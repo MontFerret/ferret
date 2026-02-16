@@ -22,6 +22,7 @@ type AggregateCollector struct {
 	// avoid allocating and hashing into a map until a second distinct key appears.
 	singleGroupKey   string
 	singleGroupValue runtime.List
+	hasSingleGroup   bool
 	groups           map[string]runtime.List
 	hasData          bool
 }
@@ -41,7 +42,7 @@ func (c *AggregateCollector) Iterate(ctx context.Context) (runtime.Iterator, err
 	size := 0
 	if c.hasData {
 		groupCount := len(c.groups)
-		if c.singleGroupKey != "" {
+		if c.hasSingleGroup {
 			groupCount++
 		}
 		size = c.plan.Size() + groupCount
@@ -56,7 +57,7 @@ func (c *AggregateCollector) Iterate(ctx context.Context) (runtime.Iterator, err
 			}
 		}
 
-		if c.singleGroupKey != "" {
+		if c.hasSingleGroup {
 			if err := values.Append(ctx, NewKV(runtime.NewString(c.singleGroupKey), c.singleGroupValue)); err != nil {
 				return nil, err
 			}
@@ -108,14 +109,15 @@ func (c *AggregateCollector) Set(ctx context.Context, key, value runtime.Value) 
 	c.hasData = true
 
 	// Fast path: first non-aggregate key is stored in the single-group slot.
-	if c.singleGroupKey == "" && len(c.groups) == 0 {
+	if !c.hasSingleGroup && len(c.groups) == 0 {
 		c.singleGroupKey = keyStr
 		c.singleGroupValue = runtime.NewArray(4)
+		c.hasSingleGroup = true
 		return c.singleGroupValue.Append(ctx, value)
 	}
 
 	// If a second distinct key appears, promote to the groups map.
-	if c.singleGroupKey != "" {
+	if c.hasSingleGroup {
 		if keyStr == c.singleGroupKey {
 			return c.singleGroupValue.Append(ctx, value)
 		}
@@ -128,6 +130,7 @@ func (c *AggregateCollector) Set(ctx context.Context, key, value runtime.Value) 
 			c.groups[c.singleGroupKey] = c.singleGroupValue
 		}
 
+		c.hasSingleGroup = false
 		c.singleGroupKey = ""
 		c.singleGroupValue = nil
 	}
@@ -163,7 +166,7 @@ func (c *AggregateCollector) Get(ctx context.Context, key runtime.Value) (runtim
 		return c.valueFor(idx), nil
 	}
 
-	if c.singleGroupKey != "" && keyStr == c.singleGroupKey {
+	if c.hasSingleGroup && keyStr == c.singleGroupKey {
 		return c.singleGroupValue, nil
 	}
 
@@ -180,7 +183,7 @@ func (c *AggregateCollector) Length(_ context.Context) (runtime.Int, error) {
 	}
 
 	groupCount := len(c.groups)
-	if c.singleGroupKey != "" {
+	if c.hasSingleGroup {
 		groupCount++
 	}
 
@@ -195,7 +198,7 @@ func (c *AggregateCollector) MarshalJSON() ([]byte, error) {
 			_ = obj.Set(context.Background(), key, c.valueFor(i))
 		}
 
-		if c.singleGroupKey != "" {
+		if c.hasSingleGroup {
 			_ = obj.Set(context.Background(), runtime.NewString(c.singleGroupKey), c.singleGroupValue)
 		}
 
@@ -231,6 +234,7 @@ func (c *AggregateCollector) Copy() runtime.Value {
 func (c *AggregateCollector) Close() error {
 	c.plan = nil
 	c.states = nil
+	c.hasSingleGroup = false
 	c.singleGroupKey = ""
 	c.singleGroupValue = nil
 	c.groups = nil

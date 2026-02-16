@@ -11,10 +11,11 @@ type KeyCounterCollector struct {
 	*runtime.Box[runtime.List]
 	grouping map[string]runtime.Int
 	// Fast path for the common single-key case: keep first counter without a map.
-	singleKey   string
-	singleIndex runtime.Int
-	singleKV    *KV
-	sorted      bool
+	singleKey      string
+	singleIndex    runtime.Int
+	singleKV       *KV
+	hasSingleGroup bool
+	sorted         bool
 }
 
 func NewKeyCounterCollector() Transformer {
@@ -75,7 +76,7 @@ func (c *KeyCounterCollector) Set(ctx context.Context, key, _ runtime.Value) err
 	}
 
 	// Fast path: first key stays in singleKey/singleKV to avoid map allocation.
-	if c.grouping == nil && c.singleKey == "" {
+	if c.grouping == nil && !c.hasSingleGroup {
 		kv := NewKV(key, runtime.ZeroInt)
 		if err := c.Value.Append(ctx, kv); err != nil {
 			return err
@@ -84,6 +85,7 @@ func (c *KeyCounterCollector) Set(ctx context.Context, key, _ runtime.Value) err
 		c.singleKey = keyStr
 		c.singleIndex = 0
 		c.singleKV = kv
+		c.hasSingleGroup = true
 
 		if count, ok := kv.Value.(runtime.Int); ok {
 			kv.Value = count + 1
@@ -96,7 +98,7 @@ func (c *KeyCounterCollector) Set(ctx context.Context, key, _ runtime.Value) err
 
 	// Promote to map when a second distinct key appears.
 	if c.grouping == nil {
-		if keyStr == c.singleKey {
+		if c.hasSingleGroup && keyStr == c.singleKey {
 			kv := c.singleKV
 			if count, ok := kv.Value.(runtime.Int); ok {
 				kv.Value = count + 1
@@ -107,9 +109,11 @@ func (c *KeyCounterCollector) Set(ctx context.Context, key, _ runtime.Value) err
 			return nil
 		}
 
-		c.grouping = map[string]runtime.Int{
-			c.singleKey: c.singleIndex,
+		c.grouping = map[string]runtime.Int{}
+		if c.hasSingleGroup {
+			c.grouping[c.singleKey] = c.singleIndex
 		}
+		c.hasSingleGroup = false
 		c.singleKey = ""
 		c.singleIndex = 0
 		c.singleKV = nil
@@ -168,7 +172,7 @@ func (c *KeyCounterCollector) Get(ctx context.Context, key runtime.Value) (runti
 	}
 
 	if c.grouping == nil {
-		if keyStr == c.singleKey {
+		if c.hasSingleGroup && keyStr == c.singleKey {
 			return c.singleIndex, nil
 		}
 
@@ -192,6 +196,7 @@ func (c *KeyCounterCollector) Close() error {
 	val := c.Value
 	c.Value = nil
 	c.grouping = nil
+	c.hasSingleGroup = false
 	c.singleKey = ""
 	c.singleIndex = 0
 	c.singleKV = nil

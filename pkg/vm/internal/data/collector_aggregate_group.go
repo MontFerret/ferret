@@ -13,9 +13,10 @@ type GroupedAggregateCollector struct {
 	*runtime.Box[runtime.List]
 	grouping map[string]*groupedAggregateEntry
 	// Fast path for the common single-key case: keep first group without a map.
-	singleKey   string
-	singleEntry *groupedAggregateEntry
-	sorted      bool
+	singleKey      string
+	singleEntry    *groupedAggregateEntry
+	hasSingleGroup bool
+	sorted         bool
 }
 
 type groupedAggregateEntry struct {
@@ -125,7 +126,7 @@ func (c *GroupedAggregateCollector) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	if c.singleKey != "" && c.singleEntry != nil {
+	if c.hasSingleGroup && c.singleEntry != nil {
 		addEntry(c.singleKey, c.singleEntry)
 	}
 
@@ -162,6 +163,7 @@ func (c *GroupedAggregateCollector) Close() error {
 	c.plan = nil
 	c.Value = nil
 	c.grouping = nil
+	c.hasSingleGroup = false
 	c.singleKey = ""
 	c.singleEntry = nil
 	c.sorted = false
@@ -255,10 +257,11 @@ func (c *GroupedAggregateCollector) entryFor(ctx context.Context, key runtime.Va
 	}
 
 	// Fast path: first key stays in singleKey/singleEntry to avoid map allocation.
-	if c.grouping == nil && c.singleKey == "" {
+	if c.grouping == nil && !c.hasSingleGroup {
 		entry := c.newEntry(key)
 		c.singleKey = keyStr
 		c.singleEntry = entry
+		c.hasSingleGroup = true
 
 		if err := c.Value.Append(ctx, NewKV(key, entry.group)); err != nil {
 			return nil, err
@@ -269,13 +272,15 @@ func (c *GroupedAggregateCollector) entryFor(ctx context.Context, key runtime.Va
 
 	// Promote to map when a second distinct key appears.
 	if c.grouping == nil {
-		if keyStr == c.singleKey {
+		if c.hasSingleGroup && keyStr == c.singleKey {
 			return c.singleEntry, nil
 		}
 
-		c.grouping = map[string]*groupedAggregateEntry{
-			c.singleKey: c.singleEntry,
+		c.grouping = map[string]*groupedAggregateEntry{}
+		if c.hasSingleGroup {
+			c.grouping[c.singleKey] = c.singleEntry
 		}
+		c.hasSingleGroup = false
 		c.singleKey = ""
 		c.singleEntry = nil
 	}
@@ -306,7 +311,7 @@ func (c *GroupedAggregateCollector) lookupEntry(ctx context.Context, key runtime
 
 func (c *GroupedAggregateCollector) lookupEntryByString(keyStr string) (*groupedAggregateEntry, bool) {
 	if c.grouping == nil {
-		if c.singleKey == keyStr && c.singleEntry != nil {
+		if c.hasSingleGroup && c.singleKey == keyStr && c.singleEntry != nil {
 			return c.singleEntry, true
 		}
 

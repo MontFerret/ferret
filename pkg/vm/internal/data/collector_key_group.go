@@ -11,9 +11,10 @@ type KeyGroupCollector struct {
 	*runtime.Box[runtime.List]
 	grouping map[string]runtime.List
 	// Fast path for the common single-key case: keep first group without a map.
-	singleKey   string
-	singleGroup runtime.List
-	sorted      bool
+	singleKey      string
+	singleGroup    runtime.List
+	hasSingleGroup bool
+	sorted         bool
 }
 
 func NewKeyGroupCollector() Transformer {
@@ -57,10 +58,11 @@ func (c *KeyGroupCollector) Set(ctx context.Context, key, value runtime.Value) e
 	}
 
 	// Fast path: first key stays in singleKey/singleGroup to avoid map allocation.
-	if c.grouping == nil && c.singleKey == "" {
+	if c.grouping == nil && !c.hasSingleGroup {
 		group := runtime.NewArray(4)
 		c.singleKey = keyStr
 		c.singleGroup = group
+		c.hasSingleGroup = true
 
 		if err := c.Value.Append(ctx, NewKV(key, group)); err != nil {
 			return err
@@ -71,13 +73,15 @@ func (c *KeyGroupCollector) Set(ctx context.Context, key, value runtime.Value) e
 
 	// Promote to map when a second distinct key appears.
 	if c.grouping == nil {
-		if keyStr == c.singleKey {
+		if c.hasSingleGroup && keyStr == c.singleKey {
 			return c.singleGroup.Append(ctx, value)
 		}
 
-		c.grouping = map[string]runtime.List{
-			c.singleKey: c.singleGroup,
+		c.grouping = map[string]runtime.List{}
+		if c.hasSingleGroup {
+			c.grouping[c.singleKey] = c.singleGroup
 		}
+		c.hasSingleGroup = false
 		c.singleKey = ""
 		c.singleGroup = nil
 	}
@@ -128,7 +132,7 @@ func (c *KeyGroupCollector) Get(ctx context.Context, key runtime.Value) (runtime
 	}
 
 	if c.grouping == nil {
-		if keyStr == c.singleKey {
+		if c.hasSingleGroup && keyStr == c.singleKey {
 			return c.singleGroup, nil
 		}
 
@@ -152,6 +156,7 @@ func (c *KeyGroupCollector) Close() error {
 	val := c.Value
 	c.Value = nil
 	c.grouping = nil
+	c.hasSingleGroup = false
 	c.singleKey = ""
 	c.singleGroup = nil
 
