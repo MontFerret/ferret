@@ -4,11 +4,12 @@ import (
 	"io"
 	goruntime "runtime"
 
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
-	"github.com/antlr4-go/antlr/v4"
 )
 
 type Formatter struct {
@@ -64,12 +65,15 @@ func (fmt *Formatter) Format(out io.Writer, src *file.Source) error {
 	p.RemoveErrorListeners()
 	// Add custom error listener
 	p.AddErrorListener(parserd.NewErrorListener(src, errorHandler, tokenHistory))
-	// TODO: Implement me
-	//l := NewVisitor(src, out)
-	//p.Visit(l)
+	l := newVisitor(out, fmt.opts)
+	p.Visit(l)
 
 	if errorHandler.HasErrors() {
 		return errorHandler.Unwrap()
+	}
+
+	if err := l.Err(); err != nil {
+		return err
 	}
 
 	return nil

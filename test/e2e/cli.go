@@ -19,6 +19,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/formatter"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	"github.com/rs/zerolog"
@@ -216,6 +217,11 @@ var (
 		"compiles a given query, but does not execute",
 	)
 
+	format = flag.Bool(
+		"format",
+		false,
+		"formats a given query and prints it to standard output")
+
 	profiler = flag.Bool(
 		"profiler",
 		false,
@@ -286,23 +292,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	engine, err := ferret.New(
-		ferret.WithLog(console),
-		ferret.WithLogLevel(ferret.MustParseLogLevel(*logLevel)),
-	)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	//_ = engine.Drivers().Register(http.NewDriver())
-	//_ = engine.Drivers().Register(cdp.NewDriver(cdp.WithAddress(*conn)))
-
-	sessionOptions := []ferret.SessionOption{
-		ferret.WithSessionParams(p),
-	}
-
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	signal.Notify(c, os.Kill)
@@ -316,10 +305,37 @@ func main() {
 		}
 	}()
 
-	if query != "" {
-		err = runQuery(ctx, engine, sessionOptions, file.NewSource("stdin", query))
+	if *format {
+		f := formatter.New()
+
+		if query != "" {
+			err = formatQuery(f, file.NewSource("stdin", query))
+		} else {
+			err = formatFiles(ctx, f, files)
+		}
 	} else {
-		err = execFiles(ctx, engine, sessionOptions, files)
+		engine, e := ferret.New(
+			ferret.WithLog(console),
+			ferret.WithLogLevel(ferret.MustParseLogLevel(*logLevel)),
+		)
+
+		if e != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		//_ = engine.Drivers().Register(http.NewDriver())
+		//_ = engine.Drivers().Register(cdp.NewDriver(cdp.WithAddress(*conn)))
+
+		sessionOptions := []ferret.SessionOption{
+			ferret.WithSessionParams(p),
+		}
+
+		if query != "" {
+			err = runQuery(ctx, engine, sessionOptions, file.NewSource("stdin", query))
+		} else {
+			err = execFiles(ctx, engine, sessionOptions, files)
+		}
 	}
 
 	if err != nil {
@@ -328,132 +344,26 @@ func main() {
 	}
 }
 
+func formatQuery(f *formatter.Formatter, query *file.Source) error {
+	err := f.Format(os.Stdout, query)
+
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stdout)
+	}
+
+	return err
+}
+
+func formatFiles(ctx context.Context, f *formatter.Formatter, files []string) error {
+	return processFiles(ctx, files, "format", func(ctx context.Context, src *file.Source) error {
+		return formatQuery(f, src)
+	})
+}
+
 func execFiles(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, files []string) error {
-	errList := make([]diagnostics.FormattableError, 0, len(files))
-
-	for _, path := range files {
-		log := logger.With().Str("path", path).Logger()
-		log.Debug().Msg("checking path...")
-
-		info, err := os.Stat(path)
-
-		if err != nil {
-			log.Debug().Err(err).Msg("failed to get path info")
-
-			errList = append(errList, &diagnostics.Diagnostic{
-				Kind:    diagnostics.UnexpectedError,
-				Message: "failed to get path info",
-				Source:  file.NewSource("stdin", path),
-				Cause:   err,
-			})
-
-			continue
-		}
-
-		if info.IsDir() {
-			log.Debug().Msg("path points to a directory. retrieving list of files...")
-
-			fileInfos, err := os.ReadDir(path)
-
-			if err != nil {
-				log.Debug().Err(err).Msg("failed to retrieve list of files")
-
-				errList = append(errList, &diagnostics.Diagnostic{
-					Kind:    diagnostics.UnexpectedError,
-					Message: "failed to retrieve list of files",
-					Source:  file.NewSource("stdin", path),
-					Cause:   err,
-				})
-
-				continue
-			}
-
-			log.Debug().Int("size", len(fileInfos)).Msg("retrieved list of files. starting to iterate...")
-
-			dirFiles := make([]string, 0, len(fileInfos))
-
-			for _, info := range fileInfos {
-				if filepath.Ext(info.Name()) == ".fql" {
-					dirFiles = append(dirFiles, filepath.Join(path, info.Name()))
-				}
-			}
-
-			if len(dirFiles) > 0 {
-				if err := execFiles(ctx, engine, opts, dirFiles); err != nil {
-					log.Debug().Err(err).Msg("failed to execute files")
-
-					errList = append(errList, &diagnostics.Diagnostic{
-						Kind:    diagnostics.UnexpectedError,
-						Message: "failed to execute files",
-						Source:  file.NewSource("stdin", path),
-						Cause:   err,
-					})
-				} else {
-					log.Debug().Int("size", len(fileInfos)).Err(err).Msg("successfully executed files")
-				}
-			} else {
-				log.Debug().Int("size", len(fileInfos)).Err(err).Msg("no FQL files found")
-			}
-
-			continue
-		}
-
-		log.Debug().Msg("path points to a file. starting to read content")
-
-		src, err := file.Read(path)
-
-		if err != nil {
-			log.Debug().Err(err).Msg("failed to read content")
-
-			errList = append(errList, &diagnostics.Diagnostic{
-				Kind:    diagnostics.UnexpectedError,
-				Message: "failed to read content",
-				Source:  file.NewSource("stdin", path),
-				Cause:   err,
-			})
-
-			continue
-		}
-
-		log.Debug().Msg("successfully read file")
-		log.Debug().Msg("executing file...")
-		err = runQuery(ctx, engine, opts, src)
-
-		if err != nil {
-			log.Debug().Err(err).Msg("failed to execute file")
-
-			derr, ok := err.(diagnostics.FormattableError)
-
-			if ok {
-				errList = append(errList, derr)
-			} else {
-				errList = append(errList, &diagnostics.Diagnostic{
-					Kind:    diagnostics.UnexpectedError,
-					Message: "failed to execute file",
-					Source:  src,
-					Cause:   err,
-				})
-			}
-
-			log.Debug().Err(derr).Msg("failed to execute file with diagnostics")
-
-			continue
-		}
-
-		log.Debug().Msg("successfully executed file")
-	}
-
-	if len(errList) > 0 {
-		if len(errList) == len(files) {
-			logger.Debug().Interface("errors", errList).Msg("failed to execute file(s)")
-		} else {
-			logger.Debug().Interface("errors", errList).Msg("executed with errors")
-		}
-
-		return diagnostics.NewDiagnosticsOf(errList)
-	}
-
-	return nil
+	return processFiles(ctx, files, "execute", func(ctx context.Context, src *file.Source) error {
+		return runQuery(ctx, engine, opts, src)
+	})
 }
 
 func runQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, query *file.Source) error {
@@ -518,6 +428,134 @@ func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 		}
 
 		os.Exit(1)
+	}
+
+	return nil
+}
+
+func processFiles(ctx context.Context, files []string, op string, predicate func(ctx context.Context, src *file.Source) error) error {
+	errList := make([]diagnostics.FormattableError, 0, len(files))
+
+	for _, path := range files {
+		log := logger.With().Str("path", path).Logger()
+		log.Debug().Msg("checking path...")
+
+		info, err := os.Stat(path)
+
+		if err != nil {
+			log.Debug().Err(err).Msg("failed to get path info")
+
+			errList = append(errList, &diagnostics.Diagnostic{
+				Kind:    diagnostics.UnexpectedError,
+				Message: "failed to get path info",
+				Source:  file.NewSource("stdin", path),
+				Cause:   err,
+			})
+
+			continue
+		}
+
+		if info.IsDir() {
+			log.Debug().Msg("path points to a directory. retrieving list of files...")
+
+			fileInfos, err := os.ReadDir(path)
+
+			if err != nil {
+				log.Debug().Err(err).Msg("failed to retrieve list of files")
+
+				errList = append(errList, &diagnostics.Diagnostic{
+					Kind:    diagnostics.UnexpectedError,
+					Message: "failed to retrieve list of files",
+					Source:  file.NewSource("stdin", path),
+					Cause:   err,
+				})
+
+				continue
+			}
+
+			log.Debug().Int("size", len(fileInfos)).Msg("retrieved list of files. starting to iterate...")
+
+			dirFiles := make([]string, 0, len(fileInfos))
+
+			for _, info := range fileInfos {
+				if filepath.Ext(info.Name()) == ".fql" {
+					dirFiles = append(dirFiles, filepath.Join(path, info.Name()))
+				}
+			}
+
+			if len(dirFiles) > 0 {
+				if err := processFiles(ctx, dirFiles, op, predicate); err != nil {
+					log.Debug().Err(err).Msg(fmt.Sprintf("failed to %s files", op))
+
+					errList = append(errList, &diagnostics.Diagnostic{
+						Kind:    diagnostics.UnexpectedError,
+						Message: fmt.Sprintf("failed to %s files", op),
+						Source:  file.NewSource("stdin", path),
+						Cause:   err,
+					})
+				} else {
+					log.Debug().Int("size", len(fileInfos)).Err(err).Msg(fmt.Sprintf("successfully %sed files", op))
+				}
+			} else {
+				log.Debug().Int("size", len(fileInfos)).Err(err).Msg("no FQL files found")
+			}
+
+			continue
+		}
+
+		log.Debug().Msg("path points to a file. starting to read content")
+
+		src, err := file.Read(path)
+
+		if err != nil {
+			log.Debug().Err(err).Msg("failed to read content")
+
+			errList = append(errList, &diagnostics.Diagnostic{
+				Kind:    diagnostics.UnexpectedError,
+				Message: "failed to read content",
+				Source:  file.NewSource("stdin", path),
+				Cause:   err,
+			})
+
+			continue
+		}
+
+		log.Debug().Msg("successfully read file")
+		log.Debug().Msg(fmt.Sprintf("starting to %s file...", op))
+		err = predicate(ctx, src)
+
+		if err != nil {
+			log.Debug().Err(err).Msg("failed to execute file")
+
+			derr, ok := err.(diagnostics.FormattableError)
+
+			if ok {
+				errList = append(errList, derr)
+			} else {
+				errList = append(errList, &diagnostics.Diagnostic{
+					Kind:    diagnostics.UnexpectedError,
+					Message: "failed to execute file",
+					Source:  src,
+					Cause:   err,
+				})
+			}
+
+			log.Debug().Err(derr).Msg("failed to execute file with diagnostics")
+
+			continue
+		}
+
+		log.Debug().Msg("successfully executed file")
+	}
+
+	if len(errList) > 0 {
+		if len(errList) == len(files) {
+			logger.Debug().Interface("errors", errList).Msg("failed to execute file(s)")
+		} else {
+			logger.Debug().Interface("errors", errList).Msg("executed with errors")
+		}
+
+		return diagnostics.NewDiagnosticsOf(errList)
 	}
 
 	return nil
