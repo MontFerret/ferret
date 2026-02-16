@@ -67,13 +67,9 @@ func (sp *ScopeProjection) EmitAsObject(dst vm.Operand) {
 	for _, v := range sp.values {
 		// Key (field name)
 		keyConst := sp.symbols.AddConstant(runtime.String(v.Name))
-
-		// Value (actual variable value)
-		valReg := sp.registers.Allocate()
-		sp.emitter.EmitAB(vm.OpMove, valReg, v.Register)
-
-		// Set the key-value pair in the object
-		sp.emitter.EmitObjectSetConst(buildDst, keyConst, valReg)
+		// Set the key-value pair in the object.
+		// buildDst may differ from dst when aliasing is detected, so values can be used directly.
+		sp.emitter.EmitObjectSetConst(buildDst, keyConst, v.Register)
 	}
 
 	if buildDst != dst {

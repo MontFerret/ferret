@@ -90,32 +90,23 @@ func (c *LoopCollectCompiler) compileGroupKeys(ctx fql.ICollectGroupingContext) 
 // It handles both multiple selectors (as array elements) and single selectors differently.
 func (c *LoopCollectCompiler) finalizeGrouping(spec *core.Collector) {
 	loop := c.ctx.Loops.Current()
+	groupKeyReg := c.selectGroupKey(spec.Type(), loop)
 
 	if len(spec.GroupSelectors()) > 1 {
-		// Handle multiple group selectors
-		variables := make([]vm.Operand, len(spec.GroupSelectors()))
-
-		// Process each selector and create a local variable for it
+		// Handle multiple group selectors.
 		for i, selector := range spec.GroupSelectors() {
 			name := selector.Name()
+			reg := c.declareLocalOrReport(selector.Context(), name.String(), core.TypeUnknown)
 
-			// Declare a local variable for the selector if not already done
-			if variables[i] == vm.NoopOperand {
-				variables[i] = c.declareLocalOrReport(selector.Context(), name.String(), core.TypeUnknown)
-			}
-
-			// Get the appropriate register (key or value) based on collector type
-			reg := c.selectGroupKey(spec.Type(), loop)
-
-			// Load the value at index i from the array in reg into the variable
-			c.ctx.Emitter.EmitABC(vm.OpLoadIndex, variables[i], reg, loadConstant(c.ctx, runtime.Int(i)))
+			// Load the value at index i from the group key array into the local variable.
+			c.ctx.Emitter.EmitABC(vm.OpLoadIndex, reg, groupKeyReg, loadConstant(c.ctx, runtime.Int(i)))
 		}
 	} else {
 		// Handle single group selector - simpler case
 		// Get the variable name
 		name := spec.GroupSelectors()[0].Name()
 		// If we have a single selector, we can just use the loop register directly
-		c.assignLocalOrReport(spec.GroupSelectors()[0].Context(), name.String(), core.TypeUnknown, c.selectGroupKey(spec.Type(), loop))
+		c.assignLocalOrReport(spec.GroupSelectors()[0].Context(), name.String(), core.TypeUnknown, groupKeyReg)
 	}
 }
 

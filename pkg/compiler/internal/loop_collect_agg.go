@@ -193,48 +193,14 @@ func (c *LoopCollectCompiler) initializeGlobalAggregationSelectors(selectors []f
 }
 
 func (c *LoopCollectCompiler) buildGlobalAggregatePlan(ctx fql.ICollectAggregatorContext) (*runtime.AggregatePlan, bool) {
-	selectors := ctx.AllCollectAggregateSelector()
-	if len(selectors) == 0 {
-		return nil, false
-	}
-
-	keys := make([]runtime.String, 0, len(selectors))
-	kinds := make([]runtime.AggregateKind, 0, len(selectors))
-
-	for _, selector := range selectors {
-		fce := selector.FunctionCallExpression()
-		if fce == nil || fce.FunctionCall() == nil {
-			return nil, false
-		}
-
-		if fce.ErrorOperator() != nil {
-			return nil, false
-		}
-
-		args := fce.FunctionCall().ArgumentList()
-		if args == nil {
-			return nil, false
-		}
-
-		exps := args.AllExpression()
-		if len(exps) != 1 {
-			return nil, false
-		}
-
-		funcName := getFunctionName(fce.FunctionCall(), c.ctx.UseAliases)
-		kind, ok := aggregateKind(funcName)
-		if !ok {
-			return nil, false
-		}
-
-		keys = append(keys, runtime.String(selector.Identifier().GetText()))
-		kinds = append(kinds, kind)
-	}
-
-	return runtime.NewAggregatePlan(keys, kinds), true
+	return c.buildAggregatePlan(ctx.AllCollectAggregateSelector())
 }
 
 func (c *LoopCollectCompiler) buildGroupedAggregatePlan(selectors []fql.ICollectAggregateSelectorContext) (*runtime.AggregatePlan, bool) {
+	return c.buildAggregatePlan(selectors)
+}
+
+func (c *LoopCollectCompiler) buildAggregatePlan(selectors []fql.ICollectAggregateSelectorContext) (*runtime.AggregatePlan, bool) {
 	if len(selectors) == 0 {
 		return nil, false
 	}

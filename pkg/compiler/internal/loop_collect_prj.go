@@ -149,13 +149,9 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 			varName := variable.GetText()
 			// Store the variable name as a string constant
 			keyConst := c.ctx.Symbols.AddConstant(runtime.String(varName))
-
-			// Move the variable value to the value register
-			valReg := c.ctx.Registers.Allocate()
-			c.ctx.Emitter.EmitAB(vm.OpMove, valReg, resolved[i])
-
-			// Set the key-value pair in the object
-			c.ctx.Emitter.EmitObjectSetConst(buildDst, keyConst, valReg)
+			// Set the key-value pair in the object directly.
+			// If kv.Value is referenced in the projection, buildDst is switched to a temp register.
+			c.ctx.Emitter.EmitObjectSetConst(buildDst, keyConst, resolved[i])
 		}
 
 		if buildDst != kv.Value {
