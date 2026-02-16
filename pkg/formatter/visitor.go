@@ -123,6 +123,16 @@ func (v *visitor) emitTrivia(text string, trimLeading bool, hasPrevLine bool) {
 	}
 }
 
+func (v *visitor) tokenStart(node antlr.TerminalNode) int {
+	if node == nil {
+		return 0
+	}
+	if sym := node.GetSymbol(); sym != nil {
+		return sym.GetStart()
+	}
+	return 0
+}
+
 func (v *visitor) isInlineComment(text string) bool {
 	if text == "" || strings.Contains(text, "\n") {
 		return false
@@ -132,6 +142,25 @@ func (v *visitor) isInlineComment(text string) bool {
 		return false
 	}
 	return strings.HasPrefix(trimmed, "//") || strings.HasPrefix(trimmed, "/*")
+}
+
+func (v *visitor) extractInlineComment(line string) string {
+	if line == "" {
+		return ""
+	}
+	trimmed := strings.TrimSpace(line)
+	if trimmed == "" {
+		return ""
+	}
+	trimmed = strings.TrimLeft(trimmed, " \t,")
+	if strings.HasPrefix(trimmed, "//") || strings.HasPrefix(trimmed, "/*") {
+		return trimmed
+	}
+	return ""
+}
+
+func (v *visitor) containsComment(text string) bool {
+	return strings.Contains(text, "//") || strings.Contains(text, "/*")
 }
 
 func (v *visitor) emitBetween(prev, next antlr.ParserRuleContext) {
@@ -167,6 +196,74 @@ func (v *visitor) emitBetweenIndices(start, end int) {
 	}
 
 	v.emitTrivia(text, false, true)
+}
+
+func (v *visitor) emitListTriviaWith(p *printer, text string) {
+	if text == "" {
+		p.newline()
+		return
+	}
+	if strings.TrimSpace(text) == "" {
+		if strings.Count(text, "\n") >= 2 {
+			p.newline()
+		}
+		p.newline()
+		return
+	}
+
+	line := text
+	rest := ""
+	if idx := strings.IndexByte(text, '\n'); idx >= 0 {
+		line = text[:idx]
+		rest = text[idx+1:]
+	}
+
+	if inline := v.extractInlineComment(line); inline != "" {
+		if !p.atLineStart {
+			p.space()
+		}
+		p.write(inline)
+		p.newline()
+	} else {
+		p.newline()
+	}
+
+	v.emitListCommentLinesWith(p, rest)
+}
+
+func (v *visitor) emitListCommentLinesWith(p *printer, text string) {
+	if text == "" {
+		return
+	}
+	lines := strings.Split(text, "\n")
+	emptyCount := 0
+	wroteLine := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			emptyCount++
+			continue
+		}
+		if emptyCount > 0 {
+			p.newline()
+			emptyCount = 0
+		}
+		if !p.atLineStart {
+			p.space()
+		}
+		p.write(trimmed)
+		p.newline()
+		wroteLine = true
+	}
+
+	if emptyCount >= 2 {
+		p.newline()
+		return
+	}
+	if !wroteLine && emptyCount > 0 {
+		p.newline()
+	}
 }
 
 func (v *visitor) emitLeading(next antlr.ParserRuleContext) {
@@ -245,6 +342,82 @@ func (v *visitor) forHeaderStopIndex(ctx *fql.ForExpressionContext) int {
 		}
 	}
 	return v.stopIndex(ctx)
+}
+
+func (v *visitor) arrayHasComments(ctx *fql.ArrayLiteralContext) bool {
+	if ctx == nil || ctx.ArgumentList() == nil {
+		return false
+	}
+	args := ctx.ArgumentList().AllExpression()
+	if len(args) == 0 {
+		return false
+	}
+	closeStart := v.tokenStart(ctx.CloseBracket())
+	for i, arg := range args {
+		start := v.stopIndex(arg.(antlr.ParserRuleContext)) + 1
+		end := closeStart
+		if i < len(args)-1 {
+			end = v.startIndex(args[i+1].(antlr.ParserRuleContext))
+		}
+		if v.containsComment(v.sliceBetween(start, end)) {
+			return true
+		}
+	}
+	return false
+}
+
+func (v *visitor) objectHasComments(ctx *fql.ObjectLiteralContext) bool {
+	if ctx == nil {
+		return false
+	}
+	props := ctx.AllPropertyAssignment()
+	if len(props) == 0 {
+		return false
+	}
+	closeStart := v.tokenStart(ctx.CloseBrace())
+	for i, prop := range props {
+		start := v.stopIndex(prop.(antlr.ParserRuleContext)) + 1
+		end := closeStart
+		if i < len(props)-1 {
+			end = v.startIndex(props[i+1].(antlr.ParserRuleContext))
+		}
+		if v.containsComment(v.sliceBetween(start, end)) {
+			return true
+		}
+	}
+	return false
+}
+
+func (v *visitor) argumentListClose(ctx *fql.ArgumentListContext) antlr.TerminalNode {
+	if ctx == nil {
+		return nil
+	}
+	if parent, ok := ctx.GetParent().(*fql.FunctionCallContext); ok {
+		return parent.CloseParen()
+	}
+	return nil
+}
+
+func (v *visitor) argumentListHasComments(ctx *fql.ArgumentListContext) bool {
+	if ctx == nil {
+		return false
+	}
+	args := ctx.AllExpression()
+	if len(args) == 0 {
+		return false
+	}
+	closeStart := v.tokenStart(v.argumentListClose(ctx))
+	for i, arg := range args {
+		start := v.stopIndex(arg.(antlr.ParserRuleContext)) + 1
+		end := closeStart
+		if i < len(args)-1 {
+			end = v.startIndex(args[i+1].(antlr.ParserRuleContext))
+		}
+		if v.containsComment(v.sliceBetween(start, end)) {
+			return true
+		}
+	}
+	return false
 }
 
 func (v *visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
@@ -1500,17 +1673,24 @@ func (v *visitor) formatArrayLiteral(ctx *fql.ArrayLiteralContext) {
 		return
 	}
 
+	hasComments := v.arrayHasComments(ctx)
 	if v.p.forceSingleLine {
+		if hasComments {
+			v.formatArrayLiteralWith(v.p, ctx, false)
+			return
+		}
 		v.formatArrayLiteralInline(ctx)
 		return
 	}
 
-	inline := v.renderInline(func(p *printer) {
-		v.formatArrayLiteralWith(p, ctx, true)
-	})
-	if len(inline) <= int(v.opts.printWidth) {
-		v.p.write(inline)
-		return
+	if !hasComments {
+		inline := v.renderInline(func(p *printer) {
+			v.formatArrayLiteralWith(p, ctx, true)
+		})
+		if len(inline) <= int(v.opts.printWidth) {
+			v.p.write(inline)
+			return
+		}
 	}
 
 	v.formatArrayLiteralWith(v.p, ctx, false)
@@ -1526,12 +1706,18 @@ func (v *visitor) formatArrayLiteralWith(p *printer, ctx *fql.ArrayLiteralContex
 	if !inline {
 		p.newline()
 		p.withIndent(func() {
+			closeStart := v.tokenStart(ctx.CloseBracket())
 			for i, expr := range args {
-				v.formatExpressionWith(p, expr.(*fql.ExpressionContext))
+				exprCtx := expr.(*fql.ExpressionContext)
+				v.formatExpressionWith(p, exprCtx)
 				if i < len(args)-1 {
 					p.write(",")
 				}
-				p.newline()
+				nextStart := closeStart
+				if i < len(args)-1 {
+					nextStart = v.startIndex(args[i+1].(antlr.ParserRuleContext))
+				}
+				v.emitListTriviaWith(p, v.sliceBetween(v.stopIndex(exprCtx)+1, nextStart))
 			}
 		})
 		p.write("]")
@@ -1558,17 +1744,24 @@ func (v *visitor) formatObjectLiteral(ctx *fql.ObjectLiteralContext) {
 		return
 	}
 
+	hasComments := v.objectHasComments(ctx)
 	if v.p.forceSingleLine {
+		if hasComments {
+			v.formatObjectLiteralWith(v.p, ctx, false)
+			return
+		}
 		v.formatObjectLiteralInline(ctx)
 		return
 	}
 
-	inline := v.renderInline(func(p *printer) {
-		v.formatObjectLiteralWith(p, ctx, true)
-	})
-	if len(inline) <= int(v.opts.printWidth) {
-		v.p.write(inline)
-		return
+	if !hasComments {
+		inline := v.renderInline(func(p *printer) {
+			v.formatObjectLiteralWith(p, ctx, true)
+		})
+		if len(inline) <= int(v.opts.printWidth) {
+			v.p.write(inline)
+			return
+		}
 	}
 
 	v.formatObjectLiteralWith(v.p, ctx, false)
@@ -1601,12 +1794,18 @@ func (v *visitor) formatObjectLiteralWith(p *printer, ctx *fql.ObjectLiteralCont
 
 	p.newline()
 	p.withIndent(func() {
+		closeStart := v.tokenStart(ctx.CloseBrace())
 		for i, prop := range props {
-			v.formatPropertyAssignmentWith(p, prop.(*fql.PropertyAssignmentContext))
+			propCtx := prop.(*fql.PropertyAssignmentContext)
+			v.formatPropertyAssignmentWith(p, propCtx)
 			if i < len(props)-1 {
 				p.write(",")
 			}
-			p.newline()
+			nextStart := closeStart
+			if i < len(props)-1 {
+				nextStart = v.startIndex(props[i+1].(antlr.ParserRuleContext))
+			}
+			v.emitListTriviaWith(p, v.sliceBetween(v.stopIndex(propCtx)+1, nextStart))
 		}
 	})
 	p.write("}")
@@ -1702,17 +1901,24 @@ func (v *visitor) formatArgumentList(ctx *fql.ArgumentListContext) {
 		return
 	}
 
+	hasComments := v.argumentListHasComments(ctx)
 	if v.p.forceSingleLine {
+		if hasComments {
+			v.formatArgumentListWith(v.p, ctx, false)
+			return
+		}
 		v.formatArgumentListInline(ctx)
 		return
 	}
 
-	inline := v.renderInline(func(p *printer) {
-		v.formatArgumentListWith(p, ctx, true)
-	})
-	if len(inline) <= int(v.opts.printWidth) {
-		v.p.write(inline)
-		return
+	if !hasComments {
+		inline := v.renderInline(func(p *printer) {
+			v.formatArgumentListWith(p, ctx, true)
+		})
+		if len(inline) <= int(v.opts.printWidth) {
+			v.p.write(inline)
+			return
+		}
 	}
 
 	v.formatArgumentListWith(v.p, ctx, false)
@@ -1737,12 +1943,18 @@ func (v *visitor) formatArgumentListWith(p *printer, ctx *fql.ArgumentListContex
 
 	p.newline()
 	p.withIndent(func() {
+		closeStart := v.tokenStart(v.argumentListClose(ctx))
 		for i, arg := range args {
-			v.formatExpressionWith(p, arg.(*fql.ExpressionContext))
+			argCtx := arg.(*fql.ExpressionContext)
+			v.formatExpressionWith(p, argCtx)
 			if i < len(args)-1 {
 				p.write(",")
 			}
-			p.newline()
+			nextStart := closeStart
+			if i < len(args)-1 {
+				nextStart = v.startIndex(args[i+1].(antlr.ParserRuleContext))
+			}
+			v.emitListTriviaWith(p, v.sliceBetween(v.stopIndex(argCtx)+1, nextStart))
 		}
 	})
 }
