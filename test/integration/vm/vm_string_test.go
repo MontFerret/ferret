@@ -82,5 +82,15 @@ RETURN `+"`"+`${1 + 2}`+"`"+`
 			`
 RETURN { `+"`"+`foo${1}`+"`"+`: 2 }
 		`, map[string]any{"foo1": 2}, "Template literals should work as property names"),
+
+		Case(
+			fmt.Sprintf("\nRETURN %scost=\\${1}%s\n", "`", "`"),
+			"cost=${1}",
+			"Should allow escaping interpolation start in template literals"),
+
+		Case(
+			fmt.Sprintf("\nRETURN %suse \\`backtick\\`%s\n", "`", "`"),
+			"use `backtick`",
+			"Should allow escaped backticks in template literals"),
 	})
 }
