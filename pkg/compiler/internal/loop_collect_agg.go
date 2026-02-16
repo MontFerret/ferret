@@ -61,76 +61,105 @@ func (c *LoopCollectCompiler) reportAggregateSemanticError(ctx antlr.ParserRuleC
 	c.ctx.Errors.Add(err)
 }
 
+func (c *LoopCollectCompiler) parseAggregateSelector(selector fql.ICollectAggregateSelectorContext) (*core.CompiledAggregateSelector, bool) {
+	name := runtime.String(selector.Identifier().GetText())
+	fcx := selector.FunctionCallExpression()
+
+	if fcx == nil || fcx.FunctionCall() == nil {
+		c.reportAggregateSemanticError(
+			selector,
+			fmt.Sprintf("Invalid aggregate selector for '%s'", name.String()),
+			"Use a function call expression, e.g. AGGREGATE total = COUNT(x).",
+		)
+
+		return nil, false
+	}
+
+	funcName := getFunctionName(fcx.FunctionCall(), c.ctx.UseAliases)
+	args := c.ctx.ExprCompiler.CompileArgumentList(fcx.FunctionCall().ArgumentList())
+
+	if len(args) == 0 {
+		c.reportAggregateSemanticError(
+			selector,
+			fmt.Sprintf("Aggregate '%s' requires at least one argument", funcName.String()),
+			fmt.Sprintf("Provide at least one expression, e.g. %s(x).", funcName.String()),
+		)
+		return nil, false
+	}
+
+	return core.NewCompiledAggregateSelector(
+		name,
+		args,
+		funcName,
+		fcx.ErrorOperator() != nil,
+		selector,
+	), true
+}
+
+func (c *LoopCollectCompiler) initializeAggregationSelectors(
+	selectors []fql.ICollectAggregateSelectorContext,
+	emit func(int, *core.CompiledAggregateSelector) bool,
+) []*core.AggregateSelector {
+	wrappedSelectors := make([]*core.AggregateSelector, 0, len(selectors))
+
+	for i, selector := range selectors {
+		parsed, ok := c.parseAggregateSelector(selector)
+		if !ok {
+			return nil
+		}
+
+		if emit != nil && !emit(i, parsed) {
+			return nil
+		}
+
+		wrappedSelectors = append(
+			wrappedSelectors,
+			core.NewAggregateSelector(parsed.Name(), len(parsed.Args()), parsed.FuncName(), parsed.ProtectedCall(), parsed.Context()),
+		)
+	}
+
+	return wrappedSelectors
+}
+
+func (c *LoopCollectCompiler) emitAggregateArgs(dst vm.Operand, args core.RegisterSequence, keyForArg func(argIndex int) vm.Operand) {
+	if len(args) > 1 {
+		for i, arg := range args {
+			c.ctx.Emitter.EmitPushKV(dst, keyForArg(i), arg)
+		}
+
+		return
+	}
+
+	c.ctx.Emitter.EmitPushKV(dst, keyForArg(-1), args[0])
+}
+
 // initializeGroupedAggregationSelectors processes aggregation selectors for grouped aggregations.
 // It compiles each selector's function call expression and arguments, and creates AggregateSelector objects.
 // For selectors with multiple arguments, it packs them into an array.
 // Returns a slice of AggregateSelectors that describe the aggregation operations.
 func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, kv *core.KV, dst vm.Operand, fused bool) []*core.AggregateSelector {
-	wrappedSelectors := make([]*core.AggregateSelector, 0, len(selectors))
-
-	for i := 0; i < len(selectors); i++ {
-		selector := selectors[i]
-		// Get the variable name for this aggregation result
-		name := runtime.String(selector.Identifier().GetText())
-		// Get the function call expression
-		fcx := selector.FunctionCallExpression()
-		if fcx == nil || fcx.FunctionCall() == nil {
-			c.reportAggregateSemanticError(
-				selector,
-				fmt.Sprintf("Invalid aggregate selector for '%s'", name.String()),
-				"Use a function call expression, e.g. AGGREGATE total = COUNT(x).",
-			)
-			return nil
-		}
-
-		funcName := getFunctionName(fcx.FunctionCall(), c.ctx.UseAliases)
-		isProtected := fcx.ErrorOperator() != nil
-		// Compile the function arguments
-		args := c.ctx.ExprCompiler.CompileArgumentList(fcx.FunctionCall().ArgumentList())
-
-		if len(args) == 0 {
-			c.reportAggregateSemanticError(
-				selector,
-				fmt.Sprintf("Aggregate '%s' requires at least one argument", funcName.String()),
-				fmt.Sprintf("Provide at least one expression, e.g. %s(x).", funcName.String()),
-			)
-			return nil
-		}
-
+	return c.initializeAggregationSelectors(selectors, func(i int, parsed *core.CompiledAggregateSelector) bool {
 		if fused {
-			if len(args) != 1 {
+			if len(parsed.Args()) != 1 {
 				c.reportAggregateSemanticError(
-					selector,
-					fmt.Sprintf("Aggregate '%s' requires exactly one argument in fused grouped mode", funcName.String()),
+					parsed.Context(),
+					fmt.Sprintf("Aggregate '%s' requires exactly one argument in fused grouped mode", parsed.FuncName().String()),
 					"Use a single argument in each aggregate function call when grouped aggregation fusion is enabled.",
 				)
-				return nil
+				return false
 			}
 
 			key := c.loadGroupedAggregateKey(kv.Key, i)
-			c.ctx.Emitter.EmitPushKV(dst, key, args[0])
-		} else {
-			if len(args) > 1 {
-				// For multiple arguments, push each one with an indexed key
-				for y := 0; y < len(args); y++ {
-					// Create a key with format "name:index"
-					key := c.loadSelectorKey(kv.Key, name, y)
-					// Push the key-value pair to the collector
-					c.ctx.Emitter.EmitPushKV(dst, key, args[y])
-				}
-			} else {
-				// For a single argument, use the selector name as the key
-				key := c.loadSelectorKey(kv.Key, name, -1)
-				// Push the key-value pair to the collector
-				c.ctx.Emitter.EmitPushKV(dst, key, args[0])
-			}
+			c.ctx.Emitter.EmitPushKV(dst, key, parsed.Args()[0])
+			return true
 		}
 
-		// Create an AggregateSelector with all the information needed to process it later
-		wrappedSelectors = append(wrappedSelectors, core.NewAggregateSelector(name, len(args), funcName, isProtected, selector))
-	}
+		c.emitAggregateArgs(dst, parsed.Args(), func(argIndex int) vm.Operand {
+			return c.loadSelectorKey(kv.Key, parsed.Name(), argIndex)
+		})
 
-	return wrappedSelectors
+		return true
+	})
 }
 
 // initializeGlobalAggregationSelectors processes aggregation selectors for global (non-grouped) aggregations.
@@ -138,58 +167,16 @@ func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []
 // For selectors with multiple arguments, it uses indexed keys to store each argument separately.
 // Returns a slice of AggregateSelectors that describe the aggregation operations.
 func (c *LoopCollectCompiler) initializeGlobalAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, dst vm.Operand) []*core.AggregateSelector {
-	wrappedSelectors := make([]*core.AggregateSelector, 0, len(selectors))
-
-	for i := 0; i < len(selectors); i++ {
-		selector := selectors[i]
-		// Get the variable name for this aggregation result
-		name := runtime.String(selector.Identifier().GetText())
-		// Get the function call expression
-		fcx := selector.FunctionCallExpression()
-		if fcx == nil || fcx.FunctionCall() == nil {
-			c.reportAggregateSemanticError(
-				selector,
-				fmt.Sprintf("Invalid aggregate selector for '%s'", name.String()),
-				"Use a function call expression, e.g. AGGREGATE total = COUNT(x).",
-			)
-			return nil
-		}
-
-		funcName := getFunctionName(fcx.FunctionCall(), c.ctx.UseAliases)
-		isProtected := fcx.ErrorOperator() != nil
-		// Compile the function arguments
-		args := c.ctx.ExprCompiler.CompileArgumentList(fcx.FunctionCall().ArgumentList())
-
-		if len(args) == 0 {
-			c.reportAggregateSemanticError(
-				selector,
-				fmt.Sprintf("Aggregate '%s' requires at least one argument", funcName.String()),
-				fmt.Sprintf("Provide at least one expression, e.g. %s(x).", funcName.String()),
-			)
-			return nil
-		}
-
-		if len(args) > 1 {
-			// For multiple arguments, push each one with an indexed key
-			for y := 0; y < len(args); y++ {
-				// Create a key with format "name:index"
-				key := c.loadGlobalSelectorKey(name, y)
-				// Push the key-value pair to the collector
-				c.ctx.Emitter.EmitPushKV(dst, key, args[y])
+	return c.initializeAggregationSelectors(selectors, func(_ int, parsed *core.CompiledAggregateSelector) bool {
+		c.emitAggregateArgs(dst, parsed.Args(), func(argIndex int) vm.Operand {
+			if argIndex >= 0 {
+				return c.loadGlobalSelectorKey(parsed.Name(), argIndex)
 			}
-		} else {
-			// For a single argument, use the selector name as the key
-			key := loadConstant(c.ctx, name)
-			// Push the key-value pair to the collector
-			c.ctx.Emitter.EmitPushKV(dst, key, args[0])
-		}
 
-		// For global aggregation, we don't need to store the register in the selector
-		// as the values are already pushed to the collector
-		wrappedSelectors = append(wrappedSelectors, core.NewAggregateSelector(name, len(args), funcName, isProtected, selector))
-	}
-
-	return wrappedSelectors
+			return loadConstant(c.ctx, parsed.Name())
+		})
+		return true
+	})
 }
 
 func (c *LoopCollectCompiler) buildGlobalAggregatePlan(ctx fql.ICollectAggregatorContext) (*runtime.AggregatePlan, bool) {
