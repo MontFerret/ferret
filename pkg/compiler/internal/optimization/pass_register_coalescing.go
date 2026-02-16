@@ -504,54 +504,7 @@ func computeLiveIntervals(cfg *ControlFlowGraph, liveness map[int]*LivenessInfo,
 
 // applyRenumbering applies the register renumbering map to the program
 func applyRenumbering(program *bytecode.Program, renumberMap map[int]int, unsafeRegs map[int]bool) bool {
-	modified := false
-
-	if len(renumberMap) > 0 {
-		// Replace registers in all instructions
-		for i := range program.Bytecode {
-			inst := &program.Bytecode[i]
-			changed := false
-			uses, defs := instructionUseDef(*inst)
-			usedSet := make(map[int]bool, len(uses)+len(defs))
-
-			for _, r := range uses {
-				usedSet[r] = true
-			}
-
-			for _, r := range defs {
-				usedSet[r] = true
-			}
-
-			for j := 0; j < 3; j++ {
-				op := inst.Operands[j]
-
-				if !operandIsRegister(inst.Opcode, j) {
-					continue
-				}
-
-				if op.IsRegister() {
-					reg := op.Register()
-
-					if !usedSet[reg] {
-						continue
-					}
-
-					if unsafeRegs[reg] {
-						continue
-					}
-
-					if newReg, ok := renumberMap[reg]; ok {
-						inst.Operands[j] = bytecode.NewRegister(newReg)
-						changed = true
-					}
-				}
-			}
-
-			if changed {
-				modified = true
-			}
-		}
-	}
+	modified := applyRegisterMap(program, renumberMap, unsafeRegs)
 
 	if updateRegisterCount(program) {
 		modified = true
@@ -865,13 +818,17 @@ func foldMovesIntoDefs(program *bytecode.Program, cfg *ControlFlowGraph, livenes
 
 // applyCoalescing applies the coalescing map to the program
 func applyCoalescing(program *bytecode.Program, coalesceMap map[int]int, unsafeRegs map[int]bool) bool {
-	if len(coalesceMap) == 0 {
+	return applyRegisterMap(program, coalesceMap, unsafeRegs)
+}
+
+func applyRegisterMap(program *bytecode.Program, mapping map[int]int, unsafeRegs map[int]bool) bool {
+	if len(mapping) == 0 {
 		return false
 	}
 
 	modified := false
 
-	// Replace coalesced registers in all instructions
+	// Replace mapped registers in all instructions.
 	for i := range program.Bytecode {
 		inst := &program.Bytecode[i]
 		changed := false
@@ -905,7 +862,11 @@ func applyCoalescing(program *bytecode.Program, coalesceMap map[int]int, unsafeR
 					continue
 				}
 
-				if newReg, ok := coalesceMap[reg]; ok {
+				if newReg, ok := mapping[reg]; ok {
+					if newReg == reg {
+						continue
+					}
+
 					inst.Operands[j] = bytecode.NewRegister(newReg)
 					changed = true
 				}
