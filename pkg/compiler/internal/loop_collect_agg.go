@@ -245,7 +245,9 @@ func (c *LoopCollectCompiler) buildAggregatePlan(selectors []fql.ICollectAggrega
 		kinds = append(kinds, kind)
 	}
 
-	return bytecode.NewAggregatePlan(keys, kinds), true
+	plan := bytecode.NewAggregatePlan(keys, kinds)
+
+	return &plan, true
 }
 
 func (c *LoopCollectCompiler) shouldFuseGroupedAggregation(grouping fql.ICollectGroupingContext, selectors []fql.ICollectAggregateSelectorContext) bool {

@@ -10,8 +10,9 @@ import (
 )
 
 type GroupedAggregateCollector struct {
-	plan *bytecode.AggregatePlan
 	*runtime.Box[runtime.List]
+
+	plan     bytecode.AggregatePlan
 	grouping map[string]*groupedAggregateEntry
 	// Fast path for the common single-key case: keep first group without a map.
 	singleKey      string
@@ -26,11 +27,7 @@ type groupedAggregateEntry struct {
 	states []aggregateState
 }
 
-func NewGroupedAggregateCollector(plan *bytecode.AggregatePlan) Transformer {
-	if plan == nil {
-		panic("aggregate plan is nil")
-	}
-
+func NewGroupedAggregateCollector(plan bytecode.AggregatePlan) Transformer {
 	return &GroupedAggregateCollector{
 		plan: plan,
 		Box: &runtime.Box[runtime.List]{
@@ -65,11 +62,11 @@ func (c *GroupedAggregateCollector) Set(ctx context.Context, key, value runtime.
 			return err
 		}
 
-		if idx < 0 || idx >= c.plan.Size() {
+		if idx < 0 || idx >= len(c.plan.Keys) {
 			return runtime.Errorf(runtime.ErrInvalidArgument, "aggregate selector index out of range")
 		}
 
-		c.update(&entry.states[idx], c.plan.KindAt(idx), value)
+		c.update(&entry.states[idx], c.plan.Kinds[idx], value)
 
 		return nil
 	}
@@ -96,11 +93,11 @@ func (c *GroupedAggregateCollector) Get(ctx context.Context, key runtime.Value) 
 			return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", groupKey.String())
 		}
 
-		if idx < 0 || idx >= c.plan.Size() {
+		if idx < 0 || idx >= len(c.plan.Keys) {
 			return runtime.None, runtime.Errorf(runtime.ErrInvalidArgument, "aggregate selector index out of range")
 		}
 
-		return c.valueFor(entry.states[idx], c.plan.KindAt(idx)), nil
+		return c.valueFor(entry.states[idx], c.plan.Kinds[idx]), nil
 	}
 
 	keyStr, err := c.keyString(ctx, key)
@@ -124,9 +121,9 @@ func (c *GroupedAggregateCollector) MarshalJSON() ([]byte, error) {
 	obj := runtime.NewObject()
 
 	addEntry := func(keyStr string, entry *groupedAggregateEntry) {
-		for idx := 0; idx < c.plan.Size(); idx++ {
+		for idx := 0; idx < len(c.plan.Keys); idx++ {
 			aggKey := runtime.NewString(keyStr + runtime.NamespaceSeparator + strconv.Itoa(idx))
-			_ = obj.Set(context.Background(), aggKey, c.valueFor(entry.states[idx], c.plan.KindAt(idx)))
+			_ = obj.Set(context.Background(), aggKey, c.valueFor(entry.states[idx], c.plan.Kinds[idx]))
 		}
 	}
 
@@ -164,7 +161,6 @@ func (c *GroupedAggregateCollector) Copy() runtime.Value {
 
 func (c *GroupedAggregateCollector) Close() error {
 	val := c.Value
-	c.plan = nil
 	c.Value = nil
 	c.grouping = nil
 	c.hasSingleGroup = false
@@ -336,7 +332,7 @@ func (c *GroupedAggregateCollector) newEntry(key runtime.Value) *groupedAggregat
 	return &groupedAggregateEntry{
 		key:    key,
 		group:  runtime.NewArray(4),
-		states: make([]aggregateState, c.plan.Size()),
+		states: make([]aggregateState, len(c.plan.Keys)),
 	}
 }
 

@@ -83,6 +83,7 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (result runtime.Value, 
 
 	instructions := vm.instructions
 	constants := vm.program.Constants
+	aggregatePlans := vm.program.Metadata.AggregatePlans
 	reg := vm.registers.Values
 	shapeCache := vm.cache.ShapeCache
 loop:
@@ -400,15 +401,11 @@ loop:
 			if collectorType == bytecode.CollectorTypeAggregate || collectorType == bytecode.CollectorTypeAggregateGroup {
 				planIdx := int(src2)
 
-				if planIdx < 0 || planIdx >= len(constants) {
+				if planIdx < 0 || planIdx >= len(aggregatePlans) {
 					return nil, runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan")
 				}
 
-				plan, ok := constants[planIdx].(*bytecode.AggregatePlan)
-
-				if !ok || plan == nil {
-					return nil, runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan")
-				}
+				plan := aggregatePlans[planIdx]
 
 				if collectorType == bytecode.CollectorTypeAggregate {
 					reg[dst] = data.NewAggregateCollector(plan)

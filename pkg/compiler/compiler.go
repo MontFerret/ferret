@@ -79,16 +79,20 @@ func (c *Compiler) Compile(src *file.Source) (program *bytecode.Program, err err
 		return nil, l.Ctx.Errors.Unwrap()
 	}
 
-	program = &bytecode.Program{}
-	program.Source = src
-	program.Bytecode = l.Ctx.Emitter.Bytecode()
-	program.Constants = l.Ctx.Symbols.Constants()
-	program.CatchTable = l.Ctx.CatchTable.All()
-	program.DebugSpans = l.Ctx.Emitter.Spans()
-	program.Registers = l.Ctx.Registers.Size()
-	program.Params = l.Ctx.Symbols.Params()
-	program.Functions = l.Ctx.Symbols.Functions()
-	program.Labels = l.Ctx.Emitter.Labels()
+	program = &bytecode.Program{
+		Metadata: bytecode.Metadata{
+			AggregatePlans: l.Ctx.AggregatePlans(),
+			DebugSpans:     l.Ctx.Emitter.Spans(),
+			Functions:      l.Ctx.Symbols.Functions(),
+			Labels:         l.Ctx.Emitter.Labels(),
+		},
+		Source:     src,
+		Bytecode:   l.Ctx.Emitter.Bytecode(),
+		Constants:  l.Ctx.Symbols.Constants(),
+		CatchTable: l.Ctx.CatchTable.All(),
+		Registers:  l.Ctx.Registers.Size(),
+		Params:     l.Ctx.Symbols.Params(),
+	}
 
 	if err := optimization.Run(program, c.opts.Level); err != nil {
 		return nil, err

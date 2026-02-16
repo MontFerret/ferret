@@ -128,9 +128,9 @@ func spanAt(program *bytecode.Program, pc int) file.Span {
 		return file.Span{Start: -1, End: -1}
 	}
 
-	if pc < 0 || pc >= len(program.DebugSpans) {
+	if pc < 0 || pc >= len(program.Metadata.DebugSpans) {
 		return file.Span{Start: -1, End: -1}
 	}
 
-	return program.DebugSpans[pc]
+	return program.Metadata.DebugSpans[pc]
 }

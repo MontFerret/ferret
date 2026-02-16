@@ -16,19 +16,19 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 
 	newDisassemblerOptions(options...)
 
-	labels := collectLabels(p.Bytecode, p.Labels)
+	labels := collectLabels(p.Bytecode, p.Metadata.Labels)
 
 	var buf bytes.Buffer
 	w := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
 
+	// Header: functions
+	for name, args := range p.Metadata.Functions {
+		_, _ = fmt.Fprintln(w, formatFunction(name, args))
+	}
+
 	// Header: params
 	for _, name := range p.Params {
 		_, _ = fmt.Fprintln(w, formatParam(name))
-	}
-
-	// Header: functions
-	for name, args := range p.Functions {
-		_, _ = fmt.Fprintln(w, formatFunction(name, args))
 	}
 
 	// Header: constants

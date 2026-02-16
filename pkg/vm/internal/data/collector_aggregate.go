@@ -17,7 +17,7 @@ type aggregateState struct {
 }
 
 type AggregateCollector struct {
-	plan   *bytecode.AggregatePlan
+	plan   bytecode.AggregatePlan
 	states []aggregateState
 	// Fast path for single projection key (common for COLLECT ... INTO groups):
 	// avoid allocating and hashing into a map until a second distinct key appears.
@@ -28,14 +28,10 @@ type AggregateCollector struct {
 	hasData          bool
 }
 
-func NewAggregateCollector(plan *bytecode.AggregatePlan) Transformer {
-	if plan == nil {
-		panic("aggregate plan is nil")
-	}
-
+func NewAggregateCollector(plan bytecode.AggregatePlan) Transformer {
 	return &AggregateCollector{
 		plan:   plan,
-		states: make([]aggregateState, plan.Size()),
+		states: make([]aggregateState, len(plan.Keys)),
 	}
 }
 
@@ -49,13 +45,13 @@ func (c *AggregateCollector) Iterate(ctx context.Context) (runtime.Iterator, err
 			groupCount++
 		}
 
-		size = c.plan.Size() + groupCount
+		size = len(c.plan.Keys) + groupCount
 	}
 
 	values := runtime.NewArray(size)
 
 	if c.hasData {
-		for i, key := range c.plan.Keys() {
+		for i, key := range c.plan.Keys {
 			if err := values.Append(ctx, NewKV(key, c.valueFor(i))); err != nil {
 				return nil, err
 			}
@@ -107,7 +103,7 @@ func (c *AggregateCollector) Set(ctx context.Context, key, value runtime.Value) 
 		}
 	}
 
-	if idx, ok := c.plan.Index(keyStr); ok {
+	if idx, ok := c.plan.Index[keyStr]; ok {
 		c.hasData = true
 		c.update(idx, value)
 
@@ -172,7 +168,7 @@ func (c *AggregateCollector) Get(ctx context.Context, key runtime.Value) (runtim
 		}
 	}
 
-	if idx, ok := c.plan.Index(keyStr); ok {
+	if idx, ok := c.plan.Index[keyStr]; ok {
 		return c.valueFor(idx), nil
 	}
 
@@ -198,14 +194,14 @@ func (c *AggregateCollector) Length(_ context.Context) (runtime.Int, error) {
 		groupCount++
 	}
 
-	return runtime.Int(c.plan.Size() + groupCount), nil
+	return runtime.Int(len(c.plan.Keys) + groupCount), nil
 }
 
 func (c *AggregateCollector) MarshalJSON() ([]byte, error) {
 	obj := runtime.NewObject()
 
 	if c.hasData {
-		for i, key := range c.plan.Keys() {
+		for i, key := range c.plan.Keys {
 			_ = obj.Set(context.Background(), key, c.valueFor(i))
 		}
 
@@ -243,7 +239,6 @@ func (c *AggregateCollector) Copy() runtime.Value {
 }
 
 func (c *AggregateCollector) Close() error {
-	c.plan = nil
 	c.states = nil
 	c.hasSingleGroup = false
 	c.singleGroupKey = ""
@@ -257,7 +252,7 @@ func (c *AggregateCollector) Close() error {
 func (c *AggregateCollector) update(idx int, value runtime.Value) {
 	state := &c.states[idx]
 
-	switch c.plan.KindAt(idx) {
+	switch c.plan.Kinds[idx] {
 	case bytecode.AggregateCount:
 		state.count++
 	case bytecode.AggregateSum:
@@ -293,7 +288,7 @@ func (c *AggregateCollector) update(idx int, value runtime.Value) {
 func (c *AggregateCollector) valueFor(idx int) runtime.Value {
 	state := c.states[idx]
 
-	switch c.plan.KindAt(idx) {
+	switch c.plan.Kinds[idx] {
 	case bytecode.AggregateCount:
 		return state.count
 	case bytecode.AggregateSum:

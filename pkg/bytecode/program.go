@@ -8,15 +8,20 @@ import (
 type (
 	Catch [3]int
 
+	Metadata struct {
+		AggregatePlans []AggregatePlan
+		DebugSpans     []file.Span
+		Functions      map[string]int
+		Labels         map[int]string
+	}
+
 	Program struct {
 		Source     *file.Source
+		Registers  int
 		Bytecode   []Instruction
 		Constants  []runtime.Value
 		CatchTable []Catch
-		DebugSpans []file.Span
-		Functions  map[string]int
 		Params     []string
-		Registers  int
-		Labels     map[int]string
+		Metadata   Metadata
 	}
 )

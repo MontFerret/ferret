@@ -79,7 +79,7 @@ func TestCollectAggregateGroupedFusionSupportsScalarLiteralKeys(t *testing.T) {
 				t.Fatalf("unexpected compilation error: %v", err)
 			}
 
-			if !hasAggregatePlanConstant(program) {
+			if !hasAggregatePlan(program) {
 				t.Fatalf("expected grouped fused aggregate plan for key expression %q", tc.key)
 			}
 
@@ -105,14 +105,8 @@ func firstCompilationError(err error) *compiler.CompilationError {
 	}
 }
 
-func hasAggregatePlanConstant(program *bytecode.Program) bool {
-	for _, constant := range program.Constants {
-		if _, ok := constant.(*bytecode.AggregatePlan); ok {
-			return true
-		}
-	}
-
-	return false
+func hasAggregatePlan(program *bytecode.Program) bool {
+	return len(program.Metadata.AggregatePlans) > 0
 }
 
 func hasFunctionCallOpcode(program *bytecode.Program) bool {

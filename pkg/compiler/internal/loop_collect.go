@@ -52,7 +52,7 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 		if plan, ok := c.buildGlobalAggregatePlan(aggregationCtx); ok {
 			collectorType = bytecode.CollectorTypeAggregate
 			useAggregateCollector = true
-			aggregatePlanIndex = c.ctx.Symbols.AddConstant(plan).Constant()
+			aggregatePlanIndex = c.ctx.AddAggregatePlan(plan)
 		}
 	}
 
@@ -79,7 +79,7 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 	if useAggregateCollector {
 		dst = loop.PatchDestinationAxy(c.ctx.Registers, c.ctx.Emitter, bytecode.OpDataSetCollector, int(collectorType), aggregatePlanIndex)
 	} else if useGroupedAggregateCollector {
-		planIdx := c.ctx.Symbols.AddConstant(groupedAggregatePlan).Constant()
+		planIdx := c.ctx.AddAggregatePlan(groupedAggregatePlan)
 		dst = loop.PatchDestinationAxy(c.ctx.Registers, c.ctx.Emitter, bytecode.OpDataSetCollector, int(collectorType), planIdx)
 	} else {
 		dst = loop.PatchDestinationAx(c.ctx.Registers, c.ctx.Emitter, bytecode.OpDataSetCollector, int(collectorType))
