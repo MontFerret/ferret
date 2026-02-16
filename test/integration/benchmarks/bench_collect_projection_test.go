@@ -10,6 +10,11 @@ FOR i IN 1..200
   COLLECT g = i % 5 INTO groups
   RETURN groups
 `
+	collectProjectionSingleGroup = `
+FOR i IN 1..10000
+  COLLECT g = "only" INTO groups
+  RETURN groups
+`
 
 	collectProjectionKeep = `
 FOR i IN 1..200
@@ -40,6 +45,14 @@ func BenchmarkCollectProjection_AllVars_O0(b *testing.B) {
 
 func BenchmarkCollectProjection_AllVars_O1(b *testing.B) {
 	RunBenchmarkO1(b, collectProjectionAllVars)
+}
+
+func BenchmarkCollectProjection_SingleGroup_O0(b *testing.B) {
+	RunBenchmarkO0(b, collectProjectionSingleGroup)
+}
+
+func BenchmarkCollectProjection_SingleGroup_O1(b *testing.B) {
+	RunBenchmarkO1(b, collectProjectionSingleGroup)
 }
 
 func BenchmarkCollectProjection_Keep_O0(b *testing.B) {

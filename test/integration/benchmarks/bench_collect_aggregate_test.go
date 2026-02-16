@@ -24,10 +24,73 @@ FOR u IN users
 	RETURN { minAge, maxAge, totalSalary }
 `
 
+const globalCollectAggregateLargeQuery = `
+LET values = 1..10000
+
+FOR v IN values
+	COLLECT AGGREGATE
+		cnt = COUNT(v),
+		sum = SUM(v),
+		min = MIN(v),
+		max = MAX(v),
+		avg = AVERAGE(v)
+	RETURN { cnt, sum, min, max, avg }
+`
+
+const globalCollectAggregateLargeIntoQuery = `
+LET values = 1..10000
+
+FOR v IN values
+	COLLECT AGGREGATE
+		sum = SUM(v),
+		min = MIN(v),
+		max = MAX(v)
+	INTO groups
+	RETURN { sum, min, max, groups }
+`
+
+const groupedCollectAggregateLargeQuery = `
+LET values = 1..10000
+
+FOR v IN values
+	COLLECT g = v % 100
+	AGGREGATE
+		cnt = COUNT(v),
+		sum = SUM(v),
+		min = MIN(v),
+		max = MAX(v),
+		avg = AVERAGE(v)
+	RETURN { g, cnt, sum, min, max, avg }
+`
+
 func BenchmarkGlobalCollectAggregate_O0(b *testing.B) {
 	RunBenchmarkO0(b, globalCollectAggregateQuery, vm.WithFunctions(base.Stdlib()))
 }
 
 func BenchmarkGlobalCollectAggregate_O1(b *testing.B) {
 	RunBenchmarkO1(b, globalCollectAggregateQuery, vm.WithFunctions(base.Stdlib()))
+}
+
+func BenchmarkGlobalCollectAggregateLarge_O0(b *testing.B) {
+	RunBenchmarkO0(b, globalCollectAggregateLargeQuery, vm.WithFunctions(base.Stdlib()))
+}
+
+func BenchmarkGlobalCollectAggregateLarge_O1(b *testing.B) {
+	RunBenchmarkO1(b, globalCollectAggregateLargeQuery, vm.WithFunctions(base.Stdlib()))
+}
+
+func BenchmarkGlobalCollectAggregateLargeInto_O0(b *testing.B) {
+	RunBenchmarkO0(b, globalCollectAggregateLargeIntoQuery, vm.WithFunctions(base.Stdlib()))
+}
+
+func BenchmarkGlobalCollectAggregateLargeInto_O1(b *testing.B) {
+	RunBenchmarkO1(b, globalCollectAggregateLargeIntoQuery, vm.WithFunctions(base.Stdlib()))
+}
+
+func BenchmarkGroupedCollectAggregateLarge_O0(b *testing.B) {
+	RunBenchmarkO0(b, groupedCollectAggregateLargeQuery, vm.WithFunctions(base.Stdlib()))
+}
+
+func BenchmarkGroupedCollectAggregateLarge_O1(b *testing.B) {
+	RunBenchmarkO1(b, groupedCollectAggregateLargeQuery, vm.WithFunctions(base.Stdlib()))
 }

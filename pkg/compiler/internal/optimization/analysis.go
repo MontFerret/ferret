@@ -57,11 +57,13 @@ func (a *Analyzer) FindReachableBlocks() []*BasicBlock {
 func (a *Analyzer) FindUnreachableBlocks() []*BasicBlock {
 	reachable := a.FindReachableBlocks()
 	reachableMap := make(map[int]bool)
+
 	for _, block := range reachable {
 		reachableMap[block.ID] = true
 	}
 
 	unreachable := make([]*BasicBlock, 0)
+
 	for _, block := range a.cfg.Blocks {
 		if !reachableMap[block.ID] && block != a.cfg.Exit {
 			unreachable = append(unreachable, block)
@@ -113,8 +115,10 @@ func (a *Analyzer) CalculateDominators() map[int]*BasicBlock {
 
 	// Initialize dominators
 	dominators := make(map[int]map[int]bool)
+
 	for _, block := range a.cfg.Blocks {
 		dominators[block.ID] = make(map[int]bool)
+
 		// Initially, every block is dominated by all blocks
 		for _, b := range a.cfg.Blocks {
 			dominators[block.ID][b.ID] = true
@@ -126,8 +130,10 @@ func (a *Analyzer) CalculateDominators() map[int]*BasicBlock {
 
 	// Iteratively compute dominators
 	changed := true
+
 	for changed {
 		changed = false
+
 		for _, block := range a.cfg.Blocks {
 			if block == a.cfg.Entry {
 				continue
@@ -136,6 +142,7 @@ func (a *Analyzer) CalculateDominators() map[int]*BasicBlock {
 			// Compute intersection of dominators of all predecessors
 			newDom := make(map[int]bool)
 			first := true
+
 			for _, pred := range block.Predecessors {
 				if first {
 					for id := range dominators[pred.ID] {
@@ -166,6 +173,7 @@ func (a *Analyzer) CalculateDominators() map[int]*BasicBlock {
 						break
 					}
 				}
+
 				if changed {
 					dominators[block.ID] = newDom
 				}
@@ -177,6 +185,7 @@ func (a *Analyzer) CalculateDominators() map[int]*BasicBlock {
 	// The immediate dominator of a block is the unique dominator that is dominated by all other dominators
 	immediateDominators := make(map[int]*BasicBlock)
 	blockMap := make(map[int]*BasicBlock)
+
 	for _, b := range a.cfg.Blocks {
 		blockMap[b.ID] = b
 	}
@@ -188,6 +197,7 @@ func (a *Analyzer) CalculateDominators() map[int]*BasicBlock {
 
 		// Find the immediate dominator by looking for the dominator that is not dominated by any other dominator
 		var idom *BasicBlock
+
 		for domID := range dominators[block.ID] {
 			if domID == block.ID {
 				continue
@@ -195,10 +205,12 @@ func (a *Analyzer) CalculateDominators() map[int]*BasicBlock {
 
 			// Check if this dominator is dominated by any other dominator of block
 			isDominatedByOther := false
+
 			for otherID := range dominators[block.ID] {
 				if otherID == block.ID || otherID == domID {
 					continue
 				}
+
 				// If otherID dominates domID, then domID is not the immediate dominator
 				if dominators[domID][otherID] {
 					isDominatedByOther = true

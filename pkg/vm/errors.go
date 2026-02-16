@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 )
 
@@ -16,7 +17,7 @@ type (
 	warmupError struct {
 		Err error
 		PC  int
-		Dst Operand
+		Dst bytecode.Operand
 	}
 
 	warmupErrorSet struct {
@@ -65,7 +66,7 @@ func (e *warmupErrorSet) Error() string {
 	return b.String()
 }
 
-func (e *warmupErrorSet) Add(err error, pc int, dst Operand) {
+func (e *warmupErrorSet) Add(err error, pc int, dst bytecode.Operand) {
 	e.Errors = append(e.Errors, &warmupError{
 		Err: err,
 		PC:  pc,

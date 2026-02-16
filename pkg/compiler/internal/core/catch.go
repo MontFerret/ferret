@@ -1,21 +1,21 @@
 package core
 
 import (
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 type CatchStack struct {
-	entries []vm.Catch
+	entries []bytecode.Catch
 }
 
 func NewCatchStack() *CatchStack {
 	return &CatchStack{
-		entries: make([]vm.Catch, 0),
+		entries: make([]bytecode.Catch, 0),
 	}
 }
 
 func (cs *CatchStack) Push(start, end, jump int) {
-	cs.entries = append(cs.entries, vm.Catch{start, end, jump})
+	cs.entries = append(cs.entries, bytecode.Catch{start, end, jump})
 }
 
 func (cs *CatchStack) Pop() {
@@ -24,14 +24,14 @@ func (cs *CatchStack) Pop() {
 	}
 }
 
-func (cs *CatchStack) Find(pos int) (vm.Catch, bool) {
+func (cs *CatchStack) Find(pos int) (bytecode.Catch, bool) {
 	for _, c := range cs.entries {
 		if pos >= c[0] && pos <= c[1] {
 			return c, true
 		}
 	}
 
-	return vm.Catch{}, false
+	return bytecode.Catch{}, false
 }
 
 func (cs *CatchStack) Clear() {
@@ -42,6 +42,6 @@ func (cs *CatchStack) Len() int {
 	return len(cs.entries)
 }
 
-func (cs *CatchStack) All() []vm.Catch {
+func (cs *CatchStack) All() []bytecode.Catch {
 	return cs.entries
 }

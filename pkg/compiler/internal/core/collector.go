@@ -1,27 +1,18 @@
 package core
 
-import "github.com/MontFerret/ferret/v2/pkg/vm"
-
-type (
-	CollectorType int
-
-	Collector struct {
-		typ            CollectorType
-		dst            vm.Operand
-		projection     *CollectorProjection
-		groupSelectors []*CollectSelector
-		aggregation    *CollectorAggregation
-	}
+import (
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
-const (
-	CollectorTypeCounter CollectorType = iota
-	CollectorTypeKey
-	CollectorTypeKeyCounter
-	CollectorTypeKeyGroup
-)
+type Collector struct {
+	typ            bytecode.CollectorType
+	dst            bytecode.Operand
+	projection     *CollectorProjection
+	groupSelectors []*CollectSelector
+	aggregation    *CollectorAggregation
+}
 
-func NewCollector(type_ CollectorType, dst vm.Operand, projection *CollectorProjection, groupSelectors []*CollectSelector, aggregation *CollectorAggregation) *Collector {
+func NewCollector(type_ bytecode.CollectorType, dst bytecode.Operand, projection *CollectorProjection, groupSelectors []*CollectSelector, aggregation *CollectorAggregation) *Collector {
 	return &Collector{
 		typ:            type_,
 		dst:            dst,
@@ -31,27 +22,27 @@ func NewCollector(type_ CollectorType, dst vm.Operand, projection *CollectorProj
 	}
 }
 
-func DetermineCollectorType(withGrouping, withAggregation, withProjection, withCounter bool) CollectorType {
+func DetermineCollectorType(withGrouping, withAggregation, withProjection, withCounter bool) bytecode.CollectorType {
 	if withGrouping {
 		if withCounter {
-			return CollectorTypeKeyCounter
+			return bytecode.CollectorTypeKeyCounter
 		}
 
-		return CollectorTypeKeyGroup
+		return bytecode.CollectorTypeKeyGroup
 	}
 
 	if withAggregation {
-		return CollectorTypeKeyGroup
+		return bytecode.CollectorTypeKeyGroup
 	}
 
-	return CollectorTypeCounter
+	return bytecode.CollectorTypeCounter
 }
 
-func (c *Collector) Type() CollectorType {
+func (c *Collector) Type() bytecode.CollectorType {
 	return c.typ
 }
 
-func (c *Collector) Destination() vm.Operand {
+func (c *Collector) Destination() bytecode.Operand {
 	return c.dst
 }
 

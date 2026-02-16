@@ -1,10 +1,10 @@
 package internal
 
 import (
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // LoopCollectCompiler handles the compilation of COLLECT clauses in FQL queries.
@@ -41,16 +41,55 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 
 	// Determine the collector type based on the presence of different COLLECT components
 	collectorType := core.DetermineCollectorType(len(groupSelectors) > 0, aggregationCtx != nil, projectionCtx != nil, counterCtx != nil)
+	useAggregateCollector := false
+	aggregatePlanIndex := 0
+	var groupedAggregatePlan *bytecode.AggregatePlan
+	useGroupedAggregateCollector := false
+
+	// Fast path for global aggregation:
+	// if every selector is plan-compatible, we can use the VM aggregate collector directly.
+	if aggregationCtx != nil && len(groupSelectors) == 0 {
+		if plan, ok := c.buildGlobalAggregatePlan(aggregationCtx); ok {
+			collectorType = bytecode.CollectorTypeAggregate
+			useAggregateCollector = true
+			aggregatePlanIndex = c.ctx.AddAggregatePlan(plan)
+		}
+	}
+
+	// Fast path for grouped aggregation:
+	// enable fused grouped collector only for a narrow, predictable shape.
+	if aggregationCtx != nil && groupingCtx != nil {
+		selectors := aggregationCtx.AllCollectAggregateSelector()
+
+		if c.shouldFuseGroupedAggregation(groupingCtx, selectors) {
+			if plan, ok := c.buildGroupedAggregatePlan(selectors); ok {
+				groupedAggregatePlan = plan
+				useGroupedAggregateCollector = true
+				collectorType = bytecode.CollectorTypeAggregateGroup
+			}
+		}
+	}
 
 	// We replace DataSet initialization with Collector initialization
 	loop := c.ctx.Loops.Current()
-	dst := loop.PatchDestinationAx(c.ctx.Registers, c.ctx.Emitter, vm.OpDataSetCollector, int(collectorType))
+	var dst bytecode.Operand
+
+	// Aggregate collectors store their plan index in the collector opcode arguments.
+	// Generic collectors do not require an aggregate plan operand.
+	if useAggregateCollector {
+		dst = loop.PatchDestinationAxy(c.ctx.Registers, c.ctx.Emitter, bytecode.OpDataSetCollector, int(collectorType), aggregatePlanIndex)
+	} else if useGroupedAggregateCollector {
+		planIdx := c.ctx.AddAggregatePlan(groupedAggregatePlan)
+		dst = loop.PatchDestinationAxy(c.ctx.Registers, c.ctx.Emitter, bytecode.OpDataSetCollector, int(collectorType), planIdx)
+	} else {
+		dst = loop.PatchDestinationAx(c.ctx.Registers, c.ctx.Emitter, bytecode.OpDataSetCollector, int(collectorType))
+	}
 
 	var aggregation *core.CollectorAggregation
 
 	// Initialize aggregationCtx if present in the COLLECT clause
 	if aggregationCtx != nil {
-		aggregation = c.initializeAggregation(aggregationCtx, dst, kv, len(groupSelectors) > 0)
+		aggregation = c.initializeAggregation(aggregationCtx, dst, kv, len(groupSelectors) > 0, groupedAggregatePlan)
 	}
 
 	// Initialize projectionCtx for group variables or counters
@@ -68,11 +107,11 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 // finalizeCollector completes the collector setup by pushing key-value pairs to the collector
 // and emitting finalization instructions for the current loop.
 // The behavior varies based on whether grouping and aggregation are used.
-func (c *LoopCollectCompiler) finalizeCollector(dst vm.Operand, kv *core.KV, spec *core.Collector) {
+func (c *LoopCollectCompiler) finalizeCollector(dst bytecode.Operand, kv *core.KV, spec *core.Collector) {
 	loop := c.ctx.Loops.Current()
 
 	// If we do not use grouping but use aggregation, we do not need to push the key and value
-	// because they are already pushed by the global aggregation.
+	// because aggregate selectors already emitted their inputs into the collector.
 	if spec.HasGrouping() || !spec.HasAggregation() {
 		c.ctx.Emitter.EmitPushKV(dst, kv.Key, kv.Value)
 	} else if spec.HasProjection() {
@@ -95,17 +134,18 @@ func (c *LoopCollectCompiler) compileLoop(spec *core.Collector) {
 	}
 
 	// Ensure loop value register is allocated
-	if loop.Value == vm.NoopOperand {
+	if loop.Value == bytecode.NoopOperand {
 		loop.Value = c.ctx.Registers.Allocate()
 	}
 
 	// Ensure loop key register is allocated
-	if loop.Key == vm.NoopOperand {
+	if loop.Key == bytecode.NoopOperand {
 		loop.Key = c.ctx.Registers.Allocate()
 	}
 
 	// Determine if we need to initialize the loop
 	// We only need to initialize if we have grouping or if we don't have aggregation
+	// (aggregate-only global mode is finalized in a synthetic loop later).
 	doInit := spec.HasGrouping() || !spec.HasAggregation()
 
 	if doInit {
@@ -132,6 +172,7 @@ func (c *LoopCollectCompiler) compileLoop(spec *core.Collector) {
 
 	// Process projection if present
 	if spec.HasProjection() {
+		// Global aggregate-only projection is finalized in compileGlobalAggregationFuncCalls.
 		if spec.HasGrouping() || !spec.HasAggregation() {
 			c.finalizeProjection(spec, loop.Value)
 		}

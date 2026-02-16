@@ -10,7 +10,11 @@ import (
 type KeyGroupCollector struct {
 	*runtime.Box[runtime.List]
 	grouping map[string]runtime.List
-	sorted   bool
+	// Fast path for the common single-key case: keep first group without a map.
+	singleKey      string
+	singleGroup    runtime.List
+	hasSingleGroup bool
+	sorted         bool
 }
 
 func NewKeyGroupCollector() Transformer {
@@ -18,7 +22,6 @@ func NewKeyGroupCollector() Transformer {
 		Box: &runtime.Box[runtime.List]{
 			Value: runtime.NewArray(8),
 		},
-		grouping: make(map[string]runtime.List),
 	}
 }
 
@@ -41,22 +44,58 @@ func (c *KeyGroupCollector) Iterate(ctx context.Context) (runtime.Iterator, erro
 }
 
 func (c *KeyGroupCollector) Set(ctx context.Context, key, value runtime.Value) error {
-	k, err := Stringify(ctx, key)
+	var keyStr string
 
-	if err != nil {
-		return err
+	switch k := key.(type) {
+	case runtime.String:
+		keyStr = k.String()
+	default:
+		var err error
+		keyStr, err = Stringify(ctx, key)
+
+		if err != nil {
+			return err
+		}
 	}
 
-	group, exists := c.grouping[k]
+	// Fast path: first key stays in singleKey/singleGroup to avoid map allocation.
+	if c.grouping == nil && !c.hasSingleGroup {
+		group := runtime.NewArray(4)
+		c.singleKey = keyStr
+		c.singleGroup = group
+		c.hasSingleGroup = true
+
+		if err := c.Value.Append(ctx, NewKV(key, group)); err != nil {
+			return err
+		}
+
+		return group.Append(ctx, value)
+	}
+
+	// Promote to map when a second distinct key appears.
+	if c.grouping == nil {
+		if c.hasSingleGroup && keyStr == c.singleKey {
+			return c.singleGroup.Append(ctx, value)
+		}
+
+		c.grouping = map[string]runtime.List{}
+
+		if c.hasSingleGroup {
+			c.grouping[c.singleKey] = c.singleGroup
+		}
+
+		c.hasSingleGroup = false
+		c.singleKey = ""
+		c.singleGroup = nil
+	}
+
+	group, exists := c.grouping[keyStr]
 
 	if !exists {
 		group = runtime.NewArray(4)
+		c.grouping[keyStr] = group
 
-		c.grouping[k] = group
-
-		err = c.Value.Append(ctx, NewKV(key, group))
-
-		if err != nil {
+		if err := c.Value.Append(ctx, NewKV(key, group)); err != nil {
 			return err
 		}
 	}
@@ -82,16 +121,31 @@ func (c *KeyGroupCollector) sort(ctx context.Context) error {
 }
 
 func (c *KeyGroupCollector) Get(ctx context.Context, key runtime.Value) (runtime.Value, error) {
-	k, err := Stringify(ctx, key)
+	var keyStr string
 
-	if err != nil {
-		return nil, err
+	switch k := key.(type) {
+	case runtime.String:
+		keyStr = k.String()
+	default:
+		var err error
+		keyStr, err = Stringify(ctx, key)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	v, ok := c.grouping[k]
+	if c.grouping == nil {
+		if c.hasSingleGroup && keyStr == c.singleKey {
+			return c.singleGroup, nil
+		}
+
+		return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", keyStr)
+	}
+
+	v, ok := c.grouping[keyStr]
 
 	if !ok {
-		return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", k)
+		return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", keyStr)
 	}
 
 	return v, nil
@@ -105,6 +159,9 @@ func (c *KeyGroupCollector) Close() error {
 	val := c.Value
 	c.Value = nil
 	c.grouping = nil
+	c.hasSingleGroup = false
+	c.singleKey = ""
+	c.singleGroup = nil
 
 	if closer := val.(io.Closer); closer != nil {
 		return closer.Close()

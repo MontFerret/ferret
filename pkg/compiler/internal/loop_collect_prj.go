@@ -5,10 +5,12 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	compilerdiagnostics "github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // initializeProjection handles the projection setup for group variables and counters.
@@ -21,7 +23,7 @@ func (c *LoopCollectCompiler) initializeProjection(kv *core.KV, projection fql.I
 		// Compile the group variable projection and get the variable name
 		varName := c.compileGroupVariableProjection(kv, projection)
 		// Create a group projection with the variable name
-		return core.NewCollectorGroupProjection(varName)
+		return core.NewCollectorGroupProjection(varName, projection)
 	}
 
 	// Handle counter projection
@@ -32,11 +34,14 @@ func (c *LoopCollectCompiler) initializeProjection(kv *core.KV, projection fql.I
 
 		// Optional: validate that the first Identifier is actually "COUNT"
 		if strings.ToUpper(counter.Identifier(0).GetText()) != "COUNT" {
-			panic("counter identifier must be COUNT")
+			err := c.ctx.Errors.Create(compilerdiagnostics.SemanticError, counter, "Invalid count projection")
+			err.Hint = "Use WITH COUNT INTO <variable>."
+			c.ctx.Errors.Add(err)
+			return nil
 		}
 
 		// Create a count projection with the variable name
-		return core.NewCollectorCountProjection(varName)
+		return core.NewCollectorCountProjection(varName, counter)
 	}
 
 	// If neither projection nor counter is present, return nil
@@ -46,7 +51,7 @@ func (c *LoopCollectCompiler) initializeProjection(kv *core.KV, projection fql.I
 // finalizeProjection completes the projection setup by creating and assigning local variables.
 // It handles different behaviors based on whether grouping and aggregation are used.
 // Returns the register containing the projected value.
-func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregator vm.Operand) vm.Operand {
+func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregator bytecode.Operand) bytecode.Operand {
 	loop := c.ctx.Loops.Current()
 	varName := spec.Projection().VariableName()
 
@@ -55,7 +60,11 @@ func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregato
 		// Now we need to expand group variables from the dataset
 		loop.ValueName = varName
 		// Assign the aggregator value to the local variable with the projection name
-		c.ctx.Symbols.AssignLocal(loop.ValueName, core.TypeUnknown, aggregator)
+		if !c.assignLocalOrReport(spec.Projection().Context(), loop.ValueName, core.TypeUnknown, aggregator) {
+			if existing, _, found := c.ctx.Symbols.Resolve(loop.ValueName); found {
+				c.ctx.Emitter.EmitAB(bytecode.OpMove, existing, aggregator)
+			}
+		}
 
 		return loop.Value
 	}
@@ -63,9 +72,8 @@ func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregato
 	// For cases with aggregation but without grouping:
 	// Load the value from the aggregator using the projection variable name as key
 	key := loadConstant(c.ctx, runtime.String(varName))
-	// TODO: Handle error if the variable is not found
-	val, _ := c.ctx.Symbols.DeclareLocal(varName, core.TypeUnknown)
-	c.ctx.Emitter.EmitABC(vm.OpLoadKey, val, aggregator, key)
+	val := c.declareLocalOrReport(spec.Projection().Context(), varName, core.TypeUnknown)
+	c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, val, aggregator, key)
 
 	return val
 }
@@ -105,7 +113,7 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 	} else {
 		// If a filter is provided, project only the specified variables
 		variables := keeper.AllIdentifier()
-		resolved := make([]vm.Operand, len(variables))
+		resolved := make([]bytecode.Operand, len(variables))
 		useTemp := false
 
 		for i, variable := range variables {
@@ -114,8 +122,12 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 			reg, _, found := c.ctx.Symbols.Resolve(varName)
 
 			if !found {
-				// TODO: Handle error properly instead of panicking
-				panic("variable not found: " + varName)
+				c.ctx.Errors.VariableNotFound(variable.GetSymbol(), varName)
+				noneReg := c.ctx.Registers.Allocate()
+				c.ctx.Emitter.EmitA(bytecode.OpLoadNone, noneReg)
+				c.ctx.Types.Set(noneReg, core.TypeNone)
+				resolved[i] = noneReg
+				continue
 			}
 
 			resolved[i] = reg
@@ -138,13 +150,9 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 			varName := variable.GetText()
 			// Store the variable name as a string constant
 			keyConst := c.ctx.Symbols.AddConstant(runtime.String(varName))
-
-			// Move the variable value to the value register
-			valReg := c.ctx.Registers.Allocate()
-			c.ctx.Emitter.EmitAB(vm.OpMove, valReg, resolved[i])
-
-			// Set the key-value pair in the object
-			c.ctx.Emitter.EmitObjectSetConst(buildDst, keyConst, valReg)
+			// Set the key-value pair in the object directly.
+			// If kv.Value is referenced in the projection, buildDst is switched to a temp register.
+			c.ctx.Emitter.EmitObjectSetConst(buildDst, keyConst, resolved[i])
 		}
 
 		if buildDst != kv.Value {

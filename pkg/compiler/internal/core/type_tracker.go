@@ -1,18 +1,20 @@
 package core
 
-import "github.com/MontFerret/ferret/v2/pkg/vm"
+import (
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+)
 
 type TypeTracker struct {
-	regs map[vm.Operand]ValueType
+	regs map[bytecode.Operand]ValueType
 }
 
 func NewTypeTracker() *TypeTracker {
 	return &TypeTracker{
-		regs: make(map[vm.Operand]ValueType),
+		regs: make(map[bytecode.Operand]ValueType),
 	}
 }
 
-func (t *TypeTracker) Set(op vm.Operand, typ ValueType) {
+func (t *TypeTracker) Set(op bytecode.Operand, typ ValueType) {
 	if t == nil || !op.IsRegister() {
 		return
 	}
@@ -20,7 +22,7 @@ func (t *TypeTracker) Set(op vm.Operand, typ ValueType) {
 	t.regs[op] = typ
 }
 
-func (t *TypeTracker) Get(op vm.Operand) (ValueType, bool) {
+func (t *TypeTracker) Get(op bytecode.Operand) (ValueType, bool) {
 	if t == nil || !op.IsRegister() {
 		return TypeUnknown, false
 	}
@@ -30,7 +32,7 @@ func (t *TypeTracker) Get(op vm.Operand) (ValueType, bool) {
 	return typ, ok
 }
 
-func (t *TypeTracker) Resolve(op vm.Operand) ValueType {
+func (t *TypeTracker) Resolve(op bytecode.Operand) ValueType {
 	typ, ok := t.Get(op)
 
 	if !ok {

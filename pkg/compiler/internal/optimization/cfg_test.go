@@ -3,12 +3,12 @@ package optimization
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 func TestBuildCFG_EmptyProgram(t *testing.T) {
-	program := &vm.Program{
-		Bytecode: []vm.Instruction{},
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{},
 	}
 
 	builder := NewBuilder(program)
@@ -33,10 +33,10 @@ func TestBuildCFG_EmptyProgram(t *testing.T) {
 
 func TestBuildCFG_SingleBlock(t *testing.T) {
 	// Simple program with no control flow
-	program := &vm.Program{
-		Bytecode: []vm.Instruction{
-			vm.NewInstruction(vm.OpLoadConst, 0, 0),
-			vm.NewInstruction(vm.OpReturn, 0),
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, 0, 0),
+			bytecode.NewInstruction(bytecode.OpReturn, 0),
 		},
 	}
 
@@ -73,13 +73,13 @@ func TestBuildCFG_SingleBlock(t *testing.T) {
 
 func TestBuildCFG_UnconditionalJump(t *testing.T) {
 	// Program with unconditional jump
-	program := &vm.Program{
-		Bytecode: []vm.Instruction{
-			vm.NewInstruction(vm.OpLoadConst, 0, 0), // Block 0
-			vm.NewInstruction(vm.OpJump, 3),         // Block 0
-			vm.NewInstruction(vm.OpLoadConst, 1, 0), // Block 1 (unreachable)
-			vm.NewInstruction(vm.OpLoadConst, 2, 0), // Block 2 (jump target)
-			vm.NewInstruction(vm.OpReturn, 0),       // Block 2
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, 0, 0), // Block 0
+			bytecode.NewInstruction(bytecode.OpJump, 3),         // Block 0
+			bytecode.NewInstruction(bytecode.OpLoadConst, 1, 0), // Block 1 (unreachable)
+			bytecode.NewInstruction(bytecode.OpLoadConst, 2, 0), // Block 2 (jump target)
+			bytecode.NewInstruction(bytecode.OpReturn, 0),       // Block 2
 		},
 	}
 
@@ -109,14 +109,14 @@ func TestBuildCFG_UnconditionalJump(t *testing.T) {
 
 func TestBuildCFG_ConditionalJump(t *testing.T) {
 	// Program with conditional jump (if-else structure)
-	program := &vm.Program{
-		Bytecode: []vm.Instruction{
-			vm.NewInstruction(vm.OpLoadBool, 0, 1),    // Block 0: condition
-			vm.NewInstruction(vm.OpJumpIfFalse, 4, 0), // Block 0: if false, jump to 4
-			vm.NewInstruction(vm.OpLoadConst, 1, 0),   // Block 1: then branch
-			vm.NewInstruction(vm.OpJump, 5),           // Block 1: jump to merge
-			vm.NewInstruction(vm.OpLoadConst, 2, 0),   // Block 2: else branch
-			vm.NewInstruction(vm.OpReturn, 0),         // Block 3: merge
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadBool, 0, 1),    // Block 0: condition
+			bytecode.NewInstruction(bytecode.OpJumpIfFalse, 4, 0), // Block 0: if false, jump to 4
+			bytecode.NewInstruction(bytecode.OpLoadConst, 1, 0),   // Block 1: then branch
+			bytecode.NewInstruction(bytecode.OpJump, 5),           // Block 1: jump to merge
+			bytecode.NewInstruction(bytecode.OpLoadConst, 2, 0),   // Block 2: else branch
+			bytecode.NewInstruction(bytecode.OpReturn, 0),         // Block 3: merge
 		},
 	}
 
@@ -151,13 +151,13 @@ func TestBuildCFG_ConditionalJump(t *testing.T) {
 
 func TestBuildCFG_Loop(t *testing.T) {
 	// Program with a loop (back edge)
-	program := &vm.Program{
-		Bytecode: []vm.Instruction{
-			vm.NewInstruction(vm.OpLoadConst, 0, 0),   // Block 0: loop header
-			vm.NewInstruction(vm.OpJumpIfFalse, 4, 0), // Block 0: exit condition
-			vm.NewInstruction(vm.OpLoadConst, 1, 0),   // Block 1: loop body
-			vm.NewInstruction(vm.OpJump, 0),           // Block 1: back to loop header
-			vm.NewInstruction(vm.OpReturn, 0),         // Block 2: exit
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, 0, 0),   // Block 0: loop header
+			bytecode.NewInstruction(bytecode.OpJumpIfFalse, 4, 0), // Block 0: exit condition
+			bytecode.NewInstruction(bytecode.OpLoadConst, 1, 0),   // Block 1: loop body
+			bytecode.NewInstruction(bytecode.OpJump, 0),           // Block 1: back to loop header
+			bytecode.NewInstruction(bytecode.OpReturn, 0),         // Block 2: exit
 		},
 	}
 
@@ -224,23 +224,23 @@ func TestBasicBlock_AddSuccessor(t *testing.T) {
 func TestBasicBlock_IsTerminator(t *testing.T) {
 	tests := []struct {
 		name     string
-		opcode   vm.Opcode
+		opcode   bytecode.Opcode
 		expected bool
 	}{
-		{"Return", vm.OpReturn, true},
-		{"Jump", vm.OpJump, true},
-		{"JumpIfFalse", vm.OpJumpIfFalse, true},
-		{"JumpIfTrue", vm.OpJumpIfTrue, true},
-		{"JumpIfNone", vm.OpJumpIfNone, true},
-		{"IterNext", vm.OpIterNext, true},
-		{"Add", vm.OpAdd, false},
-		{"LoadConst", vm.OpLoadConst, false},
+		{"Return", bytecode.OpReturn, true},
+		{"Jump", bytecode.OpJump, true},
+		{"JumpIfFalse", bytecode.OpJumpIfFalse, true},
+		{"JumpIfTrue", bytecode.OpJumpIfTrue, true},
+		{"JumpIfNone", bytecode.OpJumpIfNone, true},
+		{"IterNext", bytecode.OpIterNext, true},
+		{"Add", bytecode.OpAdd, false},
+		{"LoadConst", bytecode.OpLoadConst, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			block := NewBasicBlock(1, 0)
-			block.AddInstruction(vm.NewInstruction(tt.opcode))
+			block.AddInstruction(bytecode.NewInstruction(tt.opcode))
 
 			if block.IsTerminator() != tt.expected {
 				t.Errorf("expected IsTerminator() = %v for %s", tt.expected, tt.name)

@@ -1,10 +1,10 @@
 package internal
 
 import (
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // LoopSortCompiler handles compilation of SORT clauses within loops.
@@ -42,7 +42,7 @@ func (c *LoopSortCompiler) Compile(ctx fql.ISortClauseContext) {
 
 // compileSortKeys processes all sort expressions and returns the key register and directions.
 // For multiple expressions, it creates an array of keys; for single expression, uses the key directly.
-func (c *LoopSortCompiler) compileSortKeys(clauses []fql.ISortClauseExpressionContext) (vm.Operand, []runtime.SortDirection) {
+func (c *LoopSortCompiler) compileSortKeys(clauses []fql.ISortClauseExpressionContext) (bytecode.Operand, []runtime.SortDirection) {
 	kvKeyReg := c.ctx.Registers.Allocate()
 	directions := make([]runtime.SortDirection, len(clauses))
 	isSortMany := len(clauses) > 1
@@ -56,7 +56,7 @@ func (c *LoopSortCompiler) compileSortKeys(clauses []fql.ISortClauseExpressionCo
 
 // compileMultipleSortKeys handles compilation when there are multiple sort expressions.
 // It creates an array of compiled expressions for multi-key sorting.
-func (c *LoopSortCompiler) compileMultipleSortKeys(clauses []fql.ISortClauseExpressionContext, kvKeyReg vm.Operand, directions []runtime.SortDirection) (vm.Operand, []runtime.SortDirection) {
+func (c *LoopSortCompiler) compileMultipleSortKeys(clauses []fql.ISortClauseExpressionContext, kvKeyReg bytecode.Operand, directions []runtime.SortDirection) (bytecode.Operand, []runtime.SortDirection) {
 	c.ctx.Emitter.EmitArray(kvKeyReg, len(clauses))
 
 	// Compile each sort expression and store direction
@@ -70,9 +70,9 @@ func (c *LoopSortCompiler) compileMultipleSortKeys(clauses []fql.ISortClauseExpr
 }
 
 // compileSingleSortKey handles compilation when there is only one sort expression.
-func (c *LoopSortCompiler) compileSingleSortKey(clause fql.ISortClauseExpressionContext, kvKeyReg vm.Operand, directions []runtime.SortDirection) (vm.Operand, []runtime.SortDirection) {
+func (c *LoopSortCompiler) compileSingleSortKey(clause fql.ISortClauseExpressionContext, kvKeyReg bytecode.Operand, directions []runtime.SortDirection) (bytecode.Operand, []runtime.SortDirection) {
 	clauseReg := c.ctx.ExprCompiler.Compile(clause.Expression())
-	c.ctx.Emitter.EmitAB(vm.OpMove, kvKeyReg, clauseReg)
+	c.ctx.Emitter.EmitAB(bytecode.OpMove, kvKeyReg, clauseReg)
 	directions[0] = sortDirection(clause.SortDirection())
 
 	return kvKeyReg, directions
@@ -81,7 +81,7 @@ func (c *LoopSortCompiler) compileSingleSortKey(clause fql.ISortClauseExpression
 // resolveValueRegister determines the appropriate register for the value part of KeyValuePair.
 // If the loop already has a value name, reuse it; otherwise, allocate a new register
 // and load the value from the iterator.
-func (c *LoopSortCompiler) resolveValueRegister(loop *core.Loop) vm.Operand {
+func (c *LoopSortCompiler) resolveValueRegister(loop *core.Loop) bytecode.Operand {
 	if loop.Kind == core.ForInLoop {
 		// If value is already used in the loop body, reuse the existing register
 		if loop.ValueName != "" {
@@ -91,6 +91,7 @@ func (c *LoopSortCompiler) resolveValueRegister(loop *core.Loop) vm.Operand {
 		// Otherwise, allocate a new register and load the value from iterator
 		kvValReg := c.ctx.Registers.Allocate()
 		loop.EmitValue(kvValReg, c.ctx.Emitter)
+
 		return kvValReg
 	}
 
@@ -99,7 +100,7 @@ func (c *LoopSortCompiler) resolveValueRegister(loop *core.Loop) vm.Operand {
 
 // compileSorter configures a sorter for a loop based on provided sort clauses and directions.
 // It handles both single-key and multi-key sorting by emitting the appropriate VM operations.
-func (c *LoopSortCompiler) compileSorter(loop *core.Loop, clauses []fql.ISortClauseExpressionContext, directions []runtime.SortDirection) vm.Operand {
+func (c *LoopSortCompiler) compileSorter(loop *core.Loop, clauses []fql.ISortClauseExpressionContext, directions []runtime.SortDirection) bytecode.Operand {
 	isSortMany := len(clauses) > 1
 
 	if isSortMany {
@@ -107,13 +108,13 @@ func (c *LoopSortCompiler) compileSorter(loop *core.Loop, clauses []fql.ISortCla
 		encoded := runtime.EncodeSortDirections(directions)
 		count := len(clauses)
 
-		return loop.PatchDestinationAxy(c.ctx.Registers, c.ctx.Emitter, vm.OpDataSetMultiSorter, encoded, count)
+		return loop.PatchDestinationAxy(c.ctx.Registers, c.ctx.Emitter, bytecode.OpDataSetMultiSorter, encoded, count)
 	}
 
 	// Single-key sorting only needs the direction
 	dir := sortDirection(clauses[0].SortDirection())
 
-	return loop.PatchDestinationAx(c.ctx.Registers, c.ctx.Emitter, vm.OpDataSetSorter, int(dir))
+	return loop.PatchDestinationAx(c.ctx.Registers, c.ctx.Emitter, bytecode.OpDataSetSorter, int(dir))
 }
 
 // finalizeSorting completes the sorting process by:
@@ -121,14 +122,14 @@ func (c *LoopSortCompiler) compileSorter(loop *core.Loop, clauses []fql.ISortCla
 // 2. Finalizing the current loop
 // 3. Replacing the loop source with sorted results
 // 4. Reinitializing the loop for iteration over sorted data
-func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter vm.Operand) {
+func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter bytecode.Operand) {
 	// We need to pack the current scope before emitting the KeyValuePair
 	// In case the variables are used after SORT clause
 	// We need to restore them after the loop is reinitialized
 	scope := c.storeScope(kv)
 
 	// Add the KeyValuePair to the dataset
-	c.ctx.Emitter.EmitABC(vm.OpPushKV, sorter, kv.Key, kv.Value)
+	c.ctx.Emitter.EmitABC(bytecode.OpPushKV, sorter, kv.Key, kv.Value)
 
 	// Finalize the current loop iteration
 	loop.EmitFinalization(c.ctx.Emitter)
@@ -139,15 +140,15 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 	// Replace the loop source with sorted results
 	loop.LabelBase = c.ctx.Loops.NextBase()
 	loop.Src = c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitAB(vm.OpMove, loop.Src, sorter)
+	c.ctx.Emitter.EmitAB(bytecode.OpMove, loop.Src, sorter)
 
 	if loop.Kind != core.ForInLoop {
 		// We switched from a WhileLoop to a ForInLoop because the underlying data is Iterable now.
 		loop.Kind = core.ForInLoop
 	}
 
-	loop.Value = vm.NoopOperand
-	loop.Key = vm.NoopOperand
+	loop.Value = bytecode.NoopOperand
+	loop.Key = bytecode.NoopOperand
 
 	// Reinitialize the loop to iterate over sorted data
 	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)

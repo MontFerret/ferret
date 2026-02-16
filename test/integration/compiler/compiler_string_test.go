@@ -3,7 +3,7 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 func TestString(t *testing.T) {
@@ -12,8 +12,8 @@ func TestString(t *testing.T) {
 			`
 			RETURN "FOO BAR"
 		`, BC{
-				I(vm.OpLoadConst, 1, C(0)),
-				I(vm.OpReturn, 1),
+				I(bytecode.OpLoadConst, 1, C(0)),
+				I(bytecode.OpReturn, 1),
 			}, "Should be possible to use multi line string"),
 	})
 }

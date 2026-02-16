@@ -3,12 +3,13 @@ package internal
 import (
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 type DispatchCompiler struct {
@@ -21,9 +22,9 @@ func NewDispatchCompiler(ctx *CompilerContext) *DispatchCompiler {
 	}
 }
 
-func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) vm.Operand {
+func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) bytecode.Operand {
 	if ctx == nil {
-		return vm.NoopOperand
+		return bytecode.NoopOperand
 	}
 
 	targetReg := c.ensureRegister(c.compileTarget(ctx.DispatchTarget()))
@@ -37,7 +38,7 @@ func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) vm.Operan
 
 	c.ctx.Emitter.WithSpan(span, func() {
 		c.ctx.Emitter.EmitMove(dst, targetReg)
-		c.ctx.Emitter.EmitABC(vm.OpDispatch, dst, eventReg, argsReg)
+		c.ctx.Emitter.EmitABC(bytecode.OpDispatch, dst, eventReg, argsReg)
 	})
 
 	c.ctx.Types.Set(dst, core.TypeAny)
@@ -45,9 +46,9 @@ func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) vm.Operan
 	return dst
 }
 
-func (c *DispatchCompiler) compileEventName(ctx fql.IDispatchEventNameContext) vm.Operand {
+func (c *DispatchCompiler) compileEventName(ctx fql.IDispatchEventNameContext) bytecode.Operand {
 	if ctx == nil {
-		return vm.NoopOperand
+		return bytecode.NoopOperand
 	}
 
 	if sl := ctx.StringLiteral(); sl != nil {
@@ -70,12 +71,12 @@ func (c *DispatchCompiler) compileEventName(ctx fql.IDispatchEventNameContext) v
 		return c.ctx.ExprCompiler.CompileFunctionCall(fc, false)
 	}
 
-	return vm.NoopOperand
+	return bytecode.NoopOperand
 }
 
-func (c *DispatchCompiler) compileTarget(ctx fql.IDispatchTargetContext) vm.Operand {
+func (c *DispatchCompiler) compileTarget(ctx fql.IDispatchTargetContext) bytecode.Operand {
 	if ctx == nil {
-		return vm.NoopOperand
+		return bytecode.NoopOperand
 	}
 
 	if v := ctx.Variable(); v != nil {
@@ -94,10 +95,10 @@ func (c *DispatchCompiler) compileTarget(ctx fql.IDispatchTargetContext) vm.Oper
 		return c.ctx.ExprCompiler.CompileFunctionCallExpression(fc)
 	}
 
-	return vm.NoopOperand
+	return bytecode.NoopOperand
 }
 
-func (c *DispatchCompiler) compilePayload(ctx fql.IDispatchWithClauseContext) vm.Operand {
+func (c *DispatchCompiler) compilePayload(ctx fql.IDispatchWithClauseContext) bytecode.Operand {
 	if ctx == nil || ctx.Expression() == nil {
 		return loadConstant(c.ctx, runtime.None)
 	}
@@ -105,7 +106,7 @@ func (c *DispatchCompiler) compilePayload(ctx fql.IDispatchWithClauseContext) vm
 	return c.ctx.ExprCompiler.Compile(ctx.Expression())
 }
 
-func (c *DispatchCompiler) compileOptions(ctx fql.IDispatchOptionsClauseContext) vm.Operand {
+func (c *DispatchCompiler) compileOptions(ctx fql.IDispatchOptionsClauseContext) bytecode.Operand {
 	if ctx == nil || ctx.Expression() == nil {
 		return loadConstant(c.ctx, runtime.None)
 	}
@@ -113,7 +114,7 @@ func (c *DispatchCompiler) compileOptions(ctx fql.IDispatchOptionsClauseContext)
 	return c.ctx.ExprCompiler.Compile(ctx.Expression())
 }
 
-func (c *DispatchCompiler) buildDispatchArgs(payload, options vm.Operand) vm.Operand {
+func (c *DispatchCompiler) buildDispatchArgs(payload, options bytecode.Operand) bytecode.Operand {
 	dst := c.ctx.Registers.Allocate()
 	payloadKey := c.ctx.Symbols.AddConstant(runtime.NewString("payload"))
 	optionsKey := c.ctx.Symbols.AddConstant(runtime.NewString("options"))
@@ -126,8 +127,8 @@ func (c *DispatchCompiler) buildDispatchArgs(payload, options vm.Operand) vm.Ope
 	return dst
 }
 
-func (c *DispatchCompiler) ensureRegister(op vm.Operand) vm.Operand {
-	if op == vm.NoopOperand {
+func (c *DispatchCompiler) ensureRegister(op bytecode.Operand) bytecode.Operand {
+	if op == bytecode.NoopOperand {
 		return loadConstant(c.ctx, runtime.None)
 	}
 

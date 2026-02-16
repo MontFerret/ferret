@@ -1,10 +1,8 @@
 package core
 
 import (
-	"fmt"
-
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 const (
@@ -42,7 +40,7 @@ const (
 type Variable struct {
 	Name     string
 	Kind     SymbolKind
-	Register vm.Operand
+	Register bytecode.Operand
 	Depth    int
 	Type     ValueType
 }
@@ -53,7 +51,7 @@ type SymbolTable struct {
 
 	params    map[string]string
 	functions map[string]int
-	globals   map[string]vm.Operand
+	globals   map[string]bytecode.Operand
 	locals    []*Variable
 
 	scope int
@@ -64,7 +62,7 @@ func NewSymbolTable(registers *RegisterAllocator) *SymbolTable {
 		registers: registers,
 		constants: NewConstantPool(),
 		params:    make(map[string]string),
-		globals:   make(map[string]vm.Operand),
+		globals:   make(map[string]bytecode.Operand),
 		locals:    make([]*Variable, 0),
 	}
 }
@@ -100,17 +98,17 @@ func (st *SymbolTable) LocalVariables() []Variable {
 	return locals
 }
 
-func (st *SymbolTable) DeclareLocal(name string, typ ValueType) (vm.Operand, bool) {
+func (st *SymbolTable) DeclareLocal(name string, typ ValueType) (bytecode.Operand, bool) {
 	reg := st.registers.Allocate()
 
 	if ok := st.AssignLocal(name, typ, reg); !ok {
-		return vm.NoopOperand, false
+		return bytecode.NoopOperand, false
 	}
 
 	return reg, true
 }
 
-func (st *SymbolTable) AssignLocal(name string, typ ValueType, op vm.Operand) bool {
+func (st *SymbolTable) AssignLocal(name string, typ ValueType, op bytecode.Operand) bool {
 	if name != IgnorePseudoVariable && name != PseudoVariable {
 		// Check if the variable already exists in the current scope
 		for i := len(st.locals) - 1; i >= 0; i-- {
@@ -133,17 +131,17 @@ func (st *SymbolTable) AssignLocal(name string, typ ValueType, op vm.Operand) bo
 	return true
 }
 
-func (st *SymbolTable) DeclareGlobal(name string, typ ValueType) (vm.Operand, bool) {
+func (st *SymbolTable) DeclareGlobal(name string, typ ValueType) (bytecode.Operand, bool) {
 	op := st.registers.Allocate()
 
 	if ok := st.AssignGlobal(name, typ, op); !ok {
-		return vm.NoopOperand, false
+		return bytecode.NoopOperand, false
 	}
 
 	return op, true
 }
 
-func (st *SymbolTable) AssignGlobal(name string, typ ValueType, op vm.Operand) bool {
+func (st *SymbolTable) AssignGlobal(name string, typ ValueType, op bytecode.Operand) bool {
 	if _, exists := st.globals[name]; exists {
 		return false
 	}
@@ -153,7 +151,7 @@ func (st *SymbolTable) AssignGlobal(name string, typ ValueType, op vm.Operand) b
 	return true
 }
 
-func (st *SymbolTable) BindParam(name string) vm.Operand {
+func (st *SymbolTable) BindParam(name string) bytecode.Operand {
 	st.params[name] = name
 	return st.constants.Add(runtime.NewString(name))
 }
@@ -178,19 +176,19 @@ func (st *SymbolTable) Constants() []runtime.Value {
 	return st.constants.All()
 }
 
-func (st *SymbolTable) AddConstant(val runtime.Value) vm.Operand {
+func (st *SymbolTable) AddConstant(val runtime.Value) bytecode.Operand {
 	return st.constants.Add(val)
 }
 
-func (st *SymbolTable) Constant(addr vm.Operand) runtime.Value {
+func (st *SymbolTable) Constant(addr bytecode.Operand) runtime.Value {
 	return st.constants.Get(addr)
 }
 
-func (st *SymbolTable) Resolve(name string) (vm.Operand, SymbolKind, bool) {
+func (st *SymbolTable) Resolve(name string) (bytecode.Operand, SymbolKind, bool) {
 	for i := len(st.locals) - 1; i >= 0; i-- {
 		v := st.locals[i]
 		if v.Name == name {
-			return vm.NewRegister(int(v.Register)), v.Kind, true
+			return bytecode.NewRegister(int(v.Register)), v.Kind, true
 		}
 	}
 
@@ -198,7 +196,7 @@ func (st *SymbolTable) Resolve(name string) (vm.Operand, SymbolKind, bool) {
 		return reg, SymbolGlobal, true
 	}
 
-	return vm.NoopOperand, SymbolLocal, false
+	return bytecode.NoopOperand, SymbolLocal, false
 }
 
 func (st *SymbolTable) Lookup(name string) (*Variable, bool) {
@@ -213,9 +211,11 @@ func (st *SymbolTable) Lookup(name string) (*Variable, bool) {
 
 func (st *SymbolTable) Params() []string {
 	out := make([]string, 0, len(st.params))
+
 	for k := range st.params {
 		out = append(out, k)
 	}
+
 	return out
 }
 
@@ -228,26 +228,4 @@ func (st *SymbolTable) Functions() map[string]int {
 	}
 
 	return funcs
-}
-
-func (st *SymbolTable) DebugView() []string {
-	var out []string
-
-	for _, v := range st.locals {
-		out = append(out, fmt.Sprintf("[local] %s -> R%d (%v)", v.Name, v.Register, v.Type))
-	}
-
-	for k, r := range st.globals {
-		out = append(out, fmt.Sprintf("[global] %s -> R%d", k, r))
-	}
-
-	for k, v := range st.params {
-		out = append(out, fmt.Sprintf("[param] %s -> %s", k, v))
-	}
-
-	for _, c := range st.constants.All() {
-		out = append(out, fmt.Sprintf("[constant] %s", c.String()))
-	}
-
-	return out
 }

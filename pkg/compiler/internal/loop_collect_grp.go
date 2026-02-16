@@ -1,10 +1,10 @@
 package internal
 
 import (
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // initializeGrouping creates the KeyValue pair for collection, handling both grouping and value setup.
@@ -14,7 +14,7 @@ func (c *LoopCollectCompiler) initializeGrouping(grouping fql.ICollectGroupingCo
 	var groupSelectors []*core.CollectSelector
 
 	// Initialize key-value pair with no-op operands
-	kv := core.NewKV(vm.NoopOperand, vm.NoopOperand)
+	kv := core.NewKV(bytecode.NoopOperand, bytecode.NoopOperand)
 	loop := c.ctx.Loops.Current()
 
 	// Handle grouping key if present
@@ -25,7 +25,7 @@ func (c *LoopCollectCompiler) initializeGrouping(grouping fql.ICollectGroupingCo
 	// Setup value register and emit value from current loop
 	// The behavior differs based on the loop type (FOR IN vs FOR)
 	if loop.Kind == core.ForInLoop {
-		if loop.Value != vm.NoopOperand {
+		if loop.Value != bytecode.NoopOperand {
 			// Reuse existing value register if available
 			kv.Value = loop.Value
 		} else {
@@ -34,7 +34,7 @@ func (c *LoopCollectCompiler) initializeGrouping(grouping fql.ICollectGroupingCo
 			loop.EmitValue(kv.Value, c.ctx.Emitter)
 		}
 	} else {
-		if loop.Key != vm.NoopOperand {
+		if loop.Key != bytecode.NoopOperand {
 			// For non-ForInLoop, use key as value if available
 			kv.Value = loop.Key
 		} else {
@@ -51,15 +51,15 @@ func (c *LoopCollectCompiler) initializeGrouping(grouping fql.ICollectGroupingCo
 // It processes the selectors in the grouping context and creates the appropriate VM instructions.
 // For multiple selectors, it creates an array of values. For a single selector, it uses the value directly.
 // Returns the register containing the key value and a slice of CollectSelectors for later use.
-func (c *LoopCollectCompiler) compileGroupKeys(ctx fql.ICollectGroupingContext) (vm.Operand, []*core.CollectSelector) {
+func (c *LoopCollectCompiler) compileGroupKeys(ctx fql.ICollectGroupingContext) (bytecode.Operand, []*core.CollectSelector) {
 	selectors := ctx.AllCollectSelector()
 
 	// If no selectors are present, return no-op operand
 	if len(selectors) == 0 {
-		return vm.NoopOperand, nil
+		return bytecode.NoopOperand, nil
 	}
 
-	var kvKeyReg vm.Operand
+	var kvKeyReg bytecode.Operand
 	var collectSelectors []*core.CollectSelector
 
 	if len(selectors) > 1 {
@@ -74,13 +74,13 @@ func (c *LoopCollectCompiler) compileGroupKeys(ctx fql.ICollectGroupingContext) 
 			c.ctx.Emitter.EmitArrayPush(kvKeyReg, reg)
 
 			// Create a CollectSelector for each selector with its identifier
-			collectSelectors[i] = core.NewCollectSelector(runtime.String(selector.Identifier().GetText()))
+			collectSelectors[i] = core.NewCollectSelector(runtime.String(selector.Identifier().GetText()), selector)
 		}
 	} else {
 		// Handle single selector case - simpler, no need for array
 		selector := selectors[0]
 		kvKeyReg = c.ctx.ExprCompiler.Compile(selector.Expression())
-		collectSelectors = []*core.CollectSelector{core.NewCollectSelector(runtime.String(selector.Identifier().GetText()))}
+		collectSelectors = []*core.CollectSelector{core.NewCollectSelector(runtime.String(selector.Identifier().GetText()), selector)}
 	}
 
 	return kvKeyReg, collectSelectors
@@ -90,42 +90,33 @@ func (c *LoopCollectCompiler) compileGroupKeys(ctx fql.ICollectGroupingContext) 
 // It handles both multiple selectors (as array elements) and single selectors differently.
 func (c *LoopCollectCompiler) finalizeGrouping(spec *core.Collector) {
 	loop := c.ctx.Loops.Current()
+	// Depending on collector mode, grouped keys are emitted either as iterator key or value.
+	// selectGroupKey keeps this branching in one place.
+	groupKeyReg := c.selectGroupKey(spec.Type(), loop)
 
 	if len(spec.GroupSelectors()) > 1 {
-		// Handle multiple group selectors
-		variables := make([]vm.Operand, len(spec.GroupSelectors()))
-
-		// Process each selector and create a local variable for it
+		// Handle multiple group selectors.
 		for i, selector := range spec.GroupSelectors() {
 			name := selector.Name()
+			reg := c.declareLocalOrReport(selector.Context(), name.String(), core.TypeUnknown)
 
-			// Declare a local variable for the selector if not already done
-			if variables[i] == vm.NoopOperand {
-				// TODO: Handle error if the variable already exists
-				reg, _ := c.ctx.Symbols.DeclareLocal(name.String(), core.TypeUnknown)
-				variables[i] = reg
-			}
-
-			// Get the appropriate register (key or value) based on collector type
-			reg := c.selectGroupKey(spec.Type(), loop)
-
-			// Load the value at index i from the array in reg into the variable
-			c.ctx.Emitter.EmitABC(vm.OpLoadIndex, variables[i], reg, loadConstant(c.ctx, runtime.Int(i)))
+			// Load the value at index i from the group key array into the local variable.
+			c.ctx.Emitter.EmitABC(bytecode.OpLoadIndex, reg, groupKeyReg, loadConstant(c.ctx, runtime.Int(i)))
 		}
 	} else {
 		// Handle single group selector - simpler case
 		// Get the variable name
 		name := spec.GroupSelectors()[0].Name()
-		// If we have a single selector, we can just use the loops' register directly
-		c.ctx.Symbols.AssignLocal(name.String(), core.TypeUnknown, c.selectGroupKey(spec.Type(), loop))
+		// If we have a single selector, we can just use the loop register directly
+		c.assignLocalOrReport(spec.GroupSelectors()[0].Context(), name.String(), core.TypeUnknown, groupKeyReg)
 	}
 }
 
 // selectGroupKey determines which register (key or value) to use based on the collector type.
 // Different collector types require different registers to be used as the group key.
-func (c *LoopCollectCompiler) selectGroupKey(collectorType core.CollectorType, loop *core.Loop) vm.Operand {
+func (c *LoopCollectCompiler) selectGroupKey(collectorType bytecode.CollectorType, loop *core.Loop) bytecode.Operand {
 	switch collectorType {
-	case core.CollectorTypeKeyGroup, core.CollectorTypeKeyCounter:
+	case bytecode.CollectorTypeKeyGroup, bytecode.CollectorTypeKeyCounter, bytecode.CollectorTypeAggregateGroup:
 		// For key-based collectors, use the key register
 		return loop.Key
 	default:

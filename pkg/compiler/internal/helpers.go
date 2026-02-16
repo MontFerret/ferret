@@ -3,16 +3,15 @@ package internal
 import (
 	"strings"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 
 	"github.com/antlr4-go/antlr/v4"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
-
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func loadConstant(ctx *CompilerContext, value runtime.Value) vm.Operand {
+func loadConstant(ctx *CompilerContext, value runtime.Value) bytecode.Operand {
 	reg := ctx.Registers.Allocate()
 	ctx.Emitter.EmitLoadConst(reg, ctx.Symbols.AddConstant(value))
 	ctx.Types.Set(reg, valueTypeFromRuntime(value))

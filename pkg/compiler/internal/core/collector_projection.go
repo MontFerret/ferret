@@ -1,21 +1,26 @@
 package core
 
+import "github.com/antlr4-go/antlr/v4"
+
 type CollectorProjection struct {
 	groupsVariable string
 	countVariable  string
+	ctx            antlr.ParserRuleContext
 }
 
-func NewCollectorGroupProjection(groupsVariable string) *CollectorProjection {
+func NewCollectorGroupProjection(groupsVariable string, ctx antlr.ParserRuleContext) *CollectorProjection {
 	return &CollectorProjection{
 		groupsVariable: groupsVariable,
 		countVariable:  "",
+		ctx:            ctx,
 	}
 }
 
-func NewCollectorCountProjection(countVariable string) *CollectorProjection {
+func NewCollectorCountProjection(countVariable string, ctx antlr.ParserRuleContext) *CollectorProjection {
 	return &CollectorProjection{
 		groupsVariable: "",
 		countVariable:  countVariable,
+		ctx:            ctx,
 	}
 }
 
@@ -37,4 +42,8 @@ func (p *CollectorProjection) IsGrouped() bool {
 
 func (p *CollectorProjection) IsCounted() bool {
 	return p.countVariable != ""
+}
+
+func (p *CollectorProjection) Context() antlr.ParserRuleContext {
+	return p.ctx
 }

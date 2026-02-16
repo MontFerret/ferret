@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 type LoopType int
@@ -27,20 +27,20 @@ type Loop struct {
 	Distinct bool
 	Allocate bool
 
-	Src   vm.Operand
-	State vm.Operand
+	Src   bytecode.Operand
+	State bytecode.Operand
 
 	ValueName string
-	Value     vm.Operand
+	Value     bytecode.Operand
 	KeyName   string
-	Key       vm.Operand
+	Key       bytecode.Operand
 
 	// For WHILE/STEP loops
-	InitFn      func() vm.Operand
-	ConditionFn func() vm.Operand
-	UpdateFn    func() vm.Operand
+	InitFn      func() bytecode.Operand
+	ConditionFn func() bytecode.Operand
+	UpdateFn    func() bytecode.Operand
 
-	Dst vm.Operand
+	Dst bytecode.Operand
 
 	LabelBase     string
 	startLabel    Label
@@ -49,7 +49,7 @@ type Loop struct {
 	bodyLabel     Label
 	endLabel      Label
 
-	resetRegs []vm.Operand
+	resetRegs []bytecode.Operand
 }
 
 func (l *Loop) StartLabel() Label {
@@ -109,7 +109,7 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
 	emitter.MarkLabel(l.startLabel)
 
 	if l.Allocate {
-		emitter.EmitAb(vm.OpDataSet, l.Dst, l.Distinct)
+		emitter.EmitAb(bytecode.OpDataSet, l.Dst, l.Distinct)
 	}
 
 	switch l.Kind {
@@ -134,15 +134,15 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
 	emitter.MarkLabel(l.bodyLabel)
 }
 
-func (l *Loop) RegisterReset(reg vm.Operand) {
-	if reg == vm.NoopOperand {
+func (l *Loop) RegisterReset(reg bytecode.Operand) {
+	if reg == bytecode.NoopOperand {
 		return
 	}
 
 	l.resetRegs = append(l.resetRegs, reg)
 }
 
-func (l *Loop) EmitValue(dst vm.Operand, emitter *Emitter) {
+func (l *Loop) EmitValue(dst bytecode.Operand, emitter *Emitter) {
 	// For WHILE/STEP loops, the value is already in the destination register
 	// No additional emission needed as the variable is directly assigned
 	if l.Kind == ForInLoop {
@@ -150,7 +150,7 @@ func (l *Loop) EmitValue(dst vm.Operand, emitter *Emitter) {
 	}
 }
 
-func (l *Loop) EmitKey(dst vm.Operand, emitter *Emitter) {
+func (l *Loop) EmitKey(dst bytecode.Operand, emitter *Emitter) {
 	if l.Kind == ForInLoop {
 		emitter.EmitIterKey(dst, l.State)
 	}
@@ -161,15 +161,15 @@ func (l *Loop) EmitFinalization(emitter *Emitter) {
 	emitter.MarkLabel(l.endLabel)
 
 	if l.Kind == ForInLoop {
-		emitter.EmitA(vm.OpClose, l.State)
+		emitter.EmitA(bytecode.OpClose, l.State)
 	}
 
 	for _, reg := range l.resetRegs {
-		emitter.EmitA(vm.OpLoadZero, reg)
+		emitter.EmitA(bytecode.OpLoadZero, reg)
 	}
 }
 
-func (l *Loop) PatchDestinationAx(alloc *RegisterAllocator, emitter *Emitter, op vm.Opcode, arg int) vm.Operand {
+func (l *Loop) PatchDestinationAx(alloc *RegisterAllocator, emitter *Emitter, op bytecode.Opcode, arg int) bytecode.Operand {
 	if l.Allocate {
 		emitter.SwapAx(l.startLabel, op, l.Dst, arg)
 
@@ -181,7 +181,7 @@ func (l *Loop) PatchDestinationAx(alloc *RegisterAllocator, emitter *Emitter, op
 	return tmp
 }
 
-func (l *Loop) PatchDestinationAxy(alloc *RegisterAllocator, emitter *Emitter, op vm.Opcode, arg1, arg2 int) vm.Operand {
+func (l *Loop) PatchDestinationAxy(alloc *RegisterAllocator, emitter *Emitter, op bytecode.Opcode, arg1, arg2 int) bytecode.Operand {
 	if l.Allocate {
 		emitter.SwapAxy(l.startLabel, op, l.Dst, arg1, arg2)
 
@@ -194,13 +194,13 @@ func (l *Loop) PatchDestinationAxy(alloc *RegisterAllocator, emitter *Emitter, o
 }
 
 func (l *Loop) emitForInLoopIteration(alloc *RegisterAllocator, emitter *Emitter) {
-	if l.State == vm.NoopOperand {
+	if l.State == bytecode.NoopOperand {
 		l.State = alloc.Allocate()
 	}
 
 	emitter.EmitIter(l.State, l.Src)
 	emitter.MarkLabel(l.condLabel)
-	emitter.EmitJumpc(vm.OpIterNext, l.State, l.endLabel)
+	emitter.EmitJumpc(bytecode.OpIterNext, l.State, l.endLabel)
 }
 
 func (l *Loop) emitForWhileLoopIteration(_ *RegisterAllocator, emitter *Emitter) {
@@ -208,18 +208,18 @@ func (l *Loop) emitForWhileLoopIteration(_ *RegisterAllocator, emitter *Emitter)
 		panic("condition function must be defined for while loop")
 	}
 
-	if l.Value != vm.NoopOperand {
+	if l.Value != bytecode.NoopOperand {
 		// Initialize the loop variable
-		emitter.EmitA(vm.OpLoadZero, l.Value)
+		emitter.EmitA(bytecode.OpLoadZero, l.Value)
 	}
 
 	// Jump to the initial condition check (skipping the increment)
 	emitter.EmitJump(l.condLabel)
 
-	if l.Value != vm.NoopOperand {
+	if l.Value != bytecode.NoopOperand {
 		// Placeholder for the loop increment
 		emitter.MarkLabel(l.continueLabel)
-		emitter.EmitA(vm.OpIncr, l.Value)
+		emitter.EmitA(bytecode.OpIncr, l.Value)
 	}
 
 	// Mark the continue label (initial condition check point)
@@ -235,18 +235,18 @@ func (l *Loop) emitForDoWhileLoopIteration(_ *RegisterAllocator, emitter *Emitte
 		panic("condition function must be defined for while loop")
 	}
 
-	if l.Value != vm.NoopOperand {
+	if l.Value != bytecode.NoopOperand {
 		// Initialize the loop variable
-		emitter.EmitA(vm.OpLoadZero, l.Value)
+		emitter.EmitA(bytecode.OpLoadZero, l.Value)
 	}
 
 	// Jump to the loop body first
 	emitter.EmitJump(l.bodyLabel)
 
-	if l.Value != vm.NoopOperand {
+	if l.Value != bytecode.NoopOperand {
 		// Placeholder for the loop increment
 		emitter.MarkLabel(l.continueLabel)
-		emitter.EmitA(vm.OpIncr, l.Value)
+		emitter.EmitA(bytecode.OpIncr, l.Value)
 	}
 
 	// Mark the continue label (initial condition check point)
@@ -265,8 +265,8 @@ func (l *Loop) emitForStepLoopIteration(_ *RegisterAllocator, emitter *Emitter) 
 	// Initialize the loop variable
 	initValue := l.InitFn()
 
-	if l.Value != vm.NoopOperand {
-		emitter.EmitAB(vm.OpMove, l.Value, initValue)
+	if l.Value != bytecode.NoopOperand {
+		emitter.EmitAB(bytecode.OpMove, l.Value, initValue)
 	}
 
 	// Jump to the initial condition check (skipping the increment)
@@ -276,11 +276,11 @@ func (l *Loop) emitForStepLoopIteration(_ *RegisterAllocator, emitter *Emitter) 
 	emitter.MarkLabel(l.continueLabel)
 
 	// Execute increment (this happens on every loop-back, but not on first iteration)
-	if l.Value != vm.NoopOperand {
+	if l.Value != bytecode.NoopOperand {
 		nextValue := l.UpdateFn()
 
-		if !nextValue.Equals(vm.NoopOperand) && !nextValue.Equals(l.Value) {
-			emitter.EmitAB(vm.OpMove, l.Value, nextValue)
+		if !nextValue.Equals(bytecode.NoopOperand) && !nextValue.Equals(l.Value) {
+			emitter.EmitAB(bytecode.OpMove, l.Value, nextValue)
 		}
 	}
 
@@ -296,6 +296,6 @@ func (l *Loop) canDeclareVar(name string) bool {
 	return name != "" && name != IgnorePseudoVariable
 }
 
-func (l *Loop) canBindVar(op vm.Operand) bool {
-	return op != vm.NoopOperand
+func (l *Loop) canBindVar(op bytecode.Operand) bool {
+	return op != bytecode.NoopOperand
 }

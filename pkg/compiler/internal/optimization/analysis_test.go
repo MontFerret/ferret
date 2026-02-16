@@ -4,18 +4,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 func TestAnalyzer_FindReachableBlocks(t *testing.T) {
 	// Create a program with unreachable code
-	program := &vm.Program{
-		Bytecode: []vm.Instruction{
-			vm.NewInstruction(vm.OpLoadConst, 0, 0),
-			vm.NewInstruction(vm.OpJump, 4),         // Jump over unreachable code
-			vm.NewInstruction(vm.OpLoadConst, 1, 0), // Unreachable
-			vm.NewInstruction(vm.OpLoadConst, 2, 0), // Unreachable
-			vm.NewInstruction(vm.OpReturn, 0),
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, 0, 0),
+			bytecode.NewInstruction(bytecode.OpJump, 4),         // Jump over unreachable code
+			bytecode.NewInstruction(bytecode.OpLoadConst, 1, 0), // Unreachable
+			bytecode.NewInstruction(bytecode.OpLoadConst, 2, 0), // Unreachable
+			bytecode.NewInstruction(bytecode.OpReturn, 0),
 		},
 	}
 
@@ -37,13 +37,13 @@ func TestAnalyzer_FindReachableBlocks(t *testing.T) {
 
 func TestAnalyzer_FindUnreachableBlocks(t *testing.T) {
 	// Create a program with unreachable code
-	program := &vm.Program{
-		Bytecode: []vm.Instruction{
-			vm.NewInstruction(vm.OpLoadConst, 0, 0),
-			vm.NewInstruction(vm.OpJump, 4),         // Jump over unreachable code
-			vm.NewInstruction(vm.OpLoadConst, 1, 0), // Unreachable
-			vm.NewInstruction(vm.OpLoadConst, 2, 0), // Unreachable
-			vm.NewInstruction(vm.OpReturn, 0),
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, 0, 0),
+			bytecode.NewInstruction(bytecode.OpJump, 4),         // Jump over unreachable code
+			bytecode.NewInstruction(bytecode.OpLoadConst, 1, 0), // Unreachable
+			bytecode.NewInstruction(bytecode.OpLoadConst, 2, 0), // Unreachable
+			bytecode.NewInstruction(bytecode.OpReturn, 0),
 		},
 	}
 
@@ -68,13 +68,13 @@ func TestAnalyzer_FindUnreachableBlocks(t *testing.T) {
 
 func TestAnalyzer_FindBackEdges(t *testing.T) {
 	// Create a program with a loop
-	program := &vm.Program{
-		Bytecode: []vm.Instruction{
-			vm.NewInstruction(vm.OpLoadConst, 0, 0),   // Block 0: loop header
-			vm.NewInstruction(vm.OpJumpIfFalse, 4, 0), // Block 0: exit condition
-			vm.NewInstruction(vm.OpLoadConst, 1, 0),   // Block 1: loop body
-			vm.NewInstruction(vm.OpJump, 0),           // Block 1: back to loop header (back edge)
-			vm.NewInstruction(vm.OpReturn, 0),         // Block 2: exit
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, 0, 0),   // Block 0: loop header
+			bytecode.NewInstruction(bytecode.OpJumpIfFalse, 4, 0), // Block 0: exit condition
+			bytecode.NewInstruction(bytecode.OpLoadConst, 1, 0),   // Block 1: loop body
+			bytecode.NewInstruction(bytecode.OpJump, 0),           // Block 1: back to loop header (back edge)
+			bytecode.NewInstruction(bytecode.OpReturn, 0),         // Block 2: exit
 		},
 	}
 
@@ -102,10 +102,10 @@ func TestAnalyzer_FindBackEdges(t *testing.T) {
 
 func TestAnalyzer_FindBackEdges_NoLoop(t *testing.T) {
 	// Create a simple linear program
-	program := &vm.Program{
-		Bytecode: []vm.Instruction{
-			vm.NewInstruction(vm.OpLoadConst, 0, 0),
-			vm.NewInstruction(vm.OpReturn, 0),
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, 0, 0),
+			bytecode.NewInstruction(bytecode.OpReturn, 0),
 		},
 	}
 
@@ -126,14 +126,14 @@ func TestAnalyzer_FindBackEdges_NoLoop(t *testing.T) {
 
 func TestAnalyzer_CalculateDominators(t *testing.T) {
 	// Create a simple if-else program
-	program := &vm.Program{
-		Bytecode: []vm.Instruction{
-			vm.NewInstruction(vm.OpLoadBool, 0, 1),    // Block 0: condition
-			vm.NewInstruction(vm.OpJumpIfFalse, 4, 0), // Block 0
-			vm.NewInstruction(vm.OpLoadConst, 1, 0),   // Block 1: then
-			vm.NewInstruction(vm.OpJump, 5),           // Block 1
-			vm.NewInstruction(vm.OpLoadConst, 2, 0),   // Block 2: else
-			vm.NewInstruction(vm.OpReturn, 0),         // Block 3: merge
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadBool, 0, 1),    // Block 0: condition
+			bytecode.NewInstruction(bytecode.OpJumpIfFalse, 4, 0), // Block 0
+			bytecode.NewInstruction(bytecode.OpLoadConst, 1, 0),   // Block 1: then
+			bytecode.NewInstruction(bytecode.OpJump, 5),           // Block 1
+			bytecode.NewInstruction(bytecode.OpLoadConst, 2, 0),   // Block 2: else
+			bytecode.NewInstruction(bytecode.OpReturn, 0),         // Block 3: merge
 		},
 	}
 
@@ -163,10 +163,10 @@ func TestAnalyzer_CalculateDominators(t *testing.T) {
 }
 
 func TestCFG_ToDOT(t *testing.T) {
-	program := &vm.Program{
-		Bytecode: []vm.Instruction{
-			vm.NewInstruction(vm.OpLoadConst, 0, 0),
-			vm.NewInstruction(vm.OpReturn, 0),
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, 0, 0),
+			bytecode.NewInstruction(bytecode.OpReturn, 0),
 		},
 	}
 
@@ -193,10 +193,10 @@ func TestCFG_ToDOT(t *testing.T) {
 }
 
 func TestCFG_String(t *testing.T) {
-	program := &vm.Program{
-		Bytecode: []vm.Instruction{
-			vm.NewInstruction(vm.OpLoadConst, 0, 0),
-			vm.NewInstruction(vm.OpReturn, 0),
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, 0, 0),
+			bytecode.NewInstruction(bytecode.OpReturn, 0),
 		},
 	}
 

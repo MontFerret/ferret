@@ -3,12 +3,13 @@ package vm
 import (
 	"errors"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func toRuntimeError(program *Program, pc int, err error) *RuntimeError {
+func toRuntimeError(program *bytecode.Program, pc int, err error) *RuntimeError {
 	if err == nil {
 		return nil
 	}
@@ -122,14 +123,14 @@ func toRuntimeError(program *Program, pc int, err error) *RuntimeError {
 	}
 }
 
-func spanAt(program *Program, pc int) file.Span {
+func spanAt(program *bytecode.Program, pc int) file.Span {
 	if program == nil {
 		return file.Span{Start: -1, End: -1}
 	}
 
-	if pc < 0 || pc >= len(program.DebugSpans) {
+	if pc < 0 || pc >= len(program.Metadata.DebugSpans) {
 		return file.Span{Start: -1, End: -1}
 	}
 
-	return program.DebugSpans[pc]
+	return program.Metadata.DebugSpans[pc]
 }

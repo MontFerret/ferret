@@ -1,6 +1,8 @@
 package optimization
 
-import "github.com/MontFerret/ferret/v2/pkg/vm"
+import (
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+)
 
 type (
 	// PassResult contains the result of running a pass
@@ -10,7 +12,7 @@ type (
 	}
 
 	PassContext struct {
-		Program  *vm.Program
+		Program  *bytecode.Program
 		CFG      *ControlFlowGraph
 		Metadata map[string]any // Shared metadata between passes
 	}

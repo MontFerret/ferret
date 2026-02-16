@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 
 	"github.com/MontFerret/ferret/v2/pkg/asm"
@@ -18,25 +19,25 @@ import (
 	"github.com/MontFerret/ferret/v2/test/integration/base"
 )
 
-func Case(expression string, expected *vm.Program, desc ...string) UseCase {
+func Case(expression string, expected *bytecode.Program, desc ...string) UseCase {
 	return UseCase{
 		TestCase: base.NewCase(expression, expected, ShouldEqualBytecode, desc...),
 	}
 }
 
-func SkipCase(expression string, expected *vm.Program, desc ...string) UseCase {
+func SkipCase(expression string, expected *bytecode.Program, desc ...string) UseCase {
 	return Skip(Case(expression, expected, desc...))
 }
 
-func ByteCodeCase(expression string, expected []vm.Instruction, desc ...string) UseCase {
+func ByteCodeCase(expression string, expected []bytecode.Instruction, desc ...string) UseCase {
 	return UseCase{
-		TestCase: base.NewCase(expression, &vm.Program{
+		TestCase: base.NewCase(expression, &bytecode.Program{
 			Bytecode: expected,
 		}, ShouldEqualBytecode, desc...),
 	}
 }
 
-func SkipByteCodeCase(expression string, expected []vm.Instruction, desc ...string) UseCase {
+func SkipByteCodeCase(expression string, expected []bytecode.Instruction, desc ...string) UseCase {
 	return Skip(ByteCodeCase(expression, expected, desc...))
 }
 
@@ -125,7 +126,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 				println("Actual:")
 				println(asm.Disassemble(actual))
 
-				if p, ok := useCase.Expected.(*vm.Program); ok {
+				if p, ok := useCase.Expected.(*bytecode.Program); ok {
 					println("Expected:")
 					println(asm.Disassemble(p))
 				}
@@ -169,7 +170,7 @@ func RunUseCases(t *testing.T, level compiler.OptimizationLevel, useCases []UseC
 	RunUseCasesWith(t, compiler.New(compiler.WithOptimizationLevel(level)), useCases)
 }
 
-func Disassembly(instr []string, opcodes ...vm.Opcode) string {
+func Disassembly(instr []string, opcodes ...bytecode.Opcode) string {
 	var disassembly string
 
 	for i := 0; i < len(instr); i++ {

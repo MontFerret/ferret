@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/MontFerret/ferret/v2/pkg/asm"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
-func PrintDebugInfo(name string, uc TestCase, prog *vm.Program) {
+func PrintDebugInfo(name string, uc TestCase, prog *bytecode.Program) {
 	fmt.Println("")
 	fmt.Println("VM Test:", name)
 	fmt.Println("Expression:", uc.Expression)

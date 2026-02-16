@@ -3,7 +3,7 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 func TestForNested(t *testing.T) {
@@ -13,7 +13,7 @@ func TestForNested(t *testing.T) {
 							FOR val IN [1, 2, 3]
 								RETURN {[prop]: val}`,
 			BC{
-				I(vm.OpReturn, 0, 7),
+				I(bytecode.OpReturn, 0, 7),
 			},
 		),
 		SkipByteCodeCase(
@@ -21,7 +21,7 @@ func TestForNested(t *testing.T) {
 							FOR prop IN ["a"]
 								RETURN {[prop]: val}`,
 			BC{
-				I(vm.OpReturn, 0, 7),
+				I(bytecode.OpReturn, 0, 7),
 			},
 		),
 		SkipByteCodeCase(
@@ -29,7 +29,7 @@ func TestForNested(t *testing.T) {
 							FOR val IN 1..3
 								RETURN {[prop]: val}`,
 			BC{
-				I(vm.OpReturn, 0, 7),
+				I(bytecode.OpReturn, 0, 7),
 			},
 		),
 		SkipByteCodeCase(
@@ -38,7 +38,7 @@ func TestForNested(t *testing.T) {
 								FOR val2 IN [1, 2, 3]
 									RETURN { [prop]: [val, val2] }`,
 			BC{
-				I(vm.OpReturn, 0, 7),
+				I(bytecode.OpReturn, 0, 7),
 			},
 		),
 		SkipByteCodeCase(
@@ -48,7 +48,7 @@ func TestForNested(t *testing.T) {
 									RETURN { [prop]: val }
 							)`,
 			BC{
-				I(vm.OpReturn, 0, 7),
+				I(bytecode.OpReturn, 0, 7),
 			},
 		),
 		SkipByteCodeCase(
@@ -60,7 +60,7 @@ func TestForNested(t *testing.T) {
 		
 							RETURN sub`,
 			BC{
-				I(vm.OpReturn, 0, 7),
+				I(bytecode.OpReturn, 0, 7),
 			},
 		),
 		SkipByteCodeCase(`
@@ -72,7 +72,7 @@ FOR s IN strs
 		RETURN CONCAT(s, n)
 `,
 			BC{
-				I(vm.OpReturn, 0, 7),
+				I(bytecode.OpReturn, 0, 7),
 			},
 		),
 		SkipByteCodeCase(`
@@ -84,7 +84,7 @@ FOR n IN 0..1
 		RETURN CONCAT(s, n)
 `,
 			BC{
-				I(vm.OpReturn, 0, 7),
+				I(bytecode.OpReturn, 0, 7),
 			},
 		),
 	})

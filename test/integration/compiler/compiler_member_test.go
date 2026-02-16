@@ -3,21 +3,21 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 func TestMember(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		SkipByteCodeCase("LET arr = [1,2,3,4] RETURN arr[10]", BC{
-			I(vm.OpLoadConst, 1, C(0)),
-			I(vm.OpMove, 2, C(1)),
-			I(vm.OpLoadConst, 3, C(2)),
-			I(vm.OpMove, 4, C(3)),
-			I(vm.OpLoadConst, 5, C(4)),
-			I(vm.OpMove, 6, C(5)),
-			I(vm.OpLoadArray, 7, R(2), R(4), R(6)),
-			I(vm.OpMove, 0, 7),
-			I(vm.OpReturn, 0, 7),
+			I(bytecode.OpLoadConst, 1, C(0)),
+			I(bytecode.OpMove, 2, C(1)),
+			I(bytecode.OpLoadConst, 3, C(2)),
+			I(bytecode.OpMove, 4, C(3)),
+			I(bytecode.OpLoadConst, 5, C(4)),
+			I(bytecode.OpMove, 6, C(5)),
+			I(bytecode.OpLoadArray, 7, R(2), R(4), R(6)),
+			I(bytecode.OpMove, 0, 7),
+			I(bytecode.OpReturn, 0, 7),
 		}),
 		//Case("LET arr = [1,2,3,4] RETURN arr[1]", 2),
 		//Case("LET arr = [1,2,3,4] LET idx = 1 RETURN arr[idx]", 2),
@@ -144,7 +144,7 @@ func TestMember(t *testing.T) {
 					RETURN FIRST(arr)['name'].first
 				`,
 			BC{
-				I(vm.OpLoadConst, 1, C(0)),
+				I(bytecode.OpLoadConst, 1, C(0)),
 			}),
 		//CaseNil(`
 		//			LET obj = { foo: None }

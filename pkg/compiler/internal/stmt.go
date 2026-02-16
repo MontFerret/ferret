@@ -1,9 +1,9 @@
 package internal
 
 import (
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // StmtCompiler handles the compilation of FQL statements.
@@ -78,7 +78,7 @@ func (c *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
 		out := c.ctx.LoopCompiler.Compile(fe)
 
 		// Emit a return instruction with the loop result
-		c.ctx.Emitter.EmitA(vm.OpReturn, out)
+		c.ctx.Emitter.EmitA(bytecode.OpReturn, out)
 	} else if re := ctx.ReturnExpression(); re != nil {
 		// Handle RETURN expressions (e.g., RETURN x)
 		// Compile the expression to return
@@ -95,7 +95,7 @@ func (c *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
 		}
 
 		// Emit a return instruction with the expression result
-		c.ctx.Emitter.EmitA(vm.OpReturn, valReg)
+		c.ctx.Emitter.EmitA(bytecode.OpReturn, valReg)
 	}
 }
 
@@ -108,9 +108,9 @@ func (c *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
 // Returns:
 //   - An operand representing the register where the variable value is stored,
 //     or NoopOperand if the variable is ignored
-func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationContext) vm.Operand {
+func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationContext) bytecode.Operand {
 	if ctx == nil {
-		return vm.NoopOperand
+		return bytecode.NoopOperand
 	}
 
 	// Start with the ignore pseudo-variable as the default name
@@ -137,10 +137,10 @@ func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationCo
 			if !ok {
 				c.ctx.Errors.VariableNotUnique(ctx, name)
 
-				return vm.NoopOperand
+				return bytecode.NoopOperand
 			}
 
-			c.ctx.Emitter.EmitAB(vm.OpLoadConst, dest, src)
+			c.ctx.Emitter.EmitAB(bytecode.OpLoadConst, dest, src)
 			c.ctx.Types.Set(dest, srcType)
 
 			src = dest
@@ -149,14 +149,14 @@ func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationCo
 			if ok := c.ctx.Symbols.AssignGlobal(name, srcType, src); !ok {
 				c.ctx.Errors.VariableNotUnique(ctx, name)
 
-				return vm.NoopOperand
+				return bytecode.NoopOperand
 			}
 		} else {
 			// Otherwise, assign as a local variable in the current scope
 			if ok := c.ctx.Symbols.AssignLocal(name, srcType, src); !ok {
 				c.ctx.Errors.VariableNotUnique(ctx, name)
 
-				return vm.NoopOperand
+				return bytecode.NoopOperand
 			}
 		}
 
@@ -166,7 +166,7 @@ func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationCo
 	}
 
 	// For ignored variables, return a no-op operand
-	return vm.NoopOperand
+	return bytecode.NoopOperand
 }
 
 // CompileFunctionCall processes a function call expression in an FQL query.
@@ -177,9 +177,9 @@ func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationCo
 //
 // Returns:
 //   - An operand representing the register where the function call result is stored
-func (c *StmtCompiler) CompileFunctionCall(ctx fql.IFunctionCallExpressionContext) vm.Operand {
+func (c *StmtCompiler) CompileFunctionCall(ctx fql.IFunctionCallExpressionContext) bytecode.Operand {
 	if ctx == nil {
-		return vm.NoopOperand
+		return bytecode.NoopOperand
 	}
 
 	// Delegate to the expression compiler for function call compilation

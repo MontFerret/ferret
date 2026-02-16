@@ -1,7 +1,7 @@
 package optimization
 
 import (
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 const (
@@ -80,8 +80,10 @@ func computeLiveness(cfg *ControlFlowGraph) map[int]*LivenessInfo {
 
 			// LiveOut[B] = Union of LiveIn[S] for all successors S of B
 			newLiveOut := make(map[int]bool)
+
 			for _, succ := range block.Successors {
 				succInfo := info[succ.ID]
+
 				for reg := range succInfo.LiveIn {
 					newLiveOut[reg] = true
 				}
@@ -89,9 +91,11 @@ func computeLiveness(cfg *ControlFlowGraph) map[int]*LivenessInfo {
 
 			// LiveIn[B] = Use[B] Union (LiveOut[B] - Def[B])
 			newLiveIn := make(map[int]bool)
+
 			for reg := range blockInfo.Use {
 				newLiveIn[reg] = true
 			}
+
 			for reg := range newLiveOut {
 				if !blockInfo.Def[reg] {
 					newLiveIn[reg] = true
@@ -112,38 +116,44 @@ func computeLiveness(cfg *ControlFlowGraph) map[int]*LivenessInfo {
 
 // instructionUseDef returns registers used and defined by an instruction.
 // Only registers (non-constants) are included.
-func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
-	addUse := func(op vm.Operand) {
-		if op != vm.NoopOperand && op.IsRegister() {
+func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
+	addUse := func(op bytecode.Operand) {
+		if op != bytecode.NoopOperand && op.IsRegister() {
 			uses = append(uses, op.Register())
 		}
 	}
-	addDef := func(op vm.Operand) {
-		if op != vm.NoopOperand && op.IsRegister() {
+	addDef := func(op bytecode.Operand) {
+		if op != bytecode.NoopOperand && op.IsRegister() {
 			defs = append(defs, op.Register())
 		}
 	}
-	addRangeUses := func(start, end vm.Operand) {
+	addRangeUses := func(start, end bytecode.Operand) {
 		if !start.IsRegister() || !end.IsRegister() {
 			return
 		}
+
 		startReg := start.Register()
 		endReg := end.Register()
+
 		if startReg <= 0 || endReg < startReg {
 			return
 		}
+
 		for r := startReg; r <= endReg; r++ {
 			uses = append(uses, r)
 		}
 	}
-	addFixedRangeUses := func(start vm.Operand, count int) {
+	addFixedRangeUses := func(start bytecode.Operand, count int) {
 		if !start.IsRegister() {
 			return
 		}
+
 		startReg := start.Register()
+
 		if startReg <= 0 || count <= 0 {
 			return
 		}
+
 		for r := startReg; r < startReg+count; r++ {
 			uses = append(uses, r)
 		}
@@ -154,144 +164,143 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 
 	switch op {
 	// No-operand terminator.
-	case vm.OpReturn:
+	case bytecode.OpReturn:
 		addUse(dst)
 		return
-
 	// Moves / loads.
-	case vm.OpMove:
+	case bytecode.OpMove:
 		addUse(src1)
 		addDef(dst)
 		return
-	case vm.OpLoadConst, vm.OpLoadParam, vm.OpLoadNone, vm.OpLoadBool, vm.OpLoadZero, vm.OpRand:
+	case bytecode.OpLoadConst, bytecode.OpLoadParam, bytecode.OpLoadNone, bytecode.OpLoadBool, bytecode.OpLoadZero, bytecode.OpRand:
 		addDef(dst)
 		return
-	case vm.OpLoadArray:
+	case bytecode.OpLoadArray:
 		addDef(dst)
 		return
-	case vm.OpLoadObject:
+	case bytecode.OpLoadObject:
 		addDef(dst)
 		return
-	case vm.OpLoadRange:
+	case bytecode.OpLoadRange:
 		addUse(src1)
 		addUse(src2)
 		addDef(dst)
 		return
 
 	// Simple arithmetic, comparisons, access.
-	case vm.OpAdd, vm.OpSub, vm.OpMulti, vm.OpDiv, vm.OpMod,
-		vm.OpCmp,
-		vm.OpEq, vm.OpNe, vm.OpGt, vm.OpLt, vm.OpGte, vm.OpLte,
-		vm.OpAnyEq, vm.OpAnyNe, vm.OpAnyGt, vm.OpAnyGte, vm.OpAnyLt, vm.OpAnyLte,
-		vm.OpAnyIn,
-		vm.OpNoneEq, vm.OpNoneNe, vm.OpNoneGt, vm.OpNoneGte, vm.OpNoneLt, vm.OpNoneLte,
-		vm.OpNoneIn,
-		vm.OpAllEq, vm.OpAllNe, vm.OpAllGt, vm.OpAllGte, vm.OpAllLt, vm.OpAllLte,
-		vm.OpAllIn,
-		vm.OpIn, vm.OpLike, vm.OpRegexp,
-		vm.OpLoadIndex, vm.OpLoadIndexOptional, vm.OpLoadIndexConst, vm.OpLoadIndexOptionalConst,
-		vm.OpLoadKey, vm.OpLoadKeyOptional, vm.OpLoadKeyConst, vm.OpLoadKeyOptionalConst,
-		vm.OpLoadProperty, vm.OpLoadPropertyOptional, vm.OpLoadPropertyConst, vm.OpLoadPropertyOptionalConst,
-		vm.OpApplyQuery:
+	case bytecode.OpAdd, bytecode.OpSub, bytecode.OpMulti, bytecode.OpDiv, bytecode.OpMod,
+		bytecode.OpCmp,
+		bytecode.OpEq, bytecode.OpNe, bytecode.OpGt, bytecode.OpLt, bytecode.OpGte, bytecode.OpLte,
+		bytecode.OpAnyEq, bytecode.OpAnyNe, bytecode.OpAnyGt, bytecode.OpAnyGte, bytecode.OpAnyLt, bytecode.OpAnyLte,
+		bytecode.OpAnyIn,
+		bytecode.OpNoneEq, bytecode.OpNoneNe, bytecode.OpNoneGt, bytecode.OpNoneGte, bytecode.OpNoneLt, bytecode.OpNoneLte,
+		bytecode.OpNoneIn,
+		bytecode.OpAllEq, bytecode.OpAllNe, bytecode.OpAllGt, bytecode.OpAllGte, bytecode.OpAllLt, bytecode.OpAllLte,
+		bytecode.OpAllIn,
+		bytecode.OpIn, bytecode.OpLike, bytecode.OpRegexp,
+		bytecode.OpLoadIndex, bytecode.OpLoadIndexOptional, bytecode.OpLoadIndexConst, bytecode.OpLoadIndexOptionalConst,
+		bytecode.OpLoadKey, bytecode.OpLoadKeyOptional, bytecode.OpLoadKeyConst, bytecode.OpLoadKeyOptionalConst,
+		bytecode.OpLoadProperty, bytecode.OpLoadPropertyOptional, bytecode.OpLoadPropertyConst, bytecode.OpLoadPropertyOptionalConst,
+		bytecode.OpApplyQuery:
 		addUse(src1)
 		addUse(src2)
 		addDef(dst)
 		return
 
 	// Unary ops.
-	case vm.OpIncr, vm.OpDecr:
+	case bytecode.OpIncr, bytecode.OpDecr:
 		addUse(dst)
 		addDef(dst)
 		return
-	case vm.OpCastBool, vm.OpNegate, vm.OpNot, vm.OpFlipPositive, vm.OpFlipNegative, vm.OpLength, vm.OpType, vm.OpFlatten, vm.OpExists:
+	case bytecode.OpCastBool, bytecode.OpNegate, bytecode.OpNot, bytecode.OpFlipPositive, bytecode.OpFlipNegative, bytecode.OpLength, bytecode.OpType, bytecode.OpFlatten, bytecode.OpExists:
 		addUse(src1)
 		addDef(dst)
 		return
 
 	// Control flow.
-	case vm.OpJumpIfFalse, vm.OpJumpIfTrue, vm.OpJumpIfNone:
+	case bytecode.OpJumpIfFalse, bytecode.OpJumpIfTrue, bytecode.OpJumpIfNone:
 		addUse(src1)
 		return
-	case vm.OpJump:
+	case bytecode.OpJump:
 		return
 
 	// Dataset operations.
-	case vm.OpDataSet, vm.OpDataSetCollector, vm.OpDataSetSorter, vm.OpDataSetMultiSorter:
+	case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
 		addDef(dst)
 		return
-	case vm.OpPush, vm.OpArrayPush:
+	case bytecode.OpPush, bytecode.OpArrayPush:
 		addUse(dst)
 		addUse(src1)
 		return
-	case vm.OpPushKV, vm.OpObjectSet, vm.OpObjectSetConst:
+	case bytecode.OpPushKV, bytecode.OpObjectSet, bytecode.OpObjectSetConst:
 		addUse(dst)
 		addUse(src1)
 		addUse(src2)
 		return
 
 	// Iterators.
-	case vm.OpIter:
+	case bytecode.OpIter:
 		addUse(src1)
 		addDef(dst)
 		return
-	case vm.OpIterValue, vm.OpIterKey:
+	case bytecode.OpIterValue, bytecode.OpIterKey:
 		addUse(src1)
 		addDef(dst)
 		return
-	case vm.OpIterLimit, vm.OpIterSkip:
+	case bytecode.OpIterLimit, bytecode.OpIterSkip:
 		addUse(src1)
 		addUse(src2)
 		addDef(src1)
 		return
-	case vm.OpIterNext:
+	case bytecode.OpIterNext:
 		addUse(src1)
 		return
 
 	// Calls.
-	case vm.OpCall, vm.OpProtectedCall:
+	case bytecode.OpCall, bytecode.OpProtectedCall:
 		addUse(dst)
 		addRangeUses(src1, src2)
 		addDef(dst)
 		return
-	case vm.OpCall0, vm.OpProtectedCall0:
+	case bytecode.OpCall0, bytecode.OpProtectedCall0:
 		addUse(dst)
 		addDef(dst)
 		return
-	case vm.OpCall1, vm.OpProtectedCall1:
+	case bytecode.OpCall1, bytecode.OpProtectedCall1:
 		addUse(dst)
 		addUse(src1)
 		addDef(dst)
 		return
-	case vm.OpCall2, vm.OpProtectedCall2:
+	case bytecode.OpCall2, bytecode.OpProtectedCall2:
 		addUse(dst)
 		addUse(src1)
 		addUse(src2)
 		addDef(dst)
 		return
-	case vm.OpCall3, vm.OpProtectedCall3:
+	case bytecode.OpCall3, bytecode.OpProtectedCall3:
 		addUse(dst)
 		addFixedRangeUses(src1, 3)
 		addDef(dst)
 		return
-	case vm.OpCall4, vm.OpProtectedCall4:
+	case bytecode.OpCall4, bytecode.OpProtectedCall4:
 		addUse(dst)
 		addFixedRangeUses(src1, 4)
 		addDef(dst)
 		return
 
 	// Stream.
-	case vm.OpStream:
+	case bytecode.OpStream:
 		addUse(dst)
 		addUse(src1)
 		addUse(src2)
 		addDef(dst)
 		return
-	case vm.OpStreamIter:
+	case bytecode.OpStreamIter:
 		addUse(src1)
 		addUse(src2)
 		addDef(dst)
 		return
-	case vm.OpDispatch:
+	case bytecode.OpDispatch:
 		addUse(dst)
 		addUse(src1)
 		addUse(src2)
@@ -299,11 +308,11 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 		return
 
 	// Utility.
-	case vm.OpClose:
+	case bytecode.OpClose:
 		addUse(dst)
 		addDef(dst)
 		return
-	case vm.OpSleep:
+	case bytecode.OpSleep:
 		addUse(dst)
 		return
 	}
@@ -312,7 +321,7 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 }
 
 // computeUseDefForInstruction updates Use and Def sets for an instruction
-func computeUseDefForInstruction(inst vm.Instruction, info *LivenessInfo) {
+func computeUseDefForInstruction(inst bytecode.Instruction, info *LivenessInfo) {
 	uses, defs := instructionUseDef(inst)
 
 	// Use-before-def within the block
@@ -332,10 +341,12 @@ func mapsEqual(a, b map[int]bool) bool {
 	if len(a) != len(b) {
 		return false
 	}
+
 	for k := range a {
 		if !b[k] {
 			return false
 		}
 	}
+
 	return true
 }

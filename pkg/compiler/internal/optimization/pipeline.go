@@ -3,7 +3,7 @@ package optimization
 import (
 	"fmt"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 type (
@@ -40,7 +40,7 @@ func (p *Pipeline) Add(pass Pass) {
 }
 
 // Run executes all passes in the pipeline
-func (p *Pipeline) Run(program *vm.Program) (*PipelineResult, error) {
+func (p *Pipeline) Run(program *bytecode.Program) (*PipelineResult, error) {
 	result := &PipelineResult{
 		Modified: false,
 	}
@@ -54,6 +54,7 @@ func (p *Pipeline) Run(program *vm.Program) (*PipelineResult, error) {
 	}
 
 	var modified bool
+
 	ctx := &PassContext{
 		Program:  program,
 		CFG:      cfg,
@@ -95,7 +96,7 @@ func (p *Pipeline) Run(program *vm.Program) (*PipelineResult, error) {
 	return result, nil
 }
 
-func Run(program *vm.Program, level Level) error {
+func Run(program *bytecode.Program, level Level) error {
 	if level <= LevelNone {
 		return nil
 	}

@@ -5,30 +5,30 @@ import (
 	"fmt"
 	"text/tabwriter"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 // Disassemble returns a human-readable disassembly of the given program.
-func Disassemble(p *vm.Program, options ...DisassemblerOption) (string, error) {
+func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, error) {
 	if p == nil {
 		return "", ErrInvalidProgram
 	}
 
 	newDisassemblerOptions(options...)
 
-	labels := collectLabels(p.Bytecode, p.Labels)
+	labels := collectLabels(p.Bytecode, p.Metadata.Labels)
 
 	var buf bytes.Buffer
 	w := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
 
+	// Header: functions
+	for name, args := range p.Metadata.Functions {
+		_, _ = fmt.Fprintln(w, formatFunction(name, args))
+	}
+
 	// Header: params
 	for _, name := range p.Params {
 		_, _ = fmt.Fprintln(w, formatParam(name))
-	}
-
-	// Header: functions
-	for name, args := range p.Functions {
-		_, _ = fmt.Fprintln(w, formatFunction(name, args))
 	}
 
 	// Header: constants
@@ -55,7 +55,7 @@ func Disassemble(p *vm.Program, options ...DisassemblerOption) (string, error) {
 }
 
 // collectLabels identifies jump targets and assigns symbolic labels to them.
-func collectLabels(bytecode []vm.Instruction, names map[int]string) map[int]string {
+func collectLabels(instructions []bytecode.Instruction, names map[int]string) map[int]string {
 	labels := make(map[int]string)
 	counter := 0
 
@@ -65,9 +65,9 @@ func collectLabels(bytecode []vm.Instruction, names map[int]string) map[int]stri
 	}
 
 	// Collect unmarked jump targets
-	for _, instr := range bytecode {
+	for _, instr := range instructions {
 		switch instr.Opcode {
-		case vm.OpJump, vm.OpJumpIfFalse, vm.OpJumpIfTrue, vm.OpJumpIfNone, vm.OpIterNext, vm.OpIterSkip, vm.OpIterLimit:
+		case bytecode.OpJump, bytecode.OpJumpIfFalse, bytecode.OpJumpIfTrue, bytecode.OpJumpIfNone, bytecode.OpIterNext, bytecode.OpIterSkip, bytecode.OpIterLimit:
 			target := int(instr.Operands[0])
 
 			if name, ok := names[target]; !ok || name == "" {
@@ -83,7 +83,7 @@ func collectLabels(bytecode []vm.Instruction, names map[int]string) map[int]stri
 }
 
 // disasmLine renders a single instruction into text, with optional constants and location info.
-func disasmLine(ip int, instr vm.Instruction, p *vm.Program, labels map[int]string) string {
+func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels map[int]string) string {
 	ops := instr.Operands
 	var out string
 
@@ -91,33 +91,33 @@ func disasmLine(ip int, instr vm.Instruction, p *vm.Program, labels map[int]stri
 
 	switch opcode {
 	// Op Jmp
-	case vm.OpJump:
+	case bytecode.OpJump:
 		out = fmt.Sprintf("%d: %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels))
 
 	// Op Jmp R
-	case vm.OpJumpIfTrue, vm.OpJumpIfFalse, vm.OpJumpIfNone, vm.OpIterNext:
+	case bytecode.OpJumpIfTrue, bytecode.OpJumpIfFalse, bytecode.OpJumpIfNone, bytecode.OpIterNext:
 		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels), formatOperand(ops[1]))
 
 	// Op Jmp R, R
-	case vm.OpIterSkip, vm.OpIterLimit:
+	case bytecode.OpIterSkip, bytecode.OpIterLimit:
 		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels), formatOperand(ops[1]), formatOperand(ops[2]))
 
 	// Op R
-	case vm.OpLoadNone, vm.OpLoadZero, vm.OpCall0, vm.OpClose, vm.OpSleep, vm.OpRand, vm.OpIncr, vm.OpDecr, vm.OpReturn:
+	case bytecode.OpLoadNone, bytecode.OpLoadZero, bytecode.OpCall0, bytecode.OpClose, bytecode.OpSleep, bytecode.OpRand, bytecode.OpIncr, bytecode.OpDecr, bytecode.OpReturn:
 		out = fmt.Sprintf("%d: %s %s", ip, opcode, formatOperand(ops[0]))
 
 	// Op R Arg
-	case vm.OpLoadBool, vm.OpLoadArray, vm.OpLoadObject, vm.OpDataSet, vm.OpDataSetCollector, vm.OpDataSetSorter:
+	case bytecode.OpLoadBool, bytecode.OpLoadArray, bytecode.OpLoadObject, bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter:
 		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, formatOperand(ops[0]), formatArgument(ops[1]))
 
 	// Op R C
-	case vm.OpLoadConst:
+	case bytecode.OpLoadConst:
 		cIdx := ops[1].Constant()
 		comment := constValue(p, cIdx)
 		out = fmt.Sprintf("%d: %s %s %s ; %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), comment)
 
 	// Op R R
-	case vm.OpMove, vm.OpLength, vm.OpType, vm.OpExists, vm.OpCall1, vm.OpIter, vm.OpIterValue, vm.OpIterKey, vm.OpPush, vm.OpArrayPush:
+	case bytecode.OpMove, bytecode.OpLength, bytecode.OpType, bytecode.OpExists, bytecode.OpCall1, bytecode.OpIter, bytecode.OpIterValue, bytecode.OpIterKey, bytecode.OpPush, bytecode.OpArrayPush:
 		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]))
 
 	// Op R R R

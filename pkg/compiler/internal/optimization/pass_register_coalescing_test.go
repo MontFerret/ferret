@@ -4,96 +4,96 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func TestRegisterCoalescing_CoalescesWhenSrcDies(t *testing.T) {
-	program := &vm.Program{
+	program := &bytecode.Program{
 		Constants: []runtime.Value{
 			runtime.Int(10),
 		},
 		Registers: 4,
-		Bytecode: []vm.Instruction{
-			vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(1), vm.NewConstant(0)),
-			vm.NewInstruction(vm.OpMove, vm.NewRegister(2), vm.NewRegister(1)),
-			vm.NewInstruction(vm.OpAdd, vm.NewRegister(3), vm.NewRegister(2), vm.NewRegister(2)),
-			vm.NewInstruction(vm.OpReturn, vm.NewRegister(3)),
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(2), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(3), bytecode.NewRegister(2), bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(3)),
 		},
 	}
 
 	runCoalescing(t, program)
 
-	expected := []vm.Instruction{
-		vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(1), vm.NewConstant(0)),
-		vm.NewInstruction(vm.OpMove, vm.NewRegister(1), vm.NewRegister(1)),
-		vm.NewInstruction(vm.OpAdd, vm.NewRegister(1), vm.NewRegister(1), vm.NewRegister(1)),
-		vm.NewInstruction(vm.OpReturn, vm.NewRegister(1)),
+	expected := []bytecode.Instruction{
+		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+		bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(1), bytecode.NewRegister(1)),
+		bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(1), bytecode.NewRegister(1), bytecode.NewRegister(1)),
+		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
 	}
 
 	assertBytecodeEqual(t, program.Bytecode, expected)
 }
 
 func TestRegisterCoalescing_NoCoalesceWhenInterfering(t *testing.T) {
-	program := &vm.Program{
+	program := &bytecode.Program{
 		Constants: []runtime.Value{
 			runtime.Int(1),
 		},
 		Registers: 4,
-		Bytecode: []vm.Instruction{
-			vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(1), vm.NewConstant(0)),
-			vm.NewInstruction(vm.OpMove, vm.NewRegister(2), vm.NewRegister(1)),
-			vm.NewInstruction(vm.OpIncr, vm.NewRegister(2)),
-			vm.NewInstruction(vm.OpAdd, vm.NewRegister(3), vm.NewRegister(2), vm.NewRegister(1)),
-			vm.NewInstruction(vm.OpReturn, vm.NewRegister(3)),
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(2), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpIncr, bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(3), bytecode.NewRegister(2), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(3)),
 		},
 	}
 
 	runCoalescing(t, program)
 
-	expected := []vm.Instruction{
-		vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(1), vm.NewConstant(0)),
-		vm.NewInstruction(vm.OpMove, vm.NewRegister(2), vm.NewRegister(1)),
-		vm.NewInstruction(vm.OpIncr, vm.NewRegister(2)),
-		vm.NewInstruction(vm.OpAdd, vm.NewRegister(1), vm.NewRegister(2), vm.NewRegister(1)),
-		vm.NewInstruction(vm.OpReturn, vm.NewRegister(1)),
+	expected := []bytecode.Instruction{
+		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+		bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(2), bytecode.NewRegister(1)),
+		bytecode.NewInstruction(bytecode.OpIncr, bytecode.NewRegister(2)),
+		bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(1), bytecode.NewRegister(2), bytecode.NewRegister(1)),
+		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
 	}
 
 	assertBytecodeEqual(t, program.Bytecode, expected)
 }
 
 func TestRegisterCoalescing_NoCoalesceForRangeSensitiveRegs(t *testing.T) {
-	program := &vm.Program{
+	program := &bytecode.Program{
 		Constants: []runtime.Value{
 			runtime.Int(1),
 			runtime.Int(2),
 		},
 		Registers: 6,
-		Bytecode: []vm.Instruction{
-			vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(1), vm.NewConstant(0)),
-			vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(2), vm.NewConstant(1)),
-			vm.NewInstruction(vm.OpMove, vm.NewRegister(3), vm.NewRegister(1)),
-			vm.NewInstruction(vm.OpCall, vm.NewRegister(4), vm.NewRegister(1), vm.NewRegister(2)),
-			vm.NewInstruction(vm.OpAdd, vm.NewRegister(5), vm.NewRegister(3), vm.NewRegister(1)),
-			vm.NewInstruction(vm.OpReturn, vm.NewRegister(5)),
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(2), bytecode.NewConstant(1)),
+			bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(3), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpCall, bytecode.NewRegister(4), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(5), bytecode.NewRegister(3), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(5)),
 		},
 	}
 
 	runCoalescing(t, program)
 
-	expected := []vm.Instruction{
-		vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(1), vm.NewConstant(0)),
-		vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(2), vm.NewConstant(1)),
-		vm.NewInstruction(vm.OpMove, vm.NewRegister(3), vm.NewRegister(1)),
-		vm.NewInstruction(vm.OpCall, vm.NewRegister(4), vm.NewRegister(1), vm.NewRegister(2)),
-		vm.NewInstruction(vm.OpAdd, vm.NewRegister(3), vm.NewRegister(3), vm.NewRegister(1)),
-		vm.NewInstruction(vm.OpReturn, vm.NewRegister(3)),
+	expected := []bytecode.Instruction{
+		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(2), bytecode.NewConstant(1)),
+		bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(3), bytecode.NewRegister(1)),
+		bytecode.NewInstruction(bytecode.OpCall, bytecode.NewRegister(4), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+		bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(3), bytecode.NewRegister(3), bytecode.NewRegister(1)),
+		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(3)),
 	}
 
 	assertBytecodeEqual(t, program.Bytecode, expected)
 }
 
-func runCoalescing(t *testing.T, program *vm.Program) {
+func runCoalescing(t *testing.T, program *bytecode.Program) {
 	t.Helper()
 
 	p := NewPipeline()
@@ -105,7 +105,7 @@ func runCoalescing(t *testing.T, program *vm.Program) {
 	}
 }
 
-func assertBytecodeEqual(t *testing.T, got, want []vm.Instruction) {
+func assertBytecodeEqual(t *testing.T, got, want []bytecode.Instruction) {
 	t.Helper()
 
 	if !reflect.DeepEqual(got, want) {

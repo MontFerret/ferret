@@ -3,7 +3,7 @@ package core
 import (
 	"fmt"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 type LoopTable struct {
@@ -31,7 +31,7 @@ func (lt *LoopTable) NewForWhileLoop(loopType LoopType, distinct bool) *Loop {
 func (lt *LoopTable) NewLoop(kind LoopKind, loopType LoopType, distinct bool) *Loop {
 	parent := lt.Current()
 	allocate := parent == nil || parent.Type != PassThroughLoop
-	result := vm.NoopOperand
+	result := bytecode.NoopOperand
 
 	if loopType != TemporalLoop {
 		if allocate {

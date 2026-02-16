@@ -25,6 +25,26 @@ func TestCollectAggregate(t *testing.T) {
 			map[string]any{"gender": "m", "minAge": 31, "grouped": []map[string]any{{"u": map[string]any{"gender": "m", "age": 31}}, {"u": map[string]any{"gender": "m", "age": 45}}}},
 		}, "Should support COLLECT INTO + AGGREGATE"),
 		CaseArray(`
+			LET users = [
+				{ group: "a", age: 1 },
+				{ group: "a", age: "oops" },
+				{ group: "b", age: 2 },
+				{ group: "b", age: null }
+			]
+			FOR u IN users
+				COLLECT g = u.group
+				AGGREGATE
+					cnt = COUNT(u.age),
+					sum = SUM(u.age),
+					min = MIN(u.age),
+					max = MAX(u.age),
+					avg = AVERAGE(u.age)
+				RETURN { g, cnt, sum, min, max, avg }
+		`, []any{
+			map[string]any{"g": "a", "cnt": 2, "sum": 1, "min": 1, "max": 1, "avg": 1},
+			map[string]any{"g": "b", "cnt": 2, "sum": 2, "min": 2, "max": 2, "avg": 2},
+		}, "Should aggregate per group and skip non-numbers in numeric aggregates"),
+		CaseArray(`
 			LET users = []
 			FOR u IN users
 				COLLECT gender = u.gender
@@ -349,6 +369,44 @@ FOR u IN users
 		`,
 			[]any{map[string]any{"minAge": nil, "maxAge": nil}},
 			"Should handle empty arrays gracefully"),
+		CaseArray(`
+			LET values = [1, "x", 3, null, 5]
+			FOR v IN values
+				COLLECT AGGREGATE
+					cnt = COUNT(v),
+					sum = SUM(v),
+					min = MIN(v),
+					max = MAX(v),
+					avg = AVERAGE(v)
+				RETURN {
+					cnt,
+					sum,
+					min,
+					max,
+					avg
+				}
+		`,
+			[]any{map[string]any{"cnt": 5, "sum": 9, "min": 1, "max": 5, "avg": 3}},
+			"Should handle mixed types in global aggregation"),
+		CaseArray(`
+			LET values = ["a", null, "b"]
+			FOR v IN values
+				COLLECT AGGREGATE
+					cnt = COUNT(v),
+					sum = SUM(v),
+					min = MIN(v),
+					max = MAX(v),
+					avg = AVERAGE(v)
+				RETURN {
+					cnt,
+					sum,
+					min,
+					max,
+					avg
+				}
+		`,
+			[]any{map[string]any{"cnt": 3, "sum": 0, "min": nil, "max": nil, "avg": 0}},
+			"Should handle non-numeric values in global aggregation"),
 		CaseArray(`
 LET users = [
 				{

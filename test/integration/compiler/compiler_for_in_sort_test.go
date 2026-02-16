@@ -3,7 +3,7 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 func TestSort(t *testing.T) {
@@ -13,7 +13,7 @@ FOR s IN []
 	SORT s
 	RETURN s
 `, BC{
-			I(vm.OpReturn, 0, 7),
+			I(bytecode.OpReturn, 0, 7),
 		}),
 	})
 }
