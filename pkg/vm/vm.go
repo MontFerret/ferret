@@ -144,6 +144,49 @@ loop:
 				break
 			}
 
+			if count == 2 {
+				s1 := runtime.ToString(reg[start])
+				s2 := runtime.ToString(reg[start+1])
+
+				if s1 == runtime.EmptyString {
+					reg[dst] = s2
+					break
+				}
+
+				if s2 == runtime.EmptyString {
+					reg[dst] = s1
+					break
+				}
+
+				reg[dst] = runtime.NewString(string(s1) + string(s2))
+				break
+			}
+
+			if count == 3 {
+				s1 := runtime.ToString(reg[start])
+				s2 := runtime.ToString(reg[start+1])
+				s3 := runtime.ToString(reg[start+2])
+
+				if s1 == runtime.EmptyString {
+					if s2 == runtime.EmptyString {
+						reg[dst] = s3
+						break
+					}
+					if s3 == runtime.EmptyString {
+						reg[dst] = s2
+						break
+					}
+				} else if s2 == runtime.EmptyString {
+					if s3 == runtime.EmptyString {
+						reg[dst] = s1
+						break
+					}
+				}
+
+				reg[dst] = runtime.NewString(string(s1) + string(s2) + string(s3))
+				break
+			}
+
 			var b strings.Builder
 
 			for i := 0; i < count; i++ {
