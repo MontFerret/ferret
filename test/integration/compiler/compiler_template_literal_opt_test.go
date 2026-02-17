@@ -49,20 +49,39 @@ func assertOpcodeCount(t *testing.T, prog *bytecode.Program, op bytecode.Opcode,
 	}
 }
 
-func TestTemplateLiteral_ConstFoldedToSingleConst(t *testing.T) {
-	prog := compileNoOpt(t, "RETURN `foo-${1}-bar-${true}`")
-	assertOpcodeCount(t, prog, bytecode.OpAdd, 0)
-	out := execProgram(t, prog)
-	if out != "foo-1-bar-true" {
-		t.Fatalf("expected %q, got %v", "foo-1-bar-true", out)
+func TestTemplateLiteral_ConstantFolding(t *testing.T) {
+	testCases := []struct {
+		name     string
+		query    string
+		opAdd    int
+		expected string
+	}{
+		{
+			name:     "fully constant template",
+			query:    "RETURN `foo-${1}-bar-${true}`",
+			opAdd:    0,
+			expected: "foo-1-bar-true",
+		},
+		{
+			name:     "folds constant expressions into chunks",
+			query:    "LET x = \"X\" RETURN `a-${1}-b-${x}-c-${true}-d`",
+			opAdd:    2,
+			expected: "a-1-b-X-c-true-d",
+		},
 	}
-}
 
-func TestTemplateLiteral_FoldsConstExpressionsIntoChunks(t *testing.T) {
-	prog := compileNoOpt(t, "LET x = \"X\" RETURN `a-${1}-b-${x}-c-${true}-d`")
-	assertOpcodeCount(t, prog, bytecode.OpAdd, 2)
-	out := execProgram(t, prog)
-	if out != "a-1-b-X-c-true-d" {
-		t.Fatalf("expected %q, got %v", "a-1-b-X-c-true-d", out)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			prog := compileNoOpt(t, tc.query)
+			assertOpcodeCount(t, prog, bytecode.OpAdd, tc.opAdd)
+			out := execProgram(t, prog)
+			str, ok := out.(string)
+			if !ok {
+				t.Fatalf("expected string output, got %T", out)
+			}
+			if str != tc.expected {
+				t.Fatalf("expected %q, got %v", tc.expected, str)
+			}
+		})
 	}
 }
