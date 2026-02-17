@@ -25,12 +25,14 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 
 	ctx := context.Background()
 	instance := vm.New(prog)
-	env := vm.NewEnvironment(opts)
+	env := vm.NewEnvironment(options)
 
-	println("Query:")
-	println(expression)
-	println("Bytecode:")
-	println(asm.Disassemble(prog))
+	if testing.Verbose() {
+		println("Query:")
+		println(expression)
+		println("Bytecode:")
+		println(asm.Disassemble(prog))
+	}
 
 	b.ResetTimer()
 

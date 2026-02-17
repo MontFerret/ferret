@@ -34,6 +34,14 @@ func (p *PeepholePass) Run(ctx *PassContext) (*PassResult, error) {
 	prog := ctx.Program
 	bytecodeLen := len(prog.Bytecode)
 	targets := collectJumpTargets(prog.Bytecode, prog.CatchTable)
+	var liveness map[int]*LivenessInfo
+	var blockByInstruction []*BasicBlock
+
+	if ctx.CFG != nil {
+		liveness = computeLiveness(ctx.CFG)
+		blockByInstruction = buildInstructionBlockMap(ctx.CFG, bytecodeLen)
+	}
+
 	keep := make([]bool, bytecodeLen)
 
 	for i := range keep {
@@ -58,7 +66,7 @@ func (p *PeepholePass) Run(ctx *PassContext) (*PassResult, error) {
 					dstReg := next.Operands[0].Register()
 
 					if next.Operands[2].Register() == tmpReg {
-						if dstReg == tmpReg || !regUsedAfter(prog.Bytecode, i+1, tmpReg) {
+						if dstReg == tmpReg || !regLiveAfterInstruction(prog.Bytecode, i+1, tmpReg, blockByInstruction, liveness) {
 							next.Opcode = bytecode.OpAddConst
 							next.Operands[2] = inst.Operands[1]
 							prog.Bytecode[i+1] = next
@@ -241,6 +249,71 @@ func regUsedAfter(code []bytecode.Instruction, start int, reg int) bool {
 	}
 
 	return false
+}
+
+func buildInstructionBlockMap(cfg *ControlFlowGraph, codeLen int) []*BasicBlock {
+	if cfg == nil || codeLen <= 0 {
+		return nil
+	}
+
+	byInstruction := make([]*BasicBlock, codeLen)
+
+	for _, block := range cfg.Blocks {
+		if block == nil || block == cfg.Exit || len(block.Instructions) == 0 {
+			continue
+		}
+
+		start := block.Start
+		end := block.End
+
+		if start < 0 {
+			start = 0
+		}
+
+		if end >= codeLen {
+			end = codeLen - 1
+		}
+
+		for idx := start; idx <= end; idx++ {
+			byInstruction[idx] = block
+		}
+	}
+
+	return byInstruction
+}
+
+func regLiveAfterInstruction(code []bytecode.Instruction, start int, reg int, blockByInstruction []*BasicBlock, liveness map[int]*LivenessInfo) bool {
+	if reg <= 0 || start < 0 || start >= len(code) {
+		return false
+	}
+
+	if len(blockByInstruction) == len(code) {
+		block := blockByInstruction[start]
+
+		if block != nil {
+			startInBlock := start - block.Start
+
+			for i := startInBlock + 1; i < len(block.Instructions); i++ {
+				uses, defs := instructionUseDef(block.Instructions[i])
+
+				if regIn(uses, reg) {
+					return true
+				}
+
+				if regIn(defs, reg) {
+					return false
+				}
+			}
+
+			if info := liveness[block.ID]; info != nil {
+				return info.LiveOut[reg]
+			}
+
+			return false
+		}
+	}
+
+	return regUsedAfter(code, start, reg)
 }
 
 func remapIndexForward(indexMap []int, keep []bool, old int) int {

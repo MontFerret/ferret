@@ -3,6 +3,7 @@ package optimization
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -255,6 +256,41 @@ func applyConstFolding(inst *bytecode.Instruction, state constState, program *by
 					newConsts[dst] = out
 					modified = replaceWithConstLoad(inst, dst, out, program, constIndex) || modified
 				}
+			}
+		}
+	case bytecode.OpConcat:
+		if inst.Operands[0].IsRegister() && inst.Operands[1].IsRegister() {
+			dst := inst.Operands[0].Register()
+			start := inst.Operands[1].Register()
+			count := int(inst.Operands[2])
+
+			if count <= 0 {
+				newConsts[dst] = runtime.EmptyString
+				modified = replaceWithConstLoad(inst, dst, runtime.EmptyString, program, constIndex) || modified
+				break
+			}
+
+			if start <= 0 {
+				break
+			}
+
+			folded := true
+			var b strings.Builder
+
+			for i := 0; i < count; i++ {
+				val, ok := state[start+i]
+				if !ok {
+					folded = false
+					break
+				}
+
+				b.WriteString(runtime.ToString(val).String())
+			}
+
+			if folded {
+				out := runtime.NewString(b.String())
+				newConsts[dst] = out
+				modified = replaceWithConstLoad(inst, dst, out, program, constIndex) || modified
 			}
 		}
 	}

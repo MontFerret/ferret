@@ -11,8 +11,15 @@ import (
 
 func runPeephole(t *testing.T, program *bytecode.Program) (*PassResult, error) {
 	t.Helper()
+
+	builder := NewBuilder(program)
+	cfg, err := builder.Build()
+	if err != nil {
+		return nil, err
+	}
+
 	pass := NewPeepholePass()
-	return pass.Run(&PassContext{Program: program})
+	return pass.Run(&PassContext{Program: program, CFG: cfg})
 }
 
 func TestPeephole_RemovesRedundantLoads(t *testing.T) {
@@ -75,6 +82,39 @@ func TestPeephole_RewritesAddConstRight(t *testing.T) {
 	}
 	if !add.Operands[2].IsConstant() || add.Operands[2].Constant() != 1 {
 		t.Fatalf("expected constant operand C1, got %s", add.Operands[2])
+	}
+}
+
+func TestPeephole_SkipsAddConstRewriteWhenValueLiveAcrossJump(t *testing.T) {
+	program := &bytecode.Program{
+		Constants: []runtime.Value{
+			runtime.NewInt(2),
+		},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(2), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(1), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpJump, bytecode.Operand(5)),
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(2), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+		},
+	}
+
+	res, err := runPeephole(t, program)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.Modified {
+		t.Fatalf("expected peephole pass to keep live temp register load")
+	}
+	if len(program.Bytecode) != 6 {
+		t.Fatalf("expected 6 instructions, got %d", len(program.Bytecode))
+	}
+	if program.Bytecode[0].Opcode != bytecode.OpLoadConst {
+		t.Fatalf("expected first instruction to remain LOADC, got %s", program.Bytecode[0].Opcode)
+	}
+	if program.Bytecode[1].Opcode != bytecode.OpAdd {
+		t.Fatalf("expected second instruction to remain ADD, got %s", program.Bytecode[1].Opcode)
 	}
 }
 

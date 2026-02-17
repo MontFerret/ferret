@@ -9,7 +9,7 @@ import (
 
 func TestRegisterCoalescing(t *testing.T) {
 	RunUseCases(t, compiler.O1, []UseCase{
-		RegistersCase("LET foo = 'bar' RETURN `${foo} baz`", 3, "bar baz", "Should coalesce registers across string interpolation"),
+		RegistersCase("LET foo = 'bar' RETURN `${foo} baz`", 1, "bar baz", "Should coalesce registers across string interpolation"),
 		RegistersCaseWith("RETURN `${@foo} baz`", 3, "bar baz", map[string]runtime.Value{"foo": runtime.NewString("bar")}, "Should coalesce registers across string interpolation with param"),
 		RegistersCase(`
 LET a = 10
