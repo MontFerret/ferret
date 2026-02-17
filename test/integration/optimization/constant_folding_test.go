@@ -11,6 +11,34 @@ import (
 
 func TestConstantFolding(t *testing.T) {
 	RunUseCases(t, compiler.O1, []UseCase{
+		OpcodeCase("RETURN ``", OpcodeCount{
+			Count: map[bytecode.Opcode]int{
+				bytecode.OpConcat:    0,
+				bytecode.OpLoadConst: 1,
+			},
+		}, "", "should fold empty template literal into a single empty string constant"),
+
+		OpcodeCase("RETURN `hello`", OpcodeCount{
+			Count: map[bytecode.Opcode]int{
+				bytecode.OpConcat:    0,
+				bytecode.OpLoadConst: 1,
+			},
+		}, "hello", "should fold literal-only template into a single string constant"),
+
+		OpcodeCase("RETURN `use \\`backtick\\``", OpcodeCount{
+			Count: map[bytecode.Opcode]int{
+				bytecode.OpConcat:    0,
+				bytecode.OpLoadConst: 1,
+			},
+		}, "use `backtick`", "should fold escaped backtick in template literal"),
+
+		OpcodeCase("RETURN `${NONE}`", OpcodeCount{
+			Count: map[bytecode.Opcode]int{
+				bytecode.OpConcat:    0,
+				bytecode.OpLoadConst: 1,
+			},
+		}, "", "should fold NONE interpolation into empty string"),
+
 		OpcodeCase("RETURN `foo-${1}-bar-${true}`", OpcodeCount{
 			Count: map[bytecode.Opcode]int{
 				bytecode.OpConcat:    0,
@@ -44,6 +72,18 @@ func TestConstantFolding(t *testing.T) {
 				bytecode.OpConcat: 1,
 			},
 		}, "pre-bar", "should not fold template literal with prefix literal and param interpolation"), vm.WithParam("foo", runtime.NewString("bar"))),
+
+		Options(OpcodeCase("RETURN `pre-${@foo}-post`", OpcodeCount{
+			Count: map[bytecode.Opcode]int{
+				bytecode.OpConcat: 1,
+			},
+		}, "pre-bar-post", "should not fold template literal with suffix literal and param interpolation"), vm.WithParam("foo", runtime.NewString("bar"))),
+
+		Options(OpcodeCase("RETURN `${@foo}-${1 + 2}`", OpcodeCount{
+			Count: map[bytecode.Opcode]int{
+				bytecode.OpConcat: 1,
+			},
+		}, "bar-3", "should keep concat with params but fold constant subexpressions"), vm.WithParam("foo", runtime.NewString("bar"))),
 
 		Options(OpcodeCase("RETURN `cost=\\${1}`", OpcodeCount{
 			Count: map[bytecode.Opcode]int{
