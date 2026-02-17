@@ -9,6 +9,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	"github.com/MontFerret/ferret/v2/pkg/asm"
 
@@ -41,6 +42,21 @@ func SkipByteCodeCase(expression string, expected []bytecode.Instruction, desc .
 	return Skip(ByteCodeCase(expression, expected, desc...))
 }
 
+func OpcodeCase[T OpcodeExpectation](expression string, expectation T, out any, desc ...string) UseCase {
+	return UseCase{
+		TestCase: base.NewCase(expression, expectation, ShouldCheckOpcode, desc...),
+		Execution: Execution{
+			Run:       true,
+			Expected:  out,
+			Assertion: convey.ShouldEqual,
+		},
+	}
+}
+
+func SkipOpcodeCase[T OpcodeExpectation](expression string, expectation T, out any, desc ...string) UseCase {
+	return Skip(OpcodeCase(expression, expectation, out, desc...))
+}
+
 func RegistersCase(expression string, num int, output any, desc ...string) UseCase {
 	return NewCase(expression, num, ShouldUseEqRegisters, Execution{
 		Run:       true,
@@ -49,7 +65,20 @@ func RegistersCase(expression string, num int, output any, desc ...string) UseCa
 	}, desc...)
 }
 
-func SkipAtMostRegistersCase(expression string, num int, output any, desc ...string) UseCase {
+func SkipRegistersCase(expression string, num int, output any, desc ...string) UseCase {
+	return Skip(RegistersCase(expression, num, output, desc...))
+}
+
+func RegistersCaseWith(expression string, num int, output any, params map[string]runtime.Value, desc ...string) UseCase {
+	return NewCase(expression, num, ShouldUseEqRegisters, Execution{
+		Run:       true,
+		Expected:  output,
+		Assertion: convey.ShouldEqual,
+		Options:   []vm.EnvironmentOption{vm.WithParams(params)},
+	}, desc...)
+}
+
+func SkipRegistersCaseWith(expression string, num int, output any, desc ...string) UseCase {
 	return Skip(RegistersCase(expression, num, output, desc...))
 }
 
@@ -143,9 +172,20 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 						vm.WithFunctions(base.ForWhileHelpers()),
 					}
 
+					if len(useCase.Execution.Options) > 0 {
+						options = append(options, useCase.Execution.Options...)
+					}
+
 					assertion := useCase.Execution.Assertion
 					expected := useCase.Execution.Expected
 					out, err := base.Exec(actual, useCase.RawOutput, options...)
+
+					_, ok := expected.(error)
+
+					if ok {
+						convey.So(err, convey.ShouldNotBeNil)
+						return
+					}
 
 					convey.So(err, convey.ShouldBeNil)
 

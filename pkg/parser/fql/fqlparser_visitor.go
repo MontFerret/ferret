@@ -172,6 +172,12 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#stringLiteral.
 	VisitStringLiteral(ctx *StringLiteralContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#templateLiteral.
+	VisitTemplateLiteral(ctx *TemplateLiteralContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#templateElement.
+	VisitTemplateElement(ctx *TemplateElementContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#floatLiteral.
 	VisitFloatLiteral(ctx *FloatLiteralContext) interface{}
 

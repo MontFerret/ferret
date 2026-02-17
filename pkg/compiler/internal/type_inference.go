@@ -67,7 +67,7 @@ func literalValue(ctx fql.ILiteralContext) (runtime.Value, bool) {
 	case ctx.NoneLiteral() != nil:
 		return runtime.None, true
 	case ctx.StringLiteral() != nil:
-		return parseStringLiteral(ctx.StringLiteral()), true
+		return parseStringLiteralConst(ctx.StringLiteral())
 	case ctx.IntegerLiteral() != nil:
 		val, err := strconv.Atoi(ctx.IntegerLiteral().GetText())
 		if err != nil {

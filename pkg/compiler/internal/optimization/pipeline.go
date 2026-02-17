@@ -105,6 +105,7 @@ func Run(program *bytecode.Program, level Level) error {
 	p.Add(NewConstantPropagationPass())
 	p.Add(NewLivenessAnalysisPass())
 	p.Add(NewRegisterCoalescingPass())
+	p.Add(NewPeepholePass())
 
 	_, err := p.Run(program)
 

@@ -1,5 +1,7 @@
 lexer grammar FqlLexer;
 
+tokens { TemplateExprEnd }
+
 // Skip
 MultiLineComment: '/*' .*? '*/'             -> channel(HIDDEN);
 SingleLineComment: '//' ~[\r\n\u2028\u2029]* -> channel(HIDDEN);
@@ -16,8 +18,17 @@ OpenBracket: '[';
 CloseBracket: ']';
 OpenParen: '(';
 CloseParen: ')';
-OpenBrace: '{';
-CloseBrace: '}';
+OpenBrace: '{' { if len(l.templateDepth) > 0 { l.templateDepth[len(l.templateDepth)-1]++ } };
+CloseBrace: '}' {
+	if len(l.templateDepth) > 0 {
+		l.templateDepth[len(l.templateDepth)-1]--
+		if l.templateDepth[len(l.templateDepth)-1] == 0 {
+			l.templateDepth = l.templateDepth[:len(l.templateDepth)-1]
+			l.PopMode()
+			l.SetType(FqlLexerTemplateExprEnd)
+		}
+	}
+};
 
 // Comparison operators
 Gt: '>';
@@ -100,7 +111,8 @@ Step: 'STEP';
 Param: '@';
 Identifier: Letter+ (Symbols (Identifier)*)* (Digit (Identifier)*)*;
 IgnoreIdentifier: Underscore;
-StringLiteral: SQString | DQSring | BacktickString | TickString;
+StringLiteral: SQString | DQSring | TickString;
+BacktickOpen: '`' -> pushMode(TEMPLATE);
 DurationLiteral
     : DecimalIntegerLiteral (Dot [0-9]+)? ExponentPart? DurationUnit
     ;
@@ -135,7 +147,6 @@ fragment Digit
     ;
 fragment DQSring: '"' ( '\\'. | '""' | ~('"'| '\\') )* '"';
 fragment SQString: '\'' ('\\'. | '\'\'' | ~('\'' | '\\'))* '\'';
-fragment BacktickString: '`' ('\\`' | ~'`')* '`';
 fragment TickString: '´' ('\\´' | ~'´')* '´';
 fragment NamespaceSeparator: '::';
 fragment DurationUnit
@@ -144,4 +155,21 @@ fragment DurationUnit
     | 'M'
     | 'H'
     | 'D'
+    ;
+
+mode TEMPLATE;
+
+TemplateExprStart
+    : '${' {
+		l.templateDepth = append(l.templateDepth, 1)
+		l.PushMode(0)
+	}
+    ;
+
+TemplateChars
+    : ( '\\' . | ~[`\\$] | '$' { p.GetInputStream().LA(1) != '{' }? )+
+    ;
+
+BacktickClose
+    : '`' -> popMode
     ;

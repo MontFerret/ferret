@@ -158,7 +158,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 
 				defer func() {
 					if recovered := recover(); recovered != nil {
-						base.PrintDebugInfo(name, useCase, prog)
+						base.PrintDebugInfo(name, useCase.TestCase, prog)
 
 						t.Error(recovered)
 					}
@@ -182,6 +182,10 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 					vm.WithFunctions(std),
 				}
 				options = append(options, opts...)
+
+				if len(useCase.Options) > 0 {
+					options = append(options, useCase.Options...)
+				}
 
 				expected := useCase.Expected
 				actual, err := base.Exec(prog, useCase.RawOutput, options...)
@@ -230,7 +234,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 				}
 
 				if useCase.DebugOutput {
-					base.PrintDebugInfo(name, useCase, prog)
+					base.PrintDebugInfo(name, useCase.TestCase, prog)
 				}
 			})
 		})

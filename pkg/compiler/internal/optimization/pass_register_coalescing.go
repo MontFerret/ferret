@@ -891,6 +891,10 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 		return idx == 1
 	case bytecode.OpIterSkip, bytecode.OpIterLimit:
 		return idx == 1 || idx == 2
+	case bytecode.OpConcat:
+		return idx == 0 || idx == 1
+	case bytecode.OpAddConst:
+		return idx == 0 || idx == 1
 	case bytecode.OpLoadNone, bytecode.OpLoadZero, bytecode.OpLoadBool, bytecode.OpLoadConst, bytecode.OpLoadParam, bytecode.OpRand:
 		return idx == 0
 	case bytecode.OpLoadArray, bytecode.OpLoadObject:
@@ -962,6 +966,8 @@ func collectRangeSensitiveRegs(program *bytecode.Program) map[int]bool {
 			markFixedRange(inst.Operands[1], 3)
 		case bytecode.OpCall4, bytecode.OpProtectedCall4:
 			markFixedRange(inst.Operands[1], 4)
+		case bytecode.OpConcat:
+			markFixedRange(inst.Operands[1], int(inst.Operands[2]))
 		}
 	}
 

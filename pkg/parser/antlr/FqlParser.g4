@@ -311,6 +311,16 @@ booleanLiteral
 
 stringLiteral
     : StringLiteral
+    | templateLiteral
+    ;
+
+templateLiteral
+    : BacktickOpen templateElement* BacktickClose
+    ;
+
+templateElement
+    : TemplateChars
+    | TemplateExprStart expression TemplateExprEnd
     ;
 
 floatLiteral

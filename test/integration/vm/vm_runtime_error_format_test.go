@@ -3,7 +3,7 @@ package vm_test
 import "testing"
 
 func TestRuntimeErrorFormatting(t *testing.T) {
-	useCases := []UseCase{
+	RunUseCases(t, []UseCase{
 		RuntimeErrorCase(
 			"LET numerator = 10\nRETURN numerator / 0",
 			ExpectedRuntimeError{
@@ -19,7 +19,5 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 			},
 			"script.fql",
 		),
-	}
-
-	RunUseCases(t, useCases)
+	})
 }

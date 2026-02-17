@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
 func isComputedPropertyPrefix(node *TokenNode) bool {
@@ -27,6 +28,34 @@ func isComputedPropertyPrefix(node *TokenNode) bool {
 }
 
 func matchLiteralErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+	if isUnclosedTemplateLiteral(offending) {
+		span := spanFromTokenSafe(offending.Token(), src)
+		span.Start = span.End
+		span.End = span.Start + 1
+
+		err.Message = "Unclosed string literal"
+		err.Hint = "Add a matching '`' to close the string."
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing closing '`'"),
+		}
+
+		return true
+	}
+
+	if isMissing(err.Message) && has(err.Message, "`") {
+		span := spanFromTokenSafe(offending.Token(), src)
+		span.Start = span.End
+		span.End = span.Start + 1
+
+		err.Message = "Unclosed string literal"
+		err.Hint = "Add a matching '`' to close the string."
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing closing '`'"),
+		}
+
+		return true
+	}
+
 	if isNoAlternative(err.Message) {
 		input := extractNoAlternativeInputs(err.Message)
 		if len(input) == 0 {
@@ -240,5 +269,34 @@ func matchLiteralErrors(src *file.Source, err *diagnostics.Diagnostic, offending
 		}
 	}
 
+	return false
+}
+
+func isUnclosedTemplateLiteral(node *TokenNode) bool {
+	if node == nil || node.Token() == nil {
+		return false
+	}
+
+	// If we recently saw a closing backtick, don't treat it as unclosed.
+	if hasPrevTokenType(node, fql.FqlLexerBacktickClose, 12) {
+		return false
+	}
+
+	ttype := node.Token().GetTokenType()
+	if ttype == fql.FqlLexerBacktickOpen || ttype == fql.FqlLexerTemplateChars || ttype == fql.FqlLexerTemplateExprStart || ttype == fql.FqlLexerTemplateExprEnd {
+		return true
+	}
+
+	return hasPrevTokenType(node, fql.FqlLexerBacktickOpen, 12)
+}
+
+func hasPrevTokenType(node *TokenNode, tokenType int, steps int) bool {
+	current := node
+	for i := 0; i < steps && current != nil; i++ {
+		if current.Token() != nil && current.Token().GetTokenType() == tokenType {
+			return true
+		}
+		current = current.Prev()
+	}
 	return false
 }

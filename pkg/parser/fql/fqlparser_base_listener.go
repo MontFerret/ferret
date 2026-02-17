@@ -354,6 +354,18 @@ func (s *BaseFqlParserListener) EnterStringLiteral(ctx *StringLiteralContext) {}
 // ExitStringLiteral is called when production stringLiteral is exited.
 func (s *BaseFqlParserListener) ExitStringLiteral(ctx *StringLiteralContext) {}
 
+// EnterTemplateLiteral is called when production templateLiteral is entered.
+func (s *BaseFqlParserListener) EnterTemplateLiteral(ctx *TemplateLiteralContext) {}
+
+// ExitTemplateLiteral is called when production templateLiteral is exited.
+func (s *BaseFqlParserListener) ExitTemplateLiteral(ctx *TemplateLiteralContext) {}
+
+// EnterTemplateElement is called when production templateElement is entered.
+func (s *BaseFqlParserListener) EnterTemplateElement(ctx *TemplateElementContext) {}
+
+// ExitTemplateElement is called when production templateElement is exited.
+func (s *BaseFqlParserListener) ExitTemplateElement(ctx *TemplateElementContext) {}
+
 // EnterFloatLiteral is called when production floatLiteral is entered.
 func (s *BaseFqlParserListener) EnterFloatLiteral(ctx *FloatLiteralContext) {}
 

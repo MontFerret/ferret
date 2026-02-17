@@ -302,8 +302,11 @@ func isSimpleGroupExpression(expr fql.IExpressionContext) bool {
 	}
 
 	if lit := atom.Literal(); lit != nil {
-		return lit.StringLiteral() != nil ||
-			lit.IntegerLiteral() != nil ||
+		if sl := lit.StringLiteral(); sl != nil {
+			_, ok := parseStringLiteralConst(sl)
+			return ok
+		}
+		return lit.IntegerLiteral() != nil ||
 			lit.FloatLiteral() != nil ||
 			lit.BooleanLiteral() != nil ||
 			lit.NoneLiteral() != nil

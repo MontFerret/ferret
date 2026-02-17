@@ -42,6 +42,8 @@ const (
 
 	// Arithmetic Operations
 	OpAdd
+	OpAddConst
+	OpConcat
 	OpSub
 	OpMulti
 	OpDiv
@@ -218,6 +220,10 @@ func (op Opcode) String() string {
 	// Arithmetic Operations
 	case OpAdd:
 		return "ADD"
+	case OpAddConst:
+		return "ADDC"
+	case OpConcat:
+		return "CONCAT"
 	case OpSub:
 		return "SUB"
 	case OpMulti:

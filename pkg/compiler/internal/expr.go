@@ -419,11 +419,11 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) bytecode.Oper
 			if rightCtx := ctx.ExpressionAtom(1); rightCtx != nil {
 				if lit := rightCtx.Literal(); lit != nil {
 					if sl := lit.StringLiteral(); sl != nil {
-						exp := parseStringLiteral(sl).String()
-
-						// Verify that the expression is a valid regular expression
-						if _, err := regexp.Compile(exp); err != nil {
-							c.ctx.Errors.InvalidRegexExpression(ctx, exp)
+						if exp, ok := parseStringLiteralConst(sl); ok {
+							// Verify that the expression is a valid regular expression
+							if _, err := regexp.Compile(exp.String()); err != nil {
+								c.ctx.Errors.InvalidRegexExpression(ctx, exp.String())
+							}
 						}
 					} else {
 						c.ctx.Errors.InvalidRegexExpression(ctx, lit.GetText())
@@ -1001,11 +1001,6 @@ func (c *ExprCompiler) compileQueryLiteral(ctx fql.IQueryLiteralContext) bytecod
 		kind = strings.ToLower(ident.GetText())
 	}
 
-	payload := runtime.EmptyString
-	if str := ctx.StringLiteral(); str != nil {
-		payload = parseStringLiteral(str)
-	}
-
 	dst := c.ctx.Registers.Allocate()
 	span := diagnostics.SpanFromRuleContext(ctx)
 
@@ -1019,7 +1014,14 @@ func (c *ExprCompiler) compileQueryLiteral(ctx fql.IQueryLiteralContext) bytecod
 		c.ctx.Emitter.EmitArrayPush(dst, kindReg)
 	})
 
-	payloadReg := loadConstant(c.ctx, payload)
+	payloadReg := loadConstant(c.ctx, runtime.EmptyString)
+	if str := ctx.StringLiteral(); str != nil {
+		if val, ok := parseStringLiteralConst(str); ok {
+			payloadReg = loadConstant(c.ctx, val)
+		} else {
+			payloadReg = c.ctx.LiteralCompiler.CompileStringLiteral(str)
+		}
+	}
 
 	c.ctx.Emitter.WithSpan(span, func() {
 		c.ctx.Emitter.EmitArrayPush(dst, payloadReg)

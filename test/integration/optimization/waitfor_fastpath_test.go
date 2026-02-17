@@ -4,129 +4,62 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 )
 
-func TestWaitforFastPath_TrueSkipsSleep(t *testing.T) {
-	prog := compileOptimized(t, `RETURN WAITFOR TRUE TIMEOUT 1s`)
-	assertNoOpcode(t, prog, bytecode.OpSleep)
-	out := execOptimized(t, prog)
-	if out != true {
-		t.Fatalf("expected true, got %v", out)
-	}
-}
+func TestWaitforFastPath(t *testing.T) {
+	RunUseCases(t, compiler.O1, []UseCase{
+		OpcodeCase(`RETURN WAITFOR TRUE TIMEOUT 1s`, OpcodeExistence{
+			NotExists: []bytecode.Opcode{bytecode.OpSleep},
+		}, true, "should skip sleep for true condition"),
 
-func TestWaitforFastPath_FalseTimeoutIsSingleSleep(t *testing.T) {
-	prog := compileOptimized(t, `RETURN WAITFOR FALSE TIMEOUT 10ms`)
-	assertHasOpcode(t, prog, bytecode.OpSleep)
-	assertNoOpcode(t, prog, bytecode.OpJump)
-	assertNoOpcode(t, prog, bytecode.OpJumpIfTrue)
-	assertNoOpcode(t, prog, bytecode.OpJumpIfFalse)
-	out := execOptimized(t, prog)
-	if out != false {
-		t.Fatalf("expected false, got %v", out)
-	}
-}
+		OpcodeCase(`RETURN WAITFOR FALSE TIMEOUT 10ms`, OpcodeExistence{
+			Exists:    []bytecode.Opcode{bytecode.OpSleep},
+			NotExists: []bytecode.Opcode{bytecode.OpJump, bytecode.OpJumpIfTrue, bytecode.OpJumpIfFalse},
+		}, false, "should include sleep for false condition"),
 
-func TestWaitforFastPath_ValueNoneTimeout(t *testing.T) {
-	prog := compileOptimized(t, `RETURN WAITFOR VALUE NONE TIMEOUT 10ms`)
-	assertHasOpcode(t, prog, bytecode.OpSleep)
-	assertNoOpcode(t, prog, bytecode.OpJump)
-	assertNoOpcode(t, prog, bytecode.OpJumpIfTrue)
-	assertNoOpcode(t, prog, bytecode.OpJumpIfFalse)
-	out := execOptimized(t, prog)
-	if out != nil {
-		t.Fatalf("expected nil, got %v", out)
-	}
-}
+		OpcodeCase(`RETURN WAITFOR VALUE NONE TIMEOUT 10ms`, OpcodeExistence{
+			Exists:    []bytecode.Opcode{bytecode.OpSleep},
+			NotExists: []bytecode.Opcode{bytecode.OpJump, bytecode.OpJumpIfTrue, bytecode.OpJumpIfFalse},
+		}, nil, "should include sleep for none value"),
 
-func TestWaitforFastPath_ExistsEmptyArrayTimeout(t *testing.T) {
-	prog := compileOptimized(t, `RETURN WAITFOR EXISTS [] TIMEOUT 10ms`)
-	assertHasOpcode(t, prog, bytecode.OpSleep)
-	assertNoOpcode(t, prog, bytecode.OpJump)
-	assertNoOpcode(t, prog, bytecode.OpJumpIfTrue)
-	assertNoOpcode(t, prog, bytecode.OpJumpIfFalse)
-	out := execOptimized(t, prog)
-	if out != false {
-		t.Fatalf("expected false, got %v", out)
-	}
-}
+		OpcodeCase(`RETURN WAITFOR EXISTS [] TIMEOUT 10ms`, OpcodeExistence{
+			Exists:    []bytecode.Opcode{bytecode.OpSleep},
+			NotExists: []bytecode.Opcode{bytecode.OpJump, bytecode.OpJumpIfTrue, bytecode.OpJumpIfFalse},
+		}, false, "should include sleep for empty array"),
 
-func TestWaitforFastPath_ExistsNonEmptyArrayImmediate(t *testing.T) {
-	prog := compileOptimized(t, `RETURN WAITFOR EXISTS [1] TIMEOUT 10ms`)
-	assertNoOpcode(t, prog, bytecode.OpSleep)
-	out := execOptimized(t, prog)
-	if out != true {
-		t.Fatalf("expected true, got %v", out)
-	}
-}
+		OpcodeCase(`RETURN WAITFOR EXISTS [1] TIMEOUT 10ms`, OpcodeExistence{
+			NotExists: []bytecode.Opcode{bytecode.OpSleep},
+		}, true, "should skip sleep for non-empty array"),
 
-func TestWaitforFastPath_ExistsEmptyObjectTimeout(t *testing.T) {
-	prog := compileOptimized(t, `RETURN WAITFOR EXISTS {} TIMEOUT 10ms`)
-	assertHasOpcode(t, prog, bytecode.OpSleep)
-	assertNoOpcode(t, prog, bytecode.OpJump)
-	assertNoOpcode(t, prog, bytecode.OpJumpIfTrue)
-	assertNoOpcode(t, prog, bytecode.OpJumpIfFalse)
-	out := execOptimized(t, prog)
-	if out != false {
-		t.Fatalf("expected false, got %v", out)
-	}
-}
+		OpcodeCase(`RETURN WAITFOR EXISTS {} TIMEOUT 10ms`, OpcodeExistence{
+			Exists:    []bytecode.Opcode{bytecode.OpSleep},
+			NotExists: []bytecode.Opcode{bytecode.OpJump, bytecode.OpJumpIfTrue, bytecode.OpJumpIfFalse},
+		}, false, "should include sleep for empty object"),
 
-func TestWaitforFastPath_ExistsNonEmptyObjectImmediate(t *testing.T) {
-	prog := compileOptimized(t, `RETURN WAITFOR EXISTS { foo: 1 } TIMEOUT 10ms`)
-	assertNoOpcode(t, prog, bytecode.OpSleep)
-	out := execOptimized(t, prog)
-	if out != true {
-		t.Fatalf("expected true, got %v", out)
-	}
-}
+		OpcodeCase(`RETURN WAITFOR EXISTS { foo: 1 } TIMEOUT 10ms`, OpcodeExistence{
+			NotExists: []bytecode.Opcode{bytecode.OpSleep},
+		}, true, "should skip sleep for non-empty object"),
 
-func TestWaitforFastPath_ExistsEmptyStringTimeout(t *testing.T) {
-	prog := compileOptimized(t, `RETURN WAITFOR EXISTS "" TIMEOUT 10ms`)
-	assertHasOpcode(t, prog, bytecode.OpSleep)
-	assertNoOpcode(t, prog, bytecode.OpJump)
-	assertNoOpcode(t, prog, bytecode.OpJumpIfTrue)
-	assertNoOpcode(t, prog, bytecode.OpJumpIfFalse)
-	out := execOptimized(t, prog)
-	if out != false {
-		t.Fatalf("expected false, got %v", out)
-	}
-}
+		OpcodeCase(`RETURN WAITFOR EXISTS "" TIMEOUT 10ms`, OpcodeExistence{
+			Exists:    []bytecode.Opcode{bytecode.OpSleep},
+			NotExists: []bytecode.Opcode{bytecode.OpJump, bytecode.OpJumpIfTrue, bytecode.OpJumpIfFalse},
+		}, false, "should include sleep for empty string"),
 
-func TestWaitforFastPath_ExistsNonEmptyStringImmediate(t *testing.T) {
-	prog := compileOptimized(t, `RETURN WAITFOR EXISTS "ok" TIMEOUT 10ms`)
-	assertNoOpcode(t, prog, bytecode.OpSleep)
-	out := execOptimized(t, prog)
-	if out != true {
-		t.Fatalf("expected true, got %v", out)
-	}
-}
+		OpcodeCase(`RETURN WAITFOR EXISTS "ok" TIMEOUT 10ms`, OpcodeExistence{
+			NotExists: []bytecode.Opcode{bytecode.OpSleep},
+		}, true, "should skip sleep for non-empty string"),
 
-func TestWaitforFastPath_ValueArrayImmediate(t *testing.T) {
-	prog := compileOptimized(t, `RETURN WAITFOR VALUE [1] TIMEOUT 10ms`)
-	assertNoOpcode(t, prog, bytecode.OpSleep)
-	out := execOptimized(t, prog)
-	arr, ok := out.([]any)
-	if !ok || len(arr) != 1 || arr[0] != float64(1) {
-		t.Fatalf("expected [1], got %v", out)
-	}
-}
+		OpcodeCase(`RETURN WAITFOR VALUE [1] TIMEOUT 10ms`, OpcodeExistence{
+			NotExists: []bytecode.Opcode{bytecode.OpSleep},
+		}, []any{float64(1)}, "should skip sleep for immediate value"),
 
-func TestWaitforFastPath_ValueObjectImmediate(t *testing.T) {
-	prog := compileOptimized(t, `RETURN WAITFOR VALUE { foo: 1 } TIMEOUT 10ms`)
-	assertNoOpcode(t, prog, bytecode.OpSleep)
-	out := execOptimized(t, prog)
-	obj, ok := out.(map[string]any)
-	if !ok || obj["foo"] != float64(1) {
-		t.Fatalf("expected object with foo=1, got %v", out)
-	}
-}
+		OpcodeCase(`RETURN WAITFOR VALUE { foo: 1 } TIMEOUT 10ms`, OpcodeExistence{
+			NotExists: []bytecode.Opcode{bytecode.OpSleep},
+		}, map[string]any{"foo": float64(1)}, "should skip sleep for immediate object"),
 
-func TestWaitforFastPath_ValueStringImmediate(t *testing.T) {
-	prog := compileOptimized(t, `RETURN WAITFOR VALUE "ok" TIMEOUT 10ms`)
-	assertNoOpcode(t, prog, bytecode.OpSleep)
-	out := execOptimized(t, prog)
-	if out != "ok" {
-		t.Fatalf("expected ok, got %v", out)
-	}
+		OpcodeCase(`RETURN WAITFOR VALUE "ok" TIMEOUT 10ms`, OpcodeExistence{
+			NotExists: []bytecode.Opcode{bytecode.OpSleep},
+		}, "ok", "should skip sleep for immediate string"),
+	})
 }

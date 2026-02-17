@@ -63,6 +63,10 @@ func (c *LiteralCompiler) Compile(ctx fql.ILiteralContext) bytecode.Operand {
 // Returns:
 //   - An operand representing the compiled string constant
 func parseStringLiteral(ctx fql.IStringLiteralContext) runtime.String {
+	if ctx == nil || ctx.StringLiteral() == nil {
+		return runtime.EmptyString
+	}
+
 	var b strings.Builder
 
 	// Process each child node in the string literal
@@ -117,6 +121,106 @@ func parseStringLiteral(ctx fql.IStringLiteralContext) runtime.String {
 	return runtime.NewString(b.String())
 }
 
+func parseTemplateChunk(text string) string {
+	if text == "" {
+		return ""
+	}
+
+	var b strings.Builder
+	b.Grow(len(text))
+
+	for i := 0; i < len(text); i++ {
+		ch := text[i]
+		if ch == '\\' && i+1 < len(text) {
+			next := text[i+1]
+			switch next {
+			case 'n':
+				b.WriteByte('\n')
+			case 't':
+				b.WriteByte('\t')
+			case '`':
+				b.WriteByte('`')
+			case '$':
+				b.WriteByte('$')
+			case '\\':
+				b.WriteByte('\\')
+			default:
+				b.WriteByte('\\')
+				b.WriteByte(next)
+			}
+			i++
+			continue
+		}
+		b.WriteByte(ch)
+	}
+
+	return b.String()
+}
+
+func parseTemplateLiteralConst(ctx fql.ITemplateLiteralContext) (runtime.String, bool) {
+	if ctx == nil {
+		return runtime.EmptyString, false
+	}
+
+	var b strings.Builder
+
+	for _, el := range ctx.AllTemplateElement() {
+		if el == nil {
+			continue
+		}
+		if expr := el.Expression(); expr != nil {
+			if val, ok := constStringFromExpression(expr); ok {
+				b.WriteString(val)
+				continue
+			}
+			return runtime.EmptyString, false
+		}
+		if chunk := el.TemplateChars(); chunk != nil {
+			b.WriteString(parseTemplateChunk(chunk.GetText()))
+		}
+	}
+
+	return runtime.NewString(b.String()), true
+}
+
+func parseStringLiteralConst(ctx fql.IStringLiteralContext) (runtime.String, bool) {
+	if ctx == nil {
+		return runtime.EmptyString, false
+	}
+
+	if ctx.StringLiteral() != nil {
+		return parseStringLiteral(ctx), true
+	}
+
+	if tmpl := ctx.TemplateLiteral(); tmpl != nil {
+		return parseTemplateLiteralConst(tmpl)
+	}
+
+	return runtime.EmptyString, false
+}
+
+func constStringFromExpression(expr fql.IExpressionContext) (string, bool) {
+	if expr == nil {
+		return "", false
+	}
+
+	val, ok := literalValueFromExpression(expr)
+	if !ok {
+		return "", false
+	}
+
+	switch val.(type) {
+	case runtime.String, runtime.Int, runtime.Float, runtime.Boolean:
+		return val.String(), true
+	}
+
+	if val == runtime.None {
+		return "", true
+	}
+
+	return "", false
+}
+
 // CompileStringLiteral processes a string literal from the FQL AST and converts it into a runtime string.
 // It handles escape sequences like \n and \t, and properly extracts the string content without quotes.
 // Parameters:
@@ -125,8 +229,136 @@ func parseStringLiteral(ctx fql.IStringLiteralContext) runtime.String {
 // Returns:
 //   - An operand representing the compiled string constant
 func (c *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
+	if tmpl := ctx.TemplateLiteral(); tmpl != nil {
+		return c.CompileTemplateLiteral(tmpl)
+	}
+
 	// Create a runtime string and load it as a constant
 	return loadConstant(c.ctx, parseStringLiteral(ctx))
+}
+
+// CompileTemplateLiteral processes a template literal from the FQL AST.
+// It concatenates literal chunks and interpolated expressions into a string.
+func (c *LiteralCompiler) CompileTemplateLiteral(ctx fql.ITemplateLiteralContext) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
+	type part struct {
+		literal string
+		expr    fql.IExpressionContext
+	}
+
+	elements := ctx.AllTemplateElement()
+	if len(elements) == 0 {
+		return loadConstant(c.ctx, runtime.EmptyString)
+	}
+
+	parts := make([]part, 0, len(elements))
+	var buf strings.Builder
+	hasDynamic := false
+
+	flushLiteral := func() {
+		if buf.Len() == 0 {
+			return
+		}
+
+		parts = append(parts, part{literal: buf.String()})
+		buf.Reset()
+	}
+
+	for _, el := range elements {
+		if el == nil {
+			continue
+		}
+
+		if chunk := el.TemplateChars(); chunk != nil {
+			buf.WriteString(parseTemplateChunk(chunk.GetText()))
+
+			continue
+		}
+
+		if expr := el.Expression(); expr != nil {
+			if val, ok := constStringFromExpression(expr); ok {
+				buf.WriteString(val)
+
+				continue
+			}
+
+			hasDynamic = true
+			flushLiteral()
+			parts = append(parts, part{expr: expr})
+		}
+	}
+
+	if !hasDynamic {
+		return loadConstant(c.ctx, runtime.NewString(buf.String()))
+	}
+
+	flushLiteral()
+
+	if len(parts) == 0 {
+		return loadConstant(c.ctx, runtime.EmptyString)
+	}
+
+	if len(parts) == 1 && parts[0].expr == nil {
+		return loadConstant(c.ctx, runtime.NewString(parts[0].literal))
+	}
+
+	if len(parts) == 1 && parts[0].expr != nil {
+		start := c.ctx.ExprCompiler.Compile(parts[0].expr)
+
+		if start.IsConstant() {
+			reg := c.ctx.Registers.Allocate()
+			c.ctx.Emitter.EmitLoadConst(reg, start)
+			start = reg
+		}
+
+		if !start.IsRegister() {
+			return bytecode.NoopOperand
+		}
+
+		c.ctx.Emitter.EmitABC(bytecode.OpConcat, start, start, bytecode.Operand(1))
+		c.ctx.Types.Set(start, core.TypeString)
+
+		return start
+	}
+
+	seq := c.ctx.Registers.AllocateSequence(len(parts))
+
+	for i, part := range parts {
+		target := seq[i]
+
+		if part.expr != nil {
+			op := c.ctx.ExprCompiler.Compile(part.expr)
+			if op.IsConstant() {
+				c.ctx.Emitter.EmitLoadConst(target, op)
+			} else if op.IsRegister() {
+				if op.Equals(target) {
+					continue
+				}
+
+				c.ctx.Emitter.EmitMove(target, op)
+			} else {
+				return bytecode.NoopOperand
+			}
+
+			continue
+		}
+
+		lit := runtime.NewString(part.literal)
+		c.ctx.Emitter.EmitLoadConst(target, c.ctx.Symbols.AddConstant(lit))
+	}
+
+	dst := seq[0]
+	c.ctx.Emitter.EmitABC(bytecode.OpConcat, dst, seq[0], bytecode.Operand(len(seq)))
+	c.ctx.Types.Set(dst, core.TypeString)
+
+	return dst
 }
 
 // CompileIntegerLiteral processes an integer literal from the FQL AST and converts it into a runtime integer.
@@ -330,7 +562,10 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) by
 func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) bytecode.Operand {
 	// Handle string literal property names (e.g., { "property": value })
 	if str := ctx.StringLiteral(); str != nil {
-		return loadConstant(c.ctx, parseStringLiteral(str))
+		if val, ok := parseStringLiteralConst(str); ok {
+			return loadConstant(c.ctx, val)
+		}
+		return c.CompileStringLiteral(str)
 	}
 
 	var name string
@@ -362,8 +597,10 @@ func (c *LiteralCompiler) CompilePropertyNameConst(ctx fql.IPropertyNameContext)
 
 	// Handle string literal property names (e.g., { "property": value })
 	if str := ctx.StringLiteral(); str != nil {
-		value := parseStringLiteral(str)
-		return c.ctx.Symbols.AddConstant(value), true
+		if value, ok := parseStringLiteralConst(str); ok {
+			return c.ctx.Symbols.AddConstant(value), true
+		}
+		return bytecode.NoopOperand, false
 	}
 
 	var name string

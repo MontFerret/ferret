@@ -227,6 +227,14 @@ func (v *BaseFqlParserVisitor) VisitStringLiteral(ctx *StringLiteralContext) int
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitTemplateLiteral(ctx *TemplateLiteralContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitTemplateElement(ctx *TemplateElementContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitFloatLiteral(ctx *FloatLiteralContext) interface{} {
 	return v.VisitChildren(ctx)
 }

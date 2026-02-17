@@ -172,6 +172,12 @@ type FqlParserListener interface {
 	// EnterStringLiteral is called when entering the stringLiteral production.
 	EnterStringLiteral(c *StringLiteralContext)
 
+	// EnterTemplateLiteral is called when entering the templateLiteral production.
+	EnterTemplateLiteral(c *TemplateLiteralContext)
+
+	// EnterTemplateElement is called when entering the templateElement production.
+	EnterTemplateElement(c *TemplateElementContext)
+
 	// EnterFloatLiteral is called when entering the floatLiteral production.
 	EnterFloatLiteral(c *FloatLiteralContext)
 
@@ -471,6 +477,12 @@ type FqlParserListener interface {
 
 	// ExitStringLiteral is called when exiting the stringLiteral production.
 	ExitStringLiteral(c *StringLiteralContext)
+
+	// ExitTemplateLiteral is called when exiting the templateLiteral production.
+	ExitTemplateLiteral(c *TemplateLiteralContext)
+
+	// ExitTemplateElement is called when exiting the templateElement production.
+	ExitTemplateElement(c *TemplateElementContext)
 
 	// ExitFloatLiteral is called when exiting the floatLiteral production.
 	ExitFloatLiteral(c *FloatLiteralContext)

@@ -1168,10 +1168,56 @@ func (v *visitor) formatBackoffStrategy(ctx *fql.BackoffStrategyContext) {
 	case ctx.Identifier() != nil:
 		v.p.write(ctx.Identifier().GetText())
 	case ctx.StringLiteral() != nil:
-		v.p.write(formatStringLiteral(ctx.StringLiteral().GetText(), v.opts.singleQuote))
+		v.formatStringLiteralNode(ctx.StringLiteral())
 	case ctx.None() != nil:
 		v.p.write(applyCase(v.opts.caseMode, ctx.None().GetText()))
 	}
+}
+
+func (v *visitor) formatStringLiteralNode(ctx fql.IStringLiteralContext) {
+	v.formatStringLiteralNodeWith(v.p, ctx)
+}
+
+func (v *visitor) formatStringLiteralNodeWith(p *printer, ctx fql.IStringLiteralContext) {
+	if ctx == nil {
+		return
+	}
+
+	if tmpl := ctx.TemplateLiteral(); tmpl != nil {
+		v.formatTemplateLiteralWith(p, tmpl)
+		return
+	}
+
+	if tok := ctx.StringLiteral(); tok != nil {
+		p.write(formatStringLiteral(tok.GetText(), v.opts.singleQuote))
+	}
+}
+
+func (v *visitor) formatTemplateLiteral(ctx fql.ITemplateLiteralContext) {
+	v.formatTemplateLiteralWith(v.p, ctx)
+}
+
+func (v *visitor) formatTemplateLiteralWith(p *printer, ctx fql.ITemplateLiteralContext) {
+	if ctx == nil {
+		return
+	}
+
+	p.write("`")
+	for _, el := range ctx.AllTemplateElement() {
+		if el == nil {
+			continue
+		}
+		if chunk := el.TemplateChars(); chunk != nil {
+			p.writeRaw(chunk.GetText())
+			continue
+		}
+		if expr := el.Expression(); expr != nil {
+			p.writeRaw("${")
+			v.formatExpressionWith(p, expr.(*fql.ExpressionContext))
+			p.writeRaw("}")
+		}
+	}
+	p.write("`")
 }
 
 func (v *visitor) formatJitterClause(ctx *fql.JitterClauseContext) {
@@ -1240,7 +1286,7 @@ func (v *visitor) formatDispatchEventName(ctx *fql.DispatchEventNameContext) {
 
 	switch {
 	case ctx.StringLiteral() != nil:
-		v.p.write(formatStringLiteral(ctx.StringLiteral().GetText(), v.opts.singleQuote))
+		v.formatStringLiteralNode(ctx.StringLiteral())
 	case ctx.Variable() != nil:
 		v.formatVariable(ctx.Variable().(*fql.VariableContext))
 	case ctx.Param() != nil:
@@ -1300,7 +1346,7 @@ func (v *visitor) formatWaitForEventName(ctx *fql.WaitForEventNameContext) {
 
 	switch {
 	case ctx.StringLiteral() != nil:
-		v.p.write(formatStringLiteral(ctx.StringLiteral().GetText(), v.opts.singleQuote))
+		v.formatStringLiteralNode(ctx.StringLiteral())
 	case ctx.Variable() != nil:
 		v.formatVariable(ctx.Variable().(*fql.VariableContext))
 	case ctx.Param() != nil:
@@ -1631,7 +1677,7 @@ func (v *visitor) formatLiteral(ctx *fql.LiteralContext) {
 	case ctx.BooleanLiteral() != nil:
 		v.formatBooleanLiteral(ctx.BooleanLiteral().(*fql.BooleanLiteralContext))
 	case ctx.StringLiteral() != nil:
-		v.p.write(formatStringLiteral(ctx.StringLiteral().GetText(), v.opts.singleQuote))
+		v.formatStringLiteralNode(ctx.StringLiteral())
 	case ctx.FloatLiteral() != nil:
 		v.p.write(ctx.FloatLiteral().GetText())
 	case ctx.IntegerLiteral() != nil:
@@ -1841,7 +1887,7 @@ func (v *visitor) formatPropertyNameWith(p *printer, ctx *fql.PropertyNameContex
 	case ctx.Identifier() != nil:
 		p.write(ctx.Identifier().GetText())
 	case ctx.StringLiteral() != nil:
-		p.write(formatStringLiteral(ctx.StringLiteral().GetText(), v.opts.singleQuote))
+		v.formatStringLiteralNodeWith(p, ctx.StringLiteral())
 	case ctx.Param() != nil:
 		v.formatParamWith(p, ctx.Param().(*fql.ParamContext))
 	case ctx.SafeReservedWord() != nil:
@@ -2220,7 +2266,7 @@ func (v *visitor) formatQueryLiteral(ctx *fql.QueryLiteralContext) {
 	}
 	if sl := ctx.StringLiteral(); sl != nil {
 		v.p.space()
-		v.p.write(formatStringLiteral(sl.GetText(), v.opts.singleQuote))
+		v.formatStringLiteralNode(sl)
 		if ctx.OpenParen() != nil && ctx.Expression() != nil {
 			v.p.write("(")
 			v.formatExpression(ctx.Expression().(*fql.ExpressionContext))

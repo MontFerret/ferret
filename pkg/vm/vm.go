@@ -3,6 +3,7 @@ package vm
 import (
 	"context"
 	"io"
+	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -123,6 +124,91 @@ loop:
 			}
 		case bytecode.OpAdd:
 			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
+		case bytecode.OpAddConst:
+			reg[dst] = runtime.Add(ctx, reg[src1], constants[src2.Constant()])
+		case bytecode.OpConcat:
+			start := int(src1)
+			count := int(src2)
+
+			if count <= 0 {
+				reg[dst] = runtime.EmptyString
+				break
+			}
+
+			if count == 1 {
+				reg[dst] = runtime.ToString(reg[start])
+				break
+			}
+
+			if count == 2 {
+				s1 := runtime.ToString(reg[start])
+				s2 := runtime.ToString(reg[start+1])
+
+				if s1 == runtime.EmptyString {
+					reg[dst] = s2
+					break
+				}
+
+				if s2 == runtime.EmptyString {
+					reg[dst] = s1
+					break
+				}
+
+				reg[dst] = runtime.NewString(string(s1) + string(s2))
+				break
+			}
+
+			if count == 3 {
+				s1 := runtime.ToString(reg[start])
+				s2 := runtime.ToString(reg[start+1])
+				s3 := runtime.ToString(reg[start+2])
+
+				if s1 == runtime.EmptyString {
+					if s2 == runtime.EmptyString {
+						reg[dst] = s3
+						break
+					}
+					if s3 == runtime.EmptyString {
+						reg[dst] = s2
+						break
+					}
+				} else if s2 == runtime.EmptyString {
+					if s3 == runtime.EmptyString {
+						reg[dst] = s1
+						break
+					}
+				}
+
+				reg[dst] = runtime.NewString(string(s1) + string(s2) + string(s3))
+				break
+			}
+
+			parts := make([]runtime.String, count)
+			totalLen := 0
+
+			for i := 0; i < count; i++ {
+				s := runtime.ToString(reg[start+i])
+				parts[i] = s
+				totalLen += len(s)
+			}
+
+			if totalLen == 0 {
+				reg[dst] = runtime.EmptyString
+				break
+			}
+
+			var b strings.Builder
+			b.Grow(totalLen)
+
+			for i := 0; i < count; i++ {
+				if parts[i] == runtime.EmptyString {
+					continue
+				}
+
+				b.WriteString(string(parts[i]))
+			}
+
+			reg[dst] = runtime.NewString(b.String())
 		case bytecode.OpSub:
 			reg[dst] = runtime.Subtract(ctx, reg[src1], reg[src2])
 		case bytecode.OpMulti:

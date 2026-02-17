@@ -21,9 +21,9 @@ func CastToProgram(prog any) *bytecode.Program {
 
 // ShouldEqualBytecode asserts that the bytecode of the actual program matches the expected program's bytecode.
 // It compares each instruction's opcode and operands, returning an error message if any mismatch is found.
-func ShouldEqualBytecode(e any, a ...any) string {
-	expected := CastToProgram(e)
-	actual := CastToProgram(a[0])
+func ShouldEqualBytecode(a any, e ...any) string {
+	actual := CastToProgram(a)
+	expected := CastToProgram(e[0])
 
 	for i := 0; i < len(expected.Bytecode); i++ {
 		actualIns := actual.Bytecode[i]
@@ -41,6 +41,64 @@ func ShouldEqualBytecode(e any, a ...any) string {
 			if err := convey.ShouldEqual(actualIns.Operands[j], expectedIns.Operands[j]); err != "" {
 				return fmt.Sprintf("operands mismatch at index %d, operand %d: expected %s, got %s", i, j, expectedIns.Operands[j], actualIns.Operands[j])
 			}
+		}
+	}
+
+	return ""
+}
+
+// ShouldCheckOpcode asserts that the actual program's bytecode contains (or does not contain) specific opcodes, or that certain opcodes appear a specific number of times, based on the provided expectation type (OpcodeExistence or OpcodeCount).
+func ShouldCheckOpcode(a any, e ...any) string {
+	actual := CastToProgram(a)
+
+	switch expectation := e[0].(type) {
+	case OpcodeExistence:
+		return shouldCheckOpcodeExistence(actual, expectation)
+	case OpcodeCount:
+		return shouldCheckOpcodeCount(actual, expectation)
+	default:
+		panic(fmt.Sprintf("unsupported opcode expectation type: %T", e[0]))
+	}
+
+	return ""
+}
+
+func shouldCheckOpcodeCount(actual *bytecode.Program, expected OpcodeCount) string {
+	current := make(map[bytecode.Opcode]int)
+
+	for _, inst := range actual.Bytecode {
+		current[inst.Opcode]++
+	}
+
+	for opcode, count := range expected.Count {
+		if current[opcode] != count {
+			return fmt.Sprintf("expected %d occurrences of opcode %s, got %d", count, opcode.String(), current[opcode])
+		}
+	}
+
+	return ""
+}
+
+func shouldCheckOpcodeExistence(actual *bytecode.Program, expected OpcodeExistence) string {
+	exists := func(op bytecode.Opcode) bool {
+		for _, inst := range actual.Bytecode {
+			if inst.Opcode == op {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	for _, opcode := range expected.Exists {
+		if !exists(opcode) {
+			return fmt.Sprintf("expected opcode %s to be present", opcode.String())
+		}
+	}
+
+	for _, opcode := range expected.NotExists {
+		if exists(opcode) {
+			return fmt.Sprintf("unexpected opcode %s in bytecode", opcode.String())
 		}
 	}
 

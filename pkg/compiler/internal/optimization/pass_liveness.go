@@ -175,6 +175,25 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 	case bytecode.OpLoadConst, bytecode.OpLoadParam, bytecode.OpLoadNone, bytecode.OpLoadBool, bytecode.OpLoadZero, bytecode.OpRand:
 		addDef(dst)
 		return
+	case bytecode.OpConcat:
+		addDef(dst)
+
+		if !src1.IsRegister() {
+			return
+		}
+
+		startReg := src1.Register()
+		count := int(src2)
+
+		if count <= 0 || startReg <= 0 {
+			return
+		}
+
+		for r := startReg; r < startReg+count; r++ {
+			uses = append(uses, r)
+		}
+
+		return
 	case bytecode.OpLoadArray:
 		addDef(dst)
 		return
@@ -188,7 +207,7 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 		return
 
 	// Simple arithmetic, comparisons, access.
-	case bytecode.OpAdd, bytecode.OpSub, bytecode.OpMulti, bytecode.OpDiv, bytecode.OpMod,
+	case bytecode.OpAdd, bytecode.OpAddConst, bytecode.OpSub, bytecode.OpMulti, bytecode.OpDiv, bytecode.OpMod,
 		bytecode.OpCmp,
 		bytecode.OpEq, bytecode.OpNe, bytecode.OpGt, bytecode.OpLt, bytecode.OpGte, bytecode.OpLte,
 		bytecode.OpAnyEq, bytecode.OpAnyNe, bytecode.OpAnyGt, bytecode.OpAnyGte, bytecode.OpAnyLt, bytecode.OpAnyLte,
