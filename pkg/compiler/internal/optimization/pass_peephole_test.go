@@ -22,6 +22,97 @@ func runPeephole(t *testing.T, program *bytecode.Program) (*PassResult, error) {
 	return pass.Run(&PassContext{Program: program, CFG: cfg})
 }
 
+func TestPeephole_AddConstRewriteCases(t *testing.T) {
+	testCases := []struct {
+		name         string
+		program      *bytecode.Program
+		wantModified bool
+		wantOpcodes  []bytecode.Opcode
+	}{
+		{
+			name: "rewrites when temp register dies and dst equals temp",
+			program: &bytecode.Program{
+				Constants: []runtime.Value{
+					runtime.NewInt(7),
+				},
+				Bytecode: []bytecode.Instruction{
+					bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(2), bytecode.NewConstant(0)),
+					bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(2), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+				},
+			},
+			wantModified: true,
+			wantOpcodes: []bytecode.Opcode{
+				bytecode.OpAddConst,
+				bytecode.OpReturn,
+			},
+		},
+		{
+			name: "does not rewrite when temporary is the left operand",
+			program: &bytecode.Program{
+				Constants: []runtime.Value{
+					runtime.NewInt(7),
+				},
+				Bytecode: []bytecode.Instruction{
+					bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(2), bytecode.NewConstant(0)),
+					bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(3), bytecode.NewRegister(2), bytecode.NewRegister(1)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(3)),
+				},
+			},
+			wantModified: false,
+			wantOpcodes: []bytecode.Opcode{
+				bytecode.OpLoadConst,
+				bytecode.OpAdd,
+				bytecode.OpReturn,
+			},
+		},
+		{
+			name: "does not rewrite when load is jump target",
+			program: &bytecode.Program{
+				Constants: []runtime.Value{
+					runtime.NewInt(5),
+				},
+				Bytecode: []bytecode.Instruction{
+					bytecode.NewInstruction(bytecode.OpJump, bytecode.Operand(1)),
+					bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(2), bytecode.NewConstant(0)),
+					bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(3)),
+				},
+			},
+			wantModified: false,
+			wantOpcodes: []bytecode.Opcode{
+				bytecode.OpJump,
+				bytecode.OpLoadConst,
+				bytecode.OpAdd,
+				bytecode.OpReturn,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := runPeephole(t, tc.program)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if res.Modified != tc.wantModified {
+				t.Fatalf("unexpected modified flag: got %v, want %v", res.Modified, tc.wantModified)
+			}
+
+			if len(tc.program.Bytecode) != len(tc.wantOpcodes) {
+				t.Fatalf("unexpected instruction count: got %d, want %d", len(tc.program.Bytecode), len(tc.wantOpcodes))
+			}
+
+			for i, op := range tc.wantOpcodes {
+				if tc.program.Bytecode[i].Opcode != op {
+					t.Fatalf("unexpected opcode at %d: got %s, want %s", i, tc.program.Bytecode[i].Opcode, op)
+				}
+			}
+		})
+	}
+}
+
 func TestPeephole_RemovesRedundantLoads(t *testing.T) {
 	program := &bytecode.Program{
 		Constants: []runtime.Value{
