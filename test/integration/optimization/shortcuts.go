@@ -1,8 +1,11 @@
 package optimization_test
 
 import (
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 
 	"github.com/MontFerret/ferret/v2/test/integration/base"
 )
@@ -18,6 +21,11 @@ type (
 		Expected  any
 		Assertion convey.Assertion
 		Options   []vm.EnvironmentOption
+	}
+
+	OpcodeExpectation struct {
+		Exists    []bytecode.Opcode
+		NotExists []bytecode.Opcode
 	}
 )
 

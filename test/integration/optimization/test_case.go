@@ -38,6 +38,21 @@ func ByteCodeCase(expression string, expected []bytecode.Instruction, desc ...st
 	}
 }
 
+func OpcodeCase(expression string, expectation OpcodeExpectation, out any, desc ...string) UseCase {
+	return UseCase{
+		TestCase: base.NewCase(expression, expectation, ShouldSatisfyOpcodeExpectation, desc...),
+		Execution: Execution{
+			Run:       true,
+			Expected:  out,
+			Assertion: convey.ShouldEqual,
+		},
+	}
+}
+
+func SkipOpcodeCase(expression string, expectation OpcodeExpectation, out any, desc ...string) UseCase {
+	return Skip(OpcodeCase(expression, expectation, out, desc...))
+}
+
 func SkipByteCodeCase(expression string, expected []bytecode.Instruction, desc ...string) UseCase {
 	return Skip(ByteCodeCase(expression, expected, desc...))
 }
@@ -164,6 +179,13 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 					assertion := useCase.Execution.Assertion
 					expected := useCase.Execution.Expected
 					out, err := base.Exec(actual, useCase.RawOutput, options...)
+
+					_, ok := expected.(error)
+
+					if ok {
+						convey.So(err, convey.ShouldNotBeNil)
+						return
+					}
 
 					convey.So(err, convey.ShouldBeNil)
 

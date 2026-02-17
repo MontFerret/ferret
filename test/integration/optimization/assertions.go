@@ -21,9 +21,9 @@ func CastToProgram(prog any) *bytecode.Program {
 
 // ShouldEqualBytecode asserts that the bytecode of the actual program matches the expected program's bytecode.
 // It compares each instruction's opcode and operands, returning an error message if any mismatch is found.
-func ShouldEqualBytecode(e any, a ...any) string {
-	expected := CastToProgram(e)
-	actual := CastToProgram(a[0])
+func ShouldEqualBytecode(a any, e ...any) string {
+	actual := CastToProgram(a)
+	expected := CastToProgram(e[0])
 
 	for i := 0; i < len(expected.Bytecode); i++ {
 		actualIns := actual.Bytecode[i]
@@ -41,6 +41,39 @@ func ShouldEqualBytecode(e any, a ...any) string {
 			if err := convey.ShouldEqual(actualIns.Operands[j], expectedIns.Operands[j]); err != "" {
 				return fmt.Sprintf("operands mismatch at index %d, operand %d: expected %s, got %s", i, j, expectedIns.Operands[j], actualIns.Operands[j])
 			}
+		}
+	}
+
+	return ""
+}
+
+func ShouldSatisfyOpcodeExpectation(a any, e ...any) string {
+	actual := CastToProgram(a)
+	expected, ok := e[0].(OpcodeExpectation)
+
+	if !ok {
+		panic("expected must be a type of OpcodeExpectation")
+	}
+
+	exists := func(op bytecode.Opcode) bool {
+		for _, inst := range actual.Bytecode {
+			if inst.Opcode == op {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	for _, opcode := range expected.Exists {
+		if !exists(opcode) {
+			return fmt.Sprintf("expected opcode %s to be present", opcode.String())
+		}
+	}
+
+	for _, opcode := range expected.NotExists {
+		if exists(opcode) {
+			return fmt.Sprintf("unexpected opcode %s in bytecode", opcode.String())
 		}
 	}
 
