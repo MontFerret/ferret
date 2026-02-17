@@ -598,8 +598,8 @@ func (vm *VM) castSubscribeArgs(dst, eventName, opts runtime.Value) (runtime.Obs
 func (vm *VM) castDispatchArgs(
 	ctx context.Context,
 	target, eventName, args runtime.Value,
-) (runtime.Dispatcher, runtime.String, runtime.Value, runtime.Value, error) {
-	dispatcher, ok := target.(runtime.Dispatcher)
+) (runtime.Dispatchable, runtime.String, runtime.Value, runtime.Value, error) {
+	dispatcher, ok := target.(runtime.Dispatchable)
 
 	if !ok {
 		return nil, "", nil, nil, runtime.TypeErrorOf(target, runtime.TypeDispatcher)

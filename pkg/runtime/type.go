@@ -131,7 +131,7 @@ func Reflect(input Value) Type {
 		return TypeIterator
 	case Measurable:
 		return TypeMeasurable
-	case Dispatcher:
+	case Dispatchable:
 		return TypeDispatcher
 	case Observable:
 		return TypeObservable
