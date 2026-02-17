@@ -285,31 +285,56 @@ func (c *LiteralCompiler) CompileTemplateLiteral(ctx fql.ITemplateLiteralContext
 		parts = append(parts, part{literal: buf.String()})
 	}
 
-	dst := c.ctx.Registers.Allocate()
-	startIndex := 0
-	startValue := runtime.EmptyString
-	if len(parts) > 0 && parts[0].expr == nil && parts[0].literal != "" {
-		startValue = runtime.NewString(parts[0].literal)
-		startIndex = 1
+	if len(parts) == 0 {
+		return loadConstant(c.ctx, runtime.EmptyString)
 	}
 
-	c.ctx.Emitter.EmitMove(dst, loadConstant(c.ctx, startValue))
+	if len(parts) == 1 && parts[0].expr == nil {
+		return loadConstant(c.ctx, runtime.NewString(parts[0].literal))
+	}
 
-	for i := startIndex; i < len(parts); i++ {
-		var src bytecode.Operand
-		if parts[i].expr != nil {
-			src = c.ctx.ExprCompiler.Compile(parts[i].expr)
-		} else {
-			src = loadConstant(c.ctx, runtime.NewString(parts[i].literal))
+	if len(parts) == 1 && parts[0].expr != nil {
+		start := c.ctx.ExprCompiler.Compile(parts[0].expr)
+
+		if start.IsConstant() {
+			reg := c.ctx.Registers.Allocate()
+			c.ctx.Emitter.EmitLoadConst(reg, start)
+			start = reg
 		}
-		tmp := c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitABC(bytecode.OpAdd, tmp, dst, src)
-		dst = tmp
+
+		if !start.IsRegister() {
+			return bytecode.NoopOperand
+		}
+
+		c.ctx.Emitter.EmitABC(bytecode.OpConcat, start, start, bytecode.Operand(1))
+		c.ctx.Types.Set(start, core.TypeString)
+
+		return start
 	}
 
-	if dst.IsRegister() {
-		c.ctx.Types.Set(dst, core.TypeString)
+	seq := c.ctx.Registers.AllocateSequence(len(parts))
+
+	for i, part := range parts {
+		target := seq[i]
+
+		if part.expr != nil {
+			op := c.ctx.ExprCompiler.Compile(part.expr)
+			if op.IsConstant() {
+				c.ctx.Emitter.EmitLoadConst(target, op)
+			} else if !op.Equals(target) {
+				c.ctx.Emitter.EmitMove(target, op)
+			}
+
+			continue
+		}
+
+		lit := runtime.NewString(part.literal)
+		c.ctx.Emitter.EmitLoadConst(target, c.ctx.Symbols.AddConstant(lit))
 	}
+
+	dst := seq[0]
+	c.ctx.Emitter.EmitABC(bytecode.OpConcat, dst, seq[0], bytecode.Operand(len(seq)))
+	c.ctx.Types.Set(dst, core.TypeString)
 
 	return dst
 }

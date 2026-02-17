@@ -53,19 +53,22 @@ func TestTemplateLiteral_ConstantFolding(t *testing.T) {
 	testCases := []struct {
 		name     string
 		query    string
+		opConcat int
 		opAdd    int
 		expected string
 	}{
 		{
 			name:     "fully constant template",
 			query:    "RETURN `foo-${1}-bar-${true}`",
+			opConcat: 0,
 			opAdd:    0,
 			expected: "foo-1-bar-true",
 		},
 		{
 			name:     "folds constant expressions into chunks",
 			query:    "LET x = \"X\" RETURN `a-${1}-b-${x}-c-${true}-d`",
-			opAdd:    2,
+			opConcat: 1,
+			opAdd:    0,
 			expected: "a-1-b-X-c-true-d",
 		},
 	}
@@ -73,6 +76,7 @@ func TestTemplateLiteral_ConstantFolding(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			prog := compileNoOpt(t, tc.query)
+			assertOpcodeCount(t, prog, bytecode.OpConcat, tc.opConcat)
 			assertOpcodeCount(t, prog, bytecode.OpAdd, tc.opAdd)
 			out := execProgram(t, prog)
 			str, ok := out.(string)

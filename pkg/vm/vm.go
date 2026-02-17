@@ -3,6 +3,7 @@ package vm
 import (
 	"context"
 	"io"
+	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -123,6 +124,27 @@ loop:
 			}
 		case bytecode.OpAdd:
 			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
+		case bytecode.OpConcat:
+			start := int(src1)
+			count := int(src2)
+
+			if count <= 0 {
+				reg[dst] = runtime.EmptyString
+				break
+			}
+
+			if count == 1 {
+				reg[dst] = runtime.ToString(reg[start])
+				break
+			}
+
+			var b strings.Builder
+
+			for i := 0; i < count; i++ {
+				b.WriteString(runtime.ToString(reg[start+i]).String())
+			}
+
+			reg[dst] = runtime.NewString(b.String())
 		case bytecode.OpSub:
 			reg[dst] = runtime.Subtract(ctx, reg[src1], reg[src2])
 		case bytecode.OpMulti:
