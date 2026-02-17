@@ -58,10 +58,6 @@ func (ds *DataSet) String() string {
 	return "[DataSet]"
 }
 
-func (ds *DataSet) Unwrap() interface{} {
-	return ds.values
-}
-
 func (ds *DataSet) Hash() uint64 {
 	return 0
 }

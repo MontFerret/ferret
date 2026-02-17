@@ -16,7 +16,7 @@ import (
 	"github.com/wI2L/jettison"
 )
 
-func IsNil(input interface{}) bool {
+func IsNil(input any) bool {
 	val := reflect.ValueOf(input)
 	kind := val.Kind()
 
@@ -95,7 +95,7 @@ func Parse(input interface{}) Value {
 		return NewFloat(float64(value))
 	case time.Time:
 		return NewDateTime(value)
-	case []interface{}:
+	case []any:
 		ctx := context.Background()
 		arr := NewArray(len(value))
 
@@ -104,7 +104,7 @@ func Parse(input interface{}) Value {
 		}
 
 		return arr
-	case map[string]interface{}:
+	case map[string]any:
 		ctx := context.Background()
 		obj := NewObject()
 
@@ -182,7 +182,7 @@ func Parse(input interface{}) Value {
 }
 
 func Unmarshal(value json.RawMessage) (Value, error) {
-	var o interface{}
+	var o any
 
 	err := json.Unmarshal(value, &o)
 
@@ -203,7 +203,7 @@ func MustMarshal(value Value) json.RawMessage {
 	return out
 }
 
-func MustMarshalAny(input interface{}) json.RawMessage {
+func MustMarshalAny(input any) json.RawMessage {
 	out, err := jettison.MarshalOpts(input, jettison.NoHTMLEscaping())
 
 	if err != nil {
@@ -688,7 +688,7 @@ func GetByKey[T Value](ctx context.Context, input, key Value) (T, error) {
 	if !ok {
 		var zero T
 
-		return zero, TypeError(Reflect(input), TypeKeyReadable)
+		return zero, TypeError(TypeOf(input), TypeKeyReadable)
 	}
 
 	found, err := keyReadable.Get(ctx, key)
@@ -710,7 +710,7 @@ func GetByKey[T Value](ctx context.Context, input, key Value) (T, error) {
 	if !ok {
 		var zero T
 
-		return zero, TypeError(Reflect(found), Reflect(zero))
+		return zero, TypeError(TypeOf(found), TypeOf(zero))
 	}
 
 	return expected, nil
@@ -725,7 +725,7 @@ func GetByIndex[T Value](ctx context.Context, input Value, index Int) (T, error)
 	if !ok {
 		var zero T
 
-		return zero, TypeError(Reflect(input), TypeIndexReadable)
+		return zero, TypeError(TypeOf(input), TypeIndexReadable)
 	}
 
 	found, err := indexReadable.Get(ctx, index)
@@ -747,7 +747,7 @@ func GetByIndex[T Value](ctx context.Context, input Value, index Int) (T, error)
 	if !ok {
 		var zero T
 
-		return zero, TypeError(Reflect(found), Reflect(zero))
+		return zero, TypeError(TypeOf(found), TypeOf(zero))
 	}
 
 	return expected, nil

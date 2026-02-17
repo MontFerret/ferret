@@ -95,7 +95,7 @@ func typeRank(value Value) int64 {
 	}
 }
 
-func Reflect(input Value) Type {
+func TypeOf(input Value) Type {
 	if input == None || input == nil {
 		return TypeNone
 	}
@@ -163,7 +163,7 @@ func CompareTypes(a, b Value) int64 {
 
 func ValidateType(value Value, required ...Type) error {
 	var valid bool
-	tid := Reflect(value)
+	tid := TypeOf(value)
 
 	for _, t := range required {
 		if tid == t {

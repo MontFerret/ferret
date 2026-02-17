@@ -73,10 +73,6 @@ func (i Int) String() string {
 	return strconv.Itoa(int(i))
 }
 
-func (i Int) Unwrap() interface{} {
-	return int(i)
-}
-
 func (i Int) Hash() uint64 {
 	h := fnv.New64a()
 

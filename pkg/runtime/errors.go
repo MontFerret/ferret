@@ -26,7 +26,7 @@ var (
 const typeErrorTemplate = "expected %s, but got %s"
 
 func TypeErrorOf(value Value, expected ...Type) error {
-	return TypeError(Reflect(value), expected...)
+	return TypeError(TypeOf(value), expected...)
 }
 
 func TypeError(actual Type, expected ...Type) error {

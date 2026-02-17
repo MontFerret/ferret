@@ -18,10 +18,6 @@ func (n *none) String() string {
 	return ""
 }
 
-func (n *none) Unwrap() interface{} {
-	return nil
-}
-
 func (n *none) Hash() uint64 {
 	return 0
 }

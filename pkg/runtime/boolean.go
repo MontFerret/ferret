@@ -74,10 +74,6 @@ func (t Boolean) String() string {
 	return "false"
 }
 
-func (t Boolean) Unwrap() interface{} {
-	return bool(t)
-}
-
 func (t Boolean) Hash() uint64 {
 	if t {
 		return hashTrue

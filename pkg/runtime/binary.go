@@ -35,10 +35,6 @@ func (b Binary) String() string {
 	return string(b)
 }
 
-func (b Binary) Unwrap() interface{} {
-	return []byte(b)
-}
-
 func (b Binary) Hash() uint64 {
 	h := fnv.New64a()
 

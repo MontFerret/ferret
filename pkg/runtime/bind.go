@@ -141,7 +141,13 @@ func bindInterface(src Value, dst reflect.Value) error {
 		return nil
 	}
 
-	unwrapped := src.Unwrap()
+	unwrappable, ok := src.(Unwrappable)
+
+	if !ok {
+		return nil
+	}
+
+	unwrapped := unwrappable.Unwrap()
 	if unwrapped == nil {
 		dst.Set(reflect.Zero(dst.Type()))
 		return nil
@@ -157,7 +163,13 @@ func bindInterface(src Value, dst reflect.Value) error {
 }
 
 func bindFallback(src Value, dst reflect.Value) error {
-	unwrapped := src.Unwrap()
+	unwrappable, ok := src.(Unwrappable)
+
+	if !ok {
+		return nil
+	}
+
+	unwrapped := unwrappable.Unwrap()
 	if unwrapped == nil {
 		dst.Set(reflect.Zero(dst.Type()))
 		return nil
@@ -424,5 +436,5 @@ func setUint(dst reflect.Value, value int64) error {
 }
 
 func bindTypeError(src Value, target reflect.Type) error {
-	return Errorf(ErrInvalidArgumentType, "cannot bind %s to %s", Reflect(src), target.String())
+	return Errorf(ErrInvalidArgumentType, "cannot bind %s to %s", TypeOf(src), target.String())
 }

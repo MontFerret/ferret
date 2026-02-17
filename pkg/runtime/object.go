@@ -129,16 +129,6 @@ func (t *Object) Compare(other Value) int64 {
 	return res
 }
 
-func (t *Object) Unwrap() interface{} {
-	obj := make(map[string]interface{})
-
-	for key, val := range t.data {
-		obj[key] = val.Unwrap()
-	}
-
-	return obj
-}
-
 func (t *Object) Hash() uint64 {
 	h := fnv.New64a()
 

@@ -74,10 +74,6 @@ func (s String) String() string {
 	return string(s)
 }
 
-func (s String) Unwrap() interface{} {
-	return string(s)
-}
-
 func (s String) Hash() uint64 {
 	h := fnv.New64a()
 
@@ -98,7 +94,7 @@ func (s String) Compare(other Value) int64 {
 		return CompareTypes(s, other)
 	}
 
-	return int64(strings.Compare(string(s), otherString.Unwrap().(string)))
+	return int64(strings.Compare(string(s), string(otherString)))
 }
 
 func (s String) Length(_ context.Context) (Int, error) {

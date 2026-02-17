@@ -35,7 +35,7 @@ func (v *Box[T]) String() string {
 	return fmt.Sprintf("Box[%s]", v.Type())
 }
 
-func (v *Box[T]) Unwrap() interface{} {
+func (v *Box[T]) Unwrap() any {
 	return v.Value
 }
 
