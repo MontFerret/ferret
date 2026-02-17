@@ -227,14 +227,28 @@ func applyConstFolding(inst *bytecode.Instruction, state constState, program *by
 				}
 			}
 		}
-	case bytecode.OpAdd, bytecode.OpSub, bytecode.OpMulti, bytecode.OpDiv, bytecode.OpMod,
+	case bytecode.OpAdd, bytecode.OpAddConst, bytecode.OpSub, bytecode.OpMulti, bytecode.OpDiv, bytecode.OpMod,
 		bytecode.OpCmp, bytecode.OpEq, bytecode.OpNe, bytecode.OpGt, bytecode.OpLt, bytecode.OpGte, bytecode.OpLte:
-		if inst.Operands[0].IsRegister() && inst.Operands[1].IsRegister() && inst.Operands[2].IsRegister() {
+		if inst.Operands[0].IsRegister() && inst.Operands[1].IsRegister() {
 			left, lok := state[inst.Operands[1].Register()]
-			right, rok := state[inst.Operands[2].Register()]
+			var right runtime.Value
+			var rok bool
+
+			if inst.Opcode == bytecode.OpAddConst && inst.Operands[2].IsConstant() {
+				right = program.Constants[inst.Operands[2].Constant()]
+				rok = true
+			} else if inst.Operands[2].IsRegister() {
+				right, rok = state[inst.Operands[2].Register()]
+			}
 
 			if lok && rok {
-				out, ok := foldBinary(inst.Opcode, left, right, bg)
+				op := inst.Opcode
+
+				if op == bytecode.OpAddConst {
+					op = bytecode.OpAdd
+				}
+
+				out, ok := foldBinary(op, left, right, bg)
 
 				if ok && isSimpleConst(out) {
 					dst := inst.Operands[0].Register()

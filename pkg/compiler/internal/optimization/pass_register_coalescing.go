@@ -893,6 +893,8 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 		return idx == 1 || idx == 2
 	case bytecode.OpConcat:
 		return idx == 0 || idx == 1
+	case bytecode.OpAddConst:
+		return idx == 0 || idx == 1
 	case bytecode.OpLoadNone, bytecode.OpLoadZero, bytecode.OpLoadBool, bytecode.OpLoadConst, bytecode.OpLoadParam, bytecode.OpRand:
 		return idx == 0
 	case bytecode.OpLoadArray, bytecode.OpLoadObject:

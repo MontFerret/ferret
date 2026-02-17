@@ -48,6 +48,30 @@ func (p *PeepholePass) Run(ctx *PassContext) (*PassResult, error) {
 		}
 
 		inst := prog.Bytecode[i]
+
+		if i+1 < bytecodeLen && inst.Opcode == bytecode.OpLoadConst && inst.Operands[0].IsRegister() && inst.Operands[1].IsConstant() {
+			if !targets[i] {
+				next := prog.Bytecode[i+1]
+
+				if next.Opcode == bytecode.OpAdd && next.Operands[0].IsRegister() && next.Operands[1].IsRegister() && next.Operands[2].IsRegister() {
+					tmpReg := inst.Operands[0].Register()
+					dstReg := next.Operands[0].Register()
+
+					if next.Operands[2].Register() == tmpReg {
+						if dstReg == tmpReg || !regUsedAfter(prog.Bytecode, i+1, tmpReg) {
+							next.Opcode = bytecode.OpAddConst
+							next.Operands[2] = inst.Operands[1]
+							prog.Bytecode[i+1] = next
+							keep[i] = false
+							modified = true
+
+							continue
+						}
+					}
+				}
+			}
+		}
+
 		if isSelfMove(inst) && !targets[i] {
 			keep[i] = false
 			modified = true
@@ -197,6 +221,22 @@ func regIn(list []int, reg int) bool {
 	for _, r := range list {
 		if r == reg {
 			return true
+		}
+	}
+
+	return false
+}
+
+func regUsedAfter(code []bytecode.Instruction, start int, reg int) bool {
+	for i := start + 1; i < len(code); i++ {
+		uses, defs := instructionUseDef(code[i])
+
+		if regIn(uses, reg) {
+			return true
+		}
+
+		if regIn(defs, reg) {
+			return false
 		}
 	}
 

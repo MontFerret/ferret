@@ -45,6 +45,39 @@ func TestPeephole_RemovesRedundantLoads(t *testing.T) {
 	}
 }
 
+func TestPeephole_RewritesAddConstRight(t *testing.T) {
+	program := &bytecode.Program{
+		Constants: []runtime.Value{
+			runtime.NewInt(2),
+			runtime.NewInt(3),
+		},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(2), bytecode.NewConstant(1)),
+			bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(3)),
+		},
+	}
+
+	res, err := runPeephole(t, program)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !res.Modified {
+		t.Fatalf("expected peephole pass to modify program")
+	}
+	if len(program.Bytecode) != 3 {
+		t.Fatalf("expected 3 instructions, got %d", len(program.Bytecode))
+	}
+	add := program.Bytecode[1]
+	if add.Opcode != bytecode.OpAddConst {
+		t.Fatalf("expected ADDC, got %s", add.Opcode)
+	}
+	if !add.Operands[2].IsConstant() || add.Operands[2].Constant() != 1 {
+		t.Fatalf("expected constant operand C1, got %s", add.Operands[2])
+	}
+}
+
 func TestPeephole_RemovesSelfMove(t *testing.T) {
 	program := &bytecode.Program{
 		Constants: []runtime.Value{

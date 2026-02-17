@@ -124,6 +124,12 @@ loop:
 			}
 		case bytecode.OpAdd:
 			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
+		case bytecode.OpAddConst:
+			if src2.IsConstant() {
+				reg[dst] = runtime.Add(ctx, reg[src1], constants[src2.Constant()])
+			} else {
+				reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
+			}
 		case bytecode.OpConcat:
 			start := int(src1)
 			count := int(src2)
