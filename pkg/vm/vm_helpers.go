@@ -480,8 +480,8 @@ func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Valu
 	keyed, ok := src.(runtime.KeyReadable)
 
 	if !ok {
-		// Try a more expensive but generic approach for objects that don't implement KeyReadable but might still support key access (e.g. via reflection).
-		return runtime.ReadValueByKey(ctx, src, arg)
+		// Try a more expensive using reflection for structs and maps that don't implement KeyReadable but use ferret tags or map keys.
+		return runtime.EncodeField(ctx, src, arg)
 	}
 
 	out, err := keyed.Get(ctx, arg)

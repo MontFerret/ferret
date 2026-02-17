@@ -9,9 +9,9 @@ import (
 
 var timeType = reflect.TypeOf(time.Time{})
 
-// Bind binds a runtime Value into the provided target.
+// Decode binds a runtime Value into the provided target.
 // Target must be a non-nil pointer.
-func Bind[T any](src Value, target T) error {
+func Decode[T any](src Value, target T) error {
 	if src == nil {
 		src = None
 	}
@@ -336,28 +336,7 @@ func bindStruct(src Value, dst reflect.Value) error {
 }
 
 func fieldBindingName(field reflect.StructField) (string, bool) {
-	if raw := field.Tag.Get("json"); raw != "" {
-		return parseTag(raw, field.Name)
-	}
-
-	if raw := field.Tag.Get("ferret"); raw != "" {
-		return parseTag(raw, field.Name)
-	}
-
-	return field.Name, true
-}
-
-func parseTag(tag, fallback string) (string, bool) {
-	name := strings.Split(tag, ",")[0]
-	if name == "-" {
-		return "", false
-	}
-
-	if name == "" {
-		return fallback, true
-	}
-
-	return name, true
+	return Tag(field)
 }
 
 func collectEntries(src Value) (map[string]Value, error) {

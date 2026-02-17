@@ -73,6 +73,11 @@ func Random2(mid float64) float64 {
 	return Random(randMax, randMin)
 }
 
+// Parse attempts to convert an arbitrary input into a Value type.
+// It supports basic types like bool, string, int, float, time.Time, as well as slices and maps.
+// For unsupported types, it returns None.
+// It does not use "ferret" tags for struct fields and instead relies on field names directly.
+// For more safe and controlled parsing, consider using the "ferret" tags and the Encode function.
 func Parse(input interface{}) Value {
 	switch value := input.(type) {
 	case bool:
@@ -169,7 +174,13 @@ func Parse(input interface{}) Value {
 
 			for i := 0; i < size; i++ {
 				field := t.Field(i)
+				if field.PkgPath != "" {
+					continue
+				}
 				fieldValue := v.Field(i)
+				if !fieldValue.CanInterface() {
+					continue
+				}
 
 				_ = obj.Set(ctx, NewString(field.Name), Parse(fieldValue.Interface()))
 			}
