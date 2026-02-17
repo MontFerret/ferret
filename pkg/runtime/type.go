@@ -5,7 +5,14 @@ import (
 	"reflect"
 )
 
-type Type string
+type (
+	Type string
+
+	// Typed is an interface that can be implemented by any value to provide its type information.
+	Typed interface {
+		Type() Type
+	}
+)
 
 func NewType(pkg, name string) Type {
 	if pkg == "" {
@@ -93,7 +100,7 @@ func Reflect(input Value) Type {
 		return TypeNone
 	}
 
-	switch input.(type) {
+	switch v := input.(type) {
 	case Boolean:
 		return TypeBoolean
 	case Int:
@@ -130,6 +137,8 @@ func Reflect(input Value) Type {
 		return TypeObservable
 	case Queryable:
 		return TypeQueryable
+	case Typed:
+		return v.Type()
 	default:
 		t := reflect.TypeOf(input)
 
