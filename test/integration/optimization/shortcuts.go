@@ -1,6 +1,7 @@
 package optimization_test
 
 import (
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/v2/test/integration/base"
@@ -16,6 +17,7 @@ type (
 		Run       bool
 		Expected  any
 		Assertion convey.Assertion
+		Options   []vm.EnvironmentOption
 	}
 )
 

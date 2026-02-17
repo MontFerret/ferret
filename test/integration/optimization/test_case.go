@@ -9,6 +9,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	"github.com/MontFerret/ferret/v2/pkg/asm"
 
@@ -49,7 +50,20 @@ func RegistersCase(expression string, num int, output any, desc ...string) UseCa
 	}, desc...)
 }
 
-func SkipAtMostRegistersCase(expression string, num int, output any, desc ...string) UseCase {
+func SkipRegistersCase(expression string, num int, output any, desc ...string) UseCase {
+	return Skip(RegistersCase(expression, num, output, desc...))
+}
+
+func RegistersCaseWith(expression string, num int, output any, params map[string]runtime.Value, desc ...string) UseCase {
+	return NewCase(expression, num, ShouldUseEqRegisters, Execution{
+		Run:       true,
+		Expected:  output,
+		Assertion: convey.ShouldEqual,
+		Options:   []vm.EnvironmentOption{vm.WithParams(params)},
+	}, desc...)
+}
+
+func SkipRegistersCaseWith(expression string, num int, output any, desc ...string) UseCase {
 	return Skip(RegistersCase(expression, num, output, desc...))
 }
 
@@ -141,6 +155,10 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 					options := []vm.EnvironmentOption{
 						vm.WithFunctions(std),
 						vm.WithFunctions(base.ForWhileHelpers()),
+					}
+
+					if len(useCase.Execution.Options) > 0 {
+						options = append(options, useCase.Execution.Options...)
 					}
 
 					assertion := useCase.Execution.Assertion
