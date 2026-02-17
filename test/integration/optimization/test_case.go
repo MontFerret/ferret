@@ -38,9 +38,13 @@ func ByteCodeCase(expression string, expected []bytecode.Instruction, desc ...st
 	}
 }
 
-func OpcodeCase(expression string, expectation OpcodeExpectation, out any, desc ...string) UseCase {
+func SkipByteCodeCase(expression string, expected []bytecode.Instruction, desc ...string) UseCase {
+	return Skip(ByteCodeCase(expression, expected, desc...))
+}
+
+func OpcodeCase[T OpcodeExpectation](expression string, expectation T, out any, desc ...string) UseCase {
 	return UseCase{
-		TestCase: base.NewCase(expression, expectation, ShouldSatisfyOpcodeExpectation, desc...),
+		TestCase: base.NewCase(expression, expectation, ShouldCheckOpcode, desc...),
 		Execution: Execution{
 			Run:       true,
 			Expected:  out,
@@ -49,12 +53,8 @@ func OpcodeCase(expression string, expectation OpcodeExpectation, out any, desc 
 	}
 }
 
-func SkipOpcodeCase(expression string, expectation OpcodeExpectation, out any, desc ...string) UseCase {
+func SkipOpcodeCase[T OpcodeExpectation](expression string, expectation T, out any, desc ...string) UseCase {
 	return Skip(OpcodeCase(expression, expectation, out, desc...))
-}
-
-func SkipByteCodeCase(expression string, expected []bytecode.Instruction, desc ...string) UseCase {
-	return Skip(ByteCodeCase(expression, expected, desc...))
 }
 
 func RegistersCase(expression string, num int, output any, desc ...string) UseCase {

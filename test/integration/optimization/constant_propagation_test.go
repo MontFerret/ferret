@@ -10,23 +10,23 @@ import (
 
 func TestConstantPropagation(t *testing.T) {
 	RunUseCases(t, compiler.O1, []UseCase{
-		OpcodeCase(`LET a = 1 + 2 RETURN a`, OpcodeExpectation{
+		OpcodeCase(`LET a = 1 + 2 RETURN a`, OpcodeExistence{
 			NotExists: []bytecode.Opcode{bytecode.OpAdd},
 		}, 3, "should fold constant addition"),
 
-		OpcodeCase(`LET a = 1 + 2 RETURN -a`, OpcodeExpectation{
+		OpcodeCase(`LET a = 1 + 2 RETURN -a`, OpcodeExistence{
 			NotExists: []bytecode.Opcode{bytecode.OpAdd, bytecode.OpFlipNegative},
 		}, -3, "should fold constant addition and unary minus"),
 
-		OpcodeCase(`LET a = 10 RETURN (a - 3) * 2`, OpcodeExpectation{
+		OpcodeCase(`LET a = 10 RETURN (a - 3) * 2`, OpcodeExistence{
 			NotExists: []bytecode.Opcode{bytecode.OpSub, bytecode.OpMulti},
 		}, 14, "should fold chain of arithmetic operations"),
 
-		OpcodeCase(`RETURN 1 / 0`, OpcodeExpectation{
+		OpcodeCase(`RETURN 1 / 0`, OpcodeExistence{
 			Exists: []bytecode.Opcode{bytecode.OpDiv},
 		}, runtime.ErrInvalidOperation, "should not fold division by zero"),
 
-		OpcodeCase(`RETURN 1 / "0"`, OpcodeExpectation{
+		OpcodeCase(`RETURN 1 / "0"`, OpcodeExistence{
 			Exists: []bytecode.Opcode{bytecode.OpDiv},
 		}, runtime.ErrInvalidOperation, "should not fold division by zero with string"),
 	})

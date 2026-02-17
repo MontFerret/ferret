@@ -47,14 +47,39 @@ func ShouldEqualBytecode(a any, e ...any) string {
 	return ""
 }
 
-func ShouldSatisfyOpcodeExpectation(a any, e ...any) string {
+// ShouldCheckOpcode asserts that the actual program's bytecode contains (or does not contain) specific opcodes, or that certain opcodes appear a specific number of times, based on the provided expectation type (OpcodeExistence or OpcodeCount).
+func ShouldCheckOpcode(a any, e ...any) string {
 	actual := CastToProgram(a)
-	expected, ok := e[0].(OpcodeExpectation)
 
-	if !ok {
-		panic("expected must be a type of OpcodeExpectation")
+	switch expectation := e[0].(type) {
+	case OpcodeExistence:
+		return shouldCheckOpcodeExistence(actual, expectation)
+	case OpcodeCount:
+		return shouldCheckOpcodeCount(actual, expectation)
+	default:
+		panic(fmt.Sprintf("unsupported opcode expectation type: %T", e[0]))
 	}
 
+	return ""
+}
+
+func shouldCheckOpcodeCount(actual *bytecode.Program, expected OpcodeCount) string {
+	current := make(map[bytecode.Opcode]int)
+
+	for _, inst := range actual.Bytecode {
+		current[inst.Opcode]++
+	}
+
+	for opcode, count := range expected.Count {
+		if current[opcode] != count {
+			return fmt.Sprintf("expected %d occurrences of opcode %s, got %d", count, opcode.String(), current[opcode])
+		}
+	}
+
+	return ""
+}
+
+func shouldCheckOpcodeExistence(actual *bytecode.Program, expected OpcodeExistence) string {
 	exists := func(op bytecode.Opcode) bool {
 		for _, inst := range actual.Bytecode {
 			if inst.Opcode == op {

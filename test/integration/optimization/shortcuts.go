@@ -23,9 +23,17 @@ type (
 		Options   []vm.EnvironmentOption
 	}
 
-	OpcodeExpectation struct {
+	OpcodeExpectation interface {
+		OpcodeExistence | OpcodeCount
+	}
+
+	OpcodeExistence struct {
 		Exists    []bytecode.Opcode
 		NotExists []bytecode.Opcode
+	}
+
+	OpcodeCount struct {
+		Count map[bytecode.Opcode]int
 	}
 )
 
@@ -37,9 +45,19 @@ func NewCase(expression string, expected any, assertion convey.Assertion, exec E
 }
 
 func Skip(uc UseCase) UseCase {
-	uc.Skip = true
+	uc.TestCase = base.Skip(uc.TestCase)
 
 	return uc
 }
 
-var Debug = base.Debug
+func Debug(uc UseCase) UseCase {
+	uc.TestCase = base.Debug(uc.TestCase)
+
+	return uc
+}
+
+func Options(uc UseCase, opts ...vm.EnvironmentOption) UseCase {
+	uc.Execution.Options = append(uc.Execution.Options, opts...)
+
+	return uc
+}
