@@ -1,7 +1,9 @@
 package runtime
 
 import (
+	"fmt"
 	"hash/fnv"
+	"reflect"
 
 	"github.com/wI2L/jettison"
 )
@@ -12,10 +14,17 @@ type Box[T any] struct {
 	Value T
 }
 
+// NewBox creates a new Box containing the provided value.
 func NewBox[T any](value T) *Box[T] {
 	return &Box[T]{
 		Value: value,
 	}
+}
+
+func (v *Box[T]) Type() Type {
+	t := reflect.TypeOf(v.Value)
+
+	return NewType(t.PkgPath(), t.Name())
 }
 
 func (v *Box[T]) MarshalJSON() ([]byte, error) {
@@ -23,7 +32,7 @@ func (v *Box[T]) MarshalJSON() ([]byte, error) {
 }
 
 func (v *Box[T]) String() string {
-	return "[Box]"
+	return fmt.Sprintf("Box[%s]", v.Type())
 }
 
 func (v *Box[T]) Unwrap() interface{} {

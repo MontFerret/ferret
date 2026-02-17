@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"hash/fnv"
-	"io"
 	"math"
 	"math/rand"
 	"reflect"
@@ -559,41 +558,6 @@ func ToNumberOrString(input Value) Value {
 	}
 }
 
-func ToStrings(ctx context.Context, input Collection) []String {
-	size, err := input.Length(ctx)
-
-	if err != nil {
-		size = 0
-	}
-
-	res := make([]String, size)
-
-	iterator, err := input.Iterate(ctx)
-
-	if err != nil {
-		return res
-	}
-
-	var i int
-
-	for hasNext, err := iterator.HasNext(ctx); hasNext && err == nil; {
-		val, _, err := iterator.Next(ctx)
-
-		if err != nil {
-			return res
-		}
-
-		res[i] = NewString(val.String())
-		i++
-	}
-
-	if closable, ok := iterator.(io.Closer); ok {
-		_ = closable.Close()
-	}
-
-	return res
-}
-
 func ToBinary(input Value) Binary {
 	bin, ok := input.(Binary)
 
@@ -663,4 +627,128 @@ func UnwrapStrings(values []String) []string {
 
 func CompareStrings(a, b String) Int {
 	return Int(strings.Compare(a.String(), b.String()))
+}
+
+// ToSlice converts an Iterable input into a slice of type T using the provided mapper function.
+// It returns an error if the input does not implement Iterable or if any mapping operation fails.
+func ToSlice[T any](ctx context.Context, input Value, mapper Mapper[T]) ([]T, error) {
+	iter, ok := input.(Iterable)
+
+	if !ok {
+		return nil, TypeErrorOf(input, TypeIterable)
+	}
+
+	capacity := 5
+
+	meas, ok := input.(Measurable)
+
+	if ok {
+		res, err := meas.Length(ctx)
+
+		if err != nil {
+			return nil, err
+		}
+
+		capacity = int(res)
+	}
+
+	result := make([]T, 0, capacity)
+
+	err := ForEach(ctx, iter, func(_ context.Context, val Value, key Value) (Boolean, error) {
+		mapped, e := mapper(ctx, val, key)
+
+		if e != nil {
+			return False, e
+		}
+
+		result = append(result, mapped)
+
+		return True, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func ToStringSlice(ctx context.Context, input Collection) ([]String, error) {
+	return ToSlice(ctx, input, func(_ context.Context, val Value, _ Value) (String, error) {
+		return ToString(val), nil
+	})
+}
+
+// GetByKey attempts to get a value by key from the input.
+// It returns an error if the input does not implement KeyReadable,
+// if the key is not found, or if the found value cannot be cast to the expected type.
+func GetByKey[T Value](ctx context.Context, input, key Value) (T, error) {
+	keyReadable, ok := input.(KeyReadable)
+
+	if !ok {
+		var zero T
+
+		return zero, TypeError(Reflect(input), TypeKeyReadable)
+	}
+
+	found, err := keyReadable.Get(ctx, key)
+
+	if err != nil {
+		var zero T
+
+		return zero, err
+	}
+
+	if found == nil || found == None {
+		var zero T
+
+		return zero, ErrNotFound
+	}
+
+	expected, ok := found.(T)
+
+	if !ok {
+		var zero T
+
+		return zero, TypeError(Reflect(found), Reflect(zero))
+	}
+
+	return expected, nil
+}
+
+// GetByIndex attempts to get a value by index from the input.
+// It returns an error if the input does not implement IndexReadable,
+// if the index is not found, or if the found value cannot be cast to the expected type.
+func GetByIndex[T Value](ctx context.Context, input Value, index Int) (T, error) {
+	indexReadable, ok := input.(IndexReadable)
+
+	if !ok {
+		var zero T
+
+		return zero, TypeError(Reflect(input), TypeIndexReadable)
+	}
+
+	found, err := indexReadable.Get(ctx, index)
+
+	if err != nil {
+		var zero T
+
+		return zero, err
+	}
+
+	if found == nil || found == None {
+		var zero T
+
+		return zero, ErrNotFound
+	}
+
+	expected, ok := found.(T)
+
+	if !ok {
+		var zero T
+
+		return zero, TypeError(Reflect(found), Reflect(zero))
+	}
+
+	return expected, nil
 }
