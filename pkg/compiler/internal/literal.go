@@ -248,42 +248,58 @@ func (c *LiteralCompiler) CompileTemplateLiteral(ctx fql.ITemplateLiteralContext
 		return bytecode.NoopOperand
 	}
 
-	if val, ok := parseTemplateLiteralConst(ctx); ok {
-		return loadConstant(c.ctx, val)
-	}
-
 	type part struct {
 		literal string
 		expr    fql.IExpressionContext
 	}
 
-	parts := make([]part, 0, len(ctx.AllTemplateElement()))
-	var buf strings.Builder
+	elements := ctx.AllTemplateElement()
+	if len(elements) == 0 {
+		return loadConstant(c.ctx, runtime.EmptyString)
+	}
 
-	for _, el := range ctx.AllTemplateElement() {
+	parts := make([]part, 0, len(elements))
+	var buf strings.Builder
+	hasDynamic := false
+
+	flushLiteral := func() {
+		if buf.Len() == 0 {
+			return
+		}
+
+		parts = append(parts, part{literal: buf.String()})
+		buf.Reset()
+	}
+
+	for _, el := range elements {
 		if el == nil {
 			continue
 		}
+
 		if chunk := el.TemplateChars(); chunk != nil {
 			buf.WriteString(parseTemplateChunk(chunk.GetText()))
+
 			continue
 		}
+
 		if expr := el.Expression(); expr != nil {
 			if val, ok := constStringFromExpression(expr); ok {
 				buf.WriteString(val)
+
 				continue
 			}
-			if buf.Len() > 0 {
-				parts = append(parts, part{literal: buf.String()})
-				buf.Reset()
-			}
+
+			hasDynamic = true
+			flushLiteral()
 			parts = append(parts, part{expr: expr})
 		}
 	}
 
-	if buf.Len() > 0 {
-		parts = append(parts, part{literal: buf.String()})
+	if !hasDynamic {
+		return loadConstant(c.ctx, runtime.NewString(buf.String()))
 	}
+
+	flushLiteral()
 
 	if len(parts) == 0 {
 		return loadConstant(c.ctx, runtime.EmptyString)
@@ -321,8 +337,14 @@ func (c *LiteralCompiler) CompileTemplateLiteral(ctx fql.ITemplateLiteralContext
 			op := c.ctx.ExprCompiler.Compile(part.expr)
 			if op.IsConstant() {
 				c.ctx.Emitter.EmitLoadConst(target, op)
-			} else if !op.Equals(target) {
+			} else if op.IsRegister() {
+				if op.Equals(target) {
+					continue
+				}
+
 				c.ctx.Emitter.EmitMove(target, op)
+			} else {
+				return bytecode.NoopOperand
 			}
 
 			continue

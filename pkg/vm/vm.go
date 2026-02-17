@@ -125,11 +125,7 @@ loop:
 		case bytecode.OpAdd:
 			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
 		case bytecode.OpAddConst:
-			if src2.IsConstant() {
-				reg[dst] = runtime.Add(ctx, reg[src1], constants[src2.Constant()])
-			} else {
-				reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
-			}
+			reg[dst] = runtime.Add(ctx, reg[src1], constants[src2.Constant()])
 		case bytecode.OpConcat:
 			start := int(src1)
 			count := int(src2)
@@ -187,10 +183,29 @@ loop:
 				break
 			}
 
-			var b strings.Builder
+			parts := make([]runtime.String, count)
+			totalLen := 0
 
 			for i := 0; i < count; i++ {
-				b.WriteString(runtime.ToString(reg[start+i]).String())
+				s := runtime.ToString(reg[start+i])
+				parts[i] = s
+				totalLen += len(s)
+			}
+
+			if totalLen == 0 {
+				reg[dst] = runtime.EmptyString
+				break
+			}
+
+			var b strings.Builder
+			b.Grow(totalLen)
+
+			for i := 0; i < count; i++ {
+				if parts[i] == runtime.EmptyString {
+					continue
+				}
+
+				b.WriteString(string(parts[i]))
 			}
 
 			reg[dst] = runtime.NewString(b.String())
