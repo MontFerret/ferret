@@ -70,10 +70,10 @@ func (p *Proxy) Hash() uint64 {
 }
 
 func (p *Proxy) Compare(other Value) int64 {
-	comp, ok := other.(Comparable)
+	comp, ok := p.target.(Comparable)
 
 	if ok {
-		return comp.Compare(p)
+		return comp.Compare(other)
 	}
 
 	return -1
@@ -94,7 +94,7 @@ func (p *Proxy) Length(ctx context.Context) (Int, error) {
 }
 
 func (p *Proxy) Get(ctx context.Context, key Value) (Value, error) {
-	keyReadable, ok := key.(KeyReadable)
+	keyReadable, ok := p.target.(KeyReadable)
 
 	if ok {
 		return keyReadable.Get(ctx, key)
@@ -104,7 +104,7 @@ func (p *Proxy) Get(ctx context.Context, key Value) (Value, error) {
 }
 
 func (p *Proxy) Set(ctx context.Context, key, value Value) error {
-	keyWritable, ok := key.(KeyWritable)
+	keyWritable, ok := p.target.(KeyWritable)
 
 	if ok {
 		return keyWritable.Set(ctx, key, value)
