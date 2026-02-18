@@ -80,8 +80,23 @@ func EncodeField(ctx context.Context, input any, key Value) (Value, error) {
 		return None, nil
 	case reflect.Map:
 		v := reflect.ValueOf(input)
-		field := v.MapIndex(reflect.ValueOf(key))
+		mapKeyType := v.Type().Key()
 
+		var mapKeyVal reflect.Value
+		switch mapKeyType.Kind() {
+		case reflect.String:
+			// Use the string representation of the runtime.Value as the map key.
+			mapKeyVal = reflect.ValueOf(keyStr)
+		default:
+			keyType := reflect.TypeOf(key)
+			if keyType == nil || !keyType.AssignableTo(mapKeyType) {
+				// Cannot use the provided key for this map type.
+				return None, nil
+			}
+			mapKeyVal = reflect.ValueOf(key)
+		}
+
+		field := v.MapIndex(mapKeyVal)
 		if field.IsValid() {
 			return Encode(field.Interface()), nil
 		}
