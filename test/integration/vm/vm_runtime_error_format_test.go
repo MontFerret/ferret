@@ -19,5 +19,18 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 			},
 			"script.fql",
 		),
+		RuntimeErrorCase(
+			"LET obj = {}\nRETURN obj.foo.bar",
+			ExpectedRuntimeError{
+				Message: "Cannot read property \"bar\" of none",
+				Contains: []string{
+					"TypeError: Cannot read property \"bar\" of none",
+					"property access on none",
+					"Hint: Use optional chaining (?.) or check for none before accessing a member",
+				},
+				NotContains: []string{"Caused by:"},
+			},
+			"obj.fql",
+		),
 	})
 }
