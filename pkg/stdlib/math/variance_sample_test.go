@@ -25,6 +25,6 @@ func TestSampleVariance(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out.Unwrap(), ShouldEqual, 4.3)
+		So(out, ShouldEqual, 4.3)
 	})
 }

@@ -25,6 +25,6 @@ func TestCeil(t *testing.T) {
 		out, err = math.Ceil(context.Background(), runtime.NewFloat(-2.50))
 
 		So(err, ShouldBeNil)
-		So(out.Unwrap(), ShouldEqual, -2)
+		So(out, ShouldEqual, -2)
 	})
 }

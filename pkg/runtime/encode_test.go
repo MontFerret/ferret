@@ -121,11 +121,10 @@ func TestEncodeByKey(t *testing.T) {
 			},
 			Field: "pointerProp",
 			Expected: runtime.NewObjectWith(
-				runtime.NewObjectProperty("StrProp", runtime.String("test")),
-				runtime.NewObjectProperty("IntProp", runtime.Int(0)),
-				runtime.NewObjectProperty("SliceProp", runtime.NewArray(0)),
-				runtime.NewObjectProperty("PointerProp", runtime.None),
-				runtime.NewObjectProperty("UntaggedProp", runtime.String("")),
+				runtime.NewObjectProperty("strProp", runtime.String("test")),
+				runtime.NewObjectProperty("intProp", runtime.Int(0)),
+				runtime.NewObjectProperty("sliceProp", runtime.NewArray(0)),
+				runtime.NewObjectProperty("pointerProp", runtime.None),
 			),
 		},
 	}
@@ -148,9 +147,10 @@ func TestEncodeByKey(t *testing.T) {
 				privateStrProp: "hello world",
 			}
 
-			_, err := runtime.EncodeField(nil, sv, runtime.String("privateStrProp"))
+			res, err := runtime.EncodeField(nil, sv, runtime.String("privateStrProp"))
 
-			So(err, ShouldNotBeNil)
+			So(res, ShouldEqual, runtime.None)
+			So(err, ShouldBeNil)
 		})
 
 		Convey("should not read a non-tagged field from a struct", func() {

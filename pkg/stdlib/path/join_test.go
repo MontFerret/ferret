@@ -16,7 +16,7 @@ func TestJoin(t *testing.T) {
 		Convey("It should return an empty string without error", func() {
 			out, err := path.Join(context.Background())
 
-			So(out.Unwrap(), ShouldEqual, "")
+			So(out.String(), ShouldEqual, "")
 			So(err, ShouldBeNil)
 		})
 	})
@@ -44,7 +44,7 @@ func TestJoin(t *testing.T) {
 			runtime.NewArrayWith(runtime.NewString("pkg"), runtime.NewString("path")),
 		)
 
-		So(out.Unwrap(), ShouldEqual, "pkg/path")
+		So(out.String(), ShouldEqual, "pkg/path")
 	})
 
 	Convey("Join('pkg', 'path') should return 'pkg/path'", t, func() {
@@ -53,7 +53,7 @@ func TestJoin(t *testing.T) {
 			runtime.NewString("pkg"), runtime.NewString("path"),
 		)
 
-		So(out.Unwrap(), ShouldEqual, "pkg/path")
+		So(out.String(), ShouldEqual, "pkg/path")
 	})
 
 	Convey("Join with empty array should return empty string", t, func() {
@@ -62,7 +62,7 @@ func TestJoin(t *testing.T) {
 			runtime.NewArray(0),
 		)
 
-		So(out.Unwrap(), ShouldEqual, "")
+		So(out.String(), ShouldEqual, "")
 	})
 
 	Convey("Join with single element should return that element", t, func() {
@@ -71,7 +71,7 @@ func TestJoin(t *testing.T) {
 			runtime.NewArrayWith(runtime.NewString("single")),
 		)
 
-		So(out.Unwrap(), ShouldEqual, "single")
+		So(out.String(), ShouldEqual, "single")
 	})
 
 	Convey("Join('/', 'home', 'user') should return '/home/user'", t, func() {
@@ -80,7 +80,7 @@ func TestJoin(t *testing.T) {
 			runtime.NewString("/"), runtime.NewString("home"), runtime.NewString("user"),
 		)
 
-		So(out.Unwrap(), ShouldEqual, "/home/user")
+		So(out.String(), ShouldEqual, "/home/user")
 	})
 
 	Convey("Join with empty strings should handle correctly", t, func() {
@@ -89,6 +89,6 @@ func TestJoin(t *testing.T) {
 			runtime.NewString(""), runtime.NewString("path"),
 		)
 
-		So(out.Unwrap(), ShouldEqual, "path")
+		So(out.String(), ShouldEqual, "path")
 	})
 }

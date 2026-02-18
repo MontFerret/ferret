@@ -127,3 +127,7 @@ func (f Float) Compare(other Value) int64 {
 		return CompareTypes(f, other)
 	}
 }
+
+func (f Float) Unwrap() any {
+	return float64(f)
+}

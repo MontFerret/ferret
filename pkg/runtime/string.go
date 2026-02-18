@@ -116,3 +116,7 @@ func (s String) Concat(other Value) String {
 func (s String) At(index Int) String {
 	return String([]rune(s)[index])
 }
+
+func (s String) Unwrap() any {
+	return string(s)
+}

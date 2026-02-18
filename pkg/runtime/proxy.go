@@ -19,6 +19,26 @@ func NewProxy(target any) *Proxy {
 	}
 }
 
+func (p *Proxy) Type() Type {
+	typed, ok := p.target.(Typed)
+
+	if ok {
+		return typed.Type()
+	}
+
+	return NewReflectType(p.target)
+}
+
+func (p *Proxy) Unwrap() any {
+	unwrappable, ok := p.target.(Unwrappable)
+
+	if ok {
+		return unwrappable.Unwrap()
+	}
+
+	return p.target
+}
+
 func (p *Proxy) MarshalJSON() ([]byte, error) {
 	marshaler, ok := p.target.(json.Marshaler)
 
@@ -49,8 +69,28 @@ func (p *Proxy) Hash() uint64 {
 	return uint64(reflect.ValueOf(p.target).Pointer())
 }
 
+func (p *Proxy) Compare(other Value) int64 {
+	comp, ok := other.(Comparable)
+
+	if ok {
+		return comp.Compare(p)
+	}
+
+	return -1
+}
+
 func (p *Proxy) Copy() Value {
 	return NewProxy(p.target)
+}
+
+func (p *Proxy) Length(ctx context.Context) (Int, error) {
+	measurable, ok := p.target.(Measurable)
+
+	if ok {
+		return measurable.Length(ctx)
+	}
+
+	return -1, ProxyError(p.target, TypeMeasurable)
 }
 
 func (p *Proxy) Get(ctx context.Context, key Value) (Value, error) {
@@ -60,7 +100,17 @@ func (p *Proxy) Get(ctx context.Context, key Value) (Value, error) {
 		return keyReadable.Get(ctx, key)
 	}
 
-	return EncodeField(ctx, p.target, key)
+	return None, ProxyError(p.target, TypeKeyReadable)
+}
+
+func (p *Proxy) Set(ctx context.Context, key, value Value) error {
+	keyWritable, ok := key.(KeyWritable)
+
+	if ok {
+		return keyWritable.Set(ctx, key, value)
+	}
+
+	return ProxyError(p.target, TypeKeyWritable)
 }
 
 func (p *Proxy) Iterate(ctx context.Context) (Iterator, error) {
@@ -70,5 +120,55 @@ func (p *Proxy) Iterate(ctx context.Context) (Iterator, error) {
 		return iterable.Iterate(ctx)
 	}
 
-	return nil, fmt.Errorf("cannot iterate over %T", p.target)
+	return nil, ProxyError(p.target, TypeIterable)
+}
+
+func (p *Proxy) SortAsc(ctx context.Context) error {
+	sortable, ok := p.target.(Sortable)
+
+	if ok {
+		return sortable.SortAsc(ctx)
+	}
+
+	return ProxyError(p.target, TypeSortable)
+}
+
+func (p *Proxy) SortDesc(ctx context.Context) error {
+	sortable, ok := p.target.(Sortable)
+
+	if ok {
+		return sortable.SortDesc(ctx)
+	}
+
+	return ProxyError(p.target, TypeSortable)
+}
+
+func (p *Proxy) Dispatch(ctx context.Context, event DispatchEvent) (Value, error) {
+	dispatchable, ok := p.target.(Dispatchable)
+
+	if ok {
+		return dispatchable.Dispatch(ctx, event)
+	}
+
+	return None, ProxyError(p.target, TypeDispatchable)
+}
+
+func (p *Proxy) Subscribe(ctx context.Context, subscription Subscription) (Stream, error) {
+	observable, ok := p.target.(Observable)
+
+	if ok {
+		return observable.Subscribe(ctx, subscription)
+	}
+
+	return nil, ProxyError(p.target, TypeObservable)
+}
+
+func (p *Proxy) Query(ctx context.Context, q Query) (Value, error) {
+	queryable, ok := p.target.(Queryable)
+
+	if ok {
+		return queryable.Query(ctx, q)
+	}
+
+	return None, ProxyError(p.target, TypeQueryable)
 }

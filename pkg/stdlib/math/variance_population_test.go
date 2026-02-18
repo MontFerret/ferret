@@ -25,6 +25,6 @@ func TestPopulationVariance(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out.Unwrap(), ShouldEqual, 3.44)
+		So(out, ShouldEqual, 3.44)
 	})
 }

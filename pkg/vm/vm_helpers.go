@@ -2,6 +2,7 @@ package vm
 
 import (
 	"context"
+	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -480,8 +481,7 @@ func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Valu
 	keyed, ok := src.(runtime.KeyReadable)
 
 	if !ok {
-		// Try a more expensive using reflection for structs and maps that don't implement KeyReadable but use ferret tags or map keys.
-		return runtime.EncodeField(ctx, src, arg)
+		return nil, runtime.TypeErrorOf(src, runtime.TypeKeyReadable)
 	}
 
 	out, err := keyed.Get(ctx, arg)
@@ -603,7 +603,7 @@ func (vm *VM) castDispatchArgs(
 	dispatcher, ok := target.(runtime.Dispatchable)
 
 	if !ok {
-		return nil, "", nil, nil, runtime.TypeErrorOf(target, runtime.TypeDispatcher)
+		return nil, "", nil, nil, runtime.TypeErrorOf(target, runtime.TypeDispatchable)
 	}
 
 	eventNameStr, err := runtime.CastString(eventName)
@@ -689,7 +689,7 @@ func (vm *VM) setOrOptional(dst bytecode.Operand, val runtime.Value, err error, 
 		return nil
 	}
 
-	if optional {
+	if optional || errors.Is(err, runtime.ErrNotFound) {
 		vm.registers.Values[dst] = runtime.None
 
 		return nil

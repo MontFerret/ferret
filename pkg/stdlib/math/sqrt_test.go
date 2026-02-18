@@ -31,7 +31,7 @@ func TestSqrt(t *testing.T) {
 		out, err = math.Sqrt(context.Background(), runtime.NewFloat(-4))
 
 		So(err, ShouldBeNil)
-		So(runtime.IsNaN(out.(runtime.Float)).Unwrap(), ShouldBeTrue)
+		So(runtime.Unwrap(runtime.IsNaN(out.(runtime.Float))), ShouldBeTrue)
 	})
 
 	Convey("Should return error when value is not numeric", t, func() {

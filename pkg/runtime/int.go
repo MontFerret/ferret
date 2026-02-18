@@ -119,3 +119,7 @@ func (i Int) Compare(other Value) int64 {
 		return CompareTypes(i, other)
 	}
 }
+
+func (i Int) Unwrap() any {
+	return int(i)
+}

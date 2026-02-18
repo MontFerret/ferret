@@ -105,7 +105,7 @@ func toRuntimeError(program *bytecode.Program, pc int, err error) *RuntimeError 
 			message = diagnostics.FormatMessage(msg.Error())
 			cause = cs
 		} else {
-			message = "Error"
+			message = "Runtime Error"
 			cause = err
 		}
 	}

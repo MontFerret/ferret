@@ -182,7 +182,7 @@ func TestWrite(t *testing.T) {
 				read, err := fs.Read(context.Background(), fpath)
 				So(err, ShouldBeNil)
 
-				readBytes := read.Unwrap().([]byte)
+				readBytes := runtime.Unwrap(read)
 				So(readBytes, ShouldResemble, bytes.Repeat(data, i+1))
 			}
 		})

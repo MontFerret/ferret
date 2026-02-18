@@ -25,6 +25,6 @@ func TestCos(t *testing.T) {
 		out, err = math.Cos(context.Background(), runtime.NewFloat(-3.141592653589783))
 
 		So(err, ShouldBeNil)
-		So(out.Unwrap(), ShouldEqual, -1)
+		So(out, ShouldEqual, -1)
 	})
 }

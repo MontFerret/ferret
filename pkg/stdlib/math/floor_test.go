@@ -25,6 +25,6 @@ func TestFloor(t *testing.T) {
 		out, err = math.Floor(context.Background(), runtime.NewFloat(-2.50))
 
 		So(err, ShouldBeNil)
-		So(out.Unwrap(), ShouldEqual, -3)
+		So(out, ShouldEqual, -3)
 	})
 }

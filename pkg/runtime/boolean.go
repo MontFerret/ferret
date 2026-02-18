@@ -103,3 +103,7 @@ func (t Boolean) Compare(other Value) int64 {
 
 	return +1
 }
+
+func (t Boolean) Unwrap() any {
+	return bool(t)
+}
