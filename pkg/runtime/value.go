@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 // Value represents an interface of
@@ -9,8 +10,8 @@ import (
 type Value interface {
 	// TODO: Remove Marshaler and introduce a runtime Serializer
 	json.Marshaler
-	String() string
-	Hash() uint64
-	// TODO: Add context and return error. It needs to support values that rely on external storages.
+	fmt.Stringer
+	Hashable
+	// Copy returns a shallow copy of the value.
 	Copy() Value
 }

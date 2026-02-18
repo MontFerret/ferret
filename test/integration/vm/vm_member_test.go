@@ -274,8 +274,8 @@ func TestTaggedTypes(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		Case("RETURN GET_VALUE().strProp", "test"),
 		Case("RETURN GET_VALUE().intProp", 99),
-		Case("RETURN GET_VALUE().sliceProp", []any{1, 2, 3}),
-		Case("RETURN GET_VALUE().nilPointerProp.strProp", "nested"),
+		CaseArray("RETURN GET_VALUE().sliceProp", []any{1, 2, 3}),
+		Case("RETURN GET_VALUE().pointerProp.strProp", "nested"),
 		CaseNil("RETURN GET_VALUE().nilPointerProp"),
 		CaseNil("RETURN GET_VALUE().untagged"),
 		CaseNil("RETURN GET_VALUE().privateStrProp"),

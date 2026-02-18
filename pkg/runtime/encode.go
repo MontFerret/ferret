@@ -51,7 +51,7 @@ func EncodeField(ctx context.Context, input any, key Value) (Value, error) {
 
 			if f.Tag.Get(TagName) == keyStr {
 				if !f.IsExported() {
-					return None, fmt.Errorf("field %s is not exported", keyStr)
+					return None, nil
 				}
 
 				name = f.Name
