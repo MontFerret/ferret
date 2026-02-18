@@ -10,7 +10,7 @@ import (
 
 type encodeParams struct {
 	Name    string `ferret:"name"`
-	Age     int    `ferret:"age"`
+	Age     int    `json:"age"`
 	City    string
 	Ignored string `ferret:"-"`
 	private string `ferret:"private"`
@@ -70,10 +70,12 @@ func TestEncode(t *testing.T) {
 
 func TestEncodeByKey(t *testing.T) {
 	type SomeValue struct {
-		StrProp     string     `ferret:"strProp"`
-		IntProp     int        `ferret:"intProp"`
-		SliceProp   []int      `ferret:"sliceProp"`
-		PointerProp *SomeValue `ferret:"pointerProp"`
+		StrProp           string     `ferret:"strProp"`
+		IntProp           int        `ferret:"intProp"`
+		SliceProp         []int      `ferret:"sliceProp"`
+		PointerProp       *SomeValue `ferret:"pointerProp"`
+		JsonTag           string     `ferret:"jsonTag"`
+		JsonAndRuntimeTag string     `ferret:"ferretTag" json:"jsonFerretTag"`
 
 		UntaggedProp string
 
@@ -125,7 +127,25 @@ func TestEncodeByKey(t *testing.T) {
 				runtime.NewObjectProperty("intProp", runtime.Int(0)),
 				runtime.NewObjectProperty("sliceProp", runtime.NewArray(0)),
 				runtime.NewObjectProperty("pointerProp", runtime.None),
+				runtime.NewObjectProperty("jsonTag", runtime.EmptyString),
+				runtime.NewObjectProperty("ferretTag", runtime.EmptyString),
 			),
+		},
+		{
+			Name: "json tag",
+			Input: SomeValue{
+				JsonTag: "json value",
+			},
+			Field:    "jsonTag",
+			Expected: runtime.String("json value"),
+		},
+		{
+			Name: "json and runtime tag. ferret tag should take precedence",
+			Input: SomeValue{
+				JsonAndRuntimeTag: "json and runtime value",
+			},
+			Field:    "ferretTag",
+			Expected: runtime.String("json and runtime value"),
 		},
 	}
 

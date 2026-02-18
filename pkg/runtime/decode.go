@@ -310,7 +310,7 @@ func bindStruct(src Value, dst reflect.Value) error {
 			continue
 		}
 
-		name, ok := fieldBindingName(field)
+		name, ok := Tag(field)
 		if !ok {
 			continue
 		}
@@ -333,10 +333,6 @@ func bindStruct(src Value, dst reflect.Value) error {
 	}
 
 	return nil
-}
-
-func fieldBindingName(field reflect.StructField) (string, bool) {
-	return Tag(field)
 }
 
 func collectEntries(src Value) (map[string]Value, error) {

@@ -12,6 +12,8 @@ const maxInt64 = ^uint64(0) >> 1
 var byteSliceType = reflect.TypeOf([]byte(nil))
 
 // Encode converts a Go value into a runtime Value using ferret tags for structs.
+// If "ferret" tag is not present, it falls back to "json" tag, otherwise the field will be ignored.
+// It also supports unwrapping values that implement the Unwrappable interface.
 func Encode(input any) Value {
 	if input == nil {
 		return None
@@ -49,7 +51,12 @@ func EncodeField(ctx context.Context, input any, key Value) (Value, error) {
 		for i := 0; i < v.NumField(); i++ {
 			f := t.Field(i)
 
-			if f.Tag.Get(TagName) == keyStr {
+			tagName, ok := Tag(f)
+			if !ok {
+				continue
+			}
+
+			if tagName == keyStr {
 				if !f.IsExported() {
 					return None, nil
 				}

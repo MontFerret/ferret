@@ -12,7 +12,7 @@ import (
 type bindParams struct {
 	Name     string   `ferret:"name"`
 	Age      int      `ferret:"age"`
-	Count    int64    `ferret:"count"`
+	Count    int64    `json:"count"`
 	Alias    string   `ferret:"alt"`
 	City     string   `ferret:"city"`
 	Tags     []string `ferret:"tags"`
