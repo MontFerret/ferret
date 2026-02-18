@@ -4,6 +4,17 @@ import "context"
 
 type TypeAssertion func(input Value) error
 
+func AssertNone(input Value) error {
+	if input == None {
+		return nil
+	}
+
+	return TypeErrorOf(
+		input,
+		TypeNone,
+	)
+}
+
 func AssertString(input Value) error {
 	_, ok := input.(String)
 

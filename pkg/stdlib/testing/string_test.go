@@ -28,7 +28,7 @@ func TestString(t *t.T) {
 				_, err := String(context.Background(), runtime.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [int] '1' to be string")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Int '1' to be String")
 			})
 		})
 
@@ -37,7 +37,7 @@ func TestString(t *t.T) {
 				_, err := String(context.Background(), runtime.True)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [boolean] 'true' to be string")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Boolean 'true' to be String")
 			})
 		})
 
@@ -46,7 +46,7 @@ func TestString(t *t.T) {
 				_, err := String(context.Background(), runtime.NewArray(0))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [array] '[]' to be string")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Array '[]' to be String")
 			})
 		})
 	})
@@ -87,7 +87,7 @@ func TestNotString(t *t.T) {
 				_, err := NotString(context.Background(), runtime.NewString(""))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [string] '' not to be string")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected String '' not to be String")
 			})
 		})
 
@@ -96,7 +96,7 @@ func TestNotString(t *t.T) {
 				_, err := NotString(context.Background(), runtime.NewString("hello"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [string] 'hello' not to be string")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected String 'hello' not to be String")
 			})
 		})
 	})

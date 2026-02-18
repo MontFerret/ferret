@@ -28,7 +28,7 @@ func TestArray(t *t.T) {
 				_, err := Array(context.Background(), runtime.NewString("test"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [string] 'test' to be array")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected String 'test' to be Array")
 			})
 		})
 
@@ -37,7 +37,7 @@ func TestArray(t *t.T) {
 				_, err := Array(context.Background(), runtime.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [int] '1' to be array")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Int '1' to be Array")
 			})
 		})
 
@@ -46,7 +46,7 @@ func TestArray(t *t.T) {
 				_, err := Array(context.Background(), runtime.NewObject())
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [object] '{}' to be array")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Object '{}' to be Array")
 			})
 		})
 	})
@@ -87,7 +87,7 @@ func TestNotArray(t *t.T) {
 				_, err := NotArray(context.Background(), runtime.NewArray(0))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [array] '[]' not to be array")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Array '[]' not to be Array")
 			})
 		})
 
@@ -96,7 +96,7 @@ func TestNotArray(t *t.T) {
 				_, err := NotArray(context.Background(), runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [array] '[1,2]' not to be array")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Array '[1,2]' not to be Array")
 			})
 		})
 	})

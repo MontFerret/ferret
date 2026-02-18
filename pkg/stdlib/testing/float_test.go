@@ -28,7 +28,7 @@ func TestFloat(t *t.T) {
 				_, err := Float(context.Background(), runtime.NewString("1.5"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [string] '1.5' to be float")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected String '1.5' to be Float")
 			})
 		})
 
@@ -37,7 +37,7 @@ func TestFloat(t *t.T) {
 				_, err := Float(context.Background(), runtime.True)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [boolean] 'true' to be float")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Boolean 'true' to be Float")
 			})
 		})
 
@@ -46,7 +46,7 @@ func TestFloat(t *t.T) {
 				_, err := Float(context.Background(), runtime.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [int] '1' to be float")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Int '1' to be Float")
 			})
 		})
 	})
@@ -95,7 +95,7 @@ func TestNotFloat(t *t.T) {
 				_, err := NotFloat(context.Background(), runtime.NewFloat(0.0))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [float] '0' not to be float")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Float '0' not to be Float")
 			})
 		})
 
@@ -104,7 +104,7 @@ func TestNotFloat(t *t.T) {
 				_, err := NotFloat(context.Background(), runtime.NewFloat(3.14))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [float] '3.14' not to be float")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Float '3.14' not to be Float")
 			})
 		})
 	})

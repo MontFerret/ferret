@@ -14,8 +14,10 @@ var Empty = base.Assertion{
 	DefaultMessage: func(_ []runtime.Value) string {
 		return "be empty"
 	},
-	MinArgs: 1,
-	MaxArgs: 2,
+	Args: base.Args{
+		Min: 1,
+		Max: 2,
+	},
 	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
 		value := args[0]
 

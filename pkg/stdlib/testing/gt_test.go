@@ -33,7 +33,7 @@ func TestGt(t *t.T) {
 				_, err := Gt(context.Background(), runtime.NewInt(1), runtime.NewInt(2))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [int] '1' to be greater than [int] '2'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Int '1' to be greater than Int '2'").Error())
 			})
 		})
 
@@ -42,7 +42,7 @@ func TestGt(t *t.T) {
 				_, err := Gt(context.Background(), runtime.NewInt(1), runtime.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [int] '1' to be greater than [int] '1'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Int '1' to be greater than Int '1'").Error())
 			})
 		})
 
@@ -77,7 +77,7 @@ func TestNotGt(t *t.T) {
 				_, err := NotGt(context.Background(), runtime.NewInt(2), runtime.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [int] '2' not to be greater than [int] '1'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Int '2' not to be greater than Int '1'").Error())
 			})
 		})
 

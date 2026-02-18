@@ -33,7 +33,7 @@ func TestLte(t *t.T) {
 				_, err := Lte(context.Background(), runtime.NewInt(2), runtime.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [int] '2' to be less than or equal to [int] '1'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Int '2' to be less than or equal to Int '1'").Error())
 			})
 		})
 
@@ -76,7 +76,7 @@ func TestNotLte(t *t.T) {
 				_, err := NotLte(context.Background(), runtime.NewInt(1), runtime.NewInt(2))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [int] '1' not to be less than or equal to [int] '2'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Int '1' not to be less than or equal to Int '2'").Error())
 			})
 		})
 
@@ -85,7 +85,7 @@ func TestNotLte(t *t.T) {
 				_, err := NotLte(context.Background(), runtime.NewInt(1), runtime.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [int] '1' not to be less than or equal to [int] '1'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Int '1' not to be less than or equal to Int '1'").Error())
 			})
 		})
 

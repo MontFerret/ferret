@@ -18,8 +18,10 @@ var Include = base.Assertion{
 	DefaultMessage: func(args []runtime.Value) string {
 		return fmt.Sprintf("include %s", base.FormatValue(args[1]))
 	},
-	MinArgs: 2,
-	MaxArgs: 3,
+	Args: base.Args{
+		Min: 2,
+		Max: 3,
+	},
 	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
 		haystack := args[0]
 		needle := args[1]

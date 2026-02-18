@@ -28,7 +28,7 @@ func TestObject(t *t.T) {
 				_, err := Object(context.Background(), runtime.NewString("test"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [string] 'test' to be object")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected String 'test' to be Object")
 			})
 		})
 
@@ -37,7 +37,7 @@ func TestObject(t *t.T) {
 				_, err := Object(context.Background(), runtime.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [int] '1' to be object")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Int '1' to be Object")
 			})
 		})
 
@@ -46,7 +46,7 @@ func TestObject(t *t.T) {
 				_, err := Object(context.Background(), runtime.NewArray(0))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [array] '[]' to be object")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Array '[]' to be Object")
 			})
 		})
 	})
@@ -89,7 +89,7 @@ func TestNotObject(t *t.T) {
 				_, err := NotObject(context.Background(), runtime.NewObject())
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [object] '{}' not to be object")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Object '{}' not to be Object")
 			})
 		})
 
@@ -100,7 +100,7 @@ func TestNotObject(t *t.T) {
 				))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [object] '{\"key\":\"value\"}' not to be object")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Object '{\"key\":\"value\"}' not to be Object")
 			})
 		})
 	})

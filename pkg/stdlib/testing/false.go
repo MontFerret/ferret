@@ -16,8 +16,10 @@ var False = base.Assertion{
 	DefaultMessage: func(args []runtime.Value) string {
 		return fmt.Sprintf("be %s", base.FormatValue(runtime.False))
 	},
-	MinArgs: 1,
-	MaxArgs: 2,
+	Args: base.Args{
+		Min: 1,
+		Max: 2,
+	},
 	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
 		return args[0] == runtime.False, nil
 	},

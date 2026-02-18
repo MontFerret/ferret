@@ -29,7 +29,7 @@ func TestDateTime(t *t.T) {
 				_, err := DateTime(context.Background(), runtime.NewString("2023-01-01"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [string] '2023-01-01' to be datetime")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected String '2023-01-01' to be DateTime")
 			})
 		})
 
@@ -38,7 +38,7 @@ func TestDateTime(t *t.T) {
 				_, err := DateTime(context.Background(), runtime.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [int] '1' to be datetime")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Int '1' to be DateTime")
 			})
 		})
 
@@ -47,7 +47,7 @@ func TestDateTime(t *t.T) {
 				_, err := DateTime(context.Background(), runtime.NewArray(0))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [array] '[]' to be datetime")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Array '[]' to be DateTime")
 			})
 		})
 	})
@@ -91,8 +91,8 @@ func TestNotDateTime(t *t.T) {
 				_, err := NotDateTime(context.Background(), dt)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldContainSubstring, base.ErrAssertion.Error()+": expected [date_time] '")
-				So(err.Error(), ShouldContainSubstring, "' not to be datetime")
+				So(err.Error(), ShouldContainSubstring, base.ErrAssertion.Error()+": expected DateTime '")
+				So(err.Error(), ShouldContainSubstring, "' not to be DateTime")
 			})
 		})
 
@@ -101,7 +101,7 @@ func TestNotDateTime(t *t.T) {
 				_, err := NotDateTime(context.Background(), runtime.ZeroDateTime)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [date_time] '0001-01-01 00:00:00 +0000 UTC' not to be datetime")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected DateTime '0001-01-01 00:00:00 +0000 UTC' not to be DateTime")
 			})
 		})
 	})

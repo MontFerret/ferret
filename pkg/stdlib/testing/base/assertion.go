@@ -11,12 +11,18 @@ type AssertionFn func(ctx context.Context, args []runtime.Value) (bool, error)
 
 type MessageFn func(args []runtime.Value) string
 
-type Assertion struct {
-	DefaultMessage MessageFn
-	MinArgs        int
-	MaxArgs        int
-	Fn             AssertionFn
-}
+type (
+	Args struct {
+		Min int
+		Max int
+	}
+
+	Assertion struct {
+		DefaultMessage MessageFn
+		Args           Args
+		Fn             AssertionFn
+	}
+)
 
 func NewPositiveAssertion(assertion Assertion) runtime.Function {
 	return newInternal(assertion, true)
@@ -28,7 +34,7 @@ func NewNegativeAssertion(assertion Assertion) runtime.Function {
 
 func newInternal(assertion Assertion, connotation bool) runtime.Function {
 	return func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-		err := runtime.ValidateArgs(args, assertion.MinArgs, assertion.MaxArgs)
+		err := runtime.ValidateArgs(args, assertion.Args.Min, assertion.Args.Max)
 
 		if err != nil {
 			return runtime.None, err
@@ -49,14 +55,16 @@ func newInternal(assertion Assertion, connotation bool) runtime.Function {
 }
 
 func toError(assertion Assertion, args []runtime.Value, positive bool) error {
-	if len(args) != assertion.MaxArgs {
+	maxArgs := assertion.Args.Max
+
+	if len(args) != maxArgs {
 		connotation := ""
 
 		if !positive {
 			connotation = "not "
 		}
 
-		if assertion.MaxArgs > 1 {
+		if maxArgs > 1 {
 			actual := args[0]
 
 			var msg string
@@ -78,7 +86,7 @@ func toError(assertion Assertion, args []runtime.Value, positive bool) error {
 	}
 
 	// Last argument is always is a custom message
-	msg := args[assertion.MaxArgs-1]
+	msg := args[maxArgs-1]
 
 	return runtime.Error(ErrAssertion, msg.String())
 }

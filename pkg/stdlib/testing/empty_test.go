@@ -41,7 +41,7 @@ func TestEmpty(t *t.T) {
 				_, err := Empty(context.Background(), runtime.NewString("Foo"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [string] 'Foo' to be empty").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected String 'Foo' to be empty").Error())
 			})
 		})
 
@@ -63,7 +63,7 @@ func TestEmpty(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1,2,3]' to be empty").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Array '[1,2,3]' to be empty").Error())
 			})
 		})
 
@@ -92,7 +92,7 @@ func TestEmpty(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' to be empty").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Object '{\"a\":1,\"b\":2,\"c\":3}' to be empty").Error())
 			})
 		})
 
@@ -146,7 +146,7 @@ func TestNotEmpty(t *t.T) {
 				_, err := NotEmpty(context.Background(), runtime.NewString(""))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [string] '' not to be empty").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected String '' not to be empty").Error())
 			})
 		})
 	})
@@ -171,7 +171,7 @@ func TestNotEmpty(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[]' not to be empty").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Array '[]' not to be empty").Error())
 			})
 		})
 	})
@@ -200,7 +200,7 @@ func TestNotEmpty(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [object] '{}' not to be empty").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Object '{}' not to be empty").Error())
 			})
 		})
 	})

@@ -60,7 +60,7 @@ func TestMatch(t *t.T) {
 					runtime.NewString("^goodbye"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [string] 'hello world' to match regular expression")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected String 'hello world' to match regular expression")
 			})
 		})
 
@@ -81,7 +81,7 @@ func TestMatch(t *t.T) {
 					runtime.NewString("^abc"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [int] '123' to match regular expression")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Int '123' to match regular expression")
 			})
 		})
 
@@ -136,7 +136,7 @@ func TestNotMatch(t *t.T) {
 					runtime.NewString("^hello"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [string] 'hello world' not to match regular expression")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected String 'hello world' not to match regular expression")
 			})
 		})
 
@@ -147,7 +147,7 @@ func TestNotMatch(t *t.T) {
 					runtime.NewString("\\d+"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [string] 'abc123def' not to match regular expression")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected String 'abc123def' not to match regular expression")
 			})
 		})
 
@@ -158,7 +158,7 @@ func TestNotMatch(t *t.T) {
 					runtime.NewString("\\d+"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [int] '123' not to match regular expression")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Int '123' not to match regular expression")
 			})
 		})
 
