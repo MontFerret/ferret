@@ -35,10 +35,6 @@ func (b Binary) String() string {
 	return string(b)
 }
 
-func (b Binary) Unwrap() interface{} {
-	return []byte(b)
-}
-
 func (b Binary) Hash() uint64 {
 	h := fnv.New64a()
 
@@ -86,4 +82,8 @@ func (b Binary) Compare(other Value) int64 {
 	}
 
 	return 0
+}
+
+func (b Binary) Unwrap() any {
+	return []byte(b)
 }

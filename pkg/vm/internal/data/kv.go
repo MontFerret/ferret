@@ -36,10 +36,6 @@ func (p *KV) String() string {
 	return "[KV]"
 }
 
-func (p *KV) Unwrap() interface{} {
-	return [2]runtime.Value{p.Key, p.Value}
-}
-
 func (p *KV) Hash() uint64 {
 	h := fnv.New64a()
 

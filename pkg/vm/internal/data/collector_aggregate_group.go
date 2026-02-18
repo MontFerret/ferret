@@ -147,10 +147,6 @@ func (c *GroupedAggregateCollector) String() string {
 	return string(data)
 }
 
-func (c *GroupedAggregateCollector) Unwrap() interface{} {
-	return c
-}
-
 func (c *GroupedAggregateCollector) Hash() uint64 {
 	return 0
 }

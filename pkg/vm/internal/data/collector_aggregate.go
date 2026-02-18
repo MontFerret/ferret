@@ -226,10 +226,6 @@ func (c *AggregateCollector) String() string {
 	return string(data)
 }
 
-func (c *AggregateCollector) Unwrap() interface{} {
-	return c
-}
-
 func (c *AggregateCollector) Hash() uint64 {
 	return 0
 }

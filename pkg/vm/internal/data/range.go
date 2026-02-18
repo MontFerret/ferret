@@ -32,10 +32,6 @@ func (r *Range) String() string {
 	return fmt.Sprintf("%d..%d", r.start, r.end)
 }
 
-func (r *Range) Unwrap() interface{} {
-	return []int64{r.start, r.end}
-}
-
 func (r *Range) Hash() uint64 {
 	h := fnv.New64a()
 

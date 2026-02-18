@@ -14,6 +14,7 @@ type (
 	}
 )
 
+// NewType creates a new Type from a given package and name.
 func NewType(pkg, name string) Type {
 	if pkg == "" {
 		return Type(pkg)
@@ -24,6 +25,13 @@ func NewType(pkg, name string) Type {
 	}
 
 	return Type(pkg + "." + name)
+}
+
+// NewReflectType creates a new Type from a given value using reflection.
+func NewReflectType(input any) Type {
+	t := reflect.TypeOf(input)
+
+	return NewType(t.PkgPath(), t.Name())
 }
 
 func (t Type) String() string {
@@ -63,7 +71,7 @@ const (
 	TypeComparable     = Type("comparable")
 	TypeCloneable      = Type("cloneable")
 	TypeSortable       = Type("sortable")
-	TypeDispatcher     = Type("dispatcher")
+	TypeDispatchable   = Type("dispatchable")
 	TypeObservable     = Type("observable")
 	TypeQueryable      = Type("queryable")
 )
@@ -95,7 +103,7 @@ func typeRank(value Value) int64 {
 	}
 }
 
-func Reflect(input Value) Type {
+func TypeOf(input Value) Type {
 	if input == None || input == nil {
 		return TypeNone
 	}
@@ -132,7 +140,7 @@ func Reflect(input Value) Type {
 	case Measurable:
 		return TypeMeasurable
 	case Dispatchable:
-		return TypeDispatcher
+		return TypeDispatchable
 	case Observable:
 		return TypeObservable
 	case Queryable:
@@ -140,9 +148,7 @@ func Reflect(input Value) Type {
 	case Typed:
 		return v.Type()
 	default:
-		t := reflect.TypeOf(input)
-
-		return NewType(t.PkgPath(), t.Name())
+		return NewReflectType(input)
 	}
 }
 
@@ -163,7 +169,7 @@ func CompareTypes(a, b Value) int64 {
 
 func ValidateType(value Value, required ...Type) error {
 	var valid bool
-	tid := Reflect(value)
+	tid := TypeOf(value)
 
 	for _, t := range required {
 		if tid == t {

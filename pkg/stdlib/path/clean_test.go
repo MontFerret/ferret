@@ -34,7 +34,7 @@ func TestClean(t *testing.T) {
 			runtime.NewString("pkg//path//clean.go"),
 		)
 
-		So(out.Unwrap(), ShouldEqual, "pkg/path/clean.go")
+		So(out.String(), ShouldEqual, "pkg/path/clean.go")
 	})
 
 	Convey("Clean('/cmd/main/../../..') should return '/'", t, func() {
@@ -43,7 +43,7 @@ func TestClean(t *testing.T) {
 			runtime.NewString("/cmd/main/../../.."),
 		)
 
-		So(out.Unwrap(), ShouldEqual, "/")
+		So(out.String(), ShouldEqual, "/")
 	})
 
 	Convey("Clean('') should return '.'", t, func() {
@@ -52,7 +52,7 @@ func TestClean(t *testing.T) {
 			runtime.NewString(""),
 		)
 
-		So(out.Unwrap(), ShouldEqual, ".")
+		So(out.String(), ShouldEqual, ".")
 	})
 
 	Convey("Clean('.') should return '.'", t, func() {
@@ -61,7 +61,7 @@ func TestClean(t *testing.T) {
 			runtime.NewString("."),
 		)
 
-		So(out.Unwrap(), ShouldEqual, ".")
+		So(out.String(), ShouldEqual, ".")
 	})
 
 	Convey("Clean('./a') should return 'a'", t, func() {
@@ -70,7 +70,7 @@ func TestClean(t *testing.T) {
 			runtime.NewString("./a"),
 		)
 
-		So(out.Unwrap(), ShouldEqual, "a")
+		So(out.String(), ShouldEqual, "a")
 	})
 
 	Convey("Clean('a//b') should return 'a/b'", t, func() {
@@ -79,6 +79,6 @@ func TestClean(t *testing.T) {
 			runtime.NewString("a//b"),
 		)
 
-		So(out.Unwrap(), ShouldEqual, "a/b")
+		So(out.String(), ShouldEqual, "a/b")
 	})
 }

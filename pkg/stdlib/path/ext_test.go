@@ -34,7 +34,7 @@ func TestExt(t *testing.T) {
 			runtime.NewString("dir/main.go"),
 		)
 
-		So(out.Unwrap(), ShouldEqual, ".go")
+		So(out.String(), ShouldEqual, ".go")
 	})
 
 	Convey("Ext('') should return ''", t, func() {
@@ -43,7 +43,7 @@ func TestExt(t *testing.T) {
 			runtime.NewString(""),
 		)
 
-		So(out.Unwrap(), ShouldEqual, "")
+		So(out.String(), ShouldEqual, "")
 	})
 
 	Convey("Ext('file') should return ''", t, func() {
@@ -52,7 +52,7 @@ func TestExt(t *testing.T) {
 			runtime.NewString("file"),
 		)
 
-		So(out.Unwrap(), ShouldEqual, "")
+		So(out.String(), ShouldEqual, "")
 	})
 
 	Convey("Ext('.hidden') should return '.hidden'", t, func() {
@@ -61,7 +61,7 @@ func TestExt(t *testing.T) {
 			runtime.NewString(".hidden"),
 		)
 
-		So(out.Unwrap(), ShouldEqual, ".hidden")
+		So(out.String(), ShouldEqual, ".hidden")
 	})
 
 	Convey("Ext('archive.tar.gz') should return '.gz'", t, func() {
@@ -70,7 +70,7 @@ func TestExt(t *testing.T) {
 			runtime.NewString("archive.tar.gz"),
 		)
 
-		So(out.Unwrap(), ShouldEqual, ".gz")
+		So(out.String(), ShouldEqual, ".gz")
 	})
 
 	Convey("Ext('/path/to/file.txt') should return '.txt'", t, func() {
@@ -79,6 +79,6 @@ func TestExt(t *testing.T) {
 			runtime.NewString("/path/to/file.txt"),
 		)
 
-		So(out.Unwrap(), ShouldEqual, ".txt")
+		So(out.String(), ShouldEqual, ".txt")
 	})
 }

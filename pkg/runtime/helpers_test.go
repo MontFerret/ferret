@@ -113,7 +113,7 @@ func TestHelpers(t *testing.T) {
 					actualType := reflect.TypeOf(out)
 
 					So(actualType, ShouldEqual, expectedType)
-					So(out.Unwrap(), ShouldEqual, input.Parsed.Unwrap())
+					So(out, ShouldEqual, input.Parsed)
 				}
 			})
 		})

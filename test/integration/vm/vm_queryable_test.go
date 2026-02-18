@@ -72,10 +72,6 @@ func (t *mockText) String() string {
 	return t.value.String()
 }
 
-func (t *mockText) Unwrap() interface{} {
-	return t.value.Unwrap()
-}
-
 func (t *mockText) Hash() uint64 {
 	return t.value.Hash()
 }

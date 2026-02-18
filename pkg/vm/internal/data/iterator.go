@@ -52,10 +52,6 @@ func (it *Iterator) Close() error {
 	return nil
 }
 
-func (it *Iterator) Unwrap() interface{} {
-	return it.src
-}
-
 func (it *Iterator) MarshalJSON() ([]byte, error) {
 	panic("not supported")
 }

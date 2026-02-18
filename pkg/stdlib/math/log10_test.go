@@ -25,6 +25,6 @@ func TestLog10(t *testing.T) {
 		out, err = math.Log10(context.Background(), runtime.NewFloat(0))
 
 		So(err, ShouldBeNil)
-		So(runtime.IsInf(out.(runtime.Float), -1).Unwrap(), ShouldBeTrue)
+		So(runtime.Unwrap(runtime.IsInf(out.(runtime.Float), -1)), ShouldBeTrue)
 	})
 }

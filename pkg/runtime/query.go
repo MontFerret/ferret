@@ -42,14 +42,6 @@ func (q Query) String() string {
 	return q.Kind.String() + ":" + q.Payload.String()
 }
 
-func (q Query) Unwrap() interface{} {
-	return map[string]interface{}{
-		"kind":    q.Kind.Unwrap(),
-		"payload": q.Payload.Unwrap(),
-		"params":  q.Params.Unwrap(),
-	}
-}
-
 func (q Query) Hash() uint64 {
 	h := fnv.New64a()
 	h.Write([]byte("query:"))

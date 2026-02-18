@@ -25,7 +25,7 @@ func TestPercentile(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 2)
+		So(runtime.Unwrap(out), ShouldEqual, 2)
 
 		// Test with different percentile
 		out, err = math.Percentile(
@@ -41,7 +41,7 @@ func TestPercentile(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 4)
+		So(runtime.Unwrap(out), ShouldEqual, 4)
 	})
 
 	Convey("Should return error for invalid arguments", t, func() {
@@ -69,7 +69,7 @@ func TestPercentile(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(runtime.IsNaN(out.(runtime.Float)).Unwrap(), ShouldBeTrue)
+		So(runtime.Unwrap(runtime.IsNaN(out.(runtime.Float))), ShouldBeTrue)
 
 		// Invalid percentile (outside range)
 		out, err = math.Percentile(

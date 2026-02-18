@@ -9,9 +9,9 @@ import (
 
 var timeType = reflect.TypeOf(time.Time{})
 
-// Bind binds a runtime Value into the provided target.
+// Decode binds a runtime Value into the provided target.
 // Target must be a non-nil pointer.
-func Bind[T any](src Value, target T) error {
+func Decode[T any](src Value, target T) error {
 	if src == nil {
 		src = None
 	}
@@ -141,7 +141,13 @@ func bindInterface(src Value, dst reflect.Value) error {
 		return nil
 	}
 
-	unwrapped := src.Unwrap()
+	unwrappable, ok := src.(Unwrappable)
+
+	if !ok {
+		return nil
+	}
+
+	unwrapped := unwrappable.Unwrap()
 	if unwrapped == nil {
 		dst.Set(reflect.Zero(dst.Type()))
 		return nil
@@ -157,7 +163,13 @@ func bindInterface(src Value, dst reflect.Value) error {
 }
 
 func bindFallback(src Value, dst reflect.Value) error {
-	unwrapped := src.Unwrap()
+	unwrappable, ok := src.(Unwrappable)
+
+	if !ok {
+		return nil
+	}
+
+	unwrapped := unwrappable.Unwrap()
 	if unwrapped == nil {
 		dst.Set(reflect.Zero(dst.Type()))
 		return nil
@@ -298,7 +310,7 @@ func bindStruct(src Value, dst reflect.Value) error {
 			continue
 		}
 
-		name, ok := fieldBindingName(field)
+		name, ok := Tag(field)
 		if !ok {
 			continue
 		}
@@ -321,31 +333,6 @@ func bindStruct(src Value, dst reflect.Value) error {
 	}
 
 	return nil
-}
-
-func fieldBindingName(field reflect.StructField) (string, bool) {
-	if raw := field.Tag.Get("json"); raw != "" {
-		return parseTag(raw, field.Name)
-	}
-
-	if raw := field.Tag.Get("ferret"); raw != "" {
-		return parseTag(raw, field.Name)
-	}
-
-	return field.Name, true
-}
-
-func parseTag(tag, fallback string) (string, bool) {
-	name := strings.Split(tag, ",")[0]
-	if name == "-" {
-		return "", false
-	}
-
-	if name == "" {
-		return fallback, true
-	}
-
-	return name, true
 }
 
 func collectEntries(src Value) (map[string]Value, error) {
@@ -424,5 +411,5 @@ func setUint(dst reflect.Value, value int64) error {
 }
 
 func bindTypeError(src Value, target reflect.Type) error {
-	return Errorf(ErrInvalidArgumentType, "cannot bind %s to %s", Reflect(src), target.String())
+	return Errorf(ErrInvalidArgumentType, "cannot bind %s to %s", TypeOf(src), target.String())
 }

@@ -25,6 +25,6 @@ func TestStandardDeviationSample(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out.Unwrap(), ShouldEqual, 2.073644135332772)
+		So(out, ShouldEqual, 2.073644135332772)
 	})
 }

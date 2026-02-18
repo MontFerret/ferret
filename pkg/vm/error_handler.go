@@ -2,6 +2,7 @@ package vm
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
@@ -26,6 +27,7 @@ func toRuntimeError(program *bytecode.Program, pc int, err error) *RuntimeError 
 	hint := ""
 	note := ""
 	var cause error
+	var memberErr *runtime.MemberAccessError
 
 	switch {
 	case errors.Is(err, ErrDivisionByZero):
@@ -40,6 +42,14 @@ func toRuntimeError(program *bytecode.Program, pc int, err error) *RuntimeError 
 		label = "attempt to take modulo by zero"
 		hint = "Ensure the divisor is non-zero before modulo"
 		note = "Add a conditional check before modulo"
+	case errors.As(err, &memberErr):
+		kind = diagnostics.TypeError
+		message = memberErr.Error()
+		if message != "" {
+			message = strings.ToUpper(message[:1]) + message[1:]
+		}
+		label = memberErr.Label()
+		hint = memberErr.Hint()
 	case errors.Is(err, runtime.ErrInvalidType):
 		kind = diagnostics.TypeError
 		message = "Invalid type"
@@ -105,7 +115,7 @@ func toRuntimeError(program *bytecode.Program, pc int, err error) *RuntimeError 
 			message = diagnostics.FormatMessage(msg.Error())
 			cause = cs
 		} else {
-			message = "Error"
+			message = "Runtime Error"
 			cause = err
 		}
 	}

@@ -14,6 +14,12 @@ LET obj = NONE
 RETURN obj?.abc
 	`
 
+	optionalMemberAccessShort2 = `
+LET obj = {}
+
+RETURN obj.abc
+	`
+
 	optionalMemberAccessLong = `
 LET obj = NONE
 
@@ -39,6 +45,14 @@ func BenchmarkOptionalMemberAccess_Short_O0(b *testing.B) {
 
 func BenchmarkOptionalMemberAccess_Short_O1(b *testing.B) {
 	RunBenchmarkO1(b, optionalMemberAccessShort)
+}
+
+func BenchmarkOptionalMemberAccess_Short2_O0(b *testing.B) {
+	RunBenchmarkO0(b, optionalMemberAccessShort2)
+}
+
+func BenchmarkOptionalMemberAccess_Short2_O1(b *testing.B) {
+	RunBenchmarkO1(b, optionalMemberAccessShort2)
 }
 
 func BenchmarkOptionalMemberAccess_Long_O0(b *testing.B) {

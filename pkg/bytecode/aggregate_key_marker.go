@@ -22,10 +22,6 @@ func (m *aggregateKeyMarker) String() string {
 	return aggregateKeyMarkerString
 }
 
-func (m *aggregateKeyMarker) Unwrap() interface{} {
-	return m
-}
-
 func (m *aggregateKeyMarker) Hash() uint64 {
 	return 0x9e3779b97f4a7c15
 }

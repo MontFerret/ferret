@@ -228,16 +228,6 @@ func (t *FastObject) Compare(other runtime.Value) int64 {
 	return res
 }
 
-func (t *FastObject) Unwrap() interface{} {
-	obj := make(map[string]interface{}, t.len())
-
-	t.forEachKV(func(key string, val runtime.Value) {
-		obj[key] = val.Unwrap()
-	})
-
-	return obj
-}
-
 func (t *FastObject) Hash() uint64 {
 	h := fnv.New64a()
 

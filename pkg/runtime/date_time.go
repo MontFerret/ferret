@@ -62,7 +62,7 @@ func (dt DateTime) String() string {
 	return dt.Time.String()
 }
 
-func (dt DateTime) Unwrap() interface{} {
+func (dt DateTime) Unwrap() any {
 	return dt.Time
 }
 

@@ -31,10 +31,6 @@ func (r *Regexp) String() string {
 	return (*regexp.Regexp)(r).String()
 }
 
-func (r *Regexp) Unwrap() interface{} {
-	return (*regexp.Regexp)(r)
-}
-
 func (r *Regexp) Hash() uint64 {
 	h := fnv.New64a()
 

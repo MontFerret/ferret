@@ -65,19 +65,6 @@ func TestObject(t *testing.T) {
 		})
 	})
 
-	Convey(".Unwrap", t, func() {
-		Convey("Should return an unwrapped items", func() {
-			obj := NewObjectWith(
-				NewObjectProperty("foo", NewString("foo")),
-				NewObjectProperty("bar", NewString("bar")),
-			)
-
-			for _, val := range obj.Unwrap().(map[string]interface{}) {
-				So(val, ShouldHaveSameTypeAs, "")
-			}
-		})
-	})
-
 	Convey(".String", t, func() {
 		Convey("Should return a string representation ", func() {
 			obj := NewObjectWith(

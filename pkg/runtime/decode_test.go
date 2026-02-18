@@ -10,15 +10,16 @@ import (
 )
 
 type bindParams struct {
-	Name  string `json:"name"`
-	Age   int    `ferret:"age"`
-	Count int64  `json:"count"`
-	Alias string `json:"alias" ferret:"alt"`
-	City  string
-	Tags  []string `json:"tags"`
+	Name     string   `ferret:"name"`
+	Age      int      `ferret:"age"`
+	Count    int64    `json:"count"`
+	Alias    string   `ferret:"alt"`
+	City     string   `ferret:"city"`
+	Tags     []string `ferret:"tags"`
+	Untagged string
 }
 
-func TestBind(t *testing.T) {
+func TestDecode(t *testing.T) {
 	Convey("Should bind values into a struct", t, func() {
 		obj := runtime.NewObject()
 		So(obj.Set(context.Background(), runtime.NewString("name"), runtime.NewString("Alice")), ShouldBeNil)
@@ -31,16 +32,17 @@ func TestBind(t *testing.T) {
 			runtime.NewString("a"),
 			runtime.NewString("b"),
 		)), ShouldBeNil)
+		So(obj.Set(context.Background(), runtime.NewString("untagged"), runtime.NewString("ignored")), ShouldBeNil)
 
 		var out bindParams
-		err := runtime.Bind(obj, &out)
+		err := runtime.Decode(obj, &out)
 
 		So(err, ShouldBeNil)
 		So(out, ShouldResemble, bindParams{
 			Name:  "Alice",
 			Age:   30,
 			Count: 42,
-			Alias: "primary",
+			Alias: "secondary",
 			City:  "Paris",
 			Tags:  []string{"a", "b"},
 		})
@@ -49,21 +51,21 @@ func TestBind(t *testing.T) {
 	Convey("Should reject non-pointer targets", t, func() {
 		obj := runtime.NewObject()
 		var out bindParams
-		err := runtime.Bind(obj, out)
+		err := runtime.Decode(obj, out)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("Should reject nil pointer targets", t, func() {
 		obj := runtime.NewObject()
 		var out *bindParams
-		err := runtime.Bind(obj, out)
+		err := runtime.Decode(obj, out)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("Should reject non-string map keys", t, func() {
 		obj := runtime.NewObject()
 		var out map[int]string
-		err := runtime.Bind(obj, &out)
+		err := runtime.Decode(obj, &out)
 		So(err, ShouldNotBeNil)
 	})
 }

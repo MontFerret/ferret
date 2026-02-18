@@ -20,12 +20,6 @@ func TestBoolean(t *testing.T) {
 		})
 	})
 
-	Convey(".Unwrap", t, func() {
-		Convey("Should return an unwrapped items", func() {
-			So(True.Unwrap(), ShouldHaveSameTypeAs, true)
-		})
-	})
-
 	Convey(".String", t, func() {
 		Convey("Should return a string representation ", func() {
 			So(True.String(), ShouldEqual, "true")

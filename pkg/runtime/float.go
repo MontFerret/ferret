@@ -83,10 +83,6 @@ func (f Float) String() string {
 	return fmt.Sprintf("%v", float64(f))
 }
 
-func (f Float) Unwrap() interface{} {
-	return float64(f)
-}
-
 func (f Float) Hash() uint64 {
 	h := fnv.New64a()
 
@@ -130,4 +126,8 @@ func (f Float) Compare(other Value) int64 {
 	default:
 		return CompareTypes(f, other)
 	}
+}
+
+func (f Float) Unwrap() any {
+	return float64(f)
 }

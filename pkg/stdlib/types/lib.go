@@ -33,5 +33,5 @@ func RegisterLib(ns runtime.Namespace) error {
 }
 
 func isTypeof(value runtime.Value, ctype runtime.Type) runtime.Value {
-	return runtime.NewBoolean(runtime.Reflect(value) == ctype)
+	return runtime.NewBoolean(runtime.TypeOf(value) == ctype)
 }

@@ -57,19 +57,6 @@ func TestArray(t *testing.T) {
 		})
 	})
 
-	Convey(".Unwrap", t, func() {
-		Convey("Should return a an array of unwrapped values", func() {
-			arr := runtime.NewArrayWith(
-				runtime.ZeroInt,
-				runtime.ZeroInt,
-			)
-
-			for _, val := range arr.Unwrap().([]interface{}) {
-				So(val, ShouldHaveSameTypeAs, 0)
-			}
-		})
-	})
-
 	Convey(".String", t, func() {
 		Convey("Should return a string representation ", func() {
 			arr := runtime.NewArrayWith(runtime.ZeroInt, runtime.ZeroInt)

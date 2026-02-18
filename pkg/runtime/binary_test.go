@@ -21,13 +21,13 @@ func TestBinary(t *testing.T) {
 				data := []byte("hello world")
 				binary := runtime.NewBinary(data)
 				So(binary, ShouldNotBeNil)
-				So(binary.Unwrap(), ShouldResemble, data)
+				So([]byte(binary), ShouldResemble, data)
 			})
 
 			Convey("Should create empty Binary", func() {
 				binary := runtime.NewBinary([]byte{})
 				So(binary, ShouldNotBeNil)
-				So(binary.Unwrap(), ShouldResemble, []byte{})
+				So([]byte(binary), ShouldResemble, []byte{})
 			})
 		})
 
@@ -39,7 +39,7 @@ func TestBinary(t *testing.T) {
 				binary, err := runtime.NewBinaryFrom(reader)
 				So(err, ShouldBeNil)
 				So(binary, ShouldNotBeNil)
-				So(binary.Unwrap(), ShouldResemble, []byte(data))
+				So([]byte(binary), ShouldResemble, []byte(data))
 			})
 
 			Convey("Should create empty Binary from empty reader", func() {
@@ -48,7 +48,7 @@ func TestBinary(t *testing.T) {
 				binary, err := runtime.NewBinaryFrom(reader)
 				So(err, ShouldBeNil)
 				So(binary, ShouldNotBeNil)
-				So(binary.Unwrap(), ShouldResemble, []byte{})
+				So([]byte(binary), ShouldResemble, []byte{})
 			})
 
 			Convey("Should handle reader errors", func() {
@@ -118,10 +118,10 @@ func TestBinary(t *testing.T) {
 				copied := original.Copy()
 				copyBinary := copied.(runtime.Binary)
 
-				So(copyBinary.Unwrap(), ShouldResemble, original.Unwrap())
+				So([]byte(copyBinary), ShouldResemble, []byte(original))
 
 				// Modifying original data shouldn't affect copy since Copy should create new slice
-				originalBytes := original.Unwrap().([]byte)
+				originalBytes := []byte(original)
 				if len(originalBytes) > 0 {
 					originalBytes[0] = 'x' // This should not affect the copy
 				}

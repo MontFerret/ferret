@@ -25,6 +25,6 @@ func TestStandardDeviationPopulation(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out.Unwrap(), ShouldEqual, 1.8547236990991407)
+		So(out, ShouldEqual, 1.8547236990991407)
 	})
 }

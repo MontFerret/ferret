@@ -257,3 +257,37 @@ func TestOptionalChaining(t *testing.T) {
 		return nil, runtime.ErrNotImplemented
 	}))
 }
+
+func TestTaggedTypes(t *testing.T) {
+	type SomeValue struct {
+		StrProp        string     `ferret:"strProp"`
+		IntProp        int        `ferret:"intProp"`
+		SliceProp      []int      `ferret:"sliceProp"`
+		PointerProp    *SomeValue `ferret:"pointerProp"`
+		NilPointerProp *SomeValue `ferret:"nilPointerProp"`
+
+		UntaggedProp string
+
+		privateStrProp string
+	}
+
+	RunUseCases(t, []UseCase{
+		Case("RETURN GET_VALUE().strProp", "test"),
+		Case("RETURN GET_VALUE().intProp", 99),
+		CaseArray("RETURN GET_VALUE().sliceProp", []any{1, 2, 3}),
+		Case("RETURN GET_VALUE().pointerProp.strProp", "nested"),
+		CaseNil("RETURN GET_VALUE().nilPointerProp"),
+		CaseNil("RETURN GET_VALUE().untagged"),
+		CaseNil("RETURN GET_VALUE().privateStrProp"),
+	}, vm.WithFunction("GET_VALUE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+		return runtime.Encode(SomeValue{
+			StrProp:        "test",
+			IntProp:        99,
+			SliceProp:      []int{1, 2, 3},
+			PointerProp:    &SomeValue{StrProp: "nested"},
+			NilPointerProp: nil,
+			UntaggedProp:   "untagged",
+			privateStrProp: "private",
+		}), nil
+	}))
+}

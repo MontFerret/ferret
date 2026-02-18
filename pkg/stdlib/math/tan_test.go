@@ -15,12 +15,12 @@ func TestTan(t *testing.T) {
 		out, err := math.Tan(context.Background(), runtime.NewFloat(10))
 
 		So(err, ShouldBeNil)
-		So(out.Unwrap(), ShouldEqual, 0.6483608274590867)
+		So(out, ShouldEqual, 0.6483608274590867)
 
 		out, err = math.Tan(context.Background(), runtime.NewInt(5))
 
 		So(err, ShouldBeNil)
-		So(out.Unwrap(), ShouldEqual, -3.3805150062465854)
+		So(out, ShouldEqual, -3.3805150062465854)
 
 		out, err = math.Tan(context.Background(), runtime.NewInt(0))
 

@@ -25,6 +25,6 @@ func TestAtan(t *testing.T) {
 		out, err = math.Atan(context.Background(), runtime.NewInt(10))
 
 		So(err, ShouldBeNil)
-		So(out.Unwrap(), ShouldEqual, 1.4711276743037345)
+		So(out, ShouldEqual, 1.4711276743037345)
 	})
 }

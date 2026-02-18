@@ -30,6 +30,6 @@ func GET(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	case runtime.Map:
 		return execMethod(ctx, h.MethodGet, args)
 	default:
-		return runtime.None, runtime.TypeError(runtime.Reflect(arg), runtime.TypeString, runtime.TypeObject)
+		return runtime.None, runtime.TypeError(runtime.TypeOf(arg), runtime.TypeString, runtime.TypeObject)
 	}
 }

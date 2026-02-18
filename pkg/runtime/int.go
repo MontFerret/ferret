@@ -73,10 +73,6 @@ func (i Int) String() string {
 	return strconv.Itoa(int(i))
 }
 
-func (i Int) Unwrap() interface{} {
-	return int(i)
-}
-
 func (i Int) Hash() uint64 {
 	h := fnv.New64a()
 
@@ -122,4 +118,8 @@ func (i Int) Compare(other Value) int64 {
 	default:
 		return CompareTypes(i, other)
 	}
+}
+
+func (i Int) Unwrap() any {
+	return int(i)
 }

@@ -90,16 +90,6 @@ func (t *Array) Compare(other Value) int64 {
 	return res
 }
 
-func (t *Array) Unwrap() interface{} {
-	arr := make([]interface{}, len(t.data))
-
-	for idx, val := range t.data {
-		arr[idx] = val.Unwrap()
-	}
-
-	return arr
-}
-
 func (t *Array) Hash() uint64 {
 	h := fnv.New64a()
 

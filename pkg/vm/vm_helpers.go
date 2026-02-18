@@ -2,6 +2,7 @@ package vm
 
 import (
 	"context"
+	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -453,7 +454,7 @@ func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Va
 	indexed, ok := src.(runtime.IndexReadable)
 
 	if !ok {
-		return nil, runtime.TypeErrorOf(src, runtime.TypeIndexReadable)
+		return nil, runtime.MemberAccessErrorOf(src, runtime.MemberAccessIndex, arg)
 	}
 
 	var idx runtime.Int
@@ -480,7 +481,7 @@ func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Valu
 	keyed, ok := src.(runtime.KeyReadable)
 
 	if !ok {
-		return nil, runtime.TypeErrorOf(src, runtime.TypeKeyReadable)
+		return nil, runtime.MemberAccessErrorOf(src, runtime.MemberAccessProperty, arg)
 	}
 
 	out, err := keyed.Get(ctx, arg)
@@ -602,7 +603,7 @@ func (vm *VM) castDispatchArgs(
 	dispatcher, ok := target.(runtime.Dispatchable)
 
 	if !ok {
-		return nil, "", nil, nil, runtime.TypeErrorOf(target, runtime.TypeDispatcher)
+		return nil, "", nil, nil, runtime.TypeErrorOf(target, runtime.TypeDispatchable)
 	}
 
 	eventNameStr, err := runtime.CastString(eventName)
@@ -688,7 +689,7 @@ func (vm *VM) setOrOptional(dst bytecode.Operand, val runtime.Value, err error, 
 		return nil
 	}
 
-	if optional {
+	if optional || errors.Is(err, runtime.ErrNotFound) {
 		vm.registers.Values[dst] = runtime.None
 
 		return nil
