@@ -2,6 +2,8 @@ package data_test
 
 import (
 	"context"
+	"errors"
+	"io"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -136,16 +138,10 @@ func TestKeyCounterCollectorAllowsEmptyStringKey(t *testing.T) {
 		t.Fatalf("iterate: %v", err)
 	}
 
-	hasNext, err := iter.HasNext(ctx)
-	if err != nil {
-		t.Fatalf("has next: %v", err)
-	}
-
-	if !hasNext {
+	value, key, err := iter.Next(ctx)
+	if errors.Is(err, io.EOF) {
 		t.Fatal("expected one iterator item")
 	}
-
-	value, key, err := iter.Next(ctx)
 	if err != nil {
 		t.Fatalf("next: %v", err)
 	}

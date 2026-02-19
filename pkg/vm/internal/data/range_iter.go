@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"io"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -21,15 +22,15 @@ func NewRangeIterator(values *Range) runtime.Iterator {
 	return &RangeIterator{values: values, pos: values.start, counter: -1, descending: true}
 }
 
-func (iter *RangeIterator) HasNext(_ context.Context) (bool, error) {
-	if !iter.descending {
-		return iter.values.end >= iter.pos, nil
+func (iter *RangeIterator) Next(_ context.Context) (value runtime.Value, key runtime.Value, err error) {
+	if !iter.descending && iter.pos > iter.values.end {
+		return runtime.None, runtime.None, io.EOF
 	}
 
-	return iter.values.end <= iter.pos, nil
-}
+	if iter.descending && iter.pos < iter.values.end {
+		return runtime.None, runtime.None, io.EOF
+	}
 
-func (iter *RangeIterator) Next(_ context.Context) (value runtime.Value, key runtime.Value, err error) {
 	iter.counter++
 
 	if !iter.descending {

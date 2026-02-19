@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"hash/fnv"
+	"io"
 	"sort"
 
 	"github.com/wI2L/jettison"
@@ -845,13 +846,9 @@ type fastObjectIterator struct {
 	pos     int
 }
 
-func (iter *fastObjectIterator) HasNext(_ context.Context) (bool, error) {
-	return len(iter.entries) > iter.pos, nil
-}
-
 func (iter *fastObjectIterator) Next(_ context.Context) (runtime.Value, runtime.Value, error) {
 	if iter.pos >= len(iter.entries) {
-		return runtime.None, runtime.None, runtime.Error(runtime.ErrInvalidOperation, "no more elements")
+		return runtime.None, runtime.None, io.EOF
 	}
 
 	entry := iter.entries[iter.pos]
@@ -870,13 +867,9 @@ type fastObjectDictIterator struct {
 	pos  int
 }
 
-func (iter *fastObjectDictIterator) HasNext(_ context.Context) (bool, error) {
-	return len(iter.keys) > iter.pos, nil
-}
-
 func (iter *fastObjectDictIterator) Next(_ context.Context) (runtime.Value, runtime.Value, error) {
 	if iter.pos >= len(iter.keys) {
-		return runtime.None, runtime.None, runtime.Error(runtime.ErrInvalidOperation, "no more elements")
+		return runtime.None, runtime.None, io.EOF
 	}
 
 	key := iter.keys[iter.pos]

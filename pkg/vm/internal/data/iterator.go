@@ -19,10 +19,6 @@ func NewIterator(src runtime.Iterator) *Iterator {
 	return &Iterator{src, runtime.None, runtime.None}
 }
 
-func (it *Iterator) HasNext(ctx context.Context) (bool, error) {
-	return it.src.HasNext(ctx)
-}
-
 func (it *Iterator) Next(ctx context.Context) error {
 	val, key, err := it.src.Next(ctx)
 

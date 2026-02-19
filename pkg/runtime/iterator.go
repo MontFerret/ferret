@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"io"
 )
 
@@ -12,8 +13,8 @@ type (
 	}
 
 	// Iterator represents an interface of an iterator.
+	// Next must return io.EOF when the iterator is exhausted.
 	Iterator interface {
-		HasNext(ctx context.Context) (bool, error)
 		Next(ctx context.Context) (value Value, key Value, err error)
 	}
 )
@@ -39,17 +40,11 @@ func ForEach(ctx context.Context, input Iterable, predicate Predicate) error {
 
 func ForEachIter(ctx context.Context, iter Iterator, predicate Predicate) error {
 	for {
-		hasNext, err := iter.HasNext(ctx)
+		val, key, err := iter.Next(ctx)
 
-		if err != nil {
-			return err
-		}
-
-		if !hasNext {
+		if errors.Is(err, io.EOF) {
 			return nil
 		}
-
-		val, key, err := iter.Next(ctx)
 
 		if err != nil {
 			return err

@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"io"
 )
 
 type ObjectIterator struct {
@@ -23,13 +24,9 @@ func NewObjectIterator(obj *Object) Iterator {
 	return iter
 }
 
-func (iter *ObjectIterator) HasNext(_ context.Context) (bool, error) {
-	return len(iter.keys) > iter.pos, nil
-}
-
 func (iter *ObjectIterator) Next(_ context.Context) (Value, Value, error) {
 	if iter.pos >= len(iter.keys) {
-		return None, None, Error(ErrInvalidOperation, "no more elements")
+		return None, None, io.EOF
 	}
 
 	key := iter.keys[iter.pos]

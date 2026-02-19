@@ -2,6 +2,8 @@ package data_test
 
 import (
 	"context"
+	"errors"
+	"io"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
@@ -17,29 +19,20 @@ func TestRangeIterator(t *testing.T) {
 		r := data.NewRange(0, 0)
 		iter := data.NewRangeIterator(r)
 
-		hasNext, err := iter.HasNext(ctx)
-		So(err, ShouldBeNil)
-		So(hasNext, ShouldBeTrue)
-
 		val, key, err := iter.Next(ctx)
 
 		So(err, ShouldBeNil)
 		So(val, ShouldEqual, runtime.NewInt(0))
 		So(key, ShouldEqual, runtime.NewInt(0))
 
-		hasNext, err = iter.HasNext(ctx)
-		So(err, ShouldBeNil)
-		So(hasNext, ShouldBeFalse)
+		_, _, err = iter.Next(ctx)
+		So(errors.Is(err, io.EOF), ShouldBeTrue)
 	})
 
 	Convey("Two values", t, func() {
 		ctx := context.Background()
 		r := data.NewRange(0, 1)
 		iter := data.NewRangeIterator(r)
-
-		hasNext, err := iter.HasNext(ctx)
-		So(err, ShouldBeNil)
-		So(hasNext, ShouldBeTrue)
 
 		val, key, err := iter.Next(ctx)
 
@@ -53,19 +46,14 @@ func TestRangeIterator(t *testing.T) {
 		So(val, ShouldEqual, runtime.NewInt(1))
 		So(key, ShouldEqual, runtime.NewInt(1))
 
-		hasNext, err = iter.HasNext(ctx)
-		So(err, ShouldBeNil)
-		So(hasNext, ShouldBeFalse)
+		_, _, err = iter.Next(ctx)
+		So(errors.Is(err, io.EOF), ShouldBeTrue)
 	})
 
 	Convey("Two values (2)", t, func() {
 		ctx := context.Background()
 		r := data.NewRange(1, 2)
 		iter := data.NewRangeIterator(r)
-
-		hasNext, err := iter.HasNext(ctx)
-		So(err, ShouldBeNil)
-		So(hasNext, ShouldBeTrue)
 
 		val, key, err := iter.Next(ctx)
 
@@ -79,9 +67,8 @@ func TestRangeIterator(t *testing.T) {
 		So(val, ShouldEqual, runtime.NewInt(2))
 		So(key, ShouldEqual, runtime.NewInt(1))
 
-		hasNext, err = iter.HasNext(ctx)
-		So(err, ShouldBeNil)
-		So(hasNext, ShouldBeFalse)
+		_, _, err = iter.Next(ctx)
+		So(errors.Is(err, io.EOF), ShouldBeTrue)
 	})
 
 	Convey("Multiple ascending values", t, func() {
@@ -92,12 +79,11 @@ func TestRangeIterator(t *testing.T) {
 		actual := make([]runtime.Int, 0, 10)
 
 		for {
-			hasNext, err := iter.HasNext(ctx)
-			if !hasNext || err != nil {
+			val, _, err := iter.Next(ctx)
+			if errors.Is(err, io.EOF) {
 				break
 			}
-
-			val, _, err := iter.Next(ctx)
+			So(err, ShouldBeNil)
 			actual = append(actual, val.(runtime.Int))
 		}
 
@@ -112,12 +98,11 @@ func TestRangeIterator(t *testing.T) {
 		actual := make([]runtime.Int, 0, 10)
 
 		for {
-			hasNext, err := iter.HasNext(ctx)
-			if !hasNext || err != nil {
+			val, _, err := iter.Next(ctx)
+			if errors.Is(err, io.EOF) {
 				break
 			}
-
-			val, _, err := iter.Next(ctx)
+			So(err, ShouldBeNil)
 			actual = append(actual, val.(runtime.Int))
 		}
 
@@ -129,17 +114,18 @@ func BenchmarkRangeIterator(b *testing.B) {
 	size := 100
 	ctx := context.Background()
 	r := data.NewRange(0, int64(size))
-	iter := data.NewRangeIterator(r)
-
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
+		iter := data.NewRangeIterator(r)
 		for {
-			hasNext, err := iter.HasNext(ctx)
-			if !hasNext || err != nil {
+			_, _, err := iter.Next(ctx)
+			if errors.Is(err, io.EOF) {
 				break
 			}
-			iter.Next(ctx)
+			if err != nil {
+				break
+			}
 		}
 	}
 }

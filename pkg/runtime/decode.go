@@ -2,6 +2,8 @@ package runtime
 
 import (
 	"context"
+	"errors"
+	"io"
 	"reflect"
 	"strings"
 	"time"
@@ -205,8 +207,11 @@ func bindSlice(src Value, dst reflect.Value) error {
 	out := reflect.MakeSlice(dst.Type(), 0, 0)
 	index := 0
 
-	for hasNext, err := iter.HasNext(ctx); hasNext && err == nil; {
+	for {
 		val, _, err := iter.Next(ctx)
+		if errors.Is(err, io.EOF) || errors.Is(err, ErrTimeout) {
+			break
+		}
 		if err != nil {
 			return err
 		}
@@ -218,7 +223,6 @@ func bindSlice(src Value, dst reflect.Value) error {
 
 		out = reflect.Append(out, elem)
 		index++
-		hasNext, err = iter.HasNext(ctx)
 	}
 
 	dst.Set(out)
@@ -240,12 +244,15 @@ func bindArray(src Value, dst reflect.Value) error {
 	elemType := dst.Type().Elem()
 	index := 0
 
-	for hasNext, err := iter.HasNext(ctx); hasNext && err == nil; {
+	for {
 		if index >= dst.Len() {
 			return Error(ErrInvalidArgumentType, "source has more elements than target array")
 		}
 
 		val, _, err := iter.Next(ctx)
+		if errors.Is(err, io.EOF) || errors.Is(err, ErrTimeout) {
+			break
+		}
 		if err != nil {
 			return err
 		}
@@ -257,7 +264,6 @@ func bindArray(src Value, dst reflect.Value) error {
 
 		dst.Index(index).Set(elem)
 		index++
-		hasNext, err = iter.HasNext(ctx)
 	}
 
 	return nil
@@ -353,8 +359,11 @@ func collectEntries(src Value) (map[string]Value, error) {
 	}
 
 	out := make(map[string]Value)
-	for hasNext, err := iter.HasNext(ctx); hasNext && err == nil; {
+	for {
 		keyVal, _, err := iter.Next(ctx)
+		if errors.Is(err, io.EOF) || errors.Is(err, ErrTimeout) {
+			break
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -370,7 +379,6 @@ func collectEntries(src Value) (map[string]Value, error) {
 		}
 
 		out[key.String()] = val
-		hasNext, err = iter.HasNext(ctx)
 	}
 
 	return out, nil

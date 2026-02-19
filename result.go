@@ -2,6 +2,7 @@ package ferret
 
 import (
 	"context"
+	"errors"
 	"io"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -24,6 +25,9 @@ type (
 		value runtime.Iterable
 		iter  runtime.Iterator
 		err   error
+		peek  runtime.Value
+		has   bool
+		done  bool
 	}
 )
 
@@ -81,6 +85,10 @@ func (r *rowsResult) HasNext(ctx context.Context) (bool, error) {
 		return false, r.err
 	}
 
+	if r.done {
+		return false, nil
+	}
+
 	if r.iter == nil {
 		r.iter, r.err = r.value.Iterate(ctx)
 
@@ -89,7 +97,23 @@ func (r *rowsResult) HasNext(ctx context.Context) (bool, error) {
 		}
 	}
 
-	return r.iter.HasNext(ctx)
+	if r.has {
+		return true, nil
+	}
+
+	val, _, err := r.iter.Next(ctx)
+	if errors.Is(err, io.EOF) {
+		r.done = true
+		return false, nil
+	}
+	if err != nil {
+		r.err = err
+		return false, err
+	}
+
+	r.peek = val
+	r.has = true
+	return true, nil
 }
 
 func (r *rowsResult) Next(ctx context.Context) (runtime.Value, error) {
@@ -97,11 +121,25 @@ func (r *rowsResult) Next(ctx context.Context) (runtime.Value, error) {
 		return runtime.None, r.err
 	}
 
+	if r.done {
+		return runtime.None, io.EOF
+	}
+
 	if r.iter == nil {
 		return runtime.None, io.ErrUnexpectedEOF
 	}
 
+	if r.has {
+		r.has = false
+		return r.peek, nil
+	}
+
 	val, _, err := r.iter.Next(ctx)
+
+	if errors.Is(err, io.EOF) {
+		r.done = true
+		return runtime.None, io.EOF
+	}
 
 	if err != nil {
 		r.err = err

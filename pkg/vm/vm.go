@@ -2,6 +2,7 @@ package vm
 
 import (
 	"context"
+	"errors"
 	"io"
 	"strings"
 
@@ -571,18 +572,12 @@ loop:
 			}
 		case bytecode.OpIterNext:
 			iterator := reg[src1].(*data.Iterator)
-			hasNext, err := iterator.HasNext(ctx)
-
-			if err != nil {
-				return nil, err
-			}
-
-			if hasNext {
-				if err := iterator.Next(ctx); err != nil {
+			if err := iterator.Next(ctx); err != nil {
+				if errors.Is(err, io.EOF) {
+					vm.pc = int(dst)
+				} else {
 					return nil, err
 				}
-			} else {
-				vm.pc = int(dst)
 			}
 		case bytecode.OpIterValue:
 			iterator := reg[src1].(*data.Iterator)
