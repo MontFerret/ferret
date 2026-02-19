@@ -14,9 +14,11 @@ import (
 func TestKeys(t *testing.T) {
 	Convey("Keys(obj, false) should return 'a', 'c', 'b' in any order", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("a", runtime.NewInt(0)),
-			runtime.NewObjectProperty("b", runtime.NewInt(1)),
-			runtime.NewObjectProperty("c", runtime.NewInt(2)),
+			map[string]runtime.Value{
+				"a": runtime.NewInt(0),
+				"b": runtime.NewInt(1),
+				"c": runtime.NewInt(2),
+			},
 		)
 
 		keys, err := objects.Keys(context.Background(), obj)
@@ -47,9 +49,11 @@ func TestKeys(t *testing.T) {
 
 	Convey("Keys(obj, true) should return ['a', 'b', 'c'] in sorted order", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("b", runtime.NewInt(0)),
-			runtime.NewObjectProperty("a", runtime.NewInt(1)),
-			runtime.NewObjectProperty("c", runtime.NewInt(3)),
+			map[string]runtime.Value{
+				"b": runtime.NewInt(0),
+				"a": runtime.NewInt(1),
+				"c": runtime.NewInt(3),
+			},
 		)
 
 		keys, err := objects.Keys(context.Background(), obj, runtime.NewBoolean(true))
@@ -106,10 +110,12 @@ func TestKeys(t *testing.T) {
 
 	Convey("When object has special character keys", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("key with spaces", runtime.NewInt(1)),
-			runtime.NewObjectProperty("key_with_underscores", runtime.NewInt(2)),
-			runtime.NewObjectProperty("key-with-dashes", runtime.NewInt(3)),
-			runtime.NewObjectProperty("key.with.dots", runtime.NewInt(4)),
+			map[string]runtime.Value{
+				"key with spaces":      runtime.NewInt(1),
+				"key_with_underscores": runtime.NewInt(2),
+				"key-with-dashes":      runtime.NewInt(3),
+				"key.with.dots":        runtime.NewInt(4),
+			},
 		)
 
 		keys, err := objects.Keys(context.Background(), obj, runtime.NewBoolean(true))

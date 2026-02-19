@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"io"
 )
 
 type ArrayIterator struct {
@@ -14,13 +15,9 @@ func NewArrayIterator(values *Array) Iterator {
 	return &ArrayIterator{values: values, length: len(values.data), pos: 0}
 }
 
-func (iter *ArrayIterator) HasNext(_ context.Context) (bool, error) {
-	return iter.length > iter.pos, nil
-}
-
 func (iter *ArrayIterator) Next(_ context.Context) (value Value, key Value, err error) {
 	if iter.pos >= iter.length {
-		return None, None, Error(ErrInvalidOperation, "no more elements")
+		return None, None, io.EOF
 	}
 
 	value = iter.values.data[iter.pos]

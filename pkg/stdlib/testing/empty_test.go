@@ -85,9 +85,11 @@ func TestEmpty(t *t.T) {
 				_, err := Empty(
 					context.Background(),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("a", runtime.NewInt(1)),
-						runtime.NewObjectProperty("b", runtime.NewInt(2)),
-						runtime.NewObjectProperty("c", runtime.NewInt(3)),
+						map[string]runtime.Value{
+							"a": runtime.NewInt(1),
+							"b": runtime.NewInt(2),
+							"c": runtime.NewInt(3),
+						},
 					),
 				)
 
@@ -182,9 +184,11 @@ func TestNotEmpty(t *t.T) {
 				_, err := NotEmpty(
 					context.Background(),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("a", runtime.NewInt(1)),
-						runtime.NewObjectProperty("b", runtime.NewInt(2)),
-						runtime.NewObjectProperty("c", runtime.NewInt(3)),
+						map[string]runtime.Value{
+							"a": runtime.NewInt(1),
+							"b": runtime.NewInt(2),
+							"c": runtime.NewInt(3),
+						},
 					),
 				)
 

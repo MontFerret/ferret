@@ -2,6 +2,7 @@ package ferret
 
 import (
 	"context"
+	"errors"
 	"io"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -11,7 +12,6 @@ type (
 	Result interface {
 		io.Closer
 
-		HasNext(ctx context.Context) (bool, error)
 		Next(ctx context.Context) (runtime.Value, error)
 	}
 
@@ -24,6 +24,7 @@ type (
 		value runtime.Iterable
 		iter  runtime.Iterator
 		err   error
+		done  bool
 	}
 )
 
@@ -53,10 +54,6 @@ func (r *scalarResult) Close() error {
 	return closable.Close()
 }
 
-func (r *scalarResult) HasNext(_ context.Context) (bool, error) {
-	return !r.consumed, nil
-}
-
 func (r *scalarResult) Next(_ context.Context) (runtime.Value, error) {
 	if r.consumed {
 		return runtime.None, io.EOF
@@ -76,32 +73,28 @@ func (r *rowsResult) Close() error {
 	return closable.Close()
 }
 
-func (r *rowsResult) HasNext(ctx context.Context) (bool, error) {
-	if r.err != nil {
-		return false, r.err
-	}
-
-	if r.iter == nil {
-		r.iter, r.err = r.value.Iterate(ctx)
-
-		if r.err != nil {
-			return false, r.err
-		}
-	}
-
-	return r.iter.HasNext(ctx)
-}
-
 func (r *rowsResult) Next(ctx context.Context) (runtime.Value, error) {
 	if r.err != nil {
 		return runtime.None, r.err
 	}
 
+	if r.done {
+		return runtime.None, io.EOF
+	}
+
 	if r.iter == nil {
-		return runtime.None, io.ErrUnexpectedEOF
+		r.iter, r.err = r.value.Iterate(ctx)
+		if r.err != nil {
+			return runtime.None, r.err
+		}
 	}
 
 	val, _, err := r.iter.Next(ctx)
+
+	if errors.Is(err, io.EOF) {
+		r.done = true
+		return runtime.None, io.EOF
+	}
 
 	if err != nil {
 		r.err = err

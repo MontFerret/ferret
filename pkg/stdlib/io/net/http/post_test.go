@@ -66,8 +66,10 @@ func TestPOST(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		out, err := http.POST(ctx, runtime.NewObjectWith(
-			runtime.NewObjectProperty("url", runtime.NewString(url)),
-			runtime.NewObjectProperty("body", runtime.NewBinary(b)),
+			map[string]runtime.Value{
+				"url":  runtime.NewString(url),
+				"body": runtime.NewBinary(b),
+			},
 		))
 
 		So(err, ShouldBeNil)
@@ -109,13 +111,17 @@ func TestPOST(t *testing.T) {
 		ctx := context.Background()
 
 		j := runtime.NewObjectWith(
-			runtime.NewObjectProperty("first_name", runtime.NewString("Rob")),
-			runtime.NewObjectProperty("last_name", runtime.NewString("Pike")),
+			map[string]runtime.Value{
+				"first_name": runtime.NewString("Rob"),
+				"last_name":  runtime.NewString("Pike"),
+			},
 		)
 
 		out, err := http.POST(ctx, runtime.NewObjectWith(
-			runtime.NewObjectProperty("url", runtime.NewString(url)),
-			runtime.NewObjectProperty("body", j),
+			map[string]runtime.Value{
+				"url":  runtime.NewString(url),
+				"body": j,
+			},
 		))
 
 		So(err, ShouldBeNil)

@@ -9,19 +9,8 @@ import (
 	"github.com/wI2L/jettison"
 )
 
-type (
-	ObjectProperty struct {
-		key   string
-		value Value
-	}
-
-	Object struct {
-		data map[string]Value
-	}
-)
-
-func NewObjectProperty(name string, value Value) *ObjectProperty {
-	return &ObjectProperty{name, value}
+type Object struct {
+	data map[string]Value
 }
 
 func NewObject() *Object {
@@ -32,14 +21,12 @@ func NewObjectOf(size int) *Object {
 	return &Object{make(map[string]Value, size)}
 }
 
-func NewObjectWith(props ...*ObjectProperty) *Object {
-	obj := &Object{make(map[string]Value)}
-
-	for _, prop := range props {
-		obj.data[prop.key] = prop.value
+func NewObjectWith(props map[string]Value) *Object {
+	data := make(map[string]Value, len(props))
+	for k, v := range props {
+		data[k] = v
 	}
-
-	return obj
+	return &Object{data}
 }
 
 func (t *Object) ObjectLike() {}

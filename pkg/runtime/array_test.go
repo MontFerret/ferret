@@ -118,7 +118,9 @@ func TestArray(t *testing.T) {
 			Convey("When object and array are nested at the same time", func() {
 				arr1 := runtime.NewArrayWith(
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("one", runtime.NewInt(1)),
+						map[string]runtime.Value{
+							"one": runtime.NewInt(1),
+						},
 					),
 					runtime.NewArrayWith(
 						runtime.NewInt(2),
@@ -126,7 +128,9 @@ func TestArray(t *testing.T) {
 				)
 				arr2 := runtime.NewArrayWith(
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("one", runtime.NewInt(1)),
+						map[string]runtime.Value{
+							"one": runtime.NewInt(1),
+						},
 					),
 					runtime.NewArrayWith(
 						runtime.NewInt(2),
@@ -139,12 +143,16 @@ func TestArray(t *testing.T) {
 			Convey("When only objects are nested", func() {
 				arr1 := runtime.NewArrayWith(
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("one", runtime.NewInt(1)),
+						map[string]runtime.Value{
+							"one": runtime.NewInt(1),
+						},
 					),
 				)
 				arr2 := runtime.NewArrayWith(
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("one", runtime.NewInt(1)),
+						map[string]runtime.Value{
+							"one": runtime.NewInt(1),
+						},
 					),
 				)
 
@@ -170,7 +178,9 @@ func TestArray(t *testing.T) {
 				arr1 := runtime.NewArrayWith(
 					runtime.NewInt(0),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("one", runtime.NewInt(1)),
+						map[string]runtime.Value{
+							"one": runtime.NewInt(1),
+						},
 					),
 					runtime.NewArrayWith(
 						runtime.NewInt(2),
@@ -179,7 +189,9 @@ func TestArray(t *testing.T) {
 				arr2 := runtime.NewArrayWith(
 					runtime.NewInt(0),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("one", runtime.NewInt(1)),
+						map[string]runtime.Value{
+							"one": runtime.NewInt(1),
+						},
 					),
 					runtime.NewArrayWith(
 						runtime.NewInt(2),
@@ -192,16 +204,16 @@ func TestArray(t *testing.T) {
 			Convey("When custom complex type", func() {
 				arr1 := runtime.NewArrayWith(
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty(
-							"arr", runtime.NewArrayWith(runtime.NewObject()),
-						),
+						map[string]runtime.Value{
+							"arr": runtime.NewArrayWith(runtime.NewObject()),
+						},
 					),
 				)
 				arr2 := runtime.NewArrayWith(
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty(
-							"arr", runtime.NewArrayWith(runtime.NewObject()),
-						),
+						map[string]runtime.Value{
+							"arr": runtime.NewArrayWith(runtime.NewObject()),
+						},
 					),
 				)
 
@@ -239,7 +251,11 @@ func TestArray(t *testing.T) {
 				runtime.NewString("foobar"),
 				runtime.NewCurrentDateTime(),
 				runtime.NewArrayWith(runtime.NewInt(1), runtime.True),
-				runtime.NewObjectWith(runtime.NewObjectProperty("foo", runtime.NewString("bar"))),
+				runtime.NewObjectWith(
+					map[string]runtime.Value{
+						"foo": runtime.NewString("bar"),
+					},
+				),
 			)
 
 			h1 := arr.Hash()
@@ -512,7 +528,9 @@ func TestArray(t *testing.T) {
 			arr := runtime.NewArrayWith(
 				runtime.NewInt(0),
 				runtime.NewObjectWith(
-					runtime.NewObjectProperty("one", runtime.NewInt(1)),
+					map[string]runtime.Value{
+						"one": runtime.NewInt(1),
+					},
 				),
 				runtime.NewArrayWith(
 					runtime.NewInt(2),

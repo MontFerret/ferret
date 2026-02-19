@@ -94,7 +94,9 @@ func TestZip(t *testing.T) {
 			keys := runtime.NewArrayWith(runtime.NewString("k1"))
 			vals := runtime.NewArrayWith(runtime.NewInt(1))
 			expected := runtime.NewObjectWith(
-				runtime.NewObjectProperty("k1", runtime.NewInt(1)),
+				map[string]runtime.Value{
+					"k1": runtime.NewInt(1),
+				},
 			)
 
 			actual, err := objects.Zip(context.Background(), keys, vals)
@@ -113,8 +115,10 @@ func TestZip(t *testing.T) {
 				runtime.NewInt(2),
 			)
 			expected := runtime.NewObjectWith(
-				runtime.NewObjectProperty("k1", runtime.NewInt(1)),
-				runtime.NewObjectProperty("k2", runtime.NewInt(2)),
+				map[string]runtime.Value{
+					"k1": runtime.NewInt(1),
+					"k2": runtime.NewInt(2),
+				},
 			)
 
 			actual, err := objects.Zip(context.Background(), keys, vals)
@@ -135,8 +139,10 @@ func TestZip(t *testing.T) {
 				runtime.NewInt(3),
 			)
 			expected := runtime.NewObjectWith(
-				runtime.NewObjectProperty("a", runtime.NewInt(1)),
-				runtime.NewObjectProperty("b", runtime.NewInt(2)),
+				map[string]runtime.Value{
+					"a": runtime.NewInt(1),
+					"b": runtime.NewInt(2),
+				},
 			)
 
 			actual, err := objects.Zip(context.Background(), keys, vals)
@@ -152,7 +158,11 @@ func TestZip(t *testing.T) {
 			)
 			vals := runtime.NewArrayWith(
 				runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)),
-				runtime.NewObjectWith(runtime.NewObjectProperty("nested", runtime.NewString("value"))),
+				runtime.NewObjectWith(
+					map[string]runtime.Value{
+						"nested": runtime.NewString("value"),
+					},
+				),
 			)
 
 			actual, err := objects.Zip(context.Background(), keys, vals)

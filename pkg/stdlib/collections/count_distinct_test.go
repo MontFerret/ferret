@@ -65,9 +65,11 @@ func TestCountDistinct(t *testing.T) {
 
 	Convey("When counting distinct elements in object", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("a", runtime.NewInt(1)),
-			runtime.NewObjectProperty("b", runtime.NewInt(2)),
-			runtime.NewObjectProperty("c", runtime.NewInt(1)), // duplicate value
+			map[string]runtime.Value{
+				"a": runtime.NewInt(1),
+				"b": runtime.NewInt(2),
+				"c": runtime.NewInt(1), // duplicate value
+			},
 		)
 
 		result, err := collections.CountDistinct(context.Background(), obj)
@@ -108,13 +110,19 @@ func TestCountDistinct(t *testing.T) {
 
 	Convey("When counting distinct with complex objects", t, func() {
 		obj1 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("x", runtime.NewInt(1)),
+			map[string]runtime.Value{
+				"x": runtime.NewInt(1),
+			},
 		)
 		obj2 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("x", runtime.NewInt(1)),
+			map[string]runtime.Value{
+				"x": runtime.NewInt(1),
+			},
 		)
 		obj3 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("x", runtime.NewInt(2)),
+			map[string]runtime.Value{
+				"x": runtime.NewInt(2),
+			},
 		)
 
 		arr := runtime.NewArrayWith(obj1, obj2, obj3)

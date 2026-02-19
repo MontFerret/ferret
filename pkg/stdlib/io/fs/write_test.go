@@ -20,7 +20,9 @@ func TestWrite(t *testing.T) {
 		path := runtime.NewString("path.txt")
 		data := runtime.NewBinary([]byte("3timeslazy"))
 		params := runtime.NewObjectWith(
-			runtime.NewObjectProperty("mode", runtime.NewString("w")),
+			map[string]runtime.Value{
+				"mode": runtime.NewString("w"),
+			},
 		)
 		someInt := runtime.NewInt(0)
 
@@ -93,7 +95,9 @@ func TestWrite(t *testing.T) {
 
 					Convey(name, func() {
 						params := runtime.NewObjectWith(
-							runtime.NewObjectProperty("mode", mode),
+							map[string]runtime.Value{
+								"mode": mode,
+							},
 						)
 
 						none, err := fs.Write(context.Background(), path, data, params)
@@ -116,7 +120,9 @@ func TestWrite(t *testing.T) {
 				runtime.NewString(file.Name()),
 				runtime.NewBinary([]byte("3timeslazy")),
 				runtime.NewObjectWith(
-					runtime.NewObjectProperty("mode", runtime.NewString("wx")),
+					map[string]runtime.Value{
+						"mode": runtime.NewString("wx"),
+					},
 				),
 			)
 			So(none, ShouldResemble, runtime.None)
@@ -143,7 +149,9 @@ func TestWrite(t *testing.T) {
 			data := runtime.NewBinary([]byte("3timeslazy"))
 			fpath := runtime.NewString(file.Name())
 			params := runtime.NewObjectWith(
-				runtime.NewObjectProperty("mode", runtime.NewString("w")),
+				map[string]runtime.Value{
+					"mode": runtime.NewString("w"),
+				},
 			)
 
 			for _ = range [2]struct{}{} {
@@ -167,7 +175,9 @@ func TestWrite(t *testing.T) {
 			data := runtime.NewBinary([]byte("3timeslazy"))
 			fpath := runtime.NewString(file.Name())
 			params := runtime.NewObjectWith(
-				runtime.NewObjectProperty("mode", runtime.NewString("a")),
+				map[string]runtime.Value{
+					"mode": runtime.NewString("a"),
+				},
 			)
 
 			for i := range [2]struct{}{} {

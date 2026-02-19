@@ -15,7 +15,9 @@ import (
 func TestHas(t *testing.T) {
 	Convey("When key exists", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("key", runtime.NewString("val")),
+			map[string]runtime.Value{
+				"key": runtime.NewString("val"),
+			},
 		)
 
 		val, err := objects.Has(context.Background(), obj, runtime.NewString("key"))
@@ -28,7 +30,9 @@ func TestHas(t *testing.T) {
 
 	Convey("When key doesn't exists", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("anyOtherKey", runtime.NewString("val")),
+			map[string]runtime.Value{
+				"anyOtherKey": runtime.NewString("val"),
+			},
 		)
 
 		val, err := objects.Has(context.Background(), obj, runtime.NewString("key"))
@@ -83,7 +87,9 @@ func TestHas(t *testing.T) {
 
 	Convey("When key is empty string", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("", runtime.NewString("empty")),
+			map[string]runtime.Value{
+				"": runtime.NewString("empty"),
+			},
 		)
 
 		val, err := objects.Has(context.Background(), obj, runtime.NewString(""))
@@ -94,14 +100,13 @@ func TestHas(t *testing.T) {
 	})
 
 	Convey("When object has many keys", t, func() {
-		properties := make([]*runtime.ObjectProperty, 100)
+		properties := make(map[string]runtime.Value, 100)
+
 		for i := 0; i < 100; i++ {
-			properties[i] = runtime.NewObjectProperty(
-				fmt.Sprintf("key%d", i),
-				runtime.NewInt(i),
-			)
+			properties[fmt.Sprintf("key%d", i)] = runtime.NewInt(i)
 		}
-		obj := runtime.NewObjectWith(properties...)
+
+		obj := runtime.NewObjectWith(properties)
 
 		// Test existing key
 		val, err := objects.Has(context.Background(), obj, runtime.NewString("key50"))

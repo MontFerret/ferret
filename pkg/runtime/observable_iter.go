@@ -2,13 +2,13 @@ package runtime
 
 import (
 	"context"
+	"io"
 	"time"
 )
 
 type StreamIterator struct {
 	stream      Stream
 	channel     <-chan Message
-	message     Message
 	timeout     time.Duration
 	initialized bool
 	closed      bool
@@ -25,14 +25,14 @@ func NewIteratorWithTimeout(stream Stream, timeout time.Duration) Iterator {
 	}
 }
 
-func (s *StreamIterator) HasNext(ctx context.Context) (bool, error) {
+func (s *StreamIterator) Next(ctx context.Context) (value Value, key Value, err error) {
 	if !s.initialized {
 		s.channel = s.stream.Read(ctx)
 		s.initialized = true
 	}
 
 	if s.closed {
-		return false, nil
+		return None, None, io.EOF
 	}
 
 	var message Message
@@ -41,22 +41,16 @@ func (s *StreamIterator) HasNext(ctx context.Context) (bool, error) {
 	select {
 	case message, isOpen = <-s.channel:
 	case <-time.After(s.timeout):
-		return false, ErrTimeout
+		return None, None, ErrTimeout
 	}
 
 	if !isOpen {
 		s.closed = true
 
-		return false, nil
+		return None, None, io.EOF
 	}
 
-	s.message = message
-
-	return true, nil
-}
-
-func (s *StreamIterator) Next(_ context.Context) (value Value, key Value, err error) {
-	return s.message.Value(), None, s.message.Err()
+	return message.Value(), None, message.Err()
 }
 
 func (s *StreamIterator) Close() error {

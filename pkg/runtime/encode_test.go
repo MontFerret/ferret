@@ -39,8 +39,10 @@ func TestEncode(t *testing.T) {
 		out := runtime.Encode(input)
 
 		expected := runtime.NewObjectWith(
-			runtime.NewObjectProperty("name", runtime.NewString("Alice")),
-			runtime.NewObjectProperty("age", runtime.NewInt(30)),
+			map[string]runtime.Value{
+				"name": runtime.NewString("Alice"),
+				"age":  runtime.NewInt(30),
+			},
 		)
 
 		So(out, ShouldResemble, expected)
@@ -58,10 +60,14 @@ func TestEncode(t *testing.T) {
 		out := runtime.Encode(input)
 
 		expected := runtime.NewObjectWith(
-			runtime.NewObjectProperty("inner", runtime.NewObjectWith(
-				runtime.NewObjectProperty("value", runtime.NewString("ok")),
-			)),
-			runtime.NewObjectProperty("count", runtime.NewInt(2)),
+			map[string]runtime.Value{
+				"inner": runtime.NewObjectWith(
+					map[string]runtime.Value{
+						"value": runtime.NewString("ok"),
+					},
+				),
+				"count": runtime.NewInt(2),
+			},
 		)
 
 		So(out, ShouldResemble, expected)
@@ -123,12 +129,14 @@ func TestEncodeByKey(t *testing.T) {
 			},
 			Field: "pointerProp",
 			Expected: runtime.NewObjectWith(
-				runtime.NewObjectProperty("strProp", runtime.String("test")),
-				runtime.NewObjectProperty("intProp", runtime.Int(0)),
-				runtime.NewObjectProperty("sliceProp", runtime.NewArray(0)),
-				runtime.NewObjectProperty("pointerProp", runtime.None),
-				runtime.NewObjectProperty("jsonTag", runtime.EmptyString),
-				runtime.NewObjectProperty("ferretTag", runtime.EmptyString),
+				map[string]runtime.Value{
+					"strProp":     runtime.String("test"),
+					"intProp":     runtime.Int(0),
+					"sliceProp":   runtime.NewArray(0),
+					"pointerProp": runtime.None,
+					"jsonTag":     runtime.EmptyString,
+					"ferretTag":   runtime.EmptyString,
+				},
 			),
 		},
 		{

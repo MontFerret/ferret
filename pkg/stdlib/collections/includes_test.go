@@ -120,9 +120,11 @@ func TestIncludes(t *testing.T) {
 	Convey("When searching in object", t, func() {
 		Convey("Should find existing value", func() {
 			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("a", runtime.NewInt(1)),
-				runtime.NewObjectProperty("b", runtime.NewString("hello")),
-				runtime.NewObjectProperty("c", runtime.NewBoolean(true)),
+				map[string]runtime.Value{
+					"a": runtime.NewInt(1),
+					"b": runtime.NewString("hello"),
+					"c": runtime.NewBoolean(true),
+				},
 			)
 			needle := runtime.NewString("hello")
 
@@ -134,8 +136,10 @@ func TestIncludes(t *testing.T) {
 
 		Convey("Should not find non-existing value", func() {
 			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("a", runtime.NewInt(1)),
-				runtime.NewObjectProperty("b", runtime.NewString("hello")),
+				map[string]runtime.Value{
+					"a": runtime.NewInt(1),
+					"b": runtime.NewString("hello"),
+				},
 			)
 			needle := runtime.NewString("world")
 
@@ -147,7 +151,9 @@ func TestIncludes(t *testing.T) {
 
 		Convey("Should not find key as value", func() {
 			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("hello", runtime.NewString("world")),
+				map[string]runtime.Value{
+					"hello": runtime.NewString("world"),
+				},
 			)
 			needle := runtime.NewString("hello") // This is a key, not a value
 
@@ -180,10 +186,14 @@ func TestIncludes(t *testing.T) {
 
 	Convey("When searching with complex objects", t, func() {
 		obj1 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("x", runtime.NewInt(1)),
+			map[string]runtime.Value{
+				"x": runtime.NewInt(1),
+			},
 		)
 		obj2 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("x", runtime.NewInt(1)),
+			map[string]runtime.Value{
+				"x": runtime.NewInt(1),
+			},
 		)
 		arr := runtime.NewArrayWith(obj1, runtime.NewString("test"))
 
@@ -229,7 +239,9 @@ func TestIncludes(t *testing.T) {
 	Convey("Edge cases for array/object searching", t, func() {
 		Convey("Should handle nested objects", func() {
 			innerObj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("nested", runtime.NewString("value")),
+				map[string]runtime.Value{
+					"nested": runtime.NewString("value"),
+				},
 			)
 			arr := runtime.NewArrayWith(runtime.NewInt(1), innerObj)
 

@@ -73,6 +73,7 @@ func (f *literalFormatter) formatStringLiteralNodeWith(p *printer, ctx fql.IStri
 	}
 }
 
+//lint:ignore U1000 Ignore unused method
 func (f *literalFormatter) formatTemplateLiteral(ctx fql.ITemplateLiteralContext) {
 	f.formatTemplateLiteralWith(f.p, ctx)
 }
@@ -159,14 +160,17 @@ func (f *literalFormatter) formatComputedPropertyNameWith(p *printer, ctx *fql.C
 	p.write("]")
 }
 
+//lint:ignore U1000 Ignore unused method
 func (f *literalFormatter) formatPropertyAssignment(ctx *fql.PropertyAssignmentContext) {
 	f.formatPropertyAssignmentWith(f.p, ctx)
 }
 
+//lint:ignore U1000 Ignore unused method
 func (f *literalFormatter) formatPropertyName(ctx *fql.PropertyNameContext) {
 	f.formatPropertyNameWith(f.p, ctx)
 }
 
+//lint:ignore U1000 Ignore unused method
 func (f *literalFormatter) formatComputedPropertyName(ctx *fql.ComputedPropertyNameContext) {
 	f.formatComputedPropertyNameWith(f.p, ctx)
 }

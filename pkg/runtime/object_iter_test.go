@@ -2,6 +2,8 @@ package runtime_test
 
 import (
 	"context"
+	"errors"
+	"io"
 	"slices"
 	"testing"
 
@@ -16,10 +18,8 @@ func TestObjectIterator(t *testing.T) {
 		obj := NewObject()
 		iter := NewObjectIterator(obj)
 
-		hasNext, err := iter.HasNext(ctx)
-
-		So(err, ShouldBeNil)
-		So(hasNext, ShouldBeFalse)
+		_, _, err := iter.Next(ctx)
+		So(errors.Is(err, io.EOF), ShouldBeTrue)
 	})
 
 	Convey("One value", t, func() {
@@ -28,21 +28,14 @@ func TestObjectIterator(t *testing.T) {
 		obj.Set(ctx, NewString("key"), NewInt(1))
 		iter := NewObjectIterator(obj)
 
-		hasNext, err := iter.HasNext(ctx)
-
-		So(err, ShouldBeNil)
-		So(hasNext, ShouldBeTrue)
-
 		val, key, err := iter.Next(ctx)
 
 		So(err, ShouldBeNil)
 		So(val, ShouldEqual, NewInt(1))
 		So(key, ShouldEqual, NewString("key"))
 
-		hasNext, err = iter.HasNext(ctx)
-
-		So(err, ShouldBeNil)
-		So(hasNext, ShouldBeFalse)
+		_, _, err = iter.Next(ctx)
+		So(errors.Is(err, io.EOF), ShouldBeTrue)
 	})
 
 	Convey("Multiple values", t, func() {
@@ -58,12 +51,11 @@ func TestObjectIterator(t *testing.T) {
 		actual := make([][2]Value, 0, 5)
 
 		for {
-			hasNext, err := iter.HasNext(ctx)
-			if !hasNext || err != nil {
+			val, key, err := iter.Next(ctx)
+			if errors.Is(err, io.EOF) {
 				break
 			}
-
-			val, key, err := iter.Next(ctx)
+			So(err, ShouldBeNil)
 
 			actual = append(actual, [2]Value{key, val})
 		}
@@ -91,17 +83,18 @@ func BenchmarkObjectIterator(b *testing.B) {
 		obj.Set(ctx, NewString("key"+ToString(NewInt(i)).String()), NewInt(i))
 	}
 
-	iter := NewObjectIterator(obj)
-
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
+		iter := NewObjectIterator(obj)
 		for {
-			hasNext, err := iter.HasNext(ctx)
-			if !hasNext || err != nil {
+			_, _, err := iter.Next(ctx)
+			if errors.Is(err, io.EOF) {
 				break
 			}
-			iter.Next(ctx)
+			if err != nil {
+				break
+			}
 		}
 	}
 }

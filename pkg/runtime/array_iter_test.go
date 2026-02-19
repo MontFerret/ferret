@@ -2,6 +2,8 @@ package runtime_test
 
 import (
 	"context"
+	"errors"
+	"io"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -15,10 +17,8 @@ func TestArrayIterator(t *testing.T) {
 		arr := runtime.NewArray(0)
 		iter := runtime.NewArrayIterator(arr)
 
-		hasNext, err := iter.HasNext(ctx)
-
-		So(err, ShouldBeNil)
-		So(hasNext, ShouldBeFalse)
+		_, _, err := iter.Next(ctx)
+		So(errors.Is(err, io.EOF), ShouldBeTrue)
 	})
 
 	Convey("One value", t, func() {
@@ -27,21 +27,14 @@ func TestArrayIterator(t *testing.T) {
 		arr.Append(ctx, runtime.NewInt(1))
 		iter := runtime.NewArrayIterator(arr)
 
-		hasNext, err := iter.HasNext(ctx)
-
-		So(err, ShouldBeNil)
-		So(hasNext, ShouldBeTrue)
-
 		val, key, err := iter.Next(ctx)
 
 		So(err, ShouldBeNil)
 		So(val, ShouldEqual, runtime.NewInt(1))
 		So(key, ShouldEqual, runtime.NewInt(0))
 
-		hasNext, err = iter.HasNext(ctx)
-
-		So(err, ShouldBeNil)
-		So(hasNext, ShouldBeFalse)
+		_, _, err = iter.Next(ctx)
+		So(errors.Is(err, io.EOF), ShouldBeTrue)
 	})
 
 	Convey("Multiple values", t, func() {
@@ -57,11 +50,11 @@ func TestArrayIterator(t *testing.T) {
 		actual := make([]runtime.Int, 0, 5)
 
 		for {
-			hasNext, err := iter.HasNext(ctx)
-			if !hasNext || err != nil {
+			val, _, err := iter.Next(ctx)
+			if errors.Is(err, io.EOF) {
 				break
 			}
-			val, _, err := iter.Next(ctx)
+			So(err, ShouldBeNil)
 			actual = append(actual, val.(runtime.Int))
 		}
 
@@ -84,12 +77,13 @@ func BenchmarkArrayIterator(b *testing.B) {
 		iter := runtime.NewArrayIterator(arr)
 
 		for {
-			hasNext, err := iter.HasNext(ctx)
-			if !hasNext || err != nil {
+			_, _, err := iter.Next(ctx)
+			if errors.Is(err, io.EOF) {
 				break
 			}
-
-			iter.Next(ctx)
+			if err != nil {
+				break
+			}
 		}
 	}
 }

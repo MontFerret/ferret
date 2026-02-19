@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"hash/fnv"
+	"io"
 	"math"
 	"math/rand"
 	"reflect"
@@ -262,8 +264,12 @@ func ToList(ctx context.Context, input Value) List {
 
 		arr := NewArray(10)
 
-		for hasNext, err := iterator.HasNext(ctx); hasNext && err == nil; {
+		for {
 			val, _, err := iterator.Next(ctx)
+
+			if errors.Is(err, io.EOF) {
+				break
+			}
 
 			if err != nil {
 				return arr
@@ -299,8 +305,12 @@ func ToMap(ctx context.Context, input Value) Map {
 
 		obj := NewObject()
 
-		for hasNext, err := iterator.HasNext(ctx); hasNext && err == nil; {
+		for {
 			val, key, err := iterator.Next(ctx)
+
+			if errors.Is(err, io.EOF) {
+				break
+			}
 
 			if err != nil {
 				return obj
@@ -374,12 +384,14 @@ func ToFloat(ctx context.Context, input Value) (Float, error) {
 		res := ZeroFloat
 
 		for {
-			hasNext, err := iterator.HasNext(ctx)
-			if !hasNext || err != nil {
+			val, _, err := iterator.Next(ctx)
+			if errors.Is(err, io.EOF) {
 				break
 			}
 
-			val, _, err := iterator.Next(ctx)
+			if errors.Is(err, ErrTimeout) {
+				break
+			}
 
 			if err != nil {
 				continue
@@ -447,12 +459,14 @@ func ToInt(ctx context.Context, input Value) (Int, error) {
 		res := ZeroInt
 
 		for {
-			hasNext, err := iterator.HasNext(ctx)
-			if !hasNext || err != nil {
+			item, _, err := iterator.Next(ctx)
+			if errors.Is(err, io.EOF) {
 				break
 			}
 
-			item, _, err := iterator.Next(ctx)
+			if errors.Is(err, ErrTimeout) {
+				break
+			}
 
 			if err != nil {
 				continue
@@ -515,8 +529,16 @@ func ToNumberOnly(ctx context.Context, input Value) Value {
 		i := ZeroInt
 		f := ZeroFloat
 
-		for hasNext, err := iterator.HasNext(ctx); hasNext && err == nil; {
+		for {
 			val, _, err := iterator.Next(ctx)
+
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			if errors.Is(err, ErrTimeout) {
+				break
+			}
 
 			if err != nil {
 				continue

@@ -66,7 +66,7 @@ func TestOpExists(t *testing.T) {
 		},
 		{
 			name: "non-empty object is true",
-			program: programWithConst(runtime.NewObjectWith(runtime.NewObjectProperty("a", runtime.NewInt(1))),
+			program: programWithConst(runtime.NewObjectWith(map[string]runtime.Value{"key": runtime.NewInt(1)}),
 				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
 				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
