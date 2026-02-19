@@ -20,6 +20,17 @@ func NewProxy[T any](target T) *Proxy[T] {
 }
 
 func (p *Proxy[T]) Target() T {
+	// Safeguard against nil target.
+	// This can happen if the constructor is bypassed or misused, which is a programming error.
+	// In such cases, we return the zero value of T to prevent panics in methods that rely on the target.
+	if p.target == nil {
+		var zero T
+
+		return zero
+	}
+
+	// This should not panic because the constructor enforces the type.
+	// If the target is not of type T, it means that the constructor was bypassed or misused, which is a programming error.
 	return p.target.(T)
 }
 
