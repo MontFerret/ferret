@@ -1,7 +1,9 @@
-package vm
+package diagnostic
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -10,7 +12,75 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func toRuntimeError(program *bytecode.Program, pc int, err error) *RuntimeError {
+func WrapRuntimeError(program *bytecode.Program, pc int, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	var runtimeError *RuntimeError
+
+	if errors.As(err, &runtimeError) {
+		return err
+	}
+
+	var wpErrorSet *WarmupErrorSet
+
+	if errors.As(err, &wpErrorSet) {
+		errs := NewRuntimeErrorSet(5)
+
+		for _, wer := range wpErrorSet.Errors {
+			// warmup PCs are zero-based instruction indices (no pre-increment),
+			// while ToRuntimeError expects a post-increment pc (see pc-1 usage)
+			errs.Add(ToRuntimeError(program, wer.PC+1, wer.Err))
+		}
+
+		return errs
+	}
+
+	return ToRuntimeError(program, pc, err)
+}
+
+func RuntimeErrorFromPanic(program *bytecode.Program, pc int, r any) error {
+	message := "unexpected runtime panic"
+	cause := fmt.Errorf("panic: %v", r)
+
+	if err, ok := r.(error); ok {
+		cause = err
+	}
+
+	return &RuntimeError{
+		Diagnostic: &diagnostics.Diagnostic{
+			Kind:    diagnostics.UnexpectedError,
+			Message: fmt.Sprintf("%s. %s", message, cause.Error()),
+			Source:  program.Source,
+			Spans:   []diagnostics.ErrorSpan{diagnostics.NewMainErrorSpan(SpanAt(program, pc-1), "")},
+			Cause:   cause,
+		},
+	}
+}
+
+func NewRuntimeError(
+	program *bytecode.Program,
+	pc int,
+	kind diagnostics.Kind,
+	message string,
+	label string,
+	hint string,
+	note string,
+) *RuntimeError {
+	return &RuntimeError{
+		Diagnostic: &diagnostics.Diagnostic{
+			Kind:    kind,
+			Message: message,
+			Hint:    hint,
+			Note:    note,
+			Source:  program.Source,
+			Spans:   []diagnostics.ErrorSpan{diagnostics.NewMainErrorSpan(SpanAt(program, pc-1), label)},
+		},
+	}
+}
+
+func ToRuntimeError(program *bytecode.Program, pc int, err error) *RuntimeError {
 	if err == nil {
 		return nil
 	}
@@ -27,7 +97,7 @@ func toRuntimeError(program *bytecode.Program, pc int, err error) *RuntimeError 
 	hint := ""
 	note := ""
 	var cause error
-	var memberErr *runtime.MemberAccessError
+	var memberErr *MemberAccessError
 
 	switch {
 	case errors.Is(err, ErrDivisionByZero):
@@ -127,13 +197,13 @@ func toRuntimeError(program *bytecode.Program, pc int, err error) *RuntimeError 
 			Hint:    hint,
 			Note:    note,
 			Source:  program.Source,
-			Spans:   []diagnostics.ErrorSpan{diagnostics.NewMainErrorSpan(spanAt(program, pc-1), label)},
+			Spans:   []diagnostics.ErrorSpan{diagnostics.NewMainErrorSpan(SpanAt(program, pc-1), label)},
 			Cause:   cause,
 		},
 	}
 }
 
-func spanAt(program *bytecode.Program, pc int) file.Span {
+func SpanAt(program *bytecode.Program, pc int) file.Span {
 	if program == nil {
 		return file.Span{Start: -1, End: -1}
 	}
@@ -143,4 +213,54 @@ func spanAt(program *bytecode.Program, pc int) file.Span {
 	}
 
 	return program.Metadata.DebugSpans[pc]
+}
+
+func CheckDivisionByZero(
+	ctx context.Context,
+	program *bytecode.Program,
+	pc int,
+	left runtime.Value,
+	right runtime.Value,
+) error {
+	l := runtime.ToNumberOnly(ctx, left)
+	if _, ok := l.(runtime.Int); !ok {
+		return nil
+	}
+
+	r := runtime.ToNumberOnly(ctx, right)
+	if rv, ok := r.(runtime.Int); ok && rv == 0 {
+		return NewRuntimeError(
+			program,
+			pc,
+			DivideByZero,
+			"Division by zero",
+			"attempt to divide by zero",
+			"Ensure the denominator is non-zero before division",
+			"Add a conditional check before dividing",
+		)
+	}
+
+	return nil
+}
+
+func CheckModuloByZero(
+	ctx context.Context,
+	program *bytecode.Program,
+	pc int,
+	right runtime.Value,
+) error {
+	rv, _ := runtime.ToInt(ctx, right)
+	if rv == 0 {
+		return NewRuntimeError(
+			program,
+			pc,
+			ModuloByZero,
+			"Modulo by zero",
+			"attempt to take modulo by zero",
+			"Ensure the divisor is non-zero before modulo",
+			"Add a conditional check before modulo",
+		)
+	}
+
+	return nil
 }
