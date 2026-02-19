@@ -25,7 +25,7 @@ func Print(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		}
 	}
 
-	logger := runtime.LoggerFromContext(ctx)
+	logger := runtime.GetLogger(ctx)
 	logger.Print(messages...)
 
 	return runtime.None, nil
