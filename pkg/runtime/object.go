@@ -22,7 +22,11 @@ func NewObjectOf(size int) *Object {
 }
 
 func NewObjectWith(props map[string]Value) *Object {
-	return &Object{props}
+	data := make(map[string]Value, len(props))
+	for k, v := range props {
+		data[k] = v
+	}
+	return &Object{data}
 }
 
 func (t *Object) ObjectLike() {}
