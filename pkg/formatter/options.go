@@ -1,53 +1,25 @@
 package formatter
 
-type (
-	options struct {
-		printWidth     uint64
-		tabWidth       uint64
-		singleQuote    bool
-		bracketSpacing bool
-		caseMode       CaseMode
-	}
+import "github.com/MontFerret/ferret/v2/pkg/formatter/internal"
 
-	Option func(*options)
-)
-
-func defaultOptions() *options {
-	return &options{
-		printWidth:     80, // Characters
-		tabWidth:       4,  // Spaces
-		singleQuote:    false,
-		bracketSpacing: true,
-		caseMode:       CaseModeUpper,
-	}
-}
+type Option = internal.Option
 
 func WithPrintWidth(size uint64) Option {
-	return func(opts *options) {
-		opts.printWidth = size
-	}
+	return internal.WithPrintWidth(size)
 }
 
 func WithTabWidth(size uint64) Option {
-	return func(opts *options) {
-		opts.tabWidth = size
-	}
+	return internal.WithTabWidth(size)
 }
 
 func WithSingleQuote(val bool) Option {
-	return func(opts *options) {
-		opts.singleQuote = val
-	}
+	return internal.WithSingleQuote(val)
 }
 
 func WithBracketSpacing(val bool) Option {
-	return func(opts *options) {
-		opts.bracketSpacing = val
-	}
+	return internal.WithBracketSpacing(val)
 }
 
 func WithCaseMode(mode CaseMode) Option {
-	return func(opts *options) {
-		opts.caseMode = mode
-	}
+	return internal.WithCaseMode(mode)
 }

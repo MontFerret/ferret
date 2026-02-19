@@ -1,4 +1,4 @@
-package formatter
+package internal
 
 import "strings"
 
@@ -17,6 +17,7 @@ func unquoteStringLiteral(raw string) string {
 	if len(raw) < 2 {
 		return raw
 	}
+
 	quote := raw[0]
 	content := raw[1 : len(raw)-1]
 	var b strings.Builder
@@ -24,6 +25,7 @@ func unquoteStringLiteral(raw string) string {
 
 	for i := 0; i < len(content); i++ {
 		ch := content[i]
+
 		if ch == '\\' && i+1 < len(content) {
 			next := content[i+1]
 			switch next {
@@ -35,14 +37,19 @@ func unquoteStringLiteral(raw string) string {
 				b.WriteByte('\\')
 				b.WriteByte(next)
 			}
+
 			i++
+
 			continue
 		}
+
 		if (quote == '\'' || quote == '"') && ch == quote && i+1 < len(content) && content[i+1] == quote {
 			b.WriteByte(quote)
 			i++
+
 			continue
 		}
+
 		b.WriteByte(ch)
 	}
 
@@ -52,13 +59,16 @@ func unquoteStringLiteral(raw string) string {
 func quoteStringLiteral(val string, singleQuote bool) string {
 	quote := byte('"')
 	doubleQuote := "\"\""
+
 	if singleQuote {
 		quote = '\''
 		doubleQuote = "''"
 	}
+
 	var b strings.Builder
 	b.Grow(len(val) + 2)
 	b.WriteByte(quote)
+
 	for _, r := range val {
 		switch r {
 		case '\n':
@@ -70,12 +80,16 @@ func quoteStringLiteral(val string, singleQuote bool) string {
 		default:
 			if r == rune(quote) {
 				b.WriteString(doubleQuote)
+
 				continue
 			}
+
 			b.WriteRune(r)
 		}
 	}
+
 	b.WriteByte(quote)
+
 	return b.String()
 }
 

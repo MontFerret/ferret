@@ -1,0 +1,510 @@
+package internal
+
+import (
+	"github.com/antlr4-go/antlr/v4"
+
+	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+)
+
+type statementFormatter struct {
+	*engine
+}
+
+func (f *statementFormatter) formatBodyStatement(ctx *fql.BodyStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	switch {
+	case ctx.VariableDeclaration() != nil:
+		f.formatVariableDeclaration(ctx.VariableDeclaration().(*fql.VariableDeclarationContext))
+	case ctx.FunctionCallExpression() != nil:
+		f.expression.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
+	case ctx.WaitForExpression() != nil:
+		f.formatWaitForExpression(ctx.WaitForExpression().(*fql.WaitForExpressionContext))
+	case ctx.DispatchExpression() != nil:
+		f.formatDispatchExpression(ctx.DispatchExpression().(*fql.DispatchExpressionContext))
+	}
+}
+
+func (f *statementFormatter) formatBodyExpression(ctx *fql.BodyExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	switch {
+	case ctx.ReturnExpression() != nil:
+		f.formatReturnExpression(ctx.ReturnExpression().(*fql.ReturnExpressionContext))
+	case ctx.ForExpression() != nil:
+		f.formatForExpression(ctx.ForExpression().(*fql.ForExpressionContext))
+	}
+}
+
+func (f *statementFormatter) formatVariableDeclaration(ctx *fql.VariableDeclarationContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordLet)
+	f.p.space()
+
+	if id := ctx.Identifier(); id != nil {
+		f.p.write(id.GetText())
+	} else if id := ctx.IgnoreIdentifier(); id != nil {
+		f.p.write(id.GetText())
+	} else if id := ctx.SafeReservedWord(); id != nil {
+		f.p.write(id.GetText())
+	}
+
+	f.p.space()
+	f.p.write("=")
+	f.p.space()
+
+	if expr := ctx.Expression(); expr != nil {
+		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+	}
+}
+
+func (f *statementFormatter) formatReturnExpression(ctx *fql.ReturnExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordReturn)
+
+	if ctx.Distinct() != nil {
+		f.p.space()
+		f.writeKeyword(keywordDistinct)
+	}
+
+	f.p.space()
+
+	if expr := ctx.Expression(); expr != nil {
+		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+	}
+}
+
+func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordFor)
+	f.p.space()
+
+	if tok := ctx.GetValueVariable(); tok != nil {
+		f.p.write(tok.GetText())
+	}
+
+	if tok := ctx.GetCounterVariable(); tok != nil {
+		f.p.write(",")
+		f.p.space()
+		f.p.write(tok.GetText())
+	}
+
+	switch {
+	case ctx.In() != nil:
+		f.p.space()
+		f.writeKeyword(keywordIn)
+		f.p.space()
+		f.formatForExpressionSource(ctx.ForExpressionSource().(*fql.ForExpressionSourceContext))
+	case ctx.Step() != nil:
+		f.p.space()
+		f.p.write("=")
+		f.p.space()
+		f.expression.formatExpression(ctx.GetStepInit().(*fql.ExpressionContext))
+		f.p.space()
+		f.writeKeyword(keywordWhile)
+		f.p.space()
+		f.expression.formatExpression(ctx.GetStepCondition().(*fql.ExpressionContext))
+		f.p.space()
+		f.writeKeyword(keywordStep)
+		f.p.space()
+
+		if tok := ctx.GetStepVariable(); tok != nil {
+			f.p.write(tok.GetText())
+		}
+
+		if tok := ctx.GetStepUpdate(); tok != nil {
+			f.p.write(tok.GetText())
+		} else if expr := ctx.GetStepUpdateExp(); expr != nil {
+			f.p.space()
+			f.p.write("=")
+			f.p.space()
+			f.expression.formatExpression(expr.(*fql.ExpressionContext))
+		}
+	case ctx.While() != nil:
+		if ctx.Do() != nil {
+			f.p.space()
+			f.writeKeyword(keywordDo)
+		}
+
+		f.p.space()
+		f.writeKeyword(keywordWhile)
+		f.p.space()
+		f.expression.formatExpression(ctx.Expression(0).(*fql.ExpressionContext))
+	}
+
+	bodies := ctx.AllForExpressionBody()
+	ret := ctx.ForExpressionReturn()
+
+	if len(bodies) == 0 && ret == nil {
+		return
+	}
+
+	headerStop := f.forHeaderStopIndex(ctx)
+
+	var first antlr.ParserRuleContext
+
+	if len(bodies) > 0 {
+		first = bodies[0].(antlr.ParserRuleContext)
+	} else if ret != nil {
+		first = ret.(antlr.ParserRuleContext)
+	}
+
+	f.p.withIndent(func() {
+		if first != nil {
+			f.trivia.emitBetweenIndices(headerStop+1, f.trivia.startIndex(first))
+		} else {
+			f.p.newline()
+		}
+
+		for i, body := range bodies {
+			f.formatForExpressionBody(body.(*fql.ForExpressionBodyContext))
+
+			if i < len(bodies)-1 {
+				f.trivia.emitBetween(body.(antlr.ParserRuleContext), bodies[i+1].(antlr.ParserRuleContext))
+			}
+		}
+
+		if ret != nil {
+			if len(bodies) > 0 {
+				f.trivia.emitBetween(bodies[len(bodies)-1].(antlr.ParserRuleContext), ret.(antlr.ParserRuleContext))
+			}
+
+			f.formatForExpressionReturn(ret.(*fql.ForExpressionReturnContext))
+		}
+	})
+}
+
+func (f *statementFormatter) forHeaderStopIndex(ctx *fql.ForExpressionContext) int {
+	if ctx == nil {
+		return 0
+	}
+
+	switch {
+	case ctx.In() != nil:
+		if src := ctx.ForExpressionSource(); src != nil {
+			return f.trivia.stopIndex(src.(antlr.ParserRuleContext))
+		}
+	case ctx.Step() != nil:
+		if expr := ctx.GetStepUpdateExp(); expr != nil {
+			return f.trivia.stopIndex(expr.(antlr.ParserRuleContext))
+		}
+
+		if tok := ctx.GetStepUpdate(); tok != nil {
+			return tok.GetStop()
+		}
+
+		if tok := ctx.GetStepVariable(); tok != nil {
+			return tok.GetStop()
+		}
+	case ctx.While() != nil:
+		if expr := ctx.Expression(0); expr != nil {
+			return f.trivia.stopIndex(expr.(antlr.ParserRuleContext))
+		}
+	}
+
+	return f.trivia.stopIndex(ctx)
+}
+
+func (f *statementFormatter) formatForExpressionSource(ctx *fql.ForExpressionSourceContext) {
+	if ctx == nil {
+		return
+	}
+
+	switch {
+	case ctx.FunctionCallExpression() != nil:
+		f.expression.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
+	case ctx.ArrayLiteral() != nil:
+		f.list.formatArrayLiteral(ctx.ArrayLiteral().(*fql.ArrayLiteralContext))
+	case ctx.ObjectLiteral() != nil:
+		f.list.formatObjectLiteral(ctx.ObjectLiteral().(*fql.ObjectLiteralContext))
+	case ctx.Variable() != nil:
+		f.expression.formatVariable(ctx.Variable().(*fql.VariableContext))
+	case ctx.MemberExpression() != nil:
+		f.member.formatMemberExpression(ctx.MemberExpression().(*fql.MemberExpressionContext))
+	case ctx.RangeOperator() != nil:
+		f.expression.formatRangeOperator(ctx.RangeOperator().(*fql.RangeOperatorContext))
+	case ctx.Param() != nil:
+		f.expression.formatParam(ctx.Param().(*fql.ParamContext))
+	}
+}
+
+func (f *statementFormatter) formatForExpressionBody(ctx *fql.ForExpressionBodyContext) {
+	if ctx == nil {
+		return
+	}
+
+	switch {
+	case ctx.ForExpressionStatement() != nil:
+		stmt := ctx.ForExpressionStatement().(*fql.ForExpressionStatementContext)
+
+		switch {
+		case stmt.VariableDeclaration() != nil:
+			f.formatVariableDeclaration(stmt.VariableDeclaration().(*fql.VariableDeclarationContext))
+		case stmt.FunctionCallExpression() != nil:
+			f.expression.formatFunctionCallExpression(stmt.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
+		}
+	case ctx.ForExpressionClause() != nil:
+		clause := ctx.ForExpressionClause().(*fql.ForExpressionClauseContext)
+
+		switch {
+		case clause.FilterClause() != nil:
+			f.clause.formatFilterClause(clause.FilterClause().(*fql.FilterClauseContext))
+		case clause.LimitClause() != nil:
+			f.clause.formatLimitClause(clause.LimitClause().(*fql.LimitClauseContext))
+		case clause.SortClause() != nil:
+			f.clause.formatSortClause(clause.SortClause().(*fql.SortClauseContext))
+		case clause.CollectClause() != nil:
+			f.clause.formatCollectClause(clause.CollectClause().(*fql.CollectClauseContext))
+		}
+	}
+}
+
+func (f *statementFormatter) formatForExpressionReturn(ctx *fql.ForExpressionReturnContext) {
+	if ctx == nil {
+		return
+	}
+
+	switch {
+	case ctx.ReturnExpression() != nil:
+		f.formatReturnExpression(ctx.ReturnExpression().(*fql.ReturnExpressionContext))
+	case ctx.ForExpression() != nil:
+		f.formatForExpression(ctx.ForExpression().(*fql.ForExpressionContext))
+	}
+}
+
+func (f *statementFormatter) formatWaitForExpression(ctx *fql.WaitForExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordWaitFor)
+	f.p.space()
+
+	if event := ctx.WaitForEventExpression(); event != nil {
+		f.formatWaitForEventExpression(event.(*fql.WaitForEventExpressionContext))
+	} else if pred := ctx.WaitForPredicateExpression(); pred != nil {
+		f.formatWaitForPredicateExpression(pred.(*fql.WaitForPredicateExpressionContext))
+	}
+
+	if ctx.WaitForOrThrowClause() != nil {
+		f.p.space()
+		f.writeKeyword(keywordOr)
+		f.p.space()
+		f.writeKeyword(keywordThrow)
+	}
+}
+
+func (f *statementFormatter) formatWaitForEventExpression(ctx *fql.WaitForEventExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordEvent)
+	f.p.space()
+
+	if name := ctx.WaitForEventName(); name != nil {
+		f.formatWaitForEventName(name.(*fql.WaitForEventNameContext))
+	}
+
+	f.p.space()
+	f.writeKeyword(keywordIn)
+	f.p.space()
+
+	if src := ctx.WaitForEventSource(); src != nil {
+		f.formatWaitForEventSource(src.(*fql.WaitForEventSourceContext))
+	}
+
+	if opt := ctx.OptionsClause(); opt != nil {
+		f.p.space()
+		f.clause.formatOptionsClause(opt.(*fql.OptionsClauseContext))
+	}
+
+	if filter := ctx.FilterClause(); filter != nil {
+		f.p.space()
+		f.clause.formatFilterClause(filter.(*fql.FilterClauseContext))
+	}
+
+	if timeout := ctx.TimeoutClause(); timeout != nil {
+		f.p.space()
+		f.clause.formatTimeoutClause(timeout.(*fql.TimeoutClauseContext))
+	}
+}
+
+func (f *statementFormatter) formatWaitForPredicateExpression(ctx *fql.WaitForPredicateExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	if pred := ctx.WaitForPredicate(); pred != nil {
+		f.formatWaitForPredicate(pred.(*fql.WaitForPredicateContext))
+	}
+
+	if timeout := ctx.TimeoutClause(); timeout != nil {
+		f.p.space()
+		f.clause.formatTimeoutClause(timeout.(*fql.TimeoutClauseContext))
+	}
+
+	if every := ctx.EveryClause(); every != nil {
+		f.p.space()
+		f.clause.formatEveryClause(every.(*fql.EveryClauseContext))
+	}
+
+	if backoff := ctx.BackoffClause(); backoff != nil {
+		f.p.space()
+		f.clause.formatBackoffClause(backoff.(*fql.BackoffClauseContext))
+	}
+
+	if jitter := ctx.JitterClause(); jitter != nil {
+		f.p.space()
+		f.clause.formatJitterClause(jitter.(*fql.JitterClauseContext))
+	}
+}
+
+func (f *statementFormatter) formatWaitForPredicate(ctx *fql.WaitForPredicateContext) {
+	if ctx == nil {
+		return
+	}
+
+	switch {
+	case ctx.Not() != nil && ctx.Exists() != nil:
+		f.writeKeyword(keywordNot)
+		f.p.space()
+		f.writeKeyword(keywordExists)
+		f.p.space()
+		f.expression.formatExpression(ctx.Expression().(*fql.ExpressionContext))
+	case ctx.Exists() != nil:
+		f.writeKeyword(keywordExists)
+		f.p.space()
+		f.expression.formatExpression(ctx.Expression().(*fql.ExpressionContext))
+	case ctx.Value() != nil:
+		f.writeKeyword(keywordValue)
+		f.p.space()
+		f.expression.formatExpression(ctx.Expression().(*fql.ExpressionContext))
+	case ctx.Expression() != nil:
+		f.expression.formatExpression(ctx.Expression().(*fql.ExpressionContext))
+	}
+}
+
+func (f *statementFormatter) formatDispatchExpression(ctx *fql.DispatchExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordDispatch)
+	f.p.space()
+
+	if name := ctx.DispatchEventName(); name != nil {
+		f.formatDispatchEventName(name.(*fql.DispatchEventNameContext))
+	}
+
+	f.p.space()
+	f.writeKeyword(keywordIn)
+	f.p.space()
+
+	if tgt := ctx.DispatchTarget(); tgt != nil {
+		f.formatDispatchTarget(tgt.(*fql.DispatchTargetContext))
+	}
+
+	if with := ctx.DispatchWithClause(); with != nil {
+		f.p.space()
+		f.formatDispatchWithClause(with.(*fql.DispatchWithClauseContext))
+	}
+
+	if opt := ctx.DispatchOptionsClause(); opt != nil {
+		f.p.space()
+		f.formatDispatchOptionsClause(opt.(*fql.DispatchOptionsClauseContext))
+	}
+}
+
+func (f *statementFormatter) formatDispatchEventName(ctx *fql.DispatchEventNameContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.values.formatStringOrRef(
+		ctx.StringLiteral(),
+		ctx.Variable(),
+		ctx.Param(),
+		ctx.MemberExpression(),
+		ctx.FunctionCall(),
+	)
+}
+
+func (f *statementFormatter) formatDispatchTarget(ctx *fql.DispatchTargetContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.values.formatRefValueWithCallExpr(
+		ctx.FunctionCallExpression(),
+		ctx.Variable(),
+		ctx.Param(),
+		ctx.MemberExpression(),
+	)
+}
+
+func (f *statementFormatter) formatDispatchWithClause(ctx *fql.DispatchWithClauseContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordWith)
+	f.p.space()
+
+	if expr := ctx.Expression(); expr != nil {
+		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+	}
+}
+
+func (f *statementFormatter) formatDispatchOptionsClause(ctx *fql.DispatchOptionsClauseContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordOptions)
+	f.p.space()
+
+	if expr := ctx.Expression(); expr != nil {
+		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+	}
+}
+
+func (f *statementFormatter) formatWaitForEventName(ctx *fql.WaitForEventNameContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.values.formatStringOrRef(
+		ctx.StringLiteral(),
+		ctx.Variable(),
+		ctx.Param(),
+		ctx.MemberExpression(),
+		ctx.FunctionCall(),
+	)
+}
+
+func (f *statementFormatter) formatWaitForEventSource(ctx *fql.WaitForEventSourceContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.values.formatRefValueWithCallExpr(
+		ctx.FunctionCallExpression(),
+		ctx.Variable(),
+		nil,
+		ctx.MemberExpression(),
+	)
+}

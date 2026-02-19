@@ -1,9 +1,11 @@
 package formatter
 
-type CaseMode uint64
+import "github.com/MontFerret/ferret/v2/pkg/formatter/internal"
+
+type CaseMode = internal.CaseMode
 
 const (
-	CaseModeIgnore CaseMode = iota
-	CaseModeUpper
-	CaseModeLower
+	CaseModeIgnore = internal.CaseModeIgnore
+	CaseModeUpper  = internal.CaseModeUpper
+	CaseModeLower  = internal.CaseModeLower
 )
