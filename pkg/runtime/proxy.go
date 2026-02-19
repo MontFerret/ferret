@@ -84,7 +84,7 @@ func (p *Proxy[T]) Compare(other Value) int64 {
 }
 
 func (p *Proxy[T]) Copy() Value {
-	return NewProxy(p.target)
+	return NewProxy[T](p.target)
 }
 
 func (p *Proxy[T]) Length(ctx context.Context) (Int, error) {
