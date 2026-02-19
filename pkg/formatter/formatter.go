@@ -8,16 +8,17 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/formatter/internal"
 	"github.com/MontFerret/ferret/v2/pkg/parser"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
 type Formatter struct {
-	opts *options
+	opts *internal.Options
 }
 
 func New(setters ...Option) *Formatter {
-	opts := defaultOptions()
+	opts := internal.DefaultOptions()
 
 	for _, setter := range setters {
 		setter(opts)
@@ -65,7 +66,7 @@ func (fmt *Formatter) Format(out io.Writer, src *file.Source) error {
 	p.RemoveErrorListeners()
 	// Add custom error listener
 	p.AddErrorListener(parserd.NewErrorListener(src, errorHandler, tokenHistory))
-	l := newVisitor(src, out, fmt.opts)
+	l := internal.NewVisitor(src, out, fmt.opts)
 	p.Visit(l)
 
 	if errorHandler.HasErrors() {
