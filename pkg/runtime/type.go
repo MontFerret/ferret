@@ -121,12 +121,12 @@ func TypeOf(input Value) Type {
 		return TypeDateTime
 	case *Array:
 		return TypeArray
+	case *Object:
+		return TypeObject
 	case ObjectLike:
 		return TypeObject
 	case List:
 		return TypeList
-	case *Object:
-		return TypeObject
 	case Map:
 		return TypeMap
 	case Binary:

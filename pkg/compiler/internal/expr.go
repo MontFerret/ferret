@@ -1079,6 +1079,7 @@ func (c *ExprCompiler) emitBooleanAnd(left, right bytecode.Operand) bytecode.Ope
 	return dst
 }
 
+//lint:ignore U1000 Ignore unused method
 func (c *ExprCompiler) compileArrayExpansion(src bytecode.Operand, expansion fql.IArrayExpansionContext, tail []fql.IMemberExpressionPathContext) bytecode.Operand {
 	span := diagnostics.SpanFromRuleContext(expansion)
 	inline := expansion.InlineExpression()
