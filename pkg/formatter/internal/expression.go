@@ -176,8 +176,12 @@ func (f *expressionFormatter) formatUnaryOperator(ctx *fql.UnaryOperatorContext)
 	}
 
 	op := ctx.GetText()
-	if op == "NOT" || op == "!" {
-		f.p.write(applyCase(f.opts.caseMode, op))
+	if op == keywordNot || op == "!" {
+		if op == "!" {
+			f.p.write(op)
+		} else {
+			f.writeKeyword(keywordNot)
+		}
 		f.p.space()
 
 		return

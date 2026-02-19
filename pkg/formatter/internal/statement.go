@@ -45,7 +45,7 @@ func (f *statementFormatter) formatVariableDeclaration(ctx *fql.VariableDeclarat
 		return
 	}
 
-	f.writeKeyword("LET")
+	f.writeKeyword(keywordLet)
 	f.p.space()
 
 	if id := ctx.Identifier(); id != nil {
@@ -70,11 +70,11 @@ func (f *statementFormatter) formatReturnExpression(ctx *fql.ReturnExpressionCon
 		return
 	}
 
-	f.writeKeyword("RETURN")
+	f.writeKeyword(keywordReturn)
 
 	if ctx.Distinct() != nil {
 		f.p.space()
-		f.writeKeyword("DISTINCT")
+		f.writeKeyword(keywordDistinct)
 	}
 
 	f.p.space()
@@ -89,7 +89,7 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 		return
 	}
 
-	f.writeKeyword("FOR")
+	f.writeKeyword(keywordFor)
 	f.p.space()
 
 	if tok := ctx.GetValueVariable(); tok != nil {
@@ -105,7 +105,7 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 	switch {
 	case ctx.In() != nil:
 		f.p.space()
-		f.writeKeyword("IN")
+		f.writeKeyword(keywordIn)
 		f.p.space()
 		f.formatForExpressionSource(ctx.ForExpressionSource().(*fql.ForExpressionSourceContext))
 	case ctx.Step() != nil:
@@ -114,11 +114,11 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 		f.p.space()
 		f.expression.formatExpression(ctx.GetStepInit().(*fql.ExpressionContext))
 		f.p.space()
-		f.writeKeyword("WHILE")
+		f.writeKeyword(keywordWhile)
 		f.p.space()
 		f.expression.formatExpression(ctx.GetStepCondition().(*fql.ExpressionContext))
 		f.p.space()
-		f.writeKeyword("STEP")
+		f.writeKeyword(keywordStep)
 		f.p.space()
 
 		if tok := ctx.GetStepVariable(); tok != nil {
@@ -136,11 +136,11 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 	case ctx.While() != nil:
 		if ctx.Do() != nil {
 			f.p.space()
-			f.writeKeyword("DO")
+			f.writeKeyword(keywordDo)
 		}
 
 		f.p.space()
-		f.writeKeyword("WHILE")
+		f.writeKeyword(keywordWhile)
 		f.p.space()
 		f.expression.formatExpression(ctx.Expression(0).(*fql.ExpressionContext))
 	}
@@ -290,7 +290,7 @@ func (f *statementFormatter) formatWaitForExpression(ctx *fql.WaitForExpressionC
 		return
 	}
 
-	f.writeKeyword("WAITFOR")
+	f.writeKeyword(keywordWaitFor)
 	f.p.space()
 
 	if event := ctx.WaitForEventExpression(); event != nil {
@@ -301,9 +301,9 @@ func (f *statementFormatter) formatWaitForExpression(ctx *fql.WaitForExpressionC
 
 	if ctx.WaitForOrThrowClause() != nil {
 		f.p.space()
-		f.writeKeyword("OR")
+		f.writeKeyword(keywordOr)
 		f.p.space()
-		f.writeKeyword("THROW")
+		f.writeKeyword(keywordThrow)
 	}
 }
 
@@ -312,7 +312,7 @@ func (f *statementFormatter) formatWaitForEventExpression(ctx *fql.WaitForEventE
 		return
 	}
 
-	f.writeKeyword("EVENT")
+	f.writeKeyword(keywordEvent)
 	f.p.space()
 
 	if name := ctx.WaitForEventName(); name != nil {
@@ -320,7 +320,7 @@ func (f *statementFormatter) formatWaitForEventExpression(ctx *fql.WaitForEventE
 	}
 
 	f.p.space()
-	f.writeKeyword("IN")
+	f.writeKeyword(keywordIn)
 	f.p.space()
 
 	if src := ctx.WaitForEventSource(); src != nil {
@@ -380,17 +380,17 @@ func (f *statementFormatter) formatWaitForPredicate(ctx *fql.WaitForPredicateCon
 
 	switch {
 	case ctx.Not() != nil && ctx.Exists() != nil:
-		f.writeKeyword("NOT")
+		f.writeKeyword(keywordNot)
 		f.p.space()
-		f.writeKeyword("EXISTS")
+		f.writeKeyword(keywordExists)
 		f.p.space()
 		f.expression.formatExpression(ctx.Expression().(*fql.ExpressionContext))
 	case ctx.Exists() != nil:
-		f.writeKeyword("EXISTS")
+		f.writeKeyword(keywordExists)
 		f.p.space()
 		f.expression.formatExpression(ctx.Expression().(*fql.ExpressionContext))
 	case ctx.Value() != nil:
-		f.writeKeyword("VALUE")
+		f.writeKeyword(keywordValue)
 		f.p.space()
 		f.expression.formatExpression(ctx.Expression().(*fql.ExpressionContext))
 	case ctx.Expression() != nil:
@@ -403,7 +403,7 @@ func (f *statementFormatter) formatDispatchExpression(ctx *fql.DispatchExpressio
 		return
 	}
 
-	f.writeKeyword("DISPATCH")
+	f.writeKeyword(keywordDispatch)
 	f.p.space()
 
 	if name := ctx.DispatchEventName(); name != nil {
@@ -411,7 +411,7 @@ func (f *statementFormatter) formatDispatchExpression(ctx *fql.DispatchExpressio
 	}
 
 	f.p.space()
-	f.writeKeyword("IN")
+	f.writeKeyword(keywordIn)
 	f.p.space()
 
 	if tgt := ctx.DispatchTarget(); tgt != nil {
@@ -434,18 +434,13 @@ func (f *statementFormatter) formatDispatchEventName(ctx *fql.DispatchEventNameC
 		return
 	}
 
-	switch {
-	case ctx.StringLiteral() != nil:
-		f.literal.formatStringLiteralNode(ctx.StringLiteral())
-	case ctx.Variable() != nil:
-		f.expression.formatVariable(ctx.Variable().(*fql.VariableContext))
-	case ctx.Param() != nil:
-		f.expression.formatParam(ctx.Param().(*fql.ParamContext))
-	case ctx.MemberExpression() != nil:
-		f.member.formatMemberExpression(ctx.MemberExpression().(*fql.MemberExpressionContext))
-	case ctx.FunctionCall() != nil:
-		f.expression.formatFunctionCall(ctx.FunctionCall().(*fql.FunctionCallContext))
-	}
+	f.values.formatStringOrRef(
+		ctx.StringLiteral(),
+		ctx.Variable(),
+		ctx.Param(),
+		ctx.MemberExpression(),
+		ctx.FunctionCall(),
+	)
 }
 
 func (f *statementFormatter) formatDispatchTarget(ctx *fql.DispatchTargetContext) {
@@ -453,16 +448,12 @@ func (f *statementFormatter) formatDispatchTarget(ctx *fql.DispatchTargetContext
 		return
 	}
 
-	switch {
-	case ctx.FunctionCallExpression() != nil:
-		f.expression.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
-	case ctx.Variable() != nil:
-		f.expression.formatVariable(ctx.Variable().(*fql.VariableContext))
-	case ctx.Param() != nil:
-		f.expression.formatParam(ctx.Param().(*fql.ParamContext))
-	case ctx.MemberExpression() != nil:
-		f.member.formatMemberExpression(ctx.MemberExpression().(*fql.MemberExpressionContext))
-	}
+	f.values.formatRefValueWithCallExpr(
+		ctx.FunctionCallExpression(),
+		ctx.Variable(),
+		ctx.Param(),
+		ctx.MemberExpression(),
+	)
 }
 
 func (f *statementFormatter) formatDispatchWithClause(ctx *fql.DispatchWithClauseContext) {
@@ -470,7 +461,7 @@ func (f *statementFormatter) formatDispatchWithClause(ctx *fql.DispatchWithClaus
 		return
 	}
 
-	f.writeKeyword("WITH")
+	f.writeKeyword(keywordWith)
 	f.p.space()
 
 	if expr := ctx.Expression(); expr != nil {
@@ -483,7 +474,7 @@ func (f *statementFormatter) formatDispatchOptionsClause(ctx *fql.DispatchOption
 		return
 	}
 
-	f.writeKeyword("OPTIONS")
+	f.writeKeyword(keywordOptions)
 	f.p.space()
 
 	if expr := ctx.Expression(); expr != nil {
@@ -496,18 +487,13 @@ func (f *statementFormatter) formatWaitForEventName(ctx *fql.WaitForEventNameCon
 		return
 	}
 
-	switch {
-	case ctx.StringLiteral() != nil:
-		f.literal.formatStringLiteralNode(ctx.StringLiteral())
-	case ctx.Variable() != nil:
-		f.expression.formatVariable(ctx.Variable().(*fql.VariableContext))
-	case ctx.Param() != nil:
-		f.expression.formatParam(ctx.Param().(*fql.ParamContext))
-	case ctx.MemberExpression() != nil:
-		f.member.formatMemberExpression(ctx.MemberExpression().(*fql.MemberExpressionContext))
-	case ctx.FunctionCall() != nil:
-		f.expression.formatFunctionCall(ctx.FunctionCall().(*fql.FunctionCallContext))
-	}
+	f.values.formatStringOrRef(
+		ctx.StringLiteral(),
+		ctx.Variable(),
+		ctx.Param(),
+		ctx.MemberExpression(),
+		ctx.FunctionCall(),
+	)
 }
 
 func (f *statementFormatter) formatWaitForEventSource(ctx *fql.WaitForEventSourceContext) {
@@ -515,12 +501,10 @@ func (f *statementFormatter) formatWaitForEventSource(ctx *fql.WaitForEventSourc
 		return
 	}
 
-	switch {
-	case ctx.FunctionCallExpression() != nil:
-		f.expression.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
-	case ctx.Variable() != nil:
-		f.expression.formatVariable(ctx.Variable().(*fql.VariableContext))
-	case ctx.MemberExpression() != nil:
-		f.member.formatMemberExpression(ctx.MemberExpression().(*fql.MemberExpressionContext))
-	}
+	f.values.formatRefValueWithCallExpr(
+		ctx.FunctionCallExpression(),
+		ctx.Variable(),
+		nil,
+		ctx.MemberExpression(),
+	)
 }

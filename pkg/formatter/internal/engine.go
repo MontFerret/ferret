@@ -17,6 +17,7 @@ type engine struct {
 	literal    *literalFormatter
 	member     *memberFormatter
 	clause     *clauseFormatter
+	values     *valueFormatter
 }
 
 type context struct {
@@ -41,6 +42,7 @@ func newEngine(src *file.Source, out io.Writer, opts *Options) *engine {
 	e.literal = &literalFormatter{engine: e}
 	e.member = &memberFormatter{engine: e}
 	e.clause = &clauseFormatter{engine: e}
+	e.values = &valueFormatter{engine: e}
 
 	return e
 }

@@ -142,7 +142,7 @@ func (f *memberFormatter) formatArrayQuestionMark(ctx *fql.ArrayQuestionMarkCont
 	}
 
 	f.p.space()
-	f.writeKeyword("FILTER")
+	f.writeKeyword(keywordFilter)
 	f.p.space()
 
 	if expr := ctx.Expression(); expr != nil {
@@ -159,15 +159,15 @@ func (f *memberFormatter) formatArrayQuestionQuantifier(ctx *fql.ArrayQuestionQu
 
 	switch {
 	case ctx.Any() != nil:
-		f.p.write(applyCase(f.opts.caseMode, ctx.Any().GetText()))
+		f.writeKeyword(keywordAny)
 	case ctx.All() != nil:
-		f.p.write(applyCase(f.opts.caseMode, ctx.All().GetText()))
+		f.writeKeyword(keywordAll)
 	case ctx.None() != nil:
-		f.p.write(applyCase(f.opts.caseMode, ctx.None().GetText()))
+		f.writeKeyword(keywordNone)
 	case ctx.At() != nil && ctx.Least() != nil:
-		f.p.write(applyCase(f.opts.caseMode, ctx.At().GetText()))
+		f.writeKeyword(keywordAt)
 		f.p.space()
-		f.p.write(applyCase(f.opts.caseMode, ctx.Least().GetText()))
+		f.writeKeyword(keywordLeast)
 		f.p.space()
 		f.p.write("(")
 
@@ -245,7 +245,7 @@ func (f *memberFormatter) formatInlineFilter(ctx *fql.InlineFilterContext) {
 		return
 	}
 
-	f.writeKeyword("FILTER")
+	f.writeKeyword(keywordFilter)
 	f.p.space()
 
 	if expr := ctx.Expression(); expr != nil {
@@ -258,7 +258,7 @@ func (f *memberFormatter) formatInlineLimit(ctx *fql.InlineLimitContext) {
 		return
 	}
 
-	f.writeKeyword("LIMIT")
+	f.writeKeyword(keywordLimit)
 	f.p.space()
 	values := ctx.AllLimitClauseValue()
 
@@ -277,7 +277,7 @@ func (f *memberFormatter) formatInlineReturn(ctx *fql.InlineReturnContext) {
 		return
 	}
 
-	f.writeKeyword("RETURN")
+	f.writeKeyword(keywordReturn)
 	f.p.space()
 
 	if expr := ctx.Expression(); expr != nil {

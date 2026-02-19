@@ -114,7 +114,7 @@ func (f *programFormatter) formatUse(ctx *fql.UseContext) {
 		return
 	}
 
-	f.writeKeyword("USE")
+	f.writeKeyword(keywordUse)
 	f.p.space()
 
 	if ns := ctx.NamespaceIdentifier(); ns != nil {
@@ -122,7 +122,7 @@ func (f *programFormatter) formatUse(ctx *fql.UseContext) {
 	}
 
 	f.p.space()
-	f.writeKeyword("AS")
+	f.writeKeyword(keywordAs)
 	f.p.space()
 
 	if alias := ctx.GetAlias(); alias != nil {

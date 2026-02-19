@@ -11,7 +11,7 @@ func (f *clauseFormatter) formatFilterClause(ctx *fql.FilterClauseContext) {
 		return
 	}
 
-	f.writeKeyword("FILTER")
+	f.writeKeyword(keywordFilter)
 	f.p.space()
 
 	if expr := ctx.Expression(); expr != nil {
@@ -24,7 +24,7 @@ func (f *clauseFormatter) formatLimitClause(ctx *fql.LimitClauseContext) {
 		return
 	}
 
-	f.writeKeyword("LIMIT")
+	f.writeKeyword(keywordLimit)
 	f.p.space()
 	values := ctx.AllLimitClauseValue()
 
@@ -43,18 +43,13 @@ func (f *clauseFormatter) formatLimitClauseValue(ctx *fql.LimitClauseValueContex
 		return
 	}
 
-	switch {
-	case ctx.IntegerLiteral() != nil:
-		f.p.write(ctx.IntegerLiteral().GetText())
-	case ctx.Param() != nil:
-		f.expression.formatParam(ctx.Param().(*fql.ParamContext))
-	case ctx.Variable() != nil:
-		f.expression.formatVariable(ctx.Variable().(*fql.VariableContext))
-	case ctx.FunctionCallExpression() != nil:
-		f.expression.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
-	case ctx.MemberExpression() != nil:
-		f.member.formatMemberExpression(ctx.MemberExpression().(*fql.MemberExpressionContext))
-	}
+	f.values.formatIntOrRef(
+		ctx.IntegerLiteral(),
+		ctx.Param(),
+		ctx.Variable(),
+		ctx.FunctionCallExpression(),
+		ctx.MemberExpression(),
+	)
 }
 
 func (f *clauseFormatter) formatSortClause(ctx *fql.SortClauseContext) {
@@ -62,7 +57,7 @@ func (f *clauseFormatter) formatSortClause(ctx *fql.SortClauseContext) {
 		return
 	}
 
-	f.writeKeyword("SORT")
+	f.writeKeyword(keywordSort)
 	f.p.space()
 	exprs := ctx.AllSortClauseExpression()
 
@@ -95,7 +90,7 @@ func (f *clauseFormatter) formatCollectClause(ctx *fql.CollectClauseContext) {
 		return
 	}
 
-	f.writeKeyword("COLLECT")
+	f.writeKeyword(keywordCollect)
 
 	if grouping := ctx.CollectGrouping(); grouping != nil {
 		f.p.space()
@@ -158,7 +153,7 @@ func (f *clauseFormatter) formatCollectAggregator(ctx *fql.CollectAggregatorCont
 		return
 	}
 
-	f.writeKeyword("AGGREGATE")
+	f.writeKeyword(keywordAggregate)
 	f.p.space()
 	selectors := ctx.AllCollectAggregateSelector()
 
@@ -194,7 +189,7 @@ func (f *clauseFormatter) formatCollectGroupProjection(ctx *fql.CollectGroupProj
 		return
 	}
 
-	f.writeKeyword("INTO")
+	f.writeKeyword(keywordInto)
 	f.p.space()
 
 	if sel := ctx.CollectSelector(); sel != nil {
@@ -217,7 +212,7 @@ func (f *clauseFormatter) formatCollectGroupProjectionFilter(ctx *fql.CollectGro
 		return
 	}
 
-	f.writeKeyword("KEEP")
+	f.writeKeyword(keywordKeep)
 	f.p.space()
 	ids := ctx.AllIdentifier()
 
@@ -236,7 +231,7 @@ func (f *clauseFormatter) formatCollectCounter(ctx *fql.CollectCounterContext) {
 		return
 	}
 
-	f.writeKeyword("WITH")
+	f.writeKeyword(keywordWith)
 	f.p.space()
 
 	if id := ctx.Identifier(0); id != nil {
@@ -244,7 +239,7 @@ func (f *clauseFormatter) formatCollectCounter(ctx *fql.CollectCounterContext) {
 	}
 
 	f.p.space()
-	f.writeKeyword("INTO")
+	f.writeKeyword(keywordInto)
 	f.p.space()
 
 	if id := ctx.Identifier(1); id != nil {
@@ -257,7 +252,7 @@ func (f *clauseFormatter) formatOptionsClause(ctx *fql.OptionsClauseContext) {
 		return
 	}
 
-	f.writeKeyword("OPTIONS")
+	f.writeKeyword(keywordOptions)
 	f.p.space()
 
 	if obj := ctx.ObjectLiteral(); obj != nil {
@@ -270,25 +265,17 @@ func (f *clauseFormatter) formatTimeoutClause(ctx *fql.TimeoutClauseContext) {
 		return
 	}
 
-	f.writeKeyword("TIMEOUT")
+	f.writeKeyword(keywordTimeout)
 	f.p.space()
-
-	switch {
-	case ctx.DurationLiteral() != nil:
-		f.p.write(ctx.DurationLiteral().GetText())
-	case ctx.IntegerLiteral() != nil:
-		f.p.write(ctx.IntegerLiteral().GetText())
-	case ctx.FloatLiteral() != nil:
-		f.p.write(ctx.FloatLiteral().GetText())
-	case ctx.Variable() != nil:
-		f.expression.formatVariable(ctx.Variable().(*fql.VariableContext))
-	case ctx.Param() != nil:
-		f.expression.formatParam(ctx.Param().(*fql.ParamContext))
-	case ctx.MemberExpression() != nil:
-		f.member.formatMemberExpression(ctx.MemberExpression().(*fql.MemberExpressionContext))
-	case ctx.FunctionCall() != nil:
-		f.expression.formatFunctionCall(ctx.FunctionCall().(*fql.FunctionCallContext))
-	}
+	f.values.formatDurationNumberOrRef(
+		ctx.DurationLiteral(),
+		ctx.IntegerLiteral(),
+		ctx.FloatLiteral(),
+		ctx.Variable(),
+		ctx.Param(),
+		ctx.MemberExpression(),
+		ctx.FunctionCall(),
+	)
 }
 
 func (f *clauseFormatter) formatEveryClause(ctx *fql.EveryClauseContext) {
@@ -296,7 +283,7 @@ func (f *clauseFormatter) formatEveryClause(ctx *fql.EveryClauseContext) {
 		return
 	}
 
-	f.writeKeyword("EVERY")
+	f.writeKeyword(keywordEvery)
 	f.p.space()
 	values := ctx.AllEveryClauseValue()
 
@@ -314,22 +301,15 @@ func (f *clauseFormatter) formatEveryClauseValue(ctx *fql.EveryClauseValueContex
 		return
 	}
 
-	switch {
-	case ctx.DurationLiteral() != nil:
-		f.p.write(ctx.DurationLiteral().GetText())
-	case ctx.IntegerLiteral() != nil:
-		f.p.write(ctx.IntegerLiteral().GetText())
-	case ctx.FloatLiteral() != nil:
-		f.p.write(ctx.FloatLiteral().GetText())
-	case ctx.Variable() != nil:
-		f.expression.formatVariable(ctx.Variable().(*fql.VariableContext))
-	case ctx.Param() != nil:
-		f.expression.formatParam(ctx.Param().(*fql.ParamContext))
-	case ctx.MemberExpression() != nil:
-		f.member.formatMemberExpression(ctx.MemberExpression().(*fql.MemberExpressionContext))
-	case ctx.FunctionCall() != nil:
-		f.expression.formatFunctionCall(ctx.FunctionCall().(*fql.FunctionCallContext))
-	}
+	f.values.formatDurationNumberOrRef(
+		ctx.DurationLiteral(),
+		ctx.IntegerLiteral(),
+		ctx.FloatLiteral(),
+		ctx.Variable(),
+		ctx.Param(),
+		ctx.MemberExpression(),
+		ctx.FunctionCall(),
+	)
 }
 
 func (f *clauseFormatter) formatBackoffClause(ctx *fql.BackoffClauseContext) {
@@ -337,7 +317,7 @@ func (f *clauseFormatter) formatBackoffClause(ctx *fql.BackoffClauseContext) {
 		return
 	}
 
-	f.writeKeyword("BACKOFF")
+	f.writeKeyword(keywordBackoff)
 	f.p.space()
 
 	if strat := ctx.BackoffStrategy(); strat != nil {
@@ -356,7 +336,7 @@ func (f *clauseFormatter) formatBackoffStrategy(ctx *fql.BackoffStrategyContext)
 	case ctx.StringLiteral() != nil:
 		f.literal.formatStringLiteralNode(ctx.StringLiteral())
 	case ctx.None() != nil:
-		f.p.write(applyCase(f.opts.caseMode, ctx.None().GetText()))
+		f.writeKeyword(keywordNone)
 	}
 }
 
@@ -365,7 +345,7 @@ func (f *clauseFormatter) formatJitterClause(ctx *fql.JitterClauseContext) {
 		return
 	}
 
-	f.writeKeyword("JITTER")
+	f.writeKeyword(keywordJitter)
 	f.p.space()
 
 	if val := ctx.JitterClauseValue(); val != nil {
@@ -378,18 +358,12 @@ func (f *clauseFormatter) formatJitterClauseValue(ctx *fql.JitterClauseValueCont
 		return
 	}
 
-	switch {
-	case ctx.FloatLiteral() != nil:
-		f.p.write(ctx.FloatLiteral().GetText())
-	case ctx.IntegerLiteral() != nil:
-		f.p.write(ctx.IntegerLiteral().GetText())
-	case ctx.Variable() != nil:
-		f.expression.formatVariable(ctx.Variable().(*fql.VariableContext))
-	case ctx.Param() != nil:
-		f.expression.formatParam(ctx.Param().(*fql.ParamContext))
-	case ctx.MemberExpression() != nil:
-		f.member.formatMemberExpression(ctx.MemberExpression().(*fql.MemberExpressionContext))
-	case ctx.FunctionCall() != nil:
-		f.expression.formatFunctionCall(ctx.FunctionCall().(*fql.FunctionCallContext))
-	}
+	f.values.formatFloatOrIntOrRef(
+		ctx.FloatLiteral(),
+		ctx.IntegerLiteral(),
+		ctx.Variable(),
+		ctx.Param(),
+		ctx.MemberExpression(),
+		ctx.FunctionCall(),
+	)
 }
