@@ -33,7 +33,7 @@ func TestEqual(t *t.T) {
 				_, err := Equal(context.Background(), runtime.NewString("Foo"), runtime.NewString("Bar"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [string] 'Foo' to be equal to [string] 'Bar'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected String 'Foo' to be equal to String 'Bar'").Error())
 			})
 		})
 
@@ -52,7 +52,7 @@ func TestEqual(t *t.T) {
 				_, err := Equal(context.Background(), runtime.NewInt(1), runtime.NewInt(2))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [int] '1' to be equal to [int] '2'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Int '1' to be equal to Int '2'").Error())
 			})
 		})
 
@@ -71,7 +71,7 @@ func TestEqual(t *t.T) {
 				_, err := Equal(context.Background(), runtime.False, runtime.True)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [boolean] 'false' to be equal to [boolean] 'true'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Boolean 'false' to be equal to Boolean 'true'").Error())
 			})
 		})
 
@@ -94,7 +94,7 @@ func TestEqual(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1]' to be equal to [array] '[1,2]'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Array '[1]' to be equal to Array '[1,2]'").Error())
 			})
 		})
 
@@ -141,7 +141,7 @@ func TestNotEqual(t *t.T) {
 				_, err := NotEqual(context.Background(), runtime.NewString("Foo"), runtime.NewString("Foo"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [string] 'Foo' not to be equal to [string] 'Foo'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected String 'Foo' not to be equal to String 'Foo'").Error())
 			})
 		})
 	})
@@ -160,7 +160,7 @@ func TestNotEqual(t *t.T) {
 				_, err := NotEqual(context.Background(), runtime.NewInt(1), runtime.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [int] '1' not to be equal to [int] '1'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Int '1' not to be equal to Int '1'").Error())
 			})
 		})
 	})
@@ -179,7 +179,7 @@ func TestNotEqual(t *t.T) {
 				_, err := NotEqual(context.Background(), runtime.False, runtime.False)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [boolean] 'false' not to be equal to [boolean] 'false'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Boolean 'false' not to be equal to Boolean 'false'").Error())
 			})
 		})
 	})
@@ -206,7 +206,7 @@ func TestNotEqual(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1,2]' not to be equal to [array] '[1,2]'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Array '[1,2]' not to be equal to Array '[1,2]'").Error())
 			})
 		})
 	})

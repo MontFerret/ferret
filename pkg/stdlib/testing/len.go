@@ -16,8 +16,10 @@ var Len = base.Assertion{
 	DefaultMessage: func(args []runtime.Value) string {
 		return fmt.Sprintf("has size %s", args[1])
 	},
-	MinArgs: 2,
-	MaxArgs: 3,
+	Args: base.Args{
+		Min: 2,
+		Max: 3,
+	},
 	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
 		col := args[0]
 		size := args[1]

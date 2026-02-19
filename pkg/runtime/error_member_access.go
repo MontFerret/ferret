@@ -77,7 +77,7 @@ func (e *MemberAccessError) Hint() string {
 	}
 
 	if e.Target == TypeNone {
-		return "Use optional chaining (?.) or check for none before accessing a member"
+		return "Use optional chaining (?.) or check for None before accessing a member"
 	}
 
 	switch e.Access {

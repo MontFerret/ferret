@@ -42,7 +42,7 @@ func TestLen(t *t.T) {
 				_, err := Len(context.Background(), runtime.NewString("Foo"), runtime.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [string] 'Foo' to has size 1").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected String 'Foo' to has size 1").Error())
 			})
 		})
 
@@ -65,7 +65,7 @@ func TestLen(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1,2,3]' to has size 1").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Array '[1,2,3]' to has size 1").Error())
 			})
 		})
 
@@ -96,7 +96,7 @@ func TestLen(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' to has size 1").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Object '{\"a\":1,\"b\":2,\"c\":3}' to has size 1").Error())
 			})
 		})
 
@@ -155,7 +155,7 @@ func TestNotLen(t *t.T) {
 				_, err := NotLen(context.Background(), runtime.NewString("Foo"), runtime.NewInt(3))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [string] 'Foo' not to has size 3").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected String 'Foo' not to has size 3").Error())
 			})
 		})
 	})
@@ -182,7 +182,7 @@ func TestNotLen(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1,2,3]' not to has size 3").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Array '[1,2,3]' not to has size 3").Error())
 			})
 		})
 	})
@@ -217,7 +217,7 @@ func TestNotLen(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' not to has size 3").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Object '{\"a\":1,\"b\":2,\"c\":3}' not to has size 3").Error())
 			})
 		})
 	})

@@ -33,7 +33,7 @@ func TestInclude(t *t.T) {
 				_, err := Include(context.Background(), runtime.NewString("Foo"), runtime.NewString("Bar"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [string] 'Foo' to include [string] 'Bar'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected String 'Foo' to include String 'Bar'").Error())
 			})
 		})
 
@@ -56,7 +56,7 @@ func TestInclude(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1,2,3]' to include [int] '4'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Array '[1,2,3]' to include Int '4'").Error())
 			})
 		})
 
@@ -87,7 +87,7 @@ func TestInclude(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' to include [int] '4'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Object '{\"a\":1,\"b\":2,\"c\":3}' to include Int '4'").Error())
 			})
 		})
 
@@ -138,7 +138,7 @@ func TestNotInclude(t *t.T) {
 				_, err := NotInclude(context.Background(), runtime.NewString("FooBar"), runtime.NewString("Bar"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [string] 'FooBar' not to include [string] 'Bar'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected String 'FooBar' not to include String 'Bar'").Error())
 			})
 		})
 	})
@@ -165,7 +165,7 @@ func TestNotInclude(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1,2,3]' not to include [int] '2'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Array '[1,2,3]' not to include Int '2'").Error())
 			})
 		})
 	})
@@ -200,7 +200,7 @@ func TestNotInclude(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' not to include [int] '2'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected Object '{\"a\":1,\"b\":2,\"c\":3}' not to include Int '2'").Error())
 			})
 		})
 	})

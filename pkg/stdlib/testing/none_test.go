@@ -29,7 +29,7 @@ func TestNone(t *t.T) {
 			_, err := None(context.Background(), runtime.NewString("true"))
 
 			So(err, ShouldBeError)
-			So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [string] 'true' to be [none] 'none'")
+			So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected String 'true' to be None")
 		})
 	})
 
@@ -58,7 +58,7 @@ func TestNotNone(t *t.T) {
 			_, err := NotNone(context.Background(), runtime.None)
 
 			So(err, ShouldBeError)
-			So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [none] 'none' not to be [none] 'none'")
+			So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected None 'none' not to be None")
 		})
 	})
 

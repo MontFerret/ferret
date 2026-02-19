@@ -19,7 +19,7 @@ func TestTypeError(t *testing.T) {
 		e = runtime.TypeErrorOf(runtime.True, runtime.TypeList, runtime.TypeString)
 		So(e, ShouldNotBeNil)
 
-		cause := errors.New("invalid type: expected foo or bar, but got boolean")
+		cause := errors.New("invalid type: expected foo or bar, but got Boolean")
 		e = runtime.TypeErrorOf(runtime.True, "foo", "bar")
 		So(e.Error(), ShouldEqual, cause.Error())
 	})

@@ -28,7 +28,7 @@ func TestInt(t *t.T) {
 				_, err := Int(context.Background(), runtime.NewString("1"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [string] '1' to be int")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected String '1' to be Int")
 			})
 		})
 
@@ -37,7 +37,7 @@ func TestInt(t *t.T) {
 				_, err := Int(context.Background(), runtime.True)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [boolean] 'true' to be int")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Boolean 'true' to be Int")
 			})
 		})
 
@@ -46,7 +46,7 @@ func TestInt(t *t.T) {
 				_, err := Int(context.Background(), runtime.NewFloat(1.5))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [float] '1.5' to be int")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Float '1.5' to be Int")
 			})
 		})
 	})
@@ -95,7 +95,7 @@ func TestNotInt(t *t.T) {
 				_, err := NotInt(context.Background(), runtime.NewInt(0))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [int] '0' not to be int")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Int '0' not to be Int")
 			})
 		})
 
@@ -104,7 +104,7 @@ func TestNotInt(t *t.T) {
 				_, err := NotInt(context.Background(), runtime.NewInt(42))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [int] '42' not to be int")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Int '42' not to be Int")
 			})
 		})
 	})

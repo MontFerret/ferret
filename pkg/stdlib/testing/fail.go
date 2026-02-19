@@ -14,8 +14,10 @@ var Fail = base.Assertion{
 	DefaultMessage: func(_ []runtime.Value) string {
 		return "not fail"
 	},
-	MinArgs: 0,
-	MaxArgs: 1,
+	Args: base.Args{
+		Min: 0,
+		Max: 1,
+	},
 	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
 		return false, nil
 	},

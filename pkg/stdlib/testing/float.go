@@ -1,8 +1,6 @@
 package testing
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
@@ -11,14 +9,4 @@ import (
 // FLOAT asserts that value is a float type.
 // @param {Any} actual - Second to test.
 // @param {String} [message] - Message to display on error.
-var Float = base.Assertion{
-	DefaultMessage: func(args []runtime.Value) string {
-		return "be float"
-	},
-	MinArgs: 1,
-	MaxArgs: 2,
-	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
-		err := runtime.AssertFloat(args[0])
-		return err == nil, nil
-	},
-}
+var Float = base.TypeAssertion(runtime.TypeFloat)

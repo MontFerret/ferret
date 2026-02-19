@@ -1,11 +1,6 @@
 package testing
 
 import (
-	"context"
-	"fmt"
-
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
-
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
@@ -13,13 +8,4 @@ import (
 // @param {Any} actual - Actual value.
 // @param {Any} expected - Expected value.
 // @param {String} [message] - Message to display on error.
-var Lt = base.Assertion{
-	DefaultMessage: func(args []runtime.Value) string {
-		return fmt.Sprintf("be %s %s", base.LessOp, base.FormatValue(args[1]))
-	},
-	MinArgs: 2,
-	MaxArgs: 3,
-	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
-		return base.LessOp.Compare(args)
-	},
-}
+var Lt = base.EqualityAssertion(base.LessOp)

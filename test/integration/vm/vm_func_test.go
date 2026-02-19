@@ -10,13 +10,13 @@ import (
 
 func TestFunctionCall(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		Case("RETURN TYPENAME(1)", "int"),
-		Case("RETURN TYPENAME(1.1)", "float"),
+		Case("RETURN TYPENAME(1)", "Int"),
+		Case("RETURN TYPENAME(1.1)", "Float"),
 		Case("WAIT(10) RETURN 1", 1),
 		Case("RETURN LENGTH([1,2,3])", 3),
 		Case("RETURN CONCAT('a', 'b', 'c')", "abc"),
 		Case("RETURN CONCAT(CONCAT('a', 'b'), 'c', CONCAT('d', 'e'))", "abcde", "Nested calls"),
-		SkipCaseArray(`
+		CaseArray(`
 		LET arr = []
 		LET a = 1
 		LET res = APPEND(arr, a)
@@ -56,8 +56,8 @@ func TestFunctionCall0(t *testing.T) {
 func TestBuiltinFunctions(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		Case("RETURN LENGTH([1,2,3])", 3),
-		Case("RETURN TYPENAME([1,2,3])", "array"),
-		Case("RETURN TYPENAME({ a: 1, b: 2 })", "object"),
+		Case("RETURN TYPENAME([1,2,3])", "Array"),
+		Case("RETURN TYPENAME({ a: 1, b: 2 })", "Object"),
 		Case("WAIT(10) RETURN 1", 1),
 	})
 }
