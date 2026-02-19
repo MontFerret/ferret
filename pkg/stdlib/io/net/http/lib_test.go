@@ -75,8 +75,10 @@ func TestREQUEST(t *testing.T) {
 		ctx := context.Background()
 
 		out, err := http.REQUEST(ctx, runtime.NewObjectWith(
-			runtime.NewObjectProperty("method", runtime.NewString("GET")),
-			runtime.NewObjectProperty("url", runtime.NewString(url)),
+			map[string]runtime.Value{
+				"method": runtime.NewString("GET"),
+				"url":    runtime.NewString(url),
+			},
 		))
 
 		So(err, ShouldBeNil)
@@ -95,9 +97,11 @@ func TestREQUEST(t *testing.T) {
 		ctx := context.Background()
 
 		out, err := http.REQUEST(ctx, runtime.NewObjectWith(
-			runtime.NewObjectProperty("method", runtime.NewString("POST")),
-			runtime.NewObjectProperty("url", runtime.NewString(url)),
-			runtime.NewObjectProperty("body", runtime.NewBinary([]byte("test data"))),
+			map[string]runtime.Value{
+				"method": runtime.NewString("POST"),
+				"url":    runtime.NewString(url),
+				"body":   runtime.NewBinary([]byte("test data")),
+			},
 		))
 
 		So(err, ShouldBeNil)
@@ -119,11 +123,15 @@ func TestREQUEST(t *testing.T) {
 		ctx := context.Background()
 
 		out, err := http.REQUEST(ctx, runtime.NewObjectWith(
-			runtime.NewObjectProperty("method", runtime.NewString("POST")),
-			runtime.NewObjectProperty("url", runtime.NewString(url)),
-			runtime.NewObjectProperty("headers", runtime.NewObjectWith(
-				runtime.NewObjectProperty("X-Token", runtime.NewString("test-token")),
-			)),
+			map[string]runtime.Value{
+				"method": runtime.NewString("POST"),
+				"url":    runtime.NewString(url),
+				"headers": runtime.NewObjectWith(
+					map[string]runtime.Value{
+						"X-Token": runtime.NewString("test-token"),
+					},
+				),
+			},
 		))
 
 		So(err, ShouldBeNil)
@@ -145,11 +153,15 @@ func TestREQUEST(t *testing.T) {
 		ctx := context.Background()
 
 		out, err := http.REQUEST(ctx, runtime.NewObjectWith(
-			runtime.NewObjectProperty("method", runtime.NewString("POST")),
-			runtime.NewObjectProperty("url", runtime.NewString(url)),
-			runtime.NewObjectProperty("body", runtime.NewObjectWith(
-				runtime.NewObjectProperty("test", runtime.NewString("data")),
-			)),
+			map[string]runtime.Value{
+				"method": runtime.NewString("POST"),
+				"url":    runtime.NewString(url),
+				"body": runtime.NewObjectWith(
+					map[string]runtime.Value{
+						"test": runtime.NewString("data"),
+					},
+				),
+			},
 		))
 
 		So(err, ShouldBeNil)
@@ -160,7 +172,9 @@ func TestREQUEST(t *testing.T) {
 		ctx := context.Background()
 
 		out, err := http.REQUEST(ctx, runtime.NewObjectWith(
-			runtime.NewObjectProperty("method", runtime.NewString("GET")),
+			map[string]runtime.Value{
+				"method": runtime.NewString("GET"),
+			},
 		))
 
 		So(out, ShouldEqual, runtime.None)

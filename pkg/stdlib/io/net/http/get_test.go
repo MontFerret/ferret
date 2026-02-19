@@ -56,11 +56,15 @@ func TestGET(t *testing.T) {
 		ctx := context.Background()
 
 		out, err := http.GET(ctx, runtime.NewObjectWith(
-			runtime.NewObjectProperty("url", runtime.NewString(url)),
-			runtime.NewObjectProperty("headers", runtime.NewObjectWith(
-				runtime.NewObjectProperty("X-token", runtime.NewString("Ferret")),
-				runtime.NewObjectProperty("X-From", runtime.NewString("localhost")),
-			)),
+			map[string]runtime.Value{
+				"url": runtime.NewString(url),
+				"headers": runtime.NewObjectWith(
+					map[string]runtime.Value{
+						"X-token": runtime.NewString("Ferret"),
+						"X-From":  runtime.NewString("localhost"),
+					},
+				),
+			},
 		))
 
 		So(err, ShouldBeNil)

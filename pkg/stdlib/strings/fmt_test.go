@@ -64,9 +64,9 @@ func TestFmt(t *testing.T) {
 			Format:   "{}",
 			Args: []runtime.Value{
 				runtime.NewObjectWith(
-					runtime.NewObjectProperty(
-						"key", runtime.NewString("value"),
-					),
+					map[string]runtime.Value{
+						"key": runtime.NewString("value"),
+					},
 				),
 			},
 		},
@@ -76,12 +76,10 @@ func TestFmt(t *testing.T) {
 			Format:   "{}",
 			Args: []runtime.Value{
 				runtime.NewObjectWith(
-					runtime.NewObjectProperty(
-						"key", runtime.NewString("value"),
-					),
-					runtime.NewObjectProperty(
-						"yek", runtime.NewString("eulav"),
-					),
+					map[string]runtime.Value{
+						"key": runtime.NewString("value"),
+						"yek": runtime.NewString("eulav"),
+					},
 				),
 			},
 		},

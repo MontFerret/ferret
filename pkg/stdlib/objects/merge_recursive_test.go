@@ -36,10 +36,14 @@ func TestMergeRecursive(t *testing.T) {
 
 	Convey("Merge single object", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("a", runtime.NewInt(0)),
+			map[string]runtime.Value{
+				"a": runtime.NewInt(0),
+			},
 		)
 		expected := runtime.NewObjectWith(
-			runtime.NewObjectProperty("a", runtime.NewInt(0)),
+			map[string]runtime.Value{
+				"a": runtime.NewInt(0),
+			},
 		)
 
 		actual, err := objects.MergeRecursive(context.Background(), obj)
@@ -51,18 +55,24 @@ func TestMergeRecursive(t *testing.T) {
 	Convey("Merge two objects", t, func() {
 		Convey("When there are no common keys", func() {
 			obj1 := runtime.NewObjectWith(
-				runtime.NewObjectProperty("a", runtime.NewInt(0)),
-				runtime.NewObjectProperty("b", runtime.NewInt(1)),
+				map[string]runtime.Value{
+					"a": runtime.NewInt(0),
+					"b": runtime.NewInt(1),
+				},
 			)
 			obj2 := runtime.NewObjectWith(
-				runtime.NewObjectProperty("c", runtime.NewInt(2)),
-				runtime.NewObjectProperty("d", runtime.NewInt(3)),
+				map[string]runtime.Value{
+					"c": runtime.NewInt(2),
+					"d": runtime.NewInt(3),
+				},
 			)
 			expected := runtime.NewObjectWith(
-				runtime.NewObjectProperty("a", runtime.NewInt(0)),
-				runtime.NewObjectProperty("b", runtime.NewInt(1)),
-				runtime.NewObjectProperty("c", runtime.NewInt(2)),
-				runtime.NewObjectProperty("d", runtime.NewInt(3)),
+				map[string]runtime.Value{
+					"a": runtime.NewInt(0),
+					"b": runtime.NewInt(1),
+					"c": runtime.NewInt(2),
+					"d": runtime.NewInt(3),
+				},
 			)
 
 			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
@@ -73,17 +83,23 @@ func TestMergeRecursive(t *testing.T) {
 
 		Convey("When objects with the same key", func() {
 			obj1 := runtime.NewObjectWith(
-				runtime.NewObjectProperty("a", runtime.NewInt(0)),
-				runtime.NewObjectProperty("b", runtime.NewInt(1)),
+				map[string]runtime.Value{
+					"a": runtime.NewInt(0),
+					"b": runtime.NewInt(1),
+				},
 			)
 			obj2 := runtime.NewObjectWith(
-				runtime.NewObjectProperty("a", runtime.NewInt(2)), // Same key, different value
-				runtime.NewObjectProperty("c", runtime.NewInt(3)),
+				map[string]runtime.Value{
+					"a": runtime.NewInt(2), // Same key, different value
+					"c": runtime.NewInt(3),
+				},
 			)
 			expected := runtime.NewObjectWith(
-				runtime.NewObjectProperty("a", runtime.NewInt(2)), // Second object's value should win
-				runtime.NewObjectProperty("b", runtime.NewInt(1)),
-				runtime.NewObjectProperty("c", runtime.NewInt(3)),
+				map[string]runtime.Value{
+					"a": runtime.NewInt(2), // Second object's value should win
+					"b": runtime.NewInt(1),
+					"c": runtime.NewInt(3),
+				},
 			)
 
 			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
@@ -94,19 +110,27 @@ func TestMergeRecursive(t *testing.T) {
 
 		Convey("Merge two objects with the same keys and nested objects", func() {
 			nestedObj1 := runtime.NewObjectWith(
-				runtime.NewObjectProperty("x", runtime.NewInt(1)),
+				map[string]runtime.Value{
+					"x": runtime.NewInt(1),
+				},
 			)
 			nestedObj2 := runtime.NewObjectWith(
-				runtime.NewObjectProperty("y", runtime.NewInt(2)),
+				map[string]runtime.Value{
+					"y": runtime.NewInt(2),
+				},
 			)
 
 			obj1 := runtime.NewObjectWith(
-				runtime.NewObjectProperty("nested", nestedObj1),
-				runtime.NewObjectProperty("simple", runtime.NewString("value1")),
+				map[string]runtime.Value{
+					"nested": nestedObj1,
+					"simple": runtime.NewString("value1"),
+				},
 			)
 			obj2 := runtime.NewObjectWith(
-				runtime.NewObjectProperty("nested", nestedObj2),                  // Should merge recursively
-				runtime.NewObjectProperty("simple", runtime.NewString("value2")), // Should overwrite
+				map[string]runtime.Value{
+					"nested": nestedObj2,                  // Should merge recursively
+					"simple": runtime.NewString("value2"), // Should overwrite
+				},
 			)
 
 			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
@@ -135,10 +159,14 @@ func TestMergeRecursive(t *testing.T) {
 			arr2 := runtime.NewArrayWith(runtime.NewInt(3), runtime.NewInt(4))
 
 			obj1 := runtime.NewObjectWith(
-				runtime.NewObjectProperty("arr", arr1),
+				map[string]runtime.Value{
+					"arr": arr1,
+				},
 			)
 			obj2 := runtime.NewObjectWith(
-				runtime.NewObjectProperty("arr", arr2),
+				map[string]runtime.Value{
+					"arr": arr2,
+				},
 			)
 
 			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
@@ -161,37 +189,33 @@ func TestMergeRecursive(t *testing.T) {
 		Convey("When there are nested objects (example from ArangoDB doc)", func() {
 			// { "user-1": { "name": "Jane", "livesIn": { "city": "LA" } } }
 			obj1 := runtime.NewObjectWith(
-				runtime.NewObjectProperty(
-					"user-1", runtime.NewObjectWith(
-						runtime.NewObjectProperty(
-							"name", runtime.NewString("Jane"),
-						),
-						runtime.NewObjectProperty(
-							"livesIn", runtime.NewObjectWith(
-								runtime.NewObjectProperty(
-									"city", runtime.NewString("LA"),
-								),
+				map[string]runtime.Value{
+					"user-1": runtime.NewObjectWith(
+						map[string]runtime.Value{
+							"name": runtime.NewString("Jane"),
+							"livesIn": runtime.NewObjectWith(
+								map[string]runtime.Value{
+									"city": runtime.NewString("LA"),
+								},
 							),
-						),
+						},
 					),
-				),
+				},
 			)
 			// { "user-1": { "age": 42, "livesIn": { "state": "CA" } } }
 			obj2 := runtime.NewObjectWith(
-				runtime.NewObjectProperty(
-					"user-1", runtime.NewObjectWith(
-						runtime.NewObjectProperty(
-							"age", runtime.NewInt(42),
-						),
-						runtime.NewObjectProperty(
-							"livesIn", runtime.NewObjectWith(
-								runtime.NewObjectProperty(
-									"state", runtime.NewString("CA"),
-								),
+				map[string]runtime.Value{
+					"user-1": runtime.NewObjectWith(
+						map[string]runtime.Value{
+							"age": runtime.NewInt(42),
+							"livesIn": runtime.NewObjectWith(
+								map[string]runtime.Value{
+									"state": runtime.NewString("CA"),
+								},
 							),
-						),
+						},
 					),
-				),
+				},
 			)
 
 			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
@@ -226,7 +250,10 @@ func TestMergeRecursive(t *testing.T) {
 	Convey("Merged object should be independent of source objects", t, func() {
 		Convey("When array", func() {
 			arr := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2))
-			obj := runtime.NewObjectWith(runtime.NewObjectProperty("arr", arr))
+			obj := runtime.NewObjectWith(
+				map[string]runtime.Value{
+					"arr": arr,
+				})
 
 			actual, err := objects.MergeRecursive(context.Background(), obj)
 
@@ -245,9 +272,13 @@ func TestMergeRecursive(t *testing.T) {
 
 		Convey("When object", func() {
 			nested := runtime.NewObjectWith(
-				runtime.NewObjectProperty("nested", runtime.NewInt(0)),
-			)
-			obj := runtime.NewObjectWith(runtime.NewObjectProperty("obj", nested))
+				map[string]runtime.Value{
+					"nested": runtime.NewInt(0),
+				})
+			obj := runtime.NewObjectWith(
+				map[string]runtime.Value{
+					"obj": nested,
+				})
 
 			actual, err := objects.MergeRecursive(context.Background(), obj)
 

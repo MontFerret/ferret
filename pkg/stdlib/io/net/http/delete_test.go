@@ -66,8 +66,10 @@ func TestDELETE(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		out, err := http.DELETE(ctx, runtime.NewObjectWith(
-			runtime.NewObjectProperty("url", runtime.NewString(url)),
-			runtime.NewObjectProperty("body", runtime.NewBinary(b)),
+			map[string]runtime.Value{
+				"url":  runtime.NewString(url),
+				"body": runtime.NewBinary(b),
+			},
 		))
 
 		So(err, ShouldBeNil)

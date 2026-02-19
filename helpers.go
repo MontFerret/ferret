@@ -2,6 +2,7 @@ package ferret
 
 import (
 	"context"
+	"errors"
 	"io"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -14,31 +15,19 @@ func IsScalar(result Result) bool {
 }
 
 func ForEach(ctx context.Context, result Result, predicate func(val runtime.Value) error) error {
-	hasNext, err := result.HasNext(ctx)
-
-	if err != nil {
-		return err
-	}
-
-	for hasNext {
+	for {
 		val, err := result.Next(ctx)
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
 
 		if err != nil {
 			return err
 		}
-
 		if err := predicate(val); err != nil {
 			return err
 		}
-
-		hasNext, err = result.HasNext(ctx)
-
-		if err != nil {
-			return err
-		}
 	}
-
-	return nil
 }
 
 func Collect(ctx context.Context, result Result) ([]runtime.Value, error) {
@@ -58,17 +47,16 @@ func Collect(ctx context.Context, result Result) ([]runtime.Value, error) {
 }
 
 func One(ctx context.Context, result Result) (runtime.Value, error) {
-	hasNext, err := result.HasNext(ctx)
+	val, err := result.Next(ctx)
+	if errors.Is(err, io.EOF) {
+		return runtime.None, nil
+	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	if !hasNext {
-		return runtime.None, nil
-	}
-
-	return result.Next(ctx)
+	return val, nil
 }
 
 func JSONStream(ctx context.Context, input io.Writer, result Result) error {

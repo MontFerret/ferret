@@ -63,7 +63,9 @@ func TestObject(t *t.T) {
 		Convey("When arg is non-empty object", func() {
 			Convey("It should not return an error", func() {
 				_, err := Object(context.Background(), runtime.NewObjectWith(
-					runtime.NewObjectProperty("key", runtime.NewString("value")),
+					map[string]runtime.Value{
+						"key": runtime.NewString("value"),
+					},
 				))
 
 				So(err, ShouldBeNil)
@@ -96,7 +98,9 @@ func TestNotObject(t *t.T) {
 		Convey("When arg is non-empty object", func() {
 			Convey("It should return an error", func() {
 				_, err := NotObject(context.Background(), runtime.NewObjectWith(
-					runtime.NewObjectProperty("key", runtime.NewString("value")),
+					map[string]runtime.Value{
+						"key": runtime.NewString("value"),
+					},
 				))
 
 				So(err, ShouldBeError)

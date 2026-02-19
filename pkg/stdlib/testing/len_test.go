@@ -88,9 +88,11 @@ func TestLen(t *t.T) {
 				_, err := Len(
 					context.Background(),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("a", runtime.NewInt(1)),
-						runtime.NewObjectProperty("b", runtime.NewInt(2)),
-						runtime.NewObjectProperty("c", runtime.NewInt(3)),
+						map[string]runtime.Value{
+							"a": runtime.NewInt(1),
+							"b": runtime.NewInt(2),
+							"c": runtime.NewInt(3),
+						},
 					),
 					runtime.NewInt(1),
 				)
@@ -105,9 +107,11 @@ func TestLen(t *t.T) {
 				_, err := Len(
 					context.Background(),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("a", runtime.NewInt(1)),
-						runtime.NewObjectProperty("b", runtime.NewInt(2)),
-						runtime.NewObjectProperty("c", runtime.NewInt(3)),
+						map[string]runtime.Value{
+							"a": runtime.NewInt(1),
+							"b": runtime.NewInt(2),
+							"c": runtime.NewInt(3),
+						},
 					),
 					runtime.NewInt(3),
 				)
@@ -193,9 +197,11 @@ func TestNotLen(t *t.T) {
 				_, err := NotLen(
 					context.Background(),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("a", runtime.NewInt(1)),
-						runtime.NewObjectProperty("b", runtime.NewInt(2)),
-						runtime.NewObjectProperty("c", runtime.NewInt(3)),
+						map[string]runtime.Value{
+							"a": runtime.NewInt(1),
+							"b": runtime.NewInt(2),
+							"c": runtime.NewInt(3),
+						},
 					),
 					runtime.NewInt(1),
 				)
@@ -209,9 +215,11 @@ func TestNotLen(t *t.T) {
 				_, err := NotLen(
 					context.Background(),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("a", runtime.NewInt(1)),
-						runtime.NewObjectProperty("b", runtime.NewInt(2)),
-						runtime.NewObjectProperty("c", runtime.NewInt(3)),
+						map[string]runtime.Value{
+							"a": runtime.NewInt(1),
+							"b": runtime.NewInt(2),
+							"c": runtime.NewInt(3),
+						},
 					),
 					runtime.NewInt(3),
 				)

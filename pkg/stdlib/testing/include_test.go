@@ -79,9 +79,11 @@ func TestInclude(t *t.T) {
 				_, err := Include(
 					context.Background(),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("a", runtime.NewInt(1)),
-						runtime.NewObjectProperty("b", runtime.NewInt(2)),
-						runtime.NewObjectProperty("c", runtime.NewInt(3)),
+						map[string]runtime.Value{
+							"a": runtime.NewInt(1),
+							"b": runtime.NewInt(2),
+							"c": runtime.NewInt(3),
+						},
 					),
 					runtime.NewInt(4),
 				)
@@ -96,9 +98,11 @@ func TestInclude(t *t.T) {
 				_, err := Include(
 					context.Background(),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("a", runtime.NewInt(1)),
-						runtime.NewObjectProperty("b", runtime.NewInt(2)),
-						runtime.NewObjectProperty("c", runtime.NewInt(3)),
+						map[string]runtime.Value{
+							"a": runtime.NewInt(1),
+							"b": runtime.NewInt(2),
+							"c": runtime.NewInt(3),
+						},
 					),
 					runtime.NewInt(2),
 				)
@@ -176,9 +180,11 @@ func TestNotInclude(t *t.T) {
 				_, err := NotInclude(
 					context.Background(),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("a", runtime.NewInt(1)),
-						runtime.NewObjectProperty("b", runtime.NewInt(2)),
-						runtime.NewObjectProperty("c", runtime.NewInt(3)),
+						map[string]runtime.Value{
+							"a": runtime.NewInt(1),
+							"b": runtime.NewInt(2),
+							"c": runtime.NewInt(3),
+						},
 					),
 					runtime.NewInt(4),
 				)
@@ -192,9 +198,11 @@ func TestNotInclude(t *t.T) {
 				_, err := NotInclude(
 					context.Background(),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("a", runtime.NewInt(1)),
-						runtime.NewObjectProperty("b", runtime.NewInt(2)),
-						runtime.NewObjectProperty("c", runtime.NewInt(3)),
+						map[string]runtime.Value{
+							"a": runtime.NewInt(1),
+							"b": runtime.NewInt(2),
+							"c": runtime.NewInt(3),
+						},
 					),
 					runtime.NewInt(2),
 				)

@@ -53,8 +53,10 @@ func TestCount(t *testing.T) {
 
 	Convey("When counting an object", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("a", runtime.NewInt(1)),
-			runtime.NewObjectProperty("b", runtime.NewInt(2)),
+			map[string]runtime.Value{
+				"a": runtime.NewInt(1),
+				"b": runtime.NewInt(2),
+			},
 		)
 
 		result, err := collections.Count(context.Background(), obj)

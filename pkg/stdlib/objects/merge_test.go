@@ -40,17 +40,23 @@ func TestMerge(t *testing.T) {
 
 	Convey("Merged object should be independent of source objects", t, func() {
 		obj1 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
-			runtime.NewObjectProperty("prop2", runtime.NewString("str")),
+			map[string]runtime.Value{
+				"prop1": runtime.NewInt(1),
+				"prop2": runtime.NewString("str"),
+			},
 		)
 		obj2 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("prop3", runtime.NewInt(3)),
+			map[string]runtime.Value{
+				"prop3": runtime.NewInt(3),
+			},
 		)
 
 		result := runtime.NewObjectWith(
-			runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
-			runtime.NewObjectProperty("prop2", runtime.NewString("str")),
-			runtime.NewObjectProperty("prop3", runtime.NewInt(3)),
+			map[string]runtime.Value{
+				"prop1": runtime.NewInt(1),
+				"prop2": runtime.NewString("str"),
+				"prop3": runtime.NewInt(3),
+			},
 		)
 
 		merged, err := objects.Merge(context.Background(), obj1, obj2)
@@ -70,12 +76,16 @@ func TestMerge(t *testing.T) {
 func TestMergeObjects(t *testing.T) {
 	Convey("Merge single object", t, func() {
 		obj1 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
-			runtime.NewObjectProperty("prop2", runtime.NewString("str")),
+			map[string]runtime.Value{
+				"prop1": runtime.NewInt(1),
+				"prop2": runtime.NewString("str"),
+			},
 		)
 		result := runtime.NewObjectWith(
-			runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
-			runtime.NewObjectProperty("prop2", runtime.NewString("str")),
+			map[string]runtime.Value{
+				"prop1": runtime.NewInt(1),
+				"prop2": runtime.NewString("str"),
+			},
 		)
 
 		merged, err := objects.Merge(context.Background(), obj1)
@@ -86,17 +96,23 @@ func TestMergeObjects(t *testing.T) {
 
 	Convey("Merge two objects", t, func() {
 		obj1 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
-			runtime.NewObjectProperty("prop2", runtime.NewString("str")),
+			map[string]runtime.Value{
+				"prop1": runtime.NewInt(1),
+				"prop2": runtime.NewString("str"),
+			},
 		)
 		obj2 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("prop3", runtime.NewInt(3)),
+			map[string]runtime.Value{
+				"prop3": runtime.NewInt(3),
+			},
 		)
 
 		result := runtime.NewObjectWith(
-			runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
-			runtime.NewObjectProperty("prop2", runtime.NewString("str")),
-			runtime.NewObjectProperty("prop3", runtime.NewInt(3)),
+			map[string]runtime.Value{
+				"prop1": runtime.NewInt(1),
+				"prop2": runtime.NewString("str"),
+				"prop3": runtime.NewInt(3),
+			},
 		)
 
 		merged, err := objects.Merge(context.Background(), obj1, obj2)
@@ -107,17 +123,23 @@ func TestMergeObjects(t *testing.T) {
 
 	Convey("When keys are repeated", t, func() {
 		obj1 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
-			runtime.NewObjectProperty("prop2", runtime.NewString("str")),
+			map[string]runtime.Value{
+				"prop1": runtime.NewInt(1),
+				"prop2": runtime.NewString("str"),
+			},
 		)
 		obj2 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("prop1", runtime.NewInt(2)), // Same key, different value
+			map[string]runtime.Value{
+				"prop1": runtime.NewInt(2), // Same key, different value
+			},
 		)
 
 		// Later objects should overwrite earlier ones
 		result := runtime.NewObjectWith(
-			runtime.NewObjectProperty("prop1", runtime.NewInt(2)), // Should be the value from obj2
-			runtime.NewObjectProperty("prop2", runtime.NewString("str")),
+			map[string]runtime.Value{
+				"prop1": runtime.NewInt(2), // Should be the value from obj2
+				"prop2": runtime.NewString("str"),
+			},
 		)
 
 		merged, err := objects.Merge(context.Background(), obj1, obj2)
@@ -139,13 +161,21 @@ func TestMergeObjects(t *testing.T) {
 
 	Convey("Merge objects with complex values", t, func() {
 		arr := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2))
-		nestedObj := runtime.NewObjectWith(runtime.NewObjectProperty("nested", runtime.NewString("value")))
+		nestedObj := runtime.NewObjectWith(
+			map[string]runtime.Value{
+				"nested": runtime.NewString("value"),
+			},
+		)
 
 		obj1 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("array", arr),
+			map[string]runtime.Value{
+				"array": arr,
+			},
 		)
 		obj2 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("object", nestedObj),
+			map[string]runtime.Value{
+				"object": nestedObj,
+			},
 		)
 
 		merged, err := objects.Merge(context.Background(), obj1, obj2)
@@ -177,18 +207,24 @@ func TestMergeObjects(t *testing.T) {
 func TestMergeArray(t *testing.T) {
 	Convey("Merge array", t, func() {
 		obj1 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
-			runtime.NewObjectProperty("prop2", runtime.NewString("str")),
+			map[string]runtime.Value{
+				"prop1": runtime.NewInt(1),
+				"prop2": runtime.NewString("str"),
+			},
 		)
 		obj2 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("prop3", runtime.NewInt(3)),
+			map[string]runtime.Value{
+				"prop3": runtime.NewInt(3),
+			},
 		)
 
 		objArr := runtime.NewArrayWith(obj1, obj2)
 		result := runtime.NewObjectWith(
-			runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
-			runtime.NewObjectProperty("prop2", runtime.NewString("str")),
-			runtime.NewObjectProperty("prop3", runtime.NewInt(3)),
+			map[string]runtime.Value{
+				"prop1": runtime.NewInt(1),
+				"prop2": runtime.NewString("str"),
+				"prop3": runtime.NewInt(3),
+			},
 		)
 
 		merged, err := objects.Merge(context.Background(), objArr)
@@ -222,7 +258,9 @@ func TestMergeArray(t *testing.T) {
 	Convey("Merge with empty objects", t, func() {
 		obj1 := runtime.NewObject()
 		obj2 := runtime.NewObjectWith(
-			runtime.NewObjectProperty("key", runtime.NewString("value")),
+			map[string]runtime.Value{
+				"key": runtime.NewString("value"),
+			},
 		)
 
 		merged, err := objects.Merge(context.Background(), obj1, obj2)
@@ -236,7 +274,9 @@ func TestMergeArray(t *testing.T) {
 
 	Convey("MergeRecursive with identical objects", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("key", runtime.NewString("value")),
+			map[string]runtime.Value{
+				"key": runtime.NewString("value"),
+			},
 		)
 
 		merged, err := objects.MergeRecursive(context.Background(), obj, obj)
