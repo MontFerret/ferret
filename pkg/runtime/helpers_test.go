@@ -211,6 +211,7 @@ func TestHelpers(t *testing.T) {
 				So(output, ShouldEqual, runtime.NewFloat(100.1))
 
 				output2, err := runtime.ToFloat(ctx, runtime.NewString("foobar"))
+				So(err, ShouldNotBeNil)
 				So(output2, ShouldEqual, runtime.ZeroFloat)
 			})
 
@@ -240,7 +241,7 @@ func TestHelpers(t *testing.T) {
 
 			Convey("Should convert DateTime", func() {
 				dt := runtime.NewCurrentDateTime()
-				ts := dt.Time.Unix()
+				ts := dt.Unix()
 
 				out, err := runtime.ToFloat(ctx, dt)
 				So(err, ShouldBeNil)
@@ -316,7 +317,7 @@ func TestHelpers(t *testing.T) {
 
 			Convey("Should convert DateTime", func() {
 				dt := runtime.NewCurrentDateTime()
-				ts := dt.Time.Unix()
+				ts := dt.Unix()
 				out, err := runtime.ToInt(ctx, dt)
 
 				So(err, ShouldBeNil)

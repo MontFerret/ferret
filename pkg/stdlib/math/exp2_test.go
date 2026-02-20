@@ -17,7 +17,7 @@ func TestExp2(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, 65536)
 
-		out, err = math.Exp(context.Background(), runtime.NewFloat(1))
+		_, err = math.Exp(context.Background(), runtime.NewFloat(1))
 
 		So(err, ShouldBeNil)
 		//So(out.Compare(runtime.NewFloat(2)) == 1, ShouldBeTrue)

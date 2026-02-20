@@ -72,7 +72,7 @@ func (dt DateTime) Hash() uint64 {
 	h.Write([]byte(TypeDateTime))
 	h.Write([]byte(":"))
 
-	bytes, err := dt.Time.GobEncode()
+	bytes, err := dt.GobEncode()
 
 	if err != nil {
 		return 0

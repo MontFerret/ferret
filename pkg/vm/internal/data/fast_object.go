@@ -57,7 +57,7 @@ func NewShapeCache(limit int) *ShapeCache {
 	return cache
 }
 
-func (c *ShapeCache) Root() *fastShape {
+func (c *ShapeCache) Root() *Shape {
 	if c == nil {
 		return nil
 	}
@@ -65,7 +65,7 @@ func (c *ShapeCache) Root() *fastShape {
 	return c.root
 }
 
-func (c *ShapeCache) Transition(shape *fastShape, key string) *fastShape {
+func (c *ShapeCache) Transition(shape *Shape, key string) *Shape {
 	if c == nil || shape == nil {
 		return nil
 	}

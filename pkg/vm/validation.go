@@ -8,11 +8,7 @@ import (
 )
 
 func validate(env *Environment, program *bytecode.Program) error {
-	if err := validateParams(env, program); err != nil {
-		return err
-	}
-
-	return nil
+	return validateParams(env, program)
 }
 
 func validateParams(env *Environment, program *bytecode.Program) error {

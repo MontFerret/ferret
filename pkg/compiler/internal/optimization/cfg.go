@@ -91,19 +91,19 @@ func (bb *BasicBlock) IsTerminator() bool {
 func (bb *BasicBlock) String() string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("Block %d [%d:%d]:\n", bb.ID, bb.Start, bb.End))
+	fmt.Fprintf(&sb, "Block %d [%d:%d]:\n", bb.ID, bb.Start, bb.End)
 
 	for i, inst := range bb.Instructions {
-		sb.WriteString(fmt.Sprintf("  %d: %s", bb.Start+i, inst.Opcode.String()))
+		fmt.Fprintf(&sb, "  %d: %s", bb.Start+i, inst.Opcode.String())
 
 		if inst.Operands[0] != 0 || inst.Operands[1] != 0 || inst.Operands[2] != 0 {
-			sb.WriteString(fmt.Sprintf(" %d", inst.Operands[0]))
+			fmt.Fprintf(&sb, " %d", inst.Operands[0])
 
 			if inst.Operands[1] != 0 || inst.Operands[2] != 0 {
-				sb.WriteString(fmt.Sprintf(" %d", inst.Operands[1]))
+				fmt.Fprintf(&sb, " %d", inst.Operands[1])
 
 				if inst.Operands[2] != 0 {
-					sb.WriteString(fmt.Sprintf(" %d", inst.Operands[2]))
+					fmt.Fprintf(&sb, " %d", inst.Operands[2])
 				}
 			}
 		}
@@ -118,7 +118,7 @@ func (bb *BasicBlock) String() string {
 			sb.WriteString(", ")
 		}
 
-		sb.WriteString(fmt.Sprintf("%d", succ.ID))
+		fmt.Fprintf(&sb, "%d", succ.ID)
 	}
 
 	sb.WriteString("\n")

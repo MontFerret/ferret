@@ -36,7 +36,7 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 
 	b.ResetTimer()
 
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		_, err := instance.Run(ctx, env)
 
 		if err != nil {

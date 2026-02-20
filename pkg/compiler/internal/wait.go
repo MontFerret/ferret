@@ -760,7 +760,7 @@ func parseDurationLiteral(text string) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	multiplier := float64(1)
+	var multiplier float64
 	switch unit {
 	case "MS":
 		multiplier = 1

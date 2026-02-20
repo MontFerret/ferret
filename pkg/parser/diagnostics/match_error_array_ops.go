@@ -33,7 +33,7 @@ func matchArrayOperatorErrors(src *file.Source, err *diagnostics.Diagnostic, off
 }
 
 func matchQueryOperatorErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
-	if !(isMismatched(err.Message) || isMissing(err.Message) || isNoAlternative(err.Message)) {
+	if !isMismatched(err.Message) && !isMissing(err.Message) && !isNoAlternative(err.Message) {
 		return false
 	}
 
@@ -165,7 +165,7 @@ func matchArrayInlineReturnErrors(src *file.Source, err *diagnostics.Diagnostic,
 }
 
 func matchArrayQuestionQuantifierErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
-	if !(isMismatched(err.Message) || isMissing(err.Message) || isNoAlternative(err.Message)) {
+	if !isMismatched(err.Message) && !isMissing(err.Message) && !isNoAlternative(err.Message) {
 		return false
 	}
 
@@ -197,7 +197,7 @@ func matchArrayQuestionQuantifierErrors(src *file.Source, err *diagnostics.Diagn
 }
 
 func matchArrayOperatorUnclosed(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
-	if !(isMismatched(err.Message) || isMissing(err.Message) || isNoAlternative(err.Message)) {
+	if !isMismatched(err.Message) && !isMissing(err.Message) && !isNoAlternative(err.Message) {
 		return false
 	}
 

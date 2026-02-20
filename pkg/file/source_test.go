@@ -57,7 +57,7 @@ func TestSourceName(t *testing.T) {
 		})
 
 		Convey("Should return empty string for nil source", func() {
-			var source *Source = nil
+			var source *Source
 
 			So(source.Name(), ShouldEqual, "")
 		})
@@ -79,7 +79,7 @@ func TestSourceEmpty(t *testing.T) {
 		})
 
 		Convey("Should return true for nil source", func() {
-			var source *Source = nil
+			var source *Source
 
 			So(source.Empty(), ShouldBeTrue)
 		})
@@ -167,7 +167,7 @@ func TestSourceLocationAt(t *testing.T) {
 			})
 
 			Convey("Should handle nil source", func() {
-				var nilSource *Source = nil
+				var nilSource *Source
 				line, col := nilSource.LocationAt(Span{Start: 0, End: 1})
 				So(line, ShouldEqual, 0)
 				So(col, ShouldEqual, 0)
@@ -241,7 +241,7 @@ func TestSourceSnippet(t *testing.T) {
 		})
 
 		Convey("Nil source", func() {
-			var source *Source = nil
+			var source *Source
 			span := Span{Start: 0, End: 1}
 
 			snippets := source.Snippet(span)

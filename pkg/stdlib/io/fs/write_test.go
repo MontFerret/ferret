@@ -154,7 +154,7 @@ func TestWrite(t *testing.T) {
 				},
 			)
 
-			for _ = range [2]struct{}{} {
+			for range [2]struct{}{} {
 				// at first iteration check that `Write` creates file and writes `data`.
 				// At second iteration check that `Write` truncates the file and
 				// writes `data` again

@@ -77,9 +77,9 @@ func (t Boolean) String() string {
 func (t Boolean) Hash() uint64 {
 	if t {
 		return hashTrue
-	} else {
-		return hashFalse
 	}
+
+	return hashFalse
 }
 
 func (t Boolean) Copy() Value {

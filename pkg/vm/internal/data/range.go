@@ -93,11 +93,13 @@ func (r *Range) Compare(_ context.Context, other runtime.Value) (int64, error) {
 
 	if r.start == otherRange.start && r.end == otherRange.end {
 		return 0, nil
-	} else if r.start < otherRange.start || r.end < otherRange.end {
-		return -1, nil
-	} else {
-		return 1, nil
 	}
+
+	if r.start < otherRange.start || r.end < otherRange.end {
+		return -1, nil
+	}
+
+	return 1, nil
 }
 
 func (r *Range) calculateCapacity(start int64, end int64) int64 {

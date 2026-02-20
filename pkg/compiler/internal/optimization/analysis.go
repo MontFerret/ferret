@@ -242,17 +242,17 @@ func (cfg *ControlFlowGraph) ToDOT() string {
 	// Write nodes
 	for _, block := range cfg.Blocks {
 		if block == cfg.Exit {
-			sb.WriteString(fmt.Sprintf("  block%d [label=\"Exit\", shape=ellipse];\n", block.ID))
+			fmt.Fprintf(&sb, "  block%d [label=\"Exit\", shape=ellipse];\n", block.ID)
 		} else {
 			label := fmt.Sprintf("Block %d\\n[%d:%d]", block.ID, block.Start, block.End)
-			sb.WriteString(fmt.Sprintf("  block%d [label=\"%s\"];\n", block.ID, label))
+			fmt.Fprintf(&sb, "  block%d [label=\"%s\"];\n", block.ID, label)
 		}
 	}
 
 	// Write edges
 	for _, block := range cfg.Blocks {
 		for _, succ := range block.Successors {
-			sb.WriteString(fmt.Sprintf("  block%d -> block%d;\n", block.ID, succ.ID))
+			fmt.Fprintf(&sb, "  block%d -> block%d;\n", block.ID, succ.ID)
 		}
 	}
 
@@ -266,9 +266,9 @@ func (cfg *ControlFlowGraph) String() string {
 	var sb strings.Builder
 
 	sb.WriteString("Control Flow Graph:\n")
-	sb.WriteString(fmt.Sprintf("  Entry: Block %d\n", cfg.Entry.ID))
-	sb.WriteString(fmt.Sprintf("  Exit: Block %d\n", cfg.Exit.ID))
-	sb.WriteString(fmt.Sprintf("  Blocks: %d\n\n", len(cfg.Blocks)))
+	fmt.Fprintf(&sb, "  Entry: Block %d\n", cfg.Entry.ID)
+	fmt.Fprintf(&sb, "  Exit: Block %d\n", cfg.Exit.ID)
+	fmt.Fprintf(&sb, "  Blocks: %d\n\n", len(cfg.Blocks))
 
 	for _, block := range cfg.Blocks {
 		if block != cfg.Exit {

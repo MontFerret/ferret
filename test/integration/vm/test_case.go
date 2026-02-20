@@ -10,14 +10,14 @@ import (
 
 	"github.com/MontFerret/ferret/v2/test/integration/base"
 
-	. "github.com/smartystreets/goconvey/convey"
+	convey "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func Case(expression string, expected any, desc ...string) UseCase {
-	return NewCase(expression, expected, ShouldEqual, desc...)
+	return NewCase(expression, expected, convey.ShouldEqual, desc...)
 }
 
 func DebugCase(expression string, expected any, desc ...string) UseCase {
@@ -29,7 +29,7 @@ func SkipCase(expression string, expected any, desc ...string) UseCase {
 }
 
 func CaseNil(expression string, desc ...string) UseCase {
-	return NewCase(expression, nil, ShouldBeNil, desc...)
+	return NewCase(expression, nil, convey.ShouldBeNil, desc...)
 }
 
 func SkipCaseNil(expression string, desc ...string) UseCase {
@@ -41,7 +41,7 @@ func DebugCaseNil(expression string, desc ...string) UseCase {
 }
 
 func CaseRuntimeError(expression string, desc ...string) UseCase {
-	return NewCase(expression, nil, ShouldBeError, desc...)
+	return NewCase(expression, nil, convey.ShouldBeError, desc...)
 }
 
 func CaseRuntimeErrorAs(expression string, expected error, desc ...string) UseCase {
@@ -73,7 +73,7 @@ func SkipCaseCompilationError(expression string, desc ...string) UseCase {
 }
 
 func CaseObject(expression string, expected map[string]any, desc ...string) UseCase {
-	uc := NewCase(expression, expected, ShouldEqualJSON, desc...)
+	uc := NewCase(expression, expected, convey.ShouldEqualJSON, desc...)
 	uc.RawOutput = true
 	return uc
 }
@@ -87,7 +87,7 @@ func DebugCaseObject(expression string, expected map[string]any, desc ...string)
 }
 
 func CaseArray(expression string, expected []any, desc ...string) UseCase {
-	uc := NewCase(expression, expected, ShouldEqualJSON, desc...)
+	uc := NewCase(expression, expected, convey.ShouldEqualJSON, desc...)
 	uc.RawOutput = true
 	return uc
 }
@@ -125,7 +125,7 @@ func DebugCaseItems(expression string, expected ...any) UseCase {
 }
 
 func CaseJSON(expression string, expected string, desc ...string) UseCase {
-	uc := NewCase(expression, expected, ShouldEqualJSON, desc...)
+	uc := NewCase(expression, expected, convey.ShouldEqualJSON, desc...)
 	uc.RawOutput = true
 	return uc
 }
@@ -153,7 +153,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 				return
 			}
 
-			Convey(useCase.Expression, t, func() {
+			convey.Convey(useCase.Expression, t, func() {
 				prog, err := c.Compile(file.NewSource(name, useCase.Expression))
 
 				defer func() {
@@ -171,9 +171,9 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 						}
 					}
 
-					So(err, ShouldBeNil)
+					convey.So(err, convey.ShouldBeNil)
 				} else {
-					So(err, ShouldBeError)
+					convey.So(err, convey.ShouldBeError)
 
 					return
 				}
@@ -192,12 +192,12 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 
 				for _, assertion := range useCase.Assertions {
 					if base.ArePtrsEqual(assertion, ShouldBeRuntimeError) {
-						So(err, ShouldBeRuntimeError, expected)
+						convey.So(err, ShouldBeRuntimeError, expected)
 
 						return
 					}
 
-					if base.ArePtrsEqual(assertion, ShouldBeError) {
+					if base.ArePtrsEqual(assertion, convey.ShouldBeError) {
 						frmt, ok := err.(diagnostics.Formattable)
 
 						if ok {
@@ -205,32 +205,32 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 						}
 
 						if expected != nil {
-							So(err, ShouldBeError, expected)
+							convey.So(err, convey.ShouldBeError, expected)
 						} else {
-							So(err, ShouldBeError)
+							convey.So(err, convey.ShouldBeError)
 						}
 
 						return
 					}
 
-					So(err, ShouldBeNil)
+					convey.So(err, convey.ShouldBeNil)
 
-					if base.ArePtrsEqual(assertion, ShouldEqualJSON) {
+					if base.ArePtrsEqual(assertion, convey.ShouldEqualJSON) {
 						expectedJ, err := j.Marshal(expected)
-						So(err, ShouldBeNil)
-						So(actual, ShouldEqualJSON, string(expectedJ))
+						convey.So(err, convey.ShouldBeNil)
+						convey.So(actual, convey.ShouldEqualJSON, string(expectedJ))
 					} else if base.ArePtrsEqual(assertion, base.ShouldHaveSameItems) {
-						So(actual, base.ShouldHaveSameItems, expected)
-					} else if base.ArePtrsEqual(assertion, ShouldBeNil) {
-						So(actual, ShouldBeNil)
+						convey.So(actual, base.ShouldHaveSameItems, expected)
+					} else if base.ArePtrsEqual(assertion, convey.ShouldBeNil) {
+						convey.So(actual, convey.ShouldBeNil)
 					} else {
-						So(actual, assertion, expected)
+						convey.So(actual, assertion, expected)
 					}
 				}
 
 				// If no assertions are provided, we check the expected value directly
 				if len(useCase.Assertions) == 0 {
-					So(actual, ShouldEqual, expected)
+					convey.So(actual, convey.ShouldEqual, expected)
 				}
 
 				if useCase.DebugOutput {
