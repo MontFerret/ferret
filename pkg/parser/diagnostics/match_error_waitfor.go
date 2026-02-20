@@ -40,11 +40,12 @@ func matchWaitForErrors(src *file.Source, err *diagnostics.Diagnostic, offending
 	if clause, spanNode := waitForMissingClauseValue(offending); clause != "" {
 		span := spanFromTokenSafe(spanNode.Token(), src)
 		err.Message = fmt.Sprintf("Expected value after '%s' in WAITFOR clause", clause)
-		if clause == "BACKOFF" {
+		switch clause {
+		case "BACKOFF":
 			err.Hint = "Provide a backoff strategy, e.g. BACKOFF LINEAR."
-		} else if clause == "JITTER" {
+		case "JITTER":
 			err.Hint = "Provide a jitter value between 0 and 1, e.g. JITTER 0.2."
-		} else {
+		default:
 			err.Hint = fmt.Sprintf("Provide a duration, e.g. %s 100ms.", clause)
 		}
 		err.Spans = []diagnostics.ErrorSpan{

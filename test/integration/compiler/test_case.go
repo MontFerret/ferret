@@ -74,8 +74,8 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 			name = strings.TrimSpace(useCase.Expression)
 		}
 
-		name = strings.Replace(name, "\n", " ", -1)
-		name = strings.Replace(name, "\t", " ", -1)
+		name = strings.ReplaceAll(name, "\n", " ")
+		name = strings.ReplaceAll(name, "\t", " ")
 		// Replace multiple spaces with a single space
 		name = strings.Join(strings.Fields(name), " ")
 		skip := useCase.Skip

@@ -510,9 +510,9 @@ loop:
 			if err := ds.Append(ctx, reg[src1]); err != nil {
 				if _, catch := vm.tryCatch(vm.pc); catch {
 					continue
-				} else {
-					return nil, err
 				}
+
+				return nil, err
 			}
 		case bytecode.OpArrayPush:
 			ds := reg[dst].(*runtime.Array)
@@ -610,9 +610,9 @@ loop:
 			if err != nil {
 				if _, catch := vm.tryCatch(vm.pc); catch {
 					continue
-				} else {
-					return nil, err
 				}
+
+				return nil, err
 			}
 
 			stream, err := observable.Subscribe(ctx, runtime.Subscription{
@@ -623,9 +623,9 @@ loop:
 			if err != nil {
 				if _, catch := vm.tryCatch(vm.pc); catch {
 					continue
-				} else {
-					return nil, err
 				}
+
+				return nil, err
 			}
 
 			reg[dst] = data.NewStreamValue(stream)
@@ -640,9 +640,9 @@ loop:
 				if err != nil {
 					if _, catch := vm.tryCatch(vm.pc); catch {
 						continue
-					} else {
-						return nil, err
 					}
+
+					return nil, err
 				}
 
 				timeout = t
@@ -678,9 +678,9 @@ loop:
 			if err != nil {
 				if _, catch := vm.tryCatch(vm.pc); catch {
 					continue
-				} else {
-					return nil, err
 				}
+
+				return nil, err
 			}
 
 			if err := data.Sleep(ctx, dur); err != nil {

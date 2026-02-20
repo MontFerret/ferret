@@ -1,6 +1,7 @@
 package runtime_test
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -160,7 +161,7 @@ func TestEncodeByKey(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			Convey(tc.Name, t, func() {
-				actual, err := runtime.EncodeField(t.Context(), tc.Input, runtime.String(tc.Field))
+				actual, err := runtime.EncodeField(context.Background(), tc.Input, runtime.String(tc.Field))
 
 				So(err, ShouldBeNil)
 				So(actual, ShouldResemble, tc.Expected)
@@ -175,7 +176,7 @@ func TestEncodeByKey(t *testing.T) {
 				privateStrProp: "hello world",
 			}
 
-			res, err := runtime.EncodeField(nil, sv, runtime.String("privateStrProp"))
+			res, err := runtime.EncodeField(context.TODO(), sv, runtime.String("privateStrProp"))
 
 			So(res, ShouldEqual, runtime.None)
 			So(err, ShouldBeNil)
@@ -185,7 +186,7 @@ func TestEncodeByKey(t *testing.T) {
 			sv := SomeValue{
 				privateStrProp: "hello world",
 			}
-			actual, err := runtime.EncodeField(nil, sv, runtime.String("UntaggedProp"))
+			actual, err := runtime.EncodeField(context.TODO(), sv, runtime.String("UntaggedProp"))
 
 			So(err, ShouldBeNil)
 			So(actual, ShouldEqual, runtime.None)

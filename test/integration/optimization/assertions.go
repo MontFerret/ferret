@@ -59,8 +59,6 @@ func ShouldCheckOpcode(a any, e ...any) string {
 	default:
 		panic(fmt.Sprintf("unsupported opcode expectation type: %T", e[0]))
 	}
-
-	return ""
 }
 
 func shouldCheckOpcodeCount(actual *bytecode.Program, expected OpcodeCount) string {

@@ -73,9 +73,5 @@ func (fmt *Formatter) Format(out io.Writer, src *file.Source) error {
 		return errorHandler.Unwrap()
 	}
 
-	if err := l.Err(); err != nil {
-		return err
-	}
-
-	return nil
+	return l.Err()
 }

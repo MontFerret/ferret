@@ -1,5 +1,6 @@
 # This file contains all available configuration options
 # with their default values.
+version: 2
 
 # options for analysis running
 run:
@@ -16,6 +17,17 @@ run:
 linters:
   disable:
     - errcheck
+    - unused
+
+linters-settings:
+  staticcheck:
+    checks:
+      - all
+      - -U1000
+      - -ST1000
+      - -ST1001
+      - -ST1020
+      - -ST1022
 
 issues:
   # List of regexps of issue texts to exclude, empty list by default.
@@ -25,6 +37,14 @@ issues:
   exclude:
     - '^(G104|G401|G505|G501):'
     - '^shadow: declaration of'
+    - '^ST1000:'
+    - '^ST1001:'
+    - '^ST1020:'
+    - 'should not use dot imports'
+  exclude-rules:
+    - text: "ST1001: should not use dot imports"
+      linters:
+        - staticcheck
 
   # which files to skip: they will be analyzed, but issues from them
   # won't be reported. Default value is empty list, but there is

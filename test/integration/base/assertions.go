@@ -8,7 +8,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 
-	. "github.com/smartystreets/goconvey/convey"
+	convey "github.com/smartystreets/goconvey/convey"
 )
 
 type (
@@ -47,7 +47,7 @@ func ShouldHaveSameItems(actual any, expected ...any) string {
 	expectedArr := wapper[0].([]any)
 
 	for _, item := range expectedArr {
-		if err := ShouldContain(actual, item); err != "" {
+		if err := convey.ShouldContain(actual, item); err != "" {
 			return err
 		}
 	}
@@ -133,7 +133,6 @@ func ShouldBeCompilationError(actual any, expected ...any) string {
 			fmt.Println(err.Format())
 		}
 
-		break
 	case *ExpectedMultiError:
 		err, ok := actual.(*diagnostics.DiagnosticSet)
 

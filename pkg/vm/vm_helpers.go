@@ -214,20 +214,12 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 	queryable, ok := src.(runtime.Queryable)
 
 	if !ok {
-		if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(src, runtime.TypeQueryable)); err != nil {
-			return err
-		}
-
-		return nil
+		return vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(src, runtime.TypeQueryable))
 	}
 
 	res, err := queryable.Query(ctx, query)
 
-	if err := vm.setOrTryCatch(dst, res, err); err != nil {
-		return err
-	}
-
-	return nil
+	return vm.setOrTryCatch(dst, res, err)
 }
 
 func (vm *VM) regexpCached(pc int, value runtime.Value) (*data.Regexp, error) {

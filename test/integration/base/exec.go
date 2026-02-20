@@ -11,6 +11,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
+type contextKey string
+
+const testSaltKey contextKey = "test-salt"
+
 func Compile(expression string) (*bytecode.Program, error) {
 	c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
 
@@ -23,7 +27,7 @@ func Run(p *bytecode.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
 
 	type Salt struct{}
 
-	out, err := instance.Run(context.WithValue(context.Background(), "test-salt", &Salt{}), env)
+	out, err := instance.Run(context.WithValue(context.Background(), testSaltKey, &Salt{}), env)
 
 	if err != nil {
 		return nil, err

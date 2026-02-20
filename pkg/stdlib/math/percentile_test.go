@@ -72,7 +72,7 @@ func TestPercentile(t *testing.T) {
 		So(runtime.Unwrap(runtime.IsNaN(out.(runtime.Float))), ShouldBeTrue)
 
 		// Invalid percentile (outside range)
-		out, err = math.Percentile(
+		_, err = math.Percentile(
 			context.Background(),
 			runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)),
 			runtime.NewInt(0),

@@ -74,11 +74,12 @@ func (c *ExprCompiler) CompileIncDec(token antlr.Token, target bytecode.Operand)
 
 	operator := token.GetText()
 
-	if operator == "++" {
+	switch operator {
+	case "++":
 		c.ctx.Emitter.EmitA(bytecode.OpIncr, target)
-	} else if operator == "--" {
+	case "--":
 		c.ctx.Emitter.EmitA(bytecode.OpDecr, target)
-	} else {
+	default:
 		c.ctx.Errors.InvalidToken(token)
 
 		return bytecode.NoopOperand
