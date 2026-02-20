@@ -370,7 +370,8 @@ func TestHelpers(t *testing.T) {
 				}
 
 				for _, pairs := range inputs {
-					actual := runtime.ToList(context.Background(), pairs[0])
+					actual, err := runtime.ToList(context.Background(), pairs[0])
+					So(err, ShouldBeNil)
 					expected := pairs[1]
 
 					So(actual.Compare(expected), ShouldEqual, 0)

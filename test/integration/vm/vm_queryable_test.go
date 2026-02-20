@@ -3,7 +3,10 @@ package vm_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
+
+	"github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -151,7 +154,8 @@ func (m *mockDBQueryable) Query(ctx context.Context, q runtime.Query) (runtime.V
 		return runtime.NewArray(0), nil
 	}
 
-	params := runtime.ToMap(ctx, q.Params)
+	params, err := runtime.ToMap(ctx, q.Params)
+	convey.So(err, convey.ShouldBeNil)
 	category, _ := params.Get(ctx, runtime.NewString("c"))
 	if category == runtime.NewString("laptops") {
 		return runtime.NewArrayWith(
@@ -219,38 +223,38 @@ func TestQueryable(t *testing.T) {
 		"val": runtime.NewInt(1),
 	}))
 
-	var hasCSS bool
-	var hasSQLParams bool
-	var hasText bool
+	t.Run("Should receive correct queries", func(t *testing.T) {
+		convey.Convey("Should be ok", t, func() {
+			var hasCSS bool
+			var hasSQLParams bool
+			var hasText bool
 
-	for _, q := range queryable.queries {
-		switch q.Kind {
-		case runtime.NewString("css"):
-			if q.Payload == runtime.NewString(".items") {
-				hasCSS = true
-			}
-		case runtime.NewString("text"):
-			if q.Payload == runtime.EmptyString {
-				hasText = true
-			}
-		case runtime.NewString("sql"):
-			params := runtime.ToMap(context.Background(), q.Params)
-			value, err := params.Get(context.Background(), runtime.NewString("c"))
-			if err == nil && value == runtime.NewString("laptops") {
-				hasSQLParams = true
-			}
-		}
-	}
+			for _, q := range queryable.queries {
+				switch q.Kind {
+				case runtime.NewString("css"):
+					if q.Payload == runtime.NewString(".items") {
+						hasCSS = true
+					}
+				case runtime.NewString("text"):
+					if q.Payload == runtime.EmptyString {
+						hasText = true
+					}
+				case runtime.NewString("sql"):
+					params, err := runtime.ToMap(context.Background(), q.Params)
+					convey.So(err, convey.ShouldBeNil)
 
-	if !hasCSS {
-		t.Fatalf("expected query kind %q with payload %q", "css", ".items")
-	}
-	if !hasText {
-		t.Fatalf("expected query kind %q with empty payload", "text")
-	}
-	if !hasSQLParams {
-		t.Fatalf("expected query params to contain %q=%q", "c", "laptops")
-	}
+					value, err := params.Get(context.Background(), runtime.NewString("c"))
+					if err == nil && value == runtime.NewString("laptops") {
+						hasSQLParams = true
+					}
+				}
+			}
+
+			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and payload %q", "css", ".items"), hasCSS, convey.ShouldBeTrue)
+			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and empty payload", "text"), hasText, convey.ShouldBeTrue)
+			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and params containing %q=%q", "sql", "c", "laptops"), hasSQLParams, convey.ShouldBeTrue)
+		})
+	})
 }
 
 func TestComplexQueries(t *testing.T) {

@@ -14,5 +14,5 @@ import (
 // @param {Any} input - Input value of arbitrary type.
 // @return {Any[]} - An array value.
 func ToArray(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
-	return runtime.ToList(ctx, arg), nil
+	return runtime.ToList(ctx, arg)
 }

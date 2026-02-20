@@ -226,6 +226,7 @@ func MustMarshalAny(input any) json.RawMessage {
 	return out
 }
 
+// IsScalar checks if the input Value is of a scalar type (Int, Float, String, or Boolean).
 func IsScalar(input Value) Boolean {
 	switch input.(type) {
 	case Int, Float, String, Boolean:
@@ -235,6 +236,7 @@ func IsScalar(input Value) Boolean {
 	}
 }
 
+// IsNumber checks if the input Value is of type Int or Float, indicating that it is a numeric type.
 func IsNumber(input Value) Boolean {
 	switch input.(type) {
 	case Int, Float:
@@ -244,7 +246,12 @@ func IsNumber(input Value) Boolean {
 	}
 }
 
-func ToList(ctx context.Context, input Value) List {
+// ToList attempts to convert an arbitrary Value into a List type.
+// It supports basic types like Boolean, Int, Float, String, DateTime by wrapping them into a single-element List.
+// For List types, it returns a copy of the List.
+// For Iterable types, it iterates through the elements and appends them to a new List.
+// For unsupported types, it returns an empty List.
+func ToList(ctx context.Context, input Value) (List, error) {
 	switch value := input.(type) {
 	case Boolean,
 		Int,
@@ -252,14 +259,14 @@ func ToList(ctx context.Context, input Value) List {
 		String,
 		DateTime:
 
-		return NewArrayWith(value)
+		return NewArrayWith(value), nil
 	case List:
-		return value.Copy().(List)
+		return value.Copy().(List), nil
 	case Iterable:
 		iterator, err := value.Iterate(ctx)
 
 		if err != nil {
-			return NewArray(0)
+			return nil, err
 		}
 
 		arr := NewArray(10)
@@ -272,22 +279,26 @@ func ToList(ctx context.Context, input Value) List {
 			}
 
 			if err != nil {
-				return arr
+				return nil, err
 			}
 
 			_ = arr.Append(ctx, val)
 		}
 
-		return arr
+		return arr, nil
 	default:
-		return EmptyArray()
+		return EmptyArray(), nil
 	}
 }
 
-func ToMap(ctx context.Context, input Value) Map {
+// ToMap attempts to convert an arbitrary Value into a Map type.
+// It supports Map, Array, and Iterable types, converting them into a Map format.
+// For unsupported types, it returns an empty Map.
+// The function uses the string representation of keys for Arrays and Iterables, with array indices as keys for Arrays.
+func ToMap(ctx context.Context, input Value) (Map, error) {
 	switch value := input.(type) {
 	case Map:
-		return value
+		return value, nil
 	case *Array:
 		obj := NewObject()
 
@@ -295,12 +306,12 @@ func ToMap(ctx context.Context, input Value) Map {
 			_ = obj.Set(ctx, ToString(Int(i)), v)
 		}
 
-		return obj
+		return obj, nil
 	case Iterable:
 		iterator, err := value.Iterate(ctx)
 
 		if err != nil {
-			return NewObject()
+			return nil, err
 		}
 
 		obj := NewObject()
@@ -313,15 +324,15 @@ func ToMap(ctx context.Context, input Value) Map {
 			}
 
 			if err != nil {
-				return obj
+				return nil, err
 			}
 
 			_ = obj.Set(ctx, ToString(key), val)
 		}
 
-		return obj
+		return obj, nil
 	default:
-		return NewObject()
+		return NewObject(), nil
 	}
 }
 
@@ -568,6 +579,9 @@ func ToNumberOnly(ctx context.Context, input Value) Value {
 	}
 }
 
+// ToIntDefault attempts to convert an arbitrary Value into an Int.
+// If the conversion fails or if the resulting Int is not greater than zero, it returns the provided defaultValue.
+// This function is useful for safely converting values to Int while providing a fallback option in case of errors or non-positive results.
 func ToIntDefault(ctx context.Context, input Value, defaultValue Int) (Int, error) {
 	result, err := ToInt(ctx, input)
 
@@ -582,6 +596,10 @@ func ToIntDefault(ctx context.Context, input Value, defaultValue Int) (Int, erro
 	return defaultValue, nil
 }
 
+// ToNumberOrString attempts to convert an arbitrary Value into either a Number (Int or Float) or a String.
+// If the input is already an Int, Float, or String, it returns it directly.
+// For other types, it converts the input to its string representation and returns it as a String.
+// This allows for flexible conversion of various Value types into a format that can be easily used as either a number or a string.
 func ToNumberOrString(input Value) Value {
 	switch value := input.(type) {
 	case Int, Float, String:
@@ -591,6 +609,10 @@ func ToNumberOrString(input Value) Value {
 	}
 }
 
+// ToBinary attempts to convert an arbitrary Value into a Binary type.
+// If the input is already a Binary, it returns it directly.
+// For other types, it converts the input to its string representation and then to a byte slice to create a new Binary.
+// This allows for flexible conversion of various Value types into a Binary format, using their string representation as the basis for the binary data.
 func ToBinary(input Value) Binary {
 	bin, ok := input.(Binary)
 
@@ -601,6 +623,9 @@ func ToBinary(input Value) Binary {
 	return NewBinary([]byte(input.String()))
 }
 
+// Hash computes a hash value for the given typename and content using the FNV-1a hashing algorithm.
+// It concatenates the typename, a colon, and the content bytes to generate a unique hash value.
+// This function can be used to create consistent hash values for different types of content based on their type and content.
 func Hash(typename string, content []byte) uint64 {
 	h := fnv.New64a()
 
@@ -611,6 +636,9 @@ func Hash(typename string, content []byte) uint64 {
 	return h.Sum64()
 }
 
+// MapHash computes a hash value for a map of string keys to Value values.
+// It uses the FNV-1a hashing algorithm to generate a consistent hash based on the keys and their corresponding value hashes.
+// The keys are sorted to ensure that the order of key-value pairs does not affect the resulting hash.
 func MapHash(input map[string]Value) uint64 {
 	h := fnv.New64a()
 
@@ -648,6 +676,7 @@ func MapHash(input map[string]Value) uint64 {
 	return h.Sum64()
 }
 
+// UnwrapStrings is a helper function that takes a slice of String values and returns a slice of their underlying string representations.
 func UnwrapStrings(values []String) []string {
 	out := make([]string, len(values))
 
@@ -658,6 +687,8 @@ func UnwrapStrings(values []String) []string {
 	return out
 }
 
+// CompareStrings compares two String values and returns an Int indicating their lexicographical order.
+// It returns a negative Int if a < b, zero if a == b, and a positive Int if a > b.
 func CompareStrings(a, b String) Int {
 	return Int(strings.Compare(a.String(), b.String()))
 }
@@ -706,6 +737,9 @@ func ToSlice[T any](ctx context.Context, input Value, mapper Mapper[T]) ([]T, er
 	return result, nil
 }
 
+// ToStringSlice is a helper function that converts an Iterable input into a slice of strings.
+// It uses the ToSlice function with a mapper that converts each Value to a String.
+// It returns an error if the input does not implement Iterable or if any mapping operation fails.
 func ToStringSlice(ctx context.Context, input Collection) ([]String, error) {
 	return ToSlice(ctx, input, func(_ context.Context, val Value, _ Value) (String, error) {
 		return ToString(val), nil
