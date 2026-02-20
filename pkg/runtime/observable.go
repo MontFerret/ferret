@@ -17,8 +17,15 @@ type (
 
 	// Message represents an event message that an Observable can emit.
 	Message interface {
+		// Value returns a value of the message.
 		Value() Value
+		// Err returns an error of the message.
 		Err() error
+	}
+
+	defaultMessage struct {
+		value Value
+		err   error
 	}
 
 	// Stream represents an event stream that produces target event objects.
@@ -33,3 +40,21 @@ type (
 		Subscribe(ctx context.Context, subscription Subscription) (Stream, error)
 	}
 )
+
+// NewErrorMessage creates a new Message with an error.
+func NewErrorMessage(err error) Message {
+	return &defaultMessage{err: err, value: None}
+}
+
+// NewValueMessage creates a new Message with a value.
+func NewValueMessage(val Value) Message {
+	return &defaultMessage{err: nil, value: val}
+}
+
+func (m *defaultMessage) Value() Value {
+	return m.value
+}
+
+func (m *defaultMessage) Err() error {
+	return m.err
+}
