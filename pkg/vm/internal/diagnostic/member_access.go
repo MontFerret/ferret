@@ -1,6 +1,10 @@
-package runtime
+package diagnostic
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+)
 
 type MemberAccessKind string
 
@@ -10,14 +14,14 @@ const (
 )
 
 type MemberAccessError struct {
-	Target Type
+	Target runtime.Type
 	Access MemberAccessKind
 	Member string
 }
 
-func MemberAccessErrorOf(target Value, access MemberAccessKind, member Value) error {
+func MemberAccessErrorOf(target runtime.Value, access MemberAccessKind, member runtime.Value) error {
 	return &MemberAccessError{
-		Target: TypeOf(target),
+		Target: runtime.TypeOf(target),
 		Access: access,
 		Member: memberAccessName(member),
 	}
@@ -51,7 +55,7 @@ func (e *MemberAccessError) Error() string {
 }
 
 func (e *MemberAccessError) Unwrap() error {
-	return ErrInvalidType
+	return runtime.ErrInvalidType
 }
 
 func (e *MemberAccessError) Label() string {
@@ -76,7 +80,7 @@ func (e *MemberAccessError) Hint() string {
 		return ""
 	}
 
-	if e.Target == TypeNone {
+	if e.Target == runtime.TypeNone {
 		return "Use optional chaining (?.) or check for None before accessing a member"
 	}
 
@@ -90,13 +94,13 @@ func (e *MemberAccessError) Hint() string {
 	}
 }
 
-func memberAccessName(member Value) string {
-	if member == nil || member == None {
+func memberAccessName(member runtime.Value) string {
+	if member == nil || member == runtime.None {
 		return ""
 	}
 
 	switch v := member.(type) {
-	case String:
+	case runtime.String:
 		return string(v)
 	default:
 		return v.String()

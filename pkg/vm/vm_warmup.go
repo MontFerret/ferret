@@ -4,6 +4,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostic"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
@@ -16,7 +17,7 @@ func (vm *VM) warmup(env *Environment) error {
 		return nil
 	}
 
-	errors := &warmupErrorSet{}
+	errors := &diagnostic.WarmupErrorSet{}
 	constants := vm.program.Constants
 	functions := env.Functions
 	reg := map[bytecode.Operand]runtime.Value{}
@@ -183,7 +184,7 @@ func resolveFnAndCache[T runtime.FunctionConstraint](
 	fallback runtime.FunctionCollection[runtime.Function],
 	assign func(*mem.CachedFunction, T),
 	funcs map[int]*mem.CachedFunction,
-	errList *warmupErrorSet,
+	errList *diagnostic.WarmupErrorSet,
 ) {
 	fnName, err := resolveFnName(reg, dst)
 
