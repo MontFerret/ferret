@@ -11,15 +11,21 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-type bindParams struct {
-	Name     string   `ferret:"name"`
-	Age      int      `ferret:"age"`
-	Count    int64    `json:"count"`
-	Alias    string   `ferret:"alt"`
-	City     string   `ferret:"city"`
-	Tags     []string `ferret:"tags"`
-	Untagged string
-}
+type (
+	someOthers struct {
+		Other string `json:"other"`
+	}
+	bindParams struct {
+		Name     string   `ferret:"name"`
+		Age      int      `ferret:"age"`
+		Count    int64    `json:"count"`
+		Alias    string   `ferret:"alt"`
+		City     string   `ferret:"city"`
+		Tags     []string `ferret:"tags"`
+		Untagged string
+		Pointer  *someOthers `ferret:"pointer"`
+	}
+)
 
 func TestDecode(t *testing.T) {
 	Convey("Should bind values into a struct", t, func() {
@@ -35,6 +41,9 @@ func TestDecode(t *testing.T) {
 			runtime.NewString("b"),
 		)), ShouldBeNil)
 		So(obj.Set(context.Background(), runtime.NewString("untagged"), runtime.NewString("ignored")), ShouldBeNil)
+		So(obj.Set(context.Background(), runtime.NewString("pointer"), runtime.NewObjectWith(map[string]runtime.Value{
+			"other": runtime.NewString("value"),
+		})), ShouldBeNil)
 
 		var out bindParams
 		err := sdk.Decode(obj, &out)
@@ -47,6 +56,9 @@ func TestDecode(t *testing.T) {
 			Alias: "secondary",
 			City:  "Paris",
 			Tags:  []string{"a", "b"},
+			Pointer: &someOthers{
+				Other: "value",
+			},
 		})
 	})
 

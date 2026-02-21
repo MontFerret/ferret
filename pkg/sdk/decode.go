@@ -15,7 +15,8 @@ var timeType = reflect.TypeOf(time.Time{})
 
 // Decode binds a runtime Value into the provided target.
 // Target must be a non-nil pointer.
-func Decode[T any](src runtime.Value, target T) error {
+// It uses tags (ferret or json) for struct fields and supports unwrapping values that implement the Unwrappable interface.
+func Decode(src runtime.Value, target any) error {
 	if src == nil {
 		src = runtime.None
 	}
