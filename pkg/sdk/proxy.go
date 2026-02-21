@@ -12,12 +12,27 @@ import (
 )
 
 type Proxy[T any] struct {
-	target any
+	target   any
+	typeName runtime.Type
 }
 
+// NewProxy creates a new Proxy for the given target.
+// The target can be of any type and can partially implement the runtime interfaces.
+// The Proxy will attempt to delegate method calls to the target if it implements the corresponding interfaces,
+// otherwise it will return an error indicating that the target does not support the required interface.
 func NewProxy[T any](target T) *Proxy[T] {
 	return &Proxy[T]{
 		target: target,
+	}
+}
+
+// NewProxyWithType creates a new Proxy for the given target and type.
+// This is useful when the target does not implement the runtime.Typed interface, or when you want to override the type information for the target.
+// The provided type will be used for type assertions and method dispatching, instead of the type of the target.
+func NewProxyWithType[T any](typeName runtime.Type, target T) *Proxy[T] {
+	return &Proxy[T]{
+		target:   target,
+		typeName: typeName,
 	}
 }
 
@@ -37,6 +52,10 @@ func (p *Proxy[T]) Target() T {
 }
 
 func (p *Proxy[T]) Type() runtime.Type {
+	if p.typeName != "" {
+		return p.typeName
+	}
+
 	typed, ok := p.target.(runtime.Typed)
 
 	if ok {
@@ -124,6 +143,26 @@ func (p *Proxy[T]) Length(ctx context.Context) (runtime.Int, error) {
 	}
 
 	return -1, ProxyError(p.target, runtime.TypeMeasurable)
+}
+
+func (p *Proxy[T]) Set(ctx context.Context, key, value runtime.Value) error {
+	keyWritable, ok := p.target.(runtime.KeyWritable)
+
+	if ok {
+		return keyWritable.Set(ctx, key, value)
+	}
+
+	return ProxyError(p.target, runtime.TypeKeyWritable)
+}
+
+func (p *Proxy[T]) Get(ctx context.Context, key runtime.Value) (runtime.Value, error) {
+	keyReadable, ok := p.target.(runtime.KeyReadable)
+
+	if ok {
+		return keyReadable.Get(ctx, key)
+	}
+
+	return runtime.None, ProxyError(p.target, runtime.TypeKeyReadable)
 }
 
 func (p *Proxy[T]) Iterate(ctx context.Context) (runtime.Iterator, error) {
