@@ -61,13 +61,13 @@ func SortList(ctx context.Context, values List, ascending Boolean) error {
 	}
 
 	return stableSort(ctx, func(ctx context.Context, a, b Int) (Boolean, error) {
-		aVal, err := values.Get(ctx, a)
+		aVal, err := values.At(ctx, a)
 
 		if err != nil {
 			return false, err
 		}
 
-		bVal, err := values.Get(ctx, b)
+		bVal, err := values.At(ctx, b)
 
 		if err != nil {
 			return false, err
@@ -88,13 +88,13 @@ func SortListWith(ctx context.Context, values List, comparator Comparator) error
 	}
 
 	return stableSort(ctx, func(ctx context.Context, a, b Int) (Boolean, error) {
-		aVal, err := values.Get(ctx, a)
+		aVal, err := values.At(ctx, a)
 
 		if err != nil {
 			return false, err
 		}
 
-		bVal, err := values.Get(ctx, b)
+		bVal, err := values.At(ctx, b)
 
 		if err != nil {
 			return false, err

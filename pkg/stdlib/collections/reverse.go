@@ -31,7 +31,7 @@ func Reverse(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 		result := runtime.NewArray(int(size))
 
 		for i := size - 1; i >= 0; i-- {
-			item, err := col.Get(ctx, i)
+			item, err := col.At(ctx, i)
 
 			if err != nil {
 				return runtime.None, err

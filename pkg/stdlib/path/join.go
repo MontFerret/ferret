@@ -30,7 +30,7 @@ func Join(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	elems := make([]string, size)
 
 	for idx := runtime.ZeroInt; idx < size; idx++ {
-		arrElem, _ := arr.Get(ctx, idx)
+		arrElem, _ := arr.At(ctx, idx)
 		err := runtime.ValidateType(arrElem, runtime.TypeString)
 
 		if err != nil {

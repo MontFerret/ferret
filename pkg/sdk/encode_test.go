@@ -1,10 +1,12 @@
-package runtime_test
+package sdk_test
 
 import (
 	"context"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/v2/pkg/sdk"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -37,7 +39,7 @@ func TestEncode(t *testing.T) {
 			private: "secret",
 		}
 
-		out := runtime.Encode(input)
+		out := sdk.Encode(input)
 
 		expected := runtime.NewObjectWith(
 			map[string]runtime.Value{
@@ -58,7 +60,7 @@ func TestEncode(t *testing.T) {
 			Count: 2,
 		}
 
-		out := runtime.Encode(input)
+		out := sdk.Encode(input)
 
 		expected := runtime.NewObjectWith(
 			map[string]runtime.Value{
@@ -161,7 +163,7 @@ func TestEncodeByKey(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			Convey(tc.Name, t, func() {
-				actual, err := runtime.EncodeField(context.Background(), tc.Input, runtime.String(tc.Field))
+				actual, err := sdk.EncodeField(context.Background(), tc.Input, runtime.String(tc.Field))
 
 				So(err, ShouldBeNil)
 				So(actual, ShouldResemble, tc.Expected)
@@ -176,7 +178,7 @@ func TestEncodeByKey(t *testing.T) {
 				privateStrProp: "hello world",
 			}
 
-			res, err := runtime.EncodeField(context.TODO(), sv, runtime.String("privateStrProp"))
+			res, err := sdk.EncodeField(context.TODO(), sv, runtime.String("privateStrProp"))
 
 			So(res, ShouldEqual, runtime.None)
 			So(err, ShouldBeNil)
@@ -186,7 +188,7 @@ func TestEncodeByKey(t *testing.T) {
 			sv := SomeValue{
 				privateStrProp: "hello world",
 			}
-			actual, err := runtime.EncodeField(context.TODO(), sv, runtime.String("UntaggedProp"))
+			actual, err := sdk.EncodeField(context.TODO(), sv, runtime.String("UntaggedProp"))
 
 			So(err, ShouldBeNil)
 			So(actual, ShouldEqual, runtime.None)

@@ -150,7 +150,7 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 			break
 		}
 
-		kindVal, err := value.Get(ctx, runtime.NewInt(0))
+		kindVal, err := value.At(ctx, runtime.NewInt(0))
 		if err != nil {
 			if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
 				return err
@@ -159,7 +159,7 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 			break
 		}
 
-		payloadVal, err := value.Get(ctx, runtime.NewInt(1))
+		payloadVal, err := value.At(ctx, runtime.NewInt(1))
 		if err != nil {
 			if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
 				return err
@@ -170,7 +170,7 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 
 		var paramsVal runtime.Value = runtime.None
 		if length > 2 {
-			paramsVal, err = value.Get(ctx, runtime.NewInt(2))
+			paramsVal, err = value.At(ctx, runtime.NewInt(2))
 			if err != nil {
 				if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
 					return err
@@ -467,7 +467,7 @@ func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Va
 		return nil, err
 	}
 
-	return indexed.Get(ctx, idx)
+	return indexed.At(ctx, idx)
 }
 
 func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {

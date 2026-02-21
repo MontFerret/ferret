@@ -76,6 +76,6 @@ func Median(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 
 		return mean(ctx, sliced)
 	default:
-		return sorted.Get(ctx, size/2)
+		return sorted.At(ctx, size/2)
 	}
 }

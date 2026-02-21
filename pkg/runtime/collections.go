@@ -6,8 +6,8 @@ type (
 
 	// IndexReadable is an interface for accessing elements by their index in a collection-like structure.
 	IndexReadable interface {
-		// Get retrieves the value at the given index or returns an error if the index is invalid.
-		Get(ctx context.Context, idx Int) (Value, error)
+		// At retrieves the value at the given index or returns an error if the index is invalid.
+		At(ctx context.Context, idx Int) (Value, error)
 	}
 
 	// KeyReadable is an interface for accessing elements by their key in a collection-like structure.
@@ -18,8 +18,8 @@ type (
 
 	// IndexWritable is an interface for modifying elements by their index in a collection-like structure.
 	IndexWritable interface {
-		// Set method updates the value at the given index or returns an error if the index is invalid.
-		Set(ctx context.Context, idx Int, value Value) error
+		// SetAt method updates the value at the given index or returns an error if the index is invalid.
+		SetAt(ctx context.Context, idx Int, value Value) error
 	}
 
 	// KeyWritable is an interface for modifying elements by their key in a collection-like structure.

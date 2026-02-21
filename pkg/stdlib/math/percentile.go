@@ -81,18 +81,18 @@ func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 	switch {
 	case index == even:
 		i := runtime.Int(index)
-		return sorted.Get(ctx, i-1)
+		return sorted.At(ctx, i-1)
 	case index > 1:
 		// Convert float to int via truncation
 		i := runtime.Int(index)
 		// Find the average of the index and following values
-		aVal, err := sorted.Get(ctx, i-1)
+		aVal, err := sorted.At(ctx, i-1)
 
 		if err != nil {
 			return runtime.None, err
 		}
 
-		bVal, err := sorted.Get(ctx, i)
+		bVal, err := sorted.At(ctx, i)
 
 		if err != nil {
 			return runtime.None, err

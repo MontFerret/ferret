@@ -74,7 +74,7 @@ func validateArrayOf(ctx context.Context, typ runtime.Type, arr *runtime.Array) 
 	}
 
 	for idx := runtime.ZeroInt; idx < size; idx++ {
-		item, err := arr.Get(ctx, idx)
+		item, err := arr.At(ctx, idx)
 
 		if err != nil {
 			return err

@@ -42,8 +42,8 @@ func (ds *DataSet) Append(ctx context.Context, item runtime.Value) error {
 	return nil
 }
 
-func (ds *DataSet) Get(ctx context.Context, idx runtime.Int) (runtime.Value, error) {
-	return ds.values.Get(ctx, idx)
+func (ds *DataSet) At(ctx context.Context, idx runtime.Int) (runtime.Value, error) {
+	return ds.values.At(ctx, idx)
 }
 
 func (ds *DataSet) Iterate(ctx context.Context) (runtime.Iterator, error) {
@@ -82,8 +82,8 @@ func (ds *DataSet) Clear(ctx context.Context) error {
 	return ds.values.Clear(ctx)
 }
 
-func (ds *DataSet) Set(ctx context.Context, idx runtime.Int, value runtime.Value) error {
-	return ds.values.Set(ctx, idx, value)
+func (ds *DataSet) SetAt(ctx context.Context, idx runtime.Int, value runtime.Value) error {
+	return ds.values.SetAt(ctx, idx, value)
 }
 
 func (ds *DataSet) Remove(ctx context.Context, value runtime.Value) error {

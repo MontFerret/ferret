@@ -74,7 +74,7 @@ func Zip(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 
 		keyExists[k] = true
 
-		val, _ = vals.Get(c, idx)
+		val, _ = vals.At(c, idx)
 
 		cloneable, ok := val.(runtime.Cloneable)
 

@@ -63,7 +63,7 @@ func TestKeys(t *testing.T) {
 
 		expectedKeys := []string{"a", "b", "c"}
 		for idx, key := range expectedKeys {
-			actualKey, _ := keysArray.Get(context.Background(), runtime.NewInt(idx))
+			actualKey, _ := keysArray.At(context.Background(), runtime.NewInt(idx))
 			So(actualKey.String(), ShouldEqual, key)
 		}
 	})
@@ -128,7 +128,7 @@ func TestKeys(t *testing.T) {
 		// Check sorted order
 		expectedKeys := []string{"key with spaces", "key-with-dashes", "key.with.dots", "key_with_underscores"}
 		for idx, expectedKey := range expectedKeys {
-			actualKey, _ := keysArray.Get(context.Background(), runtime.NewInt(idx))
+			actualKey, _ := keysArray.At(context.Background(), runtime.NewInt(idx))
 			So(actualKey.String(), ShouldEqual, expectedKey)
 		}
 	})
