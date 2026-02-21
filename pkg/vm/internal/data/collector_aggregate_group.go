@@ -366,7 +366,7 @@ func (c *GroupedAggregateCollector) aggregateKey(ctx context.Context, key runtim
 		return nil, 0, false, nil
 	}
 
-	marker, err := list.Get(ctx, 0)
+	marker, err := list.At(ctx, 0)
 	if err != nil {
 		return nil, 0, false, err
 	}
@@ -375,12 +375,12 @@ func (c *GroupedAggregateCollector) aggregateKey(ctx context.Context, key runtim
 		return nil, 0, false, nil
 	}
 
-	groupKey, err := list.Get(ctx, 1)
+	groupKey, err := list.At(ctx, 1)
 	if err != nil {
 		return nil, 0, false, err
 	}
 
-	idxVal, err := list.Get(ctx, 2)
+	idxVal, err := list.At(ctx, 2)
 	if err != nil {
 		return nil, 0, false, err
 	}

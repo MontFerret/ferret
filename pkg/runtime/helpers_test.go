@@ -395,8 +395,8 @@ func TestHelpers(t *testing.T) {
 			//	So(arr.Length() == input.Length(), ShouldBeTrue)
 			//
 			//	for idx := range vals {
-			//		expected := input.Get(values.runtime.NewInt(idx))
-			//		actual := arr.Get(values.runtime.NewInt(idx))
+			//		expected := input.At(values.runtime.NewInt(idx))
+			//		actual := arr.At(values.runtime.NewInt(idx))
 			//
 			//		// same ref
 			//		So(actual == expected, ShouldBeTrue)
@@ -414,7 +414,7 @@ func TestHelpers(t *testing.T) {
 			//	arr := values.ToList(context.Background(), input).Sort()
 			//
 			//	So(arr.String(), ShouldEqual, "[1,\"bar\",{}]")
-			//	So(arr.Get(values.runtime.NewInt(2)) == input.MustGet("qaz"), ShouldBeTrue)
+			//	So(arr.At(values.runtime.NewInt(2)) == input.MustGet("qaz"), ShouldBeTrue)
 			//})
 		})
 

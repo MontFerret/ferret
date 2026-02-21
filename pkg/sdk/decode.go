@@ -1,4 +1,4 @@
-package runtime
+package sdk
 
 import (
 	"context"
@@ -7,44 +7,46 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 var timeType = reflect.TypeOf(time.Time{})
 
 // Decode binds a runtime Value into the provided target.
 // Target must be a non-nil pointer.
-func Decode[T any](src Value, target T) error {
+func Decode[T any](src runtime.Value, target T) error {
 	if src == nil {
-		src = None
+		src = runtime.None
 	}
 
 	targetValue := reflect.ValueOf(target)
 	if !targetValue.IsValid() {
-		return Error(ErrInvalidArgumentType, "target is invalid")
+		return runtime.Error(runtime.ErrInvalidArgumentType, "target is invalid")
 	}
 
 	if targetValue.Kind() != reflect.Pointer {
-		return Error(ErrInvalidArgumentType, "target must be a pointer")
+		return runtime.Error(runtime.ErrInvalidArgumentType, "target must be a pointer")
 	}
 
 	if targetValue.IsNil() {
-		return Error(ErrInvalidArgumentType, "target must be a non-nil pointer")
+		return runtime.Error(runtime.ErrInvalidArgumentType, "target must be a non-nil pointer")
 	}
 
 	return bindValue(src, targetValue.Elem())
 }
 
-func bindValue(src Value, dst reflect.Value) error {
+func bindValue(src runtime.Value, dst reflect.Value) error {
 	if !dst.CanSet() {
-		return Error(ErrInvalidArgumentType, "target is not settable")
+		return runtime.Error(runtime.ErrInvalidArgumentType, "target is not settable")
 	}
 
 	if src == nil {
-		src = None
+		src = runtime.None
 	}
 
 	if dst.Kind() == reflect.Pointer {
-		if src == None {
+		if src == runtime.None {
 			dst.Set(reflect.Zero(dst.Type()))
 			return nil
 		}
@@ -61,7 +63,7 @@ func bindValue(src Value, dst reflect.Value) error {
 		return bindValue(src, dst.Elem())
 	}
 
-	if src == None {
+	if src == runtime.None {
 		dst.Set(reflect.Zero(dst.Type()))
 		return nil
 	}
@@ -74,14 +76,14 @@ func bindValue(src Value, dst reflect.Value) error {
 
 	switch dst.Kind() {
 	case reflect.Bool:
-		val, ok := src.(Boolean)
+		val, ok := src.(runtime.Boolean)
 		if !ok {
 			return bindTypeError(src, dst.Type())
 		}
 		dst.SetBool(bool(val))
 		return nil
 	case reflect.String:
-		val, ok := src.(String)
+		val, ok := src.(runtime.String)
 		if !ok {
 			return bindTypeError(src, dst.Type())
 		}
@@ -89,28 +91,28 @@ func bindValue(src Value, dst reflect.Value) error {
 		return nil
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		switch v := src.(type) {
-		case Int:
+		case runtime.Int:
 			return setInt(dst, int64(v))
-		case Float:
+		case runtime.Float:
 			return bindTypeError(src, dst.Type())
 		default:
 			return bindTypeError(src, dst.Type())
 		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		switch v := src.(type) {
-		case Int:
+		case runtime.Int:
 			return setUint(dst, int64(v))
-		case Float:
+		case runtime.Float:
 			return bindTypeError(src, dst.Type())
 		default:
 			return bindTypeError(src, dst.Type())
 		}
 	case reflect.Float32, reflect.Float64:
 		switch v := src.(type) {
-		case Float:
+		case runtime.Float:
 			dst.SetFloat(float64(v))
 			return nil
-		case Int:
+		case runtime.Int:
 			dst.SetFloat(float64(v))
 			return nil
 		default:
@@ -123,7 +125,7 @@ func bindValue(src Value, dst reflect.Value) error {
 	case reflect.Map:
 		return bindMap(src, dst)
 	case reflect.Struct:
-		if dt, ok := src.(DateTime); ok && dst.Type() == timeType {
+		if dt, ok := src.(runtime.DateTime); ok && dst.Type() == timeType {
 			dst.Set(reflect.ValueOf(dt.Time))
 			return nil
 		}
@@ -136,14 +138,14 @@ func bindValue(src Value, dst reflect.Value) error {
 	}
 }
 
-func bindInterface(src Value, dst reflect.Value) error {
+func bindInterface(src runtime.Value, dst reflect.Value) error {
 	srcVal := reflect.ValueOf(src)
 	if srcVal.IsValid() && srcVal.Type().AssignableTo(dst.Type()) {
 		dst.Set(srcVal)
 		return nil
 	}
 
-	unwrappable, ok := src.(Unwrappable)
+	unwrappable, ok := src.(runtime.Unwrappable)
 
 	if !ok {
 		return nil
@@ -164,8 +166,8 @@ func bindInterface(src Value, dst reflect.Value) error {
 	return bindTypeError(src, dst.Type())
 }
 
-func bindFallback(src Value, dst reflect.Value) error {
-	unwrappable, ok := src.(Unwrappable)
+func bindFallback(src runtime.Value, dst reflect.Value) error {
+	unwrappable, ok := src.(runtime.Unwrappable)
 
 	if !ok {
 		return nil
@@ -191,8 +193,8 @@ func bindFallback(src Value, dst reflect.Value) error {
 	return bindTypeError(src, dst.Type())
 }
 
-func bindSlice(src Value, dst reflect.Value) error {
-	iterable, ok := src.(Iterable)
+func bindSlice(src runtime.Value, dst reflect.Value) error {
+	iterable, ok := src.(runtime.Iterable)
 	if !ok {
 		return bindTypeError(src, dst.Type())
 	}
@@ -209,7 +211,7 @@ func bindSlice(src Value, dst reflect.Value) error {
 
 	for {
 		val, _, err := iter.Next(ctx)
-		if errors.Is(err, io.EOF) || errors.Is(err, ErrTimeout) {
+		if errors.Is(err, io.EOF) || errors.Is(err, runtime.ErrTimeout) {
 			break
 		}
 		if err != nil {
@@ -229,8 +231,8 @@ func bindSlice(src Value, dst reflect.Value) error {
 	return nil
 }
 
-func bindArray(src Value, dst reflect.Value) error {
-	iterable, ok := src.(Iterable)
+func bindArray(src runtime.Value, dst reflect.Value) error {
+	iterable, ok := src.(runtime.Iterable)
 	if !ok {
 		return bindTypeError(src, dst.Type())
 	}
@@ -246,11 +248,11 @@ func bindArray(src Value, dst reflect.Value) error {
 
 	for {
 		if index >= dst.Len() {
-			return Error(ErrInvalidArgumentType, "source has more elements than target array")
+			return runtime.Error(runtime.ErrInvalidArgumentType, "source has more elements than target array")
 		}
 
 		val, _, err := iter.Next(ctx)
-		if errors.Is(err, io.EOF) || errors.Is(err, ErrTimeout) {
+		if errors.Is(err, io.EOF) || errors.Is(err, runtime.ErrTimeout) {
 			break
 		}
 		if err != nil {
@@ -269,9 +271,9 @@ func bindArray(src Value, dst reflect.Value) error {
 	return nil
 }
 
-func bindMap(src Value, dst reflect.Value) error {
+func bindMap(src runtime.Value, dst reflect.Value) error {
 	if dst.Type().Key().Kind() != reflect.String {
-		return Error(ErrInvalidArgumentType, "map key type must be string")
+		return runtime.Error(runtime.ErrInvalidArgumentType, "map key type must be string")
 	}
 
 	entries, err := collectEntries(src)
@@ -295,7 +297,7 @@ func bindMap(src Value, dst reflect.Value) error {
 	return nil
 }
 
-func bindStruct(src Value, dst reflect.Value) error {
+func bindStruct(src runtime.Value, dst reflect.Value) error {
 	entries, err := collectEntries(src)
 	if err != nil {
 		return err
@@ -316,7 +318,7 @@ func bindStruct(src Value, dst reflect.Value) error {
 			continue
 		}
 
-		name, ok := Tag(field)
+		name, ok := runtime.Tag(field)
 		if !ok {
 			continue
 		}
@@ -341,8 +343,8 @@ func bindStruct(src Value, dst reflect.Value) error {
 	return nil
 }
 
-func collectEntries(src Value) (map[string]Value, error) {
-	m, ok := src.(Map)
+func collectEntries(src runtime.Value) (map[string]runtime.Value, error) {
+	m, ok := src.(runtime.Map)
 	if !ok {
 		return nil, bindTypeError(src, reflect.TypeOf(map[string]any{}))
 	}
@@ -358,19 +360,19 @@ func collectEntries(src Value) (map[string]Value, error) {
 		return nil, err
 	}
 
-	out := make(map[string]Value)
+	out := make(map[string]runtime.Value)
 	for {
 		keyVal, _, err := iter.Next(ctx)
-		if errors.Is(err, io.EOF) || errors.Is(err, ErrTimeout) {
+		if errors.Is(err, io.EOF) || errors.Is(err, runtime.ErrTimeout) {
 			break
 		}
 		if err != nil {
 			return nil, err
 		}
 
-		key, ok := keyVal.(String)
+		key, ok := keyVal.(runtime.String)
 		if !ok {
-			return nil, Error(ErrInvalidArgumentType, "map key type must be string")
+			return nil, runtime.Error(runtime.ErrInvalidArgumentType, "map key type must be string")
 		}
 
 		val, err := m.Get(ctx, keyVal)
@@ -388,7 +390,7 @@ func setInt(dst reflect.Value, value int64) error {
 	switch dst.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		if dst.OverflowInt(value) {
-			return Error(ErrInvalidArgumentType, "integer overflow")
+			return runtime.Error(runtime.ErrInvalidArgumentType, "integer overflow")
 		}
 		dst.SetInt(value)
 		return nil
@@ -396,28 +398,28 @@ func setInt(dst reflect.Value, value int64) error {
 		dst.SetFloat(float64(value))
 		return nil
 	default:
-		return Error(ErrInvalidArgumentType, "invalid integer target type")
+		return runtime.Error(runtime.ErrInvalidArgumentType, "invalid integer target type")
 	}
 }
 
 func setUint(dst reflect.Value, value int64) error {
 	if value < 0 {
-		return Error(ErrInvalidArgumentType, "negative value for unsigned target")
+		return runtime.Error(runtime.ErrInvalidArgumentType, "negative value for unsigned target")
 	}
 
 	u := uint64(value)
 	switch dst.Kind() {
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		if dst.OverflowUint(u) {
-			return Error(ErrInvalidArgumentType, "unsigned integer overflow")
+			return runtime.Error(runtime.ErrInvalidArgumentType, "unsigned integer overflow")
 		}
 		dst.SetUint(u)
 		return nil
 	default:
-		return Error(ErrInvalidArgumentType, "invalid unsigned target type")
+		return runtime.Error(runtime.ErrInvalidArgumentType, "invalid unsigned target type")
 	}
 }
 
-func bindTypeError(src Value, target reflect.Type) error {
-	return Errorf(ErrInvalidArgumentType, "cannot bind %s to %s", TypeOf(src), target.String())
+func bindTypeError(src runtime.Value, target reflect.Type) error {
+	return runtime.Errorf(runtime.ErrInvalidArgumentType, "cannot bind %s to %s", runtime.TypeOf(src), target.String())
 }

@@ -45,5 +45,5 @@ func Nth(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, nil
 	}
 
-	return list.Get(ctx, idx)
+	return list.At(ctx, idx)
 }

@@ -180,8 +180,8 @@ func TestMergeRecursive(t *testing.T) {
 			arrLength, _ := arrResult.Length(context.Background())
 			So(arrLength, ShouldEqual, 2)
 
-			val0, _ := arrResult.Get(context.Background(), runtime.NewInt(0))
-			val1, _ := arrResult.Get(context.Background(), runtime.NewInt(1))
+			val0, _ := arrResult.At(context.Background(), runtime.NewInt(0))
+			val1, _ := arrResult.At(context.Background(), runtime.NewInt(1))
 			So(runtime.CompareValues(val0, runtime.NewInt(3)), ShouldEqual, 0)
 			So(runtime.CompareValues(val1, runtime.NewInt(4)), ShouldEqual, 0)
 		})
@@ -223,7 +223,7 @@ func TestMergeRecursive(t *testing.T) {
 
 			So(err, ShouldBeNil)
 
-			// Get the merged user object
+			// At the merged user object
 			userVal, _ := actualObj.Get(context.Background(), runtime.NewString("user-1"))
 			userObj := userVal.(*runtime.Object)
 
@@ -262,7 +262,7 @@ func TestMergeRecursive(t *testing.T) {
 			// Modify original array
 			arr.Append(context.Background(), runtime.NewInt(3))
 
-			// Get result array and check it's unchanged
+			// At result array and check it's unchanged
 			actualObj := actual.(*runtime.Object)
 			resultArrVal, _ := actualObj.Get(context.Background(), runtime.NewString("arr"))
 			resultArr := resultArrVal.(*runtime.Array)
@@ -287,7 +287,7 @@ func TestMergeRecursive(t *testing.T) {
 			// Modify original nested object
 			nested.Set(context.Background(), runtime.NewString("str"), runtime.NewInt(0))
 
-			// Get result object and check it's unchanged
+			// At result object and check it's unchanged
 			actualObj := actual.(*runtime.Object)
 			resultObjVal, _ := actualObj.Get(context.Background(), runtime.NewString("obj"))
 			resultObj := resultObjVal.(*runtime.Object)

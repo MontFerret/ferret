@@ -203,7 +203,7 @@ func TestZip(t *testing.T) {
 		resultLength, _ := resultArrVal.Length(context.Background())
 		So(resultLength, ShouldEqual, 1)
 
-		val, _ := resultArrVal.Get(context.Background(), runtime.NewInt(0))
+		val, _ := resultArrVal.At(context.Background(), runtime.NewInt(0))
 		So(runtime.CompareValues(val, runtime.NewInt(0)), ShouldEqual, 0)
 	})
 

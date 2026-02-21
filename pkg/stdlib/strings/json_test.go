@@ -166,7 +166,7 @@ func TestJSONParse(t *testing.T) {
 	//
 	//Convey("It should parse an object", t, func() {
 	//	val := runtime.NewObject()
-	//	val.Set(runtime.NewString("foo"), runtime.NewString("bar"))
+	//	val.SetAt(runtime.NewString("foo"), runtime.NewString("bar"))
 	//
 	//	b, err := val.MarshalJSON()
 	//
@@ -258,7 +258,7 @@ func TestJSONStringify(t *testing.T) {
 
 	//Convey("It should serialize object", t, func() {
 	//	obj := runtime.NewObject()
-	//	obj.Set(runtime.NewString("foo"), runtime.NewString("bar"))
+	//	obj.SetAt(runtime.NewString("foo"), runtime.NewString("bar"))
 	//
 	//	out, err := strings.JSONStringify(
 	//		context.Background(),

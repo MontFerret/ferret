@@ -183,7 +183,7 @@ func (t *Array) IndexOf(_ context.Context, item Value) (Int, error) {
 	return -1, nil
 }
 
-func (t *Array) Get(_ context.Context, idx Int) (Value, error) {
+func (t *Array) At(_ context.Context, idx Int) (Value, error) {
 	l := Int(len(t.data) - 1)
 
 	if l < 0 {
@@ -324,7 +324,7 @@ func (t *Array) Append(_ context.Context, value Value) error {
 	return nil
 }
 
-func (t *Array) Set(_ context.Context, idx Int, value Value) error {
+func (t *Array) SetAt(_ context.Context, idx Int, value Value) error {
 	last := Int(len(t.data) - 1)
 
 	if last >= idx {

@@ -153,8 +153,8 @@ func TestValues(t *testing.T) {
 			if arr, ok := val.(*runtime.Array); ok {
 				length, _ := arr.Length(context.Background())
 				if length == 2 {
-					val0, _ := arr.Get(context.Background(), runtime.NewInt(0))
-					val1, _ := arr.Get(context.Background(), runtime.NewInt(1))
+					val0, _ := arr.At(context.Background(), runtime.NewInt(0))
+					val1, _ := arr.At(context.Background(), runtime.NewInt(1))
 					if runtime.CompareValues(val0, runtime.NewInt(0)) == 0 && runtime.CompareValues(val1, runtime.NewInt(1)) == 0 {
 						hasArr1 = true
 					}
@@ -228,8 +228,8 @@ func TestValues(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		// Get the returned array value
-		returnedArr, _ := actualArray.Get(context.Background(), runtime.NewInt(0))
+		// At the returned array value
+		returnedArr, _ := actualArray.At(context.Background(), runtime.NewInt(0))
 		returnedArrayVal := returnedArr.(*runtime.Array)
 
 		// Modify the original array
@@ -239,7 +239,7 @@ func TestValues(t *testing.T) {
 		returnedLength, _ := returnedArrayVal.Length(context.Background())
 		So(returnedLength, ShouldEqual, 1)
 
-		val, _ := returnedArrayVal.Get(context.Background(), runtime.NewInt(0))
+		val, _ := returnedArrayVal.At(context.Background(), runtime.NewInt(0))
 		So(runtime.CompareValues(val, runtime.NewInt(0)), ShouldEqual, 0)
 	})
 
@@ -260,8 +260,8 @@ func TestValues(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		// Get the returned object value
-		returnedObj, _ := actualArray.Get(context.Background(), runtime.NewInt(0))
+		// At the returned object value
+		returnedObj, _ := actualArray.At(context.Background(), runtime.NewInt(0))
 		returnedObjectVal := returnedObj.(*runtime.Object)
 
 		// Modify the original nested object
@@ -352,8 +352,8 @@ func TestValues(t *testing.T) {
 		actualLength, _ := actualArray.Length(context.Background())
 		So(actualLength, ShouldEqual, 1)
 
-		// Get the deep object and verify it's independent
-		returnedDeep, _ := actualArray.Get(context.Background(), runtime.NewInt(0))
+		// At the deep object and verify it's independent
+		returnedDeep, _ := actualArray.At(context.Background(), runtime.NewInt(0))
 		returnedDeepObj := returnedDeep.(*runtime.Object)
 
 		// Modify the original deep object

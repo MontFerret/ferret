@@ -339,7 +339,7 @@ func TestArray(t *testing.T) {
 		//})
 	})
 
-	//Convey(".Get", t, func() {
+	//Convey(".At", t, func() {
 	//	Convey("Should return item by index", func() {
 	//		arr := values.NewArrayWith(
 	//			values.runtime.NewInt(1),
@@ -349,7 +349,7 @@ func TestArray(t *testing.T) {
 	//			values.runtime.NewInt(5),
 	//		)
 	//
-	//		el := arr.Get(1)
+	//		el := arr.At(1)
 	//
 	//		So(el.Compareruntime.Values(values.runtime.NewInt(2)), ShouldEqual, 0)
 	//	})
@@ -357,27 +357,27 @@ func TestArray(t *testing.T) {
 	//	Convey("Should return runtime.None when no items", func() {
 	//		arr := values.NewArrayWith()
 	//
-	//		el := arr.Get(1)
+	//		el := arr.At(1)
 	//
 	//		So(el.Compareruntime.Values(values.runtime.None), ShouldEqual, 0)
 	//	})
 	//})
 
-	Convey(".Set", t, func() {
+	Convey(".SetAt", t, func() {
 		//Convey("Should set item by index", func() {
 		//	arr := values.NewArrayWith(values.runtime.ZeroInt)
 		//
-		//	err := arr.Set(0, values.runtime.NewInt(1))
+		//	err := arr.SetAt(0, values.runtime.NewInt(1))
 		//
 		//	So(err, ShouldBeNil)
 		//	So(arr.Length(), ShouldEqual, 1)
-		//	So(arr.Get(0).CompareValues(values.NewInt(1)), ShouldEqual, 0)
+		//	So(arr.At(0).CompareValues(values.NewInt(1)), ShouldEqual, 0)
 		//})
 
 		Convey("Should return an error when index is out of bounds", func() {
 			arr := runtime.NewArray(10)
 
-			err := arr.Set(ctx, 0, runtime.NewInt(1))
+			err := arr.SetAt(ctx, 0, runtime.NewInt(1))
 
 			So(err, ShouldNotBeNil)
 			size, _ := arr.Length(ctx)
@@ -422,7 +422,7 @@ func TestArray(t *testing.T) {
 	//		s := arr.Slice(0, 1)
 	//
 	//		So(s.Length(ctx), ShouldEqual, 1)
-	//		So(s.Get(0).Compareruntime.Values(values.runtime.ZeroInt), ShouldEqual, 0)
+	//		So(s.At(0).Compareruntime.Values(values.runtime.ZeroInt), ShouldEqual, 0)
 	//
 	//		s2 := arr.Slice(2, arr.Length(ctx))
 	//
@@ -447,7 +447,7 @@ func TestArray(t *testing.T) {
 
 			lenAfter, _ := arr.Length(ctx)
 
-			act, _ := arr.Get(ctx, 3)
+			act, _ := arr.At(ctx, 3)
 
 			So(lenAfter, ShouldBeGreaterThan, lenBefore)
 			So(act, ShouldEqual, 100)
@@ -471,7 +471,7 @@ func TestArray(t *testing.T) {
 
 			lenAfter, _ := arr.Length(ctx)
 
-			val, _ := arr.Get(ctx, 3)
+			val, _ := arr.At(ctx, 3)
 
 			So(lenAfter, ShouldBeLessThan, lenBefore)
 			So(val, ShouldEqual, 4)
@@ -493,7 +493,7 @@ func TestArray(t *testing.T) {
 
 			lenAfter, _ := arr.Length(ctx)
 
-			val, _ := arr.Get(ctx, 4)
+			val, _ := arr.At(ctx, 4)
 
 			So(lenAfter, ShouldBeLessThan, lenBefore)
 			So(lenAfter, ShouldEqual, 5)
@@ -516,7 +516,7 @@ func TestArray(t *testing.T) {
 
 			lenAfter, _ := arr.Length(ctx)
 
-			val, _ := arr.Get(ctx, 0)
+			val, _ := arr.At(ctx, 0)
 
 			So(lenAfter, ShouldBeLessThan, lenBefore)
 			So(val, ShouldEqual, 1)
@@ -582,10 +582,10 @@ func TestArray(t *testing.T) {
 		//
 		//	clone := arr.Clone().(*values.Array)
 		//
-		//	nestedInArr := arr.Get(values.runtime.NewInt(0)).(*values.Array)
+		//	nestedInArr := arr.At(values.runtime.NewInt(0)).(*values.Array)
 		//	nestedInarr.Append(ctx, values.runtime.NewInt(5))
 		//
-		//	nestedInClone := clone.Get(values.runtime.NewInt(0)).(*values.Array)
+		//	nestedInClone := clone.At(values.runtime.NewInt(0)).(*values.Array)
 		//
 		//	So(nestedInArr.Compareruntime.Values(nestedInClone), ShouldNotEqual, 0)
 		//})
@@ -827,13 +827,13 @@ func TestArray(t *testing.T) {
 				So(length, ShouldEqual, runtime.NewInt(3))
 
 				// Should remove first occurrence
-				val0, _ := arr.Get(ctx, runtime.NewInt(0))
+				val0, _ := arr.At(ctx, runtime.NewInt(0))
 				So(val0, ShouldEqual, runtime.NewInt(1))
 
-				val1, _ := arr.Get(ctx, runtime.NewInt(1))
+				val1, _ := arr.At(ctx, runtime.NewInt(1))
 				So(val1, ShouldEqual, runtime.NewFloat(3.14))
 
-				val2, _ := arr.Get(ctx, runtime.NewInt(2))
+				val2, _ := arr.At(ctx, runtime.NewInt(2))
 				So(val2, ShouldEqual, runtime.NewString("test"))
 			})
 
@@ -873,16 +873,16 @@ func TestArray(t *testing.T) {
 				err := arr.SortAsc(ctx)
 				So(err, ShouldBeNil)
 
-				val0, _ := arr.Get(ctx, runtime.NewInt(0))
+				val0, _ := arr.At(ctx, runtime.NewInt(0))
 				So(val0, ShouldEqual, runtime.NewInt(1))
 
-				val1, _ := arr.Get(ctx, runtime.NewInt(1))
+				val1, _ := arr.At(ctx, runtime.NewInt(1))
 				So(val1, ShouldEqual, runtime.NewInt(2))
 
-				val2, _ := arr.Get(ctx, runtime.NewInt(2))
+				val2, _ := arr.At(ctx, runtime.NewInt(2))
 				So(val2, ShouldEqual, runtime.NewInt(3))
 
-				val3, _ := arr.Get(ctx, runtime.NewInt(3))
+				val3, _ := arr.At(ctx, runtime.NewInt(3))
 				So(val3, ShouldEqual, runtime.NewInt(4))
 			})
 

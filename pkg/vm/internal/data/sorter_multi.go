@@ -52,8 +52,8 @@ func (s *MultiSorter) sort(ctx context.Context) error {
 		secondKVKey := secondKV.Key.(runtime.List)
 
 		for idx, direction := range s.directions {
-			firstKey, _ := firstKVKey.Get(ctx, runtime.NewInt(idx))
-			secondKey, _ := secondKVKey.Get(ctx, runtime.NewInt(idx))
+			firstKey, _ := firstKVKey.At(ctx, runtime.NewInt(idx))
+			secondKey, _ := secondKVKey.At(ctx, runtime.NewInt(idx))
 			comp := runtime.CompareValues(firstKey, secondKey)
 
 			if comp != 0 {

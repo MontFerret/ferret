@@ -24,8 +24,7 @@ var (
 )
 
 const (
-	typeErrorTemplate  = "expected %s, but got %s"
-	proxyErrorTemplate = "proxy target %T does not implement %s interface"
+	typeErrorTemplate = "expected %s, but got %s"
 )
 
 func TypeErrorOf(value Value, expected ...Type) error {
@@ -50,26 +49,6 @@ func TypeError(actual Type, expected ...Type) error {
 	expectedStr := strings.Join(strs, " or ")
 
 	return Error(ErrInvalidType, fmt.Sprintf(typeErrorTemplate, expectedStr, actual))
-}
-
-func ProxyError(target any, expected ...Type) error {
-	if len(expected) == 0 {
-		return Error(ErrInvalidType, fmt.Sprintf(proxyErrorTemplate, target, "unknown"))
-	}
-
-	if len(expected) == 1 {
-		return Error(ErrInvalidType, fmt.Sprintf(proxyErrorTemplate, target, expected[0]))
-	}
-
-	strs := make([]string, len(expected))
-
-	for idx, t := range expected {
-		strs[idx] = string(t)
-	}
-
-	expectedStr := strings.Join(strs, " or ")
-
-	return Error(ErrInvalidType, fmt.Sprintf(proxyErrorTemplate, target, expectedStr))
 }
 
 func Error(err error, msg string) error {

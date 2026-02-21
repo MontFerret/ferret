@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/sdk"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 
 	"github.com/MontFerret/ferret/v2/test/integration/base"
@@ -280,7 +281,7 @@ func TestTaggedTypes(t *testing.T) {
 		CaseNil("RETURN GET_VALUE().untagged"),
 		CaseNil("RETURN GET_VALUE().privateStrProp"),
 	}, vm.WithFunction("GET_VALUE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-		return runtime.Encode(SomeValue{
+		return sdk.Encode(SomeValue{
 			StrProp:        "test",
 			IntProp:        99,
 			SliceProp:      []int{1, 2, 3},

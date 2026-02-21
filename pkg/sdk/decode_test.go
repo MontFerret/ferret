@@ -1,10 +1,12 @@
-package runtime_test
+package sdk_test
 
 import (
 	"context"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/v2/pkg/sdk"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -35,7 +37,7 @@ func TestDecode(t *testing.T) {
 		So(obj.Set(context.Background(), runtime.NewString("untagged"), runtime.NewString("ignored")), ShouldBeNil)
 
 		var out bindParams
-		err := runtime.Decode(obj, &out)
+		err := sdk.Decode(obj, &out)
 
 		So(err, ShouldBeNil)
 		So(out, ShouldResemble, bindParams{
@@ -51,21 +53,21 @@ func TestDecode(t *testing.T) {
 	Convey("Should reject non-pointer targets", t, func() {
 		obj := runtime.NewObject()
 		var out bindParams
-		err := runtime.Decode(obj, out)
+		err := sdk.Decode(obj, out)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("Should reject nil pointer targets", t, func() {
 		obj := runtime.NewObject()
 		var out *bindParams
-		err := runtime.Decode(obj, out)
+		err := sdk.Decode(obj, out)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("Should reject non-string map keys", t, func() {
 		obj := runtime.NewObject()
 		var out map[int]string
-		err := runtime.Decode(obj, &out)
+		err := sdk.Decode(obj, &out)
 		So(err, ShouldNotBeNil)
 	})
 }

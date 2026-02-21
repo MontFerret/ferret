@@ -144,7 +144,7 @@ func (c *KeyCounterCollector) Set(ctx context.Context, key, _ runtime.Value) err
 
 		c.grouping[keyStr] = idx
 	} else {
-		value, err := c.Value.Get(ctx, idx)
+		value, err := c.Value.At(ctx, idx)
 
 		if err != nil {
 			return err

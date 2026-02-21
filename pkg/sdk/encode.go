@@ -1,10 +1,12 @@
-package runtime
+package sdk
 
 import (
 	"context"
 	"fmt"
 	"reflect"
 	"time"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 const maxInt64 = ^uint64(0) >> 1
@@ -14,12 +16,12 @@ var byteSliceType = reflect.TypeOf([]byte(nil))
 // Encode converts a Go value into a runtime Value using ferret tags for structs.
 // If "ferret" tag is not present, it falls back to "json" tag, otherwise the field will be ignored.
 // It also supports unwrapping values that implement the Unwrappable interface.
-func Encode(input any) Value {
+func Encode(input any) runtime.Value {
 	if input == nil {
-		return None
+		return runtime.None
 	}
 
-	if value, ok := input.(Value); ok {
+	if value, ok := input.(runtime.Value); ok {
 		return value
 	}
 
@@ -28,12 +30,12 @@ func Encode(input any) Value {
 
 // EncodeField reads a field from a struct or a value from a map by the provided key and encodes it into a runtime Value.
 // It supports unwrapping values that implement the Unwrappable interface.
-func EncodeField(ctx context.Context, input any, key Value) (Value, error) {
+func EncodeField(ctx context.Context, input any, key runtime.Value) (runtime.Value, error) {
 	if input == nil {
-		return None, nil
+		return runtime.None, nil
 	}
 
-	wrapper, ok := input.(Unwrappable)
+	wrapper, ok := input.(runtime.Unwrappable)
 
 	if ok {
 		input = wrapper.Unwrap()
@@ -51,14 +53,14 @@ func EncodeField(ctx context.Context, input any, key Value) (Value, error) {
 		for i := 0; i < v.NumField(); i++ {
 			f := t.Field(i)
 
-			tagName, ok := Tag(f)
+			tagName, ok := runtime.Tag(f)
 			if !ok {
 				continue
 			}
 
 			if tagName == keyStr {
 				if !f.IsExported() {
-					return None, nil
+					return runtime.None, nil
 				}
 
 				name = f.Name
@@ -68,7 +70,7 @@ func EncodeField(ctx context.Context, input any, key Value) (Value, error) {
 		}
 
 		if name == "" {
-			return None, nil
+			return runtime.None, nil
 		}
 
 		field := v.FieldByName(name)
@@ -77,7 +79,7 @@ func EncodeField(ctx context.Context, input any, key Value) (Value, error) {
 			return Encode(field.Interface()), nil
 		}
 
-		return None, nil
+		return runtime.None, nil
 	case reflect.Map:
 		v := reflect.ValueOf(input)
 		mapKeyType := v.Type().Key()
@@ -91,7 +93,7 @@ func EncodeField(ctx context.Context, input any, key Value) (Value, error) {
 			keyType := reflect.TypeOf(key)
 			if keyType == nil || !keyType.AssignableTo(mapKeyType) {
 				// Cannot use the provided key for this map type.
-				return None, nil
+				return runtime.None, nil
 			}
 			mapKeyVal = reflect.ValueOf(key)
 		}
@@ -101,12 +103,12 @@ func EncodeField(ctx context.Context, input any, key Value) (Value, error) {
 			return Encode(field.Interface()), nil
 		}
 
-		return None, nil
+		return runtime.None, nil
 	case reflect.Ptr:
 		v := reflect.ValueOf(input)
 
 		if v.IsNil() {
-			return None, nil
+			return runtime.None, nil
 		}
 
 		return EncodeField(ctx, v.Elem().Interface(), key)
@@ -114,62 +116,62 @@ func EncodeField(ctx context.Context, input any, key Value) (Value, error) {
 		break
 	}
 
-	return None, fmt.Errorf("cannot read field by key from type: %s", t.String())
+	return runtime.None, fmt.Errorf("cannot read field by key from type: %s", t.String())
 }
 
-func encodeValue(v reflect.Value) Value {
+func encodeValue(v reflect.Value) runtime.Value {
 	if !v.IsValid() {
-		return None
+		return runtime.None
 	}
 
 	switch v.Kind() {
 	case reflect.Interface:
 		if v.IsNil() {
-			return None
+			return runtime.None
 		}
 		return encodeValue(v.Elem())
 	case reflect.Ptr:
 		if v.IsNil() {
-			return None
+			return runtime.None
 		}
 		return encodeValue(v.Elem())
 	}
 
 	if v.CanInterface() {
-		if value, ok := v.Interface().(Value); ok {
+		if value, ok := v.Interface().(runtime.Value); ok {
 			return value
 		}
 	}
 
 	if v.Type() == timeType {
 		if v.CanInterface() {
-			return NewDateTime(v.Interface().(time.Time))
+			return runtime.NewDateTime(v.Interface().(time.Time))
 		}
-		return None
+		return runtime.None
 	}
 
 	if v.Type() == byteSliceType && v.Kind() == reflect.Slice {
-		return NewBinary(v.Bytes())
+		return runtime.NewBinary(v.Bytes())
 	}
 
 	switch v.Kind() {
 	case reflect.Bool:
-		return NewBoolean(v.Bool())
+		return runtime.NewBoolean(v.Bool())
 	case reflect.String:
-		return NewString(v.String())
+		return runtime.NewString(v.String())
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return NewInt64(v.Int())
+		return runtime.NewInt64(v.Int())
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		u := v.Uint()
 		if u > maxInt64 {
-			return None
+			return runtime.None
 		}
-		return NewInt64(int64(u))
+		return runtime.NewInt64(int64(u))
 	case reflect.Float32, reflect.Float64:
-		return NewFloat(v.Float())
+		return runtime.NewFloat(v.Float())
 	case reflect.Slice, reflect.Array:
 		size := v.Len()
-		arr := NewArray(size)
+		arr := runtime.NewArray(size)
 		ctx := context.Background()
 
 		for i := 0; i < size; i++ {
@@ -178,17 +180,17 @@ func encodeValue(v reflect.Value) Value {
 
 		return arr
 	case reflect.Map:
-		obj := NewObject()
+		obj := runtime.NewObject()
 		ctx := context.Background()
 
 		for _, key := range v.MapKeys() {
 			keyVal := encodeValue(key)
-			_ = obj.Set(ctx, NewString(keyVal.String()), encodeValue(v.MapIndex(key)))
+			_ = obj.Set(ctx, runtime.NewString(keyVal.String()), encodeValue(v.MapIndex(key)))
 		}
 
 		return obj
 	case reflect.Struct:
-		obj := NewObject()
+		obj := runtime.NewObject()
 		ctx := context.Background()
 		t := v.Type()
 
@@ -198,16 +200,16 @@ func encodeValue(v reflect.Value) Value {
 				continue
 			}
 
-			name, ok := Tag(field)
+			name, ok := runtime.Tag(field)
 			if !ok {
 				continue
 			}
 
-			_ = obj.Set(ctx, NewString(name), encodeValue(v.Field(i)))
+			_ = obj.Set(ctx, runtime.NewString(name), encodeValue(v.Field(i)))
 		}
 
 		return obj
 	default:
-		return None
+		return runtime.None
 	}
 }

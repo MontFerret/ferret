@@ -403,7 +403,7 @@ func TestObject(t *testing.T) {
 		})
 	})
 
-	Convey(".Get", t, func() {
+	Convey(".At", t, func() {
 		//Convey("Should return item by key", func() {
 		//	obj := values.NewObjectWith(
 		//		values.NewObjectProperty("foo", values.NewInt(1)),
@@ -411,7 +411,7 @@ func TestObject(t *testing.T) {
 		//		values.NewObjectProperty("qaz", values.NewInt(3)),
 		//	)
 		//
-		//	el, _ := obj.Get("foo")
+		//	el, _ := obj.At("foo")
 		//
 		//	So(el.CompareValues(values.NewInt(1)), ShouldEqual, 0)
 		//})
@@ -419,21 +419,21 @@ func TestObject(t *testing.T) {
 		//Convey("Should return None when no items", func() {
 		//	obj := values.NewObject()
 		//
-		//	el, _ := obj.Get("foo")
+		//	el, _ := obj.At("foo")
 		//
 		//	So(el.CompareValues(values.None), ShouldEqual, 0)
 		//})
 	})
 
-	Convey(".Set", t, func() {
+	Convey(".SetAt", t, func() {
 		//Convey("Should set item by index", func() {
 		//	obj := values.NewObject()
 		//
-		//	obj.Set("foo", values.NewInt(1))
+		//	obj.SetAt("foo", values.NewInt(1))
 		//
 		//	So(obj.Length(), ShouldEqual, 1)
 		//
-		//	v, _ := obj.Get("foo")
+		//	v, _ := obj.At("foo")
 		//	So(v.CompareValues(values.NewInt(1)), ShouldEqual, 0)
 		//})
 	})
