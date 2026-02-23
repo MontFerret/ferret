@@ -3,8 +3,10 @@ package data
 import (
 	"context"
 	"io"
+	"strconv"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -116,30 +118,35 @@ func (c *GroupedAggregateCollector) Length(ctx context.Context) (runtime.Int, er
 	return c.Value.Length(ctx)
 }
 
-//func (c *GroupedAggregateCollector) MarshalJSON() ([]byte, error) {
-//	obj := runtime.NewObject()
-//
-//	addEntry := func(keyStr string, entry *groupedAggregateEntry) {
-//		for idx := 0; idx < len(c.plan.Keys); idx++ {
-//			aggKey := runtime.NewString(keyStr + runtime.NamespaceSeparator + strconv.Itoa(idx))
-//			_ = obj.Set(context.Background(), aggKey, c.valueFor(entry.states[idx], c.plan.Kinds[idx]))
-//		}
-//	}
-//
-//	if c.hasSingleGroup && c.singleEntry != nil {
-//		addEntry(c.singleKey, c.singleEntry)
-//	}
-//
-//	for key, entry := range c.grouping {
-//		addEntry(key, entry)
-//	}
-//
-//	return obj.MarshalJSON()
-//}
+func (c *GroupedAggregateCollector) MarshalJSON() ([]byte, error) {
+	obj := runtime.NewObject()
+
+	addEntry := func(keyStr string, entry *groupedAggregateEntry) {
+		for idx := 0; idx < len(c.plan.Keys); idx++ {
+			aggKey := runtime.NewString(keyStr + runtime.NamespaceSeparator + strconv.Itoa(idx))
+			_ = obj.Set(context.Background(), aggKey, c.valueFor(entry.states[idx], c.plan.Kinds[idx]))
+		}
+	}
+
+	if c.hasSingleGroup && c.singleEntry != nil {
+		addEntry(c.singleKey, c.singleEntry)
+	}
+
+	for key, entry := range c.grouping {
+		addEntry(key, entry)
+	}
+
+	return json.Default.Encode(obj)
+}
 
 func (c *GroupedAggregateCollector) String() string {
-	// TODO: implement a more informative string representation.
-	return "[GroupedAggregateCollector]"
+	encoded, err := c.MarshalJSON()
+
+	if err != nil {
+		return "[GroupedAggregateCollector]"
+	}
+
+	return string(encoded)
 }
 
 func (c *GroupedAggregateCollector) Hash() uint64 {

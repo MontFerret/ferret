@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -197,29 +198,34 @@ func (c *AggregateCollector) Length(_ context.Context) (runtime.Int, error) {
 	return runtime.Int(len(c.plan.Keys) + groupCount), nil
 }
 
-//func (c *AggregateCollector) MarshalJSON() ([]byte, error) {
-//	obj := runtime.NewObject()
-//
-//	if c.hasData {
-//		for i, key := range c.plan.Keys {
-//			_ = obj.Set(context.Background(), key, c.valueFor(i))
-//		}
-//
-//		if c.hasSingleGroup {
-//			_ = obj.Set(context.Background(), runtime.NewString(c.singleGroupKey), c.singleGroupValue)
-//		}
-//
-//		for key, value := range c.groups {
-//			_ = obj.Set(context.Background(), runtime.NewString(key), value)
-//		}
-//	}
-//
-//	return obj.MarshalJSON()
-//}
+func (c *AggregateCollector) MarshalJSON() ([]byte, error) {
+	obj := runtime.NewObject()
+
+	if c.hasData {
+		for i, key := range c.plan.Keys {
+			_ = obj.Set(context.Background(), key, c.valueFor(i))
+		}
+
+		if c.hasSingleGroup {
+			_ = obj.Set(context.Background(), runtime.NewString(c.singleGroupKey), c.singleGroupValue)
+		}
+
+		for key, value := range c.groups {
+			_ = obj.Set(context.Background(), runtime.NewString(key), value)
+		}
+	}
+
+	return json.Default.Encode(obj)
+}
 
 func (c *AggregateCollector) String() string {
-	// TODO: Implement a more informative string representation that includes the aggregate keys and group keys.
-	return "[AggregateCollector]"
+	encoded, err := c.MarshalJSON()
+
+	if err != nil {
+		return "[AggregateCollector]"
+	}
+
+	return string(encoded)
 }
 
 func (c *AggregateCollector) Hash() uint64 {

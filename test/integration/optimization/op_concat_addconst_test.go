@@ -1,4 +1,4 @@
-package vm_test
+package optimization_test_test
 
 import (
 	"context"
