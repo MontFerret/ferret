@@ -4,16 +4,14 @@ import (
 	"context"
 	"encoding/binary"
 	"hash/fnv"
-
-	"github.com/wI2L/jettison"
 )
 
 type (
 	// Query represents a query literal used by the operator index.
 	Query struct {
-		Kind    String
-		Payload String
-		Params  Value
+		Kind    String `json:"kind"`
+		Payload String `json:"payload"`
+		Params  Value  `json:"params"`
 	}
 
 	// Queryable allows values to handle operator index queries.
@@ -24,14 +22,6 @@ type (
 
 func NewQuery(kind, payload String) Query {
 	return Query{Kind: kind, Payload: payload, Params: None}
-}
-
-func (q Query) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(map[string]Value{
-		"kind":    q.Kind,
-		"payload": q.Payload,
-		"params":  q.Params,
-	}, jettison.NoHTMLEscaping())
 }
 
 func (q Query) String() string {

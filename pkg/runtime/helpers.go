@@ -3,7 +3,6 @@ package runtime
 import (
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"hash/fnv"
 	"io"
@@ -14,8 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/wI2L/jettison"
 )
 
 func IsNil(input any) bool {
@@ -194,37 +191,37 @@ func Parse(input interface{}) Value {
 	}
 }
 
-func Unmarshal(value json.RawMessage) (Value, error) {
-	var o any
+//func Unmarshal(value json.RawMessage) (Value, error) {
+//	var o any
+//
+//	err := json.Unmarshal(value, &o)
+//
+//	if err != nil {
+//		return None, err
+//	}
+//
+//	return Parse(o), nil
+//}
 
-	err := json.Unmarshal(value, &o)
-
-	if err != nil {
-		return None, err
-	}
-
-	return Parse(o), nil
-}
-
-func MustMarshal(value Value) json.RawMessage {
-	out, err := value.MarshalJSON()
-
-	if err != nil {
-		panic(err)
-	}
-
-	return out
-}
-
-func MustMarshalAny(input any) json.RawMessage {
-	out, err := jettison.MarshalOpts(input, jettison.NoHTMLEscaping())
-
-	if err != nil {
-		panic(err)
-	}
-
-	return out
-}
+//func MustMarshal(value Value) json.RawMessage {
+//	out, err := value.MarshalJSON()
+//
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	return out
+//}
+//
+//func MustMarshalAny(input any) json.RawMessage {
+//	out, err := jettison.MarshalOpts(input, jettison.NoHTMLEscaping())
+//
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	return out
+//}
 
 // IsScalar checks if the input Value is of a scalar type (Int, Float, String, or Boolean).
 func IsScalar(input Value) Boolean {

@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"reflect"
-
-	"github.com/wI2L/jettison"
 )
 
 // Box is a generic container that holds a single value of type T.
@@ -21,41 +19,30 @@ func NewBox[T any](value T) *Box[T] {
 	}
 }
 
-func (v *Box[T]) Type() Type {
-	t := reflect.TypeOf(v.Value)
+func (b *Box[T]) Type() Type {
+	t := reflect.TypeOf(b.Value)
 
 	return NewType(t.PkgPath(), t.Name())
 }
 
-func (v *Box[T]) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(v.Value, jettison.NoHTMLEscaping())
+func (b *Box[T]) String() string {
+	return fmt.Sprintf("Box[%s]: %b", b.Type(), b.Value)
 }
 
-func (v *Box[T]) String() string {
-	return fmt.Sprintf("Box[%s]", v.Type())
+func (b *Box[T]) Unwrap() any {
+	return b.Value
 }
 
-func (v *Box[T]) Unwrap() any {
-	return v.Value
-}
-
-func (v *Box[T]) Hash() uint64 {
+func (b *Box[T]) Hash() uint64 {
 	h := fnv.New64a()
 
 	_, _ = h.Write([]byte("box:"))
 
-	data, err := v.MarshalJSON()
-
-	if err != nil {
-		// TODO: Panic?
-		return 0
-	}
-
-	_, _ = h.Write(data)
+	_, _ = h.Write([]byte(b.String()))
 
 	return h.Sum64()
 }
 
-func (v *Box[T]) Copy() Value {
-	return &Box[T]{Value: v.Value}
+func (b *Box[T]) Copy() Value {
+	return &Box[T]{Value: b.Value}
 }

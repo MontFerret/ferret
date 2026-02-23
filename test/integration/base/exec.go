@@ -5,6 +5,8 @@ import (
 	j "encoding/json"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
+	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
@@ -27,13 +29,16 @@ func Run(p *bytecode.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
 
 	type Salt struct{}
 
-	out, err := instance.Run(context.WithValue(context.Background(), testSaltKey, &Salt{}), env)
+	ctx := context.WithValue(context.Background(), testSaltKey, &Salt{})
+	ctx = ferretencoding.WithRegistry(ctx, ferretencoding.NewRegistry())
+
+	out, err := instance.Run(ctx, env)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return out.MarshalJSON()
+	return encodingjson.Default.Encode(out)
 }
 
 func Exec(p *bytecode.Program, raw bool, opts ...vm.EnvironmentOption) (any, error) {

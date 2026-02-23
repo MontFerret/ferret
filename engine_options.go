@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 )
@@ -16,6 +17,7 @@ type (
 		functions runtime.FunctionsBuilder
 		params    map[string]runtime.Value
 		logging   runtime.LogSettings
+		registry  *encoding.Registry
 	}
 
 	Option func(env *options) error
@@ -26,6 +28,7 @@ func newOptions(setters []Option) (*options, error) {
 	opts := &options{
 		functions: ns.Functions(),
 		params:    make(map[string]runtime.Value),
+		registry:  encoding.NewRegistry(),
 		logging: runtime.LogSettings{
 			Writer: os.Stdout,
 			Level:  runtime.ErrorLevel,
@@ -116,5 +119,28 @@ func WithLogFields(fields map[string]any) Option {
 	return func(opts *options) error {
 		opts.logging.Fields = fields
 		return nil
+	}
+}
+
+// WithEncodingRegistry sets a custom encoding registry for query execution.
+func WithEncodingRegistry(registry *encoding.Registry) Option {
+	return func(opts *options) error {
+		if registry == nil {
+			return runtime.Error(runtime.ErrMissedArgument, "registry")
+		}
+
+		opts.registry = registry
+		return nil
+	}
+}
+
+// WithEncodingCodec registers or overrides a codec for the given content type.
+func WithEncodingCodec(contentType string, codec encoding.Codec) Option {
+	return func(opts *options) error {
+		if opts.registry == nil {
+			opts.registry = encoding.NewRegistry()
+		}
+
+		return opts.registry.Register(contentType, codec)
 	}
 }

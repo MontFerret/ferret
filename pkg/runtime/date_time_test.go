@@ -1,9 +1,7 @@
 package runtime_test
 
 import (
-	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
@@ -24,20 +22,6 @@ func TestDateTime(t *testing.T) {
 			d := runtime.NewCurrentDateTime()
 
 			So(d.Hash(), ShouldEqual, d.Hash())
-		})
-	})
-
-	Convey(".MarshalJSON", t, func() {
-		Convey("It should correctly serialize Value", func() {
-			value := time.Now()
-
-			json1, err := json.Marshal(value)
-			So(err, ShouldBeNil)
-
-			json2, err := runtime.NewDateTime(value).MarshalJSON()
-			So(err, ShouldBeNil)
-
-			So(json1, ShouldResemble, json2)
 		})
 	})
 }

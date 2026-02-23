@@ -60,25 +60,6 @@ func TestBinary(t *testing.T) {
 			})
 		})
 
-		Convey(".MarshalJSON", func() {
-			Convey("Should marshal to base64 encoded JSON string", func() {
-				data := []byte("hello")
-				binary := runtime.NewBinary(data)
-
-				marshaled, err := binary.MarshalJSON()
-				So(err, ShouldBeNil)
-				So(string(marshaled), ShouldContainSubstring, "aGVsbG8=") // base64 for "hello"
-			})
-
-			Convey("Should marshal empty binary", func() {
-				binary := runtime.NewBinary([]byte{})
-
-				marshaled, err := binary.MarshalJSON()
-				So(err, ShouldBeNil)
-				So(string(marshaled), ShouldNotBeEmpty)
-			})
-		})
-
 		Convey(".String", func() {
 			Convey("Should return string representation", func() {
 				data := []byte("hello")

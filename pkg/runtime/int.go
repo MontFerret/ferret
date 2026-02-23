@@ -4,8 +4,6 @@ import (
 	"encoding/binary"
 	"hash/fnv"
 	"strconv"
-
-	"github.com/wI2L/jettison"
 )
 
 type Int int64
@@ -53,20 +51,6 @@ func ParseInt(input interface{}) (Int, error) {
 	default:
 		return ZeroInt, Error(ErrInvalidType, "expected 'int'")
 	}
-}
-
-func MustParseInt(input interface{}) Int {
-	res, err := ParseInt(input)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return res
-}
-
-func (i Int) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(int64(i), jettison.NoHTMLEscaping())
 }
 
 func (i Int) String() string {

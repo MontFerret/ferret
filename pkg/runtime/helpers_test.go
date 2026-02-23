@@ -7,6 +7,7 @@ import (
 	"testing"
 	"unsafe"
 
+	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -434,7 +435,7 @@ func TestHelpers(t *testing.T) {
 
 				So(err, ShouldBeNil)
 
-				json2, err := val.MarshalJSON()
+				json2, err := encodingjson.Default.Encode(val)
 
 				So(err, ShouldBeNil)
 				So(json2, ShouldResemble, json1)

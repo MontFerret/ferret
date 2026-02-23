@@ -5,8 +5,7 @@ import (
 	"encoding/binary"
 	"hash/fnv"
 	"sort"
-
-	"github.com/wI2L/jettison"
+	"strings"
 )
 
 type Object struct {
@@ -31,18 +30,25 @@ func NewObjectWith(props map[string]Value) *Object {
 
 func (t *Object) ObjectLike() {}
 
-func (t *Object) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(t.data, jettison.NoHTMLEscaping())
-}
-
 func (t *Object) String() string {
-	marshaled, err := t.MarshalJSON()
+	var b strings.Builder
 
-	if err != nil {
+	if len(t.data) == 0 {
 		return "{}"
 	}
 
-	return string(marshaled)
+	b.WriteString("{")
+
+	for k, v := range t.data {
+		b.WriteString(k)
+		b.WriteString(": ")
+		b.WriteString(v.String())
+		b.WriteString(", ")
+	}
+
+	b.WriteString("}")
+
+	return b.String()
 }
 
 // Compare compares the source object with other core.Value

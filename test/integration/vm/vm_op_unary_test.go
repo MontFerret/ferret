@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 
@@ -41,7 +42,7 @@ func TestUnaryOperators(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		out1, err := v1.MarshalJSON()
+		out1, err := encodingjson.Default.Encode(v1)
 		So(err, ShouldBeNil)
 
 		So(string(out1), ShouldEqual, `{"enabled":true}`)
@@ -55,7 +56,7 @@ func TestUnaryOperators(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		out2, err := v2.MarshalJSON()
+		out2, err := encodingjson.Default.Encode(v2)
 
 		So(err, ShouldBeNil)
 		So(string(out2), ShouldEqual, `{"enabled":false}`)

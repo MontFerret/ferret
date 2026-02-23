@@ -6,8 +6,7 @@ import (
 	"hash/fnv"
 	"io"
 	"sort"
-
-	"github.com/wI2L/jettison"
+	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -159,18 +158,21 @@ func (t *FastObject) Type() string {
 
 func (t *FastObject) ObjectLike() {}
 
-func (t *FastObject) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(t.toMap(), jettison.NoHTMLEscaping())
-}
-
 func (t *FastObject) String() string {
-	marshaled, err := t.MarshalJSON()
+	var b strings.Builder
 
-	if err != nil {
-		return "{}"
-	}
+	b.WriteString("{")
 
-	return string(marshaled)
+	t.forEachKV(func(k string, v runtime.Value) {
+		b.WriteString(k)
+		b.WriteString(": ")
+		b.WriteString(v.String())
+		b.WriteString(", ")
+	})
+
+	b.WriteString("}")
+
+	return b.String()
 }
 
 func (t *FastObject) Compare(other runtime.Value) int64 {
