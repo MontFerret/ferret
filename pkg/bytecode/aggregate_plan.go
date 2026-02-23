@@ -15,9 +15,9 @@ const (
 )
 
 type AggregatePlan struct {
-	Keys  []runtime.String
-	Kinds []AggregateKind
-	Index map[string]int
+	Keys  []runtime.String `json:"keys"`
+	Kinds []AggregateKind  `json:"kinds"`
+	Index map[string]int   `json:"index"`
 }
 
 func NewAggregatePlan(keys []runtime.String, kinds []AggregateKind) AggregatePlan {

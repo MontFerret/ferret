@@ -9,10 +9,10 @@ type (
 	Catch [3]int
 
 	Metadata struct {
-		AggregatePlans []AggregatePlan
-		DebugSpans     []file.Span
-		Functions      map[string]int
-		Labels         map[int]string
+		AggregatePlans []AggregatePlan `json:"aggregatePlans"`
+		DebugSpans     []file.Span     `json:"debugSpans"`
+		Functions      map[string]int  `json:"functions"`
+		Labels         map[int]string  `json:"labels"`
 	}
 
 	Program struct {
