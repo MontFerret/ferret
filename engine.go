@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -14,6 +15,7 @@ type Engine struct {
 	functions runtime.Functions
 	params    map[string]runtime.Value
 	logging   runtime.LogSettings
+	registry  *encoding.Registry
 }
 
 func New(setters ...Option) (*Engine, error) {
@@ -28,7 +30,12 @@ func New(setters ...Option) (*Engine, error) {
 		functions: opts.functions.Build(),
 		params:    opts.params,
 		logging:   opts.logging,
+		registry:  opts.registry,
 	}, nil
+}
+
+func (e *Engine) Codecs() *encoding.Registry {
+	return e.registry
 }
 
 func (e *Engine) Compile(src *file.Source) (*Plan, error) {
@@ -42,7 +49,7 @@ func (e *Engine) Compile(src *file.Source) (*Plan, error) {
 		Functions: e.functions,
 		Params:    e.params,
 		Logging:   e.logging,
-	}), nil
+	}, e.registry), nil
 }
 
 func (e *Engine) MustCompile(src *file.Source) *Plan {

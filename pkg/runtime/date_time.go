@@ -3,8 +3,6 @@ package runtime
 import (
 	"hash/fnv"
 	"time"
-
-	"github.com/wI2L/jettison"
 )
 
 const DefaultTimeLayout = time.RFC3339
@@ -52,10 +50,6 @@ func MustParseDateTime(input interface{}) DateTime {
 	}
 
 	return dt
-}
-
-func (dt DateTime) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(dt.Time, jettison.NoHTMLEscaping())
 }
 
 func (dt DateTime) String() string {

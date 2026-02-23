@@ -7,8 +7,7 @@ import (
 	"io"
 	"sort"
 
-	"github.com/wI2L/jettison"
-
+	"github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -160,7 +159,7 @@ func (t *FastObject) Type() string {
 func (t *FastObject) ObjectLike() {}
 
 func (t *FastObject) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(t.toMap(), jettison.NoHTMLEscaping())
+	return json.Default.Encode(t.toMap())
 }
 
 func (t *FastObject) String() string {
@@ -465,11 +464,13 @@ func (t *FastObject) FindOne(ctx context.Context, predicate runtime.KeyReadableP
 
 func (t *FastObject) ContainsKey(_ context.Context, key runtime.Value) (runtime.Boolean, error) {
 	_, exists := t.getSlot(key.String())
+
 	return runtime.Boolean(exists), nil
 }
 
 func (t *FastObject) ContainsValue(_ context.Context, target runtime.Value) (runtime.Boolean, error) {
 	found := false
+
 	t.forEachKV(func(_ string, val runtime.Value) {
 		if runtime.CompareValues(target, val) == 0 {
 			found = true
@@ -495,11 +496,13 @@ func (t *FastObject) Get(_ context.Context, key runtime.Value) (runtime.Value, e
 
 func (t *FastObject) Set(_ context.Context, key runtime.Value, value runtime.Value) error {
 	t.setString(key.String(), value)
+
 	return nil
 }
 
 func (t *FastObject) RemoveKey(_ context.Context, key runtime.Value) error {
 	t.removeString(key.String())
+
 	return nil
 }
 
@@ -542,6 +545,7 @@ func (t *FastObject) Clear(_ context.Context) error {
 	if t.dict != nil {
 		t.dict = make(map[string]runtime.Value)
 		t.size = 0
+
 		return nil
 	}
 
@@ -555,6 +559,7 @@ func (t *FastObject) Clear(_ context.Context) error {
 func (t *FastObject) Iterate(_ context.Context) (runtime.Iterator, error) {
 	if t.dict != nil {
 		keys := make([]string, 0, len(t.dict))
+
 		for key := range t.dict {
 			keys = append(keys, key)
 		}
@@ -566,10 +571,12 @@ func (t *FastObject) Iterate(_ context.Context) (runtime.Iterator, error) {
 	}
 
 	entries := make([]fastObjectEntry, 0, t.size)
+
 	for idx, key := range t.shape.names {
 		if t.slots[idx] == nil {
 			continue
 		}
+
 		entries = append(entries, fastObjectEntry{key: key, slot: idx})
 	}
 
@@ -598,6 +605,7 @@ func (t *FastObject) LookupSlot(key string) (int, bool) {
 	}
 
 	idx, ok := t.shape.fields[key]
+
 	return idx, ok
 }
 
@@ -634,10 +642,13 @@ func (t *FastObject) SetSlotWithShape(next *Shape, slot int, value runtime.Value
 	}
 
 	t.shape = next
+
 	if t.slots[slot] == nil {
 		t.size++
 	}
+
 	t.slots[slot] = value
+
 	return true
 }
 
@@ -654,7 +665,9 @@ func (t *FastObject) SetStringCached(key string, value runtime.Value) (*Shape, *
 		if _, exists := t.dict[key]; !exists {
 			t.size++
 		}
+
 		t.dict[key] = value
+
 		return nil, nil, 0, false
 	}
 
@@ -667,7 +680,9 @@ func (t *FastObject) SetStringCached(key string, value runtime.Value) (*Shape, *
 		if t.slots[idx] == nil {
 			t.size++
 		}
+
 		t.slots[idx] = value
+
 		return shape, shape, idx, true
 	}
 
@@ -675,6 +690,7 @@ func (t *FastObject) SetStringCached(key string, value runtime.Value) (*Shape, *
 		t.toDict()
 		t.dict[key] = value
 		t.size = len(t.dict)
+
 		return nil, nil, 0, false
 	}
 
@@ -693,6 +709,7 @@ func (t *FastObject) SetStringCached(key string, value runtime.Value) (*Shape, *
 	slot := next.fields[key]
 	t.slots[slot] = value
 	t.size++
+
 	return shape, next, slot, true
 }
 
@@ -704,8 +721,10 @@ func (t *FastObject) removeString(key string) {
 	if t.dict != nil {
 		if _, exists := t.dict[key]; exists {
 			delete(t.dict, key)
+
 			t.size--
 		}
+
 		return
 	}
 
@@ -730,10 +749,13 @@ func (t *FastObject) toDict() {
 		if idx >= len(t.slots) {
 			break
 		}
+
 		val := t.slots[idx]
+
 		if val == nil {
 			continue
 		}
+
 		dict[key] = val
 	}
 
@@ -754,9 +776,11 @@ func (t *FastObject) len() int {
 func (t *FastObject) keys() []string {
 	if t.dict != nil {
 		keys := make([]string, 0, len(t.dict))
+
 		for k := range t.dict {
 			keys = append(keys, k)
 		}
+
 		return keys
 	}
 
@@ -765,6 +789,7 @@ func (t *FastObject) keys() []string {
 		if t.slots[idx] == nil {
 			continue
 		}
+
 		keys = append(keys, k)
 	}
 
@@ -788,6 +813,7 @@ func (t *FastObject) getByKey(key string) runtime.Value {
 func (t *FastObject) getSlot(key string) (runtime.Value, bool) {
 	if t.dict != nil {
 		val, ok := t.dict[key]
+
 		return val, ok
 	}
 
@@ -796,6 +822,7 @@ func (t *FastObject) getSlot(key string) (runtime.Value, bool) {
 		if val == nil {
 			return runtime.None, false
 		}
+
 		return val, true
 	}
 
@@ -807,32 +834,38 @@ func (t *FastObject) forEachKV(fn func(key string, val runtime.Value)) {
 		for key, val := range t.dict {
 			fn(key, val)
 		}
+
 		return
 	}
 
 	for idx, key := range t.shape.names {
 		val := t.slots[idx]
+
 		if val == nil {
 			continue
 		}
+
 		fn(key, val)
 	}
 }
 
-func (t *FastObject) toMap() map[string]runtime.Value {
+func (t *FastObject) toMap() runtime.Map {
 	if t.dict != nil {
-		return t.dict
+		return runtime.NewObjectWith(t.dict)
 	}
 
-	out := make(map[string]runtime.Value, t.size)
+	ctx := context.Background()
+	obj := runtime.NewObject()
+
 	for idx, key := range t.shape.names {
 		if t.slots[idx] == nil {
 			continue
 		}
-		out[key] = t.slots[idx]
+
+		_ = obj.Set(ctx, runtime.String(key), t.slots[idx])
 	}
 
-	return out
+	return obj
 }
 
 type fastObjectEntry struct {

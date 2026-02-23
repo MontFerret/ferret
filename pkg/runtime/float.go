@@ -6,8 +6,6 @@ import (
 	"hash/fnv"
 	"math"
 	"strconv"
-
-	"github.com/wI2L/jettison"
 )
 
 type Float float64
@@ -73,10 +71,6 @@ func IsNaN(input Float) Boolean {
 
 func IsInf(input Float, sign Int) Boolean {
 	return NewBoolean(math.IsInf(float64(input), int(sign)))
-}
-
-func (f Float) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(float64(f), jettison.NoHTMLEscaping())
 }
 
 func (f Float) String() string {

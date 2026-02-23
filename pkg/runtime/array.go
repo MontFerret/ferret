@@ -4,8 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"hash/fnv"
-
-	"github.com/wI2L/jettison"
+	"strings"
 )
 
 type Array struct {
@@ -36,18 +35,12 @@ func NewArrayOf(values []Value) *Array {
 	return &Array{data: values}
 }
 
-func (t *Array) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(t.data, jettison.NoHTMLEscaping())
-}
-
 func (t *Array) String() string {
-	marshaled, err := t.MarshalJSON()
+	var b strings.Builder
 
-	if err != nil {
-		return "[]"
-	}
+	writeArray(&b, t)
 
-	return string(marshaled)
+	return b.String()
 }
 
 func (t *Array) Compare(other Value) int64 {
@@ -155,10 +148,6 @@ func (t *Array) Iterate(_ context.Context) (Iterator, error) {
 
 func (t *Array) Length(_ context.Context) (Int, error) {
 	return Int(len(t.data)), nil
-}
-
-func (t *Array) IsEmpty(_ context.Context) (Boolean, error) {
-	return len(t.data) == 0, nil
 }
 
 func (t *Array) Contains(ctx context.Context, value Value) (Boolean, error) {

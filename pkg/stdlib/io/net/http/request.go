@@ -6,6 +6,8 @@ import (
 	"io"
 	h "net/http"
 
+	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
+	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -121,7 +123,12 @@ func newParamsFrom(ctx context.Context, obj runtime.Map) (Params, error) {
 		if ok {
 			p.Body = bin
 		} else {
-			j, err := body.MarshalJSON()
+			encoder := ferretencoding.Encoder(encodingjson.Default)
+			if selected, resolverErr := ferretencoding.EncoderFrom(ctx, ferretencoding.ContentTypeJSON); resolverErr == nil {
+				encoder = selected
+			}
+
+			j, err := encoder.Encode(body)
 
 			if err != nil {
 				return Params{}, runtime.Error(err, ".body")

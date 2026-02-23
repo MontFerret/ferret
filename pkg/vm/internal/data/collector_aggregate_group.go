@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -135,16 +136,17 @@ func (c *GroupedAggregateCollector) MarshalJSON() ([]byte, error) {
 		addEntry(key, entry)
 	}
 
-	return obj.MarshalJSON()
+	return json.Default.Encode(obj)
 }
 
 func (c *GroupedAggregateCollector) String() string {
-	data, err := c.MarshalJSON()
+	encoded, err := c.MarshalJSON()
+
 	if err != nil {
 		return "[GroupedAggregateCollector]"
 	}
 
-	return string(data)
+	return string(encoded)
 }
 
 func (c *GroupedAggregateCollector) Hash() uint64 {

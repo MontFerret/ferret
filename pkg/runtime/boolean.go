@@ -3,8 +3,6 @@ package runtime
 import (
 	"hash/fnv"
 	"strings"
-
-	"github.com/wI2L/jettison"
 )
 
 type Boolean bool
@@ -60,10 +58,6 @@ func MustParseBoolean(input interface{}) Boolean {
 	}
 
 	return res
-}
-
-func (t Boolean) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(bool(t), jettison.NoHTMLEscaping())
 }
 
 func (t Boolean) String() string {

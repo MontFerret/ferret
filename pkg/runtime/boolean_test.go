@@ -9,17 +9,6 @@ import (
 )
 
 func TestBoolean(t *testing.T) {
-	Convey(".MarshalJSON", t, func() {
-		Convey("Should serialize a boolean items", func() {
-			b := True
-			marshaled, err := b.MarshalJSON()
-
-			So(err, ShouldBeNil)
-
-			So(string(marshaled), ShouldEqual, "true")
-		})
-	})
-
 	Convey(".String", t, func() {
 		Convey("Should return a string representation ", func() {
 			So(True.String(), ShouldEqual, "true")

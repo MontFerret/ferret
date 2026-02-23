@@ -17,7 +17,7 @@ type (
 // NewType creates a new Type from a given package and name.
 func NewType(pkg, name string) Type {
 	if pkg == "" {
-		return Type(pkg)
+		return Type(name)
 	}
 
 	if name == "" {
@@ -25,13 +25,6 @@ func NewType(pkg, name string) Type {
 	}
 
 	return Type(pkg + "." + name)
-}
-
-// NewReflectType creates a new Type from a given value using reflection.
-func NewReflectType(input any) Type {
-	t := reflect.TypeOf(input)
-
-	return NewType(t.PkgPath(), t.Name())
 }
 
 func (t Type) String() string {
@@ -148,8 +141,36 @@ func TypeOf(input Value) Type {
 	case Typed:
 		return v.Type()
 	default:
-		return NewReflectType(input)
+		return ReflectTypeOf(input)
 	}
+}
+
+// ReflectTypeOf creates a new Type from a given value using reflection.
+func ReflectTypeOf(input any) Type {
+	return typeOfBuiltin(reflect.TypeOf(input))
+}
+
+func typeOfBuiltin(t reflect.Type) Type {
+	var name, pkg string
+
+	switch t.Kind() {
+	case reflect.Ptr:
+		return typeOfBuiltin(t.Elem())
+	case reflect.Slice:
+		elem := t.Elem()
+		name = fmt.Sprintf("[]%s", elem.Name())
+		pkg = elem.PkgPath()
+	case reflect.Map:
+		key := t.Key()
+		value := t.Elem()
+		name = fmt.Sprintf("map[%s]%s", key.Name(), value.Name())
+		pkg = key.PkgPath()
+	default:
+		name = t.Name()
+		pkg = t.PkgPath()
+	}
+
+	return NewType(pkg, name)
 }
 
 func CompareTypes(a, b Value) int64 {

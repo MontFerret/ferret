@@ -1,7 +1,6 @@
 package runtime_test
 
 import (
-	"encoding/json"
 	"testing"
 
 	c "context"
@@ -30,30 +29,6 @@ func TestArray(t *testing.T) {
 			size, _ := arr.Length(ctx)
 
 			So(size, ShouldEqual, 3)
-		})
-	})
-
-	Convey(".MarshalJSON", t, func() {
-		Convey("Should serialize empty array", func() {
-			arr := runtime.NewArray(10)
-			marshaled, err := arr.MarshalJSON()
-
-			So(err, ShouldBeNil)
-
-			So(string(marshaled), ShouldEqual, "[]")
-		})
-
-		Convey("Should serialize full array", func() {
-			arr := runtime.NewArrayWith(
-				runtime.NewInt(1),
-				runtime.NewInt(2),
-				runtime.NewInt(3),
-			)
-			marshaled, err := json.Marshal(arr)
-
-			So(err, ShouldBeNil)
-
-			So(string(marshaled), ShouldEqual, "[1,2,3]")
 		})
 	})
 
@@ -724,24 +699,6 @@ func TestArray(t *testing.T) {
 			})
 		})
 
-		Convey(".IsEmpty", func() {
-			Convey("Should return true for empty array", func() {
-				arr := runtime.NewArray(0)
-
-				isEmpty, err := arr.IsEmpty(ctx)
-				So(err, ShouldBeNil)
-				So(isEmpty, ShouldEqual, runtime.True)
-			})
-
-			Convey("Should return false for non-empty array", func() {
-				arr := runtime.NewArrayWith(runtime.NewInt(1))
-
-				isEmpty, err := arr.IsEmpty(ctx)
-				So(err, ShouldBeNil)
-				So(isEmpty, ShouldEqual, runtime.False)
-			})
-		})
-
 		Convey(".Clear", func() {
 			Convey("Should clear all elements", func() {
 				arr := runtime.NewArrayWith(
@@ -759,8 +716,8 @@ func TestArray(t *testing.T) {
 				length, _ = arr.Length(ctx)
 				So(length, ShouldEqual, runtime.NewInt(0))
 
-				isEmpty, _ := arr.IsEmpty(ctx)
-				So(isEmpty, ShouldEqual, runtime.True)
+				size, _ := arr.Length(ctx)
+				So(size, ShouldEqual, runtime.ZeroInt)
 			})
 
 			Convey("Should work on empty array", func() {
@@ -806,8 +763,8 @@ func TestArray(t *testing.T) {
 
 				So(arr.Compare(copyArr), ShouldEqual, 0)
 
-				isEmpty, _ := copyArr.IsEmpty(ctx)
-				So(isEmpty, ShouldEqual, runtime.True)
+				size, _ := copyArr.Length(ctx)
+				So(size, ShouldEqual, runtime.ZeroInt)
 			})
 		})
 

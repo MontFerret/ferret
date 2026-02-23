@@ -66,10 +66,6 @@ func (ds *DataSet) Copy() runtime.Value {
 	return ds
 }
 
-func (ds *DataSet) MarshalJSON() ([]byte, error) {
-	return ds.values.MarshalJSON()
-}
-
 func (ds *DataSet) Compare(other runtime.Value) int64 {
 	return ds.values.Compare(other)
 }

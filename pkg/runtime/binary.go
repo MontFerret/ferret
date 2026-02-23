@@ -4,8 +4,6 @@ import (
 	"context"
 	"hash/fnv"
 	"io"
-
-	"github.com/wI2L/jettison"
 )
 
 type Binary []byte
@@ -22,13 +20,6 @@ func NewBinaryFrom(stream io.Reader) (Binary, error) {
 	}
 
 	return values, nil
-}
-
-func (b Binary) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts([]byte(b),
-		jettison.NoStringEscaping(),
-		jettison.NoCompact(),
-	)
 }
 
 func (b Binary) String() string {

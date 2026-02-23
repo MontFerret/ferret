@@ -4,6 +4,8 @@ import (
 	c "context"
 	"testing"
 
+	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
+
 	. "github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -39,10 +41,10 @@ func TestObject(t *testing.T) {
 		})
 	})
 
-	Convey(".MarshalJSON", t, func() {
+	Convey(".EncodeJSON", t, func() {
 		Convey("Should serialize an empty object", func() {
 			obj := NewObject()
-			marshaled, err := obj.MarshalJSON()
+			marshaled, err := encodingjson.Default.Encode(obj)
 
 			So(err, ShouldBeNil)
 
@@ -61,7 +63,7 @@ func TestObject(t *testing.T) {
 					"object":  NewObject(),
 				},
 			)
-			marshaled, err := obj.MarshalJSON()
+			marshaled, err := encodingjson.Default.Encode(obj)
 
 			So(err, ShouldBeNil)
 

@@ -1,7 +1,6 @@
 package runtime_test
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -27,20 +26,6 @@ func TestInt(t *testing.T) {
 			v := runtime.NewInt(1)
 
 			So(v.Hash(), ShouldEqual, v.Hash())
-		})
-	})
-
-	Convey(".MarshalJSON", t, func() {
-		Convey("It should correctly serialize Value", func() {
-			value := 10
-
-			json1, err := json.Marshal(value)
-			So(err, ShouldBeNil)
-
-			json2, err := runtime.NewInt(value).MarshalJSON()
-			So(err, ShouldBeNil)
-
-			So(json1, ShouldResemble, json2)
 		})
 	})
 }

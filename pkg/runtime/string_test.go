@@ -2,8 +2,6 @@ package runtime_test
 
 import (
 	c "context"
-	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -42,32 +40,6 @@ func TestString(t *testing.T) {
 		})
 	})
 
-	Convey(".MarshalJSON", t, func() {
-		Convey("It should correctly serialize Value", func() {
-			value := "foobar"
-
-			json1, err := json.Marshal(value)
-			So(err, ShouldBeNil)
-
-			json2, err := runtime.NewString(value).MarshalJSON()
-			So(err, ShouldBeNil)
-
-			So(json1, ShouldResemble, json2)
-		})
-
-		Convey("It should NOT escape HTML", func() {
-			value := "<div><span>Foobar</span></div>"
-
-			json1, err := json.Marshal(value)
-			So(err, ShouldBeNil)
-
-			json2, err := runtime.NewString(value).MarshalJSON()
-			So(err, ShouldBeNil)
-
-			So(json1, ShouldNotResemble, json2)
-			So(string(json2), ShouldEqual, fmt.Sprintf(`"%s"`, value))
-		})
-	})
 	Convey(".At", t, func() {
 		Convey("It should return a character", func() {
 			v := runtime.NewString("abcdefg")

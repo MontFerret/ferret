@@ -2,10 +2,8 @@ package strings
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/wI2L/jettison"
-
+	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -19,15 +17,12 @@ func JSONParse(_ context.Context, args ...runtime.Value) (runtime.Value, error) 
 		return runtime.EmptyString, err
 	}
 
-	var val interface{}
-
-	err = json.Unmarshal([]byte(args[0].String()), &val)
-
+	out, err := encodingjson.Default.Decode([]byte(args[0].String()))
 	if err != nil {
 		return runtime.EmptyString, err
 	}
 
-	return runtime.Parse(val), nil
+	return out, nil
 }
 
 // JSON_STRINGIFY returns a JSON string representation of the input value.
@@ -40,7 +35,7 @@ func JSONStringify(_ context.Context, args ...runtime.Value) (runtime.Value, err
 		return runtime.EmptyString, err
 	}
 
-	out, err := jettison.MarshalOpts(args[0])
+	out, err := encodingjson.Default.Encode(args[0])
 
 	if err != nil {
 		return runtime.EmptyString, err

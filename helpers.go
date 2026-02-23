@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io"
 
+	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	"github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -60,8 +62,13 @@ func One(ctx context.Context, result Result) (runtime.Value, error) {
 }
 
 func JSONStream(ctx context.Context, input io.Writer, result Result) error {
+	encoder := encoding.Encoder(json.Default)
+	if selected, err := encoding.EncoderFrom(ctx, encoding.ContentTypeJSON); err == nil {
+		encoder = selected
+	}
+
 	return ForEach(ctx, result, func(val runtime.Value) error {
-		j, err := val.MarshalJSON()
+		j, err := encoder.Encode(val)
 
 		if err != nil {
 			return err

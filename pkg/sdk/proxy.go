@@ -62,7 +62,7 @@ func (p *Proxy[T]) Type() runtime.Type {
 		return typed.Type()
 	}
 
-	return runtime.NewReflectType(p.target)
+	return runtime.ReflectTypeOf(p.target)
 }
 
 func (p *Proxy[T]) Unwrap() any {

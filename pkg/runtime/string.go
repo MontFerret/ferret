@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"strings"
-
-	"github.com/wI2L/jettison"
 )
 
 type String string
@@ -64,10 +62,6 @@ func MustParseString(input interface{}) String {
 	}
 
 	return res
-}
-
-func (s String) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(string(s), jettison.NoHTMLEscaping())
 }
 
 func (s String) String() string {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/smartystreets/goconvey/convey"
 
+	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -68,7 +69,7 @@ func newMockText(value string) *mockText {
 }
 
 func (t *mockText) MarshalJSON() ([]byte, error) {
-	return t.value.MarshalJSON()
+	return encodingjson.Default.Encode(t.value)
 }
 
 func (t *mockText) String() string {
@@ -96,7 +97,7 @@ func newMockNode(kind string) *mockNode {
 }
 
 func (n *mockNode) MarshalJSON() ([]byte, error) {
-	return runtime.NewString(n.kind).MarshalJSON()
+	return encodingjson.Default.Encode(runtime.NewString(n.kind))
 }
 
 func (n *mockNode) String() string {

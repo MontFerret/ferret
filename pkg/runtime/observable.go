@@ -11,8 +11,8 @@ type (
 	// Subscription represents an event subscription object that contains target event name
 	// and optional event options.
 	Subscription struct {
-		EventName String
-		Options   Map
+		EventName String `json:"eventName"`
+		Options   Map    `json:"options"`
 	}
 
 	// Message represents an event message that an Observable can emit.
