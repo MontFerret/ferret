@@ -20,11 +20,15 @@ func NewObjectOf(size int) *Object {
 	return &Object{make(map[string]Value, size)}
 }
 
+// NewObjectWith creates a new object with the provided properties.
+// The properties are copied to ensure that the original map can be safely modified without affecting the created object.
 func NewObjectWith(props map[string]Value) *Object {
 	data := make(map[string]Value, len(props))
+
 	for k, v := range props {
 		data[k] = v
 	}
+
 	return &Object{data}
 }
 
