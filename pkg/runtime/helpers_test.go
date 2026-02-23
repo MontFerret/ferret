@@ -431,7 +431,7 @@ func TestHelpers(t *testing.T) {
 
 				So(err, ShouldBeNil)
 
-				val, err := runtime.Unmarshal(json1)
+				val, err := encodingjson.Default.Decode(json1)
 
 				So(err, ShouldBeNil)
 

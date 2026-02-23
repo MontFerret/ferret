@@ -38,17 +38,7 @@ func NewArrayOf(values []Value) *Array {
 func (t *Array) String() string {
 	var b strings.Builder
 
-	b.WriteString("[")
-
-	for i, el := range t.data {
-		b.WriteString(el.String())
-
-		if i != len(t.data)-1 {
-			b.WriteString(", ")
-		}
-	}
-
-	b.WriteString("]")
+	writeArray(&b, t)
 
 	return b.String()
 }

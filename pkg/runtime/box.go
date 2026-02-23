@@ -26,7 +26,7 @@ func (b *Box[T]) Type() Type {
 }
 
 func (b *Box[T]) String() string {
-	return fmt.Sprintf("Box[%s]: %b", b.Type(), b.Value)
+	return fmt.Sprintf("Box[%s]: %v", b.Type(), b.Value)
 }
 
 func (b *Box[T]) Unwrap() any {

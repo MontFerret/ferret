@@ -6,8 +6,8 @@ import (
 	"hash/fnv"
 	"io"
 	"sort"
-	"strings"
 
+	"github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -158,21 +158,18 @@ func (t *FastObject) Type() string {
 
 func (t *FastObject) ObjectLike() {}
 
+func (t *FastObject) MarshalJSON() ([]byte, error) {
+	return json.Default.Encode(t.toMap())
+}
+
 func (t *FastObject) String() string {
-	var b strings.Builder
+	marshaled, err := t.MarshalJSON()
 
-	b.WriteString("{")
+	if err != nil {
+		return "{}"
+	}
 
-	t.forEachKV(func(k string, v runtime.Value) {
-		b.WriteString(k)
-		b.WriteString(": ")
-		b.WriteString(v.String())
-		b.WriteString(", ")
-	})
-
-	b.WriteString("}")
-
-	return b.String()
+	return string(marshaled)
 }
 
 func (t *FastObject) Compare(other runtime.Value) int64 {
@@ -821,20 +818,24 @@ func (t *FastObject) forEachKV(fn func(key string, val runtime.Value)) {
 	}
 }
 
-func (t *FastObject) toMap() map[string]runtime.Value {
+func (t *FastObject) toMap() runtime.Map {
+	obj := runtime.NewObject()
+
 	if t.dict != nil {
-		return t.dict
+		return obj
 	}
 
-	out := make(map[string]runtime.Value, t.size)
+	ctx := context.Background()
+
 	for idx, key := range t.shape.names {
 		if t.slots[idx] == nil {
 			continue
 		}
-		out[key] = t.slots[idx]
+
+		_ = obj.Set(ctx, runtime.String(key), t.slots[idx])
 	}
 
-	return out
+	return obj
 }
 
 type fastObjectEntry struct {

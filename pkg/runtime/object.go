@@ -32,21 +32,7 @@ func (t *Object) ObjectLike() {}
 
 func (t *Object) String() string {
 	var b strings.Builder
-
-	if len(t.data) == 0 {
-		return "{}"
-	}
-
-	b.WriteString("{")
-
-	for k, v := range t.data {
-		b.WriteString(k)
-		b.WriteString(": ")
-		b.WriteString(v.String())
-		b.WriteString(", ")
-	}
-
-	b.WriteString("}")
+	writeObject(&b, t)
 
 	return b.String()
 }

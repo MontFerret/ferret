@@ -4,19 +4,19 @@ import (
 	"context"
 	"testing"
 
-	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
+	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func TestEngineInjectsRegistryIntoContext(t *testing.T) {
-	expected := ferretencoding.NewRegistry()
+	expected := encoding.NewRegistry()
 	calledWithExpected := false
 
 	eng, err := New(
 		WithEncodingRegistry(expected),
 		WithFunction("CHECK_REGISTRY", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-			registry, err := ferretencoding.RegistryFrom(ctx)
+			registry, err := encoding.RegistryFrom(ctx)
 			if err != nil {
 				return runtime.False, nil
 			}
@@ -56,7 +56,7 @@ func TestEngineInjectsRegistryIntoContext(t *testing.T) {
 func TestEngineDefaultRegistryContainsJSONEncoder(t *testing.T) {
 	eng, err := New(
 		WithFunction("HAS_JSON_CODEC", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-			_, err := ferretencoding.EncoderFrom(ctx, ferretencoding.ContentTypeJSON)
+			_, err := encoding.EncoderFrom(ctx, encoding.ContentTypeJSON)
 			if err != nil {
 				return runtime.False, nil
 			}
