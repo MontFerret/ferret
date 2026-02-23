@@ -821,7 +821,7 @@ func (t *FastObject) forEachKV(fn func(key string, val runtime.Value)) {
 func (t *FastObject) toMap() runtime.Map {
 	obj := runtime.NewObject()
 
-	if t.dict == nil {
+	if len(t.dict) == 0 {
 		return obj
 	}
 
