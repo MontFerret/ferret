@@ -2,7 +2,8 @@ package json
 
 import (
 	"bytes"
-	stdjson "encoding/json"
+
+	"github.com/goccy/go-json"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -20,7 +21,7 @@ func (Codec) Encode(value runtime.Value) ([]byte, error) {
 
 	var buf bytes.Buffer
 
-	encoder := stdjson.NewEncoder(&buf)
+	encoder := json.NewEncoder(&buf)
 	encoder.SetEscapeHTML(false)
 
 	if err := encoder.Encode(value); err != nil {
@@ -36,5 +37,11 @@ func (Codec) Encode(value runtime.Value) ([]byte, error) {
 }
 
 func (Codec) Decode(data []byte) (runtime.Value, error) {
-	return runtime.Unmarshal(data)
+	var o any
+
+	if err := json.Unmarshal(data, &o); err != nil {
+		return runtime.None, err
+	}
+
+	return runtime.Parse(o), nil
 }
