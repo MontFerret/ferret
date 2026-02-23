@@ -17,7 +17,7 @@ import (
 type Codec struct{}
 
 // Default is the default JSON codec.
-var Default Codec = Codec{}
+var Default = Codec{}
 
 func (Codec) Encode(value runtime.Value) ([]byte, error) {
 	var buf bytes.Buffer
@@ -128,7 +128,7 @@ func (Codec) Decode(data []byte) (runtime.Value, error) {
 			}
 		case json.Number:
 			raw := v.String()
-			if strings.IndexAny(raw, ".eE") == -1 {
+			if !strings.ContainsAny(raw, ".eE") {
 				parsed, err := strconv.ParseInt(raw, 10, 64)
 				if err == nil {
 					maxInt := int64(^uint(0) >> 1)
