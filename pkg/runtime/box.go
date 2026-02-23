@@ -3,7 +3,6 @@ package runtime
 import (
 	"fmt"
 	"hash/fnv"
-	"reflect"
 )
 
 // Box is a generic container that holds a single value of type T.
@@ -19,14 +18,8 @@ func NewBox[T any](value T) *Box[T] {
 	}
 }
 
-func (b *Box[T]) Type() Type {
-	t := reflect.TypeOf(b.Value)
-
-	return NewType(t.PkgPath(), t.Name())
-}
-
 func (b *Box[T]) String() string {
-	return fmt.Sprintf("Box[%s]: %v", b.Type(), b.Value)
+	return fmt.Sprintf("Box[%T](%v)", b.Value, b.Value)
 }
 
 func (b *Box[T]) Unwrap() any {
@@ -37,7 +30,6 @@ func (b *Box[T]) Hash() uint64 {
 	h := fnv.New64a()
 
 	_, _ = h.Write([]byte("box:"))
-
 	_, _ = h.Write([]byte(b.String()))
 
 	return h.Sum64()
