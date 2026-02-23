@@ -26,7 +26,7 @@ func (b *Box[T]) Type() Type {
 }
 
 func (b *Box[T]) String() string {
-	return fmt.Sprintf("Box[%s]: %s", b.Type(), b.Value)
+	return fmt.Sprintf("Box[%s]: %v", b.Type(), b.Value)
 }
 
 func (b *Box[T]) Unwrap() any {
@@ -37,6 +37,7 @@ func (b *Box[T]) Hash() uint64 {
 	h := fnv.New64a()
 
 	_, _ = h.Write([]byte("box:"))
+
 	_, _ = h.Write([]byte(b.String()))
 
 	return h.Sum64()
