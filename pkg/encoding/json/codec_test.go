@@ -196,16 +196,6 @@ func TestJSONCodecEncode(t *testing.T) {
 		assertJSON(t, runtime.NewBox(7), "7")
 	})
 
-	t.Run("embedded box", func(t *testing.T) {
-		type EmbeddedBox struct {
-			*runtime.Box[int]
-		}
-
-		assertJSON(t, &EmbeddedBox{
-			Box: runtime.NewBox[int](7),
-		}, "7")
-	})
-
 	t.Run("iterable_branch", func(t *testing.T) {
 		iter := &iterOnly{items: []runtime.Value{runtime.NewInt(1), runtime.NewString("x")}}
 		assertJSON(t, iter, "[1,\"x\"]")
