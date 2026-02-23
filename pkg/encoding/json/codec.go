@@ -75,6 +75,7 @@ func (Codec) Decode(data []byte) (runtime.Value, error) {
 		if err == io.EOF {
 			break
 		}
+
 		if err != nil {
 			return runtime.None, err
 		}
@@ -128,15 +129,19 @@ func (Codec) Decode(data []byte) (runtime.Value, error) {
 			}
 		case json.Number:
 			raw := v.String()
+
 			if !strings.ContainsAny(raw, ".eE") {
-				parsed, err := strconv.ParseInt(raw, 10, 64)
+				parsed, err := strconv.ParseInt(raw, 10, strconv.IntSize)
+
 				if err == nil {
 					maxInt := int64(^uint(0) >> 1)
 					minInt := -maxInt - 1
+
 					if parsed >= minInt && parsed <= maxInt {
 						if err := attach(runtime.NewInt(int(parsed))); err != nil {
 							return runtime.None, err
 						}
+
 						break
 					}
 				}
