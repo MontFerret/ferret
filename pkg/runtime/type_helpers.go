@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 )
 
@@ -20,7 +21,7 @@ func SameType(a, b Type) bool {
 }
 
 func typeRank(value Value) int64 {
-	if value == None {
+	if value == None || value == nil {
 		return 0
 	}
 
@@ -35,14 +36,14 @@ func typeRank(value Value) int64 {
 		return 4
 	case DateTime:
 		return 5
-	case List:
-		return 6
-	case Map:
-		return 7
 	case Binary:
+		return 6
+	case List:
+		return 7
+	case Map:
 		return 8
 	default:
-		return -1
+		return math.MaxInt // unknown types last
 	}
 }
 
@@ -62,9 +63,10 @@ func CompareTypes(a, b Value) int64 {
 	return 1
 }
 
-// TypeOf returns the runtime Type of a given value.
-// It prefers known concrete types and interfaces; if none match and the value
-// implements Typed, its Type is returned. Otherwise it falls back to reflection.
+// TypeOf returns the Type of a given Value, respecting any Typed overrides.
+// It checks for known concrete types and interfaces first, and if no match is found, it falls back to HostTypeOf to create a Type based on the Go type of the value using reflection.
+// This allows the runtime to recognize and work with types defined in the host environment, even if they don't implement any specific interfaces or aren't known concrete types within the runtime.
+// For example, if a value is of a Go struct type that doesn't implement Typed or any known interfaces, HostTypeOf will create a Type with the name of that struct type, allowing it to be used in type checks and error messages within the runtime.
 func TypeOf(input Value) Type {
 	if input == None || input == nil {
 		return TypeNone
@@ -112,9 +114,11 @@ func TypeOf(input Value) Type {
 	}
 }
 
-// HostTypeOf creates a new Type from a given value using reflection, ignoring pointers and slices/maps of known types.
-// This is used as a fallback for values that don't match any known concrete types or interfaces and don't implement Typed.
-// Unlike TypeOf, it doesn't check for Typed overrides and always uses reflection, so it's suitable for host values that may not implement Typed.
+// HostTypeOf creates a new Type from a given value using reflection, for types not known to the runtime.
+// It handles pointers, slices, and maps by unwrapping them and including their element types in the name.
+// For example, a value of type *[]int would yield a Type with the name "[]int".
+// This function is used as a fallback in TypeOf when a value doesn't match any known concrete types or interfaces.
+// Note that the resulting Type may not have any special behavior beyond its name, and Is checks will likely fail unless the value is exactly the same type.
 func HostTypeOf(input any) Type {
 	return typeFromReflect(reflect.TypeOf(input))
 }
@@ -139,7 +143,7 @@ func typeFromReflect(t reflect.Type) Type {
 		pkg = t.PkgPath()
 	}
 
-	return NewHostType(pkg, name)
+	return hewHostType(pkg, name, t)
 }
 
 // IsType reports whether a value matches the required type.

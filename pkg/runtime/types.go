@@ -37,9 +37,6 @@ var (
 		_, ok := v.(Binary)
 		return ok
 	})
-	TypeRegexp = NewType("Regexp", func(Value) bool {
-		return false
-	})
 
 	// Interfaces
 	TypeCollection = NewType("Collection", func(v Value) bool {
@@ -54,6 +51,8 @@ var (
 		_, ok := v.(Map)
 		return ok
 	})
+
+	// Capabilities
 	TypeIndexReadable = NewType("IndexReadable", func(v Value) bool {
 		_, ok := v.(IndexReadable)
 		return ok

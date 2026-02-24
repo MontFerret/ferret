@@ -46,8 +46,33 @@ func NewType(name string, assert TypeMatcher) Type {
 	return &runtimeType{name: name, assert: assert}
 }
 
-// NewHostType creates a new Type from a given package and name.
-func NewHostType(pkg, name string) Type {
+func (rt *runtimeType) Name() string {
+	if rt == nil {
+		return UnknownTypeName
+	}
+
+	return rt.name
+}
+
+func (rt *runtimeType) String() string {
+	if rt == nil {
+		return UnknownTypeName
+	}
+
+	return rt.name
+}
+
+func (rt *runtimeType) Is(v Value) bool {
+	if rt == nil || rt.assert == nil {
+		return false
+	}
+
+	return rt.assert(v)
+}
+
+// hewHostType creates a new Type for a host-defined type (e.g., a Go type).
+// The pkg parameter is the package path of the type, and the name parameter is the name of the type.
+func hewHostType(pkg, name string, typ reflect.Type) Type {
 	if pkg == "" {
 		return &hostType{name: name}
 	}
@@ -56,31 +81,7 @@ func NewHostType(pkg, name string) Type {
 		panic("name is empty")
 	}
 
-	return &hostType{name: pkg + "." + name}
-}
-
-func (t *runtimeType) Name() string {
-	if t == nil {
-		return UnknownTypeName
-	}
-
-	return t.name
-}
-
-func (t *runtimeType) String() string {
-	if t == nil {
-		return UnknownTypeName
-	}
-
-	return t.name
-}
-
-func (t *runtimeType) Is(v Value) bool {
-	if t == nil || t.assert == nil {
-		return false
-	}
-
-	return t.assert(v)
+	return &hostType{name: pkg + "." + name, typ: typ}
 }
 
 func (ht *hostType) Name() string {

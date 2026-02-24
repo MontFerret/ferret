@@ -287,7 +287,7 @@ func (vm *VM) regexpCached(pc int, value runtime.Value) (*data.Regexp, error) {
 
 		return r, nil
 	default:
-		return nil, runtime.TypeErrorOf(value, runtime.TypeString, runtime.TypeRegexp)
+		return nil, runtime.TypeErrorOf(value, runtime.TypeString, data.TypeRegexp)
 	}
 }
 
