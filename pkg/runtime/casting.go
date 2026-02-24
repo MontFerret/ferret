@@ -1,5 +1,18 @@
 package runtime
 
+// Cast attempts to cast the input value to the specified type T.
+// If the cast is successful, it returns the casted value.
+// Otherwise, it returns the provided fallback value.
+func Cast[T Value](input Value, fallback T) T {
+	val, ok := input.(T)
+
+	if ok {
+		return val
+	}
+
+	return fallback
+}
+
 func CastBoolean(input Value) (Boolean, error) {
 	boolean, ok := input.(Boolean)
 
@@ -8,16 +21,6 @@ func CastBoolean(input Value) (Boolean, error) {
 	}
 
 	return False, TypeErrorOf(input, TypeBoolean)
-}
-
-func SafeCastBoolean(input Value, fallback Boolean) Boolean {
-	boolean, ok := input.(Boolean)
-
-	if ok {
-		return boolean
-	}
-
-	return fallback
 }
 
 func CastInt(input Value) (Int, error) {
@@ -30,16 +33,6 @@ func CastInt(input Value) (Int, error) {
 	return ZeroInt, TypeErrorOf(input, TypeInt)
 }
 
-func SafeCastInt(input Value, fallback Int) Int {
-	integer, ok := input.(Int)
-
-	if ok {
-		return integer
-	}
-
-	return fallback
-}
-
 func CastFloat(input Value) (Float, error) {
 	float, ok := input.(Float)
 
@@ -48,16 +41,6 @@ func CastFloat(input Value) (Float, error) {
 	}
 
 	return ZeroFloat, TypeErrorOf(input, TypeFloat)
-}
-
-func SafeCastFloat(input Value, fallback Float) Float {
-	float, ok := input.(Float)
-
-	if ok {
-		return float
-	}
-
-	return fallback
 }
 
 func CastString(input Value) (String, error) {
@@ -70,16 +53,6 @@ func CastString(input Value) (String, error) {
 	return EmptyString, TypeErrorOf(input, TypeString)
 }
 
-func SafeCastString(input Value, fallback String) String {
-	str, ok := input.(String)
-
-	if ok {
-		return str
-	}
-
-	return fallback
-}
-
 func CastDateTime(input Value) (DateTime, error) {
 	dt, ok := input.(DateTime)
 
@@ -88,16 +61,6 @@ func CastDateTime(input Value) (DateTime, error) {
 	}
 
 	return ZeroDateTime, TypeErrorOf(input, TypeDateTime)
-}
-
-func SafeCastDateTime(input Value, fallback DateTime) DateTime {
-	dt, ok := input.(DateTime)
-
-	if ok {
-		return dt
-	}
-
-	return fallback
 }
 
 func CastCollection(input Value) (Collection, error) {
@@ -110,6 +73,16 @@ func CastCollection(input Value) (Collection, error) {
 	return nil, TypeErrorOf(input, TypeCollection)
 }
 
+func CastArray(input Value) (*Array, error) {
+	arr, ok := input.(*Array)
+
+	if ok {
+		return arr, nil
+	}
+
+	return nil, TypeErrorOf(input, TypeArray)
+}
+
 func CastList(input Value) (List, error) {
 	arr, ok := input.(List)
 
@@ -120,14 +93,14 @@ func CastList(input Value) (List, error) {
 	return nil, TypeErrorOf(input, TypeList)
 }
 
-func SafeCastList(input Value, fallback List) List {
-	arr, ok := input.(List)
+func CastObject(input Value) (*Object, error) {
+	obj, ok := input.(*Object)
 
 	if ok {
-		return arr
+		return obj, nil
 	}
 
-	return fallback
+	return nil, TypeErrorOf(input, TypeObject)
 }
 
 func CastMap(input Value) (Map, error) {
@@ -140,16 +113,6 @@ func CastMap(input Value) (Map, error) {
 	return nil, TypeErrorOf(input, TypeMap)
 }
 
-func SafeCastMap(input Value, fallback Map) Map {
-	obj, ok := input.(Map)
-
-	if ok {
-		return obj
-	}
-	return fallback
-
-}
-
 func CastBinary(input Value) (Binary, error) {
 	bin, ok := input.(Binary)
 
@@ -158,16 +121,6 @@ func CastBinary(input Value) (Binary, error) {
 	}
 
 	return nil, TypeErrorOf(input, TypeBinary)
-}
-
-func SafeCastBinary(input Value, fallback Binary) Binary {
-	bin, ok := input.(Binary)
-
-	if ok {
-		return bin
-	}
-
-	return fallback
 }
 
 func CastComparable(input Value) (Comparable, error) {

@@ -16,12 +16,12 @@ func Contains(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.False, err
 	}
 
-	text := runtime.SafeCastString(args[0], runtime.EmptyString)
-	search := runtime.SafeCastString(args[1], runtime.EmptyString)
+	text := runtime.Cast[runtime.String](args[0], runtime.EmptyString)
+	search := runtime.Cast[runtime.String](args[1], runtime.EmptyString)
 	returnIndex := runtime.False
 
 	if len(args) > 2 {
-		returnIndex = runtime.SafeCastBoolean(args[2], runtime.False)
+		returnIndex = runtime.Cast[runtime.Boolean](args[2], runtime.False)
 	}
 
 	if returnIndex == runtime.True {

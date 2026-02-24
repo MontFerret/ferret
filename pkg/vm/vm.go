@@ -439,7 +439,7 @@ loop:
 				)
 			}
 		case bytecode.OpType:
-			reg[dst] = runtime.String(runtime.TypeOf(reg[src1]))
+			reg[dst] = runtime.NewString(runtime.TypeName(runtime.TypeOf(reg[src1])))
 		case bytecode.OpFlatten:
 			depth := src2.Register()
 

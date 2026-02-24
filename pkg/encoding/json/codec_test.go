@@ -185,13 +185,6 @@ func TestJSONCodecEncode(t *testing.T) {
 		assertJSON(t, obj, "{\"a\":1,\"b\":2}")
 	})
 
-	t.Run("query", func(t *testing.T) {
-		q := runtime.NewQuery(runtime.NewString("kind"), runtime.NewString("payload"))
-		q.Params = runtime.None
-
-		assertJSON(t, q, "{\"kind\":\"kind\",\"payload\":\"payload\",\"params\":null}")
-	})
-
 	t.Run("box", func(t *testing.T) {
 		assertJSON(t, runtime.NewBox(7), "7")
 	})

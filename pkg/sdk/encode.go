@@ -53,7 +53,7 @@ func EncodeField(ctx context.Context, input any, key runtime.Value) (runtime.Val
 		for i := 0; i < v.NumField(); i++ {
 			f := t.Field(i)
 
-			tagName, ok := runtime.Tag(f)
+			tagName, ok := Tag(f)
 			if !ok {
 				continue
 			}
@@ -200,7 +200,7 @@ func encodeValue(v reflect.Value) runtime.Value {
 				continue
 			}
 
-			name, ok := runtime.Tag(field)
+			name, ok := Tag(field)
 			if !ok {
 				continue
 			}

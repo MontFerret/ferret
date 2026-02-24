@@ -68,7 +68,7 @@ func (e *MemberAccessError) Label() string {
 		access = "member"
 	}
 
-	if e.Target == "" {
+	if runtime.TypeName(e.Target) == "" {
 		return fmt.Sprintf("%s access", access)
 	}
 
@@ -80,7 +80,7 @@ func (e *MemberAccessError) Hint() string {
 		return ""
 	}
 
-	if e.Target == runtime.TypeNone {
+	if runtime.SameType(e.Target, runtime.TypeNone) {
 		return "Use optional chaining (?.) or check for None before accessing a member"
 	}
 

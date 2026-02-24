@@ -130,8 +130,39 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 	var query runtime.Query
 
 	switch value := arg.(type) {
-	case runtime.Query:
-		query = value
+	case runtime.ObjectLike:
+		kind, err := value.Get(ctx, runtime.NewString("kind"))
+		if err != nil {
+			if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
+				return err
+			}
+
+			break
+		}
+
+		payload, err := value.Get(ctx, runtime.NewString("payload"))
+		if err != nil {
+			if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
+				return err
+			}
+
+			break
+		}
+
+		options, err := value.Get(ctx, runtime.NewString("options"))
+		if err != nil {
+			if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
+				return err
+			}
+
+			break
+		}
+
+		query = runtime.Query{
+			Kind:    runtime.Cast[runtime.String](kind, runtime.EmptyString),
+			Payload: runtime.Cast[runtime.String](payload, runtime.EmptyString),
+			Options: options,
+		}
 	case *runtime.Array:
 		length, err := value.Length(ctx)
 		if err != nil {
@@ -143,7 +174,8 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 		}
 
 		if length < 2 {
-			if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(arg, runtime.TypeQuery)); err != nil {
+			// TODO: Give a more specific error message here
+			if err := vm.setOrTryCatch(dst, runtime.None, runtime.Error(runtime.ErrInvalidOperation, "unexpected query format")); err != nil {
 				return err
 			}
 
@@ -168,9 +200,9 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 			break
 		}
 
-		var paramsVal runtime.Value = runtime.None
+		var optionsVal runtime.Value = runtime.None
 		if length > 2 {
-			paramsVal, err = value.At(ctx, runtime.NewInt(2))
+			optionsVal, err = value.At(ctx, runtime.NewInt(2))
 			if err != nil {
 				if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
 					return err
@@ -201,10 +233,14 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 			}
 		}
 
-		query = runtime.NewQuery(kind, payload)
-		query.Params = paramsVal
+		query = runtime.Query{
+			Kind:    kind,
+			Payload: payload,
+			Options: optionsVal,
+		}
 	default:
-		if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(arg, runtime.TypeQuery, runtime.TypeArray)); err != nil {
+		// TODO: Give a more specific error message here
+		if err := vm.setOrTryCatch(dst, runtime.None, runtime.Error(runtime.ErrInvalidOperation, "unexpected query format")); err != nil {
 			return err
 		}
 

@@ -33,18 +33,26 @@ func TypeErrorOf(value Value, expected ...Type) error {
 
 func TypeError(actual Type, expected ...Type) error {
 	if len(expected) == 0 {
-		return Error(ErrInvalidType, string(actual))
+		return Error(ErrInvalidType, typeString(actual))
 	}
 
 	strs := make([]string, len(expected))
 
 	for idx, t := range expected {
-		strs[idx] = string(t)
+		strs[idx] = typeString(t)
 	}
 
 	expectedStr := strings.Join(strs, " or ")
 
-	return Error(ErrInvalidType, fmt.Sprintf(typeErrorTemplate, expectedStr, actual))
+	return Error(ErrInvalidType, fmt.Sprintf(typeErrorTemplate, expectedStr, typeString(actual)))
+}
+
+func typeString(t Type) string {
+	if t == nil {
+		return "Unknown"
+	}
+
+	return t.String()
 }
 
 func Error(err error, msg string) error {

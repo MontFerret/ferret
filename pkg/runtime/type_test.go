@@ -139,7 +139,7 @@ func TestValidateType(t *testing.T) {
 
 func TestTypeOfTypedOverride(t *testing.T) {
 	Convey("TypeOf should respect Typed overrides", t, func() {
-		So(runtime.TypeOf(typedOnly{}), ShouldEqual, runtime.TypeMap)
+		So(runtime.SameType(runtime.TypeOf(typedOnly{}), runtime.TypeMap), ShouldBeTrue)
 	})
 
 	Convey("IsType should use TypeOf before interface checks", t, func() {

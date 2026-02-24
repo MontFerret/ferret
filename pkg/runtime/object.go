@@ -32,6 +32,10 @@ func NewObjectWith(props map[string]Value) *Object {
 	return &Object{data}
 }
 
+func (t *Object) Type() Type {
+	return TypeObject
+}
+
 func (t *Object) ObjectLike() {}
 
 func (t *Object) String() string {

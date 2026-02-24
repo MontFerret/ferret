@@ -35,6 +35,10 @@ func NewArrayOf(values []Value) *Array {
 	return &Array{data: values}
 }
 
+func (t *Array) Type() Type {
+	return TypeArray
+}
+
 func (t *Array) String() string {
 	var b strings.Builder
 

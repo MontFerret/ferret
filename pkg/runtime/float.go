@@ -73,6 +73,10 @@ func IsInf(input Float, sign Int) Boolean {
 	return NewBoolean(math.IsInf(float64(input), int(sign)))
 }
 
+func (f Float) Type() Type {
+	return TypeFloat
+}
+
 func (f Float) String() string {
 	return fmt.Sprintf("%v", float64(f))
 }
@@ -80,7 +84,7 @@ func (f Float) String() string {
 func (f Float) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(TypeFloat))
+	h.Write([]byte(TypeFloat.Name()))
 
 	bytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bytes, math.Float64bits(float64(f)))

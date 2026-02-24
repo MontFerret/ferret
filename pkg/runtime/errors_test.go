@@ -20,7 +20,7 @@ func TestTypeError(t *testing.T) {
 		So(e, ShouldNotBeNil)
 
 		cause := errors.New("invalid type: expected foo or bar, but got Boolean")
-		e = runtime.TypeErrorOf(runtime.True, "foo", "bar")
+		e = runtime.TypeErrorOf(runtime.True, runtime.NewHostType("", "foo"), runtime.NewHostType("", "bar"))
 		So(e.Error(), ShouldEqual, cause.Error())
 	})
 }

@@ -64,6 +64,10 @@ func MustParseString(input interface{}) String {
 	return res
 }
 
+func (s String) Type() Type {
+	return TypeString
+}
+
 func (s String) String() string {
 	return string(s)
 }
@@ -71,7 +75,7 @@ func (s String) String() string {
 func (s String) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(TypeString))
+	h.Write([]byte(TypeString.Name()))
 	h.Write([]byte(s))
 
 	return h.Sum64()

@@ -79,7 +79,7 @@ func (p *ProxyMap[TKey, TValue]) Iterate(ctx context.Context) (runtime.Iterator,
 }
 
 func (p *ProxyMap[TKey, TValue]) itemToProxy(item TValue) runtime.Value {
-	if p.itemTypeName != "" {
+	if p.itemTypeName != nil {
 		return NewProxyWithType(p.itemTypeName, item)
 	}
 
