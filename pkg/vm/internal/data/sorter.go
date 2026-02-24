@@ -45,7 +45,7 @@ func (s *Sorter) Set(ctx context.Context, key, value runtime.Value) error {
 }
 
 func (s *Sorter) sort(ctx context.Context) error {
-	return runtime.SortListWith(ctx, s.Value, func(first, second runtime.Value) int64 {
+	return runtime.SortListWith(ctx, s.Value, func(first, second runtime.Value) int {
 		firstKV := first.(*KV)
 		secondKV := second.(*KV)
 

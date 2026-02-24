@@ -48,7 +48,7 @@ func SortListDesc(ctx context.Context, values List) error {
 
 // SortList sorts the given List using the stable Sort algorithm
 func SortList(ctx context.Context, values List, ascending Boolean) error {
-	var pivot int64 = -1
+	pivot := -1
 
 	if ascending {
 		pivot = 1
@@ -105,13 +105,13 @@ func SortListWith(ctx context.Context, values List, comparator Comparator) error
 }
 
 func SortSlice(values []Value, ascending Boolean) {
-	var pivot int64 = -1
+	pivot := -1
 
 	if ascending {
 		pivot = 1
 	}
 
-	SortSliceWith(values, func(first, second Value) int64 {
+	SortSliceWith(values, func(first, second Value) int {
 		comp := CompareValues(first, second)
 
 		return pivot * comp

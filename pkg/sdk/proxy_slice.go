@@ -96,7 +96,7 @@ func (p *ProxySlice[T]) sort(ascending bool) {
 	})
 }
 
-func (p *ProxySlice[T]) compare(a, b T) int64 {
+func (p *ProxySlice[T]) compare(a, b T) int {
 	if comparableA, ok := any(a).(runtime.Comparable); ok {
 		return comparableA.Compare(p.itemToProxy(b))
 	}

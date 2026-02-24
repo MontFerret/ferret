@@ -66,7 +66,7 @@ func (ds *DataSet) Copy() runtime.Value {
 	return ds
 }
 
-func (ds *DataSet) Compare(other runtime.Value) int64 {
+func (ds *DataSet) Compare(other runtime.Value) int {
 	return ds.values.Compare(other)
 }
 

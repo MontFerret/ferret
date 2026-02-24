@@ -235,11 +235,11 @@ func (c *GroupedAggregateCollector) valueFor(state aggregateState, kind bytecode
 }
 
 func (c *GroupedAggregateCollector) sort(ctx context.Context) error {
-	return runtime.SortListWith(ctx, c.Value, func(first, second runtime.Value) int64 {
+	return runtime.SortListWith(ctx, c.Value, func(first, second runtime.Value) int {
 		firstKV, firstOk := first.(*KV)
 		secondKV, secondOk := second.(*KV)
 
-		var comp int64
+		var comp int
 
 		if firstOk && secondOk {
 			comp = runtime.CompareValues(firstKV.Key, secondKV.Key)

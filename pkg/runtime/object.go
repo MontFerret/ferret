@@ -48,7 +48,7 @@ func (t *Object) String() string {
 // Compare compares the source object with other core.Value
 // The behavior of the Compare is similar
 // to the comparison of objects in ArangoDB
-func (t *Object) Compare(other Value) int64 {
+func (t *Object) Compare(other Value) int {
 	otherObject, ok := other.(*Object)
 
 	if !ok {
@@ -70,7 +70,7 @@ func (t *Object) Compare(other Value) int64 {
 		return 1
 	}
 
-	var res int64
+	var res int
 
 	tKeys := make([]string, 0, size)
 

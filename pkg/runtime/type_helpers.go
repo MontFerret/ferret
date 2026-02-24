@@ -15,7 +15,7 @@ func TypeName(t Type) string {
 	return t.Name()
 }
 
-func typeRank(value Value) int64 {
+func typeRank(value Value) int {
 	if value == None || value == nil {
 		return 0
 	}
@@ -43,7 +43,7 @@ func typeRank(value Value) int64 {
 }
 
 // CompareTypes compares the types of two values and returns -1 if a < b, 0 if a == b, and 1 if a > b.
-func CompareTypes(a, b Value) int64 {
+func CompareTypes(a, b Value) int {
 	aRank := typeRank(a)
 	bRank := typeRank(b)
 

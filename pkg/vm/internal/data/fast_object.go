@@ -172,7 +172,7 @@ func (t *FastObject) String() string {
 	return string(marshaled)
 }
 
-func (t *FastObject) Compare(other runtime.Value) int64 {
+func (t *FastObject) Compare(other runtime.Value) int {
 	otherObject, ok := other.(*FastObject)
 
 	if !ok {
@@ -204,7 +204,7 @@ func (t *FastObject) Compare(other runtime.Value) int64 {
 	otherKeys := otherObject.keys()
 	sort.Strings(otherKeys)
 
-	var res int64
+	var res int
 
 	for i := 0; i < len(tKeys) && res == 0; i++ {
 		tKey, otherKey := tKeys[i], otherKeys[i]

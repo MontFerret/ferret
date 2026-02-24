@@ -85,7 +85,7 @@ func (dt DateTime) Copy() Value {
 	return NewDateTime(dt.Time)
 }
 
-func (dt DateTime) Compare(other Value) int64 {
+func (dt DateTime) Compare(other Value) int {
 	otherDt, ok := other.(DateTime)
 
 	if !ok {

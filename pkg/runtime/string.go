@@ -85,14 +85,14 @@ func (s String) Copy() Value {
 	return s
 }
 
-func (s String) Compare(other Value) int64 {
+func (s String) Compare(other Value) int {
 	otherString, ok := other.(String)
 
 	if !ok {
 		return CompareTypes(s, other)
 	}
 
-	return int64(strings.Compare(string(s), string(otherString)))
+	return strings.Compare(string(s), string(otherString))
 }
 
 func (s String) Length(_ context.Context) (Int, error) {
