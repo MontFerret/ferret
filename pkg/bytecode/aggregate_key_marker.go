@@ -23,6 +23,10 @@ var (
 
 type aggregateKeyMarker struct{}
 
+func (m *aggregateKeyMarker) Type() runtime.Type {
+	return typeAggregateKeyMarker
+}
+
 func (m *aggregateKeyMarker) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aggregateKeyMarkerString)
 }

@@ -52,6 +52,10 @@ func MustParseDateTime(input interface{}) DateTime {
 	return dt
 }
 
+func (dt DateTime) Type() Type {
+	return TypeDateTime
+}
+
 func (dt DateTime) String() string {
 	return dt.Time.String()
 }
