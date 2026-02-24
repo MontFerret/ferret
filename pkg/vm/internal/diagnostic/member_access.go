@@ -80,7 +80,7 @@ func (e *MemberAccessError) Hint() string {
 		return ""
 	}
 
-	if runtime.SameType(e.Target, runtime.TypeNone) {
+	if runtime.IsSameType(e.Target, runtime.TypeNone) {
 		return "Use optional chaining (?.) or check for None before accessing a member"
 	}
 

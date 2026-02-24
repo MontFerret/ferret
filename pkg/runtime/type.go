@@ -42,7 +42,50 @@ const (
 	UnknownTypeName = "Unknown"
 )
 
-func NewType(name string, assert TypeMatcher) Type {
+// NewType creates a new Type with the given package name, type name, and assertion function.
+// The pkg parameter is the package name of the type, and the name parameter is the name of the type.
+// The assert parameter is a TypeMatcher function that determines if a value matches this type.
+// The resulting Type's Name will be in the format "pkg.name". If pkg is empty, it will panic. If name is empty, it will panic.
+// Example usage:
+//
+//	myType := runtime.NewType("myPackage", "MyType", func(value runtime.Value) bool {
+//	    // Implement type matching logic here
+//	    return true // or false based on the logic
+//	})
+func NewType(pkg, name string, assert TypeMatcher) Type {
+	if pkg == "" {
+		panic("pkg cannot be empty")
+	}
+
+	if name == "" {
+		panic("name cannot be empty")
+	}
+
+	return &runtimeType{name: pkg + "." + name, assert: assert}
+}
+
+// NewTypeFor creates a new Type with the given package name and type name, using a TypeMatcher that checks if a value is of type T.
+// The pkg parameter is the package name of the type, and the name parameter is the name of the type.
+// The resulting Type's Name will be in the format "pkg.name". If pkg is empty, it will panic. If name is empty, it will panic.
+// Example usage:
+//
+//	type MyType struct{}
+//	myType := runtime.NewTypeFor[MyType]("myPackage", "MyType")
+//
+// This will create a Type that matches any value of type MyType.
+func NewTypeFor[T Value](pkg, name string) Type {
+	return NewType(pkg, name, func(v Value) bool {
+		_, ok := v.(T)
+
+		return ok
+	})
+}
+
+func newBuiltinType(name string, assert TypeMatcher) Type {
+	if name == "" {
+		panic("name cannot be empty")
+	}
+
 	return &runtimeType{name: name, assert: assert}
 }
 

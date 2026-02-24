@@ -2,126 +2,126 @@ package runtime
 
 var (
 	// Actual types
-	TypeNone = NewType("None", func(v Value) bool {
+	TypeNone = newBuiltinType("None", func(v Value) bool {
 		return v == None || v == nil
 	})
-	TypeBoolean = NewType("Boolean", func(v Value) bool {
+	TypeBoolean = newBuiltinType("Boolean", func(v Value) bool {
 		_, ok := v.(Boolean)
 		return ok
 	})
-	TypeInt = NewType("Int", func(v Value) bool {
+	TypeInt = newBuiltinType("Int", func(v Value) bool {
 		_, ok := v.(Int)
 		return ok
 	})
-	TypeFloat = NewType("Float", func(v Value) bool {
+	TypeFloat = newBuiltinType("Float", func(v Value) bool {
 		_, ok := v.(Float)
 		return ok
 	})
-	TypeString = NewType("String", func(v Value) bool {
+	TypeString = newBuiltinType("String", func(v Value) bool {
 		_, ok := v.(String)
 		return ok
 	})
-	TypeDateTime = NewType("DateTime", func(v Value) bool {
+	TypeDateTime = newBuiltinType("DateTime", func(v Value) bool {
 		_, ok := v.(DateTime)
 		return ok
 	})
-	TypeArray = NewType("Array", func(v Value) bool {
+	TypeArray = newBuiltinType("Array", func(v Value) bool {
 		_, ok := v.(*Array)
 		return ok
 	})
-	TypeObject = NewType("Object", func(v Value) bool {
+	TypeObject = newBuiltinType("Object", func(v Value) bool {
 		_, ok := v.(ObjectLike)
 		return ok
 	})
-	TypeBinary = NewType("Binary", func(v Value) bool {
+	TypeBinary = newBuiltinType("Binary", func(v Value) bool {
 		_, ok := v.(Binary)
 		return ok
 	})
 
 	// Interfaces
-	TypeCollection = NewType("Collection", func(v Value) bool {
+	TypeCollection = newBuiltinType("Collection", func(v Value) bool {
 		_, ok := v.(Collection)
 		return ok
 	})
-	TypeList = NewType("List", func(v Value) bool {
+	TypeList = newBuiltinType("List", func(v Value) bool {
 		_, ok := v.(List)
 		return ok
 	})
-	TypeMap = NewType("Map", func(v Value) bool {
+	TypeMap = newBuiltinType("Map", func(v Value) bool {
 		_, ok := v.(Map)
 		return ok
 	})
 
 	// Capabilities
-	TypeIndexReadable = NewType("IndexReadable", func(v Value) bool {
+	TypeIndexReadable = newBuiltinType("IndexReadable", func(v Value) bool {
 		_, ok := v.(IndexReadable)
 		return ok
 	})
-	TypeIndexRemovable = NewType("IndexRemovable", func(v Value) bool {
+	TypeIndexRemovable = newBuiltinType("IndexRemovable", func(v Value) bool {
 		_, ok := v.(IndexRemovable)
 		return ok
 	})
-	TypeIndexWritable = NewType("IndexWritable", func(v Value) bool {
+	TypeIndexWritable = newBuiltinType("IndexWritable", func(v Value) bool {
 		_, ok := v.(IndexWritable)
 		return ok
 	})
-	TypeKeyReadable = NewType("KeyReadable", func(v Value) bool {
+	TypeKeyReadable = newBuiltinType("KeyReadable", func(v Value) bool {
 		_, ok := v.(KeyReadable)
 		return ok
 	})
-	TypeKeyWritable = NewType("KeyWritable", func(v Value) bool {
+	TypeKeyWritable = newBuiltinType("KeyWritable", func(v Value) bool {
 		_, ok := v.(KeyWritable)
 		return ok
 	})
-	TypeKeyRemovable = NewType("KeyRemovable", func(v Value) bool {
+	TypeKeyRemovable = newBuiltinType("KeyRemovable", func(v Value) bool {
 		_, ok := v.(KeyRemovable)
 		return ok
 	})
-	TypeValueRemovable = NewType("ValueRemovable", func(v Value) bool {
+	TypeValueRemovable = newBuiltinType("ValueRemovable", func(v Value) bool {
 		_, ok := v.(ValueRemovable)
 		return ok
 	})
-	TypeAppendable = NewType("Appendable", func(v Value) bool {
+	TypeAppendable = newBuiltinType("Appendable", func(v Value) bool {
 		_, ok := v.(Appendable)
 		return ok
 	})
-	TypeContainable = NewType("Containable", func(v Value) bool {
+	TypeContainable = newBuiltinType("Containable", func(v Value) bool {
 		_, ok := v.(Containable)
 		return ok
 	})
-	TypeIterable = NewType("Iterable", func(v Value) bool {
+	TypeIterable = newBuiltinType("Iterable", func(v Value) bool {
 		_, ok := v.(Iterable)
 		return ok
 	})
-	TypeIterator = NewType("Iterator", func(v Value) bool {
+	TypeIterator = newBuiltinType("Iterator", func(v Value) bool {
 		_, ok := v.(Iterator)
 		return ok
 	})
-	TypeMeasurable = NewType("Measurable", func(v Value) bool {
+	TypeMeasurable = newBuiltinType("Measurable", func(v Value) bool {
 		_, ok := v.(Measurable)
 		return ok
 	})
-	TypeComparable = NewType("Comparable", func(v Value) bool {
+	TypeComparable = newBuiltinType("Comparable", func(v Value) bool {
 		_, ok := v.(Comparable)
 		return ok
 	})
-	TypeCloneable = NewType("Cloneable", func(v Value) bool {
+	TypeCloneable = newBuiltinType("Cloneable", func(v Value) bool {
 		_, ok := v.(Cloneable)
 		return ok
 	})
-	TypeSortable = NewType("Sortable", func(v Value) bool {
+	TypeSortable = newBuiltinType("Sortable", func(v Value) bool {
 		_, ok := v.(Sortable)
 		return ok
 	})
-	TypeDispatchable = NewType("Dispatchable", func(v Value) bool {
+	TypeDispatchable = newBuiltinType("Dispatchable", func(v Value) bool {
 		_, ok := v.(Dispatchable)
 		return ok
 	})
-	TypeObservable = NewType("Observable", func(v Value) bool {
+	TypeObservable = newBuiltinType("Observable", func(v Value) bool {
 		_, ok := v.(Observable)
 		return ok
 	})
-	TypeQueryable = NewType("Queryable", func(v Value) bool {
+	TypeQueryable = newBuiltinType("Queryable", func(v Value) bool {
 		_, ok := v.(Queryable)
 		return ok
 	})

@@ -31,10 +31,14 @@ type typedList struct {
 	*runtime.Array
 }
 
+var typeTypedList = runtime.NewType("test", "typedList", func(value runtime.Value) bool {
+	_, ok := value.(typedList)
+
+	return ok
+})
+
 func (t typedList) Type() runtime.Type {
-	return runtime.NewType("CustomList", func(runtime.Value) bool {
-		return false
-	})
+	return typeTypedList
 }
 
 func TestValidateType(t *testing.T) {
@@ -147,11 +151,21 @@ func TestValidateType(t *testing.T) {
 	})
 }
 
-func TestTypeOfTypedOverride(t *testing.T) {
-	Convey("TypeOf should respect Typed overrides", t, func() {
-		So(runtime.SameType(runtime.TypeOf(typedOnly{}), runtime.TypeMap), ShouldBeTrue)
-	})
+func TestIsSameType(t *testing.T) {
+	Convey("IsSameType should correctly compare types", t, func() {
+		So(runtime.IsSameType(runtime.TypeInt, runtime.TypeInt), ShouldBeTrue)
+		So(runtime.IsSameType(runtime.TypeInt, runtime.TypeFloat), ShouldBeFalse)
+		So(runtime.IsSameType(runtime.TypeArray, runtime.TypeList), ShouldBeFalse)
 
+		// Equality by ref only
+		t1 := runtime.NewType("test", "CustomType", func(runtime.Value) bool { return false })
+		t2 := runtime.NewType("test", "CustomType", func(runtime.Value) bool { return false })
+		So(runtime.IsSameType(t1, t1), ShouldBeTrue)
+		So(runtime.IsSameType(t1, t2), ShouldBeFalse)
+	})
+}
+
+func TestTypeOfTypedOverride(t *testing.T) {
 	Convey("IsType should use TypeOf before interface checks", t, func() {
 		So(runtime.IsType(typedOnly{}, runtime.TypeMap), ShouldBeTrue)
 		So(runtime.IsType(typedOnly{}, runtime.TypeList), ShouldBeFalse)
@@ -161,11 +175,8 @@ func TestTypeOfTypedOverride(t *testing.T) {
 func TestTypeOfTypedOverrideForList(t *testing.T) {
 	Convey("TypeOf should prefer Typed over interface matches", t, func() {
 		val := typedList{Array: runtime.NewArray(0)}
-		custom := runtime.NewType("CustomList", func(runtime.Value) bool {
-			return false
-		})
 
-		So(runtime.SameType(runtime.TypeOf(val), custom), ShouldBeTrue)
+		So(runtime.IsSameType(runtime.TypeOf(val), typeTypedList), ShouldBeTrue)
 		So(runtime.IsType(val, runtime.TypeList), ShouldBeTrue)
 	})
 }

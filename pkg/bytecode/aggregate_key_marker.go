@@ -13,10 +13,7 @@ var (
 
 	// typeAggregateKeyMarker is the runtime type of AggregateKeyMarker.
 	// It is used for encoding and decoding the marker in bytecode constants.
-	typeAggregateKeyMarker = runtime.NewType("__agg_key_marker__", func(value runtime.Value) bool {
-		_, ok := value.(*aggregateKeyMarker)
-		return ok
-	})
+	typeAggregateKeyMarker = runtime.NewTypeFor[*aggregateKeyMarker]("bytecode", "__agg_key_marker__")
 )
 
 type aggregateKeyMarker struct{}

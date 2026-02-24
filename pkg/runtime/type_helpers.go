@@ -15,11 +15,6 @@ func TypeName(t Type) string {
 	return t.Name()
 }
 
-// SameType reports whether two Types share the same stable name.
-func SameType(a, b Type) bool {
-	return TypeName(a) == TypeName(b)
-}
-
 func typeRank(value Value) int64 {
 	if value == None || value == nil {
 		return 0
@@ -148,6 +143,23 @@ func typeFromReflect(t reflect.Type) Type {
 	return newHostType(pkg, name, t)
 }
 
+// IsSameType checks if two Types are the same, considering nil as a valid type that can be compared.
+// It returns true if both types are nil or if they are the same non-nil type, and false otherwise.
+// This function is used in IsType to quickly check for type equality before falling back to Is checks, and it allows for nil types to be compared without causing a panic.
+// For example, IsSameType(nil, nil) returns true, IsSameType(nil, TypeInt) returns false, and IsSameType(TypeInt, TypeInt) returns true.
+// Note that IsSameType only checks for direct type equality and does not consider interface conformance or Typed overrides, which is why IsType uses it as a first check before calling required.Is(value).
+func IsSameType(a, b Type) bool {
+	if a == nil && b == nil {
+		return true
+	}
+
+	if a == nil || b == nil {
+		return false
+	}
+
+	return a == b
+}
+
 // IsType reports whether a value matches the required type.
 // It uses TypeOf first (respecting Typed overrides) and then checks required.Is.
 func IsType(value Value, required Type) bool {
@@ -157,7 +169,7 @@ func IsType(value Value, required Type) bool {
 
 	actual := TypeOf(value)
 
-	if SameType(actual, required) {
+	if IsSameType(actual, required) {
 		return true
 	}
 
@@ -171,7 +183,7 @@ func ValidateType(value Value, required ...Type) error {
 	tid := TypeOf(value)
 
 	for _, t := range required {
-		if SameType(tid, t) || (t != nil && t.Is(value)) {
+		if IsSameType(tid, t) || (t != nil && t.Is(value)) {
 			valid = true
 			break
 		}
