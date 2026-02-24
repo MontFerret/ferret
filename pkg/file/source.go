@@ -1,12 +1,25 @@
 package file
 
-import "strings"
+import (
+	"errors"
+	"strings"
 
-type Source struct {
-	name  string
-	text  string
-	lines []string
-}
+	"github.com/goccy/go-json"
+)
+
+type (
+	Source struct {
+		name  string
+		text  string
+		lines []string
+	}
+
+	sourceJSON struct {
+		Name  string   `json:"name"`
+		Text  string   `json:"text"`
+		Lines []string `json:"lines"`
+	}
+)
 
 func NewSource(name, text string) *Source {
 	lines := strings.Split(text, "\n")
@@ -20,6 +33,32 @@ func NewSource(name, text string) *Source {
 
 func NewAnonymousSource(text string) *Source {
 	return NewSource("anonymous", text)
+}
+
+func (s *Source) MarshalJSON() ([]byte, error) {
+	return json.Marshal(sourceJSON{
+		Name:  s.Name(),
+		Text:  s.Content(),
+		Lines: s.lines,
+	})
+}
+
+func (s *Source) UnmarshalJSON(bytes []byte) error {
+	if s == nil {
+		return errors.New("source: UnmarshalJSON on nil source")
+	}
+
+	var data sourceJSON
+
+	if err := json.Unmarshal(bytes, &data); err != nil {
+		return err
+	}
+
+	s.name = data.Name
+	s.text = data.Text
+	s.lines = data.Lines
+
+	return nil
 }
 
 func (s *Source) Name() string {

@@ -1,8 +1,8 @@
 package bytecode
 
 type Instruction struct {
-	Opcode   Opcode
-	Operands [3]Operand
+	Opcode   Opcode     `json:"opcode"`
+	Operands [3]Operand `json:"operands"`
 }
 
 func NewInstruction(opcode Opcode, operands ...Operand) Instruction {
