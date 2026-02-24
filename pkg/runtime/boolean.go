@@ -84,7 +84,7 @@ func (t Boolean) Copy() Value {
 	return t
 }
 
-func (t Boolean) Compare(other Value) int64 {
+func (t Boolean) Compare(other Value) int {
 	otherBool, ok := other.(Boolean)
 
 	if !ok {

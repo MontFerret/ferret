@@ -52,7 +52,7 @@ func (b Binary) Length(_ context.Context) (Int, error) {
 	return Int(len(b)), nil
 }
 
-func (b Binary) Compare(other Value) int64 {
+func (b Binary) Compare(other Value) int {
 	otherBin, ok := other.(Binary)
 
 	if !ok {

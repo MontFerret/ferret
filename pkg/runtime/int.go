@@ -77,7 +77,7 @@ func (i Int) Copy() Value {
 	return i
 }
 
-func (i Int) Compare(other Value) int64 {
+func (i Int) Compare(other Value) int {
 	switch otherVal := other.(type) {
 	case Int:
 		if i == otherVal {

@@ -84,7 +84,7 @@ func (r *Range) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(arr, jettison.NoHTMLEscaping())
 }
 
-func (r *Range) Compare(_ context.Context, other runtime.Value) (int64, error) {
+func (r *Range) Compare(_ context.Context, other runtime.Value) (int, error) {
 	otherRange, ok := other.(*Range)
 
 	if !ok {

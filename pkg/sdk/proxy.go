@@ -105,7 +105,7 @@ func (p *Proxy[T]) Hash() uint64 {
 	return uint64(reflect.ValueOf(p.target).Pointer())
 }
 
-func (p *Proxy[T]) Compare(other runtime.Value) int64 {
+func (p *Proxy[T]) Compare(other runtime.Value) int {
 	comp, ok := p.target.(runtime.Comparable)
 
 	if ok {

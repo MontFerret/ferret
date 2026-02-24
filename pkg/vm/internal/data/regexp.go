@@ -54,14 +54,14 @@ func (r *Regexp) Copy() runtime.Value {
 	return copied
 }
 
-func (r *Regexp) Compare(_ context.Context, other runtime.Value) (int64, error) {
+func (r *Regexp) Compare(_ context.Context, other runtime.Value) (int, error) {
 	otherRegexp, ok := other.(*Regexp)
 
 	if !ok {
 		return runtime.CompareTypes(r, other), nil
 	}
 
-	return int64(strings.Compare(r.String(), otherRegexp.String())), nil
+	return strings.Compare(r.String(), otherRegexp.String()), nil
 }
 
 func (r *Regexp) Match(value runtime.Value) runtime.Boolean {

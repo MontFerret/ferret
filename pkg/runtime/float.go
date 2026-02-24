@@ -97,7 +97,7 @@ func (f Float) Copy() Value {
 	return f
 }
 
-func (f Float) Compare(other Value) int64 {
+func (f Float) Compare(other Value) int {
 	switch otherVal := other.(type) {
 	case Float:
 		if f == otherVal {

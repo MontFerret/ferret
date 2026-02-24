@@ -2,13 +2,13 @@ package runtime
 
 type (
 	Comparable interface {
-		Compare(other Value) int64
+		Compare(other Value) int
 	}
 
-	Comparator = func(first, second Value) int64
+	Comparator = func(first, second Value) int
 )
 
-func CompareValues(a, b Value) int64 {
+func CompareValues(a, b Value) int {
 	aComparable, ok := a.(Comparable)
 
 	if ok {

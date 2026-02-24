@@ -47,7 +47,7 @@ func (t *Array) String() string {
 	return b.String()
 }
 
-func (t *Array) Compare(other Value) int64 {
+func (t *Array) Compare(other Value) int {
 	otherArr, ok := other.(*Array)
 
 	if !ok {
@@ -69,7 +69,7 @@ func (t *Array) Compare(other Value) int64 {
 		return 1
 	}
 
-	var res int64
+	var res int
 
 	for i := 0; i < size; i++ {
 		thisVal := t.data[i]
