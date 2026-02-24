@@ -23,10 +23,18 @@ func ProxyError(target any, expected ...runtime.Type) error {
 	strs := make([]string, len(expected))
 
 	for idx, t := range expected {
-		strs[idx] = string(t)
+		strs[idx] = typeString(t)
 	}
 
 	expectedStr := strings.Join(strs, " or ")
 
 	return runtime.Error(runtime.ErrInvalidType, fmt.Sprintf(proxyErrorTemplate, target, expectedStr))
+}
+
+func typeString(t runtime.Type) string {
+	if t == nil {
+		return ""
+	}
+
+	return t.String()
 }

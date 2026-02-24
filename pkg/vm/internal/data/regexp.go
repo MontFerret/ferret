@@ -13,6 +13,12 @@ import (
 
 type Regexp regexp.Regexp
 
+var TypeRegexp = runtime.NewType("Regexp", func(val runtime.Value) bool {
+	_, ok := val.(*Regexp)
+
+	return ok
+})
+
 func NewRegexp(pattern runtime.String) (*Regexp, error) {
 	r, err := regexp.Compile(string(pattern))
 

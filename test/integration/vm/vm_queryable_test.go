@@ -155,7 +155,7 @@ func (m *mockDBQueryable) Query(ctx context.Context, q runtime.Query) (runtime.V
 		return runtime.NewArray(0), nil
 	}
 
-	params, err := runtime.ToMap(ctx, q.Params)
+	params, err := runtime.ToMap(ctx, q.Options)
 	convey.So(err, convey.ShouldBeNil)
 	category, _ := params.Get(ctx, runtime.NewString("c"))
 	if category == runtime.NewString("laptops") {
@@ -241,7 +241,7 @@ func TestQueryable(t *testing.T) {
 						hasText = true
 					}
 				case runtime.NewString("sql"):
-					params, err := runtime.ToMap(context.Background(), q.Params)
+					params, err := runtime.ToMap(context.Background(), q.Options)
 					convey.So(err, convey.ShouldBeNil)
 
 					value, err := params.Get(context.Background(), runtime.NewString("c"))

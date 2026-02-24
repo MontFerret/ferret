@@ -20,7 +20,7 @@ var (
 func booleanHash(val Boolean) uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(TypeBoolean))
+	h.Write([]byte(TypeBoolean.Name()))
 	h.Write([]byte(val.String()))
 
 	return h.Sum64()
@@ -58,6 +58,10 @@ func MustParseBoolean(input interface{}) Boolean {
 	}
 
 	return res
+}
+
+func (t Boolean) Type() Type {
+	return TypeBoolean
 }
 
 func (t Boolean) String() string {

@@ -14,10 +14,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-const (
-	aggregateKeyMarkerType = runtime.Type("agg_key_marker")
-)
-
 type (
 	programJSON struct {
 		Source     *file.Source   `json:"source,omitempty"`
@@ -41,7 +37,7 @@ func encodeConstant(value runtime.Value) (constantJSON, error) {
 	}
 
 	if value == AggregateKeyMarker {
-		return constantJSON{Type: encodeConstantType(aggregateKeyMarkerType)}, nil
+		return constantJSON{Type: encodeConstantType(typeAggregateKeyMarker)}, nil
 	}
 
 	switch v := value.(type) {
@@ -85,7 +81,7 @@ func encodeConstant(value runtime.Value) (constantJSON, error) {
 }
 
 func encodeConstantType(typ runtime.Type) string {
-	return strings.ToLower(typ.String())
+	return strings.ToLower(runtime.TypeName(typ))
 }
 
 func decodeConstant(frame constantJSON) (runtime.Value, error) {
@@ -95,12 +91,12 @@ func decodeConstant(frame constantJSON) (runtime.Value, error) {
 		return nil, err
 	}
 
-	switch dt {
-	case runtime.TypeNone:
+	switch runtime.TypeName(dt) {
+	case runtime.TypeName(runtime.TypeNone):
 		return runtime.None, nil
-	case aggregateKeyMarkerType:
+	case runtime.TypeName(typeAggregateKeyMarker):
 		return AggregateKeyMarker, nil
-	case runtime.TypeBoolean:
+	case runtime.TypeName(runtime.TypeBoolean):
 		raw := strings.TrimSpace(string(frame.Value))
 		if raw == "" {
 			return runtime.False, fmt.Errorf("empty bool value")
@@ -112,7 +108,7 @@ func decodeConstant(frame constantJSON) (runtime.Value, error) {
 		}
 
 		return runtime.NewBoolean(value), nil
-	case runtime.TypeInt:
+	case runtime.TypeName(runtime.TypeInt):
 		raw := strings.TrimSpace(string(frame.Value))
 		if raw == "" {
 			return runtime.ZeroInt, fmt.Errorf("empty int value")
@@ -124,7 +120,7 @@ func decodeConstant(frame constantJSON) (runtime.Value, error) {
 		}
 
 		return runtime.NewInt64(value), nil
-	case runtime.TypeFloat:
+	case runtime.TypeName(runtime.TypeFloat):
 		raw := strings.TrimSpace(string(frame.Value))
 		if raw == "" {
 			return runtime.ZeroFloat, fmt.Errorf("empty float value")
@@ -136,7 +132,7 @@ func decodeConstant(frame constantJSON) (runtime.Value, error) {
 		}
 
 		return runtime.NewFloat(value), nil
-	case runtime.TypeString:
+	case runtime.TypeName(runtime.TypeString):
 		var value string
 
 		if err := json.Unmarshal(frame.Value, &value); err != nil {
@@ -144,7 +140,7 @@ func decodeConstant(frame constantJSON) (runtime.Value, error) {
 		}
 
 		return runtime.NewString(value), nil
-	case runtime.TypeBinary:
+	case runtime.TypeName(runtime.TypeBinary):
 		var encoded string
 
 		if err := json.Unmarshal(frame.Value, &encoded); err != nil {
@@ -157,7 +153,7 @@ func decodeConstant(frame constantJSON) (runtime.Value, error) {
 		}
 
 		return runtime.NewBinary(decoded), nil
-	case runtime.TypeDateTime:
+	case runtime.TypeName(runtime.TypeDateTime):
 		var encoded string
 		if err := json.Unmarshal(frame.Value, &encoded); err != nil {
 			return nil, err
@@ -179,7 +175,7 @@ func decodeConstantType(typ string) (runtime.Type, error) {
 	case "none":
 		return runtime.TypeNone, nil
 	case "agg_key_marker":
-		return aggregateKeyMarkerType, nil
+		return typeAggregateKeyMarker, nil
 	case "bool":
 		return runtime.TypeBoolean, nil
 	case "int":
@@ -193,6 +189,6 @@ func decodeConstantType(typ string) (runtime.Type, error) {
 	case "datetime":
 		return runtime.TypeDateTime, nil
 	default:
-		return "", fmt.Errorf("unsupported constant type %q", typ)
+		return nil, fmt.Errorf("unsupported constant type %q", typ)
 	}
 }

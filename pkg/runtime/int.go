@@ -53,6 +53,10 @@ func ParseInt(input interface{}) (Int, error) {
 	}
 }
 
+func (i Int) Type() Type {
+	return TypeInt
+}
+
 func (i Int) String() string {
 	return strconv.Itoa(int(i))
 }
@@ -60,7 +64,7 @@ func (i Int) String() string {
 func (i Int) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(TypeInt))
+	h.Write([]byte(TypeInt.Name()))
 
 	bytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bytes, uint64(i))

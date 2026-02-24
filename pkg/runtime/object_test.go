@@ -22,22 +22,36 @@ func TestObject(t *testing.T) {
 		})
 
 		Convey("Should create an object, from passed values", func() {
-			obj := NewObjectWith(
-				map[string]Value{
-					"none":    None,
-					"boolean": False,
-					"int":     NewInt(1),
-					"float":   Float(1),
-					"string":  NewString("1"),
-					"array":   NewArray(10),
-					"object":  NewObject(),
-				},
-			)
+			values := map[string]Value{
+				"none":    None,
+				"boolean": False,
+				"int":     NewInt(1),
+				"float":   Float(1),
+				"string":  NewString("1"),
+				"array":   NewArray(10),
+				"object":  NewObject(),
+			}
+			obj := NewObjectWith(values)
 
 			size, err := obj.Length(c.Background())
 
 			So(err, ShouldBeNil)
 			So(size, ShouldEqual, 7)
+
+			values["int"] = ZeroInt
+
+			current, _ := obj.Get(c.Background(), NewString("int"))
+
+			So(current.String(), ShouldNotEqual, values["int"].String())
+		})
+
+		Convey("Should implement runtime.Map interface", func() {
+			var obj Value
+			obj = NewObject()
+
+			_, ok := obj.(Map)
+
+			So(ok, ShouldBeTrue)
 		})
 	})
 

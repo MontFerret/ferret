@@ -319,7 +319,7 @@ func bindStruct(src runtime.Value, dst reflect.Value) error {
 			continue
 		}
 
-		name, ok := runtime.Tag(field)
+		name, ok := Tag(field)
 		if !ok {
 			continue
 		}

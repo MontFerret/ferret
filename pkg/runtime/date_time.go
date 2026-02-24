@@ -52,6 +52,10 @@ func MustParseDateTime(input interface{}) DateTime {
 	return dt
 }
 
+func (dt DateTime) Type() Type {
+	return TypeDateTime
+}
+
 func (dt DateTime) String() string {
 	return dt.Time.String()
 }
@@ -63,7 +67,7 @@ func (dt DateTime) Unwrap() any {
 func (dt DateTime) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(TypeDateTime))
+	h.Write([]byte(TypeDateTime.Name()))
 	h.Write([]byte(":"))
 
 	bytes, err := dt.GobEncode()

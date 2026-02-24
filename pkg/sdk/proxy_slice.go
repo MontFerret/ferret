@@ -76,7 +76,7 @@ func (p *ProxySlice[T]) Iterate(ctx context.Context) (runtime.Iterator, error) {
 }
 
 func (p *ProxySlice[T]) itemToProxy(item T) runtime.Value {
-	if p.itemTypeName != "" {
+	if p.itemTypeName != nil {
 		return NewProxyWithType(p.itemTypeName, item)
 	}
 

@@ -10,6 +10,10 @@ var (
 	None = &none{}
 )
 
+func (n *none) Type() Type {
+	return TypeNone
+}
+
 func (n *none) String() string {
 	return ""
 }

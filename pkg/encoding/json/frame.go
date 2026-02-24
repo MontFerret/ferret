@@ -106,24 +106,6 @@ func encodeValue(ctx context.Context, buf *bytes.Buffer, value runtime.Value) er
 		writeJSONString(buf, v.Time.Format(time.RFC3339Nano))
 
 		return nil
-	case runtime.Query:
-		buf.WriteByte('{')
-		writeJSONString(buf, "kind")
-		buf.WriteByte(':')
-		writeJSONString(buf, v.Kind.String())
-		buf.WriteByte(',')
-		writeJSONString(buf, "payload")
-		buf.WriteByte(':')
-		writeJSONString(buf, v.Payload.String())
-		buf.WriteByte(',')
-		writeJSONString(buf, "params")
-		buf.WriteByte(':')
-		if err := encodeValue(ctx, buf, v.Params); err != nil {
-			return err
-		}
-		buf.WriteByte('}')
-
-		return nil
 	case runtime.Map:
 		return encodeMap(ctx, buf, v)
 	case runtime.List:

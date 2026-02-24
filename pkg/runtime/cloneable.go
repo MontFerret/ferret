@@ -7,6 +7,7 @@ import "context"
 // and Clone returns a deep copy of the value.
 type Cloneable interface {
 	Value
+	// Clone creates a deep copy of the value.
 	Clone(ctx context.Context) (Cloneable, error)
 }
 

@@ -52,7 +52,7 @@ func (p *Proxy[T]) Target() T {
 }
 
 func (p *Proxy[T]) Type() runtime.Type {
-	if p.typeName != "" {
+	if p.typeName != nil {
 		return p.typeName
 	}
 
@@ -62,7 +62,7 @@ func (p *Proxy[T]) Type() runtime.Type {
 		return typed.Type()
 	}
 
-	return runtime.ReflectTypeOf(p.target)
+	return runtime.HostTypeOf(p.target)
 }
 
 func (p *Proxy[T]) Unwrap() any {

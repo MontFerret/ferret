@@ -22,6 +22,10 @@ func NewBinaryFrom(stream io.Reader) (Binary, error) {
 	return values, nil
 }
 
+func (b Binary) Type() Type {
+	return TypeBinary
+}
+
 func (b Binary) String() string {
 	return string(b)
 }
@@ -29,7 +33,7 @@ func (b Binary) String() string {
 func (b Binary) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(TypeBinary))
+	h.Write([]byte(TypeBinary.Name()))
 	h.Write([]byte(":"))
 	h.Write(b)
 
