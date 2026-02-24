@@ -1,6 +1,7 @@
 package file
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/goccy/go-json"
@@ -43,6 +44,10 @@ func (s *Source) MarshalJSON() ([]byte, error) {
 }
 
 func (s *Source) UnmarshalJSON(bytes []byte) error {
+	if s == nil {
+		return errors.New("source: UnmarshalJSON on nil source")
+	}
+
 	var data serializedSource
 
 	if err := json.Unmarshal(bytes, &data); err != nil {
