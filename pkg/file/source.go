@@ -14,7 +14,7 @@ type (
 		lines []string
 	}
 
-	serializedSource struct {
+	sourceJSON struct {
 		Name  string   `json:"name"`
 		Text  string   `json:"text"`
 		Lines []string `json:"lines"`
@@ -36,7 +36,7 @@ func NewAnonymousSource(text string) *Source {
 }
 
 func (s *Source) MarshalJSON() ([]byte, error) {
-	return json.Marshal(serializedSource{
+	return json.Marshal(sourceJSON{
 		Name:  s.Name(),
 		Text:  s.Content(),
 		Lines: s.lines,
@@ -48,7 +48,7 @@ func (s *Source) UnmarshalJSON(bytes []byte) error {
 		return errors.New("source: UnmarshalJSON on nil source")
 	}
 
-	var data serializedSource
+	var data sourceJSON
 
 	if err := json.Unmarshal(bytes, &data); err != nil {
 		return err
