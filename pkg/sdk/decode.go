@@ -17,21 +17,11 @@ var timeType = reflect.TypeOf(time.Time{})
 // Target must be a non-nil pointer.
 // It uses tags (ferret or json) for struct fields and supports unwrapping values that implement the Unwrappable interface.
 func Decode(src runtime.Value, target any) error {
-	if src == nil {
-		src = runtime.None
-	}
+	src = normalizeSrc(src)
 
-	targetValue := reflect.ValueOf(target)
-	if !targetValue.IsValid() {
-		return runtime.Error(runtime.ErrInvalidArgumentType, "target is invalid")
-	}
-
-	if targetValue.Kind() != reflect.Pointer {
-		return runtime.Error(runtime.ErrInvalidArgumentType, "target must be a pointer")
-	}
-
-	if targetValue.IsNil() {
-		return runtime.Error(runtime.ErrInvalidArgumentType, "target must be a non-nil pointer")
+	targetValue, err := validateTarget(target)
+	if err != nil {
+		return err
 	}
 
 	return bindValue(src, targetValue.Elem())
@@ -42,26 +32,10 @@ func bindValue(src runtime.Value, dst reflect.Value) error {
 		return runtime.Error(runtime.ErrInvalidArgumentType, "target is not settable")
 	}
 
-	if src == nil {
-		src = runtime.None
-	}
+	src = normalizeSrc(src)
 
 	if dst.Kind() == reflect.Pointer {
-		if src == runtime.None {
-			dst.Set(reflect.Zero(dst.Type()))
-			return nil
-		}
-
-		if dst.IsNil() {
-			elem := reflect.New(dst.Type().Elem())
-			if err := bindValue(src, elem.Elem()); err != nil {
-				return err
-			}
-			dst.Set(elem)
-			return nil
-		}
-
-		return bindValue(src, dst.Elem())
+		return bindPointer(src, dst)
 	}
 
 	if src == runtime.None {
@@ -75,50 +49,83 @@ func bindValue(src runtime.Value, dst reflect.Value) error {
 		return nil
 	}
 
+	if handled, err := bindScalar(src, dst); handled {
+		return err
+	}
+
+	return bindComposite(src, dst)
+}
+
+func bindPointer(src runtime.Value, dst reflect.Value) error {
+	if src == runtime.None {
+		dst.Set(reflect.Zero(dst.Type()))
+		return nil
+	}
+
+	if dst.IsNil() {
+		elem := reflect.New(dst.Type().Elem())
+		if err := bindValue(src, elem.Elem()); err != nil {
+			return err
+		}
+		dst.Set(elem)
+		return nil
+	}
+
+	return bindValue(src, dst.Elem())
+}
+
+func bindScalar(src runtime.Value, dst reflect.Value) (bool, error) {
 	switch dst.Kind() {
 	case reflect.Bool:
 		val, ok := src.(runtime.Boolean)
 		if !ok {
-			return bindTypeError(src, dst.Type())
+			return true, bindTypeError(src, dst.Type())
 		}
 		dst.SetBool(bool(val))
-		return nil
+		return true, nil
 	case reflect.String:
 		val, ok := src.(runtime.String)
 		if !ok {
-			return bindTypeError(src, dst.Type())
+			return true, bindTypeError(src, dst.Type())
 		}
 		dst.SetString(val.String())
-		return nil
+		return true, nil
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		switch v := src.(type) {
 		case runtime.Int:
-			return setInt(dst, int64(v))
+			return true, setInt(dst, int64(v))
 		case runtime.Float:
-			return bindTypeError(src, dst.Type())
+			return true, bindTypeError(src, dst.Type())
 		default:
-			return bindTypeError(src, dst.Type())
+			return true, bindTypeError(src, dst.Type())
 		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		switch v := src.(type) {
 		case runtime.Int:
-			return setUint(dst, int64(v))
+			return true, setUint(dst, int64(v))
 		case runtime.Float:
-			return bindTypeError(src, dst.Type())
+			return true, bindTypeError(src, dst.Type())
 		default:
-			return bindTypeError(src, dst.Type())
+			return true, bindTypeError(src, dst.Type())
 		}
 	case reflect.Float32, reflect.Float64:
 		switch v := src.(type) {
 		case runtime.Float:
 			dst.SetFloat(float64(v))
-			return nil
+			return true, nil
 		case runtime.Int:
 			dst.SetFloat(float64(v))
-			return nil
+			return true, nil
 		default:
-			return bindTypeError(src, dst.Type())
+			return true, bindTypeError(src, dst.Type())
 		}
+	default:
+		return false, nil
+	}
+}
+
+func bindComposite(src runtime.Value, dst reflect.Value) error {
+	switch dst.Kind() {
 	case reflect.Slice:
 		return bindSlice(src, dst)
 	case reflect.Array:
@@ -146,28 +153,14 @@ func bindInterface(src runtime.Value, dst reflect.Value) error {
 		return nil
 	}
 
-	unwrappable, ok := src.(runtime.Unwrappable)
-
-	if !ok {
-		return nil
-	}
-
-	unwrapped := unwrappable.Unwrap()
-	if unwrapped == nil {
-		dst.Set(reflect.Zero(dst.Type()))
-		return nil
-	}
-
-	unwrapVal := reflect.ValueOf(unwrapped)
-	if unwrapVal.Type().AssignableTo(dst.Type()) {
-		dst.Set(unwrapVal)
-		return nil
-	}
-
-	return bindTypeError(src, dst.Type())
+	return bindUnwrapped(src, dst, false)
 }
 
 func bindFallback(src runtime.Value, dst reflect.Value) error {
+	return bindUnwrapped(src, dst, true)
+}
+
+func bindUnwrapped(src runtime.Value, dst reflect.Value, allowConvert bool) error {
 	unwrappable, ok := src.(runtime.Unwrappable)
 
 	if !ok {
@@ -186,7 +179,7 @@ func bindFallback(src runtime.Value, dst reflect.Value) error {
 		return nil
 	}
 
-	if unwrapVal.Type().ConvertibleTo(dst.Type()) {
+	if allowConvert && unwrapVal.Type().ConvertibleTo(dst.Type()) {
 		dst.Set(unwrapVal.Convert(dst.Type()))
 		return nil
 	}
@@ -208,7 +201,6 @@ func bindSlice(src runtime.Value, dst reflect.Value) error {
 
 	elemType := dst.Type().Elem()
 	out := reflect.MakeSlice(dst.Type(), 0, 0)
-	index := 0
 
 	for {
 		val, _, err := iter.Next(ctx)
@@ -225,7 +217,6 @@ func bindSlice(src runtime.Value, dst reflect.Value) error {
 		}
 
 		out = reflect.Append(out, elem)
-		index++
 	}
 
 	dst.Set(out)
@@ -367,6 +358,7 @@ func collectEntries(src runtime.Value) (map[string]runtime.Value, error) {
 		if errors.Is(err, io.EOF) || errors.Is(err, runtime.ErrTimeout) {
 			break
 		}
+
 		if err != nil {
 			return nil, err
 		}
@@ -393,10 +385,13 @@ func setInt(dst reflect.Value, value int64) error {
 		if dst.OverflowInt(value) {
 			return runtime.Error(runtime.ErrInvalidArgumentType, "integer overflow")
 		}
+
 		dst.SetInt(value)
+
 		return nil
 	case reflect.Float32, reflect.Float64:
 		dst.SetFloat(float64(value))
+
 		return nil
 	default:
 		return runtime.Error(runtime.ErrInvalidArgumentType, "invalid integer target type")
@@ -409,12 +404,15 @@ func setUint(dst reflect.Value, value int64) error {
 	}
 
 	u := uint64(value)
+
 	switch dst.Kind() {
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		if dst.OverflowUint(u) {
 			return runtime.Error(runtime.ErrInvalidArgumentType, "unsigned integer overflow")
 		}
+
 		dst.SetUint(u)
+
 		return nil
 	default:
 		return runtime.Error(runtime.ErrInvalidArgumentType, "invalid unsigned target type")
@@ -423,4 +421,29 @@ func setUint(dst reflect.Value, value int64) error {
 
 func bindTypeError(src runtime.Value, target reflect.Type) error {
 	return runtime.Errorf(runtime.ErrInvalidArgumentType, "cannot bind %s to %s", runtime.TypeOf(src), target.String())
+}
+
+func normalizeSrc(src runtime.Value) runtime.Value {
+	if src == nil {
+		return runtime.None
+	}
+
+	return src
+}
+
+func validateTarget(target any) (reflect.Value, error) {
+	targetValue := reflect.ValueOf(target)
+	if !targetValue.IsValid() {
+		return reflect.Value{}, runtime.Error(runtime.ErrInvalidArgumentType, "target is invalid")
+	}
+
+	if targetValue.Kind() != reflect.Pointer {
+		return reflect.Value{}, runtime.Error(runtime.ErrInvalidArgumentType, "target must be a pointer")
+	}
+
+	if targetValue.IsNil() {
+		return reflect.Value{}, runtime.Error(runtime.ErrInvalidArgumentType, "target must be a non-nil pointer")
+	}
+
+	return targetValue, nil
 }

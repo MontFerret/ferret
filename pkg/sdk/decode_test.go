@@ -25,6 +25,27 @@ type (
 		Untagged string
 		Pointer  *someOthers `ferret:"pointer"`
 	}
+	nestedAddress struct {
+		City string `ferret:"city"`
+		Zip  int    `ferret:"zip"`
+	}
+	nestedProfile struct {
+		Name    string        `ferret:"name"`
+		Address nestedAddress `ferret:"address"`
+	}
+	nestedFriendMeta struct {
+		Active bool `ferret:"active"`
+	}
+	nestedFriend struct {
+		ID   int               `ferret:"id"`
+		Tags []string          `ferret:"tags"`
+		Meta *nestedFriendMeta `ferret:"meta"`
+	}
+	nestedPayload struct {
+		Profile nestedProfile  `ferret:"profile"`
+		Matrix  [][]int        `ferret:"matrix"`
+		Friends []nestedFriend `ferret:"friends"`
+	}
 )
 
 func TestDecode(t *testing.T) {
@@ -58,6 +79,65 @@ func TestDecode(t *testing.T) {
 			Tags:  []string{"a", "b"},
 			Pointer: &someOthers{
 				Other: "value",
+			},
+		})
+	})
+
+	Convey("Should bind deeply nested structs and slices", t, func() {
+		obj := runtime.NewObjectWith(map[string]runtime.Value{
+			"profile": runtime.NewObjectWith(map[string]runtime.Value{
+				"name": runtime.NewString("Alice"),
+				"address": runtime.NewObjectWith(map[string]runtime.Value{
+					"city": runtime.NewString("Paris"),
+					"zip":  runtime.NewInt(75001),
+				}),
+			}),
+			"matrix": runtime.NewArrayWith(
+				runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)),
+				runtime.NewArrayWith(runtime.NewInt(3), runtime.NewInt(4)),
+			),
+			"friends": runtime.NewArrayWith(
+				runtime.NewObjectWith(map[string]runtime.Value{
+					"id":   runtime.NewInt(1),
+					"tags": runtime.NewArrayWith(runtime.NewString("a"), runtime.NewString("b")),
+					"meta": runtime.NewObjectWith(map[string]runtime.Value{
+						"active": runtime.NewBoolean(true),
+					}),
+				}),
+				runtime.NewObjectWith(map[string]runtime.Value{
+					"id":   runtime.NewInt(2),
+					"tags": runtime.NewArrayWith(runtime.NewString("c")),
+					"meta": runtime.NewObjectWith(map[string]runtime.Value{
+						"active": runtime.NewBoolean(false),
+					}),
+				}),
+			),
+		})
+
+		var out nestedPayload
+		err := sdk.Decode(obj, &out)
+
+		So(err, ShouldBeNil)
+		So(out, ShouldResemble, nestedPayload{
+			Profile: nestedProfile{
+				Name: "Alice",
+				Address: nestedAddress{
+					City: "Paris",
+					Zip:  75001,
+				},
+			},
+			Matrix: [][]int{{1, 2}, {3, 4}},
+			Friends: []nestedFriend{
+				{
+					ID:   1,
+					Tags: []string{"a", "b"},
+					Meta: &nestedFriendMeta{Active: true},
+				},
+				{
+					ID:   2,
+					Tags: []string{"c"},
+					Meta: &nestedFriendMeta{Active: false},
+				},
 			},
 		})
 	})
