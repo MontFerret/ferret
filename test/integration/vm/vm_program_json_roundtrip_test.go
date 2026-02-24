@@ -124,6 +124,26 @@ FOR u IN users
 			description: "Grouped aggregate round-trip",
 		},
 		{
+			expression: `LET users = [
+  { gender: "M", age: 30, salary: 100 },
+  { gender: "F", age: 28, salary: 120 },
+  { gender: "M", age: 40, salary: 90 }
+]
+
+FOR u IN users
+  COLLECT g = u.gender
+  AGGREGATE
+    cnt = COUNT(u.age),
+    sum = SUM(u.salary),
+    minAge = MIN(u.age)
+  RETURN { g, cnt, sum, minAge }`,
+			expected: []any{
+				map[string]any{"g": "F", "cnt": 1, "sum": 120, "minAge": 28},
+				map[string]any{"g": "M", "cnt": 2, "sum": 190, "minAge": 30},
+			},
+			description: "Grouped aggregate round-trip with multiple documents",
+		},
+		{
 			expression:  "RETURN @doc[~ text]",
 			expected:    "ok",
 			options:     []vm.EnvironmentOption{vm.WithParams(map[string]runtime.Value{"doc": queryable})},
