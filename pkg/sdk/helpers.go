@@ -10,16 +10,16 @@ import (
 // Mapper represents a function that maps a value and its key to a new value of type T.
 type Mapper[T any] func(ctx context.Context, value, key runtime.Value) (T, error)
 
-// GetByKey attempts to get a value by key from the input.
+// TryGetByKey attempts to get a value by key from the input.
 // It returns an error if the input does not implement KeyReadable,
 // if the key is not found, or if the found value cannot be cast to the expected type.
-func GetByKey[T runtime.Value](ctx context.Context, input, key runtime.Value) (T, error) {
+func TryGetByKey[T runtime.Value](ctx context.Context, input, key runtime.Value) (T, bool, error) {
 	keyReadable, ok := input.(runtime.KeyReadable)
 
 	if !ok {
 		var zero T
 
-		return zero, runtime.TypeError(runtime.TypeOf(input), runtime.TypeKeyReadable)
+		return zero, false, runtime.TypeError(runtime.TypeOf(input), runtime.TypeKeyReadable)
 	}
 
 	found, err := keyReadable.Get(ctx, key)
@@ -27,13 +27,13 @@ func GetByKey[T runtime.Value](ctx context.Context, input, key runtime.Value) (T
 	if err != nil {
 		var zero T
 
-		return zero, err
+		return zero, false, err
 	}
 
 	if found == nil || found == runtime.None {
 		var zero T
 
-		return zero, runtime.ErrNotFound
+		return zero, false, nil
 	}
 
 	expected, ok := found.(T)
@@ -41,22 +41,22 @@ func GetByKey[T runtime.Value](ctx context.Context, input, key runtime.Value) (T
 	if !ok {
 		var zero T
 
-		return zero, runtime.TypeError(runtime.TypeOf(found), runtime.TypeOf(zero))
+		return zero, false, runtime.TypeError(runtime.TypeOf(found), runtime.TypeOf(zero))
 	}
 
-	return expected, nil
+	return expected, true, nil
 }
 
-// GetByIndex attempts to get a value by index from the input.
+// TryGetByIndex attempts to get a value by index from the input.
 // It returns an error if the input does not implement IndexReadable,
 // if the index is not found, or if the found value cannot be cast to the expected type.
-func GetByIndex[T runtime.Value](ctx context.Context, input runtime.Value, index runtime.Int) (T, error) {
+func TryGetByIndex[T runtime.Value](ctx context.Context, input runtime.Value, index runtime.Int) (T, bool, error) {
 	indexReadable, ok := input.(runtime.IndexReadable)
 
 	if !ok {
 		var zero T
 
-		return zero, runtime.TypeError(runtime.TypeOf(input), runtime.TypeIndexReadable)
+		return zero, false, runtime.TypeError(runtime.TypeOf(input), runtime.TypeIndexReadable)
 	}
 
 	found, err := indexReadable.At(ctx, index)
@@ -64,13 +64,13 @@ func GetByIndex[T runtime.Value](ctx context.Context, input runtime.Value, index
 	if err != nil {
 		var zero T
 
-		return zero, err
+		return zero, false, err
 	}
 
 	if found == nil || found == runtime.None {
 		var zero T
 
-		return zero, runtime.ErrNotFound
+		return zero, false, nil
 	}
 
 	expected, ok := found.(T)
@@ -78,10 +78,10 @@ func GetByIndex[T runtime.Value](ctx context.Context, input runtime.Value, index
 	if !ok {
 		var zero T
 
-		return zero, runtime.TypeError(runtime.TypeOf(found), runtime.TypeOf(zero))
+		return zero, false, runtime.TypeError(runtime.TypeOf(found), runtime.TypeOf(zero))
 	}
 
-	return expected, nil
+	return expected, true, nil
 }
 
 // ToSlice converts an Iterable input into a slice of type T using the provided mapper function.
