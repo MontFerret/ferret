@@ -74,7 +74,7 @@ func (rt *runtimeType) Is(v Value) bool {
 // The pkg parameter is the package path of the type, and the name parameter is the name of the type.
 func newHostType(pkg, name string, typ reflect.Type) Type {
 	if pkg == "" {
-		return &hostType{name: name}
+		return &hostType{name: name, typ: typ}
 	}
 
 	if name == "" {
