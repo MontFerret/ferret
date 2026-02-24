@@ -85,18 +85,12 @@ func encodeConstantType(typ runtime.Type) string {
 }
 
 func decodeConstant(frame constantJSON) (runtime.Value, error) {
-	dt, err := decodeConstantType(frame.Type)
-
-	if err != nil {
-		return nil, err
-	}
-
-	switch runtime.TypeName(dt) {
-	case runtime.TypeName(runtime.TypeNone):
+	switch frame.Type {
+	case encodeConstantType(runtime.TypeNone):
 		return runtime.None, nil
-	case runtime.TypeName(typeAggregateKeyMarker):
+	case encodeConstantType(typeAggregateKeyMarker):
 		return AggregateKeyMarker, nil
-	case runtime.TypeName(runtime.TypeBoolean):
+	case encodeConstantType(runtime.TypeBoolean):
 		raw := strings.TrimSpace(string(frame.Value))
 		if raw == "" {
 			return runtime.False, fmt.Errorf("empty bool value")
@@ -108,7 +102,7 @@ func decodeConstant(frame constantJSON) (runtime.Value, error) {
 		}
 
 		return runtime.NewBoolean(value), nil
-	case runtime.TypeName(runtime.TypeInt):
+	case encodeConstantType(runtime.TypeInt):
 		raw := strings.TrimSpace(string(frame.Value))
 		if raw == "" {
 			return runtime.ZeroInt, fmt.Errorf("empty int value")
@@ -120,7 +114,7 @@ func decodeConstant(frame constantJSON) (runtime.Value, error) {
 		}
 
 		return runtime.NewInt64(value), nil
-	case runtime.TypeName(runtime.TypeFloat):
+	case encodeConstantType(runtime.TypeFloat):
 		raw := strings.TrimSpace(string(frame.Value))
 		if raw == "" {
 			return runtime.ZeroFloat, fmt.Errorf("empty float value")
@@ -132,7 +126,7 @@ func decodeConstant(frame constantJSON) (runtime.Value, error) {
 		}
 
 		return runtime.NewFloat(value), nil
-	case runtime.TypeName(runtime.TypeString):
+	case encodeConstantType(runtime.TypeString):
 		var value string
 
 		if err := json.Unmarshal(frame.Value, &value); err != nil {
@@ -140,7 +134,7 @@ func decodeConstant(frame constantJSON) (runtime.Value, error) {
 		}
 
 		return runtime.NewString(value), nil
-	case runtime.TypeName(runtime.TypeBinary):
+	case encodeConstantType(runtime.TypeBinary):
 		var encoded string
 
 		if err := json.Unmarshal(frame.Value, &encoded); err != nil {
@@ -153,7 +147,7 @@ func decodeConstant(frame constantJSON) (runtime.Value, error) {
 		}
 
 		return runtime.NewBinary(decoded), nil
-	case runtime.TypeName(runtime.TypeDateTime):
+	case encodeConstantType(runtime.TypeDateTime):
 		var encoded string
 		if err := json.Unmarshal(frame.Value, &encoded); err != nil {
 			return nil, err
@@ -167,28 +161,5 @@ func decodeConstant(frame constantJSON) (runtime.Value, error) {
 		return runtime.NewDateTime(parsed), nil
 	default:
 		return nil, fmt.Errorf("unsupported constant type %q", frame.Type)
-	}
-}
-
-func decodeConstantType(typ string) (runtime.Type, error) {
-	switch typ {
-	case "none":
-		return runtime.TypeNone, nil
-	case "agg_key_marker":
-		return typeAggregateKeyMarker, nil
-	case "bool":
-		return runtime.TypeBoolean, nil
-	case "int":
-		return runtime.TypeInt, nil
-	case "float":
-		return runtime.TypeFloat, nil
-	case "string":
-		return runtime.TypeString, nil
-	case "binary":
-		return runtime.TypeBinary, nil
-	case "datetime":
-		return runtime.TypeDateTime, nil
-	default:
-		return nil, fmt.Errorf("unsupported constant type %q", typ)
 	}
 }

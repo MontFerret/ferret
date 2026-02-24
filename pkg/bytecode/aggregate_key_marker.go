@@ -6,8 +6,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-const aggregateKeyMarkerString = "__agg_key__"
-
 var (
 	// AggregateKeyMarker is a sentinel value used to disambiguate internal aggregate keys
 	// from user-provided group keys in fused grouped aggregation.
@@ -15,7 +13,7 @@ var (
 
 	// typeAggregateKeyMarker is the runtime type of AggregateKeyMarker.
 	// It is used for encoding and decoding the marker in bytecode constants.
-	typeAggregateKeyMarker = runtime.NewType("AggregateKeyMarker", func(value runtime.Value) bool {
+	typeAggregateKeyMarker = runtime.NewType("__agg_key_marker__", func(value runtime.Value) bool {
 		_, ok := value.(*aggregateKeyMarker)
 		return ok
 	})
@@ -28,11 +26,11 @@ func (m *aggregateKeyMarker) Type() runtime.Type {
 }
 
 func (m *aggregateKeyMarker) MarshalJSON() ([]byte, error) {
-	return json.Marshal(aggregateKeyMarkerString)
+	return json.Marshal(typeAggregateKeyMarker.Name())
 }
 
 func (m *aggregateKeyMarker) String() string {
-	return aggregateKeyMarkerString
+	return typeAggregateKeyMarker.Name()
 }
 
 func (m *aggregateKeyMarker) Hash() uint64 {
