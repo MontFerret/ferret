@@ -64,7 +64,7 @@ func CompareTypes(a, b Value) int64 {
 }
 
 // TypeOf returns the Type of a given Value, respecting any Typed overrides.
-// It checks for known concrete types and interfaces first, and if no match is found, it falls back to HostTypeOf to create a Type based on the Go type of the value using reflection.
+// It checks for Typed first, then known concrete types and interfaces, and if no match is found, it falls back to HostTypeOf to create a Type based on the Go type of the value using reflection.
 // This allows the runtime to recognize and work with types defined in the host environment, even if they don't implement any specific interfaces or aren't known concrete types within the runtime.
 // For example, if a value is of a Go struct type that doesn't implement Typed or any known interfaces, HostTypeOf will create a Type with the name of that struct type, allowing it to be used in type checks and error messages within the runtime.
 func TypeOf(input Value) Type {
@@ -72,7 +72,11 @@ func TypeOf(input Value) Type {
 		return TypeNone
 	}
 
-	switch v := input.(type) {
+	if typed, ok := input.(Typed); ok {
+		return typed.Type()
+	}
+
+	switch input.(type) {
 	case Boolean:
 		return TypeBoolean
 	case Int:
@@ -107,8 +111,6 @@ func TypeOf(input Value) Type {
 		return TypeObservable
 	case Queryable:
 		return TypeQueryable
-	case Typed:
-		return v.Type()
 	default:
 		return HostTypeOf(input)
 	}

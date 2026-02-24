@@ -27,6 +27,16 @@ func (typedOnly) Copy() runtime.Value {
 	return typedOnly{}
 }
 
+type typedList struct {
+	*runtime.Array
+}
+
+func (t typedList) Type() runtime.Type {
+	return runtime.NewType("CustomList", func(runtime.Value) bool {
+		return false
+	})
+}
+
 func TestValidateType(t *testing.T) {
 	type testCase struct {
 		Name     string
@@ -145,5 +155,17 @@ func TestTypeOfTypedOverride(t *testing.T) {
 	Convey("IsType should use TypeOf before interface checks", t, func() {
 		So(runtime.IsType(typedOnly{}, runtime.TypeMap), ShouldBeTrue)
 		So(runtime.IsType(typedOnly{}, runtime.TypeList), ShouldBeFalse)
+	})
+}
+
+func TestTypeOfTypedOverrideForList(t *testing.T) {
+	Convey("TypeOf should prefer Typed over interface matches", t, func() {
+		val := typedList{Array: runtime.NewArray(0)}
+		custom := runtime.NewType("CustomList", func(runtime.Value) bool {
+			return false
+		})
+
+		So(runtime.SameType(runtime.TypeOf(val), custom), ShouldBeTrue)
+		So(runtime.IsType(val, runtime.TypeList), ShouldBeTrue)
 	})
 }
