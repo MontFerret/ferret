@@ -143,7 +143,7 @@ func typeFromReflect(t reflect.Type) Type {
 		pkg = t.PkgPath()
 	}
 
-	return hewHostType(pkg, name, t)
+	return newHostType(pkg, name, t)
 }
 
 // IsType reports whether a value matches the required type.
