@@ -30,6 +30,14 @@ func TestArray(t *testing.T) {
 
 			So(size, ShouldEqual, 3)
 		})
+
+		Convey("Should implement List interface", func() {
+			var arr runtime.Value
+			arr = runtime.NewArray(10)
+			_, ok := arr.(runtime.List)
+
+			So(ok, ShouldBeTrue)
+		})
 	})
 
 	Convey(".String", t, func() {

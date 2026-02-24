@@ -36,10 +36,6 @@ func TypeError(actual Type, expected ...Type) error {
 		return Error(ErrInvalidType, string(actual))
 	}
 
-	if len(expected) == 1 {
-		return Error(ErrInvalidType, fmt.Sprintf(typeErrorTemplate, expected, actual))
-	}
-
 	strs := make([]string, len(expected))
 
 	for idx, t := range expected {
