@@ -328,6 +328,27 @@ func TestDecode(t *testing.T) {
 		So(closed, ShouldBeTrue)
 	})
 
+	Convey("Should decode arrays with exact source length and reject overflow", t, func() {
+		Convey("exact length succeeds", func() {
+			src := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2))
+			var out [2]int
+
+			err := sdk.Decode(src, &out)
+
+			So(err, ShouldBeNil)
+			So(out, ShouldResemble, [2]int{1, 2})
+		})
+
+		Convey("overflow fails", func() {
+			src := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2))
+			var out [1]int
+
+			err := sdk.Decode(src, &out)
+
+			So(err, ShouldNotBeNil)
+		})
+	})
+
 	Convey("Should reject non-pointer targets", t, func() {
 		obj := runtime.NewObject()
 		var out bindParams

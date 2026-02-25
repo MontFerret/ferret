@@ -256,10 +256,6 @@ func bindArray(src runtime.Value, dst reflect.Value) (retErr error) {
 	index := 0
 
 	for {
-		if index >= dst.Len() {
-			return runtime.Error(runtime.ErrInvalidArgumentType, "source has more elements than target array")
-		}
-
 		val, _, err := iter.Next(ctx)
 		if errors.Is(err, io.EOF) || errors.Is(err, runtime.ErrTimeout) {
 			break
@@ -267,6 +263,10 @@ func bindArray(src runtime.Value, dst reflect.Value) (retErr error) {
 
 		if err != nil {
 			return err
+		}
+
+		if index >= dst.Len() {
+			return runtime.Error(runtime.ErrInvalidArgumentType, "source has more elements than target array")
 		}
 
 		elem := reflect.New(elemType).Elem()
