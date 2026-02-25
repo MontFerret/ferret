@@ -62,6 +62,9 @@ type (
 		*EmbeddedParams
 		Driver string `json:"driver"`
 	}
+	EmbeddedNode struct {
+		*EmbeddedNode
+	}
 )
 
 func TestDecode(t *testing.T) {
@@ -246,6 +249,16 @@ func TestDecode(t *testing.T) {
 			},
 			Driver: "old-driver",
 		})
+	})
+
+	Convey("Should avoid infinite recursion on self-embedded pointers", t, func() {
+		obj := runtime.NewObject()
+
+		var out EmbeddedNode
+		err := sdk.Decode(obj, &out)
+
+		So(err, ShouldBeNil)
+		So(out.EmbeddedNode, ShouldBeNil)
 	})
 
 	Convey("Should reject non-pointer targets", t, func() {

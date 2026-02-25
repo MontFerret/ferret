@@ -315,13 +315,26 @@ func bindStruct(src runtime.Value, dst reflect.Value) error {
 
 	lowerKeys := buildLowerKeyMap(entries)
 	used := make(map[string]struct{}, len(entries))
+	visiting := make(map[reflect.Type]int)
 
-	_, err = bindStructEntries(dst, entries, lowerKeys, used)
+	_, err = bindStructEntries(dst, entries, lowerKeys, used, visiting)
 	return err
 }
 
-func bindStructEntries(dst reflect.Value, entries map[string]runtime.Value, lowerKeys map[string]string, used map[string]struct{}) (bool, error) {
+func bindStructEntries(dst reflect.Value, entries map[string]runtime.Value, lowerKeys map[string]string, used map[string]struct{}, visiting map[reflect.Type]int) (bool, error) {
 	dstType := dst.Type()
+	if visiting[dstType] > 0 {
+		return false, nil
+	}
+
+	visiting[dstType]++
+	defer func() {
+		visiting[dstType]--
+		if visiting[dstType] == 0 {
+			delete(visiting, dstType)
+		}
+	}()
+
 	matched := false
 
 	for i := 0; i < dstType.NumField(); i++ {
@@ -364,7 +377,7 @@ func bindStructEntries(dst reflect.Value, entries map[string]runtime.Value, lowe
 
 		switch fieldType.Kind() {
 		case reflect.Struct:
-			subMatched, err := bindStructEntries(fieldVal, entries, lowerKeys, used)
+			subMatched, err := bindStructEntries(fieldVal, entries, lowerKeys, used, visiting)
 			if err != nil {
 				return false, err
 			}
@@ -376,9 +389,13 @@ func bindStructEntries(dst reflect.Value, entries map[string]runtime.Value, lowe
 				continue
 			}
 
+			if visiting[fieldType.Elem()] > 0 {
+				continue
+			}
+
 			if fieldVal.IsNil() {
 				elem := reflect.New(fieldType.Elem())
-				subMatched, err := bindStructEntries(elem.Elem(), entries, lowerKeys, used)
+				subMatched, err := bindStructEntries(elem.Elem(), entries, lowerKeys, used, visiting)
 
 				if err != nil {
 					return false, err
@@ -392,7 +409,7 @@ func bindStructEntries(dst reflect.Value, entries map[string]runtime.Value, lowe
 				break
 			}
 
-			subMatched, err := bindStructEntries(fieldVal.Elem(), entries, lowerKeys, used)
+			subMatched, err := bindStructEntries(fieldVal.Elem(), entries, lowerKeys, used, visiting)
 			if err != nil {
 				return false, err
 			}
