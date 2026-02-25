@@ -40,6 +40,7 @@ func bindValue(src runtime.Value, dst reflect.Value) error {
 
 	if src == runtime.None {
 		dst.Set(reflect.Zero(dst.Type()))
+
 		return nil
 	}
 
@@ -59,6 +60,7 @@ func bindValue(src runtime.Value, dst reflect.Value) error {
 func bindPointer(src runtime.Value, dst reflect.Value) error {
 	if src == runtime.None {
 		dst.Set(reflect.Zero(dst.Type()))
+
 		return nil
 	}
 
@@ -67,7 +69,9 @@ func bindPointer(src runtime.Value, dst reflect.Value) error {
 		if err := bindValue(src, elem.Elem()); err != nil {
 			return err
 		}
+
 		dst.Set(elem)
+
 		return nil
 	}
 
@@ -78,17 +82,23 @@ func bindScalar(src runtime.Value, dst reflect.Value) (bool, error) {
 	switch dst.Kind() {
 	case reflect.Bool:
 		val, ok := src.(runtime.Boolean)
+
 		if !ok {
 			return true, bindTypeError(src, dst.Type())
 		}
+
 		dst.SetBool(bool(val))
+
 		return true, nil
 	case reflect.String:
 		val, ok := src.(runtime.String)
+
 		if !ok {
 			return true, bindTypeError(src, dst.Type())
 		}
+
 		dst.SetString(val.String())
+
 		return true, nil
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		switch v := src.(type) {
@@ -135,6 +145,7 @@ func bindComposite(src runtime.Value, dst reflect.Value) error {
 	case reflect.Struct:
 		if dt, ok := src.(runtime.DateTime); ok && dst.Type() == timeType {
 			dst.Set(reflect.ValueOf(dt.Time))
+
 			return nil
 		}
 
@@ -148,8 +159,10 @@ func bindComposite(src runtime.Value, dst reflect.Value) error {
 
 func bindInterface(src runtime.Value, dst reflect.Value) error {
 	srcVal := reflect.ValueOf(src)
+
 	if srcVal.IsValid() && srcVal.Type().AssignableTo(dst.Type()) {
 		dst.Set(srcVal)
+
 		return nil
 	}
 
@@ -187,7 +200,7 @@ func bindUnwrapped(src runtime.Value, dst reflect.Value, allowConvert bool) erro
 	return bindTypeError(src, dst.Type())
 }
 
-func bindSlice(src runtime.Value, dst reflect.Value) error {
+func bindSlice(src runtime.Value, dst reflect.Value) (retErr error) {
 	iterable, ok := src.(runtime.Iterable)
 	if !ok {
 		return bindTypeError(src, dst.Type())
@@ -198,6 +211,7 @@ func bindSlice(src runtime.Value, dst reflect.Value) error {
 	if err != nil {
 		return err
 	}
+	defer closeIterOnReturn(iter, &retErr)
 
 	elemType := dst.Type().Elem()
 	out := reflect.MakeSlice(dst.Type(), 0, 0)
@@ -207,6 +221,7 @@ func bindSlice(src runtime.Value, dst reflect.Value) error {
 		if errors.Is(err, io.EOF) || errors.Is(err, runtime.ErrTimeout) {
 			break
 		}
+
 		if err != nil {
 			return err
 		}
@@ -220,10 +235,11 @@ func bindSlice(src runtime.Value, dst reflect.Value) error {
 	}
 
 	dst.Set(out)
+
 	return nil
 }
 
-func bindArray(src runtime.Value, dst reflect.Value) error {
+func bindArray(src runtime.Value, dst reflect.Value) (retErr error) {
 	iterable, ok := src.(runtime.Iterable)
 	if !ok {
 		return bindTypeError(src, dst.Type())
@@ -234,21 +250,23 @@ func bindArray(src runtime.Value, dst reflect.Value) error {
 	if err != nil {
 		return err
 	}
+	defer closeIterOnReturn(iter, &retErr)
 
 	elemType := dst.Type().Elem()
 	index := 0
 
 	for {
-		if index >= dst.Len() {
-			return runtime.Error(runtime.ErrInvalidArgumentType, "source has more elements than target array")
-		}
-
 		val, _, err := iter.Next(ctx)
 		if errors.Is(err, io.EOF) || errors.Is(err, runtime.ErrTimeout) {
 			break
 		}
+
 		if err != nil {
 			return err
+		}
+
+		if index >= dst.Len() {
+			return runtime.Error(runtime.ErrInvalidArgumentType, "source has more elements than target array")
 		}
 
 		elem := reflect.New(elemType).Elem()
@@ -278,6 +296,7 @@ func bindMap(src runtime.Value, dst reflect.Value) error {
 
 	for key, value := range entries {
 		elem := reflect.New(elemType).Elem()
+
 		if err := bindValue(value, elem); err != nil {
 			return err
 		}
@@ -286,6 +305,7 @@ func bindMap(src runtime.Value, dst reflect.Value) error {
 	}
 
 	dst.Set(out)
+
 	return nil
 }
 
@@ -295,17 +315,33 @@ func bindStruct(src runtime.Value, dst reflect.Value) error {
 		return err
 	}
 
-	lowerKeys := make(map[string]string, len(entries))
-	for key := range entries {
-		lower := strings.ToLower(key)
-		if _, exists := lowerKeys[lower]; !exists {
-			lowerKeys[lower] = key
-		}
+	lowerKeys := buildLowerKeyMap(entries)
+	used := make(map[string]struct{}, len(entries))
+	visiting := make(map[reflect.Type]int)
+
+	_, err = bindStructEntries(dst, entries, lowerKeys, used, visiting)
+	return err
+}
+
+func bindStructEntries(dst reflect.Value, entries map[string]runtime.Value, lowerKeys map[string]string, used map[string]struct{}, visiting map[reflect.Type]int) (bool, error) {
+	dstType := dst.Type()
+	if visiting[dstType] > 0 {
+		return false, nil
 	}
 
-	dstType := dst.Type()
+	visiting[dstType]++
+	defer func() {
+		visiting[dstType]--
+		if visiting[dstType] == 0 {
+			delete(visiting, dstType)
+		}
+	}()
+
+	matched := false
+
 	for i := 0; i < dstType.NumField(); i++ {
 		field := dstType.Field(i)
+
 		if field.PkgPath != "" {
 			continue
 		}
@@ -315,27 +351,113 @@ func bindStruct(src runtime.Value, dst reflect.Value) error {
 			continue
 		}
 
-		value, ok := entries[name]
-		if !ok {
-			if original, found := lowerKeys[strings.ToLower(name)]; found {
-				value = entries[original]
-				ok = true
-			}
-		}
-
+		value, key, ok := lookupEntry(name, entries, lowerKeys, used)
 		if !ok {
 			continue
 		}
 
 		if err := bindValue(value, dst.Field(i)); err != nil {
-			return err
+			return false, err
+		}
+
+		used[key] = struct{}{}
+		matched = true
+	}
+
+	for i := 0; i < dstType.NumField(); i++ {
+		field := dstType.Field(i)
+		if field.PkgPath != "" || !field.Anonymous {
+			continue
+		}
+
+		if _, ok := Tag(field); ok {
+			continue
+		}
+
+		fieldVal := dst.Field(i)
+		fieldType := fieldVal.Type()
+
+		switch fieldType.Kind() {
+		case reflect.Struct:
+			subMatched, err := bindStructEntries(fieldVal, entries, lowerKeys, used, visiting)
+			if err != nil {
+				return false, err
+			}
+			if subMatched {
+				matched = true
+			}
+		case reflect.Pointer:
+			if fieldType.Elem().Kind() != reflect.Struct {
+				continue
+			}
+
+			if visiting[fieldType.Elem()] > 0 {
+				continue
+			}
+
+			if fieldVal.IsNil() {
+				elem := reflect.New(fieldType.Elem())
+				subMatched, err := bindStructEntries(elem.Elem(), entries, lowerKeys, used, visiting)
+
+				if err != nil {
+					return false, err
+				}
+
+				if subMatched {
+					fieldVal.Set(elem)
+					matched = true
+				}
+
+				break
+			}
+
+			subMatched, err := bindStructEntries(fieldVal.Elem(), entries, lowerKeys, used, visiting)
+			if err != nil {
+				return false, err
+			}
+
+			if subMatched {
+				matched = true
+			}
+		default:
+			continue
 		}
 	}
 
-	return nil
+	return matched, nil
 }
 
-func collectEntries(src runtime.Value) (map[string]runtime.Value, error) {
+func buildLowerKeyMap(entries map[string]runtime.Value) map[string]string {
+	lowerKeys := make(map[string]string, len(entries))
+	for key := range entries {
+		lower := strings.ToLower(key)
+
+		if _, exists := lowerKeys[lower]; !exists {
+			lowerKeys[lower] = key
+		}
+	}
+
+	return lowerKeys
+}
+
+func lookupEntry(name string, entries map[string]runtime.Value, lowerKeys map[string]string, used map[string]struct{}) (runtime.Value, string, bool) {
+	if _, taken := used[name]; !taken {
+		if value, ok := entries[name]; ok {
+			return value, name, true
+		}
+	}
+
+	lower := strings.ToLower(name)
+	if original, ok := lowerKeys[lower]; ok {
+		if _, taken := used[original]; !taken {
+			return entries[original], original, true
+		}
+	}
+
+	return nil, "", false
+}
+
+func collectEntries(src runtime.Value) (out map[string]runtime.Value, retErr error) {
 	m, ok := src.(runtime.Map)
 	if !ok {
 		return nil, bindTypeError(src, reflect.TypeOf(map[string]any{}))
@@ -351,8 +473,10 @@ func collectEntries(src runtime.Value) (map[string]runtime.Value, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer closeIterOnReturn(iter, &retErr)
 
-	out := make(map[string]runtime.Value)
+	out = make(map[string]runtime.Value)
+
 	for {
 		keyVal, _, err := iter.Next(ctx)
 		if errors.Is(err, io.EOF) || errors.Is(err, runtime.ErrTimeout) {
@@ -421,6 +545,20 @@ func setUint(dst reflect.Value, value int64) error {
 
 func bindTypeError(src runtime.Value, target reflect.Type) error {
 	return runtime.Errorf(runtime.ErrInvalidArgumentType, "cannot bind %s to %s", runtime.TypeOf(src), target.String())
+}
+
+func closeIter(iter runtime.Iterator) error {
+	if closable, ok := iter.(io.Closer); ok {
+		return closable.Close()
+	}
+
+	return nil
+}
+
+func closeIterOnReturn(iter runtime.Iterator, retErr *error) {
+	if err := closeIter(iter); *retErr == nil && err != nil {
+		*retErr = err
+	}
 }
 
 func normalizeSrc(src runtime.Value) runtime.Value {

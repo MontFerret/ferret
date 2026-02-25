@@ -54,6 +54,26 @@ type encodeNestedPayload struct {
 	Friends []encodeNestedFriend `ferret:"friends"`
 }
 
+type EncodeEmbeddedParams struct {
+	URL       string `json:"url"`
+	UserAgent string `json:"userAgent"`
+}
+
+type EncodeEmbeddedPageLoadParams struct {
+	EncodeEmbeddedParams
+	Driver string `json:"driver"`
+	URL    string `json:"url"`
+}
+
+type EncodeEmbeddedNode struct {
+	*EncodeEmbeddedNode
+}
+
+type encodeTaggedNode struct {
+	Value string            `json:"value"`
+	Next  *encodeTaggedNode `json:"next"`
+}
+
 func TestEncode(t *testing.T) {
 	Convey("Should encode tagged fields only", t, func() {
 		input := encodeParams{
@@ -145,6 +165,76 @@ func TestEncode(t *testing.T) {
 				),
 			},
 		)
+
+		So(out, ShouldResemble, expected)
+	})
+
+	Convey("Should encode anonymous embedded structs inline", t, func() {
+		input := EncodeEmbeddedPageLoadParams{
+			EncodeEmbeddedParams: EncodeEmbeddedParams{
+				URL:       "https://example.test",
+				UserAgent: "agent",
+			},
+			Driver: "chrome",
+			URL:    "parent-url",
+		}
+
+		out := sdk.Encode(input)
+
+		expected := runtime.NewObjectWith(
+			map[string]runtime.Value{
+				"driver":    runtime.NewString("chrome"),
+				"url":       runtime.NewString("parent-url"),
+				"userAgent": runtime.NewString("agent"),
+			},
+		)
+
+		So(out, ShouldResemble, expected)
+	})
+
+	Convey("Should avoid infinite recursion on self-embedded pointers", t, func() {
+		node := EncodeEmbeddedNode{}
+		node.EncodeEmbeddedNode = &node
+
+		out := sdk.Encode(node)
+
+		So(out, ShouldResemble, runtime.NewObject())
+	})
+
+	Convey("Should encode tagged pointer cycles as none", t, func() {
+		node := &encodeTaggedNode{
+			Value: "root",
+		}
+		node.Next = node
+
+		out := sdk.Encode(node)
+
+		expected := runtime.NewObjectWith(map[string]runtime.Value{
+			"value": runtime.NewString("root"),
+			"next":  runtime.None,
+		})
+
+		So(out, ShouldResemble, expected)
+	})
+
+	Convey("Should encode tagged pointer chains without cycles", t, func() {
+		tail := &encodeTaggedNode{
+			Value: "tail",
+		}
+		head := &encodeTaggedNode{
+			Value: "head",
+			Next:  tail,
+		}
+
+		out := sdk.Encode(head)
+
+		expected := runtime.NewObjectWith(map[string]runtime.Value{
+			"value": runtime.NewString("head"),
+			"next": runtime.NewObjectWith(map[string]runtime.Value{
+				"value": runtime.NewString("tail"),
+				"next":  runtime.None,
+			}),
+		})
 
 		So(out, ShouldResemble, expected)
 	})
