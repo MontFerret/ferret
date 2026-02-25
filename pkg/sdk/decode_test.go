@@ -219,6 +219,35 @@ func TestDecode(t *testing.T) {
 		})
 	})
 
+	Convey("Should not overwrite existing embedded pointer fields on partial update", t, func() {
+		obj := runtime.NewObjectWith(map[string]runtime.Value{
+			"url": runtime.NewString("new-url"),
+		})
+
+		out := EmbeddedOuterPointer{
+			EmbeddedParams: &EmbeddedParams{
+				URL:         "old",
+				UserAgent:   "ua",
+				KeepCookies: true,
+				Charset:     "utf-8",
+			},
+			Driver: "old-driver",
+		}
+
+		err := sdk.Decode(obj, &out)
+
+		So(err, ShouldBeNil)
+		So(out, ShouldResemble, EmbeddedOuterPointer{
+			EmbeddedParams: &EmbeddedParams{
+				URL:         "new-url",
+				UserAgent:   "ua",
+				KeepCookies: true,
+				Charset:     "utf-8",
+			},
+			Driver: "old-driver",
+		})
+	})
+
 	Convey("Should reject non-pointer targets", t, func() {
 		obj := runtime.NewObject()
 		var out bindParams

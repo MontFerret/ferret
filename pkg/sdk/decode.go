@@ -376,15 +376,28 @@ func bindStructEntries(dst reflect.Value, entries map[string]runtime.Value, lowe
 				continue
 			}
 
-			elem := reflect.New(fieldType.Elem())
-			subMatched, err := bindStructEntries(elem.Elem(), entries, lowerKeys, used)
+			if fieldVal.IsNil() {
+				elem := reflect.New(fieldType.Elem())
+				subMatched, err := bindStructEntries(elem.Elem(), entries, lowerKeys, used)
 
+				if err != nil {
+					return false, err
+				}
+
+				if subMatched {
+					fieldVal.Set(elem)
+					matched = true
+				}
+
+				break
+			}
+
+			subMatched, err := bindStructEntries(fieldVal.Elem(), entries, lowerKeys, used)
 			if err != nil {
 				return false, err
 			}
 
 			if subMatched {
-				fieldVal.Set(elem)
 				matched = true
 			}
 		default:
