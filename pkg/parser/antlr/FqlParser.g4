@@ -12,6 +12,24 @@ options { tokenVocab=FqlLexer; }
 		}
 		return la1 == FqlParserNot && p.GetTokenStream().LA(2) == FqlParserExists
 	}
+
+	func (p *FqlParser) pushImplicitCurrent() {
+		p.implicitCurrentDepth++
+	}
+
+	func (p *FqlParser) popImplicitCurrent() {
+		if p.implicitCurrentDepth > 0 {
+			p.implicitCurrentDepth--
+		}
+	}
+
+	func (p *FqlParser) allowImplicitCurrent() bool {
+		return p.implicitCurrentDepth > 0
+	}
+}
+
+@parser::structmembers {
+	implicitCurrentDepth int
 }
 
 program
@@ -106,6 +124,10 @@ filterClause
     : Filter expression
     ;
 
+eventFilterClause
+    : Filter {p.pushImplicitCurrent()} expression {p.popImplicitCurrent()}
+    ;
+
 limitClause
     : Limit limitClauseValue (Comma limitClauseValue)?
     ;
@@ -115,6 +137,7 @@ limitClauseValue
     | param
     | variable
     | functionCallExpression
+    | {p.allowImplicitCurrent()}? implicitMemberExpression
     | memberExpression
     ;
 
@@ -200,7 +223,7 @@ dispatchOptionsClause
     ;
 
 waitForEventExpression
-    : Event waitForEventName In waitForEventSource (optionsClause)? (filterClause)? (timeoutClause)?
+    : Event waitForEventName In waitForEventSource (optionsClause)? (eventFilterClause)? (timeoutClause)?
     ;
 
 waitForPredicateExpression
@@ -411,7 +434,7 @@ arrayContraction
     ;
 
 arrayQuestionMark
-    : OpenBracket QuestionMark (Filter expression | arrayQuestionQuantifier Filter expression)? CloseBracket
+    : OpenBracket QuestionMark (Filter {p.pushImplicitCurrent()} expression {p.popImplicitCurrent()} | arrayQuestionQuantifier Filter {p.pushImplicitCurrent()} expression {p.popImplicitCurrent()})? CloseBracket
     ;
 
 arrayQuestionQuantifier
@@ -439,15 +462,15 @@ inlineExpression
     ;
 
 inlineFilter
-    : Filter expression
+    : Filter {p.pushImplicitCurrent()} expression {p.popImplicitCurrent()}
     ;
 
 inlineLimit
-    : Limit limitClauseValue (Comma limitClauseValue)?
+    : Limit {p.pushImplicitCurrent()} limitClauseValue (Comma limitClauseValue)? {p.popImplicitCurrent()}
     ;
 
 inlineReturn
-    : Return expression
+    : Return {p.pushImplicitCurrent()} expression {p.popImplicitCurrent()}
     ;
 
 safeReservedWord
@@ -511,7 +534,7 @@ rangeOperand
     | variable
     | param
     | functionCallExpression
-    | implicitMemberExpression
+    | {p.allowImplicitCurrent()}? implicitMemberExpression
     | memberExpression
     ;
 
@@ -539,7 +562,7 @@ expressionAtom
     | rangeOperator
     | literal
     | variable
-    | implicitMemberExpression
+    | {p.allowImplicitCurrent()}? implicitMemberExpression
     | memberExpression
     | param
     | dispatchExpression
@@ -554,6 +577,10 @@ implicitMemberExpression
 implicitMemberExpressionStart
     : errorOperator? Dot propertyName
     | errorOperator? Dot computedPropertyName
+    | Dot arrayExpansion
+    | Dot arrayContraction
+    | Dot arrayQuestionMark
+    | Dot arrayApply
     ;
 
 queryLiteral

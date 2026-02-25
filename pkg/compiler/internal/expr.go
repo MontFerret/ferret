@@ -26,7 +26,8 @@ const (
 // ExprCompiler handles the compilation of expressions in FQL queries.
 // It transforms expression operations from the AST into VM instructions.
 type ExprCompiler struct {
-	ctx *CompilerContext
+	ctx                  *CompilerContext
+	implicitCurrentDepth int
 }
 
 // NewExprCompiler creates a new instance of ExprCompiler with the given compiler context.
@@ -471,6 +472,16 @@ func (c *ExprCompiler) CompileImplicitMemberExpression(ctx fql.IImplicitMemberEx
 		return bytecode.NoopOperand
 	}
 
+	if c.implicitCurrentDepth == 0 {
+		if dot := start.Dot(); dot != nil {
+			c.ctx.Errors.VariableNotFound(dot.GetSymbol(), core.PseudoVariable)
+		} else if token := start.GetStart(); token != nil {
+			c.ctx.Errors.VariableNotFound(token, core.PseudoVariable)
+		}
+
+		return bytecode.NoopOperand
+	}
+
 	src, _, found := c.ctx.Symbols.Resolve(core.PseudoVariable)
 	if !found {
 		if dot := start.Dot(); dot != nil {
@@ -489,6 +500,32 @@ func (c *ExprCompiler) CompileImplicitMemberExpression(ctx fql.IImplicitMemberEx
 	}
 
 	segments := ctx.AllMemberExpressionPath()
+	if expansion := start.ArrayExpansion(); expansion != nil {
+		return c.compileArrayExpansionChain(src, expansion, segments)
+	}
+
+	if contraction := start.ArrayContraction(); contraction != nil {
+		inlineTail, restTail := splitArrayOperatorTail(segments)
+		result := c.compileArrayContraction(src, contraction, inlineTail)
+		if len(restTail) == 0 {
+			return result
+		}
+		return c.compileMemberExpressionSegments(result, restTail)
+	}
+
+	if question := start.ArrayQuestionMark(); question != nil {
+		inlineTail, restTail := splitArrayOperatorTail(segments)
+		result := c.compileArrayQuestionMark(src, question, inlineTail)
+		if len(restTail) == 0 {
+			return result
+		}
+		return c.compileMemberExpressionSegments(result, restTail)
+	}
+
+	if apply := start.ArrayApply(); apply != nil {
+		return c.compileArrayApply(src, apply, segments)
+	}
+
 	if isSimpleMemberPathChain(segments) {
 		return c.compileImplicitSimpleMemberExpressionSegments(src, start, segments)
 	}
@@ -512,6 +549,28 @@ func (c *ExprCompiler) CompileImplicitMemberExpression(ctx fql.IImplicitMemberEx
 	}
 
 	return c.compileMemberExpressionSegments(dst, segments)
+}
+
+func (c *ExprCompiler) compileWithImplicitCurrent(expr fql.IExpressionContext) bytecode.Operand {
+	if expr == nil {
+		return bytecode.NoopOperand
+	}
+
+	c.implicitCurrentDepth++
+	defer func() {
+		c.implicitCurrentDepth--
+	}()
+
+	return c.Compile(expr)
+}
+
+func (c *ExprCompiler) withImplicitCurrent(fn func()) {
+	c.implicitCurrentDepth++
+	defer func() {
+		c.implicitCurrentDepth--
+	}()
+
+	fn()
 }
 
 // CompileMemberExpression processes a member expression (e.g., obj.prop, arr[idx]) from the FQL AST.
@@ -1028,7 +1087,7 @@ func (c *ExprCompiler) compileArrayQuestionMark(src bytecode.Operand, question f
 
 	// Apply optional filter
 	if filter := question.Expression(); filter != nil {
-		cond := c.ctx.ExprCompiler.Compile(filter)
+		cond := c.compileWithImplicitCurrent(filter)
 		label := c.ctx.Loops.Current().ContinueLabel()
 		c.ctx.Emitter.EmitJumpIfFalse(cond, label)
 	}
@@ -1321,7 +1380,7 @@ func (c *ExprCompiler) compileArrayIteration(src bytecode.Operand, span file.Spa
 
 	if inline != nil {
 		if ret := inline.InlineReturn(); ret != nil {
-			projection = c.ctx.ExprCompiler.Compile(ret.Expression())
+			projection = c.compileWithImplicitCurrent(ret.Expression())
 		}
 	}
 
@@ -1353,7 +1412,7 @@ func (c *ExprCompiler) compileInlineFilter(inline fql.IInlineExpressionContext) 
 		return
 	}
 
-	src := c.ctx.ExprCompiler.Compile(filter.Expression())
+	src := c.compileWithImplicitCurrent(filter.Expression())
 	label := c.ctx.Loops.Current().ContinueLabel()
 	c.ctx.Emitter.EmitJumpIfFalse(src, label)
 }
@@ -1363,7 +1422,7 @@ func (c *ExprCompiler) compileInlineFilterExpr(expr fql.IExpressionContext) {
 		return
 	}
 
-	src := c.ctx.ExprCompiler.Compile(expr)
+	src := c.compileWithImplicitCurrent(expr)
 	label := c.ctx.Loops.Current().ContinueLabel()
 	c.ctx.Emitter.EmitJumpIfFalse(src, label)
 }
@@ -1383,13 +1442,15 @@ func (c *ExprCompiler) compileInlineLimit(inline fql.IInlineExpressionContext) {
 		return
 	}
 
-	if len(clauses) == 1 {
-		c.ctx.LoopCompiler.compileLimit(c.ctx.LoopCompiler.compileLimitClauseValue(clauses[0]))
-		return
-	}
+	c.withImplicitCurrent(func() {
+		if len(clauses) == 1 {
+			c.ctx.LoopCompiler.compileLimit(c.ctx.LoopCompiler.compileLimitClauseValue(clauses[0]))
+			return
+		}
 
-	c.ctx.LoopCompiler.compileOffset(c.ctx.LoopCompiler.compileLimitClauseValue(clauses[0]))
-	c.ctx.LoopCompiler.compileLimit(c.ctx.LoopCompiler.compileLimitClauseValue(clauses[1]))
+		c.ctx.LoopCompiler.compileOffset(c.ctx.LoopCompiler.compileLimitClauseValue(clauses[0]))
+		c.ctx.LoopCompiler.compileLimit(c.ctx.LoopCompiler.compileLimitClauseValue(clauses[1]))
+	})
 }
 
 // CompileVariable processes a variable reference from the FQL AST.

@@ -371,6 +371,10 @@ func (c *LoopCompiler) compileLimitClauseValue(ctx fql.ILimitClauseValueContext)
 		return c.ctx.ExprCompiler.CompileMemberExpression(me)
 	}
 
+	if ime := ctx.ImplicitMemberExpression(); ime != nil {
+		return c.ctx.ExprCompiler.CompileImplicitMemberExpression(ime)
+	}
+
 	// Handle function calls (e.g., LIMIT getLimit())
 	if fce := ctx.FunctionCallExpression(); fce != nil {
 		return c.ctx.ExprCompiler.CompileFunctionCallExpression(fce)

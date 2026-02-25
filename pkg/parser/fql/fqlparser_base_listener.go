@@ -116,6 +116,12 @@ func (s *BaseFqlParserListener) EnterFilterClause(ctx *FilterClauseContext) {}
 // ExitFilterClause is called when production filterClause is exited.
 func (s *BaseFqlParserListener) ExitFilterClause(ctx *FilterClauseContext) {}
 
+// EnterEventFilterClause is called when production eventFilterClause is entered.
+func (s *BaseFqlParserListener) EnterEventFilterClause(ctx *EventFilterClauseContext) {}
+
+// ExitEventFilterClause is called when production eventFilterClause is exited.
+func (s *BaseFqlParserListener) ExitEventFilterClause(ctx *EventFilterClauseContext) {}
+
 // EnterLimitClause is called when production limitClause is entered.
 func (s *BaseFqlParserListener) EnterLimitClause(ctx *LimitClauseContext) {}
 

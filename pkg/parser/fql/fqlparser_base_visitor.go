@@ -71,6 +71,10 @@ func (v *BaseFqlParserVisitor) VisitFilterClause(ctx *FilterClauseContext) inter
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitEventFilterClause(ctx *EventFilterClauseContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitLimitClause(ctx *LimitClauseContext) interface{} {
 	return v.VisitChildren(ctx)
 }

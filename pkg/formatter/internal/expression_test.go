@@ -23,9 +23,10 @@ func TestExpressionFormatter_UnaryNot(t *testing.T) {
 }
 
 func TestExpressionFormatter_ImplicitMemberExpression(t *testing.T) {
-	input := "RETURN .name"
+	input := "RETURN [1][* RETURN .name]"
 	program := parseProgram(t, input)
-	expr := mustFirst[*fql.ExpressionContext](t, program)
+	inlineRet := mustFirst[*fql.InlineReturnContext](t, program)
+	expr := inlineRet.Expression().(*fql.ExpressionContext)
 
 	var buf bytes.Buffer
 	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
@@ -37,9 +38,10 @@ func TestExpressionFormatter_ImplicitMemberExpression(t *testing.T) {
 }
 
 func TestExpressionFormatter_ImplicitMemberExpressionOptional(t *testing.T) {
-	input := "RETURN ?.name"
+	input := "RETURN [1][* RETURN ?.name]"
 	program := parseProgram(t, input)
-	expr := mustFirst[*fql.ExpressionContext](t, program)
+	inlineRet := mustFirst[*fql.InlineReturnContext](t, program)
+	expr := inlineRet.Expression().(*fql.ExpressionContext)
 
 	var buf bytes.Buffer
 	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())

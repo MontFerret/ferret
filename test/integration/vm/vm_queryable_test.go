@@ -314,8 +314,17 @@ func TestComplexQueries(t *testing.T) {
 			"Should filter results from query using implicit CURRENT",
 		),
 		CaseArray(
+			"RETURN @doc[~ css`.product`]\n    [* RETURN .[~ css`.title`][~ text]]",
+			[]any{
+				[]any{"title"},
+			},
+			"Should apply query shorthand inside implicit CURRENT",
+		),
+		CaseArray(
 			"RETURN @doc\n    [~ css`.product`]\n    [* FILTER FIRST(CURRENT[~ css`.price`][~ text]) != \"\"]\n    [~ css`.title`]\n    [~ text]",
-			[]any{"title"},
+			[]any{
+				[]any{"title"},
+			},
 			"Should combine query apply inside array filter",
 		),
 		CaseArray(

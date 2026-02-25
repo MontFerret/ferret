@@ -55,6 +55,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#filterClause.
 	VisitFilterClause(ctx *FilterClauseContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#eventFilterClause.
+	VisitEventFilterClause(ctx *EventFilterClauseContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#limitClause.
 	VisitLimitClause(ctx *LimitClauseContext) interface{}
 

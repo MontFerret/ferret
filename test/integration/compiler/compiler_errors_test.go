@@ -24,12 +24,5 @@ func TestErrors(t *testing.T) {
 				Kind:    parserd.NameError,
 				Message: "Variable 'i' is not defined",
 			}, "Global variable not defined"),
-		ErrorCase(
-			`
-			RETURN .name
-		`, E{
-				Kind:    parserd.NameError,
-				Message: "Variable 'CURRENT' is not defined",
-			}, "Implicit CURRENT outside of scope"),
 	})
 }

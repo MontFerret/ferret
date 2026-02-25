@@ -244,6 +244,35 @@ LET users = [
 RETURN users[* FILTER .age > 20][* RETURN .name]`, []any{"Bob"}),
 		CaseArray(`
 LET users = [
+	[{ active: true }, { active: false }],
+	[{ active: false }]
+]
+RETURN users[* FILTER .[? FILTER .active]]`, []any{
+			[]any{
+				map[string]any{"active": true},
+				map[string]any{"active": false},
+			},
+		}),
+		CaseArray(`
+LET users = [
+	[{ name: "Ann" }],
+	[{ name: "Bob" }, { name: "Cat" }]
+]
+RETURN users[* RETURN .[*].name]`, []any{
+			[]any{"Ann"},
+			[]any{"Bob", "Cat"},
+		}),
+		CaseArray(`
+LET groups = [
+	[[1, 2], [3]],
+	[[4]]
+]
+RETURN groups[* RETURN .[**]]`, []any{
+			[]any{1, 2, 3},
+			[]any{4},
+		}),
+		CaseArray(`
+LET users = [
 	{ name: "Ann" },
 	{ name: "Bob" },
 	{ name: "Cat" }
