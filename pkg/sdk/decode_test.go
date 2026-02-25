@@ -3,6 +3,7 @@ package sdk_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -45,6 +46,21 @@ type (
 		Profile nestedProfile  `ferret:"profile"`
 		Matrix  [][]int        `ferret:"matrix"`
 		Friends []nestedFriend `ferret:"friends"`
+	}
+	EmbeddedParams struct {
+		URL         string `json:"url"`
+		UserAgent   string `json:"userAgent"`
+		KeepCookies bool   `json:"keepCookies"`
+		Charset     string `json:"charset"`
+	}
+	EmbeddedPageLoadParams struct {
+		EmbeddedParams
+		Driver  string        `json:"driver"`
+		Timeout time.Duration `json:"timeout"`
+	}
+	EmbeddedOuterPointer struct {
+		*EmbeddedParams
+		Driver string `json:"driver"`
 	}
 )
 
@@ -139,6 +155,67 @@ func TestDecode(t *testing.T) {
 					Meta: &nestedFriendMeta{Active: false},
 				},
 			},
+		})
+	})
+
+	Convey("Should bind anonymous embedded structs inline", t, func() {
+		obj := runtime.NewObjectWith(map[string]runtime.Value{
+			"url":         runtime.NewString("https://example.test"),
+			"userAgent":   runtime.NewString("agent"),
+			"keepCookies": runtime.NewBoolean(true),
+			"charset":     runtime.NewString("utf-8"),
+			"driver":      runtime.NewString("chrome"),
+			"timeout":     runtime.NewInt(42),
+		})
+
+		var out EmbeddedPageLoadParams
+		err := sdk.Decode(obj, &out)
+
+		So(err, ShouldBeNil)
+		So(out, ShouldResemble, EmbeddedPageLoadParams{
+			EmbeddedParams: EmbeddedParams{
+				URL:         "https://example.test",
+				UserAgent:   "agent",
+				KeepCookies: true,
+				Charset:     "utf-8",
+			},
+			Driver:  "chrome",
+			Timeout: 42,
+		})
+	})
+
+	Convey("Should allocate embedded pointers only when matched", t, func() {
+		Convey("no matching keys keeps pointer nil", func() {
+			obj := runtime.NewObjectWith(map[string]runtime.Value{
+				"driver": runtime.NewString("chrome"),
+			})
+
+			var out EmbeddedOuterPointer
+			err := sdk.Decode(obj, &out)
+
+			So(err, ShouldBeNil)
+			So(out, ShouldResemble, EmbeddedOuterPointer{
+				EmbeddedParams: nil,
+				Driver:         "chrome",
+			})
+		})
+
+		Convey("matching key allocates pointer", func() {
+			obj := runtime.NewObjectWith(map[string]runtime.Value{
+				"url":    runtime.NewString("https://example.test"),
+				"driver": runtime.NewString("chrome"),
+			})
+
+			var out EmbeddedOuterPointer
+			err := sdk.Decode(obj, &out)
+
+			So(err, ShouldBeNil)
+			So(out, ShouldResemble, EmbeddedOuterPointer{
+				EmbeddedParams: &EmbeddedParams{
+					URL: "https://example.test",
+				},
+				Driver: "chrome",
+			})
 		})
 	})
 

@@ -54,6 +54,17 @@ type encodeNestedPayload struct {
 	Friends []encodeNestedFriend `ferret:"friends"`
 }
 
+type EncodeEmbeddedParams struct {
+	URL       string `json:"url"`
+	UserAgent string `json:"userAgent"`
+}
+
+type EncodeEmbeddedPageLoadParams struct {
+	EncodeEmbeddedParams
+	Driver string `json:"driver"`
+	URL    string `json:"url"`
+}
+
 func TestEncode(t *testing.T) {
 	Convey("Should encode tagged fields only", t, func() {
 		input := encodeParams{
@@ -143,6 +154,29 @@ func TestEncode(t *testing.T) {
 						},
 					),
 				),
+			},
+		)
+
+		So(out, ShouldResemble, expected)
+	})
+
+	Convey("Should encode anonymous embedded structs inline", t, func() {
+		input := EncodeEmbeddedPageLoadParams{
+			EncodeEmbeddedParams: EncodeEmbeddedParams{
+				URL:       "https://example.test",
+				UserAgent: "agent",
+			},
+			Driver: "chrome",
+			URL:    "parent-url",
+		}
+
+		out := sdk.Encode(input)
+
+		expected := runtime.NewObjectWith(
+			map[string]runtime.Value{
+				"driver":    runtime.NewString("chrome"),
+				"url":       runtime.NewString("parent-url"),
+				"userAgent": runtime.NewString("agent"),
 			},
 		)
 

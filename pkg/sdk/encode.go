@@ -2,6 +2,8 @@ package sdk
 
 import (
 	"context"
+	"errors"
+	"io"
 	"reflect"
 	"time"
 
@@ -92,9 +94,11 @@ func encodeScalar(v reflect.Value) (runtime.Value, bool) {
 		return runtime.NewInt64(v.Int()), true
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		u := v.Uint()
+
 		if u > maxInt64 {
 			return runtime.None, true
 		}
+
 		return runtime.NewInt64(int64(u)), true
 	case reflect.Float32, reflect.Float64:
 		return runtime.NewFloat(v.Float()), true
@@ -144,6 +148,7 @@ func encodeStruct(v reflect.Value) runtime.Value {
 	obj := runtime.NewObject()
 	ctx := context.Background()
 	t := v.Type()
+	used := make(map[string]struct{}, t.NumField())
 
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
@@ -157,7 +162,80 @@ func encodeStruct(v reflect.Value) runtime.Value {
 		}
 
 		_ = obj.Set(ctx, runtime.NewString(name), encodeValue(v.Field(i)))
+		used[name] = struct{}{}
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if field.PkgPath != "" || !field.Anonymous {
+			continue
+		}
+
+		if _, ok := Tag(field); ok {
+			continue
+		}
+
+		fieldVal := v.Field(i)
+		switch fieldVal.Kind() {
+		case reflect.Struct:
+			mergeObject(obj, encodeStruct(fieldVal), used)
+		case reflect.Pointer:
+			if fieldVal.IsNil() || fieldVal.Elem().Kind() != reflect.Struct {
+				continue
+			}
+
+			mergeObject(obj, encodeStruct(fieldVal.Elem()), used)
+		default:
+			continue
+		}
 	}
 
 	return obj
+}
+
+func mergeObject(dst *runtime.Object, src runtime.Value, used map[string]struct{}) {
+	m, ok := src.(runtime.Map)
+	if !ok {
+		return
+	}
+
+	ctx := context.Background()
+	keys, err := m.Keys(ctx)
+	if err != nil {
+		return
+	}
+
+	iter, err := keys.Iterate(ctx)
+	if err != nil {
+		return
+	}
+
+	for {
+		keyVal, _, err := iter.Next(ctx)
+		if errors.Is(err, io.EOF) || errors.Is(err, runtime.ErrTimeout) {
+			break
+		}
+
+		if err != nil {
+			return
+		}
+
+		key, ok := keyVal.(runtime.String)
+		if !ok {
+			continue
+		}
+
+		keyStr := key.String()
+		if _, exists := used[keyStr]; exists {
+			continue
+		}
+
+		val, err := m.Get(ctx, keyVal)
+		if err != nil {
+			return
+		}
+
+		_ = dst.Set(ctx, runtime.NewString(keyStr), val)
+		used[keyStr] = struct{}{}
+	}
 }
