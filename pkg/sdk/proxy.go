@@ -195,12 +195,12 @@ func (p *Proxy[T]) Subscribe(ctx context.Context, subscription runtime.Subscript
 	return nil, ProxyError(p.target, runtime.TypeObservable)
 }
 
-func (p *Proxy[T]) Query(ctx context.Context, q runtime.Query) (runtime.Value, error) {
+func (p *Proxy[T]) Query(ctx context.Context, q runtime.Query) (runtime.List, error) {
 	queryable, ok := p.target.(runtime.Queryable)
 
 	if ok {
 		return queryable.Query(ctx, q)
 	}
 
-	return runtime.None, ProxyError(p.target, runtime.TypeQueryable)
+	return nil, ProxyError(p.target, runtime.TypeQueryable)
 }

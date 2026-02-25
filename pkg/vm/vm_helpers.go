@@ -247,15 +247,49 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 		return nil
 	}
 
-	queryable, ok := src.(runtime.Queryable)
+	if queryable, ok := src.(runtime.Queryable); ok {
+		res, err := queryable.Query(ctx, query)
+		if err == nil && res == nil {
+			res = runtime.NewArray(0)
+		}
 
-	if !ok {
-		return vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(src, runtime.TypeQueryable))
+		return vm.setOrTryCatch(dst, res, err)
 	}
 
-	res, err := queryable.Query(ctx, query)
+	if list, ok := src.(runtime.List); ok {
+		out := runtime.NewArray(0)
 
-	return vm.setOrTryCatch(dst, res, err)
+		err := runtime.ForEach(ctx, list, func(ctx context.Context, value, _ runtime.Value) (runtime.Boolean, error) {
+			queryable, ok := value.(runtime.Queryable)
+			if !ok {
+				return runtime.False, runtime.TypeErrorOf(value, runtime.TypeQueryable)
+			}
+
+			res, err := queryable.Query(ctx, query)
+			if err != nil {
+				return runtime.False, err
+			}
+			if res == nil {
+				return runtime.True, nil
+			}
+
+			if err := runtime.ForEach(ctx, res, func(ctx context.Context, item, _ runtime.Value) (runtime.Boolean, error) {
+				if err := out.Append(ctx, item); err != nil {
+					return runtime.False, err
+				}
+
+				return runtime.True, nil
+			}); err != nil {
+				return runtime.False, err
+			}
+
+			return runtime.True, nil
+		})
+
+		return vm.setOrTryCatch(dst, out, err)
+	}
+
+	return vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(src, runtime.TypeQueryable, runtime.TypeList))
 }
 
 func (vm *VM) regexpCached(pc int, value runtime.Value) (*data.Regexp, error) {
