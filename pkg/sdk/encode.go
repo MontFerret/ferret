@@ -14,6 +14,18 @@ const maxInt64 = ^uint64(0) >> 1
 
 var byteSliceType = reflect.TypeOf([]byte(nil))
 
+type encodeState struct {
+	embedVisiting map[reflect.Type]int
+	ptrVisiting   map[uintptr]int
+}
+
+func newEncodeState() *encodeState {
+	return &encodeState{
+		embedVisiting: make(map[reflect.Type]int),
+		ptrVisiting:   make(map[uintptr]int),
+	}
+}
+
 // Encode converts a Go value into a runtime Value.
 // It handles basic types, slices, maps, and structs (using tags for field names).
 // If the input is already a runtime Value, it returns it directly.
@@ -27,19 +39,54 @@ func Encode(input any) runtime.Value {
 		return value
 	}
 
-	return encodeValue(reflect.ValueOf(input))
+	return encodeValueWithState(reflect.ValueOf(input), newEncodeState())
 }
 
-func encodeValue(v reflect.Value) runtime.Value {
+func encodeValueWithState(v reflect.Value, state *encodeState) runtime.Value {
 	if !v.IsValid() {
 		return runtime.None
 	}
 
-	v, ok := derefValue(v)
-	if !ok {
-		return runtime.None
+	visitedPtrs := make([]uintptr, 0, 2)
+
+	defer func() {
+		for i := len(visitedPtrs) - 1; i >= 0; i-- {
+			ptr := visitedPtrs[i]
+			state.ptrVisiting[ptr]--
+
+			if state.ptrVisiting[ptr] == 0 {
+				delete(state.ptrVisiting, ptr)
+			}
+		}
+	}()
+
+	for {
+		switch v.Kind() {
+		case reflect.Interface:
+			if v.IsNil() {
+				return runtime.None
+			}
+
+			v = v.Elem()
+		case reflect.Pointer:
+			if v.IsNil() {
+				return runtime.None
+			}
+
+			ptr := v.Pointer()
+			if state.ptrVisiting[ptr] > 0 {
+				return runtime.None
+			}
+
+			state.ptrVisiting[ptr]++
+			visitedPtrs = append(visitedPtrs, ptr)
+			v = v.Elem()
+		default:
+			goto resolved
+		}
 	}
 
+resolved:
 	if v.CanInterface() {
 		if value, ok := v.Interface().(runtime.Value); ok {
 			return value
@@ -54,19 +101,7 @@ func encodeValue(v reflect.Value) runtime.Value {
 		return value
 	}
 
-	return encodeComposite(v)
-}
-
-func derefValue(v reflect.Value) (reflect.Value, bool) {
-	switch v.Kind() {
-	case reflect.Interface, reflect.Ptr:
-		if v.IsNil() {
-			return reflect.Value{}, false
-		}
-		return derefValue(v.Elem())
-	default:
-		return v, true
-	}
+	return encodeComposite(v, state)
 }
 
 func encodeSpecial(v reflect.Value) (runtime.Value, bool) {
@@ -107,63 +142,51 @@ func encodeScalar(v reflect.Value) (runtime.Value, bool) {
 	}
 }
 
-func encodeComposite(v reflect.Value) runtime.Value {
+func encodeComposite(v reflect.Value, state *encodeState) runtime.Value {
 	switch v.Kind() {
 	case reflect.Slice, reflect.Array:
-		return encodeArrayLike(v)
+		return encodeArrayLike(v, state)
 	case reflect.Map:
-		return encodeMap(v)
+		return encodeMap(v, state)
 	case reflect.Struct:
-		return encodeStruct(v)
+		return encodeStruct(v, state)
 	default:
 		return runtime.None
 	}
 }
 
-func encodeArrayLike(v reflect.Value) runtime.Value {
+func encodeArrayLike(v reflect.Value, state *encodeState) runtime.Value {
 	size := v.Len()
 	arr := runtime.NewArray(size)
 	ctx := context.Background()
 
 	for i := 0; i < size; i++ {
-		_ = arr.Append(ctx, encodeValue(v.Index(i)))
+		_ = arr.Append(ctx, encodeValueWithState(v.Index(i), state))
 	}
 
 	return arr
 }
 
-func encodeMap(v reflect.Value) runtime.Value {
+func encodeMap(v reflect.Value, state *encodeState) runtime.Value {
 	obj := runtime.NewObject()
 	ctx := context.Background()
 
 	for _, key := range v.MapKeys() {
-		keyVal := encodeValue(key)
-		_ = obj.Set(ctx, runtime.NewString(keyVal.String()), encodeValue(v.MapIndex(key)))
+		keyVal := encodeValueWithState(key, state)
+		_ = obj.Set(ctx, runtime.NewString(keyVal.String()), encodeValueWithState(v.MapIndex(key), state))
 	}
 
 	return obj
 }
 
-func encodeStruct(v reflect.Value) runtime.Value {
-	return encodeStructWithVisit(v, make(map[reflect.Type]int))
+func encodeStruct(v reflect.Value, state *encodeState) runtime.Value {
+	return encodeStructWithVisit(v, state)
 }
 
-func encodeStructWithVisit(v reflect.Value, visiting map[reflect.Type]int) runtime.Value {
+func encodeStructWithVisit(v reflect.Value, state *encodeState) runtime.Value {
 	obj := runtime.NewObject()
 	ctx := context.Background()
 	t := v.Type()
-	if visiting[t] > 0 {
-		return obj
-	}
-
-	visiting[t]++
-	defer func() {
-		visiting[t]--
-		if visiting[t] == 0 {
-			delete(visiting, t)
-		}
-	}()
-
 	used := make(map[string]struct{}, t.NumField())
 
 	for i := 0; i < t.NumField(); i++ {
@@ -177,7 +200,7 @@ func encodeStructWithVisit(v reflect.Value, visiting map[reflect.Type]int) runti
 			continue
 		}
 
-		_ = obj.Set(ctx, runtime.NewString(name), encodeValue(v.Field(i)))
+		_ = obj.Set(ctx, runtime.NewString(name), encodeValueWithState(v.Field(i), state))
 		used[name] = struct{}{}
 	}
 
@@ -192,22 +215,18 @@ func encodeStructWithVisit(v reflect.Value, visiting map[reflect.Type]int) runti
 		}
 
 		fieldVal := v.Field(i)
-		switch fieldVal.Kind() {
-		case reflect.Struct:
-			mergeObject(obj, encodeStructWithVisit(fieldVal, visiting), used)
-		case reflect.Pointer:
-			if fieldVal.IsNil() || fieldVal.Elem().Kind() != reflect.Struct {
-				continue
-			}
-
-			if visiting[fieldVal.Elem().Type()] > 0 {
-				continue
-			}
-
-			mergeObject(obj, encodeStructWithVisit(fieldVal.Elem(), visiting), used)
-		default:
+		embedded, ok := resolveEmbeddedStruct(fieldVal)
+		if !ok {
 			continue
 		}
+
+		embedType := embedded.Type()
+		if !enterTypeVisit(state.embedVisiting, embedType) {
+			continue
+		}
+
+		mergeObject(obj, encodeStructWithVisit(embedded, state), used)
+		leaveTypeVisit(state.embedVisiting, embedType)
 	}
 
 	return obj
@@ -229,6 +248,10 @@ func mergeObject(dst *runtime.Object, src runtime.Value, used map[string]struct{
 	if err != nil {
 		return
 	}
+
+	defer func() {
+		_ = closeIter(iter)
+	}()
 
 	for {
 		keyVal, _, err := iter.Next(ctx)
@@ -257,5 +280,37 @@ func mergeObject(dst *runtime.Object, src runtime.Value, used map[string]struct{
 
 		_ = dst.Set(ctx, runtime.NewString(keyStr), val)
 		used[keyStr] = struct{}{}
+	}
+}
+
+func resolveEmbeddedStruct(fieldVal reflect.Value) (reflect.Value, bool) {
+	switch fieldVal.Kind() {
+	case reflect.Struct:
+		return fieldVal, true
+	case reflect.Pointer:
+		if fieldVal.IsNil() || fieldVal.Elem().Kind() != reflect.Struct {
+			return reflect.Value{}, false
+		}
+
+		return fieldVal.Elem(), true
+	default:
+		return reflect.Value{}, false
+	}
+}
+
+func enterTypeVisit(visiting map[reflect.Type]int, t reflect.Type) bool {
+	if visiting[t] > 0 {
+		return false
+	}
+
+	visiting[t]++
+	return true
+}
+
+func leaveTypeVisit(visiting map[reflect.Type]int, t reflect.Type) {
+	visiting[t]--
+
+	if visiting[t] == 0 {
+		delete(visiting, t)
 	}
 }

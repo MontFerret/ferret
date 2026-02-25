@@ -2,6 +2,7 @@ package sdk_test
 
 import (
 	"context"
+	"io"
 	"testing"
 	"time"
 
@@ -65,7 +66,55 @@ type (
 	EmbeddedNode struct {
 		*EmbeddedNode
 	}
+	closableIterable struct {
+		values []runtime.Value
+		closed *bool
+	}
+	closableIterator struct {
+		values []runtime.Value
+		index  int
+		closed *bool
+	}
 )
+
+func (c closableIterable) String() string {
+	return "closableIterable"
+}
+
+func (c closableIterable) Hash() uint64 {
+	return 0
+}
+
+func (c closableIterable) Copy() runtime.Value {
+	return c
+}
+
+func (c closableIterable) Iterate(_ context.Context) (runtime.Iterator, error) {
+	return &closableIterator{
+		values: c.values,
+		closed: c.closed,
+	}, nil
+}
+
+func (it *closableIterator) Next(_ context.Context) (runtime.Value, runtime.Value, error) {
+	if it.index >= len(it.values) {
+		return runtime.None, runtime.None, io.EOF
+	}
+
+	index := it.index
+	value := it.values[index]
+	it.index++
+
+	return value, runtime.NewInt(index), nil
+}
+
+func (it *closableIterator) Close() error {
+	if it.closed != nil {
+		*it.closed = true
+	}
+
+	return nil
+}
 
 func TestDecode(t *testing.T) {
 	Convey("Should bind values into a struct", t, func() {
@@ -259,6 +308,24 @@ func TestDecode(t *testing.T) {
 
 		So(err, ShouldBeNil)
 		So(out.EmbeddedNode, ShouldBeNil)
+	})
+
+	Convey("Should close iterators when decoding slices", t, func() {
+		closed := false
+		source := closableIterable{
+			values: []runtime.Value{
+				runtime.NewString("a"),
+				runtime.NewString("b"),
+			},
+			closed: &closed,
+		}
+
+		var out []string
+		err := sdk.Decode(source, &out)
+
+		So(err, ShouldBeNil)
+		So(out, ShouldResemble, []string{"a", "b"})
+		So(closed, ShouldBeTrue)
 	})
 
 	Convey("Should reject non-pointer targets", t, func() {

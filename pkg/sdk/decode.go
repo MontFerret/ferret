@@ -200,7 +200,7 @@ func bindUnwrapped(src runtime.Value, dst reflect.Value, allowConvert bool) erro
 	return bindTypeError(src, dst.Type())
 }
 
-func bindSlice(src runtime.Value, dst reflect.Value) error {
+func bindSlice(src runtime.Value, dst reflect.Value) (retErr error) {
 	iterable, ok := src.(runtime.Iterable)
 	if !ok {
 		return bindTypeError(src, dst.Type())
@@ -211,6 +211,7 @@ func bindSlice(src runtime.Value, dst reflect.Value) error {
 	if err != nil {
 		return err
 	}
+	defer closeIterOnReturn(iter, &retErr)
 
 	elemType := dst.Type().Elem()
 	out := reflect.MakeSlice(dst.Type(), 0, 0)
@@ -238,7 +239,7 @@ func bindSlice(src runtime.Value, dst reflect.Value) error {
 	return nil
 }
 
-func bindArray(src runtime.Value, dst reflect.Value) error {
+func bindArray(src runtime.Value, dst reflect.Value) (retErr error) {
 	iterable, ok := src.(runtime.Iterable)
 	if !ok {
 		return bindTypeError(src, dst.Type())
@@ -249,6 +250,7 @@ func bindArray(src runtime.Value, dst reflect.Value) error {
 	if err != nil {
 		return err
 	}
+	defer closeIterOnReturn(iter, &retErr)
 
 	elemType := dst.Type().Elem()
 	index := 0
@@ -455,7 +457,7 @@ func lookupEntry(name string, entries map[string]runtime.Value, lowerKeys map[st
 	return nil, "", false
 }
 
-func collectEntries(src runtime.Value) (map[string]runtime.Value, error) {
+func collectEntries(src runtime.Value) (out map[string]runtime.Value, retErr error) {
 	m, ok := src.(runtime.Map)
 	if !ok {
 		return nil, bindTypeError(src, reflect.TypeOf(map[string]any{}))
@@ -471,8 +473,9 @@ func collectEntries(src runtime.Value) (map[string]runtime.Value, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer closeIterOnReturn(iter, &retErr)
 
-	out := make(map[string]runtime.Value)
+	out = make(map[string]runtime.Value)
 
 	for {
 		keyVal, _, err := iter.Next(ctx)
@@ -542,6 +545,20 @@ func setUint(dst reflect.Value, value int64) error {
 
 func bindTypeError(src runtime.Value, target reflect.Type) error {
 	return runtime.Errorf(runtime.ErrInvalidArgumentType, "cannot bind %s to %s", runtime.TypeOf(src), target.String())
+}
+
+func closeIter(iter runtime.Iterator) error {
+	if closable, ok := iter.(io.Closer); ok {
+		return closable.Close()
+	}
+
+	return nil
+}
+
+func closeIterOnReturn(iter runtime.Iterator, retErr *error) {
+	if err := closeIter(iter); *retErr == nil && err != nil {
+		*retErr = err
+	}
 }
 
 func normalizeSrc(src runtime.Value) runtime.Value {

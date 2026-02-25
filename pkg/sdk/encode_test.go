@@ -69,6 +69,11 @@ type EncodeEmbeddedNode struct {
 	*EncodeEmbeddedNode
 }
 
+type encodeTaggedNode struct {
+	Value string            `json:"value"`
+	Next  *encodeTaggedNode `json:"next"`
+}
+
 func TestEncode(t *testing.T) {
 	Convey("Should encode tagged fields only", t, func() {
 		input := encodeParams{
@@ -194,6 +199,44 @@ func TestEncode(t *testing.T) {
 		out := sdk.Encode(node)
 
 		So(out, ShouldResemble, runtime.NewObject())
+	})
+
+	Convey("Should encode tagged pointer cycles as none", t, func() {
+		node := &encodeTaggedNode{
+			Value: "root",
+		}
+		node.Next = node
+
+		out := sdk.Encode(node)
+
+		expected := runtime.NewObjectWith(map[string]runtime.Value{
+			"value": runtime.NewString("root"),
+			"next":  runtime.None,
+		})
+
+		So(out, ShouldResemble, expected)
+	})
+
+	Convey("Should encode tagged pointer chains without cycles", t, func() {
+		tail := &encodeTaggedNode{
+			Value: "tail",
+		}
+		head := &encodeTaggedNode{
+			Value: "head",
+			Next:  tail,
+		}
+
+		out := sdk.Encode(head)
+
+		expected := runtime.NewObjectWith(map[string]runtime.Value{
+			"value": runtime.NewString("head"),
+			"next": runtime.NewObjectWith(map[string]runtime.Value{
+				"value": runtime.NewString("tail"),
+				"next":  runtime.None,
+			}),
+		})
+
+		So(out, ShouldResemble, expected)
 	})
 
 	Convey("Should encode nested tagged structs", t, func() {
