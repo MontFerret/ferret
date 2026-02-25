@@ -332,9 +332,9 @@ func (f *statementFormatter) formatWaitForEventExpression(ctx *fql.WaitForEventE
 		f.clause.formatOptionsClause(opt.(*fql.OptionsClauseContext))
 	}
 
-	if filter := ctx.FilterClause(); filter != nil {
+	if filter := ctx.EventFilterClause(); filter != nil {
 		f.p.space()
-		f.clause.formatFilterClause(filter.(*fql.FilterClauseContext))
+		f.clause.formatEventFilterClause(filter.(*fql.EventFilterClauseContext))
 	}
 
 	if timeout := ctx.TimeoutClause(); timeout != nil {

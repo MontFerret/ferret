@@ -116,6 +116,12 @@ func (s *BaseFqlParserListener) EnterFilterClause(ctx *FilterClauseContext) {}
 // ExitFilterClause is called when production filterClause is exited.
 func (s *BaseFqlParserListener) ExitFilterClause(ctx *FilterClauseContext) {}
 
+// EnterEventFilterClause is called when production eventFilterClause is entered.
+func (s *BaseFqlParserListener) EnterEventFilterClause(ctx *EventFilterClauseContext) {}
+
+// ExitEventFilterClause is called when production eventFilterClause is exited.
+func (s *BaseFqlParserListener) ExitEventFilterClause(ctx *EventFilterClauseContext) {}
+
 // EnterLimitClause is called when production limitClause is entered.
 func (s *BaseFqlParserListener) EnterLimitClause(ctx *LimitClauseContext) {}
 
@@ -565,6 +571,28 @@ func (s *BaseFqlParserListener) EnterExpressionAtom(ctx *ExpressionAtomContext) 
 
 // ExitExpressionAtom is called when production expressionAtom is exited.
 func (s *BaseFqlParserListener) ExitExpressionAtom(ctx *ExpressionAtomContext) {}
+
+// EnterImplicitMemberExpression is called when production implicitMemberExpression is entered.
+func (s *BaseFqlParserListener) EnterImplicitMemberExpression(ctx *ImplicitMemberExpressionContext) {}
+
+// ExitImplicitMemberExpression is called when production implicitMemberExpression is exited.
+func (s *BaseFqlParserListener) ExitImplicitMemberExpression(ctx *ImplicitMemberExpressionContext) {}
+
+// EnterImplicitCurrentExpression is called when production implicitCurrentExpression is entered.
+func (s *BaseFqlParserListener) EnterImplicitCurrentExpression(ctx *ImplicitCurrentExpressionContext) {
+}
+
+// ExitImplicitCurrentExpression is called when production implicitCurrentExpression is exited.
+func (s *BaseFqlParserListener) ExitImplicitCurrentExpression(ctx *ImplicitCurrentExpressionContext) {
+}
+
+// EnterImplicitMemberExpressionStart is called when production implicitMemberExpressionStart is entered.
+func (s *BaseFqlParserListener) EnterImplicitMemberExpressionStart(ctx *ImplicitMemberExpressionStartContext) {
+}
+
+// ExitImplicitMemberExpressionStart is called when production implicitMemberExpressionStart is exited.
+func (s *BaseFqlParserListener) ExitImplicitMemberExpressionStart(ctx *ImplicitMemberExpressionStartContext) {
+}
 
 // EnterQueryLiteral is called when production queryLiteral is entered.
 func (s *BaseFqlParserListener) EnterQueryLiteral(ctx *QueryLiteralContext) {}

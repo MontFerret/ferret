@@ -9,7 +9,7 @@ const (
 	jumpPlaceholder      = -1
 	UndefinedVariable    = -1
 	IgnorePseudoVariable = "_"
-	PseudoVariable       = "CURRENT"
+	PseudoVariable       = "__CURRENT__"
 )
 
 type SymbolKind int

@@ -34,6 +34,7 @@ func TestVariables(t *testing.T) {
 		Case(`LET a = 1 RETURN a`, 1),
 		Case(`LET a = 1.1 RETURN a`, 1.1),
 		Case(`LET a = "foo" RETURN a`, "foo"),
+		Case(`LET CURRENT = 5 RETURN CURRENT`, 5, "CURRENT behaves as a normal identifier"),
 		Case(
 			`
 		LET a = 'foo'

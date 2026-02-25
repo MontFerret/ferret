@@ -71,6 +71,10 @@ func (v *BaseFqlParserVisitor) VisitFilterClause(ctx *FilterClauseContext) inter
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitEventFilterClause(ctx *EventFilterClauseContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitLimitClause(ctx *LimitClauseContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -364,6 +368,18 @@ func (v *BaseFqlParserVisitor) VisitPredicate(ctx *PredicateContext) interface{}
 }
 
 func (v *BaseFqlParserVisitor) VisitExpressionAtom(ctx *ExpressionAtomContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitImplicitMemberExpression(ctx *ImplicitMemberExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitImplicitCurrentExpression(ctx *ImplicitCurrentExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitImplicitMemberExpressionStart(ctx *ImplicitMemberExpressionStartContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

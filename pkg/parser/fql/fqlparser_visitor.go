@@ -55,6 +55,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#filterClause.
 	VisitFilterClause(ctx *FilterClauseContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#eventFilterClause.
+	VisitEventFilterClause(ctx *EventFilterClauseContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#limitClause.
 	VisitLimitClause(ctx *LimitClauseContext) interface{}
 
@@ -276,6 +279,15 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#expressionAtom.
 	VisitExpressionAtom(ctx *ExpressionAtomContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#implicitMemberExpression.
+	VisitImplicitMemberExpression(ctx *ImplicitMemberExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#implicitCurrentExpression.
+	VisitImplicitCurrentExpression(ctx *ImplicitCurrentExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#implicitMemberExpressionStart.
+	VisitImplicitMemberExpressionStart(ctx *ImplicitMemberExpressionStartContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#queryLiteral.
 	VisitQueryLiteral(ctx *QueryLiteralContext) interface{}

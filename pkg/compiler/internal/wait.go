@@ -111,7 +111,7 @@ func (c *WaitCompiler) compileEvent(ctx fql.IWaitForEventExpressionContext) byte
 	c.ctx.Emitter.WithSpan(span, func() {
 		c.ctx.Emitter.EmitMove(streamReg, srcReg)
 		c.ctx.Emitter.EmitABC(bytecode.OpStream, streamReg, eventReg, optsReg)
-		c.ctx.Emitter.EmitAB(bytecode.OpStreamIter, streamReg, timeoutReg)
+		c.ctx.Emitter.EmitABC(bytecode.OpStreamIter, streamReg, streamReg, timeoutReg)
 	})
 
 	start := c.ctx.Emitter.NewLabel()
@@ -122,14 +122,14 @@ func (c *WaitCompiler) compileEvent(ctx fql.IWaitForEventExpressionContext) byte
 		c.ctx.Emitter.EmitIterNext(streamReg, end)
 	})
 
-	if filter := ctx.FilterClause(); filter != nil {
+	if filter := ctx.EventFilterClause(); filter != nil {
 		eventValReg, _ := c.ctx.Symbols.DeclareLocal(core.PseudoVariable, core.TypeUnknown)
 
 		c.ctx.Emitter.WithSpan(span, func() {
 			c.ctx.Emitter.EmitAB(bytecode.OpIterValue, eventValReg, streamReg)
 		})
 
-		cond := c.ctx.ExprCompiler.Compile(filter.Expression())
+		cond := c.ctx.ExprCompiler.compileWithImplicitCurrent(filter.Expression())
 		c.ctx.Emitter.EmitJumpIfFalse(cond, start)
 	}
 

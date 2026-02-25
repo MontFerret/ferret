@@ -12,6 +12,61 @@ options { tokenVocab=FqlLexer; }
 		}
 		return la1 == FqlParserNot && p.GetTokenStream().LA(2) == FqlParserExists
 	}
+
+	func (p *FqlParser) pushImplicitCurrent() {
+		p.implicitCurrentDepth++
+	}
+
+	func (p *FqlParser) popImplicitCurrent() {
+		if p.implicitCurrentDepth > 0 {
+			p.implicitCurrentDepth--
+		}
+	}
+
+	func (p *FqlParser) allowImplicitCurrent() bool {
+		return p.implicitCurrentDepth > 0
+	}
+
+	func (p *FqlParser) isSafeReservedWordToken(token int) bool {
+		switch token {
+		case FqlParserAnd, FqlParserOr, FqlParserAs, FqlParserDistinct, FqlParserFilter, FqlParserSort,
+			FqlParserLimit, FqlParserCollect, FqlParserSortDirection, FqlParserInto, FqlParserKeep, FqlParserWith,
+			FqlParserAll, FqlParserAny, FqlParserAt, FqlParserLeast, FqlParserAggregate, FqlParserEvent, FqlParserTimeout,
+			FqlParserOptions, FqlParserEvery, FqlParserBackoff, FqlParserJitter, FqlParserExists, FqlParserValue, FqlParserStep:
+			return true
+		default:
+			return false
+		}
+	}
+
+	func (p *FqlParser) isUnsafeReservedWordToken(token int) bool {
+		switch token {
+		case FqlParserReturn, FqlParserDispatch, FqlParserNone, FqlParserNull, FqlParserLet, FqlParserUse,
+			FqlParserWaitfor, FqlParserWhile, FqlParserDo, FqlParserIn, FqlParserLike, FqlParserNot, FqlParserFor,
+			FqlParserBooleanLiteral, FqlParserThrow:
+			return true
+		default:
+			return false
+		}
+	}
+
+	func (p *FqlParser) isImplicitCurrentValue() bool {
+		la1 := p.GetTokenStream().LA(2)
+		switch la1 {
+		case FqlParserIdentifier, FqlParserStringLiteral, FqlParserParam, FqlParserOpenBracket, FqlParserBacktickOpen:
+			return false
+		}
+
+		if p.isSafeReservedWordToken(la1) || p.isUnsafeReservedWordToken(la1) {
+			return false
+		}
+
+		return true
+	}
+}
+
+@parser::structmembers {
+	implicitCurrentDepth int
 }
 
 program
@@ -106,6 +161,10 @@ filterClause
     : Filter expression
     ;
 
+eventFilterClause
+    : Filter {p.pushImplicitCurrent()} expression {p.popImplicitCurrent()}
+    ;
+
 limitClause
     : Limit limitClauseValue (Comma limitClauseValue)?
     ;
@@ -115,6 +174,8 @@ limitClauseValue
     | param
     | variable
     | functionCallExpression
+    | implicitCurrentExpression
+    | {p.allowImplicitCurrent()}? implicitMemberExpression
     | memberExpression
     ;
 
@@ -200,7 +261,7 @@ dispatchOptionsClause
     ;
 
 waitForEventExpression
-    : Event waitForEventName In waitForEventSource (optionsClause)? (filterClause)? (timeoutClause)?
+    : Event waitForEventName In waitForEventSource (optionsClause)? (eventFilterClause)? (timeoutClause)?
     ;
 
 waitForPredicateExpression
@@ -411,7 +472,7 @@ arrayContraction
     ;
 
 arrayQuestionMark
-    : OpenBracket QuestionMark (Filter expression | arrayQuestionQuantifier Filter expression)? CloseBracket
+    : OpenBracket QuestionMark (Filter {p.pushImplicitCurrent()} expression {p.popImplicitCurrent()} | arrayQuestionQuantifier Filter {p.pushImplicitCurrent()} expression {p.popImplicitCurrent()})? CloseBracket
     ;
 
 arrayQuestionQuantifier
@@ -439,15 +500,15 @@ inlineExpression
     ;
 
 inlineFilter
-    : Filter expression
+    : Filter {p.pushImplicitCurrent()} expression {p.popImplicitCurrent()}
     ;
 
 inlineLimit
-    : Limit limitClauseValue (Comma limitClauseValue)?
+    : Limit {p.pushImplicitCurrent()} limitClauseValue (Comma limitClauseValue)? {p.popImplicitCurrent()}
     ;
 
 inlineReturn
-    : Return expression
+    : Return {p.pushImplicitCurrent()} expression {p.popImplicitCurrent()}
     ;
 
 safeReservedWord
@@ -476,7 +537,6 @@ safeReservedWord
     | Jitter
     | Exists
     | Value
-    | Current
     | Step
     ;
 
@@ -511,6 +571,8 @@ rangeOperand
     | variable
     | param
     | functionCallExpression
+    | implicitCurrentExpression
+    | {p.allowImplicitCurrent()}? implicitMemberExpression
     | memberExpression
     ;
 
@@ -538,11 +600,30 @@ expressionAtom
     | rangeOperator
     | literal
     | variable
+    | implicitCurrentExpression
+    | {p.allowImplicitCurrent()}? implicitMemberExpression
     | memberExpression
     | param
     | dispatchExpression
     | waitForExpression
     | OpenParen (forExpression | waitForExpression | expression) CloseParen errorOperator?
+    ;
+
+implicitMemberExpression
+    : implicitMemberExpressionStart memberExpressionPath*
+    ;
+
+implicitCurrentExpression
+    : {p.allowImplicitCurrent() && p.isImplicitCurrentValue()}? Dot
+    ;
+
+implicitMemberExpressionStart
+    : errorOperator? Dot propertyName
+    | errorOperator? Dot computedPropertyName
+    | Dot arrayExpansion
+    | Dot arrayContraction
+    | Dot arrayQuestionMark
+    | Dot arrayApply
     ;
 
 queryLiteral

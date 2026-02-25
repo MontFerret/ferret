@@ -55,6 +55,9 @@ type FqlParserListener interface {
 	// EnterFilterClause is called when entering the filterClause production.
 	EnterFilterClause(c *FilterClauseContext)
 
+	// EnterEventFilterClause is called when entering the eventFilterClause production.
+	EnterEventFilterClause(c *EventFilterClauseContext)
+
 	// EnterLimitClause is called when entering the limitClause production.
 	EnterLimitClause(c *LimitClauseContext)
 
@@ -277,6 +280,15 @@ type FqlParserListener interface {
 	// EnterExpressionAtom is called when entering the expressionAtom production.
 	EnterExpressionAtom(c *ExpressionAtomContext)
 
+	// EnterImplicitMemberExpression is called when entering the implicitMemberExpression production.
+	EnterImplicitMemberExpression(c *ImplicitMemberExpressionContext)
+
+	// EnterImplicitCurrentExpression is called when entering the implicitCurrentExpression production.
+	EnterImplicitCurrentExpression(c *ImplicitCurrentExpressionContext)
+
+	// EnterImplicitMemberExpressionStart is called when entering the implicitMemberExpressionStart production.
+	EnterImplicitMemberExpressionStart(c *ImplicitMemberExpressionStartContext)
+
 	// EnterQueryLiteral is called when entering the queryLiteral production.
 	EnterQueryLiteral(c *QueryLiteralContext)
 
@@ -360,6 +372,9 @@ type FqlParserListener interface {
 
 	// ExitFilterClause is called when exiting the filterClause production.
 	ExitFilterClause(c *FilterClauseContext)
+
+	// ExitEventFilterClause is called when exiting the eventFilterClause production.
+	ExitEventFilterClause(c *EventFilterClauseContext)
 
 	// ExitLimitClause is called when exiting the limitClause production.
 	ExitLimitClause(c *LimitClauseContext)
@@ -582,6 +597,15 @@ type FqlParserListener interface {
 
 	// ExitExpressionAtom is called when exiting the expressionAtom production.
 	ExitExpressionAtom(c *ExpressionAtomContext)
+
+	// ExitImplicitMemberExpression is called when exiting the implicitMemberExpression production.
+	ExitImplicitMemberExpression(c *ImplicitMemberExpressionContext)
+
+	// ExitImplicitCurrentExpression is called when exiting the implicitCurrentExpression production.
+	ExitImplicitCurrentExpression(c *ImplicitCurrentExpressionContext)
+
+	// ExitImplicitMemberExpressionStart is called when exiting the implicitMemberExpressionStart production.
+	ExitImplicitMemberExpressionStart(c *ImplicitMemberExpressionStartContext)
 
 	// ExitQueryLiteral is called when exiting the queryLiteral production.
 	ExitQueryLiteral(c *QueryLiteralContext)

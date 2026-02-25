@@ -19,6 +19,19 @@ func (f *clauseFormatter) formatFilterClause(ctx *fql.FilterClauseContext) {
 	}
 }
 
+func (f *clauseFormatter) formatEventFilterClause(ctx *fql.EventFilterClauseContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordFilter)
+	f.p.space()
+
+	if expr := ctx.Expression(); expr != nil {
+		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+	}
+}
+
 func (f *clauseFormatter) formatLimitClause(ctx *fql.LimitClauseContext) {
 	if ctx == nil {
 		return
@@ -40,6 +53,16 @@ func (f *clauseFormatter) formatLimitClause(ctx *fql.LimitClauseContext) {
 
 func (f *clauseFormatter) formatLimitClauseValue(ctx *fql.LimitClauseValueContext) {
 	if ctx == nil {
+		return
+	}
+
+	if ctx.ImplicitCurrentExpression() != nil {
+		f.p.write(".")
+		return
+	}
+
+	if ctx.ImplicitMemberExpression() != nil {
+		f.member.formatImplicitMemberExpression(ctx.ImplicitMemberExpression().(*fql.ImplicitMemberExpressionContext))
 		return
 	}
 

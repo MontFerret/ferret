@@ -3,6 +3,6 @@ LET doc = DOCUMENT('https://soundcloud.com/charts/top', { driver: "cdp", userAge
 WAIT_ELEMENT(doc, '.chartTrack__details', 5000)
 SCROLL_BOTTOM(doc)
 
-LET evt = (WAITFOR EVENT "request" IN doc FILTER CURRENT.url LIKE "https://api-v2.soundcloud.com/charts?genre=soundcloud*")
+LET evt = (WAITFOR EVENT "request" IN doc FILTER .url LIKE "https://api-v2.soundcloud.com/charts?genre=soundcloud*")
 
 RETURN evt.headers["User-Agent"]
