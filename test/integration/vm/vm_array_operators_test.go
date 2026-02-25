@@ -165,6 +165,49 @@ RETURN values[* RETURN . * 2]`, []any{2, 4, 6}),
 LET values = [1, 2, 3]
 RETURN values[* RETURN .]`, []any{1, 2, 3}),
 		CaseArray(`
+LET users = [
+	{ name: "Ann", friends: [ { name: "Bob", age: 20 }, { name: "Cat", age: 17 } ] },
+	{ name: "Dan", friends: [ { name: "Eve", age: 19 } ] },
+	{ name: "Liz", friends: [ { name: "Max", age: 16 } ] }
+]
+RETURN users[* RETURN {
+	name: .name,
+	friends: .friends[* FILTER .age > 18][* RETURN .name]
+}]`, []any{
+			map[string]any{"name": "Ann", "friends": []any{"Bob"}},
+			map[string]any{"name": "Dan", "friends": []any{"Eve"}},
+			map[string]any{"name": "Liz", "friends": []any{}},
+		}),
+		CaseArray(`
+LET users = [
+	{ name: "Ann", friends: [ { name: "Bob", age: 20 }, { name: "Cat", age: 17 } ] },
+	{ name: "Dan", friends: [ { name: "Eve", age: 19 } ] },
+	{ name: "Liz", friends: [ { name: "Max", age: 16 } ] }
+]
+RETURN users[* RETURN {
+	name: .name,
+	friends: .friends[* RETURN .name],
+	again: .name
+}]`, []any{
+			map[string]any{"name": "Ann", "friends": []any{"Bob", "Cat"}, "again": "Ann"},
+			map[string]any{"name": "Dan", "friends": []any{"Eve"}, "again": "Dan"},
+			map[string]any{"name": "Liz", "friends": []any{"Max"}, "again": "Liz"},
+		}),
+		CaseArray(`
+LET users = [
+	{ name: "Ann", friends: [ { name: "Bob", age: 20 }, { name: "Cat", age: 17 } ] },
+	{ name: "Dan", friends: [ { name: "Eve", age: 19 } ] },
+	{ name: "Liz", friends: [ { name: "Max", age: 16 } ] }
+]
+RETURN users[* RETURN {
+	name: .name,
+	hasAdult: .friends[? FILTER .age > 18]
+}]`, []any{
+			map[string]any{"name": "Ann", "hasAdult": true},
+			map[string]any{"name": "Dan", "hasAdult": true},
+			map[string]any{"name": "Liz", "hasAdult": false},
+		}),
+		CaseArray(`
 LET values = [1, 2, 3, 4]
 RETURN values[* FILTER . > 2 RETURN . * 10]`, []any{30, 40}),
 		Case(`
