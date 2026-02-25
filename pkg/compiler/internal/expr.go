@@ -467,7 +467,7 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) bytecode.Oper
 }
 
 // CompileImplicitMemberExpression processes an implicit member expression (e.g., .name, .[0], ?.name).
-// It resolves the implicit current value from the symbol table and compiles member access paths.
+// The implicit current resolution is centralized in resolveImplicitCurrent.
 func (c *ExprCompiler) CompileImplicitMemberExpression(ctx fql.IImplicitMemberExpressionContext) bytecode.Operand {
 	start := ctx.ImplicitMemberExpressionStart()
 	if start == nil {
@@ -660,6 +660,7 @@ func (c *ExprCompiler) resolveImplicitCurrent(token antlr.Token) (bytecode.Opera
 	return src, true
 }
 
+// getImplicitToken picks the span anchor for implicit-current diagnostics.
 func getImplicitToken(ctx antlr.ParserRuleContext) antlr.Token {
 	switch v := ctx.(type) {
 	case fql.IImplicitMemberExpressionStartContext:
