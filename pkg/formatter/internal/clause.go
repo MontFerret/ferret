@@ -56,6 +56,11 @@ func (f *clauseFormatter) formatLimitClauseValue(ctx *fql.LimitClauseValueContex
 		return
 	}
 
+	if ctx.ImplicitCurrentExpression() != nil {
+		f.p.write(".")
+		return
+	}
+
 	if ctx.ImplicitMemberExpression() != nil {
 		f.member.formatImplicitMemberExpression(ctx.ImplicitMemberExpression().(*fql.ImplicitMemberExpressionContext))
 		return

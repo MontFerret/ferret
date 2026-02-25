@@ -445,6 +445,8 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) bytecode.Oper
 		return c.ctx.LiteralCompiler.Compile(l)
 	} else if v := ctx.Variable(); v != nil {
 		return c.CompileVariable(v)
+	} else if ice := ctx.ImplicitCurrentExpression(); ice != nil {
+		return c.CompileImplicitCurrentExpression(ice)
 	} else if ime := ctx.ImplicitMemberExpression(); ime != nil {
 		return c.CompileImplicitMemberExpression(ime)
 	} else if me := ctx.MemberExpression(); me != nil {
@@ -464,8 +466,8 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) bytecode.Oper
 	return bytecode.NoopOperand
 }
 
-// CompileImplicitMemberExpression processes an implicit CURRENT member expression (e.g., .name, .[0], ?.name).
-// It resolves CURRENT from the symbol table and compiles member access paths as if CURRENT were explicit.
+// CompileImplicitMemberExpression processes an implicit member expression (e.g., .name, .[0], ?.name).
+// It resolves the implicit current value from the symbol table and compiles member access paths.
 func (c *ExprCompiler) CompileImplicitMemberExpression(ctx fql.IImplicitMemberExpressionContext) bytecode.Operand {
 	start := ctx.ImplicitMemberExpressionStart()
 	if start == nil {
@@ -635,6 +637,42 @@ func (c *ExprCompiler) compileMemberExpressionSource(mes fql.IMemberExpressionSo
 	}
 
 	return bytecode.NoopOperand
+}
+
+// CompileImplicitCurrentExpression processes a bare implicit current shorthand (e.g., .).
+func (c *ExprCompiler) CompileImplicitCurrentExpression(ctx fql.IImplicitCurrentExpressionContext) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
+	if c.implicitCurrentDepth == 0 {
+		if dot := ctx.Dot(); dot != nil {
+			c.ctx.Errors.VariableNotFound(dot.GetSymbol(), core.PseudoVariable)
+		} else if token := ctx.GetStart(); token != nil {
+			c.ctx.Errors.VariableNotFound(token, core.PseudoVariable)
+		}
+
+		return bytecode.NoopOperand
+	}
+
+	src, _, found := c.ctx.Symbols.Resolve(core.PseudoVariable)
+	if !found {
+		if dot := ctx.Dot(); dot != nil {
+			c.ctx.Errors.VariableNotFound(dot.GetSymbol(), core.PseudoVariable)
+		} else if token := ctx.GetStart(); token != nil {
+			c.ctx.Errors.VariableNotFound(token, core.PseudoVariable)
+		}
+
+		return bytecode.NoopOperand
+	}
+
+	if !src.IsRegister() {
+		reg := c.ctx.Registers.Allocate()
+		c.ctx.Emitter.EmitMove(reg, src)
+		src = reg
+	}
+
+	return src
 }
 
 func (c *ExprCompiler) compileMemberExpressionSegments(src bytecode.Operand, segments []fql.IMemberExpressionPathContext) bytecode.Operand {
@@ -1769,6 +1807,10 @@ func (c *ExprCompiler) compileRangeOperand(ctx fql.IRangeOperandContext) bytecod
 
 	if me := ctx.MemberExpression(); me != nil {
 		return c.CompileMemberExpression(me)
+	}
+
+	if ice := ctx.ImplicitCurrentExpression(); ice != nil {
+		return c.CompileImplicitCurrentExpression(ice)
 	}
 
 	if ime := ctx.ImplicitMemberExpression(); ime != nil {

@@ -113,6 +113,8 @@ func (f *expressionFormatter) formatExpressionAtom(ctx *fql.ExpressionAtomContex
 		f.literal.formatLiteral(ctx.Literal().(*fql.LiteralContext))
 	case ctx.Variable() != nil:
 		f.formatVariable(ctx.Variable().(*fql.VariableContext))
+	case ctx.ImplicitCurrentExpression() != nil:
+		f.p.write(".")
 	case ctx.ImplicitMemberExpression() != nil:
 		f.member.formatImplicitMemberExpression(ctx.ImplicitMemberExpression().(*fql.ImplicitMemberExpressionContext))
 	case ctx.MemberExpression() != nil:

@@ -283,6 +283,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#implicitMemberExpression.
 	VisitImplicitMemberExpression(ctx *ImplicitMemberExpressionContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#implicitCurrentExpression.
+	VisitImplicitCurrentExpression(ctx *ImplicitCurrentExpressionContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#implicitMemberExpressionStart.
 	VisitImplicitMemberExpressionStart(ctx *ImplicitMemberExpressionStartContext) interface{}
 

@@ -40,7 +40,7 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after 'RETURN' in array operator",
-				Hint:    "Provide a projection expression, e.g. [* RETURN CURRENT].",
+				Hint:    "Provide a projection expression, e.g. [* RETURN .].",
 			},
 			"Missing inline RETURN expression",
 		),

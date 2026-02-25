@@ -299,36 +299,36 @@ func TestComplexQueries(t *testing.T) {
 			"Should pass params to query",
 		),
 		CaseArray(
-			"RETURN @doc\n    [~ css`.product`]\n    [~ css`.title`]\n    [~ text]\n    [* FILTER CURRENT != \"\" RETURN UPPER(CURRENT)]",
+			"RETURN @doc\n    [~ css`.product`]\n    [~ css`.title`]\n    [~ text]\n    [* FILTER . != \"\" RETURN UPPER(.)]",
 			[]any{"TITLE"},
 			"Should apply array operators after query chain",
 		),
 		CaseArray(
-			"RETURN @db[~ sql`SELECT name, price FROM products`]\n    [* FILTER CURRENT.price > 100 RETURN CURRENT.name]",
+			"RETURN @db[~ sql`SELECT name, price FROM products`]\n    [* FILTER .price > 100 RETURN .name]",
 			[]any{"Laptop Pro"},
 			"Should filter results from query",
 		),
 		CaseArray(
 			"RETURN @db[~ sql`SELECT name, price FROM products`]\n    [* FILTER .price > 100 RETURN .name]",
 			[]any{"Laptop Pro"},
-			"Should filter results from query using implicit CURRENT",
+			"Should filter results from query using shorthand",
 		),
 		CaseArray(
 			"RETURN @doc[~ css`.product`]\n    [* RETURN .[~ css`.title`][~ text]]",
 			[]any{
 				[]any{"title"},
 			},
-			"Should apply query shorthand inside implicit CURRENT",
+			"Should apply query shorthand inside implicit current",
 		),
 		CaseArray(
-			"RETURN @doc\n    [~ css`.product`]\n    [* FILTER FIRST(CURRENT[~ css`.price`][~ text]) != \"\"]\n    [~ css`.title`]\n    [~ text]",
+			"RETURN @doc\n    [~ css`.product`]\n    [* FILTER FIRST(.[~ css`.price`][~ text]) != \"\"]\n    [~ css`.title`]\n    [~ text]",
 			[]any{
 				[]any{"title"},
 			},
 			"Should combine query apply inside array filter",
 		),
 		CaseArray(
-			"RETURN @json\n    [~ jp`$.orders[*]`]\n    [* FILTER CURRENT.total > 100]\n    [* RETURN {\n         id: CURRENT.id,\n         items: CURRENT.items[* RETURN CURRENT.name]\n       }]",
+			"RETURN @json\n    [~ jp`$.orders[*]`]\n    [* FILTER .total > 100]\n    [* RETURN {\n         id: .id,\n         items: .items[* RETURN .name]\n       }]",
 			[]any{
 				map[string]any{
 					"id":    1,
@@ -338,7 +338,7 @@ func TestComplexQueries(t *testing.T) {
 			"Should project nested array operators",
 		),
 		CaseArray(
-			"RETURN @doc\n    [~ css`.product`]\n    [* RETURN {\n         title: FIRST(CURRENT[~ css`.title`][~ text]),\n         price: FIRST(CURRENT[~ css`.price`][~ text])\n       }]",
+			"RETURN @doc\n    [~ css`.product`]\n    [* RETURN {\n         title: FIRST(.[~ css`.title`][~ text]),\n         price: FIRST(.[~ css`.price`][~ text])\n       }]",
 			[]any{
 				map[string]any{"title": "title", "price": "price"},
 			},

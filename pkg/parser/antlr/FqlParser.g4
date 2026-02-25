@@ -26,6 +26,43 @@ options { tokenVocab=FqlLexer; }
 	func (p *FqlParser) allowImplicitCurrent() bool {
 		return p.implicitCurrentDepth > 0
 	}
+
+	func (p *FqlParser) isSafeReservedWordToken(token int) bool {
+		switch token {
+		case FqlParserAnd, FqlParserOr, FqlParserAs, FqlParserDistinct, FqlParserFilter, FqlParserSort,
+			FqlParserLimit, FqlParserCollect, FqlParserSortDirection, FqlParserInto, FqlParserKeep, FqlParserWith,
+			FqlParserAll, FqlParserAny, FqlParserAt, FqlParserLeast, FqlParserAggregate, FqlParserEvent, FqlParserTimeout,
+			FqlParserOptions, FqlParserEvery, FqlParserBackoff, FqlParserJitter, FqlParserExists, FqlParserValue, FqlParserStep:
+			return true
+		default:
+			return false
+		}
+	}
+
+	func (p *FqlParser) isUnsafeReservedWordToken(token int) bool {
+		switch token {
+		case FqlParserReturn, FqlParserDispatch, FqlParserNone, FqlParserNull, FqlParserLet, FqlParserUse,
+			FqlParserWaitfor, FqlParserWhile, FqlParserDo, FqlParserIn, FqlParserLike, FqlParserNot, FqlParserFor,
+			FqlParserBooleanLiteral, FqlParserThrow:
+			return true
+		default:
+			return false
+		}
+	}
+
+	func (p *FqlParser) isImplicitCurrentValue() bool {
+		la1 := p.GetTokenStream().LA(2)
+		switch la1 {
+		case FqlParserIdentifier, FqlParserStringLiteral, FqlParserParam, FqlParserOpenBracket, FqlParserBacktickOpen:
+			return false
+		}
+
+		if p.isSafeReservedWordToken(la1) || p.isUnsafeReservedWordToken(la1) {
+			return false
+		}
+
+		return true
+	}
 }
 
 @parser::structmembers {
@@ -137,6 +174,7 @@ limitClauseValue
     | param
     | variable
     | functionCallExpression
+    | implicitCurrentExpression
     | {p.allowImplicitCurrent()}? implicitMemberExpression
     | memberExpression
     ;
@@ -499,7 +537,6 @@ safeReservedWord
     | Jitter
     | Exists
     | Value
-    | Current
     | Step
     ;
 
@@ -534,6 +571,7 @@ rangeOperand
     | variable
     | param
     | functionCallExpression
+    | implicitCurrentExpression
     | {p.allowImplicitCurrent()}? implicitMemberExpression
     | memberExpression
     ;
@@ -562,6 +600,7 @@ expressionAtom
     | rangeOperator
     | literal
     | variable
+    | implicitCurrentExpression
     | {p.allowImplicitCurrent()}? implicitMemberExpression
     | memberExpression
     | param
@@ -572,6 +611,10 @@ expressionAtom
 
 implicitMemberExpression
     : implicitMemberExpressionStart memberExpressionPath*
+    ;
+
+implicitCurrentExpression
+    : {p.allowImplicitCurrent() && p.isImplicitCurrentValue()}? Dot
     ;
 
 implicitMemberExpressionStart

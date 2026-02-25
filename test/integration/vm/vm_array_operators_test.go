@@ -74,7 +74,7 @@ func TestArrayOperators(t *testing.T) {
 						{ name: "Cat", age: 50 }
 					]
 
-					RETURN users[*][* FILTER CURRENT.age > 40].age
+					RETURN users[*][* FILTER .age > 40].age
 				`,
 			[]any{45, 50}),
 		CaseArray(`
@@ -85,7 +85,7 @@ func TestArrayOperators(t *testing.T) {
 						{ name: "Dan", age: 55 }
 					]
 
-					RETURN users[* FILTER CURRENT.age > 20][* FILTER CURRENT.age < 50].name
+					RETURN users[* FILTER .age > 20][* FILTER .age < 50].name
 				`,
 			[]any{"Bob", "Cat"}),
 		CaseArray(`
@@ -96,7 +96,7 @@ func TestArrayOperators(t *testing.T) {
 						{ name: "Dan", age: 55 }
 					]
 
-					RETURN users[* FILTER CURRENT.age > 30][*].name
+					RETURN users[* FILTER .age > 30][*].name
 				`,
 			[]any{"Bob", "Cat", "Dan"}),
 		CaseArray(`
@@ -151,7 +151,7 @@ LET users = [
 			[]any{"Alice", "Tom", "Jane"}),
 		CaseArray(`
 LET arr = [ [ 1, 2 ], 3, [ 4, 5 ], 6 ]
-RETURN arr[** FILTER CURRENT % 2 == 0]`, []any{2, 4, 6}),
+RETURN arr[** FILTER . % 2 == 0]`, []any{2, 4, 6}),
 		CaseArray(`
 LET values = [1, 2, 3, 4]
 RETURN values[* LIMIT 2]`, []any{1, 2}),
@@ -160,16 +160,19 @@ LET values = [1, 2, 3, 4]
 RETURN values[* LIMIT 1, 2]`, []any{2, 3}),
 		CaseArray(`
 LET values = [1, 2, 3]
-RETURN values[* RETURN CURRENT * 2]`, []any{2, 4, 6}),
+RETURN values[* RETURN . * 2]`, []any{2, 4, 6}),
+		CaseArray(`
+LET values = [1, 2, 3]
+RETURN values[* RETURN .]`, []any{1, 2, 3}),
 		CaseArray(`
 LET values = [1, 2, 3, 4]
-RETURN values[* FILTER CURRENT > 2 RETURN CURRENT * 10]`, []any{30, 40}),
+RETURN values[* FILTER . > 2 RETURN . * 10]`, []any{30, 40}),
 		Case(`
 LET arr = [1, 2, 3, 4]
-RETURN arr[? 2 FILTER CURRENT % 2 == 0]`, true),
+RETURN arr[? 2 FILTER . % 2 == 0]`, true),
 		Case(`
 LET arr = [1, 3, 5]
-RETURN arr[? FILTER CURRENT % 2 == 0]`, false),
+RETURN arr[? FILTER . % 2 == 0]`, false),
 		Case(`
 LET arr = [1]
 RETURN arr[?]`, true),
@@ -178,19 +181,19 @@ LET arr = []
 RETURN arr[?]`, false),
 		Case(`
 LET arr = [1, 2]
-RETURN arr[? ANY FILTER CURRENT > 1]`, true),
+RETURN arr[? ANY FILTER . > 1]`, true),
 		Case(`
 LET arr = [1, 3, 5]
-RETURN arr[? NONE FILTER CURRENT % 2 == 0]`, true),
+RETURN arr[? NONE FILTER . % 2 == 0]`, true),
 		Case(`
 LET arr = [2, 4]
-RETURN arr[? ALL FILTER CURRENT % 2 == 0]`, true),
+RETURN arr[? ALL FILTER . % 2 == 0]`, true),
 		Case(`
 LET arr = [2, 4, 6]
-RETURN arr[? AT LEAST (2) FILTER CURRENT % 2 == 0]`, true),
+RETURN arr[? AT LEAST (2) FILTER . % 2 == 0]`, true),
 		Case(`
 LET arr = [2, 4, 6]
-RETURN arr[? 2..3 FILTER CURRENT % 2 == 0]`, true),
+RETURN arr[? 2..3 FILTER . % 2 == 0]`, true),
 		CaseArray(`
 LET docs = [
 	{ name: "A", dimensions: [{ type: "height", value: 45 }] },
@@ -199,7 +202,7 @@ LET docs = [
 ]
 
 FOR doc IN docs
-	FILTER doc.dimensions[? FILTER CURRENT.type == "height" AND CURRENT.value > 40]
+	FILTER doc.dimensions[? FILTER .type == "height" AND .value > 40]
 	RETURN doc.name`, []any{"A"}),
 		CaseArray(`
 LET docs = [
@@ -209,15 +212,15 @@ LET docs = [
 ]
 
 FOR doc IN docs
-	FILTER doc.dimensions[? FILTER CURRENT.part == "frame" AND
-		CURRENT.measurements[? FILTER CURRENT.type == "width" AND CURRENT.value <= 80]]
+	FILTER doc.dimensions[? FILTER .part == "frame" AND
+		.measurements[? FILTER .type == "width" AND .value <= 80]]
 	RETURN doc.name`, []any{"A"}),
 		CaseArray(`
 LET users = [
 	{ name: "Ann", age: 20 },
 	{ name: "Bob", age: 30 }
 ]
-RETURN users[* FILTER CURRENT.age > 20].name`, []any{"Bob"}),
+RETURN users[* FILTER .age > 20].name`, []any{"Bob"}),
 		CaseArray(`
 LET users = [
 	{ name: "Ann", age: 20 },
@@ -283,13 +286,13 @@ LET users = [
 	{ name: "Ann" },
 	{ name: "Bob" }
 ]
-RETURN users[* RETURN { n: CURRENT.name }].n`, []any{"Ann", "Bob"}),
+RETURN users[* RETURN { n: .name }].n`, []any{"Ann", "Bob"}),
 		CaseArray(`
 LET groups = [
 	[{ name: "Ann", age: 20 }],
 	[{ name: "Bob", age: 30 }]
 ]
-RETURN groups[** FILTER CURRENT.age > 20].name`, []any{"Bob"}),
+RETURN groups[** FILTER .age > 20].name`, []any{"Bob"}),
 		CaseArray(`
 LET users = [
 						{ 
@@ -314,9 +317,9 @@ LET users = [
 			FOR u IN users
 				RETURN {
 					name: u.name,
-					friends: u.friends[* FILTER CONTAINS(CURRENT.name, "a") AND CURRENT.age > 40
+					friends: u.friends[* FILTER CONTAINS(.name, "a") AND .age > 40
 						LIMIT 2
-						RETURN CONCAT(CURRENT.name, " is ", CURRENT.age)
+						RETURN CONCAT(.name, " is ", .age)
 					]
 				}
 				`,

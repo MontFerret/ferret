@@ -74,7 +74,6 @@ Value: 'VALUE';
 Throw: 'THROW';
 Distinct: 'DISTINCT';
 Filter: 'FILTER';
-Current: 'CURRENT';
 Sort: 'SORT';
 Limit: 'LIMIT';
 Let: 'LET';

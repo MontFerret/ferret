@@ -375,6 +375,10 @@ func (v *BaseFqlParserVisitor) VisitImplicitMemberExpression(ctx *ImplicitMember
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitImplicitCurrentExpression(ctx *ImplicitCurrentExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitImplicitMemberExpressionStart(ctx *ImplicitMemberExpressionStartContext) interface{} {
 	return v.VisitChildren(ctx)
 }

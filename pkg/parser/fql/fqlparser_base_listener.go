@@ -578,6 +578,14 @@ func (s *BaseFqlParserListener) EnterImplicitMemberExpression(ctx *ImplicitMembe
 // ExitImplicitMemberExpression is called when production implicitMemberExpression is exited.
 func (s *BaseFqlParserListener) ExitImplicitMemberExpression(ctx *ImplicitMemberExpressionContext) {}
 
+// EnterImplicitCurrentExpression is called when production implicitCurrentExpression is entered.
+func (s *BaseFqlParserListener) EnterImplicitCurrentExpression(ctx *ImplicitCurrentExpressionContext) {
+}
+
+// ExitImplicitCurrentExpression is called when production implicitCurrentExpression is exited.
+func (s *BaseFqlParserListener) ExitImplicitCurrentExpression(ctx *ImplicitCurrentExpressionContext) {
+}
+
 // EnterImplicitMemberExpressionStart is called when production implicitMemberExpressionStart is entered.
 func (s *BaseFqlParserListener) EnterImplicitMemberExpressionStart(ctx *ImplicitMemberExpressionStartContext) {
 }

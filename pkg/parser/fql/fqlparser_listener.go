@@ -283,6 +283,9 @@ type FqlParserListener interface {
 	// EnterImplicitMemberExpression is called when entering the implicitMemberExpression production.
 	EnterImplicitMemberExpression(c *ImplicitMemberExpressionContext)
 
+	// EnterImplicitCurrentExpression is called when entering the implicitCurrentExpression production.
+	EnterImplicitCurrentExpression(c *ImplicitCurrentExpressionContext)
+
 	// EnterImplicitMemberExpressionStart is called when entering the implicitMemberExpressionStart production.
 	EnterImplicitMemberExpressionStart(c *ImplicitMemberExpressionStartContext)
 
@@ -597,6 +600,9 @@ type FqlParserListener interface {
 
 	// ExitImplicitMemberExpression is called when exiting the implicitMemberExpression production.
 	ExitImplicitMemberExpression(c *ImplicitMemberExpressionContext)
+
+	// ExitImplicitCurrentExpression is called when exiting the implicitCurrentExpression production.
+	ExitImplicitCurrentExpression(c *ImplicitCurrentExpressionContext)
 
 	// ExitImplicitMemberExpressionStart is called when exiting the implicitMemberExpressionStart production.
 	ExitImplicitMemberExpressionStart(c *ImplicitMemberExpressionStartContext)

@@ -138,7 +138,7 @@ func matchArrayInlineReturnErrors(src *file.Source, err *diagnostics.Diagnostic,
 		span.End = span.Start + 1
 
 		err.Message = "Expected expression after 'RETURN' in array operator"
-		err.Hint = "Provide a projection expression, e.g. [* RETURN CURRENT]."
+		err.Hint = "Provide a projection expression, e.g. [* RETURN .]."
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing expression"),
 		}
@@ -156,7 +156,7 @@ func matchArrayInlineReturnErrors(src *file.Source, err *diagnostics.Diagnostic,
 	span.End = span.Start + 1
 
 	err.Message = "Expected expression after 'RETURN' in array operator"
-	err.Hint = "Provide a projection expression, e.g. [* RETURN CURRENT]."
+	err.Hint = "Provide a projection expression, e.g. [* RETURN .]."
 	err.Spans = []diagnostics.ErrorSpan{
 		diagnostics.NewMainErrorSpan(span, "missing expression"),
 	}
