@@ -475,32 +475,16 @@ func (c *ExprCompiler) CompileImplicitMemberExpression(ctx fql.IImplicitMemberEx
 	}
 
 	if c.implicitCurrentDepth == 0 {
-		if dot := start.Dot(); dot != nil {
-			c.ctx.Errors.VariableNotFound(dot.GetSymbol(), core.PseudoVariable)
-		} else if token := start.GetStart(); token != nil {
-			c.ctx.Errors.VariableNotFound(token, core.PseudoVariable)
-		}
-
+		c.resolveImplicitCurrent(getImplicitToken(start))
 		return bytecode.NoopOperand
 	}
 
-	src, _, found := c.ctx.Symbols.Resolve(core.PseudoVariable)
-	if !found {
-		if dot := start.Dot(); dot != nil {
-			c.ctx.Errors.VariableNotFound(dot.GetSymbol(), core.PseudoVariable)
-		} else if token := start.GetStart(); token != nil {
-			c.ctx.Errors.VariableNotFound(token, core.PseudoVariable)
-		}
-
+	src, ok := c.resolveImplicitCurrent(getImplicitToken(start))
+	if !ok {
 		return bytecode.NoopOperand
 	}
 
-	if !src.IsRegister() {
-		reg := c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitMove(reg, src)
-		src = reg
-	}
-
+	// src is now guaranteed to be a register via resolveImplicitCurrent.
 	segments := ctx.AllMemberExpressionPath()
 	if expansion := start.ArrayExpansion(); expansion != nil {
 		return c.compileArrayExpansionChain(src, expansion, segments)
@@ -645,25 +629,26 @@ func (c *ExprCompiler) CompileImplicitCurrentExpression(ctx fql.IImplicitCurrent
 		return bytecode.NoopOperand
 	}
 
-	if c.implicitCurrentDepth == 0 {
-		if dot := ctx.Dot(); dot != nil {
-			c.ctx.Errors.VariableNotFound(dot.GetSymbol(), core.PseudoVariable)
-		} else if token := ctx.GetStart(); token != nil {
-			c.ctx.Errors.VariableNotFound(token, core.PseudoVariable)
-		}
-
+	src, ok := c.resolveImplicitCurrent(getImplicitToken(ctx))
+	if !ok {
 		return bytecode.NoopOperand
+	}
+
+	return src
+}
+
+// resolveImplicitCurrent centralizes implicit current resolution and error reporting.
+// It returns a register operand and true on success.
+func (c *ExprCompiler) resolveImplicitCurrent(token antlr.Token) (bytecode.Operand, bool) {
+	if c.implicitCurrentDepth == 0 {
+		c.ctx.Errors.VariableNotFound(token, core.PseudoVariable)
+		return bytecode.NoopOperand, false
 	}
 
 	src, _, found := c.ctx.Symbols.Resolve(core.PseudoVariable)
 	if !found {
-		if dot := ctx.Dot(); dot != nil {
-			c.ctx.Errors.VariableNotFound(dot.GetSymbol(), core.PseudoVariable)
-		} else if token := ctx.GetStart(); token != nil {
-			c.ctx.Errors.VariableNotFound(token, core.PseudoVariable)
-		}
-
-		return bytecode.NoopOperand
+		c.ctx.Errors.VariableNotFound(token, core.PseudoVariable)
+		return bytecode.NoopOperand, false
 	}
 
 	if !src.IsRegister() {
@@ -672,7 +657,22 @@ func (c *ExprCompiler) CompileImplicitCurrentExpression(ctx fql.IImplicitCurrent
 		src = reg
 	}
 
-	return src
+	return src, true
+}
+
+func getImplicitToken(ctx antlr.ParserRuleContext) antlr.Token {
+	switch v := ctx.(type) {
+	case fql.IImplicitMemberExpressionStartContext:
+		if dot := v.Dot(); dot != nil {
+			return dot.GetSymbol()
+		}
+	case fql.IImplicitCurrentExpressionContext:
+		if dot := v.Dot(); dot != nil {
+			return dot.GetSymbol()
+		}
+	}
+
+	return ctx.GetStart()
 }
 
 func (c *ExprCompiler) compileMemberExpressionSegments(src bytecode.Operand, segments []fql.IMemberExpressionPathContext) bytecode.Operand {
