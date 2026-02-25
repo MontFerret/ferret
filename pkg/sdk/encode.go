@@ -145,9 +145,25 @@ func encodeMap(v reflect.Value) runtime.Value {
 }
 
 func encodeStruct(v reflect.Value) runtime.Value {
+	return encodeStructWithVisit(v, make(map[reflect.Type]int))
+}
+
+func encodeStructWithVisit(v reflect.Value, visiting map[reflect.Type]int) runtime.Value {
 	obj := runtime.NewObject()
 	ctx := context.Background()
 	t := v.Type()
+	if visiting[t] > 0 {
+		return obj
+	}
+
+	visiting[t]++
+	defer func() {
+		visiting[t]--
+		if visiting[t] == 0 {
+			delete(visiting, t)
+		}
+	}()
+
 	used := make(map[string]struct{}, t.NumField())
 
 	for i := 0; i < t.NumField(); i++ {
@@ -178,13 +194,17 @@ func encodeStruct(v reflect.Value) runtime.Value {
 		fieldVal := v.Field(i)
 		switch fieldVal.Kind() {
 		case reflect.Struct:
-			mergeObject(obj, encodeStruct(fieldVal), used)
+			mergeObject(obj, encodeStructWithVisit(fieldVal, visiting), used)
 		case reflect.Pointer:
 			if fieldVal.IsNil() || fieldVal.Elem().Kind() != reflect.Struct {
 				continue
 			}
 
-			mergeObject(obj, encodeStruct(fieldVal.Elem()), used)
+			if visiting[fieldVal.Elem().Type()] > 0 {
+				continue
+			}
+
+			mergeObject(obj, encodeStructWithVisit(fieldVal.Elem(), visiting), used)
 		default:
 			continue
 		}

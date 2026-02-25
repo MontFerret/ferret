@@ -65,6 +65,10 @@ type EncodeEmbeddedPageLoadParams struct {
 	URL    string `json:"url"`
 }
 
+type EncodeEmbeddedNode struct {
+	*EncodeEmbeddedNode
+}
+
 func TestEncode(t *testing.T) {
 	Convey("Should encode tagged fields only", t, func() {
 		input := encodeParams{
@@ -181,6 +185,15 @@ func TestEncode(t *testing.T) {
 		)
 
 		So(out, ShouldResemble, expected)
+	})
+
+	Convey("Should avoid infinite recursion on self-embedded pointers", t, func() {
+		node := EncodeEmbeddedNode{}
+		node.EncodeEmbeddedNode = &node
+
+		out := sdk.Encode(node)
+
+		So(out, ShouldResemble, runtime.NewObject())
 	})
 
 	Convey("Should encode nested tagged structs", t, func() {
