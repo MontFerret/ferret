@@ -12,9 +12,10 @@ const maxInt64 = ^uint64(0) >> 1
 
 var byteSliceType = reflect.TypeOf([]byte(nil))
 
-// Encode converts a Go value into a runtime Value using ferret tags for structs.
-// If "ferret" tag is not present, it falls back to "json" tag, otherwise the field will be ignored.
-// It also supports unwrapping values that implement the Unwrappable interface.
+// Encode converts a Go value into a runtime Value.
+// It handles basic types, slices, maps, and structs (using tags for field names).
+// If the input is already a runtime Value, it returns it directly.
+// For unsupported types, it returns runtime.None.
 func Encode(input any) runtime.Value {
 	if input == nil {
 		return runtime.None
