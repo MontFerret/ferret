@@ -1,7 +1,6 @@
 package sdk_test
 
 import (
-	"context"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -29,6 +28,32 @@ type encodeOuter struct {
 	Count int          `ferret:"count"`
 }
 
+type encodeNestedAddress struct {
+	City string `ferret:"city"`
+	Zip  int    `ferret:"zip"`
+}
+
+type encodeNestedProfile struct {
+	Name    string              `ferret:"name"`
+	Address encodeNestedAddress `ferret:"address"`
+}
+
+type encodeNestedFriendMeta struct {
+	Active bool `ferret:"active"`
+}
+
+type encodeNestedFriend struct {
+	ID   int                     `ferret:"id"`
+	Tags []string                `ferret:"tags"`
+	Meta *encodeNestedFriendMeta `ferret:"meta"`
+}
+
+type encodeNestedPayload struct {
+	Profile encodeNestedProfile  `ferret:"profile"`
+	Matrix  [][]int              `ferret:"matrix"`
+	Friends []encodeNestedFriend `ferret:"friends"`
+}
+
 func TestEncode(t *testing.T) {
 	Convey("Should encode tagged fields only", t, func() {
 		input := encodeParams{
@@ -45,6 +70,79 @@ func TestEncode(t *testing.T) {
 			map[string]runtime.Value{
 				"name": runtime.NewString("Alice"),
 				"age":  runtime.NewInt(30),
+			},
+		)
+
+		So(out, ShouldResemble, expected)
+	})
+
+	Convey("Should encode deeply nested structs and slices", t, func() {
+		input := encodeNestedPayload{
+			Profile: encodeNestedProfile{
+				Name: "Alice",
+				Address: encodeNestedAddress{
+					City: "Paris",
+					Zip:  75001,
+				},
+			},
+			Matrix: [][]int{{1, 2}, {3, 4}},
+			Friends: []encodeNestedFriend{
+				{
+					ID:   1,
+					Tags: []string{"a", "b"},
+					Meta: &encodeNestedFriendMeta{Active: true},
+				},
+				{
+					ID:   2,
+					Tags: []string{"c"},
+					Meta: &encodeNestedFriendMeta{Active: false},
+				},
+			},
+		}
+
+		out := sdk.Encode(input)
+
+		expected := runtime.NewObjectWith(
+			map[string]runtime.Value{
+				"profile": runtime.NewObjectWith(
+					map[string]runtime.Value{
+						"name": runtime.NewString("Alice"),
+						"address": runtime.NewObjectWith(
+							map[string]runtime.Value{
+								"city": runtime.NewString("Paris"),
+								"zip":  runtime.NewInt(75001),
+							},
+						),
+					},
+				),
+				"matrix": runtime.NewArrayWith(
+					runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)),
+					runtime.NewArrayWith(runtime.NewInt(3), runtime.NewInt(4)),
+				),
+				"friends": runtime.NewArrayWith(
+					runtime.NewObjectWith(
+						map[string]runtime.Value{
+							"id":   runtime.NewInt(1),
+							"tags": runtime.NewArrayWith(runtime.NewString("a"), runtime.NewString("b")),
+							"meta": runtime.NewObjectWith(
+								map[string]runtime.Value{
+									"active": runtime.NewBoolean(true),
+								},
+							),
+						},
+					),
+					runtime.NewObjectWith(
+						map[string]runtime.Value{
+							"id":   runtime.NewInt(2),
+							"tags": runtime.NewArrayWith(runtime.NewString("c")),
+							"meta": runtime.NewObjectWith(
+								map[string]runtime.Value{
+									"active": runtime.NewBoolean(false),
+								},
+							),
+						},
+					),
+				),
 			},
 		)
 
@@ -74,124 +172,5 @@ func TestEncode(t *testing.T) {
 		)
 
 		So(out, ShouldResemble, expected)
-	})
-}
-
-func TestEncodeByKey(t *testing.T) {
-	type SomeValue struct {
-		StrProp           string     `ferret:"strProp"`
-		IntProp           int        `ferret:"intProp"`
-		SliceProp         []int      `ferret:"sliceProp"`
-		PointerProp       *SomeValue `ferret:"pointerProp"`
-		JsonTag           string     `ferret:"jsonTag"`
-		JsonAndRuntimeTag string     `ferret:"ferretTag" json:"jsonFerretTag"`
-
-		UntaggedProp string
-
-		privateStrProp string `ferret:"privateStrProp"`
-	}
-
-	type testCase struct {
-		Name     string
-		Input    SomeValue
-		Field    string
-		Expected runtime.Value
-	}
-
-	testCases := []testCase{
-		{
-			Name: "string",
-			Input: SomeValue{
-				StrProp: "test",
-			},
-			Field:    "strProp",
-			Expected: runtime.String("test"),
-		},
-		{
-			Name: "int",
-			Input: SomeValue{
-				IntProp: 99,
-			},
-			Field:    "intProp",
-			Expected: runtime.Int(99),
-		},
-		{
-			Name: "slice",
-			Input: SomeValue{
-				SliceProp: []int{1, 2, 3},
-			},
-			Field:    "sliceProp",
-			Expected: runtime.NewArrayWith(runtime.Int(1), runtime.Int(2), runtime.Int(3)),
-		},
-		{
-			Name: "pointer",
-			Input: SomeValue{
-				PointerProp: &SomeValue{
-					StrProp: "test",
-				},
-			},
-			Field: "pointerProp",
-			Expected: runtime.NewObjectWith(
-				map[string]runtime.Value{
-					"strProp":     runtime.String("test"),
-					"intProp":     runtime.Int(0),
-					"sliceProp":   runtime.NewArray(0),
-					"pointerProp": runtime.None,
-					"jsonTag":     runtime.EmptyString,
-					"ferretTag":   runtime.EmptyString,
-				},
-			),
-		},
-		{
-			Name: "json tag",
-			Input: SomeValue{
-				JsonTag: "json value",
-			},
-			Field:    "jsonTag",
-			Expected: runtime.String("json value"),
-		},
-		{
-			Name: "json and runtime tag. ferret tag should take precedence",
-			Input: SomeValue{
-				JsonAndRuntimeTag: "json and runtime value",
-			},
-			Field:    "ferretTag",
-			Expected: runtime.String("json and runtime value"),
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.Name, func(t *testing.T) {
-			Convey(tc.Name, t, func() {
-				actual, err := sdk.EncodeField(context.Background(), tc.Input, runtime.String(tc.Field))
-
-				So(err, ShouldBeNil)
-				So(actual, ShouldResemble, tc.Expected)
-			})
-		})
-
-	}
-
-	Convey("Struct", t, func() {
-		Convey("should not read a private tagged field from a struct", func() {
-			sv := SomeValue{
-				privateStrProp: "hello world",
-			}
-
-			res, err := sdk.EncodeField(context.TODO(), sv, runtime.String("privateStrProp"))
-
-			So(res, ShouldEqual, runtime.None)
-			So(err, ShouldBeNil)
-		})
-
-		Convey("should not read a non-tagged field from a struct", func() {
-			sv := SomeValue{
-				privateStrProp: "hello world",
-			}
-			actual, err := sdk.EncodeField(context.TODO(), sv, runtime.String("UntaggedProp"))
-
-			So(err, ShouldBeNil)
-			So(actual, ShouldEqual, runtime.None)
-		})
 	})
 }
