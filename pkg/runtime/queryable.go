@@ -14,6 +14,6 @@ type (
 
 	// Queryable allows values to handle operator index queries.
 	Queryable interface {
-		Query(ctx context.Context, q Query) (Value, error)
+		Query(ctx context.Context, q Query) (List, error)
 	}
 )

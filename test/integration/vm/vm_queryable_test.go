@@ -15,19 +15,19 @@ import (
 
 type testQueryable struct {
 	queries []runtime.Query
-	result  runtime.Value
+	result  runtime.List
 	err     error
 }
 
-func (t *testQueryable) Query(_ context.Context, q runtime.Query) (runtime.Value, error) {
+func (t *testQueryable) Query(_ context.Context, q runtime.Query) (runtime.List, error) {
 	t.queries = append(t.queries, q)
 	if t.err != nil {
-		return runtime.None, t.err
+		return nil, t.err
 	}
 	if t.result != nil {
 		return t.result, nil
 	}
-	return runtime.None, nil
+	return runtime.NewArray(0), nil
 }
 
 func (t *testQueryable) MarshalJSON() ([]byte, error) {
@@ -120,23 +120,23 @@ func (n *mockNode) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	return runtime.NewArrayWith(n).Iterate(ctx)
 }
 
-func (n *mockNode) Query(_ context.Context, q runtime.Query) (runtime.Value, error) {
+func (n *mockNode) Query(_ context.Context, q runtime.Query) (runtime.List, error) {
 	switch q.Kind.String() {
 	case "css":
 		switch q.Payload.String() {
 		case ".product":
-			return newMockNode("product"), nil
+			return runtime.NewArrayWith(newMockNode("product")), nil
 		case ".title":
-			return newMockNode("title"), nil
+			return runtime.NewArrayWith(newMockNode("title")), nil
 		case ".price":
-			return newMockNode("price"), nil
+			return runtime.NewArrayWith(newMockNode("price")), nil
 		default:
-			return newMockNode("node"), nil
+			return runtime.NewArrayWith(newMockNode("node")), nil
 		}
 	case "text":
-		return newMockText(n.kind), nil
+		return runtime.NewArrayWith(newMockText(n.kind)), nil
 	default:
-		return runtime.None, nil
+		return runtime.NewArray(0), nil
 	}
 }
 
@@ -144,11 +144,11 @@ type mockDBQueryable struct {
 	testQueryable
 }
 
-func (m *mockDBQueryable) Query(ctx context.Context, q runtime.Query) (runtime.Value, error) {
+func (m *mockDBQueryable) Query(ctx context.Context, q runtime.Query) (runtime.List, error) {
 	m.queries = append(m.queries, q)
 
 	if q.Kind.String() == "nil" {
-		return runtime.None, nil
+		return runtime.NewArray(0), nil
 	}
 
 	if q.Kind.String() != "sql" {
@@ -183,7 +183,7 @@ type mockJSONQueryable struct {
 	testQueryable
 }
 
-func (m *mockJSONQueryable) Query(ctx context.Context, q runtime.Query) (runtime.Value, error) {
+func (m *mockJSONQueryable) Query(ctx context.Context, q runtime.Query) (runtime.List, error) {
 	m.queries = append(m.queries, q)
 
 	if q.Kind.String() != "jp" {
@@ -211,13 +211,35 @@ func (m *mockJSONQueryable) Query(ctx context.Context, q runtime.Query) (runtime
 	return orders, nil
 }
 
+type nilListQueryable struct{}
+
+func (n *nilListQueryable) Query(_ context.Context, _ runtime.Query) (runtime.List, error) {
+	return nil, nil
+}
+
+func (n *nilListQueryable) MarshalJSON() ([]byte, error) {
+	return json.Marshal("nil-queryable")
+}
+
+func (n *nilListQueryable) String() string {
+	return "nil-queryable"
+}
+
+func (n *nilListQueryable) Hash() uint64 {
+	return 0
+}
+
+func (n *nilListQueryable) Copy() runtime.Value {
+	return n
+}
+
 func TestQueryable(t *testing.T) {
-	queryable := &testQueryable{result: runtime.NewString("ok")}
+	queryable := &testQueryable{result: runtime.NewArrayWith(runtime.NewString("ok"))}
 
 	RunUseCases(t, []UseCase{
-		Case("RETURN @doc[~ css`.items`]", "ok", "Should apply query literal"),
-		Case("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", "ok", "Should apply query literal with params"),
-		Case("RETURN @doc[~ text]", "ok", "Should apply query literal with no string payload"),
+		CaseArray("RETURN @doc[~ css`.items`]", []any{"ok"}, "Should apply query literal"),
+		CaseArray("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", []any{"ok"}, "Should apply query literal with params"),
+		CaseArray("RETURN @doc[~ text]", []any{"ok"}, "Should apply query literal with no string payload"),
 		RuntimeErrorCase("RETURN @val[~ css`x`]", ExpectedRuntimeError{Message: "Invalid type"}),
 	}, vm.WithParams(map[string]runtime.Value{
 		"doc": queryable,
@@ -264,9 +286,9 @@ func TestComplexQueries(t *testing.T) {
 	queryableJSON := &mockJSONQueryable{}
 
 	RunUseCases(t, []UseCase{
-		Case(
+		CaseArray(
 			"RETURN @doc\n    [~ css`.product`]\n    [~ css`.title`]\n    [~ text]",
-			"title",
+			[]any{"title"},
 			"Should chain apply operators",
 		),
 		CaseArray(
@@ -287,7 +309,7 @@ func TestComplexQueries(t *testing.T) {
 			"Should filter results from query",
 		),
 		CaseArray(
-			"RETURN @doc\n    [~ css`.product`]\n    [* FILTER CURRENT[~ css`.price`][~ text] != \"\"]\n    [~ css`.title`]\n    [~ text]",
+			"RETURN @doc\n    [~ css`.product`]\n    [* FILTER FIRST(CURRENT[~ css`.price`][~ text]) != \"\"]\n    [~ css`.title`]\n    [~ text]",
 			[]any{"title"},
 			"Should combine query apply inside array filter",
 		),
@@ -302,17 +324,56 @@ func TestComplexQueries(t *testing.T) {
 			"Should project nested array operators",
 		),
 		CaseArray(
-			"RETURN @doc\n    [~ css`.product`]\n    [* RETURN {\n         title: CURRENT[~ css`.title`][~ text],\n         price: CURRENT[~ css`.price`][~ text]\n       }]",
+			"RETURN @doc\n    [~ css`.product`]\n    [* RETURN {\n         title: FIRST(CURRENT[~ css`.title`][~ text]),\n         price: FIRST(CURRENT[~ css`.price`][~ text])\n       }]",
 			[]any{
 				map[string]any{"title": "title", "price": "price"},
 			},
 			"Should support nested apply inside projections",
 		),
-		CaseNil("RETURN @doc[~ nil`foo`]?.foo", "Should return null for queryable that returns None"),
-		SkipCaseNil("RETURN @doc[~ nil`foo`]?.[*].name", "Should return null for queryable that returns None"),
+		CaseArray("RETURN @doc[~ nil`foo`]", []any{}, "Should return empty array for queryable that returns empty list"),
+		SkipCaseArray("RETURN @doc[~ nil`foo`]?.[*].name", []any{}, "Should return empty array for queryable that returns empty list"),
 	}, vm.WithParams(map[string]runtime.Value{
 		"doc":  queryableDoc,
 		"db":   queryableDB,
 		"json": queryableJSON,
+	}))
+}
+
+func TestQueryableListInput(t *testing.T) {
+	queryableDoc := newMockNode("doc")
+	queryableNil := &nilListQueryable{}
+	queryableA := &testQueryable{
+		result: runtime.NewArrayWith(runtime.NewString("a1"), runtime.NewString("a2")),
+	}
+	queryableB := &testQueryable{
+		result: runtime.NewArrayWith(runtime.NewString("b1")),
+	}
+
+	RunUseCases(t, []UseCase{
+		CaseArray(
+			"RETURN [@qA, @qB][~ text]",
+			[]any{"a1", "a2", "b1"},
+			"Should apply query to list inputs and flatten results",
+		),
+		CaseArray(
+			"RETURN [@qNil, @qA][~ text]",
+			[]any{"a1", "a2"},
+			"Should ignore nil list results when flattening",
+		),
+		CaseArray(
+			"RETURN [@doc, @doc][~ css`.title`][~ text]",
+			[]any{"title", "title"},
+			"Should chain queries over list inputs",
+		),
+		RuntimeErrorCase(
+			"RETURN [@qA, 1][~ text]",
+			ExpectedRuntimeError{Message: "Invalid type"},
+			"Should fail when list element is not queryable",
+		),
+	}, vm.WithParams(map[string]runtime.Value{
+		"doc":  queryableDoc,
+		"qNil": queryableNil,
+		"qA":   queryableA,
+		"qB":   queryableB,
 	}))
 }

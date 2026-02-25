@@ -18,8 +18,8 @@ import (
 
 type roundTripQueryable struct{}
 
-func (q *roundTripQueryable) Query(_ context.Context, _ runtime.Query) (runtime.Value, error) {
-	return runtime.NewString("ok"), nil
+func (q *roundTripQueryable) Query(_ context.Context, _ runtime.Query) (runtime.List, error) {
+	return runtime.NewArrayWith(runtime.NewString("ok")), nil
 }
 
 func (q *roundTripQueryable) MarshalJSON() ([]byte, error) {
@@ -145,7 +145,7 @@ FOR u IN users
 		},
 		{
 			expression:  "RETURN @doc[~ text]",
-			expected:    "ok",
+			expected:    []any{"ok"},
 			options:     []vm.EnvironmentOption{vm.WithParams(map[string]runtime.Value{"doc": queryable})},
 			description: "Query literal without params",
 		},
