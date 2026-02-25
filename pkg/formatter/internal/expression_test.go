@@ -21,3 +21,31 @@ func TestExpressionFormatter_UnaryNot(t *testing.T) {
 		t.Fatalf("unexpected unary operator formatting: %q", got)
 	}
 }
+
+func TestExpressionFormatter_ImplicitMemberExpression(t *testing.T) {
+	input := "RETURN .name"
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != ".name" {
+		t.Fatalf("unexpected implicit member formatting: %q", got)
+	}
+}
+
+func TestExpressionFormatter_ImplicitMemberExpressionOptional(t *testing.T) {
+	input := "RETURN ?.name"
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "?.name" {
+		t.Fatalf("unexpected implicit optional member formatting: %q", got)
+	}
+}

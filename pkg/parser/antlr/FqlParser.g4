@@ -511,6 +511,7 @@ rangeOperand
     | variable
     | param
     | functionCallExpression
+    | implicitMemberExpression
     | memberExpression
     ;
 
@@ -538,11 +539,21 @@ expressionAtom
     | rangeOperator
     | literal
     | variable
+    | implicitMemberExpression
     | memberExpression
     | param
     | dispatchExpression
     | waitForExpression
     | OpenParen (forExpression | waitForExpression | expression) CloseParen errorOperator?
+    ;
+
+implicitMemberExpression
+    : implicitMemberExpressionStart memberExpressionPath*
+    ;
+
+implicitMemberExpressionStart
+    : errorOperator? Dot propertyName
+    | errorOperator? Dot computedPropertyName
     ;
 
 queryLiteral

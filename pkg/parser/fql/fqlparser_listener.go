@@ -277,6 +277,12 @@ type FqlParserListener interface {
 	// EnterExpressionAtom is called when entering the expressionAtom production.
 	EnterExpressionAtom(c *ExpressionAtomContext)
 
+	// EnterImplicitMemberExpression is called when entering the implicitMemberExpression production.
+	EnterImplicitMemberExpression(c *ImplicitMemberExpressionContext)
+
+	// EnterImplicitMemberExpressionStart is called when entering the implicitMemberExpressionStart production.
+	EnterImplicitMemberExpressionStart(c *ImplicitMemberExpressionStartContext)
+
 	// EnterQueryLiteral is called when entering the queryLiteral production.
 	EnterQueryLiteral(c *QueryLiteralContext)
 
@@ -582,6 +588,12 @@ type FqlParserListener interface {
 
 	// ExitExpressionAtom is called when exiting the expressionAtom production.
 	ExitExpressionAtom(c *ExpressionAtomContext)
+
+	// ExitImplicitMemberExpression is called when exiting the implicitMemberExpression production.
+	ExitImplicitMemberExpression(c *ImplicitMemberExpressionContext)
+
+	// ExitImplicitMemberExpressionStart is called when exiting the implicitMemberExpressionStart production.
+	ExitImplicitMemberExpressionStart(c *ImplicitMemberExpressionStartContext)
 
 	// ExitQueryLiteral is called when exiting the queryLiteral production.
 	ExitQueryLiteral(c *QueryLiteralContext)

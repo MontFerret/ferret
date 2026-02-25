@@ -309,6 +309,11 @@ func TestComplexQueries(t *testing.T) {
 			"Should filter results from query",
 		),
 		CaseArray(
+			"RETURN @db[~ sql`SELECT name, price FROM products`]\n    [* FILTER .price > 100 RETURN .name]",
+			[]any{"Laptop Pro"},
+			"Should filter results from query using implicit CURRENT",
+		),
+		CaseArray(
 			"RETURN @doc\n    [~ css`.product`]\n    [* FILTER FIRST(CURRENT[~ css`.price`][~ text]) != \"\"]\n    [~ css`.title`]\n    [~ text]",
 			[]any{"title"},
 			"Should combine query apply inside array filter",

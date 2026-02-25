@@ -277,6 +277,12 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#expressionAtom.
 	VisitExpressionAtom(ctx *ExpressionAtomContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#implicitMemberExpression.
+	VisitImplicitMemberExpression(ctx *ImplicitMemberExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#implicitMemberExpressionStart.
+	VisitImplicitMemberExpressionStart(ctx *ImplicitMemberExpressionStartContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#queryLiteral.
 	VisitQueryLiteral(ctx *QueryLiteralContext) interface{}
 

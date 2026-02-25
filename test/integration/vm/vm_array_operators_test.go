@@ -220,6 +220,30 @@ LET users = [
 RETURN users[* FILTER CURRENT.age > 20].name`, []any{"Bob"}),
 		CaseArray(`
 LET users = [
+	{ name: "Ann", age: 20 },
+	{ name: "Bob", age: 30 }
+]
+RETURN users[* RETURN .name]`, []any{"Ann", "Bob"}),
+		CaseArray(`
+LET users = [
+	{ age: 10 },
+	{ name: "Bob" }
+]
+RETURN users[* RETURN ?.name]`, []any{nil, "Bob"}),
+		CaseArray(`
+LET users = [
+	[1, 2],
+	[3]
+]
+RETURN users[* RETURN .[0]]`, []any{1, 3}),
+		CaseArray(`
+LET users = [
+	{ name: "Ann", age: 20 },
+	{ name: "Bob", age: 30 }
+]
+RETURN users[* FILTER .age > 20][* RETURN .name]`, []any{"Bob"}),
+		CaseArray(`
+LET users = [
 	{ name: "Ann" },
 	{ name: "Bob" },
 	{ name: "Cat" }

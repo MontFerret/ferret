@@ -566,6 +566,20 @@ func (s *BaseFqlParserListener) EnterExpressionAtom(ctx *ExpressionAtomContext) 
 // ExitExpressionAtom is called when production expressionAtom is exited.
 func (s *BaseFqlParserListener) ExitExpressionAtom(ctx *ExpressionAtomContext) {}
 
+// EnterImplicitMemberExpression is called when production implicitMemberExpression is entered.
+func (s *BaseFqlParserListener) EnterImplicitMemberExpression(ctx *ImplicitMemberExpressionContext) {}
+
+// ExitImplicitMemberExpression is called when production implicitMemberExpression is exited.
+func (s *BaseFqlParserListener) ExitImplicitMemberExpression(ctx *ImplicitMemberExpressionContext) {}
+
+// EnterImplicitMemberExpressionStart is called when production implicitMemberExpressionStart is entered.
+func (s *BaseFqlParserListener) EnterImplicitMemberExpressionStart(ctx *ImplicitMemberExpressionStartContext) {
+}
+
+// ExitImplicitMemberExpressionStart is called when production implicitMemberExpressionStart is exited.
+func (s *BaseFqlParserListener) ExitImplicitMemberExpressionStart(ctx *ImplicitMemberExpressionStartContext) {
+}
+
 // EnterQueryLiteral is called when production queryLiteral is entered.
 func (s *BaseFqlParserListener) EnterQueryLiteral(ctx *QueryLiteralContext) {}
 

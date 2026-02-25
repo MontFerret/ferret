@@ -18,6 +18,39 @@ func (f *memberFormatter) formatMemberExpression(ctx *fql.MemberExpressionContex
 	}
 }
 
+func (f *memberFormatter) formatImplicitMemberExpression(ctx *fql.ImplicitMemberExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.formatImplicitMemberExpressionStart(ctx.ImplicitMemberExpressionStart().(*fql.ImplicitMemberExpressionStartContext))
+
+	for _, path := range ctx.AllMemberExpressionPath() {
+		f.formatMemberExpressionPath(path.(*fql.MemberExpressionPathContext))
+	}
+}
+
+func (f *memberFormatter) formatImplicitMemberExpressionStart(ctx *fql.ImplicitMemberExpressionStartContext) {
+	if ctx == nil {
+		return
+	}
+
+	if ctx.ErrorOperator() != nil {
+		f.p.write("?")
+	}
+
+	f.p.write(".")
+
+	if ctx.PropertyName() != nil {
+		f.literal.formatPropertyNameWith(f.p, ctx.PropertyName().(*fql.PropertyNameContext))
+		return
+	}
+
+	if ctx.ComputedPropertyName() != nil {
+		f.literal.formatComputedPropertyNameWith(f.p, ctx.ComputedPropertyName().(*fql.ComputedPropertyNameContext))
+	}
+}
+
 func (f *memberFormatter) formatMemberExpressionSource(ctx *fql.MemberExpressionSourceContext) {
 	if ctx == nil {
 		return

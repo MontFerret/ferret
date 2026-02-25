@@ -113,6 +113,8 @@ func (f *expressionFormatter) formatExpressionAtom(ctx *fql.ExpressionAtomContex
 		f.literal.formatLiteral(ctx.Literal().(*fql.LiteralContext))
 	case ctx.Variable() != nil:
 		f.formatVariable(ctx.Variable().(*fql.VariableContext))
+	case ctx.ImplicitMemberExpression() != nil:
+		f.member.formatImplicitMemberExpression(ctx.ImplicitMemberExpression().(*fql.ImplicitMemberExpressionContext))
 	case ctx.MemberExpression() != nil:
 		f.member.formatMemberExpression(ctx.MemberExpression().(*fql.MemberExpressionContext))
 	case ctx.Param() != nil:
@@ -312,6 +314,8 @@ func (f *expressionFormatter) formatRangeOperand(ctx *fql.RangeOperandContext) {
 		f.formatParam(ctx.Param().(*fql.ParamContext))
 	case ctx.FunctionCallExpression() != nil:
 		f.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
+	case ctx.ImplicitMemberExpression() != nil:
+		f.member.formatImplicitMemberExpression(ctx.ImplicitMemberExpression().(*fql.ImplicitMemberExpressionContext))
 	case ctx.MemberExpression() != nil:
 		f.member.formatMemberExpression(ctx.MemberExpression().(*fql.MemberExpressionContext))
 	}

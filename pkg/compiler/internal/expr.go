@@ -444,6 +444,8 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) bytecode.Oper
 		return c.ctx.LiteralCompiler.Compile(l)
 	} else if v := ctx.Variable(); v != nil {
 		return c.CompileVariable(v)
+	} else if ime := ctx.ImplicitMemberExpression(); ime != nil {
+		return c.CompileImplicitMemberExpression(ime)
 	} else if me := ctx.MemberExpression(); me != nil {
 		return c.CompileMemberExpression(me)
 	} else if p := ctx.Param(); p != nil {
@@ -459,6 +461,57 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) bytecode.Oper
 	}
 
 	return bytecode.NoopOperand
+}
+
+// CompileImplicitMemberExpression processes an implicit CURRENT member expression (e.g., .name, .[0], ?.name).
+// It resolves CURRENT from the symbol table and compiles member access paths as if CURRENT were explicit.
+func (c *ExprCompiler) CompileImplicitMemberExpression(ctx fql.IImplicitMemberExpressionContext) bytecode.Operand {
+	start := ctx.ImplicitMemberExpressionStart()
+	if start == nil {
+		return bytecode.NoopOperand
+	}
+
+	src, _, found := c.ctx.Symbols.Resolve(core.PseudoVariable)
+	if !found {
+		if dot := start.Dot(); dot != nil {
+			c.ctx.Errors.VariableNotFound(dot.GetSymbol(), core.PseudoVariable)
+		} else if token := start.GetStart(); token != nil {
+			c.ctx.Errors.VariableNotFound(token, core.PseudoVariable)
+		}
+
+		return bytecode.NoopOperand
+	}
+
+	if !src.IsRegister() {
+		reg := c.ctx.Registers.Allocate()
+		c.ctx.Emitter.EmitMove(reg, src)
+		src = reg
+	}
+
+	segments := ctx.AllMemberExpressionPath()
+	if isSimpleMemberPathChain(segments) {
+		return c.compileImplicitSimpleMemberExpressionSegments(src, start, segments)
+	}
+
+	operand, constOperand := c.compileImplicitMemberStartOperand(start)
+	if operand == bytecode.NoopOperand {
+		return bytecode.NoopOperand
+	}
+
+	dst := c.ctx.Registers.Allocate()
+	span := diagnostics.SpanFromRuleContext(start.(antlr.ParserRuleContext))
+	optional := start.ErrorOperator() != nil
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		op := memberLoadOpcode(operandType(c.ctx, src), constOperand, optional)
+		c.ctx.Emitter.EmitABC(op, dst, src, operand)
+	})
+
+	if len(segments) == 0 {
+		return dst
+	}
+
+	return c.compileMemberExpressionSegments(dst, segments)
 }
 
 // CompileMemberExpression processes a member expression (e.g., obj.prop, arr[idx]) from the FQL AST.
@@ -584,6 +637,81 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src bytecode.Operand, seg
 	return src
 }
 
+func (c *ExprCompiler) compileImplicitSimpleMemberExpressionSegments(src bytecode.Operand, start fql.IImplicitMemberExpressionStartContext, segments []fql.IMemberExpressionPathContext) bytecode.Operand {
+	result := src
+	stickyDst := false
+	hasJump := false
+	var endLabel core.Label
+
+	startOp, startConst := c.compileImplicitMemberStartOperand(start)
+	if startOp == bytecode.NoopOperand {
+		return bytecode.NoopOperand
+	}
+
+	startOptional := start.ErrorOperator() != nil
+	startDst := result
+	if !stickyDst || !startDst.IsRegister() {
+		startDst = c.ctx.Registers.Allocate()
+	}
+
+	startSpan := diagnostics.SpanFromRuleContext(start.(antlr.ParserRuleContext))
+	c.ctx.Emitter.WithSpan(startSpan, func() {
+		op := memberLoadOpcode(operandType(c.ctx, result), startConst, startOptional)
+		c.ctx.Emitter.EmitABC(op, startDst, result, startOp)
+
+		if startOptional {
+			if !hasJump {
+				endLabel = c.ctx.Emitter.NewLabel("member", "optional", "end")
+				hasJump = true
+			}
+			c.ctx.Emitter.EmitJumpIfNone(startDst, endLabel)
+		}
+	})
+
+	if startOptional {
+		stickyDst = true
+	}
+
+	result = startDst
+
+	for _, segment := range segments {
+		p := segment.(*fql.MemberExpressionPathContext)
+		src2, constOperand := c.compileMemberPathOperand(p)
+		optional := p.ErrorOperator() != nil
+
+		dst := result
+		if !stickyDst || !dst.IsRegister() {
+			dst = c.ctx.Registers.Allocate()
+		}
+
+		span := diagnostics.SpanFromRuleContext(p)
+		c.ctx.Emitter.WithSpan(span, func() {
+			op := memberLoadOpcode(operandType(c.ctx, result), constOperand, optional)
+			c.ctx.Emitter.EmitABC(op, dst, result, src2)
+
+			if optional {
+				if !hasJump {
+					endLabel = c.ctx.Emitter.NewLabel("member", "optional", "end")
+					hasJump = true
+				}
+				c.ctx.Emitter.EmitJumpIfNone(dst, endLabel)
+			}
+		})
+
+		if optional {
+			stickyDst = true
+		}
+
+		result = dst
+	}
+
+	if hasJump {
+		c.ctx.Emitter.MarkLabel(endLabel)
+	}
+
+	return result
+}
+
 func isSimpleMemberPathChain(segments []fql.IMemberExpressionPathContext) bool {
 	for _, segment := range segments {
 		p := segment.(*fql.MemberExpressionPathContext)
@@ -651,6 +779,32 @@ func (c *ExprCompiler) compileMemberPathOperand(p *fql.MemberExpressionPathConte
 	}
 
 	if cpn := p.ComputedPropertyName(); cpn != nil {
+		if val, ok := literalValueFromExpression(cpn.Expression()); ok {
+			switch val.(type) {
+			case *runtime.Array, *runtime.Object:
+				// Keep array/object literals dynamic to preserve their stringified key value.
+				return c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn), false
+			default:
+				return c.ctx.Symbols.AddConstant(val), true
+			}
+		}
+
+		return c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn), false
+	}
+
+	return bytecode.NoopOperand, false
+}
+
+func (c *ExprCompiler) compileImplicitMemberStartOperand(start fql.IImplicitMemberExpressionStartContext) (bytecode.Operand, bool) {
+	if pn := start.PropertyName(); pn != nil {
+		if constOp, ok := c.ctx.LiteralCompiler.CompilePropertyNameConst(pn); ok {
+			return constOp, true
+		}
+
+		return c.ctx.LiteralCompiler.CompilePropertyName(pn), false
+	}
+
+	if cpn := start.ComputedPropertyName(); cpn != nil {
 		if val, ok := literalValueFromExpression(cpn.Expression()); ok {
 			switch val.(type) {
 			case *runtime.Array, *runtime.Object:
@@ -1554,6 +1708,10 @@ func (c *ExprCompiler) compileRangeOperand(ctx fql.IRangeOperandContext) bytecod
 
 	if me := ctx.MemberExpression(); me != nil {
 		return c.CompileMemberExpression(me)
+	}
+
+	if ime := ctx.ImplicitMemberExpression(); ime != nil {
+		return c.CompileImplicitMemberExpression(ime)
 	}
 
 	if fc := ctx.FunctionCallExpression(); fc != nil {
