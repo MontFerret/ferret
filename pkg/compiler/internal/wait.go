@@ -111,7 +111,7 @@ func (c *WaitCompiler) compileEvent(ctx fql.IWaitForEventExpressionContext) byte
 	c.ctx.Emitter.WithSpan(span, func() {
 		c.ctx.Emitter.EmitMove(streamReg, srcReg)
 		c.ctx.Emitter.EmitABC(bytecode.OpStream, streamReg, eventReg, optsReg)
-		c.ctx.Emitter.EmitAB(bytecode.OpStreamIter, streamReg, timeoutReg)
+		c.ctx.Emitter.EmitABC(bytecode.OpStreamIter, streamReg, streamReg, timeoutReg)
 	})
 
 	start := c.ctx.Emitter.NewLabel()
