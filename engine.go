@@ -36,7 +36,7 @@ func New(setters ...Option) (*Engine, error) {
 		functions: functions,
 		params:    opts.params,
 		logging:   opts.logging,
-		encoding:  opts.registry,
+		encoding:  opts.encodig,
 	}, nil
 }
 

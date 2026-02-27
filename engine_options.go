@@ -17,7 +17,7 @@ type (
 		lib      runtime.RootNamespace
 		params   map[string]runtime.Value
 		logging  runtime.LogSettings
-		registry *encoding.Registry
+		encodig  *encoding.Registry
 	}
 
 	Option func(env *options) error
@@ -26,9 +26,9 @@ type (
 func newOptions(setters []Option) (*options, error) {
 	ns := runtime.NewRootNamespace()
 	opts := &options{
-		lib:      ns,
-		params:   make(map[string]runtime.Value),
-		registry: encoding.NewRegistry(),
+		lib:     ns,
+		params:  make(map[string]runtime.Value),
+		encodig: encoding.NewRegistry(),
 		logging: runtime.LogSettings{
 			Writer: os.Stdout,
 			Level:  runtime.ErrorLevel,
@@ -127,14 +127,14 @@ func WithLogFields(fields map[string]any) Option {
 	}
 }
 
-// WithEncodingRegistry sets a custom encoding encoding for query execution.
+// WithEncodingRegistry sets a custom encoding registry for query execution.
 func WithEncodingRegistry(registry *encoding.Registry) Option {
 	return func(opts *options) error {
 		if registry == nil {
-			return runtime.Error(runtime.ErrMissedArgument, "encoding")
+			return runtime.Error(runtime.ErrMissedArgument, "registry")
 		}
 
-		opts.registry = registry
+		opts.encodig = registry
 		return nil
 	}
 }
@@ -142,10 +142,10 @@ func WithEncodingRegistry(registry *encoding.Registry) Option {
 // WithEncodingCodec registers or overrides a codec for the given content type.
 func WithEncodingCodec(contentType string, codec encoding.Codec) Option {
 	return func(opts *options) error {
-		if opts.registry == nil {
-			opts.registry = encoding.NewRegistry()
+		if opts.encodig == nil {
+			opts.encodig = encoding.NewRegistry()
 		}
 
-		return opts.registry.Register(contentType, codec)
+		return opts.encodig.Register(contentType, codec)
 	}
 }
