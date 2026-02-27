@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha512"
 	"encoding/base64"
+	"encoding/hex"
 	"net/url"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -27,7 +28,7 @@ func Md5(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	text := arg.String()
 	res := md5.Sum([]byte(text))
 
-	return runtime.NewString(string(res[:])), nil
+	return runtime.NewString(hex.EncodeToString(res[:])), nil
 }
 
 // SHA1 calculates the SHA1 checksum for text and returns it in a hexadecimal string representation.
@@ -37,7 +38,7 @@ func Sha1(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	text := arg.String()
 	res := sha1.Sum([]byte(text))
 
-	return runtime.NewString(string(res[:])), nil
+	return runtime.NewString(hex.EncodeToString(res[:])), nil
 }
 
 // SHA512 calculates the SHA512 checksum for text and returns it in a hexadecimal string representation.
@@ -47,7 +48,7 @@ func Sha512(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	text := arg.String()
 	res := sha512.Sum512([]byte(text))
 
-	return runtime.NewString(string(res[:])), nil
+	return runtime.NewString(hex.EncodeToString(res[:])), nil
 }
 
 // TO_BASE64 returns the base64 representation of value.

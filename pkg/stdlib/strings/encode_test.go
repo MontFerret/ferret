@@ -32,7 +32,7 @@ func TestMd5(t *testing.T) {
 			str,
 		)
 
-		So(out, ShouldNotEqual, str)
+		So(out, ShouldEqual, runtime.NewString("3858f62230ac3c915f300c664312c63f"))
 	})
 }
 
@@ -44,7 +44,7 @@ func TestSha1(t *testing.T) {
 			str,
 		)
 
-		So(out, ShouldNotEqual, str)
+		So(out, ShouldEqual, runtime.NewString("8843d7f92416211de9ebb963ff4ce28125932878"))
 	})
 }
 
@@ -56,7 +56,7 @@ func TestSha512(t *testing.T) {
 			str,
 		)
 
-		So(out, ShouldNotEqual, str)
+		So(out, ShouldEqual, runtime.NewString("0a50261ebd1a390fed2bf326f2673c145582a6342d523204973d0219337f81616a8069b012587cf5635f6925f1b56c360230c19b273500ee013e030601bf2425"))
 	})
 }
 
