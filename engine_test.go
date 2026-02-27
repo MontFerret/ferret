@@ -49,7 +49,7 @@ func TestEngineInjectsRegistryIntoContext(t *testing.T) {
 	}
 
 	if !calledWithExpected {
-		t.Fatalf("expected function to receive the engine registry")
+		t.Fatalf("expected function to receive the engine encoding")
 	}
 }
 

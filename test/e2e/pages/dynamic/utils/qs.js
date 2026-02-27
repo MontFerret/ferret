@@ -18,7 +18,7 @@ function decode(input) {
  * Simple query string parser.
  *
  * @param {String} query The query string that needs to be parsed.
- * @returns {Object}
+ * @returns {Map}
  * @api public
  */
 export function parse(query) {
@@ -45,7 +45,7 @@ export function parse(query) {
 /**
  * Transform a query string to an object.
  *
- * @param {Object} obj Object that should be transformed.
+ * @param {Map} obj Object that should be transformed.
  * @param {String} prefix Optional prefix.
  * @returns {String}
  * @api public

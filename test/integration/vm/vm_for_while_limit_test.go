@@ -57,7 +57,7 @@ func TestForWhileLimit(t *testing.T) {
 				LIMIT o[1]
 				RETURN i
 		`, []any{0, 1}, "Should be able to use array element"),
-	}, vm.WithFunctionsBuilder(func(fns runtime.FunctionsBuilder) {
+	}, vm.WithFunctionsRegistrar(func(fns *runtime.FunctionsBuilder) {
 		fns.Set("LIMIT_VALUE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.NewInt(2), nil
 		})

@@ -16,18 +16,18 @@ func Range(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	if err := runtime.ValidateArgType(args, 0, runtime.AssertNumber); err != nil {
+	if err := runtime.ValidateArgValueAt(args, 0, runtime.AssertNumber); err != nil {
 		return runtime.None, err
 	}
 
-	if err := runtime.ValidateArgType(args, 1, runtime.AssertNumber); err != nil {
+	if err := runtime.ValidateArgValueAt(args, 1, runtime.AssertNumber); err != nil {
 		return runtime.None, err
 	}
 
 	var step float64 = 1
 
 	if len(args) > 2 {
-		if err := runtime.ValidateArgType(args, 2, runtime.AssertNumber); err != nil {
+		if err := runtime.ValidateArgValueAt(args, 2, runtime.AssertNumber); err != nil {
 			return runtime.None, err
 		}
 

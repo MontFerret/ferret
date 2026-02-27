@@ -17,7 +17,7 @@ func RemoveValue(ctx context.Context, args ...runtime.Value) (runtime.Value, err
 		return runtime.None, err
 	}
 
-	arr, err := runtime.CastList(args[0])
+	arr, err := runtime.CastArgAt[runtime.List](args, 0)
 
 	if err != nil {
 		return runtime.None, err
@@ -28,7 +28,7 @@ func RemoveValue(ctx context.Context, args ...runtime.Value) (runtime.Value, err
 	limit = -1
 
 	if len(args) > 2 {
-		arg3, err := runtime.CastInt(args[2])
+		arg3, err := runtime.CastArgAt[runtime.Int](args, 2)
 
 		if err != nil {
 			return runtime.None, err
@@ -39,7 +39,7 @@ func RemoveValue(ctx context.Context, args ...runtime.Value) (runtime.Value, err
 
 	var counter runtime.Int
 
-	return arr.Find(ctx, func(ctx context.Context, item runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+	return arr.Filter(ctx, func(ctx context.Context, item runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		remove := runtime.CompareValues(item, value) == 0
 
 		if remove {

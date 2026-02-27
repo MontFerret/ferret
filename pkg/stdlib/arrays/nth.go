@@ -12,18 +12,8 @@ import (
 // @param {Any[]} array - An array with elements of arbitrary type.
 // @param {Int} index - Position of desired element in array, positions start at 0.
 // @return {Any} - The array element at the given position.
-func Nth(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgs(args, 2, 2); err != nil {
-		return runtime.None, err
-	}
-
-	list, err := runtime.CastList(args[0])
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	idx, err := runtime.CastInt(args[1])
+func Nth(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	list, idx, err := runtime.CastArgs2[runtime.List, runtime.Int](arg1, arg2)
 
 	if err != nil {
 		return runtime.None, err

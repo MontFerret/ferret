@@ -10,12 +10,11 @@ import (
 // @param {Int[] | Float[]} numbers - arrayList of numbers.
 // @return {Float} - The sum of the values.
 func Sum(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
-	arr, err := runtime.CastList(arg)
-
-	if err != nil {
+	if err := runtime.ValidateArgType(arg, 0, runtime.TypeList); err != nil {
 		return runtime.None, err
 	}
 
+	arr := arg.(runtime.List)
 	size, err := arr.Length(ctx)
 
 	if err != nil {

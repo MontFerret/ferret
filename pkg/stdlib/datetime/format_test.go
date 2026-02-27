@@ -110,6 +110,6 @@ func TestDateFormat(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, datetime.DateFormat)
+		tc.Do(t, Fn2(datetime.DateFormat))
 	}
 }

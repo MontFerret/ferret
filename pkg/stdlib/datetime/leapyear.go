@@ -9,18 +9,16 @@ import (
 // DATE_LEAPYEAR returns true if date is in a leap year else false.
 // @param {DateTime} date - Source DateTime.
 // @return {Boolean} - Date is in a leap year.
-func DateLeapYear(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+func DateLeapYear(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	dt, err := runtime.CastArg[runtime.DateTime](arg, 0)
+
+	if err != nil {
 		return runtime.None, err
 	}
 
-	if err := runtime.AssertDateTime(args[0]); err != nil {
-		return runtime.None, err
-	}
+	year := dt.Year()
 
-	year := args[0].(runtime.DateTime).Year()
-
-	return runtime.NewBoolean(isLeap(year)), nil
+	return runtime.Boolean(isLeap(year)), nil
 }
 
 func isLeap(year int) bool {

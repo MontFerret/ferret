@@ -11,18 +11,18 @@ import (
 func TestCasting(t *testing.T) {
 	Convey("Casting Builder", t, func() {
 
-		Convey("Cast", func() {
+		Convey("CastOr", func() {
 			Convey("Should cast T to T", func() {
 				input := runtime.NewInt(1)
 				fallback := runtime.NewInt(0)
-				actual := runtime.Cast(input, fallback)
+				actual := runtime.CastOr(input, fallback)
 				So(actual, ShouldEqual, input)
 			})
 
 			Convey("Should return fallback for non-T types", func() {
 				input := runtime.NewString("1")
 				fallback := runtime.NewInt(0)
-				actual := runtime.Cast(input, fallback)
+				actual := runtime.CastOr(input, fallback)
 				So(actual, ShouldEqual, fallback)
 			})
 		})

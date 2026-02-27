@@ -44,6 +44,6 @@ func TestDateQuarter(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, datetime.DateQuarter)
+		tc.Do(t, Fn1(datetime.DateQuarter))
 	}
 }

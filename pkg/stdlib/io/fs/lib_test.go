@@ -13,19 +13,19 @@ func TestRegisterLib(t *testing.T) {
 	Convey("Should register FS namespace functions", t, func() {
 		ns := runtime.NewRootNamespace()
 
-		err := fs.RegisterLib(ns)
-
-		So(err, ShouldBeNil)
+		fs.RegisterLib(ns)
 
 		// Verify that functions were registered by checking registered function names
-		functions := ns.Functions().Build().Names()
-		So(len(functions), ShouldBeGreaterThan, 0)
+		functions, err := ns.Build()
+		So(err, ShouldBeNil)
+		names := functions.List()
+		So(len(names), ShouldBeGreaterThan, 0)
 
 		// Check that FS functions are registered
 		hasRead := false
 		hasWrite := false
 
-		for _, fn := range functions {
+		for _, fn := range names {
 			if fn == "FS::READ" {
 				hasRead = true
 			}

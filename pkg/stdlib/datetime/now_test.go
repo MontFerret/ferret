@@ -20,6 +20,6 @@ func TestNow(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, datetime.Now)
+		tc.Do(t, Fn0(datetime.Now))
 	}
 }

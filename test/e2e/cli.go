@@ -325,8 +325,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		//_ = engine.Drivers().Register(http.NewDriver())
-		//_ = engine.Drivers().Register(cdp.NewDriver(cdp.WithAddress(*conn)))
+		//_ = engine.Drivers().Add(http.NewDriver())
+		//_ = engine.Drivers().Add(cdp.NewDriver(cdp.WithAddress(*conn)))
 
 		sessionOptions := []ferret.SessionOption{
 			ferret.WithSessionParams(p),
@@ -382,7 +382,12 @@ func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 		return err
 	}
 
-	sess := plan.NewSession(opts...)
+	sess, err := plan.NewSession(opts...)
+
+	if err != nil {
+		return err
+	}
+
 	defer sess.Close()
 
 	beforeExec := "Before Execution"

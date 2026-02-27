@@ -12,14 +12,8 @@ import (
 // FROM_BASE64 returns the value of a base64 representation.
 // @param {String} str - The string to decode.
 // @return {String} - The decoded string.
-func FromBase64(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return runtime.EmptyString, err
-	}
-
-	value := args[0].String()
+func FromBase64(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	value := arg.String()
 
 	out, err := base64.StdEncoding.DecodeString(value)
 	if err != nil {
@@ -32,14 +26,8 @@ func FromBase64(_ context.Context, args ...runtime.Value) (runtime.Value, error)
 // DECODE_URI_COMPONENT returns the decoded String of uri.
 // @param {String} uri - Uri to decode.
 // @return {String} - Decoded string.
-func DecodeURIComponent(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return runtime.EmptyString, err
-	}
-
-	str, err := url.QueryUnescape(args[0].String())
+func DecodeURIComponent(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	str, err := url.QueryUnescape(arg.String())
 
 	if err != nil {
 		return runtime.None, err

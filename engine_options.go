@@ -12,12 +12,12 @@ import (
 
 type (
 	options struct {
-		compiler  []compiler.Option
-		noStdlib  bool
-		functions runtime.FunctionsBuilder
-		params    map[string]runtime.Value
-		logging   runtime.LogSettings
-		registry  *encoding.Registry
+		compiler []compiler.Option
+		noStdlib bool
+		lib      runtime.RootNamespace
+		params   map[string]runtime.Value
+		logging  runtime.LogSettings
+		registry *encoding.Registry
 	}
 
 	Option func(env *options) error
@@ -26,9 +26,9 @@ type (
 func newOptions(setters []Option) (*options, error) {
 	ns := runtime.NewRootNamespace()
 	opts := &options{
-		functions: ns.Functions(),
-		params:    make(map[string]runtime.Value),
-		registry:  encoding.NewRegistry(),
+		lib:      ns,
+		params:   make(map[string]runtime.Value),
+		registry: encoding.NewRegistry(),
 		logging: runtime.LogSettings{
 			Writer: os.Stdout,
 			Level:  runtime.ErrorLevel,
@@ -42,36 +42,41 @@ func newOptions(setters []Option) (*options, error) {
 	}
 
 	if !opts.noStdlib {
-		if err := stdlib.RegisterLib(ns); err != nil {
-			return nil, err
-		}
+		stdlib.RegisterLib(ns)
 	}
 
 	return opts, nil
 }
 
-// WithNamespace creates an Option that sets the functions from the provided runtime.Namespace to the options if not nil.
+// WithNamespace creates an Option that sets the lib from the provided *runtime.Namespace to the options if not nil.
 func WithNamespace(ns runtime.Namespace) Option {
 	return func(opts *options) error {
 		if ns == nil {
 			return nil
 		}
 
-		if opts.functions == nil {
-			opts.functions = ns.Functions()
-		} else {
-			opts.functions.SetFrom(ns.Functions().Build())
+		opts.lib.Function().From(ns.Function())
+
+		return nil
+	}
+}
+
+// WithFunctionsBuilder creates an Option that sets the lib from the provided runtime.FunctionDefs to the options if not nil.
+func WithFunctionsRegistrar(setter func(fns runtime.FunctionDefs)) Option {
+	return func(env *options) error {
+		if setter != nil {
+			setter(env.lib.Function())
 		}
 
 		return nil
 	}
 }
 
-// WithFunctions creates an Option that sets the provided runtime.Functions to the options if not nil.
-func WithFunctions(funcs runtime.Functions) Option {
+// WithFunctions creates an Option that sets the provided *runtime.Functions to the options if not nil.
+func WithFunctions(funcs *runtime.Functions) Option {
 	return func(opts *options) error {
 		if funcs != nil {
-			opts.functions.SetFrom(funcs)
+			opts.lib.Function().From(runtime.NewFunctionsBuilderFrom(funcs))
 		}
 
 		return nil
@@ -89,7 +94,7 @@ func WithFunction(name string, function runtime.Function) Option {
 			return runtime.Error(runtime.ErrMissedArgument, "function")
 		}
 
-		opts.functions.Set(name, function)
+		opts.lib.Function().Var().Add(name, function)
 
 		return nil
 	}
@@ -122,11 +127,11 @@ func WithLogFields(fields map[string]any) Option {
 	}
 }
 
-// WithEncodingRegistry sets a custom encoding registry for query execution.
+// WithEncodingRegistry sets a custom encoding encoding for query execution.
 func WithEncodingRegistry(registry *encoding.Registry) Option {
 	return func(opts *options) error {
 		if registry == nil {
-			return runtime.Error(runtime.ErrMissedArgument, "registry")
+			return runtime.Error(runtime.ErrMissedArgument, "encoding")
 		}
 
 		opts.registry = registry

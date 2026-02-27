@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func ForWhileHelpers() runtime.Functions {
+func ForWhileHelpers() *runtime.Functions {
 	return runtime.NewFunctionsFromMap(map[string]runtime.Function{
 		"UNTIL": StateFn[int](func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			state := GetFnState[int](ctx)

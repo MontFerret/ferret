@@ -1,9 +1,23 @@
 package runtime
 
-// Cast attempts to cast the input value to the specified type T.
+// Cast attempts to cast the input value to the specified type T. If successful, it returns the value and nil error.
+// If the cast fails, it returns the zero value of type T and a TypeError indicating the mismatch.
+func Cast[T Value](input Value) (T, error) {
+	val, ok := input.(T)
+
+	if ok {
+		return val, nil
+	}
+
+	var zero T
+
+	return zero, TypeErrorOf(input, TypeOf(zero))
+}
+
+// CastOr attempts to cast the input value to the specified type T.
 // If the cast is successful, it returns the casted value.
 // Otherwise, it returns the provided fallback value.
-func Cast[T Value](input Value, fallback T) T {
+func CastOr[T Value](input Value, fallback T) T {
 	val, ok := input.(T)
 
 	if ok {

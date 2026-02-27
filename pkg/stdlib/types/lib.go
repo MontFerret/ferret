@@ -4,32 +4,28 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func RegisterLib(ns runtime.Namespace) error {
-	ns.Functions().
-		Set1("TO_BOOL", ToBool).
-		Set1("TO_INT", ToInt).
-		Set1("TO_FLOAT", ToFloat).
-		Set1("TO_STRING", ToString).
-		Set1("TO_DATETIME", ToDateTime).
-		Set1("TO_ARRAY", ToArray).
-		Set1("TO_BINARY", ToBinary).
-		Set1("TO_OBJECT", ToObject).
-		Set1("IS_NONE", IsNone).
-		Set1("IS_BOOL", IsBool).
-		Set1("IS_INT", IsInt).
-		Set1("IS_FLOAT", IsFloat).
-		Set1("IS_STRING", IsString).
-		Set1("IS_DATETIME", IsDateTime).
-		Set1("IS_LIST", IsList).
-		Set1("IS_ARRAY", IsArray).
-		Set1("IS_MAP", IsMap).
-		Set1("IS_OBJECT", IsObject).
-		Set1("IS_HTML_ELEMENT", IsHTMLElement).
-		Set1("IS_HTML_DOCUMENT", IsHTMLDocument).
-		Set1("IS_BINARY", IsBinary).
-		Set1("IS_NAN", IsNaN)
-
-	return nil
+func RegisterLib(ns runtime.Namespace) {
+	ns.Function().A1().
+		Add("TO_BOOL", ToBool).
+		Add("TO_INT", ToInt).
+		Add("TO_FLOAT", ToFloat).
+		Add("TO_STRING", ToString).
+		Add("TO_DATETIME", ToDateTime).
+		Add("TO_ARRAY", ToArray).
+		Add("TO_BINARY", ToBinary).
+		Add("TO_OBJECT", ToObject).
+		Add("IS_NONE", IsNone).
+		Add("IS_BOOL", IsBool).
+		Add("IS_INT", IsInt).
+		Add("IS_FLOAT", IsFloat).
+		Add("IS_STRING", IsString).
+		Add("IS_DATETIME", IsDateTime).
+		Add("IS_LIST", IsList).
+		Add("IS_ARRAY", IsArray).
+		Add("IS_MAP", IsMap).
+		Add("IS_OBJECT", IsObject).
+		Add("IS_BINARY", IsBinary).
+		Add("IS_NAN", IsNaN)
 }
 
 func isTypeof(value runtime.Value, ctype runtime.Type) runtime.Value {

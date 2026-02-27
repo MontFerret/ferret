@@ -35,7 +35,7 @@ func Unwrap(err error) (error, error) {
 	originalMsg := err.Error()
 	wrappedMsg := wrapped.Error()
 
-	// Find where the wrapped message ends in the original
+	// Filter where the wrapped message ends in the original
 	if idx := strings.Index(originalMsg, wrappedMsg); idx != -1 {
 		// Extract everything after the wrapped message
 		rest := originalMsg[idx+len(wrappedMsg):]

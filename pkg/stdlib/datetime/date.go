@@ -16,19 +16,22 @@ func Date(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	if err := runtime.AssertString(args[0]); err != nil {
+	str, err := runtime.CastArgAt[runtime.String](args, 0)
+
+	if err != nil {
 		return runtime.None, err
 	}
 
-	str := args[0].(runtime.String)
 	layout := runtime.DefaultTimeLayout
 
 	if len(args) > 1 {
-		if err := runtime.AssertString(args[1]); err != nil {
+		l, err := runtime.CastArgAt[runtime.String](args, 1)
+
+		if err != nil {
 			return runtime.None, err
 		}
 
-		layout = args[1].String()
+		layout = string(l)
 	}
 
 	t, err := time.Parse(layout, str.String())

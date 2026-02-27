@@ -16,23 +16,17 @@ func Position(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 		return runtime.None, err
 	}
 
-	arr, err := runtime.CastList(args[0])
+	arr, err := runtime.CastArgAt[runtime.List](args, 0)
 
 	if err != nil {
 		return runtime.None, err
 	}
 
 	el := args[1]
-	var retIdx runtime.Boolean
+	retIdx, err := runtime.CastArgAtOr[runtime.Boolean](args, 2, false)
 
-	if len(args) > 2 {
-		arg2, err := runtime.CastBoolean(args[2])
-
-		if err != nil {
-			return runtime.None, err
-		}
-
-		retIdx = arg2
+	if err != nil {
+		return runtime.None, err
 	}
 
 	position, err := arr.IndexOf(ctx, el)

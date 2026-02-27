@@ -6,39 +6,15 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// VALUES return the attribute values of the object as an array.
-// @param {hashMap} object - Target object.
+// VALUES return the attribute values of the map as a list.
+// @param {Map} map - Target map.
 // @return {Any[]} - Values of document returned in any order.
-// TODO: REWRITE TO USE LIST & MAP instead
-func Values(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
+func Values(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateType(arg, runtime.TypeMap); err != nil {
 		return runtime.None, err
 	}
 
-	err = runtime.ValidateType(args[0], runtime.TypeObject)
+	obj := arg.(runtime.Map)
 
-	if err != nil {
-		return runtime.None, err
-	}
-
-	obj := args[0].(runtime.Map)
-	vals := runtime.NewArray(0)
-
-	_ = obj.ForEach(ctx, func(c context.Context, val, key runtime.Value) (runtime.Boolean, error) {
-		val, err := runtime.CloneOrCopy(c, val)
-
-		if err != nil {
-			return runtime.False, err
-		}
-
-		if err := vals.Append(c, val); err != nil {
-			return runtime.False, err
-		}
-
-		return true, nil
-	})
-
-	return vals, nil
+	return obj.Values(ctx)
 }

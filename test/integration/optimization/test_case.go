@@ -111,7 +111,7 @@ func SkipRegistersObjectCase(expression string, num int, output map[string]any, 
 }
 
 func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
-	// Register standard library functions
+	// Add standard library functions
 	std := base.Stdlib()
 	sameAssertion := func(a, b convey.Assertion) bool {
 		if a == nil || b == nil {

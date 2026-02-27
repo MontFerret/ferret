@@ -11,7 +11,7 @@ import (
 // @param {Int | Float} number - Input number.
 // @return {Float} - The sin, in radians, of a given number.
 func Sin(_ context.Context, arg runtime.Value) (runtime.Value, error) {
-	if err := runtime.AssertNumber(arg); err != nil {
+	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertNumber); err != nil {
 		return runtime.None, err
 	}
 

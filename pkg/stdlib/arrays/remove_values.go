@@ -10,18 +10,8 @@ import (
 // @param {Any[]} array - Source array.
 // @param {Any[]} values - Target values.
 // @return {Any[]} - A new array with removed all occurrences of values in a given array.
-func RemoveValues(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgs(args, 2, 2); err != nil {
-		return runtime.None, err
-	}
-
-	arr, err := runtime.CastList(args[0])
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	vals, err := runtime.CastList(args[1])
+func RemoveValues(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	arr, vals, err := runtime.CastArgs2[runtime.List, runtime.List](arg1, arg2)
 
 	if err != nil {
 		return runtime.None, err
@@ -39,7 +29,7 @@ func RemoveValues(ctx context.Context, args ...runtime.Value) (runtime.Value, er
 		return runtime.None, err
 	}
 
-	return arr.Find(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+	return arr.Filter(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		h := value.Hash()
 
 		_, exists := lookupTable[h]

@@ -159,8 +159,8 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 		}
 
 		query = runtime.Query{
-			Kind:    runtime.Cast[runtime.String](kind, runtime.EmptyString),
-			Payload: runtime.Cast[runtime.String](payload, runtime.EmptyString),
+			Kind:    runtime.CastOr[runtime.String](kind, runtime.EmptyString),
+			Payload: runtime.CastOr[runtime.String](payload, runtime.EmptyString),
 			Options: options,
 		}
 	case *runtime.Array:

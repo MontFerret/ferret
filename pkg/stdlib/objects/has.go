@@ -9,28 +9,17 @@ import (
 // HAS returns the value stored by the given key.
 // @param {String} key - The key name string.
 // @return {Boolean} - True if the key exists else false.
-// TODO: REWRITE TO USE LIST & MAP instead
-func Has(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 2, 2)
-
-	if err != nil {
+func Has(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgType(arg1, 0, runtime.TypeMap); err != nil {
 		return runtime.None, err
 	}
 
-	err = runtime.ValidateType(args[0], runtime.TypeObject)
-
-	if err != nil {
+	if err := runtime.ValidateArgType(arg2, 1, runtime.TypeString); err != nil {
 		return runtime.None, err
 	}
 
-	err = runtime.ValidateType(args[1], runtime.TypeString)
+	target := arg1.(runtime.Map)
+	key := arg2.(runtime.String)
 
-	if err != nil {
-		return runtime.None, err
-	}
-
-	obj := args[0].(runtime.Map)
-	keyName := args[1].(runtime.String)
-
-	return obj.ContainsKey(ctx, keyName)
+	return target.ContainsKey(ctx, key)
 }

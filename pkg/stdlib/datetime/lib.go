@@ -4,28 +4,33 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func RegisterLib(ns runtime.Namespace) error {
-	return ns.RegisterFunctions(
-		runtime.NewFunctionsFromMap(map[string]runtime.Function{
-			"NOW":                Now,
-			"DATE":               Date,
-			"DATE_COMPARE":       DateCompare,
-			"DATE_DAYOFWEEK":     DateDayOfWeek,
-			"DATE_YEAR":          DateYear,
-			"DATE_MONTH":         DateMonth,
-			"DATE_DAY":           DateDay,
-			"DATE_HOUR":          DateHour,
-			"DATE_MINUTE":        DateMinute,
-			"DATE_SECOND":        DateSecond,
-			"DATE_MILLISECOND":   DateMillisecond,
-			"DATE_DAYOFYEAR":     DateDayOfYear,
-			"DATE_LEAPYEAR":      DateLeapYear,
-			"DATE_QUARTER":       DateQuarter,
-			"DATE_DAYS_IN_MONTH": DateDaysInMonth,
-			"DATE_FORMAT":        DateFormat,
-			"DATE_ADD":           DateAdd,
-			"DATE_SUBTRACT":      DateSubtract,
-			"DATE_DIFF":          DateDiff,
-		}),
-	)
+func RegisterLib(ns runtime.Namespace) {
+	ns.Function().A0().
+		Add("NOW", Now)
+
+	ns.Function().A1().
+		Add("DATE_DAYOFWEEK", DateDayOfWeek).
+		Add("DATE_YEAR", DateYear).
+		Add("DATE_MONTH", DateMonth).
+		Add("DATE_DAY", DateDay).
+		Add("DATE_HOUR", DateHour).
+		Add("DATE_MINUTE", DateMinute).
+		Add("DATE_SECOND", DateSecond).
+		Add("DATE_MILLISECOND", DateMillisecond).
+		Add("DATE_DAYOFYEAR", DateDayOfYear).
+		Add("DATE_LEAPYEAR", DateLeapYear).
+		Add("DATE_QUARTER", DateQuarter).
+		Add("DATE_DAYS_IN_MONTH", DateDaysInMonth)
+
+	ns.Function().A2().
+		Add("DATE_FORMAT", DateFormat)
+
+	ns.Function().A3().
+		Add("DATE_ADD", DateAdd).
+		Add("DATE_SUBTRACT", DateSubtract)
+
+	ns.Function().Var().
+		Add("DATE", Date).
+		Add("DATE_COMPARE", DateCompare).
+		Add("DATE_DIFF", DateDiff)
 }

@@ -18,9 +18,9 @@ func Minus(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	intersections := make(map[uint64]runtime.Value)
 	var capacity runtime.Int
 
-	for idx, i := range args {
+	for idx := range args {
 		idx := idx
-		list, err := runtime.CastList(i)
+		list, err := runtime.CastArgAt[runtime.List](args, idx)
 
 		if err != nil {
 			return runtime.None, err

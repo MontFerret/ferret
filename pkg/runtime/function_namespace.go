@@ -8,19 +8,31 @@ const NamespaceSeparator = "::"
 const emptyNS = ""
 
 type (
+	// RootNamespace is the top-level namespace that can contain multiple nested namespaces and functions.
+	// It provides methods to create nested namespaces and register functions within those namespaces.
+	RootNamespace interface {
+		Namespace
+
+		// Build constructs and returns a finalized Functions instance or an error if the build process fails.
+		Build() (*Functions, error)
+	}
+
+	// Namespace represents a namespace that can contain functions and nested namespaces.
+	// It provides methods to create nested namespaces and register functions within those namespaces.
 	Namespace interface {
+		// Namespace creates a new nested namespace with the given name and returns it.
 		Namespace(name string) Namespace
-		Functions() FunctionsBuilder
-		RegisterFunctions(funcs Functions) error
+		// Function returns a FunctionDefs interface that allows registering functions within this namespace.
+		Function() FunctionDefs
 	}
 
 	defaultNamespace struct {
-		builder *defaultFunctionBuilder
+		builder *FunctionsBuilder
 		name    string
 	}
 )
 
-func NewRootNamespace() Namespace {
+func NewRootNamespace() RootNamespace {
 	ns := new(defaultNamespace)
 	ns.builder = newRootFunctionsBuilder()
 
@@ -35,6 +47,16 @@ func NewNamespace(name string) Namespace {
 	return ns
 }
 
+func makeFunctionName(namespace, name string) string {
+	name = strings.ToUpper(name)
+
+	if namespace == emptyNS {
+		return name
+	}
+
+	return namespace + NamespaceSeparator + name
+}
+
 func (nc *defaultNamespace) Namespace(name string) Namespace {
 	ns := new(defaultNamespace)
 	ns.name = makeFunctionName(nc.name, name)
@@ -43,18 +65,10 @@ func (nc *defaultNamespace) Namespace(name string) Namespace {
 	return ns
 }
 
-func (nc *defaultNamespace) Functions() FunctionsBuilder {
+func (nc *defaultNamespace) Function() FunctionDefs {
 	return nc.builder
 }
 
-func (nc *defaultNamespace) RegisterFunctions(funcs Functions) error {
-	for _, fname := range funcs.Names() {
-		if nc.builder.Has(fname) {
-			return Errorf(ErrNotUnique, "function '%s' already exists", makeFunctionName(nc.name, fname))
-		}
-	}
-
-	nc.builder.SetFrom(funcs)
-
-	return nil
+func (nc *defaultNamespace) Build() (*Functions, error) {
+	return nc.builder.Build()
 }

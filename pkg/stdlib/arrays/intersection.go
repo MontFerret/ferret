@@ -23,8 +23,8 @@ func sections(ctx context.Context, args []runtime.Value, count int) (runtime.Val
 	intersections := make(map[uint64][]runtime.Value)
 	capacity := len(args)
 
-	for _, i := range args {
-		list, err := runtime.CastList(i)
+	for i, arg := range args {
+		list, err := runtime.CastArg[runtime.List](arg, i)
 
 		if err != nil {
 			return runtime.None, err

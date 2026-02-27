@@ -11,25 +11,19 @@ import (
 // Keys and values must be arrays and have the same length.
 // @param {String[]} keys - An array of strings, to be used as key names in the result.
 // @param {hashMap[]} values - An array of runtime.Value, to be used as key values.
-// @return {hashMap} - An object with the keys and values assembled.
-// TODO: REWRITE TO USE LIST & MAP instead
-func Zip(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 2, 2)
+// @return {Map} - An object with the keys and values assembled.
+func Zip(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	keys, err := runtime.CastArg[runtime.List](arg1, 0)
 
 	if err != nil {
-		return runtime.None, err
+		return runtime.None, runtime.ArgError(err, 1)
 	}
 
-	for _, arg := range args {
-		err = runtime.ValidateType(arg, runtime.TypeArray)
+	vals, err := runtime.CastArg[runtime.List](arg2, 1)
 
-		if err != nil {
-			return runtime.None, err
-		}
+	if err != nil {
+		return runtime.None, runtime.ArgError(err, 2)
 	}
-
-	keys := args[0].(*runtime.Array)
-	vals := args[1].(*runtime.Array)
 
 	keysSize, _ := keys.Length(ctx)
 	valsSize, _ := vals.Length(ctx)
@@ -43,10 +37,8 @@ func Zip(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		)
 	}
 
-	err = validateArrayOf(ctx, runtime.TypeString, keys)
-
-	if err != nil {
-		return runtime.None, err
+	if err := runtime.AssertItemsOf(ctx, keys, runtime.AssertString); err != nil {
+		return runtime.None, runtime.ArgError(err, 1)
 	}
 
 	zipped := runtime.NewObject()
@@ -56,7 +48,7 @@ func Zip(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	var exists bool
 	keyExists := map[runtime.String]bool{}
 
-	_ = keys.ForEach(ctx, func(c context.Context, key runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+	return zipped, keys.ForEach(ctx, func(c context.Context, key runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		k = key.(runtime.String)
 
 		// this is necessary to implement ArangoDB's behavior.
@@ -86,6 +78,4 @@ func Zip(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 
 		return true, nil
 	})
-
-	return zipped, nil
 }

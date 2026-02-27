@@ -14,14 +14,8 @@ import (
 // ENCODE_URI_COMPONENT returns the encoded String of uri.
 // @param {String} uri - Uri to encode.
 // @return {String} - Encoded string.
-func EncodeURIComponent(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return runtime.EmptyString, err
-	}
-
-	str := url.QueryEscape(args[0].String())
+func EncodeURIComponent(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	str := url.QueryEscape(arg.String())
 
 	return runtime.NewString(str), nil
 }
@@ -29,14 +23,8 @@ func EncodeURIComponent(_ context.Context, args ...runtime.Value) (runtime.Value
 // MD5 calculates the MD5 checksum for text and return it in a hexadecimal string representation.
 // @param {String} str - The string to do calculations against to.
 // @return {String} - MD5 checksum as hex string.
-func Md5(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return runtime.EmptyString, err
-	}
-
-	text := args[0].String()
+func Md5(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	text := arg.String()
 	res := md5.Sum([]byte(text))
 
 	return runtime.NewString(string(res[:])), nil
@@ -45,14 +33,8 @@ func Md5(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 // SHA1 calculates the SHA1 checksum for text and returns it in a hexadecimal string representation.
 // @param {String} str - The string to do calculations against to.
 // @return {String} - Sha1 checksum as hex string.
-func Sha1(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return runtime.EmptyString, err
-	}
-
-	text := args[0].String()
+func Sha1(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	text := arg.String()
 	res := sha1.Sum([]byte(text))
 
 	return runtime.NewString(string(res[:])), nil
@@ -61,14 +43,8 @@ func Sha1(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 // SHA512 calculates the SHA512 checksum for text and returns it in a hexadecimal string representation.
 // @param {String} str - The string to do calculations against to.
 // @return {String} - SHA512 checksum as hex string.
-func Sha512(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return runtime.EmptyString, err
-	}
-
-	text := args[0].String()
+func Sha512(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	text := arg.String()
 	res := sha512.Sum512([]byte(text))
 
 	return runtime.NewString(string(res[:])), nil
@@ -77,14 +53,8 @@ func Sha512(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 // TO_BASE64 returns the base64 representation of value.
 // @param {String} str - The string to encode.
 // @return {String} - A base64 representation of the string.
-func ToBase64(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return runtime.EmptyString, err
-	}
-
-	value := args[0].String()
+func ToBase64(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	value := arg.String()
 	out := base64.StdEncoding.EncodeToString([]byte(value))
 
 	return runtime.NewString(out), nil

@@ -34,8 +34,8 @@ func (vm *VM) warmup(env *Environment) error {
 		case bytecode.OpCall, bytecode.OpProtectedCall:
 			resolveFnAndCache(
 				pc, dst, reg,
-				functions.FV().Get,
-				functions.FV(),
+				functions.Var().Get,
+				functions.Var(),
 				func(f *mem.CachedFunction, fn runtime.Function) { f.FnV = fn },
 				vm.cache.Functions,
 				errors,
@@ -43,8 +43,8 @@ func (vm *VM) warmup(env *Environment) error {
 		case bytecode.OpCall0, bytecode.OpProtectedCall0:
 			resolveFnAndCache(
 				pc, dst, reg,
-				functions.F0().Get,
-				functions.FV(),
+				functions.A0().Get,
+				functions.Var(),
 				func(f *mem.CachedFunction, fn runtime.Function0) { f.Fn0 = fn },
 				vm.cache.Functions,
 				errors,
@@ -52,8 +52,8 @@ func (vm *VM) warmup(env *Environment) error {
 		case bytecode.OpCall1, bytecode.OpProtectedCall1:
 			resolveFnAndCache(
 				pc, dst, reg,
-				functions.F1().Get,
-				functions.FV(),
+				functions.A1().Get,
+				functions.Var(),
 				func(f *mem.CachedFunction, fn runtime.Function1) { f.Fn1 = fn },
 				vm.cache.Functions,
 				errors,
@@ -61,8 +61,8 @@ func (vm *VM) warmup(env *Environment) error {
 		case bytecode.OpCall2, bytecode.OpProtectedCall2:
 			resolveFnAndCache(
 				pc, dst, reg,
-				functions.F2().Get,
-				functions.FV(),
+				functions.A2().Get,
+				functions.Var(),
 				func(f *mem.CachedFunction, fn runtime.Function2) { f.Fn2 = fn },
 				vm.cache.Functions,
 				errors,
@@ -70,8 +70,8 @@ func (vm *VM) warmup(env *Environment) error {
 		case bytecode.OpCall3, bytecode.OpProtectedCall3:
 			resolveFnAndCache(
 				pc, dst, reg,
-				functions.F3().Get,
-				functions.FV(),
+				functions.A3().Get,
+				functions.Var(),
 				func(f *mem.CachedFunction, fn runtime.Function3) { f.Fn3 = fn },
 				vm.cache.Functions,
 				errors,
@@ -79,8 +79,8 @@ func (vm *VM) warmup(env *Environment) error {
 		case bytecode.OpCall4, bytecode.OpProtectedCall4:
 			resolveFnAndCache(
 				pc, dst, reg,
-				functions.F4().Get,
-				functions.FV(),
+				functions.A4().Get,
+				functions.Var(),
 				func(f *mem.CachedFunction, fn runtime.Function4) { f.Fn4 = fn },
 				vm.cache.Functions,
 				errors,

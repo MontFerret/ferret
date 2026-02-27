@@ -148,7 +148,7 @@ func TestDateAdd(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, datetime.DateAdd)
+		tc.Do(t, Fn3(datetime.DateAdd))
 	}
 }
 
@@ -287,6 +287,6 @@ func TestDateSubtract(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, datetime.DateSubtract)
+		tc.Do(t, Fn3(datetime.DateSubtract))
 	}
 }

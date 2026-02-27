@@ -10,7 +10,7 @@ import (
 
 func TestUse(t *testing.T) {
 	ns := runtime.NewNamespace("FOO")
-	ns.Functions().Set0("TEST_FN", func(_ context.Context) (runtime.Value, error) {
+	ns.Function().A0().Add("TEST_FN", func(_ context.Context) (runtime.Value, error) {
 		return runtime.True, nil
 	})
 

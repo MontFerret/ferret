@@ -4,10 +4,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func RegisterLib(ns runtime.Namespace) error {
-	ns.Functions().
-		Set1("WAIT", Wait).
-		Set("PRINT", Print)
-
-	return nil
+func RegisterLib(ns runtime.Namespace) {
+	ns.Function().A1().Add("WAIT", Wait)
+	ns.Function().Var().Add("PRINT", Print)
 }

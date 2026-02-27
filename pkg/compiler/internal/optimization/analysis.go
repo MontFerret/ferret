@@ -181,7 +181,7 @@ func (a *Analyzer) CalculateDominators() map[int]*BasicBlock {
 		}
 	}
 
-	// Find immediate dominator (closest dominator that is not the node itself)
+	// Filter immediate dominator (closest dominator that is not the node itself)
 	// The immediate dominator of a block is the unique dominator that is dominated by all other dominators
 	immediateDominators := make(map[int]*BasicBlock)
 	blockMap := make(map[int]*BasicBlock)
@@ -195,7 +195,7 @@ func (a *Analyzer) CalculateDominators() map[int]*BasicBlock {
 			continue
 		}
 
-		// Find the immediate dominator by looking for the dominator that is not dominated by any other dominator
+		// Filter the immediate dominator by looking for the dominator that is not dominated by any other dominator
 		var idom *BasicBlock
 
 		for domID := range dominators[block.ID] {

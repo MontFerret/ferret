@@ -19,12 +19,11 @@ func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 		return runtime.None, err
 	}
 
-	arr, err := runtime.CastList(args[0])
-
-	if err != nil {
+	if err := runtime.ValidateArgValueAt(args, 0, runtime.AssertList); err != nil {
 		return runtime.None, err
 	}
 
+	arr := args[0].(runtime.List)
 	size, err := arr.Length(ctx)
 
 	if err != nil {
@@ -85,7 +84,7 @@ func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 	case index > 1:
 		// Convert float to int via truncation
 		i := runtime.Int(index)
-		// Find the average of the index and following values
+		// Filter the average of the index and following values
 		aVal, err := sorted.At(ctx, i-1)
 
 		if err != nil {

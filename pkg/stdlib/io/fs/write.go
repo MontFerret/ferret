@@ -11,15 +11,13 @@ import (
 // WRITE writes the given data into the file.
 // @param {String} path - File path to write into.
 // @param {Binary} data - Data to write.
-// @param {hashMap} [params] - additional parameters:
+// @param {Map} [params] - additional parameters:
 // @param {String} [params.mode] - Write mode.
 // * x - Exclusive: returns an error if the file exist. It can be combined with other modes
 // * a - Append: will create a file if the specified file does not exist
 // * w - Write (Default): will create a file if the specified file does not exist
 func Write(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := validateRequiredWriteArgs(args)
-
-	if err != nil {
+	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
 	}
 
@@ -28,7 +26,7 @@ func Write(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 	params := defaultParams
 
 	if len(args) == 3 {
-		params, err = parseParams(args[2])
+		p, err := parseParams(args[2])
 
 		if err != nil {
 			return runtime.None, runtime.Error(
@@ -36,6 +34,8 @@ func Write(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 				"parse `params` argument",
 			)
 		}
+
+		params = p
 	}
 
 	// 0666 - read & write
@@ -54,22 +54,6 @@ func Write(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 	}
 
 	return runtime.None, nil
-}
-
-func validateRequiredWriteArgs(args []runtime.Value) error {
-	err := runtime.ValidateArgs(args, 2, 3)
-
-	if err != nil {
-		return err
-	}
-
-	err = runtime.ValidateType(args[0], runtime.TypeString)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // parsedParams contains parsed additional parameters.

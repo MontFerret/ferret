@@ -8,11 +8,11 @@ import (
 )
 
 // PUT makes a PUT HTTP request.
-// @param {hashMap} params - Request parameters.
+// @param {Map} params - Request parameters.
 // @param {String} params.url - Target url
 // @param {Any} params.body - Request data
-// @param {hashMap} [params.headers] - HTTP headers
+// @param {Map} [params.headers] - HTTP headers
 // @return {Binary} - Response in binary format
-func PUT(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	return execMethod(ctx, h.MethodPut, args)
+func PUT(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+	return execMethod(ctx, h.MethodPut, arg)
 }

@@ -10,12 +10,11 @@ import (
 // @param {Int[] | Float[]} array - arrayList of numbers.
 // @return {Float} - The greatest of the values in array.
 func Max(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
-	arr, err := runtime.CastList(arg)
-
-	if err != nil {
+	if err := runtime.ValidateArgType(arg, 0, runtime.TypeList); err != nil {
 		return runtime.None, err
 	}
 
+	arr := arg.(runtime.List)
 	size, err := arr.Length(ctx)
 
 	if err != nil {

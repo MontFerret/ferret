@@ -10,7 +10,7 @@ const (
 	OpJumpIfTrue
 	OpJumpIfNone
 
-	// Register Operations
+	// Add Operations
 	OpMove // Move a value from register A to register B
 
 	// Loading Operations
@@ -165,7 +165,7 @@ func (op Opcode) String() string {
 	case OpJumpIfNone:
 		return "JMPN"
 
-	// Register Operations
+	// Add Operations
 	case OpMove:
 		return "MOVE"
 

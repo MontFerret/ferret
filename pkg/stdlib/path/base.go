@@ -10,20 +10,12 @@ import (
 // BASE returns the last component of the path or the path itself if it does not contain any directory separators.
 // @param {String} path - The path.
 // @return {String} - The last component of the path.
-func Base(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
+func Base(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateType(arg, runtime.TypeString); err != nil {
 		return runtime.EmptyString, err
 	}
 
-	err = runtime.ValidateType(args[0], runtime.TypeString)
-
-	if err != nil {
-		return runtime.EmptyString, err
-	}
-
-	pathText := args[0].String()
+	pathText := arg.String()
 
 	return runtime.NewString(path.Base(pathText)), nil
 }

@@ -7,12 +7,8 @@ import (
 
 // RegisterLib register `NET` namespace functions.
 // @namespace NET
-func RegisterLib(ns runtime.Namespace) error {
-	io := ns.Namespace("NET")
+func RegisterLib(ns runtime.Namespace) {
+	net := ns.Namespace("NET")
 
-	if err := http.RegisterLib(io); err != nil {
-		return runtime.Error(err, "register `HTTP`")
-	}
-
-	return nil
+	http.RegisterLib(net)
 }

@@ -9,16 +9,14 @@ import (
 // DATE_DAYOFWEEK returns number of the weekday from the date. Sunday is the 0th day of week.
 // @param {DateTime} date - Source DateTime.
 // @return {Int} - Number of the weekday.
-func DateDayOfWeek(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+func DateDayOfWeek(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	dt, err := runtime.CastArg[runtime.DateTime](arg, 0)
+
+	if err != nil {
 		return runtime.None, err
 	}
 
-	if err := runtime.AssertDateTime(args[0]); err != nil {
-		return runtime.None, err
-	}
+	wday := dt.Weekday()
 
-	wday := args[0].(runtime.DateTime).Weekday()
-
-	return runtime.NewInt(int(wday)), nil
+	return runtime.Int(wday), nil
 }

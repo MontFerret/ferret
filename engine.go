@@ -12,10 +12,10 @@ import (
 
 type Engine struct {
 	compiler  *compiler.Compiler
-	functions runtime.Functions
+	functions *runtime.Functions
 	params    map[string]runtime.Value
 	logging   runtime.LogSettings
-	registry  *encoding.Registry
+	encoding  *encoding.Registry
 }
 
 func New(setters ...Option) (*Engine, error) {
@@ -25,17 +25,23 @@ func New(setters ...Option) (*Engine, error) {
 		return nil, err
 	}
 
+	functions, err := opts.lib.Build()
+
+	if err != nil {
+		return nil, err
+	}
+
 	return &Engine{
 		compiler:  compiler.New(opts.compiler...),
-		functions: opts.functions.Build(),
+		functions: functions,
 		params:    opts.params,
 		logging:   opts.logging,
-		registry:  opts.registry,
+		encoding:  opts.registry,
 	}, nil
 }
 
 func (e *Engine) Codecs() *encoding.Registry {
-	return e.registry
+	return e.encoding
 }
 
 func (e *Engine) Compile(src *file.Source) (*Plan, error) {
@@ -49,7 +55,7 @@ func (e *Engine) Compile(src *file.Source) (*Plan, error) {
 		Functions: e.functions,
 		Params:    e.params,
 		Logging:   e.logging,
-	}, e.registry), nil
+	}, e.encoding), nil
 }
 
 func (e *Engine) MustCompile(src *file.Source) *Plan {
@@ -69,7 +75,12 @@ func (e *Engine) Run(ctx context.Context, src *file.Source, opts ...SessionOptio
 		return nil, err
 	}
 
-	session := plan.NewSession(opts...)
+	session, err := plan.NewSession(opts...)
+
+	if err != nil {
+		return nil, err
+	}
+
 	defer session.Close()
 
 	return session.Run(ctx)

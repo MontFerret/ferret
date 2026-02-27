@@ -7,65 +7,71 @@ import (
 )
 
 func WithParams(params map[string]runtime.Value) EnvironmentOption {
-	return func(env *Environment) {
-		env.Params = params
+	return func(env *environmentBuilder) {
+		env.params = params
 	}
 }
 
 func WithParam(name string, value interface{}) EnvironmentOption {
-	return func(options *Environment) {
-		options.Params[name] = runtime.Parse(value)
+	return func(env *environmentBuilder) {
+		env.params[name] = runtime.Parse(value)
 	}
 }
 
-func WithFunctions(funcs runtime.Functions) EnvironmentOption {
-	return func(env *Environment) {
+func WithFunctions(funcs *runtime.Functions) EnvironmentOption {
+	return func(env *environmentBuilder) {
 		if funcs != nil {
-			env.Functions = runtime.NewFunctionsFrom(env.Functions, funcs)
+			env.functions.From(runtime.NewFunctionsBuilderFrom(funcs))
 		}
 	}
 }
 
 func WithFunction(name string, function runtime.Function) EnvironmentOption {
-	return func(env *Environment) {
-		env.Functions = runtime.NewFunctionsBuilder().SetFrom(env.Functions).Set(name, function).Build()
-	}
-}
-
-func WithNamespace(ns runtime.Namespace) EnvironmentOption {
-	return func(env *Environment) {
-		if ns != nil {
-			env.Functions = runtime.NewFunctionsFrom(env.Functions, ns.Functions().Build())
+	return func(env *environmentBuilder) {
+		if name != "" && function != nil {
+			env.functions.Var().Add(name, function)
 		}
 	}
 }
 
-func WithFunctionsBuilder(setter func(fns runtime.FunctionsBuilder)) EnvironmentOption {
-	return func(env *Environment) {
-		if setter != nil {
-			builder := runtime.NewFunctionsBuilder()
-			setter(builder)
-			builder.SetFrom(env.Functions)
+func WithNamespace(ns runtime.Namespace) EnvironmentOption {
+	return func(env *environmentBuilder) {
+		if ns != nil {
+			env.functions.From(ns.Function())
+		}
+	}
+}
 
-			env.Functions = builder.Build()
+func WithFunctionsBuilder(builder runtime.FunctionDefs) EnvironmentOption {
+	return func(env *environmentBuilder) {
+		if builder != nil {
+			env.functions.From(builder)
+		}
+	}
+}
+
+func WithFunctionsRegistrar(setter func(fns runtime.FunctionDefs)) EnvironmentOption {
+	return func(env *environmentBuilder) {
+		if setter != nil {
+			setter(env.functions)
 		}
 	}
 }
 
 func WithLog(writer io.Writer) EnvironmentOption {
-	return func(options *Environment) {
-		options.Logging.Writer = writer
+	return func(env *environmentBuilder) {
+		env.logging.Writer = writer
 	}
 }
 
 func WithLogLevel(lvl runtime.LogLevel) EnvironmentOption {
-	return func(options *Environment) {
-		options.Logging.Level = lvl
+	return func(env *environmentBuilder) {
+		env.logging.Level = lvl
 	}
 }
 
 func WithLogFields(fields map[string]interface{}) EnvironmentOption {
-	return func(options *Environment) {
-		options.Logging.Fields = fields
+	return func(env *environmentBuilder) {
+		env.logging.Fields = fields
 	}
 }

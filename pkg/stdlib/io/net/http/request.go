@@ -19,22 +19,18 @@ type Params struct {
 }
 
 // REQUEST makes a HTTP request.
-// @param {hashMap} params - Request parameters.
+// @param {Map} params - Request parameters.
 // @param {String} params.method - HTTP method
 // @param {String} params.url - Target url
 // @param {Binary} params.body - Request data
-// @param {hashMap} [params.headers] - HTTP headers
+// @param {Map} [params.headers] - HTTP headers
 // @return {Binary} - Response in binary format
-func REQUEST(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	return execMethod(ctx, "", args)
+func REQUEST(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+	return execMethod(ctx, "", arg)
 }
 
-func execMethod(ctx context.Context, method runtime.String, args []runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
-		return runtime.None, err
-	}
-
-	params, err := runtime.CastMap(args[0])
+func execMethod(ctx context.Context, method runtime.String, arg runtime.Value) (runtime.Value, error) {
+	params, err := runtime.CastMap(arg)
 
 	if err != nil {
 		return runtime.None, err

@@ -57,13 +57,10 @@ func (r *Registry) Register(contentType string, codec Codec) error {
 
 // Codec returns a codec for the content type.
 func (r *Registry) Codec(contentType string) (Codec, error) {
-	entry, normalized, err := r.lookup(contentType)
+	entry, err := r.lookup(contentType)
+
 	if err != nil {
 		return nil, err
-	}
-
-	if entry == nil {
-		return nil, fmt.Errorf("%w: %s", ErrCodecNotFound, normalized)
 	}
 
 	return entry, nil
@@ -71,13 +68,10 @@ func (r *Registry) Codec(contentType string) (Codec, error) {
 
 // Encoder returns an encoder for the content type.
 func (r *Registry) Encoder(contentType string) (Encoder, error) {
-	codec, normalized, err := r.lookup(contentType)
+	codec, err := r.lookup(contentType)
+
 	if err != nil {
 		return nil, err
-	}
-
-	if codec == nil {
-		return nil, fmt.Errorf("%w: %s", ErrCodecNotFound, normalized)
 	}
 
 	return codec, nil
@@ -85,35 +79,32 @@ func (r *Registry) Encoder(contentType string) (Encoder, error) {
 
 // Decoder returns a decoder for the content type.
 func (r *Registry) Decoder(contentType string) (Decoder, error) {
-	codec, normalized, err := r.lookup(contentType)
+	codec, err := r.lookup(contentType)
+
 	if err != nil {
 		return nil, err
-	}
-
-	if codec == nil {
-		return nil, fmt.Errorf("%w: %s", ErrCodecNotFound, normalized)
 	}
 
 	return codec, nil
 }
 
-func (r *Registry) lookup(contentType string) (Codec, string, error) {
+func (r *Registry) lookup(contentType string) (Codec, error) {
 	if r == nil {
-		return nil, "", ErrNilRegistry
+		return nil, ErrNilRegistry
 	}
 
 	normalized, err := normalizeContentType(contentType)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	r.mu.RLock()
 	entry, exists := r.entries[normalized]
 	r.mu.RUnlock()
 
-	if !exists {
-		return nil, normalized, fmt.Errorf("%w: %s", ErrCodecNotFound, normalized)
+	if !exists || entry == nil {
+		return nil, fmt.Errorf("%w: %s", ErrCodecNotFound, normalized)
 	}
 
-	return entry, normalized, nil
+	return entry, nil
 }

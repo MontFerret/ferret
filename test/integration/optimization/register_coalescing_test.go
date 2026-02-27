@@ -116,7 +116,7 @@ FOR x IN [1,2,3,4,5]
 			map[string]any{"x": 3, "y": 6, "z": 9},
 			map[string]any{"x": 4, "y": 8, "z": 12},
 			map[string]any{"x": 5, "y": 10, "z": 15},
-		}, "Register reuse across loop iterations"),
+		}, "Add reuse across loop iterations"),
 		RegistersCase(`
 LET x = 1
 RETURN (x > 0) ? (x + 1) : (x - 1)

@@ -200,7 +200,7 @@ func (c *ExprCompiler) compileTernary(ctx fql.IExpressionContext) bytecode.Opera
 	condReg := c.Compile(ctx.GetCondition())
 	c.ctx.Emitter.EmitMove(dst, condReg)
 
-	// Define jump labels
+	// Add jump labels
 	elseLabel := c.ctx.Emitter.NewLabel()
 	endLabel := c.ctx.Emitter.NewLabel()
 
@@ -254,7 +254,7 @@ func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) bytecode.Oper
 			if fe := atom.ForExpression(); fe != nil {
 				// Since FOR-IN loops depend on custom iterators,
 				// We need to handle cleanup before exiting the loop.
-				// TODO: Find a better way to handle this. The code assumes the knowledge of the internals of the FOR-IN loop.
+				// TODO: Filter a better way to handle this. The code assumes the knowledge of the internals of the FOR-IN loop.
 				if fe.In() != nil {
 					jump = endCatch - 1
 				}

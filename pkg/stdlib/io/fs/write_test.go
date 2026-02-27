@@ -21,7 +21,7 @@ func TestWrite(t *testing.T) {
 		data := runtime.NewBinary([]byte("3timeslazy"))
 		params := runtime.NewObjectWith(
 			map[string]runtime.Value{
-				"mode": runtime.NewString("w"),
+				"mode": runtime.NewString("foo"),
 			},
 		)
 		someInt := runtime.NewInt(0)
@@ -41,16 +41,16 @@ func TestWrite(t *testing.T) {
 					Args: []runtime.Value{path},
 				},
 				{
-					Name: "Arguments Number: more than 3 arguments passed",
-					Args: []runtime.Value{path, data, params, someInt},
-				},
-				{
 					Name: "Arguments Type: `path` not a string",
 					Args: []runtime.Value{someInt},
 				},
 				{
 					Name: "Arguments Type: `params` not an object",
 					Args: []runtime.Value{path, data, someInt},
+				},
+				{
+					Name: "Arguments Type: `params` contains invalid `mode`",
+					Args: []runtime.Value{path, data, params},
 				},
 			}
 

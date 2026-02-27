@@ -6,15 +6,12 @@ import (
 
 // RegisterLib register `HTTP` namespace functions.
 // @namespace HTTP
-func RegisterLib(ns runtime.Namespace) error {
-	return ns.
-		Namespace("HTTP").
-		RegisterFunctions(
-			runtime.NewFunctionsFromMap(map[string]runtime.Function{
-				"GET":    GET,
-				"POST":   POST,
-				"PUT":    PUT,
-				"DELETE": DELETE,
-				"DO":     REQUEST,
-			}))
+func RegisterLib(ns runtime.Namespace) {
+	ns = ns.Namespace("HTTP")
+	ns.Function().A1().
+		Add("GET", GET).
+		Add("POST", POST).
+		Add("PUT", PUT).
+		Add("DELETE", DELETE).
+		Add("DO", REQUEST)
 }

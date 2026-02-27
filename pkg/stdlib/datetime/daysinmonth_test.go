@@ -62,6 +62,6 @@ func TestDateDateDaysInMonth(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, datetime.DateDaysInMonth)
+		tc.Do(t, Fn1(datetime.DateDaysInMonth))
 	}
 }

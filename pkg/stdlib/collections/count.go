@@ -8,7 +8,7 @@ import (
 
 // COUNT computes the number of distinct elements in the given collection and returns the count as an integer.
 func Count(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
-	collection, err := runtime.CastCollection(arg)
+	collection, err := runtime.CastArg[runtime.Collection](arg, 0)
 
 	if err != nil {
 		return runtime.ZeroInt, err

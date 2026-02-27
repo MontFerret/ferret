@@ -107,12 +107,6 @@ func TestNth_EdgeCases(t *testing.T) {
 func TestNth_ArgumentValidation(t *testing.T) {
 	ctx := context.Background()
 
-	Convey("Should reject too few arguments", t, func() {
-		arr := runtime.NewArrayWith(runtime.NewInt(1))
-		_, err := arrays.Nth(ctx, arr)
-		So(err, ShouldNotBeNil)
-	})
-
 	Convey("Should reject invalid argument types", t, func() {
 		nonArray := runtime.NewString("not an array")
 		nonInt := runtime.NewString("not an int")

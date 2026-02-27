@@ -16,7 +16,7 @@ func Unshift(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 		return runtime.None, err
 	}
 
-	list, err := runtime.CastList(args[0])
+	list, err := runtime.CastArgAt[runtime.List](args, 0)
 
 	if err != nil {
 		return runtime.None, err
@@ -26,7 +26,7 @@ func Unshift(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 	uniq := runtime.False
 
 	if len(args) > 2 {
-		uniq, err = runtime.CastBoolean(args[2])
+		uniq, err = runtime.CastArgAt[runtime.Boolean](args, 2)
 
 		if err != nil {
 			return runtime.None, err

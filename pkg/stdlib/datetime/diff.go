@@ -17,29 +17,16 @@ func DateDiff(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	if err := runtime.AssertDateTime(args[0]); err != nil {
+	date1, date2, unit, err := runtime.CastVarArgs3[runtime.DateTime, runtime.DateTime, runtime.String](args)
+
+	if err != nil {
 		return runtime.None, err
 	}
 
-	if err := runtime.AssertDateTime(args[1]); err != nil {
+	isFloat, err := runtime.CastArgAtOr[runtime.Boolean](args, 3, runtime.False)
+
+	if err != nil {
 		return runtime.None, err
-	}
-
-	if err := runtime.AssertString(args[2]); err != nil {
-		return runtime.None, err
-	}
-
-	date1 := args[0].(runtime.DateTime)
-	date2 := args[1].(runtime.DateTime)
-	unit := args[2].(runtime.String)
-	isFloat := runtime.NewBoolean(false)
-
-	if len(args) == 4 {
-		if err := runtime.AssertBoolean(args[3]); err != nil {
-			return runtime.None, err
-		}
-
-		isFloat = args[3].(runtime.Boolean)
 	}
 
 	if date1.Equal(date2.Time) {

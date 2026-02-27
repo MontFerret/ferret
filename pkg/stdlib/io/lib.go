@@ -8,16 +8,9 @@ import (
 
 // RegisterLib register `IO` namespace functions.
 // @namespace IO
-func RegisterLib(ns runtime.Namespace) error {
+func RegisterLib(ns runtime.Namespace) {
 	io := ns.Namespace("IO")
 
-	if err := fs.RegisterLib(io); err != nil {
-		return runtime.Error(err, "register `FS`")
-	}
-
-	if err := net.RegisterLib(io); err != nil {
-		return runtime.Error(err, "register `NET`")
-	}
-
-	return nil
+	fs.RegisterLib(io)
+	net.RegisterLib(io)
 }

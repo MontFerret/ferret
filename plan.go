@@ -9,23 +9,33 @@ import (
 type Plan struct {
 	prog     *bytecode.Program
 	env      *vm.Environment
-	registry *encoding.Registry
+	encoding *encoding.Registry
 }
 
-func newPlan(prog *bytecode.Program, env *vm.Environment, registry *encoding.Registry) *Plan {
-	if registry == nil {
-		registry = encoding.NewRegistry()
+func newPlan(prog *bytecode.Program, env *vm.Environment, enc *encoding.Registry) *Plan {
+	if enc == nil {
+		enc = encoding.NewRegistry()
 	}
 
 	return &Plan{
 		prog:     prog,
 		env:      env,
-		registry: registry,
+		encoding: enc,
 	}
 }
 
-func (p *Plan) NewSession(setters ...SessionOption) *Session {
-	env := vm.NewEnvironment(setters)
+func (p *Plan) NewSession(setters ...SessionOption) (*Session, error) {
+	env, err := vm.NewEnvironment(setters)
 
-	return newSession(vm.New(p.prog), vm.MergeEnvironments(p.env, env), p.registry)
+	if err != nil {
+		return nil, err
+	}
+
+	mergedEnv, err := vm.MergeEnvironments(p.env, env)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return newSession(vm.New(p.prog), mergedEnv, p.encoding), nil
 }

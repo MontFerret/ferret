@@ -10,24 +10,17 @@ import (
 // READ reads from a given file.
 // @param {String} path - Path to file to read from.
 // @return {Binary} - File content in binary format.
-func Read(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
+func Read(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	path, err := runtime.CastArg[runtime.String](arg, 0)
 
 	if err != nil {
-		return runtime.None, runtime.Error(err, "validate arguments number")
+		return runtime.None, err
 	}
 
-	err = runtime.ValidateType(args[0], runtime.TypeString)
+	data, err := os.ReadFile(path.String())
 
 	if err != nil {
-		return runtime.None, runtime.Error(err, "validate [0] argument")
-	}
-
-	path := args[0].String()
-	data, err := os.ReadFile(path)
-
-	if err != nil {
-		return runtime.None, runtime.Error(err, "read file")
+		return runtime.None, err
 	}
 
 	return runtime.NewBinary(data), nil
