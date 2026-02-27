@@ -48,7 +48,7 @@ func (c *Compiler) Compile(src *file.Source) (program *bytecode.Program, err err
 			n := goruntime.Stack(buf, false)
 			stackTrace := string(buf[:n])
 
-			// Filter out exactly what the error was and add the e
+			// Find out exactly what the error was and add the error
 			switch x := r.(type) {
 			case string:
 				e = diagnostics.NewUnexpectedError(src, x+"\n"+stackTrace)
