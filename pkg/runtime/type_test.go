@@ -33,8 +33,7 @@ type typedList struct {
 }
 
 func (t typedList) Concat(ctx context.Context, other runtime.List) error {
-	//TODO implement me
-	panic("implement me")
+	return t.Array.Concat(ctx, other)
 }
 
 var typeTypedList = runtime.NewType("test", "typedList", func(value runtime.Value) bool {
