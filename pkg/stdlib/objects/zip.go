@@ -16,13 +16,13 @@ func Zip(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	keys, err := runtime.CastArg[runtime.List](arg1, 0)
 
 	if err != nil {
-		return runtime.None, runtime.ArgError(err, 1)
+		return runtime.None, err
 	}
 
 	vals, err := runtime.CastArg[runtime.List](arg2, 1)
 
 	if err != nil {
-		return runtime.None, runtime.ArgError(err, 2)
+		return runtime.None, err
 	}
 
 	keysSize, _ := keys.Length(ctx)
@@ -51,15 +51,7 @@ func Zip(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return zipped, keys.ForEach(ctx, func(c context.Context, key runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		k = key.(runtime.String)
 
-		// this is necessary to implement ArangoDB's behavior.
-		// in ArangoDB the first value in values is
-		// associated with each key. Ex.:
-		// -- query --
-		// > RETURN ZIP(
-		// >     ["a", "b", "a"], [1, 2, 3]
-		// > )
-		// -- result --
-		// > [{"a": 1,"b": 2}]
+		// If the key already exists, we skip it. This allows us to handle duplicate keys in the input.
 		if _, exists = keyExists[k]; exists {
 			return true, nil
 		}
