@@ -6,9 +6,11 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func ForWhileHelpers() *runtime.Functions {
-	return runtime.NewFunctionsFromMap(map[string]runtime.Function{
-		"UNTIL": StateFn[int](func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func ForWhileHelpers() runtime.FunctionDefs {
+	builder := runtime.NewFunctionsBuilder()
+
+	builder.Var().
+		Add("UNTIL", StateFn[int](func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			state := GetFnState[int](ctx)
 			untilCounter := state.Get()
 
@@ -22,8 +24,8 @@ func ForWhileHelpers() *runtime.Functions {
 			return runtime.False, nil
 		}, func(ctx context.Context) int {
 			return 0
-		}),
-		"W_POP": func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+		})).
+		Add("W_POP", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			list, err := runtime.CastList(args[0])
 
 			if err != nil {
@@ -43,8 +45,8 @@ func ForWhileHelpers() *runtime.Functions {
 			}
 
 			return runtime.False, nil
-		},
-		"COUNTER": StateFn[int](func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+		}).
+		Add("COUNTER", StateFn[int](func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			state := GetFnState[int](ctx)
 			counter := state.Get()
 			counter++
@@ -54,6 +56,7 @@ func ForWhileHelpers() *runtime.Functions {
 			return runtime.Int(counter), nil
 		}, func(ctx context.Context) int {
 			return -1
-		}),
-	})
+		}))
+
+	return builder
 }

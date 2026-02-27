@@ -17,5 +17,5 @@ func TestForWhile(t *testing.T) {
 				FOR x IN 1..y
 					RETURN i * x
 		`, []any{0, 1, 2, 2, 4, 6, 3, 6, 9, 12, 4, 8, 12, 16, 20}),
-	}, vm.WithFunctions(base.ForWhileHelpers()))
+	}, vm.WithFunctionsBuilder(base.ForWhileHelpers()))
 }

@@ -2,6 +2,7 @@ package objects
 
 import (
 	"context"
+	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -21,7 +22,12 @@ func MergeRecursive(ctx context.Context, args ...runtime.Value) (runtime.Value, 
 	first := args[0].(runtime.Map)
 
 	if len(args) == 1 {
-		return first.Copy(), nil
+		cloned, err := runtime.CloneOrCopy(ctx, first)
+		if err != nil {
+			return runtime.None, err
+		}
+
+		return cloned, nil
 	}
 
 	merged, err := first.Empty(ctx)
@@ -48,9 +54,27 @@ func merge(ctx context.Context, dst, src runtime.Map) error {
 	return src.ForEach(ctx, func(c context.Context, val, key runtime.Value) (runtime.Boolean, error) {
 		switch v := val.(type) {
 		case runtime.Map:
-			return runtime.True, merge(ctx, v, dst)
+			existing, err := dst.Get(c, key)
+			if err == nil {
+				if existingMap, ok := existing.(runtime.Map); ok {
+					if err := merge(c, existingMap, v); err != nil {
+						return false, err
+					}
+
+					return true, nil
+				}
+			} else if !errors.Is(err, runtime.ErrNotFound) {
+				return false, err
+			}
+
+			cloned, err := v.Clone(c)
+			if err != nil {
+				return false, err
+			}
+
+			return true, dst.Set(c, key, cloned.(runtime.Map))
 		default:
-			return runtime.True, dst.Set(c, key, val)
+			return true, dst.Set(c, key, val)
 		}
 	})
 }

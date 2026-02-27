@@ -57,37 +57,61 @@ type (
 		List() []string
 	}
 
+	// fnErrors aggregates build errors shared across nested function definitions.
+	fnErrors struct {
+		items []error
+	}
+
+	// defaultFnDef stores functions for a namespace and shares data/errors with nested builders.
 	defaultFnDef[T FunctionConstraint] struct {
 		namespace string
-		errors    []error
+		errors    *fnErrors
 		data      map[string]T
 	}
 )
 
-func newFnDef[T FunctionConstraint](namespace string) *defaultFnDef[T] {
+// Add appends an error to the shared list.
+func (e *fnErrors) Add(err error) {
+	e.items = append(e.items, err)
+}
+
+// All returns all collected errors from the shared list.
+func (e *fnErrors) All() []error {
+	return e.items
+}
+
+// newFnDef creates a function definition with a shared error container.
+func newFnDef[T FunctionConstraint](namespace string, errs *fnErrors) *defaultFnDef[T] {
 	return &defaultFnDef[T]{
 		namespace: namespace,
+		errors:    errs,
 		data:      make(map[string]T),
 	}
 }
 
+// newFnDefFrom reuses the parent data and error container for nested builders.
 func newFnDefFrom[T FunctionConstraint](namespace string, other *defaultFnDef[T]) *defaultFnDef[T] {
 	return &defaultFnDef[T]{
 		namespace: namespace,
+		errors:    other.errors,
 		// We share the same map across all builders to ensure that changes in one builder are reflected in all builders that share the same namespace.
 		data: other.data,
 	}
+}
+
+func (fd *defaultFnDef[T]) addError(err error) {
+	if fd.errors == nil {
+		fd.errors = &fnErrors{}
+	}
+
+	fd.errors.Add(err)
 }
 
 func (fd *defaultFnDef[T]) Add(name string, fn T) FnDef[T] {
 	fname := makeFunctionName(fd.namespace, name)
 
 	if _, exists := fd.data[fname]; exists {
-		if fd.errors == nil {
-			fd.errors = make([]error, 0)
-		}
-
-		fd.errors = append(fd.errors, fmt.Errorf("function with name '%s' already exists in '%s' namespace", name, fd.namespace))
+		fd.addError(fmt.Errorf("function with name '%s' already exists in '%s' namespace", name, fd.namespace))
 
 		return fd
 	}
@@ -101,11 +125,7 @@ func (fd *defaultFnDef[T]) Remove(name string) FnDef[T] {
 	fname := makeFunctionName(fd.namespace, name)
 
 	if _, exists := fd.data[fname]; !exists {
-		if fd.errors == nil {
-			fd.errors = make([]error, 0)
-		}
-
-		fd.errors = append(fd.errors, fmt.Errorf("function with name '%s' does not exist in '%s' namespace", name, fd.namespace))
+		fd.addError(fmt.Errorf("function with name '%s' does not exist in '%s' namespace", name, fd.namespace))
 
 		return fd
 	}
@@ -195,18 +215,22 @@ func newRootFunctionsBuilder() *FunctionsBuilder {
 	return newNamespaceFunctionsBuilder("")
 }
 
+// newNamespaceFunctionsBuilder creates a builder with shared errors across its FnDefs.
 func newNamespaceFunctionsBuilder(namespace string) *FunctionsBuilder {
+	errs := &fnErrors{}
+
 	return &FunctionsBuilder{
 		namespace: namespace,
-		av:        newFnDef[Function](namespace),
-		a0:        newFnDef[Function0](namespace),
-		a1:        newFnDef[Function1](namespace),
-		a2:        newFnDef[Function2](namespace),
-		a3:        newFnDef[Function3](namespace),
-		a4:        newFnDef[Function4](namespace),
+		av:        newFnDef[Function](namespace, errs),
+		a0:        newFnDef[Function0](namespace, errs),
+		a1:        newFnDef[Function1](namespace, errs),
+		a2:        newFnDef[Function2](namespace, errs),
+		a3:        newFnDef[Function3](namespace, errs),
+		a4:        newFnDef[Function4](namespace, errs),
 	}
 }
 
+// newFunctionsBuilderInternalFrom creates a nested builder sharing parent data and errors.
 func newFunctionsBuilderInternalFrom(namespace string, other *FunctionsBuilder) *FunctionsBuilder {
 	return &FunctionsBuilder{
 		namespace: namespace,
@@ -319,12 +343,12 @@ func (b *FunctionsBuilder) From(other FunctionDefs) FunctionDefs {
 
 func (b *FunctionsBuilder) Build() (*Functions, error) {
 	errs := slices.Concat(
-		b.av.errors,
-		b.a0.errors,
-		b.a1.errors,
-		b.a2.errors,
-		b.a3.errors,
-		b.a4.errors,
+		collectFnErrors(b.av),
+		collectFnErrors(b.a0),
+		collectFnErrors(b.a1),
+		collectFnErrors(b.a2),
+		collectFnErrors(b.a3),
+		collectFnErrors(b.a4),
 	)
 
 	flookup := make(map[string]struct{})
@@ -386,4 +410,13 @@ func (b *FunctionsBuilder) Build() (*Functions, error) {
 	registry.hash = functionsHash(registry)
 
 	return registry, nil
+}
+
+// collectFnErrors returns errors collected for a definition, if any.
+func collectFnErrors[T FunctionConstraint](fd *defaultFnDef[T]) []error {
+	if fd == nil || fd.errors == nil {
+		return nil
+	}
+
+	return fd.errors.All()
 }

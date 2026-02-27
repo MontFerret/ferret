@@ -12,15 +12,6 @@ import (
 )
 
 func TestDir(t *testing.T) {
-	Convey("When arg is not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = path.Dir(context.Background())
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("Wrong argument", t, func() {
 		var err error
 		_, err = path.Dir(context.Background(), runtime.NewInt(0))

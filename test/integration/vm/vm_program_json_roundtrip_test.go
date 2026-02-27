@@ -68,7 +68,7 @@ func runProgramRoundTrip(t *testing.T, cases []roundTripCase) {
 					convey.So(err, convey.ShouldBeNil)
 
 					opts := []vm.EnvironmentOption{
-						vm.WithFunctions(base.Stdlib()),
+						vm.WithNamespace(base.Stdlib()),
 					}
 					opts = append(opts, tc.options...)
 

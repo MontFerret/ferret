@@ -1048,5 +1048,5 @@ func TestForStepNested(t *testing.T) {
 				},
 			},
 		}, "Should handle nested FOR loops with COLLECT AGGREGATE"),
-	}, vm.WithFunctions(base.ForWhileHelpers()))
+	}, vm.WithFunctionsBuilder(base.ForWhileHelpers()))
 }

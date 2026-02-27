@@ -12,16 +12,6 @@ import (
 )
 
 func TestLower(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.Lower(context.Background())
-
-			So(err, ShouldBeError)
-
-		})
-	})
-
 	Convey("Lower('FOOBAR') should return 'foobar'", t, func() {
 		out, _ := strings.Lower(
 			context.Background(),
@@ -33,16 +23,6 @@ func TestLower(t *testing.T) {
 }
 
 func TestUpper(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.Upper(context.Background())
-
-			So(err, ShouldBeError)
-
-		})
-	})
-
 	Convey("Lower('foobar') should return 'FOOBAR'", t, func() {
 		out, _ := strings.Upper(
 			context.Background(),

@@ -957,5 +957,5 @@ LET users = [
 		`, []any{
 				0,
 			}, "Should return 0 when there are no items in the source"),
-	}, vm.WithFunctions(base.ForWhileHelpers()))
+	}, vm.WithFunctionsBuilder(base.ForWhileHelpers()))
 }

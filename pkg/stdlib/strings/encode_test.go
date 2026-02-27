@@ -12,22 +12,6 @@ import (
 )
 
 func TestEncodedURIComponent(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			_, err := strings.EncodeURIComponent(context.Background())
-
-			So(err, ShouldBeError)
-
-			_, err = strings.EncodeURIComponent(
-				context.Background(),
-				runtime.NewString("https://github.com/MontFerret/ferret"),
-				runtime.NewString("https://github.com/MontFerret/ferret"),
-			)
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("When args are strings", t, func() {
 		Convey("EncodeURIComponent('https://github.com/MontFerret/ferret') should return encoded uri", func() {
 			out, _ := strings.EncodeURIComponent(
@@ -41,15 +25,6 @@ func TestEncodedURIComponent(t *testing.T) {
 }
 
 func TestMd5(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.Md5(context.Background())
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("Should return hash sum of a string", t, func() {
 		str := runtime.NewString("foobar")
 		out, _ := strings.Md5(
@@ -62,15 +37,6 @@ func TestMd5(t *testing.T) {
 }
 
 func TestSha1(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.Sha1(context.Background())
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("Should return hash sum of a string", t, func() {
 		str := runtime.NewString("foobar")
 		out, _ := strings.Sha1(
@@ -83,15 +49,6 @@ func TestSha1(t *testing.T) {
 }
 
 func TestSha512(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.Sha512(context.Background())
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("Should return hash sum of a string", t, func() {
 		str := runtime.NewString("foobar")
 		out, _ := strings.Sha512(
@@ -104,15 +61,6 @@ func TestSha512(t *testing.T) {
 }
 
 func TestToBase64(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.ToBase64(context.Background())
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("Should encode a given value", t, func() {
 		out, err := strings.ToBase64(
 			context.Background(),

@@ -40,17 +40,18 @@ func TestFunctionCall(t *testing.T) {
 }
 
 func TestFunctionCall0(t *testing.T) {
+	builder := runtime.NewFunctionsBuilder()
+	builder.Var().Add("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+		return runtime.String("test"), nil
+	})
+	builder.A0().Add("TEST0", func(ctx context.Context) (runtime.Value, error) {
+		return runtime.String("test0"), nil
+	})
+
 	RunUseCases(t, []UseCase{
 		Case("RETURN TEST0()", "test0", "Should call a function with no arguments"),
 		Case("RETURN TEST()", "test", "Should call a function with no arguments using fallback"),
-	}, vm.WithFunctions(runtime.NewFunctionsBuilder().
-		Set("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-			return runtime.String("test"), nil
-		}).
-		Set0("TEST0", func(ctx context.Context) (runtime.Value, error) {
-			return runtime.String("test0"), nil
-		}).
-		Build()))
+	}, vm.WithFunctionsBuilder(builder))
 }
 
 func TestBuiltinFunctions(t *testing.T) {

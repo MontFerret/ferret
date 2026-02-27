@@ -25,7 +25,10 @@ func Compile(expression string) (*bytecode.Program, error) {
 
 func Run(p *bytecode.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
 	instance := vm.New(p)
-	env := vm.NewEnvironment(opts)
+	env, err := vm.NewEnvironment(opts)
+	if err != nil {
+		return nil, err
+	}
 
 	type Salt struct{}
 

@@ -168,8 +168,8 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 
 				if useCase.Execution.Run {
 					options := []vm.EnvironmentOption{
-						vm.WithFunctions(std),
-						vm.WithFunctions(base.ForWhileHelpers()),
+						vm.WithNamespace(std),
+						vm.WithFunctionsBuilder(base.ForWhileHelpers()),
 					}
 
 					if len(useCase.Execution.Options) > 0 {

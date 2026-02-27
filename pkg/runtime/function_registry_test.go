@@ -17,11 +17,15 @@ func TestFunctionsBuilderBuildAndHash(t *testing.T) {
 		return arg, nil
 	}
 
-	funcs := NewFunctionsBuilder().
-		Set("var", varFn).
-		Set0("zero", fn0).
-		Set1("one", fn1).
-		Build()
+	builder := NewFunctionsBuilder()
+	builder.Var().Add("var", varFn)
+	builder.A0().Add("zero", fn0)
+	builder.A1().Add("one", fn1)
+
+	funcs, err := builder.Build()
+	if err != nil {
+		t.Fatalf("build functions: %v", err)
+	}
 
 	if funcs.Size() != 3 {
 		t.Fatalf("expected 3 functions, got %d", funcs.Size())
@@ -41,7 +45,7 @@ func TestFunctionsBuilderBuildAndHash(t *testing.T) {
 		}
 	}
 
-	names := funcs.Names()
+	names := funcs.List()
 	for _, name := range []string{"VAR", "ZERO", "ONE"} {
 		if !slices.Contains(names, name) {
 			t.Fatalf("expected names to include %q, got %v", name, names)
@@ -69,9 +73,24 @@ func TestNewFunctionsFromAndFromMap(t *testing.T) {
 		return None, nil
 	}
 
-	f1 := NewFunctionsBuilder().Set0("a", fn0).Build()
-	f2 := NewFunctionsBuilder().Set0("b", fn0).Build()
-	merged := NewFunctionsFrom(f1, f2)
+	f1Builder := NewFunctionsBuilder()
+	f1Builder.A0().Add("a", fn0)
+	f1, err := f1Builder.Build()
+	if err != nil {
+		t.Fatalf("build functions: %v", err)
+	}
+
+	f2Builder := NewFunctionsBuilder()
+	f2Builder.A0().Add("b", fn0)
+	f2, err := f2Builder.Build()
+	if err != nil {
+		t.Fatalf("build functions: %v", err)
+	}
+
+	merged, err := NewFunctionsFrom(f1, f2)
+	if err != nil {
+		t.Fatalf("merge functions: %v", err)
+	}
 
 	if merged.Size() != 2 {
 		t.Fatalf("expected 2 merged functions, got %d", merged.Size())
@@ -91,11 +110,14 @@ func TestNewFunctionsFromAndFromMap(t *testing.T) {
 		}
 	}
 
-	fromMap := NewFunctionsFromMap(map[string]Function{
+	fromMap, err := NewFunctionsFromMap(map[string]Function{
 		"FOO": func(ctx context.Context, args ...Value) (Value, error) {
 			return None, nil
 		},
 	})
+	if err != nil {
+		t.Fatalf("functions from map: %v", err)
+	}
 
 	if !fromMap.Has("FOO") {
 		t.Fatal("expected functions from map to include FOO")

@@ -12,16 +12,6 @@ import (
 )
 
 func TestRandomToken(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.RandomToken(context.Background())
-
-			So(err, ShouldBeError)
-
-		})
-	})
-
 	Convey("When args are invalid", t, func() {
 		Convey("It should return an error", func() {
 			var err error

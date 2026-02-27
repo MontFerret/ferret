@@ -32,7 +32,17 @@ func Merge(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	return mergeMaps(ctx, objs)
+	merged, err := mergeMaps(ctx, objs)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	cloned, err := runtime.CloneOrCopy(ctx, merged)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	return cloned, nil
 }
 
 func mergeMaps(ctx context.Context, arr runtime.List) (runtime.Map, error) {
@@ -44,7 +54,7 @@ func mergeMaps(ctx context.Context, arr runtime.List) (runtime.Map, error) {
 		return nil, err
 	}
 
-	if first == nil {
+	if first == nil || first == runtime.None {
 		return runtime.NewObject(), nil
 	}
 

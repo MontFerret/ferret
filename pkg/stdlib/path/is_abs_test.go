@@ -12,15 +12,6 @@ import (
 )
 
 func TestIsAbs(t *testing.T) {
-	Convey("When arg is not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = path.IsAbs(context.Background())
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("Wrong argument", t, func() {
 		var err error
 		_, err = path.IsAbs(context.Background(), runtime.NewInt(0))

@@ -11,17 +11,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/strings"
 )
 
-// TODO: Fix the tests
 func TestJSONParse(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.JSONParse(context.Background())
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("When invalid JSON", t, func() {
 		Convey("It should return an error", func() {
 			_, err := strings.JSONParse(
@@ -184,15 +174,6 @@ func TestJSONParse(t *testing.T) {
 }
 
 func TestJSONStringify(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.JSONStringify(context.Background())
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("It should serialize none", t, func() {
 		out, err := strings.JSONStringify(
 			context.Background(),
