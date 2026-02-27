@@ -200,7 +200,7 @@ func (c *ExprCompiler) compileTernary(ctx fql.IExpressionContext) bytecode.Opera
 	condReg := c.Compile(ctx.GetCondition())
 	c.ctx.Emitter.EmitMove(dst, condReg)
 
-	// Add jump labels
+	// Define jump labels
 	elseLabel := c.ctx.Emitter.NewLabel()
 	endLabel := c.ctx.Emitter.NewLabel()
 
