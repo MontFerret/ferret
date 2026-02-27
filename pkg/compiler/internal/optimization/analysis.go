@@ -195,7 +195,7 @@ func (a *Analyzer) CalculateDominators() map[int]*BasicBlock {
 			continue
 		}
 
-		// Filter the immediate dominator by looking for the dominator that is not dominated by any other dominator
+		// Find the immediate dominator by looking for the dominator that is not dominated by any other dominator
 		var idom *BasicBlock
 
 		for domID := range dominators[block.ID] {
