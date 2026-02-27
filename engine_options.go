@@ -61,7 +61,7 @@ func WithNamespace(ns runtime.Namespace) Option {
 	}
 }
 
-// WithFunctionsBuilder creates an Option that sets the lib from the provided runtime.FunctionDefs to the options if not nil.
+// WithFunctionsRegistrar creates an Option that invokes the provided registrar with the engine's runtime.FunctionDefs if the registrar is not nil.
 func WithFunctionsRegistrar(setter func(fns runtime.FunctionDefs)) Option {
 	return func(env *options) error {
 		if setter != nil {
