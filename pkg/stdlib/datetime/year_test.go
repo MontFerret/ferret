@@ -43,6 +43,6 @@ func TestDateYear(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, datetime.DateYear)
+		tc.Do(t, Fn1(datetime.DateYear))
 	}
 }

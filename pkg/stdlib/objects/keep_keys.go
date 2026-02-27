@@ -7,26 +7,27 @@ import (
 )
 
 // KEEP_KEYS returns a new object with only given keys.
-// @param {hashMap} obj - Source object.
+// @param {Object|Map} obj - Source object.
 // @param {String, repeated} keys - Keys that need to be kept.
-// @return {hashMap} - New hashMap with only given keys.
-// TODO: REWRITE TO USE LIST & MAP instead
+// @return {Map} - New Object with only given keys.
 func KeepKeys(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, runtime.MaxArgs); err != nil {
 		return runtime.None, err
 	}
 
-	if err := runtime.AssertMap(args[0]); err != nil {
+	if err := runtime.ValidateArgTypeAt(args, 0, runtime.TypeMap); err != nil {
 		return runtime.None, err
 	}
 
-	var keys *runtime.Array
+	src := args[0].(runtime.Map)
+
+	var keys runtime.List
 
 	if len(args) == 2 {
-		arr, ok := args[1].(*runtime.Array)
+		list, ok := args[1].(runtime.List)
 
 		if ok {
-			keys = arr
+			keys = list
 		}
 	}
 
@@ -34,19 +35,22 @@ func KeepKeys(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 		keys = runtime.NewArrayWith(args[1:]...)
 	}
 
-	if err := validateArrayOf(ctx, runtime.TypeString, keys); err != nil {
+	if err := runtime.AssertItemsOf(ctx, keys, runtime.AssertString); err != nil {
+		return runtime.None, runtime.ArgError(err, 1)
+	}
+
+	resultObj, err := src.Empty(ctx)
+
+	if err != nil {
 		return runtime.None, err
 	}
 
-	obj := args[0].(runtime.Map)
-	resultObj := runtime.NewObject()
-
 	var key runtime.String
 
-	_ = keys.ForEach(ctx, func(c context.Context, keyVal runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+	return resultObj, keys.ForEach(ctx, func(c context.Context, keyVal runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		key = keyVal.(runtime.String)
 
-		if val, err := obj.Get(c, key); err == nil {
+		if val, err := src.Get(c, key); err == nil {
 			cloneable, ok := val.(runtime.Cloneable)
 
 			if ok {
@@ -64,6 +68,4 @@ func KeepKeys(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 
 		return true, nil
 	})
-
-	return resultObj, nil
 }

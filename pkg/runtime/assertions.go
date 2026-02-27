@@ -2,7 +2,7 @@ package runtime
 
 import "context"
 
-type TypeAssertion func(input Value) error
+type ValueAssertion func(input Value) error
 
 func AssertNone(input Value) error {
 	if input == None {
@@ -115,7 +115,7 @@ func AssertList(input Value) error {
 	return nil
 }
 
-func AssertCollectionOf(ctx context.Context, input Value, assertion TypeAssertion) error {
+func AssertCollectionOf(ctx context.Context, input Value, assertion ValueAssertion) error {
 	coll, err := CastCollection(input)
 
 	if err != nil {
@@ -131,7 +131,7 @@ func AssertCollectionOf(ctx context.Context, input Value, assertion TypeAssertio
 	})
 }
 
-func AssertItemsOf(ctx context.Context, input Iterable, assertion TypeAssertion) error {
+func AssertItemsOf(ctx context.Context, input Iterable, assertion ValueAssertion) error {
 	return ForEach(ctx, input, func(ctx context.Context, value, _ Value) (Boolean, error) {
 		if err := assertion(value); err != nil {
 			return false, err

@@ -51,6 +51,6 @@ func TestDateDayOfYear(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, datetime.DateDayOfYear)
+		tc.Do(t, Fn1(datetime.DateDayOfYear))
 	}
 }

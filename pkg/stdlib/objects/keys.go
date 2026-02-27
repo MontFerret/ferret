@@ -2,63 +2,45 @@ package objects
 
 import (
 	"context"
-	"sort"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // KEYS returns string array of object's keys
-// @param {hashMap} obj - The object whose keys you want to extract
+// @param {Map} obj - The object whose keys you want to extract
 // @param {Boolean} [sort=False] - If sort is true, then the returned keys will be sorted.
 // @return {String[]} - arrayList that contains object keys.
-// TODO: REWRITE TO USE LIST & MAP instead
 func Keys(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 2)
-	if err != nil {
+	if err := runtime.ValidateArgs(args, 1, 2); err != nil {
 		return runtime.None, err
 	}
 
-	err = runtime.ValidateType(args[0], runtime.TypeObject)
-	if err != nil {
+	if err := runtime.ValidateArgTypeAt(args, 0, runtime.TypeMap); err != nil {
 		return runtime.None, err
 	}
 
-	obj := args[0].(runtime.Map)
-	needSort := false
+	target := args[0].(runtime.Map)
+	needSort := runtime.False
 
 	if len(args) == 2 {
-		err = runtime.ValidateType(args[1], runtime.TypeBoolean)
-		if err != nil {
+		if err := runtime.ValidateArgTypeAt(args, 1, runtime.TypeBoolean); err != nil {
 			return runtime.None, err
 		}
 
-		needSort = bool(args[1].(runtime.Boolean))
+		needSort = args[1].(runtime.Boolean)
 	}
 
-	size, err := obj.Length(ctx)
+	keys, err := target.Keys(ctx)
 
 	if err != nil {
 		return runtime.None, err
 	}
 
-	oKeys := make([]string, 0, size)
-
-	_ = obj.ForEach(ctx, func(c context.Context, value, key runtime.Value) (runtime.Boolean, error) {
-		oKeys = append(oKeys, key.String())
-
-		return true, nil
-	})
-
-	keys := sort.StringSlice(oKeys)
-	keysArray := runtime.NewArray(len(keys))
-
 	if needSort {
-		keys.Sort()
+		if err := keys.SortAsc(ctx); err != nil {
+			return runtime.None, err
+		}
 	}
 
-	for _, key := range keys {
-		_ = keysArray.Append(ctx, runtime.NewString(key))
-	}
-
-	return keysArray, nil
+	return keys, nil
 }

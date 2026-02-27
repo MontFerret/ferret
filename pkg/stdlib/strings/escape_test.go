@@ -11,14 +11,6 @@ import (
 )
 
 func TestEscapeHTML(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			_, err := strings.EscapeHTML(context.Background())
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("EscapeHTML", t, func() {
 		Convey("Should escape an HTML string", func() {
 			out, err := strings.EscapeHTML(context.Background(), runtime.NewString(`<body><span>Foobar</span></body>`))

@@ -165,7 +165,7 @@ func (op Opcode) String() string {
 	case OpJumpIfNone:
 		return "JMPN"
 
-	// Register Operations
+	// Add Operations
 	case OpMove:
 		return "MOVE"
 

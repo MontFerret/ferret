@@ -10,14 +10,8 @@ import (
 // JSON_PARSE returns a value described by the JSON-encoded input string.
 // @param {String} str - The string to parse as JSON.
 // @return {Any} - Parsed value.
-func JSONParse(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return runtime.EmptyString, err
-	}
-
-	out, err := encodingjson.Default.Decode([]byte(args[0].String()))
+func JSONParse(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	out, err := encodingjson.Default.Decode([]byte(arg.String()))
 	if err != nil {
 		return runtime.EmptyString, err
 	}
@@ -28,14 +22,8 @@ func JSONParse(_ context.Context, args ...runtime.Value) (runtime.Value, error) 
 // JSON_STRINGIFY returns a JSON string representation of the input value.
 // @param {Any} str - The input value to serialize.
 // @return {String} - JSON string.
-func JSONStringify(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return runtime.EmptyString, err
-	}
-
-	out, err := encodingjson.Default.Encode(args[0])
+func JSONStringify(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	out, err := encodingjson.Default.Encode(arg)
 
 	if err != nil {
 		return runtime.EmptyString, err

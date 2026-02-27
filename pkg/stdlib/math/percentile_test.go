@@ -44,6 +44,23 @@ func TestPercentile(t *testing.T) {
 		So(runtime.Unwrap(out), ShouldEqual, 4)
 	})
 
+	Convey("Should support interpolation method", t, func() {
+		out, err := math.Percentile(
+			context.Background(),
+			runtime.NewArrayWith(
+				runtime.NewInt(1),
+				runtime.NewInt(2),
+				runtime.NewInt(3),
+				runtime.NewInt(4),
+			),
+			runtime.NewInt(50),
+			runtime.NewString("interpolation"),
+		)
+
+		So(err, ShouldBeNil)
+		So(runtime.Unwrap(out), ShouldEqual, 2.5)
+	})
+
 	Convey("Should return error for invalid arguments", t, func() {
 		// Non-array first argument
 		out, err := math.Percentile(context.Background(), runtime.NewInt(1), runtime.NewInt(50))

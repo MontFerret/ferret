@@ -64,33 +64,33 @@ FOR v IN values
 `
 
 func BenchmarkGlobalCollectAggregate_O0(b *testing.B) {
-	RunBenchmarkO0(b, globalCollectAggregateQuery, vm.WithFunctions(base.Stdlib()))
+	RunBenchmarkO0(b, globalCollectAggregateQuery, vm.WithNamespace(base.Stdlib()))
 }
 
 func BenchmarkGlobalCollectAggregate_O1(b *testing.B) {
-	RunBenchmarkO1(b, globalCollectAggregateQuery, vm.WithFunctions(base.Stdlib()))
+	RunBenchmarkO1(b, globalCollectAggregateQuery, vm.WithNamespace(base.Stdlib()))
 }
 
 func BenchmarkGlobalCollectAggregateLarge_O0(b *testing.B) {
-	RunBenchmarkO0(b, globalCollectAggregateLargeQuery, vm.WithFunctions(base.Stdlib()))
+	RunBenchmarkO0(b, globalCollectAggregateLargeQuery, vm.WithNamespace(base.Stdlib()))
 }
 
 func BenchmarkGlobalCollectAggregateLarge_O1(b *testing.B) {
-	RunBenchmarkO1(b, globalCollectAggregateLargeQuery, vm.WithFunctions(base.Stdlib()))
+	RunBenchmarkO1(b, globalCollectAggregateLargeQuery, vm.WithNamespace(base.Stdlib()))
 }
 
 func BenchmarkGlobalCollectAggregateLargeInto_O0(b *testing.B) {
-	RunBenchmarkO0(b, globalCollectAggregateLargeIntoQuery, vm.WithFunctions(base.Stdlib()))
+	RunBenchmarkO0(b, globalCollectAggregateLargeIntoQuery, vm.WithNamespace(base.Stdlib()))
 }
 
 func BenchmarkGlobalCollectAggregateLargeInto_O1(b *testing.B) {
-	RunBenchmarkO1(b, globalCollectAggregateLargeIntoQuery, vm.WithFunctions(base.Stdlib()))
+	RunBenchmarkO1(b, globalCollectAggregateLargeIntoQuery, vm.WithNamespace(base.Stdlib()))
 }
 
 func BenchmarkGroupedCollectAggregateLarge_O0(b *testing.B) {
-	RunBenchmarkO0(b, groupedCollectAggregateLargeQuery, vm.WithFunctions(base.Stdlib()))
+	RunBenchmarkO0(b, groupedCollectAggregateLargeQuery, vm.WithNamespace(base.Stdlib()))
 }
 
 func BenchmarkGroupedCollectAggregateLarge_O1(b *testing.B) {
-	RunBenchmarkO1(b, groupedCollectAggregateLargeQuery, vm.WithFunctions(base.Stdlib()))
+	RunBenchmarkO1(b, groupedCollectAggregateLargeQuery, vm.WithNamespace(base.Stdlib()))
 }

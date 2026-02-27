@@ -19,13 +19,16 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 	}
 
 	options := []vm.EnvironmentOption{
-		vm.WithFunctions(Stdlib()),
+		vm.WithNamespace(Stdlib()),
 	}
 	options = append(options, opts...)
 
 	ctx := context.Background()
 	instance := vm.New(prog)
-	env := vm.NewEnvironment(options)
+	env, err := vm.NewEnvironment(options)
+	if err != nil {
+		panic(err)
+	}
 
 	if testing.Verbose() {
 		println("Query:")

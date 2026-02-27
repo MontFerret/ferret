@@ -54,18 +54,6 @@ func TestHas(t *testing.T) {
 		So(bool(valBool), ShouldEqual, false)
 	})
 
-	Convey("Not enought arguments", t, func() {
-		val, err := objects.Has(context.Background())
-
-		So(err, ShouldBeError)
-		So(val, ShouldEqual, runtime.None)
-
-		val, err = objects.Has(context.Background(), runtime.NewObject())
-
-		So(err, ShouldBeError)
-		So(val, ShouldEqual, runtime.None)
-	})
-
 	Convey("When keyName isn't string", t, func() {
 		obj := runtime.NewObject()
 		key := runtime.NewInt(1)

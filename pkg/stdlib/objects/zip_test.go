@@ -12,36 +12,6 @@ import (
 
 func TestZip(t *testing.T) {
 	Convey("Invalid arguments", t, func() {
-		Convey("When there are no arguments", func() {
-			actual, err := objects.Zip(context.Background())
-			expected := runtime.None
-
-			So(err, ShouldBeError)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
-		})
-
-		Convey("When single argument", func() {
-			actual, err := objects.Zip(context.Background(), runtime.NewArray(0))
-			expected := runtime.None
-
-			So(err, ShouldBeError)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
-
-			actual, err = objects.Zip(context.Background(), runtime.NewInt(0))
-
-			So(err, ShouldBeError)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
-		})
-
-		Convey("When too many arguments", func() {
-			actual, err := objects.Zip(context.Background(),
-				runtime.NewArray(0), runtime.NewArray(0), runtime.NewArray(0))
-			expected := runtime.None
-
-			So(err, ShouldBeError)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
-		})
-
 		Convey("When there is not array argument", func() {
 			actual, err := objects.Zip(context.Background(), runtime.NewArray(0), runtime.NewInt(0))
 			expected := runtime.None

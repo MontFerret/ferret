@@ -10,20 +10,12 @@ import (
 // DIR returns the directory component of path.
 // @param {String} path - The path.
 // @return {String} - The directory component of path.
-func Dir(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
+func Dir(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateType(arg, runtime.TypeString); err != nil {
 		return runtime.EmptyString, err
 	}
 
-	err = runtime.ValidateType(args[0], runtime.TypeString)
-
-	if err != nil {
-		return runtime.EmptyString, err
-	}
-
-	pathText := args[0].String()
+	pathText := arg.String()
 
 	return runtime.NewString(path.Dir(pathText)), nil
 }

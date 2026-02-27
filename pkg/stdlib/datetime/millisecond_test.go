@@ -54,6 +54,6 @@ func TestDateMillisecond(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, datetime.DateMillisecond)
+		tc.Do(t, Fn1(datetime.DateMillisecond))
 	}
 }

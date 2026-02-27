@@ -11,6 +11,20 @@ import (
 func TestForFilter(t *testing.T) {
 	counterA := 0
 	counterB := 0
+
+	builder := runtime.NewFunctionsBuilder()
+	builder.Var().
+		Add("COUNT_A", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+			counterA++
+
+			return runtime.None, nil
+		}).
+		Add("COUNT_B", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+			counterB++
+
+			return runtime.None, nil
+		})
+
 	RunUseCases(t, []UseCase{
 		CaseArray(
 			`
@@ -271,16 +285,5 @@ LET users = [
 				COUNT_B()
 				RETURN i + x
 `, []any{5, 6, 5}),
-	}, vm.WithFunctions(runtime.NewFunctionsFromMap(map[string]runtime.Function{
-		"COUNT_A": func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-			counterA++
-
-			return runtime.None, nil
-		},
-		"COUNT_B": func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-			counterB++
-
-			return runtime.None, nil
-		},
-	})))
+	}, vm.WithFunctionsBuilder(builder))
 }

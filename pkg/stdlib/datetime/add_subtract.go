@@ -26,8 +26,8 @@ var (
 // @param {Int} amount - Amount of units
 // @param {String} unit - Unit.
 // @return {DateTime} - Calculated date.
-func DateAdd(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	date, amount, unit, err := getArgs(args)
+func DateAdd(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	date, amount, unit, err := castArgs(arg1, arg2, arg3)
 	if err != nil {
 		return runtime.None, err
 	}
@@ -56,8 +56,8 @@ func DateAdd(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 // @param {Int} amount - amount of units
 // @param {String} unit - unit.
 // @return {DateTime} - calculated date.
-func DateSubtract(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	date, amount, unit, err := getArgs(args)
+func DateSubtract(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	date, amount, unit, err := castArgs(arg1, arg2, arg3)
 	if err != nil {
 		return runtime.None, err
 	}
@@ -72,26 +72,6 @@ func DateSubtract(_ context.Context, args ...runtime.Value) (runtime.Value, erro
 	return runtime.NewDateTime(tm), nil
 }
 
-func getArgs(args []runtime.Value) (runtime.DateTime, runtime.Int, runtime.String, error) {
-	if err := runtime.ValidateArgs(args, 3, 3); err != nil {
-		return emptyDateTime, emptyInt, emptyString, err
-	}
-
-	if err := runtime.AssertDateTime(args[0]); err != nil {
-		return emptyDateTime, emptyInt, emptyString, err
-	}
-
-	if err := runtime.AssertInt(args[1]); err != nil {
-		return emptyDateTime, emptyInt, emptyString, err
-	}
-
-	if err := runtime.AssertString(args[2]); err != nil {
-		return emptyDateTime, emptyInt, emptyString, err
-	}
-
-	date := args[0].(runtime.DateTime)
-	amount := args[1].(runtime.Int)
-	unit := args[2].(runtime.String)
-
-	return date, amount, unit, nil
+func castArgs(arg1, arg2, arg3 runtime.Value) (runtime.DateTime, runtime.Int, runtime.String, error) {
+	return runtime.CastArgs3[runtime.DateTime, runtime.Int, runtime.String](arg1, arg2, arg3)
 }

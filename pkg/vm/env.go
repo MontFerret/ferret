@@ -7,10 +7,16 @@ import (
 )
 
 type (
-	EnvironmentOption func(env *Environment)
+	environmentBuilder struct {
+		functions *runtime.FunctionsBuilder
+		params    map[string]runtime.Value
+		logging   runtime.LogSettings
+	}
+
+	EnvironmentOption func(env *environmentBuilder)
 
 	Environment struct {
-		Functions runtime.Functions
+		Functions *runtime.Functions
 		Params    map[string]runtime.Value
 		Logging   runtime.LogSettings
 	}
@@ -32,27 +38,44 @@ func NewDefaultEnvironment() *Environment {
 	}
 }
 
-func NewEnvironment(opts []EnvironmentOption) *Environment {
-	env := NewDefaultEnvironment()
-
-	for _, opt := range opts {
-		opt(env)
+func NewEnvironment(opts []EnvironmentOption) (*Environment, error) {
+	envBuilder := &environmentBuilder{
+		functions: runtime.NewFunctionsBuilder(),
+		params:    make(map[string]runtime.Value),
+		logging: runtime.LogSettings{
+			Writer: os.Stdout,
+			Level:  runtime.ErrorLevel,
+		},
 	}
 
-	return env
+	for _, opt := range opts {
+		opt(envBuilder)
+	}
+
+	funcs, err := envBuilder.functions.Build()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Environment{
+		Functions: funcs,
+		Params:    envBuilder.params,
+		Logging:   envBuilder.logging,
+	}, nil
 }
 
-func MergeEnvironments(envs ...*Environment) *Environment {
+func MergeEnvironments(envs ...*Environment) (*Environment, error) {
 	if len(envs) == 0 {
-		return NewDefaultEnvironment()
+		return NewDefaultEnvironment(), nil
 	}
 
 	if len(envs) == 1 {
-		return envs[0]
+		return envs[0], nil
 	}
 
 	merged := NewDefaultEnvironment()
-	builder := runtime.NewFunctionsBuilder()
+	funcsToMerge := make([]*runtime.Functions, 0, len(envs))
 
 	for _, env := range envs {
 		if env == nil {
@@ -60,7 +83,8 @@ func MergeEnvironments(envs ...*Environment) *Environment {
 		}
 
 		// merge functions
-		builder.SetFrom(env.Functions)
+		// TODO: Resolve conflicts between functions with the same name?
+		funcsToMerge = append(funcsToMerge, env.Functions)
 
 		// merge params
 		for name, val := range env.Params {
@@ -75,7 +99,14 @@ func MergeEnvironments(envs ...*Environment) *Environment {
 		merged.Logging.Level = env.Logging.Level
 	}
 
-	merged.Functions = builder.Build()
+	builder := runtime.NewFunctionsBuilderFrom(funcsToMerge...)
+	funcs, err := builder.Build()
 
-	return merged
+	if err != nil {
+		return nil, err
+	}
+
+	merged.Functions = funcs
+
+	return merged, nil
 }

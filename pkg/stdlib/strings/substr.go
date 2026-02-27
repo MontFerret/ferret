@@ -62,21 +62,15 @@ func Substring(_ context.Context, args ...runtime.Value) (runtime.Value, error) 
 // @param {String} str - The source string.
 // @param {Int} length - The amount of characters to return.
 // @return {String} - The leftmost characters of the string value by index.
-func Left(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 2, 2)
-
-	if err != nil {
-		return runtime.EmptyString, err
-	}
-
-	text := args[0].String()
+func Left(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	text := arg1.String()
 	runes := []rune(text)
 
 	var pos int
-	arg1, ok := args[1].(runtime.Int)
+	length, ok := arg2.(runtime.Int)
 
 	if ok {
-		pos = int(arg1)
+		pos = int(length)
 	}
 
 	if len(text) < pos {
@@ -90,22 +84,16 @@ func Left(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 // @param {String} str - The source string.
 // @param {Int} length - The amount of characters to return.
 // @return {String} - The rightmost characters of the string value.
-func Right(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 2, 2)
-
-	if err != nil {
-		return runtime.EmptyString, err
-	}
-
-	text := args[0].String()
+func Right(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	text := arg1.String()
 	runes := []rune(text)
 	size := len(runes)
 	pos := size
 
-	arg1, ok := args[1].(runtime.Int)
+	length, ok := arg2.(runtime.Int)
 
 	if ok {
-		pos = int(arg1)
+		pos = int(length)
 	}
 
 	if len(text) < pos {

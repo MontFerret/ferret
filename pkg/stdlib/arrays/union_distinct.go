@@ -14,7 +14,7 @@ func UnionDistinct(ctx context.Context, args ...runtime.Value) (runtime.Value, e
 		return runtime.None, err
 	}
 
-	list, err := runtime.CastList(args[0])
+	list, err := runtime.CastArgAt[runtime.List](args, 0)
 
 	if err != nil {
 		return runtime.None, err
@@ -35,8 +35,8 @@ func UnionDistinct(ctx context.Context, args ...runtime.Value) (runtime.Value, e
 	hashTable := make(map[uint64]bool)
 	result := runtime.NewArray(capacity)
 
-	for _, arg := range args {
-		currList, err := runtime.CastList(arg)
+	for i, arg := range args {
+		currList, err := runtime.CastArg[runtime.List](arg, i)
 
 		if err != nil {
 			return runtime.None, err

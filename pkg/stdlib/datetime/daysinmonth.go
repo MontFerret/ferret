@@ -25,16 +25,13 @@ var daysCount = map[time.Month]int{
 // DATE_DAYS_IN_MONTH returns the number of days in the month of date.
 // @param {DateTime} date - Source DateTime.
 // @return {Int} - Number of the days.
-func DateDaysInMonth(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+func DateDaysInMonth(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	dt, err := runtime.CastArg[runtime.DateTime](arg, 0)
+
+	if err != nil {
 		return runtime.None, err
 	}
 
-	if err := runtime.AssertDateTime(args[0]); err != nil {
-		return runtime.None, err
-	}
-
-	dt := args[0].(runtime.DateTime)
 	month := dt.Month()
 	count := daysCount[month]
 
@@ -42,5 +39,5 @@ func DateDaysInMonth(_ context.Context, args ...runtime.Value) (runtime.Value, e
 		count++
 	}
 
-	return runtime.NewInt(count), nil
+	return runtime.Int(count), nil
 }

@@ -13,13 +13,14 @@ func TestRegisterLib(t *testing.T) {
 	Convey("Should register NET namespace functions", t, func() {
 		ns := runtime.NewRootNamespace()
 
-		err := net.RegisterLib(ns)
+		net.RegisterLib(ns)
 
+		funcs, err := ns.Build()
 		So(err, ShouldBeNil)
 
 		// Verify that functions were registered by checking registered function names
-		functions := ns.Functions().Build()
-		So(len(functions.Names()), ShouldBeGreaterThan, 0)
+		functions := funcs.List()
+		So(len(functions), ShouldBeGreaterThan, 0)
 
 		// Check that HTTP functions are registered
 		hasGet := false
@@ -28,7 +29,7 @@ func TestRegisterLib(t *testing.T) {
 		hasDelete := false
 		hasDo := false
 
-		for _, fn := range functions.Names() {
+		for _, fn := range functions {
 			if fn == "NET::HTTP::GET" {
 				hasGet = true
 			}

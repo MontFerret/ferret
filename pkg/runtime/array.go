@@ -210,7 +210,7 @@ func (t *Array) Last(_ context.Context) (Value, error) {
 	return None, nil
 }
 
-func (t *Array) Find(ctx context.Context, predicate IndexReadablePredicate) (List, error) {
+func (t *Array) Filter(ctx context.Context, predicate IndexReadablePredicate) (List, error) {
 	result := NewArray(len(t.data))
 	size := Int(len(t.data))
 
@@ -230,7 +230,7 @@ func (t *Array) Find(ctx context.Context, predicate IndexReadablePredicate) (Lis
 	return result, nil
 }
 
-func (t *Array) FindOne(ctx context.Context, predicate IndexReadablePredicate) (Value, Boolean, error) {
+func (t *Array) Find(ctx context.Context, predicate IndexReadablePredicate) (Value, Boolean, error) {
 	size := Int(len(t.data))
 
 	for idx := Int(0); idx < size; idx++ {
@@ -341,6 +341,10 @@ func (t *Array) Clear(_ context.Context) error {
 	return nil
 }
 
+func (t *Array) Empty(_ context.Context) (List, error) {
+	return NewArray(0), nil
+}
+
 func (t *Array) Remove(ctx context.Context, value Value) error {
 	idx, err := t.IndexOf(ctx, value)
 
@@ -375,4 +379,19 @@ func (t *Array) Swap(_ context.Context, i, j Int) error {
 	t.data[i], t.data[j] = t.data[j], t.data[i]
 
 	return nil
+}
+
+func (t *Array) Concat(ctx context.Context, other List) error {
+	switch list := other.(type) {
+	case *Array:
+		t.data = append(t.data, list.data...)
+
+		return nil
+	default:
+		return ForEach(ctx, other, func(ctx context.Context, value, _ Value) (Boolean, error) {
+			t.data = append(t.data, value)
+
+			return true, nil
+		})
+	}
 }

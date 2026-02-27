@@ -9,16 +9,14 @@ import (
 // DATE_MILLISECOND returns the millisecond of date as a number.
 // @param {DateTime} date - Source DateTime.
 // @return {Int} - A millisecond number.
-func DateMillisecond(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+func DateMillisecond(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	dt, err := runtime.CastArg[runtime.DateTime](arg, 0)
+
+	if err != nil {
 		return runtime.None, err
 	}
 
-	if err := runtime.AssertDateTime(args[0]); err != nil {
-		return runtime.None, err
-	}
+	msec := dt.Nanosecond() / 1000000
 
-	msec := args[0].(runtime.DateTime).Nanosecond() / 1000000
-
-	return runtime.NewInt(msec), nil
+	return runtime.Int(msec), nil
 }

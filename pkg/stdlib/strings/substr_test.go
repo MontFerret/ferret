@@ -12,19 +12,6 @@ import (
 )
 
 func TestSubstring(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.Substring(context.Background())
-
-			So(err, ShouldBeError)
-
-			_, err = strings.Substring(context.Background(), runtime.NewString("foo"))
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("Substring('foobar', 3) should return 'bar'", t, func() {
 		out, err := strings.Substring(
 			context.Background(),
@@ -98,19 +85,6 @@ func TestSubstring(t *testing.T) {
 }
 
 func TestLeft(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.Left(context.Background())
-
-			So(err, ShouldBeError)
-
-			_, err = strings.Left(context.Background(), runtime.NewString("foo"))
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("Left('foobarfoobar', 3) should return 'foo'", t, func() {
 		out, _ := strings.Left(
 			context.Background(),
@@ -133,19 +107,6 @@ func TestLeft(t *testing.T) {
 }
 
 func TestRight(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.Right(context.Background())
-
-			So(err, ShouldBeError)
-
-			_, err = strings.Right(context.Background(), runtime.NewString("foo"))
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("Right('foobarfoobar', 3) should return 'bar'", t, func() {
 		out, _ := strings.Right(
 			context.Background(),

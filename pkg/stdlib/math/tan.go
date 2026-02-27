@@ -11,7 +11,7 @@ import (
 // @param {Int | Float} number - A number.
 // @return {Float} - The tangent.
 func Tan(_ context.Context, arg runtime.Value) (runtime.Value, error) {
-	if err := runtime.AssertNumber(arg); err != nil {
+	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertNumber); err != nil {
 		return runtime.None, err
 	}
 

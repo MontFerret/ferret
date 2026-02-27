@@ -11,15 +11,6 @@ import (
 )
 
 func TestFromBase64(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.FromBase64(context.Background())
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("When hash is not valid base64", t, func() {
 		Convey("It should return an error", func() {
 			var err error
@@ -45,14 +36,6 @@ func TestFromBase64(t *testing.T) {
 }
 
 func TestDecodeURIComponent(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			_, err := strings.DecodeURIComponent(context.Background())
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("When invalid URI encoding", t, func() {
 		Convey("It should return an error", func() {
 			_, err := strings.DecodeURIComponent(

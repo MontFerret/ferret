@@ -10,18 +10,18 @@ import (
 // @param {Int[] | Float[]} array - arrayList of numbers.
 // @return {Float} - The average of the values in array.
 func Average(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
-	arr, err := runtime.CastList(arg)
-
-	if err != nil {
+	if err := runtime.ValidateArgType(arg, 0, runtime.TypeList); err != nil {
 		return runtime.None, err
 	}
+
+	arr := arg.(runtime.List)
 
 	var (
 		sum   float64
 		count int
 	)
 
-	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+	err := arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		if !runtime.IsNumber(value) {
 			return true, nil // skip non-numbers/nulls
 		}

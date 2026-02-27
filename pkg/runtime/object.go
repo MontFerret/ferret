@@ -235,7 +235,7 @@ func (t *Object) ForEach(ctx context.Context, predicate KeyReadablePredicate) er
 	return nil
 }
 
-func (t *Object) Find(ctx context.Context, predicate KeyReadablePredicate) (List, error) {
+func (t *Object) Filter(ctx context.Context, predicate KeyReadablePredicate) (List, error) {
 	res := NewArray(len(t.data))
 
 	for key, val := range t.data {
@@ -253,7 +253,7 @@ func (t *Object) Find(ctx context.Context, predicate KeyReadablePredicate) (List
 	return res, nil
 }
 
-func (t *Object) FindOne(ctx context.Context, predicate KeyReadablePredicate) (Value, Boolean, error) {
+func (t *Object) Find(ctx context.Context, predicate KeyReadablePredicate) (Value, Boolean, error) {
 	for key, val := range t.data {
 		res, err := predicate(ctx, val, String(key))
 
@@ -324,10 +324,30 @@ func (t *Object) Remove(_ context.Context, value Value) error {
 	return nil
 }
 
+func (t *Object) Merge(ctx context.Context, other Map) error {
+	switch m := other.(type) {
+	case *Object:
+		for key, val := range m.data {
+			t.data[key] = val
+		}
+
+		return nil
+	default:
+		return m.ForEach(ctx, func(ctx context.Context, value, key Value) (Boolean, error) {
+			t.data[key.String()] = value
+			return true, nil
+		})
+	}
+}
+
 func (t *Object) Clear(_ context.Context) error {
 	t.data = make(map[string]Value)
 
 	return nil
+}
+
+func (t *Object) Empty(_ context.Context) (Map, error) {
+	return NewObject(), nil
 }
 
 func (t *Object) Iterate(_ context.Context) (Iterator, error) {

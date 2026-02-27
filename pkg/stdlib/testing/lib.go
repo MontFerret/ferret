@@ -6,60 +6,54 @@ import (
 )
 
 // @namespace T
-func RegisterLib(ns runtime.Namespace) error {
+func RegisterLib(ns runtime.Namespace) {
 	t := ns.Namespace("T")
 
-	if err := registerNOT(t); err != nil {
-		return err
-	}
+	registerNOT(t)
 
-	t.Functions().
-		Set("EQ", base.NewPositiveAssertion(Equal)).
-		Set("FAIL", base.NewPositiveAssertion(Fail)).
-		Set("FALSE", base.NewPositiveAssertion(False)).
-		Set("GT", base.NewPositiveAssertion(Gt)).
-		Set("GTE", base.NewPositiveAssertion(Gte)).
-		Set("INCLUDE", base.NewPositiveAssertion(Include)).
-		Set("LEN", base.NewPositiveAssertion(Len)).
-		Set("MATCH", base.NewPositiveAssertion(Match)).
-		Set("LT", base.NewPositiveAssertion(Lt)).
-		Set("LTE", base.NewPositiveAssertion(Lte)).
-		Set("NONE", base.NewPositiveAssertion(None)).
-		Set("TRUE", base.NewPositiveAssertion(True)).
-		Set("STRING", base.NewPositiveAssertion(String)).
-		Set("INT", base.NewPositiveAssertion(Int)).
-		Set("FLOAT", base.NewPositiveAssertion(Float)).
-		Set("DATETIME", base.NewPositiveAssertion(DateTime)).
-		Set("ARRAY", base.NewPositiveAssertion(Array)).
-		Set("OBJECT", base.NewPositiveAssertion(Object)).
-		Set("BINARY", base.NewPositiveAssertion(Binary))
-
-	return nil
+	t.Function().Var().
+		Add("EQ", base.NewPositiveAssertion(Equal)).
+		Add("FAIL", base.NewPositiveAssertion(Fail)).
+		Add("FALSE", base.NewPositiveAssertion(False)).
+		Add("GT", base.NewPositiveAssertion(Gt)).
+		Add("GTE", base.NewPositiveAssertion(Gte)).
+		Add("INCLUDE", base.NewPositiveAssertion(Include)).
+		Add("LEN", base.NewPositiveAssertion(Len)).
+		Add("MATCH", base.NewPositiveAssertion(Match)).
+		Add("LT", base.NewPositiveAssertion(Lt)).
+		Add("LTE", base.NewPositiveAssertion(Lte)).
+		Add("NONE", base.NewPositiveAssertion(None)).
+		Add("TRUE", base.NewPositiveAssertion(True)).
+		Add("STRING", base.NewPositiveAssertion(String)).
+		Add("INT", base.NewPositiveAssertion(Int)).
+		Add("FLOAT", base.NewPositiveAssertion(Float)).
+		Add("DATETIME", base.NewPositiveAssertion(DateTime)).
+		Add("ARRAY", base.NewPositiveAssertion(Array)).
+		Add("OBJECT", base.NewPositiveAssertion(Object)).
+		Add("BINARY", base.NewPositiveAssertion(Binary))
 }
 
-func registerNOT(ns runtime.Namespace) error {
+func registerNOT(ns runtime.Namespace) {
 	t := ns.Namespace("NOT")
 
-	t.Functions().
-		Set("EMPTY", base.NewNegativeAssertion(Empty)).
-		Set("EQ", base.NewNegativeAssertion(Equal)).
-		Set("FALSE", base.NewNegativeAssertion(False)).
-		Set("GT", base.NewNegativeAssertion(Gt)).
-		Set("GTE", base.NewNegativeAssertion(Gte)).
-		Set("INCLUDE", base.NewNegativeAssertion(Include)).
-		Set("LEN", base.NewNegativeAssertion(Len)).
-		Set("MATCH", base.NewNegativeAssertion(Match)).
-		Set("LT", base.NewNegativeAssertion(Lt)).
-		Set("LTE", base.NewNegativeAssertion(Lte)).
-		Set("NONE", base.NewNegativeAssertion(None)).
-		Set("TRUE", base.NewNegativeAssertion(True)).
-		Set("STRING", base.NewNegativeAssertion(String)).
-		Set("INT", base.NewNegativeAssertion(Int)).
-		Set("FLOAT", base.NewNegativeAssertion(Float)).
-		Set("DATETIME", base.NewNegativeAssertion(DateTime)).
-		Set("ARRAY", base.NewNegativeAssertion(Array)).
-		Set("OBJECT", base.NewNegativeAssertion(Object)).
-		Set("BINARY", base.NewNegativeAssertion(Binary))
-
-	return nil
+	t.Function().Var().
+		Add("EMPTY", base.NewNegativeAssertion(Empty)).
+		Add("EQ", base.NewNegativeAssertion(Equal)).
+		Add("FALSE", base.NewNegativeAssertion(False)).
+		Add("GT", base.NewNegativeAssertion(Gt)).
+		Add("GTE", base.NewNegativeAssertion(Gte)).
+		Add("INCLUDE", base.NewNegativeAssertion(Include)).
+		Add("LEN", base.NewNegativeAssertion(Len)).
+		Add("MATCH", base.NewNegativeAssertion(Match)).
+		Add("LT", base.NewNegativeAssertion(Lt)).
+		Add("LTE", base.NewNegativeAssertion(Lte)).
+		Add("NONE", base.NewNegativeAssertion(None)).
+		Add("TRUE", base.NewNegativeAssertion(True)).
+		Add("STRING", base.NewNegativeAssertion(String)).
+		Add("INT", base.NewNegativeAssertion(Int)).
+		Add("FLOAT", base.NewNegativeAssertion(Float)).
+		Add("DATETIME", base.NewNegativeAssertion(DateTime)).
+		Add("ARRAY", base.NewNegativeAssertion(Array)).
+		Add("OBJECT", base.NewNegativeAssertion(Object)).
+		Add("BINARY", base.NewNegativeAssertion(Binary))
 }

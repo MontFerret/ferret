@@ -9,16 +9,14 @@ import (
 // DATE_DAY returns the day of date as a number.
 // @param {DateTime} date - Source DateTime.
 // @return {Int} - A day number.
-func DateDay(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+func DateDay(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	dt, err := runtime.CastArg[runtime.DateTime](arg, 0)
+
+	if err != nil {
 		return runtime.None, err
 	}
 
-	if err := runtime.AssertDateTime(args[0]); err != nil {
-		return runtime.None, err
-	}
+	day := dt.Day()
 
-	day := args[0].(runtime.DateTime).Day()
-
-	return runtime.NewInt(day), nil
+	return runtime.Int(day), nil
 }

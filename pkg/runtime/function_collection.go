@@ -15,7 +15,7 @@ type (
 		GetAll() map[string]T
 		Names() []string
 		Size() int
-		ForEach(fn func(T, string) error) error
+		ForEach(fn func(T, string) bool)
 	}
 
 	defaultFunctionCollection[T FunctionConstraint] struct {
@@ -81,12 +81,10 @@ func (f *defaultFunctionCollection[T]) Size() int {
 	return len(f.values)
 }
 
-func (f *defaultFunctionCollection[T]) ForEach(fn func(T, string) error) error {
+func (f *defaultFunctionCollection[T]) ForEach(fn func(T, string) bool) {
 	for name, value := range f.values {
-		if err := fn(value, name); err != nil {
-			return err
+		if !fn(value, name) {
+			break
 		}
 	}
-
-	return nil
 }

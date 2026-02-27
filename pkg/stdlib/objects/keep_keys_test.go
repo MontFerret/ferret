@@ -11,7 +11,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/objects"
 )
 
-// TODO: Fix tests
 func TestKeepKeys(t *testing.T) {
 	Convey("When not enough arguments)", t, func() {
 		// there is no object
@@ -103,7 +102,7 @@ func TestKeepKeysStrings(t *testing.T) {
 		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, runtime.NewString("c"))
 
 		So(err, ShouldEqual, nil)
-		So(isEqualObjects(afterKeepKeys.(*runtime.Object), resultObj), ShouldEqual, true)
+		So(isEqualObjects(afterKeepKeys.(runtime.Map), resultObj), ShouldEqual, true)
 	})
 
 	Convey("KeepKeys when there are more keys than object properties", t, func() {
@@ -125,7 +124,7 @@ func TestKeepKeysStrings(t *testing.T) {
 		)
 
 		So(err, ShouldEqual, nil)
-		So(isEqualObjects(afterKeepKeys.(*runtime.Object), resultObj), ShouldEqual, true)
+		So(isEqualObjects(afterKeepKeys.(runtime.Map), resultObj), ShouldEqual, true)
 	})
 }
 
@@ -208,7 +207,7 @@ func TestKeepKeysArray(t *testing.T) {
 	})
 }
 
-func isEqualObjects(obj1 *runtime.Object, obj2 *runtime.Object) bool {
+func isEqualObjects(obj1, obj2 runtime.Map) bool {
 	// Use the built-in Compare method
 	return runtime.CompareValues(obj1, obj2) == 0
 }

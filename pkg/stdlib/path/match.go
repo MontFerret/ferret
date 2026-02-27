@@ -11,27 +11,17 @@ import (
 // @param {String} pattern - The pattern.
 // @param {String} name - The name.
 // @return {Boolean} - True if the name matches the pattern.
-func Match(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 2, 2)
-
-	if err != nil {
+func Match(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateType(arg1, runtime.TypeString); err != nil {
 		return runtime.False, err
 	}
 
-	err = runtime.ValidateType(args[0], runtime.TypeString)
-
-	if err != nil {
+	if err := runtime.ValidateType(arg2, runtime.TypeString); err != nil {
 		return runtime.False, err
 	}
 
-	err = runtime.ValidateType(args[1], runtime.TypeString)
-
-	if err != nil {
-		return runtime.False, err
-	}
-
-	pattern := args[0].String()
-	name := args[1].String()
+	pattern := arg1.String()
+	name := arg2.String()
 
 	matched, err := path.Match(pattern, name)
 

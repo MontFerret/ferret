@@ -12,32 +12,6 @@ import (
 
 func TestValues(t *testing.T) {
 	Convey("Invalid arguments", t, func() {
-		Convey("When there is no arguments", func() {
-			actual, err := objects.Values(context.Background())
-
-			So(err, ShouldBeError)
-			So(actual, ShouldEqual, runtime.None)
-		})
-
-		Convey("When 2 arguments", func() {
-			obj := runtime.NewObjectWith(
-				map[string]runtime.Value{
-					"k1": runtime.NewInt(0),
-					"k2": runtime.NewInt(1),
-				},
-			)
-
-			actual, err := objects.Values(context.Background(), obj, obj)
-
-			So(err, ShouldBeError)
-			So(actual, ShouldEqual, runtime.None)
-
-			actual, err = objects.Values(context.Background(), obj, runtime.NewInt(0))
-
-			So(err, ShouldBeError)
-			So(actual, ShouldEqual, runtime.None)
-		})
-
 		Convey("When there is not object argument", func() {
 			actual, err := objects.Values(context.Background(), runtime.NewInt(0))
 

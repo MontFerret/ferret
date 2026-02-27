@@ -12,14 +12,6 @@ import (
 )
 
 func TestMatch(t *testing.T) {
-	Convey("When arg is not passed", t, func() {
-		Convey("It should return an error", func() {
-			_, err := path.Match(context.Background())
-
-			So(err, ShouldBeError)
-		})
-	})
-
 	Convey("First argument is wrong", t, func() {
 		var err error
 		_, err = path.Match(context.Background(), runtime.NewInt(0), runtime.NewString("/"))

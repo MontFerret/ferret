@@ -19,12 +19,11 @@ func TestRegisterLib(t *testing.T) {
 	Convey("Should register HTTP namespace functions", t, func() {
 		ns := runtime.NewRootNamespace()
 
-		err := http.RegisterLib(ns)
-
-		So(err, ShouldBeNil)
+		http.RegisterLib(ns)
 
 		// Verify that functions were registered by checking registered function names
-		functions := ns.Functions().Build()
+		functions, err := ns.Build()
+		So(err, ShouldBeNil)
 		So(functions.Size(), ShouldBeGreaterThan, 0)
 
 		// Check that HTTP functions are registered
@@ -34,7 +33,8 @@ func TestRegisterLib(t *testing.T) {
 		hasDelete := false
 		hasDo := false
 
-		for _, fn := range functions.Names() {
+		names := functions.List()
+		for _, fn := range names {
 			if fn == "HTTP::GET" {
 				hasGet = true
 			}
@@ -180,15 +180,6 @@ func TestREQUEST(t *testing.T) {
 		So(out, ShouldEqual, runtime.None)
 		So(err, ShouldBeError)
 		So(err.Error(), ShouldContainSubstring, ".url")
-	})
-
-	Convey("Should return error with invalid arguments", t, func() {
-		ctx := context.Background()
-
-		out, err := http.REQUEST(ctx)
-
-		So(out, ShouldEqual, runtime.None)
-		So(err, ShouldBeError)
 	})
 
 	Convey("Should return error with invalid argument type", t, func() {

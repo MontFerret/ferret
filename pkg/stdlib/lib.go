@@ -15,60 +15,32 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/utils"
 )
 
-func New() runtime.Functions {
+// New creates a new standard library.
+// It registers all available functions and namespaces to the root namespace and returns it.
+func New() runtime.Namespace {
 	ns := runtime.NewRootNamespace()
 
-	if err := RegisterLib(ns); err != nil {
-		panic(err)
-	}
+	RegisterLib(ns)
 
-	return ns.Functions().Build()
+	return ns
 }
 
-func RegisterLib(ns runtime.Namespace) error {
-	if err := types.RegisterLib(ns); err != nil {
-		return err
+func RegisterLib(ns runtime.Namespace) {
+	libs := []func(runtime.Namespace){
+		types.RegisterLib,
+		strings.RegisterLib,
+		math.RegisterLib,
+		collections.RegisterLib,
+		datetime.RegisterLib,
+		arrays.RegisterLib,
+		objects.RegisterLib,
+		io.RegisterLib,
+		path.RegisterLib,
+		utils.RegisterLib,
+		testing.RegisterLib,
 	}
 
-	if err := strings.RegisterLib(ns); err != nil {
-		return err
+	for _, lib := range libs {
+		lib(ns)
 	}
-
-	if err := math.RegisterLib(ns); err != nil {
-		return err
-	}
-
-	if err := collections.RegisterLib(ns); err != nil {
-		return err
-	}
-
-	if err := datetime.RegisterLib(ns); err != nil {
-		return err
-	}
-
-	if err := arrays.RegisterLib(ns); err != nil {
-		return err
-	}
-
-	if err := objects.RegisterLib(ns); err != nil {
-		return err
-	}
-
-	////if err := html.RegisterLib(ns); err != nil {
-	////	return err
-	////}
-	//
-	if err := io.RegisterLib(ns); err != nil {
-		return err
-	}
-
-	if err := path.RegisterLib(ns); err != nil {
-		return err
-	}
-
-	if err := utils.RegisterLib(ns); err != nil {
-		return err
-	}
-
-	return testing.RegisterLib(ns)
 }

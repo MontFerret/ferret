@@ -260,5 +260,5 @@ LET users = [
 				RETURN u
 `, []any{},
 			"Should compile query with multiple left side expression and with binary operator 2"),
-	}, vm.WithFunctions(base.ForWhileHelpers()))
+	}, vm.WithFunctionsBuilder(base.ForWhileHelpers()))
 }

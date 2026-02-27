@@ -8,11 +8,11 @@ import (
 )
 
 // DELETE makes a DELETE request.
-// @param {hashMap} params - Request parameters.
+// @param {Map} params - Request parameters.
 // @param {String} params.url - Target url
 // @param {Binary} params.body - Request data
-// @param {hashMap} [params.headers] - HTTP headers
+// @param {Map} [params.headers] - HTTP headers
 // @return {Binary} - Response in binary format
-func DELETE(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	return execMethod(ctx, h.MethodDelete, args)
+func DELETE(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+	return execMethod(ctx, h.MethodDelete, arg)
 }

@@ -2,15 +2,15 @@ package objects
 
 import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
-func RegisterLib(ns runtime.Namespace) error {
-	ns.Functions().
-		Set("HAS", Has).
-		Set("KEYS", Keys).
-		Set("KEEP_KEYS", KeepKeys).
-		Set("MERGE", Merge).
-		Set("ZIP", Zip).
-		Set("VALUES", Values).
-		Set("MERGE_RECURSIVE", MergeRecursive)
-
-	return nil
+func RegisterLib(ns runtime.Namespace) {
+	ns.Function().A1().
+		Add("VALUES", Values)
+	ns.Function().A2().
+		Add("HAS", Has).
+		Add("ZIP", Zip)
+	ns.Function().Var().
+		Add("KEYS", Keys).
+		Add("KEEP_KEYS", KeepKeys).
+		Add("MERGE", Merge).
+		Add("MERGE_RECURSIVE", MergeRecursive)
 }

@@ -43,6 +43,6 @@ func TestDateDayOfWeek(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, datetime.DateDayOfWeek)
+		tc.Do(t, Fn1(datetime.DateDayOfWeek))
 	}
 }

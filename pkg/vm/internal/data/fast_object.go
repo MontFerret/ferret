@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/binary"
 	"hash/fnv"
-	"io"
 	"sort"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding/json"
@@ -405,7 +404,7 @@ func (t *FastObject) ForEach(ctx context.Context, predicate runtime.KeyReadableP
 	return nil
 }
 
-func (t *FastObject) Find(ctx context.Context, predicate runtime.KeyReadablePredicate) (runtime.List, error) {
+func (t *FastObject) Filter(ctx context.Context, predicate runtime.KeyReadablePredicate) (runtime.List, error) {
 	res := runtime.NewArray(t.len())
 
 	err := t.ForEach(ctx, func(c context.Context, value, key runtime.Value) (runtime.Boolean, error) {
@@ -431,7 +430,7 @@ func (t *FastObject) Find(ctx context.Context, predicate runtime.KeyReadablePred
 	return res, nil
 }
 
-func (t *FastObject) FindOne(ctx context.Context, predicate runtime.KeyReadablePredicate) (runtime.Value, runtime.Boolean, error) {
+func (t *FastObject) Find(ctx context.Context, predicate runtime.KeyReadablePredicate) (runtime.Value, runtime.Boolean, error) {
 	var out runtime.Value
 	var ok bool
 
@@ -713,6 +712,18 @@ func (t *FastObject) SetStringCached(key string, value runtime.Value) (*Shape, *
 	return shape, next, slot, true
 }
 
+func (t *FastObject) Empty(_ context.Context) (runtime.Map, error) {
+	return NewFastObject(t.cache, t.dictThreshold), nil
+}
+
+func (t *FastObject) Merge(ctx context.Context, other runtime.Map) error {
+	return other.ForEach(ctx, func(c context.Context, value, key runtime.Value) (runtime.Boolean, error) {
+		t.setString(key.String(), value)
+
+		return true, nil
+	})
+}
+
 func (t *FastObject) setString(key string, value runtime.Value) {
 	t.SetStringCached(key, value)
 }
@@ -866,48 +877,4 @@ func (t *FastObject) toMap() runtime.Map {
 	}
 
 	return obj
-}
-
-type fastObjectEntry struct {
-	key  string
-	slot int
-}
-
-type fastObjectIterator struct {
-	entries []fastObjectEntry
-	slots   []runtime.Value
-	pos     int
-}
-
-func (iter *fastObjectIterator) Next(_ context.Context) (runtime.Value, runtime.Value, error) {
-	if iter.pos >= len(iter.entries) {
-		return runtime.None, runtime.None, io.EOF
-	}
-
-	entry := iter.entries[iter.pos]
-	value := iter.slots[entry.slot]
-	if value == nil {
-		value = runtime.None
-	}
-	iter.pos++
-
-	return value, runtime.String(entry.key), nil
-}
-
-type fastObjectDictIterator struct {
-	keys []string
-	dict map[string]runtime.Value
-	pos  int
-}
-
-func (iter *fastObjectDictIterator) Next(_ context.Context) (runtime.Value, runtime.Value, error) {
-	if iter.pos >= len(iter.keys) {
-		return runtime.None, runtime.None, io.EOF
-	}
-
-	key := iter.keys[iter.pos]
-	value := iter.dict[key]
-	iter.pos++
-
-	return value, runtime.String(key), nil
 }

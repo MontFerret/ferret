@@ -22,7 +22,7 @@ func SortDesc(ctx context.Context, values Value) error {
 	return Sort(ctx, values, false)
 }
 
-// Sort is a generic sorting function that accepts either a List or value that implements Sortable interface.
+// Sort is a generic sorting function that accepts a Sortable value.
 func Sort(ctx context.Context, values Value, ascending Boolean) error {
 	switch value := values.(type) {
 	case Sortable:
@@ -31,10 +31,8 @@ func Sort(ctx context.Context, values Value, ascending Boolean) error {
 		}
 
 		return value.SortDesc(ctx)
-	case List:
-		return SortList(ctx, value, ascending)
 	default:
-		return TypeErrorOf(values, TypeList, TypeSortable)
+		return TypeErrorOf(values, TypeSortable)
 	}
 }
 

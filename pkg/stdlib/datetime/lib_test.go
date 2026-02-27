@@ -13,12 +13,14 @@ func TestRegisterLib(t *testing.T) {
 	Convey("When registering functions", t, func() {
 		ns := runtime.NewRootNamespace()
 
-		err := datetime.RegisterLib(ns)
+		datetime.RegisterLib(ns)
+
+		// Test that some key functions are registered by checking registered functions list
+		registry, err := ns.Build()
 
 		So(err, ShouldBeNil)
 
-		// Test that some key functions are registered by checking registered functions list
-		registeredFunctions := ns.Functions().Build().Names()
+		registeredFunctions := registry.List()
 
 		expectedFunctions := []string{
 			"NOW", "DATE", "DATE_COMPARE", "DATE_DAYOFWEEK", "DATE_YEAR",

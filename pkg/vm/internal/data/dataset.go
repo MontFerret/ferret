@@ -98,12 +98,12 @@ func (ds *DataSet) Swap(ctx context.Context, a, b runtime.Int) error {
 	return ds.values.Swap(ctx, a, b)
 }
 
-func (ds *DataSet) Find(ctx context.Context, predicate runtime.IndexReadablePredicate) (runtime.List, error) {
-	return ds.values.Find(ctx, predicate)
+func (ds *DataSet) Filter(ctx context.Context, predicate runtime.IndexReadablePredicate) (runtime.List, error) {
+	return ds.values.Filter(ctx, predicate)
 }
 
-func (ds *DataSet) FindOne(ctx context.Context, predicate runtime.IndexReadablePredicate) (runtime.Value, runtime.Boolean, error) {
-	return ds.values.FindOne(ctx, predicate)
+func (ds *DataSet) Find(ctx context.Context, predicate runtime.IndexReadablePredicate) (runtime.Value, runtime.Boolean, error) {
+	return ds.values.Find(ctx, predicate)
 }
 
 func (ds *DataSet) IndexOf(ctx context.Context, value runtime.Value) (runtime.Int, error) {
@@ -128,6 +128,23 @@ func (ds *DataSet) ForEach(ctx context.Context, predicate runtime.IndexReadableP
 
 func (ds *DataSet) Contains(ctx context.Context, value runtime.Value) (runtime.Boolean, error) {
 	return ds.values.Contains(ctx, value)
+}
+
+func (ds *DataSet) SortAsc(ctx context.Context) error {
+	return ds.values.SortAsc(ctx)
+}
+
+func (ds *DataSet) SortDesc(ctx context.Context) error {
+	return ds.values.SortDesc(ctx)
+}
+
+func (ds *DataSet) Empty(_ context.Context) (runtime.List, error) {
+	// TODO: Or should we return an underlying list instead?
+	return NewDataSet(ds.uniqueness != nil), nil
+}
+
+func (ds *DataSet) Concat(ctx context.Context, other runtime.List) error {
+	return ds.values.Concat(ctx, other)
 }
 
 func (ds *DataSet) canAdd(_ context.Context, value runtime.Value) (bool, error) {

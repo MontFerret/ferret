@@ -5,6 +5,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 )
 
-func Stdlib() runtime.Functions {
+func Stdlib() runtime.Namespace {
 	return stdlib.New()
 }

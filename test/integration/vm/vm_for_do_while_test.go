@@ -29,5 +29,5 @@ func TestForDoWhile(t *testing.T) {
 			4, 8, 12, 16, 20,
 			5, 10, 15, 20, 25, 30,
 			6, 12, 18, 24, 30, 36, 42}),
-	}, vm.WithFunctions(base.ForWhileHelpers()))
+	}, vm.WithFunctionsBuilder(base.ForWhileHelpers()))
 }

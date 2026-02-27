@@ -13,12 +13,6 @@ import (
 // always true.
 // @param {String} uri - Uri to escape.
 // @return {String} - Escaped string.
-func EscapeHTML(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	return runtime.NewString(html.EscapeString(args[0].String())), nil
+func EscapeHTML(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	return runtime.NewString(html.EscapeString(arg.String())), nil
 }

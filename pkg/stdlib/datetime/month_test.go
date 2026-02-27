@@ -43,6 +43,6 @@ func TestDateMonth(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, datetime.DateMonth)
+		tc.Do(t, Fn1(datetime.DateMonth))
 	}
 }

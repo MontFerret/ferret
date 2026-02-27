@@ -12,11 +12,11 @@ import (
 // @param {Int | Float} exp - The exponent value.
 // @return {Float} - The exponentiated value.
 func Pow(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
-	if err := runtime.AssertNumber(arg1); err != nil {
+	if err := runtime.ValidateArgValue(arg1, 0, runtime.AssertNumber); err != nil {
 		return runtime.None, err
 	}
 
-	if err := runtime.AssertNumber(arg2); err != nil {
+	if err := runtime.ValidateArgValue(arg2, 1, runtime.AssertNumber); err != nil {
 		return runtime.None, err
 	}
 

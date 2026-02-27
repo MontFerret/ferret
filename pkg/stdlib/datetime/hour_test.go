@@ -43,6 +43,6 @@ func TestDateHour(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, datetime.DateHour)
+		tc.Do(t, Fn1(datetime.DateHour))
 	}
 }

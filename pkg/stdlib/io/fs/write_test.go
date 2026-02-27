@@ -21,10 +21,11 @@ func TestWrite(t *testing.T) {
 		data := runtime.NewBinary([]byte("3timeslazy"))
 		params := runtime.NewObjectWith(
 			map[string]runtime.Value{
-				"mode": runtime.NewString("w"),
+				"mode": runtime.NewString("foo"),
 			},
 		)
 		someInt := runtime.NewInt(0)
+		someStr := runtime.NewString("test")
 
 		Convey("All arguments", func() {
 
@@ -41,16 +42,20 @@ func TestWrite(t *testing.T) {
 					Args: []runtime.Value{path},
 				},
 				{
-					Name: "Arguments Number: more than 3 arguments passed",
-					Args: []runtime.Value{path, data, params, someInt},
+					Name: "Arguments Type: `path` not a string",
+					Args: []runtime.Value{someInt, data},
 				},
 				{
-					Name: "Arguments Type: `path` not a string",
-					Args: []runtime.Value{someInt},
+					Name: "Arguments Type: `data` not a binary",
+					Args: []runtime.Value{path, someStr},
 				},
 				{
 					Name: "Arguments Type: `params` not an object",
 					Args: []runtime.Value{path, data, someInt},
+				},
+				{
+					Name: "Arguments Type: `params` contains invalid `mode`",
+					Args: []runtime.Value{path, data, params},
 				},
 			}
 
@@ -197,19 +202,16 @@ func TestWrite(t *testing.T) {
 			}
 		})
 
-		Convey("Write string data", func() {
+		Convey("Write string data should error", func() {
 			file, delFile := tempFile()
 			defer delFile()
 
 			text := "test string data"
 			fpath := runtime.NewString(file.Name())
 
-			_, err := fs.Write(context.Background(), fpath, runtime.NewString(text))
-			So(err, ShouldBeNil)
-
-			read, err := fs.Read(context.Background(), fpath)
-			So(err, ShouldBeNil)
-			So(read.String(), ShouldEqual, text)
+			none, err := fs.Write(context.Background(), fpath, runtime.NewString(text))
+			So(err, ShouldBeError)
+			So(none, ShouldResemble, runtime.None)
 		})
 	})
 }

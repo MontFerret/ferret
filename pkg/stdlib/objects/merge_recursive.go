@@ -2,85 +2,79 @@ package objects
 
 import (
 	"context"
+	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // MERGE_RECURSIVE recursively merge the given objects into a single object.
-// @param {Objects, repeated} objects - Objects to merge.
-// @return {hashMap} - hashMap created by merging.
-// TODO: REWRITE TO USE LIST & MAP instead
+// @param {Map, repeated} objects - Maps to merge.
+// @return {Map} - Map created by merging.
 func MergeRecursive(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, runtime.MaxArgs)
+	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
+		return runtime.None, err
+	}
+
+	if err := runtime.ValidateArgsType(args, runtime.TypeMap); err != nil {
+		return runtime.None, err
+	}
+
+	first := args[0].(runtime.Map)
+
+	if len(args) == 1 {
+		cloned, err := runtime.CloneOrCopy(ctx, first)
+		if err != nil {
+			return runtime.None, err
+		}
+
+		return cloned, nil
+	}
+
+	merged, err := first.Empty(ctx)
+
 	if err != nil {
 		return runtime.None, err
 	}
 
 	for _, arg := range args {
-		if err = runtime.ValidateType(arg, runtime.TypeObject); err != nil {
+		if err := merge(ctx, merged, arg.(runtime.Map)); err != nil {
 			return runtime.None, err
 		}
-	}
-
-	var merged runtime.Map = runtime.NewObject()
-
-	for _, arg := range args {
-		out, err := merge(ctx, merged, arg)
-
-		if err != nil {
-			return runtime.None, err
-		}
-
-		merged = out.(runtime.Map)
 	}
 
 	return merged.Clone(ctx)
 }
 
-func merge(ctx context.Context, src, dst runtime.Value) (runtime.Value, error) {
+func merge(ctx context.Context, dst, src runtime.Map) error {
 	// If both values are equal, no need to merge
 	if runtime.CompareValues(src, dst) == 0 {
-		return src, nil
+		return nil
 	}
 
-	srcObj, ok := src.(runtime.Map)
+	return src.ForEach(ctx, func(c context.Context, val, key runtime.Value) (runtime.Boolean, error) {
+		switch v := val.(type) {
+		case runtime.Map:
+			existing, err := dst.Get(c, key)
+			if err == nil {
+				if existingMap, ok := existing.(runtime.Map); ok {
+					if err := merge(c, existingMap, v); err != nil {
+						return false, err
+					}
 
-	if !ok {
-		return dst, nil
-	}
-
-	dstObj, ok := dst.(runtime.Map)
-
-	if !ok {
-		return src, nil
-	}
-
-	size, err := dstObj.Length(ctx)
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	if size == 0 {
-		return src, nil
-	}
-
-	var srcVal runtime.Value
-
-	_ = dstObj.ForEach(ctx, func(c context.Context, val, key runtime.Value) (runtime.Boolean, error) {
-		if srcVal, err = srcObj.Get(c, key); err == nil {
-			v, err := merge(ctx, srcVal, val)
-
-			if err != nil {
-				return runtime.False, err
+					return true, nil
+				}
+			} else if !errors.Is(err, runtime.ErrNotFound) {
+				return false, err
 			}
 
-			val = v
+			cloned, err := v.Clone(c)
+			if err != nil {
+				return false, err
+			}
+
+			return true, dst.Set(c, key, cloned.(runtime.Map))
+		default:
+			return true, dst.Set(c, key, val)
 		}
-
-		_ = srcObj.Set(c, key, val)
-		return true, nil
 	})
-
-	return src, nil
 }

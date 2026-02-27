@@ -573,5 +573,5 @@ FOR i WHILE UNTIL(LENGTH(users))
 				"uniqueSkillCount": 4,
 			},
 		}, "Should aggregate with array operations"),
-	}, vm.WithFunctions(base.ForWhileHelpers()))
+	}, vm.WithFunctionsBuilder(base.ForWhileHelpers()))
 }

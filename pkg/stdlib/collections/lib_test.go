@@ -13,9 +13,7 @@ func TestLib(t *testing.T) {
 	Convey("Should register all functions", t, func() {
 		ns := runtime.NewRootNamespace()
 
-		err := collections.RegisterLib(ns)
-
-		So(err, ShouldBeNil)
+		collections.RegisterLib(ns)
 
 		// Check that all expected functions are registered
 		expectedFunctions := []string{
@@ -25,7 +23,9 @@ func TestLib(t *testing.T) {
 			"REVERSE",
 		}
 
-		registeredFunctions := ns.Functions().Build().Names()
+		funcs, err := ns.Build()
+		So(err, ShouldBeNil)
+		registeredFunctions := funcs.List()
 
 		for _, funcName := range expectedFunctions {
 			found := false
@@ -37,13 +37,5 @@ func TestLib(t *testing.T) {
 			}
 			So(found, ShouldBeTrue)
 		}
-	})
-
-	Convey("Should not return error on valid namespace", t, func() {
-		ns := runtime.NewRootNamespace()
-
-		err := collections.RegisterLib(ns)
-
-		So(err, ShouldBeNil)
 	})
 }

@@ -30,6 +30,56 @@ func (tc *testCase) Do(t *testing.T, fn runtime.Function) {
 	})
 }
 
+func Fn0(fn runtime.Function0) runtime.Function {
+	return func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+		if err := runtime.ValidateArgs(args, 0, 0); err != nil {
+			return runtime.None, err
+		}
+
+		return fn(ctx)
+	}
+}
+
+func Fn1(fn runtime.Function1) runtime.Function {
+	return func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+		if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+			return runtime.None, err
+		}
+
+		return fn(ctx, args[0])
+	}
+}
+
+func Fn2(fn runtime.Function2) runtime.Function {
+	return func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+		if err := runtime.ValidateArgs(args, 2, 2); err != nil {
+			return runtime.None, err
+		}
+
+		return fn(ctx, args[0], args[1])
+	}
+}
+
+func Fn3(fn runtime.Function3) runtime.Function {
+	return func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+		if err := runtime.ValidateArgs(args, 3, 3); err != nil {
+			return runtime.None, err
+		}
+
+		return fn(ctx, args[0], args[1], args[2])
+	}
+}
+
+func Fn4(fn runtime.Function4) runtime.Function {
+	return func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+		if err := runtime.ValidateArgs(args, 4, 4); err != nil {
+			return runtime.None, err
+		}
+
+		return fn(ctx, args[0], args[1], args[2], args[3])
+	}
+}
+
 func mustDefaultLayoutDt(timeString string) runtime.DateTime {
 	dt, err := defaultLayoutDt(timeString)
 

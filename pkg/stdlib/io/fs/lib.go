@@ -6,12 +6,12 @@ import (
 
 // RegisterLib register `FS` namespace functions.
 // @namespace FS
-func RegisterLib(ns runtime.Namespace) error {
-	return ns.
-		Namespace("FS").
-		RegisterFunctions(
-			runtime.NewFunctionsFromMap(map[string]runtime.Function{
-				"READ":  Read,
-				"WRITE": Write,
-			}))
+func RegisterLib(ns runtime.Namespace) {
+	ns = ns.Namespace("FS")
+
+	ns.Function().A1().
+		Add("READ", Read)
+
+	ns.Function().Var().
+		Add("WRITE", Write)
 }

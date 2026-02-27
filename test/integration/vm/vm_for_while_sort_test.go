@@ -230,11 +230,11 @@ func TestForWhileSort(t *testing.T) {
 			
 			RETURN sorted[0]
 		`, map[string]any{"active": true, "age": 31, "gender": "m"}),
-	}, vm.WithFunctionsBuilder(func(fns runtime.FunctionsBuilder) {
-		fns.Set("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	}, vm.WithFunctionsRegistrar(func(fns runtime.FunctionDefs) {
+		fns.Var().Add("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.None, nil
 		})
 
-		fns.SetFrom(base.ForWhileHelpers())
+		fns.From(base.ForWhileHelpers())
 	}))
 }

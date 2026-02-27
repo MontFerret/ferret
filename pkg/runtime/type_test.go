@@ -1,6 +1,7 @@
 package runtime_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -29,6 +30,10 @@ func (typedOnly) Copy() runtime.Value {
 
 type typedList struct {
 	*runtime.Array
+}
+
+func (t typedList) Concat(ctx context.Context, other runtime.List) error {
+	return t.Array.Concat(ctx, other)
 }
 
 var typeTypedList = runtime.NewType("test", "typedList", func(value runtime.Value) bool {

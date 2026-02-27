@@ -394,5 +394,5 @@ func TestForStepDistinct(t *testing.T) {
 			[]any{"JavaScript", "Python"},
 			[]any{"C++", "Java"},
 		}, "Should handle DISTINCT with array comparison and sorting"),
-	}, vm.WithFunctions(base.ForWhileHelpers()))
+	}, vm.WithFunctionsBuilder(base.ForWhileHelpers()))
 }

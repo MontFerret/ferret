@@ -7,18 +7,17 @@ import (
 )
 
 // MERGE merge the given objects into a single object.
-// @param {hashMap, repeated} objects - Objects to merge.
-// @return {hashMap} - hashMap created by merging.
-// TODO: REWRITE TO USE LIST & MAP instead
+// @param {Map, repeated} objects - Maps to merge.
+// @return {Map} - Map created by merging.
 func Merge(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
 		return runtime.None, err
 	}
 
-	var objs *runtime.Array
+	var objs runtime.List
 
 	if len(args) == 1 {
-		arr, ok := args[0].(*runtime.Array)
+		arr, ok := args[0].(runtime.List)
 
 		if ok {
 			objs = arr
@@ -29,61 +28,46 @@ func Merge(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		objs = runtime.NewArrayWith(args...)
 	}
 
-	if err := validateArrayOf(ctx, runtime.TypeObject, objs); err != nil {
+	if err := runtime.AssertItemsOf(ctx, objs, runtime.AssertMap); err != nil {
 		return runtime.None, err
 	}
 
-	return mergeArray(ctx, objs)
+	merged, err := mergeMaps(ctx, objs)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	cloned, err := runtime.CloneOrCopy(ctx, merged)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	return cloned, nil
 }
 
-func mergeArray(ctx context.Context, arr *runtime.Array) (runtime.Map, error) {
-	merged, obj := runtime.Map(runtime.NewObject()), runtime.Map(runtime.NewObject())
+func mergeMaps(ctx context.Context, arr runtime.List) (runtime.Map, error) {
+	var obj runtime.Map
 
-	_ = arr.ForEach(ctx, func(c context.Context, arrValue runtime.Value, arrIdx runtime.Int) (runtime.Boolean, error) {
-		obj = arrValue.(runtime.Map)
-
-		_ = obj.ForEach(c, func(_ context.Context, objValue, objKey runtime.Value) (runtime.Boolean, error) {
-			cloneable, ok := objValue.(runtime.Cloneable)
-
-			if ok {
-				clone, err := cloneable.Clone(c)
-
-				if err != nil {
-					return runtime.False, err
-				}
-
-				objValue = clone
-			}
-
-			_ = merged.Set(c, objKey, objValue)
-
-			return true, nil
-		})
-
-		return true, nil
-	})
-
-	return merged, nil
-}
-
-func validateArrayOf(ctx context.Context, typ runtime.Type, arr *runtime.Array) error {
-	size, err := arr.Length(ctx)
+	first, err := arr.First(ctx)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	for idx := runtime.ZeroInt; idx < size; idx++ {
-		item, err := arr.At(ctx, idx)
-
-		if err != nil {
-			return err
-		}
-
-		if err := runtime.ValidateType(item, typ); err != nil {
-			return err
-		}
+	if first == nil || first == runtime.None {
+		return runtime.NewObject(), nil
 	}
 
-	return nil
+	firstMap := first.(runtime.Map)
+	merged, err := firstMap.Empty(ctx)
+
+	if err != nil {
+		return runtime.NewObject(), err
+	}
+
+	return merged, arr.ForEach(ctx, func(c context.Context, arrValue runtime.Value, arrIdx runtime.Int) (runtime.Boolean, error) {
+		obj = arrValue.(runtime.Map)
+
+		return true, merged.Merge(ctx, obj)
+	})
 }

@@ -139,7 +139,7 @@ func DebugCaseJSON(expression string, expected string, desc ...string) UseCase {
 }
 
 func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ...vm.EnvironmentOption) {
-	// Register standard library functions
+	// Add standard library functions
 	std := base.Stdlib()
 
 	for _, useCase := range useCases {
@@ -179,7 +179,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 				}
 
 				options := []vm.EnvironmentOption{
-					vm.WithFunctions(std),
+					vm.WithNamespace(std),
 				}
 				options = append(options, opts...)
 
