@@ -10,7 +10,7 @@ const (
 	OpJumpIfTrue
 	OpJumpIfNone
 
-	// Add Operations
+	// Register Operations
 	OpMove // Move a value from register A to register B
 
 	// Loading Operations
