@@ -8,12 +8,18 @@ import (
 
 func WithParams(params map[string]runtime.Value) EnvironmentOption {
 	return func(env *environmentBuilder) {
-		env.params = params
+		if params != nil {
+			env.params = params
+		}
 	}
 }
 
 func WithParam(name string, value interface{}) EnvironmentOption {
 	return func(env *environmentBuilder) {
+		if env.params == nil {
+			env.params = make(map[string]runtime.Value)
+		}
+
 		env.params[name] = runtime.Parse(value)
 	}
 }
