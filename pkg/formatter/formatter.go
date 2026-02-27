@@ -44,7 +44,7 @@ func (fmt *Formatter) Format(out io.Writer, src *file.Source) error {
 			n := goruntime.Stack(buf, false)
 			stackTrace := string(buf[:n])
 
-			// Filter out exactly what the error was and add the e
+			// Find out exactly what the error was and add the error
 			switch x := r.(type) {
 			case string:
 				e = diagnostics.NewUnexpectedError(src, x+"\n"+stackTrace)
