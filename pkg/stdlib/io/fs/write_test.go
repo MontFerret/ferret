@@ -25,6 +25,7 @@ func TestWrite(t *testing.T) {
 			},
 		)
 		someInt := runtime.NewInt(0)
+		someStr := runtime.NewString("test")
 
 		Convey("All arguments", func() {
 
@@ -42,7 +43,11 @@ func TestWrite(t *testing.T) {
 				},
 				{
 					Name: "Arguments Type: `path` not a string",
-					Args: []runtime.Value{someInt},
+					Args: []runtime.Value{someInt, data},
+				},
+				{
+					Name: "Arguments Type: `data` not a binary",
+					Args: []runtime.Value{path, someStr},
 				},
 				{
 					Name: "Arguments Type: `params` not an object",
@@ -197,19 +202,16 @@ func TestWrite(t *testing.T) {
 			}
 		})
 
-		Convey("Write string data", func() {
+		Convey("Write string data should error", func() {
 			file, delFile := tempFile()
 			defer delFile()
 
 			text := "test string data"
 			fpath := runtime.NewString(file.Name())
 
-			_, err := fs.Write(context.Background(), fpath, runtime.NewString(text))
-			So(err, ShouldBeNil)
-
-			read, err := fs.Read(context.Background(), fpath)
-			So(err, ShouldBeNil)
-			So(read.String(), ShouldEqual, text)
+			none, err := fs.Write(context.Background(), fpath, runtime.NewString(text))
+			So(err, ShouldBeError)
+			So(none, ShouldResemble, runtime.None)
 		})
 	})
 }

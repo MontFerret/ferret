@@ -21,8 +21,15 @@ func Write(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	fpath := runtime.ToString(args[0])
-	data := runtime.ToBinary(args[1])
+	fpath, err := runtime.CastArg[runtime.String](args[0], 0)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	data, err := runtime.CastArg[runtime.Binary](args[1], 1)
+	if err != nil {
+		return runtime.None, err
+	}
 	params := defaultParams
 
 	if len(args) == 3 {
