@@ -48,7 +48,7 @@ func newOptions(setters []Option) (*options, error) {
 	return opts, nil
 }
 
-// WithNamespace creates an Option that sets the lib from the provided *runtime.Namespace to the options if not nil.
+// WithNamespace creates an Option that sets the lib from the provided runtime.Namespace to the options if not nil.
 func WithNamespace(ns runtime.Namespace) Option {
 	return func(opts *options) error {
 		if ns == nil {
