@@ -42,20 +42,17 @@ func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 
 	percent := runtime.Float(num)
 
-	// TODO: Implement different methods
-	//method := "rank"
-	//
-	//if len(args) > 2 {
-	//	err = runtime.ValidateType(args[2], runtime.StringType)
-	//
-	//	if err != nil {
-	//		return values.None, err
-	//	}
-	//
-	//	if args[2].String() == "interpolation" {
-	//		method = "interpolation"
-	//	}
-	//}
+	method := "rank"
+
+	if len(args) > 2 {
+		if err := runtime.ValidateType(args[2], runtime.TypeString); err != nil {
+			return runtime.None, err
+		}
+
+		if args[2].String() == "interpolation" {
+			method = "interpolation"
+		}
+	}
 
 	if percent <= 0 || percent > 100 {
 		return runtime.NaN(), errors.New("input is outside of range")
@@ -71,34 +68,48 @@ func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 		return runtime.NaN(), err
 	}
 
-	// Multiply percent by length of input
-	l := runtime.Float(size)
-	index := (percent / 100) * l
-	even := runtime.Float(runtime.Int(index))
+	switch method {
+	case "interpolation":
+		if size == 1 {
+			return sorted.At(ctx, 0)
+		}
 
-	// Check if the index is a whole number
-	switch {
-	case index == even:
-		i := runtime.Int(index)
-		return sorted.At(ctx, i-1)
-	case index > 1:
-		// Convert float to int via truncation
-		i := runtime.Int(index)
-		// Find the average of the index and following values
-		aVal, err := sorted.At(ctx, i-1)
+		pos := (float64(percent) / 100.0) * float64(size-1)
+		lower := int(math.Floor(pos))
+		upper := int(math.Ceil(pos))
 
+		if lower == upper {
+			return sorted.At(ctx, runtime.Int(lower))
+		}
+
+		lowerVal, err := sorted.At(ctx, runtime.Int(lower))
 		if err != nil {
 			return runtime.None, err
 		}
 
-		bVal, err := sorted.At(ctx, i)
-
+		upperVal, err := sorted.At(ctx, runtime.Int(upper))
 		if err != nil {
 			return runtime.None, err
 		}
 
-		return mean(ctx, runtime.NewArrayWith(aVal, bVal))
+		if err := runtime.AssertNumber(lowerVal); err != nil {
+			return runtime.None, err
+		}
+
+		if err := runtime.AssertNumber(upperVal); err != nil {
+			return runtime.None, err
+		}
+
+		frac := pos - float64(lower)
+		result := toFloat(lowerVal) + (toFloat(upperVal)-toFloat(lowerVal))*frac
+
+		return runtime.NewFloat(result), nil
 	default:
-		return runtime.NaN(), errors.New("input is outside of range")
+		pos := math.Ceil((float64(percent) / 100.0) * float64(size))
+		if pos < 1 || pos > float64(size) {
+			return runtime.NaN(), errors.New("input is outside of range")
+		}
+
+		return sorted.At(ctx, runtime.Int(pos-1))
 	}
 }
