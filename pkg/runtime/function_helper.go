@@ -138,7 +138,7 @@ func CastArg[T Value](arg Value, index int) (T, error) {
 
 	var zero T
 
-	return zero, ArgError(TypeErrorOf(arg, TypeOf(zero)), index)
+	return zero, ArgError(TypeErrorOf(arg, expectedTypeOf[T]()), index)
 }
 
 // CastArgAt attempts to cast an argument from the args slice at the specified index to type T.

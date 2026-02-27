@@ -10,6 +10,41 @@ import (
 
 func TestCasting(t *testing.T) {
 	Convey("Casting Builder", t, func() {
+		Convey("Cast", func() {
+			Convey("Should cast concrete and interface types", func() {
+				val, err := runtime.Cast[runtime.Int](runtime.NewInt(42))
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, runtime.NewInt(42))
+
+				arr := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2))
+				list, err := runtime.Cast[runtime.List](arr)
+				So(err, ShouldBeNil)
+				So(list, ShouldEqual, arr)
+			})
+
+			Convey("Should return error with expected interface type", func() {
+				_, err := runtime.Cast[runtime.List](runtime.True)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "expected List")
+				So(err.Error(), ShouldContainSubstring, "got Boolean")
+			})
+		})
+
+		Convey("CastArg", func() {
+			Convey("Should cast argument to interface type", func() {
+				arr := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2))
+				list, err := runtime.CastArg[runtime.List](arr, 0)
+				So(err, ShouldBeNil)
+				So(list, ShouldEqual, arr)
+			})
+
+			Convey("Should return error with expected type and position", func() {
+				_, err := runtime.CastArg[runtime.List](runtime.True, 0)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "expected List")
+				So(err.Error(), ShouldContainSubstring, "position 1")
+			})
+		})
 
 		Convey("CastOr", func() {
 			Convey("Should cast T to T", func() {

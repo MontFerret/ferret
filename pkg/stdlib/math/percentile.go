@@ -84,7 +84,7 @@ func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 	case index > 1:
 		// Convert float to int via truncation
 		i := runtime.Int(index)
-		// Filter the average of the index and following values
+		// Find the average of the index and following values
 		aVal, err := sorted.At(ctx, i-1)
 
 		if err != nil {

@@ -11,7 +11,7 @@ func Cast[T Value](input Value) (T, error) {
 
 	var zero T
 
-	return zero, TypeErrorOf(input, TypeOf(zero))
+	return zero, TypeErrorOf(input, expectedTypeOf[T]())
 }
 
 // CastOr attempts to cast the input value to the specified type T.
