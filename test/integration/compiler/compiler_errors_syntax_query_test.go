@@ -13,7 +13,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "QUERY requires a query literal",
-				Hint:    "Provide a query literal, e.g. QUERY `.items` IN doc USING css.",
+				Hint:    "Provide a query literal, e.g. QUERY `.items` IN doc USING css or QUERY @q IN doc USING css.",
 			},
 			"Missing query literal after QUERY",
 		),

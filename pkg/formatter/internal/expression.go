@@ -162,8 +162,14 @@ func (f *expressionFormatter) formatQueryExpressionWith(p *printer, ctx *fql.Que
 	f.writeKeywordWith(p, keywordQuery)
 	p.space()
 
-	if lit := ctx.StringLiteral(); lit != nil {
-		f.literal.formatStringLiteralNodeWith(p, lit)
+	if payload := ctx.QueryPayload(); payload != nil {
+		if lit := payload.StringLiteral(); lit != nil {
+			f.literal.formatStringLiteralNodeWith(p, lit)
+		} else if param := payload.Param(); param != nil {
+			f.formatParamWith(p, param.(*fql.ParamContext))
+		} else if variable := payload.Variable(); variable != nil {
+			f.formatVariableWith(p, variable.(*fql.VariableContext))
+		}
 	}
 
 	p.space()
@@ -178,7 +184,7 @@ func (f *expressionFormatter) formatQueryExpressionWith(p *printer, ctx *fql.Que
 	f.writeKeywordWith(p, keywordUsing)
 	p.space()
 
-	if id := ctx.Identifier(); id != nil {
+	if id := ctx.GetDialect(); id != nil {
 		p.write(id.GetText())
 	}
 

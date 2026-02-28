@@ -292,6 +292,9 @@ type FqlParserListener interface {
 	// EnterQueryExpression is called when entering the queryExpression production.
 	EnterQueryExpression(c *QueryExpressionContext)
 
+	// EnterQueryPayload is called when entering the queryPayload production.
+	EnterQueryPayload(c *QueryPayloadContext)
+
 	// EnterQueryWithOpt is called when entering the queryWithOpt production.
 	EnterQueryWithOpt(c *QueryWithOptContext)
 
@@ -615,6 +618,9 @@ type FqlParserListener interface {
 
 	// ExitQueryExpression is called when exiting the queryExpression production.
 	ExitQueryExpression(c *QueryExpressionContext)
+
+	// ExitQueryPayload is called when exiting the queryPayload production.
+	ExitQueryPayload(c *QueryPayloadContext)
 
 	// ExitQueryWithOpt is called when exiting the queryWithOpt production.
 	ExitQueryWithOpt(c *QueryWithOptContext)

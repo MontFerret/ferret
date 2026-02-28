@@ -387,6 +387,10 @@ func (v *BaseFqlParserVisitor) VisitQueryExpression(ctx *QueryExpressionContext)
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitQueryPayload(ctx *QueryPayloadContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitQueryWithOpt(ctx *QueryWithOptContext) interface{} {
 	return v.VisitChildren(ctx)
 }

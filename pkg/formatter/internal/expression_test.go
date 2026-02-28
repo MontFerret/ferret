@@ -80,3 +80,17 @@ func TestExpressionFormatter_QueryExpressionInline(t *testing.T) {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }
+
+func TestExpressionFormatter_QueryExpressionParamPayload(t *testing.T) {
+	input := "RETURN QUERY @q IN doc USING css"
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "QUERY @q IN doc USING css" {
+		t.Fatalf("unexpected query expression formatting: %q", got)
+	}
+}

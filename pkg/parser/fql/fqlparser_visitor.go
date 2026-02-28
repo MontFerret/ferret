@@ -292,6 +292,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#queryExpression.
 	VisitQueryExpression(ctx *QueryExpressionContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#queryPayload.
+	VisitQueryPayload(ctx *QueryPayloadContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#queryWithOpt.
 	VisitQueryWithOpt(ctx *QueryWithOptContext) interface{}
 

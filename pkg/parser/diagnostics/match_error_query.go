@@ -39,7 +39,7 @@ func matchQueryErrors(src *file.Source, err *diagnostics.Diagnostic, offending *
 
 		span := spanFromTokenSafe(spanNode.Token(), src)
 		err.Message = "QUERY requires a query literal"
-		err.Hint = "Provide a query literal, e.g. QUERY `.items` IN doc USING css."
+		err.Hint = "Provide a query literal, e.g. QUERY `.items` IN doc USING css or QUERY @q IN doc USING css."
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing query literal"),
 		}
@@ -199,7 +199,7 @@ func hasQueryLiteralBetween(node *TokenNode, max int) bool {
 		if is(current, "QUERY") {
 			return false
 		}
-		if isStringLiteral(current) || isBacktickToken(current) {
+		if isStringLiteral(current) || isBacktickToken(current) || isParamToken(current) || isIdentifier(current) || isSafeReservedWordToken(current) {
 			return true
 		}
 		current = current.Prev()
@@ -230,4 +230,50 @@ func isBacktickToken(node *TokenNode) bool {
 
 	tt := node.Token().GetTokenType()
 	return tt == fql.FqlLexerBacktickOpen || tt == fql.FqlLexerBacktickClose
+}
+
+func isParamToken(node *TokenNode) bool {
+	if node == nil || node.Token() == nil {
+		return false
+	}
+
+	return node.Token().GetTokenType() == fql.FqlLexerParam
+}
+
+func isSafeReservedWordToken(node *TokenNode) bool {
+	if node == nil || node.Token() == nil {
+		return false
+	}
+
+	switch node.Token().GetTokenType() {
+	case fql.FqlLexerAnd,
+		fql.FqlLexerOr,
+		fql.FqlLexerAs,
+		fql.FqlLexerDistinct,
+		fql.FqlLexerFilter,
+		fql.FqlLexerSort,
+		fql.FqlLexerLimit,
+		fql.FqlLexerCollect,
+		fql.FqlLexerSortDirection,
+		fql.FqlLexerInto,
+		fql.FqlLexerKeep,
+		fql.FqlLexerWith,
+		fql.FqlLexerAll,
+		fql.FqlLexerAny,
+		fql.FqlLexerAt,
+		fql.FqlLexerLeast,
+		fql.FqlLexerAggregate,
+		fql.FqlLexerEvent,
+		fql.FqlLexerTimeout,
+		fql.FqlLexerOptions,
+		fql.FqlLexerEvery,
+		fql.FqlLexerBackoff,
+		fql.FqlLexerJitter,
+		fql.FqlLexerExists,
+		fql.FqlLexerValue,
+		fql.FqlLexerStep:
+		return true
+	default:
+		return false
+	}
 }

@@ -1269,7 +1269,7 @@ func (c *ExprCompiler) compileQueryExpression(ctx fql.IQueryExpressionContext) b
 	})
 
 	kind := ""
-	if ident := ctx.Identifier(); ident != nil {
+	if ident := ctx.GetDialect(); ident != nil {
 		kind = strings.ToLower(ident.GetText())
 	}
 
@@ -1279,11 +1279,17 @@ func (c *ExprCompiler) compileQueryExpression(ctx fql.IQueryExpressionContext) b
 	})
 
 	payloadReg := loadConstant(c.ctx, runtime.EmptyString)
-	if str := ctx.StringLiteral(); str != nil {
-		if val, ok := parseStringLiteralConst(str); ok {
-			payloadReg = loadConstant(c.ctx, val)
-		} else {
-			payloadReg = c.ctx.LiteralCompiler.CompileStringLiteral(str)
+	if payload := ctx.QueryPayload(); payload != nil {
+		if str := payload.StringLiteral(); str != nil {
+			if val, ok := parseStringLiteralConst(str); ok {
+				payloadReg = loadConstant(c.ctx, val)
+			} else {
+				payloadReg = c.ctx.LiteralCompiler.CompileStringLiteral(str)
+			}
+		} else if param := payload.Param(); param != nil {
+			payloadReg = c.CompileParam(param)
+		} else if variable := payload.Variable(); variable != nil {
+			payloadReg = c.CompileVariable(variable)
 		}
 	}
 

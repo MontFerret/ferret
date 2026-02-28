@@ -630,7 +630,13 @@ implicitMemberExpressionStart
     ;
 
 queryExpression
-    : Query stringLiteral In expression Using Identifier queryWithOpt?
+    : Query queryPayload In expression Using dialect=Identifier queryWithOpt?
+    ;
+
+queryPayload
+    : stringLiteral
+    | param
+    | variable
     ;
 
 queryWithOpt
