@@ -238,6 +238,7 @@ func TestQueryable(t *testing.T) {
 
 	RunUseCases(t, []UseCase{
 		CaseArray("RETURN @doc[~ css`.items`]", []any{"ok"}, "Should apply query literal"),
+		Case("RETURN @doc[~ css`.items`][0]", "ok", "Should apply query literal and index tail"),
 		CaseArray("RETURN QUERY `.items` IN @doc USING css", []any{"ok"}, "Should apply query expression"),
 		CaseArray("RETURN QUERY @q IN @doc USING css", []any{"ok"}, "Should apply query expression with param payload"),
 		CaseArray("LET q = \".dynamic-var\"\nRETURN QUERY q IN @doc USING css", []any{"ok"}, "Should apply query expression with variable payload"),

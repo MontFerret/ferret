@@ -1236,7 +1236,7 @@ func (c *ExprCompiler) compileArrayApply(src bytecode.Operand, apply fql.IArrayA
 	})
 
 	if len(tail) > 0 {
-		dst = c.compileMemberExpressionSegments(dst, tail)
+		return c.compileMemberExpressionSegments(dst, tail)
 	}
 
 	if dst.IsRegister() {
