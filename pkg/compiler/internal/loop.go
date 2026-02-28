@@ -558,6 +558,10 @@ func (c *LoopCompiler) inferExpressionAtomType(ctx fql.IExpressionAtomContext) c
 		return core.TypeAny
 	}
 
+	if ctx.MatchExpression() != nil {
+		return core.TypeAny
+	}
+
 	if ctx.RangeOperator() != nil {
 		return core.TypeList
 	}

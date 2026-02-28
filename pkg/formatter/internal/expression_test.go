@@ -94,3 +94,47 @@ func TestExpressionFormatter_QueryExpressionParamPayload(t *testing.T) {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }
+
+func TestExpressionFormatter_MatchExpressionInline(t *testing.T) {
+	input := "RETURN MATCH x(1=>10,_=>0)"
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "MATCH x ( 1 => 10, _ => 0 )" {
+		t.Fatalf("unexpected MATCH inline formatting: %q", got)
+	}
+}
+
+func TestExpressionFormatter_MatchExpressionGuardMultiline(t *testing.T) {
+	input := "RETURN MATCH(WHEN a>0=>a,WHEN a<0=>-a,_=>0)"
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	opts := DefaultOptions()
+	opts.printWidth = 10
+	e := newEngine(file.NewAnonymousSource(input), &buf, opts)
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "MATCH (\n    WHEN a > 0 => a,\n    WHEN a < 0 => -a,\n    _ => 0,\n)" {
+		t.Fatalf("unexpected MATCH guard multiline formatting: %q", got)
+	}
+}
+
+func TestExpressionFormatter_MatchExpressionObjectPattern(t *testing.T) {
+	input := `RETURN MATCH obj({ "a": 1, b: v }=>v,_=>0)`
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != `MATCH obj ( { "a": 1, b: v } => v, _ => 0 )` {
+		t.Fatalf("unexpected MATCH object pattern formatting: %q", got)
+	}
+}

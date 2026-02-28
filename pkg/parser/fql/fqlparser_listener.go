@@ -280,6 +280,51 @@ type FqlParserListener interface {
 	// EnterExpressionAtom is called when entering the expressionAtom production.
 	EnterExpressionAtom(c *ExpressionAtomContext)
 
+	// EnterMatchExpression is called when entering the matchExpression production.
+	EnterMatchExpression(c *MatchExpressionContext)
+
+	// EnterMatchPatternArms is called when entering the matchPatternArms production.
+	EnterMatchPatternArms(c *MatchPatternArmsContext)
+
+	// EnterMatchPatternArmList is called when entering the matchPatternArmList production.
+	EnterMatchPatternArmList(c *MatchPatternArmListContext)
+
+	// EnterMatchGuardArms is called when entering the matchGuardArms production.
+	EnterMatchGuardArms(c *MatchGuardArmsContext)
+
+	// EnterMatchGuardArmList is called when entering the matchGuardArmList production.
+	EnterMatchGuardArmList(c *MatchGuardArmListContext)
+
+	// EnterMatchPatternArm is called when entering the matchPatternArm production.
+	EnterMatchPatternArm(c *MatchPatternArmContext)
+
+	// EnterMatchPatternGuard is called when entering the matchPatternGuard production.
+	EnterMatchPatternGuard(c *MatchPatternGuardContext)
+
+	// EnterMatchGuardArm is called when entering the matchGuardArm production.
+	EnterMatchGuardArm(c *MatchGuardArmContext)
+
+	// EnterMatchDefaultArm is called when entering the matchDefaultArm production.
+	EnterMatchDefaultArm(c *MatchDefaultArmContext)
+
+	// EnterMatchPattern is called when entering the matchPattern production.
+	EnterMatchPattern(c *MatchPatternContext)
+
+	// EnterMatchBindingPattern is called when entering the matchBindingPattern production.
+	EnterMatchBindingPattern(c *MatchBindingPatternContext)
+
+	// EnterMatchLiteralPattern is called when entering the matchLiteralPattern production.
+	EnterMatchLiteralPattern(c *MatchLiteralPatternContext)
+
+	// EnterMatchObjectPattern is called when entering the matchObjectPattern production.
+	EnterMatchObjectPattern(c *MatchObjectPatternContext)
+
+	// EnterMatchObjectPatternProperty is called when entering the matchObjectPatternProperty production.
+	EnterMatchObjectPatternProperty(c *MatchObjectPatternPropertyContext)
+
+	// EnterMatchObjectPatternKey is called when entering the matchObjectPatternKey production.
+	EnterMatchObjectPatternKey(c *MatchObjectPatternKeyContext)
+
 	// EnterImplicitMemberExpression is called when entering the implicitMemberExpression production.
 	EnterImplicitMemberExpression(c *ImplicitMemberExpressionContext)
 
@@ -606,6 +651,51 @@ type FqlParserListener interface {
 
 	// ExitExpressionAtom is called when exiting the expressionAtom production.
 	ExitExpressionAtom(c *ExpressionAtomContext)
+
+	// ExitMatchExpression is called when exiting the matchExpression production.
+	ExitMatchExpression(c *MatchExpressionContext)
+
+	// ExitMatchPatternArms is called when exiting the matchPatternArms production.
+	ExitMatchPatternArms(c *MatchPatternArmsContext)
+
+	// ExitMatchPatternArmList is called when exiting the matchPatternArmList production.
+	ExitMatchPatternArmList(c *MatchPatternArmListContext)
+
+	// ExitMatchGuardArms is called when exiting the matchGuardArms production.
+	ExitMatchGuardArms(c *MatchGuardArmsContext)
+
+	// ExitMatchGuardArmList is called when exiting the matchGuardArmList production.
+	ExitMatchGuardArmList(c *MatchGuardArmListContext)
+
+	// ExitMatchPatternArm is called when exiting the matchPatternArm production.
+	ExitMatchPatternArm(c *MatchPatternArmContext)
+
+	// ExitMatchPatternGuard is called when exiting the matchPatternGuard production.
+	ExitMatchPatternGuard(c *MatchPatternGuardContext)
+
+	// ExitMatchGuardArm is called when exiting the matchGuardArm production.
+	ExitMatchGuardArm(c *MatchGuardArmContext)
+
+	// ExitMatchDefaultArm is called when exiting the matchDefaultArm production.
+	ExitMatchDefaultArm(c *MatchDefaultArmContext)
+
+	// ExitMatchPattern is called when exiting the matchPattern production.
+	ExitMatchPattern(c *MatchPatternContext)
+
+	// ExitMatchBindingPattern is called when exiting the matchBindingPattern production.
+	ExitMatchBindingPattern(c *MatchBindingPatternContext)
+
+	// ExitMatchLiteralPattern is called when exiting the matchLiteralPattern production.
+	ExitMatchLiteralPattern(c *MatchLiteralPatternContext)
+
+	// ExitMatchObjectPattern is called when exiting the matchObjectPattern production.
+	ExitMatchObjectPattern(c *MatchObjectPatternContext)
+
+	// ExitMatchObjectPatternProperty is called when exiting the matchObjectPatternProperty production.
+	ExitMatchObjectPatternProperty(c *MatchObjectPatternPropertyContext)
+
+	// ExitMatchObjectPatternKey is called when exiting the matchObjectPatternKey production.
+	ExitMatchObjectPatternKey(c *MatchObjectPatternKeyContext)
 
 	// ExitImplicitMemberExpression is called when exiting the implicitMemberExpression production.
 	ExitImplicitMemberExpression(c *ImplicitMemberExpressionContext)

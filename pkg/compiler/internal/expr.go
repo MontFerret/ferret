@@ -439,6 +439,8 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) bytecode.Oper
 
 	if fex := ctx.FunctionCallExpression(); fex != nil {
 		return c.CompileFunctionCallExpression(fex)
+	} else if mx := ctx.MatchExpression(); mx != nil {
+		return c.compileMatchExpression(mx)
 	} else if qx := ctx.QueryExpression(); qx != nil {
 		return c.compileQueryExpression(qx)
 	} else if r := ctx.RangeOperator(); r != nil {
@@ -466,6 +468,304 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) bytecode.Oper
 	}
 
 	return bytecode.NoopOperand
+}
+
+func (c *ExprCompiler) compileMatchExpression(ctx fql.IMatchExpressionContext) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
+	dst := c.ctx.Registers.Allocate()
+	end := c.ctx.Emitter.NewLabel("match.end")
+
+	if arms := ctx.MatchPatternArms(); arms != nil {
+		scrutinee := ctx.Expression()
+		if scrutinee == nil {
+			return bytecode.NoopOperand
+		}
+
+		scrReg := c.ensureRegister(c.Compile(scrutinee))
+		c.compileMatchPatternArms(scrReg, arms, dst, end)
+	} else if guards := ctx.MatchGuardArms(); guards != nil {
+		c.compileMatchGuardArms(guards, dst, end)
+	}
+
+	c.ctx.Emitter.MarkLabel(end)
+
+	if dst.IsRegister() {
+		c.ctx.Types.Set(dst, core.TypeAny)
+	}
+
+	return dst
+}
+
+func (c *ExprCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx fql.IMatchPatternArmsContext, dst bytecode.Operand, end core.Label) {
+	if ctx == nil {
+		return
+	}
+
+	var arms []fql.IMatchPatternArmContext
+	if list := ctx.MatchPatternArmList(); list != nil {
+		arms = list.AllMatchPatternArm()
+	}
+
+	for _, arm := range arms {
+		if arm == nil {
+			continue
+		}
+
+		next := c.ctx.Emitter.NewLabel("match.next")
+		c.ctx.Symbols.EnterScope()
+
+		if pattern := arm.MatchPattern(); pattern != nil {
+			c.compileMatchPatternValue(scrReg, pattern, next)
+		}
+
+		if guard := arm.MatchPatternGuard(); guard != nil {
+			if expr := guard.Expression(); expr != nil {
+				cond := c.Compile(expr)
+				c.ctx.Emitter.EmitJumpIfFalse(cond, next)
+			}
+		}
+
+		if result := arm.Expression(); result != nil {
+			out := c.ensureRegister(c.Compile(result))
+			c.ctx.Emitter.EmitMove(dst, out)
+		}
+
+		c.ctx.Emitter.EmitJump(end)
+		c.ctx.Symbols.ExitScope()
+		c.ctx.Emitter.MarkLabel(next)
+	}
+
+	if def := ctx.MatchDefaultArm(); def != nil {
+		c.ctx.Symbols.EnterScope()
+		if result := def.Expression(); result != nil {
+			out := c.ensureRegister(c.Compile(result))
+			c.ctx.Emitter.EmitMove(dst, out)
+		}
+		c.ctx.Symbols.ExitScope()
+	}
+}
+
+func (c *ExprCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext, dst bytecode.Operand, end core.Label) {
+	if ctx == nil {
+		return
+	}
+
+	var arms []fql.IMatchGuardArmContext
+	if list := ctx.MatchGuardArmList(); list != nil {
+		arms = list.AllMatchGuardArm()
+	}
+
+	for _, arm := range arms {
+		if arm == nil {
+			continue
+		}
+
+		next := c.ctx.Emitter.NewLabel("match.next")
+		c.ctx.Symbols.EnterScope()
+
+		exprs := arm.AllExpression()
+		if len(exprs) > 0 {
+			cond := c.Compile(exprs[0])
+			c.ctx.Emitter.EmitJumpIfFalse(cond, next)
+		}
+
+		if len(exprs) > 1 {
+			out := c.ensureRegister(c.Compile(exprs[1]))
+			c.ctx.Emitter.EmitMove(dst, out)
+		}
+
+		c.ctx.Emitter.EmitJump(end)
+		c.ctx.Symbols.ExitScope()
+		c.ctx.Emitter.MarkLabel(next)
+	}
+
+	if def := ctx.MatchDefaultArm(); def != nil {
+		c.ctx.Symbols.EnterScope()
+		if result := def.Expression(); result != nil {
+			out := c.ensureRegister(c.Compile(result))
+			c.ctx.Emitter.EmitMove(dst, out)
+		}
+		c.ctx.Symbols.ExitScope()
+	}
+}
+
+func (c *ExprCompiler) compileMatchPatternValue(valueReg bytecode.Operand, ctx fql.IMatchPatternContext, onFail core.Label) {
+	if ctx == nil {
+		return
+	}
+
+	switch {
+	case ctx.MatchLiteralPattern() != nil:
+		litReg := c.compileMatchLiteralPattern(ctx.MatchLiteralPattern())
+		cmp := c.emitComparison(bytecode.OpEq, valueReg, litReg)
+		c.ctx.Emitter.EmitJumpIfFalse(cmp, onFail)
+	case ctx.MatchBindingPattern() != nil:
+		binding := ctx.MatchBindingPattern()
+		if binding == nil {
+			return
+		}
+		var name string
+		if id := binding.Identifier(); id != nil {
+			name = id.GetText()
+		} else if srw := binding.SafeReservedWord(); srw != nil {
+			name = srw.GetText()
+		}
+		if name != "" {
+			c.declareMatchBinding(binding, name, valueReg)
+		}
+	case ctx.MatchObjectPattern() != nil:
+		c.compileMatchObjectPattern(valueReg, ctx.MatchObjectPattern(), onFail)
+	}
+}
+
+func (c *ExprCompiler) compileMatchLiteralPattern(ctx fql.IMatchLiteralPatternContext) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
+	if nl := ctx.NoneLiteral(); nl != nil {
+		return c.ctx.LiteralCompiler.CompileNoneLiteral(nl)
+	}
+
+	if bl := ctx.BooleanLiteral(); bl != nil {
+		return c.ctx.LiteralCompiler.CompileBooleanLiteral(bl)
+	}
+
+	if sl := ctx.StringLiteral(); sl != nil {
+		if val, ok := parseStringLiteralConst(sl); ok {
+			return loadConstant(c.ctx, val)
+		}
+
+		return c.ctx.LiteralCompiler.CompileStringLiteral(sl)
+	}
+
+	if fl := ctx.FloatLiteral(); fl != nil {
+		return c.ctx.LiteralCompiler.CompileFloatLiteral(fl)
+	}
+
+	if il := ctx.IntegerLiteral(); il != nil {
+		return c.ctx.LiteralCompiler.CompileIntegerLiteral(il)
+	}
+
+	return bytecode.NoopOperand
+}
+
+func (c *ExprCompiler) compileMatchObjectPattern(valueReg bytecode.Operand, ctx fql.IMatchObjectPatternContext, onFail core.Label) {
+	if ctx == nil {
+		return
+	}
+
+	props := ctx.AllMatchObjectPatternProperty()
+	if len(props) == 0 {
+		keys := c.emitObjectsKeys(valueReg)
+		c.ctx.Emitter.EmitJumpIfNone(keys, onFail)
+		return
+	}
+
+	for _, prop := range props {
+		if prop == nil {
+			continue
+		}
+
+		keyReg := c.compileMatchObjectPatternKey(prop.MatchObjectPatternKey())
+		if keyReg == bytecode.NoopOperand {
+			continue
+		}
+
+		has := c.emitObjectsHas(valueReg, keyReg)
+		c.ctx.Emitter.EmitJumpIfFalse(has, onFail)
+
+		val := c.ctx.Registers.Allocate()
+		c.ctx.Emitter.EmitABC(bytecode.OpLoadProperty, val, valueReg, keyReg)
+		c.compileMatchPatternValue(val, prop.MatchPattern(), onFail)
+	}
+}
+
+func (c *ExprCompiler) compileMatchObjectPatternKey(ctx fql.IMatchObjectPatternKeyContext) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
+	if sl := ctx.StringLiteral(); sl != nil {
+		if val, ok := parseStringLiteralConst(sl); ok {
+			return loadConstant(c.ctx, val)
+		}
+
+		return c.ctx.LiteralCompiler.CompileStringLiteral(sl)
+	}
+
+	var name string
+
+	if id := ctx.Identifier(); id != nil {
+		name = id.GetText()
+	} else if srw := ctx.SafeReservedWord(); srw != nil {
+		name = srw.GetText()
+	} else if urw := ctx.UnsafeReservedWord(); urw != nil {
+		name = urw.GetText()
+	}
+
+	if name == "" {
+		return bytecode.NoopOperand
+	}
+
+	return loadConstant(c.ctx, runtime.NewString(name))
+}
+
+func (c *ExprCompiler) emitObjectsHas(scrReg, keyReg bytecode.Operand) bytecode.Operand {
+	scrReg = c.ensureRegister(scrReg)
+	keyReg = c.ensureRegister(keyReg)
+	seq := c.ctx.Registers.AllocateSequence(2)
+	c.ctx.Emitter.EmitMove(seq[0], scrReg)
+	c.ctx.Emitter.EmitMove(seq[1], keyReg)
+
+	return c.CompileFunctionCallByNameWith(runtime.NewString("HAS"), true, seq)
+}
+
+func (c *ExprCompiler) emitObjectsKeys(scrReg bytecode.Operand) bytecode.Operand {
+	scrReg = c.ensureRegister(scrReg)
+	seq := c.ctx.Registers.AllocateSequence(1)
+	c.ctx.Emitter.EmitMove(seq[0], scrReg)
+
+	return c.CompileFunctionCallByNameWith(runtime.NewString("KEYS"), true, seq)
+}
+
+func (c *ExprCompiler) declareMatchBinding(ctx antlr.ParserRuleContext, name string, valueReg bytecode.Operand) bytecode.Operand {
+	valueReg = c.ensureRegister(valueReg)
+	reg, ok := c.ctx.Symbols.DeclareLocal(name, core.TypeAny)
+	if ok {
+		c.ctx.Emitter.EmitMove(reg, valueReg)
+		c.ctx.Types.Set(reg, operandType(c.ctx, valueReg))
+		return reg
+	}
+
+	if ctx != nil {
+		c.ctx.Errors.DuplicateMatchBinding(ctx, name)
+	}
+
+	if existing, _, found := c.ctx.Symbols.Resolve(name); found {
+		return existing
+	}
+
+	return valueReg
+}
+
+func (c *ExprCompiler) ensureRegister(op bytecode.Operand) bytecode.Operand {
+	if op == bytecode.NoopOperand {
+		return op
+	}
+
+	if op.IsRegister() {
+		return op
+	}
+
+	reg := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitLoadConst(reg, op)
+	c.ctx.Types.Set(reg, operandType(c.ctx, op))
+
+	return reg
 }
 
 // CompileImplicitMemberExpression processes an implicit member expression (e.g., .name, .[0], ?.name).

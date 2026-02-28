@@ -371,6 +371,66 @@ func (v *BaseFqlParserVisitor) VisitExpressionAtom(ctx *ExpressionAtomContext) i
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitMatchExpression(ctx *MatchExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMatchPatternArms(ctx *MatchPatternArmsContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMatchPatternArmList(ctx *MatchPatternArmListContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMatchGuardArms(ctx *MatchGuardArmsContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMatchGuardArmList(ctx *MatchGuardArmListContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMatchPatternArm(ctx *MatchPatternArmContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMatchPatternGuard(ctx *MatchPatternGuardContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMatchGuardArm(ctx *MatchGuardArmContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMatchDefaultArm(ctx *MatchDefaultArmContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMatchPattern(ctx *MatchPatternContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMatchBindingPattern(ctx *MatchBindingPatternContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMatchLiteralPattern(ctx *MatchLiteralPatternContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMatchObjectPattern(ctx *MatchObjectPatternContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMatchObjectPatternProperty(ctx *MatchObjectPatternPropertyContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMatchObjectPatternKey(ctx *MatchObjectPatternKeyContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitImplicitMemberExpression(ctx *ImplicitMemberExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
