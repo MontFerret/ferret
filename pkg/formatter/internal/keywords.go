@@ -34,7 +34,6 @@ const (
 	keywordStep      = "STEP"
 	keywordThrow     = "THROW"
 	keywordTimeout   = "TIMEOUT"
-	keywordFrom      = "FROM"
 	keywordUse       = "USE"
 	keywordUsing     = "USING"
 	keywordValue     = "VALUE"

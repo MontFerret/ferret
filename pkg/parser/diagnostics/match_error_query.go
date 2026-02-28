@@ -39,37 +39,37 @@ func matchQueryErrors(src *file.Source, err *diagnostics.Diagnostic, offending *
 
 		span := spanFromTokenSafe(spanNode.Token(), src)
 		err.Message = "QUERY requires a query literal"
-		err.Hint = "Provide a query literal, e.g. QUERY `.items` FROM doc USING css."
+		err.Hint = "Provide a query literal, e.g. QUERY `.items` IN doc USING css."
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing query literal"),
 		}
 		return true
 	}
 
-	if expectsKeyword(err.Message, "from") && hasPrevToken(offending, "QUERY", 10) && hasQueryLiteralBetween(offending, 10) && !hasTokenBefore(offending, "QUERY", "FROM", 10) {
+	if expectsKeyword(err.Message, "in") && hasPrevToken(offending, "QUERY", 10) && hasQueryLiteralBetween(offending, 10) && !hasTokenBefore(offending, "QUERY", "IN", 10) {
 		span := spanFromTokenSafe(offending.Token(), src)
-		err.Message = "Expected FROM after query literal"
-		err.Hint = "Add FROM <expr>, e.g. QUERY `.items` FROM doc USING css."
+		err.Message = "Expected IN after query literal"
+		err.Hint = "Add IN <expr>, e.g. QUERY `.items` IN doc USING css."
 		err.Spans = []diagnostics.ErrorSpan{
-			diagnostics.NewMainErrorSpan(span, "missing 'FROM'"),
+			diagnostics.NewMainErrorSpan(span, "missing 'IN'"),
 		}
 		return true
 	}
 
-	if (is(offending, "USING") || is(offending, "WITH") || isEOF(offending)) && hasPrevToken(offending, "FROM", 2) {
+	if (is(offending, "USING") || is(offending, "WITH") || isEOF(offending)) && hasPrevToken(offending, "IN", 2) {
 		span := spanFromTokenSafe(offending.Token(), src)
-		err.Message = "Expected expression after FROM"
-		err.Hint = "Provide a source expression, e.g. QUERY `.items` FROM doc USING css."
+		err.Message = "Expected expression after IN"
+		err.Hint = "Provide a source expression, e.g. QUERY `.items` IN doc USING css."
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing expression"),
 		}
 		return true
 	}
 
-	if expectsKeyword(err.Message, "using") && hasTokenBefore(offending, "QUERY", "FROM", 10) && !hasTokenBefore(offending, "QUERY", "USING", 10) {
+	if expectsKeyword(err.Message, "using") && hasTokenBefore(offending, "QUERY", "IN", 10) && !hasTokenBefore(offending, "QUERY", "USING", 10) {
 		span := spanFromTokenSafe(offending.Token(), src)
-		err.Message = "Expected USING <dialect> after FROM expression"
-		err.Hint = "Add USING <dialect>, e.g. QUERY `.items` FROM doc USING css."
+		err.Message = "Expected USING <dialect> after IN expression"
+		err.Hint = "Add USING <dialect>, e.g. QUERY `.items` IN doc USING css."
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing 'USING'"),
 		}
@@ -146,11 +146,11 @@ func isMissingQueryLiteral(msg string, offending *TokenNode) bool {
 		return false
 	}
 
-	if is(offending, "FROM") && is(offending.Prev(), "QUERY") {
+	if is(offending, "IN") && is(offending.Prev(), "QUERY") {
 		return true
 	}
 
-	if is(offending, "QUERY") && is(offending.Next(), "FROM") {
+	if is(offending, "QUERY") && is(offending.Next(), "IN") {
 		return true
 	}
 

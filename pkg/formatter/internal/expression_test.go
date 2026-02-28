@@ -68,7 +68,7 @@ func TestExpressionFormatter_ImplicitCurrentExpression(t *testing.T) {
 }
 
 func TestExpressionFormatter_QueryExpressionInline(t *testing.T) {
-	input := "RETURN QUERY `.items` FROM doc USING css WITH { limit: 10 }"
+	input := "RETURN QUERY `.items` IN doc USING css WITH { limit: 10 }"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -76,7 +76,7 @@ func TestExpressionFormatter_QueryExpressionInline(t *testing.T) {
 	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "QUERY `.items` FROM doc USING css WITH { limit: 10 }" {
+	if got := buf.String(); got != "QUERY `.items` IN doc USING css WITH { limit: 10 }" {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }

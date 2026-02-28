@@ -41,7 +41,7 @@ options { tokenVocab=FqlLexer; }
 
 	func (p *FqlParser) isUnsafeReservedWordToken(token int) bool {
 		switch token {
-		case FqlParserReturn, FqlParserDispatch, FqlParserQuery, FqlParserFrom, FqlParserUsing, FqlParserNone,
+		case FqlParserReturn, FqlParserDispatch, FqlParserQuery, FqlParserUsing, FqlParserNone,
 			FqlParserNull, FqlParserLet, FqlParserUse, FqlParserWaitfor, FqlParserWhile, FqlParserDo, FqlParserIn,
 			FqlParserLike, FqlParserNot, FqlParserFor, FqlParserBooleanLiteral, FqlParserThrow:
 			return true
@@ -544,7 +544,6 @@ unsafeReservedWord
     : Return
     | Dispatch
     | Query
-    | From
     | Using
     | None
     | Null
@@ -631,7 +630,7 @@ implicitMemberExpressionStart
     ;
 
 queryExpression
-    : Query stringLiteral From expression Using Identifier queryWithOpt?
+    : Query stringLiteral In expression Using Identifier queryWithOpt?
     ;
 
 queryWithOpt

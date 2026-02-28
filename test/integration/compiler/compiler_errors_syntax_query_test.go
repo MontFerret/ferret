@@ -9,11 +9,11 @@ import (
 func TestSyntaxErrorsQueryExpression(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		ErrorCase(
-			`RETURN QUERY FROM doc USING css`,
+			`RETURN QUERY IN doc USING css`,
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "QUERY requires a query literal",
-				Hint:    "Provide a query literal, e.g. QUERY `.items` FROM doc USING css.",
+				Hint:    "Provide a query literal, e.g. QUERY `.items` IN doc USING css.",
 			},
 			"Missing query literal after QUERY",
 		),
@@ -21,31 +21,31 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			"RETURN QUERY `.x` doc USING css",
 			E{
 				Kind:    parserd.SyntaxError,
-				Message: "Expected FROM after query literal",
-				Hint:    "Add FROM <expr>, e.g. QUERY `.items` FROM doc USING css.",
+				Message: "Expected IN after query literal",
+				Hint:    "Add IN <expr>, e.g. QUERY `.items` IN doc USING css.",
 			},
-			"Missing FROM after query literal",
+			"Missing IN after query literal",
 		),
 		ErrorCase(
-			"RETURN QUERY `.x` FROM USING css",
+			"RETURN QUERY `.x` IN USING css",
 			E{
 				Kind:    parserd.SyntaxError,
-				Message: "Expected expression after FROM",
-				Hint:    "Provide a source expression, e.g. QUERY `.items` FROM doc USING css.",
+				Message: "Expected expression after IN",
+				Hint:    "Provide a source expression, e.g. QUERY `.items` IN doc USING css.",
 			},
-			"Missing source expression after FROM",
+			"Missing source expression after IN",
 		),
 		ErrorCase(
-			"RETURN QUERY `.x` FROM doc css",
+			"RETURN QUERY `.x` IN doc css",
 			E{
 				Kind:    parserd.SyntaxError,
-				Message: "Expected USING <dialect> after FROM expression",
-				Hint:    "Add USING <dialect>, e.g. QUERY `.items` FROM doc USING css.",
+				Message: "Expected USING <dialect> after IN expression",
+				Hint:    "Add USING <dialect>, e.g. QUERY `.items` IN doc USING css.",
 			},
-			"Missing USING after FROM expression",
+			"Missing USING after IN expression",
 		),
 		ErrorCase(
-			"RETURN QUERY `.x` FROM doc USING",
+			"RETURN QUERY `.x` IN doc USING",
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected dialect identifier after USING",
@@ -54,7 +54,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			"Missing dialect after USING",
 		),
 		ErrorCase(
-			"RETURN QUERY `.x` FROM doc USING \"css\"",
+			"RETURN QUERY `.x` IN doc USING \"css\"",
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Dialect after USING must be an identifier",
@@ -63,7 +63,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			"Invalid dialect token after USING",
 		),
 		ErrorCase(
-			"RETURN QUERY `.x` FROM @doc USING css WITH RETURN",
+			"RETURN QUERY `.x` IN @doc USING css WITH RETURN",
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected options expression after WITH",

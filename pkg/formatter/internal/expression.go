@@ -167,7 +167,7 @@ func (f *expressionFormatter) formatQueryExpressionWith(p *printer, ctx *fql.Que
 	}
 
 	p.space()
-	f.writeKeywordWith(p, keywordFrom)
+	f.writeKeywordWith(p, keywordIn)
 	p.space()
 
 	if expr := ctx.Expression(); expr != nil {

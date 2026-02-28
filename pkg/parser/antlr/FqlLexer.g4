@@ -63,7 +63,6 @@ RegexMatch: '=~';
 For: 'FOR';
 Return: 'RETURN';
 Query: 'QUERY';
-From: 'FROM';
 Using: 'USING';
 Waitfor: 'WAITFOR';
 Dispatch: 'DISPATCH';
