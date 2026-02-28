@@ -10,6 +10,7 @@ type SyntaxErrorMatcher func(src *file.Source, err *diagnostics.Diagnostic, offe
 func AnalyzeSyntaxError(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	matchers := []SyntaxErrorMatcher{
 		matchArrayOperatorErrors,
+		matchQueryErrors,
 		matchStepLoopErrors,
 		matchLiteralErrors,
 		matchWaitForErrors,

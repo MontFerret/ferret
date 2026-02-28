@@ -238,7 +238,9 @@ func TestQueryable(t *testing.T) {
 
 	RunUseCases(t, []UseCase{
 		CaseArray("RETURN @doc[~ css`.items`]", []any{"ok"}, "Should apply query literal"),
+		CaseArray("RETURN QUERY `.items` FROM @doc USING css", []any{"ok"}, "Should apply query expression"),
 		CaseArray("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", []any{"ok"}, "Should apply query literal with params"),
+		CaseArray("RETURN QUERY `SELECT * FROM products` FROM @doc USING sql WITH { c: \"phones\" }", []any{"ok"}, "Should apply query expression with options"),
 		CaseArray("RETURN @doc[~ text]", []any{"ok"}, "Should apply query literal with no string payload"),
 		RuntimeErrorCase("RETURN @val[~ css`x`]", ExpectedRuntimeError{Message: "Invalid type"}),
 	}, vm.WithParams(map[string]runtime.Value{
@@ -250,6 +252,7 @@ func TestQueryable(t *testing.T) {
 		convey.Convey("Should be ok", t, func() {
 			var hasCSS bool
 			var hasSQLParams bool
+			var hasSQLQueryExpr bool
 			var hasText bool
 
 			for _, q := range queryable.queries {
@@ -263,6 +266,16 @@ func TestQueryable(t *testing.T) {
 						hasText = true
 					}
 				case runtime.NewString("sql"):
+					if q.Payload == runtime.NewString("SELECT * FROM products") {
+						params, err := runtime.ToMap(context.Background(), q.Options)
+						convey.So(err, convey.ShouldBeNil)
+
+						value, err := params.Get(context.Background(), runtime.NewString("c"))
+						if err == nil && value == runtime.NewString("phones") {
+							hasSQLQueryExpr = true
+						}
+					}
+
 					params, err := runtime.ToMap(context.Background(), q.Options)
 					convey.So(err, convey.ShouldBeNil)
 
@@ -275,6 +288,7 @@ func TestQueryable(t *testing.T) {
 
 			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and payload %q", "css", ".items"), hasCSS, convey.ShouldBeTrue)
 			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and empty payload", "text"), hasText, convey.ShouldBeTrue)
+			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and params containing %q=%q", "sql", "c", "phones"), hasSQLQueryExpr, convey.ShouldBeTrue)
 			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and params containing %q=%q", "sql", "c", "laptops"), hasSQLParams, convey.ShouldBeTrue)
 		})
 	})

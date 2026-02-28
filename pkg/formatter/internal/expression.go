@@ -105,6 +105,8 @@ func (f *expressionFormatter) formatExpressionAtom(ctx *fql.ExpressionAtomContex
 		f.formatRegexpOperator(ctx.RegexpOperator().(*fql.RegexpOperatorContext))
 		f.p.space()
 		f.formatExpressionAtom(ctx.GetRight().(*fql.ExpressionAtomContext))
+	case ctx.QueryExpression() != nil:
+		f.formatQueryExpression(ctx.QueryExpression().(*fql.QueryExpressionContext))
 	case ctx.FunctionCallExpression() != nil:
 		f.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
 	case ctx.RangeOperator() != nil:
@@ -127,6 +129,75 @@ func (f *expressionFormatter) formatExpressionAtom(ctx *fql.ExpressionAtomContex
 		f.statement.formatWaitForExpression(ctx.WaitForExpression().(*fql.WaitForExpressionContext))
 	case ctx.OpenParen() != nil:
 		f.formatParenthesizedExpression(ctx)
+	}
+}
+
+func (f *expressionFormatter) formatQueryExpression(ctx *fql.QueryExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	if ctx.QueryWithOpt() == nil || f.p.forceSingleLine {
+		f.formatQueryExpressionWith(f.p, ctx, true)
+		return
+	}
+
+	inline, ok := f.renderInline(func(p *printer) {
+		f.formatQueryExpressionWith(p, ctx, true)
+	})
+
+	if ok && len(inline) <= int(f.opts.printWidth) {
+		f.p.write(inline)
+		return
+	}
+
+	f.formatQueryExpressionWith(f.p, ctx, false)
+}
+
+func (f *expressionFormatter) formatQueryExpressionWith(p *printer, ctx *fql.QueryExpressionContext, inline bool) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeywordWith(p, keywordQuery)
+	p.space()
+
+	if lit := ctx.StringLiteral(); lit != nil {
+		f.literal.formatStringLiteralNodeWith(p, lit)
+	}
+
+	p.space()
+	f.writeKeywordWith(p, keywordFrom)
+	p.space()
+
+	if expr := ctx.Expression(); expr != nil {
+		f.formatExpressionWith(p, expr.(*fql.ExpressionContext))
+	}
+
+	p.space()
+	f.writeKeywordWith(p, keywordUsing)
+	p.space()
+
+	if id := ctx.Identifier(); id != nil {
+		p.write(id.GetText())
+	}
+
+	if with := ctx.QueryWithOpt(); with != nil {
+		if expr := with.Expression(); expr != nil {
+			if inline {
+				p.space()
+				f.writeKeywordWith(p, keywordWith)
+				p.space()
+				f.formatExpressionWith(p, expr.(*fql.ExpressionContext))
+			} else {
+				p.newline()
+				p.withIndent(func() {
+					f.writeKeywordWith(p, keywordWith)
+					p.space()
+					f.formatExpressionWith(p, expr.(*fql.ExpressionContext))
+				})
+			}
+		}
 	}
 }
 
@@ -401,4 +472,12 @@ func (f *expressionFormatter) formatExpressionWith(p *printer, ctx *fql.Expressi
 	f.p = p
 	f.formatExpression(ctx)
 	f.p = orig
+}
+
+func (f *expressionFormatter) writeKeywordWith(p *printer, val string) {
+	if p == nil {
+		return
+	}
+
+	p.write(applyCase(f.opts.caseMode, val))
 }

@@ -66,3 +66,17 @@ func TestExpressionFormatter_ImplicitCurrentExpression(t *testing.T) {
 		t.Fatalf("unexpected implicit current formatting: %q", got)
 	}
 }
+
+func TestExpressionFormatter_QueryExpressionInline(t *testing.T) {
+	input := "RETURN QUERY `.items` FROM doc USING css WITH { limit: 10 }"
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "QUERY `.items` FROM doc USING css WITH { limit: 10 }" {
+		t.Fatalf("unexpected query expression formatting: %q", got)
+	}
+}

@@ -594,6 +594,18 @@ func (s *BaseFqlParserListener) EnterImplicitMemberExpressionStart(ctx *Implicit
 func (s *BaseFqlParserListener) ExitImplicitMemberExpressionStart(ctx *ImplicitMemberExpressionStartContext) {
 }
 
+// EnterQueryExpression is called when production queryExpression is entered.
+func (s *BaseFqlParserListener) EnterQueryExpression(ctx *QueryExpressionContext) {}
+
+// ExitQueryExpression is called when production queryExpression is exited.
+func (s *BaseFqlParserListener) ExitQueryExpression(ctx *QueryExpressionContext) {}
+
+// EnterQueryWithOpt is called when production queryWithOpt is entered.
+func (s *BaseFqlParserListener) EnterQueryWithOpt(ctx *QueryWithOptContext) {}
+
+// ExitQueryWithOpt is called when production queryWithOpt is exited.
+func (s *BaseFqlParserListener) ExitQueryWithOpt(ctx *QueryWithOptContext) {}
+
 // EnterQueryLiteral is called when production queryLiteral is entered.
 func (s *BaseFqlParserListener) EnterQueryLiteral(ctx *QueryLiteralContext) {}
 

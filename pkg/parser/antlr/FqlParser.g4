@@ -41,9 +41,9 @@ options { tokenVocab=FqlLexer; }
 
 	func (p *FqlParser) isUnsafeReservedWordToken(token int) bool {
 		switch token {
-		case FqlParserReturn, FqlParserDispatch, FqlParserNone, FqlParserNull, FqlParserLet, FqlParserUse,
-			FqlParserWaitfor, FqlParserWhile, FqlParserDo, FqlParserIn, FqlParserLike, FqlParserNot, FqlParserFor,
-			FqlParserBooleanLiteral, FqlParserThrow:
+		case FqlParserReturn, FqlParserDispatch, FqlParserQuery, FqlParserFrom, FqlParserUsing, FqlParserNone,
+			FqlParserNull, FqlParserLet, FqlParserUse, FqlParserWaitfor, FqlParserWhile, FqlParserDo, FqlParserIn,
+			FqlParserLike, FqlParserNot, FqlParserFor, FqlParserBooleanLiteral, FqlParserThrow:
 			return true
 		default:
 			return false
@@ -543,6 +543,9 @@ safeReservedWord
 unsafeReservedWord
     : Return
     | Dispatch
+    | Query
+    | From
+    | Using
     | None
     | Null
     | Let
@@ -596,6 +599,7 @@ expressionAtom
     : left=expressionAtom multiplicativeOperator right=expressionAtom
     | left=expressionAtom additiveOperator right=expressionAtom
     | left=expressionAtom regexpOperator right=expressionAtom
+    | queryExpression
     | functionCallExpression
     | rangeOperator
     | literal
@@ -624,6 +628,14 @@ implicitMemberExpressionStart
     | Dot arrayContraction
     | Dot arrayQuestionMark
     | Dot arrayApply
+    ;
+
+queryExpression
+    : Query stringLiteral From expression Using Identifier queryWithOpt?
+    ;
+
+queryWithOpt
+    : With expression
     ;
 
 queryLiteral
