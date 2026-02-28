@@ -176,6 +176,148 @@ func TestPeephole_RewritesAddConstRight(t *testing.T) {
 	}
 }
 
+func TestPeephole_RewritesEqJumpToJumpIfNe(t *testing.T) {
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpEq, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpJumpIfFalse, bytecode.Operand(3), bytecode.NewRegister(3)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+		},
+	}
+
+	res, err := runPeephole(t, program)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !res.Modified {
+		t.Fatalf("expected peephole pass to modify program")
+	}
+	if len(program.Bytecode) != 3 {
+		t.Fatalf("expected 3 instructions, got %d", len(program.Bytecode))
+	}
+
+	inst := program.Bytecode[0]
+	if inst.Opcode != bytecode.OpJumpIfNe {
+		t.Fatalf("expected first instruction to be JMPNE, got %s", inst.Opcode)
+	}
+	if inst.Operands[0] != bytecode.Operand(2) {
+		t.Fatalf("unexpected jump target: got %d, want %d", inst.Operands[0], 2)
+	}
+	if inst.Operands[1] != bytecode.NewRegister(1) || inst.Operands[2] != bytecode.NewRegister(2) {
+		t.Fatalf("unexpected operands: got %v %v", inst.Operands[1], inst.Operands[2])
+	}
+}
+
+func TestPeephole_RewritesEqConstJumpToJumpIfNeConst(t *testing.T) {
+	program := &bytecode.Program{
+		Constants: []runtime.Value{
+			runtime.NewInt(7),
+		},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(3), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpEq, bytecode.NewRegister(4), bytecode.NewRegister(1), bytecode.NewRegister(3)),
+			bytecode.NewInstruction(bytecode.OpJumpIfFalse, bytecode.Operand(4), bytecode.NewRegister(4)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+		},
+	}
+
+	res, err := runPeephole(t, program)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !res.Modified {
+		t.Fatalf("expected peephole pass to modify program")
+	}
+	if len(program.Bytecode) != 3 {
+		t.Fatalf("expected 3 instructions, got %d", len(program.Bytecode))
+	}
+
+	inst := program.Bytecode[0]
+	if inst.Opcode != bytecode.OpJumpIfNeConst {
+		t.Fatalf("expected first instruction to be JMPNEC, got %s", inst.Opcode)
+	}
+	if inst.Operands[0] != bytecode.Operand(2) {
+		t.Fatalf("unexpected jump target: got %d, want %d", inst.Operands[0], 2)
+	}
+	if inst.Operands[1] != bytecode.NewRegister(1) || inst.Operands[2] != bytecode.NewConstant(0) {
+		t.Fatalf("unexpected operands: got %v %v", inst.Operands[1], inst.Operands[2])
+	}
+}
+
+func TestPeephole_DoesNotRewriteEqWhenResultIsLive(t *testing.T) {
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpEq, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpJumpIfFalse, bytecode.Operand(3), bytecode.NewRegister(3)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(3)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+		},
+	}
+
+	res, err := runPeephole(t, program)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.Modified {
+		t.Fatalf("expected peephole pass to keep program unchanged")
+	}
+	if program.Bytecode[0].Opcode != bytecode.OpEq {
+		t.Fatalf("expected first instruction to remain EQ, got %s", program.Bytecode[0].Opcode)
+	}
+}
+
+func TestPeephole_DoesNotRewriteEqWhenTargeted(t *testing.T) {
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpJump, bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpEq, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpJumpIfFalse, bytecode.Operand(4), bytecode.NewRegister(3)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+		},
+	}
+
+	res, err := runPeephole(t, program)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.Modified {
+		t.Fatalf("expected peephole pass to keep program unchanged")
+	}
+	if program.Bytecode[1].Opcode != bytecode.OpEq {
+		t.Fatalf("expected EQ to remain, got %s", program.Bytecode[1].Opcode)
+	}
+}
+
+func TestPeephole_DoesNotRewriteWhenLoadConstIsTarget(t *testing.T) {
+	program := &bytecode.Program{
+		Constants: []runtime.Value{
+			runtime.NewInt(3),
+		},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpJump, bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(3), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpEq, bytecode.NewRegister(4), bytecode.NewRegister(1), bytecode.NewRegister(3)),
+			bytecode.NewInstruction(bytecode.OpJumpIfFalse, bytecode.Operand(5), bytecode.NewRegister(4)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+		},
+	}
+
+	res, err := runPeephole(t, program)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.Modified {
+		t.Fatalf("expected peephole pass to keep program unchanged")
+	}
+	if program.Bytecode[1].Opcode != bytecode.OpLoadConst {
+		t.Fatalf("expected LOADC to remain, got %s", program.Bytecode[1].Opcode)
+	}
+}
+
 func TestPeephole_SkipsAddConstRewriteWhenValueLiveAcrossJump(t *testing.T) {
 	program := &bytecode.Program{
 		Constants: []runtime.Value{

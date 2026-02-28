@@ -2,6 +2,7 @@ package internal
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -530,7 +531,9 @@ func (c *ExprCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx fql.
 
 		if result := arm.Expression(); result != nil {
 			out := c.ensureRegister(c.Compile(result))
-			c.ctx.Emitter.EmitMove(dst, out)
+			if out != bytecode.NoopOperand && out != dst {
+				c.ctx.Emitter.EmitMove(dst, out)
+			}
 		}
 
 		c.ctx.Emitter.EmitJump(end)
@@ -542,7 +545,9 @@ func (c *ExprCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx fql.
 		c.ctx.Symbols.EnterScope()
 		if result := def.Expression(); result != nil {
 			out := c.ensureRegister(c.Compile(result))
-			c.ctx.Emitter.EmitMove(dst, out)
+			if out != bytecode.NoopOperand && out != dst {
+				c.ctx.Emitter.EmitMove(dst, out)
+			}
 		}
 		c.ctx.Symbols.ExitScope()
 	}
@@ -574,7 +579,9 @@ func (c *ExprCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext, dst
 
 		if len(exprs) > 1 {
 			out := c.ensureRegister(c.Compile(exprs[1]))
-			c.ctx.Emitter.EmitMove(dst, out)
+			if out != bytecode.NoopOperand && out != dst {
+				c.ctx.Emitter.EmitMove(dst, out)
+			}
 		}
 
 		c.ctx.Emitter.EmitJump(end)
@@ -586,7 +593,9 @@ func (c *ExprCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext, dst
 		c.ctx.Symbols.EnterScope()
 		if result := def.Expression(); result != nil {
 			out := c.ensureRegister(c.Compile(result))
-			c.ctx.Emitter.EmitMove(dst, out)
+			if out != bytecode.NoopOperand && out != dst {
+				c.ctx.Emitter.EmitMove(dst, out)
+			}
 		}
 		c.ctx.Symbols.ExitScope()
 	}
@@ -599,9 +608,15 @@ func (c *ExprCompiler) compileMatchPatternValue(valueReg bytecode.Operand, ctx f
 
 	switch {
 	case ctx.MatchLiteralPattern() != nil:
-		litReg := c.compileMatchLiteralPattern(ctx.MatchLiteralPattern())
-		cmp := c.emitComparison(bytecode.OpEq, valueReg, litReg)
-		c.ctx.Emitter.EmitJumpIfFalse(cmp, onFail)
+		litOp := c.compileMatchLiteralOperand(ctx.MatchLiteralPattern())
+		if litOp == bytecode.NoopOperand {
+			return
+		}
+		if litOp.IsConstant() {
+			c.ctx.Emitter.EmitJumpCompare(bytecode.OpJumpIfNeConst, valueReg, litOp, onFail)
+		} else {
+			c.ctx.Emitter.EmitJumpCompare(bytecode.OpJumpIfNe, valueReg, litOp, onFail)
+		}
 	case ctx.MatchBindingPattern() != nil:
 		binding := ctx.MatchBindingPattern()
 		if binding == nil {
@@ -621,33 +636,48 @@ func (c *ExprCompiler) compileMatchPatternValue(valueReg bytecode.Operand, ctx f
 	}
 }
 
-func (c *ExprCompiler) compileMatchLiteralPattern(ctx fql.IMatchLiteralPatternContext) bytecode.Operand {
+func (c *ExprCompiler) compileMatchLiteralOperand(ctx fql.IMatchLiteralPatternContext) bytecode.Operand {
 	if ctx == nil {
 		return bytecode.NoopOperand
 	}
 
 	if nl := ctx.NoneLiteral(); nl != nil {
-		return c.ctx.LiteralCompiler.CompileNoneLiteral(nl)
+		return c.ctx.Symbols.AddConstant(runtime.None)
 	}
 
 	if bl := ctx.BooleanLiteral(); bl != nil {
-		return c.ctx.LiteralCompiler.CompileBooleanLiteral(bl)
+		switch strings.ToLower(bl.GetText()) {
+		case "true":
+			return c.ctx.Symbols.AddConstant(runtime.True)
+		case "false":
+			return c.ctx.Symbols.AddConstant(runtime.False)
+		default:
+			return bytecode.NoopOperand
+		}
 	}
 
 	if sl := ctx.StringLiteral(); sl != nil {
 		if val, ok := parseStringLiteralConst(sl); ok {
-			return loadConstant(c.ctx, val)
+			return c.ctx.Symbols.AddConstant(val)
 		}
 
 		return c.ctx.LiteralCompiler.CompileStringLiteral(sl)
 	}
 
 	if fl := ctx.FloatLiteral(); fl != nil {
-		return c.ctx.LiteralCompiler.CompileFloatLiteral(fl)
+		val, err := strconv.ParseFloat(fl.GetText(), 64)
+		if err != nil {
+			panic(err)
+		}
+		return c.ctx.Symbols.AddConstant(runtime.NewFloat(val))
 	}
 
 	if il := ctx.IntegerLiteral(); il != nil {
-		return c.ctx.LiteralCompiler.CompileIntegerLiteral(il)
+		val, err := strconv.Atoi(il.GetText())
+		if err != nil {
+			panic(err)
+		}
+		return c.ctx.Symbols.AddConstant(runtime.NewInt(val))
 	}
 
 	return bytecode.NoopOperand
@@ -670,16 +700,20 @@ func (c *ExprCompiler) compileMatchObjectPattern(valueReg bytecode.Operand, ctx 
 			continue
 		}
 
-		keyReg := c.compileMatchObjectPatternKey(prop.MatchObjectPatternKey())
-		if keyReg == bytecode.NoopOperand {
+		keyOp := c.compileMatchObjectPatternKey(prop.MatchObjectPatternKey())
+		if keyOp == bytecode.NoopOperand {
 			continue
 		}
 
-		has := c.emitObjectsHas(valueReg, keyReg)
+		has := c.emitObjectsHas(valueReg, keyOp)
 		c.ctx.Emitter.EmitJumpIfFalse(has, onFail)
 
 		val := c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitABC(bytecode.OpLoadProperty, val, valueReg, keyReg)
+		if keyOp.IsConstant() {
+			c.ctx.Emitter.EmitABC(bytecode.OpLoadPropertyConst, val, valueReg, keyOp)
+		} else {
+			c.ctx.Emitter.EmitABC(bytecode.OpLoadProperty, val, valueReg, keyOp)
+		}
 		c.compileMatchPatternValue(val, prop.MatchPattern(), onFail)
 	}
 }
@@ -691,7 +725,7 @@ func (c *ExprCompiler) compileMatchObjectPatternKey(ctx fql.IMatchObjectPatternK
 
 	if sl := ctx.StringLiteral(); sl != nil {
 		if val, ok := parseStringLiteralConst(sl); ok {
-			return loadConstant(c.ctx, val)
+			return c.ctx.Symbols.AddConstant(val)
 		}
 
 		return c.ctx.LiteralCompiler.CompileStringLiteral(sl)
@@ -711,7 +745,7 @@ func (c *ExprCompiler) compileMatchObjectPatternKey(ctx fql.IMatchObjectPatternK
 		return bytecode.NoopOperand
 	}
 
-	return loadConstant(c.ctx, runtime.NewString(name))
+	return c.ctx.Symbols.AddConstant(runtime.NewString(name))
 }
 
 func (c *ExprCompiler) emitObjectsHas(scrReg, keyReg bytecode.Operand) bytecode.Operand {

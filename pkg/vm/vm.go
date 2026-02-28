@@ -123,6 +123,14 @@ loop:
 			if reg[src1] == runtime.None {
 				vm.pc = int(dst)
 			}
+		case bytecode.OpJumpIfNe:
+			if operators.NotEquals(ctx, reg[src1], reg[src2]) {
+				vm.pc = int(dst)
+			}
+		case bytecode.OpJumpIfNeConst:
+			if operators.NotEquals(ctx, reg[src1], constants[src2.Constant()]) {
+				vm.pc = int(dst)
+			}
 		case bytecode.OpAdd:
 			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
 		case bytecode.OpAddConst:
