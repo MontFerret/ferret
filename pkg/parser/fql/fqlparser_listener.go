@@ -289,6 +289,15 @@ type FqlParserListener interface {
 	// EnterImplicitMemberExpressionStart is called when entering the implicitMemberExpressionStart production.
 	EnterImplicitMemberExpressionStart(c *ImplicitMemberExpressionStartContext)
 
+	// EnterQueryExpression is called when entering the queryExpression production.
+	EnterQueryExpression(c *QueryExpressionContext)
+
+	// EnterQueryPayload is called when entering the queryPayload production.
+	EnterQueryPayload(c *QueryPayloadContext)
+
+	// EnterQueryWithOpt is called when entering the queryWithOpt production.
+	EnterQueryWithOpt(c *QueryWithOptContext)
+
 	// EnterQueryLiteral is called when entering the queryLiteral production.
 	EnterQueryLiteral(c *QueryLiteralContext)
 
@@ -606,6 +615,15 @@ type FqlParserListener interface {
 
 	// ExitImplicitMemberExpressionStart is called when exiting the implicitMemberExpressionStart production.
 	ExitImplicitMemberExpressionStart(c *ImplicitMemberExpressionStartContext)
+
+	// ExitQueryExpression is called when exiting the queryExpression production.
+	ExitQueryExpression(c *QueryExpressionContext)
+
+	// ExitQueryPayload is called when exiting the queryPayload production.
+	ExitQueryPayload(c *QueryPayloadContext)
+
+	// ExitQueryWithOpt is called when exiting the queryWithOpt production.
+	ExitQueryWithOpt(c *QueryWithOptContext)
 
 	// ExitQueryLiteral is called when exiting the queryLiteral production.
 	ExitQueryLiteral(c *QueryLiteralContext)

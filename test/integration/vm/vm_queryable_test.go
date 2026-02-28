@@ -238,18 +238,27 @@ func TestQueryable(t *testing.T) {
 
 	RunUseCases(t, []UseCase{
 		CaseArray("RETURN @doc[~ css`.items`]", []any{"ok"}, "Should apply query literal"),
+		Case("RETURN @doc[~ css`.items`][0]", "ok", "Should apply query literal and index tail"),
+		CaseArray("RETURN QUERY `.items` IN @doc USING css", []any{"ok"}, "Should apply query expression"),
+		CaseArray("RETURN QUERY @q IN @doc USING css", []any{"ok"}, "Should apply query expression with param payload"),
+		CaseArray("LET q = \".dynamic-var\"\nRETURN QUERY q IN @doc USING css", []any{"ok"}, "Should apply query expression with variable payload"),
 		CaseArray("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", []any{"ok"}, "Should apply query literal with params"),
+		CaseArray("RETURN QUERY `SELECT * FROM products` IN @doc USING sql WITH { c: \"phones\" }", []any{"ok"}, "Should apply query expression with options"),
 		CaseArray("RETURN @doc[~ text]", []any{"ok"}, "Should apply query literal with no string payload"),
 		RuntimeErrorCase("RETURN @val[~ css`x`]", ExpectedRuntimeError{Message: "Invalid type"}),
 	}, vm.WithParams(map[string]runtime.Value{
 		"doc": queryable,
+		"q":   runtime.NewString(".dynamic-param"),
 		"val": runtime.NewInt(1),
 	}))
 
 	t.Run("Should receive correct queries", func(t *testing.T) {
 		convey.Convey("Should be ok", t, func() {
 			var hasCSS bool
+			var hasCSSParam bool
+			var hasCSSVar bool
 			var hasSQLParams bool
+			var hasSQLQueryExpr bool
 			var hasText bool
 
 			for _, q := range queryable.queries {
@@ -258,11 +267,27 @@ func TestQueryable(t *testing.T) {
 					if q.Payload == runtime.NewString(".items") {
 						hasCSS = true
 					}
+					if q.Payload == runtime.NewString(".dynamic-param") {
+						hasCSSParam = true
+					}
+					if q.Payload == runtime.NewString(".dynamic-var") {
+						hasCSSVar = true
+					}
 				case runtime.NewString("text"):
 					if q.Payload == runtime.EmptyString {
 						hasText = true
 					}
 				case runtime.NewString("sql"):
+					if q.Payload == runtime.NewString("SELECT * FROM products") {
+						params, err := runtime.ToMap(context.Background(), q.Options)
+						convey.So(err, convey.ShouldBeNil)
+
+						value, err := params.Get(context.Background(), runtime.NewString("c"))
+						if err == nil && value == runtime.NewString("phones") {
+							hasSQLQueryExpr = true
+						}
+					}
+
 					params, err := runtime.ToMap(context.Background(), q.Options)
 					convey.So(err, convey.ShouldBeNil)
 
@@ -274,7 +299,10 @@ func TestQueryable(t *testing.T) {
 			}
 
 			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and payload %q", "css", ".items"), hasCSS, convey.ShouldBeTrue)
+			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and payload %q", "css", ".dynamic-param"), hasCSSParam, convey.ShouldBeTrue)
+			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and payload %q", "css", ".dynamic-var"), hasCSSVar, convey.ShouldBeTrue)
 			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and empty payload", "text"), hasText, convey.ShouldBeTrue)
+			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and params containing %q=%q", "sql", "c", "phones"), hasSQLQueryExpr, convey.ShouldBeTrue)
 			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and params containing %q=%q", "sql", "c", "laptops"), hasSQLParams, convey.ShouldBeTrue)
 		})
 	})

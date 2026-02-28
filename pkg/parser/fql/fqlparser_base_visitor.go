@@ -383,6 +383,18 @@ func (v *BaseFqlParserVisitor) VisitImplicitMemberExpressionStart(ctx *ImplicitM
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitQueryExpression(ctx *QueryExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitQueryPayload(ctx *QueryPayloadContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitQueryWithOpt(ctx *QueryWithOptContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitQueryLiteral(ctx *QueryLiteralContext) interface{} {
 	return v.VisitChildren(ctx)
 }

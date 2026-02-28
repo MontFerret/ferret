@@ -439,6 +439,8 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) bytecode.Oper
 
 	if fex := ctx.FunctionCallExpression(); fex != nil {
 		return c.CompileFunctionCallExpression(fex)
+	} else if qx := ctx.QueryExpression(); qx != nil {
+		return c.compileQueryExpression(qx)
 	} else if r := ctx.RangeOperator(); r != nil {
 		return c.CompileRangeOperator(r)
 	} else if l := ctx.Literal(); l != nil {
@@ -1234,11 +1236,85 @@ func (c *ExprCompiler) compileArrayApply(src bytecode.Operand, apply fql.IArrayA
 	})
 
 	if len(tail) > 0 {
-		dst = c.compileMemberExpressionSegments(dst, tail)
+		return c.compileMemberExpressionSegments(dst, tail)
 	}
 
 	if dst.IsRegister() {
-		c.ctx.Types.Set(dst, core.TypeAny)
+		c.ctx.Types.Set(dst, core.TypeList)
+	}
+
+	return dst
+}
+
+func (c *ExprCompiler) compileQueryExpression(ctx fql.IQueryExpressionContext) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
+	srcExpr := ctx.Expression()
+	if srcExpr == nil {
+		return bytecode.NoopOperand
+	}
+
+	src := c.Compile(srcExpr)
+	if src == bytecode.NoopOperand {
+		return bytecode.NoopOperand
+	}
+
+	queryReg := c.ctx.Registers.Allocate()
+	span := diagnostics.SpanFromRuleContext(ctx)
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitArray(queryReg, 3)
+	})
+
+	kind := ""
+	if ident := ctx.GetDialect(); ident != nil {
+		kind = strings.ToLower(ident.GetText())
+	}
+
+	kindReg := loadConstant(c.ctx, runtime.NewString(kind))
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitArrayPush(queryReg, kindReg)
+	})
+
+	payloadReg := loadConstant(c.ctx, runtime.EmptyString)
+	if payload := ctx.QueryPayload(); payload != nil {
+		if str := payload.StringLiteral(); str != nil {
+			if val, ok := parseStringLiteralConst(str); ok {
+				payloadReg = loadConstant(c.ctx, val)
+			} else {
+				payloadReg = c.ctx.LiteralCompiler.CompileStringLiteral(str)
+			}
+		} else if param := payload.Param(); param != nil {
+			payloadReg = c.CompileParam(param)
+		} else if variable := payload.Variable(); variable != nil {
+			payloadReg = c.CompileVariable(variable)
+		}
+	}
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitArrayPush(queryReg, payloadReg)
+	})
+
+	var optionsReg bytecode.Operand
+	if with := ctx.QueryWithOpt(); with != nil && with.Expression() != nil {
+		optionsReg = c.Compile(with.Expression())
+	} else {
+		optionsReg = loadConstant(c.ctx, runtime.None)
+	}
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitArrayPush(queryReg, optionsReg)
+	})
+
+	dst := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitABC(bytecode.OpApplyQuery, dst, src, queryReg)
+	})
+
+	if dst.IsRegister() {
+		c.ctx.Types.Set(dst, core.TypeList)
 	}
 
 	return dst

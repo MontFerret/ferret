@@ -62,6 +62,8 @@ RegexMatch: '=~';
 // Common Keywords
 For: 'FOR';
 Return: 'RETURN';
+Query: 'QUERY';
+Using: 'USING';
 Waitfor: 'WAITFOR';
 Dispatch: 'DISPATCH';
 Options: 'OPTIONS';
