@@ -49,6 +49,14 @@ RETURN MATCH 1 (
 	1 => 10,
 	2 => 20,
 	_ => 30,
+)`
+
+	matchMergePureLiteralResults = `
+LET x = @x
+RETURN MATCH x (
+	0 => 0,
+	1 => 1,
+	_ => 2,
 )
 `
 )
@@ -99,4 +107,12 @@ func BenchmarkMatch_ConstScrutinee_O0(b *testing.B) {
 
 func BenchmarkMatch_ConstScrutinee_O1(b *testing.B) {
 	RunBenchmarkO1(b, matchConstScrutineeQuery)
+}
+
+func BenchmarkMatch_MergePureLiteralResults_O0(b *testing.B) {
+	RunBenchmarkO0(b, matchMergePureLiteralResults, vm.WithParam("x", 1))
+}
+
+func BenchmarkMatch_MergePureLiteralResults_O1(b *testing.B) {
+	RunBenchmarkO1(b, matchMergePureLiteralResults, vm.WithParam("x", 1))
 }
