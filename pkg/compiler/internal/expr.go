@@ -197,16 +197,14 @@ func (c *ExprCompiler) compileLogicalOr(ctx fql.IExpressionContext) bytecode.Ope
 func (c *ExprCompiler) compileTernary(ctx fql.IExpressionContext) bytecode.Operand {
 	dst := c.ctx.Registers.Allocate()
 
-	// Compile condition and put result in dst
-	condReg := c.Compile(ctx.GetCondition())
-	c.ctx.Emitter.EmitMove(dst, condReg)
-
 	// Define jump labels
 	elseLabel := c.ctx.Emitter.NewLabel()
 	endLabel := c.ctx.Emitter.NewLabel()
 
 	// endLabel to 'false' branch if condition is false
-	c.ctx.Emitter.EmitJumpIfFalse(dst, elseLabel)
+	if cond := ctx.GetCondition(); cond != nil {
+		c.emitConditionJump(cond, elseLabel, false)
+	}
 
 	// True branch
 	if onTrue := ctx.GetOnTrue(); onTrue != nil {
@@ -347,6 +345,209 @@ func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) bytecode.Oper
 	})
 
 	return dest
+}
+
+func (c *ExprCompiler) compileLiteralOperand(lit fql.ILiteralContext) bytecode.Operand {
+	if lit == nil {
+		return bytecode.NoopOperand
+	}
+
+	if nl := lit.NoneLiteral(); nl != nil {
+		return c.ctx.Symbols.AddConstant(runtime.None)
+	}
+
+	if bl := lit.BooleanLiteral(); bl != nil {
+		switch strings.ToLower(bl.GetText()) {
+		case "true":
+			return c.ctx.Symbols.AddConstant(runtime.True)
+		case "false":
+			return c.ctx.Symbols.AddConstant(runtime.False)
+		default:
+			return bytecode.NoopOperand
+		}
+	}
+
+	if sl := lit.StringLiteral(); sl != nil {
+		if val, ok := parseStringLiteralConst(sl); ok {
+			return c.ctx.Symbols.AddConstant(val)
+		}
+
+		return c.ctx.LiteralCompiler.CompileStringLiteral(sl)
+	}
+
+	if fl := lit.FloatLiteral(); fl != nil {
+		val, err := strconv.ParseFloat(fl.GetText(), 64)
+		if err != nil {
+			panic(err)
+		}
+		return c.ctx.Symbols.AddConstant(runtime.NewFloat(val))
+	}
+
+	if il := lit.IntegerLiteral(); il != nil {
+		val, err := strconv.Atoi(il.GetText())
+		if err != nil {
+			panic(err)
+		}
+		return c.ctx.Symbols.AddConstant(runtime.NewInt(val))
+	}
+
+	return bytecode.NoopOperand
+}
+
+func (c *ExprCompiler) emitPredicateJump(ctx fql.IPredicateContext, label core.Label, jumpOnTrue bool) bool {
+	if ctx == nil {
+		return false
+	}
+
+	op := ctx.EqualityOperator()
+	if op == nil {
+		return false
+	}
+
+	opText := op.GetText()
+	if opText != "==" && opText != "!=" {
+		return false
+	}
+
+	leftCtx := ctx.Predicate(0)
+	rightCtx := ctx.Predicate(1)
+	if leftCtx == nil || rightCtx == nil {
+		return false
+	}
+
+	var rightLitOp bytecode.Operand
+	if atom := rightCtx.ExpressionAtom(); atom != nil {
+		if lit := atom.Literal(); lit != nil {
+			rightLitOp = c.compileLiteralOperand(lit)
+		}
+	}
+
+	if rightLitOp != bytecode.NoopOperand {
+		if rightLitOp.IsConstant() {
+			leftOp := c.ensureRegister(c.compilePredicate(leftCtx))
+			opcode := bytecode.OpJumpIfNe
+			if opText == "==" {
+				if jumpOnTrue {
+					opcode = bytecode.OpJumpIfEqConst
+				} else {
+					opcode = bytecode.OpJumpIfNeConst
+				}
+			} else {
+				if jumpOnTrue {
+					opcode = bytecode.OpJumpIfNeConst
+				} else {
+					opcode = bytecode.OpJumpIfEqConst
+				}
+			}
+			c.ctx.Emitter.EmitJumpCompare(opcode, leftOp, rightLitOp, label)
+			return true
+		}
+
+		leftOp := c.ensureRegister(c.compilePredicate(leftCtx))
+		rightOp := c.ensureRegister(rightLitOp)
+		opcode := bytecode.OpJumpIfNe
+		if opText == "==" {
+			if jumpOnTrue {
+				opcode = bytecode.OpJumpIfEq
+			} else {
+				opcode = bytecode.OpJumpIfNe
+			}
+		} else {
+			if jumpOnTrue {
+				opcode = bytecode.OpJumpIfNe
+			} else {
+				opcode = bytecode.OpJumpIfEq
+			}
+		}
+		c.ctx.Emitter.EmitJumpCompare(opcode, leftOp, rightOp, label)
+		return true
+	}
+
+	var leftLitOp bytecode.Operand
+	if atom := leftCtx.ExpressionAtom(); atom != nil {
+		if lit := atom.Literal(); lit != nil {
+			leftLitOp = c.compileLiteralOperand(lit)
+		}
+	}
+
+	if leftLitOp != bytecode.NoopOperand {
+		if leftLitOp.IsConstant() {
+			leftOp := c.ensureRegister(c.compilePredicate(rightCtx))
+			opcode := bytecode.OpJumpIfNe
+			if opText == "==" {
+				if jumpOnTrue {
+					opcode = bytecode.OpJumpIfEqConst
+				} else {
+					opcode = bytecode.OpJumpIfNeConst
+				}
+			} else {
+				if jumpOnTrue {
+					opcode = bytecode.OpJumpIfNeConst
+				} else {
+					opcode = bytecode.OpJumpIfEqConst
+				}
+			}
+			c.ctx.Emitter.EmitJumpCompare(opcode, leftOp, leftLitOp, label)
+			return true
+		}
+
+		leftOp := c.ensureRegister(leftLitOp)
+		rightOp := c.ensureRegister(c.compilePredicate(rightCtx))
+		opcode := bytecode.OpJumpIfNe
+		if opText == "==" {
+			if jumpOnTrue {
+				opcode = bytecode.OpJumpIfEq
+			} else {
+				opcode = bytecode.OpJumpIfNe
+			}
+		} else {
+			if jumpOnTrue {
+				opcode = bytecode.OpJumpIfNe
+			} else {
+				opcode = bytecode.OpJumpIfEq
+			}
+		}
+		c.ctx.Emitter.EmitJumpCompare(opcode, leftOp, rightOp, label)
+		return true
+	}
+
+	leftOp := c.ensureRegister(c.compilePredicate(leftCtx))
+	rightOp := c.ensureRegister(c.compilePredicate(rightCtx))
+	opcode := bytecode.OpJumpIfNe
+	if opText == "==" {
+		if jumpOnTrue {
+			opcode = bytecode.OpJumpIfEq
+		} else {
+			opcode = bytecode.OpJumpIfNe
+		}
+	} else {
+		if jumpOnTrue {
+			opcode = bytecode.OpJumpIfNe
+		} else {
+			opcode = bytecode.OpJumpIfEq
+		}
+	}
+	c.ctx.Emitter.EmitJumpCompare(opcode, leftOp, rightOp, label)
+	return true
+}
+
+func (c *ExprCompiler) emitConditionJump(expr fql.IExpressionContext, label core.Label, jumpOnTrue bool) {
+	if expr == nil {
+		return
+	}
+
+	if pred := expr.Predicate(); pred != nil {
+		if c.emitPredicateJump(pred, label, jumpOnTrue) {
+			return
+		}
+	}
+
+	cond := c.Compile(expr)
+	if jumpOnTrue {
+		c.ctx.Emitter.EmitJumpIfTrue(cond, label)
+	} else {
+		c.ctx.Emitter.EmitJumpIfFalse(cond, label)
+	}
 }
 
 // compileAtom processes an atomic expression from the FQL AST.
@@ -524,8 +725,7 @@ func (c *ExprCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx fql.
 
 		if guard := arm.MatchPatternGuard(); guard != nil {
 			if expr := guard.Expression(); expr != nil {
-				cond := c.Compile(expr)
-				c.ctx.Emitter.EmitJumpIfFalse(cond, next)
+				c.emitConditionJump(expr, next, false)
 			}
 		}
 
@@ -573,8 +773,7 @@ func (c *ExprCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext, dst
 
 		exprs := arm.AllExpression()
 		if len(exprs) > 0 {
-			cond := c.Compile(exprs[0])
-			c.ctx.Emitter.EmitJumpIfFalse(cond, next)
+			c.emitConditionJump(exprs[0], next, false)
 		}
 
 		if len(exprs) > 1 {

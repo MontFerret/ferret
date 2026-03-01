@@ -57,10 +57,10 @@ func (p *PeepholePass) Run(ctx *PassContext) (*PassResult, error) {
 
 		inst := prog.Bytecode[i]
 
-		if i+1 < bytecodeLen && inst.Opcode == bytecode.OpEq && !targets[i] {
+		if i+1 < bytecodeLen && (inst.Opcode == bytecode.OpEq || inst.Opcode == bytecode.OpNe) && !targets[i] {
 			next := prog.Bytecode[i+1]
 
-			if next.Opcode == bytecode.OpJumpIfFalse && inst.Operands[0].IsRegister() && next.Operands[1].IsRegister() && next.Operands[1].Register() == inst.Operands[0].Register() {
+			if (next.Opcode == bytecode.OpJumpIfFalse || next.Opcode == bytecode.OpJumpIfTrue) && inst.Operands[0].IsRegister() && next.Operands[1].IsRegister() && next.Operands[1].Register() == inst.Operands[0].Register() {
 				cmpReg := inst.Operands[0].Register()
 
 				if !regLiveAfterInstruction(prog.Bytecode, i+1, cmpReg, blockByInstruction, liveness) {
@@ -71,13 +71,26 @@ func (p *PeepholePass) Run(ctx *PassContext) (*PassResult, error) {
 						}
 					}
 
+					newOp := bytecode.OpJumpIfNe
+					newOpConst := bytecode.OpJumpIfNeConst
+
+					if inst.Opcode == bytecode.OpEq {
+						if next.Opcode == bytecode.OpJumpIfTrue {
+							newOp = bytecode.OpJumpIfEq
+							newOpConst = bytecode.OpJumpIfEqConst
+						}
+					} else if next.Opcode == bytecode.OpJumpIfFalse {
+						newOp = bytecode.OpJumpIfEq
+						newOpConst = bytecode.OpJumpIfEqConst
+					}
+
 					if i > 0 && keep[i-1] && inst.Operands[2].IsRegister() {
 						prev := prog.Bytecode[i-1]
 						if prev.Opcode == bytecode.OpLoadConst && prev.Operands[0].IsRegister() && prev.Operands[1].IsConstant() && !targets[i-1] {
 							constReg := prev.Operands[0].Register()
 
 							if inst.Operands[2].Register() == constReg && !regLiveAfterInstruction(prog.Bytecode, i+1, constReg, blockByInstruction, liveness) {
-								next.Opcode = bytecode.OpJumpIfNeConst
+								next.Opcode = newOpConst
 								next.Operands[1] = inst.Operands[1]
 								next.Operands[2] = prev.Operands[1]
 								prog.Bytecode[i+1] = next
@@ -90,9 +103,9 @@ func (p *PeepholePass) Run(ctx *PassContext) (*PassResult, error) {
 					}
 
 					if inst.Operands[2].IsConstant() {
-						next.Opcode = bytecode.OpJumpIfNeConst
+						next.Opcode = newOpConst
 					} else {
-						next.Opcode = bytecode.OpJumpIfNe
+						next.Opcode = newOp
 					}
 					next.Operands[1] = inst.Operands[1]
 					next.Operands[2] = inst.Operands[2]
@@ -231,6 +244,8 @@ func isJumpOpcode(op bytecode.Opcode) bool {
 		bytecode.OpJumpIfNone,
 		bytecode.OpJumpIfNe,
 		bytecode.OpJumpIfNeConst,
+		bytecode.OpJumpIfEq,
+		bytecode.OpJumpIfEqConst,
 		bytecode.OpIterNext,
 		bytecode.OpIterSkip,
 		bytecode.OpIterLimit:

@@ -67,7 +67,7 @@ func collectLabels(instructions []bytecode.Instruction, names map[int]string) ma
 	// Collect unmarked jump targets
 	for _, instr := range instructions {
 		switch instr.Opcode {
-		case bytecode.OpJump, bytecode.OpJumpIfFalse, bytecode.OpJumpIfTrue, bytecode.OpJumpIfNone, bytecode.OpJumpIfNe, bytecode.OpJumpIfNeConst, bytecode.OpIterNext, bytecode.OpIterSkip, bytecode.OpIterLimit:
+		case bytecode.OpJump, bytecode.OpJumpIfFalse, bytecode.OpJumpIfTrue, bytecode.OpJumpIfNone, bytecode.OpJumpIfNe, bytecode.OpJumpIfNeConst, bytecode.OpJumpIfEq, bytecode.OpJumpIfEqConst, bytecode.OpIterNext, bytecode.OpIterSkip, bytecode.OpIterLimit:
 			target := int(instr.Operands[0])
 
 			if name, ok := names[target]; !ok || name == "" {
@@ -99,7 +99,7 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels), formatOperand(ops[1]))
 
 	// Op Jmp R, R
-	case bytecode.OpJumpIfNe, bytecode.OpJumpIfNeConst, bytecode.OpIterSkip, bytecode.OpIterLimit:
+	case bytecode.OpJumpIfNe, bytecode.OpJumpIfNeConst, bytecode.OpJumpIfEq, bytecode.OpJumpIfEqConst, bytecode.OpIterSkip, bytecode.OpIterLimit:
 		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels), formatOperand(ops[1]), formatOperand(ops[2]))
 
 	// Op R

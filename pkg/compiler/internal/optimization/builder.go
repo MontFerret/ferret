@@ -85,7 +85,7 @@ func (b *Builder) identifyLeaders(instructions []bytecode.Instruction) map[int]b
 			if i+1 < len(instructions) {
 				leaders[i+1] = true
 			}
-		case bytecode.OpJumpIfFalse, bytecode.OpJumpIfTrue, bytecode.OpJumpIfNone, bytecode.OpJumpIfNe, bytecode.OpJumpIfNeConst:
+		case bytecode.OpJumpIfFalse, bytecode.OpJumpIfTrue, bytecode.OpJumpIfNone, bytecode.OpJumpIfNe, bytecode.OpJumpIfNeConst, bytecode.OpJumpIfEq, bytecode.OpJumpIfEqConst:
 			// Target of conditional jump is a leader
 			target := int(inst.Operands[0])
 
@@ -186,7 +186,7 @@ func (b *Builder) createEdges(instructions []bytecode.Instruction, blocks []*Bas
 				block.AddSuccessor(targetBlock)
 			}
 
-		case bytecode.OpJumpIfFalse, bytecode.OpJumpIfTrue, bytecode.OpJumpIfNone, bytecode.OpJumpIfNe, bytecode.OpJumpIfNeConst:
+		case bytecode.OpJumpIfFalse, bytecode.OpJumpIfTrue, bytecode.OpJumpIfNone, bytecode.OpJumpIfNe, bytecode.OpJumpIfNeConst, bytecode.OpJumpIfEq, bytecode.OpJumpIfEqConst:
 			// Conditional jump: has two successors
 			// 1. Jump target
 			target := int(lastInst.Operands[0])

@@ -153,6 +153,8 @@ const (
 	// Compare-Jump Operations
 	OpJumpIfNe
 	OpJumpIfNeConst
+	OpJumpIfEq
+	OpJumpIfEqConst
 )
 
 func (op Opcode) String() string {
@@ -172,6 +174,10 @@ func (op Opcode) String() string {
 		return "JMPNE"
 	case OpJumpIfNeConst:
 		return "JMPNEC"
+	case OpJumpIfEq:
+		return "JMPEQ"
+	case OpJumpIfEqConst:
+		return "JMPEQC"
 
 	// Add Operations
 	case OpMove:
