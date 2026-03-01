@@ -162,6 +162,12 @@ func (p *PeepholePass) Run(ctx *PassContext) (*PassResult, error) {
 		next := prog.Bytecode[i+1]
 		uses, defs := instructionUseDef(next)
 
+		if isPureDef(next.Opcode) && defRegister(next) == defReg && samePureDef(inst, next) && !targets[i+1] {
+			keep[i+1] = false
+			modified = true
+			continue
+		}
+
 		if regIn(defs, defReg) && !regIn(uses, defReg) {
 			keep[i] = false
 			modified = true
@@ -315,6 +321,21 @@ func regUsedAfter(code []bytecode.Instruction, start int, reg int) bool {
 	}
 
 	return false
+}
+
+func samePureDef(a, b bytecode.Instruction) bool {
+	if a.Opcode != b.Opcode {
+		return false
+	}
+
+	switch a.Opcode {
+	case bytecode.OpLoadConst, bytecode.OpLoadParam, bytecode.OpLoadBool, bytecode.OpMove:
+		return a.Operands[0] == b.Operands[0] && a.Operands[1] == b.Operands[1]
+	case bytecode.OpLoadNone, bytecode.OpLoadZero:
+		return a.Operands[0] == b.Operands[0]
+	default:
+		return false
+	}
 }
 
 func buildInstructionBlockMap(cfg *ControlFlowGraph, codeLen int) []*BasicBlock {

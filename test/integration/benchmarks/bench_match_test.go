@@ -43,6 +43,14 @@ FOR v IN vals
 		_ => 3,
 	)
 `
+
+	matchConstScrutineeQuery = `
+RETURN MATCH 1 (
+	1 => 10,
+	2 => 20,
+	_ => 30,
+)
+`
 )
 
 var matchLoopVals = func() []any {
@@ -83,4 +91,12 @@ func BenchmarkMatch_LoopMix_O0(b *testing.B) {
 
 func BenchmarkMatch_LoopMix_O1(b *testing.B) {
 	RunBenchmarkO1(b, matchLoopMixQuery, vm.WithParam("vals", matchLoopVals))
+}
+
+func BenchmarkMatch_ConstScrutinee_O0(b *testing.B) {
+	RunBenchmarkO0(b, matchConstScrutineeQuery)
+}
+
+func BenchmarkMatch_ConstScrutinee_O1(b *testing.B) {
+	RunBenchmarkO1(b, matchConstScrutineeQuery)
 }

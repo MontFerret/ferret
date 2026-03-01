@@ -554,6 +554,53 @@ func TestPeephole_RemovesSelfMove(t *testing.T) {
 	}
 }
 
+func TestPeephole_RemovesRedundantPureDefAfterLabel(t *testing.T) {
+	prog := &bytecode.Program{
+		Registers: 2,
+		Constants: []runtime.Value{
+			runtime.NewString("default"),
+		},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+		Metadata: bytecode.Metadata{
+			Labels: map[int]string{
+				0: "match.0.next.1",
+			},
+		},
+	}
+
+	builder := NewBuilder(prog)
+	cfg, err := builder.Build()
+	if err != nil {
+		t.Fatalf("failed to build CFG: %v", err)
+	}
+
+	pass := NewPeepholePass()
+	result, err := pass.Run(&PassContext{
+		Program:  prog,
+		CFG:      cfg,
+		Metadata: map[string]any{},
+	})
+	if err != nil {
+		t.Fatalf("pass failed: %v", err)
+	}
+	if !result.Modified {
+		t.Fatalf("expected peephole to modify program")
+	}
+	if len(prog.Bytecode) != 2 {
+		t.Fatalf("expected redundant LOADC removal, got len=%d", len(prog.Bytecode))
+	}
+	if prog.Bytecode[0].Opcode != bytecode.OpLoadConst || prog.Bytecode[1].Opcode != bytecode.OpReturn {
+		t.Fatalf("unexpected bytecode sequence after peephole")
+	}
+	if prog.Metadata.Labels[0] != "match.0.next.1" {
+		t.Fatalf("expected label to remain on first instruction")
+	}
+}
+
 func TestPeephole_UpdatesJumpTargets(t *testing.T) {
 	program := &bytecode.Program{
 		Constants: []runtime.Value{

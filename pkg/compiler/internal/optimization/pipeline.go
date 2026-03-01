@@ -103,6 +103,7 @@ func Run(program *bytecode.Program, level Level) error {
 
 	p := NewPipeline()
 	p.Add(NewConstantPropagationPass())
+	p.Add(NewMatchSimplifyPass())
 	p.Add(NewLivenessAnalysisPass())
 	p.Add(NewRegisterCoalescingPass())
 	p.Add(NewPeepholePass())

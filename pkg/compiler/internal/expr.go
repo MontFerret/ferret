@@ -29,6 +29,7 @@ const (
 type ExprCompiler struct {
 	ctx                  *CompilerContext
 	implicitCurrentDepth int
+	matchID              int
 }
 
 // NewExprCompiler creates a new instance of ExprCompiler with the given compiler context.
@@ -686,8 +687,12 @@ func (c *ExprCompiler) compileMatchExpression(ctx fql.IMatchExpressionContext) b
 		return bytecode.NoopOperand
 	}
 
+	matchID := c.matchID
+	c.matchID++
+
 	dst := c.ctx.Registers.Allocate()
-	end := c.ctx.Emitter.NewLabel("match.end")
+	start := c.ctx.Emitter.NewLabel("match", strconv.Itoa(matchID), "start")
+	end := c.ctx.Emitter.NewLabel("match", strconv.Itoa(matchID), "end")
 
 	if arms := ctx.MatchPatternArms(); arms != nil {
 		scrutinee := ctx.Expression()
@@ -696,9 +701,11 @@ func (c *ExprCompiler) compileMatchExpression(ctx fql.IMatchExpressionContext) b
 		}
 
 		scrReg := c.ensureRegister(c.Compile(scrutinee))
-		c.compileMatchPatternArms(scrReg, arms, dst, end)
+		c.ctx.Emitter.MarkLabel(start)
+		c.compileMatchPatternArms(scrReg, arms, dst, end, matchID)
 	} else if guards := ctx.MatchGuardArms(); guards != nil {
-		c.compileMatchGuardArms(guards, dst, end)
+		c.ctx.Emitter.MarkLabel(start)
+		c.compileMatchGuardArms(guards, dst, end, matchID)
 	}
 
 	c.ctx.Emitter.MarkLabel(end)
@@ -710,7 +717,7 @@ func (c *ExprCompiler) compileMatchExpression(ctx fql.IMatchExpressionContext) b
 	return dst
 }
 
-func (c *ExprCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx fql.IMatchPatternArmsContext, dst bytecode.Operand, end core.Label) {
+func (c *ExprCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx fql.IMatchPatternArmsContext, dst bytecode.Operand, end core.Label, matchID int) {
 	if ctx == nil {
 		return
 	}
@@ -720,12 +727,12 @@ func (c *ExprCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx fql.
 		arms = list.AllMatchPatternArm()
 	}
 
-	for _, arm := range arms {
+	for armIndex, arm := range arms {
 		if arm == nil {
 			continue
 		}
 
-		next := c.ctx.Emitter.NewLabel("match.next")
+		next := c.ctx.Emitter.NewLabel("match", strconv.Itoa(matchID), "next", strconv.Itoa(armIndex))
 		c.ctx.Symbols.EnterScope()
 
 		if pattern := arm.MatchPattern(); pattern != nil {
@@ -762,7 +769,7 @@ func (c *ExprCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx fql.
 	}
 }
 
-func (c *ExprCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext, dst bytecode.Operand, end core.Label) {
+func (c *ExprCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext, dst bytecode.Operand, end core.Label, matchID int) {
 	if ctx == nil {
 		return
 	}
@@ -772,12 +779,12 @@ func (c *ExprCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext, dst
 		arms = list.AllMatchGuardArm()
 	}
 
-	for _, arm := range arms {
+	for armIndex, arm := range arms {
 		if arm == nil {
 			continue
 		}
 
-		next := c.ctx.Emitter.NewLabel("match.next")
+		next := c.ctx.Emitter.NewLabel("match", strconv.Itoa(matchID), "next", strconv.Itoa(armIndex))
 		c.ctx.Symbols.EnterScope()
 
 		exprs := arm.AllExpression()
