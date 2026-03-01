@@ -201,13 +201,22 @@ func (c *ExprCompiler) compileTernary(ctx fql.IExpressionContext) bytecode.Opera
 	elseLabel := c.ctx.Emitter.NewLabel()
 	endLabel := c.ctx.Emitter.NewLabel()
 
-	// endLabel to 'false' branch if condition is false
-	if cond := ctx.GetCondition(); cond != nil {
+	onTrue := ctx.GetOnTrue()
+	onFalse := ctx.GetOnFalse()
+	cond := ctx.GetCondition()
+
+	// If true branch is omitted, preserve condition value.
+	if onTrue == nil && cond != nil {
+		condReg := c.Compile(cond)
+		c.ctx.Emitter.EmitMove(dst, condReg)
+		c.ctx.Emitter.EmitJumpIfFalse(condReg, elseLabel)
+	} else if cond != nil {
+		// endLabel to 'false' branch if condition is false
 		c.emitConditionJump(cond, elseLabel, false)
 	}
 
 	// True branch
-	if onTrue := ctx.GetOnTrue(); onTrue != nil {
+	if onTrue != nil {
 		trueReg := c.Compile(onTrue)
 		// Move result of true branch to dst
 		c.ctx.Emitter.EmitMove(dst, trueReg)
@@ -219,7 +228,7 @@ func (c *ExprCompiler) compileTernary(ctx fql.IExpressionContext) bytecode.Opera
 	c.ctx.Emitter.MarkLabel(elseLabel)
 
 	// False branch
-	if onFalse := ctx.GetOnFalse(); onFalse != nil {
+	if onFalse != nil {
 		falseReg := c.Compile(onFalse)
 		// Move result of false branch to dst
 		c.ctx.Emitter.EmitMove(dst, falseReg)
