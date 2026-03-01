@@ -29,7 +29,6 @@ const (
 type ExprCompiler struct {
 	ctx                  *CompilerContext
 	implicitCurrentDepth int
-	matchID              int
 }
 
 // NewExprCompiler creates a new instance of ExprCompiler with the given compiler context.
@@ -687,12 +686,8 @@ func (c *ExprCompiler) compileMatchExpression(ctx fql.IMatchExpressionContext) b
 		return bytecode.NoopOperand
 	}
 
-	matchID := c.matchID
-	c.matchID++
-
 	dst := c.ctx.Registers.Allocate()
-	start := c.ctx.Emitter.NewLabel("match", strconv.Itoa(matchID), "start")
-	end := c.ctx.Emitter.NewLabel("match", strconv.Itoa(matchID), "end")
+	end := c.ctx.Emitter.NewLabel("match.end")
 
 	if arms := ctx.MatchPatternArms(); arms != nil {
 		scrutinee := ctx.Expression()
@@ -700,12 +695,15 @@ func (c *ExprCompiler) compileMatchExpression(ctx fql.IMatchExpressionContext) b
 			return bytecode.NoopOperand
 		}
 
+		if c.tryCompileMatchConstantFold(scrutinee, arms, dst) {
+			c.ctx.Types.Set(dst, core.TypeAny)
+			return dst
+		}
+
 		scrReg := c.ensureRegister(c.Compile(scrutinee))
-		c.ctx.Emitter.MarkLabel(start)
-		c.compileMatchPatternArms(scrReg, arms, dst, end, matchID)
+		c.compileMatchPatternArms(scrReg, arms, dst, end)
 	} else if guards := ctx.MatchGuardArms(); guards != nil {
-		c.ctx.Emitter.MarkLabel(start)
-		c.compileMatchGuardArms(guards, dst, end, matchID)
+		c.compileMatchGuardArms(guards, dst, end)
 	}
 
 	c.ctx.Emitter.MarkLabel(end)
@@ -717,7 +715,7 @@ func (c *ExprCompiler) compileMatchExpression(ctx fql.IMatchExpressionContext) b
 	return dst
 }
 
-func (c *ExprCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx fql.IMatchPatternArmsContext, dst bytecode.Operand, end core.Label, matchID int) {
+func (c *ExprCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx fql.IMatchPatternArmsContext, dst bytecode.Operand, end core.Label) {
 	if ctx == nil {
 		return
 	}
@@ -727,12 +725,12 @@ func (c *ExprCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx fql.
 		arms = list.AllMatchPatternArm()
 	}
 
-	for armIndex, arm := range arms {
+	for _, arm := range arms {
 		if arm == nil {
 			continue
 		}
 
-		next := c.ctx.Emitter.NewLabel("match", strconv.Itoa(matchID), "next", strconv.Itoa(armIndex))
+		next := c.ctx.Emitter.NewLabel("match.next")
 		c.ctx.Symbols.EnterScope()
 
 		if pattern := arm.MatchPattern(); pattern != nil {
@@ -769,7 +767,7 @@ func (c *ExprCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx fql.
 	}
 }
 
-func (c *ExprCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext, dst bytecode.Operand, end core.Label, matchID int) {
+func (c *ExprCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext, dst bytecode.Operand, end core.Label) {
 	if ctx == nil {
 		return
 	}
@@ -779,12 +777,12 @@ func (c *ExprCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext, dst
 		arms = list.AllMatchGuardArm()
 	}
 
-	for armIndex, arm := range arms {
+	for _, arm := range arms {
 		if arm == nil {
 			continue
 		}
 
-		next := c.ctx.Emitter.NewLabel("match", strconv.Itoa(matchID), "next", strconv.Itoa(armIndex))
+		next := c.ctx.Emitter.NewLabel("match.next")
 		c.ctx.Symbols.EnterScope()
 
 		exprs := arm.AllExpression()
@@ -896,6 +894,195 @@ func (c *ExprCompiler) compileMatchLiteralOperand(ctx fql.IMatchLiteralPatternCo
 	}
 
 	return bytecode.NoopOperand
+}
+
+func (c *ExprCompiler) tryCompileMatchConstantFold(scrutinee fql.IExpressionContext, armsCtx fql.IMatchPatternArmsContext, dst bytecode.Operand) bool {
+	if scrutinee == nil || armsCtx == nil {
+		return false
+	}
+
+	scrutineeVal, ok := matchLiteralValueFromExpression(scrutinee)
+	if !ok {
+		return false
+	}
+
+	list := armsCtx.MatchPatternArmList()
+	if list == nil {
+		return false
+	}
+
+	arms := list.AllMatchPatternArm()
+	if len(arms) == 0 {
+		return false
+	}
+
+	var selected fql.IExpressionContext
+	for _, arm := range arms {
+		if arm == nil {
+			continue
+		}
+		if arm.MatchPatternGuard() != nil {
+			return false
+		}
+		pat := arm.MatchPattern()
+		if pat == nil {
+			return false
+		}
+		litPat := pat.MatchLiteralPattern()
+		if litPat == nil {
+			return false
+		}
+		patVal, ok := literalValueFromMatchLiteral(litPat)
+		if !ok {
+			return false
+		}
+		if runtime.CompareValues(scrutineeVal, patVal) == 0 {
+			selected = arm.Expression()
+			break
+		}
+	}
+
+	if selected == nil {
+		if def := armsCtx.MatchDefaultArm(); def != nil {
+			selected = def.Expression()
+		}
+	}
+
+	if selected == nil {
+		return false
+	}
+
+	c.ctx.Symbols.EnterScope()
+	out := c.ensureRegister(c.Compile(selected))
+	if out != bytecode.NoopOperand && out != dst {
+		c.ctx.Emitter.EmitMove(dst, out)
+	}
+	c.ctx.Symbols.ExitScope()
+
+	return true
+}
+
+func matchLiteralValueFromExpression(expr fql.IExpressionContext) (runtime.Value, bool) {
+	if expr == nil {
+		return nil, false
+	}
+	if expr.UnaryOperator() != nil || expr.LogicalAndOperator() != nil || expr.LogicalOrOperator() != nil || expr.GetTernaryOperator() != nil {
+		return nil, false
+	}
+	pred := expr.Predicate()
+	if pred == nil {
+		return nil, false
+	}
+	if pred.EqualityOperator() != nil || pred.ArrayOperator() != nil || pred.InOperator() != nil || pred.LikeOperator() != nil {
+		return nil, false
+	}
+	atom := pred.ExpressionAtom()
+	if atom == nil {
+		return nil, false
+	}
+	if atom.Literal() == nil {
+		return nil, false
+	}
+	if atom.ExpressionAtom(0) != nil || atom.ExpressionAtom(1) != nil {
+		return nil, false
+	}
+	if atom.AdditiveOperator() != nil || atom.MultiplicativeOperator() != nil || atom.RegexpOperator() != nil || atom.ErrorOperator() != nil || atom.RangeOperator() != nil {
+		return nil, false
+	}
+
+	return literalValueFromLiteral(atom.Literal())
+}
+
+func literalValueFromLiteral(lit fql.ILiteralContext) (runtime.Value, bool) {
+	if lit == nil {
+		return nil, false
+	}
+
+	if nl := lit.NoneLiteral(); nl != nil {
+		return runtime.None, true
+	}
+
+	if bl := lit.BooleanLiteral(); bl != nil {
+		switch strings.ToLower(bl.GetText()) {
+		case "true":
+			return runtime.True, true
+		case "false":
+			return runtime.False, true
+		default:
+			return nil, false
+		}
+	}
+
+	if sl := lit.StringLiteral(); sl != nil {
+		if val, ok := parseStringLiteralConst(sl); ok {
+			return val, true
+		}
+		return nil, false
+	}
+
+	if fl := lit.FloatLiteral(); fl != nil {
+		val, err := strconv.ParseFloat(fl.GetText(), 64)
+		if err != nil {
+			return nil, false
+		}
+		return runtime.NewFloat(val), true
+	}
+
+	if il := lit.IntegerLiteral(); il != nil {
+		val, err := strconv.Atoi(il.GetText())
+		if err != nil {
+			return nil, false
+		}
+		return runtime.NewInt(val), true
+	}
+
+	return nil, false
+}
+
+func literalValueFromMatchLiteral(lit fql.IMatchLiteralPatternContext) (runtime.Value, bool) {
+	if lit == nil {
+		return nil, false
+	}
+
+	if nl := lit.NoneLiteral(); nl != nil {
+		return runtime.None, true
+	}
+
+	if bl := lit.BooleanLiteral(); bl != nil {
+		switch strings.ToLower(bl.GetText()) {
+		case "true":
+			return runtime.True, true
+		case "false":
+			return runtime.False, true
+		default:
+			return nil, false
+		}
+	}
+
+	if sl := lit.StringLiteral(); sl != nil {
+		if val, ok := parseStringLiteralConst(sl); ok {
+			return val, true
+		}
+		return nil, false
+	}
+
+	if fl := lit.FloatLiteral(); fl != nil {
+		val, err := strconv.ParseFloat(fl.GetText(), 64)
+		if err != nil {
+			return nil, false
+		}
+		return runtime.NewFloat(val), true
+	}
+
+	if il := lit.IntegerLiteral(); il != nil {
+		val, err := strconv.Atoi(il.GetText())
+		if err != nil {
+			return nil, false
+		}
+		return runtime.NewInt(val), true
+	}
+
+	return nil, false
 }
 
 func (c *ExprCompiler) compileMatchObjectPattern(valueReg bytecode.Operand, ctx fql.IMatchObjectPatternContext, onFail core.Label) {
