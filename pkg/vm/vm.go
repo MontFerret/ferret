@@ -139,6 +139,46 @@ loop:
 			if operators.Equals(ctx, reg[src1], constants[src2.Constant()]) {
 				vm.pc = int(dst)
 			}
+		case bytecode.OpJumpIfMissingProperty:
+			obj, ok := reg[src1].(runtime.Map)
+			if !ok {
+				vm.pc = int(dst)
+				continue
+			}
+
+			key, ok := reg[src2].(runtime.String)
+			if !ok {
+				vm.pc = int(dst)
+				continue
+			}
+
+			has, err := obj.ContainsKey(ctx, key)
+			if err != nil {
+				return nil, err
+			}
+			if !has {
+				vm.pc = int(dst)
+			}
+		case bytecode.OpJumpIfMissingPropertyConst:
+			obj, ok := reg[src1].(runtime.Map)
+			if !ok {
+				vm.pc = int(dst)
+				continue
+			}
+
+			key, ok := constants[src2.Constant()].(runtime.String)
+			if !ok {
+				vm.pc = int(dst)
+				continue
+			}
+
+			has, err := obj.ContainsKey(ctx, key)
+			if err != nil {
+				return nil, err
+			}
+			if !has {
+				vm.pc = int(dst)
+			}
 		case bytecode.OpAdd:
 			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
 		case bytecode.OpAddConst:

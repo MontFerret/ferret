@@ -236,6 +236,8 @@ func TestBasicBlock_IsTerminator(t *testing.T) {
 		{"JumpIfNeConst", bytecode.OpJumpIfNeConst, true},
 		{"JumpIfEq", bytecode.OpJumpIfEq, true},
 		{"JumpIfEqConst", bytecode.OpJumpIfEqConst, true},
+		{"JumpIfMissingProperty", bytecode.OpJumpIfMissingProperty, true},
+		{"JumpIfMissingPropertyConst", bytecode.OpJumpIfMissingPropertyConst, true},
 		{"IterNext", bytecode.OpIterNext, true},
 		{"Add", bytecode.OpAdd, false},
 		{"LoadConst", bytecode.OpLoadConst, false},

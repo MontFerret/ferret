@@ -155,6 +155,8 @@ const (
 	OpJumpIfNeConst
 	OpJumpIfEq
 	OpJumpIfEqConst
+	OpJumpIfMissingProperty
+	OpJumpIfMissingPropertyConst
 )
 
 func (op Opcode) String() string {
@@ -178,6 +180,10 @@ func (op Opcode) String() string {
 		return "JMPEQ"
 	case OpJumpIfEqConst:
 		return "JMPEQC"
+	case OpJumpIfMissingProperty:
+		return "JMPMISSPROP"
+	case OpJumpIfMissingPropertyConst:
+		return "JMPMISSPROPC"
 
 	// Add Operations
 	case OpMove:

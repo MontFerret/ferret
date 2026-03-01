@@ -246,6 +246,8 @@ func isJumpOpcode(op bytecode.Opcode) bool {
 		bytecode.OpJumpIfNeConst,
 		bytecode.OpJumpIfEq,
 		bytecode.OpJumpIfEqConst,
+		bytecode.OpJumpIfMissingProperty,
+		bytecode.OpJumpIfMissingPropertyConst,
 		bytecode.OpIterNext,
 		bytecode.OpIterSkip,
 		bytecode.OpIterLimit:

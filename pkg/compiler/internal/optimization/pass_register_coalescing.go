@@ -895,6 +895,10 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 		return idx == 1 || idx == 2
 	case bytecode.OpJumpIfEqConst:
 		return idx == 1
+	case bytecode.OpJumpIfMissingProperty:
+		return idx == 1 || idx == 2
+	case bytecode.OpJumpIfMissingPropertyConst:
+		return idx == 1
 	case bytecode.OpIterNext:
 		return idx == 1
 	case bytecode.OpIterSkip, bytecode.OpIterLimit:

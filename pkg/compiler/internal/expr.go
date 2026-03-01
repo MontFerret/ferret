@@ -913,8 +913,11 @@ func (c *ExprCompiler) compileMatchObjectPattern(valueReg bytecode.Operand, ctx 
 			continue
 		}
 
-		has := c.emitObjectsHas(valueReg, keyOp)
-		c.ctx.Emitter.EmitJumpIfFalse(has, onFail)
+		if keyOp.IsConstant() {
+			c.ctx.Emitter.EmitJumpCompare(bytecode.OpJumpIfMissingPropertyConst, valueReg, keyOp, onFail)
+		} else {
+			c.ctx.Emitter.EmitJumpCompare(bytecode.OpJumpIfMissingProperty, valueReg, keyOp, onFail)
+		}
 
 		val := c.ctx.Registers.Allocate()
 		if keyOp.IsConstant() {
@@ -954,16 +957,6 @@ func (c *ExprCompiler) compileMatchObjectPatternKey(ctx fql.IMatchObjectPatternK
 	}
 
 	return c.ctx.Symbols.AddConstant(runtime.NewString(name))
-}
-
-func (c *ExprCompiler) emitObjectsHas(scrReg, keyReg bytecode.Operand) bytecode.Operand {
-	scrReg = c.ensureRegister(scrReg)
-	keyReg = c.ensureRegister(keyReg)
-	seq := c.ctx.Registers.AllocateSequence(2)
-	c.ctx.Emitter.EmitMove(seq[0], scrReg)
-	c.ctx.Emitter.EmitMove(seq[1], keyReg)
-
-	return c.CompileFunctionCallByNameWith(runtime.NewString("HAS"), true, seq)
 }
 
 func (c *ExprCompiler) emitObjectsKeys(scrReg bytecode.Operand) bytecode.Operand {
