@@ -53,6 +53,7 @@ Or: 'OR' | '||';
 
 // Other operators
 Range: Dot Dot;
+Arrow: '=>';
 Assign: '=';
 QuestionMark: '?';
 RegexNotMatch: '!~';
@@ -60,6 +61,8 @@ RegexMatch: '=~';
 
 // Keywords
 // Common Keywords
+Match: 'MATCH';
+When: 'WHEN';
 For: 'FOR';
 Return: 'RETURN';
 Query: 'QUERY';

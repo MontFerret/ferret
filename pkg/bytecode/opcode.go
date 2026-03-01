@@ -149,6 +149,14 @@ const (
 
 	// Dispatch Operations
 	OpDispatch
+
+	// Compare-Jump Operations
+	OpJumpIfNe
+	OpJumpIfNeConst
+	OpJumpIfEq
+	OpJumpIfEqConst
+	OpJumpIfMissingProperty
+	OpJumpIfMissingPropertyConst
 )
 
 func (op Opcode) String() string {
@@ -164,6 +172,18 @@ func (op Opcode) String() string {
 		return "JMPT"
 	case OpJumpIfNone:
 		return "JMPN"
+	case OpJumpIfNe:
+		return "JMPNE"
+	case OpJumpIfNeConst:
+		return "JMPNEC"
+	case OpJumpIfEq:
+		return "JMPEQ"
+	case OpJumpIfEqConst:
+		return "JMPEQC"
+	case OpJumpIfMissingProperty:
+		return "JMPMISSPROP"
+	case OpJumpIfMissingPropertyConst:
+		return "JMPMISSPROPC"
 
 	// Add Operations
 	case OpMove:

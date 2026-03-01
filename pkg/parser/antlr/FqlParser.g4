@@ -43,7 +43,7 @@ options { tokenVocab=FqlLexer; }
 		switch token {
 		case FqlParserReturn, FqlParserDispatch, FqlParserQuery, FqlParserUsing, FqlParserNone,
 			FqlParserNull, FqlParserLet, FqlParserUse, FqlParserWaitfor, FqlParserWhile, FqlParserDo, FqlParserIn,
-			FqlParserLike, FqlParserNot, FqlParserFor, FqlParserBooleanLiteral, FqlParserThrow:
+			FqlParserLike, FqlParserNot, FqlParserFor, FqlParserBooleanLiteral, FqlParserThrow, FqlParserMatch, FqlParserWhen:
 			return true
 		default:
 			return false
@@ -558,6 +558,8 @@ unsafeReservedWord
     | For
     | BooleanLiteral
     | Throw
+    | Match
+    | When
     ;
 
 durationLiteral
@@ -598,6 +600,7 @@ expressionAtom
     : left=expressionAtom multiplicativeOperator right=expressionAtom
     | left=expressionAtom additiveOperator right=expressionAtom
     | left=expressionAtom regexpOperator right=expressionAtom
+    | matchExpression
     | queryExpression
     | functionCallExpression
     | rangeOperator
@@ -610,6 +613,77 @@ expressionAtom
     | dispatchExpression
     | waitForExpression
     | OpenParen (forExpression | waitForExpression | expression) CloseParen errorOperator?
+    ;
+
+matchExpression
+    : Match expression matchPatternArms
+    | Match matchGuardArms
+    ;
+
+matchPatternArms
+    : OpenParen matchPatternArmList? matchDefaultArm Comma? CloseParen
+    ;
+
+matchPatternArmList
+    : matchPatternArm (Comma matchPatternArm)* Comma
+    ;
+
+matchGuardArms
+    : OpenParen matchGuardArmList? matchDefaultArm Comma? CloseParen
+    ;
+
+matchGuardArmList
+    : matchGuardArm (Comma matchGuardArm)* Comma
+    ;
+
+matchPatternArm
+    : matchPattern matchPatternGuard? Arrow expression
+    ;
+
+matchPatternGuard
+    : When expression
+    ;
+
+matchGuardArm
+    : When expression Arrow expression
+    ;
+
+matchDefaultArm
+    : IgnoreIdentifier Arrow expression
+    ;
+
+matchPattern
+    : matchLiteralPattern
+    | matchBindingPattern
+    | matchObjectPattern
+    ;
+
+matchBindingPattern
+    : Identifier
+    | safeReservedWord
+    ;
+
+matchLiteralPattern
+    : noneLiteral
+    | booleanLiteral
+    | stringLiteral
+    | floatLiteral
+    | integerLiteral
+    ;
+
+matchObjectPattern
+    : OpenBrace (matchObjectPatternProperty (Comma matchObjectPatternProperty)* Comma?)? CloseBrace
+    ;
+
+matchObjectPatternProperty
+    : matchObjectPatternKey Colon matchPattern
+    ;
+
+matchObjectPatternKey
+    : Identifier
+    | stringLiteral
+    | safeReservedWord
+    | unsafeReservedWord
     ;
 
 implicitMemberExpression

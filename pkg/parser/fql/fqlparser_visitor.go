@@ -280,6 +280,51 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#expressionAtom.
 	VisitExpressionAtom(ctx *ExpressionAtomContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#matchExpression.
+	VisitMatchExpression(ctx *MatchExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#matchPatternArms.
+	VisitMatchPatternArms(ctx *MatchPatternArmsContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#matchPatternArmList.
+	VisitMatchPatternArmList(ctx *MatchPatternArmListContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#matchGuardArms.
+	VisitMatchGuardArms(ctx *MatchGuardArmsContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#matchGuardArmList.
+	VisitMatchGuardArmList(ctx *MatchGuardArmListContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#matchPatternArm.
+	VisitMatchPatternArm(ctx *MatchPatternArmContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#matchPatternGuard.
+	VisitMatchPatternGuard(ctx *MatchPatternGuardContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#matchGuardArm.
+	VisitMatchGuardArm(ctx *MatchGuardArmContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#matchDefaultArm.
+	VisitMatchDefaultArm(ctx *MatchDefaultArmContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#matchPattern.
+	VisitMatchPattern(ctx *MatchPatternContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#matchBindingPattern.
+	VisitMatchBindingPattern(ctx *MatchBindingPatternContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#matchLiteralPattern.
+	VisitMatchLiteralPattern(ctx *MatchLiteralPatternContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#matchObjectPattern.
+	VisitMatchObjectPattern(ctx *MatchObjectPatternContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#matchObjectPatternProperty.
+	VisitMatchObjectPatternProperty(ctx *MatchObjectPatternPropertyContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#matchObjectPatternKey.
+	VisitMatchObjectPatternKey(ctx *MatchObjectPatternKeyContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#implicitMemberExpression.
 	VisitImplicitMemberExpression(ctx *ImplicitMemberExpressionContext) interface{}
 

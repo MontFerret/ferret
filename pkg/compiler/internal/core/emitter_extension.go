@@ -192,6 +192,16 @@ func (e *Emitter) EmitJumpc(op bytecode.Opcode, reg bytecode.Operand, label Labe
 	e.addLabelRef(pos, 0, label)
 }
 
+// EmitJumpCompare emits a conditional jump that compares two operands.
+func (e *Emitter) EmitJumpCompare(op bytecode.Opcode, left, right bytecode.Operand, label Label) {
+	e.emitInstruction(bytecode.Instruction{
+		Opcode:   op,
+		Operands: [3]bytecode.Operand{jumpPlaceholder, left, right},
+	})
+	pos := len(e.instructions) - 1
+	e.addLabelRef(pos, 0, label)
+}
+
 func (e *Emitter) EmitJumpIfFalse(cond bytecode.Operand, label Label) {
 	e.EmitJumpIf(cond, false, label)
 }

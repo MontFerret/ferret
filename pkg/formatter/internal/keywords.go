@@ -23,6 +23,7 @@ const (
 	keywordLeast     = "LEAST"
 	keywordLet       = "LET"
 	keywordLimit     = "LIMIT"
+	keywordMatch     = "MATCH"
 	keywordNone      = "NONE"
 	keywordNot       = "NOT"
 	keywordNull      = "NULL"
@@ -38,6 +39,7 @@ const (
 	keywordUsing     = "USING"
 	keywordValue     = "VALUE"
 	keywordWaitFor   = "WAITFOR"
+	keywordWhen      = "WHEN"
 	keywordWhile     = "WHILE"
 	keywordWith      = "WITH"
 )

@@ -115,6 +115,15 @@ func (h *ErrorHandler) VariableNotFound(token antlr.Token, name string) {
 	})
 }
 
+func (h *ErrorHandler) DuplicateMatchBinding(ctx antlr.ParserRuleContext, name string) {
+	h.Add(&diagnostics.Diagnostic{
+		Message: fmt.Sprintf("duplicate binding '%s' in MATCH pattern", name),
+		Source:  h.src,
+		Spans:   []diagnostics.ErrorSpan{diagnostics.NewMainErrorSpan(SpanFromRuleContext(ctx), "")},
+		Kind:    NameError,
+	})
+}
+
 func (h *ErrorHandler) MissingReturnValue(ctx antlr.ParserRuleContext) {
 	h.Add(&diagnostics.Diagnostic{
 		Message: fmt.Sprintf("Expected expression after '%s'", ctx.GetText()),

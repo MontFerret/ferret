@@ -57,6 +57,66 @@ func (p *PeepholePass) Run(ctx *PassContext) (*PassResult, error) {
 
 		inst := prog.Bytecode[i]
 
+		if i+1 < bytecodeLen && (inst.Opcode == bytecode.OpEq || inst.Opcode == bytecode.OpNe) && !targets[i] {
+			next := prog.Bytecode[i+1]
+
+			if (next.Opcode == bytecode.OpJumpIfFalse || next.Opcode == bytecode.OpJumpIfTrue) && inst.Operands[0].IsRegister() && next.Operands[1].IsRegister() && next.Operands[1].Register() == inst.Operands[0].Register() {
+				cmpReg := inst.Operands[0].Register()
+
+				if !regLiveAfterInstruction(prog.Bytecode, i+1, cmpReg, blockByInstruction, liveness) {
+					if i > 0 && inst.Operands[2].IsRegister() {
+						prev := prog.Bytecode[i-1]
+						if prev.Opcode == bytecode.OpLoadConst && prev.Operands[0].IsRegister() && inst.Operands[2].Register() == prev.Operands[0].Register() && targets[i-1] {
+							continue
+						}
+					}
+
+					newOp := bytecode.OpJumpIfNe
+					newOpConst := bytecode.OpJumpIfNeConst
+
+					if inst.Opcode == bytecode.OpEq {
+						if next.Opcode == bytecode.OpJumpIfTrue {
+							newOp = bytecode.OpJumpIfEq
+							newOpConst = bytecode.OpJumpIfEqConst
+						}
+					} else if next.Opcode == bytecode.OpJumpIfFalse {
+						newOp = bytecode.OpJumpIfEq
+						newOpConst = bytecode.OpJumpIfEqConst
+					}
+
+					if i > 0 && keep[i-1] && inst.Operands[2].IsRegister() {
+						prev := prog.Bytecode[i-1]
+						if prev.Opcode == bytecode.OpLoadConst && prev.Operands[0].IsRegister() && prev.Operands[1].IsConstant() && !targets[i-1] {
+							constReg := prev.Operands[0].Register()
+
+							if inst.Operands[2].Register() == constReg && !regLiveAfterInstruction(prog.Bytecode, i+1, constReg, blockByInstruction, liveness) {
+								next.Opcode = newOpConst
+								next.Operands[1] = inst.Operands[1]
+								next.Operands[2] = prev.Operands[1]
+								prog.Bytecode[i+1] = next
+								keep[i] = false
+								keep[i-1] = false
+								modified = true
+								continue
+							}
+						}
+					}
+
+					if inst.Operands[2].IsConstant() {
+						next.Opcode = newOpConst
+					} else {
+						next.Opcode = newOp
+					}
+					next.Operands[1] = inst.Operands[1]
+					next.Operands[2] = inst.Operands[2]
+					prog.Bytecode[i+1] = next
+					keep[i] = false
+					modified = true
+					continue
+				}
+			}
+		}
+
 		if i+1 < bytecodeLen && inst.Opcode == bytecode.OpLoadConst && inst.Operands[0].IsRegister() && inst.Operands[1].IsConstant() {
 			if !targets[i] {
 				next := prog.Bytecode[i+1]
@@ -101,6 +161,12 @@ func (p *PeepholePass) Run(ctx *PassContext) (*PassResult, error) {
 
 		next := prog.Bytecode[i+1]
 		uses, defs := instructionUseDef(next)
+
+		if isPureDef(next.Opcode) && defRegister(next) == defReg && samePureDef(inst, next) && !targets[i+1] {
+			keep[i+1] = false
+			modified = true
+			continue
+		}
 
 		if regIn(defs, defReg) && !regIn(uses, defReg) {
 			keep[i] = false
@@ -182,6 +248,12 @@ func isJumpOpcode(op bytecode.Opcode) bool {
 		bytecode.OpJumpIfFalse,
 		bytecode.OpJumpIfTrue,
 		bytecode.OpJumpIfNone,
+		bytecode.OpJumpIfNe,
+		bytecode.OpJumpIfNeConst,
+		bytecode.OpJumpIfEq,
+		bytecode.OpJumpIfEqConst,
+		bytecode.OpJumpIfMissingProperty,
+		bytecode.OpJumpIfMissingPropertyConst,
 		bytecode.OpIterNext,
 		bytecode.OpIterSkip,
 		bytecode.OpIterLimit:
@@ -249,6 +321,21 @@ func regUsedAfter(code []bytecode.Instruction, start int, reg int) bool {
 	}
 
 	return false
+}
+
+func samePureDef(a, b bytecode.Instruction) bool {
+	if a.Opcode != b.Opcode {
+		return false
+	}
+
+	switch a.Opcode {
+	case bytecode.OpLoadConst, bytecode.OpLoadParam, bytecode.OpLoadBool, bytecode.OpMove:
+		return a.Operands[0] == b.Operands[0] && a.Operands[1] == b.Operands[1]
+	case bytecode.OpLoadNone, bytecode.OpLoadZero:
+		return a.Operands[0] == b.Operands[0]
+	default:
+		return false
+	}
 }
 
 func buildInstructionBlockMap(cfg *ControlFlowGraph, codeLen int) []*BasicBlock {

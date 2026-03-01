@@ -572,6 +572,98 @@ func (s *BaseFqlParserListener) EnterExpressionAtom(ctx *ExpressionAtomContext) 
 // ExitExpressionAtom is called when production expressionAtom is exited.
 func (s *BaseFqlParserListener) ExitExpressionAtom(ctx *ExpressionAtomContext) {}
 
+// EnterMatchExpression is called when production matchExpression is entered.
+func (s *BaseFqlParserListener) EnterMatchExpression(ctx *MatchExpressionContext) {}
+
+// ExitMatchExpression is called when production matchExpression is exited.
+func (s *BaseFqlParserListener) ExitMatchExpression(ctx *MatchExpressionContext) {}
+
+// EnterMatchPatternArms is called when production matchPatternArms is entered.
+func (s *BaseFqlParserListener) EnterMatchPatternArms(ctx *MatchPatternArmsContext) {}
+
+// ExitMatchPatternArms is called when production matchPatternArms is exited.
+func (s *BaseFqlParserListener) ExitMatchPatternArms(ctx *MatchPatternArmsContext) {}
+
+// EnterMatchPatternArmList is called when production matchPatternArmList is entered.
+func (s *BaseFqlParserListener) EnterMatchPatternArmList(ctx *MatchPatternArmListContext) {}
+
+// ExitMatchPatternArmList is called when production matchPatternArmList is exited.
+func (s *BaseFqlParserListener) ExitMatchPatternArmList(ctx *MatchPatternArmListContext) {}
+
+// EnterMatchGuardArms is called when production matchGuardArms is entered.
+func (s *BaseFqlParserListener) EnterMatchGuardArms(ctx *MatchGuardArmsContext) {}
+
+// ExitMatchGuardArms is called when production matchGuardArms is exited.
+func (s *BaseFqlParserListener) ExitMatchGuardArms(ctx *MatchGuardArmsContext) {}
+
+// EnterMatchGuardArmList is called when production matchGuardArmList is entered.
+func (s *BaseFqlParserListener) EnterMatchGuardArmList(ctx *MatchGuardArmListContext) {}
+
+// ExitMatchGuardArmList is called when production matchGuardArmList is exited.
+func (s *BaseFqlParserListener) ExitMatchGuardArmList(ctx *MatchGuardArmListContext) {}
+
+// EnterMatchPatternArm is called when production matchPatternArm is entered.
+func (s *BaseFqlParserListener) EnterMatchPatternArm(ctx *MatchPatternArmContext) {}
+
+// ExitMatchPatternArm is called when production matchPatternArm is exited.
+func (s *BaseFqlParserListener) ExitMatchPatternArm(ctx *MatchPatternArmContext) {}
+
+// EnterMatchPatternGuard is called when production matchPatternGuard is entered.
+func (s *BaseFqlParserListener) EnterMatchPatternGuard(ctx *MatchPatternGuardContext) {}
+
+// ExitMatchPatternGuard is called when production matchPatternGuard is exited.
+func (s *BaseFqlParserListener) ExitMatchPatternGuard(ctx *MatchPatternGuardContext) {}
+
+// EnterMatchGuardArm is called when production matchGuardArm is entered.
+func (s *BaseFqlParserListener) EnterMatchGuardArm(ctx *MatchGuardArmContext) {}
+
+// ExitMatchGuardArm is called when production matchGuardArm is exited.
+func (s *BaseFqlParserListener) ExitMatchGuardArm(ctx *MatchGuardArmContext) {}
+
+// EnterMatchDefaultArm is called when production matchDefaultArm is entered.
+func (s *BaseFqlParserListener) EnterMatchDefaultArm(ctx *MatchDefaultArmContext) {}
+
+// ExitMatchDefaultArm is called when production matchDefaultArm is exited.
+func (s *BaseFqlParserListener) ExitMatchDefaultArm(ctx *MatchDefaultArmContext) {}
+
+// EnterMatchPattern is called when production matchPattern is entered.
+func (s *BaseFqlParserListener) EnterMatchPattern(ctx *MatchPatternContext) {}
+
+// ExitMatchPattern is called when production matchPattern is exited.
+func (s *BaseFqlParserListener) ExitMatchPattern(ctx *MatchPatternContext) {}
+
+// EnterMatchBindingPattern is called when production matchBindingPattern is entered.
+func (s *BaseFqlParserListener) EnterMatchBindingPattern(ctx *MatchBindingPatternContext) {}
+
+// ExitMatchBindingPattern is called when production matchBindingPattern is exited.
+func (s *BaseFqlParserListener) ExitMatchBindingPattern(ctx *MatchBindingPatternContext) {}
+
+// EnterMatchLiteralPattern is called when production matchLiteralPattern is entered.
+func (s *BaseFqlParserListener) EnterMatchLiteralPattern(ctx *MatchLiteralPatternContext) {}
+
+// ExitMatchLiteralPattern is called when production matchLiteralPattern is exited.
+func (s *BaseFqlParserListener) ExitMatchLiteralPattern(ctx *MatchLiteralPatternContext) {}
+
+// EnterMatchObjectPattern is called when production matchObjectPattern is entered.
+func (s *BaseFqlParserListener) EnterMatchObjectPattern(ctx *MatchObjectPatternContext) {}
+
+// ExitMatchObjectPattern is called when production matchObjectPattern is exited.
+func (s *BaseFqlParserListener) ExitMatchObjectPattern(ctx *MatchObjectPatternContext) {}
+
+// EnterMatchObjectPatternProperty is called when production matchObjectPatternProperty is entered.
+func (s *BaseFqlParserListener) EnterMatchObjectPatternProperty(ctx *MatchObjectPatternPropertyContext) {
+}
+
+// ExitMatchObjectPatternProperty is called when production matchObjectPatternProperty is exited.
+func (s *BaseFqlParserListener) ExitMatchObjectPatternProperty(ctx *MatchObjectPatternPropertyContext) {
+}
+
+// EnterMatchObjectPatternKey is called when production matchObjectPatternKey is entered.
+func (s *BaseFqlParserListener) EnterMatchObjectPatternKey(ctx *MatchObjectPatternKeyContext) {}
+
+// ExitMatchObjectPatternKey is called when production matchObjectPatternKey is exited.
+func (s *BaseFqlParserListener) ExitMatchObjectPatternKey(ctx *MatchObjectPatternKeyContext) {}
+
 // EnterImplicitMemberExpression is called when production implicitMemberExpression is entered.
 func (s *BaseFqlParserListener) EnterImplicitMemberExpression(ctx *ImplicitMemberExpressionContext) {}
 

@@ -240,6 +240,27 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 	case bytecode.OpJumpIfFalse, bytecode.OpJumpIfTrue, bytecode.OpJumpIfNone:
 		addUse(src1)
 		return
+	case bytecode.OpJumpIfNe:
+		addUse(src1)
+		addUse(src2)
+		return
+	case bytecode.OpJumpIfNeConst:
+		addUse(src1)
+		return
+	case bytecode.OpJumpIfEq:
+		addUse(src1)
+		addUse(src2)
+		return
+	case bytecode.OpJumpIfEqConst:
+		addUse(src1)
+		return
+	case bytecode.OpJumpIfMissingProperty:
+		addUse(src1)
+		addUse(src2)
+		return
+	case bytecode.OpJumpIfMissingPropertyConst:
+		addUse(src1)
+		return
 	case bytecode.OpJump:
 		return
 
