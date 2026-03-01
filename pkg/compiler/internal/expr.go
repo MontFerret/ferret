@@ -725,7 +725,13 @@ func (c *ExprCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx fql.
 		arms = list.AllMatchPatternArm()
 	}
 
-	for _, arm := range arms {
+	mergeLabels, mergeGroups := collectMatchResultMerges(c, arms)
+	var defaultLabel core.Label
+	if len(mergeGroups) > 0 {
+		defaultLabel = c.ctx.Emitter.NewLabel("match.default")
+	}
+
+	for idx, arm := range arms {
 		if arm == nil {
 			continue
 		}
@@ -744,15 +750,36 @@ func (c *ExprCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx fql.
 		}
 
 		if result := arm.Expression(); result != nil {
-			out := c.ensureRegister(c.Compile(result))
+			if label, ok := mergeLabels[idx]; ok {
+				c.ctx.Emitter.EmitJump(label)
+			} else {
+				out := c.ensureRegister(c.Compile(result))
+				if out != bytecode.NoopOperand && out != dst {
+					c.ctx.Emitter.EmitMove(dst, out)
+				}
+				c.ctx.Emitter.EmitJump(end)
+			}
+		} else {
+			c.ctx.Emitter.EmitJump(end)
+		}
+
+		c.ctx.Symbols.ExitScope()
+		c.ctx.Emitter.MarkLabel(next)
+	}
+
+	if len(mergeGroups) > 0 {
+		c.ctx.Emitter.EmitJump(defaultLabel)
+		for _, group := range mergeGroups {
+			c.ctx.Emitter.MarkLabel(group.label)
+			c.ctx.Symbols.EnterScope()
+			out := c.ensureRegister(c.Compile(group.result))
 			if out != bytecode.NoopOperand && out != dst {
 				c.ctx.Emitter.EmitMove(dst, out)
 			}
+			c.ctx.Symbols.ExitScope()
+			c.ctx.Emitter.EmitJump(end)
 		}
-
-		c.ctx.Emitter.EmitJump(end)
-		c.ctx.Symbols.ExitScope()
-		c.ctx.Emitter.MarkLabel(next)
+		c.ctx.Emitter.MarkLabel(defaultLabel)
 	}
 
 	if def := ctx.MatchDefaultArm(); def != nil {
@@ -812,6 +839,75 @@ func (c *ExprCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext, dst
 		}
 		c.ctx.Symbols.ExitScope()
 	}
+}
+
+type matchResultGroup struct {
+	label  core.Label
+	result fql.IExpressionContext
+	arms   []int
+}
+
+func collectMatchResultMerges(c *ExprCompiler, arms []fql.IMatchPatternArmContext) (map[int]core.Label, []matchResultGroup) {
+	if len(arms) == 0 {
+		return nil, nil
+	}
+
+	groups := make(map[string]*matchResultGroup)
+	order := make([]*matchResultGroup, 0)
+
+	for idx, arm := range arms {
+		if arm == nil {
+			continue
+		}
+		if arm.MatchPatternGuard() != nil {
+			continue
+		}
+		pattern := arm.MatchPattern()
+		if pattern == nil || pattern.MatchLiteralPattern() == nil {
+			continue
+		}
+		result := arm.Expression()
+		if result == nil {
+			continue
+		}
+		key, ok := matchPureResultKey(result)
+		if !ok {
+			continue
+		}
+
+		group, exists := groups[key]
+		if !exists {
+			group = &matchResultGroup{result: result}
+			groups[key] = group
+			order = append(order, group)
+		}
+		group.arms = append(group.arms, idx)
+	}
+
+	if len(order) == 0 {
+		return nil, nil
+	}
+
+	labels := make(map[int]core.Label)
+	merged := make([]matchResultGroup, 0)
+
+	for _, group := range order {
+		if len(group.arms) < 2 {
+			continue
+		}
+		label := c.ctx.Emitter.NewLabel("match.result")
+		group.label = label
+		for _, idx := range group.arms {
+			labels[idx] = label
+		}
+		merged = append(merged, *group)
+	}
+
+	if len(merged) == 0 {
+		return nil, nil
+	}
+
+	return labels, merged
 }
 
 func (c *ExprCompiler) compileMatchPatternValue(valueReg bytecode.Operand, ctx fql.IMatchPatternContext, onFail core.Label) {
@@ -1083,6 +1179,241 @@ func literalValueFromMatchLiteral(lit fql.IMatchLiteralPatternContext) (runtime.
 	}
 
 	return nil, false
+}
+
+func matchPureResultKey(expr fql.IExpressionContext) (string, bool) {
+	if expr == nil {
+		return "", false
+	}
+
+	if expr.UnaryOperator() != nil || expr.LogicalAndOperator() != nil || expr.LogicalOrOperator() != nil || expr.GetTernaryOperator() != nil {
+		return "", false
+	}
+
+	pred := expr.Predicate()
+	if pred == nil {
+		return "", false
+	}
+
+	if pred.EqualityOperator() != nil || pred.ArrayOperator() != nil || pred.InOperator() != nil || pred.LikeOperator() != nil {
+		return "", false
+	}
+
+	atom := pred.ExpressionAtom()
+	if atom == nil {
+		return "", false
+	}
+
+	if atom.ExpressionAtom(0) != nil || atom.ExpressionAtom(1) != nil {
+		return "", false
+	}
+
+	if atom.AdditiveOperator() != nil || atom.MultiplicativeOperator() != nil || atom.RegexpOperator() != nil || atom.ErrorOperator() != nil || atom.RangeOperator() != nil {
+		return "", false
+	}
+
+	if inner := atom.Expression(); inner != nil {
+		return matchPureResultKey(inner)
+	}
+
+	if lit := atom.Literal(); lit != nil {
+		val, ok := literalValueFromLiteral(lit)
+		if !ok {
+			return "", false
+		}
+		return matchPureLiteralKey(val)
+	}
+
+	if v := atom.Variable(); v != nil {
+		name := matchVariableName(v)
+		if name == "" {
+			return "", false
+		}
+		return "var:" + name, true
+	}
+
+	if p := atom.Param(); p != nil {
+		name := matchParamName(p)
+		if name == "" {
+			return "", false
+		}
+		return "param:" + name, true
+	}
+
+	if m := atom.MemberExpression(); m != nil {
+		return matchMemberExpressionKey(m)
+	}
+
+	if im := atom.ImplicitMemberExpression(); im != nil {
+		return matchImplicitMemberExpressionKey(im)
+	}
+
+	return "", false
+}
+
+func matchPureLiteralKey(val runtime.Value) (string, bool) {
+	if val == nil {
+		return "", false
+	}
+
+	if val == runtime.None {
+		return "lit:none", true
+	}
+
+	switch v := val.(type) {
+	case runtime.Boolean:
+		if v {
+			return "lit:true", true
+		}
+		return "lit:false", true
+	case runtime.Int:
+		return "lit:int:" + strconv.FormatInt(int64(v), 10), true
+	case runtime.Float:
+		return "lit:float:" + strconv.FormatFloat(float64(v), 'g', -1, 64), true
+	case runtime.String:
+		return "lit:str:" + strconv.Quote(string(v)), true
+	default:
+		return "", false
+	}
+}
+
+func matchVariableName(ctx fql.IVariableContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	if id := ctx.Identifier(); id != nil {
+		return id.GetText()
+	}
+
+	if srw := ctx.SafeReservedWord(); srw != nil {
+		return srw.GetText()
+	}
+
+	return ""
+}
+
+func matchParamName(ctx fql.IParamContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	var name string
+	if id := ctx.Identifier(); id != nil {
+		name = id.GetText()
+	} else if srw := ctx.SafeReservedWord(); srw != nil {
+		name = srw.GetText()
+	}
+
+	if name == "" {
+		return ""
+	}
+
+	return "@" + name
+}
+
+func matchMemberExpressionKey(ctx fql.IMemberExpressionContext) (string, bool) {
+	if ctx == nil {
+		return "", false
+	}
+
+	source := ctx.MemberExpressionSource()
+	if source == nil {
+		return "", false
+	}
+
+	var base string
+	if v := source.Variable(); v != nil {
+		name := matchVariableName(v)
+		if name == "" {
+			return "", false
+		}
+		base = "var:" + name
+	} else if p := source.Param(); p != nil {
+		name := matchParamName(p)
+		if name == "" {
+			return "", false
+		}
+		base = "param:" + name
+	} else {
+		return "", false
+	}
+
+	paths := ctx.AllMemberExpressionPath()
+	if len(paths) != 1 {
+		return "", false
+	}
+
+	prop, ok := matchMemberExpressionPathKey(paths[0])
+	if !ok {
+		return "", false
+	}
+
+	return "member:" + base + "." + prop, true
+}
+
+func matchImplicitMemberExpressionKey(ctx fql.IImplicitMemberExpressionContext) (string, bool) {
+	if ctx == nil {
+		return "", false
+	}
+
+	if len(ctx.AllMemberExpressionPath()) > 0 {
+		return "", false
+	}
+
+	start := ctx.ImplicitMemberExpressionStart()
+	if start == nil {
+		return "", false
+	}
+
+	if start.ErrorOperator() != nil || start.ComputedPropertyName() != nil || start.ArrayExpansion() != nil || start.ArrayContraction() != nil || start.ArrayQuestionMark() != nil || start.ArrayApply() != nil {
+		return "", false
+	}
+
+	prop, ok := matchPropertyNameKey(start.PropertyName())
+	if !ok {
+		return "", false
+	}
+
+	return "member:implicit:." + prop, true
+}
+
+func matchMemberExpressionPathKey(ctx fql.IMemberExpressionPathContext) (string, bool) {
+	if ctx == nil {
+		return "", false
+	}
+
+	if ctx.ErrorOperator() != nil || ctx.ComputedPropertyName() != nil || ctx.ArrayContraction() != nil || ctx.ArrayExpansion() != nil || ctx.ArrayQuestionMark() != nil || ctx.ArrayApply() != nil {
+		return "", false
+	}
+
+	return matchPropertyNameKey(ctx.PropertyName())
+}
+
+func matchPropertyNameKey(ctx fql.IPropertyNameContext) (string, bool) {
+	if ctx == nil {
+		return "", false
+	}
+
+	var name string
+
+	if id := ctx.Identifier(); id != nil {
+		name = id.GetText()
+	} else if srw := ctx.SafeReservedWord(); srw != nil {
+		name = srw.GetText()
+	} else if urw := ctx.UnsafeReservedWord(); urw != nil {
+		name = urw.GetText()
+	} else if sl := ctx.StringLiteral(); sl != nil {
+		if val, ok := parseStringLiteralConst(sl); ok {
+			name = string(val)
+		}
+	}
+
+	if name == "" {
+		return "", false
+	}
+
+	return strconv.Quote(name), true
 }
 
 func (c *ExprCompiler) compileMatchObjectPattern(valueReg bytecode.Operand, ctx fql.IMatchObjectPatternContext, onFail core.Label) {
