@@ -42,6 +42,7 @@ func NewWithOptions(program *bytecode.Program, opts ...VMOption) *VM {
 	vm.fastObjectDictThreshold = cfg.fastObjectDictThreshold
 	vm.instructions = make([]data.ExecInstruction, len(program.Bytecode))
 	maxUdfRegs := 0
+
 	for i := range program.Functions.UserDefined {
 		if program.Functions.UserDefined[i].Registers > maxUdfRegs {
 			maxUdfRegs = program.Functions.UserDefined[i].Registers
