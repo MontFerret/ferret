@@ -115,7 +115,6 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 
 	// Op R
 	case bytecode.OpLoadNone, bytecode.OpLoadZero,
-		bytecode.OpHCall0, bytecode.OpProtectedHCall0, bytecode.OpCall0, bytecode.OpProtectedCall0, bytecode.OpTailCall0,
 		bytecode.OpClose, bytecode.OpSleep, bytecode.OpRand, bytecode.OpIncr, bytecode.OpDecr, bytecode.OpReturn:
 		out = fmt.Sprintf("%d: %s %s", ip, opcode, formatOperand(ops[0]))
 
@@ -144,9 +143,15 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 
 	// Op R R
 	case bytecode.OpMove, bytecode.OpLength, bytecode.OpType, bytecode.OpExists,
-		bytecode.OpHCall1, bytecode.OpProtectedHCall1, bytecode.OpCall1, bytecode.OpProtectedCall1, bytecode.OpTailCall1,
 		bytecode.OpIter, bytecode.OpIterValue, bytecode.OpIterKey, bytecode.OpPush, bytecode.OpArrayPush:
 		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]))
+
+	case bytecode.OpHCall, bytecode.OpProtectedHCall, bytecode.OpCall, bytecode.OpProtectedCall, bytecode.OpTailCall:
+		out = fmt.Sprintf("%d: %s %s", ip, opcode, formatOperand(ops[0]))
+
+		if ops[1] != bytecode.NoopOperand || ops[2] != bytecode.NoopOperand {
+			out += fmt.Sprintf(" %s %s", formatOperand(ops[1]), formatOperand(ops[2]))
+		}
 
 	// Op R R R
 	default:
@@ -168,13 +173,7 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 
 func isUdfCallOpcode(op bytecode.Opcode) bool {
 	switch op {
-	case bytecode.OpCall, bytecode.OpProtectedCall,
-		bytecode.OpCall0, bytecode.OpProtectedCall0,
-		bytecode.OpCall1, bytecode.OpProtectedCall1,
-		bytecode.OpCall2, bytecode.OpProtectedCall2,
-		bytecode.OpCall3, bytecode.OpProtectedCall3,
-		bytecode.OpCall4, bytecode.OpProtectedCall4,
-		bytecode.OpTailCall, bytecode.OpTailCall0, bytecode.OpTailCall1, bytecode.OpTailCall2, bytecode.OpTailCall3, bytecode.OpTailCall4:
+	case bytecode.OpCall, bytecode.OpProtectedCall, bytecode.OpTailCall:
 		return true
 	default:
 		return false

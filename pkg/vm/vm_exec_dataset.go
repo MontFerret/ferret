@@ -34,11 +34,7 @@ func (vm *VM) execDatasetOps(
 			planIdx := int(src2)
 
 			if planIdx < 0 || planIdx >= len(aggregatePlans) {
-				if vm.unwindToProtected() {
-					return nil
-				}
-
-				return runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan")
+				return vm.handleProtectedError(runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan"))
 			}
 
 			plan := aggregatePlans[planIdx]
@@ -57,15 +53,7 @@ func (vm *VM) execDatasetOps(
 		ds := reg[dst].(runtime.Appendable)
 
 		if err := ds.Append(ctx, reg[src1]); err != nil {
-			if _, catch := vm.tryCatch(vm.pc); catch {
-				return nil
-			}
-
-			if vm.unwindToProtected() {
-				return nil
-			}
-
-			return err
+			return vm.handleError(err)
 		}
 	case bytecode.OpArrayPush:
 		ds := reg[dst].(*runtime.Array)
@@ -75,15 +63,7 @@ func (vm *VM) execDatasetOps(
 		tr := reg[dst].(runtime.KeyWritable)
 
 		if err := tr.Set(ctx, reg[src1], reg[src2]); err != nil {
-			if _, catch := vm.tryCatch(vm.pc); catch {
-				return nil
-			}
-
-			if vm.unwindToProtected() {
-				return nil
-			}
-
-			return err
+			return vm.handleError(err)
 		}
 	case bytecode.OpObjectSet:
 		obj, ok := reg[dst].(*data.FastObject)

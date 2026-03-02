@@ -47,11 +47,7 @@ func (vm *VM) execControlOps(
 
 		has, err := obj.ContainsKey(ctx, key)
 		if err != nil {
-			if vm.unwindToProtected() {
-				return false, nil
-			}
-
-			return false, err
+			return false, vm.handleProtectedError(err)
 		}
 		if !has {
 			vm.pc = int(dst)
@@ -71,11 +67,7 @@ func (vm *VM) execControlOps(
 
 		has, err := obj.ContainsKey(ctx, key)
 		if err != nil {
-			if vm.unwindToProtected() {
-				return false, nil
-			}
-
-			return false, err
+			return false, vm.handleProtectedError(err)
 		}
 		if !has {
 			vm.pc = int(dst)

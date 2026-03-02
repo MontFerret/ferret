@@ -107,36 +107,11 @@ const (
 	// Host Function Operations
 	OpHCall
 	OpProtectedHCall
-	OpHCall0
-	OpProtectedHCall0
-	OpHCall1
-	OpProtectedHCall1
-	OpHCall2
-	OpProtectedHCall2
-	OpHCall3
-	OpProtectedHCall3
-	OpHCall4
-	OpProtectedHCall4
 
 	// UDF Operations
 	OpCall
 	OpProtectedCall
-	OpCall0
-	OpProtectedCall0
-	OpCall1
-	OpProtectedCall1
-	OpCall2
-	OpProtectedCall2
-	OpCall3
-	OpProtectedCall3
-	OpCall4
-	OpProtectedCall4
 	OpTailCall
-	OpTailCall0
-	OpTailCall1
-	OpTailCall2
-	OpTailCall3
-	OpTailCall4
 
 	// Dataset Operations
 	OpDataSet
@@ -249,7 +224,7 @@ func (op Opcode) String() string {
 	case OpLoadPropertyOptional:
 		return "LOADPRO"
 
-		// Collection Creation
+	// Collection Creation
 	case OpLoadArray:
 		return "LOADARR"
 	case OpLoadObject:
@@ -378,64 +353,14 @@ func (op Opcode) String() string {
 		return "HCALL"
 	case OpProtectedHCall:
 		return "PHCALL"
-	case OpHCall0:
-		return "HCALL0"
-	case OpProtectedHCall0:
-		return "PHCALL0"
-	case OpHCall1:
-		return "HCALL1"
-	case OpProtectedHCall1:
-		return "PHCALL1"
-	case OpHCall2:
-		return "HCALL2"
-	case OpProtectedHCall2:
-		return "PHCALL2"
-	case OpHCall3:
-		return "HCALL3"
-	case OpProtectedHCall3:
-		return "PHCALL3"
-	case OpHCall4:
-		return "HCALL4"
-	case OpProtectedHCall4:
-		return "PHCALL4"
 
 	// UDF Operations
 	case OpCall:
 		return "CALL"
 	case OpProtectedCall:
 		return "PCALL"
-	case OpCall0:
-		return "CALL0"
-	case OpProtectedCall0:
-		return "PCALL0"
-	case OpCall1:
-		return "CALL1"
-	case OpProtectedCall1:
-		return "PCALL1"
-	case OpCall2:
-		return "CALL2"
-	case OpProtectedCall2:
-		return "PCALL2"
-	case OpCall3:
-		return "CALL3"
-	case OpProtectedCall3:
-		return "PCALL3"
-	case OpCall4:
-		return "CALL4"
-	case OpProtectedCall4:
-		return "PCALL4"
 	case OpTailCall:
 		return "TAILCALL"
-	case OpTailCall0:
-		return "TAILCALL0"
-	case OpTailCall1:
-		return "TAILCALL1"
-	case OpTailCall2:
-		return "TAILCALL2"
-	case OpTailCall3:
-		return "TAILCALL3"
-	case OpTailCall4:
-		return "TAILCALL4"
 
 	// Dataset Operations
 	case OpDataSet:

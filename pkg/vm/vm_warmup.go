@@ -24,20 +24,15 @@ func (vm *VM) warmup(env *Environment) error {
 
 	for pc, inst := range vm.program.Bytecode {
 		op := inst.Opcode
-		dst, src1 := inst.Operands[0], inst.Operands[1]
+		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
 
 		switch op {
 		case bytecode.OpLoadConst:
 			reg[dst] = constants[src1.Constant()]
 		case bytecode.OpMove:
 			reg[dst] = reg[src1]
-		case bytecode.OpHCall, bytecode.OpProtectedHCall,
-			bytecode.OpHCall0, bytecode.OpProtectedHCall0,
-			bytecode.OpHCall1, bytecode.OpProtectedHCall1,
-			bytecode.OpHCall2, bytecode.OpProtectedHCall2,
-			bytecode.OpHCall3, bytecode.OpProtectedHCall3,
-			bytecode.OpHCall4, bytecode.OpProtectedHCall4:
-			warmupResolveHostCall(pc, op, dst, reg, functions, vm.cache.HostFunctions, errors)
+		case bytecode.OpHCall, bytecode.OpProtectedHCall:
+			warmupResolveHostCall(pc, op, dst, src1, src2, reg, functions, vm.cache.HostFunctions, errors)
 		default:
 			continue
 		}
@@ -173,23 +168,40 @@ func warmupResolveHostCall(
 	pc int,
 	op bytecode.Opcode,
 	dst bytecode.Operand,
+	src1 bytecode.Operand,
+	src2 bytecode.Operand,
 	reg map[bytecode.Operand]runtime.Value,
 	functions *runtime.Functions,
 	funcs []*mem.CachedHostFunction,
 	errors *diagnostic.WarmupErrorSet,
 ) {
-	switch op {
-	case bytecode.OpHCall, bytecode.OpProtectedHCall:
-		resolveHostCall(pc, dst, reg, functions.Var().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function) { f.FnV = fn }, funcs, errors)
-	case bytecode.OpHCall0, bytecode.OpProtectedHCall0:
+	if op != bytecode.OpHCall && op != bytecode.OpProtectedHCall {
+		return
+	}
+
+	argCount := 0
+
+	if src1.IsRegister() && src2.IsRegister() {
+		start := src1.Register()
+		end := src2.Register()
+
+		if start > 0 && end >= start {
+			argCount = end - start + 1
+		}
+	}
+
+	switch argCount {
+	case 0:
 		resolveHostCall(pc, dst, reg, functions.A0().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function0) { f.Fn0 = fn }, funcs, errors)
-	case bytecode.OpHCall1, bytecode.OpProtectedHCall1:
+	case 1:
 		resolveHostCall(pc, dst, reg, functions.A1().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function1) { f.Fn1 = fn }, funcs, errors)
-	case bytecode.OpHCall2, bytecode.OpProtectedHCall2:
+	case 2:
 		resolveHostCall(pc, dst, reg, functions.A2().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function2) { f.Fn2 = fn }, funcs, errors)
-	case bytecode.OpHCall3, bytecode.OpProtectedHCall3:
+	case 3:
 		resolveHostCall(pc, dst, reg, functions.A3().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function3) { f.Fn3 = fn }, funcs, errors)
-	case bytecode.OpHCall4, bytecode.OpProtectedHCall4:
+	case 4:
 		resolveHostCall(pc, dst, reg, functions.A4().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function4) { f.Fn4 = fn }, funcs, errors)
+	default:
+		resolveHostCall(pc, dst, reg, functions.Var().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function) { f.FnV = fn }, funcs, errors)
 	}
 }

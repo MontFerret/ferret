@@ -5,97 +5,60 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
-func (vm *VM) callv(ctx context.Context, pc int, src1, src2 bytecode.Operand) (runtime.Value, error) {
-	reg := vm.registers.Values
-	cacheFn := vm.cache.HostFunctions[pc]
-
-	var size int
-
-	if src1 > 0 {
-		size = src2.Register() - src1.Register() + 1
+func hostCallArgs(reg []runtime.Value, src1, src2 bytecode.Operand) []runtime.Value {
+	if !src1.IsRegister() || !src2.IsRegister() {
+		return nil
 	}
 
-	start := int(src1)
-	end := int(src1) + size
+	start := src1.Register()
+	end := src2.Register()
+
+	if start <= 0 || end < start {
+		return nil
+	}
+
+	size := end - start + 1
 	args := make([]runtime.Value, size)
 
-	// Iterate over registers starting from src1 and up to the src2
-	for i := start; i < end; i++ {
-		args[i-start] = reg[i]
+	for i := 0; i < size; i++ {
+		args[i] = reg[start+i]
+	}
+
+	return args
+}
+
+func callCachedHostFunction(
+	ctx context.Context,
+	cacheFn *mem.CachedHostFunction,
+	args []runtime.Value,
+) (runtime.Value, error) {
+	switch len(args) {
+	case 0:
+		if cacheFn.Fn0 != nil {
+			return cacheFn.Fn0(ctx)
+		}
+	case 1:
+		if cacheFn.Fn1 != nil {
+			return cacheFn.Fn1(ctx, args[0])
+		}
+	case 2:
+		if cacheFn.Fn2 != nil {
+			return cacheFn.Fn2(ctx, args[0], args[1])
+		}
+	case 3:
+		if cacheFn.Fn3 != nil {
+			return cacheFn.Fn3(ctx, args[0], args[1], args[2])
+		}
+	case 4:
+		if cacheFn.Fn4 != nil {
+			return cacheFn.Fn4(ctx, args[0], args[1], args[2], args[3])
+		}
 	}
 
 	return cacheFn.FnV(ctx, args...)
-}
-
-func (vm *VM) call0(ctx context.Context, pc int) (runtime.Value, error) {
-	cacheFn := vm.cache.HostFunctions[pc]
-
-	if cacheFn.Fn0 != nil {
-		return cacheFn.Fn0(ctx)
-	}
-
-	// Fall back to a variadic function call
-	return cacheFn.FnV(ctx)
-}
-
-func (vm *VM) call1(ctx context.Context, pc int, src1 bytecode.Operand) (runtime.Value, error) {
-	reg := vm.registers.Values
-	arg := reg[src1]
-	cacheFn := vm.cache.HostFunctions[pc]
-
-	if cacheFn.Fn1 != nil {
-		return cacheFn.Fn1(ctx, arg)
-	}
-
-	// Fall back to a variadic function call
-	return cacheFn.FnV(ctx, arg)
-}
-
-func (vm *VM) call2(ctx context.Context, pc int, src1, src2 bytecode.Operand) (runtime.Value, error) {
-	reg := vm.registers.Values
-	cacheFn := vm.cache.HostFunctions[pc]
-	arg1 := reg[src1]
-	arg2 := reg[src2]
-
-	if cacheFn.Fn2 != nil {
-		return cacheFn.Fn2(ctx, arg1, arg2)
-	}
-
-	// Fall back to a variadic function call
-	return cacheFn.FnV(ctx, arg1, arg2)
-}
-
-func (vm *VM) call3(ctx context.Context, pc int, src1 bytecode.Operand) (runtime.Value, error) {
-	reg := vm.registers.Values
-	cacheFn := vm.cache.HostFunctions[pc]
-	arg1 := reg[src1]
-	arg2 := reg[src1+1]
-	arg3 := reg[src1+2]
-
-	if cacheFn.Fn3 != nil {
-		return cacheFn.Fn3(ctx, arg1, arg2, arg3)
-	}
-
-	// Fall back to a variadic function call
-	return cacheFn.FnV(ctx, arg1, arg2, arg3)
-}
-
-func (vm *VM) call4(ctx context.Context, pc int, src1 bytecode.Operand) (runtime.Value, error) {
-	reg := vm.registers.Values
-	cacheFn := vm.cache.HostFunctions[pc]
-	arg1 := reg[src1]
-	arg2 := reg[src1+1]
-	arg3 := reg[src1+2]
-	arg4 := reg[src1+3]
-
-	if cacheFn.Fn4 != nil {
-		return cacheFn.Fn4(ctx, arg1, arg2, arg3, arg4)
-	}
-
-	// Fall back to a variadic function call
-	return cacheFn.FnV(ctx, arg1, arg2, arg3, arg4)
 }
 
 func (vm *VM) execHostCall(
@@ -104,27 +67,13 @@ func (vm *VM) execHostCall(
 	pc int,
 	dst, src1, src2 bytecode.Operand,
 ) error {
-	var (
-		out runtime.Value
-		err error
-	)
-
-	switch op {
-	case bytecode.OpHCall, bytecode.OpProtectedHCall:
-		out, err = vm.callv(ctx, pc, src1, src2)
-	case bytecode.OpHCall0, bytecode.OpProtectedHCall0:
-		out, err = vm.call0(ctx, pc)
-	case bytecode.OpHCall1, bytecode.OpProtectedHCall1:
-		out, err = vm.call1(ctx, pc, src1)
-	case bytecode.OpHCall2, bytecode.OpProtectedHCall2:
-		out, err = vm.call2(ctx, pc, src1, src2)
-	case bytecode.OpHCall3, bytecode.OpProtectedHCall3:
-		out, err = vm.call3(ctx, pc, src1)
-	case bytecode.OpHCall4, bytecode.OpProtectedHCall4:
-		out, err = vm.call4(ctx, pc, src1)
-	default:
+	if op != bytecode.OpHCall && op != bytecode.OpProtectedHCall {
 		return runtime.Error(runtime.ErrUnexpected, "invalid host call opcode")
 	}
+
+	cacheFn := vm.cache.HostFunctions[pc]
+	args := hostCallArgs(vm.registers.Values, src1, src2)
+	out, err := callCachedHostFunction(ctx, cacheFn, args)
 
 	if err := vm.setCallResult(op, dst, out, err); err != nil {
 		if vm.unwindToProtected() {
@@ -171,8 +120,7 @@ func (vm *VM) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtim
 
 func isProtectedCall(op bytecode.Opcode) bool {
 	switch op {
-	case bytecode.OpProtectedHCall, bytecode.OpProtectedHCall0, bytecode.OpProtectedHCall1, bytecode.OpProtectedHCall2, bytecode.OpProtectedHCall3, bytecode.OpProtectedHCall4,
-		bytecode.OpProtectedCall, bytecode.OpProtectedCall0, bytecode.OpProtectedCall1, bytecode.OpProtectedCall2, bytecode.OpProtectedCall3, bytecode.OpProtectedCall4:
+	case bytecode.OpProtectedHCall, bytecode.OpProtectedCall:
 		return true
 	default:
 		return false

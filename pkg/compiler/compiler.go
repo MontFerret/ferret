@@ -93,6 +93,7 @@ func (c *Compiler) Compile(src *file.Source) (program *bytecode.Program, err err
 	}
 
 	program = &bytecode.Program{
+		Version: bytecode.ProgramVersion,
 		Functions: bytecode.Functions{
 			Host:        l.Ctx.Symbols.Functions(),
 			UserDefined: udfs,

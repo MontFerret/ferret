@@ -16,6 +16,7 @@ import (
 
 type (
 	programJSON struct {
+		Version    int            `json:"version,omitempty"`
 		Source     *file.Source   `json:"source,omitempty"`
 		Registers  int            `json:"registers"`
 		Bytecode   []Instruction  `json:"bytecode"`

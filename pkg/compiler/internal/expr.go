@@ -2843,35 +2843,12 @@ func (c *ExprCompiler) compileHostFunctionCallWith(name runtime.String, protecte
 	c.ctx.Emitter.EmitLoadConst(dest, c.ctx.Symbols.AddConstant(name))
 	c.ctx.Symbols.BindFunction(name.String(), len(seq))
 
-	var opcode bytecode.Opcode
-	var protectedOpcode bytecode.Opcode
-
-	switch len(seq) {
-	case 0:
-		opcode = bytecode.OpHCall0
-		protectedOpcode = bytecode.OpProtectedHCall0
-	case 1:
-		opcode = bytecode.OpHCall1
-		protectedOpcode = bytecode.OpProtectedHCall1
-	case 2:
-		opcode = bytecode.OpHCall2
-		protectedOpcode = bytecode.OpProtectedHCall2
-	case 3:
-		opcode = bytecode.OpHCall3
-		protectedOpcode = bytecode.OpProtectedHCall3
-	case 4:
-		opcode = bytecode.OpHCall4
-		protectedOpcode = bytecode.OpProtectedHCall4
-	default:
-		opcode = bytecode.OpHCall
-		protectedOpcode = bytecode.OpProtectedHCall
+	opcode := bytecode.OpHCall
+	if protected {
+		opcode = bytecode.OpProtectedHCall
 	}
 
-	if !protected {
-		c.ctx.Emitter.EmitAs(opcode, dest, seq)
-	} else {
-		c.ctx.Emitter.EmitAs(protectedOpcode, dest, seq)
-	}
+	c.ctx.Emitter.EmitAs(opcode, dest, seq)
 
 	c.ctx.Types.Set(dest, core.TypeAny)
 
@@ -2885,35 +2862,12 @@ func (c *ExprCompiler) compileUdfCallWith(fn *UDFInfo, protected bool, seq core.
 	dest := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitLoadConst(dest, c.ctx.Symbols.AddConstant(runtime.NewInt(fn.ID)))
 
-	var opcode bytecode.Opcode
-	var protectedOpcode bytecode.Opcode
-
-	switch len(args) {
-	case 0:
-		opcode = bytecode.OpCall0
-		protectedOpcode = bytecode.OpProtectedCall0
-	case 1:
-		opcode = bytecode.OpCall1
-		protectedOpcode = bytecode.OpProtectedCall1
-	case 2:
-		opcode = bytecode.OpCall2
-		protectedOpcode = bytecode.OpProtectedCall2
-	case 3:
-		opcode = bytecode.OpCall3
-		protectedOpcode = bytecode.OpProtectedCall3
-	case 4:
-		opcode = bytecode.OpCall4
-		protectedOpcode = bytecode.OpProtectedCall4
-	default:
-		opcode = bytecode.OpCall
-		protectedOpcode = bytecode.OpProtectedCall
+	opcode := bytecode.OpCall
+	if protected {
+		opcode = bytecode.OpProtectedCall
 	}
 
-	if !protected {
-		c.ctx.Emitter.EmitAs(opcode, dest, args)
-	} else {
-		c.ctx.Emitter.EmitAs(protectedOpcode, dest, args)
-	}
+	c.ctx.Emitter.EmitAs(opcode, dest, args)
 
 	c.ctx.Types.Set(dest, core.TypeAny)
 
@@ -2927,24 +2881,7 @@ func (c *ExprCompiler) EmitUdfTailCall(fn *UDFInfo, seq core.RegisterSequence, c
 	dest := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitLoadConst(dest, c.ctx.Symbols.AddConstant(runtime.NewInt(fn.ID)))
 
-	var opcode bytecode.Opcode
-
-	switch len(args) {
-	case 0:
-		opcode = bytecode.OpTailCall0
-	case 1:
-		opcode = bytecode.OpTailCall1
-	case 2:
-		opcode = bytecode.OpTailCall2
-	case 3:
-		opcode = bytecode.OpTailCall3
-	case 4:
-		opcode = bytecode.OpTailCall4
-	default:
-		opcode = bytecode.OpTailCall
-	}
-
-	c.ctx.Emitter.EmitAs(opcode, dest, args)
+	c.ctx.Emitter.EmitAs(bytecode.OpTailCall, dest, args)
 }
 
 func (c *ExprCompiler) prepareUdfCallArgs(fn *UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) core.RegisterSequence {

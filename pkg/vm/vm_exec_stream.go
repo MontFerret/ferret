@@ -16,15 +16,7 @@ func (vm *VM) execStreamOp(
 	observable, eventName, options, err := vm.castSubscribeArgs(reg[dst], reg[src1], reg[src2])
 
 	if err != nil {
-		if _, catch := vm.tryCatch(vm.pc); catch {
-			return nil
-		}
-
-		if vm.unwindToProtected() {
-			return nil
-		}
-
-		return err
+		return vm.handleError(err)
 	}
 
 	stream, err := observable.Subscribe(ctx, runtime.Subscription{
@@ -33,15 +25,7 @@ func (vm *VM) execStreamOp(
 	})
 
 	if err != nil {
-		if _, catch := vm.tryCatch(vm.pc); catch {
-			return nil
-		}
-
-		if vm.unwindToProtected() {
-			return nil
-		}
-
-		return err
+		return vm.handleError(err)
 	}
 
 	reg[dst] = data.NewStreamValue(stream)
@@ -62,15 +46,7 @@ func (vm *VM) execStreamIterOp(
 		t, err := runtime.CastInt(reg[src2])
 
 		if err != nil {
-			if _, catch := vm.tryCatch(vm.pc); catch {
-				return nil
-			}
-
-			if vm.unwindToProtected() {
-				return nil
-			}
-
-			return err
+			return vm.handleError(err)
 		}
 
 		timeout = t

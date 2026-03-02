@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostic"
 )
@@ -16,10 +15,6 @@ func (vm *VM) wrapRuntimeError(err error) error {
 
 func (vm *VM) runtimeErrorFromPanic(r any) error {
 	return diagnostic.RuntimeErrorFromPanic(vm.program, vm.pc, r)
-}
-
-func (vm *VM) newRuntimeError(kind diagnostics.Kind, message, label, hint, note string) *RuntimeError {
-	return diagnostic.NewRuntimeError(vm.program, vm.pc, kind, message, label, hint, note)
 }
 
 func (vm *VM) checkDivisionByZero(ctx context.Context, left, right runtime.Value) error {
@@ -57,17 +52,9 @@ func (vm *VM) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err error) 
 		return nil
 	}
 
-	if _, catch := vm.tryCatch(vm.pc); catch {
+	return vm.handleErrorWithCatch(err, func() {
 		reg[dst] = runtime.None
-
-		return nil
-	}
-
-	if vm.unwindToProtected() {
-		return nil
-	}
-
-	return err
+	})
 }
 
 func (vm *VM) setOrOptional(dst bytecode.Operand, val runtime.Value, err error, optional bool) error {

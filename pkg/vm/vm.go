@@ -170,17 +170,13 @@ loop:
 				length, err := measurable.Length(ctx)
 
 				if err != nil {
-					if _, catch := vm.tryCatch(vm.pc); catch {
+					if err := vm.handleErrorWithCatch(err, func() {
 						reg[dst] = runtime.False
-
-						continue
+					}); err != nil {
+						return nil, err
 					}
 
-					if vm.unwindToProtected() {
-						continue
-					}
-
-					return nil, err
+					continue
 				}
 
 				reg[dst] = runtime.NewBoolean(length != 0)
@@ -196,13 +192,9 @@ loop:
 				length, err := val.Length(ctx)
 
 				if err != nil {
-					if _, catch := vm.tryCatch(vm.pc); catch {
+					if err := vm.handleErrorWithCatch(err, func() {
 						length = 0
-					} else {
-						if vm.unwindToProtected() {
-							continue
-						}
-
+					}); err != nil {
 						return nil, err
 					}
 				}
@@ -211,22 +203,19 @@ loop:
 				continue
 			}
 
-			if _, catch := vm.tryCatch(vm.pc); catch {
-				reg[dst] = runtime.ZeroInt
-				continue
-			}
-
-			if vm.unwindToProtected() {
-				continue
-			}
-
-			return runtime.None, runtime.TypeErrorOf(reg[src1],
+			if err := vm.handleErrorWithCatch(runtime.TypeErrorOf(reg[src1],
 				runtime.TypeString,
 				runtime.TypeList,
 				runtime.TypeMap,
 				runtime.TypeBinary,
 				runtime.TypeMeasurable,
-			)
+			), func() {
+				reg[dst] = runtime.ZeroInt
+			}); err != nil {
+				return runtime.None, err
+			}
+
+			continue
 		case bytecode.OpType:
 			reg[dst] = runtime.NewString(runtime.TypeName(runtime.TypeOf(reg[src1])))
 		case bytecode.OpClose:
@@ -237,13 +226,11 @@ loop:
 				closeErr := val.Close()
 
 				if closeErr != nil {
-					if _, catch := vm.tryCatch(vm.pc); !catch {
-						if vm.unwindToProtected() {
-							continue
-						}
-
-						return nil, closeErr
+					if err := vm.handleError(closeErr); err != nil {
+						return nil, err
 					}
+
+					continue
 				}
 			}
 		case bytecode.OpLoadRange:
@@ -254,22 +241,22 @@ loop:
 				break
 			}
 
-			if vm.unwindToProtected() {
-				continue
+			if err := vm.handleProtectedError(err); err != nil {
+				return nil, err
 			}
 
-			return nil, err
+			continue
 		case bytecode.OpLoadIndex, bytecode.OpLoadIndexOptional:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadIndexOptional
 			arg := reg[src2]
 
 			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
-				if vm.unwindToProtected() {
-					continue
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
 				}
 
-				return nil, err
+				continue
 			}
 		case bytecode.OpLoadIndexConst, bytecode.OpLoadIndexOptionalConst:
 			src := reg[src1]
@@ -277,11 +264,11 @@ loop:
 			arg := constants[src2.Constant()]
 
 			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
-				if vm.unwindToProtected() {
-					continue
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
 				}
 
-				return nil, err
+				continue
 			}
 		case bytecode.OpLoadKey, bytecode.OpLoadKeyOptional:
 			src := reg[src1]
@@ -289,11 +276,11 @@ loop:
 			arg := reg[src2]
 
 			if err := vm.loadKeyAndSet(ctx, dst, vm.pc-1, src, arg, optional); err != nil {
-				if vm.unwindToProtected() {
-					continue
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
 				}
 
-				return nil, err
+				continue
 			}
 		case bytecode.OpLoadKeyConst, bytecode.OpLoadKeyOptionalConst:
 			src := reg[src1]
@@ -301,11 +288,11 @@ loop:
 			arg := constants[src2.Constant()]
 
 			if err := vm.loadKeyConstAndSet(ctx, dst, vm.pc-1, inst, src, arg, optional); err != nil {
-				if vm.unwindToProtected() {
-					continue
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
 				}
 
-				return nil, err
+				continue
 			}
 		case bytecode.OpLoadPropertyConst, bytecode.OpLoadPropertyOptionalConst:
 			src := reg[src1]
@@ -313,11 +300,11 @@ loop:
 			prop := constants[src2.Constant()]
 
 			if err := vm.loadPropertyConstAndSet(ctx, dst, vm.pc-1, inst, src, prop, optional); err != nil {
-				if vm.unwindToProtected() {
-					continue
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
 				}
 
-				return nil, err
+				continue
 			}
 		case bytecode.OpLoadProperty, bytecode.OpLoadPropertyOptional:
 			src := reg[src1]
@@ -325,19 +312,19 @@ loop:
 			prop := reg[src2]
 
 			if err := vm.loadPropertyAndSet(ctx, dst, vm.pc-1, src, prop, optional); err != nil {
-				if vm.unwindToProtected() {
-					continue
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
 				}
 
-				return nil, err
+				continue
 			}
 		case bytecode.OpApplyQuery:
 			if err := vm.applyQuery(ctx, reg, src1, constants, src2, dst); err != nil {
-				if vm.unwindToProtected() {
-					continue
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
 				}
 
-				return nil, err
+				continue
 			}
 		case bytecode.OpAdd:
 			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
@@ -351,20 +338,20 @@ loop:
 			reg[dst] = runtime.Multiply(ctx, reg[src1], reg[src2])
 		case bytecode.OpDiv:
 			if err := vm.checkDivisionByZero(ctx, reg[src1], reg[src2]); err != nil {
-				if vm.unwindToProtected() {
-					continue
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
 				}
 
-				return nil, err
+				continue
 			}
 			reg[dst] = runtime.Divide(ctx, reg[src1], reg[src2])
 		case bytecode.OpMod:
 			if err := vm.checkModuloByZero(ctx, reg[src2]); err != nil {
-				if vm.unwindToProtected() {
-					continue
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
 				}
 
-				return nil, err
+				continue
 			}
 			reg[dst] = runtime.Modulus(ctx, reg[src1], reg[src2])
 		case bytecode.OpIncr:
@@ -405,24 +392,24 @@ loop:
 				break
 			}
 
-			if vm.unwindToProtected() {
-				continue
+			if err := vm.handleProtectedError(err); err != nil {
+				return nil, err
 			}
 
-			return nil, err
+			continue
 		case bytecode.OpRegexp:
 			r, err := vm.regexpCached(vm.pc-1, reg[src2])
 
 			if err == nil {
 				reg[dst] = r.Match(reg[src1])
-			} else if _, catch := vm.tryCatch(vm.pc); catch {
-				reg[dst] = runtime.False
 			} else {
-				if vm.unwindToProtected() {
-					continue
+				if err := vm.handleErrorWithCatch(err, func() {
+					reg[dst] = runtime.False
+				}); err != nil {
+					return nil, err
 				}
 
-				return nil, err
+				continue
 			}
 		case bytecode.OpAllEq, bytecode.OpAllNe, bytecode.OpAllGt, bytecode.OpAllGte, bytecode.OpAllLt, bytecode.OpAllLte, bytecode.OpAllIn:
 			cmp := operators.ComparatorFromByte(int(op) - int(bytecode.OpAllEq))
@@ -467,22 +454,11 @@ loop:
 			if done {
 				break loop
 			}
-		case bytecode.OpHCall, bytecode.OpProtectedHCall,
-			bytecode.OpHCall0, bytecode.OpProtectedHCall0,
-			bytecode.OpHCall1, bytecode.OpProtectedHCall1,
-			bytecode.OpHCall2, bytecode.OpProtectedHCall2,
-			bytecode.OpHCall3, bytecode.OpProtectedHCall3,
-			bytecode.OpHCall4, bytecode.OpProtectedHCall4:
+		case bytecode.OpHCall, bytecode.OpProtectedHCall:
 			if err := vm.execHostCall(ctx, op, vm.pc-1, dst, src1, src2); err != nil {
 				return nil, err
 			}
-		case bytecode.OpCall, bytecode.OpProtectedCall,
-			bytecode.OpCall0, bytecode.OpProtectedCall0,
-			bytecode.OpCall1, bytecode.OpProtectedCall1,
-			bytecode.OpCall2, bytecode.OpProtectedCall2,
-			bytecode.OpCall3, bytecode.OpProtectedCall3,
-			bytecode.OpCall4, bytecode.OpProtectedCall4,
-			bytecode.OpTailCall, bytecode.OpTailCall0, bytecode.OpTailCall1, bytecode.OpTailCall2, bytecode.OpTailCall3, bytecode.OpTailCall4:
+		case bytecode.OpCall, bytecode.OpProtectedCall, bytecode.OpTailCall:
 			if err := vm.execUdfCall(op, dst, src1, src2); err != nil {
 				return nil, err
 			}
@@ -531,29 +507,24 @@ loop:
 			dur, err := runtime.ToInt(ctx, reg[dst])
 
 			if err != nil {
-				if _, catch := vm.tryCatch(vm.pc); catch {
-					continue
+				if err := vm.handleError(err); err != nil {
+					return nil, err
 				}
 
-				if vm.unwindToProtected() {
-					continue
-				}
-
-				return nil, err
+				continue
 			}
 
 			if err := data.Sleep(ctx, dur); err != nil {
-				if vm.unwindToProtected() {
-					continue
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
 				}
 
-				return nil, err
+				continue
 			}
 		case bytecode.OpRand:
 			reg[dst] = runtime.NewFloat(runtime.RandomDefault())
 		default:
-			// TODO: Return an error or ignore unknown opcodes?
-			continue
+			return nil, runtime.Errorf(runtime.ErrUnexpected, "unknown opcode %d at pc %d", op, vm.pc-1)
 		}
 	}
 

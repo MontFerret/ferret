@@ -63,11 +63,11 @@ func (c *GroupedAggregateCollector) Set(ctx context.Context, key, value runtime.
 			return err
 		}
 
-		if idx < 0 || idx >= len(c.plan.Keys) {
-			return runtime.Errorf(runtime.ErrInvalidArgument, "aggregate selector index out of range")
+		if err := validateAggregateSelectorIndex(idx, len(c.plan.Keys)); err != nil {
+			return err
 		}
 
-		c.update(&entry.states[idx], c.plan.Kinds[idx], value)
+		updateAggregateState(&entry.states[idx], c.plan.Kinds[idx], value)
 
 		return nil
 	}
@@ -91,14 +91,14 @@ func (c *GroupedAggregateCollector) Get(ctx context.Context, key runtime.Value) 
 		}
 
 		if !ok {
-			return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", groupKey.String())
+			return runtime.None, collectorKeyNotFound(groupKey.String())
 		}
 
-		if idx < 0 || idx >= len(c.plan.Keys) {
-			return runtime.None, runtime.Errorf(runtime.ErrInvalidArgument, "aggregate selector index out of range")
+		if err := validateAggregateSelectorIndex(idx, len(c.plan.Keys)); err != nil {
+			return nil, err
 		}
 
-		return c.valueFor(entry.states[idx], c.plan.Kinds[idx]), nil
+		return aggregateValueFor(entry.states[idx], c.plan.Kinds[idx]), nil
 	}
 
 	keyStr, err := c.keyString(ctx, key)
@@ -108,7 +108,7 @@ func (c *GroupedAggregateCollector) Get(ctx context.Context, key runtime.Value) 
 
 	entry, ok := c.lookupEntryByString(keyStr)
 	if !ok {
-		return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", keyStr)
+		return runtime.None, collectorKeyNotFound(keyStr)
 	}
 
 	return entry.group, nil
@@ -124,7 +124,7 @@ func (c *GroupedAggregateCollector) MarshalJSON() ([]byte, error) {
 	addEntry := func(keyStr string, entry *groupedAggregateEntry) {
 		for idx := 0; idx < len(c.plan.Keys); idx++ {
 			aggKey := runtime.NewString(keyStr + runtime.NamespaceSeparator + strconv.Itoa(idx))
-			_ = obj.Set(context.Background(), aggKey, c.valueFor(entry.states[idx], c.plan.Kinds[idx]))
+			_ = obj.Set(context.Background(), aggKey, aggregateValueFor(entry.states[idx], c.plan.Kinds[idx]))
 		}
 	}
 
@@ -173,82 +173,8 @@ func (c *GroupedAggregateCollector) Close() error {
 	return nil
 }
 
-func (c *GroupedAggregateCollector) update(state *aggregateState, kind bytecode.AggregateKind, value runtime.Value) {
-	switch kind {
-	case bytecode.AggregateCount:
-		state.count++
-	case bytecode.AggregateSum:
-		if runtime.IsNumber(value) {
-			state.sum += toFloat(value)
-		}
-	case bytecode.AggregateAverage:
-		if runtime.IsNumber(value) {
-			state.sum += toFloat(value)
-			state.count++
-		}
-	case bytecode.AggregateMin:
-		if runtime.IsNumber(value) {
-			v := toFloat(value)
-			if !state.hasNumber || v < state.min {
-				state.min = v
-			}
-			state.hasNumber = true
-		}
-	case bytecode.AggregateMax:
-		if runtime.IsNumber(value) {
-			v := toFloat(value)
-			if !state.hasNumber || v > state.max {
-				state.max = v
-			}
-			state.hasNumber = true
-		}
-	}
-}
-
-func (c *GroupedAggregateCollector) valueFor(state aggregateState, kind bytecode.AggregateKind) runtime.Value {
-	switch kind {
-	case bytecode.AggregateCount:
-		return state.count
-	case bytecode.AggregateSum:
-		return runtime.NewFloat(state.sum)
-	case bytecode.AggregateAverage:
-		if state.count == 0 {
-			return runtime.ZeroFloat
-		}
-
-		return runtime.NewFloat(state.sum / float64(state.count))
-	case bytecode.AggregateMin:
-		if !state.hasNumber {
-			return runtime.None
-		}
-
-		return runtime.NewFloat(state.min)
-	case bytecode.AggregateMax:
-		if !state.hasNumber {
-			return runtime.None
-		}
-
-		return runtime.NewFloat(state.max)
-	default:
-		return runtime.None
-	}
-}
-
 func (c *GroupedAggregateCollector) sort(ctx context.Context) error {
-	return runtime.SortListWith(ctx, c.Value, func(first, second runtime.Value) int {
-		firstKV, firstOk := first.(*KV)
-		secondKV, secondOk := second.(*KV)
-
-		var comp int
-
-		if firstOk && secondOk {
-			comp = runtime.CompareValues(firstKV.Key, secondKV.Key)
-		} else {
-			comp = runtime.CompareValues(first, second)
-		}
-
-		return comp
-	})
+	return sortCollectorList(ctx, c.Value)
 }
 
 func (c *GroupedAggregateCollector) entryFor(ctx context.Context, key runtime.Value) (*groupedAggregateEntry, error) {
@@ -279,7 +205,7 @@ func (c *GroupedAggregateCollector) entryFor(ctx context.Context, key runtime.Va
 
 		c.grouping = map[string]*groupedAggregateEntry{}
 		if c.hasSingleGroup {
-			c.grouping[c.singleKey] = c.singleEntry
+			c.grouping = promoteSingleGroup(c.grouping, c.singleKey, c.singleEntry)
 		}
 		c.hasSingleGroup = false
 		c.singleKey = ""
@@ -335,20 +261,7 @@ func (c *GroupedAggregateCollector) newEntry(key runtime.Value) *groupedAggregat
 }
 
 func (c *GroupedAggregateCollector) keyString(ctx context.Context, key runtime.Value) (string, error) {
-	var keyStr string
-
-	switch k := key.(type) {
-	case runtime.String:
-		keyStr = k.String()
-	default:
-		var err error
-		keyStr, err = Stringify(ctx, key)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	return keyStr, nil
+	return normalizeCollectorKey(ctx, key)
 }
 
 func (c *GroupedAggregateCollector) aggregateKey(ctx context.Context, key runtime.Value) (runtime.Value, int, bool, error) {

@@ -107,6 +107,7 @@ func programWithConst(value runtime.Value, ops ...bytecode.Instruction) *bytecod
 	instructions = append(instructions, ops...)
 
 	return &bytecode.Program{
+		Version:   bytecode.ProgramVersion,
 		Bytecode:  instructions,
 		Constants: []runtime.Value{value},
 		Registers: 3,
@@ -115,6 +116,7 @@ func programWithConst(value runtime.Value, ops ...bytecode.Instruction) *bytecod
 
 func programWithOps(ops ...bytecode.Instruction) *bytecode.Program {
 	return &bytecode.Program{
+		Version:   bytecode.ProgramVersion,
 		Bytecode:  ops,
 		Registers: 3,
 	}

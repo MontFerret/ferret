@@ -882,6 +882,10 @@ func applyRegisterMap(program *bytecode.Program, mapping map[int]int, unsafeRegs
 }
 
 func operandIsRegister(op bytecode.Opcode, idx int) bool {
+	if bytecode.IsCallOpcode(op) {
+		return idx == 0 || idx == 1 || idx == 2
+	}
+
 	switch op {
 	case bytecode.OpJump:
 		return false
@@ -915,16 +919,6 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 		return idx == 0 || idx == 1
 	case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
 		return idx == 0
-	case bytecode.OpHCall0, bytecode.OpProtectedHCall0, bytecode.OpCall0, bytecode.OpProtectedCall0, bytecode.OpTailCall0:
-		return idx == 0
-	case bytecode.OpHCall1, bytecode.OpProtectedHCall1, bytecode.OpCall1, bytecode.OpProtectedCall1, bytecode.OpTailCall1:
-		return idx == 0 || idx == 1
-	case bytecode.OpHCall2, bytecode.OpProtectedHCall2, bytecode.OpCall2, bytecode.OpProtectedCall2, bytecode.OpTailCall2:
-		return idx == 0 || idx == 1 || idx == 2
-	case bytecode.OpHCall3, bytecode.OpProtectedHCall3, bytecode.OpHCall4, bytecode.OpProtectedHCall4,
-		bytecode.OpCall3, bytecode.OpProtectedCall3, bytecode.OpCall4, bytecode.OpProtectedCall4,
-		bytecode.OpTailCall3, bytecode.OpTailCall4:
-		return idx == 0 || idx == 1
 	case bytecode.OpIncr, bytecode.OpDecr, bytecode.OpClose, bytecode.OpSleep, bytecode.OpReturn:
 		return idx == 0
 	default:
@@ -934,23 +928,6 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 
 func collectRangeSensitiveRegs(program *bytecode.Program) map[int]bool {
 	unsafeRegs := make(map[int]bool)
-
-	markRange := func(start, end bytecode.Operand) {
-		if !start.IsRegister() || !end.IsRegister() {
-			return
-		}
-
-		startReg := start.Register()
-		endReg := end.Register()
-
-		if startReg <= 0 || endReg < startReg {
-			return
-		}
-
-		for r := startReg; r <= endReg; r++ {
-			unsafeRegs[r] = true
-		}
-	}
 
 	markFixedRange := func(start bytecode.Operand, count int) {
 		if !start.IsRegister() {
@@ -971,16 +948,25 @@ func collectRangeSensitiveRegs(program *bytecode.Program) map[int]bool {
 	for i := range program.Bytecode {
 		inst := program.Bytecode[i]
 
-		switch inst.Opcode {
-		case bytecode.OpLoadObject:
-			// No range-based operands anymore.
-		case bytecode.OpHCall, bytecode.OpProtectedHCall, bytecode.OpCall, bytecode.OpProtectedCall, bytecode.OpTailCall:
-			markRange(inst.Operands[1], inst.Operands[2])
-		case bytecode.OpHCall3, bytecode.OpProtectedHCall3, bytecode.OpCall3, bytecode.OpProtectedCall3, bytecode.OpTailCall3:
-			markFixedRange(inst.Operands[1], 3)
-		case bytecode.OpHCall4, bytecode.OpProtectedHCall4, bytecode.OpCall4, bytecode.OpProtectedCall4, bytecode.OpTailCall4:
-			markFixedRange(inst.Operands[1], 4)
-		case bytecode.OpConcat:
+		if bytecode.IsCallOpcode(inst.Opcode) {
+			start := inst.Operands[1]
+			end := inst.Operands[2]
+
+			if start.IsRegister() && end.IsRegister() {
+				startReg := start.Register()
+				endReg := end.Register()
+
+				// Keep multi-arg call ranges fixed so [src1..src2] remains valid
+				// after any register remapping. Single-arg calls are safe to rename.
+				if startReg > 0 && endReg > startReg {
+					for r := startReg; r <= endReg; r++ {
+						unsafeRegs[r] = true
+					}
+				}
+			}
+		}
+
+		if inst.Opcode == bytecode.OpConcat {
 			markFixedRange(inst.Operands[1], int(inst.Operands[2]))
 		}
 	}

@@ -138,6 +138,7 @@ func TestOpAddConst(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			program := &bytecode.Program{
+				Version: bytecode.ProgramVersion,
 				Constants: []runtime.Value{
 					tc.left,
 					tc.right,
@@ -184,6 +185,7 @@ func buildConcatProgram(values []runtime.Value, startReg, count int) *bytecode.P
 	instructions = append(instructions, bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(dst)))
 
 	return &bytecode.Program{
+		Version:   bytecode.ProgramVersion,
 		Constants: values,
 		Bytecode:  instructions,
 		Registers: dst + 1,

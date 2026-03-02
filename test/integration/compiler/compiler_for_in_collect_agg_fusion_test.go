@@ -114,34 +114,9 @@ func hasFunctionCallOpcode(program *bytecode.Program) bool {
 		switch instruction.Opcode {
 		case bytecode.OpHCall,
 			bytecode.OpProtectedHCall,
-			bytecode.OpHCall0,
-			bytecode.OpProtectedHCall0,
-			bytecode.OpHCall1,
-			bytecode.OpProtectedHCall1,
-			bytecode.OpHCall2,
-			bytecode.OpProtectedHCall2,
-			bytecode.OpHCall3,
-			bytecode.OpProtectedHCall3,
-			bytecode.OpHCall4,
-			bytecode.OpProtectedHCall4,
 			bytecode.OpCall,
 			bytecode.OpProtectedCall,
-			bytecode.OpCall0,
-			bytecode.OpProtectedCall0,
-			bytecode.OpCall1,
-			bytecode.OpProtectedCall1,
-			bytecode.OpCall2,
-			bytecode.OpProtectedCall2,
-			bytecode.OpCall3,
-			bytecode.OpProtectedCall3,
-			bytecode.OpCall4,
-			bytecode.OpProtectedCall4,
-			bytecode.OpTailCall,
-			bytecode.OpTailCall0,
-			bytecode.OpTailCall1,
-			bytecode.OpTailCall2,
-			bytecode.OpTailCall3,
-			bytecode.OpTailCall4:
+			bytecode.OpTailCall:
 			return true
 		}
 	}
