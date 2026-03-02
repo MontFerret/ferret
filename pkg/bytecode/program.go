@@ -17,6 +17,7 @@ type (
 		DebugSpans     []file.Span     `json:"debugSpans"`
 		Functions      map[string]int  `json:"functions"`
 		Labels         map[int]string  `json:"labels"`
+		UDFs           []UDF           `json:"udfs,omitempty"`
 	}
 
 	Program struct {

@@ -31,6 +31,27 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#variableDeclaration.
 	VisitVariableDeclaration(ctx *VariableDeclarationContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#functionDeclaration.
+	VisitFunctionDeclaration(ctx *FunctionDeclarationContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#functionParameterList.
+	VisitFunctionParameterList(ctx *FunctionParameterListContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#functionParameter.
+	VisitFunctionParameter(ctx *FunctionParameterContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#functionBody.
+	VisitFunctionBody(ctx *FunctionBodyContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#functionStatement.
+	VisitFunctionStatement(ctx *FunctionStatementContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#expressionStatement.
+	VisitExpressionStatement(ctx *ExpressionStatementContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#functionReturn.
+	VisitFunctionReturn(ctx *FunctionReturnContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#returnExpression.
 	VisitReturnExpression(ctx *ReturnExpressionContext) interface{}
 

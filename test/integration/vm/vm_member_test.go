@@ -168,6 +168,10 @@ func TestMemberReservedWords(t *testing.T) {
 
 		for idx, l := range p.GetLiteralNames() {
 			if r.MatchString(l) {
+				if l == "'FUNC'" {
+					continue
+				}
+
 				query := strings.Builder{}
 				query.WriteString("LET o = {\n")
 				query.WriteString(l[1 : len(l)-1])

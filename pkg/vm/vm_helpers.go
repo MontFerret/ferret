@@ -714,6 +714,10 @@ func (vm *VM) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err error) 
 		return nil
 	}
 
+	if vm.unwindToProtected() {
+		return nil
+	}
+
 	return err
 }
 
@@ -742,6 +746,10 @@ func (vm *VM) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtim
 		return nil
 	}
 
+	if vm.unwindToProtected() {
+		return nil
+	}
+
 	return err
 }
 
@@ -763,7 +771,8 @@ func (vm *VM) setOrOptional(dst bytecode.Operand, val runtime.Value, err error, 
 
 func isProtectedCall(op bytecode.Opcode) bool {
 	switch op {
-	case bytecode.OpProtectedCall, bytecode.OpProtectedCall0, bytecode.OpProtectedCall1, bytecode.OpProtectedCall2, bytecode.OpProtectedCall3, bytecode.OpProtectedCall4:
+	case bytecode.OpProtectedHCall, bytecode.OpProtectedHCall0, bytecode.OpProtectedHCall1, bytecode.OpProtectedHCall2, bytecode.OpProtectedHCall3, bytecode.OpProtectedHCall4,
+		bytecode.OpProtectedCall, bytecode.OpProtectedCall0, bytecode.OpProtectedCall1, bytecode.OpProtectedCall2, bytecode.OpProtectedCall3, bytecode.OpProtectedCall4:
 		return true
 	default:
 		return false

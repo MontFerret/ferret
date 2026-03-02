@@ -31,7 +31,7 @@ func (vm *VM) warmup(env *Environment) error {
 			reg[dst] = constants[src1.Constant()]
 		case bytecode.OpMove:
 			reg[dst] = reg[src1]
-		case bytecode.OpCall, bytecode.OpProtectedCall:
+		case bytecode.OpHCall, bytecode.OpProtectedHCall:
 			resolveFnAndCache(
 				pc, dst, reg,
 				functions.Var().Get,
@@ -40,7 +40,7 @@ func (vm *VM) warmup(env *Environment) error {
 				vm.cache.Functions,
 				errors,
 			)
-		case bytecode.OpCall0, bytecode.OpProtectedCall0:
+		case bytecode.OpHCall0, bytecode.OpProtectedHCall0:
 			resolveFnAndCache(
 				pc, dst, reg,
 				functions.A0().Get,
@@ -49,7 +49,7 @@ func (vm *VM) warmup(env *Environment) error {
 				vm.cache.Functions,
 				errors,
 			)
-		case bytecode.OpCall1, bytecode.OpProtectedCall1:
+		case bytecode.OpHCall1, bytecode.OpProtectedHCall1:
 			resolveFnAndCache(
 				pc, dst, reg,
 				functions.A1().Get,
@@ -58,7 +58,7 @@ func (vm *VM) warmup(env *Environment) error {
 				vm.cache.Functions,
 				errors,
 			)
-		case bytecode.OpCall2, bytecode.OpProtectedCall2:
+		case bytecode.OpHCall2, bytecode.OpProtectedHCall2:
 			resolveFnAndCache(
 				pc, dst, reg,
 				functions.A2().Get,
@@ -67,7 +67,7 @@ func (vm *VM) warmup(env *Environment) error {
 				vm.cache.Functions,
 				errors,
 			)
-		case bytecode.OpCall3, bytecode.OpProtectedCall3:
+		case bytecode.OpHCall3, bytecode.OpProtectedHCall3:
 			resolveFnAndCache(
 				pc, dst, reg,
 				functions.A3().Get,
@@ -76,7 +76,7 @@ func (vm *VM) warmup(env *Environment) error {
 				vm.cache.Functions,
 				errors,
 			)
-		case bytecode.OpCall4, bytecode.OpProtectedCall4:
+		case bytecode.OpHCall4, bytecode.OpProtectedHCall4:
 			resolveFnAndCache(
 				pc, dst, reg,
 				functions.A4().Get,

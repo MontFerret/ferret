@@ -16,11 +16,14 @@ type CompilerContext struct {
 	Emitter    *core.Emitter
 	Registers  *core.RegisterAllocator
 	Symbols    *core.SymbolTable
+	Constants  *core.ConstantPool
 	Types      *core.TypeTracker
 	Loops      *core.LoopTable
 	CatchTable *core.CatchStack
 	Errors     *diagnostics.ErrorHandler
 	UseAliases map[string]string
+	UDFs       *UDFTable
+	UDFScope   *UDFScope
 
 	aggregatePlans      []*bytecode.AggregatePlan
 	aggregatePlanByHash map[uint64][]int
@@ -33,6 +36,7 @@ type CompilerContext struct {
 	LoopCollectCompiler *LoopCollectCompiler
 	WaitCompiler        *WaitCompiler
 	DispatchCompiler    *DispatchCompiler
+	UDFCompiler         *UDFCompiler
 }
 
 // NewCompilerContext initializes a new CompilerContext with default values.
@@ -43,6 +47,7 @@ func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler) *Com
 		Emitter:             core.NewEmitter(),
 		Registers:           core.NewRegisterAllocator(),
 		Symbols:             nil, // set later
+		Constants:           core.NewConstantPool(),
 		Loops:               nil, // set later
 		CatchTable:          core.NewCatchStack(),
 		UseAliases:          make(map[string]string),
@@ -50,7 +55,7 @@ func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler) *Com
 		aggregatePlanByHash: make(map[uint64][]int),
 	}
 
-	ctx.Symbols = core.NewSymbolTable(ctx.Registers)
+	ctx.Symbols = core.NewSymbolTable(ctx.Registers, ctx.Constants)
 	ctx.Types = core.NewTypeTracker()
 	ctx.Loops = core.NewLoopTable(ctx.Registers)
 
@@ -62,6 +67,7 @@ func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler) *Com
 	ctx.LoopCollectCompiler = NewCollectCompiler(ctx)
 	ctx.WaitCompiler = NewWaitCompiler(ctx)
 	ctx.DispatchCompiler = NewDispatchCompiler(ctx)
+	ctx.UDFCompiler = NewUDFCompiler(ctx)
 
 	return ctx
 }

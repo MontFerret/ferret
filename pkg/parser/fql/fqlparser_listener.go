@@ -31,6 +31,27 @@ type FqlParserListener interface {
 	// EnterVariableDeclaration is called when entering the variableDeclaration production.
 	EnterVariableDeclaration(c *VariableDeclarationContext)
 
+	// EnterFunctionDeclaration is called when entering the functionDeclaration production.
+	EnterFunctionDeclaration(c *FunctionDeclarationContext)
+
+	// EnterFunctionParameterList is called when entering the functionParameterList production.
+	EnterFunctionParameterList(c *FunctionParameterListContext)
+
+	// EnterFunctionParameter is called when entering the functionParameter production.
+	EnterFunctionParameter(c *FunctionParameterContext)
+
+	// EnterFunctionBody is called when entering the functionBody production.
+	EnterFunctionBody(c *FunctionBodyContext)
+
+	// EnterFunctionStatement is called when entering the functionStatement production.
+	EnterFunctionStatement(c *FunctionStatementContext)
+
+	// EnterExpressionStatement is called when entering the expressionStatement production.
+	EnterExpressionStatement(c *ExpressionStatementContext)
+
+	// EnterFunctionReturn is called when entering the functionReturn production.
+	EnterFunctionReturn(c *FunctionReturnContext)
+
 	// EnterReturnExpression is called when entering the returnExpression production.
 	EnterReturnExpression(c *ReturnExpressionContext)
 
@@ -402,6 +423,27 @@ type FqlParserListener interface {
 
 	// ExitVariableDeclaration is called when exiting the variableDeclaration production.
 	ExitVariableDeclaration(c *VariableDeclarationContext)
+
+	// ExitFunctionDeclaration is called when exiting the functionDeclaration production.
+	ExitFunctionDeclaration(c *FunctionDeclarationContext)
+
+	// ExitFunctionParameterList is called when exiting the functionParameterList production.
+	ExitFunctionParameterList(c *FunctionParameterListContext)
+
+	// ExitFunctionParameter is called when exiting the functionParameter production.
+	ExitFunctionParameter(c *FunctionParameterContext)
+
+	// ExitFunctionBody is called when exiting the functionBody production.
+	ExitFunctionBody(c *FunctionBodyContext)
+
+	// ExitFunctionStatement is called when exiting the functionStatement production.
+	ExitFunctionStatement(c *FunctionStatementContext)
+
+	// ExitExpressionStatement is called when exiting the expressionStatement production.
+	ExitExpressionStatement(c *ExpressionStatementContext)
+
+	// ExitFunctionReturn is called when exiting the functionReturn production.
+	ExitFunctionReturn(c *FunctionReturnContext)
 
 	// ExitReturnExpression is called when exiting the returnExpression production.
 	ExitReturnExpression(c *ReturnExpressionContext)

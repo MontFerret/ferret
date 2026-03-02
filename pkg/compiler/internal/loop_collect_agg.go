@@ -471,7 +471,7 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 			}
 
 			// Call the aggregation function with the loaded arguments
-			result := c.ctx.ExprCompiler.CompileFunctionCallByNameWith(selector.FuncName(), selector.ProtectedCall(), args)
+			result := c.ctx.ExprCompiler.CompileFunctionCallByNameWith(nil, selector.FuncName(), selector.ProtectedCall(), args)
 
 			// Declare a local variable for the aggregation result
 			selectorVarName := selector.Name()
@@ -540,7 +540,7 @@ func (c *LoopCollectCompiler) compileGroupedAggregationFuncCall(selector *core.A
 		args = core.RegisterSequence{value}
 	}
 
-	resArg := c.ctx.ExprCompiler.CompileFunctionCallByNameWith(selector.FuncName(), selector.ProtectedCall(), args)
+	resArg := c.ctx.ExprCompiler.CompileFunctionCallByNameWith(nil, selector.FuncName(), selector.ProtectedCall(), args)
 
 	c.ctx.Emitter.EmitMove(valReg, resArg)
 }

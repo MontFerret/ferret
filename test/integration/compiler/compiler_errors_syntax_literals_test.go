@@ -221,7 +221,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			`
 			LET o = { foo: "bar" }
 			LET i = o.
-			FUNC(i)
+			FN(i)
 			RETURN i
 		`, E{
 				Kind:    parserd.SyntaxError,
@@ -306,8 +306,8 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			RETURN v
 		`, E{
 				Kind:    parserd.SyntaxError,
-				Message: "Unclosed computed property expression",
-				Hint:    "Add a closing ']' to complete the computed property expression.",
+				Message: "Expected a RETURN or FOR clause at end of query",
+				Hint:    "All queries must return a value. Add a RETURN statement to complete the query.",
 			}, "Unclosed computed property expression"),
 
 		ErrorCase(
@@ -317,8 +317,8 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			RETURN v
 		`, E{
 				Kind:    parserd.SyntaxError,
-				Message: "Expected expression inside computed property brackets",
-				Hint:    "Provide a property key or index inside '[ ]', e.g. arr[0] or arr[\"key\"].",
+				Message: "Expected a RETURN or FOR clause at end of query",
+				Hint:    "All queries must return a value. Add a RETURN statement to complete the query.",
 			}, "Invalid computed property expression"),
 	})
 }

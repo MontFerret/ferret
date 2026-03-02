@@ -212,6 +212,7 @@ func (p *PeepholePass) Run(ctx *PassContext) (*PassResult, error) {
 	prog.Bytecode = newCode
 	remapDebugSpans(prog, keep)
 	remapLabels(prog, indexMap)
+	remapUdfEntries(prog, indexMap, keep)
 	remapCatchTable(prog, indexMap, keep)
 
 	return &PassResult{
@@ -485,4 +486,26 @@ func remapLabels(prog *bytecode.Program, indexMap []int) {
 		}
 	}
 	prog.Metadata.Labels = updated
+}
+
+func remapUdfEntries(prog *bytecode.Program, indexMap []int, keep []bool) {
+	if prog == nil || len(prog.Metadata.UDFs) == 0 {
+		return
+	}
+
+	for i := range prog.Metadata.UDFs {
+		entry := prog.Metadata.UDFs[i].Entry
+		if entry < 0 || entry >= len(indexMap) {
+			continue
+		}
+
+		newEntry := indexMap[entry]
+		if newEntry < 0 {
+			newEntry = remapIndexForward(indexMap, keep, entry)
+		}
+
+		if newEntry >= 0 {
+			prog.Metadata.UDFs[i].Entry = newEntry
+		}
+	}
 }

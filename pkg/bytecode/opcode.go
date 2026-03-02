@@ -104,7 +104,21 @@ const (
 	OpClose
 	OpSleep
 
-	// Function Operations
+	// Host Function Operations
+	OpHCall
+	OpProtectedHCall
+	OpHCall0
+	OpProtectedHCall0
+	OpHCall1
+	OpProtectedHCall1
+	OpHCall2
+	OpProtectedHCall2
+	OpHCall3
+	OpProtectedHCall3
+	OpHCall4
+	OpProtectedHCall4
+
+	// UDF Operations
 	OpCall
 	OpProtectedCall
 	OpCall0
@@ -117,6 +131,12 @@ const (
 	OpProtectedCall3
 	OpCall4
 	OpProtectedCall4
+	OpTailCall
+	OpTailCall0
+	OpTailCall1
+	OpTailCall2
+	OpTailCall3
+	OpTailCall4
 
 	// Dataset Operations
 	OpDataSet
@@ -353,7 +373,33 @@ func (op Opcode) String() string {
 	case OpDispatch:
 		return "DSCH"
 
-	// Function Operations
+	// Host Function Operations
+	case OpHCall:
+		return "HCALL"
+	case OpProtectedHCall:
+		return "PHCALL"
+	case OpHCall0:
+		return "HCALL0"
+	case OpProtectedHCall0:
+		return "PHCALL0"
+	case OpHCall1:
+		return "HCALL1"
+	case OpProtectedHCall1:
+		return "PHCALL1"
+	case OpHCall2:
+		return "HCALL2"
+	case OpProtectedHCall2:
+		return "PHCALL2"
+	case OpHCall3:
+		return "HCALL3"
+	case OpProtectedHCall3:
+		return "PHCALL3"
+	case OpHCall4:
+		return "HCALL4"
+	case OpProtectedHCall4:
+		return "PHCALL4"
+
+	// UDF Operations
 	case OpCall:
 		return "CALL"
 	case OpProtectedCall:
@@ -378,6 +424,18 @@ func (op Opcode) String() string {
 		return "CALL4"
 	case OpProtectedCall4:
 		return "PCALL4"
+	case OpTailCall:
+		return "TAILCALL"
+	case OpTailCall0:
+		return "TAILCALL0"
+	case OpTailCall1:
+		return "TAILCALL1"
+	case OpTailCall2:
+		return "TAILCALL2"
+	case OpTailCall3:
+		return "TAILCALL3"
+	case OpTailCall4:
+		return "TAILCALL4"
 
 	// Dataset Operations
 	case OpDataSet:

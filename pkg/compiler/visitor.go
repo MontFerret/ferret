@@ -29,7 +29,13 @@ func (v *Visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
 		v.VisitHead(head.(*fql.HeadContext))
 	}
 
+	v.Ctx.UDFs = internal.CollectUDFs(v.Ctx, ctx)
+	if v.Ctx.UDFs != nil {
+		v.Ctx.UDFScope = v.Ctx.UDFs.GlobalScope
+	}
+
 	v.Ctx.StmtCompiler.Compile(ctx.Body())
+	v.Ctx.UDFCompiler.CompileAll()
 
 	return nil
 }

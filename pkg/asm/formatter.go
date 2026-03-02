@@ -55,6 +55,11 @@ func formatFunction(name string, args int) string {
 	return fmt.Sprintf(".func %s %d", name, args)
 }
 
+// formatUdf generates comments for the UDF table entries.
+func formatUdf(id int, udf bytecode.UDF) string {
+	return fmt.Sprintf(".udf %d %s %d %d %d", id, udf.Name, udf.Entry, udf.Registers, udf.Params)
+}
+
 // formatConstant generates a comment for a constant value in the program.
 func formatConstant(constant runtime.Value) string {
 	return fmt.Sprintf(".const %s", constantAsText(constant))

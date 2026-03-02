@@ -915,13 +915,15 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 		return idx == 0 || idx == 1
 	case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
 		return idx == 0
-	case bytecode.OpCall0, bytecode.OpProtectedCall0:
+	case bytecode.OpHCall0, bytecode.OpProtectedHCall0, bytecode.OpCall0, bytecode.OpProtectedCall0, bytecode.OpTailCall0:
 		return idx == 0
-	case bytecode.OpCall1, bytecode.OpProtectedCall1:
+	case bytecode.OpHCall1, bytecode.OpProtectedHCall1, bytecode.OpCall1, bytecode.OpProtectedCall1, bytecode.OpTailCall1:
 		return idx == 0 || idx == 1
-	case bytecode.OpCall2, bytecode.OpProtectedCall2:
+	case bytecode.OpHCall2, bytecode.OpProtectedHCall2, bytecode.OpCall2, bytecode.OpProtectedCall2, bytecode.OpTailCall2:
 		return idx == 0 || idx == 1 || idx == 2
-	case bytecode.OpCall3, bytecode.OpProtectedCall3, bytecode.OpCall4, bytecode.OpProtectedCall4:
+	case bytecode.OpHCall3, bytecode.OpProtectedHCall3, bytecode.OpHCall4, bytecode.OpProtectedHCall4,
+		bytecode.OpCall3, bytecode.OpProtectedCall3, bytecode.OpCall4, bytecode.OpProtectedCall4,
+		bytecode.OpTailCall3, bytecode.OpTailCall4:
 		return idx == 0 || idx == 1
 	case bytecode.OpIncr, bytecode.OpDecr, bytecode.OpClose, bytecode.OpSleep, bytecode.OpReturn:
 		return idx == 0
@@ -972,11 +974,11 @@ func collectRangeSensitiveRegs(program *bytecode.Program) map[int]bool {
 		switch inst.Opcode {
 		case bytecode.OpLoadObject:
 			// No range-based operands anymore.
-		case bytecode.OpCall, bytecode.OpProtectedCall:
+		case bytecode.OpHCall, bytecode.OpProtectedHCall, bytecode.OpCall, bytecode.OpProtectedCall, bytecode.OpTailCall:
 			markRange(inst.Operands[1], inst.Operands[2])
-		case bytecode.OpCall3, bytecode.OpProtectedCall3:
+		case bytecode.OpHCall3, bytecode.OpProtectedHCall3, bytecode.OpCall3, bytecode.OpProtectedCall3, bytecode.OpTailCall3:
 			markFixedRange(inst.Operands[1], 3)
-		case bytecode.OpCall4, bytecode.OpProtectedCall4:
+		case bytecode.OpHCall4, bytecode.OpProtectedHCall4, bytecode.OpCall4, bytecode.OpProtectedCall4, bytecode.OpTailCall4:
 			markFixedRange(inst.Operands[1], 4)
 		case bytecode.OpConcat:
 			markFixedRange(inst.Operands[1], int(inst.Operands[2]))

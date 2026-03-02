@@ -15,6 +15,7 @@ const (
 	keywordEvery     = "EVERY"
 	keywordExists    = "EXISTS"
 	keywordFilter    = "FILTER"
+	keywordFunc      = "FUNC"
 	keywordFor       = "FOR"
 	keywordIn        = "IN"
 	keywordInto      = "INTO"

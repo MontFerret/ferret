@@ -296,7 +296,39 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 		addUse(src1)
 		return
 
-	// Calls.
+	// Host calls.
+	case bytecode.OpHCall, bytecode.OpProtectedHCall:
+		addUse(dst)
+		addRangeUses(src1, src2)
+		addDef(dst)
+		return
+	case bytecode.OpHCall0, bytecode.OpProtectedHCall0:
+		addUse(dst)
+		addDef(dst)
+		return
+	case bytecode.OpHCall1, bytecode.OpProtectedHCall1:
+		addUse(dst)
+		addUse(src1)
+		addDef(dst)
+		return
+	case bytecode.OpHCall2, bytecode.OpProtectedHCall2:
+		addUse(dst)
+		addUse(src1)
+		addUse(src2)
+		addDef(dst)
+		return
+	case bytecode.OpHCall3, bytecode.OpProtectedHCall3:
+		addUse(dst)
+		addFixedRangeUses(src1, 3)
+		addDef(dst)
+		return
+	case bytecode.OpHCall4, bytecode.OpProtectedHCall4:
+		addUse(dst)
+		addFixedRangeUses(src1, 4)
+		addDef(dst)
+		return
+
+	// UDF calls.
 	case bytecode.OpCall, bytecode.OpProtectedCall:
 		addUse(dst)
 		addRangeUses(src1, src2)
@@ -326,6 +358,30 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 		addUse(dst)
 		addFixedRangeUses(src1, 4)
 		addDef(dst)
+		return
+	case bytecode.OpTailCall:
+		addUse(dst)
+		addRangeUses(src1, src2)
+		return
+	case bytecode.OpTailCall0:
+		addUse(dst)
+		return
+	case bytecode.OpTailCall1:
+		addUse(dst)
+		addUse(src1)
+		return
+	case bytecode.OpTailCall2:
+		addUse(dst)
+		addUse(src1)
+		addUse(src2)
+		return
+	case bytecode.OpTailCall3:
+		addUse(dst)
+		addFixedRangeUses(src1, 3)
+		return
+	case bytecode.OpTailCall4:
+		addUse(dst)
+		addFixedRangeUses(src1, 4)
 		return
 
 	// Stream.

@@ -149,5 +149,14 @@ FOR u IN users
 			options:     []vm.EnvironmentOption{vm.WithParams(map[string]runtime.Value{"doc": queryable})},
 			description: "Query literal without params",
 		},
+		{
+			expression: `
+FUNC add(x, y)
+  RETURN x + y
+RETURN add(2, 3)
+`,
+			expected:    5,
+			description: "UDF round-trip",
+		},
 	})
 }

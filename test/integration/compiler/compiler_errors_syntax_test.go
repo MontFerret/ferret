@@ -195,7 +195,7 @@ func TestSyntaxErrors(t *testing.T) {
 
 		ErrorCase(
 			`
-			FUNC(1,
+			FN(1,
 			RETURN NONE
 		`, E{
 				Kind:    parserd.SyntaxError,
@@ -205,7 +205,7 @@ func TestSyntaxErrors(t *testing.T) {
 
 		ErrorCase(
 			`
-			FUNC(,)
+			FN(,)
 			RETURN NONE
 		`, E{
 				Kind:    parserd.SyntaxError,
@@ -215,7 +215,7 @@ func TestSyntaxErrors(t *testing.T) {
 
 		ErrorCase(
 			`
-			FUNC(
+			FN(
 			RETURN NONE
 		`, E{
 				Kind:    parserd.SyntaxError,
@@ -225,7 +225,7 @@ func TestSyntaxErrors(t *testing.T) {
 
 		ErrorCase(
 			`
-			FUNC(1
+			FN(1
 			RETURN NONE
 		`, E{
 				Kind:    parserd.SyntaxError,

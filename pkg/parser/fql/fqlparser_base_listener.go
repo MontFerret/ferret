@@ -68,6 +68,48 @@ func (s *BaseFqlParserListener) EnterVariableDeclaration(ctx *VariableDeclaratio
 // ExitVariableDeclaration is called when production variableDeclaration is exited.
 func (s *BaseFqlParserListener) ExitVariableDeclaration(ctx *VariableDeclarationContext) {}
 
+// EnterFunctionDeclaration is called when production functionDeclaration is entered.
+func (s *BaseFqlParserListener) EnterFunctionDeclaration(ctx *FunctionDeclarationContext) {}
+
+// ExitFunctionDeclaration is called when production functionDeclaration is exited.
+func (s *BaseFqlParserListener) ExitFunctionDeclaration(ctx *FunctionDeclarationContext) {}
+
+// EnterFunctionParameterList is called when production functionParameterList is entered.
+func (s *BaseFqlParserListener) EnterFunctionParameterList(ctx *FunctionParameterListContext) {}
+
+// ExitFunctionParameterList is called when production functionParameterList is exited.
+func (s *BaseFqlParserListener) ExitFunctionParameterList(ctx *FunctionParameterListContext) {}
+
+// EnterFunctionParameter is called when production functionParameter is entered.
+func (s *BaseFqlParserListener) EnterFunctionParameter(ctx *FunctionParameterContext) {}
+
+// ExitFunctionParameter is called when production functionParameter is exited.
+func (s *BaseFqlParserListener) ExitFunctionParameter(ctx *FunctionParameterContext) {}
+
+// EnterFunctionBody is called when production functionBody is entered.
+func (s *BaseFqlParserListener) EnterFunctionBody(ctx *FunctionBodyContext) {}
+
+// ExitFunctionBody is called when production functionBody is exited.
+func (s *BaseFqlParserListener) ExitFunctionBody(ctx *FunctionBodyContext) {}
+
+// EnterFunctionStatement is called when production functionStatement is entered.
+func (s *BaseFqlParserListener) EnterFunctionStatement(ctx *FunctionStatementContext) {}
+
+// ExitFunctionStatement is called when production functionStatement is exited.
+func (s *BaseFqlParserListener) ExitFunctionStatement(ctx *FunctionStatementContext) {}
+
+// EnterExpressionStatement is called when production expressionStatement is entered.
+func (s *BaseFqlParserListener) EnterExpressionStatement(ctx *ExpressionStatementContext) {}
+
+// ExitExpressionStatement is called when production expressionStatement is exited.
+func (s *BaseFqlParserListener) ExitExpressionStatement(ctx *ExpressionStatementContext) {}
+
+// EnterFunctionReturn is called when production functionReturn is entered.
+func (s *BaseFqlParserListener) EnterFunctionReturn(ctx *FunctionReturnContext) {}
+
+// ExitFunctionReturn is called when production functionReturn is exited.
+func (s *BaseFqlParserListener) ExitFunctionReturn(ctx *FunctionReturnContext) {}
+
 // EnterReturnExpression is called when production returnExpression is entered.
 func (s *BaseFqlParserListener) EnterReturnExpression(ctx *ReturnExpressionContext) {}
 

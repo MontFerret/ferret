@@ -44,7 +44,8 @@ func (b *Builder) Build() (*ControlFlowGraph, error) {
 		if block.IsTerminator() && len(block.Instructions) > 0 {
 			lastInst := block.Instructions[len(block.Instructions)-1]
 
-			if lastInst.Opcode == bytecode.OpReturn {
+			if lastInst.Opcode == bytecode.OpReturn ||
+				lastInst.Opcode == bytecode.OpTailCall || lastInst.Opcode == bytecode.OpTailCall0 || lastInst.Opcode == bytecode.OpTailCall1 || lastInst.Opcode == bytecode.OpTailCall2 || lastInst.Opcode == bytecode.OpTailCall3 || lastInst.Opcode == bytecode.OpTailCall4 {
 				block.AddSuccessor(exit)
 			}
 		}
@@ -109,7 +110,7 @@ func (b *Builder) identifyLeaders(instructions []bytecode.Instruction) map[int]b
 			if i+1 < len(instructions) {
 				leaders[i+1] = true
 			}
-		case bytecode.OpReturn:
+		case bytecode.OpReturn, bytecode.OpTailCall, bytecode.OpTailCall0, bytecode.OpTailCall1, bytecode.OpTailCall2, bytecode.OpTailCall3, bytecode.OpTailCall4:
 			// Instruction after return is a leader (if it exists, it's unreachable but still a block)
 			if i+1 < len(instructions) {
 				leaders[i+1] = true
@@ -215,7 +216,7 @@ func (b *Builder) createEdges(instructions []bytecode.Instruction, blocks []*Bas
 				}
 			}
 
-		case bytecode.OpReturn:
+		case bytecode.OpReturn, bytecode.OpTailCall, bytecode.OpTailCall0, bytecode.OpTailCall1, bytecode.OpTailCall2, bytecode.OpTailCall3, bytecode.OpTailCall4:
 			// Return doesn't add regular successors; handled by exit block
 
 		default:

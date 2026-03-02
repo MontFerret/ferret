@@ -18,6 +18,8 @@ func (f *statementFormatter) formatBodyStatement(ctx *fql.BodyStatementContext) 
 	switch {
 	case ctx.VariableDeclaration() != nil:
 		f.formatVariableDeclaration(ctx.VariableDeclaration().(*fql.VariableDeclarationContext))
+	case ctx.FunctionDeclaration() != nil:
+		f.formatFunctionDeclaration(ctx.FunctionDeclaration().(*fql.FunctionDeclarationContext))
 	case ctx.FunctionCallExpression() != nil:
 		f.expression.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
 	case ctx.WaitForExpression() != nil:
@@ -82,6 +84,178 @@ func (f *statementFormatter) formatReturnExpression(ctx *fql.ReturnExpressionCon
 	if expr := ctx.Expression(); expr != nil {
 		f.expression.formatExpression(expr.(*fql.ExpressionContext))
 	}
+}
+
+func (f *statementFormatter) formatFunctionDeclaration(ctx *fql.FunctionDeclarationContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordFunc)
+	f.p.space()
+
+	if name := ctx.FunctionName(); name != nil {
+		f.p.write(name.GetText())
+	}
+
+	f.p.write("(")
+
+	if params := ctx.FunctionParameterList(); params != nil {
+		f.formatFunctionParameterList(params.(*fql.FunctionParameterListContext))
+	}
+
+	f.p.write(")")
+	f.p.space()
+	f.p.write("(")
+
+	body := ctx.FunctionBody()
+	if body == nil {
+		f.p.write(")")
+		return
+	}
+
+	funcBody := body.(*fql.FunctionBodyContext)
+	stmts := funcBody.AllFunctionStatement()
+	ret := funcBody.FunctionReturn()
+
+	if len(stmts) == 0 && ret == nil {
+		f.p.write(")")
+		return
+	}
+
+	headerStop := f.functionHeaderStopIndex(ctx)
+	start := headerStop + 1
+	if openParen := funcBody.OpenParen(); openParen != nil {
+		if sym := openParen.GetSymbol(); sym != nil {
+			start = sym.GetStop() + 1
+		}
+	}
+
+	var first antlr.ParserRuleContext
+	if len(stmts) > 0 {
+		first = stmts[0].(antlr.ParserRuleContext)
+	} else if ret != nil {
+		first = ret.(antlr.ParserRuleContext)
+	}
+
+	f.p.withIndent(func() {
+		if first != nil {
+			f.trivia.emitBetweenIndices(start, f.trivia.startIndex(first))
+		} else {
+			f.p.newline()
+		}
+
+		for i, stmt := range stmts {
+			f.formatFunctionStatement(stmt.(*fql.FunctionStatementContext))
+
+			if i < len(stmts)-1 {
+				f.trivia.emitBetween(stmt.(antlr.ParserRuleContext), stmts[i+1].(antlr.ParserRuleContext))
+			}
+		}
+
+		if ret != nil {
+			if len(stmts) > 0 {
+				f.trivia.emitBetween(stmts[len(stmts)-1].(antlr.ParserRuleContext), ret.(antlr.ParserRuleContext))
+			}
+
+			f.formatFunctionReturn(ret.(*fql.FunctionReturnContext))
+		}
+	})
+
+	if !f.p.atLineStart {
+		f.p.newline()
+	}
+
+	f.p.write(")")
+}
+
+func (f *statementFormatter) formatFunctionParameterList(ctx *fql.FunctionParameterListContext) {
+	if ctx == nil {
+		return
+	}
+
+	params := ctx.AllFunctionParameter()
+	for i, param := range params {
+		pctx, ok := param.(*fql.FunctionParameterContext)
+		if !ok || pctx == nil {
+			continue
+		}
+
+		if id := pctx.Identifier(); id != nil {
+			f.p.write(id.GetText())
+		}
+
+		if i < len(params)-1 {
+			f.p.write(",")
+			f.p.space()
+		}
+	}
+}
+
+func (f *statementFormatter) formatFunctionStatement(ctx *fql.FunctionStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	switch {
+	case ctx.VariableDeclaration() != nil:
+		f.formatVariableDeclaration(ctx.VariableDeclaration().(*fql.VariableDeclarationContext))
+	case ctx.FunctionDeclaration() != nil:
+		f.formatFunctionDeclaration(ctx.FunctionDeclaration().(*fql.FunctionDeclarationContext))
+	case ctx.FunctionCallExpression() != nil:
+		f.expression.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
+	case ctx.WaitForExpression() != nil:
+		f.formatWaitForExpression(ctx.WaitForExpression().(*fql.WaitForExpressionContext))
+	case ctx.DispatchExpression() != nil:
+		f.formatDispatchExpression(ctx.DispatchExpression().(*fql.DispatchExpressionContext))
+	case ctx.ExpressionStatement() != nil:
+		f.formatExpressionStatement(ctx.ExpressionStatement().(*fql.ExpressionStatementContext))
+	}
+}
+
+func (f *statementFormatter) formatFunctionReturn(ctx *fql.FunctionReturnContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordReturn)
+	f.p.space()
+
+	if expr := ctx.Expression(); expr != nil {
+		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+	}
+}
+
+func (f *statementFormatter) formatExpressionStatement(ctx *fql.ExpressionStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	if expr := ctx.Expression(); expr != nil {
+		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+	}
+}
+
+func (f *statementFormatter) functionHeaderStopIndex(ctx *fql.FunctionDeclarationContext) int {
+	if ctx == nil {
+		return 0
+	}
+
+	if tok := ctx.GetToken(fql.FqlParserCloseParen, 0); tok != nil {
+		if sym := tok.GetSymbol(); sym != nil {
+			return sym.GetStop()
+		}
+	}
+
+	if params := ctx.FunctionParameterList(); params != nil {
+		return f.trivia.stopIndex(params.(antlr.ParserRuleContext))
+	}
+
+	if name := ctx.FunctionName(); name != nil {
+		return f.trivia.stopIndex(name.(antlr.ParserRuleContext))
+	}
+
+	return f.trivia.stopIndex(ctx)
 }
 
 func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) {

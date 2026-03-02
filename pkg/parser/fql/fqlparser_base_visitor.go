@@ -39,6 +39,34 @@ func (v *BaseFqlParserVisitor) VisitVariableDeclaration(ctx *VariableDeclaration
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitFunctionDeclaration(ctx *FunctionDeclarationContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitFunctionParameterList(ctx *FunctionParameterListContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitFunctionParameter(ctx *FunctionParameterContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitFunctionBody(ctx *FunctionBodyContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitFunctionStatement(ctx *FunctionStatementContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitExpressionStatement(ctx *ExpressionStatementContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitFunctionReturn(ctx *FunctionReturnContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitReturnExpression(ctx *ReturnExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }

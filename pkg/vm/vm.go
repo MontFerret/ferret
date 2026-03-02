@@ -21,6 +21,7 @@ type VM struct {
 	fastObjectDictThreshold int
 	instructions            []data.ExecInstruction
 	pc                      int
+	frames                  []callFrame
 }
 
 func New(program *bytecode.Program) *VM {
@@ -82,14 +83,15 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (result runtime.Value, 
 	vm.registers.MarkDirty()
 	vm.env = env
 	vm.pc = 0
+	vm.frames = vm.frames[:0]
 
 	instructions := vm.instructions
 	constants := vm.program.Constants
 	aggregatePlans := vm.program.Metadata.AggregatePlans
-	reg := vm.registers.Values
 	shapeCache := vm.cache.ShapeCache
 loop:
 	for vm.pc < len(instructions) {
+		reg := vm.registers.Values
 		inst := &instructions[vm.pc]
 		op := inst.Opcode
 		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
@@ -154,6 +156,10 @@ loop:
 
 			has, err := obj.ContainsKey(ctx, key)
 			if err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 			if !has {
@@ -174,6 +180,10 @@ loop:
 
 			has, err := obj.ContainsKey(ctx, key)
 			if err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 			if !has {
@@ -272,11 +282,19 @@ loop:
 			reg[dst] = runtime.Multiply(ctx, reg[src1], reg[src2])
 		case bytecode.OpDiv:
 			if err := vm.checkDivisionByZero(ctx, reg[src1], reg[src2]); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 			reg[dst] = runtime.Divide(ctx, reg[src1], reg[src2])
 		case bytecode.OpMod:
 			if err := vm.checkModuloByZero(ctx, reg[src2]); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 			reg[dst] = runtime.Modulus(ctx, reg[src1], reg[src2])
@@ -316,6 +334,10 @@ loop:
 			if err == nil {
 				reg[dst] = res
 			} else {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 		case bytecode.OpRegexp:
@@ -326,6 +348,10 @@ loop:
 			} else if _, catch := vm.tryCatch(vm.pc); catch {
 				reg[dst] = runtime.False
 			} else {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 		case bytecode.OpAllEq, bytecode.OpAllNe, bytecode.OpAllGt, bytecode.OpAllGte, bytecode.OpAllLt, bytecode.OpAllLte, bytecode.OpAllIn:
@@ -359,6 +385,10 @@ loop:
 			arg := reg[src2]
 
 			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 		case bytecode.OpLoadIndexConst, bytecode.OpLoadIndexOptionalConst:
@@ -367,6 +397,10 @@ loop:
 			arg := constants[src2.Constant()]
 
 			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 		case bytecode.OpLoadKey, bytecode.OpLoadKeyOptional:
@@ -375,6 +409,10 @@ loop:
 			arg := reg[src2]
 
 			if err := vm.loadKeyAndSet(ctx, dst, vm.pc-1, src, arg, optional); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 		case bytecode.OpLoadKeyConst, bytecode.OpLoadKeyOptionalConst:
@@ -383,6 +421,10 @@ loop:
 			arg := constants[src2.Constant()]
 
 			if err := vm.loadKeyConstAndSet(ctx, dst, vm.pc-1, inst, src, arg, optional); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 		case bytecode.OpLoadPropertyConst, bytecode.OpLoadPropertyOptionalConst:
@@ -391,6 +433,10 @@ loop:
 			prop := constants[src2.Constant()]
 
 			if err := vm.loadPropertyConstAndSet(ctx, dst, vm.pc-1, inst, src, prop, optional); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 		case bytecode.OpLoadProperty, bytecode.OpLoadPropertyOptional:
@@ -399,48 +445,174 @@ loop:
 			prop := reg[src2]
 
 			if err := vm.loadPropertyAndSet(ctx, dst, vm.pc-1, src, prop, optional); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 		case bytecode.OpApplyQuery:
 			if err := vm.applyQuery(ctx, reg, src1, constants, src2, dst); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
-		case bytecode.OpCall, bytecode.OpProtectedCall:
+		case bytecode.OpHCall, bytecode.OpProtectedHCall:
 			out, err := vm.callv(ctx, vm.pc-1, src1, src2)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
-		case bytecode.OpCall0, bytecode.OpProtectedCall0:
+		case bytecode.OpHCall0, bytecode.OpProtectedHCall0:
 			out, err := vm.call0(ctx, vm.pc-1)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
-		case bytecode.OpCall1, bytecode.OpProtectedCall1:
+		case bytecode.OpHCall1, bytecode.OpProtectedHCall1:
 			out, err := vm.call1(ctx, vm.pc-1, src1)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
-		case bytecode.OpCall2, bytecode.OpProtectedCall2:
+		case bytecode.OpHCall2, bytecode.OpProtectedHCall2:
 			out, err := vm.call2(ctx, vm.pc-1, src1, src2)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
-		case bytecode.OpCall3, bytecode.OpProtectedCall3:
+		case bytecode.OpHCall3, bytecode.OpProtectedHCall3:
 			out, err := vm.call3(ctx, vm.pc-1, src1)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
-		case bytecode.OpCall4, bytecode.OpProtectedCall4:
+		case bytecode.OpHCall4, bytecode.OpProtectedHCall4:
 			out, err := vm.call4(ctx, vm.pc-1, src1)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
+		case bytecode.OpCall, bytecode.OpProtectedCall:
+			if err := vm.callUdf(op, dst, src1, src2); err != nil {
+				if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
+					if vm.unwindToProtected() {
+						continue
+					}
+
+					return nil, err
+				}
+
+				continue
+			}
+
+			continue
+		case bytecode.OpCall0, bytecode.OpProtectedCall0:
+			if err := vm.callUdf(op, dst, 0, 0); err != nil {
+				if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
+					if vm.unwindToProtected() {
+						continue
+					}
+
+					return nil, err
+				}
+
+				continue
+			}
+
+			continue
+		case bytecode.OpCall1, bytecode.OpProtectedCall1:
+			if err := vm.callUdf(op, dst, src1, 0); err != nil {
+				if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
+					if vm.unwindToProtected() {
+						continue
+					}
+
+					return nil, err
+				}
+
+				continue
+			}
+
+			continue
+		case bytecode.OpCall2, bytecode.OpProtectedCall2:
+			if err := vm.callUdf(op, dst, src1, src2); err != nil {
+				if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
+					if vm.unwindToProtected() {
+						continue
+					}
+
+					return nil, err
+				}
+
+				continue
+			}
+
+			continue
+		case bytecode.OpCall3, bytecode.OpProtectedCall3:
+			if err := vm.callUdf(op, dst, src1, 0); err != nil {
+				if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
+					if vm.unwindToProtected() {
+						continue
+					}
+
+					return nil, err
+				}
+
+				continue
+			}
+
+			continue
+		case bytecode.OpCall4, bytecode.OpProtectedCall4:
+			if err := vm.callUdf(op, dst, src1, 0); err != nil {
+				if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
+					if vm.unwindToProtected() {
+						continue
+					}
+
+					return nil, err
+				}
+
+				continue
+			}
+
+			continue
+		case bytecode.OpTailCall, bytecode.OpTailCall0, bytecode.OpTailCall1, bytecode.OpTailCall2, bytecode.OpTailCall3, bytecode.OpTailCall4:
+			if err := vm.tailCallUdf(op, dst, src1, src2); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
+				return nil, err
+			}
+
+			continue
 		case bytecode.OpExists:
 			val := reg[src1]
 
@@ -456,6 +628,10 @@ loop:
 					if _, catch := vm.tryCatch(vm.pc); catch {
 						reg[dst] = runtime.False
 
+						continue
+					}
+
+					if vm.unwindToProtected() {
 						continue
 					}
 
@@ -478,6 +654,10 @@ loop:
 					if _, catch := vm.tryCatch(vm.pc); catch {
 						length = 0
 					} else {
+						if vm.unwindToProtected() {
+							continue
+						}
+
 						return nil, err
 					}
 				}
@@ -486,6 +666,10 @@ loop:
 			} else if _, catch := vm.tryCatch(vm.pc); catch {
 				reg[dst] = runtime.ZeroInt
 			} else {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return runtime.None, runtime.TypeErrorOf(reg[src1],
 					runtime.TypeString,
 					runtime.TypeList,
@@ -517,6 +701,10 @@ loop:
 
 				if closeErr != nil {
 					if _, catch := vm.tryCatch(vm.pc); !catch {
+						if vm.unwindToProtected() {
+							continue
+						}
+
 						return nil, closeErr
 					}
 				}
@@ -527,6 +715,10 @@ loop:
 			if err == nil {
 				reg[dst] = res
 			} else {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 		case bytecode.OpDataSet:
@@ -545,6 +737,10 @@ loop:
 				planIdx := int(src2)
 
 				if planIdx < 0 || planIdx >= len(aggregatePlans) {
+					if vm.unwindToProtected() {
+						continue
+					}
+
 					return nil, runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan")
 				}
 
@@ -568,6 +764,10 @@ loop:
 					continue
 				}
 
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 		case bytecode.OpArrayPush:
@@ -579,6 +779,10 @@ loop:
 
 			if err := tr.Set(ctx, reg[src1], reg[src2]); err != nil {
 				if _, catch := vm.tryCatch(vm.pc); catch {
+					continue
+				}
+
+				if vm.unwindToProtected() {
 					continue
 				}
 
@@ -614,6 +818,10 @@ loop:
 				iterator, err := src.Iterate(ctx)
 
 				if err != nil {
+					if vm.unwindToProtected() {
+						continue
+					}
+
 					return nil, err
 				}
 
@@ -623,6 +831,10 @@ loop:
 					// Fall back to an empty iterator
 					reg[dst] = data.NoopIter
 				} else {
+					if vm.unwindToProtected() {
+						continue
+					}
+
 					return nil, runtime.TypeErrorOf(src, runtime.TypeIterable)
 				}
 			}
@@ -632,6 +844,10 @@ loop:
 				if errors.Is(err, io.EOF) {
 					vm.pc = int(dst)
 				} else {
+					if vm.unwindToProtected() {
+						continue
+					}
+
 					return nil, err
 				}
 			}
@@ -668,6 +884,10 @@ loop:
 					continue
 				}
 
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 
@@ -678,6 +898,10 @@ loop:
 
 			if err != nil {
 				if _, catch := vm.tryCatch(vm.pc); catch {
+					continue
+				}
+
+				if vm.unwindToProtected() {
 					continue
 				}
 
@@ -695,6 +919,10 @@ loop:
 
 				if err != nil {
 					if _, catch := vm.tryCatch(vm.pc); catch {
+						continue
+					}
+
+					if vm.unwindToProtected() {
 						continue
 					}
 
@@ -736,17 +964,33 @@ loop:
 					continue
 				}
 
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 
 			if err := data.Sleep(ctx, dur); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
 		case bytecode.OpRand:
 			reg[dst] = runtime.NewFloat(runtime.RandomDefault())
 		case bytecode.OpReturn:
-			reg[bytecode.NoopOperand] = reg[dst]
+			retVal := reg[dst]
 
+			if frame, ok := vm.popFrame(); ok {
+				vm.registers.Values = frame.registers
+				vm.registers.Values[frame.returnDest] = retVal
+				vm.pc = frame.returnPC
+				continue
+			}
+
+			reg[bytecode.NoopOperand] = retVal
 			break loop
 		default:
 			// TODO: Return an error or ignore unknown opcodes?
@@ -754,5 +998,5 @@ loop:
 		}
 	}
 
-	return reg[bytecode.NoopOperand], nil
+	return vm.registers.Values[bytecode.NoopOperand], nil
 }
