@@ -30,6 +30,22 @@ func (d *ErrorListener) ReportAttemptingFullContext(recognizer antlr.Parser, dfa
 func (d *ErrorListener) ReportContextSensitivity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex, prediction int, configs *antlr.ATNConfigSet) {
 }
 
+func (d *ErrorListener) ReportAmbiguity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, exact bool, ambigAlts *antlr.BitSet, configs *antlr.ATNConfigSet) {
+	if recognizer == nil || dfa == nil || d.DiagnosticErrorListener == nil {
+		return
+	}
+
+	if ctx := recognizer.GetParserRuleContext(); ctx != nil {
+		for _, rule := range recognizer.GetRuleInvocationStack(ctx) {
+			if rule == "expressionAtom" {
+				return
+			}
+		}
+	}
+
+	d.DiagnosticErrorListener.ReportAmbiguity(recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs)
+}
+
 func (d *ErrorListener) SyntaxError(_ antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
 	var offending antlr.Token
 

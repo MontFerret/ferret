@@ -29,6 +29,16 @@ FUNC outer(x) (
 RETURN outer(2)
 `, 3, "Nested capture"),
 		Case(`
+FUNC outer(a) (
+  FUNC inner(b) (
+    RETURN b
+  )
+  LET v = inner(1)
+  RETURN v
+)
+RETURN outer(2)
+`, 1, "Nested LET before return"),
+		Case(`
 FUNC fact(n) (
   RETURN MATCH n (
     0 => 1,
