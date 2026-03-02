@@ -9,7 +9,7 @@ import (
 
 func (vm *VM) callv(ctx context.Context, pc int, src1, src2 bytecode.Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
-	cacheFn := vm.cache.Functions[pc]
+	cacheFn := vm.cache.HostFunctions[pc]
 
 	var size int
 
@@ -30,7 +30,7 @@ func (vm *VM) callv(ctx context.Context, pc int, src1, src2 bytecode.Operand) (r
 }
 
 func (vm *VM) call0(ctx context.Context, pc int) (runtime.Value, error) {
-	cacheFn := vm.cache.Functions[pc]
+	cacheFn := vm.cache.HostFunctions[pc]
 
 	if cacheFn.Fn0 != nil {
 		return cacheFn.Fn0(ctx)
@@ -43,7 +43,7 @@ func (vm *VM) call0(ctx context.Context, pc int) (runtime.Value, error) {
 func (vm *VM) call1(ctx context.Context, pc int, src1 bytecode.Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
 	arg := reg[src1]
-	cacheFn := vm.cache.Functions[pc]
+	cacheFn := vm.cache.HostFunctions[pc]
 
 	if cacheFn.Fn1 != nil {
 		return cacheFn.Fn1(ctx, arg)
@@ -55,7 +55,7 @@ func (vm *VM) call1(ctx context.Context, pc int, src1 bytecode.Operand) (runtime
 
 func (vm *VM) call2(ctx context.Context, pc int, src1, src2 bytecode.Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
-	cacheFn := vm.cache.Functions[pc]
+	cacheFn := vm.cache.HostFunctions[pc]
 	arg1 := reg[src1]
 	arg2 := reg[src2]
 
@@ -69,7 +69,7 @@ func (vm *VM) call2(ctx context.Context, pc int, src1, src2 bytecode.Operand) (r
 
 func (vm *VM) call3(ctx context.Context, pc int, src1 bytecode.Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
-	cacheFn := vm.cache.Functions[pc]
+	cacheFn := vm.cache.HostFunctions[pc]
 	arg1 := reg[src1]
 	arg2 := reg[src1+1]
 	arg3 := reg[src1+2]
@@ -84,7 +84,7 @@ func (vm *VM) call3(ctx context.Context, pc int, src1 bytecode.Operand) (runtime
 
 func (vm *VM) call4(ctx context.Context, pc int, src1 bytecode.Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
-	cacheFn := vm.cache.Functions[pc]
+	cacheFn := vm.cache.HostFunctions[pc]
 	arg1 := reg[src1]
 	arg2 := reg[src1+1]
 	arg3 := reg[src1+2]

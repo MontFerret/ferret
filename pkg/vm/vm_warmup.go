@@ -37,7 +37,7 @@ func (vm *VM) warmup(env *Environment) error {
 			bytecode.OpHCall2, bytecode.OpProtectedHCall2,
 			bytecode.OpHCall3, bytecode.OpProtectedHCall3,
 			bytecode.OpHCall4, bytecode.OpProtectedHCall4:
-			warmupResolveHostCall(pc, op, dst, reg, functions, vm.cache.Functions, errors)
+			warmupResolveHostCall(pc, op, dst, reg, functions, vm.cache.HostFunctions, errors)
 		default:
 			continue
 		}
@@ -94,7 +94,7 @@ func (vm *VM) warmupRegexps() {
 	vm.cache.RegexpsWarmed = true
 }
 
-func resolveFnName(reg map[bytecode.Operand]runtime.Value, dst bytecode.Operand) (string, error) {
+func resolveHostFnName(reg map[bytecode.Operand]runtime.Value, dst bytecode.Operand) (string, error) {
 	val, ok := reg[dst]
 
 	if ok {
@@ -108,45 +108,45 @@ func resolveFnName(reg map[bytecode.Operand]runtime.Value, dst bytecode.Operand)
 	return "", ErrInvalidFunctionName
 }
 
-func resolveFn[T runtime.FunctionConstraint](
+func resolveHostFn[T runtime.FunctionConstraint](
 	primary func(name string) (T, bool),
 	fallback runtime.FunctionCollection[runtime.Function],
-	setter func(*mem.CachedFunction, T),
+	setter func(*mem.CachedHostFunction, T),
 	fnName string,
-) (*mem.CachedFunction, error) {
+) (*mem.CachedHostFunction, error) {
 	if fn, ok := primary(fnName); ok {
-		c := &mem.CachedFunction{}
+		c := &mem.CachedHostFunction{}
 		setter(c, fn)
 		return c, nil
 	}
 
 	if fallback != nil {
 		if fnv, ok := fallback.Get(fnName); ok {
-			return &mem.CachedFunction{FnV: fnv}, nil
+			return &mem.CachedHostFunction{FnV: fnv}, nil
 		}
 	}
 
 	return nil, ErrUnresolvedFunction
 }
 
-func resolveFnAndCache[T runtime.FunctionConstraint](
+func resolveHostFnAndCache[T runtime.FunctionConstraint](
 	pc int,
 	dst bytecode.Operand,
 	reg map[bytecode.Operand]runtime.Value,
 	get func(string) (T, bool),
 	fallback runtime.FunctionCollection[runtime.Function],
-	assign func(*mem.CachedFunction, T),
-	funcs []*mem.CachedFunction,
+	assign func(*mem.CachedHostFunction, T),
+	funcs []*mem.CachedHostFunction,
 	errList *diagnostic.WarmupErrorSet,
 ) {
-	fnName, err := resolveFnName(reg, dst)
+	fnName, err := resolveHostFnName(reg, dst)
 
 	if err != nil {
 		errList.Add(err, pc, dst)
 		return
 	}
 
-	fn, err := resolveFn(get, fallback, assign, fnName)
+	fn, err := resolveHostFn(get, fallback, assign, fnName)
 
 	if err != nil {
 		errList.Add(err, pc, dst)
@@ -162,11 +162,11 @@ func resolveHostCall[T runtime.FunctionConstraint](
 	reg map[bytecode.Operand]runtime.Value,
 	get func(string) (T, bool),
 	functions *runtime.Functions,
-	assign func(*mem.CachedFunction, T),
-	funcs []*mem.CachedFunction,
+	assign func(*mem.CachedHostFunction, T),
+	funcs []*mem.CachedHostFunction,
 	errList *diagnostic.WarmupErrorSet,
 ) {
-	resolveFnAndCache(pc, dst, reg, get, functions.Var(), assign, funcs, errList)
+	resolveHostFnAndCache(pc, dst, reg, get, functions.Var(), assign, funcs, errList)
 }
 
 func warmupResolveHostCall(
@@ -175,21 +175,21 @@ func warmupResolveHostCall(
 	dst bytecode.Operand,
 	reg map[bytecode.Operand]runtime.Value,
 	functions *runtime.Functions,
-	funcs []*mem.CachedFunction,
+	funcs []*mem.CachedHostFunction,
 	errors *diagnostic.WarmupErrorSet,
 ) {
 	switch op {
 	case bytecode.OpHCall, bytecode.OpProtectedHCall:
-		resolveHostCall(pc, dst, reg, functions.Var().Get, functions, func(f *mem.CachedFunction, fn runtime.Function) { f.FnV = fn }, funcs, errors)
+		resolveHostCall(pc, dst, reg, functions.Var().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function) { f.FnV = fn }, funcs, errors)
 	case bytecode.OpHCall0, bytecode.OpProtectedHCall0:
-		resolveHostCall(pc, dst, reg, functions.A0().Get, functions, func(f *mem.CachedFunction, fn runtime.Function0) { f.Fn0 = fn }, funcs, errors)
+		resolveHostCall(pc, dst, reg, functions.A0().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function0) { f.Fn0 = fn }, funcs, errors)
 	case bytecode.OpHCall1, bytecode.OpProtectedHCall1:
-		resolveHostCall(pc, dst, reg, functions.A1().Get, functions, func(f *mem.CachedFunction, fn runtime.Function1) { f.Fn1 = fn }, funcs, errors)
+		resolveHostCall(pc, dst, reg, functions.A1().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function1) { f.Fn1 = fn }, funcs, errors)
 	case bytecode.OpHCall2, bytecode.OpProtectedHCall2:
-		resolveHostCall(pc, dst, reg, functions.A2().Get, functions, func(f *mem.CachedFunction, fn runtime.Function2) { f.Fn2 = fn }, funcs, errors)
+		resolveHostCall(pc, dst, reg, functions.A2().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function2) { f.Fn2 = fn }, funcs, errors)
 	case bytecode.OpHCall3, bytecode.OpProtectedHCall3:
-		resolveHostCall(pc, dst, reg, functions.A3().Get, functions, func(f *mem.CachedFunction, fn runtime.Function3) { f.Fn3 = fn }, funcs, errors)
+		resolveHostCall(pc, dst, reg, functions.A3().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function3) { f.Fn3 = fn }, funcs, errors)
 	case bytecode.OpHCall4, bytecode.OpProtectedHCall4:
-		resolveHostCall(pc, dst, reg, functions.A4().Get, functions, func(f *mem.CachedFunction, fn runtime.Function4) { f.Fn4 = fn }, funcs, errors)
+		resolveHostCall(pc, dst, reg, functions.A4().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function4) { f.Fn4 = fn }, funcs, errors)
 	}
 }
