@@ -43,6 +43,12 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#functionBody.
 	VisitFunctionBody(ctx *FunctionBodyContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#functionArrow.
+	VisitFunctionArrow(ctx *FunctionArrowContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#functionBlock.
+	VisitFunctionBlock(ctx *FunctionBlockContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#functionStatement.
 	VisitFunctionStatement(ctx *FunctionStatementContext) interface{}
 

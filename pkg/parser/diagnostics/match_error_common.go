@@ -9,6 +9,38 @@ import (
 )
 
 func matchCommonErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+	if isNoAlternative(err.Message) || isMissing(err.Message) || isMismatched(err.Message) {
+		if is(offending.Prev(), "=>") || is(offending, "=>") {
+			span := spanFromTokenSafe(offending.Prev().Token(), src)
+			span.Start += 2
+			span.End += 2
+
+			err.Message = "Expected expression after '=>'"
+			err.Hint = "Provide an expression, e.g. FUNC f() => x + 1"
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing expression"),
+			}
+
+			return true
+		}
+
+		if has(err.Message, "=>") && has(err.Message, "'('") && hasPrevToken(offending, "FUNC", 12) {
+			if paren := findPrevToken(offending, ")", 8); paren != nil {
+				span := spanFromTokenSafe(paren.Token(), src)
+				span.Start++
+				span.End++
+
+				err.Message = "Expected '=>' or '(' after function declaration"
+				err.Hint = "Use 'FUNC f(x) => expr' or 'FUNC f(x) ( ... RETURN expr )'."
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, "missing function body"),
+				}
+
+				return true
+			}
+		}
+	}
+
 	if isNoAlternative(err.Message) {
 		prevLogical := isLogicalOperator(offending.Prev())
 		if prevLogical && !isExpressionStart(offending) {

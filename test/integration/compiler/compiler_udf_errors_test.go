@@ -10,8 +10,7 @@ func TestUdfErrors(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		ErrorCase(
 			`
-FUNC f(x, x)
-  RETURN x
+FUNC f(x, x) => x
 RETURN f(1)
 `, E{
 				Kind:    parserd.NameError,
@@ -19,8 +18,7 @@ RETURN f(1)
 			}, "Duplicate parameter names"),
 		ErrorCase(
 			`
-FUNC f(x)
-  RETURN x
+FUNC f(x) => x
 RETURN f(1, 2)
 `, E{
 				Kind:    parserd.NameError,

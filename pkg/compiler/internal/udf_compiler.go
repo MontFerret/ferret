@@ -70,11 +70,15 @@ func (c *UDFCompiler) compile(fn *UDFInfo) {
 
 	body := fn.Decl.FunctionBody()
 	if body != nil {
-		for _, stmt := range body.AllFunctionStatement() {
-			c.ctx.StmtCompiler.CompileFunctionStatement(stmt)
-		}
+		if arrow := body.FunctionArrow(); arrow != nil {
+			c.compileExpressionReturn(arrow.Expression())
+		} else if block := body.FunctionBlock(); block != nil {
+			for _, stmt := range block.AllFunctionStatement() {
+				c.ctx.StmtCompiler.CompileFunctionStatement(stmt)
+			}
 
-		c.compileReturn(body.FunctionReturn())
+			c.compileReturn(block.FunctionReturn())
+		}
 	}
 
 	fn.Registers = c.ctx.Registers.Size()
@@ -92,6 +96,10 @@ func (c *UDFCompiler) compileReturn(ctx fql.IFunctionReturnContext) {
 	}
 
 	expr := ctx.Expression()
+	c.compileExpressionReturn(expr)
+}
+
+func (c *UDFCompiler) compileExpressionReturn(expr fql.IExpressionContext) {
 	if expr == nil {
 		return
 	}

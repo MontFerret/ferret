@@ -121,8 +121,16 @@ functionParameter
     ;
 
 functionBody
+    : functionArrow
+    | functionBlock
+    ;
+
+functionArrow
+    : Arrow expression
+    ;
+
+functionBlock
     : OpenParen functionStatement* functionReturn CloseParen
-    | functionStatement* functionReturn
     ;
 
 functionStatement

@@ -55,6 +55,25 @@ func TestSyntaxErrors(t *testing.T) {
 				Message: "Expected expression after 'RETURN'",
 				Hint:    "Did you forget to provide a value to return?",
 			}, "Missing return value"),
+		ErrorCase(
+			`
+			FUNC f(x)
+			  RETURN x
+			RETURN f(1)
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected '=>' or '(' after function declaration",
+				Hint:    "Use 'FUNC f(x) => expr' or 'FUNC f(x) ( ... RETURN expr )'.",
+			}, "Undelimited function body"),
+		ErrorCase(
+			`
+			FUNC f() => RETURN 1
+			RETURN f()
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected expression after '=>'",
+				Hint:    "Provide an expression, e.g. FUNC f() => x + 1",
+			}, "Missing arrow expression"),
 
 		ErrorCase(
 			`

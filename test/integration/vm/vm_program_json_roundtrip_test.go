@@ -151,8 +151,7 @@ FOR u IN users
 		},
 		{
 			expression: `
-FUNC add(x, y)
-  RETURN x + y
+FUNC add(x, y) => x + y
 RETURN add(2, 3)
 `,
 			expected:    5,

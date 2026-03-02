@@ -43,6 +43,12 @@ type FqlParserListener interface {
 	// EnterFunctionBody is called when entering the functionBody production.
 	EnterFunctionBody(c *FunctionBodyContext)
 
+	// EnterFunctionArrow is called when entering the functionArrow production.
+	EnterFunctionArrow(c *FunctionArrowContext)
+
+	// EnterFunctionBlock is called when entering the functionBlock production.
+	EnterFunctionBlock(c *FunctionBlockContext)
+
 	// EnterFunctionStatement is called when entering the functionStatement production.
 	EnterFunctionStatement(c *FunctionStatementContext)
 
@@ -435,6 +441,12 @@ type FqlParserListener interface {
 
 	// ExitFunctionBody is called when exiting the functionBody production.
 	ExitFunctionBody(c *FunctionBodyContext)
+
+	// ExitFunctionArrow is called when exiting the functionArrow production.
+	ExitFunctionArrow(c *FunctionArrowContext)
+
+	// ExitFunctionBlock is called when exiting the functionBlock production.
+	ExitFunctionBlock(c *FunctionBlockContext)
 
 	// ExitFunctionStatement is called when exiting the functionStatement production.
 	ExitFunctionStatement(c *FunctionStatementContext)

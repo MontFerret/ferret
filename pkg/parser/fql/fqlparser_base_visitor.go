@@ -55,6 +55,14 @@ func (v *BaseFqlParserVisitor) VisitFunctionBody(ctx *FunctionBodyContext) inter
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitFunctionArrow(ctx *FunctionArrowContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitFunctionBlock(ctx *FunctionBlockContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitFunctionStatement(ctx *FunctionStatementContext) interface{} {
 	return v.VisitChildren(ctx)
 }

@@ -92,6 +92,18 @@ func (s *BaseFqlParserListener) EnterFunctionBody(ctx *FunctionBodyContext) {}
 // ExitFunctionBody is called when production functionBody is exited.
 func (s *BaseFqlParserListener) ExitFunctionBody(ctx *FunctionBodyContext) {}
 
+// EnterFunctionArrow is called when production functionArrow is entered.
+func (s *BaseFqlParserListener) EnterFunctionArrow(ctx *FunctionArrowContext) {}
+
+// ExitFunctionArrow is called when production functionArrow is exited.
+func (s *BaseFqlParserListener) ExitFunctionArrow(ctx *FunctionArrowContext) {}
+
+// EnterFunctionBlock is called when production functionBlock is entered.
+func (s *BaseFqlParserListener) EnterFunctionBlock(ctx *FunctionBlockContext) {}
+
+// ExitFunctionBlock is called when production functionBlock is exited.
+func (s *BaseFqlParserListener) ExitFunctionBlock(ctx *FunctionBlockContext) {}
+
 // EnterFunctionStatement is called when production functionStatement is entered.
 func (s *BaseFqlParserListener) EnterFunctionStatement(ctx *FunctionStatementContext) {}
 

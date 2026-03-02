@@ -147,14 +147,16 @@ func collectNestedFunctions(ctx *CompilerContext, table *UDFTable, fn *UDFInfo) 
 
 	out := make([]*UDFInfo, 0)
 
-	for _, stmt := range body.AllFunctionStatement() {
-		if stmt == nil {
-			continue
-		}
+	if block := body.FunctionBlock(); block != nil {
+		for _, stmt := range block.AllFunctionStatement() {
+			if stmt == nil {
+				continue
+			}
 
-		if decl := stmt.FunctionDeclaration(); decl != nil {
-			if nested := registerFunction(ctx, table, fn.BodyScope, decl.(*fql.FunctionDeclarationContext)); nested != nil {
-				out = append(out, nested)
+			if decl := stmt.FunctionDeclaration(); decl != nil {
+				if nested := registerFunction(ctx, table, fn.BodyScope, decl.(*fql.FunctionDeclarationContext)); nested != nil {
+					out = append(out, nested)
+				}
 			}
 		}
 	}
@@ -314,51 +316,59 @@ func analyzeFunctionCaptures(ctx *CompilerContext, fn *UDFInfo, env *varEnv) {
 
 	body := fn.Decl.FunctionBody()
 	if body != nil {
-		for _, stmt := range body.AllFunctionStatement() {
-			if stmt == nil {
-				continue
-			}
-
-			switch {
-			case stmt.VariableDeclaration() != nil:
-				decl := stmt.VariableDeclaration()
-				if decl != nil && decl.Expression() != nil {
-					collectAndCaptureVars(ctx, decl.Expression(), env, captureSet, &captureOrder)
-				}
-				name := variableDeclarationName(decl)
-				if name != "" {
-					env.add(name)
-				}
-			case stmt.FunctionDeclaration() != nil:
-				decl := stmt.FunctionDeclaration().(*fql.FunctionDeclarationContext)
-				name := strings.ToUpper(decl.FunctionName().GetText())
-				if nested, ok := fn.BodyScope.Functions[name]; ok {
-					analyzeFunctionCaptures(ctx, nested, env)
-					for _, cap := range nested.Captures {
-						if env.currentHas(cap) {
-							continue
-						}
-						if _, exists := captureSet[cap]; !exists {
-							captureSet[cap] = struct{}{}
-							captureOrder = append(captureOrder, cap)
-						}
-						env.add(cap)
-					}
-				}
-			case stmt.FunctionCallExpression() != nil:
-				collectAndCaptureVars(ctx, stmt.FunctionCallExpression(), env, captureSet, &captureOrder)
-			case stmt.WaitForExpression() != nil:
-				collectAndCaptureVars(ctx, stmt.WaitForExpression(), env, captureSet, &captureOrder)
-			case stmt.DispatchExpression() != nil:
-				collectAndCaptureVars(ctx, stmt.DispatchExpression(), env, captureSet, &captureOrder)
-			case stmt.ExpressionStatement() != nil:
-				collectAndCaptureVars(ctx, stmt.ExpressionStatement(), env, captureSet, &captureOrder)
+		if arrow := body.FunctionArrow(); arrow != nil {
+			if expr := arrow.Expression(); expr != nil {
+				collectAndCaptureVars(ctx, expr, env, captureSet, &captureOrder)
 			}
 		}
-	}
 
-	if body != nil && body.FunctionReturn() != nil {
-		collectAndCaptureVars(ctx, body.FunctionReturn(), env, captureSet, &captureOrder)
+		if block := body.FunctionBlock(); block != nil {
+			for _, stmt := range block.AllFunctionStatement() {
+				if stmt == nil {
+					continue
+				}
+
+				switch {
+				case stmt.VariableDeclaration() != nil:
+					decl := stmt.VariableDeclaration()
+					if decl != nil && decl.Expression() != nil {
+						collectAndCaptureVars(ctx, decl.Expression(), env, captureSet, &captureOrder)
+					}
+					name := variableDeclarationName(decl)
+					if name != "" {
+						env.add(name)
+					}
+				case stmt.FunctionDeclaration() != nil:
+					decl := stmt.FunctionDeclaration().(*fql.FunctionDeclarationContext)
+					name := strings.ToUpper(decl.FunctionName().GetText())
+					if nested, ok := fn.BodyScope.Functions[name]; ok {
+						analyzeFunctionCaptures(ctx, nested, env)
+						for _, cap := range nested.Captures {
+							if env.currentHas(cap) {
+								continue
+							}
+							if _, exists := captureSet[cap]; !exists {
+								captureSet[cap] = struct{}{}
+								captureOrder = append(captureOrder, cap)
+							}
+							env.add(cap)
+						}
+					}
+				case stmt.FunctionCallExpression() != nil:
+					collectAndCaptureVars(ctx, stmt.FunctionCallExpression(), env, captureSet, &captureOrder)
+				case stmt.WaitForExpression() != nil:
+					collectAndCaptureVars(ctx, stmt.WaitForExpression(), env, captureSet, &captureOrder)
+				case stmt.DispatchExpression() != nil:
+					collectAndCaptureVars(ctx, stmt.DispatchExpression(), env, captureSet, &captureOrder)
+				case stmt.ExpressionStatement() != nil:
+					collectAndCaptureVars(ctx, stmt.ExpressionStatement(), env, captureSet, &captureOrder)
+				}
+			}
+
+			if block.FunctionReturn() != nil {
+				collectAndCaptureVars(ctx, block.FunctionReturn(), env, captureSet, &captureOrder)
+			}
+		}
 	}
 
 	fn.Captures = captureOrder

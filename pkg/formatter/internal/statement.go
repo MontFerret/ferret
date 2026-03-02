@@ -105,27 +105,41 @@ func (f *statementFormatter) formatFunctionDeclaration(ctx *fql.FunctionDeclarat
 	}
 
 	f.p.write(")")
-	f.p.space()
-	f.p.write("(")
 
 	body := ctx.FunctionBody()
 	if body == nil {
-		f.p.write(")")
 		return
 	}
 
 	funcBody := body.(*fql.FunctionBodyContext)
-	stmts := funcBody.AllFunctionStatement()
-	ret := funcBody.FunctionReturn()
-
-	if len(stmts) == 0 && ret == nil {
-		f.p.write(")")
+	if arrow := funcBody.FunctionArrow(); arrow != nil {
+		f.p.space()
+		f.p.write("=>")
+		f.p.space()
+		if expr := arrow.Expression(); expr != nil {
+			f.expression.formatExpression(expr.(*fql.ExpressionContext))
+		}
 		return
 	}
 
+	block := funcBody.FunctionBlock()
+	if block == nil {
+		return
+	}
+
+	stmts := block.AllFunctionStatement()
+	ret := block.FunctionReturn()
+
+	if len(stmts) == 0 && ret == nil {
+		return
+	}
+
+	f.p.space()
+	f.p.write("(")
+
 	headerStop := f.functionHeaderStopIndex(ctx)
 	start := headerStop + 1
-	if openParen := funcBody.OpenParen(); openParen != nil {
+	if openParen := block.OpenParen(); openParen != nil {
 		if sym := openParen.GetSymbol(); sym != nil {
 			start = sym.GetStop() + 1
 		}
