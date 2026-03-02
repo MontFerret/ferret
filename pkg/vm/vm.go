@@ -29,57 +29,74 @@ func New(program *bytecode.Program) *VM {
 	return NewWithOptions(program)
 }
 
-func NewWithOptions(program *bytecode.Program, opts ...VMOption) *VM {
-	cfg := defaultVMConfig()
+func NewWithOptions(program *bytecode.Program, opts ...Option) *VM {
+	cfg := newOptions(opts)
 
-	for _, opt := range opts {
-		opt(&cfg)
+	vm := &VM{
+		registers:               mem.NewRegisterFile(program.Registers),
+		cache:                   mem.NewCache(len(program.Bytecode), cfg.shapeCacheLimit),
+		program:                 program,
+		runSafetyMode:           cfg.runSafetyMode,
+		fastObjectDictThreshold: cfg.fastObjectDictThreshold,
+		instructions:            buildExecInstructions(program.Bytecode),
+		catchByPC:               buildCatchByPC(len(program.Bytecode), program.CatchTable),
 	}
 
-	vm := new(VM)
-	vm.program = program
-	vm.runSafetyMode = cfg.runSafetyMode
-	vm.registers = mem.NewRegisterFile(program.Registers)
-	vm.cache = mem.NewCache(len(program.Bytecode), cfg.shapeCacheLimit)
-	vm.fastObjectDictThreshold = cfg.fastObjectDictThreshold
-	vm.instructions = make([]data.ExecInstruction, len(program.Bytecode))
-	maxUdfRegs := 0
-
-	for i := range program.Functions.UserDefined {
-		if program.Functions.UserDefined[i].Registers > maxUdfRegs {
-			maxUdfRegs = program.Functions.UserDefined[i].Registers
-		}
-	}
-	vm.regPool.init(maxUdfRegs)
-
-	for i := range program.Bytecode {
-		vm.instructions[i] = data.ExecInstruction{
-			Instruction: program.Bytecode[i],
-		}
-	}
-
-	if bytecodeLen := len(program.Bytecode); bytecodeLen > 0 {
-		vm.catchByPC = make([]int, bytecodeLen)
-		for i := range vm.catchByPC {
-			vm.catchByPC[i] = -1
-		}
-		for i, pair := range program.CatchTable {
-			start, end := pair[0], pair[1]
-			if start < 0 {
-				start = 0
-			}
-			if end >= bytecodeLen {
-				end = bytecodeLen - 1
-			}
-			for pc := start; pc <= end; pc++ {
-				if vm.catchByPC[pc] == -1 {
-					vm.catchByPC[pc] = i
-				}
-			}
-		}
-	}
+	vm.regPool.init(maxUDFRegisters(program.Functions.UserDefined))
 
 	return vm
+}
+
+func buildExecInstructions(code []bytecode.Instruction) []data.ExecInstruction {
+	instructions := make([]data.ExecInstruction, len(code))
+
+	for i := range code {
+		instructions[i] = data.ExecInstruction{
+			Instruction: code[i],
+		}
+	}
+
+	return instructions
+}
+
+func maxUDFRegisters(udfs []bytecode.UDF) int {
+	maxUDFRegs := 0
+
+	for i := range udfs {
+		if udfs[i].Registers > maxUDFRegs {
+			maxUDFRegs = udfs[i].Registers
+		}
+	}
+
+	return maxUDFRegs
+}
+
+func buildCatchByPC(bytecodeLen int, catches []bytecode.Catch) []int {
+	if bytecodeLen <= 0 {
+		return nil
+	}
+
+	catchByPC := make([]int, bytecodeLen)
+	for i := range catchByPC {
+		catchByPC[i] = -1
+	}
+
+	for i, pair := range catches {
+		start, end := pair[0], pair[1]
+		if start < 0 {
+			start = 0
+		}
+		if end >= bytecodeLen {
+			end = bytecodeLen - 1
+		}
+		for pc := start; pc <= end; pc++ {
+			if catchByPC[pc] == -1 {
+				catchByPC[pc] = i
+			}
+		}
+	}
+
+	return catchByPC
 }
 
 func (vm *VM) Run(ctx context.Context, env *Environment) (runtime.Value, error) {
