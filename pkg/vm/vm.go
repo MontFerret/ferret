@@ -22,6 +22,7 @@ type VM struct {
 	instructions            []data.ExecInstruction
 	pc                      int
 	frames                  []callFrame
+	regPool                 regPool
 }
 
 func New(program *bytecode.Program) *VM {
@@ -41,6 +42,13 @@ func NewWithOptions(program *bytecode.Program, opts ...VMOption) *VM {
 	vm.cache = mem.NewCache(len(program.Bytecode), cfg.shapeCacheLimit)
 	vm.fastObjectDictThreshold = cfg.fastObjectDictThreshold
 	vm.instructions = make([]data.ExecInstruction, len(program.Bytecode))
+	maxUdfRegs := 0
+	for i := range program.Functions.UserDefined {
+		if program.Functions.UserDefined[i].Registers > maxUdfRegs {
+			maxUdfRegs = program.Functions.UserDefined[i].Registers
+		}
+	}
+	vm.regPool.init(maxUdfRegs)
 
 	for i := range program.Bytecode {
 		vm.instructions[i] = data.ExecInstruction{
@@ -984,6 +992,7 @@ loop:
 			retVal := reg[dst]
 
 			if frame, ok := vm.popFrame(); ok {
+				vm.regPool.put(vm.registers.Values)
 				vm.registers.Values = frame.registers
 				vm.registers.Values[frame.returnDest] = retVal
 				vm.pc = frame.returnPC

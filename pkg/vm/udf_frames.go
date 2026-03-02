@@ -41,6 +41,7 @@ func (vm *VM) unwindToProtected() bool {
 
 		frame := vm.frames[i]
 		vm.frames = vm.frames[:i]
+		vm.regPool.put(vm.registers.Values)
 		vm.registers.Values = frame.registers
 
 		if frame.returnDest.IsRegister() {

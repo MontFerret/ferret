@@ -1,0 +1,46 @@
+package vm
+
+import "github.com/MontFerret/ferret/v2/pkg/runtime"
+
+type regPool struct {
+	buckets [][][]runtime.Value
+}
+
+func (p *regPool) init(maxSize int) {
+	if maxSize < 0 {
+		maxSize = 0
+	}
+
+	p.buckets = make([][][]runtime.Value, maxSize+1)
+}
+
+func (p *regPool) get(size int) []runtime.Value {
+	if size <= 0 {
+		return nil
+	}
+
+	if size < len(p.buckets) {
+		bucket := p.buckets[size]
+		n := len(bucket)
+		if n > 0 {
+			reg := bucket[n-1]
+			p.buckets[size] = bucket[:n-1]
+			return reg
+		}
+	}
+
+	return make([]runtime.Value, size)
+}
+
+func (p *regPool) put(reg []runtime.Value) {
+	if len(reg) == 0 {
+		return
+	}
+
+	clear(reg)
+
+	size := len(reg)
+	if size < len(p.buckets) {
+		p.buckets[size] = append(p.buckets[size], reg)
+	}
+}

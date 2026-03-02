@@ -99,7 +99,7 @@ func (vm *VM) callUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) erro
 		return runtime.Error(runtime.ErrInvalidOperation, fmt.Sprintf("UDF '%s' has invalid register window", udf.Name))
 	}
 
-	newRegs := make([]runtime.Value, udf.Registers)
+	newRegs := vm.regPool.get(udf.Registers)
 	vm.copyUdfArgs(op, newRegs, reg, src1, src2)
 
 	vm.pushFrame(vm.pc, dst, isProtectedUdfCall(op), fnID)
@@ -134,15 +134,107 @@ func (vm *VM) tailCallUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) 
 		return runtime.Error(runtime.ErrInvalidOperation, fmt.Sprintf("UDF '%s' has invalid register window", udf.Name))
 	}
 
-	newRegs := make([]runtime.Value, udf.Registers)
-	vm.copyUdfArgs(op, newRegs, reg, src1, src2)
-
 	frame := &vm.frames[len(vm.frames)-1]
 	frame.fnID = fnID
-	vm.registers.Values = newRegs
+
+	if cap(reg) >= udf.Registers {
+		oldLen := len(reg)
+		vm.copyUdfArgsInPlace(op, reg, src1, src2)
+
+		if oldLen > udf.Registers {
+			for i := udf.Registers; i < oldLen; i++ {
+				reg[i] = nil
+			}
+		}
+
+		if oldLen != udf.Registers {
+			reg = reg[:udf.Registers]
+		}
+
+		clearUdfRegsExceptArgs(reg, argCount)
+		vm.registers.Values = reg
+	} else {
+		newRegs := vm.regPool.get(udf.Registers)
+		vm.copyUdfArgs(op, newRegs, reg, src1, src2)
+		vm.regPool.put(reg)
+		vm.registers.Values = newRegs
+	}
 	vm.pc = udf.Entry
 
 	return nil
+}
+
+func (vm *VM) copyUdfArgsInPlace(op bytecode.Opcode, reg []runtime.Value, src1, src2 bytecode.Operand) {
+	switch op {
+	case bytecode.OpCall1, bytecode.OpProtectedCall1, bytecode.OpTailCall1:
+		v1 := reg[src1]
+		reg[1] = v1
+	case bytecode.OpCall2, bytecode.OpProtectedCall2, bytecode.OpTailCall2:
+		v1 := reg[src1]
+		v2 := reg[src2]
+		reg[1] = v1
+		reg[2] = v2
+	case bytecode.OpCall3, bytecode.OpProtectedCall3, bytecode.OpTailCall3:
+		start := src1.Register()
+		v1 := reg[start]
+		v2 := reg[start+1]
+		v3 := reg[start+2]
+		reg[1] = v1
+		reg[2] = v2
+		reg[3] = v3
+	case bytecode.OpCall4, bytecode.OpProtectedCall4, bytecode.OpTailCall4:
+		start := src1.Register()
+		v1 := reg[start]
+		v2 := reg[start+1]
+		v3 := reg[start+2]
+		v4 := reg[start+3]
+		reg[1] = v1
+		reg[2] = v2
+		reg[3] = v3
+		reg[4] = v4
+	case bytecode.OpCall, bytecode.OpProtectedCall, bytecode.OpTailCall:
+		start := src1.Register()
+		end := src2.Register()
+		if start <= 0 || end < start {
+			return
+		}
+		count := end - start + 1
+		dstStart := 1
+		dstEnd := dstStart + count - 1
+
+		if start <= dstEnd && dstStart <= end {
+			for i := count - 1; i >= 0; i-- {
+				reg[dstStart+i] = reg[start+i]
+			}
+			return
+		}
+
+		for i := 0; i < count && dstStart+i < len(reg); i++ {
+			reg[dstStart+i] = reg[start+i]
+		}
+	default:
+		// OpCall0, OpProtectedCall0, OpTailCall0 have no arguments.
+	}
+}
+
+func clearUdfRegsExceptArgs(reg []runtime.Value, argCount int) {
+	if len(reg) == 0 {
+		return
+	}
+
+	if argCount < 0 {
+		argCount = 0
+	}
+
+	reg[0] = nil
+
+	if argCount >= len(reg)-1 {
+		return
+	}
+
+	for i := argCount + 1; i < len(reg); i++ {
+		reg[i] = nil
+	}
 }
 
 func isProtectedUdfCall(op bytecode.Opcode) bool {
