@@ -16,6 +16,7 @@ type VM struct {
 	cache                   *mem.Cache
 	env                     *Environment
 	program                 *bytecode.Program
+	runSafetyMode           RunSafetyMode
 	fastObjectDictThreshold int
 	instructions            []data.ExecInstruction
 	catchByPC               []int
@@ -37,6 +38,7 @@ func NewWithOptions(program *bytecode.Program, opts ...VMOption) *VM {
 
 	vm := new(VM)
 	vm.program = program
+	vm.runSafetyMode = cfg.runSafetyMode
 	vm.registers = mem.NewRegisterFile(program.Registers)
 	vm.cache = mem.NewCache(len(program.Bytecode), cfg.shapeCacheLimit)
 	vm.fastObjectDictThreshold = cfg.fastObjectDictThreshold
@@ -80,11 +82,21 @@ func NewWithOptions(program *bytecode.Program, opts ...VMOption) *VM {
 	return vm
 }
 
-func (vm *VM) Run(ctx context.Context, env *Environment) (result runtime.Value, err error) {
+func (vm *VM) Run(ctx context.Context, env *Environment) (runtime.Value, error) {
+	switch vm.runSafetyMode {
+	case RunSafetyFast:
+		return vm.runFast(ctx, env)
+	default:
+		return vm.runStrict(ctx, env)
+	}
+}
+
+func (vm *VM) runStrict(ctx context.Context, env *Environment) (result runtime.Value, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = vm.runtimeErrorFromPanic(r)
 			result = nil
+
 			return
 		}
 
@@ -93,6 +105,20 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (result runtime.Value, 
 		}
 	}()
 
+	return vm.runCore(ctx, env)
+}
+
+func (vm *VM) runFast(ctx context.Context, env *Environment) (runtime.Value, error) {
+	result, err := vm.runCore(ctx, env)
+
+	if err != nil {
+		return nil, vm.wrapRuntimeError(err)
+	}
+
+	return result, nil
+}
+
+func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, error) {
 	if env == nil {
 		env = noopEnv
 	}

@@ -39,59 +39,57 @@ func udfArgRange(src1, src2 bytecode.Operand) (int, int, bool) {
 	return start, end, true
 }
 
-func udfArgCount(src1, src2 bytecode.Operand) int {
+func udfArgInfo(src1, src2 bytecode.Operand) (int, int) {
 	start, end, ok := udfArgRange(src1, src2)
 	if !ok {
+		return 0, 0
+	}
+
+	return start, end - start + 1
+}
+
+func clampUdfArgCount(srcLen, start, count int) int {
+	if count <= 0 || srcLen == 0 || start >= srcLen {
 		return 0
 	}
 
-	return end - start + 1
+	if maxCount := srcLen - start; count > maxCount {
+		count = maxCount
+	}
+
+	return count
 }
 
-func copyUdfArgs(dst, src []runtime.Value, src1, src2 bytecode.Operand) {
-	if len(dst) <= 1 || len(src) == 0 {
+func copyUdfArgsToUdfRegisters(dst, src []runtime.Value, start, count int) {
+	if len(dst) <= 1 || len(src) == 0 || count <= 0 {
 		return
 	}
 
-	start, end, ok := udfArgRange(src1, src2)
-	if !ok {
-		return
-	}
-
-	if start >= len(src) {
-		return
-	}
-
-	count := end - start + 1
 	if maxCount := len(dst) - 1; count > maxCount {
 		count = maxCount
 	}
 
-	if maxCount := len(src) - start; count > maxCount {
-		count = maxCount
+	count = clampUdfArgCount(len(src), start, count)
+	if count <= 0 {
+		return
 	}
 
 	copy(dst[1:1+count], src[start:start+count])
 }
 
-func collectUdfArgs(src []runtime.Value, src1, src2 bytecode.Operand) []runtime.Value {
-	start, end, ok := udfArgRange(src1, src2)
-	if !ok || start >= len(src) {
-		return nil
-	}
-
-	count := end - start + 1
-	if maxCount := len(src) - start; count > maxCount {
-		count = maxCount
-	}
-
+func collectUdfArgsInto(dst, src []runtime.Value, start, count int) int {
+	count = clampUdfArgCount(len(src), start, count)
 	if count <= 0 {
-		return nil
+		return 0
 	}
 
-	out := make([]runtime.Value, count)
-	copy(out, src[start:start+count])
-	return out
+	if count > len(dst) {
+		count = len(dst)
+	}
+
+	copy(dst[:count], src[start:start+count])
+
+	return count
 }
 
 func (vm *VM) callUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) error {
@@ -107,7 +105,7 @@ func (vm *VM) callUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) erro
 		return err
 	}
 
-	argCount := udfArgCount(src1, src2)
+	argStart, argCount := udfArgInfo(src1, src2)
 	if udf.Params != argCount {
 		return runtime.Error(runtime.ErrInvalidArgument, fmt.Sprintf("UDF '%s' expects %d arguments, got %d", udf.Name, udf.Params, argCount))
 	}
@@ -117,7 +115,7 @@ func (vm *VM) callUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) erro
 	}
 
 	newRegs := vm.regPool.get(udf.Registers)
-	copyUdfArgs(newRegs, reg, src1, src2)
+	copyUdfArgsToUdfRegisters(newRegs, reg, argStart, argCount)
 
 	vm.pushFrame(vm.pc, dst, isProtectedUdfCall(op), fnID)
 	vm.registers.Values = newRegs
@@ -142,8 +140,7 @@ func (vm *VM) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
 		return err
 	}
 
-	args := collectUdfArgs(reg, src1, src2)
-	argCount := len(args)
+	argStart, argCount := udfArgInfo(src1, src2)
 	if udf.Params != argCount {
 		return runtime.Error(runtime.ErrInvalidArgument, fmt.Sprintf("UDF '%s' expects %d arguments, got %d", udf.Name, udf.Params, argCount))
 	}
@@ -154,6 +151,23 @@ func (vm *VM) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
 
 	frame := &vm.frames[len(vm.frames)-1]
 	frame.fnID = fnID
+
+	var (
+		args      []runtime.Value
+		heapArgs  []runtime.Value
+		stackArgs [8]runtime.Value
+	)
+
+	if argCount > 0 {
+		if argCount <= len(stackArgs) {
+			count := collectUdfArgsInto(stackArgs[:argCount], reg, argStart, argCount)
+			args = stackArgs[:count]
+		} else {
+			heapArgs = make([]runtime.Value, argCount)
+			count := collectUdfArgsInto(heapArgs, reg, argStart, argCount)
+			args = heapArgs[:count]
+		}
+	}
 
 	if cap(reg) >= udf.Registers {
 		reg = reg[:udf.Registers]

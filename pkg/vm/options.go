@@ -5,17 +5,28 @@ const (
 	defaultFastObjectDictThreshold = 64
 )
 
-type VMOption func(*vmConfig)
+type (
+	RunSafetyMode uint8
 
-type vmConfig struct {
-	shapeCacheLimit         int
-	fastObjectDictThreshold int
-}
+	vmConfig struct {
+		shapeCacheLimit         int
+		fastObjectDictThreshold int
+		runSafetyMode           RunSafetyMode
+	}
+
+	VMOption func(*vmConfig)
+)
+
+const (
+	RunSafetyStrict RunSafetyMode = iota
+	RunSafetyFast
+)
 
 func defaultVMConfig() vmConfig {
 	return vmConfig{
 		shapeCacheLimit:         defaultShapeCacheLimit,
 		fastObjectDictThreshold: defaultFastObjectDictThreshold,
+		runSafetyMode:           RunSafetyStrict,
 	}
 }
 
@@ -33,6 +44,17 @@ func WithFastObjectDictThreshold(limit int) VMOption {
 	return func(cfg *vmConfig) {
 		if limit > 0 {
 			cfg.fastObjectDictThreshold = limit
+		}
+	}
+}
+
+// WithRunSafetyMode controls panic handling policy during Run.
+// RunSafetyStrict wraps panics into runtime errors, while RunSafetyFast lets panics propagate.
+func WithRunSafetyMode(mode RunSafetyMode) VMOption {
+	return func(cfg *vmConfig) {
+		switch mode {
+		case RunSafetyStrict, RunSafetyFast:
+			cfg.runSafetyMode = mode
 		}
 	}
 }

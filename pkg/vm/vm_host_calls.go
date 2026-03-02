@@ -8,18 +8,22 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
-func hostCallArgs(reg []runtime.Value, src1, src2 bytecode.Operand) []runtime.Value {
+func hostCallArgRange(src1, src2 bytecode.Operand) (int, int, bool) {
 	if !src1.IsRegister() || !src2.IsRegister() {
-		return nil
+		return 0, 0, false
 	}
 
 	start := src1.Register()
 	end := src2.Register()
 
 	if start <= 0 || end < start {
-		return nil
+		return 0, 0, false
 	}
 
+	return start, end, true
+}
+
+func hostCallArgs(reg []runtime.Value, start, end int) []runtime.Value {
 	size := end - start + 1
 	args := make([]runtime.Value, size)
 
@@ -33,32 +37,85 @@ func hostCallArgs(reg []runtime.Value, src1, src2 bytecode.Operand) []runtime.Va
 func callCachedHostFunction(
 	ctx context.Context,
 	cacheFn *mem.CachedHostFunction,
-	args []runtime.Value,
+	reg []runtime.Value,
+	src1, src2 bytecode.Operand,
 ) (runtime.Value, error) {
-	switch len(args) {
-	case 0:
+	if cacheFn == nil {
+		return nil, ErrUnresolvedFunction
+	}
+
+	start, end, hasRange := hostCallArgRange(src1, src2)
+	if !hasRange {
 		if cacheFn.Fn0 != nil {
 			return cacheFn.Fn0(ctx)
 		}
+
+		if cacheFn.FnV != nil {
+			return cacheFn.FnV(ctx)
+		}
+
+		return nil, ErrUnresolvedFunction
+	}
+
+	if start < 0 || end >= len(reg) {
+		return nil, runtime.Error(runtime.ErrUnexpected, "invalid host call argument range")
+	}
+
+	switch end - start + 1 {
 	case 1:
+		arg0 := reg[start]
+
 		if cacheFn.Fn1 != nil {
-			return cacheFn.Fn1(ctx, args[0])
+			return cacheFn.Fn1(ctx, arg0)
+		}
+
+		if cacheFn.FnV != nil {
+			return cacheFn.FnV(ctx, arg0)
 		}
 	case 2:
+		arg0 := reg[start]
+		arg1 := reg[start+1]
+
 		if cacheFn.Fn2 != nil {
-			return cacheFn.Fn2(ctx, args[0], args[1])
+			return cacheFn.Fn2(ctx, arg0, arg1)
+		}
+
+		if cacheFn.FnV != nil {
+			return cacheFn.FnV(ctx, arg0, arg1)
 		}
 	case 3:
+		arg0 := reg[start]
+		arg1 := reg[start+1]
+		arg2 := reg[start+2]
+
 		if cacheFn.Fn3 != nil {
-			return cacheFn.Fn3(ctx, args[0], args[1], args[2])
+			return cacheFn.Fn3(ctx, arg0, arg1, arg2)
+		}
+
+		if cacheFn.FnV != nil {
+			return cacheFn.FnV(ctx, arg0, arg1, arg2)
 		}
 	case 4:
+		arg0 := reg[start]
+		arg1 := reg[start+1]
+		arg2 := reg[start+2]
+		arg3 := reg[start+3]
+
 		if cacheFn.Fn4 != nil {
-			return cacheFn.Fn4(ctx, args[0], args[1], args[2], args[3])
+			return cacheFn.Fn4(ctx, arg0, arg1, arg2, arg3)
+		}
+
+		if cacheFn.FnV != nil {
+			return cacheFn.FnV(ctx, arg0, arg1, arg2, arg3)
+		}
+	default:
+		if cacheFn.FnV != nil {
+			args := hostCallArgs(reg, start, end)
+			return cacheFn.FnV(ctx, args...)
 		}
 	}
 
-	return cacheFn.FnV(ctx, args...)
+	return nil, ErrUnresolvedFunction
 }
 
 func (vm *VM) execHostCall(
@@ -72,8 +129,7 @@ func (vm *VM) execHostCall(
 	}
 
 	cacheFn := vm.cache.HostFunctions[pc]
-	args := hostCallArgs(vm.registers.Values, src1, src2)
-	out, err := callCachedHostFunction(ctx, cacheFn, args)
+	out, err := callCachedHostFunction(ctx, cacheFn, vm.registers.Values, src1, src2)
 
 	if err := vm.setCallResult(op, dst, out, err); err != nil {
 		if vm.unwindToProtected() {
