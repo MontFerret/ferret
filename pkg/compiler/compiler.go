@@ -65,7 +65,7 @@ func (c *Compiler) Compile(src *file.Source) (program *bytecode.Program, err err
 		}
 	}()
 
-	l := NewVisitor(src, errorHandler)
+	l := NewVisitor(src, errorHandler, c.opts.Level)
 	tokenHistory := parserd.NewTokenHistory(10)
 	p := parser.New(src.Content(), func(stream antlr.TokenStream) antlr.TokenStream {
 		return parserd.NewTrackingTokenStream(stream, tokenHistory)

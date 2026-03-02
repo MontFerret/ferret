@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
@@ -25,6 +26,8 @@ type CompilerContext struct {
 	UDFs       *UDFTable
 	UDFScope   *UDFScope
 
+	OptimizationLevel optimization.Level
+
 	aggregatePlans      []*bytecode.AggregatePlan
 	aggregatePlanByHash map[uint64][]int
 
@@ -40,7 +43,7 @@ type CompilerContext struct {
 }
 
 // NewCompilerContext initializes a new CompilerContext with default values.
-func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler) *CompilerContext {
+func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler, level optimization.Level) *CompilerContext {
 	ctx := &CompilerContext{
 		Source:              src,
 		Errors:              errors,
@@ -53,6 +56,7 @@ func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler) *Com
 		UseAliases:          make(map[string]string),
 		aggregatePlans:      make([]*bytecode.AggregatePlan, 0),
 		aggregatePlanByHash: make(map[uint64][]int),
+		OptimizationLevel:   level,
 	}
 
 	ctx.Symbols = core.NewSymbolTable(ctx.Registers, ctx.Constants)

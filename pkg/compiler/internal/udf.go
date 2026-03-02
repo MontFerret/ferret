@@ -7,8 +7,10 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type (
@@ -101,6 +103,10 @@ func CollectUDFs(ctx *CompilerContext, program *fql.ProgramContext) *UDFTable {
 
 	for _, fn := range top {
 		collectNestedFunctions(ctx, table, fn)
+	}
+
+	if ctx != nil && ctx.OptimizationLevel > optimization.LevelNone {
+		pruneUnusedUDFs(ctx, table, body)
 	}
 
 	analyzeCaptures(ctx, table, body)
@@ -299,6 +305,227 @@ func analyzeCaptures(ctx *CompilerContext, table *UDFTable, body *fql.BodyContex
 			}
 		}
 	}
+}
+
+func pruneUnusedUDFs(ctx *CompilerContext, table *UDFTable, body *fql.BodyContext) {
+	if ctx == nil || table == nil || body == nil {
+		return
+	}
+
+	reachable := computeReachableUDFs(ctx, table, body)
+	if len(reachable) == 0 {
+		for _, fn := range table.Functions {
+			if fn != nil && fn.Scope != nil {
+				delete(fn.Scope.Functions, fn.Name)
+			}
+		}
+		table.Functions = nil
+
+		return
+	}
+
+	filtered := make([]*UDFInfo, 0, len(reachable))
+
+	for _, fn := range table.Functions {
+		if fn == nil {
+			continue
+		}
+
+		if _, ok := reachable[fn]; ok {
+			filtered = append(filtered, fn)
+			continue
+		}
+
+		if fn.Scope != nil {
+			delete(fn.Scope.Functions, fn.Name)
+		}
+	}
+
+	for i, fn := range filtered {
+		fn.ID = i
+	}
+
+	table.Functions = filtered
+}
+
+func computeReachableUDFs(ctx *CompilerContext, table *UDFTable, body *fql.BodyContext) map[*UDFInfo]struct{} {
+	reachable := make(map[*UDFInfo]struct{})
+	if ctx == nil || table == nil || body == nil {
+		return reachable
+	}
+
+	roots := collectCallsInTopLevel(ctx, table, body, table.GlobalScope)
+	if len(roots) == 0 {
+		return reachable
+	}
+
+	callCache := make(map[*UDFInfo][]*UDFInfo)
+	stack := make([]*UDFInfo, 0, len(roots))
+	stack = append(stack, roots...)
+
+	for len(stack) > 0 {
+		idx := len(stack) - 1
+		fn := stack[idx]
+		stack = stack[:idx]
+
+		if fn == nil {
+			continue
+		}
+
+		if _, ok := reachable[fn]; ok {
+			continue
+		}
+
+		reachable[fn] = struct{}{}
+
+		callees, ok := callCache[fn]
+		if !ok {
+			callees = collectCallsInFunction(ctx, table, fn)
+			callCache[fn] = callees
+		}
+
+		for _, callee := range callees {
+			if callee == nil {
+				continue
+			}
+			if _, ok := reachable[callee]; !ok {
+				stack = append(stack, callee)
+			}
+		}
+	}
+
+	return reachable
+}
+
+func collectCallsInTopLevel(ctx *CompilerContext, table *UDFTable, body *fql.BodyContext, scope *UDFScope) []*UDFInfo {
+	if ctx == nil || table == nil || body == nil {
+		return nil
+	}
+
+	out := make(map[*UDFInfo]struct{})
+
+	for _, stmt := range body.AllBodyStatement() {
+		if stmt == nil {
+			continue
+		}
+
+		st, ok := stmt.(*fql.BodyStatementContext)
+		if !ok {
+			continue
+		}
+
+		if st.FunctionDeclaration() != nil {
+			continue
+		}
+
+		collectCallsInExpression(ctx, table, st, scope, out)
+	}
+
+	if expr := body.BodyExpression(); expr != nil {
+		collectCallsInExpression(ctx, table, expr, scope, out)
+	}
+
+	return udfSetToSlice(out)
+}
+
+func collectCallsInFunction(ctx *CompilerContext, table *UDFTable, fn *UDFInfo) []*UDFInfo {
+	if ctx == nil || table == nil || fn == nil || fn.Decl == nil {
+		return nil
+	}
+
+	out := make(map[*UDFInfo]struct{})
+	scope := fn.BodyScope
+
+	body := fn.Decl.FunctionBody()
+	if body == nil {
+		return nil
+	}
+
+	if arrow := body.FunctionArrow(); arrow != nil {
+		collectCallsInExpression(ctx, table, arrow.Expression(), scope, out)
+		return udfSetToSlice(out)
+	}
+
+	if block := body.FunctionBlock(); block != nil {
+		for _, stmt := range block.AllFunctionStatement() {
+			if stmt == nil {
+				continue
+			}
+
+			st, ok := stmt.(*fql.FunctionStatementContext)
+			if !ok {
+				continue
+			}
+
+			if st.FunctionDeclaration() != nil {
+				continue
+			}
+
+			collectCallsInExpression(ctx, table, st, scope, out)
+		}
+
+		if ret := block.FunctionReturn(); ret != nil {
+			collectCallsInExpression(ctx, table, ret, scope, out)
+		}
+	}
+
+	return udfSetToSlice(out)
+}
+
+func collectCallsInExpression(ctx *CompilerContext, table *UDFTable, node antlr.Tree, scope *UDFScope, out map[*UDFInfo]struct{}) {
+	if ctx == nil || table == nil || node == nil || out == nil {
+		return
+	}
+
+	var calls []*fql.FunctionCallContext
+	findFunctionCallRefs(node, &calls)
+
+	for _, call := range calls {
+		if call == nil {
+			continue
+		}
+
+		name := getFunctionName(call, ctx.UseAliases)
+		nameStr := name.String()
+		if strings.Contains(nameStr, runtime.NamespaceSeparator) {
+			continue
+		}
+
+		if fn, ok := table.Resolve(nameStr, scope); ok {
+			out[fn] = struct{}{}
+		}
+	}
+}
+
+func findFunctionCallRefs(node antlr.Tree, out *[]*fql.FunctionCallContext) {
+	if node == nil || out == nil {
+		return
+	}
+
+	if _, ok := node.(*fql.FunctionDeclarationContext); ok {
+		return
+	}
+
+	if call, ok := node.(*fql.FunctionCallContext); ok {
+		*out = append(*out, call)
+	}
+
+	for i := 0; i < node.GetChildCount(); i++ {
+		findFunctionCallRefs(node.GetChild(i), out)
+	}
+}
+
+func udfSetToSlice(set map[*UDFInfo]struct{}) []*UDFInfo {
+	if len(set) == 0 {
+		return nil
+	}
+
+	out := make([]*UDFInfo, 0, len(set))
+	for fn := range set {
+		out = append(out, fn)
+	}
+
+	return out
 }
 
 func analyzeFunctionCaptures(ctx *CompilerContext, fn *UDFInfo, env *varEnv) {
