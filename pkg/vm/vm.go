@@ -2,9 +2,7 @@ package vm
 
 import (
 	"context"
-	"errors"
 	"io"
-	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -20,6 +18,7 @@ type VM struct {
 	program                 *bytecode.Program
 	fastObjectDictThreshold int
 	instructions            []data.ExecInstruction
+	catchByPC               []int
 	pc                      int
 	frames                  []callFrame
 	regPool                 regPool
@@ -53,6 +52,27 @@ func NewWithOptions(program *bytecode.Program, opts ...VMOption) *VM {
 	for i := range program.Bytecode {
 		vm.instructions[i] = data.ExecInstruction{
 			Instruction: program.Bytecode[i],
+		}
+	}
+
+	if bytecodeLen := len(program.Bytecode); bytecodeLen > 0 {
+		vm.catchByPC = make([]int, bytecodeLen)
+		for i := range vm.catchByPC {
+			vm.catchByPC[i] = -1
+		}
+		for i, pair := range program.CatchTable {
+			start, end := pair[0], pair[1]
+			if start < 0 {
+				start = 0
+			}
+			if end >= bytecodeLen {
+				end = bytecodeLen - 1
+			}
+			for pc := start; pc <= end; pc++ {
+				if vm.catchByPC[pc] == -1 {
+					vm.catchByPC[pc] = i
+				}
+			}
 		}
 	}
 
@@ -119,6 +139,10 @@ loop:
 		case bytecode.OpLoadParam:
 			name := constants[src1.Constant()]
 			reg[dst] = vm.env.Params[name.String()]
+		case bytecode.OpLoadArray:
+			reg[dst] = runtime.NewArray(int(src1))
+		case bytecode.OpLoadObject:
+			reg[dst] = data.NewFastObjectOf(shapeCache, vm.fastObjectDictThreshold, int(src1))
 		case bytecode.OpJump:
 			vm.pc = int(dst)
 		case bytecode.OpJumpIfFalse:
@@ -133,260 +157,107 @@ loop:
 			if reg[src1] == runtime.None {
 				vm.pc = int(dst)
 			}
-		case bytecode.OpJumpIfNe:
-			if operators.NotEquals(ctx, reg[src1], reg[src2]) {
-				vm.pc = int(dst)
-			}
-		case bytecode.OpJumpIfNeConst:
-			if operators.NotEquals(ctx, reg[src1], constants[src2.Constant()]) {
-				vm.pc = int(dst)
-			}
-		case bytecode.OpJumpIfEq:
-			if operators.Equals(ctx, reg[src1], reg[src2]) {
-				vm.pc = int(dst)
-			}
-		case bytecode.OpJumpIfEqConst:
-			if operators.Equals(ctx, reg[src1], constants[src2.Constant()]) {
-				vm.pc = int(dst)
-			}
-		case bytecode.OpJumpIfMissingProperty:
-			obj, ok := reg[src1].(runtime.Map)
-			if !ok {
-				vm.pc = int(dst)
+		case bytecode.OpExists:
+			val := reg[src1]
+
+			if val == runtime.None {
+				reg[dst] = runtime.False
 				continue
 			}
 
-			key, ok := reg[src2].(runtime.String)
-			if !ok {
-				vm.pc = int(dst)
-				continue
-			}
+			if measurable, ok := val.(runtime.Measurable); ok {
+				length, err := measurable.Length(ctx)
 
-			has, err := obj.ContainsKey(ctx, key)
-			if err != nil {
-				if vm.unwindToProtected() {
-					continue
-				}
+				if err != nil {
+					if _, catch := vm.tryCatch(vm.pc); catch {
+						reg[dst] = runtime.False
 
-				return nil, err
-			}
-			if !has {
-				vm.pc = int(dst)
-			}
-		case bytecode.OpJumpIfMissingPropertyConst:
-			obj, ok := reg[src1].(runtime.Map)
-			if !ok {
-				vm.pc = int(dst)
-				continue
-			}
-
-			key, ok := constants[src2.Constant()].(runtime.String)
-			if !ok {
-				vm.pc = int(dst)
-				continue
-			}
-
-			has, err := obj.ContainsKey(ctx, key)
-			if err != nil {
-				if vm.unwindToProtected() {
-					continue
-				}
-
-				return nil, err
-			}
-			if !has {
-				vm.pc = int(dst)
-			}
-		case bytecode.OpAdd:
-			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
-		case bytecode.OpAddConst:
-			reg[dst] = runtime.Add(ctx, reg[src1], constants[src2.Constant()])
-		case bytecode.OpConcat:
-			start := int(src1)
-			count := int(src2)
-
-			if count <= 0 {
-				reg[dst] = runtime.EmptyString
-				break
-			}
-
-			if count == 1 {
-				reg[dst] = runtime.ToString(reg[start])
-				break
-			}
-
-			if count == 2 {
-				s1 := runtime.ToString(reg[start])
-				s2 := runtime.ToString(reg[start+1])
-
-				if s1 == runtime.EmptyString {
-					reg[dst] = s2
-					break
-				}
-
-				if s2 == runtime.EmptyString {
-					reg[dst] = s1
-					break
-				}
-
-				reg[dst] = runtime.NewString(string(s1) + string(s2))
-				break
-			}
-
-			if count == 3 {
-				s1 := runtime.ToString(reg[start])
-				s2 := runtime.ToString(reg[start+1])
-				s3 := runtime.ToString(reg[start+2])
-
-				if s1 == runtime.EmptyString {
-					if s2 == runtime.EmptyString {
-						reg[dst] = s3
-						break
+						continue
 					}
-					if s3 == runtime.EmptyString {
-						reg[dst] = s2
-						break
+
+					if vm.unwindToProtected() {
+						continue
 					}
-				} else if s2 == runtime.EmptyString {
-					if s3 == runtime.EmptyString {
-						reg[dst] = s1
-						break
+
+					return nil, err
+				}
+
+				reg[dst] = runtime.NewBoolean(length != 0)
+
+				continue
+			}
+
+			reg[dst] = runtime.True
+		case bytecode.OpLength:
+			val, ok := reg[src1].(runtime.Measurable)
+
+			if ok {
+				length, err := val.Length(ctx)
+
+				if err != nil {
+					if _, catch := vm.tryCatch(vm.pc); catch {
+						length = 0
+					} else {
+						if vm.unwindToProtected() {
+							continue
+						}
+
+						return nil, err
 					}
 				}
 
-				reg[dst] = runtime.NewString(string(s1) + string(s2) + string(s3))
-				break
+				reg[dst] = length
+				continue
 			}
 
-			parts := make([]runtime.String, count)
-			totalLen := 0
-
-			for i := 0; i < count; i++ {
-				s := runtime.ToString(reg[start+i])
-				parts[i] = s
-				totalLen += len(s)
+			if _, catch := vm.tryCatch(vm.pc); catch {
+				reg[dst] = runtime.ZeroInt
+				continue
 			}
 
-			if totalLen == 0 {
-				reg[dst] = runtime.EmptyString
-				break
+			if vm.unwindToProtected() {
+				continue
 			}
 
-			var b strings.Builder
-			b.Grow(totalLen)
+			return runtime.None, runtime.TypeErrorOf(reg[src1],
+				runtime.TypeString,
+				runtime.TypeList,
+				runtime.TypeMap,
+				runtime.TypeBinary,
+				runtime.TypeMeasurable,
+			)
+		case bytecode.OpType:
+			reg[dst] = runtime.NewString(runtime.TypeName(runtime.TypeOf(reg[src1])))
+		case bytecode.OpClose:
+			val, ok := reg[dst].(io.Closer)
+			reg[dst] = runtime.None
 
-			for i := 0; i < count; i++ {
-				if parts[i] == runtime.EmptyString {
-					continue
+			if ok {
+				closeErr := val.Close()
+
+				if closeErr != nil {
+					if _, catch := vm.tryCatch(vm.pc); !catch {
+						if vm.unwindToProtected() {
+							continue
+						}
+
+						return nil, closeErr
+					}
 				}
-
-				b.WriteString(string(parts[i]))
 			}
-
-			reg[dst] = runtime.NewString(b.String())
-		case bytecode.OpSub:
-			reg[dst] = runtime.Subtract(ctx, reg[src1], reg[src2])
-		case bytecode.OpMulti:
-			reg[dst] = runtime.Multiply(ctx, reg[src1], reg[src2])
-		case bytecode.OpDiv:
-			if err := vm.checkDivisionByZero(ctx, reg[src1], reg[src2]); err != nil {
-				if vm.unwindToProtected() {
-					continue
-				}
-
-				return nil, err
-			}
-			reg[dst] = runtime.Divide(ctx, reg[src1], reg[src2])
-		case bytecode.OpMod:
-			if err := vm.checkModuloByZero(ctx, reg[src2]); err != nil {
-				if vm.unwindToProtected() {
-					continue
-				}
-
-				return nil, err
-			}
-			reg[dst] = runtime.Modulus(ctx, reg[src1], reg[src2])
-		case bytecode.OpIncr:
-			reg[dst] = runtime.Increment(ctx, reg[dst])
-		case bytecode.OpDecr:
-			reg[dst] = runtime.Decrement(ctx, reg[dst])
-		case bytecode.OpCastBool:
-			reg[dst] = runtime.ToBoolean(reg[src1])
-		case bytecode.OpNegate:
-			reg[dst] = operators.Negate(reg[src1])
-		case bytecode.OpFlipPositive:
-			reg[dst] = operators.Positive(reg[src1])
-		case bytecode.OpFlipNegative:
-			reg[dst] = operators.Negative(reg[src1])
-		case bytecode.OpCmp:
-			reg[dst] = operators.Compare(ctx, reg[src1], reg[src2])
-		case bytecode.OpNot:
-			reg[dst] = !runtime.ToBoolean(reg[src1])
-		case bytecode.OpEq:
-			reg[dst] = operators.Equals(ctx, reg[src1], reg[src2])
-		case bytecode.OpNe:
-			reg[dst] = operators.NotEquals(ctx, reg[src1], reg[src2])
-		case bytecode.OpGt:
-			reg[dst] = operators.GreaterThan(ctx, reg[src1], reg[src2])
-		case bytecode.OpLt:
-			reg[dst] = operators.LessThan(ctx, reg[src1], reg[src2])
-		case bytecode.OpGte:
-			reg[dst] = operators.GreaterThanOrEqual(ctx, reg[src1], reg[src2])
-		case bytecode.OpLte:
-			reg[dst] = operators.LessThanOrEqual(ctx, reg[src1], reg[src2])
-		case bytecode.OpIn:
-			reg[dst] = operators.Contains(ctx, reg[src2], reg[src1])
-		case bytecode.OpLike:
-			res, err := operators.Like(reg[src1], reg[src2])
+		case bytecode.OpLoadRange:
+			res, err := operators.ToRange(ctx, reg[src1], reg[src2])
 
 			if err == nil {
 				reg[dst] = res
-			} else {
-				if vm.unwindToProtected() {
-					continue
-				}
-
-				return nil, err
+				break
 			}
-		case bytecode.OpRegexp:
-			r, err := vm.regexpCached(vm.pc-1, reg[src2])
 
-			if err == nil {
-				reg[dst] = r.Match(reg[src1])
-			} else if _, catch := vm.tryCatch(vm.pc); catch {
-				reg[dst] = runtime.False
-			} else {
-				if vm.unwindToProtected() {
-					continue
-				}
-
-				return nil, err
+			if vm.unwindToProtected() {
+				continue
 			}
-		case bytecode.OpAllEq, bytecode.OpAllNe, bytecode.OpAllGt, bytecode.OpAllGte, bytecode.OpAllLt, bytecode.OpAllLte, bytecode.OpAllIn:
-			cmp := operators.ComparatorFromByte(int(op) - int(bytecode.OpAllEq))
-			res, err := operators.ArrayAll(ctx, cmp, reg[src1], reg[src2])
 
-			if err := vm.setOrTryCatch(dst, res, err); err != nil {
-				return nil, err
-			}
-		case bytecode.OpAnyEq, bytecode.OpAnyNe, bytecode.OpAnyGt, bytecode.OpAnyGte, bytecode.OpAnyLt, bytecode.OpAnyLte, bytecode.OpAnyIn:
-			cmp := operators.ComparatorFromByte(int(op) - int(bytecode.OpAnyEq))
-			res, err := operators.ArrayAny(ctx, cmp, reg[src1], reg[src2])
-
-			if err := vm.setOrTryCatch(dst, res, err); err != nil {
-				return nil, err
-			}
-		case bytecode.OpNoneEq, bytecode.OpNoneNe, bytecode.OpNoneGt, bytecode.OpNoneGte, bytecode.OpNoneLt, bytecode.OpNoneLte, bytecode.OpNoneIn:
-			cmp := operators.ComparatorFromByte(int(op) - int(bytecode.OpNoneEq))
-			res, err := operators.ArrayNone(ctx, cmp, reg[src1], reg[src2])
-
-			if err := vm.setOrTryCatch(dst, res, err); err != nil {
-				return nil, err
-			}
-		case bytecode.OpLoadArray:
-			reg[dst] = runtime.NewArray(int(src1))
-		case bytecode.OpLoadObject:
-			reg[dst] = data.NewFastObjectOf(shapeCache, vm.fastObjectDictThreshold, int(src1))
+			return nil, err
 		case bytecode.OpLoadIndex, bytecode.OpLoadIndexOptional:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadIndexOptional
@@ -467,227 +338,112 @@ loop:
 
 				return nil, err
 			}
-		case bytecode.OpHCall, bytecode.OpProtectedHCall:
-			out, err := vm.callv(ctx, vm.pc-1, src1, src2)
-
-			if err := vm.setCallResult(op, dst, out, err); err != nil {
+		case bytecode.OpAdd:
+			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
+		case bytecode.OpAddConst:
+			reg[dst] = runtime.Add(ctx, reg[src1], constants[src2.Constant()])
+		case bytecode.OpConcat:
+			vm.concatStrings(reg, dst, src1, src2)
+		case bytecode.OpSub:
+			reg[dst] = runtime.Subtract(ctx, reg[src1], reg[src2])
+		case bytecode.OpMulti:
+			reg[dst] = runtime.Multiply(ctx, reg[src1], reg[src2])
+		case bytecode.OpDiv:
+			if err := vm.checkDivisionByZero(ctx, reg[src1], reg[src2]); err != nil {
 				if vm.unwindToProtected() {
 					continue
 				}
 
 				return nil, err
 			}
-		case bytecode.OpHCall0, bytecode.OpProtectedHCall0:
-			out, err := vm.call0(ctx, vm.pc-1)
-
-			if err := vm.setCallResult(op, dst, out, err); err != nil {
+			reg[dst] = runtime.Divide(ctx, reg[src1], reg[src2])
+		case bytecode.OpMod:
+			if err := vm.checkModuloByZero(ctx, reg[src2]); err != nil {
 				if vm.unwindToProtected() {
 					continue
 				}
 
 				return nil, err
 			}
-		case bytecode.OpHCall1, bytecode.OpProtectedHCall1:
-			out, err := vm.call1(ctx, vm.pc-1, src1)
+			reg[dst] = runtime.Modulus(ctx, reg[src1], reg[src2])
+		case bytecode.OpIncr:
+			reg[dst] = runtime.Increment(ctx, reg[dst])
+		case bytecode.OpDecr:
+			reg[dst] = runtime.Decrement(ctx, reg[dst])
+		case bytecode.OpCastBool:
+			reg[dst] = runtime.ToBoolean(reg[src1])
+		case bytecode.OpNegate:
+			reg[dst] = operators.Negate(reg[src1])
+		case bytecode.OpFlipPositive:
+			reg[dst] = operators.Positive(reg[src1])
+		case bytecode.OpFlipNegative:
+			reg[dst] = operators.Negative(reg[src1])
+		case bytecode.OpCmp:
+			reg[dst] = operators.Compare(ctx, reg[src1], reg[src2])
+		case bytecode.OpNot:
+			reg[dst] = !runtime.ToBoolean(reg[src1])
+		case bytecode.OpEq:
+			reg[dst] = operators.Equals(ctx, reg[src1], reg[src2])
+		case bytecode.OpNe:
+			reg[dst] = operators.NotEquals(ctx, reg[src1], reg[src2])
+		case bytecode.OpGt:
+			reg[dst] = operators.GreaterThan(ctx, reg[src1], reg[src2])
+		case bytecode.OpLt:
+			reg[dst] = operators.LessThan(ctx, reg[src1], reg[src2])
+		case bytecode.OpGte:
+			reg[dst] = operators.GreaterThanOrEqual(ctx, reg[src1], reg[src2])
+		case bytecode.OpLte:
+			reg[dst] = operators.LessThanOrEqual(ctx, reg[src1], reg[src2])
+		case bytecode.OpIn:
+			reg[dst] = operators.Contains(ctx, reg[src2], reg[src1])
+		case bytecode.OpLike:
+			res, err := operators.Like(reg[src1], reg[src2])
 
-			if err := vm.setCallResult(op, dst, out, err); err != nil {
-				if vm.unwindToProtected() {
-					continue
-				}
-
-				return nil, err
+			if err == nil {
+				reg[dst] = res
+				break
 			}
-		case bytecode.OpHCall2, bytecode.OpProtectedHCall2:
-			out, err := vm.call2(ctx, vm.pc-1, src1, src2)
 
-			if err := vm.setCallResult(op, dst, out, err); err != nil {
-				if vm.unwindToProtected() {
-					continue
-				}
-
-				return nil, err
-			}
-		case bytecode.OpHCall3, bytecode.OpProtectedHCall3:
-			out, err := vm.call3(ctx, vm.pc-1, src1)
-
-			if err := vm.setCallResult(op, dst, out, err); err != nil {
-				if vm.unwindToProtected() {
-					continue
-				}
-
-				return nil, err
-			}
-		case bytecode.OpHCall4, bytecode.OpProtectedHCall4:
-			out, err := vm.call4(ctx, vm.pc-1, src1)
-
-			if err := vm.setCallResult(op, dst, out, err); err != nil {
-				if vm.unwindToProtected() {
-					continue
-				}
-
-				return nil, err
-			}
-		case bytecode.OpCall, bytecode.OpProtectedCall:
-			if err := vm.callUdf(op, dst, src1, src2); err != nil {
-				if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
-					if vm.unwindToProtected() {
-						continue
-					}
-
-					return nil, err
-				}
-
+			if vm.unwindToProtected() {
 				continue
 			}
 
-			continue
-		case bytecode.OpCall0, bytecode.OpProtectedCall0:
-			if err := vm.callUdf(op, dst, 0, 0); err != nil {
-				if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
-					if vm.unwindToProtected() {
-						continue
-					}
+			return nil, err
+		case bytecode.OpRegexp:
+			r, err := vm.regexpCached(vm.pc-1, reg[src2])
 
-					return nil, err
-				}
-
-				continue
-			}
-
-			continue
-		case bytecode.OpCall1, bytecode.OpProtectedCall1:
-			if err := vm.callUdf(op, dst, src1, 0); err != nil {
-				if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
-					if vm.unwindToProtected() {
-						continue
-					}
-
-					return nil, err
-				}
-
-				continue
-			}
-
-			continue
-		case bytecode.OpCall2, bytecode.OpProtectedCall2:
-			if err := vm.callUdf(op, dst, src1, src2); err != nil {
-				if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
-					if vm.unwindToProtected() {
-						continue
-					}
-
-					return nil, err
-				}
-
-				continue
-			}
-
-			continue
-		case bytecode.OpCall3, bytecode.OpProtectedCall3:
-			if err := vm.callUdf(op, dst, src1, 0); err != nil {
-				if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
-					if vm.unwindToProtected() {
-						continue
-					}
-
-					return nil, err
-				}
-
-				continue
-			}
-
-			continue
-		case bytecode.OpCall4, bytecode.OpProtectedCall4:
-			if err := vm.callUdf(op, dst, src1, 0); err != nil {
-				if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
-					if vm.unwindToProtected() {
-						continue
-					}
-
-					return nil, err
-				}
-
-				continue
-			}
-
-			continue
-		case bytecode.OpTailCall, bytecode.OpTailCall0, bytecode.OpTailCall1, bytecode.OpTailCall2, bytecode.OpTailCall3, bytecode.OpTailCall4:
-			if err := vm.tailCallUdf(op, dst, src1, src2); err != nil {
-				if vm.unwindToProtected() {
-					continue
-				}
-
-				return nil, err
-			}
-
-			continue
-		case bytecode.OpExists:
-			val := reg[src1]
-
-			if val == runtime.None {
-				reg[dst] = runtime.False
-				continue
-			}
-
-			if measurable, ok := val.(runtime.Measurable); ok {
-				length, err := measurable.Length(ctx)
-
-				if err != nil {
-					if _, catch := vm.tryCatch(vm.pc); catch {
-						reg[dst] = runtime.False
-
-						continue
-					}
-
-					if vm.unwindToProtected() {
-						continue
-					}
-
-					return nil, err
-				}
-
-				reg[dst] = runtime.NewBoolean(length != 0)
-
-				continue
-			}
-
-			reg[dst] = runtime.True
-		case bytecode.OpLength:
-			val, ok := reg[src1].(runtime.Measurable)
-
-			if ok {
-				length, err := val.Length(ctx)
-
-				if err != nil {
-					if _, catch := vm.tryCatch(vm.pc); catch {
-						length = 0
-					} else {
-						if vm.unwindToProtected() {
-							continue
-						}
-
-						return nil, err
-					}
-				}
-
-				reg[dst] = length
+			if err == nil {
+				reg[dst] = r.Match(reg[src1])
 			} else if _, catch := vm.tryCatch(vm.pc); catch {
-				reg[dst] = runtime.ZeroInt
+				reg[dst] = runtime.False
 			} else {
 				if vm.unwindToProtected() {
 					continue
 				}
 
-				return runtime.None, runtime.TypeErrorOf(reg[src1],
-					runtime.TypeString,
-					runtime.TypeList,
-					runtime.TypeMap,
-					runtime.TypeBinary,
-					runtime.TypeMeasurable,
-				)
+				return nil, err
 			}
-		case bytecode.OpType:
-			reg[dst] = runtime.NewString(runtime.TypeName(runtime.TypeOf(reg[src1])))
+		case bytecode.OpAllEq, bytecode.OpAllNe, bytecode.OpAllGt, bytecode.OpAllGte, bytecode.OpAllLt, bytecode.OpAllLte, bytecode.OpAllIn:
+			cmp := operators.ComparatorFromByte(int(op) - int(bytecode.OpAllEq))
+			res, err := operators.ArrayAll(ctx, cmp, reg[src1], reg[src2])
+
+			if err := vm.setOrTryCatch(dst, res, err); err != nil {
+				return nil, err
+			}
+		case bytecode.OpAnyEq, bytecode.OpAnyNe, bytecode.OpAnyGt, bytecode.OpAnyGte, bytecode.OpAnyLt, bytecode.OpAnyLte, bytecode.OpAnyIn:
+			cmp := operators.ComparatorFromByte(int(op) - int(bytecode.OpAnyEq))
+			res, err := operators.ArrayAny(ctx, cmp, reg[src1], reg[src2])
+
+			if err := vm.setOrTryCatch(dst, res, err); err != nil {
+				return nil, err
+			}
+		case bytecode.OpNoneEq, bytecode.OpNoneNe, bytecode.OpNoneGt, bytecode.OpNoneGte, bytecode.OpNoneLt, bytecode.OpNoneLte, bytecode.OpNoneIn:
+			cmp := operators.ComparatorFromByte(int(op) - int(bytecode.OpNoneEq))
+			res, err := operators.ArrayNone(ctx, cmp, reg[src1], reg[src2])
+
+			if err := vm.setOrTryCatch(dst, res, err); err != nil {
+				return nil, err
+			}
 		case bytecode.OpFlatten:
 			depth := src2.Register()
 
@@ -700,247 +456,53 @@ loop:
 			if err := vm.setOrTryCatch(dst, res, err); err != nil {
 				return nil, err
 			}
-		case bytecode.OpClose:
-			val, ok := reg[dst].(io.Closer)
-			reg[dst] = runtime.None
-
-			if ok {
-				closeErr := val.Close()
-
-				if closeErr != nil {
-					if _, catch := vm.tryCatch(vm.pc); !catch {
-						if vm.unwindToProtected() {
-							continue
-						}
-
-						return nil, closeErr
-					}
-				}
-			}
-		case bytecode.OpLoadRange:
-			res, err := operators.ToRange(ctx, reg[src1], reg[src2])
-
-			if err == nil {
-				reg[dst] = res
-			} else {
-				if vm.unwindToProtected() {
-					continue
-				}
-
+		case bytecode.OpJumpIfNe, bytecode.OpJumpIfNeConst, bytecode.OpJumpIfEq, bytecode.OpJumpIfEqConst,
+			bytecode.OpJumpIfMissingProperty, bytecode.OpJumpIfMissingPropertyConst,
+			bytecode.OpReturn:
+			done, err := vm.execControlOps(ctx, op, dst, src1, src2, reg, constants)
+			if err != nil {
 				return nil, err
 			}
-		case bytecode.OpDataSet:
-			reg[dst] = data.NewDataSet(src1 == 1)
-		case bytecode.OpDataSetSorter:
-			reg[dst] = data.NewSorter(runtime.SortDirection(src1))
-		case bytecode.OpDataSetMultiSorter:
-			encoded := src1.Register()
-			count := src2.Register()
-
-			reg[dst] = data.NewMultiSorter(runtime.DecodeSortDirections(encoded, count))
-		case bytecode.OpDataSetCollector:
-			collectorType := bytecode.CollectorType(src1)
-
-			if collectorType == bytecode.CollectorTypeAggregate || collectorType == bytecode.CollectorTypeAggregateGroup {
-				planIdx := int(src2)
-
-				if planIdx < 0 || planIdx >= len(aggregatePlans) {
-					if vm.unwindToProtected() {
-						continue
-					}
-
-					return nil, runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan")
-				}
-
-				plan := aggregatePlans[planIdx]
-
-				if collectorType == bytecode.CollectorTypeAggregate {
-					reg[dst] = data.NewAggregateCollector(plan)
-				} else {
-					reg[dst] = data.NewGroupedAggregateCollector(plan)
-				}
-
-				break
+			if done {
+				break loop
 			}
-
-			reg[dst] = data.NewCollector(collectorType)
-		case bytecode.OpPush:
-			ds := reg[dst].(runtime.Appendable)
-
-			if err := ds.Append(ctx, reg[src1]); err != nil {
-				if _, catch := vm.tryCatch(vm.pc); catch {
-					continue
-				}
-
-				if vm.unwindToProtected() {
-					continue
-				}
-
+		case bytecode.OpHCall, bytecode.OpProtectedHCall,
+			bytecode.OpHCall0, bytecode.OpProtectedHCall0,
+			bytecode.OpHCall1, bytecode.OpProtectedHCall1,
+			bytecode.OpHCall2, bytecode.OpProtectedHCall2,
+			bytecode.OpHCall3, bytecode.OpProtectedHCall3,
+			bytecode.OpHCall4, bytecode.OpProtectedHCall4:
+			if err := vm.execHostCall(ctx, op, vm.pc-1, dst, src1, src2); err != nil {
 				return nil, err
 			}
-		case bytecode.OpArrayPush:
-			ds := reg[dst].(*runtime.Array)
-
-			_ = ds.Append(ctx, reg[src1])
-		case bytecode.OpPushKV:
-			tr := reg[dst].(runtime.KeyWritable)
-
-			if err := tr.Set(ctx, reg[src1], reg[src2]); err != nil {
-				if _, catch := vm.tryCatch(vm.pc); catch {
-					continue
-				}
-
-				if vm.unwindToProtected() {
-					continue
-				}
-
+		case bytecode.OpCall, bytecode.OpProtectedCall,
+			bytecode.OpCall0, bytecode.OpProtectedCall0,
+			bytecode.OpCall1, bytecode.OpProtectedCall1,
+			bytecode.OpCall2, bytecode.OpProtectedCall2,
+			bytecode.OpCall3, bytecode.OpProtectedCall3,
+			bytecode.OpCall4, bytecode.OpProtectedCall4,
+			bytecode.OpTailCall, bytecode.OpTailCall0, bytecode.OpTailCall1, bytecode.OpTailCall2, bytecode.OpTailCall3, bytecode.OpTailCall4:
+			if err := vm.execUdfCall(op, dst, src1, src2); err != nil {
 				return nil, err
 			}
-		case bytecode.OpObjectSet:
-			obj, ok := reg[dst].(*data.FastObject)
-			key := runtime.ToString(reg[src1])
-			value := reg[src2]
-
-			if ok {
-				_ = obj.Set(ctx, key, value)
-				break
+			continue
+		case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter,
+			bytecode.OpPush, bytecode.OpPushKV, bytecode.OpArrayPush, bytecode.OpObjectSet, bytecode.OpObjectSetConst:
+			if err := vm.execDatasetOps(ctx, op, inst, dst, src1, src2, reg, constants, aggregatePlans); err != nil {
+				return nil, err
 			}
-
-			_ = reg[dst].(runtime.KeyWritable).Set(ctx, key, value)
-		case bytecode.OpObjectSetConst:
-			objVal := reg[dst]
-			key := runtime.ToString(constants[src1.Constant()])
-			value := reg[src2]
-
-			if obj, ok := objVal.(*data.FastObject); ok {
-				vm.objectSetConstCached(inst, obj, key, value)
-				break
-			}
-
-			_ = objVal.(runtime.KeyWritable).Set(ctx, key, value)
-		case bytecode.OpIter:
-			input := reg[src1]
-
-			switch src := input.(type) {
-			case runtime.Iterable:
-				iterator, err := src.Iterate(ctx)
-
-				if err != nil {
-					if vm.unwindToProtected() {
-						continue
-					}
-
-					return nil, err
-				}
-
-				reg[dst] = data.NewIterator(iterator)
-			default:
-				if _, catch := vm.tryCatch(vm.pc); catch {
-					// Fall back to an empty iterator
-					reg[dst] = data.NoopIter
-				} else {
-					if vm.unwindToProtected() {
-						continue
-					}
-
-					return nil, runtime.TypeErrorOf(src, runtime.TypeIterable)
-				}
-			}
-		case bytecode.OpIterNext:
-			iterator := reg[src1].(*data.Iterator)
-			if err := iterator.Next(ctx); err != nil {
-				if errors.Is(err, io.EOF) {
-					vm.pc = int(dst)
-				} else {
-					if vm.unwindToProtected() {
-						continue
-					}
-
-					return nil, err
-				}
-			}
-		case bytecode.OpIterValue:
-			iterator := reg[src1].(*data.Iterator)
-			reg[dst] = iterator.Value()
-		case bytecode.OpIterKey:
-			iterator := reg[src1].(*data.Iterator)
-			reg[dst] = iterator.Key()
-		case bytecode.OpIterSkip:
-			state := runtime.ToIntSafe(ctx, reg[src1])
-			threshold := runtime.ToIntSafe(ctx, reg[src2])
-
-			if state < threshold {
-				state++
-				reg[src1] = state
-				vm.pc = int(dst)
-			}
-		case bytecode.OpIterLimit:
-			state := runtime.ToIntSafe(ctx, reg[src1])
-			threshold := runtime.ToIntSafe(ctx, reg[src2])
-
-			if state < threshold {
-				state++
-				reg[src1] = state
-			} else {
-				vm.pc = int(dst)
+		case bytecode.OpIter, bytecode.OpIterNext, bytecode.OpIterValue, bytecode.OpIterKey, bytecode.OpIterLimit, bytecode.OpIterSkip:
+			if err := vm.execIterOps(ctx, op, dst, src1, src2, reg); err != nil {
+				return nil, err
 			}
 		case bytecode.OpStream:
-			observable, eventName, options, err := vm.castSubscribeArgs(reg[dst], reg[src1], reg[src2])
-
-			if err != nil {
-				if _, catch := vm.tryCatch(vm.pc); catch {
-					continue
-				}
-
-				if vm.unwindToProtected() {
-					continue
-				}
-
+			if err := vm.execStreamOp(ctx, dst, src1, src2, reg); err != nil {
 				return nil, err
 			}
-
-			stream, err := observable.Subscribe(ctx, runtime.Subscription{
-				EventName: eventName,
-				Options:   options,
-			})
-
-			if err != nil {
-				if _, catch := vm.tryCatch(vm.pc); catch {
-					continue
-				}
-
-				if vm.unwindToProtected() {
-					continue
-				}
-
-				return nil, err
-			}
-
-			reg[dst] = data.NewStreamValue(stream)
 		case bytecode.OpStreamIter:
-			stream := reg[src1].(*data.StreamValue)
-
-			var timeout runtime.Int
-
-			if reg[src2] != nil && reg[src2] != runtime.None {
-				t, err := runtime.CastInt(reg[src2])
-
-				if err != nil {
-					if _, catch := vm.tryCatch(vm.pc); catch {
-						continue
-					}
-
-					if vm.unwindToProtected() {
-						continue
-					}
-
-					return nil, err
-				}
-
-				timeout = t
+			if err := vm.execStreamIterOp(ctx, dst, src1, src2, reg); err != nil {
+				return nil, err
 			}
-
-			reg[dst] = stream.Iterate(timeout)
 		case bytecode.OpDispatch:
 			dispatcher, eventName, payload, options, err := vm.castDispatchArgs(ctx, reg[dst], reg[src1], reg[src2])
 
@@ -988,19 +550,6 @@ loop:
 			}
 		case bytecode.OpRand:
 			reg[dst] = runtime.NewFloat(runtime.RandomDefault())
-		case bytecode.OpReturn:
-			retVal := reg[dst]
-
-			if frame, ok := vm.popFrame(); ok {
-				vm.regPool.put(vm.registers.Values)
-				vm.registers.Values = frame.registers
-				vm.registers.Values[frame.returnDest] = retVal
-				vm.pc = frame.returnPC
-				continue
-			}
-
-			reg[bytecode.NoopOperand] = retVal
-			break loop
 		default:
 			// TODO: Return an error or ignore unknown opcodes?
 			continue

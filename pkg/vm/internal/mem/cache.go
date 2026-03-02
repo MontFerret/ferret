@@ -8,9 +8,9 @@ import (
 type (
 	Cache struct {
 		FuncHash        uint64
-		Functions       map[int]*CachedFunction
+		Functions       []*CachedFunction
 		RegexpsWarmed   bool
-		Regexps         map[int]*CachedRegexp
+		Regexps         []*CachedRegexp
 		LoadKeyICs      []*LoadKeyCache
 		LoadKeyConstICs []*LoadKeyConstCache
 		ShapeCache      *data.ShapeCache
@@ -162,8 +162,8 @@ func (c *LoadKeyConstCache) Add(shapeID uint64, slot int) {
 
 func NewCache(bytecodeLen, shapeCacheLimit int) *Cache {
 	return &Cache{
-		Functions:       make(map[int]*CachedFunction),
-		Regexps:         make(map[int]*CachedRegexp),
+		Functions:       make([]*CachedFunction, bytecodeLen),
+		Regexps:         make([]*CachedRegexp, bytecodeLen),
 		LoadKeyICs:      make([]*LoadKeyCache, bytecodeLen),
 		LoadKeyConstICs: make([]*LoadKeyConstCache, bytecodeLen),
 		ShapeCache:      data.NewShapeCache(shapeCacheLimit),

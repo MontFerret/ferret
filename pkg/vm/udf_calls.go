@@ -48,30 +48,24 @@ func (vm *VM) udfArgCount(op bytecode.Opcode, src1, src2 bytecode.Operand) int {
 func (vm *VM) copyUdfArgs(op bytecode.Opcode, dst []runtime.Value, src []runtime.Value, src1, src2 bytecode.Operand) {
 	switch op {
 	case bytecode.OpCall1, bytecode.OpProtectedCall1, bytecode.OpTailCall1:
-		dst[1] = src[src1]
+		idxs := [2]int{src1.Register()}
+		copyUdfArgsInternal(dst, src, 1, 0, 1, false, false, idxs[:1])
 	case bytecode.OpCall2, bytecode.OpProtectedCall2, bytecode.OpTailCall2:
-		dst[1] = src[src1]
-		dst[2] = src[src2]
+		idxs := [2]int{src1.Register(), src2.Register()}
+		copyUdfArgsInternal(dst, src, 1, 0, 2, false, false, idxs[:2])
 	case bytecode.OpCall3, bytecode.OpProtectedCall3, bytecode.OpTailCall3:
 		start := src1.Register()
-		dst[1] = src[start]
-		dst[2] = src[start+1]
-		dst[3] = src[start+2]
+		copyUdfArgsInternal(dst, src, 1, start, 3, false, false, nil)
 	case bytecode.OpCall4, bytecode.OpProtectedCall4, bytecode.OpTailCall4:
 		start := src1.Register()
-		dst[1] = src[start]
-		dst[2] = src[start+1]
-		dst[3] = src[start+2]
-		dst[4] = src[start+3]
+		copyUdfArgsInternal(dst, src, 1, start, 4, false, false, nil)
 	case bytecode.OpCall, bytecode.OpProtectedCall, bytecode.OpTailCall:
 		start := src1.Register()
 		end := src2.Register()
 		if start <= 0 || end < start {
 			return
 		}
-		for i := 0; i <= end-start && i+1 < len(dst); i++ {
-			dst[1+i] = src[start+i]
-		}
+		copyUdfArgsInternal(dst, src, 1, start, end-start+1, true, false, nil)
 	default:
 		// OpCall0, OpProtectedCall0, OpTailCall0 have no arguments.
 	}
@@ -167,53 +161,143 @@ func (vm *VM) tailCallUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) 
 func (vm *VM) copyUdfArgsInPlace(op bytecode.Opcode, reg []runtime.Value, src1, src2 bytecode.Operand) {
 	switch op {
 	case bytecode.OpCall1, bytecode.OpProtectedCall1, bytecode.OpTailCall1:
-		v1 := reg[src1]
-		reg[1] = v1
+		idxs := [2]int{src1.Register()}
+		copyUdfArgsInternal(reg, reg, 1, 0, 1, false, true, idxs[:1])
 	case bytecode.OpCall2, bytecode.OpProtectedCall2, bytecode.OpTailCall2:
-		v1 := reg[src1]
-		v2 := reg[src2]
-		reg[1] = v1
-		reg[2] = v2
+		idxs := [2]int{src1.Register(), src2.Register()}
+		copyUdfArgsInternal(reg, reg, 1, 0, 2, false, true, idxs[:2])
 	case bytecode.OpCall3, bytecode.OpProtectedCall3, bytecode.OpTailCall3:
 		start := src1.Register()
-		v1 := reg[start]
-		v2 := reg[start+1]
-		v3 := reg[start+2]
-		reg[1] = v1
-		reg[2] = v2
-		reg[3] = v3
+		copyUdfArgsInternal(reg, reg, 1, start, 3, false, true, nil)
 	case bytecode.OpCall4, bytecode.OpProtectedCall4, bytecode.OpTailCall4:
 		start := src1.Register()
-		v1 := reg[start]
-		v2 := reg[start+1]
-		v3 := reg[start+2]
-		v4 := reg[start+3]
-		reg[1] = v1
-		reg[2] = v2
-		reg[3] = v3
-		reg[4] = v4
+		copyUdfArgsInternal(reg, reg, 1, start, 4, false, true, nil)
 	case bytecode.OpCall, bytecode.OpProtectedCall, bytecode.OpTailCall:
 		start := src1.Register()
 		end := src2.Register()
 		if start <= 0 || end < start {
 			return
 		}
-		count := end - start + 1
-		dstStart := 1
-		dstEnd := dstStart + count - 1
+		copyUdfArgsInternal(reg, reg, 1, start, end-start+1, true, true, nil)
+	default:
+		// OpCall0, OpProtectedCall0, OpTailCall0 have no arguments.
+	}
+}
 
-		if start <= dstEnd && dstStart <= end {
-			for i := count - 1; i >= 0; i-- {
-				reg[dstStart+i] = reg[start+i]
+func copyUdfArgsInternal(dst, src []runtime.Value, dstStart, srcStart, count int, bounded bool, sameSlice bool, indices []int) {
+	if count <= 0 {
+		return
+	}
+
+	if indices != nil {
+		if sameSlice {
+			var tmp [4]runtime.Value
+			if count <= len(tmp) {
+				for i := 0; i < count; i++ {
+					tmp[i] = src[indices[i]]
+				}
+				for i := 0; i < count; i++ {
+					if bounded && dstStart+i >= len(dst) {
+						continue
+					}
+					dst[dstStart+i] = tmp[i]
+				}
+				return
+			}
+
+			values := make([]runtime.Value, count)
+			for i := 0; i < count; i++ {
+				values[i] = src[indices[i]]
+			}
+			for i := 0; i < count; i++ {
+				if bounded && dstStart+i >= len(dst) {
+					continue
+				}
+				dst[dstStart+i] = values[i]
 			}
 			return
 		}
 
-		for i := 0; i < count && dstStart+i < len(reg); i++ {
-			reg[dstStart+i] = reg[start+i]
+		for i := 0; i < count; i++ {
+			if bounded && dstStart+i >= len(dst) {
+				return
+			}
+			dst[dstStart+i] = src[indices[i]]
 		}
+		return
+	}
+
+	dstEnd := dstStart + count - 1
+	srcEnd := srcStart + count - 1
+
+	if sameSlice && srcStart <= dstEnd && dstStart <= srcEnd {
+		for i := count - 1; i >= 0; i-- {
+			if bounded && dstStart+i >= len(dst) {
+				continue
+			}
+
+			dst[dstStart+i] = src[srcStart+i]
+		}
+
+		return
+	}
+
+	if bounded {
+		for i := 0; i < count && dstStart+i < len(dst); i++ {
+			dst[dstStart+i] = src[srcStart+i]
+		}
+
+		return
+	}
+
+	for i := 0; i < count; i++ {
+		dst[dstStart+i] = src[srcStart+i]
+	}
+}
+
+func (vm *VM) execUdfCall(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) error {
+	switch op {
+	case bytecode.OpCall, bytecode.OpProtectedCall,
+		bytecode.OpCall0, bytecode.OpProtectedCall0,
+		bytecode.OpCall1, bytecode.OpProtectedCall1,
+		bytecode.OpCall2, bytecode.OpProtectedCall2,
+		bytecode.OpCall3, bytecode.OpProtectedCall3,
+		bytecode.OpCall4, bytecode.OpProtectedCall4:
+		if op == bytecode.OpCall0 || op == bytecode.OpProtectedCall0 {
+			src1, src2 = 0, 0
+		} else if op == bytecode.OpCall3 || op == bytecode.OpProtectedCall3 || op == bytecode.OpCall4 || op == bytecode.OpProtectedCall4 {
+			src2 = 0
+		}
+
+		if err := vm.callUdf(op, dst, src1, src2); err != nil {
+			if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
+				if vm.unwindToProtected() {
+					return nil
+				}
+
+				return err
+			}
+		}
+
+		return nil
+	case bytecode.OpTailCall, bytecode.OpTailCall0, bytecode.OpTailCall1, bytecode.OpTailCall2, bytecode.OpTailCall3, bytecode.OpTailCall4:
+		if op == bytecode.OpTailCall0 {
+			src1, src2 = 0, 0
+		} else if op == bytecode.OpTailCall3 || op == bytecode.OpTailCall4 {
+			src2 = 0
+		}
+
+		if err := vm.tailCallUdf(op, dst, src1, src2); err != nil {
+			if vm.unwindToProtected() {
+				return nil
+			}
+
+			return err
+		}
+
+		return nil
 	default:
-		// OpCall0, OpProtectedCall0, OpTailCall0 have no arguments.
+		return runtime.Error(runtime.ErrUnexpected, "invalid udf call opcode")
 	}
 }
 
