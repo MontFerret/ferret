@@ -346,21 +346,27 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 		addDef(dst)
 		return
 	case bytecode.OpTailCall:
+		addUse(dst)
 		addRangeUses(src1, src2)
 		return
 	case bytecode.OpTailCall0:
+		addUse(dst)
 		return
 	case bytecode.OpTailCall1:
+		addUse(dst)
 		addUse(src1)
 		return
 	case bytecode.OpTailCall2:
+		addUse(dst)
 		addUse(src1)
 		addUse(src2)
 		return
 	case bytecode.OpTailCall3:
+		addUse(dst)
 		addFixedRangeUses(src1, 3)
 		return
 	case bytecode.OpTailCall4:
+		addUse(dst)
 		addFixedRangeUses(src1, 4)
 		return
 
