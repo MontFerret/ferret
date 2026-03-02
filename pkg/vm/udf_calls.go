@@ -17,11 +17,11 @@ func (vm *VM) resolveUdfID(val runtime.Value) (int, error) {
 }
 
 func (vm *VM) udfByID(id int) (*bytecode.UDF, error) {
-	if id < 0 || vm.program == nil || id >= len(vm.program.Metadata.UDFs) {
+	if id < 0 || vm.program == nil || id >= len(vm.program.Functions.UserDefined) {
 		return nil, ErrUnresolvedFunction
 	}
 
-	return &vm.program.Metadata.UDFs[id], nil
+	return &vm.program.Functions.UserDefined[id], nil
 }
 
 func (vm *VM) udfArgCount(op bytecode.Opcode, src1, src2 bytecode.Operand) int {

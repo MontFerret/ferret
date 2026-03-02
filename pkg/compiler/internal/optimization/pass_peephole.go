@@ -489,12 +489,12 @@ func remapLabels(prog *bytecode.Program, indexMap []int) {
 }
 
 func remapUdfEntries(prog *bytecode.Program, indexMap []int, keep []bool) {
-	if prog == nil || len(prog.Metadata.UDFs) == 0 {
+	if prog == nil || len(prog.Functions.UserDefined) == 0 {
 		return
 	}
 
-	for i := range prog.Metadata.UDFs {
-		entry := prog.Metadata.UDFs[i].Entry
+	for i := range prog.Functions.UserDefined {
+		entry := prog.Functions.UserDefined[i].Entry
 		if entry < 0 || entry >= len(indexMap) {
 			continue
 		}
@@ -505,7 +505,7 @@ func remapUdfEntries(prog *bytecode.Program, indexMap []int, keep []bool) {
 		}
 
 		if newEntry >= 0 {
-			prog.Metadata.UDFs[i].Entry = newEntry
+			prog.Functions.UserDefined[i].Entry = newEntry
 		}
 	}
 }

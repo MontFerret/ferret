@@ -93,12 +93,14 @@ func (c *Compiler) Compile(src *file.Source) (program *bytecode.Program, err err
 	}
 
 	program = &bytecode.Program{
+		Functions: bytecode.Functions{
+			Host:        l.Ctx.Symbols.Functions(),
+			UserDefined: udfs,
+		},
 		Metadata: bytecode.Metadata{
 			AggregatePlans: l.Ctx.AggregatePlans(),
 			DebugSpans:     l.Ctx.Emitter.Spans(),
-			Functions:      l.Ctx.Symbols.Functions(),
 			Labels:         l.Ctx.Emitter.Labels(),
-			UDFs:           udfs,
 		},
 		Source:     src,
 		Bytecode:   l.Ctx.Emitter.Bytecode(),

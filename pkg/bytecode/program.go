@@ -15,9 +15,7 @@ type (
 	Metadata struct {
 		AggregatePlans []AggregatePlan `json:"aggregatePlans"`
 		DebugSpans     []file.Span     `json:"debugSpans"`
-		Functions      map[string]int  `json:"functions"`
 		Labels         map[int]string  `json:"labels"`
-		UDFs           []UDF           `json:"udfs,omitempty"`
 	}
 
 	Program struct {
@@ -27,6 +25,7 @@ type (
 		Constants  []runtime.Value
 		CatchTable []Catch
 		Params     []string
+		Functions  Functions
 		Metadata   Metadata
 	}
 )
@@ -55,6 +54,7 @@ func (p *Program) MarshalJSON() ([]byte, error) {
 		Constants:  constants,
 		CatchTable: p.CatchTable,
 		Params:     p.Params,
+		Functions:  p.Functions,
 		Metadata:   p.Metadata,
 	}
 
@@ -89,6 +89,7 @@ func (p *Program) UnmarshalJSON(data []byte) error {
 	p.Constants = constants
 	p.CatchTable = decoded.CatchTable
 	p.Params = decoded.Params
+	p.Functions = decoded.Functions
 	p.Metadata = decoded.Metadata
 
 	return nil

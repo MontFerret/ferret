@@ -28,12 +28,12 @@ RETURN used()
 `
 
 	prog := compileWithLevel(t, compiler.O1, expr)
-	if len(prog.Metadata.UDFs) != 1 {
-		t.Fatalf("expected 1 UDF at O1, got %d", len(prog.Metadata.UDFs))
+	if len(prog.Functions.UserDefined) != 1 {
+		t.Fatalf("expected 1 UDF at O1, got %d", len(prog.Functions.UserDefined))
 	}
 
-	if prog.Metadata.UDFs[0].Name != "USED" {
-		t.Fatalf("expected USED UDF, got %q", prog.Metadata.UDFs[0].Name)
+	if prog.Functions.UserDefined[0].Name != "USED" {
+		t.Fatalf("expected USED UDF, got %q", prog.Functions.UserDefined[0].Name)
 	}
 }
 
@@ -45,8 +45,8 @@ RETURN used()
 `
 
 	prog := compileWithLevel(t, compiler.O0, expr)
-	if len(prog.Metadata.UDFs) != 2 {
-		t.Fatalf("expected 2 UDFs at O0, got %d", len(prog.Metadata.UDFs))
+	if len(prog.Functions.UserDefined) != 2 {
+		t.Fatalf("expected 2 UDFs at O0, got %d", len(prog.Functions.UserDefined))
 	}
 }
 
@@ -61,12 +61,12 @@ RETURN outer()
 `
 
 	prog := compileWithLevel(t, compiler.O1, expr)
-	if len(prog.Metadata.UDFs) != 1 {
-		t.Fatalf("expected 1 UDF at O1, got %d", len(prog.Metadata.UDFs))
+	if len(prog.Functions.UserDefined) != 1 {
+		t.Fatalf("expected 1 UDF at O1, got %d", len(prog.Functions.UserDefined))
 	}
 
 	var outerParams int = -1
-	for _, udf := range prog.Metadata.UDFs {
+	for _, udf := range prog.Functions.UserDefined {
 		if udf.Name == "OUTER" {
 			outerParams = udf.Params
 			break
@@ -95,7 +95,7 @@ RETURN fact(5)
 
 	prog := compileWithLevel(t, compiler.O1, expr)
 	found := false
-	for _, udf := range prog.Metadata.UDFs {
+	for _, udf := range prog.Functions.UserDefined {
 		if udf.Name == "FACT" {
 			found = true
 			break

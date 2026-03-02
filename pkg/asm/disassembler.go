@@ -23,12 +23,12 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 	w := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
 
 	// Header: functions
-	for name, args := range p.Metadata.Functions {
+	for name, args := range p.Functions.Host {
 		_, _ = fmt.Fprintln(w, formatFunction(name, args))
 	}
 
 	// Header: UDFs
-	for id, udf := range p.Metadata.UDFs {
+	for id, udf := range p.Functions.UserDefined {
 		_, _ = fmt.Fprintln(w, formatUdf(id, udf))
 	}
 
@@ -209,9 +209,9 @@ func udfCallComment(p *bytecode.Program, instr bytecode.Instruction, prev *bytec
 	}
 
 	id := int(idVal)
-	if id < 0 || id >= len(p.Metadata.UDFs) {
+	if id < 0 || id >= len(p.Functions.UserDefined) {
 		return ""
 	}
 
-	return fmt.Sprintf("udf %s", p.Metadata.UDFs[id].Name)
+	return fmt.Sprintf("udf %s", p.Functions.UserDefined[id].Name)
 }

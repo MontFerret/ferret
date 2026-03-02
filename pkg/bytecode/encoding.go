@@ -22,6 +22,7 @@ type (
 		Constants  []constantJSON `json:"constants,omitempty"`
 		CatchTable []Catch        `json:"catchTable,omitempty"`
 		Params     []string       `json:"params,omitempty"`
+		Functions  Functions      `json:"functions,omitempty"`
 		Metadata   Metadata       `json:"metadata"`
 	}
 
