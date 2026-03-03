@@ -57,7 +57,12 @@ func getFunctionName(ctx fql.IFunctionCallContext, aliases map[string]string) ru
 
 	if len(aliases) > 0 {
 		if target, ok := aliases[strings.ToUpper(fn)]; ok && target != "" {
-			return runtime.NewString(strings.ToUpper(target))
+			// Bare calls should only use function aliases (e.g. USE NS::FN AS ALIAS).
+			// Namespace aliases (e.g. USE NS AS ALIAS) are intended for qualified
+			// calls such as ALIAS::FN and must not rewrite ALIAS().
+			if strings.Contains(strings.ToUpper(target), runtime.NamespaceSeparator) {
+				return runtime.NewString(strings.ToUpper(target))
+			}
 		}
 	}
 

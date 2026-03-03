@@ -20,6 +20,14 @@ USE FOO AS F
 
 RETURN F::TEST_FN()`, true, "Should compile and resolve alias to the namespaced function using the namespace alias"),
 		Case(`
+USE FOO AS F
+FUNC f() => F::TEST_FN()
+RETURN f()`, true, "Should resolve namespace alias host call inside UDF body"),
+		Case(`
+USE FOO AS F
+FUNC f() => true
+RETURN f()`, true, "Should not rewrite bare UDF call through namespace alias"),
+		Case(`
 USE FOO::TEST_FN AS FN
 
 RETURN FN()`, true, "Should compile and resolve alias to the namespaced function using the function alias"),

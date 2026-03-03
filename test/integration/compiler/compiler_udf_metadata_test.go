@@ -165,11 +165,44 @@ RETURN FN()
 	}
 }
 
-func TestUdfNamespaceAliasHostMetadata_TODO(t *testing.T) {
-	t.Skip("TODO: namespace alias in UDF currently adds extra FOO key to host metadata")
-	// Desired canonical behavior for future fix:
-	// USE FOO AS F
-	// FUNC f() => F::TEST_FN()
-	// RETURN f()
-	// Host metadata should contain only FOO::TEST_FN.
+func TestUdfNamespaceAliasHostMetadata(t *testing.T) {
+	expr := `
+USE FOO AS F
+FUNC f() => F::TEST_FN()
+RETURN f()
+`
+
+	prog := compileWithLevel(t, compiler.O0, expr)
+	if got := prog.Functions.Host["FOO::TEST_FN"]; got != 0 {
+		t.Fatalf("expected FOO::TEST_FN arity 0, got %d", got)
+	}
+
+	if _, ok := prog.Functions.Host["FOO"]; ok {
+		t.Fatalf("expected no bare FOO host metadata, got %v", prog.Functions.Host)
+	}
+}
+
+func TestNamespaceAliasDoesNotShadowUdfCallAtO1(t *testing.T) {
+	expr := `
+USE FOO AS F
+FUNC f() => 1
+RETURN f()
+`
+
+	prog := compileWithLevel(t, compiler.O1, expr)
+	found := false
+	for _, udf := range prog.Functions.UserDefined {
+		if udf.Name == "F" {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Fatalf("expected UDF F to remain reachable at O1, got %v", prog.Functions.UserDefined)
+	}
+
+	if _, ok := prog.Functions.Host["FOO"]; ok {
+		t.Fatalf("expected no bare FOO host metadata at O1, got %v", prog.Functions.Host)
+	}
 }
