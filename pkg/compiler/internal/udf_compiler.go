@@ -83,11 +83,25 @@ func (c *UDFCompiler) compile(fn *UDFInfo) {
 
 	fn.Registers = c.ctx.Registers.Size()
 
+	// Preserve metadata discovered while compiling UDF bodies. UDF compilation
+	// uses a temporary symbol table, so params/host function bindings must be
+	// merged back into the outer table before we restore the original context.
+	udfParams := c.ctx.Symbols.Params()
+	udfFunctions := c.ctx.Symbols.Functions()
+
 	c.ctx.Registers = state.registers
 	c.ctx.Symbols = state.symbols
 	c.ctx.Types = state.types
 	c.ctx.Loops = state.loops
 	c.ctx.UDFScope = state.udfScope
+
+	for _, name := range udfParams {
+		c.ctx.Symbols.BindParam(name)
+	}
+
+	for name, args := range udfFunctions {
+		c.ctx.Symbols.BindFunction(name, args)
+	}
 }
 
 func (c *UDFCompiler) compileReturn(ctx fql.IFunctionReturnContext) {

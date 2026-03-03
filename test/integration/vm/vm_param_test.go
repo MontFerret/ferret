@@ -10,6 +10,10 @@ func TestParam(t *testing.T) {
 	RunUseCases(t,
 		[]UseCase{
 			CaseRuntimeErrorStr(`RETURN @foo`, "Missing parameter"),
+			CaseRuntimeErrorStr(`
+FUNC read() => @foo
+RETURN read()
+`, "Missing parameter"),
 			Case(`RETURN @str`, "bar", "Should return a value of a parameter"),
 			Case(`RETURN @int + @int`, 2, "Should return a sum of two parameters"),
 			Case(`RETURN @obj.str1 + @obj.str2`, "foobar", "Should return a concatenated string of two parameter properties"),
