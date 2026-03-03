@@ -1,12 +1,14 @@
-package vm
+package frame
 
 import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
-type regPool struct {
+// Pool manages reusable register windows indexed by size.
+type Pool struct {
 	buckets [][][]runtime.Value
 }
 
-func (p *regPool) init(maxSize int) {
+// Init prepares the pool with buckets up to maxSize.
+func (p *Pool) Init(maxSize int) {
 	if maxSize < 0 {
 		maxSize = 0
 	}
@@ -14,7 +16,7 @@ func (p *regPool) init(maxSize int) {
 	p.buckets = make([][][]runtime.Value, maxSize+1)
 }
 
-func (p *regPool) get(size int) []runtime.Value {
+func (p *Pool) Get(size int) []runtime.Value {
 	if size <= 0 {
 		return nil
 	}
@@ -32,11 +34,13 @@ func (p *regPool) get(size int) []runtime.Value {
 	return make([]runtime.Value, size)
 }
 
-func (p *regPool) put(reg []runtime.Value) {
+// Put clears and stores a register window for reuse.
+func (p *Pool) Put(reg []runtime.Value) {
 	if len(reg) == 0 {
 		return
 	}
 
+	// Clear to avoid retaining references across calls.
 	clear(reg)
 
 	size := len(reg)

@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 )
 
 func (vm *VM) resolveUdfID(val runtime.Value) (int, error) {
@@ -114,10 +115,16 @@ func (vm *VM) callUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) erro
 		return runtime.Error(runtime.ErrInvalidOperation, fmt.Sprintf("UDF '%s' has invalid register window", udf.Name))
 	}
 
-	newRegs := vm.regPool.get(udf.Registers)
+	newRegs := vm.frames.GetRegisters(udf.Registers)
 	copyUdfArgsToUdfRegisters(newRegs, reg, argStart, argCount)
 
-	vm.pushFrame(vm.pc, dst, isProtectedUdfCall(op), fnID)
+	vm.frames.Push(frame.CallFrame{
+		ReturnPC:   vm.pc,
+		ReturnDest: dst,
+		Registers:  vm.registers.Values,
+		Protected:  isProtectedUdfCall(op),
+		FnID:       fnID,
+	})
 	vm.registers.Values = newRegs
 	vm.pc = udf.Entry
 
@@ -125,7 +132,7 @@ func (vm *VM) callUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) erro
 }
 
 func (vm *VM) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
-	if len(vm.frames) == 0 {
+	if vm.frames.Len() == 0 {
 		return ErrUnresolvedFunction
 	}
 
@@ -149,8 +156,11 @@ func (vm *VM) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
 		return runtime.Error(runtime.ErrInvalidOperation, fmt.Sprintf("UDF '%s' has invalid register window", udf.Name))
 	}
 
-	frame := &vm.frames[len(vm.frames)-1]
-	frame.fnID = fnID
+	currentFrame := vm.frames.Top()
+	if currentFrame == nil {
+		return ErrUnresolvedFunction
+	}
+	currentFrame.FnID = fnID
 
 	var (
 		args      []runtime.Value
@@ -177,11 +187,11 @@ func (vm *VM) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
 		}
 		vm.registers.Values = reg
 	} else {
-		newRegs := vm.regPool.get(udf.Registers)
+		newRegs := vm.frames.GetRegisters(udf.Registers)
 		if len(args) > 0 && len(newRegs) > 1 {
 			copy(newRegs[1:], args)
 		}
-		vm.regPool.put(reg)
+		vm.frames.PutRegisters(reg)
 		vm.registers.Values = newRegs
 	}
 

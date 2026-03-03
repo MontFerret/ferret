@@ -89,8 +89,19 @@ func TestNewWithOptions_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 		}
 	}
 
-	if got, want := len(instance.regPool.buckets), 6; got != want {
-		t.Fatalf("unexpected reg pool bucket count: got %d, want %d", got, want)
+	reg := instance.frames.GetRegisters(5)
+	if got, want := len(reg), 5; got != want {
+		t.Fatalf("unexpected pooled register size: got %d, want %d", got, want)
+	}
+
+	instance.frames.PutRegisters(reg)
+	reused := instance.frames.GetRegisters(5)
+	if got, want := len(reused), 5; got != want {
+		t.Fatalf("unexpected reused register size: got %d, want %d", got, want)
+	}
+
+	if &reg[0] != &reused[0] {
+		t.Fatal("expected register pool to reuse buffers")
 	}
 }
 

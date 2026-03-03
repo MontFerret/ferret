@@ -7,6 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/operators"
 )
@@ -21,8 +22,7 @@ type VM struct {
 	instructions            []data.ExecInstruction
 	catchByPC               []int
 	pc                      int
-	frames                  []callFrame
-	regPool                 regPool
+	frames                  frame.CallStack
 }
 
 func New(program *bytecode.Program) *VM {
@@ -42,7 +42,7 @@ func NewWithOptions(program *bytecode.Program, opts ...Option) *VM {
 		catchByPC:               buildCatchByPC(len(program.Bytecode), program.CatchTable),
 	}
 
-	vm.regPool.init(maxUDFRegisters(program.Functions.UserDefined))
+	vm.frames.Init(maxUDFRegisters(program.Functions.UserDefined))
 
 	return vm
 }
@@ -155,7 +155,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, err
 	vm.registers.MarkDirty()
 	vm.env = env
 	vm.pc = 0
-	vm.frames = vm.frames[:0]
+	vm.frames.Reset()
 
 	instructions := vm.instructions
 	constants := vm.program.Constants
@@ -618,11 +618,9 @@ loop:
 		case bytecode.OpReturn:
 			retVal := reg[dst]
 
-			if frame, ok := vm.popFrame(); ok {
-				vm.regPool.put(vm.registers.Values)
-				vm.registers.Values = frame.registers
-				vm.registers.Values[frame.returnDest] = retVal
-				vm.pc = frame.returnPC
+			if registers, pc, ok := vm.frames.Return(vm.registers.Values, retVal); ok {
+				vm.registers.Values = registers
+				vm.pc = pc
 
 				continue
 			}

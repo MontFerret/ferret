@@ -1,22 +1,15 @@
-package vm
+package frame
 
 import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 )
 
-func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
-	instance := New(&bytecode.Program{
-		Registers: 1,
-		Functions: bytecode.Functions{
-			UserDefined: []bytecode.UDF{
-				{Registers: 6},
-			},
-		},
-	})
+func TestCallStackUnwindToProtected_ReclaimsRegisters(t *testing.T) {
+	var stack CallStack
+	stack.Init(6)
 
 	lowerRegs := make([]runtime.Value, 2)
 	protectedRegs := make([]runtime.Value, 3)
@@ -26,45 +19,45 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 
 	protectedRegs[1] = runtime.True
 
-	instance.registers.Values = activeRegs
-	instance.frames.Push(frame.CallFrame{
+	stack.Push(CallFrame{
 		ReturnPC:   10,
 		ReturnDest: bytecode.NewRegister(0),
 		Registers:  lowerRegs,
 		Protected:  false,
 	})
-	instance.frames.Push(frame.CallFrame{
+	stack.Push(CallFrame{
 		ReturnPC:   20,
 		ReturnDest: bytecode.NewRegister(1),
 		Registers:  protectedRegs,
 		Protected:  true,
 	})
-	instance.frames.Push(frame.CallFrame{
+	stack.Push(CallFrame{
 		ReturnPC:   30,
 		ReturnDest: bytecode.NewRegister(0),
 		Registers:  aboveRegs1,
 		Protected:  false,
 	})
-	instance.frames.Push(frame.CallFrame{
+	stack.Push(CallFrame{
 		ReturnPC:   40,
 		ReturnDest: bytecode.NewRegister(0),
 		Registers:  aboveRegs2,
 		Protected:  false,
 	})
 
-	if ok := instance.unwindToProtected(); !ok {
+	registers, pc, ok := stack.UnwindToProtected(activeRegs)
+	if !ok {
 		t.Fatal("expected protected unwind to succeed")
 	}
 
-	if got, want := instance.pc, 20; got != want {
+	if got, want := pc, 20; got != want {
 		t.Fatalf("unexpected pc after unwind: got %d, want %d", got, want)
 	}
 
-	if got, want := instance.frames.Len(), 1; got != want {
+	if got, want := stack.Len(), 1; got != want {
 		t.Fatalf("unexpected frame depth after unwind: got %d, want %d", got, want)
 	}
 
-	remaining := instance.frames.Top()
+	remaining := stack.Top()
 	if remaining == nil {
 		t.Fatal("expected remaining frame after unwind")
 	}
@@ -73,11 +66,11 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		t.Fatalf("unexpected surviving frame returnPC: got %d, want %d", got, want)
 	}
 
-	if got, want := instance.registers.Values[1], runtime.None; got != want {
+	if got, want := registers[1], runtime.None; got != want {
 		t.Fatalf("expected protected return destination to be reset, got %v", got)
 	}
 
-	reused4 := instance.frames.GetRegisters(4)
+	reused4 := stack.GetRegisters(4)
 	if len(reused4) != 4 {
 		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused4), 4)
 	}
@@ -85,7 +78,7 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		t.Fatal("expected frame registers of size 4 to be reclaimed")
 	}
 
-	reused5 := instance.frames.GetRegisters(5)
+	reused5 := stack.GetRegisters(5)
 	if len(reused5) != 5 {
 		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused5), 5)
 	}
@@ -93,11 +86,48 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		t.Fatal("expected frame registers of size 5 to be reclaimed")
 	}
 
-	reused6 := instance.frames.GetRegisters(6)
+	reused6 := stack.GetRegisters(6)
 	if len(reused6) != 6 {
 		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused6), 6)
 	}
 	if &reused6[0] != &activeRegs[0] {
 		t.Fatal("expected active registers of size 6 to be reclaimed")
+	}
+}
+
+func TestCallStackReturn_ReusesRegisters(t *testing.T) {
+	var stack CallStack
+	stack.Init(3)
+
+	callerRegs := make([]runtime.Value, 2)
+	activeRegs := make([]runtime.Value, 3)
+
+	stack.Push(CallFrame{
+		ReturnPC:   7,
+		ReturnDest: bytecode.NewRegister(1),
+		Registers:  callerRegs,
+		Protected:  false,
+	})
+
+	retVal := runtime.True
+	registers, pc, ok := stack.Return(activeRegs, retVal)
+	if !ok {
+		t.Fatal("expected return to succeed")
+	}
+
+	if got, want := pc, 7; got != want {
+		t.Fatalf("unexpected pc after return: got %d, want %d", got, want)
+	}
+
+	if got, want := registers[1], retVal; got != want {
+		t.Fatalf("unexpected return destination: got %v, want %v", got, want)
+	}
+
+	reused := stack.GetRegisters(3)
+	if len(reused) != 3 {
+		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused), 3)
+	}
+	if &reused[0] != &activeRegs[0] {
+		t.Fatal("expected active registers to be reclaimed")
 	}
 }
