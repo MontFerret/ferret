@@ -2957,12 +2957,24 @@ func (c *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.Re
 
 		// Evaluate each element into seq Registers
 		for i, exp := range exps {
-			// Compile expression and move to seq register
+			// Fast path: load scalar/none literals directly into the argument window.
+			// This avoids generating LOADC temp + MOVE arg,temp pairs.
+			if val, ok := literalValueFromExpression(exp); ok && (bool(runtime.IsScalar(val)) || val == runtime.None) {
+				c.ctx.Emitter.EmitLoadConst(seq[i], c.ctx.Symbols.AddConstant(val))
+				c.ctx.Types.Set(seq[i], valueTypeFromRuntime(val))
+				continue
+			}
+
+			// Compile expression and move/load into seq register
 			srcReg := c.Compile(exp)
 
 			// The reason we move is that the argument list must be a contiguous sequence of registers
 			// Otherwise, we cannot compileInitialization neither a list nor an object literal with arguments
-			c.ctx.Emitter.EmitMove(seq[i], srcReg)
+			if srcReg.IsConstant() {
+				c.ctx.Emitter.EmitLoadConst(seq[i], srcReg)
+			} else {
+				c.ctx.Emitter.EmitMove(seq[i], srcReg)
+			}
 			c.ctx.Types.Set(seq[i], operandType(c.ctx, srcReg))
 		}
 	}
