@@ -37,10 +37,10 @@ func TestDisassemble_UDFStartEndLabels(t *testing.T) {
 	}
 
 	expected := []string{
-		"@udf.0.A.start",
-		"@udf.0.A.end",
-		"@udf.1.B.start",
-		"@udf.1.B.end",
+		"udf.0.A.start",
+		"udf.0.A.end",
+		"udf.1.B.start",
+		"udf.1.B.end",
 	}
 	for _, label := range expected {
 		if !strings.Contains(out, label) {
@@ -74,7 +74,7 @@ func TestDisassemble_UDFEndLabelOnTailCall(t *testing.T) {
 		t.Fatalf("Disassemble() error: %v", err)
 	}
 
-	endPos := strings.Index(out, "@udf.0.OUTER.end")
+	endPos := strings.Index(out, "udf.0.OUTER.end")
 	tailPos := strings.Index(out, "4: TAILCALL")
 
 	if endPos < 0 {
@@ -119,8 +119,8 @@ func TestDisassemble_UDFLabelsCoexistWithMetadataLabels(t *testing.T) {
 		t.Fatalf("Disassemble() error: %v", err)
 	}
 
-	canonicalPos := strings.Index(out, "@loop.1.1.start")
-	udfPos := strings.Index(out, "@udf.0.F.start")
+	canonicalPos := strings.Index(out, "loop.1.1.start")
+	udfPos := strings.Index(out, "udf.0.F.start")
 	insPos := strings.Index(out, "2: LOADC")
 
 	if canonicalPos < 0 || udfPos < 0 {
@@ -165,19 +165,19 @@ func TestDisassemble_UDFLabelsIgnoreInvalidEntries(t *testing.T) {
 		t.Fatalf("Disassemble() error: %v", err)
 	}
 
-	if !strings.Contains(out, "@udf.0.VALID.start") {
+	if !strings.Contains(out, "udf.0.VALID.start") {
 		t.Fatalf("missing label for valid udf:\n%s", out)
 	}
 
-	if !strings.Contains(out, "@udf.0.VALID.end") {
+	if !strings.Contains(out, "udf.0.VALID.end") {
 		t.Fatalf("missing end label for valid udf:\n%s", out)
 	}
 
-	if strings.Contains(out, "@udf.1.NEG.start") || strings.Contains(out, "@udf.1.NEG.end") {
+	if strings.Contains(out, "udf.1.NEG.start") || strings.Contains(out, "udf.1.NEG.end") {
 		t.Fatalf("invalid negative entry must not produce boundary labels:\n%s", out)
 	}
 
-	if strings.Contains(out, "@udf.2.BIG.start") || strings.Contains(out, "@udf.2.BIG.end") {
+	if strings.Contains(out, "udf.2.BIG.start") || strings.Contains(out, "udf.2.BIG.end") {
 		t.Fatalf("out-of-range entry must not produce boundary labels:\n%s", out)
 	}
 }
@@ -203,13 +203,55 @@ func TestDisassemble_LabelFormatting_NoColonAndBlankLineBetweenBlocks(t *testing
 		t.Fatalf("Disassemble() error: %v", err)
 	}
 
-	if !strings.Contains(out, "\n\n@loop.1.1.end\n") {
+	if !strings.Contains(out, "\n\nloop.1.1.end\n") {
 		t.Fatalf("expected blank line before second label block:\n%s", out)
 	}
 
+	definitionCount := 0
 	for _, line := range strings.Split(out, "\n") {
+		if line == "loop.1.1.start" || line == "loop.1.1.end" {
+			definitionCount++
+		}
+
+		if strings.HasPrefix(line, "@") {
+			t.Fatalf("label definition must not start with '@', got line %q\n%s", line, out)
+		}
+
 		if strings.HasPrefix(line, "@") && strings.HasSuffix(line, ":") {
 			t.Fatalf("label definition must not end with colon, got line %q\n%s", line, out)
 		}
+	}
+
+	if definitionCount == 0 {
+		t.Fatalf("expected at least one label definition line in output:\n%s", out)
+	}
+}
+
+func TestDisassemble_LabelDefinitionWithoutAt_LabelReferenceWithAt(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpJump, bytecode.Operand(2)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Metadata: bytecode.Metadata{
+			Labels: map[int]string{
+				2: "loop.1.1.end",
+			},
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	if !strings.Contains(out, "\nloop.1.1.end\n") {
+		t.Fatalf("expected label definition without '@':\n%s", out)
+	}
+
+	if !strings.Contains(out, "JMP @loop.1.1.end") {
+		t.Fatalf("expected jump operand to keep '@' reference style:\n%s", out)
 	}
 }

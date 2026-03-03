@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"sort"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -96,7 +97,7 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 			}
 
 			for _, label := range ipLabels {
-				_, _ = fmt.Fprintf(w, "%s\n", label)
+				_, _ = fmt.Fprintf(w, "%s\n", formatLabelDefinition(label))
 			}
 		}
 
@@ -140,6 +141,11 @@ func collectLabels(instructions []bytecode.Instruction, names map[int]string) ma
 	}
 
 	return labels
+}
+
+// formatLabelDefinition strips the label-reference prefix from label definitions.
+func formatLabelDefinition(label string) string {
+	return strings.TrimPrefix(label, "@")
 }
 
 type udfBoundaryLabels struct {
