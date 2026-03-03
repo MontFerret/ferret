@@ -74,7 +74,12 @@ func (d *ErrorListener) parseError(msg string, offending antlr.Token) *diagnosti
 		},
 	}
 
-	AnalyzeSyntaxError(d.src, err, d.history.Last())
+	node := d.history.Last()
+	if node == nil && offending != nil {
+		node = &TokenNode{token: offending}
+	}
+
+	AnalyzeSyntaxError(d.src, err, node)
 
 	return err
 }

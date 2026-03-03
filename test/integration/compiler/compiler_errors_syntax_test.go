@@ -67,18 +67,24 @@ func TestSyntaxErrors(t *testing.T) {
 			}, "Undelimited function body"),
 		ErrorCase(
 			`
-			FUNC f() => RETURN 1
-			RETURN f()
-		`, E{
+				FUNC f() => RETURN 1
+				RETURN f()
+			`, E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after '=>'",
 				Hint:    "Provide an expression, e.g. FUNC f() => x + 1",
 			}, "Missing arrow expression"),
+		ErrorCase(
+			`=>`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected expression after '=>'",
+				Hint:    "Provide an expression, e.g. FUNC f() => x + 1",
+			}, "Missing arrow expression at start of input"),
 
 		ErrorCase(
 			`
-			LET a = 1
-			LET b = 2
+				LET a = 1
+				LET b = 2
 			LET i = (a ||
 			RETURN i
 		`, E{
@@ -262,14 +268,14 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Provide an end value to complete the range, e.g. 0..10.",
 			}, "Incomplete range"),
 
-		SkipErrorCase(
+		ErrorCase(
 			`
-			LET r = ..0
-			RETURN r
-		`, E{
+				LET r = ..0
+				RETURN r
+			`, E{
 				Kind:    parserd.SyntaxError,
-				Message: "Expected end value before '..' in range expression",
-				Hint:    "Object properties must have a name before the colon, e.g. { property: 123 }.",
+				Message: "Expected end value after '..' in range expression",
+				Hint:    "Provide an end value to complete the range, e.g. ..10.",
 			}, "Incomplete range 2"),
 	})
 }

@@ -36,6 +36,15 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 			"Missing query string after type",
 		),
 		ErrorCase(
+			`LET doc = {} RETURN doc[~ css"x"`,
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected query type before query literal",
+				Hint:    "Provide a type name before the query string, e.g. doc[~ css`...`].",
+			},
+			"Missing query type before query literal",
+		),
+		ErrorCase(
 			`RETURN [1, 2][* RETURN]`,
 			E{
 				Kind:    parserd.SyntaxError,

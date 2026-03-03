@@ -10,8 +10,9 @@ import (
 
 func matchCommonErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if isNoAlternative(err.Message) || isMissing(err.Message) || isMismatched(err.Message) {
-		if is(offending.Prev(), "=>") || is(offending, "=>") {
-			span := spanFromTokenSafe(offending.Prev().Token(), src)
+		prev := offending.Prev()
+		if node := anyIs(prev, offending, "=>"); node != nil {
+			span := spanFromTokenSafe(node.Token(), src)
 			span.Start += 2
 			span.End += 2
 
