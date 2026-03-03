@@ -122,9 +122,14 @@ func TestDisassemble_UDFLabelsCoexistWithMetadataLabels(t *testing.T) {
 	canonicalPos := strings.Index(out, "loop.1.1.start")
 	udfPos := strings.Index(out, "udf.0.F.start")
 	insPos := strings.Index(out, "2: LOADC")
+	combined := "loop.1.1.start, udf.0.F.start"
 
 	if canonicalPos < 0 || udfPos < 0 {
 		t.Fatalf("expected both canonical and udf labels at ip 2:\n%s", out)
+	}
+
+	if !strings.Contains(out, combined) {
+		t.Fatalf("expected stacked labels on one line %q:\n%s", combined, out)
 	}
 
 	if insPos < 0 {
@@ -253,5 +258,29 @@ func TestDisassemble_LabelDefinitionWithoutAt_LabelReferenceWithAt(t *testing.T)
 
 	if !strings.Contains(out, "JMP @loop.1.1.end") {
 		t.Fatalf("expected jump operand to keep '@' reference style:\n%s", out)
+	}
+}
+
+func TestDisassemble_StackedUDFStartEndSingleInstruction(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Functions: bytecode.Functions{
+			UserDefined: []bytecode.UDF{
+				{Name: "ONE", Entry: 0, Registers: 1, Params: 0},
+			},
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	expected := "udf.0.ONE.start, udf.0.ONE.end"
+	if !strings.Contains(out, expected) {
+		t.Fatalf("expected stacked UDF start/end labels on one line %q:\n%s", expected, out)
 	}
 }

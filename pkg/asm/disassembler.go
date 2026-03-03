@@ -96,9 +96,12 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 				_, _ = fmt.Fprintln(w)
 			}
 
+			formatted := make([]string, 0, len(ipLabels))
 			for _, label := range ipLabels {
-				_, _ = fmt.Fprintf(w, "%s\n", formatLabelDefinition(label))
+				formatted = append(formatted, formatLabelDefinition(label))
 			}
+
+			_, _ = fmt.Fprintf(w, "%s\n", strings.Join(formatted, ", "))
 		}
 
 		var prev *bytecode.Instruction
