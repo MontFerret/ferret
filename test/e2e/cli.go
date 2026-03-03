@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MontFerret/ferret/v2/pkg/asm"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
@@ -642,7 +643,9 @@ func analyzeQuery(query *file.Source) error {
 
 	prof.StartTimer(compilation)
 
-	c.MustCompile(query)
+	prog := c.MustCompile(query)
+
+	fmt.Println(asm.Disassemble(prog))
 
 	prof.StopTimer(compilation)
 
