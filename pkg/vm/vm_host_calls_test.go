@@ -60,3 +60,38 @@ func TestRunReturnsUnresolvedFunctionWhenHostCacheEntryIsMissing(t *testing.T) {
 		t.Fatalf("expected unresolved function message, got %q", rtErr.Message)
 	}
 }
+
+func TestSetCallResult_AppliesCatchJumpZeroAndFallbackValue(t *testing.T) {
+	instance := New(&bytecode.Program{
+		Registers: 2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(1)),
+		},
+		CatchTable: []bytecode.Catch{
+			{1, 1, 0},
+		},
+	})
+
+	instance.pc = 1
+	instance.registers.Values[1] = runtime.True
+
+	err := instance.setCallResult(
+		bytecode.OpHCall,
+		bytecode.NewRegister(1),
+		runtime.True,
+		errors.New("boom"),
+	)
+
+	if err != nil {
+		t.Fatalf("expected caught error to be swallowed, got %v", err)
+	}
+
+	if got := instance.registers.Values[1]; got != runtime.None {
+		t.Fatalf("expected destination to be reset to none, got %v", got)
+	}
+
+	if got, want := instance.pc, 0; got != want {
+		t.Fatalf("expected catch jump target %d, got %d", want, got)
+	}
+}

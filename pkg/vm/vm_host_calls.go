@@ -160,7 +160,7 @@ func (vm *VM) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtim
 	if catch, ok := vm.tryCatch(vm.pc); ok {
 		reg[dst] = runtime.None
 
-		if catch[2] > 0 {
+		if catch[2] >= 0 {
 			vm.pc = catch[2]
 		}
 

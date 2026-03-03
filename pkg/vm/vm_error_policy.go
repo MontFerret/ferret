@@ -25,9 +25,13 @@ func (vm *VM) handleErrorWithCatch(err error, onCatch func()) error {
 		return nil
 	}
 
-	if _, catch := vm.tryCatch(vm.pc); catch {
+	if catch, ok := vm.tryCatch(vm.pc); ok {
 		if onCatch != nil {
 			onCatch()
+		}
+
+		if catch[2] >= 0 {
+			vm.pc = catch[2]
 		}
 
 		return nil

@@ -235,7 +235,7 @@ func collectJumpTargets(code []bytecode.Instruction, catches []bytecode.Catch) m
 	}
 
 	for _, entry := range catches {
-		if entry[2] > 0 {
+		if entry[2] >= 0 {
 			targets[entry[2]] = true
 		}
 	}
@@ -447,7 +447,7 @@ func remapCatchTable(prog *bytecode.Program, indexMap []int, keep []bool) {
 			continue
 		}
 		jump := entry[2]
-		if jump > 0 {
+		if jump >= 0 {
 			jump = remapIndexForward(indexMap, keep, jump)
 		}
 		updated = append(updated, bytecode.Catch{start, end, jump})
