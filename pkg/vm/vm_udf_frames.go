@@ -40,6 +40,10 @@ func (vm *VM) unwindToProtected() bool {
 		}
 
 		frame := vm.frames[i]
+		for j := i + 1; j < len(vm.frames); j++ {
+			vm.regPool.put(vm.frames[j].registers)
+		}
+
 		vm.frames = vm.frames[:i]
 		vm.regPool.put(vm.registers.Values)
 		vm.registers.Values = frame.registers
