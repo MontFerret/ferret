@@ -657,7 +657,12 @@ func analyzeQuery(query *file.Source) error {
 
 	prof.StartTimer(compilation)
 
-	prog := c.MustCompile(query)
+	prog, err := c.Compile(query)
+
+	if err != nil {
+		fmt.Println(diagnostics.Format(err))
+		os.Exit(1)
+	}
 
 	fmt.Println(asm.Disassemble(prog))
 

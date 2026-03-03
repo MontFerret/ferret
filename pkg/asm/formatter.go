@@ -35,7 +35,7 @@ func constValue(p *bytecode.Program, idx int) string {
 }
 
 func formatProgram(p *bytecode.Program) string {
-	return fmt.Sprintf(".prog %d %d %d", len(p.Bytecode), len(p.Constants), len(p.Params))
+	return fmt.Sprintf(".prog %d %d %d", p.Registers, len(p.Constants), len(p.Params))
 }
 
 // formatLocation returns a line/col comment if available for the given instruction.

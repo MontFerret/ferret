@@ -117,13 +117,3 @@ func (c *Compiler) Compile(src *file.Source) (program *bytecode.Program, err err
 
 	return program, err
 }
-
-func (c *Compiler) MustCompile(src *file.Source) *bytecode.Program {
-	program, err := c.Compile(src)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return program
-}
