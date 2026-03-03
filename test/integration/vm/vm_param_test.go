@@ -32,3 +32,23 @@ RETURN read()
 		vm.WithParam("end", 5),
 	)
 }
+
+func TestParamInNestedUdf(t *testing.T) {
+	expr := `
+FUNC outer() (
+  FUNC middle() (
+    FUNC inner() => @foo
+    RETURN inner()
+  )
+  RETURN middle()
+)
+RETURN outer()
+`
+
+	RunUseCases(t,
+		[]UseCase{
+			CaseRuntimeErrorStr(expr, "Missing parameter", "Should report missing parameter used only in nested UDF path"),
+			Options(Case(expr, "bar", "Should resolve parameter in nested UDF path when provided"), vm.WithParam("foo", "bar")),
+		},
+	)
+}
