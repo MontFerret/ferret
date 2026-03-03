@@ -22,6 +22,9 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 	var buf bytes.Buffer
 	w := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
 
+	// Header: program info
+	_, _ = fmt.Fprintln(w, formatProgram(p))
+
 	// Header: functions
 	for name, args := range p.Functions.Host {
 		_, _ = fmt.Fprintln(w, formatFunction(name, args))
