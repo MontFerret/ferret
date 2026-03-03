@@ -284,3 +284,91 @@ func TestDisassemble_StackedUDFStartEndSingleInstruction(t *testing.T) {
 		t.Fatalf("expected stacked UDF start/end labels on one line %q:\n%s", expected, out)
 	}
 }
+
+func TestDisassemble_HCallCommentWithHostFunctionName(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(1), bytecode.NewRegister(2), bytecode.NewRegister(2)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("X::DO"),
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	if !strings.Contains(out, "1: HCALL R1 R2 R2 ; host X::DO") {
+		t.Fatalf("expected HCALL host comment in output:\n%s", out)
+	}
+}
+
+func TestDisassemble_ProtectedHCallCommentWithHostFunctionName(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpProtectedHCall, bytecode.NewRegister(1), bytecode.NewRegister(2), bytecode.NewRegister(2)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("X::SAFE"),
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	if !strings.Contains(out, "1: PHCALL R1 R2 R2 ; host X::SAFE") {
+		t.Fatalf("expected protected HCALL host comment in output:\n%s", out)
+	}
+}
+
+func TestDisassemble_HCallCommentMissingWhenNoMatchingLoadConst(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(2), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(1), bytecode.NewRegister(2), bytecode.NewRegister(2)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("X::DO"),
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	if strings.Contains(out, "; host X::DO") {
+		t.Fatalf("did not expect host comment when LOADC register does not match HCALL register:\n%s", out)
+	}
+}
+
+func TestDisassemble_HCallCommentMissingWhenConstantIsNotString(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(1), bytecode.NewRegister(2), bytecode.NewRegister(2)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewInt(42),
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	if strings.Contains(out, "; host ") {
+		t.Fatalf("did not expect host comment when function-name constant is not a string:\n%s", out)
+	}
+}

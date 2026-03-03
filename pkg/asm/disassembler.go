@@ -293,12 +293,27 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 		}
 	}
 
+	if isHostCallOpcode(opcode) {
+		if comment := hostCallComment(p, instr, prev); comment != "" {
+			out += formatComment(comment)
+		}
+	}
+
 	return out
 }
 
 func isUdfCallOpcode(op bytecode.Opcode) bool {
 	switch op {
 	case bytecode.OpCall, bytecode.OpProtectedCall, bytecode.OpTailCall:
+		return true
+	default:
+		return false
+	}
+}
+
+func isHostCallOpcode(op bytecode.Opcode) bool {
+	switch op {
+	case bytecode.OpHCall, bytecode.OpProtectedHCall:
 		return true
 	default:
 		return false
@@ -338,4 +353,34 @@ func udfCallComment(p *bytecode.Program, instr bytecode.Instruction, prev *bytec
 	}
 
 	return fmt.Sprintf("udf %s", p.Functions.UserDefined[id].Name)
+}
+
+func hostCallComment(p *bytecode.Program, instr bytecode.Instruction, prev *bytecode.Instruction) string {
+	if p == nil || prev == nil {
+		return ""
+	}
+
+	if prev.Opcode != bytecode.OpLoadConst {
+		return ""
+	}
+
+	if prev.Operands[0] != instr.Operands[0] {
+		return ""
+	}
+
+	if !prev.Operands[1].IsConstant() {
+		return ""
+	}
+
+	idx := prev.Operands[1].Constant()
+	if idx < 0 || idx >= len(p.Constants) {
+		return ""
+	}
+
+	name, ok := p.Constants[idx].(runtime.String)
+	if !ok {
+		return ""
+	}
+
+	return fmt.Sprintf("host %s", name)
 }
