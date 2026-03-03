@@ -8,6 +8,100 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
+func TestDisassemble_HeaderSectionsStackedLayout(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  4,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Params: []string{"value"},
+		Constants: []runtime.Value{
+			runtime.NewString("value"),
+			runtime.NewInt(0),
+			runtime.NewInt(1),
+			runtime.NewString("X::DO"),
+		},
+		Functions: bytecode.Functions{
+			Host: map[string]int{
+				"X::DO": 1,
+			},
+			UserDefined: []bytecode.UDF{
+				{Name: "FACT", Entry: 0, Registers: 10, Params: 1},
+			},
+		},
+		Metadata: bytecode.Metadata{
+			CompilerVersion:   "2.0.0",
+			OptimizationLevel: 1,
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	metaPos := strings.Index(out, "\n.meta\n")
+	paramsPos := strings.Index(out, "\n.params\n")
+	constsPos := strings.Index(out, "\n.consts\n")
+	udfPos := strings.Index(out, "\n.udf\n")
+	funcPos := strings.Index(out, "\n.func\n")
+	bodyPos := strings.Index(out, "0: RET R0")
+
+	if metaPos < 0 || paramsPos < 0 || constsPos < 0 || udfPos < 0 || funcPos < 0 || bodyPos < 0 {
+		t.Fatalf("expected stacked header sections and body in output:\n%s", out)
+	}
+
+	if !(metaPos < paramsPos && paramsPos < constsPos && constsPos < udfPos && udfPos < funcPos && funcPos < bodyPos) {
+		t.Fatalf("unexpected section order in output:\n%s", out)
+	}
+
+	expectedRows := []string{
+		"\n  compiler 2.0.0\n",
+		"\n  opt O1\n",
+		"\n  value\n",
+		"\n  \"value\"\n",
+		"\n  0\n",
+		"\n  1\n",
+		"\n  \"X::DO\"\n",
+		"\n  0 FACT 0 10 1  ; id name entry registers params\n",
+		"\n  X::DO 1 ; name params\n",
+	}
+
+	for _, row := range expectedRows {
+		if !strings.Contains(out, row) {
+			t.Fatalf("missing expected row %q in output:\n%s", row, out)
+		}
+	}
+}
+
+func TestDisassemble_HeaderSections_OmitEmptySections(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Metadata: bytecode.Metadata{
+			CompilerVersion:   "2.0.0",
+			OptimizationLevel: 0,
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	if !strings.Contains(out, "\n.meta\n") {
+		t.Fatalf("expected .meta section in output:\n%s", out)
+	}
+
+	if strings.Contains(out, "\n.params\n") || strings.Contains(out, "\n.consts\n") || strings.Contains(out, "\n.udf\n") || strings.Contains(out, "\n.func\n") {
+		t.Fatalf("expected empty sections to be omitted:\n%s", out)
+	}
+}
+
 func TestDisassemble_UDFStartEndLabels(t *testing.T) {
 	prog := &bytecode.Program{
 		ISAVersion: bytecode.Version,

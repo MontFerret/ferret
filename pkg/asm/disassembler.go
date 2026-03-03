@@ -30,37 +30,66 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 	// Header: version and source info
 	_, _ = fmt.Fprintf(w, ".isa %s\n", formatVersionNum(p.ISAVersion))
 	_, _ = fmt.Fprintf(w, ".asm %s\n", formatVersionNum(Version))
-	_, _ = fmt.Fprintf(w, ".meta compiler %s\n", formatVersion(p.Metadata.CompilerVersion))
-	_, _ = fmt.Fprintf(w, ".meta opt O%d\n", p.Metadata.OptimizationLevel)
+
+	_, _ = fmt.Fprintln(w)
+
+	_, _ = fmt.Fprintln(w, ".meta")
+	_, _ = fmt.Fprintf(w, "  %s\n", formatMetaCompilerRow(p.Metadata.CompilerVersion))
+	_, _ = fmt.Fprintf(w, "  %s\n", formatMetaOptimizationRow(p.Metadata.OptimizationLevel))
 
 	_, _ = fmt.Fprintln(w)
 
 	// Header: program info
 	_, _ = fmt.Fprintln(w, formatProgram(p))
 
-	// Header: functions
-	for name, args := range p.Functions.Host {
-		_, _ = fmt.Fprintln(w, formatFunctionHeader(name, args))
-	}
+	writeSection := func(name string, rows []string) {
+		if len(rows) == 0 {
+			return
+		}
 
-	// Header: UDFs
-	for id, udf := range p.Functions.UserDefined {
-		_, _ = fmt.Fprintln(w, formatUdfHeader(id, udf))
-	}
-
-	// Header: params
-	for _, name := range p.Params {
-		_, _ = fmt.Fprintln(w, formatParamHeader(name))
-	}
-
-	// Header: constants
-	for _, constant := range p.Constants {
-		_, _ = fmt.Fprintln(w, formatConstant(constant))
-	}
-
-	if buf.Len() > 0 {
 		_, _ = fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w, name)
+
+		for _, row := range rows {
+			_, _ = fmt.Fprintf(w, "  %s\n", row)
+		}
 	}
+
+	paramRows := make([]string, 0, len(p.Params))
+	for _, name := range p.Params {
+		paramRows = append(paramRows, formatParamRow(name))
+	}
+
+	constRows := make([]string, 0, len(p.Constants))
+	for _, constant := range p.Constants {
+		constRows = append(constRows, formatConstantRow(constant))
+	}
+
+	udfRows := make([]string, 0, len(p.Functions.UserDefined))
+	for id, udf := range p.Functions.UserDefined {
+		udfRows = append(udfRows, formatUdfRow(id, udf))
+	}
+
+	funcRows := make([]string, 0, len(p.Functions.Host))
+	if len(p.Functions.Host) > 0 {
+		names := make([]string, 0, len(p.Functions.Host))
+		for name := range p.Functions.Host {
+			names = append(names, name)
+		}
+
+		sort.Strings(names)
+
+		for _, name := range names {
+			funcRows = append(funcRows, formatFunctionRow(name, p.Functions.Host[name]))
+		}
+	}
+
+	writeSection(".params", paramRows)
+	writeSection(".consts", constRows)
+	writeSection(".udf", udfRows)
+	writeSection(".func", funcRows)
+
+	_, _ = fmt.Fprintln(w)
 
 	// Body: disassembly
 	bodyStarted := false

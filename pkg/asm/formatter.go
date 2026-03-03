@@ -60,25 +60,49 @@ func formatVersionNum(v int) string {
 	return formatVersion(fmt.Sprintf("%d", v))
 }
 
-// formatParamHeader generates comments mapping register indices to parameter names.
-func formatParamHeader(name string) string {
-	return fmt.Sprintf(".param %s", name)
+func formatMetaCompilerRow(version string) string {
+	return fmt.Sprintf("compiler %s", formatVersion(version))
 }
 
-// formatFunctionHeader generates comments for the functions defined in the program.
-func formatFunctionHeader(name string, args int) string {
-	return fmt.Sprintf(".func %s %d ; name params", name, args)
+func formatMetaOptimizationRow(level int) string {
+	return fmt.Sprintf("opt O%d", level)
 }
 
-// formatUdfHeader generates comments for the UDF table entries.
-func formatUdfHeader(id int, udf bytecode.UDF) string {
+func formatParamRow(name string) string {
+	return name
+}
+
+func formatFunctionRow(name string, args int) string {
+	return fmt.Sprintf("%s %d ; name params", name, args)
+}
+
+func formatUdfRow(id int, udf bytecode.UDF) string {
 	comment := "id name entry registers params"
-	return fmt.Sprintf(".udf %d %s %d %d %d %s", id, udf.Name, udf.Entry, udf.Registers, udf.Params, formatComment(comment))
+	return fmt.Sprintf("%d %s %d %d %d %s", id, udf.Name, udf.Entry, udf.Registers, udf.Params, formatComment(comment))
 }
 
-// formatConstant generates a comment for a constant value in the program.
+func formatConstantRow(constant runtime.Value) string {
+	return constantAsText(constant)
+}
+
+// formatParamHeader is a legacy single-line header helper.
+func formatParamHeader(name string) string {
+	return fmt.Sprintf(".param %s", formatParamRow(name))
+}
+
+// formatFunctionHeader is a legacy single-line header helper.
+func formatFunctionHeader(name string, args int) string {
+	return fmt.Sprintf(".func %s", formatFunctionRow(name, args))
+}
+
+// formatUdfHeader is a legacy single-line header helper.
+func formatUdfHeader(id int, udf bytecode.UDF) string {
+	return fmt.Sprintf(".udf %s", formatUdfRow(id, udf))
+}
+
+// formatConstant is a legacy single-line header helper.
 func formatConstant(constant runtime.Value) string {
-	return fmt.Sprintf(".const %s", constantAsText(constant))
+	return fmt.Sprintf(".const %s", formatConstantRow(constant))
 }
 
 func formatOperand(op bytecode.Operand) string {
