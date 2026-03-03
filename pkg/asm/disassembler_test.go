@@ -154,7 +154,7 @@ func TestDisassemble_EntryOmittedWhenNoBytecode(t *testing.T) {
 	}
 }
 
-func TestDisassemble_UDFStartEndLabels(t *testing.T) {
+func TestDisassemble_UDFEntryLabels(t *testing.T) {
 	prog := &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Bytecode: []bytecode.Instruction{
@@ -183,19 +183,21 @@ func TestDisassemble_UDFStartEndLabels(t *testing.T) {
 	}
 
 	expected := []string{
-		"udf.0.A.start",
-		"udf.0.A.end",
-		"udf.1.B.start",
-		"udf.1.B.end",
+		"udf.0.A",
+		"udf.1.B",
 	}
 	for _, label := range expected {
 		if !strings.Contains(out, label) {
 			t.Fatalf("missing label %q in output:\n%s", label, out)
 		}
 	}
+
+	if strings.Contains(out, "udf.0.A.start") || strings.Contains(out, "udf.0.A.end") || strings.Contains(out, "udf.1.B.start") || strings.Contains(out, "udf.1.B.end") {
+		t.Fatalf("did not expect UDF boundary label suffixes in output:\n%s", out)
+	}
 }
 
-func TestDisassemble_UDFEndLabelOnTailCall(t *testing.T) {
+func TestDisassemble_UDFLabelAtEntryForTailCallBody(t *testing.T) {
 	prog := &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Bytecode: []bytecode.Instruction{
@@ -220,19 +222,23 @@ func TestDisassemble_UDFEndLabelOnTailCall(t *testing.T) {
 		t.Fatalf("Disassemble() error: %v", err)
 	}
 
-	endPos := strings.Index(out, "udf.0.OUTER.end")
-	tailPos := strings.Index(out, "4: TAILCALL")
+	udfPos := strings.Index(out, "udf.0.OUTER")
+	entryInstrPos := strings.Index(out, "3: LOADC")
 
-	if endPos < 0 {
-		t.Fatalf("missing UDF end label in output:\n%s", out)
+	if udfPos < 0 {
+		t.Fatalf("missing UDF entry label in output:\n%s", out)
 	}
 
-	if tailPos < 0 {
-		t.Fatalf("missing TAILCALL instruction in output:\n%s", out)
+	if entryInstrPos < 0 {
+		t.Fatalf("missing UDF entry instruction in output:\n%s", out)
 	}
 
-	if endPos > tailPos {
-		t.Fatalf("UDF end label must appear before tail call line:\n%s", out)
+	if udfPos > entryInstrPos {
+		t.Fatalf("UDF entry label must appear before entry instruction:\n%s", out)
+	}
+
+	if strings.Contains(out, "udf.0.OUTER.end") {
+		t.Fatalf("did not expect UDF end label in output:\n%s", out)
 	}
 }
 
@@ -266,9 +272,9 @@ func TestDisassemble_UDFLabelsCoexistWithMetadataLabels(t *testing.T) {
 	}
 
 	canonicalPos := strings.Index(out, "loop.1.1.start")
-	udfPos := strings.Index(out, "udf.0.F.start")
+	udfPos := strings.Index(out, "udf.0.F")
 	insPos := strings.Index(out, "2: LOADC")
-	combined := "loop.1.1.start, udf.0.F.start"
+	combined := "loop.1.1.start, udf.0.F"
 
 	if canonicalPos < 0 || udfPos < 0 {
 		t.Fatalf("expected both canonical and udf labels at ip 2:\n%s", out)
@@ -316,19 +322,19 @@ func TestDisassemble_UDFLabelsIgnoreInvalidEntries(t *testing.T) {
 		t.Fatalf("Disassemble() error: %v", err)
 	}
 
-	if !strings.Contains(out, "udf.0.VALID.start") {
+	if !strings.Contains(out, "udf.0.VALID") {
 		t.Fatalf("missing label for valid udf:\n%s", out)
 	}
 
-	if !strings.Contains(out, "udf.0.VALID.end") {
-		t.Fatalf("missing end label for valid udf:\n%s", out)
+	if strings.Contains(out, "udf.0.VALID.start") || strings.Contains(out, "udf.0.VALID.end") {
+		t.Fatalf("did not expect UDF boundary label suffixes for valid udf:\n%s", out)
 	}
 
-	if strings.Contains(out, "udf.1.NEG.start") || strings.Contains(out, "udf.1.NEG.end") {
+	if strings.Contains(out, "udf.1.NEG") {
 		t.Fatalf("invalid negative entry must not produce boundary labels:\n%s", out)
 	}
 
-	if strings.Contains(out, "udf.2.BIG.start") || strings.Contains(out, "udf.2.BIG.end") {
+	if strings.Contains(out, "udf.2.BIG") {
 		t.Fatalf("out-of-range entry must not produce boundary labels:\n%s", out)
 	}
 }
@@ -407,7 +413,7 @@ func TestDisassemble_LabelDefinitionWithoutAt_LabelReferenceWithAt(t *testing.T)
 	}
 }
 
-func TestDisassemble_StackedUDFStartEndSingleInstruction(t *testing.T) {
+func TestDisassemble_UDFSingleInstructionEntryOnlyLabel(t *testing.T) {
 	prog := &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Bytecode: []bytecode.Instruction{
@@ -425,9 +431,12 @@ func TestDisassemble_StackedUDFStartEndSingleInstruction(t *testing.T) {
 		t.Fatalf("Disassemble() error: %v", err)
 	}
 
-	expected := "udf.0.ONE.start, udf.0.ONE.end"
-	if !strings.Contains(out, expected) {
-		t.Fatalf("expected stacked UDF start/end labels on one line %q:\n%s", expected, out)
+	if !strings.Contains(out, "udf.0.ONE") {
+		t.Fatalf("expected UDF entry label in output:\n%s", out)
+	}
+
+	if strings.Contains(out, "udf.0.ONE.start") || strings.Contains(out, "udf.0.ONE.end") {
+		t.Fatalf("did not expect UDF boundary label suffixes for single-instruction udf:\n%s", out)
 	}
 }
 

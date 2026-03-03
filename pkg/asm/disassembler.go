@@ -22,7 +22,7 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 	newDisassemblerOptions(options...)
 
 	labels := collectLabels(p.Bytecode, p.Metadata.Labels)
-	udfLabels := collectUdfBoundaryLabels(p)
+	udfLabels := collectUdfEntryLabels(p)
 
 	var buf bytes.Buffer
 	w := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
@@ -105,16 +105,7 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 			emitted[label] = struct{}{}
 		}
 
-		for _, label := range udfLabels.starts[ip] {
-			if _, ok := emitted[label]; ok {
-				continue
-			}
-
-			ipLabels = append(ipLabels, label)
-			emitted[label] = struct{}{}
-		}
-
-		for _, label := range udfLabels.ends[ip] {
+		for _, label := range udfLabels.entries[ip] {
 			if _, ok := emitted[label]; ok {
 				continue
 			}
@@ -183,15 +174,13 @@ func formatLabelDefinition(label string) string {
 	return strings.TrimPrefix(label, "@")
 }
 
-type udfBoundaryLabels struct {
-	starts map[int][]string
-	ends   map[int][]string
+type udfEntryLabels struct {
+	entries map[int][]string
 }
 
-func collectUdfBoundaryLabels(p *bytecode.Program) udfBoundaryLabels {
-	result := udfBoundaryLabels{
-		starts: make(map[int][]string),
-		ends:   make(map[int][]string),
+func collectUdfEntryLabels(p *bytecode.Program) udfEntryLabels {
+	result := udfEntryLabels{
+		entries: make(map[int][]string),
 	}
 
 	if p == nil || len(p.Bytecode) == 0 || len(p.Functions.UserDefined) == 0 {
@@ -229,26 +218,10 @@ func collectUdfBoundaryLabels(p *bytecode.Program) udfBoundaryLabels {
 		return entries[i].entry < entries[j].entry
 	})
 
-	lastIdx := len(p.Bytecode) - 1
 	for i := range entries {
 		cur := entries[i]
-		end := lastIdx
-
-		for j := i + 1; j < len(entries); j++ {
-			next := entries[j]
-			if next.entry <= cur.entry {
-				continue
-			}
-
-			end = next.entry - 1
-			break
-		}
-
-		startLabel := fmt.Sprintf("@udf.%d.%s.start", cur.id, cur.name)
-		endLabel := fmt.Sprintf("@udf.%d.%s.end", cur.id, cur.name)
-
-		result.starts[cur.entry] = append(result.starts[cur.entry], startLabel)
-		result.ends[end] = append(result.ends[end], endLabel)
+		entryLabel := fmt.Sprintf("@udf.%d.%s", cur.id, cur.name)
+		result.entries[cur.entry] = append(result.entries[cur.entry], entryLabel)
 	}
 
 	return result
