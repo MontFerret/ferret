@@ -9,6 +9,8 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
+const Version = 1
+
 // Disassemble returns a human-readable disassembly of the given program.
 func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, error) {
 	if p == nil {
@@ -22,22 +24,30 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 	var buf bytes.Buffer
 	w := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
 
+	// Header: version and source info
+	_, _ = fmt.Fprintf(w, ".isa %s\n", formatVersionNum(p.ISAVersion))
+	_, _ = fmt.Fprintf(w, ".asm %s\n", formatVersionNum(Version))
+	_, _ = fmt.Fprintf(w, ".meta compiler %s\n", formatVersion(p.Metadata.CompilerVersion))
+	_, _ = fmt.Fprintf(w, ".meta opt O%d\n", p.Metadata.OptimizationLevel)
+
+	_, _ = fmt.Fprintln(w)
+
 	// Header: program info
 	_, _ = fmt.Fprintln(w, formatProgram(p))
 
 	// Header: functions
 	for name, args := range p.Functions.Host {
-		_, _ = fmt.Fprintln(w, formatFunction(name, args))
+		_, _ = fmt.Fprintln(w, formatFunctionHeader(name, args))
 	}
 
 	// Header: UDFs
 	for id, udf := range p.Functions.UserDefined {
-		_, _ = fmt.Fprintln(w, formatUdf(id, udf))
+		_, _ = fmt.Fprintln(w, formatUdfHeader(id, udf))
 	}
 
 	// Header: params
 	for _, name := range p.Params {
-		_, _ = fmt.Fprintln(w, formatParam(name))
+		_, _ = fmt.Fprintln(w, formatParamHeader(name))
 	}
 
 	// Header: constants
@@ -133,7 +143,7 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 		if ops[2].IsConstant() {
 			cIdx := ops[2].Constant()
 			comment := constValue(p, cIdx)
-			out = fmt.Sprintf("%d: %s %s %s %s ; %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatOperand(ops[2]), comment)
+			out = fmt.Sprintf("%d: %s %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatOperand(ops[2]), formatComment(comment))
 		} else {
 			out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatOperand(ops[2]))
 		}
@@ -142,7 +152,7 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 	case bytecode.OpLoadConst, bytecode.OpLoadParam:
 		cIdx := ops[1].Constant()
 		comment := constValue(p, cIdx)
-		out = fmt.Sprintf("%d: %s %s %s ; %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), comment)
+		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatComment(comment))
 
 	// Op R R
 	case bytecode.OpMove, bytecode.OpLength, bytecode.OpType, bytecode.OpExists,
@@ -163,12 +173,8 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 
 	if isUdfCallOpcode(opcode) {
 		if comment := udfCallComment(p, instr, prev); comment != "" {
-			out += " ; " + comment
+			out += formatComment(comment)
 		}
-	}
-
-	if loc := formatLocation(p, ip); loc != "" {
-		out += " " + loc
 	}
 
 	return out
