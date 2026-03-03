@@ -8,10 +8,11 @@ import (
 )
 
 func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode.Operand, constants []runtime.Value, src2 bytecode.Operand, dst bytecode.Operand) error {
-	src := reg[src1]
-
+	var src runtime.Value
 	if src1.IsConstant() {
 		src = constants[src1.Constant()]
+	} else {
+		src = reg[src1]
 	}
 
 	var arg runtime.Value
