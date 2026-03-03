@@ -1714,11 +1714,7 @@ func (c *ExprCompiler) resolveImplicitCurrent(token antlr.Token) (bytecode.Opera
 		return bytecode.NoopOperand, false
 	}
 
-	if !src.IsRegister() {
-		reg := c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitMove(reg, src)
-		src = reg
-	}
+	src = c.ensureRegister(src)
 
 	return src, true
 }
@@ -2664,10 +2660,7 @@ func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) bytecode.Operan
 		return op
 	}
 
-	reg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitMove(reg, op)
-
-	return reg
+	return c.ensureRegister(op)
 }
 
 // CompileParam processes a parameter reference (e.g., @paramName) from the FQL AST.

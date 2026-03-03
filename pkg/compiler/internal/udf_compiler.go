@@ -132,12 +132,7 @@ func (c *UDFCompiler) compileExpressionReturn(expr fql.IExpressionContext) {
 		}
 	}
 
-	val := c.ctx.ExprCompiler.Compile(expr)
-	if val.IsConstant() {
-		loaded := c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitMove(loaded, val)
-		val = loaded
-	}
+	val := c.ctx.ExprCompiler.ensureRegister(c.ctx.ExprCompiler.Compile(expr))
 
 	c.ctx.Emitter.EmitA(bytecode.OpReturn, val)
 }

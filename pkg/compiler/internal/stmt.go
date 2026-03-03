@@ -84,18 +84,8 @@ func (c *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
 		c.ctx.Emitter.EmitA(bytecode.OpReturn, out)
 	} else if re := ctx.ReturnExpression(); re != nil {
 		// Handle RETURN expressions (e.g., RETURN x)
-		// Compile the expression to return
-		valReg := c.ctx.ExprCompiler.Compile(re.Expression())
-
-		// If the result is a constant, we need to move it to a temporary register
-		// because constants cannot be directly returned
-		if valReg.IsConstant() {
-			valC := valReg
-			valReg = c.ctx.Registers.Allocate()
-
-			// Move the constant value to the temporary register
-			c.ctx.Emitter.EmitMove(valReg, valC)
-		}
+		// Compile and normalize into a register because RETURN expects a register operand.
+		valReg := c.ctx.ExprCompiler.ensureRegister(c.ctx.ExprCompiler.Compile(re.Expression()))
 
 		// Emit a return instruction with the expression result
 		c.ctx.Emitter.EmitA(bytecode.OpReturn, valReg)
