@@ -62,11 +62,13 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 	}
 
 	// Body: disassembly
+	bodyStarted := false
 	for ip, instr := range p.Bytecode {
 		emitted := make(map[string]struct{}, 4)
+		ipLabels := make([]string, 0, 4)
 
 		if label, ok := labels[ip]; ok {
-			_, _ = fmt.Fprintf(w, "%s:\n", label)
+			ipLabels = append(ipLabels, label)
 			emitted[label] = struct{}{}
 		}
 
@@ -75,7 +77,7 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 				continue
 			}
 
-			_, _ = fmt.Fprintf(w, "%s:\n", label)
+			ipLabels = append(ipLabels, label)
 			emitted[label] = struct{}{}
 		}
 
@@ -84,8 +86,18 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 				continue
 			}
 
-			_, _ = fmt.Fprintf(w, "%s:\n", label)
+			ipLabels = append(ipLabels, label)
 			emitted[label] = struct{}{}
+		}
+
+		if len(ipLabels) > 0 {
+			if bodyStarted {
+				_, _ = fmt.Fprintln(w)
+			}
+
+			for _, label := range ipLabels {
+				_, _ = fmt.Fprintf(w, "%s\n", label)
+			}
 		}
 
 		var prev *bytecode.Instruction
@@ -94,6 +106,7 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 		}
 
 		_, _ = fmt.Fprintf(w, "\t%s\n", disasmLine(ip, instr, p, labels, prev))
+		bodyStarted = true
 	}
 
 	_ = w.Flush()
