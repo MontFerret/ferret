@@ -201,6 +201,65 @@ loop:
 			if reg[src1] == runtime.None {
 				vm.pc = int(dst)
 			}
+		case bytecode.OpJumpIfNe:
+			if operators.NotEquals(ctx, reg[src1], reg[src2]) {
+				vm.pc = int(dst)
+			}
+		case bytecode.OpJumpIfNeConst:
+			if operators.NotEquals(ctx, reg[src1], constants[src2.Constant()]) {
+				vm.pc = int(dst)
+			}
+		case bytecode.OpJumpIfEq:
+			if operators.Equals(ctx, reg[src1], reg[src2]) {
+				vm.pc = int(dst)
+			}
+		case bytecode.OpJumpIfEqConst:
+			if operators.Equals(ctx, reg[src1], constants[src2.Constant()]) {
+				vm.pc = int(dst)
+			}
+		case bytecode.OpJumpIfMissingProperty:
+			obj, ok := reg[src1].(runtime.Map)
+			if !ok {
+				vm.pc = int(dst)
+				continue
+			}
+
+			key, ok := reg[src2].(runtime.String)
+			if !ok {
+				vm.pc = int(dst)
+				continue
+			}
+
+			has, err := obj.ContainsKey(ctx, key)
+			if err != nil && vm.handleProtectedError(err) != nil {
+				return nil, err
+			}
+
+			if !has {
+				vm.pc = int(dst)
+			}
+		case bytecode.OpJumpIfMissingPropertyConst:
+			obj, ok := reg[src1].(runtime.Map)
+			if !ok {
+				vm.pc = int(dst)
+
+				continue
+			}
+
+			key, ok := constants[src2.Constant()].(runtime.String)
+			if !ok {
+				vm.pc = int(dst)
+				continue
+			}
+
+			has, err := obj.ContainsKey(ctx, key)
+			if err != nil && vm.handleProtectedError(err) != nil {
+				return nil, err
+			}
+
+			if !has {
+				vm.pc = int(dst)
+			}
 		case bytecode.OpExists:
 			val := reg[src1]
 
@@ -487,16 +546,6 @@ loop:
 			if err := vm.setOrTryCatch(dst, res, err); err != nil {
 				return nil, err
 			}
-		case bytecode.OpJumpIfNe, bytecode.OpJumpIfNeConst, bytecode.OpJumpIfEq, bytecode.OpJumpIfEqConst,
-			bytecode.OpJumpIfMissingProperty, bytecode.OpJumpIfMissingPropertyConst,
-			bytecode.OpReturn:
-			done, err := vm.execControlOps(ctx, op, dst, src1, src2, reg, constants)
-			if err != nil {
-				return nil, err
-			}
-			if done {
-				break loop
-			}
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
 			if err := vm.execHostCall(ctx, op, vm.pc-1, dst, src1, src2); err != nil {
 				return nil, err
@@ -566,6 +615,20 @@ loop:
 			}
 		case bytecode.OpRand:
 			reg[dst] = runtime.NewFloat(runtime.RandomDefault())
+		case bytecode.OpReturn:
+			retVal := reg[dst]
+
+			if frame, ok := vm.popFrame(); ok {
+				vm.regPool.put(vm.registers.Values)
+				vm.registers.Values = frame.registers
+				vm.registers.Values[frame.returnDest] = retVal
+				vm.pc = frame.returnPC
+
+				continue
+			}
+
+			reg[bytecode.NoopOperand] = retVal
+			break loop
 		default:
 			return nil, runtime.Errorf(runtime.ErrUnexpected, "unknown opcode %d at pc %d", op, vm.pc-1)
 		}

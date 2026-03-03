@@ -65,7 +65,7 @@ RETURN outer()
 		t.Fatalf("expected 1 UDF at O1, got %d", len(prog.Functions.UserDefined))
 	}
 
-	var outerParams int = -1
+	var outerParams = -1
 	for _, udf := range prog.Functions.UserDefined {
 		if udf.Name == "OUTER" {
 			outerParams = udf.Params

@@ -34,7 +34,7 @@ func (vm *VM) execStreamOp(
 }
 
 func (vm *VM) execStreamIterOp(
-	ctx context.Context,
+	_ context.Context,
 	dst, src1, src2 bytecode.Operand,
 	reg []runtime.Value,
 ) error {
