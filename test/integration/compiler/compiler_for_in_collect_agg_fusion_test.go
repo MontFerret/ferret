@@ -112,18 +112,11 @@ func hasAggregatePlan(program *bytecode.Program) bool {
 func hasFunctionCallOpcode(program *bytecode.Program) bool {
 	for _, instruction := range program.Bytecode {
 		switch instruction.Opcode {
-		case bytecode.OpCall,
+		case bytecode.OpHCall,
+			bytecode.OpProtectedHCall,
+			bytecode.OpCall,
 			bytecode.OpProtectedCall,
-			bytecode.OpCall0,
-			bytecode.OpProtectedCall0,
-			bytecode.OpCall1,
-			bytecode.OpProtectedCall1,
-			bytecode.OpCall2,
-			bytecode.OpProtectedCall2,
-			bytecode.OpCall3,
-			bytecode.OpProtectedCall3,
-			bytecode.OpCall4,
-			bytecode.OpProtectedCall4:
+			bytecode.OpTailCall:
 			return true
 		}
 	}

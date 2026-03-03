@@ -63,6 +63,7 @@ RegexMatch: '=~';
 // Common Keywords
 Match: 'MATCH';
 When: 'WHEN';
+Func: 'FUNC';
 For: 'FOR';
 Return: 'RETURN';
 Query: 'QUERY';

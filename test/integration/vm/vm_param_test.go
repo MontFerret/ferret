@@ -10,6 +10,10 @@ func TestParam(t *testing.T) {
 	RunUseCases(t,
 		[]UseCase{
 			CaseRuntimeErrorStr(`RETURN @foo`, "Missing parameter"),
+			CaseRuntimeErrorStr(`
+FUNC read() => @foo
+RETURN read()
+`, "Missing parameter"),
 			Case(`RETURN @str`, "bar", "Should return a value of a parameter"),
 			Case(`RETURN @int + @int`, 2, "Should return a sum of two parameters"),
 			Case(`RETURN @obj.str1 + @obj.str2`, "foobar", "Should return a concatenated string of two parameter properties"),
@@ -26,5 +30,25 @@ func TestParam(t *testing.T) {
 		vm.WithParam("values2", map[string]interface{}{"a": "a", "b": "b", "c": "c", "d": "d"}),
 		vm.WithParam("start", 1),
 		vm.WithParam("end", 5),
+	)
+}
+
+func TestParamInNestedUdf(t *testing.T) {
+	expr := `
+FUNC outer() (
+  FUNC middle() (
+    FUNC inner() => @foo
+    RETURN inner()
+  )
+  RETURN middle()
+)
+RETURN outer()
+`
+
+	RunUseCases(t,
+		[]UseCase{
+			CaseRuntimeErrorStr(expr, "Missing parameter", "Should report missing parameter used only in nested UDF path"),
+			Options(Case(expr, "bar", "Should resolve parameter in nested UDF path when provided"), vm.WithParam("foo", "bar")),
+		},
 	)
 }

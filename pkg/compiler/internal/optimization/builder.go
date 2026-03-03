@@ -1,6 +1,8 @@
 package optimization
 
 import (
+	"sort"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
@@ -44,7 +46,7 @@ func (b *Builder) Build() (*ControlFlowGraph, error) {
 		if block.IsTerminator() && len(block.Instructions) > 0 {
 			lastInst := block.Instructions[len(block.Instructions)-1]
 
-			if lastInst.Opcode == bytecode.OpReturn {
+			if bytecode.IsTerminatorOpcode(lastInst.Opcode) {
 				block.AddSuccessor(exit)
 			}
 		}
@@ -71,46 +73,26 @@ func (b *Builder) identifyLeaders(instructions []bytecode.Instruction) map[int]b
 	// Scan through bytecode to find leaders
 	for i, inst := range instructions {
 		op := inst.Opcode
+		role := bytecode.OpcodeInfoOf(op).ControlFlow
 
-		switch op {
-		case bytecode.OpJump:
-			// Target of jump is a leader
-			target := int(inst.Operands[0])
-
-			if target >= 0 && target < len(instructions) {
-				leaders[target] = true
-			}
-
-			// Instruction after jump is a leader (unreachable, but still a block start)
-			if i+1 < len(instructions) {
-				leaders[i+1] = true
-			}
-		case bytecode.OpJumpIfFalse, bytecode.OpJumpIfTrue, bytecode.OpJumpIfNone, bytecode.OpJumpIfNe, bytecode.OpJumpIfNeConst, bytecode.OpJumpIfEq, bytecode.OpJumpIfEqConst, bytecode.OpJumpIfMissingProperty, bytecode.OpJumpIfMissingPropertyConst:
-			// Target of conditional jump is a leader
-			target := int(inst.Operands[0])
+		if role == bytecode.ControlFlowJumpUnconditional || role == bytecode.ControlFlowJumpConditional {
+			targetIdx := bytecode.JumpTargetOperandIndex(op)
+			target := int(inst.Operands[targetIdx])
 
 			if target >= 0 && target < len(instructions) {
 				leaders[target] = true
 			}
 
-			// Instruction after conditional jump is a leader (fall-through path)
+			// Instruction after branch is a leader (fall-through or unreachable block start).
 			if i+1 < len(instructions) {
 				leaders[i+1] = true
 			}
-		case bytecode.OpIterNext:
-			// OpIterNext is like a conditional jump: when iterator is done, jumps to dst
-			target := int(inst.Operands[0])
 
-			if target >= 0 && target < len(instructions) {
-				leaders[target] = true
-			}
+			continue
+		}
 
-			// Instruction after OpIterNext is a leader (fall-through when iterator has more)
-			if i+1 < len(instructions) {
-				leaders[i+1] = true
-			}
-		case bytecode.OpReturn:
-			// Instruction after return is a leader (if it exists, it's unreachable but still a block)
+		if role == bytecode.ControlFlowTerminator {
+			// Instruction after terminator is a leader (if it exists, it's unreachable but still a block).
 			if i+1 < len(instructions) {
 				leaders[i+1] = true
 			}
@@ -131,14 +113,7 @@ func (b *Builder) buildBasicBlocks(instructions []bytecode.Instruction, leaders 
 		leaderIndices = append(leaderIndices, idx)
 	}
 
-	// Sort leader indices
-	for i := 0; i < len(leaderIndices); i++ {
-		for j := i + 1; j < len(leaderIndices); j++ {
-			if leaderIndices[i] > leaderIndices[j] {
-				leaderIndices[i], leaderIndices[j] = leaderIndices[j], leaderIndices[i]
-			}
-		}
-	}
+	sort.Ints(leaderIndices)
 
 	// Create basic blocks
 	for i, start := range leaderIndices {
@@ -177,49 +152,30 @@ func (b *Builder) createEdges(instructions []bytecode.Instruction, blocks []*Bas
 
 		lastInst := block.Instructions[len(block.Instructions)-1]
 		lastIdx := block.End
+		role := bytecode.OpcodeInfoOf(lastInst.Opcode).ControlFlow
 
-		switch lastInst.Opcode {
-		case bytecode.OpJump:
-			// Unconditional jump to target
-			target := int(lastInst.Operands[0])
+		switch role {
+		case bytecode.ControlFlowJumpUnconditional:
+			targetIdx := bytecode.JumpTargetOperandIndex(lastInst.Opcode)
+			target := int(lastInst.Operands[targetIdx])
+			if targetBlock, ok := indexToBlock[target]; ok {
+				block.AddSuccessor(targetBlock)
+			}
+		case bytecode.ControlFlowJumpConditional:
+			targetIdx := bytecode.JumpTargetOperandIndex(lastInst.Opcode)
+			target := int(lastInst.Operands[targetIdx])
 			if targetBlock, ok := indexToBlock[target]; ok {
 				block.AddSuccessor(targetBlock)
 			}
 
-		case bytecode.OpJumpIfFalse, bytecode.OpJumpIfTrue, bytecode.OpJumpIfNone, bytecode.OpJumpIfNe, bytecode.OpJumpIfNeConst, bytecode.OpJumpIfEq, bytecode.OpJumpIfEqConst, bytecode.OpJumpIfMissingProperty, bytecode.OpJumpIfMissingPropertyConst:
-			// Conditional jump: has two successors
-			// 1. Jump target
-			target := int(lastInst.Operands[0])
-			if targetBlock, ok := indexToBlock[target]; ok {
-				block.AddSuccessor(targetBlock)
-			}
-			// 2. Fall-through to next instruction
 			if lastIdx+1 < len(instructions) {
 				if nextBlock, ok := indexToBlock[lastIdx+1]; ok {
 					block.AddSuccessor(nextBlock)
 				}
 			}
-
-		case bytecode.OpIterNext:
-			// OpIterNext is like a conditional jump
-			// 1. Jump target (when iterator is done)
-			target := int(lastInst.Operands[0])
-			if targetBlock, ok := indexToBlock[target]; ok {
-				block.AddSuccessor(targetBlock)
-			}
-
-			// 2. Fall-through (when iterator has more elements)
-			if lastIdx+1 < len(instructions) {
-				if nextBlock, ok := indexToBlock[lastIdx+1]; ok {
-					block.AddSuccessor(nextBlock)
-				}
-			}
-
-		case bytecode.OpReturn:
-			// Return doesn't add regular successors; handled by exit block
-
+		case bytecode.ControlFlowTerminator:
+			// Return/tail-call doesn't add regular successors; handled by exit block.
 		default:
-			// Regular instruction: fall through to next block
 			if lastIdx+1 < len(instructions) {
 				if nextBlock, ok := indexToBlock[lastIdx+1]; ok {
 					block.AddSuccessor(nextBlock)

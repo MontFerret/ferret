@@ -9,14 +9,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-type aggregateState struct {
-	sum       float64
-	count     runtime.Int
-	min       float64
-	max       float64
-	hasNumber bool
-}
-
 type AggregateCollector struct {
 	plan   bytecode.AggregatePlan
 	states []aggregateState
@@ -90,18 +82,9 @@ func (c *AggregateCollector) Iterate(ctx context.Context) (runtime.Iterator, err
 }
 
 func (c *AggregateCollector) Set(ctx context.Context, key, value runtime.Value) error {
-	var keyStr string
-
-	switch k := key.(type) {
-	case runtime.String:
-		keyStr = k.String()
-	default:
-		var err error
-		keyStr, err = Stringify(ctx, key)
-
-		if err != nil {
-			return err
-		}
+	keyStr, err := normalizeCollectorKey(ctx, key)
+	if err != nil {
+		return err
 	}
 
 	if idx, ok := c.plan.Index[keyStr]; ok {
@@ -128,13 +111,7 @@ func (c *AggregateCollector) Set(ctx context.Context, key, value runtime.Value) 
 			return c.singleGroupValue.Append(ctx, value)
 		}
 
-		if c.groups == nil {
-			c.groups = map[string]runtime.List{
-				c.singleGroupKey: c.singleGroupValue,
-			}
-		} else {
-			c.groups[c.singleGroupKey] = c.singleGroupValue
-		}
+		c.groups = promoteSingleGroup(c.groups, c.singleGroupKey, c.singleGroupValue)
 
 		c.hasSingleGroup = false
 		c.singleGroupKey = ""
@@ -155,18 +132,9 @@ func (c *AggregateCollector) Set(ctx context.Context, key, value runtime.Value) 
 }
 
 func (c *AggregateCollector) Get(ctx context.Context, key runtime.Value) (runtime.Value, error) {
-	var keyStr string
-
-	switch k := key.(type) {
-	case runtime.String:
-		keyStr = k.String()
-	default:
-		var err error
-		keyStr, err = Stringify(ctx, key)
-
-		if err != nil {
-			return nil, err
-		}
+	keyStr, err := normalizeCollectorKey(ctx, key)
+	if err != nil {
+		return nil, err
 	}
 
 	if idx, ok := c.plan.Index[keyStr]; ok {
@@ -181,7 +149,7 @@ func (c *AggregateCollector) Get(ctx context.Context, key runtime.Value) (runtim
 		return group, nil
 	}
 
-	return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", keyStr)
+	return runtime.None, collectorKeyNotFound(keyStr)
 }
 
 func (c *AggregateCollector) Length(_ context.Context) (runtime.Int, error) {
@@ -249,78 +217,9 @@ func (c *AggregateCollector) Close() error {
 
 func (c *AggregateCollector) update(idx int, value runtime.Value) {
 	state := &c.states[idx]
-
-	switch c.plan.Kinds[idx] {
-	case bytecode.AggregateCount:
-		state.count++
-	case bytecode.AggregateSum:
-		if runtime.IsNumber(value) {
-			state.sum += toFloat(value)
-		}
-	case bytecode.AggregateAverage:
-		if runtime.IsNumber(value) {
-			state.sum += toFloat(value)
-			state.count++
-		}
-	case bytecode.AggregateMin:
-		if runtime.IsNumber(value) {
-			v := toFloat(value)
-			if !state.hasNumber || v < state.min {
-				state.min = v
-			}
-
-			state.hasNumber = true
-		}
-	case bytecode.AggregateMax:
-		if runtime.IsNumber(value) {
-			v := toFloat(value)
-			if !state.hasNumber || v > state.max {
-				state.max = v
-			}
-
-			state.hasNumber = true
-		}
-	}
+	updateAggregateState(state, c.plan.Kinds[idx], value)
 }
 
 func (c *AggregateCollector) valueFor(idx int) runtime.Value {
-	state := c.states[idx]
-
-	switch c.plan.Kinds[idx] {
-	case bytecode.AggregateCount:
-		return state.count
-	case bytecode.AggregateSum:
-		return runtime.NewFloat(state.sum)
-	case bytecode.AggregateAverage:
-		if state.count == 0 {
-			return runtime.ZeroFloat
-		}
-
-		return runtime.NewFloat(state.sum / float64(state.count))
-	case bytecode.AggregateMin:
-		if !state.hasNumber {
-			return runtime.None
-		}
-
-		return runtime.NewFloat(state.min)
-	case bytecode.AggregateMax:
-		if !state.hasNumber {
-			return runtime.None
-		}
-
-		return runtime.NewFloat(state.max)
-	default:
-		return runtime.None
-	}
-}
-
-func toFloat(arg runtime.Value) float64 {
-	switch v := arg.(type) {
-	case runtime.Float:
-		return float64(v)
-	case runtime.Int:
-		return float64(v)
-	default:
-		return 0
-	}
+	return aggregateValueFor(c.states[idx], c.plan.Kinds[idx])
 }

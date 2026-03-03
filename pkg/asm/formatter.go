@@ -34,6 +34,10 @@ func constValue(p *bytecode.Program, idx int) string {
 	return "<invalid>"
 }
 
+func formatProgram(p *bytecode.Program) string {
+	return fmt.Sprintf(".prog %d %d %d", p.Registers, len(p.Constants), len(p.Params))
+}
+
 // formatLocation returns a line/col comment if available for the given instruction.
 func formatLocation(p *bytecode.Program, ip int) string {
 	//if ip < len(p.Locations) {
@@ -53,6 +57,11 @@ func formatParam(name string) string {
 // formatFunction generates comments for the functions defined in the program.
 func formatFunction(name string, args int) string {
 	return fmt.Sprintf(".func %s %d", name, args)
+}
+
+// formatUdf generates comments for the UDF table entries.
+func formatUdf(id int, udf bytecode.UDF) string {
+	return fmt.Sprintf(".udf %d %s %d %d %d", id, udf.Name, udf.Entry, udf.Registers, udf.Params)
 }
 
 // formatConstant generates a comment for a constant value in the program.

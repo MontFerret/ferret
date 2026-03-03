@@ -351,7 +351,7 @@ func (c *WaitCompiler) emitExistsCheck(val bytecode.Operand) bytecode.Operand {
 }
 
 func (c *WaitCompiler) emitNow() bytecode.Operand {
-	return c.ctx.ExprCompiler.CompileFunctionCallByNameWith(runtime.NewString("NOW"), false, nil)
+	return c.ctx.ExprCompiler.CompileFunctionCallByNameWith(nil, runtime.NewString("NOW"), false, nil)
 }
 
 func (c *WaitCompiler) emitDateDiff(start, end, unit bytecode.Operand) bytecode.Operand {
@@ -360,7 +360,7 @@ func (c *WaitCompiler) emitDateDiff(start, end, unit bytecode.Operand) bytecode.
 
 func (c *WaitCompiler) emitFunctionCall(name runtime.String, args ...bytecode.Operand) bytecode.Operand {
 	if len(args) == 0 {
-		return c.ctx.ExprCompiler.CompileFunctionCallByNameWith(name, false, nil)
+		return c.ctx.ExprCompiler.CompileFunctionCallByNameWith(nil, name, false, nil)
 	}
 
 	seq := c.ctx.Registers.AllocateSequence(len(args))
@@ -370,7 +370,7 @@ func (c *WaitCompiler) emitFunctionCall(name runtime.String, args ...bytecode.Op
 		c.ctx.Types.Set(seq[i], operandType(c.ctx, arg))
 	}
 
-	return c.ctx.ExprCompiler.CompileFunctionCallByNameWith(name, false, seq)
+	return c.ctx.ExprCompiler.CompileFunctionCallByNameWith(nil, name, false, seq)
 }
 
 func (c *WaitCompiler) emitWaitSleep(intervalReg, timeoutReg, elapsedReg bytecode.Operand) {

@@ -65,7 +65,7 @@ func (c *Compiler) Compile(src *file.Source) (program *bytecode.Program, err err
 		}
 	}()
 
-	l := NewVisitor(src, errorHandler)
+	l := NewVisitor(src, errorHandler, c.opts.Level)
 	tokenHistory := parserd.NewTokenHistory(10)
 	p := parser.New(src.Content(), func(stream antlr.TokenStream) antlr.TokenStream {
 		return parserd.NewTrackingTokenStream(stream, tokenHistory)
@@ -80,18 +80,34 @@ func (c *Compiler) Compile(src *file.Source) (program *bytecode.Program, err err
 		return nil, l.Ctx.Errors.Unwrap()
 	}
 
+	var udfs []bytecode.UDF
+	if l.Ctx.UDFs != nil {
+		udfs = l.Ctx.UDFs.Metadata()
+	}
+
+	registers := l.Ctx.Registers.Size()
+	for _, udf := range udfs {
+		if udf.Registers > registers {
+			registers = udf.Registers
+		}
+	}
+
 	program = &bytecode.Program{
+		Version: bytecode.ProgramVersion,
+		Functions: bytecode.Functions{
+			Host:        l.Ctx.Symbols.Functions(),
+			UserDefined: udfs,
+		},
 		Metadata: bytecode.Metadata{
 			AggregatePlans: l.Ctx.AggregatePlans(),
 			DebugSpans:     l.Ctx.Emitter.Spans(),
-			Functions:      l.Ctx.Symbols.Functions(),
 			Labels:         l.Ctx.Emitter.Labels(),
 		},
 		Source:     src,
 		Bytecode:   l.Ctx.Emitter.Bytecode(),
 		Constants:  l.Ctx.Symbols.Constants(),
 		CatchTable: l.Ctx.CatchTable.All(),
-		Registers:  l.Ctx.Registers.Size(),
+		Registers:  registers,
 		Params:     l.Ctx.Symbols.Params(),
 	}
 
@@ -100,14 +116,4 @@ func (c *Compiler) Compile(src *file.Source) (program *bytecode.Program, err err
 	}
 
 	return program, err
-}
-
-func (c *Compiler) MustCompile(src *file.Source) *bytecode.Program {
-	program, err := c.Compile(src)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return program
 }

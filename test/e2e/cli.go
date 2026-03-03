@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MontFerret/ferret/v2/pkg/asm"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
@@ -228,6 +229,12 @@ var (
 		"profiler",
 		false,
 		"enables CPU and Memory profiler",
+	)
+
+	optimizationLevel = flag.Int(
+		"ol",
+		int(compiler.O1),
+		"set optimization level (0-3)",
 	)
 
 	logLevel = flag.String(
@@ -632,7 +639,15 @@ func analyzeQuery(query *file.Source) error {
 	afterCompilation := "After Compilation"
 	prof := NewProfiler()
 
-	c := compiler.New()
+	optLevel := compiler.OptimizationLevel(*optimizationLevel)
+
+	if optLevel < 0 || optLevel > 3 {
+		fmt.Printf("Invalid optimization level: %d.", optLevel)
+		os.Exit(1)
+	}
+
+	c := compiler.New(compiler.WithOptimizationLevel(optLevel))
+	fmt.Printf("Optimization level: O%d\n", optLevel)
 
 	fullProf := *profiler
 
@@ -642,7 +657,21 @@ func analyzeQuery(query *file.Source) error {
 
 	prof.StartTimer(compilation)
 
-	c.MustCompile(query)
+	prog, err := c.Compile(query)
+
+	if err != nil {
+		fmt.Println(diagnostics.Format(err))
+		os.Exit(1)
+	}
+
+	dis, err := asm.Disassemble(prog)
+
+	if err != nil {
+		fmt.Println("Failed to disassemble program:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println(dis)
 
 	prof.StopTimer(compilation)
 

@@ -43,7 +43,8 @@ options { tokenVocab=FqlLexer; }
 		switch token {
 		case FqlParserReturn, FqlParserDispatch, FqlParserQuery, FqlParserUsing, FqlParserNone,
 			FqlParserNull, FqlParserLet, FqlParserUse, FqlParserWaitfor, FqlParserWhile, FqlParserDo, FqlParserIn,
-			FqlParserLike, FqlParserNot, FqlParserFor, FqlParserBooleanLiteral, FqlParserThrow, FqlParserMatch, FqlParserWhen:
+			FqlParserLike, FqlParserNot, FqlParserFor, FqlParserBooleanLiteral, FqlParserThrow, FqlParserMatch, FqlParserWhen,
+			FqlParserFunc:
 			return true
 		default:
 			return false
@@ -91,6 +92,7 @@ body
 
 bodyStatement
     : variableDeclaration
+    | functionDeclaration
     | functionCallExpression
     | waitForExpression
     | dispatchExpression
@@ -104,6 +106,48 @@ bodyExpression
 variableDeclaration
     : Let id=(Identifier | IgnoreIdentifier) Assign expression
     | Let safeReservedWord Assign expression
+    ;
+
+functionDeclaration
+    : Func functionName OpenParen functionParameterList? CloseParen functionBody
+    ;
+
+functionParameterList
+    : functionParameter (Comma functionParameter)* Comma?
+    ;
+
+functionParameter
+    : Identifier
+    ;
+
+functionBody
+    : functionArrow
+    | functionBlock
+    ;
+
+functionArrow
+    : Arrow expression
+    ;
+
+functionBlock
+    : OpenParen functionStatement* functionReturn CloseParen
+    ;
+
+functionStatement
+    : variableDeclaration
+    | functionDeclaration
+    | functionCallExpression
+    | waitForExpression
+    | dispatchExpression
+    | expressionStatement
+    ;
+
+expressionStatement
+    : expression
+    ;
+
+functionReturn
+    : Return expression
     ;
 
 returnExpression

@@ -51,6 +51,9 @@ func (c *StmtCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) {
 	// Handle variable declarations (e.g., LET x = 1)
 	if vd := ctx.VariableDeclaration(); vd != nil {
 		c.CompileVariableDeclaration(vd)
+	} else if fd := ctx.FunctionDeclaration(); fd != nil {
+		// Function declarations are compiled separately.
+		return
 	} else if fce := ctx.FunctionCallExpression(); fce != nil {
 		// Handle function calls (e.g., WAIT(1000))
 		c.CompileFunctionCall(fce)
@@ -81,21 +84,57 @@ func (c *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
 		c.ctx.Emitter.EmitA(bytecode.OpReturn, out)
 	} else if re := ctx.ReturnExpression(); re != nil {
 		// Handle RETURN expressions (e.g., RETURN x)
-		// Compile the expression to return
-		valReg := c.ctx.ExprCompiler.Compile(re.Expression())
-
-		// If the result is a constant, we need to move it to a temporary register
-		// because constants cannot be directly returned
-		if valReg.IsConstant() {
-			valC := valReg
-			valReg = c.ctx.Registers.Allocate()
-
-			// Move the constant value to the temporary register
-			c.ctx.Emitter.EmitMove(valReg, valC)
-		}
+		// Compile and normalize into a register because RETURN expects a register operand.
+		valReg := c.ctx.ExprCompiler.ensureRegister(c.ctx.ExprCompiler.Compile(re.Expression()))
 
 		// Emit a return instruction with the expression result
 		c.ctx.Emitter.EmitA(bytecode.OpReturn, valReg)
+	}
+}
+
+// CompileFunctionStatement processes a statement inside a UDF body.
+// It supports variable declarations, nested function declarations, expression statements,
+// function calls, and other statements allowed in the main body.
+func (c *StmtCompiler) CompileFunctionStatement(ctx fql.IFunctionStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	stmt, ok := ctx.(*fql.FunctionStatementContext)
+	if !ok || stmt == nil {
+		return
+	}
+
+	switch {
+	case stmt.VariableDeclaration() != nil:
+		c.CompileVariableDeclaration(stmt.VariableDeclaration())
+	case stmt.FunctionDeclaration() != nil:
+		// Nested function declarations are compiled separately.
+		return
+	case stmt.FunctionCallExpression() != nil:
+		c.CompileFunctionCall(stmt.FunctionCallExpression())
+	case stmt.WaitForExpression() != nil:
+		c.ctx.WaitCompiler.Compile(stmt.WaitForExpression())
+	case stmt.DispatchExpression() != nil:
+		c.ctx.DispatchCompiler.Compile(stmt.DispatchExpression())
+	case stmt.ExpressionStatement() != nil:
+		c.CompileExpressionStatement(stmt.ExpressionStatement())
+	}
+}
+
+// CompileExpressionStatement evaluates an expression for its side effects and discards the result.
+func (c *StmtCompiler) CompileExpressionStatement(ctx fql.IExpressionStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	stmt, ok := ctx.(*fql.ExpressionStatementContext)
+	if !ok || stmt == nil {
+		return
+	}
+
+	if expr := stmt.Expression(); expr != nil {
+		c.ctx.ExprCompiler.Compile(expr)
 	}
 }
 

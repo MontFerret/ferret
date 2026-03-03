@@ -2,9 +2,6 @@ package benchmarks_test
 
 import (
 	"testing"
-
-	"github.com/MontFerret/ferret/v2/pkg/vm"
-	"github.com/MontFerret/ferret/v2/test/integration/base"
 )
 
 const globalCollectAggregateQuery = `
@@ -64,33 +61,33 @@ FOR v IN values
 `
 
 func BenchmarkGlobalCollectAggregate_O0(b *testing.B) {
-	RunBenchmarkO0(b, globalCollectAggregateQuery, vm.WithNamespace(base.Stdlib()))
+	RunBenchmarkO0(b, globalCollectAggregateQuery)
 }
 
 func BenchmarkGlobalCollectAggregate_O1(b *testing.B) {
-	RunBenchmarkO1(b, globalCollectAggregateQuery, vm.WithNamespace(base.Stdlib()))
+	RunBenchmarkO1(b, globalCollectAggregateQuery)
 }
 
 func BenchmarkGlobalCollectAggregateLarge_O0(b *testing.B) {
-	RunBenchmarkO0(b, globalCollectAggregateLargeQuery, vm.WithNamespace(base.Stdlib()))
+	RunBenchmarkO0(b, globalCollectAggregateLargeQuery)
 }
 
 func BenchmarkGlobalCollectAggregateLarge_O1(b *testing.B) {
-	RunBenchmarkO1(b, globalCollectAggregateLargeQuery, vm.WithNamespace(base.Stdlib()))
+	RunBenchmarkO1(b, globalCollectAggregateLargeQuery)
 }
 
 func BenchmarkGlobalCollectAggregateLargeInto_O0(b *testing.B) {
-	RunBenchmarkO0(b, globalCollectAggregateLargeIntoQuery, vm.WithNamespace(base.Stdlib()))
+	RunBenchmarkO0(b, globalCollectAggregateLargeIntoQuery)
 }
 
 func BenchmarkGlobalCollectAggregateLargeInto_O1(b *testing.B) {
-	RunBenchmarkO1(b, globalCollectAggregateLargeIntoQuery, vm.WithNamespace(base.Stdlib()))
+	RunBenchmarkO1(b, globalCollectAggregateLargeIntoQuery)
 }
 
 func BenchmarkGroupedCollectAggregateLarge_O0(b *testing.B) {
-	RunBenchmarkO0(b, groupedCollectAggregateLargeQuery, vm.WithNamespace(base.Stdlib()))
+	RunBenchmarkO0(b, groupedCollectAggregateLargeQuery)
 }
 
 func BenchmarkGroupedCollectAggregateLarge_O1(b *testing.B) {
-	RunBenchmarkO1(b, groupedCollectAggregateLargeQuery, vm.WithNamespace(base.Stdlib()))
+	RunBenchmarkO1(b, groupedCollectAggregateLargeQuery)
 }

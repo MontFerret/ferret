@@ -104,19 +104,14 @@ const (
 	OpClose
 	OpSleep
 
-	// Function Operations
+	// Host Function Operations
+	OpHCall
+	OpProtectedHCall
+
+	// UDF Operations
 	OpCall
 	OpProtectedCall
-	OpCall0
-	OpProtectedCall0
-	OpCall1
-	OpProtectedCall1
-	OpCall2
-	OpProtectedCall2
-	OpCall3
-	OpProtectedCall3
-	OpCall4
-	OpProtectedCall4
+	OpTailCall
 
 	// Dataset Operations
 	OpDataSet
@@ -229,7 +224,7 @@ func (op Opcode) String() string {
 	case OpLoadPropertyOptional:
 		return "LOADPRO"
 
-		// Collection Creation
+	// Collection Creation
 	case OpLoadArray:
 		return "LOADARR"
 	case OpLoadObject:
@@ -353,31 +348,19 @@ func (op Opcode) String() string {
 	case OpDispatch:
 		return "DSCH"
 
-	// Function Operations
+	// Host Function Operations
+	case OpHCall:
+		return "HCALL"
+	case OpProtectedHCall:
+		return "PHCALL"
+
+	// UDF Operations
 	case OpCall:
 		return "CALL"
 	case OpProtectedCall:
 		return "PCALL"
-	case OpCall0:
-		return "CALL0"
-	case OpProtectedCall0:
-		return "PCALL0"
-	case OpCall1:
-		return "CALL1"
-	case OpProtectedCall1:
-		return "PCALL1"
-	case OpCall2:
-		return "CALL2"
-	case OpProtectedCall2:
-		return "PCALL2"
-	case OpCall3:
-		return "CALL3"
-	case OpProtectedCall3:
-		return "PCALL3"
-	case OpCall4:
-		return "CALL4"
-	case OpProtectedCall4:
-		return "PCALL4"
+	case OpTailCall:
+		return "TAILCALL"
 
 	// Dataset Operations
 	case OpDataSet:

@@ -33,10 +33,12 @@ func TestUnaryOperators(t *testing.T) {
 	Convey("RETURN { enabled: !val}", t, func() {
 		c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
 
-		p1 := c.MustCompile(file.NewAnonymousSource(`
+		p1, err := c.Compile(file.NewAnonymousSource(`
 			LET val = ""
 			RETURN { enabled: !val }
 		`))
+
+		So(err, ShouldBeNil)
 
 		v1, err := vm.New(p1).Run(gocontext.Background(), nil)
 
@@ -47,10 +49,12 @@ func TestUnaryOperators(t *testing.T) {
 
 		So(string(out1), ShouldEqual, `{"enabled":true}`)
 
-		p2 := c.MustCompile(file.NewAnonymousSource(`
+		p2, err := c.Compile(file.NewAnonymousSource(`
 			LET val = ""
 			RETURN { enabled: !!val }
 		`))
+
+		So(err, ShouldBeNil)
 
 		v2, err := vm.New(p2).Run(gocontext.Background(), nil)
 

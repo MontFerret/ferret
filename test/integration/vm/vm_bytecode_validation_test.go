@@ -1,0 +1,46 @@
+package vm_test
+
+import (
+	"context"
+	"errors"
+	"strings"
+	"testing"
+
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
+)
+
+func TestRejectsUnsupportedBytecodeVersion(t *testing.T) {
+	program := &bytecode.Program{
+		Version:   1,
+		Bytecode:  []bytecode.Instruction{bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0))},
+		Registers: 1,
+	}
+
+	_, err := vm.New(program).Run(context.Background(), vm.NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected version validation error")
+	}
+
+	if !strings.Contains(errors.Unwrap(err).Error(), "unsupported bytecode version; recompile query") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestFailsOnUnknownOpcode(t *testing.T) {
+	unknown := bytecode.Opcode(255)
+	program := &bytecode.Program{
+		Version:   bytecode.ProgramVersion,
+		Bytecode:  []bytecode.Instruction{bytecode.NewInstruction(unknown)},
+		Registers: 1,
+	}
+
+	_, err := vm.New(program).Run(context.Background(), vm.NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected unknown opcode error")
+	}
+
+	if !strings.Contains(errors.Unwrap(err).Error(), "unknown opcode 255 at pc 0") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

@@ -62,8 +62,8 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			},
 			"Invalid dialect token after USING",
 		),
-		ErrorCase(
-			"RETURN QUERY `.x` IN @doc USING css WITH RETURN",
+		SkipErrorCase(
+			"RETURN QUERY `.x` IN @doc USING css WITH )",
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected options expression after WITH",

@@ -685,6 +685,40 @@ func TestPeephole_SkipsRemovalWhenTargetedByJump(t *testing.T) {
 	}
 }
 
+func TestPeephole_KeepsInstructionZeroWhenTargetedByCatchJump(t *testing.T) {
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(1), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+		CatchTable: []bytecode.Catch{
+			{1, 1, 0},
+		},
+	}
+
+	res, err := runPeephole(t, program)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.Modified {
+		t.Fatalf("expected peephole pass to keep catch jump target at pc 0")
+	}
+	if len(program.Bytecode) != 3 {
+		t.Fatalf("expected 3 instructions, got %d", len(program.Bytecode))
+	}
+	if program.Bytecode[0].Opcode != bytecode.OpMove {
+		t.Fatalf("expected first instruction to remain MOVE, got %s", program.Bytecode[0].Opcode)
+	}
+
+	expectedCatch := []bytecode.Catch{
+		{1, 1, 0},
+	}
+	if !reflect.DeepEqual(program.CatchTable, expectedCatch) {
+		t.Fatalf("unexpected catch table: %#v", program.CatchTable)
+	}
+}
+
 func TestPeephole_RemapsCatchDebugSpansAndLabels(t *testing.T) {
 	program := &bytecode.Program{
 		Constants: []runtime.Value{

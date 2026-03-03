@@ -8,7 +8,23 @@ import (
 )
 
 func validate(env *Environment, program *bytecode.Program) error {
+	if err := validateProgramVersion(program); err != nil {
+		return err
+	}
+
 	return validateParams(env, program)
+}
+
+func validateProgramVersion(program *bytecode.Program) error {
+	if program == nil {
+		return runtime.Error(runtime.ErrInvalidOperation, "unsupported bytecode version; recompile query")
+	}
+
+	if program.Version != bytecode.ProgramVersion {
+		return runtime.Error(runtime.ErrInvalidOperation, "unsupported bytecode version; recompile query")
+	}
+
+	return nil
 }
 
 func validateParams(env *Environment, program *bytecode.Program) error {

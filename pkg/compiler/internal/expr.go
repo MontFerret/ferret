@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -1489,7 +1490,7 @@ func (c *ExprCompiler) emitObjectsKeys(scrReg bytecode.Operand) bytecode.Operand
 	seq := c.ctx.Registers.AllocateSequence(1)
 	c.ctx.Emitter.EmitMove(seq[0], scrReg)
 
-	return c.CompileFunctionCallByNameWith(runtime.NewString("KEYS"), true, seq)
+	return c.CompileFunctionCallByNameWith(nil, runtime.NewString("KEYS"), true, seq)
 }
 
 func (c *ExprCompiler) declareMatchBinding(ctx antlr.ParserRuleContext, name string, valueReg bytecode.Operand) bytecode.Operand {
@@ -1713,11 +1714,7 @@ func (c *ExprCompiler) resolveImplicitCurrent(token antlr.Token) (bytecode.Opera
 		return bytecode.NoopOperand, false
 	}
 
-	if !src.IsRegister() {
-		reg := c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitMove(reg, src)
-		src = reg
-	}
+	src = c.ensureRegister(src)
 
 	return src, true
 }
@@ -2663,10 +2660,7 @@ func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) bytecode.Operan
 		return op
 	}
 
-	reg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitMove(reg, op)
-
-	return reg
+	return c.ensureRegister(op)
 }
 
 // CompileParam processes a parameter reference (e.g., @paramName) from the FQL AST.
@@ -2749,17 +2743,16 @@ func (c *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, pro
 	var out bytecode.Operand
 
 	c.ctx.Emitter.WithSpan(span, func() {
-		out = c.CompileFunctionCallByNameWith(name, protected, seq)
+		out = c.CompileFunctionCallByNameWith(ctx, name, protected, seq)
 	})
 
 	return out
 }
 
 // CompileFunctionCallByNameWith processes a function call by name with pre-compiled arguments.
-// It handles both built-in runtime functions (TYPENAME, LENGTH, WAIT) and user-defined functions.
-// For built-in functions, it emits specialized instructions. For user-defined functions,
-// it delegates to compileUserFunctionCallWith.
+// It resolves UDFs first (if in scope), then built-ins, and finally host functions.
 // Parameters:
+//   - ctx: The function call context (used for namespace detection and diagnostics)
 //   - name: The function name
 //   - protected: Whether this is a protected call (with TRY)
 //   - seq: The pre-compiled function arguments as a sequence of registers
@@ -2768,44 +2761,68 @@ func (c *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, pro
 //   - An operand representing the function call result
 //
 // Panics if a built-in function is called with an incorrect number of arguments.
-func (c *ExprCompiler) CompileFunctionCallByNameWith(name runtime.String, protected bool, seq core.RegisterSequence) bytecode.Operand {
-	switch name {
-	case runtimeLength:
-		dst := c.ctx.Registers.Allocate()
+func (c *ExprCompiler) CompileFunctionCallByNameWith(ctx fql.IFunctionCallContext, name runtime.String, protected bool, seq core.RegisterSequence) bytecode.Operand {
+	nameStr := name.String()
 
-		if seq == nil || len(seq) != 1 {
-			panic(runtime.Error(runtime.ErrInvalidArgument, runtimeLength+": expected 1 argument"))
+	namespaced := strings.Contains(nameStr, runtime.NamespaceSeparator)
+	if ctx != nil {
+		if ns := ctx.Namespace(); ns != nil && ns.GetText() != "" {
+			namespaced = true
 		}
-
-		c.ctx.Emitter.EmitAB(bytecode.OpLength, dst, seq[0])
-
-		return dst
-	case runtimeTypename:
-		dst := c.ctx.Registers.Allocate()
-
-		if seq == nil || len(seq) != 1 {
-			panic(runtime.Error(runtime.ErrInvalidArgument, runtimeTypename+": expected 1 argument"))
-		}
-
-		c.ctx.Emitter.EmitAB(bytecode.OpType, dst, seq[0])
-
-		return dst
-	case runtimeWait:
-		if len(seq) != 1 {
-			panic(runtime.Error(runtime.ErrInvalidArgument, runtimeWait+": expected 1 argument"))
-		}
-
-		c.ctx.Emitter.EmitA(bytecode.OpSleep, seq[0])
-
-		return seq[0]
-	default:
-		return c.compileUserFunctionCallWith(name, protected, seq)
 	}
+
+	var callCtx antlr.ParserRuleContext
+	if ctx != nil {
+		if prc, ok := ctx.(antlr.ParserRuleContext); ok {
+			callCtx = prc
+		}
+	}
+
+	if !namespaced && c.ctx.UDFs != nil && c.ctx.UDFScope != nil {
+		if fn, ok := c.ctx.UDFs.Resolve(nameStr, c.ctx.UDFScope); ok {
+			return c.compileUdfCallWith(fn, protected, seq, callCtx)
+		}
+	}
+
+	if !namespaced {
+		switch name {
+		case runtimeLength:
+			dst := c.ctx.Registers.Allocate()
+
+			if seq == nil || len(seq) != 1 {
+				panic(runtime.Error(runtime.ErrInvalidArgument, runtimeLength+": expected 1 argument"))
+			}
+
+			c.ctx.Emitter.EmitAB(bytecode.OpLength, dst, seq[0])
+
+			return dst
+		case runtimeTypename:
+			dst := c.ctx.Registers.Allocate()
+
+			if seq == nil || len(seq) != 1 {
+				panic(runtime.Error(runtime.ErrInvalidArgument, runtimeTypename+": expected 1 argument"))
+			}
+
+			c.ctx.Emitter.EmitAB(bytecode.OpType, dst, seq[0])
+
+			return dst
+		case runtimeWait:
+			if len(seq) != 1 {
+				panic(runtime.Error(runtime.ErrInvalidArgument, runtimeWait+": expected 1 argument"))
+			}
+
+			c.ctx.Emitter.EmitA(bytecode.OpSleep, seq[0])
+
+			return seq[0]
+		}
+	}
+
+	return c.compileHostFunctionCallWith(name, protected, seq)
 }
 
-// compileUserFunctionCallWith processes a user-defined function call with pre-compiled arguments.
+// compileHostFunctionCallWith processes a host function call with pre-compiled arguments.
 // It loads the function name as a constant, binds the function in the symbol table,
-// and emits the appropriate call instruction based on the number of arguments and whether
+// and emits the appropriate host call instruction based on the number of arguments and whether
 // the call is protected.
 // Parameters:
 //   - name: The function name
@@ -2814,44 +2831,97 @@ func (c *ExprCompiler) CompileFunctionCallByNameWith(name runtime.String, protec
 //
 // Returns:
 //   - An operand representing the function call result
-func (c *ExprCompiler) compileUserFunctionCallWith(name runtime.String, protected bool, seq core.RegisterSequence) bytecode.Operand {
+func (c *ExprCompiler) compileHostFunctionCallWith(name runtime.String, protected bool, seq core.RegisterSequence) bytecode.Operand {
 	dest := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitLoadConst(dest, c.ctx.Symbols.AddConstant(name))
 	c.ctx.Symbols.BindFunction(name.String(), len(seq))
 
-	var opcode bytecode.Opcode
-	var protectedOpcode bytecode.Opcode
-
-	switch len(seq) {
-	case 0:
-		opcode = bytecode.OpCall0
-		protectedOpcode = bytecode.OpProtectedCall0
-	case 1:
-		opcode = bytecode.OpCall1
-		protectedOpcode = bytecode.OpProtectedCall1
-	case 2:
-		opcode = bytecode.OpCall2
-		protectedOpcode = bytecode.OpProtectedCall2
-	case 3:
-		opcode = bytecode.OpCall3
-		protectedOpcode = bytecode.OpProtectedCall3
-	case 4:
-		opcode = bytecode.OpCall4
-		protectedOpcode = bytecode.OpProtectedCall4
-	default:
-		opcode = bytecode.OpCall
-		protectedOpcode = bytecode.OpProtectedCall
+	opcode := bytecode.OpHCall
+	if protected {
+		opcode = bytecode.OpProtectedHCall
 	}
 
-	if !protected {
-		c.ctx.Emitter.EmitAs(opcode, dest, seq)
-	} else {
-		c.ctx.Emitter.EmitAs(protectedOpcode, dest, seq)
-	}
+	c.ctx.Emitter.EmitAs(opcode, dest, seq)
 
 	c.ctx.Types.Set(dest, core.TypeAny)
 
 	return dest
+}
+
+// compileUdfCallWith processes a UDF call with pre-compiled arguments.
+func (c *ExprCompiler) compileUdfCallWith(fn *UDFInfo, protected bool, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) bytecode.Operand {
+	args := c.prepareUdfCallArgs(fn, seq, callCtx)
+
+	dest := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitLoadConst(dest, c.ctx.Symbols.AddConstant(runtime.NewInt(fn.ID)))
+
+	opcode := bytecode.OpCall
+	if protected {
+		opcode = bytecode.OpProtectedCall
+	}
+
+	c.ctx.Emitter.EmitAs(opcode, dest, args)
+
+	c.ctx.Types.Set(dest, core.TypeAny)
+
+	return dest
+}
+
+// EmitUdfTailCall emits a tail call to a UDF with pre-compiled arguments.
+func (c *ExprCompiler) EmitUdfTailCall(fn *UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) {
+	args := c.prepareUdfCallArgs(fn, seq, callCtx)
+
+	dest := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitLoadConst(dest, c.ctx.Symbols.AddConstant(runtime.NewInt(fn.ID)))
+
+	c.ctx.Emitter.EmitAs(bytecode.OpTailCall, dest, args)
+}
+
+func (c *ExprCompiler) prepareUdfCallArgs(fn *UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) core.RegisterSequence {
+	if fn == nil {
+		return seq
+	}
+
+	if len(seq) != len(fn.Params) && c.ctx.Errors != nil {
+		ctx := callCtx
+		if ctx == nil && fn.Decl != nil {
+			if prc, ok := fn.Decl.(antlr.ParserRuleContext); ok {
+				ctx = prc
+			}
+		}
+
+		if ctx != nil {
+			c.ctx.Errors.Add(c.ctx.Errors.Create(diagnostics.NameError, ctx, fmt.Sprintf("Function '%s' expects %d arguments, got %d", fn.Name, len(fn.Params), len(seq))))
+		}
+	}
+
+	if len(fn.Captures) == 0 {
+		return seq
+	}
+
+	total := len(seq) + len(fn.Captures)
+	args := c.ctx.Registers.AllocateSequence(total)
+
+	for i, src := range seq {
+		c.ctx.Emitter.EmitMove(args[i], src)
+		c.ctx.Types.Set(args[i], operandType(c.ctx, src))
+	}
+
+	for i, name := range fn.Captures {
+		reg, _, ok := c.ctx.Symbols.Resolve(name)
+		if !ok {
+			if callCtx != nil {
+				c.ctx.Errors.VariableNotFound(callCtx.GetStart(), name)
+			}
+			continue
+		}
+
+		dst := args[len(seq)+i]
+		c.ctx.Emitter.EmitMove(dst, reg)
+		c.ctx.Types.Set(dst, operandType(c.ctx, reg))
+	}
+
+	return args
 }
 
 // CompileArgumentList processes a list of function arguments from the FQL AST.
@@ -2880,12 +2950,24 @@ func (c *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.Re
 
 		// Evaluate each element into seq Registers
 		for i, exp := range exps {
-			// Compile expression and move to seq register
+			// Fast path: load scalar/none literals directly into the argument window.
+			// This avoids generating LOADC temp + MOVE arg,temp pairs.
+			if val, ok := literalValueFromExpression(exp); ok && (bool(runtime.IsScalar(val)) || val == runtime.None) {
+				c.ctx.Emitter.EmitLoadConst(seq[i], c.ctx.Symbols.AddConstant(val))
+				c.ctx.Types.Set(seq[i], valueTypeFromRuntime(val))
+				continue
+			}
+
+			// Compile expression and move/load into seq register
 			srcReg := c.Compile(exp)
 
 			// The reason we move is that the argument list must be a contiguous sequence of registers
 			// Otherwise, we cannot compileInitialization neither a list nor an object literal with arguments
-			c.ctx.Emitter.EmitMove(seq[i], srcReg)
+			if srcReg.IsConstant() {
+				c.ctx.Emitter.EmitLoadConst(seq[i], srcReg)
+			} else {
+				c.ctx.Emitter.EmitMove(seq[i], srcReg)
+			}
 			c.ctx.Types.Set(seq[i], operandType(c.ctx, srcReg))
 		}
 	}

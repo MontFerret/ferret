@@ -82,9 +82,11 @@ func (bb *BasicBlock) IsTerminator() bool {
 	}
 
 	lastInst := bb.Instructions[len(bb.Instructions)-1]
-	op := lastInst.Opcode
+	role := bytecode.OpcodeInfoOf(lastInst.Opcode).ControlFlow
 
-	return op == bytecode.OpReturn || op == bytecode.OpJump || op == bytecode.OpJumpIfFalse || op == bytecode.OpJumpIfTrue || op == bytecode.OpJumpIfNone || op == bytecode.OpJumpIfNe || op == bytecode.OpJumpIfNeConst || op == bytecode.OpJumpIfEq || op == bytecode.OpJumpIfEqConst || op == bytecode.OpJumpIfMissingProperty || op == bytecode.OpJumpIfMissingPropertyConst || op == bytecode.OpIterNext
+	return role == bytecode.ControlFlowTerminator ||
+		role == bytecode.ControlFlowJumpUnconditional ||
+		role == bytecode.ControlFlowJumpConditional
 }
 
 // String returns a string representation of the basic block

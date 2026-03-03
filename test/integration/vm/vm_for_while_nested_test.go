@@ -832,7 +832,7 @@ func TestForWhileNested(t *testing.T) {
 				"minAge": 31,
 			},
 		}),
-		SkipCaseArray(`
+		CaseArray(`
 			LET users = [
 				{
 					active: true,

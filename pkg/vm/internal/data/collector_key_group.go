@@ -44,18 +44,9 @@ func (c *KeyGroupCollector) Iterate(ctx context.Context) (runtime.Iterator, erro
 }
 
 func (c *KeyGroupCollector) Set(ctx context.Context, key, value runtime.Value) error {
-	var keyStr string
-
-	switch k := key.(type) {
-	case runtime.String:
-		keyStr = k.String()
-	default:
-		var err error
-		keyStr, err = Stringify(ctx, key)
-
-		if err != nil {
-			return err
-		}
+	keyStr, err := normalizeCollectorKey(ctx, key)
+	if err != nil {
+		return err
 	}
 
 	// Fast path: first key stays in singleKey/singleGroup to avoid map allocation.
@@ -78,10 +69,10 @@ func (c *KeyGroupCollector) Set(ctx context.Context, key, value runtime.Value) e
 			return c.singleGroup.Append(ctx, value)
 		}
 
-		c.grouping = map[string]runtime.List{}
-
 		if c.hasSingleGroup {
-			c.grouping[c.singleKey] = c.singleGroup
+			c.grouping = promoteSingleGroup(c.grouping, c.singleKey, c.singleGroup)
+		} else {
+			c.grouping = map[string]runtime.List{}
 		}
 
 		c.hasSingleGroup = false
@@ -104,34 +95,13 @@ func (c *KeyGroupCollector) Set(ctx context.Context, key, value runtime.Value) e
 }
 
 func (c *KeyGroupCollector) sort(ctx context.Context) error {
-	return runtime.SortListWith(ctx, c.Value, func(first, second runtime.Value) int {
-		firstKV, firstOk := first.(*KV)
-		secondKV, secondOk := second.(*KV)
-
-		var comp int
-
-		if firstOk && secondOk {
-			comp = runtime.CompareValues(firstKV.Key, secondKV.Key)
-		} else {
-			comp = runtime.CompareValues(first, second)
-		}
-
-		return comp
-	})
+	return sortCollectorList(ctx, c.Value)
 }
 
 func (c *KeyGroupCollector) Get(ctx context.Context, key runtime.Value) (runtime.Value, error) {
-	var keyStr string
-
-	switch k := key.(type) {
-	case runtime.String:
-		keyStr = k.String()
-	default:
-		var err error
-		keyStr, err = Stringify(ctx, key)
-		if err != nil {
-			return nil, err
-		}
+	keyStr, err := normalizeCollectorKey(ctx, key)
+	if err != nil {
+		return nil, err
 	}
 
 	if c.grouping == nil {
@@ -139,13 +109,13 @@ func (c *KeyGroupCollector) Get(ctx context.Context, key runtime.Value) (runtime
 			return c.singleGroup, nil
 		}
 
-		return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", keyStr)
+		return runtime.None, collectorKeyNotFound(keyStr)
 	}
 
 	v, ok := c.grouping[keyStr]
 
 	if !ok {
-		return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", keyStr)
+		return runtime.None, collectorKeyNotFound(keyStr)
 	}
 
 	return v, nil

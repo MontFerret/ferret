@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	parser "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
@@ -16,10 +17,10 @@ type Visitor struct {
 	Ctx *internal.CompilerContext
 }
 
-func NewVisitor(src *file.Source, errors *parser.ErrorHandler) *Visitor {
+func NewVisitor(src *file.Source, errors *parser.ErrorHandler, level optimization.Level) *Visitor {
 	v := new(Visitor)
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
-	v.Ctx = internal.NewCompilerContext(src, errors)
+	v.Ctx = internal.NewCompilerContext(src, errors, level)
 
 	return v
 }
@@ -29,7 +30,13 @@ func (v *Visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
 		v.VisitHead(head.(*fql.HeadContext))
 	}
 
+	v.Ctx.UDFs = internal.CollectUDFs(v.Ctx, ctx)
+	if v.Ctx.UDFs != nil {
+		v.Ctx.UDFScope = v.Ctx.UDFs.GlobalScope
+	}
+
 	v.Ctx.StmtCompiler.Compile(ctx.Body())
+	v.Ctx.UDFCompiler.CompileAll()
 
 	return nil
 }

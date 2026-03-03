@@ -161,7 +161,7 @@ func (e *Emitter) EmitAxy(op bytecode.Opcode, dest bytecode.Operand, arg1, agr2 
 
 // EmitAs emits an opcode with a destination value and a sequence of registers.
 func (e *Emitter) EmitAs(op bytecode.Opcode, dest bytecode.Operand, seq RegisterSequence) {
-	if seq != nil {
+	if len(seq) > 0 {
 		src1 := seq[0]
 		src2 := seq[len(seq)-1]
 		e.EmitABC(op, dest, src1, src2)

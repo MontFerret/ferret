@@ -57,10 +57,14 @@ type SymbolTable struct {
 	scope int
 }
 
-func NewSymbolTable(registers *RegisterAllocator) *SymbolTable {
+func NewSymbolTable(registers *RegisterAllocator, constants *ConstantPool) *SymbolTable {
+	if constants == nil {
+		constants = NewConstantPool()
+	}
+
 	return &SymbolTable{
 		registers: registers,
-		constants: NewConstantPool(),
+		constants: constants,
 		params:    make(map[string]string),
 		globals:   make(map[string]bytecode.Operand),
 		locals:    make([]*Variable, 0),

@@ -73,7 +73,7 @@ func TestRegisterCoalescing_NoCoalesceForRangeSensitiveRegs(t *testing.T) {
 			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
 			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(2), bytecode.NewConstant(1)),
 			bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(3), bytecode.NewRegister(1)),
-			bytecode.NewInstruction(bytecode.OpCall, bytecode.NewRegister(4), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(4), bytecode.NewRegister(1), bytecode.NewRegister(2)),
 			bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(5), bytecode.NewRegister(3), bytecode.NewRegister(1)),
 			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(5)),
 		},
@@ -85,7 +85,7 @@ func TestRegisterCoalescing_NoCoalesceForRangeSensitiveRegs(t *testing.T) {
 		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
 		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(2), bytecode.NewConstant(1)),
 		bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(3), bytecode.NewRegister(1)),
-		bytecode.NewInstruction(bytecode.OpCall, bytecode.NewRegister(4), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+		bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(4), bytecode.NewRegister(1), bytecode.NewRegister(2)),
 		bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(3), bytecode.NewRegister(3), bytecode.NewRegister(1)),
 		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(3)),
 	}

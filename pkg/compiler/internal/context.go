@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
@@ -16,11 +17,16 @@ type CompilerContext struct {
 	Emitter    *core.Emitter
 	Registers  *core.RegisterAllocator
 	Symbols    *core.SymbolTable
+	Constants  *core.ConstantPool
 	Types      *core.TypeTracker
 	Loops      *core.LoopTable
 	CatchTable *core.CatchStack
 	Errors     *diagnostics.ErrorHandler
 	UseAliases map[string]string
+	UDFs       *UDFTable
+	UDFScope   *UDFScope
+
+	OptimizationLevel optimization.Level
 
 	aggregatePlans      []*bytecode.AggregatePlan
 	aggregatePlanByHash map[uint64][]int
@@ -33,24 +39,27 @@ type CompilerContext struct {
 	LoopCollectCompiler *LoopCollectCompiler
 	WaitCompiler        *WaitCompiler
 	DispatchCompiler    *DispatchCompiler
+	UDFCompiler         *UDFCompiler
 }
 
 // NewCompilerContext initializes a new CompilerContext with default values.
-func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler) *CompilerContext {
+func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler, level optimization.Level) *CompilerContext {
 	ctx := &CompilerContext{
 		Source:              src,
 		Errors:              errors,
 		Emitter:             core.NewEmitter(),
 		Registers:           core.NewRegisterAllocator(),
 		Symbols:             nil, // set later
+		Constants:           core.NewConstantPool(),
 		Loops:               nil, // set later
 		CatchTable:          core.NewCatchStack(),
 		UseAliases:          make(map[string]string),
 		aggregatePlans:      make([]*bytecode.AggregatePlan, 0),
 		aggregatePlanByHash: make(map[uint64][]int),
+		OptimizationLevel:   level,
 	}
 
-	ctx.Symbols = core.NewSymbolTable(ctx.Registers)
+	ctx.Symbols = core.NewSymbolTable(ctx.Registers, ctx.Constants)
 	ctx.Types = core.NewTypeTracker()
 	ctx.Loops = core.NewLoopTable(ctx.Registers)
 
@@ -62,6 +71,7 @@ func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler) *Com
 	ctx.LoopCollectCompiler = NewCollectCompiler(ctx)
 	ctx.WaitCompiler = NewWaitCompiler(ctx)
 	ctx.DispatchCompiler = NewDispatchCompiler(ctx)
+	ctx.UDFCompiler = NewUDFCompiler(ctx)
 
 	return ctx
 }
