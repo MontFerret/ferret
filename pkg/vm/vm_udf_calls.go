@@ -115,7 +115,7 @@ func (vm *VM) callUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) erro
 		return runtime.Error(runtime.ErrInvalidOperation, fmt.Sprintf("UDF '%s' has invalid register window", udf.Name))
 	}
 
-	newRegs := vm.frames.GetRegisters(udf.Registers)
+	newRegs := vm.frames.AcquireRegisters(udf.Registers)
 	copyUdfArgsToUdfRegisters(newRegs, reg, argStart, argCount)
 
 	vm.frames.Push(frame.CallFrame{
@@ -156,11 +156,9 @@ func (vm *VM) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
 		return runtime.Error(runtime.ErrInvalidOperation, fmt.Sprintf("UDF '%s' has invalid register window", udf.Name))
 	}
 
-	currentFrame := vm.frames.Top()
-	if currentFrame == nil {
+	if ok := vm.frames.SetTopFnID(fnID); !ok {
 		return ErrUnresolvedFunction
 	}
-	currentFrame.FnID = fnID
 
 	var (
 		args      []runtime.Value
@@ -187,11 +185,11 @@ func (vm *VM) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
 		}
 		vm.registers.Values = reg
 	} else {
-		newRegs := vm.frames.GetRegisters(udf.Registers)
+		newRegs := vm.frames.AcquireRegisters(udf.Registers)
 		if len(args) > 0 && len(newRegs) > 1 {
 			copy(newRegs[1:], args)
 		}
-		vm.frames.PutRegisters(reg)
+		vm.frames.ReleaseRegisters(reg)
 		vm.registers.Values = newRegs
 	}
 

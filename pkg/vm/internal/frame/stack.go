@@ -52,18 +52,18 @@ func (s *CallStack) Top() *CallFrame {
 	return &s.frames[len(s.frames)-1]
 }
 
-// GetRegisters returns a register window of the requested size.
-func (s *CallStack) GetRegisters(size int) []runtime.Value {
+// AcquireRegisters returns a register window of the requested size.
+func (s *CallStack) AcquireRegisters(size int) []runtime.Value {
 	return s.pool.Get(size)
 }
 
-// PutRegisters releases a register window back into the pool.
-func (s *CallStack) PutRegisters(reg []runtime.Value) {
+// ReleaseRegisters releases a register window back into the pool.
+func (s *CallStack) ReleaseRegisters(reg []runtime.Value) {
 	s.pool.Put(reg)
 }
 
-// Return unwinds one frame, restores caller registers, and applies retVal.
-func (s *CallStack) Return(active []runtime.Value, retVal runtime.Value) ([]runtime.Value, int, bool) {
+// ReturnToCaller unwinds one frame, restores caller registers, and applies retVal.
+func (s *CallStack) ReturnToCaller(active []runtime.Value, retVal runtime.Value) ([]runtime.Value, int, bool) {
 	frame, ok := s.Pop()
 	if !ok {
 		return nil, 0, false
@@ -77,8 +77,8 @@ func (s *CallStack) Return(active []runtime.Value, retVal runtime.Value) ([]runt
 	return registers, frame.ReturnPC, true
 }
 
-// UnwindToProtected drops frames until a protected frame is reached.
-func (s *CallStack) UnwindToProtected(active []runtime.Value) ([]runtime.Value, int, bool) {
+// UnwindToProtectedFrame drops frames until a protected frame is reached.
+func (s *CallStack) UnwindToProtectedFrame(active []runtime.Value) ([]runtime.Value, int, bool) {
 	for i := len(s.frames) - 1; i >= 0; i-- {
 		if !s.frames[i].Protected {
 			continue
@@ -101,4 +101,14 @@ func (s *CallStack) UnwindToProtected(active []runtime.Value) ([]runtime.Value, 
 	}
 
 	return nil, 0, false
+}
+
+// SetTopFnID updates the top frame's function id when present.
+func (s *CallStack) SetTopFnID(fnID int) bool {
+	if len(s.frames) == 0 {
+		return false
+	}
+
+	s.frames[len(s.frames)-1].FnID = fnID
+	return true
 }

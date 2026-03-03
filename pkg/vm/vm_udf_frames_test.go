@@ -77,7 +77,7 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		t.Fatalf("expected protected return destination to be reset, got %v", got)
 	}
 
-	reused4 := instance.frames.GetRegisters(4)
+	reused4 := instance.frames.AcquireRegisters(4)
 	if len(reused4) != 4 {
 		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused4), 4)
 	}
@@ -85,7 +85,7 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		t.Fatal("expected frame registers of size 4 to be reclaimed")
 	}
 
-	reused5 := instance.frames.GetRegisters(5)
+	reused5 := instance.frames.AcquireRegisters(5)
 	if len(reused5) != 5 {
 		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused5), 5)
 	}
@@ -93,7 +93,7 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		t.Fatal("expected frame registers of size 5 to be reclaimed")
 	}
 
-	reused6 := instance.frames.GetRegisters(6)
+	reused6 := instance.frames.AcquireRegisters(6)
 	if len(reused6) != 6 {
 		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused6), 6)
 	}

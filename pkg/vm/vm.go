@@ -618,10 +618,7 @@ loop:
 		case bytecode.OpReturn:
 			retVal := reg[dst]
 
-			if registers, pc, ok := vm.frames.Return(vm.registers.Values, retVal); ok {
-				vm.registers.Values = registers
-				vm.pc = pc
-
+			if vm.returnToCaller(retVal) {
 				continue
 			}
 

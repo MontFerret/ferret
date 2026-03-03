@@ -89,13 +89,13 @@ func TestNewWithOptions_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 		}
 	}
 
-	reg := instance.frames.GetRegisters(5)
+	reg := instance.frames.AcquireRegisters(5)
 	if got, want := len(reg), 5; got != want {
 		t.Fatalf("unexpected pooled register size: got %d, want %d", got, want)
 	}
 
-	instance.frames.PutRegisters(reg)
-	reused := instance.frames.GetRegisters(5)
+	instance.frames.ReleaseRegisters(reg)
+	reused := instance.frames.AcquireRegisters(5)
 	if got, want := len(reused), 5; got != want {
 		t.Fatalf("unexpected reused register size: got %d, want %d", got, want)
 	}
