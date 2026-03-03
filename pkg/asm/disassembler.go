@@ -3,6 +3,7 @@ package asm
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"text/tabwriter"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -20,6 +21,7 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 	newDisassemblerOptions(options...)
 
 	labels := collectLabels(p.Bytecode, p.Metadata.Labels)
+	udfLabels := collectUdfBoundaryLabels(p)
 
 	var buf bytes.Buffer
 	w := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
@@ -61,8 +63,29 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 
 	// Body: disassembly
 	for ip, instr := range p.Bytecode {
+		emitted := make(map[string]struct{}, 4)
+
 		if label, ok := labels[ip]; ok {
 			_, _ = fmt.Fprintf(w, "%s:\n", label)
+			emitted[label] = struct{}{}
+		}
+
+		for _, label := range udfLabels.starts[ip] {
+			if _, ok := emitted[label]; ok {
+				continue
+			}
+
+			_, _ = fmt.Fprintf(w, "%s:\n", label)
+			emitted[label] = struct{}{}
+		}
+
+		for _, label := range udfLabels.ends[ip] {
+			if _, ok := emitted[label]; ok {
+				continue
+			}
+
+			_, _ = fmt.Fprintf(w, "%s:\n", label)
+			emitted[label] = struct{}{}
 		}
 
 		var prev *bytecode.Instruction
@@ -104,6 +127,77 @@ func collectLabels(instructions []bytecode.Instruction, names map[int]string) ma
 	}
 
 	return labels
+}
+
+type udfBoundaryLabels struct {
+	starts map[int][]string
+	ends   map[int][]string
+}
+
+func collectUdfBoundaryLabels(p *bytecode.Program) udfBoundaryLabels {
+	result := udfBoundaryLabels{
+		starts: make(map[int][]string),
+		ends:   make(map[int][]string),
+	}
+
+	if p == nil || len(p.Bytecode) == 0 || len(p.Functions.UserDefined) == 0 {
+		return result
+	}
+
+	type udfEntry struct {
+		id    int
+		name  string
+		entry int
+	}
+
+	entries := make([]udfEntry, 0, len(p.Functions.UserDefined))
+	for id, udf := range p.Functions.UserDefined {
+		if udf.Entry < 0 || udf.Entry >= len(p.Bytecode) {
+			continue
+		}
+
+		entries = append(entries, udfEntry{
+			id:    id,
+			name:  udf.Name,
+			entry: udf.Entry,
+		})
+	}
+
+	if len(entries) == 0 {
+		return result
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].entry == entries[j].entry {
+			return entries[i].id < entries[j].id
+		}
+
+		return entries[i].entry < entries[j].entry
+	})
+
+	lastIdx := len(p.Bytecode) - 1
+	for i := range entries {
+		cur := entries[i]
+		end := lastIdx
+
+		for j := i + 1; j < len(entries); j++ {
+			next := entries[j]
+			if next.entry <= cur.entry {
+				continue
+			}
+
+			end = next.entry - 1
+			break
+		}
+
+		startLabel := fmt.Sprintf("@udf.%d.%s.start", cur.id, cur.name)
+		endLabel := fmt.Sprintf("@udf.%d.%s.end", cur.id, cur.name)
+
+		result.starts[cur.entry] = append(result.starts[cur.entry], startLabel)
+		result.ends[end] = append(result.ends[end], endLabel)
+	}
+
+	return result
 }
 
 // disasmLine renders a single instruction into text, with optional constants and location info.
