@@ -46,13 +46,14 @@ func TestDisassemble_HeaderSectionsStackedLayout(t *testing.T) {
 	constsPos := strings.Index(out, "\n.consts\n")
 	udfPos := strings.Index(out, "\n.udf\n")
 	funcPos := strings.Index(out, "\n.func\n")
+	entryPos := strings.Index(out, "\n.entry\n")
 	bodyPos := strings.Index(out, "0: RET R0")
 
-	if metaPos < 0 || paramsPos < 0 || constsPos < 0 || udfPos < 0 || funcPos < 0 || bodyPos < 0 {
+	if metaPos < 0 || paramsPos < 0 || constsPos < 0 || udfPos < 0 || funcPos < 0 || entryPos < 0 || bodyPos < 0 {
 		t.Fatalf("expected stacked header sections and body in output:\n%s", out)
 	}
 
-	if !(metaPos < paramsPos && paramsPos < constsPos && constsPos < udfPos && udfPos < funcPos && funcPos < bodyPos) {
+	if !(metaPos < paramsPos && paramsPos < constsPos && constsPos < udfPos && udfPos < funcPos && funcPos < entryPos && entryPos < bodyPos) {
 		t.Fatalf("unexpected section order in output:\n%s", out)
 	}
 
@@ -99,6 +100,57 @@ func TestDisassemble_HeaderSections_OmitEmptySections(t *testing.T) {
 
 	if strings.Contains(out, "\n.params\n") || strings.Contains(out, "\n.consts\n") || strings.Contains(out, "\n.udf\n") || strings.Contains(out, "\n.func\n") {
 		t.Fatalf("expected empty sections to be omitted:\n%s", out)
+	}
+}
+
+func TestDisassemble_EntryBeforeFirstLabelAndInstruction(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Metadata: bytecode.Metadata{
+			Labels: map[int]string{
+				0: "match.start",
+			},
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	entryPos := strings.Index(out, "\n.entry\n")
+	labelPos := strings.Index(out, "\nmatch.start\n")
+	insPos := strings.Index(out, "0: RET R0")
+
+	if entryPos < 0 || labelPos < 0 || insPos < 0 {
+		t.Fatalf("expected .entry, label, and first instruction in output:\n%s", out)
+	}
+
+	if !(entryPos < labelPos && labelPos < insPos) {
+		t.Fatalf("expected .entry before label and label before instruction:\n%s", out)
+	}
+}
+
+func TestDisassemble_EntryOmittedWhenNoBytecode(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Metadata: bytecode.Metadata{
+			CompilerVersion:   "2.0.0",
+			OptimizationLevel: 0,
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	if strings.Contains(out, "\n.entry\n") {
+		t.Fatalf("expected .entry to be omitted for empty bytecode:\n%s", out)
 	}
 }
 

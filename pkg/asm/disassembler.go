@@ -89,7 +89,10 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 	writeSection(".udf", udfRows)
 	writeSection(".func", funcRows)
 
-	_, _ = fmt.Fprintln(w)
+	if len(p.Bytecode) > 0 {
+		_, _ = fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w, ".entry")
+	}
 
 	// Body: disassembly
 	bodyStarted := false
