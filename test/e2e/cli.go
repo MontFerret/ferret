@@ -664,7 +664,14 @@ func analyzeQuery(query *file.Source) error {
 		os.Exit(1)
 	}
 
-	fmt.Println(asm.Disassemble(prog))
+	dis, err := asm.Disassemble(prog)
+
+	if err != nil {
+		fmt.Println("Failed to disassemble program:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println(dis)
 
 	prof.StopTimer(compilation)
 
