@@ -16,6 +16,10 @@ func labelOrAddr(pos int, labels map[int]string) string {
 	return fmt.Sprintf("%d", pos)
 }
 
+func formatComment(comment string) string {
+	return fmt.Sprintf(" ; %s", comment)
+}
+
 // constantAsText formats a constant value as a string.
 func constantAsText(constant runtime.Value) string {
 	if runtime.IsNumber(constant) {
@@ -35,38 +39,70 @@ func constValue(p *bytecode.Program, idx int) string {
 }
 
 func formatProgram(p *bytecode.Program) string {
-	return fmt.Sprintf(".prog %d %d %d", p.Registers, len(p.Constants), len(p.Params))
+	comment := "regs consts params"
+
+	return fmt.Sprintf(".prog %d %d %d %s", p.Registers, len(p.Constants), len(p.Params), formatComment(comment))
 }
 
-// formatLocation returns a line/col comment if available for the given instruction.
-func formatLocation(p *bytecode.Program, ip int) string {
-	//if ip < len(p.Locations) {
-	//	loc := p.Locations[ip]
-	//
-	//	return fmt.Sprintf("; line %d col %d", loc.Line, loc.Column)
-	//}
+func formatVersion(v string) string {
+	if v == "" {
+		return "-"
+	}
 
-	return ""
+	return v
 }
 
-// formatParam generates comments mapping register indices to parameter names.
-func formatParam(name string) string {
-	return fmt.Sprintf(".param %s", name)
+func formatVersionNum(v int) string {
+	if v <= 0 {
+		return formatVersion("")
+	}
+
+	return formatVersion(fmt.Sprintf("%d", v))
 }
 
-// formatFunction generates comments for the functions defined in the program.
-func formatFunction(name string, args int) string {
-	return fmt.Sprintf(".func %s %d", name, args)
+func formatMetaCompilerRow(version string) string {
+	return fmt.Sprintf("compiler %s", formatVersion(version))
 }
 
-// formatUdf generates comments for the UDF table entries.
-func formatUdf(id int, udf bytecode.UDF) string {
-	return fmt.Sprintf(".udf %d %s %d %d %d", id, udf.Name, udf.Entry, udf.Registers, udf.Params)
+func formatMetaOptimizationRow(level int) string {
+	return fmt.Sprintf("opt O%d", level)
 }
 
-// formatConstant generates a comment for a constant value in the program.
+func formatParamRow(name string) string {
+	return name
+}
+
+func formatFunctionRow(name string, args int) string {
+	return fmt.Sprintf("%s %d ; name params", name, args)
+}
+
+func formatUdfRow(id int, udf bytecode.UDF) string {
+	comment := "id name entry registers params"
+	return fmt.Sprintf("%d %s %d %d %d %s", id, udf.Name, udf.Entry, udf.Registers, udf.Params, formatComment(comment))
+}
+
+func formatConstantRow(constant runtime.Value) string {
+	return constantAsText(constant)
+}
+
+// formatParamHeader is a legacy single-line header helper.
+func formatParamHeader(name string) string {
+	return fmt.Sprintf(".param %s", formatParamRow(name))
+}
+
+// formatFunctionHeader is a legacy single-line header helper.
+func formatFunctionHeader(name string, args int) string {
+	return fmt.Sprintf(".func %s", formatFunctionRow(name, args))
+}
+
+// formatUdfHeader is a legacy single-line header helper.
+func formatUdfHeader(id int, udf bytecode.UDF) string {
+	return fmt.Sprintf(".udf %s", formatUdfRow(id, udf))
+}
+
+// formatConstant is a legacy single-line header helper.
 func formatConstant(constant runtime.Value) string {
-	return fmt.Sprintf(".const %s", constantAsText(constant))
+	return fmt.Sprintf(".const %s", formatConstantRow(constant))
 }
 
 func formatOperand(op bytecode.Operand) string {

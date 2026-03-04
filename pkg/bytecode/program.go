@@ -9,17 +9,21 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
+const Version = 1
+
 type (
 	Catch [3]int
 
 	Metadata struct {
-		AggregatePlans []AggregatePlan `json:"aggregatePlans"`
-		DebugSpans     []file.Span     `json:"debugSpans"`
-		Labels         map[int]string  `json:"labels"`
+		CompilerVersion   string          `json:"compilerVersion"`
+		OptimizationLevel int             `json:"optimizationLevel"`
+		AggregatePlans    []AggregatePlan `json:"aggregatePlans"`
+		DebugSpans        []file.Span     `json:"debugSpans"`
+		Labels            map[int]string  `json:"labels"`
 	}
 
 	Program struct {
-		Version    int
+		ISAVersion int
 		Source     *file.Source
 		Registers  int
 		Bytecode   []Instruction
@@ -30,8 +34,6 @@ type (
 		Metadata   Metadata
 	}
 )
-
-const ProgramVersion = 2
 
 func (p *Program) MarshalJSON() ([]byte, error) {
 	if p == nil {
@@ -51,7 +53,7 @@ func (p *Program) MarshalJSON() ([]byte, error) {
 	}
 
 	payload := programJSON{
-		Version:    p.Version,
+		ISAVersion: p.ISAVersion,
 		Source:     p.Source,
 		Registers:  p.Registers,
 		Bytecode:   p.Bytecode,
@@ -88,7 +90,7 @@ func (p *Program) UnmarshalJSON(data []byte) error {
 	}
 
 	p.Source = decoded.Source
-	p.Version = decoded.Version
+	p.ISAVersion = decoded.ISAVersion
 	p.Registers = decoded.Registers
 	p.Bytecode = decoded.Bytecode
 	p.Constants = constants

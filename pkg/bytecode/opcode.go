@@ -218,7 +218,7 @@ func (op Opcode) String() string {
 	case OpLoadPropertyOptionalConst:
 		return "LOADPROC"
 	case OpApplyQuery:
-		return "APPLYQ"
+		return "QRY"
 	case OpLoadProperty:
 		return "LOADPR"
 	case OpLoadPropertyOptional:
@@ -264,7 +264,7 @@ func (op Opcode) String() string {
 
 	// Comparison Operations
 	case OpCmp:
-		return "COMP"
+		return "CMP"
 	case OpNot:
 		return "NOT"
 	case OpEq:
@@ -346,7 +346,7 @@ func (op Opcode) String() string {
 	case OpRand:
 		return "RAND"
 	case OpDispatch:
-		return "DSCH"
+		return "DISP"
 
 	// Host Function Operations
 	case OpHCall:
@@ -386,7 +386,7 @@ func (op Opcode) String() string {
 	case OpStream:
 		return "STRM"
 	case OpStreamIter:
-		return "STRMITER"
+		return "STRMI"
 
 	// Iterator Operations
 	case OpIter:
@@ -398,9 +398,9 @@ func (op Opcode) String() string {
 	case OpIterKey:
 		return "ITKEY"
 	case OpIterLimit:
-		return "ITLIMIT"
+		return "ITLIM"
 	case OpIterSkip:
-		return "ITSKIP"
+		return "ITSKP"
 	case OpFlatten:
 		return "FLATTEN"
 

@@ -12,9 +12,9 @@ import (
 
 func TestRejectsUnsupportedBytecodeVersion(t *testing.T) {
 	program := &bytecode.Program{
-		Version:   1,
-		Bytecode:  []bytecode.Instruction{bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0))},
-		Registers: 1,
+		ISAVersion: 0,
+		Bytecode:   []bytecode.Instruction{bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0))},
+		Registers:  1,
 	}
 
 	_, err := vm.New(program).Run(context.Background(), vm.NewDefaultEnvironment())
@@ -30,9 +30,9 @@ func TestRejectsUnsupportedBytecodeVersion(t *testing.T) {
 func TestFailsOnUnknownOpcode(t *testing.T) {
 	unknown := bytecode.Opcode(255)
 	program := &bytecode.Program{
-		Version:   bytecode.ProgramVersion,
-		Bytecode:  []bytecode.Instruction{bytecode.NewInstruction(unknown)},
-		Registers: 1,
+		ISAVersion: bytecode.Version,
+		Bytecode:   []bytecode.Instruction{bytecode.NewInstruction(unknown)},
+		Registers:  1,
 	}
 
 	_, err := vm.New(program).Run(context.Background(), vm.NewDefaultEnvironment())

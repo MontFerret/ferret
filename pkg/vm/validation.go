@@ -20,7 +20,7 @@ func validateProgramVersion(program *bytecode.Program) error {
 		return runtime.Error(runtime.ErrInvalidOperation, "unsupported bytecode version; recompile query")
 	}
 
-	if program.Version != bytecode.ProgramVersion {
+	if program.ISAVersion != bytecode.Version {
 		return runtime.Error(runtime.ErrInvalidOperation, "unsupported bytecode version; recompile query")
 	}
 

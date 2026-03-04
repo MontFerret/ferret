@@ -647,7 +647,6 @@ func analyzeQuery(query *file.Source) error {
 	}
 
 	c := compiler.New(compiler.WithOptimizationLevel(optLevel))
-	fmt.Printf("Optimization level: O%d\n", optLevel)
 
 	fullProf := *profiler
 

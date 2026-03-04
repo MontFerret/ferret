@@ -16,7 +16,7 @@ import (
 
 type (
 	programJSON struct {
-		Version    int            `json:"version,omitempty"`
+		ISAVersion int            `json:"isaversion,omitempty"`
 		Source     *file.Source   `json:"source,omitempty"`
 		Registers  int            `json:"registers"`
 		Bytecode   []Instruction  `json:"bytecode"`

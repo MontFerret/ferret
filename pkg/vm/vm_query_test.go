@@ -44,8 +44,8 @@ func (q *queryStub) Copy() runtime.Value {
 
 func programWithApplyQueryConstSource(src runtime.Value) *bytecode.Program {
 	return &bytecode.Program{
-		Version:   bytecode.ProgramVersion,
-		Registers: 1,
+		ISAVersion: bytecode.Version,
+		Registers:  1,
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpApplyQuery, bytecode.NewRegister(0), bytecode.NewConstant(0), bytecode.NewConstant(1)),
 			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
