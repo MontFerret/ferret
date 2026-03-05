@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
@@ -421,7 +422,11 @@ loop:
 				continue
 			}
 		case bytecode.OpApplyQuery:
-			if err := vm.applyQuery(ctx, reg, src1, constants, src2, dst); err != nil {
+			src := internal.ReadOperandValue(reg, constants, src1)
+			descriptor := internal.ReadOperandValue(reg, constants, src2)
+			out, err := operators.ApplyQuery(ctx, src, descriptor)
+
+			if err := vm.setOrTryCatch(dst, out, err); err != nil {
 				if err := vm.handleProtectedError(err); err != nil {
 					return nil, err
 				}
