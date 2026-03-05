@@ -2975,7 +2975,7 @@ func (c *ExprCompiler) compileHostFunctionCallWith(name runtime.String, protecte
 }
 
 // compileUdfCallWith processes a UDF call with pre-compiled arguments.
-func (c *ExprCompiler) compileUdfCallWith(fn *UDFInfo, protected bool, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) bytecode.Operand {
+func (c *ExprCompiler) compileUdfCallWith(fn *core.UDFInfo, protected bool, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) bytecode.Operand {
 	args := c.prepareUdfCallArgs(fn, seq, callCtx)
 
 	dest := c.ctx.Registers.Allocate()
@@ -2994,7 +2994,7 @@ func (c *ExprCompiler) compileUdfCallWith(fn *UDFInfo, protected bool, seq core.
 }
 
 // EmitUdfTailCall emits a tail call to a UDF with pre-compiled arguments.
-func (c *ExprCompiler) EmitUdfTailCall(fn *UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) {
+func (c *ExprCompiler) EmitUdfTailCall(fn *core.UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) {
 	args := c.prepareUdfCallArgs(fn, seq, callCtx)
 
 	dest := c.ctx.Registers.Allocate()
@@ -3003,7 +3003,7 @@ func (c *ExprCompiler) EmitUdfTailCall(fn *UDFInfo, seq core.RegisterSequence, c
 	c.ctx.Emitter.EmitAs(bytecode.OpTailCall, dest, args)
 }
 
-func (c *ExprCompiler) prepareUdfCallArgs(fn *UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) core.RegisterSequence {
+func (c *ExprCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) core.RegisterSequence {
 	if fn == nil {
 		return seq
 	}
