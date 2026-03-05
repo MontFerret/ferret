@@ -1,57 +1,49 @@
-// XPATH Examples
-// The XPATH function allows you to query elements using XPath expressions.
-// It returns an array of matched values.
+// XPath Examples - Querying HTML elements and attributes
+// 
+// XPATH(document, expression) returns an array of matching values
+//
+// For more XPath syntax, see: https://www.w3.org/TR/xpath/
 
 LET doc = DOCUMENT("https://www.google.ca", {
   driver: 'cdp'
 })
 
-// Basic XPATH query - get charset from meta tag
+// Basic attribute query
 LET charset = XPATH(doc, "//meta/@charset")
 // Returns: ["UTF-8"]
 
-// Get page title
-LET title = XPATH(doc, "//title/text()")
-// Returns: ["Google"]
-
-// Get all link hrefs on the page
-LET links = XPATH(doc, "//a/@href")
-// Returns: ["https://...", "https://...", ...]
-
-// Get specific meta content by name attribute
+// Query meta tag content by name attribute
 LET description = XPATH(doc, "//meta[@name='description']/@content")
-// Returns: ["Search the world's information..."]
+// Returns: ["Search description..."]
 
-// Get Open Graph metadata (commonly used for social sharing)
-LET ogUrl = XPATH(doc, "//meta[@property='og:url']/@content")
-LET ogTitle = XPATH(doc, "//meta[@property='og:title']/@content")
-LET ogImage = XPATH(doc, "//meta[@property='og:image']/@content")
+// Query Open Graph metadata (og:url, og:title, etc.)
+LET og_url = XPATH(doc, "//meta[@property='og:url']/@content")
+LET og_title = XPATH(doc, "//meta[@property='og:title']/@content")
+LET og_image = XPATH(doc, "//meta[@property='og:image']/@content")
 
-// Get Twitter Card metadata
-LET twitterCard = XPATH(doc, "//meta[@name='twitter:card']/@content")
-LET twitterSite = XPATH(doc, "//meta[@name='twitter:site']/@content")
+// Query Twitter Card metadata
+LET twitter_card = XPATH(doc, "//meta[@name='twitter:card']/@content")
 
-// Get all images with alt text
-LET imagesWithAlt = XPATH(doc, "//img[@alt]/@alt")
+// Query canonical URL
+LET canonical = XPATH(doc, "//link[@rel='canonical']/@href")
 
-// Get text content from elements with specific class
-// Note: XPath 1.0 doesn't have native class matching, use contains()
-LET elementsWithClass = XPATH(doc, "//*[contains(@class, 'some-class')]/text()")
+// Query all links on the page
+LET all_links = XPATH(doc, "//a/@href")
 
-// Get the first matching element (using position predicate)
-LET firstLink = XPATH(doc, "(//a/@href)[1]")
+// Query specific elements by class
+LET by_class = XPATH(doc, "//*[@class='my-class']")
 
-// Get elements by ID
-LET elementById = XPATH(doc, "//*[@id='main']//text()")
+// Query elements by ID
+LET by_id = XPATH(doc, "//*[@id='main']")
 
-// Combine conditions with 'and'
-LET specificMeta = XPATH(doc, "//meta[@property='og:type' and @content='website']/@content")
+// Query text content of elements
+LET headings = XPATH(doc, "//h1/text()")
 
-// Return an object with all collected metadata
 RETURN {
-    charset: charset,
-    title: title,
-    ogUrl: ogUrl,
-    ogTitle: ogTitle,
-    ogImage: ogImage
+  charset: charset,
+  og_url: og_url,
+  og_title: og_title,
+  og_image: og_image,
+  canonical: canonical,
+  headings: headings
 }
