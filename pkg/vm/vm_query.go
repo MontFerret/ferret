@@ -2,13 +2,24 @@ package vm
 
 import (
 	"context"
-	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-const queryModifierDescriptorUnsupported = "unexpected query format: descriptor modifier is not supported; recompile query"
+const (
+	queryDescriptorKind    = "kind"
+	queryDescriptorPayload = "payload"
+	queryDescriptorOptions = "options"
+
+	errQueryFormatUnexpected = "unexpected query format"
+)
+
+var (
+	queryDescriptorKeyKind    = runtime.NewString(queryDescriptorKind)
+	queryDescriptorKeyPayload = runtime.NewString(queryDescriptorPayload)
+	queryDescriptorKeyOptions = runtime.NewString(queryDescriptorOptions)
+)
 
 func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode.Operand, constants []runtime.Value, src2 bytecode.Operand, dst bytecode.Operand) error {
 	var src runtime.Value
@@ -30,7 +41,7 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 
 	switch value := arg.(type) {
 	case runtime.ObjectLike:
-		kind, err := value.Get(ctx, runtime.NewString("kind"))
+		kind, err := value.Get(ctx, queryDescriptorKeyKind)
 		if err != nil {
 			if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
 				return err
@@ -39,7 +50,7 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 			break
 		}
 
-		payload, err := value.Get(ctx, runtime.NewString("payload"))
+		payload, err := value.Get(ctx, queryDescriptorKeyPayload)
 		if err != nil {
 			if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
 				return err
@@ -48,7 +59,7 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 			break
 		}
 
-		options, err := value.Get(ctx, runtime.NewString("options"))
+		options, err := value.Get(ctx, queryDescriptorKeyOptions)
 		if err != nil {
 			if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
 				return err
@@ -62,20 +73,6 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 			Payload: runtime.CastOr[runtime.String](payload, runtime.EmptyString),
 			Options: options,
 		}
-
-		if _, err := value.Get(ctx, runtime.NewString("modifier")); err == nil {
-			if err := vm.setOrTryCatch(dst, runtime.None, runtime.Error(runtime.ErrInvalidOperation, queryModifierDescriptorUnsupported)); err != nil {
-				return err
-			}
-
-			break
-		} else if !errors.Is(err, runtime.ErrNotFound) {
-			if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
-				return err
-			}
-
-			break
-		}
 	case *runtime.Array:
 		length, err := value.Length(ctx)
 		if err != nil {
@@ -87,15 +84,7 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 		}
 
 		if length != 3 {
-			if length == 4 {
-				if err := vm.setOrTryCatch(dst, runtime.None, runtime.Error(runtime.ErrInvalidOperation, queryModifierDescriptorUnsupported)); err != nil {
-					return err
-				}
-
-				break
-			}
-
-			if err := vm.setOrTryCatch(dst, runtime.None, runtime.Error(runtime.ErrInvalidOperation, "unexpected query format")); err != nil {
+			if err := vm.setOrTryCatch(dst, runtime.None, runtime.Error(runtime.ErrInvalidOperation, errQueryFormatUnexpected)); err != nil {
 				return err
 			}
 
@@ -160,7 +149,7 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 		}
 	default:
 		// TODO: Give a more specific error message here
-		if err := vm.setOrTryCatch(dst, runtime.None, runtime.Error(runtime.ErrInvalidOperation, "unexpected query format")); err != nil {
+		if err := vm.setOrTryCatch(dst, runtime.None, runtime.Error(runtime.ErrInvalidOperation, errQueryFormatUnexpected)); err != nil {
 			return err
 		}
 

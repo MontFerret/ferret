@@ -645,16 +645,16 @@ func (f *expressionFormatter) writeQueryModifierWith(p *printer, modifier fql.IQ
 		return
 	}
 
-	switch strings.ToLower(modifier.GetText()) {
-	case "exists":
+	switch text := modifier.GetText(); {
+	case strings.EqualFold(text, keywordExists):
 		f.writeKeywordWith(p, keywordExists)
-	case "count":
+	case strings.EqualFold(text, keywordCount):
 		f.writeKeywordWith(p, keywordCount)
-	case "any":
+	case strings.EqualFold(text, keywordAny):
 		f.writeKeywordWith(p, keywordAny)
-	case "value":
+	case strings.EqualFold(text, keywordValue):
 		f.writeKeywordWith(p, keywordValue)
-	case "one":
+	case strings.EqualFold(text, keywordOne):
 		f.writeKeywordWith(p, keywordOne)
 	default:
 		return

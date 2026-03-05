@@ -10,6 +10,13 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
+const (
+	testQueryDescriptorKeyKind    = "kind"
+	testQueryDescriptorKeyPayload = "payload"
+	testQueryDescriptorKeyOptions = "options"
+	testQueryDescriptorKeyMod     = "modifier"
+)
+
 type queryStub struct {
 	queries []runtime.Query
 	result  runtime.List
@@ -203,36 +210,45 @@ func TestApplyQuery_ArrayDescriptorWithModifier(t *testing.T) {
 		t.Fatalf("expected runtime error, got %T", err)
 	}
 
-	if !strings.Contains(rtErr.Format(), queryModifierDescriptorUnsupported) {
-		t.Fatalf("expected formatted runtime error to include descriptor modifier detail, got:\n%s", rtErr.Format())
+	if !strings.Contains(strings.ToLower(rtErr.Format()), "unexpected query format") {
+		t.Fatalf("expected unexpected query format error, got:\n%s", rtErr.Format())
 	}
 }
 
 func TestApplyQuery_ObjectDescriptorWithModifier(t *testing.T) {
 	stub := &queryStub{
-		result: runtime.NewArray(0),
+		result: runtime.NewArrayWith(runtime.NewString("ok")),
 	}
 
 	obj := runtime.NewObject()
 	ctx := context.Background()
-	_ = obj.Set(ctx, runtime.NewString("kind"), runtime.NewString("css"))
-	_ = obj.Set(ctx, runtime.NewString("payload"), runtime.NewString(".items"))
-	_ = obj.Set(ctx, runtime.NewString("options"), runtime.None)
-	_ = obj.Set(ctx, runtime.NewString("modifier"), runtime.NewString("EXISTS"))
+	_ = obj.Set(ctx, runtime.NewString(testQueryDescriptorKeyKind), runtime.NewString("css"))
+	_ = obj.Set(ctx, runtime.NewString(testQueryDescriptorKeyPayload), runtime.NewString(".items"))
+	_ = obj.Set(ctx, runtime.NewString(testQueryDescriptorKeyOptions), runtime.None)
+	_ = obj.Set(ctx, runtime.NewString(testQueryDescriptorKeyMod), runtime.NewString("EXISTS"))
 
 	program := programWithApplyQueryDescriptor(stub, obj)
-	_, err := New(program).Run(ctx, nil)
-	if err == nil {
-		t.Fatal("expected runtime error")
+	result, err := New(program).Run(ctx, nil)
+	if err != nil {
+		t.Fatalf("run failed: %v", err)
 	}
 
-	var rtErr *RuntimeError
-	if !errors.As(err, &rtErr) {
-		t.Fatalf("expected runtime error, got %T", err)
+	assertSingleStringArrayResult(t, result, runtime.NewString("ok"))
+
+	if len(stub.queries) != 1 {
+		t.Fatalf("unexpected query count: got %d, want 1", len(stub.queries))
 	}
 
-	if !strings.Contains(rtErr.Format(), queryModifierDescriptorUnsupported) {
-		t.Fatalf("expected formatted runtime error to include descriptor modifier detail, got:\n%s", rtErr.Format())
+	if got, want := stub.queries[0].Kind, runtime.NewString("css"); got != want {
+		t.Fatalf("unexpected query kind: got %q, want %q", got, want)
+	}
+
+	if got, want := stub.queries[0].Payload, runtime.NewString(".items"); got != want {
+		t.Fatalf("unexpected query payload: got %q, want %q", got, want)
+	}
+
+	if got := stub.queries[0].Options; got != runtime.None {
+		t.Fatalf("unexpected query options: got %v, want %v", got, runtime.None)
 	}
 }
 

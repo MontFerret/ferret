@@ -256,7 +256,7 @@ func isQueryModifierToken(node *TokenNode) bool {
 		return true
 	case fql.FqlLexerIdentifier:
 		text := node.Token().GetText()
-		return equalsFoldASCII(text, "COUNT") || equalsFoldASCII(text, "ONE")
+		return strings.EqualFold(text, "COUNT") || strings.EqualFold(text, "ONE")
 	default:
 		return false
 	}
@@ -298,29 +298,4 @@ func isSafeReservedWordToken(node *TokenNode) bool {
 	default:
 		return false
 	}
-}
-
-func equalsFoldASCII(actual, expected string) bool {
-	if len(actual) != len(expected) {
-		return false
-	}
-
-	for i := 0; i < len(actual); i++ {
-		a := actual[i]
-		e := expected[i]
-
-		if a >= 'a' && a <= 'z' {
-			a -= 'a' - 'A'
-		}
-
-		if e >= 'a' && e <= 'z' {
-			e -= 'a' - 'A'
-		}
-
-		if a != e {
-			return false
-		}
-	}
-
-	return true
 }
