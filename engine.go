@@ -11,11 +11,12 @@ import (
 )
 
 type Engine struct {
-	compiler  *compiler.Compiler
-	functions *runtime.Functions
-	params    map[string]runtime.Value
-	logging   runtime.LogSettings
-	encoding  *encoding.Registry
+	compiler   *compiler.Compiler
+	functions  *runtime.Functions
+	params     map[string]runtime.Value
+	logging    runtime.LogSettings
+	encoding   *encoding.Registry
+	decorators []ContextDecorator
 }
 
 func New(setters ...Option) (*Engine, error) {
@@ -56,16 +57,6 @@ func (e *Engine) Compile(src *file.Source) (*Plan, error) {
 		Params:    e.params,
 		Logging:   e.logging,
 	}, e.encoding), nil
-}
-
-func (e *Engine) MustCompile(src *file.Source) *Plan {
-	program, err := e.Compile(src)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return program
 }
 
 func (e *Engine) Run(ctx context.Context, src *file.Source, opts ...SessionOption) (Result, error) {

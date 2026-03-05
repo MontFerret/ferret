@@ -9,13 +9,12 @@ import (
 
 type (
 	ModuleRegistry struct {
-		ns       runtime.Namespace
-		encoding *encoding.Registry
+		ns         runtime.Namespace
+		encoding   *encoding.Registry
+		decorators []ContextDecorator
 	}
 
-	ContextExtender interface {
-		ExtendContext(ctx context.Context) (context.Context, error)
-	}
+	ContextDecorator func(ctx context.Context) (context.Context, error)
 
 	Module interface {
 		Name() string
@@ -29,4 +28,8 @@ func (mr *ModuleRegistry) Functions() runtime.Namespace {
 
 func (mr *ModuleRegistry) Encoding() *encoding.Registry {
 	return mr.encoding
+}
+
+func (mr *ModuleRegistry) WithContext(extender ContextDecorator) {
+	mr.decorators = append(mr.decorators, extender)
 }
