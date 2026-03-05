@@ -75,6 +75,22 @@ jobs:
       - name: Unit tests
         run: make cover
 
+  race:
+    name: Race Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.25
+
+      - name: Run race tests
+        run: go test ./... -race
+
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest

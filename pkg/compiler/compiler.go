@@ -17,10 +17,17 @@ import (
 
 const Version = "2.0.0"
 
+// Compiler translates FQL source code into bytecode programs.
+//
+// A Compiler is immutable after construction and safe for concurrent use.
+// Multiple goroutines can call Compile on the same Compiler instance.
 type Compiler struct {
 	opts *options
 }
 
+// New creates a compiler with optional configuration.
+//
+// The returned compiler is immutable and can be shared safely across goroutines.
 func New(setters ...Option) *Compiler {
 	c := &Compiler{
 		opts: &options{
@@ -35,6 +42,9 @@ func New(setters ...Option) *Compiler {
 	return c
 }
 
+// Compile parses and compiles a source into a bytecode program.
+//
+// Compile is safe for concurrent use by multiple goroutines.
 func (c *Compiler) Compile(src *file.Source) (program *bytecode.Program, err error) {
 	if src.Empty() {
 		return nil, parserd.NewEmptyQueryError(src)
