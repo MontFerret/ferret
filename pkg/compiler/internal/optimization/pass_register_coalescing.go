@@ -8,9 +8,17 @@ import (
 
 const RegisterCoalescingPassName = "register-coalescing"
 
-// RegisterCoalescingPass performs register coalescing to reduce register usage
-// by renumbering registers based on liveness intervals
-type RegisterCoalescingPass struct{}
+type (
+	// RegisterCoalescingPass performs register coalescing to reduce register usage
+	// by renumbering registers based on liveness intervals
+	RegisterCoalescingPass struct{}
+
+	liveInterval struct {
+		reg   int
+		start int
+		end   int
+	}
+)
 
 // NewRegisterCoalescingPass creates a new register coalescing pass
 func NewRegisterCoalescingPass() Pass {
@@ -27,11 +35,6 @@ func (p *RegisterCoalescingPass) Requires() []string {
 }
 
 // liveInterval represents the live range of a register
-type liveInterval struct {
-	reg   int
-	start int
-	end   int
-}
 
 // Run executes register coalescing on the program
 func (p *RegisterCoalescingPass) Run(ctx *PassContext) (*PassResult, error) {

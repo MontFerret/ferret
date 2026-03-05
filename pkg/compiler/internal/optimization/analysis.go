@@ -113,123 +113,149 @@ func (a *Analyzer) CalculateDominators() map[int]*BasicBlock {
 		return map[int]*BasicBlock{}
 	}
 
-	// Initialize dominators
-	dominators := make(map[int]map[int]bool)
+	dominators := initializeDominators(a.cfg)
+	computeDominatorsFixedPoint(a.cfg, dominators)
 
-	for _, block := range a.cfg.Blocks {
-		dominators[block.ID] = make(map[int]bool)
+	return buildImmediateDominators(a.cfg, dominators)
+}
 
-		// Initially, every block is dominated by all blocks
-		for _, b := range a.cfg.Blocks {
-			dominators[block.ID][b.ID] = true
+func initializeDominators(cfg *ControlFlowGraph) map[int]map[int]bool {
+	dominators := make(map[int]map[int]bool, len(cfg.Blocks))
+
+	for _, block := range cfg.Blocks {
+		dominators[block.ID] = make(map[int]bool, len(cfg.Blocks))
+
+		for _, other := range cfg.Blocks {
+			dominators[block.ID][other.ID] = true
 		}
 	}
 
-	// Entry is only dominated by itself
-	dominators[a.cfg.Entry.ID] = map[int]bool{a.cfg.Entry.ID: true}
+	dominators[cfg.Entry.ID] = map[int]bool{cfg.Entry.ID: true}
+	return dominators
+}
 
-	// Iteratively compute dominators
+func computeDominatorsFixedPoint(cfg *ControlFlowGraph, dominators map[int]map[int]bool) {
 	changed := true
 
 	for changed {
 		changed = false
 
-		for _, block := range a.cfg.Blocks {
-			if block == a.cfg.Entry {
+		for _, block := range cfg.Blocks {
+			if block == cfg.Entry {
 				continue
 			}
 
-			// Compute intersection of dominators of all predecessors
-			newDom := make(map[int]bool)
-			first := true
+			newSet := intersectPredecessorDominators(block, dominators)
+			newSet[block.ID] = true
 
-			for _, pred := range block.Predecessors {
-				if first {
-					for id := range dominators[pred.ID] {
-						newDom[id] = true
-					}
-					first = false
-				} else {
-					// Intersection
-					for id := range newDom {
-						if !dominators[pred.ID][id] {
-							delete(newDom, id)
-						}
-					}
-				}
-			}
-
-			// Add self
-			newDom[block.ID] = true
-
-			// Check if changed
-			if len(newDom) != len(dominators[block.ID]) {
+			if updateDominatorSet(dominators, block.ID, newSet) {
 				changed = true
-				dominators[block.ID] = newDom
-			} else {
-				for id := range newDom {
-					if !dominators[block.ID][id] {
-						changed = true
-						break
-					}
-				}
-
-				if changed {
-					dominators[block.ID] = newDom
-				}
 			}
 		}
 	}
+}
 
-	// Find immediate dominator (closest dominator that is not the node itself)
-	// The immediate dominator of a block is the unique dominator that is dominated by all other dominators
-	immediateDominators := make(map[int]*BasicBlock)
-	blockMap := make(map[int]*BasicBlock)
+func intersectPredecessorDominators(block *BasicBlock, dominators map[int]map[int]bool) map[int]bool {
+	intersection := make(map[int]bool)
+	firstPred := true
 
-	for _, b := range a.cfg.Blocks {
-		blockMap[b.ID] = b
-	}
-
-	for _, block := range a.cfg.Blocks {
-		if block == a.cfg.Entry {
+	for _, pred := range block.Predecessors {
+		if firstPred {
+			for id := range dominators[pred.ID] {
+				intersection[id] = true
+			}
+			firstPred = false
 			continue
 		}
 
-		// Find the immediate dominator by looking for the dominator that is not dominated by any other dominator
-		var idom *BasicBlock
-
-		for domID := range dominators[block.ID] {
-			if domID == block.ID {
-				continue
+		for id := range intersection {
+			if !dominators[pred.ID][id] {
+				delete(intersection, id)
 			}
-
-			// Check if this dominator is dominated by any other dominator of block
-			isDominatedByOther := false
-
-			for otherID := range dominators[block.ID] {
-				if otherID == block.ID || otherID == domID {
-					continue
-				}
-
-				// If otherID dominates domID, then domID is not the immediate dominator
-				if dominators[domID][otherID] {
-					isDominatedByOther = true
-					break
-				}
-			}
-
-			if !isDominatedByOther {
-				idom = blockMap[domID]
-				break
-			}
-		}
-
-		if idom != nil {
-			immediateDominators[block.ID] = idom
 		}
 	}
 
-	return immediateDominators
+	return intersection
+}
+
+func updateDominatorSet(dominators map[int]map[int]bool, blockID int, newSet map[int]bool) bool {
+	current := dominators[blockID]
+	if dominatorSetsEqual(current, newSet) {
+		return false
+	}
+
+	dominators[blockID] = newSet
+	return true
+}
+
+func dominatorSetsEqual(left, right map[int]bool) bool {
+	if len(left) != len(right) {
+		return false
+	}
+
+	for id := range left {
+		if !right[id] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func buildImmediateDominators(cfg *ControlFlowGraph, dominators map[int]map[int]bool) map[int]*BasicBlock {
+	immediate := make(map[int]*BasicBlock)
+	blockMap := make(map[int]*BasicBlock, len(cfg.Blocks))
+
+	for _, block := range cfg.Blocks {
+		blockMap[block.ID] = block
+	}
+
+	for _, block := range cfg.Blocks {
+		if block == cfg.Entry {
+			continue
+		}
+
+		idomID, ok := findImmediateDominator(block.ID, dominators)
+		if !ok {
+			continue
+		}
+
+		if idom := blockMap[idomID]; idom != nil {
+			immediate[block.ID] = idom
+		}
+	}
+
+	return immediate
+}
+
+func findImmediateDominator(blockID int, dominators map[int]map[int]bool) (int, bool) {
+	blockDominators := dominators[blockID]
+
+	for domID := range blockDominators {
+		if domID == blockID {
+			continue
+		}
+
+		if !isDominatedByOtherCandidate(blockID, domID, blockDominators, dominators) {
+			return domID, true
+		}
+	}
+
+	return 0, false
+}
+
+func isDominatedByOtherCandidate(blockID, candidateID int, blockDominators map[int]bool, dominators map[int]map[int]bool) bool {
+	for otherID := range blockDominators {
+		if otherID == blockID || otherID == candidateID {
+			continue
+		}
+
+		if dominators[candidateID][otherID] {
+			return true
+		}
+	}
+
+	return false
 }
 
 // ToDOT converts the CFG to Graphviz DOT format for visualization

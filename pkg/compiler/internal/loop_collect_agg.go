@@ -419,85 +419,93 @@ func (c *LoopCollectCompiler) finalizeGlobalAggregation(spec *core.Collector) {
 // and assigns the results to local variables.
 // It also handles the case where there are no records in the aggregator by loading NONE values.
 func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Collector) {
-	// Gets the number of records in the accumulator
+	aggregator, elseLabel, endLabel := c.emitGlobalAggregationEmptyGuard(spec)
+	selectorRegs := c.compileGlobalAggregationSelectors(spec, aggregator)
+	projVar := c.compileGlobalAggregationProjection(spec, aggregator)
+	c.emitGlobalAggregationEmptyFallback(selectorRegs, projVar, elseLabel, endLabel)
+}
+
+func (c *LoopCollectCompiler) emitGlobalAggregationEmptyGuard(spec *core.Collector) (bytecode.Operand, core.Label, core.Label) {
 	aggregator := spec.Destination()
 	cond := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitAB(bytecode.OpLength, cond, aggregator)
 
 	zero := loadConstant(c.ctx, runtime.ZeroInt)
-	// Check if the number equals to zero
 	c.ctx.Emitter.EmitEq(cond, cond, zero)
 
 	elseLabel := c.ctx.Emitter.NewLabel()
 	endLabel := c.ctx.Emitter.NewLabel()
-
-	// We skip the key retrieval and function call if there are no records in the accumulator
 	c.ctx.Emitter.EmitJumpIfTrue(cond, elseLabel)
 
+	return aggregator, elseLabel, endLabel
+}
+
+func (c *LoopCollectCompiler) compileGlobalAggregationSelectors(spec *core.Collector, aggregator bytecode.Operand) []bytecode.Operand {
 	selectors := spec.Aggregation().Selectors()
-	selectorVarRegs := make([]bytecode.Operand, len(selectors))
+	selectorRegs := make([]bytecode.Operand, len(selectors))
 
 	if spec.Type() == bytecode.CollectorTypeAggregate {
-		// Plan-backed aggregate collector already stores final values by selector name.
-		for i, selector := range selectors {
-			selectorVarName := selector.Name()
-			varReg := c.declareLocalOrReport(selector.Context(), selectorVarName.String(), core.TypeUnknown)
-			selectorVarRegs[i] = varReg
-
-			key := loadConstant(c.ctx, selector.Name())
-			c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, varReg, aggregator, key)
-		}
-	} else {
-		// Generic collector path: reconstruct selector args and evaluate aggregate functions in bytecode.
-		// Process each aggregation selector
-		for i, selector := range selectors {
-			var args core.RegisterSequence
-
-			// We need to unpack arguments from the aggregator
-			if selector.Args() > 1 {
-				// For multiple arguments, allocate a sequence and load each argument by its indexed key
-				args = c.ctx.Registers.AllocateSequence(selector.Args())
-
-				for y, reg := range args {
-					argKeyReg := c.loadGlobalSelectorKey(selector.Name(), y)
-					c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, reg, aggregator, argKeyReg)
-				}
-			} else {
-				// For a single argument, load it directly using the selector name as key
-				key := loadConstant(c.ctx, selector.Name())
-				value := c.ctx.Registers.Allocate()
-				c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, value, aggregator, key)
-				args = core.RegisterSequence{value}
-			}
-
-			// Call the aggregation function with the loaded arguments
-			result := c.ctx.ExprCompiler.CompileFunctionCallByNameWith(nil, selector.FuncName(), selector.ProtectedCall(), args)
-
-			// Declare a local variable for the aggregation result
-			selectorVarName := selector.Name()
-			varReg := c.declareLocalOrReport(selector.Context(), selectorVarName.String(), core.TypeUnknown)
-			selectorVarRegs[i] = varReg
-
-			// Move the function result to the variable
-			c.ctx.Emitter.EmitAB(bytecode.OpMove, varReg, result)
-		}
+		c.compilePlanBackedGlobalAggregationSelectors(selectors, aggregator, selectorRegs)
+		return selectorRegs
 	}
 
-	var projVar bytecode.Operand
+	c.compileGenericGlobalAggregationSelectors(selectors, aggregator, selectorRegs)
+	return selectorRegs
+}
 
-	// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
-	if spec.HasProjection() {
-		projVar = c.finalizeProjection(spec, aggregator)
+func (c *LoopCollectCompiler) compilePlanBackedGlobalAggregationSelectors(selectors []*core.AggregateSelector, aggregator bytecode.Operand, selectorRegs []bytecode.Operand) {
+	for i, selector := range selectors {
+		varReg := c.declareLocalOrReport(selector.Context(), selector.Name().String(), core.TypeUnknown)
+		selectorRegs[i] = varReg
+
+		key := loadConstant(c.ctx, selector.Name())
+		c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, varReg, aggregator, key)
+	}
+}
+
+func (c *LoopCollectCompiler) compileGenericGlobalAggregationSelectors(selectors []*core.AggregateSelector, aggregator bytecode.Operand, selectorRegs []bytecode.Operand) {
+	for i, selector := range selectors {
+		args := c.compileGlobalAggregationSelectorArgs(selector, aggregator)
+		result := c.ctx.ExprCompiler.CompileFunctionCallByNameWith(nil, selector.FuncName(), selector.ProtectedCall(), args)
+
+		varReg := c.declareLocalOrReport(selector.Context(), selector.Name().String(), core.TypeUnknown)
+		selectorRegs[i] = varReg
+		c.ctx.Emitter.EmitAB(bytecode.OpMove, varReg, result)
+	}
+}
+
+func (c *LoopCollectCompiler) compileGlobalAggregationSelectorArgs(selector *core.AggregateSelector, aggregator bytecode.Operand) core.RegisterSequence {
+	if selector.Args() <= 1 {
+		key := loadConstant(c.ctx, selector.Name())
+		value := c.ctx.Registers.Allocate()
+		c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, value, aggregator, key)
+		return core.RegisterSequence{value}
 	}
 
-	// Skip the else block (for empty aggregator)
+	args := c.ctx.Registers.AllocateSequence(selector.Args())
+	for idx, reg := range args {
+		argKey := c.loadGlobalSelectorKey(selector.Name(), idx)
+		c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, reg, aggregator, argKey)
+	}
+
+	return args
+}
+
+func (c *LoopCollectCompiler) compileGlobalAggregationProjection(spec *core.Collector, aggregator bytecode.Operand) bytecode.Operand {
+	if !spec.HasProjection() {
+		return bytecode.NoopOperand
+	}
+
+	return c.finalizeProjection(spec, aggregator)
+}
+
+func (c *LoopCollectCompiler) emitGlobalAggregationEmptyFallback(selectorRegs []bytecode.Operand, projVar bytecode.Operand, elseLabel, endLabel core.Label) {
 	c.ctx.Emitter.EmitJump(endLabel)
 	c.ctx.Emitter.MarkLabel(elseLabel)
 
-	// If there are no records in the aggregator, load NONE values for all variables
-	for _, varReg := range selectorVarRegs {
-		c.ctx.Emitter.EmitA(bytecode.OpLoadNone, varReg)
-		c.ctx.Types.Set(varReg, core.TypeNone)
+	for _, reg := range selectorRegs {
+		c.ctx.Emitter.EmitA(bytecode.OpLoadNone, reg)
+		c.ctx.Types.Set(reg, core.TypeNone)
 	}
 
 	if projVar != bytecode.NoopOperand {

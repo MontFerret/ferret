@@ -14,11 +14,41 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
-// LoopCompiler handles the compilation of FOR loop expressions in FQL queries.
-// It transforms loop operations into VM instructions for iteration, filtering, and data manipulation.
-type LoopCompiler struct {
-	ctx *CompilerContext
-}
+type (
+	// LoopCompiler handles the compilation of FOR loop expressions in FQL queries.
+	// It transforms loop operations into VM instructions for iteration, filtering, and data manipulation.
+	LoopCompiler struct {
+		ctx *CompilerContext
+	}
+
+	loopOperandKind int
+
+	loopOperandContext struct {
+		param                  fql.IParamContext
+		integerLiteral         fql.IIntegerLiteralContext
+		variable               fql.IVariableContext
+		memberExpression       fql.IMemberExpressionContext
+		implicitCurrentExpr    fql.IImplicitCurrentExpressionContext
+		implicitMemberExpr     fql.IImplicitMemberExpressionContext
+		functionCallExpression fql.IFunctionCallExpressionContext
+		rangeOperator          fql.IRangeOperatorContext
+		arrayLiteral           fql.IArrayLiteralContext
+		objectLiteral          fql.IObjectLiteralContext
+	}
+)
+
+const (
+	loopOperandParam loopOperandKind = iota
+	loopOperandIntegerLiteral
+	loopOperandVariable
+	loopOperandMemberExpression
+	loopOperandImplicitCurrent
+	loopOperandImplicitMember
+	loopOperandFunctionCallExpression
+	loopOperandRangeOperator
+	loopOperandArrayLiteral
+	loopOperandObjectLiteral
+)
 
 // NewLoopCompiler creates a new instance of LoopCompiler with the given compiler context.
 func NewLoopCompiler(ctx *CompilerContext) *LoopCompiler {
@@ -70,38 +100,56 @@ func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) bytecode.Operand {
 //
 // Returns the rule context for the return expression or nested FOR expression.
 func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind core.LoopKind) antlr.RuleContext {
-	var distinct bool
-	var returnRuleCtx antlr.RuleContext
-	var loopType core.LoopType
-	returnCtx := ctx.ForExpressionReturn()
-
-	if returnCtx == nil {
+	returnRuleCtx, distinct, loopType, ok := c.resolveLoopReturnSpec(ctx.ForExpressionReturn())
+	if !ok {
 		return nil
-	}
-
-	// Determine the loop type and whether it should use distinct values
-	if re := returnCtx.ReturnExpression(); re != nil {
-		returnRuleCtx = re
-		distinct = re.Distinct() != nil
-		loopType = core.NormalLoop
-	} else if fe := returnCtx.ForExpression(); fe != nil {
-		returnRuleCtx = fe
-		loopType = core.PassThroughLoop
 	}
 
 	// Create a new loop with the determined properties
 	loop := c.ctx.Loops.NewLoop(kind, loopType, distinct)
-	if loop.Dst.IsRegister() {
-		c.ctx.Types.Set(loop.Dst, core.TypeList)
+	c.setLoopDestinationType(loop)
+
+	c.configureLoopRuntime(loop, ctx, kind)
+
+	// Push the loop onto the stack and enter a new symbol scope
+	c.ctx.Loops.Push(loop)
+	c.ctx.Symbols.EnterScope()
+
+	valueType, keyType := c.inferLoopVariableTypes(ctx, loop, kind)
+	c.declareLoopVariables(ctx, loop, valueType, keyType)
+	c.emitLoopInitialization(ctx, loop)
+	c.patchDistinctLoopDestination(loop)
+
+	return returnRuleCtx
+}
+
+func (c *LoopCompiler) resolveLoopReturnSpec(returnCtx fql.IForExpressionReturnContext) (antlr.RuleContext, bool, core.LoopType, bool) {
+	if returnCtx == nil {
+		return nil, false, core.NormalLoop, false
 	}
 
-	// Set up the loop source based on the loop kind
+	if re := returnCtx.ReturnExpression(); re != nil {
+		return re, re.Distinct() != nil, core.NormalLoop, true
+	}
+
+	if fe := returnCtx.ForExpression(); fe != nil {
+		return fe, false, core.PassThroughLoop, true
+	}
+
+	return nil, false, core.NormalLoop, false
+}
+
+func (c *LoopCompiler) setLoopDestinationType(loop *core.Loop) {
+	if loop != nil && loop.Dst.IsRegister() {
+		c.ctx.Types.Set(loop.Dst, core.TypeList)
+	}
+}
+
+func (c *LoopCompiler) configureLoopRuntime(loop *core.Loop, ctx fql.IForExpressionContext, kind core.LoopKind) {
 	switch kind {
 	case core.ForInLoop:
-		// For IN loops, compile the collection to iterate over
 		loop.Src = c.compileForExpressionSource(ctx.ForExpressionSource())
 	case core.ForStepLoop:
-		// For STEP loops, set up functions to evaluate init, condition, and increment expressions
 		loop.InitFn = func() bytecode.Operand {
 			return c.ctx.ExprCompiler.Compile(ctx.GetStepInit())
 		}
@@ -109,80 +157,93 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 			return c.ctx.ExprCompiler.Compile(ctx.GetStepCondition())
 		}
 		loop.UpdateFn = func() bytecode.Operand {
-			if exp := ctx.GetStepUpdateExp(); exp != nil {
-				// If an increment expression is provided, use it
-				return c.ctx.ExprCompiler.Compile(exp)
-			}
-
-			stepVar := ctx.GetStepVariable()
-			stepVarName := textOfLoopVariable(stepVar)
-			variable, _, found := c.ctx.Symbols.Resolve(stepVarName)
-
-			if !found {
-				c.ctx.Errors.VariableNotFound(tokenOfLoopVariable(stepVar), stepVarName)
-				return bytecode.NoopOperand
-			}
-
-			inc := ctx.GetStepUpdate()
-
-			return c.ctx.ExprCompiler.CompileIncDec(inc, variable)
+			return c.compileStepUpdate(ctx)
 		}
 	default:
-		// For WHILE/DO-WHILE loops, set up a function to evaluate the condition
 		loop.ConditionFn = func() bytecode.Operand {
 			return c.ctx.ExprCompiler.Compile(ctx.Expression(0))
 		}
 	}
+}
 
-	// Push the loop onto the stack and enter a new symbol scope
-	c.ctx.Loops.Push(loop)
-	c.ctx.Symbols.EnterScope()
+func (c *LoopCompiler) compileStepUpdate(ctx fql.IForExpressionContext) bytecode.Operand {
+	if exp := ctx.GetStepUpdateExp(); exp != nil {
+		return c.ctx.ExprCompiler.Compile(exp)
+	}
 
-	// Declare variables for the loop value and counter if specified
-	var valueType core.ValueType
-	var keyType core.ValueType
+	stepVar := ctx.GetStepVariable()
+	stepVarName := textOfLoopVariable(stepVar)
+	variable, _, found := c.ctx.Symbols.Resolve(stepVarName)
+	if !found {
+		c.ctx.Errors.VariableNotFound(tokenOfLoopVariable(stepVar), stepVarName)
+		return bytecode.NoopOperand
+	}
 
+	return c.ctx.ExprCompiler.CompileIncDec(ctx.GetStepUpdate(), variable)
+}
+
+func (c *LoopCompiler) inferLoopVariableTypes(ctx fql.IForExpressionContext, loop *core.Loop, kind core.LoopKind) (core.ValueType, core.ValueType) {
 	switch kind {
 	case core.ForInLoop:
-		valueType, keyType = c.inferForInTypes(ctx.ForExpressionSource(), loop.Src)
+		return c.inferForInTypes(ctx.ForExpressionSource(), loop.Src)
 	case core.ForStepLoop:
-		valueType = c.inferExpressionType(ctx.GetStepInit())
+		return c.inferExpressionType(ctx.GetStepInit()), core.TypeUnknown
 	case core.WhileLoop, core.DoWhileLoop:
-		valueType = core.TypeInt
+		return core.TypeInt, core.TypeUnknown
+	default:
+		return core.TypeUnknown, core.TypeUnknown
+	}
+}
+
+func (c *LoopCompiler) declareLoopVariables(ctx fql.IForExpressionContext, loop *core.Loop, valueType, keyType core.ValueType) {
+	c.declareLoopValueVariable(ctx, loop, valueType)
+	c.declareLoopCounterVariable(ctx, loop, keyType)
+}
+
+func (c *LoopCompiler) declareLoopValueVariable(ctx fql.IForExpressionContext, loop *core.Loop, valueType core.ValueType) {
+	val := ctx.GetValueVariable()
+	if val == nil {
+		return
 	}
 
-	if val := ctx.GetValueVariable(); val != nil {
-		varName := textOfLoopVariable(val)
-		loop.DeclareValueVar(varName, c.ctx.Symbols, valueType)
+	varName := textOfLoopVariable(val)
+	loop.DeclareValueVar(varName, c.ctx.Symbols, valueType)
 
-		if loop.Value.IsRegister() {
-			c.ctx.Types.Set(loop.Value, valueType)
-		}
-
-		if loop.Kind == core.ForStepLoop {
-			stepVar := ctx.GetStepVariable()
-
-			stepVarName := textOfLoopVariable(stepVar)
-
-			if stepVar != nil && varName != stepVarName {
-				if _, _, found := c.ctx.Symbols.Resolve(stepVarName); found {
-					ce := c.ctx.Errors.Create(parser.SemanticError, ctx, fmt.Sprintf("step variable missmatch: expected '%s' but got '%s'", varName, stepVarName))
-					ce.Hint = "Make sure the same variable is used in all parts of the STEP loop"
-					c.ctx.Errors.Add(ce)
-				}
-			}
-		}
+	if loop.Value.IsRegister() {
+		c.ctx.Types.Set(loop.Value, valueType)
 	}
 
-	if ctr := ctx.GetCounterVariable(); ctr != nil {
-		loop.DeclareKeyVar(textOfBindingIdentifier(ctr), c.ctx.Symbols, keyType)
+	if loop.Kind == core.ForStepLoop {
+		c.validateStepVariableName(ctx, varName)
+	}
+}
 
-		if loop.Key.IsRegister() {
-			c.ctx.Types.Set(loop.Key, keyType)
+func (c *LoopCompiler) validateStepVariableName(ctx fql.IForExpressionContext, expected string) {
+	stepVar := ctx.GetStepVariable()
+	stepVarName := textOfLoopVariable(stepVar)
+
+	if stepVar != nil && expected != stepVarName {
+		if _, _, found := c.ctx.Symbols.Resolve(stepVarName); found {
+			ce := c.ctx.Errors.Create(parser.SemanticError, ctx, fmt.Sprintf("step variable missmatch: expected '%s' but got '%s'", expected, stepVarName))
+			ce.Hint = "Make sure the same variable is used in all parts of the STEP loop"
+			c.ctx.Errors.Add(ce)
 		}
 	}
+}
 
-	// Emit VM instructions for loop initialization
+func (c *LoopCompiler) declareLoopCounterVariable(ctx fql.IForExpressionContext, loop *core.Loop, keyType core.ValueType) {
+	ctr := ctx.GetCounterVariable()
+	if ctr == nil {
+		return
+	}
+
+	loop.DeclareKeyVar(textOfBindingIdentifier(ctr), c.ctx.Symbols, keyType)
+	if loop.Key.IsRegister() {
+		c.ctx.Types.Set(loop.Key, keyType)
+	}
+}
+
+func (c *LoopCompiler) emitLoopInitialization(ctx fql.IForExpressionContext, loop *core.Loop) {
 	span := file.Span{Start: -1, End: -1}
 
 	if srcCtx := ctx.ForExpressionSource(); srcCtx != nil {
@@ -196,22 +257,19 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	c.ctx.Emitter.WithSpan(span, func() {
 		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
 	})
+}
 
-	// Handle distinct values if needed
-	if !loop.Allocate {
-		// If the current loop must push distinct items, we must patch the dest dataset
-		if loop.Distinct {
-			parent := c.ctx.Loops.FindParent(c.ctx.Loops.Depth())
-
-			if parent == nil {
-				panic("parent loop not found in loop table")
-			}
-
-			c.ctx.Emitter.Patchx(parent.StartLabel(), 1)
-		}
+func (c *LoopCompiler) patchDistinctLoopDestination(loop *core.Loop) {
+	if loop.Allocate || !loop.Distinct {
+		return
 	}
 
-	return returnRuleCtx
+	parent := c.ctx.Loops.FindParent(c.ctx.Loops.Depth())
+	if parent == nil {
+		panic("parent loop not found in loop table")
+	}
+
+	c.ctx.Emitter.Patchx(parent.StartLabel(), 1)
 }
 
 // compileFinalization handles the teardown of a loop, including processing the return expression,
@@ -264,42 +322,24 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 // such as function calls, member expressions, variables, parameters, range operators, and literals.
 // Returns an operand representing the compiled source expression.
 func (c *LoopCompiler) compileForExpressionSource(ctx fql.IForExpressionSourceContext) bytecode.Operand {
-	// Handle function call expressions (e.g., FOR x IN getUsers())
-	if fce := ctx.FunctionCallExpression(); fce != nil {
-		return c.ctx.ExprCompiler.CompileFunctionCallExpression(fce)
-	}
-
-	// Handle member expressions (e.g., FOR x IN users.active)
-	if me := ctx.MemberExpression(); me != nil {
-		return c.ctx.ExprCompiler.CompileMemberExpression(me)
-	}
-
-	// Handle variables (e.g., FOR x IN users)
-	if v := ctx.Variable(); v != nil {
-		return c.ctx.ExprCompiler.CompileVariable(v)
-	}
-
-	// Handle parameters (e.g., FOR x IN @users)
-	if p := ctx.Param(); p != nil {
-		return c.ctx.ExprCompiler.CompileParam(p)
-	}
-
-	// Handle range operators (e.g., FOR x IN 1..10)
-	if ro := ctx.RangeOperator(); ro != nil {
-		return c.ctx.ExprCompiler.CompileRangeOperator(ro)
-	}
-
-	// Handle array literals (e.g., FOR x IN [1, 2, 3])
-	if al := ctx.ArrayLiteral(); al != nil {
-		return c.ctx.LiteralCompiler.CompileArrayLiteral(al)
-	}
-
-	// Handle object literals (e.g., FOR x IN {a: 1, b: 2})
-	if ol := ctx.ObjectLiteral(); ol != nil {
-		return c.ctx.LiteralCompiler.CompileObjectLiteral(ol)
-	}
-
-	return bytecode.NoopOperand
+	return c.compileLoopOperand(
+		loopOperandContext{
+			param:                  ctx.Param(),
+			variable:               ctx.Variable(),
+			memberExpression:       ctx.MemberExpression(),
+			functionCallExpression: ctx.FunctionCallExpression(),
+			rangeOperator:          ctx.RangeOperator(),
+			arrayLiteral:           ctx.ArrayLiteral(),
+			objectLiteral:          ctx.ObjectLiteral(),
+		},
+		loopOperandFunctionCallExpression,
+		loopOperandMemberExpression,
+		loopOperandVariable,
+		loopOperandParam,
+		loopOperandRangeOperator,
+		loopOperandArrayLiteral,
+		loopOperandObjectLiteral,
+	)
 }
 
 // compileForExpressionStatement processes statements within a FOR loop body.
@@ -355,40 +395,61 @@ func (c *LoopCompiler) compileLimitClause(ctx fql.ILimitClauseContext) {
 // such as parameters, integer literals, variables, member expressions, and function calls.
 // Returns an operand representing the compiled limit/offset value.
 func (c *LoopCompiler) compileLimitClauseValue(ctx fql.ILimitClauseValueContext) bytecode.Operand {
-	// Handle parameters (e.g., LIMIT @limit)
-	if pm := ctx.Param(); pm != nil {
-		return c.ctx.ExprCompiler.CompileParam(pm)
+	return c.compileLoopOperand(
+		loopOperandContext{
+			param:                  ctx.Param(),
+			integerLiteral:         ctx.IntegerLiteral(),
+			variable:               ctx.Variable(),
+			memberExpression:       ctx.MemberExpression(),
+			implicitCurrentExpr:    ctx.ImplicitCurrentExpression(),
+			implicitMemberExpr:     ctx.ImplicitMemberExpression(),
+			functionCallExpression: ctx.FunctionCallExpression(),
+		},
+		loopOperandParam,
+		loopOperandIntegerLiteral,
+		loopOperandVariable,
+		loopOperandMemberExpression,
+		loopOperandImplicitCurrent,
+		loopOperandImplicitMember,
+		loopOperandFunctionCallExpression,
+	)
+}
+
+func (c *LoopCompiler) compileLoopOperand(source loopOperandContext, order ...loopOperandKind) bytecode.Operand {
+	branches := make([]operandBranch, 0, len(order))
+
+	for _, kind := range order {
+		switch kind {
+		case loopOperandParam:
+			branches = append(branches, newOperandBranch(source.param != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileParam(source.param) }))
+		case loopOperandIntegerLiteral:
+			branches = append(branches, newOperandBranch(source.integerLiteral != nil, func() bytecode.Operand { return c.ctx.LiteralCompiler.CompileIntegerLiteral(source.integerLiteral) }))
+		case loopOperandVariable:
+			branches = append(branches, newOperandBranch(source.variable != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileVariable(source.variable) }))
+		case loopOperandMemberExpression:
+			branches = append(branches, newOperandBranch(source.memberExpression != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileMemberExpression(source.memberExpression) }))
+		case loopOperandImplicitCurrent:
+			branches = append(branches, newOperandBranch(source.implicitCurrentExpr != nil, func() bytecode.Operand {
+				return c.ctx.ExprCompiler.CompileImplicitCurrentExpression(source.implicitCurrentExpr)
+			}))
+		case loopOperandImplicitMember:
+			branches = append(branches, newOperandBranch(source.implicitMemberExpr != nil, func() bytecode.Operand {
+				return c.ctx.ExprCompiler.CompileImplicitMemberExpression(source.implicitMemberExpr)
+			}))
+		case loopOperandFunctionCallExpression:
+			branches = append(branches, newOperandBranch(source.functionCallExpression != nil, func() bytecode.Operand {
+				return c.ctx.ExprCompiler.CompileFunctionCallExpression(source.functionCallExpression)
+			}))
+		case loopOperandRangeOperator:
+			branches = append(branches, newOperandBranch(source.rangeOperator != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileRangeOperator(source.rangeOperator) }))
+		case loopOperandArrayLiteral:
+			branches = append(branches, newOperandBranch(source.arrayLiteral != nil, func() bytecode.Operand { return c.ctx.LiteralCompiler.CompileArrayLiteral(source.arrayLiteral) }))
+		case loopOperandObjectLiteral:
+			branches = append(branches, newOperandBranch(source.objectLiteral != nil, func() bytecode.Operand { return c.ctx.LiteralCompiler.CompileObjectLiteral(source.objectLiteral) }))
+		}
 	}
 
-	// Handle integer literals (e.g., LIMIT 10)
-	if il := ctx.IntegerLiteral(); il != nil {
-		return c.ctx.LiteralCompiler.CompileIntegerLiteral(il)
-	}
-
-	// Handle variables (e.g., LIMIT limit)
-	if vb := ctx.Variable(); vb != nil {
-		return c.ctx.ExprCompiler.CompileVariable(vb)
-	}
-
-	// Handle member expressions (e.g., LIMIT config.limit)
-	if me := ctx.MemberExpression(); me != nil {
-		return c.ctx.ExprCompiler.CompileMemberExpression(me)
-	}
-
-	if ice := ctx.ImplicitCurrentExpression(); ice != nil {
-		return c.ctx.ExprCompiler.CompileImplicitCurrentExpression(ice)
-	}
-
-	if ime := ctx.ImplicitMemberExpression(); ime != nil {
-		return c.ctx.ExprCompiler.CompileImplicitMemberExpression(ime)
-	}
-
-	// Handle function calls (e.g., LIMIT getLimit())
-	if fce := ctx.FunctionCallExpression(); fce != nil {
-		return c.ctx.ExprCompiler.CompileFunctionCallExpression(fce)
-	}
-
-	return bytecode.NoopOperand
+	return compileFirstOperand(branches...)
 }
 
 // compileLimit emits VM instructions to limit the number of iterations in a loop.

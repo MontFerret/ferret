@@ -25,7 +25,36 @@ const (
 	runtimeWait     = "WAIT"
 )
 
-type queryModifier string
+type (
+	// ExprCompiler handles the compilation of expressions in FQL queries.
+	// It transforms expression operations from the AST into VM instructions.
+	ExprCompiler struct {
+		ctx                  *CompilerContext
+		implicitCurrentDepth int
+	}
+
+	// queryModifier represents modifiers that can be applied to queries for altering their behavior or result interpretation.
+	queryModifier string
+
+	// atomBinaryOperator represents binary operators used in FQL expressions.
+	atomBinaryOperator struct {
+		opcode  bytecode.Opcode
+		negated bool
+		regexp  bool
+	}
+
+	matchResultGroup struct {
+		label  core.Label
+		result fql.IExpressionContext
+		arms   []int
+	}
+
+	optionalMemberChainState struct {
+		stickyDst bool
+		hasJump   bool
+		endLabel  core.Label
+	}
+)
 
 const (
 	queryModifierUnknown queryModifier = ""
@@ -40,13 +69,6 @@ const (
 	queryValueFailMessage = "QUERY VALUE expected at least one match"
 	queryOneFailMessage   = "QUERY ONE expected exactly one match"
 )
-
-// ExprCompiler handles the compilation of expressions in FQL queries.
-// It transforms expression operations from the AST into VM instructions.
-type ExprCompiler struct {
-	ctx                  *CompilerContext
-	implicitCurrentDepth int
-}
 
 // NewExprCompiler creates a new instance of ExprCompiler with the given compiler context.
 func NewExprCompiler(ctx *CompilerContext) *ExprCompiler {
@@ -268,93 +290,145 @@ func (c *ExprCompiler) compileTernary(ctx fql.IExpressionContext) bytecode.Opera
 //
 // Panics if the operator type is not recognized or not implemented.
 func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) bytecode.Operand {
-	if atom := ctx.ExpressionAtom(); atom != nil {
-		startCatch := c.ctx.Emitter.Size()
-		reg := c.compileAtom(atom)
-
-		if atom.ErrorOperator() != nil {
-			jump := -1
-			endCatch := c.ctx.Emitter.Size()
-
-			if fe := atom.ForExpression(); fe != nil {
-				// Since FOR-IN loops depend on custom iterators,
-				// We need to handle cleanup before exiting the loop.
-				// TODO: Find a better way to handle this. The code assumes the knowledge of the internals of the FOR-IN loop.
-				if fe.In() != nil {
-					jump = endCatch - 1
-				}
-			}
-
-			c.ctx.CatchTable.Push(startCatch, endCatch, jump)
-		}
-
+	if reg, ok := c.compilePredicateAtom(ctx); ok {
 		return reg
 	}
 
-	var opcode bytecode.Opcode
-	var isNegated bool
-	dest := c.ctx.Registers.Allocate()
+	opcode, isNegated, ok := c.resolvePredicateOperator(ctx)
+	if !ok {
+		return bytecode.NoopOperand
+	}
+
 	left := c.compilePredicate(ctx.Predicate(0))
 	right := c.compilePredicate(ctx.Predicate(1))
+
+	return c.emitBinaryPredicate(ctx, opcode, left, right, isNegated)
+}
+
+func (c *ExprCompiler) compileLiteralOperand(lit fql.ILiteralContext) bytecode.Operand {
+	return compileScalarLiteralOperand(c.ctx, lit)
+}
+
+func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode.Operand, bool) {
+	if ctx == nil {
+		return bytecode.NoopOperand, true
+	}
+
+	atom := ctx.ExpressionAtom()
+	if atom == nil {
+		return bytecode.NoopOperand, false
+	}
+
+	startCatch := c.ctx.Emitter.Size()
+	reg := c.compileAtom(atom)
+
+	if atom.ErrorOperator() == nil {
+		return reg, true
+	}
+
+	jump := -1
+	endCatch := c.ctx.Emitter.Size()
+
+	if fe := atom.ForExpression(); fe != nil {
+		// Since FOR-IN loops depend on custom iterators,
+		// We need to handle cleanup before exiting the loop.
+		// TODO: Find a better way to handle this. The code assumes the knowledge of the internals of the FOR-IN loop.
+		if fe.In() != nil {
+			jump = endCatch - 1
+		}
+	}
+
+	c.ctx.CatchTable.Push(startCatch, endCatch, jump)
+
+	return reg, true
+}
+
+func (c *ExprCompiler) resolvePredicateOperator(ctx fql.IPredicateContext) (bytecode.Opcode, bool, bool) {
+	if ctx == nil {
+		return bytecode.Opcode(0), false, false
+	}
 
 	if op := ctx.EqualityOperator(); op != nil {
 		switch op.GetText() {
 		case "==":
-			opcode = bytecode.OpEq
+			return bytecode.OpEq, false, true
 		case "!=":
-			opcode = bytecode.OpNe
+			return bytecode.OpNe, false, true
 		case ">":
-			opcode = bytecode.OpGt
+			return bytecode.OpGt, false, true
 		case ">=":
-			opcode = bytecode.OpGte
+			return bytecode.OpGte, false, true
 		case "<":
-			opcode = bytecode.OpLt
+			return bytecode.OpLt, false, true
 		case "<=":
-			opcode = bytecode.OpLte
+			return bytecode.OpLte, false, true
 		default:
-			return bytecode.NoopOperand
+			return bytecode.Opcode(0), false, false
 		}
-	} else if op := ctx.InOperator(); op != nil {
-		opcode = bytecode.OpIn
-		isNegated = op.Not() != nil
-	} else if op := ctx.LikeOperator(); op != nil {
-		opcode = bytecode.OpLike
-		isNegated = op.Not() != nil
-	} else if op := ctx.ArrayOperator(); op != nil {
-		var pos int
-
-		if op.All() != nil {
-			pos = int(bytecode.OpAllEq)
-		} else if op.Any() != nil {
-			pos = int(bytecode.OpAnyEq)
-		} else if op.None() != nil {
-			pos = int(bytecode.OpNoneEq)
-		}
-
-		if eo := op.EqualityOperator(); eo != nil {
-			switch eo.GetText() {
-			case "!=":
-				pos += int(bytecode.OpAllNe) - int(bytecode.OpAllEq)
-			case ">":
-				pos += int(bytecode.OpAllGt) - int(bytecode.OpAllEq)
-			case ">=":
-				pos += int(bytecode.OpAllGte) - int(bytecode.OpAllEq)
-			case "<":
-				pos += int(bytecode.OpAllLt) - int(bytecode.OpAllEq)
-			case "<=":
-				pos += int(bytecode.OpAllLte) - int(bytecode.OpAllEq)
-			default:
-				break
-			}
-		} else if inOp := op.InOperator(); inOp != nil {
-			pos += int(bytecode.OpAllIn) - int(bytecode.OpAllEq)
-		} else {
-			return bytecode.NoopOperand
-		}
-
-		opcode = bytecode.Opcode(pos)
 	}
 
+	if op := ctx.InOperator(); op != nil {
+		return bytecode.OpIn, op.Not() != nil, true
+	}
+
+	if op := ctx.LikeOperator(); op != nil {
+		return bytecode.OpLike, op.Not() != nil, true
+	}
+
+	if op := ctx.ArrayOperator(); op != nil {
+		opcode, ok := resolveArrayPredicateOpcode(op)
+		return opcode, false, ok
+	}
+
+	return bytecode.Opcode(0), false, false
+}
+
+func resolveArrayPredicateOpcode(op fql.IArrayOperatorContext) (bytecode.Opcode, bool) {
+	if op == nil {
+		return bytecode.Opcode(0), false
+	}
+
+	var pos int
+
+	switch {
+	case op.All() != nil:
+		pos = int(bytecode.OpAllEq)
+	case op.Any() != nil:
+		pos = int(bytecode.OpAnyEq)
+	case op.None() != nil:
+		pos = int(bytecode.OpNoneEq)
+	}
+
+	if eo := op.EqualityOperator(); eo != nil {
+		switch eo.GetText() {
+		case "!=":
+			pos += int(bytecode.OpAllNe) - int(bytecode.OpAllEq)
+		case ">":
+			pos += int(bytecode.OpAllGt) - int(bytecode.OpAllEq)
+		case ">=":
+			pos += int(bytecode.OpAllGte) - int(bytecode.OpAllEq)
+		case "<":
+			pos += int(bytecode.OpAllLt) - int(bytecode.OpAllEq)
+		case "<=":
+			pos += int(bytecode.OpAllLte) - int(bytecode.OpAllEq)
+		default:
+			// Keep OpAllEq/OpAnyEq/OpNoneEq fallback for parser-provided defaults.
+		}
+
+		return bytecode.Opcode(pos), true
+	}
+
+	if op.InOperator() != nil {
+		pos += int(bytecode.OpAllIn) - int(bytecode.OpAllEq)
+
+		return bytecode.Opcode(pos), true
+	}
+
+	return bytecode.Opcode(0), false
+}
+
+func (c *ExprCompiler) emitBinaryPredicate(ctx fql.IPredicateContext, opcode bytecode.Opcode, left, right bytecode.Operand, isNegated bool) bytecode.Operand {
+	dest := c.ctx.Registers.Allocate()
 	span := file.Span{Start: -1, End: -1}
 
 	if prc, ok := ctx.(antlr.ParserRuleContext); ok {
@@ -373,188 +447,134 @@ func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) bytecode.Oper
 	return dest
 }
 
-func (c *ExprCompiler) compileLiteralOperand(lit fql.ILiteralContext) bytecode.Operand {
-	if lit == nil {
-		return bytecode.NoopOperand
+func (c *ExprCompiler) emitPredicateJump(ctx fql.IPredicateContext, label core.Label, jumpOnTrue bool) bool {
+	opText, leftCtx, rightCtx, ok := resolvePredicateEqNeJump(ctx)
+	if !ok {
+		return false
 	}
 
-	if nl := lit.NoneLiteral(); nl != nil {
-		return c.ctx.Symbols.AddConstant(runtime.None)
+	rightLiteral := c.compilePredicateLiteralOperand(rightCtx)
+	if rightLiteral != bytecode.NoopOperand {
+		return c.emitPredicateJumpWithLiteralOperand(opText, jumpOnTrue, leftCtx, rightCtx, rightLiteral, true, label)
 	}
 
-	if bl := lit.BooleanLiteral(); bl != nil {
-		switch strings.ToLower(bl.GetText()) {
-		case "true":
-			return c.ctx.Symbols.AddConstant(runtime.True)
-		case "false":
-			return c.ctx.Symbols.AddConstant(runtime.False)
-		default:
-			return bytecode.NoopOperand
-		}
+	leftLiteral := c.compilePredicateLiteralOperand(leftCtx)
+	if leftLiteral != bytecode.NoopOperand {
+		return c.emitPredicateJumpWithLiteralOperand(opText, jumpOnTrue, leftCtx, rightCtx, leftLiteral, false, label)
 	}
 
-	if sl := lit.StringLiteral(); sl != nil {
-		if val, ok := parseStringLiteralConst(sl); ok {
-			return c.ctx.Symbols.AddConstant(val)
-		}
+	leftOp := c.ensureRegister(c.compilePredicate(leftCtx))
+	rightOp := c.ensureRegister(c.compilePredicate(rightCtx))
+	c.emitPredicateJumpCompare(opText, jumpOnTrue, leftOp, rightOp, label, false)
 
-		return c.ctx.LiteralCompiler.CompileStringLiteral(sl)
-	}
-
-	if fl := lit.FloatLiteral(); fl != nil {
-		val, err := strconv.ParseFloat(fl.GetText(), 64)
-		if err != nil {
-			panic(err)
-		}
-		return c.ctx.Symbols.AddConstant(runtime.NewFloat(val))
-	}
-
-	if il := lit.IntegerLiteral(); il != nil {
-		val, err := strconv.Atoi(il.GetText())
-		if err != nil {
-			panic(err)
-		}
-		return c.ctx.Symbols.AddConstant(runtime.NewInt(val))
-	}
-
-	return bytecode.NoopOperand
+	return true
 }
 
-func (c *ExprCompiler) emitPredicateJump(ctx fql.IPredicateContext, label core.Label, jumpOnTrue bool) bool {
+func resolvePredicateEqNeJump(ctx fql.IPredicateContext) (string, fql.IPredicateContext, fql.IPredicateContext, bool) {
 	if ctx == nil {
-		return false
+		return "", nil, nil, false
 	}
 
 	op := ctx.EqualityOperator()
 	if op == nil {
-		return false
+		return "", nil, nil, false
 	}
 
 	opText := op.GetText()
 	if opText != "==" && opText != "!=" {
-		return false
+		return "", nil, nil, false
 	}
 
 	leftCtx := ctx.Predicate(0)
 	rightCtx := ctx.Predicate(1)
 	if leftCtx == nil || rightCtx == nil {
-		return false
+		return "", nil, nil, false
 	}
 
-	var rightLitOp bytecode.Operand
-	if atom := rightCtx.ExpressionAtom(); atom != nil {
-		if lit := atom.Literal(); lit != nil {
-			rightLitOp = c.compileLiteralOperand(lit)
-		}
+	return opText, leftCtx, rightCtx, true
+}
+
+func (c *ExprCompiler) compilePredicateLiteralOperand(ctx fql.IPredicateContext) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
 	}
 
-	if rightLitOp != bytecode.NoopOperand {
-		if rightLitOp.IsConstant() {
-			leftOp := c.ensureRegister(c.compilePredicate(leftCtx))
-			opcode := bytecode.OpJumpIfNe
-			if opText == "==" {
-				if jumpOnTrue {
-					opcode = bytecode.OpJumpIfEqConst
-				} else {
-					opcode = bytecode.OpJumpIfNeConst
-				}
-			} else {
-				if jumpOnTrue {
-					opcode = bytecode.OpJumpIfNeConst
-				} else {
-					opcode = bytecode.OpJumpIfEqConst
-				}
-			}
-			c.ctx.Emitter.EmitJumpCompare(opcode, leftOp, rightLitOp, label)
-			return true
+	atom := ctx.ExpressionAtom()
+	if atom == nil {
+		return bytecode.NoopOperand
+	}
+
+	literal := atom.Literal()
+	if literal == nil {
+		return bytecode.NoopOperand
+	}
+
+	return c.compileLiteralOperand(literal)
+}
+
+func (c *ExprCompiler) emitPredicateJumpWithLiteralOperand(opText string, jumpOnTrue bool, leftCtx, rightCtx fql.IPredicateContext, literalOp bytecode.Operand, literalOnRight bool, label core.Label) bool {
+	if literalOp.IsConstant() {
+		exprCtx := leftCtx
+		if !literalOnRight {
+			exprCtx = rightCtx
 		}
 
+		exprOp := c.ensureRegister(c.compilePredicate(exprCtx))
+		c.emitPredicateJumpCompare(opText, jumpOnTrue, exprOp, literalOp, label, true)
+
+		return true
+	}
+
+	if literalOnRight {
 		leftOp := c.ensureRegister(c.compilePredicate(leftCtx))
-		rightOp := c.ensureRegister(rightLitOp)
-		opcode := bytecode.OpJumpIfNe
-		if opText == "==" {
-			if jumpOnTrue {
-				opcode = bytecode.OpJumpIfEq
-			} else {
-				opcode = bytecode.OpJumpIfNe
-			}
-		} else {
-			if jumpOnTrue {
-				opcode = bytecode.OpJumpIfNe
-			} else {
-				opcode = bytecode.OpJumpIfEq
-			}
-		}
-		c.ctx.Emitter.EmitJumpCompare(opcode, leftOp, rightOp, label)
+		rightOp := c.ensureRegister(literalOp)
+		c.emitPredicateJumpCompare(opText, jumpOnTrue, leftOp, rightOp, label, false)
+
 		return true
 	}
 
-	var leftLitOp bytecode.Operand
-	if atom := leftCtx.ExpressionAtom(); atom != nil {
-		if lit := atom.Literal(); lit != nil {
-			leftLitOp = c.compileLiteralOperand(lit)
-		}
-	}
-
-	if leftLitOp != bytecode.NoopOperand {
-		if leftLitOp.IsConstant() {
-			leftOp := c.ensureRegister(c.compilePredicate(rightCtx))
-			opcode := bytecode.OpJumpIfNe
-			if opText == "==" {
-				if jumpOnTrue {
-					opcode = bytecode.OpJumpIfEqConst
-				} else {
-					opcode = bytecode.OpJumpIfNeConst
-				}
-			} else {
-				if jumpOnTrue {
-					opcode = bytecode.OpJumpIfNeConst
-				} else {
-					opcode = bytecode.OpJumpIfEqConst
-				}
-			}
-			c.ctx.Emitter.EmitJumpCompare(opcode, leftOp, leftLitOp, label)
-			return true
-		}
-
-		leftOp := c.ensureRegister(leftLitOp)
-		rightOp := c.ensureRegister(c.compilePredicate(rightCtx))
-		opcode := bytecode.OpJumpIfNe
-		if opText == "==" {
-			if jumpOnTrue {
-				opcode = bytecode.OpJumpIfEq
-			} else {
-				opcode = bytecode.OpJumpIfNe
-			}
-		} else {
-			if jumpOnTrue {
-				opcode = bytecode.OpJumpIfNe
-			} else {
-				opcode = bytecode.OpJumpIfEq
-			}
-		}
-		c.ctx.Emitter.EmitJumpCompare(opcode, leftOp, rightOp, label)
-		return true
-	}
-
-	leftOp := c.ensureRegister(c.compilePredicate(leftCtx))
+	leftOp := c.ensureRegister(literalOp)
 	rightOp := c.ensureRegister(c.compilePredicate(rightCtx))
-	opcode := bytecode.OpJumpIfNe
+	c.emitPredicateJumpCompare(opText, jumpOnTrue, leftOp, rightOp, label, false)
+
+	return true
+}
+
+func (c *ExprCompiler) emitPredicateJumpCompare(opText string, jumpOnTrue bool, left, right bytecode.Operand, label core.Label, constOperand bool) {
+	opcode := resolveEqNeJumpOpcode(opText, jumpOnTrue, constOperand)
+	c.ctx.Emitter.EmitJumpCompare(opcode, left, right, label)
+}
+
+func resolveEqNeJumpOpcode(opText string, jumpOnTrue, constOperand bool) bytecode.Opcode {
+	if constOperand {
+		if opText == "==" {
+			if jumpOnTrue {
+				return bytecode.OpJumpIfEqConst
+			}
+
+			return bytecode.OpJumpIfNeConst
+		}
+
+		if jumpOnTrue {
+			return bytecode.OpJumpIfNeConst
+		}
+
+		return bytecode.OpJumpIfEqConst
+	}
+
 	if opText == "==" {
 		if jumpOnTrue {
-			opcode = bytecode.OpJumpIfEq
-		} else {
-			opcode = bytecode.OpJumpIfNe
+			return bytecode.OpJumpIfEq
 		}
-	} else {
-		if jumpOnTrue {
-			opcode = bytecode.OpJumpIfNe
-		} else {
-			opcode = bytecode.OpJumpIfEq
-		}
+
+		return bytecode.OpJumpIfNe
 	}
-	c.ctx.Emitter.EmitJumpCompare(opcode, leftOp, rightOp, label)
-	return true
+
+	if jumpOnTrue {
+		return bytecode.OpJumpIfNe
+	}
+
+	return bytecode.OpJumpIfEq
 }
 
 func (c *ExprCompiler) emitConditionJump(expr fql.IExpressionContext, label core.Label, jumpOnTrue bool) {
@@ -588,110 +608,161 @@ func (c *ExprCompiler) emitConditionJump(expr fql.IExpressionContext, label core
 //
 // Panics if the expression type is not recognized.
 func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) bytecode.Operand {
-	var opcode bytecode.Opcode
-	var isSet bool
-	var isNegated bool
-	var isRegexp bool
+	if op, ok := resolveAtomBinaryOperator(ctx); ok {
+		return c.compileBinaryAtom(ctx, op)
+	}
 
+	return c.compileLeafAtom(ctx)
+}
+
+func resolveAtomBinaryOperator(ctx fql.IExpressionAtomContext) (atomBinaryOperator, bool) {
 	if op := ctx.MultiplicativeOperator(); op != nil {
-		isSet = true
-
 		switch op.GetText() {
 		case "*":
-			opcode = bytecode.OpMulti
+			return atomBinaryOperator{opcode: bytecode.OpMulti}, true
 		case "/":
-			opcode = bytecode.OpDiv
+			return atomBinaryOperator{opcode: bytecode.OpDiv}, true
 		case "%":
-			opcode = bytecode.OpMod
+			return atomBinaryOperator{opcode: bytecode.OpMod}, true
 		default:
-			return bytecode.NoopOperand
+			return atomBinaryOperator{}, false
 		}
-	} else if op := ctx.AdditiveOperator(); op != nil {
-		isSet = true
+	}
 
+	if op := ctx.AdditiveOperator(); op != nil {
 		switch op.GetText() {
 		case "+":
-			opcode = bytecode.OpAdd
+			return atomBinaryOperator{opcode: bytecode.OpAdd}, true
 		case "-":
-			opcode = bytecode.OpSub
+			return atomBinaryOperator{opcode: bytecode.OpSub}, true
 		default:
-			return bytecode.NoopOperand
+			return atomBinaryOperator{}, false
 		}
-
-	} else if op := ctx.RegexpOperator(); op != nil {
-		isSet = true
-		opcode = bytecode.OpRegexp
-		isNegated = op.GetText() == "!~"
-		isRegexp = true
 	}
 
-	if isSet {
-		regLeft := c.compileAtom(ctx.ExpressionAtom(0))
-		regRight := c.compileAtom(ctx.ExpressionAtom(1))
-		dst := c.ctx.Registers.Allocate()
-
-		span := file.Span{Start: -1, End: -1}
-
-		if prc, ok := ctx.(antlr.ParserRuleContext); ok {
-			span = diagnostics.SpanFromRuleContext(prc)
-		}
-
-		c.ctx.Emitter.WithSpan(span, func() {
-			c.ctx.Emitter.EmitABC(opcode, dst, regLeft, regRight)
-
-			if isNegated {
-				// If the operator is negated, we need to invert the result
-				c.ctx.Emitter.EmitAB(bytecode.OpNot, dst, dst)
-			}
-		})
-
-		if isRegexp {
-			if rightCtx := ctx.ExpressionAtom(1); rightCtx != nil {
-				if lit := rightCtx.Literal(); lit != nil {
-					if sl := lit.StringLiteral(); sl != nil {
-						if exp, ok := parseStringLiteralConst(sl); ok {
-							// Verify that the expression is a valid regular expression
-							if _, err := regexp.Compile(exp.String()); err != nil {
-								c.ctx.Errors.InvalidRegexExpression(ctx, exp.String())
-							}
-						}
-					} else {
-						c.ctx.Errors.InvalidRegexExpression(ctx, lit.GetText())
-					}
-				}
-			}
-		}
-
-		return dst
+	if op := ctx.RegexpOperator(); op != nil {
+		return atomBinaryOperator{
+			opcode:  bytecode.OpRegexp,
+			negated: op.GetText() == "!~",
+			regexp:  true,
+		}, true
 	}
 
+	return atomBinaryOperator{}, false
+}
+
+func (c *ExprCompiler) compileBinaryAtom(ctx fql.IExpressionAtomContext, op atomBinaryOperator) bytecode.Operand {
+	left := c.compileAtom(ctx.ExpressionAtom(0))
+	right := c.compileAtom(ctx.ExpressionAtom(1))
+	dst := c.emitBinaryAtomOperation(ctx, op, left, right)
+
+	if op.regexp {
+		c.validateRegexpOperand(ctx)
+	}
+
+	return dst
+}
+
+func (c *ExprCompiler) emitBinaryAtomOperation(ctx fql.IExpressionAtomContext, op atomBinaryOperator, left, right bytecode.Operand) bytecode.Operand {
+	dst := c.ctx.Registers.Allocate()
+	span := file.Span{Start: -1, End: -1}
+
+	if prc, ok := ctx.(antlr.ParserRuleContext); ok {
+		span = diagnostics.SpanFromRuleContext(prc)
+	}
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitABC(op.opcode, dst, left, right)
+
+		if op.negated {
+			c.ctx.Emitter.EmitAB(bytecode.OpNot, dst, dst)
+		}
+	})
+
+	return dst
+}
+
+func (c *ExprCompiler) validateRegexpOperand(ctx fql.IExpressionAtomContext) {
+	right := ctx.ExpressionAtom(1)
+	if right == nil {
+		return
+	}
+
+	lit := right.Literal()
+	if lit == nil {
+		return
+	}
+
+	if str := lit.StringLiteral(); str != nil {
+		exp, ok := parseStringLiteralConst(str)
+		if !ok {
+			return
+		}
+
+		if _, err := regexp.Compile(exp.String()); err != nil {
+			c.ctx.Errors.InvalidRegexExpression(ctx, exp.String())
+		}
+
+		return
+	}
+
+	c.ctx.Errors.InvalidRegexExpression(ctx, lit.GetText())
+}
+
+func (c *ExprCompiler) compileLeafAtom(ctx fql.IExpressionAtomContext) bytecode.Operand {
 	if fex := ctx.FunctionCallExpression(); fex != nil {
 		return c.CompileFunctionCallExpression(fex)
-	} else if mx := ctx.MatchExpression(); mx != nil {
+	}
+
+	if mx := ctx.MatchExpression(); mx != nil {
 		return c.compileMatchExpression(mx)
-	} else if qx := ctx.QueryExpression(); qx != nil {
+	}
+
+	if qx := ctx.QueryExpression(); qx != nil {
 		return c.compileQueryExpression(qx)
-	} else if r := ctx.RangeOperator(); r != nil {
+	}
+
+	if r := ctx.RangeOperator(); r != nil {
 		return c.CompileRangeOperator(r)
-	} else if l := ctx.Literal(); l != nil {
+	}
+
+	if l := ctx.Literal(); l != nil {
 		return c.ctx.LiteralCompiler.Compile(l)
-	} else if v := ctx.Variable(); v != nil {
+	}
+
+	if v := ctx.Variable(); v != nil {
 		return c.CompileVariable(v)
-	} else if ice := ctx.ImplicitCurrentExpression(); ice != nil {
+	}
+
+	if ice := ctx.ImplicitCurrentExpression(); ice != nil {
 		return c.CompileImplicitCurrentExpression(ice)
-	} else if ime := ctx.ImplicitMemberExpression(); ime != nil {
+	}
+
+	if ime := ctx.ImplicitMemberExpression(); ime != nil {
 		return c.CompileImplicitMemberExpression(ime)
-	} else if me := ctx.MemberExpression(); me != nil {
+	}
+
+	if me := ctx.MemberExpression(); me != nil {
 		return c.CompileMemberExpression(me)
-	} else if p := ctx.Param(); p != nil {
+	}
+
+	if p := ctx.Param(); p != nil {
 		return c.CompileParam(p)
-	} else if de := ctx.DispatchExpression(); de != nil {
+	}
+
+	if de := ctx.DispatchExpression(); de != nil {
 		return c.ctx.DispatchCompiler.Compile(de)
-	} else if fe := ctx.ForExpression(); fe != nil {
+	}
+
+	if fe := ctx.ForExpression(); fe != nil {
 		return c.ctx.LoopCompiler.Compile(fe)
-	} else if wfe := ctx.WaitForExpression(); wfe != nil {
+	}
+
+	if wfe := ctx.WaitForExpression(); wfe != nil {
 		return c.ctx.WaitCompiler.Compile(wfe)
-	} else if e := ctx.Expression(); e != nil {
+	}
+
+	if e := ctx.Expression(); e != nil {
 		return c.Compile(e)
 	}
 
@@ -737,78 +808,124 @@ func (c *ExprCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx fql.
 		return
 	}
 
-	var arms []fql.IMatchPatternArmContext
-	if list := ctx.MatchPatternArmList(); list != nil {
-		arms = list.AllMatchPatternArm()
-	}
-
+	arms := collectMatchPatternArms(ctx)
 	mergeLabels, mergeGroups := collectMatchResultMerges(c, arms)
-	var defaultLabel core.Label
-	if len(mergeGroups) > 0 {
-		defaultLabel = c.ctx.Emitter.NewLabel("match.default")
-	}
+	defaultLabel, hasDefaultLabel := c.matchMergeDefaultLabel(mergeGroups)
 
 	for idx, arm := range arms {
-		if arm == nil {
-			continue
-		}
+		c.compileMatchPatternArm(scrReg, arm, idx, mergeLabels, dst, end)
+	}
 
-		next := c.ctx.Emitter.NewLabel("match.next")
+	if hasDefaultLabel {
+		c.compileMatchMergedResults(mergeGroups, defaultLabel, dst, end)
+	}
+
+	c.compileMatchPatternDefaultArm(ctx.MatchDefaultArm(), dst)
+}
+
+func collectMatchPatternArms(ctx fql.IMatchPatternArmsContext) []fql.IMatchPatternArmContext {
+	if ctx == nil {
+		return nil
+	}
+
+	list := ctx.MatchPatternArmList()
+	if list == nil {
+		return nil
+	}
+
+	return list.AllMatchPatternArm()
+}
+
+func (c *ExprCompiler) matchMergeDefaultLabel(groups []matchResultGroup) (core.Label, bool) {
+	if len(groups) == 0 {
+		return core.Label{}, false
+	}
+
+	return c.ctx.Emitter.NewLabel("match.default"), true
+}
+
+func (c *ExprCompiler) compileMatchPatternArm(scrReg bytecode.Operand, arm fql.IMatchPatternArmContext, idx int, mergeLabels map[int]core.Label, dst bytecode.Operand, end core.Label) {
+	if arm == nil {
+		return
+	}
+
+	next := c.ctx.Emitter.NewLabel("match.next")
+	c.ctx.Symbols.EnterScope()
+	c.compileMatchPatternArmConditions(scrReg, arm, next)
+	c.compileMatchPatternArmResult(arm, idx, mergeLabels, dst, end)
+	c.ctx.Symbols.ExitScope()
+	c.ctx.Emitter.MarkLabel(next)
+}
+
+func (c *ExprCompiler) compileMatchPatternArmConditions(scrReg bytecode.Operand, arm fql.IMatchPatternArmContext, next core.Label) {
+	if pattern := arm.MatchPattern(); pattern != nil {
+		c.compileMatchPatternValue(scrReg, pattern, next)
+	}
+
+	guard := arm.MatchPatternGuard()
+	if guard == nil {
+		return
+	}
+
+	expr := guard.Expression()
+	if expr == nil {
+		return
+	}
+
+	c.emitConditionJump(expr, next, false)
+}
+
+func (c *ExprCompiler) compileMatchPatternArmResult(arm fql.IMatchPatternArmContext, idx int, mergeLabels map[int]core.Label, dst bytecode.Operand, end core.Label) {
+	result := arm.Expression()
+	if result == nil {
+		c.ctx.Emitter.EmitJump(end)
+		return
+	}
+
+	if label, ok := mergeLabels[idx]; ok {
+		c.ctx.Emitter.EmitJump(label)
+		return
+	}
+
+	out := c.ensureRegister(c.Compile(result))
+	if out != bytecode.NoopOperand && out != dst {
+		c.ctx.Emitter.EmitMove(dst, out)
+	}
+
+	c.ctx.Emitter.EmitJump(end)
+}
+
+func (c *ExprCompiler) compileMatchMergedResults(groups []matchResultGroup, defaultLabel core.Label, dst bytecode.Operand, end core.Label) {
+	c.ctx.Emitter.EmitJump(defaultLabel)
+
+	for _, group := range groups {
+		c.ctx.Emitter.MarkLabel(group.label)
 		c.ctx.Symbols.EnterScope()
-
-		if pattern := arm.MatchPattern(); pattern != nil {
-			c.compileMatchPatternValue(scrReg, pattern, next)
-		}
-
-		if guard := arm.MatchPatternGuard(); guard != nil {
-			if expr := guard.Expression(); expr != nil {
-				c.emitConditionJump(expr, next, false)
-			}
-		}
-
-		if result := arm.Expression(); result != nil {
-			if label, ok := mergeLabels[idx]; ok {
-				c.ctx.Emitter.EmitJump(label)
-			} else {
-				out := c.ensureRegister(c.Compile(result))
-				if out != bytecode.NoopOperand && out != dst {
-					c.ctx.Emitter.EmitMove(dst, out)
-				}
-				c.ctx.Emitter.EmitJump(end)
-			}
-		} else {
-			c.ctx.Emitter.EmitJump(end)
-		}
-
-		c.ctx.Symbols.ExitScope()
-		c.ctx.Emitter.MarkLabel(next)
-	}
-
-	if len(mergeGroups) > 0 {
-		c.ctx.Emitter.EmitJump(defaultLabel)
-		for _, group := range mergeGroups {
-			c.ctx.Emitter.MarkLabel(group.label)
-			c.ctx.Symbols.EnterScope()
-			out := c.ensureRegister(c.Compile(group.result))
-			if out != bytecode.NoopOperand && out != dst {
-				c.ctx.Emitter.EmitMove(dst, out)
-			}
-			c.ctx.Symbols.ExitScope()
-			c.ctx.Emitter.EmitJump(end)
-		}
-		c.ctx.Emitter.MarkLabel(defaultLabel)
-	}
-
-	if def := ctx.MatchDefaultArm(); def != nil {
-		c.ctx.Symbols.EnterScope()
-		if result := def.Expression(); result != nil {
-			out := c.ensureRegister(c.Compile(result))
-			if out != bytecode.NoopOperand && out != dst {
-				c.ctx.Emitter.EmitMove(dst, out)
-			}
+		out := c.ensureRegister(c.Compile(group.result))
+		if out != bytecode.NoopOperand && out != dst {
+			c.ctx.Emitter.EmitMove(dst, out)
 		}
 		c.ctx.Symbols.ExitScope()
+		c.ctx.Emitter.EmitJump(end)
 	}
+
+	c.ctx.Emitter.MarkLabel(defaultLabel)
+}
+
+func (c *ExprCompiler) compileMatchPatternDefaultArm(def fql.IMatchDefaultArmContext, dst bytecode.Operand) {
+	if def == nil {
+		return
+	}
+
+	c.ctx.Symbols.EnterScope()
+	result := def.Expression()
+	if result != nil {
+		out := c.ensureRegister(c.Compile(result))
+		if out != bytecode.NoopOperand && out != dst {
+			c.ctx.Emitter.EmitMove(dst, out)
+		}
+	}
+	c.ctx.Symbols.ExitScope()
 }
 
 func (c *ExprCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext, dst bytecode.Operand, end core.Label) {
@@ -856,12 +973,6 @@ func (c *ExprCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext, dst
 		}
 		c.ctx.Symbols.ExitScope()
 	}
-}
-
-type matchResultGroup struct {
-	label  core.Label
-	result fql.IExpressionContext
-	arms   []int
 }
 
 func collectMatchResultMerges(c *ExprCompiler, arms []fql.IMatchPatternArmContext) (map[int]core.Label, []matchResultGroup) {
@@ -963,110 +1074,102 @@ func (c *ExprCompiler) compileMatchPatternValue(valueReg bytecode.Operand, ctx f
 }
 
 func (c *ExprCompiler) compileMatchLiteralOperand(ctx fql.IMatchLiteralPatternContext) bytecode.Operand {
-	if ctx == nil {
-		return bytecode.NoopOperand
-	}
-
-	if nl := ctx.NoneLiteral(); nl != nil {
-		return c.ctx.Symbols.AddConstant(runtime.None)
-	}
-
-	if bl := ctx.BooleanLiteral(); bl != nil {
-		switch strings.ToLower(bl.GetText()) {
-		case "true":
-			return c.ctx.Symbols.AddConstant(runtime.True)
-		case "false":
-			return c.ctx.Symbols.AddConstant(runtime.False)
-		default:
-			return bytecode.NoopOperand
-		}
-	}
-
-	if sl := ctx.StringLiteral(); sl != nil {
-		if val, ok := parseStringLiteralConst(sl); ok {
-			return c.ctx.Symbols.AddConstant(val)
-		}
-
-		return c.ctx.LiteralCompiler.CompileStringLiteral(sl)
-	}
-
-	if fl := ctx.FloatLiteral(); fl != nil {
-		val, err := strconv.ParseFloat(fl.GetText(), 64)
-		if err != nil {
-			panic(err)
-		}
-		return c.ctx.Symbols.AddConstant(runtime.NewFloat(val))
-	}
-
-	if il := ctx.IntegerLiteral(); il != nil {
-		val, err := strconv.Atoi(il.GetText())
-		if err != nil {
-			panic(err)
-		}
-		return c.ctx.Symbols.AddConstant(runtime.NewInt(val))
-	}
-
-	return bytecode.NoopOperand
+	return compileScalarLiteralOperand(c.ctx, ctx)
 }
 
 func (c *ExprCompiler) tryCompileMatchConstantFold(scrutinee fql.IExpressionContext, armsCtx fql.IMatchPatternArmsContext, dst bytecode.Operand) bool {
-	if scrutinee == nil || armsCtx == nil {
-		return false
-	}
-
-	scrutineeVal, ok := matchLiteralValueFromExpression(scrutinee)
+	scrutineeVal, arms, ok := matchConstantFoldPreconditions(scrutinee, armsCtx)
 	if !ok {
 		return false
 	}
 
+	selected, ok := selectMatchConstantFoldExpression(scrutineeVal, arms, armsCtx.MatchDefaultArm())
+	if !ok {
+		return false
+	}
+
+	return c.emitMatchConstantFoldExpression(selected, dst)
+}
+
+func matchConstantFoldPreconditions(scrutinee fql.IExpressionContext, armsCtx fql.IMatchPatternArmsContext) (runtime.Value, []fql.IMatchPatternArmContext, bool) {
+	if scrutinee == nil || armsCtx == nil {
+		return nil, nil, false
+	}
+
+	scrutineeVal, ok := matchLiteralValueFromExpression(scrutinee)
+	if !ok {
+		return nil, nil, false
+	}
+
 	list := armsCtx.MatchPatternArmList()
 	if list == nil {
-		return false
+		return nil, nil, false
 	}
 
 	arms := list.AllMatchPatternArm()
 	if len(arms) == 0 {
-		return false
+		return nil, nil, false
 	}
 
+	return scrutineeVal, arms, true
+}
+
+func selectMatchConstantFoldExpression(scrutinee runtime.Value, arms []fql.IMatchPatternArmContext, defaultArm fql.IMatchDefaultArmContext) (fql.IExpressionContext, bool) {
 	var selected fql.IExpressionContext
+
 	for _, arm := range arms {
 		if arm == nil {
 			continue
 		}
-		if arm.MatchPatternGuard() != nil {
-			return false
-		}
-		pat := arm.MatchPattern()
-		if pat == nil {
-			return false
-		}
-		litPat := pat.MatchLiteralPattern()
-		if litPat == nil {
-			return false
-		}
-		patVal, ok := literalValueFromMatchLiteral(litPat)
+
+		patternValue, expression, ok := matchConstantFoldArmExpression(arm)
 		if !ok {
-			return false
+			return nil, false
 		}
-		if runtime.CompareValues(scrutineeVal, patVal) == 0 {
-			selected = arm.Expression()
+
+		if runtime.CompareValues(scrutinee, patternValue) == 0 {
+			selected = expression
 			break
 		}
 	}
 
-	if selected == nil {
-		if def := armsCtx.MatchDefaultArm(); def != nil {
-			selected = def.Expression()
-		}
+	if selected == nil && defaultArm != nil {
+		selected = defaultArm.Expression()
 	}
 
-	if selected == nil {
+	return selected, selected != nil
+}
+
+func matchConstantFoldArmExpression(arm fql.IMatchPatternArmContext) (runtime.Value, fql.IExpressionContext, bool) {
+	if arm.MatchPatternGuard() != nil {
+		return nil, nil, false
+	}
+
+	pattern := arm.MatchPattern()
+	if pattern == nil {
+		return nil, nil, false
+	}
+
+	literalPattern := pattern.MatchLiteralPattern()
+	if literalPattern == nil {
+		return nil, nil, false
+	}
+
+	patternValue, ok := literalValueFromMatchLiteral(literalPattern)
+	if !ok {
+		return nil, nil, false
+	}
+
+	return patternValue, arm.Expression(), true
+}
+
+func (c *ExprCompiler) emitMatchConstantFoldExpression(expr fql.IExpressionContext, dst bytecode.Operand) bool {
+	if expr == nil {
 		return false
 	}
 
 	c.ctx.Symbols.EnterScope()
-	out := c.ensureRegister(c.Compile(selected))
+	out := c.ensureRegister(c.Compile(expr))
 	if out != bytecode.NoopOperand && out != dst {
 		c.ctx.Emitter.EmitMove(dst, out)
 	}
@@ -1076,156 +1179,72 @@ func (c *ExprCompiler) tryCompileMatchConstantFold(scrutinee fql.IExpressionCont
 }
 
 func matchLiteralValueFromExpression(expr fql.IExpressionContext) (runtime.Value, bool) {
-	if expr == nil {
-		return nil, false
-	}
-	if expr.UnaryOperator() != nil || expr.LogicalAndOperator() != nil || expr.LogicalOrOperator() != nil || expr.GetTernaryOperator() != nil {
-		return nil, false
-	}
-	pred := expr.Predicate()
-	if pred == nil {
-		return nil, false
-	}
-	if pred.EqualityOperator() != nil || pred.ArrayOperator() != nil || pred.InOperator() != nil || pred.LikeOperator() != nil {
-		return nil, false
-	}
-	atom := pred.ExpressionAtom()
-	if atom == nil {
-		return nil, false
-	}
-	if atom.Literal() == nil {
-		return nil, false
-	}
-	if atom.ExpressionAtom(0) != nil || atom.ExpressionAtom(1) != nil {
-		return nil, false
-	}
-	if atom.AdditiveOperator() != nil || atom.MultiplicativeOperator() != nil || atom.RegexpOperator() != nil || atom.ErrorOperator() != nil || atom.RangeOperator() != nil {
+	atom, ok := matchPureResultAtom(expr)
+	if !ok {
 		return nil, false
 	}
 
-	return literalValueFromLiteral(atom.Literal())
+	literal := atom.Literal()
+	if literal == nil {
+		return nil, false
+	}
+
+	return literalValueFromLiteral(literal)
 }
 
 func literalValueFromLiteral(lit fql.ILiteralContext) (runtime.Value, bool) {
-	if lit == nil {
-		return nil, false
-	}
-
-	if nl := lit.NoneLiteral(); nl != nil {
-		return runtime.None, true
-	}
-
-	if bl := lit.BooleanLiteral(); bl != nil {
-		switch strings.ToLower(bl.GetText()) {
-		case "true":
-			return runtime.True, true
-		case "false":
-			return runtime.False, true
-		default:
-			return nil, false
-		}
-	}
-
-	if sl := lit.StringLiteral(); sl != nil {
-		if val, ok := parseStringLiteralConst(sl); ok {
-			return val, true
-		}
-		return nil, false
-	}
-
-	if fl := lit.FloatLiteral(); fl != nil {
-		val, err := strconv.ParseFloat(fl.GetText(), 64)
-		if err != nil {
-			return nil, false
-		}
-		return runtime.NewFloat(val), true
-	}
-
-	if il := lit.IntegerLiteral(); il != nil {
-		val, err := strconv.Atoi(il.GetText())
-		if err != nil {
-			return nil, false
-		}
-		return runtime.NewInt(val), true
-	}
-
-	return nil, false
+	return scalarLiteralValue(lit)
 }
 
 func literalValueFromMatchLiteral(lit fql.IMatchLiteralPatternContext) (runtime.Value, bool) {
-	if lit == nil {
-		return nil, false
-	}
-
-	if nl := lit.NoneLiteral(); nl != nil {
-		return runtime.None, true
-	}
-
-	if bl := lit.BooleanLiteral(); bl != nil {
-		switch strings.ToLower(bl.GetText()) {
-		case "true":
-			return runtime.True, true
-		case "false":
-			return runtime.False, true
-		default:
-			return nil, false
-		}
-	}
-
-	if sl := lit.StringLiteral(); sl != nil {
-		if val, ok := parseStringLiteralConst(sl); ok {
-			return val, true
-		}
-		return nil, false
-	}
-
-	if fl := lit.FloatLiteral(); fl != nil {
-		val, err := strconv.ParseFloat(fl.GetText(), 64)
-		if err != nil {
-			return nil, false
-		}
-		return runtime.NewFloat(val), true
-	}
-
-	if il := lit.IntegerLiteral(); il != nil {
-		val, err := strconv.Atoi(il.GetText())
-		if err != nil {
-			return nil, false
-		}
-		return runtime.NewInt(val), true
-	}
-
-	return nil, false
+	return scalarLiteralValue(lit)
 }
 
 func matchPureResultKey(expr fql.IExpressionContext) (string, bool) {
-	if expr == nil {
+	atom, ok := matchPureResultAtom(expr)
+	if !ok {
 		return "", false
 	}
 
+	return matchPureResultKeyFromAtom(atom)
+}
+
+func matchPureResultAtom(expr fql.IExpressionContext) (fql.IExpressionAtomContext, bool) {
+	if expr == nil {
+		return nil, false
+	}
+
 	if expr.UnaryOperator() != nil || expr.LogicalAndOperator() != nil || expr.LogicalOrOperator() != nil || expr.GetTernaryOperator() != nil {
-		return "", false
+		return nil, false
 	}
 
 	pred := expr.Predicate()
 	if pred == nil {
-		return "", false
+		return nil, false
 	}
 
 	if pred.EqualityOperator() != nil || pred.ArrayOperator() != nil || pred.InOperator() != nil || pred.LikeOperator() != nil {
-		return "", false
+		return nil, false
 	}
 
 	atom := pred.ExpressionAtom()
 	if atom == nil {
-		return "", false
+		return nil, false
 	}
 
 	if atom.ExpressionAtom(0) != nil || atom.ExpressionAtom(1) != nil {
-		return "", false
+		return nil, false
 	}
 
 	if atom.AdditiveOperator() != nil || atom.MultiplicativeOperator() != nil || atom.RegexpOperator() != nil || atom.ErrorOperator() != nil || atom.RangeOperator() != nil {
+		return nil, false
+	}
+
+	return atom, true
+}
+
+func matchPureResultKeyFromAtom(atom fql.IExpressionAtomContext) (string, bool) {
+	if atom == nil {
 		return "", false
 	}
 
@@ -1553,51 +1572,90 @@ func (c *ExprCompiler) CompileImplicitMemberExpression(ctx fql.IImplicitMemberEx
 		return bytecode.NoopOperand
 	}
 
-	if c.implicitCurrentDepth == 0 {
-		c.resolveImplicitCurrent(getImplicitToken(start))
-		return bytecode.NoopOperand
-	}
-
-	src, ok := c.resolveImplicitCurrent(getImplicitToken(start))
+	src, ok := c.resolveImplicitMemberSource(start)
 	if !ok {
 		return bytecode.NoopOperand
 	}
 
-	// src is now guaranteed to be a register via resolveImplicitCurrent.
 	segments := ctx.AllMemberExpressionPath()
+	if arrayResult, handled := c.compileImplicitMemberArrayOperator(src, start, segments); handled {
+		return arrayResult
+	}
+
+	return c.compileImplicitMemberPath(src, start, segments)
+}
+
+func (c *ExprCompiler) resolveImplicitMemberSource(start fql.IImplicitMemberExpressionStartContext) (bytecode.Operand, bool) {
+	if start == nil {
+		return bytecode.NoopOperand, false
+	}
+
+	if c.implicitCurrentDepth == 0 {
+		c.resolveImplicitCurrent(getImplicitToken(start))
+		return bytecode.NoopOperand, false
+	}
+
+	// resolveImplicitCurrent guarantees a register operand on success.
+	return c.resolveImplicitCurrent(getImplicitToken(start))
+}
+
+func (c *ExprCompiler) compileImplicitMemberArrayOperator(src bytecode.Operand, start fql.IImplicitMemberExpressionStartContext, segments []fql.IMemberExpressionPathContext) (bytecode.Operand, bool) {
 	if expansion := start.ArrayExpansion(); expansion != nil {
-		return c.compileArrayExpansionChain(src, expansion, segments)
+		return c.compileArrayExpansionChain(src, expansion, segments), true
 	}
 
 	if contraction := start.ArrayContraction(); contraction != nil {
 		inlineTail, restTail := splitArrayOperatorTail(segments)
 		result := c.compileArrayContraction(src, contraction, inlineTail)
-		if len(restTail) == 0 {
-			return result
-		}
-		return c.compileMemberExpressionSegments(result, restTail)
+		return c.continueImplicitMemberArrayResult(result, restTail), true
 	}
 
 	if question := start.ArrayQuestionMark(); question != nil {
 		inlineTail, restTail := splitArrayOperatorTail(segments)
 		result := c.compileArrayQuestionMark(src, question, inlineTail)
-		if len(restTail) == 0 {
-			return result
-		}
-		return c.compileMemberExpressionSegments(result, restTail)
+		return c.continueImplicitMemberArrayResult(result, restTail), true
 	}
 
 	if apply := start.ArrayApply(); apply != nil {
-		return c.compileArrayApply(src, apply, segments)
+		return c.compileArrayApply(src, apply, segments), true
 	}
 
+	return bytecode.NoopOperand, false
+}
+
+func (c *ExprCompiler) continueImplicitMemberArrayResult(result bytecode.Operand, tail []fql.IMemberExpressionPathContext) bytecode.Operand {
+	if len(tail) == 0 {
+		return result
+	}
+
+	return c.compileMemberExpressionSegments(result, tail)
+}
+
+func (c *ExprCompiler) compileImplicitMemberPath(src bytecode.Operand, start fql.IImplicitMemberExpressionStartContext, segments []fql.IMemberExpressionPathContext) bytecode.Operand {
 	if isSimpleMemberPathChain(segments) {
 		return c.compileImplicitSimpleMemberExpressionSegments(src, start, segments)
 	}
 
+	return c.compileImplicitGenericMemberExpression(src, start, segments)
+}
+
+func (c *ExprCompiler) compileImplicitGenericMemberExpression(src bytecode.Operand, start fql.IImplicitMemberExpressionStartContext, segments []fql.IMemberExpressionPathContext) bytecode.Operand {
+	dst, ok := c.emitImplicitMemberStartLoad(src, start)
+	if !ok {
+		return bytecode.NoopOperand
+	}
+
+	if len(segments) == 0 {
+		return dst
+	}
+
+	return c.compileMemberExpressionSegments(dst, segments)
+}
+
+func (c *ExprCompiler) emitImplicitMemberStartLoad(src bytecode.Operand, start fql.IImplicitMemberExpressionStartContext) (bytecode.Operand, bool) {
 	operand, constOperand := c.compileImplicitMemberStartOperand(start)
 	if operand == bytecode.NoopOperand {
-		return bytecode.NoopOperand
+		return bytecode.NoopOperand, false
 	}
 
 	dst := c.ctx.Registers.Allocate()
@@ -1609,11 +1667,7 @@ func (c *ExprCompiler) CompileImplicitMemberExpression(ctx fql.IImplicitMemberEx
 		c.ctx.Emitter.EmitABC(op, dst, src, operand)
 	})
 
-	if len(segments) == 0 {
-		return dst
-	}
-
-	return c.compileMemberExpressionSegments(dst, segments)
+	return dst, true
 }
 
 func (c *ExprCompiler) compileWithImplicitCurrent(expr fql.IExpressionContext) bytecode.Operand {
@@ -1811,78 +1865,74 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src bytecode.Operand, seg
 }
 
 func (c *ExprCompiler) compileImplicitSimpleMemberExpressionSegments(src bytecode.Operand, start fql.IImplicitMemberExpressionStartContext, segments []fql.IMemberExpressionPathContext) bytecode.Operand {
-	result := src
-	stickyDst := false
-	hasJump := false
-	var endLabel core.Label
-
 	startOp, startConst := c.compileImplicitMemberStartOperand(start)
 	if startOp == bytecode.NoopOperand {
 		return bytecode.NoopOperand
 	}
 
-	startOptional := start.ErrorOperator() != nil
-	startDst := result
-	if !stickyDst || !startDst.IsRegister() {
-		startDst = c.ctx.Registers.Allocate()
-	}
-
+	state := &optionalMemberChainState{}
 	startSpan := diagnostics.SpanFromRuleContext(start.(antlr.ParserRuleContext))
-	c.ctx.Emitter.WithSpan(startSpan, func() {
-		op := memberLoadOpcode(operandType(c.ctx, result), startConst, startOptional)
-		c.ctx.Emitter.EmitABC(op, startDst, result, startOp)
-
-		if startOptional {
-			if !hasJump {
-				endLabel = c.ctx.Emitter.NewLabel("member", "optional", "end")
-				hasJump = true
-			}
-			c.ctx.Emitter.EmitJumpIfNone(startDst, endLabel)
-		}
-	})
-
-	if startOptional {
-		stickyDst = true
-	}
-
-	result = startDst
+	result := c.emitOptionalMemberLoadSegment(startSpan, src, startOp, startConst, start.ErrorOperator() != nil, state)
 
 	for _, segment := range segments {
 		p := segment.(*fql.MemberExpressionPathContext)
-		src2, constOperand := c.compileMemberPathOperand(p)
-		optional := p.ErrorOperator() != nil
-
-		dst := result
-		if !stickyDst || !dst.IsRegister() {
-			dst = c.ctx.Registers.Allocate()
-		}
-
+		segmentOp, constOperand := c.compileMemberPathOperand(p)
 		span := diagnostics.SpanFromRuleContext(p)
-		c.ctx.Emitter.WithSpan(span, func() {
-			op := memberLoadOpcode(operandType(c.ctx, result), constOperand, optional)
-			c.ctx.Emitter.EmitABC(op, dst, result, src2)
+		result = c.emitOptionalMemberLoadSegment(span, result, segmentOp, constOperand, p.ErrorOperator() != nil, state)
+	}
 
-			if optional {
-				if !hasJump {
-					endLabel = c.ctx.Emitter.NewLabel("member", "optional", "end")
-					hasJump = true
-				}
-				c.ctx.Emitter.EmitJumpIfNone(dst, endLabel)
-			}
-		})
+	c.finalizeOptionalMemberChain(state)
+	return result
+}
+
+func (c *ExprCompiler) emitOptionalMemberLoadSegment(span file.Span, src, segmentOp bytecode.Operand, constOperand, optional bool, state *optionalMemberChainState) bytecode.Operand {
+	dst := c.allocateOptionalMemberDestination(src, state)
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		op := memberLoadOpcode(operandType(c.ctx, src), constOperand, optional)
+		c.ctx.Emitter.EmitABC(op, dst, src, segmentOp)
 
 		if optional {
-			stickyDst = true
+			c.ctx.Emitter.EmitJumpIfNone(dst, c.optionalMemberEndLabel(state))
 		}
+	})
 
-		result = dst
+	if optional {
+		state.stickyDst = true
 	}
 
-	if hasJump {
-		c.ctx.Emitter.MarkLabel(endLabel)
+	return dst
+}
+
+func (c *ExprCompiler) allocateOptionalMemberDestination(src bytecode.Operand, state *optionalMemberChainState) bytecode.Operand {
+	if state != nil && state.stickyDst && src.IsRegister() {
+		return src
 	}
 
-	return result
+	return c.ctx.Registers.Allocate()
+}
+
+func (c *ExprCompiler) optionalMemberEndLabel(state *optionalMemberChainState) core.Label {
+	if state == nil {
+		return core.Label{}
+	}
+
+	if state.hasJump {
+		return state.endLabel
+	}
+
+	state.endLabel = c.ctx.Emitter.NewLabel("member", "optional", "end")
+	state.hasJump = true
+
+	return state.endLabel
+}
+
+func (c *ExprCompiler) finalizeOptionalMemberChain(state *optionalMemberChainState) {
+	if state == nil || !state.hasJump {
+		return
+	}
+
+	c.ctx.Emitter.MarkLabel(state.endLabel)
 }
 
 func isSimpleMemberPathChain(segments []fql.IMemberExpressionPathContext) bool {
@@ -2324,98 +2374,142 @@ func (c *ExprCompiler) compileQueryExpression(ctx fql.IQueryExpressionContext) b
 		return bytecode.NoopOperand
 	}
 
-	srcExpr := ctx.Expression()
-	if srcExpr == nil {
+	src, ok := c.compileQueryExpressionSource(ctx)
+	if !ok {
 		return bytecode.NoopOperand
 	}
 
-	src := c.Compile(srcExpr)
-	if src == bytecode.NoopOperand {
-		return bytecode.NoopOperand
-	}
-
-	queryReg := c.ctx.Registers.Allocate()
 	span := diagnostics.SpanFromRuleContext(ctx)
 	modifier := queryModifierName(ctx.QueryModifier())
-
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitArray(queryReg, 3)
-	})
-
-	kind := ""
-	if ident := ctx.GetDialect(); ident != nil {
-		kind = strings.ToLower(ident.GetText())
-	}
-
-	kindReg := loadConstant(c.ctx, runtime.NewString(kind))
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitArrayPush(queryReg, kindReg)
-	})
-
-	payloadReg := loadConstant(c.ctx, runtime.EmptyString)
-	if payload := ctx.QueryPayload(); payload != nil {
-		if str := payload.StringLiteral(); str != nil {
-			if val, ok := parseStringLiteralConst(str); ok {
-				payloadReg = loadConstant(c.ctx, val)
-			} else {
-				payloadReg = c.ctx.LiteralCompiler.CompileStringLiteral(str)
-			}
-		} else if param := payload.Param(); param != nil {
-			payloadReg = c.CompileParam(param)
-		} else if variable := payload.Variable(); variable != nil {
-			payloadReg = c.CompileVariable(variable)
-		}
-	}
-
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitArrayPush(queryReg, payloadReg)
-	})
-
-	var optionsReg bytecode.Operand
-	if with := ctx.QueryWithOpt(); with != nil && with.Expression() != nil {
-		optionsReg = c.Compile(with.Expression())
-	} else {
-		optionsReg = loadConstant(c.ctx, runtime.None)
-	}
-
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitArrayPush(queryReg, optionsReg)
-	})
-
-	queryResult := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitABC(bytecode.OpApplyQuery, queryResult, src, queryReg)
-	})
-
-	dst := queryResult
-	switch modifier {
-	case queryModifierExists:
-		dst = c.ctx.Registers.Allocate()
-		c.ctx.Emitter.WithSpan(span, func() {
-			c.ctx.Emitter.EmitAB(bytecode.OpExists, dst, queryResult)
-		})
-	case queryModifierCount:
-		dst = c.ctx.Registers.Allocate()
-		c.ctx.Emitter.WithSpan(span, func() {
-			c.ctx.Emitter.EmitAB(bytecode.OpLength, dst, queryResult)
-		})
-	case queryModifierAny:
-		dst = c.ctx.Registers.Allocate()
-		zero := c.ctx.Symbols.AddConstant(runtime.NewInt(0))
-		c.ctx.Emitter.WithSpan(span, func() {
-			c.ctx.Emitter.EmitABC(bytecode.OpLoadIndexOptionalConst, dst, queryResult, zero)
-		})
-	case queryModifierValue:
-		dst = c.ctx.lowerQueryModifierValue(span, queryResult)
-	case queryModifierOne:
-		dst = c.ctx.lowerQueryModifierOne(span, queryResult)
-	}
+	queryReg := c.emitQueryEnvelope(ctx, span)
+	queryResult := c.emitApplyQuery(span, src, queryReg)
+	dst := c.lowerQueryModifier(span, modifier, queryResult)
 
 	if dst.IsRegister() {
 		c.ctx.Types.Set(dst, queryResultTypeForModifier(modifier))
 	}
 
 	return dst
+}
+
+func (c *ExprCompiler) compileQueryExpressionSource(ctx fql.IQueryExpressionContext) (bytecode.Operand, bool) {
+	if ctx == nil {
+		return bytecode.NoopOperand, false
+	}
+
+	sourceExpr := ctx.Expression()
+	if sourceExpr == nil {
+		return bytecode.NoopOperand, false
+	}
+
+	source := c.Compile(sourceExpr)
+	return source, source != bytecode.NoopOperand
+}
+
+func (c *ExprCompiler) emitQueryEnvelope(ctx fql.IQueryExpressionContext, span file.Span) bytecode.Operand {
+	queryReg := c.ctx.Registers.Allocate()
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitArray(queryReg, 3)
+	})
+
+	kind := c.compileQueryKindOperand(ctx)
+	c.emitQueryEnvelopeOperand(span, queryReg, kind)
+
+	payload := c.compileQueryPayloadOperand(ctx.QueryPayload())
+	c.emitQueryEnvelopeOperand(span, queryReg, payload)
+
+	options := c.compileQueryOptionsOperand(ctx.QueryWithOpt())
+	c.emitQueryEnvelopeOperand(span, queryReg, options)
+
+	return queryReg
+}
+
+func (c *ExprCompiler) compileQueryKindOperand(ctx fql.IQueryExpressionContext) bytecode.Operand {
+	kind := ""
+	if ident := ctx.GetDialect(); ident != nil {
+		kind = strings.ToLower(ident.GetText())
+	}
+
+	return loadConstant(c.ctx, runtime.NewString(kind))
+}
+
+func (c *ExprCompiler) compileQueryPayloadOperand(ctx fql.IQueryPayloadContext) bytecode.Operand {
+	if ctx == nil {
+		return loadConstant(c.ctx, runtime.EmptyString)
+	}
+
+	if literal := ctx.StringLiteral(); literal != nil {
+		if value, ok := parseStringLiteralConst(literal); ok {
+			return loadConstant(c.ctx, value)
+		}
+
+		return c.ctx.LiteralCompiler.CompileStringLiteral(literal)
+	}
+
+	if param := ctx.Param(); param != nil {
+		return c.CompileParam(param)
+	}
+
+	if variable := ctx.Variable(); variable != nil {
+		return c.CompileVariable(variable)
+	}
+
+	return loadConstant(c.ctx, runtime.EmptyString)
+}
+
+func (c *ExprCompiler) compileQueryOptionsOperand(ctx fql.IQueryWithOptContext) bytecode.Operand {
+	if ctx == nil || ctx.Expression() == nil {
+		return loadConstant(c.ctx, runtime.None)
+	}
+
+	return c.Compile(ctx.Expression())
+}
+
+func (c *ExprCompiler) emitQueryEnvelopeOperand(span file.Span, queryReg, value bytecode.Operand) {
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitArrayPush(queryReg, value)
+	})
+}
+
+func (c *ExprCompiler) emitApplyQuery(span file.Span, src, queryReg bytecode.Operand) bytecode.Operand {
+	result := c.ctx.Registers.Allocate()
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitABC(bytecode.OpApplyQuery, result, src, queryReg)
+	})
+
+	return result
+}
+
+func (c *ExprCompiler) lowerQueryModifier(span file.Span, modifier queryModifier, queryResult bytecode.Operand) bytecode.Operand {
+	switch modifier {
+	case queryModifierExists:
+		dst := c.ctx.Registers.Allocate()
+		c.ctx.Emitter.WithSpan(span, func() {
+			c.ctx.Emitter.EmitAB(bytecode.OpExists, dst, queryResult)
+		})
+		return dst
+	case queryModifierCount:
+		dst := c.ctx.Registers.Allocate()
+		c.ctx.Emitter.WithSpan(span, func() {
+			c.ctx.Emitter.EmitAB(bytecode.OpLength, dst, queryResult)
+		})
+		return dst
+	case queryModifierAny:
+		dst := c.ctx.Registers.Allocate()
+		zero := c.ctx.Symbols.AddConstant(runtime.NewInt(0))
+		c.ctx.Emitter.WithSpan(span, func() {
+			c.ctx.Emitter.EmitABC(bytecode.OpLoadIndexOptionalConst, dst, queryResult, zero)
+		})
+		return dst
+	case queryModifierValue:
+		return c.ctx.lowerQueryModifierValue(span, queryResult)
+	case queryModifierOne:
+		return c.ctx.lowerQueryModifierOne(span, queryResult)
+	default:
+		return queryResult
+	}
 }
 
 func queryModifierName(ctx fql.IQueryModifierContext) queryModifier {
@@ -2975,7 +3069,7 @@ func (c *ExprCompiler) compileHostFunctionCallWith(name runtime.String, protecte
 }
 
 // compileUdfCallWith processes a UDF call with pre-compiled arguments.
-func (c *ExprCompiler) compileUdfCallWith(fn *UDFInfo, protected bool, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) bytecode.Operand {
+func (c *ExprCompiler) compileUdfCallWith(fn *core.UDFInfo, protected bool, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) bytecode.Operand {
 	args := c.prepareUdfCallArgs(fn, seq, callCtx)
 
 	dest := c.ctx.Registers.Allocate()
@@ -2994,7 +3088,7 @@ func (c *ExprCompiler) compileUdfCallWith(fn *UDFInfo, protected bool, seq core.
 }
 
 // EmitUdfTailCall emits a tail call to a UDF with pre-compiled arguments.
-func (c *ExprCompiler) EmitUdfTailCall(fn *UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) {
+func (c *ExprCompiler) EmitUdfTailCall(fn *core.UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) {
 	args := c.prepareUdfCallArgs(fn, seq, callCtx)
 
 	dest := c.ctx.Registers.Allocate()
@@ -3003,7 +3097,7 @@ func (c *ExprCompiler) EmitUdfTailCall(fn *UDFInfo, seq core.RegisterSequence, c
 	c.ctx.Emitter.EmitAs(bytecode.OpTailCall, dest, args)
 }
 
-func (c *ExprCompiler) prepareUdfCallArgs(fn *UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) core.RegisterSequence {
+func (c *ExprCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) core.RegisterSequence {
 	if fn == nil {
 		return seq
 	}

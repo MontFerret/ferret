@@ -23,8 +23,8 @@ type CompilerContext struct {
 	CatchTable *core.CatchStack
 	Errors     *diagnostics.ErrorHandler
 	UseAliases map[string]string
-	UDFs       *UDFTable
-	UDFScope   *UDFScope
+	UDFs       *core.UDFTable
+	UDFScope   *core.UDFScope
 
 	OptimizationLevel optimization.Level
 

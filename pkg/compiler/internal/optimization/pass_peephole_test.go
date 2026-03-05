@@ -22,16 +22,27 @@ func runPeephole(t *testing.T, program *bytecode.Program) (*PassResult, error) {
 	return pass.Run(&PassContext{Program: program, CFG: cfg})
 }
 
-func TestPeephole_AddConstRewriteCases(t *testing.T) {
-	testCases := []struct {
-		name         string
-		program      *bytecode.Program
-		wantModified bool
-		wantOpcodes  []bytecode.Opcode
-	}{
-		{
-			name: "rewrites when temp register dies and dst equals temp",
-			program: &bytecode.Program{
+type peepholeOpcodeCase struct {
+	name         string
+	program      func() *bytecode.Program
+	wantModified bool
+	wantOpcodes  []bytecode.Opcode
+}
+
+type peepholeJumpRewriteCase struct {
+	name           string
+	program        func() *bytecode.Program
+	wantOpcode     bytecode.Opcode
+	wantJumpTarget bytecode.Operand
+	wantLeft       bytecode.Operand
+	wantRight      bytecode.Operand
+}
+
+var addConstRewriteCases = []peepholeOpcodeCase{
+	{
+		name: "rewrites when temp register dies and dst equals temp",
+		program: func() *bytecode.Program {
+			return &bytecode.Program{
 				Constants: []runtime.Value{
 					runtime.NewInt(7),
 				},
@@ -40,16 +51,18 @@ func TestPeephole_AddConstRewriteCases(t *testing.T) {
 					bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(2), bytecode.NewRegister(1), bytecode.NewRegister(2)),
 					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 				},
-			},
-			wantModified: true,
-			wantOpcodes: []bytecode.Opcode{
-				bytecode.OpAddConst,
-				bytecode.OpReturn,
-			},
+			}
 		},
-		{
-			name: "does not rewrite when temporary is the left operand",
-			program: &bytecode.Program{
+		wantModified: true,
+		wantOpcodes: []bytecode.Opcode{
+			bytecode.OpAddConst,
+			bytecode.OpReturn,
+		},
+	},
+	{
+		name: "does not rewrite when temporary is the left operand",
+		program: func() *bytecode.Program {
+			return &bytecode.Program{
 				Constants: []runtime.Value{
 					runtime.NewInt(7),
 				},
@@ -58,17 +71,19 @@ func TestPeephole_AddConstRewriteCases(t *testing.T) {
 					bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(3), bytecode.NewRegister(2), bytecode.NewRegister(1)),
 					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(3)),
 				},
-			},
-			wantModified: false,
-			wantOpcodes: []bytecode.Opcode{
-				bytecode.OpLoadConst,
-				bytecode.OpAdd,
-				bytecode.OpReturn,
-			},
+			}
 		},
-		{
-			name: "does not rewrite when load is jump target",
-			program: &bytecode.Program{
+		wantModified: false,
+		wantOpcodes: []bytecode.Opcode{
+			bytecode.OpLoadConst,
+			bytecode.OpAdd,
+			bytecode.OpReturn,
+		},
+	},
+	{
+		name: "does not rewrite when load is jump target",
+		program: func() *bytecode.Program {
+			return &bytecode.Program{
 				Constants: []runtime.Value{
 					runtime.NewInt(5),
 				},
@@ -78,68 +93,261 @@ func TestPeephole_AddConstRewriteCases(t *testing.T) {
 					bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
 					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(3)),
 				},
-			},
-			wantModified: false,
-			wantOpcodes: []bytecode.Opcode{
-				bytecode.OpJump,
-				bytecode.OpLoadConst,
-				bytecode.OpAdd,
-				bytecode.OpReturn,
-			},
+			}
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			res, err := runPeephole(t, tc.program)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if res.Modified != tc.wantModified {
-				t.Fatalf("unexpected modified flag: got %v, want %v", res.Modified, tc.wantModified)
-			}
-
-			if len(tc.program.Bytecode) != len(tc.wantOpcodes) {
-				t.Fatalf("unexpected instruction count: got %d, want %d", len(tc.program.Bytecode), len(tc.wantOpcodes))
-			}
-
-			for i, op := range tc.wantOpcodes {
-				if tc.program.Bytecode[i].Opcode != op {
-					t.Fatalf("unexpected opcode at %d: got %s, want %s", i, tc.program.Bytecode[i].Opcode, op)
-				}
-			}
-		})
-	}
+		wantModified: false,
+		wantOpcodes: []bytecode.Opcode{
+			bytecode.OpJump,
+			bytecode.OpLoadConst,
+			bytecode.OpAdd,
+			bytecode.OpReturn,
+		},
+	},
 }
 
-func TestPeephole_RemovesRedundantLoads(t *testing.T) {
-	program := &bytecode.Program{
-		Constants: []runtime.Value{
-			runtime.NewString("a"),
+var redundantDefRemovalCases = []peepholeOpcodeCase{
+	{
+		name: "removes redundant load const",
+		program: func() *bytecode.Program {
+			return &bytecode.Program{
+				Constants: []runtime.Value{
+					runtime.NewString("a"),
+				},
+				Bytecode: []bytecode.Instruction{
+					bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+					bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+				},
+			}
 		},
-		Bytecode: []bytecode.Instruction{
-			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
-			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		wantModified: true,
+		wantOpcodes: []bytecode.Opcode{
+			bytecode.OpLoadConst,
+			bytecode.OpReturn,
 		},
-	}
+	},
+	{
+		name: "removes self move",
+		program: func() *bytecode.Program {
+			return &bytecode.Program{
+				Constants: []runtime.Value{
+					runtime.NewString("a"),
+				},
+				Bytecode: []bytecode.Instruction{
+					bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+					bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(1), bytecode.NewRegister(1)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+				},
+			}
+		},
+		wantModified: true,
+		wantOpcodes: []bytecode.Opcode{
+			bytecode.OpLoadConst,
+			bytecode.OpReturn,
+		},
+	},
+}
 
+var comparisonJumpRewriteCases = []peepholeJumpRewriteCase{
+	{
+		name: "eq + jump false -> jump if ne",
+		program: func() *bytecode.Program {
+			return &bytecode.Program{
+				Bytecode: []bytecode.Instruction{
+					bytecode.NewInstruction(bytecode.OpEq, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+					bytecode.NewInstruction(bytecode.OpJumpIfFalse, bytecode.Operand(3), bytecode.NewRegister(3)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+				},
+			}
+		},
+		wantOpcode:     bytecode.OpJumpIfNe,
+		wantJumpTarget: bytecode.Operand(2),
+		wantLeft:       bytecode.NewRegister(1),
+		wantRight:      bytecode.NewRegister(2),
+	},
+	{
+		name: "eq const + jump false -> jump if ne const",
+		program: func() *bytecode.Program {
+			return &bytecode.Program{
+				Constants: []runtime.Value{
+					runtime.NewInt(7),
+				},
+				Bytecode: []bytecode.Instruction{
+					bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(3), bytecode.NewConstant(0)),
+					bytecode.NewInstruction(bytecode.OpEq, bytecode.NewRegister(4), bytecode.NewRegister(1), bytecode.NewRegister(3)),
+					bytecode.NewInstruction(bytecode.OpJumpIfFalse, bytecode.Operand(4), bytecode.NewRegister(4)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+				},
+			}
+		},
+		wantOpcode:     bytecode.OpJumpIfNeConst,
+		wantJumpTarget: bytecode.Operand(2),
+		wantLeft:       bytecode.NewRegister(1),
+		wantRight:      bytecode.NewConstant(0),
+	},
+	{
+		name: "eq + jump true -> jump if eq",
+		program: func() *bytecode.Program {
+			return &bytecode.Program{
+				Bytecode: []bytecode.Instruction{
+					bytecode.NewInstruction(bytecode.OpEq, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+					bytecode.NewInstruction(bytecode.OpJumpIfTrue, bytecode.Operand(3), bytecode.NewRegister(3)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+				},
+			}
+		},
+		wantOpcode:     bytecode.OpJumpIfEq,
+		wantJumpTarget: bytecode.Operand(2),
+		wantLeft:       bytecode.NewRegister(1),
+		wantRight:      bytecode.NewRegister(2),
+	},
+	{
+		name: "ne + jump false -> jump if eq",
+		program: func() *bytecode.Program {
+			return &bytecode.Program{
+				Bytecode: []bytecode.Instruction{
+					bytecode.NewInstruction(bytecode.OpNe, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+					bytecode.NewInstruction(bytecode.OpJumpIfFalse, bytecode.Operand(3), bytecode.NewRegister(3)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+				},
+			}
+		},
+		wantOpcode:     bytecode.OpJumpIfEq,
+		wantJumpTarget: bytecode.Operand(2),
+		wantLeft:       bytecode.NewRegister(1),
+		wantRight:      bytecode.NewRegister(2),
+	},
+	{
+		name: "ne + jump true -> jump if ne",
+		program: func() *bytecode.Program {
+			return &bytecode.Program{
+				Bytecode: []bytecode.Instruction{
+					bytecode.NewInstruction(bytecode.OpNe, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+					bytecode.NewInstruction(bytecode.OpJumpIfTrue, bytecode.Operand(3), bytecode.NewRegister(3)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+				},
+			}
+		},
+		wantOpcode:     bytecode.OpJumpIfNe,
+		wantJumpTarget: bytecode.Operand(2),
+		wantLeft:       bytecode.NewRegister(1),
+		wantRight:      bytecode.NewRegister(2),
+	},
+	{
+		name: "eq const + jump true -> jump if eq const",
+		program: func() *bytecode.Program {
+			return &bytecode.Program{
+				Constants: []runtime.Value{
+					runtime.NewInt(9),
+				},
+				Bytecode: []bytecode.Instruction{
+					bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(3), bytecode.NewConstant(0)),
+					bytecode.NewInstruction(bytecode.OpEq, bytecode.NewRegister(4), bytecode.NewRegister(1), bytecode.NewRegister(3)),
+					bytecode.NewInstruction(bytecode.OpJumpIfTrue, bytecode.Operand(4), bytecode.NewRegister(4)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+				},
+			}
+		},
+		wantOpcode:     bytecode.OpJumpIfEqConst,
+		wantJumpTarget: bytecode.Operand(2),
+		wantLeft:       bytecode.NewRegister(1),
+		wantRight:      bytecode.NewConstant(0),
+	},
+	{
+		name: "ne const + jump false -> jump if eq const",
+		program: func() *bytecode.Program {
+			return &bytecode.Program{
+				Constants: []runtime.Value{
+					runtime.NewInt(9),
+				},
+				Bytecode: []bytecode.Instruction{
+					bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(3), bytecode.NewConstant(0)),
+					bytecode.NewInstruction(bytecode.OpNe, bytecode.NewRegister(4), bytecode.NewRegister(1), bytecode.NewRegister(3)),
+					bytecode.NewInstruction(bytecode.OpJumpIfFalse, bytecode.Operand(4), bytecode.NewRegister(4)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+				},
+			}
+		},
+		wantOpcode:     bytecode.OpJumpIfEqConst,
+		wantJumpTarget: bytecode.Operand(2),
+		wantLeft:       bytecode.NewRegister(1),
+		wantRight:      bytecode.NewConstant(0),
+	},
+}
+
+func runPeepholeOpcodeCase(t *testing.T, tc peepholeOpcodeCase) {
+	t.Helper()
+
+	program := tc.program()
 	res, err := runPeephole(t, program)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+
+	if res.Modified != tc.wantModified {
+		t.Fatalf("unexpected modified flag: got %v, want %v", res.Modified, tc.wantModified)
+	}
+
+	if len(program.Bytecode) != len(tc.wantOpcodes) {
+		t.Fatalf("unexpected instruction count: got %d, want %d", len(program.Bytecode), len(tc.wantOpcodes))
+	}
+
+	for i, op := range tc.wantOpcodes {
+		if program.Bytecode[i].Opcode != op {
+			t.Fatalf("unexpected opcode at %d: got %s, want %s", i, program.Bytecode[i].Opcode, op)
+		}
+	}
+}
+
+func runPeepholeJumpRewriteCase(t *testing.T, tc peepholeJumpRewriteCase) {
+	t.Helper()
+
+	program := tc.program()
+	res, err := runPeephole(t, program)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
 	if !res.Modified {
 		t.Fatalf("expected peephole pass to modify program")
 	}
-	if len(program.Bytecode) != 2 {
-		t.Fatalf("expected 2 instructions, got %d", len(program.Bytecode))
+
+	if len(program.Bytecode) != 3 {
+		t.Fatalf("expected 3 instructions, got %d", len(program.Bytecode))
 	}
-	if program.Bytecode[0].Opcode != bytecode.OpLoadConst {
-		t.Fatalf("expected first instruction to be LOADC, got %s", program.Bytecode[0].Opcode)
+
+	inst := program.Bytecode[0]
+	if inst.Opcode != tc.wantOpcode {
+		t.Fatalf("unexpected first opcode: got %s, want %s", inst.Opcode, tc.wantOpcode)
 	}
-	if program.Bytecode[1].Opcode != bytecode.OpReturn {
-		t.Fatalf("expected last instruction to be RETURN, got %s", program.Bytecode[1].Opcode)
+	if inst.Operands[0] != tc.wantJumpTarget {
+		t.Fatalf("unexpected jump target: got %d, want %d", inst.Operands[0], tc.wantJumpTarget)
+	}
+	if inst.Operands[1] != tc.wantLeft || inst.Operands[2] != tc.wantRight {
+		t.Fatalf("unexpected operands: got %v %v", inst.Operands[1], inst.Operands[2])
+	}
+}
+
+func TestPeephole_AddConstRewriteCases(t *testing.T) {
+	for _, tc := range addConstRewriteCases {
+		t.Run(tc.name, func(t *testing.T) {
+			runPeepholeOpcodeCase(t, tc)
+		})
+	}
+}
+
+func TestPeephole_RemovesRedundantDefs(t *testing.T) {
+	for _, tc := range redundantDefRemovalCases {
+		t.Run(tc.name, func(t *testing.T) {
+			runPeepholeOpcodeCase(t, tc)
+		})
 	}
 }
 
@@ -176,246 +384,11 @@ func TestPeephole_RewritesAddConstRight(t *testing.T) {
 	}
 }
 
-func TestPeephole_RewritesEqJumpToJumpIfNe(t *testing.T) {
-	program := &bytecode.Program{
-		Bytecode: []bytecode.Instruction{
-			bytecode.NewInstruction(bytecode.OpEq, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
-			bytecode.NewInstruction(bytecode.OpJumpIfFalse, bytecode.Operand(3), bytecode.NewRegister(3)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
-		},
-	}
-
-	res, err := runPeephole(t, program)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !res.Modified {
-		t.Fatalf("expected peephole pass to modify program")
-	}
-	if len(program.Bytecode) != 3 {
-		t.Fatalf("expected 3 instructions, got %d", len(program.Bytecode))
-	}
-
-	inst := program.Bytecode[0]
-	if inst.Opcode != bytecode.OpJumpIfNe {
-		t.Fatalf("expected first instruction to be JMPNE, got %s", inst.Opcode)
-	}
-	if inst.Operands[0] != bytecode.Operand(2) {
-		t.Fatalf("unexpected jump target: got %d, want %d", inst.Operands[0], 2)
-	}
-	if inst.Operands[1] != bytecode.NewRegister(1) || inst.Operands[2] != bytecode.NewRegister(2) {
-		t.Fatalf("unexpected operands: got %v %v", inst.Operands[1], inst.Operands[2])
-	}
-}
-
-func TestPeephole_RewritesEqConstJumpToJumpIfNeConst(t *testing.T) {
-	program := &bytecode.Program{
-		Constants: []runtime.Value{
-			runtime.NewInt(7),
-		},
-		Bytecode: []bytecode.Instruction{
-			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(3), bytecode.NewConstant(0)),
-			bytecode.NewInstruction(bytecode.OpEq, bytecode.NewRegister(4), bytecode.NewRegister(1), bytecode.NewRegister(3)),
-			bytecode.NewInstruction(bytecode.OpJumpIfFalse, bytecode.Operand(4), bytecode.NewRegister(4)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
-		},
-	}
-
-	res, err := runPeephole(t, program)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !res.Modified {
-		t.Fatalf("expected peephole pass to modify program")
-	}
-	if len(program.Bytecode) != 3 {
-		t.Fatalf("expected 3 instructions, got %d", len(program.Bytecode))
-	}
-
-	inst := program.Bytecode[0]
-	if inst.Opcode != bytecode.OpJumpIfNeConst {
-		t.Fatalf("expected first instruction to be JMPNEC, got %s", inst.Opcode)
-	}
-	if inst.Operands[0] != bytecode.Operand(2) {
-		t.Fatalf("unexpected jump target: got %d, want %d", inst.Operands[0], 2)
-	}
-	if inst.Operands[1] != bytecode.NewRegister(1) || inst.Operands[2] != bytecode.NewConstant(0) {
-		t.Fatalf("unexpected operands: got %v %v", inst.Operands[1], inst.Operands[2])
-	}
-}
-
-func TestPeephole_RewritesEqJumpTrueToJumpIfEq(t *testing.T) {
-	program := &bytecode.Program{
-		Bytecode: []bytecode.Instruction{
-			bytecode.NewInstruction(bytecode.OpEq, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
-			bytecode.NewInstruction(bytecode.OpJumpIfTrue, bytecode.Operand(3), bytecode.NewRegister(3)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
-		},
-	}
-
-	res, err := runPeephole(t, program)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !res.Modified {
-		t.Fatalf("expected peephole pass to modify program")
-	}
-	if len(program.Bytecode) != 3 {
-		t.Fatalf("expected 3 instructions, got %d", len(program.Bytecode))
-	}
-
-	inst := program.Bytecode[0]
-	if inst.Opcode != bytecode.OpJumpIfEq {
-		t.Fatalf("expected first instruction to be JMPEQ, got %s", inst.Opcode)
-	}
-	if inst.Operands[0] != bytecode.Operand(2) {
-		t.Fatalf("unexpected jump target: got %d, want %d", inst.Operands[0], 2)
-	}
-	if inst.Operands[1] != bytecode.NewRegister(1) || inst.Operands[2] != bytecode.NewRegister(2) {
-		t.Fatalf("unexpected operands: got %v %v", inst.Operands[1], inst.Operands[2])
-	}
-}
-
-func TestPeephole_RewritesNeJumpFalseToJumpIfEq(t *testing.T) {
-	program := &bytecode.Program{
-		Bytecode: []bytecode.Instruction{
-			bytecode.NewInstruction(bytecode.OpNe, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
-			bytecode.NewInstruction(bytecode.OpJumpIfFalse, bytecode.Operand(3), bytecode.NewRegister(3)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
-		},
-	}
-
-	res, err := runPeephole(t, program)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !res.Modified {
-		t.Fatalf("expected peephole pass to modify program")
-	}
-	if len(program.Bytecode) != 3 {
-		t.Fatalf("expected 3 instructions, got %d", len(program.Bytecode))
-	}
-
-	inst := program.Bytecode[0]
-	if inst.Opcode != bytecode.OpJumpIfEq {
-		t.Fatalf("expected first instruction to be JMPEQ, got %s", inst.Opcode)
-	}
-	if inst.Operands[0] != bytecode.Operand(2) {
-		t.Fatalf("unexpected jump target: got %d, want %d", inst.Operands[0], 2)
-	}
-	if inst.Operands[1] != bytecode.NewRegister(1) || inst.Operands[2] != bytecode.NewRegister(2) {
-		t.Fatalf("unexpected operands: got %v %v", inst.Operands[1], inst.Operands[2])
-	}
-}
-
-func TestPeephole_RewritesNeJumpTrueToJumpIfNe(t *testing.T) {
-	program := &bytecode.Program{
-		Bytecode: []bytecode.Instruction{
-			bytecode.NewInstruction(bytecode.OpNe, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
-			bytecode.NewInstruction(bytecode.OpJumpIfTrue, bytecode.Operand(3), bytecode.NewRegister(3)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
-		},
-	}
-
-	res, err := runPeephole(t, program)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !res.Modified {
-		t.Fatalf("expected peephole pass to modify program")
-	}
-	if len(program.Bytecode) != 3 {
-		t.Fatalf("expected 3 instructions, got %d", len(program.Bytecode))
-	}
-
-	inst := program.Bytecode[0]
-	if inst.Opcode != bytecode.OpJumpIfNe {
-		t.Fatalf("expected first instruction to be JMPNE, got %s", inst.Opcode)
-	}
-	if inst.Operands[0] != bytecode.Operand(2) {
-		t.Fatalf("unexpected jump target: got %d, want %d", inst.Operands[0], 2)
-	}
-	if inst.Operands[1] != bytecode.NewRegister(1) || inst.Operands[2] != bytecode.NewRegister(2) {
-		t.Fatalf("unexpected operands: got %v %v", inst.Operands[1], inst.Operands[2])
-	}
-}
-
-func TestPeephole_RewritesEqJumpTrueConstToJumpIfEqConst(t *testing.T) {
-	program := &bytecode.Program{
-		Constants: []runtime.Value{
-			runtime.NewInt(9),
-		},
-		Bytecode: []bytecode.Instruction{
-			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(3), bytecode.NewConstant(0)),
-			bytecode.NewInstruction(bytecode.OpEq, bytecode.NewRegister(4), bytecode.NewRegister(1), bytecode.NewRegister(3)),
-			bytecode.NewInstruction(bytecode.OpJumpIfTrue, bytecode.Operand(4), bytecode.NewRegister(4)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
-		},
-	}
-
-	res, err := runPeephole(t, program)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !res.Modified {
-		t.Fatalf("expected peephole pass to modify program")
-	}
-	if len(program.Bytecode) != 3 {
-		t.Fatalf("expected 3 instructions, got %d", len(program.Bytecode))
-	}
-
-	inst := program.Bytecode[0]
-	if inst.Opcode != bytecode.OpJumpIfEqConst {
-		t.Fatalf("expected first instruction to be JMPEQC, got %s", inst.Opcode)
-	}
-	if inst.Operands[0] != bytecode.Operand(2) {
-		t.Fatalf("unexpected jump target: got %d, want %d", inst.Operands[0], 2)
-	}
-	if inst.Operands[1] != bytecode.NewRegister(1) || inst.Operands[2] != bytecode.NewConstant(0) {
-		t.Fatalf("unexpected operands: got %v %v", inst.Operands[1], inst.Operands[2])
-	}
-}
-
-func TestPeephole_RewritesNeJumpFalseConstToJumpIfEqConst(t *testing.T) {
-	program := &bytecode.Program{
-		Constants: []runtime.Value{
-			runtime.NewInt(9),
-		},
-		Bytecode: []bytecode.Instruction{
-			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(3), bytecode.NewConstant(0)),
-			bytecode.NewInstruction(bytecode.OpNe, bytecode.NewRegister(4), bytecode.NewRegister(1), bytecode.NewRegister(3)),
-			bytecode.NewInstruction(bytecode.OpJumpIfFalse, bytecode.Operand(4), bytecode.NewRegister(4)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
-		},
-	}
-
-	res, err := runPeephole(t, program)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !res.Modified {
-		t.Fatalf("expected peephole pass to modify program")
-	}
-	if len(program.Bytecode) != 3 {
-		t.Fatalf("expected 3 instructions, got %d", len(program.Bytecode))
-	}
-
-	inst := program.Bytecode[0]
-	if inst.Opcode != bytecode.OpJumpIfEqConst {
-		t.Fatalf("expected first instruction to be JMPEQC, got %s", inst.Opcode)
-	}
-	if inst.Operands[0] != bytecode.Operand(2) {
-		t.Fatalf("unexpected jump target: got %d, want %d", inst.Operands[0], 2)
-	}
-	if inst.Operands[1] != bytecode.NewRegister(1) || inst.Operands[2] != bytecode.NewConstant(0) {
-		t.Fatalf("unexpected operands: got %v %v", inst.Operands[1], inst.Operands[2])
+func TestPeephole_RewritesComparisonJumps(t *testing.T) {
+	for _, tc := range comparisonJumpRewriteCases {
+		t.Run(tc.name, func(t *testing.T) {
+			runPeepholeJumpRewriteCase(t, tc)
+		})
 	}
 }
 
@@ -521,36 +494,6 @@ func TestPeephole_SkipsAddConstRewriteWhenValueLiveAcrossJump(t *testing.T) {
 	}
 	if program.Bytecode[1].Opcode != bytecode.OpAdd {
 		t.Fatalf("expected second instruction to remain ADD, got %s", program.Bytecode[1].Opcode)
-	}
-}
-
-func TestPeephole_RemovesSelfMove(t *testing.T) {
-	program := &bytecode.Program{
-		Constants: []runtime.Value{
-			runtime.NewString("a"),
-		},
-		Bytecode: []bytecode.Instruction{
-			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
-			bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(1), bytecode.NewRegister(1)),
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
-		},
-	}
-
-	res, err := runPeephole(t, program)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !res.Modified {
-		t.Fatalf("expected peephole pass to modify program")
-	}
-	if len(program.Bytecode) != 2 {
-		t.Fatalf("expected 2 instructions, got %d", len(program.Bytecode))
-	}
-	if program.Bytecode[0].Opcode != bytecode.OpLoadConst {
-		t.Fatalf("expected first instruction to be LOADC, got %s", program.Bytecode[0].Opcode)
-	}
-	if program.Bytecode[1].Opcode != bytecode.OpReturn {
-		t.Fatalf("expected last instruction to be RETURN, got %s", program.Bytecode[1].Opcode)
 	}
 }
 
@@ -771,5 +714,90 @@ func TestPeephole_RemapsCatchDebugSpansAndLabels(t *testing.T) {
 
 	if label, ok := program.Metadata.Labels[2]; !ok || label != "end" {
 		t.Fatalf("expected label 'end' at index 2, got %v", program.Metadata.Labels)
+	}
+}
+
+type peepholeJumpOpcodeMatrixCase struct {
+	name         string
+	compareOp    bytecode.Opcode
+	jumpOp       bytecode.Opcode
+	wantJumpOp   bytecode.Opcode
+	wantConstOp  bytecode.Opcode
+	wantResolved bool
+}
+
+var peepholeJumpOpcodeMatrixCases = []peepholeJumpOpcodeMatrixCase{
+	{
+		name:         "eq with jump false",
+		compareOp:    bytecode.OpEq,
+		jumpOp:       bytecode.OpJumpIfFalse,
+		wantJumpOp:   bytecode.OpJumpIfNe,
+		wantConstOp:  bytecode.OpJumpIfNeConst,
+		wantResolved: true,
+	},
+	{
+		name:         "eq with jump true",
+		compareOp:    bytecode.OpEq,
+		jumpOp:       bytecode.OpJumpIfTrue,
+		wantJumpOp:   bytecode.OpJumpIfEq,
+		wantConstOp:  bytecode.OpJumpIfEqConst,
+		wantResolved: true,
+	},
+	{
+		name:         "ne with jump false",
+		compareOp:    bytecode.OpNe,
+		jumpOp:       bytecode.OpJumpIfFalse,
+		wantJumpOp:   bytecode.OpJumpIfEq,
+		wantConstOp:  bytecode.OpJumpIfEqConst,
+		wantResolved: true,
+	},
+	{
+		name:         "ne with jump true",
+		compareOp:    bytecode.OpNe,
+		jumpOp:       bytecode.OpJumpIfTrue,
+		wantJumpOp:   bytecode.OpJumpIfNe,
+		wantConstOp:  bytecode.OpJumpIfNeConst,
+		wantResolved: true,
+	},
+	{
+		name:         "unsupported compare opcode",
+		compareOp:    bytecode.OpGt,
+		jumpOp:       bytecode.OpJumpIfTrue,
+		wantResolved: false,
+	},
+	{
+		name:         "unsupported jump opcode",
+		compareOp:    bytecode.OpEq,
+		jumpOp:       bytecode.OpJump,
+		wantResolved: false,
+	},
+}
+
+func runPeepholeJumpOpcodeMatrixCase(t *testing.T, tc peepholeJumpOpcodeMatrixCase) {
+	t.Helper()
+
+	gotJumpOp, gotConstOp, ok := resolveComparisonJumpOpcode(tc.compareOp, tc.jumpOp)
+	if ok != tc.wantResolved {
+		t.Fatalf("unexpected resolved flag: got %v, want %v", ok, tc.wantResolved)
+	}
+
+	if !tc.wantResolved {
+		return
+	}
+
+	if gotJumpOp != tc.wantJumpOp {
+		t.Fatalf("unexpected jump opcode: got %s, want %s", gotJumpOp, tc.wantJumpOp)
+	}
+
+	if gotConstOp != tc.wantConstOp {
+		t.Fatalf("unexpected const jump opcode: got %s, want %s", gotConstOp, tc.wantConstOp)
+	}
+}
+
+func TestPeephole_ResolveComparisonJumpOpcode(t *testing.T) {
+	for _, tc := range peepholeJumpOpcodeMatrixCases {
+		t.Run(tc.name, func(t *testing.T) {
+			runPeepholeJumpOpcodeMatrixCase(t, tc)
+		})
 	}
 }
