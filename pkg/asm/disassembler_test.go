@@ -527,3 +527,24 @@ func TestDisassemble_HCallCommentMissingWhenConstantIsNotString(t *testing.T) {
 		t.Fatalf("did not expect host comment when function-name constant is not a string:\n%s", out)
 	}
 }
+
+func TestDisassemble_FailCommentWithMessageConstant(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpFail, bytecode.NewConstant(0)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("QUERY VALUE expected at least one match"),
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	if !strings.Contains(out, `0: FAIL C0 ; "QUERY VALUE expected at least one match"`) {
+		t.Fatalf("expected FAIL line with message constant comment:\n%s", out)
+	}
+}

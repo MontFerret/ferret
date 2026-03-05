@@ -43,6 +43,17 @@ func (q *queryStub) Copy() runtime.Value {
 }
 
 func programWithApplyQueryConstSource(src runtime.Value) *bytecode.Program {
+	return programWithApplyQueryDescriptor(
+		src,
+		runtime.NewArrayWith(
+			runtime.NewString("css"),
+			runtime.NewString(".items"),
+			runtime.None,
+		),
+	)
+}
+
+func programWithApplyQueryDescriptor(src runtime.Value, descriptor runtime.Value) *bytecode.Program {
 	return &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Registers:  1,
@@ -52,11 +63,7 @@ func programWithApplyQueryConstSource(src runtime.Value) *bytecode.Program {
 		},
 		Constants: []runtime.Value{
 			src,
-			runtime.NewArrayWith(
-				runtime.NewString("css"),
-				runtime.NewString(".items"),
-				runtime.None,
-			),
+			descriptor,
 		},
 	}
 }
@@ -168,5 +175,91 @@ func TestApplyQuery_ConstantSourceNonQueryableReturnsTypeError(t *testing.T) {
 				t.Fatalf("expected invalid type error, got %q", rtErr.Message)
 			}
 		})
+	}
+}
+
+func TestApplyQuery_ArrayDescriptorWithModifier(t *testing.T) {
+	stub := &queryStub{
+		result: runtime.NewArrayWith(runtime.NewString("a"), runtime.NewString("b")),
+	}
+
+	program := programWithApplyQueryDescriptor(
+		stub,
+		runtime.NewArrayWith(
+			runtime.NewString("css"),
+			runtime.NewString(".items"),
+			runtime.None,
+			runtime.NewString("count"),
+		),
+	)
+
+	_, err := New(program).Run(context.Background(), nil)
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	if !strings.Contains(rtErr.Format(), queryModifierDescriptorUnsupported) {
+		t.Fatalf("expected formatted runtime error to include descriptor modifier detail, got:\n%s", rtErr.Format())
+	}
+}
+
+func TestApplyQuery_ObjectDescriptorWithModifier(t *testing.T) {
+	stub := &queryStub{
+		result: runtime.NewArray(0),
+	}
+
+	obj := runtime.NewObject()
+	ctx := context.Background()
+	_ = obj.Set(ctx, runtime.NewString("kind"), runtime.NewString("css"))
+	_ = obj.Set(ctx, runtime.NewString("payload"), runtime.NewString(".items"))
+	_ = obj.Set(ctx, runtime.NewString("options"), runtime.None)
+	_ = obj.Set(ctx, runtime.NewString("modifier"), runtime.NewString("EXISTS"))
+
+	program := programWithApplyQueryDescriptor(stub, obj)
+	_, err := New(program).Run(ctx, nil)
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	if !strings.Contains(rtErr.Format(), queryModifierDescriptorUnsupported) {
+		t.Fatalf("expected formatted runtime error to include descriptor modifier detail, got:\n%s", rtErr.Format())
+	}
+}
+
+func TestApplyQuery_ArrayDescriptorRequiresExactTupleSize(t *testing.T) {
+	stub := &queryStub{
+		result: runtime.NewArrayWith(runtime.NewString("a")),
+	}
+
+	program := programWithApplyQueryDescriptor(
+		stub,
+		runtime.NewArrayWith(
+			runtime.NewString("css"),
+			runtime.NewString(".items"),
+		),
+	)
+
+	_, err := New(program).Run(context.Background(), nil)
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	if !strings.Contains(strings.ToLower(rtErr.Format()), "unexpected query format") {
+		t.Fatalf("expected unexpected query format error, got:\n%s", rtErr.Format())
 	}
 }

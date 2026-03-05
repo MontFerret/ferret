@@ -13,7 +13,7 @@ func matchQueryErrors(src *file.Source, err *diagnostics.Diagnostic, offending *
 		return false
 	}
 
-	if !isMismatched(err.Message) && !isMissing(err.Message) && !isNoAlternative(err.Message) && !isExtraneous(err.Message) {
+	if !isMismatched(err.Message) && !isMissing(err.Message) && !isNoAlternative(err.Message) && !isExtraneous(err.Message) && !has(err.Message, "queryexpression failed predicate") {
 		return false
 	}
 
@@ -168,6 +168,10 @@ func isMissingQueryLiteral(msg string, offending *TokenNode) bool {
 		}
 	}
 
+	if has(msg, "queryexpression failed predicate") {
+		return true
+	}
+
 	return false
 }
 
@@ -199,7 +203,7 @@ func hasQueryLiteralBetween(node *TokenNode, max int) bool {
 		if is(current, "QUERY") {
 			return false
 		}
-		if isStringLiteral(current) || isBacktickToken(current) || isParamToken(current) || isIdentifier(current) || isSafeReservedWordToken(current) {
+		if isStringLiteral(current) || isBacktickToken(current) || isParamToken(current) || isIdentifier(current) || (isSafeReservedWordToken(current) && !isQueryModifierToken(current)) {
 			return true
 		}
 		current = current.Prev()
@@ -240,6 +244,24 @@ func isParamToken(node *TokenNode) bool {
 	return node.Token().GetTokenType() == fql.FqlLexerParam
 }
 
+func isQueryModifierToken(node *TokenNode) bool {
+	if node == nil || node.Token() == nil {
+		return false
+	}
+
+	switch node.Token().GetTokenType() {
+	case fql.FqlLexerExists,
+		fql.FqlLexerAny,
+		fql.FqlLexerValue:
+		return true
+	case fql.FqlLexerIdentifier:
+		text := node.Token().GetText()
+		return equalsFoldASCII(text, "COUNT") || equalsFoldASCII(text, "ONE")
+	default:
+		return false
+	}
+}
+
 func isSafeReservedWordToken(node *TokenNode) bool {
 	if node == nil || node.Token() == nil {
 		return false
@@ -276,4 +298,29 @@ func isSafeReservedWordToken(node *TokenNode) bool {
 	default:
 		return false
 	}
+}
+
+func equalsFoldASCII(actual, expected string) bool {
+	if len(actual) != len(expected) {
+		return false
+	}
+
+	for i := 0; i < len(actual); i++ {
+		a := actual[i]
+		e := expected[i]
+
+		if a >= 'a' && a <= 'z' {
+			a -= 'a' - 'A'
+		}
+
+		if e >= 'a' && e <= 'z' {
+			e -= 'a' - 'A'
+		}
+
+		if a != e {
+			return false
+		}
+	}
+
+	return true
 }

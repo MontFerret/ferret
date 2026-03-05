@@ -419,3 +419,36 @@ func TestQueryableListInput(t *testing.T) {
 		"qB":   queryableB,
 	}))
 }
+
+func TestQueryableModifiers(t *testing.T) {
+	queryableMany := &testQueryable{
+		result: runtime.NewArrayWith(runtime.NewString("a"), runtime.NewString("b")),
+	}
+	queryableOne := &testQueryable{
+		result: runtime.NewArrayWith(runtime.NewString("only")),
+	}
+	queryableEmpty := &testQueryable{
+		result: runtime.NewArray(0),
+	}
+
+	RunUseCases(t, []UseCase{
+		Case("RETURN QUERY EXISTS `.items` IN @many USING css", true, "EXISTS should return true for non-empty result"),
+		Case("RETURN QUERY EXISTS `.items` IN @empty USING css", false, "EXISTS should return false for empty result"),
+		Case("RETURN QUERY COUNT `.items` IN @many USING css", 2, "COUNT should return result length"),
+		Case("RETURN QUERY COUNT `.items` IN @empty USING css", 0, "COUNT should return zero for empty result"),
+		Case("RETURN QUERY ANY `.items` IN @many USING css", "a", "ANY should return first result"),
+		CaseNil("RETURN QUERY ANY `.items` IN @empty USING css", "ANY should return NONE for empty result"),
+		Case("RETURN QUERY VALUE `.items` IN @many USING css", "a", "VALUE should return first result"),
+		RuntimeErrorCase("RETURN QUERY VALUE `.items` IN @empty USING css", ExpectedRuntimeError{Contains: []string{"QUERY VALUE expected at least one match"}}, "VALUE should fail for empty result"),
+		Case("RETURN QUERY ONE `.items` IN @one USING css", "only", "ONE should return the only result"),
+		RuntimeErrorCase("RETURN QUERY ONE `.items` IN @empty USING css", ExpectedRuntimeError{Contains: []string{"QUERY ONE expected exactly one match"}}, "ONE should fail for empty result"),
+		RuntimeErrorCase("RETURN QUERY ONE `.items` IN @many USING css", ExpectedRuntimeError{Contains: []string{"QUERY ONE expected exactly one match"}}, "ONE should fail for multiple results"),
+		CaseNil("LET maybe = (QUERY VALUE `.items` IN @empty USING css)?\nRETURN maybe", "VALUE assertion should be catchable with optional operator"),
+		CaseNil("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe", "ONE assertion should be catchable for empty result with optional operator"),
+		CaseNil("LET maybe = (QUERY ONE `.items` IN @many USING css)?\nRETURN maybe", "ONE assertion should be catchable for multi result with optional operator"),
+	}, vm.WithParams(map[string]runtime.Value{
+		"many":  queryableMany,
+		"one":   queryableOne,
+		"empty": queryableEmpty,
+	}))
+}

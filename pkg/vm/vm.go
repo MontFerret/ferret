@@ -595,6 +595,38 @@ loop:
 			if err := vm.setOrTryCatch(dst, out, err); err != nil {
 				return nil, err
 			}
+		case bytecode.OpFail:
+			if !dst.IsConstant() {
+				if err := vm.handleError(runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a constant string message")); err != nil {
+					return nil, err
+				}
+
+				continue
+			}
+
+			idx := dst.Constant()
+			if idx < 0 || idx >= len(constants) {
+				if err := vm.handleError(runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a valid constant string message")); err != nil {
+					return nil, err
+				}
+
+				continue
+			}
+
+			msg, ok := constants[idx].(runtime.String)
+			if !ok {
+				if err := vm.handleError(runtime.TypeErrorOf(constants[idx], runtime.TypeString)); err != nil {
+					return nil, err
+				}
+
+				continue
+			}
+
+			if err := vm.handleError(runtime.Error(runtime.ErrInvalidOperation, msg.String())); err != nil {
+				return nil, err
+			}
+
+			continue
 		case bytecode.OpSleep:
 			dur, err := runtime.ToInt(ctx, reg[dst])
 

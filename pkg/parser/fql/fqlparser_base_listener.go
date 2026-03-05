@@ -746,6 +746,12 @@ func (s *BaseFqlParserListener) EnterQueryExpression(ctx *QueryExpressionContext
 // ExitQueryExpression is called when production queryExpression is exited.
 func (s *BaseFqlParserListener) ExitQueryExpression(ctx *QueryExpressionContext) {}
 
+// EnterQueryModifier is called when production queryModifier is entered.
+func (s *BaseFqlParserListener) EnterQueryModifier(ctx *QueryModifierContext) {}
+
+// ExitQueryModifier is called when production queryModifier is exited.
+func (s *BaseFqlParserListener) ExitQueryModifier(ctx *QueryModifierContext) {}
+
 // EnterQueryPayload is called when production queryPayload is entered.
 func (s *BaseFqlParserListener) EnterQueryPayload(ctx *QueryPayloadContext) {}
 

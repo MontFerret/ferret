@@ -18,6 +18,15 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			"Missing query literal after QUERY",
 		),
 		ErrorCase(
+			`RETURN QUERY EXISTS IN doc USING css`,
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "QUERY requires a query literal",
+				Hint:    "Provide a query literal, e.g. QUERY `.items` IN doc USING css or QUERY @q IN doc USING css.",
+			},
+			"Missing query literal after QUERY modifier",
+		),
+		ErrorCase(
 			"RETURN QUERY `.x` doc USING css",
 			E{
 				Kind:    parserd.SyntaxError,

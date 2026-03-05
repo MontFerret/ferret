@@ -39,6 +39,66 @@ options { tokenVocab=FqlLexer; }
 		}
 	}
 
+	func (p *FqlParser) isQueryModifierAhead() bool {
+		la1 := p.GetTokenStream().LA(1)
+		if la1 == FqlParserExists || la1 == FqlParserAny || la1 == FqlParserValue {
+			return true
+		}
+
+		if la1 != FqlParserIdentifier {
+			return false
+		}
+
+		tok := p.GetTokenStream().LT(1)
+		if tok == nil {
+			return false
+		}
+
+		return p.isQueryModifierText(tok.GetText())
+	}
+
+	func (p *FqlParser) isQueryModifierText(text string) bool {
+		return equalsFoldAscii(text, "EXISTS") ||
+			equalsFoldAscii(text, "COUNT") ||
+			equalsFoldAscii(text, "ANY") ||
+			equalsFoldAscii(text, "VALUE") ||
+			equalsFoldAscii(text, "ONE")
+	}
+
+	func (p *FqlParser) isCurrentIdentifierText(expected string) bool {
+		tok := p.GetTokenStream().LT(1)
+		if tok == nil || tok.GetTokenType() != FqlParserIdentifier {
+			return false
+		}
+
+		return equalsFoldAscii(tok.GetText(), expected)
+	}
+
+	func equalsFoldAscii(actual, expected string) bool {
+		if len(actual) != len(expected) {
+			return false
+		}
+
+		for i := 0; i < len(actual); i++ {
+			a := actual[i]
+			e := expected[i]
+
+			if a >= 'a' && a <= 'z' {
+				a -= 'a' - 'A'
+			}
+
+			if e >= 'a' && e <= 'z' {
+				e -= 'a' - 'A'
+			}
+
+			if a != e {
+				return false
+			}
+		}
+
+		return true
+	}
+
 	func (p *FqlParser) isUnsafeReservedWordToken(token int) bool {
 		switch token {
 		case FqlParserReturn, FqlParserDispatch, FqlParserQuery, FqlParserUsing, FqlParserNone,
@@ -748,7 +808,16 @@ implicitMemberExpressionStart
     ;
 
 queryExpression
-    : Query queryPayload In expression Using dialect=Identifier queryWithOpt?
+    : Query queryModifier queryPayload In expression Using dialect=Identifier queryWithOpt?
+    | Query {!p.isQueryModifierAhead()}? queryPayload In expression Using dialect=Identifier queryWithOpt?
+    ;
+
+queryModifier
+    : Exists
+    | Any
+    | Value
+    | {p.isCurrentIdentifierText("COUNT")}? Identifier
+    | {p.isCurrentIdentifierText("ONE")}? Identifier
     ;
 
 queryPayload

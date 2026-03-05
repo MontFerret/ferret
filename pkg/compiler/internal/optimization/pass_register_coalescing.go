@@ -919,6 +919,8 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 		return idx == 0 || idx == 1
 	case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
 		return idx == 0
+	case bytecode.OpFail:
+		return false
 	case bytecode.OpIncr, bytecode.OpDecr, bytecode.OpClose, bytecode.OpSleep, bytecode.OpReturn:
 		return idx == 0
 	default:

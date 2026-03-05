@@ -364,6 +364,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#queryExpression.
 	VisitQueryExpression(ctx *QueryExpressionContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#queryModifier.
+	VisitQueryModifier(ctx *QueryModifierContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#queryPayload.
 	VisitQueryPayload(ctx *QueryPayloadContext) interface{}
 

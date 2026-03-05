@@ -2,10 +2,13 @@ package vm
 
 import (
 	"context"
+	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
+
+const queryModifierDescriptorUnsupported = "unexpected query format: descriptor modifier is not supported; recompile query"
 
 func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode.Operand, constants []runtime.Value, src2 bytecode.Operand, dst bytecode.Operand) error {
 	var src runtime.Value
@@ -59,6 +62,20 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 			Payload: runtime.CastOr[runtime.String](payload, runtime.EmptyString),
 			Options: options,
 		}
+
+		if _, err := value.Get(ctx, runtime.NewString("modifier")); err == nil {
+			if err := vm.setOrTryCatch(dst, runtime.None, runtime.Error(runtime.ErrInvalidOperation, queryModifierDescriptorUnsupported)); err != nil {
+				return err
+			}
+
+			break
+		} else if !errors.Is(err, runtime.ErrNotFound) {
+			if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
+				return err
+			}
+
+			break
+		}
 	case *runtime.Array:
 		length, err := value.Length(ctx)
 		if err != nil {
@@ -69,8 +86,15 @@ func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode
 			break
 		}
 
-		if length < 2 {
-			// TODO: Give a more specific error message here
+		if length != 3 {
+			if length == 4 {
+				if err := vm.setOrTryCatch(dst, runtime.None, runtime.Error(runtime.ErrInvalidOperation, queryModifierDescriptorUnsupported)); err != nil {
+					return err
+				}
+
+				break
+			}
+
 			if err := vm.setOrTryCatch(dst, runtime.None, runtime.Error(runtime.ErrInvalidOperation, "unexpected query format")); err != nil {
 				return err
 			}

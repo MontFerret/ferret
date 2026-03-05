@@ -152,6 +152,7 @@ const (
 	OpJumpIfEqConst
 	OpJumpIfMissingProperty
 	OpJumpIfMissingPropertyConst
+	OpFail // Raises a runtime failure with a constant message
 )
 
 func (op Opcode) String() string {
@@ -179,6 +180,8 @@ func (op Opcode) String() string {
 		return "JMPMISSPROP"
 	case OpJumpIfMissingPropertyConst:
 		return "JMPMISSPROPC"
+	case OpFail:
+		return "FAIL"
 
 	// Add Operations
 	case OpMove:
