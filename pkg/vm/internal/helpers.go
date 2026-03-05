@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"strings"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -11,4 +13,89 @@ func ReadOperandValue(reg []runtime.Value, constants []runtime.Value, operand by
 	}
 
 	return reg[operand]
+}
+
+func ConcatStrings(reg []runtime.Value, dst, src1, src2 bytecode.Operand) {
+	start := int(src1)
+	count := int(src2)
+
+	if count <= 0 {
+		reg[dst] = runtime.EmptyString
+		return
+	}
+
+	if count == 1 {
+		reg[dst] = runtime.ToString(reg[start])
+		return
+	}
+
+	if count == 2 {
+		s1 := runtime.ToString(reg[start])
+		s2 := runtime.ToString(reg[start+1])
+
+		if s1 == runtime.EmptyString {
+			reg[dst] = s2
+			return
+		}
+
+		if s2 == runtime.EmptyString {
+			reg[dst] = s1
+			return
+		}
+
+		reg[dst] = runtime.NewString(string(s1) + string(s2))
+		return
+	}
+
+	if count == 3 {
+		s1 := runtime.ToString(reg[start])
+		s2 := runtime.ToString(reg[start+1])
+		s3 := runtime.ToString(reg[start+2])
+
+		if s1 == runtime.EmptyString {
+			if s2 == runtime.EmptyString {
+				reg[dst] = s3
+				return
+			}
+			if s3 == runtime.EmptyString {
+				reg[dst] = s2
+				return
+			}
+		} else if s2 == runtime.EmptyString {
+			if s3 == runtime.EmptyString {
+				reg[dst] = s1
+				return
+			}
+		}
+
+		reg[dst] = runtime.NewString(string(s1) + string(s2) + string(s3))
+		return
+	}
+
+	parts := make([]runtime.String, count)
+	totalLen := 0
+
+	for i := 0; i < count; i++ {
+		s := runtime.ToString(reg[start+i])
+		parts[i] = s
+		totalLen += len(s)
+	}
+
+	if totalLen == 0 {
+		reg[dst] = runtime.EmptyString
+		return
+	}
+
+	var b strings.Builder
+	b.Grow(totalLen)
+
+	for i := 0; i < count; i++ {
+		if parts[i] == runtime.EmptyString {
+			continue
+		}
+
+		b.WriteString(string(parts[i]))
+	}
+
+	reg[dst] = runtime.NewString(b.String())
 }

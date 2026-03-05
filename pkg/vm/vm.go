@@ -438,7 +438,7 @@ loop:
 		case bytecode.OpAddConst:
 			reg[dst] = runtime.Add(ctx, reg[src1], constants[src2.Constant()])
 		case bytecode.OpConcat:
-			vm.concatStrings(reg, dst, src1, src2)
+			internal.ConcatStrings(reg, dst, src1, src2)
 		case bytecode.OpSub:
 			reg[dst] = runtime.Subtract(ctx, reg[src1], reg[src2])
 		case bytecode.OpMulti:
@@ -667,4 +667,26 @@ loop:
 	}
 
 	return vm.registers.Values[bytecode.NoopOperand], nil
+}
+
+func (vm *VM) unwindToProtected() bool {
+	registers, pc, ok := vm.frames.UnwindToProtectedFrame(vm.registers.Values)
+	if !ok {
+		return false
+	}
+
+	vm.registers.Values = registers
+	vm.pc = pc
+	return true
+}
+
+func (vm *VM) returnToCaller(retVal runtime.Value) bool {
+	registers, pc, ok := vm.frames.ReturnToCaller(vm.registers.Values, retVal)
+	if !ok {
+		return false
+	}
+
+	vm.registers.Values = registers
+	vm.pc = pc
+	return true
 }
