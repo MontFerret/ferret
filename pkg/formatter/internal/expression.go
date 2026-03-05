@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"strings"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
@@ -591,6 +593,7 @@ func (f *expressionFormatter) formatQueryExpressionWith(p *printer, ctx *fql.Que
 
 	f.writeKeywordWith(p, keywordQuery)
 	p.space()
+	f.writeQueryModifierWith(p, ctx.QueryModifier())
 
 	if payload := ctx.QueryPayload(); payload != nil {
 		if lit := payload.StringLiteral(); lit != nil {
@@ -635,6 +638,29 @@ func (f *expressionFormatter) formatQueryExpressionWith(p *printer, ctx *fql.Que
 			}
 		}
 	}
+}
+
+func (f *expressionFormatter) writeQueryModifierWith(p *printer, modifier fql.IQueryModifierContext) {
+	if modifier == nil {
+		return
+	}
+
+	switch text := modifier.GetText(); {
+	case strings.EqualFold(text, keywordExists):
+		f.writeKeywordWith(p, keywordExists)
+	case strings.EqualFold(text, keywordCount):
+		f.writeKeywordWith(p, keywordCount)
+	case strings.EqualFold(text, keywordAny):
+		f.writeKeywordWith(p, keywordAny)
+	case strings.EqualFold(text, keywordValue):
+		f.writeKeywordWith(p, keywordValue)
+	case strings.EqualFold(text, keywordOne):
+		f.writeKeywordWith(p, keywordOne)
+	default:
+		return
+	}
+
+	p.space()
 }
 
 func (f *expressionFormatter) formatParenthesizedExpression(ctx *fql.ExpressionAtomContext) {

@@ -275,6 +275,12 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 		comment := constValue(p, cIdx)
 		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatComment(comment))
 
+	case bytecode.OpFail:
+		out = fmt.Sprintf("%d: %s %s", ip, opcode, formatOperand(ops[0]))
+		if ops[0].IsConstant() {
+			out += formatComment(constValue(p, ops[0].Constant()))
+		}
+
 	// Op R R
 	case bytecode.OpMove, bytecode.OpLength, bytecode.OpType, bytecode.OpExists,
 		bytecode.OpIter, bytecode.OpIterValue, bytecode.OpIterKey, bytecode.OpPush, bytecode.OpArrayPush:

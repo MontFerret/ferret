@@ -100,6 +100,12 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#collectClause.
 	VisitCollectClause(ctx *CollectClauseContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#bindingIdentifier.
+	VisitBindingIdentifier(ctx *BindingIdentifierContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#loopVariable.
+	VisitLoopVariable(ctx *LoopVariableContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#collectSelector.
 	VisitCollectSelector(ctx *CollectSelectorContext) interface{}
 
@@ -363,6 +369,9 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#queryExpression.
 	VisitQueryExpression(ctx *QueryExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#queryModifier.
+	VisitQueryModifier(ctx *QueryModifierContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#queryPayload.
 	VisitQueryPayload(ctx *QueryPayloadContext) interface{}

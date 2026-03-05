@@ -25,6 +25,22 @@ const (
 	runtimeWait     = "WAIT"
 )
 
+type queryModifier string
+
+const (
+	queryModifierUnknown queryModifier = ""
+	queryModifierExists  queryModifier = "exists"
+	queryModifierCount   queryModifier = "count"
+	queryModifierAny     queryModifier = "any"
+	queryModifierValue   queryModifier = "value"
+	queryModifierOne     queryModifier = "one"
+)
+
+const (
+	queryValueFailMessage = "QUERY VALUE expected at least one match"
+	queryOneFailMessage   = "QUERY ONE expected exactly one match"
+)
+
 // ExprCompiler handles the compilation of expressions in FQL queries.
 // It transforms expression operations from the AST into VM instructions.
 type ExprCompiler struct {
@@ -2320,6 +2336,7 @@ func (c *ExprCompiler) compileQueryExpression(ctx fql.IQueryExpressionContext) b
 
 	queryReg := c.ctx.Registers.Allocate()
 	span := diagnostics.SpanFromRuleContext(ctx)
+	modifier := queryModifierName(ctx.QueryModifier())
 
 	c.ctx.Emitter.WithSpan(span, func() {
 		c.ctx.Emitter.EmitArray(queryReg, 3)
@@ -2365,14 +2382,121 @@ func (c *ExprCompiler) compileQueryExpression(ctx fql.IQueryExpressionContext) b
 		c.ctx.Emitter.EmitArrayPush(queryReg, optionsReg)
 	})
 
-	dst := c.ctx.Registers.Allocate()
+	queryResult := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitABC(bytecode.OpApplyQuery, dst, src, queryReg)
+		c.ctx.Emitter.EmitABC(bytecode.OpApplyQuery, queryResult, src, queryReg)
 	})
 
-	if dst.IsRegister() {
-		c.ctx.Types.Set(dst, core.TypeList)
+	dst := queryResult
+	switch modifier {
+	case queryModifierExists:
+		dst = c.ctx.Registers.Allocate()
+		c.ctx.Emitter.WithSpan(span, func() {
+			c.ctx.Emitter.EmitAB(bytecode.OpExists, dst, queryResult)
+		})
+	case queryModifierCount:
+		dst = c.ctx.Registers.Allocate()
+		c.ctx.Emitter.WithSpan(span, func() {
+			c.ctx.Emitter.EmitAB(bytecode.OpLength, dst, queryResult)
+		})
+	case queryModifierAny:
+		dst = c.ctx.Registers.Allocate()
+		zero := c.ctx.Symbols.AddConstant(runtime.NewInt(0))
+		c.ctx.Emitter.WithSpan(span, func() {
+			c.ctx.Emitter.EmitABC(bytecode.OpLoadIndexOptionalConst, dst, queryResult, zero)
+		})
+	case queryModifierValue:
+		dst = c.ctx.lowerQueryModifierValue(span, queryResult)
+	case queryModifierOne:
+		dst = c.ctx.lowerQueryModifierOne(span, queryResult)
 	}
+
+	if dst.IsRegister() {
+		c.ctx.Types.Set(dst, queryResultTypeForModifier(modifier))
+	}
+
+	return dst
+}
+
+func queryModifierName(ctx fql.IQueryModifierContext) queryModifier {
+	if ctx == nil {
+		return queryModifierUnknown
+	}
+
+	return parseQueryModifier(ctx.GetText())
+}
+
+func queryResultTypeForModifier(modifier queryModifier) core.ValueType {
+	switch modifier {
+	case queryModifierExists:
+		return core.TypeBool
+	case queryModifierCount:
+		return core.TypeInt
+	case queryModifierAny, queryModifierValue, queryModifierOne:
+		return core.TypeAny
+	default:
+		return core.TypeList
+	}
+}
+
+func parseQueryModifier(text string) queryModifier {
+	switch strings.ToLower(text) {
+	case string(queryModifierExists):
+		return queryModifierExists
+	case string(queryModifierCount):
+		return queryModifierCount
+	case string(queryModifierAny):
+		return queryModifierAny
+	case string(queryModifierValue):
+		return queryModifierValue
+	case string(queryModifierOne):
+		return queryModifierOne
+	default:
+		return queryModifierUnknown
+	}
+}
+
+func (c *CompilerContext) lowerQueryModifierValue(span file.Span, queryResult bytecode.Operand) bytecode.Operand {
+	dst := c.Registers.Allocate()
+	cond := c.Registers.Allocate()
+	zero := c.Symbols.AddConstant(runtime.NewInt(0))
+	message := c.Symbols.AddConstant(runtime.NewString(queryValueFailMessage))
+	success := c.Emitter.NewLabel("query", string(queryModifierValue), "ok")
+	end := c.Emitter.NewLabel("query", string(queryModifierValue), "end")
+
+	c.Emitter.WithSpan(span, func() {
+		c.Emitter.EmitAB(bytecode.OpExists, cond, queryResult)
+		c.Emitter.EmitJumpIfTrue(cond, success)
+		c.Emitter.EmitLoadNone(dst)
+		c.Emitter.EmitA(bytecode.OpFail, message)
+		c.Emitter.EmitJump(end)
+		c.Emitter.MarkLabel(success)
+		c.Emitter.EmitABC(bytecode.OpLoadIndexConst, dst, queryResult, zero)
+		c.Emitter.MarkLabel(end)
+	})
+
+	return dst
+}
+
+func (c *CompilerContext) lowerQueryModifierOne(span file.Span, queryResult bytecode.Operand) bytecode.Operand {
+	dst := c.Registers.Allocate()
+	length := c.Registers.Allocate()
+	one := c.Symbols.AddConstant(runtime.NewInt(1))
+	zero := c.Symbols.AddConstant(runtime.NewInt(0))
+	message := c.Symbols.AddConstant(runtime.NewString(queryOneFailMessage))
+	success := c.Emitter.NewLabel("query", string(queryModifierOne), "ok")
+	end := c.Emitter.NewLabel("query", string(queryModifierOne), "end")
+
+	c.Emitter.WithSpan(span, func() {
+		c.Emitter.EmitAB(bytecode.OpLength, length, queryResult)
+		c.Emitter.EmitJumpCompare(bytecode.OpJumpIfEqConst, length, one, success)
+		c.Emitter.EmitLoadNone(dst)
+		c.Emitter.EmitA(bytecode.OpFail, message)
+		c.Emitter.EmitJump(end)
+		c.Emitter.MarkLabel(success)
+		c.Emitter.EmitABC(bytecode.OpLoadIndexConst, dst, queryResult, zero)
+		c.Emitter.MarkLabel(end)
+	})
 
 	return dst
 }
@@ -2638,9 +2762,11 @@ func (c *ExprCompiler) compileInlineLimit(inline fql.IInlineExpressionContext) {
 func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) bytecode.Operand {
 	// Check if the context is valid (in case of parser errors)
 	var name string
+	token := ctx.GetStart()
 
 	if id := ctx.Identifier(); id != nil {
 		name = id.GetText()
+		token = id.GetSymbol()
 	} else if srw := ctx.SafeReservedWord(); srw != nil {
 		name = srw.GetText()
 	} else {
@@ -2651,7 +2777,7 @@ func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) bytecode.Operan
 	op, _, found := c.ctx.Symbols.Resolve(name)
 
 	if !found {
-		c.ctx.Errors.VariableNotFound(ctx.Identifier().GetSymbol(), name)
+		c.ctx.Errors.VariableNotFound(token, name)
 
 		return bytecode.NoopOperand
 	}

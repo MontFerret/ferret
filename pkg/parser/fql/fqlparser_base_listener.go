@@ -206,6 +206,18 @@ func (s *BaseFqlParserListener) EnterCollectClause(ctx *CollectClauseContext) {}
 // ExitCollectClause is called when production collectClause is exited.
 func (s *BaseFqlParserListener) ExitCollectClause(ctx *CollectClauseContext) {}
 
+// EnterBindingIdentifier is called when production bindingIdentifier is entered.
+func (s *BaseFqlParserListener) EnterBindingIdentifier(ctx *BindingIdentifierContext) {}
+
+// ExitBindingIdentifier is called when production bindingIdentifier is exited.
+func (s *BaseFqlParserListener) ExitBindingIdentifier(ctx *BindingIdentifierContext) {}
+
+// EnterLoopVariable is called when production loopVariable is entered.
+func (s *BaseFqlParserListener) EnterLoopVariable(ctx *LoopVariableContext) {}
+
+// ExitLoopVariable is called when production loopVariable is exited.
+func (s *BaseFqlParserListener) ExitLoopVariable(ctx *LoopVariableContext) {}
+
 // EnterCollectSelector is called when production collectSelector is entered.
 func (s *BaseFqlParserListener) EnterCollectSelector(ctx *CollectSelectorContext) {}
 
@@ -745,6 +757,12 @@ func (s *BaseFqlParserListener) EnterQueryExpression(ctx *QueryExpressionContext
 
 // ExitQueryExpression is called when production queryExpression is exited.
 func (s *BaseFqlParserListener) ExitQueryExpression(ctx *QueryExpressionContext) {}
+
+// EnterQueryModifier is called when production queryModifier is entered.
+func (s *BaseFqlParserListener) EnterQueryModifier(ctx *QueryModifierContext) {}
+
+// ExitQueryModifier is called when production queryModifier is exited.
+func (s *BaseFqlParserListener) ExitQueryModifier(ctx *QueryModifierContext) {}
 
 // EnterQueryPayload is called when production queryPayload is entered.
 func (s *BaseFqlParserListener) EnterQueryPayload(ctx *QueryPayloadContext) {}

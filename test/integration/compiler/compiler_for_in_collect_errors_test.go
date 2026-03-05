@@ -3,7 +3,6 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
@@ -42,13 +41,11 @@ func TestCollectNameErrors(t *testing.T) {
 			}, "COLLECT KEEP should report missing variables as diagnostics"),
 		ErrorCase(
 			`
-			FOR u IN [1, 2, 3]
-				COLLECT WITH sum INTO total
-				RETURN total
-		`, E{
-				Kind:    diagnostics.Kind("SemanticError"),
-				Message: "Invalid count projection",
-				Hint:    "Use WITH COUNT INTO <variable>.",
+				FOR u IN [1, 2, 3]
+					COLLECT WITH sum INTO total
+					RETURN total
+			`, E{
+				Kind: parserd.SyntaxError,
 			}, "COLLECT WITH should reject non-COUNT identifiers without panicking"),
 	})
 }

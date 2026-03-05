@@ -1,4 +1,4 @@
-package vm
+package internal
 
 import (
 	"strings"
@@ -7,7 +7,15 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func (vm *VM) concatStrings(reg []runtime.Value, dst, src1, src2 bytecode.Operand) {
+func ReadOperandValue(reg []runtime.Value, constants []runtime.Value, operand bytecode.Operand) runtime.Value {
+	if operand.IsConstant() {
+		return constants[operand.Constant()]
+	}
+
+	return reg[operand]
+}
+
+func ConcatStrings(reg []runtime.Value, dst, src1, src2 bytecode.Operand) {
 	start := int(src1)
 	count := int(src2)
 

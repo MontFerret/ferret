@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
@@ -421,7 +422,11 @@ loop:
 				continue
 			}
 		case bytecode.OpApplyQuery:
-			if err := vm.applyQuery(ctx, reg, src1, constants, src2, dst); err != nil {
+			src := internal.ReadOperandValue(reg, constants, src1)
+			descriptor := internal.ReadOperandValue(reg, constants, src2)
+			out, err := operators.ApplyQuery(ctx, src, descriptor)
+
+			if err := vm.setOrTryCatch(dst, out, err); err != nil {
 				if err := vm.handleProtectedError(err); err != nil {
 					return nil, err
 				}
@@ -433,7 +438,7 @@ loop:
 		case bytecode.OpAddConst:
 			reg[dst] = runtime.Add(ctx, reg[src1], constants[src2.Constant()])
 		case bytecode.OpConcat:
-			vm.concatStrings(reg, dst, src1, src2)
+			internal.ConcatStrings(reg, dst, src1, src2)
 		case bytecode.OpSub:
 			reg[dst] = runtime.Subtract(ctx, reg[src1], reg[src2])
 		case bytecode.OpMulti:
@@ -595,6 +600,38 @@ loop:
 			if err := vm.setOrTryCatch(dst, out, err); err != nil {
 				return nil, err
 			}
+		case bytecode.OpFail:
+			if !dst.IsConstant() {
+				if err := vm.handleError(runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a constant string message")); err != nil {
+					return nil, err
+				}
+
+				continue
+			}
+
+			idx := dst.Constant()
+			if idx < 0 || idx >= len(constants) {
+				if err := vm.handleError(runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a valid constant string message")); err != nil {
+					return nil, err
+				}
+
+				continue
+			}
+
+			msg, ok := constants[idx].(runtime.String)
+			if !ok {
+				if err := vm.handleError(runtime.TypeErrorOf(constants[idx], runtime.TypeString)); err != nil {
+					return nil, err
+				}
+
+				continue
+			}
+
+			if err := vm.handleError(runtime.Error(runtime.ErrInvalidOperation, msg.String())); err != nil {
+				return nil, err
+			}
+
+			continue
 		case bytecode.OpSleep:
 			dur, err := runtime.ToInt(ctx, reg[dst])
 
@@ -630,4 +667,26 @@ loop:
 	}
 
 	return vm.registers.Values[bytecode.NoopOperand], nil
+}
+
+func (vm *VM) unwindToProtected() bool {
+	registers, pc, ok := vm.frames.UnwindToProtectedFrame(vm.registers.Values)
+	if !ok {
+		return false
+	}
+
+	vm.registers.Values = registers
+	vm.pc = pc
+	return true
+}
+
+func (vm *VM) returnToCaller(retVal runtime.Value) bool {
+	registers, pc, ok := vm.frames.ReturnToCaller(vm.registers.Values, retVal)
+	if !ok {
+		return false
+	}
+
+	vm.registers.Values = registers
+	vm.pc = pc
+	return true
 }

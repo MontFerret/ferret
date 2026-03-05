@@ -229,7 +229,7 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 	case bytecode.OpJumpIfMissingPropertyConst:
 		addUse(src1)
 		return
-	case bytecode.OpJump:
+	case bytecode.OpJump, bytecode.OpFail:
 		return
 
 	// Dataset operations.

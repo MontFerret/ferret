@@ -13,7 +13,7 @@ func matchQueryErrors(src *file.Source, err *diagnostics.Diagnostic, offending *
 		return false
 	}
 
-	if !isMismatched(err.Message) && !isMissing(err.Message) && !isNoAlternative(err.Message) && !isExtraneous(err.Message) {
+	if !isMismatched(err.Message) && !isMissing(err.Message) && !isNoAlternative(err.Message) && !isExtraneous(err.Message) && !has(err.Message, "queryexpression failed predicate") {
 		return false
 	}
 
@@ -168,6 +168,10 @@ func isMissingQueryLiteral(msg string, offending *TokenNode) bool {
 		}
 	}
 
+	if has(msg, "queryexpression failed predicate") {
+		return true
+	}
+
 	return false
 }
 
@@ -199,7 +203,7 @@ func hasQueryLiteralBetween(node *TokenNode, max int) bool {
 		if is(current, "QUERY") {
 			return false
 		}
-		if isStringLiteral(current) || isBacktickToken(current) || isParamToken(current) || isIdentifier(current) || isSafeReservedWordToken(current) {
+		if isStringLiteral(current) || isBacktickToken(current) || isParamToken(current) || isIdentifier(current) || (isSafeReservedWordToken(current) && !isQueryModifierToken(current)) {
 			return true
 		}
 		current = current.Prev()
@@ -240,6 +244,23 @@ func isParamToken(node *TokenNode) bool {
 	return node.Token().GetTokenType() == fql.FqlLexerParam
 }
 
+func isQueryModifierToken(node *TokenNode) bool {
+	if node == nil || node.Token() == nil {
+		return false
+	}
+
+	switch node.Token().GetTokenType() {
+	case fql.FqlLexerExists,
+		fql.FqlLexerAny,
+		fql.FqlLexerValue,
+		fql.FqlLexerCount,
+		fql.FqlLexerOne:
+		return true
+	default:
+		return false
+	}
+}
+
 func isSafeReservedWordToken(node *TokenNode) bool {
 	if node == nil || node.Token() == nil {
 		return false
@@ -271,7 +292,9 @@ func isSafeReservedWordToken(node *TokenNode) bool {
 		fql.FqlLexerJitter,
 		fql.FqlLexerExists,
 		fql.FqlLexerValue,
-		fql.FqlLexerStep:
+		fql.FqlLexerStep,
+		fql.FqlLexerCount,
+		fql.FqlLexerOne:
 		return true
 	default:
 		return false

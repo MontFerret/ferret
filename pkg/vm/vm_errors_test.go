@@ -1,10 +1,13 @@
 package vm
 
 import (
+	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
@@ -94,5 +97,90 @@ func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 
 	if got, want := instance.pc, 1; got != want {
 		t.Fatalf("expected pc to stay unchanged at %d, got %d", want, got)
+	}
+}
+
+func TestOpFail_UncaughtReturnsRuntimeError(t *testing.T) {
+	instance := New(&bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpFail, bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("boom"),
+		},
+	})
+
+	_, err := instance.Run(context.Background(), nil)
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	if !strings.Contains(rtErr.Format(), "boom") {
+		t.Fatalf("expected runtime error to include fail message, got:\n%s", rtErr.Format())
+	}
+}
+
+func TestOpFail_CaughtUsesCatchJumpTarget(t *testing.T) {
+	instance := New(&bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpFail, bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("boom"),
+			runtime.NewInt(7),
+		},
+		CatchTable: []bytecode.Catch{
+			{2, 2, 3},
+		},
+	})
+
+	result, err := instance.Run(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("expected fail to be caught, got %v", err)
+	}
+
+	if result != runtime.NewInt(7) {
+		t.Fatalf("expected catch jump target to continue execution, got %v", result)
+	}
+}
+
+func TestOpFail_InvalidMessageTypeReturnsTypeError(t *testing.T) {
+	instance := New(&bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpFail, bytecode.NewConstant(0)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewInt(1),
+		},
+	})
+
+	_, err := instance.Run(context.Background(), nil)
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	if !strings.Contains(strings.ToLower(rtErr.Format()), "invalid type") {
+		t.Fatalf("expected invalid type error, got:\n%s", rtErr.Format())
 	}
 }

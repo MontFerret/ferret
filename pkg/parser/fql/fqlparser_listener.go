@@ -100,6 +100,12 @@ type FqlParserListener interface {
 	// EnterCollectClause is called when entering the collectClause production.
 	EnterCollectClause(c *CollectClauseContext)
 
+	// EnterBindingIdentifier is called when entering the bindingIdentifier production.
+	EnterBindingIdentifier(c *BindingIdentifierContext)
+
+	// EnterLoopVariable is called when entering the loopVariable production.
+	EnterLoopVariable(c *LoopVariableContext)
+
 	// EnterCollectSelector is called when entering the collectSelector production.
 	EnterCollectSelector(c *CollectSelectorContext)
 
@@ -364,6 +370,9 @@ type FqlParserListener interface {
 	// EnterQueryExpression is called when entering the queryExpression production.
 	EnterQueryExpression(c *QueryExpressionContext)
 
+	// EnterQueryModifier is called when entering the queryModifier production.
+	EnterQueryModifier(c *QueryModifierContext)
+
 	// EnterQueryPayload is called when entering the queryPayload production.
 	EnterQueryPayload(c *QueryPayloadContext)
 
@@ -498,6 +507,12 @@ type FqlParserListener interface {
 
 	// ExitCollectClause is called when exiting the collectClause production.
 	ExitCollectClause(c *CollectClauseContext)
+
+	// ExitBindingIdentifier is called when exiting the bindingIdentifier production.
+	ExitBindingIdentifier(c *BindingIdentifierContext)
+
+	// ExitLoopVariable is called when exiting the loopVariable production.
+	ExitLoopVariable(c *LoopVariableContext)
 
 	// ExitCollectSelector is called when exiting the collectSelector production.
 	ExitCollectSelector(c *CollectSelectorContext)
@@ -762,6 +777,9 @@ type FqlParserListener interface {
 
 	// ExitQueryExpression is called when exiting the queryExpression production.
 	ExitQueryExpression(c *QueryExpressionContext)
+
+	// ExitQueryModifier is called when exiting the queryModifier production.
+	ExitQueryModifier(c *QueryModifierContext)
 
 	// ExitQueryPayload is called when exiting the queryPayload production.
 	ExitQueryPayload(c *QueryPayloadContext)

@@ -74,13 +74,13 @@ func (c *LoopCollectCompiler) compileGroupKeys(ctx fql.ICollectGroupingContext) 
 			c.ctx.Emitter.EmitArrayPush(kvKeyReg, reg)
 
 			// Create a CollectSelector for each selector with its identifier
-			collectSelectors[i] = core.NewCollectSelector(runtime.String(selector.Identifier().GetText()), selector)
+			collectSelectors[i] = core.NewCollectSelector(runtime.String(textOfBindingIdentifier(selector.BindingIdentifier())), selector)
 		}
 	} else {
 		// Handle single selector case - simpler, no need for array
 		selector := selectors[0]
 		kvKeyReg = c.ctx.ExprCompiler.Compile(selector.Expression())
-		collectSelectors = []*core.CollectSelector{core.NewCollectSelector(runtime.String(selector.Identifier().GetText()), selector)}
+		collectSelectors = []*core.CollectSelector{core.NewCollectSelector(runtime.String(textOfBindingIdentifier(selector.BindingIdentifier())), selector)}
 	}
 
 	return kvKeyReg, collectSelectors
