@@ -9,9 +9,9 @@ import (
 
 type (
 	ModuleRegistry struct {
-		ns               runtime.Namespace
-		encoding         *encoding.Registry
-		contextExtenders []ContextDecorator
+		ns         runtime.Namespace
+		encoding   *encoding.Registry
+		decorators []ContextDecorator
 	}
 
 	ContextDecorator func(ctx context.Context) (context.Context, error)
@@ -31,5 +31,5 @@ func (mr *ModuleRegistry) Encoding() *encoding.Registry {
 }
 
 func (mr *ModuleRegistry) WithContext(extender ContextDecorator) {
-	mr.contextExtenders = append(mr.contextExtenders, extender)
+	mr.decorators = append(mr.decorators, extender)
 }
