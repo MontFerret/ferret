@@ -49,6 +49,27 @@ const (
 
 const waitForDefaultEveryMs = 100
 
+type waitPredicateCompileConfig struct {
+	mode          waitForPredicateMode
+	predExpr      fql.IExpressionContext
+	timeoutReg    bytecode.Operand
+	everyReg      bytecode.Operand
+	capEveryReg   bytecode.Operand
+	backoff       waitForBackoff
+	jitterReg     bytecode.Operand
+	jitterLiteral *float64
+	hasJitter     bool
+}
+
+type waitPredicatePollState struct {
+	baseEveryReg bytecode.Operand
+	pollReg      bytecode.Operand
+	intervalReg  bytecode.Operand
+	resultReg    bytecode.Operand
+	startReg     bytecode.Operand
+	unitReg      bytecode.Operand
+}
+
 type durationClause interface {
 	DurationLiteral() fql.IDurationLiteralContext
 	IntegerLiteral() fql.IIntegerLiteralContext
@@ -147,118 +168,170 @@ func (c *WaitCompiler) compilePredicate(ctx fql.IWaitForPredicateExpressionConte
 		return bytecode.NoopOperand
 	}
 
-	mode := waitForPredicateModeBool
-	if predicate.Value() != nil {
-		mode = waitForPredicateModeValue
-	} else if predicate.Exists() != nil {
-		mode = waitForPredicateModeExists
-		if predicate.Not() != nil {
-			mode = waitForPredicateModeNotExists
-		}
-	}
-
 	predExpr := predicate.Expression()
 	if predExpr == nil {
 		return bytecode.NoopOperand
 	}
 
-	timeoutReg := c.compileDurationClause(ctx.TimeoutClause())
+	config := c.buildWaitPredicateConfig(ctx, predicate, predExpr)
+	c.normalizeWaitPredicateConfig(&config)
+
+	if result, ok := c.tryCompileWaitPredicateFastPath(config); ok {
+		return result
+	}
+
+	state := c.initWaitPredicatePollState(config)
+	c.emitWaitPredicatePollLoop(config, state)
+
+	return state.resultReg
+}
+
+func resolveWaitPredicateMode(hasValue, hasExists, hasNot bool) waitForPredicateMode {
+	if hasValue {
+		return waitForPredicateModeValue
+	}
+
+	if hasExists {
+		if hasNot {
+			return waitForPredicateModeNotExists
+		}
+
+		return waitForPredicateModeExists
+	}
+
+	return waitForPredicateModeBool
+}
+
+func (c *WaitCompiler) buildWaitPredicateConfig(ctx fql.IWaitForPredicateExpressionContext, predicate fql.IWaitForPredicateContext, predExpr fql.IExpressionContext) waitPredicateCompileConfig {
 	everyReg, capEveryReg := c.compileEveryClause(ctx.EveryClause())
-	backoff := c.compileBackoffClause(ctx.BackoffClause())
 	jitterReg, jitterLiteral, hasJitter := c.compileJitterClause(ctx.JitterClause())
 
-	if hasJitter {
-		if jitterLiteral != nil && *jitterLiteral == 0 {
-			hasJitter = false
-		} else if jitterLiteral == nil {
-			c.emitClampRange(jitterReg, loadConstant(c.ctx, runtime.NewFloat(0)), loadConstant(c.ctx, runtime.NewFloat(1)))
-		}
+	return waitPredicateCompileConfig{
+		mode:          resolveWaitPredicateMode(predicate.Value() != nil, predicate.Exists() != nil, predicate.Not() != nil),
+		predExpr:      predExpr,
+		timeoutReg:    c.compileDurationClause(ctx.TimeoutClause()),
+		everyReg:      everyReg,
+		capEveryReg:   capEveryReg,
+		backoff:       c.compileBackoffClause(ctx.BackoffClause()),
+		jitterReg:     jitterReg,
+		jitterLiteral: jitterLiteral,
+		hasJitter:     hasJitter,
+	}
+}
+
+func (c *WaitCompiler) normalizeWaitPredicateConfig(config *waitPredicateCompileConfig) {
+	if !config.hasJitter {
+		return
 	}
 
-	switch mode {
+	if config.jitterLiteral != nil && *config.jitterLiteral == 0 {
+		config.hasJitter = false
+		return
+	}
+
+	if config.jitterLiteral == nil {
+		c.emitClampRange(config.jitterReg, loadConstant(c.ctx, runtime.NewFloat(0)), loadConstant(c.ctx, runtime.NewFloat(1)))
+	}
+}
+
+func (c *WaitCompiler) tryCompileWaitPredicateFastPath(config waitPredicateCompileConfig) (bytecode.Operand, bool) {
+	switch config.mode {
 	case waitForPredicateModeBool:
-		if truth, ok := literalTruthinessFromExpression(predExpr); ok {
-			if truth {
-				resultReg := c.ctx.Registers.Allocate()
-				c.ctx.Emitter.EmitBoolean(resultReg, true)
-
-				return resultReg
-			}
-			if timeoutReg != bytecode.NoopOperand {
-				c.ctx.Emitter.EmitA(bytecode.OpSleep, timeoutReg)
-				resultReg := c.ctx.Registers.Allocate()
-				c.ctx.Emitter.EmitBoolean(resultReg, false)
-
-				return resultReg
-			}
+		truth, ok := literalTruthinessFromExpression(config.predExpr)
+		if !ok {
+			return bytecode.NoopOperand, false
 		}
+
+		if truth {
+			return c.emitImmediateWaitBool(true), true
+		}
+
+		if config.timeoutReg != bytecode.NoopOperand {
+			c.ctx.Emitter.EmitA(bytecode.OpSleep, config.timeoutReg)
+			return c.emitImmediateWaitBool(false), true
+		}
+
+		return bytecode.NoopOperand, false
 	default:
-		if exists, ok := literalExistsFromExpression(predExpr); ok {
-			cond := exists
-
-			if mode == waitForPredicateModeNotExists {
-				cond = !exists
-			}
-
-			if cond {
-				if mode == waitForPredicateModeValue {
-					return c.ctx.ExprCompiler.Compile(predExpr)
-				}
-
-				resultReg := c.ctx.Registers.Allocate()
-				c.ctx.Emitter.EmitBoolean(resultReg, true)
-
-				return resultReg
-			}
-
-			if timeoutReg != bytecode.NoopOperand {
-				c.ctx.Emitter.EmitA(bytecode.OpSleep, timeoutReg)
-				resultReg := c.ctx.Registers.Allocate()
-
-				if mode == waitForPredicateModeValue {
-					c.ctx.Emitter.EmitLoadNone(resultReg)
-				} else {
-					c.ctx.Emitter.EmitBoolean(resultReg, false)
-				}
-
-				return resultReg
-			}
+		exists, ok := literalExistsFromExpression(config.predExpr)
+		if !ok {
+			return bytecode.NoopOperand, false
 		}
+
+		cond := exists
+		if config.mode == waitForPredicateModeNotExists {
+			cond = !exists
+		}
+
+		if cond {
+			if config.mode == waitForPredicateModeValue {
+				return c.ctx.ExprCompiler.Compile(config.predExpr), true
+			}
+
+			return c.emitImmediateWaitBool(true), true
+		}
+
+		if config.timeoutReg != bytecode.NoopOperand {
+			c.ctx.Emitter.EmitA(bytecode.OpSleep, config.timeoutReg)
+			if config.mode == waitForPredicateModeValue {
+				return c.emitImmediateWaitNone(), true
+			}
+
+			return c.emitImmediateWaitBool(false), true
+		}
+
+		return bytecode.NoopOperand, false
 	}
+}
 
-	baseEveryReg := c.ctx.Registers.Allocate()
-
-	if everyReg != bytecode.NoopOperand {
-		c.ctx.Emitter.EmitMove(baseEveryReg, everyReg)
-	} else {
-		c.ctx.Emitter.EmitLoadConst(baseEveryReg, c.ctx.Symbols.AddConstant(runtime.NewInt(waitForDefaultEveryMs)))
-	}
-
-	pollReg := baseEveryReg
-	var intervalReg bytecode.Operand
-
-	if backoff != waitForBackoffNone {
-		intervalReg = c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitMove(intervalReg, baseEveryReg)
-		pollReg = intervalReg
-	}
-
+func (c *WaitCompiler) emitImmediateWaitBool(value bool) bytecode.Operand {
 	resultReg := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitBoolean(resultReg, value)
 
-	if mode == waitForPredicateModeValue {
-		c.ctx.Emitter.EmitLoadNone(resultReg)
+	return resultReg
+}
+
+func (c *WaitCompiler) emitImmediateWaitNone() bytecode.Operand {
+	resultReg := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitLoadNone(resultReg)
+
+	return resultReg
+}
+
+func (c *WaitCompiler) initWaitPredicatePollState(config waitPredicateCompileConfig) waitPredicatePollState {
+	state := waitPredicatePollState{
+		baseEveryReg: c.ctx.Registers.Allocate(),
+	}
+
+	if config.everyReg != bytecode.NoopOperand {
+		c.ctx.Emitter.EmitMove(state.baseEveryReg, config.everyReg)
 	} else {
-		c.ctx.Emitter.EmitBoolean(resultReg, false)
+		c.ctx.Emitter.EmitLoadConst(state.baseEveryReg, c.ctx.Symbols.AddConstant(runtime.NewInt(waitForDefaultEveryMs)))
 	}
 
-	var startReg bytecode.Operand
-	var unitReg bytecode.Operand
-
-	if timeoutReg != bytecode.NoopOperand {
-		startReg = c.emitNow()
-		unitReg = loadConstant(c.ctx, runtime.NewString("f"))
+	state.pollReg = state.baseEveryReg
+	if config.backoff != waitForBackoffNone {
+		state.intervalReg = c.ctx.Registers.Allocate()
+		c.ctx.Emitter.EmitMove(state.intervalReg, state.baseEveryReg)
+		state.pollReg = state.intervalReg
 	}
 
+	state.resultReg = c.ctx.Registers.Allocate()
+	if config.mode == waitForPredicateModeValue {
+		c.ctx.Emitter.EmitLoadNone(state.resultReg)
+	} else {
+		c.ctx.Emitter.EmitBoolean(state.resultReg, false)
+	}
+
+	if config.timeoutReg != bytecode.NoopOperand {
+		state.startReg = c.emitNow()
+		state.unitReg = loadConstant(c.ctx, runtime.NewString("f"))
+	}
+
+	return state
+}
+
+func (c *WaitCompiler) emitWaitPredicatePollLoop(config waitPredicateCompileConfig, state waitPredicatePollState) {
 	start := c.ctx.Emitter.NewLabel()
 	success := c.ctx.Emitter.NewLabel()
 	timeoutLabel := c.ctx.Emitter.NewLabel()
@@ -266,80 +339,98 @@ func (c *WaitCompiler) compilePredicate(ctx fql.IWaitForPredicateExpressionConte
 
 	c.ctx.Emitter.MarkLabel(start)
 
-	valueReg := c.ctx.ExprCompiler.Compile(predExpr)
-
-	var condReg bytecode.Operand
-	switch mode {
-	case waitForPredicateModeValue:
-		condReg = c.emitExistsCheck(valueReg)
-	case waitForPredicateModeExists:
-		condReg = c.emitExistsCheck(valueReg)
-	case waitForPredicateModeNotExists:
-		existsReg := c.emitExistsCheck(valueReg)
-		condReg = c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitAB(bytecode.OpNot, condReg, existsReg)
-	default:
-		condReg = c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitAB(bytecode.OpCastBool, condReg, valueReg)
-	}
-
+	valueReg := c.ctx.ExprCompiler.Compile(config.predExpr)
+	condReg := c.emitWaitPredicateCondition(config.mode, valueReg)
 	c.ctx.Emitter.EmitJumpIfTrue(condReg, success)
 
-	var elapsedReg bytecode.Operand
+	elapsedReg := c.emitWaitPredicateTimeoutCheck(config.timeoutReg, state.startReg, state.unitReg, timeoutLabel)
+	sleepIntervalReg := c.prepareWaitSleepInterval(config, state.pollReg)
+	c.emitWaitSleep(sleepIntervalReg, config.timeoutReg, elapsedReg)
 
-	if timeoutReg != bytecode.NoopOperand {
-		nowReg := c.emitNow()
-		elapsedReg = c.emitDateDiff(startReg, nowReg, unitReg)
-		reachedReg := c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitGte(reachedReg, elapsedReg, timeoutReg)
-		c.ctx.Emitter.EmitJumpIfTrue(reachedReg, timeoutLabel)
-	}
-
-	sleepIntervalReg := pollReg
-
-	if hasJitter || capEveryReg != bytecode.NoopOperand {
-		sleepIntervalReg = c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitMove(sleepIntervalReg, pollReg)
-
-		if hasJitter {
-			c.emitApplyJitter(sleepIntervalReg, jitterReg)
-		}
-
-		if capEveryReg != bytecode.NoopOperand {
-			c.emitClampMax(sleepIntervalReg, capEveryReg)
-		}
-	}
-
-	c.emitWaitSleep(sleepIntervalReg, timeoutReg, elapsedReg)
-
-	if backoff != waitForBackoffNone {
-		c.emitBackoffUpdate(backoff, intervalReg, baseEveryReg)
-		if capEveryReg != bytecode.NoopOperand {
-			c.emitClampMax(intervalReg, capEveryReg)
+	if config.backoff != waitForBackoffNone {
+		c.emitBackoffUpdate(config.backoff, state.intervalReg, state.baseEveryReg)
+		if config.capEveryReg != bytecode.NoopOperand {
+			c.emitClampMax(state.intervalReg, config.capEveryReg)
 		}
 	}
 
 	c.ctx.Emitter.EmitJump(start)
 	c.ctx.Emitter.MarkLabel(success)
+	c.emitWaitSuccessResult(config.mode, state.resultReg, valueReg)
+	c.ctx.Emitter.EmitJump(end)
 
+	c.ctx.Emitter.MarkLabel(timeoutLabel)
+	c.emitWaitTimeoutResult(config.mode, state.resultReg)
+	c.ctx.Emitter.MarkLabel(end)
+}
+
+func (c *WaitCompiler) emitWaitPredicateCondition(mode waitForPredicateMode, valueReg bytecode.Operand) bytecode.Operand {
+	switch mode {
+	case waitForPredicateModeValue, waitForPredicateModeExists:
+		return c.emitExistsCheck(valueReg)
+	case waitForPredicateModeNotExists:
+		existsReg := c.emitExistsCheck(valueReg)
+		condReg := c.ctx.Registers.Allocate()
+		c.ctx.Emitter.EmitAB(bytecode.OpNot, condReg, existsReg)
+
+		return condReg
+	default:
+		condReg := c.ctx.Registers.Allocate()
+		c.ctx.Emitter.EmitAB(bytecode.OpCastBool, condReg, valueReg)
+
+		return condReg
+	}
+}
+
+func (c *WaitCompiler) emitWaitPredicateTimeoutCheck(timeoutReg, startReg, unitReg bytecode.Operand, timeoutLabel core.Label) bytecode.Operand {
+	if timeoutReg == bytecode.NoopOperand {
+		return bytecode.NoopOperand
+	}
+
+	nowReg := c.emitNow()
+	elapsedReg := c.emitDateDiff(startReg, nowReg, unitReg)
+	reachedReg := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitGte(reachedReg, elapsedReg, timeoutReg)
+	c.ctx.Emitter.EmitJumpIfTrue(reachedReg, timeoutLabel)
+
+	return elapsedReg
+}
+
+func (c *WaitCompiler) prepareWaitSleepInterval(config waitPredicateCompileConfig, pollReg bytecode.Operand) bytecode.Operand {
+	if !config.hasJitter && config.capEveryReg == bytecode.NoopOperand {
+		return pollReg
+	}
+
+	sleepIntervalReg := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitMove(sleepIntervalReg, pollReg)
+
+	if config.hasJitter {
+		c.emitApplyJitter(sleepIntervalReg, config.jitterReg)
+	}
+
+	if config.capEveryReg != bytecode.NoopOperand {
+		c.emitClampMax(sleepIntervalReg, config.capEveryReg)
+	}
+
+	return sleepIntervalReg
+}
+
+func (c *WaitCompiler) emitWaitSuccessResult(mode waitForPredicateMode, resultReg, valueReg bytecode.Operand) {
 	if mode == waitForPredicateModeValue {
 		c.ctx.Emitter.EmitMove(resultReg, valueReg)
-	} else {
-		c.ctx.Emitter.EmitBoolean(resultReg, true)
+		return
 	}
 
-	c.ctx.Emitter.EmitJump(end)
-	c.ctx.Emitter.MarkLabel(timeoutLabel)
+	c.ctx.Emitter.EmitBoolean(resultReg, true)
+}
 
+func (c *WaitCompiler) emitWaitTimeoutResult(mode waitForPredicateMode, resultReg bytecode.Operand) {
 	if mode == waitForPredicateModeValue {
 		c.ctx.Emitter.EmitLoadNone(resultReg)
-	} else {
-		c.ctx.Emitter.EmitBoolean(resultReg, false)
+		return
 	}
 
-	c.ctx.Emitter.MarkLabel(end)
-
-	return resultReg
+	c.ctx.Emitter.EmitBoolean(resultReg, false)
 }
 
 func (c *WaitCompiler) emitExistsCheck(val bytecode.Operand) bytecode.Operand {
@@ -495,44 +586,32 @@ func waitForSpan(source antlr.RuleContext, fallback antlr.RuleContext) file.Span
 
 // CompileWaitForEventName processes the event name expression in a WAITFOR statement.
 func (c *WaitCompiler) CompileWaitForEventName(ctx fql.IWaitForEventNameContext) bytecode.Operand {
-	if sl := ctx.StringLiteral(); sl != nil {
-		return c.ctx.LiteralCompiler.CompileStringLiteral(sl)
-	}
+	sl := ctx.StringLiteral()
+	v := ctx.Variable()
+	p := ctx.Param()
+	me := ctx.MemberExpression()
+	fce := ctx.FunctionCall()
 
-	if v := ctx.Variable(); v != nil {
-		return c.ctx.ExprCompiler.CompileVariable(v)
-	}
-
-	if p := ctx.Param(); p != nil {
-		return c.ctx.ExprCompiler.CompileParam(p)
-	}
-
-	if me := ctx.MemberExpression(); me != nil {
-		return c.ctx.ExprCompiler.CompileMemberExpression(me)
-	}
-
-	if fce := ctx.FunctionCall(); fce != nil {
-		return c.ctx.ExprCompiler.CompileFunctionCall(fce, false)
-	}
-
-	return bytecode.NoopOperand
+	return compileFirstOperand(
+		newOperandBranch(sl != nil, func() bytecode.Operand { return c.ctx.LiteralCompiler.CompileStringLiteral(sl) }),
+		newOperandBranch(v != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileVariable(v) }),
+		newOperandBranch(p != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileParam(p) }),
+		newOperandBranch(me != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileMemberExpression(me) }),
+		newOperandBranch(fce != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileFunctionCall(fce, false) }),
+	)
 }
 
 // CompileWaitForEventSource processes the event source expression in a WAITFOR statement.
 func (c *WaitCompiler) CompileWaitForEventSource(ctx fql.IWaitForEventSourceContext) bytecode.Operand {
-	if v := ctx.Variable(); v != nil {
-		return c.ctx.ExprCompiler.CompileVariable(v)
-	}
+	v := ctx.Variable()
+	me := ctx.MemberExpression()
+	fce := ctx.FunctionCallExpression()
 
-	if me := ctx.MemberExpression(); me != nil {
-		return c.ctx.ExprCompiler.CompileMemberExpression(me)
-	}
-
-	if fce := ctx.FunctionCallExpression(); fce != nil {
-		return c.ctx.ExprCompiler.CompileFunctionCallExpression(fce)
-	}
-
-	return bytecode.NoopOperand
+	return compileFirstOperand(
+		newOperandBranch(v != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileVariable(v) }),
+		newOperandBranch(me != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileMemberExpression(me) }),
+		newOperandBranch(fce != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileFunctionCallExpression(fce) }),
+	)
 }
 
 // CompileOptionsClause processes the options clause in a WAITFOR statement.
@@ -581,31 +660,21 @@ func (c *WaitCompiler) compileDurationClause(ctx durationClause) bytecode.Operan
 		return loadConstant(c.ctx, val)
 	}
 
-	if il := ctx.IntegerLiteral(); il != nil {
-		return c.ctx.LiteralCompiler.CompileIntegerLiteral(il)
-	}
+	il := ctx.IntegerLiteral()
+	fl := ctx.FloatLiteral()
+	v := ctx.Variable()
+	p := ctx.Param()
+	me := ctx.MemberExpression()
+	fc := ctx.FunctionCall()
 
-	if fl := ctx.FloatLiteral(); fl != nil {
-		return c.ctx.LiteralCompiler.CompileFloatLiteral(fl)
-	}
-
-	if v := ctx.Variable(); v != nil {
-		return c.ctx.ExprCompiler.CompileVariable(v)
-	}
-
-	if p := ctx.Param(); p != nil {
-		return c.ctx.ExprCompiler.CompileParam(p)
-	}
-
-	if me := ctx.MemberExpression(); me != nil {
-		return c.ctx.ExprCompiler.CompileMemberExpression(me)
-	}
-
-	if fc := ctx.FunctionCall(); fc != nil {
-		return c.ctx.ExprCompiler.CompileFunctionCall(fc, false)
-	}
-
-	return bytecode.NoopOperand
+	return compileFirstOperand(
+		newOperandBranch(il != nil, func() bytecode.Operand { return c.ctx.LiteralCompiler.CompileIntegerLiteral(il) }),
+		newOperandBranch(fl != nil, func() bytecode.Operand { return c.ctx.LiteralCompiler.CompileFloatLiteral(fl) }),
+		newOperandBranch(v != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileVariable(v) }),
+		newOperandBranch(p != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileParam(p) }),
+		newOperandBranch(me != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileMemberExpression(me) }),
+		newOperandBranch(fc != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileFunctionCall(fc, false) }),
+	)
 }
 
 func (c *WaitCompiler) compileJitterClause(ctx fql.IJitterClauseContext) (bytecode.Operand, *float64, bool) {
@@ -646,31 +715,21 @@ func (c *WaitCompiler) compileJitterClauseValue(ctx fql.IJitterClauseValueContex
 		return bytecode.NoopOperand
 	}
 
-	if fl := ctx.FloatLiteral(); fl != nil {
-		return c.ctx.LiteralCompiler.CompileFloatLiteral(fl)
-	}
+	fl := ctx.FloatLiteral()
+	il := ctx.IntegerLiteral()
+	v := ctx.Variable()
+	p := ctx.Param()
+	me := ctx.MemberExpression()
+	fc := ctx.FunctionCall()
 
-	if il := ctx.IntegerLiteral(); il != nil {
-		return c.ctx.LiteralCompiler.CompileIntegerLiteral(il)
-	}
-
-	if v := ctx.Variable(); v != nil {
-		return c.ctx.ExprCompiler.CompileVariable(v)
-	}
-
-	if p := ctx.Param(); p != nil {
-		return c.ctx.ExprCompiler.CompileParam(p)
-	}
-
-	if me := ctx.MemberExpression(); me != nil {
-		return c.ctx.ExprCompiler.CompileMemberExpression(me)
-	}
-
-	if fc := ctx.FunctionCall(); fc != nil {
-		return c.ctx.ExprCompiler.CompileFunctionCall(fc, false)
-	}
-
-	return bytecode.NoopOperand
+	return compileFirstOperand(
+		newOperandBranch(fl != nil, func() bytecode.Operand { return c.ctx.LiteralCompiler.CompileFloatLiteral(fl) }),
+		newOperandBranch(il != nil, func() bytecode.Operand { return c.ctx.LiteralCompiler.CompileIntegerLiteral(il) }),
+		newOperandBranch(v != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileVariable(v) }),
+		newOperandBranch(p != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileParam(p) }),
+		newOperandBranch(me != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileMemberExpression(me) }),
+		newOperandBranch(fc != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileFunctionCall(fc, false) }),
+	)
 }
 
 func (c *WaitCompiler) compileBackoffClause(ctx fql.IBackoffClauseContext) waitForBackoff {

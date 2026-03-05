@@ -268,93 +268,145 @@ func (c *ExprCompiler) compileTernary(ctx fql.IExpressionContext) bytecode.Opera
 //
 // Panics if the operator type is not recognized or not implemented.
 func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) bytecode.Operand {
-	if atom := ctx.ExpressionAtom(); atom != nil {
-		startCatch := c.ctx.Emitter.Size()
-		reg := c.compileAtom(atom)
-
-		if atom.ErrorOperator() != nil {
-			jump := -1
-			endCatch := c.ctx.Emitter.Size()
-
-			if fe := atom.ForExpression(); fe != nil {
-				// Since FOR-IN loops depend on custom iterators,
-				// We need to handle cleanup before exiting the loop.
-				// TODO: Find a better way to handle this. The code assumes the knowledge of the internals of the FOR-IN loop.
-				if fe.In() != nil {
-					jump = endCatch - 1
-				}
-			}
-
-			c.ctx.CatchTable.Push(startCatch, endCatch, jump)
-		}
-
+	if reg, ok := c.compilePredicateAtom(ctx); ok {
 		return reg
 	}
 
-	var opcode bytecode.Opcode
-	var isNegated bool
-	dest := c.ctx.Registers.Allocate()
+	opcode, isNegated, ok := c.resolvePredicateOperator(ctx)
+	if !ok {
+		return bytecode.NoopOperand
+	}
+
 	left := c.compilePredicate(ctx.Predicate(0))
 	right := c.compilePredicate(ctx.Predicate(1))
+
+	return c.emitBinaryPredicate(ctx, opcode, left, right, isNegated)
+}
+
+func (c *ExprCompiler) compileLiteralOperand(lit fql.ILiteralContext) bytecode.Operand {
+	return compileScalarLiteralOperand(c.ctx, lit)
+}
+
+func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode.Operand, bool) {
+	if ctx == nil {
+		return bytecode.NoopOperand, true
+	}
+
+	atom := ctx.ExpressionAtom()
+	if atom == nil {
+		return bytecode.NoopOperand, false
+	}
+
+	startCatch := c.ctx.Emitter.Size()
+	reg := c.compileAtom(atom)
+
+	if atom.ErrorOperator() == nil {
+		return reg, true
+	}
+
+	jump := -1
+	endCatch := c.ctx.Emitter.Size()
+
+	if fe := atom.ForExpression(); fe != nil {
+		// Since FOR-IN loops depend on custom iterators,
+		// We need to handle cleanup before exiting the loop.
+		// TODO: Find a better way to handle this. The code assumes the knowledge of the internals of the FOR-IN loop.
+		if fe.In() != nil {
+			jump = endCatch - 1
+		}
+	}
+
+	c.ctx.CatchTable.Push(startCatch, endCatch, jump)
+
+	return reg, true
+}
+
+func (c *ExprCompiler) resolvePredicateOperator(ctx fql.IPredicateContext) (bytecode.Opcode, bool, bool) {
+	if ctx == nil {
+		return bytecode.Opcode(0), false, false
+	}
 
 	if op := ctx.EqualityOperator(); op != nil {
 		switch op.GetText() {
 		case "==":
-			opcode = bytecode.OpEq
+			return bytecode.OpEq, false, true
 		case "!=":
-			opcode = bytecode.OpNe
+			return bytecode.OpNe, false, true
 		case ">":
-			opcode = bytecode.OpGt
+			return bytecode.OpGt, false, true
 		case ">=":
-			opcode = bytecode.OpGte
+			return bytecode.OpGte, false, true
 		case "<":
-			opcode = bytecode.OpLt
+			return bytecode.OpLt, false, true
 		case "<=":
-			opcode = bytecode.OpLte
+			return bytecode.OpLte, false, true
 		default:
-			return bytecode.NoopOperand
+			return bytecode.Opcode(0), false, false
 		}
-	} else if op := ctx.InOperator(); op != nil {
-		opcode = bytecode.OpIn
-		isNegated = op.Not() != nil
-	} else if op := ctx.LikeOperator(); op != nil {
-		opcode = bytecode.OpLike
-		isNegated = op.Not() != nil
-	} else if op := ctx.ArrayOperator(); op != nil {
-		var pos int
-
-		if op.All() != nil {
-			pos = int(bytecode.OpAllEq)
-		} else if op.Any() != nil {
-			pos = int(bytecode.OpAnyEq)
-		} else if op.None() != nil {
-			pos = int(bytecode.OpNoneEq)
-		}
-
-		if eo := op.EqualityOperator(); eo != nil {
-			switch eo.GetText() {
-			case "!=":
-				pos += int(bytecode.OpAllNe) - int(bytecode.OpAllEq)
-			case ">":
-				pos += int(bytecode.OpAllGt) - int(bytecode.OpAllEq)
-			case ">=":
-				pos += int(bytecode.OpAllGte) - int(bytecode.OpAllEq)
-			case "<":
-				pos += int(bytecode.OpAllLt) - int(bytecode.OpAllEq)
-			case "<=":
-				pos += int(bytecode.OpAllLte) - int(bytecode.OpAllEq)
-			default:
-				break
-			}
-		} else if inOp := op.InOperator(); inOp != nil {
-			pos += int(bytecode.OpAllIn) - int(bytecode.OpAllEq)
-		} else {
-			return bytecode.NoopOperand
-		}
-
-		opcode = bytecode.Opcode(pos)
 	}
 
+	if op := ctx.InOperator(); op != nil {
+		return bytecode.OpIn, op.Not() != nil, true
+	}
+
+	if op := ctx.LikeOperator(); op != nil {
+		return bytecode.OpLike, op.Not() != nil, true
+	}
+
+	if op := ctx.ArrayOperator(); op != nil {
+		opcode, ok := resolveArrayPredicateOpcode(op)
+		return opcode, false, ok
+	}
+
+	return bytecode.Opcode(0), false, false
+}
+
+func resolveArrayPredicateOpcode(op fql.IArrayOperatorContext) (bytecode.Opcode, bool) {
+	if op == nil {
+		return bytecode.Opcode(0), false
+	}
+
+	var pos int
+
+	switch {
+	case op.All() != nil:
+		pos = int(bytecode.OpAllEq)
+	case op.Any() != nil:
+		pos = int(bytecode.OpAnyEq)
+	case op.None() != nil:
+		pos = int(bytecode.OpNoneEq)
+	}
+
+	if eo := op.EqualityOperator(); eo != nil {
+		switch eo.GetText() {
+		case "!=":
+			pos += int(bytecode.OpAllNe) - int(bytecode.OpAllEq)
+		case ">":
+			pos += int(bytecode.OpAllGt) - int(bytecode.OpAllEq)
+		case ">=":
+			pos += int(bytecode.OpAllGte) - int(bytecode.OpAllEq)
+		case "<":
+			pos += int(bytecode.OpAllLt) - int(bytecode.OpAllEq)
+		case "<=":
+			pos += int(bytecode.OpAllLte) - int(bytecode.OpAllEq)
+		default:
+			// Keep OpAllEq/OpAnyEq/OpNoneEq fallback for parser-provided defaults.
+		}
+
+		return bytecode.Opcode(pos), true
+	}
+
+	if op.InOperator() != nil {
+		pos += int(bytecode.OpAllIn) - int(bytecode.OpAllEq)
+
+		return bytecode.Opcode(pos), true
+	}
+
+	return bytecode.Opcode(0), false
+}
+
+func (c *ExprCompiler) emitBinaryPredicate(ctx fql.IPredicateContext, opcode bytecode.Opcode, left, right bytecode.Operand, isNegated bool) bytecode.Operand {
+	dest := c.ctx.Registers.Allocate()
 	span := file.Span{Start: -1, End: -1}
 
 	if prc, ok := ctx.(antlr.ParserRuleContext); ok {
@@ -371,53 +423,6 @@ func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) bytecode.Oper
 	})
 
 	return dest
-}
-
-func (c *ExprCompiler) compileLiteralOperand(lit fql.ILiteralContext) bytecode.Operand {
-	if lit == nil {
-		return bytecode.NoopOperand
-	}
-
-	if nl := lit.NoneLiteral(); nl != nil {
-		return c.ctx.Symbols.AddConstant(runtime.None)
-	}
-
-	if bl := lit.BooleanLiteral(); bl != nil {
-		switch strings.ToLower(bl.GetText()) {
-		case "true":
-			return c.ctx.Symbols.AddConstant(runtime.True)
-		case "false":
-			return c.ctx.Symbols.AddConstant(runtime.False)
-		default:
-			return bytecode.NoopOperand
-		}
-	}
-
-	if sl := lit.StringLiteral(); sl != nil {
-		if val, ok := parseStringLiteralConst(sl); ok {
-			return c.ctx.Symbols.AddConstant(val)
-		}
-
-		return c.ctx.LiteralCompiler.CompileStringLiteral(sl)
-	}
-
-	if fl := lit.FloatLiteral(); fl != nil {
-		val, err := strconv.ParseFloat(fl.GetText(), 64)
-		if err != nil {
-			panic(err)
-		}
-		return c.ctx.Symbols.AddConstant(runtime.NewFloat(val))
-	}
-
-	if il := lit.IntegerLiteral(); il != nil {
-		val, err := strconv.Atoi(il.GetText())
-		if err != nil {
-			panic(err)
-		}
-		return c.ctx.Symbols.AddConstant(runtime.NewInt(val))
-	}
-
-	return bytecode.NoopOperand
 }
 
 func (c *ExprCompiler) emitPredicateJump(ctx fql.IPredicateContext, label core.Label, jumpOnTrue bool) bool {
@@ -963,50 +968,7 @@ func (c *ExprCompiler) compileMatchPatternValue(valueReg bytecode.Operand, ctx f
 }
 
 func (c *ExprCompiler) compileMatchLiteralOperand(ctx fql.IMatchLiteralPatternContext) bytecode.Operand {
-	if ctx == nil {
-		return bytecode.NoopOperand
-	}
-
-	if nl := ctx.NoneLiteral(); nl != nil {
-		return c.ctx.Symbols.AddConstant(runtime.None)
-	}
-
-	if bl := ctx.BooleanLiteral(); bl != nil {
-		switch strings.ToLower(bl.GetText()) {
-		case "true":
-			return c.ctx.Symbols.AddConstant(runtime.True)
-		case "false":
-			return c.ctx.Symbols.AddConstant(runtime.False)
-		default:
-			return bytecode.NoopOperand
-		}
-	}
-
-	if sl := ctx.StringLiteral(); sl != nil {
-		if val, ok := parseStringLiteralConst(sl); ok {
-			return c.ctx.Symbols.AddConstant(val)
-		}
-
-		return c.ctx.LiteralCompiler.CompileStringLiteral(sl)
-	}
-
-	if fl := ctx.FloatLiteral(); fl != nil {
-		val, err := strconv.ParseFloat(fl.GetText(), 64)
-		if err != nil {
-			panic(err)
-		}
-		return c.ctx.Symbols.AddConstant(runtime.NewFloat(val))
-	}
-
-	if il := ctx.IntegerLiteral(); il != nil {
-		val, err := strconv.Atoi(il.GetText())
-		if err != nil {
-			panic(err)
-		}
-		return c.ctx.Symbols.AddConstant(runtime.NewInt(val))
-	}
-
-	return bytecode.NoopOperand
+	return compileScalarLiteralOperand(c.ctx, ctx)
 }
 
 func (c *ExprCompiler) tryCompileMatchConstantFold(scrutinee fql.IExpressionContext, armsCtx fql.IMatchPatternArmsContext, dst bytecode.Operand) bool {
@@ -1107,95 +1069,11 @@ func matchLiteralValueFromExpression(expr fql.IExpressionContext) (runtime.Value
 }
 
 func literalValueFromLiteral(lit fql.ILiteralContext) (runtime.Value, bool) {
-	if lit == nil {
-		return nil, false
-	}
-
-	if nl := lit.NoneLiteral(); nl != nil {
-		return runtime.None, true
-	}
-
-	if bl := lit.BooleanLiteral(); bl != nil {
-		switch strings.ToLower(bl.GetText()) {
-		case "true":
-			return runtime.True, true
-		case "false":
-			return runtime.False, true
-		default:
-			return nil, false
-		}
-	}
-
-	if sl := lit.StringLiteral(); sl != nil {
-		if val, ok := parseStringLiteralConst(sl); ok {
-			return val, true
-		}
-		return nil, false
-	}
-
-	if fl := lit.FloatLiteral(); fl != nil {
-		val, err := strconv.ParseFloat(fl.GetText(), 64)
-		if err != nil {
-			return nil, false
-		}
-		return runtime.NewFloat(val), true
-	}
-
-	if il := lit.IntegerLiteral(); il != nil {
-		val, err := strconv.Atoi(il.GetText())
-		if err != nil {
-			return nil, false
-		}
-		return runtime.NewInt(val), true
-	}
-
-	return nil, false
+	return scalarLiteralValue(lit)
 }
 
 func literalValueFromMatchLiteral(lit fql.IMatchLiteralPatternContext) (runtime.Value, bool) {
-	if lit == nil {
-		return nil, false
-	}
-
-	if nl := lit.NoneLiteral(); nl != nil {
-		return runtime.None, true
-	}
-
-	if bl := lit.BooleanLiteral(); bl != nil {
-		switch strings.ToLower(bl.GetText()) {
-		case "true":
-			return runtime.True, true
-		case "false":
-			return runtime.False, true
-		default:
-			return nil, false
-		}
-	}
-
-	if sl := lit.StringLiteral(); sl != nil {
-		if val, ok := parseStringLiteralConst(sl); ok {
-			return val, true
-		}
-		return nil, false
-	}
-
-	if fl := lit.FloatLiteral(); fl != nil {
-		val, err := strconv.ParseFloat(fl.GetText(), 64)
-		if err != nil {
-			return nil, false
-		}
-		return runtime.NewFloat(val), true
-	}
-
-	if il := lit.IntegerLiteral(); il != nil {
-		val, err := strconv.Atoi(il.GetText())
-		if err != nil {
-			return nil, false
-		}
-		return runtime.NewInt(val), true
-	}
-
-	return nil, false
+	return scalarLiteralValue(lit)
 }
 
 func matchPureResultKey(expr fql.IExpressionContext) (string, bool) {
