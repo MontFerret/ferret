@@ -716,3 +716,88 @@ func TestPeephole_RemapsCatchDebugSpansAndLabels(t *testing.T) {
 		t.Fatalf("expected label 'end' at index 2, got %v", program.Metadata.Labels)
 	}
 }
+
+type peepholeJumpOpcodeMatrixCase struct {
+	name         string
+	compareOp    bytecode.Opcode
+	jumpOp       bytecode.Opcode
+	wantJumpOp   bytecode.Opcode
+	wantConstOp  bytecode.Opcode
+	wantResolved bool
+}
+
+var peepholeJumpOpcodeMatrixCases = []peepholeJumpOpcodeMatrixCase{
+	{
+		name:         "eq with jump false",
+		compareOp:    bytecode.OpEq,
+		jumpOp:       bytecode.OpJumpIfFalse,
+		wantJumpOp:   bytecode.OpJumpIfNe,
+		wantConstOp:  bytecode.OpJumpIfNeConst,
+		wantResolved: true,
+	},
+	{
+		name:         "eq with jump true",
+		compareOp:    bytecode.OpEq,
+		jumpOp:       bytecode.OpJumpIfTrue,
+		wantJumpOp:   bytecode.OpJumpIfEq,
+		wantConstOp:  bytecode.OpJumpIfEqConst,
+		wantResolved: true,
+	},
+	{
+		name:         "ne with jump false",
+		compareOp:    bytecode.OpNe,
+		jumpOp:       bytecode.OpJumpIfFalse,
+		wantJumpOp:   bytecode.OpJumpIfEq,
+		wantConstOp:  bytecode.OpJumpIfEqConst,
+		wantResolved: true,
+	},
+	{
+		name:         "ne with jump true",
+		compareOp:    bytecode.OpNe,
+		jumpOp:       bytecode.OpJumpIfTrue,
+		wantJumpOp:   bytecode.OpJumpIfNe,
+		wantConstOp:  bytecode.OpJumpIfNeConst,
+		wantResolved: true,
+	},
+	{
+		name:         "unsupported compare opcode",
+		compareOp:    bytecode.OpGt,
+		jumpOp:       bytecode.OpJumpIfTrue,
+		wantResolved: false,
+	},
+	{
+		name:         "unsupported jump opcode",
+		compareOp:    bytecode.OpEq,
+		jumpOp:       bytecode.OpJump,
+		wantResolved: false,
+	},
+}
+
+func runPeepholeJumpOpcodeMatrixCase(t *testing.T, tc peepholeJumpOpcodeMatrixCase) {
+	t.Helper()
+
+	gotJumpOp, gotConstOp, ok := resolveComparisonJumpOpcode(tc.compareOp, tc.jumpOp)
+	if ok != tc.wantResolved {
+		t.Fatalf("unexpected resolved flag: got %v, want %v", ok, tc.wantResolved)
+	}
+
+	if !tc.wantResolved {
+		return
+	}
+
+	if gotJumpOp != tc.wantJumpOp {
+		t.Fatalf("unexpected jump opcode: got %s, want %s", gotJumpOp, tc.wantJumpOp)
+	}
+
+	if gotConstOp != tc.wantConstOp {
+		t.Fatalf("unexpected const jump opcode: got %s, want %s", gotConstOp, tc.wantConstOp)
+	}
+}
+
+func TestPeephole_ResolveComparisonJumpOpcode(t *testing.T) {
+	for _, tc := range peepholeJumpOpcodeMatrixCases {
+		t.Run(tc.name, func(t *testing.T) {
+			runPeepholeJumpOpcodeMatrixCase(t, tc)
+		})
+	}
+}

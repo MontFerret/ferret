@@ -31,157 +31,286 @@ func (p *PeepholePass) Run(ctx *PassContext) (*PassResult, error) {
 		return &PassResult{Modified: false}, nil
 	}
 
-	prog := ctx.Program
-	bytecodeLen := len(prog.Bytecode)
-	targets := collectJumpTargets(prog.Bytecode, prog.CatchTable)
-	var liveness map[int]*LivenessInfo
-	var blockByInstruction []*BasicBlock
-
-	if ctx.CFG != nil {
-		liveness = computeLiveness(ctx.CFG)
-		blockByInstruction = buildInstructionBlockMap(ctx.CFG, bytecodeLen)
-	}
-
-	keep := make([]bool, bytecodeLen)
-
-	for i := range keep {
-		keep[i] = true
-	}
-
-	modified := false
-
-	for i := 0; i < bytecodeLen; i++ {
-		if !keep[i] {
-			continue
-		}
-
-		inst := prog.Bytecode[i]
-
-		if i+1 < bytecodeLen && (inst.Opcode == bytecode.OpEq || inst.Opcode == bytecode.OpNe) && !targets[i] {
-			next := prog.Bytecode[i+1]
-
-			if (next.Opcode == bytecode.OpJumpIfFalse || next.Opcode == bytecode.OpJumpIfTrue) && inst.Operands[0].IsRegister() && next.Operands[1].IsRegister() && next.Operands[1].Register() == inst.Operands[0].Register() {
-				cmpReg := inst.Operands[0].Register()
-
-				if !regLiveAfterInstruction(prog.Bytecode, i+1, cmpReg, blockByInstruction, liveness) {
-					if i > 0 && inst.Operands[2].IsRegister() {
-						prev := prog.Bytecode[i-1]
-						if prev.Opcode == bytecode.OpLoadConst && prev.Operands[0].IsRegister() && inst.Operands[2].Register() == prev.Operands[0].Register() && targets[i-1] {
-							continue
-						}
-					}
-
-					newOp := bytecode.OpJumpIfNe
-					newOpConst := bytecode.OpJumpIfNeConst
-
-					if inst.Opcode == bytecode.OpEq {
-						if next.Opcode == bytecode.OpJumpIfTrue {
-							newOp = bytecode.OpJumpIfEq
-							newOpConst = bytecode.OpJumpIfEqConst
-						}
-					} else if next.Opcode == bytecode.OpJumpIfFalse {
-						newOp = bytecode.OpJumpIfEq
-						newOpConst = bytecode.OpJumpIfEqConst
-					}
-
-					if i > 0 && keep[i-1] && inst.Operands[2].IsRegister() {
-						prev := prog.Bytecode[i-1]
-						if prev.Opcode == bytecode.OpLoadConst && prev.Operands[0].IsRegister() && prev.Operands[1].IsConstant() && !targets[i-1] {
-							constReg := prev.Operands[0].Register()
-
-							if inst.Operands[2].Register() == constReg && !regLiveAfterInstruction(prog.Bytecode, i+1, constReg, blockByInstruction, liveness) {
-								next.Opcode = newOpConst
-								next.Operands[1] = inst.Operands[1]
-								next.Operands[2] = prev.Operands[1]
-								prog.Bytecode[i+1] = next
-								keep[i] = false
-								keep[i-1] = false
-								modified = true
-								continue
-							}
-						}
-					}
-
-					if inst.Operands[2].IsConstant() {
-						next.Opcode = newOpConst
-					} else {
-						next.Opcode = newOp
-					}
-					next.Operands[1] = inst.Operands[1]
-					next.Operands[2] = inst.Operands[2]
-					prog.Bytecode[i+1] = next
-					keep[i] = false
-					modified = true
-					continue
-				}
-			}
-		}
-
-		if i+1 < bytecodeLen && inst.Opcode == bytecode.OpLoadConst && inst.Operands[0].IsRegister() && inst.Operands[1].IsConstant() {
-			if !targets[i] {
-				next := prog.Bytecode[i+1]
-
-				if next.Opcode == bytecode.OpAdd && next.Operands[0].IsRegister() && next.Operands[1].IsRegister() && next.Operands[2].IsRegister() {
-					tmpReg := inst.Operands[0].Register()
-					dstReg := next.Operands[0].Register()
-
-					if next.Operands[2].Register() == tmpReg {
-						if dstReg == tmpReg || !regLiveAfterInstruction(prog.Bytecode, i+1, tmpReg, blockByInstruction, liveness) {
-							next.Opcode = bytecode.OpAddConst
-							next.Operands[2] = inst.Operands[1]
-							prog.Bytecode[i+1] = next
-							keep[i] = false
-							modified = true
-
-							continue
-						}
-					}
-				}
-			}
-		}
-
-		if isSelfMove(inst) && !targets[i] {
-			keep[i] = false
-			modified = true
-			continue
-		}
-
-		if i+1 >= bytecodeLen || targets[i] {
-			continue
-		}
-
-		if !isPureDef(inst.Opcode) {
-			continue
-		}
-
-		defReg := defRegister(inst)
-		if defReg == 0 {
-			continue
-		}
-
-		next := prog.Bytecode[i+1]
-		uses, defs := instructionUseDef(next)
-
-		if isPureDef(next.Opcode) && defRegister(next) == defReg && samePureDef(inst, next) && !targets[i+1] {
-			keep[i+1] = false
-			modified = true
-			continue
-		}
-
-		if regIn(defs, defReg) && !regIn(uses, defReg) {
-			keep[i] = false
-			modified = true
-		}
-	}
+	state := newPeepholeRunState(ctx)
+	modified := runPeepholeScanAndRewrite(state)
 
 	if !modified {
 		return &PassResult{Modified: false}, nil
 	}
 
-	indexMap := make([]int, bytecodeLen)
-	newCode := make([]bytecode.Instruction, 0, bytecodeLen)
+	applyPeepholeCompactionAndRemap(state)
 
-	for i, inst := range prog.Bytecode {
+	return &PassResult{
+		Modified: true,
+		Metadata: map[string]any{},
+	}, nil
+}
+
+type peepholeRunState struct {
+	prog               *bytecode.Program
+	bytecodeLen        int
+	targets            map[int]bool
+	liveness           map[int]*LivenessInfo
+	blockByInstruction []*BasicBlock
+	keep               []bool
+}
+
+func newPeepholeRunState(ctx *PassContext) *peepholeRunState {
+	prog := ctx.Program
+	bytecodeLen := len(prog.Bytecode)
+	state := &peepholeRunState{
+		prog:        prog,
+		bytecodeLen: bytecodeLen,
+		targets:     collectJumpTargets(prog.Bytecode, prog.CatchTable),
+		keep:        make([]bool, bytecodeLen),
+	}
+
+	for i := range state.keep {
+		state.keep[i] = true
+	}
+
+	if ctx.CFG != nil {
+		state.liveness = computeLiveness(ctx.CFG)
+		state.blockByInstruction = buildInstructionBlockMap(ctx.CFG, bytecodeLen)
+	}
+
+	return state
+}
+
+func runPeepholeScanAndRewrite(state *peepholeRunState) bool {
+	modified := false
+
+	for i := 0; i < state.bytecodeLen; i++ {
+		if !state.keep[i] {
+			continue
+		}
+
+		if tryRewriteComparisonJump(state, i) {
+			modified = true
+			continue
+		}
+
+		if tryRewriteAddConst(state, i) {
+			modified = true
+			continue
+		}
+
+		if tryRemoveSelfMove(state, i) {
+			modified = true
+			continue
+		}
+
+		if tryRemoveDeadOrRedundantPureDefs(state, i) {
+			modified = true
+		}
+	}
+
+	return modified
+}
+
+func tryRewriteComparisonJump(state *peepholeRunState, index int) bool {
+	if index+1 >= state.bytecodeLen || state.targets[index] {
+		return false
+	}
+
+	inst := state.prog.Bytecode[index]
+	next := state.prog.Bytecode[index+1]
+
+	if !isComparisonJumpPair(inst, next) {
+		return false
+	}
+
+	cmpReg := inst.Operands[0].Register()
+	if regLiveAfterInstruction(state.prog.Bytecode, index+1, cmpReg, state.blockByInstruction, state.liveness) {
+		return false
+	}
+
+	if hasTargetedPreviousConstLoad(state, index, inst) {
+		return false
+	}
+
+	newOp, newOpConst, ok := resolveComparisonJumpOpcode(inst.Opcode, next.Opcode)
+	if !ok {
+		return false
+	}
+
+	if rewritten, ok := rewriteJumpUsingPreviousConstLoad(state, index, inst, next, newOpConst); ok {
+		state.prog.Bytecode[index+1] = rewritten
+		state.keep[index] = false
+		state.keep[index-1] = false
+		return true
+	}
+
+	if inst.Operands[2].IsConstant() {
+		next.Opcode = newOpConst
+	} else {
+		next.Opcode = newOp
+	}
+	next.Operands[1] = inst.Operands[1]
+	next.Operands[2] = inst.Operands[2]
+	state.prog.Bytecode[index+1] = next
+	state.keep[index] = false
+
+	return true
+}
+
+func isComparisonJumpPair(compareInst, jumpInst bytecode.Instruction) bool {
+	if compareInst.Opcode != bytecode.OpEq && compareInst.Opcode != bytecode.OpNe {
+		return false
+	}
+
+	if jumpInst.Opcode != bytecode.OpJumpIfFalse && jumpInst.Opcode != bytecode.OpJumpIfTrue {
+		return false
+	}
+
+	if !compareInst.Operands[0].IsRegister() || !jumpInst.Operands[1].IsRegister() {
+		return false
+	}
+
+	return jumpInst.Operands[1].Register() == compareInst.Operands[0].Register()
+}
+
+func resolveComparisonJumpOpcode(compareOp, jumpOp bytecode.Opcode) (bytecode.Opcode, bytecode.Opcode, bool) {
+	if (compareOp != bytecode.OpEq && compareOp != bytecode.OpNe) || (jumpOp != bytecode.OpJumpIfFalse && jumpOp != bytecode.OpJumpIfTrue) {
+		return 0, 0, false
+	}
+
+	if (compareOp == bytecode.OpEq && jumpOp == bytecode.OpJumpIfTrue) || (compareOp == bytecode.OpNe && jumpOp == bytecode.OpJumpIfFalse) {
+		return bytecode.OpJumpIfEq, bytecode.OpJumpIfEqConst, true
+	}
+
+	return bytecode.OpJumpIfNe, bytecode.OpJumpIfNeConst, true
+}
+
+func hasTargetedPreviousConstLoad(state *peepholeRunState, index int, inst bytecode.Instruction) bool {
+	if index == 0 || !inst.Operands[2].IsRegister() {
+		return false
+	}
+
+	prev := state.prog.Bytecode[index-1]
+	if prev.Opcode != bytecode.OpLoadConst || !prev.Operands[0].IsRegister() {
+		return false
+	}
+
+	return inst.Operands[2].Register() == prev.Operands[0].Register() && state.targets[index-1]
+}
+
+func rewriteJumpUsingPreviousConstLoad(state *peepholeRunState, index int, compareInst, jumpInst bytecode.Instruction, jumpConstOp bytecode.Opcode) (bytecode.Instruction, bool) {
+	if index == 0 || !state.keep[index-1] || !compareInst.Operands[2].IsRegister() {
+		return bytecode.Instruction{}, false
+	}
+
+	prev := state.prog.Bytecode[index-1]
+	if prev.Opcode != bytecode.OpLoadConst || !prev.Operands[0].IsRegister() || !prev.Operands[1].IsConstant() || state.targets[index-1] {
+		return bytecode.Instruction{}, false
+	}
+
+	constReg := prev.Operands[0].Register()
+	if compareInst.Operands[2].Register() != constReg {
+		return bytecode.Instruction{}, false
+	}
+
+	if regLiveAfterInstruction(state.prog.Bytecode, index+1, constReg, state.blockByInstruction, state.liveness) {
+		return bytecode.Instruction{}, false
+	}
+
+	jumpInst.Opcode = jumpConstOp
+	jumpInst.Operands[1] = compareInst.Operands[1]
+	jumpInst.Operands[2] = prev.Operands[1]
+
+	return jumpInst, true
+}
+
+func tryRewriteAddConst(state *peepholeRunState, index int) bool {
+	if index+1 >= state.bytecodeLen || state.targets[index] {
+		return false
+	}
+
+	loadInst := state.prog.Bytecode[index]
+	if loadInst.Opcode != bytecode.OpLoadConst || !loadInst.Operands[0].IsRegister() || !loadInst.Operands[1].IsConstant() {
+		return false
+	}
+
+	next := state.prog.Bytecode[index+1]
+	if next.Opcode != bytecode.OpAdd || !next.Operands[0].IsRegister() || !next.Operands[1].IsRegister() || !next.Operands[2].IsRegister() {
+		return false
+	}
+
+	tempReg := loadInst.Operands[0].Register()
+	if next.Operands[2].Register() != tempReg {
+		return false
+	}
+
+	dstReg := next.Operands[0].Register()
+	if dstReg != tempReg && regLiveAfterInstruction(state.prog.Bytecode, index+1, tempReg, state.blockByInstruction, state.liveness) {
+		return false
+	}
+
+	next.Opcode = bytecode.OpAddConst
+	next.Operands[2] = loadInst.Operands[1]
+	state.prog.Bytecode[index+1] = next
+	state.keep[index] = false
+
+	return true
+}
+
+func tryRemoveSelfMove(state *peepholeRunState, index int) bool {
+	if state.targets[index] || !isSelfMove(state.prog.Bytecode[index]) {
+		return false
+	}
+
+	state.keep[index] = false
+
+	return true
+}
+
+func tryRemoveDeadOrRedundantPureDefs(state *peepholeRunState, index int) bool {
+	if index+1 >= state.bytecodeLen || state.targets[index] {
+		return false
+	}
+
+	inst := state.prog.Bytecode[index]
+	if !isPureDef(inst.Opcode) {
+		return false
+	}
+
+	defReg := defRegister(inst)
+	if defReg == 0 {
+		return false
+	}
+
+	next := state.prog.Bytecode[index+1]
+	uses, defs := instructionUseDef(next)
+
+	if isPureDef(next.Opcode) && defRegister(next) == defReg && samePureDef(inst, next) && !state.targets[index+1] {
+		state.keep[index+1] = false
+		return true
+	}
+
+	if regIn(defs, defReg) && !regIn(uses, defReg) {
+		state.keep[index] = false
+		return true
+	}
+
+	return false
+}
+
+func applyPeepholeCompactionAndRemap(state *peepholeRunState) {
+	newCode, indexMap := compactPeepholeInstructions(state.prog.Bytecode, state.keep)
+	remapPeepholeJumps(newCode, indexMap, state.keep, state.bytecodeLen)
+
+	state.prog.Bytecode = newCode
+	remapDebugSpans(state.prog, state.keep)
+	remapLabels(state.prog, indexMap)
+	remapUdfEntries(state.prog, indexMap, state.keep)
+	remapCatchTable(state.prog, indexMap, state.keep)
+}
+
+func compactPeepholeInstructions(code []bytecode.Instruction, keep []bool) ([]bytecode.Instruction, []int) {
+	indexMap := make([]int, len(code))
+	newCode := make([]bytecode.Instruction, 0, len(code))
+
+	for i, inst := range code {
 		if !keep[i] {
 			indexMap[i] = -1
 			continue
@@ -191,34 +320,27 @@ func (p *PeepholePass) Run(ctx *PassContext) (*PassResult, error) {
 		newCode = append(newCode, inst)
 	}
 
-	for i := range newCode {
-		inst := newCode[i]
+	return newCode, indexMap
+}
+
+func remapPeepholeJumps(code []bytecode.Instruction, indexMap []int, keep []bool, oldCodeLen int) {
+	for i := range code {
+		inst := code[i]
 		if !isJumpOpcode(inst.Opcode) {
 			continue
 		}
 
 		oldTarget := int(inst.Operands[0])
-		if oldTarget < 0 || oldTarget >= bytecodeLen {
+		if oldTarget < 0 || oldTarget >= oldCodeLen {
 			continue
 		}
 
 		newTarget := remapIndexForward(indexMap, keep, oldTarget)
 		if newTarget >= 0 && newTarget != oldTarget {
 			inst.Operands[0] = bytecode.Operand(newTarget)
-			newCode[i] = inst
+			code[i] = inst
 		}
 	}
-
-	prog.Bytecode = newCode
-	remapDebugSpans(prog, keep)
-	remapLabels(prog, indexMap)
-	remapUdfEntries(prog, indexMap, keep)
-	remapCatchTable(prog, indexMap, keep)
-
-	return &PassResult{
-		Modified: true,
-		Metadata: map[string]any{},
-	}, nil
 }
 
 func collectJumpTargets(code []bytecode.Instruction, catches []bytecode.Catch) map[int]bool {

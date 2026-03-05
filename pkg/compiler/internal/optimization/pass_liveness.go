@@ -117,64 +117,102 @@ func computeLiveness(cfg *ControlFlowGraph) map[int]*LivenessInfo {
 // instructionUseDef returns registers used and defined by an instruction.
 // Only registers (non-constants) are included.
 func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
-	addUse := func(op bytecode.Operand) {
-		if op != bytecode.NoopOperand && op.IsRegister() {
-			uses = append(uses, op.Register())
-		}
-	}
-	addDef := func(op bytecode.Operand) {
-		if op != bytecode.NoopOperand && op.IsRegister() {
-			defs = append(defs, op.Register())
-		}
-	}
-	op := inst.Opcode
+	collector := useDefCollector{}
+	opcode := inst.Opcode
 	dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
 
-	switch op {
-	// No-operand terminator.
-	case bytecode.OpReturn:
-		addUse(dst)
+	if applyTerminalUseDef(opcode, dst, &collector) ||
+		applyMoveLoadUseDef(opcode, dst, src1, src2, &collector) ||
+		applyBinaryUseDef(opcode, dst, src1, src2, &collector) ||
+		applyUnaryUseDef(opcode, dst, src1, &collector) ||
+		applyControlFlowUseDef(opcode, src1, src2, &collector) ||
+		applyDatasetUseDef(opcode, dst, src1, src2, &collector) ||
+		applyIteratorUseDef(opcode, dst, src1, src2, &collector) ||
+		applyCallUseDef(opcode, dst, src1, src2, &collector) ||
+		applyStreamUseDef(opcode, dst, src1, src2, &collector) ||
+		applyUtilityUseDef(opcode, dst, &collector) {
+		return collector.uses, collector.defs
+	}
+
+	return collector.uses, collector.defs
+}
+
+type useDefCollector struct {
+	uses []int
+	defs []int
+}
+
+func (c *useDefCollector) addUse(op bytecode.Operand) {
+	if op != bytecode.NoopOperand && op.IsRegister() {
+		c.uses = append(c.uses, op.Register())
+	}
+}
+
+func (c *useDefCollector) addDef(op bytecode.Operand) {
+	if op != bytecode.NoopOperand && op.IsRegister() {
+		c.defs = append(c.defs, op.Register())
+	}
+}
+
+func (c *useDefCollector) addRangeUses(start, count int) {
+	if count <= 0 || start <= 0 {
 		return
-	// Moves / loads.
+	}
+
+	for reg := start; reg < start+count; reg++ {
+		c.uses = append(c.uses, reg)
+	}
+}
+
+func applyTerminalUseDef(opcode bytecode.Opcode, dst bytecode.Operand, collector *useDefCollector) bool {
+	if opcode != bytecode.OpReturn {
+		return false
+	}
+
+	collector.addUse(dst)
+	return true
+}
+
+func applyMoveLoadUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand, collector *useDefCollector) bool {
+	switch opcode {
 	case bytecode.OpMove:
-		addUse(src1)
-		addDef(dst)
-		return
-	case bytecode.OpLoadConst, bytecode.OpLoadParam, bytecode.OpLoadNone, bytecode.OpLoadBool, bytecode.OpLoadZero, bytecode.OpRand:
-		addDef(dst)
-		return
-	case bytecode.OpConcat:
-		addDef(dst)
-
-		if !src1.IsRegister() {
-			return
-		}
-
-		startReg := src1.Register()
-		count := int(src2)
-
-		if count <= 0 || startReg <= 0 {
-			return
-		}
-
-		for r := startReg; r < startReg+count; r++ {
-			uses = append(uses, r)
-		}
-
-		return
-	case bytecode.OpLoadArray:
-		addDef(dst)
-		return
-	case bytecode.OpLoadObject:
-		addDef(dst)
-		return
+		collector.addUse(src1)
+		collector.addDef(dst)
+		return true
+	case bytecode.OpLoadConst, bytecode.OpLoadParam, bytecode.OpLoadNone, bytecode.OpLoadBool, bytecode.OpLoadZero, bytecode.OpRand,
+		bytecode.OpLoadArray, bytecode.OpLoadObject:
+		collector.addDef(dst)
+		return true
 	case bytecode.OpLoadRange:
-		addUse(src1)
-		addUse(src2)
-		addDef(dst)
-		return
+		collector.addUse(src1)
+		collector.addUse(src2)
+		collector.addDef(dst)
+		return true
+	case bytecode.OpConcat:
+		collector.addDef(dst)
+		if !src1.IsRegister() {
+			return true
+		}
+		collector.addRangeUses(src1.Register(), int(src2))
+		return true
+	default:
+		return false
+	}
+}
 
-	// Simple arithmetic, comparisons, access.
+func applyBinaryUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand, collector *useDefCollector) bool {
+	if !isBinaryUseDefOpcode(opcode) {
+		return false
+	}
+
+	collector.addUse(src1)
+	collector.addUse(src2)
+	collector.addDef(dst)
+	return true
+}
+
+func isBinaryUseDefOpcode(opcode bytecode.Opcode) bool {
+	switch opcode {
 	case bytecode.OpAdd, bytecode.OpAddConst, bytecode.OpSub, bytecode.OpMulti, bytecode.OpDiv, bytecode.OpMod,
 		bytecode.OpCmp,
 		bytecode.OpEq, bytecode.OpNe, bytecode.OpGt, bytecode.OpLt, bytecode.OpGte, bytecode.OpLte,
@@ -189,122 +227,128 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 		bytecode.OpLoadKey, bytecode.OpLoadKeyOptional, bytecode.OpLoadKeyConst, bytecode.OpLoadKeyOptionalConst,
 		bytecode.OpLoadProperty, bytecode.OpLoadPropertyOptional, bytecode.OpLoadPropertyConst, bytecode.OpLoadPropertyOptionalConst,
 		bytecode.OpApplyQuery:
-		addUse(src1)
-		addUse(src2)
-		addDef(dst)
-		return
-
-	// Unary ops.
-	case bytecode.OpIncr, bytecode.OpDecr:
-		addUse(dst)
-		addDef(dst)
-		return
-	case bytecode.OpCastBool, bytecode.OpNegate, bytecode.OpNot, bytecode.OpFlipPositive, bytecode.OpFlipNegative, bytecode.OpLength, bytecode.OpType, bytecode.OpFlatten, bytecode.OpExists:
-		addUse(src1)
-		addDef(dst)
-		return
-
-	// Control flow.
-	case bytecode.OpJumpIfFalse, bytecode.OpJumpIfTrue, bytecode.OpJumpIfNone:
-		addUse(src1)
-		return
-	case bytecode.OpJumpIfNe:
-		addUse(src1)
-		addUse(src2)
-		return
-	case bytecode.OpJumpIfNeConst:
-		addUse(src1)
-		return
-	case bytecode.OpJumpIfEq:
-		addUse(src1)
-		addUse(src2)
-		return
-	case bytecode.OpJumpIfEqConst:
-		addUse(src1)
-		return
-	case bytecode.OpJumpIfMissingProperty:
-		addUse(src1)
-		addUse(src2)
-		return
-	case bytecode.OpJumpIfMissingPropertyConst:
-		addUse(src1)
-		return
-	case bytecode.OpJump, bytecode.OpFail:
-		return
-
-	// Dataset operations.
-	case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
-		addDef(dst)
-		return
-	case bytecode.OpPush, bytecode.OpArrayPush:
-		addUse(dst)
-		addUse(src1)
-		return
-	case bytecode.OpPushKV, bytecode.OpObjectSet, bytecode.OpObjectSetConst:
-		addUse(dst)
-		addUse(src1)
-		addUse(src2)
-		return
-
-	// Iterators.
-	case bytecode.OpIter:
-		addUse(src1)
-		addDef(dst)
-		return
-	case bytecode.OpIterValue, bytecode.OpIterKey:
-		addUse(src1)
-		addDef(dst)
-		return
-	case bytecode.OpIterLimit, bytecode.OpIterSkip:
-		addUse(src1)
-		addUse(src2)
-		addDef(src1)
-		return
-	case bytecode.OpIterNext:
-		addUse(src1)
-		return
-
-	// Host calls.
-	case bytecode.OpHCall, bytecode.OpProtectedHCall, bytecode.OpCall, bytecode.OpProtectedCall, bytecode.OpTailCall:
-		addUse(dst)
-		bytecode.VisitCallArgumentRegisters(op, src1, src2, func(reg int) {
-			uses = append(uses, reg)
-		})
-		if op != bytecode.OpTailCall {
-			addDef(dst)
-		}
-		return
-
-	// Stream.
-	case bytecode.OpStream:
-		addUse(dst)
-		addUse(src1)
-		addUse(src2)
-		addDef(dst)
-		return
-	case bytecode.OpStreamIter:
-		addUse(src1)
-		addUse(src2)
-		addDef(dst)
-		return
-	case bytecode.OpDispatch:
-		addUse(dst)
-		addUse(src1)
-		addUse(src2)
-		addDef(dst)
-		return
-
-	// Utility.
-	case bytecode.OpClose:
-		addUse(dst)
-		addDef(dst)
-		return
-	case bytecode.OpSleep:
-		addUse(dst)
-		return
+		return true
+	default:
+		return false
 	}
+}
 
-	return
+func applyUnaryUseDef(opcode bytecode.Opcode, dst, src1 bytecode.Operand, collector *useDefCollector) bool {
+	switch opcode {
+	case bytecode.OpIncr, bytecode.OpDecr:
+		collector.addUse(dst)
+		collector.addDef(dst)
+		return true
+	case bytecode.OpCastBool, bytecode.OpNegate, bytecode.OpNot, bytecode.OpFlipPositive, bytecode.OpFlipNegative, bytecode.OpLength, bytecode.OpType, bytecode.OpFlatten, bytecode.OpExists:
+		collector.addUse(src1)
+		collector.addDef(dst)
+		return true
+	default:
+		return false
+	}
+}
+
+func applyControlFlowUseDef(opcode bytecode.Opcode, src1, src2 bytecode.Operand, collector *useDefCollector) bool {
+	switch opcode {
+	case bytecode.OpJumpIfFalse, bytecode.OpJumpIfTrue, bytecode.OpJumpIfNone,
+		bytecode.OpJumpIfNeConst, bytecode.OpJumpIfEqConst, bytecode.OpJumpIfMissingPropertyConst:
+		collector.addUse(src1)
+		return true
+	case bytecode.OpJumpIfNe, bytecode.OpJumpIfEq, bytecode.OpJumpIfMissingProperty:
+		collector.addUse(src1)
+		collector.addUse(src2)
+		return true
+	case bytecode.OpJump, bytecode.OpFail:
+		return true
+	default:
+		return false
+	}
+}
+
+func applyDatasetUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand, collector *useDefCollector) bool {
+	switch opcode {
+	case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
+		collector.addDef(dst)
+		return true
+	case bytecode.OpPush, bytecode.OpArrayPush:
+		collector.addUse(dst)
+		collector.addUse(src1)
+		return true
+	case bytecode.OpPushKV, bytecode.OpObjectSet, bytecode.OpObjectSetConst:
+		collector.addUse(dst)
+		collector.addUse(src1)
+		collector.addUse(src2)
+		return true
+	default:
+		return false
+	}
+}
+
+func applyIteratorUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand, collector *useDefCollector) bool {
+	switch opcode {
+	case bytecode.OpIter, bytecode.OpIterValue, bytecode.OpIterKey:
+		collector.addUse(src1)
+		collector.addDef(dst)
+		return true
+	case bytecode.OpIterLimit, bytecode.OpIterSkip:
+		collector.addUse(src1)
+		collector.addUse(src2)
+		collector.addDef(src1)
+		return true
+	case bytecode.OpIterNext:
+		collector.addUse(src1)
+		return true
+	default:
+		return false
+	}
+}
+
+func applyCallUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand, collector *useDefCollector) bool {
+	switch opcode {
+	case bytecode.OpHCall, bytecode.OpProtectedHCall, bytecode.OpCall, bytecode.OpProtectedCall, bytecode.OpTailCall:
+		collector.addUse(dst)
+		bytecode.VisitCallArgumentRegisters(opcode, src1, src2, func(reg int) {
+			collector.uses = append(collector.uses, reg)
+		})
+		if opcode != bytecode.OpTailCall {
+			collector.addDef(dst)
+		}
+		return true
+	default:
+		return false
+	}
+}
+
+func applyStreamUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand, collector *useDefCollector) bool {
+	switch opcode {
+	case bytecode.OpStream, bytecode.OpDispatch:
+		collector.addUse(dst)
+		collector.addUse(src1)
+		collector.addUse(src2)
+		collector.addDef(dst)
+		return true
+	case bytecode.OpStreamIter:
+		collector.addUse(src1)
+		collector.addUse(src2)
+		collector.addDef(dst)
+		return true
+	default:
+		return false
+	}
+}
+
+func applyUtilityUseDef(opcode bytecode.Opcode, dst bytecode.Operand, collector *useDefCollector) bool {
+	switch opcode {
+	case bytecode.OpClose:
+		collector.addUse(dst)
+		collector.addDef(dst)
+		return true
+	case bytecode.OpSleep:
+		collector.addUse(dst)
+		return true
+	default:
+		return false
+	}
 }
 
 // computeUseDefForInstruction updates Use and Def sets for an instruction

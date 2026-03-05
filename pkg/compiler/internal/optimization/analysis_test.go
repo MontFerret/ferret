@@ -1,6 +1,7 @@
 package optimization
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -215,5 +216,60 @@ func TestCFG_String(t *testing.T) {
 
 	if !strings.Contains(str, "Block") {
 		t.Errorf("String output should contain block information")
+	}
+}
+
+func TestAnalyzer_IntersectPredecessorDominators(t *testing.T) {
+	block := &BasicBlock{
+		ID: 9,
+		Predecessors: []*BasicBlock{
+			{ID: 1},
+			{ID: 2},
+			{ID: 3},
+		},
+	}
+
+	dominators := map[int]map[int]bool{
+		1: {0: true, 1: true, 8: true},
+		2: {0: true, 2: true, 8: true},
+		3: {0: true, 3: true},
+	}
+
+	got := intersectPredecessorDominators(block, dominators)
+	want := map[int]bool{0: true}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected predecessor intersection: got %v, want %v", got, want)
+	}
+}
+
+func TestAnalyzer_FindImmediateDominatorHelper(t *testing.T) {
+	dominators := map[int]map[int]bool{
+		5: {2: true, 5: true},
+		2: {0: true, 2: true},
+	}
+
+	got, ok := findImmediateDominator(5, dominators)
+	if !ok {
+		t.Fatalf("expected immediate dominator to be found")
+	}
+	if got != 2 {
+		t.Fatalf("unexpected immediate dominator: got %d, want %d", got, 2)
+	}
+}
+
+func TestAnalyzer_IsDominatedByOtherCandidate(t *testing.T) {
+	blockDominators := map[int]bool{1: true, 2: true, 7: true}
+	dominators := map[int]map[int]bool{
+		1: {0: true, 1: true, 2: true},
+		2: {0: true, 2: true},
+	}
+
+	if !isDominatedByOtherCandidate(7, 1, blockDominators, dominators) {
+		t.Fatalf("expected candidate 1 to be dominated by candidate 2")
+	}
+
+	if isDominatedByOtherCandidate(7, 2, blockDominators, dominators) {
+		t.Fatalf("expected candidate 2 to remain as immediate-dominator candidate")
 	}
 }

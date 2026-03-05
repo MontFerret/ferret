@@ -244,3 +244,195 @@ func assertConstEqual(actual, expected runtime.Value) error {
 		return fmt.Errorf("unsupported expected constant type %T", expected)
 	}
 }
+
+type resolveBinaryFoldOperandsCase struct {
+	name      string
+	inst      bytecode.Instruction
+	state     constState
+	program   *bytecode.Program
+	wantLeft  runtime.Value
+	wantRight runtime.Value
+	wantOK    bool
+}
+
+var resolveBinaryFoldOperandsCases = []resolveBinaryFoldOperandsCase{
+	{
+		name: "register operands",
+		inst: bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+		state: constState{
+			1: runtime.NewInt(10),
+			2: runtime.NewInt(5),
+		},
+		program:   &bytecode.Program{},
+		wantLeft:  runtime.NewInt(10),
+		wantRight: runtime.NewInt(5),
+		wantOK:    true,
+	},
+	{
+		name: "add const right operand",
+		inst: bytecode.NewInstruction(bytecode.OpAddConst, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewConstant(0)),
+		state: constState{
+			1: runtime.NewInt(2),
+		},
+		program: &bytecode.Program{
+			Constants: []runtime.Value{
+				runtime.NewInt(7),
+			},
+		},
+		wantLeft:  runtime.NewInt(2),
+		wantRight: runtime.NewInt(7),
+		wantOK:    true,
+	},
+	{
+		name: "missing left operand constant",
+		inst: bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+		state: constState{
+			2: runtime.NewInt(5),
+		},
+		program: &bytecode.Program{},
+		wantOK:  false,
+	},
+	{
+		name: "add const without constant operand",
+		inst: bytecode.NewInstruction(bytecode.OpAddConst, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+		state: constState{
+			1: runtime.NewInt(2),
+			2: runtime.NewInt(3),
+		},
+		program: &bytecode.Program{},
+		wantOK:  false,
+	},
+	{
+		name:    "non register left operand",
+		inst:    bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(3), bytecode.NewConstant(0), bytecode.NewRegister(2)),
+		state:   constState{},
+		program: &bytecode.Program{},
+		wantOK:  false,
+	},
+}
+
+func runResolveBinaryFoldOperandsCase(t *testing.T, tc resolveBinaryFoldOperandsCase) {
+	t.Helper()
+
+	gotLeft, gotRight, ok := resolveBinaryFoldOperands(tc.inst, tc.state, tc.program)
+	if ok != tc.wantOK {
+		t.Fatalf("unexpected ok flag: got %v, want %v", ok, tc.wantOK)
+	}
+
+	if !tc.wantOK {
+		return
+	}
+
+	if err := assertConstEqual(gotLeft, tc.wantLeft); err != nil {
+		t.Fatalf("unexpected left operand: %v", err)
+	}
+	if err := assertConstEqual(gotRight, tc.wantRight); err != nil {
+		t.Fatalf("unexpected right operand: %v", err)
+	}
+}
+
+func TestConstantPropagation_ResolveBinaryFoldOperands(t *testing.T) {
+	for _, tc := range resolveBinaryFoldOperandsCases {
+		t.Run(tc.name, func(t *testing.T) {
+			runResolveBinaryFoldOperandsCase(t, tc)
+		})
+	}
+}
+
+func TestConstantPropagation_ResolveConcatFoldOperands(t *testing.T) {
+	tests := []struct {
+		name      string
+		inst      bytecode.Instruction
+		wantDst   int
+		wantStart int
+		wantCount int
+		wantOK    bool
+	}{
+		{
+			name:      "register operands",
+			inst:      bytecode.NewInstruction(bytecode.OpConcat, bytecode.NewRegister(4), bytecode.NewRegister(2), bytecode.Operand(3)),
+			wantDst:   4,
+			wantStart: 2,
+			wantCount: 3,
+			wantOK:    true,
+		},
+		{
+			name:   "missing destination register",
+			inst:   bytecode.NewInstruction(bytecode.OpConcat, bytecode.NewConstant(0), bytecode.NewRegister(2), bytecode.Operand(3)),
+			wantOK: false,
+		},
+		{
+			name:   "missing start register",
+			inst:   bytecode.NewInstruction(bytecode.OpConcat, bytecode.NewRegister(4), bytecode.NewConstant(0), bytecode.Operand(3)),
+			wantOK: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			dst, start, count, ok := resolveConcatFoldOperands(tc.inst)
+			if ok != tc.wantOK {
+				t.Fatalf("unexpected ok flag: got %v, want %v", ok, tc.wantOK)
+			}
+
+			if !tc.wantOK {
+				return
+			}
+
+			if dst != tc.wantDst || start != tc.wantStart || count != tc.wantCount {
+				t.Fatalf("unexpected operands: got (%d, %d, %d), want (%d, %d, %d)", dst, start, count, tc.wantDst, tc.wantStart, tc.wantCount)
+			}
+		})
+	}
+}
+
+func TestConstantPropagation_BuildConcatFoldConst(t *testing.T) {
+	tests := []struct {
+		name   string
+		state  constState
+		start  int
+		count  int
+		want   runtime.Value
+		wantOK bool
+	}{
+		{
+			name: "all constants present",
+			state: constState{
+				1: runtime.NewString("sum="),
+				2: runtime.NewInt(3),
+				3: runtime.True,
+			},
+			start:  1,
+			count:  3,
+			want:   runtime.NewString("sum=3true"),
+			wantOK: true,
+		},
+		{
+			name: "missing range entry",
+			state: constState{
+				1: runtime.NewString("a"),
+				3: runtime.NewString("b"),
+			},
+			start:  1,
+			count:  3,
+			wantOK: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, ok := buildConcatFoldConst(tc.state, tc.start, tc.count)
+			if ok != tc.wantOK {
+				t.Fatalf("unexpected ok flag: got %v, want %v", ok, tc.wantOK)
+			}
+
+			if !tc.wantOK {
+				return
+			}
+
+			if err := assertConstEqual(got, tc.want); err != nil {
+				t.Fatalf("unexpected folded concat constant: %v", err)
+			}
+		})
+	}
+}
