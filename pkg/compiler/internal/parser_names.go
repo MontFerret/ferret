@@ -14,14 +14,6 @@ func textOfBindingIdentifier(id fql.IBindingIdentifierContext) string {
 	return id.GetText()
 }
 
-func tokenOfBindingIdentifier(id fql.IBindingIdentifierContext) antlr.Token {
-	if id == nil {
-		return nil
-	}
-
-	return id.GetStart()
-}
-
 func textOfLoopVariable(loopVar fql.ILoopVariableContext) string {
 	if loopVar == nil {
 		return ""
