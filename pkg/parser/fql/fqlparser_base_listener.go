@@ -206,6 +206,18 @@ func (s *BaseFqlParserListener) EnterCollectClause(ctx *CollectClauseContext) {}
 // ExitCollectClause is called when production collectClause is exited.
 func (s *BaseFqlParserListener) ExitCollectClause(ctx *CollectClauseContext) {}
 
+// EnterBindingIdentifier is called when production bindingIdentifier is entered.
+func (s *BaseFqlParserListener) EnterBindingIdentifier(ctx *BindingIdentifierContext) {}
+
+// ExitBindingIdentifier is called when production bindingIdentifier is exited.
+func (s *BaseFqlParserListener) ExitBindingIdentifier(ctx *BindingIdentifierContext) {}
+
+// EnterLoopVariable is called when production loopVariable is entered.
+func (s *BaseFqlParserListener) EnterLoopVariable(ctx *LoopVariableContext) {}
+
+// ExitLoopVariable is called when production loopVariable is exited.
+func (s *BaseFqlParserListener) ExitLoopVariable(ctx *LoopVariableContext) {}
+
 // EnterCollectSelector is called when production collectSelector is entered.
 func (s *BaseFqlParserListener) EnterCollectSelector(ctx *CollectSelectorContext) {}
 

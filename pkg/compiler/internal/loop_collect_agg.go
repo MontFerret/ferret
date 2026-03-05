@@ -71,7 +71,7 @@ func (c *LoopCollectCompiler) reportAggregateSemanticError(ctx antlr.ParserRuleC
 // parseAggregateSelector validates and compiles one aggregate selector.
 // It returns a normalized selector representation shared by grouped/global initializers.
 func (c *LoopCollectCompiler) parseAggregateSelector(selector fql.ICollectAggregateSelectorContext) (*core.CompiledAggregateSelector, bool) {
-	name := runtime.String(selector.Identifier().GetText())
+	name := runtime.String(textOfBindingIdentifier(selector.BindingIdentifier()))
 	fcx := selector.FunctionCallExpression()
 
 	if fcx == nil || fcx.FunctionCall() == nil {
@@ -247,7 +247,7 @@ func (c *LoopCollectCompiler) buildAggregatePlan(selectors []fql.ICollectAggrega
 			return nil, false
 		}
 
-		keys = append(keys, runtime.String(selector.Identifier().GetText()))
+		keys = append(keys, runtime.String(textOfBindingIdentifier(selector.BindingIdentifier())))
 		kinds = append(kinds, kind)
 	}
 

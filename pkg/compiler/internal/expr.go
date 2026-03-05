@@ -2762,9 +2762,11 @@ func (c *ExprCompiler) compileInlineLimit(inline fql.IInlineExpressionContext) {
 func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) bytecode.Operand {
 	// Check if the context is valid (in case of parser errors)
 	var name string
+	token := ctx.GetStart()
 
 	if id := ctx.Identifier(); id != nil {
 		name = id.GetText()
+		token = id.GetSymbol()
 	} else if srw := ctx.SafeReservedWord(); srw != nil {
 		name = srw.GetText()
 	} else {
@@ -2775,7 +2777,7 @@ func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) bytecode.Operan
 	op, _, found := c.ctx.Symbols.Resolve(name)
 
 	if !found {
-		c.ctx.Errors.VariableNotFound(ctx.Identifier().GetSymbol(), name)
+		c.ctx.Errors.VariableNotFound(token, name)
 
 		return bytecode.NoopOperand
 	}

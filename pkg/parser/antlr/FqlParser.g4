@@ -32,7 +32,8 @@ options { tokenVocab=FqlLexer; }
 		case FqlParserAnd, FqlParserOr, FqlParserAs, FqlParserDistinct, FqlParserFilter, FqlParserSort,
 			FqlParserLimit, FqlParserCollect, FqlParserSortDirection, FqlParserInto, FqlParserKeep, FqlParserWith,
 			FqlParserAll, FqlParserAny, FqlParserAt, FqlParserLeast, FqlParserAggregate, FqlParserEvent, FqlParserTimeout,
-			FqlParserOptions, FqlParserEvery, FqlParserBackoff, FqlParserJitter, FqlParserExists, FqlParserValue, FqlParserStep:
+			FqlParserOptions, FqlParserEvery, FqlParserBackoff, FqlParserJitter, FqlParserExists, FqlParserValue, FqlParserStep,
+			FqlParserOne, FqlParserCount:
 			return true
 		default:
 			return false
@@ -41,20 +42,19 @@ options { tokenVocab=FqlLexer; }
 
 	func (p *FqlParser) isQueryModifierAhead() bool {
 		la1 := p.GetTokenStream().LA(1)
-		if la1 == FqlParserExists || la1 == FqlParserAny || la1 == FqlParserValue {
+		switch la1 {
+		case FqlParserExists, FqlParserAny, FqlParserValue, FqlParserCount, FqlParserOne:
 			return true
-		}
+		case FqlParserIdentifier:
+			tok := p.GetTokenStream().LT(1)
+			if tok == nil {
+				return false
+			}
 
-		if la1 != FqlParserIdentifier {
+			return p.isQueryModifierText(tok.GetText())
+		default:
 			return false
 		}
-
-		tok := p.GetTokenStream().LT(1)
-		if tok == nil {
-			return false
-		}
-
-		return p.isQueryModifierText(tok.GetText())
 	}
 
 	func (p *FqlParser) isQueryModifierText(text string) bool {
@@ -215,16 +215,16 @@ returnExpression
     ;
 
 forExpression
-    : For valueVariable=(Identifier | IgnoreIdentifier) (Comma counterVariable=Identifier)? In forExpressionSource
+    : For valueVariable=loopVariable (Comma counterVariable=bindingIdentifier)? In forExpressionSource
         forExpressionBody*
         forExpressionReturn
-    | For valueVariable=(Identifier | IgnoreIdentifier) Assign stepInit=expression While stepCondition=expression Step stepVariable=(Identifier | IgnoreIdentifier) stepUpdate=(Increment | Decrement)
+    | For valueVariable=loopVariable Assign stepInit=expression While stepCondition=expression Step stepVariable=loopVariable stepUpdate=(Increment | Decrement)
         forExpressionBody*
         forExpressionReturn
-    | For valueVariable=(Identifier | IgnoreIdentifier) Assign stepInit=expression While stepCondition=expression Step stepVariable=(Identifier | IgnoreIdentifier) Assign stepUpdateExp=expression
+    | For valueVariable=loopVariable Assign stepInit=expression While stepCondition=expression Step stepVariable=loopVariable Assign stepUpdateExp=expression
         forExpressionBody*
         forExpressionReturn
-    | For valueVariable=(Identifier | IgnoreIdentifier) Do? While expression
+    | For valueVariable=loopVariable Do? While expression
         forExpressionBody*
         forExpressionReturn
     ;
@@ -302,9 +302,18 @@ collectClause
   | Collect collectCounter
   ;
 
+bindingIdentifier
+    : Identifier
+    | safeReservedWord
+    ;
+
+loopVariable
+    : bindingIdentifier
+    | IgnoreIdentifier
+    ;
 
 collectSelector
-    : Identifier Assign expression
+    : bindingIdentifier Assign expression
     ;
 
 collectGrouping
@@ -312,7 +321,7 @@ collectGrouping
     ;
 
 collectAggregateSelector
-    : Identifier Assign functionCallExpression
+    : bindingIdentifier Assign functionCallExpression
     ;
 
 collectAggregator
@@ -321,7 +330,7 @@ collectAggregator
 
 collectGroupProjection
     : Into collectSelector
-    | Into Identifier (collectGroupProjectionFilter)?
+    | Into bindingIdentifier (collectGroupProjectionFilter)?
     ;
 
 collectGroupProjectionFilter
@@ -329,7 +338,7 @@ collectGroupProjectionFilter
     ;
 
 collectCounter
-    : With Identifier Into Identifier
+    : With Count Into bindingIdentifier
     ;
 
 waitForExpression
@@ -624,6 +633,7 @@ safeReservedWord
     | Sort
     | Limit
     | Collect
+    | Count
     | SortDirection
     | Into
     | Keep
@@ -642,6 +652,7 @@ safeReservedWord
     | Exists
     | Value
     | Step
+    | One
     ;
 
 unsafeReservedWord
@@ -816,8 +827,8 @@ queryModifier
     : Exists
     | Any
     | Value
-    | {p.isCurrentIdentifierText("COUNT")}? Identifier
-    | {p.isCurrentIdentifierText("ONE")}? Identifier
+    | Count
+    | One
     ;
 
 queryPayload

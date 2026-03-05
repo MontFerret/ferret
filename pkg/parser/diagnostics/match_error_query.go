@@ -252,11 +252,10 @@ func isQueryModifierToken(node *TokenNode) bool {
 	switch node.Token().GetTokenType() {
 	case fql.FqlLexerExists,
 		fql.FqlLexerAny,
-		fql.FqlLexerValue:
+		fql.FqlLexerValue,
+		fql.FqlLexerCount,
+		fql.FqlLexerOne:
 		return true
-	case fql.FqlLexerIdentifier:
-		text := node.Token().GetText()
-		return strings.EqualFold(text, "COUNT") || strings.EqualFold(text, "ONE")
 	default:
 		return false
 	}
@@ -293,7 +292,9 @@ func isSafeReservedWordToken(node *TokenNode) bool {
 		fql.FqlLexerJitter,
 		fql.FqlLexerExists,
 		fql.FqlLexerValue,
-		fql.FqlLexerStep:
+		fql.FqlLexerStep,
+		fql.FqlLexerCount,
+		fql.FqlLexerOne:
 		return true
 	default:
 		return false

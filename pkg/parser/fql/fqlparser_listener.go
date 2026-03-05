@@ -100,6 +100,12 @@ type FqlParserListener interface {
 	// EnterCollectClause is called when entering the collectClause production.
 	EnterCollectClause(c *CollectClauseContext)
 
+	// EnterBindingIdentifier is called when entering the bindingIdentifier production.
+	EnterBindingIdentifier(c *BindingIdentifierContext)
+
+	// EnterLoopVariable is called when entering the loopVariable production.
+	EnterLoopVariable(c *LoopVariableContext)
+
 	// EnterCollectSelector is called when entering the collectSelector production.
 	EnterCollectSelector(c *CollectSelectorContext)
 
@@ -501,6 +507,12 @@ type FqlParserListener interface {
 
 	// ExitCollectClause is called when exiting the collectClause production.
 	ExitCollectClause(c *CollectClauseContext)
+
+	// ExitBindingIdentifier is called when exiting the bindingIdentifier production.
+	ExitBindingIdentifier(c *BindingIdentifierContext)
+
+	// ExitLoopVariable is called when exiting the loopVariable production.
+	ExitLoopVariable(c *LoopVariableContext)
 
 	// ExitCollectSelector is called when exiting the collectSelector production.
 	ExitCollectSelector(c *CollectSelectorContext)

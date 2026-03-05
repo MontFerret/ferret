@@ -114,10 +114,12 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 				return c.ctx.ExprCompiler.Compile(exp)
 			}
 
-			variable, _, found := c.ctx.Symbols.Resolve(ctx.GetStepVariable().GetText())
+			stepVar := ctx.GetStepVariable()
+			stepVarName := textOfLoopVariable(stepVar)
+			variable, _, found := c.ctx.Symbols.Resolve(stepVarName)
 
 			if !found {
-				c.ctx.Errors.VariableNotFound(ctx.GetStepVariable(), ctx.GetStepVariable().GetText())
+				c.ctx.Errors.VariableNotFound(tokenOfLoopVariable(stepVar), stepVarName)
 				return bytecode.NoopOperand
 			}
 
@@ -150,7 +152,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	}
 
 	if val := ctx.GetValueVariable(); val != nil {
-		varName := val.GetText()
+		varName := textOfLoopVariable(val)
 		loop.DeclareValueVar(varName, c.ctx.Symbols, valueType)
 
 		if loop.Value.IsRegister() {
@@ -160,9 +162,11 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 		if loop.Kind == core.ForStepLoop {
 			stepVar := ctx.GetStepVariable()
 
-			if stepVar != nil && varName != stepVar.GetText() {
-				if _, _, found := c.ctx.Symbols.Resolve(stepVar.GetText()); found {
-					ce := c.ctx.Errors.Create(parser.SemanticError, ctx, fmt.Sprintf("step variable missmatch: expected '%s' but got '%s'", varName, stepVar.GetText()))
+			stepVarName := textOfLoopVariable(stepVar)
+
+			if stepVar != nil && varName != stepVarName {
+				if _, _, found := c.ctx.Symbols.Resolve(stepVarName); found {
+					ce := c.ctx.Errors.Create(parser.SemanticError, ctx, fmt.Sprintf("step variable missmatch: expected '%s' but got '%s'", varName, stepVarName))
 					ce.Hint = "Make sure the same variable is used in all parts of the STEP loop"
 					c.ctx.Errors.Add(ce)
 				}
@@ -171,7 +175,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	}
 
 	if ctr := ctx.GetCounterVariable(); ctr != nil {
-		loop.DeclareKeyVar(ctr.GetText(), c.ctx.Symbols, keyType)
+		loop.DeclareKeyVar(textOfBindingIdentifier(ctr), c.ctx.Symbols, keyType)
 
 		if loop.Key.IsRegister() {
 			c.ctx.Types.Set(loop.Key, keyType)

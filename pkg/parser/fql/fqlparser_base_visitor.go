@@ -131,6 +131,14 @@ func (v *BaseFqlParserVisitor) VisitCollectClause(ctx *CollectClauseContext) int
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitBindingIdentifier(ctx *BindingIdentifierContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitLoopVariable(ctx *LoopVariableContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitCollectSelector(ctx *CollectSelectorContext) interface{} {
 	return v.VisitChildren(ctx)
 }

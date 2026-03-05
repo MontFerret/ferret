@@ -158,7 +158,7 @@ func (f *clauseFormatter) formatCollectSelector(ctx *fql.CollectSelectorContext)
 		return
 	}
 
-	if id := ctx.Identifier(); id != nil {
+	if id := ctx.BindingIdentifier(); id != nil {
 		f.p.write(id.GetText())
 	}
 
@@ -194,7 +194,7 @@ func (f *clauseFormatter) formatCollectAggregateSelector(ctx *fql.CollectAggrega
 		return
 	}
 
-	if id := ctx.Identifier(); id != nil {
+	if id := ctx.BindingIdentifier(); id != nil {
 		f.p.write(id.GetText())
 	}
 
@@ -220,7 +220,7 @@ func (f *clauseFormatter) formatCollectGroupProjection(ctx *fql.CollectGroupProj
 		return
 	}
 
-	if id := ctx.Identifier(); id != nil {
+	if id := ctx.BindingIdentifier(); id != nil {
 		f.p.write(id.GetText())
 
 		if filter := ctx.CollectGroupProjectionFilter(); filter != nil {
@@ -257,15 +257,13 @@ func (f *clauseFormatter) formatCollectCounter(ctx *fql.CollectCounterContext) {
 	f.writeKeyword(keywordWith)
 	f.p.space()
 
-	if id := ctx.Identifier(0); id != nil {
-		f.p.write(id.GetText())
-	}
+	f.writeKeyword(keywordCount)
 
 	f.p.space()
 	f.writeKeyword(keywordInto)
 	f.p.space()
 
-	if id := ctx.Identifier(1); id != nil {
+	if id := ctx.BindingIdentifier(); id != nil {
 		f.p.write(id.GetText())
 	}
 }

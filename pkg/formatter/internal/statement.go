@@ -395,7 +395,7 @@ func (f *statementFormatter) forHeaderStopIndex(ctx *fql.ForExpressionContext) i
 		}
 
 		if tok := ctx.GetStepVariable(); tok != nil {
-			return tok.GetStop()
+			return f.trivia.stopIndex(tok)
 		}
 	case ctx.While() != nil:
 		if expr := ctx.Expression(0); expr != nil {

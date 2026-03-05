@@ -1,10 +1,6 @@
 package internal
 
 import (
-	"strings"
-
-	"github.com/antlr4-go/antlr/v4"
-
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
@@ -28,13 +24,10 @@ func (c *LoopCollectCompiler) initializeProjection(kv *core.KV, projection fql.I
 
 	// Handle counter projection
 	if counter != nil {
-		// Extract the counter variable name from the context
-		// Extract the target variable (the second Identifier after INTO)
-		varName := counter.Identifier(1).GetText()
-
-		// Optional: validate that the first Identifier is actually "COUNT"
-		if strings.ToUpper(counter.Identifier(0).GetText()) != "COUNT" {
-			err := c.ctx.Errors.Create(parser.SemanticError, counter, "Invalid count projection")
+		// Extract the target variable after INTO
+		varName := textOfBindingIdentifier(counter.BindingIdentifier())
+		if varName == "" {
+			err := c.ctx.Errors.Create(parser.SemanticError, counter, "Missing counter projection variable")
 			err.Hint = "Use WITH COUNT INTO <variable>."
 			c.ctx.Errors.Add(err)
 			return nil
@@ -84,7 +77,7 @@ func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregato
 // Returns the variable name for the projection.
 func (c *LoopCollectCompiler) compileGroupVariableProjection(kv *core.KV, groupVar fql.ICollectGroupProjectionContext) string {
 	// Handle default projection (identifier)
-	if identifier := groupVar.Identifier(); identifier != nil {
+	if identifier := groupVar.BindingIdentifier(); identifier != nil {
 		// Default projection uses an identifier and optional filter
 		return c.compileDefaultGroupProjection(kv, identifier, groupVar.CollectGroupProjectionFilter())
 	}
@@ -102,7 +95,7 @@ func (c *LoopCollectCompiler) compileGroupVariableProjection(kv *core.KV, groupV
 // compileDefaultGroupProjection handles the default group projection with an identifier.
 // It can either project all local variables (when keeper is nil) or only specific variables (when keeper is provided).
 // Returns the identifier text as the variable name for the projection.
-func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identifier antlr.TerminalNode, keeper fql.ICollectGroupProjectionFilterContext) string {
+func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identifier fql.IBindingIdentifierContext, keeper fql.ICollectGroupProjectionFilterContext) string {
 	if keeper == nil {
 		// If no filter is provided, project all local variables
 		variables := c.ctx.Symbols.LocalVariables()
@@ -174,5 +167,5 @@ func (c *LoopCollectCompiler) compileCustomGroupProjection(kv *core.KV, selector
 	c.ctx.Emitter.EmitMove(kv.Value, selectorReg)
 
 	// Return the selector identifier as the variable name
-	return selector.Identifier().GetText()
+	return textOfBindingIdentifier(selector.BindingIdentifier())
 }
