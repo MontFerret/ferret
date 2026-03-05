@@ -17,11 +17,48 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// WaitCompiler handles the compilation of WAITFOR expressions in FQL queries.
-// It transforms wait operations into VM instructions for event streaming and polling.
-type WaitCompiler struct {
-	ctx *CompilerContext
-}
+type (
+	// WaitCompiler handles the compilation of WAITFOR expressions in FQL queries.
+	// It transforms wait operations into VM instructions for event streaming and polling.
+	WaitCompiler struct {
+		ctx *CompilerContext
+	}
+
+	waitForPredicateMode int
+
+	waitForBackoff int
+
+	waitPredicateCompileConfig struct {
+		mode          waitForPredicateMode
+		predExpr      fql.IExpressionContext
+		timeoutReg    bytecode.Operand
+		everyReg      bytecode.Operand
+		capEveryReg   bytecode.Operand
+		backoff       waitForBackoff
+		jitterReg     bytecode.Operand
+		jitterLiteral *float64
+		hasJitter     bool
+	}
+
+	waitPredicatePollState struct {
+		baseEveryReg bytecode.Operand
+		pollReg      bytecode.Operand
+		intervalReg  bytecode.Operand
+		resultReg    bytecode.Operand
+		startReg     bytecode.Operand
+		unitReg      bytecode.Operand
+	}
+
+	durationClause interface {
+		DurationLiteral() fql.IDurationLiteralContext
+		IntegerLiteral() fql.IIntegerLiteralContext
+		FloatLiteral() fql.IFloatLiteralContext
+		Variable() fql.IVariableContext
+		Param() fql.IParamContext
+		MemberExpression() fql.IMemberExpressionContext
+		FunctionCall() fql.IFunctionCallContext
+	}
+)
 
 // NewWaitCompiler creates a new instance of WaitCompiler with the given compiler context.
 func NewWaitCompiler(ctx *CompilerContext) *WaitCompiler {
@@ -30,16 +67,12 @@ func NewWaitCompiler(ctx *CompilerContext) *WaitCompiler {
 	}
 }
 
-type waitForPredicateMode int
-
 const (
 	waitForPredicateModeBool waitForPredicateMode = iota
 	waitForPredicateModeExists
 	waitForPredicateModeNotExists
 	waitForPredicateModeValue
 )
-
-type waitForBackoff int
 
 const (
 	waitForBackoffNone waitForBackoff = iota
@@ -48,37 +81,6 @@ const (
 )
 
 const waitForDefaultEveryMs = 100
-
-type waitPredicateCompileConfig struct {
-	mode          waitForPredicateMode
-	predExpr      fql.IExpressionContext
-	timeoutReg    bytecode.Operand
-	everyReg      bytecode.Operand
-	capEveryReg   bytecode.Operand
-	backoff       waitForBackoff
-	jitterReg     bytecode.Operand
-	jitterLiteral *float64
-	hasJitter     bool
-}
-
-type waitPredicatePollState struct {
-	baseEveryReg bytecode.Operand
-	pollReg      bytecode.Operand
-	intervalReg  bytecode.Operand
-	resultReg    bytecode.Operand
-	startReg     bytecode.Operand
-	unitReg      bytecode.Operand
-}
-
-type durationClause interface {
-	DurationLiteral() fql.IDurationLiteralContext
-	IntegerLiteral() fql.IIntegerLiteralContext
-	FloatLiteral() fql.IFloatLiteralContext
-	Variable() fql.IVariableContext
-	Param() fql.IParamContext
-	MemberExpression() fql.IMemberExpressionContext
-	FunctionCall() fql.IFunctionCallContext
-}
 
 // Compile processes a WAITFOR expression from the FQL AST and generates the appropriate VM instructions.
 func (c *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) bytecode.Operand {

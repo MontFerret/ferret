@@ -7,8 +7,19 @@ import (
 
 const PeepholePassName = "peephole"
 
-// PeepholePass performs simple local rewrites to remove redundant instructions.
-type PeepholePass struct{}
+type (
+	// PeepholePass performs simple local rewrites to remove redundant instructions.
+	PeepholePass struct{}
+
+	peepholeRunState struct {
+		prog               *bytecode.Program
+		bytecodeLen        int
+		targets            map[int]bool
+		liveness           map[int]*LivenessInfo
+		blockByInstruction []*BasicBlock
+		keep               []bool
+	}
+)
 
 // NewPeepholePass creates a new peephole pass.
 func NewPeepholePass() Pass {
@@ -44,15 +55,6 @@ func (p *PeepholePass) Run(ctx *PassContext) (*PassResult, error) {
 		Modified: true,
 		Metadata: map[string]any{},
 	}, nil
-}
-
-type peepholeRunState struct {
-	prog               *bytecode.Program
-	bytecodeLen        int
-	targets            map[int]bool
-	liveness           map[int]*LivenessInfo
-	blockByInstruction []*BasicBlock
-	keep               []bool
 }
 
 func newPeepholeRunState(ctx *PassContext) *peepholeRunState {

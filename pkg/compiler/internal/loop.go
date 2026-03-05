@@ -14,13 +14,28 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
-// LoopCompiler handles the compilation of FOR loop expressions in FQL queries.
-// It transforms loop operations into VM instructions for iteration, filtering, and data manipulation.
-type LoopCompiler struct {
-	ctx *CompilerContext
-}
+type (
+	// LoopCompiler handles the compilation of FOR loop expressions in FQL queries.
+	// It transforms loop operations into VM instructions for iteration, filtering, and data manipulation.
+	LoopCompiler struct {
+		ctx *CompilerContext
+	}
 
-type loopOperandKind int
+	loopOperandKind int
+
+	loopOperandContext struct {
+		param                  fql.IParamContext
+		integerLiteral         fql.IIntegerLiteralContext
+		variable               fql.IVariableContext
+		memberExpression       fql.IMemberExpressionContext
+		implicitCurrentExpr    fql.IImplicitCurrentExpressionContext
+		implicitMemberExpr     fql.IImplicitMemberExpressionContext
+		functionCallExpression fql.IFunctionCallExpressionContext
+		rangeOperator          fql.IRangeOperatorContext
+		arrayLiteral           fql.IArrayLiteralContext
+		objectLiteral          fql.IObjectLiteralContext
+	}
+)
 
 const (
 	loopOperandParam loopOperandKind = iota
@@ -34,19 +49,6 @@ const (
 	loopOperandArrayLiteral
 	loopOperandObjectLiteral
 )
-
-type loopOperandContext struct {
-	param                  fql.IParamContext
-	integerLiteral         fql.IIntegerLiteralContext
-	variable               fql.IVariableContext
-	memberExpression       fql.IMemberExpressionContext
-	implicitCurrentExpr    fql.IImplicitCurrentExpressionContext
-	implicitMemberExpr     fql.IImplicitMemberExpressionContext
-	functionCallExpression fql.IFunctionCallExpressionContext
-	rangeOperator          fql.IRangeOperatorContext
-	arrayLiteral           fql.IArrayLiteralContext
-	objectLiteral          fql.IObjectLiteralContext
-}
 
 // NewLoopCompiler creates a new instance of LoopCompiler with the given compiler context.
 func NewLoopCompiler(ctx *CompilerContext) *LoopCompiler {

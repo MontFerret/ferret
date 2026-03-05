@@ -25,7 +25,36 @@ const (
 	runtimeWait     = "WAIT"
 )
 
-type queryModifier string
+type (
+	// ExprCompiler handles the compilation of expressions in FQL queries.
+	// It transforms expression operations from the AST into VM instructions.
+	ExprCompiler struct {
+		ctx                  *CompilerContext
+		implicitCurrentDepth int
+	}
+
+	// queryModifier represents modifiers that can be applied to queries for altering their behavior or result interpretation.
+	queryModifier string
+
+	// atomBinaryOperator represents binary operators used in FQL expressions.
+	atomBinaryOperator struct {
+		opcode  bytecode.Opcode
+		negated bool
+		regexp  bool
+	}
+
+	matchResultGroup struct {
+		label  core.Label
+		result fql.IExpressionContext
+		arms   []int
+	}
+
+	optionalMemberChainState struct {
+		stickyDst bool
+		hasJump   bool
+		endLabel  core.Label
+	}
+)
 
 const (
 	queryModifierUnknown queryModifier = ""
@@ -40,13 +69,6 @@ const (
 	queryValueFailMessage = "QUERY VALUE expected at least one match"
 	queryOneFailMessage   = "QUERY ONE expected exactly one match"
 )
-
-// ExprCompiler handles the compilation of expressions in FQL queries.
-// It transforms expression operations from the AST into VM instructions.
-type ExprCompiler struct {
-	ctx                  *CompilerContext
-	implicitCurrentDepth int
-}
 
 // NewExprCompiler creates a new instance of ExprCompiler with the given compiler context.
 func NewExprCompiler(ctx *CompilerContext) *ExprCompiler {
@@ -593,12 +615,6 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) bytecode.Oper
 	return c.compileLeafAtom(ctx)
 }
 
-type atomBinaryOperator struct {
-	opcode  bytecode.Opcode
-	negated bool
-	regexp  bool
-}
-
 func resolveAtomBinaryOperator(ctx fql.IExpressionAtomContext) (atomBinaryOperator, bool) {
 	if op := ctx.MultiplicativeOperator(); op != nil {
 		switch op.GetText() {
@@ -957,12 +973,6 @@ func (c *ExprCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext, dst
 		}
 		c.ctx.Symbols.ExitScope()
 	}
-}
-
-type matchResultGroup struct {
-	label  core.Label
-	result fql.IExpressionContext
-	arms   []int
 }
 
 func collectMatchResultMerges(c *ExprCompiler, arms []fql.IMatchPatternArmContext) (map[int]core.Label, []matchResultGroup) {
@@ -1873,12 +1883,6 @@ func (c *ExprCompiler) compileImplicitSimpleMemberExpressionSegments(src bytecod
 
 	c.finalizeOptionalMemberChain(state)
 	return result
-}
-
-type optionalMemberChainState struct {
-	stickyDst bool
-	hasJump   bool
-	endLabel  core.Label
 }
 
 func (c *ExprCompiler) emitOptionalMemberLoadSegment(span file.Span, src, segmentOp bytecode.Operand, constOperand, optional bool, state *optionalMemberChainState) bytecode.Operand {

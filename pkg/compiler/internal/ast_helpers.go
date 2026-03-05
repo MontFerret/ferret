@@ -9,13 +9,20 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-type scalarLiteralNode interface {
-	NoneLiteral() fql.INoneLiteralContext
-	BooleanLiteral() fql.IBooleanLiteralContext
-	StringLiteral() fql.IStringLiteralContext
-	FloatLiteral() fql.IFloatLiteralContext
-	IntegerLiteral() fql.IIntegerLiteralContext
-}
+type (
+	scalarLiteralNode interface {
+		NoneLiteral() fql.INoneLiteralContext
+		BooleanLiteral() fql.IBooleanLiteralContext
+		StringLiteral() fql.IStringLiteralContext
+		FloatLiteral() fql.IFloatLiteralContext
+		IntegerLiteral() fql.IIntegerLiteralContext
+	}
+
+	operandBranch struct {
+		enabled bool
+		compile func() bytecode.Operand
+	}
+)
 
 func compileScalarLiteralOperand(ctx *CompilerContext, lit scalarLiteralNode) bytecode.Operand {
 	if lit == nil {
@@ -122,11 +129,6 @@ func literalIntValue(text string) (runtime.Value, bool) {
 	}
 
 	return runtime.NewInt(val), true
-}
-
-type operandBranch struct {
-	enabled bool
-	compile func() bytecode.Operand
 }
 
 func newOperandBranch(enabled bool, compile func() bytecode.Operand) operandBranch {

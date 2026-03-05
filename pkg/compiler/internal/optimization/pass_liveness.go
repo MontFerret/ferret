@@ -9,9 +9,9 @@ const (
 	LivenessAnalysis         = "liveness"
 )
 
-// LivenessAnalysisPass performs liveness analysis to determine which registers
-// are live (potentially used) at each program point
 type (
+	// LivenessAnalysisPass performs liveness analysis to determine which registers
+	// are live (potentially used) at each program point
 	LivenessAnalysisPass struct{}
 
 	// LivenessInfo contains liveness information for a basic block
@@ -20,6 +20,11 @@ type (
 		LiveOut map[int]bool // Registers live at block exit
 		Use     map[int]bool // Registers used in block before definition
 		Def     map[int]bool // Registers defined in block
+	}
+
+	useDefCollector struct {
+		uses []int
+		defs []int
 	}
 )
 
@@ -135,11 +140,6 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 	}
 
 	return collector.uses, collector.defs
-}
-
-type useDefCollector struct {
-	uses []int
-	defs []int
 }
 
 func (c *useDefCollector) addUse(op bytecode.Operand) {

@@ -11,10 +11,26 @@ import (
 
 const ConstantPropagationPassName = "constant-propagation"
 
-// ConstantPropagationPass performs a simple constant propagation and folding.
-// It is conservative across control-flow merges: a register is considered constant
-// only if all predecessors agree on the same constant value.
-type ConstantPropagationPass struct{}
+type (
+	// ConstantPropagationPass performs a simple constant propagation and folding.
+	// It is conservative across control-flow merges: a register is considered constant
+	// only if all predecessors agree on the same constant value.
+	ConstantPropagationPass struct{}
+
+	constState map[int]runtime.Value
+
+	constFoldEnv struct {
+		state      constState
+		program    *bytecode.Program
+		constIndex map[string]int
+		bg         context.Context
+	}
+
+	constFoldResult struct {
+		modified  bool
+		newConsts map[int]runtime.Value
+	}
+)
 
 // NewConstantPropagationPass creates a new constant propagation pass.
 func NewConstantPropagationPass() Pass {
@@ -87,8 +103,6 @@ func (p *ConstantPropagationPass) Run(ctx *PassContext) (*PassResult, error) {
 		Metadata: map[string]any{},
 	}, nil
 }
-
-type constState map[int]runtime.Value
 
 func copyState(in constState) constState {
 	if len(in) == 0 {
@@ -173,18 +187,6 @@ func applyConstFolding(inst *bytecode.Instruction, state constState, program *by
 	applyConstUpdates(state, defs, result.newConsts)
 
 	return result.modified
-}
-
-type constFoldEnv struct {
-	state      constState
-	program    *bytecode.Program
-	constIndex map[string]int
-	bg         context.Context
-}
-
-type constFoldResult struct {
-	modified  bool
-	newConsts map[int]runtime.Value
 }
 
 func newConstFoldResult() constFoldResult {
