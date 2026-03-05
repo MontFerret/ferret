@@ -1,7 +1,9 @@
 package internal
 
 import (
+	"errors"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -133,6 +135,105 @@ func TestResolveWaitPredicateMode(t *testing.T) {
 			mode := resolveWaitPredicateMode(tt.hasValue, tt.hasExists, tt.hasNot)
 			if mode != tt.expected {
 				t.Fatalf("unexpected mode: got %d want %d", mode, tt.expected)
+			}
+		})
+	}
+}
+
+func TestParseDurationLiteral_Valid(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		expected    runtime.Value
+		expectFloat bool
+	}{
+		{
+			name:     "milliseconds",
+			input:    "100ms",
+			expected: runtime.NewInt64(100),
+		},
+		{
+			name:     "seconds",
+			input:    "2s",
+			expected: runtime.NewInt64(2000),
+		},
+		{
+			name:     "minutes",
+			input:    "1.5m",
+			expected: runtime.NewInt64(90000),
+		},
+		{
+			name:     "hours with spaces",
+			input:    " 1h ",
+			expected: runtime.NewInt64(3600000),
+		},
+		{
+			name:        "fractional milliseconds",
+			input:       "0.5ms",
+			expected:    runtime.NewFloat(0.5),
+			expectFloat: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := parseDurationLiteral(tt.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if runtime.CompareValues(actual, tt.expected) != 0 {
+				t.Fatalf("unexpected value: got %v want %v", actual, tt.expected)
+			}
+
+			_, isFloat := actual.(runtime.Float)
+			if isFloat != tt.expectFloat {
+				t.Fatalf("unexpected value kind: float=%v expected=%v", isFloat, tt.expectFloat)
+			}
+		})
+	}
+}
+
+func TestParseDurationLiteral_Invalid(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{
+			name:  "empty",
+			input: "",
+		},
+		{
+			name:  "missing unit",
+			input: "100",
+		},
+		{
+			name:  "missing numeric part",
+			input: "ms",
+		},
+		{
+			name:  "unknown unit",
+			input: "1x",
+		},
+		{
+			name:  "invalid number",
+			input: "abcs",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := parseDurationLiteral(tt.input)
+			if err == nil {
+				t.Fatal("expected parsing error")
+			}
+
+			if !errors.Is(err, strconv.ErrSyntax) {
+				t.Fatalf("expected syntax error, got %v", err)
+			}
+
+			if actual != runtime.None {
+				t.Fatalf("expected runtime.None on error, got %v", actual)
 			}
 		})
 	}

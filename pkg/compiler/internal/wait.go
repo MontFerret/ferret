@@ -784,63 +784,77 @@ func (c *WaitCompiler) compileBackoffClause(ctx fql.IBackoffClauseContext) waitF
 }
 
 func parseDurationLiteral(text string) (runtime.Value, error) {
-	raw := strings.ToUpper(strings.TrimSpace(text))
+	raw := normalizeDurationLiteral(text)
 	if raw == "" {
 		return runtime.None, strconv.ErrSyntax
 	}
 
-	var unit string
-	switch {
-	case strings.HasSuffix(raw, "MS"):
-		unit = "MS"
-		raw = strings.TrimSuffix(raw, "MS")
-	case strings.HasSuffix(raw, "S"):
-		unit = "S"
-		raw = strings.TrimSuffix(raw, "S")
-	case strings.HasSuffix(raw, "M"):
-		unit = "M"
-		raw = strings.TrimSuffix(raw, "M")
-	case strings.HasSuffix(raw, "H"):
-		unit = "H"
-		raw = strings.TrimSuffix(raw, "H")
-	case strings.HasSuffix(raw, "D"):
-		unit = "D"
-		raw = strings.TrimSuffix(raw, "D")
-	default:
+	number, unit, ok := splitDurationLiteral(raw)
+	if !ok || number == "" {
 		return runtime.None, strconv.ErrSyntax
 	}
 
-	if raw == "" {
-		return runtime.None, strconv.ErrSyntax
-	}
-
-	value, err := strconv.ParseFloat(raw, 64)
+	value, err := parseDurationLiteralNumber(number)
 	if err != nil {
 		return runtime.None, err
 	}
 
-	var multiplier float64
-	switch unit {
-	case "MS":
-		multiplier = 1
-	case "S":
-		multiplier = 1000
-	case "M":
-		multiplier = 60000
-	case "H":
-		multiplier = 3600000
-	case "D":
-		multiplier = 86400000
-	default:
+	multiplier, ok := durationUnitMultiplier(unit)
+	if !ok {
 		return runtime.None, strconv.ErrSyntax
 	}
 
-	ms := value * multiplier
+	return durationValueFromMilliseconds(value * multiplier), nil
+}
+
+func normalizeDurationLiteral(text string) string {
+	return strings.ToUpper(strings.TrimSpace(text))
+}
+
+func splitDurationLiteral(raw string) (string, string, bool) {
+	switch {
+	case strings.HasSuffix(raw, "MS"):
+		return strings.TrimSuffix(raw, "MS"), "MS", true
+	case strings.HasSuffix(raw, "S"):
+		return strings.TrimSuffix(raw, "S"), "S", true
+	case strings.HasSuffix(raw, "M"):
+		return strings.TrimSuffix(raw, "M"), "M", true
+	case strings.HasSuffix(raw, "H"):
+		return strings.TrimSuffix(raw, "H"), "H", true
+	case strings.HasSuffix(raw, "D"):
+		return strings.TrimSuffix(raw, "D"), "D", true
+	default:
+		return "", "", false
+	}
+}
+
+func parseDurationLiteralNumber(raw string) (float64, error) {
+	return strconv.ParseFloat(raw, 64)
+}
+
+func durationUnitMultiplier(unit string) (float64, bool) {
+	switch unit {
+	case "MS":
+		return 1, true
+	case "S":
+		return 1000, true
+	case "M":
+		return 60000, true
+	case "H":
+		return 3600000, true
+	case "D":
+		return 86400000, true
+	default:
+		return 0, false
+	}
+}
+
+func durationValueFromMilliseconds(ms float64) runtime.Value {
 	if frac := math.Mod(ms, 1); frac == 0 {
-		return runtime.NewInt64(int64(ms)), nil
+		return runtime.NewInt64(int64(ms))
 	}
 
-	return runtime.NewFloat(ms), nil
+	return runtime.NewFloat(ms)
 }
 
 func literalFromExpression(ctx fql.IExpressionContext) fql.ILiteralContext {
