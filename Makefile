@@ -42,7 +42,8 @@ bench:
 	go test -run=XXX -bench=. ${DIR_PKG}/...
 
 generate:
-	go generate ${DIR_PKG}/...
+	go generate ${DIR_PKG}/... && \
+	make fmt
 
 doc:
 	godoc -http=:6060 -index
