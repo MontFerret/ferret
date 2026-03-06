@@ -2,6 +2,8 @@ package ferret
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/file"
@@ -32,29 +34,44 @@ func New(setters ...Option) (*Engine, error) {
 		return nil, err
 	}
 
+	hooks := boot.hooks.clone()
+
+	if err := hooks.engine.runInitHooks(); err != nil {
+		return nil, fmt.Errorf("init hooks: %w", err)
+	}
+
 	return &Engine{
 		compiler: compiler.New(opts.compiler...),
 		host:     h,
-		hooks:    boot.hooks.clone(),
+		hooks:    hooks,
 	}, nil
 }
 
-func (e *Engine) Compile(src *file.Source) (*Plan, error) {
+func (e *Engine) Compile(ctx context.Context, src *file.Source) (*Plan, error) {
+	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
+		return nil, fmt.Errorf("before compile hooks: %w", err)
+	}
+
 	prog, err := e.compiler.Compile(src)
+
+	if hookErr := e.hooks.plan.runAfterCompileHooks(ctx, err); hookErr != nil {
+		return nil, errors.Join(err, fmt.Errorf("after compile hooks: %w", err))
+	}
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &Plan{
-		prog:  prog,
-		host:  e.host,
-		hooks: e.hooks.session,
+		prog:         prog,
+		host:         e.host,
+		hooks:        e.hooks.plan,
+		sessionHooks: e.hooks.session,
 	}, nil
 }
 
 func (e *Engine) Run(ctx context.Context, src *file.Source, opts ...SessionOption) (Result, error) {
-	plan, err := e.Compile(src)
+	plan, err := e.Compile(ctx, src)
 
 	if err != nil {
 		return nil, err
@@ -66,11 +83,19 @@ func (e *Engine) Run(ctx context.Context, src *file.Source, opts ...SessionOptio
 		return nil, err
 	}
 
-	defer session.Close()
+	defer func() {
+		// TODO: Log errors
+		session.Close()
+		plan.Close()
+	}()
 
 	return session.Run(ctx)
 }
 
 func (e *Engine) Close() error {
-	return e.hooks.engine.runCloseHooks()
+	if err := e.hooks.engine.runCloseHooks(); err != nil {
+		return fmt.Errorf("close hooks: %w", err)
+	}
+
+	return nil
 }

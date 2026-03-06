@@ -9,6 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 type (
@@ -24,6 +25,13 @@ type (
 	}
 
 	Option func(env *options) error
+
+	SessionOption = vm.EnvironmentOption
+)
+
+var (
+	WithSessionParams = vm.WithParams
+	WithSessionParam  = vm.WithParam
 )
 
 func newOptions(setters []Option) (*options, error) {
@@ -202,6 +210,41 @@ func WithEngineCloseHook(hook EngineCloseHook) Option {
 	}
 }
 
+// WithBeforeCompileHook returns an Option that registers a hook to be executed before compilation.
+func WithBeforeCompileHook(hook BeforeCompileHook) Option {
+	return func(opts *options) error {
+		if hook == nil {
+			return fmt.Errorf("before compile hook is nil")
+		}
+
+		opts.hooks.plan.BeforeCompile(hook)
+		return nil
+	}
+}
+
+func WithAfterCompileHook(hook AfterCompileHook) Option {
+	return func(opts *options) error {
+		if hook == nil {
+			return fmt.Errorf("after compile hook is nil")
+		}
+
+		opts.hooks.plan.AfterCompile(hook)
+		return nil
+	}
+}
+
+// WithPlanCloseHook returns an Option that registers a hook to be executed when a plan is closed.
+func WithPlanCloseHook(hook PlanCloseHook) Option {
+	return func(opts *options) error {
+		if hook == nil {
+			return fmt.Errorf("plan close hook is nil")
+		}
+
+		opts.hooks.plan.OnClose(hook)
+		return nil
+	}
+}
+
 // WithBeforeRunHook returns an Option that registers a hook to be executed during session initialization.
 func WithBeforeRunHook(hook BeforeRunHook) Option {
 	return func(opts *options) error {
@@ -222,18 +265,6 @@ func WithAfterRunHook(hook AfterRunHook) Option {
 		}
 
 		opts.hooks.session.AfterRun(hook)
-		return nil
-	}
-}
-
-// WithFailedRunHook returns an Option that registers a hook to be executed when a session run fails.
-func WithFailedRunHook(hook FailedRunHook) Option {
-	return func(opts *options) error {
-		if hook == nil {
-			return fmt.Errorf("failed run hook is nil")
-		}
-
-		opts.hooks.session.OnFailure(hook)
 		return nil
 	}
 }
