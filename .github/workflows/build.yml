@@ -62,7 +62,7 @@ jobs:
           LOCATION=$PWD ./install.sh
 
       - name: Get dependencies
-        run: make install
+        run: make install && make install-tools
 
       - name: Generate
         run: |
