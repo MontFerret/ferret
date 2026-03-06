@@ -1,6 +1,7 @@
 package ferret
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -12,23 +13,26 @@ import (
 
 type (
 	options struct {
-		compiler []compiler.Option
 		noStdlib bool
-		lib      runtime.RootNamespace
+		compiler []compiler.Option
+		library  runtime.Library
 		params   map[string]runtime.Value
 		logging  runtime.LogSettings
-		encodig  *encoding.Registry
+		encoding *encoding.Registry
+		modules  []Module
+		hooks    *hookRegistry
 	}
 
 	Option func(env *options) error
 )
 
 func newOptions(setters []Option) (*options, error) {
-	ns := runtime.NewRootNamespace()
 	opts := &options{
-		lib:     ns,
-		params:  make(map[string]runtime.Value),
-		encodig: encoding.NewRegistry(),
+		compiler: []compiler.Option{},
+		library:  runtime.NewLibrary(),
+		params:   make(map[string]runtime.Value),
+		encoding: encoding.NewRegistry(),
+		hooks:    newHookRegistry(),
 		logging: runtime.LogSettings{
 			Writer: os.Stdout,
 			Level:  runtime.ErrorLevel,
@@ -42,20 +46,20 @@ func newOptions(setters []Option) (*options, error) {
 	}
 
 	if !opts.noStdlib {
-		stdlib.RegisterLib(ns)
+		stdlib.RegisterLib(opts.library)
 	}
 
 	return opts, nil
 }
 
-// WithNamespace creates an Option that sets the lib from the provided runtime.Namespace to the options if not nil.
+// WithNamespace creates an Option that sets the library from the provided runtime.Namespace to the options if not nil.
 func WithNamespace(ns runtime.Namespace) Option {
 	return func(opts *options) error {
 		if ns == nil {
-			return nil
+			return fmt.Errorf("namespace cannot be nil")
 		}
 
-		opts.lib.Function().From(ns.Function())
+		opts.library.Function().From(ns.Function())
 
 		return nil
 	}
@@ -64,9 +68,11 @@ func WithNamespace(ns runtime.Namespace) Option {
 // WithFunctionsRegistrar creates an Option that invokes the provided registrar with the engine's runtime.FunctionDefs if the registrar is not nil.
 func WithFunctionsRegistrar(setter func(fns runtime.FunctionDefs)) Option {
 	return func(env *options) error {
-		if setter != nil {
-			setter(env.lib.Function())
+		if setter == nil {
+			return fmt.Errorf("functions registrar cannot be nil")
 		}
+
+		setter(env.library.Function())
 
 		return nil
 	}
@@ -75,26 +81,11 @@ func WithFunctionsRegistrar(setter func(fns runtime.FunctionDefs)) Option {
 // WithFunctions creates an Option that sets the provided *runtime.Functions to the options if not nil.
 func WithFunctions(funcs *runtime.Functions) Option {
 	return func(opts *options) error {
-		if funcs != nil {
-			opts.lib.Function().From(runtime.NewFunctionsBuilderFrom(funcs))
+		if funcs == nil {
+			return fmt.Errorf("functions cannot be nil")
 		}
 
-		return nil
-	}
-}
-
-// WithFunction returns an Option that registers a runtime.Function with a given name in the options' function builder.
-func WithFunction(name string, function runtime.Function) Option {
-	return func(opts *options) error {
-		if name == "" {
-			return runtime.Error(runtime.ErrMissedArgument, "function name")
-		}
-
-		if name == "" || function == nil {
-			return runtime.Error(runtime.ErrMissedArgument, "function")
-		}
-
-		opts.lib.Function().Var().Add(name, function)
+		opts.library.Function().From(runtime.NewFunctionsBuilderFrom(funcs))
 
 		return nil
 	}
@@ -104,6 +95,10 @@ func WithFunction(name string, function runtime.Function) Option {
 // The writer can be any io.Writer, such as os.Stdout or a file.
 func WithLog(writer io.Writer) Option {
 	return func(opts *options) error {
+		if writer == nil {
+			return fmt.Errorf("log writer cannot be nil")
+		}
+
 		opts.logging.Writer = writer
 		return nil
 	}
@@ -113,6 +108,10 @@ func WithLog(writer io.Writer) Option {
 // The logging level determines the severity of log messages that will be recorded.
 func WithLogLevel(lvl runtime.LogLevel) Option {
 	return func(opts *options) error {
+		if lvl < runtime.TraceLevel || lvl > runtime.Disabled {
+			return fmt.Errorf("invalid log level: %v", lvl)
+		}
+
 		opts.logging.Level = lvl
 		return nil
 	}
@@ -122,7 +121,18 @@ func WithLogLevel(lvl runtime.LogLevel) Option {
 // These fields can provide additional context for debugging and monitoring purposes.
 func WithLogFields(fields map[string]any) Option {
 	return func(opts *options) error {
-		opts.logging.Fields = fields
+		if fields == nil {
+			return fmt.Errorf("log fields cannot be nil")
+		}
+
+		if opts.logging.Fields == nil {
+			opts.logging.Fields = make(map[string]any)
+		}
+
+		for k, v := range fields {
+			opts.logging.Fields[k] = v
+		}
+
 		return nil
 	}
 }
@@ -131,10 +141,10 @@ func WithLogFields(fields map[string]any) Option {
 func WithEncodingRegistry(registry *encoding.Registry) Option {
 	return func(opts *options) error {
 		if registry == nil {
-			return runtime.Error(runtime.ErrMissedArgument, "registry")
+			return fmt.Errorf("encoding registry is nil")
 		}
 
-		opts.encodig = registry
+		opts.encoding = registry
 		return nil
 	}
 }
@@ -142,10 +152,100 @@ func WithEncodingRegistry(registry *encoding.Registry) Option {
 // WithEncodingCodec registers or overrides a codec for the given content type.
 func WithEncodingCodec(contentType string, codec encoding.Codec) Option {
 	return func(opts *options) error {
-		if opts.encodig == nil {
-			opts.encodig = encoding.NewRegistry()
+		if opts.encoding == nil {
+			opts.encoding = encoding.NewRegistry()
 		}
 
-		return opts.encodig.Register(contentType, codec)
+		return opts.encoding.Register(contentType, codec)
+	}
+}
+
+// WithCompilerOptions creates an Option that appends the provided compiler options to the options if not empty.
+func WithCompilerOptions(opts ...compiler.Option) Option {
+	return func(o *options) error {
+		if len(opts) == 0 {
+			return nil
+		}
+
+		if o.compiler == nil {
+			o.compiler = opts
+			return nil
+		}
+
+		o.compiler = append(o.compiler, opts...)
+
+		return nil
+	}
+}
+
+// WithEngineInitHook returns an Option that registers a hook to be executed during engine initialization.
+func WithEngineInitHook(hook EngineInitHook) Option {
+	return func(opts *options) error {
+		if hook == nil {
+			return fmt.Errorf("engine init hook is nil")
+		}
+
+		opts.hooks.engine.OnInit(hook)
+		return nil
+	}
+}
+
+// WithEngineCloseHook returns an Option that registers a hook to be executed when the engine is closed.
+func WithEngineCloseHook(hook EngineCloseHook) Option {
+	return func(opts *options) error {
+		if hook == nil {
+			return fmt.Errorf("engine close hook is nil")
+		}
+
+		opts.hooks.engine.OnClose(hook)
+		return nil
+	}
+}
+
+// WithBeforeRunHook returns an Option that registers a hook to be executed during session initialization.
+func WithBeforeRunHook(hook BeforeRunHook) Option {
+	return func(opts *options) error {
+		if hook == nil {
+			return fmt.Errorf("before run hook is nil")
+		}
+
+		opts.hooks.session.BeforeRun(hook)
+		return nil
+	}
+}
+
+// WithAfterRunHook returns an Option that registers a hook to be executed during session initialization.
+func WithAfterRunHook(hook AfterRunHook) Option {
+	return func(opts *options) error {
+		if hook == nil {
+			return fmt.Errorf("after run hook is nil")
+		}
+
+		opts.hooks.session.AfterRun(hook)
+		return nil
+	}
+}
+
+// WithFailedRunHook returns an Option that registers a hook to be executed when a session run fails.
+func WithFailedRunHook(hook FailedRunHook) Option {
+	return func(opts *options) error {
+		if hook == nil {
+			return fmt.Errorf("failed run hook is nil")
+		}
+
+		opts.hooks.session.OnFailure(hook)
+		return nil
+	}
+}
+
+// WithSessionCloseHook returns an Option that registers a hook to be executed when a session is closed.
+func WithSessionCloseHook(hook SessionCloseHook) Option {
+	return func(opts *options) error {
+		if hook == nil {
+			return fmt.Errorf("session close hook is nil")
+		}
+
+		opts.hooks.session.OnClose(hook)
+		return nil
 	}
 }

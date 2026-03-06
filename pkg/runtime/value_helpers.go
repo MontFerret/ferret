@@ -73,12 +73,9 @@ func Random2(mid float64) float64 {
 }
 
 // Parse attempts to convert an arbitrary input into a Value type.
-// It supports basic types like bool, string, int, float, time.Time, as well as slices and maps.
-// For unsupported types, it returns None.
-// It does not use "ferret" tags for struct fields and instead relies on field names directly.
-// For more safe and controlled parsing, consider using the "ferret" tags and the Encode function.
+// Deprecated: Use ValueOf for explicit host-to-Ferret value conversion with error handling.
 func Parse(input any) Value {
-	parsed, err := ParseStrict(input)
+	parsed, err := ValueOf(input)
 
 	if err != nil {
 		return None
@@ -87,9 +84,28 @@ func Parse(input any) Value {
 	return parsed
 }
 
-// ParseStrict converts the given input into a strongly-typed Value or returns an error if the input type is unsupported.
-func ParseStrict(input any) (Value, error) {
+// ValueOf converts a native Go value into a Ferret runtime Value.
+// It returns an error if the value cannot be converted.
+//
+// This is the preferred API for host-to-Ferret value conversion.
+//
+// For legacy permissive behavior that silently converts unsupported
+// values to None, see Parse.
+func ValueOf(input any) (Value, error) {
 	switch value := input.(type) {
+	case nil:
+		return None, nil
+	case Value:
+		return value, nil
+	case []Value:
+		ctx := context.Background()
+		arr := NewArray(len(value))
+
+		for _, el := range value {
+			_ = arr.Append(ctx, el)
+		}
+
+		return arr, nil
 	case bool:
 		return NewBoolean(value), nil
 	case string:
@@ -114,11 +130,11 @@ func ParseStrict(input any) (Value, error) {
 		ctx := context.Background()
 		arr := NewArray(len(value))
 
-		for _, el := range value {
-			parsed, err := ParseStrict(el)
+		for idx, el := range value {
+			parsed, err := ValueOf(el)
 
 			if err != nil {
-				return None, err
+				return None, Errorf(err, "at index %d", idx)
 			}
 
 			_ = arr.Append(ctx, parsed)
@@ -130,10 +146,10 @@ func ParseStrict(input any) (Value, error) {
 		obj := NewObject()
 
 		for key, el := range value {
-			parsed, err := ParseStrict(el)
+			parsed, err := ValueOf(el)
 
 			if err != nil {
-				return None, err
+				return None, Errorf(err, "at key %q", key)
 			}
 
 			_ = obj.Set(ctx, NewString(key), parsed)
@@ -142,10 +158,6 @@ func ParseStrict(input any) (Value, error) {
 		return obj, nil
 	case []byte:
 		return NewBinary(value), nil
-	case nil:
-		return None, nil
-	case Value:
-		return value, nil
 	default:
 		v := reflect.ValueOf(value)
 		t := reflect.TypeOf(value)
@@ -159,7 +171,7 @@ func ParseStrict(input any) (Value, error) {
 				return None, nil
 			}
 
-			return ParseStrict(el.Interface())
+			return ValueOf(el.Interface())
 		}
 
 		if kind == reflect.Slice || kind == reflect.Array {
@@ -167,10 +179,10 @@ func ParseStrict(input any) (Value, error) {
 			arr := NewArray(size)
 
 			for i := 0; i < size; i++ {
-				val, err := ParseStrict(v.Index(i).Interface())
+				val, err := ValueOf(v.Index(i).Interface())
 
 				if err != nil {
-					return None, err
+					return None, Errorf(err, "at index %d", i)
 				}
 
 				_ = arr.Append(ctx, val)
@@ -184,16 +196,16 @@ func ParseStrict(input any) (Value, error) {
 			obj := NewObject()
 
 			for _, k := range keys {
-				key, err := ParseStrict(k.Interface())
+				key, err := ValueOf(k.Interface())
 
 				if err != nil {
-					return None, err
+					return None, Errorf(err, "at key %v", k.Interface())
 				}
 
-				val, err := ParseStrict(v.MapIndex(k).Interface())
+				val, err := ValueOf(v.MapIndex(k).Interface())
 
 				if err != nil {
-					return None, err
+					return None, Errorf(err, "at key %v", k.Interface())
 				}
 
 				_ = obj.Set(ctx, NewString(key.String()), val)
@@ -217,10 +229,10 @@ func ParseStrict(input any) (Value, error) {
 					continue
 				}
 
-				parsed, err := ParseStrict(fieldValue.Interface())
+				parsed, err := ValueOf(fieldValue.Interface())
 
 				if err != nil {
-					return None, err
+					return None, Errorf(err, "at field %q", field.Name)
 				}
 
 				_ = obj.Set(ctx, NewString(field.Name), parsed)

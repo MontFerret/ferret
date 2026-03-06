@@ -17,7 +17,7 @@ import (
 
 func TestRegisterLib(t *testing.T) {
 	Convey("Should register HTTP namespace functions", t, func() {
-		ns := runtime.NewRootNamespace()
+		ns := runtime.NewLibrary()
 
 		http.RegisterLib(ns)
 
