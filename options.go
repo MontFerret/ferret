@@ -157,6 +157,23 @@ func WithEncodingRegistry(registry *encoding.Registry) Option {
 	}
 }
 
+// WithModules creates an Option that appends the provided modules to the options if not empty.
+func WithModules(module ...Module) Option {
+	return func(env *options) error {
+		if len(module) == 0 {
+			return fmt.Errorf("modules cannot be empty")
+		}
+
+		if env.modules == nil {
+			env.modules = make([]Module, 0, len(module))
+		}
+
+		env.modules = append(env.modules, module...)
+
+		return nil
+	}
+}
+
 // WithEncodingCodec registers or overrides a codec for the given content type.
 func WithEncodingCodec(contentType string, codec encoding.Codec) Option {
 	return func(opts *options) error {
