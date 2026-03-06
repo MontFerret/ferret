@@ -7,7 +7,7 @@ toolchain go1.24.5
 require (
 	github.com/antlr4-go/antlr/v4 v4.13.1
 	github.com/gobwas/glob v0.2.3
-	github.com/goccy/go-json v0.10.2
+	github.com/goccy/go-json v0.10.5
 	github.com/jarcoal/httpmock v1.4.0
 	github.com/rs/zerolog v1.34.0
 	github.com/smarty/assertions v1.15.0
