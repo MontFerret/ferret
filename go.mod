@@ -8,7 +8,7 @@ require (
 	github.com/antlr4-go/antlr/v4 v4.13.1
 	github.com/gobwas/glob v0.2.3
 	github.com/goccy/go-json v0.10.5
-	github.com/jarcoal/httpmock v1.4.0
+	github.com/jarcoal/httpmock v1.4.1
 	github.com/rs/zerolog v1.34.0
 	github.com/smarty/assertions v1.16.0
 	github.com/smartystreets/goconvey v1.8.1
