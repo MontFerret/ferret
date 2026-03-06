@@ -12,18 +12,6 @@ type Plan struct {
 	encoding *encoding.Registry
 }
 
-func newPlan(prog *bytecode.Program, env *vm.Environment, enc *encoding.Registry) *Plan {
-	if enc == nil {
-		enc = encoding.NewRegistry()
-	}
-
-	return &Plan{
-		prog:     prog,
-		env:      env,
-		encoding: enc,
-	}
-}
-
 func (p *Plan) NewSession(setters ...SessionOption) (*Session, error) {
 	env, err := vm.ExtendEnvironment(p.env, setters)
 
@@ -31,5 +19,10 @@ func (p *Plan) NewSession(setters ...SessionOption) (*Session, error) {
 		return nil, err
 	}
 
-	return newSession(vm.New(p.prog), env, p.encoding), nil
+	return &Session{
+		// TODO: create a VM pool and get a VM from it instead of creating a new one for each session
+		vm:       vm.New(p.prog),
+		env:      env,
+		encoding: p.encoding,
+	}, nil
 }

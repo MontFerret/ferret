@@ -7,26 +7,19 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
+// Session represents a single execution of a compiled Ferret program.
+// It holds the state of the execution, including the virtual machine, environment, and encoding registry.
+// A Session is created from a Plan and can be run to obtain results.
+// It is not thread-safe and should be used for a single execution.
+// After running, it can be closed to release any resources if necessary, or it can be reused for multiple runs if the environment and registry are not modified.
 type Session struct {
 	vm       *vm.VM
 	env      *vm.Environment
-	registry *encoding.Registry
-}
-
-func newSession(vmi *vm.VM, env *vm.Environment, registry *encoding.Registry) *Session {
-	if registry == nil {
-		registry = encoding.NewRegistry()
-	}
-
-	return &Session{
-		vm:       vmi,
-		env:      env,
-		registry: registry,
-	}
+	encoding *encoding.Registry
 }
 
 func (s *Session) Run(ctx context.Context) (Result, error) {
-	ctx = encoding.WithRegistry(ctx, s.registry)
+	ctx = encoding.WithRegistry(ctx, s.encoding)
 
 	out, err := s.vm.Run(ctx, s.env)
 
