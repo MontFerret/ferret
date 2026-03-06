@@ -10,7 +10,7 @@ require (
 	github.com/goccy/go-json v0.10.2
 	github.com/jarcoal/httpmock v1.4.0
 	github.com/rs/zerolog v1.34.0
-	github.com/smarty/assertions v1.15.0
+	github.com/smarty/assertions v1.16.0
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/wI2L/jettison v0.7.4
 )
