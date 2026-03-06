@@ -17,7 +17,7 @@ type (
 		noStdlib bool
 		compiler []compiler.Option
 		library  runtime.Library
-		params   map[string]runtime.Value
+		params   runtime.Params
 		logging  runtime.LogSettings
 		encoding *encoding.Registry
 		modules  []Module

@@ -383,7 +383,7 @@ func runQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionO
 }
 
 func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, query *file.Source) error {
-	plan, err := engine.Compile(query)
+	plan, err := engine.Compile(ctx, query)
 
 	if err != nil {
 		return err
