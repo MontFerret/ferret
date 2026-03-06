@@ -20,9 +20,17 @@ type (
 )
 
 func newBootstrap(opts *options) *bootstrap {
+	var hooks *hookRegistry
+
+	if opts.hooks != nil {
+		hooks = opts.hooks
+	} else {
+		hooks = newHookRegistry()
+	}
+
 	return &bootstrap{
 		host:  newHostBuilder(opts),
-		hooks: newHookRegistry(),
+		hooks: hooks,
 	}
 }
 
