@@ -55,7 +55,7 @@ func (e *Engine) Compile(ctx context.Context, src *file.Source) (*Plan, error) {
 	prog, err := e.compiler.Compile(src)
 
 	if hookErr := e.hooks.plan.runAfterCompileHooks(ctx, err); hookErr != nil {
-		return nil, errors.Join(err, fmt.Errorf("after compile hooks: %w", err))
+		return nil, errors.Join(err, fmt.Errorf("after compile hooks: %w", hookErr))
 	}
 
 	if err != nil {
