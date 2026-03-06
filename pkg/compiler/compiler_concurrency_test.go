@@ -143,11 +143,7 @@ RETURN RUN(2)
 				return err
 			}
 
-			if err := assertUDFMetadata(program, entry.spec.expectedHost, entry.spec.expectedUDFs); err != nil {
-				return err
-			}
-
-			return nil
+			return assertUDFMetadata(program, entry.spec.expectedHost, entry.spec.expectedUDFs)
 		})
 	})
 
@@ -165,11 +161,7 @@ RETURN RUN(2)
 				return err
 			}
 
-			if err := assertUDFMetadata(program, query.expectedHost, query.expectedUDFs); err != nil {
-				return err
-			}
-
-			return nil
+			return assertUDFMetadata(program, query.expectedHost, query.expectedUDFs)
 		})
 	})
 }
