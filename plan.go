@@ -25,17 +25,11 @@ func newPlan(prog *bytecode.Program, env *vm.Environment, enc *encoding.Registry
 }
 
 func (p *Plan) NewSession(setters ...SessionOption) (*Session, error) {
-	env, err := vm.NewEnvironment(setters)
+	env, err := vm.ExtendEnvironment(p.env, setters)
 
 	if err != nil {
 		return nil, err
 	}
 
-	mergedEnv, err := vm.MergeEnvironments(p.env, env)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return newSession(vm.New(p.prog), mergedEnv, p.encoding), nil
+	return newSession(vm.New(p.prog), env, p.encoding), nil
 }

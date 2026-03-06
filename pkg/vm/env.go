@@ -110,3 +110,17 @@ func MergeEnvironments(envs ...*Environment) (*Environment, error) {
 
 	return merged, nil
 }
+
+func ExtendEnvironment(env *Environment, opts []EnvironmentOption) (*Environment, error) {
+	if len(opts) == 0 {
+		return env, nil
+	}
+
+	newEnv, err := NewEnvironment(opts)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return MergeEnvironments(env, newEnv)
+}
