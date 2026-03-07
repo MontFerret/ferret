@@ -149,7 +149,7 @@ func WithLogFields(fields map[string]any) Option {
 func WithEncodingRegistry(registry *encoding.Registry) Option {
 	return func(opts *options) error {
 		if registry == nil {
-			return fmt.Errorf("encoding registry is nil")
+			return fmt.Errorf("encoding registry cannot be nil")
 		}
 
 		opts.encoding = registry
