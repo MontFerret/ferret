@@ -9,7 +9,7 @@ import (
 type (
 	environmentBuilder struct {
 		functions *runtime.FunctionsBuilder
-		params    map[string]runtime.Value
+		params    runtime.Params
 		logging   runtime.LogSettings
 	}
 
@@ -17,20 +17,20 @@ type (
 
 	Environment struct {
 		Functions *runtime.Functions
-		Params    map[string]runtime.Value
+		Params    runtime.Params
 		Logging   runtime.LogSettings
 	}
 )
 
 var noopEnv = &Environment{
 	Functions: runtime.NewFunctions(),
-	Params:    make(map[string]runtime.Value),
+	Params:    runtime.NewParams(),
 }
 
 func NewDefaultEnvironment() *Environment {
 	return &Environment{
 		Functions: runtime.NewFunctions(),
-		Params:    make(map[string]runtime.Value),
+		Params:    runtime.NewParams(),
 		Logging: runtime.LogSettings{
 			Writer: os.Stdout,
 			Level:  runtime.ErrorLevel,
@@ -41,7 +41,7 @@ func NewDefaultEnvironment() *Environment {
 func NewEnvironment(opts []EnvironmentOption) (*Environment, error) {
 	envBuilder := &environmentBuilder{
 		functions: runtime.NewFunctionsBuilder(),
-		params:    make(map[string]runtime.Value),
+		params:    runtime.NewParams(),
 		logging: runtime.LogSettings{
 			Writer: os.Stdout,
 			Level:  runtime.ErrorLevel,
@@ -109,4 +109,18 @@ func MergeEnvironments(envs ...*Environment) (*Environment, error) {
 	merged.Functions = funcs
 
 	return merged, nil
+}
+
+func ExtendEnvironment(env *Environment, opts []EnvironmentOption) (*Environment, error) {
+	if len(opts) == 0 {
+		return env, nil
+	}
+
+	newEnv, err := NewEnvironment(opts)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return MergeEnvironments(env, newEnv)
 }

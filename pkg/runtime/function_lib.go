@@ -8,9 +8,10 @@ const NamespaceSeparator = "::"
 const emptyNS = ""
 
 type (
-	// RootNamespace is the top-level namespace that can contain multiple nested namespaces and functions.
-	// It provides methods to create nested namespaces and register functions within those namespaces.
-	RootNamespace interface {
+	// Library represents a collection of functions organized in namespaces.
+	// It provides methods to create nested namespaces and register functions within those namespaces,
+	// as well as a method to build the final Functions instance.
+	Library interface {
 		Namespace
 
 		// Build constructs and returns a finalized Functions instance or an error if the build process fails.
@@ -26,25 +27,25 @@ type (
 		Function() FunctionDefs
 	}
 
-	defaultNamespace struct {
+	library struct {
 		builder *FunctionsBuilder
 		name    string
 	}
 )
 
-func NewRootNamespace() RootNamespace {
-	ns := new(defaultNamespace)
-	ns.builder = newRootFunctionsBuilder()
+func NewLibrary() Library {
+	lib := new(library)
+	lib.builder = newRootFunctionsBuilder()
 
-	return ns
+	return lib
 }
 
 func NewNamespace(name string) Namespace {
-	ns := new(defaultNamespace)
-	ns.name = strings.ToUpper(name)
-	ns.builder = newNamespaceFunctionsBuilder(ns.name)
+	lib := new(library)
+	lib.name = strings.ToUpper(name)
+	lib.builder = newNamespacedFunctionsBuilder(lib.name)
 
-	return ns
+	return lib
 }
 
 func makeFunctionName(namespace, name string) string {
@@ -57,18 +58,18 @@ func makeFunctionName(namespace, name string) string {
 	return namespace + NamespaceSeparator + name
 }
 
-func (nc *defaultNamespace) Namespace(name string) Namespace {
-	ns := new(defaultNamespace)
-	ns.name = makeFunctionName(nc.name, name)
-	ns.builder = newFunctionsBuilderInternalFrom(ns.name, nc.builder)
+func (lib *library) Namespace(name string) Namespace {
+	newLib := new(library)
+	newLib.name = makeFunctionName(lib.name, name)
+	newLib.builder = newFunctionsBuilderInternalFrom(newLib.name, lib.builder)
 
-	return ns
+	return newLib
 }
 
-func (nc *defaultNamespace) Function() FunctionDefs {
-	return nc.builder
+func (lib *library) Function() FunctionDefs {
+	return lib.builder
 }
 
-func (nc *defaultNamespace) Build() (*Functions, error) {
-	return nc.builder.Build()
+func (lib *library) Build() (*Functions, error) {
+	return lib.builder.Build()
 }

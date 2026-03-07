@@ -2,7 +2,6 @@ package encoding
 
 import (
 	"fmt"
-	"sync"
 
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 )
@@ -13,10 +12,15 @@ const (
 )
 
 // Registry stores codecs by content type.
-type Registry struct {
-	mu      sync.RWMutex
-	entries map[string]Codec
-}
+type (
+	CodecRegistrar interface {
+		Register(contentType string, codec Codec) error
+	}
+
+	Registry struct {
+		entries map[string]Codec
+	}
+)
 
 // NewRegistry creates a registry with built-in codecs.
 func NewRegistry() *Registry {
@@ -48,9 +52,7 @@ func (r *Registry) Register(contentType string, codec Codec) error {
 		return err
 	}
 
-	r.mu.Lock()
 	r.entries[normalized] = codec
-	r.mu.Unlock()
 
 	return nil
 }
@@ -88,6 +90,20 @@ func (r *Registry) Decoder(contentType string) (Decoder, error) {
 	return codec, nil
 }
 
+func (r *Registry) Clone() *Registry {
+	if r == nil {
+		return nil
+	}
+
+	clone := NewEmptyRegistry()
+
+	for k, v := range r.entries {
+		clone.entries[k] = v
+	}
+
+	return clone
+}
+
 func (r *Registry) lookup(contentType string) (Codec, error) {
 	if r == nil {
 		return nil, ErrNilRegistry
@@ -98,9 +114,7 @@ func (r *Registry) lookup(contentType string) (Codec, error) {
 		return nil, err
 	}
 
-	r.mu.RLock()
 	entry, exists := r.entries[normalized]
-	r.mu.RUnlock()
 
 	if !exists || entry == nil {
 		return nil, fmt.Errorf("%w: %s", ErrCodecNotFound, normalized)

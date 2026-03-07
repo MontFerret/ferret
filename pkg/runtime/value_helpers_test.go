@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 	"unsafe"
 
@@ -442,4 +443,74 @@ func TestHelpers(t *testing.T) {
 			})
 		})
 	})
+}
+func TestValueOfArrayAndMapContext(t *testing.T) {
+	input := map[string]any{
+		"items": []any{
+			1,
+			make(chan int),
+		},
+	}
+
+	_, err := runtime.ValueOf(input)
+
+	if err == nil {
+		t.Fatal("expected ValueOf to fail")
+	}
+
+	errMsg := err.Error()
+
+	if !strings.Contains(errMsg, `at index 1`) {
+		t.Fatalf("expected error to include index context, got %q", errMsg)
+	}
+
+	if !strings.Contains(errMsg, `at key "items"`) {
+		t.Fatalf("expected error to include key context, got %q", errMsg)
+	}
+}
+
+func TestValueOfStructFieldContext(t *testing.T) {
+	type payload struct {
+		Items []any
+	}
+
+	input := payload{
+		Items: []any{
+			make(chan int),
+		},
+	}
+
+	_, err := runtime.ValueOf(input)
+
+	if err == nil {
+		t.Fatal("expected ValueOf to fail")
+	}
+
+	errMsg := err.Error()
+
+	if !strings.Contains(errMsg, `at field "Items"`) {
+		t.Fatalf("expected error to include field context, got %q", errMsg)
+	}
+
+	if !strings.Contains(errMsg, `at index 0`) {
+		t.Fatalf("expected error to include index context, got %q", errMsg)
+	}
+}
+
+func TestValueOfReflectMapContext(t *testing.T) {
+	input := map[int]any{
+		7: make(chan int),
+	}
+
+	_, err := runtime.ValueOf(input)
+
+	if err == nil {
+		t.Fatal("expected ValueOf to fail")
+	}
+
+	errMsg := err.Error()
+
+	if !strings.Contains(errMsg, `at key 7`) {
+		t.Fatalf("expected error to include key context, got %q", errMsg)
+	}
 }

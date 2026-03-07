@@ -18,7 +18,7 @@ import (
 // New creates a new standard library.
 // It registers all available functions and namespaces to the root namespace and returns it.
 func New() runtime.Namespace {
-	ns := runtime.NewRootNamespace()
+	ns := runtime.NewLibrary()
 
 	RegisterLib(ns)
 

@@ -11,7 +11,7 @@ import (
 
 func TestLib(t *testing.T) {
 	Convey("Should register all functions", t, func() {
-		ns := runtime.NewRootNamespace()
+		ns := runtime.NewLibrary()
 
 		collections.RegisterLib(ns)
 

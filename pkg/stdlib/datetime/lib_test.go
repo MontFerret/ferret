@@ -11,7 +11,7 @@ import (
 
 func TestRegisterLib(t *testing.T) {
 	Convey("When registering functions", t, func() {
-		ns := runtime.NewRootNamespace()
+		ns := runtime.NewLibrary()
 
 		datetime.RegisterLib(ns)
 

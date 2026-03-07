@@ -73,121 +73,175 @@ func Random2(mid float64) float64 {
 }
 
 // Parse attempts to convert an arbitrary input into a Value type.
-// It supports basic types like bool, string, int, float, time.Time, as well as slices and maps.
-// For unsupported types, it returns None.
-// It does not use "ferret" tags for struct fields and instead relies on field names directly.
-// For more safe and controlled parsing, consider using the "ferret" tags and the Encode function.
-func Parse(input interface{}) Value {
+// Deprecated: Use ValueOf for explicit host-to-Ferret value conversion with error handling.
+func Parse(input any) Value {
+	parsed, err := ValueOf(input)
+
+	if err != nil {
+		return None
+	}
+
+	return parsed
+}
+
+// ValueOf converts a native Go value into a Ferret runtime Value.
+// It returns an error if the value cannot be converted.
+//
+// This is the preferred API for host-to-Ferret value conversion.
+//
+// For legacy permissive behavior that silently converts unsupported
+// values to None, see Parse.
+func ValueOf(input any) (Value, error) {
 	switch value := input.(type) {
-	case bool:
-		return NewBoolean(value)
-	case string:
-		return NewString(value)
-	case int64:
-		return NewInt(int(value))
-	case int32:
-		return NewInt(int(value))
-	case int16:
-		return NewInt(int(value))
-	case int8:
-		return NewInt(int(value))
-	case int:
-		return NewInt(value)
-	case float64:
-		return NewFloat(value)
-	case float32:
-		return NewFloat(float64(value))
-	case time.Time:
-		return NewDateTime(value)
-	case []any:
+	case nil:
+		return None, nil
+	case Value:
+		return value, nil
+	case []Value:
 		ctx := context.Background()
 		arr := NewArray(len(value))
 
 		for _, el := range value {
-			_ = arr.Append(ctx, Parse(el))
+			_ = arr.Append(ctx, el)
 		}
 
-		return arr
+		return arr, nil
+	case bool:
+		return NewBoolean(value), nil
+	case string:
+		return NewString(value), nil
+	case int64:
+		return NewInt(int(value)), nil
+	case int32:
+		return NewInt(int(value)), nil
+	case int16:
+		return NewInt(int(value)), nil
+	case int8:
+		return NewInt(int(value)), nil
+	case int:
+		return NewInt(value), nil
+	case float64:
+		return NewFloat(value), nil
+	case float32:
+		return NewFloat(float64(value)), nil
+	case time.Time:
+		return NewDateTime(value), nil
+	case []any:
+		ctx := context.Background()
+		arr := NewArray(len(value))
+
+		for idx, el := range value {
+			parsed, err := ValueOf(el)
+
+			if err != nil {
+				return None, Errorf(err, "at index %d", idx)
+			}
+
+			_ = arr.Append(ctx, parsed)
+		}
+
+		return arr, nil
 	case map[string]any:
 		ctx := context.Background()
 		obj := NewObject()
 
 		for key, el := range value {
-			_ = obj.Set(ctx, NewString(key), Parse(el))
+			parsed, err := ValueOf(el)
+
+			if err != nil {
+				return None, Errorf(err, "at key %q", key)
+			}
+
+			_ = obj.Set(ctx, NewString(key), parsed)
 		}
 
-		return obj
+		return obj, nil
 	case []byte:
-		return NewBinary(value)
-	case nil:
-		return None
-	case Value:
-		return value
+		return NewBinary(value), nil
 	default:
 		v := reflect.ValueOf(value)
 		t := reflect.TypeOf(value)
 		kind := t.Kind()
+		ctx := context.Background()
 
 		if kind == reflect.Ptr {
 			el := v.Elem()
 
 			if el.Kind() == 0 {
-				return None
+				return None, nil
 			}
 
-			return Parse(el.Interface())
+			return ValueOf(el.Interface())
 		}
 
 		if kind == reflect.Slice || kind == reflect.Array {
 			size := v.Len()
 			arr := NewArray(size)
-			ctx := context.Background()
 
 			for i := 0; i < size; i++ {
-				curVal := v.Index(i)
-				_ = arr.Append(ctx, Parse(curVal.Interface()))
+				val, err := ValueOf(v.Index(i).Interface())
+
+				if err != nil {
+					return None, Errorf(err, "at index %d", i)
+				}
+
+				_ = arr.Append(ctx, val)
 			}
 
-			return arr
+			return arr, nil
 		}
 
 		if kind == reflect.Map {
 			keys := v.MapKeys()
 			obj := NewObject()
-			ctx := context.Background()
 
 			for _, k := range keys {
-				key := Parse(k.Interface())
-				curVal := v.MapIndex(k)
+				key, err := ValueOf(k.Interface())
 
-				_ = obj.Set(ctx, NewString(key.String()), Parse(curVal.Interface()))
+				if err != nil {
+					return None, Errorf(err, "at key %v", k.Interface())
+				}
+
+				val, err := ValueOf(v.MapIndex(k).Interface())
+
+				if err != nil {
+					return None, Errorf(err, "at key %v", k.Interface())
+				}
+
+				_ = obj.Set(ctx, NewString(key.String()), val)
 			}
 
-			return obj
+			return obj, nil
 		}
 
 		if kind == reflect.Struct {
 			obj := NewObject()
 			size := t.NumField()
-			ctx := context.Background()
 
 			for i := 0; i < size; i++ {
 				field := t.Field(i)
 				if field.PkgPath != "" {
 					continue
 				}
+
 				fieldValue := v.Field(i)
 				if !fieldValue.CanInterface() {
 					continue
 				}
 
-				_ = obj.Set(ctx, NewString(field.Name), Parse(fieldValue.Interface()))
+				parsed, err := ValueOf(fieldValue.Interface())
+
+				if err != nil {
+					return None, Errorf(err, "at field %q", field.Name)
+				}
+
+				_ = obj.Set(ctx, NewString(field.Name), parsed)
 			}
 
-			return obj
+			return obj, nil
 		}
 
-		return None
+		return None, Errorf(ErrInvalidType, "cannot parse type %T", input)
 	}
 }
 

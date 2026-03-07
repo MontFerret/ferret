@@ -11,7 +11,7 @@ import (
 
 func TestRegisterLib(t *testing.T) {
 	Convey("Should register NET namespace functions", t, func() {
-		ns := runtime.NewRootNamespace()
+		ns := runtime.NewLibrary()
 
 		net.RegisterLib(ns)
 
