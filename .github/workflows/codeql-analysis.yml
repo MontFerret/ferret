@@ -51,6 +51,20 @@ jobs:
           mkdir -p ~/.antlr
           curl -sSL -o ~/.antlr/antlr-4.13.2-complete.jar https://www.antlr.org/download/antlr-4.13.2-complete.jar
 
+      - name: Set up ANTLR CLI wrapper
+        run: |
+          test -f "$HOME/.antlr/antlr-4.13.2-complete.jar"
+          mkdir -p "$HOME/antlr-bin"
+          cat > "$HOME/antlr-bin/antlr" <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          exec java -jar "$HOME/.antlr/antlr-4.13.2-complete.jar" "$@"
+          EOF
+          chmod +x "$HOME/antlr-bin/antlr"
+          echo "$HOME/antlr-bin" >> "$GITHUB_PATH"
+          command -v antlr
+          antlr -version || true
+
       - name: Generate parser/lexer (uses ANTLR 4.13.2)
         env:
           ANTLR_JAR: ~/.antlr/antlr-4.13.2-complete.jar
