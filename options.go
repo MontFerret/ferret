@@ -168,7 +168,13 @@ func WithModules(module ...Module) Option {
 			env.modules = make([]Module, 0, len(module))
 		}
 
-		env.modules = append(env.modules, module...)
+		for _, m := range module {
+			if m == nil {
+				return fmt.Errorf("module cannot be nil")
+			}
+
+			env.modules = append(env.modules, m)
+		}
 
 		return nil
 	}
