@@ -65,6 +65,7 @@ jobs:
           EOF
           chmod +x "$HOME/antlr-bin/antlr"
           echo "$HOME/antlr-bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/antlr-bin:$PATH"
           command -v antlr
           antlr -version || true
 
@@ -72,6 +73,7 @@ jobs:
         env:
           ANTLR_JAR: ~/.antlr/antlr-4.13.2-complete.jar
         run: |
+          command -v antlr
           # Prefer your project’s generation target if present.
           if grep -qE '(^|\s)generate:' Makefile 2>/dev/null; then
             echo "Running: make generate"
