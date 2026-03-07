@@ -93,11 +93,6 @@ func (e *Engine) Run(ctx context.Context, src *file.Source, opts ...SessionOptio
 	var session *Session
 
 	defer func() {
-		logCtx := ctx
-		if logCtx == nil {
-			logCtx = context.Background()
-		}
-
 		logger := runtime.NewLogger(e.host.logging)
 
 		if session != nil {
