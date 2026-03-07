@@ -203,7 +203,8 @@ func WithCompilerOptions(opts ...compiler.Option) Option {
 	}
 }
 
-// WithEngineInitHook returns an Option that registers a hook to be executed during engine initialization.
+// WithEngineInitHook returns an Option that registers a hook to execute during engine initialization.
+// It returns an error if hook is nil.
 func WithEngineInitHook(hook EngineInitHook) Option {
 	return func(opts *options) error {
 		if hook == nil {
@@ -215,7 +216,8 @@ func WithEngineInitHook(hook EngineInitHook) Option {
 	}
 }
 
-// WithEngineCloseHook returns an Option that registers a hook to be executed when the engine is closed.
+// WithEngineCloseHook returns an Option that registers a hook to execute when the engine is closed.
+// It returns an error if hook is nil.
 func WithEngineCloseHook(hook EngineCloseHook) Option {
 	return func(opts *options) error {
 		if hook == nil {
@@ -227,7 +229,8 @@ func WithEngineCloseHook(hook EngineCloseHook) Option {
 	}
 }
 
-// WithBeforeCompileHook returns an Option that registers a hook to be executed before compilation.
+// WithBeforeCompileHook returns an Option that registers a hook to execute before each compilation attempt.
+// It returns an error if hook is nil.
 func WithBeforeCompileHook(hook BeforeCompileHook) Option {
 	return func(opts *options) error {
 		if hook == nil {
@@ -239,6 +242,8 @@ func WithBeforeCompileHook(hook BeforeCompileHook) Option {
 	}
 }
 
+// WithAfterCompileHook returns an Option that registers a hook to execute after each compilation attempt.
+// The hook receives the compilation error (if any). It returns an error if hook is nil.
 func WithAfterCompileHook(hook AfterCompileHook) Option {
 	return func(opts *options) error {
 		if hook == nil {
@@ -250,7 +255,8 @@ func WithAfterCompileHook(hook AfterCompileHook) Option {
 	}
 }
 
-// WithPlanCloseHook returns an Option that registers a hook to be executed when a plan is closed.
+// WithPlanCloseHook returns an Option that registers a hook to execute when a plan is closed.
+// It returns an error if hook is nil.
 func WithPlanCloseHook(hook PlanCloseHook) Option {
 	return func(opts *options) error {
 		if hook == nil {
@@ -262,7 +268,9 @@ func WithPlanCloseHook(hook PlanCloseHook) Option {
 	}
 }
 
-// WithBeforeRunHook returns an Option that registers a hook to be executed during session initialization.
+// WithBeforeRunHook returns an Option that registers a hook to execute before each session run.
+// The hook can replace the context used by subsequent hooks and VM execution.
+// It returns an error if hook is nil.
 func WithBeforeRunHook(hook BeforeRunHook) Option {
 	return func(opts *options) error {
 		if hook == nil {
@@ -274,7 +282,8 @@ func WithBeforeRunHook(hook BeforeRunHook) Option {
 	}
 }
 
-// WithAfterRunHook returns an Option that registers a hook to be executed during session initialization.
+// WithAfterRunHook returns an Option that registers a hook to execute after each session run attempt.
+// The hook receives the run error (if any). It returns an error if hook is nil.
 func WithAfterRunHook(hook AfterRunHook) Option {
 	return func(opts *options) error {
 		if hook == nil {
@@ -286,7 +295,8 @@ func WithAfterRunHook(hook AfterRunHook) Option {
 	}
 }
 
-// WithSessionCloseHook returns an Option that registers a hook to be executed when a session is closed.
+// WithSessionCloseHook returns an Option that registers a hook to execute when a session is closed.
+// It returns an error if hook is nil.
 func WithSessionCloseHook(hook SessionCloseHook) Option {
 	return func(opts *options) error {
 		if hook == nil {

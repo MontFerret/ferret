@@ -7,7 +7,7 @@ type (
 		Register(Bootstrap) error
 	}
 
-	// Bootstrap defines an interface for configuring the host and registering lifecycle sessionHooks with the runtime engine.
+	// Bootstrap defines an interface for configuring the host and registering lifecycle hooks with the runtime engine.
 	Bootstrap interface {
 		Host() HostConfigurer
 		Hooks() HookRegistrar

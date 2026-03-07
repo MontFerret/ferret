@@ -35,6 +35,7 @@ func (p *Plan) NewSession(setters ...SessionOption) (*Session, error) {
 }
 
 func (p *Plan) Close() error {
+	// Plan close hooks follow the hook registry close semantics (LIFO with error aggregation).
 	if err := p.hooks.runCloseHooks(); err != nil {
 		return fmt.Errorf("close hooks: %w", err)
 	}

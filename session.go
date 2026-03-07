@@ -22,6 +22,7 @@ type Session struct {
 }
 
 func (s *Session) Run(c context.Context) (Result, error) {
+	// Before-run hooks can replace the context used for the rest of execution.
 	ctx, err := s.hooks.runBeforeRunHooks(c)
 	if err != nil {
 		return nil, fmt.Errorf("before run hooks: %w", err)
@@ -30,6 +31,7 @@ func (s *Session) Run(c context.Context) (Result, error) {
 	ctx = encoding.WithRegistry(ctx, s.encoding)
 	out, err := s.vm.Run(ctx, s.env)
 
+	// After-run hooks always run and receive the VM run error (if any).
 	if hookErr := s.hooks.runAfterRunHooks(ctx, err); hookErr != nil {
 		return nil, errors.Join(err, fmt.Errorf("after run hooks: %w", hookErr))
 	}
