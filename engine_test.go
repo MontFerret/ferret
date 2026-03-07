@@ -89,12 +89,25 @@ func TestEngineNewReturnsModuleRegistrationError(t *testing.T) {
 	t.Parallel()
 
 	registerErr := errors.New("module register failed")
+	closeCalled := false
 
-	eng, err := New(WithModules(coverageModule{
-		registerFn: func(Bootstrap) error {
-			return registerErr
+	eng, err := New(WithModules(
+		coverageModule{
+			registerFn: func(boot Bootstrap) error {
+				boot.Hooks().Engine().OnClose(func() error {
+					closeCalled = true
+					return nil
+				})
+
+				return nil
+			},
 		},
-	}))
+		coverageModule{
+			registerFn: func(Bootstrap) error {
+				return registerErr
+			},
+		},
+	))
 	if err == nil {
 		t.Fatal("expected New to fail on module registration error")
 	}
@@ -103,8 +116,51 @@ func TestEngineNewReturnsModuleRegistrationError(t *testing.T) {
 		t.Fatal("expected engine to be nil on module registration error")
 	}
 
+	if !closeCalled {
+		t.Fatal("expected close hooks to run on module registration error")
+	}
+
 	if !errors.Is(err, registerErr) {
 		t.Fatalf("expected registration error to be preserved, got: %v", err)
+	}
+}
+
+func TestEngineNewJoinsModuleRegistrationAndCloseHookErrors(t *testing.T) {
+	t.Parallel()
+
+	registerErr := errors.New("module register failed")
+	closeErr := errors.New("close hook failed")
+
+	_, err := New(WithModules(
+		coverageModule{
+			registerFn: func(boot Bootstrap) error {
+				boot.Hooks().Engine().OnClose(func() error {
+					return closeErr
+				})
+
+				return nil
+			},
+		},
+		coverageModule{
+			registerFn: func(Bootstrap) error {
+				return registerErr
+			},
+		},
+	))
+	if err == nil {
+		t.Fatal("expected New to fail when module registration and close hooks fail")
+	}
+
+	if !errors.Is(err, registerErr) {
+		t.Fatalf("expected error to include module registration error, got: %v", err)
+	}
+
+	if !errors.Is(err, closeErr) {
+		t.Fatalf("expected error to include close hook error, got: %v", err)
+	}
+
+	if !strings.Contains(err.Error(), "close hooks") {
+		t.Fatalf("expected error to include close hooks label, got: %v", err)
 	}
 }
 

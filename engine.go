@@ -26,6 +26,10 @@ func New(setters ...Option) (*Engine, error) {
 
 	for _, m := range opts.modules {
 		if err := m.Register(boot); err != nil {
+			if closeErr := boot.hooks.engine.runCloseHooks(); closeErr != nil {
+				return nil, errors.Join(err, fmt.Errorf("close hooks: %w", closeErr))
+			}
+
 			return nil, err
 		}
 	}
