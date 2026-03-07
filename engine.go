@@ -7,6 +7,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type Engine struct {
@@ -31,6 +32,10 @@ func New(setters ...Option) (*Engine, error) {
 
 	h, err := boot.host.Build()
 	if err != nil {
+		if closeErr := boot.hooks.engine.runCloseHooks(); closeErr != nil {
+			return nil, errors.Join(err, fmt.Errorf("close hooks: %w", closeErr))
+		}
+
 		return nil, err
 	}
 
@@ -38,7 +43,13 @@ func New(setters ...Option) (*Engine, error) {
 
 	// Run init hooks after bootstrap is finalized and before returning the engine.
 	if err := hooks.engine.runInitHooks(); err != nil {
-		return nil, fmt.Errorf("init hooks: %w", err)
+		initErr := fmt.Errorf("init hooks: %w", err)
+
+		if closeErr := hooks.engine.runCloseHooks(); closeErr != nil {
+			return nil, errors.Join(initErr, fmt.Errorf("close hooks: %w", closeErr))
+		}
+
+		return nil, initErr
 	}
 
 	return &Engine{
@@ -79,17 +90,39 @@ func (e *Engine) Run(ctx context.Context, src *file.Source, opts ...SessionOptio
 		return nil, err
 	}
 
-	session, err := plan.NewSession(opts...)
+	var session *Session
 
+	defer func() {
+		logCtx := ctx
+		if logCtx == nil {
+			logCtx = context.Background()
+		}
+
+		logger := runtime.NewLogger(e.host.logging)
+
+		if session != nil {
+			if closeErr := session.Close(); closeErr != nil {
+				logger.Error().
+					Err(closeErr).
+					Str("phase", "session").
+					Str("operation", "close").
+					Msg("deferred cleanup failed")
+			}
+		}
+
+		if closeErr := plan.Close(); closeErr != nil {
+			logger.Error().
+				Err(closeErr).
+				Str("phase", "plan").
+				Str("operation", "close").
+				Msg("deferred cleanup failed")
+		}
+	}()
+
+	session, err = plan.NewSession(opts...)
 	if err != nil {
 		return nil, err
 	}
-
-	defer func() {
-		// TODO: Log errors
-		session.Close()
-		plan.Close()
-	}()
 
 	return session.Run(ctx)
 }
