@@ -1,41 +1,44 @@
 package ferret
 
 import (
+	"fmt"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 type Plan struct {
-	prog     *bytecode.Program
-	env      *vm.Environment
-	encoding *encoding.Registry
-}
-
-func newPlan(prog *bytecode.Program, env *vm.Environment, enc *encoding.Registry) *Plan {
-	if enc == nil {
-		enc = encoding.NewRegistry()
-	}
-
-	return &Plan{
-		prog:     prog,
-		env:      env,
-		encoding: enc,
-	}
+	prog         *bytecode.Program
+	host         *host
+	hooks        planHooks
+	sessionHooks sessionHooks
 }
 
 func (p *Plan) NewSession(setters ...SessionOption) (*Session, error) {
-	env, err := vm.NewEnvironment(setters)
+	env, err := vm.ExtendEnvironment(&vm.Environment{
+		Functions: p.host.functions,
+		Params:    p.host.params,
+		Logging:   p.host.logging,
+	}, setters)
 
 	if err != nil {
 		return nil, err
 	}
 
-	mergedEnv, err := vm.MergeEnvironments(p.env, env)
+	return &Session{
+		// TODO: create a VM pool and get a VM from it instead of creating a new one for each session
+		vm:       vm.New(p.prog),
+		env:      env,
+		encoding: p.host.encoding,
+		hooks:    p.sessionHooks,
+	}, nil
+}
 
-	if err != nil {
-		return nil, err
+func (p *Plan) Close() error {
+	// Plan close hooks follow the hook registry close semantics (LIFO with error aggregation).
+	if err := p.hooks.runCloseHooks(); err != nil {
+		return fmt.Errorf("close hooks: %w", err)
 	}
 
-	return newSession(vm.New(p.prog), mergedEnv, p.encoding), nil
+	return nil
 }

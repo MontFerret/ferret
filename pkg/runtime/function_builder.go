@@ -212,11 +212,11 @@ func NewFunctionsBuilderFrom(funcs ...*Functions) *FunctionsBuilder {
 }
 
 func newRootFunctionsBuilder() *FunctionsBuilder {
-	return newNamespaceFunctionsBuilder("")
+	return newNamespacedFunctionsBuilder("")
 }
 
-// newNamespaceFunctionsBuilder creates a builder with shared errors across its FnDefs.
-func newNamespaceFunctionsBuilder(namespace string) *FunctionsBuilder {
+// newNamespacedFunctionsBuilder creates a builder with shared errors across its FnDefs.
+func newNamespacedFunctionsBuilder(namespace string) *FunctionsBuilder {
 	errs := &fnErrors{}
 
 	return &FunctionsBuilder{

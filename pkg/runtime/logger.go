@@ -54,16 +54,18 @@ func (l LogLevel) String() string {
 	return zerolog.Level(l).String()
 }
 
-func WithLogger(ctx context.Context, opts LogSettings) context.Context {
+func NewLogger(opts LogSettings) zerolog.Logger {
 	c := zerolog.New(opts.Writer).With().Timestamp()
 
 	for k, v := range opts.Fields {
 		c = c.Interface(k, v)
 	}
 
-	logger := c.Logger().Level(zerolog.Level(opts.Level))
+	return c.Logger().Level(zerolog.Level(opts.Level))
+}
 
-	return logger.WithContext(ctx)
+func WithLogger(ctx context.Context, opts LogSettings) context.Context {
+	return NewLogger(opts).WithContext(ctx)
 }
 
 func GetLogger(ctx context.Context) zerolog.Logger {

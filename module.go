@@ -1,35 +1,35 @@
 package ferret
 
-import (
-	"context"
-
-	"github.com/MontFerret/ferret/v2/pkg/encoding"
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
-)
-
+// Module represents a self-contained unit of functionality that can be registered with the engine.
 type (
-	ModuleRegistry struct {
-		ns         runtime.Namespace
-		encoding   *encoding.Registry
-		decorators []ContextDecorator
-	}
-
-	ContextDecorator func(ctx context.Context) (context.Context, error)
-
 	Module interface {
 		Name() string
-		Register(registry *ModuleRegistry) error
+		Register(Bootstrap) error
+	}
+
+	// Bootstrap defines an interface for configuring the host and registering lifecycle hooks with the runtime engine.
+	Bootstrap interface {
+		Host() HostConfigurer
+		Hooks() HookRegistrar
+	}
+
+	bootstrap struct {
+		host  *hostBuilder
+		hooks *hookRegistry
 	}
 )
 
-func (mr *ModuleRegistry) Functions() runtime.Namespace {
-	return mr.ns
+func newBootstrap(opts *options) *bootstrap {
+	return &bootstrap{
+		host:  newHostBuilder(opts),
+		hooks: opts.hooks,
+	}
 }
 
-func (mr *ModuleRegistry) Encoding() *encoding.Registry {
-	return mr.encoding
+func (b *bootstrap) Host() HostConfigurer {
+	return b.host
 }
 
-func (mr *ModuleRegistry) WithContext(extender ContextDecorator) {
-	mr.decorators = append(mr.decorators, extender)
+func (b *bootstrap) Hooks() HookRegistrar {
+	return b.hooks
 }

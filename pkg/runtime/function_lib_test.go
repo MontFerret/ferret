@@ -7,7 +7,7 @@ import (
 )
 
 func TestNamespaceRegisterFunctionsNested(t *testing.T) {
-	root := NewRootNamespace()
+	root := NewLibrary()
 	nested := root.Namespace("foo").Namespace("bar")
 
 	nested.Function().A0().
@@ -27,7 +27,7 @@ func TestNamespaceRegisterFunctionsNested(t *testing.T) {
 }
 
 func TestNamespaceRegisterFunctionsDuplicate(t *testing.T) {
-	root := NewRootNamespace()
+	root := NewLibrary()
 	ns := root.Namespace("foo")
 
 	ns.Function().A0().
@@ -51,7 +51,7 @@ func TestNamespaceNewNamespaceQualifiedNames(t *testing.T) {
 			return None, nil
 		})
 
-	funcs, err := ns.(*defaultNamespace).Build()
+	funcs, err := ns.(*library).Build()
 	if err != nil {
 		t.Fatalf("build functions: %v", err)
 	}
