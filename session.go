@@ -9,11 +9,16 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-// Session represents a single execution of a compiled Ferret program.
+// Session represents the execution of a compiled Ferret program.
 // It holds the state of the execution, including the virtual machine, environment, and encoding registry.
 // A Session is created from a Plan and can be run to obtain results.
-// It is not thread-safe and should be used for a single execution.
-// After running, it can be closed to release any resources if necessary, or it can be reused for multiple runs if the environment and registry are not modified.
+//
+// Session is not safe for concurrent use by multiple goroutines.
+// It is typically used for a single logical execution. When a Session is created
+// directly via Plan.NewSession, it may be reused for multiple sequential runs as
+// long as the environment and encoding registry are not modified between runs.
+// Helper APIs such as Engine.Run may take ownership of the Session and close it
+// after a single execution, in which case the caller must not attempt to reuse it.
 type Session struct {
 	vm       *vm.VM
 	env      *vm.Environment
