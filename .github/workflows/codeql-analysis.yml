@@ -43,17 +43,20 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.antlr
-          key: antlr-4.13.2
+          key: ${{ runner.os }}-antlr-4.13.2
 
-      - name: Install ANTLR 4.13.2
-        if: steps.cache-antlr.outputs.cache-hit != 'true'
+      - name: Ensure ANTLR 4.13.2 jar exists
         run: |
-          mkdir -p ~/.antlr
-          curl -sSL -o ~/.antlr/antlr-4.13.2-complete.jar https://www.antlr.org/download/antlr-4.13.2-complete.jar
+          mkdir -p "$HOME/.antlr"
+          if [ ! -s "$HOME/.antlr/antlr-4.13.2-complete.jar" ]; then
+            curl -sSL -o "$HOME/.antlr/antlr-4.13.2-complete.jar" https://www.antlr.org/download/antlr-4.13.2-complete.jar
+          fi
+          test -s "$HOME/.antlr/antlr-4.13.2-complete.jar"
 
       - name: Set up ANTLR CLI wrapper
         run: |
-          test -f "$HOME/.antlr/antlr-4.13.2-complete.jar"
+          ls -l "$HOME/.antlr"
+          test -s "$HOME/.antlr/antlr-4.13.2-complete.jar"
           mkdir -p "$HOME/antlr-bin"
           cat > "$HOME/antlr-bin/antlr" <<'EOF'
           #!/usr/bin/env bash
