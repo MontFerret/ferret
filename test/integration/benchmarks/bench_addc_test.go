@@ -2,8 +2,6 @@ package benchmarks_test
 
 import (
 	"testing"
-
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 const (
@@ -42,11 +40,11 @@ func BenchmarkAddNumeric_O1(b *testing.B) {
 }
 
 func BenchmarkAddConstNumericWithParam_O0(b *testing.B) {
-	RunBenchmarkO0(b, addConstNumericWithParamQuery, vm.WithParam("base", 1))
+	RunBenchmarkO0(b, addConstNumericWithParamQuery, WithParam("base", 1))
 }
 
 func BenchmarkAddConstNumericWithParam_O1(b *testing.B) {
-	RunBenchmarkO1(b, addConstNumericWithParamQuery, vm.WithParam("base", 1))
+	RunBenchmarkO1(b, addConstNumericWithParamQuery, WithParam("base", 1))
 }
 
 func BenchmarkAddConstString_O0(b *testing.B) {
@@ -58,25 +56,25 @@ func BenchmarkAddConstString_O1(b *testing.B) {
 }
 
 func BenchmarkAddConstStringWithParam_O0(b *testing.B) {
-	RunBenchmarkO0(b, addConstStringWithParamQuery, vm.WithParam("foo", "bar"))
+	RunBenchmarkO0(b, addConstStringWithParamQuery, WithParam("foo", "bar"))
 }
 
 func BenchmarkAddConstStringWithParam_O1(b *testing.B) {
-	RunBenchmarkO1(b, addConstStringWithParamQuery, vm.WithParam("foo", "bar"))
+	RunBenchmarkO1(b, addConstStringWithParamQuery, WithParam("foo", "bar"))
 }
 
 func BenchmarkTemplateLiteralSimple_O0(b *testing.B) {
-	RunBenchmarkO0(b, templateLiteralSimpleQuery, vm.WithParam("name", "World"))
+	RunBenchmarkO0(b, templateLiteralSimpleQuery, WithParam("name", "World"))
 }
 
 func BenchmarkTemplateLiteralSimple_O1(b *testing.B) {
-	RunBenchmarkO1(b, templateLiteralSimpleQuery, vm.WithParam("name", "World"))
+	RunBenchmarkO1(b, templateLiteralSimpleQuery, WithParam("name", "World"))
 }
 
 func BenchmarkTemplateLiteralNumeric_O0(b *testing.B) {
-	RunBenchmarkO0(b, templateLiteralNumericQuery, vm.WithParam("a", 1), vm.WithParam("b", 2))
+	RunBenchmarkO0(b, templateLiteralNumericQuery, WithParam("a", 1), WithParam("b", 2))
 }
 
 func BenchmarkTemplateLiteralNumeric_O1(b *testing.B) {
-	RunBenchmarkO1(b, templateLiteralNumericQuery, vm.WithParam("a", 1), vm.WithParam("b", 2))
+	RunBenchmarkO1(b, templateLiteralNumericQuery, WithParam("a", 1), WithParam("b", 2))
 }

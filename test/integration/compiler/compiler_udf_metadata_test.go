@@ -3,6 +3,7 @@ package compiler_test
 import (
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 )
 
@@ -204,5 +205,56 @@ RETURN f()
 
 	if _, ok := prog.Functions.Host["FOO"]; ok {
 		t.Fatalf("expected no bare FOO host metadata at O1, got %v", prog.Functions.Host)
+	}
+}
+
+func TestProgramParamsPreserveFirstUseOrder(t *testing.T) {
+	expr := `RETURN [@beta, @alpha, @beta, @gamma]`
+
+	prog := compileWithLevel(t, compiler.O0, expr)
+
+	if len(prog.Params) != 3 {
+		t.Fatalf("unexpected params count: got %d (%v), want %d", len(prog.Params), prog.Params, 3)
+	}
+
+	want := []string{"beta", "alpha", "gamma"}
+	for i := range want {
+		if prog.Params[i] != want[i] {
+			t.Fatalf("unexpected param order at index %d: got %q, want %q", i, prog.Params[i], want[i])
+		}
+	}
+}
+
+func TestLoadParamUsesSlotOperand(t *testing.T) {
+	expr := `RETURN @foo + @bar + @foo`
+
+	prog := compileWithLevel(t, compiler.O0, expr)
+
+	var loads []bytecode.Instruction
+	for _, inst := range prog.Bytecode {
+		if inst.Opcode == bytecode.OpLoadParam {
+			loads = append(loads, inst)
+		}
+	}
+
+	if len(loads) != 3 {
+		t.Fatalf("unexpected number of LOADP instructions: got %d", len(loads))
+	}
+
+	got := []bytecode.Operand{
+		loads[0].Operands[1],
+		loads[1].Operands[1],
+		loads[2].Operands[1],
+	}
+	want := []bytecode.Operand{1, 2, 1}
+
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("unexpected slot at LOADP #%d: got %d, want %d", i, got[i], want[i])
+		}
+
+		if got[i].IsConstant() {
+			t.Fatalf("expected LOADP source operand to be slot-encoded, got constant %s", got[i])
+		}
 	}
 }
