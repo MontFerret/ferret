@@ -6,7 +6,6 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm/internal"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
@@ -14,16 +13,15 @@ import (
 )
 
 type VM struct {
-	registers               *mem.RegisterFile
-	cache                   *mem.Cache
-	env                     *Environment
-	program                 *bytecode.Program
-	runSafetyMode           RunSafetyMode
-	fastObjectDictThreshold int
-	instructions            []data.ExecInstruction
-	catchByPC               []int
-	pc                      int
-	frames                  frame.CallStack
+	options      options
+	registers    *mem.RegisterFile
+	cache        *mem.Cache
+	env          *Environment
+	program      *bytecode.Program
+	instructions []data.ExecInstruction
+	catchByPC    []int
+	pc           int
+	frames       frame.CallStack
 }
 
 func New(program *bytecode.Program) *VM {
@@ -34,30 +32,29 @@ func NewWith(program *bytecode.Program, opts ...Option) *VM {
 	o := newOptions(opts)
 
 	vm := &VM{
-		registers:               mem.NewRegisterFile(program.Registers),
-		cache:                   mem.NewCache(len(program.Bytecode), o.shapeCacheLimit),
-		program:                 program,
-		runSafetyMode:           o.runSafetyMode,
-		fastObjectDictThreshold: o.fastObjectDictThreshold,
-		instructions:            internal.BuildExecInstructions(program.Bytecode),
-		catchByPC:               internal.BuildCatchByPC(len(program.Bytecode), program.CatchTable),
+		registers:    mem.NewRegisterFile(program.Registers),
+		cache:        mem.NewCache(len(program.Bytecode), o.shapeCacheLimit),
+		program:      program,
+		options:      o,
+		instructions: buildExecInstructions(program.Bytecode),
+		catchByPC:    buildCatchByPC(len(program.Bytecode), program.CatchTable),
 	}
 
-	vm.frames.Init(internal.MaxUDFRegisters(program.Functions.UserDefined))
+	vm.frames.Init(maxUDFRegisters(program.Functions.UserDefined))
 
 	return vm
 }
 
 func (vm *VM) Run(ctx context.Context, env *Environment) (runtime.Value, error) {
-	switch vm.runSafetyMode {
-	case RunSafetyFast:
-		return vm.runFast(ctx, env)
+	switch vm.options.panicPolicy {
+	case PanicPropagate:
+		return vm.runUnchecked(ctx, env)
 	default:
-		return vm.runStrict(ctx, env)
+		return vm.runRecovered(ctx, env)
 	}
 }
 
-func (vm *VM) runStrict(ctx context.Context, env *Environment) (result runtime.Value, err error) {
+func (vm *VM) runRecovered(ctx context.Context, env *Environment) (result runtime.Value, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = vm.runtimeErrorFromPanic(r)
@@ -74,7 +71,7 @@ func (vm *VM) runStrict(ctx context.Context, env *Environment) (result runtime.V
 	return vm.runCore(ctx, env)
 }
 
-func (vm *VM) runFast(ctx context.Context, env *Environment) (runtime.Value, error) {
+func (vm *VM) runUnchecked(ctx context.Context, env *Environment) (runtime.Value, error) {
 	result, err := vm.runCore(ctx, env)
 
 	if err != nil {
@@ -90,12 +87,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, err
 	}
 
 	if err := validate(env, vm.program); err != nil {
-		return nil, err
-	}
-
-	paramSlots, err := bindParams(vm.program.Params, env)
-
-	if err != nil {
 		return nil, err
 	}
 
@@ -116,6 +107,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, err
 	constants := vm.program.Constants
 	aggregatePlans := vm.program.Metadata.AggregatePlans
 	shapeCache := vm.cache.ShapeCache
+	paramSlots := vm.cache.Params
 loop:
 	for vm.pc < len(instructions) {
 		reg := vm.registers.Values
@@ -140,7 +132,7 @@ loop:
 		case bytecode.OpLoadArray:
 			reg[dst] = runtime.NewArray(int(src1))
 		case bytecode.OpLoadObject:
-			reg[dst] = data.NewFastObjectOf(shapeCache, vm.fastObjectDictThreshold, int(src1))
+			reg[dst] = data.NewFastObjectOf(shapeCache, vm.options.fastObjectDictThreshold, int(src1))
 		case bytecode.OpJump:
 			vm.pc = int(dst)
 		case bytecode.OpJumpIfFalse:
@@ -375,8 +367,8 @@ loop:
 				continue
 			}
 		case bytecode.OpApplyQuery:
-			src := internal.ReadOperandValue(reg, constants, src1)
-			descriptor := internal.ReadOperandValue(reg, constants, src2)
+			src := readOperandValue(reg, constants, src1)
+			descriptor := readOperandValue(reg, constants, src2)
 			out, err := operators.ApplyQuery(ctx, src, descriptor)
 
 			if err := vm.setOrTryCatch(dst, out, err); err != nil {
@@ -391,7 +383,7 @@ loop:
 		case bytecode.OpAddConst:
 			reg[dst] = runtime.Add(ctx, reg[src1], constants[src2.Constant()])
 		case bytecode.OpConcat:
-			internal.ConcatStrings(reg, dst, src1, src2)
+			concatStrings(reg, dst, src1, src2)
 		case bytecode.OpSub:
 			reg[dst] = runtime.Subtract(ctx, reg[src1], reg[src2])
 		case bytecode.OpMulti:

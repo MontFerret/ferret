@@ -1,4 +1,4 @@
-package internal
+package vm
 
 import (
 	"strings"
@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 )
 
-func ReadOperandValue(reg []runtime.Value, constants []runtime.Value, operand bytecode.Operand) runtime.Value {
+func readOperandValue(reg []runtime.Value, constants []runtime.Value, operand bytecode.Operand) runtime.Value {
 	if operand.IsConstant() {
 		return constants[operand.Constant()]
 	}
@@ -16,7 +16,7 @@ func ReadOperandValue(reg []runtime.Value, constants []runtime.Value, operand by
 	return reg[operand]
 }
 
-func ConcatStrings(reg []runtime.Value, dst, src1, src2 bytecode.Operand) {
+func concatStrings(reg []runtime.Value, dst, src1, src2 bytecode.Operand) {
 	start := int(src1)
 	count := int(src2)
 
@@ -101,7 +101,7 @@ func ConcatStrings(reg []runtime.Value, dst, src1, src2 bytecode.Operand) {
 	reg[dst] = runtime.NewString(b.String())
 }
 
-func BuildCatchByPC(bytecodeLen int, catches []bytecode.Catch) []int {
+func buildCatchByPC(bytecodeLen int, catches []bytecode.Catch) []int {
 	if bytecodeLen <= 0 {
 		return nil
 	}
@@ -133,7 +133,7 @@ func BuildCatchByPC(bytecodeLen int, catches []bytecode.Catch) []int {
 	return catchByPC
 }
 
-func BuildExecInstructions(code []bytecode.Instruction) []data.ExecInstruction {
+func buildExecInstructions(code []bytecode.Instruction) []data.ExecInstruction {
 	instructions := make([]data.ExecInstruction, len(code))
 
 	for i := range code {
@@ -145,7 +145,7 @@ func BuildExecInstructions(code []bytecode.Instruction) []data.ExecInstruction {
 	return instructions
 }
 
-func MaxUDFRegisters(udfs []bytecode.UDF) int {
+func maxUDFRegisters(udfs []bytecode.UDF) int {
 	maxUDFRegs := 0
 
 	for i := range udfs {

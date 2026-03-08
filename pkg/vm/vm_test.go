@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/vm/internal"
 )
 
 func TestNewWithOptions_InitializesFieldsFromProgramAndConfig(t *testing.T) {
@@ -29,7 +28,7 @@ func TestNewWithOptions_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 		program,
 		WithShapeCacheLimit(17),
 		WithFastObjectDictThreshold(23),
-		WithRunSafetyMode(RunSafetyFast),
+		WithPanicPolicy(PanicPropagate),
 	)
 
 	if instance.program != program {
@@ -44,11 +43,11 @@ func TestNewWithOptions_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 		t.Fatalf("unexpected register file size: got %d, want %d", got, want)
 	}
 
-	if got, want := instance.runSafetyMode, RunSafetyFast; got != want {
+	if got, want := instance.options.panicPolicy, PanicPropagate; got != want {
 		t.Fatalf("unexpected run safety mode: got %d, want %d", got, want)
 	}
 
-	if got, want := instance.fastObjectDictThreshold, 23; got != want {
+	if got, want := instance.options.fastObjectDictThreshold, 23; got != want {
 		t.Fatalf("unexpected fast object dict threshold: got %d, want %d", got, want)
 	}
 
@@ -107,7 +106,7 @@ func TestNewWithOptions_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 }
 
 func TestBuildCatchByPC_EmptyBytecodeReturnsNil(t *testing.T) {
-	got := internal.BuildCatchByPC(0, []bytecode.Catch{
+	got := buildCatchByPC(0, []bytecode.Catch{
 		{0, 0, 1},
 	})
 
@@ -117,7 +116,7 @@ func TestBuildCatchByPC_EmptyBytecodeReturnsNil(t *testing.T) {
 }
 
 func TestBuildCatchByPC_ClampsAndKeepsFirstMatch(t *testing.T) {
-	got := internal.BuildCatchByPC(5, []bytecode.Catch{
+	got := buildCatchByPC(5, []bytecode.Catch{
 		{-3, 0, 10},
 		{2, 100, 20},
 		{3, 3, 30},
@@ -136,7 +135,7 @@ func TestBuildCatchByPC_ClampsAndKeepsFirstMatch(t *testing.T) {
 }
 
 func TestMaxUDFRegisters_ReturnsMaxOrZero(t *testing.T) {
-	if got := internal.MaxUDFRegisters(nil); got != 0 {
+	if got := maxUDFRegisters(nil); got != 0 {
 		t.Fatalf("expected zero for nil list, got %d", got)
 	}
 
@@ -146,7 +145,7 @@ func TestMaxUDFRegisters_ReturnsMaxOrZero(t *testing.T) {
 		{Registers: 1},
 	}
 
-	if got := internal.MaxUDFRegisters(udfs); got != 9 {
+	if got := maxUDFRegisters(udfs); got != 9 {
 		t.Fatalf("unexpected max UDF register count: got %d, want %d", got, 9)
 	}
 }

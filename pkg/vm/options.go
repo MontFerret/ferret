@@ -6,27 +6,27 @@ const (
 )
 
 type (
-	RunSafetyMode uint8
+	PanicPolicy uint8
 
 	options struct {
 		shapeCacheLimit         int
 		fastObjectDictThreshold int
-		runSafetyMode           RunSafetyMode
+		panicPolicy             PanicPolicy
 	}
 
 	Option func(*options)
 )
 
 const (
-	RunSafetyStrict RunSafetyMode = iota
-	RunSafetyFast
+	PanicRecover PanicPolicy = iota
+	PanicPropagate
 )
 
 func newOptions(opts []Option) options {
 	cfg := options{
 		shapeCacheLimit:         defaultShapeCacheLimit,
 		fastObjectDictThreshold: defaultFastObjectDictThreshold,
-		runSafetyMode:           RunSafetyStrict,
+		panicPolicy:             PanicRecover,
 	}
 
 	for _, opt := range opts {
@@ -54,13 +54,13 @@ func WithFastObjectDictThreshold(limit int) Option {
 	}
 }
 
-// WithRunSafetyMode controls panic handling policy during Run.
-// RunSafetyStrict wraps panics into runtime errors, while RunSafetyFast lets panics propagate.
-func WithRunSafetyMode(mode RunSafetyMode) Option {
+// WithPanicPolicy controls panic handling policy during Run.
+// PanicRecover wraps panics into runtime errors, while PanicPropagate lets panics propagate.
+func WithPanicPolicy(mode PanicPolicy) Option {
 	return func(cfg *options) {
 		switch mode {
-		case RunSafetyStrict, RunSafetyFast:
-			cfg.runSafetyMode = mode
+		case PanicRecover, PanicPropagate:
+			cfg.panicPolicy = mode
 		}
 	}
 }
