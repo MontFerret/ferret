@@ -14,7 +14,6 @@ type (
 		LoadKeyICs      []*LoadKeyCache
 		LoadKeyConstICs []*LoadKeyConstCache
 		ShapeCache      *data.ShapeCache
-		Params          []runtime.Value
 	}
 
 	CachedHostFunction struct {

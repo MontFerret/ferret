@@ -16,6 +16,7 @@ type VM struct {
 	options      options
 	registers    *mem.RegisterFile
 	cache        *mem.Cache
+	scratch      *mem.Scratch
 	env          *Environment
 	program      *bytecode.Program
 	instructions []data.ExecInstruction
@@ -34,6 +35,7 @@ func NewWith(program *bytecode.Program, opts ...Option) *VM {
 	vm := &VM{
 		registers:    mem.NewRegisterFile(program.Registers),
 		cache:        mem.NewCache(len(program.Bytecode), o.shapeCacheLimit),
+		scratch:      mem.NewScratch(len(program.Params)),
 		program:      program,
 		options:      o,
 		instructions: buildExecInstructions(program.Bytecode),
@@ -107,7 +109,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, err
 	constants := vm.program.Constants
 	aggregatePlans := vm.program.Metadata.AggregatePlans
 	shapeCache := vm.cache.ShapeCache
-	paramSlots := vm.cache.Params
+	paramSlots := vm.scratch.Params
 loop:
 	for vm.pc < len(instructions) {
 		reg := vm.registers.Values
