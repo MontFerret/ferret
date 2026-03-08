@@ -49,7 +49,8 @@ type SymbolTable struct {
 	registers *RegisterAllocator
 	constants *ConstantPool
 
-	params    map[string]string
+	params    map[string]int
+	paramList []string
 	functions map[string]int
 	globals   map[string]bytecode.Operand
 	locals    []*Variable
@@ -65,7 +66,8 @@ func NewSymbolTable(registers *RegisterAllocator, constants *ConstantPool) *Symb
 	return &SymbolTable{
 		registers: registers,
 		constants: constants,
-		params:    make(map[string]string),
+		params:    make(map[string]int),
+		paramList: make([]string, 0),
 		globals:   make(map[string]bytecode.Operand),
 		locals:    make([]*Variable, 0),
 	}
@@ -156,8 +158,15 @@ func (st *SymbolTable) AssignGlobal(name string, typ ValueType, op bytecode.Oper
 }
 
 func (st *SymbolTable) BindParam(name string) bytecode.Operand {
-	st.params[name] = name
-	return st.constants.Add(runtime.NewString(name))
+	if slot, exists := st.params[name]; exists {
+		return bytecode.Operand(slot + 1)
+	}
+
+	slot := len(st.paramList)
+	st.params[name] = slot
+	st.paramList = append(st.paramList, name)
+
+	return bytecode.Operand(slot + 1)
 }
 
 func (st *SymbolTable) BindFunction(name string, args int) {
@@ -214,11 +223,8 @@ func (st *SymbolTable) Lookup(name string) (*Variable, bool) {
 }
 
 func (st *SymbolTable) Params() []string {
-	out := make([]string, 0, len(st.params))
-
-	for k := range st.params {
-		out = append(out, k)
-	}
+	out := make([]string, len(st.paramList))
+	copy(out, st.paramList)
 
 	return out
 }

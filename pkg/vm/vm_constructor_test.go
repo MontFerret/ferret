@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal"
 )
 
 func TestNewWithOptions_InitializesFieldsFromProgramAndConfig(t *testing.T) {
@@ -24,7 +25,7 @@ func TestNewWithOptions_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 		},
 	}
 
-	instance := NewWithOptions(
+	instance := NewWith(
 		program,
 		WithShapeCacheLimit(17),
 		WithFastObjectDictThreshold(23),
@@ -106,7 +107,7 @@ func TestNewWithOptions_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 }
 
 func TestBuildCatchByPC_EmptyBytecodeReturnsNil(t *testing.T) {
-	got := buildCatchByPC(0, []bytecode.Catch{
+	got := internal.BuildCatchByPC(0, []bytecode.Catch{
 		{0, 0, 1},
 	})
 
@@ -116,7 +117,7 @@ func TestBuildCatchByPC_EmptyBytecodeReturnsNil(t *testing.T) {
 }
 
 func TestBuildCatchByPC_ClampsAndKeepsFirstMatch(t *testing.T) {
-	got := buildCatchByPC(5, []bytecode.Catch{
+	got := internal.BuildCatchByPC(5, []bytecode.Catch{
 		{-3, 0, 10},
 		{2, 100, 20},
 		{3, 3, 30},
@@ -135,7 +136,7 @@ func TestBuildCatchByPC_ClampsAndKeepsFirstMatch(t *testing.T) {
 }
 
 func TestMaxUDFRegisters_ReturnsMaxOrZero(t *testing.T) {
-	if got := maxUDFRegisters(nil); got != 0 {
+	if got := internal.MaxUDFRegisters(nil); got != 0 {
 		t.Fatalf("expected zero for nil list, got %d", got)
 	}
 
@@ -145,7 +146,7 @@ func TestMaxUDFRegisters_ReturnsMaxOrZero(t *testing.T) {
 		{Registers: 1},
 	}
 
-	if got := maxUDFRegisters(udfs); got != 9 {
+	if got := internal.MaxUDFRegisters(udfs); got != 9 {
 		t.Fatalf("unexpected max UDF register count: got %d, want %d", got, 9)
 	}
 }

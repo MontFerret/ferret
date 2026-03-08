@@ -27,77 +27,25 @@ type VM struct {
 }
 
 func New(program *bytecode.Program) *VM {
-	return NewWithOptions(program)
+	return NewWith(program)
 }
 
-func NewWithOptions(program *bytecode.Program, opts ...Option) *VM {
-	cfg := newOptions(opts)
+func NewWith(program *bytecode.Program, opts ...Option) *VM {
+	o := newOptions(opts)
 
 	vm := &VM{
 		registers:               mem.NewRegisterFile(program.Registers),
-		cache:                   mem.NewCache(len(program.Bytecode), cfg.shapeCacheLimit),
+		cache:                   mem.NewCache(len(program.Bytecode), o.shapeCacheLimit),
 		program:                 program,
-		runSafetyMode:           cfg.runSafetyMode,
-		fastObjectDictThreshold: cfg.fastObjectDictThreshold,
-		instructions:            buildExecInstructions(program.Bytecode),
-		catchByPC:               buildCatchByPC(len(program.Bytecode), program.CatchTable),
+		runSafetyMode:           o.runSafetyMode,
+		fastObjectDictThreshold: o.fastObjectDictThreshold,
+		instructions:            internal.BuildExecInstructions(program.Bytecode),
+		catchByPC:               internal.BuildCatchByPC(len(program.Bytecode), program.CatchTable),
 	}
 
-	vm.frames.Init(maxUDFRegisters(program.Functions.UserDefined))
+	vm.frames.Init(internal.MaxUDFRegisters(program.Functions.UserDefined))
 
 	return vm
-}
-
-func buildExecInstructions(code []bytecode.Instruction) []data.ExecInstruction {
-	instructions := make([]data.ExecInstruction, len(code))
-
-	for i := range code {
-		instructions[i] = data.ExecInstruction{
-			Instruction: code[i],
-		}
-	}
-
-	return instructions
-}
-
-func maxUDFRegisters(udfs []bytecode.UDF) int {
-	maxUDFRegs := 0
-
-	for i := range udfs {
-		if udfs[i].Registers > maxUDFRegs {
-			maxUDFRegs = udfs[i].Registers
-		}
-	}
-
-	return maxUDFRegs
-}
-
-func buildCatchByPC(bytecodeLen int, catches []bytecode.Catch) []int {
-	if bytecodeLen <= 0 {
-		return nil
-	}
-
-	catchByPC := make([]int, bytecodeLen)
-	for i := range catchByPC {
-		catchByPC[i] = -1
-	}
-
-	for i, pair := range catches {
-		start, end := pair[0], pair[1]
-		if start < 0 {
-			start = 0
-		}
-		if end >= bytecodeLen {
-			end = bytecodeLen - 1
-		}
-		for pc := start; pc <= end; pc++ {
-			if catchByPC[pc] == -1 {
-				catchByPC[pc] = i
-			}
-		}
-	}
-
-	return catchByPC
 }
 
 func (vm *VM) Run(ctx context.Context, env *Environment) (runtime.Value, error) {
@@ -145,6 +93,12 @@ func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, err
 		return nil, err
 	}
 
+	paramSlots, err := bindParams(vm.program.Params, env)
+
+	if err != nil {
+		return nil, err
+	}
+
 	if err := vm.warmup(env); err != nil {
 		return nil, err
 	}
@@ -182,8 +136,7 @@ loop:
 		case bytecode.OpLoadConst:
 			reg[dst] = constants[src1.Constant()]
 		case bytecode.OpLoadParam:
-			name := constants[src1.Constant()]
-			reg[dst] = vm.env.Params[name.String()]
+			reg[dst] = paramSlots[int(src1)-1]
 		case bytecode.OpLoadArray:
 			reg[dst] = runtime.NewArray(int(src1))
 		case bytecode.OpLoadObject:

@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-const Version = 1
+const Version = 2
 
 type (
 	Catch [3]int

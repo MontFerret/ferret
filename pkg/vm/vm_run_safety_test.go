@@ -50,7 +50,7 @@ func TestRunSafetyStrictRecoversPanics(t *testing.T) {
 func TestRunSafetyFastPropagatesPanics(t *testing.T) {
 	program := compileProgram(t, "RETURN PANIC_FN()")
 
-	instance := NewWithOptions(program, WithRunSafetyMode(RunSafetyFast))
+	instance := NewWith(program, WithRunSafetyMode(RunSafetyFast))
 	env, err := NewEnvironment([]EnvironmentOption{
 		WithFunction("PANIC_FN", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			panic("panic in host function")
@@ -72,7 +72,7 @@ func TestRunSafetyFastPropagatesPanics(t *testing.T) {
 func TestRunSafetyFastStillWrapsReturnedErrors(t *testing.T) {
 	program := compileProgram(t, "RETURN FAIL_FN()")
 
-	instance := NewWithOptions(program, WithRunSafetyMode(RunSafetyFast))
+	instance := NewWith(program, WithRunSafetyMode(RunSafetyFast))
 	env, err := NewEnvironment([]EnvironmentOption{
 		WithFunction("FAIL_FN", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.None, errors.New("boom")

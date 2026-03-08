@@ -18,7 +18,7 @@ const (
 	OpLoadBool   // Set a boolean value to a register
 	OpLoadZero   // Set a zero value to a register
 	OpLoadConst  // Load a constant to a register or a global variable
-	OpLoadParam  // Load a parameter to a register A
+	OpLoadParam  // Load a parameter slot to a register A
 	OpLoadArray  // Create an array
 	OpLoadObject // Create an object
 	OpLoadRange  // Create a range
