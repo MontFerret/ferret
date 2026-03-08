@@ -6,10 +6,6 @@ import (
 )
 
 func validate(_ *Environment, program *bytecode.Program) error {
-	return validateProgramVersion(program)
-}
-
-func validateProgramVersion(program *bytecode.Program) error {
 	if program == nil {
 		return runtime.Error(runtime.ErrInvalidOperation, "unsupported bytecode version; recompile query")
 	}

@@ -1,10 +1,5 @@
 package vm
 
-const (
-	defaultShapeCacheLimit         = 128
-	defaultFastObjectDictThreshold = 64
-)
-
 type (
 	PanicPolicy uint8
 
@@ -15,6 +10,11 @@ type (
 	}
 
 	Option func(*options)
+)
+
+const (
+	defaultShapeCacheLimit         = 128
+	defaultFastObjectDictThreshold = 64
 )
 
 const (
