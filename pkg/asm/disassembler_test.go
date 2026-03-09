@@ -548,3 +548,23 @@ func TestDisassemble_FailCommentWithMessageConstant(t *testing.T) {
 		t.Fatalf("expected FAIL line with message constant comment:\n%s", out)
 	}
 }
+
+func TestDisassemble_LoadParamUsesSlotComment(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Params:     []string{"foo", "bar"},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(1), bytecode.Operand(2)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	if !strings.Contains(out, "0: LOADP R1 2") || !strings.Contains(out, "; @bar") {
+		t.Fatalf("expected LOADP slot comment in output:\n%s", out)
+	}
+}

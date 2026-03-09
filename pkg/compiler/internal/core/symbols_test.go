@@ -180,3 +180,23 @@ func TestSymbolTable_HasConstant(t *testing.T) {
 		So(exists, ShouldBeFalse)
 	})
 }
+
+func TestSymbolTable_BindParamUsesStableSlots(t *testing.T) {
+	Convey("SymbolTable should assign stable parameter slots in first-seen order", t, func() {
+		st := newSymbolTable()
+
+		foo := st.BindParam("foo")
+		bar := st.BindParam("bar")
+		fooAgain := st.BindParam("foo")
+
+		So(foo, ShouldEqual, bytecode.Operand(1))
+		So(bar, ShouldEqual, bytecode.Operand(2))
+		So(fooAgain, ShouldEqual, foo)
+
+		So(st.Params(), ShouldResemble, []string{"foo", "bar"})
+
+		params := st.Params()
+		params[0] = "changed"
+		So(st.Params(), ShouldResemble, []string{"foo", "bar"})
+	})
+}

@@ -270,10 +270,19 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 		}
 
 	// Op R C
-	case bytecode.OpLoadConst, bytecode.OpLoadParam:
+	case bytecode.OpLoadConst:
 		cIdx := ops[1].Constant()
 		comment := constValue(p, cIdx)
 		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatComment(comment))
+	case bytecode.OpLoadParam:
+		slot := int(ops[1]) - 1
+		comment := "<invalid>"
+
+		if slot >= 0 && slot < len(p.Params) {
+			comment = "@" + p.Params[slot]
+		}
+
+		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatArgument(ops[1]), formatComment(comment))
 
 	case bytecode.OpFail:
 		out = fmt.Sprintf("%d: %s %s", ip, opcode, formatOperand(ops[0]))

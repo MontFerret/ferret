@@ -82,8 +82,8 @@ func (e *Emitter) EmitLoadConst(dst bytecode.Operand, constant bytecode.Operand)
 	e.EmitAB(bytecode.OpLoadConst, dst, constant)
 }
 
-func (e *Emitter) EmitLoadParam(dst, constant bytecode.Operand) {
-	e.EmitAB(bytecode.OpLoadParam, dst, constant)
+func (e *Emitter) EmitLoadParam(dst, slot bytecode.Operand) {
+	e.EmitAB(bytecode.OpLoadParam, dst, slot)
 }
 
 func (e *Emitter) EmitBoolean(dst bytecode.Operand, value bool) {

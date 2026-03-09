@@ -1,6 +1,8 @@
 package vm
 
 import (
+	"strings"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
@@ -9,6 +11,10 @@ import (
 )
 
 func (vm *VM) warmup(env *Environment) error {
+	if err := vm.bindParams(env); err != nil {
+		return err
+	}
+
 	vm.warmupRegexps()
 
 	hash := env.Functions.Hash()
@@ -87,6 +93,35 @@ func (vm *VM) warmupRegexps() {
 	}
 
 	vm.cache.RegexpsWarmed = true
+}
+
+func (vm *VM) bindParams(env *Environment) error {
+	required := vm.program.Params
+
+	vm.scratch.ResizeParams(len(required))
+
+	var missedParams []string
+
+	for idx, name := range required {
+		val, exists := env.Params[name]
+
+		if !exists {
+			if missedParams == nil {
+				missedParams = make([]string, 0, len(required))
+			}
+
+			missedParams = append(missedParams, "@"+name)
+			val = runtime.None
+		}
+
+		vm.scratch.Params[idx] = val
+	}
+
+	if len(missedParams) > 0 {
+		return runtime.Error(ErrMissedParam, strings.Join(missedParams, ", "))
+	}
+
+	return nil
 }
 
 func resolveHostFnName(reg map[bytecode.Operand]runtime.Value, dst bytecode.Operand) (string, error) {

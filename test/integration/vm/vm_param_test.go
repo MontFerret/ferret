@@ -2,8 +2,6 @@ package vm_test
 
 import (
 	"testing"
-
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func TestParam(t *testing.T) {
@@ -22,14 +20,14 @@ RETURN read()
 			CaseArray(`FOR i IN @start..@end RETURN i`, []any{1, 2, 3, 4, 5}, "Should iterate over a range parameter"),
 			Case(`RETURN @obj.str1`, "foo", "Should be possible to use in member expression"),
 		},
-		vm.WithParam("str", "bar"),
-		vm.WithParam("int", 1),
-		vm.WithParam("bool", true),
-		vm.WithParam("obj", map[string]interface{}{"str1": "foo", "str2": "bar"}),
-		vm.WithParam("values1", []int{1, 2, 3, 4}),
-		vm.WithParam("values2", map[string]interface{}{"a": "a", "b": "b", "c": "c", "d": "d"}),
-		vm.WithParam("start", 1),
-		vm.WithParam("end", 5),
+		WithParam("str", "bar"),
+		WithParam("int", 1),
+		WithParam("bool", true),
+		WithParam("obj", map[string]interface{}{"str1": "foo", "str2": "bar"}),
+		WithParam("values1", []int{1, 2, 3, 4}),
+		WithParam("values2", map[string]interface{}{"a": "a", "b": "b", "c": "c", "d": "d"}),
+		WithParam("start", 1),
+		WithParam("end", 5),
 	)
 }
 
@@ -48,7 +46,37 @@ RETURN outer()
 	RunUseCases(t,
 		[]UseCase{
 			CaseRuntimeErrorStr(expr, "Missing parameter", "Should report missing parameter used only in nested UDF path"),
-			Options(Case(expr, "bar", "Should resolve parameter in nested UDF path when provided"), vm.WithParam("foo", "bar")),
+			Options(Case(expr, "bar", "Should resolve parameter in nested UDF path when provided"), WithParam("foo", "bar")),
 		},
+	)
+}
+
+func TestParamUdfSlotAlignment(t *testing.T) {
+	expr1 := `
+LET x = @alpha
+FUNC f() => @beta
+RETURN x + f()
+`
+
+	RunUseCases(t,
+		[]UseCase{
+			Case(expr1, 30, "Should keep UDF @param slots aligned with program param ordering"),
+		},
+		WithParam("alpha", 10),
+		WithParam("beta", 20),
+	)
+
+	expr2 := `
+LET x = @alpha
+FUNC f() => @beta
+RETURN [x, f()]
+`
+
+	RunUseCases(t,
+		[]UseCase{
+			CaseArray(expr2, []any{1, 2}, "Should resolve different parameters in main body and UDF body"),
+		},
+		WithParam("alpha", 1),
+		WithParam("beta", 2),
 	)
 }

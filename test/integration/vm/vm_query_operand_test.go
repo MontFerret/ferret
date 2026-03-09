@@ -120,9 +120,9 @@ func TestApplyQueryConstantSource_FastMode_NoPanic(t *testing.T) {
 		result: runtime.NewArrayWith(runtime.NewString("ok")),
 	}
 
-	instance := vm.NewWithOptions(
+	instance := vm.NewWith(
 		programWithApplyQueryConstSource(stub),
-		vm.WithRunSafetyMode(vm.RunSafetyFast),
+		vm.WithPanicPolicy(vm.PanicPropagate),
 	)
 
 	defer func() {
@@ -154,9 +154,9 @@ func TestApplyQueryConstantSource_NonQueryable_NoPanicTypeError(t *testing.T) {
 		{
 			name: "fast",
 			run: func() (runtime.Value, error) {
-				return vm.NewWithOptions(
+				return vm.NewWith(
 					programWithApplyQueryConstSource(runtime.NewInt(1)),
-					vm.WithRunSafetyMode(vm.RunSafetyFast),
+					vm.WithPanicPolicy(vm.PanicPropagate),
 				).Run(context.Background(), vm.NewDefaultEnvironment())
 			},
 		},

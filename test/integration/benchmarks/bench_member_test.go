@@ -2,8 +2,6 @@ package benchmarks_test
 
 import (
 	"testing"
-
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 const (
@@ -53,17 +51,17 @@ func BenchmarkMemberAccess_Long_O1(b *testing.B) {
 }
 
 func BenchmarkUnknownMemberAccess_Short_O0(b *testing.B) {
-	RunBenchmarkO0(b, unknownMemberAccessShort, vm.WithParam("obj", map[string]any{"foo": "bar"}))
+	RunBenchmarkO0(b, unknownMemberAccessShort, WithParam("obj", map[string]any{"foo": "bar"}))
 }
 
 func BenchmarkUnknownMemberAccess_Short_O1(b *testing.B) {
-	RunBenchmarkO1(b, unknownMemberAccessShort, vm.WithParam("obj", map[string]any{"foo": "bar"}))
+	RunBenchmarkO1(b, unknownMemberAccessShort, WithParam("obj", map[string]any{"foo": "bar"}))
 }
 
 func BenchmarkUnknownMemberAccess_Long_O0(b *testing.B) {
-	RunBenchmarkO0(b, unknownMemberAccessLong, vm.WithParam("obj", map[string]any{"foo": "bar", "bar": map[string]any{"qaz": map[string]any{"abc": 42}}}))
+	RunBenchmarkO0(b, unknownMemberAccessLong, WithParam("obj", map[string]any{"foo": "bar", "bar": map[string]any{"qaz": map[string]any{"abc": 42}}}))
 }
 
 func BenchmarkUnknownMemberAccess_Long_O1(b *testing.B) {
-	RunBenchmarkO1(b, unknownMemberAccessLong, vm.WithParam("obj", map[string]any{"foo": "bar", "bar": map[string]any{"qaz": map[string]any{"abc": 42}}}))
+	RunBenchmarkO1(b, unknownMemberAccessLong, WithParam("obj", map[string]any{"foo": "bar", "bar": map[string]any{"qaz": map[string]any{"abc": 42}}}))
 }

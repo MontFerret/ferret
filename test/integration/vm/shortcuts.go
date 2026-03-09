@@ -7,6 +7,10 @@ import (
 	"github.com/MontFerret/ferret/v2/test/integration/base"
 )
 
+var (
+	WithParam = base.WithParam
+)
+
 type UseCase struct {
 	base.TestCase
 

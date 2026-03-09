@@ -2,8 +2,6 @@ package benchmarks_test
 
 import (
 	"testing"
-
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 const (
@@ -70,35 +68,35 @@ var matchLoopVals = func() []any {
 }()
 
 func BenchmarkMatch_Scrutinee_O0(b *testing.B) {
-	RunBenchmarkO0(b, matchScrutineeQuery, vm.WithParam("x", 1))
+	RunBenchmarkO0(b, matchScrutineeQuery, WithParam("x", 1))
 }
 
 func BenchmarkMatch_Scrutinee_O1(b *testing.B) {
-	RunBenchmarkO1(b, matchScrutineeQuery, vm.WithParam("x", 1))
+	RunBenchmarkO1(b, matchScrutineeQuery, WithParam("x", 1))
 }
 
 func BenchmarkMatch_Guard_O0(b *testing.B) {
-	RunBenchmarkO0(b, matchGuardQuery, vm.WithParam("x", 7))
+	RunBenchmarkO0(b, matchGuardQuery, WithParam("x", 7))
 }
 
 func BenchmarkMatch_Guard_O1(b *testing.B) {
-	RunBenchmarkO1(b, matchGuardQuery, vm.WithParam("x", 7))
+	RunBenchmarkO1(b, matchGuardQuery, WithParam("x", 7))
 }
 
 func BenchmarkMatch_ObjectPattern_O0(b *testing.B) {
-	RunBenchmarkO0(b, matchObjectPatternQuery, vm.WithParam("obj", map[string]any{"a": 1, "b": 2}))
+	RunBenchmarkO0(b, matchObjectPatternQuery, WithParam("obj", map[string]any{"a": 1, "b": 2}))
 }
 
 func BenchmarkMatch_ObjectPattern_O1(b *testing.B) {
-	RunBenchmarkO1(b, matchObjectPatternQuery, vm.WithParam("obj", map[string]any{"a": 1, "b": 2}))
+	RunBenchmarkO1(b, matchObjectPatternQuery, WithParam("obj", map[string]any{"a": 1, "b": 2}))
 }
 
 func BenchmarkMatch_LoopMix_O0(b *testing.B) {
-	RunBenchmarkO0(b, matchLoopMixQuery, vm.WithParam("vals", matchLoopVals))
+	RunBenchmarkO0(b, matchLoopMixQuery, WithParam("vals", matchLoopVals))
 }
 
 func BenchmarkMatch_LoopMix_O1(b *testing.B) {
-	RunBenchmarkO1(b, matchLoopMixQuery, vm.WithParam("vals", matchLoopVals))
+	RunBenchmarkO1(b, matchLoopMixQuery, WithParam("vals", matchLoopVals))
 }
 
 func BenchmarkMatch_ConstScrutinee_O0(b *testing.B) {
@@ -110,9 +108,9 @@ func BenchmarkMatch_ConstScrutinee_O1(b *testing.B) {
 }
 
 func BenchmarkMatch_MergePureLiteralResults_O0(b *testing.B) {
-	RunBenchmarkO0(b, matchMergePureLiteralResults, vm.WithParam("x", 1))
+	RunBenchmarkO0(b, matchMergePureLiteralResults, WithParam("x", 1))
 }
 
 func BenchmarkMatch_MergePureLiteralResults_O1(b *testing.B) {
-	RunBenchmarkO1(b, matchMergePureLiteralResults, vm.WithParam("x", 1))
+	RunBenchmarkO1(b, matchMergePureLiteralResults, WithParam("x", 1))
 }

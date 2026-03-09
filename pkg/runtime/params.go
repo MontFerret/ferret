@@ -4,8 +4,26 @@ import "fmt"
 
 type Params map[string]Value
 
+// NewParams creates and returns an empty Params map.
 func NewParams() Params {
 	return make(Params)
+}
+
+// NewParamsFrom constructs a Params object from a map of string keys to any values, converting each value to a Value.
+func NewParamsFrom(values map[string]any) (Params, error) {
+	params := make(Params, len(values))
+
+	for k, v := range values {
+		val, err := ValueOf(v)
+
+		if err != nil {
+			return nil, fmt.Errorf("param %q: %w", k, err)
+		}
+
+		params[k] = val
+	}
+
+	return params, nil
 }
 
 func (p Params) Get(name string) (Value, bool) {
@@ -86,6 +104,18 @@ func (p Params) SetAll(values map[string]any) error {
 	}
 
 	return nil
+}
+
+func (p Params) Merge(other Params) Params {
+	if other == nil {
+		return p
+	}
+
+	for k, v := range other {
+		p[k] = v
+	}
+
+	return p
 }
 
 func (p Params) MustSet(name string, value any) Params {

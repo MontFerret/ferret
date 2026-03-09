@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func ForWhileHelpers() runtime.FunctionDefs {
@@ -59,4 +60,14 @@ func ForWhileHelpers() runtime.FunctionDefs {
 		}))
 
 	return builder
+}
+
+func WithParam(name string, value any) vm.EnvironmentOption {
+	parsed, err := runtime.ValueOf(value)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return vm.WithParam(name, parsed)
 }
