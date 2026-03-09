@@ -50,3 +50,19 @@ RETURN outer()
 		},
 	)
 }
+
+func TestParamDifferentInUdf(t *testing.T) {
+	expr := `
+LET x = @alpha
+FUNC f() => @beta
+RETURN [x, f()]
+`
+
+	RunUseCases(t,
+		[]UseCase{
+			Case(expr, []any{1, 2}, "Should resolve different parameters in main body and UDF body"),
+		},
+		WithParam("alpha", 1),
+		WithParam("beta", 2),
+	)
+}
