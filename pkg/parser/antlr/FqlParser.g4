@@ -266,7 +266,7 @@ filterClause
     ;
 
 eventFilterClause
-    : Filter {p.pushImplicitCurrent()} expression {p.popImplicitCurrent()}
+    : When {p.pushImplicitCurrent()} expression {p.popImplicitCurrent()}
     ;
 
 limitClause
