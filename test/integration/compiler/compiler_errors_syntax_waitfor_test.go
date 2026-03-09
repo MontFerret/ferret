@@ -76,5 +76,12 @@ func TestSyntaxErrorsWaitfor(t *testing.T) {
 		`, E{
 			Kind: parserd.SyntaxError,
 		}, "Missing comma in WAITFOR EVERY cap clause"),
+		ErrorCase(`
+			LET obs = {}
+			LET ok = WAITFOR EVENT "test" IN obs FILTER .type == "match"
+			RETURN ok
+		`, E{
+			Kind: parserd.SyntaxError,
+		}, "Legacy FILTER keyword is invalid in WAITFOR EVENT"),
 	})
 }

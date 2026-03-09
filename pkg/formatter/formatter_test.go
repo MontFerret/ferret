@@ -64,3 +64,27 @@ func TestFormatter_BlockCommentPreservesLeadingSpace(t *testing.T) {
 		t.Fatalf("expected leading space in block comment line; got:\n%s", out)
 	}
 }
+
+func TestFormatter_WaitForEventFilterUsesWhenAndRemainsParseable(t *testing.T) {
+	input := "LET obs = []\nWAITFOR EVENT \"test\" IN obs WHEN .type == \"match\"\nRETURN 1"
+	src := file.NewAnonymousSource(input)
+	var buf bytes.Buffer
+	fmt := New()
+
+	if err := fmt.Format(&buf, src); err != nil {
+		t.Fatalf("format failed: %v", err)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "WHEN .type == \"match\"") {
+		t.Fatalf("expected WAITFOR event filter to use WHEN; got:\n%s", out)
+	}
+	if strings.Contains(out, "FILTER .type == \"match\"") {
+		t.Fatalf("unexpected legacy FILTER in WAITFOR event filter; got:\n%s", out)
+	}
+
+	var roundTrip bytes.Buffer
+	if err := fmt.Format(&roundTrip, file.NewAnonymousSource(out)); err != nil {
+		t.Fatalf("formatted output must remain parseable: %v\nformatted:\n%s", err, out)
+	}
+}

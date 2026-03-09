@@ -127,7 +127,7 @@ WAITFOR EVENT "test" IN obj
 RETURN NONE`, "Should compile but return an error during execution because the object does not implement the interface"),
 		Options(
 			CaseFn(`LET obs = @obs
-WAITFOR EVENT "test" IN obs FILTER .type == "match"
+WAITFOR EVENT "test" IN obs WHEN .type == "match"
 RETURN 1`, assertReturnOneAndReads(matchFirst, 1)),
 			vm.WithParams(map[string]runtime.Value{
 				"obs": matchFirst,
@@ -135,7 +135,7 @@ RETURN 1`, assertReturnOneAndReads(matchFirst, 1)),
 		),
 		Options(
 			CaseFn(`LET obs = @obs
-WAITFOR EVENT "test" IN obs FILTER .type == "match"
+WAITFOR EVENT "test" IN obs WHEN .type == "match"
 RETURN 1`, assertReturnOneAndReads(matchSecond, 2)),
 			vm.WithParams(map[string]runtime.Value{
 				"obs": matchSecond,

@@ -376,7 +376,7 @@ func fqlparserParserInit() {
 		1, 0, 0, 0, 466, 465, 1, 0, 0, 0, 467, 45, 1, 0, 0, 0, 468, 471, 3, 34,
 		17, 0, 469, 471, 3, 36, 18, 0, 470, 468, 1, 0, 0, 0, 470, 469, 1, 0, 0,
 		0, 471, 47, 1, 0, 0, 0, 472, 473, 5, 58, 0, 0, 473, 474, 3, 198, 99, 0,
-		474, 49, 1, 0, 0, 0, 475, 476, 5, 58, 0, 0, 476, 477, 6, 25, -1, 0, 477,
+		474, 49, 1, 0, 0, 0, 475, 476, 5, 39, 0, 0, 476, 477, 6, 25, -1, 0, 477,
 		478, 3, 198, 99, 0, 478, 479, 6, 25, -1, 0, 479, 51, 1, 0, 0, 0, 480, 481,
 		5, 60, 0, 0, 481, 484, 3, 54, 27, 0, 482, 483, 5, 9, 0, 0, 483, 485, 3,
 		54, 27, 0, 484, 482, 1, 0, 0, 0, 484, 485, 1, 0, 0, 0, 485, 53, 1, 0, 0,
@@ -6006,7 +6006,7 @@ type IEventFilterClauseContext interface {
 	GetParser() antlr.Parser
 
 	// Getter signatures
-	Filter() antlr.TerminalNode
+	When() antlr.TerminalNode
 	Expression() IExpressionContext
 
 	// IsEventFilterClauseContext differentiates from other interfaces.
@@ -6045,8 +6045,8 @@ func NewEventFilterClauseContext(parser antlr.Parser, parent antlr.ParserRuleCon
 
 func (s *EventFilterClauseContext) GetParser() antlr.Parser { return s.parser }
 
-func (s *EventFilterClauseContext) Filter() antlr.TerminalNode {
-	return s.GetToken(FqlParserFilter, 0)
+func (s *EventFilterClauseContext) When() antlr.TerminalNode {
+	return s.GetToken(FqlParserWhen, 0)
 }
 
 func (s *EventFilterClauseContext) Expression() IExpressionContext {
@@ -6101,7 +6101,7 @@ func (p *FqlParser) EventFilterClause() (localctx IEventFilterClauseContext) {
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(475)
-		p.Match(FqlParserFilter)
+		p.Match(FqlParserWhen)
 		if p.HasError() {
 			// Recognition error - abort rule
 			goto errorExit

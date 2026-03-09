@@ -21,3 +21,17 @@ func TestClauseFormatter_TimeoutValueFormatsParam(t *testing.T) {
 		t.Fatalf("unexpected timeout formatting: %q", got)
 	}
 }
+
+func TestClauseFormatter_EventFilterClauseUsesWhen(t *testing.T) {
+	input := "WAITFOR EVENT \"test\" IN obs WHEN .type == \"match\""
+	program := parseProgram(t, input)
+	filter := mustFirst[*fql.EventFilterClauseContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+
+	e.clause.formatEventFilterClause(filter)
+	if got := buf.String(); got != "WHEN .type == \"match\"" {
+		t.Fatalf("unexpected event filter formatting: %q", got)
+	}
+}
