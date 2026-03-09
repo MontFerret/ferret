@@ -106,6 +106,18 @@ func (p Params) SetAll(values map[string]any) error {
 	return nil
 }
 
+func (p Params) Merge(other Params) Params {
+	if other == nil {
+		return p
+	}
+
+	for k, v := range other {
+		p[k] = v
+	}
+
+	return p
+}
+
 func (p Params) MustSet(name string, value any) Params {
 	if err := p.Set(name, value); err != nil {
 		panic(err)

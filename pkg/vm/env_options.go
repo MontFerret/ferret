@@ -8,9 +8,15 @@ import (
 
 func WithParams(params runtime.Params) EnvironmentOption {
 	return func(env *environmentBuilder) {
-		if params != nil {
-			env.params = params
+		if params == nil {
+			return
 		}
+
+		if env.params == nil {
+			env.params = runtime.NewParams()
+		}
+
+		env.params.Merge(params)
 	}
 }
 
@@ -20,7 +26,7 @@ func WithParam(name string, value runtime.Value) EnvironmentOption {
 			env.params = runtime.NewParams()
 		}
 
-		env.params[name] = runtime.Parse(value)
+		env.params[name] = value
 	}
 }
 
