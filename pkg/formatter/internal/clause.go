@@ -24,7 +24,7 @@ func (f *clauseFormatter) formatEventFilterClause(ctx *fql.EventFilterClauseCont
 		return
 	}
 
-	f.writeKeyword(keywordFilter)
+	f.writeKeyword(keywordWhen)
 	f.p.space()
 
 	if expr := ctx.Expression(); expr != nil {
