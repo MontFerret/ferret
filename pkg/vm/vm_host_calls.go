@@ -8,21 +8,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
-func hostCallArgRange(src1, src2 bytecode.Operand) (int, int, bool) {
-	if !src1.IsRegister() || !src2.IsRegister() {
-		return 0, 0, false
-	}
-
-	start := src1.Register()
-	end := src2.Register()
-
-	if start <= 0 || end < start {
-		return 0, 0, false
-	}
-
-	return start, end, true
-}
-
 func hostCallArgs(reg []runtime.Value, start, end int) []runtime.Value {
 	size := end - start + 1
 	args := make([]runtime.Value, size)
@@ -44,7 +29,7 @@ func callCachedHostFunction(
 		return nil, ErrUnresolvedFunction
 	}
 
-	start, end, hasRange := hostCallArgRange(src1, src2)
+	start, end, hasRange := callArgRange(src1, src2)
 	if !hasRange {
 		if cacheFn.Fn0 != nil {
 			return cacheFn.Fn0(ctx)
@@ -151,7 +136,7 @@ func (vm *VM) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtim
 		return nil
 	}
 
-	if isProtectedCall(op) {
+	if bytecode.IsProtectedCallOpcode(op) {
 		reg[dst] = runtime.None
 
 		return nil
@@ -172,13 +157,4 @@ func (vm *VM) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtim
 	}
 
 	return err
-}
-
-func isProtectedCall(op bytecode.Opcode) bool {
-	switch op {
-	case bytecode.OpProtectedHCall, bytecode.OpProtectedCall:
-		return true
-	default:
-		return false
-	}
 }

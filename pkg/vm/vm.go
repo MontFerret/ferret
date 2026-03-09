@@ -2,7 +2,6 @@ package vm
 
 import (
 	"context"
-	"io"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -268,34 +267,6 @@ loop:
 			continue
 		case bytecode.OpType:
 			reg[dst] = runtime.NewString(runtime.TypeName(runtime.TypeOf(reg[src1])))
-		case bytecode.OpClose:
-			val, ok := reg[dst].(io.Closer)
-			reg[dst] = runtime.None
-
-			if ok {
-				closeErr := val.Close()
-
-				if closeErr != nil {
-					if err := vm.handleError(closeErr); err != nil {
-						return nil, err
-					}
-
-					continue
-				}
-			}
-		case bytecode.OpLoadRange:
-			res, err := operators.ToRange(ctx, reg[src1], reg[src2])
-
-			if err == nil {
-				reg[dst] = res
-				break
-			}
-
-			if err := vm.handleProtectedError(err); err != nil {
-				return nil, err
-			}
-
-			continue
 		case bytecode.OpLoadIndex, bytecode.OpLoadIndexOptional:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadIndexOptional
@@ -368,18 +339,6 @@ loop:
 
 				continue
 			}
-		case bytecode.OpApplyQuery:
-			src := readOperandValue(reg, constants, src1)
-			descriptor := readOperandValue(reg, constants, src2)
-			out, err := operators.ApplyQuery(ctx, src, descriptor)
-
-			if err := vm.setOrTryCatch(dst, out, err); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
-					return nil, err
-				}
-
-				continue
-			}
 		case bytecode.OpAdd:
 			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
 		case bytecode.OpAddConst:
@@ -438,33 +397,6 @@ loop:
 			reg[dst] = operators.LessThanOrEqual(ctx, reg[src1], reg[src2])
 		case bytecode.OpIn:
 			reg[dst] = operators.Contains(ctx, reg[src2], reg[src1])
-		case bytecode.OpLike:
-			res, err := operators.Like(reg[src1], reg[src2])
-
-			if err == nil {
-				reg[dst] = res
-				break
-			}
-
-			if err := vm.handleProtectedError(err); err != nil {
-				return nil, err
-			}
-
-			continue
-		case bytecode.OpRegexp:
-			r, err := vm.regexpCached(vm.pc-1, reg[src2])
-
-			if err == nil {
-				reg[dst] = r.Match(reg[src1])
-			} else {
-				if err := vm.handleErrorWithCatch(err, func() {
-					reg[dst] = runtime.False
-				}); err != nil {
-					return nil, err
-				}
-
-				continue
-			}
 		case bytecode.OpAllEq, bytecode.OpAllNe, bytecode.OpAllGt, bytecode.OpAllGte, bytecode.OpAllLt, bytecode.OpAllLte, bytecode.OpAllIn:
 			cmp := operators.ComparatorFromByte(int(op) - int(bytecode.OpAllEq))
 			res, err := operators.ArrayAll(ctx, cmp, reg[src1], reg[src2])
@@ -482,18 +414,6 @@ loop:
 		case bytecode.OpNoneEq, bytecode.OpNoneNe, bytecode.OpNoneGt, bytecode.OpNoneGte, bytecode.OpNoneLt, bytecode.OpNoneLte, bytecode.OpNoneIn:
 			cmp := operators.ComparatorFromByte(int(op) - int(bytecode.OpNoneEq))
 			res, err := operators.ArrayNone(ctx, cmp, reg[src1], reg[src2])
-
-			if err := vm.setOrTryCatch(dst, res, err); err != nil {
-				return nil, err
-			}
-		case bytecode.OpFlatten:
-			depth := src2.Register()
-
-			if depth < 1 {
-				depth = 1
-			}
-
-			res, err := operators.Flatten(ctx, reg[src1], depth)
 
 			if err := vm.setOrTryCatch(dst, res, err); err != nil {
 				return nil, err
@@ -516,87 +436,6 @@ loop:
 			if err := vm.execIterOps(ctx, op, dst, src1, src2, reg); err != nil {
 				return nil, err
 			}
-		case bytecode.OpStream:
-			if err := vm.execStreamOp(ctx, dst, src1, src2, reg); err != nil {
-				return nil, err
-			}
-		case bytecode.OpStreamIter:
-			if err := vm.execStreamIterOp(ctx, dst, src1, src2, reg); err != nil {
-				return nil, err
-			}
-		case bytecode.OpDispatch:
-			dispatcher, eventName, payload, options, err := vm.castDispatchArgs(ctx, reg[dst], reg[src1], reg[src2])
-
-			if err != nil {
-				if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
-					return nil, err
-				}
-				continue
-			}
-
-			out, err := dispatcher.Dispatch(ctx, runtime.DispatchEvent{
-				Name:    eventName,
-				Payload: payload,
-				Options: options,
-			})
-
-			if out == nil {
-				out = runtime.None
-			}
-
-			if err := vm.setOrTryCatch(dst, out, err); err != nil {
-				return nil, err
-			}
-		case bytecode.OpFail:
-			if !dst.IsConstant() {
-				if err := vm.handleError(runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a constant string message")); err != nil {
-					return nil, err
-				}
-
-				continue
-			}
-
-			idx := dst.Constant()
-			if idx < 0 || idx >= len(constants) {
-				if err := vm.handleError(runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a valid constant string message")); err != nil {
-					return nil, err
-				}
-
-				continue
-			}
-
-			msg, ok := constants[idx].(runtime.String)
-			if !ok {
-				if err := vm.handleError(runtime.TypeErrorOf(constants[idx], runtime.TypeString)); err != nil {
-					return nil, err
-				}
-
-				continue
-			}
-
-			if err := vm.handleError(runtime.Error(runtime.ErrInvalidOperation, msg.String())); err != nil {
-				return nil, err
-			}
-
-			continue
-		case bytecode.OpSleep:
-			dur, err := runtime.ToInt(ctx, reg[dst])
-
-			if err != nil {
-				if err := vm.handleError(err); err != nil {
-					return nil, err
-				}
-
-				continue
-			}
-
-			if err := data.Sleep(ctx, dur); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
-					return nil, err
-				}
-
-				continue
-			}
 		case bytecode.OpRand:
 			reg[dst] = runtime.NewFloat(runtime.RandomDefault())
 		case bytecode.OpReturn:
@@ -609,6 +448,12 @@ loop:
 			reg[bytecode.NoopOperand] = retVal
 			break loop
 		default:
+			if handled, err := vm.execColdOps(ctx, op, dst, src1, src2, reg, constants); err != nil {
+				return nil, err
+			} else if handled {
+				continue
+			}
+
 			return nil, runtime.Errorf(runtime.ErrUnexpected, "unknown opcode %d at pc %d", op, vm.pc-1)
 		}
 	}

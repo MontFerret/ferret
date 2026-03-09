@@ -10,6 +10,63 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
+type warmupRegisters struct {
+	values []runtime.Value
+	set    []bool
+}
+
+func newWarmupRegisters(size int) warmupRegisters {
+	if size < 0 {
+		size = 0
+	}
+
+	return warmupRegisters{
+		values: make([]runtime.Value, size),
+		set:    make([]bool, size),
+	}
+}
+
+func (r *warmupRegisters) setRegister(op bytecode.Operand, val runtime.Value) {
+	if !op.IsRegister() {
+		return
+	}
+
+	idx := op.Register()
+	if idx < 0 || idx >= len(r.values) {
+		return
+	}
+
+	r.values[idx] = val
+	r.set[idx] = true
+}
+
+func (r *warmupRegisters) getRegister(op bytecode.Operand) (runtime.Value, bool) {
+	if !op.IsRegister() {
+		return nil, false
+	}
+
+	idx := op.Register()
+	if idx < 0 || idx >= len(r.values) || !r.set[idx] {
+		return nil, false
+	}
+
+	return r.values[idx], true
+}
+
+func (r *warmupRegisters) clearRegister(op bytecode.Operand) {
+	if !op.IsRegister() {
+		return
+	}
+
+	idx := op.Register()
+	if idx < 0 || idx >= len(r.values) {
+		return
+	}
+
+	r.values[idx] = nil
+	r.set[idx] = false
+}
+
 func (vm *VM) warmup(env *Environment) error {
 	if err := vm.bindParams(env); err != nil {
 		return err
@@ -26,7 +83,7 @@ func (vm *VM) warmup(env *Environment) error {
 	errors := &diagnostic.WarmupErrorSet{}
 	constants := vm.program.Constants
 	functions := env.Functions
-	reg := map[bytecode.Operand]runtime.Value{}
+	reg := newWarmupRegisters(vm.program.Registers)
 
 	for pc, inst := range vm.program.Bytecode {
 		op := inst.Opcode
@@ -34,11 +91,15 @@ func (vm *VM) warmup(env *Environment) error {
 
 		switch op {
 		case bytecode.OpLoadConst:
-			reg[dst] = constants[src1.Constant()]
+			reg.setRegister(dst, constants[src1.Constant()])
 		case bytecode.OpMove:
-			reg[dst] = reg[src1]
+			if val, ok := reg.getRegister(src1); ok {
+				reg.setRegister(dst, val)
+			} else {
+				reg.clearRegister(dst)
+			}
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
-			warmupResolveHostCall(pc, op, dst, src1, src2, reg, functions, vm.cache.HostFunctions, errors)
+			warmupResolveHostCall(pc, op, dst, src1, src2, reg.values, reg.set, functions, vm.cache.HostFunctions, errors)
 		default:
 			continue
 		}
@@ -59,7 +120,7 @@ func (vm *VM) warmupRegexps() {
 	}
 
 	constants := vm.program.Constants
-	reg := map[bytecode.Operand]runtime.Value{}
+	reg := newWarmupRegisters(vm.program.Registers)
 
 	for pc, inst := range vm.program.Bytecode {
 		op := inst.Opcode
@@ -67,15 +128,15 @@ func (vm *VM) warmupRegexps() {
 
 		switch op {
 		case bytecode.OpLoadConst:
-			reg[dst] = constants[src1.Constant()]
+			reg.setRegister(dst, constants[src1.Constant()])
 		case bytecode.OpMove:
-			if val, ok := reg[src1]; ok {
-				reg[dst] = val
+			if val, ok := reg.getRegister(src1); ok {
+				reg.setRegister(dst, val)
 			} else {
-				delete(reg, dst)
+				reg.clearRegister(dst)
 			}
 		case bytecode.OpRegexp:
-			if val, ok := reg[src2]; ok {
+			if val, ok := reg.getRegister(src2); ok {
 				r, err := data.ToRegexp(val)
 
 				if err == nil {
@@ -88,7 +149,7 @@ func (vm *VM) warmupRegexps() {
 		}
 
 		if op != bytecode.OpLoadConst && op != bytecode.OpMove && dst.IsRegister() {
-			delete(reg, dst)
+			reg.clearRegister(dst)
 		}
 	}
 
@@ -124,15 +185,18 @@ func (vm *VM) bindParams(env *Environment) error {
 	return nil
 }
 
-func resolveHostFnName(reg map[bytecode.Operand]runtime.Value, dst bytecode.Operand) (string, error) {
-	val, ok := reg[dst]
+func resolveHostFnName(reg []runtime.Value, regSet []bool, dst bytecode.Operand) (string, error) {
+	if !dst.IsRegister() {
+		return "", ErrInvalidFunctionName
+	}
 
-	if ok {
-		fnName, ok := val.(runtime.String)
+	idx := dst.Register()
+	if idx < 0 || idx >= len(reg) || idx >= len(regSet) || !regSet[idx] {
+		return "", ErrInvalidFunctionName
+	}
 
-		if ok {
-			return fnName.String(), nil
-		}
+	if fnName, ok := reg[idx].(runtime.String); ok {
+		return fnName.String(), nil
 	}
 
 	return "", ErrInvalidFunctionName
@@ -162,14 +226,15 @@ func resolveHostFn[T runtime.FunctionConstraint](
 func resolveHostFnAndCache[T runtime.FunctionConstraint](
 	pc int,
 	dst bytecode.Operand,
-	reg map[bytecode.Operand]runtime.Value,
+	reg []runtime.Value,
+	regSet []bool,
 	get func(string) (T, bool),
 	fallback runtime.FunctionCollection[runtime.Function],
 	assign func(*mem.CachedHostFunction, T),
 	funcs []*mem.CachedHostFunction,
 	errList *diagnostic.WarmupErrorSet,
 ) {
-	fnName, err := resolveHostFnName(reg, dst)
+	fnName, err := resolveHostFnName(reg, regSet, dst)
 
 	if err != nil {
 		errList.Add(err, pc, dst)
@@ -189,14 +254,15 @@ func resolveHostFnAndCache[T runtime.FunctionConstraint](
 func resolveHostCall[T runtime.FunctionConstraint](
 	pc int,
 	dst bytecode.Operand,
-	reg map[bytecode.Operand]runtime.Value,
+	reg []runtime.Value,
+	regSet []bool,
 	get func(string) (T, bool),
 	functions *runtime.Functions,
 	assign func(*mem.CachedHostFunction, T),
 	funcs []*mem.CachedHostFunction,
 	errList *diagnostic.WarmupErrorSet,
 ) {
-	resolveHostFnAndCache(pc, dst, reg, get, functions.Var(), assign, funcs, errList)
+	resolveHostFnAndCache(pc, dst, reg, regSet, get, functions.Var(), assign, funcs, errList)
 }
 
 func warmupResolveHostCall(
@@ -205,7 +271,8 @@ func warmupResolveHostCall(
 	dst bytecode.Operand,
 	src1 bytecode.Operand,
 	src2 bytecode.Operand,
-	reg map[bytecode.Operand]runtime.Value,
+	reg []runtime.Value,
+	regSet []bool,
 	functions *runtime.Functions,
 	funcs []*mem.CachedHostFunction,
 	errors *diagnostic.WarmupErrorSet,
@@ -214,29 +281,20 @@ func warmupResolveHostCall(
 		return
 	}
 
-	argCount := 0
-
-	if src1.IsRegister() && src2.IsRegister() {
-		start := src1.Register()
-		end := src2.Register()
-
-		if start > 0 && end >= start {
-			argCount = end - start + 1
-		}
-	}
+	_, argCount := callArgInfo(src1, src2)
 
 	switch argCount {
 	case 0:
-		resolveHostCall(pc, dst, reg, functions.A0().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function0) { f.Fn0 = fn }, funcs, errors)
+		resolveHostCall(pc, dst, reg, regSet, functions.A0().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function0) { f.Fn0 = fn }, funcs, errors)
 	case 1:
-		resolveHostCall(pc, dst, reg, functions.A1().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function1) { f.Fn1 = fn }, funcs, errors)
+		resolveHostCall(pc, dst, reg, regSet, functions.A1().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function1) { f.Fn1 = fn }, funcs, errors)
 	case 2:
-		resolveHostCall(pc, dst, reg, functions.A2().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function2) { f.Fn2 = fn }, funcs, errors)
+		resolveHostCall(pc, dst, reg, regSet, functions.A2().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function2) { f.Fn2 = fn }, funcs, errors)
 	case 3:
-		resolveHostCall(pc, dst, reg, functions.A3().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function3) { f.Fn3 = fn }, funcs, errors)
+		resolveHostCall(pc, dst, reg, regSet, functions.A3().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function3) { f.Fn3 = fn }, funcs, errors)
 	case 4:
-		resolveHostCall(pc, dst, reg, functions.A4().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function4) { f.Fn4 = fn }, funcs, errors)
+		resolveHostCall(pc, dst, reg, regSet, functions.A4().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function4) { f.Fn4 = fn }, funcs, errors)
 	default:
-		resolveHostCall(pc, dst, reg, functions.Var().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function) { f.FnV = fn }, funcs, errors)
+		resolveHostCall(pc, dst, reg, regSet, functions.Var().Get, functions, func(f *mem.CachedHostFunction, fn runtime.Function) { f.FnV = fn }, funcs, errors)
 	}
 }

@@ -25,30 +25,6 @@ func (vm *VM) udfByID(id int) (*bytecode.UDF, error) {
 	return &vm.program.Functions.UserDefined[id], nil
 }
 
-func udfArgRange(src1, src2 bytecode.Operand) (int, int, bool) {
-	if !src1.IsRegister() || !src2.IsRegister() {
-		return 0, 0, false
-	}
-
-	start := src1.Register()
-	end := src2.Register()
-
-	if start <= 0 || end < start {
-		return 0, 0, false
-	}
-
-	return start, end, true
-}
-
-func udfArgInfo(src1, src2 bytecode.Operand) (int, int) {
-	start, end, ok := udfArgRange(src1, src2)
-	if !ok {
-		return 0, 0
-	}
-
-	return start, end - start + 1
-}
-
 func clampUdfArgCount(srcLen, start, count int) int {
 	if count <= 0 || srcLen == 0 || start >= srcLen {
 		return 0
@@ -106,7 +82,7 @@ func (vm *VM) callUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) erro
 		return err
 	}
 
-	argStart, argCount := udfArgInfo(src1, src2)
+	argStart, argCount := callArgInfo(src1, src2)
 	if udf.Params != argCount {
 		return runtime.Error(runtime.ErrInvalidArgument, fmt.Sprintf("UDF '%s' expects %d arguments, got %d", udf.Name, udf.Params, argCount))
 	}
@@ -122,7 +98,7 @@ func (vm *VM) callUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) erro
 		ReturnPC:   vm.pc,
 		ReturnDest: dst,
 		Registers:  vm.registers.Values,
-		Protected:  isProtectedUdfCall(op),
+		Protected:  bytecode.IsProtectedCallOpcode(op),
 		FnID:       fnID,
 	})
 	vm.registers.Values = newRegs
@@ -147,7 +123,7 @@ func (vm *VM) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
 		return err
 	}
 
-	argStart, argCount := udfArgInfo(src1, src2)
+	argStart, argCount := callArgInfo(src1, src2)
 	if udf.Params != argCount {
 		return runtime.Error(runtime.ErrInvalidArgument, fmt.Sprintf("UDF '%s' expects %d arguments, got %d", udf.Name, udf.Params, argCount))
 	}
@@ -224,14 +200,5 @@ func (vm *VM) execUdfCall(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) 
 		return nil
 	default:
 		return runtime.Error(runtime.ErrUnexpected, "invalid udf call opcode")
-	}
-}
-
-func isProtectedUdfCall(op bytecode.Opcode) bool {
-	switch op {
-	case bytecode.OpProtectedCall:
-		return true
-	default:
-		return false
 	}
 }

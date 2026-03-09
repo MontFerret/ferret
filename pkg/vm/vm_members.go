@@ -10,90 +10,20 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
-func (vm *VM) loadFastKeyCached(
-	ctx context.Context,
-	pc int,
-	inst *data.ExecInstruction,
-	obj *data.FastObject,
-	arg runtime.Value,
-	key string,
-	constKey bool,
-) (runtime.Value, error) {
+func keyString(arg runtime.Value) string {
+	switch v := arg.(type) {
+	case runtime.String:
+		return string(v)
+	default:
+		return runtime.ToString(v).String()
+	}
+}
+
+func (vm *VM) loadFastKeyCached(ctx context.Context, pc int, obj *data.FastObject, arg runtime.Value, key string) (runtime.Value, error) {
 	shapeID := obj.ShapeID()
+	// shapeID==0 means the fast-object layout is not stable yet.
 	if shapeID == 0 {
 		return vm.loadKey(ctx, obj, arg)
-	}
-
-	if constKey {
-		if inst != nil && inst.InlineShapeID == shapeID {
-			if inst.InlineSlot < 0 {
-				return nil, runtime.ErrNotFound
-			}
-			if val, ok := obj.SlotValue(inst.InlineSlot); ok {
-				return val, nil
-			}
-
-			return nil, runtime.ErrNotFound
-		}
-
-		if pc < 0 || pc >= len(vm.cache.LoadKeyConstICs) {
-			return vm.loadKey(ctx, obj, arg)
-		}
-
-		cache := vm.cache.LoadKeyConstICs[pc]
-		if cache != nil {
-			if slot, ok := cache.Lookup(shapeID); ok {
-				if inst != nil {
-					inst.InlineShapeID = shapeID
-					inst.InlineSlot = slot
-				}
-
-				if slot < 0 {
-					return nil, runtime.ErrNotFound
-				}
-				if val, ok := obj.SlotValue(slot); ok {
-					return val, nil
-				}
-
-				return nil, runtime.ErrNotFound
-			}
-		}
-
-		slot, ok := obj.LookupSlot(key)
-		if !ok {
-			if cache == nil {
-				cache = mem.NewLoadKeyConstCache()
-				vm.cache.LoadKeyConstICs[pc] = cache
-			}
-
-			cache.Add(shapeID, -1)
-
-			if inst != nil {
-				inst.InlineShapeID = shapeID
-				inst.InlineSlot = -1
-			}
-
-			return nil, runtime.ErrNotFound
-		}
-
-		val, ok := obj.SlotValue(slot)
-		if !ok {
-			return nil, runtime.ErrNotFound
-		}
-
-		if cache == nil {
-			cache = mem.NewLoadKeyConstCache()
-			vm.cache.LoadKeyConstICs[pc] = cache
-		}
-
-		cache.Add(shapeID, slot)
-
-		if inst != nil {
-			inst.InlineShapeID = shapeID
-			inst.InlineSlot = slot
-		}
-
-		return val, nil
 	}
 
 	if pc < 0 || pc >= len(vm.cache.LoadKeyICs) {
@@ -103,9 +33,11 @@ func (vm *VM) loadFastKeyCached(
 	cache := vm.cache.LoadKeyICs[pc]
 	if cache != nil {
 		if slot, ok := cache.Lookup(shapeID, key); ok {
+			// slot==-1 caches a proven miss for this shape+key pair.
 			if slot < 0 {
 				return nil, runtime.ErrNotFound
 			}
+
 			if val, ok := obj.SlotValue(slot); ok {
 				return val, nil
 			}
@@ -121,6 +53,7 @@ func (vm *VM) loadFastKeyCached(
 			vm.cache.LoadKeyICs[pc] = cache
 		}
 
+		// Add is a no-op once the IC turns megamorphic.
 		cache.Add(shapeID, key, -1)
 
 		return nil, runtime.ErrNotFound
@@ -136,7 +69,100 @@ func (vm *VM) loadFastKeyCached(
 		vm.cache.LoadKeyICs[pc] = cache
 	}
 
+	// Add is a no-op once the IC turns megamorphic.
 	cache.Add(shapeID, key, slot)
+
+	return val, nil
+}
+
+func (vm *VM) loadFastKeyConstCached(
+	ctx context.Context,
+	pc int,
+	inst *data.ExecInstruction,
+	obj *data.FastObject,
+	arg runtime.Value,
+	key string,
+) (runtime.Value, error) {
+	shapeID := obj.ShapeID()
+	// shapeID==0 means the fast-object layout is not stable yet.
+	if shapeID == 0 {
+		return vm.loadKey(ctx, obj, arg)
+	}
+
+	// Monomorphic inline cache fast-path.
+	if inst != nil && inst.InlineShapeID == shapeID {
+		// slot==-1 caches a proven miss for this shape.
+		if inst.InlineSlot < 0 {
+			return nil, runtime.ErrNotFound
+		}
+
+		if val, ok := obj.SlotValue(inst.InlineSlot); ok {
+			return val, nil
+		}
+
+		return nil, runtime.ErrNotFound
+	}
+
+	if pc < 0 || pc >= len(vm.cache.LoadKeyConstICs) {
+		return vm.loadKey(ctx, obj, arg)
+	}
+
+	cache := vm.cache.LoadKeyConstICs[pc]
+	if cache != nil {
+		if slot, ok := cache.Lookup(shapeID); ok {
+			if inst != nil {
+				inst.InlineShapeID = shapeID
+				inst.InlineSlot = slot
+			}
+
+			// slot==-1 caches a proven miss for this shape.
+			if slot < 0 {
+				return nil, runtime.ErrNotFound
+			}
+
+			if val, ok := obj.SlotValue(slot); ok {
+				return val, nil
+			}
+
+			return nil, runtime.ErrNotFound
+		}
+	}
+
+	slot, ok := obj.LookupSlot(key)
+	if !ok {
+		if cache == nil {
+			cache = mem.NewLoadKeyConstCache()
+			vm.cache.LoadKeyConstICs[pc] = cache
+		}
+
+		// Add is a no-op once the IC turns megamorphic.
+		cache.Add(shapeID, -1)
+
+		if inst != nil {
+			inst.InlineShapeID = shapeID
+			inst.InlineSlot = -1
+		}
+
+		return nil, runtime.ErrNotFound
+	}
+
+	val, ok := obj.SlotValue(slot)
+	if !ok {
+		return nil, runtime.ErrNotFound
+	}
+
+	if cache == nil {
+		cache = mem.NewLoadKeyConstCache()
+		vm.cache.LoadKeyConstICs[pc] = cache
+	}
+
+	// Add is a no-op once the IC turns megamorphic.
+	cache.Add(shapeID, slot)
+
+	if inst != nil {
+		inst.InlineShapeID = shapeID
+		inst.InlineSlot = slot
+	}
 
 	return val, nil
 }
@@ -148,16 +174,7 @@ func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value)
 		return vm.loadKey(ctx, src, arg)
 	}
 
-	var key string
-
-	switch v := arg.(type) {
-	case runtime.String:
-		key = string(v)
-	default:
-		key = runtime.ToString(v).String()
-	}
-
-	return vm.loadFastKeyCached(ctx, pc, nil, obj, arg, key, false)
+	return vm.loadFastKeyCached(ctx, pc, obj, arg, keyString(arg))
 }
 
 func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *data.ExecInstruction, src, arg runtime.Value) (runtime.Value, error) {
@@ -167,16 +184,7 @@ func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *data.ExecIns
 		return vm.loadKey(ctx, src, arg)
 	}
 
-	var key string
-
-	switch v := arg.(type) {
-	case runtime.String:
-		key = string(v)
-	default:
-		key = runtime.ToString(v).String()
-	}
-
-	return vm.loadFastKeyCached(ctx, pc, inst, obj, arg, key, true)
+	return vm.loadFastKeyConstCached(ctx, pc, inst, obj, arg, keyString(arg))
 }
 
 func (vm *VM) objectSetConstCached(inst *data.ExecInstruction, obj *data.FastObject, key runtime.String, value runtime.Value) {
