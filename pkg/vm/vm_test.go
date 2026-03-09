@@ -95,7 +95,7 @@ func TestPanicPolicyPropagateStillWrapsReturnedErrors(t *testing.T) {
 	}
 }
 
-func TestNewWithOptions_InitializesFieldsFromProgramAndConfig(t *testing.T) {
+func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 	program := &bytecode.Program{
 		Registers: 6,
 		Bytecode: []bytecode.Instruction{
