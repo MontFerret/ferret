@@ -258,3 +258,53 @@ func TestLoadParamUsesSlotOperand(t *testing.T) {
 		}
 	}
 }
+
+func TestUdfParamSlotMatchesProgramParamOrdering(t *testing.T) {
+	expr := `
+LET x = @alpha
+FUNC f() => @beta
+RETURN x + f()
+`
+
+	prog := compileWithLevel(t, compiler.O0, expr)
+
+	wantParams := []string{"alpha", "beta"}
+	if len(prog.Params) != len(wantParams) {
+		t.Fatalf("unexpected params count: got %d (%v), want %d", len(prog.Params), prog.Params, len(wantParams))
+	}
+
+	for i := range wantParams {
+		if prog.Params[i] != wantParams[i] {
+			t.Fatalf("unexpected param at index %d: got %q, want %q", i, prog.Params[i], wantParams[i])
+		}
+	}
+
+	udfEntry := -1
+	for _, udf := range prog.Functions.UserDefined {
+		if udf.Name == "F" {
+			udfEntry = udf.Entry
+			break
+		}
+	}
+
+	if udfEntry < 0 {
+		t.Fatalf("expected UDF F metadata, got %v", prog.Functions.UserDefined)
+	}
+
+	if udfEntry >= len(prog.Bytecode) {
+		t.Fatalf("invalid UDF entry: %d (bytecode len: %d)", udfEntry, len(prog.Bytecode))
+	}
+
+	inst := prog.Bytecode[udfEntry]
+	if inst.Opcode != bytecode.OpLoadParam {
+		t.Fatalf("unexpected opcode at UDF entry %d: got %s, want %s", udfEntry, inst.Opcode, bytecode.OpLoadParam)
+	}
+
+	if got := inst.Operands[1]; got != bytecode.Operand(2) {
+		t.Fatalf("unexpected UDF LOADP slot: got %d, want %d", got, bytecode.Operand(2))
+	}
+
+	if inst.Operands[1].IsConstant() {
+		t.Fatalf("expected UDF LOADP source operand to be slot-encoded, got constant %s", inst.Operands[1])
+	}
+}

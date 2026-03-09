@@ -51,6 +51,22 @@ RETURN outer()
 	)
 }
 
+func TestParamUdfSlotAlignment(t *testing.T) {
+	expr := `
+LET x = @alpha
+FUNC f() => @beta
+RETURN x + f()
+`
+
+	RunUseCases(t,
+		[]UseCase{
+			Case(expr, 30, "Should keep UDF @param slots aligned with program param ordering"),
+		},
+		WithParam("alpha", 10),
+		WithParam("beta", 20),
+	)
+}
+
 func TestParamDifferentInUdf(t *testing.T) {
 	expr := `
 LET x = @alpha

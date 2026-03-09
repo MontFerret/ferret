@@ -55,8 +55,20 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 		udfScope:  c.ctx.UDFScope,
 	}
 
+	var outerParams []string
+	if state.symbols != nil {
+		outerParams = state.symbols.Params()
+	}
+
 	c.ctx.Registers = core.NewRegisterAllocator()
 	c.ctx.Symbols = core.NewSymbolTable(c.ctx.Registers, c.ctx.Constants)
+
+	// Pre-seed param bindings from the outer table so UDF-emitted LOADP slots
+	// remain aligned with program-level param ordering.
+	for _, name := range outerParams {
+		c.ctx.Symbols.BindParam(name)
+	}
+
 	c.ctx.Types = core.NewTypeTracker()
 	c.ctx.Loops = core.NewLoopTable(c.ctx.Registers)
 	c.ctx.UDFScope = fn.BodyScope
@@ -88,8 +100,8 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 	fn.Registers = c.ctx.Registers.Size()
 
 	// Preserve metadata discovered while compiling UDF bodies. UDF compilation
-	// uses a temporary symbol table, so params/host function bindings must be
-	// merged back into the outer table before we restore the original context.
+	// uses a temporary symbol table pre-seeded with outer param bindings, and
+	// then merges any newly discovered params/host function bindings back.
 	udfParams := c.ctx.Symbols.Params()
 	udfFunctions := c.ctx.Symbols.Functions()
 
