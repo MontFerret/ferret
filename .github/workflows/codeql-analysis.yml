@@ -32,6 +32,9 @@ jobs:
           check-latest: true
           cache: true
 
+      - name: Install Go dependencies
+        run: make install-tools && make install
+
       - name: Set up Java (for ANTLR)
         uses: actions/setup-java@v4
         with:
