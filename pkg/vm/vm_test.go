@@ -133,7 +133,7 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 	}
 
 	if got, want := instance.options.panicPolicy, PanicPropagate; got != want {
-		t.Fatalf("unexpected run safety mode: got %d, want %d", got, want)
+		t.Fatalf("unexpected panic policy: got %d, want %d", got, want)
 	}
 
 	if got, want := instance.options.fastObjectDictThreshold, 23; got != want {
