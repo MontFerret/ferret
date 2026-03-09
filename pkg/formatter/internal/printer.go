@@ -9,6 +9,7 @@ type printer struct {
 	out             io.Writer
 	opts            *Options
 	indent          int
+	lineColumn      int
 	atLineStart     bool
 	lastWasSpace    bool
 	forceSingleLine bool
@@ -28,6 +29,10 @@ func (p *printer) Err() error {
 	return p.err
 }
 
+func (p *printer) currentColumn() int {
+	return p.lineColumn
+}
+
 func (p *printer) writeIndent() {
 	if p.err != nil || !p.atLineStart {
 		return
@@ -43,6 +48,8 @@ func (p *printer) writeIndent() {
 		p.err = err
 		return
 	}
+
+	p.lineColumn += len(indent)
 }
 
 func (p *printer) write(s string) {
@@ -62,6 +69,7 @@ func (p *printer) write(s string) {
 
 	p.atLineStart = false
 	p.lastWasSpace = false
+	p.lineColumn += len(s)
 }
 
 func (p *printer) writeRaw(s string) {
@@ -88,6 +96,7 @@ func (p *printer) writeRaw(s string) {
 
 			p.atLineStart = true
 			p.lastWasSpace = false
+			p.lineColumn = 0
 
 			continue
 		}
@@ -104,6 +113,7 @@ func (p *printer) writeRaw(s string) {
 		}
 
 		p.lastWasSpace = r == ' '
+		p.lineColumn += len(string(r))
 	}
 }
 
@@ -120,6 +130,7 @@ func (p *printer) space() {
 	}
 
 	p.lastWasSpace = true
+	p.lineColumn++
 }
 
 func (p *printer) newline() {
@@ -142,6 +153,7 @@ func (p *printer) newline() {
 
 	p.atLineStart = true
 	p.lastWasSpace = false
+	p.lineColumn = 0
 }
 
 func (p *printer) withIndent(fn func()) {

@@ -162,7 +162,7 @@ func (f *expressionFormatter) formatMatchExpression(ctx *fql.MatchExpressionCont
 			f.formatMatchExpressionWith(p, ctx, true)
 		})
 
-		if ok && len(inline) <= int(f.opts.printWidth) {
+		if ok && f.inlineFits(inline) {
 			f.p.write(inline)
 			return
 		}
@@ -473,7 +473,7 @@ func (f *expressionFormatter) formatMatchObjectPatternWith(p *printer, ctx *fql.
 	inline, ok := f.renderInline(func(out *printer) {
 		f.formatMatchObjectPatternWithMode(out, ctx, true)
 	})
-	if ok && len(inline) <= int(f.opts.printWidth) {
+	if ok && f.inlineFitsWith(p, inline) {
 		p.write(inline)
 		return
 	}
@@ -578,7 +578,7 @@ func (f *expressionFormatter) formatQueryExpression(ctx *fql.QueryExpressionCont
 		f.formatQueryExpressionWith(p, ctx, true)
 	})
 
-	if ok && len(inline) <= int(f.opts.printWidth) {
+	if ok && f.inlineFits(inline) {
 		f.p.write(inline)
 		return
 	}
