@@ -13,16 +13,12 @@ import (
 
 type VM struct {
 	options      options
-	registers    *mem.RegisterFile
 	cache        *mem.Cache
-	scratch      *mem.Scratch
-	env          *Environment
 	program      *bytecode.Program
 	instructions []data.ExecInstruction
 	catchByPC    []int
-	pc           int
 	frames       frame.CallStack
-	errors       errorHandler
+	exec         execState
 }
 
 func New(program *bytecode.Program) *VM {
@@ -33,16 +29,19 @@ func NewWith(program *bytecode.Program, opts ...Option) *VM {
 	o := newOptions(opts)
 
 	vm := &VM{
-		registers:    mem.NewRegisterFile(program.Registers),
 		cache:        mem.NewCache(len(program.Bytecode), o.shapeCacheLimit),
-		scratch:      mem.NewScratch(len(program.Params)),
 		program:      program,
 		options:      o,
 		instructions: buildExecInstructions(program.Bytecode),
 		catchByPC:    buildCatchByPC(len(program.Bytecode), program.CatchTable),
 	}
 
-	vm.errors = errorHandler{vm: vm}
+	vm.exec = execState{
+		vm:        vm,
+		registers: mem.NewRegisterFile(program.Registers),
+		scratch:   mem.NewScratch(len(program.Params)),
+	}
+	vm.exec.errors = errorHandler{state: &vm.exec}
 	vm.frames.Init(maxUDFRegisters(program.Functions.UserDefined))
 
 	return vm
@@ -58,66 +57,68 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (runtime.Value, error) 
 }
 
 func (vm *VM) runRecovered(ctx context.Context, env *Environment) (result runtime.Value, err error) {
+	exec := &vm.exec
+
 	defer func() {
 		if r := recover(); r != nil {
-			err = vm.runtimeErrorFromPanic(r)
+			err = exec.runtimeErrorFromPanic(r)
 			result = nil
 
 			return
 		}
 
 		if err != nil {
-			err = vm.wrapRuntimeError(err)
+			err = exec.wrapRuntimeError(err)
 		}
 	}()
 
-	return vm.runCore(ctx, env)
+	return exec.runCore(ctx, env)
 }
 
 func (vm *VM) runUnchecked(ctx context.Context, env *Environment) (runtime.Value, error) {
-	result, err := vm.runCore(ctx, env)
+	exec := &vm.exec
+	result, err := exec.runCore(ctx, env)
 
 	if err != nil {
-		return nil, vm.wrapRuntimeError(err)
+		return nil, exec.wrapRuntimeError(err)
 	}
 
 	return result, nil
 }
 
-func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, error) {
+func (exec *execState) runCore(ctx context.Context, env *Environment) (runtime.Value, error) {
 	if env == nil {
 		env = noopEnv
 	}
 
-	if err := validate(env, vm.program); err != nil {
+	if err := validate(env, exec.vm.program); err != nil {
 		return nil, err
 	}
 
-	if err := vm.warmup(env); err != nil {
+	if err := exec.warmup(env); err != nil {
 		return nil, err
 	}
 
-	if vm.registers.IsDirty() {
-		vm.registers.Reset()
+	if exec.registers.IsDirty() {
+		exec.registers.Reset()
 	}
 
-	vm.registers.MarkDirty()
-	vm.env = env
-	vm.pc = 0
-	vm.frames.Reset()
+	exec.registers.MarkDirty()
+	exec.env = env
+	exec.pc = 0
+	exec.vm.frames.Reset()
 
-	instructions := vm.instructions
-	constants := vm.program.Constants
-	aggregatePlans := vm.program.Metadata.AggregatePlans
-	shapeCache := vm.cache.ShapeCache
-	paramSlots := vm.scratch.Params
+	instructions := exec.vm.instructions
+	constants := exec.vm.program.Constants
+	shapeCache := exec.vm.cache.ShapeCache
+	paramSlots := exec.scratch.Params
 loop:
-	for vm.pc < len(instructions) {
-		reg := vm.registers.Values
-		inst := &instructions[vm.pc]
+	for exec.pc < len(instructions) {
+		reg := exec.registers.Values
+		inst := &instructions[exec.pc]
 		op := inst.Opcode
 		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
-		vm.pc++
+		exec.pc++
 
 		switch op {
 		case bytecode.OpLoadNone:
@@ -135,79 +136,79 @@ loop:
 		case bytecode.OpLoadArray:
 			reg[dst] = runtime.NewArray(int(src1))
 		case bytecode.OpLoadObject:
-			reg[dst] = data.NewFastObjectOf(shapeCache, vm.options.fastObjectDictThreshold, int(src1))
+			reg[dst] = data.NewFastObjectOf(shapeCache, exec.vm.options.fastObjectDictThreshold, int(src1))
 		case bytecode.OpJump:
-			vm.pc = int(dst)
+			exec.pc = int(dst)
 		case bytecode.OpJumpIfFalse:
 			if !runtime.ToBoolean(reg[src1]) {
-				vm.pc = int(dst)
+				exec.pc = int(dst)
 			}
 		case bytecode.OpJumpIfTrue:
 			if runtime.ToBoolean(reg[src1]) {
-				vm.pc = int(dst)
+				exec.pc = int(dst)
 			}
 		case bytecode.OpJumpIfNone:
 			if reg[src1] == runtime.None {
-				vm.pc = int(dst)
+				exec.pc = int(dst)
 			}
 		case bytecode.OpJumpIfNe:
 			if operators.NotEquals(ctx, reg[src1], reg[src2]) {
-				vm.pc = int(dst)
+				exec.pc = int(dst)
 			}
 		case bytecode.OpJumpIfNeConst:
 			if operators.NotEquals(ctx, reg[src1], constants[src2.Constant()]) {
-				vm.pc = int(dst)
+				exec.pc = int(dst)
 			}
 		case bytecode.OpJumpIfEq:
 			if operators.Equals(ctx, reg[src1], reg[src2]) {
-				vm.pc = int(dst)
+				exec.pc = int(dst)
 			}
 		case bytecode.OpJumpIfEqConst:
 			if operators.Equals(ctx, reg[src1], constants[src2.Constant()]) {
-				vm.pc = int(dst)
+				exec.pc = int(dst)
 			}
 		case bytecode.OpJumpIfMissingProperty:
 			obj, ok := reg[src1].(runtime.Map)
 			if !ok {
-				vm.pc = int(dst)
+				exec.pc = int(dst)
 				continue
 			}
 
 			key, ok := reg[src2].(runtime.String)
 			if !ok {
-				vm.pc = int(dst)
+				exec.pc = int(dst)
 				continue
 			}
 
 			has, err := obj.ContainsKey(ctx, key)
-			if err != nil && vm.errors.protected(err) != nil {
+			if err != nil && exec.errors.protected(err) != nil {
 				return nil, err
 			}
 
 			if !has {
-				vm.pc = int(dst)
+				exec.pc = int(dst)
 			}
 		case bytecode.OpJumpIfMissingPropertyConst:
 			obj, ok := reg[src1].(runtime.Map)
 			if !ok {
-				vm.pc = int(dst)
+				exec.pc = int(dst)
 
 				continue
 			}
 
 			key, ok := constants[src2.Constant()].(runtime.String)
 			if !ok {
-				vm.pc = int(dst)
+				exec.pc = int(dst)
 				continue
 			}
 
 			has, err := obj.ContainsKey(ctx, key)
-			if err != nil && vm.errors.protected(err) != nil {
+			if err != nil && exec.errors.protected(err) != nil {
 				return nil, err
 			}
 
 			if !has {
-				vm.pc = int(dst)
+				exec.pc = int(dst)
 			}
 		case bytecode.OpExists:
 			val := reg[src1]
@@ -221,7 +222,7 @@ loop:
 				length, err := measurable.Length(ctx)
 
 				if err != nil {
-					if err := vm.errors.handleWithCatch(err, func() {
+					if err := exec.errors.handleWithCatch(err, func() {
 						reg[dst] = runtime.False
 					}); err != nil {
 						return nil, err
@@ -243,7 +244,7 @@ loop:
 				length, err := val.Length(ctx)
 
 				if err != nil {
-					if err := vm.errors.handleWithCatch(err, func() {
+					if err := exec.errors.handleWithCatch(err, func() {
 						length = 0
 					}); err != nil {
 						return nil, err
@@ -254,7 +255,7 @@ loop:
 				continue
 			}
 
-			if err := vm.errors.handleWithCatch(runtime.TypeErrorOf(reg[src1],
+			if err := exec.errors.handleWithCatch(runtime.TypeErrorOf(reg[src1],
 				runtime.TypeString,
 				runtime.TypeList,
 				runtime.TypeMap,
@@ -274,8 +275,8 @@ loop:
 			optional := op == bytecode.OpLoadIndexOptional
 			arg := reg[src2]
 
-			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
-				if err := vm.errors.protected(err); err != nil {
+			if err := exec.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
+				if err := exec.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -286,8 +287,8 @@ loop:
 			optional := op == bytecode.OpLoadIndexOptionalConst
 			arg := constants[src2.Constant()]
 
-			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
-				if err := vm.errors.protected(err); err != nil {
+			if err := exec.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
+				if err := exec.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -298,8 +299,8 @@ loop:
 			optional := op == bytecode.OpLoadKeyOptional
 			arg := reg[src2]
 
-			if err := vm.loadKeyAndSet(ctx, dst, vm.pc-1, src, arg, optional); err != nil {
-				if err := vm.errors.protected(err); err != nil {
+			if err := exec.loadKeyAndSet(ctx, dst, exec.pc-1, src, arg, optional); err != nil {
+				if err := exec.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -310,8 +311,8 @@ loop:
 			optional := op == bytecode.OpLoadKeyOptionalConst
 			arg := constants[src2.Constant()]
 
-			if err := vm.loadKeyConstAndSet(ctx, dst, vm.pc-1, inst, src, arg, optional); err != nil {
-				if err := vm.errors.protected(err); err != nil {
+			if err := exec.loadKeyConstAndSet(ctx, dst, exec.pc-1, inst, src, arg, optional); err != nil {
+				if err := exec.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -322,8 +323,8 @@ loop:
 			optional := op == bytecode.OpLoadPropertyOptionalConst
 			prop := constants[src2.Constant()]
 
-			if err := vm.loadPropertyConstAndSet(ctx, dst, vm.pc-1, inst, src, prop, optional); err != nil {
-				if err := vm.errors.protected(err); err != nil {
+			if err := exec.loadPropertyConstAndSet(ctx, dst, exec.pc-1, inst, src, prop, optional); err != nil {
+				if err := exec.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -334,8 +335,8 @@ loop:
 			optional := op == bytecode.OpLoadPropertyOptional
 			prop := reg[src2]
 
-			if err := vm.loadPropertyAndSet(ctx, dst, vm.pc-1, src, prop, optional); err != nil {
-				if err := vm.errors.protected(err); err != nil {
+			if err := exec.loadPropertyAndSet(ctx, dst, exec.pc-1, src, prop, optional); err != nil {
+				if err := exec.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -352,8 +353,8 @@ loop:
 		case bytecode.OpMulti:
 			reg[dst] = runtime.Multiply(ctx, reg[src1], reg[src2])
 		case bytecode.OpDiv:
-			if err := vm.checkDivisionByZero(ctx, reg[src1], reg[src2]); err != nil {
-				if err := vm.errors.protected(err); err != nil {
+			if err := exec.checkDivisionByZero(ctx, reg[src1], reg[src2]); err != nil {
+				if err := exec.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -361,8 +362,8 @@ loop:
 			}
 			reg[dst] = runtime.Divide(ctx, reg[src1], reg[src2])
 		case bytecode.OpMod:
-			if err := vm.checkModuloByZero(ctx, reg[src2]); err != nil {
-				if err := vm.errors.protected(err); err != nil {
+			if err := exec.checkModuloByZero(ctx, reg[src2]); err != nil {
+				if err := exec.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -403,39 +404,39 @@ loop:
 			cmp := operators.ComparatorFromByte(int(op) - int(bytecode.OpAllEq))
 			res, err := operators.ArrayAll(ctx, cmp, reg[src1], reg[src2])
 
-			if err := vm.errors.setOrCatch(dst, res, err); err != nil {
+			if err := exec.errors.setOrCatch(dst, res, err); err != nil {
 				return nil, err
 			}
 		case bytecode.OpAnyEq, bytecode.OpAnyNe, bytecode.OpAnyGt, bytecode.OpAnyGte, bytecode.OpAnyLt, bytecode.OpAnyLte, bytecode.OpAnyIn:
 			cmp := operators.ComparatorFromByte(int(op) - int(bytecode.OpAnyEq))
 			res, err := operators.ArrayAny(ctx, cmp, reg[src1], reg[src2])
 
-			if err := vm.errors.setOrCatch(dst, res, err); err != nil {
+			if err := exec.errors.setOrCatch(dst, res, err); err != nil {
 				return nil, err
 			}
 		case bytecode.OpNoneEq, bytecode.OpNoneNe, bytecode.OpNoneGt, bytecode.OpNoneGte, bytecode.OpNoneLt, bytecode.OpNoneLte, bytecode.OpNoneIn:
 			cmp := operators.ComparatorFromByte(int(op) - int(bytecode.OpNoneEq))
 			res, err := operators.ArrayNone(ctx, cmp, reg[src1], reg[src2])
 
-			if err := vm.errors.setOrCatch(dst, res, err); err != nil {
+			if err := exec.errors.setOrCatch(dst, res, err); err != nil {
 				return nil, err
 			}
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
-			if err := vm.execHostCall(ctx, op, vm.pc-1, dst, src1, src2); err != nil {
+			if err := exec.execHostCall(ctx, op, exec.pc-1, dst, src1, src2); err != nil {
 				return nil, err
 			}
 		case bytecode.OpCall, bytecode.OpProtectedCall, bytecode.OpTailCall:
-			if err := vm.execUdfCall(op, dst, src1, src2); err != nil {
+			if err := exec.execUdfCall(op, dst, src1, src2); err != nil {
 				return nil, err
 			}
 			continue
 		case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter,
 			bytecode.OpPush, bytecode.OpPushKV, bytecode.OpArrayPush, bytecode.OpObjectSet, bytecode.OpObjectSetConst:
-			if err := vm.execDatasetOps(ctx, op, inst, dst, src1, src2, reg, constants, aggregatePlans); err != nil {
+			if err := exec.execDatasetOps(ctx, op, inst, dst, src1, src2); err != nil {
 				return nil, err
 			}
 		case bytecode.OpIter, bytecode.OpIterNext, bytecode.OpIterValue, bytecode.OpIterKey, bytecode.OpIterLimit, bytecode.OpIterSkip:
-			if err := vm.execIterOps(ctx, op, dst, src1, src2, reg); err != nil {
+			if err := exec.execIterOps(ctx, op, dst, src1, src2); err != nil {
 				return nil, err
 			}
 		case bytecode.OpRand:
@@ -443,44 +444,44 @@ loop:
 		case bytecode.OpReturn:
 			retVal := reg[dst]
 
-			if vm.returnToCaller(retVal) {
+			if exec.returnToCaller(retVal) {
 				continue
 			}
 
 			reg[bytecode.NoopOperand] = retVal
 			break loop
 		default:
-			if handled, err := vm.execColdOps(ctx, op, dst, src1, src2, reg, constants); err != nil {
+			if handled, err := exec.execColdOps(ctx, op, dst, src1, src2); err != nil {
 				return nil, err
 			} else if handled {
 				continue
 			}
 
-			return nil, runtime.Errorf(runtime.ErrUnexpected, "unknown opcode %d at pc %d", op, vm.pc-1)
+			return nil, runtime.Errorf(runtime.ErrUnexpected, "unknown opcode %d at pc %d", op, exec.pc-1)
 		}
 	}
 
-	return vm.registers.Values[bytecode.NoopOperand], nil
+	return exec.registers.Values[bytecode.NoopOperand], nil
 }
 
-func (vm *VM) unwindToProtected() bool {
-	registers, pc, ok := vm.frames.UnwindToProtectedFrame(vm.registers.Values)
+func (exec *execState) unwindToProtected() bool {
+	registers, pc, ok := exec.vm.frames.UnwindToProtectedFrame(exec.registers.Values)
 	if !ok {
 		return false
 	}
 
-	vm.registers.Values = registers
-	vm.pc = pc
+	exec.registers.Values = registers
+	exec.pc = pc
 	return true
 }
 
-func (vm *VM) returnToCaller(retVal runtime.Value) bool {
-	registers, pc, ok := vm.frames.ReturnToCaller(vm.registers.Values, retVal)
+func (exec *execState) returnToCaller(retVal runtime.Value) bool {
+	registers, pc, ok := exec.vm.frames.ReturnToCaller(exec.registers.Values, retVal)
 	if !ok {
 		return false
 	}
 
-	vm.registers.Values = registers
-	vm.pc = pc
+	exec.registers.Values = registers
+	exec.pc = pc
 	return true
 }

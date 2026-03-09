@@ -8,15 +8,16 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 )
 
-func (vm *VM) execDatasetOps(
+func (exec *execState) execDatasetOps(
 	ctx context.Context,
 	op bytecode.Opcode,
 	inst *data.ExecInstruction,
 	dst, src1, src2 bytecode.Operand,
-	reg []runtime.Value,
-	constants []runtime.Value,
-	aggregatePlans []bytecode.AggregatePlan,
 ) error {
+	reg := exec.registers.Values
+	constants := exec.vm.program.Constants
+	aggregatePlans := exec.vm.program.Metadata.AggregatePlans
+
 	switch op {
 	case bytecode.OpDataSet:
 		reg[dst] = data.NewDataSet(src1 == 1)
@@ -34,7 +35,7 @@ func (vm *VM) execDatasetOps(
 			planIdx := int(src2)
 
 			if planIdx < 0 || planIdx >= len(aggregatePlans) {
-				return vm.errors.protected(runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan"))
+				return exec.errors.protected(runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan"))
 			}
 
 			plan := aggregatePlans[planIdx]
@@ -53,7 +54,7 @@ func (vm *VM) execDatasetOps(
 		ds := reg[dst].(runtime.Appendable)
 
 		if err := ds.Append(ctx, reg[src1]); err != nil {
-			return vm.errors.handle(err)
+			return exec.errors.handle(err)
 		}
 	case bytecode.OpArrayPush:
 		ds := reg[dst].(*runtime.Array)
@@ -63,7 +64,7 @@ func (vm *VM) execDatasetOps(
 		tr := reg[dst].(runtime.KeyWritable)
 
 		if err := tr.Set(ctx, reg[src1], reg[src2]); err != nil {
-			return vm.errors.handle(err)
+			return exec.errors.handle(err)
 		}
 	case bytecode.OpObjectSet:
 		obj, ok := reg[dst].(*data.FastObject)
@@ -82,7 +83,7 @@ func (vm *VM) execDatasetOps(
 		value := reg[src2]
 
 		if obj, ok := objVal.(*data.FastObject); ok {
-			vm.objectSetConstCached(inst, obj, key, value)
+			exec.objectSetConstCached(inst, obj, key, value)
 			return nil
 		}
 

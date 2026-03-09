@@ -39,7 +39,7 @@ e2e:
 	${LAB_BIN} --timeout=120 --attempts=5 --concurrency=1 --wait=http://127.0.0.1:9222/json/version --runtime=bin://./bin/ferret --files=./test/e2e/tests --cdn=./test/e2e/pages/dynamic --cdn=./test/e2e/pages/static
 
 bench:
-	go test -run=XXX -bench=. ${DIR_PKG}/...
+	go test -run=XXX -bench=. ${DIR_PKG}/... ${DIR_INTEG}/...
 
 generate:
 	go generate ${DIR_PKG}/... && \

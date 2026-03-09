@@ -100,19 +100,15 @@ func BenchmarkUdfCalls(b *testing.B) {
 		c := c
 
 		b.Run(fmt.Sprintf("UDF/TopLevel/%s/O0", c.name), func(b *testing.B) {
-			b.ReportAllocs()
 			RunBenchmarkO0(b, udfTopLevelQuery(c))
 		})
 		b.Run(fmt.Sprintf("UDF/TopLevel/%s/O1", c.name), func(b *testing.B) {
-			b.ReportAllocs()
 			RunBenchmarkO1(b, udfTopLevelQuery(c))
 		})
 		b.Run(fmt.Sprintf("UDF/Nested/%s/O0", c.name), func(b *testing.B) {
-			b.ReportAllocs()
 			RunBenchmarkO0(b, udfNestedQuery(c))
 		})
 		b.Run(fmt.Sprintf("UDF/Nested/%s/O1", c.name), func(b *testing.B) {
-			b.ReportAllocs()
 			RunBenchmarkO1(b, udfNestedQuery(c))
 		})
 	}
@@ -123,11 +119,10 @@ func BenchmarkUdfCalls_HostBaseline(b *testing.B) {
 		c := c
 
 		b.Run(fmt.Sprintf("Host/TopLevel/%s/O0", c.name), func(b *testing.B) {
-			b.ReportAllocs()
 			RunBenchmarkO0(b, hostTopLevelQuery(c), hostOption(c))
 		})
+
 		b.Run(fmt.Sprintf("Host/TopLevel/%s/O1", c.name), func(b *testing.B) {
-			b.ReportAllocs()
 			RunBenchmarkO1(b, hostTopLevelQuery(c), hostOption(c))
 		})
 	}

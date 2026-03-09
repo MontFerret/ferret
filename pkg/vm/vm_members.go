@@ -19,18 +19,18 @@ func keyString(arg runtime.Value) string {
 	}
 }
 
-func (vm *VM) loadFastKeyCached(ctx context.Context, pc int, obj *data.FastObject, arg runtime.Value, key string) (runtime.Value, error) {
+func (exec *execState) loadFastKeyCached(ctx context.Context, pc int, obj *data.FastObject, arg runtime.Value, key string) (runtime.Value, error) {
 	shapeID := obj.ShapeID()
 	// shapeID==0 means the fast-object layout is not stable yet.
 	if shapeID == 0 {
-		return vm.loadKey(ctx, obj, arg)
+		return exec.loadKey(ctx, obj, arg)
 	}
 
-	if pc < 0 || pc >= len(vm.cache.LoadKeyICs) {
-		return vm.loadKey(ctx, obj, arg)
+	if pc < 0 || pc >= len(exec.vm.cache.LoadKeyICs) {
+		return exec.loadKey(ctx, obj, arg)
 	}
 
-	cache := vm.cache.LoadKeyICs[pc]
+	cache := exec.vm.cache.LoadKeyICs[pc]
 	if cache != nil {
 		if slot, ok := cache.Lookup(shapeID, key); ok {
 			// slot==-1 caches a proven miss for this shape+key pair.
@@ -50,7 +50,7 @@ func (vm *VM) loadFastKeyCached(ctx context.Context, pc int, obj *data.FastObjec
 	if !ok {
 		if cache == nil {
 			cache = mem.NewLoadKeyCache()
-			vm.cache.LoadKeyICs[pc] = cache
+			exec.vm.cache.LoadKeyICs[pc] = cache
 		}
 
 		// Add is a no-op once the IC turns megamorphic.
@@ -66,7 +66,7 @@ func (vm *VM) loadFastKeyCached(ctx context.Context, pc int, obj *data.FastObjec
 
 	if cache == nil {
 		cache = mem.NewLoadKeyCache()
-		vm.cache.LoadKeyICs[pc] = cache
+		exec.vm.cache.LoadKeyICs[pc] = cache
 	}
 
 	// Add is a no-op once the IC turns megamorphic.
@@ -75,7 +75,7 @@ func (vm *VM) loadFastKeyCached(ctx context.Context, pc int, obj *data.FastObjec
 	return val, nil
 }
 
-func (vm *VM) loadFastKeyConstCached(
+func (exec *execState) loadFastKeyConstCached(
 	ctx context.Context,
 	pc int,
 	inst *data.ExecInstruction,
@@ -86,7 +86,7 @@ func (vm *VM) loadFastKeyConstCached(
 	shapeID := obj.ShapeID()
 	// shapeID==0 means the fast-object layout is not stable yet.
 	if shapeID == 0 {
-		return vm.loadKey(ctx, obj, arg)
+		return exec.loadKey(ctx, obj, arg)
 	}
 
 	// Monomorphic inline cache fast-path.
@@ -103,11 +103,11 @@ func (vm *VM) loadFastKeyConstCached(
 		return nil, runtime.ErrNotFound
 	}
 
-	if pc < 0 || pc >= len(vm.cache.LoadKeyConstICs) {
-		return vm.loadKey(ctx, obj, arg)
+	if pc < 0 || pc >= len(exec.vm.cache.LoadKeyConstICs) {
+		return exec.loadKey(ctx, obj, arg)
 	}
 
-	cache := vm.cache.LoadKeyConstICs[pc]
+	cache := exec.vm.cache.LoadKeyConstICs[pc]
 	if cache != nil {
 		if slot, ok := cache.Lookup(shapeID); ok {
 			if inst != nil {
@@ -132,7 +132,7 @@ func (vm *VM) loadFastKeyConstCached(
 	if !ok {
 		if cache == nil {
 			cache = mem.NewLoadKeyConstCache()
-			vm.cache.LoadKeyConstICs[pc] = cache
+			exec.vm.cache.LoadKeyConstICs[pc] = cache
 		}
 
 		// Add is a no-op once the IC turns megamorphic.
@@ -153,7 +153,7 @@ func (vm *VM) loadFastKeyConstCached(
 
 	if cache == nil {
 		cache = mem.NewLoadKeyConstCache()
-		vm.cache.LoadKeyConstICs[pc] = cache
+		exec.vm.cache.LoadKeyConstICs[pc] = cache
 	}
 
 	// Add is a no-op once the IC turns megamorphic.
@@ -167,27 +167,27 @@ func (vm *VM) loadFastKeyConstCached(
 	return val, nil
 }
 
-func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value) (runtime.Value, error) {
+func (exec *execState) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value) (runtime.Value, error) {
 	obj, ok := src.(*data.FastObject)
 
 	if !ok {
-		return vm.loadKey(ctx, src, arg)
+		return exec.loadKey(ctx, src, arg)
 	}
 
-	return vm.loadFastKeyCached(ctx, pc, obj, arg, keyString(arg))
+	return exec.loadFastKeyCached(ctx, pc, obj, arg, keyString(arg))
 }
 
-func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *data.ExecInstruction, src, arg runtime.Value) (runtime.Value, error) {
+func (exec *execState) loadKeyConstCached(ctx context.Context, pc int, inst *data.ExecInstruction, src, arg runtime.Value) (runtime.Value, error) {
 	obj, ok := src.(*data.FastObject)
 
 	if !ok {
-		return vm.loadKey(ctx, src, arg)
+		return exec.loadKey(ctx, src, arg)
 	}
 
-	return vm.loadFastKeyConstCached(ctx, pc, inst, obj, arg, keyString(arg))
+	return exec.loadFastKeyConstCached(ctx, pc, inst, obj, arg, keyString(arg))
 }
 
-func (vm *VM) objectSetConstCached(inst *data.ExecInstruction, obj *data.FastObject, key runtime.String, value runtime.Value) {
+func (exec *execState) objectSetConstCached(inst *data.ExecInstruction, obj *data.FastObject, key runtime.String, value runtime.Value) {
 	if obj == nil {
 		return
 	}
@@ -211,7 +211,7 @@ func (vm *VM) objectSetConstCached(inst *data.ExecInstruction, obj *data.FastObj
 	}
 }
 
-func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
+func (exec *execState) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
 	indexed, ok := src.(runtime.IndexReadable)
 
 	if !ok {
@@ -238,7 +238,7 @@ func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Va
 	return indexed.At(ctx, idx)
 }
 
-func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
+func (exec *execState) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
 	keyed, ok := src.(runtime.KeyReadable)
 
 	if !ok {
@@ -254,42 +254,42 @@ func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Valu
 	return out, nil
 }
 
-func (vm *VM) loadIndexAndSet(ctx context.Context, dst bytecode.Operand, src, arg runtime.Value, optional bool) error {
+func (exec *execState) loadIndexAndSet(ctx context.Context, dst bytecode.Operand, src, arg runtime.Value, optional bool) error {
 	if optional && src == runtime.None {
-		vm.registers.Values[dst] = runtime.None
+		exec.registers.Values[dst] = runtime.None
 		return nil
 	}
 
-	out, err := vm.loadIndex(ctx, src, arg)
+	out, err := exec.loadIndex(ctx, src, arg)
 
-	return vm.errors.setOptional(dst, out, err, optional)
+	return exec.errors.setOptional(dst, out, err, optional)
 }
 
-func (vm *VM) loadKeyAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, arg runtime.Value, optional bool) error {
+func (exec *execState) loadKeyAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, arg runtime.Value, optional bool) error {
 	if optional && src == runtime.None {
-		vm.registers.Values[dst] = runtime.None
+		exec.registers.Values[dst] = runtime.None
 		return nil
 	}
 
-	out, err := vm.loadKeyCached(ctx, pc, src, arg)
+	out, err := exec.loadKeyCached(ctx, pc, src, arg)
 
-	return vm.errors.setOptional(dst, out, err, optional)
+	return exec.errors.setOptional(dst, out, err, optional)
 }
 
-func (vm *VM) loadKeyConstAndSet(ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, arg runtime.Value, optional bool) error {
+func (exec *execState) loadKeyConstAndSet(ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, arg runtime.Value, optional bool) error {
 	if optional && src == runtime.None {
-		vm.registers.Values[dst] = runtime.None
+		exec.registers.Values[dst] = runtime.None
 		return nil
 	}
 
-	out, err := vm.loadKeyConstCached(ctx, pc, inst, src, arg)
+	out, err := exec.loadKeyConstCached(ctx, pc, inst, src, arg)
 
-	return vm.errors.setOptional(dst, out, err, optional)
+	return exec.errors.setOptional(dst, out, err, optional)
 }
 
-func (vm *VM) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, prop runtime.Value, optional bool) error {
+func (exec *execState) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, prop runtime.Value, optional bool) error {
 	if optional && src == runtime.None {
-		vm.registers.Values[dst] = runtime.None
+		exec.registers.Values[dst] = runtime.None
 		return nil
 	}
 
@@ -298,19 +298,19 @@ func (vm *VM) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc i
 
 	switch getter := prop.(type) {
 	case runtime.String:
-		out, err = vm.loadKeyCached(ctx, pc, src, getter)
+		out, err = exec.loadKeyCached(ctx, pc, src, getter)
 	case runtime.Float, runtime.Int:
-		out, err = vm.loadIndex(ctx, src, getter)
+		out, err = exec.loadIndex(ctx, src, getter)
 	default:
-		out, err = vm.loadKeyCached(ctx, pc, src, runtime.ToString(prop))
+		out, err = exec.loadKeyCached(ctx, pc, src, runtime.ToString(prop))
 	}
 
-	return vm.errors.setOptional(dst, out, err, optional)
+	return exec.errors.setOptional(dst, out, err, optional)
 }
 
-func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, prop runtime.Value, optional bool) error {
+func (exec *execState) loadPropertyConstAndSet(ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, prop runtime.Value, optional bool) error {
 	if optional && src == runtime.None {
-		vm.registers.Values[dst] = runtime.None
+		exec.registers.Values[dst] = runtime.None
 		return nil
 	}
 
@@ -319,12 +319,12 @@ func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst bytecode.Operand,
 
 	switch getter := prop.(type) {
 	case runtime.String:
-		out, err = vm.loadKeyConstCached(ctx, pc, inst, src, getter)
+		out, err = exec.loadKeyConstCached(ctx, pc, inst, src, getter)
 	case runtime.Float, runtime.Int:
-		out, err = vm.loadIndex(ctx, src, getter)
+		out, err = exec.loadIndex(ctx, src, getter)
 	default:
-		out, err = vm.loadKeyConstCached(ctx, pc, inst, src, runtime.ToString(prop))
+		out, err = exec.loadKeyConstCached(ctx, pc, inst, src, runtime.ToString(prop))
 	}
 
-	return vm.errors.setOptional(dst, out, err, optional)
+	return exec.errors.setOptional(dst, out, err, optional)
 }

@@ -67,25 +67,25 @@ func (r *warmupRegisters) clearRegister(op bytecode.Operand) {
 	r.set[idx] = false
 }
 
-func (vm *VM) warmup(env *Environment) error {
-	if err := vm.bindParams(env); err != nil {
+func (exec *execState) warmup(env *Environment) error {
+	if err := exec.bindParams(env); err != nil {
 		return err
 	}
 
-	vm.warmupRegexps()
+	exec.warmupRegexps()
 
 	hash := env.Functions.Hash()
 
-	if vm.cache.FuncHash == hash || hash == 0 {
+	if exec.vm.cache.FuncHash == hash || hash == 0 {
 		return nil
 	}
 
 	errors := &diagnostic.WarmupErrorSet{}
-	constants := vm.program.Constants
+	constants := exec.vm.program.Constants
 	functions := env.Functions
-	reg := newWarmupRegisters(vm.program.Registers)
+	reg := newWarmupRegisters(exec.vm.program.Registers)
 
-	for pc, inst := range vm.program.Bytecode {
+	for pc, inst := range exec.vm.program.Bytecode {
 		op := inst.Opcode
 		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
 
@@ -99,7 +99,7 @@ func (vm *VM) warmup(env *Environment) error {
 				reg.clearRegister(dst)
 			}
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
-			warmupResolveHostCall(pc, op, dst, src1, src2, reg.values, reg.set, functions, vm.cache.HostFunctions, errors)
+			warmupResolveHostCall(pc, op, dst, src1, src2, reg.values, reg.set, functions, exec.vm.cache.HostFunctions, errors)
 		default:
 			continue
 		}
@@ -109,20 +109,20 @@ func (vm *VM) warmup(env *Environment) error {
 		return errors
 	}
 
-	vm.cache.FuncHash = env.Functions.Hash()
+	exec.vm.cache.FuncHash = env.Functions.Hash()
 
 	return nil
 }
 
-func (vm *VM) warmupRegexps() {
-	if vm.cache.RegexpsWarmed {
+func (exec *execState) warmupRegexps() {
+	if exec.vm.cache.RegexpsWarmed {
 		return
 	}
 
-	constants := vm.program.Constants
-	reg := newWarmupRegisters(vm.program.Registers)
+	constants := exec.vm.program.Constants
+	reg := newWarmupRegisters(exec.vm.program.Registers)
 
-	for pc, inst := range vm.program.Bytecode {
+	for pc, inst := range exec.vm.program.Bytecode {
 		op := inst.Opcode
 		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
 
@@ -141,8 +141,8 @@ func (vm *VM) warmupRegexps() {
 
 				if err == nil {
 					pattern := r.String()
-					if cached := vm.cache.Regexps[pc]; cached == nil || cached.Pattern != pattern {
-						vm.cache.Regexps[pc] = &mem.CachedRegexp{Pattern: pattern, Regexp: r}
+					if cached := exec.vm.cache.Regexps[pc]; cached == nil || cached.Pattern != pattern {
+						exec.vm.cache.Regexps[pc] = &mem.CachedRegexp{Pattern: pattern, Regexp: r}
 					}
 				}
 			}
@@ -153,13 +153,13 @@ func (vm *VM) warmupRegexps() {
 		}
 	}
 
-	vm.cache.RegexpsWarmed = true
+	exec.vm.cache.RegexpsWarmed = true
 }
 
-func (vm *VM) bindParams(env *Environment) error {
-	required := vm.program.Params
+func (exec *execState) bindParams(env *Environment) error {
+	required := exec.vm.program.Params
 
-	vm.scratch.ResizeParams(len(required))
+	exec.scratch.ResizeParams(len(required))
 
 	var missedParams []string
 
@@ -175,7 +175,7 @@ func (vm *VM) bindParams(env *Environment) error {
 			val = runtime.None
 		}
 
-		vm.scratch.Params[idx] = val
+		exec.scratch.Params[idx] = val
 	}
 
 	if len(missedParams) > 0 {

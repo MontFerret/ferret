@@ -103,7 +103,7 @@ func callCachedHostFunction(
 	return nil, ErrUnresolvedFunction
 }
 
-func (vm *VM) execHostCall(
+func (exec *execState) execHostCall(
 	ctx context.Context,
 	op bytecode.Opcode,
 	pc int,
@@ -113,11 +113,11 @@ func (vm *VM) execHostCall(
 		return runtime.Error(runtime.ErrUnexpected, "invalid host call opcode")
 	}
 
-	cacheFn := vm.cache.HostFunctions[pc]
-	out, err := callCachedHostFunction(ctx, cacheFn, vm.registers.Values, src1, src2)
+	cacheFn := exec.vm.cache.HostFunctions[pc]
+	out, err := callCachedHostFunction(ctx, cacheFn, exec.registers.Values, src1, src2)
 
-	if err := vm.errors.setCallResult(op, dst, out, err); err != nil {
-		if vm.unwindToProtected() {
+	if err := exec.errors.setCallResult(op, dst, out, err); err != nil {
+		if exec.unwindToProtected() {
 			return nil
 		}
 

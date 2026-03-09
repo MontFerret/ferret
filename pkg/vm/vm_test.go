@@ -124,11 +124,11 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 		t.Fatal("expected VM to keep source program reference")
 	}
 
-	if instance.registers == nil {
+	if instance.exec.registers == nil {
 		t.Fatal("expected register file to be initialized")
 	}
 
-	if got, want := instance.registers.Size(), program.Registers; got != want {
+	if got, want := instance.exec.registers.Size(), program.Registers; got != want {
 		t.Fatalf("unexpected register file size: got %d, want %d", got, want)
 	}
 
@@ -317,7 +317,7 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 
 	protectedRegs[1] = runtime.True
 
-	instance.registers.Values = activeRegs
+	instance.exec.registers.Values = activeRegs
 	instance.frames.Push(frame.CallFrame{
 		ReturnPC:   10,
 		ReturnDest: bytecode.NewRegister(0),
@@ -343,11 +343,11 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		Protected:  false,
 	})
 
-	if ok := instance.unwindToProtected(); !ok {
+	if ok := instance.exec.unwindToProtected(); !ok {
 		t.Fatal("expected protected unwind to succeed")
 	}
 
-	if got, want := instance.pc, 20; got != want {
+	if got, want := instance.exec.pc, 20; got != want {
 		t.Fatalf("unexpected pc after unwind: got %d, want %d", got, want)
 	}
 
@@ -364,7 +364,7 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		t.Fatalf("unexpected surviving frame returnPC: got %d, want %d", got, want)
 	}
 
-	if got, want := instance.registers.Values[1], runtime.None; got != want {
+	if got, want := instance.exec.registers.Values[1], runtime.None; got != want {
 		t.Fatalf("expected protected return destination to be reset, got %v", got)
 	}
 
@@ -455,10 +455,10 @@ func TestSetCallResult_AppliesCatchJumpZeroAndFallbackValue(t *testing.T) {
 		},
 	})
 
-	instance.pc = 1
-	instance.registers.Values[1] = runtime.True
+	instance.exec.pc = 1
+	instance.exec.registers.Values[1] = runtime.True
 
-	err := instance.errors.setCallResult(
+	err := instance.exec.errors.setCallResult(
 		bytecode.OpHCall,
 		bytecode.NewRegister(1),
 		runtime.True,
@@ -469,11 +469,11 @@ func TestSetCallResult_AppliesCatchJumpZeroAndFallbackValue(t *testing.T) {
 		t.Fatalf("expected caught error to be swallowed, got %v", err)
 	}
 
-	if got := instance.registers.Values[1]; got != runtime.None {
+	if got := instance.exec.registers.Values[1]; got != runtime.None {
 		t.Fatalf("expected destination to be reset to none, got %v", got)
 	}
 
-	if got, want := instance.pc, 0; got != want {
+	if got, want := instance.exec.pc, 0; got != want {
 		t.Fatalf("expected catch jump target %d, got %d", want, got)
 	}
 }
@@ -490,10 +490,10 @@ func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
 		},
 	})
 
-	instance.pc = 1
+	instance.exec.pc = 1
 	called := false
 
-	err := instance.errors.handleWithCatch(errors.New("boom"), func() {
+	err := instance.exec.errors.handleWithCatch(errors.New("boom"), func() {
 		called = true
 	})
 
@@ -505,7 +505,7 @@ func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
 		t.Fatal("expected onCatch callback to be called")
 	}
 
-	if got, want := instance.pc, 0; got != want {
+	if got, want := instance.exec.pc, 0; got != want {
 		t.Fatalf("expected catch jump target %d, got %d", want, got)
 	}
 }
@@ -523,14 +523,14 @@ func TestHandleErrorWithCatch_AppliesPositiveJumpTarget(t *testing.T) {
 		},
 	})
 
-	instance.pc = 1
+	instance.exec.pc = 1
 
-	err := instance.errors.handleWithCatch(errors.New("boom"), nil)
+	err := instance.exec.errors.handleWithCatch(errors.New("boom"), nil)
 	if err != nil {
 		t.Fatalf("expected caught error to be swallowed, got %v", err)
 	}
 
-	if got, want := instance.pc, 2; got != want {
+	if got, want := instance.exec.pc, 2; got != want {
 		t.Fatalf("expected catch jump target %d, got %d", want, got)
 	}
 }
@@ -547,11 +547,11 @@ func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 		},
 	})
 
-	instance.pc = 1
+	instance.exec.pc = 1
 	called := false
 	wantErr := errors.New("boom")
 
-	err := instance.errors.handleWithCatch(wantErr, func() {
+	err := instance.exec.errors.handleWithCatch(wantErr, func() {
 		called = true
 	})
 
@@ -563,7 +563,7 @@ func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 		t.Fatal("expected onCatch callback not to be called")
 	}
 
-	if got, want := instance.pc, 1; got != want {
+	if got, want := instance.exec.pc, 1; got != want {
 		t.Fatalf("expected pc to stay unchanged at %d, got %d", want, got)
 	}
 }

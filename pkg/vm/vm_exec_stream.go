@@ -8,15 +8,15 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 )
 
-func (vm *VM) execStreamOp(
+func (exec *execState) execStreamOp(
 	ctx context.Context,
 	dst, src1, src2 bytecode.Operand,
-	reg []runtime.Value,
 ) error {
-	observable, eventName, options, err := vm.castSubscribeArgs(reg[dst], reg[src1], reg[src2])
+	reg := exec.registers.Values
+	observable, eventName, options, err := exec.castSubscribeArgs(reg[dst], reg[src1], reg[src2])
 
 	if err != nil {
-		return vm.errors.handle(err)
+		return exec.errors.handle(err)
 	}
 
 	stream, err := observable.Subscribe(ctx, runtime.Subscription{
@@ -25,7 +25,7 @@ func (vm *VM) execStreamOp(
 	})
 
 	if err != nil {
-		return vm.errors.handle(err)
+		return exec.errors.handle(err)
 	}
 
 	reg[dst] = data.NewStreamValue(stream)
@@ -33,11 +33,11 @@ func (vm *VM) execStreamOp(
 	return nil
 }
 
-func (vm *VM) execStreamIterOp(
+func (exec *execState) execStreamIterOp(
 	_ context.Context,
 	dst, src1, src2 bytecode.Operand,
-	reg []runtime.Value,
 ) error {
+	reg := exec.registers.Values
 	stream := reg[src1].(*data.StreamValue)
 
 	var timeout runtime.Int
@@ -46,7 +46,7 @@ func (vm *VM) execStreamIterOp(
 		t, err := runtime.CastInt(reg[src2])
 
 		if err != nil {
-			return vm.errors.handle(err)
+			return exec.errors.handle(err)
 		}
 
 		timeout = t
@@ -57,7 +57,7 @@ func (vm *VM) execStreamIterOp(
 	return nil
 }
 
-func (vm *VM) castSubscribeArgs(dst, eventName, opts runtime.Value) (runtime.Observable, runtime.String, runtime.Map, error) {
+func (exec *execState) castSubscribeArgs(dst, eventName, opts runtime.Value) (runtime.Observable, runtime.String, runtime.Map, error) {
 	observable, ok := dst.(runtime.Observable)
 
 	if !ok {
@@ -85,7 +85,7 @@ func (vm *VM) castSubscribeArgs(dst, eventName, opts runtime.Value) (runtime.Obs
 	return observable, eventNameStr, options, nil
 }
 
-func (vm *VM) castDispatchArgs(
+func (exec *execState) castDispatchArgs(
 	ctx context.Context,
 	target, eventName, args runtime.Value,
 ) (runtime.Dispatchable, runtime.String, runtime.Value, runtime.Value, error) {
