@@ -60,6 +60,57 @@ func TestParams(t *testing.T) {
 			So(strings.Contains(err.Error(), `param "unknown"`), ShouldBeTrue)
 		})
 
+		Convey("NewParamsFrom", func() {
+			params, err := runtime.NewParamsFrom(map[string]any{
+				"name":  "ferret",
+				"count": 7,
+				"none":  nil,
+			})
+
+			So(err, ShouldBeNil)
+			So(params, ShouldNotBeNil)
+			So(params.MustGet("name"), ShouldEqual, runtime.NewString("ferret"))
+			So(params.MustGet("count"), ShouldEqual, runtime.NewInt(7))
+
+			value, exists := params.Get("none")
+			So(exists, ShouldBeTrue)
+			So(value, ShouldEqual, runtime.None)
+
+			params, err = runtime.NewParamsFrom(map[string]any{
+				"bad": make(chan int),
+			})
+
+			So(err, ShouldNotBeNil)
+			So(errors.Is(err, runtime.ErrInvalidType), ShouldBeTrue)
+			So(strings.Contains(err.Error(), `param "bad"`), ShouldBeTrue)
+			So(params, ShouldBeNil)
+		})
+
+		Convey("Merge", func() {
+			params := runtime.NewParams().
+				SetValue("shared", runtime.NewString("old")).
+				SetValue("keep", runtime.True)
+
+			before := params.Clone()
+
+			out := params.Merge(nil)
+			So(out, ShouldResemble, params)
+			So(params, ShouldResemble, before)
+
+			out = params.Merge(runtime.NewParams())
+			So(out, ShouldResemble, params)
+			So(params, ShouldResemble, before)
+
+			out = params.Merge(runtime.NewParams().
+				SetValue("shared", runtime.NewString("new")).
+				SetValue("added", runtime.NewInt(9)))
+
+			So(out, ShouldResemble, params)
+			So(params.MustGet("shared"), ShouldEqual, runtime.NewString("new"))
+			So(params.MustGet("keep"), ShouldEqual, runtime.True)
+			So(params.MustGet("added"), ShouldEqual, runtime.NewInt(9))
+		})
+
 		Convey("SetValue, SetAllValues and Delete", func() {
 			params := runtime.NewParams()
 			answer := runtime.NewInt(42)
