@@ -262,7 +262,7 @@ func (vm *VM) loadIndexAndSet(ctx context.Context, dst bytecode.Operand, src, ar
 
 	out, err := vm.loadIndex(ctx, src, arg)
 
-	return vm.setOrOptional(dst, out, err, optional)
+	return vm.errors.setOptional(dst, out, err, optional)
 }
 
 func (vm *VM) loadKeyAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, arg runtime.Value, optional bool) error {
@@ -273,7 +273,7 @@ func (vm *VM) loadKeyAndSet(ctx context.Context, dst bytecode.Operand, pc int, s
 
 	out, err := vm.loadKeyCached(ctx, pc, src, arg)
 
-	return vm.setOrOptional(dst, out, err, optional)
+	return vm.errors.setOptional(dst, out, err, optional)
 }
 
 func (vm *VM) loadKeyConstAndSet(ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, arg runtime.Value, optional bool) error {
@@ -284,7 +284,7 @@ func (vm *VM) loadKeyConstAndSet(ctx context.Context, dst bytecode.Operand, pc i
 
 	out, err := vm.loadKeyConstCached(ctx, pc, inst, src, arg)
 
-	return vm.setOrOptional(dst, out, err, optional)
+	return vm.errors.setOptional(dst, out, err, optional)
 }
 
 func (vm *VM) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, prop runtime.Value, optional bool) error {
@@ -305,7 +305,7 @@ func (vm *VM) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc i
 		out, err = vm.loadKeyCached(ctx, pc, src, runtime.ToString(prop))
 	}
 
-	return vm.setOrOptional(dst, out, err, optional)
+	return vm.errors.setOptional(dst, out, err, optional)
 }
 
 func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, prop runtime.Value, optional bool) error {
@@ -326,5 +326,5 @@ func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst bytecode.Operand,
 		out, err = vm.loadKeyConstCached(ctx, pc, inst, src, runtime.ToString(prop))
 	}
 
-	return vm.setOrOptional(dst, out, err, optional)
+	return vm.errors.setOptional(dst, out, err, optional)
 }

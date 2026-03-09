@@ -9,44 +9,48 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostic"
 )
 
-// handleProtectedError applies protected-frame unwinding policy.
-func (vm *VM) handleProtectedError(err error) error {
+type errorHandler struct {
+	vm *VM
+}
+
+// protected applies protected-frame unwinding policy.
+func (h errorHandler) protected(err error) error {
 	if err == nil {
 		return nil
 	}
 
-	if vm.unwindToProtected() {
+	if h.vm.unwindToProtected() {
 		return nil
 	}
 
 	return err
 }
 
-// handleError applies catch-table then protected-frame error policy.
-func (vm *VM) handleError(err error) error {
-	return vm.handleErrorWithCatch(err, nil)
+// handle applies catch-table then protected-frame error policy.
+func (h errorHandler) handle(err error) error {
+	return h.handleWithCatch(err, nil)
 }
 
-// handleErrorWithCatch applies catch-table then protected-frame error policy
+// handleWithCatch applies catch-table then protected-frame error policy
 // and allows a catch-specific fallback assignment/action.
-func (vm *VM) handleErrorWithCatch(err error, onCatch func()) error {
+func (h errorHandler) handleWithCatch(err error, onCatch func()) error {
 	if err == nil {
 		return nil
 	}
 
-	if catch, ok := vm.tryCatch(vm.pc); ok {
+	if catch, ok := h.vm.tryCatch(h.vm.pc); ok {
 		if onCatch != nil {
 			onCatch()
 		}
 
 		if catch[2] >= 0 {
-			vm.pc = catch[2]
+			h.vm.pc = catch[2]
 		}
 
 		return nil
 	}
 
-	return vm.handleProtectedError(err)
+	return h.protected(err)
 }
 
 func (vm *VM) wrapRuntimeError(err error) error {
@@ -83,8 +87,8 @@ func (vm *VM) tryCatch(pos int) (bytecode.Catch, bool) {
 	return bytecode.Catch{}, false
 }
 
-func (vm *VM) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err error) error {
-	reg := vm.registers.Values
+func (h errorHandler) setOrCatch(dst bytecode.Operand, val runtime.Value, err error) error {
+	reg := h.vm.registers.Values
 
 	if err == nil {
 		reg[dst] = val
@@ -92,21 +96,53 @@ func (vm *VM) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err error) 
 		return nil
 	}
 
-	return vm.handleErrorWithCatch(err, func() {
+	return h.handleWithCatch(err, func() {
 		reg[dst] = runtime.None
 	})
 }
 
-func (vm *VM) setOrOptional(dst bytecode.Operand, val runtime.Value, err error, optional bool) error {
+func (h errorHandler) setOptional(dst bytecode.Operand, val runtime.Value, err error, optional bool) error {
 	if err == nil {
-		vm.registers.Values[dst] = val
+		h.vm.registers.Values[dst] = val
 
 		return nil
 	}
 
 	if optional || errors.Is(err, runtime.ErrNotFound) {
-		vm.registers.Values[dst] = runtime.None
+		h.vm.registers.Values[dst] = runtime.None
 
+		return nil
+	}
+
+	return err
+}
+
+func (h errorHandler) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) error {
+	reg := h.vm.registers.Values
+
+	if err == nil {
+		reg[dst] = out
+
+		return nil
+	}
+
+	if bytecode.IsProtectedCallOpcode(op) {
+		reg[dst] = runtime.None
+
+		return nil
+	}
+
+	if catch, ok := h.vm.tryCatch(h.vm.pc); ok {
+		reg[dst] = runtime.None
+
+		if catch[2] >= 0 {
+			h.vm.pc = catch[2]
+		}
+
+		return nil
+	}
+
+	if h.vm.unwindToProtected() {
 		return nil
 	}
 

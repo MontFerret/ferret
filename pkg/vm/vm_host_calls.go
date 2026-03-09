@@ -116,7 +116,7 @@ func (vm *VM) execHostCall(
 	cacheFn := vm.cache.HostFunctions[pc]
 	out, err := callCachedHostFunction(ctx, cacheFn, vm.registers.Values, src1, src2)
 
-	if err := vm.setCallResult(op, dst, out, err); err != nil {
+	if err := vm.errors.setCallResult(op, dst, out, err); err != nil {
 		if vm.unwindToProtected() {
 			return nil
 		}
@@ -125,36 +125,4 @@ func (vm *VM) execHostCall(
 	}
 
 	return nil
-}
-
-func (vm *VM) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) error {
-	reg := vm.registers.Values
-
-	if err == nil {
-		reg[dst] = out
-
-		return nil
-	}
-
-	if bytecode.IsProtectedCallOpcode(op) {
-		reg[dst] = runtime.None
-
-		return nil
-	}
-
-	if catch, ok := vm.tryCatch(vm.pc); ok {
-		reg[dst] = runtime.None
-
-		if catch[2] >= 0 {
-			vm.pc = catch[2]
-		}
-
-		return nil
-	}
-
-	if vm.unwindToProtected() {
-		return nil
-	}
-
-	return err
 }

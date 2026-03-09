@@ -16,7 +16,7 @@ func (vm *VM) execStreamOp(
 	observable, eventName, options, err := vm.castSubscribeArgs(reg[dst], reg[src1], reg[src2])
 
 	if err != nil {
-		return vm.handleError(err)
+		return vm.errors.handle(err)
 	}
 
 	stream, err := observable.Subscribe(ctx, runtime.Subscription{
@@ -25,7 +25,7 @@ func (vm *VM) execStreamOp(
 	})
 
 	if err != nil {
-		return vm.handleError(err)
+		return vm.errors.handle(err)
 	}
 
 	reg[dst] = data.NewStreamValue(stream)
@@ -46,7 +46,7 @@ func (vm *VM) execStreamIterOp(
 		t, err := runtime.CastInt(reg[src2])
 
 		if err != nil {
-			return vm.handleError(err)
+			return vm.errors.handle(err)
 		}
 
 		timeout = t

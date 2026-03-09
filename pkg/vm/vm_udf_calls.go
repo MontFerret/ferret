@@ -178,7 +178,7 @@ func (vm *VM) execUdfCall(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) 
 	switch op {
 	case bytecode.OpCall, bytecode.OpProtectedCall:
 		if err := vm.callUdf(op, dst, src1, src2); err != nil {
-			if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
+			if err := vm.errors.setCallResult(op, dst, runtime.None, err); err != nil {
 				if vm.unwindToProtected() {
 					return nil
 				}

@@ -22,6 +22,7 @@ type VM struct {
 	catchByPC    []int
 	pc           int
 	frames       frame.CallStack
+	errors       errorHandler
 }
 
 func New(program *bytecode.Program) *VM {
@@ -41,6 +42,7 @@ func NewWith(program *bytecode.Program, opts ...Option) *VM {
 		catchByPC:    buildCatchByPC(len(program.Bytecode), program.CatchTable),
 	}
 
+	vm.errors = errorHandler{vm: vm}
 	vm.frames.Init(maxUDFRegisters(program.Functions.UserDefined))
 
 	return vm
@@ -178,7 +180,7 @@ loop:
 			}
 
 			has, err := obj.ContainsKey(ctx, key)
-			if err != nil && vm.handleProtectedError(err) != nil {
+			if err != nil && vm.errors.protected(err) != nil {
 				return nil, err
 			}
 
@@ -200,7 +202,7 @@ loop:
 			}
 
 			has, err := obj.ContainsKey(ctx, key)
-			if err != nil && vm.handleProtectedError(err) != nil {
+			if err != nil && vm.errors.protected(err) != nil {
 				return nil, err
 			}
 
@@ -219,7 +221,7 @@ loop:
 				length, err := measurable.Length(ctx)
 
 				if err != nil {
-					if err := vm.handleErrorWithCatch(err, func() {
+					if err := vm.errors.handleWithCatch(err, func() {
 						reg[dst] = runtime.False
 					}); err != nil {
 						return nil, err
@@ -241,7 +243,7 @@ loop:
 				length, err := val.Length(ctx)
 
 				if err != nil {
-					if err := vm.handleErrorWithCatch(err, func() {
+					if err := vm.errors.handleWithCatch(err, func() {
 						length = 0
 					}); err != nil {
 						return nil, err
@@ -252,7 +254,7 @@ loop:
 				continue
 			}
 
-			if err := vm.handleErrorWithCatch(runtime.TypeErrorOf(reg[src1],
+			if err := vm.errors.handleWithCatch(runtime.TypeErrorOf(reg[src1],
 				runtime.TypeString,
 				runtime.TypeList,
 				runtime.TypeMap,
@@ -273,7 +275,7 @@ loop:
 			arg := reg[src2]
 
 			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
+				if err := vm.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -285,7 +287,7 @@ loop:
 			arg := constants[src2.Constant()]
 
 			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
+				if err := vm.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -297,7 +299,7 @@ loop:
 			arg := reg[src2]
 
 			if err := vm.loadKeyAndSet(ctx, dst, vm.pc-1, src, arg, optional); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
+				if err := vm.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -309,7 +311,7 @@ loop:
 			arg := constants[src2.Constant()]
 
 			if err := vm.loadKeyConstAndSet(ctx, dst, vm.pc-1, inst, src, arg, optional); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
+				if err := vm.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -321,7 +323,7 @@ loop:
 			prop := constants[src2.Constant()]
 
 			if err := vm.loadPropertyConstAndSet(ctx, dst, vm.pc-1, inst, src, prop, optional); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
+				if err := vm.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -333,7 +335,7 @@ loop:
 			prop := reg[src2]
 
 			if err := vm.loadPropertyAndSet(ctx, dst, vm.pc-1, src, prop, optional); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
+				if err := vm.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -351,7 +353,7 @@ loop:
 			reg[dst] = runtime.Multiply(ctx, reg[src1], reg[src2])
 		case bytecode.OpDiv:
 			if err := vm.checkDivisionByZero(ctx, reg[src1], reg[src2]); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
+				if err := vm.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -360,7 +362,7 @@ loop:
 			reg[dst] = runtime.Divide(ctx, reg[src1], reg[src2])
 		case bytecode.OpMod:
 			if err := vm.checkModuloByZero(ctx, reg[src2]); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
+				if err := vm.errors.protected(err); err != nil {
 					return nil, err
 				}
 
@@ -401,21 +403,21 @@ loop:
 			cmp := operators.ComparatorFromByte(int(op) - int(bytecode.OpAllEq))
 			res, err := operators.ArrayAll(ctx, cmp, reg[src1], reg[src2])
 
-			if err := vm.setOrTryCatch(dst, res, err); err != nil {
+			if err := vm.errors.setOrCatch(dst, res, err); err != nil {
 				return nil, err
 			}
 		case bytecode.OpAnyEq, bytecode.OpAnyNe, bytecode.OpAnyGt, bytecode.OpAnyGte, bytecode.OpAnyLt, bytecode.OpAnyLte, bytecode.OpAnyIn:
 			cmp := operators.ComparatorFromByte(int(op) - int(bytecode.OpAnyEq))
 			res, err := operators.ArrayAny(ctx, cmp, reg[src1], reg[src2])
 
-			if err := vm.setOrTryCatch(dst, res, err); err != nil {
+			if err := vm.errors.setOrCatch(dst, res, err); err != nil {
 				return nil, err
 			}
 		case bytecode.OpNoneEq, bytecode.OpNoneNe, bytecode.OpNoneGt, bytecode.OpNoneGte, bytecode.OpNoneLt, bytecode.OpNoneLte, bytecode.OpNoneIn:
 			cmp := operators.ComparatorFromByte(int(op) - int(bytecode.OpNoneEq))
 			res, err := operators.ArrayNone(ctx, cmp, reg[src1], reg[src2])
 
-			if err := vm.setOrTryCatch(dst, res, err); err != nil {
+			if err := vm.errors.setOrCatch(dst, res, err); err != nil {
 				return nil, err
 			}
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:

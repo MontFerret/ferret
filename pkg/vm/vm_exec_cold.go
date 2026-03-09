@@ -24,7 +24,7 @@ func (vm *VM) execColdOps(
 		reg[dst] = runtime.None
 
 		if ok {
-			if err := vm.handleError(val.Close()); err != nil {
+			if err := vm.errors.handle(val.Close()); err != nil {
 				return true, err
 			}
 		}
@@ -37,13 +37,13 @@ func (vm *VM) execColdOps(
 			return true, nil
 		}
 
-		return true, vm.handleProtectedError(err)
+		return true, vm.errors.protected(err)
 	case bytecode.OpApplyQuery:
 		src := readOperandValue(reg, constants, src1)
 		descriptor := readOperandValue(reg, constants, src2)
 		out, err := operators.ApplyQuery(ctx, src, descriptor)
-		if err := vm.setOrTryCatch(dst, out, err); err != nil {
-			return true, vm.handleProtectedError(err)
+		if err := vm.errors.setOrCatch(dst, out, err); err != nil {
+			return true, vm.errors.protected(err)
 		}
 
 		return true, nil
@@ -54,7 +54,7 @@ func (vm *VM) execColdOps(
 			return true, nil
 		}
 
-		return true, vm.handleProtectedError(err)
+		return true, vm.errors.protected(err)
 	case bytecode.OpRegexp:
 		r, err := vm.regexpCached(vm.pc-1, reg[src2])
 		if err == nil {
@@ -62,7 +62,7 @@ func (vm *VM) execColdOps(
 			return true, nil
 		}
 
-		if err := vm.handleErrorWithCatch(err, func() {
+		if err := vm.errors.handleWithCatch(err, func() {
 			reg[dst] = runtime.False
 		}); err != nil {
 			return true, err
@@ -76,7 +76,7 @@ func (vm *VM) execColdOps(
 		}
 
 		res, err := operators.Flatten(ctx, reg[src1], depth)
-		return true, vm.setOrTryCatch(dst, res, err)
+		return true, vm.errors.setOrCatch(dst, res, err)
 	case bytecode.OpStream:
 		return true, vm.execStreamOp(ctx, dst, src1, src2, reg)
 	case bytecode.OpStreamIter:
@@ -84,7 +84,7 @@ func (vm *VM) execColdOps(
 	case bytecode.OpDispatch:
 		dispatcher, eventName, payload, options, err := vm.castDispatchArgs(ctx, reg[dst], reg[src1], reg[src2])
 		if err != nil {
-			return true, vm.setOrTryCatch(dst, runtime.None, err)
+			return true, vm.errors.setOrCatch(dst, runtime.None, err)
 		}
 
 		out, err := dispatcher.Dispatch(ctx, runtime.DispatchEvent{
@@ -96,30 +96,30 @@ func (vm *VM) execColdOps(
 			out = runtime.None
 		}
 
-		return true, vm.setOrTryCatch(dst, out, err)
+		return true, vm.errors.setOrCatch(dst, out, err)
 	case bytecode.OpFail:
 		if !dst.IsConstant() {
-			return true, vm.handleError(runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a constant string message"))
+			return true, vm.errors.handle(runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a constant string message"))
 		}
 
 		idx := dst.Constant()
 		if idx < 0 || idx >= len(constants) {
-			return true, vm.handleError(runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a valid constant string message"))
+			return true, vm.errors.handle(runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a valid constant string message"))
 		}
 
 		msg, ok := constants[idx].(runtime.String)
 		if !ok {
-			return true, vm.handleError(runtime.TypeErrorOf(constants[idx], runtime.TypeString))
+			return true, vm.errors.handle(runtime.TypeErrorOf(constants[idx], runtime.TypeString))
 		}
 
-		return true, vm.handleError(runtime.Error(runtime.ErrInvalidOperation, msg.String()))
+		return true, vm.errors.handle(runtime.Error(runtime.ErrInvalidOperation, msg.String()))
 	case bytecode.OpSleep:
 		dur, err := runtime.ToInt(ctx, reg[dst])
 		if err != nil {
-			return true, vm.handleError(err)
+			return true, vm.errors.handle(err)
 		}
 
-		return true, vm.handleProtectedError(data.Sleep(ctx, dur))
+		return true, vm.errors.protected(data.Sleep(ctx, dur))
 	default:
 		return false, nil
 	}

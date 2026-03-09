@@ -458,7 +458,7 @@ func TestSetCallResult_AppliesCatchJumpZeroAndFallbackValue(t *testing.T) {
 	instance.pc = 1
 	instance.registers.Values[1] = runtime.True
 
-	err := instance.setCallResult(
+	err := instance.errors.setCallResult(
 		bytecode.OpHCall,
 		bytecode.NewRegister(1),
 		runtime.True,
@@ -493,7 +493,7 @@ func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
 	instance.pc = 1
 	called := false
 
-	err := instance.handleErrorWithCatch(errors.New("boom"), func() {
+	err := instance.errors.handleWithCatch(errors.New("boom"), func() {
 		called = true
 	})
 
@@ -525,7 +525,7 @@ func TestHandleErrorWithCatch_AppliesPositiveJumpTarget(t *testing.T) {
 
 	instance.pc = 1
 
-	err := instance.handleErrorWithCatch(errors.New("boom"), nil)
+	err := instance.errors.handleWithCatch(errors.New("boom"), nil)
 	if err != nil {
 		t.Fatalf("expected caught error to be swallowed, got %v", err)
 	}
@@ -551,7 +551,7 @@ func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 	called := false
 	wantErr := errors.New("boom")
 
-	err := instance.handleErrorWithCatch(wantErr, func() {
+	err := instance.errors.handleWithCatch(wantErr, func() {
 		called = true
 	})
 

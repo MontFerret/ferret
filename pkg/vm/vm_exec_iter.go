@@ -25,12 +25,12 @@ func (vm *VM) execIterOps(
 			iterator, err := src.Iterate(ctx)
 
 			if err != nil {
-				return vm.handleProtectedError(err)
+				return vm.errors.protected(err)
 			}
 
 			reg[dst] = data.NewIterator(iterator)
 		default:
-			return vm.handleErrorWithCatch(runtime.TypeErrorOf(src, runtime.TypeIterable), func() {
+			return vm.errors.handleWithCatch(runtime.TypeErrorOf(src, runtime.TypeIterable), func() {
 				// Fall back to an empty iterator under catch.
 				reg[dst] = data.NoopIter
 			})
@@ -41,7 +41,7 @@ func (vm *VM) execIterOps(
 			if errors.Is(err, io.EOF) {
 				vm.pc = int(dst)
 			} else {
-				return vm.handleProtectedError(err)
+				return vm.errors.protected(err)
 			}
 		}
 	case bytecode.OpIterValue:
