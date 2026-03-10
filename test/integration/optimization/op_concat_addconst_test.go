@@ -85,7 +85,12 @@ func TestOpConcat(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			program := buildConcatProgram(tc.values, tc.startReg, tc.count)
 
-			out, err := vm.New(program).Run(context.Background(), vm.NewDefaultEnvironment())
+			instance, err := vm.New(program)
+			if err != nil {
+				t.Fatalf("unexpected constructor error: %v", err)
+			}
+
+			out, err := instance.Run(context.Background(), vm.NewDefaultEnvironment())
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -151,7 +156,12 @@ func TestOpAddConst(t *testing.T) {
 				Registers: 3,
 			}
 
-			out, err := vm.New(program).Run(context.Background(), vm.NewDefaultEnvironment())
+			instance, err := vm.New(program)
+			if err != nil {
+				t.Fatalf("unexpected constructor error: %v", err)
+			}
+
+			out, err := instance.Run(context.Background(), vm.NewDefaultEnvironment())
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}

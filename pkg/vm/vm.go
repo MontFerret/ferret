@@ -21,11 +21,15 @@ type VM struct {
 	options      options
 }
 
-func New(program *bytecode.Program) *VM {
+func New(program *bytecode.Program) (*VM, error) {
 	return NewWith(program)
 }
 
-func NewWith(program *bytecode.Program, opts ...Option) *VM {
+func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
+	if err := validate(program); err != nil {
+		return nil, err
+	}
+
 	o := newOptions(opts)
 
 	vm := &VM{
@@ -38,7 +42,7 @@ func NewWith(program *bytecode.Program, opts ...Option) *VM {
 
 	vm.state.init(program, buildCatchByPC(len(program.Bytecode), program.CatchTable), o.panicPolicy)
 
-	return vm
+	return vm, nil
 }
 
 func (vm *VM) Run(ctx context.Context, env *Environment) (runtime.Value, error) {
@@ -85,10 +89,6 @@ func (vm *VM) runUnchecked(ctx context.Context, env *Environment) (runtime.Value
 func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, error) {
 	if env == nil {
 		env = noopEnv
-	}
-
-	if err := validate(vm.program); err != nil {
-		return nil, err
 	}
 
 	if err := warmup(vm, env); err != nil {

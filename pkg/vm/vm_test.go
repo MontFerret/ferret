@@ -28,10 +28,21 @@ func compileProgram(t *testing.T, source string) *bytecode.Program {
 	return program
 }
 
+func mustNewVM(t *testing.T, program *bytecode.Program, opts ...Option) *VM {
+	t.Helper()
+
+	instance, err := NewWith(program, opts...)
+	if err != nil {
+		t.Fatalf("vm init failed: %v", err)
+	}
+
+	return instance
+}
+
 func TestPanicPolicyRecoversPanics(t *testing.T) {
 	program := compileProgram(t, "RETURN PANIC_FN()")
 
-	instance := New(program)
+	instance := mustNewVM(t, program)
 	env, err := NewEnvironment([]EnvironmentOption{
 		WithFunction("PANIC_FN", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			panic("panic in host function")
@@ -55,7 +66,7 @@ func TestPanicPolicyRecoversPanics(t *testing.T) {
 func TestPanicPolicyPropagatesPanics(t *testing.T) {
 	program := compileProgram(t, "RETURN PANIC_FN()")
 
-	instance := NewWith(program, WithPanicPolicy(PanicPropagate))
+	instance := mustNewVM(t, program, WithPanicPolicy(PanicPropagate))
 	env, err := NewEnvironment([]EnvironmentOption{
 		WithFunction("PANIC_FN", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			panic("panic in host function")
@@ -77,7 +88,7 @@ func TestPanicPolicyPropagatesPanics(t *testing.T) {
 func TestPanicPolicyPropagateStillWrapsReturnedErrors(t *testing.T) {
 	program := compileProgram(t, "RETURN FAIL_FN()")
 
-	instance := NewWith(program, WithPanicPolicy(PanicPropagate))
+	instance := mustNewVM(t, program, WithPanicPolicy(PanicPropagate))
 	env, err := NewEnvironment([]EnvironmentOption{
 		WithFunction("FAIL_FN", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.None, errors.New("boom")
@@ -100,7 +111,8 @@ func TestPanicPolicyPropagateStillWrapsReturnedErrors(t *testing.T) {
 
 func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 	program := &bytecode.Program{
-		Registers: 6,
+		ISAVersion: bytecode.Version,
+		Registers:  6,
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
 			bytecode.NewInstruction(bytecode.OpJump, bytecode.Operand(1)),
@@ -116,7 +128,7 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 		},
 	}
 
-	instance := NewWith(
+	instance := mustNewVM(t,
 		program,
 		WithShapeCacheLimit(17),
 		WithFastObjectDictThreshold(23),
@@ -259,7 +271,7 @@ func TestOpLoadParam_UsesBoundSlots(t *testing.T) {
 	env.Params["foo"] = runtime.NewInt(1)
 	env.Params["bar"] = runtime.NewInt(2)
 
-	out, err := New(program).Run(context.Background(), env)
+	out, err := mustNewVM(t, program).Run(context.Background(), env)
 	if err != nil {
 		t.Fatalf("expected successful run, got %v", err)
 	}
@@ -283,7 +295,7 @@ func TestOpLoadParam_MissingParamsPreserveRuntimeError(t *testing.T) {
 	env := NewDefaultEnvironment()
 	env.Params["foo"] = runtime.NewInt(1)
 
-	_, err := New(program).Run(context.Background(), env)
+	_, err := mustNewVM(t, program).Run(context.Background(), env)
 	if err == nil {
 		t.Fatal("expected missing parameter error")
 	}
@@ -303,8 +315,9 @@ func TestOpLoadParam_MissingParamsPreserveRuntimeError(t *testing.T) {
 }
 
 func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
-	instance := New(&bytecode.Program{
-		Registers: 1,
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
 		Functions: bytecode.Functions{
 			UserDefined: []bytecode.UDF{
 				{Registers: 6},
@@ -403,7 +416,7 @@ func TestRunReturnsUnresolvedFunctionWhenHostCacheEntryIsMissing(t *testing.T) {
 		t.Fatalf("compile failed: %v", err)
 	}
 
-	instance := New(program)
+	instance := mustNewVM(t, program)
 	env, err := NewEnvironment([]EnvironmentOption{
 		WithFunction("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.True, nil
@@ -447,8 +460,9 @@ func TestRunReturnsUnresolvedFunctionWhenHostCacheEntryIsMissing(t *testing.T) {
 }
 
 func TestSetCallResult_AppliesCatchJumpZeroAndFallbackValue(t *testing.T) {
-	instance := New(&bytecode.Program{
-		Registers: 2,
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(1)),
 			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(1)),
@@ -482,8 +496,9 @@ func TestSetCallResult_AppliesCatchJumpZeroAndFallbackValue(t *testing.T) {
 }
 
 func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
-	instance := New(&bytecode.Program{
-		Registers: 2,
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
@@ -511,8 +526,9 @@ func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
 }
 
 func TestHandleErrorWithCatch_AppliesPositiveJumpTarget(t *testing.T) {
-	instance := New(&bytecode.Program{
-		Registers: 2,
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
@@ -536,8 +552,9 @@ func TestHandleErrorWithCatch_AppliesPositiveJumpTarget(t *testing.T) {
 }
 
 func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
-	instance := New(&bytecode.Program{
-		Registers: 2,
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
@@ -566,7 +583,7 @@ func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 }
 
 func TestOpFail_UncaughtReturnsRuntimeError(t *testing.T) {
-	instance := New(&bytecode.Program{
+	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Registers:  1,
 		Bytecode: []bytecode.Instruction{
@@ -594,7 +611,7 @@ func TestOpFail_UncaughtReturnsRuntimeError(t *testing.T) {
 }
 
 func TestOpFail_CaughtUsesCatchJumpTarget(t *testing.T) {
-	instance := New(&bytecode.Program{
+	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Registers:  1,
 		Bytecode: []bytecode.Instruction{
@@ -624,7 +641,7 @@ func TestOpFail_CaughtUsesCatchJumpTarget(t *testing.T) {
 }
 
 func TestOpFail_InvalidMessageTypeReturnsTypeError(t *testing.T) {
-	instance := New(&bytecode.Program{
+	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Registers:  1,
 		Bytecode: []bytecode.Instruction{
@@ -652,7 +669,7 @@ func TestOpFail_InvalidMessageTypeReturnsTypeError(t *testing.T) {
 
 func TestWarmupClearsStaleHostCacheAcrossEnvironments(t *testing.T) {
 	program := compileProgram(t, "RETURN F()")
-	instance := New(program)
+	instance := mustNewVM(t, program)
 
 	envWithFn, err := NewEnvironment([]EnvironmentOption{
 		WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
@@ -689,7 +706,7 @@ func TestWarmupClearsStaleHostCacheAcrossEnvironments(t *testing.T) {
 
 func TestWarmupRebindTouchesOnlyHostCallSlots(t *testing.T) {
 	program := compileProgram(t, "RETURN F()")
-	instance := New(program)
+	instance := mustNewVM(t, program)
 
 	hostPC := -1
 	nonHostPC := -1
@@ -774,7 +791,7 @@ func TestStrictWarmupFailsProtectedMissingHostCallForDefaultAndBuiltEnvironment(
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := New(program).Run(context.Background(), tc.env)
+			_, err := mustNewVM(t, program).Run(context.Background(), tc.env)
 			if err == nil {
 				t.Fatal("expected unresolved function error from strict warmup")
 			}
@@ -813,7 +830,7 @@ func TestStrictWarmupFailsOnDeadCodeUnresolvedHostCall(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := New(program).Run(context.Background(), tc.env)
+			_, err := mustNewVM(t, program).Run(context.Background(), tc.env)
 			if err == nil {
 				t.Fatal("expected unresolved function error from strict warmup")
 			}
@@ -837,7 +854,7 @@ LET b = MISSING_B()
 RETURN a + b
 `)
 
-	_, err := New(program).Run(context.Background(), NewDefaultEnvironment())
+	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
 	if err == nil {
 		t.Fatal("expected warmup error set")
 	}
@@ -874,7 +891,7 @@ func TestStrictWarmupInvalidTargetReturnsInvalidFunctionName(t *testing.T) {
 		},
 	}
 
-	_, err := New(program).Run(context.Background(), NewDefaultEnvironment())
+	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
 	if err == nil {
 		t.Fatal("expected runtime error")
 	}
@@ -891,7 +908,7 @@ func TestStrictWarmupInvalidTargetReturnsInvalidFunctionName(t *testing.T) {
 
 func TestStrictWarmupFailureIsRepeatableUntilEnvironmentFixed(t *testing.T) {
 	program := compileProgram(t, "RETURN F()")
-	instance := New(program)
+	instance := mustNewVM(t, program)
 
 	assertUnresolved := func(err error) {
 		t.Helper()
@@ -946,7 +963,7 @@ func TestHostNilResultIsNormalizedToNone(t *testing.T) {
 		t.Fatalf("environment build failed: %v", err)
 	}
 
-	out, err := New(program).Run(context.Background(), env)
+	out, err := mustNewVM(t, program).Run(context.Background(), env)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -959,7 +976,7 @@ func TestHostNilResultIsNormalizedToNone(t *testing.T) {
 func TestModuloTypeErrorNotMisclassifiedAsModuloByZero(t *testing.T) {
 	program := compileProgram(t, `RETURN 5 % "x"`)
 
-	_, err := New(program).Run(context.Background(), NewDefaultEnvironment())
+	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
 	if err == nil {
 		t.Fatal("expected runtime error")
 	}
@@ -1000,7 +1017,7 @@ func TestInvalidFunctionNameHasNonEmptyKind(t *testing.T) {
 		t.Fatalf("environment build failed: %v", err)
 	}
 
-	_, err = New(program).Run(context.Background(), env)
+	_, err = mustNewVM(t, program).Run(context.Background(), env)
 	if err == nil {
 		t.Fatal("expected runtime error")
 	}
@@ -1048,8 +1065,9 @@ func TestWrapRuntimeErrorSingleWarmupFailureReturnsRuntimeError(t *testing.T) {
 }
 
 func TestNearestBoundaryPrefersCatchOverProtectedUnwind(t *testing.T) {
-	instance := New(&bytecode.Program{
-		Registers: 2,
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
@@ -1085,8 +1103,9 @@ func TestNearestBoundaryPrefersCatchOverProtectedUnwind(t *testing.T) {
 }
 
 func TestNearestBoundaryUsesProtectedUnwindWithoutCatch(t *testing.T) {
-	instance := New(&bytecode.Program{
-		Registers: 2,
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
@@ -1137,7 +1156,7 @@ RETURN outer()
 	env := NewDefaultEnvironment()
 	env.Params["x"] = runtime.None
 
-	_, err := New(program).Run(context.Background(), env)
+	_, err := mustNewVM(t, program).Run(context.Background(), env)
 	if err == nil {
 		t.Fatal("expected runtime error")
 	}
@@ -1258,7 +1277,7 @@ FUNC boo() (
 RETURN boo()
 `)
 
-	_, err := New(program).Run(context.Background(), NewDefaultEnvironment())
+	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
 	if err == nil {
 		t.Fatal("expected runtime error")
 	}
@@ -1305,7 +1324,7 @@ func TestUdfRuntimeMessageUsesSourceSpellingName(t *testing.T) {
 		},
 	}
 
-	_, err := New(program).Run(context.Background(), NewDefaultEnvironment())
+	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
 	if err == nil {
 		t.Fatal("expected runtime error")
 	}
@@ -1336,7 +1355,7 @@ func TestRecoveredPanicRuntimeErrorDoesNotLeakGoStackTrace(t *testing.T) {
 		t.Fatalf("environment build failed: %v", err)
 	}
 
-	_, err = New(program).Run(context.Background(), env)
+	_, err = mustNewVM(t, program).Run(context.Background(), env)
 	if err == nil {
 		t.Fatal("expected runtime error")
 	}
@@ -1367,7 +1386,7 @@ func TestInvariantInRecoverModeBecomesUnexpectedRuntimeError(t *testing.T) {
 		},
 	}
 
-	_, err := New(program).Run(context.Background(), NewDefaultEnvironment())
+	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
 	if err == nil {
 		t.Fatal("expected runtime error")
 	}
@@ -1401,7 +1420,7 @@ func TestInvalidCollectorTypeInvariantInRecoverModeBecomesUnexpectedRuntimeError
 		},
 	}
 
-	_, err := New(program).Run(context.Background(), NewDefaultEnvironment())
+	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
 	if err == nil {
 		t.Fatal("expected runtime error")
 	}
@@ -1435,7 +1454,7 @@ func TestInvariantInPropagateModePanics(t *testing.T) {
 		},
 	}
 
-	instance := NewWith(program, WithPanicPolicy(PanicPropagate))
+	instance := mustNewVM(t, program, WithPanicPolicy(PanicPropagate))
 
 	defer func() {
 		if recover() == nil {
@@ -1461,7 +1480,7 @@ func TestInvalidCollectorTypeInvariantInPropagateModePanics(t *testing.T) {
 		},
 	}
 
-	instance := NewWith(program, WithPanicPolicy(PanicPropagate))
+	instance := mustNewVM(t, program, WithPanicPolicy(PanicPropagate))
 
 	defer func() {
 		if recover() == nil {

@@ -40,7 +40,10 @@ func TestUnaryOperators(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v1, err := vm.New(p1).Run(gocontext.Background(), nil)
+		vm1, err := vm.New(p1)
+		So(err, ShouldBeNil)
+
+		v1, err := vm1.Run(gocontext.Background(), nil)
 
 		So(err, ShouldBeNil)
 
@@ -56,7 +59,10 @@ func TestUnaryOperators(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v2, err := vm.New(p2).Run(gocontext.Background(), nil)
+		vm2, err := vm.New(p2)
+		So(err, ShouldBeNil)
+
+		v2, err := vm2.Run(gocontext.Background(), nil)
 
 		So(err, ShouldBeNil)
 

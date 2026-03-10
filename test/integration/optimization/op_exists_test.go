@@ -84,7 +84,12 @@ func TestOpExists(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			out, err := vm.New(test.program).Run(context.Background(), vm.NewDefaultEnvironment())
+			instance, err := vm.New(test.program)
+			if err != nil {
+				t.Fatalf("unexpected constructor error: %v", err)
+			}
+
+			out, err := instance.Run(context.Background(), vm.NewDefaultEnvironment())
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}

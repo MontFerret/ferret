@@ -94,7 +94,11 @@ func TestApplyQueryConstantSource_Strict(t *testing.T) {
 		result: runtime.NewArrayWith(runtime.NewString("ok")),
 	}
 
-	instance := vm.New(programWithApplyQueryConstSource(stub))
+	instance, err := vm.New(programWithApplyQueryConstSource(stub))
+	if err != nil {
+		t.Fatalf("constructor failed: %v", err)
+	}
+
 	result, err := instance.Run(context.Background(), vm.NewDefaultEnvironment())
 	if err != nil {
 		t.Fatalf("run failed: %v", err)
@@ -120,10 +124,13 @@ func TestApplyQueryConstantSource_FastMode_NoPanic(t *testing.T) {
 		result: runtime.NewArrayWith(runtime.NewString("ok")),
 	}
 
-	instance := vm.NewWith(
+	instance, err := vm.NewWith(
 		programWithApplyQueryConstSource(stub),
 		vm.WithPanicPolicy(vm.PanicPropagate),
 	)
+	if err != nil {
+		t.Fatalf("constructor failed: %v", err)
+	}
 
 	defer func() {
 		if recovered := recover(); recovered != nil {
@@ -147,17 +154,26 @@ func TestApplyQueryConstantSource_NonQueryable_NoPanicTypeError(t *testing.T) {
 		{
 			name: "strict",
 			run: func() (runtime.Value, error) {
-				return vm.New(programWithApplyQueryConstSource(runtime.NewInt(1))).
-					Run(context.Background(), vm.NewDefaultEnvironment())
+				instance, err := vm.New(programWithApplyQueryConstSource(runtime.NewInt(1)))
+				if err != nil {
+					return runtime.None, err
+				}
+
+				return instance.Run(context.Background(), vm.NewDefaultEnvironment())
 			},
 		},
 		{
 			name: "fast",
 			run: func() (runtime.Value, error) {
-				return vm.NewWith(
+				instance, err := vm.NewWith(
 					programWithApplyQueryConstSource(runtime.NewInt(1)),
 					vm.WithPanicPolicy(vm.PanicPropagate),
-				).Run(context.Background(), vm.NewDefaultEnvironment())
+				)
+				if err != nil {
+					return runtime.None, err
+				}
+
+				return instance.Run(context.Background(), vm.NewDefaultEnvironment())
 			},
 		},
 	}
