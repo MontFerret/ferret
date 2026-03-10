@@ -37,6 +37,7 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 		println(asm.Disassemble(prog))
 	}
 
+	b.ReportAllocs()
 	b.ResetTimer()
 	b.ReportAllocs()
 

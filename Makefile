@@ -5,6 +5,7 @@ LAB_BIN ?= lab
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
 DIR_INTEG = ./test/integration
+DIR_BENCH = ./test/integration/benchmarks
 DIR_E2E = ./test/e2e
 
 default: build
@@ -15,6 +16,7 @@ install-tools:
 	go install honnef.co/go/tools/cmd/staticcheck@latest && \
 	go install golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignment@latest && \
 	go install golang.org/x/tools/cmd/goimports@latest && \
+	go install golang.org/x/perf/cmd/benchstat@latest && \
 	go install github.com/mgechev/revive@latest
 
 install:
@@ -40,7 +42,7 @@ e2e:
 	${LAB_BIN} --timeout=120 --attempts=5 --concurrency=1 --wait=http://127.0.0.1:9222/json/version --runtime=bin://./bin/ferret --files=./test/e2e/tests --cdn=./test/e2e/pages/dynamic --cdn=./test/e2e/pages/static
 
 bench:
-	go test -run=XXX -bench=. ${DIR_PKG}/...
+	go test -run=XXX -bench=. ${DIR_PKG}/... ${DIR_BENCH}/...
 
 generate:
 	go generate ${DIR_PKG}/... && \
