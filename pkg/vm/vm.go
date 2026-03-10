@@ -79,11 +79,11 @@ func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, err
 		env = noopEnv
 	}
 
-	if err := validate(env, vm.program); err != nil {
+	if err := validate(vm.program); err != nil {
 		return nil, err
 	}
 
-	if err := vm.warmup(env); err != nil {
+	if err := warmup(vm, env); err != nil {
 		return nil, err
 	}
 

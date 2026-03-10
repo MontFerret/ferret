@@ -10,12 +10,12 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
-func (vm *VM) warmup(env *Environment) error {
-	if err := vm.bindParams(env); err != nil {
+func warmup(vm *VM, env *Environment) error {
+	if err := bindParams(vm, env); err != nil {
 		return err
 	}
 
-	vm.warmupRegexps()
+	warmupRegexps(vm)
 
 	hash := env.Functions.Hash()
 
@@ -53,7 +53,7 @@ func (vm *VM) warmup(env *Environment) error {
 	return nil
 }
 
-func (vm *VM) warmupRegexps() {
+func warmupRegexps(vm *VM) {
 	if vm.cache.RegexpsWarmed {
 		return
 	}
@@ -95,7 +95,7 @@ func (vm *VM) warmupRegexps() {
 	vm.cache.RegexpsWarmed = true
 }
 
-func (vm *VM) bindParams(env *Environment) error {
+func bindParams(vm *VM, env *Environment) error {
 	required := vm.program.Params
 
 	vm.state.scratch.ResizeParams(len(required))
