@@ -324,6 +324,172 @@ loop:
 			}
 
 			reg[dst] = runtime.NewRange(start, end)
+		case bytecode.OpLoadIndex, bytecode.OpLoadIndexOptional:
+			src := reg[src1]
+			optional := op == bytecode.OpLoadIndexOptional
+			arg := reg[src2]
+
+			// TODO: inline loadIndexAndSet for better performance
+			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
+				}
+			}
+		case bytecode.OpLoadKey, bytecode.OpLoadKeyOptional:
+			src := reg[src1]
+			optional := op == bytecode.OpLoadKeyOptional
+			arg := reg[src2]
+
+			// TODO: inline loadIndexAndSet for better performance
+			if err := vm.loadKeyAndSet(ctx, dst, vm.pc-1, src, arg, optional); err != nil {
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
+				}
+			}
+		case bytecode.OpLoadProperty, bytecode.OpLoadPropertyOptional:
+			src := reg[src1]
+			optional := op == bytecode.OpLoadPropertyOptional
+			prop := reg[src2]
+
+			// TODO: inline loadIndexAndSet for better performance
+			// I guess the reason it cannot inline is due to a different control flow
+			if err := vm.loadPropertyAndSet(ctx, dst, vm.pc-1, src, prop, optional); err != nil {
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
+				}
+			}
+		case bytecode.OpLoadIndexConst, bytecode.OpLoadIndexOptionalConst:
+			src := reg[src1]
+			optional := op == bytecode.OpLoadIndexOptionalConst
+			arg := constants[src2.Constant()]
+
+			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
+				}
+			}
+		case bytecode.OpLoadKeyConst, bytecode.OpLoadKeyOptionalConst:
+			src := reg[src1]
+			optional := op == bytecode.OpLoadKeyOptionalConst
+			arg := constants[src2.Constant()]
+
+			if err := vm.loadKeyConstAndSet(ctx, dst, vm.pc-1, inst, src, arg, optional); err != nil {
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
+				}
+			}
+		case bytecode.OpLoadPropertyConst, bytecode.OpLoadPropertyOptionalConst:
+			src := reg[src1]
+			optional := op == bytecode.OpLoadPropertyOptionalConst
+			prop := constants[src2.Constant()]
+
+			if err := vm.loadPropertyConstAndSet(ctx, dst, vm.pc-1, inst, src, prop, optional); err != nil {
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
+				}
+			}
+		case bytecode.OpPush:
+			ds := reg[dst].(runtime.Appendable)
+
+			if err := ds.Append(ctx, reg[src1]); err != nil {
+				if err := vm.handleError(err); err != nil {
+					return nil, err
+				}
+			}
+		case bytecode.OpPushKV:
+			tr := reg[dst].(runtime.KeyWritable)
+
+			if err := tr.Set(ctx, reg[src1], reg[src2]); err != nil {
+				if err := vm.handleError(err); err != nil {
+					return nil, err
+				}
+			}
+		case bytecode.OpArrayPush:
+			ds := reg[dst].(*runtime.Array)
+
+			_ = ds.Append(ctx, reg[src1])
+		case bytecode.OpObjectSet:
+			key := runtime.ToString(reg[src1])
+			value := reg[src2]
+			obj, ok := reg[dst].(*data.FastObject)
+
+			if ok {
+				_ = obj.Set(ctx, key, value)
+				continue
+			}
+
+			writable, ok := reg[dst].(runtime.KeyWritable)
+
+			if ok {
+				if err := writable.Set(ctx, key, value); err != nil {
+					if err := vm.handleError(err); err != nil {
+						return nil, err
+					}
+				}
+
+				continue
+			}
+
+			if err := vm.handleError(runtime.TypeErrorOf(reg[dst], runtime.TypeObject)); err != nil {
+				return nil, err
+			}
+		case bytecode.OpObjectSetConst:
+			objVal := reg[dst]
+			key := runtime.ToString(constants[src1.Constant()])
+			value := reg[src2]
+
+			if obj, ok := objVal.(*data.FastObject); ok {
+				vm.objectSetConstCached(inst, obj, key, value)
+				continue
+			}
+
+			writable, ok := reg[dst].(runtime.KeyWritable)
+
+			if ok {
+				if err := writable.Set(ctx, key, value); err != nil {
+					if err := vm.handleError(err); err != nil {
+						return nil, err
+					}
+				}
+				continue
+			}
+
+			if err := vm.handleError(runtime.TypeErrorOf(reg[dst], runtime.TypeObject)); err != nil {
+				return nil, err
+			}
+		case bytecode.OpIter:
+			input := reg[src1]
+			iterable, ok := input.(runtime.Iterable)
+
+			if ok {
+				iterator, err := iterable.Iterate(ctx)
+
+				if err == nil {
+					reg[dst] = data.NewIterator(iterator)
+					continue
+				}
+
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
+				}
+
+				continue
+			}
+
+			// TODO: replace with inlined version
+			err := vm.handleErrorWithFallback(runtime.TypeErrorOf(input, runtime.TypeIterable), dst, data.NoopIter)
+
+			if err != nil {
+				return nil, err
+			}
+		case bytecode.OpIterNext, bytecode.OpIterValue, bytecode.OpIterKey, bytecode.OpIterLimit, bytecode.OpIterSkip:
+			if err := vm.execIterOps(ctx, op, dst, src1, src2, reg); err != nil {
+				return nil, err
+			}
+		case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
+			if err := vm.execDatasetOps(ctx, op, inst, dst, src1, src2, reg, constants, aggregatePlans); err != nil {
+				return nil, err
+			}
 		case bytecode.OpExists:
 			val := reg[src1]
 
@@ -336,9 +502,7 @@ loop:
 				length, err := measurable.Length(ctx)
 
 				if err != nil {
-					if err := vm.handleErrorWithCatch(err, func() {
-						reg[dst] = runtime.False
-					}); err != nil {
+					if err := vm.handleErrorWithFallback(err, dst, runtime.False); err != nil {
 						return nil, err
 					}
 
@@ -358,26 +522,24 @@ loop:
 				length, err := val.Length(ctx)
 
 				if err != nil {
-					if err := vm.handleErrorWithCatch(err, func() {
-						length = 0
-					}); err != nil {
+					if err := vm.handleError(err); err != nil {
 						return nil, err
 					}
+
+					length = 0
 				}
 
 				reg[dst] = length
 				continue
 			}
 
-			if err := vm.handleErrorWithCatch(runtime.TypeErrorOf(reg[src1],
+			if err := vm.handleErrorWithFallback(runtime.TypeErrorOf(reg[src1],
 				runtime.TypeString,
 				runtime.TypeList,
 				runtime.TypeMap,
 				runtime.TypeBinary,
 				runtime.TypeMeasurable,
-			), func() {
-				reg[dst] = runtime.ZeroInt
-			}); err != nil {
+			), dst, runtime.ZeroInt); err != nil {
 				return runtime.None, err
 			}
 
@@ -398,78 +560,6 @@ loop:
 
 					continue
 				}
-			}
-		case bytecode.OpLoadIndex, bytecode.OpLoadIndexOptional:
-			src := reg[src1]
-			optional := op == bytecode.OpLoadIndexOptional
-			arg := reg[src2]
-
-			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
-					return nil, err
-				}
-
-				continue
-			}
-		case bytecode.OpLoadIndexConst, bytecode.OpLoadIndexOptionalConst:
-			src := reg[src1]
-			optional := op == bytecode.OpLoadIndexOptionalConst
-			arg := constants[src2.Constant()]
-
-			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
-					return nil, err
-				}
-
-				continue
-			}
-		case bytecode.OpLoadKey, bytecode.OpLoadKeyOptional:
-			src := reg[src1]
-			optional := op == bytecode.OpLoadKeyOptional
-			arg := reg[src2]
-
-			if err := vm.loadKeyAndSet(ctx, dst, vm.pc-1, src, arg, optional); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
-					return nil, err
-				}
-
-				continue
-			}
-		case bytecode.OpLoadKeyConst, bytecode.OpLoadKeyOptionalConst:
-			src := reg[src1]
-			optional := op == bytecode.OpLoadKeyOptionalConst
-			arg := constants[src2.Constant()]
-
-			if err := vm.loadKeyConstAndSet(ctx, dst, vm.pc-1, inst, src, arg, optional); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
-					return nil, err
-				}
-
-				continue
-			}
-		case bytecode.OpLoadPropertyConst, bytecode.OpLoadPropertyOptionalConst:
-			src := reg[src1]
-			optional := op == bytecode.OpLoadPropertyOptionalConst
-			prop := constants[src2.Constant()]
-
-			if err := vm.loadPropertyConstAndSet(ctx, dst, vm.pc-1, inst, src, prop, optional); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
-					return nil, err
-				}
-
-				continue
-			}
-		case bytecode.OpLoadProperty, bytecode.OpLoadPropertyOptional:
-			src := reg[src1]
-			optional := op == bytecode.OpLoadPropertyOptional
-			prop := reg[src2]
-
-			if err := vm.loadPropertyAndSet(ctx, dst, vm.pc-1, src, prop, optional); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
-					return nil, err
-				}
-
-				continue
 			}
 		case bytecode.OpApplyQuery:
 			src := readOperandValue(reg, constants, src1)
@@ -560,9 +650,7 @@ loop:
 			if err == nil {
 				reg[dst] = r.Match(reg[src1])
 			} else {
-				if err := vm.handleErrorWithCatch(err, func() {
-					reg[dst] = runtime.False
-				}); err != nil {
+				if err := vm.handleErrorWithFallback(err, dst, runtime.False); err != nil {
 					return nil, err
 				}
 
@@ -601,15 +689,7 @@ loop:
 			if err := vm.setOrTryCatch(dst, res, err); err != nil {
 				return nil, err
 			}
-		case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter,
-			bytecode.OpPush, bytecode.OpPushKV, bytecode.OpArrayPush, bytecode.OpObjectSet, bytecode.OpObjectSetConst:
-			if err := vm.execDatasetOps(ctx, op, inst, dst, src1, src2, reg, constants, aggregatePlans); err != nil {
-				return nil, err
-			}
-		case bytecode.OpIter, bytecode.OpIterNext, bytecode.OpIterValue, bytecode.OpIterKey, bytecode.OpIterLimit, bytecode.OpIterSkip:
-			if err := vm.execIterOps(ctx, op, dst, src1, src2, reg); err != nil {
-				return nil, err
-			}
+
 		case bytecode.OpStream:
 			if err := vm.execStreamOp(ctx, dst, src1, src2, reg); err != nil {
 				return nil, err

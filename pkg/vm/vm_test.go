@@ -480,7 +480,7 @@ func TestSetCallResult_AppliesCatchJumpZeroAndFallbackValue(t *testing.T) {
 
 func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
 	instance := New(&bytecode.Program{
-		Registers: 1,
+		Registers: 2,
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
@@ -491,18 +491,16 @@ func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
 	})
 
 	instance.pc = 1
-	called := false
 
-	err := instance.handleErrorWithCatch(errors.New("boom"), func() {
-		called = true
-	})
+	err := instance.handleErrorWithFallback(errors.New("boom"), bytecode.Operand(1), runtime.True)
 
 	if err != nil {
 		t.Fatalf("expected caught error to be swallowed, got %v", err)
 	}
 
-	if !called {
-		t.Fatal("expected onCatch callback to be called")
+	val := instance.registers.Values[1]
+	if val != runtime.True {
+		t.Fatalf("expected fallback value to be set in destination register, got %v", val)
 	}
 
 	if got, want := instance.pc, 0; got != want {
@@ -512,7 +510,7 @@ func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
 
 func TestHandleErrorWithCatch_AppliesPositiveJumpTarget(t *testing.T) {
 	instance := New(&bytecode.Program{
-		Registers: 1,
+		Registers: 2,
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
@@ -525,7 +523,7 @@ func TestHandleErrorWithCatch_AppliesPositiveJumpTarget(t *testing.T) {
 
 	instance.pc = 1
 
-	err := instance.handleErrorWithCatch(errors.New("boom"), nil)
+	err := instance.handleErrorWithFallback(errors.New("boom"), bytecode.NoopOperand, nil)
 	if err != nil {
 		t.Fatalf("expected caught error to be swallowed, got %v", err)
 	}
@@ -537,7 +535,7 @@ func TestHandleErrorWithCatch_AppliesPositiveJumpTarget(t *testing.T) {
 
 func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 	instance := New(&bytecode.Program{
-		Registers: 1,
+		Registers: 2,
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
@@ -548,19 +546,17 @@ func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 	})
 
 	instance.pc = 1
-	called := false
 	wantErr := errors.New("boom")
 
-	err := instance.handleErrorWithCatch(wantErr, func() {
-		called = true
-	})
+	err := instance.handleErrorWithFallback(wantErr, bytecode.Operand(1), runtime.True)
 
 	if err != wantErr {
 		t.Fatalf("expected original error to be returned, got %v", err)
 	}
 
-	if called {
-		t.Fatal("expected onCatch callback not to be called")
+	val := instance.registers.Values[1]
+	if val == runtime.True {
+		t.Fatalf("expected fallback value to be ignored, got %v", val)
 	}
 
 	if got, want := instance.pc, 1; got != want {

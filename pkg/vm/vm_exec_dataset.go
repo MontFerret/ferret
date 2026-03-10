@@ -49,44 +49,7 @@ func (vm *VM) execDatasetOps(
 		}
 
 		reg[dst] = data.NewCollector(collectorType)
-	case bytecode.OpPush:
-		ds := reg[dst].(runtime.Appendable)
 
-		if err := ds.Append(ctx, reg[src1]); err != nil {
-			return vm.handleError(err)
-		}
-	case bytecode.OpArrayPush:
-		ds := reg[dst].(*runtime.Array)
-
-		_ = ds.Append(ctx, reg[src1])
-	case bytecode.OpPushKV:
-		tr := reg[dst].(runtime.KeyWritable)
-
-		if err := tr.Set(ctx, reg[src1], reg[src2]); err != nil {
-			return vm.handleError(err)
-		}
-	case bytecode.OpObjectSet:
-		obj, ok := reg[dst].(*data.FastObject)
-		key := runtime.ToString(reg[src1])
-		value := reg[src2]
-
-		if ok {
-			_ = obj.Set(ctx, key, value)
-			return nil
-		}
-
-		_ = reg[dst].(runtime.KeyWritable).Set(ctx, key, value)
-	case bytecode.OpObjectSetConst:
-		objVal := reg[dst]
-		key := runtime.ToString(constants[src1.Constant()])
-		value := reg[src2]
-
-		if obj, ok := objVal.(*data.FastObject); ok {
-			vm.objectSetConstCached(inst, obj, key, value)
-			return nil
-		}
-
-		_ = objVal.(runtime.KeyWritable).Set(ctx, key, value)
 	}
 
 	return nil

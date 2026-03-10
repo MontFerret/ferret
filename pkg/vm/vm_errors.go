@@ -24,19 +24,19 @@ func (vm *VM) handleProtectedError(err error) error {
 
 // handleError applies catch-table then protected-frame error policy.
 func (vm *VM) handleError(err error) error {
-	return vm.handleErrorWithCatch(err, nil)
+	return vm.handleErrorWithFallback(err, bytecode.NoopOperand, nil)
 }
 
-// handleErrorWithCatch applies catch-table then protected-frame error policy
+// handleErrorWithFallback applies catch-table then protected-frame error policy
 // and allows a catch-specific fallback assignment/action.
-func (vm *VM) handleErrorWithCatch(err error, onCatch func()) error {
+func (vm *VM) handleErrorWithFallback(err error, dst bytecode.Operand, fallback runtime.Value) error {
 	if err == nil {
 		return nil
 	}
 
 	if catch, ok := vm.tryCatch(vm.pc); ok {
-		if onCatch != nil {
-			onCatch()
+		if fallback != nil {
+			vm.registers.Values[dst] = fallback
 		}
 
 		if catch[2] >= 0 {
@@ -92,9 +92,7 @@ func (vm *VM) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err error) 
 		return nil
 	}
 
-	return vm.handleErrorWithCatch(err, func() {
-		reg[dst] = runtime.None
-	})
+	return vm.handleErrorWithFallback(err, dst, runtime.None)
 }
 
 func (vm *VM) setOrOptional(dst bytecode.Operand, val runtime.Value, err error, optional bool) error {

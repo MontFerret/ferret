@@ -17,24 +17,7 @@ func (vm *VM) execIterOps(
 	reg []runtime.Value,
 ) error {
 	switch op {
-	case bytecode.OpIter:
-		input := reg[src1]
 
-		switch src := input.(type) {
-		case runtime.Iterable:
-			iterator, err := src.Iterate(ctx)
-
-			if err != nil {
-				return vm.handleProtectedError(err)
-			}
-
-			reg[dst] = data.NewIterator(iterator)
-		default:
-			return vm.handleErrorWithCatch(runtime.TypeErrorOf(src, runtime.TypeIterable), func() {
-				// Fall back to an empty iterator under catch.
-				reg[dst] = data.NoopIter
-			})
-		}
 	case bytecode.OpIterNext:
 		iterator := reg[src1].(*data.Iterator)
 		if err := iterator.Next(ctx); err != nil {
