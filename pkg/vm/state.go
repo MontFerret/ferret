@@ -8,13 +8,12 @@ import (
 
 type execState struct {
 	program   *bytecode.Program
-	catchByPC []int
-
 	env       *Environment
-	pc        int
 	registers *mem.RegisterFile
 	scratch   *mem.Scratch
 	frames    frame.CallStack
+	catchByPC []int
+	pc        int
 }
 
 func (s *execState) init(program *bytecode.Program, catchByPC []int) {

@@ -12,11 +12,11 @@ import (
 )
 
 type VM struct {
-	options      options
 	cache        *mem.Cache
 	program      *bytecode.Program
-	instructions []data.ExecInstruction
 	state        execState
+	instructions []data.ExecInstruction
+	options      options
 }
 
 func New(program *bytecode.Program) *VM {

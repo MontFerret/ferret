@@ -9,9 +9,9 @@ import (
 )
 
 type queryStub struct {
-	queries []runtime.Query
 	result  runtime.List
 	err     error
+	queries []runtime.Query
 }
 
 func (q *queryStub) Query(_ context.Context, query runtime.Query) (runtime.List, error) {
