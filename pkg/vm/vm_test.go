@@ -785,6 +785,41 @@ func TestTailCallUdf_ReusedWindowResetsNonArgSlotsToNone(t *testing.T) {
 	}
 }
 
+func TestReleaseRunState_ClearsScratchHostArgsForReuse(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+	})
+
+	state := mustAcquireRunState(t, instance)
+	state.scratch.ResizeHostArgs(3)
+	state.scratch.HostArgs[0] = runtime.NewInt(1)
+	state.scratch.HostArgs[1] = runtime.NewInt(2)
+	state.scratch.HostArgs[2] = runtime.NewInt(3)
+
+	instance.releaseRunState(state)
+
+	reused := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(reused)
+
+	if reused != state {
+		t.Fatal("expected run state to be reused from pool")
+	}
+
+	if got, want := len(reused.scratch.HostArgs), 3; got != want {
+		t.Fatalf("unexpected reused host args size: got %d, want %d", got, want)
+	}
+
+	for i := range reused.scratch.HostArgs {
+		if got := reused.scratch.HostArgs[i]; got != runtime.None {
+			t.Fatalf("expected reused host arg slot %d to be runtime.None, got %v", i, got)
+		}
+	}
+}
+
 func TestOpFail_UncaughtReturnsRuntimeError(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,

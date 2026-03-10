@@ -27,6 +27,7 @@ func callCachedHostFunction(
 	ctx context.Context,
 	cacheFn *mem.CachedHostFunction,
 	reg []runtime.Value,
+	scratch *mem.Scratch,
 	target runtime.Value,
 	src1, src2 bytecode.Operand,
 ) (runtime.Value, error) {
@@ -64,7 +65,8 @@ func callCachedHostFunction(
 		}
 
 		if cacheFn.FnV != nil {
-			return cacheFn.FnV(ctx, arg0)
+			args := stageHostCallArgs(scratch, reg, start, 1)
+			return cacheFn.FnV(ctx, args...)
 		}
 	case 2:
 		arg0 := reg[start]
@@ -75,7 +77,8 @@ func callCachedHostFunction(
 		}
 
 		if cacheFn.FnV != nil {
-			return cacheFn.FnV(ctx, arg0, arg1)
+			args := stageHostCallArgs(scratch, reg, start, 2)
+			return cacheFn.FnV(ctx, args...)
 		}
 	case 3:
 		arg0 := reg[start]
@@ -87,7 +90,8 @@ func callCachedHostFunction(
 		}
 
 		if cacheFn.FnV != nil {
-			return cacheFn.FnV(ctx, arg0, arg1, arg2)
+			args := stageHostCallArgs(scratch, reg, start, 3)
+			return cacheFn.FnV(ctx, args...)
 		}
 	case 4:
 		arg0 := reg[start]
@@ -100,32 +104,33 @@ func callCachedHostFunction(
 		}
 
 		if cacheFn.FnV != nil {
-			return cacheFn.FnV(ctx, arg0, arg1, arg2, arg3)
+			args := stageHostCallArgs(scratch, reg, start, 4)
+			return cacheFn.FnV(ctx, args...)
 		}
 	default:
 		if cacheFn.FnV != nil {
 			argCount := end - start + 1
-			var stackArgs [8]runtime.Value
-			if argCount <= len(stackArgs) {
-				copy(stackArgs[:argCount], reg[start:start+argCount])
-
-				switch argCount {
-				case 5:
-					return cacheFn.FnV(ctx, stackArgs[0], stackArgs[1], stackArgs[2], stackArgs[3], stackArgs[4])
-				case 6:
-					return cacheFn.FnV(ctx, stackArgs[0], stackArgs[1], stackArgs[2], stackArgs[3], stackArgs[4], stackArgs[5])
-				case 7:
-					return cacheFn.FnV(ctx, stackArgs[0], stackArgs[1], stackArgs[2], stackArgs[3], stackArgs[4], stackArgs[5], stackArgs[6])
-				case 8:
-					return cacheFn.FnV(ctx, stackArgs[0], stackArgs[1], stackArgs[2], stackArgs[3], stackArgs[4], stackArgs[5], stackArgs[6], stackArgs[7])
-				}
-			}
-
-			heapArgs := make([]runtime.Value, argCount)
-			copy(heapArgs, reg[start:start+argCount])
-			return cacheFn.FnV(ctx, heapArgs...)
+			args := stageHostCallArgs(scratch, reg, start, argCount)
+			return cacheFn.FnV(ctx, args...)
 		}
 	}
 
 	return nil, ErrUnresolvedFunction
+}
+
+func stageHostCallArgs(scratch *mem.Scratch, reg []runtime.Value, start, count int) []runtime.Value {
+	if count <= 0 {
+		return nil
+	}
+
+	if scratch == nil {
+		args := make([]runtime.Value, count)
+		copy(args, reg[start:start+count])
+		return args
+	}
+
+	scratch.ResizeHostArgs(count)
+	args := scratch.HostArgs[:count]
+	copy(args, reg[start:start+count])
+	return args
 }

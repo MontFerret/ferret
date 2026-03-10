@@ -263,7 +263,7 @@ loop:
 			continue
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
 			cacheFn := vm.cache.HostFunctions[state.pc-1]
-			out, err := callCachedHostFunction(ctx, cacheFn, state.registers.Values, reg[dst], src1, src2)
+			out, err := callCachedHostFunction(ctx, cacheFn, state.registers.Values, state.scratch, reg[dst], src1, src2)
 
 			if state.setCallResult(op, dst, out, err) == errReturn {
 				return nil, err
@@ -595,7 +595,7 @@ loop:
 
 			var timeout runtime.Int
 
-			if reg[src2] != nil && reg[src2] != runtime.None {
+			if reg[src2] != runtime.None {
 				t, err := runtime.CastInt(reg[src2])
 
 				if err != nil {

@@ -3,52 +3,65 @@ package mem
 import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
 type Scratch struct {
-	Params []runtime.Value
+	Params   []runtime.Value
+	HostArgs []runtime.Value
 }
 
 func NewScratch(params int) *Scratch {
-	paramSlots := make([]runtime.Value, params)
-
-	for i := 0; i < params; i++ {
-		paramSlots[i] = runtime.None
-	}
-
 	return &Scratch{
-		Params: paramSlots,
+		Params: makeNoneValues(params),
 	}
 }
 
 func (s *Scratch) ResizeParams(size int) {
-	if size < 0 || size == len(s.Params) {
+	resizeNoneValues(&s.Params, size)
+}
+
+func (s *Scratch) ResizeHostArgs(size int) {
+	resizeNoneValues(&s.HostArgs, size)
+}
+
+func makeNoneValues(size int) []runtime.Value {
+	if size <= 0 {
+		return nil
+	}
+
+	values := make([]runtime.Value, size)
+	for i := 0; i < size; i++ {
+		values[i] = runtime.None
+	}
+
+	return values
+}
+
+func resizeNoneValues(values *[]runtime.Value, size int) {
+	current := *values
+	if size < 0 || size == len(current) {
 		return
 	}
 
-	prevSize := len(s.Params)
+	prevSize := len(current)
 
 	if size < prevSize {
 		for i := size; i < prevSize; i++ {
-			s.Params[i] = runtime.None
+			current[i] = runtime.None
 		}
 
-		s.Params = s.Params[:size]
+		*values = current[:size]
 		return
 	}
 
-	if size > cap(s.Params) {
-		params := make([]runtime.Value, size)
-		copy(params, s.Params)
-		s.Params = params
-
-		for i := prevSize; i < size; i++ {
-			s.Params[i] = runtime.None
-		}
-
-		return
+	if size > cap(current) {
+		resized := make([]runtime.Value, size)
+		copy(resized, current)
+		current = resized
+	} else {
+		current = current[:size]
 	}
-
-	s.Params = s.Params[:size]
 
 	for i := prevSize; i < size; i++ {
-		s.Params[i] = runtime.None
+		current[i] = runtime.None
 	}
+
+	*values = current
 }

@@ -10,102 +10,94 @@ import (
 )
 
 func TestCallCachedHostFunction_VarargSixArgsPreservesOrderAndCount(t *testing.T) {
-	var seen []runtime.Value
+	cases := []int{1, 4, 6, 8, 9}
 
-	cacheFn := &mem.CachedHostFunction{
-		FnV: func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-			seen = append([]runtime.Value(nil), args...)
-			return runtime.NewInt(len(args)), nil
-		},
-	}
+	for _, argCount := range cases {
+		t.Run(runtime.NewInt(argCount).String(), func(t *testing.T) {
+			var seen []runtime.Value
 
-	reg := []runtime.Value{
-		runtime.None,
-		runtime.NewInt(10),
-		runtime.NewInt(20),
-		runtime.NewInt(30),
-		runtime.NewInt(40),
-		runtime.NewInt(50),
-		runtime.NewInt(60),
-	}
+			cacheFn := &mem.CachedHostFunction{
+				FnV: func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+					seen = append([]runtime.Value(nil), args...)
+					return runtime.NewInt(len(args)), nil
+				},
+			}
 
-	out, err := callCachedHostFunction(
-		context.Background(),
-		cacheFn,
-		reg,
-		runtime.NewString("TEST"),
-		bytecode.NewRegister(1),
-		bytecode.NewRegister(6),
-	)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+			reg := make([]runtime.Value, argCount+1)
+			reg[0] = runtime.None
+			for i := 0; i < argCount; i++ {
+				reg[i+1] = runtime.NewInt(i + 1)
+			}
 
-	if got, want := out, runtime.NewInt(6); got != want {
-		t.Fatalf("unexpected return value: got %v, want %v", got, want)
-	}
+			scratch := mem.NewScratch(0)
+			out, err := callCachedHostFunction(
+				context.Background(),
+				cacheFn,
+				reg,
+				scratch,
+				runtime.NewString("TEST"),
+				bytecode.NewRegister(1),
+				bytecode.NewRegister(argCount),
+			)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-	if got, want := len(seen), 6; got != want {
-		t.Fatalf("unexpected arg count: got %d, want %d", got, want)
-	}
+			if got, want := out, runtime.NewInt(argCount); got != want {
+				t.Fatalf("unexpected return value: got %v, want %v", got, want)
+			}
 
-	wantVals := []runtime.Value{
-		runtime.NewInt(10),
-		runtime.NewInt(20),
-		runtime.NewInt(30),
-		runtime.NewInt(40),
-		runtime.NewInt(50),
-		runtime.NewInt(60),
-	}
-	for i := range wantVals {
-		if got, want := seen[i], wantVals[i]; got != want {
-			t.Fatalf("unexpected arg[%d]: got %v, want %v", i, got, want)
-		}
+			if got, want := len(seen), argCount; got != want {
+				t.Fatalf("unexpected arg count: got %d, want %d", got, want)
+			}
+
+			for i := 0; i < argCount; i++ {
+				if got, want := seen[i], runtime.NewInt(i+1); got != want {
+					t.Fatalf("unexpected arg[%d]: got %v, want %v", i, got, want)
+				}
+			}
+		})
 	}
 }
 
 func TestCallCachedHostFunction_VarargArgsSliceMutationDoesNotMutateRegisters(t *testing.T) {
-	cacheFn := &mem.CachedHostFunction{
-		FnV: func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-			args[0] = runtime.NewInt(777)
-			args[len(args)-1] = runtime.NewInt(999)
-			return runtime.True, nil
-		},
-	}
+	cases := []int{1, 4, 6, 8, 9}
 
-	reg := []runtime.Value{
-		runtime.None,
-		runtime.NewInt(1),
-		runtime.NewInt(2),
-		runtime.NewInt(3),
-		runtime.NewInt(4),
-		runtime.NewInt(5),
-		runtime.NewInt(6),
-	}
+	for _, argCount := range cases {
+		t.Run(runtime.NewInt(argCount).String(), func(t *testing.T) {
+			cacheFn := &mem.CachedHostFunction{
+				FnV: func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+					args[0] = runtime.NewInt(777)
+					args[len(args)-1] = runtime.NewInt(999)
+					return runtime.True, nil
+				},
+			}
 
-	_, err := callCachedHostFunction(
-		context.Background(),
-		cacheFn,
-		reg,
-		runtime.NewString("TEST"),
-		bytecode.NewRegister(1),
-		bytecode.NewRegister(6),
-	)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+			reg := make([]runtime.Value, argCount+1)
+			reg[0] = runtime.None
+			for i := 0; i < argCount; i++ {
+				reg[i+1] = runtime.NewInt(i + 1)
+			}
 
-	wantVals := []runtime.Value{
-		runtime.NewInt(1),
-		runtime.NewInt(2),
-		runtime.NewInt(3),
-		runtime.NewInt(4),
-		runtime.NewInt(5),
-		runtime.NewInt(6),
-	}
-	for i := range wantVals {
-		if got, want := reg[i+1], wantVals[i]; got != want {
-			t.Fatalf("register arg[%d] mutated: got %v, want %v", i, got, want)
-		}
+			scratch := mem.NewScratch(0)
+			_, err := callCachedHostFunction(
+				context.Background(),
+				cacheFn,
+				reg,
+				scratch,
+				runtime.NewString("TEST"),
+				bytecode.NewRegister(1),
+				bytecode.NewRegister(argCount),
+			)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			for i := 0; i < argCount; i++ {
+				if got, want := reg[i+1], runtime.NewInt(i+1); got != want {
+					t.Fatalf("register arg[%d] mutated: got %v, want %v", i, got, want)
+				}
+			}
+		})
 	}
 }

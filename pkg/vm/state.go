@@ -54,6 +54,9 @@ func (s *execState) cleanupForPool() {
 	for i := range s.scratch.Params {
 		s.scratch.Params[i] = runtime.None
 	}
+	for i := range s.scratch.HostArgs {
+		s.scratch.HostArgs[i] = runtime.None
+	}
 
 	s.env = nil
 	s.pc = 0
