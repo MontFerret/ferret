@@ -213,7 +213,7 @@ func applyBinaryUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand,
 
 func isBinaryUseDefOpcode(opcode bytecode.Opcode) bool {
 	switch opcode {
-	case bytecode.OpAdd, bytecode.OpAddConst, bytecode.OpSub, bytecode.OpMulti, bytecode.OpDiv, bytecode.OpMod,
+	case bytecode.OpAdd, bytecode.OpAddConst, bytecode.OpSub, bytecode.OpMul, bytecode.OpDiv, bytecode.OpMod,
 		bytecode.OpCmp,
 		bytecode.OpEq, bytecode.OpNe, bytecode.OpGt, bytecode.OpLt, bytecode.OpGte, bytecode.OpLte,
 		bytecode.OpAnyEq, bytecode.OpAnyNe, bytecode.OpAnyGt, bytecode.OpAnyGte, bytecode.OpAnyLt, bytecode.OpAnyLte,

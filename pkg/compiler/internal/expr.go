@@ -619,7 +619,7 @@ func resolveAtomBinaryOperator(ctx fql.IExpressionAtomContext) (atomBinaryOperat
 	if op := ctx.MultiplicativeOperator(); op != nil {
 		switch op.GetText() {
 		case "*":
-			return atomBinaryOperator{opcode: bytecode.OpMulti}, true
+			return atomBinaryOperator{opcode: bytecode.OpMul}, true
 		case "/":
 			return atomBinaryOperator{opcode: bytecode.OpDiv}, true
 		case "%":

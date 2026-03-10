@@ -7,11 +7,13 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-type Comparator int
-type ComparatorPredicate func(ctx context.Context, a, b runtime.Value) runtime.Boolean
+type (
+	arrayComparator          int
+	arrayComparatorPredicate func(ctx context.Context, a, b runtime.Value) runtime.Boolean
+)
 
 const (
-	EQ Comparator = iota
+	EQ arrayComparator = iota
 	NEQ
 	GT
 	GTE
@@ -20,8 +22,8 @@ const (
 	IN
 )
 
-func ComparatorFromByte(op int) Comparator {
-	val := Comparator(op)
+func comparatorFromByte(op int) arrayComparator {
+	val := arrayComparator(op)
 
 	if val < EQ || val > IN {
 		return -1
@@ -30,7 +32,7 @@ func ComparatorFromByte(op int) Comparator {
 	return val
 }
 
-func (op Comparator) Predicate() ComparatorPredicate {
+func (op arrayComparator) predicate() arrayComparatorPredicate {
 	switch op {
 	case EQ:
 		return eq

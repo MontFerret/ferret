@@ -204,7 +204,7 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 		return
 
 	// Simple arithmetic, comparisons, access.
-	case bytecode.OpAdd, bytecode.OpSub, bytecode.OpMulti, bytecode.OpDiv, bytecode.OpMod,
+	case bytecode.OpAdd, bytecode.OpSub, bytecode.OpMul, bytecode.OpDiv, bytecode.OpMod,
 		bytecode.OpCmp,
 		bytecode.OpEq, bytecode.OpNe, bytecode.OpGt, bytecode.OpLt, bytecode.OpGte, bytecode.OpLte,
 		bytecode.OpAnyEq, bytecode.OpAnyNe, bytecode.OpAnyGt, bytecode.OpAnyGte, bytecode.OpAnyLt, bytecode.OpAnyLte,

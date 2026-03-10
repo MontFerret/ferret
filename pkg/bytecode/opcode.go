@@ -45,7 +45,7 @@ const (
 	OpAddConst
 	OpConcat
 	OpSub
-	OpMulti
+	OpMul
 	OpDiv
 	OpMod
 	OpIncr
@@ -244,7 +244,7 @@ func (op Opcode) String() string {
 		return "CONCAT"
 	case OpSub:
 		return "SUB"
-	case OpMulti:
+	case OpMul:
 		return "MUL"
 	case OpDiv:
 		return "DIV"

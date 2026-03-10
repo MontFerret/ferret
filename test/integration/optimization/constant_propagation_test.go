@@ -19,7 +19,7 @@ func TestConstantPropagation(t *testing.T) {
 		}, -3, "should fold constant addition and unary minus"),
 
 		OpcodeCase(`LET a = 10 RETURN (a - 3) * 2`, OpcodeExistence{
-			NotExists: []bytecode.Opcode{bytecode.OpSub, bytecode.OpMulti},
+			NotExists: []bytecode.Opcode{bytecode.OpSub, bytecode.OpMul},
 		}, 14, "should fold chain of arithmetic operations"),
 
 		OpcodeCase(`RETURN 1 / 0`, OpcodeExistence{

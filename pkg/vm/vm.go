@@ -579,82 +579,54 @@ loop:
 
 				continue
 			}
-		case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
-			if err := vm.execDatasetOps(ctx, op, inst, dst, src1, src2, reg, constants, aggregatePlans); err != nil {
+		case bytecode.OpDataSet:
+			reg[dst] = data.NewDataSet(src1 == 1)
+		case bytecode.OpDataSetCollector:
+			collectorType := bytecode.CollectorType(src1)
+
+			if collectorType == bytecode.CollectorTypeAggregate || collectorType == bytecode.CollectorTypeAggregateGroup {
+				planIdx := int(src2)
+
+				if planIdx < 0 || planIdx >= len(aggregatePlans) {
+					// TODO: is it really recoverable error?
+					if err := vm.handleProtectedError(runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan")); err != nil {
+						return nil, err
+					}
+
+					continue
+				}
+
+				plan := aggregatePlans[planIdx]
+
+				if collectorType == bytecode.CollectorTypeAggregate {
+					reg[dst] = data.NewAggregateCollector(plan)
+				} else {
+					reg[dst] = data.NewGroupedAggregateCollector(plan)
+				}
+
+				continue
+			}
+
+			reg[dst] = data.NewCollector(collectorType)
+		case bytecode.OpDataSetSorter:
+			reg[dst] = data.NewSorter(runtime.SortDirection(src1))
+		case bytecode.OpDataSetMultiSorter:
+			encoded := src1.Register()
+			count := src2.Register()
+
+			reg[dst] = data.NewMultiSorter(runtime.DecodeSortDirections(encoded, count))
+		case bytecode.OpFlatten:
+			depth := src2.Register()
+
+			if depth < 1 {
+				depth = 1
+			}
+
+			res, err := arrayFlatten(ctx, reg[src1], depth)
+
+			if err := vm.setOrTryCatch(dst, res, err); err != nil {
 				return nil, err
 			}
-		case bytecode.OpExists:
-			val := reg[src1]
-
-			if val == runtime.None {
-				reg[dst] = runtime.False
-				continue
-			}
-
-			if measurable, ok := val.(runtime.Measurable); ok {
-				length, err := measurable.Length(ctx)
-
-				if err != nil {
-					if err := vm.handleErrorWithFallback(err, dst, runtime.False); err != nil {
-						return nil, err
-					}
-
-					continue
-				}
-
-				reg[dst] = runtime.NewBoolean(length != 0)
-
-				continue
-			}
-
-			reg[dst] = runtime.True
-		case bytecode.OpLength:
-			val, ok := reg[src1].(runtime.Measurable)
-
-			if ok {
-				length, err := val.Length(ctx)
-
-				if err != nil {
-					if err := vm.handleError(err); err != nil {
-						return nil, err
-					}
-
-					length = 0
-				}
-
-				reg[dst] = length
-				continue
-			}
-
-			if err := vm.handleErrorWithFallback(runtime.TypeErrorOf(reg[src1],
-				runtime.TypeString,
-				runtime.TypeList,
-				runtime.TypeMap,
-				runtime.TypeBinary,
-				runtime.TypeMeasurable,
-			), dst, runtime.ZeroInt); err != nil {
-				return runtime.None, err
-			}
-
-			continue
-		case bytecode.OpType:
-			reg[dst] = runtime.NewString(runtime.TypeName(runtime.TypeOf(reg[src1])))
-		case bytecode.OpClose:
-			val, ok := reg[dst].(io.Closer)
-			reg[dst] = runtime.None
-
-			if ok {
-				closeErr := val.Close()
-
-				if closeErr != nil {
-					if err := vm.handleError(closeErr); err != nil {
-						return nil, err
-					}
-
-					continue
-				}
-			}
-
 		case bytecode.OpAdd:
 			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
 		case bytecode.OpAddConst:
@@ -663,7 +635,7 @@ loop:
 			concatStrings(reg, dst, src1, src2)
 		case bytecode.OpSub:
 			reg[dst] = runtime.Subtract(ctx, reg[src1], reg[src2])
-		case bytecode.OpMulti:
+		case bytecode.OpMul:
 			reg[dst] = runtime.Multiply(ctx, reg[src1], reg[src2])
 		case bytecode.OpDiv:
 			if err := vm.checkDivisionByZero(ctx, reg[src1], reg[src2]); err != nil {
@@ -687,14 +659,14 @@ loop:
 			reg[dst] = runtime.Increment(ctx, reg[dst])
 		case bytecode.OpDecr:
 			reg[dst] = runtime.Decrement(ctx, reg[dst])
-		case bytecode.OpCastBool:
-			reg[dst] = coerceBool(reg[src1])
 		case bytecode.OpNegate:
 			reg[dst] = Negate(reg[src1])
 		case bytecode.OpFlipPositive:
 			reg[dst] = Positive(reg[src1])
 		case bytecode.OpFlipNegative:
 			reg[dst] = Negative(reg[src1])
+		case bytecode.OpCastBool:
+			reg[dst] = coerceBool(reg[src1])
 		case bytecode.OpCmp:
 			reg[dst] = cmp(ctx, reg[src1], reg[src2])
 		case bytecode.OpNot:
@@ -738,38 +710,95 @@ loop:
 
 				continue
 			}
+		case bytecode.OpExists:
+			val := reg[src1]
+
+			if val == runtime.None {
+				reg[dst] = runtime.False
+				continue
+			}
+
+			if measurable, ok := val.(runtime.Measurable); ok {
+				length, err := measurable.Length(ctx)
+
+				if err != nil {
+					if err := vm.handleErrorWithFallback(err, dst, runtime.False); err != nil {
+						return nil, err
+					}
+
+					continue
+				}
+
+				reg[dst] = runtime.NewBoolean(length != 0)
+
+				continue
+			}
+
+			reg[dst] = runtime.True
 		case bytecode.OpAllEq, bytecode.OpAllNe, bytecode.OpAllGt, bytecode.OpAllGte, bytecode.OpAllLt, bytecode.OpAllLte, bytecode.OpAllIn:
-			cmp := ComparatorFromByte(int(op) - int(bytecode.OpAllEq))
-			res, err := ArrayAll(ctx, cmp, reg[src1], reg[src2])
+			cmp := comparatorFromByte(int(op) - int(bytecode.OpAllEq))
+			res, err := arrayAll(ctx, cmp, reg[src1], reg[src2])
 
 			if err := vm.setOrTryCatch(dst, res, err); err != nil {
 				return nil, err
 			}
 		case bytecode.OpAnyEq, bytecode.OpAnyNe, bytecode.OpAnyGt, bytecode.OpAnyGte, bytecode.OpAnyLt, bytecode.OpAnyLte, bytecode.OpAnyIn:
-			cmp := ComparatorFromByte(int(op) - int(bytecode.OpAnyEq))
-			res, err := ArrayAny(ctx, cmp, reg[src1], reg[src2])
+			cmp := comparatorFromByte(int(op) - int(bytecode.OpAnyEq))
+			res, err := arrayAny(ctx, cmp, reg[src1], reg[src2])
 
 			if err := vm.setOrTryCatch(dst, res, err); err != nil {
 				return nil, err
 			}
 		case bytecode.OpNoneEq, bytecode.OpNoneNe, bytecode.OpNoneGt, bytecode.OpNoneGte, bytecode.OpNoneLt, bytecode.OpNoneLte, bytecode.OpNoneIn:
-			cmp := ComparatorFromByte(int(op) - int(bytecode.OpNoneEq))
-			res, err := ArrayNone(ctx, cmp, reg[src1], reg[src2])
+			cmp := comparatorFromByte(int(op) - int(bytecode.OpNoneEq))
+			res, err := arrayNone(ctx, cmp, reg[src1], reg[src2])
 
 			if err := vm.setOrTryCatch(dst, res, err); err != nil {
 				return nil, err
 			}
-		case bytecode.OpFlatten:
-			depth := src2.Register()
+		case bytecode.OpLength:
+			val, ok := reg[src1].(runtime.Measurable)
 
-			if depth < 1 {
-				depth = 1
+			if ok {
+				length, err := val.Length(ctx)
+
+				if err != nil {
+					if err := vm.handleError(err); err != nil {
+						return nil, err
+					}
+
+					length = 0
+				}
+
+				reg[dst] = length
+				continue
 			}
 
-			res, err := Flatten(ctx, reg[src1], depth)
+			if err := vm.handleErrorWithFallback(runtime.TypeErrorOf(reg[src1],
+				runtime.TypeString,
+				runtime.TypeList,
+				runtime.TypeMap,
+				runtime.TypeBinary,
+				runtime.TypeMeasurable,
+			), dst, runtime.ZeroInt); err != nil {
+				return runtime.None, err
+			}
+		case bytecode.OpType:
+			reg[dst] = runtime.NewString(runtime.TypeName(runtime.TypeOf(reg[src1])))
+		case bytecode.OpClose:
+			val, ok := reg[dst].(io.Closer)
+			reg[dst] = runtime.None
 
-			if err := vm.setOrTryCatch(dst, res, err); err != nil {
-				return nil, err
+			if ok {
+				closeErr := val.Close()
+
+				if closeErr != nil {
+					if err := vm.handleError(closeErr); err != nil {
+						return nil, err
+					}
+
+					continue
+				}
 			}
 		case bytecode.OpSleep:
 			dur, err := runtime.ToInt(ctx, reg[dst])
@@ -791,7 +820,6 @@ loop:
 			}
 		case bytecode.OpRand:
 			reg[dst] = runtime.NewFloat(runtime.RandomDefault())
-
 		default:
 			return nil, runtime.Errorf(runtime.ErrUnexpected, "unknown opcode %d at pc %d", op, vm.pc-1)
 		}

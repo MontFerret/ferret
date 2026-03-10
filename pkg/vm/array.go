@@ -6,14 +6,14 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func ArrayAll(ctx context.Context, cmp Comparator, left, right runtime.Value) (runtime.Boolean, error) {
+func arrayAll(ctx context.Context, cmp arrayComparator, left, right runtime.Value) (runtime.Boolean, error) {
 	arr, err := runtime.CastList(left)
 
 	if err != nil {
 		return runtime.False, err
 	}
 
-	pred := cmp.Predicate()
+	pred := cmp.predicate()
 	result := runtime.True
 
 	if err := arr.ForEach(ctx, func(ctx context.Context, v runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
@@ -30,14 +30,14 @@ func ArrayAll(ctx context.Context, cmp Comparator, left, right runtime.Value) (r
 	return result, nil
 }
 
-func ArrayAny(ctx context.Context, cmp Comparator, left, right runtime.Value) (runtime.Boolean, error) {
+func arrayAny(ctx context.Context, cmp arrayComparator, left, right runtime.Value) (runtime.Boolean, error) {
 	arr, err := runtime.CastList(left)
 
 	if err != nil {
 		return runtime.False, err
 	}
 
-	pred := cmp.Predicate()
+	pred := cmp.predicate()
 	result := runtime.False
 
 	if err := arr.ForEach(ctx, func(ctx context.Context, v runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
@@ -53,14 +53,14 @@ func ArrayAny(ctx context.Context, cmp Comparator, left, right runtime.Value) (r
 	return result, nil
 }
 
-func ArrayNone(ctx context.Context, cmp Comparator, left, right runtime.Value) (runtime.Boolean, error) {
+func arrayNone(ctx context.Context, cmp arrayComparator, left, right runtime.Value) (runtime.Boolean, error) {
 	arr, err := runtime.CastList(left)
 
 	if err != nil {
 		return runtime.False, err
 	}
 
-	pred := cmp.Predicate()
+	pred := cmp.predicate()
 	result := runtime.True
 
 	if err := arr.ForEach(ctx, func(ctx context.Context, v runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
@@ -76,7 +76,7 @@ func ArrayNone(ctx context.Context, cmp Comparator, left, right runtime.Value) (
 	return result, nil
 }
 
-func Flatten(ctx context.Context, value runtime.Value, depth int) (runtime.List, error) {
+func arrayFlatten(ctx context.Context, value runtime.Value, depth int) (runtime.List, error) {
 	list, err := runtime.CastList(value)
 	if err != nil {
 		return nil, err
