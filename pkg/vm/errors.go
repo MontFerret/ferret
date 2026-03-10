@@ -9,8 +9,9 @@ import (
 type RuntimeError = diagnostic.RuntimeError
 
 type (
-	errAction uint8
-	failClass uint8
+	errAction    uint8
+	errorKind    uint8
+	recoveryMode uint8
 )
 
 const (
@@ -20,10 +21,14 @@ const (
 )
 
 const (
-	failRuntime failClass = iota
-	failProtected
-	failOptional
-	failInvariant
+	errKindRuntime errorKind = iota
+	errKindInvariant
+)
+
+const (
+	recoverDefault recoveryMode = iota
+	recoverOptional
+	recoverProtected
 )
 
 const (

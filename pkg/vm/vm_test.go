@@ -502,7 +502,7 @@ func TestRunReturnsUnresolvedFunctionWhenHostCacheEntryIsMissing(t *testing.T) {
 	}
 }
 
-func TestSetCallResult_AppliesCatchJumpZeroAndFallbackValue(t *testing.T) {
+func TestSetCallResult_RaisesPendingFailureBeforeResolution(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Registers:  2,
@@ -521,15 +521,27 @@ func TestSetCallResult_AppliesCatchJumpZeroAndFallbackValue(t *testing.T) {
 	state.pc = 1
 	state.registers.Values[1] = runtime.True
 
-	action := state.setCallResult(
+	state.setCallResult(
 		bytecode.OpHCall,
 		bytecode.NewRegister(1),
 		runtime.True,
 		errors.New("boom"),
 	)
 
-	if action == errReturn {
-		t.Fatalf("expected caught error to be swallowed, got %v", action)
+	if !state.hasFailure() {
+		t.Fatal("expected pending failure to be recorded")
+	}
+
+	if got := state.registers.Values[1]; got != runtime.True {
+		t.Fatalf("expected destination to remain unchanged before resolution, got %v", got)
+	}
+
+	if got, want := state.pc, 1; got != want {
+		t.Fatalf("expected pc to remain unchanged before resolution: got %d, want %d", got, want)
+	}
+
+	if action := state.resolveFailure(); action != errContinue {
+		t.Fatalf("expected caught error to continue, got %v", action)
 	}
 
 	if got := state.registers.Values[1]; got != runtime.None {
@@ -538,6 +550,10 @@ func TestSetCallResult_AppliesCatchJumpZeroAndFallbackValue(t *testing.T) {
 
 	if got, want := state.pc, 0; got != want {
 		t.Fatalf("expected catch jump target %d, got %d", want, got)
+	}
+
+	if state.hasFailure() {
+		t.Fatal("expected pending failure to be cleared after resolution")
 	}
 }
 
@@ -558,7 +574,13 @@ func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
 	defer instance.releaseRunState(state)
 
 	state.pc = 1
-	action := state.applyCatch(bytecode.Operand(1), runtime.True, errors.New("boom"))
+	state.raiseRuntime(errors.New("boom"), recoverDefault, bytecode.Operand(1), runtime.True, true)
+
+	if got := state.registers.Values[1]; got == runtime.True {
+		t.Fatalf("expected fallback to be deferred until resolution, got %v", got)
+	}
+
+	action := state.resolveFailure()
 	if action == errReturn {
 		t.Fatalf("expected caught error to be swallowed, got %v", action)
 	}
@@ -591,7 +613,9 @@ func TestHandleErrorWithCatch_AppliesPositiveJumpTarget(t *testing.T) {
 	defer instance.releaseRunState(state)
 
 	state.pc = 1
-	action := state.applyCatch(bytecode.NoopOperand, nil, errors.New("boom"))
+	state.raiseRuntime(errors.New("boom"), recoverDefault, bytecode.NoopOperand, nil, false)
+
+	action := state.resolveFailure()
 	if action == errReturn {
 		t.Fatalf("expected caught error to be swallowed, got %v", action)
 	}
@@ -620,9 +644,14 @@ func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 	state.pc = 1
 	wantErr := errors.New("boom")
 
-	action := state.applyCatch(bytecode.Operand(1), runtime.True, wantErr)
+	state.raiseRuntime(wantErr, recoverDefault, bytecode.Operand(1), runtime.True, true)
+	action := state.resolveFailure()
 	if action != errReturn {
 		t.Fatalf("expected original error to be returned, got %v", action)
+	}
+
+	if got := state.failureError(); !errors.Is(got, wantErr) {
+		t.Fatalf("expected pending failure error to be preserved, got %v", got)
 	}
 
 	val := state.registers.Values[1]
@@ -635,7 +664,7 @@ func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 	}
 }
 
-func TestSetOrOptional_OptionalErrorUsesFailOptionalPath(t *testing.T) {
+func TestSetOrOptional_OptionalErrorUsesOptionalRecovery(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Registers:  2,
@@ -654,7 +683,16 @@ func TestSetOrOptional_OptionalErrorUsesFailOptionalPath(t *testing.T) {
 	state.pc = 1
 	state.registers.Values[1] = runtime.True
 
-	action := state.setOrOptional(bytecode.NewRegister(1), runtime.True, errors.New("boom"), true)
+	state.setOrOptional(bytecode.NewRegister(1), runtime.True, errors.New("boom"), true)
+	if !state.hasFailure() {
+		t.Fatal("expected optional error to raise pending failure")
+	}
+
+	if got := state.registers.Values[1]; got != runtime.True {
+		t.Fatalf("expected destination to remain unchanged before resolution, got %v", got)
+	}
+
+	action := state.resolveFailure()
 	if action != errContinue {
 		t.Fatalf("expected optional path to continue, got %v", action)
 	}
@@ -682,7 +720,12 @@ func TestSetOrOptional_NotFoundContinuesWithNone(t *testing.T) {
 
 	state.registers.Values[1] = runtime.True
 
-	action := state.setOrOptional(bytecode.NewRegister(1), runtime.True, runtime.ErrNotFound, false)
+	state.setOrOptional(bytecode.NewRegister(1), runtime.True, runtime.ErrNotFound, false)
+	if !state.hasFailure() {
+		t.Fatal("expected not found path to raise pending failure")
+	}
+
+	action := state.resolveFailure()
 	if action != errContinue {
 		t.Fatalf("expected not found to continue, got %v", action)
 	}
@@ -692,10 +735,48 @@ func TestSetOrOptional_NotFoundContinuesWithNone(t *testing.T) {
 	}
 }
 
-func TestSetOrOptional_NonOptionalNonNotFoundReturnsError(t *testing.T) {
+func TestSetOrOptional_NonOptionalNonNotFoundUsesDefaultResolver(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+		},
+		CatchTable: []bytecode.Catch{
+			{0, 0, 0},
+		},
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
+
+	state.pc = 0
+	initial := runtime.NewInt(42)
+	state.registers.Values[1] = initial
+
+	state.setOrOptional(bytecode.NewRegister(1), runtime.True, errors.New("boom"), false)
+	if !state.hasFailure() {
+		t.Fatal("expected non-optional error to raise pending failure")
+	}
+
+	if got := state.registers.Values[1]; got != initial {
+		t.Fatalf("expected destination to remain unchanged before resolution, got %v", got)
+	}
+
+	action := state.resolveFailure()
+	if action != errContinue {
+		t.Fatalf("expected non-optional path to flow through default resolver and continue, got %v", action)
+	}
+
+	if got := state.registers.Values[1]; got != runtime.None {
+		t.Fatalf("expected destination to be set to runtime.None via default fallback, got %v", got)
+	}
+}
+
+func TestRaiseRuntime_FirstFailureWinsUntilResolved(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
 		},
@@ -704,16 +785,56 @@ func TestSetOrOptional_NonOptionalNonNotFoundReturnsError(t *testing.T) {
 	state := mustAcquireRunState(t, instance)
 	defer instance.releaseRunState(state)
 
-	initial := runtime.NewInt(42)
-	state.registers.Values[1] = initial
+	errA := errors.New("A")
+	errB := errors.New("B")
 
-	action := state.setOrOptional(bytecode.NewRegister(1), runtime.True, errors.New("boom"), false)
-	if action != errReturn {
-		t.Fatalf("expected non-optional non-not-found to return error, got %v", action)
+	state.raiseRuntime(errA, recoverDefault, bytecode.NoopOperand, nil, false)
+	state.raiseRuntime(errB, recoverDefault, bytecode.NoopOperand, nil, false)
+
+	if got := state.failureError(); !errors.Is(got, errA) {
+		t.Fatalf("expected first raised error to remain pending, got %v", got)
 	}
 
-	if got := state.registers.Values[1]; got != initial {
-		t.Fatalf("expected destination to remain unchanged, got %v", got)
+	if action := state.resolveFailure(); action != errReturn {
+		t.Fatalf("expected unresolved failure to return, got %v", action)
+	}
+
+	if got := state.failureError(); !errors.Is(got, errA) {
+		t.Fatalf("expected returned failure to remain original error, got %v", got)
+	}
+}
+
+func TestRunStateLifecycleClearsPendingFailure(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+		},
+	})
+
+	state := mustAcquireRunState(t, instance)
+	state.raiseRuntime(errors.New("boom"), recoverDefault, bytecode.NoopOperand, nil, false)
+	if !state.hasFailure() {
+		t.Fatal("expected pending failure before lifecycle reset")
+	}
+
+	state.prepareRun(NewDefaultEnvironment())
+	if state.hasFailure() {
+		t.Fatal("expected prepareRun to clear pending failure")
+	}
+
+	state.raiseRuntime(errors.New("boom"), recoverDefault, bytecode.NoopOperand, nil, false)
+	instance.releaseRunState(state)
+
+	reused := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(reused)
+	if reused != state {
+		t.Fatal("expected state reuse from pool")
+	}
+
+	if reused.hasFailure() {
+		t.Fatal("expected cleanupForPool to clear pending failure")
 	}
 }
 
@@ -1418,7 +1539,8 @@ func TestNearestBoundaryPrefersCatchOverProtectedUnwind(t *testing.T) {
 	})
 	state.pc = 1
 
-	action := state.applyProtected(errors.New("boom"))
+	state.raiseRuntime(errors.New("boom"), recoverDefault, bytecode.NoopOperand, nil, false)
+	action := state.resolveFailure()
 	if action != errContinue {
 		t.Fatalf("expected continue, got %v", action)
 	}
@@ -1456,7 +1578,8 @@ func TestNearestBoundaryUsesProtectedUnwindWithoutCatch(t *testing.T) {
 	})
 	state.pc = 1
 
-	action := state.applyProtected(errors.New("boom"))
+	state.raiseRuntime(errors.New("boom"), recoverDefault, bytecode.NoopOperand, nil, false)
+	action := state.resolveFailure()
 	if action != errContinue {
 		t.Fatalf("expected continue, got %v", action)
 	}

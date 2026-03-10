@@ -12,6 +12,15 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
+type pendingFailure struct {
+	err         error
+	kind        errorKind
+	mode        recoveryMode
+	dst         bytecode.Operand
+	fallback    runtime.Value
+	setFallback bool
+}
+
 type execState struct {
 	program     *bytecode.Program
 	env         *Environment
@@ -21,6 +30,8 @@ type execState struct {
 	catchByPC   []int
 	pc          int
 	panicPolicy PanicPolicy
+	failure     pendingFailure
+	hasFail     bool
 }
 
 func (s *execState) init(program *bytecode.Program, catchByPC []int, panicPolicy PanicPolicy) {
@@ -42,6 +53,7 @@ func (s *execState) prepareRun(env *Environment) {
 	s.registers.MarkDirty()
 	s.env = env
 	s.pc = 0
+	s.clearFailure()
 }
 
 func (s *execState) cleanupForPool() {
@@ -60,6 +72,7 @@ func (s *execState) cleanupForPool() {
 
 	s.env = nil
 	s.pc = 0
+	s.clearFailure()
 }
 
 func (s *execState) bindParams(env *Environment) error {
@@ -91,61 +104,93 @@ func (s *execState) bindParams(env *Environment) error {
 	return nil
 }
 
-func (s *execState) fail(err error, class failClass, dst bytecode.Operand, fallback runtime.Value, setFallback bool) errAction {
-	if err == nil {
+func (s *execState) raiseRuntime(err error, mode recoveryMode, dst bytecode.Operand, fallback runtime.Value, setFallback bool) {
+	s.raise(err, errKindRuntime, mode, dst, fallback, setFallback)
+}
+
+func (s *execState) raiseInvariant(err error) {
+	s.raise(err, errKindInvariant, recoverDefault, bytecode.NoopOperand, nil, false)
+}
+
+func (s *execState) raise(err error, kind errorKind, mode recoveryMode, dst bytecode.Operand, fallback runtime.Value, setFallback bool) {
+	if err == nil || s.hasFail {
+		return
+	}
+
+	s.failure = pendingFailure{
+		err:         err,
+		kind:        kind,
+		mode:        mode,
+		dst:         dst,
+		fallback:    fallback,
+		setFallback: setFallback,
+	}
+	s.hasFail = true
+}
+
+func (s *execState) hasFailure() bool {
+	return s.hasFail
+}
+
+func (s *execState) failureError() error {
+	if !s.hasFail {
+		return nil
+	}
+
+	return s.failure.err
+}
+
+func (s *execState) clearFailure() {
+	s.failure = pendingFailure{}
+	s.hasFail = false
+}
+
+func (s *execState) resolveFailure() errAction {
+	if !s.hasFail {
 		return errOK
 	}
 
-	switch class {
-	case failInvariant:
+	failure := s.failure
+
+	switch failure.kind {
+	case errKindInvariant:
 		if s.panicPolicy == PanicPropagate {
-			panic(err)
+			panic(failure.err)
 		}
 
 		return errReturn
-	case failProtected:
-		if setFallback && dst.IsRegister() {
-			s.registers.Values[dst] = normalizeValue(fallback)
-		}
+	case errKindRuntime:
+		switch failure.mode {
+		case recoverOptional, recoverProtected:
+			if failure.setFallback && failure.dst.IsRegister() {
+				s.registers.Values[failure.dst] = normalizeValue(failure.fallback)
+			}
+			s.clearFailure()
+			return errContinue
+		default:
+			if catch, ok := s.tryCatch(s.pc); ok {
+				if failure.setFallback && failure.dst.IsRegister() {
+					s.registers.Values[failure.dst] = normalizeValue(failure.fallback)
+				}
 
-		return errContinue
-	case failOptional:
-		if setFallback && dst.IsRegister() {
-			s.registers.Values[dst] = normalizeValue(fallback)
-		}
+				if catch[2] >= 0 {
+					s.pc = catch[2]
+				}
 
-		return errContinue
+				s.clearFailure()
+				return errContinue
+			}
+
+			if s.unwindToProtected() {
+				s.clearFailure()
+				return errContinue
+			}
+
+			return errReturn
+		}
 	default:
-		if catch, ok := s.tryCatch(s.pc); ok {
-			if setFallback && dst.IsRegister() && fallback != nil {
-				s.registers.Values[dst] = normalizeValue(fallback)
-			}
-
-			if catch[2] >= 0 {
-				s.pc = catch[2]
-			}
-
-			return errContinue
-		}
-
-		if s.unwindToProtected() {
-			return errContinue
-		}
-
 		return errReturn
 	}
-}
-
-func (s *execState) applyProtected(err error) errAction {
-	return s.fail(err, failRuntime, bytecode.NoopOperand, nil, false)
-}
-
-func (s *execState) applyCatch(dst bytecode.Operand, fallback runtime.Value, err error) errAction {
-	return s.fail(err, failRuntime, dst, fallback, true)
-}
-
-func (s *execState) applyInvariant(err error) errAction {
-	return s.fail(err, failInvariant, bytecode.NoopOperand, nil, false)
 }
 
 func (s *execState) wrapRuntimeError(err error) error {
@@ -182,28 +227,29 @@ func (s *execState) tryCatch(pos int) (bytecode.Catch, bool) {
 	return bytecode.Catch{}, false
 }
 
-func (s *execState) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err error) errAction {
+func (s *execState) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err error) {
 	reg := s.registers.Values
 
 	if err == nil {
 		reg[dst] = normalizeValue(val)
-		return errOK
+		return
 	}
 
-	return s.fail(err, failRuntime, dst, runtime.None, true)
+	s.raiseRuntime(err, recoverDefault, dst, runtime.None, true)
 }
 
-func (s *execState) setOrOptional(dst bytecode.Operand, val runtime.Value, err error, optional bool) errAction {
+func (s *execState) setOrOptional(dst bytecode.Operand, val runtime.Value, err error, optional bool) {
 	if err == nil {
 		s.registers.Values[dst] = normalizeValue(val)
-		return errOK
+		return
 	}
 
 	if optional || errors.Is(err, runtime.ErrNotFound) {
-		return s.fail(err, failOptional, dst, runtime.None, true)
+		s.raiseRuntime(err, recoverOptional, dst, runtime.None, true)
+		return
 	}
 
-	return errReturn
+	s.raiseRuntime(err, recoverDefault, dst, runtime.None, true)
 }
 
 func (s *execState) unwindToProtected() bool {
@@ -228,20 +274,20 @@ func (s *execState) returnToCaller(retVal runtime.Value) bool {
 	return true
 }
 
-func (s *execState) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) errAction {
+func (s *execState) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) {
 	reg := s.registers.Values
 
 	if err == nil {
 		reg[dst] = normalizeValue(out)
-
-		return errOK
+		return
 	}
 
 	if bytecode.IsProtectedCall(op) {
-		return s.fail(err, failProtected, dst, runtime.None, true)
+		s.raiseRuntime(err, recoverProtected, dst, runtime.None, true)
+		return
 	}
 
-	return s.fail(err, failRuntime, dst, runtime.None, true)
+	s.raiseRuntime(err, recoverDefault, dst, runtime.None, true)
 }
 
 func (s *execState) resolveUdfID(val runtime.Value) (int, error) {

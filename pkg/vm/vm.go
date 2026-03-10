@@ -193,9 +193,8 @@ loop:
 
 			has, err := obj.ContainsKey(ctx, key)
 			if err != nil {
-				if state.applyProtected(err) == errReturn {
-					return nil, err
-				}
+				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 
 			if !has {
@@ -217,9 +216,8 @@ loop:
 
 			has, err := obj.ContainsKey(ctx, key)
 			if err != nil {
-				if state.applyProtected(err) == errReturn {
-					return nil, err
-				}
+				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 
 			if !has {
@@ -228,69 +226,47 @@ loop:
 		case bytecode.OpFail:
 			if !dst.IsConstant() {
 				callErr := runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a constant string message")
-				if state.applyCatch(bytecode.NoopOperand, nil, callErr) == errReturn {
-					return nil, callErr
-				}
-
-				continue
+				state.raiseRuntime(callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 
 			idx := dst.Constant()
 			if idx < 0 || idx >= len(constants) {
 				callErr := runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a valid constant string message")
-				if state.applyCatch(bytecode.NoopOperand, nil, callErr) == errReturn {
-					return nil, callErr
-				}
-
-				continue
+				state.raiseRuntime(callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 
 			msg, ok := constants[idx].(runtime.String)
 			if !ok {
 				callErr := runtime.TypeErrorOf(constants[idx], runtime.TypeString)
-				if state.applyCatch(bytecode.NoopOperand, nil, callErr) == errReturn {
-					return nil, callErr
-				}
-
-				continue
+				state.raiseRuntime(callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 
 			callErr := runtime.Error(runtime.ErrInvalidOperation, msg.String())
-			if state.applyCatch(bytecode.NoopOperand, nil, callErr) == errReturn {
-				return nil, callErr
-			}
-
-			continue
+			state.raiseRuntime(callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+			break
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
 			cacheFn := vm.cache.HostFunctions[state.pc-1]
 			out, err := callCachedHostFunction(ctx, cacheFn, state.registers.Values, state.scratch, reg[dst], src1, src2)
 
-			if state.setCallResult(op, dst, out, err) == errReturn {
-				return nil, err
-			}
+			state.setCallResult(op, dst, out, err)
 		case bytecode.OpCall, bytecode.OpProtectedCall:
 			if err := state.callUdf(op, dst, src1, src2); err != nil {
-				if state.setCallResult(op, dst, runtime.None, err) == errReturn {
-					return nil, err
-				}
+				state.setCallResult(op, dst, runtime.None, err)
 			}
 		case bytecode.OpTailCall:
 			if err := state.tailCallUdf(dst, src1, src2); err != nil {
-				if state.applyProtected(err) == errReturn {
-					return nil, err
-				}
-
-				continue
+				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 		case bytecode.OpDispatch:
 			dispatcher, eventName, payload, options, err := vm.castDispatchArgs(ctx, reg[dst], reg[src1], reg[src2])
 
 			if err != nil {
-				if state.setOrTryCatch(dst, runtime.None, err) == errReturn {
-					return nil, err
-				}
-
-				continue
+				state.setOrTryCatch(dst, runtime.None, err)
+				break
 			}
 
 			out, err := dispatcher.Dispatch(ctx, runtime.DispatchEvent{
@@ -303,9 +279,7 @@ loop:
 				out = runtime.None
 			}
 
-			if state.setOrTryCatch(dst, out, err) == errReturn {
-				return nil, err
-			}
+			state.setOrTryCatch(dst, out, err)
 		case bytecode.OpMove:
 			reg[dst] = reg[src1]
 		case bytecode.OpLoadNone:
@@ -326,21 +300,15 @@ loop:
 			start, err := runtime.ToInt(ctx, reg[src1])
 
 			if err != nil {
-				if state.applyProtected(err) == errReturn {
-					return nil, err
-				}
-
-				continue
+				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 
 			end, err := runtime.ToInt(ctx, reg[src2])
 
 			if err != nil {
-				if state.applyProtected(err) == errReturn {
-					return nil, err
-				}
-
-				continue
+				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 
 			reg[dst] = runtime.NewRange(start, end)
@@ -350,30 +318,14 @@ loop:
 			arg := reg[src2]
 
 			// TODO: inline loadIndexAndSet for better performance
-			if action, err := vm.loadIndexAndSet(state, ctx, dst, src, arg, optional); action != errOK {
-				if action == errReturn {
-					if state.applyProtected(err) == errReturn {
-						return nil, err
-					}
-				}
-
-				continue
-			}
+			vm.loadIndexAndSet(state, ctx, dst, src, arg, optional)
 		case bytecode.OpLoadKey, bytecode.OpLoadKeyOptional:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadKeyOptional
 			arg := reg[src2]
 
 			// TODO: inline loadIndexAndSet for better performance
-			if action, err := vm.loadKeyAndSet(state, ctx, dst, state.pc-1, src, arg, optional); action != errOK {
-				if action == errReturn {
-					if state.applyProtected(err) == errReturn {
-						return nil, err
-					}
-				}
-
-				continue
-			}
+			vm.loadKeyAndSet(state, ctx, dst, state.pc-1, src, arg, optional)
 		case bytecode.OpLoadProperty, bytecode.OpLoadPropertyOptional:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadPropertyOptional
@@ -381,72 +333,38 @@ loop:
 
 			// TODO: inline loadIndexAndSet for better performance
 			// I guess the reason it cannot inline is due to a different control flow
-			if action, err := vm.loadPropertyAndSet(state, ctx, dst, state.pc-1, src, prop, optional); action != errOK {
-				if action == errReturn {
-					if state.applyProtected(err) == errReturn {
-						return nil, err
-					}
-				}
-
-				continue
-			}
+			vm.loadPropertyAndSet(state, ctx, dst, state.pc-1, src, prop, optional)
 		case bytecode.OpLoadIndexConst, bytecode.OpLoadIndexOptionalConst:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadIndexOptionalConst
 			arg := constants[src2.Constant()]
 
-			if action, err := vm.loadIndexAndSet(state, ctx, dst, src, arg, optional); action != errOK {
-				if action == errReturn {
-					if state.applyProtected(err) == errReturn {
-						return nil, err
-					}
-				}
-
-				continue
-			}
+			vm.loadIndexAndSet(state, ctx, dst, src, arg, optional)
 		case bytecode.OpLoadKeyConst, bytecode.OpLoadKeyOptionalConst:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadKeyOptionalConst
 			arg := constants[src2.Constant()]
 
-			if action, err := vm.loadKeyConstAndSet(state, ctx, dst, state.pc-1, inst, src, arg, optional); action != errOK {
-				if action == errReturn {
-					if state.applyProtected(err) == errReturn {
-						return nil, err
-					}
-				}
-
-				continue
-			}
+			vm.loadKeyConstAndSet(state, ctx, dst, state.pc-1, inst, src, arg, optional)
 		case bytecode.OpLoadPropertyConst, bytecode.OpLoadPropertyOptionalConst:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadPropertyOptionalConst
 			prop := constants[src2.Constant()]
 
-			if action, err := vm.loadPropertyConstAndSet(state, ctx, dst, state.pc-1, inst, src, prop, optional); action != errOK {
-				if action == errReturn {
-					if state.applyProtected(err) == errReturn {
-						return nil, err
-					}
-				}
-
-				continue
-			}
+			vm.loadPropertyConstAndSet(state, ctx, dst, state.pc-1, inst, src, prop, optional)
 		case bytecode.OpPush:
 			ds := reg[dst].(runtime.Appendable)
 
 			if err := ds.Append(ctx, reg[src1]); err != nil {
-				if state.applyCatch(bytecode.NoopOperand, nil, err) == errReturn {
-					return nil, err
-				}
+				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 		case bytecode.OpPushKV:
 			tr := reg[dst].(runtime.KeyWritable)
 
 			if err := tr.Set(ctx, reg[src1], reg[src2]); err != nil {
-				if state.applyCatch(bytecode.NoopOperand, nil, err) == errReturn {
-					return nil, err
-				}
+				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 		case bytecode.OpArrayPush:
 			ds := reg[dst].(*runtime.Array)
@@ -466,18 +384,16 @@ loop:
 
 			if ok {
 				if err := writable.Set(ctx, key, value); err != nil {
-					if state.applyCatch(bytecode.NoopOperand, nil, err) == errReturn {
-						return nil, err
-					}
+					state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+					break
 				}
 
 				continue
 			}
 
 			callErr := runtime.TypeErrorOf(reg[dst], runtime.TypeObject)
-			if state.applyCatch(bytecode.NoopOperand, nil, callErr) == errReturn {
-				return nil, callErr
-			}
+			state.raiseRuntime(callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+			break
 		case bytecode.OpObjectSetConst:
 			objVal := reg[dst]
 			key := runtime.ToString(constants[src1.Constant()])
@@ -492,17 +408,15 @@ loop:
 
 			if ok {
 				if err := writable.Set(ctx, key, value); err != nil {
-					if state.applyCatch(bytecode.NoopOperand, nil, err) == errReturn {
-						return nil, err
-					}
+					state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+					break
 				}
 				continue
 			}
 
 			callErr := runtime.TypeErrorOf(reg[dst], runtime.TypeObject)
-			if state.applyCatch(bytecode.NoopOperand, nil, callErr) == errReturn {
-				return nil, callErr
-			}
+			state.raiseRuntime(callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+			break
 		case bytecode.OpIter:
 			input := reg[src1]
 			iterable, ok := input.(runtime.Iterable)
@@ -515,18 +429,14 @@ loop:
 					continue
 				}
 
-				if state.applyProtected(err) == errReturn {
-					return nil, err
-				}
-
-				continue
+				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 
 			// TODO: replace with inlined version
 			callErr := runtime.TypeErrorOf(input, runtime.TypeIterable)
-			if state.applyCatch(dst, data.NoopIter, callErr) == errReturn {
-				return nil, callErr
-			}
+			state.raiseRuntime(callErr, recoverDefault, dst, data.NoopIter, true)
+			break
 		case bytecode.OpIterNext:
 			iterator := reg[src1].(*data.Iterator)
 
@@ -536,9 +446,8 @@ loop:
 					continue
 				}
 
-				if state.applyProtected(err) == errReturn {
-					return nil, err
-				}
+				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 		case bytecode.OpIterValue:
 			iterator := reg[src1].(*data.Iterator)
@@ -569,11 +478,8 @@ loop:
 			observable, eventName, options, err := vm.castSubscribeArgs(reg[dst], reg[src1], reg[src2])
 
 			if err != nil {
-				if state.applyCatch(bytecode.NoopOperand, nil, err) == errReturn {
-					return nil, err
-				}
-
-				continue
+				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 
 			stream, err := observable.Subscribe(ctx, runtime.Subscription{
@@ -582,11 +488,8 @@ loop:
 			})
 
 			if err != nil {
-				if state.applyCatch(bytecode.NoopOperand, nil, err) == errReturn {
-					return nil, err
-				}
-
-				continue
+				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 
 			reg[dst] = data.NewStreamValue(stream)
@@ -599,14 +502,15 @@ loop:
 				t, err := runtime.CastInt(reg[src2])
 
 				if err != nil {
-					if state.applyCatch(bytecode.NoopOperand, nil, err) == errReturn {
-						return nil, err
-					}
-
-					t = 0
+					state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+					break
 				}
 
 				timeout = t
+			}
+
+			if state.hasFailure() {
+				break
 			}
 
 			reg[dst] = stream.Iterate(timeout)
@@ -616,13 +520,7 @@ loop:
 			// TODO: unwrap since it's cannot be inlined
 			out, err := applyQuery(ctx, src, descriptor)
 
-			if action := state.setOrTryCatch(dst, out, err); action != errOK {
-				if action == errReturn {
-					return nil, err
-				}
-
-				continue
-			}
+			state.setOrTryCatch(dst, out, err)
 		case bytecode.OpDataSet:
 			reg[dst] = data.NewDataSet(src1 == 1)
 		case bytecode.OpDataSetCollector:
@@ -636,11 +534,8 @@ loop:
 						"invalid aggregate plan index",
 						runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan index %d", planIdx),
 					)
-					if state.applyInvariant(invariantErr) == errReturn {
-						return nil, invariantErr
-					}
-
-					continue
+					state.raiseInvariant(invariantErr)
+					break
 				}
 
 				plan := aggregatePlans[planIdx]
@@ -657,11 +552,8 @@ loop:
 			collector, err := data.NewCollectorSafe(collectorType)
 			if err != nil {
 				invariantErr := diagnostic.NewInvariantError("invalid collector configuration", err)
-				if state.applyInvariant(invariantErr) == errReturn {
-					return nil, invariantErr
-				}
-
-				continue
+				state.raiseInvariant(invariantErr)
+				break
 			}
 
 			reg[dst] = collector
@@ -681,9 +573,7 @@ loop:
 
 			res, err := arrayFlatten(ctx, reg[src1], depth)
 
-			if state.setOrTryCatch(dst, res, err) == errReturn {
-				return nil, err
-			}
+			state.setOrTryCatch(dst, res, err)
 		case bytecode.OpAdd:
 			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
 		case bytecode.OpAddConst:
@@ -696,20 +586,14 @@ loop:
 			reg[dst] = runtime.Multiply(ctx, reg[src1], reg[src2])
 		case bytecode.OpDiv:
 			if err := state.checkDivisionByZero(ctx, reg[src1], reg[src2]); err != nil {
-				if state.applyProtected(err) == errReturn {
-					return nil, err
-				}
-
-				continue
+				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 			reg[dst] = runtime.Divide(ctx, reg[src1], reg[src2])
 		case bytecode.OpMod:
 			if err := state.checkModuloByZero(ctx, reg[src2]); err != nil {
-				if state.applyProtected(err) == errReturn {
-					return nil, err
-				}
-
-				continue
+				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 			reg[dst] = runtime.Modulus(ctx, reg[src1], reg[src2])
 		case bytecode.OpIncr:
@@ -750,22 +634,16 @@ loop:
 				break
 			}
 
-			if state.applyProtected(err) == errReturn {
-				return nil, err
-			}
-
-			continue
+			state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+			break
 		case bytecode.OpRegexp:
 			r, err := vm.regexpCached(state.pc-1, reg[src2])
 
 			if err == nil {
 				reg[dst] = r.Match(reg[src1])
 			} else {
-				if state.applyCatch(dst, runtime.False, err) == errReturn {
-					return nil, err
-				}
-
-				continue
+				state.raiseRuntime(err, recoverDefault, dst, runtime.False, true)
+				break
 			}
 		case bytecode.OpExists:
 			val := reg[src1]
@@ -779,11 +657,8 @@ loop:
 				length, err := measurable.Length(ctx)
 
 				if err != nil {
-					if state.applyCatch(dst, runtime.False, err) == errReturn {
-						return nil, err
-					}
-
-					continue
+					state.raiseRuntime(err, recoverDefault, dst, runtime.False, true)
+					break
 				}
 
 				reg[dst] = runtime.NewBoolean(length != 0)
@@ -796,23 +671,17 @@ loop:
 			cmp := comparatorFromByte(int(op) - int(bytecode.OpAllEq))
 			res, err := arrayAll(ctx, cmp, reg[src1], reg[src2])
 
-			if state.setOrTryCatch(dst, res, err) == errReturn {
-				return nil, err
-			}
+			state.setOrTryCatch(dst, res, err)
 		case bytecode.OpAnyEq, bytecode.OpAnyNe, bytecode.OpAnyGt, bytecode.OpAnyGte, bytecode.OpAnyLt, bytecode.OpAnyLte, bytecode.OpAnyIn:
 			cmp := comparatorFromByte(int(op) - int(bytecode.OpAnyEq))
 			res, err := arrayAny(ctx, cmp, reg[src1], reg[src2])
 
-			if state.setOrTryCatch(dst, res, err) == errReturn {
-				return nil, err
-			}
+			state.setOrTryCatch(dst, res, err)
 		case bytecode.OpNoneEq, bytecode.OpNoneNe, bytecode.OpNoneGt, bytecode.OpNoneGte, bytecode.OpNoneLt, bytecode.OpNoneLte, bytecode.OpNoneIn:
 			cmp := comparatorFromByte(int(op) - int(bytecode.OpNoneEq))
 			res, err := arrayNone(ctx, cmp, reg[src1], reg[src2])
 
-			if state.setOrTryCatch(dst, res, err) == errReturn {
-				return nil, err
-			}
+			state.setOrTryCatch(dst, res, err)
 		case bytecode.OpLength:
 			val, ok := reg[src1].(runtime.Measurable)
 
@@ -820,11 +689,8 @@ loop:
 				length, err := val.Length(ctx)
 
 				if err != nil {
-					if state.applyCatch(bytecode.NoopOperand, nil, err) == errReturn {
-						return nil, err
-					}
-
-					length = 0
+					state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+					break
 				}
 
 				reg[dst] = length
@@ -838,9 +704,8 @@ loop:
 				runtime.TypeBinary,
 				runtime.TypeMeasurable,
 			)
-			if state.applyCatch(dst, runtime.ZeroInt, callErr) == errReturn {
-				return runtime.None, callErr
-			}
+			state.raiseRuntime(callErr, recoverDefault, dst, runtime.ZeroInt, true)
+			break
 		case bytecode.OpType:
 			reg[dst] = runtime.NewString(runtime.TypeName(runtime.TypeOf(reg[src1])))
 		case bytecode.OpClose:
@@ -851,35 +716,34 @@ loop:
 				closeErr := val.Close()
 
 				if closeErr != nil {
-					if state.applyCatch(bytecode.NoopOperand, nil, closeErr) == errReturn {
-						return nil, closeErr
-					}
-
-					continue
+					state.raiseRuntime(closeErr, recoverDefault, bytecode.NoopOperand, nil, false)
+					break
 				}
 			}
 		case bytecode.OpSleep:
 			dur, err := runtime.ToInt(ctx, reg[dst])
 
 			if err != nil {
-				if state.applyCatch(bytecode.NoopOperand, nil, err) == errReturn {
-					return nil, err
-				}
-
-				continue
+				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 
 			if err := data.Sleep(ctx, dur); err != nil {
-				if state.applyProtected(err) == errReturn {
-					return nil, err
-				}
-
-				continue
+				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
 		case bytecode.OpRand:
 			reg[dst] = runtime.NewFloat(runtime.RandomDefault())
 		default:
 			return nil, runtime.Errorf(runtime.ErrUnexpected, "unknown opcode %d at pc %d", op, state.pc-1)
+		}
+
+		if state.hasFailure() {
+			if state.resolveFailure() == errReturn {
+				return nil, state.failureError()
+			}
+
+			continue
 		}
 	}
 
