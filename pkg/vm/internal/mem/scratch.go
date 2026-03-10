@@ -23,10 +23,32 @@ func (s *Scratch) ResizeParams(size int) {
 		return
 	}
 
+	prevSize := len(s.Params)
+
+	if size < prevSize {
+		for i := size; i < prevSize; i++ {
+			s.Params[i] = runtime.None
+		}
+
+		s.Params = s.Params[:size]
+		return
+	}
+
 	if size > cap(s.Params) {
-		s.Params = make([]runtime.Value, size)
+		params := make([]runtime.Value, size)
+		copy(params, s.Params)
+		s.Params = params
+
+		for i := prevSize; i < size; i++ {
+			s.Params[i] = runtime.None
+		}
+
 		return
 	}
 
 	s.Params = s.Params[:size]
+
+	for i := prevSize; i < size; i++ {
+		s.Params[i] = runtime.None
+	}
 }
