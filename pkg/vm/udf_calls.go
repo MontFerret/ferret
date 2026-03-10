@@ -178,7 +178,9 @@ func (s *execState) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
 
 	if cap(reg) >= udf.Registers {
 		reg = reg[:udf.Registers]
-		clear(reg)
+		for i := range reg {
+			reg[i] = runtime.None
+		}
 
 		if len(args) > 0 && len(reg) > 1 {
 			copy(reg[1:], args)

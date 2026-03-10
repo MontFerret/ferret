@@ -31,7 +31,9 @@ func (p *Pool) Get(size int) []runtime.Value {
 		}
 	}
 
-	return make([]runtime.Value, size)
+	reg := make([]runtime.Value, size)
+	fillWithNone(reg)
+	return reg
 }
 
 // Put clears and stores a register window for reuse.
@@ -40,11 +42,17 @@ func (p *Pool) Put(reg []runtime.Value) {
 		return
 	}
 
-	// Clear to avoid retaining references across calls.
-	clear(reg)
+	// Normalize to runtime.None and avoid retaining references across calls.
+	fillWithNone(reg)
 
 	size := len(reg)
 	if size < len(p.buckets) {
 		p.buckets[size] = append(p.buckets[size], reg)
+	}
+}
+
+func fillWithNone(reg []runtime.Value) {
+	for i := range reg {
+		reg[i] = runtime.None
 	}
 }

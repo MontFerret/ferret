@@ -23,17 +23,6 @@ func hostCallArgRange(src1, src2 bytecode.Operand) (int, int, bool) {
 	return start, end, true
 }
 
-func hostCallArgs(reg []runtime.Value, start, end int) []runtime.Value {
-	size := end - start + 1
-	args := make([]runtime.Value, size)
-
-	for i := 0; i < size; i++ {
-		args[i] = reg[start+i]
-	}
-
-	return args
-}
-
 func callCachedHostFunction(
 	ctx context.Context,
 	cacheFn *mem.CachedHostFunction,
@@ -115,8 +104,26 @@ func callCachedHostFunction(
 		}
 	default:
 		if cacheFn.FnV != nil {
-			args := hostCallArgs(reg, start, end)
-			return cacheFn.FnV(ctx, args...)
+			argCount := end - start + 1
+			var stackArgs [8]runtime.Value
+			if argCount <= len(stackArgs) {
+				copy(stackArgs[:argCount], reg[start:start+argCount])
+
+				switch argCount {
+				case 5:
+					return cacheFn.FnV(ctx, stackArgs[0], stackArgs[1], stackArgs[2], stackArgs[3], stackArgs[4])
+				case 6:
+					return cacheFn.FnV(ctx, stackArgs[0], stackArgs[1], stackArgs[2], stackArgs[3], stackArgs[4], stackArgs[5])
+				case 7:
+					return cacheFn.FnV(ctx, stackArgs[0], stackArgs[1], stackArgs[2], stackArgs[3], stackArgs[4], stackArgs[5], stackArgs[6])
+				case 8:
+					return cacheFn.FnV(ctx, stackArgs[0], stackArgs[1], stackArgs[2], stackArgs[3], stackArgs[4], stackArgs[5], stackArgs[6], stackArgs[7])
+				}
+			}
+
+			heapArgs := make([]runtime.Value, argCount)
+			copy(heapArgs, reg[start:start+argCount])
+			return cacheFn.FnV(ctx, heapArgs...)
 		}
 	}
 

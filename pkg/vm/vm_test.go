@@ -717,6 +717,74 @@ func TestSetOrOptional_NonOptionalNonNotFoundReturnsError(t *testing.T) {
 	}
 }
 
+func TestTailCallUdf_ReusedWindowResetsNonArgSlotsToNone(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  8,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Functions: bytecode.Functions{
+			UserDefined: []bytecode.UDF{
+				{
+					Name:        "F",
+					DisplayName: "f",
+					Entry:       0,
+					Registers:   6,
+					Params:      2,
+				},
+			},
+		},
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
+
+	reg := state.registers.Values
+	for i := range reg {
+		reg[i] = runtime.NewInt(100 + i)
+	}
+
+	reg[1] = runtime.NewInt(0)  // UDF id
+	reg[3] = runtime.NewInt(10) // arg1
+	reg[4] = runtime.NewInt(20) // arg2
+
+	state.frames.Push(frame.CallFrame{
+		ReturnPC:   99,
+		ReturnDest: bytecode.NewRegister(0),
+		Registers:  make([]runtime.Value, 2),
+	})
+	state.pc = 5
+
+	oldPtr := &reg[0]
+	if err := state.tailCallUdf(bytecode.NewRegister(1), bytecode.NewRegister(3), bytecode.NewRegister(4)); err != nil {
+		t.Fatalf("unexpected tail call error: %v", err)
+	}
+
+	newRegs := state.registers.Values
+	if got, want := len(newRegs), 6; got != want {
+		t.Fatalf("unexpected tail-call register window size: got %d, want %d", got, want)
+	}
+
+	if &newRegs[0] != oldPtr {
+		t.Fatal("expected tail call to reuse active register window")
+	}
+
+	if got, want := newRegs[1], runtime.NewInt(10); got != want {
+		t.Fatalf("unexpected first tail-call argument: got %v, want %v", got, want)
+	}
+
+	if got, want := newRegs[2], runtime.NewInt(20); got != want {
+		t.Fatalf("unexpected second tail-call argument: got %v, want %v", got, want)
+	}
+
+	for _, idx := range []int{0, 3, 4, 5} {
+		if got := newRegs[idx]; got != runtime.None {
+			t.Fatalf("expected non-argument slot %d to be runtime.None, got %v", idx, got)
+		}
+	}
+}
+
 func TestOpFail_UncaughtReturnsRuntimeError(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
