@@ -6,12 +6,14 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostic"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
 type hostCallWarmupDescriptor struct {
 	FnName    string
 	PC        int
+	Dst       bytecode.Operand
 	ArgCount  int
 	HasFnName bool
 }
@@ -29,10 +31,23 @@ func warmup(vm *VM, env *Environment) error {
 		return nil
 	}
 
+	var warmupErrs diagnostic.WarmupErrorSet
+
 	functions := env.Functions
 	for _, descriptor := range vm.hostWarmups {
 		vm.cache.HostFunctions[descriptor.PC] = nil
-		vm.cache.HostFunctions[descriptor.PC] = warmupBindHostCall(descriptor, functions)
+
+		cachedFn, err := warmupBindHostCall(descriptor, functions)
+		if err != nil {
+			warmupErrs.Add(err, descriptor.PC, descriptor.Dst)
+			continue
+		}
+
+		vm.cache.HostFunctions[descriptor.PC] = cachedFn
+	}
+
+	if warmupErrs.Size() > 0 {
+		return &warmupErrs
 	}
 
 	vm.cache.FuncHash = hash
@@ -162,59 +177,27 @@ func warmupArgCount(src1, src2 bytecode.Operand) int {
 	return argCount
 }
 
-func warmupBindHostCall(descriptor hostCallWarmupDescriptor, functions *runtime.Functions) *mem.CachedHostFunction {
+func warmupBindHostCall(descriptor hostCallWarmupDescriptor, functions *runtime.Functions) (*mem.CachedHostFunction, error) {
 	if !descriptor.HasFnName {
-		return nil
+		return nil, ErrInvalidFunctionName
 	}
 
 	argCount := descriptor.ArgCount
 
 	switch argCount {
 	case 0:
-		fn, err := resolveHostFn(functions.A0().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function0) { f.Fn0 = fn }, descriptor.FnName)
-		if err != nil {
-			return nil
-		}
-
-		return fn
+		return resolveHostFn(functions.A0().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function0) { f.Fn0 = fn }, descriptor.FnName)
 	case 1:
-		fn, err := resolveHostFn(functions.A1().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function1) { f.Fn1 = fn }, descriptor.FnName)
-		if err != nil {
-			return nil
-		}
-
-		return fn
+		return resolveHostFn(functions.A1().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function1) { f.Fn1 = fn }, descriptor.FnName)
 	case 2:
-		fn, err := resolveHostFn(functions.A2().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function2) { f.Fn2 = fn }, descriptor.FnName)
-		if err != nil {
-			return nil
-		}
-
-		return fn
+		return resolveHostFn(functions.A2().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function2) { f.Fn2 = fn }, descriptor.FnName)
 	case 3:
-		fn, err := resolveHostFn(functions.A3().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function3) { f.Fn3 = fn }, descriptor.FnName)
-		if err != nil {
-			return nil
-		}
-
-		return fn
+		return resolveHostFn(functions.A3().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function3) { f.Fn3 = fn }, descriptor.FnName)
 	case 4:
-		fn, err := resolveHostFn(functions.A4().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function4) { f.Fn4 = fn }, descriptor.FnName)
-		if err != nil {
-			return nil
-		}
-
-		return fn
+		return resolveHostFn(functions.A4().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function4) { f.Fn4 = fn }, descriptor.FnName)
 	default:
-		fn, err := resolveHostFn(functions.Var().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function) { f.FnV = fn }, descriptor.FnName)
-		if err != nil {
-			return nil
-		}
-
-		return fn
+		return resolveHostFn(functions.Var().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function) { f.FnV = fn }, descriptor.FnName)
 	}
-
-	return nil
 }
 
 func buildHostWarmupDescriptors(program *bytecode.Program) []hostCallWarmupDescriptor {
@@ -234,10 +217,15 @@ func buildHostWarmupDescriptors(program *bytecode.Program) []hostCallWarmupDescr
 		case bytecode.OpLoadConst:
 			reg[dst] = constants[src1.Constant()]
 		case bytecode.OpMove:
-			reg[dst] = reg[src1]
+			if val, ok := reg[src1]; ok {
+				reg[dst] = val
+			} else {
+				delete(reg, dst)
+			}
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
 			descriptor := hostCallWarmupDescriptor{
 				PC:       pc,
+				Dst:      dst,
 				ArgCount: warmupArgCount(src1, src2),
 			}
 
@@ -248,8 +236,10 @@ func buildHostWarmupDescriptors(program *bytecode.Program) []hostCallWarmupDescr
 			}
 
 			descriptors = append(descriptors, descriptor)
-		default:
-			continue
+		}
+
+		if op != bytecode.OpLoadConst && op != bytecode.OpMove && dst.IsRegister() {
+			delete(reg, dst)
 		}
 	}
 

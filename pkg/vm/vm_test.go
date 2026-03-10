@@ -756,7 +756,7 @@ func TestWarmupRebindTouchesOnlyHostCallSlots(t *testing.T) {
 	}
 }
 
-func TestProtectedMissingHostCallBehavesSameForDefaultAndBuiltEnvironment(t *testing.T) {
+func TestStrictWarmupFailsProtectedMissingHostCallForDefaultAndBuiltEnvironment(t *testing.T) {
 	program := compileProgram(t, "RETURN MISSING_FN()?")
 
 	builtEnv, err := NewEnvironment(nil)
@@ -774,19 +774,24 @@ func TestProtectedMissingHostCallBehavesSameForDefaultAndBuiltEnvironment(t *tes
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out, err := New(program).Run(context.Background(), tc.env)
-			if err != nil {
-				t.Fatalf("expected protected missing host call to return none, got %v", err)
+			_, err := New(program).Run(context.Background(), tc.env)
+			if err == nil {
+				t.Fatal("expected unresolved function error from strict warmup")
 			}
 
-			if out != runtime.None {
-				t.Fatalf("expected none output, got %v", out)
+			var rtErr *RuntimeError
+			if !errors.As(err, &rtErr) {
+				t.Fatalf("expected runtime error, got %T", err)
+			}
+
+			if got, want := rtErr.Message, "Unresolved function"; got != want {
+				t.Fatalf("unexpected message: got %q, want %q", got, want)
 			}
 		})
 	}
 }
 
-func TestWarmupDoesNotFailOnDeadCodeUnresolvedHostCall(t *testing.T) {
+func TestStrictWarmupFailsOnDeadCodeUnresolvedHostCall(t *testing.T) {
 	program := compileProgram(t, "RETURN false ? MISSING_FN() : 1")
 
 	envWithDummy, err := NewEnvironment([]EnvironmentOption{
@@ -808,15 +813,125 @@ func TestWarmupDoesNotFailOnDeadCodeUnresolvedHostCall(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out, err := New(program).Run(context.Background(), tc.env)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
+			_, err := New(program).Run(context.Background(), tc.env)
+			if err == nil {
+				t.Fatal("expected unresolved function error from strict warmup")
 			}
 
-			if got, want := out, runtime.NewInt(1); got != want {
-				t.Fatalf("unexpected output: got %v, want %v", got, want)
+			var rtErr *RuntimeError
+			if !errors.As(err, &rtErr) {
+				t.Fatalf("expected runtime error, got %T", err)
+			}
+
+			if got, want := rtErr.Message, "Unresolved function"; got != want {
+				t.Fatalf("unexpected message: got %q, want %q", got, want)
 			}
 		})
+	}
+}
+
+func TestStrictWarmupAggregatesMissingHostFunctions(t *testing.T) {
+	program := compileProgram(t, `
+LET a = MISSING_A()
+LET b = MISSING_B()
+RETURN a + b
+`)
+
+	_, err := New(program).Run(context.Background(), NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected warmup error set")
+	}
+
+	var rtErrSet *RuntimeErrorSet
+	if !errors.As(err, &rtErrSet) {
+		t.Fatalf("expected runtime error set, got %T", err)
+	}
+
+	if got, want := rtErrSet.Size(), 2; got != want {
+		t.Fatalf("unexpected error set size: got %d, want %d", got, want)
+	}
+
+	unresolved := 0
+	for _, rtErr := range rtErrSet.Errors() {
+		if rtErr.Message == "Unresolved function" {
+			unresolved++
+		}
+	}
+
+	if got, want := unresolved, 2; got != want {
+		t.Fatalf("unexpected unresolved error count: got %d, want %d", got, want)
+	}
+}
+
+func TestStrictWarmupInvalidTargetReturnsInvalidFunctionName(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+	}
+
+	_, err := New(program).Run(context.Background(), NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	if got, want := rtErr.Message, "Invalid function name"; got != want {
+		t.Fatalf("unexpected message: got %q, want %q", got, want)
+	}
+}
+
+func TestStrictWarmupFailureIsRepeatableUntilEnvironmentFixed(t *testing.T) {
+	program := compileProgram(t, "RETURN F()")
+	instance := New(program)
+
+	assertUnresolved := func(err error) {
+		t.Helper()
+
+		if err == nil {
+			t.Fatal("expected unresolved function error")
+		}
+
+		var rtErr *RuntimeError
+		if !errors.As(err, &rtErr) {
+			t.Fatalf("expected runtime error, got %T", err)
+		}
+
+		if got, want := rtErr.Message, "Unresolved function"; got != want {
+			t.Fatalf("unexpected message: got %q, want %q", got, want)
+		}
+	}
+
+	_, err := instance.Run(context.Background(), NewDefaultEnvironment())
+	assertUnresolved(err)
+
+	_, err = instance.Run(context.Background(), NewDefaultEnvironment())
+	assertUnresolved(err)
+
+	validEnv, err := NewEnvironment([]EnvironmentOption{
+		WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+			return runtime.NewInt(7), nil
+		}),
+	})
+	if err != nil {
+		t.Fatalf("environment build failed: %v", err)
+	}
+
+	out, err := instance.Run(context.Background(), validEnv)
+	if err != nil {
+		t.Fatalf("expected successful run after env fix, got %v", err)
+	}
+
+	if got, want := out, runtime.NewInt(7); got != want {
+		t.Fatalf("unexpected output: got %v, want %v", got, want)
 	}
 }
 
