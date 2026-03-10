@@ -109,12 +109,12 @@ func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, err
 	aggregatePlans := vm.program.Metadata.AggregatePlans
 	shapeCache := vm.cache.ShapeCache
 	paramSlots := vm.scratch.Params
-	reg := vm.registers.Values
 loop:
 	for vm.pc < len(instructions) {
 		inst := &instructions[vm.pc]
 		op := inst.Opcode
 		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
+		reg := vm.registers.Values
 		vm.pc++
 
 		switch op {
