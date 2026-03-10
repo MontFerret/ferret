@@ -328,6 +328,32 @@ func TestOpLoadParam_MissingParamsPreserveRuntimeError(t *testing.T) {
 	}
 }
 
+func TestRun_MissingParamPrecedesWarmupHostResolution(t *testing.T) {
+	program := compileProgram(t, "RETURN MISSING_FN(@foo)")
+
+	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected missing parameter error")
+	}
+
+	if !strings.Contains(err.Error(), "Missing parameter") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if strings.Contains(err.Error(), "Unresolved function") {
+		t.Fatalf("expected missing parameter to be reported before host warmup failure, got %v", err)
+	}
+
+	cause := errors.Unwrap(err)
+	if cause == nil {
+		cause = err
+	}
+
+	if !strings.Contains(cause.Error(), "@foo") {
+		t.Fatalf("expected missing parameter name in error, got %v (cause: %v)", err, cause)
+	}
+}
+
 func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,

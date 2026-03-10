@@ -3,6 +3,7 @@ package vm
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -56,6 +57,35 @@ func (s *execState) cleanupForPool() {
 
 	s.env = nil
 	s.pc = 0
+}
+
+func (s *execState) bindParams(env *Environment) error {
+	required := s.program.Params
+
+	s.scratch.ResizeParams(len(required))
+
+	var missedParams []string
+
+	for idx, name := range required {
+		val, exists := env.Params[name]
+
+		if !exists {
+			if missedParams == nil {
+				missedParams = make([]string, 0, len(required))
+			}
+
+			missedParams = append(missedParams, "@"+name)
+			val = runtime.None
+		}
+
+		s.scratch.Params[idx] = val
+	}
+
+	if len(missedParams) > 0 {
+		return runtime.Error(ErrMissedParam, strings.Join(missedParams, ", "))
+	}
+
+	return nil
 }
 
 func (s *execState) fail(err error, class failClass, dst bytecode.Operand, fallback runtime.Value, setFallback bool) errAction {
