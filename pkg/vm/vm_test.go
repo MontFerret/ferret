@@ -952,6 +952,52 @@ func TestStrictWarmupFailureIsRepeatableUntilEnvironmentFixed(t *testing.T) {
 	}
 }
 
+func TestResetDrainsLeakedFramesBetweenFailedRuns(t *testing.T) {
+	program := compileProgram(t, `
+FUNC inner() (
+	RETURN 1 / 0
+)
+
+FUNC outer() (
+	RETURN inner()
+)
+
+RETURN outer()
+`)
+
+	instance := mustNewVM(t, program)
+
+	runAndCheck := func(label string) int {
+		t.Helper()
+
+		_, err := instance.Run(context.Background(), NewDefaultEnvironment())
+		if err == nil {
+			t.Fatalf("%s: expected runtime error", label)
+		}
+
+		var rtErr *RuntimeError
+		if !errors.As(err, &rtErr) {
+			t.Fatalf("%s: expected runtime error, got %T", label, err)
+		}
+
+		if rtErr.Kind != DivideByZero {
+			t.Fatalf("%s: unexpected error kind: got %s, want %s", label, rtErr.Kind, DivideByZero)
+		}
+
+		return instance.state.frames.Len()
+	}
+
+	leakedFirst := runAndCheck("first run")
+	if leakedFirst == 0 {
+		t.Fatal("first run should leave frames to exercise reset cleanup")
+	}
+
+	leakedSecond := runAndCheck("second run")
+	if leakedSecond != leakedFirst {
+		t.Fatalf("expected stale frames to be drained between runs: first=%d second=%d", leakedFirst, leakedSecond)
+	}
+}
+
 func TestHostNilResultIsNormalizedToNone(t *testing.T) {
 	program := compileProgram(t, "RETURN NIL_FN()")
 	env, err := NewEnvironment([]EnvironmentOption{

@@ -179,6 +179,137 @@ func TestCallStackReturnToCaller_EmptyStackDoesNotRelease(t *testing.T) {
 	}
 }
 
+func TestCallStackReset_DrainsFramesAndReclaimsDiscardedWindows(t *testing.T) {
+	var stack CallStack
+	stack.Init(6)
+
+	rootRegs := make([]runtime.Value, 2)
+	midRegs := make([]runtime.Value, 3)
+	topRegs := make([]runtime.Value, 4)
+	activeRegs := make([]runtime.Value, 5)
+
+	stack.Push(CallFrame{Registers: rootRegs, FnName: "root"})
+	stack.Push(CallFrame{Registers: midRegs, FnName: "mid"})
+	stack.Push(CallFrame{Registers: topRegs, FnName: "top"})
+
+	baseRegs := stack.Reset(activeRegs)
+	if got, want := stack.Len(), 0; got != want {
+		t.Fatalf("unexpected stack length after reset: got %d, want %d", got, want)
+	}
+
+	if len(baseRegs) != len(rootRegs) {
+		t.Fatalf("unexpected base register size: got %d, want %d", len(baseRegs), len(rootRegs))
+	}
+
+	if &baseRegs[0] != &rootRegs[0] {
+		t.Fatal("expected reset to restore root register window")
+	}
+
+	reused5 := stack.AcquireRegisters(5)
+	if len(reused5) != 5 {
+		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused5), 5)
+	}
+	if &reused5[0] != &activeRegs[0] {
+		t.Fatal("expected active registers to be reclaimed")
+	}
+
+	reused4 := stack.AcquireRegisters(4)
+	if len(reused4) != 4 {
+		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused4), 4)
+	}
+	if &reused4[0] != &topRegs[0] {
+		t.Fatal("expected top frame registers to be reclaimed")
+	}
+
+	reused3 := stack.AcquireRegisters(3)
+	if len(reused3) != 3 {
+		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused3), 3)
+	}
+	if &reused3[0] != &midRegs[0] {
+		t.Fatal("expected middle frame registers to be reclaimed")
+	}
+
+	reused2 := stack.AcquireRegisters(2)
+	if len(reused2) != 2 {
+		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused2), 2)
+	}
+	if &reused2[0] == &rootRegs[0] {
+		t.Fatal("did not expect root registers to be returned to the pool")
+	}
+}
+
+func TestCallStackReset_ZeroesFrameStructsInBackingArray(t *testing.T) {
+	var stack CallStack
+	stack.Init(4)
+
+	stack.Push(CallFrame{
+		FnName:      "outer",
+		Registers:   make([]runtime.Value, 2),
+		FnID:        10,
+		CallSitePC:  20,
+		ReturnPC:    30,
+		ReturnDest:  bytecode.NewRegister(1),
+		HasCallSite: true,
+		Protected:   true,
+	})
+	stack.Push(CallFrame{
+		FnName:      "inner",
+		Registers:   make([]runtime.Value, 3),
+		FnID:        11,
+		CallSitePC:  21,
+		ReturnPC:    31,
+		ReturnDest:  bytecode.NewRegister(2),
+		HasCallSite: true,
+		Protected:   false,
+	})
+
+	_ = stack.Reset(make([]runtime.Value, 4))
+
+	if got, want := stack.Len(), 0; got != want {
+		t.Fatalf("unexpected stack length after reset: got %d, want %d", got, want)
+	}
+
+	backing := stack.frames[:2]
+	for i, frame := range backing {
+		if frame.Registers != nil || frame.FnName != "" || frame.FnID != 0 || frame.CallSitePC != 0 || frame.ReturnPC != 0 || frame.ReturnDest != 0 || frame.HasCallSite || frame.Protected {
+			t.Fatalf("expected zeroed frame at index %d, got %+v", i, frame)
+		}
+	}
+}
+
+func TestCallStackReset_EmptyStackNoOp(t *testing.T) {
+	var stack CallStack
+	stack.Init(3)
+
+	activeRegs := make([]runtime.Value, 3)
+	activeRegs[0] = runtime.True
+
+	got := stack.Reset(activeRegs)
+	if len(got) != len(activeRegs) {
+		t.Fatalf("unexpected active register size: got %d, want %d", len(got), len(activeRegs))
+	}
+
+	if &got[0] != &activeRegs[0] {
+		t.Fatal("expected reset to keep active registers when stack is empty")
+	}
+
+	if got[0] != runtime.True {
+		t.Fatalf("unexpected active register value after empty reset: got %v", got[0])
+	}
+
+	if gotLen := stack.Len(); gotLen != 0 {
+		t.Fatalf("unexpected stack length after empty reset: got %d, want 0", gotLen)
+	}
+
+	reused := stack.AcquireRegisters(3)
+	if len(reused) != 3 {
+		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused), 3)
+	}
+	if &reused[0] == &activeRegs[0] {
+		t.Fatal("did not expect active registers to be pooled for empty reset")
+	}
+}
+
 func TestCallStackSetTopFnID(t *testing.T) {
 	var stack CallStack
 	stack.Init(1)

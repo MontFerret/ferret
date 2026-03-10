@@ -32,6 +32,8 @@ func (s *execState) init(program *bytecode.Program, catchByPC []int, panicPolicy
 }
 
 func (s *execState) reset(env *Environment) {
+	s.registers.Values = s.frames.Reset(s.registers.Values)
+
 	if s.registers.IsDirty() {
 		s.registers.Reset()
 	}
@@ -39,7 +41,6 @@ func (s *execState) reset(env *Environment) {
 	s.registers.MarkDirty()
 	s.env = env
 	s.pc = 0
-	s.frames.Reset()
 }
 
 func (s *execState) fail(err error, class failClass, dst bytecode.Operand, fallback runtime.Value, setFallback bool) errAction {

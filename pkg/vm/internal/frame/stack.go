@@ -19,13 +19,23 @@ func (s *CallStack) Init(maxPoolSize int) {
 	s.pool.Init(maxPoolSize)
 }
 
-// Reset clears the call stack while leaving the pool intact.
-func (s *CallStack) Reset() {
+// Reset drains active frames, reclaims discarded register windows, and clears frame metadata.
+// It returns the base register window that remains owned by the caller register file.
+func (s *CallStack) Reset(active []runtime.Value) []runtime.Value {
 	if len(s.frames) == 0 {
-		return
+		return active
+	}
+
+	curr := active
+	for i := len(s.frames) - 1; i >= 0; i-- {
+		s.pool.Put(curr)
+		curr = s.frames[i].Registers
+		s.frames[i] = CallFrame{}
 	}
 
 	s.frames = s.frames[:0]
+
+	return curr
 }
 
 // Len returns the number of active frames.
