@@ -180,15 +180,19 @@ func (vm *VM) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
 	if cap(reg) >= udf.Registers {
 		reg = reg[:udf.Registers]
 		clear(reg)
+
 		if len(args) > 0 && len(reg) > 1 {
 			copy(reg[1:], args)
 		}
+
 		vm.registers.Values = reg
 	} else {
 		newRegs := vm.frames.AcquireRegisters(udf.Registers)
+
 		if len(args) > 0 && len(newRegs) > 1 {
 			copy(newRegs[1:], args)
 		}
+
 		vm.frames.ReleaseRegisters(reg)
 		vm.registers.Values = newRegs
 	}
@@ -196,33 +200,4 @@ func (vm *VM) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
 	vm.pc = udf.Entry
 
 	return nil
-}
-
-func (vm *VM) execUdfCall(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) error {
-	switch op {
-	case bytecode.OpCall, bytecode.OpProtectedCall:
-		if err := vm.callUdf(op, dst, src1, src2); err != nil {
-			if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
-				if vm.unwindToProtected() {
-					return nil
-				}
-
-				return err
-			}
-		}
-
-		return nil
-	case bytecode.OpTailCall:
-		if err := vm.tailCallUdf(dst, src1, src2); err != nil {
-			if vm.unwindToProtected() {
-				return nil
-			}
-
-			return err
-		}
-
-		return nil
-	default:
-		return runtime.Error(runtime.ErrUnexpected, "invalid udf call opcode")
-	}
 }

@@ -244,11 +244,48 @@ loop:
 
 				return nil, err
 			}
-		case bytecode.OpCall, bytecode.OpProtectedCall, bytecode.OpTailCall:
-			if err := vm.execUdfCall(op, dst, src1, src2); err != nil {
+		case bytecode.OpCall, bytecode.OpProtectedCall:
+			if err := vm.callUdf(op, dst, src1, src2); err != nil {
+				if err := vm.setCallResult(op, dst, runtime.None, err); err != nil {
+					if vm.unwindToProtected() {
+						continue
+					}
+
+					return nil, err
+				}
+			}
+		case bytecode.OpTailCall:
+			if err := vm.tailCallUdf(dst, src1, src2); err != nil {
+				if vm.unwindToProtected() {
+					continue
+				}
+
 				return nil, err
 			}
-			continue
+		case bytecode.OpDispatch:
+			dispatcher, eventName, payload, options, err := vm.castDispatchArgs(ctx, reg[dst], reg[src1], reg[src2])
+
+			if err != nil {
+				if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
+					return nil, err
+				}
+
+				continue
+			}
+
+			out, err := dispatcher.Dispatch(ctx, runtime.DispatchEvent{
+				Name:    eventName,
+				Payload: payload,
+				Options: options,
+			})
+
+			if out == nil {
+				out = runtime.None
+			}
+
+			if err := vm.setOrTryCatch(dst, out, err); err != nil {
+				return nil, err
+			}
 		case bytecode.OpLoadNone:
 			reg[dst] = runtime.None
 		case bytecode.OpLoadZero:
@@ -571,29 +608,6 @@ loop:
 			}
 		case bytecode.OpStreamIter:
 			if err := vm.execStreamIterOp(ctx, dst, src1, src2, reg); err != nil {
-				return nil, err
-			}
-		case bytecode.OpDispatch:
-			dispatcher, eventName, payload, options, err := vm.castDispatchArgs(ctx, reg[dst], reg[src1], reg[src2])
-
-			if err != nil {
-				if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
-					return nil, err
-				}
-				continue
-			}
-
-			out, err := dispatcher.Dispatch(ctx, runtime.DispatchEvent{
-				Name:    eventName,
-				Payload: payload,
-				Options: options,
-			})
-
-			if out == nil {
-				out = runtime.None
-			}
-
-			if err := vm.setOrTryCatch(dst, out, err); err != nil {
 				return nil, err
 			}
 		case bytecode.OpSleep:
