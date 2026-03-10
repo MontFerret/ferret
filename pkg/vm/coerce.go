@@ -24,11 +24,3 @@ func coerceBool(input runtime.Value) runtime.Boolean {
 		return runtime.True
 	}
 }
-
-//func coerceType[T any](vm *VM, input, fallback runtime.Value) (T, error) {
-//	casted, ok := input.(T)
-//
-//	if ok {
-//		return casted, nil
-//	}
-//}
