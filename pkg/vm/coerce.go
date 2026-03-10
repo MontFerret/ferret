@@ -1,6 +1,8 @@
 package vm
 
-import "github.com/MontFerret/ferret/v2/pkg/runtime"
+import (
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+)
 
 func coerceBool(input runtime.Value) runtime.Boolean {
 	if input == nil || input == runtime.None {

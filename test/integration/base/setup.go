@@ -38,6 +38,7 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 	}
 
 	b.ResetTimer()
+	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
 		_, err := instance.Run(ctx, env)

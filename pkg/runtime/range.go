@@ -1,4 +1,4 @@
-package data
+package runtime
 
 import (
 	"context"
@@ -6,25 +6,23 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
-
 	"github.com/wI2L/jettison"
 )
 
 type Range struct {
-	start int64
-	end   int64
+	start Int
+	end   Int
 }
 
-func NewRange(start, end int64) *Range {
+func NewRange(start, end Int) *Range {
 	return &Range{start, end}
 }
 
-func (r *Range) Start() int64 {
+func (r *Range) Start() Int {
 	return r.start
 }
 
-func (r *Range) End() int64 {
+func (r *Range) End() Int {
 	return r.end
 }
 
@@ -35,37 +33,40 @@ func (r *Range) String() string {
 func (r *Range) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte("vm.range"))
+	h.Write([]byte("range"))
 	h.Write([]byte(":"))
 
-	startMultiplier := 1
+	var startMultiplier Int
+	startMultiplier = 1
 	if r.start < 0 {
 		h.Write([]byte("-"))
 		startMultiplier = -1
 	}
 
 	bytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(bytes, uint64(r.start*int64(startMultiplier)))
+	binary.LittleEndian.PutUint64(bytes, uint64(r.start*startMultiplier))
 	h.Write(bytes)
 	h.Write([]byte(".."))
 
-	endMultiplier := 1
+	var endMultiplier Int
+	endMultiplier = 1
+
 	if r.start < 0 {
 		h.Write([]byte("-"))
 		endMultiplier = -1
 	}
 
-	binary.LittleEndian.PutUint64(bytes, uint64(r.end*int64(endMultiplier)))
+	binary.LittleEndian.PutUint64(bytes, uint64(r.end*endMultiplier))
 	h.Write(bytes)
 
 	return h.Sum64()
 }
 
-func (r *Range) Copy() runtime.Value {
+func (r *Range) Copy() Value {
 	return NewRange(r.start, r.end)
 }
 
-func (r *Range) Iterate(_ context.Context) (runtime.Iterator, error) {
+func (r *Range) Iterate(_ context.Context) (Iterator, error) {
 	return NewRangeIterator(r), nil
 }
 
@@ -73,7 +74,7 @@ func (r *Range) MarshalJSON() ([]byte, error) {
 	start := r.start
 	end := r.end
 
-	var arr []int64
+	var arr []Int
 
 	if start <= end {
 		arr = r.populateArray(start, end, r.calculateCapacity(start, end), true)
@@ -84,11 +85,11 @@ func (r *Range) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(arr, jettison.NoHTMLEscaping())
 }
 
-func (r *Range) Compare(_ context.Context, other runtime.Value) (int, error) {
+func (r *Range) Compare(_ context.Context, other Value) (int, error) {
 	otherRange, ok := other.(*Range)
 
 	if !ok {
-		return runtime.CompareTypes(r, other), nil
+		return CompareTypes(r, other), nil
 	}
 
 	if r.start == otherRange.start && r.end == otherRange.end {
@@ -102,8 +103,8 @@ func (r *Range) Compare(_ context.Context, other runtime.Value) (int, error) {
 	return 1, nil
 }
 
-func (r *Range) calculateCapacity(start int64, end int64) int64 {
-	var capacity int64
+func (r *Range) calculateCapacity(start, end Int) Int {
+	var capacity Int
 	if start <= end {
 		if end < 0 {
 			capacity = start + (end * -1) + 1
@@ -120,8 +121,8 @@ func (r *Range) calculateCapacity(start int64, end int64) int64 {
 	return capacity
 }
 
-func (r *Range) populateArray(start int64, end int64, capacity int64, ascending bool) []int64 {
-	arr := make([]int64, 0, capacity)
+func (r *Range) populateArray(start, end, capacity Int, ascending bool) []Int {
+	arr := make([]Int, 0, capacity)
 
 	if ascending {
 		// start to end

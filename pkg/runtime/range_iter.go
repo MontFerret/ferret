@@ -1,20 +1,18 @@
-package data
+package runtime
 
 import (
 	"context"
 	"io"
-
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type RangeIterator struct {
 	values     *Range
 	descending bool
-	pos        int64
-	counter    int64
+	pos        Int
+	counter    Int
 }
 
-func NewRangeIterator(values *Range) runtime.Iterator {
+func NewRangeIterator(values *Range) Iterator {
 	if values.start <= values.end {
 		return &RangeIterator{values: values, pos: values.start, counter: -1}
 	}
@@ -22,13 +20,13 @@ func NewRangeIterator(values *Range) runtime.Iterator {
 	return &RangeIterator{values: values, pos: values.start, counter: -1, descending: true}
 }
 
-func (iter *RangeIterator) Next(_ context.Context) (value runtime.Value, key runtime.Value, err error) {
+func (iter *RangeIterator) Next(_ context.Context) (value Value, key Value, err error) {
 	if !iter.descending && iter.pos > iter.values.end {
-		return runtime.None, runtime.None, io.EOF
+		return None, None, io.EOF
 	}
 
 	if iter.descending && iter.pos < iter.values.end {
-		return runtime.None, runtime.None, io.EOF
+		return None, None, io.EOF
 	}
 
 	iter.counter++
@@ -40,8 +38,8 @@ func (iter *RangeIterator) Next(_ context.Context) (value runtime.Value, key run
 	}
 
 	if !iter.descending {
-		return runtime.Int(iter.pos - 1), runtime.Int(iter.counter), nil
+		return iter.pos - 1, iter.counter, nil
 	}
 
-	return runtime.Int(iter.pos + 1), runtime.Int(iter.counter), nil
+	return iter.pos + 1, iter.counter, nil
 }

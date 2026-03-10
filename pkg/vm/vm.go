@@ -286,14 +286,14 @@ loop:
 			if err := vm.setOrTryCatch(dst, out, err); err != nil {
 				return nil, err
 			}
-		case bytecode.OpLoadNone:
-			reg[dst] = runtime.None
-		case bytecode.OpLoadZero:
-			reg[dst] = runtime.ZeroInt
-		case bytecode.OpLoadBool:
-			reg[dst] = runtime.Boolean(src1 == 1)
 		case bytecode.OpMove:
 			reg[dst] = reg[src1]
+		case bytecode.OpLoadNone:
+			reg[dst] = runtime.None
+		case bytecode.OpLoadBool:
+			reg[dst] = runtime.Boolean(src1 == 1)
+		case bytecode.OpLoadZero:
+			reg[dst] = runtime.ZeroInt
 		case bytecode.OpLoadConst:
 			reg[dst] = constants[src1.Constant()]
 		case bytecode.OpLoadParam:
@@ -302,7 +302,28 @@ loop:
 			reg[dst] = runtime.NewArray(int(src1))
 		case bytecode.OpLoadObject:
 			reg[dst] = data.NewFastObjectOf(shapeCache, vm.options.fastObjectDictThreshold, int(src1))
+		case bytecode.OpLoadRange:
+			start, err := runtime.ToInt(ctx, reg[src1])
 
+			if err != nil {
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
+				}
+
+				continue
+			}
+
+			end, err := runtime.ToInt(ctx, reg[src2])
+
+			if err != nil {
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
+				}
+
+				continue
+			}
+
+			reg[dst] = runtime.NewRange(start, end)
 		case bytecode.OpExists:
 			val := reg[src1]
 
@@ -378,19 +399,6 @@ loop:
 					continue
 				}
 			}
-		case bytecode.OpLoadRange:
-			res, err := ToRange(ctx, reg[src1], reg[src2])
-
-			if err == nil {
-				reg[dst] = res
-				break
-			}
-
-			if err := vm.handleProtectedError(err); err != nil {
-				return nil, err
-			}
-
-			continue
 		case bytecode.OpLoadIndex, bytecode.OpLoadIndexOptional:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadIndexOptional

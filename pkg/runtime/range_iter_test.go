@@ -1,4 +1,4 @@
-package data_test
+package runtime_test
 
 import (
 	"context"
@@ -6,18 +6,15 @@ import (
 	"io"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
-
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestRangeIterator(t *testing.T) {
 	Convey("Zero value", t, func() {
 		ctx := context.Background()
-		r := data.NewRange(0, 0)
-		iter := data.NewRangeIterator(r)
+		r := runtime.NewRange(0, 0)
+		iter := runtime.NewRangeIterator(r)
 
 		val, key, err := iter.Next(ctx)
 
@@ -31,8 +28,8 @@ func TestRangeIterator(t *testing.T) {
 
 	Convey("Two values", t, func() {
 		ctx := context.Background()
-		r := data.NewRange(0, 1)
-		iter := data.NewRangeIterator(r)
+		r := runtime.NewRange(0, 1)
+		iter := runtime.NewRangeIterator(r)
 
 		val, key, err := iter.Next(ctx)
 
@@ -52,8 +49,8 @@ func TestRangeIterator(t *testing.T) {
 
 	Convey("Two values (2)", t, func() {
 		ctx := context.Background()
-		r := data.NewRange(1, 2)
-		iter := data.NewRangeIterator(r)
+		r := runtime.NewRange(1, 2)
+		iter := runtime.NewRangeIterator(r)
 
 		val, key, err := iter.Next(ctx)
 
@@ -73,8 +70,8 @@ func TestRangeIterator(t *testing.T) {
 
 	Convey("Multiple ascending values", t, func() {
 		ctx := context.Background()
-		r := data.NewRange(0, 10)
-		iter := data.NewRangeIterator(r)
+		r := runtime.NewRange(0, 10)
+		iter := runtime.NewRangeIterator(r)
 
 		actual := make([]runtime.Int, 0, 10)
 
@@ -92,8 +89,8 @@ func TestRangeIterator(t *testing.T) {
 
 	Convey("Multiple descending values", t, func() {
 		ctx := context.Background()
-		r := data.NewRange(10, 0)
-		iter := data.NewRangeIterator(r)
+		r := runtime.NewRange(10, 0)
+		iter := runtime.NewRangeIterator(r)
 
 		actual := make([]runtime.Int, 0, 10)
 
@@ -111,13 +108,15 @@ func TestRangeIterator(t *testing.T) {
 }
 
 func BenchmarkRangeIterator(b *testing.B) {
-	size := 100
+	var size runtime.Int
+	size = 100
 	ctx := context.Background()
-	r := data.NewRange(0, int64(size))
+	r := runtime.NewRange(0, size)
 	b.ResetTimer()
+	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		iter := data.NewRangeIterator(r)
+		iter := runtime.NewRangeIterator(r)
 		for {
 			_, _, err := iter.Next(ctx)
 			if errors.Is(err, io.EOF) {
