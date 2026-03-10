@@ -635,6 +635,88 @@ func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 	}
 }
 
+func TestSetOrOptional_OptionalErrorUsesFailOptionalPath(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+		},
+		CatchTable: []bytecode.Catch{
+			{1, 1, 0},
+		},
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
+
+	state.pc = 1
+	state.registers.Values[1] = runtime.True
+
+	action := state.setOrOptional(bytecode.NewRegister(1), runtime.True, errors.New("boom"), true)
+	if action != errContinue {
+		t.Fatalf("expected optional path to continue, got %v", action)
+	}
+
+	if got := state.registers.Values[1]; got != runtime.None {
+		t.Fatalf("expected destination to be reset to none, got %v", got)
+	}
+
+	if got, want := state.pc, 1; got != want {
+		t.Fatalf("expected optional path to bypass catch jump and keep pc %d, got %d", want, got)
+	}
+}
+
+func TestSetOrOptional_NotFoundContinuesWithNone(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+		},
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
+
+	state.registers.Values[1] = runtime.True
+
+	action := state.setOrOptional(bytecode.NewRegister(1), runtime.True, runtime.ErrNotFound, false)
+	if action != errContinue {
+		t.Fatalf("expected not found to continue, got %v", action)
+	}
+
+	if got := state.registers.Values[1]; got != runtime.None {
+		t.Fatalf("expected destination to be reset to none, got %v", got)
+	}
+}
+
+func TestSetOrOptional_NonOptionalNonNotFoundReturnsError(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+		},
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
+
+	initial := runtime.NewInt(42)
+	state.registers.Values[1] = initial
+
+	action := state.setOrOptional(bytecode.NewRegister(1), runtime.True, errors.New("boom"), false)
+	if action != errReturn {
+		t.Fatalf("expected non-optional non-not-found to return error, got %v", action)
+	}
+
+	if got := state.registers.Values[1]; got != initial {
+		t.Fatalf("expected destination to remain unchanged, got %v", got)
+	}
+}
+
 func TestOpFail_UncaughtReturnsRuntimeError(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,

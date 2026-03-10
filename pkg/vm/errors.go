@@ -22,6 +22,7 @@ const (
 const (
 	failRuntime failClass = iota
 	failProtected
+	failOptional
 	failInvariant
 )
 

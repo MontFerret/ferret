@@ -106,6 +106,12 @@ func (s *execState) fail(err error, class failClass, dst bytecode.Operand, fallb
 		}
 
 		return errContinue
+	case failOptional:
+		if setFallback && dst.IsRegister() {
+			s.registers.Values[dst] = normalizeValue(fallback)
+		}
+
+		return errContinue
 	default:
 		if catch, ok := s.tryCatch(s.pc); ok {
 			if setFallback && dst.IsRegister() && fallback != nil {
@@ -191,8 +197,7 @@ func (s *execState) setOrOptional(dst bytecode.Operand, val runtime.Value, err e
 	}
 
 	if optional || errors.Is(err, runtime.ErrNotFound) {
-		s.registers.Values[dst] = runtime.None
-		return errContinue
+		return s.fail(err, failOptional, dst, runtime.None, true)
 	}
 
 	return errReturn
