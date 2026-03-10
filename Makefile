@@ -9,10 +9,11 @@ DIR_E2E = ./test/e2e
 
 default: build
 
-build: vet generate test compile
+build: lint generate test compile
 
 install-tools:
 	go install honnef.co/go/tools/cmd/staticcheck@latest && \
+	go install golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignment@latest && \
 	go install golang.org/x/tools/cmd/goimports@latest && \
 	go install github.com/mgechev/revive@latest
 
