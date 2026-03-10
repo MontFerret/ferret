@@ -9,11 +9,10 @@ import (
 
 type KeyCounterCollector struct {
 	*runtime.Box[runtime.List]
-	grouping map[string]runtime.Int
-	// Fast path for the common single-key case: keep first counter without a map.
+	grouping       map[string]runtime.Int
+	singleKV       *KV
 	singleKey      string
 	singleIndex    runtime.Int
-	singleKV       *KV
 	hasSingleGroup bool
 	sorted         bool
 }

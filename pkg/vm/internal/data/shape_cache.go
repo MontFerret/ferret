@@ -6,28 +6,28 @@ type (
 	FastObject struct {
 		cache         *ShapeCache
 		shape         *fastShape
+		dict          map[string]runtime.Value
 		slots         []runtime.Value
 		size          int
-		dict          map[string]runtime.Value
 		dictThreshold int
 	}
 
 	fastShape struct {
-		id     uint64
 		fields map[string]int
 		names  []string
+		id     uint64
 	}
 
 	ShapeCache struct {
-		limit       int
-		nextID      uint64
 		transitions map[shapeKey]*fastShape
 		root        *fastShape
+		limit       int
+		nextID      uint64
 	}
 
 	shapeKey struct {
-		shapeID uint64
 		key     string
+		shapeID uint64
 	}
 )
 

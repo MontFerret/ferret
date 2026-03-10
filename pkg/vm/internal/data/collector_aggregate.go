@@ -10,14 +10,12 @@ import (
 )
 
 type AggregateCollector struct {
-	plan   bytecode.AggregatePlan
-	states []aggregateState
-	// Fast path for single projection key (common for COLLECT ... INTO groups):
-	// avoid allocating and hashing into a map until a second distinct key appears.
-	singleGroupKey   string
+	plan             bytecode.AggregatePlan
 	singleGroupValue runtime.List
-	hasSingleGroup   bool
 	groups           map[string]runtime.List
+	singleGroupKey   string
+	states           []aggregateState
+	hasSingleGroup   bool
 	hasData          bool
 }
 

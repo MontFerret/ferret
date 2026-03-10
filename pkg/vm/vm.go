@@ -14,8 +14,8 @@ import (
 type VM struct {
 	cache        *mem.Cache
 	program      *bytecode.Program
-	state        execState
 	instructions []data.ExecInstruction
+	state        execState
 	options      options
 }
 

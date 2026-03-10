@@ -8,11 +8,10 @@ import (
 )
 
 type KeyGroupCollector struct {
+	singleGroup runtime.List
 	*runtime.Box[runtime.List]
-	grouping map[string]runtime.List
-	// Fast path for the common single-key case: keep first group without a map.
+	grouping       map[string]runtime.List
 	singleKey      string
-	singleGroup    runtime.List
 	hasSingleGroup bool
 	sorted         bool
 }

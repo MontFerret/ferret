@@ -11,13 +11,11 @@ import (
 )
 
 type GroupedAggregateCollector struct {
+	plan bytecode.AggregatePlan
 	*runtime.Box[runtime.List]
-
-	plan     bytecode.AggregatePlan
-	grouping map[string]*groupedAggregateEntry
-	// Fast path for the common single-key case: keep first group without a map.
-	singleKey      string
+	grouping       map[string]*groupedAggregateEntry
 	singleEntry    *groupedAggregateEntry
+	singleKey      string
 	hasSingleGroup bool
 	sorted         bool
 }
