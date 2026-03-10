@@ -521,6 +521,64 @@ loop:
 			} else {
 				vm.pc = int(dst)
 			}
+		case bytecode.OpStream:
+			observable, eventName, options, err := vm.castSubscribeArgs(reg[dst], reg[src1], reg[src2])
+
+			if err != nil {
+				if err := vm.handleError(err); err != nil {
+					return nil, err
+				}
+
+				continue
+			}
+
+			stream, err := observable.Subscribe(ctx, runtime.Subscription{
+				EventName: eventName,
+				Options:   options,
+			})
+
+			if err != nil {
+				if err := vm.handleError(err); err != nil {
+					return nil, err
+				}
+
+				continue
+			}
+
+			reg[dst] = data.NewStreamValue(stream)
+		case bytecode.OpStreamIter:
+			stream := reg[src1].(*data.StreamValue)
+
+			var timeout runtime.Int
+
+			if reg[src2] != nil && reg[src2] != runtime.None {
+				t, err := runtime.CastInt(reg[src2])
+
+				if err != nil {
+					if err := vm.handleError(err); err != nil {
+						return nil, err
+					}
+
+					t = 0
+				}
+
+				timeout = t
+			}
+
+			reg[dst] = stream.Iterate(timeout)
+		case bytecode.OpQuery:
+			src := readOperandValue(reg, constants, src1)
+			descriptor := readOperandValue(reg, constants, src2)
+			// TODO: unwrap since it's cannot be inlined
+			out, err := applyQuery(ctx, src, descriptor)
+
+			if err := vm.setOrTryCatch(dst, out, err); err != nil {
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
+				}
+
+				continue
+			}
 		case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
 			if err := vm.execDatasetOps(ctx, op, inst, dst, src1, src2, reg, constants, aggregatePlans); err != nil {
 				return nil, err
@@ -596,18 +654,7 @@ loop:
 					continue
 				}
 			}
-		case bytecode.OpApplyQuery:
-			src := readOperandValue(reg, constants, src1)
-			descriptor := readOperandValue(reg, constants, src2)
-			out, err := ApplyQuery(ctx, src, descriptor)
 
-			if err := vm.setOrTryCatch(dst, out, err); err != nil {
-				if err := vm.handleProtectedError(err); err != nil {
-					return nil, err
-				}
-
-				continue
-			}
 		case bytecode.OpAdd:
 			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
 		case bytecode.OpAddConst:
@@ -722,15 +769,6 @@ loop:
 			res, err := Flatten(ctx, reg[src1], depth)
 
 			if err := vm.setOrTryCatch(dst, res, err); err != nil {
-				return nil, err
-			}
-
-		case bytecode.OpStream:
-			if err := vm.execStreamOp(ctx, dst, src1, src2, reg); err != nil {
-				return nil, err
-			}
-		case bytecode.OpStreamIter:
-			if err := vm.execStreamIterOp(ctx, dst, src1, src2, reg); err != nil {
 				return nil, err
 			}
 		case bytecode.OpSleep:

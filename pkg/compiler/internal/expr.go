@@ -2355,7 +2355,7 @@ func (c *ExprCompiler) compileArrayApply(src bytecode.Operand, apply fql.IArrayA
 	span := diagnostics.SpanFromRuleContext(apply)
 
 	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitABC(bytecode.OpApplyQuery, dst, src, query)
+		c.ctx.Emitter.EmitABC(bytecode.OpQuery, dst, src, query)
 	})
 
 	if len(tail) > 0 {
@@ -2476,7 +2476,7 @@ func (c *ExprCompiler) emitApplyQuery(span file.Span, src, queryReg bytecode.Ope
 	result := c.ctx.Registers.Allocate()
 
 	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitABC(bytecode.OpApplyQuery, result, src, queryReg)
+		c.ctx.Emitter.EmitABC(bytecode.OpQuery, result, src, queryReg)
 	})
 
 	return result

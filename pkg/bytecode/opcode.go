@@ -38,7 +38,7 @@ const (
 	OpLoadPropertyOptionalConst
 
 	// Integrated Query Operations
-	OpApplyQuery // Apply a query to a value
+	OpQuery // Apply a query to a value
 
 	// Arithmetic Operations
 	OpAdd
@@ -220,7 +220,7 @@ func (op Opcode) String() string {
 		return "LOADPRC"
 	case OpLoadPropertyOptionalConst:
 		return "LOADPROC"
-	case OpApplyQuery:
+	case OpQuery:
 		return "QRY"
 	case OpLoadProperty:
 		return "LOADPR"

@@ -37,14 +37,14 @@ func findApplyQueryDescriptorSize(code []bytecode.Instruction, applyIdx int) (in
 func assertThreeSlotQueryDescriptor(t *testing.T, code []bytecode.Instruction) {
 	t.Helper()
 
-	applyIdx, ok := findFirstOpcodeIndex(code, bytecode.OpApplyQuery)
+	applyIdx, ok := findFirstOpcodeIndex(code, bytecode.OpQuery)
 	if !ok {
-		t.Fatalf("expected OpApplyQuery in bytecode")
+		t.Fatalf("expected OpQuery in bytecode")
 	}
 
 	size, ok := findApplyQueryDescriptorSize(code, applyIdx)
 	if !ok {
-		t.Fatalf("expected OpLoadArray for query descriptor before OpApplyQuery")
+		t.Fatalf("expected OpLoadArray for query descriptor before OpQuery")
 	}
 
 	if size != 3 {

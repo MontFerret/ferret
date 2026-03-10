@@ -3,59 +3,8 @@ package vm
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 )
-
-func (vm *VM) execStreamOp(
-	ctx context.Context,
-	dst, src1, src2 bytecode.Operand,
-	reg []runtime.Value,
-) error {
-	observable, eventName, options, err := vm.castSubscribeArgs(reg[dst], reg[src1], reg[src2])
-
-	if err != nil {
-		return vm.handleError(err)
-	}
-
-	stream, err := observable.Subscribe(ctx, runtime.Subscription{
-		EventName: eventName,
-		Options:   options,
-	})
-
-	if err != nil {
-		return vm.handleError(err)
-	}
-
-	reg[dst] = data.NewStreamValue(stream)
-
-	return nil
-}
-
-func (vm *VM) execStreamIterOp(
-	_ context.Context,
-	dst, src1, src2 bytecode.Operand,
-	reg []runtime.Value,
-) error {
-	stream := reg[src1].(*data.StreamValue)
-
-	var timeout runtime.Int
-
-	if reg[src2] != nil && reg[src2] != runtime.None {
-		t, err := runtime.CastInt(reg[src2])
-
-		if err != nil {
-			return vm.handleError(err)
-		}
-
-		timeout = t
-	}
-
-	reg[dst] = stream.Iterate(timeout)
-
-	return nil
-}
 
 func (vm *VM) castSubscribeArgs(dst, eventName, opts runtime.Value) (runtime.Observable, runtime.String, runtime.Map, error) {
 	observable, ok := dst.(runtime.Observable)

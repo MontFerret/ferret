@@ -20,7 +20,7 @@ var (
 	queryDescriptorKeyOptions = runtime.NewString(queryDescriptorOptions)
 )
 
-func ApplyQuery(ctx context.Context, src runtime.Value, descriptor runtime.Value) (runtime.Value, error) {
+func applyQuery(ctx context.Context, src runtime.Value, descriptor runtime.Value) (runtime.Value, error) {
 	query, err := parseQueryDescriptor(ctx, descriptor)
 	if err != nil {
 		return runtime.None, err

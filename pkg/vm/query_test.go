@@ -89,7 +89,7 @@ func TestApplyQuery_ObjectDescriptorIgnoresModifier(t *testing.T) {
 	_ = obj.Set(ctx, runtime.NewString("options"), runtime.None)
 	_ = obj.Set(ctx, runtime.NewString("modifier"), runtime.NewString("ONE"))
 
-	out, err := ApplyQuery(ctx, src, obj)
+	out, err := applyQuery(ctx, src, obj)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -113,7 +113,7 @@ func TestApplyQuery_ArrayDescriptorRequiresExactTupleSize(t *testing.T) {
 		runtime.NewString("count"),
 	)
 
-	_, err := ApplyQuery(context.Background(), src, descriptor)
+	_, err := applyQuery(context.Background(), src, descriptor)
 	if err == nil {
 		t.Fatal("expected runtime error")
 	}
@@ -134,7 +134,7 @@ func TestApplyQuery_ArrayDescriptorPayloadTypeValidation(t *testing.T) {
 		runtime.None,
 	)
 
-	_, err := ApplyQuery(context.Background(), src, descriptor)
+	_, err := applyQuery(context.Background(), src, descriptor)
 	if err == nil {
 		t.Fatal("expected runtime error")
 	}
@@ -147,7 +147,7 @@ func TestApplyQuery_ArrayDescriptorPayloadTypeValidation(t *testing.T) {
 func TestApplyQuery_QueryableNilResultNormalizedToEmptyArray(t *testing.T) {
 	src := &queryStub{}
 
-	out, err := ApplyQuery(context.Background(), src, validDescriptor())
+	out, err := applyQuery(context.Background(), src, validDescriptor())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -177,7 +177,7 @@ func TestApplyQuery_ListSourceFlattensResults(t *testing.T) {
 
 	src := runtime.NewArrayWith(a, b)
 
-	out, err := ApplyQuery(context.Background(), src, validDescriptor())
+	out, err := applyQuery(context.Background(), src, validDescriptor())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -190,7 +190,7 @@ func TestApplyQuery_ListSourceFlattensResults(t *testing.T) {
 }
 
 func TestApplyQuery_NonQueryableSourceTypeError(t *testing.T) {
-	_, err := ApplyQuery(context.Background(), runtime.NewInt(1), validDescriptor())
+	_, err := applyQuery(context.Background(), runtime.NewInt(1), validDescriptor())
 	if err == nil {
 		t.Fatal("expected type error")
 	}
