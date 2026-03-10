@@ -9,44 +9,66 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostic"
 )
 
-// handleProtectedError applies protected-frame unwinding policy.
-func (s *execState) handleProtectedError(err error) error {
+type (
+	errAction uint8
+	errPolicy uint8
+)
+
+const (
+	errOK errAction = iota
+	errContinue
+	errReturn
+)
+
+const (
+	errPolicyProtected errPolicy = iota
+	errPolicyCatch
+)
+
+func (s *execState) applyErrPolicy(err error, policy errPolicy, dst bytecode.Operand, fallback runtime.Value) errAction {
 	if err == nil {
-		return nil
+		return errOK
 	}
 
-	if s.unwindToProtected() {
-		return nil
-	}
-
-	return err
+	return s.applyErrPolicySlow(err, policy, dst, fallback)
 }
 
-// handleError applies catch-table then protected-frame error policy.
-func (s *execState) handleError(err error) error {
-	return s.handleErrorWithFallback(err, bytecode.NoopOperand, nil)
+func (s *execState) applyErrPolicySlow(err error, policy errPolicy, dst bytecode.Operand, fallback runtime.Value) errAction {
+	switch policy {
+	case errPolicyCatch:
+		if catch, ok := s.tryCatch(s.pc); ok {
+			if fallback != nil {
+				s.registers.Values[dst] = fallback
+			}
+
+			if catch[2] >= 0 {
+				s.pc = catch[2]
+			}
+
+			return errContinue
+		}
+		fallthrough
+	case errPolicyProtected:
+		if s.unwindToProtected() {
+			return errContinue
+		}
+
+		return errReturn
+	default:
+		if s.unwindToProtected() {
+			return errContinue
+		}
+
+		return errReturn
+	}
 }
 
-// handleErrorWithFallback applies catch-table then protected-frame error policy
-// and allows a catch-specific fallback assignment/action.
-func (s *execState) handleErrorWithFallback(err error, dst bytecode.Operand, fallback runtime.Value) error {
-	if err == nil {
-		return nil
-	}
+func (s *execState) applyProtected(err error) errAction {
+	return s.applyErrPolicy(err, errPolicyProtected, bytecode.NoopOperand, nil)
+}
 
-	if catch, ok := s.tryCatch(s.pc); ok {
-		if fallback != nil {
-			s.registers.Values[dst] = fallback
-		}
-
-		if catch[2] >= 0 {
-			s.pc = catch[2]
-		}
-
-		return nil
-	}
-
-	return s.handleProtectedError(err)
+func (s *execState) applyCatch(dst bytecode.Operand, fallback runtime.Value, err error) errAction {
+	return s.applyErrPolicy(err, errPolicyCatch, dst, fallback)
 }
 
 func (s *execState) wrapRuntimeError(err error) error {
@@ -83,32 +105,29 @@ func (s *execState) tryCatch(pos int) (bytecode.Catch, bool) {
 	return bytecode.Catch{}, false
 }
 
-func (s *execState) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err error) error {
+func (s *execState) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err error) errAction {
 	reg := s.registers.Values
 
 	if err == nil {
 		reg[dst] = val
-
-		return nil
+		return errOK
 	}
 
-	return s.handleErrorWithFallback(err, dst, runtime.None)
+	return s.applyErrPolicySlow(err, errPolicyCatch, dst, runtime.None)
 }
 
-func (s *execState) setOrOptional(dst bytecode.Operand, val runtime.Value, err error, optional bool) error {
+func (s *execState) setOrOptional(dst bytecode.Operand, val runtime.Value, err error, optional bool) errAction {
 	if err == nil {
 		s.registers.Values[dst] = val
-
-		return nil
+		return errOK
 	}
 
 	if optional || errors.Is(err, runtime.ErrNotFound) {
 		s.registers.Values[dst] = runtime.None
-
-		return nil
+		return errContinue
 	}
 
-	return err
+	return errReturn
 }
 
 func (s *execState) unwindToProtected() bool {

@@ -458,15 +458,15 @@ func TestSetCallResult_AppliesCatchJumpZeroAndFallbackValue(t *testing.T) {
 	instance.state.pc = 1
 	instance.state.registers.Values[1] = runtime.True
 
-	err := instance.state.setCallResult(
+	action := instance.state.setCallResult(
 		bytecode.OpHCall,
 		bytecode.NewRegister(1),
 		runtime.True,
 		errors.New("boom"),
 	)
 
-	if err != nil {
-		t.Fatalf("expected caught error to be swallowed, got %v", err)
+	if action == errReturn {
+		t.Fatalf("expected caught error to be swallowed, got %v", action)
 	}
 
 	if got := instance.state.registers.Values[1]; got != runtime.None {
@@ -492,10 +492,9 @@ func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
 
 	instance.state.pc = 1
 
-	err := instance.state.handleErrorWithFallback(errors.New("boom"), bytecode.Operand(1), runtime.True)
-
-	if err != nil {
-		t.Fatalf("expected caught error to be swallowed, got %v", err)
+	action := instance.state.applyCatch(bytecode.Operand(1), runtime.True, errors.New("boom"))
+	if action == errReturn {
+		t.Fatalf("expected caught error to be swallowed, got %v", action)
 	}
 
 	val := instance.state.registers.Values[1]
@@ -523,9 +522,9 @@ func TestHandleErrorWithCatch_AppliesPositiveJumpTarget(t *testing.T) {
 
 	instance.state.pc = 1
 
-	err := instance.state.handleErrorWithFallback(errors.New("boom"), bytecode.NoopOperand, nil)
-	if err != nil {
-		t.Fatalf("expected caught error to be swallowed, got %v", err)
+	action := instance.state.applyCatch(bytecode.NoopOperand, nil, errors.New("boom"))
+	if action == errReturn {
+		t.Fatalf("expected caught error to be swallowed, got %v", action)
 	}
 
 	if got, want := instance.state.pc, 2; got != want {
@@ -548,10 +547,9 @@ func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 	instance.state.pc = 1
 	wantErr := errors.New("boom")
 
-	err := instance.state.handleErrorWithFallback(wantErr, bytecode.Operand(1), runtime.True)
-
-	if err != wantErr {
-		t.Fatalf("expected original error to be returned, got %v", err)
+	action := instance.state.applyCatch(bytecode.Operand(1), runtime.True, wantErr)
+	if action != errReturn {
+		t.Fatalf("expected original error to be returned, got %v", action)
 	}
 
 	val := instance.state.registers.Values[1]

@@ -118,20 +118,26 @@ func callCachedHostFunction(
 	return nil, ErrUnresolvedFunction
 }
 
-func (s *execState) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) error {
+func (s *execState) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) errAction {
 	reg := s.registers.Values
 
 	if err == nil {
 		reg[dst] = out
 
-		return nil
+		return errOK
 	}
 
 	if bytecode.IsProtectedCall(op) {
 		reg[dst] = runtime.None
 
-		return nil
+		return errContinue
 	}
+
+	return s.setCallResultSlow(dst, err)
+}
+
+func (s *execState) setCallResultSlow(dst bytecode.Operand, err error) errAction {
+	reg := s.registers.Values
 
 	if catch, ok := s.tryCatch(s.pc); ok {
 		reg[dst] = runtime.None
@@ -140,12 +146,12 @@ func (s *execState) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out 
 			s.pc = catch[2]
 		}
 
-		return nil
+		return errContinue
 	}
 
 	if s.unwindToProtected() {
-		return nil
+		return errContinue
 	}
 
-	return err
+	return errReturn
 }
