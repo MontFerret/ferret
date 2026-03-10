@@ -2,6 +2,7 @@ package vm
 
 import (
 	"context"
+	"errors"
 	"io"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -482,9 +483,43 @@ loop:
 			if err != nil {
 				return nil, err
 			}
-		case bytecode.OpIterNext, bytecode.OpIterValue, bytecode.OpIterKey, bytecode.OpIterLimit, bytecode.OpIterSkip:
-			if err := vm.execIterOps(ctx, op, dst, src1, src2, reg); err != nil {
-				return nil, err
+		case bytecode.OpIterNext:
+			iterator := reg[src1].(*data.Iterator)
+
+			if err := iterator.Next(ctx); err != nil {
+				if errors.Is(err, io.EOF) {
+					vm.pc = int(dst)
+					continue
+				}
+
+				if err := vm.handleProtectedError(err); err != nil {
+					return nil, err
+				}
+			}
+		case bytecode.OpIterValue:
+			iterator := reg[src1].(*data.Iterator)
+			reg[dst] = iterator.Value()
+		case bytecode.OpIterKey:
+			iterator := reg[src1].(*data.Iterator)
+			reg[dst] = iterator.Key()
+		case bytecode.OpIterSkip:
+			state := runtime.ToIntSafe(ctx, reg[src1])
+			threshold := runtime.ToIntSafe(ctx, reg[src2])
+
+			if state < threshold {
+				state++
+				reg[src1] = state
+				vm.pc = int(dst)
+			}
+		case bytecode.OpIterLimit:
+			state := runtime.ToIntSafe(ctx, reg[src1])
+			threshold := runtime.ToIntSafe(ctx, reg[src2])
+
+			if state < threshold {
+				state++
+				reg[src1] = state
+			} else {
+				vm.pc = int(dst)
 			}
 		case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
 			if err := vm.execDatasetOps(ctx, op, inst, dst, src1, src2, reg, constants, aggregatePlans); err != nil {

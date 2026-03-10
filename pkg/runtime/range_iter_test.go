@@ -6,8 +6,9 @@ import (
 	"io"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func TestRangeIterator(t *testing.T) {
