@@ -812,3 +812,104 @@ loop:
 
 	return state.registers.Values[bytecode.NoopOperand], nil
 }
+
+func (vm *VM) regexpCached(pc int, value runtime.Value) (*data.Regexp, error) {
+	// We compare patterns to ensure that the cached regexp is the same as the one we're trying to use.
+	// This is necessary because the same compiled function can be used in different places with different regexps,
+	// and we want to avoid caching a regexp that doesn't match the current pattern.
+	switch v := value.(type) {
+	case *data.Regexp:
+		pattern := v.String()
+
+		if cached := vm.cache.Regexps[pc]; cached == nil || cached.Pattern != pattern {
+			vm.cache.Regexps[pc] = &mem.CachedRegexp{Pattern: pattern, Regexp: v}
+		}
+
+		return v, nil
+	case runtime.String:
+		pattern := v.String()
+
+		if cached := vm.cache.Regexps[pc]; cached != nil && cached.Pattern == pattern {
+			return cached.Regexp, nil
+		}
+
+		r, err := data.NewRegexp(v)
+		if err != nil {
+			return nil, err
+		}
+
+		vm.cache.Regexps[pc] = &mem.CachedRegexp{Pattern: pattern, Regexp: r}
+
+		return r, nil
+	default:
+		return nil, runtime.TypeErrorOf(value, runtime.TypeString, data.TypeRegexp)
+	}
+}
+
+func (vm *VM) castSubscribeArgs(dst, eventName, opts runtime.Value) (runtime.Observable, runtime.String, runtime.Map, error) {
+	observable, ok := dst.(runtime.Observable)
+
+	if !ok {
+		return nil, "", nil, runtime.TypeErrorOf(dst, runtime.TypeObservable)
+	}
+
+	eventNameStr, ok := eventName.(runtime.String)
+
+	if !ok {
+		return nil, "", nil, runtime.TypeErrorOf(eventName, runtime.TypeString)
+	}
+
+	var options runtime.Map
+
+	if opts != nil && opts != runtime.None {
+		m, ok := opts.(runtime.Map)
+
+		if !ok {
+			return nil, "", nil, runtime.TypeErrorOf(opts, runtime.TypeMap)
+		}
+
+		options = m
+	}
+
+	return observable, eventNameStr, options, nil
+}
+
+func (vm *VM) castDispatchArgs(
+	ctx context.Context,
+	target, eventName, args runtime.Value,
+) (runtime.Dispatchable, runtime.String, runtime.Value, runtime.Value, error) {
+	dispatcher, ok := target.(runtime.Dispatchable)
+
+	if !ok {
+		return nil, "", nil, nil, runtime.TypeErrorOf(target, runtime.TypeDispatchable)
+	}
+
+	eventNameStr, err := runtime.CastString(eventName)
+
+	if err != nil {
+		return nil, "", nil, nil, err
+	}
+
+	var payload runtime.Value = runtime.None
+	var options runtime.Value = runtime.None
+
+	if args == nil || args == runtime.None {
+		return dispatcher, eventNameStr, payload, options, nil
+	}
+
+	argMap, err := runtime.CastMap(args)
+
+	if err != nil {
+		return nil, "", nil, nil, err
+	}
+
+	if val, err := argMap.Get(ctx, runtime.NewString("payload")); err == nil {
+		payload = val
+	}
+
+	if val, err := argMap.Get(ctx, runtime.NewString("options")); err == nil {
+		options = val
+	}
+
+	return dispatcher, eventNameStr, payload, options, nil
+}
