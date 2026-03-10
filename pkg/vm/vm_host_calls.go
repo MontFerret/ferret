@@ -118,30 +118,6 @@ func callCachedHostFunction(
 	return nil, ErrUnresolvedFunction
 }
 
-func (vm *VM) execHostCall(
-	ctx context.Context,
-	op bytecode.Opcode,
-	pc int,
-	dst, src1, src2 bytecode.Operand,
-) error {
-	if op != bytecode.OpHCall && op != bytecode.OpProtectedHCall {
-		return runtime.Error(runtime.ErrUnexpected, "invalid host call opcode")
-	}
-
-	cacheFn := vm.cache.HostFunctions[pc]
-	out, err := callCachedHostFunction(ctx, cacheFn, vm.registers.Values, src1, src2)
-
-	if err := vm.setCallResult(op, dst, out, err); err != nil {
-		if vm.unwindToProtected() {
-			return nil
-		}
-
-		return err
-	}
-
-	return nil
-}
-
 func (vm *VM) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) error {
 	reg := vm.registers.Values
 
@@ -151,7 +127,7 @@ func (vm *VM) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtim
 		return nil
 	}
 
-	if isProtectedCall(op) {
+	if bytecode.IsProtectedCall(op) {
 		reg[dst] = runtime.None
 
 		return nil
@@ -172,13 +148,4 @@ func (vm *VM) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtim
 	}
 
 	return err
-}
-
-func isProtectedCall(op bytecode.Opcode) bool {
-	switch op {
-	case bytecode.OpProtectedHCall, bytecode.OpProtectedCall:
-		return true
-	default:
-		return false
-	}
 }

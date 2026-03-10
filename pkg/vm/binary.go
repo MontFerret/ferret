@@ -1,4 +1,4 @@
-package operators
+package vm
 
 import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
