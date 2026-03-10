@@ -118,8 +118,8 @@ func callCachedHostFunction(
 	return nil, ErrUnresolvedFunction
 }
 
-func (vm *VM) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) error {
-	reg := vm.registers.Values
+func (s *execState) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) error {
+	reg := s.registers.Values
 
 	if err == nil {
 		reg[dst] = out
@@ -133,17 +133,17 @@ func (vm *VM) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtim
 		return nil
 	}
 
-	if catch, ok := vm.tryCatch(vm.pc); ok {
+	if catch, ok := s.tryCatch(s.pc); ok {
 		reg[dst] = runtime.None
 
 		if catch[2] >= 0 {
-			vm.pc = catch[2]
+			s.pc = catch[2]
 		}
 
 		return nil
 	}
 
-	if vm.unwindToProtected() {
+	if s.unwindToProtected() {
 		return nil
 	}
 

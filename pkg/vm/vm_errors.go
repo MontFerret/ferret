@@ -10,12 +10,12 @@ import (
 )
 
 // handleProtectedError applies protected-frame unwinding policy.
-func (vm *VM) handleProtectedError(err error) error {
+func (s *execState) handleProtectedError(err error) error {
 	if err == nil {
 		return nil
 	}
 
-	if vm.unwindToProtected() {
+	if s.unwindToProtected() {
 		return nil
 	}
 
@@ -23,58 +23,58 @@ func (vm *VM) handleProtectedError(err error) error {
 }
 
 // handleError applies catch-table then protected-frame error policy.
-func (vm *VM) handleError(err error) error {
-	return vm.handleErrorWithFallback(err, bytecode.NoopOperand, nil)
+func (s *execState) handleError(err error) error {
+	return s.handleErrorWithFallback(err, bytecode.NoopOperand, nil)
 }
 
 // handleErrorWithFallback applies catch-table then protected-frame error policy
 // and allows a catch-specific fallback assignment/action.
-func (vm *VM) handleErrorWithFallback(err error, dst bytecode.Operand, fallback runtime.Value) error {
+func (s *execState) handleErrorWithFallback(err error, dst bytecode.Operand, fallback runtime.Value) error {
 	if err == nil {
 		return nil
 	}
 
-	if catch, ok := vm.tryCatch(vm.pc); ok {
+	if catch, ok := s.tryCatch(s.pc); ok {
 		if fallback != nil {
-			vm.registers.Values[dst] = fallback
+			s.registers.Values[dst] = fallback
 		}
 
 		if catch[2] >= 0 {
-			vm.pc = catch[2]
+			s.pc = catch[2]
 		}
 
 		return nil
 	}
 
-	return vm.handleProtectedError(err)
+	return s.handleProtectedError(err)
 }
 
-func (vm *VM) wrapRuntimeError(err error) error {
-	return diagnostic.WrapRuntimeError(vm.program, vm.pc, err)
+func (s *execState) wrapRuntimeError(err error) error {
+	return diagnostic.WrapRuntimeError(s.program, s.pc, err)
 }
 
-func (vm *VM) runtimeErrorFromPanic(r any) error {
-	return diagnostic.RuntimeErrorFromPanic(vm.program, vm.pc, r)
+func (s *execState) runtimeErrorFromPanic(r any) error {
+	return diagnostic.RuntimeErrorFromPanic(s.program, s.pc, r)
 }
 
-func (vm *VM) checkDivisionByZero(ctx context.Context, left, right runtime.Value) error {
-	return diagnostic.CheckDivisionByZero(ctx, vm.program, vm.pc, left, right)
+func (s *execState) checkDivisionByZero(ctx context.Context, left, right runtime.Value) error {
+	return diagnostic.CheckDivisionByZero(ctx, s.program, s.pc, left, right)
 }
 
-func (vm *VM) checkModuloByZero(ctx context.Context, right runtime.Value) error {
-	return diagnostic.CheckModuloByZero(ctx, vm.program, vm.pc, right)
+func (s *execState) checkModuloByZero(ctx context.Context, right runtime.Value) error {
+	return diagnostic.CheckModuloByZero(ctx, s.program, s.pc, right)
 }
 
-func (vm *VM) tryCatch(pos int) (bytecode.Catch, bool) {
-	if vm.catchByPC != nil && pos >= 0 && pos < len(vm.catchByPC) {
-		if idx := vm.catchByPC[pos]; idx >= 0 {
-			return vm.program.CatchTable[idx], true
+func (s *execState) tryCatch(pos int) (bytecode.Catch, bool) {
+	if s.catchByPC != nil && pos >= 0 && pos < len(s.catchByPC) {
+		if idx := s.catchByPC[pos]; idx >= 0 {
+			return s.program.CatchTable[idx], true
 		}
 
 		return bytecode.Catch{}, false
 	}
 
-	for _, pair := range vm.program.CatchTable {
+	for _, pair := range s.program.CatchTable {
 		if pos >= pair[0] && pos <= pair[1] {
 			return pair, true
 		}
@@ -83,8 +83,8 @@ func (vm *VM) tryCatch(pos int) (bytecode.Catch, bool) {
 	return bytecode.Catch{}, false
 }
 
-func (vm *VM) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err error) error {
-	reg := vm.registers.Values
+func (s *execState) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err error) error {
+	reg := s.registers.Values
 
 	if err == nil {
 		reg[dst] = val
@@ -92,21 +92,43 @@ func (vm *VM) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err error) 
 		return nil
 	}
 
-	return vm.handleErrorWithFallback(err, dst, runtime.None)
+	return s.handleErrorWithFallback(err, dst, runtime.None)
 }
 
-func (vm *VM) setOrOptional(dst bytecode.Operand, val runtime.Value, err error, optional bool) error {
+func (s *execState) setOrOptional(dst bytecode.Operand, val runtime.Value, err error, optional bool) error {
 	if err == nil {
-		vm.registers.Values[dst] = val
+		s.registers.Values[dst] = val
 
 		return nil
 	}
 
 	if optional || errors.Is(err, runtime.ErrNotFound) {
-		vm.registers.Values[dst] = runtime.None
+		s.registers.Values[dst] = runtime.None
 
 		return nil
 	}
 
 	return err
+}
+
+func (s *execState) unwindToProtected() bool {
+	registers, pc, ok := s.frames.UnwindToProtectedFrame(s.registers.Values)
+	if !ok {
+		return false
+	}
+
+	s.registers.Values = registers
+	s.pc = pc
+	return true
+}
+
+func (s *execState) returnToCaller(retVal runtime.Value) bool {
+	registers, pc, ok := s.frames.ReturnToCaller(s.registers.Values, retVal)
+	if !ok {
+		return false
+	}
+
+	s.registers.Values = registers
+	s.pc = pc
+	return true
 }

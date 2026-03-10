@@ -248,40 +248,40 @@ func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Valu
 
 func (vm *VM) loadIndexAndSet(ctx context.Context, dst bytecode.Operand, src, arg runtime.Value, optional bool) error {
 	if optional && src == runtime.None {
-		vm.registers.Values[dst] = runtime.None
+		vm.state.registers.Values[dst] = runtime.None
 		return nil
 	}
 
 	out, err := vm.loadIndex(ctx, src, arg)
 
-	return vm.setOrOptional(dst, out, err, optional)
+	return vm.state.setOrOptional(dst, out, err, optional)
 }
 
 func (vm *VM) loadKeyAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, arg runtime.Value, optional bool) error {
 	if optional && src == runtime.None {
-		vm.registers.Values[dst] = runtime.None
+		vm.state.registers.Values[dst] = runtime.None
 		return nil
 	}
 
 	out, err := vm.loadKeyCached(ctx, pc, src, arg)
 
-	return vm.setOrOptional(dst, out, err, optional)
+	return vm.state.setOrOptional(dst, out, err, optional)
 }
 
 func (vm *VM) loadKeyConstAndSet(ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, arg runtime.Value, optional bool) error {
 	if optional && src == runtime.None {
-		vm.registers.Values[dst] = runtime.None
+		vm.state.registers.Values[dst] = runtime.None
 		return nil
 	}
 
 	out, err := vm.loadKeyConstCached(ctx, pc, inst, src, arg)
 
-	return vm.setOrOptional(dst, out, err, optional)
+	return vm.state.setOrOptional(dst, out, err, optional)
 }
 
 func (vm *VM) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, prop runtime.Value, optional bool) error {
 	if optional && src == runtime.None {
-		vm.registers.Values[dst] = runtime.None
+		vm.state.registers.Values[dst] = runtime.None
 		return nil
 	}
 
@@ -297,12 +297,12 @@ func (vm *VM) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc i
 		out, err = vm.loadKeyCached(ctx, pc, src, runtime.ToString(prop))
 	}
 
-	return vm.setOrOptional(dst, out, err, optional)
+	return vm.state.setOrOptional(dst, out, err, optional)
 }
 
 func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, prop runtime.Value, optional bool) error {
 	if optional && src == runtime.None {
-		vm.registers.Values[dst] = runtime.None
+		vm.state.registers.Values[dst] = runtime.None
 		return nil
 	}
 
@@ -318,5 +318,5 @@ func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst bytecode.Operand,
 		out, err = vm.loadKeyConstCached(ctx, pc, inst, src, runtime.ToString(prop))
 	}
 
-	return vm.setOrOptional(dst, out, err, optional)
+	return vm.state.setOrOptional(dst, out, err, optional)
 }

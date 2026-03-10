@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 )
 
-func (vm *VM) resolveUdfID(val runtime.Value) (int, error) {
+func (s *execState) resolveUdfID(val runtime.Value) (int, error) {
 	idVal, ok := val.(runtime.Int)
 	if !ok {
 		return -1, ErrInvalidFunctionName
@@ -17,12 +17,12 @@ func (vm *VM) resolveUdfID(val runtime.Value) (int, error) {
 	return int(idVal), nil
 }
 
-func (vm *VM) udfByID(id int) (*bytecode.UDF, error) {
-	if id < 0 || vm.program == nil || id >= len(vm.program.Functions.UserDefined) {
+func (s *execState) udfByID(id int) (*bytecode.UDF, error) {
+	if id < 0 || s.program == nil || id >= len(s.program.Functions.UserDefined) {
 		return nil, ErrUnresolvedFunction
 	}
 
-	return &vm.program.Functions.UserDefined[id], nil
+	return &s.program.Functions.UserDefined[id], nil
 }
 
 func udfArgRange(src1, src2 bytecode.Operand) (int, int, bool) {
@@ -93,15 +93,15 @@ func collectUdfArgsInto(dst, src []runtime.Value, start, count int) int {
 	return count
 }
 
-func (vm *VM) callUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) error {
-	reg := vm.registers.Values
+func (s *execState) callUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) error {
+	reg := s.registers.Values
 
-	fnID, err := vm.resolveUdfID(reg[dst])
+	fnID, err := s.resolveUdfID(reg[dst])
 	if err != nil {
 		return err
 	}
 
-	udf, err := vm.udfByID(fnID)
+	udf, err := s.udfByID(fnID)
 	if err != nil {
 		return err
 	}
@@ -115,34 +115,34 @@ func (vm *VM) callUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) erro
 		return runtime.Error(runtime.ErrInvalidOperation, fmt.Sprintf("UDF '%s' has invalid register window", udf.Name))
 	}
 
-	newRegs := vm.frames.AcquireRegisters(udf.Registers)
+	newRegs := s.frames.AcquireRegisters(udf.Registers)
 	copyUdfArgsToUdfRegisters(newRegs, reg, argStart, argCount)
 
-	vm.frames.Push(frame.CallFrame{
-		ReturnPC:   vm.pc,
+	s.frames.Push(frame.CallFrame{
+		ReturnPC:   s.pc,
 		ReturnDest: dst,
-		Registers:  vm.registers.Values,
+		Registers:  s.registers.Values,
 		Protected:  bytecode.IsProtectedUdfCall(op),
 		FnID:       fnID,
 	})
-	vm.registers.Values = newRegs
-	vm.pc = udf.Entry
+	s.registers.Values = newRegs
+	s.pc = udf.Entry
 
 	return nil
 }
 
-func (vm *VM) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
-	if vm.frames.Len() == 0 {
+func (s *execState) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
+	if s.frames.Len() == 0 {
 		return ErrUnresolvedFunction
 	}
 
-	reg := vm.registers.Values
-	fnID, err := vm.resolveUdfID(reg[dst])
+	reg := s.registers.Values
+	fnID, err := s.resolveUdfID(reg[dst])
 	if err != nil {
 		return err
 	}
 
-	udf, err := vm.udfByID(fnID)
+	udf, err := s.udfByID(fnID)
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (vm *VM) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
 		return runtime.Error(runtime.ErrInvalidOperation, fmt.Sprintf("UDF '%s' has invalid register window", udf.Name))
 	}
 
-	if ok := vm.frames.SetTopFnID(fnID); !ok {
+	if ok := s.frames.SetTopFnID(fnID); !ok {
 		return ErrUnresolvedFunction
 	}
 
@@ -185,19 +185,19 @@ func (vm *VM) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
 			copy(reg[1:], args)
 		}
 
-		vm.registers.Values = reg
+		s.registers.Values = reg
 	} else {
-		newRegs := vm.frames.AcquireRegisters(udf.Registers)
+		newRegs := s.frames.AcquireRegisters(udf.Registers)
 
 		if len(args) > 0 && len(newRegs) > 1 {
 			copy(newRegs[1:], args)
 		}
 
-		vm.frames.ReleaseRegisters(reg)
-		vm.registers.Values = newRegs
+		s.frames.ReleaseRegisters(reg)
+		s.registers.Values = newRegs
 	}
 
-	vm.pc = udf.Entry
+	s.pc = udf.Entry
 
 	return nil
 }

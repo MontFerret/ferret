@@ -98,7 +98,7 @@ func (vm *VM) warmupRegexps() {
 func (vm *VM) bindParams(env *Environment) error {
 	required := vm.program.Params
 
-	vm.scratch.ResizeParams(len(required))
+	vm.state.scratch.ResizeParams(len(required))
 
 	var missedParams []string
 
@@ -114,7 +114,7 @@ func (vm *VM) bindParams(env *Environment) error {
 			val = runtime.None
 		}
 
-		vm.scratch.Params[idx] = val
+		vm.state.scratch.Params[idx] = val
 	}
 
 	if len(missedParams) > 0 {
