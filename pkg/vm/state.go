@@ -31,7 +31,7 @@ func (s *execState) init(program *bytecode.Program, catchByPC []int, panicPolicy
 	s.frames.Init(maxUDFRegisters(program.Functions.UserDefined))
 }
 
-func (s *execState) reset(env *Environment) {
+func (s *execState) prepareRun(env *Environment) {
 	s.registers.Values = s.frames.Reset(s.registers.Values)
 
 	if s.registers.IsDirty() {
@@ -40,6 +40,21 @@ func (s *execState) reset(env *Environment) {
 
 	s.registers.MarkDirty()
 	s.env = env
+	s.pc = 0
+}
+
+func (s *execState) cleanupForPool() {
+	s.registers.Values = s.frames.Reset(s.registers.Values)
+
+	if s.registers.IsDirty() {
+		s.registers.Reset()
+	}
+
+	for i := range s.scratch.Params {
+		s.scratch.Params[i] = runtime.None
+	}
+
+	s.env = nil
 	s.pc = 0
 }
 

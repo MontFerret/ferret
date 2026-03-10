@@ -15,9 +15,10 @@ import (
 type VM struct {
 	cache        *mem.Cache
 	program      *bytecode.Program
+	catchByPC    []int
 	hostWarmups  []hostCallWarmupDescriptor
 	instructions []data.ExecInstruction
-	state        execState
+	statePool    []*execState
 	options      options
 }
 
@@ -31,48 +32,74 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 	}
 
 	o := newOptions(opts)
+	catchByPC := buildCatchByPC(len(program.Bytecode), program.CatchTable)
 
 	vm := &VM{
 		cache:        mem.NewCache(len(program.Bytecode), o.shapeCacheLimit),
 		program:      program,
+		catchByPC:    catchByPC,
 		hostWarmups:  buildHostWarmupDescriptors(program),
 		options:      o,
 		instructions: buildExecInstructions(program.Bytecode),
 	}
 
-	vm.state.init(program, buildCatchByPC(len(program.Bytecode), program.CatchTable), o.panicPolicy)
-
 	return vm, nil
 }
 
 func (vm *VM) Run(ctx context.Context, env *Environment) (runtime.Value, error) {
+	state := vm.acquireRunState()
+	defer vm.releaseRunState(state)
+
 	switch vm.options.panicPolicy {
 	case PanicPropagate:
-		return vm.runUnchecked(ctx, env)
+		return vm.runUnchecked(ctx, env, state)
 	default:
-		return vm.runRecovered(ctx, env)
+		return vm.runRecovered(ctx, env, state)
 	}
 }
 
-func (vm *VM) runRecovered(ctx context.Context, env *Environment) (result runtime.Value, err error) {
+func (vm *VM) acquireRunState() *execState {
+	n := len(vm.statePool)
+	if n > 0 {
+		state := vm.statePool[n-1]
+		vm.statePool = vm.statePool[:n-1]
+		return state
+	}
+
+	state := &execState{}
+	state.init(vm.program, vm.catchByPC, vm.options.panicPolicy)
+
+	return state
+}
+
+func (vm *VM) releaseRunState(state *execState) {
+	if state == nil {
+		return
+	}
+
+	state.cleanupForPool()
+	vm.statePool = append(vm.statePool, state)
+}
+
+func (vm *VM) runRecovered(ctx context.Context, env *Environment, state *execState) (result runtime.Value, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = vm.state.runtimeErrorFromPanic(r)
+			err = state.runtimeErrorFromPanic(r)
 			result = nil
 
 			return
 		}
 
 		if err != nil {
-			err = vm.state.wrapRuntimeError(err)
+			err = state.wrapRuntimeError(err)
 		}
 	}()
 
-	return vm.runCore(ctx, env)
+	return vm.runCore(ctx, env, state)
 }
 
-func (vm *VM) runUnchecked(ctx context.Context, env *Environment) (runtime.Value, error) {
-	result, err := vm.runCore(ctx, env)
+func (vm *VM) runUnchecked(ctx context.Context, env *Environment, state *execState) (runtime.Value, error) {
+	result, err := vm.runCore(ctx, env, state)
 
 	if err != nil {
 		var invariantErr *diagnostic.InvariantError
@@ -80,23 +107,22 @@ func (vm *VM) runUnchecked(ctx context.Context, env *Environment) (runtime.Value
 			panic(err)
 		}
 
-		return nil, vm.state.wrapRuntimeError(err)
+		return nil, state.wrapRuntimeError(err)
 	}
 
 	return result, nil
 }
 
-func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, error) {
+func (vm *VM) runCore(ctx context.Context, env *Environment, state *execState) (runtime.Value, error) {
 	if env == nil {
 		env = noopEnv
 	}
 
-	if err := warmup(vm, env); err != nil {
+	state.prepareRun(env)
+
+	if err := warmup(vm, state, env); err != nil {
 		return nil, err
 	}
-
-	state := &vm.state
-	state.reset(env)
 
 	instructions := vm.instructions
 	constants := vm.program.Constants
@@ -324,7 +350,7 @@ loop:
 			arg := reg[src2]
 
 			// TODO: inline loadIndexAndSet for better performance
-			if action, err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); action != errOK {
+			if action, err := vm.loadIndexAndSet(state, ctx, dst, src, arg, optional); action != errOK {
 				if action == errReturn {
 					if state.applyProtected(err) == errReturn {
 						return nil, err
@@ -339,7 +365,7 @@ loop:
 			arg := reg[src2]
 
 			// TODO: inline loadIndexAndSet for better performance
-			if action, err := vm.loadKeyAndSet(ctx, dst, state.pc-1, src, arg, optional); action != errOK {
+			if action, err := vm.loadKeyAndSet(state, ctx, dst, state.pc-1, src, arg, optional); action != errOK {
 				if action == errReturn {
 					if state.applyProtected(err) == errReturn {
 						return nil, err
@@ -355,7 +381,7 @@ loop:
 
 			// TODO: inline loadIndexAndSet for better performance
 			// I guess the reason it cannot inline is due to a different control flow
-			if action, err := vm.loadPropertyAndSet(ctx, dst, state.pc-1, src, prop, optional); action != errOK {
+			if action, err := vm.loadPropertyAndSet(state, ctx, dst, state.pc-1, src, prop, optional); action != errOK {
 				if action == errReturn {
 					if state.applyProtected(err) == errReturn {
 						return nil, err
@@ -369,7 +395,7 @@ loop:
 			optional := op == bytecode.OpLoadIndexOptionalConst
 			arg := constants[src2.Constant()]
 
-			if action, err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); action != errOK {
+			if action, err := vm.loadIndexAndSet(state, ctx, dst, src, arg, optional); action != errOK {
 				if action == errReturn {
 					if state.applyProtected(err) == errReturn {
 						return nil, err
@@ -383,7 +409,7 @@ loop:
 			optional := op == bytecode.OpLoadKeyOptionalConst
 			arg := constants[src2.Constant()]
 
-			if action, err := vm.loadKeyConstAndSet(ctx, dst, state.pc-1, inst, src, arg, optional); action != errOK {
+			if action, err := vm.loadKeyConstAndSet(state, ctx, dst, state.pc-1, inst, src, arg, optional); action != errOK {
 				if action == errReturn {
 					if state.applyProtected(err) == errReturn {
 						return nil, err
@@ -397,7 +423,7 @@ loop:
 			optional := op == bytecode.OpLoadPropertyOptionalConst
 			prop := constants[src2.Constant()]
 
-			if action, err := vm.loadPropertyConstAndSet(ctx, dst, state.pc-1, inst, src, prop, optional); action != errOK {
+			if action, err := vm.loadPropertyConstAndSet(state, ctx, dst, state.pc-1, inst, src, prop, optional); action != errOK {
 				if action == errReturn {
 					if state.applyProtected(err) == errReturn {
 						return nil, err

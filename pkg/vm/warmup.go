@@ -18,8 +18,8 @@ type hostCallWarmupDescriptor struct {
 	HasFnName bool
 }
 
-func warmup(vm *VM, env *Environment) error {
-	if err := bindParams(vm, env); err != nil {
+func warmup(vm *VM, state *execState, env *Environment) error {
+	if err := bindParams(vm, state, env); err != nil {
 		return err
 	}
 
@@ -98,10 +98,10 @@ func warmupRegexps(vm *VM) {
 	vm.cache.RegexpsWarmed = true
 }
 
-func bindParams(vm *VM, env *Environment) error {
+func bindParams(vm *VM, state *execState, env *Environment) error {
 	required := vm.program.Params
 
-	vm.state.scratch.ResizeParams(len(required))
+	state.scratch.ResizeParams(len(required))
 
 	var missedParams []string
 
@@ -117,7 +117,7 @@ func bindParams(vm *VM, env *Environment) error {
 			val = runtime.None
 		}
 
-		vm.state.scratch.Params[idx] = val
+		state.scratch.Params[idx] = val
 	}
 
 	if len(missedParams) > 0 {

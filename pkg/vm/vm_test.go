@@ -39,6 +39,17 @@ func mustNewVM(t *testing.T, program *bytecode.Program, opts ...Option) *VM {
 	return instance
 }
 
+func mustAcquireRunState(t *testing.T, instance *VM) *execState {
+	t.Helper()
+
+	state := instance.acquireRunState()
+	if state == nil {
+		t.Fatal("expected run state")
+	}
+
+	return state
+}
+
 func TestPanicPolicyRecoversPanics(t *testing.T) {
 	program := compileProgram(t, "RETURN PANIC_FN()")
 
@@ -139,11 +150,14 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 		t.Fatal("expected VM to keep source program reference")
 	}
 
-	if instance.state.registers == nil {
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
+
+	if state.registers == nil {
 		t.Fatal("expected register file to be initialized")
 	}
 
-	if got, want := instance.state.registers.Size(), program.Registers; got != want {
+	if got, want := state.registers.Size(), program.Registers; got != want {
 		t.Fatalf("unexpected register file size: got %d, want %d", got, want)
 	}
 
@@ -188,18 +202,18 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 
 	wantCatchByPC := []int{0, 0}
 	for i := range wantCatchByPC {
-		if got := instance.state.catchByPC[i]; got != wantCatchByPC[i] {
+		if got := instance.catchByPC[i]; got != wantCatchByPC[i] {
 			t.Fatalf("unexpected catch mapping at pc %d: got %d, want %d", i, got, wantCatchByPC[i])
 		}
 	}
 
-	reg := instance.state.frames.AcquireRegisters(5)
+	reg := state.frames.AcquireRegisters(5)
 	if got, want := len(reg), 5; got != want {
 		t.Fatalf("unexpected pooled register size: got %d, want %d", got, want)
 	}
 
-	instance.state.frames.ReleaseRegisters(reg)
-	reused := instance.state.frames.AcquireRegisters(5)
+	state.frames.ReleaseRegisters(reg)
+	reused := state.frames.AcquireRegisters(5)
 	if got, want := len(reused), 5; got != want {
 		t.Fatalf("unexpected reused register size: got %d, want %d", got, want)
 	}
@@ -333,45 +347,48 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 
 	protectedRegs[1] = runtime.True
 
-	instance.state.registers.Values = activeRegs
-	instance.state.frames.Push(frame.CallFrame{
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
+
+	state.registers.Values = activeRegs
+	state.frames.Push(frame.CallFrame{
 		ReturnPC:   10,
 		ReturnDest: bytecode.NewRegister(0),
 		Registers:  lowerRegs,
 		Protected:  false,
 	})
-	instance.state.frames.Push(frame.CallFrame{
+	state.frames.Push(frame.CallFrame{
 		ReturnPC:   20,
 		ReturnDest: bytecode.NewRegister(1),
 		Registers:  protectedRegs,
 		Protected:  true,
 	})
-	instance.state.frames.Push(frame.CallFrame{
+	state.frames.Push(frame.CallFrame{
 		ReturnPC:   30,
 		ReturnDest: bytecode.NewRegister(0),
 		Registers:  aboveRegs1,
 		Protected:  false,
 	})
-	instance.state.frames.Push(frame.CallFrame{
+	state.frames.Push(frame.CallFrame{
 		ReturnPC:   40,
 		ReturnDest: bytecode.NewRegister(0),
 		Registers:  aboveRegs2,
 		Protected:  false,
 	})
 
-	if ok := instance.state.unwindToProtected(); !ok {
+	if ok := state.unwindToProtected(); !ok {
 		t.Fatal("expected protected unwind to succeed")
 	}
 
-	if got, want := instance.state.pc, 20; got != want {
+	if got, want := state.pc, 20; got != want {
 		t.Fatalf("unexpected pc after unwind: got %d, want %d", got, want)
 	}
 
-	if got, want := instance.state.frames.Len(), 1; got != want {
+	if got, want := state.frames.Len(), 1; got != want {
 		t.Fatalf("unexpected frame depth after unwind: got %d, want %d", got, want)
 	}
 
-	remaining := instance.state.frames.Top()
+	remaining := state.frames.Top()
 	if remaining == nil {
 		t.Fatal("expected remaining frame after unwind")
 	}
@@ -380,11 +397,11 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		t.Fatalf("unexpected surviving frame returnPC: got %d, want %d", got, want)
 	}
 
-	if got, want := instance.state.registers.Values[1], runtime.None; got != want {
+	if got, want := state.registers.Values[1], runtime.None; got != want {
 		t.Fatalf("expected protected return destination to be reset, got %v", got)
 	}
 
-	reused4 := instance.state.frames.AcquireRegisters(4)
+	reused4 := state.frames.AcquireRegisters(4)
 	if len(reused4) != 4 {
 		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused4), 4)
 	}
@@ -392,7 +409,7 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		t.Fatal("expected frame registers of size 4 to be reclaimed")
 	}
 
-	reused5 := instance.state.frames.AcquireRegisters(5)
+	reused5 := state.frames.AcquireRegisters(5)
 	if len(reused5) != 5 {
 		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused5), 5)
 	}
@@ -400,7 +417,7 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		t.Fatal("expected frame registers of size 5 to be reclaimed")
 	}
 
-	reused6 := instance.state.frames.AcquireRegisters(6)
+	reused6 := state.frames.AcquireRegisters(6)
 	if len(reused6) != 6 {
 		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused6), 6)
 	}
@@ -472,10 +489,13 @@ func TestSetCallResult_AppliesCatchJumpZeroAndFallbackValue(t *testing.T) {
 		},
 	})
 
-	instance.state.pc = 1
-	instance.state.registers.Values[1] = runtime.True
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
 
-	action := instance.state.setCallResult(
+	state.pc = 1
+	state.registers.Values[1] = runtime.True
+
+	action := state.setCallResult(
 		bytecode.OpHCall,
 		bytecode.NewRegister(1),
 		runtime.True,
@@ -486,11 +506,11 @@ func TestSetCallResult_AppliesCatchJumpZeroAndFallbackValue(t *testing.T) {
 		t.Fatalf("expected caught error to be swallowed, got %v", action)
 	}
 
-	if got := instance.state.registers.Values[1]; got != runtime.None {
+	if got := state.registers.Values[1]; got != runtime.None {
 		t.Fatalf("expected destination to be reset to none, got %v", got)
 	}
 
-	if got, want := instance.state.pc, 0; got != want {
+	if got, want := state.pc, 0; got != want {
 		t.Fatalf("expected catch jump target %d, got %d", want, got)
 	}
 }
@@ -508,19 +528,21 @@ func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
 		},
 	})
 
-	instance.state.pc = 1
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
 
-	action := instance.state.applyCatch(bytecode.Operand(1), runtime.True, errors.New("boom"))
+	state.pc = 1
+	action := state.applyCatch(bytecode.Operand(1), runtime.True, errors.New("boom"))
 	if action == errReturn {
 		t.Fatalf("expected caught error to be swallowed, got %v", action)
 	}
 
-	val := instance.state.registers.Values[1]
+	val := state.registers.Values[1]
 	if val != runtime.True {
 		t.Fatalf("expected fallback value to be set in destination register, got %v", val)
 	}
 
-	if got, want := instance.state.pc, 0; got != want {
+	if got, want := state.pc, 0; got != want {
 		t.Fatalf("expected catch jump target %d, got %d", want, got)
 	}
 }
@@ -539,14 +561,16 @@ func TestHandleErrorWithCatch_AppliesPositiveJumpTarget(t *testing.T) {
 		},
 	})
 
-	instance.state.pc = 1
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
 
-	action := instance.state.applyCatch(bytecode.NoopOperand, nil, errors.New("boom"))
+	state.pc = 1
+	action := state.applyCatch(bytecode.NoopOperand, nil, errors.New("boom"))
 	if action == errReturn {
 		t.Fatalf("expected caught error to be swallowed, got %v", action)
 	}
 
-	if got, want := instance.state.pc, 2; got != want {
+	if got, want := state.pc, 2; got != want {
 		t.Fatalf("expected catch jump target %d, got %d", want, got)
 	}
 }
@@ -564,20 +588,23 @@ func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 		},
 	})
 
-	instance.state.pc = 1
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
+
+	state.pc = 1
 	wantErr := errors.New("boom")
 
-	action := instance.state.applyCatch(bytecode.Operand(1), runtime.True, wantErr)
+	action := state.applyCatch(bytecode.Operand(1), runtime.True, wantErr)
 	if action != errReturn {
 		t.Fatalf("expected original error to be returned, got %v", action)
 	}
 
-	val := instance.state.registers.Values[1]
+	val := state.registers.Values[1]
 	if val == runtime.True {
 		t.Fatalf("expected fallback value to be ignored, got %v", val)
 	}
 
-	if got, want := instance.state.pc, 1; got != want {
+	if got, want := state.pc, 1; got != want {
 		t.Fatalf("expected pc to stay unchanged at %d, got %d", want, got)
 	}
 }
@@ -984,17 +1011,60 @@ RETURN outer()
 			t.Fatalf("%s: unexpected error kind: got %s, want %s", label, rtErr.Kind, DivideByZero)
 		}
 
-		return instance.state.frames.Len()
+		return strings.Count(rtErr.Format(), "called from")
 	}
 
-	leakedFirst := runAndCheck("first run")
-	if leakedFirst == 0 {
-		t.Fatal("first run should leave frames to exercise reset cleanup")
+	stackDepthFirst := runAndCheck("first run")
+	stackDepthSecond := runAndCheck("second run")
+	if stackDepthSecond != stackDepthFirst {
+		t.Fatalf("expected stable stack depth across repeated failed runs: first=%d second=%d", stackDepthFirst, stackDepthSecond)
+	}
+}
+
+func TestRunReenterSameVMUsesIsolatedRunState(t *testing.T) {
+	program := compileProgram(t, "RETURN REENTER()")
+	instance := mustNewVM(t, program)
+
+	var (
+		env   *Environment
+		depth int
+		err   error
+	)
+
+	env, err = NewEnvironment([]EnvironmentOption{
+		WithFunction("REENTER", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+			if depth > 0 {
+				return runtime.NewInt(42), nil
+			}
+
+			depth++
+			defer func() {
+				depth--
+			}()
+
+			return instance.Run(ctx, env)
+		}),
+	})
+	if err != nil {
+		t.Fatalf("environment build failed: %v", err)
 	}
 
-	leakedSecond := runAndCheck("second run")
-	if leakedSecond != leakedFirst {
-		t.Fatalf("expected stale frames to be drained between runs: first=%d second=%d", leakedFirst, leakedSecond)
+	out, err := instance.Run(context.Background(), env)
+	if err != nil {
+		t.Fatalf("outer run failed: %v", err)
+	}
+
+	if got, want := out, runtime.NewInt(42); got != want {
+		t.Fatalf("unexpected first output: got %v, want %v", got, want)
+	}
+
+	out, err = instance.Run(context.Background(), env)
+	if err != nil {
+		t.Fatalf("second outer run failed: %v", err)
+	}
+
+	if got, want := out, runtime.NewInt(42); got != want {
+		t.Fatalf("unexpected second output: got %v, want %v", got, want)
 	}
 }
 
@@ -1126,24 +1196,27 @@ func TestNearestBoundaryPrefersCatchOverProtectedUnwind(t *testing.T) {
 	})
 
 	protectedRegs := make([]runtime.Value, 2)
-	instance.state.frames.Push(frame.CallFrame{
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
+
+	state.frames.Push(frame.CallFrame{
 		ReturnPC:   9,
 		ReturnDest: bytecode.NewRegister(1),
 		Registers:  protectedRegs,
 		Protected:  true,
 	})
-	instance.state.pc = 1
+	state.pc = 1
 
-	action := instance.state.applyProtected(errors.New("boom"))
+	action := state.applyProtected(errors.New("boom"))
 	if action != errContinue {
 		t.Fatalf("expected continue, got %v", action)
 	}
 
-	if got, want := instance.state.pc, 3; got != want {
+	if got, want := state.pc, 3; got != want {
 		t.Fatalf("expected catch jump to win, got %d", got)
 	}
 
-	if got, want := instance.state.frames.Len(), 1; got != want {
+	if got, want := state.frames.Len(), 1; got != want {
 		t.Fatalf("expected protected frame to remain, got %d", got)
 	}
 }
@@ -1160,25 +1233,28 @@ func TestNearestBoundaryUsesProtectedUnwindWithoutCatch(t *testing.T) {
 
 	lowerRegs := make([]runtime.Value, 2)
 	activeRegs := make([]runtime.Value, 2)
-	instance.state.registers.Values = activeRegs
-	instance.state.frames.Push(frame.CallFrame{
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
+
+	state.registers.Values = activeRegs
+	state.frames.Push(frame.CallFrame{
 		ReturnPC:   7,
 		ReturnDest: bytecode.NewRegister(1),
 		Registers:  lowerRegs,
 		Protected:  true,
 	})
-	instance.state.pc = 1
+	state.pc = 1
 
-	action := instance.state.applyProtected(errors.New("boom"))
+	action := state.applyProtected(errors.New("boom"))
 	if action != errContinue {
 		t.Fatalf("expected continue, got %v", action)
 	}
 
-	if got, want := instance.state.pc, 7; got != want {
+	if got, want := state.pc, 7; got != want {
 		t.Fatalf("unexpected unwind target: got %d, want %d", got, want)
 	}
 
-	if got, want := instance.state.frames.Len(), 0; got != want {
+	if got, want := state.frames.Len(), 0; got != want {
 		t.Fatalf("expected stack to be unwound, got len %d", got)
 	}
 }

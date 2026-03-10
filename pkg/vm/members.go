@@ -246,15 +246,15 @@ func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Valu
 	return out, nil
 }
 
-func (vm *VM) loadIndexAndSet(ctx context.Context, dst bytecode.Operand, src, arg runtime.Value, optional bool) (errAction, error) {
+func (vm *VM) loadIndexAndSet(state *execState, ctx context.Context, dst bytecode.Operand, src, arg runtime.Value, optional bool) (errAction, error) {
 	if optional && src == runtime.None {
-		vm.state.registers.Values[dst] = runtime.None
+		state.registers.Values[dst] = runtime.None
 		return errContinue, nil
 	}
 
 	out, err := vm.loadIndex(ctx, src, arg)
 
-	action := vm.state.setOrOptional(dst, out, err, optional)
+	action := state.setOrOptional(dst, out, err, optional)
 	if action == errReturn {
 		return errReturn, err
 	}
@@ -262,15 +262,15 @@ func (vm *VM) loadIndexAndSet(ctx context.Context, dst bytecode.Operand, src, ar
 	return action, nil
 }
 
-func (vm *VM) loadKeyAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, arg runtime.Value, optional bool) (errAction, error) {
+func (vm *VM) loadKeyAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, src, arg runtime.Value, optional bool) (errAction, error) {
 	if optional && src == runtime.None {
-		vm.state.registers.Values[dst] = runtime.None
+		state.registers.Values[dst] = runtime.None
 		return errContinue, nil
 	}
 
 	out, err := vm.loadKeyCached(ctx, pc, src, arg)
 
-	action := vm.state.setOrOptional(dst, out, err, optional)
+	action := state.setOrOptional(dst, out, err, optional)
 	if action == errReturn {
 		return errReturn, err
 	}
@@ -278,15 +278,15 @@ func (vm *VM) loadKeyAndSet(ctx context.Context, dst bytecode.Operand, pc int, s
 	return action, nil
 }
 
-func (vm *VM) loadKeyConstAndSet(ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, arg runtime.Value, optional bool) (errAction, error) {
+func (vm *VM) loadKeyConstAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, arg runtime.Value, optional bool) (errAction, error) {
 	if optional && src == runtime.None {
-		vm.state.registers.Values[dst] = runtime.None
+		state.registers.Values[dst] = runtime.None
 		return errContinue, nil
 	}
 
 	out, err := vm.loadKeyConstCached(ctx, pc, inst, src, arg)
 
-	action := vm.state.setOrOptional(dst, out, err, optional)
+	action := state.setOrOptional(dst, out, err, optional)
 	if action == errReturn {
 		return errReturn, err
 	}
@@ -294,9 +294,9 @@ func (vm *VM) loadKeyConstAndSet(ctx context.Context, dst bytecode.Operand, pc i
 	return action, nil
 }
 
-func (vm *VM) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, prop runtime.Value, optional bool) (errAction, error) {
+func (vm *VM) loadPropertyAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, src, prop runtime.Value, optional bool) (errAction, error) {
 	if optional && src == runtime.None {
-		vm.state.registers.Values[dst] = runtime.None
+		state.registers.Values[dst] = runtime.None
 		return errContinue, nil
 	}
 
@@ -312,7 +312,7 @@ func (vm *VM) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc i
 		out, err = vm.loadKeyCached(ctx, pc, src, runtime.ToString(prop))
 	}
 
-	action := vm.state.setOrOptional(dst, out, err, optional)
+	action := state.setOrOptional(dst, out, err, optional)
 	if action == errReturn {
 		return errReturn, err
 	}
@@ -320,9 +320,9 @@ func (vm *VM) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc i
 	return action, nil
 }
 
-func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, prop runtime.Value, optional bool) (errAction, error) {
+func (vm *VM) loadPropertyConstAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, prop runtime.Value, optional bool) (errAction, error) {
 	if optional && src == runtime.None {
-		vm.state.registers.Values[dst] = runtime.None
+		state.registers.Values[dst] = runtime.None
 		return errContinue, nil
 	}
 
@@ -338,7 +338,7 @@ func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst bytecode.Operand,
 		out, err = vm.loadKeyConstCached(ctx, pc, inst, src, runtime.ToString(prop))
 	}
 
-	action := vm.state.setOrOptional(dst, out, err, optional)
+	action := state.setOrOptional(dst, out, err, optional)
 	if action == errReturn {
 		return errReturn, err
 	}
