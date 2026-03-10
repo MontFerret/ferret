@@ -8,6 +8,14 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 )
 
+func normalizeValue(val runtime.Value) runtime.Value {
+	if val == nil {
+		return runtime.None
+	}
+
+	return val
+}
+
 func readOperandValue(reg []runtime.Value, constants []runtime.Value, operand bytecode.Operand) runtime.Value {
 	if operand.IsConstant() {
 		return constants[operand.Constant()]

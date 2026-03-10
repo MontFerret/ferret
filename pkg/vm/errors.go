@@ -8,6 +8,23 @@ import (
 // RuntimeError represents a VM execution error with source context.
 type RuntimeError = diagnostic.RuntimeError
 
+type (
+	errAction uint8
+	failClass uint8
+)
+
+const (
+	errOK errAction = iota
+	errContinue
+	errReturn
+)
+
+const (
+	failRuntime failClass = iota
+	failProtected
+	failInvariant
+)
+
 const (
 	ArityError       diagnostics.Kind = diagnostic.ArityError
 	NullDereferenced diagnostics.Kind = diagnostic.NullDereferenced

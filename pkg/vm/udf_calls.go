@@ -21,23 +21,6 @@ func udfDisplayName(udf *bytecode.UDF) string {
 	return udf.Name
 }
 
-func (s *execState) resolveUdfID(val runtime.Value) (int, error) {
-	idVal, ok := val.(runtime.Int)
-	if !ok {
-		return -1, ErrInvalidFunctionName
-	}
-
-	return int(idVal), nil
-}
-
-func (s *execState) udfByID(id int) (*bytecode.UDF, error) {
-	if id < 0 || s.program == nil || id >= len(s.program.Functions.UserDefined) {
-		return nil, ErrUnresolvedFunction
-	}
-
-	return &s.program.Functions.UserDefined[id], nil
-}
-
 func udfArgRange(src1, src2 bytecode.Operand) (int, int, bool) {
 	if !src1.IsRegister() || !src2.IsRegister() {
 		return 0, 0, false

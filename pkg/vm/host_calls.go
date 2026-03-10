@@ -122,19 +122,3 @@ func callCachedHostFunction(
 
 	return nil, ErrUnresolvedFunction
 }
-
-func (s *execState) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) errAction {
-	reg := s.registers.Values
-
-	if err == nil {
-		reg[dst] = normalizeValue(out)
-
-		return errOK
-	}
-
-	if bytecode.IsProtectedCall(op) {
-		return s.fail(err, failProtected, dst, runtime.None, true)
-	}
-
-	return s.fail(err, failRuntime, dst, runtime.None, true)
-}
