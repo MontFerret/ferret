@@ -8,3 +8,12 @@ func IsProtectedCall(op Opcode) bool {
 		return false
 	}
 }
+
+func IsProtectedUdfCall(op Opcode) bool {
+	switch op {
+	case OpProtectedCall:
+		return true
+	default:
+		return false
+	}
+}

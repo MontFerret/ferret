@@ -122,7 +122,7 @@ func (vm *VM) callUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) erro
 		ReturnPC:   vm.pc,
 		ReturnDest: dst,
 		Registers:  vm.registers.Values,
-		Protected:  isProtectedUdfCall(op),
+		Protected:  bytecode.IsProtectedUdfCall(op),
 		FnID:       fnID,
 	})
 	vm.registers.Values = newRegs
@@ -224,14 +224,5 @@ func (vm *VM) execUdfCall(op bytecode.Opcode, dst, src1, src2 bytecode.Operand) 
 		return nil
 	default:
 		return runtime.Error(runtime.ErrUnexpected, "invalid udf call opcode")
-	}
-}
-
-func isProtectedUdfCall(op bytecode.Opcode) bool {
-	switch op {
-	case bytecode.OpProtectedCall:
-		return true
-	default:
-		return false
 	}
 }
