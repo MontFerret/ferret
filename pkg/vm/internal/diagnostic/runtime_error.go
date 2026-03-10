@@ -10,9 +10,12 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 )
 
-func WrapRuntimeError(program *bytecode.Program, pc int, err error) error {
+const vmStackNotePrefix = "VM stack: "
+
+func WrapRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEntry, err error) error {
 	if err == nil {
 		return nil
 	}
@@ -20,27 +23,32 @@ func WrapRuntimeError(program *bytecode.Program, pc int, err error) error {
 	var runtimeError *RuntimeError
 
 	if errors.As(err, &runtimeError) {
-		return err
+		return attachCallStack(runtimeError, program, callStack)
 	}
 
 	var wpErrorSet *WarmupErrorSet
 
 	if errors.As(err, &wpErrorSet) {
+		if len(wpErrorSet.Errors) == 1 {
+			wer := wpErrorSet.Errors[0]
+			return ToRuntimeError(program, wer.PC+1, nil, wer.Err)
+		}
+
 		errs := NewRuntimeErrorSet(5)
 
 		for _, wer := range wpErrorSet.Errors {
 			// warmup PCs are zero-based instruction indices (no pre-increment),
 			// while ToRuntimeError expects a post-increment pc (see pc-1 usage)
-			errs.Add(ToRuntimeError(program, wer.PC+1, wer.Err))
+			errs.Add(ToRuntimeError(program, wer.PC+1, nil, wer.Err))
 		}
 
 		return errs
 	}
 
-	return ToRuntimeError(program, pc, err)
+	return ToRuntimeError(program, pc, callStack, err)
 }
 
-func RuntimeErrorFromPanic(program *bytecode.Program, pc int, r any) error {
+func RuntimeErrorFromPanic(program *bytecode.Program, pc int, callStack []frame.TraceEntry, r any) error {
 	message := "unexpected runtime panic"
 	cause := fmt.Errorf("panic: %v", r)
 
@@ -53,7 +61,8 @@ func RuntimeErrorFromPanic(program *bytecode.Program, pc int, r any) error {
 			Kind:    diagnostics.UnexpectedError,
 			Message: fmt.Sprintf("%s. %s", message, cause.Error()),
 			Source:  program.Source,
-			Spans:   []diagnostics.ErrorSpan{diagnostics.NewMainErrorSpan(SpanAt(program, pc-1), "")},
+			Note:    stackNote(callStack),
+			Spans:   buildSpans(program, pc, callStack, ""),
 			Cause:   cause,
 		},
 	}
@@ -80,7 +89,7 @@ func NewRuntimeError(
 	}
 }
 
-func ToRuntimeError(program *bytecode.Program, pc int, err error) *RuntimeError {
+func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEntry, err error) *RuntimeError {
 	if err == nil {
 		return nil
 	}
@@ -98,6 +107,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, err error) *RuntimeError 
 	note := ""
 	var cause error
 	var memberErr *MemberAccessError
+	var invariantErr *InvariantError
 
 	switch {
 	case errors.Is(err, ErrDivisionByZero):
@@ -174,9 +184,20 @@ func ToRuntimeError(program *bytecode.Program, pc int, err error) *RuntimeError 
 		hint = "Ensure the function is registered and accessible in the current context"
 		note = "Add the function to the registry if it's missing"
 	case errors.Is(err, ErrInvalidFunctionName):
+		kind = UnresolvedSymbol
 		message = "Invalid function name"
 		label = "invalid function name"
 		hint = "Ensure the function name is valid and does not contain illegal characters"
+	case errors.As(err, &invariantErr):
+		kind = diagnostics.UnexpectedError
+		message = "VM invariant violation"
+		if invariantErr.Message != "" {
+			message = invariantErr.Message
+		}
+
+		label = "internal invariant violated"
+		hint = "This indicates an internal VM bug; please report it with the query and stack context"
+		cause = invariantErr.Cause
 	default:
 		kind = UncaughtError
 		msg, cs := diagnostics.Unwrap(err)
@@ -195,12 +216,113 @@ func ToRuntimeError(program *bytecode.Program, pc int, err error) *RuntimeError 
 			Kind:    kind,
 			Message: message,
 			Hint:    hint,
-			Note:    note,
+			Note:    appendStackNote(note, callStack),
 			Source:  program.Source,
-			Spans:   []diagnostics.ErrorSpan{diagnostics.NewMainErrorSpan(SpanAt(program, pc-1), label)},
+			Spans:   buildSpans(program, pc, callStack, label),
 			Cause:   cause,
 		},
 	}
+}
+
+func attachCallStack(err *RuntimeError, program *bytecode.Program, callStack []frame.TraceEntry) *RuntimeError {
+	if err == nil || len(callStack) == 0 || err.Diagnostic == nil {
+		return err
+	}
+
+	if !hasStackTraceLabel(err.Spans) {
+		err.Spans = append(callStackSpans(program, callStack), err.Spans...)
+	}
+
+	err.Note = appendStackNote(err.Note, callStack)
+
+	return err
+}
+
+func hasStackTraceLabel(spans []diagnostics.ErrorSpan) bool {
+	for _, span := range spans {
+		if strings.HasPrefix(span.Label, "called from ") {
+			return true
+		}
+	}
+
+	return false
+}
+
+func callStackSpans(program *bytecode.Program, callStack []frame.TraceEntry) []diagnostics.ErrorSpan {
+	if len(callStack) == 0 {
+		return nil
+	}
+
+	spans := make([]diagnostics.ErrorSpan, 0, len(callStack))
+
+	for i, entry := range callStack {
+		span := SpanAt(program, entry.CallSitePC)
+		if span.Start < 0 || span.End < 0 {
+			continue
+		}
+
+		label := fmt.Sprintf("called from (#%d)", i+1)
+		if name := strings.TrimSpace(entry.FnName); name != "" {
+			label = fmt.Sprintf("called from %s (#%d)", name, i+1)
+		}
+
+		spans = append(spans, diagnostics.NewSecondaryErrorSpan(span, label))
+	}
+
+	return spans
+}
+
+func buildSpans(program *bytecode.Program, pc int, callStack []frame.TraceEntry, label string) []diagnostics.ErrorSpan {
+	spans := callStackSpans(program, callStack)
+	spans = append(spans, diagnostics.NewMainErrorSpan(SpanAt(program, pc-1), label))
+
+	return spans
+}
+
+func stackNote(callStack []frame.TraceEntry) string {
+	if len(callStack) == 0 {
+		return ""
+	}
+
+	names := make([]string, 0, len(callStack))
+
+	// callStack is nearest -> farthest; render as outer -> ... -> inner
+	for i := len(callStack) - 1; i >= 0; i-- {
+		entry := callStack[i]
+		name := strings.TrimSpace(entry.FnName)
+		if name == "" {
+			if entry.FnID < 0 {
+				continue
+			}
+
+			name = fmt.Sprintf("#%d", entry.FnID)
+		}
+
+		names = append(names, name)
+	}
+
+	if len(names) == 0 {
+		return ""
+	}
+
+	return vmStackNotePrefix + strings.Join(names, " -> ")
+}
+
+func appendStackNote(note string, callStack []frame.TraceEntry) string {
+	stack := stackNote(callStack)
+	if stack == "" {
+		return note
+	}
+
+	if strings.Contains(note, vmStackNotePrefix) || strings.Contains(note, stack) {
+		return note
+	}
+
+	if note == "" {
+		return stack
+	}
+
+	return note + "\n" + stack
 }
 
 func SpanAt(program *bytecode.Program, pc int) file.Span {
@@ -249,7 +371,16 @@ func CheckModuloByZero(
 	pc int,
 	right runtime.Value,
 ) error {
-	rv, _ := runtime.ToInt(ctx, right)
+	rv, err := runtime.ToInt(ctx, right)
+	if err != nil {
+		// Keep modulo diagnostics type-safe for invalid string inputs like "x".
+		if _, ok := right.(runtime.String); ok {
+			return runtime.TypeErrorOf(right, runtime.TypeInt)
+		}
+
+		return err
+	}
+
 	if rv == 0 {
 		return NewRuntimeError(
 			program,

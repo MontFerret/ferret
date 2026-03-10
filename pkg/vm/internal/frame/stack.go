@@ -8,6 +8,12 @@ type CallStack struct {
 	pool   Pool
 }
 
+type TraceEntry struct {
+	FnName     string
+	CallSitePC int
+	FnID       int
+}
+
 // Init initializes the underlying register pool.
 func (s *CallStack) Init(maxPoolSize int) {
 	s.pool.Init(maxPoolSize)
@@ -111,4 +117,62 @@ func (s *CallStack) SetTopFnID(fnID int) bool {
 
 	s.frames[len(s.frames)-1].FnID = fnID
 	return true
+}
+
+// SetTopCall updates call metadata of the top frame when present.
+func (s *CallStack) SetTopCall(fnID int, fnName string, callSitePC int) bool {
+	if len(s.frames) == 0 {
+		return false
+	}
+
+	top := &s.frames[len(s.frames)-1]
+	top.FnID = fnID
+	top.FnName = fnName
+	top.CallSitePC = callSitePC
+	top.HasCallSite = true
+
+	return true
+}
+
+// TraceEntries returns caller trace entries from nearest to farthest frame.
+func (s *CallStack) TraceEntries() []TraceEntry {
+	if len(s.frames) == 0 {
+		return nil
+	}
+
+	traces := make([]TraceEntry, 0, len(s.frames))
+
+	for i := len(s.frames) - 1; i >= 0; i-- {
+		frame := s.frames[i]
+		if !frame.HasCallSite {
+			continue
+		}
+
+		traces = append(traces, TraceEntry{
+			CallSitePC: frame.CallSitePC,
+			FnID:       frame.FnID,
+			FnName:     frame.FnName,
+		})
+	}
+
+	if len(traces) == 0 {
+		return nil
+	}
+
+	return traces
+}
+
+// CallSitePCs returns caller PCs from nearest to farthest frame.
+func (s *CallStack) CallSitePCs() []int {
+	traces := s.TraceEntries()
+	if len(traces) == 0 {
+		return nil
+	}
+
+	pcs := make([]int, 0, len(traces))
+	for _, trace := range traces {
+		pcs = append(pcs, trace.CallSitePC)
+	}
+
+	return pcs
 }

@@ -7,18 +7,20 @@ import (
 )
 
 type execState struct {
-	program   *bytecode.Program
-	env       *Environment
-	registers *mem.RegisterFile
-	scratch   *mem.Scratch
-	frames    frame.CallStack
-	catchByPC []int
-	pc        int
+	program     *bytecode.Program
+	env         *Environment
+	registers   *mem.RegisterFile
+	scratch     *mem.Scratch
+	frames      frame.CallStack
+	catchByPC   []int
+	pc          int
+	panicPolicy PanicPolicy
 }
 
-func (s *execState) init(program *bytecode.Program, catchByPC []int) {
+func (s *execState) init(program *bytecode.Program, catchByPC []int, panicPolicy PanicPolicy) {
 	s.program = program
 	s.catchByPC = catchByPC
+	s.panicPolicy = panicPolicy
 	s.registers = mem.NewRegisterFile(program.Registers)
 	s.scratch = mem.NewScratch(len(program.Params))
 	s.frames.Init(maxUDFRegisters(program.Functions.UserDefined))

@@ -8,9 +8,12 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostic"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
 func compileProgram(t *testing.T, source string) *bytecode.Program {
@@ -645,4 +648,711 @@ func TestOpFail_InvalidMessageTypeReturnsTypeError(t *testing.T) {
 	if !strings.Contains(strings.ToLower(rtErr.Format()), "invalid type") {
 		t.Fatalf("expected invalid type error, got:\n%s", rtErr.Format())
 	}
+}
+
+func TestWarmupClearsStaleHostCacheAcrossEnvironments(t *testing.T) {
+	program := compileProgram(t, "RETURN F()")
+	instance := New(program)
+
+	envWithFn, err := NewEnvironment([]EnvironmentOption{
+		WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+			return runtime.NewInt(7), nil
+		}),
+	})
+	if err != nil {
+		t.Fatalf("environment build failed: %v", err)
+	}
+
+	out, err := instance.Run(context.Background(), envWithFn)
+	if err != nil {
+		t.Fatalf("first run failed: %v", err)
+	}
+
+	if got, want := out, runtime.NewInt(7); got != want {
+		t.Fatalf("unexpected first run result: got %v, want %v", got, want)
+	}
+
+	_, err = instance.Run(context.Background(), NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected unresolved function after env switch")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	if got, want := rtErr.Message, "Unresolved function"; got != want {
+		t.Fatalf("unexpected message: got %q, want %q", got, want)
+	}
+}
+
+func TestWarmupRebindTouchesOnlyHostCallSlots(t *testing.T) {
+	program := compileProgram(t, "RETURN F()")
+	instance := New(program)
+
+	hostPC := -1
+	nonHostPC := -1
+	for i, inst := range program.Bytecode {
+		if inst.Opcode == bytecode.OpHCall || inst.Opcode == bytecode.OpProtectedHCall {
+			if hostPC < 0 {
+				hostPC = i
+			}
+			continue
+		}
+
+		if nonHostPC < 0 {
+			nonHostPC = i
+		}
+	}
+
+	if hostPC < 0 || nonHostPC < 0 {
+		t.Fatalf("expected host and non-host opcodes, got host=%d nonHost=%d", hostPC, nonHostPC)
+	}
+
+	sentinel := &mem.CachedHostFunction{
+		FnV: func(_ context.Context, _ ...runtime.Value) (runtime.Value, error) {
+			return runtime.NewInt(77), nil
+		},
+	}
+	instance.cache.HostFunctions[nonHostPC] = sentinel
+
+	envA, err := NewEnvironment([]EnvironmentOption{
+		WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+			return runtime.NewInt(1), nil
+		}),
+	})
+	if err != nil {
+		t.Fatalf("environment build failed: %v", err)
+	}
+
+	envB, err := NewEnvironment([]EnvironmentOption{
+		WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+			return runtime.NewInt(2), nil
+		}),
+		WithFunction("G", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+			return runtime.NewInt(3), nil
+		}),
+	})
+	if err != nil {
+		t.Fatalf("environment build failed: %v", err)
+	}
+
+	if _, err := instance.Run(context.Background(), envA); err != nil {
+		t.Fatalf("first run failed: %v", err)
+	}
+
+	instance.cache.HostFunctions[nonHostPC] = sentinel
+	if _, err := instance.Run(context.Background(), envB); err != nil {
+		t.Fatalf("second run failed: %v", err)
+	}
+
+	if got := instance.cache.HostFunctions[nonHostPC]; got != sentinel {
+		t.Fatalf("unexpected non-host cache mutation: got %p, want %p", got, sentinel)
+	}
+
+	if instance.cache.HostFunctions[hostPC] == nil {
+		t.Fatal("expected host call slot to be rebound")
+	}
+}
+
+func TestProtectedMissingHostCallBehavesSameForDefaultAndBuiltEnvironment(t *testing.T) {
+	program := compileProgram(t, "RETURN MISSING_FN()?")
+
+	builtEnv, err := NewEnvironment(nil)
+	if err != nil {
+		t.Fatalf("environment build failed: %v", err)
+	}
+
+	cases := []struct {
+		env  *Environment
+		name string
+	}{
+		{name: "default", env: NewDefaultEnvironment()},
+		{name: "built", env: builtEnv},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := New(program).Run(context.Background(), tc.env)
+			if err != nil {
+				t.Fatalf("expected protected missing host call to return none, got %v", err)
+			}
+
+			if out != runtime.None {
+				t.Fatalf("expected none output, got %v", out)
+			}
+		})
+	}
+}
+
+func TestWarmupDoesNotFailOnDeadCodeUnresolvedHostCall(t *testing.T) {
+	program := compileProgram(t, "RETURN false ? MISSING_FN() : 1")
+
+	envWithDummy, err := NewEnvironment([]EnvironmentOption{
+		WithFunction("DUMMY", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+			return runtime.None, nil
+		}),
+	})
+	if err != nil {
+		t.Fatalf("environment build failed: %v", err)
+	}
+
+	cases := []struct {
+		env  *Environment
+		name string
+	}{
+		{name: "default", env: NewDefaultEnvironment()},
+		{name: "dummy", env: envWithDummy},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := New(program).Run(context.Background(), tc.env)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if got, want := out, runtime.NewInt(1); got != want {
+				t.Fatalf("unexpected output: got %v, want %v", got, want)
+			}
+		})
+	}
+}
+
+func TestHostNilResultIsNormalizedToNone(t *testing.T) {
+	program := compileProgram(t, "RETURN NIL_FN()")
+	env, err := NewEnvironment([]EnvironmentOption{
+		WithFunction("NIL_FN", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+			return nil, nil
+		}),
+	})
+	if err != nil {
+		t.Fatalf("environment build failed: %v", err)
+	}
+
+	out, err := New(program).Run(context.Background(), env)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if out != runtime.None {
+		t.Fatalf("expected none, got %v", out)
+	}
+}
+
+func TestModuloTypeErrorNotMisclassifiedAsModuloByZero(t *testing.T) {
+	program := compileProgram(t, `RETURN 5 % "x"`)
+
+	_, err := New(program).Run(context.Background(), NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	if rtErr.Kind != diagnostics.TypeError {
+		t.Fatalf("unexpected kind: got %s, want %s", rtErr.Kind, diagnostics.TypeError)
+	}
+
+	formatted := strings.ToLower(rtErr.Format())
+	if strings.Contains(formatted, "modulo by zero") {
+		t.Fatalf("expected non-modulo classification, got:\n%s", rtErr.Format())
+	}
+}
+
+func TestInvalidFunctionNameHasNonEmptyKind(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Constants: []runtime.Value{runtime.NewInt(123)},
+	}
+
+	env, err := NewEnvironment([]EnvironmentOption{
+		WithFunction("DUMMY", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+			return runtime.None, nil
+		}),
+	})
+	if err != nil {
+		t.Fatalf("environment build failed: %v", err)
+	}
+
+	_, err = New(program).Run(context.Background(), env)
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	if rtErr.Kind == "" {
+		t.Fatalf("expected non-empty diagnostic kind, got %q", rtErr.Kind)
+	}
+
+	if got, want := rtErr.Message, "Invalid function name"; got != want {
+		t.Fatalf("unexpected message: got %q, want %q", got, want)
+	}
+}
+
+func TestWrapRuntimeErrorSingleWarmupFailureReturnsRuntimeError(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Source:     file.NewSource("test", "RETURN 1"),
+		Metadata: bytecode.Metadata{
+			DebugSpans: []file.Span{{Start: 0, End: 6}},
+		},
+	}
+
+	warmup := &diagnostic.WarmupErrorSet{}
+	warmup.Add(ErrInvalidFunctionName, 0, bytecode.NewRegister(0))
+
+	err := diagnostic.WrapRuntimeError(program, 1, nil, warmup)
+	if err == nil {
+		t.Fatal("expected wrapped error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	var rtErrSet *RuntimeErrorSet
+	if errors.As(err, &rtErrSet) {
+		t.Fatalf("expected single runtime error, got set")
+	}
+}
+
+func TestNearestBoundaryPrefersCatchOverProtectedUnwind(t *testing.T) {
+	instance := New(&bytecode.Program{
+		Registers: 2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+		},
+		CatchTable: []bytecode.Catch{
+			{1, 1, 3},
+		},
+	})
+
+	protectedRegs := make([]runtime.Value, 2)
+	instance.state.frames.Push(frame.CallFrame{
+		ReturnPC:   9,
+		ReturnDest: bytecode.NewRegister(1),
+		Registers:  protectedRegs,
+		Protected:  true,
+	})
+	instance.state.pc = 1
+
+	action := instance.state.applyProtected(errors.New("boom"))
+	if action != errContinue {
+		t.Fatalf("expected continue, got %v", action)
+	}
+
+	if got, want := instance.state.pc, 3; got != want {
+		t.Fatalf("expected catch jump to win, got %d", got)
+	}
+
+	if got, want := instance.state.frames.Len(), 1; got != want {
+		t.Fatalf("expected protected frame to remain, got %d", got)
+	}
+}
+
+func TestNearestBoundaryUsesProtectedUnwindWithoutCatch(t *testing.T) {
+	instance := New(&bytecode.Program{
+		Registers: 2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+		},
+	})
+
+	lowerRegs := make([]runtime.Value, 2)
+	activeRegs := make([]runtime.Value, 2)
+	instance.state.registers.Values = activeRegs
+	instance.state.frames.Push(frame.CallFrame{
+		ReturnPC:   7,
+		ReturnDest: bytecode.NewRegister(1),
+		Registers:  lowerRegs,
+		Protected:  true,
+	})
+	instance.state.pc = 1
+
+	action := instance.state.applyProtected(errors.New("boom"))
+	if action != errContinue {
+		t.Fatalf("expected continue, got %v", action)
+	}
+
+	if got, want := instance.state.pc, 7; got != want {
+		t.Fatalf("unexpected unwind target: got %d, want %d", got, want)
+	}
+
+	if got, want := instance.state.frames.Len(), 0; got != want {
+		t.Fatalf("expected stack to be unwound, got len %d", got)
+	}
+}
+
+func TestRuntimeErrorIncludesUDFCallStackContext(t *testing.T) {
+	program := compileProgram(t, `
+FUNC inner() (
+	RETURN @x.foo
+)
+FUNC middle() (
+	LET value = inner()
+	RETURN value
+)
+FUNC outer() (
+	LET value = middle()
+	RETURN value
+)
+RETURN outer()
+`)
+
+	env := NewDefaultEnvironment()
+	env.Params["x"] = runtime.None
+
+	_, err := New(program).Run(context.Background(), env)
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	formatted := rtErr.Format()
+	if !strings.Contains(formatted, "called from inner (#1)") {
+		t.Fatalf("expected VM call stack context, got:\n%s", formatted)
+	}
+
+	if !strings.Contains(formatted, "VM stack: outer -> middle -> inner") {
+		t.Fatalf("expected additive VM stack note, got:\n%s", formatted)
+	}
+}
+
+func TestWrapRuntimeErrorPreservesExistingNoteAndDoesNotDuplicateStackDetails(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Source:     file.NewSource("test", "RETURN 1"),
+		Metadata: bytecode.Metadata{
+			DebugSpans: []file.Span{{Start: 0, End: 6}},
+		},
+	}
+
+	base := diagnostic.NewRuntimeError(
+		program,
+		1,
+		diagnostic.UncaughtError,
+		"Runtime error",
+		"",
+		"",
+		"existing note",
+	)
+
+	stack := []frame.TraceEntry{
+		{CallSitePC: 0, FnID: 2, FnName: "inner"},
+		{CallSitePC: 0, FnID: 1, FnName: "outer"},
+	}
+
+	wrapped := diagnostic.WrapRuntimeError(program, 1, stack, base)
+
+	var rtErr *RuntimeError
+	if !errors.As(wrapped, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", wrapped)
+	}
+
+	if !strings.Contains(rtErr.Note, "existing note") {
+		t.Fatalf("expected existing note to be preserved, got %q", rtErr.Note)
+	}
+
+	if !strings.Contains(rtErr.Note, "VM stack: outer -> inner") {
+		t.Fatalf("expected VM stack note, got %q", rtErr.Note)
+	}
+
+	wrappedTwice := diagnostic.WrapRuntimeError(program, 1, stack, wrapped)
+	if !errors.As(wrappedTwice, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", wrappedTwice)
+	}
+
+	if strings.Count(rtErr.Note, "VM stack:") != 1 {
+		t.Fatalf("expected idempotent stack note append, got %q", rtErr.Note)
+	}
+
+	if strings.Count(rtErr.Format(), "called from inner (#1)") != 1 {
+		t.Fatalf("expected idempotent stack spans, got:\n%s", rtErr.Format())
+	}
+}
+
+func TestWrapRuntimeErrorRecognizesLegacyCallStackLabelWithoutDuplicatingSpans(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Source:     file.NewSource("test", "RETURN 1"),
+		Metadata: bytecode.Metadata{
+			DebugSpans: []file.Span{{Start: 0, End: 6}},
+		},
+	}
+
+	base := &diagnostic.RuntimeError{
+		Diagnostic: &diagnostics.Diagnostic{
+			Kind:    diagnostic.UncaughtError,
+			Message: "Runtime error",
+			Source:  program.Source,
+			Spans: []diagnostics.ErrorSpan{
+				diagnostics.NewSecondaryErrorSpan(file.Span{Start: 0, End: 6}, "called from (#1)"),
+				diagnostics.NewMainErrorSpan(file.Span{Start: 0, End: 6}, ""),
+			},
+		},
+	}
+
+	stack := []frame.TraceEntry{
+		{CallSitePC: 0, FnID: 1, FnName: "boo"},
+	}
+
+	wrapped := diagnostic.WrapRuntimeError(program, 1, stack, base)
+
+	var rtErr *RuntimeError
+	if !errors.As(wrapped, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", wrapped)
+	}
+
+	formatted := rtErr.Format()
+	if strings.Count(formatted, "called from (#1)") != 1 {
+		t.Fatalf("expected legacy stack label to be preserved without duplication, got:\n%s", formatted)
+	}
+}
+
+func TestRuntimeErrorSingleUdfStackFormattingUsesSourceSpelling(t *testing.T) {
+	program := compileProgram(t, `
+FUNC boo() (
+	LET a = 1
+	LET b = 0
+	RETURN a / b
+)
+RETURN boo()
+`)
+
+	_, err := New(program).Run(context.Background(), NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	formatted := rtErr.Format()
+	if !strings.Contains(formatted, "called from boo (#1)") {
+		t.Fatalf("expected call-site label with source-spelling udf name, got:\n%s", formatted)
+	}
+
+	if !strings.Contains(formatted, "VM stack: boo") {
+		t.Fatalf("expected source-spelling VM stack note, got:\n%s", formatted)
+	}
+}
+
+func TestUdfRuntimeMessageUsesSourceSpellingName(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  3,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpCall, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewInt(0),
+		},
+		Functions: bytecode.Functions{
+			UserDefined: []bytecode.UDF{
+				{
+					Name:        "BOO",
+					DisplayName: "boo",
+					Entry:       3,
+					Registers:   2,
+					Params:      1,
+				},
+			},
+		},
+	}
+
+	_, err := New(program).Run(context.Background(), NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	formatted := rtErr.Format()
+	if !strings.Contains(formatted, "'boo'") {
+		t.Fatalf("expected source-spelling name in runtime diagnostic, got:\n%s", formatted)
+	}
+
+	if strings.Contains(formatted, "'BOO'") {
+		t.Fatalf("unexpected normalized name in runtime diagnostic:\n%s", formatted)
+	}
+}
+
+func TestRecoveredPanicRuntimeErrorDoesNotLeakGoStackTrace(t *testing.T) {
+	program := compileProgram(t, "RETURN PANIC_FN()")
+	env, err := NewEnvironment([]EnvironmentOption{
+		WithFunction("PANIC_FN", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+			panic("panic in host function")
+		}),
+	})
+	if err != nil {
+		t.Fatalf("environment build failed: %v", err)
+	}
+
+	_, err = New(program).Run(context.Background(), env)
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	formatted := rtErr.Format()
+	if strings.Contains(formatted, "goroutine ") || strings.Contains(formatted, "runtime/debug.Stack") {
+		t.Fatalf("runtime error format leaked Go stack trace:\n%s", formatted)
+	}
+}
+
+func TestInvariantInRecoverModeBecomesUnexpectedRuntimeError(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(
+				bytecode.OpDataSetCollector,
+				bytecode.NewRegister(1),
+				bytecode.Operand(bytecode.CollectorTypeAggregate),
+				bytecode.Operand(99),
+			),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+	}
+
+	_, err := New(program).Run(context.Background(), NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	if rtErr.Kind != diagnostics.UnexpectedError {
+		t.Fatalf("unexpected kind: got %s, want %s", rtErr.Kind, diagnostics.UnexpectedError)
+	}
+
+	if !strings.Contains(strings.ToLower(rtErr.Message), "invalid aggregate plan index") {
+		t.Fatalf("unexpected message: %q", rtErr.Message)
+	}
+}
+
+func TestInvalidCollectorTypeInvariantInRecoverModeBecomesUnexpectedRuntimeError(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(
+				bytecode.OpDataSetCollector,
+				bytecode.NewRegister(1),
+				bytecode.Operand(255),
+				bytecode.Operand(0),
+			),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+	}
+
+	_, err := New(program).Run(context.Background(), NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	if rtErr.Kind != diagnostics.UnexpectedError {
+		t.Fatalf("unexpected kind: got %s, want %s", rtErr.Kind, diagnostics.UnexpectedError)
+	}
+
+	if !strings.Contains(strings.ToLower(rtErr.Message), "invalid collector configuration") {
+		t.Fatalf("unexpected message: %q", rtErr.Message)
+	}
+}
+
+func TestInvariantInPropagateModePanics(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(
+				bytecode.OpDataSetCollector,
+				bytecode.NewRegister(1),
+				bytecode.Operand(bytecode.CollectorTypeAggregate),
+				bytecode.Operand(99),
+			),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+	}
+
+	instance := NewWith(program, WithPanicPolicy(PanicPropagate))
+
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic for invariant in propagate mode")
+		}
+	}()
+
+	_, _ = instance.Run(context.Background(), NewDefaultEnvironment())
+}
+
+func TestInvalidCollectorTypeInvariantInPropagateModePanics(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(
+				bytecode.OpDataSetCollector,
+				bytecode.NewRegister(1),
+				bytecode.Operand(255),
+				bytecode.Operand(0),
+			),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+	}
+
+	instance := NewWith(program, WithPanicPolicy(PanicPropagate))
+
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic for invariant in propagate mode")
+		}
+	}()
+
+	_, _ = instance.Run(context.Background(), NewDefaultEnvironment())
 }

@@ -23,6 +23,38 @@ type WarmupErrorSet struct {
 	Errors []*WarmupError
 }
 
+type InvariantError struct {
+	Cause   error
+	Message string
+}
+
+func NewInvariantError(message string, cause error) error {
+	return &InvariantError{
+		Message: message,
+		Cause:   cause,
+	}
+}
+
+func (e *InvariantError) Error() string {
+	if e == nil {
+		return ""
+	}
+
+	if e.Cause != nil {
+		return e.Message + ": " + e.Cause.Error()
+	}
+
+	return e.Message
+}
+
+func (e *InvariantError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+
+	return e.Cause
+}
+
 func (e *WarmupError) Error() string {
 	return e.Err.Error()
 }

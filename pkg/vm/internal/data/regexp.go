@@ -45,10 +45,8 @@ func (r *Regexp) Hash() uint64 {
 
 func (r *Regexp) Copy() runtime.Value {
 	copied, err := NewRegexp(runtime.String(r.String()))
-
-	// it should never happen
 	if err != nil {
-		panic(err)
+		return r
 	}
 
 	return copied

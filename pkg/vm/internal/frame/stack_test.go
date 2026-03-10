@@ -207,3 +207,49 @@ func TestCallStackSetTopFnID(t *testing.T) {
 		t.Fatalf("unexpected fnID after update: got %d, want %d", got, want)
 	}
 }
+
+func TestCallStackTraceEntries_OrderAndMetadata(t *testing.T) {
+	var stack CallStack
+	stack.Init(1)
+
+	stack.Push(CallFrame{
+		FnID:        1,
+		FnName:      "outer",
+		CallSitePC:  11,
+		HasCallSite: true,
+	})
+	stack.Push(CallFrame{
+		FnID:        2,
+		FnName:      "middle",
+		CallSitePC:  22,
+		HasCallSite: true,
+	})
+	stack.Push(CallFrame{
+		FnID:        3,
+		FnName:      "inner",
+		CallSitePC:  33,
+		HasCallSite: true,
+	})
+
+	traces := stack.TraceEntries()
+	if got, want := len(traces), 3; got != want {
+		t.Fatalf("unexpected trace count: got %d, want %d", got, want)
+	}
+
+	if got, want := traces[0].FnName, "inner"; got != want {
+		t.Fatalf("unexpected nearest trace name: got %q, want %q", got, want)
+	}
+
+	if got, want := traces[2].FnName, "outer"; got != want {
+		t.Fatalf("unexpected farthest trace name: got %q, want %q", got, want)
+	}
+
+	pcs := stack.CallSitePCs()
+	if got, want := len(pcs), 3; got != want {
+		t.Fatalf("unexpected pc count: got %d, want %d", got, want)
+	}
+
+	if got, want := pcs[0], 33; got != want {
+		t.Fatalf("unexpected nearest pc: got %d, want %d", got, want)
+	}
+}

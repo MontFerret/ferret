@@ -8,12 +8,14 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostic"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
 type VM struct {
 	cache        *mem.Cache
 	program      *bytecode.Program
+	hostWarmups  []hostCallWarmupDescriptor
 	instructions []data.ExecInstruction
 	state        execState
 	options      options
@@ -29,11 +31,12 @@ func NewWith(program *bytecode.Program, opts ...Option) *VM {
 	vm := &VM{
 		cache:        mem.NewCache(len(program.Bytecode), o.shapeCacheLimit),
 		program:      program,
+		hostWarmups:  buildHostWarmupDescriptors(program),
 		options:      o,
 		instructions: buildExecInstructions(program.Bytecode),
 	}
 
-	vm.state.init(program, buildCatchByPC(len(program.Bytecode), program.CatchTable))
+	vm.state.init(program, buildCatchByPC(len(program.Bytecode), program.CatchTable), o.panicPolicy)
 
 	return vm
 }
@@ -68,6 +71,11 @@ func (vm *VM) runUnchecked(ctx context.Context, env *Environment) (runtime.Value
 	result, err := vm.runCore(ctx, env)
 
 	if err != nil {
+		var invariantErr *diagnostic.InvariantError
+		if errors.As(err, &invariantErr) {
+			panic(err)
+		}
+
 		return nil, vm.state.wrapRuntimeError(err)
 	}
 
@@ -229,7 +237,7 @@ loop:
 			continue
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
 			cacheFn := vm.cache.HostFunctions[state.pc-1]
-			out, err := callCachedHostFunction(ctx, cacheFn, state.registers.Values, src1, src2)
+			out, err := callCachedHostFunction(ctx, cacheFn, state.registers.Values, reg[dst], src1, src2)
 
 			if state.setCallResult(op, dst, out, err) == errReturn {
 				return nil, err
@@ -598,10 +606,12 @@ loop:
 				planIdx := int(src2)
 
 				if planIdx < 0 || planIdx >= len(aggregatePlans) {
-					// TODO: is it really recoverable error?
-					callErr := runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan")
-					if state.applyProtected(callErr) == errReturn {
-						return nil, callErr
+					invariantErr := diagnostic.NewInvariantError(
+						"invalid aggregate plan index",
+						runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan index %d", planIdx),
+					)
+					if state.applyInvariant(invariantErr) == errReturn {
+						return nil, invariantErr
 					}
 
 					continue
@@ -618,7 +628,17 @@ loop:
 				continue
 			}
 
-			reg[dst] = data.NewCollector(collectorType)
+			collector, err := data.NewCollectorSafe(collectorType)
+			if err != nil {
+				invariantErr := diagnostic.NewInvariantError("invalid collector configuration", err)
+				if state.applyInvariant(invariantErr) == errReturn {
+					return nil, invariantErr
+				}
+
+				continue
+			}
+
+			reg[dst] = collector
 		case bytecode.OpDataSetSorter:
 			reg[dst] = data.NewSorter(runtime.SortDirection(src1))
 		case bytecode.OpDataSetMultiSorter:

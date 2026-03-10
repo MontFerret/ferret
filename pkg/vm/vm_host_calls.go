@@ -38,9 +38,14 @@ func callCachedHostFunction(
 	ctx context.Context,
 	cacheFn *mem.CachedHostFunction,
 	reg []runtime.Value,
+	target runtime.Value,
 	src1, src2 bytecode.Operand,
 ) (runtime.Value, error) {
 	if cacheFn == nil {
+		if _, ok := target.(runtime.String); !ok {
+			return nil, ErrInvalidFunctionName
+		}
+
 		return nil, ErrUnresolvedFunction
 	}
 
@@ -122,36 +127,14 @@ func (s *execState) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out 
 	reg := s.registers.Values
 
 	if err == nil {
-		reg[dst] = out
+		reg[dst] = normalizeValue(out)
 
 		return errOK
 	}
 
 	if bytecode.IsProtectedCall(op) {
-		reg[dst] = runtime.None
-
-		return errContinue
+		return s.fail(err, failProtected, dst, runtime.None, true)
 	}
 
-	return s.setCallResultSlow(dst, err)
-}
-
-func (s *execState) setCallResultSlow(dst bytecode.Operand, err error) errAction {
-	reg := s.registers.Values
-
-	if catch, ok := s.tryCatch(s.pc); ok {
-		reg[dst] = runtime.None
-
-		if catch[2] >= 0 {
-			s.pc = catch[2]
-		}
-
-		return errContinue
-	}
-
-	if s.unwindToProtected() {
-		return errContinue
-	}
-
-	return errReturn
+	return s.fail(err, failRuntime, dst, runtime.None, true)
 }

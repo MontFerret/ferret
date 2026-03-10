@@ -2,11 +2,24 @@ package vm
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 )
+
+func udfDisplayName(udf *bytecode.UDF) string {
+	if udf == nil {
+		return ""
+	}
+
+	if name := strings.TrimSpace(udf.DisplayName); name != "" {
+		return name
+	}
+
+	return udf.Name
+}
 
 func (s *execState) resolveUdfID(val runtime.Value) (int, error) {
 	idVal, ok := val.(runtime.Int)
@@ -108,22 +121,25 @@ func (s *execState) callUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand
 
 	argStart, argCount := udfArgInfo(src1, src2)
 	if udf.Params != argCount {
-		return runtime.Error(runtime.ErrInvalidArgument, fmt.Sprintf("UDF '%s' expects %d arguments, got %d", udf.Name, udf.Params, argCount))
+		return runtime.Error(runtime.ErrInvalidArgument, fmt.Sprintf("UDF '%s' expects %d arguments, got %d", udfDisplayName(udf), udf.Params, argCount))
 	}
 
 	if udf.Registers <= 0 {
-		return runtime.Error(runtime.ErrInvalidOperation, fmt.Sprintf("UDF '%s' has invalid register window", udf.Name))
+		return runtime.Error(runtime.ErrInvalidOperation, fmt.Sprintf("UDF '%s' has invalid register window", udfDisplayName(udf)))
 	}
 
 	newRegs := s.frames.AcquireRegisters(udf.Registers)
 	copyUdfArgsToUdfRegisters(newRegs, reg, argStart, argCount)
 
 	s.frames.Push(frame.CallFrame{
-		ReturnPC:   s.pc,
-		ReturnDest: dst,
-		Registers:  s.registers.Values,
-		Protected:  bytecode.IsProtectedUdfCall(op),
-		FnID:       fnID,
+		ReturnPC:    s.pc,
+		ReturnDest:  dst,
+		Registers:   s.registers.Values,
+		Protected:   bytecode.IsProtectedUdfCall(op),
+		FnID:        fnID,
+		FnName:      udfDisplayName(udf),
+		CallSitePC:  s.pc - 1,
+		HasCallSite: true,
 	})
 	s.registers.Values = newRegs
 	s.pc = udf.Entry
@@ -149,14 +165,14 @@ func (s *execState) tailCallUdf(dst, src1, src2 bytecode.Operand) error {
 
 	argStart, argCount := udfArgInfo(src1, src2)
 	if udf.Params != argCount {
-		return runtime.Error(runtime.ErrInvalidArgument, fmt.Sprintf("UDF '%s' expects %d arguments, got %d", udf.Name, udf.Params, argCount))
+		return runtime.Error(runtime.ErrInvalidArgument, fmt.Sprintf("UDF '%s' expects %d arguments, got %d", udfDisplayName(udf), udf.Params, argCount))
 	}
 
 	if udf.Registers <= 0 {
-		return runtime.Error(runtime.ErrInvalidOperation, fmt.Sprintf("UDF '%s' has invalid register window", udf.Name))
+		return runtime.Error(runtime.ErrInvalidOperation, fmt.Sprintf("UDF '%s' has invalid register window", udfDisplayName(udf)))
 	}
 
-	if ok := s.frames.SetTopFnID(fnID); !ok {
+	if ok := s.frames.SetTopCall(fnID, udfDisplayName(udf), s.pc-1); !ok {
 		return ErrUnresolvedFunction
 	}
 

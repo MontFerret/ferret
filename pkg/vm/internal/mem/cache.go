@@ -7,13 +7,14 @@ import (
 
 type (
 	Cache struct {
-		ShapeCache      *data.ShapeCache
-		HostFunctions   []*CachedHostFunction
-		Regexps         []*CachedRegexp
-		LoadKeyICs      []*LoadKeyCache
-		LoadKeyConstICs []*LoadKeyConstCache
-		FuncHash        uint64
-		RegexpsWarmed   bool
+		ShapeCache          *data.ShapeCache
+		HostFunctions       []*CachedHostFunction
+		Regexps             []*CachedRegexp
+		LoadKeyICs          []*LoadKeyCache
+		LoadKeyConstICs     []*LoadKeyConstCache
+		FuncHash            uint64
+		HostFunctionsWarmed bool
+		RegexpsWarmed       bool
 	}
 
 	CachedHostFunction struct {

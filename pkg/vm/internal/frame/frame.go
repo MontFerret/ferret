@@ -7,9 +7,12 @@ import (
 
 // CallFrame captures the caller state needed to resume execution after a UDF call.
 type CallFrame struct {
-	Registers  []runtime.Value
-	FnID       int
-	ReturnPC   int
-	ReturnDest bytecode.Operand
-	Protected  bool
+	FnName      string
+	Registers   []runtime.Value
+	FnID        int
+	CallSitePC  int
+	ReturnPC    int
+	ReturnDest  bytecode.Operand
+	HasCallSite bool
+	Protected   bool
 }

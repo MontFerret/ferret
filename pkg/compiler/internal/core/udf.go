@@ -17,15 +17,16 @@ type (
 	}
 
 	UDFInfo struct {
-		ID        int
-		Name      string
-		Params    []string
-		Captures  []string
-		Decl      fql.IFunctionDeclarationContext
-		Scope     *UDFScope
-		BodyScope *UDFScope
-		Entry     int
-		Registers int
+		ID          int
+		Name        string
+		DisplayName string
+		Params      []string
+		Captures    []string
+		Decl        fql.IFunctionDeclarationContext
+		Scope       *UDFScope
+		BodyScope   *UDFScope
+		Entry       int
+		Registers   int
 	}
 )
 
@@ -54,10 +55,11 @@ func (t *UDFTable) Metadata() []bytecode.UDF {
 		}
 
 		out = append(out, bytecode.UDF{
-			Name:      fn.Name,
-			Entry:     fn.Entry,
-			Registers: fn.Registers,
-			Params:    len(fn.Params) + len(fn.Captures),
+			Name:        fn.Name,
+			DisplayName: fn.DisplayName,
+			Entry:       fn.Entry,
+			Registers:   fn.Registers,
+			Params:      len(fn.Params) + len(fn.Captures),
 		})
 	}
 

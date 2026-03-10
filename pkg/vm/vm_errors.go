@@ -11,7 +11,7 @@ import (
 
 type (
 	errAction uint8
-	errPolicy uint8
+	failClass uint8
 )
 
 const (
@@ -21,24 +21,41 @@ const (
 )
 
 const (
-	errPolicyProtected errPolicy = iota
-	errPolicyCatch
+	failRuntime failClass = iota
+	failProtected
+	failInvariant
 )
 
-func (s *execState) applyErrPolicy(err error, policy errPolicy, dst bytecode.Operand, fallback runtime.Value) errAction {
+func normalizeValue(val runtime.Value) runtime.Value {
+	if val == nil {
+		return runtime.None
+	}
+
+	return val
+}
+
+func (s *execState) fail(err error, class failClass, dst bytecode.Operand, fallback runtime.Value, setFallback bool) errAction {
 	if err == nil {
 		return errOK
 	}
 
-	return s.applyErrPolicySlow(err, policy, dst, fallback)
-}
+	switch class {
+	case failInvariant:
+		if s.panicPolicy == PanicPropagate {
+			panic(err)
+		}
 
-func (s *execState) applyErrPolicySlow(err error, policy errPolicy, dst bytecode.Operand, fallback runtime.Value) errAction {
-	switch policy {
-	case errPolicyCatch:
+		return errReturn
+	case failProtected:
+		if setFallback && dst.IsRegister() {
+			s.registers.Values[dst] = normalizeValue(fallback)
+		}
+
+		return errContinue
+	default:
 		if catch, ok := s.tryCatch(s.pc); ok {
-			if fallback != nil {
-				s.registers.Values[dst] = fallback
+			if setFallback && dst.IsRegister() && fallback != nil {
+				s.registers.Values[dst] = normalizeValue(fallback)
 			}
 
 			if catch[2] >= 0 {
@@ -47,14 +64,7 @@ func (s *execState) applyErrPolicySlow(err error, policy errPolicy, dst bytecode
 
 			return errContinue
 		}
-		fallthrough
-	case errPolicyProtected:
-		if s.unwindToProtected() {
-			return errContinue
-		}
 
-		return errReturn
-	default:
 		if s.unwindToProtected() {
 			return errContinue
 		}
@@ -64,19 +74,23 @@ func (s *execState) applyErrPolicySlow(err error, policy errPolicy, dst bytecode
 }
 
 func (s *execState) applyProtected(err error) errAction {
-	return s.applyErrPolicy(err, errPolicyProtected, bytecode.NoopOperand, nil)
+	return s.fail(err, failRuntime, bytecode.NoopOperand, nil, false)
 }
 
 func (s *execState) applyCatch(dst bytecode.Operand, fallback runtime.Value, err error) errAction {
-	return s.applyErrPolicy(err, errPolicyCatch, dst, fallback)
+	return s.fail(err, failRuntime, dst, fallback, true)
+}
+
+func (s *execState) applyInvariant(err error) errAction {
+	return s.fail(err, failInvariant, bytecode.NoopOperand, nil, false)
 }
 
 func (s *execState) wrapRuntimeError(err error) error {
-	return diagnostic.WrapRuntimeError(s.program, s.pc, err)
+	return diagnostic.WrapRuntimeError(s.program, s.pc, s.frames.TraceEntries(), err)
 }
 
 func (s *execState) runtimeErrorFromPanic(r any) error {
-	return diagnostic.RuntimeErrorFromPanic(s.program, s.pc, r)
+	return diagnostic.RuntimeErrorFromPanic(s.program, s.pc, s.frames.TraceEntries(), r)
 }
 
 func (s *execState) checkDivisionByZero(ctx context.Context, left, right runtime.Value) error {
@@ -109,16 +123,16 @@ func (s *execState) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err e
 	reg := s.registers.Values
 
 	if err == nil {
-		reg[dst] = val
+		reg[dst] = normalizeValue(val)
 		return errOK
 	}
 
-	return s.applyErrPolicySlow(err, errPolicyCatch, dst, runtime.None)
+	return s.fail(err, failRuntime, dst, runtime.None, true)
 }
 
 func (s *execState) setOrOptional(dst bytecode.Operand, val runtime.Value, err error, optional bool) errAction {
 	if err == nil {
-		s.registers.Values[dst] = val
+		s.registers.Values[dst] = normalizeValue(val)
 		return errOK
 	}
 
