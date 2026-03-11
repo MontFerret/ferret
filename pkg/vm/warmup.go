@@ -197,41 +197,21 @@ func warmupBindHostCall(descriptor hostCallWarmupDescriptor, functions *runtime.
 	}
 }
 
-func inlineHostCallIDs(instructions []data.ExecInstruction, descriptors []hostCallWarmupDescriptor) {
-	for pc := range instructions {
-		op := instructions[pc].Opcode
-
-		if op == bytecode.OpHCall || op == bytecode.OpProtectedHCall {
-			instructions[pc].InlineSlot = -1
-		}
-	}
-
-	for id := range descriptors {
-		descriptors[id].ID = id
-		pc := descriptors[id].PC
-		if pc < 0 || pc >= len(instructions) {
-			continue
-		}
-
-		op := instructions[pc].Opcode
-		if op != bytecode.OpHCall && op != bytecode.OpProtectedHCall {
-			continue
-		}
-
-		instructions[pc].InlineSlot = id
-	}
-}
-
-func buildHostWarmupDescriptors(program *bytecode.Program) []hostCallWarmupDescriptor {
+func buildExecPlan(program *bytecode.Program) ([]data.ExecInstruction, []hostCallWarmupDescriptor) {
 	if program == nil || len(program.Bytecode) == 0 {
-		return nil
+		return nil, nil
 	}
 
+	instructions := make([]data.ExecInstruction, len(program.Bytecode))
 	constants := program.Constants
 	reg := map[bytecode.Operand]runtime.Value{}
-	descriptors := make([]hostCallWarmupDescriptor, 0, 8)
+	hostWarmups := make([]hostCallWarmupDescriptor, 0, 8)
 
 	for pc, inst := range program.Bytecode {
+		instructions[pc] = data.ExecInstruction{
+			Instruction: inst,
+		}
+
 		op := inst.Opcode
 		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
 
@@ -245,8 +225,12 @@ func buildHostWarmupDescriptors(program *bytecode.Program) []hostCallWarmupDescr
 				delete(reg, dst)
 			}
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
+			id := len(hostWarmups)
+			instructions[pc].InlineSlot = id
+
 			descriptor := hostCallWarmupDescriptor{
 				PC:       pc,
+				ID:       id,
 				Dst:      dst,
 				ArgCount: warmupArgCount(src1, src2),
 			}
@@ -257,7 +241,7 @@ func buildHostWarmupDescriptors(program *bytecode.Program) []hostCallWarmupDescr
 				descriptor.HasFnName = true
 			}
 
-			descriptors = append(descriptors, descriptor)
+			hostWarmups = append(hostWarmups, descriptor)
 		}
 
 		if op != bytecode.OpLoadConst && op != bytecode.OpMove && dst.IsRegister() {
@@ -265,9 +249,9 @@ func buildHostWarmupDescriptors(program *bytecode.Program) []hostCallWarmupDescr
 		}
 	}
 
-	if len(descriptors) == 0 {
-		return nil
+	if len(hostWarmups) == 0 {
+		hostWarmups = nil
 	}
 
-	return descriptors
+	return instructions, hostWarmups
 }

@@ -247,6 +247,57 @@ func TestNewWith_InlinesHostCallIDs(t *testing.T) {
 	}
 }
 
+func TestNewWith_HostCallIDsAreCompactAndOrdered(t *testing.T) {
+	program := compileProgram(t, `
+LET a = F(1)
+LET b = G(2)
+RETURN [a, b]
+`)
+	instance := mustNewVM(t, program)
+
+	if got, want := len(instance.hostWarmups), 2; got != want {
+		t.Fatalf("unexpected host warmup count: got %d, want %d", got, want)
+	}
+
+	prevPC := -1
+	for i, descriptor := range instance.hostWarmups {
+		if got, want := descriptor.ID, i; got != want {
+			t.Fatalf("unexpected host warmup id at index %d: got %d, want %d", i, got, want)
+		}
+
+		if descriptor.PC <= prevPC {
+			t.Fatalf("host warmup pcs are not increasing: prev=%d, curr=%d", prevPC, descriptor.PC)
+		}
+		prevPC = descriptor.PC
+
+		inst := instance.instructions[descriptor.PC]
+		if got, want := inst.InlineSlot, i; got != want {
+			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", descriptor.PC, got, want)
+		}
+	}
+
+	hostCallsites := 0
+	for pc, inst := range instance.instructions {
+		if inst.Opcode != bytecode.OpHCall && inst.Opcode != bytecode.OpProtectedHCall {
+			continue
+		}
+
+		hostCallsites++
+
+		if inst.InlineSlot < 0 || inst.InlineSlot >= len(instance.hostWarmups) {
+			t.Fatalf("invalid inlined host id at pc %d: %d", pc, inst.InlineSlot)
+		}
+
+		if got, want := instance.hostWarmups[inst.InlineSlot].PC, pc; got != want {
+			t.Fatalf("host id %d points to pc %d, expected %d", inst.InlineSlot, got, want)
+		}
+	}
+
+	if got, want := hostCallsites, len(instance.hostWarmups); got != want {
+		t.Fatalf("unexpected host callsite count: got %d, want %d", got, want)
+	}
+}
+
 func TestRun_IgnoresInlineSlotForNonHostOpcodes(t *testing.T) {
 	program := compileProgram(t, "LET a = 1 RETURN F(a)")
 	instance := mustNewVM(t, program)

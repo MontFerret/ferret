@@ -34,9 +34,7 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 
 	o := newOptions(opts)
 	catchByPC := buildCatchByPC(len(program.Bytecode), program.CatchTable)
-	hostWarmups := buildHostWarmupDescriptors(program)
-	instructions := buildExecInstructions(program.Bytecode)
-	inlineHostCallIDs(instructions, hostWarmups)
+	instructions, hostWarmups := buildExecPlan(program)
 
 	vm := &VM{
 		cache:        mem.NewCache(len(program.Bytecode), len(hostWarmups), o.shapeCacheLimit),
