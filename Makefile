@@ -59,5 +59,5 @@ fmt:
 # https://github.com/mgechev/revive
 # go get github.com/mgechev/revive
 lint:
-	staticcheck -tests=false -checks=all,-U1000,-ST1000,-ST1001,-ST1020,-ST1022 $$(go list ./pkg/... | grep -v /fql) && \
+	staticcheck -tests=false -checks=all,-U1000,-ST1000,-ST1001,-ST1020,-ST1022,-S1002 $$(go list ./pkg/... | grep -v /fql) && \
 	revive -config revive.toml -formatter stylish -exclude ./pkg/parser/fql/... -exclude ./vendor/... -exclude ./*_test.go ./...

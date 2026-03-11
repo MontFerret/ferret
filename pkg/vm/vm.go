@@ -269,7 +269,6 @@ loop:
 
 			callErr := runtime.Error(runtime.ErrInvalidOperation, msg.String())
 			state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
-			break
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
 			hostID := inst.InlineSlot
 			if hostID < 0 || hostID >= len(hostFunctions) {
@@ -292,7 +291,6 @@ loop:
 		case bytecode.OpTailCall:
 			if err := state.tailCallUdf(dst, src1, src2); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
-				break
 			}
 		case bytecode.OpDispatch:
 			dispatcher, eventName, payload, opts, err := coerceDispatchArgs(ctx, reg[dst], reg[src1], reg[src2])
@@ -390,14 +388,12 @@ loop:
 
 			if err := ds.Append(ctx, reg[src1]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
-				break
 			}
 		case bytecode.OpPushKV:
 			tr := reg[dst].(runtime.KeyWritable)
 
 			if err := tr.Set(ctx, reg[src1], reg[src2]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
-				break
 			}
 		case bytecode.OpArrayPush:
 			ds := reg[dst].(*runtime.Array)
@@ -426,7 +422,6 @@ loop:
 
 			callErr := runtime.TypeErrorOf(reg[dst], runtime.TypeObject)
 			state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
-			break
 		case bytecode.OpObjectSetConst:
 			objVal := reg[dst]
 			key := runtime.ToString(constants[src1.Constant()])
@@ -444,12 +439,12 @@ loop:
 					state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 					break
 				}
+
 				continue
 			}
 
 			callErr := runtime.TypeErrorOf(reg[dst], runtime.TypeObject)
 			state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
-			break
 		case bytecode.OpIter:
 			input := reg[src1]
 			iterable, ok := input.(runtime.Iterable)
@@ -466,10 +461,8 @@ loop:
 				break
 			}
 
-			// TODO: replace with inlined version
 			callErr := runtime.TypeErrorOf(input, runtime.TypeIterable)
 			state.raiseRuntimeAt(pc, callErr, recoverDefault, dst, data.NoopIter, true)
-			break
 		case bytecode.OpIterNext:
 			iterator := reg[src1].(*data.Iterator)
 
@@ -480,7 +473,6 @@ loop:
 				}
 
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
-				break
 			}
 		case bytecode.OpIterValue:
 			iterator := reg[src1].(*data.Iterator)
@@ -617,12 +609,14 @@ loop:
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
+
 			reg[dst] = runtime.Divide(ctx, reg[src1], reg[src2])
 		case bytecode.OpMod:
 			if err := state.checkModuloByZeroAt(ctx, pc, reg[src2]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
+
 			reg[dst] = runtime.Modulus(ctx, reg[src1], reg[src2])
 		case bytecode.OpIncr:
 			reg[dst] = runtime.Increment(ctx, reg[dst])
@@ -663,16 +657,15 @@ loop:
 			}
 
 			state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
-			break
 		case bytecode.OpRegexp:
 			r, err := vm.regexpCached(pc, reg[src2])
 
 			if err == nil {
 				reg[dst] = r.Match(reg[src1])
-			} else {
-				state.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.False, true)
-				break
+				continue
 			}
+
+			state.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.False, true)
 		case bytecode.OpExists:
 			val := reg[src1]
 
@@ -733,7 +726,6 @@ loop:
 				runtime.TypeMeasurable,
 			)
 			state.raiseRuntimeAt(pc, callErr, recoverDefault, dst, runtime.ZeroInt, true)
-			break
 		case bytecode.OpType:
 			reg[dst] = runtime.NewString(runtime.TypeName(runtime.TypeOf(reg[src1])))
 		case bytecode.OpClose:
@@ -745,7 +737,6 @@ loop:
 
 				if closeErr != nil {
 					state.raiseRuntimeAt(pc, closeErr, recoverDefault, bytecode.NoopOperand, nil, false)
-					break
 				}
 			}
 		case bytecode.OpSleep:
@@ -758,7 +749,6 @@ loop:
 
 			if err := data.Sleep(ctx, dur); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
-				break
 			}
 		case bytecode.OpRand:
 			reg[dst] = runtime.NewFloat(runtime.RandomDefault())
