@@ -7,25 +7,23 @@ import (
 
 type (
 	Cache struct {
-		ShapeCache          *data.ShapeCache
-		HostFunctions       []CachedHostFunction
-		Regexps             []*CachedRegexp
-		LoadKeyICs          []*LoadKeyCache
-		LoadKeyConstICs     []*LoadKeyConstCache
-		FuncHash            uint64
-		HostFunctionsWarmed bool
-		RegexpsWarmed       bool
-		FunctionsRef        *runtime.Functions
+		ShapeCache      *data.ShapeCache
+		FunctionsRef    *runtime.Functions
+		HostFunctions   []CachedHostFunction
+		Regexps         []*CachedRegexp
+		LoadKeyICs      []*LoadKeyCache
+		LoadKeyConstICs []*LoadKeyConstCache
+		RegexpsWarmed   bool
 	}
 
 	CachedHostFunction struct {
-		Bound bool
 		Fn0   runtime.Function0
 		Fn1   runtime.Function1
 		Fn2   runtime.Function2
 		Fn3   runtime.Function3
 		Fn4   runtime.Function4
 		FnV   runtime.Function
+		Bound bool
 	}
 
 	CachedRegexp struct {

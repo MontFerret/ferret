@@ -223,31 +223,30 @@ func TestNewWith_InlinesHostCallIDs(t *testing.T) {
 	program := compileProgram(t, "RETURN F(1)")
 	instance := mustNewVM(t, program)
 
-	if len(instance.hostWarmupSites) == 0 {
-		t.Fatal("expected host call warmup callsites")
+	if len(instance.hostBindings) == 0 {
+		t.Fatal("expected host call warmup descriptors")
 	}
 
-	for _, site := range instance.hostWarmupSites {
-		if site.BindingID < 0 || site.BindingID >= len(instance.cache.HostFunctions) {
-			t.Fatalf("invalid binding id %d for pc %d", site.BindingID, site.PC)
+	for i, binding := range instance.hostBindings {
+		if got, want := binding.ID, i; got != want {
+			t.Fatalf("unexpected host binding id at index %d: got %d, want %d", i, got, want)
 		}
 
-		if site.PC < 0 || site.PC >= len(instance.instructions) {
-			t.Fatalf("invalid callsite pc %d", site.PC)
+		if binding.ID < 0 || binding.ID >= len(instance.cache.HostFunctions) {
+			t.Fatalf("invalid binding id %d for pc %d", binding.ID, binding.PC)
 		}
 
-		binding := instance.hostBindings[site.BindingID]
-		if got, want := binding.ID, site.BindingID; got != want {
-			t.Fatalf("binding id mismatch: got %d, want %d", got, want)
+		if binding.PC < 0 || binding.PC >= len(instance.instructions) {
+			t.Fatalf("invalid callsite pc %d", binding.PC)
 		}
 
-		inst := instance.instructions[site.PC]
+		inst := instance.instructions[binding.PC]
 		if inst.Opcode != bytecode.OpHCall && inst.Opcode != bytecode.OpProtectedHCall {
-			t.Fatalf("callsite pc %d does not point to host call opcode %d", site.PC, inst.Opcode)
+			t.Fatalf("callsite pc %d does not point to host call opcode %d", binding.PC, inst.Opcode)
 		}
 
-		if got, want := inst.InlineSlot, site.BindingID; got != want {
-			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", site.PC, got, want)
+		if got, want := inst.InlineSlot, binding.ID; got != want {
+			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", binding.PC, got, want)
 		}
 	}
 }
@@ -264,10 +263,6 @@ RETURN [a, b]
 		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
 	}
 
-	if got, want := len(instance.hostWarmupSites), 2; got != want {
-		t.Fatalf("unexpected host callsite count: got %d, want %d", got, want)
-	}
-
 	prevPC := -1
 	for i, binding := range instance.hostBindings {
 		if got, want := binding.ID, i; got != want {
@@ -276,23 +271,23 @@ RETURN [a, b]
 	}
 
 	used := make([]bool, len(instance.hostBindings))
-	siteByPC := make(map[int]hostCallsiteWarmup, len(instance.hostWarmupSites))
-	for _, site := range instance.hostWarmupSites {
-		if site.PC <= prevPC {
-			t.Fatalf("host warmup pcs are not increasing: prev=%d, curr=%d", prevPC, site.PC)
+	siteByPC := make(map[int]hostCallBindingDescriptor, len(instance.hostBindings))
+	for _, binding := range instance.hostBindings {
+		if binding.PC <= prevPC {
+			t.Fatalf("host warmup pcs are not increasing: prev=%d, curr=%d", prevPC, binding.PC)
 		}
-		prevPC = site.PC
+		prevPC = binding.PC
 
-		if site.BindingID < 0 || site.BindingID >= len(instance.hostBindings) {
-			t.Fatalf("invalid inlined host id at pc %d: %d", site.PC, site.BindingID)
+		if binding.ID < 0 || binding.ID >= len(instance.hostBindings) {
+			t.Fatalf("invalid inlined host id at pc %d: %d", binding.PC, binding.ID)
 		}
 
-		used[site.BindingID] = true
-		siteByPC[site.PC] = site
+		used[binding.ID] = true
+		siteByPC[binding.PC] = binding
 
-		inst := instance.instructions[site.PC]
-		if got, want := inst.InlineSlot, site.BindingID; got != want {
-			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", site.PC, got, want)
+		inst := instance.instructions[binding.PC]
+		if got, want := inst.InlineSlot, binding.ID; got != want {
+			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", binding.PC, got, want)
 		}
 	}
 
@@ -319,17 +314,17 @@ RETURN [a, b]
 			t.Fatalf("host callsite pc %d missing from warmup site metadata", pc)
 		}
 
-		if got, want := site.BindingID, inst.InlineSlot; got != want {
+		if got, want := site.ID, inst.InlineSlot; got != want {
 			t.Fatalf("host id mismatch at pc %d: got %d, want %d", pc, got, want)
 		}
 	}
 
-	if got, want := hostCallsites, len(instance.hostWarmupSites); got != want {
+	if got, want := hostCallsites, len(instance.hostBindings); got != want {
 		t.Fatalf("unexpected host callsite count: got %d, want %d", got, want)
 	}
 }
 
-func TestNewWith_DeduplicatesHostBindingsByFunctionAndBindClass(t *testing.T) {
+func TestNewWith_AssignsOneHostBindingPerCallsite(t *testing.T) {
 	program := compileProgram(t, `
 LET a = F(1)
 LET b = F(2)
@@ -337,28 +332,29 @@ RETURN [a, b]
 `)
 	instance := mustNewVM(t, program)
 
-	if got, want := len(instance.hostWarmupSites), 2; got != want {
-		t.Fatalf("unexpected host callsite count: got %d, want %d", got, want)
+	if got, want := len(instance.hostBindings), 2; got != want {
+		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
 	}
 
-	if got, want := len(instance.hostBindings), 1; got != want {
-		t.Fatalf("expected deduplicated host binding count: got %d, want %d", got, want)
+	firstID := instance.hostBindings[0].ID
+	secondID := instance.hostBindings[1].ID
+	if firstID == secondID {
+		t.Fatalf("expected distinct binding ids per callsite, got %d", firstID)
 	}
 
-	firstID := instance.hostWarmupSites[0].BindingID
-	for i, site := range instance.hostWarmupSites {
-		if got, want := site.BindingID, firstID; got != want {
+	for i, binding := range instance.hostBindings {
+		if got, want := binding.ID, i; got != want {
 			t.Fatalf("unexpected binding id for site %d: got %d, want %d", i, got, want)
 		}
 
-		inst := instance.instructions[site.PC]
-		if got, want := inst.InlineSlot, firstID; got != want {
-			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", site.PC, got, want)
+		inst := instance.instructions[binding.PC]
+		if got, want := inst.InlineSlot, binding.ID; got != want {
+			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", binding.PC, got, want)
 		}
 	}
 }
 
-func TestNewWith_DoesNotDeduplicateHostBindingsAcrossBindClasses(t *testing.T) {
+func TestNewWith_AssignsDistinctBindingsAcrossBindClasses(t *testing.T) {
 	program := compileProgram(t, `
 LET a = F()
 LET b = F(1)
@@ -366,16 +362,12 @@ RETURN [a, b]
 `)
 	instance := mustNewVM(t, program)
 
-	if got, want := len(instance.hostWarmupSites), 2; got != want {
-		t.Fatalf("unexpected host callsite count: got %d, want %d", got, want)
-	}
-
 	if got, want := len(instance.hostBindings), 2; got != want {
 		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
 	}
 
-	firstID := instance.hostWarmupSites[0].BindingID
-	secondID := instance.hostWarmupSites[1].BindingID
+	firstID := instance.hostBindings[0].ID
+	secondID := instance.hostBindings[1].ID
 	if firstID == secondID {
 		t.Fatalf("expected distinct binding ids for different bind classes, got %d", firstID)
 	}
@@ -1468,6 +1460,45 @@ func TestWarmupRebindTouchesOnlyHostCallSlots(t *testing.T) {
 
 	if !instance.cache.HostFunctions[hostID].Bound {
 		t.Fatal("expected host call slot to be rebound")
+	}
+}
+
+func TestWarmupRebindsWhenEnvironmentFunctionNamesMatch(t *testing.T) {
+	program := compileProgram(t, "RETURN F()")
+	instance := mustNewVM(t, program)
+
+	envA, err := NewEnvironment([]EnvironmentOption{
+		WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+			return runtime.NewInt(1), nil
+		}),
+	})
+	if err != nil {
+		t.Fatalf("environment build failed: %v", err)
+	}
+
+	envB, err := NewEnvironment([]EnvironmentOption{
+		WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+			return runtime.NewInt(2), nil
+		}),
+	})
+	if err != nil {
+		t.Fatalf("environment build failed: %v", err)
+	}
+
+	outA, err := instance.Run(context.Background(), envA)
+	if err != nil {
+		t.Fatalf("first run failed: %v", err)
+	}
+	if got, want := outA, runtime.NewInt(1); got != want {
+		t.Fatalf("unexpected first run result: got %v, want %v", got, want)
+	}
+
+	outB, err := instance.Run(context.Background(), envB)
+	if err != nil {
+		t.Fatalf("second run failed: %v", err)
+	}
+	if got, want := outB, runtime.NewInt(2); got != want {
+		t.Fatalf("unexpected second run result: got %v, want %v", got, want)
 	}
 }
 

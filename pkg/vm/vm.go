@@ -13,15 +13,14 @@ import (
 )
 
 type VM struct {
-	cache           *mem.Cache
-	program         *bytecode.Program
-	catchByPC       []int
-	hostBindings    []hostCallBindingDescriptor
-	hostWarmupSites []hostCallsiteWarmup
-	instructions    []data.ExecInstruction
-	freeState       *execState
-	statePool       []*execState
-	options         options
+	cache        *mem.Cache
+	program      *bytecode.Program
+	catchByPC    []int
+	hostBindings []hostCallBindingDescriptor
+	instructions []data.ExecInstruction
+	freeState    *execState
+	statePool    []*execState
+	options      options
 }
 
 func New(program *bytecode.Program) (*VM, error) {
@@ -35,16 +34,15 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 
 	o := newOptions(opts)
 	catchByPC := buildCatchByPC(len(program.Bytecode), program.CatchTable)
-	instructions, hostBindings, hostWarmupSites := buildExecPlan(program)
+	instructions, hostBindings := buildExecPlan(program)
 
 	vm := &VM{
-		cache:           mem.NewCache(len(program.Bytecode), len(hostBindings), o.shapeCacheLimit),
-		program:         program,
-		catchByPC:       catchByPC,
-		hostBindings:    hostBindings,
-		hostWarmupSites: hostWarmupSites,
-		options:         o,
-		instructions:    instructions,
+		cache:        mem.NewCache(len(program.Bytecode), len(hostBindings), o.shapeCacheLimit),
+		program:      program,
+		catchByPC:    catchByPC,
+		hostBindings: hostBindings,
+		options:      o,
+		instructions: instructions,
 	}
 
 	return vm, nil
@@ -137,11 +135,13 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, state *execState) (
 	}
 
 	state.prepareRun(env)
+	if err := state.bindParams(env); err != nil {
+		return nil, err
+	}
 
-	if !vm.isWarmupReady(env) {
-		if err := warmup(vm, state, env); err != nil {
-			return nil, err
-		}
+	ensureRegexpsWarmed(vm)
+	if err := ensureHostFunctionsBound(vm, env); err != nil {
+		return nil, err
 	}
 
 	instructions := vm.instructions
@@ -778,22 +778,6 @@ loop:
 	}
 
 	return state.registers.Values[bytecode.NoopOperand], nil
-}
-
-func (vm *VM) isWarmupReady(env *Environment) bool {
-	if !vm.cache.RegexpsWarmed {
-		return false
-	}
-
-	if len(vm.program.Params) > 0 {
-		return false
-	}
-
-	if len(vm.hostBindings) == 0 {
-		return true
-	}
-
-	return vm.cache.HostFunctionsWarmed && vm.cache.FunctionsRef == env.Functions
 }
 
 func (vm *VM) regexpCached(pc int, value runtime.Value) (*data.Regexp, error) {

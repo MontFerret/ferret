@@ -15,24 +15,24 @@ import (
 type (
 	pendingFailure struct {
 		err         error
-		kind        errorKind
-		mode        recoveryMode
+		fallback    runtime.Value
 		pc          int
 		dst         bytecode.Operand
-		fallback    runtime.Value
+		kind        errorKind
+		mode        recoveryMode
 		setFallback bool
 	}
 
 	execState struct {
 		program   *bytecode.Program
 		env       *Environment
-		registers mem.RegisterFile
+		failure   pendingFailure
 		scratch   mem.Scratch
 		frames    frame.CallStack
 		catchByPC []int
+		registers mem.RegisterFile
 		pc        int
 		lastPC    int
-		failure   pendingFailure
 		hasFail   bool
 	}
 )
