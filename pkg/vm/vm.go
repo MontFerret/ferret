@@ -13,14 +13,15 @@ import (
 )
 
 type VM struct {
-	cache        *mem.Cache
-	program      *bytecode.Program
-	catchByPC    []int
-	hostWarmups  []hostCallWarmupDescriptor
-	instructions []data.ExecInstruction
-	freeState    *execState
-	statePool    []*execState
-	options      options
+	cache           *mem.Cache
+	program         *bytecode.Program
+	catchByPC       []int
+	hostBindings    []hostCallBindingDescriptor
+	hostWarmupSites []hostCallsiteWarmup
+	instructions    []data.ExecInstruction
+	freeState       *execState
+	statePool       []*execState
+	options         options
 }
 
 func New(program *bytecode.Program) (*VM, error) {
@@ -34,15 +35,16 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 
 	o := newOptions(opts)
 	catchByPC := buildCatchByPC(len(program.Bytecode), program.CatchTable)
-	instructions, hostWarmups := buildExecPlan(program)
+	instructions, hostBindings, hostWarmupSites := buildExecPlan(program)
 
 	vm := &VM{
-		cache:        mem.NewCache(len(program.Bytecode), len(hostWarmups), o.shapeCacheLimit),
-		program:      program,
-		catchByPC:    catchByPC,
-		hostWarmups:  hostWarmups,
-		options:      o,
-		instructions: instructions,
+		cache:           mem.NewCache(len(program.Bytecode), len(hostBindings), o.shapeCacheLimit),
+		program:         program,
+		catchByPC:       catchByPC,
+		hostBindings:    hostBindings,
+		hostWarmupSites: hostWarmupSites,
+		options:         o,
+		instructions:    instructions,
 	}
 
 	return vm, nil
@@ -787,7 +789,7 @@ func (vm *VM) isWarmupReady(env *Environment) bool {
 		return false
 	}
 
-	if len(vm.hostWarmups) == 0 {
+	if len(vm.hostBindings) == 0 {
 		return true
 	}
 

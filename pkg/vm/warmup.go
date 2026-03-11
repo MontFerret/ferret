@@ -8,13 +8,17 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
-type hostCallWarmupDescriptor struct {
+type hostCallBindingDescriptor struct {
 	FnName    string
-	PC        int
 	ID        int
-	Dst       bytecode.Operand
 	ArgCount  int
 	HasFnName bool
+}
+
+type hostCallsiteWarmup struct {
+	PC        int
+	Dst       bytecode.Operand
+	BindingID int
 }
 
 func warmup(vm *VM, state *execState, env *Environment) error {
@@ -28,7 +32,7 @@ func warmup(vm *VM, state *execState, env *Environment) error {
 func warmupShared(vm *VM, env *Environment) error {
 	warmupRegexps(vm)
 
-	if len(vm.hostWarmups) == 0 {
+	if len(vm.hostBindings) == 0 {
 		vm.cache.HostFunctionsWarmed = true
 		return nil
 	}
@@ -47,15 +51,13 @@ func warmupShared(vm *VM, env *Environment) error {
 	var warmupErrs diagnostic.WarmupErrorSet
 
 	functions := env.Functions
-	for _, descriptor := range vm.hostWarmups {
-		if descriptor.ID < 0 || descriptor.ID >= len(vm.cache.HostFunctions) {
-			warmupErrs.Add(
-				diagnostic.NewInvariantError(
-					"invalid host warmup slot",
-					runtime.Errorf(runtime.ErrUnexpected, "invalid host warmup slot %d at pc %d", descriptor.ID, descriptor.PC),
-				),
-				descriptor.PC,
-				descriptor.Dst,
+	bindingErrors := make([]error, len(vm.hostBindings))
+
+	for i, descriptor := range vm.hostBindings {
+		if descriptor.ID != i {
+			bindingErrors[i] = diagnostic.NewInvariantError(
+				"invalid host warmup binding id",
+				runtime.Errorf(runtime.ErrUnexpected, "invalid host warmup binding id %d at index %d", descriptor.ID, i),
 			)
 			continue
 		}
@@ -64,12 +66,32 @@ func warmupShared(vm *VM, env *Environment) error {
 
 		cachedFn, err := warmupBindHostCall(descriptor, functions)
 		if err != nil {
-			warmupErrs.Add(err, descriptor.PC, descriptor.Dst)
+			bindingErrors[descriptor.ID] = err
 			continue
 		}
 
 		cachedFn.Bound = true
 		vm.cache.HostFunctions[descriptor.ID] = cachedFn
+	}
+
+	for _, site := range vm.hostWarmupSites {
+		bindingID := site.BindingID
+
+		if bindingID < 0 || bindingID >= len(bindingErrors) {
+			warmupErrs.Add(
+				diagnostic.NewInvariantError(
+					"invalid host warmup slot",
+					runtime.Errorf(runtime.ErrUnexpected, "invalid host warmup slot %d at pc %d", bindingID, site.PC),
+				),
+				site.PC,
+				site.Dst,
+			)
+			continue
+		}
+
+		if err := bindingErrors[bindingID]; err != nil {
+			warmupErrs.Add(err, site.PC, site.Dst)
+		}
 	}
 
 	if warmupErrs.Size() > 0 {
@@ -174,7 +196,7 @@ func warmupArgCount(src1, src2 bytecode.Operand) int {
 	return argCount
 }
 
-func warmupBindHostCall(descriptor hostCallWarmupDescriptor, functions *runtime.Functions) (mem.CachedHostFunction, error) {
+func warmupBindHostCall(descriptor hostCallBindingDescriptor, functions *runtime.Functions) (mem.CachedHostFunction, error) {
 	if !descriptor.HasFnName {
 		return mem.CachedHostFunction{}, ErrInvalidFunctionName
 	}
@@ -197,15 +219,32 @@ func warmupBindHostCall(descriptor hostCallWarmupDescriptor, functions *runtime.
 	}
 }
 
-func buildExecPlan(program *bytecode.Program) ([]data.ExecInstruction, []hostCallWarmupDescriptor) {
+type hostBindingKey struct {
+	FnName    string
+	BindClass uint8
+}
+
+const hostBindClassVarArg uint8 = 5
+
+func hostBindClass(argCount int) uint8 {
+	if argCount >= 0 && argCount <= 4 {
+		return uint8(argCount)
+	}
+
+	return hostBindClassVarArg
+}
+
+func buildExecPlan(program *bytecode.Program) ([]data.ExecInstruction, []hostCallBindingDescriptor, []hostCallsiteWarmup) {
 	if program == nil || len(program.Bytecode) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	instructions := make([]data.ExecInstruction, len(program.Bytecode))
 	constants := program.Constants
 	reg := map[bytecode.Operand]runtime.Value{}
-	hostWarmups := make([]hostCallWarmupDescriptor, 0, 8)
+	hostBindings := make([]hostCallBindingDescriptor, 0, 8)
+	hostWarmupSites := make([]hostCallsiteWarmup, 0, 8)
+	hostBindingByKey := map[hostBindingKey]int{}
 
 	for pc, inst := range program.Bytecode {
 		instructions[pc] = data.ExecInstruction{
@@ -225,13 +264,7 @@ func buildExecPlan(program *bytecode.Program) ([]data.ExecInstruction, []hostCal
 				delete(reg, dst)
 			}
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
-			id := len(hostWarmups)
-			instructions[pc].InlineSlot = id
-
-			descriptor := hostCallWarmupDescriptor{
-				PC:       pc,
-				ID:       id,
-				Dst:      dst,
+			descriptor := hostCallBindingDescriptor{
 				ArgCount: warmupArgCount(src1, src2),
 			}
 
@@ -239,9 +272,29 @@ func buildExecPlan(program *bytecode.Program) ([]data.ExecInstruction, []hostCal
 			if err == nil {
 				descriptor.FnName = fnName
 				descriptor.HasFnName = true
+
+				key := hostBindingKey{
+					FnName:    fnName,
+					BindClass: hostBindClass(descriptor.ArgCount),
+				}
+				if id, ok := hostBindingByKey[key]; ok {
+					descriptor.ID = id
+				} else {
+					descriptor.ID = len(hostBindings)
+					hostBindingByKey[key] = descriptor.ID
+					hostBindings = append(hostBindings, descriptor)
+				}
+			} else {
+				descriptor.ID = len(hostBindings)
+				hostBindings = append(hostBindings, descriptor)
 			}
 
-			hostWarmups = append(hostWarmups, descriptor)
+			instructions[pc].InlineSlot = descriptor.ID
+			hostWarmupSites = append(hostWarmupSites, hostCallsiteWarmup{
+				PC:        pc,
+				Dst:       dst,
+				BindingID: descriptor.ID,
+			})
 		}
 
 		if op != bytecode.OpLoadConst && op != bytecode.OpMove && dst.IsRegister() {
@@ -249,9 +302,10 @@ func buildExecPlan(program *bytecode.Program) ([]data.ExecInstruction, []hostCal
 		}
 	}
 
-	if len(hostWarmups) == 0 {
-		hostWarmups = nil
+	if len(hostBindings) == 0 {
+		hostBindings = nil
+		hostWarmupSites = nil
 	}
 
-	return instructions, hostWarmups
+	return instructions, hostBindings, hostWarmupSites
 }
