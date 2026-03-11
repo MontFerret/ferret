@@ -522,6 +522,7 @@ func TestSetCallResult_RaisesPendingFailureBeforeResolution(t *testing.T) {
 	state.registers.Values[1] = runtime.True
 
 	state.setCallResult(
+		state.pc,
 		bytecode.OpHCall,
 		bytecode.NewRegister(1),
 		runtime.True,
@@ -577,6 +578,7 @@ func TestSetCallResult_ProtectedFailureBypassesCatchJump(t *testing.T) {
 	state.registers.Values[1] = runtime.True
 
 	state.setCallResult(
+		state.pc,
 		bytecode.OpProtectedHCall,
 		bytecode.NewRegister(1),
 		runtime.True,
@@ -689,6 +691,36 @@ func TestHandleErrorWithCatch_AppliesPositiveJumpTarget(t *testing.T) {
 	}
 }
 
+func TestHandleErrorWithCatch_UsesFailureOriginPC(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+		},
+		CatchTable: []bytecode.Catch{
+			{1, 1, 0},
+		},
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
+
+	state.pc = 2
+	state.raiseRuntimeAt(1, errors.New("boom"), recoverDefault, bytecode.NoopOperand, nil, false)
+
+	action := state.resolveFailure()
+	if action != errContinue {
+		t.Fatalf("expected caught error to continue, got %v", action)
+	}
+
+	if got, want := state.pc, 0; got != want {
+		t.Fatalf("expected catch jump target %d from failure origin pc, got %d", want, got)
+	}
+}
+
 func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
@@ -747,7 +779,7 @@ func TestSetOrOptional_GenericErrorUsesDefaultResolverInOptionalMode(t *testing.
 	state.pc = 1
 	state.registers.Values[1] = runtime.True
 
-	state.setOrOptional(bytecode.NewRegister(1), runtime.True, errors.New("boom"), true)
+	state.setOrOptional(state.pc, bytecode.NewRegister(1), runtime.True, errors.New("boom"), true)
 	if !state.hasFailure() {
 		t.Fatal("expected member error to raise pending failure")
 	}
@@ -784,7 +816,7 @@ func TestSetOrOptional_NotFoundContinuesWithNone(t *testing.T) {
 
 	state.registers.Values[1] = runtime.True
 
-	state.setOrOptional(bytecode.NewRegister(1), runtime.True, runtime.ErrNotFound, false)
+	state.setOrOptional(0, bytecode.NewRegister(1), runtime.True, runtime.ErrNotFound, false)
 	if !state.hasFailure() {
 		t.Fatal("expected not found path to raise pending failure")
 	}
@@ -819,7 +851,7 @@ func TestSetOrOptional_NullDereferenceContinuesWithNone(t *testing.T) {
 		runtime.NewString("foo"),
 	)
 
-	state.setOrOptional(bytecode.NewRegister(1), runtime.True, err, true)
+	state.setOrOptional(0, bytecode.NewRegister(1), runtime.True, err, true)
 	if !state.hasFailure() {
 		t.Fatal("expected null-dereference member error to raise pending failure")
 	}
@@ -854,7 +886,7 @@ func TestSetOrOptional_GenericErrorReturnsWithoutCatch(t *testing.T) {
 	initial := runtime.NewInt(42)
 	state.registers.Values[1] = initial
 
-	state.setOrOptional(bytecode.NewRegister(1), runtime.True, wantErr, true)
+	state.setOrOptional(0, bytecode.NewRegister(1), runtime.True, wantErr, true)
 	if !state.hasFailure() {
 		t.Fatal("expected generic member error to raise pending failure")
 	}
@@ -1085,7 +1117,7 @@ func TestOpFail_CaughtUsesCatchJumpTarget(t *testing.T) {
 			runtime.NewInt(7),
 		},
 		CatchTable: []bytecode.Catch{
-			{2, 2, 3},
+			{1, 1, 3},
 		},
 	})
 

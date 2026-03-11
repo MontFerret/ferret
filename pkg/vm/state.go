@@ -17,6 +17,7 @@ type (
 		err         error
 		kind        errorKind
 		mode        recoveryMode
+		pc          int
 		dst         bytecode.Operand
 		fallback    runtime.Value
 		setFallback bool
@@ -30,6 +31,7 @@ type (
 		frames    frame.CallStack
 		catchByPC []int
 		pc        int
+		lastPC    int
 		failure   pendingFailure
 		hasFail   bool
 	}
@@ -53,6 +55,7 @@ func (s *execState) prepareRun(env *Environment) {
 	s.registers.MarkDirty()
 	s.env = env
 	s.pc = 0
+	s.lastPC = -1
 	s.clearFailure()
 }
 
@@ -72,6 +75,7 @@ func (s *execState) cleanupForPool() {
 
 	s.env = nil
 	s.pc = 0
+	s.lastPC = -1
 	s.clearFailure()
 }
 
@@ -104,15 +108,23 @@ func (s *execState) bindParams(env *Environment) error {
 	return nil
 }
 
+func (s *execState) raiseRuntimeAt(pc int, err error, mode recoveryMode, dst bytecode.Operand, fallback runtime.Value, setFallback bool) {
+	s.raise(pc, err, errKindRuntime, mode, dst, fallback, setFallback)
+}
+
 func (s *execState) raiseRuntime(err error, mode recoveryMode, dst bytecode.Operand, fallback runtime.Value, setFallback bool) {
-	s.raise(err, errKindRuntime, mode, dst, fallback, setFallback)
+	s.raiseRuntimeAt(s.pc, err, mode, dst, fallback, setFallback)
+}
+
+func (s *execState) raiseInvariantAt(pc int, err error) {
+	s.raise(pc, err, errKindInvariant, recoverDefault, bytecode.NoopOperand, nil, false)
 }
 
 func (s *execState) raiseInvariant(err error) {
-	s.raise(err, errKindInvariant, recoverDefault, bytecode.NoopOperand, nil, false)
+	s.raiseInvariantAt(s.pc, err)
 }
 
-func (s *execState) raise(err error, kind errorKind, mode recoveryMode, dst bytecode.Operand, fallback runtime.Value, setFallback bool) {
+func (s *execState) raise(pc int, err error, kind errorKind, mode recoveryMode, dst bytecode.Operand, fallback runtime.Value, setFallback bool) {
 	if err == nil || s.hasFail {
 		return
 	}
@@ -121,6 +133,7 @@ func (s *execState) raise(err error, kind errorKind, mode recoveryMode, dst byte
 		err:         err,
 		kind:        kind,
 		mode:        mode,
+		pc:          pc,
 		dst:         dst,
 		fallback:    fallback,
 		setFallback: setFallback,
@@ -165,8 +178,8 @@ func (s *execState) resolveFailure() errAction {
 			}
 
 			return s.resolveRuntimeDefault(failure)
-		case recoverMember:
-			if s.isMemberMiss(failure.err) {
+		case recoverMissingMember:
+			if s.isMissingMember(failure.err) {
 				s.applyFailureFallback(failure)
 				s.clearFailure()
 				return errContinue
@@ -186,7 +199,7 @@ func (s *execState) resolveFailure() errAction {
 }
 
 func (s *execState) resolveRuntimeDefault(failure pendingFailure) errAction {
-	if catch, ok := s.tryCatch(s.pc); ok {
+	if catch, ok := s.tryCatch(failure.pc); ok {
 		s.applyFailureFallback(failure)
 
 		if catch[2] >= 0 {
@@ -212,10 +225,10 @@ func (s *execState) applyFailureFallback(failure pendingFailure) {
 }
 
 func (s *execState) isOptionalMiss(err error) bool {
-	return s.isMemberMiss(err) || s.isNullMemberDereference(err)
+	return s.isMissingMember(err) || s.isNullMemberDereference(err)
 }
 
-func (s *execState) isMemberMiss(err error) bool {
+func (s *execState) isMissingMember(err error) bool {
 	return errors.Is(err, runtime.ErrNotFound)
 }
 
@@ -228,20 +241,40 @@ func (s *execState) isNullMemberDereference(err error) bool {
 	return runtime.IsSameType(memberErr.Target, runtime.TypeNone)
 }
 
+func (s *execState) errorPC() int {
+	if s.hasFail {
+		return s.failure.pc
+	}
+
+	if s.lastPC >= 0 {
+		return s.lastPC
+	}
+
+	if s.pc > 0 {
+		return s.pc - 1
+	}
+
+	return 0
+}
+
+func (s *execState) toRuntimePC(pc int) int {
+	return pc + 1
+}
+
 func (s *execState) wrapRuntimeError(err error) error {
-	return diagnostic.WrapRuntimeError(s.program, s.pc, s.frames.TraceEntries(), err)
+	return diagnostic.WrapRuntimeError(s.program, s.toRuntimePC(s.errorPC()), s.frames.TraceEntries(), err)
 }
 
 func (s *execState) runtimeErrorFromPanic(r any) error {
-	return diagnostic.RuntimeErrorFromPanic(s.program, s.pc, s.frames.TraceEntries(), r)
+	return diagnostic.RuntimeErrorFromPanic(s.program, s.toRuntimePC(s.errorPC()), s.frames.TraceEntries(), r)
 }
 
-func (s *execState) checkDivisionByZero(ctx context.Context, left, right runtime.Value) error {
-	return diagnostic.CheckDivisionByZero(ctx, s.program, s.pc, left, right)
+func (s *execState) checkDivisionByZeroAt(ctx context.Context, pc int, left, right runtime.Value) error {
+	return diagnostic.CheckDivisionByZero(ctx, s.program, s.toRuntimePC(pc), left, right)
 }
 
-func (s *execState) checkModuloByZero(ctx context.Context, right runtime.Value) error {
-	return diagnostic.CheckModuloByZero(ctx, s.program, s.pc, right)
+func (s *execState) checkModuloByZeroAt(ctx context.Context, pc int, right runtime.Value) error {
+	return diagnostic.CheckModuloByZero(ctx, s.program, s.toRuntimePC(pc), right)
 }
 
 func (s *execState) tryCatch(pos int) (bytecode.Catch, bool) {
@@ -262,7 +295,7 @@ func (s *execState) tryCatch(pos int) (bytecode.Catch, bool) {
 	return bytecode.Catch{}, false
 }
 
-func (s *execState) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err error) {
+func (s *execState) setOrRaiseDefault(pc int, dst bytecode.Operand, val runtime.Value, err error) {
 	reg := s.registers.Values
 
 	if err == nil {
@@ -270,21 +303,21 @@ func (s *execState) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err e
 		return
 	}
 
-	s.raiseRuntime(err, recoverDefault, dst, runtime.None, true)
+	s.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.None, true)
 }
 
-func (s *execState) setOrOptional(dst bytecode.Operand, val runtime.Value, err error, optional bool) {
+func (s *execState) setOrOptional(pc int, dst bytecode.Operand, val runtime.Value, err error, optional bool) {
 	if err == nil {
 		s.registers.Values[dst] = normalizeValue(val)
 		return
 	}
 
-	mode := recoverMember
+	mode := recoverMissingMember
 	if optional {
 		mode = recoverOptional
 	}
 
-	s.raiseRuntime(err, mode, dst, runtime.None, true)
+	s.raiseRuntimeAt(pc, err, mode, dst, runtime.None, true)
 }
 
 func (s *execState) unwindToProtected() bool {
@@ -309,7 +342,7 @@ func (s *execState) returnToCaller(retVal runtime.Value) bool {
 	return true
 }
 
-func (s *execState) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) {
+func (s *execState) setCallResult(pc int, op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) {
 	reg := s.registers.Values
 
 	if err == nil {
@@ -318,11 +351,11 @@ func (s *execState) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out 
 	}
 
 	if bytecode.IsProtectedCall(op) {
-		s.raiseRuntime(err, recoverProtected, dst, runtime.None, true)
+		s.raiseRuntimeAt(pc, err, recoverProtected, dst, runtime.None, true)
 		return
 	}
 
-	s.raiseRuntime(err, recoverDefault, dst, runtime.None, true)
+	s.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.None, true)
 }
 
 func (s *execState) resolveUdfID(val runtime.Value) (int, error) {

@@ -246,14 +246,14 @@ func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Valu
 	return out, nil
 }
 
-func (vm *VM) loadIndexAndSet(state *execState, ctx context.Context, dst bytecode.Operand, src, arg runtime.Value, optional bool) {
+func (vm *VM) loadIndexAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, src, arg runtime.Value, optional bool) {
 	if optional && src == runtime.None {
 		state.registers.Values[dst] = runtime.None
 		return
 	}
 
 	out, err := vm.loadIndex(ctx, src, arg)
-	state.setOrOptional(dst, out, err, optional)
+	state.setOrOptional(pc, dst, out, err, optional)
 }
 
 func (vm *VM) loadKeyAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, src, arg runtime.Value, optional bool) {
@@ -263,7 +263,7 @@ func (vm *VM) loadKeyAndSet(state *execState, ctx context.Context, dst bytecode.
 	}
 
 	out, err := vm.loadKeyCached(ctx, pc, src, arg)
-	state.setOrOptional(dst, out, err, optional)
+	state.setOrOptional(pc, dst, out, err, optional)
 }
 
 func (vm *VM) loadKeyConstAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, arg runtime.Value, optional bool) {
@@ -273,7 +273,7 @@ func (vm *VM) loadKeyConstAndSet(state *execState, ctx context.Context, dst byte
 	}
 
 	out, err := vm.loadKeyConstCached(ctx, pc, inst, src, arg)
-	state.setOrOptional(dst, out, err, optional)
+	state.setOrOptional(pc, dst, out, err, optional)
 }
 
 func (vm *VM) loadPropertyAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, src, prop runtime.Value, optional bool) {
@@ -294,7 +294,7 @@ func (vm *VM) loadPropertyAndSet(state *execState, ctx context.Context, dst byte
 		out, err = vm.loadKeyCached(ctx, pc, src, runtime.ToString(prop))
 	}
 
-	state.setOrOptional(dst, out, err, optional)
+	state.setOrOptional(pc, dst, out, err, optional)
 }
 
 func (vm *VM) loadPropertyConstAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, prop runtime.Value, optional bool) {
@@ -315,5 +315,5 @@ func (vm *VM) loadPropertyConstAndSet(state *execState, ctx context.Context, dst
 		out, err = vm.loadKeyConstCached(ctx, pc, inst, src, runtime.ToString(prop))
 	}
 
-	state.setOrOptional(dst, out, err, optional)
+	state.setOrOptional(pc, dst, out, err, optional)
 }

@@ -131,11 +131,13 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, state *execState) (
 	paramSlots := state.scratch.Params
 loop:
 	for state.pc < len(instructions) {
-		inst := &instructions[state.pc]
+		pc := state.pc
+		inst := &instructions[pc]
 		op := inst.Opcode
 		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
 		reg := state.registers.Values
-		state.pc++
+		state.lastPC = pc
+		state.pc = pc + 1
 
 		switch op {
 		case bytecode.OpReturn:
@@ -193,7 +195,7 @@ loop:
 
 			has, err := obj.ContainsKey(ctx, key)
 			if err != nil {
-				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
@@ -216,7 +218,7 @@ loop:
 
 			has, err := obj.ContainsKey(ctx, key)
 			if err != nil {
-				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
@@ -226,46 +228,46 @@ loop:
 		case bytecode.OpFail:
 			if !dst.IsConstant() {
 				callErr := runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a constant string message")
-				state.raiseRuntime(callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
 			idx := dst.Constant()
 			if idx < 0 || idx >= len(constants) {
 				callErr := runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a valid constant string message")
-				state.raiseRuntime(callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
 			msg, ok := constants[idx].(runtime.String)
 			if !ok {
 				callErr := runtime.TypeErrorOf(constants[idx], runtime.TypeString)
-				state.raiseRuntime(callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
 			callErr := runtime.Error(runtime.ErrInvalidOperation, msg.String())
-			state.raiseRuntime(callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+			state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
 			break
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
-			cacheFn := vm.cache.HostFunctions[state.pc-1]
+			cacheFn := vm.cache.HostFunctions[pc]
 			out, err := callCachedHostFunction(ctx, cacheFn, state.registers.Values, state.scratch, reg[dst], src1, src2)
 
-			state.setCallResult(op, dst, out, err)
+			state.setCallResult(pc, op, dst, out, err)
 		case bytecode.OpCall, bytecode.OpProtectedCall:
 			if err := state.callUdf(op, dst, src1, src2); err != nil {
-				state.setCallResult(op, dst, runtime.None, err)
+				state.setCallResult(pc, op, dst, runtime.None, err)
 			}
 		case bytecode.OpTailCall:
 			if err := state.tailCallUdf(dst, src1, src2); err != nil {
-				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 		case bytecode.OpDispatch:
 			dispatcher, eventName, payload, options, err := vm.castDispatchArgs(ctx, reg[dst], reg[src1], reg[src2])
 
 			if err != nil {
-				state.setOrTryCatch(dst, runtime.None, err)
+				state.setOrRaiseDefault(pc, dst, runtime.None, err)
 				break
 			}
 
@@ -279,7 +281,7 @@ loop:
 				out = runtime.None
 			}
 
-			state.setOrTryCatch(dst, out, err)
+			state.setOrRaiseDefault(pc, dst, out, err)
 		case bytecode.OpMove:
 			reg[dst] = reg[src1]
 		case bytecode.OpLoadNone:
@@ -300,14 +302,14 @@ loop:
 			start, err := runtime.ToInt(ctx, reg[src1])
 
 			if err != nil {
-				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
 			end, err := runtime.ToInt(ctx, reg[src2])
 
 			if err != nil {
-				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
@@ -318,14 +320,14 @@ loop:
 			arg := reg[src2]
 
 			// TODO: inline loadIndexAndSet for better performance
-			vm.loadIndexAndSet(state, ctx, dst, src, arg, optional)
+			vm.loadIndexAndSet(state, ctx, dst, pc, src, arg, optional)
 		case bytecode.OpLoadKey, bytecode.OpLoadKeyOptional:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadKeyOptional
 			arg := reg[src2]
 
 			// TODO: inline loadIndexAndSet for better performance
-			vm.loadKeyAndSet(state, ctx, dst, state.pc-1, src, arg, optional)
+			vm.loadKeyAndSet(state, ctx, dst, pc, src, arg, optional)
 		case bytecode.OpLoadProperty, bytecode.OpLoadPropertyOptional:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadPropertyOptional
@@ -333,37 +335,37 @@ loop:
 
 			// TODO: inline loadIndexAndSet for better performance
 			// I guess the reason it cannot inline is due to a different control flow
-			vm.loadPropertyAndSet(state, ctx, dst, state.pc-1, src, prop, optional)
+			vm.loadPropertyAndSet(state, ctx, dst, pc, src, prop, optional)
 		case bytecode.OpLoadIndexConst, bytecode.OpLoadIndexOptionalConst:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadIndexOptionalConst
 			arg := constants[src2.Constant()]
 
-			vm.loadIndexAndSet(state, ctx, dst, src, arg, optional)
+			vm.loadIndexAndSet(state, ctx, dst, pc, src, arg, optional)
 		case bytecode.OpLoadKeyConst, bytecode.OpLoadKeyOptionalConst:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadKeyOptionalConst
 			arg := constants[src2.Constant()]
 
-			vm.loadKeyConstAndSet(state, ctx, dst, state.pc-1, inst, src, arg, optional)
+			vm.loadKeyConstAndSet(state, ctx, dst, pc, inst, src, arg, optional)
 		case bytecode.OpLoadPropertyConst, bytecode.OpLoadPropertyOptionalConst:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadPropertyOptionalConst
 			prop := constants[src2.Constant()]
 
-			vm.loadPropertyConstAndSet(state, ctx, dst, state.pc-1, inst, src, prop, optional)
+			vm.loadPropertyConstAndSet(state, ctx, dst, pc, inst, src, prop, optional)
 		case bytecode.OpPush:
 			ds := reg[dst].(runtime.Appendable)
 
 			if err := ds.Append(ctx, reg[src1]); err != nil {
-				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 		case bytecode.OpPushKV:
 			tr := reg[dst].(runtime.KeyWritable)
 
 			if err := tr.Set(ctx, reg[src1], reg[src2]); err != nil {
-				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 		case bytecode.OpArrayPush:
@@ -384,7 +386,7 @@ loop:
 
 			if ok {
 				if err := writable.Set(ctx, key, value); err != nil {
-					state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+					state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 					break
 				}
 
@@ -392,7 +394,7 @@ loop:
 			}
 
 			callErr := runtime.TypeErrorOf(reg[dst], runtime.TypeObject)
-			state.raiseRuntime(callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+			state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
 			break
 		case bytecode.OpObjectSetConst:
 			objVal := reg[dst]
@@ -408,14 +410,14 @@ loop:
 
 			if ok {
 				if err := writable.Set(ctx, key, value); err != nil {
-					state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+					state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 					break
 				}
 				continue
 			}
 
 			callErr := runtime.TypeErrorOf(reg[dst], runtime.TypeObject)
-			state.raiseRuntime(callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+			state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
 			break
 		case bytecode.OpIter:
 			input := reg[src1]
@@ -429,13 +431,13 @@ loop:
 					continue
 				}
 
-				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
 			// TODO: replace with inlined version
 			callErr := runtime.TypeErrorOf(input, runtime.TypeIterable)
-			state.raiseRuntime(callErr, recoverDefault, dst, data.NoopIter, true)
+			state.raiseRuntimeAt(pc, callErr, recoverDefault, dst, data.NoopIter, true)
 			break
 		case bytecode.OpIterNext:
 			iterator := reg[src1].(*data.Iterator)
@@ -446,7 +448,7 @@ loop:
 					continue
 				}
 
-				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 		case bytecode.OpIterValue:
@@ -478,7 +480,7 @@ loop:
 			observable, eventName, options, err := vm.castSubscribeArgs(reg[dst], reg[src1], reg[src2])
 
 			if err != nil {
-				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
@@ -488,7 +490,7 @@ loop:
 			})
 
 			if err != nil {
-				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
@@ -502,7 +504,7 @@ loop:
 				t, err := runtime.CastInt(reg[src2])
 
 				if err != nil {
-					state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+					state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 					break
 				}
 
@@ -516,7 +518,7 @@ loop:
 			// TODO: unwrap since it's cannot be inlined
 			out, err := applyQuery(ctx, src, descriptor)
 
-			state.setOrTryCatch(dst, out, err)
+			state.setOrRaiseDefault(pc, dst, out, err)
 		case bytecode.OpDataSet:
 			reg[dst] = data.NewDataSet(src1 == 1)
 		case bytecode.OpDataSetCollector:
@@ -530,7 +532,7 @@ loop:
 						"invalid aggregate plan index",
 						runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan index %d", planIdx),
 					)
-					state.raiseInvariant(invariantErr)
+					state.raiseInvariantAt(pc, invariantErr)
 					break
 				}
 
@@ -548,7 +550,7 @@ loop:
 			collector, err := data.NewCollectorSafe(collectorType)
 			if err != nil {
 				invariantErr := diagnostic.NewInvariantError("invalid collector configuration", err)
-				state.raiseInvariant(invariantErr)
+				state.raiseInvariantAt(pc, invariantErr)
 				break
 			}
 
@@ -569,7 +571,7 @@ loop:
 
 			res, err := arrayFlatten(ctx, reg[src1], depth)
 
-			state.setOrTryCatch(dst, res, err)
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpAdd:
 			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
 		case bytecode.OpAddConst:
@@ -581,14 +583,14 @@ loop:
 		case bytecode.OpMul:
 			reg[dst] = runtime.Multiply(ctx, reg[src1], reg[src2])
 		case bytecode.OpDiv:
-			if err := state.checkDivisionByZero(ctx, reg[src1], reg[src2]); err != nil {
-				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+			if err := state.checkDivisionByZeroAt(ctx, pc, reg[src1], reg[src2]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 			reg[dst] = runtime.Divide(ctx, reg[src1], reg[src2])
 		case bytecode.OpMod:
-			if err := state.checkModuloByZero(ctx, reg[src2]); err != nil {
-				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+			if err := state.checkModuloByZeroAt(ctx, pc, reg[src2]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 			reg[dst] = runtime.Modulus(ctx, reg[src1], reg[src2])
@@ -630,15 +632,15 @@ loop:
 				break
 			}
 
-			state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+			state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 			break
 		case bytecode.OpRegexp:
-			r, err := vm.regexpCached(state.pc-1, reg[src2])
+			r, err := vm.regexpCached(pc, reg[src2])
 
 			if err == nil {
 				reg[dst] = r.Match(reg[src1])
 			} else {
-				state.raiseRuntime(err, recoverDefault, dst, runtime.False, true)
+				state.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.False, true)
 				break
 			}
 		case bytecode.OpExists:
@@ -653,7 +655,7 @@ loop:
 				length, err := measurable.Length(ctx)
 
 				if err != nil {
-					state.raiseRuntime(err, recoverDefault, dst, runtime.False, true)
+					state.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.False, true)
 					break
 				}
 
@@ -667,17 +669,17 @@ loop:
 			cmp := comparatorFromByte(int(op) - int(bytecode.OpAllEq))
 			res, err := arrayAll(ctx, cmp, reg[src1], reg[src2])
 
-			state.setOrTryCatch(dst, res, err)
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpAnyEq, bytecode.OpAnyNe, bytecode.OpAnyGt, bytecode.OpAnyGte, bytecode.OpAnyLt, bytecode.OpAnyLte, bytecode.OpAnyIn:
 			cmp := comparatorFromByte(int(op) - int(bytecode.OpAnyEq))
 			res, err := arrayAny(ctx, cmp, reg[src1], reg[src2])
 
-			state.setOrTryCatch(dst, res, err)
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpNoneEq, bytecode.OpNoneNe, bytecode.OpNoneGt, bytecode.OpNoneGte, bytecode.OpNoneLt, bytecode.OpNoneLte, bytecode.OpNoneIn:
 			cmp := comparatorFromByte(int(op) - int(bytecode.OpNoneEq))
 			res, err := arrayNone(ctx, cmp, reg[src1], reg[src2])
 
-			state.setOrTryCatch(dst, res, err)
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpLength:
 			val, ok := reg[src1].(runtime.Measurable)
 
@@ -685,7 +687,7 @@ loop:
 				length, err := val.Length(ctx)
 
 				if err != nil {
-					state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+					state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 					break
 				}
 
@@ -700,7 +702,7 @@ loop:
 				runtime.TypeBinary,
 				runtime.TypeMeasurable,
 			)
-			state.raiseRuntime(callErr, recoverDefault, dst, runtime.ZeroInt, true)
+			state.raiseRuntimeAt(pc, callErr, recoverDefault, dst, runtime.ZeroInt, true)
 			break
 		case bytecode.OpType:
 			reg[dst] = runtime.NewString(runtime.TypeName(runtime.TypeOf(reg[src1])))
@@ -712,7 +714,7 @@ loop:
 				closeErr := val.Close()
 
 				if closeErr != nil {
-					state.raiseRuntime(closeErr, recoverDefault, bytecode.NoopOperand, nil, false)
+					state.raiseRuntimeAt(pc, closeErr, recoverDefault, bytecode.NoopOperand, nil, false)
 					break
 				}
 			}
@@ -720,18 +722,18 @@ loop:
 			dur, err := runtime.ToInt(ctx, reg[dst])
 
 			if err != nil {
-				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
 			if err := data.Sleep(ctx, dur); err != nil {
-				state.raiseRuntime(err, recoverDefault, bytecode.NoopOperand, nil, false)
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 		case bytecode.OpRand:
 			reg[dst] = runtime.NewFloat(runtime.RandomDefault())
 		default:
-			return nil, runtime.Errorf(runtime.ErrUnexpected, "unknown opcode %d at pc %d", op, state.pc-1)
+			return nil, runtime.Errorf(runtime.ErrUnexpected, "unknown opcode %d at pc %d", op, pc)
 		}
 
 		// Sticky checkpoint: opcode branches only raise failures; resolution happens here.
