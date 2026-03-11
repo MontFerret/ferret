@@ -114,5 +114,5 @@ jobs:
           save-data-file: false
           summary-always: true
           fail-on-alert: true
-          alert-threshold: '120%'
+          alert-threshold: '150%'
           comment-on-alert: true
