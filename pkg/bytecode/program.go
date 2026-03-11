@@ -9,9 +9,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-const Version = 1
+const Version = 2
 
 type (
+	// Catch stores an inclusive instruction range [start, end] and an optional recovery jump target.
 	Catch [3]int
 
 	Metadata struct {

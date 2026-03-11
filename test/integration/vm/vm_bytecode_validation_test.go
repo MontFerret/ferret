@@ -11,8 +11,13 @@ import (
 )
 
 func TestRejectsUnsupportedBytecodeVersion(t *testing.T) {
+	unsupported := bytecode.Version - 1
+	if unsupported < 0 {
+		unsupported = 0
+	}
+
 	program := &bytecode.Program{
-		ISAVersion: 0,
+		ISAVersion: unsupported,
 		Bytecode:   []bytecode.Instruction{bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0))},
 		Registers:  1,
 	}

@@ -327,14 +327,19 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 	}
 
 	jump := -1
-	endCatch := c.ctx.Emitter.Size()
+	endCatchExclusive := c.ctx.Emitter.Size()
+	if endCatchExclusive <= startCatch {
+		return reg, true
+	}
+
+	endCatch := endCatchExclusive - 1
 
 	if fe := atom.ForExpression(); fe != nil {
 		// Since FOR-IN loops depend on custom iterators,
 		// We need to handle cleanup before exiting the loop.
 		// TODO: Find a better way to handle this. The code assumes the knowledge of the internals of the FOR-IN loop.
 		if fe.In() != nil {
-			jump = endCatch - 1
+			jump = endCatch
 		}
 	}
 

@@ -446,6 +446,7 @@ func TestQueryableModifiers(t *testing.T) {
 		CaseNil("LET maybe = (QUERY VALUE `.items` IN @empty USING css)?\nRETURN maybe", "VALUE assertion should be catchable with optional operator"),
 		CaseNil("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe", "ONE assertion should be catchable for empty result with optional operator"),
 		CaseNil("LET maybe = (QUERY ONE `.items` IN @many USING css)?\nRETURN maybe", "ONE assertion should be catchable for multi result with optional operator"),
+		RuntimeErrorCase("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe.foo", ExpectedRuntimeError{Contains: []string{"Cannot read property", "\"foo\""}}, "Catch should not swallow the first instruction after a guarded QUERY ONE"),
 	}, vm.WithParams(map[string]runtime.Value{
 		"many":  queryableMany,
 		"one":   queryableOne,

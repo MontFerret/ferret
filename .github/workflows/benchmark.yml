@@ -115,3 +115,4 @@ jobs:
           summary-always: true
           fail-on-alert: true
           alert-threshold: '120%'
+          comment-on-alert: true
