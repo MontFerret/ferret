@@ -8,7 +8,8 @@ import (
 type (
 	Cache struct {
 		ShapeCache          *data.ShapeCache
-		HostFunctions       []*CachedHostFunction
+		HostFunctions       []CachedHostFunction
+		HostFunctionsBound  []bool
 		Regexps             []*CachedRegexp
 		LoadKeyICs          []*LoadKeyCache
 		LoadKeyConstICs     []*LoadKeyConstCache
@@ -161,12 +162,13 @@ func (c *LoadKeyConstCache) Add(shapeID uint64, slot int) {
 	c.megamorphic = true
 }
 
-func NewCache(bytecodeLen, shapeCacheLimit int) *Cache {
+func NewCache(bytecodeLen, hostCallCount, shapeCacheLimit int) *Cache {
 	return &Cache{
-		HostFunctions:   make([]*CachedHostFunction, bytecodeLen),
-		Regexps:         make([]*CachedRegexp, bytecodeLen),
-		LoadKeyICs:      make([]*LoadKeyCache, bytecodeLen),
-		LoadKeyConstICs: make([]*LoadKeyConstCache, bytecodeLen),
-		ShapeCache:      data.NewShapeCache(shapeCacheLimit),
+		HostFunctions:      make([]CachedHostFunction, hostCallCount),
+		HostFunctionsBound: make([]bool, hostCallCount),
+		Regexps:            make([]*CachedRegexp, bytecodeLen),
+		LoadKeyICs:         make([]*LoadKeyCache, bytecodeLen),
+		LoadKeyConstICs:    make([]*LoadKeyConstCache, bytecodeLen),
+		ShapeCache:         data.NewShapeCache(shapeCacheLimit),
 	}
 }

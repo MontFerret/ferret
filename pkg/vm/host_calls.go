@@ -26,12 +26,13 @@ func hostCallArgRange(src1, src2 bytecode.Operand) (int, int, bool) {
 func callCachedHostFunction(
 	ctx context.Context,
 	cacheFn *mem.CachedHostFunction,
+	bound bool,
 	reg []runtime.Value,
 	scratch *mem.Scratch,
 	target runtime.Value,
 	src1, src2 bytecode.Operand,
 ) (runtime.Value, error) {
-	if cacheFn == nil {
+	if !bound {
 		if _, ok := target.(runtime.String); !ok {
 			return nil, ErrInvalidFunctionName
 		}

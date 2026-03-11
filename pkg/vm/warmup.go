@@ -11,6 +11,7 @@ import (
 type hostCallWarmupDescriptor struct {
 	FnName    string
 	PC        int
+	ID        int
 	Dst       bytecode.Operand
 	ArgCount  int
 	HasFnName bool
@@ -37,7 +38,20 @@ func warmupShared(vm *VM, env *Environment) error {
 
 	functions := env.Functions
 	for _, descriptor := range vm.hostWarmups {
-		vm.cache.HostFunctions[descriptor.PC] = nil
+		if descriptor.ID < 0 || descriptor.ID >= len(vm.cache.HostFunctions) {
+			warmupErrs.Add(
+				diagnostic.NewInvariantError(
+					"invalid host warmup slot",
+					runtime.Errorf(runtime.ErrUnexpected, "invalid host warmup slot %d at pc %d", descriptor.ID, descriptor.PC),
+				),
+				descriptor.PC,
+				descriptor.Dst,
+			)
+			continue
+		}
+
+		vm.cache.HostFunctions[descriptor.ID] = mem.CachedHostFunction{}
+		vm.cache.HostFunctionsBound[descriptor.ID] = false
 
 		cachedFn, err := warmupBindHostCall(descriptor, functions)
 		if err != nil {
@@ -45,7 +59,8 @@ func warmupShared(vm *VM, env *Environment) error {
 			continue
 		}
 
-		vm.cache.HostFunctions[descriptor.PC] = cachedFn
+		vm.cache.HostFunctions[descriptor.ID] = cachedFn
+		vm.cache.HostFunctionsBound[descriptor.ID] = true
 	}
 
 	if warmupErrs.Size() > 0 {
@@ -118,20 +133,20 @@ func resolveHostFn[T runtime.FunctionConstraint](
 	fallback runtime.FunctionCollection[runtime.Function],
 	setter func(*mem.CachedHostFunction, T),
 	fnName string,
-) (*mem.CachedHostFunction, error) {
+) (mem.CachedHostFunction, error) {
 	if fn, ok := primary(fnName); ok {
-		c := &mem.CachedHostFunction{}
-		setter(c, fn)
+		var c mem.CachedHostFunction
+		setter(&c, fn)
 		return c, nil
 	}
 
 	if fallback != nil {
 		if fnv, ok := fallback.Get(fnName); ok {
-			return &mem.CachedHostFunction{FnV: fnv}, nil
+			return mem.CachedHostFunction{FnV: fnv}, nil
 		}
 	}
 
-	return nil, ErrUnresolvedFunction
+	return mem.CachedHostFunction{}, ErrUnresolvedFunction
 }
 
 func warmupArgCount(src1, src2 bytecode.Operand) int {
@@ -149,9 +164,9 @@ func warmupArgCount(src1, src2 bytecode.Operand) int {
 	return argCount
 }
 
-func warmupBindHostCall(descriptor hostCallWarmupDescriptor, functions *runtime.Functions) (*mem.CachedHostFunction, error) {
+func warmupBindHostCall(descriptor hostCallWarmupDescriptor, functions *runtime.Functions) (mem.CachedHostFunction, error) {
 	if !descriptor.HasFnName {
-		return nil, ErrInvalidFunctionName
+		return mem.CachedHostFunction{}, ErrInvalidFunctionName
 	}
 
 	argCount := descriptor.ArgCount
@@ -169,6 +184,31 @@ func warmupBindHostCall(descriptor hostCallWarmupDescriptor, functions *runtime.
 		return resolveHostFn(functions.A4().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function4) { f.Fn4 = fn }, descriptor.FnName)
 	default:
 		return resolveHostFn(functions.Var().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function) { f.FnV = fn }, descriptor.FnName)
+	}
+}
+
+func inlineHostCallIDs(instructions []data.ExecInstruction, descriptors []hostCallWarmupDescriptor) {
+	for pc := range instructions {
+		op := instructions[pc].Opcode
+
+		if op == bytecode.OpHCall || op == bytecode.OpProtectedHCall {
+			instructions[pc].InlineSlot = -1
+		}
+	}
+
+	for id := range descriptors {
+		descriptors[id].ID = id
+		pc := descriptors[id].PC
+		if pc < 0 || pc >= len(instructions) {
+			continue
+		}
+
+		op := instructions[pc].Opcode
+		if op != bytecode.OpHCall && op != bytecode.OpProtectedHCall {
+			continue
+		}
+
+		instructions[pc].InlineSlot = id
 	}
 }
 

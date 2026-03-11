@@ -170,8 +170,12 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 	}
 
 	bytecodeLen := len(program.Bytecode)
-	if got := len(instance.cache.HostFunctions); got != bytecodeLen {
-		t.Fatalf("unexpected host function cache size: got %d, want %d", got, bytecodeLen)
+	if got, want := len(instance.cache.HostFunctions), len(instance.hostWarmups); got != want {
+		t.Fatalf("unexpected host function cache size: got %d, want %d", got, want)
+	}
+
+	if got, want := len(instance.cache.HostFunctionsBound), len(instance.hostWarmups); got != want {
+		t.Fatalf("unexpected host function bound bitmap size: got %d, want %d", got, want)
 	}
 
 	if got := len(instance.cache.Regexps); got != bytecodeLen {
@@ -216,6 +220,71 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 
 	if &reg[0] != &reused[0] {
 		t.Fatal("expected register pool to reuse buffers")
+	}
+}
+
+func TestNewWith_InlinesHostCallIDs(t *testing.T) {
+	program := compileProgram(t, "RETURN F(1)")
+	instance := mustNewVM(t, program)
+
+	if len(instance.hostWarmups) == 0 {
+		t.Fatal("expected host call warmup descriptors")
+	}
+
+	for _, descriptor := range instance.hostWarmups {
+		if descriptor.ID < 0 || descriptor.ID >= len(instance.cache.HostFunctions) {
+			t.Fatalf("invalid descriptor id %d for pc %d", descriptor.ID, descriptor.PC)
+		}
+
+		if descriptor.PC < 0 || descriptor.PC >= len(instance.instructions) {
+			t.Fatalf("invalid descriptor pc %d", descriptor.PC)
+		}
+
+		inst := instance.instructions[descriptor.PC]
+		if inst.Opcode != bytecode.OpHCall && inst.Opcode != bytecode.OpProtectedHCall {
+			t.Fatalf("descriptor pc %d does not point to host call opcode %d", descriptor.PC, inst.Opcode)
+		}
+
+		if got, want := inst.InlineSlot, descriptor.ID; got != want {
+			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", descriptor.PC, got, want)
+		}
+	}
+}
+
+func TestRun_IgnoresInlineSlotForNonHostOpcodes(t *testing.T) {
+	program := compileProgram(t, "LET a = 1 RETURN F(a)")
+	instance := mustNewVM(t, program)
+
+	nonHostPC := -1
+	for pc, inst := range instance.instructions {
+		if inst.Opcode != bytecode.OpHCall && inst.Opcode != bytecode.OpProtectedHCall {
+			nonHostPC = pc
+			break
+		}
+	}
+
+	if nonHostPC < 0 {
+		t.Fatal("expected at least one non-host opcode")
+	}
+
+	instance.instructions[nonHostPC].InlineSlot = 1 << 20
+
+	env, err := NewEnvironment([]EnvironmentOption{
+		WithFunction("F", func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+			return args[0], nil
+		}),
+	})
+	if err != nil {
+		t.Fatalf("environment build failed: %v", err)
+	}
+
+	out, err := instance.Run(context.Background(), env)
+	if err != nil {
+		t.Fatalf("run failed: %v", err)
+	}
+
+	if got, want := out, runtime.NewInt(1); got != want {
+		t.Fatalf("unexpected run result: got %v, want %v", got, want)
 	}
 }
 
@@ -481,7 +550,13 @@ func TestRunReturnsUnresolvedFunctionWhenHostCacheEntryIsMissing(t *testing.T) {
 		t.Fatal("host call opcode not found")
 	}
 
-	instance.cache.HostFunctions[hostPC] = nil
+	hostID := instance.instructions[hostPC].InlineSlot
+	if hostID < 0 || hostID >= len(instance.cache.HostFunctionsBound) {
+		t.Fatalf("invalid host id at pc %d: %d", hostPC, hostID)
+	}
+
+	instance.cache.HostFunctions[hostID] = mem.CachedHostFunction{}
+	instance.cache.HostFunctionsBound[hostID] = false
 
 	_, err = instance.Run(context.Background(), env)
 	if err == nil {
@@ -1195,31 +1270,22 @@ func TestWarmupRebindTouchesOnlyHostCallSlots(t *testing.T) {
 	program := compileProgram(t, "RETURN F()")
 	instance := mustNewVM(t, program)
 
-	hostPC := -1
-	nonHostPC := -1
-	for i, inst := range program.Bytecode {
-		if inst.Opcode == bytecode.OpHCall || inst.Opcode == bytecode.OpProtectedHCall {
-			if hostPC < 0 {
-				hostPC = i
-			}
-			continue
-		}
-
-		if nonHostPC < 0 {
-			nonHostPC = i
-		}
+	if got, want := len(instance.hostWarmups), 1; got != want {
+		t.Fatalf("unexpected host warmup count: got %d, want %d", got, want)
 	}
 
-	if hostPC < 0 || nonHostPC < 0 {
-		t.Fatalf("expected host and non-host opcodes, got host=%d nonHost=%d", hostPC, nonHostPC)
+	hostID := instance.hostWarmups[0].ID
+	if hostID < 0 || hostID >= len(instance.cache.HostFunctions) {
+		t.Fatalf("invalid host id %d", hostID)
 	}
 
-	sentinel := &mem.CachedHostFunction{
+	sentinel := mem.CachedHostFunction{
 		FnV: func(_ context.Context, _ ...runtime.Value) (runtime.Value, error) {
 			return runtime.NewInt(77), nil
 		},
 	}
-	instance.cache.HostFunctions[nonHostPC] = sentinel
+	instance.cache.HostFunctions[hostID] = sentinel
+	instance.cache.HostFunctionsBound[hostID] = true
 
 	envA, err := NewEnvironment([]EnvironmentOption{
 		WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
@@ -1242,20 +1308,23 @@ func TestWarmupRebindTouchesOnlyHostCallSlots(t *testing.T) {
 		t.Fatalf("environment build failed: %v", err)
 	}
 
-	if _, err := instance.Run(context.Background(), envA); err != nil {
+	outA, err := instance.Run(context.Background(), envA)
+	if err != nil {
 		t.Fatalf("first run failed: %v", err)
 	}
+	if got, want := outA, runtime.NewInt(1); got != want {
+		t.Fatalf("unexpected first run result: got %v, want %v", got, want)
+	}
 
-	instance.cache.HostFunctions[nonHostPC] = sentinel
-	if _, err := instance.Run(context.Background(), envB); err != nil {
+	outB, err := instance.Run(context.Background(), envB)
+	if err != nil {
 		t.Fatalf("second run failed: %v", err)
 	}
-
-	if got := instance.cache.HostFunctions[nonHostPC]; got != sentinel {
-		t.Fatalf("unexpected non-host cache mutation: got %p, want %p", got, sentinel)
+	if got, want := outB, runtime.NewInt(2); got != want {
+		t.Fatalf("unexpected second run result: got %v, want %v", got, want)
 	}
 
-	if instance.cache.HostFunctions[hostPC] == nil {
+	if !instance.cache.HostFunctionsBound[hostID] {
 		t.Fatal("expected host call slot to be rebound")
 	}
 }

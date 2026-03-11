@@ -33,6 +33,7 @@ func TestCallCachedHostFunction_VarargSixArgsPreservesOrderAndCount(t *testing.T
 			out, err := callCachedHostFunction(
 				context.Background(),
 				cacheFn,
+				true,
 				reg,
 				scratch,
 				runtime.NewString("TEST"),
@@ -83,6 +84,7 @@ func TestCallCachedHostFunction_VarargArgsSliceMutationDoesNotMutateRegisters(t 
 			_, err := callCachedHostFunction(
 				context.Background(),
 				cacheFn,
+				true,
 				reg,
 				scratch,
 				runtime.NewString("TEST"),

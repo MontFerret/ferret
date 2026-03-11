@@ -33,14 +33,17 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 
 	o := newOptions(opts)
 	catchByPC := buildCatchByPC(len(program.Bytecode), program.CatchTable)
+	hostWarmups := buildHostWarmupDescriptors(program)
+	instructions := buildExecInstructions(program.Bytecode)
+	inlineHostCallIDs(instructions, hostWarmups)
 
 	vm := &VM{
-		cache:        mem.NewCache(len(program.Bytecode), o.shapeCacheLimit),
+		cache:        mem.NewCache(len(program.Bytecode), len(hostWarmups), o.shapeCacheLimit),
 		program:      program,
 		catchByPC:    catchByPC,
-		hostWarmups:  buildHostWarmupDescriptors(program),
+		hostWarmups:  hostWarmups,
 		options:      o,
-		instructions: buildExecInstructions(program.Bytecode),
+		instructions: instructions,
 	}
 
 	return vm, nil
@@ -250,8 +253,19 @@ loop:
 			state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
 			break
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
-			cacheFn := vm.cache.HostFunctions[pc]
-			out, err := callCachedHostFunction(ctx, cacheFn, state.registers.Values, &state.scratch, reg[dst], src1, src2)
+			hostID := inst.InlineSlot
+			if hostID < 0 || hostID >= len(vm.cache.HostFunctions) {
+				invariantErr := diagnostic.NewInvariantError(
+					"invalid host call slot",
+					runtime.Errorf(runtime.ErrUnexpected, "invalid host call slot %d at pc %d", hostID, pc),
+				)
+				state.raiseInvariantAt(pc, invariantErr)
+				break
+			}
+
+			cacheFn := &vm.cache.HostFunctions[hostID]
+			bound := vm.cache.HostFunctionsBound[hostID]
+			out, err := callCachedHostFunction(ctx, cacheFn, bound, state.registers.Values, &state.scratch, reg[dst], src1, src2)
 
 			state.setCallResult(pc, op, dst, out, err)
 		case bytecode.OpCall, bytecode.OpProtectedCall:
