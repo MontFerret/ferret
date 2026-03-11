@@ -21,7 +21,7 @@ var (
 )
 
 func applyQuery(ctx context.Context, src runtime.Value, descriptor runtime.Value) (runtime.Value, error) {
-	query, err := parseQueryDescriptor(ctx, descriptor)
+	query, err := coerceQueryDescriptor(ctx, descriptor)
 	if err != nil {
 		return runtime.None, err
 	}
@@ -72,75 +72,4 @@ func applyQuery(ctx context.Context, src runtime.Value, descriptor runtime.Value
 	}
 
 	return runtime.None, runtime.TypeErrorOf(src, runtime.TypeQueryable, runtime.TypeList)
-}
-
-func parseQueryDescriptor(ctx context.Context, descriptor runtime.Value) (runtime.Query, error) {
-	switch value := descriptor.(type) {
-	case runtime.ObjectLike:
-		kind, err := value.Get(ctx, queryDescriptorKeyKind)
-		if err != nil {
-			return runtime.Query{}, err
-		}
-
-		payload, err := value.Get(ctx, queryDescriptorKeyPayload)
-		if err != nil {
-			return runtime.Query{}, err
-		}
-
-		options, err := value.Get(ctx, queryDescriptorKeyOptions)
-		if err != nil {
-			return runtime.Query{}, err
-		}
-
-		return runtime.Query{
-			Kind:    runtime.CastOr[runtime.String](kind, runtime.EmptyString),
-			Payload: runtime.CastOr[runtime.String](payload, runtime.EmptyString),
-			Options: options,
-		}, nil
-	case *runtime.Array:
-		length, err := value.Length(ctx)
-		if err != nil {
-			return runtime.Query{}, err
-		}
-
-		if length != 3 {
-			return runtime.Query{}, runtime.Error(runtime.ErrInvalidOperation, errQueryFormatUnexpected)
-		}
-
-		kindVal, err := value.At(ctx, runtime.NewInt(0))
-		if err != nil {
-			return runtime.Query{}, err
-		}
-
-		payloadVal, err := value.At(ctx, runtime.NewInt(1))
-		if err != nil {
-			return runtime.Query{}, err
-		}
-
-		optionsVal, err := value.At(ctx, runtime.NewInt(2))
-		if err != nil {
-			return runtime.Query{}, err
-		}
-
-		kind, err := runtime.CastString(kindVal)
-		if err != nil {
-			return runtime.Query{}, runtime.TypeErrorOf(kindVal, runtime.TypeString)
-		}
-
-		payload := runtime.EmptyString
-		if payloadVal != runtime.None {
-			payload, err = runtime.CastString(payloadVal)
-			if err != nil {
-				return runtime.Query{}, runtime.TypeErrorOf(payloadVal, runtime.TypeString, runtime.TypeNone)
-			}
-		}
-
-		return runtime.Query{
-			Kind:    kind,
-			Payload: payload,
-			Options: optionsVal,
-		}, nil
-	default:
-		return runtime.Query{}, runtime.Error(runtime.ErrInvalidOperation, errQueryFormatUnexpected)
-	}
 }
