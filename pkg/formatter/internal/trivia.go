@@ -285,7 +285,7 @@ func (t *triviaEmitter) emitListCommentLinesWith(p *printer, text string) {
 		return
 	}
 
-	if !wroteLine && emptyCount > 0 {
+	if !wroteLine && emptyCount > 1 {
 		p.newline()
 	}
 }

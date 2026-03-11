@@ -7,24 +7,26 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
-type engine struct {
-	*context
-	trivia     *triviaEmitter
-	list       *listFormatter
-	program    *programFormatter
-	statement  *statementFormatter
-	expression *expressionFormatter
-	literal    *literalFormatter
-	member     *memberFormatter
-	clause     *clauseFormatter
-	values     *valueFormatter
-}
+type (
+	context struct {
+		opts *Options
+		p    *printer
+		src  *file.Source
+	}
 
-type context struct {
-	opts *Options
-	p    *printer
-	src  *file.Source
-}
+	engine struct {
+		*context
+		trivia     *triviaEmitter
+		list       *listFormatter
+		program    *programFormatter
+		statement  *statementFormatter
+		expression *expressionFormatter
+		literal    *literalFormatter
+		member     *memberFormatter
+		clause     *clauseFormatter
+		values     *valueFormatter
+	}
+)
 
 func newEngine(src *file.Source, out io.Writer, opts *Options) *engine {
 	ctx := &context{
@@ -53,6 +55,24 @@ func (e *engine) Err() error {
 
 func (e *engine) writeKeyword(val string) {
 	e.p.write(applyCase(e.opts.caseMode, val))
+}
+
+func (e *engine) inlineFits(inline string) bool {
+	return e.inlineFitsWith(e.p, inline)
+}
+
+func (e *engine) inlineFitsWith(p *printer, inline string) bool {
+	if p == nil {
+		return len(inline) <= int(e.opts.printWidth)
+	}
+
+	column := p.currentColumn()
+
+	if p.atLineStart {
+		column += int(p.opts.tabWidth) * p.indent
+	}
+
+	return column+len(inline) <= int(e.opts.printWidth)
 }
 
 func (e *engine) renderInline(fn func(p *printer)) (string, bool) {

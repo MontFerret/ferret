@@ -9,6 +9,7 @@ type printer struct {
 	out             io.Writer
 	opts            *Options
 	indent          int
+	lineColumn      int
 	atLineStart     bool
 	lastWasSpace    bool
 	forceSingleLine bool
@@ -28,6 +29,10 @@ func (p *printer) Err() error {
 	return p.err
 }
 
+func (p *printer) currentColumn() int {
+	return p.lineColumn
+}
+
 func (p *printer) writeIndent() {
 	if p.err != nil || !p.atLineStart {
 		return
@@ -43,6 +48,8 @@ func (p *printer) writeIndent() {
 		p.err = err
 		return
 	}
+
+	p.lineColumn += len(indent)
 }
 
 func (p *printer) write(s string) {
@@ -62,6 +69,7 @@ func (p *printer) write(s string) {
 
 	p.atLineStart = false
 	p.lastWasSpace = false
+	p.lineColumn += len(s)
 }
 
 func (p *printer) writeRaw(s string) {
@@ -69,16 +77,39 @@ func (p *printer) writeRaw(s string) {
 		return
 	}
 
-	for _, r := range s {
-		if r == '\n' {
-			p.sawHardNewline = true
+	for len(s) > 0 {
+		newline := strings.IndexByte(s, '\n')
+		segment := s
 
-			if p.forceSingleLine {
-				p.space()
+		if newline >= 0 {
+			segment = s[:newline]
+		}
 
-				continue
+		if segment != "" {
+			if p.atLineStart {
+				p.atLineStart = false
 			}
 
+			_, err := io.WriteString(p.out, segment)
+			if err != nil {
+				p.err = err
+
+				return
+			}
+
+			p.lastWasSpace = segment[len(segment)-1] == ' '
+			p.lineColumn += len(segment)
+		}
+
+		if newline < 0 {
+			return
+		}
+
+		p.sawHardNewline = true
+
+		if p.forceSingleLine {
+			p.space()
+		} else {
 			_, err := io.WriteString(p.out, "\n")
 			if err != nil {
 				p.err = err
@@ -88,22 +119,10 @@ func (p *printer) writeRaw(s string) {
 
 			p.atLineStart = true
 			p.lastWasSpace = false
-
-			continue
+			p.lineColumn = 0
 		}
 
-		if p.atLineStart {
-			p.atLineStart = false
-		}
-
-		_, err := io.WriteString(p.out, string(r))
-		if err != nil {
-			p.err = err
-
-			return
-		}
-
-		p.lastWasSpace = r == ' '
+		s = s[newline+1:]
 	}
 }
 
@@ -120,6 +139,7 @@ func (p *printer) space() {
 	}
 
 	p.lastWasSpace = true
+	p.lineColumn++
 }
 
 func (p *printer) newline() {
@@ -142,6 +162,7 @@ func (p *printer) newline() {
 
 	p.atLineStart = true
 	p.lastWasSpace = false
+	p.lineColumn = 0
 }
 
 func (p *printer) withIndent(fn func()) {
