@@ -65,8 +65,7 @@ func callCachedHostFunction(
 		}
 
 		if cacheFn.FnV != nil {
-			args := stageHostCallArgs(scratch, reg, start, 1)
-			return cacheFn.FnV(ctx, args...)
+			return cacheFn.FnV(ctx, arg0)
 		}
 	case 2:
 		arg0 := reg[start]
@@ -77,8 +76,7 @@ func callCachedHostFunction(
 		}
 
 		if cacheFn.FnV != nil {
-			args := stageHostCallArgs(scratch, reg, start, 2)
-			return cacheFn.FnV(ctx, args...)
+			return cacheFn.FnV(ctx, arg0, arg1)
 		}
 	case 3:
 		arg0 := reg[start]
@@ -90,8 +88,7 @@ func callCachedHostFunction(
 		}
 
 		if cacheFn.FnV != nil {
-			args := stageHostCallArgs(scratch, reg, start, 3)
-			return cacheFn.FnV(ctx, args...)
+			return cacheFn.FnV(ctx, arg0, arg1, arg2)
 		}
 	case 4:
 		arg0 := reg[start]
@@ -104,8 +101,7 @@ func callCachedHostFunction(
 		}
 
 		if cacheFn.FnV != nil {
-			args := stageHostCallArgs(scratch, reg, start, 4)
-			return cacheFn.FnV(ctx, args...)
+			return cacheFn.FnV(ctx, arg0, arg1, arg2, arg3)
 		}
 	default:
 		if cacheFn.FnV != nil {
