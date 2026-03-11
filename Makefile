@@ -1,19 +1,25 @@
-.PHONY: build install compile test e2e doc fmt lint vet release
+.PHONY: build install compile test e2e doc fmt lint vet release bench
 export CGO_ENABLED=0
 
 LAB_BIN ?= lab
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
 DIR_INTEG = ./test/integration
+DIR_BENCH = ./test/integration/benchmarks
 DIR_E2E = ./test/e2e
+BENCH_PACKAGES ?= ${DIR_PKG}/... ${DIR_BENCH}/...
+BENCH_RUN ?= '^$$'
+BENCH_FILTER ?= .
+BENCH_COUNT ?= 1
 
 default: build
 
-build: vet generate test compile
+build: lint generate test compile
 
 install-tools:
 	go install honnef.co/go/tools/cmd/staticcheck@latest && \
 	go install golang.org/x/tools/cmd/goimports@latest && \
+	go install golang.org/x/perf/cmd/benchstat@latest && \
 	go install github.com/mgechev/revive@latest
 
 install:
@@ -39,7 +45,7 @@ e2e:
 	${LAB_BIN} --timeout=120 --attempts=5 --concurrency=1 --wait=http://127.0.0.1:9222/json/version --runtime=bin://./bin/ferret --files=./test/e2e/tests --cdn=./test/e2e/pages/dynamic --cdn=./test/e2e/pages/static
 
 bench:
-	go test -run=XXX -bench=. ${DIR_PKG}/...
+	go test ${BENCH_PACKAGES} -run ${BENCH_RUN} -bench ${BENCH_FILTER} -benchmem -count=${BENCH_COUNT}
 
 generate:
 	go generate ${DIR_PKG}/... && \
