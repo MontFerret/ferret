@@ -66,7 +66,13 @@ func (e *engine) inlineFitsWith(p *printer, inline string) bool {
 		return len(inline) <= int(e.opts.printWidth)
 	}
 
-	return p.currentColumn()+len(inline) <= int(e.opts.printWidth)
+	column := p.currentColumn()
+
+	if p.atLineStart {
+		column += int(p.opts.tabWidth) * p.indent
+	}
+
+	return column+len(inline) <= int(e.opts.printWidth)
 }
 
 func (e *engine) renderInline(fn func(p *printer)) (string, bool) {

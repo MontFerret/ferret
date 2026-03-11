@@ -46,6 +46,35 @@ func TestFormatter_ArrayTemplateLiteralNewlineForcesMultiline(t *testing.T) {
 	}
 }
 
+func TestFormatter_NestedObjectRespectsPrintWidthAtLineStart(t *testing.T) {
+	input := "RETURN [{ a: 1, bb: 2 }]"
+	src := file.NewAnonymousSource(input)
+	var buf bytes.Buffer
+	fmt := New(WithPrintWidth(18))
+
+	if err := fmt.Format(&buf, src); err != nil {
+		t.Fatalf("format failed: %v", err)
+	}
+
+	out := strings.TrimSpace(buf.String())
+	expected := strings.TrimSpace(`RETURN [
+    {
+        a: 1,
+        bb: 2
+    }
+]`)
+
+	if out != expected {
+		t.Fatalf("unexpected nested object formatting:\n%s", out)
+	}
+
+	for _, line := range strings.Split(out, "\n") {
+		if len(line) > 18 {
+			t.Fatalf("line exceeds print width 18 (%d): %q", len(line), line)
+		}
+	}
+}
+
 func TestFormatter_BlockCommentPreservesLeadingSpace(t *testing.T) {
 	input := "RETURN 1\n/*\n * a\n * b\n */\nRETURN 2"
 	src := file.NewAnonymousSource(input)
