@@ -557,6 +557,70 @@ func TestSetCallResult_RaisesPendingFailureBeforeResolution(t *testing.T) {
 	}
 }
 
+func TestSetCallResult_ProtectedFailureBypassesCatchJump(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(1)),
+		},
+		CatchTable: []bytecode.Catch{
+			{1, 1, 0},
+		},
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
+
+	state.pc = 1
+	state.registers.Values[1] = runtime.True
+
+	state.setCallResult(
+		bytecode.OpProtectedHCall,
+		bytecode.NewRegister(1),
+		runtime.True,
+		errors.New("boom"),
+	)
+
+	if action := state.resolveFailure(); action != errContinue {
+		t.Fatalf("expected protected failure to continue, got %v", action)
+	}
+
+	if got := state.registers.Values[1]; got != runtime.None {
+		t.Fatalf("expected protected fallback to set runtime.None, got %v", got)
+	}
+
+	if got, want := state.pc, 1; got != want {
+		t.Fatalf("expected protected recovery to bypass catch jump and keep pc %d, got %d", want, got)
+	}
+}
+
+func TestResolveFailure_InvariantReturnsWithoutPanic(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+		},
+	}, WithPanicPolicy(PanicPropagate))
+
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
+
+	invariantErr := diagnostic.NewInvariantError("boom", errors.New("cause"))
+	state.raiseInvariant(invariantErr)
+
+	if action := state.resolveFailure(); action != errReturn {
+		t.Fatalf("expected invariant resolution to return, got %v", action)
+	}
+
+	var gotInvariant *diagnostic.InvariantError
+	if got := state.failureError(); !errors.As(got, &gotInvariant) {
+		t.Fatalf("expected failure error to remain invariant, got %T", got)
+	}
+}
+
 func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
@@ -664,7 +728,7 @@ func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 	}
 }
 
-func TestSetOrOptional_OptionalErrorUsesOptionalRecovery(t *testing.T) {
+func TestSetOrOptional_GenericErrorUsesDefaultResolverInOptionalMode(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Registers:  2,
@@ -685,7 +749,7 @@ func TestSetOrOptional_OptionalErrorUsesOptionalRecovery(t *testing.T) {
 
 	state.setOrOptional(bytecode.NewRegister(1), runtime.True, errors.New("boom"), true)
 	if !state.hasFailure() {
-		t.Fatal("expected optional error to raise pending failure")
+		t.Fatal("expected member error to raise pending failure")
 	}
 
 	if got := state.registers.Values[1]; got != runtime.True {
@@ -694,15 +758,15 @@ func TestSetOrOptional_OptionalErrorUsesOptionalRecovery(t *testing.T) {
 
 	action := state.resolveFailure()
 	if action != errContinue {
-		t.Fatalf("expected optional path to continue, got %v", action)
+		t.Fatalf("expected catch path to continue, got %v", action)
 	}
 
 	if got := state.registers.Values[1]; got != runtime.None {
 		t.Fatalf("expected destination to be reset to none, got %v", got)
 	}
 
-	if got, want := state.pc, 1; got != want {
-		t.Fatalf("expected optional path to bypass catch jump and keep pc %d, got %d", want, got)
+	if got, want := state.pc, 0; got != want {
+		t.Fatalf("expected generic error to use default resolver and jump to catch %d, got %d", want, got)
 	}
 }
 
@@ -735,41 +799,77 @@ func TestSetOrOptional_NotFoundContinuesWithNone(t *testing.T) {
 	}
 }
 
-func TestSetOrOptional_NonOptionalNonNotFoundUsesDefaultResolver(t *testing.T) {
+func TestSetOrOptional_NullDereferenceContinuesWithNone(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Registers:  2,
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
 		},
-		CatchTable: []bytecode.Catch{
-			{0, 0, 0},
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(state)
+
+	state.registers.Values[1] = runtime.True
+
+	err := diagnostic.MemberAccessErrorOf(
+		runtime.None,
+		diagnostic.MemberAccessProperty,
+		runtime.NewString("foo"),
+	)
+
+	state.setOrOptional(bytecode.NewRegister(1), runtime.True, err, true)
+	if !state.hasFailure() {
+		t.Fatal("expected null-dereference member error to raise pending failure")
+	}
+
+	if got := state.registers.Values[1]; got != runtime.True {
+		t.Fatalf("expected destination to remain unchanged before resolution, got %v", got)
+	}
+
+	action := state.resolveFailure()
+	if action != errContinue {
+		t.Fatalf("expected null-dereference miss to continue, got %v", action)
+	}
+
+	if got := state.registers.Values[1]; got != runtime.None {
+		t.Fatalf("expected destination to be set to runtime.None for null-dereference miss, got %v", got)
+	}
+}
+
+func TestSetOrOptional_GenericErrorReturnsWithoutCatch(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
 		},
 	})
 
 	state := mustAcquireRunState(t, instance)
 	defer instance.releaseRunState(state)
 
-	state.pc = 0
+	wantErr := errors.New("boom")
 	initial := runtime.NewInt(42)
 	state.registers.Values[1] = initial
 
-	state.setOrOptional(bytecode.NewRegister(1), runtime.True, errors.New("boom"), false)
+	state.setOrOptional(bytecode.NewRegister(1), runtime.True, wantErr, true)
 	if !state.hasFailure() {
-		t.Fatal("expected non-optional error to raise pending failure")
-	}
-
-	if got := state.registers.Values[1]; got != initial {
-		t.Fatalf("expected destination to remain unchanged before resolution, got %v", got)
+		t.Fatal("expected generic member error to raise pending failure")
 	}
 
 	action := state.resolveFailure()
-	if action != errContinue {
-		t.Fatalf("expected non-optional path to flow through default resolver and continue, got %v", action)
+	if action != errReturn {
+		t.Fatalf("expected unresolved generic error to return, got %v", action)
 	}
 
-	if got := state.registers.Values[1]; got != runtime.None {
-		t.Fatalf("expected destination to be set to runtime.None via default fallback, got %v", got)
+	if got := state.failureError(); !errors.Is(got, wantErr) {
+		t.Fatalf("expected failure error to be preserved, got %v", got)
+	}
+
+	if got := state.registers.Values[1]; got != initial {
+		t.Fatalf("expected destination to remain unchanged when error returns, got %v", got)
 	}
 }
 

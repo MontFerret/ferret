@@ -67,7 +67,7 @@ func (vm *VM) acquireRunState() *execState {
 	}
 
 	state := &execState{}
-	state.init(vm.program, vm.catchByPC, vm.options.panicPolicy)
+	state.init(vm.program, vm.catchByPC)
 
 	return state
 }
@@ -509,10 +509,6 @@ loop:
 				timeout = t
 			}
 
-			if state.hasFailure() {
-				break
-			}
-
 			reg[dst] = stream.Iterate(timeout)
 		case bytecode.OpQuery:
 			src := readOperandValue(reg, constants, src1)
@@ -738,6 +734,7 @@ loop:
 			return nil, runtime.Errorf(runtime.ErrUnexpected, "unknown opcode %d at pc %d", op, state.pc-1)
 		}
 
+		// Sticky checkpoint: opcode branches only raise failures; resolution happens here.
 		if state.hasFailure() {
 			if state.resolveFailure() == errReturn {
 				return nil, state.failureError()

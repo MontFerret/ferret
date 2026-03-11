@@ -12,32 +12,32 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
-type pendingFailure struct {
-	err         error
-	kind        errorKind
-	mode        recoveryMode
-	dst         bytecode.Operand
-	fallback    runtime.Value
-	setFallback bool
-}
+type (
+	pendingFailure struct {
+		err         error
+		kind        errorKind
+		mode        recoveryMode
+		dst         bytecode.Operand
+		fallback    runtime.Value
+		setFallback bool
+	}
 
-type execState struct {
-	program     *bytecode.Program
-	env         *Environment
-	registers   *mem.RegisterFile
-	scratch     *mem.Scratch
-	frames      frame.CallStack
-	catchByPC   []int
-	pc          int
-	panicPolicy PanicPolicy
-	failure     pendingFailure
-	hasFail     bool
-}
+	execState struct {
+		program   *bytecode.Program
+		env       *Environment
+		registers *mem.RegisterFile
+		scratch   *mem.Scratch
+		frames    frame.CallStack
+		catchByPC []int
+		pc        int
+		failure   pendingFailure
+		hasFail   bool
+	}
+)
 
-func (s *execState) init(program *bytecode.Program, catchByPC []int, panicPolicy PanicPolicy) {
+func (s *execState) init(program *bytecode.Program, catchByPC []int) {
 	s.program = program
 	s.catchByPC = catchByPC
-	s.panicPolicy = panicPolicy
 	s.registers = mem.NewRegisterFile(program.Registers)
 	s.scratch = mem.NewScratch(len(program.Params))
 	s.frames.Init(maxUDFRegisters(program.Functions.UserDefined))
@@ -154,43 +154,78 @@ func (s *execState) resolveFailure() errAction {
 
 	switch failure.kind {
 	case errKindInvariant:
-		if s.panicPolicy == PanicPropagate {
-			panic(failure.err)
-		}
-
 		return errReturn
 	case errKindRuntime:
 		switch failure.mode {
-		case recoverOptional, recoverProtected:
-			if failure.setFallback && failure.dst.IsRegister() {
-				s.registers.Values[failure.dst] = normalizeValue(failure.fallback)
+		case recoverOptional:
+			if s.isOptionalMiss(failure.err) {
+				s.applyFailureFallback(failure)
+				s.clearFailure()
+				return errContinue
 			}
+
+			return s.resolveRuntimeDefault(failure)
+		case recoverMember:
+			if s.isMemberMiss(failure.err) {
+				s.applyFailureFallback(failure)
+				s.clearFailure()
+				return errContinue
+			}
+
+			return s.resolveRuntimeDefault(failure)
+		case recoverProtected:
+			s.applyFailureFallback(failure)
 			s.clearFailure()
 			return errContinue
 		default:
-			if catch, ok := s.tryCatch(s.pc); ok {
-				if failure.setFallback && failure.dst.IsRegister() {
-					s.registers.Values[failure.dst] = normalizeValue(failure.fallback)
-				}
-
-				if catch[2] >= 0 {
-					s.pc = catch[2]
-				}
-
-				s.clearFailure()
-				return errContinue
-			}
-
-			if s.unwindToProtected() {
-				s.clearFailure()
-				return errContinue
-			}
-
-			return errReturn
+			return s.resolveRuntimeDefault(failure)
 		}
 	default:
 		return errReturn
 	}
+}
+
+func (s *execState) resolveRuntimeDefault(failure pendingFailure) errAction {
+	if catch, ok := s.tryCatch(s.pc); ok {
+		s.applyFailureFallback(failure)
+
+		if catch[2] >= 0 {
+			s.pc = catch[2]
+		}
+
+		s.clearFailure()
+		return errContinue
+	}
+
+	if s.unwindToProtected() {
+		s.clearFailure()
+		return errContinue
+	}
+
+	return errReturn
+}
+
+func (s *execState) applyFailureFallback(failure pendingFailure) {
+	if failure.setFallback && failure.dst.IsRegister() {
+		s.registers.Values[failure.dst] = normalizeValue(failure.fallback)
+	}
+}
+
+func (s *execState) isOptionalMiss(err error) bool {
+	return s.isMemberMiss(err) || s.isNullMemberDereference(err)
+}
+
+func (s *execState) isMemberMiss(err error) bool {
+	return errors.Is(err, runtime.ErrNotFound)
+}
+
+func (s *execState) isNullMemberDereference(err error) bool {
+	var memberErr *diagnostic.MemberAccessError
+	if !errors.As(err, &memberErr) {
+		return false
+	}
+
+	return runtime.IsSameType(memberErr.Target, runtime.TypeNone)
 }
 
 func (s *execState) wrapRuntimeError(err error) error {
@@ -244,12 +279,12 @@ func (s *execState) setOrOptional(dst bytecode.Operand, val runtime.Value, err e
 		return
 	}
 
-	if optional || errors.Is(err, runtime.ErrNotFound) {
-		s.raiseRuntime(err, recoverOptional, dst, runtime.None, true)
-		return
+	mode := recoverMember
+	if optional {
+		mode = recoverOptional
 	}
 
-	s.raiseRuntime(err, recoverDefault, dst, runtime.None, true)
+	s.raiseRuntime(err, mode, dst, runtime.None, true)
 }
 
 func (s *execState) unwindToProtected() bool {

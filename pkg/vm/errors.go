@@ -28,6 +28,7 @@ const (
 const (
 	recoverDefault recoveryMode = iota
 	recoverOptional
+	recoverMember
 	recoverProtected
 )
 
