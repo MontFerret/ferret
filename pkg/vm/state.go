@@ -121,6 +121,7 @@ func (s *execState) raise(pc int, err error, kind errorKind, mode recoveryMode, 
 		return
 	}
 
+	s.lastPC = pc
 	s.failure = pendingFailure{
 		err:         err,
 		kind:        kind,
@@ -305,6 +306,11 @@ func (s *execState) setOrRaiseDefault(pc int, dst bytecode.Operand, val runtime.
 func (s *execState) setOrOptional(pc int, dst bytecode.Operand, val runtime.Value, err error, optional bool) {
 	if err == nil {
 		s.registers.Values[dst] = normalizeValue(val)
+		return
+	}
+
+	if optional && s.isNullMemberDereference(err) {
+		s.registers.Values[dst] = runtime.None
 		return
 	}
 

@@ -18,8 +18,7 @@ type VM struct {
 	catchByPC    []int
 	hostBindings []hostCallBindingDescriptor
 	instructions []execInstruction
-	freeState    *execState
-	statePool    []*execState
+	statePool    statePool
 	options      options
 }
 
@@ -44,6 +43,7 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 		options:      o,
 		instructions: instructions,
 	}
+	vm.statePool.Init(program, catchByPC, 1)
 
 	return vm, nil
 }
@@ -63,38 +63,11 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (runtime.Value, error) 
 }
 
 func (vm *VM) acquireRunState() *execState {
-	if vm.freeState != nil {
-		state := vm.freeState
-		vm.freeState = nil
-		return state
-	}
-
-	n := len(vm.statePool)
-	if n > 0 {
-		state := vm.statePool[n-1]
-		vm.statePool = vm.statePool[:n-1]
-		return state
-	}
-
-	state := &execState{}
-	state.init(vm.program, vm.catchByPC)
-
-	return state
+	return vm.statePool.Get()
 }
 
 func (vm *VM) releaseRunState(state *execState) {
-	if state == nil {
-		return
-	}
-
-	state.cleanupForPool()
-
-	if vm.freeState == nil {
-		vm.freeState = state
-		return
-	}
-
-	vm.statePool = append(vm.statePool, state)
+	vm.statePool.Put(state)
 }
 
 func (vm *VM) runRecovered(ctx context.Context, env *Environment, state *execState) (result runtime.Value, err error) {
@@ -157,7 +130,6 @@ loop:
 		op := inst.Opcode
 		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
 		reg := state.registers.Values
-		state.lastPC = pc
 		state.pc = pc + 1
 
 		switch op {
@@ -819,13 +791,13 @@ func (vm *VM) loadFastKeyCached(
 	if constKey {
 		if inst != nil && inst.InlineShapeID == shapeID {
 			if inst.InlineSlot < 0 {
-				return nil, runtime.ErrNotFound
+				return runtime.None, nil
 			}
 			if val, ok := obj.SlotValue(inst.InlineSlot); ok {
 				return val, nil
 			}
 
-			return nil, runtime.ErrNotFound
+			return runtime.None, nil
 		}
 
 		if pc < 0 || pc >= len(vm.cache.LoadKeyConstICs) {
@@ -841,13 +813,13 @@ func (vm *VM) loadFastKeyCached(
 				}
 
 				if slot < 0 {
-					return nil, runtime.ErrNotFound
+					return runtime.None, nil
 				}
 				if val, ok := obj.SlotValue(slot); ok {
 					return val, nil
 				}
 
-				return nil, runtime.ErrNotFound
+				return runtime.None, nil
 			}
 		}
 
@@ -865,12 +837,12 @@ func (vm *VM) loadFastKeyCached(
 				inst.InlineSlot = -1
 			}
 
-			return nil, runtime.ErrNotFound
+			return runtime.None, nil
 		}
 
 		val, ok := obj.SlotValue(slot)
 		if !ok {
-			return nil, runtime.ErrNotFound
+			return runtime.None, nil
 		}
 
 		if cache == nil {
@@ -896,13 +868,13 @@ func (vm *VM) loadFastKeyCached(
 	if cache != nil {
 		if slot, ok := cache.Lookup(shapeID, key); ok {
 			if slot < 0 {
-				return nil, runtime.ErrNotFound
+				return runtime.None, nil
 			}
 			if val, ok := obj.SlotValue(slot); ok {
 				return val, nil
 			}
 
-			return nil, runtime.ErrNotFound
+			return runtime.None, nil
 		}
 	}
 
@@ -915,12 +887,12 @@ func (vm *VM) loadFastKeyCached(
 
 		cache.Add(shapeID, key, -1)
 
-		return nil, runtime.ErrNotFound
+		return runtime.None, nil
 	}
 
 	val, ok := obj.SlotValue(slot)
 	if !ok {
-		return nil, runtime.ErrNotFound
+		return runtime.None, nil
 	}
 
 	if cache == nil {

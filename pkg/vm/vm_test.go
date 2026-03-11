@@ -11,6 +11,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostic"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
@@ -1045,21 +1046,121 @@ func TestSetOrOptional_NullDereferenceContinuesWithNone(t *testing.T) {
 	)
 
 	state.setOrOptional(0, bytecode.NewRegister(1), runtime.True, err, true)
-	if !state.hasFailure() {
-		t.Fatal("expected null-dereference member error to raise pending failure")
-	}
-
-	if got := state.registers.Values[1]; got != runtime.True {
-		t.Fatalf("expected destination to remain unchanged before resolution, got %v", got)
-	}
-
-	action := state.resolveFailure()
-	if action != errContinue {
-		t.Fatalf("expected null-dereference miss to continue, got %v", action)
+	if state.hasFailure() {
+		t.Fatal("expected null-dereference miss to short-circuit without pending failure")
 	}
 
 	if got := state.registers.Values[1]; got != runtime.None {
 		t.Fatalf("expected destination to be set to runtime.None for null-dereference miss, got %v", got)
+	}
+}
+
+func TestAcquireRunState_UsesPoolOnly(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+	})
+
+	first := mustAcquireRunState(t, instance)
+	second := mustAcquireRunState(t, instance)
+	if second == first {
+		t.Fatal("expected second acquisition to allocate a distinct run state while first is in use")
+	}
+
+	instance.releaseRunState(first)
+	instance.releaseRunState(second)
+
+	reused1 := mustAcquireRunState(t, instance)
+	reused2 := mustAcquireRunState(t, instance)
+	defer instance.releaseRunState(reused1)
+	defer instance.releaseRunState(reused2)
+
+	if reused1 != second {
+		t.Fatal("expected first reused state to be the most recently released one")
+	}
+
+	if reused2 != first {
+		t.Fatal("expected second reused state to be the older released state")
+	}
+}
+
+func TestLoadKeyCached_FastObjectMissingReturnsNoneWithoutError(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+	})
+
+	ctx := context.Background()
+	obj := data.NewFastObject(nil, 0)
+	if err := obj.Set(ctx, runtime.NewString("present"), runtime.NewInt(1)); err != nil {
+		t.Fatalf("setup fast object failed: %v", err)
+	}
+
+	out, err := instance.loadKeyCached(ctx, 0, obj, runtime.NewString("missing"))
+	if err != nil {
+		t.Fatalf("expected missing fast-object key to return None without error, got %v", err)
+	}
+
+	if out != runtime.None {
+		t.Fatalf("expected runtime.None on missing fast-object key, got %v", out)
+	}
+
+	if instance.cache.LoadKeyICs[0] == nil {
+		t.Fatal("expected load-key cache to record fast-object miss")
+	}
+
+	out, err = instance.loadKeyCached(ctx, 0, obj, runtime.NewString("missing"))
+	if err != nil {
+		t.Fatalf("expected cached missing fast-object key to return None without error, got %v", err)
+	}
+
+	if out != runtime.None {
+		t.Fatalf("expected runtime.None from cached fast-object miss, got %v", out)
+	}
+}
+
+func TestLoadKeyConstCached_FastObjectMissingReturnsNoneWithoutError(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+	})
+
+	ctx := context.Background()
+	obj := data.NewFastObject(nil, 0)
+	if err := obj.Set(ctx, runtime.NewString("present"), runtime.NewInt(1)); err != nil {
+		t.Fatalf("setup fast object failed: %v", err)
+	}
+
+	inst := &instance.instructions[0]
+	out, err := instance.loadKeyConstCached(ctx, 0, inst, obj, runtime.NewString("missing"))
+	if err != nil {
+		t.Fatalf("expected missing const fast-object key to return None without error, got %v", err)
+	}
+
+	if out != runtime.None {
+		t.Fatalf("expected runtime.None on missing const fast-object key, got %v", out)
+	}
+
+	if got, want := inst.InlineSlot, -1; got != want {
+		t.Fatalf("expected inline slot %d for cached miss, got %d", want, got)
+	}
+
+	out, err = instance.loadKeyConstCached(ctx, 0, inst, obj, runtime.NewString("missing"))
+	if err != nil {
+		t.Fatalf("expected inline cached missing const key to return None without error, got %v", err)
+	}
+
+	if out != runtime.None {
+		t.Fatalf("expected runtime.None on inline cached const miss, got %v", out)
 	}
 }
 

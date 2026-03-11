@@ -294,7 +294,7 @@ func (t *Object) Get(_ context.Context, key Value) (Value, error) {
 		return val, nil
 	}
 
-	return None, ErrNotFound
+	return None, nil
 }
 
 func (t *Object) Set(_ context.Context, key, value Value) error {

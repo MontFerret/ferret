@@ -244,7 +244,7 @@ func (t *FastObject) Get(_ context.Context, key runtime.Value) (runtime.Value, e
 		return val, nil
 	}
 
-	return runtime.None, runtime.ErrNotFound
+	return runtime.None, nil
 }
 
 func (t *FastObject) Set(_ context.Context, key runtime.Value, value runtime.Value) error {
