@@ -17,6 +17,7 @@ func TestCallCachedHostFunction_VarargSixArgsPreservesOrderAndCount(t *testing.T
 			var seen []runtime.Value
 
 			cacheFn := &mem.CachedHostFunction{
+				Bound: true,
 				FnV: func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 					seen = append([]runtime.Value(nil), args...)
 					return runtime.NewInt(len(args)), nil
@@ -33,7 +34,6 @@ func TestCallCachedHostFunction_VarargSixArgsPreservesOrderAndCount(t *testing.T
 			out, err := callCachedHostFunction(
 				context.Background(),
 				cacheFn,
-				true,
 				reg,
 				scratch,
 				runtime.NewString("TEST"),
@@ -67,6 +67,7 @@ func TestCallCachedHostFunction_VarargArgsSliceMutationDoesNotMutateRegisters(t 
 	for _, argCount := range cases {
 		t.Run(runtime.NewInt(argCount).String(), func(t *testing.T) {
 			cacheFn := &mem.CachedHostFunction{
+				Bound: true,
 				FnV: func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 					args[0] = runtime.NewInt(777)
 					args[len(args)-1] = runtime.NewInt(999)
@@ -84,7 +85,6 @@ func TestCallCachedHostFunction_VarargArgsSliceMutationDoesNotMutateRegisters(t 
 			_, err := callCachedHostFunction(
 				context.Background(),
 				cacheFn,
-				true,
 				reg,
 				scratch,
 				runtime.NewString("TEST"),

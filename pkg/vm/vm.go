@@ -18,6 +18,7 @@ type VM struct {
 	catchByPC    []int
 	hostWarmups  []hostCallWarmupDescriptor
 	instructions []data.ExecInstruction
+	freeState    *execState
 	statePool    []*execState
 	options      options
 }
@@ -51,17 +52,25 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 
 func (vm *VM) Run(ctx context.Context, env *Environment) (runtime.Value, error) {
 	state := vm.acquireRunState()
-	defer vm.releaseRunState(state)
 
 	switch vm.options.panicPolicy {
 	case PanicPropagate:
+		defer vm.releaseRunState(state)
 		return vm.runUnchecked(ctx, env, state)
 	default:
-		return vm.runRecovered(ctx, env, state)
+		result, err := vm.runRecovered(ctx, env, state)
+		vm.releaseRunState(state)
+		return result, err
 	}
 }
 
 func (vm *VM) acquireRunState() *execState {
+	if vm.freeState != nil {
+		state := vm.freeState
+		vm.freeState = nil
+		return state
+	}
+
 	n := len(vm.statePool)
 	if n > 0 {
 		state := vm.statePool[n-1]
@@ -81,6 +90,12 @@ func (vm *VM) releaseRunState(state *execState) {
 	}
 
 	state.cleanupForPool()
+
+	if vm.freeState == nil {
+		vm.freeState = state
+		return
+	}
+
 	vm.statePool = append(vm.statePool, state)
 }
 
@@ -123,14 +138,17 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, state *execState) (
 
 	state.prepareRun(env)
 
-	if err := warmup(vm, state, env); err != nil {
-		return nil, err
+	if !vm.isWarmupReady(env) {
+		if err := warmup(vm, state, env); err != nil {
+			return nil, err
+		}
 	}
 
 	instructions := vm.instructions
 	constants := vm.program.Constants
 	aggregatePlans := vm.program.Metadata.AggregatePlans
 	shapeCache := vm.cache.ShapeCache
+	hostFunctions := vm.cache.HostFunctions
 	paramSlots := state.scratch.Params
 loop:
 	for state.pc < len(instructions) {
@@ -254,7 +272,7 @@ loop:
 			break
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
 			hostID := inst.InlineSlot
-			if hostID < 0 || hostID >= len(vm.cache.HostFunctions) {
+			if hostID < 0 || hostID >= len(hostFunctions) {
 				invariantErr := diagnostic.NewInvariantError(
 					"invalid host call slot",
 					runtime.Errorf(runtime.ErrUnexpected, "invalid host call slot %d at pc %d", hostID, pc),
@@ -263,9 +281,8 @@ loop:
 				break
 			}
 
-			cacheFn := &vm.cache.HostFunctions[hostID]
-			bound := vm.cache.HostFunctionsBound[hostID]
-			out, err := callCachedHostFunction(ctx, cacheFn, bound, state.registers.Values, &state.scratch, reg[dst], src1, src2)
+			cacheFn := &hostFunctions[hostID]
+			out, err := callCachedHostFunction(ctx, cacheFn, reg, &state.scratch, reg[dst], src1, src2)
 
 			state.setCallResult(pc, op, dst, out, err)
 		case bytecode.OpCall, bytecode.OpProtectedCall:
@@ -751,9 +768,9 @@ loop:
 		}
 
 		// Sticky checkpoint: opcode branches only raise failures; resolution happens here.
-		if state.hasFailure() {
+		if state.hasFail {
 			if state.resolveFailure() == errReturn {
-				return nil, state.failureError()
+				return nil, state.failure.err
 			}
 
 			continue
@@ -761,6 +778,22 @@ loop:
 	}
 
 	return state.registers.Values[bytecode.NoopOperand], nil
+}
+
+func (vm *VM) isWarmupReady(env *Environment) bool {
+	if !vm.cache.RegexpsWarmed {
+		return false
+	}
+
+	if len(vm.program.Params) > 0 {
+		return false
+	}
+
+	if len(vm.hostWarmups) == 0 {
+		return true
+	}
+
+	return vm.cache.HostFunctionsWarmed && vm.cache.FunctionsRef == env.Functions
 }
 
 func (vm *VM) regexpCached(pc int, value runtime.Value) (*data.Regexp, error) {

@@ -28,9 +28,19 @@ func warmup(vm *VM, state *execState, env *Environment) error {
 func warmupShared(vm *VM, env *Environment) error {
 	warmupRegexps(vm)
 
+	if len(vm.hostWarmups) == 0 {
+		vm.cache.HostFunctionsWarmed = true
+		return nil
+	}
+
+	if vm.cache.HostFunctionsWarmed && vm.cache.FunctionsRef == env.Functions {
+		return nil
+	}
+
 	hash := env.Functions.Hash()
 
 	if vm.cache.HostFunctionsWarmed && vm.cache.FuncHash == hash {
+		vm.cache.FunctionsRef = env.Functions
 		return nil
 	}
 
@@ -51,7 +61,6 @@ func warmupShared(vm *VM, env *Environment) error {
 		}
 
 		vm.cache.HostFunctions[descriptor.ID] = mem.CachedHostFunction{}
-		vm.cache.HostFunctionsBound[descriptor.ID] = false
 
 		cachedFn, err := warmupBindHostCall(descriptor, functions)
 		if err != nil {
@@ -59,8 +68,8 @@ func warmupShared(vm *VM, env *Environment) error {
 			continue
 		}
 
+		cachedFn.Bound = true
 		vm.cache.HostFunctions[descriptor.ID] = cachedFn
-		vm.cache.HostFunctionsBound[descriptor.ID] = true
 	}
 
 	if warmupErrs.Size() > 0 {
@@ -68,6 +77,7 @@ func warmupShared(vm *VM, env *Environment) error {
 	}
 
 	vm.cache.FuncHash = hash
+	vm.cache.FunctionsRef = env.Functions
 	vm.cache.HostFunctionsWarmed = true
 
 	return nil

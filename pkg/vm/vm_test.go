@@ -174,10 +174,6 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 		t.Fatalf("unexpected host function cache size: got %d, want %d", got, want)
 	}
 
-	if got, want := len(instance.cache.HostFunctionsBound), len(instance.hostWarmups); got != want {
-		t.Fatalf("unexpected host function bound bitmap size: got %d, want %d", got, want)
-	}
-
 	if got := len(instance.cache.Regexps); got != bytecodeLen {
 		t.Fatalf("unexpected regexp cache size: got %d, want %d", got, bytecodeLen)
 	}
@@ -551,12 +547,12 @@ func TestRunReturnsUnresolvedFunctionWhenHostCacheEntryIsMissing(t *testing.T) {
 	}
 
 	hostID := instance.instructions[hostPC].InlineSlot
-	if hostID < 0 || hostID >= len(instance.cache.HostFunctionsBound) {
+	if hostID < 0 || hostID >= len(instance.cache.HostFunctions) {
 		t.Fatalf("invalid host id at pc %d: %d", hostPC, hostID)
 	}
 
 	instance.cache.HostFunctions[hostID] = mem.CachedHostFunction{}
-	instance.cache.HostFunctionsBound[hostID] = false
+	instance.cache.HostFunctions[hostID].Bound = false
 
 	_, err = instance.Run(context.Background(), env)
 	if err == nil {
@@ -1109,7 +1105,7 @@ func TestTailCallUdf_ReusedWindowResetsNonArgSlotsToNone(t *testing.T) {
 	}
 }
 
-func TestReleaseRunState_ClearsScratchHostArgsForReuse(t *testing.T) {
+func TestReleaseRunState_ReusesScratchHostArgsWithoutClearing(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Registers:  1,
@@ -1137,10 +1133,22 @@ func TestReleaseRunState_ClearsScratchHostArgsForReuse(t *testing.T) {
 		t.Fatalf("unexpected reused host args size: got %d, want %d", got, want)
 	}
 
-	for i := range reused.scratch.HostArgs {
-		if got := reused.scratch.HostArgs[i]; got != runtime.None {
-			t.Fatalf("expected reused host arg slot %d to be runtime.None, got %v", i, got)
-		}
+	if got, want := reused.scratch.HostArgs[0], runtime.NewInt(1); got != want {
+		t.Fatalf("expected release path to preserve scratch host args, got %v, want %v", got, want)
+	}
+
+	reg := []runtime.Value{
+		runtime.None,
+		runtime.NewInt(11),
+		runtime.NewInt(22),
+	}
+	args := stageHostCallArgs(&reused.scratch, reg, 1, 2)
+	if got, want := args[0], runtime.NewInt(11); got != want {
+		t.Fatalf("unexpected staged arg0: got %v, want %v", got, want)
+	}
+
+	if got, want := args[1], runtime.NewInt(22); got != want {
+		t.Fatalf("unexpected staged arg1: got %v, want %v", got, want)
 	}
 }
 
@@ -1285,7 +1293,7 @@ func TestWarmupRebindTouchesOnlyHostCallSlots(t *testing.T) {
 		},
 	}
 	instance.cache.HostFunctions[hostID] = sentinel
-	instance.cache.HostFunctionsBound[hostID] = true
+	instance.cache.HostFunctions[hostID].Bound = true
 
 	envA, err := NewEnvironment([]EnvironmentOption{
 		WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
@@ -1324,7 +1332,7 @@ func TestWarmupRebindTouchesOnlyHostCallSlots(t *testing.T) {
 		t.Fatalf("unexpected second run result: got %v, want %v", got, want)
 	}
 
-	if !instance.cache.HostFunctionsBound[hostID] {
+	if !instance.cache.HostFunctions[hostID].Bound {
 		t.Fatal("expected host call slot to be rebound")
 	}
 }

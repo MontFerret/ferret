@@ -46,7 +46,9 @@ func (s *execState) init(program *bytecode.Program, catchByPC []int) {
 }
 
 func (s *execState) prepareRun(env *Environment) {
-	s.registers.Values = s.frames.Reset(s.registers.Values)
+	if s.frames.Len() > 0 {
+		s.registers.Values = s.frames.Reset(s.registers.Values)
+	}
 
 	if s.registers.IsDirty() {
 		s.registers.Reset()
@@ -60,19 +62,6 @@ func (s *execState) prepareRun(env *Environment) {
 }
 
 func (s *execState) cleanupForPool() {
-	s.registers.Values = s.frames.Reset(s.registers.Values)
-
-	if s.registers.IsDirty() {
-		s.registers.Reset()
-	}
-
-	for i := range s.scratch.Params {
-		s.scratch.Params[i] = runtime.None
-	}
-	for i := range s.scratch.HostArgs {
-		s.scratch.HostArgs[i] = runtime.None
-	}
-
 	s.env = nil
 	s.pc = 0
 	s.lastPC = -1
@@ -81,6 +70,9 @@ func (s *execState) cleanupForPool() {
 
 func (s *execState) bindParams(env *Environment) error {
 	required := s.program.Params
+	if len(required) == 0 {
+		return nil
+	}
 
 	s.scratch.ResizeParams(len(required))
 
@@ -154,6 +146,10 @@ func (s *execState) failureError() error {
 }
 
 func (s *execState) clearFailure() {
+	if !s.hasFail {
+		return
+	}
+
 	s.failure = pendingFailure{}
 	s.hasFail = false
 }

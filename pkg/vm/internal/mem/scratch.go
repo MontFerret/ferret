@@ -32,9 +32,7 @@ func makeNoneValues(size int) []runtime.Value {
 	}
 
 	values := make([]runtime.Value, size)
-	for i := 0; i < size; i++ {
-		values[i] = runtime.None
-	}
+	fillWithNone(values)
 
 	return values
 }
@@ -48,9 +46,7 @@ func resizeNoneValues(values *[]runtime.Value, size int) {
 	prevSize := len(current)
 
 	if size < prevSize {
-		for i := size; i < prevSize; i++ {
-			current[i] = runtime.None
-		}
+		fillWithNone(current[size:prevSize])
 
 		*values = current[:size]
 		return
@@ -64,9 +60,7 @@ func resizeNoneValues(values *[]runtime.Value, size int) {
 		current = current[:size]
 	}
 
-	for i := prevSize; i < size; i++ {
-		current[i] = runtime.None
-	}
+	fillWithNone(current[prevSize:size])
 
 	*values = current
 }

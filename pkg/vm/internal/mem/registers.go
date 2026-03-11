@@ -9,9 +9,7 @@ type RegisterFile struct {
 
 func (rf *RegisterFile) Init(size int) {
 	values := make([]runtime.Value, size)
-	for i := range values {
-		values[i] = runtime.None
-	}
+	fillWithNone(values)
 
 	rf.Values = values
 	rf.isDirty = false
@@ -44,9 +42,7 @@ func (rf *RegisterFile) Get(idx int) runtime.Value {
 }
 
 func (rf *RegisterFile) Reset() {
-	for i := range rf.Values {
-		rf.Values[i] = runtime.None
-	}
+	fillWithNone(rf.Values)
 
 	rf.isDirty = false
 }
