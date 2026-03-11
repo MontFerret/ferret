@@ -597,11 +597,11 @@ loop:
 		case bytecode.OpDecr:
 			reg[dst] = runtime.Decrement(ctx, reg[dst])
 		case bytecode.OpNegate:
-			reg[dst] = Negate(reg[src1])
+			reg[dst] = negate(reg[src1])
 		case bytecode.OpFlipPositive:
-			reg[dst] = Positive(reg[src1])
+			reg[dst] = positive(reg[src1])
 		case bytecode.OpFlipNegative:
-			reg[dst] = Negative(reg[src1])
+			reg[dst] = negative(reg[src1])
 		case bytecode.OpCastBool:
 			reg[dst] = coerceBool(reg[src1])
 		case bytecode.OpCmp:

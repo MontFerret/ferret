@@ -2,7 +2,7 @@ package vm
 
 import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
-func Negate(input runtime.Value) runtime.Value {
+func negate(input runtime.Value) runtime.Value {
 	switch val := input.(type) {
 	case runtime.Int:
 		return -val
@@ -15,7 +15,7 @@ func Negate(input runtime.Value) runtime.Value {
 	}
 }
 
-func Negative(input runtime.Value) runtime.Value {
+func negative(input runtime.Value) runtime.Value {
 	switch value := input.(type) {
 	case runtime.Int:
 		return -value
@@ -26,7 +26,7 @@ func Negative(input runtime.Value) runtime.Value {
 	}
 }
 
-func Positive(input runtime.Value) runtime.Value {
+func positive(input runtime.Value) runtime.Value {
 	switch value := input.(type) {
 	case runtime.Int:
 		return +value
