@@ -74,6 +74,7 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+      pull-requests: write
 
     steps:
       - name: Checkout repository
@@ -100,7 +101,26 @@ jobs:
           path: ${{ env.BENCHMARK_OUTPUT }}
           if-no-files-found: warn
 
-      - name: Compare benchmark result
+      - name: Compare benchmark result and comment on same-repo PRs
+        if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: false
+          save-data-file: false
+          comment-always: true
+          summary-always: true
+          fail-on-alert: true
+          alert-threshold: '150%'
+
+      - name: Compare benchmark result without PR comment
+        if: github.event.pull_request.head.repo.full_name != github.repository || github.actor == 'dependabot[bot]'
         uses: benchmark-action/github-action-benchmark@v1
         with:
           name: ${{ env.BENCHMARK_NAME }}
@@ -115,4 +135,3 @@ jobs:
           summary-always: true
           fail-on-alert: true
           alert-threshold: '150%'
-          comment-on-alert: true
