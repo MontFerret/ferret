@@ -1,0 +1,117 @@
+name: benchmark
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BENCHMARK_NAME: Ferret Go Benchmarks
+  BENCHMARK_OUTPUT: benchmark-output.txt
+
+concurrency:
+  group: benchmark-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  main-baseline:
+    name: Persist main benchmark baseline
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: false
+          cache: true
+
+      - name: Run benchmarks
+        shell: bash
+        run: |
+          set -euo pipefail
+          make bench BENCH_COUNT=1 | tee "${BENCHMARK_OUTPUT}"
+
+      - name: Upload raw benchmark output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-output-main
+          path: ${{ env.BENCHMARK_OUTPUT }}
+          if-no-files-found: warn
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: true
+          summary-always: true
+
+  pr-compare:
+    name: Compare pull request benchmarks
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: false
+          cache: true
+
+      - name: Run benchmarks
+        shell: bash
+        run: |
+          set -euo pipefail
+          make bench BENCH_COUNT=1 | tee "${BENCHMARK_OUTPUT}"
+
+      - name: Upload raw benchmark output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-output-pr-${{ github.event.pull_request.number }}
+          path: ${{ env.BENCHMARK_OUTPUT }}
+          if-no-files-found: warn
+
+      - name: Compare benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: false
+          save-data-file: false
+          summary-always: true
+          fail-on-alert: true
+          alert-threshold: '120%'
