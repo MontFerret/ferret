@@ -153,10 +153,6 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 	state := mustAcquireRunState(t, instance)
 	defer instance.releaseRunState(state)
 
-	if state.registers == nil {
-		t.Fatal("expected register file to be initialized")
-	}
-
 	if got, want := state.registers.Size(), program.Registers; got != want {
 		t.Fatalf("unexpected register file size: got %d, want %d", got, want)
 	}

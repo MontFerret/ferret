@@ -7,10 +7,15 @@ type Scratch struct {
 	HostArgs []runtime.Value
 }
 
+func (s *Scratch) Init(params int) {
+	s.Params = makeNoneValues(params)
+	s.HostArgs = nil
+}
+
 func NewScratch(params int) *Scratch {
-	return &Scratch{
-		Params: makeNoneValues(params),
-	}
+	s := &Scratch{}
+	s.Init(params)
+	return s
 }
 
 func (s *Scratch) ResizeParams(size int) {

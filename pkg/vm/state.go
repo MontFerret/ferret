@@ -26,8 +26,8 @@ type (
 	execState struct {
 		program   *bytecode.Program
 		env       *Environment
-		registers *mem.RegisterFile
-		scratch   *mem.Scratch
+		registers mem.RegisterFile
+		scratch   mem.Scratch
 		frames    frame.CallStack
 		catchByPC []int
 		pc        int
@@ -40,8 +40,8 @@ type (
 func (s *execState) init(program *bytecode.Program, catchByPC []int) {
 	s.program = program
 	s.catchByPC = catchByPC
-	s.registers = mem.NewRegisterFile(program.Registers)
-	s.scratch = mem.NewScratch(len(program.Params))
+	s.registers.Init(program.Registers)
+	s.scratch.Init(len(program.Params))
 	s.frames.Init(maxUDFRegisters(program.Functions.UserDefined))
 }
 

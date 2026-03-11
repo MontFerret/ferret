@@ -7,15 +7,20 @@ type RegisterFile struct {
 	isDirty bool
 }
 
-func NewRegisterFile(size int) *RegisterFile {
+func (rf *RegisterFile) Init(size int) {
 	values := make([]runtime.Value, size)
 	for i := range values {
 		values[i] = runtime.None
 	}
 
-	return &RegisterFile{
-		Values: values,
-	}
+	rf.Values = values
+	rf.isDirty = false
+}
+
+func NewRegisterFile(size int) *RegisterFile {
+	rf := &RegisterFile{}
+	rf.Init(size)
+	return rf
 }
 
 func (rf *RegisterFile) IsDirty() bool {

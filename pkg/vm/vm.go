@@ -251,7 +251,7 @@ loop:
 			break
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
 			cacheFn := vm.cache.HostFunctions[pc]
-			out, err := callCachedHostFunction(ctx, cacheFn, state.registers.Values, state.scratch, reg[dst], src1, src2)
+			out, err := callCachedHostFunction(ctx, cacheFn, state.registers.Values, &state.scratch, reg[dst], src1, src2)
 
 			state.setCallResult(pc, op, dst, out, err)
 		case bytecode.OpCall, bytecode.OpProtectedCall:
