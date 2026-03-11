@@ -189,18 +189,18 @@ func warmupBindHostCall(descriptor hostCallBindingDescriptor, functions *runtime
 	}
 }
 
-func buildExecPlan(program *bytecode.Program) ([]data.ExecInstruction, []hostCallBindingDescriptor) {
+func buildExecPlan(program *bytecode.Program) ([]execInstruction, []hostCallBindingDescriptor) {
 	if program == nil || len(program.Bytecode) == 0 {
 		return nil, nil
 	}
 
-	instructions := make([]data.ExecInstruction, len(program.Bytecode))
+	instructions := make([]execInstruction, len(program.Bytecode))
 	constants := program.Constants
 	reg := map[bytecode.Operand]runtime.Value{}
 	hostBindings := make([]hostCallBindingDescriptor, 0, 8)
 
 	for pc, inst := range program.Bytecode {
-		instructions[pc] = data.ExecInstruction{
+		instructions[pc] = execInstruction{
 			Instruction: inst,
 		}
 

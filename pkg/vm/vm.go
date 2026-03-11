@@ -17,7 +17,7 @@ type VM struct {
 	program      *bytecode.Program
 	catchByPC    []int
 	hostBindings []hostCallBindingDescriptor
-	instructions []data.ExecInstruction
+	instructions []execInstruction
 	freeState    *execState
 	statePool    []*execState
 	options      options

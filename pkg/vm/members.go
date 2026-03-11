@@ -13,7 +13,7 @@ import (
 func (vm *VM) loadFastKeyCached(
 	ctx context.Context,
 	pc int,
-	inst *data.ExecInstruction,
+	inst *execInstruction,
 	obj *data.FastObject,
 	arg runtime.Value,
 	key string,
@@ -160,7 +160,7 @@ func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value)
 	return vm.loadFastKeyCached(ctx, pc, nil, obj, arg, key, false)
 }
 
-func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *data.ExecInstruction, src, arg runtime.Value) (runtime.Value, error) {
+func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *execInstruction, src, arg runtime.Value) (runtime.Value, error) {
 	obj, ok := src.(*data.FastObject)
 
 	if !ok {
@@ -179,7 +179,7 @@ func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *data.ExecIns
 	return vm.loadFastKeyCached(ctx, pc, inst, obj, arg, key, true)
 }
 
-func (vm *VM) objectSetConstCached(inst *data.ExecInstruction, obj *data.FastObject, key runtime.String, value runtime.Value) {
+func (vm *VM) objectSetConstCached(inst *execInstruction, obj *data.FastObject, key runtime.String, value runtime.Value) {
 	if obj == nil {
 		return
 	}
@@ -266,7 +266,7 @@ func (vm *VM) loadKeyAndSet(state *execState, ctx context.Context, dst bytecode.
 	state.setOrOptional(pc, dst, out, err, optional)
 }
 
-func (vm *VM) loadKeyConstAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, arg runtime.Value, optional bool) {
+func (vm *VM) loadKeyConstAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, inst *execInstruction, src, arg runtime.Value, optional bool) {
 	if optional && src == runtime.None {
 		state.registers.Values[dst] = runtime.None
 		return
@@ -297,7 +297,7 @@ func (vm *VM) loadPropertyAndSet(state *execState, ctx context.Context, dst byte
 	state.setOrOptional(pc, dst, out, err, optional)
 }
 
-func (vm *VM) loadPropertyConstAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, prop runtime.Value, optional bool) {
+func (vm *VM) loadPropertyConstAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, inst *execInstruction, src, prop runtime.Value, optional bool) {
 	if optional && src == runtime.None {
 		state.registers.Values[dst] = runtime.None
 		return
