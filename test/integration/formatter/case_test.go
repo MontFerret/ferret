@@ -13,10 +13,14 @@ import (
 func Case(expression, expected string, desc ...string) UseCase {
 	normalized := expected
 
-	if !strings.HasSuffix(normalized, "\n\n") {
-		normalized += "\n\n"
-	} else if !strings.HasSuffix(normalized, "\n") {
+	if strings.HasSuffix(normalized, "\n\n") {
+		// already ends with two newlines; nothing to do
+	} else if strings.HasSuffix(normalized, "\n") {
+		// ends with a single newline; add one more to make it two
 		normalized += "\n"
+	} else {
+		// no trailing newline; add two
+		normalized += "\n\n"
 	}
 
 	return NewCase(expression, normalized, convey.ShouldEqual, desc...)
