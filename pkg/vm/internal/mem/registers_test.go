@@ -25,13 +25,8 @@ func TestRegisterFileReset_ResetsToNoneAndClearsDirty(t *testing.T) {
 	rf.Set(0, runtime.NewInt(1))
 	rf.Set(1, runtime.NewInt(2))
 	rf.Set(2, runtime.NewInt(3))
-	rf.MarkDirty()
 
 	rf.Reset()
-
-	if rf.IsDirty() {
-		t.Fatal("expected register file to be clean after reset")
-	}
 
 	for i := range rf.Values {
 		if got := rf.Values[i]; got != runtime.None {

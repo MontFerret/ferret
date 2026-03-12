@@ -43,7 +43,7 @@ func mustNewVM(t *testing.T, program *bytecode.Program, opts ...Option) *VM {
 func mustAcquireRunState(t *testing.T, instance *VM) *execState {
 	t.Helper()
 
-	state := instance.acquireRunState()
+	state := &instance.execState
 	if state == nil {
 		t.Fatal("expected run state")
 	}
@@ -152,7 +152,7 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 	}
 
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	if got, want := state.registers.Size(), program.Registers; got != want {
 		t.Fatalf("unexpected register file size: got %d, want %d", got, want)
@@ -562,7 +562,7 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 	protectedRegs[1] = runtime.True
 
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	state.registers.Values = activeRegs
 	state.frames.Push(frame.CallFrame{
@@ -710,7 +710,7 @@ func TestSetCallResult_RaisesPendingFailureBeforeResolution(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	state.pc = 1
 	state.registers.Values[1] = runtime.True
@@ -766,7 +766,7 @@ func TestSetCallResult_ProtectedFailureBypassesCatchJump(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	state.pc = 1
 	state.registers.Values[1] = runtime.True
@@ -802,7 +802,7 @@ func TestResolveFailure_InvariantReturnsWithoutPanic(t *testing.T) {
 	}, WithPanicPolicy(PanicPropagate))
 
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	invariantErr := diagnostic.NewInvariantError("boom", errors.New("cause"))
 	state.raiseInvariant(invariantErr)
@@ -831,7 +831,7 @@ func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	state.pc = 1
 	state.raiseRuntime(errors.New("boom"), recoverDefault, bytecode.Operand(1), runtime.True, true)
@@ -870,7 +870,7 @@ func TestHandleErrorWithCatch_AppliesPositiveJumpTarget(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	state.pc = 1
 	state.raiseRuntime(errors.New("boom"), recoverDefault, bytecode.NoopOperand, nil, false)
@@ -900,7 +900,7 @@ func TestHandleErrorWithCatch_UsesFailureOriginPC(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	state.pc = 2
 	state.raiseRuntimeAt(1, errors.New("boom"), recoverDefault, bytecode.NoopOperand, nil, false)
@@ -929,7 +929,7 @@ func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	state.pc = 1
 	wantErr := errors.New("boom")
@@ -968,7 +968,7 @@ func TestSetOrOptional_GenericErrorUsesDefaultResolverInOptionalMode(t *testing.
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	state.pc = 1
 	state.registers.Values[1] = runtime.True
@@ -1006,7 +1006,7 @@ func TestSetOrOptional_NotFoundContinuesWithNone(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	state.registers.Values[1] = runtime.True
 
@@ -1035,7 +1035,7 @@ func TestSetOrOptional_NullDereferenceContinuesWithNone(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	state.registers.Values[1] = runtime.True
 
@@ -1052,38 +1052,6 @@ func TestSetOrOptional_NullDereferenceContinuesWithNone(t *testing.T) {
 
 	if got := state.registers.Values[1]; got != runtime.None {
 		t.Fatalf("expected destination to be set to runtime.None for null-dereference miss, got %v", got)
-	}
-}
-
-func TestAcquireRunState_UsesPoolOnly(t *testing.T) {
-	instance := mustNewVM(t, &bytecode.Program{
-		ISAVersion: bytecode.Version,
-		Registers:  1,
-		Bytecode: []bytecode.Instruction{
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
-		},
-	})
-
-	first := mustAcquireRunState(t, instance)
-	second := mustAcquireRunState(t, instance)
-	if second == first {
-		t.Fatal("expected second acquisition to allocate a distinct run state while first is in use")
-	}
-
-	instance.releaseRunState(first)
-	instance.releaseRunState(second)
-
-	reused1 := mustAcquireRunState(t, instance)
-	reused2 := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(reused1)
-	defer instance.releaseRunState(reused2)
-
-	if reused1 != second {
-		t.Fatal("expected first reused state to be the most recently released one")
-	}
-
-	if reused2 != first {
-		t.Fatal("expected second reused state to be the older released state")
 	}
 }
 
@@ -1174,7 +1142,7 @@ func TestSetOrOptional_GenericErrorReturnsWithoutCatch(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	wantErr := errors.New("boom")
 	initial := runtime.NewInt(42)
@@ -1209,7 +1177,7 @@ func TestRaiseRuntime_FirstFailureWinsUntilResolved(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	errA := errors.New("A")
 	errB := errors.New("B")
@@ -1245,22 +1213,22 @@ func TestRunStateLifecycleClearsPendingFailure(t *testing.T) {
 		t.Fatal("expected pending failure before lifecycle reset")
 	}
 
-	state.prepareRun(NewDefaultEnvironment())
+	state.start(NewDefaultEnvironment())
 	if state.hasFailure() {
 		t.Fatal("expected prepareRun to clear pending failure")
 	}
 
 	state.raiseRuntime(errors.New("boom"), recoverDefault, bytecode.NoopOperand, nil, false)
-	instance.releaseRunState(state)
+	state.end()
 
 	reused := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(reused)
+	defer state.end()
 	if reused != state {
 		t.Fatal("expected state reuse from pool")
 	}
 
 	if reused.hasFailure() {
-		t.Fatal("expected cleanupForPool to clear pending failure")
+		t.Fatal("expected reset to clear pending failure")
 	}
 }
 
@@ -1285,7 +1253,7 @@ func TestTailCallUdf_ReusedWindowResetsNonArgSlotsToNone(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	reg := state.registers.Values
 	for i := range reg {
@@ -1329,53 +1297,6 @@ func TestTailCallUdf_ReusedWindowResetsNonArgSlotsToNone(t *testing.T) {
 		if got := newRegs[idx]; got != runtime.None {
 			t.Fatalf("expected non-argument slot %d to be runtime.None, got %v", idx, got)
 		}
-	}
-}
-
-func TestReleaseRunState_ReusesScratchHostArgsWithoutClearing(t *testing.T) {
-	instance := mustNewVM(t, &bytecode.Program{
-		ISAVersion: bytecode.Version,
-		Registers:  1,
-		Bytecode: []bytecode.Instruction{
-			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
-		},
-	})
-
-	state := mustAcquireRunState(t, instance)
-	state.scratch.ResizeHostArgs(3)
-	state.scratch.HostArgs[0] = runtime.NewInt(1)
-	state.scratch.HostArgs[1] = runtime.NewInt(2)
-	state.scratch.HostArgs[2] = runtime.NewInt(3)
-
-	instance.releaseRunState(state)
-
-	reused := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(reused)
-
-	if reused != state {
-		t.Fatal("expected run state to be reused from pool")
-	}
-
-	if got, want := len(reused.scratch.HostArgs), 3; got != want {
-		t.Fatalf("unexpected reused host args size: got %d, want %d", got, want)
-	}
-
-	if got, want := reused.scratch.HostArgs[0], runtime.NewInt(1); got != want {
-		t.Fatalf("expected release path to preserve scratch host args, got %v, want %v", got, want)
-	}
-
-	reg := []runtime.Value{
-		runtime.None,
-		runtime.NewInt(11),
-		runtime.NewInt(22),
-	}
-	args := stageHostCallArgs(&reused.scratch, reg, 1, 2)
-	if got, want := args[0], runtime.NewInt(11); got != want {
-		t.Fatalf("unexpected staged arg0: got %v, want %v", got, want)
-	}
-
-	if got, want := args[1], runtime.NewInt(22); got != want {
-		t.Fatalf("unexpected staged arg1: got %v, want %v", got, want)
 	}
 }
 
@@ -2033,7 +1954,7 @@ func TestNearestBoundaryPrefersCatchOverProtectedUnwind(t *testing.T) {
 
 	protectedRegs := make([]runtime.Value, 2)
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer state.end()
 
 	state.frames.Push(frame.CallFrame{
 		ReturnPC:   9,
@@ -2071,7 +1992,7 @@ func TestNearestBoundaryUsesProtectedUnwindWithoutCatch(t *testing.T) {
 	lowerRegs := make([]runtime.Value, 2)
 	activeRegs := make([]runtime.Value, 2)
 	state := mustAcquireRunState(t, instance)
-	defer instance.releaseRunState(state)
+	defer instance.end()
 
 	state.registers.Values = activeRegs
 	state.frames.Push(frame.CallFrame{

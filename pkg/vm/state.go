@@ -26,11 +26,11 @@ type (
 	execState struct {
 		program   *bytecode.Program
 		env       *Environment
-		failure   pendingFailure
 		scratch   mem.Scratch
 		frames    frame.CallStack
 		catchByPC []int
 		registers mem.RegisterFile
+		failure   pendingFailure
 		pc        int
 		lastPC    int
 		hasFail   bool
@@ -45,23 +45,17 @@ func (s *execState) init(program *bytecode.Program, catchByPC []int) {
 	s.frames.Init(maxUDFRegisters(program.Functions.UserDefined))
 }
 
-func (s *execState) prepareRun(env *Environment) {
-	if s.frames.Len() > 0 {
-		s.registers.Values = s.frames.Reset(s.registers.Values)
-	}
-
-	if s.registers.IsDirty() {
-		s.registers.Reset()
-	}
-
-	s.registers.MarkDirty()
+func (s *execState) start(env *Environment) {
 	s.env = env
 	s.pc = 0
 	s.lastPC = -1
 	s.clearFailure()
 }
 
-func (s *execState) cleanupForPool() {
+func (s *execState) end() {
+	s.frames.Reset(s.registers.Values)
+	s.registers.Reset()
+
 	s.env = nil
 	s.pc = 0
 	s.lastPC = -1

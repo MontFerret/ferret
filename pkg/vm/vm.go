@@ -18,8 +18,8 @@ type VM struct {
 	catchByPC    []int
 	hostBindings []hostCallBindingDescriptor
 	instructions []execInstruction
-	statePool    statePool
-	options      options
+	execState
+	options options
 }
 
 func New(program *bytecode.Program) (*VM, error) {
@@ -43,35 +43,28 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 		options:      o,
 		instructions: instructions,
 	}
-	vm.statePool.Init(program, catchByPC, 1)
+	state := &vm.execState
+	state.init(program, catchByPC)
 
 	return vm, nil
 }
 
 func (vm *VM) Run(ctx context.Context, env *Environment) (runtime.Value, error) {
-	state := vm.acquireRunState()
-
 	switch vm.options.panicPolicy {
 	case PanicPropagate:
-		defer vm.releaseRunState(state)
-		return vm.runUnchecked(ctx, env, state)
+		defer vm.execState.end()
+		return vm.runUnchecked(ctx, env)
 	default:
-		result, err := vm.runRecovered(ctx, env, state)
-		vm.releaseRunState(state)
+		result, err := vm.runRecovered(ctx, env)
+		vm.execState.end()
 		return result, err
 	}
 }
 
-func (vm *VM) acquireRunState() *execState {
-	return vm.statePool.Get()
-}
-
-func (vm *VM) releaseRunState(state *execState) {
-	vm.statePool.Put(state)
-}
-
-func (vm *VM) runRecovered(ctx context.Context, env *Environment, state *execState) (result runtime.Value, err error) {
+func (vm *VM) runRecovered(ctx context.Context, env *Environment) (result runtime.Value, err error) {
 	defer func() {
+		state := &vm.execState
+
 		if r := recover(); r != nil {
 			err = state.runtimeErrorFromPanic(r)
 			result = nil
@@ -84,11 +77,11 @@ func (vm *VM) runRecovered(ctx context.Context, env *Environment, state *execSta
 		}
 	}()
 
-	return vm.runCore(ctx, env, state)
+	return vm.runCore(ctx, env)
 }
 
-func (vm *VM) runUnchecked(ctx context.Context, env *Environment, state *execState) (runtime.Value, error) {
-	result, err := vm.runCore(ctx, env, state)
+func (vm *VM) runUnchecked(ctx context.Context, env *Environment) (runtime.Value, error) {
+	result, err := vm.runCore(ctx, env)
 
 	if err != nil {
 		var invariantErr *diagnostic.InvariantError
@@ -96,18 +89,19 @@ func (vm *VM) runUnchecked(ctx context.Context, env *Environment, state *execSta
 			panic(err)
 		}
 
-		return nil, state.wrapRuntimeError(err)
+		return nil, vm.execState.wrapRuntimeError(err)
 	}
 
 	return result, nil
 }
 
-func (vm *VM) runCore(ctx context.Context, env *Environment, state *execState) (runtime.Value, error) {
+func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, error) {
 	if env == nil {
 		env = noopEnv
 	}
 
-	state.prepareRun(env)
+	state := &vm.execState
+	state.start(env)
 	if err := state.bindParams(env); err != nil {
 		return nil, err
 	}

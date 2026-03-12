@@ -3,16 +3,7 @@ package mem
 import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
 type RegisterFile struct {
-	Values  []runtime.Value
-	isDirty bool
-}
-
-func (rf *RegisterFile) Init(size int) {
-	values := make([]runtime.Value, size)
-	fillWithNone(values)
-
-	rf.Values = values
-	rf.isDirty = false
+	Values []runtime.Value
 }
 
 func NewRegisterFile(size int) *RegisterFile {
@@ -21,12 +12,11 @@ func NewRegisterFile(size int) *RegisterFile {
 	return rf
 }
 
-func (rf *RegisterFile) IsDirty() bool {
-	return rf.isDirty
-}
+func (rf *RegisterFile) Init(size int) {
+	values := make([]runtime.Value, size)
+	fillWithNone(values)
 
-func (rf *RegisterFile) MarkDirty() {
-	rf.isDirty = true
+	rf.Values = values
 }
 
 func (rf *RegisterFile) Size() int {
@@ -42,7 +32,5 @@ func (rf *RegisterFile) Get(idx int) runtime.Value {
 }
 
 func (rf *RegisterFile) Reset() {
-	fillWithNone(rf.Values)
-
-	rf.isDirty = false
+	fillWithNoneAndClose(rf.Values)
 }
