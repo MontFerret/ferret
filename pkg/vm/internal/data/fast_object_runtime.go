@@ -352,6 +352,16 @@ func (t *FastObject) Get(_ context.Context, key runtime.Value) (runtime.Value, e
 	return runtime.None, nil
 }
 
+func (t *FastObject) Lookup(_ context.Context, key runtime.Value) (runtime.Value, bool, error) {
+	val, ok := t.getSlot(key.String())
+
+	if ok {
+		return val, true, nil
+	}
+
+	return runtime.None, false, nil
+}
+
 func (t *FastObject) Set(_ context.Context, key runtime.Value, value runtime.Value) error {
 	t.setString(key.String(), value)
 

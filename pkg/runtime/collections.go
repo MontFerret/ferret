@@ -10,12 +10,28 @@ type (
 		At(ctx context.Context, idx Int) (Value, error)
 	}
 
+	// IndexLookup provides safe indexed access to a value.
+	IndexLookup interface {
+		// LookupAt returns the value at index.
+		// It returns found=false, err=nil when the index does not exist.
+		// It returns a non-nil error only if the lookup itself fails.
+		LookupAt(ctx context.Context, index Int) (Value, bool, error)
+	}
+
 	// KeyReadable is an interface for accessing elements by their key in a collection-like structure.
 	KeyReadable interface {
 		// Get retrieves the value associated with the given key.
 		// Implementations may represent missing keys as (None, nil), or return an error for backends
 		// where lookup itself can fail (for example remote/IO-backed stores).
 		Get(ctx context.Context, key Value) (Value, error)
+	}
+
+	// KeyLookup provides safe keyed access to a value.
+	KeyLookup interface {
+		// Lookup returns the value associated with key.
+		// It returns found=false, err=nil when the key does not exist.
+		// It returns a non-nil error only if the lookup itself fails.
+		Lookup(ctx context.Context, key Value) (Value, bool, error)
 	}
 
 	// IndexWritable is an interface for modifying elements by their index in a collection-like structure.
@@ -98,6 +114,7 @@ type (
 		Sortable
 		Appendable
 		IndexReadable
+		IndexLookup
 		IndexWritable
 		IndexRemovable
 		ValueRemovable
@@ -132,6 +149,7 @@ type (
 	Map interface {
 		Collection
 		KeyReadable
+		KeyLookup
 		KeyWritable
 		KeyRemovable
 		ValueRemovable

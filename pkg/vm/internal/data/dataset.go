@@ -46,6 +46,10 @@ func (ds *DataSet) At(ctx context.Context, idx runtime.Int) (runtime.Value, erro
 	return ds.values.At(ctx, idx)
 }
 
+func (ds *DataSet) LookupAt(ctx context.Context, index runtime.Int) (runtime.Value, bool, error) {
+	return ds.values.LookupAt(ctx, index)
+}
+
 func (ds *DataSet) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	return ds.values.Iterate(ctx)
 }

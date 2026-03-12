@@ -297,6 +297,16 @@ func (t *Object) Get(_ context.Context, key Value) (Value, error) {
 	return None, nil
 }
 
+func (t *Object) Lookup(_ context.Context, key Value) (Value, bool, error) {
+	val, found := t.data[key.String()]
+
+	if found {
+		return val, true, nil
+	}
+
+	return None, false, nil
+}
+
 func (t *Object) Set(_ context.Context, key, value Value) error {
 	if value == nil {
 		value = None
