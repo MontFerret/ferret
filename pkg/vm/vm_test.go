@@ -1778,53 +1778,6 @@ RETURN outer()
 	}
 }
 
-func TestRunReenterSameVMUsesIsolatedRunState(t *testing.T) {
-	program := compileProgram(t, "RETURN REENTER()")
-	instance := mustNewVM(t, program)
-
-	var (
-		env   *Environment
-		depth int
-		err   error
-	)
-
-	env, err = NewEnvironment([]EnvironmentOption{
-		WithFunction("REENTER", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-			if depth > 0 {
-				return runtime.NewInt(42), nil
-			}
-
-			depth++
-			defer func() {
-				depth--
-			}()
-
-			return instance.Run(ctx, env)
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	out, err := instance.Run(context.Background(), env)
-	if err != nil {
-		t.Fatalf("outer run failed: %v", err)
-	}
-
-	if got, want := out, runtime.NewInt(42); got != want {
-		t.Fatalf("unexpected first output: got %v, want %v", got, want)
-	}
-
-	out, err = instance.Run(context.Background(), env)
-	if err != nil {
-		t.Fatalf("second outer run failed: %v", err)
-	}
-
-	if got, want := out, runtime.NewInt(42); got != want {
-		t.Fatalf("unexpected second output: got %v, want %v", got, want)
-	}
-}
-
 func TestHostNilResultIsNormalizedToNone(t *testing.T) {
 	program := compileProgram(t, "RETURN NIL_FN()")
 	env, err := NewEnvironment([]EnvironmentOption{

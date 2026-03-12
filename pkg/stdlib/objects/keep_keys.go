@@ -50,7 +50,17 @@ func KeepKeys(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 	return resultObj, keys.ForEach(ctx, func(c context.Context, keyVal runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		key = keyVal.(runtime.String)
 
-		if val, err := src.Get(c, key); err == nil {
+		exists, err := src.ContainsKey(c, key)
+		if err != nil {
+			return runtime.False, err
+		}
+
+		if exists {
+			val, err := src.Get(c, key)
+			if err != nil {
+				return runtime.False, err
+			}
+
 			cloneable, ok := val.(runtime.Cloneable)
 
 			if ok {
@@ -63,7 +73,9 @@ func KeepKeys(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 				val = v
 			}
 
-			_ = resultObj.Set(c, key, val)
+			if err := resultObj.Set(c, key, val); err != nil {
+				return runtime.False, err
+			}
 		}
 
 		return true, nil

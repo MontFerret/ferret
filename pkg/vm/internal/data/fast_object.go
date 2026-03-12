@@ -6,6 +6,15 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
+type FastObject struct {
+	cache         *ShapeCache
+	shape         *fastShape
+	dict          map[string]runtime.Value
+	slots         []runtime.Value
+	size          int
+	dictThreshold int
+}
+
 func NewFastObject(cache *ShapeCache, dictThreshold int) *FastObject {
 	if cache == nil {
 		cache = NewShapeCache(0)

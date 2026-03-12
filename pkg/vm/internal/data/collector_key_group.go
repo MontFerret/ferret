@@ -132,7 +132,7 @@ func (c *KeyGroupCollector) Close() error {
 	c.singleKey = ""
 	c.singleGroup = nil
 
-	if closer := val.(io.Closer); closer != nil {
+	if closer, ok := val.(io.Closer); ok {
 		return closer.Close()
 	}
 

@@ -79,7 +79,7 @@ func (c *KeyCollector) Close() error {
 	c.Value = nil
 	c.grouping = nil
 
-	if closer := val.(io.Closer); closer != nil {
+	if closer, ok := val.(io.Closer); ok {
 		return closer.Close()
 	}
 

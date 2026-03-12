@@ -175,7 +175,7 @@ func (c *KeyCounterCollector) Close() error {
 	c.singleIndex = 0
 	c.singleKV = nil
 
-	if closer := val.(io.Closer); closer != nil {
+	if closer, ok := val.(io.Closer); ok {
 		return closer.Close()
 	}
 

@@ -71,7 +71,7 @@ func (s *Sorter) Close() error {
 	val := s.Value
 	s.Value = nil
 
-	if closer := val.(io.Closer); closer != nil {
+	if closer, ok := val.(io.Closer); ok {
 		return closer.Close()
 	}
 
