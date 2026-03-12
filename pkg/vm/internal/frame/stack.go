@@ -3,16 +3,18 @@ package frame
 import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
 // CallStack manages call frames and a register pool for UDF execution.
-type CallStack struct {
-	frames []CallFrame
-	pool   Pool
-}
+type (
+	CallStack struct {
+		frames []CallFrame
+		pool   Pool
+	}
 
-type TraceEntry struct {
-	FnName     string
-	CallSitePC int
-	FnID       int
-}
+	TraceEntry struct {
+		FnName     string
+		CallSitePC int
+		FnID       int
+	}
+)
 
 // Init initializes the underlying register pool.
 func (s *CallStack) Init(maxPoolSize int) {
@@ -94,18 +96,19 @@ func (s *CallStack) ReturnToCaller(active []runtime.Value, retVal runtime.Value)
 }
 
 // UnwindToRecoveryBoundary unwinds through the nearest protected call frame,
-// restores its caller registers, clears the protected call destination, and
-// resumes at that frame's return PC.
+// restores its caller register window, clears the protected call's result
+// destination in that caller window, and resumes at the frame's return PC.
 func (s *CallStack) UnwindToRecoveryBoundary(active []runtime.Value) ([]runtime.Value, int, bool) {
-	for i := len(s.frames) - 1; i >= 0; i-- {
-		if !s.frames[i].Protected {
+	top := len(s.frames)
+
+	for i := top - 1; i >= 0; i-- {
+		if !s.frames[i].RecoveryBoundary {
 			continue
 		}
 
 		frame := s.frames[i]
-		top := len(s.frames)
 
-		for j := i + 1; j < len(s.frames); j++ {
+		for j := i + 1; j < top; j++ {
 			s.pool.Put(s.frames[j].Registers)
 		}
 

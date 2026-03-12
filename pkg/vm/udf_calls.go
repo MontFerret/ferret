@@ -115,14 +115,14 @@ func (s *execState) callUdf(op bytecode.Opcode, dst, src1, src2 bytecode.Operand
 	copyUdfArgsToUdfRegisters(newRegs, reg, argStart, argCount)
 
 	s.frames.Push(frame.CallFrame{
-		ReturnPC:    s.pc,
-		ReturnDest:  dst,
-		Registers:   s.registers.Values,
-		Protected:   bytecode.IsProtectedUdfCall(op),
-		FnID:        fnID,
-		FnName:      udfDisplayName(udf),
-		CallSitePC:  s.pc - 1,
-		HasCallSite: true,
+		ReturnPC:         s.pc,
+		ReturnDest:       dst,
+		Registers:        s.registers.Values,
+		RecoveryBoundary: bytecode.IsProtectedUdfCall(op),
+		FnID:             fnID,
+		FnName:           udfDisplayName(udf),
+		CallSitePC:       s.pc - 1,
+		HasCallSite:      true,
 	})
 	s.registers.Values = newRegs
 	s.pc = udf.Entry

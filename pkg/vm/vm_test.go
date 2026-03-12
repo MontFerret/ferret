@@ -566,28 +566,28 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 
 	state.registers.Values = activeRegs
 	state.frames.Push(frame.CallFrame{
-		ReturnPC:   10,
-		ReturnDest: bytecode.NewRegister(0),
-		Registers:  lowerRegs,
-		Protected:  false,
+		ReturnPC:         10,
+		ReturnDest:       bytecode.NewRegister(0),
+		Registers:        lowerRegs,
+		RecoveryBoundary: false,
 	})
 	state.frames.Push(frame.CallFrame{
-		ReturnPC:   20,
-		ReturnDest: bytecode.NewRegister(1),
-		Registers:  protectedRegs,
-		Protected:  true,
+		ReturnPC:         20,
+		ReturnDest:       bytecode.NewRegister(1),
+		Registers:        protectedRegs,
+		RecoveryBoundary: true,
 	})
 	state.frames.Push(frame.CallFrame{
-		ReturnPC:   30,
-		ReturnDest: bytecode.NewRegister(0),
-		Registers:  aboveRegs1,
-		Protected:  false,
+		ReturnPC:         30,
+		ReturnDest:       bytecode.NewRegister(0),
+		Registers:        aboveRegs1,
+		RecoveryBoundary: false,
 	})
 	state.frames.Push(frame.CallFrame{
-		ReturnPC:   40,
-		ReturnDest: bytecode.NewRegister(0),
-		Registers:  aboveRegs2,
-		Protected:  false,
+		ReturnPC:         40,
+		ReturnDest:       bytecode.NewRegister(0),
+		Registers:        aboveRegs2,
+		RecoveryBoundary: false,
 	})
 
 	if ok := state.unwindToProtected(); !ok {
@@ -1914,10 +1914,10 @@ func TestNearestBoundaryPrefersCatchOverProtectedUnwind(t *testing.T) {
 	defer state.end()
 
 	state.frames.Push(frame.CallFrame{
-		ReturnPC:   9,
-		ReturnDest: bytecode.NewRegister(1),
-		Registers:  protectedRegs,
-		Protected:  true,
+		ReturnPC:         9,
+		ReturnDest:       bytecode.NewRegister(1),
+		Registers:        protectedRegs,
+		RecoveryBoundary: true,
 	})
 	state.pc = 1
 
@@ -1953,10 +1953,10 @@ func TestNearestBoundaryUsesProtectedUnwindWithoutCatch(t *testing.T) {
 
 	state.registers.Values = activeRegs
 	state.frames.Push(frame.CallFrame{
-		ReturnPC:   7,
-		ReturnDest: bytecode.NewRegister(1),
-		Registers:  lowerRegs,
-		Protected:  true,
+		ReturnPC:         7,
+		ReturnDest:       bytecode.NewRegister(1),
+		Registers:        lowerRegs,
+		RecoveryBoundary: true,
 	})
 	state.pc = 1
 

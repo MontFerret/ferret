@@ -20,28 +20,28 @@ func TestCallStackUnwindToProtectedFrame_ReclaimsRegisters(t *testing.T) {
 	protectedRegs[1] = runtime.True
 
 	stack.Push(CallFrame{
-		ReturnPC:   10,
-		ReturnDest: bytecode.NewRegister(0),
-		Registers:  lowerRegs,
-		Protected:  false,
+		ReturnPC:         10,
+		ReturnDest:       bytecode.NewRegister(0),
+		Registers:        lowerRegs,
+		RecoveryBoundary: false,
 	})
 	stack.Push(CallFrame{
-		ReturnPC:   20,
-		ReturnDest: bytecode.NewRegister(1),
-		Registers:  protectedRegs,
-		Protected:  true,
+		ReturnPC:         20,
+		ReturnDest:       bytecode.NewRegister(1),
+		Registers:        protectedRegs,
+		RecoveryBoundary: true,
 	})
 	stack.Push(CallFrame{
-		ReturnPC:   30,
-		ReturnDest: bytecode.NewRegister(0),
-		Registers:  aboveRegs1,
-		Protected:  false,
+		ReturnPC:         30,
+		ReturnDest:       bytecode.NewRegister(0),
+		Registers:        aboveRegs1,
+		RecoveryBoundary: false,
 	})
 	stack.Push(CallFrame{
-		ReturnPC:   40,
-		ReturnDest: bytecode.NewRegister(0),
-		Registers:  aboveRegs2,
-		Protected:  false,
+		ReturnPC:         40,
+		ReturnDest:       bytecode.NewRegister(0),
+		Registers:        aboveRegs2,
+		RecoveryBoundary: false,
 	})
 	backing := stack.frames[:len(stack.frames)]
 
@@ -108,7 +108,7 @@ func TestCallStackUnwindToProtectedFrame_ReclaimsRegisters(t *testing.T) {
 	}
 
 	for i, frame := range backing[1:] {
-		if frame.Registers != nil || frame.FnName != "" || frame.FnID != 0 || frame.CallSitePC != 0 || frame.ReturnPC != 0 || frame.ReturnDest != 0 || frame.HasCallSite || frame.Protected {
+		if frame.Registers != nil || frame.FnName != "" || frame.FnID != 0 || frame.CallSitePC != 0 || frame.ReturnPC != 0 || frame.ReturnDest != 0 || frame.HasCallSite || frame.RecoveryBoundary {
 			t.Fatalf("expected removed frame slot %d to be zeroed, got %+v", i+1, frame)
 		}
 	}
@@ -122,10 +122,10 @@ func TestCallStackReturnToCaller_ReusesRegisters(t *testing.T) {
 	activeRegs := make([]runtime.Value, 3)
 
 	stack.Push(CallFrame{
-		ReturnPC:   7,
-		ReturnDest: bytecode.NewRegister(1),
-		Registers:  callerRegs,
-		Protected:  false,
+		ReturnPC:         7,
+		ReturnDest:       bytecode.NewRegister(1),
+		Registers:        callerRegs,
+		RecoveryBoundary: false,
 	})
 
 	retVal := runtime.True
@@ -157,10 +157,10 @@ func TestCallStackUnwindToProtectedFrame_NoProtectedFrames(t *testing.T) {
 
 	activeRegs := make([]runtime.Value, 4)
 	stack.Push(CallFrame{
-		ReturnPC:   10,
-		ReturnDest: bytecode.NewRegister(0),
-		Registers:  make([]runtime.Value, 2),
-		Protected:  false,
+		ReturnPC:         10,
+		ReturnDest:       bytecode.NewRegister(0),
+		Registers:        make([]runtime.Value, 2),
+		RecoveryBoundary: false,
 	})
 
 	if _, _, ok := stack.UnwindToRecoveryBoundary(activeRegs); ok {
@@ -262,24 +262,24 @@ func TestCallStackReset_ZeroesFrameStructsInBackingArray(t *testing.T) {
 	stack.Init(4)
 
 	stack.Push(CallFrame{
-		FnName:      "outer",
-		Registers:   make([]runtime.Value, 2),
-		FnID:        10,
-		CallSitePC:  20,
-		ReturnPC:    30,
-		ReturnDest:  bytecode.NewRegister(1),
-		HasCallSite: true,
-		Protected:   true,
+		FnName:           "outer",
+		Registers:        make([]runtime.Value, 2),
+		FnID:             10,
+		CallSitePC:       20,
+		ReturnPC:         30,
+		ReturnDest:       bytecode.NewRegister(1),
+		HasCallSite:      true,
+		RecoveryBoundary: true,
 	})
 	stack.Push(CallFrame{
-		FnName:      "inner",
-		Registers:   make([]runtime.Value, 3),
-		FnID:        11,
-		CallSitePC:  21,
-		ReturnPC:    31,
-		ReturnDest:  bytecode.NewRegister(2),
-		HasCallSite: true,
-		Protected:   false,
+		FnName:           "inner",
+		Registers:        make([]runtime.Value, 3),
+		FnID:             11,
+		CallSitePC:       21,
+		ReturnPC:         31,
+		ReturnDest:       bytecode.NewRegister(2),
+		HasCallSite:      true,
+		RecoveryBoundary: false,
 	})
 
 	_ = stack.Reset(make([]runtime.Value, 4))
@@ -290,7 +290,7 @@ func TestCallStackReset_ZeroesFrameStructsInBackingArray(t *testing.T) {
 
 	backing := stack.frames[:2]
 	for i, frame := range backing {
-		if frame.Registers != nil || frame.FnName != "" || frame.FnID != 0 || frame.CallSitePC != 0 || frame.ReturnPC != 0 || frame.ReturnDest != 0 || frame.HasCallSite || frame.Protected {
+		if frame.Registers != nil || frame.FnName != "" || frame.FnID != 0 || frame.CallSitePC != 0 || frame.ReturnPC != 0 || frame.ReturnDest != 0 || frame.HasCallSite || frame.RecoveryBoundary {
 			t.Fatalf("expected zeroed frame at index %d, got %+v", i, frame)
 		}
 	}
@@ -338,11 +338,11 @@ func TestCallStackSetTopFnID(t *testing.T) {
 	}
 
 	stack.Push(CallFrame{
-		ReturnPC:   5,
-		ReturnDest: bytecode.NewRegister(0),
-		Registers:  make([]runtime.Value, 1),
-		Protected:  false,
-		FnID:       1,
+		ReturnPC:         5,
+		ReturnDest:       bytecode.NewRegister(0),
+		Registers:        make([]runtime.Value, 1),
+		RecoveryBoundary: false,
+		FnID:             1,
 	})
 
 	if ok := stack.SetTopFnID(42); !ok {
