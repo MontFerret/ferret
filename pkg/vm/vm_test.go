@@ -602,6 +602,10 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		t.Fatalf("unexpected frame depth after unwind: got %d, want %d", got, want)
 	}
 
+	if &state.registers.Values[0] != &protectedRegs[0] {
+		t.Fatal("expected unwind to restore the protected caller register window")
+	}
+
 	remaining := state.frames.Top()
 	if remaining == nil {
 		t.Fatal("expected remaining frame after unwind")
@@ -1964,6 +1968,10 @@ func TestNearestBoundaryUsesProtectedUnwindWithoutCatch(t *testing.T) {
 
 	if got, want := state.pc, 7; got != want {
 		t.Fatalf("unexpected unwind target: got %d, want %d", got, want)
+	}
+
+	if &state.registers.Values[0] != &lowerRegs[0] {
+		t.Fatal("expected protected unwind to resume in the caller register window")
 	}
 
 	if got, want := state.frames.Len(), 0; got != want {

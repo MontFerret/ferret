@@ -93,22 +93,32 @@ func (s *CallStack) ReturnToCaller(active []runtime.Value, retVal runtime.Value)
 	return registers, frame.ReturnPC, true
 }
 
-// UnwindToProtectedFrame drops frames until a protected frame is reached.
-func (s *CallStack) UnwindToProtectedFrame(active []runtime.Value) ([]runtime.Value, int, bool) {
+// UnwindToRecoveryBoundary unwinds through the nearest protected call frame,
+// restores its caller registers, clears the protected call destination, and
+// resumes at that frame's return PC.
+func (s *CallStack) UnwindToRecoveryBoundary(active []runtime.Value) ([]runtime.Value, int, bool) {
 	for i := len(s.frames) - 1; i >= 0; i-- {
 		if !s.frames[i].Protected {
 			continue
 		}
 
 		frame := s.frames[i]
+		top := len(s.frames)
+
 		for j := i + 1; j < len(s.frames); j++ {
 			s.pool.Put(s.frames[j].Registers)
 		}
 
-		// Reclaim registers above the protected frame and reset its return dest.
-		s.frames = s.frames[:i]
+		// Reclaim registers above the protected call and reset its return dest.
 		s.pool.Put(active)
+
+		for j := i; j < top; j++ {
+			s.frames[j] = CallFrame{}
+		}
+
+		s.frames = s.frames[:i]
 		registers := frame.Registers
+
 		if frame.ReturnDest.IsRegister() {
 			registers[frame.ReturnDest] = runtime.None
 		}

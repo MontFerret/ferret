@@ -318,7 +318,7 @@ func (s *execState) setOrOptional(pc int, dst bytecode.Operand, val runtime.Valu
 }
 
 func (s *execState) unwindToProtected() bool {
-	registers, pc, ok := s.frames.UnwindToProtectedFrame(s.registers.Values)
+	registers, pc, ok := s.frames.UnwindToRecoveryBoundary(s.registers.Values)
 	if !ok {
 		return false
 	}

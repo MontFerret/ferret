@@ -43,8 +43,9 @@ func TestCallStackUnwindToProtectedFrame_ReclaimsRegisters(t *testing.T) {
 		Registers:  aboveRegs2,
 		Protected:  false,
 	})
+	backing := stack.frames[:len(stack.frames)]
 
-	registers, pc, ok := stack.UnwindToProtectedFrame(activeRegs)
+	registers, pc, ok := stack.UnwindToRecoveryBoundary(activeRegs)
 	if !ok {
 		t.Fatal("expected protected unwind to succeed")
 	}
@@ -55,6 +56,10 @@ func TestCallStackUnwindToProtectedFrame_ReclaimsRegisters(t *testing.T) {
 
 	if got, want := stack.Len(), 1; got != want {
 		t.Fatalf("unexpected frame depth after unwind: got %d, want %d", got, want)
+	}
+
+	if &registers[0] != &protectedRegs[0] {
+		t.Fatal("expected unwind to restore protected caller registers")
 	}
 
 	remaining := stack.Top()
@@ -86,12 +91,26 @@ func TestCallStackUnwindToProtectedFrame_ReclaimsRegisters(t *testing.T) {
 		t.Fatal("expected frame registers of size 5 to be reclaimed")
 	}
 
+	reused3 := stack.AcquireRegisters(3)
+	if len(reused3) != 3 {
+		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused3), 3)
+	}
+	if &reused3[0] == &protectedRegs[0] {
+		t.Fatal("did not expect protected registers to be reclaimed")
+	}
+
 	reused6 := stack.AcquireRegisters(6)
 	if len(reused6) != 6 {
 		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused6), 6)
 	}
 	if &reused6[0] != &activeRegs[0] {
 		t.Fatal("expected active registers of size 6 to be reclaimed")
+	}
+
+	for i, frame := range backing[1:] {
+		if frame.Registers != nil || frame.FnName != "" || frame.FnID != 0 || frame.CallSitePC != 0 || frame.ReturnPC != 0 || frame.ReturnDest != 0 || frame.HasCallSite || frame.Protected {
+			t.Fatalf("expected removed frame slot %d to be zeroed, got %+v", i+1, frame)
+		}
 	}
 }
 
@@ -144,7 +163,7 @@ func TestCallStackUnwindToProtectedFrame_NoProtectedFrames(t *testing.T) {
 		Protected:  false,
 	})
 
-	if _, _, ok := stack.UnwindToProtectedFrame(activeRegs); ok {
+	if _, _, ok := stack.UnwindToRecoveryBoundary(activeRegs); ok {
 		t.Fatal("expected protected unwind to fail without protected frames")
 	}
 
