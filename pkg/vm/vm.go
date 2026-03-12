@@ -249,7 +249,7 @@ loop:
 
 			call := &hostBindings[hostID]
 			cacheFn := &hostFunctions[call.ID]
-			out, err := callCachedHostFunction(ctx, call, cacheFn, reg, &state.scratch, reg[dst])
+			out, err := callCachedHostFunction(ctx, call, cacheFn, reg, &state.scratch)
 
 			state.setCallResult(pc, op, dst, out, err)
 		case bytecode.OpCall, bytecode.OpProtectedCall:
