@@ -55,6 +55,7 @@ func (s *execState) start(env *Environment) {
 func (s *execState) end() {
 	s.frames.Reset(s.registers.Values)
 	s.registers.Reset()
+	s.scratch.Reset()
 
 	s.env = nil
 	s.pc = 0
