@@ -3,33 +3,17 @@ package vm
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
-func hostCallArgRange(src1, src2 bytecode.Operand) (int, int, bool) {
-	if !src1.IsRegister() || !src2.IsRegister() {
-		return 0, 0, false
-	}
-
-	start := src1.Register()
-	end := src2.Register()
-
-	if start <= 0 || end < start {
-		return 0, 0, false
-	}
-
-	return start, end, true
-}
-
 func callCachedHostFunction(
 	ctx context.Context,
+	desc *hostCallBindingDescriptor,
 	cacheFn *mem.CachedHostFunction,
 	reg []runtime.Value,
 	scratch *mem.Scratch,
 	target runtime.Value,
-	src1, src2 bytecode.Operand,
 ) (runtime.Value, error) {
 	if cacheFn == nil || !cacheFn.Bound {
 		if _, ok := target.(runtime.String); !ok {
@@ -39,8 +23,10 @@ func callCachedHostFunction(
 		return nil, ErrUnresolvedFunction
 	}
 
-	start, end, hasRange := hostCallArgRange(src1, src2)
-	if !hasRange {
+	start := desc.ArgStart
+
+	switch desc.ArgCount {
+	case 0:
 		if cacheFn.Fn0 != nil {
 			return cacheFn.Fn0(ctx)
 		}
@@ -48,15 +34,6 @@ func callCachedHostFunction(
 		if cacheFn.FnV != nil {
 			return cacheFn.FnV(ctx)
 		}
-
-		return nil, ErrUnresolvedFunction
-	}
-
-	if start < 0 || end >= len(reg) {
-		return nil, runtime.Error(runtime.ErrUnexpected, "invalid host call argument range")
-	}
-
-	switch end - start + 1 {
 	case 1:
 		arg0 := reg[start]
 
@@ -105,8 +82,7 @@ func callCachedHostFunction(
 		}
 	default:
 		if cacheFn.FnV != nil {
-			argCount := end - start + 1
-			args := stageHostCallArgs(scratch, reg, start, argCount)
+			args := stageHostCallArgs(scratch, reg, start, desc.ArgCount)
 			return cacheFn.FnV(ctx, args...)
 		}
 	}
@@ -122,11 +98,13 @@ func stageHostCallArgs(scratch *mem.Scratch, reg []runtime.Value, start, count i
 	if scratch == nil {
 		args := make([]runtime.Value, count)
 		copy(args, reg[start:start+count])
+
 		return args
 	}
 
 	scratch.ResizeHostArgs(count)
 	args := scratch.HostArgs[:count]
 	copy(args, reg[start:start+count])
+
 	return args
 }

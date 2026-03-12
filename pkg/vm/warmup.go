@@ -9,12 +9,12 @@ import (
 )
 
 type hostCallBindingDescriptor struct {
-	FnName    string
-	PC        int
-	Dst       bytecode.Operand
-	ID        int
-	ArgCount  int
-	HasFnName bool
+	FnName   string
+	PC       int
+	Dst      bytecode.Operand
+	ID       int
+	ArgCount int
+	ArgStart int
 }
 
 func ensureRegexpsWarmed(vm *VM) {
@@ -80,6 +80,7 @@ func ensureHostFunctionsBound(vm *VM, env *Environment) error {
 				descriptor.PC,
 				descriptor.Dst,
 			)
+
 			continue
 		}
 
@@ -92,12 +93,13 @@ func ensureHostFunctionsBound(vm *VM, env *Environment) error {
 				descriptor.PC,
 				descriptor.Dst,
 			)
+
 			continue
 		}
 
 		vm.cache.HostFunctions[descriptor.ID] = mem.CachedHostFunction{}
-
 		cachedFn, err := warmupBindHostCall(descriptor, env.Functions)
+
 		if err != nil {
 			warmupErrs.Add(err, descriptor.PC, descriptor.Dst)
 			continue
@@ -167,7 +169,7 @@ func warmupArgCount(src1, src2 bytecode.Operand) int {
 }
 
 func warmupBindHostCall(descriptor hostCallBindingDescriptor, functions *runtime.Functions) (mem.CachedHostFunction, error) {
-	if !descriptor.HasFnName {
+	if descriptor.FnName == "" {
 		return mem.CachedHostFunction{}, ErrInvalidFunctionName
 	}
 
@@ -222,12 +224,13 @@ func buildExecPlan(program *bytecode.Program) ([]execInstruction, []hostCallBind
 				Dst:      dst,
 				ID:       len(hostBindings),
 				ArgCount: warmupArgCount(src1, src2),
+				ArgStart: int(src1),
 			}
 
 			fnName, err := resolveHostFnName(reg, dst)
+
 			if err == nil {
 				descriptor.FnName = fnName
-				descriptor.HasFnName = true
 			}
 
 			hostBindings = append(hostBindings, descriptor)

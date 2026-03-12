@@ -116,6 +116,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, err
 	aggregatePlans := vm.program.Metadata.AggregatePlans
 	shapeCache := vm.cache.ShapeCache
 	hostFunctions := vm.cache.HostFunctions
+	hostBindings := vm.hostBindings
 	paramSlots := state.scratch.Params
 loop:
 	for state.pc < len(instructions) {
@@ -246,8 +247,9 @@ loop:
 				break
 			}
 
-			cacheFn := &hostFunctions[hostID]
-			out, err := callCachedHostFunction(ctx, cacheFn, reg, &state.scratch, reg[dst], src1, src2)
+			call := &hostBindings[hostID]
+			cacheFn := &hostFunctions[call.ID]
+			out, err := callCachedHostFunction(ctx, call, cacheFn, reg, &state.scratch, reg[dst])
 
 			state.setCallResult(pc, op, dst, out, err)
 		case bytecode.OpCall, bytecode.OpProtectedCall:
