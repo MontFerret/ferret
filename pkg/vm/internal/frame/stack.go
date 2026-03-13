@@ -1,25 +1,20 @@
 package frame
 
-import "github.com/MontFerret/ferret/v2/pkg/runtime"
-
-// CallStack manages call frames and a register pool for UDF execution.
-type CallStack struct {
-	frames []CallFrame
-	pool   Pool
-}
-
-// Init initializes the underlying register pool.
-func (s *CallStack) Init(maxPoolSize int) {
-	s.pool.Init(maxPoolSize)
-}
-
-// Reset clears the call stack while leaving the pool intact.
-func (s *CallStack) Reset() {
-	if len(s.frames) == 0 {
-		return
+// CallStack manages structural call frames for UDF execution.
+type (
+	CallStack struct {
+		frames []CallFrame
 	}
 
-	s.frames = s.frames[:0]
+	TraceEntry struct {
+		FnName     string
+		CallSitePC int
+		FnID       int
+	}
+)
+
+func NewCallStack() CallStack {
+	return CallStack{}
 }
 
 // Len returns the number of active frames.
@@ -38,8 +33,10 @@ func (s *CallStack) Pop() (CallFrame, bool) {
 		return CallFrame{}, false
 	}
 
-	frame := s.frames[len(s.frames)-1]
-	s.frames = s.frames[:len(s.frames)-1]
+	top := len(s.frames) - 1
+	frame := s.frames[top]
+	s.frames[top] = CallFrame{}
+	s.frames = s.frames[:top]
 	return frame, true
 }
 
@@ -52,55 +49,15 @@ func (s *CallStack) Top() *CallFrame {
 	return &s.frames[len(s.frames)-1]
 }
 
-// AcquireRegisters returns a register window of the requested size.
-func (s *CallStack) AcquireRegisters(size int) []runtime.Value {
-	return s.pool.Get(size)
-}
-
-// ReleaseRegisters releases a register window back into the pool.
-func (s *CallStack) ReleaseRegisters(reg []runtime.Value) {
-	s.pool.Put(reg)
-}
-
-// ReturnToCaller unwinds one frame, restores caller registers, and applies retVal.
-func (s *CallStack) ReturnToCaller(active []runtime.Value, retVal runtime.Value) ([]runtime.Value, int, bool) {
-	frame, ok := s.Pop()
-	if !ok {
-		return nil, 0, false
-	}
-
-	// Restore caller registers and write the return value.
-	s.pool.Put(active)
-	registers := frame.Registers
-	registers[frame.ReturnDest] = retVal
-
-	return registers, frame.ReturnPC, true
-}
-
-// UnwindToProtectedFrame drops frames until a protected frame is reached.
-func (s *CallStack) UnwindToProtectedFrame(active []runtime.Value) ([]runtime.Value, int, bool) {
+// NearestRecoveryBoundary returns the index of the nearest protected frame.
+func (s *CallStack) NearestRecoveryBoundary() int {
 	for i := len(s.frames) - 1; i >= 0; i-- {
-		if !s.frames[i].Protected {
-			continue
+		if s.frames[i].RecoveryBoundary {
+			return i
 		}
-
-		frame := s.frames[i]
-		for j := i + 1; j < len(s.frames); j++ {
-			s.pool.Put(s.frames[j].Registers)
-		}
-
-		// Reclaim registers above the protected frame and reset its return dest.
-		s.frames = s.frames[:i]
-		s.pool.Put(active)
-		registers := frame.Registers
-		if frame.ReturnDest.IsRegister() {
-			registers[frame.ReturnDest] = runtime.None
-		}
-
-		return registers, frame.ReturnPC, true
 	}
 
-	return nil, 0, false
+	return -1
 }
 
 // SetTopFnID updates the top frame's function id when present.
@@ -111,4 +68,62 @@ func (s *CallStack) SetTopFnID(fnID int) bool {
 
 	s.frames[len(s.frames)-1].FnID = fnID
 	return true
+}
+
+// SetTopCall updates call metadata of the top frame when present.
+func (s *CallStack) SetTopCall(fnID int, fnName string, callSitePC int) bool {
+	if len(s.frames) == 0 {
+		return false
+	}
+
+	top := &s.frames[len(s.frames)-1]
+	top.FnID = fnID
+	top.FnName = fnName
+	top.CallSitePC = callSitePC
+	top.HasCallSite = true
+
+	return true
+}
+
+// TraceEntries returns caller trace entries from nearest to farthest frame.
+func (s *CallStack) TraceEntries() []TraceEntry {
+	if len(s.frames) == 0 {
+		return nil
+	}
+
+	traces := make([]TraceEntry, 0, len(s.frames))
+
+	for i := len(s.frames) - 1; i >= 0; i-- {
+		frame := s.frames[i]
+		if !frame.HasCallSite {
+			continue
+		}
+
+		traces = append(traces, TraceEntry{
+			CallSitePC: frame.CallSitePC,
+			FnID:       frame.FnID,
+			FnName:     frame.FnName,
+		})
+	}
+
+	if len(traces) == 0 {
+		return nil
+	}
+
+	return traces
+}
+
+// CallSitePCs returns caller PCs from nearest to farthest frame.
+func (s *CallStack) CallSitePCs() []int {
+	traces := s.TraceEntries()
+	if len(traces) == 0 {
+		return nil
+	}
+
+	pcs := make([]int, 0, len(traces))
+	for _, trace := range traces {
+		pcs = append(pcs, trace.CallSitePC)
+	}
+
+	return pcs
 }

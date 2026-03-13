@@ -190,6 +190,20 @@ func (t *Array) At(_ context.Context, idx Int) (Value, error) {
 	return t.data[idx], nil
 }
 
+func (t *Array) LookupAt(_ context.Context, idx Int) (Value, bool, error) {
+	l := Int(len(t.data) - 1)
+
+	if l < 0 {
+		return None, false, nil
+	}
+
+	if idx > l {
+		return None, false, nil
+	}
+
+	return t.data[idx], true, nil
+}
+
 func (t *Array) First(_ context.Context) (Value, error) {
 	if len(t.data) > 0 {
 		return t.data[0], nil

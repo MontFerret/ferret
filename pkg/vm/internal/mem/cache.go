@@ -7,27 +7,28 @@ import (
 
 type (
 	Cache struct {
-		FuncHash        uint64
-		HostFunctions   []*CachedHostFunction
-		RegexpsWarmed   bool
+		ShapeCache      *data.ShapeCache
+		FunctionsRef    *runtime.Functions
+		HostFunctions   []CachedHostFunction
 		Regexps         []*CachedRegexp
 		LoadKeyICs      []*LoadKeyCache
 		LoadKeyConstICs []*LoadKeyConstCache
-		ShapeCache      *data.ShapeCache
+		RegexpsWarmed   bool
 	}
 
 	CachedHostFunction struct {
-		Fn0 runtime.Function0
-		Fn1 runtime.Function1
-		Fn2 runtime.Function2
-		Fn3 runtime.Function3
-		Fn4 runtime.Function4
-		FnV runtime.Function
+		Fn0   runtime.Function0
+		Fn1   runtime.Function1
+		Fn2   runtime.Function2
+		Fn3   runtime.Function3
+		Fn4   runtime.Function4
+		FnV   runtime.Function
+		Bound bool
 	}
 
 	CachedRegexp struct {
-		Pattern string
 		Regexp  *data.Regexp
+		Pattern string
 	}
 
 	LoadKeyCache struct {
@@ -37,8 +38,8 @@ type (
 	}
 
 	LoadKeyCacheEntry struct {
-		ShapeID uint64
 		Key     string
+		ShapeID uint64
 		Slot    int
 	}
 
@@ -160,9 +161,9 @@ func (c *LoadKeyConstCache) Add(shapeID uint64, slot int) {
 	c.megamorphic = true
 }
 
-func NewCache(bytecodeLen, shapeCacheLimit int) *Cache {
+func NewCache(bytecodeLen, hostCallCount, shapeCacheLimit int) *Cache {
 	return &Cache{
-		HostFunctions:   make([]*CachedHostFunction, bytecodeLen),
+		HostFunctions:   make([]CachedHostFunction, hostCallCount),
 		Regexps:         make([]*CachedRegexp, bytecodeLen),
 		LoadKeyICs:      make([]*LoadKeyCache, bytecodeLen),
 		LoadKeyConstICs: make([]*LoadKeyConstCache, bytecodeLen),

@@ -1,0 +1,435 @@
+package vm
+
+import (
+	"context"
+	"errors"
+	"strings"
+
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
+)
+
+type (
+	pendingFailure struct {
+		err         error
+		fallback    runtime.Value
+		pc          int
+		dst         bytecode.Operand
+		kind        errorKind
+		mode        recoveryMode
+		setFallback bool
+	}
+
+	execState struct {
+		program   *bytecode.Program
+		env       *Environment
+		scratch   mem.Scratch
+		frames    frame.CallStack
+		windows   mem.WindowPool
+		catchByPC []int
+		registers mem.RegisterFile
+		owned     mem.OwnedResources
+		failure   pendingFailure
+		pc        int
+		lastPC    int
+		hasFail   bool
+	}
+)
+
+func (s *execState) init(program *bytecode.Program) {
+	s.program = program
+	s.catchByPC = buildCatchByPC(len(program.Bytecode), program.CatchTable)
+	s.registers = mem.NewRegisterFile(program.Registers)
+	s.scratch = mem.NewScratch(len(program.Params))
+	s.frames = frame.NewCallStack()
+	s.windows = mem.NewWindowPool(maxUDFRegisters(program.Functions.UserDefined))
+}
+
+func (s *execState) start(env *Environment) error {
+	s.env = env
+	s.owned = mem.OwnedResources{}
+	s.pc = 0
+	s.lastPC = -1
+	s.clearFailure()
+
+	return s.bindParams(env)
+}
+
+func (s *execState) end() {
+	for {
+		s.owned.CloseAll()
+
+		caller, ok := s.frames.Pop()
+		if !ok {
+			break
+		}
+
+		s.windows.Release(s.registers)
+		s.registers = caller.CallerRegisters
+		s.owned = caller.OwnedResources
+	}
+
+	s.registers.Reset()
+	s.scratch.Reset()
+
+	s.env = nil
+	s.pc = 0
+	s.lastPC = -1
+	s.clearFailure()
+}
+
+func (s *execState) bindParams(env *Environment) error {
+	required := s.program.Params
+	if len(required) == 0 {
+		return nil
+	}
+
+	s.scratch.ResizeParams(len(required))
+
+	var missedParams []string
+
+	for idx, name := range required {
+		val, exists := env.Params[name]
+
+		if !exists {
+			if missedParams == nil {
+				missedParams = make([]string, 0, len(required))
+			}
+
+			missedParams = append(missedParams, "@"+name)
+			val = runtime.None
+		}
+
+		s.scratch.Params[idx] = val
+	}
+
+	if len(missedParams) > 0 {
+		return runtime.Error(ErrMissedParam, strings.Join(missedParams, ", "))
+	}
+
+	return nil
+}
+
+func (s *execState) raiseRuntimeAt(pc int, err error, mode recoveryMode, dst bytecode.Operand, fallback runtime.Value, setFallback bool) {
+	s.raise(pc, err, errKindRuntime, mode, dst, fallback, setFallback)
+}
+
+func (s *execState) raiseRuntime(err error, mode recoveryMode, dst bytecode.Operand, fallback runtime.Value, setFallback bool) {
+	s.raiseRuntimeAt(s.pc, err, mode, dst, fallback, setFallback)
+}
+
+func (s *execState) raiseInvariantAt(pc int, err error) {
+	s.raise(pc, err, errKindInvariant, recoverDefault, bytecode.NoopOperand, nil, false)
+}
+
+func (s *execState) raiseInvariant(err error) {
+	s.raiseInvariantAt(s.pc, err)
+}
+
+func (s *execState) raise(pc int, err error, kind errorKind, mode recoveryMode, dst bytecode.Operand, fallback runtime.Value, setFallback bool) {
+	if err == nil || s.hasFail {
+		return
+	}
+
+	s.lastPC = pc
+	s.failure = pendingFailure{
+		err:         err,
+		kind:        kind,
+		mode:        mode,
+		pc:          pc,
+		dst:         dst,
+		fallback:    fallback,
+		setFallback: setFallback,
+	}
+	s.hasFail = true
+}
+
+func (s *execState) hasFailure() bool {
+	return s.hasFail
+}
+
+func (s *execState) failureError() error {
+	if !s.hasFail {
+		return nil
+	}
+
+	return s.failure.err
+}
+
+func (s *execState) clearFailure() {
+	if !s.hasFail {
+		return
+	}
+
+	s.failure = pendingFailure{}
+	s.hasFail = false
+}
+
+func (s *execState) resolveFailure() errAction {
+	if !s.hasFail {
+		return errOK
+	}
+
+	failure := s.failure
+
+	switch failure.kind {
+	case errKindInvariant:
+		return errReturn
+	case errKindRuntime:
+		switch failure.mode {
+		case recoverOptional:
+			if s.isOptionalMiss(failure.err) {
+				s.applyFailureFallback(failure)
+				s.clearFailure()
+				return errContinue
+			}
+
+			return s.resolveRuntimeDefault(failure)
+		case recoverMissingMember:
+			if s.isMissingMember(failure.err) {
+				s.applyFailureFallback(failure)
+				s.clearFailure()
+				return errContinue
+			}
+
+			return s.resolveRuntimeDefault(failure)
+		case recoverProtected:
+			s.applyFailureFallback(failure)
+			s.clearFailure()
+			return errContinue
+		default:
+			return s.resolveRuntimeDefault(failure)
+		}
+	default:
+		return errReturn
+	}
+}
+
+func (s *execState) resolveRuntimeDefault(failure pendingFailure) errAction {
+	if catch, ok := s.tryCatch(failure.pc); ok {
+		s.applyFailureFallback(failure)
+
+		if catch[2] >= 0 {
+			s.pc = catch[2]
+		}
+
+		s.clearFailure()
+		return errContinue
+	}
+
+	if s.unwindToProtected() {
+		s.clearFailure()
+		return errContinue
+	}
+
+	return errReturn
+}
+
+func (s *execState) applyFailureFallback(failure pendingFailure) {
+	if failure.setFallback && failure.dst.IsRegister() {
+		s.writeBorrowedRegister(failure.dst, failure.fallback)
+	}
+}
+
+func (s *execState) isOptionalMiss(err error) bool {
+	return s.isMissingMember(err) || s.isNullMemberDereference(err)
+}
+
+func (s *execState) isMissingMember(err error) bool {
+	return errors.Is(err, runtime.ErrNotFound)
+}
+
+func (s *execState) isNullMemberDereference(err error) bool {
+	var memberErr *diagnostics.MemberAccessError
+	if !errors.As(err, &memberErr) {
+		return false
+	}
+
+	return runtime.IsSameType(memberErr.Target, runtime.TypeNone)
+}
+
+func (s *execState) errorPC() int {
+	if s.hasFail {
+		return s.failure.pc
+	}
+
+	if s.lastPC >= 0 {
+		return s.lastPC
+	}
+
+	if s.pc > 0 {
+		return s.pc - 1
+	}
+
+	return 0
+}
+
+func (s *execState) toRuntimePC(pc int) int {
+	return pc + 1
+}
+
+func (s *execState) wrapRuntimeError(err error) error {
+	return diagnostics.WrapRuntimeError(s.program, s.toRuntimePC(s.errorPC()), s.frames.TraceEntries(), err)
+}
+
+func (s *execState) runtimeErrorFromPanic(r any) error {
+	return diagnostics.RuntimeErrorFromPanic(s.program, s.toRuntimePC(s.errorPC()), s.frames.TraceEntries(), r)
+}
+
+func (s *execState) checkDivisionByZeroAt(ctx context.Context, pc int, left, right runtime.Value) error {
+	return diagnostics.CheckDivisionByZero(ctx, s.program, s.toRuntimePC(pc), left, right)
+}
+
+func (s *execState) checkModuloByZeroAt(ctx context.Context, pc int, right runtime.Value) error {
+	return diagnostics.CheckModuloByZero(ctx, s.program, s.toRuntimePC(pc), right)
+}
+
+func (s *execState) tryCatch(pos int) (bytecode.Catch, bool) {
+	if s.catchByPC != nil && pos >= 0 && pos < len(s.catchByPC) {
+		if idx := s.catchByPC[pos]; idx >= 0 {
+			return s.program.CatchTable[idx], true
+		}
+
+		return bytecode.Catch{}, false
+	}
+
+	for _, pair := range s.program.CatchTable {
+		if pos >= pair[0] && pos <= pair[1] {
+			return pair, true
+		}
+	}
+
+	return bytecode.Catch{}, false
+}
+
+func (s *execState) setOrRaiseDefault(pc int, dst bytecode.Operand, val runtime.Value, err error) {
+	if err == nil {
+		s.writeBorrowedRegister(dst, val)
+		return
+	}
+
+	s.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.None, true)
+}
+
+func (s *execState) setProducedOrRaiseDefault(pc int, dst bytecode.Operand, val runtime.Value, err error) {
+	if err == nil {
+		s.writeProducedRegister(dst, val)
+		return
+	}
+
+	s.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.None, true)
+}
+
+func (s *execState) setOrOptional(pc int, dst bytecode.Operand, val runtime.Value, err error, optional bool) {
+	if err == nil {
+		s.writeBorrowedRegister(dst, val)
+		return
+	}
+
+	if optional && s.isNullMemberDereference(err) {
+		s.writeBorrowedRegister(dst, runtime.None)
+		return
+	}
+
+	mode := recoverMissingMember
+	if optional {
+		mode = recoverOptional
+	}
+
+	s.raiseRuntimeAt(pc, err, mode, dst, runtime.None, true)
+}
+
+func (s *execState) unwindToProtected() bool {
+	boundary := s.frames.NearestRecoveryBoundary()
+	if boundary < 0 {
+		return false
+	}
+
+	for s.frames.Len() > boundary+1 {
+		frame, ok := s.frames.Pop()
+		if !ok {
+			return false
+		}
+
+		s.owned.CloseAll()
+		s.windows.Release(s.registers)
+		s.registers = frame.CallerRegisters
+		s.owned = frame.OwnedResources
+	}
+
+	frame, ok := s.frames.Pop()
+	if !ok {
+		return false
+	}
+
+	s.owned.CloseAll()
+	s.windows.Release(s.registers)
+	s.registers = frame.CallerRegisters
+	s.owned = frame.OwnedResources
+	if frame.ReturnDest.IsRegister() {
+		s.writeBorrowedRegister(frame.ReturnDest, runtime.None)
+	}
+	s.pc = frame.ReturnPC
+	return true
+}
+
+func (s *execState) returnToCaller(retVal runtime.Value) bool {
+	frame, ok := s.frames.Pop()
+	if !ok {
+		return false
+	}
+
+	callerOwned := frame.OwnedResources
+	s.owned.Transfer(retVal, &callerOwned)
+	s.owned.CloseAll()
+	s.windows.Release(s.registers)
+	s.registers = frame.CallerRegisters
+	s.owned = callerOwned
+	if frame.ReturnDest.IsRegister() {
+		s.writeBorrowedRegister(frame.ReturnDest, retVal)
+	}
+	s.pc = frame.ReturnPC
+	return true
+}
+
+func (s *execState) setCallResult(pc int, op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) {
+	if err == nil {
+		s.writeProducedRegister(dst, out)
+		return
+	}
+
+	if bytecode.IsProtectedCall(op) {
+		s.raiseRuntimeAt(pc, err, recoverProtected, dst, runtime.None, true)
+		return
+	}
+
+	s.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.None, true)
+}
+
+func (s *execState) writeBorrowedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
+	val = normalizeValue(val)
+
+	if dst.IsRegister() {
+		s.registers[dst] = val
+	}
+
+	return val
+}
+
+func (s *execState) writeProducedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
+	val = s.writeBorrowedRegister(dst, val)
+	s.owned.Track(val)
+
+	return val
+}
+
+func (s *execState) udfByID(id int) (*bytecode.UDF, error) {
+	if id < 0 || s.program == nil || id >= len(s.program.Functions.UserDefined) {
+		return nil, ErrUnresolvedFunction
+	}
+
+	return &s.program.Functions.UserDefined[id], nil
+}

@@ -99,7 +99,7 @@ func firstCompilationError(err error) *diagnostics.Diagnostic {
 			return nil
 		}
 
-		return e.Errors()[0]
+		return e.First()
 	default:
 		return nil
 	}

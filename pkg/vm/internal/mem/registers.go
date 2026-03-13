@@ -2,41 +2,16 @@ package mem
 
 import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
-type RegisterFile struct {
-	Values  []runtime.Value
-	isDirty bool
+type RegisterFile []runtime.Value
+
+func NewRegisterFile(size int) RegisterFile {
+	values := make([]runtime.Value, size)
+	fillWithNone(values)
+	return values
 }
 
-func NewRegisterFile(size int) *RegisterFile {
-	return &RegisterFile{
-		Values: make([]runtime.Value, size),
-	}
-}
-
-func (rf *RegisterFile) IsDirty() bool {
-	return rf.isDirty
-}
-
-func (rf *RegisterFile) MarkDirty() {
-	rf.isDirty = true
-}
-
-func (rf *RegisterFile) Size() int {
-	return len(rf.Values)
-}
-
-func (rf *RegisterFile) Set(idx int, val runtime.Value) {
-	rf.Values[idx] = val
-}
-
-func (rf *RegisterFile) Get(idx int) runtime.Value {
-	return rf.Values[idx]
-}
-
-func (rf *RegisterFile) Reset() {
-	for i := range rf.Values {
-		rf.Values[i] = nil
-	}
-
-	rf.isDirty = false
+// Reset scrubs register slots to runtime.None. OwnedResources is responsible
+// for closing any frame-owned values before the storage is reused.
+func (rf RegisterFile) Reset() {
+	fillWithNone(rf)
 }

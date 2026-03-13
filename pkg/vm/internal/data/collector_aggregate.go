@@ -2,6 +2,8 @@ package data
 
 import (
 	"context"
+	"errors"
+	"io"
 	"sort"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -10,14 +12,12 @@ import (
 )
 
 type AggregateCollector struct {
-	plan   bytecode.AggregatePlan
-	states []aggregateState
-	// Fast path for single projection key (common for COLLECT ... INTO groups):
-	// avoid allocating and hashing into a map until a second distinct key appears.
-	singleGroupKey   string
+	plan             bytecode.AggregatePlan
 	singleGroupValue runtime.List
-	hasSingleGroup   bool
 	groups           map[string]runtime.List
+	singleGroupKey   string
+	states           []aggregateState
+	hasSingleGroup   bool
 	hasData          bool
 }
 
@@ -205,6 +205,24 @@ func (c *AggregateCollector) Copy() runtime.Value {
 }
 
 func (c *AggregateCollector) Close() error {
+	var err error
+	if c.hasSingleGroup {
+		if closer, ok := c.singleGroupValue.(io.Closer); ok {
+			err = closer.Close()
+		}
+	} else {
+		errs := make([]error, 0, len(c.groups))
+		for _, group := range c.groups {
+			if closer, ok := group.(io.Closer); ok {
+				if closeErr := closer.Close(); closeErr != nil {
+					errs = append(errs, closeErr)
+				}
+			}
+		}
+
+		err = errors.Join(errs...)
+	}
+
 	c.states = nil
 	c.hasSingleGroup = false
 	c.singleGroupKey = ""
@@ -212,7 +230,7 @@ func (c *AggregateCollector) Close() error {
 	c.groups = nil
 	c.hasData = false
 
-	return nil
+	return err
 }
 
 func (c *AggregateCollector) update(idx int, value runtime.Value) {

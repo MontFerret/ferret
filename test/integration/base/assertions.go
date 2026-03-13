@@ -124,7 +124,7 @@ func ShouldBeCompilationError(actual any, expected ...any) string {
 				return "expected a compilation error"
 			}
 
-			err = err2.Errors()[0]
+			err = err2.First()
 		}
 
 		msg = assertExpectedError(err, ex)

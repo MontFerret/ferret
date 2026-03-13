@@ -87,23 +87,45 @@ func makeRequest(ctx context.Context, params Params) (runtime.Value, error) {
 func newParamsFrom(ctx context.Context, obj runtime.Map) (Params, error) {
 	p := Params{}
 
-	method, err := obj.Get(ctx, runtime.String("method"))
-
-	if err == nil {
+	methodKey := runtime.String("method")
+	hasMethod, err := obj.ContainsKey(ctx, methodKey)
+	if err != nil {
+		return Params{}, err
+	}
+	if hasMethod {
+		method, err := obj.Get(ctx, methodKey)
+		if err != nil {
+			return Params{}, err
+		}
 		p.Method = runtime.ToString(method)
 	}
 
-	url, err := obj.Get(ctx, runtime.String("url"))
-
+	urlKey := runtime.String("url")
+	hasURL, err := obj.ContainsKey(ctx, urlKey)
 	if err != nil {
+		return Params{}, err
+	}
+	if !hasURL {
 		return Params{}, runtime.Error(runtime.ErrMissedArgument, ".url")
 	}
 
+	url, err := obj.Get(ctx, urlKey)
+	if err != nil {
+		return Params{}, err
+	}
 	p.URL = runtime.String(url.String())
 
-	headers, err := obj.Get(ctx, runtime.String("headers"))
+	headersKey := runtime.String("headers")
+	hasHeaders, err := obj.ContainsKey(ctx, headersKey)
+	if err != nil {
+		return Params{}, err
+	}
+	if hasHeaders {
+		headers, err := obj.Get(ctx, headersKey)
+		if err != nil {
+			return Params{}, err
+		}
 
-	if err == nil {
 		if err := runtime.ValidateType(headers, runtime.TypeObject, runtime.TypeMap); err != nil {
 			return Params{}, runtime.Error(err, ".headers")
 		}
@@ -111,9 +133,17 @@ func newParamsFrom(ctx context.Context, obj runtime.Map) (Params, error) {
 		p.Headers = headers.(runtime.Map)
 	}
 
-	body, err := obj.Get(ctx, runtime.String("body"))
+	bodyKey := runtime.String("body")
+	hasBody, err := obj.ContainsKey(ctx, bodyKey)
+	if err != nil {
+		return Params{}, err
+	}
+	if hasBody {
+		body, err := obj.Get(ctx, bodyKey)
+		if err != nil {
+			return Params{}, err
+		}
 
-	if err == nil {
 		bin, ok := body.(runtime.Binary)
 
 		if ok {

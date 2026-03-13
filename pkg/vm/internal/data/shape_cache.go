@@ -1,33 +1,22 @@
 package data
 
-import "github.com/MontFerret/ferret/v2/pkg/runtime"
-
 type (
-	FastObject struct {
-		cache         *ShapeCache
-		shape         *fastShape
-		slots         []runtime.Value
-		size          int
-		dict          map[string]runtime.Value
-		dictThreshold int
+	ShapeCache struct {
+		transitions map[shapeKey]*fastShape
+		root        *fastShape
+		limit       int
+		nextID      uint64
 	}
 
 	fastShape struct {
-		id     uint64
 		fields map[string]int
 		names  []string
-	}
-
-	ShapeCache struct {
-		limit       int
-		nextID      uint64
-		transitions map[shapeKey]*fastShape
-		root        *fastShape
+		id     uint64
 	}
 
 	shapeKey struct {
-		shapeID uint64
 		key     string
+		shapeID uint64
 	}
 )
 

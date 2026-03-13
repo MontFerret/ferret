@@ -38,14 +38,14 @@ const (
 	OpLoadPropertyOptionalConst
 
 	// Integrated Query Operations
-	OpApplyQuery // Apply a query to a value
+	OpQuery // Apply a query to a value
 
 	// Arithmetic Operations
 	OpAdd
 	OpAddConst
 	OpConcat
 	OpSub
-	OpMulti
+	OpMul
 	OpDiv
 	OpMod
 	OpIncr
@@ -220,7 +220,7 @@ func (op Opcode) String() string {
 		return "LOADPRC"
 	case OpLoadPropertyOptionalConst:
 		return "LOADPROC"
-	case OpApplyQuery:
+	case OpQuery:
 		return "QRY"
 	case OpLoadProperty:
 		return "LOADPR"
@@ -244,7 +244,7 @@ func (op Opcode) String() string {
 		return "CONCAT"
 	case OpSub:
 		return "SUB"
-	case OpMulti:
+	case OpMul:
 		return "MUL"
 	case OpDiv:
 		return "DIV"

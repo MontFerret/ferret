@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"hash/fnv"
 	"io"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -49,7 +50,7 @@ func (it *Iterator) Close() error {
 }
 
 func (it *Iterator) MarshalJSON() ([]byte, error) {
-	panic("not supported")
+	return nil, runtime.Errorf(runtime.ErrUnexpected, "iterator does not support JSON encoding")
 }
 
 func (it *Iterator) String() string {
@@ -57,9 +58,12 @@ func (it *Iterator) String() string {
 }
 
 func (it *Iterator) Hash() uint64 {
-	panic("not supported")
+	hasher := fnv.New64a()
+	_, _ = hasher.Write([]byte("vm.iterator"))
+
+	return hasher.Sum64()
 }
 
 func (it *Iterator) Copy() runtime.Value {
-	panic("not supported")
+	return it
 }

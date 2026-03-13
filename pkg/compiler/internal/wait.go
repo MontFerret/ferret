@@ -500,7 +500,7 @@ func (c *WaitCompiler) emitBackoffUpdate(strategy waitForBackoff, intervalReg, b
 		c.ctx.Emitter.EmitABC(bytecode.OpAdd, intervalReg, intervalReg, baseEveryReg)
 	case waitForBackoffExponential:
 		twoReg := loadConstant(c.ctx, runtime.NewInt(2))
-		c.ctx.Emitter.EmitABC(bytecode.OpMulti, intervalReg, intervalReg, twoReg)
+		c.ctx.Emitter.EmitABC(bytecode.OpMul, intervalReg, intervalReg, twoReg)
 	default:
 		return
 	}
@@ -553,10 +553,10 @@ func (c *WaitCompiler) emitApplyJitter(intervalReg, jitterReg bytecode.Operand) 
 	oneReg := loadConstant(c.ctx, runtime.NewFloat(1))
 
 	twoJitterReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitABC(bytecode.OpMulti, twoJitterReg, jitterReg, twoReg)
+	c.ctx.Emitter.EmitABC(bytecode.OpMul, twoJitterReg, jitterReg, twoReg)
 
 	randScaleReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitABC(bytecode.OpMulti, randScaleReg, randReg, twoJitterReg)
+	c.ctx.Emitter.EmitABC(bytecode.OpMul, randScaleReg, randReg, twoJitterReg)
 
 	oneMinusReg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitABC(bytecode.OpSub, oneMinusReg, oneReg, jitterReg)
@@ -564,7 +564,7 @@ func (c *WaitCompiler) emitApplyJitter(intervalReg, jitterReg bytecode.Operand) 
 	multiplierReg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitABC(bytecode.OpAdd, multiplierReg, oneMinusReg, randScaleReg)
 
-	c.ctx.Emitter.EmitABC(bytecode.OpMulti, intervalReg, intervalReg, multiplierReg)
+	c.ctx.Emitter.EmitABC(bytecode.OpMul, intervalReg, intervalReg, multiplierReg)
 }
 
 func waitForSpan(source antlr.RuleContext, fallback antlr.RuleContext) file.Span {

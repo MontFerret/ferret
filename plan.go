@@ -25,9 +25,14 @@ func (p *Plan) NewSession(setters ...SessionOption) (*Session, error) {
 		return nil, err
 	}
 
+	instance, err := vm.New(p.prog)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Session{
 		// TODO: create a VM pool and get a VM from it instead of creating a new one for each session
-		vm:       vm.New(p.prog),
+		vm:       instance,
 		env:      env,
 		encoding: p.host.encoding,
 		hooks:    p.sessionHooks,

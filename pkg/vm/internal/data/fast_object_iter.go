@@ -20,8 +20,8 @@ type (
 	}
 
 	fastObjectDictIterator struct {
-		keys []string
 		dict map[string]runtime.Value
+		keys []string
 		pos  int
 	}
 )

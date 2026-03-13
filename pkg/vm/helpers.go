@@ -5,8 +5,15 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 )
+
+func normalizeValue(val runtime.Value) runtime.Value {
+	if val == nil {
+		return runtime.None
+	}
+
+	return val
+}
 
 func readOperandValue(reg []runtime.Value, constants []runtime.Value, operand bytecode.Operand) runtime.Value {
 	if operand.IsConstant() {
@@ -99,50 +106,6 @@ func concatStrings(reg []runtime.Value, dst, src1, src2 bytecode.Operand) {
 	}
 
 	reg[dst] = runtime.NewString(b.String())
-}
-
-func buildCatchByPC(bytecodeLen int, catches []bytecode.Catch) []int {
-	if bytecodeLen <= 0 {
-		return nil
-	}
-
-	catchByPC := make([]int, bytecodeLen)
-
-	for i := range catchByPC {
-		catchByPC[i] = -1
-	}
-
-	for i, pair := range catches {
-		start, end := pair[0], pair[1]
-
-		if start < 0 {
-			start = 0
-		}
-
-		if end >= bytecodeLen {
-			end = bytecodeLen - 1
-		}
-
-		for pc := start; pc <= end; pc++ {
-			if catchByPC[pc] == -1 {
-				catchByPC[pc] = i
-			}
-		}
-	}
-
-	return catchByPC
-}
-
-func buildExecInstructions(code []bytecode.Instruction) []data.ExecInstruction {
-	instructions := make([]data.ExecInstruction, len(code))
-
-	for i := range code {
-		instructions[i] = data.ExecInstruction{
-			Instruction: code[i],
-		}
-	}
-
-	return instructions
 }
 
 func maxUDFRegisters(udfs []bytecode.UDF) int {

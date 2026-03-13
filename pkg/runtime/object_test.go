@@ -55,6 +55,16 @@ func TestObject(t *testing.T) {
 		})
 	})
 
+	Convey(".Get", t, func() {
+		Convey("Should return None and no error for missing keys", func() {
+			obj := NewObject()
+			val, err := obj.Get(c.Background(), NewString("missing"))
+
+			So(err, ShouldBeNil)
+			So(val, ShouldEqual, None)
+		})
+	})
+
 	Convey(".EncodeJSON", t, func() {
 		Convey("Should serialize an empty object", func() {
 			obj := NewObject()

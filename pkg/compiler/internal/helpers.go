@@ -261,7 +261,8 @@ func registerFunction(
 		return nil
 	}
 
-	name := strings.ToUpper(decl.FunctionName().GetText())
+	displayName := decl.FunctionName().GetText()
+	name := strings.ToUpper(displayName)
 
 	if _, exists := scope.Functions[name]; exists {
 		ctx.Errors.Add(ctx.Errors.Create(parserd.NameError, decl, fmt.Sprintf("Function '%s' is already defined", name)))
@@ -271,12 +272,13 @@ func registerFunction(
 	params := collectFunctionParams(ctx, decl)
 
 	fn := &core.UDFInfo{
-		ID:        len(table.Functions),
-		Name:      name,
-		Params:    params,
-		Decl:      decl,
-		Scope:     scope,
-		BodyScope: core.NewUDFScope(scope),
+		ID:          len(table.Functions),
+		Name:        name,
+		DisplayName: displayName,
+		Params:      params,
+		Decl:        decl,
+		Scope:       scope,
+		BodyScope:   core.NewUDFScope(scope),
 	}
 
 	scope.Functions[name] = fn

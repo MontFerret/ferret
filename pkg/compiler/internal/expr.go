@@ -327,14 +327,19 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 	}
 
 	jump := -1
-	endCatch := c.ctx.Emitter.Size()
+	endCatchExclusive := c.ctx.Emitter.Size()
+	if endCatchExclusive <= startCatch {
+		return reg, true
+	}
+
+	endCatch := endCatchExclusive - 1
 
 	if fe := atom.ForExpression(); fe != nil {
 		// Since FOR-IN loops depend on custom iterators,
 		// We need to handle cleanup before exiting the loop.
 		// TODO: Find a better way to handle this. The code assumes the knowledge of the internals of the FOR-IN loop.
 		if fe.In() != nil {
-			jump = endCatch - 1
+			jump = endCatch
 		}
 	}
 
@@ -619,7 +624,7 @@ func resolveAtomBinaryOperator(ctx fql.IExpressionAtomContext) (atomBinaryOperat
 	if op := ctx.MultiplicativeOperator(); op != nil {
 		switch op.GetText() {
 		case "*":
-			return atomBinaryOperator{opcode: bytecode.OpMulti}, true
+			return atomBinaryOperator{opcode: bytecode.OpMul}, true
 		case "/":
 			return atomBinaryOperator{opcode: bytecode.OpDiv}, true
 		case "%":
@@ -2355,7 +2360,7 @@ func (c *ExprCompiler) compileArrayApply(src bytecode.Operand, apply fql.IArrayA
 	span := diagnostics.SpanFromRuleContext(apply)
 
 	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitABC(bytecode.OpApplyQuery, dst, src, query)
+		c.ctx.Emitter.EmitABC(bytecode.OpQuery, dst, src, query)
 	})
 
 	if len(tail) > 0 {
@@ -2476,7 +2481,7 @@ func (c *ExprCompiler) emitApplyQuery(span file.Span, src, queryReg bytecode.Ope
 	result := c.ctx.Registers.Allocate()
 
 	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitABC(bytecode.OpApplyQuery, result, src, queryReg)
+		c.ctx.Emitter.EmitABC(bytecode.OpQuery, result, src, queryReg)
 	})
 
 	return result

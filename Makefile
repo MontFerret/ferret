@@ -18,6 +18,7 @@ build: lint generate test compile
 
 install-tools:
 	go install honnef.co/go/tools/cmd/staticcheck@latest && \
+	go install golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignment@latest && \
 	go install golang.org/x/tools/cmd/goimports@latest && \
 	go install golang.org/x/perf/cmd/benchstat@latest && \
 	go install github.com/mgechev/revive@latest
@@ -62,5 +63,5 @@ fmt:
 # https://github.com/mgechev/revive
 # go get github.com/mgechev/revive
 lint:
-	staticcheck -tests=false -checks=all,-U1000,-ST1000,-ST1001,-ST1020,-ST1022 $$(go list ./pkg/... | grep -v /fql) && \
+	staticcheck -tests=false -checks=all,-U1000,-ST1000,-ST1001,-ST1020,-ST1022,-S1002 $$(go list ./pkg/... | grep -v /fql) && \
 	revive -config revive.toml -formatter stylish -exclude ./pkg/parser/fql/... -exclude ./vendor/... -exclude ./*_test.go ./...

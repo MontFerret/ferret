@@ -365,7 +365,7 @@ func foldBinaryInstruction(inst *bytecode.Instruction, env constFoldEnv, result 
 
 func isBinaryFoldOpcode(op bytecode.Opcode) bool {
 	switch op {
-	case bytecode.OpAdd, bytecode.OpAddConst, bytecode.OpSub, bytecode.OpMulti, bytecode.OpDiv, bytecode.OpMod,
+	case bytecode.OpAdd, bytecode.OpAddConst, bytecode.OpSub, bytecode.OpMul, bytecode.OpDiv, bytecode.OpMod,
 		bytecode.OpCmp, bytecode.OpEq, bytecode.OpNe, bytecode.OpGt, bytecode.OpLt, bytecode.OpGte, bytecode.OpLte:
 		return true
 	default:
@@ -551,7 +551,7 @@ func foldBinary(op bytecode.Opcode, left, right runtime.Value, bg context.Contex
 		return runtime.Add(bg, left, right), true
 	case bytecode.OpSub:
 		return runtime.Subtract(bg, left, right), true
-	case bytecode.OpMulti:
+	case bytecode.OpMul:
 		return runtime.Multiply(bg, left, right), true
 	case bytecode.OpDiv:
 		lv := runtime.ToNumberOnly(bg, left)

@@ -24,7 +24,11 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 	options = append(options, opts...)
 
 	ctx := context.Background()
-	instance := vm.New(prog)
+	instance, err := vm.New(prog)
+	if err != nil {
+		panic(err)
+	}
+
 	env, err := vm.NewEnvironment(options)
 	if err != nil {
 		panic(err)

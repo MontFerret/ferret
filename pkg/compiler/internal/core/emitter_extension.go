@@ -135,7 +135,7 @@ func (e *Emitter) EmitSub(dst, a, b bytecode.Operand) {
 }
 
 func (e *Emitter) EmitMul(dst, a, b bytecode.Operand) {
-	e.EmitABC(bytecode.OpMulti, dst, a, b)
+	e.EmitABC(bytecode.OpMul, dst, a, b)
 }
 
 func (e *Emitter) EmitDiv(dst, a, b bytecode.Operand) {

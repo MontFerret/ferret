@@ -2,6 +2,7 @@ package diagnostics
 
 import (
 	"fmt"
+	"iter"
 	"strings"
 )
 
@@ -37,6 +38,13 @@ func (e *Diagnostics[E]) Add(err E) {
 	e.errors = append(e.errors, err)
 }
 
+// AddAll appends multiple errors to the Diagnostics instance.
+func (e *Diagnostics[E]) AddAll(errs []E) {
+	e.errors = append(e.errors, errs...)
+}
+
+// Get retrieves the error at the specified index from the Diagnostics instance.
+// If the index is out of bounds, it returns the zero value of type E.
 func (e *Diagnostics[E]) Get(idx int) E {
 	if idx < 0 || idx >= len(e.errors) {
 		var zero E
@@ -46,6 +54,8 @@ func (e *Diagnostics[E]) Get(idx int) E {
 	return e.errors[idx]
 }
 
+// First returns the first error in the Diagnostics instance.
+// If there are no errors, it returns the zero value of type E.
 func (e *Diagnostics[E]) First() E {
 	if len(e.errors) == 0 {
 		var zero E
@@ -55,6 +65,8 @@ func (e *Diagnostics[E]) First() E {
 	return e.errors[0]
 }
 
+// Last returns the last error in the Diagnostics instance.
+// If there are no errors, it returns the zero value of type E.
 func (e *Diagnostics[E]) Last() E {
 	if len(e.errors) == 0 {
 		var zero E
@@ -64,9 +76,16 @@ func (e *Diagnostics[E]) Last() E {
 	return e.errors[len(e.errors)-1]
 }
 
-// Errors returns a slice of all errors currently stored in the Diagnostics instance.
-func (e *Diagnostics[E]) Errors() []E {
-	return e.errors
+// Errors returns an iterator over the errors contained within the Diagnostics instance,
+// yielding each error along with its index.
+func (e *Diagnostics[E]) Errors() iter.Seq2[int, E] {
+	return func(yield func(int, E) bool) {
+		for idx, err := range e.errors {
+			if !yield(idx, err) {
+				return
+			}
+		}
+	}
 }
 
 // Error implements the error interface for Diagnostics, returning a summary of the number of errors contained within the Diagnostics instance.
