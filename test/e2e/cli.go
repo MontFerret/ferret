@@ -585,8 +585,6 @@ func (r *ResultPrinter) Write(p []byte) (n int, err error) {
 }
 
 func printResult(ctx context.Context, res *ferret.Result) (uint64, error) {
-	defer res.Close()
-
 	isScalar := res.IsScalar()
 	encoder := ferretencoding.Encoder(encodingjson.Default)
 	if selected, err := ferretencoding.EncoderFrom(ctx, ferretencoding.ContentTypeJSON); err == nil {
