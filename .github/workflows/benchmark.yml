@@ -44,7 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          make bench BENCH_COUNT=1 | tee "${BENCHMARK_OUTPUT}"
+          make bench BENCH_COUNT=5 | tee "${BENCHMARK_OUTPUT}"
 
       - name: Upload raw benchmark output
         if: always()
