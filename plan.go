@@ -119,16 +119,13 @@ func (p *Plan) Close() error {
 }
 
 func newSessionRelease(limiter *sessionLimiter, pool *vm.Pool) vmReleaseFunc {
-	released := false
+	var once sync.Once
 
 	return func(instance *vm.VM) {
-		if released {
-			return
-		}
-
-		// Release the engine-wide session slot even if the plan has already been closed.
-		released = true
-		limiter.Release()
-		pool.Release(instance)
+		once.Do(func() {
+			// Release the engine-wide session slot even if the plan has already been closed.
+			limiter.Release()
+			pool.Release(instance)
+		})
 	}
 }

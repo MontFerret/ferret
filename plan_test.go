@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -165,4 +166,68 @@ func TestPlanNewSessionReleasesLimiterOnPoolExhaustion(t *testing.T) {
 	defer func() {
 		_ = session.Close()
 	}()
+}
+
+func TestNewSessionReleaseIsConcurrentSafeAndIdempotent(t *testing.T) {
+	t.Parallel()
+
+	eng := mustNewEngine(t, WithMaxActiveSessions(1), WithMaxIdleVMsPerPlan(1), WithMaxVMsPerPlan(1))
+	plan := mustCompilePlan(t, eng, coverageValidQuery)
+	defer func() {
+		_ = plan.Close()
+	}()
+
+	instance, err := plan.pool.Acquire()
+	if err != nil {
+		t.Fatalf("expected direct pool acquire to succeed, got: %v", err)
+	}
+
+	if err := plan.limiter.Acquire(context.Background()); err != nil {
+		t.Fatalf("expected limiter acquire to succeed, got: %v", err)
+	}
+
+	release := newSessionRelease(plan.limiter, plan.pool)
+
+	const callers = 8
+
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+
+	for i := 0; i < callers; i++ {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			<-start
+			release(instance)
+		}()
+	}
+
+	close(start)
+	wg.Wait()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	if err := plan.limiter.Acquire(ctx); err != nil {
+		t.Fatalf("expected concurrent release to free the limiter slot, got: %v", err)
+	}
+
+	plan.limiter.Release()
+
+	reused, err := plan.pool.Acquire()
+	if err != nil {
+		t.Fatalf("expected concurrent release to return the borrowed VM, got: %v", err)
+	}
+
+	if reused != instance {
+		t.Fatal("expected concurrent release to retain the original VM in the pool")
+	}
+
+	_, err = plan.pool.Acquire()
+	if !errors.Is(err, vm.ErrPoolExhausted) {
+		t.Fatalf("expected concurrent release not to free extra pool capacity, got: %v", err)
+	}
+
+	plan.pool.Release(reused)
 }

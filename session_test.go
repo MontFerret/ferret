@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -194,6 +196,47 @@ func TestSessionClose(t *testing.T) {
 	}
 }
 
+func TestSessionCloseIsIdempotentAndReturnsSameError(t *testing.T) {
+	t.Parallel()
+
+	var closeCalls atomic.Int32
+	closeErr := errors.New("session close failed")
+
+	eng := mustNewEngine(t, WithSessionCloseHook(func() error {
+		closeCalls.Add(1)
+		return closeErr
+	}))
+	plan := mustCompilePlan(t, eng, coverageValidQuery)
+	session := mustNewSession(t, plan)
+
+	firstErr := session.Close()
+	secondErr := session.Close()
+
+	if firstErr == nil {
+		t.Fatal("expected first close to fail when close hook fails")
+	}
+
+	if secondErr == nil {
+		t.Fatal("expected repeated close to return the stored close error")
+	}
+
+	if !errors.Is(firstErr, closeErr) {
+		t.Fatalf("expected first close error to include hook error, got: %v", firstErr)
+	}
+
+	if !errors.Is(secondErr, closeErr) {
+		t.Fatalf("expected repeated close error to include hook error, got: %v", secondErr)
+	}
+
+	if firstErr != secondErr {
+		t.Fatalf("expected repeated close to return the same error instance, got %v and %v", firstErr, secondErr)
+	}
+
+	if got := closeCalls.Load(); got != 1 {
+		t.Fatalf("expected close hook to run once, got %d", got)
+	}
+}
+
 func TestSessionCloseReturnsBorrowedVMToPool(t *testing.T) {
 	t.Parallel()
 
@@ -213,6 +256,81 @@ func TestSessionCloseReturnsBorrowedVMToPool(t *testing.T) {
 
 	if second.vm != firstVM {
 		t.Fatal("expected second session to reuse the pooled VM from the first session")
+	}
+}
+
+func TestSessionCloseIsConcurrentSafe(t *testing.T) {
+	t.Parallel()
+
+	var closeCalls atomic.Int32
+	closeErr := errors.New("session close failed")
+
+	eng := mustNewEngine(t,
+		WithMaxActiveSessions(1),
+		WithMaxIdleVMsPerPlan(1),
+		WithSessionCloseHook(func() error {
+			closeCalls.Add(1)
+			return closeErr
+		}),
+	)
+	plan := mustCompilePlan(t, eng, coverageValidQuery)
+	defer func() {
+		_ = plan.Close()
+	}()
+
+	session := mustNewSession(t, plan)
+	firstVM := session.vm
+
+	const callers = 8
+
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	errs := make([]error, callers)
+
+	for i := 0; i < callers; i++ {
+		wg.Add(1)
+
+		go func(idx int) {
+			defer wg.Done()
+			<-start
+			errs[idx] = session.Close()
+		}(i)
+	}
+
+	close(start)
+	wg.Wait()
+
+	for i, err := range errs {
+		if err == nil {
+			t.Fatalf("expected close caller %d to receive stored close error", i)
+		}
+
+		if !errors.Is(err, closeErr) {
+			t.Fatalf("expected close caller %d to receive hook error, got: %v", i, err)
+		}
+
+		if err != errs[0] {
+			t.Fatalf("expected all concurrent close calls to return the same error instance")
+		}
+	}
+
+	if got := closeCalls.Load(); got != 1 {
+		t.Fatalf("expected close hook to run once, got %d", got)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	nextSession, err := plan.NewSession(ctx)
+	if err != nil {
+		t.Fatalf("expected limiter permit to be released after concurrent close, got: %v", err)
+	}
+	defer func() {
+		_ = nextSession.Close()
+	}()
+
+	if nextSession.vm != firstVM {
+		t.Fatal("expected concurrent close to return the borrowed VM to the pool once")
 	}
 }
 
