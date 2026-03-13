@@ -16,7 +16,7 @@ type VM struct {
 	cache   *mem.Cache
 	program *bytecode.Program
 	plan    execPlan
-	execState
+	state   execState
 	options options
 }
 
@@ -35,15 +35,13 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 	}
 
 	o := newOptions(opts)
-
 	vm := &VM{
 		cache:   mem.NewCache(len(program.Bytecode), len(plan.hostCallDescriptors), o.shapeCacheLimit),
 		program: program,
 		plan:    plan,
 		options: o,
 	}
-	state := &vm.execState
-	state.init(program, plan.catchByPC)
+	vm.state.init(program, plan.catchByPC)
 
 	return vm, nil
 }
@@ -51,18 +49,18 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 func (vm *VM) Run(ctx context.Context, env *Environment) (runtime.Value, error) {
 	switch vm.options.panicPolicy {
 	case PanicPropagate:
-		defer vm.execState.end()
+		defer vm.state.end()
 		return vm.runUnchecked(ctx, env)
 	default:
 		result, err := vm.runRecovered(ctx, env)
-		vm.execState.end()
+		vm.state.end()
 		return result, err
 	}
 }
 
 func (vm *VM) runRecovered(ctx context.Context, env *Environment) (result runtime.Value, err error) {
 	defer func() {
-		state := &vm.execState
+		state := &vm.state
 
 		if r := recover(); r != nil {
 			err = state.runtimeErrorFromPanic(r)
@@ -88,7 +86,7 @@ func (vm *VM) runUnchecked(ctx context.Context, env *Environment) (runtime.Value
 			panic(err)
 		}
 
-		return nil, vm.execState.wrapRuntimeError(err)
+		return nil, vm.state.wrapRuntimeError(err)
 	}
 
 	return result, nil
@@ -99,7 +97,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, err
 		env = noopEnv
 	}
 
-	state := &vm.execState
+	state := &vm.state
 	state.start(env)
 	if err := state.bindParams(env); err != nil {
 		return nil, err
