@@ -108,38 +108,6 @@ func concatStrings(reg []runtime.Value, dst, src1, src2 bytecode.Operand) {
 	reg[dst] = runtime.NewString(b.String())
 }
 
-func buildCatchByPC(bytecodeLen int, catches []bytecode.Catch) []int {
-	if bytecodeLen <= 0 {
-		return nil
-	}
-
-	catchByPC := make([]int, bytecodeLen)
-
-	for i := range catchByPC {
-		catchByPC[i] = -1
-	}
-
-	for i, pair := range catches {
-		start, end := pair[0], pair[1]
-
-		if start < 0 {
-			start = 0
-		}
-
-		if end >= bytecodeLen {
-			end = bytecodeLen - 1
-		}
-
-		for pc := start; pc <= end; pc++ {
-			if catchByPC[pc] == -1 {
-				catchByPC[pc] = i
-			}
-		}
-	}
-
-	return catchByPC
-}
-
 func maxUDFRegisters(udfs []bytecode.UDF) int {
 	maxUDFRegs := 0
 

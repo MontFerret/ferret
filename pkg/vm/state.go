@@ -7,7 +7,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostic"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
@@ -225,7 +225,7 @@ func (s *execState) isMissingMember(err error) bool {
 }
 
 func (s *execState) isNullMemberDereference(err error) bool {
-	var memberErr *diagnostic.MemberAccessError
+	var memberErr *diagnostics.MemberAccessError
 	if !errors.As(err, &memberErr) {
 		return false
 	}
@@ -254,19 +254,19 @@ func (s *execState) toRuntimePC(pc int) int {
 }
 
 func (s *execState) wrapRuntimeError(err error) error {
-	return diagnostic.WrapRuntimeError(s.program, s.toRuntimePC(s.errorPC()), s.frames.TraceEntries(), err)
+	return diagnostics.WrapRuntimeError(s.program, s.toRuntimePC(s.errorPC()), s.frames.TraceEntries(), err)
 }
 
 func (s *execState) runtimeErrorFromPanic(r any) error {
-	return diagnostic.RuntimeErrorFromPanic(s.program, s.toRuntimePC(s.errorPC()), s.frames.TraceEntries(), r)
+	return diagnostics.RuntimeErrorFromPanic(s.program, s.toRuntimePC(s.errorPC()), s.frames.TraceEntries(), r)
 }
 
 func (s *execState) checkDivisionByZeroAt(ctx context.Context, pc int, left, right runtime.Value) error {
-	return diagnostic.CheckDivisionByZero(ctx, s.program, s.toRuntimePC(pc), left, right)
+	return diagnostics.CheckDivisionByZero(ctx, s.program, s.toRuntimePC(pc), left, right)
 }
 
 func (s *execState) checkModuloByZeroAt(ctx context.Context, pc int, right runtime.Value) error {
-	return diagnostic.CheckModuloByZero(ctx, s.program, s.toRuntimePC(pc), right)
+	return diagnostics.CheckModuloByZero(ctx, s.program, s.toRuntimePC(pc), right)
 }
 
 func (s *execState) tryCatch(pos int) (bytecode.Catch, bool) {
@@ -353,15 +353,6 @@ func (s *execState) setCallResult(pc int, op bytecode.Opcode, dst bytecode.Opera
 	}
 
 	s.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.None, true)
-}
-
-func (s *execState) resolveUdfID(val runtime.Value) (int, error) {
-	idVal, ok := val.(runtime.Int)
-	if !ok {
-		return -1, ErrInvalidFunctionName
-	}
-
-	return int(idVal), nil
 }
 
 func (s *execState) udfByID(id int) (*bytecode.UDF, error) {

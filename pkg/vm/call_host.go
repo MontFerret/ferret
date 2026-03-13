@@ -9,7 +9,7 @@ import (
 
 func callCachedHostFunction(
 	ctx context.Context,
-	desc *hostCallBindingDescriptor,
+	desc *callDescriptor,
 	cacheFn *mem.CachedHostFunction,
 	reg []runtime.Value,
 	scratch *mem.Scratch,

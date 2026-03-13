@@ -1,19 +1,56 @@
-package diagnostic
+package diagnostics
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 )
 
 const vmStackNotePrefix = "VM stack: "
+
+type (
+	// RuntimeError represents a VM execution error with source context.
+	RuntimeError struct {
+		*diagnostics.Diagnostic
+	}
+
+	// RuntimeErrorSet is a specialized diagnostics.Diagnostics type for RuntimeError.
+	RuntimeErrorSet struct {
+		diagnostics.Diagnostics[*RuntimeError]
+	}
+)
+
+func NewRuntimeError(
+	program *bytecode.Program,
+	pc int,
+	kind diagnostics.Kind,
+	message string,
+	label string,
+	hint string,
+	note string,
+) *RuntimeError {
+	return &RuntimeError{
+		Diagnostic: &diagnostics.Diagnostic{
+			Kind:    kind,
+			Message: message,
+			Hint:    hint,
+			Note:    note,
+			Source:  program.Source,
+			Spans:   []diagnostics.ErrorSpan{diagnostics.NewMainErrorSpan(SpanAt(program, pc-1), label)},
+		},
+	}
+}
+
+func NewRuntimeErrorSet(size int) *RuntimeErrorSet {
+	return &RuntimeErrorSet{
+		Diagnostics: *diagnostics.NewDiagnostics[*RuntimeError](size),
+	}
+}
 
 func WrapRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEntry, err error) error {
 	if err == nil {
@@ -29,17 +66,17 @@ func WrapRuntimeError(program *bytecode.Program, pc int, callStack []frame.Trace
 	var wpErrorSet *WarmupErrorSet
 
 	if errors.As(err, &wpErrorSet) {
-		if len(wpErrorSet.Errors) == 1 {
-			wer := wpErrorSet.Errors[0]
-			return ToRuntimeError(program, wer.PC+1, nil, wer.Err)
+		if wpErrorSet.Size() == 1 {
+			wer := wpErrorSet.First()
+			return ToRuntimeError(program, wer.PC+1, nil, wer.Cause)
 		}
 
 		errs := NewRuntimeErrorSet(5)
 
-		for _, wer := range wpErrorSet.Errors {
+		for _, wer := range wpErrorSet.Errors() {
 			// warmup PCs are zero-based instruction indices (no pre-increment),
 			// while ToRuntimeError expects a post-increment pc (see pc-1 usage)
-			errs.Add(ToRuntimeError(program, wer.PC+1, nil, wer.Err))
+			errs.Add(ToRuntimeError(program, wer.PC+1, nil, wer.Cause))
 		}
 
 		return errs
@@ -64,27 +101,6 @@ func RuntimeErrorFromPanic(program *bytecode.Program, pc int, callStack []frame.
 			Note:    stackNote(callStack),
 			Spans:   buildSpans(program, pc, callStack, ""),
 			Cause:   cause,
-		},
-	}
-}
-
-func NewRuntimeError(
-	program *bytecode.Program,
-	pc int,
-	kind diagnostics.Kind,
-	message string,
-	label string,
-	hint string,
-	note string,
-) *RuntimeError {
-	return &RuntimeError{
-		Diagnostic: &diagnostics.Diagnostic{
-			Kind:    kind,
-			Message: message,
-			Hint:    hint,
-			Note:    note,
-			Source:  program.Source,
-			Spans:   []diagnostics.ErrorSpan{diagnostics.NewMainErrorSpan(SpanAt(program, pc-1), label)},
 		},
 	}
 }
@@ -222,176 +238,4 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 			Cause:   cause,
 		},
 	}
-}
-
-func attachCallStack(err *RuntimeError, program *bytecode.Program, callStack []frame.TraceEntry) *RuntimeError {
-	if err == nil || len(callStack) == 0 || err.Diagnostic == nil {
-		return err
-	}
-
-	if !hasStackTraceLabel(err.Spans) {
-		err.Spans = append(callStackSpans(program, callStack), err.Spans...)
-	}
-
-	err.Note = appendStackNote(err.Note, callStack)
-
-	return err
-}
-
-func hasStackTraceLabel(spans []diagnostics.ErrorSpan) bool {
-	for _, span := range spans {
-		if strings.HasPrefix(span.Label, "called from ") {
-			return true
-		}
-	}
-
-	return false
-}
-
-func callStackSpans(program *bytecode.Program, callStack []frame.TraceEntry) []diagnostics.ErrorSpan {
-	if len(callStack) == 0 {
-		return nil
-	}
-
-	spans := make([]diagnostics.ErrorSpan, 0, len(callStack))
-
-	for i, entry := range callStack {
-		span := SpanAt(program, entry.CallSitePC)
-		if span.Start < 0 || span.End < 0 {
-			continue
-		}
-
-		label := fmt.Sprintf("called from (#%d)", i+1)
-		if name := strings.TrimSpace(entry.FnName); name != "" {
-			label = fmt.Sprintf("called from %s (#%d)", name, i+1)
-		}
-
-		spans = append(spans, diagnostics.NewSecondaryErrorSpan(span, label))
-	}
-
-	return spans
-}
-
-func buildSpans(program *bytecode.Program, pc int, callStack []frame.TraceEntry, label string) []diagnostics.ErrorSpan {
-	spans := callStackSpans(program, callStack)
-	spans = append(spans, diagnostics.NewMainErrorSpan(SpanAt(program, pc-1), label))
-
-	return spans
-}
-
-func stackNote(callStack []frame.TraceEntry) string {
-	if len(callStack) == 0 {
-		return ""
-	}
-
-	names := make([]string, 0, len(callStack))
-
-	// callStack is nearest -> farthest; render as outer -> ... -> inner
-	for i := len(callStack) - 1; i >= 0; i-- {
-		entry := callStack[i]
-		name := strings.TrimSpace(entry.FnName)
-		if name == "" {
-			if entry.FnID < 0 {
-				continue
-			}
-
-			name = fmt.Sprintf("#%d", entry.FnID)
-		}
-
-		names = append(names, name)
-	}
-
-	if len(names) == 0 {
-		return ""
-	}
-
-	return vmStackNotePrefix + strings.Join(names, " -> ")
-}
-
-func appendStackNote(note string, callStack []frame.TraceEntry) string {
-	stack := stackNote(callStack)
-	if stack == "" {
-		return note
-	}
-
-	if strings.Contains(note, vmStackNotePrefix) || strings.Contains(note, stack) {
-		return note
-	}
-
-	if note == "" {
-		return stack
-	}
-
-	return note + "\n" + stack
-}
-
-func SpanAt(program *bytecode.Program, pc int) file.Span {
-	if program == nil {
-		return file.Span{Start: -1, End: -1}
-	}
-
-	if pc < 0 || pc >= len(program.Metadata.DebugSpans) {
-		return file.Span{Start: -1, End: -1}
-	}
-
-	return program.Metadata.DebugSpans[pc]
-}
-
-func CheckDivisionByZero(
-	ctx context.Context,
-	program *bytecode.Program,
-	pc int,
-	left runtime.Value,
-	right runtime.Value,
-) error {
-	l := runtime.ToNumberOnly(ctx, left)
-	if _, ok := l.(runtime.Int); !ok {
-		return nil
-	}
-
-	r := runtime.ToNumberOnly(ctx, right)
-	if rv, ok := r.(runtime.Int); ok && rv == 0 {
-		return NewRuntimeError(
-			program,
-			pc,
-			DivideByZero,
-			"Division by zero",
-			"attempt to divide by zero",
-			"Ensure the denominator is non-zero before division",
-			"Add a conditional check before dividing",
-		)
-	}
-
-	return nil
-}
-
-func CheckModuloByZero(
-	ctx context.Context,
-	program *bytecode.Program,
-	pc int,
-	right runtime.Value,
-) error {
-	rv, err := runtime.ToInt(ctx, right)
-	if err != nil {
-		// Keep modulo diagnostics type-safe for invalid string inputs like "x".
-		if _, ok := right.(runtime.String); ok {
-			return runtime.TypeErrorOf(right, runtime.TypeInt)
-		}
-
-		return err
-	}
-
-	if rv == 0 {
-		return NewRuntimeError(
-			program,
-			pc,
-			ModuloByZero,
-			"Modulo by zero",
-			"attempt to take modulo by zero",
-			"Ensure the divisor is non-zero before modulo",
-			"Add a conditional check before modulo",
-		)
-	}
-
-	return nil
 }

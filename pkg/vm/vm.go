@@ -8,16 +8,14 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
-	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostic"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
 type VM struct {
-	cache        *mem.Cache
-	program      *bytecode.Program
-	catchByPC    []int
-	hostBindings []hostCallBindingDescriptor
-	instructions []execInstruction
+	cache   *mem.Cache
+	program *bytecode.Program
+	plan    execPlan
 	execState
 	options options
 }
@@ -30,21 +28,22 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 	if err := validate(program); err != nil {
 		return nil, err
 	}
+	plan, err := buildExecPlan(program)
+
+	if err != nil {
+		return nil, err
+	}
 
 	o := newOptions(opts)
-	catchByPC := buildCatchByPC(len(program.Bytecode), program.CatchTable)
-	instructions, hostBindings := buildExecPlan(program)
 
 	vm := &VM{
-		cache:        mem.NewCache(len(program.Bytecode), len(hostBindings), o.shapeCacheLimit),
-		program:      program,
-		catchByPC:    catchByPC,
-		hostBindings: hostBindings,
-		options:      o,
-		instructions: instructions,
+		cache:   mem.NewCache(len(program.Bytecode), len(plan.hostCallDescriptors), o.shapeCacheLimit),
+		program: program,
+		plan:    plan,
+		options: o,
 	}
 	state := &vm.execState
-	state.init(program, catchByPC)
+	state.init(program, plan.catchByPC)
 
 	return vm, nil
 }
@@ -84,7 +83,7 @@ func (vm *VM) runUnchecked(ctx context.Context, env *Environment) (runtime.Value
 	result, err := vm.runCore(ctx, env)
 
 	if err != nil {
-		var invariantErr *diagnostic.InvariantError
+		var invariantErr *diagnostics.InvariantError
 		if errors.As(err, &invariantErr) {
 			panic(err)
 		}
@@ -111,12 +110,15 @@ func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, err
 		return nil, err
 	}
 
-	instructions := vm.instructions
+	instructions := vm.plan.instructions
 	constants := vm.program.Constants
 	aggregatePlans := vm.program.Metadata.AggregatePlans
 	shapeCache := vm.cache.ShapeCache
 	hostFunctions := vm.cache.HostFunctions
-	hostBindings := vm.hostBindings
+	udfs := vm.program.Functions.UserDefined
+	hostCallDescriptors := vm.plan.hostCallDescriptors
+	udfCallDescriptors := vm.plan.udfCallDescriptors
+	udfTailCallDescriptors := vm.plan.udfTailCallDescriptors
 	paramSlots := state.scratch.Params
 loop:
 	for state.pc < len(instructions) {
@@ -239,7 +241,7 @@ loop:
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
 			hostID := inst.InlineSlot
 			if hostID < 0 || hostID >= len(hostFunctions) {
-				invariantErr := diagnostic.NewInvariantError(
+				invariantErr := diagnostics.NewInvariantError(
 					"invalid host call slot",
 					runtime.Errorf(runtime.ErrUnexpected, "invalid host call slot %d at pc %d", hostID, pc),
 				)
@@ -247,17 +249,45 @@ loop:
 				break
 			}
 
-			call := &hostBindings[hostID]
+			call := &hostCallDescriptors[hostID]
 			cacheFn := &hostFunctions[call.ID]
 			out, err := callCachedHostFunction(ctx, call, cacheFn, reg, &state.scratch)
 
 			state.setCallResult(pc, op, dst, out, err)
 		case bytecode.OpCall, bytecode.OpProtectedCall:
-			if err := state.callUdf(op, dst, src1, src2); err != nil {
+			callID := inst.InlineSlot
+			call := &udfCallDescriptors[callID]
+
+			if call.ID < 0 || call.ID >= len(udfs) {
+				invariantErr := diagnostics.NewInvariantError(
+					"invalid udf call slot",
+					runtime.Errorf(runtime.ErrUnexpected, "invalid udf call slot %d at pc %d", callID, pc),
+				)
+				state.raiseInvariantAt(pc, invariantErr)
+				break
+			}
+
+			udf := &udfs[call.ID]
+
+			if err := state.callUdf(call, udf); err != nil {
 				state.setCallResult(pc, op, dst, runtime.None, err)
 			}
 		case bytecode.OpTailCall:
-			if err := state.tailCallUdf(dst, src1, src2); err != nil {
+			callID := inst.InlineSlot
+			call := &udfTailCallDescriptors[callID]
+
+			if call.ID < 0 || call.ID >= len(udfs) {
+				invariantErr := diagnostics.NewInvariantError(
+					"invalid udf call slot",
+					runtime.Errorf(runtime.ErrUnexpected, "invalid udf call slot %d at pc %d", callID, pc),
+				)
+				state.raiseInvariantAt(pc, invariantErr)
+				break
+			}
+
+			udf := &udfs[call.ID]
+
+			if err := state.tailCallUdf(call, udf); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 			}
 		case bytecode.OpDispatch:
@@ -518,7 +548,7 @@ loop:
 				planIdx := int(src2)
 
 				if planIdx < 0 || planIdx >= len(aggregatePlans) {
-					invariantErr := diagnostic.NewInvariantError(
+					invariantErr := diagnostics.NewInvariantError(
 						"invalid aggregate plan index",
 						runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan index %d", planIdx),
 					)
@@ -539,7 +569,7 @@ loop:
 
 			collector, err := data.NewCollectorSafe(collectorType)
 			if err != nil {
-				invariantErr := diagnostic.NewInvariantError("invalid collector configuration", err)
+				invariantErr := diagnostics.NewInvariantError("invalid collector configuration", err)
 				state.raiseInvariantAt(pc, invariantErr)
 				break
 			}
@@ -967,7 +997,7 @@ func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Va
 	indexed, ok := src.(runtime.IndexReadable)
 
 	if !ok {
-		return nil, diagnostic.MemberAccessErrorOf(src, diagnostic.MemberAccessIndex, arg)
+		return nil, diagnostics.MemberAccessErrorOf(src, diagnostics.MemberAccessIndex, arg)
 	}
 
 	var idx runtime.Int
@@ -994,7 +1024,7 @@ func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Valu
 	keyed, ok := src.(runtime.KeyReadable)
 
 	if !ok {
-		return nil, diagnostic.MemberAccessErrorOf(src, diagnostic.MemberAccessProperty, arg)
+		return nil, diagnostics.MemberAccessErrorOf(src, diagnostics.MemberAccessProperty, arg)
 	}
 
 	out, err := keyed.Get(ctx, arg)

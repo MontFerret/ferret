@@ -12,7 +12,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
-	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostic"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
@@ -171,7 +170,7 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 	}
 
 	bytecodeLen := len(program.Bytecode)
-	if got, want := len(instance.cache.HostFunctions), len(instance.hostBindings); got != want {
+	if got, want := len(instance.cache.HostFunctions), len(instance.hostCallDescriptors); got != want {
 		t.Fatalf("unexpected host function cache size: got %d, want %d", got, want)
 	}
 
@@ -224,11 +223,11 @@ func TestNewWith_InlinesHostCallIDs(t *testing.T) {
 	program := compileProgram(t, "RETURN F(1)")
 	instance := mustNewVM(t, program)
 
-	if len(instance.hostBindings) == 0 {
+	if len(instance.hostCallDescriptors) == 0 {
 		t.Fatal("expected host call warmup descriptors")
 	}
 
-	for i, binding := range instance.hostBindings {
+	for i, binding := range instance.hostCallDescriptors {
 		if got, want := binding.ID, i; got != want {
 			t.Fatalf("unexpected host binding id at index %d: got %d, want %d", i, got, want)
 		}
@@ -260,26 +259,26 @@ RETURN [a, b]
 `)
 	instance := mustNewVM(t, program)
 
-	if got, want := len(instance.hostBindings), 2; got != want {
+	if got, want := len(instance.hostCallDescriptors), 2; got != want {
 		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
 	}
 
 	prevPC := -1
-	for i, binding := range instance.hostBindings {
+	for i, binding := range instance.hostCallDescriptors {
 		if got, want := binding.ID, i; got != want {
 			t.Fatalf("unexpected host binding id at index %d: got %d, want %d", i, got, want)
 		}
 	}
 
-	used := make([]bool, len(instance.hostBindings))
-	siteByPC := make(map[int]hostCallBindingDescriptor, len(instance.hostBindings))
-	for _, binding := range instance.hostBindings {
+	used := make([]bool, len(instance.hostCallDescriptors))
+	siteByPC := make(map[int]callDescriptor, len(instance.hostCallDescriptors))
+	for _, binding := range instance.hostCallDescriptors {
 		if binding.PC <= prevPC {
 			t.Fatalf("host warmup pcs are not increasing: prev=%d, curr=%d", prevPC, binding.PC)
 		}
 		prevPC = binding.PC
 
-		if binding.ID < 0 || binding.ID >= len(instance.hostBindings) {
+		if binding.ID < 0 || binding.ID >= len(instance.hostCallDescriptors) {
 			t.Fatalf("invalid inlined host id at pc %d: %d", binding.PC, binding.ID)
 		}
 
@@ -306,7 +305,7 @@ RETURN [a, b]
 
 		hostCallsites++
 
-		if inst.InlineSlot < 0 || inst.InlineSlot >= len(instance.hostBindings) {
+		if inst.InlineSlot < 0 || inst.InlineSlot >= len(instance.hostCallDescriptors) {
 			t.Fatalf("invalid inlined host id at pc %d: %d", pc, inst.InlineSlot)
 		}
 
@@ -320,7 +319,7 @@ RETURN [a, b]
 		}
 	}
 
-	if got, want := hostCallsites, len(instance.hostBindings); got != want {
+	if got, want := hostCallsites, len(instance.hostCallDescriptors); got != want {
 		t.Fatalf("unexpected host callsite count: got %d, want %d", got, want)
 	}
 }
@@ -333,17 +332,17 @@ RETURN [a, b]
 `)
 	instance := mustNewVM(t, program)
 
-	if got, want := len(instance.hostBindings), 2; got != want {
+	if got, want := len(instance.hostCallDescriptors), 2; got != want {
 		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
 	}
 
-	firstID := instance.hostBindings[0].ID
-	secondID := instance.hostBindings[1].ID
+	firstID := instance.hostCallDescriptors[0].ID
+	secondID := instance.hostCallDescriptors[1].ID
 	if firstID == secondID {
 		t.Fatalf("expected distinct binding ids per callsite, got %d", firstID)
 	}
 
-	for i, binding := range instance.hostBindings {
+	for i, binding := range instance.hostCallDescriptors {
 		if got, want := binding.ID, i; got != want {
 			t.Fatalf("unexpected binding id for site %d: got %d, want %d", i, got, want)
 		}
@@ -363,12 +362,12 @@ RETURN [a, b]
 `)
 	instance := mustNewVM(t, program)
 
-	if got, want := len(instance.hostBindings), 2; got != want {
+	if got, want := len(instance.hostCallDescriptors), 2; got != want {
 		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
 	}
 
-	firstID := instance.hostBindings[0].ID
-	secondID := instance.hostBindings[1].ID
+	firstID := instance.hostCallDescriptors[0].ID
+	secondID := instance.hostCallDescriptors[1].ID
 	if firstID == secondID {
 		t.Fatalf("expected distinct binding ids for different bind classes, got %d", firstID)
 	}
@@ -808,14 +807,14 @@ func TestResolveFailure_InvariantReturnsWithoutPanic(t *testing.T) {
 	state := mustAcquireRunState(t, instance)
 	defer state.end()
 
-	invariantErr := diagnostic.NewInvariantError("boom", errors.New("cause"))
+	invariantErr := diagnostics.NewInvariantError("boom", errors.New("cause"))
 	state.raiseInvariant(invariantErr)
 
 	if action := state.resolveFailure(); action != errReturn {
 		t.Fatalf("expected invariant resolution to return, got %v", action)
 	}
 
-	var gotInvariant *diagnostic.InvariantError
+	var gotInvariant *diagnostics.InvariantError
 	if got := state.failureError(); !errors.As(got, &gotInvariant) {
 		t.Fatalf("expected failure error to remain invariant, got %T", got)
 	}
@@ -1043,9 +1042,9 @@ func TestSetOrOptional_NullDereferenceContinuesWithNone(t *testing.T) {
 
 	state.registers.Values[1] = runtime.True
 
-	err := diagnostic.MemberAccessErrorOf(
+	err := diagnostics.MemberAccessErrorOf(
 		runtime.None,
-		diagnostic.MemberAccessProperty,
+		diagnostics.MemberAccessProperty,
 		runtime.NewString("foo"),
 	)
 
@@ -1430,11 +1429,11 @@ func TestWarmupRebindTouchesOnlyHostCallSlots(t *testing.T) {
 	program := compileProgram(t, "RETURN F()")
 	instance := mustNewVM(t, program)
 
-	if got, want := len(instance.hostBindings), 1; got != want {
+	if got, want := len(instance.hostCallDescriptors), 1; got != want {
 		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
 	}
 
-	hostID := instance.hostBindings[0].ID
+	hostID := instance.hostCallDescriptors[0].ID
 	if hostID < 0 || hostID >= len(instance.cache.HostFunctions) {
 		t.Fatalf("invalid host id %d", hostID)
 	}
@@ -1875,10 +1874,10 @@ func TestWrapRuntimeErrorSingleWarmupFailureReturnsRuntimeError(t *testing.T) {
 		},
 	}
 
-	warmup := &diagnostic.WarmupErrorSet{}
+	warmup := &diagnostics.WarmupErrorSet{}
 	warmup.Add(ErrInvalidFunctionName, 0, bytecode.NewRegister(0))
 
-	err := diagnostic.WrapRuntimeError(program, 1, nil, warmup)
+	err := diagnostics.WrapRuntimeError(program, 1, nil, warmup)
 	if err == nil {
 		t.Fatal("expected wrapped error")
 	}
@@ -2027,10 +2026,10 @@ func TestWrapRuntimeErrorPreservesExistingNoteAndDoesNotDuplicateStackDetails(t 
 		},
 	}
 
-	base := diagnostic.NewRuntimeError(
+	base := diagnostics.NewRuntimeError(
 		program,
 		1,
-		diagnostic.UncaughtError,
+		diagnostics.UncaughtError,
 		"Runtime error",
 		"",
 		"",
@@ -2042,7 +2041,7 @@ func TestWrapRuntimeErrorPreservesExistingNoteAndDoesNotDuplicateStackDetails(t 
 		{CallSitePC: 0, FnID: 1, FnName: "outer"},
 	}
 
-	wrapped := diagnostic.WrapRuntimeError(program, 1, stack, base)
+	wrapped := diagnostics.WrapRuntimeError(program, 1, stack, base)
 
 	var rtErr *RuntimeError
 	if !errors.As(wrapped, &rtErr) {
@@ -2057,7 +2056,7 @@ func TestWrapRuntimeErrorPreservesExistingNoteAndDoesNotDuplicateStackDetails(t 
 		t.Fatalf("expected VM stack note, got %q", rtErr.Note)
 	}
 
-	wrappedTwice := diagnostic.WrapRuntimeError(program, 1, stack, wrapped)
+	wrappedTwice := diagnostics.WrapRuntimeError(program, 1, stack, wrapped)
 	if !errors.As(wrappedTwice, &rtErr) {
 		t.Fatalf("expected runtime error, got %T", wrappedTwice)
 	}
@@ -2080,9 +2079,9 @@ func TestWrapRuntimeErrorRecognizesLegacyCallStackLabelWithoutDuplicatingSpans(t
 		},
 	}
 
-	base := &diagnostic.RuntimeError{
+	base := &diagnostics.RuntimeError{
 		Diagnostic: &diagnostics.Diagnostic{
-			Kind:    diagnostic.UncaughtError,
+			Kind:    diagnostics.UncaughtError,
 			Message: "Runtime error",
 			Source:  program.Source,
 			Spans: []diagnostics.ErrorSpan{
@@ -2096,7 +2095,7 @@ func TestWrapRuntimeErrorRecognizesLegacyCallStackLabelWithoutDuplicatingSpans(t
 		{CallSitePC: 0, FnID: 1, FnName: "boo"},
 	}
 
-	wrapped := diagnostic.WrapRuntimeError(program, 1, stack, base)
+	wrapped := diagnostics.WrapRuntimeError(program, 1, stack, base)
 
 	var rtErr *RuntimeError
 	if !errors.As(wrapped, &rtErr) {
