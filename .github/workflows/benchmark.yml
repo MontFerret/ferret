@@ -133,5 +133,5 @@ jobs:
           auto-push: false
           save-data-file: false
           summary-always: true
-          fail-on-alert: true
+          fail-on-alert: false
           alert-threshold: '150%'

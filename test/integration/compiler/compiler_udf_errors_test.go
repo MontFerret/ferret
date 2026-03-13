@@ -22,7 +22,7 @@ FUNC f(x) => x
 RETURN f(1, 2)
 `, E{
 				Kind:    parserd.NameError,
-				Message: "Function 'F' expects 1 arguments, got 2",
+				Message: "Function 'f' expects 1 arguments, got 2",
 			}, "UDF wrong arity"),
 		ErrorCase(
 			`
@@ -34,7 +34,7 @@ FUNC outer() (
 RETURN outer()
 `, E{
 				Kind:    parserd.NameError,
-				Message: "Function 'F' is already defined",
+				Message: "Function 'f' is already defined",
 			}, "Duplicate UDF names in the same scope"),
 		ErrorCase(
 			`
@@ -46,7 +46,7 @@ FUNC outer() (
 RETURN outer()
 `, E{
 				Kind:    parserd.NameError,
-				Message: "Function 'F' expects 2 arguments, got 1",
+				Message: "Function 'f' expects 2 arguments, got 1",
 			}, "Nested shadowed UDF arity uses the nearest scope"),
 	})
 }

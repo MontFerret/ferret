@@ -21,7 +21,7 @@ func TestNamespaceRegisterFunctionsNested(t *testing.T) {
 	}
 
 	names := funcs.List()
-	if !slices.Contains(names, "FOO::BAR::BAZ") {
+	if !slices.Contains(names, "foo::bar::baz") {
 		t.Fatalf("expected fully qualified name in root, got %v", names)
 	}
 }
@@ -57,7 +57,35 @@ func TestNamespaceNewNamespaceQualifiedNames(t *testing.T) {
 	}
 
 	names := funcs.List()
-	if !slices.Contains(names, "FOO::BAR") {
+	if !slices.Contains(names, "foo::bar") {
 		t.Fatalf("expected qualified name in namespace, got %v", names)
+	}
+}
+
+func TestNamespaceAllowsCaseDistinctQualifiedNames(t *testing.T) {
+	root := NewLibrary()
+
+	root.Namespace("Foo").Function().A0().
+		Add("Bar", func(ctx context.Context) (Value, error) {
+			return NewString("upper"), nil
+		})
+
+	root.Namespace("foo").Function().A0().
+		Add("Bar", func(ctx context.Context) (Value, error) {
+			return NewString("lower"), nil
+		})
+
+	funcs, err := root.Build()
+	if err != nil {
+		t.Fatalf("build functions: %v", err)
+	}
+
+	names := funcs.List()
+	if !slices.Contains(names, "Foo::Bar") || !slices.Contains(names, "foo::Bar") {
+		t.Fatalf("expected exact-case qualified names, got %v", names)
+	}
+
+	if _, ok := funcs.A0().Get("FOO::BAR"); ok {
+		t.Fatalf("expected wrong-case qualified lookup to fail, got %v", names)
 	}
 }

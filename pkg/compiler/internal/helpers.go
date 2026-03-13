@@ -53,25 +53,56 @@ func getFunctionName(ctx fql.IFunctionCallContext, aliases map[string]string) ru
 		name += ns
 		name += ctx.FunctionName().GetText()
 
-		return runtime.NewString(strings.ToUpper(name))
+		return runtime.NewString(name)
 	}
 
 	fn := ctx.FunctionName().GetText()
 
 	if len(aliases) > 0 {
-		if target, ok := aliases[strings.ToUpper(fn)]; ok && target != "" {
+		if target, ok := aliases[fn]; ok && target != "" {
 			// Bare calls should only use function aliases (e.g. USE NS::FN AS ALIAS).
 			// Namespace aliases (e.g. USE NS AS ALIAS) are intended for qualified
 			// calls such as ALIAS::FN and must not rewrite ALIAS().
-			if strings.Contains(strings.ToUpper(target), runtime.NamespaceSeparator) {
-				return runtime.NewString(strings.ToUpper(target))
+			if strings.Contains(target, runtime.NamespaceSeparator) {
+				return runtime.NewString(target)
 			}
 		}
 	}
 
 	name += fn
 
-	return runtime.NewString(strings.ToUpper(name))
+	return runtime.NewString(name)
+}
+
+func getUDFName(ctx fql.IFunctionCallContext, aliases map[string]string) (string, bool) {
+	if ctx == nil {
+		return "", false
+	}
+
+	if ns := ctx.Namespace(); ns != nil && ns.GetText() != "" {
+		return "", false
+	}
+
+	fnCtx := ctx.FunctionName()
+	if fnCtx == nil {
+		return "", false
+	}
+
+	name := fnCtx.GetText()
+	if name == "" {
+		return "", false
+	}
+
+	if len(aliases) > 0 {
+		if target, ok := aliases[name]; ok && target != "" {
+			// Bare function aliases targeting a qualified host function must bypass UDF lookup.
+			if strings.Contains(target, runtime.NamespaceSeparator) {
+				return "", false
+			}
+		}
+	}
+
+	return name, true
 }
 
 func applyNamespaceAlias(ns string, aliases map[string]string) string {
@@ -79,25 +110,24 @@ func applyNamespaceAlias(ns string, aliases map[string]string) string {
 		return ns
 	}
 
-	upper := strings.ToUpper(ns)
-	trimmed := strings.TrimSuffix(upper, runtime.NamespaceSeparator)
+	trimmed := strings.TrimSuffix(ns, runtime.NamespaceSeparator)
 	if trimmed == "" {
-		return upper
+		return ns
 	}
 
 	parts := strings.Split(trimmed, runtime.NamespaceSeparator)
 	if len(parts) == 0 {
-		return upper
+		return ns
 	}
 
 	target, ok := aliases[parts[0]]
 	if !ok {
-		return upper
+		return ns
 	}
 
-	target = strings.TrimSuffix(strings.ToUpper(target), runtime.NamespaceSeparator)
+	target = strings.TrimSuffix(target, runtime.NamespaceSeparator)
 	if target == "" {
-		return upper
+		return ns
 	}
 
 	parts = parts[1:]
@@ -262,10 +292,10 @@ func registerFunction(
 	}
 
 	displayName := decl.FunctionName().GetText()
-	name := strings.ToUpper(displayName)
+	name := displayName
 
 	if _, exists := scope.Functions[name]; exists {
-		ctx.Errors.Add(ctx.Errors.Create(parserd.NameError, decl, fmt.Sprintf("Function '%s' is already defined", name)))
+		ctx.Errors.Add(ctx.Errors.Create(parserd.NameError, decl, fmt.Sprintf("Function '%s' is already defined", displayName)))
 		return nil
 	}
 
@@ -380,7 +410,7 @@ func analyzeCaptures(ctx *CompilerContext, table *core.UDFTable, body *fql.BodyC
 			}
 		case stmt.FunctionDeclaration() != nil:
 			decl := stmt.FunctionDeclaration().(*fql.FunctionDeclarationContext)
-			name := strings.ToUpper(decl.FunctionName().GetText())
+			name := decl.FunctionName().GetText()
 			if fn, ok := table.Resolve(name, table.GlobalScope); ok {
 				analyzeFunctionCaptures(ctx, fn, env)
 			}
@@ -566,13 +596,12 @@ func collectCallsInExpression(ctx *CompilerContext, table *core.UDFTable, node a
 			continue
 		}
 
-		name := getFunctionName(call, ctx.UseAliases)
-		nameStr := name.String()
-		if strings.Contains(nameStr, runtime.NamespaceSeparator) {
+		name, ok := getUDFName(call, ctx.UseAliases)
+		if !ok {
 			continue
 		}
 
-		if fn, ok := table.Resolve(nameStr, scope); ok {
+		if fn, ok := table.Resolve(name, scope); ok {
 			out[fn] = struct{}{}
 		}
 	}
@@ -648,7 +677,7 @@ func analyzeFunctionCaptures(ctx *CompilerContext, fn *core.UDFInfo, env *varEnv
 					}
 				case stmt.FunctionDeclaration() != nil:
 					decl := stmt.FunctionDeclaration().(*fql.FunctionDeclarationContext)
-					name := strings.ToUpper(decl.FunctionName().GetText())
+					name := decl.FunctionName().GetText()
 					if nested, ok := fn.BodyScope.Functions[name]; ok {
 						analyzeFunctionCaptures(ctx, nested, env)
 						for _, cap := range nested.Captures {

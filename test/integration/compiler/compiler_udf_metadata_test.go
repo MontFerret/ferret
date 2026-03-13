@@ -45,6 +45,19 @@ func findUserDefined(t *testing.T, prog *bytecode.Program, name string) bytecode
 	return bytecode.UDF{}
 }
 
+func assertHostArity(t *testing.T, host map[string]int, name string, want int) {
+	t.Helper()
+
+	got, ok := host[name]
+	if !ok {
+		t.Fatalf("expected host function %q in %v", name, host)
+	}
+
+	if got != want {
+		t.Fatalf("expected %s arity %d, got %d", name, want, got)
+	}
+}
+
 func TestUdfOnlyHostCallIsPresentInHostMetadata(t *testing.T) {
 	expr := `
 FUNC f() => TEST_FN(1)
@@ -56,9 +69,7 @@ RETURN f()
 		t.Fatalf("expected exactly 1 host function, got %d", len(prog.Functions.Host))
 	}
 
-	if got := prog.Functions.Host["TEST_FN"]; got != 1 {
-		t.Fatalf("expected TEST_FN arity 1, got %d", got)
-	}
+	assertHostArity(t, prog.Functions.Host, "TEST_FN", 1)
 }
 
 func TestUdfHostCallUpdatesMaxHostArityAcrossScopes(t *testing.T) {
@@ -68,9 +79,7 @@ RETURN TEST_FN(1)
 `
 
 	prog := compileWithLevel(t, compiler.O0, expr)
-	if got := prog.Functions.Host["TEST_FN"]; got != 2 {
-		t.Fatalf("expected TEST_FN max arity 2, got %d", got)
-	}
+	assertHostArity(t, prog.Functions.Host, "TEST_FN", 2)
 }
 
 func TestUdfNestedHostCallIsPresentInHostMetadata(t *testing.T) {
@@ -87,9 +96,7 @@ RETURN outer()
 		t.Fatalf("expected exactly 1 host function, got %d (%v)", len(prog.Functions.Host), prog.Functions.Host)
 	}
 
-	if got := prog.Functions.Host["TEST_FN"]; got != 1 {
-		t.Fatalf("expected TEST_FN arity 1, got %d", got)
-	}
+	assertHostArity(t, prog.Functions.Host, "TEST_FN", 1)
 }
 
 func TestUdfOnlyParamIsPresentInProgramParams(t *testing.T) {
@@ -134,16 +141,16 @@ RETURN outer(3)
 
 		prog := compileWithLevel(t, level, expr)
 
-		if got := findUserDefined(t, prog, "OUTER").Params; got != 2 {
-			t.Fatalf("expected OUTER total params/captures to be 2, got %d", got)
+		if got := findUserDefined(t, prog, "outer").Params; got != 2 {
+			t.Fatalf("expected outer total params/captures to be 2, got %d", got)
 		}
 
-		if got := findUserDefined(t, prog, "MIDDLE").Params; got != 4 {
-			t.Fatalf("expected MIDDLE total params/captures to be 4, got %d", got)
+		if got := findUserDefined(t, prog, "middle").Params; got != 4 {
+			t.Fatalf("expected middle total params/captures to be 4, got %d", got)
 		}
 
-		if got := findUserDefined(t, prog, "INNER").Params; got != 5 {
-			t.Fatalf("expected INNER total params/captures to be 5, got %d", got)
+		if got := findUserDefined(t, prog, "inner").Params; got != 5 {
+			t.Fatalf("expected inner total params/captures to be 5, got %d", got)
 		}
 	}
 
@@ -164,9 +171,7 @@ RETURN [a(), b(), top]
 		t.Fatalf("expected exactly 1 host function, got %d (%v)", len(prog.Functions.Host), prog.Functions.Host)
 	}
 
-	if got := prog.Functions.Host["TEST_FN"]; got != 3 {
-		t.Fatalf("expected TEST_FN max arity 3, got %d", got)
-	}
+	assertHostArity(t, prog.Functions.Host, "TEST_FN", 3)
 }
 
 func TestUdfUnusedMetadataPresentAtO0(t *testing.T) {
@@ -177,9 +182,7 @@ RETURN used()
 `
 
 	prog := compileWithLevel(t, compiler.O0, expr)
-	if got := prog.Functions.Host["TEST_FN"]; got != 1 {
-		t.Fatalf("expected TEST_FN arity 1 at O0, got %d", got)
-	}
+	assertHostArity(t, prog.Functions.Host, "TEST_FN", 1)
 
 	assertParamSet(t, prog.Params, "foo")
 }
@@ -211,8 +214,56 @@ RETURN FN()
 		t.Fatalf("expected exactly 1 host function, got %d (%v)", len(prog.Functions.Host), prog.Functions.Host)
 	}
 
-	if got := prog.Functions.Host["FOO::TEST_FN"]; got != 1 {
-		t.Fatalf("expected FOO::TEST_FN arity 1, got %d", got)
+	assertHostArity(t, prog.Functions.Host, "FOO::TEST_FN", 1)
+}
+
+func TestHostMetadataPreservesCaseDistinctNames(t *testing.T) {
+	expr := `
+LET upper = Foo()
+LET lower = foo()
+RETURN [upper, lower]
+`
+
+	prog := compileWithLevel(t, compiler.O0, expr)
+	expected := map[string]int{
+		"Foo": 0,
+		"foo": 0,
+	}
+
+	if len(prog.Functions.Host) != len(expected) {
+		t.Fatalf("expected %d host functions, got %d (%v)", len(expected), len(prog.Functions.Host), prog.Functions.Host)
+	}
+
+	for name, arity := range expected {
+		assertHostArity(t, prog.Functions.Host, name, arity)
+	}
+}
+
+func TestFunctionAliasHostMetadataPreservesExactCase(t *testing.T) {
+	expr := `
+USE Foo::Test_FN AS Fn
+RETURN Fn()
+`
+
+	prog := compileWithLevel(t, compiler.O0, expr)
+	if len(prog.Functions.Host) != 1 {
+		t.Fatalf("expected exactly 1 host function, got %d (%v)", len(prog.Functions.Host), prog.Functions.Host)
+	}
+
+	assertHostArity(t, prog.Functions.Host, "Foo::Test_FN", 0)
+}
+
+func TestNamespaceAliasCaseMismatchDoesNotRewriteHostMetadata(t *testing.T) {
+	expr := `
+USE Foo AS F
+RETURN f::Test_FN()
+`
+
+	prog := compileWithLevel(t, compiler.O0, expr)
+	assertHostArity(t, prog.Functions.Host, "f::Test_FN", 0)
+
+	if _, ok := prog.Functions.Host["Foo::Test_FN"]; ok {
+		t.Fatalf("expected no exact-case alias rewrite on mismatch, got %v", prog.Functions.Host)
 	}
 }
 
@@ -224,9 +275,7 @@ RETURN f()
 `
 
 	prog := compileWithLevel(t, compiler.O0, expr)
-	if got := prog.Functions.Host["FOO::TEST_FN"]; got != 0 {
-		t.Fatalf("expected FOO::TEST_FN arity 0, got %d", got)
-	}
+	assertHostArity(t, prog.Functions.Host, "FOO::TEST_FN", 0)
 
 	if _, ok := prog.Functions.Host["FOO"]; ok {
 		t.Fatalf("expected no bare FOO host metadata, got %v", prog.Functions.Host)
@@ -243,14 +292,14 @@ RETURN f()
 	prog := compileWithLevel(t, compiler.O1, expr)
 	found := false
 	for _, udf := range prog.Functions.UserDefined {
-		if udf.Name == "F" {
+		if udf.Name == "f" {
 			found = true
 			break
 		}
 	}
 
 	if !found {
-		t.Fatalf("expected UDF F to remain reachable at O1, got %v", prog.Functions.UserDefined)
+		t.Fatalf("expected UDF f to remain reachable at O1, got %v", prog.Functions.UserDefined)
 	}
 
 	if _, ok := prog.Functions.Host["FOO"]; ok {
@@ -331,14 +380,14 @@ RETURN x + f()
 
 	udfEntry := -1
 	for _, udf := range prog.Functions.UserDefined {
-		if udf.Name == "F" {
+		if udf.Name == "f" {
 			udfEntry = udf.Entry
 			break
 		}
 	}
 
 	if udfEntry < 0 {
-		t.Fatalf("expected UDF F metadata, got %v", prog.Functions.UserDefined)
+		t.Fatalf("expected UDF f metadata, got %v", prog.Functions.UserDefined)
 	}
 
 	if udfEntry >= len(prog.Bytecode) {
@@ -356,5 +405,23 @@ RETURN x + f()
 
 	if inst.Operands[1].IsConstant() {
 		t.Fatalf("expected UDF LOADP source operand to be slot-encoded, got constant %s", inst.Operands[1])
+	}
+}
+
+func TestCaseDistinctUdfNamesPreserveMetadata(t *testing.T) {
+	expr := `
+FUNC a() => 1
+FUNC A() => 2
+RETURN a() + A()
+`
+
+	prog := compileWithLevel(t, compiler.O0, expr)
+
+	if got := findUserDefined(t, prog, "a").DisplayName; got != "a" {
+		t.Fatalf("expected lowercase UDF display name, got %q", got)
+	}
+
+	if got := findUserDefined(t, prog, "A").DisplayName; got != "A" {
+		t.Fatalf("expected uppercase UDF display name, got %q", got)
 	}
 }

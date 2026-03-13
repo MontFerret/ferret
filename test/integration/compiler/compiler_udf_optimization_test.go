@@ -32,8 +32,8 @@ RETURN used()
 		t.Fatalf("expected 1 UDF at O1, got %d", len(prog.Functions.UserDefined))
 	}
 
-	if prog.Functions.UserDefined[0].Name != "USED" {
-		t.Fatalf("expected USED UDF, got %q", prog.Functions.UserDefined[0].Name)
+	if prog.Functions.UserDefined[0].Name != "used" {
+		t.Fatalf("expected used UDF, got %q", prog.Functions.UserDefined[0].Name)
 	}
 }
 
@@ -67,18 +67,18 @@ RETURN outer()
 
 	var outerParams = -1
 	for _, udf := range prog.Functions.UserDefined {
-		if udf.Name == "OUTER" {
+		if udf.Name == "outer" {
 			outerParams = udf.Params
 			break
 		}
 	}
 
 	if outerParams == -1 {
-		t.Fatalf("expected OUTER UDF metadata")
+		t.Fatalf("expected outer UDF metadata")
 	}
 
 	if outerParams != 0 {
-		t.Fatalf("expected OUTER to have 0 params (no captures), got %d", outerParams)
+		t.Fatalf("expected outer to have 0 params (no captures), got %d", outerParams)
 	}
 }
 
@@ -96,13 +96,13 @@ RETURN fact(5)
 	prog := compileWithLevel(t, compiler.O1, expr)
 	found := false
 	for _, udf := range prog.Functions.UserDefined {
-		if udf.Name == "FACT" {
+		if udf.Name == "fact" {
 			found = true
 			break
 		}
 	}
 
 	if !found {
-		t.Fatalf("expected FACT UDF to be reachable at O1")
+		t.Fatalf("expected fact UDF to be reachable at O1")
 	}
 }
