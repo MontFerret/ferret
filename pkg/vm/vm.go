@@ -305,7 +305,7 @@ loop:
 				out = runtime.None
 			}
 
-			state.setOrRaiseDefault(pc, dst, out, err)
+			state.setProducedOrRaiseDefault(pc, dst, out, err)
 		case bytecode.OpMove:
 			reg[dst] = reg[src1]
 		case bytecode.OpLoadNone:
@@ -383,17 +383,25 @@ loop:
 
 			if err := ds.Append(ctx, reg[src1]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
+
+			state.owned.Forget(reg[src1])
 		case bytecode.OpPushKV:
 			tr := reg[dst].(runtime.KeyWritable)
 
 			if err := tr.Set(ctx, reg[src1], reg[src2]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
+
+			state.owned.Forget(reg[src1])
+			state.owned.Forget(reg[src2])
 		case bytecode.OpArrayPush:
 			ds := reg[dst].(*runtime.Array)
 
 			_ = ds.Append(ctx, reg[src1])
+			state.owned.Forget(reg[src1])
 		case bytecode.OpObjectSet:
 			key := runtime.ToString(reg[src1])
 			value := reg[src2]
@@ -401,6 +409,7 @@ loop:
 
 			if ok {
 				_ = obj.Set(ctx, key, value)
+				state.owned.Forget(value)
 				continue
 			}
 
@@ -412,6 +421,7 @@ loop:
 					break
 				}
 
+				state.owned.Forget(value)
 				continue
 			}
 
@@ -424,6 +434,7 @@ loop:
 
 			if obj, ok := objVal.(*data.FastObject); ok {
 				vm.objectSetConstCached(inst, obj, key, value)
+				state.owned.Forget(value)
 				continue
 			}
 
@@ -435,6 +446,7 @@ loop:
 					break
 				}
 
+				state.owned.Forget(value)
 				continue
 			}
 
@@ -448,7 +460,7 @@ loop:
 				iterator, err := iterable.Iterate(ctx)
 
 				if err == nil {
-					reg[dst] = data.NewIterator(iterator)
+					state.writeProducedRegister(dst, data.NewIterator(iterator))
 					continue
 				}
 
@@ -512,7 +524,7 @@ loop:
 				break
 			}
 
-			reg[dst] = data.NewStreamValue(stream)
+			state.writeProducedRegister(dst, data.NewStreamValue(stream))
 		case bytecode.OpStreamIter:
 			stream := reg[src1].(*data.StreamValue)
 
@@ -529,13 +541,13 @@ loop:
 				timeout = t
 			}
 
-			reg[dst] = stream.Iterate(timeout)
+			state.writeProducedRegister(dst, stream.Iterate(timeout))
 		case bytecode.OpQuery:
 			src := readOperandValue(reg, constants, src1)
 			descriptor := readOperandValue(reg, constants, src2)
 			out, err := applyQuery(ctx, src, descriptor)
 
-			state.setOrRaiseDefault(pc, dst, out, err)
+			state.setProducedOrRaiseDefault(pc, dst, out, err)
 		case bytecode.OpDataSet:
 			reg[dst] = data.NewDataSet(src1 == 1)
 		case bytecode.OpDataSetCollector:
@@ -556,9 +568,9 @@ loop:
 				plan := aggregatePlans[planIdx]
 
 				if collectorType == bytecode.CollectorTypeAggregate {
-					reg[dst] = data.NewAggregateCollector(plan)
+					state.writeProducedRegister(dst, data.NewAggregateCollector(plan))
 				} else {
-					reg[dst] = data.NewGroupedAggregateCollector(plan)
+					state.writeProducedRegister(dst, data.NewGroupedAggregateCollector(plan))
 				}
 
 				continue
@@ -571,14 +583,14 @@ loop:
 				break
 			}
 
-			reg[dst] = collector
+			state.writeProducedRegister(dst, collector)
 		case bytecode.OpDataSetSorter:
-			reg[dst] = data.NewSorter(runtime.SortDirection(src1))
+			state.writeProducedRegister(dst, data.NewSorter(runtime.SortDirection(src1)))
 		case bytecode.OpDataSetMultiSorter:
 			encoded := src1.Register()
 			count := src2.Register()
 
-			reg[dst] = data.NewMultiSorter(runtime.DecodeSortDirections(encoded, count))
+			state.writeProducedRegister(dst, data.NewMultiSorter(runtime.DecodeSortDirections(encoded, count)))
 		case bytecode.OpFlatten:
 			depth := src2.Register()
 
@@ -724,11 +736,13 @@ loop:
 		case bytecode.OpType:
 			reg[dst] = runtime.NewString(runtime.TypeName(runtime.TypeOf(reg[src1])))
 		case bytecode.OpClose:
-			val, ok := reg[dst].(io.Closer)
+			val := reg[dst]
+			state.owned.Forget(val)
+			closer, ok := val.(io.Closer)
 			reg[dst] = runtime.None
 
 			if ok {
-				closeErr := val.Close()
+				closeErr := closer.Close()
 
 				if closeErr != nil {
 					state.raiseRuntimeAt(pc, closeErr, recoverDefault, bytecode.NoopOperand, nil, false)

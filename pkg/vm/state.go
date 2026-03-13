@@ -31,6 +31,7 @@ type (
 		windows   mem.WindowPool
 		catchByPC []int
 		registers mem.RegisterFile
+		owned     mem.OwnedResources
 		failure   pendingFailure
 		pc        int
 		lastPC    int
@@ -49,6 +50,7 @@ func (s *execState) init(program *bytecode.Program) {
 
 func (s *execState) start(env *Environment) {
 	s.env = env
+	s.owned = mem.OwnedResources{}
 	s.pc = 0
 	s.lastPC = -1
 	s.clearFailure()
@@ -56,6 +58,8 @@ func (s *execState) start(env *Environment) {
 
 func (s *execState) end() {
 	for {
+		s.owned.CloseAll()
+
 		caller, ok := s.frames.Pop()
 		if !ok {
 			break
@@ -63,6 +67,7 @@ func (s *execState) end() {
 
 		s.windows.Release(s.registers)
 		s.registers = caller.CallerRegisters
+		s.owned = caller.OwnedResources
 	}
 
 	s.registers.Reset()
@@ -223,7 +228,7 @@ func (s *execState) resolveRuntimeDefault(failure pendingFailure) errAction {
 
 func (s *execState) applyFailureFallback(failure pendingFailure) {
 	if failure.setFallback && failure.dst.IsRegister() {
-		s.registers[failure.dst] = normalizeValue(failure.fallback)
+		s.writeBorrowedRegister(failure.dst, failure.fallback)
 	}
 }
 
@@ -299,10 +304,17 @@ func (s *execState) tryCatch(pos int) (bytecode.Catch, bool) {
 }
 
 func (s *execState) setOrRaiseDefault(pc int, dst bytecode.Operand, val runtime.Value, err error) {
-	reg := s.registers
-
 	if err == nil {
-		reg[dst] = normalizeValue(val)
+		s.writeBorrowedRegister(dst, val)
+		return
+	}
+
+	s.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.None, true)
+}
+
+func (s *execState) setProducedOrRaiseDefault(pc int, dst bytecode.Operand, val runtime.Value, err error) {
+	if err == nil {
+		s.writeProducedRegister(dst, val)
 		return
 	}
 
@@ -311,12 +323,12 @@ func (s *execState) setOrRaiseDefault(pc int, dst bytecode.Operand, val runtime.
 
 func (s *execState) setOrOptional(pc int, dst bytecode.Operand, val runtime.Value, err error, optional bool) {
 	if err == nil {
-		s.registers[dst] = normalizeValue(val)
+		s.writeBorrowedRegister(dst, val)
 		return
 	}
 
 	if optional && s.isNullMemberDereference(err) {
-		s.registers[dst] = runtime.None
+		s.writeBorrowedRegister(dst, runtime.None)
 		return
 	}
 
@@ -340,8 +352,10 @@ func (s *execState) unwindToProtected() bool {
 			return false
 		}
 
+		s.owned.CloseAll()
 		s.windows.Release(s.registers)
 		s.registers = frame.CallerRegisters
+		s.owned = frame.OwnedResources
 	}
 
 	frame, ok := s.frames.Pop()
@@ -349,10 +363,12 @@ func (s *execState) unwindToProtected() bool {
 		return false
 	}
 
+	s.owned.CloseAll()
 	s.windows.Release(s.registers)
 	s.registers = frame.CallerRegisters
+	s.owned = frame.OwnedResources
 	if frame.ReturnDest.IsRegister() {
-		s.registers[frame.ReturnDest] = runtime.None
+		s.writeBorrowedRegister(frame.ReturnDest, runtime.None)
 	}
 	s.pc = frame.ReturnPC
 	return true
@@ -364,20 +380,22 @@ func (s *execState) returnToCaller(retVal runtime.Value) bool {
 		return false
 	}
 
+	callerOwned := frame.OwnedResources
+	s.owned.Transfer(retVal, &callerOwned)
+	s.owned.CloseAll()
 	s.windows.Release(s.registers)
 	s.registers = frame.CallerRegisters
+	s.owned = callerOwned
 	if frame.ReturnDest.IsRegister() {
-		s.registers[frame.ReturnDest] = retVal
+		s.writeBorrowedRegister(frame.ReturnDest, retVal)
 	}
 	s.pc = frame.ReturnPC
 	return true
 }
 
 func (s *execState) setCallResult(pc int, op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) {
-	reg := s.registers
-
 	if err == nil {
-		reg[dst] = normalizeValue(out)
+		s.writeProducedRegister(dst, out)
 		return
 	}
 
@@ -387,6 +405,23 @@ func (s *execState) setCallResult(pc int, op bytecode.Opcode, dst bytecode.Opera
 	}
 
 	s.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.None, true)
+}
+
+func (s *execState) writeBorrowedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
+	val = normalizeValue(val)
+
+	if dst.IsRegister() {
+		s.registers[dst] = val
+	}
+
+	return val
+}
+
+func (s *execState) writeProducedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
+	val = s.writeBorrowedRegister(dst, val)
+	s.owned.Track(val)
+
+	return val
 }
 
 func (s *execState) udfByID(id int) (*bytecode.UDF, error) {

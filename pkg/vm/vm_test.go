@@ -51,6 +51,32 @@ func mustAcquireRunState(t *testing.T, instance *VM) *execState {
 	return state
 }
 
+type trackingCloser struct {
+	name   string
+	closed int
+}
+
+func newTrackingCloser(name string) *trackingCloser {
+	return &trackingCloser{name: name}
+}
+
+func (c *trackingCloser) Close() error {
+	c.closed++
+	return nil
+}
+
+func (c *trackingCloser) String() string {
+	return c.name
+}
+
+func (c *trackingCloser) Hash() uint64 {
+	return 0
+}
+
+func (c *trackingCloser) Copy() runtime.Value {
+	return c
+}
+
 func TestPanicPolicyRecoversPanics(t *testing.T) {
 	program := compileProgram(t, "RETURN PANIC_FN()")
 
@@ -644,6 +670,95 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 	}
 }
 
+func TestUnwindToProtected_ClosesOwnedResourcesOfUnwoundFramesOnly(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Functions: bytecode.Functions{
+			UserDefined: []bytecode.UDF{
+				{Registers: 6},
+			},
+		},
+	})
+
+	protectedOwned := newTrackingCloser("protected")
+	aboveOwned1 := newTrackingCloser("above-1")
+	aboveOwned2 := newTrackingCloser("above-2")
+	activeOwned := newTrackingCloser("active")
+
+	lowerRegs := mem.NewRegisterFile(2)
+	protectedRegs := mem.NewRegisterFile(3)
+	aboveRegs1 := mem.NewRegisterFile(4)
+	aboveRegs2 := mem.NewRegisterFile(5)
+	activeRegs := mem.NewRegisterFile(6)
+	protectedRegs[0] = protectedOwned
+	aboveRegs1[0] = aboveOwned1
+	aboveRegs2[0] = aboveOwned2
+	activeRegs[0] = activeOwned
+
+	protectedResources := mem.OwnedResources{}
+	protectedResources.Track(protectedOwned)
+	aboveResources1 := mem.OwnedResources{}
+	aboveResources1.Track(aboveOwned1)
+	aboveResources2 := mem.OwnedResources{}
+	aboveResources2.Track(aboveOwned2)
+
+	state := mustAcquireRunState(t, instance)
+	defer state.end()
+
+	state.registers = activeRegs
+	state.owned.Track(activeOwned)
+	state.frames.Push(frame.CallFrame{
+		ReturnPC:         10,
+		ReturnDest:       bytecode.NewRegister(0),
+		CallerRegisters:  lowerRegs,
+		RecoveryBoundary: false,
+	})
+	state.frames.Push(frame.CallFrame{
+		ReturnPC:         20,
+		ReturnDest:       bytecode.NewRegister(1),
+		CallerRegisters:  protectedRegs,
+		OwnedResources:   protectedResources,
+		RecoveryBoundary: true,
+	})
+	state.frames.Push(frame.CallFrame{
+		ReturnPC:        30,
+		ReturnDest:      bytecode.NewRegister(0),
+		CallerRegisters: aboveRegs1,
+		OwnedResources:  aboveResources1,
+	})
+	state.frames.Push(frame.CallFrame{
+		ReturnPC:        40,
+		ReturnDest:      bytecode.NewRegister(0),
+		CallerRegisters: aboveRegs2,
+		OwnedResources:  aboveResources2,
+	})
+
+	if ok := state.unwindToProtected(); !ok {
+		t.Fatal("expected protected unwind to succeed")
+	}
+
+	if got := activeOwned.closed; got != 1 {
+		t.Fatalf("expected active frame resource to close once, got %d", got)
+	}
+
+	if got := aboveOwned2.closed; got != 1 {
+		t.Fatalf("expected top unwound frame resource to close once, got %d", got)
+	}
+
+	if got := aboveOwned1.closed; got != 1 {
+		t.Fatalf("expected second unwound frame resource to close once, got %d", got)
+	}
+
+	if got := protectedOwned.closed; got != 0 {
+		t.Fatalf("expected protected caller resource to remain open, got %d closes", got)
+	}
+
+	if !state.owned.Owns(protectedOwned) {
+		t.Fatal("expected protected caller ownership to remain active after unwind")
+	}
+}
+
 func TestRunReturnsUnresolvedFunctionWhenHostCacheEntryIsMissing(t *testing.T) {
 	c := compiler.New()
 	program, err := c.Compile(file.NewSource("test", "RETURN TEST(1)"))
@@ -1029,6 +1144,100 @@ func TestSetOrOptional_NotFoundContinuesWithNone(t *testing.T) {
 	}
 }
 
+func TestReturnToCaller_ClosesDiscardedOwnedValuesButPreservesBorrowedArgs(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer state.end()
+
+	borrowed := newTrackingCloser("borrowed")
+	produced := newTrackingCloser("produced")
+
+	callerRegs := mem.NewRegisterFile(2)
+	callerRegs[0] = borrowed
+	callerOwned := mem.OwnedResources{}
+	callerOwned.Track(borrowed)
+
+	activeRegs := mem.NewRegisterFile(3)
+	activeRegs[1] = borrowed
+	activeRegs[2] = produced
+	state.registers = activeRegs
+	state.owned.Track(produced)
+
+	state.frames.Push(frame.CallFrame{
+		ReturnPC:        7,
+		ReturnDest:      bytecode.NewRegister(1),
+		CallerRegisters: callerRegs,
+		OwnedResources:  callerOwned,
+	})
+
+	if ok := state.returnToCaller(runtime.True); !ok {
+		t.Fatal("expected return to caller to succeed")
+	}
+
+	if got := produced.closed; got != 1 {
+		t.Fatalf("expected produced callee value to close once, got %d", got)
+	}
+
+	if got := borrowed.closed; got != 0 {
+		t.Fatalf("expected borrowed argument to remain open, got %d closes", got)
+	}
+
+	if !state.owned.Owns(borrowed) {
+		t.Fatal("expected caller to keep ownership of borrowed argument")
+	}
+
+	if got := state.registers[1]; got != runtime.True {
+		t.Fatalf("expected return destination to receive caller result, got %v", got)
+	}
+}
+
+func TestReturnToCaller_TransfersReturnedOwnedCloserToCaller(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+	})
+
+	state := mustAcquireRunState(t, instance)
+
+	returned := newTrackingCloser("returned")
+	activeRegs := mem.NewRegisterFile(1)
+	activeRegs[0] = returned
+	state.registers = activeRegs
+	state.owned.Track(returned)
+
+	state.frames.Push(frame.CallFrame{
+		ReturnPC:        9,
+		ReturnDest:      bytecode.NewRegister(1),
+		CallerRegisters: mem.NewRegisterFile(2),
+	})
+
+	if ok := state.returnToCaller(returned); !ok {
+		t.Fatal("expected return to caller to succeed")
+	}
+
+	if got := returned.closed; got != 0 {
+		t.Fatalf("expected returned closer to remain open after transfer, got %d closes", got)
+	}
+
+	if !state.owned.Owns(returned) {
+		t.Fatal("expected caller to own transferred return value")
+	}
+
+	if got := state.registers[1]; got != returned {
+		t.Fatalf("expected caller return destination to receive returned value, got %v", got)
+	}
+
+	state.end()
+
+	if got := returned.closed; got != 1 {
+		t.Fatalf("expected root cleanup to close transferred return value once, got %d", got)
+	}
+}
+
 func TestSetOrOptional_NullDereferenceContinuesWithNone(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
@@ -1309,6 +1518,215 @@ func TestTailCallUdf_ReusedWindowResetsNonArgSlotsToNone(t *testing.T) {
 		if got := newRegs[idx]; got != runtime.None {
 			t.Fatalf("expected non-argument slot %d to be runtime.None, got %v", idx, got)
 		}
+	}
+}
+
+func TestTailCallUdf_ReusedWindowTransfersOwnedArgsAndClosesDiscardedValues(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  8,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Functions: bytecode.Functions{
+			UserDefined: []bytecode.UDF{
+				{
+					Name:        "F",
+					DisplayName: "f",
+					Entry:       0,
+					Registers:   6,
+					Params:      2,
+				},
+			},
+		},
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer state.end()
+
+	discarded := newTrackingCloser("discarded")
+	ownedArg := newTrackingCloser("owned-arg")
+	borrowedArg := newTrackingCloser("borrowed-arg")
+
+	reg := state.registers
+	reg[0] = discarded
+	reg[3] = ownedArg
+	reg[4] = borrowedArg
+	state.owned.Track(discarded)
+	state.owned.Track(ownedArg)
+
+	state.frames.Push(frame.CallFrame{
+		ReturnPC:        99,
+		ReturnDest:      bytecode.NewRegister(0),
+		CallerRegisters: mem.NewRegisterFile(2),
+	})
+
+	desc := &callDescriptor{
+		DisplayName: "f",
+		Dst:         bytecode.NewRegister(1),
+		ID:          0,
+		ArgStart:    3,
+		ArgCount:    2,
+		CallSitePC:  4,
+	}
+	if err := tailCallUdf(state, desc, &instance.program.Functions.UserDefined[0]); err != nil {
+		t.Fatalf("unexpected tail call error: %v", err)
+	}
+
+	if got := discarded.closed; got != 1 {
+		t.Fatalf("expected discarded value to close once, got %d", got)
+	}
+
+	if got := ownedArg.closed; got != 0 {
+		t.Fatalf("expected owned argument to remain open after transfer, got %d closes", got)
+	}
+
+	if got := borrowedArg.closed; got != 0 {
+		t.Fatalf("expected borrowed argument to remain open, got %d closes", got)
+	}
+
+	if !state.owned.Owns(ownedArg) {
+		t.Fatal("expected tail call to transfer ownership of direct argument")
+	}
+
+	if state.owned.Owns(borrowedArg) {
+		t.Fatal("did not expect borrowed argument to become owned")
+	}
+
+	if got := state.registers[1]; got != ownedArg {
+		t.Fatalf("unexpected transferred argument in first slot: got %v", got)
+	}
+
+	if got := state.registers[2]; got != borrowedArg {
+		t.Fatalf("unexpected borrowed argument in second slot: got %v", got)
+	}
+}
+
+func TestTailCallUdf_FreshWindowTransfersOwnedArgsAndClosesDiscardedValues(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  4,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Functions: bytecode.Functions{
+			UserDefined: []bytecode.UDF{
+				{
+					Name:        "F",
+					DisplayName: "f",
+					Entry:       0,
+					Registers:   6,
+					Params:      2,
+				},
+			},
+		},
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer state.end()
+
+	discarded := newTrackingCloser("discarded")
+	ownedArg := newTrackingCloser("owned-arg")
+	borrowedArg := newTrackingCloser("borrowed-arg")
+
+	reg := mem.NewRegisterFile(4)
+	reg[0] = discarded
+	reg[2] = ownedArg
+	reg[3] = borrowedArg
+	state.registers = reg
+	state.owned.Track(discarded)
+	state.owned.Track(ownedArg)
+
+	state.frames.Push(frame.CallFrame{
+		ReturnPC:        99,
+		ReturnDest:      bytecode.NewRegister(0),
+		CallerRegisters: mem.NewRegisterFile(2),
+	})
+
+	oldPtr := &reg[0]
+	desc := &callDescriptor{
+		DisplayName: "f",
+		Dst:         bytecode.NewRegister(1),
+		ID:          0,
+		ArgStart:    2,
+		ArgCount:    2,
+		CallSitePC:  4,
+	}
+	if err := tailCallUdf(state, desc, &instance.program.Functions.UserDefined[0]); err != nil {
+		t.Fatalf("unexpected tail call error: %v", err)
+	}
+
+	if got := discarded.closed; got != 1 {
+		t.Fatalf("expected discarded value to close once, got %d", got)
+	}
+
+	if got := ownedArg.closed; got != 0 {
+		t.Fatalf("expected owned argument to remain open after transfer, got %d closes", got)
+	}
+
+	if got := borrowedArg.closed; got != 0 {
+		t.Fatalf("expected borrowed argument to remain open, got %d closes", got)
+	}
+
+	if !state.owned.Owns(ownedArg) {
+		t.Fatal("expected tail call to transfer ownership of direct argument")
+	}
+
+	if state.owned.Owns(borrowedArg) {
+		t.Fatal("did not expect borrowed argument to become owned")
+	}
+
+	if &state.registers[0] == oldPtr {
+		t.Fatal("expected fresh-window tail call to install a new register window")
+	}
+
+	if got := state.registers[1]; got != ownedArg {
+		t.Fatalf("unexpected transferred argument in first slot: got %v", got)
+	}
+
+	if got := state.registers[2]; got != borrowedArg {
+		t.Fatalf("unexpected borrowed argument in second slot: got %v", got)
+	}
+}
+
+func TestOpClose_DoesNotDoubleCloseTrackedValueAtRunEnd(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpClose, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("MAKE"),
+		},
+	}
+
+	instance := mustNewVM(t, program)
+	value := newTrackingCloser("close-me")
+	env, err := NewEnvironment([]EnvironmentOption{
+		WithFunction("MAKE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+			return value, nil
+		}),
+	})
+	if err != nil {
+		t.Fatalf("environment build failed: %v", err)
+	}
+
+	result, err := instance.Run(context.Background(), env)
+	if err != nil {
+		t.Fatalf("unexpected run error: %v", err)
+	}
+
+	if got := value.closed; got != 1 {
+		t.Fatalf("expected explicit close to run exactly once, got %d closes", got)
+	}
+
+	if got := result; got != runtime.ZeroInt {
+		t.Fatalf("unexpected return value: got %v, want %v", got, runtime.ZeroInt)
 	}
 }
 

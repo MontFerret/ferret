@@ -10,6 +10,8 @@ func NewRegisterFile(size int) RegisterFile {
 	return values
 }
 
+// Reset scrubs register slots to runtime.None. OwnedResources is responsible
+// for closing any frame-owned values before the storage is reused.
 func (rf RegisterFile) Reset() {
-	fillWithNoneAndClose(rf)
+	fillWithNone(rf)
 }

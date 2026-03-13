@@ -61,3 +61,20 @@ func TestWindowPoolZeroAndOversizeBehavior(t *testing.T) {
 		t.Fatal("did not expect oversize window to be pooled")
 	}
 }
+
+func TestWindowPoolRelease_ScrubsWithoutClosingValues(t *testing.T) {
+	pool := NewWindowPool(2)
+	closer := newTestCloser("window")
+	reg := []runtime.Value{closer}
+
+	pool.Release(reg)
+
+	if got := closer.closed; got != 0 {
+		t.Fatalf("expected pooled window release to avoid closing values, got %d closes", got)
+	}
+
+	reused := pool.Acquire(1)
+	if got := reused[0]; got != runtime.None {
+		t.Fatalf("expected pooled slot to be scrubbed to runtime.None, got %v", got)
+	}
+}

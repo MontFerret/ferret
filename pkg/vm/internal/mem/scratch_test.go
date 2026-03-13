@@ -121,3 +121,30 @@ func TestScratchResizeHostArgs_GrowWithinCapacityResetsExposedSlotsToNone(t *tes
 		}
 	}
 }
+
+func TestScratchReset_ScrubsParamsAndHostArgsWithoutClosing(t *testing.T) {
+	s := NewScratch(1)
+	param := newTestCloser("param")
+	hostArg := newTestCloser("host")
+	s.Params[0] = param
+	s.ResizeHostArgs(1)
+	s.HostArgs[0] = hostArg
+
+	s.Reset()
+
+	if got := param.closed; got != 0 {
+		t.Fatalf("expected params reset to avoid closing borrowed value, got %d closes", got)
+	}
+
+	if got := hostArg.closed; got != 0 {
+		t.Fatalf("expected host arg reset to avoid closing borrowed value, got %d closes", got)
+	}
+
+	if got := s.Params[0]; got != runtime.None {
+		t.Fatalf("expected param slot to reset to runtime.None, got %v", got)
+	}
+
+	if got := s.HostArgs[0]; got != runtime.None {
+		t.Fatalf("expected host arg slot to reset to runtime.None, got %v", got)
+	}
+}

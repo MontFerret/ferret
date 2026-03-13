@@ -6,22 +6,28 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
 func copyUdfArgsToUdfRegisters(dst, src []runtime.Value, start, count int) {
-	if len(dst) <= 1 || len(src) == 0 || count <= 0 {
-		return
-	}
-
-	if maxCount := len(dst) - 1; count > maxCount {
-		count = maxCount
-	}
-
+	count = udfArgCountForRegisters(len(dst), count)
 	if count <= 0 {
 		return
 	}
 
 	copy(dst[1:1+count], src[start:start+count])
+}
+
+func udfArgCountForRegisters(registers, count int) int {
+	if registers <= 1 || count <= 0 {
+		return 0
+	}
+
+	if maxCount := registers - 1; count > maxCount {
+		count = maxCount
+	}
+
+	return count
 }
 
 func collectUdfArgsInto(dst, src []runtime.Value, start, count int) int {
@@ -75,18 +81,23 @@ func tailCallUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
 		stackArgs [8]runtime.Value
 	)
 
-	if argCount > 0 {
-		if argCount <= len(stackArgs) {
-			count := collectUdfArgsInto(stackArgs[:argCount], reg, argStart, argCount)
+	copyCount := udfArgCountForRegisters(udf.Registers, argCount)
+	if copyCount > 0 {
+		if copyCount <= len(stackArgs) {
+			count := collectUdfArgsInto(stackArgs[:copyCount], reg, argStart, copyCount)
 			args = stackArgs[:count]
 		} else {
-			heapArgs = make([]runtime.Value, argCount)
-			count := collectUdfArgsInto(heapArgs, reg, argStart, argCount)
+			heapArgs = make([]runtime.Value, copyCount)
+			count := collectUdfArgsInto(heapArgs, reg, argStart, copyCount)
 			args = heapArgs[:count]
 		}
 	}
 
 	if cap(reg) >= udf.Registers {
+		var ownedArgs mem.OwnedResources
+		s.owned.TransferMany(args, &ownedArgs)
+		s.owned.CloseAll()
+
 		reg = reg[:udf.Registers]
 		for i := range reg {
 			reg[i] = runtime.None
@@ -97,15 +108,18 @@ func tailCallUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
 		}
 
 		s.registers = reg
+		s.owned = ownedArgs
 	} else {
 		newRegs := s.windows.Acquire(udf.Registers)
+		copyUdfArgsToUdfRegisters(newRegs, reg, argStart, copyCount)
 
-		if len(args) > 0 && len(newRegs) > 1 {
-			copy(newRegs[1:], args)
-		}
+		var ownedArgs mem.OwnedResources
+		s.owned.TransferMany(newRegs[1:1+len(args)], &ownedArgs)
+		s.owned.CloseAll()
 
 		s.windows.Release(reg)
 		s.registers = newRegs
+		s.owned = ownedArgs
 	}
 
 	s.pc = udf.Entry
@@ -121,12 +135,14 @@ func (s *execState) enterUdfCall(desc *callDescriptor, udf *bytecode.UDF) {
 		ReturnPC:         s.pc,
 		ReturnDest:       desc.Dst,
 		CallerRegisters:  s.registers,
+		OwnedResources:   s.owned,
 		RecoveryBoundary: desc.RecoveryBoundary,
 		FnID:             desc.ID,
 		FnName:           desc.DisplayName,
 		CallSitePC:       desc.CallSitePC,
 		HasCallSite:      true,
 	})
+	s.owned = mem.OwnedResources{}
 	s.registers = newRegs
 	s.pc = udf.Entry
 }

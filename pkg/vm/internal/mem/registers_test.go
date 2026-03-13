@@ -34,3 +34,19 @@ func TestRegisterFileReset_ResetsToNoneAndClearsDirty(t *testing.T) {
 		}
 	}
 }
+
+func TestRegisterFileReset_ScrubsWithoutClosingValues(t *testing.T) {
+	rf := NewRegisterFile(1)
+	closer := newTestCloser("register")
+	rf[0] = closer
+
+	rf.Reset()
+
+	if got := closer.closed; got != 0 {
+		t.Fatalf("expected reset to avoid closing register value, got %d closes", got)
+	}
+
+	if got := rf[0]; got != runtime.None {
+		t.Fatalf("expected register to reset to runtime.None, got %v", got)
+	}
+}

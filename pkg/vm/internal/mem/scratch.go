@@ -22,7 +22,9 @@ func (s *Scratch) ResizeHostArgs(size int) {
 	resizeNoneValues(&s.HostArgs, size)
 }
 
+// Reset scrubs scratch slots to runtime.None. Scratch storage never closes
+// values directly because params and staged args are borrowed.
 func (s *Scratch) Reset() {
-	fillWithNoneAndClose(s.Params)
+	fillWithNone(s.Params)
 	fillWithNone(s.HostArgs)
 }
