@@ -38,7 +38,7 @@ func collectUdfArgsInto(dst, src []runtime.Value, start, count int) int {
 	return count
 }
 
-func (s *execState) callUdf(desc *callDescriptor, udf *bytecode.UDF) error {
+func callUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
 	reg := s.registers
 
 	if desc.ArgCount != udf.Params {
@@ -68,7 +68,7 @@ func (s *execState) callUdf(desc *callDescriptor, udf *bytecode.UDF) error {
 	return nil
 }
 
-func (s *execState) tailCallUdf(desc *callDescriptor, udf *bytecode.UDF) error {
+func tailCallUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
 	reg := s.registers
 	argStart := desc.ArgStart
 	argCount := desc.ArgCount

@@ -248,9 +248,8 @@ loop:
 			}
 
 			call := &hostCallDescriptors[hostID]
-			cacheFn := &hostFunctions[call.ID]
-			out, err := callCachedHostFunction(ctx, call, cacheFn, reg, &state.scratch)
-
+			hostFn := &hostFunctions[call.ID]
+			out, err := callCachedHostFunction(ctx, call, hostFn, reg, &state.scratch)
 			state.setCallResult(pc, op, dst, out, err)
 		case bytecode.OpCall, bytecode.OpProtectedCall:
 			callID := inst.InlineSlot
@@ -267,7 +266,7 @@ loop:
 
 			udf := &udfs[call.ID]
 
-			if err := state.callUdf(call, udf); err != nil {
+			if err := callUdf(state, call, udf); err != nil {
 				state.setCallResult(pc, op, dst, runtime.None, err)
 			}
 		case bytecode.OpTailCall:
@@ -285,7 +284,7 @@ loop:
 
 			udf := &udfs[call.ID]
 
-			if err := state.tailCallUdf(call, udf); err != nil {
+			if err := tailCallUdf(state, call, udf); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 			}
 		case bytecode.OpDispatch:
