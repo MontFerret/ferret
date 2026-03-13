@@ -180,7 +180,7 @@ func (r *Result) First(ctx context.Context) (runtime.Value, error) {
 		return runtime.None, ErrNoResult
 	}
 	if err != nil {
-		return nil, err
+		return runtime.None, err
 	}
 
 	return val, nil
