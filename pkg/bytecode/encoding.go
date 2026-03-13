@@ -16,13 +16,13 @@ import (
 
 type (
 	programJSON struct {
-		Metadata   Metadata       `json:"metadata"`
 		Source     *file.Source   `json:"source,omitempty"`
 		Functions  Functions      `json:"functions,omitempty"`
 		Bytecode   []Instruction  `json:"bytecode"`
 		Constants  []constantJSON `json:"constants,omitempty"`
 		CatchTable []Catch        `json:"catchTable,omitempty"`
 		Params     []string       `json:"params,omitempty"`
+		Metadata   Metadata       `json:"metadata"`
 		ISAVersion int            `json:"isaversion,omitempty"`
 		Registers  int            `json:"registers"`
 	}

@@ -8,12 +8,16 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 type Engine struct {
 	compiler *compiler.Compiler
 	host     *host
 	hooks    *hookRegistry
+	limiter  *sessionLimiter
+	idleCap  int
+	totalCap int
 }
 
 func New(setters ...Option) (*Engine, error) {
@@ -60,6 +64,9 @@ func New(setters ...Option) (*Engine, error) {
 		compiler: compiler.New(opts.compiler...),
 		host:     h,
 		hooks:    hooks,
+		limiter:  newSessionLimiter(opts.maxActiveSessions),
+		idleCap:  opts.maxIdleVMsPerPlan,
+		totalCap: opts.maxVMsPerPlan,
 	}, nil
 }
 
@@ -84,6 +91,8 @@ func (e *Engine) Compile(ctx context.Context, src *file.Source) (*Plan, error) {
 		host:         e.host,
 		hooks:        e.hooks.plan,
 		sessionHooks: e.hooks.session,
+		limiter:      e.limiter,
+		pool:         vm.NewPoolWithLimits(prog, e.idleCap, e.totalCap),
 	}, nil
 }
 
@@ -118,7 +127,7 @@ func (e *Engine) Run(ctx context.Context, src *file.Source, opts ...SessionOptio
 		}
 	}()
 
-	session, err = plan.NewSession(opts...)
+	session, err = plan.NewSession(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}

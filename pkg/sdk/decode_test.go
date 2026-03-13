@@ -55,8 +55,8 @@ type (
 		KeepCookies bool   `json:"keepCookies"`
 	}
 	EmbeddedPageLoadParams struct {
+		Driver string `json:"driver"`
 		EmbeddedParams
-		Driver  string        `json:"driver"`
 		Timeout time.Duration `json:"timeout"`
 	}
 	EmbeddedOuterPointer struct {

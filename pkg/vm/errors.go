@@ -1,6 +1,8 @@
 package vm
 
 import (
+	"errors"
+
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	rtdiagnostics "github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
 )
@@ -60,4 +62,6 @@ var (
 	ErrInvalidFunctionName   = rtdiagnostics.ErrInvalidFunctionName
 	ErrDivisionByZero        = rtdiagnostics.ErrDivisionByZero
 	ErrModuloByZero          = rtdiagnostics.ErrModuloByZero
+	ErrPoolExhausted         = errors.New("pool exhausted")
+	ErrPoolClosed            = errors.New("pool closed")
 )

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -191,4 +192,56 @@ func TestSessionClose(t *testing.T) {
 	if !strings.Contains(err.Error(), "close hooks") {
 		t.Fatalf("expected close hooks label, got: %v", err)
 	}
+}
+
+func TestSessionCloseReturnsBorrowedVMToPool(t *testing.T) {
+	t.Parallel()
+
+	eng := mustNewEngine(t, WithMaxIdleVMsPerPlan(1))
+	plan := mustCompilePlan(t, eng, coverageValidQuery)
+	first := mustNewSession(t, plan)
+	firstVM := first.vm
+
+	if err := first.Close(); err != nil {
+		t.Fatalf("expected first session close to succeed, got: %v", err)
+	}
+
+	second := mustNewSession(t, plan)
+	defer func() {
+		_ = second.Close()
+	}()
+
+	if second.vm != firstVM {
+		t.Fatal("expected second session to reuse the pooled VM from the first session")
+	}
+}
+
+func TestSessionCloseAfterPlanCloseReleasesLimiter(t *testing.T) {
+	t.Parallel()
+
+	eng := mustNewEngine(t, WithMaxActiveSessions(1), WithMaxIdleVMsPerPlan(1))
+	plan := mustCompilePlan(t, eng, coverageValidQuery)
+	session := mustNewSession(t, plan)
+
+	if err := plan.Close(); err != nil {
+		t.Fatalf("expected plan close to succeed with active session, got: %v", err)
+	}
+
+	if err := session.Close(); err != nil {
+		t.Fatalf("expected session close after plan close to succeed, got: %v", err)
+	}
+
+	nextPlan := mustCompilePlan(t, eng, coverageValidQuery)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	nextSession, err := nextPlan.NewSession(ctx)
+	if err != nil {
+		t.Fatalf("expected limiter permit to be released after closing the orphaned session, got: %v", err)
+	}
+
+	defer func() {
+		_ = nextSession.Close()
+		_ = nextPlan.Close()
+	}()
 }

@@ -60,7 +60,7 @@ func mustCompilePlan(t *testing.T, eng *Engine, query string) *Plan {
 func mustNewSession(t *testing.T, plan *Plan, setters ...SessionOption) *Session {
 	t.Helper()
 
-	session, err := plan.NewSession(setters...)
+	session, err := plan.NewSession(context.Background(), setters...)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
