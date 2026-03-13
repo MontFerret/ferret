@@ -40,9 +40,9 @@ type (
 func (s *execState) init(program *bytecode.Program) {
 	s.program = program
 	s.catchByPC = buildCatchByPC(len(program.Bytecode), program.CatchTable)
-	s.registers.Init(program.Registers)
-	s.scratch.Init(len(program.Params))
-	s.frames.Init(maxUDFRegisters(program.Functions.UserDefined))
+	s.registers = mem.NewRegisterFile(program.Registers)
+	s.scratch = mem.NewScratch(len(program.Params))
+	s.frames = frame.NewCallStack(maxUDFRegisters(program.Functions.UserDefined))
 }
 
 func (s *execState) start(env *Environment) {
@@ -53,7 +53,7 @@ func (s *execState) start(env *Environment) {
 }
 
 func (s *execState) end() {
-	s.frames.Reset(s.registers.Values)
+	s.frames.Reset(s.registers)
 	s.registers.Reset()
 	s.scratch.Reset()
 
@@ -212,7 +212,7 @@ func (s *execState) resolveRuntimeDefault(failure pendingFailure) errAction {
 
 func (s *execState) applyFailureFallback(failure pendingFailure) {
 	if failure.setFallback && failure.dst.IsRegister() {
-		s.registers.Values[failure.dst] = normalizeValue(failure.fallback)
+		s.registers[failure.dst] = normalizeValue(failure.fallback)
 	}
 }
 
@@ -288,7 +288,7 @@ func (s *execState) tryCatch(pos int) (bytecode.Catch, bool) {
 }
 
 func (s *execState) setOrRaiseDefault(pc int, dst bytecode.Operand, val runtime.Value, err error) {
-	reg := s.registers.Values
+	reg := s.registers
 
 	if err == nil {
 		reg[dst] = normalizeValue(val)
@@ -300,12 +300,12 @@ func (s *execState) setOrRaiseDefault(pc int, dst bytecode.Operand, val runtime.
 
 func (s *execState) setOrOptional(pc int, dst bytecode.Operand, val runtime.Value, err error, optional bool) {
 	if err == nil {
-		s.registers.Values[dst] = normalizeValue(val)
+		s.registers[dst] = normalizeValue(val)
 		return
 	}
 
 	if optional && s.isNullMemberDereference(err) {
-		s.registers.Values[dst] = runtime.None
+		s.registers[dst] = runtime.None
 		return
 	}
 
@@ -318,29 +318,29 @@ func (s *execState) setOrOptional(pc int, dst bytecode.Operand, val runtime.Valu
 }
 
 func (s *execState) unwindToProtected() bool {
-	registers, pc, ok := s.frames.UnwindToRecoveryBoundary(s.registers.Values)
+	registers, pc, ok := s.frames.UnwindToRecoveryBoundary(s.registers)
 	if !ok {
 		return false
 	}
 
-	s.registers.Values = registers
+	s.registers = registers
 	s.pc = pc
 	return true
 }
 
 func (s *execState) returnToCaller(retVal runtime.Value) bool {
-	registers, pc, ok := s.frames.ReturnToCaller(s.registers.Values, retVal)
+	registers, pc, ok := s.frames.ReturnToCaller(s.registers, retVal)
 	if !ok {
 		return false
 	}
 
-	s.registers.Values = registers
+	s.registers = registers
 	s.pc = pc
 	return true
 }
 
 func (s *execState) setCallResult(pc int, op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) {
-	reg := s.registers.Values
+	reg := s.registers
 
 	if err == nil {
 		reg[dst] = normalizeValue(out)

@@ -39,7 +39,7 @@ func collectUdfArgsInto(dst, src []runtime.Value, start, count int) int {
 }
 
 func (s *execState) callUdf(desc *callDescriptor, udf *bytecode.UDF) error {
-	reg := s.registers.Values
+	reg := s.registers
 
 	if desc.ArgCount != udf.Params {
 		return runtime.Error(runtime.ErrInvalidArgument, fmt.Sprintf("UDF '%s' expects %d arguments, got %d", udf.Name, udf.Params, desc.ArgCount))
@@ -55,21 +55,21 @@ func (s *execState) callUdf(desc *callDescriptor, udf *bytecode.UDF) error {
 	s.frames.Push(frame.CallFrame{
 		ReturnPC:         s.pc,
 		ReturnDest:       desc.Dst,
-		Registers:        s.registers.Values,
+		Registers:        s.registers,
 		RecoveryBoundary: desc.RecoveryBoundary,
 		FnID:             desc.ID,
 		FnName:           desc.DisplayName,
 		CallSitePC:       s.pc - 1,
 		HasCallSite:      true,
 	})
-	s.registers.Values = newRegs
+	s.registers = newRegs
 	s.pc = udf.Entry
 
 	return nil
 }
 
 func (s *execState) tailCallUdf(desc *callDescriptor, udf *bytecode.UDF) error {
-	reg := s.registers.Values
+	reg := s.registers
 	argStart := desc.ArgStart
 	argCount := desc.ArgCount
 
@@ -112,7 +112,7 @@ func (s *execState) tailCallUdf(desc *callDescriptor, udf *bytecode.UDF) error {
 			copy(reg[1:], args)
 		}
 
-		s.registers.Values = reg
+		s.registers = reg
 	} else {
 		newRegs := s.frames.AcquireRegisters(udf.Registers)
 
@@ -121,7 +121,7 @@ func (s *execState) tailCallUdf(desc *callDescriptor, udf *bytecode.UDF) error {
 		}
 
 		s.frames.ReleaseRegisters(reg)
-		s.registers.Values = newRegs
+		s.registers = newRegs
 	}
 
 	s.pc = udf.Entry

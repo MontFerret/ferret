@@ -16,9 +16,10 @@ type (
 	}
 )
 
-// Init initializes the underlying register pool.
-func (s *CallStack) Init(maxPoolSize int) {
-	s.pool.Init(maxPoolSize)
+func NewCallStack(maxPoolSize int) CallStack {
+	return CallStack{
+		pool: NewPool(maxPoolSize),
+	}
 }
 
 // Reset drains active frames, reclaims discarded register windows, and clears frame metadata.

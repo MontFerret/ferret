@@ -124,7 +124,7 @@ loop:
 		inst := &instructions[pc]
 		op := inst.Opcode
 		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
-		reg := state.registers.Values
+		reg := state.registers
 		state.pc = pc + 1
 
 		switch op {
@@ -345,14 +345,14 @@ loop:
 			arg := reg[src2]
 
 			// TODO: inline loadIndexAndSet for better performance
-			vm.loadIndexAndSet(state, ctx, dst, pc, src, arg, optional)
+			vm.loadIndexAndSet(ctx, dst, pc, src, arg, optional)
 		case bytecode.OpLoadKey, bytecode.OpLoadKeyOptional:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadKeyOptional
 			arg := reg[src2]
 
 			// TODO: inline loadIndexAndSet for better performance
-			vm.loadKeyAndSet(state, ctx, dst, pc, src, arg, optional)
+			vm.loadKeyAndSet(ctx, dst, pc, src, arg, optional)
 		case bytecode.OpLoadProperty, bytecode.OpLoadPropertyOptional:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadPropertyOptional
@@ -360,25 +360,25 @@ loop:
 
 			// TODO: inline loadIndexAndSet for better performance
 			// I guess the reason it cannot inline is due to a different control flow
-			vm.loadPropertyAndSet(state, ctx, dst, pc, src, prop, optional)
+			vm.loadPropertyAndSet(ctx, dst, pc, src, prop, optional)
 		case bytecode.OpLoadIndexConst, bytecode.OpLoadIndexOptionalConst:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadIndexOptionalConst
 			arg := constants[src2.Constant()]
 
-			vm.loadIndexAndSet(state, ctx, dst, pc, src, arg, optional)
+			vm.loadIndexAndSet(ctx, dst, pc, src, arg, optional)
 		case bytecode.OpLoadKeyConst, bytecode.OpLoadKeyOptionalConst:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadKeyOptionalConst
 			arg := constants[src2.Constant()]
 
-			vm.loadKeyConstAndSet(state, ctx, dst, pc, inst, src, arg, optional)
+			vm.loadKeyConstAndSet(ctx, dst, pc, inst, src, arg, optional)
 		case bytecode.OpLoadPropertyConst, bytecode.OpLoadPropertyOptionalConst:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadPropertyOptionalConst
 			prop := constants[src2.Constant()]
 
-			vm.loadPropertyConstAndSet(state, ctx, dst, pc, inst, src, prop, optional)
+			vm.loadPropertyConstAndSet(ctx, dst, pc, inst, src, prop, optional)
 		case bytecode.OpPush:
 			ds := reg[dst].(runtime.Appendable)
 
@@ -762,7 +762,7 @@ loop:
 		}
 	}
 
-	return state.registers.Values[bytecode.NoopOperand], nil
+	return state.registers[bytecode.NoopOperand], nil
 }
 
 func (vm *VM) regexpCached(pc int, value runtime.Value) (*data.Regexp, error) {
@@ -1034,9 +1034,11 @@ func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Valu
 	return out, nil
 }
 
-func (vm *VM) loadIndexAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, src, arg runtime.Value, optional bool) {
+func (vm *VM) loadIndexAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, arg runtime.Value, optional bool) {
+	state := &vm.state
+
 	if optional && src == runtime.None {
-		state.registers.Values[dst] = runtime.None
+		state.registers[dst] = runtime.None
 		return
 	}
 
@@ -1044,9 +1046,11 @@ func (vm *VM) loadIndexAndSet(state *execState, ctx context.Context, dst bytecod
 	state.setOrOptional(pc, dst, out, err, optional)
 }
 
-func (vm *VM) loadKeyAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, src, arg runtime.Value, optional bool) {
+func (vm *VM) loadKeyAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, arg runtime.Value, optional bool) {
+	state := &vm.state
+
 	if optional && src == runtime.None {
-		state.registers.Values[dst] = runtime.None
+		state.registers[dst] = runtime.None
 		return
 	}
 
@@ -1054,9 +1058,11 @@ func (vm *VM) loadKeyAndSet(state *execState, ctx context.Context, dst bytecode.
 	state.setOrOptional(pc, dst, out, err, optional)
 }
 
-func (vm *VM) loadKeyConstAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, inst *execInstruction, src, arg runtime.Value, optional bool) {
+func (vm *VM) loadKeyConstAndSet(ctx context.Context, dst bytecode.Operand, pc int, inst *execInstruction, src, arg runtime.Value, optional bool) {
+	state := &vm.state
+
 	if optional && src == runtime.None {
-		state.registers.Values[dst] = runtime.None
+		state.registers[dst] = runtime.None
 		return
 	}
 
@@ -1064,9 +1070,11 @@ func (vm *VM) loadKeyConstAndSet(state *execState, ctx context.Context, dst byte
 	state.setOrOptional(pc, dst, out, err, optional)
 }
 
-func (vm *VM) loadPropertyAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, src, prop runtime.Value, optional bool) {
+func (vm *VM) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, prop runtime.Value, optional bool) {
+	state := &vm.state
+
 	if optional && src == runtime.None {
-		state.registers.Values[dst] = runtime.None
+		state.registers[dst] = runtime.None
 		return
 	}
 
@@ -1085,9 +1093,11 @@ func (vm *VM) loadPropertyAndSet(state *execState, ctx context.Context, dst byte
 	state.setOrOptional(pc, dst, out, err, optional)
 }
 
-func (vm *VM) loadPropertyConstAndSet(state *execState, ctx context.Context, dst bytecode.Operand, pc int, inst *execInstruction, src, prop runtime.Value, optional bool) {
+func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst bytecode.Operand, pc int, inst *execInstruction, src, prop runtime.Value, optional bool) {
+	state := &vm.state
+
 	if optional && src == runtime.None {
-		state.registers.Values[dst] = runtime.None
+		state.registers[dst] = runtime.None
 		return
 	}
 

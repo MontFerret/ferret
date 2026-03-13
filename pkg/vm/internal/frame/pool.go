@@ -7,13 +7,14 @@ type Pool struct {
 	buckets [][][]runtime.Value
 }
 
-// Init prepares the pool with buckets up to maxSize.
-func (p *Pool) Init(maxSize int) {
+func NewPool(maxSize int) Pool {
 	if maxSize < 0 {
 		maxSize = 0
 	}
 
-	p.buckets = make([][][]runtime.Value, maxSize+1)
+	return Pool{
+		buckets: make([][][]runtime.Value, maxSize+1),
+	}
 }
 
 func (p *Pool) Get(size int) []runtime.Value {
