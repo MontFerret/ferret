@@ -13,6 +13,7 @@ type Pool struct {
 	program  *bytecode.Program
 	opts     []Option
 	idle     []*VM
+	inUse    map[*VM]struct{}
 	total    int
 	max      int
 	maxTotal int
@@ -36,6 +37,7 @@ func NewPoolWithLimits(program *bytecode.Program, maxIdle, maxTotal int, opts ..
 	return &Pool{
 		program:  program,
 		opts:     opts,
+		inUse:    make(map[*VM]struct{}),
 		max:      maxIdle,
 		maxTotal: maxTotal,
 	}
@@ -43,6 +45,10 @@ func NewPoolWithLimits(program *bytecode.Program, maxIdle, maxTotal int, opts ..
 
 func (p *Pool) Acquire() (*VM, error) {
 	p.mu.Lock()
+	if p.inUse == nil {
+		p.inUse = make(map[*VM]struct{})
+	}
+
 	if p.closed {
 		p.mu.Unlock()
 		return nil, ErrPoolClosed
@@ -51,6 +57,7 @@ func (p *Pool) Acquire() (*VM, error) {
 	if len(p.idle) > 0 {
 		vm := p.idle[len(p.idle)-1]
 		p.idle = p.idle[:len(p.idle)-1]
+		p.inUse[vm] = struct{}{}
 		p.mu.Unlock()
 
 		return vm, nil
@@ -86,6 +93,8 @@ func (p *Pool) Acquire() (*VM, error) {
 
 		return nil, errors.Join(ErrPoolClosed, instance.Close())
 	}
+
+	p.inUse[instance] = struct{}{}
 	p.mu.Unlock()
 
 	return instance, nil
@@ -99,6 +108,13 @@ func (p *Pool) Release(vm *VM) {
 	shouldClose := false
 
 	p.mu.Lock()
+	if _, ok := p.inUse[vm]; !ok {
+		p.mu.Unlock()
+		return
+	}
+
+	delete(p.inUse, vm)
+
 	switch {
 	case p.closed || vm.closed:
 		shouldClose = !vm.closed

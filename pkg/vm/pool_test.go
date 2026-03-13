@@ -114,6 +114,119 @@ func TestPoolAcquireRespectsTotalCapacity(t *testing.T) {
 	}
 }
 
+func TestPoolReleaseIgnoresDuplicateReleaseOfIdleVM(t *testing.T) {
+	t.Parallel()
+
+	pool := NewPoolWithLimits(newPoolTestProgram(), 1, 1)
+	instance, err := pool.Acquire()
+	if err != nil {
+		t.Fatalf("expected acquire to succeed, got: %v", err)
+	}
+
+	closer := newTrackingCloser("retained")
+	instance.state.owned.Track(closer)
+
+	pool.Release(instance)
+	pool.Release(instance)
+
+	if got := closer.closed; got != 0 {
+		t.Fatalf("expected duplicate release not to close retained VM, got %d closes", got)
+	}
+
+	reused, err := pool.Acquire()
+	if err != nil {
+		t.Fatalf("expected retained VM to be reused, got: %v", err)
+	}
+
+	if reused != instance {
+		t.Fatal("expected duplicate release not to replace the retained VM")
+	}
+
+	_, err = pool.Acquire()
+	if !errors.Is(err, ErrPoolExhausted) {
+		t.Fatalf("expected duplicate release not to free extra capacity, got: %v", err)
+	}
+
+	pool.Release(reused)
+}
+
+func TestPoolReleaseOfManuallyClosedVMIgnoresDuplicates(t *testing.T) {
+	t.Parallel()
+
+	pool := NewPoolWithLimits(newPoolTestProgram(), 1, 1)
+	instance, err := pool.Acquire()
+	if err != nil {
+		t.Fatalf("expected acquire to succeed, got: %v", err)
+	}
+
+	closer := newTrackingCloser("manual-close")
+	instance.state.owned.Track(closer)
+
+	if err := instance.Close(); err != nil {
+		t.Fatalf("expected manual close to succeed, got: %v", err)
+	}
+
+	if got := closer.closed; got != 1 {
+		t.Fatalf("expected manual close to close VM once, got %d", got)
+	}
+
+	pool.Release(instance)
+	pool.Release(instance)
+
+	if got := closer.closed; got != 1 {
+		t.Fatalf("expected duplicate release not to re-close VM, got %d", got)
+	}
+
+	replacement, err := pool.Acquire()
+	if err != nil {
+		t.Fatalf("expected capacity to be freed after releasing closed VM, got: %v", err)
+	}
+
+	_, err = pool.Acquire()
+	if !errors.Is(err, ErrPoolExhausted) {
+		t.Fatalf("expected duplicate release not to free extra capacity, got: %v", err)
+	}
+
+	pool.Release(replacement)
+}
+
+func TestPoolDuplicateReleaseOfClosedVMDoesNotBypassTotalCapacity(t *testing.T) {
+	t.Parallel()
+
+	pool := NewPoolWithLimits(newPoolTestProgram(), 0, 1)
+	first, err := pool.Acquire()
+	if err != nil {
+		t.Fatalf("expected first acquire to succeed, got: %v", err)
+	}
+
+	closer := newTrackingCloser("dropped")
+	first.state.owned.Track(closer)
+
+	pool.Release(first)
+
+	if got := closer.closed; got != 1 {
+		t.Fatalf("expected zero-idle release to close VM once, got %d", got)
+	}
+
+	second, err := pool.Acquire()
+	if err != nil {
+		t.Fatalf("expected capacity to be available after first release, got: %v", err)
+	}
+
+	pool.Release(first)
+
+	if got := closer.closed; got != 1 {
+		t.Fatalf("expected duplicate release not to re-close VM, got %d", got)
+	}
+
+	_, err = pool.Acquire()
+	if !errors.Is(err, ErrPoolExhausted) {
+		t.Fatalf("expected duplicate release not to bypass total capacity, got: %v", err)
+	}
+
+	pool.Release(second)
+}
+
 func TestPoolReleaseWhenIdleIsFullClosesDroppedVMAndFreesCapacity(t *testing.T) {
 	t.Parallel()
 
