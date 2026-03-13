@@ -13,11 +13,7 @@ func warmup(vm *VM, env *Environment) error {
 		return err
 	}
 
-	if err := ensureRegexpsWarmed(vm); err != nil {
-		return err
-	}
-
-	return nil
+	return ensureRegexpsWarmed(vm)
 }
 
 func ensureRegexpsWarmed(vm *VM) error {
