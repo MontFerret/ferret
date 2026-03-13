@@ -172,7 +172,7 @@ func TestRunLogsDeferredCleanupErrorsWithoutChangingRunResult(t *testing.T) {
 		_ = result.Close()
 	}()
 
-	val, err := One(context.Background(), result)
+	val, err := result.Value()
 	if err != nil {
 		t.Fatalf("failed to read run result: %v", err)
 	}

@@ -87,7 +87,7 @@ func (e *Engine) Compile(ctx context.Context, src *file.Source) (*Plan, error) {
 	}, nil
 }
 
-func (e *Engine) Run(ctx context.Context, src *file.Source, opts ...SessionOption) (Result, error) {
+func (e *Engine) Run(ctx context.Context, src *file.Source, opts ...SessionOption) (*Result, error) {
 	plan, err := e.Compile(ctx, src)
 
 	if err != nil {

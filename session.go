@@ -26,7 +26,7 @@ type Session struct {
 	hooks    sessionHooks
 }
 
-func (s *Session) Run(c context.Context) (Result, error) {
+func (s *Session) Run(c context.Context) (*Result, error) {
 	// Before-run hooks can replace the context used for the rest of execution.
 	ctx, err := s.hooks.runBeforeRunHooks(c)
 	if err != nil {
