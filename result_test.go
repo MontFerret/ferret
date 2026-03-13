@@ -62,7 +62,7 @@ func (it *testIterator) Next(context.Context) (runtime.Value, runtime.Value, err
 
 func (it *testIterator) Close() error {
 	if it.closeCalls != nil {
-		*it.closeCalls++
+		(*it.closeCalls)++
 	}
 
 	return nil
