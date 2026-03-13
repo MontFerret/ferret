@@ -22,34 +22,27 @@ const (
 )
 
 type Loop struct {
-	Kind     LoopKind
-	Type     LoopType
-	Distinct bool
-	Allocate bool
-
-	Src   bytecode.Operand
-	State bytecode.Operand
-
-	ValueName string
-	Value     bytecode.Operand
-	KeyName   string
-	Key       bytecode.Operand
-
-	// For WHILE/STEP loops
-	InitFn      func() bytecode.Operand
-	ConditionFn func() bytecode.Operand
-	UpdateFn    func() bytecode.Operand
-
-	Dst bytecode.Operand
-
+	UpdateFn      func() bytecode.Operand
+	ConditionFn   func() bytecode.Operand
+	InitFn        func() bytecode.Operand
+	ValueName     string
 	LabelBase     string
+	KeyName       string
 	startLabel    Label
 	condLabel     Label
-	continueLabel Label
-	bodyLabel     Label
 	endLabel      Label
-
-	resetRegs []bytecode.Operand
+	bodyLabel     Label
+	continueLabel Label
+	resetRegs     []bytecode.Operand
+	Src           bytecode.Operand
+	Dst           bytecode.Operand
+	Type          LoopType
+	Kind          LoopKind
+	Value         bytecode.Operand
+	Key           bytecode.Operand
+	State         bytecode.Operand
+	Distinct      bool
+	Allocate      bool
 }
 
 func (l *Loop) StartLabel() Label {

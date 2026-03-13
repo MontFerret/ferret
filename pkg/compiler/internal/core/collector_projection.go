@@ -3,9 +3,9 @@ package core
 import "github.com/antlr4-go/antlr/v4"
 
 type CollectorProjection struct {
+	ctx            antlr.ParserRuleContext
 	groupsVariable string
 	countVariable  string
-	ctx            antlr.ParserRuleContext
 }
 
 func NewCollectorGroupProjection(groupsVariable string, ctx antlr.ParserRuleContext) *CollectorProjection {

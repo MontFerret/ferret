@@ -6,8 +6,8 @@ import (
 )
 
 type ObjectIterator struct {
-	keys []string
 	data map[string]Value
+	keys []string
 	pos  int
 }
 

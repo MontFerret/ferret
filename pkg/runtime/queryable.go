@@ -7,9 +7,9 @@ import (
 type (
 	// Query represents a query literal used by the operator index.
 	Query struct {
+		Options Value  `json:"options"`
 		Kind    String `json:"kind"`
 		Payload String `json:"payload"`
-		Options Value  `json:"options"`
 	}
 
 	// Queryable allows values to handle operator index queries.

@@ -5,8 +5,8 @@ import (
 )
 
 type CollectorAggregation struct {
-	state    bytecode.Operand
 	selector []*AggregateSelector
+	state    bytecode.Operand
 	fused    bool
 }
 

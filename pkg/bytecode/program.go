@@ -16,23 +16,23 @@ type (
 	Catch [3]int
 
 	Metadata struct {
+		Labels            map[int]string  `json:"labels"`
 		CompilerVersion   string          `json:"compilerVersion"`
-		OptimizationLevel int             `json:"optimizationLevel"`
 		AggregatePlans    []AggregatePlan `json:"aggregatePlans"`
 		DebugSpans        []file.Span     `json:"debugSpans"`
-		Labels            map[int]string  `json:"labels"`
+		OptimizationLevel int             `json:"optimizationLevel"`
 	}
 
 	Program struct {
-		ISAVersion int
+		Metadata   Metadata
 		Source     *file.Source
-		Registers  int
+		Functions  Functions
 		Bytecode   []Instruction
 		Constants  []runtime.Value
 		CatchTable []Catch
 		Params     []string
-		Functions  Functions
-		Metadata   Metadata
+		ISAVersion int
+		Registers  int
 	}
 )
 

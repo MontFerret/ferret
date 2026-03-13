@@ -2,8 +2,8 @@ package core
 
 type (
 	Label struct {
-		id   labelID
 		name string
+		id   labelID
 		addr int
 	}
 

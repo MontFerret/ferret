@@ -29,14 +29,14 @@ type (
 	waitForBackoff int
 
 	waitPredicateCompileConfig struct {
-		mode          waitForPredicateMode
 		predExpr      fql.IExpressionContext
+		jitterLiteral *float64
+		mode          waitForPredicateMode
 		timeoutReg    bytecode.Operand
 		everyReg      bytecode.Operand
 		capEveryReg   bytecode.Operand
 		backoff       waitForBackoff
 		jitterReg     bytecode.Operand
-		jitterLiteral *float64
 		hasJitter     bool
 	}
 

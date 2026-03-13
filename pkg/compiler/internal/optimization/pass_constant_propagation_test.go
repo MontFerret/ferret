@@ -26,12 +26,12 @@ func runConstantPropagation(t *testing.T, program *bytecode.Program) (*PassResul
 }
 
 type concatFoldingCase struct {
-	name         string
+	wantConst    runtime.Value
 	program      func() *bytecode.Program
+	name         string
 	target       int
 	wantModified bool
 	wantOpcode   bytecode.Opcode
-	wantConst    runtime.Value
 }
 
 var concatFoldingPositiveCases = []concatFoldingCase{
@@ -246,12 +246,12 @@ func assertConstEqual(actual, expected runtime.Value) error {
 }
 
 type resolveBinaryFoldOperandsCase struct {
-	name      string
-	inst      bytecode.Instruction
-	state     constState
-	program   *bytecode.Program
 	wantLeft  runtime.Value
 	wantRight runtime.Value
+	state     constState
+	program   *bytecode.Program
+	name      string
+	inst      bytecode.Instruction
 	wantOK    bool
 }
 
@@ -388,11 +388,11 @@ func TestConstantPropagation_ResolveConcatFoldOperands(t *testing.T) {
 
 func TestConstantPropagation_BuildConcatFoldConst(t *testing.T) {
 	tests := []struct {
-		name   string
+		want   runtime.Value
 		state  constState
+		name   string
 		start  int
 		count  int
-		want   runtime.Value
 		wantOK bool
 	}{
 		{

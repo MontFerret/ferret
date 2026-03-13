@@ -9,9 +9,9 @@ import (
 
 type instructionUseDefCase struct {
 	name     string
-	inst     bytecode.Instruction
 	wantUses []int
 	wantDefs []int
+	inst     bytecode.Instruction
 }
 
 var instructionUseDefCases = []instructionUseDefCase{

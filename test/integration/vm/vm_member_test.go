@@ -265,15 +265,13 @@ func TestOptionalChaining(t *testing.T) {
 
 func TestTaggedTypes(t *testing.T) {
 	type SomeValue struct {
-		StrProp        string     `ferret:"strProp"`
-		IntProp        int        `ferret:"intProp"`
-		SliceProp      []int      `ferret:"sliceProp"`
 		PointerProp    *SomeValue `ferret:"pointerProp"`
 		NilPointerProp *SomeValue `ferret:"nilPointerProp"`
-
-		UntaggedProp string
-
+		StrProp        string     `ferret:"strProp"`
+		UntaggedProp   string
 		privateStrProp string
+		SliceProp      []int `ferret:"sliceProp"`
+		IntProp        int   `ferret:"intProp"`
 	}
 
 	RunUseCases(t, []UseCase{

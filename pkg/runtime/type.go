@@ -26,15 +26,15 @@ type (
 	// name is the string representation of the type's name.
 	// assert is a TypeMatcher function used to determine if a value matches this type.
 	runtimeType struct {
-		name   string
 		assert TypeMatcher
+		name   string
 	}
 
 	// hostType is a struct that represents a type defined in the host environment (e.g., Go types).
 	// name is the string representation of the type's name, typically in the format "package.TypeName".
 	hostType struct {
-		name string
 		typ  reflect.Type
+		name string
 	}
 )
 

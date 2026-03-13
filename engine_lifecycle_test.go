@@ -13,8 +13,8 @@ import (
 )
 
 type testModule struct {
-	name       string
 	registerFn func(boot Bootstrap) error
+	name       string
 }
 
 func (m testModule) Name() string {

@@ -39,11 +39,11 @@ type (
 	}
 
 	Profiler struct {
-		labels []string
 		timers map[string]*Timer
 		allocs map[string]*rt.MemStats
 		cpus   map[string]*bytes.Buffer
 		heaps  map[string]*bytes.Buffer
+		labels []string
 	}
 )
 

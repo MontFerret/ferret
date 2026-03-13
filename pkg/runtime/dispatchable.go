@@ -5,9 +5,9 @@ import "context"
 type (
 	// DispatchEvent represents an event that can be dispatched by a Dispatchable entity.
 	DispatchEvent struct {
-		Name    String `json:"name"`
 		Payload Value  `json:"payload"`
 		Options Value  `json:"options"`
+		Name    String `json:"name"`
 	}
 
 	// Dispatchable represents an entity that can dispatch events.

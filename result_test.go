@@ -43,9 +43,9 @@ func (v *testIterableValue) Close() error {
 }
 
 type testIterator struct {
+	closeCalls *int
 	values     []runtime.Value
 	index      int
-	closeCalls *int
 }
 
 func (it *testIterator) Next(context.Context) (runtime.Value, runtime.Value, error) {

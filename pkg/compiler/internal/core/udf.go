@@ -7,8 +7,8 @@ import (
 
 type (
 	UDFTable struct {
-		Functions   []*UDFInfo
 		GlobalScope *UDFScope
+		Functions   []*UDFInfo
 	}
 
 	UDFScope struct {
@@ -17,14 +17,14 @@ type (
 	}
 
 	UDFInfo struct {
-		ID          int
+		Decl        fql.IFunctionDeclarationContext
+		Scope       *UDFScope
+		BodyScope   *UDFScope
 		Name        string
 		DisplayName string
 		Params      []string
 		Captures    []string
-		Decl        fql.IFunctionDeclarationContext
-		Scope       *UDFScope
-		BodyScope   *UDFScope
+		ID          int
 		Entry       int
 		Registers   int
 	}

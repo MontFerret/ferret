@@ -7,8 +7,8 @@ import (
 )
 
 type CollectSelector struct {
-	name runtime.String
 	ctx  antlr.ParserRuleContext
+	name runtime.String
 }
 
 func NewCollectSelector(name runtime.String, ctx antlr.ParserRuleContext) *CollectSelector {

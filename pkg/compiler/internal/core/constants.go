@@ -9,8 +9,8 @@ import (
 
 // ConstantPool stores and deduplicates constants
 type ConstantPool struct {
-	values []runtime.Value
 	index  map[uint64]int
+	values []runtime.Value
 }
 
 func NewConstantPool() *ConstantPool {

@@ -13,10 +13,10 @@ import (
 func TestOpConcat(t *testing.T) {
 	testCases := []struct {
 		name     string
+		expected runtime.String
 		values   []runtime.Value
 		startReg int
 		count    int
-		expected runtime.String
 	}{
 		{
 			name:     "count zero returns empty string",
@@ -109,10 +109,10 @@ func TestOpConcat(t *testing.T) {
 
 func TestOpAddConst(t *testing.T) {
 	testCases := []struct {
-		name     string
 		left     runtime.Value
 		right    runtime.Value
 		expected runtime.Value
+		name     string
 	}{
 		{
 			name:     "int plus int",

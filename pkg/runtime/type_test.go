@@ -48,9 +48,9 @@ func (t typedList) Type() runtime.Type {
 
 func TestValidateType(t *testing.T) {
 	type testCase struct {
-		Name     string
 		Input    runtime.Value
 		Expected runtime.Type
+		Name     string
 		Failure  bool
 	}
 

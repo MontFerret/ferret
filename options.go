@@ -14,14 +14,14 @@ import (
 
 type (
 	options struct {
-		noStdlib bool
-		compiler []compiler.Option
+		logging  runtime.LogSettings
 		library  runtime.Library
 		params   runtime.Params
-		logging  runtime.LogSettings
 		encoding *encoding.Registry
-		modules  []Module
 		hooks    *hookRegistry
+		compiler []compiler.Option
+		modules  []Module
+		noStdlib bool
 	}
 
 	Option func(env *options) error

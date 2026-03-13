@@ -57,6 +57,7 @@ doc:
 
 # http://golang.org/cmd/go/#hdr-Run_gofmt_on_package_sources
 fmt:
+	fieldalignment --fix  ./... && \
 	go fmt ./... && \
 	goimports -w -local github.com/MontFerret ${DIR_PKG} ${DIR_INTEG} ${DIR_E2E}
 

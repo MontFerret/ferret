@@ -21,11 +21,11 @@ const (
 )
 
 type decodeFrame struct {
-	kind      frameKind
 	obj       *runtime.Object
 	arr       *runtime.Array
-	expectKey bool
 	key       string
+	kind      frameKind
+	expectKey bool
 }
 
 const jsonHex = "0123456789abcdef"
@@ -155,8 +155,8 @@ func encodeAny(buf *bytes.Buffer, value any) error {
 
 func encodeMap(ctx context.Context, buf *bytes.Buffer, value runtime.Map) error {
 	type entry struct {
-		key string
 		val runtime.Value
+		key string
 	}
 
 	entries := make([]entry, 0)

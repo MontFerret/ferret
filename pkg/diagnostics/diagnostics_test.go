@@ -13,8 +13,8 @@ func TestMultiCompilationError(t *testing.T) {
 		Convey("Diagnostic() should return correct message format", func() {
 			tests := []struct {
 				name   string
-				errors []*Diagnostic
 				want   string
+				errors []*Diagnostic
 			}{
 				{
 					name:   "no errors",
@@ -51,8 +51,8 @@ func TestMultiCompilationError(t *testing.T) {
 
 			tests := []struct {
 				name   string
-				errors []*Diagnostic
 				want   string
+				errors []*Diagnostic
 			}{
 				{
 					name:   "no errors",

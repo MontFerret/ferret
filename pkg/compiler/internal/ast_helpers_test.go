@@ -142,9 +142,9 @@ func TestResolveWaitPredicateMode(t *testing.T) {
 
 func TestParseDurationLiteral_Valid(t *testing.T) {
 	tests := []struct {
+		expected    runtime.Value
 		name        string
 		input       string
-		expected    runtime.Value
 		expectFloat bool
 	}{
 		{

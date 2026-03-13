@@ -7,6 +7,7 @@ import (
 
 type printer struct {
 	out             io.Writer
+	err             error
 	opts            *Options
 	indent          int
 	lineColumn      int
@@ -14,7 +15,6 @@ type printer struct {
 	lastWasSpace    bool
 	forceSingleLine bool
 	sawHardNewline  bool
-	err             error
 }
 
 func newPrinter(out io.Writer, opts *Options) *printer {

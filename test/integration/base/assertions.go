@@ -20,8 +20,8 @@ type (
 	}
 
 	ExpectedMultiError struct {
-		Number int
 		Errors []*ExpectedError
+		Number int
 	}
 )
 

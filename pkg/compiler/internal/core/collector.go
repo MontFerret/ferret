@@ -5,11 +5,11 @@ import (
 )
 
 type Collector struct {
+	projection     *CollectorProjection
+	aggregation    *CollectorAggregation
+	groupSelectors []*CollectSelector
 	typ            bytecode.CollectorType
 	dst            bytecode.Operand
-	projection     *CollectorProjection
-	groupSelectors []*CollectSelector
-	aggregation    *CollectorAggregation
 }
 
 func NewCollector(type_ bytecode.CollectorType, dst bytecode.Operand, projection *CollectorProjection, groupSelectors []*CollectSelector, aggregation *CollectorAggregation) *Collector {

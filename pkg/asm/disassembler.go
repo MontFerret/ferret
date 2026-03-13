@@ -188,8 +188,8 @@ func collectUdfEntryLabels(p *bytecode.Program) udfEntryLabels {
 	}
 
 	type udfEntry struct {
-		id    int
 		name  string
+		id    int
 		entry int
 	}
 

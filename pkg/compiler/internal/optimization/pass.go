@@ -7,8 +7,8 @@ import (
 type (
 	// PassResult contains the result of running a pass
 	PassResult struct {
-		Modified bool           // Whether the program was modified
-		Metadata map[string]any // Pass-specific metadata
+		Metadata map[string]any
+		Modified bool
 	}
 
 	PassContext struct {

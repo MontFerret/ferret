@@ -50,9 +50,9 @@ type (
 	}
 
 	optionalMemberChainState struct {
+		endLabel  core.Label
 		stickyDst bool
 		hasJump   bool
-		endLabel  core.Label
 	}
 )
 

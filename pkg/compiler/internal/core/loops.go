@@ -7,9 +7,9 @@ import (
 )
 
 type LoopTable struct {
-	stack     []*Loop
 	registers *RegisterAllocator
 	ordinals  map[int]int
+	stack     []*Loop
 }
 
 func NewLoopTable(registers *RegisterAllocator) *LoopTable {

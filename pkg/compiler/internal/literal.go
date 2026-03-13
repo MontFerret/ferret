@@ -249,8 +249,8 @@ func (c *LiteralCompiler) CompileTemplateLiteral(ctx fql.ITemplateLiteralContext
 	}
 
 	type part struct {
-		literal string
 		expr    fql.IExpressionContext
+		literal string
 	}
 
 	elements := ctx.AllTemplateElement()

@@ -13,11 +13,11 @@ type (
 
 	peepholeRunState struct {
 		prog               *bytecode.Program
-		bytecodeLen        int
 		targets            map[int]bool
 		liveness           map[int]*LivenessInfo
 		blockByInstruction []*BasicBlock
 		keep               []bool
+		bytecodeLen        int
 	}
 )
 

@@ -9,11 +9,11 @@ import (
 )
 
 type Emitter struct {
+	labels       map[labelID]Label
+	patches      map[labelID][]labelRef
 	instructions []bytecode.Instruction
 	spans        []file.Span
 	currentSpan  file.Span
-	labels       map[labelID]Label
-	patches      map[labelID][]labelRef
 	nextLabelID  labelID
 }
 

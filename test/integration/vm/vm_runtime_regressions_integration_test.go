@@ -22,8 +22,8 @@ func TestStrictWarmupFailsProtectedMissingHostCallForDefaultAndBuiltEnvironment(
 		builtEnv := mustNewEnvironment(t)
 
 		cases := []struct {
-			name string
 			env  *vm.Environment
+			name string
 		}{
 			{name: "default", env: vm.NewDefaultEnvironment()},
 			{name: "built", env: builtEnv},
@@ -45,8 +45,8 @@ func TestStrictWarmupFailsOnDeadCodeUnresolvedHostCall(t *testing.T) {
 		}))
 
 		cases := []struct {
-			name string
 			env  *vm.Environment
+			name string
 		}{
 			{name: "default", env: vm.NewDefaultEnvironment()},
 			{name: "dummy", env: envWithDummy},

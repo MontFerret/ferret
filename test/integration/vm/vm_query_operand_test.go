@@ -12,9 +12,9 @@ import (
 )
 
 type integrationQueryStub struct {
-	queries []runtime.Query
 	result  runtime.List
 	err     error
+	queries []runtime.Query
 }
 
 func (q *integrationQueryStub) Query(_ context.Context, query runtime.Query) (runtime.List, error) {
@@ -148,8 +148,8 @@ func TestApplyQueryConstantSource_FastMode_NoPanic(t *testing.T) {
 
 func TestApplyQueryConstantSource_NonQueryable_NoPanicTypeError(t *testing.T) {
 	cases := []struct {
-		name string
 		run  func() (runtime.Value, error)
+		name string
 	}{
 		{
 			name: "strict",

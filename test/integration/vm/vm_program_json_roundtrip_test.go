@@ -39,10 +39,10 @@ func (q *roundTripQueryable) Copy() runtime.Value {
 }
 
 type roundTripCase struct {
-	expression  string
 	expected    any
-	options     []vm.EnvironmentOption
+	expression  string
 	description string
+	options     []vm.EnvironmentOption
 }
 
 func (c roundTripCase) name() string {

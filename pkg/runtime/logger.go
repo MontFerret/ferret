@@ -12,8 +12,8 @@ type (
 
 	LogSettings struct {
 		Writer io.Writer
-		Level  LogLevel
 		Fields map[string]interface{}
+		Level  LogLevel
 	}
 )
 

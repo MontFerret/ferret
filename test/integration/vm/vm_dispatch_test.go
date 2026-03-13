@@ -10,9 +10,9 @@ import (
 )
 
 type testDispatcher struct {
-	events []runtime.DispatchEvent
 	result runtime.Value
 	err    error
+	events []runtime.DispatchEvent
 }
 
 func (d *testDispatcher) Dispatch(_ context.Context, event runtime.DispatchEvent) (runtime.Value, error) {

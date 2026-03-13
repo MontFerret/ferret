@@ -43,14 +43,13 @@ type (
 
 	FunctionsBuilder struct {
 		FunctionDefs
-
-		namespace string
 		av        *defaultFnDef[Function]
 		a0        *defaultFnDef[Function0]
 		a1        *defaultFnDef[Function1]
 		a2        *defaultFnDef[Function2]
 		a3        *defaultFnDef[Function3]
 		a4        *defaultFnDef[Function4]
+		namespace string
 	}
 
 	listable interface {
@@ -64,9 +63,9 @@ type (
 
 	// defaultFnDef stores functions for a namespace and shares data/errors with nested builders.
 	defaultFnDef[T FunctionConstraint] struct {
-		namespace string
 		errors    *fnErrors
 		data      map[string]T
+		namespace string
 	}
 )
 

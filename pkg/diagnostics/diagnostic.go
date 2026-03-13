@@ -8,13 +8,13 @@ import (
 
 // Diagnostic represents a structured diagnostic error with optional source context and spans.
 type Diagnostic struct {
+	Cause   error        `json:"cause"`
+	Source  *file.Source `json:"source"`
 	Kind    Kind         `json:"kind"`
 	Message string       `json:"message"`
 	Hint    string       `json:"hint"`
 	Note    string       `json:"note"`
-	Source  *file.Source `json:"source"`
 	Spans   []ErrorSpan  `json:"spans"`
-	Cause   error        `json:"cause"`
 }
 
 func NewUnexpectedError(src *file.Source, msg string) *Diagnostic {

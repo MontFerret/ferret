@@ -19,8 +19,8 @@ type (
 	}
 
 	operandBranch struct {
-		enabled bool
 		compile func() bytecode.Operand
+		enabled bool
 	}
 )
 

@@ -11,8 +11,8 @@ import (
 
 func TestOpExists(t *testing.T) {
 	tests := []struct {
-		name     string
 		program  *bytecode.Program
+		name     string
 		expected runtime.Boolean
 	}{
 		{

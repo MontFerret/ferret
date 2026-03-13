@@ -19,8 +19,8 @@ type (
 
 	Assertion struct {
 		DefaultMessage MessageFn
-		Args           Args
 		Fn             AssertionFn
+		Args           Args
 	}
 )
 

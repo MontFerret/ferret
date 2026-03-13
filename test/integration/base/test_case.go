@@ -7,11 +7,11 @@ import (
 )
 
 type TestCase struct {
-	Expression   string
 	Expected     any
 	PreAssertion convey.Assertion
-	Assertions   []convey.Assertion
+	Expression   string
 	Description  string
+	Assertions   []convey.Assertion
 	Skip         bool
 	RawOutput    bool
 	DebugOutput  bool

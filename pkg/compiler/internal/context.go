@@ -13,33 +13,30 @@ import (
 
 // CompilerContext holds the context for the compilation process, including various compilers and allocators.
 type CompilerContext struct {
-	Source     *file.Source
-	Emitter    *core.Emitter
-	Registers  *core.RegisterAllocator
-	Symbols    *core.SymbolTable
-	Constants  *core.ConstantPool
-	Types      *core.TypeTracker
-	Loops      *core.LoopTable
-	CatchTable *core.CatchStack
-	Errors     *diagnostics.ErrorHandler
-	UseAliases map[string]string
-	UDFs       *core.UDFTable
-	UDFScope   *core.UDFScope
-
-	OptimizationLevel optimization.Level
-
-	aggregatePlans      []*bytecode.AggregatePlan
-	aggregatePlanByHash map[uint64][]int
-
-	ExprCompiler        *ExprCompiler
-	LiteralCompiler     *LiteralCompiler
-	StmtCompiler        *StmtCompiler
 	LoopCompiler        *LoopCompiler
+	Loops               *core.LoopTable
+	Registers           *core.RegisterAllocator
+	Symbols             *core.SymbolTable
+	Constants           *core.ConstantPool
+	Types               *core.TypeTracker
+	UDFScope            *core.UDFScope
+	CatchTable          *core.CatchStack
+	Errors              *diagnostics.ErrorHandler
+	UseAliases          map[string]string
+	Emitter             *core.Emitter
+	UDFs                *core.UDFTable
+	LiteralCompiler     *LiteralCompiler
+	UDFCompiler         *UDFCompiler
+	aggregatePlanByHash map[uint64][]int
+	ExprCompiler        *ExprCompiler
+	DispatchCompiler    *DispatchCompiler
+	StmtCompiler        *StmtCompiler
+	Source              *file.Source
 	LoopSortCompiler    *LoopSortCompiler
 	LoopCollectCompiler *LoopCollectCompiler
 	WaitCompiler        *WaitCompiler
-	DispatchCompiler    *DispatchCompiler
-	UDFCompiler         *UDFCompiler
+	aggregatePlans      []*bytecode.AggregatePlan
+	OptimizationLevel   optimization.Level
 }
 
 // NewCompilerContext initializes a new CompilerContext with default values.

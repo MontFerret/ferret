@@ -19,8 +19,8 @@ func TestSymbolTable_AddConstant(t *testing.T) {
 		st := newSymbolTable()
 
 		tests := []struct {
-			name  string
 			value runtime.Value
+			name  string
 		}{
 			{name: "string", value: runtime.NewString("ferret")},
 			{name: "int", value: runtime.NewInt(42)},

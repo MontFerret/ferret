@@ -3,9 +3,9 @@ package file
 import "strings"
 
 type Snippet struct {
-	Line  int
 	Text  string
 	Caret string
+	Line  int
 }
 
 func NewSnippet(src []string, line int) Snippet {

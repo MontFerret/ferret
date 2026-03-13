@@ -10,12 +10,12 @@ import (
 type (
 	// BasicBlock represents a sequence of instructions with a single entry and exit point
 	BasicBlock struct {
-		ID           int                    // Unique identifier for the block
-		Start        int                    // Index of first instruction in the bytecode
-		End          int                    // Index of last instruction in the bytecode (inclusive)
-		Instructions []bytecode.Instruction // Instructions in this block
-		Successors   []*BasicBlock          // Blocks that may execute after this one
-		Predecessors []*BasicBlock          // Blocks that may execute before this one
+		Instructions []bytecode.Instruction
+		Successors   []*BasicBlock
+		Predecessors []*BasicBlock
+		ID           int
+		Start        int
+		End          int
 	}
 
 	// ControlFlowGraph represents the control flow structure of a bytecode program

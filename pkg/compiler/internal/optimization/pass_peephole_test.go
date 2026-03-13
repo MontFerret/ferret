@@ -23,19 +23,19 @@ func runPeephole(t *testing.T, program *bytecode.Program) (*PassResult, error) {
 }
 
 type peepholeOpcodeCase struct {
-	name         string
 	program      func() *bytecode.Program
-	wantModified bool
+	name         string
 	wantOpcodes  []bytecode.Opcode
+	wantModified bool
 }
 
 type peepholeJumpRewriteCase struct {
-	name           string
 	program        func() *bytecode.Program
-	wantOpcode     bytecode.Opcode
+	name           string
 	wantJumpTarget bytecode.Operand
 	wantLeft       bytecode.Operand
 	wantRight      bytecode.Operand
+	wantOpcode     bytecode.Opcode
 }
 
 var addConstRewriteCases = []peepholeOpcodeCase{

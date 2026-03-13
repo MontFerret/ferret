@@ -14,9 +14,9 @@ import (
 )
 
 type testQueryable struct {
-	queries []runtime.Query
 	result  runtime.List
 	err     error
+	queries []runtime.Query
 }
 
 func (t *testQueryable) Query(_ context.Context, q runtime.Query) (runtime.List, error) {

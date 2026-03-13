@@ -27,8 +27,8 @@ type (
 	}
 
 	constFoldResult struct {
-		modified  bool
 		newConsts map[int]runtime.Value
+		modified  bool
 	}
 )
 

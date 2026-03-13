@@ -17,10 +17,10 @@ type (
 	}
 
 	Execution struct {
-		Run       bool
 		Expected  any
 		Assertion convey.Assertion
 		Options   []vm.EnvironmentOption
+		Run       bool
 	}
 
 	OpcodeExpectation interface {

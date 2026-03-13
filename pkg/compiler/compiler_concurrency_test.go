@@ -83,9 +83,9 @@ func TestCompilerCompileConcurrentSharedCompiler(t *testing.T) {
 	})
 
 	udfQueries := []struct {
+		expectedHost map[string]int
 		name         string
 		query        string
-		expectedHost map[string]int
 		expectedUDFs int
 	}{
 		{

@@ -12,10 +12,10 @@ import (
 
 type encodeParams struct {
 	Name    string `ferret:"name"`
-	Age     int    `json:"age"`
 	City    string
 	Ignored string `ferret:"-"`
 	private string `ferret:"private"`
+	Age     int    `json:"age"`
 }
 
 type encodeInner struct {
@@ -43,9 +43,9 @@ type encodeNestedFriendMeta struct {
 }
 
 type encodeNestedFriend struct {
-	ID   int                     `ferret:"id"`
-	Tags []string                `ferret:"tags"`
 	Meta *encodeNestedFriendMeta `ferret:"meta"`
+	Tags []string                `ferret:"tags"`
+	ID   int                     `ferret:"id"`
 }
 
 type encodeNestedPayload struct {
@@ -70,8 +70,8 @@ type EncodeEmbeddedNode struct {
 }
 
 type encodeTaggedNode struct {
-	Value string            `json:"value"`
 	Next  *encodeTaggedNode `json:"next"`
+	Value string            `json:"value"`
 }
 
 func TestEncode(t *testing.T) {

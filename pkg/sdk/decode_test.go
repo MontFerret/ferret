@@ -18,14 +18,14 @@ type (
 		Other string `json:"other"`
 	}
 	bindParams struct {
-		Name     string   `ferret:"name"`
+		Pointer  *someOthers `ferret:"pointer"`
+		Name     string      `ferret:"name"`
+		Alias    string      `ferret:"alt"`
+		City     string      `ferret:"city"`
+		Untagged string
+		Tags     []string `ferret:"tags"`
 		Age      int      `ferret:"age"`
 		Count    int64    `json:"count"`
-		Alias    string   `ferret:"alt"`
-		City     string   `ferret:"city"`
-		Tags     []string `ferret:"tags"`
-		Untagged string
-		Pointer  *someOthers `ferret:"pointer"`
 	}
 	nestedAddress struct {
 		City string `ferret:"city"`
@@ -39,9 +39,9 @@ type (
 		Active bool `ferret:"active"`
 	}
 	nestedFriend struct {
-		ID   int               `ferret:"id"`
-		Tags []string          `ferret:"tags"`
 		Meta *nestedFriendMeta `ferret:"meta"`
+		Tags []string          `ferret:"tags"`
+		ID   int               `ferret:"id"`
 	}
 	nestedPayload struct {
 		Profile nestedProfile  `ferret:"profile"`
@@ -51,8 +51,8 @@ type (
 	EmbeddedParams struct {
 		URL         string `json:"url"`
 		UserAgent   string `json:"userAgent"`
-		KeepCookies bool   `json:"keepCookies"`
 		Charset     string `json:"charset"`
+		KeepCookies bool   `json:"keepCookies"`
 	}
 	EmbeddedPageLoadParams struct {
 		EmbeddedParams
@@ -67,13 +67,13 @@ type (
 		*EmbeddedNode
 	}
 	closableIterable struct {
-		values []runtime.Value
 		closed *bool
+		values []runtime.Value
 	}
 	closableIterator struct {
+		closed *bool
 		values []runtime.Value
 		index  int
-		closed *bool
 	}
 )
 
