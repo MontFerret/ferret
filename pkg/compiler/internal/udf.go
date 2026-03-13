@@ -1,8 +1,6 @@
 package internal
 
 import (
-	"strings"
-
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
@@ -10,7 +8,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type (
@@ -137,9 +134,8 @@ func (c *UDFCompiler) compileExpressionReturn(expr fql.IExpressionContext) {
 	if fce := directFunctionCall(expr); fce != nil && fce.ErrorOperator() == nil {
 		call := fce.FunctionCall()
 		if call != nil {
-			name := getFunctionName(call, c.ctx.UseAliases)
-			if !strings.Contains(name.String(), runtime.NamespaceSeparator) {
-				if fn, ok := c.ctx.UDFs.Resolve(name.String(), c.ctx.UDFScope); ok {
+			if name, ok := getUDFName(call, c.ctx.UseAliases); ok {
+				if fn, ok := c.ctx.UDFs.Resolve(name, c.ctx.UDFScope); ok {
 					seq := c.ctx.ExprCompiler.CompileArgumentList(call.ArgumentList())
 					c.ctx.ExprCompiler.EmitUdfTailCall(fn, seq, call.(antlr.ParserRuleContext))
 					return

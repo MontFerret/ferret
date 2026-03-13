@@ -74,6 +74,37 @@ func getFunctionName(ctx fql.IFunctionCallContext, aliases map[string]string) ru
 	return runtime.NewString(strings.ToUpper(name))
 }
 
+func getUDFName(ctx fql.IFunctionCallContext, aliases map[string]string) (string, bool) {
+	if ctx == nil {
+		return "", false
+	}
+
+	if ns := ctx.Namespace(); ns != nil && ns.GetText() != "" {
+		return "", false
+	}
+
+	fnCtx := ctx.FunctionName()
+	if fnCtx == nil {
+		return "", false
+	}
+
+	name := fnCtx.GetText()
+	if name == "" {
+		return "", false
+	}
+
+	if len(aliases) > 0 {
+		if target, ok := aliases[strings.ToUpper(name)]; ok && target != "" {
+			// Bare function aliases targeting a qualified host function must bypass UDF lookup.
+			if strings.Contains(strings.ToUpper(target), runtime.NamespaceSeparator) {
+				return "", false
+			}
+		}
+	}
+
+	return name, true
+}
+
 func applyNamespaceAlias(ns string, aliases map[string]string) string {
 	if ns == "" || len(aliases) == 0 {
 		return ns
@@ -262,10 +293,10 @@ func registerFunction(
 	}
 
 	displayName := decl.FunctionName().GetText()
-	name := strings.ToUpper(displayName)
+	name := displayName
 
 	if _, exists := scope.Functions[name]; exists {
-		ctx.Errors.Add(ctx.Errors.Create(parserd.NameError, decl, fmt.Sprintf("Function '%s' is already defined", name)))
+		ctx.Errors.Add(ctx.Errors.Create(parserd.NameError, decl, fmt.Sprintf("Function '%s' is already defined", displayName)))
 		return nil
 	}
 
@@ -380,7 +411,7 @@ func analyzeCaptures(ctx *CompilerContext, table *core.UDFTable, body *fql.BodyC
 			}
 		case stmt.FunctionDeclaration() != nil:
 			decl := stmt.FunctionDeclaration().(*fql.FunctionDeclarationContext)
-			name := strings.ToUpper(decl.FunctionName().GetText())
+			name := decl.FunctionName().GetText()
 			if fn, ok := table.Resolve(name, table.GlobalScope); ok {
 				analyzeFunctionCaptures(ctx, fn, env)
 			}
@@ -566,13 +597,12 @@ func collectCallsInExpression(ctx *CompilerContext, table *core.UDFTable, node a
 			continue
 		}
 
-		name := getFunctionName(call, ctx.UseAliases)
-		nameStr := name.String()
-		if strings.Contains(nameStr, runtime.NamespaceSeparator) {
+		name, ok := getUDFName(call, ctx.UseAliases)
+		if !ok {
 			continue
 		}
 
-		if fn, ok := table.Resolve(nameStr, scope); ok {
+		if fn, ok := table.Resolve(name, scope); ok {
 			out[fn] = struct{}{}
 		}
 	}
@@ -648,7 +678,7 @@ func analyzeFunctionCaptures(ctx *CompilerContext, fn *core.UDFInfo, env *varEnv
 					}
 				case stmt.FunctionDeclaration() != nil:
 					decl := stmt.FunctionDeclaration().(*fql.FunctionDeclarationContext)
-					name := strings.ToUpper(decl.FunctionName().GetText())
+					name := decl.FunctionName().GetText()
 					if nested, ok := fn.BodyScope.Functions[name]; ok {
 						analyzeFunctionCaptures(ctx, nested, env)
 						for _, cap := range nested.Captures {

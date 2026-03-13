@@ -88,6 +88,27 @@ FUNC LENGTH(x) (
 )
 RETURN LENGTH([1,2,3])
 `, 42, "UDF shadows builtin"),
+		Case(`
+FUNC a() => 1
+FUNC A() => 2
+RETURN a() + A()
+`, 3, "UDF lookup is case-sensitive"),
+		Case(`
+FUNC length() => 100
+RETURN LENGTH([1,2,3]) + length()
+`, 103, "Lowercase UDF does not shadow differently-cased builtin call"),
+		Case(`
+FUNC LENGTH(x) => 100
+RETURN length([1,2,3])
+`, 3, "Builtin survives differently-cased UDF declaration"),
+		CaseArray(`
+FUNC f() => "outer-lower"
+FUNC outer() (
+  FUNC F() => "inner-upper"
+  RETURN [f(), F()]
+)
+RETURN [outer(), f()]
+`, []any{[]any{"outer-lower", "inner-upper"}, "outer-lower"}, "Nested UDF shadowing is exact-case"),
 		CaseArray(`
 FUNC a0() => 0
 FUNC a1(a) => a

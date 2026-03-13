@@ -3004,8 +3004,10 @@ func (c *ExprCompiler) CompileFunctionCallByNameWith(ctx fql.IFunctionCallContex
 	}
 
 	if !namespaced && c.ctx.UDFs != nil && c.ctx.UDFScope != nil {
-		if fn, ok := c.ctx.UDFs.Resolve(nameStr, c.ctx.UDFScope); ok {
-			return c.compileUdfCallWith(fn, protected, seq, callCtx)
+		if udfName, ok := getUDFName(ctx, c.ctx.UseAliases); ok {
+			if fn, ok := c.ctx.UDFs.Resolve(udfName, c.ctx.UDFScope); ok {
+				return c.compileUdfCallWith(fn, protected, seq, callCtx)
+			}
 		}
 	}
 
@@ -3116,7 +3118,12 @@ func (c *ExprCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.RegisterSeq
 		}
 
 		if ctx != nil {
-			c.ctx.Errors.Add(c.ctx.Errors.Create(diagnostics.NameError, ctx, fmt.Sprintf("Function '%s' expects %d arguments, got %d", fn.Name, len(fn.Params), len(seq))))
+			name := fn.DisplayName
+			if name == "" {
+				name = fn.Name
+			}
+
+			c.ctx.Errors.Add(c.ctx.Errors.Create(diagnostics.NameError, ctx, fmt.Sprintf("Function '%s' expects %d arguments, got %d", name, len(fn.Params), len(seq))))
 		}
 	}
 

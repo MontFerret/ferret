@@ -1,8 +1,9 @@
 package formatter_test
 
 import (
-	"github.com/MontFerret/ferret/v2/pkg/formatter"
 	"github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/v2/pkg/formatter"
 
 	"github.com/MontFerret/ferret/v2/test/integration/base"
 )
