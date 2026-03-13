@@ -48,12 +48,14 @@ func (s *execState) init(program *bytecode.Program) {
 	s.windows = mem.NewWindowPool(maxUDFRegisters(program.Functions.UserDefined))
 }
 
-func (s *execState) start(env *Environment) {
+func (s *execState) start(env *Environment) error {
 	s.env = env
 	s.owned = mem.OwnedResources{}
 	s.pc = 0
 	s.lastPC = -1
 	s.clearFailure()
+
+	return s.bindParams(env)
 }
 
 func (s *execState) end() {

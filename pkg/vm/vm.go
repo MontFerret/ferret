@@ -98,13 +98,12 @@ func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, err
 	}
 
 	state := &vm.state
-	state.start(env)
-	if err := state.bindParams(env); err != nil {
+
+	if err := state.start(env); err != nil {
 		return nil, err
 	}
 
-	ensureRegexpsWarmed(vm)
-	if err := ensureHostFunctionsBound(vm, env); err != nil {
+	if err := warmup(vm, env); err != nil {
 		return nil, err
 	}
 

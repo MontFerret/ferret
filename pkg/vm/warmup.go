@@ -8,13 +8,26 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
-func ensureRegexpsWarmed(vm *VM) {
+func warmup(vm *VM, env *Environment) error {
+	if err := ensureHostFunctionsBound(vm, env); err != nil {
+		return err
+	}
+
+	if err := ensureRegexpsWarmed(vm); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ensureRegexpsWarmed(vm *VM) error {
 	if vm.cache.RegexpsWarmed {
-		return
+		return nil
 	}
 
 	constants := vm.program.Constants
 	reg := map[bytecode.Operand]runtime.Value{}
+	var warmupErrs diagnostics.WarmupErrorSet
 
 	for pc, inst := range vm.program.Bytecode {
 		op := inst.Opcode
@@ -33,11 +46,14 @@ func ensureRegexpsWarmed(vm *VM) {
 			if val, ok := reg[src2]; ok {
 				r, err := data.ToRegexp(val)
 
-				if err == nil {
-					pattern := r.String()
-					if cached := vm.cache.Regexps[pc]; cached == nil || cached.Pattern != pattern {
-						vm.cache.Regexps[pc] = &mem.CachedRegexp{Pattern: pattern, Regexp: r}
-					}
+				if err != nil {
+					warmupErrs.Add(err, pc, dst)
+					continue
+				}
+
+				pattern := r.String()
+				if cached := vm.cache.Regexps[pc]; cached == nil || cached.Pattern != pattern {
+					vm.cache.Regexps[pc] = &mem.CachedRegexp{Pattern: pattern, Regexp: r}
 				}
 			}
 		}
@@ -47,7 +63,13 @@ func ensureRegexpsWarmed(vm *VM) {
 		}
 	}
 
+	if warmupErrs.Size() > 0 {
+		return &warmupErrs
+	}
+
 	vm.cache.RegexpsWarmed = true
+
+	return nil
 }
 
 func ensureHostFunctionsBound(vm *VM, env *Environment) error {
