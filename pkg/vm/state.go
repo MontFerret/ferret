@@ -28,6 +28,7 @@ type (
 		env       *Environment
 		scratch   mem.Scratch
 		frames    frame.CallStack
+		windows   mem.WindowPool
 		catchByPC []int
 		registers mem.RegisterFile
 		failure   pendingFailure
@@ -42,7 +43,8 @@ func (s *execState) init(program *bytecode.Program) {
 	s.catchByPC = buildCatchByPC(len(program.Bytecode), program.CatchTable)
 	s.registers = mem.NewRegisterFile(program.Registers)
 	s.scratch = mem.NewScratch(len(program.Params))
-	s.frames = frame.NewCallStack(maxUDFRegisters(program.Functions.UserDefined))
+	s.frames = frame.NewCallStack()
+	s.windows = mem.NewWindowPool(maxUDFRegisters(program.Functions.UserDefined))
 }
 
 func (s *execState) start(env *Environment) {
@@ -53,7 +55,16 @@ func (s *execState) start(env *Environment) {
 }
 
 func (s *execState) end() {
-	s.frames.Reset(s.registers)
+	for {
+		caller, ok := s.frames.Pop()
+		if !ok {
+			break
+		}
+
+		s.windows.Release(s.registers)
+		s.registers = caller.CallerRegisters
+	}
+
 	s.registers.Reset()
 	s.scratch.Reset()
 
@@ -318,24 +329,47 @@ func (s *execState) setOrOptional(pc int, dst bytecode.Operand, val runtime.Valu
 }
 
 func (s *execState) unwindToProtected() bool {
-	registers, pc, ok := s.frames.UnwindToRecoveryBoundary(s.registers)
+	boundary := s.frames.NearestRecoveryBoundary()
+	if boundary < 0 {
+		return false
+	}
+
+	for s.frames.Len() > boundary+1 {
+		frame, ok := s.frames.Pop()
+		if !ok {
+			return false
+		}
+
+		s.windows.Release(s.registers)
+		s.registers = frame.CallerRegisters
+	}
+
+	frame, ok := s.frames.Pop()
 	if !ok {
 		return false
 	}
 
-	s.registers = registers
-	s.pc = pc
+	s.windows.Release(s.registers)
+	s.registers = frame.CallerRegisters
+	if frame.ReturnDest.IsRegister() {
+		s.registers[frame.ReturnDest] = runtime.None
+	}
+	s.pc = frame.ReturnPC
 	return true
 }
 
 func (s *execState) returnToCaller(retVal runtime.Value) bool {
-	registers, pc, ok := s.frames.ReturnToCaller(s.registers, retVal)
+	frame, ok := s.frames.Pop()
 	if !ok {
 		return false
 	}
 
-	s.registers = registers
-	s.pc = pc
+	s.windows.Release(s.registers)
+	s.registers = frame.CallerRegisters
+	if frame.ReturnDest.IsRegister() {
+		s.registers[frame.ReturnDest] = retVal
+	}
+	s.pc = frame.ReturnPC
 	return true
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
+	rtdiagnostics "github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
@@ -42,7 +43,7 @@ func mustNewVM(t *testing.T, program *bytecode.Program, opts ...Option) *VM {
 func mustAcquireRunState(t *testing.T, instance *VM) *execState {
 	t.Helper()
 
-	state := &instance.execState
+	state := &instance.state
 	if state == nil {
 		t.Fatal("expected run state")
 	}
@@ -153,7 +154,7 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 	state := mustAcquireRunState(t, instance)
 	defer state.end()
 
-	if got, want := state.registers.Size(), program.Registers; got != want {
+	if got, want := len(state.registers), program.Registers; got != want {
 		t.Fatalf("unexpected register file size: got %d, want %d", got, want)
 	}
 
@@ -170,7 +171,7 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 	}
 
 	bytecodeLen := len(program.Bytecode)
-	if got, want := len(instance.cache.HostFunctions), len(instance.hostCallDescriptors); got != want {
+	if got, want := len(instance.cache.HostFunctions), len(instance.plan.hostCallDescriptors); got != want {
 		t.Fatalf("unexpected host function cache size: got %d, want %d", got, want)
 	}
 
@@ -186,30 +187,30 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 		t.Fatalf("unexpected load key const IC cache size: got %d, want %d", got, bytecodeLen)
 	}
 
-	if got, want := len(instance.instructions), bytecodeLen; got != want {
+	if got, want := len(instance.plan.instructions), bytecodeLen; got != want {
 		t.Fatalf("unexpected instruction wrapper size: got %d, want %d", got, want)
 	}
 
 	for i := range program.Bytecode {
-		if got, want := instance.instructions[i].Instruction, program.Bytecode[i]; got != want {
+		if got, want := instance.plan.instructions[i].Instruction, program.Bytecode[i]; got != want {
 			t.Fatalf("unexpected wrapped instruction at %d: got %+v, want %+v", i, got, want)
 		}
 	}
 
 	wantCatchByPC := []int{0, 0}
 	for i := range wantCatchByPC {
-		if got := instance.catchByPC[i]; got != wantCatchByPC[i] {
+		if got := state.catchByPC[i]; got != wantCatchByPC[i] {
 			t.Fatalf("unexpected catch mapping at pc %d: got %d, want %d", i, got, wantCatchByPC[i])
 		}
 	}
 
-	reg := state.frames.AcquireRegisters(5)
+	reg := state.windows.Acquire(5)
 	if got, want := len(reg), 5; got != want {
 		t.Fatalf("unexpected pooled register size: got %d, want %d", got, want)
 	}
 
-	state.frames.ReleaseRegisters(reg)
-	reused := state.frames.AcquireRegisters(5)
+	state.windows.Release(reg)
+	reused := state.windows.Acquire(5)
 	if got, want := len(reused), 5; got != want {
 		t.Fatalf("unexpected reused register size: got %d, want %d", got, want)
 	}
@@ -223,11 +224,11 @@ func TestNewWith_InlinesHostCallIDs(t *testing.T) {
 	program := compileProgram(t, "RETURN F(1)")
 	instance := mustNewVM(t, program)
 
-	if len(instance.hostCallDescriptors) == 0 {
+	if len(instance.plan.hostCallDescriptors) == 0 {
 		t.Fatal("expected host call warmup descriptors")
 	}
 
-	for i, binding := range instance.hostCallDescriptors {
+	for i, binding := range instance.plan.hostCallDescriptors {
 		if got, want := binding.ID, i; got != want {
 			t.Fatalf("unexpected host binding id at index %d: got %d, want %d", i, got, want)
 		}
@@ -236,11 +237,11 @@ func TestNewWith_InlinesHostCallIDs(t *testing.T) {
 			t.Fatalf("invalid binding id %d for pc %d", binding.ID, binding.PC)
 		}
 
-		if binding.PC < 0 || binding.PC >= len(instance.instructions) {
+		if binding.PC < 0 || binding.PC >= len(instance.plan.instructions) {
 			t.Fatalf("invalid callsite pc %d", binding.PC)
 		}
 
-		inst := instance.instructions[binding.PC]
+		inst := instance.plan.instructions[binding.PC]
 		if inst.Opcode != bytecode.OpHCall && inst.Opcode != bytecode.OpProtectedHCall {
 			t.Fatalf("callsite pc %d does not point to host call opcode %d", binding.PC, inst.Opcode)
 		}
@@ -259,33 +260,33 @@ RETURN [a, b]
 `)
 	instance := mustNewVM(t, program)
 
-	if got, want := len(instance.hostCallDescriptors), 2; got != want {
+	if got, want := len(instance.plan.hostCallDescriptors), 2; got != want {
 		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
 	}
 
 	prevPC := -1
-	for i, binding := range instance.hostCallDescriptors {
+	for i, binding := range instance.plan.hostCallDescriptors {
 		if got, want := binding.ID, i; got != want {
 			t.Fatalf("unexpected host binding id at index %d: got %d, want %d", i, got, want)
 		}
 	}
 
-	used := make([]bool, len(instance.hostCallDescriptors))
-	siteByPC := make(map[int]callDescriptor, len(instance.hostCallDescriptors))
-	for _, binding := range instance.hostCallDescriptors {
+	used := make([]bool, len(instance.plan.hostCallDescriptors))
+	siteByPC := make(map[int]callDescriptor, len(instance.plan.hostCallDescriptors))
+	for _, binding := range instance.plan.hostCallDescriptors {
 		if binding.PC <= prevPC {
 			t.Fatalf("host warmup pcs are not increasing: prev=%d, curr=%d", prevPC, binding.PC)
 		}
 		prevPC = binding.PC
 
-		if binding.ID < 0 || binding.ID >= len(instance.hostCallDescriptors) {
+		if binding.ID < 0 || binding.ID >= len(instance.plan.hostCallDescriptors) {
 			t.Fatalf("invalid inlined host id at pc %d: %d", binding.PC, binding.ID)
 		}
 
 		used[binding.ID] = true
 		siteByPC[binding.PC] = binding
 
-		inst := instance.instructions[binding.PC]
+		inst := instance.plan.instructions[binding.PC]
 		if got, want := inst.InlineSlot, binding.ID; got != want {
 			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", binding.PC, got, want)
 		}
@@ -298,14 +299,14 @@ RETURN [a, b]
 	}
 
 	hostCallsites := 0
-	for pc, inst := range instance.instructions {
+	for pc, inst := range instance.plan.instructions {
 		if inst.Opcode != bytecode.OpHCall && inst.Opcode != bytecode.OpProtectedHCall {
 			continue
 		}
 
 		hostCallsites++
 
-		if inst.InlineSlot < 0 || inst.InlineSlot >= len(instance.hostCallDescriptors) {
+		if inst.InlineSlot < 0 || inst.InlineSlot >= len(instance.plan.hostCallDescriptors) {
 			t.Fatalf("invalid inlined host id at pc %d: %d", pc, inst.InlineSlot)
 		}
 
@@ -319,7 +320,7 @@ RETURN [a, b]
 		}
 	}
 
-	if got, want := hostCallsites, len(instance.hostCallDescriptors); got != want {
+	if got, want := hostCallsites, len(instance.plan.hostCallDescriptors); got != want {
 		t.Fatalf("unexpected host callsite count: got %d, want %d", got, want)
 	}
 }
@@ -332,22 +333,22 @@ RETURN [a, b]
 `)
 	instance := mustNewVM(t, program)
 
-	if got, want := len(instance.hostCallDescriptors), 2; got != want {
+	if got, want := len(instance.plan.hostCallDescriptors), 2; got != want {
 		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
 	}
 
-	firstID := instance.hostCallDescriptors[0].ID
-	secondID := instance.hostCallDescriptors[1].ID
+	firstID := instance.plan.hostCallDescriptors[0].ID
+	secondID := instance.plan.hostCallDescriptors[1].ID
 	if firstID == secondID {
 		t.Fatalf("expected distinct binding ids per callsite, got %d", firstID)
 	}
 
-	for i, binding := range instance.hostCallDescriptors {
+	for i, binding := range instance.plan.hostCallDescriptors {
 		if got, want := binding.ID, i; got != want {
 			t.Fatalf("unexpected binding id for site %d: got %d, want %d", i, got, want)
 		}
 
-		inst := instance.instructions[binding.PC]
+		inst := instance.plan.instructions[binding.PC]
 		if got, want := inst.InlineSlot, binding.ID; got != want {
 			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", binding.PC, got, want)
 		}
@@ -362,12 +363,12 @@ RETURN [a, b]
 `)
 	instance := mustNewVM(t, program)
 
-	if got, want := len(instance.hostCallDescriptors), 2; got != want {
+	if got, want := len(instance.plan.hostCallDescriptors), 2; got != want {
 		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
 	}
 
-	firstID := instance.hostCallDescriptors[0].ID
-	secondID := instance.hostCallDescriptors[1].ID
+	firstID := instance.plan.hostCallDescriptors[0].ID
+	secondID := instance.plan.hostCallDescriptors[1].ID
 	if firstID == secondID {
 		t.Fatalf("expected distinct binding ids for different bind classes, got %d", firstID)
 	}
@@ -378,7 +379,7 @@ func TestRun_IgnoresInlineSlotForNonHostOpcodes(t *testing.T) {
 	instance := mustNewVM(t, program)
 
 	nonHostPC := -1
-	for pc, inst := range instance.instructions {
+	for pc, inst := range instance.plan.instructions {
 		if inst.Opcode != bytecode.OpHCall && inst.Opcode != bytecode.OpProtectedHCall {
 			nonHostPC = pc
 			break
@@ -389,7 +390,7 @@ func TestRun_IgnoresInlineSlotForNonHostOpcodes(t *testing.T) {
 		t.Fatal("expected at least one non-host opcode")
 	}
 
-	instance.instructions[nonHostPC].InlineSlot = 1 << 20
+	instance.plan.instructions[nonHostPC].InlineSlot = 1 << 20
 
 	env, err := NewEnvironment([]EnvironmentOption{
 		WithFunction("F", func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
@@ -563,29 +564,29 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 	state := mustAcquireRunState(t, instance)
 	defer state.end()
 
-	state.registers.Values = activeRegs
+	state.registers = activeRegs
 	state.frames.Push(frame.CallFrame{
 		ReturnPC:         10,
 		ReturnDest:       bytecode.NewRegister(0),
-		Registers:        lowerRegs,
+		CallerRegisters:  lowerRegs,
 		RecoveryBoundary: false,
 	})
 	state.frames.Push(frame.CallFrame{
 		ReturnPC:         20,
 		ReturnDest:       bytecode.NewRegister(1),
-		Registers:        protectedRegs,
+		CallerRegisters:  protectedRegs,
 		RecoveryBoundary: true,
 	})
 	state.frames.Push(frame.CallFrame{
 		ReturnPC:         30,
 		ReturnDest:       bytecode.NewRegister(0),
-		Registers:        aboveRegs1,
+		CallerRegisters:  aboveRegs1,
 		RecoveryBoundary: false,
 	})
 	state.frames.Push(frame.CallFrame{
 		ReturnPC:         40,
 		ReturnDest:       bytecode.NewRegister(0),
-		Registers:        aboveRegs2,
+		CallerRegisters:  aboveRegs2,
 		RecoveryBoundary: false,
 	})
 
@@ -601,7 +602,7 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		t.Fatalf("unexpected frame depth after unwind: got %d, want %d", got, want)
 	}
 
-	if &state.registers.Values[0] != &protectedRegs[0] {
+	if &state.registers[0] != &protectedRegs[0] {
 		t.Fatal("expected unwind to restore the protected caller register window")
 	}
 
@@ -614,11 +615,11 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		t.Fatalf("unexpected surviving frame returnPC: got %d, want %d", got, want)
 	}
 
-	if got, want := state.registers.Values[1], runtime.None; got != want {
+	if got, want := state.registers[1], runtime.None; got != want {
 		t.Fatalf("expected protected return destination to be reset, got %v", got)
 	}
 
-	reused4 := state.frames.AcquireRegisters(4)
+	reused4 := state.windows.Acquire(4)
 	if len(reused4) != 4 {
 		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused4), 4)
 	}
@@ -626,7 +627,7 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		t.Fatal("expected frame registers of size 4 to be reclaimed")
 	}
 
-	reused5 := state.frames.AcquireRegisters(5)
+	reused5 := state.windows.Acquire(5)
 	if len(reused5) != 5 {
 		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused5), 5)
 	}
@@ -634,7 +635,7 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 		t.Fatal("expected frame registers of size 5 to be reclaimed")
 	}
 
-	reused6 := state.frames.AcquireRegisters(6)
+	reused6 := state.windows.Acquire(6)
 	if len(reused6) != 6 {
 		t.Fatalf("unexpected pooled registers length: got %d, want %d", len(reused6), 6)
 	}
@@ -676,7 +677,7 @@ func TestRunReturnsUnresolvedFunctionWhenHostCacheEntryIsMissing(t *testing.T) {
 		t.Fatal("host call opcode not found")
 	}
 
-	hostID := instance.instructions[hostPC].InlineSlot
+	hostID := instance.plan.instructions[hostPC].InlineSlot
 	if hostID < 0 || hostID >= len(instance.cache.HostFunctions) {
 		t.Fatalf("invalid host id at pc %d: %d", hostPC, hostID)
 	}
@@ -716,7 +717,7 @@ func TestSetCallResult_RaisesPendingFailureBeforeResolution(t *testing.T) {
 	defer state.end()
 
 	state.pc = 1
-	state.registers.Values[1] = runtime.True
+	state.registers[1] = runtime.True
 
 	state.setCallResult(
 		state.pc,
@@ -730,7 +731,7 @@ func TestSetCallResult_RaisesPendingFailureBeforeResolution(t *testing.T) {
 		t.Fatal("expected pending failure to be recorded")
 	}
 
-	if got := state.registers.Values[1]; got != runtime.True {
+	if got := state.registers[1]; got != runtime.True {
 		t.Fatalf("expected destination to remain unchanged before resolution, got %v", got)
 	}
 
@@ -742,7 +743,7 @@ func TestSetCallResult_RaisesPendingFailureBeforeResolution(t *testing.T) {
 		t.Fatalf("expected caught error to continue, got %v", action)
 	}
 
-	if got := state.registers.Values[1]; got != runtime.None {
+	if got := state.registers[1]; got != runtime.None {
 		t.Fatalf("expected destination to be reset to none, got %v", got)
 	}
 
@@ -772,7 +773,7 @@ func TestSetCallResult_ProtectedFailureBypassesCatchJump(t *testing.T) {
 	defer state.end()
 
 	state.pc = 1
-	state.registers.Values[1] = runtime.True
+	state.registers[1] = runtime.True
 
 	state.setCallResult(
 		state.pc,
@@ -786,7 +787,7 @@ func TestSetCallResult_ProtectedFailureBypassesCatchJump(t *testing.T) {
 		t.Fatalf("expected protected failure to continue, got %v", action)
 	}
 
-	if got := state.registers.Values[1]; got != runtime.None {
+	if got := state.registers[1]; got != runtime.None {
 		t.Fatalf("expected protected fallback to set runtime.None, got %v", got)
 	}
 
@@ -807,14 +808,14 @@ func TestResolveFailure_InvariantReturnsWithoutPanic(t *testing.T) {
 	state := mustAcquireRunState(t, instance)
 	defer state.end()
 
-	invariantErr := diagnostics.NewInvariantError("boom", errors.New("cause"))
+	invariantErr := rtdiagnostics.NewInvariantError("boom", errors.New("cause"))
 	state.raiseInvariant(invariantErr)
 
 	if action := state.resolveFailure(); action != errReturn {
 		t.Fatalf("expected invariant resolution to return, got %v", action)
 	}
 
-	var gotInvariant *diagnostics.InvariantError
+	var gotInvariant *rtdiagnostics.InvariantError
 	if got := state.failureError(); !errors.As(got, &gotInvariant) {
 		t.Fatalf("expected failure error to remain invariant, got %T", got)
 	}
@@ -839,7 +840,7 @@ func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
 	state.pc = 1
 	state.raiseRuntime(errors.New("boom"), recoverDefault, bytecode.Operand(1), runtime.True, true)
 
-	if got := state.registers.Values[1]; got == runtime.True {
+	if got := state.registers[1]; got == runtime.True {
 		t.Fatalf("expected fallback to be deferred until resolution, got %v", got)
 	}
 
@@ -848,7 +849,7 @@ func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
 		t.Fatalf("expected caught error to be swallowed, got %v", action)
 	}
 
-	val := state.registers.Values[1]
+	val := state.registers[1]
 	if val != runtime.True {
 		t.Fatalf("expected fallback value to be set in destination register, got %v", val)
 	}
@@ -947,7 +948,7 @@ func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 		t.Fatalf("expected pending failure error to be preserved, got %v", got)
 	}
 
-	val := state.registers.Values[1]
+	val := state.registers[1]
 	if val == runtime.True {
 		t.Fatalf("expected fallback value to be ignored, got %v", val)
 	}
@@ -974,14 +975,14 @@ func TestSetOrOptional_GenericErrorUsesDefaultResolverInOptionalMode(t *testing.
 	defer state.end()
 
 	state.pc = 1
-	state.registers.Values[1] = runtime.True
+	state.registers[1] = runtime.True
 
 	state.setOrOptional(state.pc, bytecode.NewRegister(1), runtime.True, errors.New("boom"), true)
 	if !state.hasFailure() {
 		t.Fatal("expected member error to raise pending failure")
 	}
 
-	if got := state.registers.Values[1]; got != runtime.True {
+	if got := state.registers[1]; got != runtime.True {
 		t.Fatalf("expected destination to remain unchanged before resolution, got %v", got)
 	}
 
@@ -990,7 +991,7 @@ func TestSetOrOptional_GenericErrorUsesDefaultResolverInOptionalMode(t *testing.
 		t.Fatalf("expected catch path to continue, got %v", action)
 	}
 
-	if got := state.registers.Values[1]; got != runtime.None {
+	if got := state.registers[1]; got != runtime.None {
 		t.Fatalf("expected destination to be reset to none, got %v", got)
 	}
 
@@ -1011,7 +1012,7 @@ func TestSetOrOptional_NotFoundContinuesWithNone(t *testing.T) {
 	state := mustAcquireRunState(t, instance)
 	defer state.end()
 
-	state.registers.Values[1] = runtime.True
+	state.registers[1] = runtime.True
 
 	state.setOrOptional(0, bytecode.NewRegister(1), runtime.True, runtime.ErrNotFound, false)
 	if !state.hasFailure() {
@@ -1023,7 +1024,7 @@ func TestSetOrOptional_NotFoundContinuesWithNone(t *testing.T) {
 		t.Fatalf("expected not found to continue, got %v", action)
 	}
 
-	if got := state.registers.Values[1]; got != runtime.None {
+	if got := state.registers[1]; got != runtime.None {
 		t.Fatalf("expected destination to be reset to none, got %v", got)
 	}
 }
@@ -1040,11 +1041,11 @@ func TestSetOrOptional_NullDereferenceContinuesWithNone(t *testing.T) {
 	state := mustAcquireRunState(t, instance)
 	defer state.end()
 
-	state.registers.Values[1] = runtime.True
+	state.registers[1] = runtime.True
 
-	err := diagnostics.MemberAccessErrorOf(
+	err := rtdiagnostics.MemberAccessErrorOf(
 		runtime.None,
-		diagnostics.MemberAccessProperty,
+		rtdiagnostics.MemberAccessProperty,
 		runtime.NewString("foo"),
 	)
 
@@ -1053,7 +1054,7 @@ func TestSetOrOptional_NullDereferenceContinuesWithNone(t *testing.T) {
 		t.Fatal("expected null-dereference miss to short-circuit without pending failure")
 	}
 
-	if got := state.registers.Values[1]; got != runtime.None {
+	if got := state.registers[1]; got != runtime.None {
 		t.Fatalf("expected destination to be set to runtime.None for null-dereference miss, got %v", got)
 	}
 }
@@ -1111,7 +1112,7 @@ func TestLoadKeyConstCached_FastObjectMissingReturnsNoneWithoutError(t *testing.
 		t.Fatalf("setup fast object failed: %v", err)
 	}
 
-	inst := &instance.instructions[0]
+	inst := &instance.plan.instructions[0]
 	out, err := instance.loadKeyConstCached(ctx, 0, inst, obj, runtime.NewString("missing"))
 	if err != nil {
 		t.Fatalf("expected missing const fast-object key to return None without error, got %v", err)
@@ -1149,7 +1150,7 @@ func TestSetOrOptional_GenericErrorReturnsWithoutCatch(t *testing.T) {
 
 	wantErr := errors.New("boom")
 	initial := runtime.NewInt(42)
-	state.registers.Values[1] = initial
+	state.registers[1] = initial
 
 	state.setOrOptional(0, bytecode.NewRegister(1), runtime.True, wantErr, true)
 	if !state.hasFailure() {
@@ -1165,7 +1166,7 @@ func TestSetOrOptional_GenericErrorReturnsWithoutCatch(t *testing.T) {
 		t.Fatalf("expected failure error to be preserved, got %v", got)
 	}
 
-	if got := state.registers.Values[1]; got != initial {
+	if got := state.registers[1]; got != initial {
 		t.Fatalf("expected destination to remain unchanged when error returns, got %v", got)
 	}
 }
@@ -1258,7 +1259,7 @@ func TestTailCallUdf_ReusedWindowResetsNonArgSlotsToNone(t *testing.T) {
 	state := mustAcquireRunState(t, instance)
 	defer state.end()
 
-	reg := state.registers.Values
+	reg := state.registers
 	for i := range reg {
 		reg[i] = runtime.NewInt(100 + i)
 	}
@@ -1268,18 +1269,26 @@ func TestTailCallUdf_ReusedWindowResetsNonArgSlotsToNone(t *testing.T) {
 	reg[4] = runtime.NewInt(20) // arg2
 
 	state.frames.Push(frame.CallFrame{
-		ReturnPC:   99,
-		ReturnDest: bytecode.NewRegister(0),
-		Registers:  make([]runtime.Value, 2),
+		ReturnPC:        99,
+		ReturnDest:      bytecode.NewRegister(0),
+		CallerRegisters: make([]runtime.Value, 2),
 	})
 	state.pc = 5
 
 	oldPtr := &reg[0]
-	if err := state.tailCallUdf(bytecode.NewRegister(1), bytecode.NewRegister(3), bytecode.NewRegister(4)); err != nil {
+	desc := &callDescriptor{
+		DisplayName: "f",
+		Dst:         bytecode.NewRegister(1),
+		ID:          0,
+		ArgStart:    3,
+		ArgCount:    2,
+		CallSitePC:  4,
+	}
+	if err := tailCallUdf(state, desc, &instance.program.Functions.UserDefined[0]); err != nil {
 		t.Fatalf("unexpected tail call error: %v", err)
 	}
 
-	newRegs := state.registers.Values
+	newRegs := state.registers
 	if got, want := len(newRegs), 6; got != want {
 		t.Fatalf("unexpected tail-call register window size: got %d, want %d", got, want)
 	}
@@ -1429,11 +1438,11 @@ func TestWarmupRebindTouchesOnlyHostCallSlots(t *testing.T) {
 	program := compileProgram(t, "RETURN F()")
 	instance := mustNewVM(t, program)
 
-	if got, want := len(instance.hostCallDescriptors), 1; got != want {
+	if got, want := len(instance.plan.hostCallDescriptors), 1; got != want {
 		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
 	}
 
-	hostID := instance.hostCallDescriptors[0].ID
+	hostID := instance.plan.hostCallDescriptors[0].ID
 	if hostID < 0 || hostID >= len(instance.cache.HostFunctions) {
 		t.Fatalf("invalid host id %d", hostID)
 	}
@@ -1613,7 +1622,7 @@ RETURN a + b
 		t.Fatal("expected warmup error set")
 	}
 
-	var rtErrSet *RuntimeErrorSet
+	var rtErrSet *rtdiagnostics.RuntimeErrorSet
 	if !errors.As(err, &rtErrSet) {
 		t.Fatalf("expected runtime error set, got %T", err)
 	}
@@ -1646,7 +1655,7 @@ RETURN a + b
 		t.Fatal("expected warmup error set")
 	}
 
-	var rtErrSet *RuntimeErrorSet
+	var rtErrSet *rtdiagnostics.RuntimeErrorSet
 	if !errors.As(err, &rtErrSet) {
 		t.Fatalf("expected runtime error set, got %T", err)
 	}
@@ -1678,18 +1687,22 @@ func TestStrictWarmupInvalidTargetReturnsInvalidFunctionName(t *testing.T) {
 		},
 	}
 
-	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
+	_, err := NewWith(program)
 	if err == nil {
-		t.Fatal("expected runtime error")
+		t.Fatal("expected initialization error")
 	}
 
-	var rtErr *RuntimeError
-	if !errors.As(err, &rtErr) {
-		t.Fatalf("expected runtime error, got %T", err)
+	var initErrs *rtdiagnostics.InitializationErrorSet
+	if !errors.As(err, &initErrs) {
+		t.Fatalf("expected initialization error set, got %T", err)
 	}
 
-	if got, want := rtErr.Message, "Invalid function name"; got != want {
-		t.Fatalf("unexpected message: got %q, want %q", got, want)
+	if got, want := initErrs.Size(), 1; got != want {
+		t.Fatalf("unexpected initialization error count: got %d, want %d", got, want)
+	}
+
+	if got := initErrs.First().Cause; !errors.Is(got, ErrInvalidFunctionName) {
+		t.Fatalf("expected invalid function name cause, got %v", got)
 	}
 }
 
@@ -1837,31 +1850,22 @@ func TestInvalidFunctionNameHasNonEmptyKind(t *testing.T) {
 		Constants: []runtime.Value{runtime.NewInt(123)},
 	}
 
-	env, err := NewEnvironment([]EnvironmentOption{
-		WithFunction("DUMMY", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-			return runtime.None, nil
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	_, err = mustNewVM(t, program).Run(context.Background(), env)
+	_, err := NewWith(program)
 	if err == nil {
-		t.Fatal("expected runtime error")
+		t.Fatal("expected initialization error")
 	}
 
-	var rtErr *RuntimeError
-	if !errors.As(err, &rtErr) {
-		t.Fatalf("expected runtime error, got %T", err)
+	var initErrs *rtdiagnostics.InitializationErrorSet
+	if !errors.As(err, &initErrs) {
+		t.Fatalf("expected initialization error set, got %T", err)
 	}
 
-	if rtErr.Kind == "" {
-		t.Fatalf("expected non-empty diagnostic kind, got %q", rtErr.Kind)
+	if got, want := initErrs.Size(), 1; got != want {
+		t.Fatalf("unexpected initialization error count: got %d, want %d", got, want)
 	}
 
-	if got, want := rtErr.Message, "Invalid function name"; got != want {
-		t.Fatalf("unexpected message: got %q, want %q", got, want)
+	if got := initErrs.First().Cause; !errors.Is(got, ErrInvalidFunctionName) {
+		t.Fatalf("expected invalid function name cause, got %v", got)
 	}
 }
 
@@ -1874,10 +1878,10 @@ func TestWrapRuntimeErrorSingleWarmupFailureReturnsRuntimeError(t *testing.T) {
 		},
 	}
 
-	warmup := &diagnostics.WarmupErrorSet{}
+	warmup := &rtdiagnostics.WarmupErrorSet{}
 	warmup.Add(ErrInvalidFunctionName, 0, bytecode.NewRegister(0))
 
-	err := diagnostics.WrapRuntimeError(program, 1, nil, warmup)
+	err := rtdiagnostics.WrapRuntimeError(program, 1, nil, warmup)
 	if err == nil {
 		t.Fatal("expected wrapped error")
 	}
@@ -1887,7 +1891,7 @@ func TestWrapRuntimeErrorSingleWarmupFailureReturnsRuntimeError(t *testing.T) {
 		t.Fatalf("expected runtime error, got %T", err)
 	}
 
-	var rtErrSet *RuntimeErrorSet
+	var rtErrSet *rtdiagnostics.RuntimeErrorSet
 	if errors.As(err, &rtErrSet) {
 		t.Fatalf("expected single runtime error, got set")
 	}
@@ -1915,7 +1919,7 @@ func TestNearestBoundaryPrefersCatchOverProtectedUnwind(t *testing.T) {
 	state.frames.Push(frame.CallFrame{
 		ReturnPC:         9,
 		ReturnDest:       bytecode.NewRegister(1),
-		Registers:        protectedRegs,
+		CallerRegisters:  protectedRegs,
 		RecoveryBoundary: true,
 	})
 	state.pc = 1
@@ -1948,13 +1952,13 @@ func TestNearestBoundaryUsesProtectedUnwindWithoutCatch(t *testing.T) {
 	lowerRegs := make([]runtime.Value, 2)
 	activeRegs := make([]runtime.Value, 2)
 	state := mustAcquireRunState(t, instance)
-	defer instance.end()
+	defer state.end()
 
-	state.registers.Values = activeRegs
+	state.registers = activeRegs
 	state.frames.Push(frame.CallFrame{
 		ReturnPC:         7,
 		ReturnDest:       bytecode.NewRegister(1),
-		Registers:        lowerRegs,
+		CallerRegisters:  lowerRegs,
 		RecoveryBoundary: true,
 	})
 	state.pc = 1
@@ -1969,7 +1973,7 @@ func TestNearestBoundaryUsesProtectedUnwindWithoutCatch(t *testing.T) {
 		t.Fatalf("unexpected unwind target: got %d, want %d", got, want)
 	}
 
-	if &state.registers.Values[0] != &lowerRegs[0] {
+	if &state.registers[0] != &lowerRegs[0] {
 		t.Fatal("expected protected unwind to resume in the caller register window")
 	}
 
@@ -2026,10 +2030,10 @@ func TestWrapRuntimeErrorPreservesExistingNoteAndDoesNotDuplicateStackDetails(t 
 		},
 	}
 
-	base := diagnostics.NewRuntimeError(
+	base := rtdiagnostics.NewRuntimeError(
 		program,
 		1,
-		diagnostics.UncaughtError,
+		UncaughtError,
 		"Runtime error",
 		"",
 		"",
@@ -2041,7 +2045,7 @@ func TestWrapRuntimeErrorPreservesExistingNoteAndDoesNotDuplicateStackDetails(t 
 		{CallSitePC: 0, FnID: 1, FnName: "outer"},
 	}
 
-	wrapped := diagnostics.WrapRuntimeError(program, 1, stack, base)
+	wrapped := rtdiagnostics.WrapRuntimeError(program, 1, stack, base)
 
 	var rtErr *RuntimeError
 	if !errors.As(wrapped, &rtErr) {
@@ -2056,7 +2060,7 @@ func TestWrapRuntimeErrorPreservesExistingNoteAndDoesNotDuplicateStackDetails(t 
 		t.Fatalf("expected VM stack note, got %q", rtErr.Note)
 	}
 
-	wrappedTwice := diagnostics.WrapRuntimeError(program, 1, stack, wrapped)
+	wrappedTwice := rtdiagnostics.WrapRuntimeError(program, 1, stack, wrapped)
 	if !errors.As(wrappedTwice, &rtErr) {
 		t.Fatalf("expected runtime error, got %T", wrappedTwice)
 	}
@@ -2079,9 +2083,9 @@ func TestWrapRuntimeErrorRecognizesLegacyCallStackLabelWithoutDuplicatingSpans(t
 		},
 	}
 
-	base := &diagnostics.RuntimeError{
+	base := &rtdiagnostics.RuntimeError{
 		Diagnostic: &diagnostics.Diagnostic{
-			Kind:    diagnostics.UncaughtError,
+			Kind:    UncaughtError,
 			Message: "Runtime error",
 			Source:  program.Source,
 			Spans: []diagnostics.ErrorSpan{
@@ -2095,7 +2099,7 @@ func TestWrapRuntimeErrorRecognizesLegacyCallStackLabelWithoutDuplicatingSpans(t
 		{CallSitePC: 0, FnID: 1, FnName: "boo"},
 	}
 
-	wrapped := diagnostics.WrapRuntimeError(program, 1, stack, base)
+	wrapped := rtdiagnostics.WrapRuntimeError(program, 1, stack, base)
 
 	var rtErr *RuntimeError
 	if !errors.As(wrapped, &rtErr) {

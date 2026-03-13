@@ -39,31 +39,15 @@ func collectUdfArgsInto(dst, src []runtime.Value, start, count int) int {
 }
 
 func callUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
-	reg := s.registers
-
 	if desc.ArgCount != udf.Params {
-		return runtime.Error(runtime.ErrInvalidArgument, fmt.Sprintf("UDF '%s' expects %d arguments, got %d", udf.Name, udf.Params, desc.ArgCount))
+		return runtime.Error(runtime.ErrInvalidArgument, fmt.Sprintf("UDF '%s' expects %d arguments, got %d", desc.DisplayName, udf.Params, desc.ArgCount))
 	}
 
 	if udf.Registers <= 0 {
 		return runtime.Error(runtime.ErrInvalidOperation, fmt.Sprintf("UDF '%s' has invalid register window", desc.DisplayName))
 	}
 
-	newRegs := s.frames.AcquireRegisters(udf.Registers)
-	copyUdfArgsToUdfRegisters(newRegs, reg, desc.ArgStart, desc.ArgCount)
-
-	s.frames.Push(frame.CallFrame{
-		ReturnPC:         s.pc,
-		ReturnDest:       desc.Dst,
-		Registers:        s.registers,
-		RecoveryBoundary: desc.RecoveryBoundary,
-		FnID:             desc.ID,
-		FnName:           desc.DisplayName,
-		CallSitePC:       s.pc - 1,
-		HasCallSite:      true,
-	})
-	s.registers = newRegs
-	s.pc = udf.Entry
+	s.enterUdfCall(desc, udf)
 
 	return nil
 }
@@ -114,17 +98,35 @@ func tailCallUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
 
 		s.registers = reg
 	} else {
-		newRegs := s.frames.AcquireRegisters(udf.Registers)
+		newRegs := s.windows.Acquire(udf.Registers)
 
 		if len(args) > 0 && len(newRegs) > 1 {
 			copy(newRegs[1:], args)
 		}
 
-		s.frames.ReleaseRegisters(reg)
+		s.windows.Release(reg)
 		s.registers = newRegs
 	}
 
 	s.pc = udf.Entry
 
 	return nil
+}
+
+func (s *execState) enterUdfCall(desc *callDescriptor, udf *bytecode.UDF) {
+	newRegs := s.windows.Acquire(udf.Registers)
+	copyUdfArgsToUdfRegisters(newRegs, s.registers, desc.ArgStart, desc.ArgCount)
+
+	s.frames.Push(frame.CallFrame{
+		ReturnPC:         s.pc,
+		ReturnDest:       desc.Dst,
+		CallerRegisters:  s.registers,
+		RecoveryBoundary: desc.RecoveryBoundary,
+		FnID:             desc.ID,
+		FnName:           desc.DisplayName,
+		CallSitePC:       desc.CallSitePC,
+		HasCallSite:      true,
+	})
+	s.registers = newRegs
+	s.pc = udf.Entry
 }

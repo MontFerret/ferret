@@ -1,12 +1,9 @@
 package frame
 
-import "github.com/MontFerret/ferret/v2/pkg/runtime"
-
-// CallStack manages call frames and a register pool for UDF execution.
+// CallStack manages structural call frames for UDF execution.
 type (
 	CallStack struct {
 		frames []CallFrame
-		pool   Pool
 	}
 
 	TraceEntry struct {
@@ -16,29 +13,8 @@ type (
 	}
 )
 
-func NewCallStack(maxPoolSize int) CallStack {
-	return CallStack{
-		pool: NewPool(maxPoolSize),
-	}
-}
-
-// Reset drains active frames, reclaims discarded register windows, and clears frame metadata.
-// It returns the base register window that remains owned by the caller register file.
-func (s *CallStack) Reset(active []runtime.Value) []runtime.Value {
-	if len(s.frames) == 0 {
-		return active
-	}
-
-	curr := active
-	for i := len(s.frames) - 1; i >= 0; i-- {
-		s.pool.Put(curr)
-		curr = s.frames[i].Registers
-		s.frames[i] = CallFrame{}
-	}
-
-	s.frames = s.frames[:0]
-
-	return curr
+func NewCallStack() CallStack {
+	return CallStack{}
 }
 
 // Len returns the number of active frames.
@@ -57,8 +33,10 @@ func (s *CallStack) Pop() (CallFrame, bool) {
 		return CallFrame{}, false
 	}
 
-	frame := s.frames[len(s.frames)-1]
-	s.frames = s.frames[:len(s.frames)-1]
+	top := len(s.frames) - 1
+	frame := s.frames[top]
+	s.frames[top] = CallFrame{}
+	s.frames = s.frames[:top]
 	return frame, true
 }
 
@@ -71,66 +49,15 @@ func (s *CallStack) Top() *CallFrame {
 	return &s.frames[len(s.frames)-1]
 }
 
-// AcquireRegisters returns a register window of the requested size.
-func (s *CallStack) AcquireRegisters(size int) []runtime.Value {
-	return s.pool.Get(size)
-}
-
-// ReleaseRegisters releases a register window back into the pool.
-func (s *CallStack) ReleaseRegisters(reg []runtime.Value) {
-	s.pool.Put(reg)
-}
-
-// ReturnToCaller unwinds one frame, restores caller registers, and applies retVal.
-func (s *CallStack) ReturnToCaller(active []runtime.Value, retVal runtime.Value) ([]runtime.Value, int, bool) {
-	frame, ok := s.Pop()
-	if !ok {
-		return nil, 0, false
+// NearestRecoveryBoundary returns the index of the nearest protected frame.
+func (s *CallStack) NearestRecoveryBoundary() int {
+	for i := len(s.frames) - 1; i >= 0; i-- {
+		if s.frames[i].RecoveryBoundary {
+			return i
+		}
 	}
 
-	// Restore caller registers and write the return value.
-	s.pool.Put(active)
-	registers := frame.Registers
-	registers[frame.ReturnDest] = retVal
-
-	return registers, frame.ReturnPC, true
-}
-
-// UnwindToRecoveryBoundary unwinds through the nearest protected call frame,
-// restores its caller register window, clears the protected call's result
-// destination in that caller window, and resumes at the frame's return PC.
-func (s *CallStack) UnwindToRecoveryBoundary(active []runtime.Value) ([]runtime.Value, int, bool) {
-	top := len(s.frames)
-
-	for i := top - 1; i >= 0; i-- {
-		if !s.frames[i].RecoveryBoundary {
-			continue
-		}
-
-		frame := s.frames[i]
-
-		for j := i + 1; j < top; j++ {
-			s.pool.Put(s.frames[j].Registers)
-		}
-
-		// Reclaim registers above the protected call and reset its return dest.
-		s.pool.Put(active)
-
-		for j := i; j < top; j++ {
-			s.frames[j] = CallFrame{}
-		}
-
-		s.frames = s.frames[:i]
-		registers := frame.Registers
-
-		if frame.ReturnDest.IsRegister() {
-			registers[frame.ReturnDest] = runtime.None
-		}
-
-		return registers, frame.ReturnPC, true
-	}
-
-	return nil, 0, false
+	return -1
 }
 
 // SetTopFnID updates the top frame's function id when present.

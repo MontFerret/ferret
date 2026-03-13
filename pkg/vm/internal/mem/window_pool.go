@@ -1,23 +1,23 @@
-package frame
+package mem
 
 import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
-// Pool manages reusable register windows indexed by size.
-type Pool struct {
+// WindowPool manages reusable register windows indexed by size.
+type WindowPool struct {
 	buckets [][][]runtime.Value
 }
 
-func NewPool(maxSize int) Pool {
+func NewWindowPool(maxSize int) WindowPool {
 	if maxSize < 0 {
 		maxSize = 0
 	}
 
-	return Pool{
+	return WindowPool{
 		buckets: make([][][]runtime.Value, maxSize+1),
 	}
 }
 
-func (p *Pool) Get(size int) []runtime.Value {
+func (p *WindowPool) Acquire(size int) []runtime.Value {
 	if size <= 0 {
 		return nil
 	}
@@ -34,26 +34,20 @@ func (p *Pool) Get(size int) []runtime.Value {
 
 	reg := make([]runtime.Value, size)
 	fillWithNone(reg)
+
 	return reg
 }
 
-// Put clears and stores a register window for reuse.
-func (p *Pool) Put(reg []runtime.Value) {
+// Release clears and stores a register window for reuse.
+func (p *WindowPool) Release(reg []runtime.Value) {
 	if len(reg) == 0 {
 		return
 	}
 
-	// Normalize to runtime.None and avoid retaining references across calls.
 	fillWithNone(reg)
 
 	size := len(reg)
 	if size < len(p.buckets) {
 		p.buckets[size] = append(p.buckets[size], reg)
-	}
-}
-
-func fillWithNone(reg []runtime.Value) {
-	for i := range reg {
-		reg[i] = runtime.None
 	}
 }
