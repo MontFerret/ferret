@@ -29,6 +29,18 @@ FUNC outer(x) (
 RETURN outer(2)
 `, 3, "Nested capture"),
 		Case(`
+LET global = 100
+FUNC outer(a) (
+  LET outerLocal = 10
+  FUNC middle(b) (
+    FUNC inner(c) => global + a + outerLocal + b + c
+    RETURN inner(1)
+  )
+  RETURN middle(2)
+)
+RETURN outer(3)
+`, 116, "Multi-level capture propagation"),
+		Case(`
 FUNC outer(a) (
   FUNC inner(b) (
     RETURN b
@@ -47,6 +59,23 @@ FUNC fact(n) (
 )
 RETURN fact(5)
 `, 120, "Recursion"),
+		CaseArray(`
+FUNC f() => "outer"
+FUNC outer() (
+  FUNC f() => "inner"
+  RETURN f()
+)
+RETURN [outer(), f()]
+`, []any{"inner", "outer"}, "Nested UDF shadows only within lexical scope"),
+		CaseArray(`
+LET value = 1
+FUNC outer() (
+  LET value = 10
+  FUNC inner() => value
+  RETURN [inner(), value]
+)
+RETURN [outer(), value]
+`, []any{[]any{10, 10}, 1}, "Nested UDF captures nearest shadowed local"),
 		CaseNil(`
 FUNC risky() (
   RETURN T::FAIL()

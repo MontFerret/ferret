@@ -31,6 +31,20 @@ func assertParamSet(t *testing.T, got []string, expected ...string) {
 	}
 }
 
+func findUserDefined(t *testing.T, prog *bytecode.Program, name string) bytecode.UDF {
+	t.Helper()
+
+	for _, udf := range prog.Functions.UserDefined {
+		if udf.Name == name {
+			return udf
+		}
+	}
+
+	t.Fatalf("expected UDF %q in %v", name, prog.Functions.UserDefined)
+
+	return bytecode.UDF{}
+}
+
 func TestUdfOnlyHostCallIsPresentInHostMetadata(t *testing.T) {
 	expr := `
 FUNC f() => TEST_FN(1)
@@ -99,6 +113,42 @@ RETURN outer()
 
 	prog := compileWithLevel(t, compiler.O0, expr)
 	assertParamSet(t, prog.Params, "foo")
+}
+
+func TestUdfNestedCaptureMetadataAcrossScopes(t *testing.T) {
+	expr := `
+LET global = 100
+FUNC outer(a) (
+  LET outerLocal = 10
+  FUNC middle(b) (
+    FUNC inner(c) => global + a + outerLocal + b + c
+    RETURN inner(1)
+  )
+  RETURN middle(2)
+)
+RETURN outer(3)
+`
+
+	assertLevel := func(level compiler.OptimizationLevel) {
+		t.Helper()
+
+		prog := compileWithLevel(t, level, expr)
+
+		if got := findUserDefined(t, prog, "OUTER").Params; got != 2 {
+			t.Fatalf("expected OUTER total params/captures to be 2, got %d", got)
+		}
+
+		if got := findUserDefined(t, prog, "MIDDLE").Params; got != 4 {
+			t.Fatalf("expected MIDDLE total params/captures to be 4, got %d", got)
+		}
+
+		if got := findUserDefined(t, prog, "INNER").Params; got != 5 {
+			t.Fatalf("expected INNER total params/captures to be 5, got %d", got)
+		}
+	}
+
+	assertLevel(compiler.O0)
+	assertLevel(compiler.O1)
 }
 
 func TestUdfHostArityMergesAcrossTopLevelAndMultipleUdfs(t *testing.T) {

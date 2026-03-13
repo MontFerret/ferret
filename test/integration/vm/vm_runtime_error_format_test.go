@@ -1,6 +1,13 @@
 package vm_test
 
-import "testing"
+import (
+	"context"
+	"errors"
+	"testing"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
+)
 
 func TestRuntimeErrorFormatting(t *testing.T) {
 	RunUseCases(t, []UseCase{
@@ -31,6 +38,29 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 				NotContains: []string{"Caused by:"},
 			},
 			"obj.fql",
+		),
+		Options(
+			RuntimeErrorCase(
+				`
+FUNC Inner() => FAIL()
+FUNC Outer() (
+  LET result = Inner()
+  RETURN result
+)
+RETURN Outer()
+`,
+				ExpectedRuntimeError{
+					Contains: []string{
+						"called from Inner (#1)",
+						"called from Outer (#2)",
+						"VM stack: Outer -> Inner",
+					},
+				},
+				"nested_udf_stack.fql",
+			),
+			vm.WithFunction("FAIL", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+				return runtime.None, errors.New("boom")
+			}),
 		),
 	})
 }
