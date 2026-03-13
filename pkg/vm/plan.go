@@ -127,6 +127,10 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 		udfCallDesc = nil
 	}
 
+	if len(udfTailCallDesc) == 0 {
+		udfTailCallDesc = nil
+	}
+
 	return execPlan{
 		instructions:           instructions,
 		hostCallDescriptors:    hostCallDesc,
