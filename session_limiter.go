@@ -21,6 +21,10 @@ func (l *sessionLimiter) Acquire(ctx context.Context) error {
 		return nil
 	}
 
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	select {
 	case l.ch <- struct{}{}:
 		return nil
