@@ -41,7 +41,7 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 		plan:    plan,
 		options: o,
 	}
-	vm.state.init(program, plan.catchByPC)
+	vm.state.init(program)
 
 	return vm, nil
 }

@@ -11,7 +11,6 @@ type execPlan struct {
 	hostCallDescriptors    []callDescriptor
 	udfCallDescriptors     []callDescriptor
 	udfTailCallDescriptors []callDescriptor
-	catchByPC              []int
 }
 
 func buildExecPlan(program *bytecode.Program) (execPlan, error) {
@@ -133,7 +132,6 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 		hostCallDescriptors:    hostCallDesc,
 		udfCallDescriptors:     udfCallDesc,
 		udfTailCallDescriptors: udfTailCallDesc,
-		catchByPC:              buildCatchByPC(len(program.Bytecode), program.CatchTable),
 	}, nil
 }
 

@@ -37,9 +37,9 @@ type (
 	}
 )
 
-func (s *execState) init(program *bytecode.Program, catchByPC []int) {
+func (s *execState) init(program *bytecode.Program) {
 	s.program = program
-	s.catchByPC = catchByPC
+	s.catchByPC = buildCatchByPC(len(program.Bytecode), program.CatchTable)
 	s.registers.Init(program.Registers)
 	s.scratch.Init(len(program.Params))
 	s.frames.Init(maxUDFRegisters(program.Functions.UserDefined))
