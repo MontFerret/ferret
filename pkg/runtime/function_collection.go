@@ -1,7 +1,5 @@
 package runtime
 
-import "strings"
-
 type (
 	// FunctionConstraint is a type constraint that includes all function types
 	FunctionConstraint interface {
@@ -50,7 +48,7 @@ func (f *defaultFunctionCollection[T]) Has(name string) bool {
 }
 
 func (f *defaultFunctionCollection[T]) Get(name string) (T, bool) {
-	fn, exists := f.values[strings.ToUpper(name)]
+	fn, exists := f.values[name]
 
 	return fn, exists
 }

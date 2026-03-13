@@ -53,25 +53,25 @@ func getFunctionName(ctx fql.IFunctionCallContext, aliases map[string]string) ru
 		name += ns
 		name += ctx.FunctionName().GetText()
 
-		return runtime.NewString(strings.ToUpper(name))
+		return runtime.NewString(name)
 	}
 
 	fn := ctx.FunctionName().GetText()
 
 	if len(aliases) > 0 {
-		if target, ok := aliases[strings.ToUpper(fn)]; ok && target != "" {
+		if target, ok := aliases[fn]; ok && target != "" {
 			// Bare calls should only use function aliases (e.g. USE NS::FN AS ALIAS).
 			// Namespace aliases (e.g. USE NS AS ALIAS) are intended for qualified
 			// calls such as ALIAS::FN and must not rewrite ALIAS().
-			if strings.Contains(strings.ToUpper(target), runtime.NamespaceSeparator) {
-				return runtime.NewString(strings.ToUpper(target))
+			if strings.Contains(target, runtime.NamespaceSeparator) {
+				return runtime.NewString(target)
 			}
 		}
 	}
 
 	name += fn
 
-	return runtime.NewString(strings.ToUpper(name))
+	return runtime.NewString(name)
 }
 
 func getUDFName(ctx fql.IFunctionCallContext, aliases map[string]string) (string, bool) {
@@ -94,9 +94,9 @@ func getUDFName(ctx fql.IFunctionCallContext, aliases map[string]string) (string
 	}
 
 	if len(aliases) > 0 {
-		if target, ok := aliases[strings.ToUpper(name)]; ok && target != "" {
+		if target, ok := aliases[name]; ok && target != "" {
 			// Bare function aliases targeting a qualified host function must bypass UDF lookup.
-			if strings.Contains(strings.ToUpper(target), runtime.NamespaceSeparator) {
+			if strings.Contains(target, runtime.NamespaceSeparator) {
 				return "", false
 			}
 		}
@@ -110,25 +110,24 @@ func applyNamespaceAlias(ns string, aliases map[string]string) string {
 		return ns
 	}
 
-	upper := strings.ToUpper(ns)
-	trimmed := strings.TrimSuffix(upper, runtime.NamespaceSeparator)
+	trimmed := strings.TrimSuffix(ns, runtime.NamespaceSeparator)
 	if trimmed == "" {
-		return upper
+		return ns
 	}
 
 	parts := strings.Split(trimmed, runtime.NamespaceSeparator)
 	if len(parts) == 0 {
-		return upper
+		return ns
 	}
 
 	target, ok := aliases[parts[0]]
 	if !ok {
-		return upper
+		return ns
 	}
 
-	target = strings.TrimSuffix(strings.ToUpper(target), runtime.NamespaceSeparator)
+	target = strings.TrimSuffix(target, runtime.NamespaceSeparator)
 	if target == "" {
-		return upper
+		return ns
 	}
 
 	parts = parts[1:]

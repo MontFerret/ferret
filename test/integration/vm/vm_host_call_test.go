@@ -62,6 +62,7 @@ func TestHostFunctionCall(t *testing.T) {
 func TestBuiltinFunctions(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		Case("RETURN LENGTH([1,2,3])", 3),
+		Case("RETURN length([1,2,3])", 3),
 		Case("RETURN TYPENAME([1,2,3])", "Array"),
 		Case("RETURN TYPENAME({ a: 1, b: 2 })", "Object"),
 		Case("WAIT(10) RETURN 1", 1),
@@ -114,4 +115,19 @@ func TestHostFunctionProtectedCall(t *testing.T) {
 	}, vm.WithFunction("FAIL", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, boom
 	}))
+}
+
+func TestHostFunctionLookupIsCaseSensitive(t *testing.T) {
+	builder := runtime.NewFunctionsBuilder()
+	builder.A0().Add("Foo", func(context.Context) (runtime.Value, error) {
+		return runtime.NewString("upper"), nil
+	})
+	builder.A0().Add("foo", func(context.Context) (runtime.Value, error) {
+		return runtime.NewString("lower"), nil
+	})
+
+	RunUseCases(t, []UseCase{
+		CaseArray("RETURN [Foo(), foo()]", []any{"upper", "lower"}),
+		CaseRuntimeErrorStr("RETURN FOO()", "Unresolved function"),
+	}, vm.WithFunctionsBuilder(builder))
 }

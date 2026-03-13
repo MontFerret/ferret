@@ -1,9 +1,5 @@
 package runtime
 
-import (
-	"strings"
-)
-
 const NamespaceSeparator = "::"
 const emptyNS = ""
 
@@ -42,15 +38,13 @@ func NewLibrary() Library {
 
 func NewNamespace(name string) Namespace {
 	lib := new(library)
-	lib.name = strings.ToUpper(name)
+	lib.name = name
 	lib.builder = newNamespacedFunctionsBuilder(lib.name)
 
 	return lib
 }
 
 func makeFunctionName(namespace, name string) string {
-	name = strings.ToUpper(name)
-
 	if namespace == emptyNS {
 		return name
 	}

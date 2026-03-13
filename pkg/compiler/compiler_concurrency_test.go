@@ -108,6 +108,15 @@ RETURN RUN(2)
 			expectedHost: map[string]int{"BAR::OTHER_FN": 2},
 			expectedUDFs: 1,
 		},
+		{
+			name: "udf_case_distinct_hosts",
+			query: `
+FUNC wrap() => Foo(1) + foo(2)
+RETURN wrap()
+`,
+			expectedHost: map[string]int{"Foo": 1, "foo": 1},
+			expectedUDFs: 1,
+		},
 	}
 
 	t.Run("udf_isolation_shared_sources", func(t *testing.T) {

@@ -39,14 +39,14 @@ func TestFunctionsBuilderBuildAndHash(t *testing.T) {
 		t.Fatalf("expected cached names length %d, got %d", funcs.Size(), len(funcs.names))
 	}
 
-	for _, name := range []string{"VAR", "ZERO", "ONE"} {
+	for _, name := range []string{"var", "zero", "one"} {
 		if !funcs.Has(name) {
 			t.Fatalf("expected function %q to exist", name)
 		}
 	}
 
 	names := funcs.List()
-	for _, name := range []string{"VAR", "ZERO", "ONE"} {
+	for _, name := range []string{"var", "zero", "one"} {
 		if !slices.Contains(names, name) {
 			t.Fatalf("expected names to include %q, got %v", name, names)
 		}
@@ -74,14 +74,14 @@ func TestNewFunctionsFromAndFromMap(t *testing.T) {
 	}
 
 	f1Builder := NewFunctionsBuilder()
-	f1Builder.A0().Add("a", fn0)
+	f1Builder.A0().Add("A", fn0)
 	f1, err := f1Builder.Build()
 	if err != nil {
 		t.Fatalf("build functions: %v", err)
 	}
 
 	f2Builder := NewFunctionsBuilder()
-	f2Builder.A0().Add("b", fn0)
+	f2Builder.A0().Add("a", fn0)
 	f2, err := f2Builder.Build()
 	if err != nil {
 		t.Fatalf("build functions: %v", err)
@@ -104,14 +104,14 @@ func TestNewFunctionsFromAndFromMap(t *testing.T) {
 		t.Fatalf("expected cached names length %d, got %d", merged.Size(), len(merged.names))
 	}
 
-	for _, name := range []string{"A", "B"} {
+	for _, name := range []string{"A", "a"} {
 		if !merged.Has(name) {
 			t.Fatalf("expected merged function %q to exist", name)
 		}
 	}
 
 	fromMap, err := NewFunctionsFromMap(map[string]Function{
-		"FOO": func(ctx context.Context, args ...Value) (Value, error) {
+		"Foo": func(ctx context.Context, args ...Value) (Value, error) {
 			return None, nil
 		},
 	})
@@ -119,8 +119,8 @@ func TestNewFunctionsFromAndFromMap(t *testing.T) {
 		t.Fatalf("functions from map: %v", err)
 	}
 
-	if !fromMap.Has("FOO") {
-		t.Fatal("expected functions from map to include FOO")
+	if !fromMap.Has("Foo") {
+		t.Fatal("expected functions from map to include Foo")
 	}
 
 	if fromMap.size != fromMap.Size() {
@@ -133,5 +133,57 @@ func TestNewFunctionsFromAndFromMap(t *testing.T) {
 
 	if fromMap.Hash() != functionsHash(fromMap) {
 		t.Fatalf("expected map hash to match functionsHash, got %d vs %d", fromMap.Hash(), functionsHash(fromMap))
+	}
+}
+
+func TestFunctionLookupIsCaseSensitive(t *testing.T) {
+	fooUpper := func(context.Context) (Value, error) {
+		return NewString("upper"), nil
+	}
+	fooLower := func(context.Context) (Value, error) {
+		return NewString("lower"), nil
+	}
+
+	builder := NewFunctionsBuilder()
+	builder.A0().Add("Foo", fooUpper)
+	builder.A0().Add("foo", fooLower)
+
+	funcs, err := builder.Build()
+	if err != nil {
+		t.Fatalf("build functions: %v", err)
+	}
+
+	if funcs.Size() != 2 {
+		t.Fatalf("expected 2 functions, got %d", funcs.Size())
+	}
+
+	if !funcs.Has("Foo") || !funcs.Has("foo") {
+		t.Fatalf("expected exact-case host functions to exist, got %v", funcs.List())
+	}
+
+	if funcs.Has("FOO") {
+		t.Fatalf("expected wrong-case host name to be absent, got %v", funcs.List())
+	}
+
+	upper, ok := funcs.A0().Get("Foo")
+	if !ok {
+		t.Fatal("expected Foo lookup to succeed")
+	}
+
+	lower, ok := funcs.A0().Get("foo")
+	if !ok {
+		t.Fatal("expected foo lookup to succeed")
+	}
+
+	if _, ok := funcs.A0().Get("FOO"); ok {
+		t.Fatal("expected wrong-case lookup to fail")
+	}
+
+	if got, _ := upper(context.Background()); got != NewString("upper") {
+		t.Fatalf("unexpected Foo result: %v", got)
+	}
+
+	if got, _ := lower(context.Background()); got != NewString("lower") {
+		t.Fatalf("unexpected foo result: %v", got)
 	}
 }

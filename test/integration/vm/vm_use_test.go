@@ -9,27 +9,39 @@ import (
 )
 
 func TestUse(t *testing.T) {
-	ns := runtime.NewNamespace("FOO")
-	ns.Function().A0().Add("TEST_FN", func(_ context.Context) (runtime.Value, error) {
+	ns := runtime.NewNamespace("Foo")
+	ns.Function().A0().Add("Test_FN", func(_ context.Context) (runtime.Value, error) {
 		return runtime.True, nil
 	})
 
 	RunUseCases(t, []UseCase{
 		Case(`
-USE FOO AS F
+USE Foo AS F
 
-RETURN F::TEST_FN()`, true, "Should compile and resolve alias to the namespaced function using the namespace alias"),
+RETURN F::Test_FN()`, true, "Should compile and resolve alias to the namespaced function using the namespace alias"),
 		Case(`
-USE FOO AS F
-FUNC f() => F::TEST_FN()
+USE Foo AS F
+FUNC f() => F::Test_FN()
 RETURN f()`, true, "Should resolve namespace alias host call inside UDF body"),
 		Case(`
-USE FOO AS F
+USE Foo AS F
 FUNC f() => true
 RETURN f()`, true, "Should not rewrite bare UDF call through namespace alias"),
 		Case(`
-USE FOO::TEST_FN AS FN
+USE Foo::Test_FN AS Fn
 
-RETURN FN()`, true, "Should compile and resolve alias to the namespaced function using the function alias"),
+RETURN Fn()`, true, "Should compile and resolve alias to the namespaced function using the function alias"),
+		CaseRuntimeErrorStr(`
+USE Foo AS F
+
+RETURN f::Test_FN()`, "Unresolved function", "Namespace alias resolution is case-sensitive"),
+		CaseRuntimeErrorStr(`
+USE Foo::Test_FN AS Fn
+
+RETURN FN()`, "Unresolved function", "Function alias resolution is case-sensitive"),
+		CaseRuntimeErrorStr(`
+USE Foo AS F
+
+RETURN F::test_fn()`, "Unresolved function", "Host lookup remains case-sensitive after alias expansion"),
 	}, vm.WithNamespace(ns))
 }
