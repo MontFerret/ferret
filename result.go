@@ -72,8 +72,9 @@ func newResult(val runtime.Value) *Result {
 // Close releases resources associated with the result.
 //
 // If the underlying iterator or root value implements io.Closer, Close calls it.
-// After Close returns, the result becomes terminal and any subsequent call to
-// Next will return io.EOF.
+// After Close returns, the result becomes terminal. Subsequent calls to Next
+// will return any previously stored iteration error, if present; otherwise
+// they will return io.EOF.
 //
 // Close is safe to call even if iteration has not started.
 func (r *Result) Close() error {
