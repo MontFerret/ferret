@@ -28,8 +28,8 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 	if err := validate(program); err != nil {
 		return nil, err
 	}
-	plan, err := buildExecPlan(program)
 
+	plan, err := buildExecPlan(program)
 	if err != nil {
 		return nil, err
 	}
