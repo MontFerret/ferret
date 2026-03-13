@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -16,18 +15,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
-
-func compileProgram(t *testing.T, source string) *bytecode.Program {
-	t.Helper()
-
-	c := compiler.New()
-	program, err := c.Compile(file.NewSource("test", source))
-	if err != nil {
-		t.Fatalf("compile failed: %v", err)
-	}
-
-	return program
-}
 
 func mustNewVM(t *testing.T, program *bytecode.Program, opts ...Option) *VM {
 	t.Helper()
@@ -49,6 +36,54 @@ func mustAcquireRunState(t *testing.T, instance *VM) *execState {
 	}
 
 	return state
+}
+
+func mustNewEnvironment(t *testing.T, opts ...EnvironmentOption) *Environment {
+	t.Helper()
+
+	env, err := NewEnvironment(opts)
+	if err != nil {
+		t.Fatalf("environment build failed: %v", err)
+	}
+
+	return env
+}
+
+func assertUnresolvedFunctionError(t *testing.T, err error) *RuntimeError {
+	t.Helper()
+
+	if err == nil {
+		t.Fatal("expected unresolved function error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	if got, want := rtErr.Message, "Unresolved function"; got != want {
+		t.Fatalf("unexpected message: got %q, want %q", got, want)
+	}
+
+	return rtErr
+}
+
+func assertIntArrayValue(t *testing.T, got runtime.Value, want ...runtime.Int) {
+	t.Helper()
+
+	arr, ok := got.(*runtime.Array)
+	if !ok {
+		t.Fatalf("expected runtime.Array, got %T", got)
+	}
+
+	expected := make([]runtime.Value, len(want))
+	for i, value := range want {
+		expected[i] = value
+	}
+
+	if arr.Compare(runtime.NewArrayWith(expected...)) != 0 {
+		t.Fatalf("unexpected array value: got %v, want %v", got, runtime.NewArrayWith(expected...))
+	}
 }
 
 type trackingCloser struct {
@@ -75,76 +110,6 @@ func (c *trackingCloser) Hash() uint64 {
 
 func (c *trackingCloser) Copy() runtime.Value {
 	return c
-}
-
-func TestPanicPolicyRecoversPanics(t *testing.T) {
-	program := compileProgram(t, "RETURN PANIC_FN()")
-
-	instance := mustNewVM(t, program)
-	env, err := NewEnvironment([]EnvironmentOption{
-		WithFunction("PANIC_FN", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-			panic("panic in host function")
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	_, err = instance.Run(context.Background(), env)
-	if err == nil {
-		t.Fatal("expected runtime error in strict mode")
-	}
-
-	var rtErr *RuntimeError
-	if !errors.As(err, &rtErr) {
-		t.Fatalf("expected wrapped runtime error, got %T", err)
-	}
-}
-
-func TestPanicPolicyPropagatesPanics(t *testing.T) {
-	program := compileProgram(t, "RETURN PANIC_FN()")
-
-	instance := mustNewVM(t, program, WithPanicPolicy(PanicPropagate))
-	env, err := NewEnvironment([]EnvironmentOption{
-		WithFunction("PANIC_FN", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-			panic("panic in host function")
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	defer func() {
-		if recovered := recover(); recovered == nil {
-			t.Fatal("expected panic to propagate in fast mode")
-		}
-	}()
-
-	_, _ = instance.Run(context.Background(), env)
-}
-
-func TestPanicPolicyPropagateStillWrapsReturnedErrors(t *testing.T) {
-	program := compileProgram(t, "RETURN FAIL_FN()")
-
-	instance := mustNewVM(t, program, WithPanicPolicy(PanicPropagate))
-	env, err := NewEnvironment([]EnvironmentOption{
-		WithFunction("FAIL_FN", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-			return runtime.None, errors.New("boom")
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	_, err = instance.Run(context.Background(), env)
-	if err == nil {
-		t.Fatal("expected runtime error")
-	}
-
-	var rtErr *RuntimeError
-	if !errors.As(err, &rtErr) {
-		t.Fatalf("expected wrapped runtime error, got %T", err)
-	}
 }
 
 func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
@@ -243,197 +208,6 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 
 	if &reg[0] != &reused[0] {
 		t.Fatal("expected register pool to reuse buffers")
-	}
-}
-
-func TestNewWith_InlinesHostCallIDs(t *testing.T) {
-	program := compileProgram(t, "RETURN F(1)")
-	instance := mustNewVM(t, program)
-
-	if len(instance.plan.hostCallDescriptors) == 0 {
-		t.Fatal("expected host call warmup descriptors")
-	}
-
-	for i, binding := range instance.plan.hostCallDescriptors {
-		if got, want := binding.ID, i; got != want {
-			t.Fatalf("unexpected host binding id at index %d: got %d, want %d", i, got, want)
-		}
-
-		if binding.ID < 0 || binding.ID >= len(instance.cache.HostFunctions) {
-			t.Fatalf("invalid binding id %d for pc %d", binding.ID, binding.PC)
-		}
-
-		if binding.PC < 0 || binding.PC >= len(instance.plan.instructions) {
-			t.Fatalf("invalid callsite pc %d", binding.PC)
-		}
-
-		inst := instance.plan.instructions[binding.PC]
-		if inst.Opcode != bytecode.OpHCall && inst.Opcode != bytecode.OpProtectedHCall {
-			t.Fatalf("callsite pc %d does not point to host call opcode %d", binding.PC, inst.Opcode)
-		}
-
-		if got, want := inst.InlineSlot, binding.ID; got != want {
-			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", binding.PC, got, want)
-		}
-	}
-}
-
-func TestNewWith_HostCallIDsAreCompactAndOrdered(t *testing.T) {
-	program := compileProgram(t, `
-LET a = F(1)
-LET b = G(2)
-RETURN [a, b]
-`)
-	instance := mustNewVM(t, program)
-
-	if got, want := len(instance.plan.hostCallDescriptors), 2; got != want {
-		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
-	}
-
-	prevPC := -1
-	for i, binding := range instance.plan.hostCallDescriptors {
-		if got, want := binding.ID, i; got != want {
-			t.Fatalf("unexpected host binding id at index %d: got %d, want %d", i, got, want)
-		}
-	}
-
-	used := make([]bool, len(instance.plan.hostCallDescriptors))
-	siteByPC := make(map[int]callDescriptor, len(instance.plan.hostCallDescriptors))
-	for _, binding := range instance.plan.hostCallDescriptors {
-		if binding.PC <= prevPC {
-			t.Fatalf("host warmup pcs are not increasing: prev=%d, curr=%d", prevPC, binding.PC)
-		}
-		prevPC = binding.PC
-
-		if binding.ID < 0 || binding.ID >= len(instance.plan.hostCallDescriptors) {
-			t.Fatalf("invalid inlined host id at pc %d: %d", binding.PC, binding.ID)
-		}
-
-		used[binding.ID] = true
-		siteByPC[binding.PC] = binding
-
-		inst := instance.plan.instructions[binding.PC]
-		if got, want := inst.InlineSlot, binding.ID; got != want {
-			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", binding.PC, got, want)
-		}
-	}
-
-	for i, ok := range used {
-		if !ok {
-			t.Fatalf("host binding %d is never referenced by a callsite", i)
-		}
-	}
-
-	hostCallsites := 0
-	for pc, inst := range instance.plan.instructions {
-		if inst.Opcode != bytecode.OpHCall && inst.Opcode != bytecode.OpProtectedHCall {
-			continue
-		}
-
-		hostCallsites++
-
-		if inst.InlineSlot < 0 || inst.InlineSlot >= len(instance.plan.hostCallDescriptors) {
-			t.Fatalf("invalid inlined host id at pc %d: %d", pc, inst.InlineSlot)
-		}
-
-		site, ok := siteByPC[pc]
-		if !ok {
-			t.Fatalf("host callsite pc %d missing from warmup site metadata", pc)
-		}
-
-		if got, want := site.ID, inst.InlineSlot; got != want {
-			t.Fatalf("host id mismatch at pc %d: got %d, want %d", pc, got, want)
-		}
-	}
-
-	if got, want := hostCallsites, len(instance.plan.hostCallDescriptors); got != want {
-		t.Fatalf("unexpected host callsite count: got %d, want %d", got, want)
-	}
-}
-
-func TestNewWith_AssignsOneHostBindingPerCallsite(t *testing.T) {
-	program := compileProgram(t, `
-LET a = F(1)
-LET b = F(2)
-RETURN [a, b]
-`)
-	instance := mustNewVM(t, program)
-
-	if got, want := len(instance.plan.hostCallDescriptors), 2; got != want {
-		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
-	}
-
-	firstID := instance.plan.hostCallDescriptors[0].ID
-	secondID := instance.plan.hostCallDescriptors[1].ID
-	if firstID == secondID {
-		t.Fatalf("expected distinct binding ids per callsite, got %d", firstID)
-	}
-
-	for i, binding := range instance.plan.hostCallDescriptors {
-		if got, want := binding.ID, i; got != want {
-			t.Fatalf("unexpected binding id for site %d: got %d, want %d", i, got, want)
-		}
-
-		inst := instance.plan.instructions[binding.PC]
-		if got, want := inst.InlineSlot, binding.ID; got != want {
-			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", binding.PC, got, want)
-		}
-	}
-}
-
-func TestNewWith_AssignsDistinctBindingsAcrossBindClasses(t *testing.T) {
-	program := compileProgram(t, `
-LET a = F()
-LET b = F(1)
-RETURN [a, b]
-`)
-	instance := mustNewVM(t, program)
-
-	if got, want := len(instance.plan.hostCallDescriptors), 2; got != want {
-		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
-	}
-
-	firstID := instance.plan.hostCallDescriptors[0].ID
-	secondID := instance.plan.hostCallDescriptors[1].ID
-	if firstID == secondID {
-		t.Fatalf("expected distinct binding ids for different bind classes, got %d", firstID)
-	}
-}
-
-func TestRun_IgnoresInlineSlotForNonHostOpcodes(t *testing.T) {
-	program := compileProgram(t, "LET a = 1 RETURN F(a)")
-	instance := mustNewVM(t, program)
-
-	nonHostPC := -1
-	for pc, inst := range instance.plan.instructions {
-		if inst.Opcode != bytecode.OpHCall && inst.Opcode != bytecode.OpProtectedHCall {
-			nonHostPC = pc
-			break
-		}
-	}
-
-	if nonHostPC < 0 {
-		t.Fatal("expected at least one non-host opcode")
-	}
-
-	instance.plan.instructions[nonHostPC].InlineSlot = 1 << 20
-
-	env, err := NewEnvironment([]EnvironmentOption{
-		WithFunction("F", func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-			return args[0], nil
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	out, err := instance.Run(context.Background(), env)
-	if err != nil {
-		t.Fatalf("run failed: %v", err)
-	}
-
-	if got, want := out, runtime.NewInt(1); got != want {
-		t.Fatalf("unexpected run result: got %v, want %v", got, want)
 	}
 }
 
@@ -538,32 +312,6 @@ func TestOpLoadParam_MissingParamsPreserveRuntimeError(t *testing.T) {
 	}
 
 	if !strings.Contains(cause.Error(), "@bar") {
-		t.Fatalf("expected missing parameter name in error, got %v (cause: %v)", err, cause)
-	}
-}
-
-func TestRun_MissingParamPrecedesWarmupHostResolution(t *testing.T) {
-	program := compileProgram(t, "RETURN MISSING_FN(@foo)")
-
-	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
-	if err == nil {
-		t.Fatal("expected missing parameter error")
-	}
-
-	if !strings.Contains(err.Error(), "Missing parameter") {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if strings.Contains(err.Error(), "Unresolved function") {
-		t.Fatalf("expected missing parameter to be reported before host warmup failure, got %v", err)
-	}
-
-	cause := errors.Unwrap(err)
-	if cause == nil {
-		cause = err
-	}
-
-	if !strings.Contains(cause.Error(), "@foo") {
 		t.Fatalf("expected missing parameter name in error, got %v (cause: %v)", err, cause)
 	}
 }
@@ -756,62 +504,6 @@ func TestUnwindToProtected_ClosesOwnedResourcesOfUnwoundFramesOnly(t *testing.T)
 
 	if !state.owned.Owns(protectedOwned) {
 		t.Fatal("expected protected caller ownership to remain active after unwind")
-	}
-}
-
-func TestRunReturnsUnresolvedFunctionWhenHostCacheEntryIsMissing(t *testing.T) {
-	c := compiler.New()
-	program, err := c.Compile(file.NewSource("test", "RETURN TEST(1)"))
-	if err != nil {
-		t.Fatalf("compile failed: %v", err)
-	}
-
-	instance := mustNewVM(t, program)
-	env, err := NewEnvironment([]EnvironmentOption{
-		WithFunction("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-			return runtime.True, nil
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	if _, err := instance.Run(context.Background(), env); err != nil {
-		t.Fatalf("first run failed: %v", err)
-	}
-
-	hostPC := -1
-	for i, inst := range program.Bytecode {
-		if inst.Opcode == bytecode.OpHCall || inst.Opcode == bytecode.OpProtectedHCall {
-			hostPC = i
-			break
-		}
-	}
-
-	if hostPC < 0 {
-		t.Fatal("host call opcode not found")
-	}
-
-	hostID := instance.plan.instructions[hostPC].InlineSlot
-	if hostID < 0 || hostID >= len(instance.cache.HostFunctions) {
-		t.Fatalf("invalid host id at pc %d: %d", hostPC, hostID)
-	}
-
-	instance.cache.HostFunctions[hostID] = mem.CachedHostFunction{}
-	instance.cache.HostFunctions[hostID].Bound = false
-
-	_, err = instance.Run(context.Background(), env)
-	if err == nil {
-		t.Fatal("expected unresolved function error")
-	}
-
-	var rtErr *RuntimeError
-	if !errors.As(err, &rtErr) {
-		t.Fatalf("expected runtime error, got %T", err)
-	}
-
-	if rtErr.Message != "Unresolved function" {
-		t.Fatalf("expected unresolved function message, got %q", rtErr.Message)
 	}
 }
 
@@ -1815,285 +1507,6 @@ func TestOpFail_InvalidMessageTypeReturnsTypeError(t *testing.T) {
 	}
 }
 
-func TestWarmupClearsStaleHostCacheAcrossEnvironments(t *testing.T) {
-	program := compileProgram(t, "RETURN F()")
-	instance := mustNewVM(t, program)
-
-	envWithFn, err := NewEnvironment([]EnvironmentOption{
-		WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-			return runtime.NewInt(7), nil
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	out, err := instance.Run(context.Background(), envWithFn)
-	if err != nil {
-		t.Fatalf("first run failed: %v", err)
-	}
-
-	if got, want := out, runtime.NewInt(7); got != want {
-		t.Fatalf("unexpected first run result: got %v, want %v", got, want)
-	}
-
-	_, err = instance.Run(context.Background(), NewDefaultEnvironment())
-	if err == nil {
-		t.Fatal("expected unresolved function after env switch")
-	}
-
-	var rtErr *RuntimeError
-	if !errors.As(err, &rtErr) {
-		t.Fatalf("expected runtime error, got %T", err)
-	}
-
-	if got, want := rtErr.Message, "Unresolved function"; got != want {
-		t.Fatalf("unexpected message: got %q, want %q", got, want)
-	}
-}
-
-func TestWarmupRebindTouchesOnlyHostCallSlots(t *testing.T) {
-	program := compileProgram(t, "RETURN F()")
-	instance := mustNewVM(t, program)
-
-	if got, want := len(instance.plan.hostCallDescriptors), 1; got != want {
-		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
-	}
-
-	hostID := instance.plan.hostCallDescriptors[0].ID
-	if hostID < 0 || hostID >= len(instance.cache.HostFunctions) {
-		t.Fatalf("invalid host id %d", hostID)
-	}
-
-	sentinel := mem.CachedHostFunction{
-		FnV: func(_ context.Context, _ ...runtime.Value) (runtime.Value, error) {
-			return runtime.NewInt(77), nil
-		},
-	}
-	instance.cache.HostFunctions[hostID] = sentinel
-	instance.cache.HostFunctions[hostID].Bound = true
-
-	envA, err := NewEnvironment([]EnvironmentOption{
-		WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-			return runtime.NewInt(1), nil
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	envB, err := NewEnvironment([]EnvironmentOption{
-		WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-			return runtime.NewInt(2), nil
-		}),
-		WithFunction("G", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-			return runtime.NewInt(3), nil
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	outA, err := instance.Run(context.Background(), envA)
-	if err != nil {
-		t.Fatalf("first run failed: %v", err)
-	}
-	if got, want := outA, runtime.NewInt(1); got != want {
-		t.Fatalf("unexpected first run result: got %v, want %v", got, want)
-	}
-
-	outB, err := instance.Run(context.Background(), envB)
-	if err != nil {
-		t.Fatalf("second run failed: %v", err)
-	}
-	if got, want := outB, runtime.NewInt(2); got != want {
-		t.Fatalf("unexpected second run result: got %v, want %v", got, want)
-	}
-
-	if !instance.cache.HostFunctions[hostID].Bound {
-		t.Fatal("expected host call slot to be rebound")
-	}
-}
-
-func TestWarmupRebindsWhenEnvironmentFunctionNamesMatch(t *testing.T) {
-	program := compileProgram(t, "RETURN F()")
-	instance := mustNewVM(t, program)
-
-	envA, err := NewEnvironment([]EnvironmentOption{
-		WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-			return runtime.NewInt(1), nil
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	envB, err := NewEnvironment([]EnvironmentOption{
-		WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-			return runtime.NewInt(2), nil
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	outA, err := instance.Run(context.Background(), envA)
-	if err != nil {
-		t.Fatalf("first run failed: %v", err)
-	}
-	if got, want := outA, runtime.NewInt(1); got != want {
-		t.Fatalf("unexpected first run result: got %v, want %v", got, want)
-	}
-
-	outB, err := instance.Run(context.Background(), envB)
-	if err != nil {
-		t.Fatalf("second run failed: %v", err)
-	}
-	if got, want := outB, runtime.NewInt(2); got != want {
-		t.Fatalf("unexpected second run result: got %v, want %v", got, want)
-	}
-}
-
-func TestStrictWarmupFailsProtectedMissingHostCallForDefaultAndBuiltEnvironment(t *testing.T) {
-	program := compileProgram(t, "RETURN MISSING_FN()?")
-
-	builtEnv, err := NewEnvironment(nil)
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	cases := []struct {
-		env  *Environment
-		name string
-	}{
-		{name: "default", env: NewDefaultEnvironment()},
-		{name: "built", env: builtEnv},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			_, err := mustNewVM(t, program).Run(context.Background(), tc.env)
-			if err == nil {
-				t.Fatal("expected unresolved function error from strict warmup")
-			}
-
-			var rtErr *RuntimeError
-			if !errors.As(err, &rtErr) {
-				t.Fatalf("expected runtime error, got %T", err)
-			}
-
-			if got, want := rtErr.Message, "Unresolved function"; got != want {
-				t.Fatalf("unexpected message: got %q, want %q", got, want)
-			}
-		})
-	}
-}
-
-func TestStrictWarmupFailsOnDeadCodeUnresolvedHostCall(t *testing.T) {
-	program := compileProgram(t, "RETURN false ? MISSING_FN() : 1")
-
-	envWithDummy, err := NewEnvironment([]EnvironmentOption{
-		WithFunction("DUMMY", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-			return runtime.None, nil
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	cases := []struct {
-		env  *Environment
-		name string
-	}{
-		{name: "default", env: NewDefaultEnvironment()},
-		{name: "dummy", env: envWithDummy},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			_, err := mustNewVM(t, program).Run(context.Background(), tc.env)
-			if err == nil {
-				t.Fatal("expected unresolved function error from strict warmup")
-			}
-
-			var rtErr *RuntimeError
-			if !errors.As(err, &rtErr) {
-				t.Fatalf("expected runtime error, got %T", err)
-			}
-
-			if got, want := rtErr.Message, "Unresolved function"; got != want {
-				t.Fatalf("unexpected message: got %q, want %q", got, want)
-			}
-		})
-	}
-}
-
-func TestStrictWarmupAggregatesMissingHostFunctions(t *testing.T) {
-	program := compileProgram(t, `
-LET a = MISSING_A()
-LET b = MISSING_B()
-RETURN a + b
-`)
-
-	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
-	if err == nil {
-		t.Fatal("expected warmup error set")
-	}
-
-	var rtErrSet *rtdiagnostics.RuntimeErrorSet
-	if !errors.As(err, &rtErrSet) {
-		t.Fatalf("expected runtime error set, got %T", err)
-	}
-
-	if got, want := rtErrSet.Size(), 2; got != want {
-		t.Fatalf("unexpected error set size: got %d, want %d", got, want)
-	}
-
-	unresolved := 0
-	for _, rtErr := range rtErrSet.Errors() {
-		if rtErr.Message == "Unresolved function" {
-			unresolved++
-		}
-	}
-
-	if got, want := unresolved, 2; got != want {
-		t.Fatalf("unexpected unresolved error count: got %d, want %d", got, want)
-	}
-}
-
-func TestStrictWarmupReportsRepeatedUnresolvedHostFunctionPerCallsite(t *testing.T) {
-	program := compileProgram(t, `
-LET a = MISSING()
-LET b = MISSING()
-RETURN a + b
-`)
-
-	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
-	if err == nil {
-		t.Fatal("expected warmup error set")
-	}
-
-	var rtErrSet *rtdiagnostics.RuntimeErrorSet
-	if !errors.As(err, &rtErrSet) {
-		t.Fatalf("expected runtime error set, got %T", err)
-	}
-
-	if got, want := rtErrSet.Size(), 2; got != want {
-		t.Fatalf("unexpected error set size: got %d, want %d", got, want)
-	}
-
-	unresolved := 0
-	for _, rtErr := range rtErrSet.Errors() {
-		if rtErr.Message == "Unresolved function" {
-			unresolved++
-		}
-	}
-
-	if got, want := unresolved, 2; got != want {
-		t.Fatalf("unexpected unresolved error count: got %d, want %d", got, want)
-	}
-}
-
 func TestStrictWarmupInvalidTargetReturnsInvalidFunctionName(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
@@ -2121,138 +1534,6 @@ func TestStrictWarmupInvalidTargetReturnsInvalidFunctionName(t *testing.T) {
 
 	if got := initErrs.First().Cause; !errors.Is(got, ErrInvalidFunctionName) {
 		t.Fatalf("expected invalid function name cause, got %v", got)
-	}
-}
-
-func TestStrictWarmupFailureIsRepeatableUntilEnvironmentFixed(t *testing.T) {
-	program := compileProgram(t, "RETURN F()")
-	instance := mustNewVM(t, program)
-
-	assertUnresolved := func(err error) {
-		t.Helper()
-
-		if err == nil {
-			t.Fatal("expected unresolved function error")
-		}
-
-		var rtErr *RuntimeError
-		if !errors.As(err, &rtErr) {
-			t.Fatalf("expected runtime error, got %T", err)
-		}
-
-		if got, want := rtErr.Message, "Unresolved function"; got != want {
-			t.Fatalf("unexpected message: got %q, want %q", got, want)
-		}
-	}
-
-	_, err := instance.Run(context.Background(), NewDefaultEnvironment())
-	assertUnresolved(err)
-
-	_, err = instance.Run(context.Background(), NewDefaultEnvironment())
-	assertUnresolved(err)
-
-	validEnv, err := NewEnvironment([]EnvironmentOption{
-		WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-			return runtime.NewInt(7), nil
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	out, err := instance.Run(context.Background(), validEnv)
-	if err != nil {
-		t.Fatalf("expected successful run after env fix, got %v", err)
-	}
-
-	if got, want := out, runtime.NewInt(7); got != want {
-		t.Fatalf("unexpected output: got %v, want %v", got, want)
-	}
-}
-
-func TestResetDrainsLeakedFramesBetweenFailedRuns(t *testing.T) {
-	program := compileProgram(t, `
-FUNC inner() (
-	RETURN 1 / 0
-)
-
-FUNC outer() (
-	RETURN inner()
-)
-
-RETURN outer()
-`)
-
-	instance := mustNewVM(t, program)
-
-	runAndCheck := func(label string) int {
-		t.Helper()
-
-		_, err := instance.Run(context.Background(), NewDefaultEnvironment())
-		if err == nil {
-			t.Fatalf("%s: expected runtime error", label)
-		}
-
-		var rtErr *RuntimeError
-		if !errors.As(err, &rtErr) {
-			t.Fatalf("%s: expected runtime error, got %T", label, err)
-		}
-
-		if rtErr.Kind != DivideByZero {
-			t.Fatalf("%s: unexpected error kind: got %s, want %s", label, rtErr.Kind, DivideByZero)
-		}
-
-		return strings.Count(rtErr.Format(), "called from")
-	}
-
-	stackDepthFirst := runAndCheck("first run")
-	stackDepthSecond := runAndCheck("second run")
-	if stackDepthSecond != stackDepthFirst {
-		t.Fatalf("expected stable stack depth across repeated failed runs: first=%d second=%d", stackDepthFirst, stackDepthSecond)
-	}
-}
-
-func TestHostNilResultIsNormalizedToNone(t *testing.T) {
-	program := compileProgram(t, "RETURN NIL_FN()")
-	env, err := NewEnvironment([]EnvironmentOption{
-		WithFunction("NIL_FN", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-			return nil, nil
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	out, err := mustNewVM(t, program).Run(context.Background(), env)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if out != runtime.None {
-		t.Fatalf("expected none, got %v", out)
-	}
-}
-
-func TestModuloTypeErrorNotMisclassifiedAsModuloByZero(t *testing.T) {
-	program := compileProgram(t, `RETURN 5 % "x"`)
-
-	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
-	if err == nil {
-		t.Fatal("expected runtime error")
-	}
-
-	var rtErr *RuntimeError
-	if !errors.As(err, &rtErr) {
-		t.Fatalf("expected runtime error, got %T", err)
-	}
-
-	if rtErr.Kind != diagnostics.TypeError {
-		t.Fatalf("unexpected kind: got %s, want %s", rtErr.Kind, diagnostics.TypeError)
-	}
-
-	formatted := strings.ToLower(rtErr.Format())
-	if strings.Contains(formatted, "modulo by zero") {
-		t.Fatalf("expected non-modulo classification, got:\n%s", rtErr.Format())
 	}
 }
 
@@ -2400,45 +1681,6 @@ func TestNearestBoundaryUsesProtectedUnwindWithoutCatch(t *testing.T) {
 	}
 }
 
-func TestRuntimeErrorIncludesUDFCallStackContext(t *testing.T) {
-	program := compileProgram(t, `
-FUNC inner() (
-	RETURN @x.foo
-)
-FUNC middle() (
-	LET value = inner()
-	RETURN value
-)
-FUNC outer() (
-	LET value = middle()
-	RETURN value
-)
-RETURN outer()
-`)
-
-	env := NewDefaultEnvironment()
-	env.Params["x"] = runtime.None
-
-	_, err := mustNewVM(t, program).Run(context.Background(), env)
-	if err == nil {
-		t.Fatal("expected runtime error")
-	}
-
-	var rtErr *RuntimeError
-	if !errors.As(err, &rtErr) {
-		t.Fatalf("expected runtime error, got %T", err)
-	}
-
-	formatted := rtErr.Format()
-	if !strings.Contains(formatted, "called from inner (#1)") {
-		t.Fatalf("expected VM call stack context, got:\n%s", formatted)
-	}
-
-	if !strings.Contains(formatted, "VM stack: outer -> middle -> inner") {
-		t.Fatalf("expected additive VM stack note, got:\n%s", formatted)
-	}
-}
-
 func TestWrapRuntimeErrorPreservesExistingNoteAndDoesNotDuplicateStackDetails(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
@@ -2530,36 +1772,6 @@ func TestWrapRuntimeErrorRecognizesLegacyCallStackLabelWithoutDuplicatingSpans(t
 	}
 }
 
-func TestRuntimeErrorSingleUdfStackFormattingUsesSourceSpelling(t *testing.T) {
-	program := compileProgram(t, `
-FUNC boo() (
-	LET a = 1
-	LET b = 0
-	RETURN a / b
-)
-RETURN boo()
-`)
-
-	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
-	if err == nil {
-		t.Fatal("expected runtime error")
-	}
-
-	var rtErr *RuntimeError
-	if !errors.As(err, &rtErr) {
-		t.Fatalf("expected runtime error, got %T", err)
-	}
-
-	formatted := rtErr.Format()
-	if !strings.Contains(formatted, "called from boo (#1)") {
-		t.Fatalf("expected call-site label with source-spelling udf name, got:\n%s", formatted)
-	}
-
-	if !strings.Contains(formatted, "VM stack: boo") {
-		t.Fatalf("expected source-spelling VM stack note, got:\n%s", formatted)
-	}
-}
-
 func TestUdfRuntimeMessageUsesSourceSpellingName(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
@@ -2604,33 +1816,6 @@ func TestUdfRuntimeMessageUsesSourceSpellingName(t *testing.T) {
 
 	if strings.Contains(formatted, "'BOO'") {
 		t.Fatalf("unexpected normalized name in runtime diagnostic:\n%s", formatted)
-	}
-}
-
-func TestRecoveredPanicRuntimeErrorDoesNotLeakGoStackTrace(t *testing.T) {
-	program := compileProgram(t, "RETURN PANIC_FN()")
-	env, err := NewEnvironment([]EnvironmentOption{
-		WithFunction("PANIC_FN", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-			panic("panic in host function")
-		}),
-	})
-	if err != nil {
-		t.Fatalf("environment build failed: %v", err)
-	}
-
-	_, err = mustNewVM(t, program).Run(context.Background(), env)
-	if err == nil {
-		t.Fatal("expected runtime error")
-	}
-
-	var rtErr *RuntimeError
-	if !errors.As(err, &rtErr) {
-		t.Fatalf("expected runtime error, got %T", err)
-	}
-
-	formatted := rtErr.Format()
-	if strings.Contains(formatted, "goroutine ") || strings.Contains(formatted, "runtime/debug.Stack") {
-		t.Fatalf("runtime error format leaked Go stack trace:\n%s", formatted)
 	}
 }
 
