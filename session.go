@@ -27,14 +27,14 @@ type (
 	// Helper APIs such as Engine.Run may take ownership of the Session and close it
 	// after a single execution, in which case the caller must not attempt to reuse it.
 	Session struct {
+		hooks     sessionHooks
+		closeErr  error
 		vm        *vm.VM
 		env       *vm.Environment
 		encoding  *encoding.Registry
-		hooks     sessionHooks
 		release   vmReleaseFunc
-		closed    atomic.Bool
 		closeOnce sync.Once
-		closeErr  error
+		closed    atomic.Bool
 	}
 )
 

@@ -11,9 +11,9 @@ import (
 // It allows for efficient management of resources by reusing VM instances, reducing the overhead of creating new VMs for each execution.
 type Pool struct {
 	program  *bytecode.Program
+	inUse    map[*VM]struct{}
 	opts     []Option
 	idle     []*VM
-	inUse    map[*VM]struct{}
 	total    int
 	max      int
 	maxTotal int
