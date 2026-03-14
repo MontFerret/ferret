@@ -44,9 +44,9 @@ type (
 	}
 
 	matchResultGroup struct {
-		label  core.Label
 		result fql.IExpressionContext
 		arms   []int
+		label  core.Label
 	}
 
 	optionalMemberChainState struct {

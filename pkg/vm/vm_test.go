@@ -143,7 +143,7 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 	}
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	if got, want := len(state.registers), program.Registers; got != want {
 		t.Fatalf("unexpected register file size: got %d, want %d", got, want)
@@ -208,6 +208,85 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 
 	if &reg[0] != &reused[0] {
 		t.Fatal("expected register pool to reuse buffers")
+	}
+}
+
+func TestVMCloseIsIdempotent(t *testing.T) {
+	instance := mustNewVM(t, newTestProgram(
+		1,
+		nil,
+		bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+	))
+
+	if err := instance.Close(); err != nil {
+		t.Fatalf("expected first close to succeed, got: %v", err)
+	}
+
+	if err := instance.Close(); err != nil {
+		t.Fatalf("expected repeated close to succeed, got: %v", err)
+	}
+
+	if !instance.closed {
+		t.Fatal("expected VM to be marked closed")
+	}
+
+	if instance.cache != nil {
+		t.Fatal("expected VM close to clear cache reference")
+	}
+
+	if instance.program != nil {
+		t.Fatal("expected VM close to clear program reference")
+	}
+
+	if len(instance.plan.instructions) != 0 {
+		t.Fatal("expected VM close to clear exec plan")
+	}
+}
+
+func TestVMRunAfterCloseReturnsInvalidOperation(t *testing.T) {
+	instance := mustNewVM(t, newTestProgram(
+		1,
+		nil,
+		bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+	))
+
+	if err := instance.Close(); err != nil {
+		t.Fatalf("expected close to succeed, got: %v", err)
+	}
+
+	_, err := instance.Run(context.Background(), NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected run on closed VM to fail")
+	}
+
+	if !errors.Is(err, runtime.ErrInvalidOperation) {
+		t.Fatalf("expected invalid operation for run after close, got: %v", err)
+	}
+
+	if !strings.Contains(err.Error(), "vm is closed") {
+		t.Fatalf("expected closed VM message, got: %v", err)
+	}
+}
+
+func TestVMCloseClosesTrackedOwnedResources(t *testing.T) {
+	instance := mustNewVM(t, newTestProgram(
+		1,
+		nil,
+		bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(0)),
+		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+	))
+
+	closer := newTrackingCloser("owned")
+	instance.state.owned.Track(closer)
+
+	if err := instance.Close(); err != nil {
+		t.Fatalf("expected close to succeed, got: %v", err)
+	}
+
+	if got, want := closer.closed, 1; got != want {
+		t.Fatalf("expected close to release owned resources once, got %d", got)
 	}
 }
 
@@ -336,7 +415,7 @@ func TestUnwindToProtected_ReclaimsDiscardedFrameRegisters(t *testing.T) {
 	protectedRegs[1] = runtime.True
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	state.registers = activeRegs
 	state.frames.Push(frame.CallFrame{
@@ -452,7 +531,7 @@ func TestUnwindToProtected_ClosesOwnedResourcesOfUnwoundFramesOnly(t *testing.T)
 	aboveResources2.Track(aboveOwned2)
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	state.registers = activeRegs
 	state.owned.Track(activeOwned)
@@ -521,7 +600,7 @@ func TestSetCallResult_RaisesPendingFailureBeforeResolution(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	state.pc = 1
 	state.registers[1] = runtime.True
@@ -577,7 +656,7 @@ func TestSetCallResult_ProtectedFailureBypassesCatchJump(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	state.pc = 1
 	state.registers[1] = runtime.True
@@ -613,7 +692,7 @@ func TestResolveFailure_InvariantReturnsWithoutPanic(t *testing.T) {
 	}, WithPanicPolicy(PanicPropagate))
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	invariantErr := rtdiagnostics.NewInvariantError("boom", errors.New("cause"))
 	state.raiseInvariant(invariantErr)
@@ -642,7 +721,7 @@ func TestHandleErrorWithCatch_AppliesJumpTargetZero(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	state.pc = 1
 	state.raiseRuntime(errors.New("boom"), recoverDefault, bytecode.Operand(1), runtime.True, true)
@@ -681,7 +760,7 @@ func TestHandleErrorWithCatch_AppliesPositiveJumpTarget(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	state.pc = 1
 	state.raiseRuntime(errors.New("boom"), recoverDefault, bytecode.NoopOperand, nil, false)
@@ -711,7 +790,7 @@ func TestHandleErrorWithCatch_UsesFailureOriginPC(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	state.pc = 2
 	state.raiseRuntimeAt(1, errors.New("boom"), recoverDefault, bytecode.NoopOperand, nil, false)
@@ -740,7 +819,7 @@ func TestHandleErrorWithCatch_ReturnsErrorOutsideCatchRegion(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	state.pc = 1
 	wantErr := errors.New("boom")
@@ -779,7 +858,7 @@ func TestSetOrOptional_GenericErrorUsesDefaultResolverInOptionalMode(t *testing.
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	state.pc = 1
 	state.registers[1] = runtime.True
@@ -817,7 +896,7 @@ func TestSetOrOptional_NotFoundContinuesWithNone(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	state.registers[1] = runtime.True
 
@@ -843,7 +922,7 @@ func TestReturnToCaller_ClosesDiscardedOwnedValuesButPreservesBorrowedArgs(t *te
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	borrowed := newTrackingCloser("borrowed")
 	produced := newTrackingCloser("produced")
@@ -923,7 +1002,7 @@ func TestReturnToCaller_TransfersReturnedOwnedCloserToCaller(t *testing.T) {
 		t.Fatalf("expected caller return destination to receive returned value, got %v", got)
 	}
 
-	state.end()
+	state.endRun()
 
 	if got := returned.closed; got != 1 {
 		t.Fatalf("expected root cleanup to close transferred return value once, got %d", got)
@@ -940,7 +1019,7 @@ func TestSetOrOptional_NullDereferenceContinuesWithNone(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	state.registers[1] = runtime.True
 
@@ -1047,7 +1126,7 @@ func TestSetOrOptional_GenericErrorReturnsWithoutCatch(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	wantErr := errors.New("boom")
 	initial := runtime.NewInt(42)
@@ -1082,7 +1161,7 @@ func TestRaiseRuntime_FirstFailureWinsUntilResolved(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	errA := errors.New("A")
 	errB := errors.New("B")
@@ -1118,16 +1197,16 @@ func TestRunStateLifecycleClearsPendingFailure(t *testing.T) {
 		t.Fatal("expected pending failure before lifecycle reset")
 	}
 
-	state.start(NewDefaultEnvironment())
+	state.startRun(NewDefaultEnvironment())
 	if state.hasFailure() {
 		t.Fatal("expected prepareRun to clear pending failure")
 	}
 
 	state.raiseRuntime(errors.New("boom"), recoverDefault, bytecode.NoopOperand, nil, false)
-	state.end()
+	state.endRun()
 
 	reused := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 	if reused != state {
 		t.Fatal("expected state reuse from pool")
 	}
@@ -1158,7 +1237,7 @@ func TestTailCallUdf_ReusedWindowResetsNonArgSlotsToNone(t *testing.T) {
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	reg := state.registers
 	for i := range reg {
@@ -1234,7 +1313,7 @@ func TestTailCallUdf_ReusedWindowTransfersOwnedArgsAndClosesDiscardedValues(t *t
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	discarded := newTrackingCloser("discarded")
 	ownedArg := newTrackingCloser("owned-arg")
@@ -1315,7 +1394,7 @@ func TestTailCallUdf_FreshWindowTransfersOwnedArgsAndClosesDiscardedValues(t *te
 	})
 
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	discarded := newTrackingCloser("discarded")
 	ownedArg := newTrackingCloser("owned-arg")
@@ -1613,7 +1692,7 @@ func TestNearestBoundaryPrefersCatchOverProtectedUnwind(t *testing.T) {
 
 	protectedRegs := make([]runtime.Value, 2)
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	state.frames.Push(frame.CallFrame{
 		ReturnPC:         9,
@@ -1651,7 +1730,7 @@ func TestNearestBoundaryUsesProtectedUnwindWithoutCatch(t *testing.T) {
 	lowerRegs := make([]runtime.Value, 2)
 	activeRegs := make([]runtime.Value, 2)
 	state := mustAcquireRunState(t, instance)
-	defer state.end()
+	defer state.endRun()
 
 	state.registers = activeRegs
 	state.frames.Push(frame.CallFrame{

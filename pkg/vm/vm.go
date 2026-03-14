@@ -18,6 +18,7 @@ type VM struct {
 	plan    execPlan
 	state   execState
 	options options
+	closed  bool
 }
 
 func New(program *bytecode.Program) (*VM, error) {
@@ -47,15 +48,36 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 }
 
 func (vm *VM) Run(ctx context.Context, env *Environment) (runtime.Value, error) {
+	if vm == nil || vm.closed {
+		return nil, runtime.Error(runtime.ErrInvalidOperation, "vm is closed")
+	}
+
 	switch vm.options.panicPolicy {
 	case PanicPropagate:
-		defer vm.state.end()
+		defer vm.state.endRun()
 		return vm.runUnchecked(ctx, env)
 	default:
 		result, err := vm.runRecovered(ctx, env)
-		vm.state.end()
+		vm.state.endRun()
 		return result, err
 	}
+}
+
+// Close permanently releases the VM's execution state. Closed VMs must not be reused.
+func (vm *VM) Close() error {
+	if vm == nil || vm.closed {
+		return nil
+	}
+
+	vm.closed = true
+	vm.state.endRun()
+	vm.cache = nil
+	vm.program = nil
+	vm.plan = execPlan{}
+	vm.state = execState{}
+	vm.options = options{}
+
+	return nil
 }
 
 func (vm *VM) runRecovered(ctx context.Context, env *Environment) (result runtime.Value, err error) {
@@ -99,7 +121,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, err
 
 	state := &vm.state
 
-	if err := state.start(env); err != nil {
+	if err := state.startRun(env); err != nil {
 		return nil, err
 	}
 

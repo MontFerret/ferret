@@ -12,9 +12,8 @@ var (
 )
 
 type UseCase struct {
-	base.TestCase
-
 	Options []vm.EnvironmentOption
+	base.TestCase
 }
 
 func NewCase(expression string, expected any, assertion convey.Assertion, desc ...string) UseCase {

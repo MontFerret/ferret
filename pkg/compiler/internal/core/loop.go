@@ -28,15 +28,15 @@ type Loop struct {
 	ValueName     string
 	LabelBase     string
 	KeyName       string
-	startLabel    Label
-	condLabel     Label
+	resetRegs     []bytecode.Operand
+	continueLabel Label
 	endLabel      Label
 	bodyLabel     Label
-	continueLabel Label
-	resetRegs     []bytecode.Operand
-	Src           bytecode.Operand
-	Dst           bytecode.Operand
+	condLabel     Label
+	startLabel    Label
 	Type          LoopType
+	Dst           bytecode.Operand
+	Src           bytecode.Operand
 	Kind          LoopKind
 	Value         bytecode.Operand
 	Key           bytecode.Operand

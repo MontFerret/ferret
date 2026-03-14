@@ -11,11 +11,11 @@ import (
 )
 
 type GroupedAggregateCollector struct {
-	plan bytecode.AggregatePlan
 	*runtime.Box[runtime.List]
 	grouping       map[string]*groupedAggregateEntry
 	singleEntry    *groupedAggregateEntry
 	singleKey      string
+	plan           bytecode.AggregatePlan
 	hasSingleGroup bool
 	sorted         bool
 }

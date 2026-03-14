@@ -13,17 +13,17 @@ type (
 	}
 
 	host struct {
-		logging   runtime.LogSettings
 		functions *runtime.Functions
 		params    runtime.Params
 		encoding  *encoding.Registry
+		logging   runtime.LogSettings
 	}
 
 	hostBuilder struct {
-		logging  runtime.LogSettings
 		library  runtime.Library
 		params   runtime.Params
 		encoding *encoding.Registry
+		logging  runtime.LogSettings
 	}
 )
 

@@ -389,7 +389,7 @@ func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 		return err
 	}
 
-	sess, err := plan.NewSession(opts...)
+	sess, err := plan.NewSession(ctx, opts...)
 
 	if err != nil {
 		return err

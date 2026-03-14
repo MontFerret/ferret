@@ -24,13 +24,13 @@ type (
 	}
 
 	Program struct {
-		Metadata   Metadata
 		Source     *file.Source
 		Functions  Functions
 		Bytecode   []Instruction
 		Constants  []runtime.Value
 		CatchTable []Catch
 		Params     []string
+		Metadata   Metadata
 		ISAVersion int
 		Registers  int
 	}
