@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"sort"
 	"strconv"
 	"time"
 
@@ -123,40 +122,27 @@ func (enc encoder) encodeAny(buf *bytes.Buffer, value any) error {
 }
 
 func (enc encoder) encodeMap(ctx context.Context, buf *bytes.Buffer, value runtime.Map) error {
-	type entry struct {
-		val runtime.Value
-		key string
-	}
+	buf.WriteString("{")
+	first := true
 
-	entries := make([]entry, 0)
 	err := value.ForEach(ctx, func(_ context.Context, val, key runtime.Value) (runtime.Boolean, error) {
-		entries = append(entries, entry{key: key.String(), val: val})
+		if !first {
+			buf.WriteString(",")
+		} else {
+			first = false
+		}
 
+		enc.writeJSONString(buf, key.String())
+		buf.WriteString(":")
+
+		if err := enc.encodeValue(ctx, buf, val); err != nil {
+			return false, err
+		}
 		return true, nil
 	})
 
 	if err != nil {
 		return err
-	}
-
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].key < entries[j].key
-	})
-
-	buf.WriteString("{")
-
-	for i, item := range entries {
-		if i > 0 {
-			buf.WriteString(",")
-		}
-
-		enc.writeJSONString(buf, item.key)
-
-		buf.WriteString(":")
-
-		if err := enc.encodeValue(ctx, buf, item.val); err != nil {
-			return err
-		}
 	}
 
 	buf.WriteString("}")

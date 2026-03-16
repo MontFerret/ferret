@@ -8,6 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
+	encodingmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -58,7 +59,7 @@ func newOptions(setters []Option) (*options, error) {
 		compiler: []compiler.Option{},
 		library:  runtime.NewLibrary(),
 		params:   make(map[string]runtime.Value),
-		encoding: encoding.NewRegistry(encodingjson.Default),
+		encoding: encoding.NewRegistry(encodingjson.Default, encodingmsgpack.Default),
 		hooks:    newHookRegistry(),
 		logging: runtime.LogSettings{
 			Writer: os.Stdout,

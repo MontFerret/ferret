@@ -7,6 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
+	encodingmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
@@ -37,7 +38,7 @@ func Run(p *bytecode.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
 	type Salt struct{}
 
 	ctx := context.WithValue(context.Background(), testSaltKey, &Salt{})
-	ctx = ferretencoding.WithRegistry(ctx, ferretencoding.NewRegistry(encodingjson.Default))
+	ctx = ferretencoding.WithRegistry(ctx, ferretencoding.NewRegistry(encodingjson.Default, encodingmsgpack.Default))
 
 	out, err := instance.Run(ctx, env)
 

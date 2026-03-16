@@ -1,15 +1,19 @@
-package json_test
+package msgpack_test
 
 import (
+	"bytes"
 	"context"
-	stdjson "encoding/json"
+	"errors"
 	"io"
-	"math/big"
+	"math"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
-	"github.com/MontFerret/ferret/v2/pkg/encoding/json"
+	vmmsgpack "github.com/vmihailenco/msgpack/v5"
+
+	ferretmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -84,8 +88,8 @@ func (m *marshalerValue) Copy() runtime.Value {
 	return m
 }
 
-func (m *marshalerValue) MarshalJSON() ([]byte, error) {
-	return []byte(`{"custom":true}`), nil
+func (m *marshalerValue) MarshalMsgpack() ([]byte, error) {
+	return vmmsgpack.Marshal(map[string]any{"custom": true})
 }
 
 type badValue struct {
@@ -145,10 +149,43 @@ func hookValueLabel(value runtime.Value) string {
 	}
 }
 
-func TestJSONCodecEncode(t *testing.T) {
-	codec := json.Default
+func mustMarshalNative(t *testing.T, value any) []byte {
+	t.Helper()
 
-	assertJSON := func(t *testing.T, value runtime.Value, expected string) {
+	out, err := vmmsgpack.Marshal(value)
+	if err != nil {
+		t.Fatalf("msgpack marshal failed: %v", err)
+	}
+
+	return out
+}
+
+func mustEncodeRaw(t *testing.T, encode func(*vmmsgpack.Encoder) error) []byte {
+	t.Helper()
+
+	var buf bytes.Buffer
+	enc := vmmsgpack.NewEncoder(&buf)
+
+	if err := encode(enc); err != nil {
+		t.Fatalf("raw encode failed: %v", err)
+	}
+
+	return buf.Bytes()
+}
+
+func assertValueEqual(t *testing.T, got, expected runtime.Value) {
+	t.Helper()
+
+	if runtime.CompareValues(got, expected) != 0 {
+		t.Fatalf("expected %s, got %s", expected, got)
+	}
+}
+
+func TestMsgpackCodecEncode(t *testing.T) {
+	codec := ferretmsgpack.Default
+	ctx := context.Background()
+
+	assertBytes := func(t *testing.T, value runtime.Value, expected []byte) {
 		t.Helper()
 
 		out, err := codec.Encode(value)
@@ -156,176 +193,198 @@ func TestJSONCodecEncode(t *testing.T) {
 			t.Fatalf("encode failed: %v", err)
 		}
 
-		if string(out) != expected {
-			t.Fatalf("expected %s, got %s", expected, string(out))
+		if !bytes.Equal(out, expected) {
+			t.Fatalf("expected %x, got %x", expected, out)
 		}
 	}
 
 	t.Run("none", func(t *testing.T) {
-		assertJSON(t, runtime.None, "null")
+		assertBytes(t, runtime.None, mustMarshalNative(t, nil))
 	})
 
 	t.Run("boolean", func(t *testing.T) {
-		assertJSON(t, runtime.True, "true")
-		assertJSON(t, runtime.False, "false")
+		assertBytes(t, runtime.True, mustMarshalNative(t, true))
+		assertBytes(t, runtime.False, mustMarshalNative(t, false))
 	})
 
-	t.Run("string_no_escape", func(t *testing.T) {
-		assertJSON(t, runtime.NewString("<tag>"), "\"<tag>\"")
+	t.Run("string", func(t *testing.T) {
+		assertBytes(t, runtime.NewString("hello"), mustMarshalNative(t, "hello"))
 	})
 
-	t.Run("int_matches_stdlib", func(t *testing.T) {
-		expected, err := stdjson.Marshal(42)
-		if err != nil {
-			t.Fatalf("std json marshal failed: %v", err)
-		}
-
-		out, err := codec.Encode(runtime.NewInt(42))
-		if err != nil {
-			t.Fatalf("encode failed: %v", err)
-		}
-
-		if string(out) != string(expected) {
-			t.Fatalf("expected %s, got %s", string(expected), string(out))
-		}
+	t.Run("int_matches_native", func(t *testing.T) {
+		assertBytes(t, runtime.NewInt(42), mustMarshalNative(t, 42))
 	})
 
 	t.Run("float", func(t *testing.T) {
-		assertJSON(t, runtime.NewFloat(42.5), "42.5")
+		assertBytes(t, runtime.NewFloat(42.5), mustMarshalNative(t, 42.5))
 	})
 
 	t.Run("binary", func(t *testing.T) {
 		data := []byte("hi")
-		expected, err := stdjson.Marshal(data)
-		if err != nil {
-			t.Fatalf("std json marshal failed: %v", err)
-		}
-
-		out, err := codec.Encode(runtime.NewBinary(data))
-		if err != nil {
-			t.Fatalf("encode failed: %v", err)
-		}
-
-		if string(out) != string(expected) {
-			t.Fatalf("expected %s, got %s", string(expected), string(out))
-		}
+		assertBytes(t, runtime.NewBinary(data), mustMarshalNative(t, data))
 	})
 
 	t.Run("datetime", func(t *testing.T) {
-		ts := time.Date(2024, time.January, 2, 3, 4, 5, 0, time.UTC)
-		expected, err := stdjson.Marshal(ts)
-		if err != nil {
-			t.Fatalf("std json marshal failed: %v", err)
-		}
-
-		out, err := codec.Encode(runtime.NewDateTime(ts))
-		if err != nil {
-			t.Fatalf("encode failed: %v", err)
-		}
-
-		if string(out) != string(expected) {
-			t.Fatalf("expected %s, got %s", string(expected), string(out))
-		}
+		ts := time.Date(2024, time.January, 2, 3, 4, 5, 6, time.UTC)
+		assertBytes(t, runtime.NewDateTime(ts), mustMarshalNative(t, ts))
 	})
 
 	t.Run("array", func(t *testing.T) {
-		arr := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewString("a"), runtime.True)
-		assertJSON(t, arr, "[1,\"a\",true]")
+		value := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewString("a"), runtime.True)
+		expected := mustMarshalNative(t, []any{1, "a", true})
+		assertBytes(t, value, expected)
 	})
 
 	t.Run("deeply_nested_array", func(t *testing.T) {
 		depth := 100_000
-
-		out, err := codec.Encode(nestedArray(depth))
-		if err != nil {
-			t.Fatalf("encode failed: %v", err)
-		}
-
-		expectedLen := depth*2 + 1
-		if len(out) != expectedLen {
-			t.Fatalf("expected output length %d, got %d", expectedLen, len(out))
-		}
-
-		if out[0] != '[' || out[len(out)-1] != ']' || out[depth] != '1' {
-			t.Fatalf("expected nested array encoding, got malformed output")
-		}
-	})
-
-	t.Run("object_json_equivalence_small", func(t *testing.T) {
-		obj := runtime.NewObjectWith(map[string]runtime.Value{
-			"b": runtime.NewInt(2),
-			"a": runtime.NewInt(1),
-		})
-
-		out, err := codec.Encode(obj)
-		if err != nil {
-			t.Fatalf("encode failed: %v", err)
-		}
-
-		var got map[string]any
-		if err := stdjson.Unmarshal(out, &got); err != nil {
-			t.Fatalf("std json unmarshal failed: %v", err)
-		}
-
-		expected := map[string]any{
-			"a": float64(1),
-			"b": float64(2),
-		}
-
-		if !reflect.DeepEqual(got, expected) {
-			t.Fatalf("expected %#v, got %#v", expected, got)
-		}
-	})
-
-	t.Run("deeply_nested_object", func(t *testing.T) {
-		depth := 40_000
-
-		out, err := codec.Encode(nestedObject(depth))
-		if err != nil {
-			t.Fatalf("encode failed: %v", err)
-		}
-
-		expectedLen := depth*6 + 1
-		if len(out) != expectedLen {
-			t.Fatalf("expected output length %d, got %d", expectedLen, len(out))
-		}
-
-		if out[0] != '{' || out[len(out)-1] != '}' || string(out[:5]) != "{\"x\":" {
-			t.Fatalf("expected nested object encoding, got malformed output")
-		}
-	})
-
-	t.Run("box", func(t *testing.T) {
-		assertJSON(t, runtime.NewBox(7), "7")
-	})
-
-	t.Run("iterable_branch", func(t *testing.T) {
-		iter := &iterOnly{items: []runtime.Value{runtime.NewInt(1), runtime.NewString("x")}}
-		assertJSON(t, iter, "[1,\"x\"]")
-	})
-
-	t.Run("unwrappable_branch", func(t *testing.T) {
-		value := &unwrapValue{value: map[string]any{"a": 1}}
-		expected, err := stdjson.Marshal(map[string]any{"a": 1})
-		if err != nil {
-			t.Fatalf("std json marshal failed: %v", err)
-		}
+		value := nestedArray(depth)
 
 		out, err := codec.Encode(value)
 		if err != nil {
 			t.Fatalf("encode failed: %v", err)
 		}
 
-		if string(out) != string(expected) {
-			t.Fatalf("expected %s, got %s", string(expected), string(out))
+		decoded, err := codec.Decode(out)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
 		}
+
+		current := decoded
+		for i := 0; i < depth; i++ {
+			arr, ok := current.(*runtime.Array)
+			if !ok {
+				t.Fatalf("expected Array at depth %d, got %T", i, current)
+			}
+
+			current, err = arr.At(ctx, 0)
+			if err != nil {
+				t.Fatalf("array at depth %d failed: %v", i, err)
+			}
+		}
+
+		assertValueEqual(t, current, runtime.NewInt(1))
 	})
 
-	t.Run("json_marshaler_branch", func(t *testing.T) {
-		assertJSON(t, &marshalerValue{}, "{\"custom\":true}")
+	t.Run("object_round_trip", func(t *testing.T) {
+		obj := runtime.NewObject()
+		if err := obj.Set(ctx, runtime.NewString("b"), runtime.NewInt(2)); err != nil {
+			t.Fatalf("set b failed: %v", err)
+		}
+		if err := obj.Set(ctx, runtime.NewString("a"), runtime.NewInt(1)); err != nil {
+			t.Fatalf("set a failed: %v", err)
+		}
+
+		out, err := codec.Encode(obj)
+		if err != nil {
+			t.Fatalf("encode failed: %v", err)
+		}
+
+		decoded, err := codec.Decode(out)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+
+		assertValueEqual(t, decoded, obj)
 	})
 
-	t.Run("object_json_equivalence", func(t *testing.T) {
+	t.Run("deeply_nested_object", func(t *testing.T) {
+		depth := 40_000
+		value := nestedObject(depth)
+
+		out, err := codec.Encode(value)
+		if err != nil {
+			t.Fatalf("encode failed: %v", err)
+		}
+
+		decoded, err := codec.Decode(out)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+
+		current := decoded
+		for i := 0; i < depth; i++ {
+			obj, ok := current.(*runtime.Object)
+			if !ok {
+				t.Fatalf("expected Object at depth %d, got %T", i, current)
+			}
+
+			current, err = obj.Get(ctx, runtime.NewString("x"))
+			if err != nil {
+				t.Fatalf("object get at depth %d failed: %v", i, err)
+			}
+		}
+
+		assertValueEqual(t, current, runtime.NewInt(1))
+	})
+
+	t.Run("box", func(t *testing.T) {
+		value := runtime.NewBox(7)
+		out, err := codec.Encode(value)
+		if err != nil {
+			t.Fatalf("encode failed: %v", err)
+		}
+
+		decoded, err := codec.Decode(out)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+
+		assertValueEqual(t, decoded, runtime.NewInt(7))
+	})
+
+	t.Run("iterable_branch", func(t *testing.T) {
+		iter := &iterOnly{items: []runtime.Value{runtime.NewInt(1), runtime.NewString("x")}}
+		out, err := codec.Encode(iter)
+		if err != nil {
+			t.Fatalf("encode failed: %v", err)
+		}
+
+		decoded, err := codec.Decode(out)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+
+		assertValueEqual(t, decoded, runtime.NewArrayWith(runtime.NewInt(1), runtime.NewString("x")))
+	})
+
+	t.Run("unwrappable_branch", func(t *testing.T) {
+		value := &unwrapValue{value: map[string]any{"a": 1}}
+		out, err := codec.Encode(value)
+		if err != nil {
+			t.Fatalf("encode failed: %v", err)
+		}
+
+		decoded, err := codec.Decode(out)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+
+		expected := runtime.NewObjectWith(map[string]runtime.Value{
+			"a": runtime.NewInt(1),
+		})
+
+		assertValueEqual(t, decoded, expected)
+	})
+
+	t.Run("msgpack_marshaler_branch", func(t *testing.T) {
+		out, err := codec.Encode(&marshalerValue{})
+		if err != nil {
+			t.Fatalf("encode failed: %v", err)
+		}
+
+		decoded, err := codec.Decode(out)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+
+		expected := runtime.NewObjectWith(map[string]runtime.Value{
+			"custom": runtime.True,
+		})
+
+		assertValueEqual(t, decoded, expected)
+	})
+
+	t.Run("object_msgpack_equivalence", func(t *testing.T) {
 		obj := runtime.NewObjectWith(map[string]runtime.Value{
 			"a": runtime.NewInt(1),
 			"b": runtime.NewString("x"),
@@ -337,26 +396,27 @@ func TestJSONCodecEncode(t *testing.T) {
 		}
 
 		var got map[string]any
-		if err := stdjson.Unmarshal(out, &got); err != nil {
-			t.Fatalf("std json unmarshal failed: %v", err)
+		if err := vmmsgpack.Unmarshal(out, &got); err != nil {
+			t.Fatalf("msgpack unmarshal failed: %v", err)
 		}
 
-		expected := map[string]any{
-			"a": float64(1),
-			"b": "x",
+		if got["b"] != "x" {
+			t.Fatalf("expected string value x, got %#v", got["b"])
 		}
 
-		if !reflect.DeepEqual(got, expected) {
-			t.Fatalf("expected %#v, got %#v", expected, got)
+		if got["a"] == nil || reflect.ValueOf(got["a"]).Kind() == reflect.Invalid ||
+			got["a"] != int8(1) && got["a"] != int16(1) && got["a"] != int32(1) && got["a"] != int64(1) && got["a"] != int(1) &&
+				got["a"] != uint8(1) && got["a"] != uint16(1) && got["a"] != uint32(1) && got["a"] != uint64(1) && got["a"] != uint(1) {
+			t.Fatalf("expected integer value 1, got %#v", got["a"])
 		}
 	})
 }
 
-func TestJSONCodecEncodeHooks(t *testing.T) {
+func TestMsgpackCodecEncodeHooks(t *testing.T) {
 	t.Run("hooks_run_in_order", func(t *testing.T) {
 		var order []string
 
-		config := json.Default.EncodeWith()
+		config := ferretmsgpack.Default.EncodeWith()
 		config.PreHook(func(value runtime.Value) error {
 			if value != runtime.NewInt(7) {
 				t.Fatalf("expected hook value 7, got %v", value)
@@ -391,9 +451,12 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			t.Fatalf("encode failed: %v", err)
 		}
 
-		if string(out) != "7" {
-			t.Fatalf("expected 7, got %s", out)
+		decoded, err := ferretmsgpack.Default.Decode(out)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
 		}
+
+		assertValueEqual(t, decoded, runtime.NewInt(7))
 
 		expectedOrder := []string{"pre1", "pre2", "post"}
 		if !reflect.DeepEqual(order, expectedOrder) {
@@ -404,7 +467,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 	t.Run("post_hooks_receive_encode_errors", func(t *testing.T) {
 		var postErr error
 
-		config := json.Default.EncodeWith()
+		config := ferretmsgpack.Default.EncodeWith()
 		config.PostHook(func(_ runtime.Value, err error) error {
 			postErr = err
 			return nil
@@ -427,7 +490,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 	t.Run("nested_hooks_run_depth_first", func(t *testing.T) {
 		var order []string
 
-		config := json.Default.EncodeWith()
+		config := ferretmsgpack.Default.EncodeWith()
 		config.PreHook(func(value runtime.Value) error {
 			order = append(order, "pre:"+hookValueLabel(value))
 			return nil
@@ -448,9 +511,16 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			t.Fatalf("encode failed: %v", err)
 		}
 
-		if string(out) != "{\"items\":[\"leaf\"]}" {
-			t.Fatalf("expected nested output, got %s", out)
+		decoded, err := ferretmsgpack.Default.Decode(out)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
 		}
+
+		expectedValue := runtime.NewObjectWith(map[string]runtime.Value{
+			"items": runtime.NewArrayWith(runtime.NewString("leaf")),
+		})
+
+		assertValueEqual(t, decoded, expectedValue)
 
 		expectedOrder := []string{
 			"pre:map",
@@ -470,7 +540,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 		var postOrder []string
 		var postErrs []string
 
-		config := json.Default.EncodeWith()
+		config := ferretmsgpack.Default.EncodeWith()
 		config.PostHook(func(value runtime.Value, err error) error {
 			postOrder = append(postOrder, hookValueLabel(value))
 
@@ -513,7 +583,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 		preCalls := 0
 		postCalls := 0
 
-		config := json.Default.EncodeWith()
+		config := ferretmsgpack.Default.EncodeWith()
 		config.PreHook(func(value runtime.Value) error {
 			if value == special {
 				preCalls++
@@ -554,7 +624,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 	t.Run("configured_encoder_does_not_mutate_default", func(t *testing.T) {
 		calls := 0
 
-		config := json.Default.EncodeWith()
+		config := ferretmsgpack.Default.EncodeWith()
 		config.PreHook(func(_ runtime.Value) error {
 			calls++
 			return nil
@@ -568,7 +638,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			t.Fatalf("expected configured encoder to invoke hook once, got %d", calls)
 		}
 
-		if _, err := json.Default.Encode(runtime.NewInt(2)); err != nil {
+		if _, err := ferretmsgpack.Default.Encode(runtime.NewInt(2)); err != nil {
 			t.Fatalf("default encode failed: %v", err)
 		}
 
@@ -578,12 +648,12 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 	})
 }
 
-func TestJSONCodecDecode(t *testing.T) {
-	codec := json.Default
+func TestMsgpackCodecDecode(t *testing.T) {
+	codec := ferretmsgpack.Default
 	ctx := context.Background()
 
 	t.Run("none", func(t *testing.T) {
-		value, err := codec.Decode([]byte("null"))
+		value, err := codec.Decode(mustMarshalNative(t, nil))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
@@ -594,7 +664,7 @@ func TestJSONCodecDecode(t *testing.T) {
 	})
 
 	t.Run("boolean", func(t *testing.T) {
-		value, err := codec.Decode([]byte("true"))
+		value, err := codec.Decode(mustMarshalNative(t, true))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
@@ -605,7 +675,7 @@ func TestJSONCodecDecode(t *testing.T) {
 	})
 
 	t.Run("string", func(t *testing.T) {
-		value, err := codec.Decode([]byte(`"hello"`))
+		value, err := codec.Decode(mustMarshalNative(t, "hello"))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
@@ -616,7 +686,7 @@ func TestJSONCodecDecode(t *testing.T) {
 	})
 
 	t.Run("int", func(t *testing.T) {
-		value, err := codec.Decode([]byte("1"))
+		value, err := codec.Decode(mustMarshalNative(t, 1))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
@@ -627,7 +697,7 @@ func TestJSONCodecDecode(t *testing.T) {
 	})
 
 	t.Run("float", func(t *testing.T) {
-		value, err := codec.Decode([]byte("1.5"))
+		value, err := codec.Decode(mustMarshalNative(t, 1.5))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
@@ -637,39 +707,35 @@ func TestJSONCodecDecode(t *testing.T) {
 		}
 	})
 
-	t.Run("exponent", func(t *testing.T) {
-		value, err := codec.Decode([]byte("1e2"))
+	t.Run("binary", func(t *testing.T) {
+		data := []byte("hello")
+		value, err := codec.Decode(mustMarshalNative(t, data))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
 
-		f, ok := value.(runtime.Float)
-		if !ok {
-			t.Fatalf("expected Float, got %T", value)
+		if _, ok := value.(runtime.Binary); !ok {
+			t.Fatalf("expected Binary, got %T", value)
 		}
 
-		if f != runtime.NewFloat(100) {
-			t.Fatalf("expected 100, got %v", f)
-		}
+		assertValueEqual(t, value, runtime.NewBinary(data))
 	})
 
-	t.Run("overflow_int_fallback", func(t *testing.T) {
-		maxInt := int64(^uint(0) >> 1)
-		overflow := new(big.Int).SetInt64(maxInt)
-		overflow.Add(overflow, big.NewInt(1))
-
-		value, err := codec.Decode([]byte(overflow.String()))
+	t.Run("datetime", func(t *testing.T) {
+		ts := time.Date(2024, time.January, 2, 3, 4, 5, 6, time.UTC)
+		value, err := codec.Decode(mustMarshalNative(t, ts))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
 
-		if _, ok := value.(runtime.Float); !ok {
-			t.Fatalf("expected Float, got %T", value)
-		}
+		assertValueEqual(t, value, runtime.NewDateTime(ts))
 	})
 
 	t.Run("nested", func(t *testing.T) {
-		value, err := codec.Decode([]byte(`{"a":1,"b":[true,null,"x"]}`))
+		value, err := codec.Decode(mustMarshalNative(t, map[string]any{
+			"a": 1,
+			"b": []any{true, nil, "x"},
+		}))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
@@ -713,57 +779,129 @@ func TestJSONCodecDecode(t *testing.T) {
 		}
 
 		if item != runtime.None {
-			t.Fatalf("expected null, got %v", item)
+			t.Fatalf("expected none, got %v", item)
+		}
+	})
+
+	t.Run("non_string_map_keys_normalize", func(t *testing.T) {
+		data := mustEncodeRaw(t, func(enc *vmmsgpack.Encoder) error {
+			if err := enc.EncodeMapLen(2); err != nil {
+				return err
+			}
+			if err := enc.EncodeInt(1); err != nil {
+				return err
+			}
+			if err := enc.EncodeString("one"); err != nil {
+				return err
+			}
+			if err := enc.EncodeBool(true); err != nil {
+				return err
+			}
+			return enc.EncodeString("yes")
+		})
+
+		value, err := codec.Decode(data)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+
+		obj, ok := value.(*runtime.Object)
+		if !ok {
+			t.Fatalf("expected Object, got %T", value)
+		}
+
+		one, err := obj.Get(ctx, runtime.NewString("1"))
+		if err != nil {
+			t.Fatalf("get 1 failed: %v", err)
+		}
+		assertValueEqual(t, one, runtime.NewString("one"))
+
+		yes, err := obj.Get(ctx, runtime.NewString("true"))
+		if err != nil {
+			t.Fatalf("get true failed: %v", err)
+		}
+		assertValueEqual(t, yes, runtime.NewString("yes"))
+	})
+
+	t.Run("unsigned_overflow_error", func(t *testing.T) {
+		data := mustEncodeRaw(t, func(enc *vmmsgpack.Encoder) error {
+			return enc.EncodeUint64(math.MaxUint64)
+		})
+
+		_, err := codec.Decode(data)
+		if err == nil {
+			t.Fatal("expected overflow error")
+		}
+	})
+
+	t.Run("int_overflow_float_on_32bit", func(t *testing.T) {
+		if strconv.IntSize != 32 {
+			t.Skip("only relevant on 32-bit platforms")
+		}
+
+		data := mustEncodeRaw(t, func(enc *vmmsgpack.Encoder) error {
+			return enc.EncodeInt64(int64(math.MaxInt32) + 1)
+		})
+
+		value, err := codec.Decode(data)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+
+		if _, ok := value.(runtime.Float); !ok {
+			t.Fatalf("expected Float, got %T", value)
 		}
 	})
 
 	t.Run("empty_input_error", func(t *testing.T) {
-		_, err := codec.Decode([]byte(""))
+		_, err := codec.Decode(nil)
 		if err == nil {
-			t.Fatalf("expected error")
+			t.Fatal("expected error")
 		}
 	})
 
-	t.Run("invalid_json_error", func(t *testing.T) {
-		_, err := codec.Decode([]byte("{"))
+	t.Run("invalid_msgpack_error", func(t *testing.T) {
+		_, err := codec.Decode([]byte{0xc1})
 		if err == nil {
-			t.Fatalf("expected error")
+			t.Fatal("expected error")
 		}
 	})
 
 	t.Run("multiple_roots_error", func(t *testing.T) {
-		_, err := codec.Decode([]byte("1 2"))
+		data := append(mustMarshalNative(t, 1), mustMarshalNative(t, 2)...)
+
+		_, err := codec.Decode(data)
 		if err == nil {
-			t.Fatalf("expected error")
+			t.Fatal("expected error")
 		}
 	})
 }
 
-func TestJSONCodecDecodeHooks(t *testing.T) {
+func TestMsgpackCodecDecodeHooks(t *testing.T) {
 	t.Run("hooks_run_in_order", func(t *testing.T) {
-		input := []byte(`{"a":1}`)
+		input := mustMarshalNative(t, map[string]any{"a": 1})
 		var order []string
 
-		config := json.Default.DecodeWith()
+		config := ferretmsgpack.Default.DecodeWith()
 		config.PreHook(func(data []byte) error {
-			if string(data) != string(input) {
-				t.Fatalf("expected input %s, got %s", input, data)
+			if !bytes.Equal(data, input) {
+				t.Fatalf("expected input %x, got %x", input, data)
 			}
 
 			order = append(order, "pre1")
 			return nil
 		})
 		config.PreHook(func(data []byte) error {
-			if string(data) != string(input) {
-				t.Fatalf("expected input %s, got %s", input, data)
+			if !bytes.Equal(data, input) {
+				t.Fatalf("expected input %x, got %x", input, data)
 			}
 
 			order = append(order, "pre2")
 			return nil
 		})
 		config.PostHook(func(data []byte, err error) error {
-			if string(data) != string(input) {
-				t.Fatalf("expected input %s, got %s", input, data)
+			if !bytes.Equal(data, input) {
+				t.Fatalf("expected input %x, got %x", input, data)
 			}
 
 			if err != nil {
@@ -783,9 +921,7 @@ func TestJSONCodecDecodeHooks(t *testing.T) {
 			"a": runtime.NewInt(1),
 		})
 
-		if runtime.CompareValues(value, expectedValue) != 0 {
-			t.Fatalf("expected decoded value %s, got %s", expectedValue, value)
-		}
+		assertValueEqual(t, value, expectedValue)
 
 		expectedOrder := []string{"pre1", "pre2", "post"}
 		if !reflect.DeepEqual(order, expectedOrder) {
@@ -794,13 +930,13 @@ func TestJSONCodecDecodeHooks(t *testing.T) {
 	})
 
 	t.Run("post_hooks_receive_decode_errors", func(t *testing.T) {
-		input := []byte("{")
+		input := []byte{0xc1}
 		var postErr error
 
-		config := json.Default.DecodeWith()
+		config := ferretmsgpack.Default.DecodeWith()
 		config.PostHook(func(data []byte, err error) error {
-			if string(data) != string(input) {
-				t.Fatalf("expected input %s, got %s", input, data)
+			if !bytes.Equal(data, input) {
+				t.Fatalf("expected input %x, got %x", input, data)
 			}
 
 			postErr = err
@@ -824,13 +960,13 @@ func TestJSONCodecDecodeHooks(t *testing.T) {
 	t.Run("configured_decoder_does_not_mutate_default", func(t *testing.T) {
 		calls := 0
 
-		config := json.Default.DecodeWith()
+		config := ferretmsgpack.Default.DecodeWith()
 		config.PreHook(func(_ []byte) error {
 			calls++
 			return nil
 		})
 
-		if _, err := config.Decoder().Decode([]byte("1")); err != nil {
+		if _, err := config.Decoder().Decode(mustMarshalNative(t, 1)); err != nil {
 			t.Fatalf("configured decode failed: %v", err)
 		}
 
@@ -838,12 +974,26 @@ func TestJSONCodecDecodeHooks(t *testing.T) {
 			t.Fatalf("expected configured decoder to invoke hook once, got %d", calls)
 		}
 
-		if _, err := json.Default.Decode([]byte("1")); err != nil {
+		if _, err := ferretmsgpack.Default.Decode(mustMarshalNative(t, 1)); err != nil {
 			t.Fatalf("default decode failed: %v", err)
 		}
 
 		if calls != 1 {
 			t.Fatalf("expected default decoder to stay unmodified, got %d hook calls", calls)
+		}
+	})
+
+	t.Run("pre_hook_error_short_circuits", func(t *testing.T) {
+		expectedErr := errors.New("stop")
+
+		config := ferretmsgpack.Default.DecodeWith()
+		config.PreHook(func(_ []byte) error {
+			return expectedErr
+		})
+
+		_, err := config.Decoder().Decode(mustMarshalNative(t, 1))
+		if !errors.Is(err, expectedErr) {
+			t.Fatalf("expected %v, got %v", expectedErr, err)
 		}
 	})
 }

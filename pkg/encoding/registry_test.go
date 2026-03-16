@@ -7,6 +7,7 @@ import (
 
 	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	ferretjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
+	ferretmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -25,6 +26,33 @@ func TestNewRegistryHasExplicitJSONCodec(t *testing.T) {
 	codec, err := registry.Codec(ferretjson.ContentType)
 	if err != nil {
 		t.Fatalf("expected json codec, got error: %v", err)
+	}
+
+	input := runtime.NewObjectWith(map[string]runtime.Value{
+		"foo": runtime.NewString("bar"),
+	})
+
+	data, err := codec.Encode(input)
+	if err != nil {
+		t.Fatalf("encode failed: %v", err)
+	}
+
+	decoded, err := codec.Decode(data)
+	if err != nil {
+		t.Fatalf("decode failed: %v", err)
+	}
+
+	if runtime.CompareValues(decoded, input) != 0 {
+		t.Fatalf("decoded value mismatch: %s", decoded.String())
+	}
+}
+
+func TestNewRegistryHasExplicitMsgpackCodec(t *testing.T) {
+	registry := ferretencoding.NewRegistry(ferretmsgpack.Default)
+
+	codec, err := registry.Codec(ferretmsgpack.ContentType)
+	if err != nil {
+		t.Fatalf("expected msgpack codec, got error: %v", err)
 	}
 
 	input := runtime.NewObjectWith(map[string]runtime.Value{
