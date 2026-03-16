@@ -1,4 +1,4 @@
-# AGENT.md
+# AGENTS.md
 
 This file is the canonical operating guide for coding agents working in this repository. It is written for Ferret v2 only. If you see documentation that conflicts with this file, prefer `Makefile`, `go.mod`, and `.github/workflows/build.yml`.
 
