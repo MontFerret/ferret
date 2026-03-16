@@ -95,7 +95,7 @@ func tailCallUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
 
 	if cap(reg) >= udf.Registers {
 		var ownedArgs mem.OwnedResources
-		s.owned.TransferMany(args, &ownedArgs)
+		s.owned.ExtractMany(args, &ownedArgs)
 		s.owned.DrainTo(&s.deferred)
 
 		reg = reg[:udf.Registers]
@@ -114,7 +114,7 @@ func tailCallUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
 		copyUdfArgsToUdfRegisters(newRegs, reg, argStart, copyCount)
 
 		var ownedArgs mem.OwnedResources
-		s.owned.TransferMany(newRegs[1:1+len(args)], &ownedArgs)
+		s.owned.ExtractMany(args, &ownedArgs)
 		s.owned.DrainTo(&s.deferred)
 
 		s.windows.Release(reg)

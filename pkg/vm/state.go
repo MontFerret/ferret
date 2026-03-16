@@ -85,7 +85,9 @@ func (s *execState) finishRun(root runtime.Value) *Result {
 func (s *execState) finishRunInto(root runtime.Value, result *Result) *Result {
 	var resultOwned mem.OwnedResources
 
-	s.owned.Transfer(root, &resultOwned)
+	if s.owned.Extract(root) {
+		resultOwned.Track(root)
+	}
 	s.owned.DrainTo(&s.deferred)
 
 	result.reset(root)
@@ -411,14 +413,16 @@ func (s *execState) returnToCaller(retVal runtime.Value) bool {
 		return false
 	}
 
-	callerOwned := frame.OwnedResources
-	s.owned.Transfer(retVal, &callerOwned)
+	retOwned := s.owned.Extract(retVal)
 	s.owned.DrainTo(&s.deferred)
 	s.windows.Release(s.registers)
 	s.registers = frame.CallerRegisters
-	s.owned = callerOwned
+	s.owned = frame.OwnedResources
 	if frame.ReturnDest.IsRegister() {
 		s.writeBorrowedRegister(frame.ReturnDest, retVal)
+		if retOwned && !s.owned.Owns(retVal) {
+			s.owned.Track(retVal)
+		}
 	}
 	s.pc = frame.ReturnPC
 	return true

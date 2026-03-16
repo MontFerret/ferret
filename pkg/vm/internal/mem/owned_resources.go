@@ -8,8 +8,9 @@ import (
 )
 
 // OwnedResources tracks only direct register-held closers for a single frame.
-// It ignores values that cannot be tracked safely and is not a general runtime
-// lifetime manager.
+// Counts represent the number of live register aliases in the active frame for
+// each owned closer. It ignores values that cannot be tracked safely and is not
+// a general runtime lifetime manager.
 type OwnedResources struct {
 	closers map[io.Closer]int
 }
@@ -60,14 +61,18 @@ func (o *OwnedResources) Owns(val runtime.Value) bool {
 	return ok
 }
 
-func (o *OwnedResources) Transfer(val runtime.Value, dst *OwnedResources) {
+// Extract removes all ownership tracking for val from the current frame without
+// scheduling the closer for deferred cleanup. Use it when a value survives
+// frame teardown, for example as a return value or final result root.
+func (o *OwnedResources) Extract(val runtime.Value) bool {
 	closer, ok := trackedCloserOf(val)
 	if !ok || o.closers == nil {
-		return
+		return false
 	}
 
-	if _, exists := o.closers[closer]; !exists {
-		return
+	_, exists := o.closers[closer]
+	if !exists {
+		return false
 	}
 
 	delete(o.closers, closer)
@@ -75,18 +80,55 @@ func (o *OwnedResources) Transfer(val runtime.Value, dst *OwnedResources) {
 		o.closers = nil
 	}
 
-	if dst != nil {
-		if dst.closers == nil {
-			dst.closers = make(map[io.Closer]int)
-		}
-
-		dst.closers[closer]++
-	}
+	return true
 }
 
-func (o *OwnedResources) TransferMany(values []runtime.Value, dst *OwnedResources) {
+// ExtractMany removes ownership tracking for the provided surviving values from
+// the current frame and reassigns the matching alias counts to dst. Duplicate
+// values retain their multiplicity in the destination frame, while dead aliases
+// in the retiring frame are dropped instead of being deferred.
+func (o *OwnedResources) ExtractMany(values []runtime.Value, dst *OwnedResources) {
+	if o.closers == nil || len(values) == 0 {
+		return
+	}
+
+	survivors := make(map[io.Closer]int)
+
 	for _, val := range values {
-		o.Transfer(val, dst)
+		closer, ok := trackedCloserOf(val)
+		if !ok {
+			continue
+		}
+
+		if _, exists := o.closers[closer]; !exists {
+			continue
+		}
+
+		survivors[closer]++
+	}
+
+	if len(survivors) == 0 {
+		return
+	}
+
+	if dst != nil && dst.closers == nil {
+		dst.closers = make(map[io.Closer]int)
+	}
+
+	for closer, count := range survivors {
+		if ownedCount, exists := o.closers[closer]; exists && count > ownedCount {
+			count = ownedCount
+		}
+
+		delete(o.closers, closer)
+
+		if dst != nil {
+			dst.closers[closer] += count
+		}
+	}
+
+	if len(o.closers) == 0 {
+		o.closers = nil
 	}
 }
 
@@ -140,6 +182,9 @@ func (o *OwnedResources) Release(val runtime.Value) (io.Closer, bool) {
 		return nil, false
 	}
 
+	// Release is terminal for explicit close, not a generic ref-count decrement:
+	// once one alias is closed, the closer is retired from ownership tracking so
+	// stale aliases cannot close it again during later cleanup.
 	delete(o.closers, closer)
 	if len(o.closers) == 0 {
 		o.closers = nil

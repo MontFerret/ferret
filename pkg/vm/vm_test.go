@@ -1345,6 +1345,110 @@ func TestReturnToCaller_TransfersReturnedOwnedCloserToCaller(t *testing.T) {
 	}
 }
 
+func TestReturnToCaller_DoesNotOvercountExistingCallerAlias(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer state.endRun()
+
+	shared := newTrackingCloser("shared")
+
+	callerRegs := mem.NewRegisterFile(2)
+	callerRegs[0] = shared
+	callerOwned := mem.OwnedResources{}
+	callerOwned.Track(shared)
+
+	activeRegs := mem.NewRegisterFile(1)
+	activeRegs[0] = shared
+	state.registers = activeRegs
+	state.owned.Track(shared)
+
+	state.frames.Push(frame.CallFrame{
+		ReturnPC:        11,
+		ReturnDest:      bytecode.NewRegister(1),
+		CallerRegisters: callerRegs,
+		OwnedResources:  callerOwned,
+	})
+
+	if ok := state.returnToCaller(shared); !ok {
+		t.Fatal("expected return to caller to succeed")
+	}
+
+	state.writeBorrowedRegister(bytecode.NewRegister(1), runtime.None)
+
+	if !state.owned.Owns(shared) {
+		t.Fatal("expected first caller alias to remain owned after clearing return slot")
+	}
+
+	if got := countDeferredClosers(&state.deferred); got != 0 {
+		t.Fatalf("expected no deferred closers after clearing one of two aliases, got %d", got)
+	}
+
+	state.writeBorrowedRegister(bytecode.NewRegister(0), runtime.None)
+
+	if state.owned.Owns(shared) {
+		t.Fatal("expected ownership to end after clearing the final caller alias")
+	}
+
+	if got, want := countDeferredClosers(&state.deferred), 1; got != want {
+		t.Fatalf("expected deferred queue size %d after clearing final alias, got %d", want, got)
+	}
+
+	if got := shared.closed; got != 0 {
+		t.Fatalf("expected closer to remain deferred until cleanup, got %d closes", got)
+	}
+}
+
+func TestReturnToCaller_DoesNotAddPhantomCountWhenDestinationAlreadyMatches(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer state.endRun()
+
+	shared := newTrackingCloser("shared")
+
+	callerRegs := mem.NewRegisterFile(2)
+	callerRegs[1] = shared
+	callerOwned := mem.OwnedResources{}
+	callerOwned.Track(shared)
+
+	activeRegs := mem.NewRegisterFile(1)
+	activeRegs[0] = shared
+	state.registers = activeRegs
+	state.owned.Track(shared)
+
+	state.frames.Push(frame.CallFrame{
+		ReturnPC:        13,
+		ReturnDest:      bytecode.NewRegister(1),
+		CallerRegisters: callerRegs,
+		OwnedResources:  callerOwned,
+	})
+
+	if ok := state.returnToCaller(shared); !ok {
+		t.Fatal("expected return to caller to succeed")
+	}
+
+	state.writeBorrowedRegister(bytecode.NewRegister(1), runtime.None)
+
+	if state.owned.Owns(shared) {
+		t.Fatal("expected matching return destination not to add a phantom alias count")
+	}
+
+	if got, want := countDeferredClosers(&state.deferred), 1; got != want {
+		t.Fatalf("expected deferred queue size %d after clearing the only caller alias, got %d", want, got)
+	}
+
+	if got := shared.closed; got != 0 {
+		t.Fatalf("expected closer to remain deferred until cleanup, got %d closes", got)
+	}
+}
+
 func TestSetOrOptional_NullDereferenceContinuesWithNone(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
@@ -1804,6 +1908,80 @@ func TestTailCallUdf_FreshWindowTransfersOwnedArgsAndClosesDiscardedValues(t *te
 	}
 }
 
+func TestTailCallUdf_DuplicateOwnedArgsKeepCloserLiveUntilLastAliasClears(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  8,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Functions: bytecode.Functions{
+			UserDefined: []bytecode.UDF{
+				{
+					Name:        "F",
+					DisplayName: "f",
+					Entry:       0,
+					Registers:   6,
+					Params:      2,
+				},
+			},
+		},
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer state.endRun()
+
+	shared := newTrackingCloser("shared")
+
+	reg := state.registers
+	reg[3] = shared
+	reg[4] = shared
+	state.owned.Track(shared)
+	state.owned.Track(shared)
+
+	state.frames.Push(frame.CallFrame{
+		ReturnPC:        99,
+		ReturnDest:      bytecode.NewRegister(0),
+		CallerRegisters: mem.NewRegisterFile(2),
+	})
+
+	desc := &callDescriptor{
+		DisplayName: "f",
+		Dst:         bytecode.NewRegister(1),
+		ID:          0,
+		ArgStart:    3,
+		ArgCount:    2,
+		CallSitePC:  4,
+	}
+	if err := tailCallUdf(state, desc, &instance.program.Functions.UserDefined[0]); err != nil {
+		t.Fatalf("unexpected tail call error: %v", err)
+	}
+
+	state.writeBorrowedRegister(bytecode.NewRegister(1), runtime.None)
+
+	if !state.owned.Owns(shared) {
+		t.Fatal("expected closer to remain owned after clearing one transferred alias")
+	}
+
+	if got := countDeferredClosers(&state.deferred); got != 0 {
+		t.Fatalf("expected no deferred closers after clearing one of two aliases, got %d", got)
+	}
+
+	state.writeBorrowedRegister(bytecode.NewRegister(2), runtime.None)
+
+	if state.owned.Owns(shared) {
+		t.Fatal("expected ownership to end after clearing the final transferred alias")
+	}
+
+	if got, want := countDeferredClosers(&state.deferred), 1; got != want {
+		t.Fatalf("expected deferred queue size %d after clearing final alias, got %d", want, got)
+	}
+
+	if got := shared.closed; got != 0 {
+		t.Fatalf("expected closer to remain deferred until cleanup, got %d closes", got)
+	}
+}
+
 func TestOpClose_DoesNotDoubleCloseTrackedValueAtRunEnd(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
@@ -1845,6 +2023,48 @@ func TestOpClose_DoesNotDoubleCloseTrackedValueAtRunEnd(t *testing.T) {
 
 	if got := result.Root(); got != runtime.ZeroInt {
 		t.Fatalf("unexpected return value: got %v, want %v", got, runtime.ZeroInt)
+	}
+}
+
+func TestOpClose_DuplicateAliasClosesExactlyOnce(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  3,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(1), bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpClose, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("MAKE"),
+		},
+	}
+
+	instance := mustNewVM(t, program)
+	value := newTrackingCloser("close-me")
+	env := mustNewEnvironment(t, WithFunction("MAKE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+		return value, nil
+	}))
+
+	result := mustRunResult(t, instance, env)
+
+	if got, want := value.closed, 1; got != want {
+		t.Fatalf("expected explicit close to run exactly once with duplicate aliases, got %d closes", got)
+	}
+
+	if got := result.Root(); got != runtime.ZeroInt {
+		t.Fatalf("unexpected return value: got %v, want %v", got, runtime.ZeroInt)
+	}
+
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected result close to succeed, got %v", err)
+	}
+
+	if got, want := value.closed, 1; got != want {
+		t.Fatalf("expected duplicate alias not to re-close at result cleanup, got %d closes", got)
 	}
 }
 
