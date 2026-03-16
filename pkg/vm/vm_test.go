@@ -352,6 +352,56 @@ func TestResultMaterializeIsOneShot(t *testing.T) {
 	if !errors.Is(err, runtime.ErrInvalidOperation) {
 		t.Fatalf("expected second materialization to fail with invalid operation, got %v", err)
 	}
+
+	if !strings.Contains(err.Error(), "result is already materialized") {
+		t.Fatalf("expected already materialized error, got %v", err)
+	}
+}
+
+func TestResultMaterializeNilResultReturnsNilError(t *testing.T) {
+	var result *Result
+	called := false
+
+	_, err := Materialize[int](result, func(runtime.Value) (Materialized[int], error) {
+		called = true
+		return Materialized[int]{Value: 0}, nil
+	})
+	if !errors.Is(err, runtime.ErrInvalidOperation) {
+		t.Fatalf("expected nil result materialization to fail with invalid operation, got %v", err)
+	}
+
+	if !strings.Contains(err.Error(), "result is nil") {
+		t.Fatalf("expected nil result error, got %v", err)
+	}
+
+	if called {
+		t.Fatal("expected nil result materialization to fail before calling materializer")
+	}
+}
+
+func TestResultMaterializeClosedResultReturnsClosedError(t *testing.T) {
+	result := newResult(runtime.NewInt(7))
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected close to succeed, got %v", err)
+	}
+
+	called := false
+
+	_, err := Materialize[int](result, func(runtime.Value) (Materialized[int], error) {
+		called = true
+		return Materialized[int]{Value: 0}, nil
+	})
+	if !errors.Is(err, runtime.ErrInvalidOperation) {
+		t.Fatalf("expected closed result materialization to fail with invalid operation, got %v", err)
+	}
+
+	if !strings.Contains(err.Error(), "result is closed") {
+		t.Fatalf("expected closed result error, got %v", err)
+	}
+
+	if called {
+		t.Fatal("expected closed result materialization to fail before calling materializer")
+	}
 }
 
 func TestResultCloseIsIdempotent(t *testing.T) {
