@@ -12,6 +12,11 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
+const (
+	// ContentType is the content type for JSON codec.
+	ContentType = "application/json"
+)
+
 // Codec encodes and decodes runtime values as JSON.
 type Codec struct {
 	encoder
@@ -22,7 +27,7 @@ type Codec struct {
 var Default = Codec{}
 
 func (Codec) ContentType() string {
-	return "application/json"
+	return ContentType
 }
 
 func (c Codec) Encode(value runtime.Value) ([]byte, error) {

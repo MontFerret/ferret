@@ -4,11 +4,6 @@ import (
 	"fmt"
 )
 
-const (
-	// ContentTypeJSON is the content type for JSON codec.
-	ContentTypeJSON = "application/json"
-)
-
 // Registry stores codecs by content type.
 type (
 	CodecRegistrar interface {

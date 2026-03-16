@@ -20,7 +20,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
-	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
+	ferretjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/formatter"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -586,8 +586,8 @@ func (r *ResultPrinter) Write(p []byte) (n int, err error) {
 
 func printResult(ctx context.Context, res *ferret.Result) (uint64, error) {
 	isScalar := res.IsScalar()
-	encoder := ferretencoding.Encoder(encodingjson.Default)
-	if selected, err := ferretencoding.EncoderFrom(ctx, ferretencoding.ContentTypeJSON); err == nil {
+	encoder := ferretencoding.Encoder(ferretjson.Default)
+	if selected, err := ferretencoding.EncoderFrom(ctx, ferretjson.ContentType); err == nil {
 		encoder = selected
 	}
 
