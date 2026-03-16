@@ -104,6 +104,43 @@ func (b *badValue) Copy() runtime.Value {
 	return b
 }
 
+func nestedArray(depth int) runtime.Value {
+	value := runtime.Value(runtime.NewInt(1))
+
+	for i := 0; i < depth; i++ {
+		value = runtime.NewArrayWith(value)
+	}
+
+	return value
+}
+
+func nestedObject(depth int) runtime.Value {
+	value := runtime.Value(runtime.NewInt(1))
+
+	for i := 0; i < depth; i++ {
+		value = runtime.NewObjectWith(map[string]runtime.Value{"x": value})
+	}
+
+	return value
+}
+
+func hookValueLabel(value runtime.Value) string {
+	switch v := value.(type) {
+	case nil:
+		return "<nil>"
+	case *badValue:
+		return "bad"
+	case runtime.Map:
+		return "map"
+	case runtime.List:
+		return "list"
+	case runtime.String:
+		return "string:" + string(v)
+	default:
+		return value.String()
+	}
+}
+
 func TestJSONCodecEncode(t *testing.T) {
 	codec := json.Default
 
@@ -192,6 +229,24 @@ func TestJSONCodecEncode(t *testing.T) {
 		assertJSON(t, arr, "[1,\"a\",true]")
 	})
 
+	t.Run("deeply_nested_array", func(t *testing.T) {
+		depth := 100_000
+
+		out, err := codec.Encode(nestedArray(depth))
+		if err != nil {
+			t.Fatalf("encode failed: %v", err)
+		}
+
+		expectedLen := depth*2 + 1
+		if len(out) != expectedLen {
+			t.Fatalf("expected output length %d, got %d", expectedLen, len(out))
+		}
+
+		if out[0] != '[' || out[len(out)-1] != ']' || out[depth] != '1' {
+			t.Fatalf("expected nested array encoding, got malformed output")
+		}
+	})
+
 	t.Run("object_canonical_order", func(t *testing.T) {
 		obj := runtime.NewObjectWith(map[string]runtime.Value{
 			"b": runtime.NewInt(2),
@@ -199,6 +254,24 @@ func TestJSONCodecEncode(t *testing.T) {
 		})
 
 		assertJSON(t, obj, "{\"a\":1,\"b\":2}")
+	})
+
+	t.Run("deeply_nested_object", func(t *testing.T) {
+		depth := 20_000
+
+		out, err := codec.Encode(nestedObject(depth))
+		if err != nil {
+			t.Fatalf("encode failed: %v", err)
+		}
+
+		expectedLen := depth*6 + 1
+		if len(out) != expectedLen {
+			t.Fatalf("expected output length %d, got %d", expectedLen, len(out))
+		}
+
+		if out[0] != '{' || out[len(out)-1] != '}' || string(out[:5]) != "{\"x\":" {
+			t.Fatalf("expected nested object encoding, got malformed output")
+		}
 	})
 
 	t.Run("box", func(t *testing.T) {
@@ -327,6 +400,88 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 
 		if postErr.Error() != err.Error() {
 			t.Fatalf("expected post hook error %q, got %q", err, postErr)
+		}
+	})
+
+	t.Run("nested_hooks_run_depth_first", func(t *testing.T) {
+		var order []string
+
+		config := json.Default.EncodeWith()
+		config.PreHook(func(value runtime.Value) error {
+			order = append(order, "pre:"+hookValueLabel(value))
+			return nil
+		})
+		config.PostHook(func(value runtime.Value, err error) error {
+			if err != nil {
+				t.Fatalf("expected successful encode, got %v", err)
+			}
+
+			order = append(order, "post:"+hookValueLabel(value))
+			return nil
+		})
+
+		out, err := config.Encoder().Encode(runtime.NewObjectWith(map[string]runtime.Value{
+			"items": runtime.NewArrayWith(runtime.NewString("leaf")),
+		}))
+		if err != nil {
+			t.Fatalf("encode failed: %v", err)
+		}
+
+		if string(out) != "{\"items\":[\"leaf\"]}" {
+			t.Fatalf("expected nested output, got %s", out)
+		}
+
+		expectedOrder := []string{
+			"pre:map",
+			"pre:list",
+			"pre:string:leaf",
+			"post:string:leaf",
+			"post:list",
+			"post:map",
+		}
+
+		if !reflect.DeepEqual(order, expectedOrder) {
+			t.Fatalf("expected hook order %#v, got %#v", expectedOrder, order)
+		}
+	})
+
+	t.Run("ancestor_post_hooks_receive_descendant_errors", func(t *testing.T) {
+		var postOrder []string
+		var postErrs []string
+
+		config := json.Default.EncodeWith()
+		config.PostHook(func(value runtime.Value, err error) error {
+			postOrder = append(postOrder, hookValueLabel(value))
+
+			if err == nil {
+				postErrs = append(postErrs, "")
+			} else {
+				postErrs = append(postErrs, err.Error())
+			}
+
+			return nil
+		})
+
+		_, err := config.Encoder().Encode(runtime.NewObjectWith(map[string]runtime.Value{
+			"items": runtime.NewArrayWith(&badValue{Fn: func() {}}),
+		}))
+		if err == nil {
+			t.Fatal("expected encode error")
+		}
+
+		expectedOrder := []string{"bad", "list", "map"}
+		if !reflect.DeepEqual(postOrder, expectedOrder) {
+			t.Fatalf("expected post hook order %#v, got %#v", expectedOrder, postOrder)
+		}
+
+		if len(postErrs) != len(expectedOrder) {
+			t.Fatalf("expected %d post hook errors, got %d", len(expectedOrder), len(postErrs))
+		}
+
+		for i, hookErr := range postErrs {
+			if hookErr != err.Error() {
+				t.Fatalf("expected hook %d to receive %q, got %q", i, err, hookErr)
+			}
 		}
 	})
 
