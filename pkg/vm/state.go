@@ -32,6 +32,7 @@ type (
 		catchByPC []int
 		registers mem.RegisterFile
 		owned     mem.OwnedResources
+		deferred  mem.DeferredClosers
 		failure   pendingFailure
 		pc        int
 		lastPC    int
@@ -51,6 +52,7 @@ func (s *execState) init(program *bytecode.Program) {
 func (s *execState) startRun(env *Environment) error {
 	s.env = env
 	s.owned = mem.OwnedResources{}
+	s.deferred.Reset()
 	s.pc = 0
 	s.lastPC = -1
 	s.clearFailure()
@@ -60,7 +62,7 @@ func (s *execState) startRun(env *Environment) error {
 
 func (s *execState) endRun() {
 	for {
-		s.owned.CloseAll()
+		s.owned.DrainTo(&s.deferred)
 
 		caller, ok := s.frames.Pop()
 		if !ok {
@@ -71,6 +73,33 @@ func (s *execState) endRun() {
 		s.registers = caller.CallerRegisters
 		s.owned = caller.OwnedResources
 	}
+
+	_ = s.deferred.CloseAll()
+	s.resetRunStorage()
+}
+
+func (s *execState) finishRun(root runtime.Value) *Result {
+	return s.finishRunInto(root, newResult(root))
+}
+
+func (s *execState) finishRunInto(root runtime.Value, result *Result) *Result {
+	var resultOwned mem.OwnedResources
+
+	s.owned.Transfer(root, &resultOwned)
+	s.owned.DrainTo(&s.deferred)
+
+	result.reset(root)
+	result.adoptOwned(&resultOwned)
+	result.adoptDeferred(&s.deferred)
+
+	s.resetRunStorage()
+
+	return result
+}
+
+func (s *execState) resetRunStorage() {
+	s.owned = mem.OwnedResources{}
+	s.deferred.Reset()
 
 	s.registers.Reset()
 	s.scratch.Reset()
@@ -354,7 +383,7 @@ func (s *execState) unwindToProtected() bool {
 			return false
 		}
 
-		s.owned.CloseAll()
+		s.owned.DrainTo(&s.deferred)
 		s.windows.Release(s.registers)
 		s.registers = frame.CallerRegisters
 		s.owned = frame.OwnedResources
@@ -365,7 +394,7 @@ func (s *execState) unwindToProtected() bool {
 		return false
 	}
 
-	s.owned.CloseAll()
+	s.owned.DrainTo(&s.deferred)
 	s.windows.Release(s.registers)
 	s.registers = frame.CallerRegisters
 	s.owned = frame.OwnedResources
@@ -384,7 +413,7 @@ func (s *execState) returnToCaller(retVal runtime.Value) bool {
 
 	callerOwned := frame.OwnedResources
 	s.owned.Transfer(retVal, &callerOwned)
-	s.owned.CloseAll()
+	s.owned.DrainTo(&s.deferred)
 	s.windows.Release(s.registers)
 	s.registers = frame.CallerRegisters
 	s.owned = callerOwned
@@ -413,14 +442,35 @@ func (s *execState) writeBorrowedRegister(dst bytecode.Operand, val runtime.Valu
 	val = normalizeValue(val)
 
 	if dst.IsRegister() {
-		s.registers[dst] = val
+		prev := s.registers[dst]
+		if !mem.SameTrackedCloser(prev, val) {
+			s.owned.Discard(prev, &s.deferred)
+			s.registers[dst] = val
+
+			if s.owned.Owns(val) {
+				s.owned.Track(val)
+			}
+		} else {
+			s.registers[dst] = val
+		}
 	}
 
 	return val
 }
 
 func (s *execState) writeProducedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
-	val = s.writeBorrowedRegister(dst, val)
+	val = normalizeValue(val)
+
+	if dst.IsRegister() {
+		prev := s.registers[dst]
+		if !mem.SameTrackedCloser(prev, val) {
+			s.owned.Discard(prev, &s.deferred)
+			s.registers[dst] = val
+		} else {
+			s.registers[dst] = val
+		}
+	}
+
 	s.owned.Track(val)
 
 	return val

@@ -19,8 +19,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/asm"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
-	ferretjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/formatter"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -421,8 +419,6 @@ func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 	}
 
 	if err == nil {
-		defer res.Close()
-
 		if size, e := printResult(ctx, res); e != nil {
 			err = e
 		} else if *profiler {
@@ -584,51 +580,16 @@ func (r *ResultPrinter) Write(p []byte) (n int, err error) {
 	return r.out.Write(p)
 }
 
-func printResult(ctx context.Context, res *ferret.Result) (uint64, error) {
-	isScalar := res.IsScalar()
-	encoder := ferretencoding.Encoder(ferretjson.Default)
-	if selected, err := ferretencoding.EncoderFrom(ctx, ferretjson.ContentType); err == nil {
-		encoder = selected
-	}
-
+func printResult(_ context.Context, res *ferret.Output) (uint64, error) {
 	printer := &ResultPrinter{
 		out: os.Stdout,
 	}
-
-	if !isScalar {
-		printer.Write([]byte("["))
-	}
-
-	var counter int
-
-	err := res.ForEach(ctx, func(val runtime.Value) error {
-		j, err := encoder.Encode(val)
-
-		if err != nil {
-			return err
-		}
-
-		if counter > 0 && !isScalar {
-			printer.Write([]byte(","))
-		}
-
-		_, err = printer.Write(j)
-
-		counter++
-
-		return err
-	})
-
-	if err != nil {
+	if _, err := printer.Write(res.Content); err != nil {
 		return printer.size, err
 	}
 
-	if !isScalar {
-		printer.Write([]byte("]"))
-	}
-	os.Stdout.Write([]byte("\n"))
-
-	return printer.size, nil
+	_, err := os.Stdout.Write([]byte("\n"))
+	return printer.size, err
 }
 
 func analyzeQuery(query *file.Source) error {

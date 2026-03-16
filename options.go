@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
@@ -31,7 +32,12 @@ type (
 
 	Option func(env *options) error
 
-	SessionOption = vm.EnvironmentOption
+	sessionOptions struct {
+		outputContentType string
+		envOptions        []vm.EnvironmentOption
+	}
+
+	SessionOption func(*sessionOptions) error
 )
 
 type encodingCodecAlias struct {
@@ -45,13 +51,26 @@ const (
 	defaultMaxVMsPerPlan     = 0 // 0 means no limit on total VMs per plan.
 )
 
-var (
-	WithSessionParams = vm.WithParams
-	WithSessionParam  = vm.WithParam
-)
-
 func (c encodingCodecAlias) ContentType() string {
 	return c.contentType
+}
+
+func newSessionOptions(setters []SessionOption) (*sessionOptions, error) {
+	opts := &sessionOptions{
+		outputContentType: encodingjson.ContentType,
+	}
+
+	for _, setter := range setters {
+		if setter == nil {
+			continue
+		}
+
+		if err := setter(opts); err != nil {
+			return nil, err
+		}
+	}
+
+	return opts, nil
 }
 
 func newOptions(setters []Option) (*options, error) {
@@ -178,6 +197,45 @@ func WithEncodingRegistry(registry *encoding.Registry) Option {
 		opts.encoding = registry
 		return nil
 	}
+}
+
+func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
+	return func(session *sessionOptions) error {
+		if session == nil {
+			return nil
+		}
+
+		if len(opts) == 0 {
+			return nil
+		}
+
+		session.envOptions = append(session.envOptions, opts...)
+		return nil
+	}
+}
+
+func WithOutputContentType(contentType string) SessionOption {
+	return func(session *sessionOptions) error {
+		if session == nil {
+			return nil
+		}
+
+		trimmed := strings.TrimSpace(contentType)
+		if trimmed == "" {
+			return fmt.Errorf("output content type cannot be empty")
+		}
+
+		session.outputContentType = trimmed
+		return nil
+	}
+}
+
+func WithSessionParams(params runtime.Params) SessionOption {
+	return WithEnvironmentOptions(vm.WithParams(params))
+}
+
+func WithSessionParam(name string, value runtime.Value) SessionOption {
+	return WithEnvironmentOptions(vm.WithParam(name, value))
 }
 
 // WithModules creates an Option that appends the provided modules to the options if not empty.

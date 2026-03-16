@@ -93,10 +93,13 @@ func TestOpExists(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
+			defer func() {
+				_ = out.Close()
+			}()
 
-			val, ok := out.(runtime.Boolean)
+			val, ok := out.Root().(runtime.Boolean)
 			if !ok {
-				t.Fatalf("expected runtime.Boolean, got %T", out)
+				t.Fatalf("expected runtime.Boolean, got %T", out.Root())
 			}
 
 			if val != test.expected {

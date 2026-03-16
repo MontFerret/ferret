@@ -27,18 +27,19 @@ type (
 	// Helper APIs such as Engine.Run may take ownership of the Session and close it
 	// after a single execution, in which case the caller must not attempt to reuse it.
 	Session struct {
-		hooks     sessionHooks
-		closeErr  error
-		vm        *vm.VM
-		env       *vm.Environment
-		encoding  *encoding.Registry
-		release   vmReleaseFunc
-		closeOnce sync.Once
-		closed    atomic.Bool
+		hooks             sessionHooks
+		closeErr          error
+		vm                *vm.VM
+		env               *vm.Environment
+		encoding          *encoding.Registry
+		release           vmReleaseFunc
+		outputContentType string
+		closeOnce         sync.Once
+		closed            atomic.Bool
 	}
 )
 
-func (s *Session) Run(c context.Context) (*Result, error) {
+func (s *Session) Run(c context.Context) (*Output, error) {
 	if s.closed.Load() {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "session is closed")
 	}
@@ -61,7 +62,18 @@ func (s *Session) Run(c context.Context) (*Result, error) {
 		return nil, err
 	}
 
-	return newResult(out), nil
+	output, outputErr := newOutput(s.encoding, s.outputContentType, out)
+	closeErr := out.Close()
+
+	if outputErr != nil {
+		return nil, errors.Join(outputErr, closeErr)
+	}
+
+	if closeErr != nil {
+		return output, closeErr
+	}
+
+	return output, nil
 }
 
 // Close releases the session's borrowed VM and runs close hooks.

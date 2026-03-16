@@ -6,6 +6,7 @@ type (
 	options struct {
 		shapeCacheLimit         int
 		fastObjectDictThreshold int
+		benchmarkResultMode     bool
 		panicPolicy             PanicPolicy
 	}
 
@@ -62,5 +63,14 @@ func WithPanicPolicy(mode PanicPolicy) Option {
 		case PanicRecover, PanicPropagate:
 			cfg.panicPolicy = mode
 		}
+	}
+}
+
+// WithBenchmarkResultMode enables a benchmark/test-only result mode that
+// reuses a single Result handle across runs. This keeps benchmark hot paths
+// comparable to pre-result-handle runs while preserving the public Run API.
+func WithBenchmarkResultMode() Option {
+	return func(cfg *options) {
+		cfg.benchmarkResultMode = true
 	}
 }

@@ -20,8 +20,10 @@ func TestPlanNewSessionReturnsEnvironmentError(t *testing.T) {
 
 	_, err := plan.NewSession(
 		context.Background(),
-		vm.WithFunction("SESSION_DUP_COVER", coverageVarFn),
-		vm.WithFunction("SESSION_DUP_COVER", coverageVarFn),
+		WithEnvironmentOptions(
+			vm.WithFunction("SESSION_DUP_COVER", coverageVarFn),
+			vm.WithFunction("SESSION_DUP_COVER", coverageVarFn),
+		),
 	)
 	if err == nil {
 		t.Fatal("expected plan.NewSession to fail on conflicting session options")
@@ -70,8 +72,10 @@ func TestPlanNewSessionReleasesLimiterOnEnvironmentError(t *testing.T) {
 
 	_, err := plan.NewSession(
 		context.Background(),
-		vm.WithFunction("SESSION_DUP_LIMIT", coverageVarFn),
-		vm.WithFunction("SESSION_DUP_LIMIT", coverageVarFn),
+		WithEnvironmentOptions(
+			vm.WithFunction("SESSION_DUP_LIMIT", coverageVarFn),
+			vm.WithFunction("SESSION_DUP_LIMIT", coverageVarFn),
+		),
 	)
 	if err == nil {
 		t.Fatal("expected plan.NewSession to fail on conflicting session options")

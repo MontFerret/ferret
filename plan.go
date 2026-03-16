@@ -37,11 +37,16 @@ func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Sessi
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
 	}
 
-	host := p.host
+	h := p.host
 	hooks := p.sessionHooks
 	limiter := p.limiter
 	pool := p.pool
 	p.mu.RUnlock()
+
+	sessionOpts, err := newSessionOptions(setters)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := limiter.Acquire(ctx); err != nil {
 		return nil, err
@@ -57,10 +62,10 @@ func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Sessi
 	}()
 
 	env, err := vm.ExtendEnvironment(&vm.Environment{
-		Functions: host.functions,
-		Params:    host.params,
-		Logging:   host.logging,
-	}, setters)
+		Functions: h.functions,
+		Params:    h.params,
+		Logging:   h.logging,
+	}, sessionOpts.envOptions)
 
 	if err != nil {
 		return nil, err
@@ -78,11 +83,12 @@ func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Sessi
 	releaseLimiter = false
 
 	return &Session{
-		vm:       instance,
-		env:      env,
-		encoding: host.encoding,
-		hooks:    hooks,
-		release:  newSessionRelease(limiter, pool),
+		vm:                instance,
+		env:               env,
+		encoding:          h.encoding,
+		outputContentType: sessionOpts.outputContentType,
+		hooks:             hooks,
+		release:           newSessionRelease(limiter, pool),
 	}, nil
 }
 

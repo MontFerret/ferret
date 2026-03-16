@@ -43,11 +43,12 @@ func TestUnaryOperators(t *testing.T) {
 		vm1, err := vm.New(p1)
 		So(err, ShouldBeNil)
 
-		v1, err := vm1.Run(gocontext.Background(), nil)
+		r1, err := vm1.Run(gocontext.Background(), nil)
 
 		So(err, ShouldBeNil)
 
-		out1, err := encodingjson.Default.Encode(v1)
+		out1, err := encodingjson.Default.Encode(r1.Root())
+		So(r1.Close(), ShouldBeNil)
 		So(err, ShouldBeNil)
 
 		So(string(out1), ShouldEqual, `{"enabled":true}`)
@@ -62,11 +63,12 @@ func TestUnaryOperators(t *testing.T) {
 		vm2, err := vm.New(p2)
 		So(err, ShouldBeNil)
 
-		v2, err := vm2.Run(gocontext.Background(), nil)
+		r2, err := vm2.Run(gocontext.Background(), nil)
 
 		So(err, ShouldBeNil)
 
-		out2, err := encodingjson.Default.Encode(v2)
+		out2, err := encodingjson.Default.Encode(r2.Root())
+		So(r2.Close(), ShouldBeNil)
 
 		So(err, ShouldBeNil)
 		So(string(out2), ShouldEqual, `{"enabled":false}`)

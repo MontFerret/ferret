@@ -103,8 +103,11 @@ func TestApplyQueryConstantSource_Strict(t *testing.T) {
 	if err != nil {
 		t.Fatalf("run failed: %v", err)
 	}
+	defer func() {
+		_ = result.Close()
+	}()
 
-	assertSingleStringArrayResult(t, result, runtime.NewString("ok"))
+	assertSingleStringArrayResult(t, result.Root(), runtime.NewString("ok"))
 
 	if len(stub.queries) != 1 {
 		t.Fatalf("unexpected query count: got %d, want 1", len(stub.queries))
@@ -142,8 +145,11 @@ func TestApplyQueryConstantSource_FastMode_NoPanic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("run failed: %v", err)
 	}
+	defer func() {
+		_ = result.Close()
+	}()
 
-	assertSingleStringArrayResult(t, result, runtime.NewString("ok"))
+	assertSingleStringArrayResult(t, result.Root(), runtime.NewString("ok"))
 }
 
 func TestApplyQueryConstantSource_NonQueryable_NoPanicTypeError(t *testing.T) {
@@ -159,7 +165,13 @@ func TestApplyQueryConstantSource_NonQueryable_NoPanicTypeError(t *testing.T) {
 					return runtime.None, err
 				}
 
-				return instance.Run(context.Background(), vm.NewDefaultEnvironment())
+				result, err := instance.Run(context.Background(), vm.NewDefaultEnvironment())
+				if err != nil {
+					return runtime.None, err
+				}
+
+				root := result.Root()
+				return root, result.Close()
 			},
 		},
 		{
@@ -173,7 +185,13 @@ func TestApplyQueryConstantSource_NonQueryable_NoPanicTypeError(t *testing.T) {
 					return runtime.None, err
 				}
 
-				return instance.Run(context.Background(), vm.NewDefaultEnvironment())
+				result, err := instance.Run(context.Background(), vm.NewDefaultEnvironment())
+				if err != nil {
+					return runtime.None, err
+				}
+
+				root := result.Root()
+				return root, result.Close()
 			},
 		},
 	}

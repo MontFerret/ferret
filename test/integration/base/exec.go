@@ -3,6 +3,7 @@ package base
 import (
 	"context"
 	j "encoding/json"
+	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
@@ -11,6 +12,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/file"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -24,6 +26,32 @@ func Compile(expression string) (*bytecode.Program, error) {
 	return c.Compile(file.NewSource("", expression))
 }
 
+func newTestContext() context.Context {
+	type Salt struct{}
+
+	ctx := context.WithValue(context.Background(), testSaltKey, &Salt{})
+
+	return ferretencoding.WithRegistry(ctx, ferretencoding.NewRegistry(encodingjson.Default, encodingmsgpack.Default))
+}
+
+func materializeJSONResult(out *vm.Result) ([]byte, error) {
+	data, materializeErr := vm.Materialize[[]byte](out, func(value runtime.Value) (vm.Materialized[[]byte], error) {
+		enc := encodingjson.Default.EncodeWith().PreHook(func(value runtime.Value) error {
+			out.AdoptValue(value)
+			return nil
+		}).Encoder()
+
+		data, err := enc.Encode(value)
+		if err != nil {
+			return vm.Materialized[[]byte]{}, err
+		}
+
+		return vm.Materialized[[]byte]{Value: data}, nil
+	})
+
+	return data, errors.Join(materializeErr, out.Close())
+}
+
 func Run(p *bytecode.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
 	instance, err := vm.New(p)
 	if err != nil {
@@ -35,10 +63,7 @@ func Run(p *bytecode.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
 		return nil, err
 	}
 
-	type Salt struct{}
-
-	ctx := context.WithValue(context.Background(), testSaltKey, &Salt{})
-	ctx = ferretencoding.WithRegistry(ctx, ferretencoding.NewRegistry(encodingjson.Default, encodingmsgpack.Default))
+	ctx := newTestContext()
 
 	out, err := instance.Run(ctx, env)
 
@@ -46,7 +71,7 @@ func Run(p *bytecode.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
 		return nil, err
 	}
 
-	return encodingjson.Default.Encode(out)
+	return materializeJSONResult(out)
 }
 
 func Exec(p *bytecode.Program, raw bool, opts ...vm.EnvironmentOption) (any, error) {

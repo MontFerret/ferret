@@ -13,12 +13,13 @@ import (
 )
 
 type VM struct {
-	cache   *mem.Cache
-	program *bytecode.Program
-	plan    execPlan
-	state   execState
-	options options
-	closed  bool
+	cache           *mem.Cache
+	program         *bytecode.Program
+	benchmarkResult *Result
+	plan            execPlan
+	state           execState
+	options         options
+	closed          bool
 }
 
 func New(program *bytecode.Program) (*VM, error) {
@@ -43,23 +44,54 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 		options: o,
 	}
 	vm.state.init(program)
+	if o.benchmarkResultMode {
+		vm.benchmarkResult = &Result{closed: true, root: runtime.None}
+	}
 
 	return vm, nil
 }
 
-func (vm *VM) Run(ctx context.Context, env *Environment) (runtime.Value, error) {
+func (vm *VM) Run(ctx context.Context, env *Environment) (*Result, error) {
 	if vm == nil || vm.closed {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "vm is closed")
 	}
 
+	if vm.benchmarkResult != nil && !vm.benchmarkResult.closed {
+		return nil, runtime.Error(runtime.ErrInvalidOperation, "benchmark result must be closed before next run")
+	}
+
 	switch vm.options.panicPolicy {
 	case PanicPropagate:
-		defer vm.state.endRun()
-		return vm.runUnchecked(ctx, env)
+		defer func() {
+			if r := recover(); r != nil {
+				vm.state.endRun()
+				panic(r)
+			}
+		}()
+
+		root, err := vm.runUnchecked(ctx, env)
+		if err != nil {
+			vm.state.endRun()
+			return nil, err
+		}
+
+		if vm.benchmarkResult != nil {
+			return vm.state.finishRunInto(root, vm.benchmarkResult), nil
+		}
+
+		return vm.state.finishRun(root), nil
 	default:
-		result, err := vm.runRecovered(ctx, env)
-		vm.state.endRun()
-		return result, err
+		root, err := vm.runRecovered(ctx, env)
+		if err != nil {
+			vm.state.endRun()
+			return nil, err
+		}
+
+		if vm.benchmarkResult != nil {
+			return vm.state.finishRunInto(root, vm.benchmarkResult), nil
+		}
+
+		return vm.state.finishRun(root), nil
 	}
 }
 
@@ -70,6 +102,10 @@ func (vm *VM) Close() error {
 	}
 
 	vm.closed = true
+	if vm.benchmarkResult != nil {
+		_ = vm.benchmarkResult.Close()
+		vm.benchmarkResult = nil
+	}
 	vm.state.endRun()
 	vm.cache = nil
 	vm.program = nil
@@ -156,7 +192,7 @@ loop:
 				continue
 			}
 
-			reg[bytecode.NoopOperand] = retVal
+			state.writeBorrowedRegister(bytecode.NoopOperand, retVal)
 
 			break loop
 		case bytecode.OpJump:
@@ -328,21 +364,21 @@ loop:
 
 			state.setProducedOrRaiseDefault(pc, dst, out, err)
 		case bytecode.OpMove:
-			reg[dst] = reg[src1]
+			state.writeBorrowedRegister(dst, reg[src1])
 		case bytecode.OpLoadNone:
-			reg[dst] = runtime.None
+			state.writeBorrowedRegister(dst, runtime.None)
 		case bytecode.OpLoadBool:
-			reg[dst] = runtime.Boolean(src1 == 1)
+			state.writeBorrowedRegister(dst, runtime.Boolean(src1 == 1))
 		case bytecode.OpLoadZero:
-			reg[dst] = runtime.ZeroInt
+			state.writeBorrowedRegister(dst, runtime.ZeroInt)
 		case bytecode.OpLoadConst:
-			reg[dst] = constants[src1.Constant()]
+			state.writeBorrowedRegister(dst, constants[src1.Constant()])
 		case bytecode.OpLoadParam:
-			reg[dst] = paramSlots[int(src1)-1]
+			state.writeBorrowedRegister(dst, paramSlots[int(src1)-1])
 		case bytecode.OpLoadArray:
-			reg[dst] = runtime.NewArray(int(src1))
+			state.writeBorrowedRegister(dst, runtime.NewArray(int(src1)))
 		case bytecode.OpLoadObject:
-			reg[dst] = data.NewFastObjectOf(shapeCache, vm.options.fastObjectDictThreshold, int(src1))
+			state.writeBorrowedRegister(dst, data.NewFastObjectOf(shapeCache, vm.options.fastObjectDictThreshold, int(src1)))
 		case bytecode.OpLoadRange:
 			start, err := runtime.ToInt(ctx, reg[src1])
 
@@ -358,7 +394,7 @@ loop:
 				break
 			}
 
-			reg[dst] = runtime.NewRange(start, end)
+			state.writeBorrowedRegister(dst, runtime.NewRange(start, end))
 		case bytecode.OpLoadIndex, bytecode.OpLoadIndexOptional:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadIndexOptional
@@ -407,7 +443,7 @@ loop:
 				break
 			}
 
-			state.owned.Forget(reg[src1])
+			state.owned.Discard(reg[src1], &state.deferred)
 		case bytecode.OpPushKV:
 			tr := reg[dst].(runtime.KeyWritable)
 
@@ -416,13 +452,13 @@ loop:
 				break
 			}
 
-			state.owned.Forget(reg[src1])
-			state.owned.Forget(reg[src2])
+			state.owned.Discard(reg[src1], &state.deferred)
+			state.owned.Discard(reg[src2], &state.deferred)
 		case bytecode.OpArrayPush:
 			ds := reg[dst].(*runtime.Array)
 
 			_ = ds.Append(ctx, reg[src1])
-			state.owned.Forget(reg[src1])
+			state.owned.Discard(reg[src1], &state.deferred)
 		case bytecode.OpObjectSet:
 			key := runtime.ToString(reg[src1])
 			value := reg[src2]
@@ -430,7 +466,7 @@ loop:
 
 			if ok {
 				_ = obj.Set(ctx, key, value)
-				state.owned.Forget(value)
+				state.owned.Discard(value, &state.deferred)
 				continue
 			}
 
@@ -442,7 +478,7 @@ loop:
 					break
 				}
 
-				state.owned.Forget(value)
+				state.owned.Discard(value, &state.deferred)
 				continue
 			}
 
@@ -455,7 +491,7 @@ loop:
 
 			if obj, ok := objVal.(*data.FastObject); ok {
 				vm.objectSetConstCached(inst, obj, key, value)
-				state.owned.Forget(value)
+				state.owned.Discard(value, &state.deferred)
 				continue
 			}
 
@@ -467,7 +503,7 @@ loop:
 					break
 				}
 
-				state.owned.Forget(value)
+				state.owned.Discard(value, &state.deferred)
 				continue
 			}
 
@@ -504,17 +540,17 @@ loop:
 			}
 		case bytecode.OpIterValue:
 			iterator := reg[src1].(*data.Iterator)
-			reg[dst] = iterator.Value()
+			state.writeBorrowedRegister(dst, iterator.Value())
 		case bytecode.OpIterKey:
 			iterator := reg[src1].(*data.Iterator)
-			reg[dst] = iterator.Key()
+			state.writeBorrowedRegister(dst, iterator.Key())
 		case bytecode.OpIterSkip:
 			iterState := runtime.ToIntSafe(ctx, reg[src1])
 			threshold := runtime.ToIntSafe(ctx, reg[src2])
 
 			if iterState < threshold {
 				iterState++
-				reg[src1] = iterState
+				state.writeBorrowedRegister(src1, iterState)
 				state.pc = int(dst)
 			}
 		case bytecode.OpIterLimit:
@@ -523,7 +559,7 @@ loop:
 
 			if iterState < threshold {
 				iterState++
-				reg[src1] = iterState
+				state.writeBorrowedRegister(src1, iterState)
 			} else {
 				state.pc = int(dst)
 			}
@@ -570,7 +606,7 @@ loop:
 
 			state.setProducedOrRaiseDefault(pc, dst, out, err)
 		case bytecode.OpDataSet:
-			reg[dst] = data.NewDataSet(src1 == 1)
+			state.writeBorrowedRegister(dst, data.NewDataSet(src1 == 1))
 		case bytecode.OpDataSetCollector:
 			collectorType := bytecode.CollectorType(src1)
 
@@ -623,64 +659,64 @@ loop:
 
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpAdd:
-			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
+			state.writeBorrowedRegister(dst, runtime.Add(ctx, reg[src1], reg[src2]))
 		case bytecode.OpAddConst:
-			reg[dst] = runtime.Add(ctx, reg[src1], constants[src2.Constant()])
+			state.writeBorrowedRegister(dst, runtime.Add(ctx, reg[src1], constants[src2.Constant()]))
 		case bytecode.OpConcat:
-			concatStrings(reg, dst, src1, src2)
+			state.writeBorrowedRegister(dst, concatStrings(reg, src1, src2))
 		case bytecode.OpSub:
-			reg[dst] = runtime.Subtract(ctx, reg[src1], reg[src2])
+			state.writeBorrowedRegister(dst, runtime.Subtract(ctx, reg[src1], reg[src2]))
 		case bytecode.OpMul:
-			reg[dst] = runtime.Multiply(ctx, reg[src1], reg[src2])
+			state.writeBorrowedRegister(dst, runtime.Multiply(ctx, reg[src1], reg[src2]))
 		case bytecode.OpDiv:
 			if err := state.checkDivisionByZeroAt(ctx, pc, reg[src1], reg[src2]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
-			reg[dst] = runtime.Divide(ctx, reg[src1], reg[src2])
+			state.writeBorrowedRegister(dst, runtime.Divide(ctx, reg[src1], reg[src2]))
 		case bytecode.OpMod:
 			if err := state.checkModuloByZeroAt(ctx, pc, reg[src2]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
-			reg[dst] = runtime.Modulus(ctx, reg[src1], reg[src2])
+			state.writeBorrowedRegister(dst, runtime.Modulus(ctx, reg[src1], reg[src2]))
 		case bytecode.OpIncr:
-			reg[dst] = runtime.Increment(ctx, reg[dst])
+			state.writeBorrowedRegister(dst, runtime.Increment(ctx, reg[dst]))
 		case bytecode.OpDecr:
-			reg[dst] = runtime.Decrement(ctx, reg[dst])
+			state.writeBorrowedRegister(dst, runtime.Decrement(ctx, reg[dst]))
 		case bytecode.OpNegate:
-			reg[dst] = negate(reg[src1])
+			state.writeBorrowedRegister(dst, negate(reg[src1]))
 		case bytecode.OpFlipPositive:
-			reg[dst] = positive(reg[src1])
+			state.writeBorrowedRegister(dst, positive(reg[src1]))
 		case bytecode.OpFlipNegative:
-			reg[dst] = negative(reg[src1])
+			state.writeBorrowedRegister(dst, negative(reg[src1]))
 		case bytecode.OpCastBool:
-			reg[dst] = coerceBool(reg[src1])
+			state.writeBorrowedRegister(dst, coerceBool(reg[src1]))
 		case bytecode.OpCmp:
-			reg[dst] = cmp(ctx, reg[src1], reg[src2])
+			state.writeBorrowedRegister(dst, cmp(ctx, reg[src1], reg[src2]))
 		case bytecode.OpNot:
-			reg[dst] = !coerceBool(reg[src1])
+			state.writeBorrowedRegister(dst, !coerceBool(reg[src1]))
 		case bytecode.OpEq:
-			reg[dst] = eq(ctx, reg[src1], reg[src2])
+			state.writeBorrowedRegister(dst, eq(ctx, reg[src1], reg[src2]))
 		case bytecode.OpNe:
-			reg[dst] = ne(ctx, reg[src1], reg[src2])
+			state.writeBorrowedRegister(dst, ne(ctx, reg[src1], reg[src2]))
 		case bytecode.OpGt:
-			reg[dst] = gt(ctx, reg[src1], reg[src2])
+			state.writeBorrowedRegister(dst, gt(ctx, reg[src1], reg[src2]))
 		case bytecode.OpLt:
-			reg[dst] = lt(ctx, reg[src1], reg[src2])
+			state.writeBorrowedRegister(dst, lt(ctx, reg[src1], reg[src2]))
 		case bytecode.OpGte:
-			reg[dst] = gte(ctx, reg[src1], reg[src2])
+			state.writeBorrowedRegister(dst, gte(ctx, reg[src1], reg[src2]))
 		case bytecode.OpLte:
-			reg[dst] = lte(ctx, reg[src1], reg[src2])
+			state.writeBorrowedRegister(dst, lte(ctx, reg[src1], reg[src2]))
 		case bytecode.OpIn:
-			reg[dst] = contains(ctx, reg[src2], reg[src1])
+			state.writeBorrowedRegister(dst, contains(ctx, reg[src2], reg[src1]))
 		case bytecode.OpLike:
 			res, err := Like(reg[src1], reg[src2])
 
 			if err == nil {
-				reg[dst] = res
+				state.writeBorrowedRegister(dst, res)
 				break
 			}
 
@@ -689,7 +725,7 @@ loop:
 			r, err := vm.regexpCached(pc, reg[src2])
 
 			if err == nil {
-				reg[dst] = r.Match(reg[src1])
+				state.writeBorrowedRegister(dst, r.Match(reg[src1]))
 				continue
 			}
 
@@ -698,7 +734,7 @@ loop:
 			val := reg[src1]
 
 			if val == runtime.None {
-				reg[dst] = runtime.False
+				state.writeBorrowedRegister(dst, runtime.False)
 				continue
 			}
 
@@ -710,12 +746,12 @@ loop:
 					break
 				}
 
-				reg[dst] = runtime.NewBoolean(length != 0)
+				state.writeBorrowedRegister(dst, runtime.NewBoolean(length != 0))
 
 				continue
 			}
 
-			reg[dst] = runtime.True
+			state.writeBorrowedRegister(dst, runtime.True)
 		case bytecode.OpAllEq, bytecode.OpAllNe, bytecode.OpAllGt, bytecode.OpAllGte, bytecode.OpAllLt, bytecode.OpAllLte, bytecode.OpAllIn:
 			cmp := comparatorFromByte(int(op) - int(bytecode.OpAllEq))
 			res, err := arrayAll(ctx, cmp, reg[src1], reg[src2])
@@ -742,7 +778,7 @@ loop:
 					break
 				}
 
-				reg[dst] = length
+				state.writeBorrowedRegister(dst, length)
 				continue
 			}
 
@@ -755,12 +791,14 @@ loop:
 			)
 			state.raiseRuntimeAt(pc, callErr, recoverDefault, dst, runtime.ZeroInt, true)
 		case bytecode.OpType:
-			reg[dst] = runtime.NewString(runtime.TypeName(runtime.TypeOf(reg[src1])))
+			state.writeBorrowedRegister(dst, runtime.NewString(runtime.TypeName(runtime.TypeOf(reg[src1]))))
 		case bytecode.OpClose:
 			val := reg[dst]
-			state.owned.Forget(val)
-			closer, ok := val.(io.Closer)
-			reg[dst] = runtime.None
+			closer, ok := state.owned.Release(val)
+			if !ok {
+				closer, ok = val.(io.Closer)
+			}
+			state.writeBorrowedRegister(dst, runtime.None)
 
 			if ok {
 				closeErr := closer.Close()
@@ -781,7 +819,7 @@ loop:
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 			}
 		case bytecode.OpRand:
-			reg[dst] = runtime.NewFloat(runtime.RandomDefault())
+			state.writeBorrowedRegister(dst, runtime.NewFloat(runtime.RandomDefault()))
 		default:
 			return nil, runtime.Errorf(runtime.ErrUnexpected, "unknown opcode %d at pc %d", op, pc)
 		}
@@ -1072,7 +1110,7 @@ func (vm *VM) loadIndexAndSet(ctx context.Context, dst bytecode.Operand, pc int,
 	state := &vm.state
 
 	if optional && src == runtime.None {
-		state.registers[dst] = runtime.None
+		state.writeBorrowedRegister(dst, runtime.None)
 		return
 	}
 
@@ -1084,7 +1122,7 @@ func (vm *VM) loadKeyAndSet(ctx context.Context, dst bytecode.Operand, pc int, s
 	state := &vm.state
 
 	if optional && src == runtime.None {
-		state.registers[dst] = runtime.None
+		state.writeBorrowedRegister(dst, runtime.None)
 		return
 	}
 
@@ -1096,7 +1134,7 @@ func (vm *VM) loadKeyConstAndSet(ctx context.Context, dst bytecode.Operand, pc i
 	state := &vm.state
 
 	if optional && src == runtime.None {
-		state.registers[dst] = runtime.None
+		state.writeBorrowedRegister(dst, runtime.None)
 		return
 	}
 
@@ -1108,7 +1146,7 @@ func (vm *VM) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc i
 	state := &vm.state
 
 	if optional && src == runtime.None {
-		state.registers[dst] = runtime.None
+		state.writeBorrowedRegister(dst, runtime.None)
 		return
 	}
 
@@ -1131,7 +1169,7 @@ func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst bytecode.Operand,
 	state := &vm.state
 
 	if optional && src == runtime.None {
-		state.registers[dst] = runtime.None
+		state.writeBorrowedRegister(dst, runtime.None)
 		return
 	}
 

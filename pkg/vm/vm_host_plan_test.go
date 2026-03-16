@@ -186,8 +186,11 @@ func TestRun_IgnoresInlineSlotForNonHostOpcodes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("run failed: %v", err)
 	}
+	defer func() {
+		_ = out.Close()
+	}()
 
-	assertRuntimeValueEquals(t, out, runtime.NewInt(1))
+	assertRuntimeValueEquals(t, out.Root(), runtime.NewInt(1))
 }
 
 func TestRunReturnsUnresolvedFunctionWhenHostCacheEntryIsMissing(t *testing.T) {
@@ -255,13 +258,13 @@ func TestWarmupRebindTouchesOnlyHostCallSlots(t *testing.T) {
 	if err != nil {
 		t.Fatalf("first run failed: %v", err)
 	}
-	assertRuntimeValueEquals(t, outA, runtime.NewInt(1))
+	assertRuntimeValueEquals(t, mustResultRootAndClose(t, outA), runtime.NewInt(1))
 
 	outB, err := instance.Run(context.Background(), envB)
 	if err != nil {
 		t.Fatalf("second run failed: %v", err)
 	}
-	assertRuntimeValueEquals(t, outB, runtime.NewInt(2))
+	assertRuntimeValueEquals(t, mustResultRootAndClose(t, outB), runtime.NewInt(2))
 
 	if !instance.cache.HostFunctions[hostID].Bound {
 		t.Fatal("expected host call slot to be rebound")
@@ -289,7 +292,7 @@ func TestWarmupPreservesFunctionsRefAcrossFailedAndRecoveredRuns(t *testing.T) {
 	if err != nil {
 		t.Fatalf("initial run failed: %v", err)
 	}
-	assertRuntimeValueEquals(t, out, runtime.NewInt(7))
+	assertRuntimeValueEquals(t, mustResultRootAndClose(t, out), runtime.NewInt(7))
 
 	if instance.cache.FunctionsRef != validEnv.Functions {
 		t.Fatal("expected FunctionsRef to track the successful environment")
@@ -310,7 +313,7 @@ func TestWarmupPreservesFunctionsRefAcrossFailedAndRecoveredRuns(t *testing.T) {
 	if err != nil {
 		t.Fatalf("recovery run failed: %v", err)
 	}
-	assertRuntimeValueEquals(t, out, runtime.NewInt(9))
+	assertRuntimeValueEquals(t, mustResultRootAndClose(t, out), runtime.NewInt(9))
 
 	if instance.cache.FunctionsRef != recoveredEnv.Functions {
 		t.Fatal("expected recovery run to install the recovered FunctionsRef")
@@ -343,7 +346,7 @@ func TestWarmupRebindReplacesCachedFunctionShapeForCurrentEnvironment(t *testing
 	if err != nil {
 		t.Fatalf("fixed-arity run failed: %v", err)
 	}
-	assertRuntimeValueEquals(t, out, runtime.NewInt(12))
+	assertRuntimeValueEquals(t, mustResultRootAndClose(t, out), runtime.NewInt(12))
 
 	slot := instance.cache.HostFunctions[hostID]
 	if slot.Fn2 == nil || slot.FnV != nil {
@@ -354,7 +357,7 @@ func TestWarmupRebindReplacesCachedFunctionShapeForCurrentEnvironment(t *testing
 	if err != nil {
 		t.Fatalf("vararg run failed: %v", err)
 	}
-	assertRuntimeValueEquals(t, out, runtime.NewInt(102))
+	assertRuntimeValueEquals(t, mustResultRootAndClose(t, out), runtime.NewInt(102))
 
 	slot = instance.cache.HostFunctions[hostID]
 	if slot.Fn2 != nil || slot.FnV == nil {
@@ -365,7 +368,7 @@ func TestWarmupRebindReplacesCachedFunctionShapeForCurrentEnvironment(t *testing
 	if err != nil {
 		t.Fatalf("second fixed-arity run failed: %v", err)
 	}
-	assertRuntimeValueEquals(t, out, runtime.NewInt(22))
+	assertRuntimeValueEquals(t, mustResultRootAndClose(t, out), runtime.NewInt(22))
 
 	slot = instance.cache.HostFunctions[hostID]
 	if slot.Fn2 == nil || slot.FnV != nil {

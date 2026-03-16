@@ -23,18 +23,16 @@ func readOperandValue(reg []runtime.Value, constants []runtime.Value, operand by
 	return reg[operand]
 }
 
-func concatStrings(reg []runtime.Value, dst, src1, src2 bytecode.Operand) {
+func concatStrings(reg []runtime.Value, src1, src2 bytecode.Operand) runtime.Value {
 	start := int(src1)
 	count := int(src2)
 
 	if count <= 0 {
-		reg[dst] = runtime.EmptyString
-		return
+		return runtime.EmptyString
 	}
 
 	if count == 1 {
-		reg[dst] = runtime.ToString(reg[start])
-		return
+		return runtime.ToString(reg[start])
 	}
 
 	if count == 2 {
@@ -42,17 +40,14 @@ func concatStrings(reg []runtime.Value, dst, src1, src2 bytecode.Operand) {
 		s2 := runtime.ToString(reg[start+1])
 
 		if s1 == runtime.EmptyString {
-			reg[dst] = s2
-			return
+			return s2
 		}
 
 		if s2 == runtime.EmptyString {
-			reg[dst] = s1
-			return
+			return s1
 		}
 
-		reg[dst] = runtime.NewString(string(s1) + string(s2))
-		return
+		return runtime.NewString(string(s1) + string(s2))
 	}
 
 	if count == 3 {
@@ -62,22 +57,18 @@ func concatStrings(reg []runtime.Value, dst, src1, src2 bytecode.Operand) {
 
 		if s1 == runtime.EmptyString {
 			if s2 == runtime.EmptyString {
-				reg[dst] = s3
-				return
+				return s3
 			}
 			if s3 == runtime.EmptyString {
-				reg[dst] = s2
-				return
+				return s2
 			}
 		} else if s2 == runtime.EmptyString {
 			if s3 == runtime.EmptyString {
-				reg[dst] = s1
-				return
+				return s1
 			}
 		}
 
-		reg[dst] = runtime.NewString(string(s1) + string(s2) + string(s3))
-		return
+		return runtime.NewString(string(s1) + string(s2) + string(s3))
 	}
 
 	parts := make([]runtime.String, count)
@@ -90,8 +81,7 @@ func concatStrings(reg []runtime.Value, dst, src1, src2 bytecode.Operand) {
 	}
 
 	if totalLen == 0 {
-		reg[dst] = runtime.EmptyString
-		return
+		return runtime.EmptyString
 	}
 
 	var b strings.Builder
@@ -105,7 +95,7 @@ func concatStrings(reg []runtime.Value, dst, src1, src2 bytecode.Operand) {
 		b.WriteString(string(parts[i]))
 	}
 
-	reg[dst] = runtime.NewString(b.String())
+	return runtime.NewString(b.String())
 }
 
 func maxUDFRegisters(udfs []bytecode.UDF) int {
