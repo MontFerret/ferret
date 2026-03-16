@@ -2,8 +2,6 @@ package encoding
 
 import (
 	"fmt"
-
-	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 )
 
 const (
@@ -14,7 +12,7 @@ const (
 // Registry stores codecs by content type.
 type (
 	CodecRegistrar interface {
-		Register(contentType string, codec Codec) error
+		Register(codec Codec) error
 	}
 
 	Registry struct {
@@ -22,10 +20,13 @@ type (
 	}
 )
 
-// NewRegistry creates a registry with built-in codecs.
-func NewRegistry() *Registry {
+// NewRegistry creates a registry seeded with the provided codecs.
+func NewRegistry(codecs ...Codec) *Registry {
 	registry := NewEmptyRegistry()
-	_ = registry.Register(ContentTypeJSON, encodingjson.Default)
+
+	for _, codec := range codecs {
+		_ = registry.Register(codec)
+	}
 
 	return registry
 }
@@ -38,7 +39,7 @@ func NewEmptyRegistry() *Registry {
 }
 
 // Register stores a full codec for the content type.
-func (r *Registry) Register(contentType string, codec Codec) error {
+func (r *Registry) Register(codec Codec) error {
 	if r == nil {
 		return ErrNilRegistry
 	}
@@ -47,7 +48,7 @@ func (r *Registry) Register(contentType string, codec Codec) error {
 		return ErrNilCodec
 	}
 
-	normalized, err := normalizeContentType(contentType)
+	normalized, err := normalizeContentType(codec.ContentType())
 	if err != nil {
 		return err
 	}

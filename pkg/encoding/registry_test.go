@@ -1,18 +1,28 @@
-package encoding
+package encoding_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
+	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func TestNewRegistryHasJSONCodec(t *testing.T) {
-	registry := NewRegistry()
+type contentTypeCodec struct {
+	contentType string
+	encodingjson.Codec
+}
 
-	codec, err := registry.Codec(ContentTypeJSON)
+func (c contentTypeCodec) ContentType() string {
+	return c.contentType
+}
+
+func TestNewRegistryHasExplicitJSONCodec(t *testing.T) {
+	registry := ferretencoding.NewRegistry(encodingjson.Default)
+
+	codec, err := registry.Codec(ferretencoding.ContentTypeJSON)
 	if err != nil {
 		t.Fatalf("expected json codec, got error: %v", err)
 	}
@@ -36,37 +46,48 @@ func TestNewRegistryHasJSONCodec(t *testing.T) {
 	}
 }
 
-func TestRegistryContextResolvers(t *testing.T) {
-	registry := NewRegistry()
-	ctx := WithRegistry(context.Background(), registry)
+func TestNewRegistryIsEmptyByDefault(t *testing.T) {
+	registry := ferretencoding.NewRegistry()
 
-	if _, err := CodecFrom(ctx, ContentTypeJSON); err != nil {
+	if _, err := registry.Codec(ferretencoding.ContentTypeJSON); !errors.Is(err, ferretencoding.ErrCodecNotFound) {
+		t.Fatalf("expected ErrCodecNotFound, got %v", err)
+	}
+}
+
+func TestRegistryContextResolvers(t *testing.T) {
+	registry := ferretencoding.NewRegistry(encodingjson.Default)
+	ctx := ferretencoding.WithRegistry(context.Background(), registry)
+
+	if _, err := ferretencoding.CodecFrom(ctx, ferretencoding.ContentTypeJSON); err != nil {
 		t.Fatalf("codec from context failed: %v", err)
 	}
 
-	if _, err := EncoderFrom(ctx, ContentTypeJSON); err != nil {
+	if _, err := ferretencoding.EncoderFrom(ctx, ferretencoding.ContentTypeJSON); err != nil {
 		t.Fatalf("encoder from context failed: %v", err)
 	}
 
-	if _, err := DecoderFrom(ctx, ContentTypeJSON); err != nil {
+	if _, err := ferretencoding.DecoderFrom(ctx, ferretencoding.ContentTypeJSON); err != nil {
 		t.Fatalf("decoder from context failed: %v", err)
 	}
 }
 
 func TestRegistryContextResolversError(t *testing.T) {
-	if _, err := CodecFrom(context.Background(), ContentTypeJSON); !errors.Is(err, ErrRegistryNotFound) {
+	if _, err := ferretencoding.CodecFrom(context.Background(), ferretencoding.ContentTypeJSON); !errors.Is(err, ferretencoding.ErrRegistryNotFound) {
 		t.Fatalf("expected ErrRegistryNotFound, got %v", err)
 	}
 
-	ctx := WithRegistry(context.Background(), NewEmptyRegistry())
-	if _, err := CodecFrom(ctx, ContentTypeJSON); !errors.Is(err, ErrCodecNotFound) {
+	ctx := ferretencoding.WithRegistry(context.Background(), ferretencoding.NewEmptyRegistry())
+	if _, err := ferretencoding.CodecFrom(ctx, ferretencoding.ContentTypeJSON); !errors.Is(err, ferretencoding.ErrCodecNotFound) {
 		t.Fatalf("expected ErrCodecNotFound, got %v", err)
 	}
 }
 
 func TestRegistryNormalizesContentType(t *testing.T) {
-	registry := NewEmptyRegistry()
-	if err := registry.Register("Application/X-Test; Charset=UTF-8", encodingjson.Codec{}); err != nil {
+	registry := ferretencoding.NewEmptyRegistry()
+	if err := registry.Register(contentTypeCodec{
+		Codec:       encodingjson.Codec{},
+		contentType: "Application/X-Test; Charset=UTF-8",
+	}); err != nil {
 		t.Fatalf("register failed: %v", err)
 	}
 

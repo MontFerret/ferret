@@ -37,7 +37,7 @@ func Run(p *bytecode.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
 	type Salt struct{}
 
 	ctx := context.WithValue(context.Background(), testSaltKey, &Salt{})
-	ctx = ferretencoding.WithRegistry(ctx, ferretencoding.NewRegistry())
+	ctx = ferretencoding.WithRegistry(ctx, ferretencoding.NewRegistry(encodingjson.Default))
 
 	out, err := instance.Run(ctx, env)
 

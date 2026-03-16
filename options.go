@@ -7,6 +7,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -32,6 +33,11 @@ type (
 	SessionOption = vm.EnvironmentOption
 )
 
+type encodingCodecAlias struct {
+	encoding.Codec
+	contentType string
+}
+
 const (
 	defaultMaxActiveSessions = 0 // 0 means no limit on active sessions.
 	defaultVMPoolSize        = 8
@@ -43,12 +49,16 @@ var (
 	WithSessionParam  = vm.WithParam
 )
 
+func (c encodingCodecAlias) ContentType() string {
+	return c.contentType
+}
+
 func newOptions(setters []Option) (*options, error) {
 	opts := &options{
 		compiler: []compiler.Option{},
 		library:  runtime.NewLibrary(),
 		params:   make(map[string]runtime.Value),
-		encoding: encoding.NewRegistry(),
+		encoding: encoding.NewRegistry(encodingjson.Default),
 		hooks:    newHookRegistry(),
 		logging: runtime.LogSettings{
 			Writer: os.Stdout,
@@ -195,11 +205,18 @@ func WithModules(module ...Module) Option {
 // WithEncodingCodec registers or overrides a codec for the given content type.
 func WithEncodingCodec(contentType string, codec encoding.Codec) Option {
 	return func(opts *options) error {
+		if codec == nil {
+			return encoding.ErrNilCodec
+		}
+
 		if opts.encoding == nil {
 			opts.encoding = encoding.NewRegistry()
 		}
 
-		return opts.encoding.Register(contentType, codec)
+		return opts.encoding.Register(encodingCodecAlias{
+			Codec:       codec,
+			contentType: contentType,
+		})
 	}
 }
 

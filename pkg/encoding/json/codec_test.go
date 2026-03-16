@@ -88,6 +88,22 @@ func (m *marshalerValue) MarshalJSON() ([]byte, error) {
 	return []byte(`{"custom":true}`), nil
 }
 
+type badValue struct {
+	Fn func()
+}
+
+func (b *badValue) String() string {
+	return "bad"
+}
+
+func (b *badValue) Hash() uint64 {
+	return 0
+}
+
+func (b *badValue) Copy() runtime.Value {
+	return b
+}
+
 func TestJSONCodecEncode(t *testing.T) {
 	codec := json.Default
 
@@ -238,6 +254,105 @@ func TestJSONCodecEncode(t *testing.T) {
 
 		if !reflect.DeepEqual(got, expected) {
 			t.Fatalf("expected %#v, got %#v", expected, got)
+		}
+	})
+}
+
+func TestJSONCodecEncodeHooks(t *testing.T) {
+	t.Run("hooks_run_in_order", func(t *testing.T) {
+		var order []string
+
+		config := json.Default.EncodeWith()
+		config.PreHook(func(value runtime.Value) error {
+			if value != runtime.NewInt(7) {
+				t.Fatalf("expected hook value 7, got %v", value)
+			}
+
+			order = append(order, "pre1")
+			return nil
+		})
+		config.PreHook(func(value runtime.Value) error {
+			if value != runtime.NewInt(7) {
+				t.Fatalf("expected hook value 7, got %v", value)
+			}
+
+			order = append(order, "pre2")
+			return nil
+		})
+		config.PostHook(func(value runtime.Value, err error) error {
+			if value != runtime.NewInt(7) {
+				t.Fatalf("expected hook value 7, got %v", value)
+			}
+
+			if err != nil {
+				t.Fatalf("expected successful encode, got %v", err)
+			}
+
+			order = append(order, "post")
+			return nil
+		})
+
+		out, err := config.Encoder().Encode(runtime.NewInt(7))
+		if err != nil {
+			t.Fatalf("encode failed: %v", err)
+		}
+
+		if string(out) != "7" {
+			t.Fatalf("expected 7, got %s", out)
+		}
+
+		expectedOrder := []string{"pre1", "pre2", "post"}
+		if !reflect.DeepEqual(order, expectedOrder) {
+			t.Fatalf("expected hook order %#v, got %#v", expectedOrder, order)
+		}
+	})
+
+	t.Run("post_hooks_receive_encode_errors", func(t *testing.T) {
+		var postErr error
+
+		config := json.Default.EncodeWith()
+		config.PostHook(func(_ runtime.Value, err error) error {
+			postErr = err
+			return nil
+		})
+
+		_, err := config.Encoder().Encode(&badValue{Fn: func() {}})
+		if err == nil {
+			t.Fatal("expected encode error")
+		}
+
+		if postErr == nil {
+			t.Fatal("expected post hook to receive encode error")
+		}
+
+		if postErr.Error() != err.Error() {
+			t.Fatalf("expected post hook error %q, got %q", err, postErr)
+		}
+	})
+
+	t.Run("configured_encoder_does_not_mutate_default", func(t *testing.T) {
+		calls := 0
+
+		config := json.Default.EncodeWith()
+		config.PreHook(func(_ runtime.Value) error {
+			calls++
+			return nil
+		})
+
+		if _, err := config.Encoder().Encode(runtime.NewInt(1)); err != nil {
+			t.Fatalf("configured encode failed: %v", err)
+		}
+
+		if calls != 1 {
+			t.Fatalf("expected configured encoder to invoke hook once, got %d", calls)
+		}
+
+		if _, err := json.Default.Encode(runtime.NewInt(2)); err != nil {
+			t.Fatalf("default encode failed: %v", err)
+		}
+
+		if calls != 1 {
+			t.Fatalf("expected default encoder to stay unmodified, got %d hook calls", calls)
 		}
 	})
 }
@@ -399,6 +514,115 @@ func TestJSONCodecDecode(t *testing.T) {
 		_, err := codec.Decode([]byte("1 2"))
 		if err == nil {
 			t.Fatalf("expected error")
+		}
+	})
+}
+
+func TestJSONCodecDecodeHooks(t *testing.T) {
+	t.Run("hooks_run_in_order", func(t *testing.T) {
+		input := []byte(`{"a":1}`)
+		var order []string
+
+		config := json.Default.DecodeWith()
+		config.PreHook(func(data []byte) error {
+			if string(data) != string(input) {
+				t.Fatalf("expected input %s, got %s", input, data)
+			}
+
+			order = append(order, "pre1")
+			return nil
+		})
+		config.PreHook(func(data []byte) error {
+			if string(data) != string(input) {
+				t.Fatalf("expected input %s, got %s", input, data)
+			}
+
+			order = append(order, "pre2")
+			return nil
+		})
+		config.PostHook(func(data []byte, err error) error {
+			if string(data) != string(input) {
+				t.Fatalf("expected input %s, got %s", input, data)
+			}
+
+			if err != nil {
+				t.Fatalf("expected successful decode, got %v", err)
+			}
+
+			order = append(order, "post")
+			return nil
+		})
+
+		value, err := config.Decoder().Decode(input)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+
+		expectedValue := runtime.NewObjectWith(map[string]runtime.Value{
+			"a": runtime.NewInt(1),
+		})
+
+		if runtime.CompareValues(value, expectedValue) != 0 {
+			t.Fatalf("expected decoded value %s, got %s", expectedValue, value)
+		}
+
+		expectedOrder := []string{"pre1", "pre2", "post"}
+		if !reflect.DeepEqual(order, expectedOrder) {
+			t.Fatalf("expected hook order %#v, got %#v", expectedOrder, order)
+		}
+	})
+
+	t.Run("post_hooks_receive_decode_errors", func(t *testing.T) {
+		input := []byte("{")
+		var postErr error
+
+		config := json.Default.DecodeWith()
+		config.PostHook(func(data []byte, err error) error {
+			if string(data) != string(input) {
+				t.Fatalf("expected input %s, got %s", input, data)
+			}
+
+			postErr = err
+			return nil
+		})
+
+		_, err := config.Decoder().Decode(input)
+		if err == nil {
+			t.Fatal("expected decode error")
+		}
+
+		if postErr == nil {
+			t.Fatal("expected post hook to receive decode error")
+		}
+
+		if postErr.Error() != err.Error() {
+			t.Fatalf("expected post hook error %q, got %q", err, postErr)
+		}
+	})
+
+	t.Run("configured_decoder_does_not_mutate_default", func(t *testing.T) {
+		calls := 0
+
+		config := json.Default.DecodeWith()
+		config.PreHook(func(_ []byte) error {
+			calls++
+			return nil
+		})
+
+		if _, err := config.Decoder().Decode([]byte("1")); err != nil {
+			t.Fatalf("configured decode failed: %v", err)
+		}
+
+		if calls != 1 {
+			t.Fatalf("expected configured decoder to invoke hook once, got %d", calls)
+		}
+
+		if _, err := json.Default.Decode([]byte("1")); err != nil {
+			t.Fatalf("default decode failed: %v", err)
+		}
+
+		if calls != 1 {
+			t.Fatalf("expected default decoder to stay unmodified, got %d hook calls", calls)
 		}
 	})
 }
