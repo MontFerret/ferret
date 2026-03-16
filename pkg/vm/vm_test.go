@@ -15,6 +15,7 @@ import (
 	rtdiagnostics "github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
+	"github.com/MontFerret/ferret/v2/pkg/vm/test"
 )
 
 func mustNewVM(t *testing.T, program *bytecode.Program, opts ...Option) *VM {
@@ -423,7 +424,7 @@ func TestRun_BenchmarkResultModeReusesHandleAfterClose(t *testing.T) {
 		},
 	}
 
-	instance := mustNewVM(t, program, WithBenchmarkResultMode())
+	instance := mustNewVM(t, program, WithTesting(test.WithBenchmarkMode()))
 	closers := []*trackingCloser{
 		newTrackingCloser("first"),
 		newTrackingCloser("second"),
@@ -488,7 +489,7 @@ func TestRun_BenchmarkResultModeRequiresCloseBeforeNextRun(t *testing.T) {
 		nil,
 		bytecode.NewInstruction(bytecode.OpLoadBool, bytecode.NewRegister(0), bytecode.Operand(1)),
 		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
-	), WithBenchmarkResultMode())
+	), WithTesting(test.WithBenchmarkMode()))
 
 	result := mustRunResult(t, instance, nil)
 

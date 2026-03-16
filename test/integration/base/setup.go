@@ -7,6 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/asm"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/vm/test"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -55,7 +56,7 @@ func prepareBenchmark(c *compiler.Compiler, expression string, vmOpts []vm.Optio
 }
 
 func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opts ...vm.EnvironmentOption) {
-	prog, instance, env := prepareBenchmark(c, expression, []vm.Option{vm.WithBenchmarkResultMode()}, opts...)
+	prog, instance, env := prepareBenchmark(c, expression, []vm.Option{vm.WithTesting(test.WithBenchmarkMode())}, opts...)
 	ctx := context.Background()
 
 	if testing.Verbose() {

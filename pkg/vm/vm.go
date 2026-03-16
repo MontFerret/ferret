@@ -10,16 +10,17 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
+	"github.com/MontFerret/ferret/v2/pkg/vm/test"
 )
 
 type VM struct {
-	cache           *mem.Cache
-	program         *bytecode.Program
-	benchmarkResult *Result
-	plan            execPlan
-	state           execState
-	options         options
-	closed          bool
+	options options
+	cache   *mem.Cache
+	program *bytecode.Program
+	plan    execPlan
+	state   execState
+	testing test.Testing[*Result]
+	closed  bool
 }
 
 func New(program *bytecode.Program) (*VM, error) {
@@ -36,16 +37,18 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 		return nil, err
 	}
 
-	o := newOptions(opts)
+	o, t := newOptions(opts)
 	vm := &VM{
 		cache:   mem.NewCache(len(program.Bytecode), len(plan.hostCallDescriptors), o.shapeCacheLimit),
 		program: program,
 		plan:    plan,
 		options: o,
+		testing: t,
 	}
 	vm.state.init(program)
-	if o.benchmarkResultMode {
-		vm.benchmarkResult = &Result{closed: true, root: runtime.None}
+
+	if vm.testing.Options.BenchmarkMode {
+		vm.testing.SetBenchmark(&Result{closed: true, root: runtime.None})
 	}
 
 	return vm, nil
@@ -56,7 +59,9 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (*Result, error) {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "vm is closed")
 	}
 
-	if vm.benchmarkResult != nil && !vm.benchmarkResult.closed {
+	bench := vm.testing.Benchmark
+
+	if bench != nil && !bench.closed {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "benchmark result must be closed before next run")
 	}
 
@@ -75,8 +80,8 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (*Result, error) {
 			return nil, err
 		}
 
-		if vm.benchmarkResult != nil {
-			return vm.state.finishRunInto(root, vm.benchmarkResult), nil
+		if bench != nil {
+			return vm.state.finishRunInto(root, bench), nil
 		}
 
 		return vm.state.finishRun(root), nil
@@ -87,8 +92,8 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (*Result, error) {
 			return nil, err
 		}
 
-		if vm.benchmarkResult != nil {
-			return vm.state.finishRunInto(root, vm.benchmarkResult), nil
+		if bench != nil {
+			return vm.state.finishRunInto(root, bench), nil
 		}
 
 		return vm.state.finishRun(root), nil
@@ -102,15 +107,13 @@ func (vm *VM) Close() error {
 	}
 
 	vm.closed = true
-	if vm.benchmarkResult != nil {
-		_ = vm.benchmarkResult.Close()
-		vm.benchmarkResult = nil
-	}
+	vm.testing.Close()
 	vm.state.endRun()
 	vm.cache = nil
 	vm.program = nil
 	vm.plan = execPlan{}
 	vm.state = execState{}
+	vm.testing = test.Testing[*Result]{}
 	vm.options = options{}
 
 	return nil
