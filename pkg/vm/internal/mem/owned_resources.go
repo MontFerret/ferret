@@ -8,11 +8,13 @@ import (
 )
 
 // OwnedResources tracks only direct register-held closers for a single frame.
-// Counts represent the number of live register aliases in the active frame for
-// each owned closer. It ignores values that cannot be tracked safely and is not
-// a general runtime lifetime manager.
+// Ownership is per resource, not per register slot: duplicate aliases in the
+// same frame still map to a single owned closer. The VM is responsible for
+// deciding when the last live register alias disappears before calling Discard.
+// OwnedResources ignores values that cannot be tracked safely and is not a
+// general runtime lifetime manager.
 type OwnedResources struct {
-	closers map[io.Closer]int
+	closers map[io.Closer]struct{}
 }
 
 func (o *OwnedResources) Track(val runtime.Value) {
@@ -22,33 +24,10 @@ func (o *OwnedResources) Track(val runtime.Value) {
 	}
 
 	if o.closers == nil {
-		o.closers = make(map[io.Closer]int)
+		o.closers = make(map[io.Closer]struct{})
 	}
 
-	o.closers[closer]++
-}
-
-func (o *OwnedResources) Forget(val runtime.Value) {
-	closer, ok := trackedCloserOf(val)
-	if !ok || o.closers == nil {
-		return
-	}
-
-	count, exists := o.closers[closer]
-	if !exists {
-		return
-	}
-
-	if count <= 1 {
-		delete(o.closers, closer)
-		if len(o.closers) == 0 {
-			o.closers = nil
-		}
-
-		return
-	}
-
-	o.closers[closer] = count - 1
+	o.closers[closer] = struct{}{}
 }
 
 func (o *OwnedResources) Owns(val runtime.Value) bool {
@@ -84,15 +63,15 @@ func (o *OwnedResources) Extract(val runtime.Value) bool {
 }
 
 // ExtractMany removes ownership tracking for the provided surviving values from
-// the current frame and reassigns the matching alias counts to dst. Duplicate
-// values retain their multiplicity in the destination frame, while dead aliases
-// in the retiring frame are dropped instead of being deferred.
+// the current frame and reassigns the matching owned closers to dst. Duplicate
+// values transfer ownership only once per closer, while dead aliases in the
+// retiring frame are dropped instead of being deferred.
 func (o *OwnedResources) ExtractMany(values []runtime.Value, dst *OwnedResources) {
 	if o.closers == nil || len(values) == 0 {
 		return
 	}
 
-	survivors := make(map[io.Closer]int)
+	survivors := make(map[io.Closer]struct{})
 
 	for _, val := range values {
 		closer, ok := trackedCloserOf(val)
@@ -104,7 +83,7 @@ func (o *OwnedResources) ExtractMany(values []runtime.Value, dst *OwnedResources
 			continue
 		}
 
-		survivors[closer]++
+		survivors[closer] = struct{}{}
 	}
 
 	if len(survivors) == 0 {
@@ -112,18 +91,14 @@ func (o *OwnedResources) ExtractMany(values []runtime.Value, dst *OwnedResources
 	}
 
 	if dst != nil && dst.closers == nil {
-		dst.closers = make(map[io.Closer]int)
+		dst.closers = make(map[io.Closer]struct{})
 	}
 
-	for closer, count := range survivors {
-		if ownedCount, exists := o.closers[closer]; exists && count > ownedCount {
-			count = ownedCount
-		}
-
+	for closer := range survivors {
 		delete(o.closers, closer)
 
 		if dst != nil {
-			dst.closers[closer] += count
+			dst.closers[closer] = struct{}{}
 		}
 	}
 
@@ -138,13 +113,7 @@ func (o *OwnedResources) Discard(val runtime.Value, deferred *DeferredClosers) {
 		return
 	}
 
-	count, exists := o.closers[closer]
-	if !exists {
-		return
-	}
-
-	if count > 1 {
-		o.closers[closer] = count - 1
+	if _, exists := o.closers[closer]; !exists {
 		return
 	}
 

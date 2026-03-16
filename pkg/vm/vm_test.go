@@ -1345,7 +1345,7 @@ func TestReturnToCaller_TransfersReturnedOwnedCloserToCaller(t *testing.T) {
 	}
 }
 
-func TestReturnToCaller_DoesNotOvercountExistingCallerAlias(t *testing.T) {
+func TestReturnToCaller_KeepsOwnershipWhileCallerAliasRemains(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Registers:  2,
@@ -1402,7 +1402,7 @@ func TestReturnToCaller_DoesNotOvercountExistingCallerAlias(t *testing.T) {
 	}
 }
 
-func TestReturnToCaller_DoesNotAddPhantomCountWhenDestinationAlreadyMatches(t *testing.T) {
+func TestReturnToCaller_MatchingDestinationDoesNotNeedExtraTracking(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Registers:  2,
@@ -1437,7 +1437,7 @@ func TestReturnToCaller_DoesNotAddPhantomCountWhenDestinationAlreadyMatches(t *t
 	state.writeBorrowedRegister(bytecode.NewRegister(1), runtime.None)
 
 	if state.owned.Owns(shared) {
-		t.Fatal("expected matching return destination not to add a phantom alias count")
+		t.Fatal("expected matching return destination not to require extra ownership tracking")
 	}
 
 	if got, want := countDeferredClosers(&state.deferred), 1; got != want {
@@ -1908,7 +1908,7 @@ func TestTailCallUdf_FreshWindowTransfersOwnedArgsAndClosesDiscardedValues(t *te
 	}
 }
 
-func TestTailCallUdf_DuplicateOwnedArgsKeepCloserLiveUntilLastAliasClears(t *testing.T) {
+func TestTailCallUdf_DuplicateOwnedArgsStayLiveUntilLastAliasClears(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Registers:  8,
@@ -1936,7 +1936,6 @@ func TestTailCallUdf_DuplicateOwnedArgsKeepCloserLiveUntilLastAliasClears(t *tes
 	reg := state.registers
 	reg[3] = shared
 	reg[4] = shared
-	state.owned.Track(shared)
 	state.owned.Track(shared)
 
 	state.frames.Push(frame.CallFrame{

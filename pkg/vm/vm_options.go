@@ -14,9 +14,8 @@ type (
 	}
 
 	configurator struct {
-		options
-
 		testing test.Testing[*Result]
+		options
 	}
 
 	Option func(*configurator)

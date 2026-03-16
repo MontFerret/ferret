@@ -6,10 +6,14 @@
 //     writeProducedRegister, become owned by the active frame.
 //   - Borrowed values do not become owned unless they are explicitly
 //     transferred.
+//   - Register overwrites defer an owned closer only after the VM confirms
+//     that no other live register slot in the active frame still aliases it.
 //   - Moving a value into a container or other external sink forfeits frame
 //     ownership.
 //   - Returns and tail-calls transfer ownership of surviving direct register
 //     values.
+//   - Explicit close and external sink transfer are terminal: stale aliases
+//     left behind in registers do not participate in later cleanup.
 //   - Register, window, and scratch storage only scrub slots to runtime.None;
 //     they never close values directly.
 //   - Automatic cleanup is intentionally limited to direct register-held

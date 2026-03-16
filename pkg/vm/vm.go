@@ -14,12 +14,12 @@ import (
 )
 
 type VM struct {
-	options options
 	cache   *mem.Cache
 	program *bytecode.Program
+	testing test.Testing[*Result]
 	plan    execPlan
 	state   execState
-	testing test.Testing[*Result]
+	options options
 	closed  bool
 }
 

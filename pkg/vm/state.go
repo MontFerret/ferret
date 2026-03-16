@@ -420,7 +420,7 @@ func (s *execState) returnToCaller(retVal runtime.Value) bool {
 	s.owned = frame.OwnedResources
 	if frame.ReturnDest.IsRegister() {
 		s.writeBorrowedRegister(frame.ReturnDest, retVal)
-		if retOwned && !s.owned.Owns(retVal) {
+		if retOwned {
 			s.owned.Track(retVal)
 		}
 	}
@@ -442,18 +442,45 @@ func (s *execState) setCallResult(pc int, op bytecode.Opcode, dst bytecode.Opera
 	s.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.None, true)
 }
 
+func (s *execState) hasLiveRegisterAliasExcept(slot bytecode.Operand, val runtime.Value) bool {
+	if !slot.IsRegister() {
+		return false
+	}
+
+	skip := slot.Register()
+	for idx, other := range s.registers {
+		if idx == skip {
+			continue
+		}
+
+		if mem.SameTrackedCloser(other, val) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (s *execState) discardOwnedRegisterValue(slot bytecode.Operand, val runtime.Value) {
+	if !slot.IsRegister() || !s.owned.Owns(val) {
+		return
+	}
+
+	if s.hasLiveRegisterAliasExcept(slot, val) {
+		return
+	}
+
+	s.owned.Discard(val, &s.deferred)
+}
+
 func (s *execState) writeBorrowedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
 	val = normalizeValue(val)
 
 	if dst.IsRegister() {
 		prev := s.registers[dst]
 		if !mem.SameTrackedCloser(prev, val) {
-			s.owned.Discard(prev, &s.deferred)
+			s.discardOwnedRegisterValue(dst, prev)
 			s.registers[dst] = val
-
-			if s.owned.Owns(val) {
-				s.owned.Track(val)
-			}
 		} else {
 			s.registers[dst] = val
 		}
@@ -468,7 +495,7 @@ func (s *execState) writeProducedRegister(dst bytecode.Operand, val runtime.Valu
 	if dst.IsRegister() {
 		prev := s.registers[dst]
 		if !mem.SameTrackedCloser(prev, val) {
-			s.owned.Discard(prev, &s.deferred)
+			s.discardOwnedRegisterValue(dst, prev)
 			s.registers[dst] = val
 		} else {
 			s.registers[dst] = val

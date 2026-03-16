@@ -6,26 +6,23 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func TestOwnedResourcesExtractManyPreservesDuplicateAliasCounts(t *testing.T) {
+func TestOwnedResourcesTrackIsIdempotent(t *testing.T) {
 	owned := OwnedResources{}
 	closer := newTestCloser("dup")
 
 	owned.Track(closer)
 	owned.Track(closer)
 
-	var dst OwnedResources
-	owned.ExtractMany([]runtime.Value{closer, closer}, &dst)
-
-	if got, want := dst.closers[closer], 2; got != want {
-		t.Fatalf("unexpected transferred alias count: got %d, want %d", got, want)
+	if !owned.Owns(closer) {
+		t.Fatal("expected tracked closer to remain owned")
 	}
 
-	if owned.closers != nil {
-		t.Fatalf("expected source ownership to be empty after transfer, got %+v", owned.closers)
+	if got, want := len(owned.closers), 1; got != want {
+		t.Fatalf("expected one owned closer after duplicate tracking, got %d", got)
 	}
 }
 
-func TestOwnedResourcesExtractManyRemovesTransferredClosersFromSourceDrain(t *testing.T) {
+func TestOwnedResourcesExtractManyTransfersUniqueClosers(t *testing.T) {
 	source := OwnedResources{}
 	transferred := newTestCloser("transferred")
 	discarded := newTestCloser("discarded")
@@ -37,15 +34,19 @@ func TestOwnedResourcesExtractManyRemovesTransferredClosersFromSourceDrain(t *te
 	var dst OwnedResources
 	source.ExtractMany([]runtime.Value{transferred, transferred}, &dst)
 
+	if !dst.Owns(transferred) {
+		t.Fatal("expected transferred closer to become owned by destination")
+	}
+
+	if got, want := len(dst.closers), 1; got != want {
+		t.Fatalf("expected one transferred closer in destination, got %d", got)
+	}
+
 	deferred := DeferredClosers{}
 	source.DrainTo(&deferred)
 
 	if got, want := len(deferred.closers), 1; got != want {
 		t.Fatalf("expected only discarded closer to remain deferred, got %d", got)
-	}
-
-	if got, want := dst.closers[transferred], 2; got != want {
-		t.Fatalf("unexpected transferred alias count after drain: got %d, want %d", got, want)
 	}
 
 	if err := deferred.CloseAll(); err != nil {
@@ -61,7 +62,7 @@ func TestOwnedResourcesExtractManyRemovesTransferredClosersFromSourceDrain(t *te
 	}
 }
 
-func TestOwnedResourcesReleaseIsTerminalForDuplicateAliases(t *testing.T) {
+func TestOwnedResourcesReleaseIsTerminalForStaleAliases(t *testing.T) {
 	owned := OwnedResources{}
 	closer := newTestCloser("dup")
 
@@ -78,7 +79,7 @@ func TestOwnedResourcesReleaseIsTerminalForDuplicateAliases(t *testing.T) {
 	}
 
 	if owned.Owns(closer) {
-		t.Fatal("expected release to retire ownership for all aliases")
+		t.Fatal("expected release to retire ownership for the closer")
 	}
 
 	deferred := DeferredClosers{}
