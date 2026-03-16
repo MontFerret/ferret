@@ -104,14 +104,18 @@ func (b *badValue) Copy() runtime.Value {
 	return b
 }
 
-func nestedArray(depth int) runtime.Value {
-	value := runtime.Value(runtime.NewInt(1))
+func nestedArrayWithLeaf(depth int, leaf runtime.Value) runtime.Value {
+	value := leaf
 
 	for i := 0; i < depth; i++ {
 		value = runtime.NewArrayWith(value)
 	}
 
 	return value
+}
+
+func nestedArray(depth int) runtime.Value {
+	return nestedArrayWithLeaf(depth, runtime.NewInt(1))
 }
 
 func nestedObject(depth int) runtime.Value {
@@ -257,7 +261,7 @@ func TestJSONCodecEncode(t *testing.T) {
 	})
 
 	t.Run("deeply_nested_object", func(t *testing.T) {
-		depth := 20_000
+		depth := 40_000
 
 		out, err := codec.Encode(nestedObject(depth))
 		if err != nil {
@@ -482,6 +486,51 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			if hookErr != err.Error() {
 				t.Fatalf("expected hook %d to receive %q, got %q", i, err, hookErr)
 			}
+		}
+	})
+
+	t.Run("fallback_root_hooks_run_once", func(t *testing.T) {
+		special := &iterOnly{items: []runtime.Value{runtime.NewString("leaf")}}
+		value := nestedArrayWithLeaf(32_768, special)
+
+		preCalls := 0
+		postCalls := 0
+
+		config := json.Default.EncodeWith()
+		config.PreHook(func(value runtime.Value) error {
+			if value == special {
+				preCalls++
+			}
+
+			return nil
+		})
+		config.PostHook(func(value runtime.Value, err error) error {
+			if value == special {
+				postCalls++
+			}
+
+			if err != nil {
+				t.Fatalf("expected successful encode, got %v", err)
+			}
+
+			return nil
+		})
+
+		out, err := config.Encoder().Encode(value)
+		if err != nil {
+			t.Fatalf("encode failed: %v", err)
+		}
+
+		if len(out) == 0 {
+			t.Fatal("expected encoded output")
+		}
+
+		if preCalls != 1 {
+			t.Fatalf("expected fallback root pre-hook once, got %d", preCalls)
+		}
+
+		if postCalls != 1 {
+			t.Fatalf("expected fallback root post-hook once, got %d", postCalls)
 		}
 	})
 
