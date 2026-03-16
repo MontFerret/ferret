@@ -35,8 +35,8 @@ func BenchmarkJSONCodecEncode(b *testing.B) {
 	codec := json.Default
 
 	cases := []struct {
-		name  string
 		value runtime.Value
+		name  string
 	}{
 		{name: "flat_array_1024", value: benchmarkFlatArray(1024)},
 		{name: "flat_object_256", value: benchmarkFlatObject(256)},
@@ -71,8 +71,8 @@ func BenchmarkJSONCodecDecode(b *testing.B) {
 	codec := json.Default
 
 	cases := []struct {
-		name  string
 		value runtime.Value
+		name  string
 	}{
 		{name: "flat_array_1024", value: benchmarkFlatArray(1024)},
 		{name: "flat_object_256", value: benchmarkFlatObject(256)},

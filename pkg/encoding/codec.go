@@ -13,8 +13,8 @@ type (
 	PostEncoderHook func(value runtime.Value, err error) error
 
 	EncoderConfigurer interface {
-		PreHook(PreEncoderHook)
-		PostHook(PostEncoderHook)
+		PreHook(PreEncoderHook) EncoderConfigurer
+		PostHook(PostEncoderHook) EncoderConfigurer
 		Encoder() Encoder
 	}
 
@@ -28,8 +28,8 @@ type (
 	PostDecoderHook func(data []byte, err error) error
 
 	DecoderConfigurer interface {
-		PreHook(PreDecoderHook)
-		PostHook(PostDecoderHook)
+		PreHook(PreDecoderHook) DecoderConfigurer
+		PostHook(PostDecoderHook) DecoderConfigurer
 		Decoder() Decoder
 	}
 
