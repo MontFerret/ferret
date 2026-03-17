@@ -14,7 +14,7 @@ var benchmarkMsgpackDecoded runtime.Value
 func benchmarkFlatArray(size int) runtime.Value {
 	values := make([]runtime.Value, size)
 
-	for i := range size {
+	for i := 0; i < size; i++ {
 		values[i] = runtime.NewInt(i)
 	}
 
@@ -24,7 +24,7 @@ func benchmarkFlatArray(size int) runtime.Value {
 func benchmarkFlatObject(size int) runtime.Value {
 	props := make(map[string]runtime.Value, size)
 
-	for i := range size {
+	for i := 0; i < size; i++ {
 		props[strconv.Itoa(i)] = runtime.NewInt(i)
 	}
 
