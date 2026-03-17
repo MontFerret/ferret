@@ -20,7 +20,16 @@ func NewRegistry(codecs ...Codec) *Registry {
 	registry := NewEmptyRegistry()
 
 	for _, codec := range codecs {
-		_ = registry.Register(codec)
+		if codec == nil {
+			// Preserve existing behavior for nil codecs (they are effectively ignored),
+			// but make this explicit instead of relying on a discarded error.
+			continue
+		}
+
+		if err := registry.Register(codec); err != nil {
+			// Fail fast on invalid seed codecs so configuration problems surface immediately.
+			panic(fmt.Sprintf("encoding.NewRegistry: failed to register codec for content type %q: %v", codec.ContentType(), err))
+		}
 	}
 
 	return registry
