@@ -159,18 +159,22 @@ func TestLifecycle_AliasesAcrossFrameBoundaries(t *testing.T) {
 	callerRegs[0] = callerResource
 	callerOwned := mem.OwnedResources{}
 	callerOwned.Track(callerResource)
+	callerAliases := mem.AliasTracker{}
+	if closer, ok := mem.TrackedCloserOf(callerResource); ok {
+		callerAliases.Inc(closer)
+	}
 
 	// Callee frame has passed-in arg (not owned) and its own resource
 	state.registers[0] = callerResource // borrowed arg
-	state.registers[1] = calleeResource
-	state.registers[2] = calleeResource
-	state.owned.Track(calleeResource)
+	state.writeProducedRegister(bytecode.NewRegister(1), calleeResource)
+	state.writeProducedRegister(bytecode.NewRegister(2), calleeResource)
 
 	state.frames.Push(frame.CallFrame{
 		ReturnPC:        10,
 		ReturnDest:      bytecode.NewRegister(1),
 		CallerRegisters: callerRegs,
 		OwnedResources:  callerOwned,
+		Aliases:         callerAliases,
 	})
 
 	// Clear one of callee's resource aliases

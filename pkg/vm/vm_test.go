@@ -1410,6 +1410,10 @@ func TestReturnToCaller_KeepsOwnershipWhileCallerAliasRemains(t *testing.T) {
 	callerRegs[0] = shared
 	callerOwned := mem.OwnedResources{}
 	callerOwned.Track(shared)
+	callerAliases := mem.AliasTracker{}
+	if closer, ok := mem.TrackedCloserOf(shared); ok {
+		callerAliases.Inc(closer)
+	}
 
 	activeRegs := mem.NewRegisterFile(1)
 	activeRegs[0] = shared
@@ -1421,6 +1425,7 @@ func TestReturnToCaller_KeepsOwnershipWhileCallerAliasRemains(t *testing.T) {
 		ReturnDest:      bytecode.NewRegister(1),
 		CallerRegisters: callerRegs,
 		OwnedResources:  callerOwned,
+		Aliases:         callerAliases,
 	})
 
 	if ok := state.returnToCaller(shared); !ok {

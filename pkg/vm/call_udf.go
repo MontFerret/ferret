@@ -122,6 +122,18 @@ func tailCallUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
 		s.owned = ownedArgs
 	}
 
+	// Rebuild alias counts from surviving owned args.
+	// Must iterate args (not owned) because multiple args may alias
+	// the same closer, and each register slot needs its own count.
+	s.aliases.Reset()
+
+	for _, arg := range args {
+		closer, ok := mem.TrackedCloserOf(arg)
+		if ok && s.owned.Owns(arg) {
+			s.aliases.Inc(closer)
+		}
+	}
+
 	s.pc = udf.Entry
 
 	return nil
@@ -136,6 +148,7 @@ func (s *execState) enterUdfCall(desc *callDescriptor, udf *bytecode.UDF) {
 		ReturnDest:       desc.Dst,
 		CallerRegisters:  s.registers,
 		OwnedResources:   s.owned,
+		Aliases:          s.aliases,
 		RecoveryBoundary: desc.RecoveryBoundary,
 		FnID:             desc.ID,
 		FnName:           desc.DisplayName,
@@ -143,6 +156,7 @@ func (s *execState) enterUdfCall(desc *callDescriptor, udf *bytecode.UDF) {
 		HasCallSite:      true,
 	})
 	s.owned = mem.OwnedResources{}
+	s.aliases = mem.AliasTracker{}
 	s.registers = newRegs
 	s.pc = udf.Entry
 }

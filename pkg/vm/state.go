@@ -3,6 +3,7 @@ package vm
 import (
 	"context"
 	"errors"
+	"io"
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -32,6 +33,7 @@ type (
 		catchByPC []int
 		registers mem.RegisterFile
 		owned     mem.OwnedResources
+		aliases   mem.AliasTracker
 		deferred  mem.DeferredClosers
 		failure   pendingFailure
 		pc        int
@@ -52,6 +54,7 @@ func (s *execState) init(program *bytecode.Program) {
 func (s *execState) startRun(env *Environment) error {
 	s.env = env
 	s.owned = mem.OwnedResources{}
+	s.aliases = mem.AliasTracker{}
 	s.deferred.Reset()
 	s.pc = 0
 	s.lastPC = -1
@@ -72,6 +75,7 @@ func (s *execState) endRun() {
 		s.windows.Release(s.registers)
 		s.registers = caller.CallerRegisters
 		s.owned = caller.OwnedResources
+		s.aliases = caller.Aliases
 	}
 
 	_ = s.deferred.CloseAll()
@@ -101,6 +105,7 @@ func (s *execState) finishRunInto(root runtime.Value, result *Result) *Result {
 
 func (s *execState) resetRunStorage() {
 	s.owned = mem.OwnedResources{}
+	s.aliases.Reset()
 	s.deferred.Reset()
 
 	s.registers.Reset()
@@ -389,6 +394,7 @@ func (s *execState) unwindToProtected() bool {
 		s.windows.Release(s.registers)
 		s.registers = frame.CallerRegisters
 		s.owned = frame.OwnedResources
+		s.aliases = frame.Aliases
 	}
 
 	frame, ok := s.frames.Pop()
@@ -400,6 +406,7 @@ func (s *execState) unwindToProtected() bool {
 	s.windows.Release(s.registers)
 	s.registers = frame.CallerRegisters
 	s.owned = frame.OwnedResources
+	s.aliases = frame.Aliases
 	if frame.ReturnDest.IsRegister() {
 		s.writeBorrowedRegister(frame.ReturnDest, runtime.None)
 	}
@@ -418,10 +425,16 @@ func (s *execState) returnToCaller(retVal runtime.Value) bool {
 	s.windows.Release(s.registers)
 	s.registers = frame.CallerRegisters
 	s.owned = frame.OwnedResources
+	s.aliases = frame.Aliases
 	if frame.ReturnDest.IsRegister() {
 		s.writeBorrowedRegister(frame.ReturnDest, retVal)
+
 		if retOwned {
 			s.owned.Track(retVal)
+
+			if closer, ok := mem.TrackedCloserOf(retVal); ok {
+				s.aliases.Inc(closer)
+			}
 		}
 	}
 	s.pc = frame.ReturnPC
@@ -442,35 +455,15 @@ func (s *execState) setCallResult(pc int, op bytecode.Opcode, dst bytecode.Opera
 	s.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.None, true)
 }
 
-func (s *execState) hasLiveRegisterAliasExcept(slot bytecode.Operand, val runtime.Value) bool {
-	if !slot.IsRegister() {
-		return false
-	}
-
-	skip := slot.Register()
-	for idx, other := range s.registers {
-		if idx == skip {
-			continue
-		}
-
-		if mem.SameTrackedCloser(other, val) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (s *execState) discardOwnedRegisterValue(slot bytecode.Operand, val runtime.Value) {
-	if !slot.IsRegister() || !s.owned.Owns(val) {
+// decAliasAndMaybeDiscard decrements the alias count for closer and, if no
+// live register aliases remain, discards the closer from owned resources.
+// This replaces the old O(n) register scan with an O(1) map lookup.
+func (s *execState) decAliasAndMaybeDiscard(closer io.Closer) {
+	if s.aliases.Dec(closer) > 0 {
 		return
 	}
 
-	if s.hasLiveRegisterAliasExcept(slot, val) {
-		return
-	}
-
-	s.owned.Discard(val, &s.deferred)
+	s.owned.DiscardCloser(closer, &s.deferred)
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -502,7 +495,7 @@ func (s *execState) discardOwnedRegisterValue(slot bytecode.Operand, val runtime
 //   - computed values that don't need tracking (numbers, strings, bools)
 //   - values from other registers (borrowed references)
 //
-// Fast path: if old value not owned, just write. No alias scan.
+// Fast path: if old value not owned, just write. No alias tracking needed.
 func (s *execState) writeBorrowedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
 	val = normalizeValue(val)
 
@@ -519,9 +512,12 @@ func (s *execState) writeBorrowedRegister(dst bytecode.Operand, val runtime.Valu
 		return val
 	}
 
-	// Cold path: prev is owned, check if it's still aliased elsewhere
-	if !mem.SameTrackedCloser(prev, val) {
-		s.discardOwnedRegisterValue(dst, prev)
+	// Cold path: prev is owned, decrement its alias count
+	prevCloser, _ := mem.TrackedCloserOf(prev)
+	newCloser, newOK := mem.TrackedCloserOf(val)
+
+	if !newOK || prevCloser != newCloser {
+		s.decAliasAndMaybeDiscard(prevCloser)
 	}
 
 	s.registers[dst] = val
@@ -535,7 +531,7 @@ func (s *execState) writeBorrowedRegister(dst bytecode.Operand, val runtime.Valu
 //   - created by VM instructions (streams, collectors, etc.)
 //
 // The value will be tracked for ownership and cleanup.
-// Fast path: if old value not owned, just write and track. No alias scan.
+// Fast path: if old value not owned, just write, track, and increment alias count.
 func (s *execState) writeProducedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
 	val = normalizeValue(val)
 
@@ -545,22 +541,34 @@ func (s *execState) writeProducedRegister(dst bytecode.Operand, val runtime.Valu
 	}
 
 	prev := s.registers[dst]
+	newCloser, newOK := mem.TrackedCloserOf(val)
 
-	// Hot path: if prev value is not owned, just overwrite and track new
-	// This is the common case for non-closer values
+	// Hot path: if prev value is not owned, just overwrite, track and inc alias
 	if !s.owned.Owns(prev) {
 		s.registers[dst] = val
 		s.owned.Track(val)
+
+		if newOK {
+			s.aliases.Inc(newCloser)
+		}
+
 		return val
 	}
 
-	// Cold path: prev is owned, check if it's still aliased elsewhere
-	if !mem.SameTrackedCloser(prev, val) {
-		s.discardOwnedRegisterValue(dst, prev)
+	// Cold path: prev is owned, decrement old alias count
+	prevCloser, _ := mem.TrackedCloserOf(prev)
+
+	if !newOK || prevCloser != newCloser {
+		s.decAliasAndMaybeDiscard(prevCloser)
 	}
 
 	s.registers[dst] = val
 	s.owned.Track(val)
+
+	if newOK {
+		s.aliases.Inc(newCloser)
+	}
+
 	return val
 }
 
@@ -570,14 +578,13 @@ func (s *execState) writeProducedRegister(dst bytecode.Operand, val runtime.Valu
 //   - you want to avoid aliasing complexity
 //
 // This is semantically a copy, but ownership stays with the value, not the slot.
+// If the copied value is an owned closer, its alias count is incremented.
 func (s *execState) copyRegister(dst, src bytecode.Operand) runtime.Value {
 	if !src.IsRegister() {
-		// Not a register source, fall back to borrowed write
 		return s.writeBorrowedRegister(dst, runtime.None)
 	}
 
 	if !dst.IsRegister() {
-		// Not a register destination, nothing to do
 		return s.registers[src]
 	}
 
@@ -587,15 +594,20 @@ func (s *execState) copyRegister(dst, src bytecode.Operand) runtime.Value {
 	// Hot path: if prev value is not owned, just overwrite
 	if !s.owned.Owns(prev) {
 		s.registers[dst] = val
+		s.incAliasIfOwned(val)
 		return val
 	}
 
-	// Cold path: prev is owned, check if it's still aliased elsewhere
-	if !mem.SameTrackedCloser(prev, val) {
-		s.discardOwnedRegisterValue(dst, prev)
+	// Cold path: prev is owned, decrement old alias count
+	prevCloser, _ := mem.TrackedCloserOf(prev)
+	newCloser, newOK := mem.TrackedCloserOf(val)
+
+	if !newOK || prevCloser != newCloser {
+		s.decAliasAndMaybeDiscard(prevCloser)
 	}
 
 	s.registers[dst] = val
+	s.incAliasIfOwned(val)
 	return val
 }
 
@@ -614,12 +626,23 @@ func (s *execState) clearRegister(dst bytecode.Operand) {
 		return
 	}
 
-	// Cold path: prev is owned, check if it's still aliased elsewhere
-	if prev != runtime.None {
-		s.discardOwnedRegisterValue(dst, prev)
+	// Cold path: prev is owned, decrement alias count
+	if closer, ok := mem.TrackedCloserOf(prev); ok {
+		s.decAliasAndMaybeDiscard(closer)
 	}
 
 	s.registers[dst] = runtime.None
+}
+
+// incAliasIfOwned increments the alias count for val if it is an owned tracked closer.
+func (s *execState) incAliasIfOwned(val runtime.Value) {
+	if !s.owned.Owns(val) {
+		return
+	}
+
+	if closer, ok := mem.TrackedCloserOf(val); ok {
+		s.aliases.Inc(closer)
+	}
 }
 
 func (s *execState) udfByID(id int) (*bytecode.UDF, error) {

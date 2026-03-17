@@ -162,6 +162,28 @@ func (o *OwnedResources) Release(val runtime.Value) (io.Closer, bool) {
 	return closer, true
 }
 
+// DiscardCloser removes ownership of an already-extracted io.Closer and
+// schedules it for deferred cleanup. Unlike Discard, this avoids a
+// redundant TrackedCloserOf call when the caller already holds the closer.
+func (o *OwnedResources) DiscardCloser(closer io.Closer, deferred *DeferredClosers) {
+	if o.closers == nil {
+		return
+	}
+
+	if _, exists := o.closers[closer]; !exists {
+		return
+	}
+
+	delete(o.closers, closer)
+	if len(o.closers) == 0 {
+		o.closers = nil
+	}
+
+	if deferred != nil {
+		deferred.AddCloser(closer)
+	}
+}
+
 func (o *OwnedResources) CloseAll() {
 	deferred := DeferredClosers{}
 	o.DrainTo(&deferred)
@@ -192,16 +214,3 @@ func TrackedCloserOf(val runtime.Value) (io.Closer, bool) {
 	return closer, true
 }
 
-func SameTrackedCloser(left, right runtime.Value) bool {
-	leftCloser, leftOK := TrackedCloserOf(left)
-	if !leftOK {
-		return false
-	}
-
-	rightCloser, rightOK := TrackedCloserOf(right)
-	if !rightOK {
-		return false
-	}
-
-	return leftCloser == rightCloser
-}
