@@ -25,7 +25,7 @@ func (e *encoderConfigurer) PreHook(hook encoding.PreEncoderHook) encoding.Encod
 }
 
 func (e *encoderConfigurer) PostHook(hook encoding.PostEncoderHook) encoding.EncoderConfigurer {
-	if hook == nil {
+	if hook != nil {
 		e.post = append(e.post, hook)
 	}
 
@@ -60,7 +60,7 @@ func (d *decoderConfigurer) PreHook(hook encoding.PreDecoderHook) encoding.Decod
 }
 
 func (d *decoderConfigurer) PostHook(hook encoding.PostDecoderHook) encoding.DecoderConfigurer {
-	if hook == nil {
+	if hook != nil {
 		d.post = append(d.post, hook)
 	}
 
