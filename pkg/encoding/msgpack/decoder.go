@@ -170,8 +170,8 @@ func (dec decoder) decodeMap(ctx context.Context, d *vmmsgpack.Decoder) (runtime
 }
 
 func appendArrayValue(arr *runtime.Array, value runtime.Value) {
-	// These unsafe views keep decode hot paths off interface-heavy container methods.
-	(*arrayView)(unsafe.Pointer(arr)).data = append((*arrayView)(unsafe.Pointer(arr)).data, value)
+	// Use the public mutator on runtime.Array instead of unsafe internal access.
+	arr.Push(value)
 }
 
 func setObjectValue(obj *runtime.Object, key string, value runtime.Value) {
@@ -179,7 +179,8 @@ func setObjectValue(obj *runtime.Object, key string, value runtime.Value) {
 		value = runtime.None
 	}
 
-	(*objectView)(unsafe.Pointer(obj)).data[key] = value
+	// Use the public mutator on runtime.Object instead of unsafe internal access.
+	obj.Set(key, value)
 }
 
 func isSignedIntCode(code byte) bool {
