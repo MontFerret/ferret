@@ -18,7 +18,7 @@ type OwnedResources struct {
 }
 
 func (o *OwnedResources) Track(val runtime.Value) {
-	closer, ok := trackedCloserOf(val)
+	closer, ok := TrackedCloserOf(val)
 	if !ok {
 		return
 	}
@@ -31,7 +31,7 @@ func (o *OwnedResources) Track(val runtime.Value) {
 }
 
 func (o *OwnedResources) Owns(val runtime.Value) bool {
-	closer, ok := trackedCloserOf(val)
+	closer, ok := TrackedCloserOf(val)
 	if !ok || o.closers == nil {
 		return false
 	}
@@ -44,7 +44,7 @@ func (o *OwnedResources) Owns(val runtime.Value) bool {
 // scheduling the closer for deferred cleanup. Use it when a value survives
 // frame teardown, for example as a return value or final result root.
 func (o *OwnedResources) Extract(val runtime.Value) bool {
-	closer, ok := trackedCloserOf(val)
+	closer, ok := TrackedCloserOf(val)
 	if !ok || o.closers == nil {
 		return false
 	}
@@ -74,7 +74,7 @@ func (o *OwnedResources) ExtractMany(values []runtime.Value, dst *OwnedResources
 	survivors := make(map[io.Closer]struct{})
 
 	for _, val := range values {
-		closer, ok := trackedCloserOf(val)
+		closer, ok := TrackedCloserOf(val)
 		if !ok {
 			continue
 		}
@@ -108,7 +108,7 @@ func (o *OwnedResources) ExtractMany(values []runtime.Value, dst *OwnedResources
 }
 
 func (o *OwnedResources) Discard(val runtime.Value, deferred *DeferredClosers) {
-	closer, ok := trackedCloserOf(val)
+	closer, ok := TrackedCloserOf(val)
 	if !ok || o.closers == nil {
 		return
 	}
@@ -142,7 +142,7 @@ func (o *OwnedResources) DrainTo(deferred *DeferredClosers) {
 }
 
 func (o *OwnedResources) Release(val runtime.Value) (io.Closer, bool) {
-	closer, ok := trackedCloserOf(val)
+	closer, ok := TrackedCloserOf(val)
 	if !ok || o.closers == nil {
 		return nil, false
 	}
@@ -178,7 +178,7 @@ func (o *OwnedResources) ForEach(fn func(io.Closer)) {
 	}
 }
 
-func trackedCloserOf(val runtime.Value) (io.Closer, bool) {
+func TrackedCloserOf(val runtime.Value) (io.Closer, bool) {
 	closer, ok := val.(io.Closer)
 	if !ok || closer == nil {
 		return nil, false
@@ -193,12 +193,12 @@ func trackedCloserOf(val runtime.Value) (io.Closer, bool) {
 }
 
 func SameTrackedCloser(left, right runtime.Value) bool {
-	leftCloser, leftOK := trackedCloserOf(left)
+	leftCloser, leftOK := TrackedCloserOf(left)
 	if !leftOK {
 		return false
 	}
 
-	rightCloser, rightOK := trackedCloserOf(right)
+	rightCloser, rightOK := TrackedCloserOf(right)
 	if !rightOK {
 		return false
 	}
