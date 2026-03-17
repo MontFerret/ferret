@@ -2,7 +2,6 @@ package mem
 
 import (
 	"io"
-	"reflect"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -200,17 +199,15 @@ func (o *OwnedResources) ForEach(fn func(io.Closer)) {
 	}
 }
 
+// TrackedCloserOf extracts an io.Closer from val if it implements the
+// interface. All closers entering ownership tracking are pointer-comparable
+// by construction (either native pointer types or *ManagedResource), so no
+// reflect-based comparability check is needed.
 func TrackedCloserOf(val runtime.Value) (io.Closer, bool) {
 	closer, ok := val.(io.Closer)
 	if !ok || closer == nil {
 		return nil, false
 	}
 
-	typ := reflect.TypeOf(closer)
-	if typ == nil || !typ.Comparable() {
-		return nil, false
-	}
-
 	return closer, true
 }
-

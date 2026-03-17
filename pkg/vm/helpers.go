@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
 func normalizeValue(val runtime.Value) runtime.Value {
@@ -96,6 +97,17 @@ func concatStrings(reg []runtime.Value, src1, src2 bytecode.Operand) runtime.Val
 	}
 
 	return runtime.NewString(b.String())
+}
+
+// unwrapManaged returns the inner value if val is a *ManagedResource,
+// otherwise returns val unchanged. Used at the Result boundary so callers
+// see the original value, not the wrapper.
+func unwrapManaged(val runtime.Value) runtime.Value {
+	if m, ok := val.(*mem.ManagedResource); ok {
+		return m.Unwrap()
+	}
+
+	return val
 }
 
 func maxUDFRegisters(udfs []bytecode.UDF) int {

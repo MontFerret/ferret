@@ -3,7 +3,6 @@ package mem
 import (
 	"errors"
 	"io"
-	"reflect"
 )
 
 // CloserSet is an ordered, deduplicated collection of comparable io.Closers.
@@ -15,13 +14,11 @@ type CloserSet struct {
 
 // Add inserts a closer into the set if it is non-nil, comparable, and not
 // already present. Returns true if the closer was actually added.
+// Add inserts a closer into the set if it is non-nil and not already present.
+// All closers are pointer-comparable by construction (either native pointer
+// types or *ManagedResource), so no reflect-based comparability check is needed.
 func (s *CloserSet) Add(closer io.Closer) bool {
 	if closer == nil {
-		return false
-	}
-
-	typ := reflect.TypeOf(closer)
-	if typ == nil || !typ.Comparable() {
 		return false
 	}
 

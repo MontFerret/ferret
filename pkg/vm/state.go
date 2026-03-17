@@ -534,6 +534,7 @@ func (s *execState) writeBorrowedRegister(dst bytecode.Operand, val runtime.Valu
 // Fast path: if old value not owned, just write, track, and increment alias count.
 func (s *execState) writeProducedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
 	val = normalizeValue(val)
+	val = mem.AdoptCloser(val)
 
 	if !dst.IsRegister() {
 		s.owned.Track(val)
