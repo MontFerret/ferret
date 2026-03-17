@@ -13,12 +13,12 @@ type DeferredClosers struct {
 }
 
 func (d *DeferredClosers) Add(val runtime.Value) {
-	closer, ok := TrackedCloserOf(val)
+	closer, ok := val.(io.Closer)
 	if !ok {
 		return
 	}
 
-	d.set.Add(closer)
+	d.AddCloser(closer)
 }
 
 func (d *DeferredClosers) AddCloser(closer io.Closer) {
