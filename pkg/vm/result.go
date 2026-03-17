@@ -95,7 +95,7 @@ func (r *Result) AdoptValue(val runtime.Value) {
 		return
 	}
 
-	closer, ok := mem.TrackedCloserOf(val)
+	closer, ok := val.(io.Closer)
 	if !ok {
 		return
 	}
