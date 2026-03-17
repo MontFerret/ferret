@@ -367,7 +367,7 @@ loop:
 
 			state.setProducedOrRaiseDefault(pc, dst, out, err)
 		case bytecode.OpMove:
-			state.writeBorrowedRegister(dst, reg[src1])
+			state.copyRegister(dst, src1)
 		case bytecode.OpLoadNone:
 			state.writeBorrowedRegister(dst, runtime.None)
 		case bytecode.OpLoadBool:

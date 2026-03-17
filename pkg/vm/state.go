@@ -473,38 +473,153 @@ func (s *execState) discardOwnedRegisterValue(slot bytecode.Operand, val runtime
 	s.owned.Discard(val, &s.deferred)
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Register Write Discipline
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// These are the ONLY legal ways to mutate register state.
+// Direct reg[i] = v assignments are forbidden outside these helpers.
+//
+// Each helper encodes ownership semantics and ensures correct cleanup:
+//
+//   writeBorrowedRegister(dst, val)   - Write a borrowed/untracked value
+//   writeProducedRegister(dst, val)   - Write a produced/owned value
+//   copyRegister(dst, src)            - Copy register value (ownership follows value)
+//   clearRegister(dst)                - Clear register to None
+//
+// Hot path optimization:
+//   - Most register writes don't involve closers
+//   - Check if old value is owned FIRST (cheap map lookup)
+//   - Only scan for aliases when overwriting an owned closer
+//   - Early return on common non-closer case
+//
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// writeBorrowedRegister writes a borrowed (not owned) value to a register.
+// Use this for values that are:
+//   - constants
+//   - parameters
+//   - computed values that don't need tracking (numbers, strings, bools)
+//   - values from other registers (borrowed references)
+//
+// Fast path: if old value not owned, just write. No alias scan.
 func (s *execState) writeBorrowedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
 	val = normalizeValue(val)
 
-	if dst.IsRegister() {
-		prev := s.registers[dst]
-		if !mem.SameTrackedCloser(prev, val) {
-			s.discardOwnedRegisterValue(dst, prev)
-			s.registers[dst] = val
-		} else {
-			s.registers[dst] = val
-		}
+	if !dst.IsRegister() {
+		return val
 	}
 
+	prev := s.registers[dst]
+
+	// Hot path: if prev value is not owned, just overwrite
+	// This is the common case for non-closer values
+	if !s.owned.Owns(prev) {
+		s.registers[dst] = val
+		return val
+	}
+
+	// Cold path: prev is owned, check if it's still aliased elsewhere
+	if !mem.SameTrackedCloser(prev, val) {
+		s.discardOwnedRegisterValue(dst, prev)
+	}
+
+	s.registers[dst] = val
 	return val
 }
 
+// writeProducedRegister writes a produced (owned) value to a register.
+// Use this for values that are:
+//   - newly allocated objects (arrays, objects, iterators)
+//   - returned from host functions
+//   - created by VM instructions (streams, collectors, etc.)
+//
+// The value will be tracked for ownership and cleanup.
+// Fast path: if old value not owned, just write and track. No alias scan.
 func (s *execState) writeProducedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
 	val = normalizeValue(val)
 
-	if dst.IsRegister() {
-		prev := s.registers[dst]
-		if !mem.SameTrackedCloser(prev, val) {
-			s.discardOwnedRegisterValue(dst, prev)
-			s.registers[dst] = val
-		} else {
-			s.registers[dst] = val
-		}
+	if !dst.IsRegister() {
+		s.owned.Track(val)
+		return val
 	}
 
-	s.owned.Track(val)
+	prev := s.registers[dst]
 
+	// Hot path: if prev value is not owned, just overwrite and track new
+	// This is the common case for non-closer values
+	if !s.owned.Owns(prev) {
+		s.registers[dst] = val
+		s.owned.Track(val)
+		return val
+	}
+
+	// Cold path: prev is owned, check if it's still aliased elsewhere
+	if !mem.SameTrackedCloser(prev, val) {
+		s.discardOwnedRegisterValue(dst, prev)
+	}
+
+	s.registers[dst] = val
+	s.owned.Track(val)
 	return val
+}
+
+// copyRegister moves a value from one register to another, transferring ownership if any.
+// Use this for explicit register moves (OpMove) where:
+//   - source register will be overwritten or cleared soon
+//   - you want to avoid aliasing complexity
+//
+// This is semantically a copy, but ownership stays with the value, not the slot.
+func (s *execState) copyRegister(dst, src bytecode.Operand) runtime.Value {
+	if !src.IsRegister() {
+		// Not a register source, fall back to borrowed write
+		return s.writeBorrowedRegister(dst, runtime.None)
+	}
+
+	if !dst.IsRegister() {
+		// Not a register destination, nothing to do
+		return s.registers[src]
+	}
+
+	val := s.registers[src]
+	prev := s.registers[dst]
+
+	// Hot path: if prev value is not owned, just overwrite
+	if !s.owned.Owns(prev) {
+		s.registers[dst] = val
+		return val
+	}
+
+	// Cold path: prev is owned, check if it's still aliased elsewhere
+	if !mem.SameTrackedCloser(prev, val) {
+		s.discardOwnedRegisterValue(dst, prev)
+	}
+
+	s.registers[dst] = val
+	return val
+}
+
+// clearRegister clears a register, setting it to None and discarding any owned value.
+// Use this for explicit register cleanup when you don't need to set a new value.
+func (s *execState) clearRegister(dst bytecode.Operand) {
+	if !dst.IsRegister() {
+		return
+	}
+
+	prev := s.registers[dst]
+
+	// Hot path: if prev value is not owned, just clear
+	if !s.owned.Owns(prev) {
+		s.registers[dst] = runtime.None
+		return
+	}
+
+	// Cold path: prev is owned, check if it's still aliased elsewhere
+	if prev != runtime.None {
+		s.discardOwnedRegisterValue(dst, prev)
+	}
+
+	s.registers[dst] = runtime.None
 }
 
 func (s *execState) udfByID(id int) (*bytecode.UDF, error) {
