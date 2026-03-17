@@ -1,9 +1,7 @@
 package vm
 
 import (
-	"errors"
 	"io"
-	"reflect"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
@@ -16,8 +14,7 @@ type (
 	// Materialize for a final ownership-aware conversion.
 	Result struct {
 		root         runtime.Value
-		seen         map[io.Closer]struct{}
-		closers      []io.Closer
+		set          mem.CloserSet
 		closed       bool
 		materialized bool
 	}
@@ -43,8 +40,7 @@ func newResult(root runtime.Value) *Result {
 
 func (r *Result) reset(root runtime.Value) {
 	r.root = normalizeValue(root)
-	r.closers = nil
-	r.seen = nil
+	r.set.Reset()
 	r.closed = false
 	r.materialized = false
 }
@@ -99,12 +95,12 @@ func (r *Result) AdoptValue(val runtime.Value) {
 		return
 	}
 
-	closer, ok := comparableCloserOf(val)
+	closer, ok := val.(io.Closer)
 	if !ok {
 		return
 	}
 
-	r.AdoptCloser(closer)
+	r.set.Add(closer)
 }
 
 func (r *Result) AdoptCloser(closer io.Closer) {
@@ -112,21 +108,7 @@ func (r *Result) AdoptCloser(closer io.Closer) {
 		return
 	}
 
-	comparable, ok := comparableCloser(closer)
-	if !ok {
-		return
-	}
-
-	if r.seen == nil {
-		r.seen = make(map[io.Closer]struct{})
-	}
-
-	if _, exists := r.seen[comparable]; exists {
-		return
-	}
-
-	r.seen[comparable] = struct{}{}
-	r.closers = append(r.closers, comparable)
+	r.set.Add(closer)
 }
 
 func (r *Result) adoptOwned(owned *mem.OwnedResources) {
@@ -135,7 +117,7 @@ func (r *Result) adoptOwned(owned *mem.OwnedResources) {
 	}
 
 	owned.ForEach(func(closer io.Closer) {
-		r.AdoptCloser(closer)
+		r.set.Add(closer)
 	})
 }
 
@@ -145,7 +127,7 @@ func (r *Result) adoptDeferred(deferred *mem.DeferredClosers) {
 	}
 
 	deferred.ForEach(func(closer io.Closer) {
-		r.AdoptCloser(closer)
+		r.set.Add(closer)
 	})
 }
 
@@ -156,39 +138,9 @@ func (r *Result) Close() error {
 
 	r.closed = true
 
-	var err error
-
-	for _, closer := range r.closers {
-		if e := closer.Close(); e != nil {
-			err = errors.Join(err, e)
-		}
-	}
+	err := r.set.CloseAll()
 
 	r.root = runtime.None
-	r.closers = nil
-	r.seen = nil
 
 	return err
-}
-
-func comparableCloserOf(val runtime.Value) (io.Closer, bool) {
-	closer, ok := val.(io.Closer)
-	if !ok {
-		return nil, false
-	}
-
-	return comparableCloser(closer)
-}
-
-func comparableCloser(closer io.Closer) (io.Closer, bool) {
-	if closer == nil {
-		return nil, false
-	}
-
-	typ := reflect.TypeOf(closer)
-	if typ == nil || !typ.Comparable() {
-		return nil, false
-	}
-
-	return closer, true
 }

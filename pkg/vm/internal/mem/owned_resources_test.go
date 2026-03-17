@@ -45,7 +45,7 @@ func TestOwnedResourcesExtractManyTransfersUniqueClosers(t *testing.T) {
 	deferred := DeferredClosers{}
 	source.DrainTo(&deferred)
 
-	if got, want := len(deferred.closers), 1; got != want {
+	if got, want := deferred.set.Len(), 1; got != want {
 		t.Fatalf("expected only discarded closer to remain deferred, got %d", got)
 	}
 
@@ -86,7 +86,7 @@ func TestOwnedResourcesReleaseIsTerminalForStaleAliases(t *testing.T) {
 	owned.Discard(closer, &deferred)
 	owned.DrainTo(&deferred)
 
-	if got := len(deferred.closers); got != 0 {
+	if got := deferred.set.Len(); got != 0 {
 		t.Fatalf("expected release to keep stale aliases out of deferred cleanup, got %d closers", got)
 	}
 
