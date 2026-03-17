@@ -3,7 +3,6 @@ package msgpack
 import (
 	"context"
 	"fmt"
-	"unsafe"
 
 	vmmsgpack "github.com/vmihailenco/msgpack/v5"
 	"github.com/vmihailenco/msgpack/v5/msgpcode"
