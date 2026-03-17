@@ -209,7 +209,14 @@ func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
 			return nil
 		}
 
-		session.envOptions = append(session.envOptions, opts...)
+		for _, opt := range opts {
+			if opt == nil {
+				continue
+			}
+
+			session.envOptions = append(session.envOptions, opt)
+		}
+
 		return nil
 	}
 }
