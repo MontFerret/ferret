@@ -1,9 +1,7 @@
 package mem
 
 import (
-	"errors"
 	"io"
-	"reflect"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -11,39 +9,20 @@ import (
 // DeferredClosers tracks discarded direct closers until a result or failed run
 // drains them.
 type DeferredClosers struct {
-	seen    map[io.Closer]struct{}
-	closers []io.Closer
+	set CloserSet
 }
 
 func (d *DeferredClosers) Add(val runtime.Value) {
-	closer, ok := trackedCloserOf(val)
+	closer, ok := TrackedCloserOf(val)
 	if !ok {
 		return
 	}
 
-	d.AddCloser(closer)
+	d.set.Add(closer)
 }
 
 func (d *DeferredClosers) AddCloser(closer io.Closer) {
-	if closer == nil {
-		return
-	}
-
-	typ := reflect.TypeOf(closer)
-	if typ == nil || !typ.Comparable() {
-		return
-	}
-
-	if d.seen == nil {
-		d.seen = make(map[io.Closer]struct{})
-	}
-
-	if _, exists := d.seen[closer]; exists {
-		return
-	}
-
-	d.seen[closer] = struct{}{}
-	d.closers = append(d.closers, closer)
+	d.set.Add(closer)
 }
 
 func (d *DeferredClosers) Merge(other *DeferredClosers) {
@@ -51,38 +30,17 @@ func (d *DeferredClosers) Merge(other *DeferredClosers) {
 		return
 	}
 
-	for _, closer := range other.closers {
-		d.AddCloser(closer)
-	}
-
-	other.Reset()
+	d.set.Merge(&other.set)
 }
 
 func (d *DeferredClosers) CloseAll() error {
-	var err error
-
-	for _, closer := range d.closers {
-		if closeErr := closer.Close(); closeErr != nil {
-			err = errors.Join(err, closeErr)
-		}
-	}
-
-	d.Reset()
-
-	return err
+	return d.set.CloseAll()
 }
 
 func (d *DeferredClosers) ForEach(fn func(io.Closer)) {
-	if fn == nil {
-		return
-	}
-
-	for _, closer := range d.closers {
-		fn(closer)
-	}
+	d.set.ForEach(fn)
 }
 
 func (d *DeferredClosers) Reset() {
-	d.closers = nil
-	d.seen = nil
+	d.set.Reset()
 }
