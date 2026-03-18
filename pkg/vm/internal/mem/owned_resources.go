@@ -13,47 +13,47 @@ import (
 // OwnedResources ignores values that cannot be tracked safely and is not a
 // general runtime lifetime manager.
 type OwnedResources struct {
-	closers map[io.Closer]struct{}
+	closers map[ResourceKey]io.Closer
 }
 
 func (o *OwnedResources) Track(val runtime.Value) {
-	closer, ok := TrackedCloserOf(val)
+	key, closer, ok := ResourceKeyOf(val)
 	if !ok {
 		return
 	}
 
 	if o.closers == nil {
-		o.closers = make(map[io.Closer]struct{})
+		o.closers = make(map[ResourceKey]io.Closer)
 	}
 
-	o.closers[closer] = struct{}{}
+	o.closers[key] = closer
 }
 
 func (o *OwnedResources) Owns(val runtime.Value) bool {
-	closer, ok := TrackedCloserOf(val)
+	key, _, ok := ResourceKeyOf(val)
 	if !ok || o.closers == nil {
 		return false
 	}
 
-	_, ok = o.closers[closer]
-	return ok
+	_, exists := o.closers[key]
+	return exists
 }
 
 // Extract removes all ownership tracking for val from the current frame without
 // scheduling the closer for deferred cleanup. Use it when a value survives
 // frame teardown, for example as a return value or final result root.
 func (o *OwnedResources) Extract(val runtime.Value) bool {
-	closer, ok := TrackedCloserOf(val)
+	key, _, ok := ResourceKeyOf(val)
 	if !ok || o.closers == nil {
 		return false
 	}
 
-	_, exists := o.closers[closer]
+	_, exists := o.closers[key]
 	if !exists {
 		return false
 	}
 
-	delete(o.closers, closer)
+	delete(o.closers, key)
 	if len(o.closers) == 0 {
 		o.closers = nil
 	}
@@ -63,26 +63,27 @@ func (o *OwnedResources) Extract(val runtime.Value) bool {
 
 // ExtractMany removes ownership tracking for the provided surviving values from
 // the current frame and reassigns the matching owned closers to dst. Duplicate
-// values transfer ownership only once per closer, while dead aliases in the
+// values transfer ownership only once per resource, while dead aliases in the
 // retiring frame are dropped instead of being deferred.
 func (o *OwnedResources) ExtractMany(values []runtime.Value, dst *OwnedResources) {
 	if o.closers == nil || len(values) == 0 {
 		return
 	}
 
-	survivors := make(map[io.Closer]struct{})
+	survivors := make(map[ResourceKey]io.Closer)
 
 	for _, val := range values {
-		closer, ok := TrackedCloserOf(val)
+		key, _, ok := ResourceKeyOf(val)
 		if !ok {
 			continue
 		}
 
-		if _, exists := o.closers[closer]; !exists {
+		closer, exists := o.closers[key]
+		if !exists {
 			continue
 		}
 
-		survivors[closer] = struct{}{}
+		survivors[key] = closer
 	}
 
 	if len(survivors) == 0 {
@@ -90,14 +91,14 @@ func (o *OwnedResources) ExtractMany(values []runtime.Value, dst *OwnedResources
 	}
 
 	if dst != nil && dst.closers == nil {
-		dst.closers = make(map[io.Closer]struct{})
+		dst.closers = make(map[ResourceKey]io.Closer)
 	}
 
-	for closer := range survivors {
-		delete(o.closers, closer)
+	for key, closer := range survivors {
+		delete(o.closers, key)
 
 		if dst != nil {
-			dst.closers[closer] = struct{}{}
+			dst.closers[key] = closer
 		}
 	}
 
@@ -107,16 +108,17 @@ func (o *OwnedResources) ExtractMany(values []runtime.Value, dst *OwnedResources
 }
 
 func (o *OwnedResources) Discard(val runtime.Value, deferred *DeferredClosers) {
-	closer, ok := TrackedCloserOf(val)
+	key, _, ok := ResourceKeyOf(val)
 	if !ok || o.closers == nil {
 		return
 	}
 
-	if _, exists := o.closers[closer]; !exists {
+	closer, exists := o.closers[key]
+	if !exists {
 		return
 	}
 
-	delete(o.closers, closer)
+	delete(o.closers, key)
 	if len(o.closers) == 0 {
 		o.closers = nil
 	}
@@ -132,7 +134,7 @@ func (o *OwnedResources) DrainTo(deferred *DeferredClosers) {
 	}
 
 	if deferred != nil {
-		for closer := range o.closers {
+		for _, closer := range o.closers {
 			deferred.AddCloser(closer)
 		}
 	}
@@ -141,19 +143,20 @@ func (o *OwnedResources) DrainTo(deferred *DeferredClosers) {
 }
 
 func (o *OwnedResources) Release(val runtime.Value) (io.Closer, bool) {
-	closer, ok := TrackedCloserOf(val)
+	key, _, ok := ResourceKeyOf(val)
 	if !ok || o.closers == nil {
 		return nil, false
 	}
 
-	if _, exists := o.closers[closer]; !exists {
+	closer, exists := o.closers[key]
+	if !exists {
 		return nil, false
 	}
 
 	// Release is terminal for explicit close, not a generic ref-count decrement:
 	// once one alias is closed, the closer is retired from ownership tracking so
 	// stale aliases cannot close it again during later cleanup.
-	delete(o.closers, closer)
+	delete(o.closers, key)
 	if len(o.closers) == 0 {
 		o.closers = nil
 	}
@@ -161,19 +164,19 @@ func (o *OwnedResources) Release(val runtime.Value) (io.Closer, bool) {
 	return closer, true
 }
 
-// DiscardCloser removes ownership of an already-extracted io.Closer and
-// schedules it for deferred cleanup. Unlike Discard, this avoids a
-// redundant TrackedCloserOf call when the caller already holds the closer.
-func (o *OwnedResources) DiscardCloser(closer io.Closer, deferred *DeferredClosers) {
+// DiscardByKey removes ownership of a resource by its pre-resolved key and
+// schedules the closer for deferred cleanup. Unlike Discard, this avoids a
+// redundant ResourceKeyOf call when the caller already holds the key.
+func (o *OwnedResources) DiscardByKey(key ResourceKey, closer io.Closer, deferred *DeferredClosers) {
 	if o.closers == nil {
 		return
 	}
 
-	if _, exists := o.closers[closer]; !exists {
+	if _, exists := o.closers[key]; !exists {
 		return
 	}
 
-	delete(o.closers, closer)
+	delete(o.closers, key)
 	if len(o.closers) == 0 {
 		o.closers = nil
 	}
@@ -194,15 +197,16 @@ func (o *OwnedResources) ForEach(fn func(io.Closer)) {
 		return
 	}
 
-	for closer := range o.closers {
+	for _, closer := range o.closers {
 		fn(closer)
 	}
 }
 
 // TrackedCloserOf extracts an io.Closer from val if it implements the
-// interface. All closers entering ownership tracking are pointer-comparable
-// by construction (either native pointer types or *ManagedResource), so no
-// reflect-based comparability check is needed.
+// interface. Tracked closers are pointer-comparable by construction
+// (pointer-receiver io.Closer or runtime.Resource implementations).
+//
+// Deprecated: prefer ResourceKeyOf when the ResourceKey is also needed.
 func TrackedCloserOf(val runtime.Value) (io.Closer, bool) {
 	closer, ok := val.(io.Closer)
 	if !ok || closer == nil {

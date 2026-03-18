@@ -369,19 +369,19 @@ loop:
 		case bytecode.OpMove:
 			state.copyRegister(dst, src1)
 		case bytecode.OpLoadNone:
-			state.writeBorrowedRegister(dst, runtime.None)
+			reg[dst] = runtime.None
 		case bytecode.OpLoadBool:
-			state.writeBorrowedRegister(dst, runtime.Boolean(src1 == 1))
+			reg[dst] = runtime.Boolean(src1 == 1)
 		case bytecode.OpLoadZero:
-			state.writeBorrowedRegister(dst, runtime.ZeroInt)
+			reg[dst] = runtime.ZeroInt
 		case bytecode.OpLoadConst:
-			state.writeBorrowedRegister(dst, constants[src1.Constant()])
+			reg[dst] = constants[src1.Constant()]
 		case bytecode.OpLoadParam:
 			state.writeBorrowedRegister(dst, paramSlots[int(src1)-1])
 		case bytecode.OpLoadArray:
-			state.writeBorrowedRegister(dst, runtime.NewArray(int(src1)))
+			reg[dst] = runtime.NewArray(int(src1))
 		case bytecode.OpLoadObject:
-			state.writeBorrowedRegister(dst, data.NewFastObjectOf(shapeCache, vm.options.fastObjectDictThreshold, int(src1)))
+			reg[dst] = data.NewFastObjectOf(shapeCache, vm.options.fastObjectDictThreshold, int(src1))
 		case bytecode.OpLoadRange:
 			start, err := runtime.ToInt(ctx, reg[src1])
 
@@ -397,7 +397,7 @@ loop:
 				break
 			}
 
-			state.writeBorrowedRegister(dst, runtime.NewRange(start, end))
+			reg[dst] = runtime.NewRange(start, end)
 		case bytecode.OpLoadIndex, bytecode.OpLoadIndexOptional:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadIndexOptional
@@ -446,7 +446,7 @@ loop:
 				break
 			}
 
-			state.owned.Discard(reg[src1], &state.deferred)
+			state.retireOwnership(reg[src1])
 		case bytecode.OpPushKV:
 			tr := reg[dst].(runtime.KeyWritable)
 
@@ -455,13 +455,13 @@ loop:
 				break
 			}
 
-			state.owned.Discard(reg[src1], &state.deferred)
-			state.owned.Discard(reg[src2], &state.deferred)
+			state.retireOwnership(reg[src1])
+			state.retireOwnership(reg[src2])
 		case bytecode.OpArrayPush:
 			ds := reg[dst].(*runtime.Array)
 
 			_ = ds.Append(ctx, reg[src1])
-			state.owned.Discard(reg[src1], &state.deferred)
+			state.retireOwnership(reg[src1])
 		case bytecode.OpObjectSet:
 			key := runtime.ToString(reg[src1])
 			value := reg[src2]
@@ -469,7 +469,7 @@ loop:
 
 			if ok {
 				_ = obj.Set(ctx, key, value)
-				state.owned.Discard(value, &state.deferred)
+				state.retireOwnership(value)
 				continue
 			}
 
@@ -481,7 +481,7 @@ loop:
 					break
 				}
 
-				state.owned.Discard(value, &state.deferred)
+				state.retireOwnership(value)
 				continue
 			}
 
@@ -494,7 +494,7 @@ loop:
 
 			if obj, ok := objVal.(*data.FastObject); ok {
 				vm.objectSetConstCached(inst, obj, key, value)
-				state.owned.Discard(value, &state.deferred)
+				state.retireOwnership(value)
 				continue
 			}
 
@@ -506,7 +506,7 @@ loop:
 					break
 				}
 
-				state.owned.Discard(value, &state.deferred)
+				state.retireOwnership(value)
 				continue
 			}
 
@@ -662,73 +662,73 @@ loop:
 
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpAdd:
-			state.writeBorrowedRegister(dst, runtime.Add(ctx, reg[src1], reg[src2]))
+			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
 		case bytecode.OpAddConst:
-			state.writeBorrowedRegister(dst, runtime.Add(ctx, reg[src1], constants[src2.Constant()]))
+			reg[dst] = runtime.Add(ctx, reg[src1], constants[src2.Constant()])
 		case bytecode.OpConcat:
-			state.writeBorrowedRegister(dst, concatStrings(reg, src1, src2))
+			reg[dst] = concatStrings(reg, src1, src2)
 		case bytecode.OpSub:
-			state.writeBorrowedRegister(dst, runtime.Subtract(ctx, reg[src1], reg[src2]))
+			reg[dst] = runtime.Subtract(ctx, reg[src1], reg[src2])
 		case bytecode.OpMul:
-			state.writeBorrowedRegister(dst, runtime.Multiply(ctx, reg[src1], reg[src2]))
+			reg[dst] = runtime.Multiply(ctx, reg[src1], reg[src2])
 		case bytecode.OpDiv:
 			if err := state.checkDivisionByZeroAt(ctx, pc, reg[src1], reg[src2]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
-			state.writeBorrowedRegister(dst, runtime.Divide(ctx, reg[src1], reg[src2]))
+			reg[dst] = runtime.Divide(ctx, reg[src1], reg[src2])
 		case bytecode.OpMod:
 			if err := state.checkModuloByZeroAt(ctx, pc, reg[src2]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
-			state.writeBorrowedRegister(dst, runtime.Modulus(ctx, reg[src1], reg[src2]))
+			reg[dst] = runtime.Modulus(ctx, reg[src1], reg[src2])
 		case bytecode.OpIncr:
-			state.writeBorrowedRegister(dst, runtime.Increment(ctx, reg[dst]))
+			reg[dst] = runtime.Increment(ctx, reg[dst])
 		case bytecode.OpDecr:
-			state.writeBorrowedRegister(dst, runtime.Decrement(ctx, reg[dst]))
+			reg[dst] = runtime.Decrement(ctx, reg[dst])
 		case bytecode.OpNegate:
-			state.writeBorrowedRegister(dst, negate(reg[src1]))
+			reg[dst] = negate(reg[src1])
 		case bytecode.OpFlipPositive:
-			state.writeBorrowedRegister(dst, positive(reg[src1]))
+			reg[dst] = positive(reg[src1])
 		case bytecode.OpFlipNegative:
-			state.writeBorrowedRegister(dst, negative(reg[src1]))
+			reg[dst] = negative(reg[src1])
 		case bytecode.OpCastBool:
-			state.writeBorrowedRegister(dst, coerceBool(reg[src1]))
+			reg[dst] = coerceBool(reg[src1])
 		case bytecode.OpCmp:
-			state.writeBorrowedRegister(dst, cmp(ctx, reg[src1], reg[src2]))
+			reg[dst] = cmp(ctx, reg[src1], reg[src2])
 		case bytecode.OpNot:
-			state.writeBorrowedRegister(dst, !coerceBool(reg[src1]))
+			reg[dst] = !coerceBool(reg[src1])
 		case bytecode.OpEq:
-			state.writeBorrowedRegister(dst, eq(ctx, reg[src1], reg[src2]))
+			reg[dst] = eq(ctx, reg[src1], reg[src2])
 		case bytecode.OpNe:
-			state.writeBorrowedRegister(dst, ne(ctx, reg[src1], reg[src2]))
+			reg[dst] = ne(ctx, reg[src1], reg[src2])
 		case bytecode.OpGt:
-			state.writeBorrowedRegister(dst, gt(ctx, reg[src1], reg[src2]))
+			reg[dst] = gt(ctx, reg[src1], reg[src2])
 		case bytecode.OpLt:
-			state.writeBorrowedRegister(dst, lt(ctx, reg[src1], reg[src2]))
+			reg[dst] = lt(ctx, reg[src1], reg[src2])
 		case bytecode.OpGte:
-			state.writeBorrowedRegister(dst, gte(ctx, reg[src1], reg[src2]))
+			reg[dst] = gte(ctx, reg[src1], reg[src2])
 		case bytecode.OpLte:
-			state.writeBorrowedRegister(dst, lte(ctx, reg[src1], reg[src2]))
+			reg[dst] = lte(ctx, reg[src1], reg[src2])
 		case bytecode.OpIn:
-			state.writeBorrowedRegister(dst, contains(ctx, reg[src2], reg[src1]))
+			reg[dst] = contains(ctx, reg[src2], reg[src1])
 		case bytecode.OpLike:
 			res, err := Like(reg[src1], reg[src2])
 
 			if err == nil {
-				state.writeBorrowedRegister(dst, res)
+				reg[dst] = res
 				break
 			}
 
-			state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+			state.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.False, true)
 		case bytecode.OpRegexp:
 			r, err := vm.regexpCached(pc, reg[src2])
 
 			if err == nil {
-				state.writeBorrowedRegister(dst, r.Match(reg[src1]))
+				reg[dst] = r.Match(reg[src1])
 				continue
 			}
 
@@ -737,7 +737,7 @@ loop:
 			val := reg[src1]
 
 			if val == runtime.None {
-				state.writeBorrowedRegister(dst, runtime.False)
+				reg[dst] = runtime.False
 				continue
 			}
 
@@ -749,12 +749,12 @@ loop:
 					break
 				}
 
-				state.writeBorrowedRegister(dst, runtime.NewBoolean(length != 0))
+				reg[dst] = runtime.NewBoolean(length != 0)
 
 				continue
 			}
 
-			state.writeBorrowedRegister(dst, runtime.True)
+			reg[dst] = runtime.True
 		case bytecode.OpAllEq, bytecode.OpAllNe, bytecode.OpAllGt, bytecode.OpAllGte, bytecode.OpAllLt, bytecode.OpAllLte, bytecode.OpAllIn:
 			cmp := comparatorFromByte(int(op) - int(bytecode.OpAllEq))
 			res, err := arrayAll(ctx, cmp, reg[src1], reg[src2])
@@ -777,11 +777,11 @@ loop:
 				length, err := val.Length(ctx)
 
 				if err != nil {
-					state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+					state.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.ZeroInt, true)
 					break
 				}
 
-				state.writeBorrowedRegister(dst, length)
+				reg[dst] = length
 				continue
 			}
 
@@ -797,6 +797,9 @@ loop:
 			state.writeBorrowedRegister(dst, runtime.NewString(runtime.TypeName(runtime.TypeOf(reg[src1]))))
 		case bytecode.OpClose:
 			val := reg[dst]
+			if key, _, ok := mem.ResourceKeyOf(val); ok {
+				state.aliases.Delete(key)
+			}
 			closer, ok := state.owned.Release(val)
 			if !ok {
 				closer, ok = val.(io.Closer)

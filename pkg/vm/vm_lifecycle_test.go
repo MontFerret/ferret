@@ -160,8 +160,8 @@ func TestLifecycle_AliasesAcrossFrameBoundaries(t *testing.T) {
 	callerOwned := mem.OwnedResources{}
 	callerOwned.Track(callerResource)
 	callerAliases := mem.AliasTracker{}
-	if closer, ok := mem.TrackedCloserOf(callerResource); ok {
-		callerAliases.Inc(closer)
+	if key, _, ok := mem.ResourceKeyOf(callerResource); ok {
+		callerAliases.Inc(key)
 	}
 
 	// Callee frame has passed-in arg (not owned) and its own resource
@@ -325,6 +325,108 @@ func TestLifecycle_ExplicitCloseRemovesOwnership(t *testing.T) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Param Borrowing Tests
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+func TestLifecycle_MissingParamDoesNotCloseBorrowedParamResource(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Params:     []string{"foo", "bar"},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(0), bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+	}
+
+	instance := mustNewVM(t, program)
+	param := newTrackingCloser("borrowed-param")
+	env := NewDefaultEnvironment()
+	env.Params["foo"] = param
+
+	_, err := instance.Run(context.Background(), env)
+	if !errors.Is(err, ErrMissedParam) {
+		t.Fatalf("expected missing param error, got %v", err)
+	}
+
+	if got := param.closed; got != 0 {
+		t.Fatalf("expected borrowed param to remain open after bind failure, got %d closes", got)
+	}
+}
+
+func TestLifecycle_ReturnedParamResourceIsNotClosedByResult(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Params:     []string{"foo"},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(0), bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+	}
+
+	instance := mustNewVM(t, program)
+	param := newTrackingCloser("borrowed-param")
+	env := NewDefaultEnvironment()
+	env.Params["foo"] = param
+
+	result := mustRunResult(t, instance, env)
+
+	if got := result.Root(); got != param {
+		t.Fatalf("expected returned root to be the borrowed param, got %v", got)
+	}
+
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected result close to succeed, got %v", err)
+	}
+
+	if got := param.closed; got != 0 {
+		t.Fatalf("expected borrowed param to remain open after result close, got %d closes", got)
+	}
+}
+
+func TestLifecycle_LoadParamOverwritesOwnedRegisterWithoutOwningParam(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Params:     []string{"foo"},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(0), bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("MAKE"),
+		},
+	}
+
+	instance := mustNewVM(t, program)
+	owned := newTrackingCloser("owned")
+	param := newTrackingCloser("borrowed-param")
+	env := mustNewEnvironment(t,
+		WithFunction("MAKE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+			return owned, nil
+		}),
+		WithParam("foo", param),
+	)
+
+	result := mustRunResult(t, instance, env)
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected result close to succeed, got %v", err)
+	}
+
+	if got := owned.closed; got != 1 {
+		t.Fatalf("expected overwritten owned value to close once, got %d closes", got)
+	}
+
+	if got := param.closed; got != 0 {
+		t.Fatalf("expected loaded param to remain borrowed, got %d closes", got)
+	}
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Transfer Behavior Tests
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -439,6 +541,118 @@ func TestLifecycle_TransferWithMultipleAliases(t *testing.T) {
 
 	if got := shared.closed; got != 1 {
 		t.Fatalf("expected end run cleanup to close transferred resource once, got %d closes", got)
+	}
+}
+
+func TestLifecycle_ArrayPushDoesNotDeferTransferredResourceToResult(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadArray, bytecode.NewRegister(0), bytecode.Operand(0)),
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpArrayPush, bytecode.NewRegister(0), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("MAKE"),
+		},
+	}
+
+	instance := mustNewVM(t, program)
+	value := newTrackingCloser("transferred")
+	env := mustNewEnvironment(t, WithFunction("MAKE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+		return value, nil
+	}))
+
+	result := mustRunResult(t, instance, env)
+
+	if got := value.closed; got != 0 {
+		t.Fatalf("expected transferred value to remain open before result close, got %d closes", got)
+	}
+
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected result close to succeed, got %v", err)
+	}
+
+	if got := value.closed; got != 0 {
+		t.Fatalf("expected result cleanup not to close transferred array value, got %d closes", got)
+	}
+}
+
+func TestLifecycle_ArrayPushReloadedValueClosesExactlyOnce(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  4,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadArray, bytecode.NewRegister(0), bytecode.Operand(0)),
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpArrayPush, bytecode.NewRegister(0), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpLoadIndexConst, bytecode.NewRegister(2), bytecode.NewRegister(0), bytecode.NewConstant(1)),
+			bytecode.NewInstruction(bytecode.OpClose, bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(3)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(3)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("MAKE"),
+			runtime.ZeroInt,
+		},
+	}
+
+	instance := mustNewVM(t, program)
+	value := newTrackingCloser("transferred")
+	env := mustNewEnvironment(t, WithFunction("MAKE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+		return value, nil
+	}))
+
+	result := mustRunResult(t, instance, env)
+
+	if got := value.closed; got != 1 {
+		t.Fatalf("expected reloaded explicit close to run once, got %d closes", got)
+	}
+
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected result close to succeed, got %v", err)
+	}
+
+	if got := value.closed; got != 1 {
+		t.Fatalf("expected result cleanup not to double-close transferred value, got %d closes", got)
+	}
+}
+
+func TestLifecycle_ObjectSetConstDoesNotDeferTransferredResourceToResult(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadObject, bytecode.NewRegister(0), bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpObjectSetConst, bytecode.NewRegister(0), bytecode.NewConstant(1), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("MAKE"),
+			runtime.NewString("value"),
+		},
+	}
+
+	instance := mustNewVM(t, program)
+	value := newTrackingCloser("transferred")
+	env := mustNewEnvironment(t, WithFunction("MAKE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+		return value, nil
+	}))
+
+	result := mustRunResult(t, instance, env)
+
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected result close to succeed, got %v", err)
+	}
+
+	if got := value.closed; got != 0 {
+		t.Fatalf("expected result cleanup not to close transferred object value, got %d closes", got)
 	}
 }
 

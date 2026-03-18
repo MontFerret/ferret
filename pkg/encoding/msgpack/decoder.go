@@ -3,7 +3,6 @@ package msgpack
 import (
 	"context"
 	"fmt"
-	"unsafe"
 
 	vmmsgpack "github.com/vmihailenco/msgpack/v5"
 	"github.com/vmihailenco/msgpack/v5/msgpcode"
@@ -22,14 +21,6 @@ var (
 type decoder struct {
 	pre  []encoding.PreDecoderHook
 	post []encoding.PostDecoderHook
-}
-
-type objectView struct {
-	data map[string]runtime.Value
-}
-
-type arrayView struct {
-	data []runtime.Value
 }
 
 func (dec decoder) decodeValue(ctx context.Context, d *vmmsgpack.Decoder) (runtime.Value, error) {
@@ -120,7 +111,9 @@ func (dec decoder) decodeArray(ctx context.Context, d *vmmsgpack.Decoder) (runti
 			return runtime.None, err
 		}
 
-		appendArrayValue(arr, value)
+		if err := arr.Append(ctx, value); err != nil {
+			return runtime.None, err
+		}
 	}
 
 	return arr, nil
@@ -163,24 +156,12 @@ func (dec decoder) decodeMap(ctx context.Context, d *vmmsgpack.Decoder) (runtime
 			return runtime.None, err
 		}
 
-		setObjectValue(obj, key, value)
+		if err := obj.Set(ctx, runtime.NewString(key), value); err != nil {
+			return runtime.None, err
+		}
 	}
 
 	return obj, nil
-}
-
-func appendArrayValue(arr *runtime.Array, value runtime.Value) {
-	// Use the public mutator on runtime.Array instead of unsafe internal access.
-	arr.Push(value)
-}
-
-func setObjectValue(obj *runtime.Object, key string, value runtime.Value) {
-	if value == nil {
-		value = runtime.None
-	}
-
-	// Use the public mutator on runtime.Object instead of unsafe internal access.
-	obj.Set(key, value)
 }
 
 func isSignedIntCode(code byte) bool {

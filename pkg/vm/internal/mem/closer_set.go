@@ -3,34 +3,43 @@ package mem
 import (
 	"errors"
 	"io"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// CloserSet is an ordered, deduplicated collection of comparable io.Closers.
+// CloserSet is an ordered, deduplicated collection of io.Closers.
 // It is the shared mechanical primitive underlying DeferredClosers and Result.
+// Deduplication uses ResourceKey: runtime.Resource values are deduplicated by
+// ResourceID; plain io.Closer values are deduplicated by pointer identity.
 type CloserSet struct {
-	seen    map[io.Closer]struct{}
+	seen    map[ResourceKey]struct{}
 	closers []io.Closer
 }
 
-// Add inserts a closer into the set if it is non-nil, comparable, and not
-// already present. Returns true if the closer was actually added.
 // Add inserts a closer into the set if it is non-nil and not already present.
-// All closers are pointer-comparable by construction (either native pointer
-// types or *ManagedResource), so no reflect-based comparability check is needed.
+// If closer implements runtime.Resource its ResourceID is used for dedup so
+// two distinct objects with the same ID are treated as the same resource.
 func (s *CloserSet) Add(closer io.Closer) bool {
 	if closer == nil {
 		return false
 	}
 
-	if s.seen == nil {
-		s.seen = make(map[io.Closer]struct{})
+	var key ResourceKey
+	if res, ok := closer.(runtime.Resource); ok {
+		key = ResourceKey{ID: res.ResourceID()}
+	} else {
+		key = ResourceKey{Closer: closer}
 	}
 
-	if _, exists := s.seen[closer]; exists {
+	if s.seen == nil {
+		s.seen = make(map[ResourceKey]struct{})
+	}
+
+	if _, exists := s.seen[key]; exists {
 		return false
 	}
 
-	s.seen[closer] = struct{}{}
+	s.seen[key] = struct{}{}
 	s.closers = append(s.closers, closer)
 
 	return true

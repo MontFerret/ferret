@@ -128,9 +128,9 @@ func tailCallUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
 	s.aliases.Reset()
 
 	for _, arg := range args {
-		closer, ok := mem.TrackedCloserOf(arg)
+		key, _, ok := mem.ResourceKeyOf(arg)
 		if ok && s.owned.Owns(arg) {
-			s.aliases.Inc(closer)
+			s.aliases.Inc(key)
 		}
 	}
 

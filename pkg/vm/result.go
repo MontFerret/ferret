@@ -34,12 +34,12 @@ type (
 
 func newResult(root runtime.Value) *Result {
 	return &Result{
-		root: unwrapManaged(normalizeValue(root)),
+		root: normalizeValue(root),
 	}
 }
 
 func (r *Result) reset(root runtime.Value) {
-	r.root = unwrapManaged(normalizeValue(root))
+	r.root = normalizeValue(root)
 	r.set.Reset()
 	r.closed = false
 	r.materialized = false
