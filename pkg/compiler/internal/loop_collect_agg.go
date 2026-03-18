@@ -470,7 +470,7 @@ func (c *LoopCollectCompiler) compileGenericGlobalAggregationSelectors(selectors
 
 		varReg := c.declareLocalOrReport(selector.Context(), selector.Name().String(), core.TypeUnknown)
 		selectorRegs[i] = varReg
-		c.ctx.Emitter.EmitAB(bytecode.OpMove, varReg, result)
+		c.ctx.Emitter.EmitMoveTracked(varReg, result)
 	}
 }
 

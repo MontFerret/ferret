@@ -116,7 +116,7 @@ func opcodeClass(op Opcode) OpcodeClass {
 		OpJumpIfNe, OpJumpIfNeConst, OpJumpIfEq, OpJumpIfEqConst,
 		OpJumpIfMissingProperty, OpJumpIfMissingPropertyConst:
 		return OpcodeClassControl
-	case OpMove,
+	case OpMove, OpMoveTracked,
 		OpLoadNone, OpLoadBool, OpLoadZero, OpLoadConst, OpLoadParam, OpLoadArray, OpLoadObject, OpLoadRange:
 		return OpcodeClassLoad
 	case OpLoadIndex, OpLoadIndexOptional, OpLoadKey, OpLoadKeyOptional,

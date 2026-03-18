@@ -367,6 +367,8 @@ loop:
 
 			state.setProducedOrRaiseDefault(pc, dst, out, err)
 		case bytecode.OpMove:
+			reg[dst] = reg[src1]
+		case bytecode.OpMoveTracked:
 			state.copyRegister(dst, src1)
 		case bytecode.OpLoadNone:
 			reg[dst] = runtime.None

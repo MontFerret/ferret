@@ -175,7 +175,7 @@ func applyTerminalUseDef(opcode bytecode.Opcode, dst bytecode.Operand, collector
 
 func applyMoveLoadUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand, collector *useDefCollector) bool {
 	switch opcode {
-	case bytecode.OpMove:
+	case bytecode.OpMove, bytecode.OpMoveTracked:
 		collector.addUse(src1)
 		collector.addDef(dst)
 		return true

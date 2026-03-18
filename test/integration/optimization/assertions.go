@@ -187,7 +187,7 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 		return
 
 	// Moves / loads.
-	case bytecode.OpMove:
+	case bytecode.OpMove, bytecode.OpMoveTracked:
 		addUse(src1)
 		addDef(dst)
 		return

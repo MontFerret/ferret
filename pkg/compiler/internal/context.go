@@ -73,6 +73,16 @@ func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler, leve
 	return ctx
 }
 
+// EmitMoveAuto emits OpMove (plain) when the source register is known to hold
+// a scalar type, otherwise emits OpMoveTracked (ownership-aware).
+func (c *CompilerContext) EmitMoveAuto(dst, src bytecode.Operand) {
+	if c.Types.Resolve(src).IsScalar() {
+		c.Emitter.EmitPlainMove(dst, src)
+	} else {
+		c.Emitter.EmitMoveTracked(dst, src)
+	}
+}
+
 func (c *CompilerContext) AddAggregatePlan(plan *bytecode.AggregatePlan) int {
 	if plan == nil {
 		return -1

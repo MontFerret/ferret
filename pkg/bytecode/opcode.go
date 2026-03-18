@@ -11,7 +11,10 @@ const (
 	OpJumpIfNone
 
 	// Register Operations
-	OpMove // Move a value from register A to register B
+	OpMove // Plain register copy — no tracking
+
+	// Tracked Register Operations
+	OpMoveTracked // Tracked register copy — ownership-aware
 
 	// Loading Operations
 	OpLoadNone   // Set None value to a register
@@ -183,9 +186,11 @@ func (op Opcode) String() string {
 	case OpFail:
 		return "FAIL"
 
-	// Add Operations
+	// Register Operations
 	case OpMove:
 		return "MOVE"
+	case OpMoveTracked:
+		return "MOVET"
 
 	// Loading Operations
 	case OpLoadNone:

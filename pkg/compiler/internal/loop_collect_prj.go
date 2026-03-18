@@ -55,7 +55,7 @@ func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregato
 		// Assign the aggregator value to the local variable with the projection name
 		if !c.assignLocalOrReport(spec.Projection().Context(), loop.ValueName, core.TypeUnknown, aggregator) {
 			if existing, _, found := c.ctx.Symbols.Resolve(loop.ValueName); found {
-				c.ctx.Emitter.EmitAB(bytecode.OpMove, existing, aggregator)
+				c.ctx.Emitter.EmitMoveTracked(existing, aggregator)
 			}
 		}
 

@@ -72,7 +72,7 @@ func (c *LoopSortCompiler) compileMultipleSortKeys(clauses []fql.ISortClauseExpr
 // compileSingleSortKey handles compilation when there is only one sort expression.
 func (c *LoopSortCompiler) compileSingleSortKey(clause fql.ISortClauseExpressionContext, kvKeyReg bytecode.Operand, directions []runtime.SortDirection) (bytecode.Operand, []runtime.SortDirection) {
 	clauseReg := c.ctx.ExprCompiler.Compile(clause.Expression())
-	c.ctx.Emitter.EmitAB(bytecode.OpMove, kvKeyReg, clauseReg)
+	c.ctx.Emitter.EmitMoveTracked(kvKeyReg, clauseReg)
 	directions[0] = sortDirection(clause.SortDirection())
 
 	return kvKeyReg, directions
@@ -140,7 +140,7 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 	// Replace the loop source with sorted results
 	loop.LabelBase = c.ctx.Loops.NextBase()
 	loop.Src = c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitAB(bytecode.OpMove, loop.Src, sorter)
+	c.ctx.Emitter.EmitMoveTracked(loop.Src, sorter)
 
 	if loop.Kind != core.ForInLoop {
 		// We switched from a WhileLoop to a ForInLoop because the underlying data is Iterable now.

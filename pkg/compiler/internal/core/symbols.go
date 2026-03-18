@@ -37,6 +37,17 @@ const (
 	TypeAny
 )
 
+// IsScalar reports whether the type is a known scalar that can never
+// carry resource / closer semantics. Mirrors runtime mem.CanTrackValue.
+func (t ValueType) IsScalar() bool {
+	switch t {
+	case TypeNone, TypeInt, TypeFloat, TypeString, TypeBool:
+		return true
+	default:
+		return false
+	}
+}
+
 type Variable struct {
 	Name     string
 	Kind     SymbolKind

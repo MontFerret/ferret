@@ -403,7 +403,7 @@ func isPureDef(op bytecode.Opcode) bool {
 }
 
 func isSelfMove(inst bytecode.Instruction) bool {
-	if inst.Opcode != bytecode.OpMove {
+	if inst.Opcode != bytecode.OpMove && inst.Opcode != bytecode.OpMoveTracked {
 		return false
 	}
 

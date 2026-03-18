@@ -47,7 +47,15 @@ func (e *Emitter) EmitIterLimit(state, count bytecode.Operand, label Label) {
 // ─── Value & Memory ──────────────────────────────────────────────────────
 
 func (e *Emitter) EmitMove(dst, src bytecode.Operand) {
+	e.EmitAB(bytecode.OpMoveTracked, dst, src)
+}
+
+func (e *Emitter) EmitPlainMove(dst, src bytecode.Operand) {
 	e.EmitAB(bytecode.OpMove, dst, src)
+}
+
+func (e *Emitter) EmitMoveTracked(dst, src bytecode.Operand) {
+	e.EmitAB(bytecode.OpMoveTracked, dst, src)
 }
 
 func (e *Emitter) EmitPush(dst, src bytecode.Operand) {

@@ -259,7 +259,7 @@ func (l *Loop) emitForStepLoopIteration(_ *RegisterAllocator, emitter *Emitter) 
 	initValue := l.InitFn()
 
 	if l.Value != bytecode.NoopOperand {
-		emitter.EmitAB(bytecode.OpMove, l.Value, initValue)
+		emitter.EmitMoveTracked(l.Value, initValue)
 	}
 
 	// Jump to the initial condition check (skipping the increment)
@@ -273,7 +273,7 @@ func (l *Loop) emitForStepLoopIteration(_ *RegisterAllocator, emitter *Emitter) 
 		nextValue := l.UpdateFn()
 
 		if !nextValue.Equals(bytecode.NoopOperand) && !nextValue.Equals(l.Value) {
-			emitter.EmitAB(bytecode.OpMove, l.Value, nextValue)
+			emitter.EmitMoveTracked(l.Value, nextValue)
 		}
 	}
 

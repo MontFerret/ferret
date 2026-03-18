@@ -572,7 +572,7 @@ func buildInterferenceGraph(cfg *ControlFlowGraph, liveness map[int]*LivenessInf
 
 			// Registers used/defined in the same instruction interfere,
 			// except for moves where dst/src coalescing is desirable.
-			if inst.Opcode != bytecode.OpMove {
+			if inst.Opcode != bytecode.OpMove && inst.Opcode != bytecode.OpMoveTracked {
 				regs := make([]int, 0, len(uses)+len(defs))
 				regs = append(regs, uses...)
 				regs = append(regs, defs...)
@@ -625,7 +625,7 @@ func findCoalesceCandidates(program *bytecode.Program, cfg *ControlFlowGraph, in
 	// Look for move instructions between non-interfering registers
 	for _, block := range cfg.Blocks {
 		for _, inst := range block.Instructions {
-			if inst.Opcode == bytecode.OpMove {
+			if inst.Opcode == bytecode.OpMove || inst.Opcode == bytecode.OpMoveTracked {
 				dst, src := inst.Operands[0], inst.Operands[1]
 
 				if !dst.IsRegister() || !src.IsRegister() {
@@ -726,7 +726,7 @@ func foldMovesIntoDefs(program *bytecode.Program, cfg *ControlFlowGraph, livenes
 			next := insts[i+1]
 
 			// Pattern A: <op tmp ...> ; MOVE dst tmp  ->  <op dst ...> ; MOVE dst dst
-			if next.Opcode == bytecode.OpMove {
+			if next.Opcode == bytecode.OpMove || next.Opcode == bytecode.OpMoveTracked {
 				dst, src := next.Operands[0], next.Operands[1]
 
 				if dst.IsRegister() && src.IsRegister() {
