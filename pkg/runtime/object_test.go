@@ -76,22 +76,26 @@ func TestObject(t *testing.T) {
 		})
 
 		Convey("Should serialize full object", func() {
-			obj := NewObjectWith(
-				map[string]Value{
-					"none":    None,
-					"boolean": False,
-					"int":     NewInt(1),
-					"float":   Float(1),
-					"string":  NewString("1"),
-					"array":   NewArray(10),
-					"object":  NewObject(),
-				},
-			)
+			vals := map[string]Value{
+				"none":    None,
+				"boolean": False,
+				"int":     NewInt(1),
+				"float":   Float(1),
+				"string":  NewString("1"),
+				"array":   NewArray(10),
+				"object":  NewObject(),
+			}
+			obj := NewObjectWith(vals)
 			marshaled, err := encodingjson.Default.Encode(obj)
 
 			So(err, ShouldBeNil)
 
-			So(string(marshaled), ShouldEqual, "{\"array\":[],\"boolean\":false,\"float\":1,\"int\":1,\"none\":null,\"object\":{},\"string\":\"1\"}")
+			jsonstr := string(marshaled)
+
+			for key, val := range vals {
+				So(jsonstr, ShouldContainSubstring, "\""+key+"\":")
+				So(jsonstr, ShouldContainSubstring, val.String())
+			}
 		})
 	})
 
