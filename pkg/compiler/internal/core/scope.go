@@ -83,7 +83,7 @@ func (sp *ScopeProjection) EmitAsObject(dst bytecode.Operand) {
 }
 
 func (sp *ScopeProjection) moveProjectedValue(dst, src bytecode.Operand) {
-	if sp.types.Resolve(src).IsDefinitelyNonOwning() {
+	if sp.types.Resolve(src).IsUntracked() {
 		sp.emitter.EmitPlainMove(dst, src)
 	} else {
 		sp.emitter.EmitMoveTracked(dst, src)

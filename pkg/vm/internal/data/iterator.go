@@ -84,7 +84,7 @@ func (it *iteratorState) Key() runtime.Value {
 	return it.key
 }
 
-func (*Iterator) VMDefinitelyNonOwning() {}
+func (*Iterator) VMUntracked() {}
 
 func (it *Iterator) MarshalJSON() ([]byte, error) {
 	return nil, runtime.Errorf(runtime.ErrUnexpected, "iterator does not support JSON encoding")

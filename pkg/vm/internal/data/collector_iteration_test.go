@@ -11,53 +11,23 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 )
 
-func TestDecodeAggregateKeySupportsDirectAndLegacyValues(t *testing.T) {
-	ctx := context.Background()
-
-	testCases := []struct {
-		key  runtime.Value
-		name string
-	}{
-		{
-			name: "direct",
-			key:  data.NewAggregateKey(runtime.NewString(""), 0),
-		},
-		{
-			name: "legacy",
-			key: func() runtime.Value {
-				aggKey := runtime.NewArray(3)
-				_ = aggKey.Append(ctx, bytecode.AggregateKeyMarker)
-				_ = aggKey.Append(ctx, runtime.NewString(""))
-				_ = aggKey.Append(ctx, runtime.NewInt(0))
-				return aggKey
-			}(),
-		},
+func TestDecodeAggregateKeySupportsDirectValues(t *testing.T) {
+	groupKey, idx, ok := data.DecodeAggregateKey(data.NewAggregateKey(runtime.NewString(""), 0))
+	if !ok {
+		t.Fatal("expected aggregate key to decode successfully")
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			groupKey, idx, ok, err := data.DecodeAggregateKey(ctx, tc.key)
-			if err != nil {
-				t.Fatalf("decode aggregate key: %v", err)
-			}
+	groupKeyString, ok := groupKey.(runtime.String)
+	if !ok {
+		t.Fatalf("expected runtime.String group key, got %T", groupKey)
+	}
 
-			if !ok {
-				t.Fatal("expected aggregate key to decode successfully")
-			}
+	if groupKeyString.String() != "" {
+		t.Fatalf("expected empty-string group key, got %q", groupKeyString.String())
+	}
 
-			groupKeyString, ok := groupKey.(runtime.String)
-			if !ok {
-				t.Fatalf("expected runtime.String group key, got %T", groupKey)
-			}
-
-			if groupKeyString.String() != "" {
-				t.Fatalf("expected empty-string group key, got %q", groupKeyString.String())
-			}
-
-			if idx != 0 {
-				t.Fatalf("expected selector index 0, got %d", idx)
-			}
-		})
+	if idx != 0 {
+		t.Fatalf("expected selector index 0, got %d", idx)
 	}
 }
 

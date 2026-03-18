@@ -262,6 +262,7 @@ func (c *GroupedAggregateCollector) keyString(ctx context.Context, key runtime.V
 	return normalizeCollectorKey(ctx, key)
 }
 
-func (c *GroupedAggregateCollector) aggregateKey(ctx context.Context, key runtime.Value) (runtime.Value, int, bool, error) {
-	return DecodeAggregateKey(ctx, key)
+func (c *GroupedAggregateCollector) aggregateKey(_ context.Context, key runtime.Value) (runtime.Value, int, bool, error) {
+	groupKey, idx, ok := DecodeAggregateKey(key)
+	return groupKey, idx, ok, nil
 }

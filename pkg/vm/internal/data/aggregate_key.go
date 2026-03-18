@@ -1,11 +1,9 @@
 package data
 
 import (
-	"context"
 	"encoding/binary"
 	"hash/fnv"
 
-	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -65,50 +63,13 @@ func (k *AggregateKey) Copy() runtime.Value {
 	}
 }
 
-func (*AggregateKey) VMDefinitelyNonOwning() {}
+func (*AggregateKey) VMUntracked() {}
 
-func DecodeAggregateKey(ctx context.Context, key runtime.Value) (runtime.Value, int, bool, error) {
-	if aggKey, ok := key.(*AggregateKey); ok {
-		return aggKey.GroupKey(), aggKey.SelectorIndex(), true, nil
-	}
-
-	list, ok := key.(runtime.List)
+func DecodeAggregateKey(key runtime.Value) (runtime.Value, int, bool) {
+	aggKey, ok := key.(*AggregateKey)
 	if !ok {
-		return nil, 0, false, nil
+		return nil, 0, false
 	}
 
-	length, err := list.Length(ctx)
-	if err != nil {
-		return nil, 0, false, err
-	}
-
-	if length != 3 {
-		return nil, 0, false, nil
-	}
-
-	marker, err := list.At(ctx, 0)
-	if err != nil {
-		return nil, 0, false, err
-	}
-
-	if marker != bytecode.AggregateKeyMarker {
-		return nil, 0, false, nil
-	}
-
-	groupKey, err := list.At(ctx, 1)
-	if err != nil {
-		return nil, 0, false, err
-	}
-
-	idxVal, err := list.At(ctx, 2)
-	if err != nil {
-		return nil, 0, false, err
-	}
-
-	idx, ok := idxVal.(runtime.Int)
-	if !ok {
-		return nil, 0, false, runtime.Errorf(runtime.ErrInvalidArgument, "aggregate selector index invalid")
-	}
-
-	return groupKey, int(idx), true, nil
+	return aggKey.GroupKey(), aggKey.SelectorIndex(), true
 }

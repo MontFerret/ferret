@@ -81,18 +81,7 @@ func TestGroupedAggregateCollectorAllowsEmptyStringKey(t *testing.T) {
 		t.Fatalf("set grouped value: %v", err)
 	}
 
-	aggKey := runtime.NewArray(3)
-	if err := aggKey.Append(ctx, bytecode.AggregateKeyMarker); err != nil {
-		t.Fatalf("build aggregate key marker: %v", err)
-	}
-
-	if err := aggKey.Append(ctx, runtime.NewString("")); err != nil {
-		t.Fatalf("build aggregate key group: %v", err)
-	}
-
-	if err := aggKey.Append(ctx, runtime.NewInt(0)); err != nil {
-		t.Fatalf("build aggregate key index: %v", err)
-	}
+	aggKey := data.NewAggregateKey(runtime.NewString(""), 0)
 
 	if err := collector.Set(ctx, aggKey, runtime.NewInt(10)); err != nil {
 		t.Fatalf("set aggregate update for empty-string group key: %v", err)

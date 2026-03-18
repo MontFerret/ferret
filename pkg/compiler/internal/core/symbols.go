@@ -47,9 +47,9 @@ func (t ValueType) IsScalar() bool {
 	}
 }
 
-// IsDefinitelyNonOwning reports whether the type is known to never carry
-// direct resource / closer ownership at runtime.
-func (t ValueType) IsDefinitelyNonOwning() bool {
+// IsUntracked reports whether the type is known to never carry direct resource
+// / closer ownership at runtime.
+func (t ValueType) IsUntracked() bool {
 	switch t {
 	case TypeNone, TypeInt, TypeFloat, TypeString, TypeBool, TypeArray, TypeObject:
 		return true

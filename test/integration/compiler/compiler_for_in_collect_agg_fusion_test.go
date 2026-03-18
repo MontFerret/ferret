@@ -9,6 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func TestCollectAggregateRequiresAtLeastOneArgument(t *testing.T) {
@@ -112,7 +113,7 @@ FOR u IN users
 	}
 
 	for _, constant := range prog.Constants {
-		if constant == bytecode.AggregateKeyMarker {
+		if runtime.TypeName(runtime.TypeOf(constant)) == "bytecode.__agg_key_marker__" {
 			t.Fatalf("expected grouped fused aggregation to avoid legacy aggregate key marker constants")
 		}
 	}

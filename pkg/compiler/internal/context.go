@@ -73,12 +73,12 @@ func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler, leve
 	return ctx
 }
 
-// EmitMoveAuto emits OpMove (plain) when the source is known to be
-// definitely non-owning, otherwise emits OpMoveTracked (ownership-aware).
+// EmitMoveAuto emits OpMove (plain) when the source is known to be untracked,
+// otherwise emits OpMoveTracked (ownership-aware).
 func (c *CompilerContext) EmitMoveAuto(dst, src bytecode.Operand) {
 	srcType := operandType(c, src)
 
-	if srcType.IsDefinitelyNonOwning() {
+	if srcType.IsUntracked() {
 		c.Emitter.EmitPlainMove(dst, src)
 	} else {
 		c.Emitter.EmitMoveTracked(dst, src)

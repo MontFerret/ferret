@@ -20,11 +20,11 @@ type ResourceKey struct {
 	ID     uint64
 }
 
-// DefinitelyNonOwning is implemented by internal VM scaffolding values that
-// never participate in resource ownership tracking even if they are produced by
-// the VM and shuffled through registers.
-type DefinitelyNonOwning interface {
-	VMDefinitelyNonOwning()
+// Untracked is implemented by internal VM scaffolding values that never
+// participate in resource ownership tracking even if they are produced by the
+// VM and shuffled through registers.
+type Untracked interface {
+	VMUntracked()
 }
 
 // CanTrackValue cheaply rejects values that are known to never participate in
@@ -40,7 +40,7 @@ func CanTrackValue(val runtime.Value) bool {
 	case runtime.Boolean, runtime.Int, runtime.Float, runtime.String, *runtime.Array, *runtime.Object:
 		return false
 	default:
-		_, ok := val.(DefinitelyNonOwning)
+		_, ok := val.(Untracked)
 
 		return !ok
 	}
