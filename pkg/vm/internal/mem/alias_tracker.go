@@ -35,11 +35,6 @@ func (t *AliasTracker) Dec(key ResourceKey) int {
 	n--
 	if n <= 0 {
 		delete(t.counts, key)
-
-		if len(t.counts) == 0 {
-			t.counts = nil
-		}
-
 		return 0
 	}
 
@@ -64,13 +59,11 @@ func (t *AliasTracker) Delete(key ResourceKey) {
 	}
 
 	delete(t.counts, key)
-
-	if len(t.counts) == 0 {
-		t.counts = nil
-	}
 }
 
-// Reset clears all tracked aliases.
+// Reset clears all tracked aliases while retaining backing storage for reuse.
 func (t *AliasTracker) Reset() {
-	t.counts = nil
+	if t.counts != nil {
+		clear(t.counts)
+	}
 }

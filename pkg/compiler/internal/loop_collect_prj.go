@@ -100,7 +100,7 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 		// If no filter is provided, project all local variables
 		variables := c.ctx.Symbols.LocalVariables()
 		// Create a scope projection with all local variables
-		scope := core.NewScopeProjection(c.ctx.Registers, c.ctx.Emitter, c.ctx.Symbols, variables)
+		scope := core.NewScopeProjection(c.ctx.Registers, c.ctx.Emitter, c.ctx.Symbols, c.ctx.Types, variables)
 		// Emit the scope as an object to the value register
 		scope.EmitAsObject(kv.Value)
 	} else {

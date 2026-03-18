@@ -77,9 +77,6 @@ func (o *OwnedResources) ExtractByKey(key ResourceKey) bool {
 	}
 
 	delete(o.closers, key)
-	if len(o.closers) == 0 {
-		o.closers = nil
-	}
 
 	return true
 }
@@ -124,10 +121,6 @@ func (o *OwnedResources) ExtractMany(values []runtime.Value, dst *OwnedResources
 			dst.closers[key] = closer
 		}
 	}
-
-	if len(o.closers) == 0 {
-		o.closers = nil
-	}
 }
 
 func (o *OwnedResources) Discard(val runtime.Value, deferred *DeferredClosers) {
@@ -142,9 +135,6 @@ func (o *OwnedResources) Discard(val runtime.Value, deferred *DeferredClosers) {
 	}
 
 	delete(o.closers, key)
-	if len(o.closers) == 0 {
-		o.closers = nil
-	}
 
 	if deferred != nil {
 		deferred.AddCloser(closer)
@@ -162,7 +152,7 @@ func (o *OwnedResources) DrainTo(deferred *DeferredClosers) {
 		}
 	}
 
-	o.closers = nil
+	clear(o.closers)
 }
 
 func (o *OwnedResources) Release(val runtime.Value) (io.Closer, bool) {
@@ -180,9 +170,6 @@ func (o *OwnedResources) Release(val runtime.Value) (io.Closer, bool) {
 	// once one alias is closed, the closer is retired from ownership tracking so
 	// stale aliases cannot close it again during later cleanup.
 	delete(o.closers, key)
-	if len(o.closers) == 0 {
-		o.closers = nil
-	}
 
 	return closer, true
 }
@@ -200,9 +187,6 @@ func (o *OwnedResources) DiscardByKey(key ResourceKey, closer io.Closer, deferre
 	}
 
 	delete(o.closers, key)
-	if len(o.closers) == 0 {
-		o.closers = nil
-	}
 
 	if deferred != nil {
 		deferred.AddCloser(closer)
@@ -217,6 +201,13 @@ func (o *OwnedResources) CloseAll() {
 
 func (o *OwnedResources) Empty() bool {
 	return len(o.closers) == 0
+}
+
+// Reset clears all tracked ownership while retaining backing storage for reuse.
+func (o *OwnedResources) Reset() {
+	if o.closers != nil {
+		clear(o.closers)
+	}
 }
 
 func (o *OwnedResources) ForEach(fn func(io.Closer)) {

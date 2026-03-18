@@ -72,7 +72,7 @@ func (c *LoopSortCompiler) compileMultipleSortKeys(clauses []fql.ISortClauseExpr
 // compileSingleSortKey handles compilation when there is only one sort expression.
 func (c *LoopSortCompiler) compileSingleSortKey(clause fql.ISortClauseExpressionContext, kvKeyReg bytecode.Operand, directions []runtime.SortDirection) (bytecode.Operand, []runtime.SortDirection) {
 	clauseReg := c.ctx.ExprCompiler.Compile(clause.Expression())
-	c.ctx.Emitter.EmitMoveTracked(kvKeyReg, clauseReg)
+	c.ctx.EmitMoveAuto(kvKeyReg, clauseReg)
 	directions[0] = sortDirection(clause.SortDirection())
 
 	return kvKeyReg, directions
@@ -166,7 +166,7 @@ func (c *LoopSortCompiler) storeScope(kv *core.KV) *core.ScopeProjection {
 		return nil
 	}
 
-	sp := core.NewScopeProjection(c.ctx.Registers, c.ctx.Emitter, c.ctx.Symbols, vars)
+	sp := core.NewScopeProjection(c.ctx.Registers, c.ctx.Emitter, c.ctx.Symbols, c.ctx.Types, vars)
 	sp.EmitAsArray(kv.Value)
 
 	return sp

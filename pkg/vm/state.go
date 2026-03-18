@@ -53,8 +53,8 @@ func (s *execState) init(program *bytecode.Program) {
 
 func (s *execState) startRun(env *Environment) error {
 	s.env = env
-	s.owned = mem.OwnedResources{}
-	s.aliases = mem.AliasTracker{}
+	s.owned.Reset()
+	s.aliases.Reset()
 	s.deferred.Reset()
 	s.pc = 0
 	s.lastPC = -1
@@ -116,7 +116,7 @@ func (s *execState) finishRunInto(root runtime.Value, result *Result) *Result {
 }
 
 func (s *execState) resetRunStorage() {
-	s.owned = mem.OwnedResources{}
+	s.owned.Reset()
 	s.aliases.Reset()
 	s.deferred.Reset()
 

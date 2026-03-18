@@ -684,6 +684,14 @@ func (c *ExprCompiler) emitBinaryAtomOperation(ctx fql.IExpressionAtomContext, o
 		}
 	})
 
+	resultType := inferBinaryAtomResultType(c.ctx, op, left, right)
+	if op.negated {
+		resultType = core.TypeBool
+	}
+	if resultType != core.TypeUnknown {
+		c.ctx.Types.Set(dst, resultType)
+	}
+
 	return dst
 }
 

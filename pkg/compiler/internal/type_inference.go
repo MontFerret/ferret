@@ -143,3 +143,28 @@ func operandType(ctx *CompilerContext, op bytecode.Operand) core.ValueType {
 
 	return ctx.Types.Resolve(op)
 }
+
+func inferBinaryAtomResultType(ctx *CompilerContext, op atomBinaryOperator, left, right bytecode.Operand) core.ValueType {
+	leftType := operandType(ctx, left)
+	rightType := operandType(ctx, right)
+
+	switch op.opcode {
+	case bytecode.OpAdd:
+		switch {
+		case leftType == core.TypeString || rightType == core.TypeString:
+			return core.TypeString
+		case leftType == core.TypeFloat || rightType == core.TypeFloat:
+			if leftType == core.TypeInt || leftType == core.TypeFloat {
+				if rightType == core.TypeInt || rightType == core.TypeFloat {
+					return core.TypeFloat
+				}
+			}
+		case leftType == core.TypeInt && rightType == core.TypeInt:
+			return core.TypeInt
+		}
+	case bytecode.OpRegexp:
+		return core.TypeBool
+	}
+
+	return core.TypeUnknown
+}

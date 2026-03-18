@@ -97,10 +97,14 @@ func (s *CloserSet) Merge(other *CloserSet) {
 	other.Reset()
 }
 
-// Reset clears the set.
+// Reset clears the set while retaining backing storage for reuse.
 func (s *CloserSet) Reset() {
-	s.closers = nil
-	s.seen = nil
+	clear(s.closers)
+	s.closers = s.closers[:0]
+
+	if s.seen != nil {
+		clear(s.seen)
+	}
 }
 
 // Len returns the number of closers in the set.

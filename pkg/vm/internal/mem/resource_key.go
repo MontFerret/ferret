@@ -20,17 +20,17 @@ type ResourceKey struct {
 	ID     uint64
 }
 
-// CanTrackValue cheaply rejects the most common scalar values that can never
-// participate in VM ownership tracking. It is intentionally conservative:
-// returning true only means the caller should fall back to the full interface
-// checks in ResourceKeyOf.
+// CanTrackValue cheaply rejects values that are known to never participate in
+// direct VM ownership tracking. It is intentionally conservative: returning
+// true only means the caller should fall back to the full interface checks in
+// ResourceKeyOf.
 func CanTrackValue(val runtime.Value) bool {
 	if val == nil || val == runtime.None {
 		return false
 	}
 
 	switch val.(type) {
-	case runtime.Boolean, runtime.Int, runtime.Float, runtime.String:
+	case runtime.Boolean, runtime.Int, runtime.Float, runtime.String, *runtime.Array, *runtime.Object:
 		return false
 	default:
 		return true

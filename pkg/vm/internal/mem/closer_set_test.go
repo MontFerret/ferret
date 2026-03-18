@@ -24,9 +24,9 @@ func (sliceCloser) Close() error {
 }
 
 type udResource struct {
-	id     uint64
 	err    error
 	name   string
+	id     uint64
 	closed bool
 }
 
