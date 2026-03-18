@@ -4,7 +4,53 @@ import (
 	"errors"
 	"io"
 	"testing"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
+
+// errCloser is a test closer that returns a fixed error.
+type errCloser struct {
+	err error
+}
+
+func (c *errCloser) Close() error {
+	return c.err
+}
+
+type udResource struct {
+	id     uint64
+	err    error
+	name   string
+	closed bool
+}
+
+func newUdResource(id uint64, name string) *udResource {
+	return &udResource{
+		id:   id,
+		name: name,
+	}
+}
+
+func (u *udResource) Close() error {
+	return u.err
+}
+
+func (u *udResource) ResourceID() uint64 {
+	return u.id
+}
+
+func (u *udResource) String() string {
+	return u.name
+}
+
+func (u *udResource) Hash() uint64 {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (u *udResource) Copy() runtime.Value {
+	return &udResource{}
+}
 
 func TestCloserSetAddIsIdempotent(t *testing.T) {
 	var s CloserSet
@@ -20,6 +66,20 @@ func TestCloserSetAddIsIdempotent(t *testing.T) {
 
 	if got := s.Len(); got != 1 {
 		t.Fatalf("expected 1 closer, got %d", got)
+	}
+
+	r := newUdResource(1, "res")
+
+	if !s.Add(r) {
+		t.Fatal("expected first Add to succeed")
+	}
+
+	if s.Add(r) {
+		t.Fatal("expected duplicate Add to return false")
+	}
+
+	if got := s.Len(); got != 2 {
+		t.Fatalf("expected 2 closers, got %d", got)
 	}
 }
 
@@ -112,13 +172,4 @@ func TestCloserSetCloseAllCallsEveryCloser(t *testing.T) {
 	if c1.closed != 1 || c2.closed != 1 {
 		t.Fatalf("expected each closer called once, got c1=%d c2=%d", c1.closed, c2.closed)
 	}
-}
-
-// errCloser is a test closer that returns a fixed error.
-type errCloser struct {
-	err error
-}
-
-func (c *errCloser) Close() error {
-	return c.err
 }
