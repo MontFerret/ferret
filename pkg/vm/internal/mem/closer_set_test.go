@@ -17,6 +17,12 @@ func (c *errCloser) Close() error {
 	return c.err
 }
 
+type sliceCloser []int
+
+func (sliceCloser) Close() error {
+	return nil
+}
+
 type udResource struct {
 	id     uint64
 	err    error
@@ -171,5 +177,22 @@ func TestCloserSetCloseAllCallsEveryCloser(t *testing.T) {
 
 	if c1.closed != 1 || c2.closed != 1 {
 		t.Fatalf("expected each closer called once, got c1=%d c2=%d", c1.closed, c2.closed)
+	}
+}
+
+func TestCloserSetAddAcceptsNonComparableValueClosers(t *testing.T) {
+	var s CloserSet
+	closer := sliceCloser{1, 2, 3}
+
+	if !s.Add(closer) {
+		t.Fatal("expected first add to succeed")
+	}
+
+	if !s.Add(closer) {
+		t.Fatal("expected second add to succeed without dedupe")
+	}
+
+	if got, want := s.Len(), 2; got != want {
+		t.Fatalf("expected %d closers after adding non-comparable closer twice, got %d", want, got)
 	}
 }

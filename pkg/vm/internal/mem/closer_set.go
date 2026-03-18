@@ -3,6 +3,7 @@ package mem
 import (
 	"errors"
 	"io"
+	"reflect"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -10,7 +11,9 @@ import (
 // CloserSet is an ordered, deduplicated collection of io.Closers.
 // It is the shared mechanical primitive underlying DeferredClosers and Result.
 // Deduplication uses ResourceKey: runtime.Resource values are deduplicated by
-// ResourceID; plain io.Closer values are deduplicated by pointer identity.
+// ResourceID; plain comparable io.Closer values are deduplicated by their
+// comparable interface identity. Non-comparable plain closers are retained as
+// distinct entries because they cannot be represented safely as Go map keys.
 type CloserSet struct {
 	seen    map[ResourceKey]struct{}
 	closers []io.Closer
@@ -24,25 +27,34 @@ func (s *CloserSet) Add(closer io.Closer) bool {
 		return false
 	}
 
-	var key ResourceKey
-	if res, ok := closer.(runtime.Resource); ok {
-		key = ResourceKey{ID: res.ResourceID()}
-	} else {
-		key = ResourceKey{Closer: closer}
+	if key, ok := closerSetKey(closer); ok {
+		if s.seen == nil {
+			s.seen = make(map[ResourceKey]struct{})
+		}
+
+		if _, exists := s.seen[key]; exists {
+			return false
+		}
+
+		s.seen[key] = struct{}{}
 	}
 
-	if s.seen == nil {
-		s.seen = make(map[ResourceKey]struct{})
-	}
-
-	if _, exists := s.seen[key]; exists {
-		return false
-	}
-
-	s.seen[key] = struct{}{}
 	s.closers = append(s.closers, closer)
 
 	return true
+}
+
+func closerSetKey(closer io.Closer) (ResourceKey, bool) {
+	if res, ok := closer.(runtime.Resource); ok {
+		return ResourceKey{ID: res.ResourceID()}, true
+	}
+
+	typ := reflect.TypeOf(closer)
+	if typ == nil || !typ.Comparable() {
+		return ResourceKey{}, false
+	}
+
+	return ResourceKey{Closer: closer}, true
 }
 
 // CloseAll closes every closer in insertion order, joining any errors, then
