@@ -15,6 +15,8 @@ type FastObject struct {
 	dictThreshold int
 }
 
+func (*FastObject) VMDefinitelyNonOwning() {}
+
 func NewFastObject(cache *ShapeCache, dictThreshold int) *FastObject {
 	if cache == nil {
 		cache = NewShapeCache(0)

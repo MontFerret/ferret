@@ -94,6 +94,10 @@ func (e *Emitter) EmitLoadParam(dst, slot bytecode.Operand) {
 	e.EmitAB(bytecode.OpLoadParam, dst, slot)
 }
 
+func (e *Emitter) EmitLoadAggregateKey(dst, key, selector bytecode.Operand) {
+	e.EmitABC(bytecode.OpLoadAggregateKey, dst, key, selector)
+}
+
 func (e *Emitter) EmitBoolean(dst bytecode.Operand, value bool) {
 	if value {
 		e.EmitAB(bytecode.OpLoadBool, dst, 1)

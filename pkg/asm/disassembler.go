@@ -268,6 +268,11 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 		} else {
 			out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatOperand(ops[2]))
 		}
+	case bytecode.OpLoadAggregateKey:
+		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatOperand(ops[2]))
+		if ops[2].IsConstant() {
+			out += formatComment(constValue(p, ops[2].Constant()))
+		}
 
 	// Op R C
 	case bytecode.OpLoadConst:

@@ -158,6 +158,14 @@ func (c *LoopCollectCompiler) compileLoop(spec *core.Collector) {
 		}
 
 		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+
+		if spec.HasProjection() && loop.Value.IsRegister() {
+			if spec.Projection().IsCounted() {
+				c.ctx.Types.Set(loop.Value, core.TypeInt)
+			} else {
+				c.ctx.Types.Set(loop.Value, core.TypeArray)
+			}
+		}
 	}
 
 	// Process aggregation if present

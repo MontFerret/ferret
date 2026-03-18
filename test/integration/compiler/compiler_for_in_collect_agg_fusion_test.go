@@ -90,6 +90,34 @@ func TestCollectAggregateGroupedFusionSupportsScalarLiteralKeys(t *testing.T) {
 	}
 }
 
+func TestCollectAggregateGroupedFusionUsesAggregateKeyOpcode(t *testing.T) {
+	prog := compileWithLevel(t, compiler.O0, `
+LET users = [{ age: 1 }, { age: 2 }, { age: 3 }]
+
+FOR u IN users
+	COLLECT g = u.age
+	AGGREGATE
+		cnt = COUNT(u.age),
+		sum = SUM(u.age),
+		min = MIN(u.age)
+	RETURN { g, cnt, sum, min }
+`)
+
+	if !hasAggregatePlan(prog) {
+		t.Fatalf("expected grouped fused aggregate plan")
+	}
+
+	if !hasOpcode(prog.Bytecode, bytecode.OpLoadAggregateKey) {
+		t.Fatalf("expected grouped fused aggregation to use OpLoadAggregateKey")
+	}
+
+	for _, constant := range prog.Constants {
+		if constant == bytecode.AggregateKeyMarker {
+			t.Fatalf("expected grouped fused aggregation to avoid legacy aggregate key marker constants")
+		}
+	}
+}
+
 func firstCompilationError(err error) *diagnostics.Diagnostic {
 	switch e := err.(type) {
 	case *diagnostics.Diagnostic:

@@ -263,45 +263,5 @@ func (c *GroupedAggregateCollector) keyString(ctx context.Context, key runtime.V
 }
 
 func (c *GroupedAggregateCollector) aggregateKey(ctx context.Context, key runtime.Value) (runtime.Value, int, bool, error) {
-	// Aggregation updates use a tagged array key:
-	// [AggregateKeyMarker, <groupKey>, <selectorIdx>].
-	list, ok := key.(runtime.List)
-	if !ok {
-		return nil, 0, false, nil
-	}
-
-	length, err := list.Length(ctx)
-	if err != nil {
-		return nil, 0, false, err
-	}
-
-	if length != 3 {
-		return nil, 0, false, nil
-	}
-
-	marker, err := list.At(ctx, 0)
-	if err != nil {
-		return nil, 0, false, err
-	}
-
-	if marker != bytecode.AggregateKeyMarker {
-		return nil, 0, false, nil
-	}
-
-	groupKey, err := list.At(ctx, 1)
-	if err != nil {
-		return nil, 0, false, err
-	}
-
-	idxVal, err := list.At(ctx, 2)
-	if err != nil {
-		return nil, 0, false, err
-	}
-
-	idx, ok := idxVal.(runtime.Int)
-	if !ok {
-		return nil, 0, false, runtime.Errorf(runtime.ErrInvalidArgument, "aggregate selector index invalid")
-	}
-
-	return groupKey, int(idx), true, nil
+	return DecodeAggregateKey(ctx, key)
 }

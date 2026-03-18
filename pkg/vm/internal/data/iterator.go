@@ -8,7 +8,14 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-type Iterator struct {
+type IteratorState interface {
+	runtime.Value
+	Next(context.Context) error
+	Value() runtime.Value
+	Key() runtime.Value
+}
+
+type iteratorState struct {
 	src   runtime.Iterator
 	value runtime.Value
 	key   runtime.Value
@@ -16,11 +23,47 @@ type Iterator struct {
 
 var NoopIter = NewIterator(&noopIter{})
 
-func NewIterator(src runtime.Iterator) *Iterator {
-	return &Iterator{src, runtime.None, runtime.None}
+type Iterator struct {
+	iteratorState
 }
 
-func (it *Iterator) Next(ctx context.Context) error {
+type ClosableIterator struct {
+	iteratorState
+	closer io.Closer
+}
+
+func NewIterator(src runtime.Iterator) *Iterator {
+	return &Iterator{
+		iteratorState: newIteratorState(src),
+	}
+}
+
+func NewClosableIterator(src runtime.Iterator) *ClosableIterator {
+	closer, _ := src.(io.Closer)
+
+	return &ClosableIterator{
+		iteratorState: newIteratorState(src),
+		closer:        closer,
+	}
+}
+
+func WrapIterator(src runtime.Iterator) IteratorState {
+	if _, ok := src.(io.Closer); ok {
+		return NewClosableIterator(src)
+	}
+
+	return NewIterator(src)
+}
+
+func newIteratorState(src runtime.Iterator) iteratorState {
+	return iteratorState{
+		src:   src,
+		value: runtime.None,
+		key:   runtime.None,
+	}
+}
+
+func (it *iteratorState) Next(ctx context.Context) error {
 	val, key, err := it.src.Next(ctx)
 
 	if err != nil {
@@ -33,27 +76,29 @@ func (it *Iterator) Next(ctx context.Context) error {
 	return nil
 }
 
-func (it *Iterator) Value() runtime.Value {
+func (it *iteratorState) Value() runtime.Value {
 	return it.value
 }
 
-func (it *Iterator) Key() runtime.Value {
+func (it *iteratorState) Key() runtime.Value {
 	return it.key
 }
 
-func (it *Iterator) Close() error {
-	if closable, ok := it.src.(io.Closer); ok {
-		return closable.Close()
-	}
-
-	return nil
-}
+func (*Iterator) VMDefinitelyNonOwning() {}
 
 func (it *Iterator) MarshalJSON() ([]byte, error) {
 	return nil, runtime.Errorf(runtime.ErrUnexpected, "iterator does not support JSON encoding")
 }
 
+func (it *ClosableIterator) MarshalJSON() ([]byte, error) {
+	return nil, runtime.Errorf(runtime.ErrUnexpected, "iterator does not support JSON encoding")
+}
+
 func (it *Iterator) String() string {
+	return "[Iterator]"
+}
+
+func (it *ClosableIterator) String() string {
 	return "[Iterator]"
 }
 
@@ -64,6 +109,25 @@ func (it *Iterator) Hash() uint64 {
 	return hasher.Sum64()
 }
 
+func (it *ClosableIterator) Hash() uint64 {
+	hasher := fnv.New64a()
+	_, _ = hasher.Write([]byte("vm.iterator"))
+
+	return hasher.Sum64()
+}
+
 func (it *Iterator) Copy() runtime.Value {
 	return it
+}
+
+func (it *ClosableIterator) Copy() runtime.Value {
+	return it
+}
+
+func (it *ClosableIterator) Close() error {
+	if it.closer == nil {
+		return nil
+	}
+
+	return it.closer.Close()
 }

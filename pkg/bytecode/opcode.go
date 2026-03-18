@@ -156,6 +156,9 @@ const (
 	OpJumpIfMissingProperty
 	OpJumpIfMissingPropertyConst
 	OpFail // Raises a runtime failure with a constant message
+
+	// Internal Aggregate Operations
+	OpLoadAggregateKey // Creates an internal grouped-aggregate selector key
 )
 
 func (op Opcode) String() string {
@@ -185,6 +188,8 @@ func (op Opcode) String() string {
 		return "JMPMISSPROPC"
 	case OpFail:
 		return "FAIL"
+	case OpLoadAggregateKey:
+		return "LOADAGGK"
 
 	// Register Operations
 	case OpMove:

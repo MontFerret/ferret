@@ -202,6 +202,11 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 		addUse(src2)
 		addDef(dst)
 		return
+	case bytecode.OpLoadAggregateKey:
+		addUse(src1)
+		addUse(src2)
+		addDef(dst)
+		return
 
 	// Simple arithmetic, comparisons, access.
 	case bytecode.OpAdd, bytecode.OpSub, bytecode.OpMul, bytecode.OpDiv, bytecode.OpMod,

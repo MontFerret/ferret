@@ -11,6 +11,8 @@ type DataSet struct {
 	uniqueness map[uint64]bool
 }
 
+func (*DataSet) VMDefinitelyNonOwning() {}
+
 // TODO: Remove implementation of runtime.List interface. Add an unwrap opcode in the VM to unwrap the values.
 // Otherwise, when it escapes to the userspace, it might cause issues with the uniqueness map.
 func NewDataSet(distinct bool) runtime.List {

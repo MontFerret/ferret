@@ -579,12 +579,8 @@ func (c *LoopCollectCompiler) loadSelectorKey(key bytecode.Operand, selector run
 
 func (c *LoopCollectCompiler) loadGroupedAggregateKey(key bytecode.Operand, selectorIdx int) bytecode.Operand {
 	aggKey := c.ctx.Registers.Allocate()
-	// Use a tagged array key to avoid collisions with user-provided group keys.
-	// Format: [AggregateKeyMarker, <groupKey>, <selectorIdx>]
-	c.ctx.Emitter.EmitArray(aggKey, 3)
-	c.ctx.Emitter.EmitArrayPush(aggKey, loadConstant(c.ctx, bytecode.AggregateKeyMarker))
-	c.ctx.Emitter.EmitArrayPush(aggKey, key)
-	c.ctx.Emitter.EmitArrayPush(aggKey, loadConstant(c.ctx, runtime.Int(selectorIdx)))
+	selectorConst := c.ctx.Symbols.AddConstant(runtime.NewInt(selectorIdx))
+	c.ctx.Emitter.EmitLoadAggregateKey(aggKey, key, selectorConst)
 
 	return aggKey
 }

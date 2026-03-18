@@ -400,6 +400,18 @@ loop:
 			}
 
 			reg[dst] = runtime.NewRange(start, end)
+		case bytecode.OpLoadAggregateKey:
+			selectorVal, ok := constants[src2.Constant()].(runtime.Int)
+			if !ok {
+				invariantErr := diagnostics.NewInvariantError(
+					"invalid aggregate selector index constant",
+					runtime.Errorf(runtime.ErrUnexpected, "expected aggregate selector index constant at pc %d", pc),
+				)
+				state.raiseInvariantAt(pc, invariantErr)
+				break
+			}
+
+			reg[dst] = data.NewAggregateKey(reg[src1], int(selectorVal))
 		case bytecode.OpLoadIndex, bytecode.OpLoadIndexOptional:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadIndexOptional
@@ -522,7 +534,7 @@ loop:
 				iterator, err := iterable.Iterate(ctx)
 
 				if err == nil {
-					state.writeProducedRegister(dst, data.NewIterator(iterator))
+					state.writeProducedRegister(dst, data.WrapIterator(iterator))
 					continue
 				}
 
@@ -533,7 +545,7 @@ loop:
 			callErr := runtime.TypeErrorOf(input, runtime.TypeIterable)
 			state.raiseRuntimeAt(pc, callErr, recoverDefault, dst, data.NoopIter, true)
 		case bytecode.OpIterNext:
-			iterator := reg[src1].(*data.Iterator)
+			iterator := reg[src1].(data.IteratorState)
 
 			if err := iterator.Next(ctx); err != nil {
 				if errors.Is(err, io.EOF) {
@@ -544,10 +556,10 @@ loop:
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 			}
 		case bytecode.OpIterValue:
-			iterator := reg[src1].(*data.Iterator)
+			iterator := reg[src1].(data.IteratorState)
 			state.writeBorrowedRegister(dst, iterator.Value())
 		case bytecode.OpIterKey:
-			iterator := reg[src1].(*data.Iterator)
+			iterator := reg[src1].(data.IteratorState)
 			state.writeBorrowedRegister(dst, iterator.Key())
 		case bytecode.OpIterSkip:
 			iterState := runtime.ToIntSafe(ctx, reg[src1])

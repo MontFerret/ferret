@@ -918,6 +918,8 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 		return idx == 0
 	case bytecode.OpLoadArray, bytecode.OpLoadObject:
 		return idx == 0
+	case bytecode.OpLoadAggregateKey:
+		return idx == 0 || idx == 1
 	case bytecode.OpFlatten:
 		return idx == 0 || idx == 1
 	case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
