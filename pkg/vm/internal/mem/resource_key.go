@@ -20,6 +20,23 @@ type ResourceKey struct {
 	ID     uint64
 }
 
+// CanTrackValue cheaply rejects the most common scalar values that can never
+// participate in VM ownership tracking. It is intentionally conservative:
+// returning true only means the caller should fall back to the full interface
+// checks in ResourceKeyOf.
+func CanTrackValue(val runtime.Value) bool {
+	if val == nil || val == runtime.None {
+		return false
+	}
+
+	switch val.(type) {
+	case runtime.Boolean, runtime.Int, runtime.Float, runtime.String:
+		return false
+	default:
+		return true
+	}
+}
+
 // ResourceKeyOf derives the ownership key and associated closer from val.
 //
 // Primary path (runtime.Resource): returns ResourceKey{ID: val.ResourceID()}
@@ -31,6 +48,10 @@ type ResourceKey struct {
 //
 // Returns (zero, nil, false) if val does not implement io.Closer.
 func ResourceKeyOf(val runtime.Value) (ResourceKey, io.Closer, bool) {
+	if !CanTrackValue(val) {
+		return ResourceKey{}, nil, false
+	}
+
 	if res, ok := val.(runtime.Resource); ok {
 		return ResourceKey{ID: res.ResourceID()}, res, true
 	}

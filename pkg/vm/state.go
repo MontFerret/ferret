@@ -87,16 +87,28 @@ func (s *execState) finishRun(root runtime.Value) *Result {
 }
 
 func (s *execState) finishRunInto(root runtime.Value, result *Result) *Result {
+	result.reset(root)
+
+	if s.owned.Empty() && s.deferred.Empty() {
+		s.resetRunStorage()
+		return result
+	}
+
 	var resultOwned mem.OwnedResources
 
-	if s.owned.Extract(root) {
-		resultOwned.Track(root)
+	if key, closer, ok := mem.ResourceKeyOf(root); ok && s.owned.ExtractByKey(key) {
+		resultOwned.TrackResolved(key, closer)
 	}
-	s.owned.DrainTo(&s.deferred)
+	if !s.owned.Empty() {
+		s.owned.DrainTo(&s.deferred)
+	}
 
-	result.reset(root)
-	result.adoptOwned(&resultOwned)
-	result.adoptDeferred(&s.deferred)
+	if !resultOwned.Empty() {
+		result.adoptOwned(&resultOwned)
+	}
+	if !s.deferred.Empty() {
+		result.adoptDeferred(&s.deferred)
+	}
 
 	s.resetRunStorage()
 
@@ -421,8 +433,22 @@ func (s *execState) returnToCaller(retVal runtime.Value) bool {
 		return false
 	}
 
-	retOwned := s.owned.Extract(retVal)
-	s.owned.DrainTo(&s.deferred)
+	var (
+		retKey    mem.ResourceKey
+		retCloser io.Closer
+		retOwned  bool
+	)
+
+	if !s.owned.Empty() {
+		if key, closer, ok := mem.ResourceKeyOf(retVal); ok {
+			retKey = key
+			retCloser = closer
+			retOwned = s.owned.ExtractByKey(key)
+		}
+
+		s.owned.DrainTo(&s.deferred)
+	}
+
 	s.windows.Release(s.registers)
 	s.registers = frame.CallerRegisters
 	s.owned = frame.OwnedResources
@@ -431,11 +457,8 @@ func (s *execState) returnToCaller(retVal runtime.Value) bool {
 		s.writeBorrowedRegister(frame.ReturnDest, retVal)
 
 		if retOwned {
-			s.owned.Track(retVal)
-
-			if key, _, ok := mem.ResourceKeyOf(retVal); ok {
-				s.aliases.Inc(key)
-			}
+			s.owned.TrackResolved(retKey, retCloser)
+			s.aliases.Inc(retKey)
 		}
 	}
 	s.pc = frame.ReturnPC
@@ -476,7 +499,7 @@ func (s *execState) retireOwnership(val runtime.Value) {
 		return
 	}
 
-	s.owned.Extract(val)
+	s.owned.ExtractByKey(key)
 	s.aliases.Delete(key)
 }
 
@@ -509,7 +532,8 @@ func (s *execState) retireOwnership(val runtime.Value) {
 //   - computed values that don't need tracking (numbers, strings, bools)
 //   - values from other registers (borrowed references)
 //
-// Fast path: if old value not owned, just write. No alias tracking needed.
+// Fast path: obvious scalar values cannot participate in ownership, so we can
+// overwrite them without probing ownership state.
 func (s *execState) writeBorrowedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
 	val = normalizeValue(val)
 
@@ -519,15 +543,17 @@ func (s *execState) writeBorrowedRegister(dst bytecode.Operand, val runtime.Valu
 
 	prev := s.registers[dst]
 
-	// Hot path: if prev value is not owned, just overwrite
-	// This is the common case for non-closer values
-	if !s.owned.Owns(prev) {
+	if !mem.CanTrackValue(prev) {
 		s.registers[dst] = val
 		return val
 	}
 
-	// Cold path: prev is owned, decrement its alias count
-	prevKey, prevCloser, _ := mem.ResourceKeyOf(prev)
+	prevKey, prevCloser, ok := mem.ResourceKeyOf(prev)
+	if !ok || !s.owned.OwnsKey(prevKey) {
+		s.registers[dst] = val
+		return val
+	}
+
 	newKey, _, newOK := mem.ResourceKeyOf(val)
 
 	if !newOK || prevKey != newKey {
@@ -544,42 +570,51 @@ func (s *execState) writeBorrowedRegister(dst bytecode.Operand, val runtime.Valu
 //   - returned from host functions
 //   - created by VM instructions (streams, collectors, etc.)
 //
-// The value will be tracked for ownership and cleanup.
-// Fast path: if old value not owned, just write, track, and increment alias count.
+// The value will be tracked for ownership and cleanup when it resolves to a
+// closable resource.
 func (s *execState) writeProducedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
 	val = normalizeValue(val)
+	newKey, newCloser, newOK := mem.ResourceKeyOf(val)
 
 	if !dst.IsRegister() {
-		s.owned.Track(val)
+		if newOK {
+			s.owned.TrackResolved(newKey, newCloser)
+		}
+
 		return val
 	}
 
 	prev := s.registers[dst]
-	newKey, _, newOK := mem.ResourceKeyOf(val)
 
-	// Hot path: if prev value is not owned, just overwrite, track and inc alias
-	if !s.owned.Owns(prev) {
+	if !mem.CanTrackValue(prev) {
 		s.registers[dst] = val
-		s.owned.Track(val)
-
 		if newOK {
+			s.owned.TrackResolved(newKey, newCloser)
 			s.aliases.Inc(newKey)
 		}
 
 		return val
 	}
 
-	// Cold path: prev is owned, decrement old alias count
-	prevKey, prevCloser, _ := mem.ResourceKeyOf(prev)
+	prevKey, prevCloser, ok := mem.ResourceKeyOf(prev)
+	if !ok || !s.owned.OwnsKey(prevKey) {
+		s.registers[dst] = val
+		if newOK {
+			s.owned.TrackResolved(newKey, newCloser)
+			s.aliases.Inc(newKey)
+		}
+
+		return val
+	}
 
 	if !newOK || prevKey != newKey {
 		s.decAliasAndMaybeDiscard(prevKey, prevCloser)
 	}
 
 	s.registers[dst] = val
-	s.owned.Track(val)
 
 	if newOK {
+		s.owned.TrackResolved(newKey, newCloser)
 		s.aliases.Inc(newKey)
 	}
 
@@ -604,24 +639,37 @@ func (s *execState) copyRegister(dst, src bytecode.Operand) runtime.Value {
 
 	val := s.registers[src]
 	prev := s.registers[dst]
+	valKey, _, valTrackable := mem.ResourceKeyOf(val)
+	valOwned := valTrackable && s.owned.OwnsKey(valKey)
 
-	// Hot path: if prev value is not owned, just overwrite
-	if !s.owned.Owns(prev) {
+	if !mem.CanTrackValue(prev) {
 		s.registers[dst] = val
-		s.incAliasIfOwned(val)
+		if valOwned {
+			s.aliases.Inc(valKey)
+		}
+
 		return val
 	}
 
-	// Cold path: prev is owned, decrement old alias count
-	prevKey, prevCloser, _ := mem.ResourceKeyOf(prev)
-	newKey, _, newOK := mem.ResourceKeyOf(val)
+	prevKey, prevCloser, ok := mem.ResourceKeyOf(prev)
+	if !ok || !s.owned.OwnsKey(prevKey) {
+		s.registers[dst] = val
+		if valOwned {
+			s.aliases.Inc(valKey)
+		}
 
-	if !newOK || prevKey != newKey {
+		return val
+	}
+
+	if !valOwned || prevKey != valKey {
 		s.decAliasAndMaybeDiscard(prevKey, prevCloser)
 	}
 
 	s.registers[dst] = val
-	s.incAliasIfOwned(val)
+	if valOwned {
+		s.aliases.Inc(valKey)
+	}
+
 	return val
 }
 
@@ -634,29 +682,16 @@ func (s *execState) clearRegister(dst bytecode.Operand) {
 
 	prev := s.registers[dst]
 
-	// Hot path: if prev value is not owned, just clear
-	if !s.owned.Owns(prev) {
+	if !mem.CanTrackValue(prev) {
 		s.registers[dst] = runtime.None
 		return
 	}
 
-	// Cold path: prev is owned, decrement alias count
-	if key, closer, ok := mem.ResourceKeyOf(prev); ok {
+	if key, closer, ok := mem.ResourceKeyOf(prev); ok && s.owned.OwnsKey(key) {
 		s.decAliasAndMaybeDiscard(key, closer)
 	}
 
 	s.registers[dst] = runtime.None
-}
-
-// incAliasIfOwned increments the alias count for val if it is an owned resource.
-func (s *execState) incAliasIfOwned(val runtime.Value) {
-	if !s.owned.Owns(val) {
-		return
-	}
-
-	if key, _, ok := mem.ResourceKeyOf(val); ok {
-		s.aliases.Inc(key)
-	}
 }
 
 func (s *execState) udfByID(id int) (*bytecode.UDF, error) {

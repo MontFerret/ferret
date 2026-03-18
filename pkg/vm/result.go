@@ -112,7 +112,7 @@ func (r *Result) AdoptCloser(closer io.Closer) {
 }
 
 func (r *Result) adoptOwned(owned *mem.OwnedResources) {
-	if owned == nil {
+	if owned == nil || owned.Empty() {
 		return
 	}
 
@@ -122,7 +122,7 @@ func (r *Result) adoptOwned(owned *mem.OwnedResources) {
 }
 
 func (r *Result) adoptDeferred(deferred *mem.DeferredClosers) {
-	if deferred == nil {
+	if deferred == nil || deferred.Empty() {
 		return
 	}
 
@@ -137,10 +137,11 @@ func (r *Result) Close() error {
 	}
 
 	r.closed = true
-
-	err := r.set.CloseAll()
-
 	r.root = runtime.None
 
-	return err
+	if r.set.Len() == 0 {
+		return nil
+	}
+
+	return r.set.CloseAll()
 }

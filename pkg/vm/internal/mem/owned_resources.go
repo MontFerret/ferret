@@ -22,6 +22,14 @@ func (o *OwnedResources) Track(val runtime.Value) {
 		return
 	}
 
+	o.TrackResolved(key, closer)
+}
+
+func (o *OwnedResources) TrackResolved(key ResourceKey, closer io.Closer) {
+	if closer == nil {
+		return
+	}
+
 	if o.closers == nil {
 		o.closers = make(map[ResourceKey]io.Closer)
 	}
@@ -31,7 +39,15 @@ func (o *OwnedResources) Track(val runtime.Value) {
 
 func (o *OwnedResources) Owns(val runtime.Value) bool {
 	key, _, ok := ResourceKeyOf(val)
-	if !ok || o.closers == nil {
+	if !ok {
+		return false
+	}
+
+	return o.OwnsKey(key)
+}
+
+func (o *OwnedResources) OwnsKey(key ResourceKey) bool {
+	if o.closers == nil {
 		return false
 	}
 
@@ -44,12 +60,19 @@ func (o *OwnedResources) Owns(val runtime.Value) bool {
 // frame teardown, for example as a return value or final result root.
 func (o *OwnedResources) Extract(val runtime.Value) bool {
 	key, _, ok := ResourceKeyOf(val)
-	if !ok || o.closers == nil {
+	if !ok {
 		return false
 	}
 
-	_, exists := o.closers[key]
-	if !exists {
+	return o.ExtractByKey(key)
+}
+
+func (o *OwnedResources) ExtractByKey(key ResourceKey) bool {
+	if o.closers == nil {
+		return false
+	}
+
+	if _, exists := o.closers[key]; !exists {
 		return false
 	}
 
@@ -190,6 +213,10 @@ func (o *OwnedResources) CloseAll() {
 	deferred := DeferredClosers{}
 	o.DrainTo(&deferred)
 	_ = deferred.CloseAll()
+}
+
+func (o *OwnedResources) Empty() bool {
+	return len(o.closers) == 0
 }
 
 func (o *OwnedResources) ForEach(fn func(io.Closer)) {

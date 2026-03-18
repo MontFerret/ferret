@@ -129,7 +129,7 @@ func tailCallUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
 
 	for _, arg := range args {
 		key, _, ok := mem.ResourceKeyOf(arg)
-		if ok && s.owned.Owns(arg) {
+		if ok && s.owned.OwnsKey(key) {
 			s.aliases.Inc(key)
 		}
 	}

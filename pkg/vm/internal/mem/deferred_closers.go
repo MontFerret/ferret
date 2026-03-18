@@ -44,3 +44,7 @@ func (d *DeferredClosers) ForEach(fn func(io.Closer)) {
 func (d *DeferredClosers) Reset() {
 	d.set.Reset()
 }
+
+func (d *DeferredClosers) Empty() bool {
+	return d.set.Len() == 0
+}
