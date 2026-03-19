@@ -10,12 +10,28 @@ import (
 func TestForDoWhile(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		CaseArray(`
+			FOR DO WHILE false
+				RETURN 1
+		`, []any{1}),
+		CaseArray(`
 			FOR i DO WHILE false
 				RETURN i
 		`, []any{0}),
 		CaseArray(`
+			VAR i = 0
+			FOR DO WHILE i < 2
+				i = i + 1
+				RETURN i - 1
+		`, []any{0, 1}),
+		CaseArray(`
 		FOR i DO WHILE COUNTER() < 10
 				RETURN i`, []any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
+		CaseArray(`
+			VAR i = 0
+			FOR _ DO WHILE i < 1
+				i = i + 1
+				RETURN i
+		`, []any{1}),
 		CaseArray(`
 			FOR i DO WHILE UNTIL(6)
 				LET y = i + 1

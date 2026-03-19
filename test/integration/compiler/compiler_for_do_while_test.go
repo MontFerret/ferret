@@ -6,18 +6,18 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 )
 
-func TestForWhile(t *testing.T) {
+func TestForDoWhileCompiles(t *testing.T) {
 	expressions := []string{
 		`
-FOR WHILE UNTIL(5)
+FOR DO WHILE false
 	RETURN 1
 `,
 		`
-FOR i WHILE UNTIL(5)
+FOR i DO WHILE false
 	RETURN i
 `,
 		`
-FOR _ WHILE UNTIL(2)
+FOR _ DO WHILE false
 	RETURN 1
 `,
 	}

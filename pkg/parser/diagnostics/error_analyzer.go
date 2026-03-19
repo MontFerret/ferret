@@ -11,7 +11,7 @@ func AnalyzeSyntaxError(src *file.Source, err *diagnostics.Diagnostic, offending
 	matchers := []SyntaxErrorMatcher{
 		matchArrayOperatorErrors,
 		matchQueryErrors,
-		matchStepLoopErrors,
+		matchWhileLoopErrors,
 		matchLiteralErrors,
 		matchWaitForErrors,
 		matchMissingAssignmentValue,

@@ -4,7 +4,7 @@ import "testing"
 
 const forWhileVarQuery = `
 VAR i = 0
-FOR _ WHILE i < 100
+FOR WHILE i < 100
   LET current = i
   i = i + 1
   RETURN current

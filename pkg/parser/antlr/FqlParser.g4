@@ -32,7 +32,7 @@ options { tokenVocab=FqlLexer; }
 		case FqlParserAnd, FqlParserOr, FqlParserAs, FqlParserDistinct, FqlParserFilter, FqlParserSort,
 			FqlParserLimit, FqlParserCollect, FqlParserSortDirection, FqlParserInto, FqlParserKeep, FqlParserWith,
 			FqlParserAll, FqlParserAny, FqlParserAt, FqlParserLeast, FqlParserAggregate, FqlParserEvent, FqlParserTimeout,
-			FqlParserOptions, FqlParserEvery, FqlParserBackoff, FqlParserJitter, FqlParserExists, FqlParserValue, FqlParserStep,
+			FqlParserOptions, FqlParserEvery, FqlParserBackoff, FqlParserJitter, FqlParserExists, FqlParserValue,
 			FqlParserOne, FqlParserCount:
 			return true
 		default:
@@ -230,7 +230,7 @@ forExpression
     : For valueVariable=loopVariable (Comma counterVariable=bindingIdentifier)? In forExpressionSource
         forExpressionBody*
         forExpressionReturn
-    | For valueVariable=loopVariable Do? While expression
+    | For (valueVariable=loopVariable)? Do? While expression
         forExpressionBody*
         forExpressionReturn
     ;
@@ -658,7 +658,6 @@ safeReservedWord
     | Jitter
     | Exists
     | Value
-    | Step
     | One
     ;
 

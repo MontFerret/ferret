@@ -157,7 +157,7 @@ FOR item IN [1, 2]
 `,
 		`
 VAR i = 0
-FOR _ WHILE i < 2
+FOR WHILE i < 2
   LET current = i
   i = i + 1
   RETURN current

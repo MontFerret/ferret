@@ -188,12 +188,12 @@ RETURN ((x + 1) * (x + 2) == (x + 3) * (x + 4))
 				}
 			]
 			VAR i = 0
-			FOR _ WHILE i < LENGTH(departments)
+			FOR WHILE i < LENGTH(departments)
 				LET d = departments[i]
 				i = i + 1
 				VAR j = 0
 				LET deptUsers = (
-					FOR _ WHILE j < LENGTH(users)
+					FOR WHILE j < LENGTH(users)
 						LET u = users[j]
 						j = j + 1
 						FILTER u.department == d.name
@@ -201,7 +201,7 @@ RETURN ((x + 1) * (x + 2) == (x + 3) * (x + 4))
 				)
 				VAR k = 0
 				LET stats = (
-					FOR _ WHILE k < LENGTH(deptUsers)
+					FOR WHILE k < LENGTH(deptUsers)
 						LET u = deptUsers[k]
 						k = k + 1
 						COLLECT AGGREGATE 

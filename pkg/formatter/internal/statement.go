@@ -311,9 +311,16 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 	}
 
 	f.writeKeyword(keywordFor)
-	f.p.space()
 
-	if tok := ctx.GetValueVariable(); tok != nil {
+	writeValueVariable := true
+	if ctx.In() == nil {
+		if tok := ctx.GetValueVariable(); tok != nil && tok.GetText() == "_" {
+			writeValueVariable = false
+		}
+	}
+
+	if tok := ctx.GetValueVariable(); tok != nil && writeValueVariable {
+		f.p.space()
 		f.p.write(tok.GetText())
 	}
 

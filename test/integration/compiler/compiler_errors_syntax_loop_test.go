@@ -40,6 +40,54 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 
 		ErrorCase(
 			`
+			FOR i = 0 WHILE i < 5 STEP i = i + 1
+				RETURN i
+		`, E{
+				Kind: parserd.SyntaxError,
+			}, "Legacy STEP syntax fails generically"),
+
+		ErrorCase(
+			`
+			FOR WHILE
+				RETURN 1
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected condition after 'WHILE'",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "FOR WHILE without condition"),
+
+		ErrorCase(
+			`
+			FOR DO WHILE
+				RETURN 1
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected condition after 'WHILE'",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "FOR DO WHILE without condition"),
+
+		ErrorCase(
+			`
+			FOR 123 WHILE TRUE
+				RETURN 1
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected identifier before 'WHILE'",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "FOR WHILE with invalid binding"),
+
+		ErrorCase(
+			`
+			FOR 123 DO WHILE TRUE
+				RETURN 1
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected identifier before 'WHILE'",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "FOR DO WHILE with invalid binding"),
+
+		ErrorCase(
+			`
 			FOR IN [1, 2, 3]
 				RETURN i
 		`, E{

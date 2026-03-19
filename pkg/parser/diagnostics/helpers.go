@@ -75,6 +75,53 @@ func isIdentifier(node *TokenNode) bool {
 	return tt == fql.FqlLexerIdentifier || tt == fql.FqlLexerIgnoreIdentifier
 }
 
+func isLoopVariableToken(node *TokenNode) bool {
+	if node == nil {
+		return false
+	}
+
+	token := node.Token()
+
+	if token == nil {
+		return false
+	}
+
+	switch token.GetTokenType() {
+	case fql.FqlLexerIdentifier,
+		fql.FqlLexerIgnoreIdentifier,
+		fql.FqlLexerAnd,
+		fql.FqlLexerOr,
+		fql.FqlLexerAs,
+		fql.FqlLexerDistinct,
+		fql.FqlLexerFilter,
+		fql.FqlLexerSort,
+		fql.FqlLexerLimit,
+		fql.FqlLexerCollect,
+		fql.FqlLexerCount,
+		fql.FqlLexerSortDirection,
+		fql.FqlLexerInto,
+		fql.FqlLexerKeep,
+		fql.FqlLexerWith,
+		fql.FqlLexerAll,
+		fql.FqlLexerAny,
+		fql.FqlLexerAt,
+		fql.FqlLexerLeast,
+		fql.FqlLexerAggregate,
+		fql.FqlLexerEvent,
+		fql.FqlLexerTimeout,
+		fql.FqlLexerOptions,
+		fql.FqlLexerEvery,
+		fql.FqlLexerBackoff,
+		fql.FqlLexerJitter,
+		fql.FqlLexerExists,
+		fql.FqlLexerValue,
+		fql.FqlLexerOne:
+		return true
+	default:
+		return false
+	}
+}
+
 func isKeyword(node *TokenNode) bool {
 	if node == nil {
 		return false

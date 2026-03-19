@@ -46,3 +46,14 @@ RETURN values
 		_ = compileWithLevel(t, level, expr)
 	}
 }
+
+func TestVariablesStepIdentifierCompiles(t *testing.T) {
+	expr := `
+LET STEP = 1
+RETURN STEP
+`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		_ = compileWithLevel(t, level, expr)
+	}
+}
