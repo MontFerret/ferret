@@ -263,6 +263,50 @@ Avoid:
 func (r *Result) Close() error
 ```
 
+## Benchmark expectations for significant changes
+
+For significant changes, benchmark validation is required in addition to correctness testing.
+
+A change is significant when it modifies behavior in a way that could reasonably affect:
+- execution throughput
+- compile-time performance
+- latency on common paths
+- allocation patterns
+- memory reuse or pooling behavior
+- cleanup or ownership behavior
+- result/materialization cost
+- optimizer or code generation output relevant to performance
+
+This includes, but is not limited to, changes in:
+- `pkg/vm`
+- `pkg/runtime`
+- `pkg/compiler`
+- `pkg/bytecode`
+- `pkg/encoding`
+- parser/compiler hot paths
+- caching, pooling, register allocation, ownership tracking, or materialization logic
+
+This usually does not include:
+- comments, docs, or formatting-only edits
+- pure renames with no behavior change
+- test-only changes
+- narrowly scoped refactors that do not affect behavior or hot paths
+
+For significant changes, agents must:
+- run relevant benchmarks before making the change and save the results as a baseline
+- implement the change
+- run the same benchmarks again after the change
+- compare before/after results, preferably including `ns/op`, `B/op`, and `allocs/op`
+- report the benchmark command used and summarize the performance delta
+
+Significant changes must be covered by both:
+- tests that validate correctness
+- benchmarks that validate the affected performance-sensitive path
+
+If no relevant benchmark exists for the changed hot path, add one.
+
+If benchmark tooling, data, or environment is unavailable, state that explicitly and do not claim benchmark validation was completed.
+
 ## Tooling prerequisites
 - Go must be installed.
 - make is optional but is the preferred entrypoint for repo-defined workflows.
