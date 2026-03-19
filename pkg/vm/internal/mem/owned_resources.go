@@ -219,17 +219,3 @@ func (o *OwnedResources) ForEach(fn func(io.Closer)) {
 		fn(closer)
 	}
 }
-
-// TrackedCloserOf extracts an io.Closer from val if it implements the
-// interface. Tracked closers are pointer-comparable by construction
-// (pointer-receiver io.Closer or runtime.Resource implementations).
-//
-// Deprecated: prefer ResourceKeyOf when the ResourceKey is also needed.
-func TrackedCloserOf(val runtime.Value) (io.Closer, bool) {
-	closer, ok := val.(io.Closer)
-	if !ok || closer == nil {
-		return nil, false
-	}
-
-	return closer, true
-}
