@@ -93,6 +93,37 @@ func TestRegisterCoalescing_NoCoalesceForRangeSensitiveRegs(t *testing.T) {
 	assertBytecodeEqual(t, program.Bytecode, expected)
 }
 
+func TestRegisterCoalescing_PinsCellHandleRegisters(t *testing.T) {
+	program := &bytecode.Program{
+		Constants: []runtime.Value{
+			runtime.Int(1),
+			runtime.Int(2),
+		},
+		Registers: 8,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(3), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpMakeCell, bytecode.NewRegister(5), bytecode.NewRegister(3)),
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(6), bytecode.NewConstant(1)),
+			bytecode.NewInstruction(bytecode.OpStoreCell, bytecode.NewRegister(5), bytecode.NewRegister(6)),
+			bytecode.NewInstruction(bytecode.OpLoadCell, bytecode.NewRegister(7), bytecode.NewRegister(5)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(7)),
+		},
+	}
+
+	runCoalescing(t, program)
+
+	expected := []bytecode.Instruction{
+		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
+		bytecode.NewInstruction(bytecode.OpMakeCell, bytecode.NewRegister(5), bytecode.NewRegister(1)),
+		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(1)),
+		bytecode.NewInstruction(bytecode.OpStoreCell, bytecode.NewRegister(5), bytecode.NewRegister(1)),
+		bytecode.NewInstruction(bytecode.OpLoadCell, bytecode.NewRegister(1), bytecode.NewRegister(5)),
+		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+	}
+
+	assertBytecodeEqual(t, program.Bytecode, expected)
+}
+
 func runCoalescing(t *testing.T, program *bytecode.Program) {
 	t.Helper()
 
