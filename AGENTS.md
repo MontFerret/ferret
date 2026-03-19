@@ -231,26 +231,56 @@ type (
 - standalone type declarations make diffs and reviews clearer
 - grouped type blocks are reserved, if used at all, for small passive helper types rather than primary behavioral types
 
-## Tooling prerequisites
+## Comment rules for functions and methods
+- Do not add comments to every function or method by default.
+- Exported functions and methods should usually have doc comments, especially in public, embedding-facing, or extension-facing packages.
+- Unexported functions and methods should be commented only when they carry non-obvious behavior, invariants, side effects, ownership rules, cleanup expectations, or protocol/lifecycle constraints.
+- Comments must explain intent, contract, invariants, side effects, or lifecycle behavior.
+- Prefer comments that explain why the code exists, what must remain true, or how the method is meant to be used.
+- Do not write comments that merely restate the method name or signature.
+- For VM, runtime, compiler, encoding, and diagnostics internals, prefer comments on semantics and invariants over implementation narration.
+- Avoid comment wallpaper. Dense, meaningful comments are preferred over mechanically documenting obvious code.
 
+Preferred:
+```go
+// Close releases resources associated with the result.
+// It is safe to call multiple times. Once closed, the result must not be reused.
+func (r *Result) Close() error
+```
+
+Preferred for internal code:
+
+```go
+// promoteEscaped ensures a value that may outlive the current register write
+// is no longer tied to the current ownership path.
+func (s *execState) promoteEscaped(...)
+```
+
+Avoid:
+
+```go
+// Close closes the result.
+func (r *Result) Close() error
+```
+
+## Tooling prerequisites
 - Go must be installed.
-- `make` is optional but is the preferred entrypoint for repo-defined workflows.
-- Java plus ANTLR `4.13.2` are required when regenerating parser artifacts.
-- `lab` plus a reachable Chromium instance are required for e2e coverage.
-- `staticcheck`, `goimports`, and `revive` are needed for lint/format flows; install them with `make install-tools`.
+- make is optional but is the preferred entrypoint for repo-defined workflows.
+- Java plus ANTLR 4.13.2 are required when regenerating parser artifacts.
+- lab plus a reachable Chromium instance are required for e2e coverage.
+- staticcheck, goimports, and revive are needed for lint/format flows; install them with make install-tools.
 
 ## Command matrix
-
-- Broad validation: `go test ./...`
-- Race-heavy package and integration coverage: `make test`
-- Lint: `make lint`
-- Format: `make fmt`
-- Regenerate parser/codegen artifacts: `make generate`
-    - Run this only when grammar or generator inputs change.
-- Build the CLI binary: `make compile`
-- Run e2e coverage: `LAB_BIN=/absolute/path/to/lab make e2e`
-    - Ensure Chromium is reachable at `http://127.0.0.1:9222/json/version`.
-    - CI uses `docker run -d -p 9222:9222 ghcr.io/montferret/chromium:92.0.4512.0`.
+- Broad validation: go test ./...
+- Race-heavy package and integration coverage: make test
+- Lint: make lint
+- Format: make fmt
+- Regenerate parser/codegen artifacts: make generate
+- Run this only when grammar or generator inputs change.
+- Build the CLI binary: make compile
+- Run e2e coverage: LAB_BIN=/absolute/path/to/lab make e2e
+- Ensure Chromium is reachable at http://127.0.0.1:9222/json/version.
+- CI uses docker run -d -p 9222:9222 ghcr.io/montferret/chromium:92.0.4512.0.
 
 ## Editing rules
 
@@ -284,7 +314,3 @@ When proposing or implementing non-trivial changes:
 - do not perform opportunistic refactors unrelated to the requested task unless they are necessary for correctness
 
 ## Secondary references
-
-- `README.md` for product context and links to the broader Ferret ecosystem.
-- `CONTRIBUTING.md` for human contributor process.
-- `.github/workflows/build.yml` for the current CI validation path.
