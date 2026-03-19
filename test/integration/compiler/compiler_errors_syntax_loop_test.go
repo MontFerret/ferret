@@ -48,6 +48,30 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 
 		ErrorCase(
 			`
+			VAR i = 0
+			WHILE i < 10
+				i = i + 1
+			RETURN i
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Standalone WHILE loops are not supported",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "Standalone WHILE loop at top level"),
+
+		ErrorCase(
+			`
+			VAR i = 0
+			DO WHILE i < 10
+				i = i + 1
+			RETURN i
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Standalone DO WHILE loops are not supported",
+				Hint:    "Use 'FOR DO WHILE [condition]' or 'FOR x DO WHILE [condition]' syntax.",
+			}, "Standalone DO WHILE loop at top level"),
+
+		ErrorCase(
+			`
 			FOR WHILE
 				RETURN 1
 		`, E{

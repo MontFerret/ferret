@@ -30,6 +30,10 @@ func matchWhileLoopErrors(src *file.Source, err *diagnostics.Diagnostic, offendi
 		return true
 	}
 
+	if matchStandaloneWhileLoop(src, err, offending) {
+		return true
+	}
+
 	return false
 }
 
@@ -144,29 +148,107 @@ func matchMissingWhileLoopCondition(src *file.Source, err *diagnostics.Diagnosti
 	return true
 }
 
-func findWhileLoopHeaderToken(offending *TokenNode) *TokenNode {
-	candidates := []*TokenNode{offending}
-	if offending != nil {
-		candidates = append(candidates, offending.Prev())
+func matchStandaloneWhileLoop(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+	loopKind, span, ok := findStandaloneWhileLoopSpan(src, err, offending)
+	if !ok {
+		return false
 	}
 
-	for _, node := range candidates {
+	switch loopKind {
+	case "DO WHILE":
+		err.Message = "Standalone DO WHILE loops are not supported"
+		err.Hint = "Use 'FOR DO WHILE [condition]' or 'FOR x DO WHILE [condition]' syntax."
+	default:
+		err.Message = "Standalone WHILE loops are not supported"
+		err.Hint = "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax."
+	}
+
+	err.Spans = []diagnostics.ErrorSpan{
+		diagnostics.NewMainErrorSpan(span, "unsupported loop"),
+	}
+
+	return true
+}
+
+func findStandaloneWhileLoopSpan(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) (string, file.Span, bool) {
+	whileToken := findStandaloneWhileLoopToken(offending)
+	if whileToken == nil {
+		if is(offending, "DO") && err != nil && isNoAlternative(err.Message) && has(err.Message, "do while") && !hasPrevToken(offending, "FOR", 4) {
+			return "DO WHILE", spanFromTokenSafe(offending.Token(), src), true
+		}
+
+		return "", file.Span{}, false
+	}
+
+	if is(whileToken.Prev(), "DO") {
+		doSpan := spanFromTokenSafe(whileToken.Prev().Token(), src)
+		whileSpan := spanFromTokenSafe(whileToken.Token(), src)
+
+		return "DO WHILE", file.Span{
+			Start: doSpan.Start,
+			End:   whileSpan.End,
+		}, true
+	}
+
+	return "WHILE", spanFromTokenSafe(whileToken.Token(), src), true
+}
+
+func findStandaloneWhileLoopToken(offending *TokenNode) *TokenNode {
+	for _, node := range whileLoopTokenCandidates(offending) {
 		if !is(node, "WHILE") {
 			continue
 		}
 
-		prev := node.Prev()
-		switch {
-		case is(prev, "FOR"):
-			return node
-		case is(prev, "DO") && is(prev.Prev(), "FOR"):
-			return node
-		case isLoopVariableToken(prev) && is(prev.Prev(), "FOR"):
-			return node
-		case is(prev, "DO") && isLoopVariableToken(prev.Prev()) && is(prev.PrevAt(2), "FOR"):
+		if isWhileLoopHeaderToken(node) || hasPrevToken(node, "FOR", 4) {
+			continue
+		}
+
+		return node
+	}
+
+	return nil
+}
+
+func findWhileLoopHeaderToken(offending *TokenNode) *TokenNode {
+	for _, node := range whileLoopTokenCandidates(offending) {
+		if isWhileLoopHeaderToken(node) {
 			return node
 		}
 	}
 
 	return nil
+}
+
+func isWhileLoopHeaderToken(node *TokenNode) bool {
+	if !is(node, "WHILE") {
+		return false
+	}
+
+	prev := node.Prev()
+	switch {
+	case is(prev, "FOR"):
+		return true
+	case is(prev, "DO") && is(prev.Prev(), "FOR"):
+		return true
+	case isLoopVariableToken(prev) && is(prev.Prev(), "FOR"):
+		return true
+	case is(prev, "DO") && isLoopVariableToken(prev.Prev()) && is(prev.PrevAt(2), "FOR"):
+		return true
+	default:
+		return false
+	}
+}
+
+func whileLoopTokenCandidates(offending *TokenNode) []*TokenNode {
+	if offending == nil {
+		return nil
+	}
+
+	candidates := []*TokenNode{offending}
+
+	for i := 1; i <= 3; i++ {
+		candidates = append(candidates, offending.PrevAt(i), offending.NextAt(i))
+	}
+
+	return candidates
 }
