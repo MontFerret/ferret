@@ -284,6 +284,9 @@ func applyDatasetUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand
 	case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
 		collector.addDef(dst)
 		return true
+	case bytecode.OpCounterInc:
+		collector.addUse(dst)
+		return true
 	case bytecode.OpPush, bytecode.OpArrayPush:
 		collector.addUse(dst)
 		collector.addUse(src1)

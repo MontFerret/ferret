@@ -25,9 +25,13 @@ func (c *CounterCollector) Iterate(_ context.Context) (runtime.Iterator, error) 
 }
 
 func (c *CounterCollector) Set(_ context.Context, _, _ runtime.Value) error {
-	c.Value++
+	c.Increment()
 
 	return nil
+}
+
+func (c *CounterCollector) Increment() {
+	c.Value++
 }
 
 func (c *CounterCollector) Get(_ context.Context, _ runtime.Value) (runtime.Value, error) {

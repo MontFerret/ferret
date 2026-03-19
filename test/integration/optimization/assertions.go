@@ -256,6 +256,9 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 	case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
 		addDef(dst)
 		return
+	case bytecode.OpCounterInc:
+		addUse(dst)
+		return
 	case bytecode.OpPush, bytecode.OpArrayPush:
 		addUse(dst)
 		addUse(src1)

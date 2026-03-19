@@ -70,6 +70,10 @@ func (e *Emitter) EmitPushKV(dst, key, val bytecode.Operand) {
 	e.EmitABC(bytecode.OpPushKV, dst, key, val)
 }
 
+func (e *Emitter) EmitCounterInc(dst bytecode.Operand) {
+	e.EmitA(bytecode.OpCounterInc, dst)
+}
+
 func (e *Emitter) EmitObjectSet(dst, key, val bytecode.Operand) {
 	e.EmitABC(bytecode.OpObjectSet, dst, key, val)
 }

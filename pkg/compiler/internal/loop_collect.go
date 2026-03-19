@@ -127,6 +127,8 @@ func (c *LoopCollectCompiler) finalizeCollector(dst bytecode.Operand, kv *core.K
 		if spec.Type() != bytecode.CollectorTypeAggregateGroup || spec.HasProjection() {
 			c.ctx.Emitter.EmitPushKV(dst, kv.Key, kv.Value)
 		}
+	} else if spec.Type() == bytecode.CollectorTypeCounter {
+		c.ctx.Emitter.EmitCounterInc(dst)
 	} else if !spec.HasAggregation() {
 		c.ctx.Emitter.EmitPushKV(dst, kv.Key, kv.Value)
 	} else if spec.ProjectionState() != bytecode.NoopOperand {

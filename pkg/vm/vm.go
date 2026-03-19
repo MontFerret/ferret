@@ -471,6 +471,18 @@ loop:
 
 			state.retireOwnership(reg[src1])
 			state.retireOwnership(reg[src2])
+		case bytecode.OpCounterInc:
+			collector, ok := reg[dst].(*data.CounterCollector)
+			if !ok {
+				invariantErr := diagnostics.NewInvariantError(
+					"invalid counter collector",
+					runtime.Errorf(runtime.ErrUnexpected, "expected counter collector at pc %d", pc),
+				)
+				state.raiseInvariantAt(pc, invariantErr)
+				break
+			}
+
+			collector.Increment()
 		case bytecode.OpArrayPush:
 			ds := reg[dst].(*runtime.Array)
 

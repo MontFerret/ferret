@@ -121,3 +121,19 @@ FOR u IN users
 		t.Fatalf("expected global aggregate INTO to avoid pushing projection rows into the aggregate collector")
 	}
 }
+
+func TestCollectProjectionCountUsesDedicatedCounterIncrement(t *testing.T) {
+	prog := compileWithLevel(t, compiler.O0, `
+FOR i IN 1..10
+	COLLECT WITH COUNT INTO total
+	RETURN total
+`)
+
+	if !hasOpcode(prog.Bytecode, bytecode.OpCounterInc) {
+		t.Fatalf("expected COLLECT WITH COUNT INTO to use OpCounterInc")
+	}
+
+	if hasOpcode(prog.Bytecode, bytecode.OpPushKV) {
+		t.Fatalf("expected COLLECT WITH COUNT INTO to avoid generic PushKV collector writes")
+	}
+}

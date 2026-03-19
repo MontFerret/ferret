@@ -123,6 +123,7 @@ const (
 	OpDataSetMultiSorter
 	OpPush           // Adds a value to a generic List
 	OpPushKV         // Adds a key-value pair to a dataset
+	OpCounterInc     // Increments a counter collector
 	OpArrayPush      // Adds a value to a built-in Array instance
 	OpObjectSet      // Sets a property on a built-in Object instance
 	OpObjectSetConst // Sets a property on a built-in Object instance using a constant key
@@ -392,6 +393,8 @@ func (op Opcode) String() string {
 		return "PUSHA"
 	case OpPushKV:
 		return "PUSHKV"
+	case OpCounterInc:
+		return "CNTINC"
 	case OpObjectSet:
 		return "OBJSET"
 	case OpObjectSetConst:
