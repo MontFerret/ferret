@@ -273,6 +273,16 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 		if ops[2].IsConstant() {
 			out += formatComment(constValue(p, ops[2].Constant()))
 		}
+	case bytecode.OpAggregateUpdate:
+		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]))
+		if slot, ok := aggregateSelectorSlot(p, ip); ok {
+			out += formatComment(fmt.Sprintf("slot=%d", slot))
+		}
+	case bytecode.OpAggregateGroupUpdate:
+		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatOperand(ops[2]))
+		if slot, ok := aggregateSelectorSlot(p, ip); ok {
+			out += formatComment(fmt.Sprintf("slot=%d", slot))
+		}
 
 	// Op R C
 	case bytecode.OpLoadConst:
@@ -325,6 +335,19 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 	}
 
 	return out
+}
+
+func aggregateSelectorSlot(p *bytecode.Program, pc int) (int, bool) {
+	if p == nil || pc < 0 || pc >= len(p.Metadata.AggregateSelectorSlots) {
+		return 0, false
+	}
+
+	slot := p.Metadata.AggregateSelectorSlots[pc]
+	if slot < 0 {
+		return 0, false
+	}
+
+	return slot, true
 }
 
 func isUdfCallOpcode(op bytecode.Opcode) bool {

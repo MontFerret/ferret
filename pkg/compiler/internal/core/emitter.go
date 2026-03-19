@@ -9,12 +9,13 @@ import (
 )
 
 type Emitter struct {
-	labels       map[labelID]Label
-	patches      map[labelID][]labelRef
-	instructions []bytecode.Instruction
-	spans        []file.Span
-	currentSpan  file.Span
-	nextLabelID  labelID
+	labels        map[labelID]Label
+	patches       map[labelID][]labelRef
+	instructions  []bytecode.Instruction
+	selectorSlots []int
+	spans         []file.Span
+	currentSpan   file.Span
+	nextLabelID   labelID
 }
 
 func NewEmitter() *Emitter {
@@ -35,6 +36,17 @@ func (e *Emitter) Spans() []file.Span {
 
 	out := make([]file.Span, len(e.spans))
 	copy(out, e.spans)
+
+	return out
+}
+
+func (e *Emitter) AggregateSelectorSlots() []int {
+	if len(e.selectorSlots) == 0 {
+		return nil
+	}
+
+	out := make([]int, len(e.selectorSlots))
+	copy(out, e.selectorSlots)
 
 	return out
 }
@@ -184,7 +196,12 @@ func (e *Emitter) EmitABC(op bytecode.Opcode, dest, src1, src2 bytecode.Operand)
 }
 
 func (e *Emitter) emitInstruction(ins bytecode.Instruction) {
+	e.emitInstructionWithSelectorSlot(ins, -1)
+}
+
+func (e *Emitter) emitInstructionWithSelectorSlot(ins bytecode.Instruction, selectorSlot int) {
 	e.instructions = append(e.instructions, ins)
+	e.selectorSlots = append(e.selectorSlots, selectorSlot)
 	e.spans = append(e.spans, e.currentSpan)
 }
 
@@ -284,6 +301,10 @@ func (e *Emitter) patchOperand(pos int, field int, val int) {
 
 // swapInstruction swaps the operands of an instruction at a given position.
 func (e *Emitter) swapInstruction(label Label, ins bytecode.Instruction) {
+	e.swapInstructionWithSelectorSlot(label, ins, -1)
+}
+
+func (e *Emitter) swapInstructionWithSelectorSlot(label Label, ins bytecode.Instruction, selectorSlot int) {
 	pos, ok := e.LabelPosition(label)
 
 	if !ok {
@@ -291,10 +312,15 @@ func (e *Emitter) swapInstruction(label Label, ins bytecode.Instruction) {
 	}
 
 	e.instructions[pos] = ins
+	e.selectorSlots[pos] = selectorSlot
 }
 
 // swapInstruction swaps the operands of an instruction at a given position.
 func (e *Emitter) insertInstruction(label Label, ins bytecode.Instruction) {
+	e.insertInstructionWithSelectorSlot(label, ins, -1)
+}
+
+func (e *Emitter) insertInstructionWithSelectorSlot(label Label, ins bytecode.Instruction, selectorSlot int) {
 	pos, ok := e.LabelPosition(label)
 
 	if !ok {
@@ -304,6 +330,9 @@ func (e *Emitter) insertInstruction(label Label, ins bytecode.Instruction) {
 	// Insert instruction at position
 	e.instructions = append(e.instructions[:pos],
 		append([]bytecode.Instruction{ins}, e.instructions[pos:]...)...,
+	)
+	e.selectorSlots = append(e.selectorSlots[:pos],
+		append([]int{selectorSlot}, e.selectorSlots[pos:]...)...,
 	)
 	e.spans = append(e.spans[:pos],
 		append([]file.Span{e.currentSpan}, e.spans[pos:]...)...,

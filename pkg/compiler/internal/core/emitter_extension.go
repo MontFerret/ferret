@@ -98,6 +98,20 @@ func (e *Emitter) EmitLoadAggregateKey(dst, key, selector bytecode.Operand) {
 	e.EmitABC(bytecode.OpLoadAggregateKey, dst, key, selector)
 }
 
+func (e *Emitter) EmitAggregateUpdate(collector, value bytecode.Operand, selector int) {
+	e.emitInstructionWithSelectorSlot(bytecode.Instruction{
+		Opcode:   bytecode.OpAggregateUpdate,
+		Operands: [3]bytecode.Operand{collector, value, bytecode.NoopOperand},
+	}, selector)
+}
+
+func (e *Emitter) EmitAggregateGroupUpdate(collector, key, value bytecode.Operand, selector int) {
+	e.emitInstructionWithSelectorSlot(bytecode.Instruction{
+		Opcode:   bytecode.OpAggregateGroupUpdate,
+		Operands: [3]bytecode.Operand{collector, key, value},
+	}, selector)
+}
+
 func (e *Emitter) EmitBoolean(dst bytecode.Operand, value bool) {
 	if value {
 		e.EmitAB(bytecode.OpLoadBool, dst, 1)

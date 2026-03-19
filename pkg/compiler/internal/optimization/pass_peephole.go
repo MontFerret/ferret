@@ -302,6 +302,7 @@ func applyPeepholeCompactionAndRemap(state *peepholeRunState) {
 	remapPeepholeJumps(newCode, indexMap, state.keep, state.bytecodeLen)
 
 	state.prog.Bytecode = newCode
+	remapAggregateSelectorSlots(state.prog, state.keep)
 	remapDebugSpans(state.prog, state.keep)
 	remapLabels(state.prog, indexMap)
 	remapUdfEntries(state.prog, indexMap, state.keep)
@@ -594,6 +595,26 @@ func remapDebugSpans(prog *bytecode.Program, keep []bool) {
 		}
 	}
 	prog.Metadata.DebugSpans = updated
+}
+
+func remapAggregateSelectorSlots(prog *bytecode.Program, keep []bool) {
+	if prog == nil || len(prog.Metadata.AggregateSelectorSlots) == 0 {
+		return
+	}
+
+	if len(prog.Metadata.AggregateSelectorSlots) != len(keep) {
+		return
+	}
+
+	updated := make([]int, 0, len(prog.Metadata.AggregateSelectorSlots))
+
+	for i, slot := range prog.Metadata.AggregateSelectorSlots {
+		if keep[i] {
+			updated = append(updated, slot)
+		}
+	}
+
+	prog.Metadata.AggregateSelectorSlots = updated
 }
 
 func remapLabels(prog *bytecode.Program, indexMap []int) {

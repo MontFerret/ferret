@@ -159,6 +159,8 @@ const (
 
 	// Internal Aggregate Operations
 	OpLoadAggregateKey // Creates an internal grouped-aggregate selector key
+	OpAggregateUpdate
+	OpAggregateGroupUpdate
 )
 
 func (op Opcode) String() string {
@@ -394,6 +396,10 @@ func (op Opcode) String() string {
 		return "OBJSET"
 	case OpObjectSetConst:
 		return "OBJSETC"
+	case OpAggregateUpdate:
+		return "AGGUPD"
+	case OpAggregateGroupUpdate:
+		return "AGGGRPUPD"
 
 	// Stream Operations
 	case OpStream:

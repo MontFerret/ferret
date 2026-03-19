@@ -126,7 +126,7 @@ func areAggregatePlansEqual(a, b *bytecode.AggregatePlan) bool {
 		return a == b
 	}
 
-	if len(a.Keys) != len(b.Keys) {
+	if len(a.Keys) != len(b.Keys) || a.TrackGroupValues != b.TrackGroupValues {
 		return false
 	}
 
@@ -142,6 +142,12 @@ func areAggregatePlansEqual(a, b *bytecode.AggregatePlan) bool {
 func aggregatePlanHash(plan *bytecode.AggregatePlan) uint64 {
 	h := fnv.New64a()
 	h.Write([]byte("aggregate_plan:"))
+
+	if plan.TrackGroupValues {
+		h.Write([]byte{1})
+	} else {
+		h.Write([]byte{0})
+	}
 
 	for i, key := range plan.Keys {
 		h.Write([]byte(key))

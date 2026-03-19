@@ -138,7 +138,8 @@ func opcodeClass(op Opcode) OpcodeClass {
 	case OpHCall, OpProtectedHCall, OpCall, OpProtectedCall, OpTailCall:
 		return OpcodeClassCall
 	case OpDataSet, OpDataSetCollector, OpDataSetSorter, OpDataSetMultiSorter,
-		OpPush, OpPushKV, OpArrayPush, OpObjectSet, OpObjectSetConst:
+		OpPush, OpPushKV, OpArrayPush, OpObjectSet, OpObjectSetConst,
+		OpAggregateUpdate, OpAggregateGroupUpdate:
 		return OpcodeClassDataset
 	case OpStream, OpStreamIter:
 		return OpcodeClassStream

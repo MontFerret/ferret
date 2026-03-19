@@ -5,20 +5,22 @@ import (
 )
 
 type Collector struct {
-	projection     *CollectorProjection
-	aggregation    *CollectorAggregation
-	groupSelectors []*CollectSelector
-	typ            bytecode.CollectorType
-	dst            bytecode.Operand
+	projection      *CollectorProjection
+	aggregation     *CollectorAggregation
+	groupSelectors  []*CollectSelector
+	projectionState bytecode.Operand
+	typ             bytecode.CollectorType
+	dst             bytecode.Operand
 }
 
-func NewCollector(type_ bytecode.CollectorType, dst bytecode.Operand, projection *CollectorProjection, groupSelectors []*CollectSelector, aggregation *CollectorAggregation) *Collector {
+func NewCollector(type_ bytecode.CollectorType, dst bytecode.Operand, projection *CollectorProjection, projectionState bytecode.Operand, groupSelectors []*CollectSelector, aggregation *CollectorAggregation) *Collector {
 	return &Collector{
-		typ:            type_,
-		dst:            dst,
-		projection:     projection,
-		groupSelectors: groupSelectors,
-		aggregation:    aggregation,
+		typ:             type_,
+		dst:             dst,
+		projection:      projection,
+		projectionState: projectionState,
+		groupSelectors:  groupSelectors,
+		aggregation:     aggregation,
 	}
 }
 
@@ -48,6 +50,10 @@ func (c *Collector) Destination() bytecode.Operand {
 
 func (c *Collector) Projection() *CollectorProjection {
 	return c.projection
+}
+
+func (c *Collector) ProjectionState() bytecode.Operand {
+	return c.projectionState
 }
 
 func (c *Collector) GroupSelectors() []*CollectSelector {

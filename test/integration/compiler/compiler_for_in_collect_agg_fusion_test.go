@@ -9,7 +9,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func TestCollectAggregateRequiresAtLeastOneArgument(t *testing.T) {
@@ -91,7 +90,7 @@ func TestCollectAggregateGroupedFusionSupportsScalarLiteralKeys(t *testing.T) {
 	}
 }
 
-func TestCollectAggregateGroupedFusionUsesAggregateKeyOpcode(t *testing.T) {
+func TestCollectAggregateGroupedFusionUsesAggregateGroupUpdateOpcode(t *testing.T) {
 	prog := compileWithLevel(t, compiler.O0, `
 LET users = [{ age: 1 }, { age: 2 }, { age: 3 }]
 
@@ -108,14 +107,57 @@ FOR u IN users
 		t.Fatalf("expected grouped fused aggregate plan")
 	}
 
-	if !hasOpcode(prog.Bytecode, bytecode.OpLoadAggregateKey) {
-		t.Fatalf("expected grouped fused aggregation to use OpLoadAggregateKey")
+	if !hasOpcode(prog.Bytecode, bytecode.OpAggregateGroupUpdate) {
+		t.Fatalf("expected grouped fused aggregation to use OpAggregateGroupUpdate")
 	}
 
-	for _, constant := range prog.Constants {
-		if runtime.TypeName(runtime.TypeOf(constant)) == "bytecode.__agg_key_marker__" {
-			t.Fatalf("expected grouped fused aggregation to avoid legacy aggregate key marker constants")
-		}
+	if hasOpcode(prog.Bytecode, bytecode.OpPushKV) {
+		t.Fatalf("expected grouped fused aggregation without INTO to avoid raw PushKV group writes")
+	}
+}
+
+func TestCollectAggregateGroupedFusionSupportsComputedKeys(t *testing.T) {
+	prog := compileWithLevel(t, compiler.O0, `
+LET users = [{ age: 1 }, { age: 2 }, { age: 3 }]
+
+FOR u IN users
+	COLLECT g = u.age % 2
+	AGGREGATE
+		cnt = COUNT(u.age),
+		sum = SUM(u.age),
+		min = MIN(u.age)
+	RETURN { g, cnt, sum, min }
+`)
+
+	if !hasAggregatePlan(prog) {
+		t.Fatalf("expected grouped fused aggregate plan for computed group key")
+	}
+
+	if !hasOpcode(prog.Bytecode, bytecode.OpAggregateGroupUpdate) {
+		t.Fatalf("expected computed-key grouped fusion to use OpAggregateGroupUpdate")
+	}
+}
+
+func TestCollectAggregateGroupedFusionWithIntoKeepsGroupValueWrites(t *testing.T) {
+	prog := compileWithLevel(t, compiler.O0, `
+LET users = [{ age: 1 }, { age: 2 }, { age: 3 }]
+
+FOR u IN users
+	COLLECT g = u.age
+	AGGREGATE
+		cnt = COUNT(u.age),
+		sum = SUM(u.age),
+		min = MIN(u.age)
+	INTO groups
+	RETURN { g, cnt, sum, min, groups }
+`)
+
+	if !hasOpcode(prog.Bytecode, bytecode.OpAggregateGroupUpdate) {
+		t.Fatalf("expected grouped aggregate INTO to use OpAggregateGroupUpdate")
+	}
+
+	if !hasOpcode(prog.Bytecode, bytecode.OpPushKV) {
+		t.Fatalf("expected grouped aggregate INTO to keep raw group value writes")
 	}
 }
 

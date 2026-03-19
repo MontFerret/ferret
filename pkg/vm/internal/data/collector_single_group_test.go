@@ -16,6 +16,7 @@ func TestAggregateCollectorAllowsEmptyStringGroupKey(t *testing.T) {
 	collector := data.NewAggregateCollector(bytecode.NewAggregatePlan(
 		[]runtime.String{runtime.NewString("cnt")},
 		[]bytecode.AggregateKind{bytecode.AggregateCount},
+		false,
 	))
 
 	if err := collector.Set(ctx, runtime.NewString("cnt"), runtime.NewInt(1)); err != nil {
@@ -75,6 +76,7 @@ func TestGroupedAggregateCollectorAllowsEmptyStringKey(t *testing.T) {
 	collector := data.NewGroupedAggregateCollector(bytecode.NewAggregatePlan(
 		[]runtime.String{runtime.NewString("cnt")},
 		[]bytecode.AggregateKind{bytecode.AggregateCount},
+		true,
 	))
 
 	if err := collector.Set(ctx, runtime.NewString(""), runtime.NewString("row1")); err != nil {

@@ -12,11 +12,11 @@ import (
 )
 
 type AggregateCollector struct {
-	plan             bytecode.AggregatePlan
 	singleGroupValue runtime.List
 	groups           map[string]runtime.List
 	singleGroupKey   string
 	states           []aggregateState
+	plan             bytecode.AggregatePlan
 	hasSingleGroup   bool
 	hasData          bool
 }
@@ -98,6 +98,17 @@ func (c *AggregateCollector) Set(ctx context.Context, key, value runtime.Value) 
 	}
 
 	return group.Append(ctx, value)
+}
+
+func (c *AggregateCollector) UpdateAggregate(idx int, value runtime.Value) error {
+	if err := validateAggregateSelectorIndex(idx, len(c.plan.Keys)); err != nil {
+		return err
+	}
+
+	c.hasData = true
+	c.update(idx, value)
+
+	return nil
 }
 
 func (c *AggregateCollector) Get(ctx context.Context, key runtime.Value) (runtime.Value, error) {

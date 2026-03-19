@@ -43,6 +43,7 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 	collectorType := core.DetermineCollectorType(len(groupSelectors) > 0, aggregationCtx != nil, projectionCtx != nil, counterCtx != nil)
 	useAggregateCollector := false
 	aggregatePlanIndex := 0
+	var globalAggregatePlan *bytecode.AggregatePlan
 	var groupedAggregatePlan *bytecode.AggregatePlan
 	useGroupedAggregateCollector := false
 
@@ -52,6 +53,7 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 		if plan, ok := c.buildGlobalAggregatePlan(aggregationCtx); ok {
 			collectorType = bytecode.CollectorTypeAggregate
 			useAggregateCollector = true
+			globalAggregatePlan = plan
 			aggregatePlanIndex = c.ctx.AddAggregatePlan(plan)
 		}
 	}
@@ -62,7 +64,7 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 		selectors := aggregationCtx.AllCollectAggregateSelector()
 
 		if c.shouldFuseGroupedAggregation(groupingCtx, selectors) {
-			if plan, ok := c.buildGroupedAggregatePlan(selectors); ok {
+			if plan, ok := c.buildGroupedAggregatePlan(selectors, projectionCtx != nil); ok {
 				groupedAggregatePlan = plan
 				useGroupedAggregateCollector = true
 				collectorType = bytecode.CollectorTypeAggregateGroup
@@ -89,14 +91,24 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 
 	// Initialize aggregationCtx if present in the COLLECT clause
 	if aggregationCtx != nil {
-		aggregation = c.initializeAggregation(aggregationCtx, dst, kv, len(groupSelectors) > 0, groupedAggregatePlan)
+		plan := globalAggregatePlan
+		if len(groupSelectors) > 0 {
+			plan = groupedAggregatePlan
+		}
+
+		aggregation = c.initializeAggregation(aggregationCtx, dst, kv, len(groupSelectors) > 0, plan)
 	}
 
 	// Initialize projectionCtx for group variables or counters
 	projection := c.initializeProjection(kv, projectionCtx, counterCtx)
+	projectionState := bytecode.NoopOperand
+
+	if useAggregateCollector && projection != nil {
+		projectionState = c.insertGlobalAggregateProjectionBuffer(loop)
+	}
 
 	// Create the collector specification with all components
-	spec := core.NewCollector(collectorType, dst, projection, groupSelectors, aggregation)
+	spec := core.NewCollector(collectorType, dst, projection, projectionState, groupSelectors, aggregation)
 
 	// Finalize the collector setup
 	c.finalizeCollector(dst, kv, spec)
@@ -110,10 +122,15 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 func (c *LoopCollectCompiler) finalizeCollector(dst bytecode.Operand, kv *core.KV, spec *core.Collector) {
 	loop := c.ctx.Loops.Current()
 
-	// If we do not use grouping but use aggregation, we do not need to push the key and value
-	// because aggregate selectors already emitted their inputs into the collector.
-	if spec.HasGrouping() || !spec.HasAggregation() {
+	// Fused grouped aggregate collectors without INTO only need direct aggregate updates.
+	if spec.HasGrouping() {
+		if spec.Type() != bytecode.CollectorTypeAggregateGroup || spec.HasProjection() {
+			c.ctx.Emitter.EmitPushKV(dst, kv.Key, kv.Value)
+		}
+	} else if !spec.HasAggregation() {
 		c.ctx.Emitter.EmitPushKV(dst, kv.Key, kv.Value)
+	} else if spec.ProjectionState() != bytecode.NoopOperand {
+		c.ctx.Emitter.EmitArrayPush(spec.ProjectionState(), kv.Value)
 	} else if spec.HasProjection() {
 		// For projection without grouping but with aggregation, use the projection variable name as the key
 		key := loadConstant(c.ctx, runtime.String(spec.Projection().VariableName()))
@@ -122,6 +139,14 @@ func (c *LoopCollectCompiler) finalizeCollector(dst bytecode.Operand, kv *core.K
 
 	// Emit finalization instructions for the current loop
 	loop.EmitFinalization(c.ctx.Emitter)
+}
+
+func (c *LoopCollectCompiler) insertGlobalAggregateProjectionBuffer(loop *core.Loop) bytecode.Operand {
+	buf := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.InsertAx(loop.StartLabel(), bytecode.OpLoadArray, buf, 8)
+	c.ctx.Types.Set(buf, core.TypeArray)
+
+	return buf
 }
 
 // compileLoop compiles a loop construct by configuring its kind, registers, initialization, and processing based on the specification.

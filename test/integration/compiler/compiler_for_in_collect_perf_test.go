@@ -81,3 +81,43 @@ FOR i IN users
 		t.Fatalf("expected unknown custom collect projection handoff to use MOVET, got %s", got.String())
 	}
 }
+
+func TestCollectAggregateGlobalPlanUsesAggregateUpdateOpcode(t *testing.T) {
+	prog := compileWithLevel(t, compiler.O0, `
+LET users = [1, 2, 3]
+
+FOR u IN users
+	COLLECT AGGREGATE total = SUM(u)
+	RETURN total
+`)
+
+	if !hasOpcode(prog.Bytecode, bytecode.OpAggregateUpdate) {
+		t.Fatalf("expected plan-backed global aggregation to use OpAggregateUpdate")
+	}
+
+	if hasOpcode(prog.Bytecode, bytecode.OpPushKV) {
+		t.Fatalf("expected plan-backed global aggregation to avoid generic PushKV writes")
+	}
+}
+
+func TestCollectAggregateGlobalIntoUsesProjectionBufferArrayPush(t *testing.T) {
+	prog := compileWithLevel(t, compiler.O0, `
+LET users = [1, 2, 3]
+
+FOR u IN users
+	COLLECT AGGREGATE total = SUM(u) INTO groups
+	RETURN groups
+`)
+
+	if !hasOpcode(prog.Bytecode, bytecode.OpAggregateUpdate) {
+		t.Fatalf("expected global aggregate INTO to use OpAggregateUpdate")
+	}
+
+	if !hasOpcode(prog.Bytecode, bytecode.OpArrayPush) {
+		t.Fatalf("expected global aggregate INTO to append projection rows into a hidden array")
+	}
+
+	if hasOpcode(prog.Bytecode, bytecode.OpPushKV) {
+		t.Fatalf("expected global aggregate INTO to avoid pushing projection rows into the aggregate collector")
+	}
+}

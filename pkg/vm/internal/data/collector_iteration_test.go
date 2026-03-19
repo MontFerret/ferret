@@ -77,6 +77,7 @@ func TestAggregateCollectorIterateReturnsAggregatesThenSortedGroups(t *testing.T
 	collector := data.NewAggregateCollector(bytecode.NewAggregatePlan(
 		[]runtime.String{runtime.NewString("cnt"), runtime.NewString("sum")},
 		[]bytecode.AggregateKind{bytecode.AggregateCount, bytecode.AggregateSum},
+		false,
 	))
 
 	if err := collector.Set(ctx, runtime.NewString("cnt"), runtime.NewString("row")); err != nil {

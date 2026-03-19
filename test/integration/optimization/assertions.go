@@ -207,6 +207,15 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 		addUse(src2)
 		addDef(dst)
 		return
+	case bytecode.OpAggregateUpdate:
+		addUse(dst)
+		addUse(src1)
+		return
+	case bytecode.OpAggregateGroupUpdate:
+		addUse(dst)
+		addUse(src1)
+		addUse(src2)
+		return
 
 	// Simple arithmetic, comparisons, access.
 	case bytecode.OpAdd, bytecode.OpSub, bytecode.OpMul, bytecode.OpDiv, bytecode.OpMod,

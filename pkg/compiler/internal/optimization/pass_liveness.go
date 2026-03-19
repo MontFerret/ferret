@@ -193,6 +193,15 @@ func applyMoveLoadUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operan
 		collector.addUse(src2)
 		collector.addDef(dst)
 		return true
+	case bytecode.OpAggregateUpdate:
+		collector.addUse(dst)
+		collector.addUse(src1)
+		return true
+	case bytecode.OpAggregateGroupUpdate:
+		collector.addUse(dst)
+		collector.addUse(src1)
+		collector.addUse(src2)
+		return true
 	case bytecode.OpConcat:
 		collector.addDef(dst)
 		if !src1.IsRegister() {

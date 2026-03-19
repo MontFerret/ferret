@@ -2271,6 +2271,67 @@ func TestInvalidFunctionNameHasNonEmptyKind(t *testing.T) {
 	}
 }
 
+func TestBuildExecPlanRejectsMissingAggregateSelectorSlot(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpAggregateUpdate, bytecode.NewRegister(1), bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+	}
+
+	_, err := NewWith(program)
+	if err == nil {
+		t.Fatal("expected initialization error")
+	}
+
+	var initErrs *rtdiagnostics.InitializationErrorSet
+	if !errors.As(err, &initErrs) {
+		t.Fatalf("expected initialization error set, got %T", err)
+	}
+
+	if got, want := initErrs.Size(), 1; got != want {
+		t.Fatalf("unexpected initialization error count: got %d, want %d", got, want)
+	}
+
+	if got := initErrs.First().Cause; got == nil || !strings.Contains(got.Error(), "invalid aggregate selector slot") {
+		t.Fatalf("expected invalid aggregate selector slot cause, got %v", got)
+	}
+}
+
+func TestBuildExecPlanRejectsAggregateSelectorSlotLengthMismatch(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpAggregateUpdate, bytecode.NewRegister(1), bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+		Metadata: bytecode.Metadata{
+			AggregateSelectorSlots: []int{0},
+		},
+	}
+
+	_, err := NewWith(program)
+	if err == nil {
+		t.Fatal("expected initialization error")
+	}
+
+	var initErrs *rtdiagnostics.InitializationErrorSet
+	if !errors.As(err, &initErrs) {
+		t.Fatalf("expected initialization error set, got %T", err)
+	}
+
+	if got, want := initErrs.Size(), 1; got != want {
+		t.Fatalf("unexpected initialization error count: got %d, want %d", got, want)
+	}
+
+	if got := initErrs.First().Cause; got == nil || !strings.Contains(got.Error(), "metadata length") {
+		t.Fatalf("expected aggregate selector slot metadata length cause, got %v", got)
+	}
+}
+
 func TestWrapRuntimeErrorSingleWarmupFailureReturnsRuntimeError(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,

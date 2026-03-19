@@ -22,13 +22,13 @@ import (
 // For grouped aggregations, it compiles the selectors and packs them with the loop value.
 // For global aggregations, it pushes the selectors directly to the collector.
 // Returns a slice of AggregateSelectors that describe the aggregation operations.
-func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorContext, dst bytecode.Operand, kv *core.KV, withGrouping bool, groupedPlan *bytecode.AggregatePlan) *core.CollectorAggregation {
+func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorContext, dst bytecode.Operand, kv *core.KV, withGrouping bool, plan *bytecode.AggregatePlan) *core.CollectorAggregation {
 	loop := c.ctx.Loops.Current()
 	selectors := ctx.AllCollectAggregateSelector()
 
 	// If we have grouping, we need to pack the selectors into the collector value
 	if withGrouping {
-		if groupedPlan != nil {
+		if plan != nil {
 			// Fused grouped aggregation writes directly into the primary collector.
 			aggregateSelectors := c.initializeGroupedAggregationSelectors(selectors, kv, dst, true)
 			return core.NewCollectorAggregationFused(dst, aggregateSelectors)
@@ -46,7 +46,7 @@ func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorCo
 	}
 
 	// For global aggregation, we just push the selectors into the global collector
-	aggregateSelectors := c.initializeGlobalAggregationSelectors(selectors, dst)
+	aggregateSelectors := c.initializeGlobalAggregationSelectors(selectors, dst, plan != nil)
 
 	return core.NewCollectorAggregation(dst, aggregateSelectors)
 }
@@ -169,8 +169,7 @@ func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []
 				return false
 			}
 
-			key := c.loadGroupedAggregateKey(kv.Key, i)
-			c.ctx.Emitter.EmitPushKV(dst, key, parsed.Args()[0])
+			c.ctx.Emitter.EmitAggregateGroupUpdate(dst, kv.Key, parsed.Args()[0], i)
 
 			return true
 		}
@@ -187,8 +186,18 @@ func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []
 // It compiles each selector's function call expression and arguments, and pushes them directly to the collector.
 // For selectors with multiple arguments, it uses indexed keys to store each argument separately.
 // Returns a slice of AggregateSelectors that describe the aggregation operations.
-func (c *LoopCollectCompiler) initializeGlobalAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, dst bytecode.Operand) []*core.AggregateSelector {
-	return c.initializeAggregationSelectors(selectors, func(_ int, parsed *core.CompiledAggregateSelector) bool {
+func (c *LoopCollectCompiler) initializeGlobalAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, dst bytecode.Operand, planBacked bool) []*core.AggregateSelector {
+	return c.initializeAggregationSelectors(selectors, func(i int, parsed *core.CompiledAggregateSelector) bool {
+		if planBacked {
+			if len(parsed.Args()) != 1 {
+				return false
+			}
+
+			c.ctx.Emitter.EmitAggregateUpdate(dst, parsed.Args()[0], i)
+
+			return true
+		}
+
 		c.emitAggregateArgs(dst, parsed.Args(), func(argIndex int) bytecode.Operand {
 			if argIndex >= 0 {
 				// Multi-argument selectors are stored as <selectorName>:<argIndex>.
@@ -203,16 +212,16 @@ func (c *LoopCollectCompiler) initializeGlobalAggregationSelectors(selectors []f
 }
 
 func (c *LoopCollectCompiler) buildGlobalAggregatePlan(ctx fql.ICollectAggregatorContext) (*bytecode.AggregatePlan, bool) {
-	return c.buildAggregatePlan(ctx.AllCollectAggregateSelector())
+	return c.buildAggregatePlan(ctx.AllCollectAggregateSelector(), false)
 }
 
-func (c *LoopCollectCompiler) buildGroupedAggregatePlan(selectors []fql.ICollectAggregateSelectorContext) (*bytecode.AggregatePlan, bool) {
-	return c.buildAggregatePlan(selectors)
+func (c *LoopCollectCompiler) buildGroupedAggregatePlan(selectors []fql.ICollectAggregateSelectorContext, trackGroupValues bool) (*bytecode.AggregatePlan, bool) {
+	return c.buildAggregatePlan(selectors, trackGroupValues)
 }
 
 // buildAggregatePlan recognizes selectors that can be handled by VM-native aggregate collectors.
 // It intentionally accepts only unprotected calls with exactly one argument.
-func (c *LoopCollectCompiler) buildAggregatePlan(selectors []fql.ICollectAggregateSelectorContext) (*bytecode.AggregatePlan, bool) {
+func (c *LoopCollectCompiler) buildAggregatePlan(selectors []fql.ICollectAggregateSelectorContext, trackGroupValues bool) (*bytecode.AggregatePlan, bool) {
 	if len(selectors) == 0 {
 		return nil, false
 	}
@@ -251,7 +260,7 @@ func (c *LoopCollectCompiler) buildAggregatePlan(selectors []fql.ICollectAggrega
 		kinds = append(kinds, kind)
 	}
 
-	plan := bytecode.NewAggregatePlan(keys, kinds)
+	plan := bytecode.NewAggregatePlan(keys, kinds, trackGroupValues)
 
 	return &plan, true
 }
@@ -260,7 +269,6 @@ func (c *LoopCollectCompiler) shouldFuseGroupedAggregation(grouping fql.ICollect
 	// Heuristic:
 	// - only fuse when there are 3+ aggregates (to amortize setup cost)
 	// - only one group key (avoid complex composite/group-array keys)
-	// - only simple group expressions (identifier/param/simple member path/string literal)
 	if grouping == nil {
 		return false
 	}
@@ -270,62 +278,7 @@ func (c *LoopCollectCompiler) shouldFuseGroupedAggregation(grouping fql.ICollect
 	}
 
 	groupSelectors := grouping.AllCollectSelector()
-	if len(groupSelectors) != 1 {
-		return false
-	}
-
-	return isSimpleGroupExpression(groupSelectors[0].Expression())
-}
-
-func isSimpleGroupExpression(expr fql.IExpressionContext) bool {
-	if expr == nil {
-		return false
-	}
-
-	predicate := expr.Predicate()
-	if predicate == nil {
-		return false
-	}
-
-	atom := predicate.ExpressionAtom()
-	if atom == nil {
-		return false
-	}
-
-	// Disallow operators and complex expression forms.
-	if atom.AdditiveOperator() != nil || atom.MultiplicativeOperator() != nil || atom.RegexpOperator() != nil {
-		return false
-	}
-
-	if atom.FunctionCallExpression() != nil || atom.RangeOperator() != nil || atom.DispatchExpression() != nil || atom.ForExpression() != nil || atom.WaitForExpression() != nil {
-		return false
-	}
-
-	if lit := atom.Literal(); lit != nil {
-		if sl := lit.StringLiteral(); sl != nil {
-			_, ok := parseStringLiteralConst(sl)
-			return ok
-		}
-		return lit.IntegerLiteral() != nil ||
-			lit.FloatLiteral() != nil ||
-			lit.BooleanLiteral() != nil ||
-			lit.NoneLiteral() != nil
-	}
-
-	if atom.Variable() != nil || atom.Param() != nil {
-		return true
-	}
-
-	if me := atom.MemberExpression(); me != nil {
-		source := me.MemberExpressionSource()
-		if source == nil || (source.Variable() == nil && source.Param() == nil) {
-			return false
-		}
-
-		return isSimpleMemberPathChain(me.AllMemberExpressionPath())
-	}
-
-	return false
+	return len(groupSelectors) == 1
 }
 
 func aggregateKind(name runtime.String) (bytecode.AggregateKind, bool) {
@@ -494,6 +447,14 @@ func (c *LoopCollectCompiler) compileGlobalAggregationSelectorArgs(selector *cor
 func (c *LoopCollectCompiler) compileGlobalAggregationProjection(spec *core.Collector, aggregator bytecode.Operand) bytecode.Operand {
 	if !spec.HasProjection() {
 		return bytecode.NoopOperand
+	}
+
+	if projectionState := spec.ProjectionState(); projectionState != bytecode.NoopOperand {
+		varName := spec.Projection().VariableName()
+		val := c.declareLocalOrReport(spec.Projection().Context(), varName, core.TypeArray)
+		c.ctx.EmitMoveAuto(val, projectionState)
+
+		return val
 	}
 
 	return c.finalizeProjection(spec, aggregator)

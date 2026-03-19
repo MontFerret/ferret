@@ -476,6 +476,41 @@ loop:
 
 			_ = ds.Append(ctx, reg[src1])
 			state.retireOwnership(reg[src1])
+		case bytecode.OpAggregateUpdate:
+			collector, ok := reg[dst].(*data.AggregateCollector)
+			if !ok {
+				invariantErr := diagnostics.NewInvariantError(
+					"invalid aggregate collector",
+					runtime.Errorf(runtime.ErrUnexpected, "expected aggregate collector at pc %d", pc),
+				)
+				state.raiseInvariantAt(pc, invariantErr)
+				break
+			}
+
+			if err := collector.UpdateAggregate(inst.InlineSlot, reg[src1]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
+			state.retireOwnership(reg[src1])
+		case bytecode.OpAggregateGroupUpdate:
+			collector, ok := reg[dst].(*data.GroupedAggregateCollector)
+			if !ok {
+				invariantErr := diagnostics.NewInvariantError(
+					"invalid grouped aggregate collector",
+					runtime.Errorf(runtime.ErrUnexpected, "expected grouped aggregate collector at pc %d", pc),
+				)
+				state.raiseInvariantAt(pc, invariantErr)
+				break
+			}
+
+			if err := collector.UpdateAggregate(ctx, reg[src1], reg[src2], inst.InlineSlot); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
+			state.retireOwnership(reg[src1])
+			state.retireOwnership(reg[src2])
 		case bytecode.OpObjectSet:
 			key := runtime.ToString(reg[src1])
 			value := reg[src2]
