@@ -51,8 +51,6 @@ env:
   UNIT_BENCHMARK_OUTPUT: benchmark-unit-output.txt
   INTEGRATION_BENCHMARK_OUTPUT: benchmark-integration-output.txt
 
-  INTEGRATION_LABEL: pr/run-bench-integration
-
 concurrency:
   group: benchmark-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || inputs.target_ref }}
   cancel-in-progress: true
@@ -221,7 +219,7 @@ jobs:
     if: >
       github.event_name == 'pull_request' &&
       github.base_ref == 'main' &&
-      contains(github.event.pull_request.labels.*.name, env.INTEGRATION_LABEL)
+      contains(github.event.pull_request.labels.*.name, 'ci/run-bench-integration')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
