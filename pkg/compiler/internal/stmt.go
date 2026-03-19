@@ -229,7 +229,16 @@ func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationCo
 		}
 
 		if src.IsConstant() {
-			dest, ok := c.ctx.Symbols.DeclareGlobalWithOptions(name, srcType, opts)
+			var (
+				dest bytecode.Operand
+				ok   bool
+			)
+
+			if c.ctx.Symbols.Scope() == 0 {
+				dest, ok = c.ctx.Symbols.DeclareGlobalWithOptions(name, srcType, opts)
+			} else {
+				dest, ok = c.ctx.Symbols.DeclareLocalWithOptions(name, srcType, opts)
+			}
 
 			if !ok {
 				c.ctx.Errors.VariableNotUnique(ctx.(antlr.ParserRuleContext), name)

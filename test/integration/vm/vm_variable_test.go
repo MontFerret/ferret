@@ -79,6 +79,18 @@ func TestVariables(t *testing.T) {
 			RETURN i
 		`,
 			[]any{}, "Error handling in array comprehension"),
+		CaseArray(`
+			LET x = 1
+			LET values = (
+			  FOR i IN [1]
+			    LET x = 2
+			    RETURN x
+			)
+			RETURN [values, x]
+		`, []any{
+			[]any{2},
+			1,
+		}, "Inner-scope constant LET shadows without leaking past scope exit"),
 		Case(`
 			LET _ = (FOR i IN 1..100 RETURN NONE)
 			LET _ = (FOR i IN 1..100 RETURN NONE)

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 )
 
 func TestVariables(t *testing.T) {
@@ -28,4 +29,20 @@ func TestVariables(t *testing.T) {
 			I(bytecode.OpReturn, 1),
 		}),
 	})
+}
+
+func TestVariablesInnerScopeConstantShadowingCompiles(t *testing.T) {
+	expr := `
+LET x = 1
+LET values = (
+  FOR i IN [1]
+    LET x = 2
+    RETURN x
+)
+RETURN values
+`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		_ = compileWithLevel(t, level, expr)
+	}
 }

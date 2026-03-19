@@ -24,5 +24,17 @@ func TestErrors(t *testing.T) {
 				Kind:    parserd.NameError,
 				Message: "Variable 'i' is not defined",
 			}, "Global variable not defined"),
+		ErrorCase(
+			`
+			LET items = (
+			  FOR i IN [1]
+			    LET x = 1
+			    RETURN i
+			)
+			RETURN x
+		`, E{
+				Kind:    parserd.NameError,
+				Message: "Variable 'x' is not defined",
+			}, "Inner-scope constant LET does not leak after scope exit"),
 	})
 }
