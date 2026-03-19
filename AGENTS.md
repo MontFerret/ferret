@@ -212,8 +212,6 @@ Rationale:
 - standalone method-bearing types make diffs and reviews clearer
 - grouped type blocks are fine for passive, closely related types, but should not hide substantial behavioral types
 
-This should align much better with what you actually want.
-
 ## Comment rules for functions and methods
 - Do not add comments to every function or method by default.
 - Exported functions and methods should usually have doc comments, especially in public, embedding-facing, or extension-facing packages.
