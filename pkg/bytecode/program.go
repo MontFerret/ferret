@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-const Version = 6
+const Version = 1
 
 type (
 	// Catch stores an inclusive instruction range [start, end] and an optional recovery jump target.
