@@ -22,21 +22,21 @@ func matchMissingAssignmentValue(src *file.Source, err *diagnostics.Diagnostic, 
 
 	prev := offending.Prev()
 
-	if node := anyIs(offending, prev, "="); node != nil {
+	if node := anyAssignmentOperator(offending, prev); node != nil {
 		if keyword := node.Prev(); is(keyword, "COLLECT") || is(keyword, "AGGREGATE") {
 			return false
 		}
 
 		span := spanFromTokenSafe(node.Token(), src)
-		span.Start++
-		span.End++
+		span.Start = span.End
+		span.End = span.Start + 1
 
 		prevText := ""
 		if node.Prev() != nil {
 			prevText = node.Prev().GetText()
 		}
 
-		err.Message = fmt.Sprintf("Expected expression after '=' for variable '%s'", prevText)
+		err.Message = fmt.Sprintf("Expected expression after '%s' for variable '%s'", node.GetText(), prevText)
 		err.Hint = "Did you forget to provide a value?"
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing value"),
@@ -89,29 +89,60 @@ func matchAssignmentExpression(src *file.Source, err *diagnostics.Diagnostic, of
 		return false
 	}
 
-	eq := findPrevToken(offending, "=", 8)
-	if eq == nil {
+	operator := findPrevAssignmentOperator(offending, 16)
+	if operator == nil {
 		return false
 	}
 
-	prev := eq.Prev()
+	prev := operator.Prev()
 	if prev == nil || !isIdentifier(prev) {
 		return false
 	}
 
-	if marker := eq.PrevAt(2); is(marker, "LET") || is(marker, "VAR") || is(marker, "COLLECT") || is(marker, "AGGREGATE") || is(marker, "FOR") {
+	if operator != offending {
+		if next := operator.Next(); next == nil || next == offending || isEOF(next) {
+			return false
+		}
+	}
+
+	if marker := operator.PrevAt(2); is(marker, "LET") || is(marker, "VAR") || is(marker, "COLLECT") || is(marker, "AGGREGATE") || is(marker, "FOR") {
 		return false
 	}
 
-	span := spanFromTokenSafe(eq.Token(), src)
-	span.Start++
-	span.End++
+	span := spanFromTokenSafe(operator.Token(), src)
 
 	err.Message = "Assignment is only allowed as a standalone statement"
-	err.Hint = fmt.Sprintf("Move '%s = ...' to its own statement. Assignment cannot be used inside expressions.", prev.GetText())
+	err.Hint = fmt.Sprintf("Move '%s %s ...' to its own statement. Assignment cannot be used inside expressions.", prev.GetText(), operator.GetText())
 	err.Spans = []diagnostics.ErrorSpan{
 		diagnostics.NewMainErrorSpan(span, "assignment is not an expression"),
 	}
 
 	return true
+}
+
+func anyAssignmentOperator(nodes ...*TokenNode) *TokenNode {
+	for _, node := range nodes {
+		if isAssignmentOperator(node) {
+			return node
+		}
+	}
+
+	return nil
+}
+
+func findPrevAssignmentOperator(node *TokenNode, steps int) *TokenNode {
+	current := node
+	for i := 0; i < steps && current != nil; i++ {
+		if isAssignmentOperator(current) {
+			return current
+		}
+
+		current = current.Prev()
+	}
+
+	return nil
+}
+
+func isAssignmentOperator(node *TokenNode) bool {
+	return is(node, "=") || is(node, "+=") || is(node, "-=") || is(node, "*=") || is(node, "/=")
 }

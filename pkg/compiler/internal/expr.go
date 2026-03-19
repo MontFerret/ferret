@@ -622,27 +622,11 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) bytecode.Oper
 
 func resolveAtomBinaryOperator(ctx fql.IExpressionAtomContext) (atomBinaryOperator, bool) {
 	if op := ctx.MultiplicativeOperator(); op != nil {
-		switch op.GetText() {
-		case "*":
-			return atomBinaryOperator{opcode: bytecode.OpMul}, true
-		case "/":
-			return atomBinaryOperator{opcode: bytecode.OpDiv}, true
-		case "%":
-			return atomBinaryOperator{opcode: bytecode.OpMod}, true
-		default:
-			return atomBinaryOperator{}, false
-		}
+		return resolveArithmeticBinaryOperator(op.GetText())
 	}
 
 	if op := ctx.AdditiveOperator(); op != nil {
-		switch op.GetText() {
-		case "+":
-			return atomBinaryOperator{opcode: bytecode.OpAdd}, true
-		case "-":
-			return atomBinaryOperator{opcode: bytecode.OpSub}, true
-		default:
-			return atomBinaryOperator{}, false
-		}
+		return resolveArithmeticBinaryOperator(op.GetText())
 	}
 
 	if op := ctx.RegexpOperator(); op != nil {
@@ -654,6 +638,23 @@ func resolveAtomBinaryOperator(ctx fql.IExpressionAtomContext) (atomBinaryOperat
 	}
 
 	return atomBinaryOperator{}, false
+}
+
+func resolveArithmeticBinaryOperator(operator string) (atomBinaryOperator, bool) {
+	switch operator {
+	case "+", "+=":
+		return atomBinaryOperator{opcode: bytecode.OpAdd}, true
+	case "-", "-=":
+		return atomBinaryOperator{opcode: bytecode.OpSub}, true
+	case "*", "*=":
+		return atomBinaryOperator{opcode: bytecode.OpMul}, true
+	case "/", "/=":
+		return atomBinaryOperator{opcode: bytecode.OpDiv}, true
+	case "%":
+		return atomBinaryOperator{opcode: bytecode.OpMod}, true
+	default:
+		return atomBinaryOperator{}, false
+	}
 }
 
 func (c *ExprCompiler) compileBinaryAtom(ctx fql.IExpressionAtomContext, op atomBinaryOperator) bytecode.Operand {
@@ -669,27 +670,37 @@ func (c *ExprCompiler) compileBinaryAtom(ctx fql.IExpressionAtomContext, op atom
 }
 
 func (c *ExprCompiler) emitBinaryAtomOperation(ctx fql.IExpressionAtomContext, op atomBinaryOperator, left, right bytecode.Operand) bytecode.Operand {
-	dst := c.ctx.Registers.Allocate()
+	prc, _ := ctx.(antlr.ParserRuleContext)
+
+	return emitBinaryOperation(c.ctx, prc, op, left, right)
+}
+
+func emitBinaryOperation(ctx *CompilerContext, prc antlr.ParserRuleContext, op atomBinaryOperator, left, right bytecode.Operand) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
+	dst := ctx.Registers.Allocate()
 	span := file.Span{Start: -1, End: -1}
 
-	if prc, ok := ctx.(antlr.ParserRuleContext); ok {
+	if prc != nil {
 		span = diagnostics.SpanFromRuleContext(prc)
 	}
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitABC(op.opcode, dst, left, right)
+	ctx.Emitter.WithSpan(span, func() {
+		ctx.Emitter.EmitABC(op.opcode, dst, left, right)
 
 		if op.negated {
-			c.ctx.Emitter.EmitAB(bytecode.OpNot, dst, dst)
+			ctx.Emitter.EmitAB(bytecode.OpNot, dst, dst)
 		}
 	})
 
-	resultType := inferBinaryAtomResultType(c.ctx, op, left, right)
+	resultType := inferBinaryResultType(ctx, op, left, right)
 	if op.negated {
 		resultType = core.TypeBool
 	}
 	if resultType != core.TypeUnknown {
-		c.ctx.Types.Set(dst, resultType)
+		ctx.Types.Set(dst, resultType)
 	}
 
 	return dst

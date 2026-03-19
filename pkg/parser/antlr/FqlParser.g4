@@ -171,12 +171,20 @@ variableDeclaration
     ;
 
 assignmentStatement
-    : assignmentTarget Assign expression
+    : assignmentTarget assignmentOperator expression
     ;
 
 assignmentTarget
     : bindingIdentifier
     | memberExpression
+    ;
+
+assignmentOperator
+    : Assign
+    | PlusAssign
+    | MinusAssign
+    | MultiAssign
+    | DivAssign
     ;
 
 functionDeclaration

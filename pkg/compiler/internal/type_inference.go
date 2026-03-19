@@ -144,7 +144,7 @@ func operandType(ctx *CompilerContext, op bytecode.Operand) core.ValueType {
 	return ctx.Types.Resolve(op)
 }
 
-func inferBinaryAtomResultType(ctx *CompilerContext, op atomBinaryOperator, left, right bytecode.Operand) core.ValueType {
+func inferBinaryResultType(ctx *CompilerContext, op atomBinaryOperator, left, right bytecode.Operand) core.ValueType {
 	leftType := operandType(ctx, left)
 	rightType := operandType(ctx, right)
 

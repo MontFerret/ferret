@@ -39,6 +39,10 @@ Lte: '<=';
 Neq: '!=';
 
 // Arithmetic operators
+MultiAssign: '*=';
+DivAssign: '/=';
+PlusAssign: '+=';
+MinusAssign: '-=';
 Multi: '*';
 Div: '/';
 Mod: '%';

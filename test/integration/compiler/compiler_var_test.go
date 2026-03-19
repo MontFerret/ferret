@@ -1,10 +1,12 @@
 package compiler_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/file"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
@@ -47,21 +49,70 @@ func TestVarSyntaxErrors(t *testing.T) {
 			}, "VAR cannot use discard binding"),
 		ErrorCase(
 			`
-			VAR x = 0
-			RETURN (x = 1)
-		`, E{
+				VAR x = 0
+				RETURN (x = 1)
+			`, E{
 				Kind: parserd.SyntaxError,
 			}, "Assignment is not allowed inside expressions"),
+		ErrorCase(
+			`
+				VAR x = 0
+				x +=
+				RETURN x
+			`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected expression after '+=' for variable 'x'",
+				Hint:    "Did you forget to provide a value?",
+			}, "Compound assignment missing assignment value"),
+		ErrorCase(
+			`
+				VAR x = 0
+				RETURN (x += 1)
+			`, E{
+				Kind: parserd.SyntaxError,
+			}, "Compound assignment is not allowed inside expressions"),
 	})
+}
+
+func TestVarCompoundAssignmentMissingValueDiagnosticSpan(t *testing.T) {
+	src := "VAR x = 0\nx +=\nRETURN x"
+
+	_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).Compile(file.NewSource("var_compound_span", src))
+	if err == nil {
+		t.Fatal("expected compilation error")
+	}
+
+	diag := firstCompilationError(err)
+	if diag == nil {
+		t.Fatal("expected diagnostic")
+	}
+
+	if diag.Kind != parserd.SyntaxError {
+		t.Fatalf("expected syntax error, got %s", diag.Kind)
+	}
+
+	if diag.Message != "Expected expression after '+=' for variable 'x'" {
+		t.Fatalf("unexpected diagnostic message: %q", diag.Message)
+	}
+
+	if len(diag.Spans) == 0 {
+		t.Fatal("expected diagnostic spans")
+	}
+
+	wantStart := strings.Index(src, "+=") + len("+=")
+	got := diag.Spans[0].Span
+	if got.Start != wantStart || got.End != wantStart+1 {
+		t.Fatalf("expected span [%d,%d), got [%d,%d)", wantStart, wantStart+1, got.Start, got.End)
+	}
 }
 
 func TestVarErrors(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		ErrorCase(
 			`
-			LET x = 1
-			x = 2
-			RETURN x
+				LET x = 1
+				x = 2
+				RETURN x
 		`, E{
 				Kind:    parserd.SemanticError,
 				Message: "Variable 'x' cannot be reassigned",
@@ -69,8 +120,18 @@ func TestVarErrors(t *testing.T) {
 			}, "LET remains immutable"),
 		ErrorCase(
 			`
-			x = 1
-			RETURN 0
+				LET x = 1
+				x += 1
+				RETURN x
+			`, E{
+				Kind:    parserd.SemanticError,
+				Message: "Variable 'x' cannot be reassigned",
+				Hint:    "Declare it with VAR if you need to update it.",
+			}, "LET remains immutable for compound assignment"),
+		ErrorCase(
+			`
+				x = 1
+				RETURN 0
 		`, E{
 				Kind:    parserd.NameError,
 				Message: "Variable 'x' is not defined",
@@ -109,9 +170,19 @@ func TestVarErrors(t *testing.T) {
 			}, "Property assignment is rejected"),
 		ErrorCase(
 			`
-			LET arr = [0]
-			arr[0] = 1
-			RETURN arr
+				LET obj = {}
+				obj.x += 1
+				RETURN obj
+			`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Assignment target must be a local variable name",
+				Hint:    "Property and index assignment are not supported. Use UPDATE for structural changes.",
+			}, "Compound property assignment is rejected"),
+		ErrorCase(
+			`
+				LET arr = [0]
+				arr[0] = 1
+				RETURN arr
 		`, E{
 				Kind:    parserd.SyntaxError,
 				Message: "Assignment target must be a local variable name",
@@ -119,8 +190,18 @@ func TestVarErrors(t *testing.T) {
 			}, "Index assignment is rejected"),
 		ErrorCase(
 			`
-			VAR x = 1
-			FUNC outer() (
+				LET arr = [0]
+				arr[0] += 1
+				RETURN arr
+			`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Assignment target must be a local variable name",
+				Hint:    "Property and index assignment are not supported. Use UPDATE for structural changes.",
+			}, "Compound index assignment is rejected"),
+		ErrorCase(
+			`
+				VAR x = 1
+				FUNC outer() (
 			  LET x = 2
 			  x = 3
 			  RETURN x
@@ -154,14 +235,43 @@ FOR item IN [1, 2]
   VAR current = item
   current = current + 1
   RETURN current
-`,
+		`,
 		`
-VAR i = 0
-FOR WHILE i < 2
-  LET current = i
-  i = i + 1
-  RETURN current
-`,
+	VAR i = 0
+	FOR WHILE i < 2
+	  LET current = i
+	  i = i + 1
+	  RETURN current
+	`,
+		`
+	VAR total = 10
+	total += 1
+	total -= 2
+	total *= 3
+	total /= 3
+	RETURN total
+	`,
+		`
+	FUNC run() (
+	  VAR total = 10
+	  total += 1
+	  total -= 2
+	  total *= 3
+	  total /= 3
+	  RETURN total
+	)
+	RETURN run()
+	`,
+		`
+	VAR i = 0
+	FOR WHILE i < 3
+	  LET current = i
+	  i += 1
+	  i -= 0
+	  i *= 1
+	  i /= 1
+	  RETURN current
+	`,
 	}
 
 	for _, expr := range expressions {
@@ -182,10 +292,23 @@ RETURN x
 	}
 }
 
+func TestVarRegisterBackedCompoundAssignmentAvoidsCellOps(t *testing.T) {
+	expr := `
+	VAR x = 1
+	x += 1
+	RETURN x
+	`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		prog := compileWithLevel(t, level, expr)
+		assertNoCellOps(t, prog)
+	}
+}
+
 func TestVarReadOnlyCaptureStaysByValueAcrossOptimizationLevels(t *testing.T) {
 	expr := `
-VAR base = 1
-FUNC getBase() => base
+	VAR base = 1
+	FUNC getBase() => base
 RETURN getBase()
 `
 
@@ -222,10 +345,37 @@ RETURN setBase(2)
 	}
 }
 
+func TestVarWriteCaptureCompoundAssignmentUsesCellOpsAcrossOptimizationLevels(t *testing.T) {
+	expr := `
+	VAR base = 1
+	FUNC addToBase(v) (
+	  base += v
+	  RETURN base
+	)
+	RETURN addToBase(2)
+	`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		prog := compileWithLevel(t, level, expr)
+
+		if got := countOpcode(prog, bytecode.OpMakeCell); got == 0 {
+			t.Fatalf("expected %s in optimized level %v", bytecode.OpMakeCell, level)
+		}
+
+		if got := countOpcode(prog, bytecode.OpLoadCell); got == 0 {
+			t.Fatalf("expected %s in optimized level %v", bytecode.OpLoadCell, level)
+		}
+
+		if got := countOpcode(prog, bytecode.OpStoreCell); got == 0 {
+			t.Fatalf("expected %s in optimized level %v", bytecode.OpStoreCell, level)
+		}
+	}
+}
+
 func TestVarReassignmentOutsideLoopKeepsExactType(t *testing.T) {
 	expr := `
-VAR x = [1, 2]
-x = { value: 1 }
+	VAR x = [1, 2]
+	x = { value: 1 }
 RETURN x[0]
 `
 
