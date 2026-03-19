@@ -187,8 +187,6 @@ Treat these as implementation-sensitive and verify current code before proposing
 
 Do not treat historical discussion, stale comments, or old branches as authoritative.
 
-Here’s a corrected replacement for that section.
-
 ## Go type and file structure rules
 
 These rules are mandatory unless the task explicitly requires otherwise.
@@ -207,12 +205,49 @@ These rules are mandatory unless the task explicitly requires otherwise.
 - Methods for a struct should live in the same file as the struct unless there is a strong, explicit reason to split by concern.
 - Do not place a new method-bearing struct into an existing file just because the code compiles.
 
-Rationale:
+Allowed:
+
+```go
+type (
+	PassResult struct {
+		Metadata map[string]any
+		Modified bool
+	}
+
+	PassContext struct {
+		Program  *bytecode.Program
+		CFG      *ControlFlowGraph
+		Metadata map[string]any
+	}
+
+	Pass interface {
+		Name() string
+		Requires() []string
+		Run(ctx *PassContext) (*PassResult, error)
+	}
+)
+```
+
+Avoid:
+
+```go
+type (
+	Result struct {
+		// ...
+	}
+
+	execState struct {
+		// ...
+	}
+)
+```
+
+### Rationale:
 - one method-bearing type per file keeps ownership of behavior obvious
 - standalone method-bearing types make diffs and reviews clearer
 - grouped type blocks are fine for passive, closely related types, but should not hide substantial behavioral types
 
-## Comment rules for functions and methods
+Comment rules for functions and methods
 - Do not add comments to every function or method by default.
 - Exported functions and methods should usually have doc comments, especially in public, embedding-facing, or extension-facing packages.
 - Unexported functions and methods should be commented only when they carry non-obvious behavior, invariants, side effects, ownership rules, cleanup expectations, or protocol/lifecycle constraints.
@@ -223,6 +258,7 @@ Rationale:
 - Avoid comment wallpaper. Dense, meaningful comments are preferred over mechanically documenting obvious code.
 
 Preferred:
+
 ```go
 // Close releases resources associated with the result.
 // It is safe to call multiple times. Once closed, the result must not be reused.
@@ -244,49 +280,117 @@ Avoid:
 func (r *Result) Close() error
 ```
 
-## Benchmark expectations for significant changes
+## Development practice expectations
 
-For significant changes, benchmark validation is required in addition to correctness testing.
+Agents must follow repository-specific engineering discipline rather than generic style preferences.
 
-A change is significant when it modifies behavior in a way that could reasonably affect:
+### Core principles
+- Preserve correctness first.
+- Preserve subsystem boundaries and invariants.
+- Prefer the smallest local change that fully solves the task.
+- Avoid introducing abstractions, indirection, or refactors unless they are necessary for correctness, maintainability, or an explicitly requested design change.
+- Do not optimize by intuition alone; use measurements for performance-sensitive work.
+- Keep behavioral ownership obvious in code structure, naming, and file layout.
+
+### Mandatory expectations
+- Identify the owning subsystem before making a non-trivial change.
+- Preserve existing behavior unless the task explicitly requires changing it.
+- Add or update tests for any behavior change.
+- Add or update benchmarks for any significant change.
+- Run the narrowest relevant validation first, then broaden as appropriate.
+- Do not claim tests, benchmarks, or validation were completed unless they were actually run.
+- Do not treat historical discussions, abandoned directions, or old branches as authoritative over current code and repository guidance.
+- Do not perform opportunistic refactors unrelated to the requested task unless they are required for correctness.
+
+### Required workflow for non-trivial changes
+
+Before making a non-trivial change, agents must:
+1.	Identify the owning subsystem.
+2.	Identify the contract, invariant, or behavior being preserved or changed.
+3.	Choose the smallest reasonable implementation that fits the existing design.
+4.	Determine whether the change is significant.
+5.	Add or update correctness tests.
+6.	Add or update benchmarks if the change is significant.
+7.	Run relevant validation and summarize the results accurately.
+
+### Significant changes
+
+A change is significant when it could reasonably affect:
 - execution throughput
 - compile-time performance
 - latency on common paths
 - allocation patterns
-- memory reuse or pooling behavior
-- cleanup or ownership behavior
+- memory reuse, pooling, or cleanup behavior
 - result/materialization cost
 - optimizer or code generation output relevant to performance
 
 This includes, but is not limited to, changes in:
-- `pkg/vm`
-- `pkg/runtime`
-- `pkg/compiler`
-- `pkg/bytecode`
-- `pkg/encoding`
+- pkg/vm
+- pkg/runtime
+- pkg/compiler
+- pkg/bytecode
+- pkg/encoding
 - parser/compiler hot paths
 - caching, pooling, register allocation, ownership tracking, or materialization logic
 
 This usually does not include:
-- comments, docs, or formatting-only edits
+- comment-only, docs-only, or formatting-only edits
 - pure renames with no behavior change
 - test-only changes
 - narrowly scoped refactors that do not affect behavior or hot paths
+
+When in doubt, treat the change as significant and benchmark it.
+
+### Benchmark workflow for significant changes
 
 For significant changes, agents must:
 - run relevant benchmarks before making the change and save the results as a baseline
 - implement the change
 - run the same benchmarks again after the change
-- compare before/after results, preferably including `ns/op`, `B/op`, and `allocs/op`
+- compare before/after results, preferably including ns/op, B/op, and allocs/op
 - report the benchmark command used and summarize the performance delta
-
-Significant changes must be covered by both:
-- tests that validate correctness
-- benchmarks that validate the affected performance-sensitive path
 
 If no relevant benchmark exists for the changed hot path, add one.
 
-If benchmark tooling, data, or environment is unavailable, state that explicitly and do not claim benchmark validation was completed.
+If benchmark tooling or environment is unavailable, state that explicitly and do not claim benchmark validation was completed.
+
+## Validation and evidence
+
+When finishing a non-trivial change, agents should report:
+- owning subsystem
+- files changed
+- tests added or updated
+- benchmarks added or updated
+- validation commands run
+- benchmark commands run, if applicable
+- notable invariants preserved or intentionally changed
+
+For significant changes:
+- tests alone are not sufficient
+- both correctness tests and benchmarks are required
+- benchmark results must be compared against a baseline when the environment allows it
+
+### Change discipline
+- Prefer adapting an existing local pattern over introducing a new architectural pattern.
+- Do not add new helper layers, wrappers, interfaces, or abstractions only for aesthetic reasons.
+- Do not move code across packages unless the ownership boundary is genuinely wrong.
+- Keep diffs focused on the requested task.
+- If a cleanup is necessary to make the requested change safe, keep it tightly scoped and explain why it was needed.
+
+### Comment and documentation discipline
+- Add comments where semantics, invariants, side effects, ownership, lifecycle, or recovery behavior are non-obvious.
+- Do not add comment wallpaper.
+- Prefer comments that explain why, contract, or invariants rather than implementation narration.
+- Public and extension-facing behavior should be documented more carefully than local obvious helpers.
+
+### Decision bias when uncertain
+
+When uncertain:
+- preserve existing behavior
+- prefer the smaller local change
+- add a focused test
+- treat the change as significant if performance might be affected
+- verify ownership before introducing a new abstraction or package-level dependency
 
 ## Tooling prerequisites
 - Go must be installed.
@@ -321,15 +425,14 @@ If benchmark tooling, data, or environment is unavailable, state that explicitly
     - Cross-cutting changes: finish with `go test ./...` or `make test`.
 - Do not assume e2e is available locally. If Chromium or `lab` is missing, state that explicitly.
 
-## Validation expectations
-
+### Validation expectations
 - After code changes, run the narrowest tests that prove the behavior you touched.
 - Before finishing broader changes, run the relevant repo-level command from the matrix above.
 - If you changed formatting-sensitive files, run make fmt.
 - If you changed lint-sensitive code paths or public behavior, run make lint when the toolchain is available.
 - If you changed parser grammar, generated lexer/parser output must be included and reviewed.
 
-Expectations for non-trivial changes
+### Expectations for non-trivial changes
 
 When proposing or implementing non-trivial changes:
 - identify the owning subsystem first
@@ -339,3 +442,6 @@ When proposing or implementing non-trivial changes:
 - do not perform opportunistic refactors unrelated to the requested task unless they are necessary for correctness
 
 ## Secondary references
+- README.md for product context and links to the broader Ferret ecosystem.
+- CONTRIBUTING.md for human contributor process.
+- .github/workflows/build.yml for the current CI validation path.
