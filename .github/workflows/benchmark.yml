@@ -7,6 +7,12 @@ on:
   pull_request:
     branches:
       - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
   workflow_dispatch:
     inputs:
       run_unit:
@@ -34,8 +40,6 @@ on:
         required: false
         default: "1"
         type: string
-  issue_comment:
-    types: [created]
 
 permissions:
   contents: read
@@ -43,11 +47,14 @@ permissions:
 env:
   UNIT_BENCHMARK_NAME: Ferret Go Benchmarks - Unit
   INTEGRATION_BENCHMARK_NAME: Ferret Go Benchmarks - Integration
+
   UNIT_BENCHMARK_OUTPUT: benchmark-unit-output.txt
   INTEGRATION_BENCHMARK_OUTPUT: benchmark-integration-output.txt
 
+  INTEGRATION_LABEL: pr/run-bench-integration
+
 concurrency:
-  group: benchmark-${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref || inputs.target_ref }}
+  group: benchmark-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || inputs.target_ref }}
   cancel-in-progress: true
 
 jobs:
@@ -60,14 +67,17 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Run unit benchmarks
+        shell: bash
         run: |
           set -euo pipefail
           make bench-unit BENCH_COUNT=5 BENCH_TIMEOUT=15m | tee "${UNIT_BENCHMARK_OUTPUT}"
@@ -102,14 +112,17 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Run integration benchmarks
+        shell: bash
         run: |
           set -euo pipefail
           make bench-integration BENCH_COUNT=5 BENCH_TIMEOUT=30m | tee "${INTEGRATION_BENCHMARK_OUTPUT}"
@@ -145,14 +158,17 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Run unit benchmarks
+        shell: bash
         run: |
           set -euo pipefail
           make bench-unit BENCH_COUNT=1 BENCH_TIMEOUT=10m | tee "${UNIT_BENCHMARK_OUTPUT}"
@@ -165,7 +181,7 @@ jobs:
           path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
           if-no-files-found: warn
 
-      - name: Compare unit benchmark result and comment
+      - name: Compare unit benchmark result and comment on same-repo PRs
         if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
         uses: benchmark-action/github-action-benchmark@v1
         with:
@@ -183,6 +199,164 @@ jobs:
           fail-on-alert: true
           alert-threshold: '150%'
 
+      - name: Compare unit benchmark result without PR comment
+        if: github.event.pull_request.head.repo.full_name != github.repository || github.actor == 'dependabot[bot]'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.UNIT_BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/unit
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: false
+          save-data-file: false
+          summary-always: true
+          fail-on-alert: false
+          alert-threshold: '150%'
+
+  pr-compare-integration:
+    name: Compare PR integration benchmarks
+    if: >
+      github.event_name == 'pull_request' &&
+      github.base_ref == 'main' &&
+      contains(github.event.pull_request.labels.*.name, env.INTEGRATION_LABEL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run integration benchmarks
+        shell: bash
+        run: |
+          set -euo pipefail
+          make bench-integration BENCH_COUNT=1 BENCH_TIMEOUT=30m | tee "${INTEGRATION_BENCHMARK_OUTPUT}"
+
+      - name: Upload raw integration benchmark output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-output-pr-integration-${{ github.event.pull_request.number }}
+          path: ${{ env.INTEGRATION_BENCHMARK_OUTPUT }}
+          if-no-files-found: warn
+
+      - name: Compare integration benchmark result and comment on same-repo PRs
+        if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.INTEGRATION_BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.INTEGRATION_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/integration
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: false
+          save-data-file: false
+          comment-always: true
+          summary-always: true
+          fail-on-alert: false
+          alert-threshold: '150%'
+
+      - name: Compare integration benchmark result without PR comment
+        if: github.event.pull_request.head.repo.full_name != github.repository || github.actor == 'dependabot[bot]'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.INTEGRATION_BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.INTEGRATION_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/integration
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: false
+          save-data-file: false
+          summary-always: true
+          fail-on-alert: false
+          alert-threshold: '150%'
+
+  manual-compare-unit:
+    name: Manual unit benchmark comparison
+    if: github.event_name == 'workflow_dispatch' && inputs.run_unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_ref }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run unit benchmarks
+        shell: bash
+        run: |
+          set -euo pipefail
+          make bench-unit BENCH_COUNT=${{ inputs.bench_count }} BENCH_TIMEOUT=10m | tee "${UNIT_BENCHMARK_OUTPUT}"
+
+      - name: Upload raw unit benchmark output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-output-manual-unit
+          path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
+          if-no-files-found: warn
+
+      - name: Compare unit benchmark result
+        if: ${{ inputs.pr_number == '' }}
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.UNIT_BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/unit
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: false
+          save-data-file: false
+          summary-always: true
+          fail-on-alert: false
+          alert-threshold: '150%'
+
+      - name: Compare unit benchmark result and comment on PR
+        if: ${{ inputs.pr_number != '' }}
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.UNIT_BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/unit
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: false
+          save-data-file: false
+          comment-always: true
+          summary-always: true
+          fail-on-alert: false
+          alert-threshold: '150%'
+
   manual-compare-integration:
     name: Manual integration benchmark comparison
     if: github.event_name == 'workflow_dispatch' && inputs.run_integration_compare
@@ -193,16 +367,19 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.target_ref }}
 
-      - uses: actions/setup-go@v5
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Run integration benchmarks
+        shell: bash
         run: |
           set -euo pipefail
           make bench-integration BENCH_COUNT=${{ inputs.bench_count }} BENCH_TIMEOUT=30m | tee "${INTEGRATION_BENCHMARK_OUTPUT}"
@@ -234,131 +411,6 @@ jobs:
 
       - name: Compare integration benchmark result and comment on PR
         if: ${{ inputs.pr_number != '' }}
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          name: ${{ env.INTEGRATION_BENCHMARK_NAME }}
-          tool: go
-          output-file-path: ${{ env.INTEGRATION_BENCHMARK_OUTPUT }}
-          benchmark-data-dir-path: dev/bench/integration
-          gh-pages-branch: gh-pages
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          ref: refs/heads/main
-          auto-push: false
-          save-data-file: false
-          comment-on-alert: true
-          comment-always: true
-          summary-always: true
-          fail-on-alert: false
-          alert-threshold: '150%'
-          pull-request: ${{ inputs.pr_number }}
-
-  comment-compare-integration:
-    name: Comment-triggered integration benchmark comparison
-    if: >
-      github.event_name == 'issue_comment' &&
-      github.event.issue.pull_request &&
-      startsWith(github.event.comment.body, '/bench-integration')
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
-
-    steps:
-      - name: Reject untrusted trigger
-        id: authz
-        run: |
-          set -euo pipefail
-          assoc="${{ github.event.comment.author_association }}"
-          case "$assoc" in
-            OWNER|MEMBER|COLLABORATOR)
-              echo "allowed=true" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "allowed=false" >> "$GITHUB_OUTPUT"
-              ;;
-          esac
-
-      - name: Add denial comment
-        if: steps.authz.outputs.allowed != 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: "Integration benchmarks can only be triggered by a repository owner, member, or collaborator."
-            })
-
-      - name: Get PR metadata
-        if: steps.authz.outputs.allowed == 'true'
-        id: pr
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const pr = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-            });
-
-            core.setOutput('head_repo', pr.data.head.repo.full_name);
-            core.setOutput('head_ref', pr.data.head.ref);
-            core.setOutput('head_sha', pr.data.head.sha);
-
-      - name: Reject fork PRs
-        if: steps.authz.outputs.allowed == 'true' && steps.pr.outputs.head_repo != github.repository
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: "Comment-triggered integration benchmarks are only enabled for same-repository PRs. Use the manual workflow for fork PRs."
-            })
-
-      - uses: actions/checkout@v4
-        if: steps.authz.outputs.allowed == 'true' && steps.pr.outputs.head_repo == github.repository
-        with:
-          ref: ${{ steps.pr.outputs.head_sha }}
-
-      - uses: actions/setup-go@v5
-        if: steps.authz.outputs.allowed == 'true' && steps.pr.outputs.head_repo == github.repository
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Acknowledge command
-        if: steps.authz.outputs.allowed == 'true' && steps.pr.outputs.head_repo == github.repository
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: "Running integration benchmarks for `" + "${{ steps.pr.outputs.head_sha }}".slice(0,7) + "` against the main baseline."
-            })
-
-      - name: Run integration benchmarks
-        if: steps.authz.outputs.allowed == 'true' && steps.pr.outputs.head_repo == github.repository
-        run: |
-          set -euo pipefail
-          make bench-integration BENCH_COUNT=1 BENCH_TIMEOUT=30m | tee "${INTEGRATION_BENCHMARK_OUTPUT}"
-
-      - name: Upload raw integration benchmark output
-        if: always() && steps.authz.outputs.allowed == 'true' && steps.pr.outputs.head_repo == github.repository
-        uses: actions/upload-artifact@v4
-        with:
-          name: benchmark-output-comment-integration-pr-${{ github.event.issue.number }}
-          path: ${{ env.INTEGRATION_BENCHMARK_OUTPUT }}
-          if-no-files-found: warn
-
-      - name: Compare integration benchmark result and comment
-        if: steps.authz.outputs.allowed == 'true' && steps.pr.outputs.head_repo == github.repository
         uses: benchmark-action/github-action-benchmark@v1
         with:
           name: ${{ env.INTEGRATION_BENCHMARK_NAME }}
