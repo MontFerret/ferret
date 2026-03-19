@@ -40,6 +40,123 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 
 		ErrorCase(
 			`
+			FOR i = 0 WHILE i < 5 STEP i = i + 1
+				RETURN i
+		`, E{
+				Kind: parserd.SyntaxError,
+			}, "Legacy STEP syntax fails generically"),
+
+		ErrorCase(
+			`
+			VAR i = 0
+			WHILE i < 10
+				i = i + 1
+			RETURN i
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Standalone WHILE loops are not supported",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "Standalone WHILE loop at top level"),
+
+		ErrorCase(
+			`
+			VAR i = 0
+			DO WHILE i < 10
+				i = i + 1
+			RETURN i
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Standalone DO WHILE loops are not supported",
+				Hint:    "Use 'FOR DO WHILE [condition]' or 'FOR x DO WHILE [condition]' syntax.",
+			}, "Standalone DO WHILE loop at top level"),
+
+		ErrorCase(
+			`
+			FOR WHILE
+				RETURN 1
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected condition after 'WHILE'",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "FOR WHILE without condition"),
+
+		ErrorCase(
+			`
+			FOR DO WHILE
+				RETURN 1
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected condition after 'WHILE'",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "FOR DO WHILE without condition"),
+
+		ErrorCase(
+			`
+			FOR 123 WHILE TRUE
+				RETURN 1
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected identifier before 'WHILE'",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "FOR WHILE with invalid binding"),
+
+		ErrorCase(
+			`
+			FOR 123 DO WHILE TRUE
+				RETURN 1
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected identifier before 'WHILE'",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "FOR DO WHILE with invalid binding"),
+
+		ErrorCase(
+			`
+			LET ok = (
+				FOR WHILE FALSE
+					RETURN 1
+			)
+
+			FOR 123 WHILE TRUE
+				RETURN ok
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected identifier before 'WHILE'",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "Later FOR WHILE invalid binding is detected"),
+
+		ErrorCase(
+			`
+			LET ok = (
+				FOR DO WHILE FALSE
+					RETURN 1
+			)
+
+			FOR 123 DO WHILE TRUE
+				RETURN ok
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected identifier before 'WHILE'",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "Later FOR DO WHILE invalid binding is detected"),
+
+		ErrorCase(
+			`
+			LET ok = (
+				FOR DO WHILE FALSE
+					RETURN 1
+			)
+
+			FOR 123 WHILE TRUE
+				RETURN ok
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected identifier before 'WHILE'",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "Mixed while-loop forms still find later invalid binding"),
+
+		ErrorCase(
+			`
 			FOR IN [1, 2, 3]
 				RETURN i
 		`, E{

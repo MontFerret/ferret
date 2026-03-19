@@ -10,9 +10,7 @@ type (
 	LoopKind int
 
 	Loop struct {
-		UpdateFn      func() bytecode.Operand
 		ConditionFn   func() bytecode.Operand
-		InitFn        func() bytecode.Operand
 		ValueName     string
 		LabelBase     string
 		KeyName       string
@@ -42,7 +40,6 @@ const (
 
 const (
 	ForInLoop LoopKind = iota
-	ForStepLoop
 	WhileLoop
 	DoWhileLoop
 )
@@ -110,8 +107,6 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
 	switch l.Kind {
 	case ForInLoop:
 		l.emitForInLoopIteration(alloc, emitter)
-	case ForStepLoop:
-		l.emitForStepLoopIteration(alloc, emitter)
 	case WhileLoop:
 		l.emitForWhileLoopIteration(alloc, emitter)
 	default:
@@ -138,7 +133,7 @@ func (l *Loop) RegisterReset(reg bytecode.Operand) {
 }
 
 func (l *Loop) EmitValue(dst bytecode.Operand, emitter *Emitter) {
-	// For WHILE/STEP loops, the value is already in the destination register
+	// For WHILE loops, the value is already in the destination register
 	// No additional emission needed as the variable is directly assigned
 	if l.Kind == ForInLoop {
 		emitter.EmitIterValue(dst, l.State)
@@ -211,9 +206,10 @@ func (l *Loop) emitForWhileLoopIteration(_ *RegisterAllocator, emitter *Emitter)
 	// Jump to the initial condition check (skipping the increment)
 	emitter.EmitJump(l.condLabel)
 
+	// Mark the loop-back target even when the loop variable is ignored.
+	emitter.MarkLabel(l.continueLabel)
+
 	if l.Value != bytecode.NoopOperand {
-		// Placeholder for the loop increment
-		emitter.MarkLabel(l.continueLabel)
 		emitter.EmitA(bytecode.OpIncr, l.Value)
 	}
 
@@ -238,45 +234,11 @@ func (l *Loop) emitForDoWhileLoopIteration(_ *RegisterAllocator, emitter *Emitte
 	// Jump to the loop body first
 	emitter.EmitJump(l.bodyLabel)
 
-	if l.Value != bytecode.NoopOperand {
-		// Placeholder for the loop increment
-		emitter.MarkLabel(l.continueLabel)
-		emitter.EmitA(bytecode.OpIncr, l.Value)
-	}
-
-	// Mark the continue label (initial condition check point)
-	emitter.MarkLabel(l.condLabel)
-
-	// Evaluate the condition
-	condition := l.ConditionFn()
-	emitter.EmitJumpIfFalse(condition, l.endLabel)
-}
-
-func (l *Loop) emitForStepLoopIteration(_ *RegisterAllocator, emitter *Emitter) {
-	if l.InitFn == nil || l.ConditionFn == nil || l.UpdateFn == nil {
-		panic("step functions must be defined for step loop")
-	}
-
-	// Initialize the loop variable
-	initValue := l.InitFn()
-
-	if l.Value != bytecode.NoopOperand {
-		emitter.EmitMoveTracked(l.Value, initValue)
-	}
-
-	// Jump to the initial condition check (skipping the increment)
-	emitter.EmitJump(l.condLabel)
-
-	// Mark the jump target for loop iterations (increment + condition check)
+	// Mark the loop-back target even when the loop variable is ignored.
 	emitter.MarkLabel(l.continueLabel)
 
-	// Execute increment (this happens on every loop-back, but not on first iteration)
 	if l.Value != bytecode.NoopOperand {
-		nextValue := l.UpdateFn()
-
-		if !nextValue.Equals(bytecode.NoopOperand) && !nextValue.Equals(l.Value) {
-			emitter.EmitMoveTracked(l.Value, nextValue)
-		}
+		emitter.EmitA(bytecode.OpIncr, l.Value)
 	}
 
 	// Mark the continue label (initial condition check point)

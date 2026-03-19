@@ -292,7 +292,6 @@ func isSafeReservedWordToken(node *TokenNode) bool {
 		fql.FqlLexerJitter,
 		fql.FqlLexerExists,
 		fql.FqlLexerValue,
-		fql.FqlLexerStep,
 		fql.FqlLexerCount,
 		fql.FqlLexerOne:
 		return true

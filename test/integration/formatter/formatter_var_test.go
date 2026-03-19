@@ -25,6 +25,11 @@ RETURN run()
 )
 RETURN run()`),
 		Case(`
+LET    STEP =  10
+RETURN STEP
+`, `LET STEP = 10
+RETURN STEP`),
+		Case(`
 FOR item IN [ 1, 2 ]
 VAR current = item
 current=current+1

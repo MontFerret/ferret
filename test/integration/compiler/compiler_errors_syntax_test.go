@@ -80,6 +80,20 @@ func TestSyntaxErrors(t *testing.T) {
 				Message: "Expected expression after '=>'",
 				Hint:    "Provide an expression, e.g. FUNC f() => x + 1",
 			}, "Missing arrow expression at start of input"),
+		ErrorCase(
+			`
+			FUNC run() (
+			  VAR i = 0
+			  WHILE i < 10
+			    i = i + 1
+			  RETURN i
+			)
+			RETURN run()
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Standalone WHILE loops are not supported",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "Standalone WHILE loop inside function block"),
 
 		ErrorCase(
 			`

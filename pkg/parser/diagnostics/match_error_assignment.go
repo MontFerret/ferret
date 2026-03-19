@@ -99,7 +99,7 @@ func matchAssignmentExpression(src *file.Source, err *diagnostics.Diagnostic, of
 		return false
 	}
 
-	if marker := eq.PrevAt(2); is(marker, "LET") || is(marker, "VAR") || is(marker, "STEP") || is(marker, "COLLECT") || is(marker, "AGGREGATE") || is(marker, "FOR") {
+	if marker := eq.PrevAt(2); is(marker, "LET") || is(marker, "VAR") || is(marker, "COLLECT") || is(marker, "AGGREGATE") || is(marker, "FOR") {
 		return false
 	}
 
