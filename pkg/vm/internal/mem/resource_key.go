@@ -7,26 +7,28 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// ResourceKey is the canonical identity used in all ownership-tracking maps.
-// Exactly one field is non-zero:
-//   - ID is set (non-zero) when the value implements runtime.Resource.
-//     Two values with the same ResourceID share this key regardless of which
-//     Go object holds them, satisfying the stable-identity dedup contract.
-//   - Closer is set (non-nil) for plain comparable io.Closer values; identity
-//     is the interface value itself (compatibility path).
-//
-// ResourceKey is a comparable struct and is safe to use as a map key.
-type ResourceKey struct {
-	Closer io.Closer
-	ID     uint64
-}
+type (
+	// ResourceKey is the canonical identity used in all ownership-tracking maps.
+	// Exactly one field is non-zero:
+	//   - ID is set (non-zero) when the value implements runtime.Resource.
+	//     Two values with the same ResourceID share this key regardless of which
+	//     Go object holds them, satisfying the stable-identity dedup contract.
+	//   - Closer is set (non-nil) for plain comparable io.Closer values; identity
+	//     is the interface value itself (compatibility path).
+	//
+	// ResourceKey is a comparable struct and is safe to use as a map key.
+	ResourceKey struct {
+		Closer io.Closer
+		ID     uint64
+	}
 
-// Untracked is implemented by internal VM scaffolding values that never
-// participate in resource ownership tracking even if they are produced by the
-// VM and shuffled through registers.
-type Untracked interface {
-	VMUntracked()
-}
+	// Untracked is implemented by internal VM scaffolding values that never
+	// participate in resource ownership tracking even if they are produced by the
+	// VM and shuffled through registers.
+	Untracked interface {
+		VMUntracked()
+	}
+)
 
 // CanTrackValue cheaply rejects values that are known to never participate in
 // direct VM ownership tracking. It is intentionally conservative: returning
