@@ -137,7 +137,7 @@ func tailCallUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
 	}
 
 	s.pc = udf.Entry
-	s.cellIDs = s.cellIDs[:0]
+	s.cellHandles = s.cellHandles[:0]
 
 	return nil
 }
@@ -150,7 +150,7 @@ func (s *execState) enterUdfCall(desc *callDescriptor, udf *bytecode.UDF) {
 		ReturnPC:         s.pc,
 		ReturnDest:       desc.Dst,
 		CallerRegisters:  s.registers,
-		CellIDs:          s.snapshotCellIDs(),
+		CellHandles:      s.snapshotCellHandles(),
 		OwnedResources:   s.owned,
 		Aliases:          s.aliases,
 		RecoveryBoundary: desc.RecoveryBoundary,
@@ -161,7 +161,7 @@ func (s *execState) enterUdfCall(desc *callDescriptor, udf *bytecode.UDF) {
 	})
 	s.owned = mem.OwnedResources{}
 	s.aliases = mem.AliasTracker{}
-	s.cellIDs = s.cellIDs[:0]
+	s.cellHandles = s.cellHandles[:0]
 	s.registers = newRegs
 	s.pc = udf.Entry
 }

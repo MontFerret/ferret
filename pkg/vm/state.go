@@ -25,22 +25,22 @@ type (
 	}
 
 	execState struct {
-		program   *bytecode.Program
-		env       *Environment
-		scratch   mem.Scratch
-		frames    frame.CallStack
-		windows   mem.WindowPool
-		catchByPC []int
-		registers mem.RegisterFile
-		cells     mem.CellStore
-		cellIDs   []uint64
-		owned     mem.OwnedResources
-		aliases   mem.AliasTracker
-		deferred  mem.DeferredClosers
-		failure   pendingFailure
-		pc        int
-		lastPC    int
-		hasFail   bool
+		program     *bytecode.Program
+		env         *Environment
+		scratch     mem.Scratch
+		frames      frame.CallStack
+		windows     mem.WindowPool
+		catchByPC   []int
+		registers   mem.RegisterFile
+		cells       mem.CellStore
+		cellHandles []mem.CellHandle
+		owned       mem.OwnedResources
+		aliases     mem.AliasTracker
+		deferred    mem.DeferredClosers
+		failure     pendingFailure
+		pc          int
+		lastPC      int
+		hasFail     bool
 	}
 )
 
@@ -56,7 +56,7 @@ func (s *execState) init(program *bytecode.Program) {
 func (s *execState) startRun(env *Environment) error {
 	s.env = env
 	s.cells.Reset()
-	s.cellIDs = s.cellIDs[:0]
+	s.cellHandles = s.cellHandles[:0]
 	s.owned.Reset()
 	s.aliases.Reset()
 	s.deferred.Reset()
@@ -79,7 +79,7 @@ func (s *execState) endRun() {
 
 		s.windows.Release(s.registers)
 		s.registers = caller.CallerRegisters
-		s.cellIDs = caller.CellIDs
+		s.cellHandles = caller.CellHandles
 		s.owned = caller.OwnedResources
 		s.aliases = caller.Aliases
 	}
@@ -125,7 +125,7 @@ func (s *execState) finishRunInto(root runtime.Value, result *Result) *Result {
 
 func (s *execState) resetRunStorage() {
 	s.cells.Reset()
-	s.cellIDs = s.cellIDs[:0]
+	s.cellHandles = s.cellHandles[:0]
 	s.owned.Reset()
 	s.aliases.Reset()
 	s.deferred.Reset()
@@ -417,7 +417,7 @@ func (s *execState) unwindToProtected() bool {
 		s.owned.DrainTo(&s.deferred)
 		s.windows.Release(s.registers)
 		s.registers = frame.CallerRegisters
-		s.cellIDs = frame.CellIDs
+		s.cellHandles = frame.CellHandles
 		s.owned = frame.OwnedResources
 		s.aliases = frame.Aliases
 	}
@@ -431,7 +431,7 @@ func (s *execState) unwindToProtected() bool {
 	s.owned.DrainTo(&s.deferred)
 	s.windows.Release(s.registers)
 	s.registers = frame.CallerRegisters
-	s.cellIDs = frame.CellIDs
+	s.cellHandles = frame.CellHandles
 	s.owned = frame.OwnedResources
 	s.aliases = frame.Aliases
 	if frame.ReturnDest.IsRegister() {
@@ -467,7 +467,7 @@ func (s *execState) returnToCaller(retVal runtime.Value) bool {
 
 	s.windows.Release(s.registers)
 	s.registers = frame.CallerRegisters
-	s.cellIDs = frame.CellIDs
+	s.cellHandles = frame.CellHandles
 	s.owned = frame.OwnedResources
 	s.aliases = frame.Aliases
 	if frame.ReturnDest.IsRegister() {
@@ -520,24 +520,23 @@ func (s *execState) retireOwnership(val runtime.Value) {
 	s.aliases.Delete(key)
 }
 
-func (s *execState) snapshotCellIDs() []uint64 {
-	if len(s.cellIDs) == 0 {
+func (s *execState) snapshotCellHandles() []mem.CellHandle {
+	if len(s.cellHandles) == 0 {
 		return nil
 	}
 
-	out := make([]uint64, len(s.cellIDs))
-	copy(out, s.cellIDs)
+	out := make([]mem.CellHandle, len(s.cellHandles))
+	copy(out, s.cellHandles)
 
 	return out
 }
 
 func (s *execState) cleanupCurrentCells() {
-	if len(s.cellIDs) == 0 {
+	if len(s.cellHandles) == 0 {
 		return
 	}
 
-	for _, id := range s.cellIDs {
-		handle := mem.NewCellHandle(id)
+	for _, handle := range s.cellHandles {
 		val, ok := s.cells.Delete(handle)
 		if !ok {
 			continue
@@ -551,7 +550,7 @@ func (s *execState) cleanupCurrentCells() {
 		s.decAliasAndMaybeDiscard(key, closer)
 	}
 
-	s.cellIDs = s.cellIDs[:0]
+	s.cellHandles = s.cellHandles[:0]
 }
 
 func (s *execState) valueOf(constants []runtime.Value, op bytecode.Operand) runtime.Value {
@@ -613,7 +612,7 @@ func (s *execState) makeCell(dst bytecode.Operand, val runtime.Value) runtime.Va
 	}
 
 	handle := s.cells.New(val)
-	s.cellIDs = append(s.cellIDs, handle.ID())
+	s.cellHandles = append(s.cellHandles, handle)
 
 	return s.writeBorrowedRegister(dst, handle)
 }
