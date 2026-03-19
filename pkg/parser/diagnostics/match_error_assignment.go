@@ -28,8 +28,8 @@ func matchMissingAssignmentValue(src *file.Source, err *diagnostics.Diagnostic, 
 		}
 
 		span := spanFromTokenSafe(node.Token(), src)
-		span.Start++
-		span.End++
+		span.Start = span.End
+		span.End = span.Start + 1
 
 		prevText := ""
 		if node.Prev() != nil {

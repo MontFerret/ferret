@@ -1,10 +1,12 @@
 package compiler_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/file"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
@@ -70,6 +72,38 @@ func TestVarSyntaxErrors(t *testing.T) {
 				Kind: parserd.SyntaxError,
 			}, "Compound assignment is not allowed inside expressions"),
 	})
+}
+
+func TestVarCompoundAssignmentMissingValueDiagnosticSpan(t *testing.T) {
+	src := "VAR x = 0\nx +=\nRETURN x"
+
+	_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).Compile(file.NewSource("var_compound_span", src))
+	if err == nil {
+		t.Fatal("expected compilation error")
+	}
+
+	diag := firstCompilationError(err)
+	if diag == nil {
+		t.Fatal("expected diagnostic")
+	}
+
+	if diag.Kind != parserd.SyntaxError {
+		t.Fatalf("expected syntax error, got %s", diag.Kind)
+	}
+
+	if diag.Message != "Expected expression after '+=' for variable 'x'" {
+		t.Fatalf("unexpected diagnostic message: %q", diag.Message)
+	}
+
+	if len(diag.Spans) == 0 {
+		t.Fatal("expected diagnostic spans")
+	}
+
+	wantStart := strings.Index(src, "+=") + len("+=")
+	got := diag.Spans[0].Span
+	if got.Start != wantStart || got.End != wantStart+1 {
+		t.Fatalf("expected span [%d,%d), got [%d,%d)", wantStart, wantStart+1, got.Start, got.End)
+	}
 }
 
 func TestVarErrors(t *testing.T) {
