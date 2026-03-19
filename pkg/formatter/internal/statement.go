@@ -90,7 +90,11 @@ func (f *statementFormatter) formatAssignmentStatement(ctx *fql.AssignmentStatem
 	}
 
 	f.p.space()
-	f.p.write("=")
+	if op := ctx.AssignmentOperator(); op != nil {
+		f.p.write(op.GetText())
+	} else {
+		f.p.write("=")
+	}
 	f.p.space()
 
 	if expr := ctx.Expression(); expr != nil {

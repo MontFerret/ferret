@@ -326,7 +326,22 @@ func (c *StmtCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatementCo
 		return bytecode.NoopOperand
 	}
 
-	src := c.ctx.ExprCompiler.Compile(stmt.Expression())
+	operator := assignmentOperatorText(stmt)
+	src := bytecode.NoopOperand
+
+	if operator == "=" {
+		src = c.ctx.ExprCompiler.Compile(stmt.Expression())
+	} else {
+		op, ok := resolveArithmeticBinaryOperator(operator)
+		if !ok {
+			return bytecode.NoopOperand
+		}
+
+		left := c.snapshotBindingValue(binding)
+		right := c.ctx.ExprCompiler.Compile(stmt.Expression())
+		src = emitBinaryOperation(c.ctx, stmt, op, left, right)
+	}
+
 	srcType := operandType(c.ctx, src)
 	publishedType := srcType
 
@@ -335,6 +350,37 @@ func (c *StmtCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatementCo
 	}
 
 	binding.Type = publishedType
+
+	return c.storeBindingValue(binding, src, publishedType)
+}
+
+func assignmentOperatorText(ctx *fql.AssignmentStatementContext) string {
+	if ctx == nil || ctx.AssignmentOperator() == nil {
+		return ""
+	}
+
+	return ctx.AssignmentOperator().GetText()
+}
+
+func (c *StmtCompiler) snapshotBindingValue(binding *core.Variable) bytecode.Operand {
+	if c == nil || c.ctx == nil || binding == nil {
+		return bytecode.NoopOperand
+	}
+
+	if binding.Storage == core.BindingStorageCell {
+		return loadBindingValue(c.ctx, binding)
+	}
+
+	snapshot := c.ctx.Registers.Allocate()
+	c.ctx.EmitMoveAuto(snapshot, binding.Register)
+
+	return snapshot
+}
+
+func (c *StmtCompiler) storeBindingValue(binding *core.Variable, src bytecode.Operand, publishedType core.ValueType) bytecode.Operand {
+	if c == nil || c.ctx == nil || binding == nil {
+		return bytecode.NoopOperand
+	}
 
 	if binding.Storage == core.BindingStorageCell {
 		src = c.ctx.ExprCompiler.ensureRegister(src)

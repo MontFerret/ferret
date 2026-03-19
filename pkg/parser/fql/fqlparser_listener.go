@@ -37,6 +37,9 @@ type FqlParserListener interface {
 	// EnterAssignmentTarget is called when entering the assignmentTarget production.
 	EnterAssignmentTarget(c *AssignmentTargetContext)
 
+	// EnterAssignmentOperator is called when entering the assignmentOperator production.
+	EnterAssignmentOperator(c *AssignmentOperatorContext)
+
 	// EnterFunctionDeclaration is called when entering the functionDeclaration production.
 	EnterFunctionDeclaration(c *FunctionDeclarationContext)
 
@@ -450,6 +453,9 @@ type FqlParserListener interface {
 
 	// ExitAssignmentTarget is called when exiting the assignmentTarget production.
 	ExitAssignmentTarget(c *AssignmentTargetContext)
+
+	// ExitAssignmentOperator is called when exiting the assignmentOperator production.
+	ExitAssignmentOperator(c *AssignmentOperatorContext)
 
 	// ExitFunctionDeclaration is called when exiting the functionDeclaration production.
 	ExitFunctionDeclaration(c *FunctionDeclarationContext)

@@ -5,14 +5,34 @@ import "testing"
 func TestVarBindings(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		Case(`
-VAR x = 1
-x = x + 1
-RETURN x
-`, 2, "Top-level VAR can be reassigned"),
+	VAR x = 1
+	x = x + 1
+	RETURN x
+	`, 2, "Top-level VAR can be reassigned"),
 		Case(`
-VAR x = 1
-x = "hello"
-RETURN x
+	VAR x = 1
+	x += 2
+	RETURN x
+	`, 3, "Top-level VAR supports +="),
+		Case(`
+	VAR x = 5
+	x -= 2
+	RETURN x
+	`, 3, "Top-level VAR supports -="),
+		Case(`
+	VAR x = 3
+	x *= 4
+	RETURN x
+	`, 12, "Top-level VAR supports *="),
+		Case(`
+	VAR x = 12
+	x /= 3
+	RETURN x
+	`, 4, "Top-level VAR supports /="),
+		Case(`
+	VAR x = 1
+	x = "hello"
+	RETURN x
 `, "hello", "Top-level VAR can be reassigned across types"),
 		Case(`
 VAR CURRENT = 1
@@ -103,11 +123,11 @@ FUNC run() (
     RETURN carried
   )
 
-  RETURN (
-    FOR item IN [1, 2, 3]
-      LET _ = setCarried(item * 10)
-      COLLECT parity = item % 2 INTO groups = { carried: carried }
-      RETURN { parity, groups }
+	RETURN (
+	    FOR item IN [1, 2, 3]
+	      LET _ = setCarried(item * 10)
+	      COLLECT parity = item % 2 INTO groups = { carried: carried }
+	      RETURN { parity, groups }
   )
 )
 
@@ -127,9 +147,21 @@ RETURN run()
 				},
 			},
 		}, "COLLECT INTO projection snapshots the current value of a promoted VAR"),
+		Case(`
+	FUNC run() (
+	  VAR total = 1
+	  FUNC setTotal(v) (
+	    total = v
+	    RETURN 10
+	  )
+	  total += setTotal(5)
+	  RETURN total
+	)
+	RETURN run()
+	`, 11, "Compound assignment snapshots the old VAR value before RHS side effects"),
 		CaseArray(`
-FUNC outer() (
-  VAR total = 1
+	FUNC outer() (
+	  VAR total = 1
   FUNC middle(v) (
     FUNC inner() => total
     total = total + v

@@ -80,6 +80,12 @@ func (s *BaseFqlParserListener) EnterAssignmentTarget(ctx *AssignmentTargetConte
 // ExitAssignmentTarget is called when production assignmentTarget is exited.
 func (s *BaseFqlParserListener) ExitAssignmentTarget(ctx *AssignmentTargetContext) {}
 
+// EnterAssignmentOperator is called when production assignmentOperator is entered.
+func (s *BaseFqlParserListener) EnterAssignmentOperator(ctx *AssignmentOperatorContext) {}
+
+// ExitAssignmentOperator is called when production assignmentOperator is exited.
+func (s *BaseFqlParserListener) ExitAssignmentOperator(ctx *AssignmentOperatorContext) {}
+
 // EnterFunctionDeclaration is called when production functionDeclaration is entered.
 func (s *BaseFqlParserListener) EnterFunctionDeclaration(ctx *FunctionDeclarationContext) {}
 
