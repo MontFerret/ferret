@@ -2,19 +2,12 @@ package encoding
 
 import (
 	"fmt"
-
-	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
-)
-
-const (
-	// ContentTypeJSON is the content type for JSON codec.
-	ContentTypeJSON = "application/json"
 )
 
 // Registry stores codecs by content type.
 type (
 	CodecRegistrar interface {
-		Register(contentType string, codec Codec) error
+		Register(codec Codec) error
 	}
 
 	Registry struct {
@@ -22,10 +15,22 @@ type (
 	}
 )
 
-// NewRegistry creates a registry with built-in codecs.
-func NewRegistry() *Registry {
+// NewRegistry creates a registry seeded with the provided codecs.
+func NewRegistry(codecs ...Codec) *Registry {
 	registry := NewEmptyRegistry()
-	_ = registry.Register(ContentTypeJSON, encodingjson.Default)
+
+	for _, codec := range codecs {
+		if codec == nil {
+			// Preserve existing behavior for nil codecs (they are effectively ignored),
+			// but make this explicit instead of relying on a discarded error.
+			continue
+		}
+
+		if err := registry.Register(codec); err != nil {
+			// Fail fast on invalid seed codecs so configuration problems surface immediately.
+			panic(fmt.Sprintf("encoding.NewRegistry: failed to register codec for content type %q: %v", codec.ContentType(), err))
+		}
+	}
 
 	return registry
 }
@@ -38,7 +43,7 @@ func NewEmptyRegistry() *Registry {
 }
 
 // Register stores a full codec for the content type.
-func (r *Registry) Register(contentType string, codec Codec) error {
+func (r *Registry) Register(codec Codec) error {
 	if r == nil {
 		return ErrNilRegistry
 	}
@@ -47,7 +52,7 @@ func (r *Registry) Register(contentType string, codec Codec) error {
 		return ErrNilCodec
 	}
 
-	normalized, err := normalizeContentType(contentType)
+	normalized, err := normalizeContentType(codec.ContentType())
 	if err != nil {
 		return err
 	}

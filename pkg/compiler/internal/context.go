@@ -73,6 +73,20 @@ func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler, leve
 	return ctx
 }
 
+// EmitMoveAuto emits OpMove (plain) when the source is known to be untracked,
+// otherwise emits OpMoveTracked (ownership-aware).
+func (c *CompilerContext) EmitMoveAuto(dst, src bytecode.Operand) {
+	srcType := operandType(c, src)
+
+	if srcType.IsUntracked() {
+		c.Emitter.EmitPlainMove(dst, src)
+	} else {
+		c.Emitter.EmitMoveTracked(dst, src)
+	}
+
+	c.Types.Set(dst, srcType)
+}
+
 func (c *CompilerContext) AddAggregatePlan(plan *bytecode.AggregatePlan) int {
 	if plan == nil {
 		return -1
@@ -112,7 +126,7 @@ func areAggregatePlansEqual(a, b *bytecode.AggregatePlan) bool {
 		return a == b
 	}
 
-	if len(a.Keys) != len(b.Keys) {
+	if len(a.Keys) != len(b.Keys) || a.TrackGroupValues != b.TrackGroupValues {
 		return false
 	}
 
@@ -128,6 +142,12 @@ func areAggregatePlansEqual(a, b *bytecode.AggregatePlan) bool {
 func aggregatePlanHash(plan *bytecode.AggregatePlan) uint64 {
 	h := fnv.New64a()
 	h.Write([]byte("aggregate_plan:"))
+
+	if plan.TrackGroupValues {
+		h.Write([]byte{1})
+	} else {
+		h.Write([]byte{0})
+	}
 
 	for i, key := range plan.Keys {
 		h.Write([]byte(key))

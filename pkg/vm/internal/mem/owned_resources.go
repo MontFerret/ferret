@@ -2,101 +2,220 @@ package mem
 
 import (
 	"io"
-	"reflect"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // OwnedResources tracks only direct register-held closers for a single frame.
-// It ignores values that cannot be tracked safely and is not a general runtime
-// lifetime manager.
+// Ownership is per resource, not per register slot: duplicate aliases in the
+// same frame still map to a single owned closer. The VM is responsible for
+// deciding when the last live register alias disappears before calling Discard.
+// OwnedResources ignores values that cannot be tracked safely and is not a
+// general runtime lifetime manager.
 type OwnedResources struct {
-	closers map[io.Closer]struct{}
+	closers map[ResourceKey]io.Closer
 }
 
 func (o *OwnedResources) Track(val runtime.Value) {
-	closer, ok := trackedCloserOf(val)
+	key, closer, ok := ResourceKeyOf(val)
 	if !ok {
 		return
 	}
 
-	if o.closers == nil {
-		o.closers = make(map[io.Closer]struct{})
-	}
-
-	o.closers[closer] = struct{}{}
+	o.TrackResolved(key, closer)
 }
 
-func (o *OwnedResources) Forget(val runtime.Value) {
-	closer, ok := trackedCloserOf(val)
-	if !ok || o.closers == nil {
+func (o *OwnedResources) TrackResolved(key ResourceKey, closer io.Closer) {
+	if closer == nil {
 		return
 	}
 
-	delete(o.closers, closer)
-	if len(o.closers) == 0 {
-		o.closers = nil
+	if o.closers == nil {
+		o.closers = make(map[ResourceKey]io.Closer)
 	}
+
+	o.closers[key] = closer
 }
 
 func (o *OwnedResources) Owns(val runtime.Value) bool {
-	closer, ok := trackedCloserOf(val)
-	if !ok || o.closers == nil {
+	key, _, ok := ResourceKeyOf(val)
+	if !ok {
 		return false
 	}
 
-	_, ok = o.closers[closer]
-	return ok
+	return o.OwnsKey(key)
 }
 
-func (o *OwnedResources) Transfer(val runtime.Value, dst *OwnedResources) {
-	closer, ok := trackedCloserOf(val)
+func (o *OwnedResources) OwnsKey(key ResourceKey) bool {
+	if o.closers == nil {
+		return false
+	}
+
+	_, exists := o.closers[key]
+	return exists
+}
+
+// Extract removes all ownership tracking for val from the current frame without
+// scheduling the closer for deferred cleanup. Use it when a value survives
+// frame teardown, for example as a return value or final result root.
+func (o *OwnedResources) Extract(val runtime.Value) bool {
+	key, _, ok := ResourceKeyOf(val)
+	if !ok {
+		return false
+	}
+
+	return o.ExtractByKey(key)
+}
+
+func (o *OwnedResources) ExtractByKey(key ResourceKey) bool {
+	if o.closers == nil {
+		return false
+	}
+
+	if _, exists := o.closers[key]; !exists {
+		return false
+	}
+
+	delete(o.closers, key)
+
+	return true
+}
+
+// ExtractMany removes ownership tracking for the provided surviving values from
+// the current frame and reassigns the matching owned closers to dst. Duplicate
+// values transfer ownership only once per resource, while dead aliases in the
+// retiring frame are dropped instead of being deferred.
+func (o *OwnedResources) ExtractMany(values []runtime.Value, dst *OwnedResources) {
+	if o.closers == nil || len(values) == 0 {
+		return
+	}
+
+	survivors := make(map[ResourceKey]io.Closer)
+
+	for _, val := range values {
+		key, _, ok := ResourceKeyOf(val)
+		if !ok {
+			continue
+		}
+
+		closer, exists := o.closers[key]
+		if !exists {
+			continue
+		}
+
+		survivors[key] = closer
+	}
+
+	if len(survivors) == 0 {
+		return
+	}
+
+	if dst != nil && dst.closers == nil {
+		dst.closers = make(map[ResourceKey]io.Closer)
+	}
+
+	for key, closer := range survivors {
+		delete(o.closers, key)
+
+		if dst != nil {
+			dst.closers[key] = closer
+		}
+	}
+}
+
+func (o *OwnedResources) Discard(val runtime.Value, deferred *DeferredClosers) {
+	key, _, ok := ResourceKeyOf(val)
 	if !ok || o.closers == nil {
 		return
 	}
 
-	if _, exists := o.closers[closer]; !exists {
+	closer, exists := o.closers[key]
+	if !exists {
 		return
 	}
 
-	delete(o.closers, closer)
-	if len(o.closers) == 0 {
-		o.closers = nil
-	}
+	delete(o.closers, key)
 
-	if dst != nil {
-		if dst.closers == nil {
-			dst.closers = make(map[io.Closer]struct{})
-		}
-
-		dst.closers[closer] = struct{}{}
+	if deferred != nil {
+		deferred.AddCloser(closer)
 	}
 }
 
-func (o *OwnedResources) TransferMany(values []runtime.Value, dst *OwnedResources) {
-	for _, val := range values {
-		o.Transfer(val, dst)
+func (o *OwnedResources) DrainTo(deferred *DeferredClosers) {
+	if o.closers == nil {
+		return
+	}
+
+	if deferred != nil {
+		for _, closer := range o.closers {
+			deferred.AddCloser(closer)
+		}
+	}
+
+	clear(o.closers)
+}
+
+func (o *OwnedResources) Release(val runtime.Value) (io.Closer, bool) {
+	key, _, ok := ResourceKeyOf(val)
+	if !ok || o.closers == nil {
+		return nil, false
+	}
+
+	closer, exists := o.closers[key]
+	if !exists {
+		return nil, false
+	}
+
+	// Release is terminal for explicit close, not a generic ref-count decrement:
+	// once one alias is closed, the closer is retired from ownership tracking so
+	// stale aliases cannot close it again during later cleanup.
+	delete(o.closers, key)
+
+	return closer, true
+}
+
+// DiscardByKey removes ownership of a resource by its pre-resolved key and
+// schedules the closer for deferred cleanup. Unlike Discard, this avoids a
+// redundant ResourceKeyOf call when the caller already holds the key.
+func (o *OwnedResources) DiscardByKey(key ResourceKey, closer io.Closer, deferred *DeferredClosers) {
+	if o.closers == nil {
+		return
+	}
+
+	if _, exists := o.closers[key]; !exists {
+		return
+	}
+
+	delete(o.closers, key)
+
+	if deferred != nil {
+		deferred.AddCloser(closer)
 	}
 }
 
 func (o *OwnedResources) CloseAll() {
-	for closer := range o.closers {
-		_ = closer.Close()
-	}
-
-	o.closers = nil
+	deferred := DeferredClosers{}
+	o.DrainTo(&deferred)
+	_ = deferred.CloseAll()
 }
 
-func trackedCloserOf(val runtime.Value) (io.Closer, bool) {
-	closer, ok := val.(io.Closer)
-	if !ok || closer == nil {
-		return nil, false
+func (o *OwnedResources) Empty() bool {
+	return len(o.closers) == 0
+}
+
+// Reset clears all tracked ownership while retaining backing storage for reuse.
+func (o *OwnedResources) Reset() {
+	if o.closers != nil {
+		clear(o.closers)
+	}
+}
+
+func (o *OwnedResources) ForEach(fn func(io.Closer)) {
+	if fn == nil {
+		return
 	}
 
-	typ := reflect.TypeOf(closer)
-	if typ == nil || !typ.Comparable() {
-		return nil, false
+	for _, closer := range o.closers {
+		fn(closer)
 	}
-
-	return closer, true
 }

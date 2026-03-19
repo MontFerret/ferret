@@ -81,6 +81,10 @@ func IsProtectedCallOpcode(op Opcode) bool {
 }
 
 func JumpTargetOperandIndex(op Opcode) int {
+	if op == OpMatchLoadPropertyConst {
+		return -1
+	}
+
 	role := controlFlowRole(op)
 	if role == ControlFlowJumpConditional || role == ControlFlowJumpUnconditional {
 		return 0
@@ -116,12 +120,12 @@ func opcodeClass(op Opcode) OpcodeClass {
 		OpJumpIfNe, OpJumpIfNeConst, OpJumpIfEq, OpJumpIfEqConst,
 		OpJumpIfMissingProperty, OpJumpIfMissingPropertyConst:
 		return OpcodeClassControl
-	case OpMove,
-		OpLoadNone, OpLoadBool, OpLoadZero, OpLoadConst, OpLoadParam, OpLoadArray, OpLoadObject, OpLoadRange:
+	case OpMove, OpMoveTracked,
+		OpLoadNone, OpLoadBool, OpLoadZero, OpLoadConst, OpLoadParam, OpLoadArray, OpLoadObject, OpLoadRange, OpLoadAggregateKey:
 		return OpcodeClassLoad
 	case OpLoadIndex, OpLoadIndexOptional, OpLoadKey, OpLoadKeyOptional,
 		OpLoadProperty, OpLoadPropertyOptional, OpLoadIndexConst, OpLoadIndexOptionalConst,
-		OpLoadKeyConst, OpLoadKeyOptionalConst, OpLoadPropertyConst, OpLoadPropertyOptionalConst, OpQuery:
+		OpLoadKeyConst, OpLoadKeyOptionalConst, OpLoadPropertyConst, OpLoadPropertyOptionalConst, OpMatchLoadPropertyConst, OpQuery:
 		return OpcodeClassAccess
 	case OpAdd, OpAddConst, OpConcat, OpSub, OpMul, OpDiv, OpMod, OpIncr, OpDecr:
 		return OpcodeClassArithmetic
@@ -138,7 +142,8 @@ func opcodeClass(op Opcode) OpcodeClass {
 	case OpHCall, OpProtectedHCall, OpCall, OpProtectedCall, OpTailCall:
 		return OpcodeClassCall
 	case OpDataSet, OpDataSetCollector, OpDataSetSorter, OpDataSetMultiSorter,
-		OpPush, OpPushKV, OpArrayPush, OpObjectSet, OpObjectSetConst:
+		OpPush, OpPushKV, OpCounterInc, OpArrayPush, OpObjectSet, OpObjectSetConst,
+		OpAggregateUpdate, OpAggregateGroupUpdate:
 		return OpcodeClassDataset
 	case OpStream, OpStreamIter:
 		return OpcodeClassStream
@@ -155,7 +160,7 @@ func controlFlowRole(op Opcode) ControlFlowRole {
 		return ControlFlowJumpUnconditional
 	case OpJumpIfFalse, OpJumpIfTrue, OpJumpIfNone,
 		OpJumpIfNe, OpJumpIfNeConst, OpJumpIfEq, OpJumpIfEqConst,
-		OpJumpIfMissingProperty, OpJumpIfMissingPropertyConst,
+		OpJumpIfMissingProperty, OpJumpIfMissingPropertyConst, OpMatchLoadPropertyConst,
 		OpIterNext:
 		return ControlFlowJumpConditional
 	case OpReturn, OpTailCall:

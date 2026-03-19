@@ -175,7 +175,7 @@ func applyTerminalUseDef(opcode bytecode.Opcode, dst bytecode.Operand, collector
 
 func applyMoveLoadUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand, collector *useDefCollector) bool {
 	switch opcode {
-	case bytecode.OpMove:
+	case bytecode.OpMove, bytecode.OpMoveTracked:
 		collector.addUse(src1)
 		collector.addDef(dst)
 		return true
@@ -187,6 +187,24 @@ func applyMoveLoadUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operan
 		collector.addUse(src1)
 		collector.addUse(src2)
 		collector.addDef(dst)
+		return true
+	case bytecode.OpLoadAggregateKey:
+		collector.addUse(src1)
+		collector.addUse(src2)
+		collector.addDef(dst)
+		return true
+	case bytecode.OpMatchLoadPropertyConst:
+		collector.addUse(src1)
+		collector.addDef(dst)
+		return true
+	case bytecode.OpAggregateUpdate:
+		collector.addUse(dst)
+		collector.addUse(src1)
+		return true
+	case bytecode.OpAggregateGroupUpdate:
+		collector.addUse(dst)
+		collector.addUse(src1)
+		collector.addUse(src2)
 		return true
 	case bytecode.OpConcat:
 		collector.addDef(dst)
@@ -269,6 +287,9 @@ func applyDatasetUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand
 	switch opcode {
 	case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
 		collector.addDef(dst)
+		return true
+	case bytecode.OpCounterInc:
+		collector.addUse(dst)
 		return true
 	case bytecode.OpPush, bytecode.OpArrayPush:
 		collector.addUse(dst)

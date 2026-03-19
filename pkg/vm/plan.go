@@ -1,6 +1,8 @@
 package vm
 
 import (
+	"fmt"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
@@ -19,6 +21,8 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 	}
 
 	instructions := make([]execInstruction, len(program.Bytecode))
+	aggregateSelectorSlots := program.Metadata.AggregateSelectorSlots
+	matchFailTargets := program.Metadata.MatchFailTargets
 	constants := program.Constants
 	udfs := program.Functions.UserDefined
 	reg := map[bytecode.Operand]runtime.Value{}
@@ -27,9 +31,26 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 	udfTailCallDesc := make([]callDescriptor, 0, 4)
 	errs := diagnostics.NewInitializationErrorSet(4)
 
+	if len(aggregateSelectorSlots) > 0 && len(aggregateSelectorSlots) != len(program.Bytecode) {
+		errs.Add(
+			fmt.Errorf("aggregate selector slot metadata length %d does not match bytecode length %d", len(aggregateSelectorSlots), len(program.Bytecode)),
+			0,
+			bytecode.NoopOperand,
+		)
+	}
+
+	if len(matchFailTargets) > 0 && len(matchFailTargets) != len(program.Bytecode) {
+		errs.Add(
+			fmt.Errorf("match fail target metadata length %d does not match bytecode length %d", len(matchFailTargets), len(program.Bytecode)),
+			0,
+			bytecode.NoopOperand,
+		)
+	}
+
 	for pc, inst := range program.Bytecode {
 		instructions[pc] = execInstruction{
 			Instruction: inst,
+			InlineSlot:  -1,
 		}
 
 		op := inst.Opcode
@@ -108,6 +129,22 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 			descriptor.DisplayName = fnName
 			hostCallDesc = append(hostCallDesc, descriptor)
 			instructions[pc].InlineSlot = descriptor.ID
+		case bytecode.OpAggregateUpdate, bytecode.OpAggregateGroupUpdate:
+			slot, err := aggregateSelectorSlotAt(aggregateSelectorSlots, pc)
+			if err != nil {
+				errs.Add(err, pc, dst)
+				continue
+			}
+
+			instructions[pc].InlineSlot = slot
+		case bytecode.OpMatchLoadPropertyConst:
+			target, err := matchFailTargetAt(matchFailTargets, len(program.Bytecode), pc)
+			if err != nil {
+				errs.Add(err, pc, dst)
+				continue
+			}
+
+			instructions[pc].InlineSlot = target
 		}
 
 		if op != bytecode.OpLoadConst && op != bytecode.OpMove && dst.IsRegister() {
@@ -137,6 +174,32 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 		udfCallDescriptors:     udfCallDesc,
 		udfTailCallDescriptors: udfTailCallDesc,
 	}, nil
+}
+
+func aggregateSelectorSlotAt(slots []int, pc int) (int, error) {
+	if pc < 0 || pc >= len(slots) {
+		return -1, fmt.Errorf("invalid aggregate selector slot metadata at pc %d", pc)
+	}
+
+	slot := slots[pc]
+	if slot < 0 {
+		return -1, fmt.Errorf("invalid aggregate selector slot at pc %d", pc)
+	}
+
+	return slot, nil
+}
+
+func matchFailTargetAt(targets []int, bytecodeLen, pc int) (int, error) {
+	if pc < 0 || pc >= len(targets) {
+		return -1, fmt.Errorf("invalid match fail target metadata at pc %d", pc)
+	}
+
+	target := targets[pc]
+	if target < 0 || target >= bytecodeLen {
+		return -1, fmt.Errorf("invalid match fail target at pc %d", pc)
+	}
+
+	return target, nil
 }
 
 func resolveHostFnName(reg map[bytecode.Operand]runtime.Value, dst bytecode.Operand) (string, error) {

@@ -138,3 +138,5 @@ coverage.html
 gen
 tmp
 .tmp
+
+.claude

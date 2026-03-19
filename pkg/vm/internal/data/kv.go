@@ -13,6 +13,8 @@ type KV struct {
 	Value runtime.Value
 }
 
+func (*KV) VMUntracked() {}
+
 // NewKV creates and returns a new KV instance with the provided key and value.
 func NewKV(key, value runtime.Value) *KV {
 	return &KV{

@@ -1,0 +1,235 @@
+# AGENTS.md
+
+This file is the canonical operating guide for coding agents working in this repository. It is written for Ferret v2 only. If you see documentation that conflicts with this file, prefer `Makefile`, `go.mod`, and `.github/workflows/build.yml`.
+
+## Repo snapshot
+
+- Module path: `github.com/MontFerret/ferret/v2`
+- Go version: `1.23+`
+- Toolchain in `go.mod`: `go1.24.5`
+- This repository root is Ferret v2. Do not mix assumptions from the separate v1 branch.
+- High-level flow: `Engine` -> `compiler` -> `bytecode.Program` -> `vm.VM`
+
+## Architectural mental model
+
+Ferret v2 is a compiled query language and runtime.
+
+Primary pipeline:
+`source -> parser -> diagnostics/AST -> compiler -> bytecode.Program -> vm.VM -> runtime values/results`
+
+Subsystem responsibilities:
+- `pkg/parser` handles syntax, parse-tree processing, and parser diagnostics.
+- `pkg/compiler` performs lowering, semantic checks, bytecode emission, and optimization.
+- `pkg/bytecode` defines executable program structures.
+- `pkg/vm` executes bytecode programs.
+- `pkg/runtime` defines value semantics and runtime-facing contracts.
+- `pkg/stdlib` provides built-in host modules and functions.
+- Top-level package exposes the embedding surface used by applications.
+
+Agents should reason about changes by pipeline stage:
+- Syntax changes usually begin in grammar/parser and continue into compiler lowering.
+- Semantic/runtime changes usually live in compiler, runtime, or VM.
+- Embedding/API changes usually affect the top-level package and integration boundaries.
+
+## Canonical invariants
+
+- Ferret v2 uses a register-based VM.
+- `runtime.Value` is the common runtime/VM value abstraction.
+- Parser-generated code is derived output, not the source of truth.
+- Compiler changes must preserve program semantics expected by the VM.
+- Optimizations must preserve correctness before performance.
+- Runtime execution errors and internal invariant violations are different classes of failure and should not be collapsed conceptually.
+- Do not assume behavior from old design notes or the v1 codebase unless it is reflected in the current v2 code.
+
+## Package map
+
+Agents should begin with the package whose responsibility owns the requested behavior. Do not infer ownership from file names alone when a package in this map already describes the intended boundary.
+
+### Core execution pipeline
+
+- `pkg/parser`
+    - Grammar, parser pipeline, parse-tree processing, and parser-side diagnostics for FQL source code.
+    - Do not hand-edit generated parser artifacts; edit grammar sources and regenerate.
+
+- `pkg/compiler`
+    - Lowers parsed FQL into `bytecode.Program`, performs semantic analysis, and runs optimization/code generation passes.
+
+- `pkg/bytecode`
+    - Core executable program model: instructions, operands, programs, and related structures consumed by the VM and produced by the compiler.
+    - Changes here are cross-cutting and usually require corresponding compiler and VM updates.
+
+- `pkg/runtime`
+    - Core runtime semantics: values, function and module contracts, execution-facing interfaces, and shared language/runtime behavior.
+
+- `pkg/vm`
+    - Bytecode execution engine for Ferret v2, including program execution, runtime coordination, cleanup, and VM-facing result handling.
+    - Performance-sensitive and semantics-sensitive; verify compiler/runtime assumptions before changing internals.
+
+### Language and developer tooling
+
+- `pkg/asm`
+    - Assembly-layer support for Ferret bytecode programs, including parsing and encoding of assembly representations used for low-level tooling and debugging.
+
+- `pkg/diagnostics`
+    - Shared diagnostic primitives and formatting support for errors, warnings, spans, labels, and user-facing parser/compiler messages.
+
+- `pkg/encoding`
+    - Output encoding and materialization infrastructure for turning runtime values into external representations.
+
+- `pkg/file`
+    - File-related helpers and abstractions used by language, runtime, or tooling surfaces.
+
+- `pkg/formatter`
+    - Source formatting and pretty-printing support for Ferret code and related textual representations.
+
+### Integration and extension surfaces
+
+- `pkg/sdk`
+    - Developer-facing integration helpers for extending or embedding Ferret beyond the narrowest top-level API surface.
+
+- `pkg/stdlib`
+    - Built-in Ferret modules, namespaces, and host functions registered as the standard library.
+
+## Primary surfaces
+
+- Top-level package exposes the embedding API:
+    - `Engine` compiles and runs FQL sources.
+    - `Plan` wraps compiled bytecode plus environment state.
+    - `Session` executes a plan.
+    - `Module` and `ModuleRegistry` are the extension points for host modules.
+- `pkg/asm` provides assembly-oriented support for working with Ferret bytecode at a lower level.
+- `pkg/bytecode` defines instructions, operands, programs, and related executable structures.
+- `pkg/compiler` lowers parsed FQL into bytecode and runs optimization passes.
+- `pkg/diagnostics` provides shared diagnostics infrastructure used across parsing, compilation, and formatting of user-facing errors.
+- `pkg/encoding` handles output encoding and materialization of runtime values.
+- `pkg/file` provides file-related support used by repository subsystems.
+- `pkg/formatter` provides source formatting and pretty-printing for Ferret code.
+- `pkg/parser` parses FQL and assembles diagnostics.
+- `pkg/parser/antlr` contains the grammar sources.
+- `pkg/parser/fql` contains generated parser and lexer code.
+- `pkg/runtime` defines runtime values, function registries, and core semantics.
+- `pkg/sdk` contains developer-facing extension and embedding helpers.
+- `pkg/stdlib` registers the built-in namespaces and functions.
+- `pkg/vm` executes bytecode programs.
+- `test/integration/compiler`, `test/integration/optimization`, and `test/integration/vm` are the main regression suites.
+- `test/e2e` covers CLI and browser-backed flows.
+
+## Where to start by task
+
+- Add or change syntax:
+    - edit grammar under `pkg/parser/antlr`
+    - regenerate parser artifacts
+    - inspect parser diagnostics/code in `pkg/parser`
+    - update compiler lowering in `pkg/compiler`
+    - add or update integration coverage
+
+- Add or change bytecode/opcodes:
+    - inspect `pkg/bytecode`
+    - inspect compiler emission sites
+    - inspect VM execution in `pkg/vm`
+    - validate with VM/integration tests
+
+- Change runtime value semantics:
+    - inspect `pkg/runtime`
+    - inspect any relevant assumptions in `pkg/vm`
+    - inspect result/materialization behavior if affected
+
+- Change diagnostics behavior:
+    - inspect `pkg/diagnostics`
+    - inspect parser/compiler call sites that construct or transform diagnostics
+    - validate both message content and span/label accuracy
+
+- Change output/materialization behavior:
+    - inspect `pkg/encoding`
+    - inspect runtime and VM call sites that feed values into encoders/materializers
+    - validate public-facing behavior and resource/cleanup interactions if relevant
+
+- Change formatting behavior:
+    - inspect `pkg/formatter`
+    - validate formatting stability with targeted tests or fixtures
+
+- Change embedding API:
+    - inspect top-level package (`Engine`, `Plan`, `Session`)
+    - inspect downstream compiler/runtime/VM interactions
+    - validate public behavior with integration or e2e coverage as appropriate
+
+- Change built-in functions/modules:
+    - inspect `pkg/stdlib`
+    - inspect host function/module registration and runtime contracts
+
+- Change developer tooling or low-level program tooling:
+    - inspect `pkg/asm`, `pkg/formatter`, `pkg/diagnostics`, or `pkg/sdk` depending on which surface owns the behavior
+
+## Stability guide
+
+Treat these as relatively stable unless the task explicitly targets them:
+- the overall pipeline shape: parser -> compiler -> bytecode -> VM
+- the parser generation workflow
+- the top-level embedding entry points
+
+Treat these as implementation-sensitive and verify current code before proposing changes:
+- optimizer internals
+- diagnostics plumbing
+- VM execution internals
+- runtime value behavior and cleanup/resource semantics
+- encoding/materialization behavior
+
+Do not treat historical discussion, stale comments, or old branches as authoritative.
+
+## Tooling prerequisites
+
+- Go must be installed.
+- `make` is optional but is the preferred entrypoint for repo-defined workflows.
+- Java plus ANTLR `4.13.2` are required when regenerating parser artifacts.
+- `lab` plus a reachable Chromium instance are required for e2e coverage.
+- `staticcheck`, `goimports`, and `revive` are needed for lint/format flows; install them with `make install-tools`.
+
+## Command matrix
+
+- Broad validation: `go test ./...`
+- Race-heavy package and integration coverage: `make test`
+- Lint: `make lint`
+- Format: `make fmt`
+- Regenerate parser/codegen artifacts: `make generate`
+    - Run this only when grammar or generator inputs change.
+- Build the CLI binary: `make compile`
+- Run e2e coverage: `LAB_BIN=/absolute/path/to/lab make e2e`
+    - Ensure Chromium is reachable at `http://127.0.0.1:9222/json/version`.
+    - CI uses `docker run -d -p 9222:9222 ghcr.io/montferret/chromium:92.0.4512.0`.
+
+## Editing rules
+
+- Never hand-edit generated files under `pkg/parser/fql` or `pkg/parser/antlr/gen`.
+- Parser generation is driven by `pkg/parser/parser.go`:
+    - `antlr -Xexact-output-dir -o fql -package fql -visitor -Dlanguage=Go antlr/FqlLexer.g4 antlr/FqlParser.g4`
+    - `go run ./tools/patch_lexer.go`
+- If you change grammar files in `pkg/parser/antlr`, run `make generate` and commit the generated output in the same change.
+- Treat `Makefile` and `.github/workflows/build.yml` as the source of truth for validation commands.
+- Prefer narrow validation first, then broaden:
+    - Package-local changes: run the affected `go test` package(s).
+    - Compiler, optimizer, or VM changes: run the relevant integration suite(s).
+    - Cross-cutting changes: finish with `go test ./...` or `make test`.
+- Do not assume e2e is available locally. If Chromium or `lab` is missing, state that explicitly.
+
+## Validation expectations
+
+- After code changes, run the narrowest tests that prove the behavior you touched.
+- Before finishing broader changes, run the relevant repo-level command from the matrix above.
+- If you changed formatting-sensitive files, run `make fmt`.
+- If you changed lint-sensitive code paths or public behavior, run `make lint` when the toolchain is available.
+- If you changed parser grammar, generated lexer/parser output must be included and reviewed.
+
+## Expectations for non-trivial changes
+
+When proposing or implementing non-trivial changes:
+- identify the owning subsystem first
+- preserve invariants unless the task explicitly changes them
+- prefer local, comprehensible changes before introducing new abstractions
+- distinguish correctness work from performance work
+- do not perform opportunistic refactors unrelated to the requested task unless they are necessary for correctness
+
+## Secondary references
+
+- `README.md` for product context and links to the broader Ferret ecosystem.
+- `CONTRIBUTING.md` for human contributor process.
+- `.github/workflows/build.yml` for the current CI validation path.

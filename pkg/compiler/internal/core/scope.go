@@ -9,6 +9,7 @@ type ScopeProjection struct {
 	registers *RegisterAllocator
 	emitter   *Emitter
 	symbols   *SymbolTable
+	types     *TypeTracker
 	values    []Variable
 }
 
@@ -16,12 +17,14 @@ func NewScopeProjection(
 	registers *RegisterAllocator,
 	emitter *Emitter,
 	symbols *SymbolTable,
+	types *TypeTracker,
 	scope []Variable,
 ) *ScopeProjection {
 	return &ScopeProjection{
 		registers: registers,
 		emitter:   emitter,
 		symbols:   symbols,
+		types:     types,
 		values:    scope,
 	}
 }
@@ -35,13 +38,14 @@ func (sp *ScopeProjection) EmitAsArray(dst bytecode.Operand) {
 	}
 
 	sp.emitter.EmitArray(buildDst, len(sp.values))
+	sp.types.Set(buildDst, TypeArray)
 
 	for _, v := range sp.values {
 		sp.emitter.EmitArrayPush(buildDst, v.Register)
 	}
 
 	if buildDst != dst {
-		sp.emitter.EmitMove(dst, buildDst)
+		sp.moveProjectedValue(dst, buildDst)
 	}
 }
 
@@ -55,10 +59,11 @@ func (sp *ScopeProjection) EmitAsObject(dst bytecode.Operand) {
 	}
 
 	sp.emitter.EmitObject(buildDst, size)
+	sp.types.Set(buildDst, TypeObject)
 
 	if size == 0 {
 		if buildDst != dst {
-			sp.emitter.EmitMove(dst, buildDst)
+			sp.moveProjectedValue(dst, buildDst)
 		}
 
 		return
@@ -73,8 +78,18 @@ func (sp *ScopeProjection) EmitAsObject(dst bytecode.Operand) {
 	}
 
 	if buildDst != dst {
-		sp.emitter.EmitMove(dst, buildDst)
+		sp.moveProjectedValue(dst, buildDst)
 	}
+}
+
+func (sp *ScopeProjection) moveProjectedValue(dst, src bytecode.Operand) {
+	if sp.types.Resolve(src).IsUntracked() {
+		sp.emitter.EmitPlainMove(dst, src)
+	} else {
+		sp.emitter.EmitMoveTracked(dst, src)
+	}
+
+	sp.types.Set(dst, sp.types.Resolve(src))
 }
 
 func (sp *ScopeProjection) RestoreFromArray(src bytecode.Operand) {

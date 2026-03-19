@@ -15,12 +15,13 @@ const (
 )
 
 type AggregatePlan struct {
-	Index map[string]int   `json:"index"`
-	Keys  []runtime.String `json:"keys"`
-	Kinds []AggregateKind  `json:"kinds"`
+	Index            map[string]int   `json:"index"`
+	Keys             []runtime.String `json:"keys"`
+	Kinds            []AggregateKind  `json:"kinds"`
+	TrackGroupValues bool             `json:"trackGroupValues,omitempty"`
 }
 
-func NewAggregatePlan(keys []runtime.String, kinds []AggregateKind) AggregatePlan {
+func NewAggregatePlan(keys []runtime.String, kinds []AggregateKind, trackGroupValues bool) AggregatePlan {
 	idx := make(map[string]int, len(keys))
 
 	for i, key := range keys {
@@ -28,8 +29,9 @@ func NewAggregatePlan(keys []runtime.String, kinds []AggregateKind) AggregatePla
 	}
 
 	return AggregatePlan{
-		Keys:  keys,
-		Kinds: kinds,
-		Index: idx,
+		Keys:             keys,
+		Kinds:            kinds,
+		Index:            idx,
+		TrackGroupValues: trackGroupValues,
 	}
 }

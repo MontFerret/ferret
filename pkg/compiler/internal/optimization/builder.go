@@ -76,8 +76,7 @@ func (b *Builder) identifyLeaders(instructions []bytecode.Instruction) map[int]b
 		role := bytecode.OpcodeInfoOf(op).ControlFlow
 
 		if role == bytecode.ControlFlowJumpUnconditional || role == bytecode.ControlFlowJumpConditional {
-			targetIdx := bytecode.JumpTargetOperandIndex(op)
-			target := int(inst.Operands[targetIdx])
+			target := b.jumpTarget(i, inst)
 
 			if target >= 0 && target < len(instructions) {
 				leaders[target] = true
@@ -156,14 +155,12 @@ func (b *Builder) createEdges(instructions []bytecode.Instruction, blocks []*Bas
 
 		switch role {
 		case bytecode.ControlFlowJumpUnconditional:
-			targetIdx := bytecode.JumpTargetOperandIndex(lastInst.Opcode)
-			target := int(lastInst.Operands[targetIdx])
+			target := b.jumpTarget(lastIdx, lastInst)
 			if targetBlock, ok := indexToBlock[target]; ok {
 				block.AddSuccessor(targetBlock)
 			}
 		case bytecode.ControlFlowJumpConditional:
-			targetIdx := bytecode.JumpTargetOperandIndex(lastInst.Opcode)
-			target := int(lastInst.Operands[targetIdx])
+			target := b.jumpTarget(lastIdx, lastInst)
 			if targetBlock, ok := indexToBlock[target]; ok {
 				block.AddSuccessor(targetBlock)
 			}
@@ -183,4 +180,22 @@ func (b *Builder) createEdges(instructions []bytecode.Instruction, blocks []*Bas
 			}
 		}
 	}
+}
+
+func (b *Builder) jumpTarget(pc int, inst bytecode.Instruction) int {
+	if inst.Opcode == bytecode.OpMatchLoadPropertyConst {
+		targets := b.program.Metadata.MatchFailTargets
+		if pc >= 0 && pc < len(targets) {
+			return targets[pc]
+		}
+
+		return -1
+	}
+
+	targetIdx := bytecode.JumpTargetOperandIndex(inst.Opcode)
+	if targetIdx < 0 {
+		return -1
+	}
+
+	return int(inst.Operands[targetIdx])
 }

@@ -77,8 +77,8 @@ RETURN f2(1, 2)
 
 	assertCallArgsLoadedFromConsts(t, prog.Bytecode, callIndex, 2)
 
-	if hasOpcode(prog.Bytecode, bytecode.OpMove) {
-		t.Fatalf("expected no MOVE instructions for constant-only UDF call setup, got bytecode with MOVE")
+	if hasOpcode(prog.Bytecode, bytecode.OpMove) || hasOpcode(prog.Bytecode, bytecode.OpMoveTracked) {
+		t.Fatalf("expected no MOVE/MOVET instructions for constant-only UDF call setup")
 	}
 }
 
@@ -94,8 +94,8 @@ func TestHostCallConstantArgsDirectLoadO0(t *testing.T) {
 
 	assertCallArgsLoadedFromConsts(t, prog.Bytecode, callIndex, 2)
 
-	if hasOpcode(prog.Bytecode, bytecode.OpMove) {
-		t.Fatalf("expected no MOVE instructions for constant-only host call setup, got bytecode with MOVE")
+	if hasOpcode(prog.Bytecode, bytecode.OpMove) || hasOpcode(prog.Bytecode, bytecode.OpMoveTracked) {
+		t.Fatalf("expected no MOVE/MOVET instructions for constant-only host call setup")
 	}
 }
 
@@ -107,7 +107,7 @@ RETURN TEST(x, 2)
 
 	prog := compileWithLevel(t, compiler.O0, expr)
 
-	if !hasOpcode(prog.Bytecode, bytecode.OpMove) {
-		t.Fatalf("expected MOVE instruction for non-literal argument setup")
+	if !hasOpcode(prog.Bytecode, bytecode.OpMoveTracked) {
+		t.Fatalf("expected MOVET instruction for non-literal argument setup")
 	}
 }

@@ -149,6 +149,45 @@ func TestBuildCFG_ConditionalJump(t *testing.T) {
 	}
 }
 
+func TestBuildCFG_MatchLoadPropertyConst(t *testing.T) {
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadParam, 1, 1),
+			bytecode.NewInstruction(bytecode.OpMatchLoadPropertyConst, 2, 1, bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, 2),
+			bytecode.NewInstruction(bytecode.OpLoadZero, 1),
+			bytecode.NewInstruction(bytecode.OpReturn, 1),
+		},
+		Metadata: bytecode.Metadata{
+			MatchFailTargets: []int{-1, 3, -1, -1, -1},
+		},
+	}
+
+	builder := NewBuilder(program)
+	cfg, err := builder.Build()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(cfg.Blocks) != 4 {
+		t.Fatalf("expected 4 blocks, got %d", len(cfg.Blocks))
+	}
+
+	block0 := cfg.Blocks[0]
+	if len(block0.Successors) != 2 {
+		t.Fatalf("expected 2 successors for block 0, got %d", len(block0.Successors))
+	}
+
+	successorStarts := make(map[int]bool)
+	for _, succ := range block0.Successors {
+		successorStarts[succ.Start] = true
+	}
+
+	if !successorStarts[2] || !successorStarts[3] {
+		t.Fatalf("expected block 0 successors at indices 2 and 3")
+	}
+}
+
 func TestBuildCFG_Loop(t *testing.T) {
 	// Program with a loop (back edge)
 	program := &bytecode.Program{
@@ -238,6 +277,7 @@ func TestBasicBlock_IsTerminator(t *testing.T) {
 		{"JumpIfEqConst", bytecode.OpJumpIfEqConst, true},
 		{"JumpIfMissingProperty", bytecode.OpJumpIfMissingProperty, true},
 		{"JumpIfMissingPropertyConst", bytecode.OpJumpIfMissingPropertyConst, true},
+		{"MatchLoadPropertyConst", bytecode.OpMatchLoadPropertyConst, true},
 		{"IterNext", bytecode.OpIterNext, true},
 		{"Add", bytecode.OpAdd, false},
 		{"LoadConst", bytecode.OpLoadConst, false},

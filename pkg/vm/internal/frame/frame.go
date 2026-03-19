@@ -9,6 +9,7 @@ import (
 // CallFrame captures the caller state needed to resume execution after a UDF call.
 type CallFrame struct {
 	OwnedResources   mem.OwnedResources
+	Aliases          mem.AliasTracker
 	FnName           string
 	CallerRegisters  []runtime.Value
 	FnID             int

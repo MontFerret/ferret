@@ -3,6 +3,7 @@ package vm
 import (
 	"context"
 	"errors"
+	"io"
 	"strings"
 	"testing"
 
@@ -14,6 +15,7 @@ import (
 	rtdiagnostics "github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
+	"github.com/MontFerret/ferret/v2/pkg/vm/test"
 )
 
 func mustNewVM(t *testing.T, program *bytecode.Program, opts ...Option) *VM {
@@ -47,6 +49,41 @@ func mustNewEnvironment(t *testing.T, opts ...EnvironmentOption) *Environment {
 	}
 
 	return env
+}
+
+func mustRunResult(t *testing.T, instance *VM, env *Environment) *Result {
+	t.Helper()
+
+	result, err := instance.Run(context.Background(), env)
+	if err != nil {
+		t.Fatalf("expected successful run, got %v", err)
+	}
+
+	return result
+}
+
+func mustResultRootAndClose(t *testing.T, result *Result) runtime.Value {
+	t.Helper()
+
+	root := result.Root()
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected result close to succeed, got %v", err)
+	}
+
+	return root
+}
+
+func countDeferredClosers(deferred *mem.DeferredClosers) int {
+	if deferred == nil {
+		return 0
+	}
+
+	count := 0
+	deferred.ForEach(func(io.Closer) {
+		count++
+	})
+
+	return count
 }
 
 func assertUnresolvedFunctionError(t *testing.T, err error) *RuntimeError {
@@ -290,6 +327,350 @@ func TestVMCloseClosesTrackedOwnedResources(t *testing.T) {
 	}
 }
 
+func TestResultMaterializeIsOneShot(t *testing.T) {
+	result := newResult(runtime.NewInt(7))
+
+	got, err := Materialize[int](result, func(value runtime.Value) (Materialized[int], error) {
+		val, ok := value.(runtime.Int)
+		if !ok {
+			t.Fatalf("expected runtime.Int root, got %T", value)
+		}
+
+		return Materialized[int]{Value: int(val)}, nil
+	})
+	if err != nil {
+		t.Fatalf("expected first materialization to succeed, got %v", err)
+	}
+
+	if got != 7 {
+		t.Fatalf("unexpected materialized value: got %d, want 7", got)
+	}
+
+	_, err = Materialize[int](result, func(runtime.Value) (Materialized[int], error) {
+		return Materialized[int]{Value: 0}, nil
+	})
+	if !errors.Is(err, runtime.ErrInvalidOperation) {
+		t.Fatalf("expected second materialization to fail with invalid operation, got %v", err)
+	}
+
+	if !strings.Contains(err.Error(), "result is already materialized") {
+		t.Fatalf("expected already materialized error, got %v", err)
+	}
+}
+
+func TestResultMaterializeNilResultReturnsNilError(t *testing.T) {
+	var result *Result
+	called := false
+
+	_, err := Materialize[int](result, func(runtime.Value) (Materialized[int], error) {
+		called = true
+		return Materialized[int]{Value: 0}, nil
+	})
+	if !errors.Is(err, runtime.ErrInvalidOperation) {
+		t.Fatalf("expected nil result materialization to fail with invalid operation, got %v", err)
+	}
+
+	if !strings.Contains(err.Error(), "result is nil") {
+		t.Fatalf("expected nil result error, got %v", err)
+	}
+
+	if called {
+		t.Fatal("expected nil result materialization to fail before calling materializer")
+	}
+}
+
+func TestResultMaterializeClosedResultReturnsClosedError(t *testing.T) {
+	result := newResult(runtime.NewInt(7))
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected close to succeed, got %v", err)
+	}
+
+	called := false
+
+	_, err := Materialize[int](result, func(runtime.Value) (Materialized[int], error) {
+		called = true
+		return Materialized[int]{Value: 0}, nil
+	})
+	if !errors.Is(err, runtime.ErrInvalidOperation) {
+		t.Fatalf("expected closed result materialization to fail with invalid operation, got %v", err)
+	}
+
+	if !strings.Contains(err.Error(), "result is closed") {
+		t.Fatalf("expected closed result error, got %v", err)
+	}
+
+	if called {
+		t.Fatal("expected closed result materialization to fail before calling materializer")
+	}
+}
+
+func TestResultCloseIsIdempotent(t *testing.T) {
+	value := newTrackingCloser("result-close")
+	result := newResult(value)
+	result.AdoptValue(value)
+
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected first close to succeed, got %v", err)
+	}
+
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected repeated close to succeed, got %v", err)
+	}
+
+	if got := value.closed; got != 1 {
+		t.Fatalf("expected tracked closer to close once, got %d closes", got)
+	}
+}
+
+func TestRunResultKeepsReturnedDirectCloserAliveUntilClose(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("MAKE"),
+		},
+	}
+
+	instance := mustNewVM(t, program)
+	value := newTrackingCloser("result-root")
+	env := mustNewEnvironment(t, WithFunction("MAKE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+		return value, nil
+	}))
+
+	result := mustRunResult(t, instance, env)
+	if got := value.closed; got != 0 {
+		t.Fatalf("expected returned direct closer to stay live until result close, got %d closes", got)
+	}
+
+	if got := result.Root(); got != value {
+		t.Fatalf("expected result root to expose the live closer, got %v", got)
+	}
+
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected result close to succeed, got %v", err)
+	}
+
+	if got := value.closed; got != 1 {
+		t.Fatalf("expected result close to release returned direct closer once, got %d closes", got)
+	}
+}
+
+func TestRun_BenchmarkResultModeReusesHandleAfterClose(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("MAKE"),
+		},
+	}
+
+	instance := mustNewVM(t, program, WithTesting(test.WithBenchmarkMode()))
+	closers := []*trackingCloser{
+		newTrackingCloser("first"),
+		newTrackingCloser("second"),
+	}
+	runCount := 0
+	env := mustNewEnvironment(t, WithFunction("MAKE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+		value := closers[runCount]
+		runCount++
+		return value, nil
+	}))
+
+	result := mustRunResult(t, instance, env)
+	if got := result.Root(); got != closers[0] {
+		t.Fatalf("expected first run to expose first closer, got %v", got)
+	}
+
+	materialized, err := Materialize[string](result, func(value runtime.Value) (Materialized[string], error) {
+		closer, ok := value.(*trackingCloser)
+		if !ok {
+			t.Fatalf("expected tracking closer root, got %T", value)
+		}
+
+		return Materialized[string]{Value: closer.name}, nil
+	})
+	if err != nil {
+		t.Fatalf("expected benchmark-mode materialization to succeed, got %v", err)
+	}
+
+	if got, want := materialized, "first"; got != want {
+		t.Fatalf("unexpected materialized value: got %q, want %q", got, want)
+	}
+
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected first benchmark result close to succeed, got %v", err)
+	}
+
+	if got, want := closers[0].closed, 1; got != want {
+		t.Fatalf("expected first closer to close once, got %d", got)
+	}
+
+	reused := mustRunResult(t, instance, env)
+	if reused != result {
+		t.Fatal("expected benchmark mode to reuse the same result handle")
+	}
+
+	if got := reused.Root(); got != closers[1] {
+		t.Fatalf("expected second run to expose second closer, got %v", got)
+	}
+
+	if err := reused.Close(); err != nil {
+		t.Fatalf("expected second benchmark result close to succeed, got %v", err)
+	}
+
+	if got, want := closers[1].closed, 1; got != want {
+		t.Fatalf("expected second closer to close once, got %d", got)
+	}
+}
+
+func TestRun_BenchmarkResultModeRequiresCloseBeforeNextRun(t *testing.T) {
+	instance := mustNewVM(t, newTestProgram(
+		1,
+		nil,
+		bytecode.NewInstruction(bytecode.OpLoadBool, bytecode.NewRegister(0), bytecode.Operand(1)),
+		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+	), WithTesting(test.WithBenchmarkMode()))
+
+	result := mustRunResult(t, instance, nil)
+
+	_, err := instance.Run(context.Background(), nil)
+	if err == nil {
+		t.Fatal("expected second run without closing benchmark result to fail")
+	}
+
+	if !errors.Is(err, runtime.ErrInvalidOperation) {
+		t.Fatalf("expected invalid operation, got %v", err)
+	}
+
+	if !strings.Contains(err.Error(), "benchmark result must be closed") {
+		t.Fatalf("expected benchmark close requirement in error, got %v", err)
+	}
+
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected benchmark result close to succeed, got %v", err)
+	}
+
+	reused, err := instance.Run(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("expected run after closing benchmark result to succeed, got %v", err)
+	}
+
+	if err := reused.Close(); err != nil {
+		t.Fatalf("expected reused benchmark result close to succeed, got %v", err)
+	}
+}
+
+func TestRun_DefaultModeAllowsMultipleOpenResults(t *testing.T) {
+	instance := mustNewVM(t, newTestProgram(
+		1,
+		nil,
+		bytecode.NewInstruction(bytecode.OpLoadBool, bytecode.NewRegister(0), bytecode.Operand(1)),
+		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+	))
+
+	first := mustRunResult(t, instance, nil)
+	second := mustRunResult(t, instance, nil)
+
+	if first == second {
+		t.Fatal("expected default run mode to allocate independent result handles")
+	}
+
+	if got := first.Root(); got != runtime.True {
+		t.Fatalf("unexpected first result root: got %v", got)
+	}
+
+	if got := second.Root(); got != runtime.True {
+		t.Fatalf("unexpected second result root: got %v", got)
+	}
+
+	if err := first.Close(); err != nil {
+		t.Fatalf("expected first result close to succeed, got %v", err)
+	}
+
+	if err := second.Close(); err != nil {
+		t.Fatalf("expected second result close to succeed, got %v", err)
+	}
+}
+
+func TestFailedRunClosesDiscardedDeferredClosers(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpFail, bytecode.NewConstant(1)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("MAKE"),
+			runtime.NewString("boom"),
+		},
+	}
+
+	instance := mustNewVM(t, program)
+	value := newTrackingCloser("discarded-before-failure")
+	env := mustNewEnvironment(t, WithFunction("MAKE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+		return value, nil
+	}))
+
+	_, err := instance.Run(context.Background(), env)
+	if err == nil {
+		t.Fatal("expected run to fail")
+	}
+
+	if got := value.closed; got != 1 {
+		t.Fatalf("expected failed run teardown to close discarded closer once, got %d closes", got)
+	}
+}
+
+func TestResultCloseReleasesClosersAdoptedBeforeMaterializationFailure(t *testing.T) {
+	value := newTrackingCloser("adopted-on-failure")
+	result := newResult(runtime.NewArrayWith(value))
+
+	materializeErr := errors.New("materialize failed")
+	_, err := Materialize[string](result, func(root runtime.Value) (Materialized[string], error) {
+		arr, ok := root.(*runtime.Array)
+		if !ok {
+			t.Fatalf("expected runtime.Array root, got %T", root)
+		}
+
+		item, itemErr := arr.At(context.Background(), runtime.ZeroInt)
+		if itemErr != nil {
+			t.Fatalf("failed to read array item: %v", itemErr)
+		}
+
+		result.AdoptValue(item)
+
+		return Materialized[string]{}, materializeErr
+	})
+	if !errors.Is(err, materializeErr) {
+		t.Fatalf("expected materialization error to be preserved, got %v", err)
+	}
+
+	if got := value.closed; got != 0 {
+		t.Fatalf("expected adopted closer to remain open until result close, got %d closes", got)
+	}
+
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected result close to succeed, got %v", err)
+	}
+
+	if got := value.closed; got != 1 {
+		t.Fatalf("expected result close to release adopted closer once, got %d closes", got)
+	}
+}
+
 func TestBuildCatchByPC_EmptyBytecodeReturnsNil(t *testing.T) {
 	got := buildCatchByPC(0, []bytecode.Catch{
 		{0, 0, 1},
@@ -352,10 +733,7 @@ func TestOpLoadParam_UsesBoundSlots(t *testing.T) {
 	env.Params["foo"] = runtime.NewInt(1)
 	env.Params["bar"] = runtime.NewInt(2)
 
-	out, err := mustNewVM(t, program).Run(context.Background(), env)
-	if err != nil {
-		t.Fatalf("expected successful run, got %v", err)
-	}
+	out := mustResultRootAndClose(t, mustRunResult(t, mustNewVM(t, program), env))
 
 	if out != runtime.NewInt(3) {
 		t.Fatalf("unexpected result: got %v, want %v", out, runtime.NewInt(3))
@@ -365,7 +743,7 @@ func TestOpLoadParam_UsesBoundSlots(t *testing.T) {
 func TestOpLoadParam_MissingParamsPreserveRuntimeError(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
-		Registers:  2,
+		Registers:  3,
 		Params:     []string{"foo", "bar"},
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(1), bytecode.Operand(1)),
@@ -565,16 +943,16 @@ func TestUnwindToProtected_ClosesOwnedResourcesOfUnwoundFramesOnly(t *testing.T)
 		t.Fatal("expected protected unwind to succeed")
 	}
 
-	if got := activeOwned.closed; got != 1 {
-		t.Fatalf("expected active frame resource to close once, got %d", got)
+	if got := activeOwned.closed; got != 0 {
+		t.Fatalf("expected active frame resource to remain deferred until run end, got %d closes", got)
 	}
 
-	if got := aboveOwned2.closed; got != 1 {
-		t.Fatalf("expected top unwound frame resource to close once, got %d", got)
+	if got := aboveOwned2.closed; got != 0 {
+		t.Fatalf("expected top unwound frame resource to remain deferred until run end, got %d closes", got)
 	}
 
-	if got := aboveOwned1.closed; got != 1 {
-		t.Fatalf("expected second unwound frame resource to close once, got %d", got)
+	if got := aboveOwned1.closed; got != 0 {
+		t.Fatalf("expected second unwound frame resource to remain deferred until run end, got %d closes", got)
 	}
 
 	if got := protectedOwned.closed; got != 0 {
@@ -583,6 +961,10 @@ func TestUnwindToProtected_ClosesOwnedResourcesOfUnwoundFramesOnly(t *testing.T)
 
 	if !state.owned.Owns(protectedOwned) {
 		t.Fatal("expected protected caller ownership to remain active after unwind")
+	}
+
+	if got, want := countDeferredClosers(&state.deferred), 3; got != want {
+		t.Fatalf("expected deferred queue size %d after unwind, got %d", want, got)
 	}
 }
 
@@ -949,8 +1331,8 @@ func TestReturnToCaller_ClosesDiscardedOwnedValuesButPreservesBorrowedArgs(t *te
 		t.Fatal("expected return to caller to succeed")
 	}
 
-	if got := produced.closed; got != 1 {
-		t.Fatalf("expected produced callee value to close once, got %d", got)
+	if got := produced.closed; got != 0 {
+		t.Fatalf("expected produced callee value to remain deferred until run end, got %d closes", got)
 	}
 
 	if got := borrowed.closed; got != 0 {
@@ -959,6 +1341,10 @@ func TestReturnToCaller_ClosesDiscardedOwnedValuesButPreservesBorrowedArgs(t *te
 
 	if !state.owned.Owns(borrowed) {
 		t.Fatal("expected caller to keep ownership of borrowed argument")
+	}
+
+	if got, want := countDeferredClosers(&state.deferred), 1; got != want {
+		t.Fatalf("expected deferred queue size %d after return, got %d", want, got)
 	}
 
 	if got := state.registers[1]; got != runtime.True {
@@ -1006,6 +1392,115 @@ func TestReturnToCaller_TransfersReturnedOwnedCloserToCaller(t *testing.T) {
 
 	if got := returned.closed; got != 1 {
 		t.Fatalf("expected root cleanup to close transferred return value once, got %d", got)
+	}
+}
+
+func TestReturnToCaller_KeepsOwnershipWhileCallerAliasRemains(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer state.endRun()
+
+	shared := newTrackingCloser("shared")
+
+	callerRegs := mem.NewRegisterFile(2)
+	callerRegs[0] = shared
+	callerOwned := mem.OwnedResources{}
+	callerOwned.Track(shared)
+	callerAliases := mem.AliasTracker{}
+	if key, _, ok := mem.ResourceKeyOf(shared); ok {
+		callerAliases.Inc(key)
+	}
+
+	activeRegs := mem.NewRegisterFile(1)
+	activeRegs[0] = shared
+	state.registers = activeRegs
+	state.owned.Track(shared)
+
+	state.frames.Push(frame.CallFrame{
+		ReturnPC:        11,
+		ReturnDest:      bytecode.NewRegister(1),
+		CallerRegisters: callerRegs,
+		OwnedResources:  callerOwned,
+		Aliases:         callerAliases,
+	})
+
+	if ok := state.returnToCaller(shared); !ok {
+		t.Fatal("expected return to caller to succeed")
+	}
+
+	state.writeBorrowedRegister(bytecode.NewRegister(1), runtime.None)
+
+	if !state.owned.Owns(shared) {
+		t.Fatal("expected first caller alias to remain owned after clearing return slot")
+	}
+
+	if got := countDeferredClosers(&state.deferred); got != 0 {
+		t.Fatalf("expected no deferred closers after clearing one of two aliases, got %d", got)
+	}
+
+	state.writeBorrowedRegister(bytecode.NewRegister(0), runtime.None)
+
+	if state.owned.Owns(shared) {
+		t.Fatal("expected ownership to end after clearing the final caller alias")
+	}
+
+	if got, want := countDeferredClosers(&state.deferred), 1; got != want {
+		t.Fatalf("expected deferred queue size %d after clearing final alias, got %d", want, got)
+	}
+
+	if got := shared.closed; got != 0 {
+		t.Fatalf("expected closer to remain deferred until cleanup, got %d closes", got)
+	}
+}
+
+func TestReturnToCaller_MatchingDestinationDoesNotNeedExtraTracking(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer state.endRun()
+
+	shared := newTrackingCloser("shared")
+
+	callerRegs := mem.NewRegisterFile(2)
+	callerRegs[1] = shared
+	callerOwned := mem.OwnedResources{}
+	callerOwned.Track(shared)
+
+	activeRegs := mem.NewRegisterFile(1)
+	activeRegs[0] = shared
+	state.registers = activeRegs
+	state.owned.Track(shared)
+
+	state.frames.Push(frame.CallFrame{
+		ReturnPC:        13,
+		ReturnDest:      bytecode.NewRegister(1),
+		CallerRegisters: callerRegs,
+		OwnedResources:  callerOwned,
+	})
+
+	if ok := state.returnToCaller(shared); !ok {
+		t.Fatal("expected return to caller to succeed")
+	}
+
+	state.writeBorrowedRegister(bytecode.NewRegister(1), runtime.None)
+
+	if state.owned.Owns(shared) {
+		t.Fatal("expected matching return destination not to require extra ownership tracking")
+	}
+
+	if got, want := countDeferredClosers(&state.deferred), 1; got != want {
+		t.Fatalf("expected deferred queue size %d after clearing the only caller alias, got %d", want, got)
+	}
+
+	if got := shared.closed; got != 0 {
+		t.Fatalf("expected closer to remain deferred until cleanup, got %d closes", got)
 	}
 }
 
@@ -1113,6 +1608,39 @@ func TestLoadKeyConstCached_FastObjectMissingReturnsNoneWithoutError(t *testing.
 
 	if out != runtime.None {
 		t.Fatalf("expected runtime.None on inline cached const miss, got %v", out)
+	}
+}
+
+func TestMatchLoadPropertyConst_FastObject(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  3,
+		Params:     []string{"obj"},
+		Constants:  []runtime.Value{runtime.NewString("a")},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(1), bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpMatchLoadPropertyConst, bytecode.NewRegister(2), bytecode.NewRegister(1), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+		Metadata: bytecode.Metadata{
+			MatchFailTargets: []int{-1, 3, -1, -1, -1},
+		},
+	}
+
+	instance := mustNewVM(t, program)
+	env := mustNewEnvironment(t)
+
+	obj := data.NewFastObject(nil, 0)
+	if err := obj.Set(context.Background(), runtime.NewString("a"), runtime.NewInt(7)); err != nil {
+		t.Fatalf("setup fast object failed: %v", err)
+	}
+	env.Params["obj"] = obj
+
+	root := mustResultRootAndClose(t, mustRunResult(t, instance, env))
+	if got, want := root, runtime.NewInt(7); got != want {
+		t.Fatalf("unexpected match result: got %v, want %v", got, want)
 	}
 }
 
@@ -1344,8 +1872,8 @@ func TestTailCallUdf_ReusedWindowTransfersOwnedArgsAndClosesDiscardedValues(t *t
 		t.Fatalf("unexpected tail call error: %v", err)
 	}
 
-	if got := discarded.closed; got != 1 {
-		t.Fatalf("expected discarded value to close once, got %d", got)
+	if got := discarded.closed; got != 0 {
+		t.Fatalf("expected discarded value to remain deferred until run end, got %d closes", got)
 	}
 
 	if got := ownedArg.closed; got != 0 {
@@ -1370,6 +1898,10 @@ func TestTailCallUdf_ReusedWindowTransfersOwnedArgsAndClosesDiscardedValues(t *t
 
 	if got := state.registers[2]; got != borrowedArg {
 		t.Fatalf("unexpected borrowed argument in second slot: got %v", got)
+	}
+
+	if got, want := countDeferredClosers(&state.deferred), 1; got != want {
+		t.Fatalf("expected deferred queue size %d after reused-window tail call, got %d", want, got)
 	}
 }
 
@@ -1427,8 +1959,8 @@ func TestTailCallUdf_FreshWindowTransfersOwnedArgsAndClosesDiscardedValues(t *te
 		t.Fatalf("unexpected tail call error: %v", err)
 	}
 
-	if got := discarded.closed; got != 1 {
-		t.Fatalf("expected discarded value to close once, got %d", got)
+	if got := discarded.closed; got != 0 {
+		t.Fatalf("expected discarded value to remain deferred until run end, got %d closes", got)
 	}
 
 	if got := ownedArg.closed; got != 0 {
@@ -1458,12 +1990,89 @@ func TestTailCallUdf_FreshWindowTransfersOwnedArgsAndClosesDiscardedValues(t *te
 	if got := state.registers[2]; got != borrowedArg {
 		t.Fatalf("unexpected borrowed argument in second slot: got %v", got)
 	}
+
+	if got, want := countDeferredClosers(&state.deferred), 1; got != want {
+		t.Fatalf("expected deferred queue size %d after fresh-window tail call, got %d", want, got)
+	}
+}
+
+func TestTailCallUdf_DuplicateOwnedArgsStayLiveUntilLastAliasClears(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  8,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Functions: bytecode.Functions{
+			UserDefined: []bytecode.UDF{
+				{
+					Name:        "F",
+					DisplayName: "f",
+					Entry:       0,
+					Registers:   6,
+					Params:      2,
+				},
+			},
+		},
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer state.endRun()
+
+	shared := newTrackingCloser("shared")
+
+	reg := state.registers
+	reg[3] = shared
+	reg[4] = shared
+	state.owned.Track(shared)
+
+	state.frames.Push(frame.CallFrame{
+		ReturnPC:        99,
+		ReturnDest:      bytecode.NewRegister(0),
+		CallerRegisters: mem.NewRegisterFile(2),
+	})
+
+	desc := &callDescriptor{
+		DisplayName: "f",
+		Dst:         bytecode.NewRegister(1),
+		ID:          0,
+		ArgStart:    3,
+		ArgCount:    2,
+		CallSitePC:  4,
+	}
+	if err := tailCallUdf(state, desc, &instance.program.Functions.UserDefined[0]); err != nil {
+		t.Fatalf("unexpected tail call error: %v", err)
+	}
+
+	state.writeBorrowedRegister(bytecode.NewRegister(1), runtime.None)
+
+	if !state.owned.Owns(shared) {
+		t.Fatal("expected closer to remain owned after clearing one transferred alias")
+	}
+
+	if got := countDeferredClosers(&state.deferred); got != 0 {
+		t.Fatalf("expected no deferred closers after clearing one of two aliases, got %d", got)
+	}
+
+	state.writeBorrowedRegister(bytecode.NewRegister(2), runtime.None)
+
+	if state.owned.Owns(shared) {
+		t.Fatal("expected ownership to end after clearing the final transferred alias")
+	}
+
+	if got, want := countDeferredClosers(&state.deferred), 1; got != want {
+		t.Fatalf("expected deferred queue size %d after clearing final alias, got %d", want, got)
+	}
+
+	if got := shared.closed; got != 0 {
+		t.Fatalf("expected closer to remain deferred until cleanup, got %d closes", got)
+	}
 }
 
 func TestOpClose_DoesNotDoubleCloseTrackedValueAtRunEnd(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
-		Registers:  2,
+		Registers:  3,
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
 			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(0)),
@@ -1491,13 +2100,58 @@ func TestOpClose_DoesNotDoubleCloseTrackedValueAtRunEnd(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected run error: %v", err)
 	}
+	defer func() {
+		_ = result.Close()
+	}()
 
 	if got := value.closed; got != 1 {
 		t.Fatalf("expected explicit close to run exactly once, got %d closes", got)
 	}
 
-	if got := result; got != runtime.ZeroInt {
+	if got := result.Root(); got != runtime.ZeroInt {
 		t.Fatalf("unexpected return value: got %v, want %v", got, runtime.ZeroInt)
+	}
+}
+
+func TestOpClose_DuplicateAliasClosesExactlyOnce(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  3,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(1), bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpClose, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("MAKE"),
+		},
+	}
+
+	instance := mustNewVM(t, program)
+	value := newTrackingCloser("close-me")
+	env := mustNewEnvironment(t, WithFunction("MAKE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+		return value, nil
+	}))
+
+	result := mustRunResult(t, instance, env)
+
+	if got, want := value.closed, 1; got != want {
+		t.Fatalf("expected explicit close to run exactly once with duplicate aliases, got %d closes", got)
+	}
+
+	if got := result.Root(); got != runtime.ZeroInt {
+		t.Fatalf("unexpected return value: got %v, want %v", got, runtime.ZeroInt)
+	}
+
+	if err := result.Close(); err != nil {
+		t.Fatalf("expected result close to succeed, got %v", err)
+	}
+
+	if got, want := value.closed, 1; got != want {
+		t.Fatalf("expected duplicate alias not to re-close at result cleanup, got %d closes", got)
 	}
 }
 
@@ -1553,9 +2207,12 @@ func TestOpFail_CaughtUsesCatchJumpTarget(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected fail to be caught, got %v", err)
 	}
+	defer func() {
+		_ = result.Close()
+	}()
 
-	if result != runtime.NewInt(7) {
-		t.Fatalf("expected catch jump target to continue execution, got %v", result)
+	if got := result.Root(); got != runtime.NewInt(7) {
+		t.Fatalf("expected catch jump target to continue execution, got %v", got)
 	}
 }
 
@@ -1644,6 +2301,128 @@ func TestInvalidFunctionNameHasNonEmptyKind(t *testing.T) {
 
 	if got := initErrs.First().Cause; !errors.Is(got, ErrInvalidFunctionName) {
 		t.Fatalf("expected invalid function name cause, got %v", got)
+	}
+}
+
+func TestBuildExecPlanRejectsMissingAggregateSelectorSlot(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpAggregateUpdate, bytecode.NewRegister(1), bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+	}
+
+	_, err := NewWith(program)
+	if err == nil {
+		t.Fatal("expected initialization error")
+	}
+
+	var initErrs *rtdiagnostics.InitializationErrorSet
+	if !errors.As(err, &initErrs) {
+		t.Fatalf("expected initialization error set, got %T", err)
+	}
+
+	if got, want := initErrs.Size(), 1; got != want {
+		t.Fatalf("unexpected initialization error count: got %d, want %d", got, want)
+	}
+
+	if got := initErrs.First().Cause; got == nil || !strings.Contains(got.Error(), "invalid aggregate selector slot") {
+		t.Fatalf("expected invalid aggregate selector slot cause, got %v", got)
+	}
+}
+
+func TestBuildExecPlanRejectsAggregateSelectorSlotLengthMismatch(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpAggregateUpdate, bytecode.NewRegister(1), bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+		Metadata: bytecode.Metadata{
+			AggregateSelectorSlots: []int{0},
+		},
+	}
+
+	_, err := NewWith(program)
+	if err == nil {
+		t.Fatal("expected initialization error")
+	}
+
+	var initErrs *rtdiagnostics.InitializationErrorSet
+	if !errors.As(err, &initErrs) {
+		t.Fatalf("expected initialization error set, got %T", err)
+	}
+
+	if got, want := initErrs.Size(), 1; got != want {
+		t.Fatalf("unexpected initialization error count: got %d, want %d", got, want)
+	}
+
+	if got := initErrs.First().Cause; got == nil || !strings.Contains(got.Error(), "metadata length") {
+		t.Fatalf("expected aggregate selector slot metadata length cause, got %v", got)
+	}
+}
+
+func TestBuildExecPlanRejectsMissingMatchFailTarget(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpMatchLoadPropertyConst, bytecode.NewRegister(1), bytecode.NewRegister(2), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+	}
+
+	_, err := NewWith(program)
+	if err == nil {
+		t.Fatal("expected initialization error")
+	}
+
+	var initErrs *rtdiagnostics.InitializationErrorSet
+	if !errors.As(err, &initErrs) {
+		t.Fatalf("expected initialization error set, got %T", err)
+	}
+
+	if got, want := initErrs.Size(), 1; got != want {
+		t.Fatalf("unexpected initialization error count: got %d, want %d", got, want)
+	}
+
+	if got := initErrs.First().Cause; got == nil || !strings.Contains(got.Error(), "invalid match fail target") {
+		t.Fatalf("expected invalid match fail target cause, got %v", got)
+	}
+}
+
+func TestBuildExecPlanRejectsMatchFailTargetLengthMismatch(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpMatchLoadPropertyConst, bytecode.NewRegister(1), bytecode.NewRegister(2), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+		Metadata: bytecode.Metadata{
+			MatchFailTargets: []int{1},
+		},
+	}
+
+	_, err := NewWith(program)
+	if err == nil {
+		t.Fatal("expected initialization error")
+	}
+
+	var initErrs *rtdiagnostics.InitializationErrorSet
+	if !errors.As(err, &initErrs) {
+		t.Fatalf("expected initialization error set, got %T", err)
+	}
+
+	if got, want := initErrs.Size(), 1; got != want {
+		t.Fatalf("unexpected initialization error count: got %d, want %d", got, want)
+	}
+
+	if got := initErrs.First().Cause; got == nil || !strings.Contains(got.Error(), "match fail target metadata length") {
+		t.Fatalf("expected match fail target metadata length cause, got %v", got)
 	}
 }
 

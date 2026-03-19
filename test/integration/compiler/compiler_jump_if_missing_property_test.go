@@ -8,21 +8,33 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
-func TestJumpIfMissingPropertyConstEmission(t *testing.T) {
+func TestMatchLoadPropertyConstEmission(t *testing.T) {
 	src := `
 LET obj = { a: 1, b: 2 }
 RETURN MATCH obj (
-  { a: 1 } => 1,
+  { a: 1, b: v } => v,
   _ => 0,
 )
 `
 	c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
-	prog, err := c.Compile(file.NewSource("jump_if_missing_property_const", src))
+	prog, err := c.Compile(file.NewSource("match_load_property_const", src))
 	if err != nil {
 		t.Fatalf("compile failed: %v", err)
 	}
 
-	if !programHasOpcode(prog, bytecode.OpJumpIfMissingPropertyConst) {
-		t.Fatalf("expected bytecode to contain %s", bytecode.OpJumpIfMissingPropertyConst)
+	if !programHasOpcode(prog, bytecode.OpMatchLoadPropertyConst) {
+		t.Fatalf("expected bytecode to contain %s", bytecode.OpMatchLoadPropertyConst)
+	}
+
+	if programHasOpcode(prog, bytecode.OpJumpIfMissingPropertyConst) {
+		t.Fatalf("expected object-pattern lowering to avoid %s", bytecode.OpJumpIfMissingPropertyConst)
+	}
+
+	if programHasOpcode(prog, bytecode.OpLoadPropertyConst) {
+		t.Fatalf("expected object-pattern lowering to avoid %s", bytecode.OpLoadPropertyConst)
+	}
+
+	if len(prog.Metadata.MatchFailTargets) != len(prog.Bytecode) {
+		t.Fatalf("expected match fail targets metadata to align with bytecode: got %d, want %d", len(prog.Metadata.MatchFailTargets), len(prog.Bytecode))
 	}
 }

@@ -3,6 +3,7 @@ package vm
 import (
 	"context"
 	"errors"
+	"io"
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -32,6 +33,8 @@ type (
 		catchByPC []int
 		registers mem.RegisterFile
 		owned     mem.OwnedResources
+		aliases   mem.AliasTracker
+		deferred  mem.DeferredClosers
 		failure   pendingFailure
 		pc        int
 		lastPC    int
@@ -50,7 +53,9 @@ func (s *execState) init(program *bytecode.Program) {
 
 func (s *execState) startRun(env *Environment) error {
 	s.env = env
-	s.owned = mem.OwnedResources{}
+	s.owned.Reset()
+	s.aliases.Reset()
+	s.deferred.Reset()
 	s.pc = 0
 	s.lastPC = -1
 	s.clearFailure()
@@ -60,7 +65,7 @@ func (s *execState) startRun(env *Environment) error {
 
 func (s *execState) endRun() {
 	for {
-		s.owned.CloseAll()
+		s.owned.DrainTo(&s.deferred)
 
 		caller, ok := s.frames.Pop()
 		if !ok {
@@ -70,7 +75,50 @@ func (s *execState) endRun() {
 		s.windows.Release(s.registers)
 		s.registers = caller.CallerRegisters
 		s.owned = caller.OwnedResources
+		s.aliases = caller.Aliases
 	}
+
+	_ = s.deferred.CloseAll()
+	s.resetRunStorage()
+}
+
+func (s *execState) finishRun(root runtime.Value) *Result {
+	return s.finishRunInto(root, newResult(root))
+}
+
+func (s *execState) finishRunInto(root runtime.Value, result *Result) *Result {
+	result.reset(root)
+
+	if s.owned.Empty() && s.deferred.Empty() {
+		s.resetRunStorage()
+		return result
+	}
+
+	var resultOwned mem.OwnedResources
+
+	if key, closer, ok := mem.ResourceKeyOf(root); ok && s.owned.ExtractByKey(key) {
+		resultOwned.TrackResolved(key, closer)
+	}
+	if !s.owned.Empty() {
+		s.owned.DrainTo(&s.deferred)
+	}
+
+	if !resultOwned.Empty() {
+		result.adoptOwned(&resultOwned)
+	}
+	if !s.deferred.Empty() {
+		result.adoptDeferred(&s.deferred)
+	}
+
+	s.resetRunStorage()
+
+	return result
+}
+
+func (s *execState) resetRunStorage() {
+	s.owned.Reset()
+	s.aliases.Reset()
+	s.deferred.Reset()
 
 	s.registers.Reset()
 	s.scratch.Reset()
@@ -103,6 +151,7 @@ func (s *execState) bindParams(env *Environment) error {
 			val = runtime.None
 		}
 
+		val = normalizeValue(val)
 		s.scratch.Params[idx] = val
 	}
 
@@ -354,10 +403,11 @@ func (s *execState) unwindToProtected() bool {
 			return false
 		}
 
-		s.owned.CloseAll()
+		s.owned.DrainTo(&s.deferred)
 		s.windows.Release(s.registers)
 		s.registers = frame.CallerRegisters
 		s.owned = frame.OwnedResources
+		s.aliases = frame.Aliases
 	}
 
 	frame, ok := s.frames.Pop()
@@ -365,10 +415,11 @@ func (s *execState) unwindToProtected() bool {
 		return false
 	}
 
-	s.owned.CloseAll()
+	s.owned.DrainTo(&s.deferred)
 	s.windows.Release(s.registers)
 	s.registers = frame.CallerRegisters
 	s.owned = frame.OwnedResources
+	s.aliases = frame.Aliases
 	if frame.ReturnDest.IsRegister() {
 		s.writeBorrowedRegister(frame.ReturnDest, runtime.None)
 	}
@@ -382,14 +433,33 @@ func (s *execState) returnToCaller(retVal runtime.Value) bool {
 		return false
 	}
 
-	callerOwned := frame.OwnedResources
-	s.owned.Transfer(retVal, &callerOwned)
-	s.owned.CloseAll()
+	var (
+		retKey    mem.ResourceKey
+		retCloser io.Closer
+		retOwned  bool
+	)
+
+	if !s.owned.Empty() {
+		if key, closer, ok := mem.ResourceKeyOf(retVal); ok {
+			retKey = key
+			retCloser = closer
+			retOwned = s.owned.ExtractByKey(key)
+		}
+
+		s.owned.DrainTo(&s.deferred)
+	}
+
 	s.windows.Release(s.registers)
 	s.registers = frame.CallerRegisters
-	s.owned = callerOwned
+	s.owned = frame.OwnedResources
+	s.aliases = frame.Aliases
 	if frame.ReturnDest.IsRegister() {
 		s.writeBorrowedRegister(frame.ReturnDest, retVal)
+
+		if retOwned {
+			s.owned.TrackResolved(retKey, retCloser)
+			s.aliases.Inc(retKey)
+		}
 	}
 	s.pc = frame.ReturnPC
 	return true
@@ -409,21 +479,223 @@ func (s *execState) setCallResult(pc int, op bytecode.Opcode, dst bytecode.Opera
 	s.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.None, true)
 }
 
+// decAliasAndMaybeDiscard decrements the alias count for key and, if no
+// live register aliases remain, discards the resource from owned resources.
+// This replaces the old O(n) register scan with an O(1) map lookup.
+func (s *execState) decAliasAndMaybeDiscard(key mem.ResourceKey, closer io.Closer) {
+	if s.aliases.Dec(key) > 0 {
+		return
+	}
+
+	s.owned.DiscardByKey(key, closer, &s.deferred)
+}
+
+// retireOwnership terminally removes VM ownership of val after the value
+// escapes into an external sink. Any stale register aliases are ignored by
+// later automatic cleanup.
+func (s *execState) retireOwnership(val runtime.Value) {
+	key, _, ok := mem.ResourceKeyOf(val)
+	if !ok {
+		return
+	}
+
+	s.owned.ExtractByKey(key)
+	s.aliases.Delete(key)
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Register Write Discipline
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// These are the ONLY legal ways to mutate register state.
+// Direct reg[i] = v assignments are forbidden outside these helpers.
+//
+// Each helper encodes ownership semantics and ensures correct cleanup:
+//
+//   writeBorrowedRegister(dst, val)   - Write a borrowed/untracked value
+//   writeProducedRegister(dst, val)   - Write a produced/owned value
+//   copyRegister(dst, src)            - Copy register value (ownership follows value)
+//   clearRegister(dst)                - Clear register to None
+//
+// Hot path optimization:
+//   - Most register writes don't involve closers
+//   - Check if old value is owned FIRST (cheap map lookup)
+//   - Only scan for aliases when overwriting an owned closer
+//   - Early return on common non-closer case
+//
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// writeBorrowedRegister writes a borrowed (not owned) value to a register.
+// Use this for values that are:
+//   - constants
+//   - parameters
+//   - computed values that don't need tracking (numbers, strings, bools)
+//   - values from other registers (borrowed references)
+//
+// Fast path: obvious scalar values cannot participate in ownership, so we can
+// overwrite them without probing ownership state.
 func (s *execState) writeBorrowedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
 	val = normalizeValue(val)
 
-	if dst.IsRegister() {
+	if !dst.IsRegister() {
+		return val
+	}
+
+	prev := s.registers[dst]
+
+	if !mem.CanTrackValue(prev) {
 		s.registers[dst] = val
+		return val
+	}
+
+	prevKey, prevCloser, ok := mem.ResourceKeyOf(prev)
+	if !ok || !s.owned.OwnsKey(prevKey) {
+		s.registers[dst] = val
+		return val
+	}
+
+	newKey, _, newOK := mem.ResourceKeyOf(val)
+
+	if !newOK || prevKey != newKey {
+		s.decAliasAndMaybeDiscard(prevKey, prevCloser)
+	}
+
+	s.registers[dst] = val
+	return val
+}
+
+// writeProducedRegister writes a produced (owned) value to a register.
+// Use this for values that are:
+//   - newly allocated objects (arrays, objects, iterators)
+//   - returned from host functions
+//   - created by VM instructions (streams, collectors, etc.)
+//
+// The value will be tracked for ownership and cleanup when it resolves to a
+// closable resource.
+func (s *execState) writeProducedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
+	val = normalizeValue(val)
+	newKey, newCloser, newOK := mem.ResourceKeyOf(val)
+
+	if !dst.IsRegister() {
+		if newOK {
+			s.owned.TrackResolved(newKey, newCloser)
+		}
+
+		return val
+	}
+
+	prev := s.registers[dst]
+
+	if !mem.CanTrackValue(prev) {
+		s.registers[dst] = val
+		if newOK {
+			s.owned.TrackResolved(newKey, newCloser)
+			s.aliases.Inc(newKey)
+		}
+
+		return val
+	}
+
+	prevKey, prevCloser, ok := mem.ResourceKeyOf(prev)
+	if !ok || !s.owned.OwnsKey(prevKey) {
+		s.registers[dst] = val
+		if newOK {
+			s.owned.TrackResolved(newKey, newCloser)
+			s.aliases.Inc(newKey)
+		}
+
+		return val
+	}
+
+	if !newOK || prevKey != newKey {
+		s.decAliasAndMaybeDiscard(prevKey, prevCloser)
+	}
+
+	s.registers[dst] = val
+
+	if newOK {
+		s.owned.TrackResolved(newKey, newCloser)
+		s.aliases.Inc(newKey)
 	}
 
 	return val
 }
 
-func (s *execState) writeProducedRegister(dst bytecode.Operand, val runtime.Value) runtime.Value {
-	val = s.writeBorrowedRegister(dst, val)
-	s.owned.Track(val)
+// copyRegister moves a value from one register to another, transferring ownership if any.
+// Use this for explicit register moves (OpMove) where:
+//   - source register will be overwritten or cleared soon
+//   - you want to avoid aliasing complexity
+//
+// This is semantically a copy, but ownership stays with the value, not the slot.
+// If the copied value is an owned closer, its alias count is incremented.
+func (s *execState) copyRegister(dst, src bytecode.Operand) runtime.Value {
+	if !src.IsRegister() {
+		return s.writeBorrowedRegister(dst, runtime.None)
+	}
+
+	if !dst.IsRegister() {
+		return s.registers[src]
+	}
+
+	val := s.registers[src]
+	if !mem.CanTrackValue(val) {
+		return s.writeBorrowedRegister(dst, val)
+	}
+
+	prev := s.registers[dst]
+	valKey, _, valTrackable := mem.ResourceKeyOf(val)
+	valOwned := valTrackable && s.owned.OwnsKey(valKey)
+
+	if !mem.CanTrackValue(prev) {
+		s.registers[dst] = val
+		if valOwned {
+			s.aliases.Inc(valKey)
+		}
+
+		return val
+	}
+
+	prevKey, prevCloser, ok := mem.ResourceKeyOf(prev)
+	if !ok || !s.owned.OwnsKey(prevKey) {
+		s.registers[dst] = val
+		if valOwned {
+			s.aliases.Inc(valKey)
+		}
+
+		return val
+	}
+
+	if !valOwned || prevKey != valKey {
+		s.decAliasAndMaybeDiscard(prevKey, prevCloser)
+	}
+
+	s.registers[dst] = val
+	if valOwned {
+		s.aliases.Inc(valKey)
+	}
 
 	return val
+}
+
+// clearRegister clears a register, setting it to None and discarding any owned value.
+// Use this for explicit register cleanup when you don't need to set a new value.
+func (s *execState) clearRegister(dst bytecode.Operand) {
+	if !dst.IsRegister() {
+		return
+	}
+
+	prev := s.registers[dst]
+
+	if !mem.CanTrackValue(prev) {
+		s.registers[dst] = runtime.None
+		return
+	}
+
+	if key, closer, ok := mem.ResourceKeyOf(prev); ok && s.owned.OwnsKey(key) {
+		s.decAliasAndMaybeDiscard(key, closer)
+	}
+
+	s.registers[dst] = runtime.None
 }
 
 func (s *execState) udfByID(id int) (*bytecode.UDF, error) {

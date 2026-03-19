@@ -11,7 +11,10 @@ const (
 	OpJumpIfNone
 
 	// Register Operations
-	OpMove // Move a value from register A to register B
+	OpMove // Plain register copy — no tracking
+
+	// Tracked Register Operations
+	OpMoveTracked // Tracked register copy — ownership-aware
 
 	// Loading Operations
 	OpLoadNone   // Set None value to a register
@@ -36,6 +39,7 @@ const (
 	OpLoadKeyOptionalConst
 	OpLoadPropertyConst // Load a property from a map or list to a register using a constant key
 	OpLoadPropertyOptionalConst
+	OpMatchLoadPropertyConst // Load an object-pattern property or jump to the arm fail target
 
 	// Integrated Query Operations
 	OpQuery // Apply a query to a value
@@ -120,6 +124,7 @@ const (
 	OpDataSetMultiSorter
 	OpPush           // Adds a value to a generic List
 	OpPushKV         // Adds a key-value pair to a dataset
+	OpCounterInc     // Increments a counter collector
 	OpArrayPush      // Adds a value to a built-in Array instance
 	OpObjectSet      // Sets a property on a built-in Object instance
 	OpObjectSetConst // Sets a property on a built-in Object instance using a constant key
@@ -153,6 +158,11 @@ const (
 	OpJumpIfMissingProperty
 	OpJumpIfMissingPropertyConst
 	OpFail // Raises a runtime failure with a constant message
+
+	// Internal Aggregate Operations
+	OpLoadAggregateKey // Creates an internal grouped-aggregate selector key
+	OpAggregateUpdate
+	OpAggregateGroupUpdate
 )
 
 func (op Opcode) String() string {
@@ -182,10 +192,14 @@ func (op Opcode) String() string {
 		return "JMPMISSPROPC"
 	case OpFail:
 		return "FAIL"
+	case OpLoadAggregateKey:
+		return "LOADAGGK"
 
-	// Add Operations
+	// Register Operations
 	case OpMove:
 		return "MOVE"
+	case OpMoveTracked:
+		return "MOVET"
 
 	// Loading Operations
 	case OpLoadNone:
@@ -220,6 +234,8 @@ func (op Opcode) String() string {
 		return "LOADPRC"
 	case OpLoadPropertyOptionalConst:
 		return "LOADPROC"
+	case OpMatchLoadPropertyConst:
+		return "MATCHPRC"
 	case OpQuery:
 		return "QRY"
 	case OpLoadProperty:
@@ -380,10 +396,16 @@ func (op Opcode) String() string {
 		return "PUSHA"
 	case OpPushKV:
 		return "PUSHKV"
+	case OpCounterInc:
+		return "CNTINC"
 	case OpObjectSet:
 		return "OBJSET"
 	case OpObjectSetConst:
 		return "OBJSETC"
+	case OpAggregateUpdate:
+		return "AGGUPD"
+	case OpAggregateGroupUpdate:
+		return "AGGGRPUPD"
 
 	// Stream Operations
 	case OpStream:

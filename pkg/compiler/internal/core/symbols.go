@@ -37,6 +37,27 @@ const (
 	TypeAny
 )
 
+// IsScalar reports whether the type is a known scalar.
+func (t ValueType) IsScalar() bool {
+	switch t {
+	case TypeNone, TypeInt, TypeFloat, TypeString, TypeBool:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsUntracked reports whether the type is known to never carry direct resource
+// / closer ownership at runtime.
+func (t ValueType) IsUntracked() bool {
+	switch t {
+	case TypeNone, TypeInt, TypeFloat, TypeString, TypeBool, TypeArray, TypeObject:
+		return true
+	default:
+		return false
+	}
+}
+
 type Variable struct {
 	Name     string
 	Kind     SymbolKind

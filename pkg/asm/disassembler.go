@@ -21,7 +21,7 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 
 	newDisassemblerOptions(options...)
 
-	labels := collectLabels(p.Bytecode, p.Metadata.Labels)
+	labels := collectLabels(p)
 	udfLabels := collectUdfEntryLabels(p)
 
 	var buf bytes.Buffer
@@ -142,9 +142,16 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 }
 
 // collectLabels identifies jump targets and assigns symbolic labels to them.
-func collectLabels(instructions []bytecode.Instruction, names map[int]string) map[int]string {
+func collectLabels(p *bytecode.Program) map[int]string {
 	labels := make(map[int]string)
 	counter := 0
+
+	if p == nil {
+		return labels
+	}
+
+	instructions := p.Bytecode
+	names := p.Metadata.Labels
 
 	// Iterate through the labels in the program to initialize the labels map
 	for target, name := range names {
@@ -163,6 +170,19 @@ func collectLabels(instructions []bytecode.Instruction, names map[int]string) ma
 			}
 		default:
 			// Do nothing for other opcodes
+		}
+	}
+
+	for _, target := range p.Metadata.MatchFailTargets {
+		if target < 0 {
+			continue
+		}
+
+		if name, ok := names[target]; !ok || name == "" {
+			if _, exists := labels[target]; !exists {
+				labels[target] = fmt.Sprintf("@L%d", counter)
+				counter++
+			}
 		}
 	}
 
@@ -249,7 +269,7 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 
 	// Op R
 	case bytecode.OpLoadNone, bytecode.OpLoadZero,
-		bytecode.OpClose, bytecode.OpSleep, bytecode.OpRand, bytecode.OpIncr, bytecode.OpDecr, bytecode.OpReturn:
+		bytecode.OpClose, bytecode.OpSleep, bytecode.OpRand, bytecode.OpIncr, bytecode.OpDecr, bytecode.OpReturn, bytecode.OpCounterInc:
 		out = fmt.Sprintf("%d: %s %s", ip, opcode, formatOperand(ops[0]))
 
 	// Op R Arg
@@ -267,6 +287,33 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 			out = fmt.Sprintf("%d: %s %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatOperand(ops[2]), formatComment(comment))
 		} else {
 			out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatOperand(ops[2]))
+		}
+	case bytecode.OpLoadAggregateKey:
+		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatOperand(ops[2]))
+		if ops[2].IsConstant() {
+			out += formatComment(constValue(p, ops[2].Constant()))
+		}
+	case bytecode.OpMatchLoadPropertyConst:
+		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatOperand(ops[2]))
+		comments := make([]string, 0, 2)
+		if ops[2].IsConstant() {
+			comments = append(comments, constValue(p, ops[2].Constant()))
+		}
+		if target, ok := matchFailTarget(p, ip); ok {
+			comments = append(comments, fmt.Sprintf("fail=%s", labelOrAddr(target, labels)))
+		}
+		if len(comments) > 0 {
+			out += formatComment(strings.Join(comments, ", "))
+		}
+	case bytecode.OpAggregateUpdate:
+		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]))
+		if slot, ok := aggregateSelectorSlot(p, ip); ok {
+			out += formatComment(fmt.Sprintf("slot=%d", slot))
+		}
+	case bytecode.OpAggregateGroupUpdate:
+		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatOperand(ops[2]))
+		if slot, ok := aggregateSelectorSlot(p, ip); ok {
+			out += formatComment(fmt.Sprintf("slot=%d", slot))
 		}
 
 	// Op R C
@@ -320,6 +367,32 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 	}
 
 	return out
+}
+
+func aggregateSelectorSlot(p *bytecode.Program, pc int) (int, bool) {
+	if p == nil || pc < 0 || pc >= len(p.Metadata.AggregateSelectorSlots) {
+		return 0, false
+	}
+
+	slot := p.Metadata.AggregateSelectorSlots[pc]
+	if slot < 0 {
+		return 0, false
+	}
+
+	return slot, true
+}
+
+func matchFailTarget(p *bytecode.Program, pc int) (int, bool) {
+	if p == nil || pc < 0 || pc >= len(p.Metadata.MatchFailTargets) {
+		return 0, false
+	}
+
+	target := p.Metadata.MatchFailTargets[pc]
+	if target < 0 {
+		return 0, false
+	}
+
+	return target, true
 }
 
 func isUdfCallOpcode(op bytecode.Opcode) bool {

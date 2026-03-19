@@ -38,10 +38,6 @@ func encodeConstant(value runtime.Value) (constantJSON, error) {
 		return constantJSON{Type: encodeConstantType(runtime.TypeNone)}, nil
 	}
 
-	if value == AggregateKeyMarker {
-		return constantJSON{Type: encodeConstantType(typeAggregateKeyMarker)}, nil
-	}
-
 	switch v := value.(type) {
 	case runtime.Boolean:
 		if v {
@@ -90,8 +86,6 @@ func decodeConstant(frame constantJSON) (runtime.Value, error) {
 	switch frame.Type {
 	case encodeConstantType(runtime.TypeNone):
 		return runtime.None, nil
-	case encodeConstantType(typeAggregateKeyMarker):
-		return AggregateKeyMarker, nil
 	case encodeConstantType(runtime.TypeBoolean):
 		raw := strings.TrimSpace(string(frame.Value))
 		if raw == "" {

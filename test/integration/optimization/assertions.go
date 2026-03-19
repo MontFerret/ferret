@@ -187,7 +187,7 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 		return
 
 	// Moves / loads.
-	case bytecode.OpMove:
+	case bytecode.OpMove, bytecode.OpMoveTracked:
 		addUse(src1)
 		addDef(dst)
 		return
@@ -201,6 +201,20 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 		addUse(src1)
 		addUse(src2)
 		addDef(dst)
+		return
+	case bytecode.OpLoadAggregateKey:
+		addUse(src1)
+		addUse(src2)
+		addDef(dst)
+		return
+	case bytecode.OpAggregateUpdate:
+		addUse(dst)
+		addUse(src1)
+		return
+	case bytecode.OpAggregateGroupUpdate:
+		addUse(dst)
+		addUse(src1)
+		addUse(src2)
 		return
 
 	// Simple arithmetic, comparisons, access.
@@ -241,6 +255,9 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 	// Dataset operations.
 	case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
 		addDef(dst)
+		return
+	case bytecode.OpCounterInc:
+		addUse(dst)
 		return
 	case bytecode.OpPush, bytecode.OpArrayPush:
 		addUse(dst)

@@ -131,8 +131,10 @@ func TestRunClosesPlanWhenSessionCreationFails(t *testing.T) {
 	_, err = eng.Run(
 		context.Background(),
 		file.NewAnonymousSource("RETURN 1"),
-		vm.WithFunction("SESSION_DUP", testVarFn),
-		vm.WithFunction("SESSION_DUP", testVarFn),
+		WithEnvironmentOptions(
+			vm.WithFunction("SESSION_DUP", testVarFn),
+			vm.WithFunction("SESSION_DUP", testVarFn),
+		),
 	)
 	if err == nil {
 		t.Fatal("expected Run to fail during session creation")
@@ -168,17 +170,9 @@ func TestRunLogsDeferredCleanupErrorsWithoutChangingRunResult(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected run result error to be unchanged by cleanup failures, got: %v", err)
 	}
-	defer func() {
-		_ = result.Close()
-	}()
 
-	val, err := result.Value()
-	if err != nil {
-		t.Fatalf("failed to read run result: %v", err)
-	}
-
-	if val.String() != "1" {
-		t.Fatalf("expected run result to stay successful, got: %s", val.String())
+	if got := strings.TrimSpace(string(result.Content)); got != "1" {
+		t.Fatalf("expected run result to stay successful, got: %s", got)
 	}
 
 	logs := logOutput.String()

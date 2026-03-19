@@ -12,7 +12,7 @@ func assertNoMoveFromConstant(t *testing.T, prog *bytecode.Program) {
 	t.Helper()
 
 	for i, inst := range prog.Bytecode {
-		if inst.Opcode != bytecode.OpMove {
+		if inst.Opcode != bytecode.OpMove && inst.Opcode != bytecode.OpMoveTracked {
 			continue
 		}
 

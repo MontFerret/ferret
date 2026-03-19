@@ -3,7 +3,7 @@ package bytecode
 import "testing"
 
 func TestOpcodeInfoCompleteness(t *testing.T) {
-	for op := Opcode(0); op <= OpFail; op++ {
+	for op := Opcode(0); op <= OpAggregateGroupUpdate; op++ {
 		info := OpcodeInfoOf(op)
 
 		if info.Class == OpcodeClassUnknown {
@@ -82,6 +82,10 @@ func TestJumpTargetOperandIndex(t *testing.T) {
 
 	if JumpTargetOperandIndex(OpIterNext) != 0 {
 		t.Fatalf("expected OpIterNext target operand index 0")
+	}
+
+	if JumpTargetOperandIndex(OpMatchLoadPropertyConst) != -1 {
+		t.Fatalf("expected OpMatchLoadPropertyConst to use metadata jump targets")
 	}
 
 	if JumpTargetOperandIndex(OpAdd) != -1 {

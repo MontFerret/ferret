@@ -18,12 +18,12 @@ func NewStreamValue(stream runtime.Stream) runtime.Value {
 	}
 }
 
-func (v *StreamValue) Iterate(timeout runtime.Int) *Iterator {
+func (v *StreamValue) Iterate(timeout runtime.Int) IteratorState {
 	if timeout == 0 {
-		return NewIterator(runtime.NewIterator(v.Value))
+		return WrapIterator(runtime.NewIterator(v.Value))
 	}
 
-	return NewIterator(runtime.NewIteratorWithTimeout(v.Value, time.Duration(timeout)))
+	return WrapIterator(runtime.NewIteratorWithTimeout(v.Value, time.Duration(timeout)))
 }
 
 func (v *StreamValue) Close() error {

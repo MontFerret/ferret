@@ -95,8 +95,8 @@ func tailCallUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
 
 	if cap(reg) >= udf.Registers {
 		var ownedArgs mem.OwnedResources
-		s.owned.TransferMany(args, &ownedArgs)
-		s.owned.CloseAll()
+		s.owned.ExtractMany(args, &ownedArgs)
+		s.owned.DrainTo(&s.deferred)
 
 		reg = reg[:udf.Registers]
 		for i := range reg {
@@ -114,12 +114,24 @@ func tailCallUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
 		copyUdfArgsToUdfRegisters(newRegs, reg, argStart, copyCount)
 
 		var ownedArgs mem.OwnedResources
-		s.owned.TransferMany(newRegs[1:1+len(args)], &ownedArgs)
-		s.owned.CloseAll()
+		s.owned.ExtractMany(args, &ownedArgs)
+		s.owned.DrainTo(&s.deferred)
 
 		s.windows.Release(reg)
 		s.registers = newRegs
 		s.owned = ownedArgs
+	}
+
+	// Rebuild alias counts from surviving owned args.
+	// Must iterate args (not owned) because multiple args may alias
+	// the same closer, and each register slot needs its own count.
+	s.aliases.Reset()
+
+	for _, arg := range args {
+		key, _, ok := mem.ResourceKeyOf(arg)
+		if ok && s.owned.OwnsKey(key) {
+			s.aliases.Inc(key)
+		}
 	}
 
 	s.pc = udf.Entry
@@ -136,6 +148,7 @@ func (s *execState) enterUdfCall(desc *callDescriptor, udf *bytecode.UDF) {
 		ReturnDest:       desc.Dst,
 		CallerRegisters:  s.registers,
 		OwnedResources:   s.owned,
+		Aliases:          s.aliases,
 		RecoveryBoundary: desc.RecoveryBoundary,
 		FnID:             desc.ID,
 		FnName:           desc.DisplayName,
@@ -143,6 +156,7 @@ func (s *execState) enterUdfCall(desc *callDescriptor, udf *bytecode.UDF) {
 		HasCallSite:      true,
 	})
 	s.owned = mem.OwnedResources{}
+	s.aliases = mem.AliasTracker{}
 	s.registers = newRegs
 	s.pc = udf.Entry
 }

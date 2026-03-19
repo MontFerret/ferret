@@ -247,7 +247,7 @@ func foldLoadInstruction(inst *bytecode.Instruction, env constFoldEnv, result *c
 }
 
 func foldMoveInstruction(inst *bytecode.Instruction, env constFoldEnv, result *constFoldResult) bool {
-	if inst.Opcode != bytecode.OpMove {
+	if inst.Opcode != bytecode.OpMove && inst.Opcode != bytecode.OpMoveTracked {
 		return false
 	}
 

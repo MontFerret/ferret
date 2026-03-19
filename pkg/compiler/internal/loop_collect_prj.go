@@ -55,7 +55,7 @@ func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregato
 		// Assign the aggregator value to the local variable with the projection name
 		if !c.assignLocalOrReport(spec.Projection().Context(), loop.ValueName, core.TypeUnknown, aggregator) {
 			if existing, _, found := c.ctx.Symbols.Resolve(loop.ValueName); found {
-				c.ctx.Emitter.EmitAB(bytecode.OpMove, existing, aggregator)
+				c.ctx.EmitMoveAuto(existing, aggregator)
 			}
 		}
 
@@ -100,7 +100,7 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 		// If no filter is provided, project all local variables
 		variables := c.ctx.Symbols.LocalVariables()
 		// Create a scope projection with all local variables
-		scope := core.NewScopeProjection(c.ctx.Registers, c.ctx.Emitter, c.ctx.Symbols, variables)
+		scope := core.NewScopeProjection(c.ctx.Registers, c.ctx.Emitter, c.ctx.Symbols, c.ctx.Types, variables)
 		// Emit the scope as an object to the value register
 		scope.EmitAsObject(kv.Value)
 	} else {
@@ -137,6 +137,7 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 		}
 
 		c.ctx.Emitter.EmitObject(buildDst, len(variables))
+		c.ctx.Types.Set(buildDst, core.TypeObject)
 
 		// Process each variable in the filter
 		for i, variable := range variables {
@@ -149,7 +150,7 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 		}
 
 		if buildDst != kv.Value {
-			c.ctx.Emitter.EmitMove(kv.Value, buildDst)
+			c.ctx.EmitMoveAuto(kv.Value, buildDst)
 		}
 	}
 
@@ -164,7 +165,7 @@ func (c *LoopCollectCompiler) compileCustomGroupProjection(kv *core.KV, selector
 	// Compile the selector expression
 	selectorReg := c.ctx.ExprCompiler.Compile(selector.Expression())
 	// Move the result to the value register
-	c.ctx.Emitter.EmitMove(kv.Value, selectorReg)
+	c.ctx.EmitMoveAuto(kv.Value, selectorReg)
 
 	// Return the selector identifier as the variable name
 	return textOfBindingIdentifier(selector.BindingIdentifier())

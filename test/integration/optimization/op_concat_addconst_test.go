@@ -94,10 +94,13 @@ func TestOpConcat(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
+			defer func() {
+				_ = out.Close()
+			}()
 
-			got, ok := out.(runtime.String)
+			got, ok := out.Root().(runtime.String)
 			if !ok {
-				t.Fatalf("expected runtime.String, got %T", out)
+				t.Fatalf("expected runtime.String, got %T", out.Root())
 			}
 
 			if got != tc.expected {
@@ -165,8 +168,11 @@ func TestOpAddConst(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
+			defer func() {
+				_ = out.Close()
+			}()
 
-			if err := assertRuntimeValueEqual(out, tc.expected); err != nil {
+			if err := assertRuntimeValueEqual(out.Root(), tc.expected); err != nil {
 				t.Fatalf("unexpected result: %v", err)
 			}
 		})

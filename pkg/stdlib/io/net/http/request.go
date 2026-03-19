@@ -150,7 +150,7 @@ func newParamsFrom(ctx context.Context, obj runtime.Map) (Params, error) {
 			p.Body = bin
 		} else {
 			encoder := ferretencoding.Encoder(encodingjson.Default)
-			if selected, resolverErr := ferretencoding.EncoderFrom(ctx, ferretencoding.ContentTypeJSON); resolverErr == nil {
+			if selected, resolverErr := ferretencoding.EncoderFrom(ctx, encodingjson.ContentType); resolverErr == nil {
 				encoder = selected
 			}
 

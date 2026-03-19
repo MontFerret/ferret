@@ -47,7 +47,15 @@ func (e *Emitter) EmitIterLimit(state, count bytecode.Operand, label Label) {
 // ─── Value & Memory ──────────────────────────────────────────────────────
 
 func (e *Emitter) EmitMove(dst, src bytecode.Operand) {
+	e.EmitAB(bytecode.OpMoveTracked, dst, src)
+}
+
+func (e *Emitter) EmitPlainMove(dst, src bytecode.Operand) {
 	e.EmitAB(bytecode.OpMove, dst, src)
+}
+
+func (e *Emitter) EmitMoveTracked(dst, src bytecode.Operand) {
+	e.EmitAB(bytecode.OpMoveTracked, dst, src)
 }
 
 func (e *Emitter) EmitPush(dst, src bytecode.Operand) {
@@ -60,6 +68,10 @@ func (e *Emitter) EmitArrayPush(dst, src bytecode.Operand) {
 
 func (e *Emitter) EmitPushKV(dst, key, val bytecode.Operand) {
 	e.EmitABC(bytecode.OpPushKV, dst, key, val)
+}
+
+func (e *Emitter) EmitCounterInc(dst bytecode.Operand) {
+	e.EmitA(bytecode.OpCounterInc, dst)
 }
 
 func (e *Emitter) EmitObjectSet(dst, key, val bytecode.Operand) {
@@ -84,6 +96,24 @@ func (e *Emitter) EmitLoadConst(dst bytecode.Operand, constant bytecode.Operand)
 
 func (e *Emitter) EmitLoadParam(dst, slot bytecode.Operand) {
 	e.EmitAB(bytecode.OpLoadParam, dst, slot)
+}
+
+func (e *Emitter) EmitLoadAggregateKey(dst, key, selector bytecode.Operand) {
+	e.EmitABC(bytecode.OpLoadAggregateKey, dst, key, selector)
+}
+
+func (e *Emitter) EmitAggregateUpdate(collector, value bytecode.Operand, selector int) {
+	e.emitInstructionWithSelectorSlot(bytecode.Instruction{
+		Opcode:   bytecode.OpAggregateUpdate,
+		Operands: [3]bytecode.Operand{collector, value, bytecode.NoopOperand},
+	}, selector)
+}
+
+func (e *Emitter) EmitAggregateGroupUpdate(collector, key, value bytecode.Operand, selector int) {
+	e.emitInstructionWithSelectorSlot(bytecode.Instruction{
+		Opcode:   bytecode.OpAggregateGroupUpdate,
+		Operands: [3]bytecode.Operand{collector, key, value},
+	}, selector)
 }
 
 func (e *Emitter) EmitBoolean(dst bytecode.Operand, value bool) {
@@ -122,6 +152,16 @@ func (e *Emitter) EmitLoadProperty(dst, obj, prop bytecode.Operand) {
 
 func (e *Emitter) EmitLoadPropertyOptional(dst, obj, prop bytecode.Operand) {
 	e.EmitABC(bytecode.OpLoadPropertyOptional, dst, obj, prop)
+}
+
+func (e *Emitter) EmitMatchLoadPropertyConst(dst, obj, prop bytecode.Operand, label Label) {
+	e.emitInstructionWithMatchFailTarget(bytecode.Instruction{
+		Opcode:   bytecode.OpMatchLoadPropertyConst,
+		Operands: [3]bytecode.Operand{dst, obj, prop},
+	}, -1)
+
+	pos := len(e.instructions) - 1
+	e.addMatchFailLabelRef(pos, label)
 }
 
 // ─── Arithmetic and Logical ──────────────────────────────────────────────

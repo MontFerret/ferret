@@ -105,5 +105,15 @@ func assertRuntimeIntArrayValue(t *testing.T, got runtime.Value, want ...runtime
 func runVM(t *testing.T, instance *vm.VM, env *vm.Environment) (runtime.Value, error) {
 	t.Helper()
 
-	return instance.Run(context.Background(), env)
+	result, err := instance.Run(context.Background(), env)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	root := result.Root()
+	if closeErr := result.Close(); closeErr != nil {
+		t.Fatalf("expected result close to succeed, got %v", closeErr)
+	}
+
+	return root, nil
 }

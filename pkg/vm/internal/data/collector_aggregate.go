@@ -12,11 +12,11 @@ import (
 )
 
 type AggregateCollector struct {
-	plan             bytecode.AggregatePlan
 	singleGroupValue runtime.List
 	groups           map[string]runtime.List
 	singleGroupKey   string
 	states           []aggregateState
+	plan             bytecode.AggregatePlan
 	hasSingleGroup   bool
 	hasData          bool
 }
@@ -29,56 +29,25 @@ func NewAggregateCollector(plan bytecode.AggregatePlan) Transformer {
 }
 
 func (c *AggregateCollector) Iterate(ctx context.Context) (runtime.Iterator, error) {
-	size := 0
-
-	if c.hasData {
-		groupCount := len(c.groups)
-
-		if c.hasSingleGroup {
-			groupCount++
-		}
-
-		size = len(c.plan.Keys) + groupCount
+	if !c.hasData {
+		return &aggregateIterator{}, nil
 	}
 
-	values := runtime.NewArray(size)
-
-	if c.hasData {
-		for i, key := range c.plan.Keys {
-			if err := values.Append(ctx, NewKV(key, c.valueFor(i))); err != nil {
-				return nil, err
-			}
-		}
-
-		if c.hasSingleGroup {
-			if err := values.Append(ctx, NewKV(runtime.NewString(c.singleGroupKey), c.singleGroupValue)); err != nil {
-				return nil, err
-			}
-		}
-
-		if len(c.groups) > 0 {
-			keys := make([]string, 0, len(c.groups))
-
-			for key := range c.groups {
-				keys = append(keys, key)
-			}
-
-			sort.Strings(keys)
-
-			for _, key := range keys {
-				if err := values.Append(ctx, NewKV(runtime.NewString(key), c.groups[key])); err != nil {
-					return nil, err
-				}
-			}
-		}
+	iter := &aggregateIterator{
+		collector: c,
 	}
 
-	iter, err := values.Iterate(ctx)
-	if err != nil {
-		return nil, err
+	if len(c.groups) > 0 {
+		iter.groupKeys = make([]string, 0, len(c.groups))
+
+		for key := range c.groups {
+			iter.groupKeys = append(iter.groupKeys, key)
+		}
+
+		sort.Strings(iter.groupKeys)
 	}
 
-	return NewKVIterator(iter), nil
+	return iter, nil
 }
 
 func (c *AggregateCollector) Set(ctx context.Context, key, value runtime.Value) error {
@@ -129,6 +98,17 @@ func (c *AggregateCollector) Set(ctx context.Context, key, value runtime.Value) 
 	}
 
 	return group.Append(ctx, value)
+}
+
+func (c *AggregateCollector) UpdateAggregate(idx int, value runtime.Value) error {
+	if err := validateAggregateSelectorIndex(idx, len(c.plan.Keys)); err != nil {
+		return err
+	}
+
+	c.hasData = true
+	c.update(idx, value)
+
+	return nil
 }
 
 func (c *AggregateCollector) Get(ctx context.Context, key runtime.Value) (runtime.Value, error) {
@@ -240,4 +220,40 @@ func (c *AggregateCollector) update(idx int, value runtime.Value) {
 
 func (c *AggregateCollector) valueFor(idx int) runtime.Value {
 	return aggregateValueFor(c.states[idx], c.plan.Kinds[idx])
+}
+
+type aggregateIterator struct {
+	collector        *AggregateCollector
+	groupKeys        []string
+	aggregateIdx     int
+	groupIdx         int
+	emittedSingleKey bool
+}
+
+func (it *aggregateIterator) Next(_ context.Context) (runtime.Value, runtime.Value, error) {
+	if it.collector == nil || !it.collector.hasData {
+		return runtime.None, runtime.None, io.EOF
+	}
+
+	if it.aggregateIdx < len(it.collector.plan.Keys) {
+		idx := it.aggregateIdx
+		it.aggregateIdx++
+
+		return it.collector.valueFor(idx), it.collector.plan.Keys[idx], nil
+	}
+
+	if it.collector.hasSingleGroup && !it.emittedSingleKey {
+		it.emittedSingleKey = true
+
+		return it.collector.singleGroupValue, runtime.NewString(it.collector.singleGroupKey), nil
+	}
+
+	if it.groupIdx >= len(it.groupKeys) {
+		return runtime.None, runtime.None, io.EOF
+	}
+
+	key := it.groupKeys[it.groupIdx]
+	it.groupIdx++
+
+	return it.collector.groups[key], runtime.NewString(key), nil
 }
