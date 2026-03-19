@@ -2,6 +2,7 @@ package diagnostics
 
 import (
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
@@ -11,6 +12,13 @@ import (
 var invalidWhileLoopBindingPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`(?is)\bFOR\b\s+([^\s]+)\s+WHILE\b`),
 	regexp.MustCompile(`(?is)\bFOR\b\s+([^\s]+)\s+DO\s+WHILE\b`),
+}
+
+type whileLoopBindingMatch struct {
+	headerStart int
+	bindingSpan file.Span
+	binding     string
+	skipDo      bool
 }
 
 func matchWhileLoopErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
@@ -46,26 +54,44 @@ func findInvalidWhileLoopBindingSpan(src *file.Source) (file.Span, bool) {
 	}
 
 	content := src.Content()
+	matches := make([]whileLoopBindingMatch, 0, len(invalidWhileLoopBindingPatterns))
 
 	for i, pattern := range invalidWhileLoopBindingPatterns {
-		indexes := pattern.FindStringSubmatchIndex(content)
-		if len(indexes) < 4 {
+		for _, indexes := range pattern.FindAllStringSubmatchIndex(content, -1) {
+			if len(indexes) < 4 {
+				continue
+			}
+
+			matches = append(matches, whileLoopBindingMatch{
+				headerStart: indexes[0],
+				bindingSpan: file.Span{
+					Start: indexes[2],
+					End:   indexes[3],
+				},
+				binding: content[indexes[2]:indexes[3]],
+				skipDo:  i == 0,
+			})
+		}
+	}
+
+	sort.Slice(matches, func(i, j int) bool {
+		if matches[i].headerStart != matches[j].headerStart {
+			return matches[i].headerStart < matches[j].headerStart
+		}
+
+		return matches[i].bindingSpan.Start < matches[j].bindingSpan.Start
+	})
+
+	for _, match := range matches {
+		if match.skipDo && strings.EqualFold(match.binding, "DO") {
 			continue
 		}
 
-		binding := content[indexes[2]:indexes[3]]
-		if i == 0 && strings.EqualFold(binding, "DO") {
+		if isValidWhileLoopBindingText(match.binding) {
 			continue
 		}
 
-		if isValidWhileLoopBindingText(binding) {
-			continue
-		}
-
-		return file.Span{
-			Start: indexes[2],
-			End:   indexes[3],
-		}, true
+		return match.bindingSpan, true
 	}
 
 	return file.Span{}, false

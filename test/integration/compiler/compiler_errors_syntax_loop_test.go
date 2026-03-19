@@ -88,6 +88,51 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 
 		ErrorCase(
 			`
+			LET ok = (
+				FOR WHILE FALSE
+					RETURN 1
+			)
+
+			FOR 123 WHILE TRUE
+				RETURN ok
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected identifier before 'WHILE'",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "Later FOR WHILE invalid binding is detected"),
+
+		ErrorCase(
+			`
+			LET ok = (
+				FOR DO WHILE FALSE
+					RETURN 1
+			)
+
+			FOR 123 DO WHILE TRUE
+				RETURN ok
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected identifier before 'WHILE'",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "Later FOR DO WHILE invalid binding is detected"),
+
+		ErrorCase(
+			`
+			LET ok = (
+				FOR DO WHILE FALSE
+					RETURN 1
+			)
+
+			FOR 123 WHILE TRUE
+				RETURN ok
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected identifier before 'WHILE'",
+				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
+			}, "Mixed while-loop forms still find later invalid binding"),
+
+		ErrorCase(
+			`
 			FOR IN [1, 2, 3]
 				RETURN i
 		`, E{
