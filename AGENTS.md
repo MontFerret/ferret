@@ -77,7 +77,8 @@ Agents should begin with the package whose responsibility owns the requested beh
     - Output encoding and materialization infrastructure for turning runtime values into external representations.
 
 - `pkg/file`
-    - File-related helpers and abstractions used by language, runtime, or tooling surfaces.
+    - Ferret file abstraction and loaders for bringing query sources into the parser/compiler pipeline, including path-aware source handling used by embedding and tooling flows.
+    - Prefer this package when the behavior involves source origin, file-backed input, or file identity rather than general OS-level file utilities.
 
 - `pkg/formatter`
     - Source formatting and pretty-printing support for Ferret code and related textual representations.
@@ -85,7 +86,8 @@ Agents should begin with the package whose responsibility owns the requested beh
 ### Integration and extension surfaces
 
 - `pkg/sdk`
-    - Developer-facing integration helpers for extending or embedding Ferret beyond the narrowest top-level API surface.
+    - Extension-oriented developer surface for building on top of Ferret internals, including helpers and contracts intended for external integrations, tools, and custom runtime/module implementations.
+    - Prefer `pkg/sdk` when the goal is to support consumers building with Ferret rather than changing the core execution pipeline itself.
 
 - `pkg/stdlib`
     - Built-in Ferret modules, namespaces, and host functions registered as the standard library.
@@ -102,13 +104,13 @@ Agents should begin with the package whose responsibility owns the requested beh
 - `pkg/compiler` lowers parsed FQL into bytecode and runs optimization passes.
 - `pkg/diagnostics` provides shared diagnostics infrastructure used across parsing, compilation, and formatting of user-facing errors.
 - `pkg/encoding` handles output encoding and materialization of runtime values.
-- `pkg/file` provides file-related support used by repository subsystems.
+- `pkg/file` provides file-backed source abstractions and related loading support used by parsing, compilation, and tooling flows.
 - `pkg/formatter` provides source formatting and pretty-printing for Ferret code.
 - `pkg/parser` parses FQL and assembles diagnostics.
 - `pkg/parser/antlr` contains the grammar sources.
 - `pkg/parser/fql` contains generated parser and lexer code.
 - `pkg/runtime` defines runtime values, function registries, and core semantics.
-- `pkg/sdk` contains developer-facing extension and embedding helpers.
+- `pkg/sdk` contains extension-facing helpers and contracts for developers building on top of Ferret.
 - `pkg/stdlib` registers the built-in namespaces and functions.
 - `pkg/vm` executes bytecode programs.
 - `test/integration/compiler`, `test/integration/optimization`, and `test/integration/vm` are the main regression suites.
@@ -148,6 +150,11 @@ Agents should begin with the package whose responsibility owns the requested beh
     - inspect `pkg/formatter`
     - validate formatting stability with targeted tests or fixtures
 
+- Change file-backed source handling or source loading behavior:
+    - inspect `pkg/file`
+    - inspect parser/compiler call sites that consume source objects
+    - validate path-aware diagnostics and any embedding/tooling behavior that depends on source identity
+
 - Change embedding API:
     - inspect top-level package (`Engine`, `Plan`, `Session`)
     - inspect downstream compiler/runtime/VM interactions
@@ -156,6 +163,10 @@ Agents should begin with the package whose responsibility owns the requested beh
 - Change built-in functions/modules:
     - inspect `pkg/stdlib`
     - inspect host function/module registration and runtime contracts
+
+- Change extension or integration support for external developers/tools:
+    - inspect `pkg/sdk`
+    - validate that the change belongs to an extension-facing surface rather than the core pipeline
 
 - Change developer tooling or low-level program tooling:
     - inspect `pkg/asm`, `pkg/formatter`, `pkg/diagnostics`, or `pkg/sdk` depending on which surface owns the behavior
@@ -175,6 +186,50 @@ Treat these as implementation-sensitive and verify current code before proposing
 - encoding/materialization behavior
 
 Do not treat historical discussion, stale comments, or old branches as authoritative.
+
+## Go type and file structure rules
+
+These rules are mandatory unless the task explicitly requires otherwise.
+
+- Do not define multiple method-bearing structs in the same `.go` file.
+- A struct with methods must live in its own file.
+- Name the file after the primary type or responsibility whenever practical, for example:
+    - `result.go` for `Result`
+    - `register_file.go` for `RegisterFile`
+    - `call_stack.go` for `CallStack`
+- Do not use grouped `type ( ... )` declarations for struct types.
+- Declare each struct with its own standalone `type Name struct { ... }`.
+- Passive data-only helper structs may share a file when they belong to the same narrow concern.
+- If a helper struct later gains methods, extract it into its own file immediately.
+- Methods for a struct should live in the same file as the struct unless there is a strong, explicit reason to split by concern.
+- Do not place a new method-bearing struct into an existing file just because the code compiles.
+- Do not hide substantial type additions inside grouped `type ( ... )` declarations.
+
+Preferred:
+
+```go
+type Result struct {
+	// ...
+}
+```
+
+Avoid:
+
+```go
+type (
+	Result struct {
+		// ...
+	}
+	execState struct {
+		// ...
+	}
+)
+```
+
+### Rationale:
+- one method-bearing type per file keeps ownership of behavior obvious
+- standalone type declarations make diffs and reviews clearer
+- grouped type blocks are reserved, if used at all, for small passive helper types rather than primary behavioral types
 
 ## Tooling prerequisites
 
@@ -215,11 +270,11 @@ Do not treat historical discussion, stale comments, or old branches as authorita
 
 - After code changes, run the narrowest tests that prove the behavior you touched.
 - Before finishing broader changes, run the relevant repo-level command from the matrix above.
-- If you changed formatting-sensitive files, run `make fmt`.
-- If you changed lint-sensitive code paths or public behavior, run `make lint` when the toolchain is available.
+- If you changed formatting-sensitive files, run make fmt.
+- If you changed lint-sensitive code paths or public behavior, run make lint when the toolchain is available.
 - If you changed parser grammar, generated lexer/parser output must be included and reviewed.
 
-## Expectations for non-trivial changes
+Expectations for non-trivial changes
 
 When proposing or implementing non-trivial changes:
 - identify the owning subsystem first
