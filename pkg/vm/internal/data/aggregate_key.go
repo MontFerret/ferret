@@ -23,6 +23,15 @@ func NewAggregateKey(groupKey runtime.Value, selectorIdx int) *AggregateKey {
 	}
 }
 
+func DecodeAggregateKey(key runtime.Value) (runtime.Value, int, bool) {
+	aggKey, ok := key.(*AggregateKey)
+	if !ok {
+		return nil, 0, false
+	}
+
+	return aggKey.GroupKey(), aggKey.SelectorIndex(), true
+}
+
 func (k *AggregateKey) GroupKey() runtime.Value {
 	if k == nil || k.groupKey == nil {
 		return runtime.None
@@ -64,12 +73,3 @@ func (k *AggregateKey) Copy() runtime.Value {
 }
 
 func (*AggregateKey) VMUntracked() {}
-
-func DecodeAggregateKey(key runtime.Value) (runtime.Value, int, bool) {
-	aggKey, ok := key.(*AggregateKey)
-	if !ok {
-		return nil, 0, false
-	}
-
-	return aggKey.GroupKey(), aggKey.SelectorIndex(), true
-}

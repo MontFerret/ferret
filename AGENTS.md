@@ -187,6 +187,8 @@ Treat these as implementation-sensitive and verify current code before proposing
 
 Do not treat historical discussion, stale comments, or old branches as authoritative.
 
+Here’s a corrected replacement for that section.
+
 ## Go type and file structure rules
 
 These rules are mandatory unless the task explicitly requires otherwise.
@@ -197,60 +199,113 @@ These rules are mandatory unless the task explicitly requires otherwise.
     - `result.go` for `Result`
     - `register_file.go` for `RegisterFile`
     - `call_stack.go` for `CallStack`
-- Do not use grouped `type ( ... )` declarations for struct types.
-- Declare each struct with its own standalone `type Name struct { ... }`.
+- Grouped `type ( ... )` declarations are allowed for interfaces, passive data-only structs, and other small related helper/value types that belong to the same narrow concern.
+- Do not use grouped `type ( ... )` declarations to hide substantial behavioral types.
+- If a struct has methods, declare it as a standalone `type Name struct { ... }` in its own file.
 - Passive data-only helper structs may share a file when they belong to the same narrow concern.
 - If a helper struct later gains methods, extract it into its own file immediately.
 - Methods for a struct should live in the same file as the struct unless there is a strong, explicit reason to split by concern.
 - Do not place a new method-bearing struct into an existing file just because the code compiles.
-- Do not hide substantial type additions inside grouped `type ( ... )` declarations.
+
+Rationale:
+- one method-bearing type per file keeps ownership of behavior obvious
+- standalone method-bearing types make diffs and reviews clearer
+- grouped type blocks are fine for passive, closely related types, but should not hide substantial behavioral types
+
+## Comment rules for functions and methods
+- Do not add comments to every function or method by default.
+- Exported functions and methods should usually have doc comments, especially in public, embedding-facing, or extension-facing packages.
+- Unexported functions and methods should be commented only when they carry non-obvious behavior, invariants, side effects, ownership rules, cleanup expectations, or protocol/lifecycle constraints.
+- Comments must explain intent, contract, invariants, side effects, or lifecycle behavior.
+- Prefer comments that explain why the code exists, what must remain true, or how the method is meant to be used.
+- Do not write comments that merely restate the method name or signature.
+- For VM, runtime, compiler, encoding, and diagnostics internals, prefer comments on semantics and invariants over implementation narration.
+- Avoid comment wallpaper. Dense, meaningful comments are preferred over mechanically documenting obvious code.
 
 Preferred:
+```go
+// Close releases resources associated with the result.
+// It is safe to call multiple times. Once closed, the result must not be reused.
+func (r *Result) Close() error
+```
+
+Preferred for internal code:
 
 ```go
-type Result struct {
-	// ...
-}
+// promoteEscaped ensures a value that may outlive the current register write
+// is no longer tied to the current ownership path.
+func (s *execState) promoteEscaped(...)
 ```
 
 Avoid:
 
 ```go
-type (
-	Result struct {
-		// ...
-	}
-	execState struct {
-		// ...
-	}
-)
+// Close closes the result.
+func (r *Result) Close() error
 ```
 
-### Rationale:
-- one method-bearing type per file keeps ownership of behavior obvious
-- standalone type declarations make diffs and reviews clearer
-- grouped type blocks are reserved, if used at all, for small passive helper types rather than primary behavioral types
+## Benchmark expectations for significant changes
+
+For significant changes, benchmark validation is required in addition to correctness testing.
+
+A change is significant when it modifies behavior in a way that could reasonably affect:
+- execution throughput
+- compile-time performance
+- latency on common paths
+- allocation patterns
+- memory reuse or pooling behavior
+- cleanup or ownership behavior
+- result/materialization cost
+- optimizer or code generation output relevant to performance
+
+This includes, but is not limited to, changes in:
+- `pkg/vm`
+- `pkg/runtime`
+- `pkg/compiler`
+- `pkg/bytecode`
+- `pkg/encoding`
+- parser/compiler hot paths
+- caching, pooling, register allocation, ownership tracking, or materialization logic
+
+This usually does not include:
+- comments, docs, or formatting-only edits
+- pure renames with no behavior change
+- test-only changes
+- narrowly scoped refactors that do not affect behavior or hot paths
+
+For significant changes, agents must:
+- run relevant benchmarks before making the change and save the results as a baseline
+- implement the change
+- run the same benchmarks again after the change
+- compare before/after results, preferably including `ns/op`, `B/op`, and `allocs/op`
+- report the benchmark command used and summarize the performance delta
+
+Significant changes must be covered by both:
+- tests that validate correctness
+- benchmarks that validate the affected performance-sensitive path
+
+If no relevant benchmark exists for the changed hot path, add one.
+
+If benchmark tooling, data, or environment is unavailable, state that explicitly and do not claim benchmark validation was completed.
 
 ## Tooling prerequisites
-
 - Go must be installed.
-- `make` is optional but is the preferred entrypoint for repo-defined workflows.
-- Java plus ANTLR `4.13.2` are required when regenerating parser artifacts.
-- `lab` plus a reachable Chromium instance are required for e2e coverage.
-- `staticcheck`, `goimports`, and `revive` are needed for lint/format flows; install them with `make install-tools`.
+- make is optional but is the preferred entrypoint for repo-defined workflows.
+- Java plus ANTLR 4.13.2 are required when regenerating parser artifacts.
+- lab plus a reachable Chromium instance are required for e2e coverage.
+- staticcheck, goimports, and revive are needed for lint/format flows; install them with make install-tools.
 
 ## Command matrix
-
-- Broad validation: `go test ./...`
-- Race-heavy package and integration coverage: `make test`
-- Lint: `make lint`
-- Format: `make fmt`
-- Regenerate parser/codegen artifacts: `make generate`
-    - Run this only when grammar or generator inputs change.
-- Build the CLI binary: `make compile`
-- Run e2e coverage: `LAB_BIN=/absolute/path/to/lab make e2e`
-    - Ensure Chromium is reachable at `http://127.0.0.1:9222/json/version`.
-    - CI uses `docker run -d -p 9222:9222 ghcr.io/montferret/chromium:92.0.4512.0`.
+- Broad validation: go test ./...
+- Race-heavy package and integration coverage: make test
+- Lint: make lint
+- Format: make fmt
+- Regenerate parser/codegen artifacts: make generate
+- Run this only when grammar or generator inputs change.
+- Build the CLI binary: make compile
+- Run e2e coverage: LAB_BIN=/absolute/path/to/lab make e2e
+- Ensure Chromium is reachable at http://127.0.0.1:9222/json/version.
+- CI uses docker run -d -p 9222:9222 ghcr.io/montferret/chromium:92.0.4512.0.
 
 ## Editing rules
 
@@ -284,7 +339,3 @@ When proposing or implementing non-trivial changes:
 - do not perform opportunistic refactors unrelated to the requested task unless they are necessary for correctness
 
 ## Secondary references
-
-- `README.md` for product context and links to the broader Ferret ecosystem.
-- `CONTRIBUTING.md` for human contributor process.
-- `.github/workflows/build.yml` for the current CI validation path.

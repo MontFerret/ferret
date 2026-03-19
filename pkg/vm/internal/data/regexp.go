@@ -25,6 +25,17 @@ func NewRegexp(pattern runtime.String) (*Regexp, error) {
 	return (*Regexp)(r), nil
 }
 
+func DecodeRegexp(input runtime.Value) (*Regexp, error) {
+	switch r := input.(type) {
+	case *Regexp:
+		return r, nil
+	case runtime.String:
+		return NewRegexp(r)
+	default:
+		return nil, runtime.TypeErrorOf(input, runtime.TypeString, TypeRegexp)
+	}
+}
+
 func (r *Regexp) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(r.String(), jettison.NoHTMLEscaping())
 }

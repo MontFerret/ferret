@@ -21,11 +21,6 @@ type (
 		Use     map[int]bool // Registers used in block before definition
 		Def     map[int]bool // Registers defined in block
 	}
-
-	useDefCollector struct {
-		uses []int
-		defs []int
-	}
 )
 
 // NewLivenessAnalysisPass creates a new liveness analysis pass
@@ -140,28 +135,6 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 	}
 
 	return collector.uses, collector.defs
-}
-
-func (c *useDefCollector) addUse(op bytecode.Operand) {
-	if op != bytecode.NoopOperand && op.IsRegister() {
-		c.uses = append(c.uses, op.Register())
-	}
-}
-
-func (c *useDefCollector) addDef(op bytecode.Operand) {
-	if op != bytecode.NoopOperand && op.IsRegister() {
-		c.defs = append(c.defs, op.Register())
-	}
-}
-
-func (c *useDefCollector) addRangeUses(start, count int) {
-	if count <= 0 || start <= 0 {
-		return
-	}
-
-	for reg := start; reg < start+count; reg++ {
-		c.uses = append(c.uses, reg)
-	}
 }
 
 func applyTerminalUseDef(opcode bytecode.Opcode, dst bytecode.Operand, collector *useDefCollector) bool {
@@ -394,19 +367,4 @@ func computeUseDefForInstruction(inst bytecode.Instruction, info *LivenessInfo) 
 	for _, reg := range defs {
 		info.Def[reg] = true
 	}
-}
-
-// mapsEqual checks if two register maps are equal
-func mapsEqual(a, b map[int]bool) bool {
-	if len(a) != len(b) {
-		return false
-	}
-
-	for k := range a {
-		if !b[k] {
-			return false
-		}
-	}
-
-	return true
 }

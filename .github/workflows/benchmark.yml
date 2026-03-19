@@ -7,23 +7,58 @@ on:
   pull_request:
     branches:
       - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
   workflow_dispatch:
+    inputs:
+      run_unit:
+        description: Run unit benchmarks
+        required: false
+        default: true
+        type: boolean
+      run_integration_compare:
+        description: Run integration benchmark comparison against main baseline
+        required: false
+        default: false
+        type: boolean
+      target_ref:
+        description: Branch or commit SHA to benchmark
+        required: false
+        default: main
+        type: string
+      pr_number:
+        description: PR number to comment on
+        required: false
+        default: ""
+        type: string
+      bench_count:
+        description: Benchmark count
+        required: false
+        default: "1"
+        type: string
 
 permissions:
   contents: read
 
 env:
-  BENCHMARK_NAME: Ferret Go Benchmarks
-  BENCHMARK_OUTPUT: benchmark-output.txt
+  UNIT_BENCHMARK_NAME: Ferret Go Benchmarks - Unit
+  INTEGRATION_BENCHMARK_NAME: Ferret Go Benchmarks - Integration
+
+  UNIT_BENCHMARK_OUTPUT: benchmark-unit-output.txt
+  INTEGRATION_BENCHMARK_OUTPUT: benchmark-integration-output.txt
 
 concurrency:
-  group: benchmark-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: benchmark-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || inputs.target_ref }}
   cancel-in-progress: true
 
 jobs:
-  main-baseline:
-    name: Persist main benchmark baseline
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+  main-baseline-unit:
+    name: Persist main unit benchmark baseline
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -37,41 +72,85 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          check-latest: false
           cache: true
 
-      - name: Run benchmarks
+      - name: Run unit benchmarks
         shell: bash
         run: |
           set -euo pipefail
-          make bench BENCH_COUNT=5 | tee "${BENCHMARK_OUTPUT}"
+          make bench-unit BENCH_COUNT=5 BENCH_TIMEOUT=15m | tee "${UNIT_BENCHMARK_OUTPUT}"
 
-      - name: Upload raw benchmark output
+      - name: Upload raw unit benchmark output
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: benchmark-output-main
-          path: ${{ env.BENCHMARK_OUTPUT }}
+          name: benchmark-output-main-unit
+          path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
           if-no-files-found: warn
 
-      - name: Store benchmark result
+      - name: Store unit benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: ${{ env.BENCHMARK_NAME }}
+          name: ${{ env.UNIT_BENCHMARK_NAME }}
           tool: go
-          output-file-path: ${{ env.BENCHMARK_OUTPUT }}
-          benchmark-data-dir-path: dev/bench
+          output-file-path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/unit
           gh-pages-branch: gh-pages
           github-token: ${{ secrets.GITHUB_TOKEN }}
           ref: refs/heads/main
           auto-push: true
           summary-always: true
 
-  pr-compare:
-    name: Compare pull request benchmarks
+  main-baseline-integration:
+    name: Persist main integration benchmark baseline
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run integration benchmarks
+        shell: bash
+        run: |
+          set -euo pipefail
+          make bench-integration BENCH_COUNT=5 BENCH_TIMEOUT=30m | tee "${INTEGRATION_BENCHMARK_OUTPUT}"
+
+      - name: Upload raw integration benchmark output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-output-main-integration
+          path: ${{ env.INTEGRATION_BENCHMARK_OUTPUT }}
+          if-no-files-found: warn
+
+      - name: Store integration benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.INTEGRATION_BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.INTEGRATION_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/integration
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: true
+          summary-always: true
+
+  pr-compare-unit:
+    name: Compare PR unit benchmarks
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     permissions:
       contents: read
       pull-requests: write
@@ -84,31 +163,30 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          check-latest: false
           cache: true
 
-      - name: Run benchmarks
+      - name: Run unit benchmarks
         shell: bash
         run: |
           set -euo pipefail
-          make bench BENCH_COUNT=1 | tee "${BENCHMARK_OUTPUT}"
+          make bench-unit BENCH_COUNT=1 BENCH_TIMEOUT=10m | tee "${UNIT_BENCHMARK_OUTPUT}"
 
-      - name: Upload raw benchmark output
+      - name: Upload raw unit benchmark output
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: benchmark-output-pr-${{ github.event.pull_request.number }}
-          path: ${{ env.BENCHMARK_OUTPUT }}
+          name: benchmark-output-pr-unit-${{ github.event.pull_request.number }}
+          path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
           if-no-files-found: warn
 
-      - name: Compare benchmark result and comment on same-repo PRs
+      - name: Compare unit benchmark result and comment on same-repo PRs
         if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: ${{ env.BENCHMARK_NAME }}
+          name: ${{ env.UNIT_BENCHMARK_NAME }}
           tool: go
-          output-file-path: ${{ env.BENCHMARK_OUTPUT }}
-          benchmark-data-dir-path: dev/bench
+          output-file-path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/unit
           gh-pages-branch: gh-pages
           github-token: ${{ secrets.GITHUB_TOKEN }}
           ref: refs/heads/main
@@ -119,19 +197,230 @@ jobs:
           fail-on-alert: true
           alert-threshold: '150%'
 
-      - name: Compare benchmark result without PR comment
+      - name: Compare unit benchmark result without PR comment
         if: github.event.pull_request.head.repo.full_name != github.repository || github.actor == 'dependabot[bot]'
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: ${{ env.BENCHMARK_NAME }}
+          name: ${{ env.UNIT_BENCHMARK_NAME }}
           tool: go
-          output-file-path: ${{ env.BENCHMARK_OUTPUT }}
-          benchmark-data-dir-path: dev/bench
+          output-file-path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/unit
           gh-pages-branch: gh-pages
           github-token: ${{ secrets.GITHUB_TOKEN }}
           ref: refs/heads/main
           auto-push: false
           save-data-file: false
+          summary-always: true
+          fail-on-alert: false
+          alert-threshold: '150%'
+
+  pr-compare-integration:
+    name: Compare PR integration benchmarks
+    if: >
+      github.event_name == 'pull_request' &&
+      github.base_ref == 'main' &&
+      contains(github.event.pull_request.labels.*.name, 'ci/run-bench-integration')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run integration benchmarks
+        shell: bash
+        run: |
+          set -euo pipefail
+          make bench-integration BENCH_COUNT=1 BENCH_TIMEOUT=30m | tee "${INTEGRATION_BENCHMARK_OUTPUT}"
+
+      - name: Upload raw integration benchmark output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-output-pr-integration-${{ github.event.pull_request.number }}
+          path: ${{ env.INTEGRATION_BENCHMARK_OUTPUT }}
+          if-no-files-found: warn
+
+      - name: Compare integration benchmark result and comment on same-repo PRs
+        if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.INTEGRATION_BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.INTEGRATION_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/integration
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: false
+          save-data-file: false
+          comment-always: true
+          summary-always: true
+          fail-on-alert: false
+          alert-threshold: '150%'
+
+      - name: Compare integration benchmark result without PR comment
+        if: github.event.pull_request.head.repo.full_name != github.repository || github.actor == 'dependabot[bot]'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.INTEGRATION_BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.INTEGRATION_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/integration
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: false
+          save-data-file: false
+          summary-always: true
+          fail-on-alert: false
+          alert-threshold: '150%'
+
+  manual-compare-unit:
+    name: Manual unit benchmark comparison
+    if: github.event_name == 'workflow_dispatch' && inputs.run_unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_ref }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run unit benchmarks
+        shell: bash
+        run: |
+          set -euo pipefail
+          make bench-unit BENCH_COUNT=${{ inputs.bench_count }} BENCH_TIMEOUT=10m | tee "${UNIT_BENCHMARK_OUTPUT}"
+
+      - name: Upload raw unit benchmark output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-output-manual-unit
+          path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
+          if-no-files-found: warn
+
+      - name: Compare unit benchmark result
+        if: ${{ inputs.pr_number == '' }}
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.UNIT_BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/unit
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: false
+          save-data-file: false
+          summary-always: true
+          fail-on-alert: false
+          alert-threshold: '150%'
+
+      - name: Compare unit benchmark result and comment on PR
+        if: ${{ inputs.pr_number != '' }}
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.UNIT_BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/unit
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: false
+          save-data-file: false
+          comment-always: true
+          summary-always: true
+          fail-on-alert: false
+          alert-threshold: '150%'
+
+  manual-compare-integration:
+    name: Manual integration benchmark comparison
+    if: github.event_name == 'workflow_dispatch' && inputs.run_integration_compare
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_ref }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run integration benchmarks
+        shell: bash
+        run: |
+          set -euo pipefail
+          make bench-integration BENCH_COUNT=${{ inputs.bench_count }} BENCH_TIMEOUT=30m | tee "${INTEGRATION_BENCHMARK_OUTPUT}"
+
+      - name: Upload raw integration benchmark output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-output-manual-integration
+          path: ${{ env.INTEGRATION_BENCHMARK_OUTPUT }}
+          if-no-files-found: warn
+
+      - name: Compare integration benchmark result
+        if: ${{ inputs.pr_number == '' }}
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.INTEGRATION_BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.INTEGRATION_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/integration
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: false
+          save-data-file: false
+          summary-always: true
+          fail-on-alert: false
+          alert-threshold: '150%'
+
+      - name: Compare integration benchmark result and comment on PR
+        if: ${{ inputs.pr_number != '' }}
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.INTEGRATION_BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.INTEGRATION_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/integration
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: false
+          save-data-file: false
+          comment-always: true
           summary-always: true
           fail-on-alert: false
           alert-threshold: '150%'

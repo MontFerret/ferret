@@ -1,43 +1,9 @@
 package mem
 
-import (
-	"fmt"
+import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
-)
-
-type CellHandle struct {
-	token      uint64
-	generation uint64
-	slot       uint64
-}
-
-func (h CellHandle) ID() uint64 {
-	return h.token
-}
-
-func (h CellHandle) String() string {
-	return fmt.Sprintf("<cell:%d>", h.token)
-}
-
-func (h CellHandle) Hash() uint64 {
-	return h.token
-}
-
-func (h CellHandle) Copy() runtime.Value {
-	return h
-}
-
-func (h CellHandle) ResourceID() uint64 {
-	return h.token
-}
-
-func (CellHandle) Close() error {
-	return nil
-}
-
-func (CellHandle) VMUntracked() {}
-
+// CellStore manages storage for runtime.Value entries using unique CellHandle keys.
+// CellStore ensures value isolation and invalidates stale handles after Reset.
 type CellStore struct {
 	values     map[CellHandle]runtime.Value
 	generation uint64
@@ -121,13 +87,10 @@ func (s *CellStore) Reset() {
 			s.generation = 1
 		}
 	}
+
 	s.nextSlot = 0
 
 	if s.values != nil {
 		clear(s.values)
 	}
-}
-
-func (h CellHandle) valid() bool {
-	return h.token != 0 && h.generation != 0 && h.slot != 0
 }

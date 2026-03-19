@@ -59,6 +59,16 @@ type (
 
 const loadKeyICEntries = 4
 
+func NewCache(bytecodeLen, hostCallCount, shapeCacheLimit int) *Cache {
+	return &Cache{
+		HostFunctions:   make([]CachedHostFunction, hostCallCount),
+		Regexps:         make([]*CachedRegexp, bytecodeLen),
+		LoadKeyICs:      make([]*LoadKeyCache, bytecodeLen),
+		LoadKeyConstICs: make([]*LoadKeyConstCache, bytecodeLen),
+		ShapeCache:      data.NewShapeCache(shapeCacheLimit),
+	}
+}
+
 func NewLoadKeyCache() *LoadKeyCache {
 	return &LoadKeyCache{}
 }
@@ -159,14 +169,4 @@ func (c *LoadKeyConstCache) Add(shapeID uint64, slot int) {
 	}
 
 	c.megamorphic = true
-}
-
-func NewCache(bytecodeLen, hostCallCount, shapeCacheLimit int) *Cache {
-	return &Cache{
-		HostFunctions:   make([]CachedHostFunction, hostCallCount),
-		Regexps:         make([]*CachedRegexp, bytecodeLen),
-		LoadKeyICs:      make([]*LoadKeyCache, bytecodeLen),
-		LoadKeyConstICs: make([]*LoadKeyConstCache, bytecodeLen),
-		ShapeCache:      data.NewShapeCache(shapeCacheLimit),
-	}
 }

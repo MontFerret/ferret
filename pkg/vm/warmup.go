@@ -40,7 +40,7 @@ func ensureRegexpsWarmed(vm *VM) error {
 			}
 		case bytecode.OpRegexp:
 			if val, ok := reg[src2]; ok {
-				r, err := data.ToRegexp(val)
+				r, err := data.DecodeRegexp(val)
 
 				if err != nil {
 					warmupErrs.Add(err, pc, dst)

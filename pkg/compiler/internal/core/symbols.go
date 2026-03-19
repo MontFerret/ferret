@@ -14,7 +14,18 @@ const (
 	PseudoVariable       = "__CURRENT__"
 )
 
-type SymbolKind int
+type (
+	SymbolKind int
+
+	ValueType int
+
+	BindingStorage int
+
+	BindingOptions struct {
+		Mutable bool
+		Storage BindingStorage
+	}
+)
 
 const (
 	SymbolConst SymbolKind = iota
@@ -23,19 +34,10 @@ const (
 	SymbolParam
 )
 
-type BindingStorage int
-
 const (
 	BindingStorageValue BindingStorage = iota
 	BindingStorageCell
 )
-
-type BindingOptions struct {
-	Mutable bool
-	Storage BindingStorage
-}
-
-type ValueType int
 
 const (
 	TypeUnknown ValueType = iota
