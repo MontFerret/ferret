@@ -319,7 +319,13 @@ func (c *StmtCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatementCo
 
 	src := c.ctx.ExprCompiler.Compile(stmt.Expression())
 	srcType := operandType(c.ctx, src)
-	binding.Type = srcType
+	publishedType := srcType
+
+	if c.ctx.Loops.Depth() > 0 {
+		publishedType = core.JoinValueTypes(binding.Type, srcType)
+	}
+
+	binding.Type = publishedType
 
 	if binding.Storage == core.BindingStorageCell {
 		src = c.ctx.ExprCompiler.ensureRegister(src)
@@ -333,7 +339,7 @@ func (c *StmtCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatementCo
 		c.ctx.EmitMoveAuto(binding.Register, src)
 	}
 
-	c.ctx.Types.Set(binding.Register, srcType)
+	c.ctx.Types.Set(binding.Register, publishedType)
 
 	return binding.Register
 }

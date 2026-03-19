@@ -214,3 +214,109 @@ RETURN setBase(2)
 		}
 	}
 }
+
+func TestVarReassignmentOutsideLoopKeepsExactType(t *testing.T) {
+	expr := `
+VAR x = [1, 2]
+x = { value: 1 }
+RETURN x[0]
+`
+
+	prog := compileWithLevel(t, compiler.O0, expr)
+	assertNoCellOps(t, prog)
+
+	if !hasOpcode(prog.Bytecode, bytecode.OpLoadKeyConst) {
+		t.Fatalf("expected OpLoadKeyConst after straight-line reassignment")
+	}
+
+	if hasOpcode(prog.Bytecode, bytecode.OpLoadPropertyConst) {
+		t.Fatalf("did not expect OpLoadPropertyConst after straight-line reassignment")
+	}
+}
+
+func TestVarReassignmentInLoopWidenTypeForValueBindings(t *testing.T) {
+	expr := `
+VAR x = [1, 2]
+LET ignored = (
+  FOR item IN @items
+    FILTER item
+    x = { value: item }
+    RETURN item
+)
+RETURN x[0]
+`
+
+	prog := compileWithLevel(t, compiler.O0, expr)
+	assertNoCellOps(t, prog)
+
+	if !hasOpcode(prog.Bytecode, bytecode.OpLoadPropertyConst) {
+		t.Fatalf("expected OpLoadPropertyConst after loop-scoped conflicting reassignment")
+	}
+
+	if hasOpcode(prog.Bytecode, bytecode.OpLoadIndexConst) || hasOpcode(prog.Bytecode, bytecode.OpLoadKeyConst) {
+		t.Fatalf("did not expect exact container load opcode after loop-scoped conflicting reassignment")
+	}
+}
+
+func TestVarReassignmentInLoopWidenTypeForCellBindings(t *testing.T) {
+	expr := `
+VAR x = [1, 2]
+FUNC touch(v) (
+  x = v
+  RETURN x
+)
+LET ignored = (
+  FOR item IN @items
+    FILTER item
+    x = { value: item }
+    RETURN item
+)
+RETURN x[0]
+`
+
+	prog := compileWithLevel(t, compiler.O0, expr)
+
+	if got := countOpcode(prog, bytecode.OpMakeCell); got == 0 {
+		t.Fatalf("expected OpMakeCell for captured mutable binding")
+	}
+
+	if got := countOpcode(prog, bytecode.OpLoadCell); got == 0 {
+		t.Fatalf("expected OpLoadCell for captured mutable binding")
+	}
+
+	if got := countOpcode(prog, bytecode.OpStoreCell); got == 0 {
+		t.Fatalf("expected OpStoreCell for captured mutable binding")
+	}
+
+	if !hasOpcode(prog.Bytecode, bytecode.OpLoadPropertyConst) {
+		t.Fatalf("expected OpLoadPropertyConst after loop-scoped conflicting reassignment through cell binding")
+	}
+
+	if hasOpcode(prog.Bytecode, bytecode.OpLoadIndexConst) || hasOpcode(prog.Bytecode, bytecode.OpLoadKeyConst) {
+		t.Fatalf("did not expect exact container load opcode after loop-scoped conflicting reassignment through cell binding")
+	}
+}
+
+func TestVarReassignmentInLoopPreservesSameTypePrecision(t *testing.T) {
+	expr := `
+VAR x = [1, 2]
+LET ignored = (
+  FOR item IN @items
+    FILTER item
+    x = [item]
+    RETURN item
+)
+RETURN x[0]
+`
+
+	prog := compileWithLevel(t, compiler.O0, expr)
+	assertNoCellOps(t, prog)
+
+	if !hasOpcode(prog.Bytecode, bytecode.OpLoadIndexConst) {
+		t.Fatalf("expected OpLoadIndexConst after same-type loop reassignment")
+	}
+
+	if hasOpcode(prog.Bytecode, bytecode.OpLoadPropertyConst) {
+		t.Fatalf("did not expect OpLoadPropertyConst after same-type loop reassignment")
+	}
+}
