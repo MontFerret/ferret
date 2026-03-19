@@ -180,25 +180,11 @@ func intersectPredecessorDominators(block *BasicBlock, dominators map[int]map[in
 
 func updateDominatorSet(dominators map[int]map[int]bool, blockID int, newSet map[int]bool) bool {
 	current := dominators[blockID]
-	if dominatorSetsEqual(current, newSet) {
+	if mapsEqual(current, newSet) {
 		return false
 	}
 
 	dominators[blockID] = newSet
-	return true
-}
-
-func dominatorSetsEqual(left, right map[int]bool) bool {
-	if len(left) != len(right) {
-		return false
-	}
-
-	for id := range left {
-		if !right[id] {
-			return false
-		}
-	}
-
 	return true
 }
 

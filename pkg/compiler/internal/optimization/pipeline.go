@@ -63,6 +63,13 @@ func (p *Pipeline) Run(program *bytecode.Program) (*PipelineResult, error) {
 
 	// Run each pass
 	for i, pass := range p.passes {
+		// Validate that all declared dependencies have been executed.
+		for _, dep := range pass.Requires() {
+			if _, ok := ctx.Metadata[dep]; !ok {
+				return nil, fmt.Errorf("%w: pass %q requires %q which has not been executed", ErrMissingDependency, pass.Name(), dep)
+			}
+		}
+
 		// If previous pass modified the program, rebuild CFG
 		// We do this before running the pass to ensure it has the latest CFG
 		// And not after, to avoid unnecessary rebuilds
