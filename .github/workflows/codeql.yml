@@ -1,0 +1,111 @@
+# For most projects, this workflow file will not need changing; you simply need
+# to commit it to your repository.
+#
+# You may wish to alter this file to override the set of languages analyzed,
+# or to provide custom queries or build logic.
+#
+# ******** NOTE ********
+# We have attempted to detect the languages in your repository. Please check
+# the `language` matrix defined below to confirm you have the correct set of
+# supported CodeQL languages.
+#
+name: "CodeQL Advanced"
+
+on:
+  push:
+    branches: [ "main", "v1" ]
+  pull_request:
+    branches: [ "main", "v1" ]
+  schedule:
+    - cron: '15 0 * * 6'
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'go' ]
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go (use version from go.mod / toolchain)
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          check-latest: true
+          cache: true
+
+      - name: Install Go dependencies
+        run: make install-tools && make install
+
+      - name: Set up Java (for ANTLR)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cache ANTLR jar
+        id: cache-antlr
+        uses: actions/cache@v4
+        with:
+          path: ~/.antlr
+          key: ${{ runner.os }}-antlr-4.13.2
+
+      - name: Ensure ANTLR 4.13.2 jar exists
+        run: |
+          mkdir -p "$HOME/.antlr"
+          if [ ! -s "$HOME/.antlr/antlr-4.13.2-complete.jar" ]; then
+            curl -sSL -o "$HOME/.antlr/antlr-4.13.2-complete.jar" https://www.antlr.org/download/antlr-4.13.2-complete.jar
+          fi
+          test -s "$HOME/.antlr/antlr-4.13.2-complete.jar"
+
+      - name: Set up ANTLR CLI wrapper
+        run: |
+          ls -l "$HOME/.antlr"
+          test -s "$HOME/.antlr/antlr-4.13.2-complete.jar"
+          mkdir -p "$HOME/antlr-bin"
+          cat > "$HOME/antlr-bin/antlr" <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          exec java -jar "$HOME/.antlr/antlr-4.13.2-complete.jar" "$@"
+          EOF
+          chmod +x "$HOME/antlr-bin/antlr"
+          echo "$HOME/antlr-bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/antlr-bin:$PATH"
+          command -v antlr
+          antlr -version || true
+
+      - name: Generate parser/lexer (uses ANTLR 4.13.2)
+        env:
+          ANTLR_JAR: ~/.antlr/antlr-4.13.2-complete.jar
+        run: |
+          command -v antlr
+          # Prefer your project’s generation target if present.
+          if grep -qE '(^|\s)generate:' Makefile 2>/dev/null; then
+            echo "Running: make generate"
+            make generate
+          else
+            echo "No 'make generate' target found; attempting 'go generate ./...'"
+            go generate ./...
+          fi
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v4
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
