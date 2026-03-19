@@ -8,29 +8,31 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-type IteratorState interface {
-	runtime.Value
-	Next(context.Context) error
-	Value() runtime.Value
-	Key() runtime.Value
-}
+type (
+	IteratorState interface {
+		runtime.Value
+		Next(context.Context) error
+		Value() runtime.Value
+		Key() runtime.Value
+	}
 
-type iteratorState struct {
-	src   runtime.Iterator
-	value runtime.Value
-	key   runtime.Value
-}
+	Iterator struct {
+		iteratorState
+	}
+
+	ClosableIterator struct {
+		iteratorState
+		closer io.Closer
+	}
+
+	iteratorState struct {
+		src   runtime.Iterator
+		value runtime.Value
+		key   runtime.Value
+	}
+)
 
 var NoopIter = NewIterator(&noopIter{})
-
-type Iterator struct {
-	iteratorState
-}
-
-type ClosableIterator struct {
-	iteratorState
-	closer io.Closer
-}
 
 func NewIterator(src runtime.Iterator) *Iterator {
 	return &Iterator{

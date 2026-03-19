@@ -12,21 +12,23 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-type GroupedAggregateCollector struct {
-	entries        []*groupedAggregateEntry
-	grouping       groupIndex[*groupedAggregateEntry]
-	singleEntry    *groupedAggregateEntry
-	singleKey      runtime.Value
-	plan           bytecode.AggregatePlan
-	hasSingleGroup bool
-	sorted         bool
-}
+type (
+	GroupedAggregateCollector struct {
+		entries        []*groupedAggregateEntry
+		grouping       groupIndex[*groupedAggregateEntry]
+		singleEntry    *groupedAggregateEntry
+		singleKey      runtime.Value
+		plan           bytecode.AggregatePlan
+		hasSingleGroup bool
+		sorted         bool
+	}
 
-type groupedAggregateEntry struct {
-	key    runtime.Value
-	group  runtime.List
-	states []aggregateState
-}
+	groupedAggregateEntry struct {
+		key    runtime.Value
+		group  runtime.List
+		states []aggregateState
+	}
+)
 
 func NewGroupedAggregateCollector(plan bytecode.AggregatePlan) Transformer {
 	return &GroupedAggregateCollector{
@@ -246,32 +248,4 @@ func (c *GroupedAggregateCollector) newEntry(key runtime.Value) *groupedAggregat
 func (c *GroupedAggregateCollector) aggregateKey(_ context.Context, key runtime.Value) (runtime.Value, int, bool, error) {
 	groupKey, idx, ok := DecodeAggregateKey(key)
 	return groupKey, idx, ok, nil
-}
-
-type groupedAggregateIterator struct {
-	entries          []*groupedAggregateEntry
-	idx              int
-	trackGroupValues bool
-}
-
-func newGroupedAggregateIterator(entries []*groupedAggregateEntry, trackGroupValues bool) runtime.Iterator {
-	return &groupedAggregateIterator{
-		entries:          entries,
-		trackGroupValues: trackGroupValues,
-	}
-}
-
-func (it *groupedAggregateIterator) Next(_ context.Context) (runtime.Value, runtime.Value, error) {
-	if it == nil || it.idx >= len(it.entries) {
-		return runtime.None, runtime.None, io.EOF
-	}
-
-	entry := it.entries[it.idx]
-	it.idx++
-
-	if !it.trackGroupValues || entry.group == nil {
-		return runtime.None, entry.key, nil
-	}
-
-	return entry.group, entry.key, nil
 }

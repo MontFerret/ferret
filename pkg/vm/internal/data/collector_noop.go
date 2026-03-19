@@ -1,0 +1,49 @@
+package data
+
+import (
+	"context"
+	"hash/fnv"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+)
+
+type noopCollector struct{}
+
+func NewNoopCollector() Transformer {
+	return &noopCollector{}
+}
+
+func (c *noopCollector) String() string {
+	return "[NoopCollector]"
+}
+
+func (c *noopCollector) Hash() uint64 {
+	hasher := fnv.New64a()
+	_, _ = hasher.Write([]byte("vm.noop_collector"))
+
+	return hasher.Sum64()
+}
+
+func (c *noopCollector) Copy() runtime.Value {
+	return &noopCollector{}
+}
+
+func (c *noopCollector) Iterate(ctx context.Context) (runtime.Iterator, error) {
+	return runtime.NewArray(0).Iterate(ctx)
+}
+
+func (c *noopCollector) Length(_ context.Context) (runtime.Int, error) {
+	return 0, nil
+}
+
+func (c *noopCollector) Get(_ context.Context, key runtime.Value) (runtime.Value, error) {
+	return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %v", key)
+}
+
+func (c *noopCollector) Set(_ context.Context, _, _ runtime.Value) error {
+	return nil
+}
+
+func (c *noopCollector) Close() error {
+	return nil
+}
