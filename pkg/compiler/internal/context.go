@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"hash/fnv"
 
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
@@ -35,6 +37,7 @@ type CompilerContext struct {
 	LoopSortCompiler    *LoopSortCompiler
 	LoopCollectCompiler *LoopCollectCompiler
 	WaitCompiler        *WaitCompiler
+	PromotedBindings    map[antlr.ParserRuleContext]struct{}
 	aggregatePlans      []*bytecode.AggregatePlan
 	OptimizationLevel   optimization.Level
 }
@@ -54,6 +57,7 @@ func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler, leve
 		aggregatePlans:      make([]*bytecode.AggregatePlan, 0),
 		aggregatePlanByHash: make(map[uint64][]int),
 		OptimizationLevel:   level,
+		PromotedBindings:    make(map[antlr.ParserRuleContext]struct{}),
 	}
 
 	ctx.Symbols = core.NewSymbolTable(ctx.Registers, ctx.Constants)

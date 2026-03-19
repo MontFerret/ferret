@@ -390,6 +390,28 @@ loop:
 			reg[dst] = constants[src1.Constant()]
 		case bytecode.OpLoadParam:
 			state.writeBorrowedRegister(dst, paramSlots[int(src1)-1])
+		case bytecode.OpMakeCell:
+			state.makeCell(dst, state.valueOf(constants, src1))
+		case bytecode.OpLoadCell:
+			handle, ok := state.cellHandleOf(src1)
+			if !ok {
+				state.raiseInvariantAt(pc, runtime.Error(runtime.ErrInvalidOperation, "expected cell handle"))
+				break
+			}
+
+			if _, err := state.loadCell(dst, handle); err != nil {
+				state.raiseInvariantAt(pc, err)
+			}
+		case bytecode.OpStoreCell:
+			handle, ok := state.cellHandleOf(dst)
+			if !ok {
+				state.raiseInvariantAt(pc, runtime.Error(runtime.ErrInvalidOperation, "expected cell handle"))
+				break
+			}
+
+			if err := state.storeCell(handle, state.valueOf(constants, src1)); err != nil {
+				state.raiseInvariantAt(pc, err)
+			}
 		case bytecode.OpLoadArray:
 			reg[dst] = runtime.NewArray(int(src1))
 		case bytecode.OpLoadObject:

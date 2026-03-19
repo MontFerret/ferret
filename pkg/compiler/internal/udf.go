@@ -74,11 +74,15 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 
 	c.ctx.Symbols.EnterScope()
 
-	params := make([]string, 0, len(fn.Params)+len(fn.Captures))
-	params = append(params, fn.Params...)
-	params = append(params, fn.Captures...)
-	for _, name := range params {
+	for _, name := range fn.Params {
 		c.ctx.Symbols.DeclareLocal(name, core.TypeAny)
+	}
+
+	for _, capture := range fn.Captures {
+		c.ctx.Symbols.DeclareLocalWithOptions(capture.Name, core.TypeAny, core.BindingOptions{
+			Mutable: capture.Mutable,
+			Storage: capture.Storage,
+		})
 	}
 
 	body := fn.Decl.FunctionBody()

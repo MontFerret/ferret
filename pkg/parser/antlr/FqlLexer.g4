@@ -85,6 +85,7 @@ Filter: 'FILTER';
 Sort: 'SORT';
 Limit: 'LIMIT';
 Let: 'LET';
+Var: 'VAR';
 Collect: 'COLLECT';
 SortDirection: 'ASC' | 'DESC';
 None: 'NONE';

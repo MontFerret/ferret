@@ -18,6 +18,8 @@ func (f *statementFormatter) formatBodyStatement(ctx *fql.BodyStatementContext) 
 	switch {
 	case ctx.VariableDeclaration() != nil:
 		f.formatVariableDeclaration(ctx.VariableDeclaration().(*fql.VariableDeclarationContext))
+	case ctx.AssignmentStatement() != nil:
+		f.formatAssignmentStatement(ctx.AssignmentStatement().(*fql.AssignmentStatementContext))
 	case ctx.FunctionDeclaration() != nil:
 		f.formatFunctionDeclaration(ctx.FunctionDeclaration().(*fql.FunctionDeclarationContext))
 	case ctx.FunctionCallExpression() != nil:
@@ -47,7 +49,11 @@ func (f *statementFormatter) formatVariableDeclaration(ctx *fql.VariableDeclarat
 		return
 	}
 
-	f.writeKeyword(keywordLet)
+	if ctx.Var() != nil {
+		f.writeKeyword(keywordVar)
+	} else {
+		f.writeKeyword(keywordLet)
+	}
 	f.p.space()
 
 	if id := ctx.Identifier(); id != nil {
@@ -56,6 +62,31 @@ func (f *statementFormatter) formatVariableDeclaration(ctx *fql.VariableDeclarat
 		f.p.write(id.GetText())
 	} else if id := ctx.SafeReservedWord(); id != nil {
 		f.p.write(id.GetText())
+	} else if id := ctx.BindingIdentifier(); id != nil {
+		f.p.write(id.GetText())
+	}
+
+	f.p.space()
+	f.p.write("=")
+	f.p.space()
+
+	if expr := ctx.Expression(); expr != nil {
+		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+	}
+}
+
+func (f *statementFormatter) formatAssignmentStatement(ctx *fql.AssignmentStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	if target := ctx.AssignmentTarget(); target != nil {
+		switch {
+		case target.BindingIdentifier() != nil:
+			f.p.write(target.BindingIdentifier().GetText())
+		case target.MemberExpression() != nil:
+			f.member.formatMemberExpression(target.MemberExpression().(*fql.MemberExpressionContext))
+		}
 	}
 
 	f.p.space()
@@ -214,6 +245,8 @@ func (f *statementFormatter) formatFunctionStatement(ctx *fql.FunctionStatementC
 	switch {
 	case ctx.VariableDeclaration() != nil:
 		f.formatVariableDeclaration(ctx.VariableDeclaration().(*fql.VariableDeclarationContext))
+	case ctx.AssignmentStatement() != nil:
+		f.formatAssignmentStatement(ctx.AssignmentStatement().(*fql.AssignmentStatementContext))
 	case ctx.FunctionDeclaration() != nil:
 		f.formatFunctionDeclaration(ctx.FunctionDeclaration().(*fql.FunctionDeclarationContext))
 	case ctx.FunctionCallExpression() != nil:
@@ -441,6 +474,8 @@ func (f *statementFormatter) formatForExpressionBody(ctx *fql.ForExpressionBodyC
 		switch {
 		case stmt.VariableDeclaration() != nil:
 			f.formatVariableDeclaration(stmt.VariableDeclaration().(*fql.VariableDeclarationContext))
+		case stmt.AssignmentStatement() != nil:
+			f.formatAssignmentStatement(stmt.AssignmentStatement().(*fql.AssignmentStatementContext))
 		case stmt.FunctionCallExpression() != nil:
 			f.expression.formatFunctionCallExpression(stmt.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
 		}

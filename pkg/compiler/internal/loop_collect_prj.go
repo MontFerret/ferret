@@ -54,8 +54,12 @@ func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregato
 		loop.ValueName = varName
 		// Assign the aggregator value to the local variable with the projection name
 		if !c.assignLocalOrReport(spec.Projection().Context(), loop.ValueName, core.TypeUnknown, aggregator) {
-			if existing, _, found := c.ctx.Symbols.Resolve(loop.ValueName); found {
-				c.ctx.EmitMoveAuto(existing, aggregator)
+			if existing, found := c.ctx.Symbols.ResolveBinding(loop.ValueName); found {
+				if existing.Storage == core.BindingStorageCell {
+					c.ctx.Emitter.EmitStoreCell(existing.Register, c.ctx.ExprCompiler.ensureRegister(aggregator))
+				} else {
+					c.ctx.EmitMoveAuto(existing.Register, aggregator)
+				}
 			}
 		}
 
@@ -112,7 +116,7 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 		for i, variable := range variables {
 			varName := variable.GetText()
 			// Resolve the variable from the symbol table
-			reg, _, found := c.ctx.Symbols.Resolve(varName)
+			binding, found := c.ctx.Symbols.ResolveBinding(varName)
 
 			if !found {
 				c.ctx.Errors.VariableNotFound(variable.GetSymbol(), varName)
@@ -123,9 +127,9 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 				continue
 			}
 
-			resolved[i] = reg
+			resolved[i] = loadBindingValue(c.ctx, binding)
 
-			if reg == kv.Value {
+			if binding.Register == kv.Value || resolved[i] == kv.Value {
 				useTemp = true
 			}
 		}

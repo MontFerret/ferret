@@ -41,7 +41,7 @@ func (sp *ScopeProjection) EmitAsArray(dst bytecode.Operand) {
 	sp.types.Set(buildDst, TypeArray)
 
 	for _, v := range sp.values {
-		sp.emitter.EmitArrayPush(buildDst, v.Register)
+		sp.emitter.EmitArrayPush(buildDst, sp.projectedValue(v))
 	}
 
 	if buildDst != dst {
@@ -74,7 +74,7 @@ func (sp *ScopeProjection) EmitAsObject(dst bytecode.Operand) {
 		keyConst := sp.symbols.AddConstant(runtime.String(v.Name))
 		// Set the key-value pair in the object.
 		// buildDst may differ from dst when aliasing is detected, so values can be used directly.
-		sp.emitter.EmitObjectSetConst(buildDst, keyConst, v.Register)
+		sp.emitter.EmitObjectSetConst(buildDst, keyConst, sp.projectedValue(v))
 	}
 
 	if buildDst != dst {
@@ -97,7 +97,17 @@ func (sp *ScopeProjection) RestoreFromArray(src bytecode.Operand) {
 
 	for i, v := range sp.values {
 		sp.emitter.EmitLoadConst(idx, sp.symbols.AddConstant(runtime.Int(i)))
-		variable, _ := sp.symbols.DeclareLocal(v.Name, v.Type)
+		if v.Storage == BindingStorageCell {
+			tmp := sp.registers.Allocate()
+			variable, _ := sp.symbols.DeclareLocalWithOptions(v.Name, v.Type, BindingOptions{Mutable: v.Mutable, Storage: v.Storage})
+			sp.emitter.EmitABC(bytecode.OpLoadIndex, tmp, src, idx)
+			sp.emitter.EmitMakeCell(variable, tmp)
+			sp.types.Set(tmp, v.Type)
+			sp.types.Set(variable, TypeAny)
+			continue
+		}
+
+		variable, _ := sp.symbols.DeclareLocalWithOptions(v.Name, v.Type, BindingOptions{Mutable: v.Mutable, Storage: v.Storage})
 		sp.emitter.EmitABC(bytecode.OpLoadIndex, variable, src, idx)
 	}
 }
@@ -107,9 +117,31 @@ func (sp *ScopeProjection) RestoreFromObject(src bytecode.Operand) {
 
 	for _, v := range sp.values {
 		sp.emitter.EmitLoadConst(key, sp.symbols.AddConstant(runtime.String(v.Name)))
-		variable, _ := sp.symbols.DeclareLocal(v.Name, v.Type)
+		if v.Storage == BindingStorageCell {
+			tmp := sp.registers.Allocate()
+			variable, _ := sp.symbols.DeclareLocalWithOptions(v.Name, v.Type, BindingOptions{Mutable: v.Mutable, Storage: v.Storage})
+			sp.emitter.EmitABC(bytecode.OpLoadKey, tmp, src, key)
+			sp.emitter.EmitMakeCell(variable, tmp)
+			sp.types.Set(tmp, v.Type)
+			sp.types.Set(variable, TypeAny)
+			continue
+		}
+
+		variable, _ := sp.symbols.DeclareLocalWithOptions(v.Name, v.Type, BindingOptions{Mutable: v.Mutable, Storage: v.Storage})
 		sp.emitter.EmitABC(bytecode.OpLoadKey, variable, src, key)
 	}
+}
+
+func (sp *ScopeProjection) projectedValue(v Variable) bytecode.Operand {
+	if v.Storage != BindingStorageCell {
+		return v.Register
+	}
+
+	dst := sp.registers.Allocate()
+	sp.emitter.EmitLoadCell(dst, v.Register)
+	sp.types.Set(dst, v.Type)
+
+	return dst
 }
 
 func (sp *ScopeProjection) usesRegister(reg bytecode.Operand) bool {

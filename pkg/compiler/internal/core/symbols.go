@@ -1,6 +1,8 @@
 package core
 
 import (
+	"sort"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -20,6 +22,18 @@ const (
 	SymbolLocal
 	SymbolParam
 )
+
+type BindingStorage int
+
+const (
+	BindingStorageValue BindingStorage = iota
+	BindingStorageCell
+)
+
+type BindingOptions struct {
+	Mutable bool
+	Storage BindingStorage
+}
 
 type ValueType int
 
@@ -64,6 +78,8 @@ type Variable struct {
 	Register bytecode.Operand
 	Depth    int
 	Type     ValueType
+	Mutable  bool
+	Storage  BindingStorage
 }
 
 type SymbolTable struct {
@@ -73,7 +89,7 @@ type SymbolTable struct {
 	params    map[string]int
 	paramList []string
 	functions map[string]int
-	globals   map[string]bytecode.Operand
+	globals   map[string]*Variable
 	locals    []*Variable
 
 	scope int
@@ -89,7 +105,7 @@ func NewSymbolTable(registers *RegisterAllocator, constants *ConstantPool) *Symb
 		constants: constants,
 		params:    make(map[string]int),
 		paramList: make([]string, 0),
-		globals:   make(map[string]bytecode.Operand),
+		globals:   make(map[string]*Variable),
 		locals:    make([]*Variable, 0),
 	}
 }
@@ -125,10 +141,73 @@ func (st *SymbolTable) LocalVariables() []Variable {
 	return locals
 }
 
+func (st *SymbolTable) ProjectionVariables() []Variable {
+	vars := make([]Variable, 0)
+	seen := make(map[string]struct{})
+
+	add := func(v *Variable) {
+		if v == nil || v.Name == IgnorePseudoVariable || v.Name == PseudoVariable {
+			return
+		}
+
+		if _, ok := seen[v.Name]; ok {
+			return
+		}
+
+		seen[v.Name] = struct{}{}
+		vars = append(vars, *v)
+	}
+
+	for i := len(st.locals) - 1; i >= 0; i-- {
+		v := st.locals[i]
+		if v.Depth == st.scope {
+			add(v)
+		}
+	}
+
+	for i := len(st.locals) - 1; i >= 0; i-- {
+		v := st.locals[i]
+		if v.Depth >= st.scope || !v.Mutable {
+			continue
+		}
+
+		add(v)
+	}
+
+	if len(st.globals) == 0 {
+		return vars
+	}
+
+	names := make([]string, 0, len(st.globals))
+	for name, v := range st.globals {
+		if v == nil || !v.Mutable {
+			continue
+		}
+
+		if _, ok := seen[name]; ok {
+			continue
+		}
+
+		names = append(names, name)
+	}
+
+	sort.Strings(names)
+
+	for _, name := range names {
+		add(st.globals[name])
+	}
+
+	return vars
+}
+
 func (st *SymbolTable) DeclareLocal(name string, typ ValueType) (bytecode.Operand, bool) {
+	return st.DeclareLocalWithOptions(name, typ, BindingOptions{})
+}
+
+func (st *SymbolTable) DeclareLocalWithOptions(name string, typ ValueType, opts BindingOptions) (bytecode.Operand, bool) {
 	reg := st.registers.Allocate()
 
-	if ok := st.AssignLocal(name, typ, reg); !ok {
+	if ok := st.AssignLocalWithOptions(name, typ, reg, opts); !ok {
 		return bytecode.NoopOperand, false
 	}
 
@@ -136,6 +215,10 @@ func (st *SymbolTable) DeclareLocal(name string, typ ValueType) (bytecode.Operan
 }
 
 func (st *SymbolTable) AssignLocal(name string, typ ValueType, op bytecode.Operand) bool {
+	return st.AssignLocalWithOptions(name, typ, op, BindingOptions{})
+}
+
+func (st *SymbolTable) AssignLocalWithOptions(name string, typ ValueType, op bytecode.Operand, opts BindingOptions) bool {
 	if name != IgnorePseudoVariable && name != PseudoVariable {
 		// Check if the variable already exists in the current scope
 		for i := len(st.locals) - 1; i >= 0; i-- {
@@ -153,15 +236,21 @@ func (st *SymbolTable) AssignLocal(name string, typ ValueType, op bytecode.Opera
 		Register: op,
 		Depth:    st.scope,
 		Type:     typ,
+		Mutable:  opts.Mutable,
+		Storage:  opts.Storage,
 	})
 
 	return true
 }
 
 func (st *SymbolTable) DeclareGlobal(name string, typ ValueType) (bytecode.Operand, bool) {
+	return st.DeclareGlobalWithOptions(name, typ, BindingOptions{})
+}
+
+func (st *SymbolTable) DeclareGlobalWithOptions(name string, typ ValueType, opts BindingOptions) (bytecode.Operand, bool) {
 	op := st.registers.Allocate()
 
-	if ok := st.AssignGlobal(name, typ, op); !ok {
+	if ok := st.AssignGlobalWithOptions(name, typ, op, opts); !ok {
 		return bytecode.NoopOperand, false
 	}
 
@@ -169,11 +258,22 @@ func (st *SymbolTable) DeclareGlobal(name string, typ ValueType) (bytecode.Opera
 }
 
 func (st *SymbolTable) AssignGlobal(name string, typ ValueType, op bytecode.Operand) bool {
+	return st.AssignGlobalWithOptions(name, typ, op, BindingOptions{})
+}
+
+func (st *SymbolTable) AssignGlobalWithOptions(name string, typ ValueType, op bytecode.Operand, opts BindingOptions) bool {
 	if _, exists := st.globals[name]; exists {
 		return false
 	}
 
-	st.globals[name] = op
+	st.globals[name] = &Variable{
+		Name:     name,
+		Kind:     SymbolGlobal,
+		Register: op,
+		Type:     typ,
+		Mutable:  opts.Mutable,
+		Storage:  opts.Storage,
+	}
 
 	return true
 }
@@ -219,28 +319,30 @@ func (st *SymbolTable) Constant(addr bytecode.Operand) runtime.Value {
 }
 
 func (st *SymbolTable) Resolve(name string) (bytecode.Operand, SymbolKind, bool) {
-	for i := len(st.locals) - 1; i >= 0; i-- {
-		v := st.locals[i]
-		if v.Name == name {
-			return bytecode.NewRegister(int(v.Register)), v.Kind, true
-		}
-	}
-
-	if reg, ok := st.globals[name]; ok {
-		return reg, SymbolGlobal, true
+	if binding, ok := st.ResolveBinding(name); ok {
+		return bytecode.NewRegister(int(binding.Register)), binding.Kind, true
 	}
 
 	return bytecode.NoopOperand, SymbolLocal, false
 }
 
-func (st *SymbolTable) Lookup(name string) (*Variable, bool) {
+func (st *SymbolTable) ResolveBinding(name string) (*Variable, bool) {
 	for i := len(st.locals) - 1; i >= 0; i-- {
-		if st.locals[i].Name == name {
-			return st.locals[i], true
+		v := st.locals[i]
+		if v.Name == name {
+			return v, true
 		}
 	}
 
+	if binding, ok := st.globals[name]; ok {
+		return binding, true
+	}
+
 	return nil, false
+}
+
+func (st *SymbolTable) Lookup(name string) (*Variable, bool) {
+	return st.ResolveBinding(name)
 }
 
 func (st *SymbolTable) Params() []string {

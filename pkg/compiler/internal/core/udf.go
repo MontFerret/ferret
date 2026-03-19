@@ -6,6 +6,12 @@ import (
 )
 
 type (
+	UDFCapture struct {
+		Name    string
+		Mutable bool
+		Storage BindingStorage
+	}
+
 	UDFTable struct {
 		GlobalScope *UDFScope
 		Functions   []*UDFInfo
@@ -23,7 +29,7 @@ type (
 		Name        string
 		DisplayName string
 		Params      []string
-		Captures    []string
+		Captures    []UDFCapture
 		ID          int
 		Entry       int
 		Registers   int

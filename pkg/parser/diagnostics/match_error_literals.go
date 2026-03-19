@@ -65,7 +65,7 @@ func matchLiteralErrors(src *file.Source, err *diagnostics.Diagnostic, offending
 		token := input[len(input)-1]
 
 		isMissingClosingQuote := isQuote(token)
-		isMissingOpeningQuote := len(token) > 0 && isKeyword(offending.Prev()) && isQuote(token[len(token)-1:]) && !isValidString(token)
+		isMissingOpeningQuote := len(token) > 0 && isQuote(token[len(token)-1:]) && !isValidString(token)
 
 		if isMissingClosingQuote || isMissingOpeningQuote {
 			var span file.Span
@@ -83,9 +83,9 @@ func matchLiteralErrors(src *file.Source, err *diagnostics.Diagnostic, offending
 			} else {
 				quote = token[len(token)-1:]
 				typeOfQuote = "opening"
-				span = spanFromTokenSafe(offending.Prev().Token(), src)
-				span.Start += 2
-				span.End += 2
+				span = spanFromTokenSafe(offending.Token(), src)
+				span.Start = span.End
+				span.End = span.Start + 1
 			}
 
 			err.Message = "Unclosed string literal"
@@ -106,7 +106,23 @@ func matchLiteralErrors(src *file.Source, err *diagnostics.Diagnostic, offending
 		}
 	}
 
-	if isNoAlternative(err.Message) || isMissing(err.Message) {
+	if isNoAlternative(err.Message) || isMissing(err.Message) || isMismatched(err.Message) {
+		if is(offending, "RETURN") {
+			if bracket := findPrevToken(offending, "[", 6); bracket != nil && isComputedPropertyPrefix(bracket.Prev()) {
+				span := spanFromTokenSafe(offending.Token(), src)
+				span.Start = span.End
+				span.End = span.Start + 1
+
+				err.Message = "Expected a RETURN or FOR clause at end of query"
+				err.Hint = "All queries must return a value. Add a RETURN statement to complete the query."
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, "incomplete expression"),
+				}
+
+				return true
+			}
+		}
+
 		if is(offending.Prev(), "[") {
 			var span file.Span
 

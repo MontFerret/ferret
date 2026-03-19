@@ -306,8 +306,8 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			RETURN v
 		`, E{
 				Kind:    parserd.SyntaxError,
-				Message: "Expected a RETURN or FOR clause at end of query",
-				Hint:    "All queries must return a value. Add a RETURN statement to complete the query.",
+				Message: "Unclosed computed property expression",
+				Hint:    "Add a closing ']' to complete the computed property expression.",
 			}, "Unclosed computed property expression"),
 
 		ErrorCase(
@@ -317,8 +317,8 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			RETURN v
 		`, E{
 				Kind:    parserd.SyntaxError,
-				Message: "Expected a RETURN or FOR clause at end of query",
-				Hint:    "All queries must return a value. Add a RETURN statement to complete the query.",
+				Message: "Unclosed computed property expression",
+				Hint:    "Add a closing ']' to complete the computed property expression.",
 			}, "Invalid computed property expression"),
 	})
 }

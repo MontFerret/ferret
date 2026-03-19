@@ -98,6 +98,18 @@ func (e *Emitter) EmitLoadParam(dst, slot bytecode.Operand) {
 	e.EmitAB(bytecode.OpLoadParam, dst, slot)
 }
 
+func (e *Emitter) EmitMakeCell(dst, src bytecode.Operand) {
+	e.EmitAB(bytecode.OpMakeCell, dst, src)
+}
+
+func (e *Emitter) EmitLoadCell(dst, cell bytecode.Operand) {
+	e.EmitAB(bytecode.OpLoadCell, dst, cell)
+}
+
+func (e *Emitter) EmitStoreCell(cell, src bytecode.Operand) {
+	e.EmitAB(bytecode.OpStoreCell, cell, src)
+}
+
 func (e *Emitter) EmitLoadAggregateKey(dst, key, selector bytecode.Operand) {
 	e.EmitABC(bytecode.OpLoadAggregateKey, dst, key, selector)
 }

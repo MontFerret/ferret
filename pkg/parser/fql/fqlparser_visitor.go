@@ -31,6 +31,12 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#variableDeclaration.
 	VisitVariableDeclaration(ctx *VariableDeclarationContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#assignmentStatement.
+	VisitAssignmentStatement(ctx *AssignmentStatementContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#assignmentTarget.
+	VisitAssignmentTarget(ctx *AssignmentTargetContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#functionDeclaration.
 	VisitFunctionDeclaration(ctx *FunctionDeclarationContext) interface{}
 

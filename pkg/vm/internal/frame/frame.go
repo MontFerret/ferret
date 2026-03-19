@@ -10,6 +10,7 @@ import (
 type CallFrame struct {
 	OwnedResources   mem.OwnedResources
 	Aliases          mem.AliasTracker
+	CellHandles      []mem.CellHandle
 	FnName           string
 	CallerRegisters  []runtime.Value
 	FnID             int

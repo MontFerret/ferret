@@ -160,7 +160,7 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 // storeScope collects all local variables in the current scope, packs them into an array, and assigns it to the provided KV.
 func (c *LoopSortCompiler) storeScope(kv *core.KV) *core.ScopeProjection {
 	// No state to reset in this compiler
-	vars := c.ctx.Symbols.LocalVariables()
+	vars := c.ctx.Symbols.ProjectionVariables()
 
 	if len(vars) == 0 {
 		return nil

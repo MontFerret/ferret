@@ -1,8 +1,13 @@
 package internal
 
 import (
+	"fmt"
+
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
@@ -51,6 +56,8 @@ func (c *StmtCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) {
 	// Handle variable declarations (e.g., LET x = 1)
 	if vd := ctx.VariableDeclaration(); vd != nil {
 		c.CompileVariableDeclaration(vd)
+	} else if as := ctx.AssignmentStatement(); as != nil {
+		c.CompileAssignmentStatement(as)
 	} else if fd := ctx.FunctionDeclaration(); fd != nil {
 		// Function declarations are compiled separately.
 		return
@@ -108,6 +115,8 @@ func (c *StmtCompiler) CompileFunctionStatement(ctx fql.IFunctionStatementContex
 	switch {
 	case stmt.VariableDeclaration() != nil:
 		c.CompileVariableDeclaration(stmt.VariableDeclaration())
+	case stmt.AssignmentStatement() != nil:
+		c.CompileAssignmentStatement(stmt.AssignmentStatement())
 	case stmt.FunctionDeclaration() != nil:
 		// Nested function declarations are compiled separately.
 		return
@@ -152,15 +161,13 @@ func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationCo
 		return bytecode.NoopOperand
 	}
 
-	// Start with the ignore pseudo-variable as the default name
-	name := core.IgnorePseudoVariable
-
-	// Extract the variable name from either an identifier or a safe reserved word
-	if id := ctx.Identifier(); id != nil {
-		name = id.GetText()
-	} else if reserved := ctx.SafeReservedWord(); reserved != nil {
-		name = reserved.GetText()
+	name := variableDeclarationName(ctx)
+	if name == "" {
+		name = core.IgnorePseudoVariable
 	}
+
+	mutable := isMutableDeclaration(ctx)
+	storage := declarationStorage(c.ctx, ctx.(antlr.ParserRuleContext), mutable)
 
 	// Compile the expression that provides the variable's value
 	src := c.ctx.ExprCompiler.Compile(ctx.Expression())
@@ -168,33 +175,88 @@ func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationCo
 
 	// If this is a real variable (not the ignore pseudo-variable)
 	if name != core.IgnorePseudoVariable {
-		// Handle constant values differently - they need to be loaded into a register
-		if src.IsConstant() {
-			// Declare a global variable and load the constant into it
-			dest, ok := c.ctx.Symbols.DeclareGlobal(name, srcType)
+		opts := core.BindingOptions{
+			Mutable: mutable,
+			Storage: storage,
+		}
+
+		if storage == core.BindingStorageCell {
+			src = c.ctx.ExprCompiler.ensureRegister(src)
+
+			var (
+				dest bytecode.Operand
+				ok   bool
+			)
+
+			if c.ctx.Symbols.Scope() == 0 {
+				dest, ok = c.ctx.Symbols.DeclareGlobalWithOptions(name, srcType, opts)
+			} else {
+				dest, ok = c.ctx.Symbols.DeclareLocalWithOptions(name, srcType, opts)
+			}
 
 			if !ok {
-				c.ctx.Errors.VariableNotUnique(ctx, name)
-
+				c.ctx.Errors.VariableNotUnique(ctx.(antlr.ParserRuleContext), name)
 				return bytecode.NoopOperand
 			}
 
-			c.ctx.Emitter.EmitAB(bytecode.OpLoadConst, dest, src)
+			c.ctx.Emitter.EmitMakeCell(dest, src)
+			c.ctx.Types.Set(dest, core.TypeAny)
+
+			return dest
+		}
+
+		if mutable && src.IsConstant() {
+			var (
+				dest bytecode.Operand
+				ok   bool
+			)
+
+			if c.ctx.Symbols.Scope() == 0 {
+				dest, ok = c.ctx.Symbols.DeclareGlobalWithOptions(name, srcType, opts)
+			} else {
+				dest, ok = c.ctx.Symbols.DeclareLocalWithOptions(name, srcType, opts)
+			}
+
+			if !ok {
+				c.ctx.Errors.VariableNotUnique(ctx.(antlr.ParserRuleContext), name)
+				return bytecode.NoopOperand
+			}
+
+			c.ctx.Emitter.EmitLoadConst(dest, src)
+			c.ctx.Types.Set(dest, srcType)
+
+			return dest
+		}
+
+		if src.IsConstant() {
+			var (
+				dest bytecode.Operand
+				ok   bool
+			)
+
+			if c.ctx.Symbols.Scope() == 0 {
+				dest, ok = c.ctx.Symbols.DeclareGlobalWithOptions(name, srcType, opts)
+			} else {
+				dest, ok = c.ctx.Symbols.DeclareLocalWithOptions(name, srcType, opts)
+			}
+
+			if !ok {
+				c.ctx.Errors.VariableNotUnique(ctx.(antlr.ParserRuleContext), name)
+				return bytecode.NoopOperand
+			}
+
+			c.ctx.Emitter.EmitLoadConst(dest, src)
 			c.ctx.Types.Set(dest, srcType)
 
 			src = dest
 		} else if c.ctx.Symbols.Scope() == 0 {
-			// If we're in the global scope, assign as a global variable
-			if ok := c.ctx.Symbols.AssignGlobal(name, srcType, src); !ok {
-				c.ctx.Errors.VariableNotUnique(ctx, name)
-
+			if ok := c.ctx.Symbols.AssignGlobalWithOptions(name, srcType, src, opts); !ok {
+				c.ctx.Errors.VariableNotUnique(ctx.(antlr.ParserRuleContext), name)
 				return bytecode.NoopOperand
 			}
 		} else {
-			// Otherwise, assign as a local variable in the current scope
-			if ok := c.ctx.Symbols.AssignLocal(name, srcType, src); !ok {
-				c.ctx.Errors.VariableNotUnique(ctx, name)
-
+			if ok := c.ctx.Symbols.AssignLocalWithOptions(name, srcType, src, opts); !ok {
+				c.ctx.Errors.VariableNotUnique(ctx.(antlr.ParserRuleContext), name)
 				return bytecode.NoopOperand
 			}
 		}
@@ -223,4 +285,80 @@ func (c *StmtCompiler) CompileFunctionCall(ctx fql.IFunctionCallExpressionContex
 
 	// Delegate to the expression compiler for function call compilation
 	return c.ctx.ExprCompiler.CompileFunctionCallExpression(ctx)
+}
+
+func (c *StmtCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatementContext) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
+	stmt, ok := ctx.(*fql.AssignmentStatementContext)
+	if !ok || stmt == nil {
+		return bytecode.NoopOperand
+	}
+
+	target := stmt.AssignmentTarget()
+	if target == nil {
+		return bytecode.NoopOperand
+	}
+
+	if member := target.MemberExpression(); member != nil {
+		c.reportInvalidAssignmentTarget(member.(antlr.ParserRuleContext))
+		return bytecode.NoopOperand
+	}
+
+	name := textOfBindingIdentifier(target.BindingIdentifier())
+	if name == "" || name == core.IgnorePseudoVariable {
+		c.reportInvalidAssignmentTarget(stmt)
+		return bytecode.NoopOperand
+	}
+
+	binding, found := c.ctx.Symbols.ResolveBinding(name)
+	if !found {
+		c.ctx.Errors.VariableNotFound(stmt.GetStart(), name)
+		return bytecode.NoopOperand
+	}
+
+	if !binding.Mutable {
+		err := c.ctx.Errors.Create(parserd.SemanticError, stmt, fmt.Sprintf("Variable '%s' cannot be reassigned", name))
+		err.Hint = "Declare it with VAR if you need to update it."
+		c.ctx.Errors.Add(err)
+		return bytecode.NoopOperand
+	}
+
+	src := c.ctx.ExprCompiler.Compile(stmt.Expression())
+	srcType := operandType(c.ctx, src)
+	publishedType := srcType
+
+	if c.ctx.Loops.Depth() > 0 {
+		publishedType = core.JoinValueTypes(binding.Type, srcType)
+	}
+
+	binding.Type = publishedType
+
+	if binding.Storage == core.BindingStorageCell {
+		src = c.ctx.ExprCompiler.ensureRegister(src)
+		c.ctx.Emitter.EmitStoreCell(binding.Register, src)
+		return binding.Register
+	}
+
+	if src.IsConstant() {
+		c.ctx.Emitter.EmitLoadConst(binding.Register, src)
+	} else {
+		c.ctx.EmitMoveAuto(binding.Register, src)
+	}
+
+	c.ctx.Types.Set(binding.Register, publishedType)
+
+	return binding.Register
+}
+
+func (c *StmtCompiler) reportInvalidAssignmentTarget(ctx antlr.ParserRuleContext) {
+	if ctx == nil {
+		return
+	}
+
+	err := c.ctx.Errors.Create(parserd.SyntaxError, ctx, "Assignment target must be a local variable name")
+	err.Hint = "Property and index assignment are not supported. Use UPDATE for structural changes."
+	c.ctx.Errors.Add(err)
 }

@@ -55,7 +55,7 @@ func (p *RegisterCoalescingPass) Run(ctx *PassContext) (*PassResult, error) {
 		return nil, ErrMissingDependency
 	}
 
-	unsafeRegs := collectRangeSensitiveRegs(ctx.Program)
+	unsafeRegs := collectPinnedRegs(ctx.Program)
 	cfg := ctx.CFG
 
 	// Fold trivial move chains into their defining instruction to shorten live ranges.
@@ -88,7 +88,7 @@ func (p *RegisterCoalescingPass) Run(ctx *PassContext) (*PassResult, error) {
 
 		cfg = newCFG
 		liveness = computeLiveness(cfg)
-		unsafeRegs = collectRangeSensitiveRegs(ctx.Program)
+		unsafeRegs = collectPinnedRegs(ctx.Program)
 		interferenceGraph = buildInterferenceGraph(cfg, liveness, ctx.Program.Registers)
 	}
 
@@ -941,8 +941,14 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 	}
 }
 
-func collectRangeSensitiveRegs(program *bytecode.Program) map[int]bool {
+func collectPinnedRegs(program *bytecode.Program) map[int]bool {
 	unsafeRegs := make(map[int]bool)
+
+	for _, udf := range program.Functions.UserDefined {
+		for reg := 1; reg <= udf.Params; reg++ {
+			unsafeRegs[reg] = true
+		}
+	}
 
 	markFixedRange := func(start bytecode.Operand, count int) {
 		if !start.IsRegister() {
@@ -962,6 +968,14 @@ func collectRangeSensitiveRegs(program *bytecode.Program) map[int]bool {
 
 	for i := range program.Bytecode {
 		inst := program.Bytecode[i]
+
+		if inst.Opcode == bytecode.OpMakeCell {
+			dst := inst.Operands[0]
+
+			if dst.IsRegister() && dst.Register() > 0 {
+				unsafeRegs[dst.Register()] = true
+			}
+		}
 
 		if bytecode.IsCallOpcode(inst.Opcode) {
 			start := inst.Operands[1]
