@@ -4,7 +4,35 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
-type LoopType int
+type (
+	LoopType int
+
+	LoopKind int
+
+	Loop struct {
+		UpdateFn      func() bytecode.Operand
+		ConditionFn   func() bytecode.Operand
+		InitFn        func() bytecode.Operand
+		ValueName     string
+		LabelBase     string
+		KeyName       string
+		resetRegs     []bytecode.Operand
+		continueLabel Label
+		endLabel      Label
+		bodyLabel     Label
+		condLabel     Label
+		startLabel    Label
+		Type          LoopType
+		Dst           bytecode.Operand
+		Src           bytecode.Operand
+		Kind          LoopKind
+		Value         bytecode.Operand
+		Key           bytecode.Operand
+		State         bytecode.Operand
+		Distinct      bool
+		Allocate      bool
+	}
+)
 
 const (
 	NormalLoop LoopType = iota
@@ -12,38 +40,12 @@ const (
 	TemporalLoop
 )
 
-type LoopKind int
-
 const (
 	ForInLoop LoopKind = iota
 	ForStepLoop
 	WhileLoop
 	DoWhileLoop
 )
-
-type Loop struct {
-	UpdateFn      func() bytecode.Operand
-	ConditionFn   func() bytecode.Operand
-	InitFn        func() bytecode.Operand
-	ValueName     string
-	LabelBase     string
-	KeyName       string
-	resetRegs     []bytecode.Operand
-	continueLabel Label
-	endLabel      Label
-	bodyLabel     Label
-	condLabel     Label
-	startLabel    Label
-	Type          LoopType
-	Dst           bytecode.Operand
-	Src           bytecode.Operand
-	Kind          LoopKind
-	Value         bytecode.Operand
-	Key           bytecode.Operand
-	State         bytecode.Operand
-	Distinct      bool
-	Allocate      bool
-}
 
 func (l *Loop) StartLabel() Label {
 	return l.startLabel

@@ -97,6 +97,7 @@ func (sp *ScopeProjection) RestoreFromArray(src bytecode.Operand) {
 
 	for i, v := range sp.values {
 		sp.emitter.EmitLoadConst(idx, sp.symbols.AddConstant(runtime.Int(i)))
+
 		if v.Storage == BindingStorageCell {
 			tmp := sp.registers.Allocate()
 			variable, _ := sp.symbols.DeclareLocalWithOptions(v.Name, v.Type, BindingOptions{Mutable: v.Mutable, Storage: v.Storage})
@@ -117,6 +118,7 @@ func (sp *ScopeProjection) RestoreFromObject(src bytecode.Operand) {
 
 	for _, v := range sp.values {
 		sp.emitter.EmitLoadConst(key, sp.symbols.AddConstant(runtime.String(v.Name)))
+
 		if v.Storage == BindingStorageCell {
 			tmp := sp.registers.Allocate()
 			variable, _ := sp.symbols.DeclareLocalWithOptions(v.Name, v.Type, BindingOptions{Mutable: v.Mutable, Storage: v.Storage})
