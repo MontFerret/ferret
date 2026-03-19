@@ -80,3 +80,96 @@ func TestLifecycle_CellOverwriteAndCleanupCloseValuesExactlyOnce(t *testing.T) {
 		t.Fatalf("expected replacement to close exactly once, got %d closes", got)
 	}
 }
+
+func TestLifecycle_MultipleCellsCleanupIndependently(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  6,
+	})
+
+	state := mustAcquireRunState(t, instance)
+
+	originalA := newTrackingCloser("original-a")
+	originalB := newTrackingCloser("original-b")
+	replacementA := newTrackingCloser("replacement-a")
+	replacementB := newTrackingCloser("replacement-b")
+
+	state.writeProducedRegister(bytecode.NewRegister(0), originalA)
+
+	handleValueA := state.makeCell(bytecode.NewRegister(1), state.registers[bytecode.NewRegister(0)])
+	handleA, ok := handleValueA.(mem.CellHandle)
+	if !ok {
+		t.Fatalf("expected first cell handle, got %T", handleValueA)
+	}
+
+	state.writeProducedRegister(bytecode.NewRegister(2), originalB)
+
+	handleValueB := state.makeCell(bytecode.NewRegister(3), state.registers[bytecode.NewRegister(2)])
+	handleB, ok := handleValueB.(mem.CellHandle)
+	if !ok {
+		t.Fatalf("expected second cell handle, got %T", handleValueB)
+	}
+
+	state.clearRegister(bytecode.NewRegister(0))
+	state.clearRegister(bytecode.NewRegister(2))
+
+	state.writeProducedRegister(bytecode.NewRegister(4), replacementA)
+
+	if err := state.storeCell(handleA, state.registers[bytecode.NewRegister(4)]); err != nil {
+		t.Fatalf("unexpected first storeCell error: %v", err)
+	}
+
+	if got, want := countDeferredClosers(&state.deferred), 1; got != want {
+		t.Fatalf("expected deferred closers after first overwrite: got %d, want %d", got, want)
+	}
+
+	state.clearRegister(bytecode.NewRegister(4))
+
+	state.writeProducedRegister(bytecode.NewRegister(5), replacementB)
+
+	if err := state.storeCell(handleB, state.registers[bytecode.NewRegister(5)]); err != nil {
+		t.Fatalf("unexpected second storeCell error: %v", err)
+	}
+
+	if got, want := countDeferredClosers(&state.deferred), 2; got != want {
+		t.Fatalf("expected deferred closers after second overwrite: got %d, want %d", got, want)
+	}
+
+	state.clearRegister(bytecode.NewRegister(5))
+
+	if state.owned.Owns(originalA) || state.owned.Owns(originalB) {
+		t.Fatal("expected original cell values ownership to be released after overwrite")
+	}
+
+	if !state.owned.Owns(replacementA) || !state.owned.Owns(replacementB) {
+		t.Fatal("expected replacement values to remain owned while referenced by cells")
+	}
+
+	state.cleanupCurrentCells()
+
+	if state.owned.Owns(replacementA) || state.owned.Owns(replacementB) {
+		t.Fatal("expected replacement ownership to end after cell cleanup")
+	}
+
+	if got, want := countDeferredClosers(&state.deferred), 4; got != want {
+		t.Fatalf("expected all cell values to be deferred after cleanup: got %d, want %d", got, want)
+	}
+
+	state.endRun()
+
+	if got := originalA.closed; got != 1 {
+		t.Fatalf("expected originalA to close exactly once, got %d closes", got)
+	}
+
+	if got := originalB.closed; got != 1 {
+		t.Fatalf("expected originalB to close exactly once, got %d closes", got)
+	}
+
+	if got := replacementA.closed; got != 1 {
+		t.Fatalf("expected replacementA to close exactly once, got %d closes", got)
+	}
+
+	if got := replacementB.closed; got != 1 {
+		t.Fatalf("expected replacementB to close exactly once, got %d closes", got)
+	}
+}

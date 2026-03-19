@@ -32,5 +32,21 @@ FUNC level1() => level2()
 FUNC once() => level1()?
 RETURN [once(), once(), once()]
 `, []any{nil, nil, nil}, "Repeated protected unwinds in one run"),
+		CaseArray(`
+FUNC outer() (
+  VAR total = 1
+  FUNC wrapper(v) (
+    FUNC setAndFail(next) (
+      total = next
+      RETURN T::FAIL()
+    )
+    RETURN setAndFail(v)
+  )
+
+  LET failed = wrapper(9)?
+  RETURN [failed, total]
+)
+RETURN outer()
+`, []any{nil, 9}, "Protected unwind preserves updated promoted VAR state"),
 	})
 }

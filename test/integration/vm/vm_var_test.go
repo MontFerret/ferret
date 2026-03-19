@@ -10,6 +10,11 @@ x = x + 1
 RETURN x
 `, 2, "Top-level VAR can be reassigned"),
 		Case(`
+VAR x = 1
+x = "hello"
+RETURN x
+`, "hello", "Top-level VAR can be reassigned across types"),
+		Case(`
 VAR CURRENT = 1
 CURRENT = CURRENT + 1
 RETURN CURRENT
@@ -90,5 +95,49 @@ RETURN run()
 				},
 			},
 		}, "COLLECT KEEP snapshots the current value of a promoted VAR"),
+		CaseArray(`
+FUNC run() (
+  VAR carried = 0
+  FUNC setCarried(v) (
+    carried = v
+    RETURN carried
+  )
+
+  RETURN (
+    FOR item IN [1, 2, 3]
+      LET _ = setCarried(item * 10)
+      COLLECT parity = item % 2 INTO groups = { carried: carried }
+      RETURN { parity, groups }
+  )
+)
+
+RETURN run()
+`, []any{
+			map[string]any{
+				"parity": 0,
+				"groups": []any{
+					map[string]any{"carried": 20},
+				},
+			},
+			map[string]any{
+				"parity": 1,
+				"groups": []any{
+					map[string]any{"carried": 10},
+					map[string]any{"carried": 30},
+				},
+			},
+		}, "COLLECT INTO projection snapshots the current value of a promoted VAR"),
+		CaseArray(`
+FUNC outer() (
+  VAR total = 1
+  FUNC middle(v) (
+    FUNC inner() => total
+    total = total + v
+    RETURN inner()
+  )
+  RETURN [middle(2), total]
+)
+RETURN outer()
+`, []any{3, 3}, "Deeply nested UDF reads updated VAR from grandparent scope"),
 	})
 }
