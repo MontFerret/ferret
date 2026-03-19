@@ -39,6 +39,7 @@ const (
 	OpLoadKeyOptionalConst
 	OpLoadPropertyConst // Load a property from a map or list to a register using a constant key
 	OpLoadPropertyOptionalConst
+	OpMatchLoadPropertyConst // Load an object-pattern property or jump to the arm fail target
 
 	// Integrated Query Operations
 	OpQuery // Apply a query to a value
@@ -233,6 +234,8 @@ func (op Opcode) String() string {
 		return "LOADPRC"
 	case OpLoadPropertyOptionalConst:
 		return "LOADPROC"
+	case OpMatchLoadPropertyConst:
+		return "MATCHPRC"
 	case OpQuery:
 		return "QRY"
 	case OpLoadProperty:

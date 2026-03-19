@@ -273,6 +273,16 @@ loop:
 			if !has {
 				state.pc = int(dst)
 			}
+		case bytecode.OpMatchLoadPropertyConst:
+			key, ok := constants[src2.Constant()].(runtime.String)
+			if !ok {
+				state.pc = inst.InlineSlot
+				continue
+			}
+
+			if vm.matchLoadPropertyConst(ctx, pc, inst, dst, reg[src1], key) {
+				continue
+			}
 		case bytecode.OpFail:
 			if !dst.IsConstant() {
 				callErr := runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a constant string message")
@@ -1207,6 +1217,64 @@ func (vm *VM) loadKeyConstAndSet(ctx context.Context, dst bytecode.Operand, pc i
 
 	out, err := vm.loadKeyConstCached(ctx, pc, inst, src, arg)
 	state.setOrOptional(pc, dst, out, err, optional)
+}
+
+func (vm *VM) matchLoadPropertyConst(ctx context.Context, pc int, inst *execInstruction, dst bytecode.Operand, src runtime.Value, key runtime.String) bool {
+	state := &vm.state
+
+	switch obj := src.(type) {
+	case *runtime.Object:
+		out, found, err := obj.Lookup(ctx, key)
+		if err != nil {
+			state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+			return false
+		}
+
+		if !found {
+			state.pc = inst.InlineSlot
+			return true
+		}
+
+		state.writeBorrowedRegister(dst, out)
+		return false
+	case *data.FastObject:
+		out, found, err := obj.Lookup(ctx, key)
+		if err != nil {
+			state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+			return false
+		}
+
+		if !found {
+			state.pc = inst.InlineSlot
+			return true
+		}
+
+		state.writeBorrowedRegister(dst, out)
+		return false
+	case runtime.Map:
+		has, err := obj.ContainsKey(ctx, key)
+		if err != nil {
+			state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+			return false
+		}
+
+		if !has {
+			state.pc = inst.InlineSlot
+			return true
+		}
+
+		out, err := obj.Get(ctx, key)
+		if err != nil {
+			state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+			return false
+		}
+
+		state.writeBorrowedRegister(dst, out)
+		return false
+	default:
+		state.pc = inst.InlineSlot
+		return true
+	}
 }
 
 func (vm *VM) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, prop runtime.Value, optional bool) {

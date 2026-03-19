@@ -743,7 +743,7 @@ func TestOpLoadParam_UsesBoundSlots(t *testing.T) {
 func TestOpLoadParam_MissingParamsPreserveRuntimeError(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
-		Registers:  2,
+		Registers:  3,
 		Params:     []string{"foo", "bar"},
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(1), bytecode.Operand(1)),
@@ -1611,6 +1611,39 @@ func TestLoadKeyConstCached_FastObjectMissingReturnsNoneWithoutError(t *testing.
 	}
 }
 
+func TestMatchLoadPropertyConst_FastObject(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  3,
+		Params:     []string{"obj"},
+		Constants:  []runtime.Value{runtime.NewString("a")},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(1), bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpMatchLoadPropertyConst, bytecode.NewRegister(2), bytecode.NewRegister(1), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+		Metadata: bytecode.Metadata{
+			MatchFailTargets: []int{-1, 3, -1, -1, -1},
+		},
+	}
+
+	instance := mustNewVM(t, program)
+	env := mustNewEnvironment(t)
+
+	obj := data.NewFastObject(nil, 0)
+	if err := obj.Set(context.Background(), runtime.NewString("a"), runtime.NewInt(7)); err != nil {
+		t.Fatalf("setup fast object failed: %v", err)
+	}
+	env.Params["obj"] = obj
+
+	root := mustResultRootAndClose(t, mustRunResult(t, instance, env))
+	if got, want := root, runtime.NewInt(7); got != want {
+		t.Fatalf("unexpected match result: got %v, want %v", got, want)
+	}
+}
+
 func TestSetOrOptional_GenericErrorReturnsWithoutCatch(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,
@@ -2039,7 +2072,7 @@ func TestTailCallUdf_DuplicateOwnedArgsStayLiveUntilLastAliasClears(t *testing.T
 func TestOpClose_DoesNotDoubleCloseTrackedValueAtRunEnd(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
-		Registers:  2,
+		Registers:  3,
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
 			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(0)),
@@ -2329,6 +2362,67 @@ func TestBuildExecPlanRejectsAggregateSelectorSlotLengthMismatch(t *testing.T) {
 
 	if got := initErrs.First().Cause; got == nil || !strings.Contains(got.Error(), "metadata length") {
 		t.Fatalf("expected aggregate selector slot metadata length cause, got %v", got)
+	}
+}
+
+func TestBuildExecPlanRejectsMissingMatchFailTarget(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpMatchLoadPropertyConst, bytecode.NewRegister(1), bytecode.NewRegister(2), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+	}
+
+	_, err := NewWith(program)
+	if err == nil {
+		t.Fatal("expected initialization error")
+	}
+
+	var initErrs *rtdiagnostics.InitializationErrorSet
+	if !errors.As(err, &initErrs) {
+		t.Fatalf("expected initialization error set, got %T", err)
+	}
+
+	if got, want := initErrs.Size(), 1; got != want {
+		t.Fatalf("unexpected initialization error count: got %d, want %d", got, want)
+	}
+
+	if got := initErrs.First().Cause; got == nil || !strings.Contains(got.Error(), "invalid match fail target") {
+		t.Fatalf("expected invalid match fail target cause, got %v", got)
+	}
+}
+
+func TestBuildExecPlanRejectsMatchFailTargetLengthMismatch(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpMatchLoadPropertyConst, bytecode.NewRegister(1), bytecode.NewRegister(2), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+		Metadata: bytecode.Metadata{
+			MatchFailTargets: []int{1},
+		},
+	}
+
+	_, err := NewWith(program)
+	if err == nil {
+		t.Fatal("expected initialization error")
+	}
+
+	var initErrs *rtdiagnostics.InitializationErrorSet
+	if !errors.As(err, &initErrs) {
+		t.Fatalf("expected initialization error set, got %T", err)
+	}
+
+	if got, want := initErrs.Size(), 1; got != want {
+		t.Fatalf("unexpected initialization error count: got %d, want %d", got, want)
+	}
+
+	if got := initErrs.First().Cause; got == nil || !strings.Contains(got.Error(), "match fail target metadata length") {
+		t.Fatalf("expected match fail target metadata length cause, got %v", got)
 	}
 }
 

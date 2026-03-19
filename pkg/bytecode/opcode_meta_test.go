@@ -84,6 +84,10 @@ func TestJumpTargetOperandIndex(t *testing.T) {
 		t.Fatalf("expected OpIterNext target operand index 0")
 	}
 
+	if JumpTargetOperandIndex(OpMatchLoadPropertyConst) != -1 {
+		t.Fatalf("expected OpMatchLoadPropertyConst to use metadata jump targets")
+	}
+
 	if JumpTargetOperandIndex(OpAdd) != -1 {
 		t.Fatalf("expected OpAdd to have no jump target")
 	}

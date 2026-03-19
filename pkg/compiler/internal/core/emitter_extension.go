@@ -154,6 +154,16 @@ func (e *Emitter) EmitLoadPropertyOptional(dst, obj, prop bytecode.Operand) {
 	e.EmitABC(bytecode.OpLoadPropertyOptional, dst, obj, prop)
 }
 
+func (e *Emitter) EmitMatchLoadPropertyConst(dst, obj, prop bytecode.Operand, label Label) {
+	e.emitInstructionWithMatchFailTarget(bytecode.Instruction{
+		Opcode:   bytecode.OpMatchLoadPropertyConst,
+		Operands: [3]bytecode.Operand{dst, obj, prop},
+	}, -1)
+
+	pos := len(e.instructions) - 1
+	e.addMatchFailLabelRef(pos, label)
+}
+
 // ─── Arithmetic and Logical ──────────────────────────────────────────────
 
 func (e *Emitter) EmitAdd(dst, a, b bytecode.Operand) {

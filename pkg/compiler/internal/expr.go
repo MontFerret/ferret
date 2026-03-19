@@ -1487,16 +1487,11 @@ func (c *ExprCompiler) compileMatchObjectPattern(valueReg bytecode.Operand, ctx 
 			continue
 		}
 
-		if keyOp.IsConstant() {
-			c.ctx.Emitter.EmitJumpCompare(bytecode.OpJumpIfMissingPropertyConst, valueReg, keyOp, onFail)
-		} else {
-			c.ctx.Emitter.EmitJumpCompare(bytecode.OpJumpIfMissingProperty, valueReg, keyOp, onFail)
-		}
-
 		val := c.ctx.Registers.Allocate()
 		if keyOp.IsConstant() {
-			c.ctx.Emitter.EmitABC(bytecode.OpLoadPropertyConst, val, valueReg, keyOp)
+			c.ctx.Emitter.EmitMatchLoadPropertyConst(val, valueReg, keyOp, onFail)
 		} else {
+			c.ctx.Emitter.EmitJumpCompare(bytecode.OpJumpIfMissingProperty, valueReg, keyOp, onFail)
 			c.ctx.Emitter.EmitABC(bytecode.OpLoadProperty, val, valueReg, keyOp)
 		}
 		c.compileMatchPatternValue(val, prop.MatchPattern(), onFail)

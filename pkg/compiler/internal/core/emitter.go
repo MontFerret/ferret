@@ -9,13 +9,15 @@ import (
 )
 
 type Emitter struct {
-	labels        map[labelID]Label
-	patches       map[labelID][]labelRef
-	instructions  []bytecode.Instruction
-	selectorSlots []int
-	spans         []file.Span
-	currentSpan   file.Span
-	nextLabelID   labelID
+	labels           map[labelID]Label
+	patches          map[labelID][]labelRef
+	matchFailPatches map[labelID][]int
+	instructions     []bytecode.Instruction
+	selectorSlots    []int
+	matchFailTargets []int
+	spans            []file.Span
+	currentSpan      file.Span
+	nextLabelID      labelID
 }
 
 func NewEmitter() *Emitter {
@@ -47,6 +49,17 @@ func (e *Emitter) AggregateSelectorSlots() []int {
 
 	out := make([]int, len(e.selectorSlots))
 	copy(out, e.selectorSlots)
+
+	return out
+}
+
+func (e *Emitter) MatchFailTargets() []int {
+	if len(e.matchFailTargets) == 0 {
+		return nil
+	}
+
+	out := make([]int, len(e.matchFailTargets))
+	copy(out, e.matchFailTargets)
 
 	return out
 }
@@ -117,6 +130,12 @@ func (e *Emitter) MarkLabel(label Label) {
 	if refs, ok := e.patches[label.id]; ok {
 		for _, ref := range refs {
 			e.patchOperand(ref.pos, ref.field, len(e.instructions))
+		}
+	}
+
+	if refs, ok := e.matchFailPatches[label.id]; ok {
+		for _, pos := range refs {
+			e.patchMatchFailTarget(pos, len(e.instructions))
 		}
 	}
 }
@@ -196,12 +215,21 @@ func (e *Emitter) EmitABC(op bytecode.Opcode, dest, src1, src2 bytecode.Operand)
 }
 
 func (e *Emitter) emitInstruction(ins bytecode.Instruction) {
-	e.emitInstructionWithSelectorSlot(ins, -1)
+	e.emitInstructionWithMetadata(ins, -1, -1)
 }
 
 func (e *Emitter) emitInstructionWithSelectorSlot(ins bytecode.Instruction, selectorSlot int) {
+	e.emitInstructionWithMetadata(ins, selectorSlot, -1)
+}
+
+func (e *Emitter) emitInstructionWithMatchFailTarget(ins bytecode.Instruction, matchFailTarget int) {
+	e.emitInstructionWithMetadata(ins, -1, matchFailTarget)
+}
+
+func (e *Emitter) emitInstructionWithMetadata(ins bytecode.Instruction, selectorSlot, matchFailTarget int) {
 	e.instructions = append(e.instructions, ins)
 	e.selectorSlots = append(e.selectorSlots, selectorSlot)
+	e.matchFailTargets = append(e.matchFailTargets, matchFailTarget)
 	e.spans = append(e.spans, e.currentSpan)
 }
 
@@ -313,6 +341,7 @@ func (e *Emitter) swapInstructionWithSelectorSlot(label Label, ins bytecode.Inst
 
 	e.instructions[pos] = ins
 	e.selectorSlots[pos] = selectorSlot
+	e.matchFailTargets[pos] = -1
 }
 
 // swapInstruction swaps the operands of an instruction at a given position.
@@ -333,6 +362,9 @@ func (e *Emitter) insertInstructionWithSelectorSlot(label Label, ins bytecode.In
 	)
 	e.selectorSlots = append(e.selectorSlots[:pos],
 		append([]int{selectorSlot}, e.selectorSlots[pos:]...)...,
+	)
+	e.matchFailTargets = append(e.matchFailTargets[:pos],
+		append([]int{-1}, e.matchFailTargets[pos:]...)...,
 	)
 	e.spans = append(e.spans[:pos],
 		append([]file.Span{e.currentSpan}, e.spans[pos:]...)...,
@@ -361,6 +393,14 @@ func (e *Emitter) insertInstructionWithSelectorSlot(label Label, ins bytecode.In
 		}
 	}
 
+	for l, refs := range e.matchFailPatches {
+		for i, refPos := range refs {
+			if refPos >= pos {
+				e.matchFailPatches[l][i]++
+			}
+		}
+	}
+
 	// Re-patch any references that target labels whose address has moved
 	for l, newAddr := range moved {
 		if refs, ok := e.patches[l]; ok {
@@ -368,5 +408,32 @@ func (e *Emitter) insertInstructionWithSelectorSlot(label Label, ins bytecode.In
 				e.patchOperand(ref.pos, ref.field, newAddr)
 			}
 		}
+
+		if refs, ok := e.matchFailPatches[l]; ok {
+			for _, refPos := range refs {
+				e.patchMatchFailTarget(refPos, newAddr)
+			}
+		}
 	}
+}
+
+func (e *Emitter) addMatchFailLabelRef(pos int, label Label) {
+	if e.labels == nil {
+		e.labels = make(map[labelID]Label)
+	}
+
+	if def, ok := e.labels[label.id]; ok {
+		e.patchMatchFailTarget(pos, def.addr)
+		return
+	}
+
+	if e.matchFailPatches == nil {
+		e.matchFailPatches = make(map[labelID][]int)
+	}
+
+	e.matchFailPatches[label.id] = append(e.matchFailPatches[label.id], pos)
+}
+
+func (e *Emitter) patchMatchFailTarget(pos int, val int) {
+	e.matchFailTargets[pos] = val
 }

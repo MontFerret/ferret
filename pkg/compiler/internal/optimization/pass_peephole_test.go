@@ -679,6 +679,7 @@ func TestPeephole_RemapsCatchDebugSpansAndLabels(t *testing.T) {
 		},
 		Metadata: bytecode.Metadata{
 			AggregateSelectorSlots: []int{-1, 7, -1, 9},
+			MatchFailTargets:       []int{3, -1, -1, -1},
 			DebugSpans: []file.Span{
 				{Start: 0, End: 1},
 				{Start: 2, End: 3},
@@ -716,6 +717,11 @@ func TestPeephole_RemapsCatchDebugSpansAndLabels(t *testing.T) {
 	expectedAggregateSelectorSlots := []int{-1, -1, 9}
 	if !reflect.DeepEqual(program.Metadata.AggregateSelectorSlots, expectedAggregateSelectorSlots) {
 		t.Fatalf("unexpected aggregate selector slots: %#v", program.Metadata.AggregateSelectorSlots)
+	}
+
+	expectedMatchFailTargets := []int{2, -1, -1}
+	if !reflect.DeepEqual(program.Metadata.MatchFailTargets, expectedMatchFailTargets) {
+		t.Fatalf("unexpected match fail targets: %#v", program.Metadata.MatchFailTargets)
 	}
 
 	if label, ok := program.Metadata.Labels[2]; !ok || label != "end" {

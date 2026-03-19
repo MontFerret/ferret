@@ -115,6 +115,7 @@ func (c *Compiler) Compile(src *file.Source) (program *bytecode.Program, err err
 			OptimizationLevel:      int(c.opts.Level),
 			AggregatePlans:         l.Ctx.AggregatePlans(),
 			AggregateSelectorSlots: l.Ctx.Emitter.AggregateSelectorSlots(),
+			MatchFailTargets:       l.Ctx.Emitter.MatchFailTargets(),
 			DebugSpans:             l.Ctx.Emitter.Spans(),
 			Labels:                 l.Ctx.Emitter.Labels(),
 		},

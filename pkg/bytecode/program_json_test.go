@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func TestProgramJSONRoundTripPreservesAggregateSelectorSlots(t *testing.T) {
+func TestProgramJSONRoundTripPreservesInstructionMetadata(t *testing.T) {
 	prog := &Program{
 		ISAVersion: Version,
 		Registers:  2,
@@ -18,6 +18,7 @@ func TestProgramJSONRoundTripPreservesAggregateSelectorSlots(t *testing.T) {
 		},
 		Metadata: Metadata{
 			AggregateSelectorSlots: []int{3, -1},
+			MatchFailTargets:       []int{-1, 7},
 		},
 		Constants: []runtime.Value{runtime.NewInt(1)},
 	}
@@ -35,6 +36,10 @@ func TestProgramJSONRoundTripPreservesAggregateSelectorSlots(t *testing.T) {
 		t.Fatalf("expected metadata JSON to include aggregateSelectorSlots, got %s", string(encoded))
 	}
 
+	if !strings.Contains(string(encoded), "matchFailTargets") {
+		t.Fatalf("expected metadata JSON to include matchFailTargets, got %s", string(encoded))
+	}
+
 	var decoded Program
 	if err := json.Unmarshal(encoded, &decoded); err != nil {
 		t.Fatalf("unmarshal: %v", err)
@@ -50,5 +55,17 @@ func TestProgramJSONRoundTripPreservesAggregateSelectorSlots(t *testing.T) {
 
 	if got, want := decoded.Metadata.AggregateSelectorSlots[1], -1; got != want {
 		t.Fatalf("unexpected second aggregate selector slot: got %d, want %d", got, want)
+	}
+
+	if len(decoded.Metadata.MatchFailTargets) != 2 {
+		t.Fatalf("expected 2 match fail targets, got %d", len(decoded.Metadata.MatchFailTargets))
+	}
+
+	if got, want := decoded.Metadata.MatchFailTargets[0], -1; got != want {
+		t.Fatalf("unexpected first match fail target: got %d, want %d", got, want)
+	}
+
+	if got, want := decoded.Metadata.MatchFailTargets[1], 7; got != want {
+		t.Fatalf("unexpected second match fail target: got %d, want %d", got, want)
 	}
 }

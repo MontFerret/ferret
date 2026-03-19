@@ -81,6 +81,10 @@ func IsProtectedCallOpcode(op Opcode) bool {
 }
 
 func JumpTargetOperandIndex(op Opcode) int {
+	if op == OpMatchLoadPropertyConst {
+		return -1
+	}
+
 	role := controlFlowRole(op)
 	if role == ControlFlowJumpConditional || role == ControlFlowJumpUnconditional {
 		return 0
@@ -121,7 +125,7 @@ func opcodeClass(op Opcode) OpcodeClass {
 		return OpcodeClassLoad
 	case OpLoadIndex, OpLoadIndexOptional, OpLoadKey, OpLoadKeyOptional,
 		OpLoadProperty, OpLoadPropertyOptional, OpLoadIndexConst, OpLoadIndexOptionalConst,
-		OpLoadKeyConst, OpLoadKeyOptionalConst, OpLoadPropertyConst, OpLoadPropertyOptionalConst, OpQuery:
+		OpLoadKeyConst, OpLoadKeyOptionalConst, OpLoadPropertyConst, OpLoadPropertyOptionalConst, OpMatchLoadPropertyConst, OpQuery:
 		return OpcodeClassAccess
 	case OpAdd, OpAddConst, OpConcat, OpSub, OpMul, OpDiv, OpMod, OpIncr, OpDecr:
 		return OpcodeClassArithmetic
@@ -156,7 +160,7 @@ func controlFlowRole(op Opcode) ControlFlowRole {
 		return ControlFlowJumpUnconditional
 	case OpJumpIfFalse, OpJumpIfTrue, OpJumpIfNone,
 		OpJumpIfNe, OpJumpIfNeConst, OpJumpIfEq, OpJumpIfEqConst,
-		OpJumpIfMissingProperty, OpJumpIfMissingPropertyConst,
+		OpJumpIfMissingProperty, OpJumpIfMissingPropertyConst, OpMatchLoadPropertyConst,
 		OpIterNext:
 		return ControlFlowJumpConditional
 	case OpReturn, OpTailCall:

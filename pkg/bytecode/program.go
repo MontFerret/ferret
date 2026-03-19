@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-const Version = 5
+const Version = 6
 
 type (
 	// Catch stores an inclusive instruction range [start, end] and an optional recovery jump target.
@@ -20,6 +20,7 @@ type (
 		CompilerVersion        string          `json:"compilerVersion"`
 		AggregatePlans         []AggregatePlan `json:"aggregatePlans"`
 		AggregateSelectorSlots []int           `json:"aggregateSelectorSlots,omitempty"`
+		MatchFailTargets       []int           `json:"matchFailTargets,omitempty"`
 		DebugSpans             []file.Span     `json:"debugSpans"`
 		OptimizationLevel      int             `json:"optimizationLevel"`
 	}

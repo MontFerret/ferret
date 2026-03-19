@@ -63,7 +63,7 @@ func newPeepholeRunState(ctx *PassContext) *peepholeRunState {
 	state := &peepholeRunState{
 		prog:        prog,
 		bytecodeLen: bytecodeLen,
-		targets:     collectJumpTargets(prog.Bytecode, prog.CatchTable),
+		targets:     collectJumpTargets(prog),
 		keep:        make([]bool, bytecodeLen),
 	}
 
@@ -303,6 +303,7 @@ func applyPeepholeCompactionAndRemap(state *peepholeRunState) {
 
 	state.prog.Bytecode = newCode
 	remapAggregateSelectorSlots(state.prog, state.keep)
+	remapMatchFailTargets(state.prog, indexMap, state.keep)
 	remapDebugSpans(state.prog, state.keep)
 	remapLabels(state.prog, indexMap)
 	remapUdfEntries(state.prog, indexMap, state.keep)
@@ -332,6 +333,9 @@ func remapPeepholeJumps(code []bytecode.Instruction, indexMap []int, keep []bool
 		if !isJumpOpcode(inst.Opcode) {
 			continue
 		}
+		if inst.Opcode == bytecode.OpMatchLoadPropertyConst {
+			continue
+		}
 
 		oldTarget := int(inst.Operands[0])
 		if oldTarget < 0 || oldTarget >= oldCodeLen {
@@ -346,9 +350,13 @@ func remapPeepholeJumps(code []bytecode.Instruction, indexMap []int, keep []bool
 	}
 }
 
-func collectJumpTargets(code []bytecode.Instruction, catches []bytecode.Catch) map[int]bool {
+func collectJumpTargets(prog *bytecode.Program) map[int]bool {
 	targets := make(map[int]bool)
-	for _, inst := range code {
+	if prog == nil {
+		return targets
+	}
+
+	for _, inst := range prog.Bytecode {
 		if !isJumpOpcode(inst.Opcode) {
 			continue
 		}
@@ -359,7 +367,13 @@ func collectJumpTargets(code []bytecode.Instruction, catches []bytecode.Catch) m
 		}
 	}
 
-	for _, entry := range catches {
+	for _, target := range prog.Metadata.MatchFailTargets {
+		if target >= 0 {
+			targets[target] = true
+		}
+	}
+
+	for _, entry := range prog.CatchTable {
 		if entry[2] >= 0 {
 			targets[entry[2]] = true
 		}
@@ -380,6 +394,7 @@ func isJumpOpcode(op bytecode.Opcode) bool {
 		bytecode.OpJumpIfEqConst,
 		bytecode.OpJumpIfMissingProperty,
 		bytecode.OpJumpIfMissingPropertyConst,
+		bytecode.OpMatchLoadPropertyConst,
 		bytecode.OpIterNext,
 		bytecode.OpIterSkip,
 		bytecode.OpIterLimit:
@@ -615,6 +630,32 @@ func remapAggregateSelectorSlots(prog *bytecode.Program, keep []bool) {
 	}
 
 	prog.Metadata.AggregateSelectorSlots = updated
+}
+
+func remapMatchFailTargets(prog *bytecode.Program, indexMap []int, keep []bool) {
+	if prog == nil || len(prog.Metadata.MatchFailTargets) == 0 {
+		return
+	}
+
+	if len(prog.Metadata.MatchFailTargets) != len(keep) {
+		return
+	}
+
+	updated := make([]int, 0, len(prog.Metadata.MatchFailTargets))
+
+	for i, target := range prog.Metadata.MatchFailTargets {
+		if !keep[i] {
+			continue
+		}
+
+		if target >= 0 {
+			target = remapIndexForward(indexMap, keep, target)
+		}
+
+		updated = append(updated, target)
+	}
+
+	prog.Metadata.MatchFailTargets = updated
 }
 
 func remapLabels(prog *bytecode.Program, indexMap []int) {

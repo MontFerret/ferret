@@ -638,6 +638,10 @@ func (s *execState) copyRegister(dst, src bytecode.Operand) runtime.Value {
 	}
 
 	val := s.registers[src]
+	if !mem.CanTrackValue(val) {
+		return s.writeBorrowedRegister(dst, val)
+	}
+
 	prev := s.registers[dst]
 	valKey, _, valTrackable := mem.ResourceKeyOf(val)
 	valOwned := valTrackable && s.owned.OwnsKey(valKey)
