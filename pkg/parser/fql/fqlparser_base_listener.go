@@ -68,6 +68,18 @@ func (s *BaseFqlParserListener) EnterVariableDeclaration(ctx *VariableDeclaratio
 // ExitVariableDeclaration is called when production variableDeclaration is exited.
 func (s *BaseFqlParserListener) ExitVariableDeclaration(ctx *VariableDeclarationContext) {}
 
+// EnterAssignmentStatement is called when production assignmentStatement is entered.
+func (s *BaseFqlParserListener) EnterAssignmentStatement(ctx *AssignmentStatementContext) {}
+
+// ExitAssignmentStatement is called when production assignmentStatement is exited.
+func (s *BaseFqlParserListener) ExitAssignmentStatement(ctx *AssignmentStatementContext) {}
+
+// EnterAssignmentTarget is called when production assignmentTarget is entered.
+func (s *BaseFqlParserListener) EnterAssignmentTarget(ctx *AssignmentTargetContext) {}
+
+// ExitAssignmentTarget is called when production assignmentTarget is exited.
+func (s *BaseFqlParserListener) ExitAssignmentTarget(ctx *AssignmentTargetContext) {}
+
 // EnterFunctionDeclaration is called when production functionDeclaration is entered.
 func (s *BaseFqlParserListener) EnterFunctionDeclaration(ctx *FunctionDeclarationContext) {}
 

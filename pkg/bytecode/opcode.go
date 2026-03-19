@@ -22,6 +22,9 @@ const (
 	OpLoadZero   // Set a zero value to a register
 	OpLoadConst  // Load a constant to a register or a global variable
 	OpLoadParam  // Load a parameter slot to a register A
+	OpMakeCell   // Create an internal mutable cell handle from a value
+	OpLoadCell   // Load the current value from an internal mutable cell
+	OpStoreCell  // Replace the current value in an internal mutable cell
 	OpLoadArray  // Create an array
 	OpLoadObject // Create an object
 	OpLoadRange  // Create a range
@@ -212,6 +215,12 @@ func (op Opcode) String() string {
 		return "LOADC"
 	case OpLoadParam:
 		return "LOADP"
+	case OpMakeCell:
+		return "MKCELL"
+	case OpLoadCell:
+		return "LDCELL"
+	case OpStoreCell:
+		return "STCELL"
 
 	// Collection Access Operations
 	case OpLoadIndex:

@@ -10,6 +10,20 @@ import (
 func matchForLoopErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	prev := offending.Prev()
 
+	if eq := findPrevToken(offending, "=", 4); eq != nil && is(eq.Prev(), "COLLECT") {
+		span := spanFromTokenSafe(eq.Token(), src)
+		span.Start = span.End
+		span.End = span.Start + 1
+
+		err.Message = "Expected variable before '=' in COLLECT"
+		err.Hint = "COLLECT must group by a variable."
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing variable"),
+		}
+
+		return true
+	}
+
 	if is(prev, "IN") {
 		span := spanFromTokenSafe(prev.Token(), src)
 		span.Start = span.End + 1

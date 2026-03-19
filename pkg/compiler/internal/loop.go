@@ -349,6 +349,8 @@ func (c *LoopCompiler) compileForExpressionStatement(ctx fql.IForExpressionState
 	// Handle variable declarations (e.g., LET x = 1)
 	if vd := ctx.VariableDeclaration(); vd != nil {
 		_ = c.ctx.StmtCompiler.CompileVariableDeclaration(vd)
+	} else if as := ctx.AssignmentStatement(); as != nil {
+		_ = c.ctx.StmtCompiler.CompileAssignmentStatement(as)
 	} else if fce := ctx.FunctionCallExpression(); fce != nil {
 		// Handle function calls (e.g., doSomething())
 		_ = c.ctx.ExprCompiler.CompileFunctionCallExpression(fce)
@@ -515,8 +517,8 @@ func (c *LoopCompiler) inferForInTypes(srcCtx fql.IForExpressionSourceContext, s
 	}
 
 	if v := srcCtx.Variable(); v != nil {
-		if op, _, ok := c.ctx.Symbols.Resolve(v.GetText()); ok {
-			return c.inferValueKeyFromCollection(operandType(c.ctx, op))
+		if binding, ok := c.ctx.Symbols.ResolveBinding(v.GetText()); ok {
+			return c.inferValueKeyFromCollection(binding.Type)
 		}
 	}
 
@@ -612,8 +614,8 @@ func (c *LoopCompiler) inferExpressionAtomType(ctx fql.IExpressionAtomContext) c
 	}
 
 	if v := ctx.Variable(); v != nil {
-		if op, _, ok := c.ctx.Symbols.Resolve(v.GetText()); ok {
-			return operandType(c.ctx, op)
+		if binding, ok := c.ctx.Symbols.ResolveBinding(v.GetText()); ok {
+			return binding.Type
 		}
 		return core.TypeUnknown
 	}

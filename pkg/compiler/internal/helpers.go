@@ -176,7 +176,7 @@ func collectAndCaptureVars(
 	ctx *CompilerContext,
 	node antlr.Tree,
 	env *varEnv,
-	captureSet map[string]struct{},
+	captureSet map[string]core.UDFCapture,
 	captureOrder *[]string,
 ) {
 	if node == nil || env == nil || captureSet == nil || captureOrder == nil {
@@ -196,20 +196,74 @@ func collectAndCaptureVars(
 			continue
 		}
 
-		if env.resolve(name) {
-			if _, exists := captureSet[name]; !exists {
-				captureSet[name] = struct{}{}
-				*captureOrder = append(*captureOrder, name)
-			}
-			env.add(name)
+		if _, ok := env.resolveBinding(name); ok {
+			addCapture(captureSet, captureOrder, name, core.BindingStorageValue)
+		}
+	}
+}
+
+func findAssignmentRefs(node antlr.Tree, out *[]*fql.AssignmentStatementContext) {
+	if node == nil || out == nil {
+		return
+	}
+
+	if stmt, ok := node.(*fql.AssignmentStatementContext); ok {
+		*out = append(*out, stmt)
+	}
+
+	for i := 0; i < node.GetChildCount(); i++ {
+		findAssignmentRefs(node.GetChild(i), out)
+	}
+}
+
+func collectAndCaptureAssignments(
+	ctx *CompilerContext,
+	node antlr.Tree,
+	env *varEnv,
+	captureSet map[string]core.UDFCapture,
+	captureOrder *[]string,
+) {
+	if node == nil || env == nil || captureSet == nil || captureOrder == nil {
+		return
+	}
+
+	var assignments []*fql.AssignmentStatementContext
+	findAssignmentRefs(node, &assignments)
+
+	for _, stmt := range assignments {
+		if stmt == nil || stmt.AssignmentTarget() == nil {
 			continue
 		}
+
+		name := textOfBindingIdentifier(stmt.AssignmentTarget().BindingIdentifier())
+		if name == "" || env.currentHas(name) {
+			continue
+		}
+
+		binding, ok := env.resolveBinding(name)
+		if !ok {
+			continue
+		}
+
+		storage := core.BindingStorageValue
+		if binding.Mutable {
+			storage = core.BindingStorageCell
+			if ctx != nil && binding.Decl != nil {
+				ctx.PromotedBindings[binding.Decl] = struct{}{}
+			}
+		}
+
+		addCapture(captureSet, captureOrder, name, storage)
 	}
 }
 
 func variableDeclarationName(ctx fql.IVariableDeclarationContext) string {
 	if ctx == nil {
 		return ""
+	}
+
+	if id := ctx.BindingIdentifier(); id != nil {
+		return textOfBindingIdentifier(id)
 	}
 
 	if id := ctx.Identifier(); id != nil {
@@ -221,6 +275,18 @@ func variableDeclarationName(ctx fql.IVariableDeclarationContext) string {
 	}
 
 	return ""
+}
+
+func variableDeclarationBinding(ctx fql.IVariableDeclarationContext) captureBinding {
+	if ctx == nil {
+		return captureBinding{}
+	}
+
+	return captureBinding{
+		Name:    variableDeclarationName(ctx),
+		Mutable: isMutableDeclaration(ctx),
+		Decl:    ctx.(antlr.ParserRuleContext),
+	}
 }
 
 func collectScopeFunctionsFromBody(
@@ -349,11 +415,17 @@ func collectFunctionParams(ctx *CompilerContext, decl *fql.FunctionDeclarationCo
 }
 
 type varEnv struct {
-	scopes []map[string]struct{}
+	scopes []map[string]captureBinding
+}
+
+type captureBinding struct {
+	Decl    antlr.ParserRuleContext
+	Name    string
+	Mutable bool
 }
 
 func (e *varEnv) push() {
-	e.scopes = append(e.scopes, make(map[string]struct{}))
+	e.scopes = append(e.scopes, make(map[string]captureBinding))
 }
 
 func (e *varEnv) pop() {
@@ -363,11 +435,15 @@ func (e *varEnv) pop() {
 }
 
 func (e *varEnv) add(name string) {
+	e.addBinding(captureBinding{Name: name})
+}
+
+func (e *varEnv) addBinding(binding captureBinding) {
 	if len(e.scopes) == 0 {
 		return
 	}
 
-	e.scopes[len(e.scopes)-1][name] = struct{}{}
+	e.scopes[len(e.scopes)-1][binding.Name] = binding
 }
 
 func (e *varEnv) currentHas(name string) bool {
@@ -389,6 +465,58 @@ func (e *varEnv) resolve(name string) bool {
 	return false
 }
 
+func (e *varEnv) resolveBinding(name string) (captureBinding, bool) {
+	for i := len(e.scopes) - 1; i >= 0; i-- {
+		if binding, ok := e.scopes[i][name]; ok {
+			return binding, true
+		}
+	}
+
+	return captureBinding{}, false
+}
+
+func addCapture(captures map[string]core.UDFCapture, order *[]string, name string, storage core.BindingStorage) {
+	if captures == nil || order == nil || name == "" {
+		return
+	}
+
+	capture, exists := captures[name]
+	if !exists {
+		captures[name] = core.UDFCapture{
+			Name:    name,
+			Mutable: storage == core.BindingStorageCell,
+			Storage: storage,
+		}
+		*order = append(*order, name)
+		return
+	}
+
+	if storage == core.BindingStorageCell && capture.Storage != core.BindingStorageCell {
+		capture.Storage = core.BindingStorageCell
+		capture.Mutable = true
+		captures[name] = capture
+	}
+}
+
+func orderedCaptures(captures map[string]core.UDFCapture, order []string) []core.UDFCapture {
+	if len(order) == 0 {
+		return nil
+	}
+
+	out := make([]core.UDFCapture, 0, len(order))
+
+	for _, name := range order {
+		capture, ok := captures[name]
+		if !ok {
+			continue
+		}
+
+		out = append(out, capture)
+	}
+
+	return out
+}
+
 func analyzeCaptures(ctx *CompilerContext, table *core.UDFTable, body *fql.BodyContext) {
 	if ctx == nil || table == nil || body == nil {
 		return
@@ -404,9 +532,9 @@ func analyzeCaptures(ctx *CompilerContext, table *core.UDFTable, body *fql.BodyC
 
 		switch {
 		case stmt.VariableDeclaration() != nil:
-			name := variableDeclarationName(stmt.VariableDeclaration())
-			if name != "" {
-				env.add(name)
+			binding := variableDeclarationBinding(stmt.VariableDeclaration())
+			if binding.Name != "" {
+				env.addBinding(binding)
 			}
 		case stmt.FunctionDeclaration() != nil:
 			decl := stmt.FunctionDeclaration().(*fql.FunctionDeclarationContext)
@@ -645,10 +773,10 @@ func analyzeFunctionCaptures(ctx *CompilerContext, fn *core.UDFInfo, env *varEnv
 
 	env.push()
 	for _, p := range fn.Params {
-		env.add(p)
+		env.addBinding(captureBinding{Name: p})
 	}
 
-	captureSet := make(map[string]struct{})
+	captureSet := make(map[string]core.UDFCapture)
 	captureOrder := make([]string, 0)
 
 	body := fn.Decl.FunctionBody()
@@ -656,6 +784,7 @@ func analyzeFunctionCaptures(ctx *CompilerContext, fn *core.UDFInfo, env *varEnv
 		if arrow := body.FunctionArrow(); arrow != nil {
 			if expr := arrow.Expression(); expr != nil {
 				collectAndCaptureVars(ctx, expr, env, captureSet, &captureOrder)
+				collectAndCaptureAssignments(ctx, expr, env, captureSet, &captureOrder)
 			}
 		}
 
@@ -670,45 +799,53 @@ func analyzeFunctionCaptures(ctx *CompilerContext, fn *core.UDFInfo, env *varEnv
 					decl := stmt.VariableDeclaration()
 					if decl != nil && decl.Expression() != nil {
 						collectAndCaptureVars(ctx, decl.Expression(), env, captureSet, &captureOrder)
+						collectAndCaptureAssignments(ctx, decl.Expression(), env, captureSet, &captureOrder)
 					}
-					name := variableDeclarationName(decl)
-					if name != "" {
-						env.add(name)
+					binding := variableDeclarationBinding(decl)
+					if binding.Name != "" {
+						env.addBinding(binding)
 					}
+				case stmt.AssignmentStatement() != nil:
+					collectAndCaptureVars(ctx, stmt.AssignmentStatement(), env, captureSet, &captureOrder)
+					collectAndCaptureAssignments(ctx, stmt.AssignmentStatement(), env, captureSet, &captureOrder)
 				case stmt.FunctionDeclaration() != nil:
 					decl := stmt.FunctionDeclaration().(*fql.FunctionDeclarationContext)
 					name := decl.FunctionName().GetText()
 					if nested, ok := fn.BodyScope.Functions[name]; ok {
 						analyzeFunctionCaptures(ctx, nested, env)
 						for _, cap := range nested.Captures {
-							if env.currentHas(cap) {
+							if env.currentHas(cap.Name) {
 								continue
 							}
-							if _, exists := captureSet[cap]; !exists {
-								captureSet[cap] = struct{}{}
-								captureOrder = append(captureOrder, cap)
+							if _, ok := env.resolveBinding(cap.Name); !ok {
+								continue
 							}
-							env.add(cap)
+							addCapture(captureSet, &captureOrder, cap.Name, cap.Storage)
 						}
 					}
 				case stmt.FunctionCallExpression() != nil:
 					collectAndCaptureVars(ctx, stmt.FunctionCallExpression(), env, captureSet, &captureOrder)
+					collectAndCaptureAssignments(ctx, stmt.FunctionCallExpression(), env, captureSet, &captureOrder)
 				case stmt.WaitForExpression() != nil:
 					collectAndCaptureVars(ctx, stmt.WaitForExpression(), env, captureSet, &captureOrder)
+					collectAndCaptureAssignments(ctx, stmt.WaitForExpression(), env, captureSet, &captureOrder)
 				case stmt.DispatchExpression() != nil:
 					collectAndCaptureVars(ctx, stmt.DispatchExpression(), env, captureSet, &captureOrder)
+					collectAndCaptureAssignments(ctx, stmt.DispatchExpression(), env, captureSet, &captureOrder)
 				case stmt.ExpressionStatement() != nil:
 					collectAndCaptureVars(ctx, stmt.ExpressionStatement(), env, captureSet, &captureOrder)
+					collectAndCaptureAssignments(ctx, stmt.ExpressionStatement(), env, captureSet, &captureOrder)
 				}
 			}
 
 			if block.FunctionReturn() != nil {
 				collectAndCaptureVars(ctx, block.FunctionReturn(), env, captureSet, &captureOrder)
+				collectAndCaptureAssignments(ctx, block.FunctionReturn(), env, captureSet, &captureOrder)
 			}
 		}
 	}
 
-	fn.Captures = captureOrder
+	fn.Captures = orderedCaptures(captureSet, captureOrder)
 
 	env.pop()
 }

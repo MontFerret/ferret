@@ -183,6 +183,14 @@ func applyMoveLoadUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operan
 		bytecode.OpLoadArray, bytecode.OpLoadObject:
 		collector.addDef(dst)
 		return true
+	case bytecode.OpMakeCell, bytecode.OpLoadCell:
+		collector.addUse(src1)
+		collector.addDef(dst)
+		return true
+	case bytecode.OpStoreCell:
+		collector.addUse(dst)
+		collector.addUse(src1)
+		return true
 	case bytecode.OpLoadRange:
 		collector.addUse(src1)
 		collector.addUse(src2)

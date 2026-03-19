@@ -1786,12 +1786,13 @@ func (c *ExprCompiler) resolveImplicitCurrent(token antlr.Token) (bytecode.Opera
 		return bytecode.NoopOperand, false
 	}
 
-	src, _, found := c.ctx.Symbols.Resolve(core.PseudoVariable)
+	binding, found := c.ctx.Symbols.ResolveBinding(core.PseudoVariable)
 	if !found {
 		c.ctx.Errors.VariableNotFound(token, core.PseudoVariable)
 		return bytecode.NoopOperand, false
 	}
 
+	src := loadBindingValue(c.ctx, binding)
 	src = c.ensureRegister(src)
 
 	return src, true
@@ -2876,13 +2877,14 @@ func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) bytecode.Operan
 	}
 
 	// Just return the register / constant index
-	op, _, found := c.ctx.Symbols.Resolve(name)
-
+	binding, found := c.ctx.Symbols.ResolveBinding(name)
 	if !found {
 		c.ctx.Errors.VariableNotFound(token, name)
 
 		return bytecode.NoopOperand
 	}
+
+	op := loadBindingValue(c.ctx, binding)
 
 	if op.IsRegister() {
 		return op
@@ -3143,18 +3145,26 @@ func (c *ExprCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.RegisterSeq
 		c.ctx.Types.Set(args[i], operandType(c.ctx, src))
 	}
 
-	for i, name := range fn.Captures {
-		reg, _, ok := c.ctx.Symbols.Resolve(name)
+	for i, capture := range fn.Captures {
+		binding, ok := c.ctx.Symbols.ResolveBinding(capture.Name)
 		if !ok {
 			if callCtx != nil {
-				c.ctx.Errors.VariableNotFound(callCtx.GetStart(), name)
+				c.ctx.Errors.VariableNotFound(callCtx.GetStart(), capture.Name)
 			}
 			continue
 		}
 
 		dst := args[len(seq)+i]
-		c.ctx.Emitter.EmitMove(dst, reg)
-		c.ctx.Types.Set(dst, operandType(c.ctx, reg))
+
+		if capture.Storage == core.BindingStorageCell {
+			c.ctx.Emitter.EmitPlainMove(dst, binding.Register)
+			c.ctx.Types.Set(dst, core.TypeAny)
+			continue
+		}
+
+		src := loadBindingValue(c.ctx, binding)
+		c.ctx.EmitMoveAuto(dst, src)
+		c.ctx.Types.Set(dst, operandType(c.ctx, src))
 	}
 
 	return args

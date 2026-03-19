@@ -40,6 +40,7 @@ const (
 	keywordTimeout   = "TIMEOUT"
 	keywordUse       = "USE"
 	keywordUsing     = "USING"
+	keywordVar       = "VAR"
 	keywordValue     = "VALUE"
 	keywordWaitFor   = "WAITFOR"
 	keywordWhen      = "WHEN"

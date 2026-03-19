@@ -944,6 +944,12 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 func collectRangeSensitiveRegs(program *bytecode.Program) map[int]bool {
 	unsafeRegs := make(map[int]bool)
 
+	for _, udf := range program.Functions.UserDefined {
+		for reg := 1; reg <= udf.Params; reg++ {
+			unsafeRegs[reg] = true
+		}
+	}
+
 	markFixedRange := func(start bytecode.Operand, count int) {
 		if !start.IsRegister() {
 			return

@@ -43,6 +43,25 @@ func matchCommonErrors(src *file.Source, err *diagnostics.Diagnostic, offending 
 	}
 
 	if isNoAlternative(err.Message) {
+		if has(err.Message, "(,") {
+			spanNode := offending
+			if is(offending.Prev(), ",") {
+				spanNode = offending.Prev()
+			}
+
+			span := spanFromTokenSafe(spanNode.Token(), src)
+			span.Start++
+			span.End++
+
+			err.Message = "Expected a valid list of arguments"
+			err.Hint = "Did you forget to provide a value?"
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing value"),
+			}
+
+			return true
+		}
+
 		prevLogical := isLogicalOperator(offending.Prev())
 		if prevLogical && !isExpressionStart(offending) {
 			span := spanFromTokenSafe(offending.Prev().Token(), src)

@@ -11,6 +11,16 @@ import (
 func matchStepLoopErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	prev := offending.Prev()
 
+	if loopVar := findForWhileWithoutInitialAssignmentNode(offending, 20); loopVar != nil {
+		span := spanFromTokenSafe(loopVar.Token(), src)
+		err.Message = "Syntax error: missing '(' at '" + loopVar.GetText() + "'"
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, ""),
+		}
+
+		return true
+	}
+
 	// Handle "WHILE STEP" case - missing condition after WHILE
 	if is(offending, "STEP") && is(prev, "WHILE") {
 		span := spanFromTokenSafe(prev.Token(), src)
@@ -112,6 +122,9 @@ func matchStepLoopErrors(src *file.Source, err *diagnostics.Diagnostic, offendin
 		}
 
 		upper := toUpperTokens(tokens)
+		if hasForWhileWithoutInitialAssignment(upper) {
+			return false
+		}
 
 		// Missing STEP keyword: "... WHILE <cond> <ident> = ..."
 		if !containsToken(upper, "STEP") && containsToken(upper, "WHILE") {
@@ -251,6 +264,43 @@ func hasForEqualsWhilePattern(tokens []string) bool {
 	}
 
 	return false
+}
+
+func hasForWhileWithoutInitialAssignment(tokens []string) bool {
+	for i := 0; i+2 < len(tokens); i++ {
+		if tokens[i] == "FOR" && isIdentifierToken(tokens[i+1]) && tokens[i+2] == "WHILE" {
+			return true
+		}
+	}
+
+	return false
+}
+
+func findForWhileWithoutInitialAssignmentNode(node *TokenNode, steps int) *TokenNode {
+	current := node
+
+	for i := 0; i < steps && current != nil; i++ {
+		if is(current, "WHILE") {
+			prev := current.Prev()
+			if prev == nil || !isIdentifier(prev) {
+				continue
+			}
+
+			for walk := prev.Prev(); walk != nil; walk = walk.Prev() {
+				if is(walk, "=") {
+					return nil
+				}
+
+				if is(walk, "FOR") {
+					return prev
+				}
+			}
+		}
+
+		current = current.Prev()
+	}
+
+	return nil
 }
 
 var identifierToken = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)

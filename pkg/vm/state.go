@@ -32,6 +32,8 @@ type (
 		windows   mem.WindowPool
 		catchByPC []int
 		registers mem.RegisterFile
+		cells     mem.CellStore
+		cellIDs   []uint64
 		owned     mem.OwnedResources
 		aliases   mem.AliasTracker
 		deferred  mem.DeferredClosers
@@ -53,6 +55,8 @@ func (s *execState) init(program *bytecode.Program) {
 
 func (s *execState) startRun(env *Environment) error {
 	s.env = env
+	s.cells.Reset()
+	s.cellIDs = s.cellIDs[:0]
 	s.owned.Reset()
 	s.aliases.Reset()
 	s.deferred.Reset()
@@ -65,6 +69,7 @@ func (s *execState) startRun(env *Environment) error {
 
 func (s *execState) endRun() {
 	for {
+		s.cleanupCurrentCells()
 		s.owned.DrainTo(&s.deferred)
 
 		caller, ok := s.frames.Pop()
@@ -74,6 +79,7 @@ func (s *execState) endRun() {
 
 		s.windows.Release(s.registers)
 		s.registers = caller.CallerRegisters
+		s.cellIDs = caller.CellIDs
 		s.owned = caller.OwnedResources
 		s.aliases = caller.Aliases
 	}
@@ -88,6 +94,8 @@ func (s *execState) finishRun(root runtime.Value) *Result {
 
 func (s *execState) finishRunInto(root runtime.Value, result *Result) *Result {
 	result.reset(root)
+
+	s.cleanupCurrentCells()
 
 	if s.owned.Empty() && s.deferred.Empty() {
 		s.resetRunStorage()
@@ -116,6 +124,8 @@ func (s *execState) finishRunInto(root runtime.Value, result *Result) *Result {
 }
 
 func (s *execState) resetRunStorage() {
+	s.cells.Reset()
+	s.cellIDs = s.cellIDs[:0]
 	s.owned.Reset()
 	s.aliases.Reset()
 	s.deferred.Reset()
@@ -403,9 +413,11 @@ func (s *execState) unwindToProtected() bool {
 			return false
 		}
 
+		s.cleanupCurrentCells()
 		s.owned.DrainTo(&s.deferred)
 		s.windows.Release(s.registers)
 		s.registers = frame.CallerRegisters
+		s.cellIDs = frame.CellIDs
 		s.owned = frame.OwnedResources
 		s.aliases = frame.Aliases
 	}
@@ -415,9 +427,11 @@ func (s *execState) unwindToProtected() bool {
 		return false
 	}
 
+	s.cleanupCurrentCells()
 	s.owned.DrainTo(&s.deferred)
 	s.windows.Release(s.registers)
 	s.registers = frame.CallerRegisters
+	s.cellIDs = frame.CellIDs
 	s.owned = frame.OwnedResources
 	s.aliases = frame.Aliases
 	if frame.ReturnDest.IsRegister() {
@@ -439,6 +453,8 @@ func (s *execState) returnToCaller(retVal runtime.Value) bool {
 		retOwned  bool
 	)
 
+	s.cleanupCurrentCells()
+
 	if !s.owned.Empty() {
 		if key, closer, ok := mem.ResourceKeyOf(retVal); ok {
 			retKey = key
@@ -451,6 +467,7 @@ func (s *execState) returnToCaller(retVal runtime.Value) bool {
 
 	s.windows.Release(s.registers)
 	s.registers = frame.CallerRegisters
+	s.cellIDs = frame.CellIDs
 	s.owned = frame.OwnedResources
 	s.aliases = frame.Aliases
 	if frame.ReturnDest.IsRegister() {
@@ -501,6 +518,147 @@ func (s *execState) retireOwnership(val runtime.Value) {
 
 	s.owned.ExtractByKey(key)
 	s.aliases.Delete(key)
+}
+
+func (s *execState) snapshotCellIDs() []uint64 {
+	if len(s.cellIDs) == 0 {
+		return nil
+	}
+
+	out := make([]uint64, len(s.cellIDs))
+	copy(out, s.cellIDs)
+
+	return out
+}
+
+func (s *execState) cleanupCurrentCells() {
+	if len(s.cellIDs) == 0 {
+		return
+	}
+
+	for _, id := range s.cellIDs {
+		handle := mem.NewCellHandle(id)
+		val, ok := s.cells.Delete(handle)
+		if !ok {
+			continue
+		}
+
+		key, closer, ok := mem.ResourceKeyOf(val)
+		if !ok || !s.owned.OwnsKey(key) {
+			continue
+		}
+
+		s.decAliasAndMaybeDiscard(key, closer)
+	}
+
+	s.cellIDs = s.cellIDs[:0]
+}
+
+func (s *execState) valueOf(constants []runtime.Value, op bytecode.Operand) runtime.Value {
+	switch {
+	case op.IsRegister():
+		return normalizeValue(s.registers[op])
+	case op.IsConstant():
+		return normalizeValue(constants[op.Constant()])
+	default:
+		return runtime.None
+	}
+}
+
+func (s *execState) cellHandleOf(op bytecode.Operand) (mem.CellHandle, bool) {
+	if !op.IsRegister() {
+		return mem.CellHandle{}, false
+	}
+
+	handle, ok := s.registers[op].(mem.CellHandle)
+
+	return handle, ok
+}
+
+func (s *execState) aliasOwnedValue(dst bytecode.Operand, val runtime.Value, key mem.ResourceKey) runtime.Value {
+	if !dst.IsRegister() {
+		return val
+	}
+
+	prev := s.registers[dst]
+
+	if !mem.CanTrackValue(prev) {
+		s.registers[dst] = val
+		s.aliases.Inc(key)
+		return val
+	}
+
+	prevKey, prevCloser, ok := mem.ResourceKeyOf(prev)
+	if !ok || !s.owned.OwnsKey(prevKey) {
+		s.registers[dst] = val
+		s.aliases.Inc(key)
+		return val
+	}
+
+	if prevKey != key {
+		s.decAliasAndMaybeDiscard(prevKey, prevCloser)
+	}
+
+	s.registers[dst] = val
+	s.aliases.Inc(key)
+
+	return val
+}
+
+func (s *execState) makeCell(dst bytecode.Operand, val runtime.Value) runtime.Value {
+	val = normalizeValue(val)
+
+	if key, _, ok := mem.ResourceKeyOf(val); ok && s.owned.OwnsKey(key) {
+		s.aliases.Inc(key)
+	}
+
+	handle := s.cells.New(val)
+	s.cellIDs = append(s.cellIDs, handle.ID())
+
+	return s.writeBorrowedRegister(dst, handle)
+}
+
+func (s *execState) loadCell(dst bytecode.Operand, handle mem.CellHandle) (runtime.Value, error) {
+	val, ok := s.cells.Get(handle)
+	if !ok {
+		return runtime.None, runtime.Error(runtime.ErrInvalidOperation, "invalid cell handle")
+	}
+
+	val = normalizeValue(val)
+	key, _, ok := mem.ResourceKeyOf(val)
+	if !ok || !s.owned.OwnsKey(key) {
+		return s.writeBorrowedRegister(dst, val), nil
+	}
+
+	return s.aliasOwnedValue(dst, val, key), nil
+}
+
+func (s *execState) storeCell(handle mem.CellHandle, val runtime.Value) error {
+	oldVal, ok := s.cells.Get(handle)
+	if !ok {
+		return runtime.Error(runtime.ErrInvalidOperation, "invalid cell handle")
+	}
+
+	val = normalizeValue(val)
+
+	oldKey, oldCloser, oldTrackable := mem.ResourceKeyOf(oldVal)
+	oldOwned := oldTrackable && s.owned.OwnsKey(oldKey)
+	newKey, _, newTrackable := mem.ResourceKeyOf(val)
+	newOwned := newTrackable && s.owned.OwnsKey(newKey)
+
+	if oldOwned && (!newOwned || oldKey != newKey) {
+		s.decAliasAndMaybeDiscard(oldKey, oldCloser)
+	}
+
+	if !s.cells.Set(handle, val) {
+		return runtime.Error(runtime.ErrInvalidOperation, "invalid cell handle")
+	}
+
+	if newOwned && (!oldOwned || oldKey != newKey) {
+		s.aliases.Inc(newKey)
+	}
+
+	return nil
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

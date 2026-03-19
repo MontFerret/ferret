@@ -39,6 +39,14 @@ func (v *BaseFqlParserVisitor) VisitVariableDeclaration(ctx *VariableDeclaration
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitAssignmentStatement(ctx *AssignmentStatementContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitAssignmentTarget(ctx *AssignmentTargetContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitFunctionDeclaration(ctx *FunctionDeclarationContext) interface{} {
 	return v.VisitChildren(ctx)
 }

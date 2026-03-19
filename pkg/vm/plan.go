@@ -59,7 +59,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 		switch op {
 		case bytecode.OpLoadConst:
 			reg[dst] = constants[src1.Constant()]
-		case bytecode.OpMove:
+		case bytecode.OpMove, bytecode.OpMoveTracked:
 			if val, ok := reg[src1]; ok {
 				reg[dst] = val
 			} else {
@@ -147,7 +147,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 			instructions[pc].InlineSlot = target
 		}
 
-		if op != bytecode.OpLoadConst && op != bytecode.OpMove && dst.IsRegister() {
+		if op != bytecode.OpLoadConst && op != bytecode.OpMove && op != bytecode.OpMoveTracked && dst.IsRegister() {
 			delete(reg, dst)
 		}
 	}

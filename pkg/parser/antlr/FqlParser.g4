@@ -102,7 +102,7 @@ options { tokenVocab=FqlLexer; }
 	func (p *FqlParser) isUnsafeReservedWordToken(token int) bool {
 		switch token {
 		case FqlParserReturn, FqlParserDispatch, FqlParserQuery, FqlParserUsing, FqlParserNone,
-			FqlParserNull, FqlParserLet, FqlParserUse, FqlParserWaitfor, FqlParserWhile, FqlParserDo, FqlParserIn,
+			FqlParserNull, FqlParserLet, FqlParserVar, FqlParserUse, FqlParserWaitfor, FqlParserWhile, FqlParserDo, FqlParserIn,
 			FqlParserLike, FqlParserNot, FqlParserFor, FqlParserBooleanLiteral, FqlParserThrow, FqlParserMatch, FqlParserWhen,
 			FqlParserFunc:
 			return true
@@ -152,6 +152,7 @@ body
 
 bodyStatement
     : variableDeclaration
+    | assignmentStatement
     | functionDeclaration
     | functionCallExpression
     | waitForExpression
@@ -166,6 +167,16 @@ bodyExpression
 variableDeclaration
     : Let id=(Identifier | IgnoreIdentifier) Assign expression
     | Let safeReservedWord Assign expression
+    | Var bindingIdentifier Assign expression
+    ;
+
+assignmentStatement
+    : assignmentTarget Assign expression
+    ;
+
+assignmentTarget
+    : bindingIdentifier
+    | memberExpression
     ;
 
 functionDeclaration
@@ -195,6 +206,7 @@ functionBlock
 
 functionStatement
     : variableDeclaration
+    | assignmentStatement
     | functionDeclaration
     | functionCallExpression
     | waitForExpression
@@ -248,6 +260,7 @@ forExpressionClause
 
 forExpressionStatement
     : variableDeclaration
+    | assignmentStatement
     | functionCallExpression
     ;
 
@@ -663,6 +676,7 @@ unsafeReservedWord
     | None
     | Null
     | Let
+    | Var
     | Use
     | Waitfor
     | While

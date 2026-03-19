@@ -121,7 +121,7 @@ func opcodeClass(op Opcode) OpcodeClass {
 		OpJumpIfMissingProperty, OpJumpIfMissingPropertyConst:
 		return OpcodeClassControl
 	case OpMove, OpMoveTracked,
-		OpLoadNone, OpLoadBool, OpLoadZero, OpLoadConst, OpLoadParam, OpLoadArray, OpLoadObject, OpLoadRange, OpLoadAggregateKey:
+		OpLoadNone, OpLoadBool, OpLoadZero, OpLoadConst, OpLoadParam, OpMakeCell, OpLoadCell, OpLoadArray, OpLoadObject, OpLoadRange, OpLoadAggregateKey:
 		return OpcodeClassLoad
 	case OpLoadIndex, OpLoadIndexOptional, OpLoadKey, OpLoadKeyOptional,
 		OpLoadProperty, OpLoadPropertyOptional, OpLoadIndexConst, OpLoadIndexOptionalConst,
@@ -137,7 +137,7 @@ func opcodeClass(op Opcode) OpcodeClass {
 		OpNoneEq, OpNoneNe, OpNoneGt, OpNoneGte, OpNoneLt, OpNoneLte, OpNoneIn,
 		OpAllEq, OpAllNe, OpAllGt, OpAllGte, OpAllLt, OpAllLte, OpAllIn:
 		return OpcodeClassArray
-	case OpLength, OpClose, OpSleep, OpExists, OpRand, OpDispatch, OpFail:
+	case OpLength, OpClose, OpSleep, OpExists, OpRand, OpDispatch, OpFail, OpStoreCell:
 		return OpcodeClassUtility
 	case OpHCall, OpProtectedHCall, OpCall, OpProtectedCall, OpTailCall:
 		return OpcodeClassCall
