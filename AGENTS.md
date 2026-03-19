@@ -187,6 +187,8 @@ Treat these as implementation-sensitive and verify current code before proposing
 
 Do not treat historical discussion, stale comments, or old branches as authoritative.
 
+Here’s a corrected replacement for that section.
+
 ## Go type and file structure rules
 
 These rules are mandatory unless the task explicitly requires otherwise.
@@ -197,39 +199,20 @@ These rules are mandatory unless the task explicitly requires otherwise.
     - `result.go` for `Result`
     - `register_file.go` for `RegisterFile`
     - `call_stack.go` for `CallStack`
-- Do not use grouped `type ( ... )` declarations for struct types.
-- Declare each struct with its own standalone `type Name struct { ... }`.
+- Grouped `type ( ... )` declarations are allowed for interfaces, passive data-only structs, and other small related helper/value types that belong to the same narrow concern.
+- Do not use grouped `type ( ... )` declarations to hide substantial behavioral types.
+- If a struct has methods, declare it as a standalone `type Name struct { ... }` in its own file.
 - Passive data-only helper structs may share a file when they belong to the same narrow concern.
 - If a helper struct later gains methods, extract it into its own file immediately.
 - Methods for a struct should live in the same file as the struct unless there is a strong, explicit reason to split by concern.
 - Do not place a new method-bearing struct into an existing file just because the code compiles.
-- Do not hide substantial type additions inside grouped `type ( ... )` declarations.
 
-Preferred:
-
-```go
-type Result struct {
-	// ...
-}
-```
-
-Avoid:
-
-```go
-type (
-	Result struct {
-		// ...
-	}
-	execState struct {
-		// ...
-	}
-)
-```
-
-### Rationale:
+Rationale:
 - one method-bearing type per file keeps ownership of behavior obvious
-- standalone type declarations make diffs and reviews clearer
-- grouped type blocks are reserved, if used at all, for small passive helper types rather than primary behavioral types
+- standalone method-bearing types make diffs and reviews clearer
+- grouped type blocks are fine for passive, closely related types, but should not hide substantial behavioral types
+
+This should align much better with what you actually want.
 
 ## Comment rules for functions and methods
 - Do not add comments to every function or method by default.
