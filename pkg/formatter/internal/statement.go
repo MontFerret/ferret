@@ -329,31 +329,6 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 		f.writeKeyword(keywordIn)
 		f.p.space()
 		f.formatForExpressionSource(ctx.ForExpressionSource().(*fql.ForExpressionSourceContext))
-	case ctx.Step() != nil:
-		f.p.space()
-		f.p.write("=")
-		f.p.space()
-		f.expression.formatExpression(ctx.GetStepInit().(*fql.ExpressionContext))
-		f.p.space()
-		f.writeKeyword(keywordWhile)
-		f.p.space()
-		f.expression.formatExpression(ctx.GetStepCondition().(*fql.ExpressionContext))
-		f.p.space()
-		f.writeKeyword(keywordStep)
-		f.p.space()
-
-		if tok := ctx.GetStepVariable(); tok != nil {
-			f.p.write(tok.GetText())
-		}
-
-		if tok := ctx.GetStepUpdate(); tok != nil {
-			f.p.write(tok.GetText())
-		} else if expr := ctx.GetStepUpdateExp(); expr != nil {
-			f.p.space()
-			f.p.write("=")
-			f.p.space()
-			f.expression.formatExpression(expr.(*fql.ExpressionContext))
-		}
 	case ctx.While() != nil:
 		if ctx.Do() != nil {
 			f.p.space()
@@ -363,7 +338,7 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 		f.p.space()
 		f.writeKeyword(keywordWhile)
 		f.p.space()
-		f.expression.formatExpression(ctx.Expression(0).(*fql.ExpressionContext))
+		f.expression.formatExpression(ctx.Expression().(*fql.ExpressionContext))
 	}
 
 	bodies := ctx.AllForExpressionBody()
@@ -418,20 +393,8 @@ func (f *statementFormatter) forHeaderStopIndex(ctx *fql.ForExpressionContext) i
 		if src := ctx.ForExpressionSource(); src != nil {
 			return f.trivia.stopIndex(src.(antlr.ParserRuleContext))
 		}
-	case ctx.Step() != nil:
-		if expr := ctx.GetStepUpdateExp(); expr != nil {
-			return f.trivia.stopIndex(expr.(antlr.ParserRuleContext))
-		}
-
-		if tok := ctx.GetStepUpdate(); tok != nil {
-			return tok.GetStop()
-		}
-
-		if tok := ctx.GetStepVariable(); tok != nil {
-			return f.trivia.stopIndex(tok)
-		}
 	case ctx.While() != nil:
-		if expr := ctx.Expression(0); expr != nil {
+		if expr := ctx.Expression(); expr != nil {
 			return f.trivia.stopIndex(expr.(antlr.ParserRuleContext))
 		}
 	}

@@ -230,12 +230,6 @@ forExpression
     : For valueVariable=loopVariable (Comma counterVariable=bindingIdentifier)? In forExpressionSource
         forExpressionBody*
         forExpressionReturn
-    | For valueVariable=loopVariable Assign stepInit=expression While stepCondition=expression Step stepVariable=loopVariable stepUpdate=(Increment | Decrement)
-        forExpressionBody*
-        forExpressionReturn
-    | For valueVariable=loopVariable Assign stepInit=expression While stepCondition=expression Step stepVariable=loopVariable Assign stepUpdateExp=expression
-        forExpressionBody*
-        forExpressionReturn
     | For valueVariable=loopVariable Do? While expression
         forExpressionBody*
         forExpressionReturn

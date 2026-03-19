@@ -1,8 +1,6 @@
 package internal
 
 import (
-	"fmt"
-
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
@@ -56,16 +54,14 @@ func NewLoopCompiler(ctx *CompilerContext) *LoopCompiler {
 }
 
 // Compile processes a FOR expression from the FQL AST and generates the appropriate VM instructions.
-// It determines whether to compile a FOR IN loop (iteration over a collection), a FOR WHILE loop (while condition),
-// or a FOR STEP loop (with init, condition, and increment expressions).
+// It determines whether to compile a FOR IN loop (iteration over a collection)
+// or a FOR WHILE/DO WHILE loop.
 // Returns an operand representing the destination of the loop results.
 func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) bytecode.Operand {
 	var returnRuleCtx antlr.RuleContext
 
 	if ctx.In() != nil {
 		returnRuleCtx = c.compileInitialization(ctx, core.ForInLoop)
-	} else if ctx.Step() != nil {
-		returnRuleCtx = c.compileInitialization(ctx, core.ForStepLoop)
 	} else if ctx.Do() == nil {
 		returnRuleCtx = c.compileInitialization(ctx, core.WhileLoop)
 	} else {
@@ -96,7 +92,7 @@ func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) bytecode.Operand {
 // compiling its source, declaring variables, and emitting initialization instructions.
 // Parameters:
 //   - ctx: The FOR expression context from the AST
-//   - kind: The kind of loop (ForInLoop, WhileLoop, or ForStepLoop)
+//   - kind: The kind of loop (ForInLoop, WhileLoop, or DoWhileLoop)
 //
 // Returns the rule context for the return expression or nested FOR expression.
 func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind core.LoopKind) antlr.RuleContext {
@@ -149,45 +145,17 @@ func (c *LoopCompiler) configureLoopRuntime(loop *core.Loop, ctx fql.IForExpress
 	switch kind {
 	case core.ForInLoop:
 		loop.Src = c.compileForExpressionSource(ctx.ForExpressionSource())
-	case core.ForStepLoop:
-		loop.InitFn = func() bytecode.Operand {
-			return c.ctx.ExprCompiler.Compile(ctx.GetStepInit())
-		}
-		loop.ConditionFn = func() bytecode.Operand {
-			return c.ctx.ExprCompiler.Compile(ctx.GetStepCondition())
-		}
-		loop.UpdateFn = func() bytecode.Operand {
-			return c.compileStepUpdate(ctx)
-		}
 	default:
 		loop.ConditionFn = func() bytecode.Operand {
-			return c.ctx.ExprCompiler.Compile(ctx.Expression(0))
+			return c.ctx.ExprCompiler.Compile(ctx.Expression())
 		}
 	}
-}
-
-func (c *LoopCompiler) compileStepUpdate(ctx fql.IForExpressionContext) bytecode.Operand {
-	if exp := ctx.GetStepUpdateExp(); exp != nil {
-		return c.ctx.ExprCompiler.Compile(exp)
-	}
-
-	stepVar := ctx.GetStepVariable()
-	stepVarName := textOfLoopVariable(stepVar)
-	variable, _, found := c.ctx.Symbols.Resolve(stepVarName)
-	if !found {
-		c.ctx.Errors.VariableNotFound(tokenOfLoopVariable(stepVar), stepVarName)
-		return bytecode.NoopOperand
-	}
-
-	return c.ctx.ExprCompiler.CompileIncDec(ctx.GetStepUpdate(), variable)
 }
 
 func (c *LoopCompiler) inferLoopVariableTypes(ctx fql.IForExpressionContext, loop *core.Loop, kind core.LoopKind) (core.ValueType, core.ValueType) {
 	switch kind {
 	case core.ForInLoop:
 		return c.inferForInTypes(ctx.ForExpressionSource(), loop.Src)
-	case core.ForStepLoop:
-		return c.inferExpressionType(ctx.GetStepInit()), core.TypeUnknown
 	case core.WhileLoop, core.DoWhileLoop:
 		return core.TypeInt, core.TypeUnknown
 	default:
@@ -211,23 +179,6 @@ func (c *LoopCompiler) declareLoopValueVariable(ctx fql.IForExpressionContext, l
 
 	if loop.Value.IsRegister() {
 		c.ctx.Types.Set(loop.Value, valueType)
-	}
-
-	if loop.Kind == core.ForStepLoop {
-		c.validateStepVariableName(ctx, varName)
-	}
-}
-
-func (c *LoopCompiler) validateStepVariableName(ctx fql.IForExpressionContext, expected string) {
-	stepVar := ctx.GetStepVariable()
-	stepVarName := textOfLoopVariable(stepVar)
-
-	if stepVar != nil && expected != stepVarName {
-		if _, _, found := c.ctx.Symbols.Resolve(stepVarName); found {
-			ce := c.ctx.Errors.Create(parser.SemanticError, ctx, fmt.Sprintf("step variable missmatch: expected '%s' but got '%s'", expected, stepVarName))
-			ce.Hint = "Make sure the same variable is used in all parts of the STEP loop"
-			c.ctx.Errors.Add(ce)
-		}
 	}
 }
 

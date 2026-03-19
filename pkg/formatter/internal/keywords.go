@@ -35,7 +35,6 @@ const (
 	keywordQuery     = "QUERY"
 	keywordReturn    = "RETURN"
 	keywordSort      = "SORT"
-	keywordStep      = "STEP"
 	keywordThrow     = "THROW"
 	keywordTimeout   = "TIMEOUT"
 	keywordUse       = "USE"

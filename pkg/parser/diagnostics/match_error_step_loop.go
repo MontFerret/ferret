@@ -2,225 +2,76 @@ package diagnostics
 
 import (
 	"regexp"
-	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
+var legacyStepLoopPattern = regexp.MustCompile(`(?is)\bFOR\b[\s\S]*?\b[A-Za-z_][A-Za-z0-9_]*\s*=[\s\S]*?\bWHILE\b[\s\S]*?\b(STEP)\b`)
+
 func matchStepLoopErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
-	prev := offending.Prev()
-
-	if loopVar := findForWhileWithoutInitialAssignmentNode(offending, 20); loopVar != nil {
-		span := spanFromTokenSafe(loopVar.Token(), src)
-		err.Message = "Syntax error: missing '(' at '" + loopVar.GetText() + "'"
-		err.Spans = []diagnostics.ErrorSpan{
-			diagnostics.NewMainErrorSpan(span, ""),
-		}
-
-		return true
+	span, ok := findLegacyStepLoopSpan(src, offending)
+	if !ok {
+		return false
 	}
 
-	// Handle "WHILE STEP" case - missing condition after WHILE
-	if is(offending, "STEP") && is(prev, "WHILE") {
-		span := spanFromTokenSafe(prev.Token(), src)
-		span.Start = span.End + 1
-		span.End = span.Start + 1
-		err.Message = "Expected expression after 'WHILE'"
-		err.Hint = "STEP loops require a condition after WHILE, e.g., 'FOR i = 0 WHILE i < 10 STEP i = i + 1'."
-		err.Spans = []diagnostics.ErrorSpan{
-			diagnostics.NewMainErrorSpan(span, "missing condition"),
-		}
-
-		return true
+	err.Message = "STEP is no longer supported in FOR loops"
+	err.Hint = "Use VAR state with 'FOR _ WHILE ...' and update the counter inside the loop body."
+	err.Spans = []diagnostics.ErrorSpan{
+		diagnostics.NewMainErrorSpan(span, "removed syntax"),
 	}
 
-	// Handle incomplete STEP clause - missing variable assignment after STEP
-	if is(prev, "STEP") && !isIdentifier(offending) {
-		span := spanFromTokenSafe(prev.Token(), src)
-		span.Start = span.End + 1
-		span.End = span.Start + 1
-		err.Message = "Expected variable assignment after 'STEP'"
-		err.Hint = "STEP requires a variable assignment, e.g., 'STEP i = i + 1'."
-		err.Spans = []diagnostics.ErrorSpan{
-			diagnostics.NewMainErrorSpan(span, "missing assignment"),
-		}
-
-		return true
-	}
-
-	// Handle "Expected a RETURN or FOR clause at end of query" when preceded by STEP
-	if has(err.Message, "Expected a RETURN or FOR clause at end of query") && hasPrevToken(offending, "STEP", 5) {
-		stepNode := findPrevToken(offending, "STEP", 5)
-		if stepNode != nil {
-			span := spanFromTokenSafe(stepNode.Token(), src)
-			span.Start = span.End + 1
-			span.End = span.Start + 1
-			err.Message = "Expected variable assignment after 'STEP'"
-			err.Hint = "STEP requires a variable assignment, e.g., 'STEP i = i + 1'."
-			err.Spans = []diagnostics.ErrorSpan{
-				diagnostics.NewMainErrorSpan(span, "missing assignment"),
-			}
-
-			return true
-		}
-	}
-
-	// Handle "mismatched input '<EOF>' expecting '='" in STEP context
-	if isMismatched(err.Message) && has(err.Message, "expecting '='") && hasPrevToken(offending, "STEP", 3) {
-		stepNode := findPrevToken(offending, "STEP", 3)
-		if stepNode != nil {
-			span := spanFromTokenSafe(stepNode.Token(), src)
-			span.Start = span.End + 1
-			span.End = span.Start + 1
-			err.Message = "Incomplete STEP clause"
-			err.Hint = "STEP requires a complete variable assignment, e.g., 'STEP i = i + 1'."
-			err.Spans = []diagnostics.ErrorSpan{
-				diagnostics.NewMainErrorSpan(span, "incomplete assignment"),
-			}
-
-			return true
-		}
-	}
-
-	// Handle extraneous RETURN after STEP (and similar cases)
-	if isExtraneous(err.Message) && is(offending, "RETURN") && hasPrevToken(offending, "STEP", 2) {
-		stepNode := findPrevToken(offending, "STEP", 2)
-		if stepNode != nil {
-			span := spanFromTokenSafe(stepNode.Token(), src)
-			span.Start = span.End + 1
-			span.End = span.Start + 1
-			err.Message = "Expected variable assignment after 'STEP'"
-			err.Hint = "STEP requires a variable assignment, e.g., 'STEP i = i + 1'."
-			err.Spans = []diagnostics.ErrorSpan{
-				diagnostics.NewMainErrorSpan(span, "missing assignment"),
-			}
-
-			return true
-		}
-	}
-
-	// Handle missing '=' in STEP assignment using multiple error patterns
-	if isMissing(err.Message) && isMissingToken(err.Message, "=") && hasPrevToken(offending, "STEP", 3) {
-		span := spanFromTokenSafe(offending.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
-		err.Message = "Expected '=' after variable in STEP clause"
-		err.Hint = "STEP assignments require '=', e.g., 'STEP i = i + 1'."
-		err.Spans = []diagnostics.ErrorSpan{
-			diagnostics.NewMainErrorSpan(span, "missing '='"),
-		}
-
-		return true
-	}
-
-	// Handle "no viable alternative" patterns for STEP loops
-	if isNoAlternative(err.Message) {
-		tokens := extractNoAlternativeInputs(err.Message)
-		if len(tokens) == 0 {
-			return false
-		}
-
-		upper := toUpperTokens(tokens)
-		if hasForWhileWithoutInitialAssignment(upper) {
-			return false
-		}
-
-		// Missing STEP keyword: "... WHILE <cond> <ident> = ..."
-		if !containsToken(upper, "STEP") && containsToken(upper, "WHILE") {
-			// Guard against missing initial assignment value: "FOR i = WHILE ..."
-			if hasForEqualsWhilePattern(upper) {
-				return false
-			}
-
-			last := normalizeToken(tokens[len(tokens)-1])
-			if isIdentifierToken(last) {
-				span := spanFromTokenSafe(offending.Token(), src)
-				span.Start = span.End
-				span.End = span.Start + 1
-				err.Message = "Syntax error: missing 'STEP' at '" + last + "'"
-				err.Spans = []diagnostics.ErrorSpan{
-					diagnostics.NewMainErrorSpan(span, "missing 'STEP'"),
-				}
-
-				return true
-			}
-		}
-
-		stepIdx := lastIndexOfToken(upper, "STEP")
-		if stepIdx != -1 {
-			after := upper[stepIdx+1:]
-			rawAfter := tokens[stepIdx+1:]
-			stepNode := findPrevToken(offending, "STEP", 6)
-
-			span := spanFromTokenSafe(offending.Token(), src)
-			if stepNode != nil {
-				span = spanFromTokenSafe(stepNode.Token(), src)
-				span.Start = span.End + 1
-				span.End = span.Start + 1
-			}
-
-			if len(after) == 0 {
-				err.Message = "Incomplete STEP clause"
-				err.Hint = "STEP requires a complete variable assignment, e.g., 'STEP i = i + 1'."
-				err.Spans = []diagnostics.ErrorSpan{
-					diagnostics.NewMainErrorSpan(span, "incomplete assignment"),
-				}
-
-				return true
-			}
-
-			switch after[0] {
-			case "RETURN", "FILTER", "SORT", "LIMIT":
-				err.Message = "Expected a RETURN or FOR clause at end of query"
-				err.Hint = "All queries must return a value. Add a RETURN statement to complete the query."
-				err.Spans = []diagnostics.ErrorSpan{
-					diagnostics.NewMainErrorSpan(span, "unexpected clause"),
-				}
-
-				return true
-			}
-
-			if isIdentifierToken(rawAfter[0]) {
-				if len(after) == 1 {
-					err.Message = "Incomplete STEP clause"
-					err.Hint = "STEP requires a complete variable assignment, e.g., 'STEP i = i + 1'."
-					err.Spans = []diagnostics.ErrorSpan{
-						diagnostics.NewMainErrorSpan(span, "incomplete assignment"),
-					}
-
-					return true
-				}
-
-				if after[1] != "=" {
-					err.Message = "Expected '=' after variable in STEP clause"
-					err.Hint = "STEP assignments require '=', e.g., 'STEP i = i + 1'."
-					err.Spans = []diagnostics.ErrorSpan{
-						diagnostics.NewMainErrorSpan(span, "missing '='"),
-					}
-
-					return true
-				}
-			}
-		}
-	}
-
-	return false
+	return true
 }
 
-// Helper function to check if a previous token exists within n steps
+func findLegacyStepLoopSpan(src *file.Source, node *TokenNode) (file.Span, bool) {
+	if step := findLegacyStepLoopToken(node); step != nil {
+		return spanFromTokenSafe(step.Token(), src), true
+	}
+
+	if src == nil {
+		return file.Span{}, false
+	}
+
+	indexes := legacyStepLoopPattern.FindStringSubmatchIndex(src.Content())
+	if len(indexes) < 4 {
+		return file.Span{}, false
+	}
+
+	return file.Span{
+		Start: indexes[2],
+		End:   indexes[3],
+	}, true
+}
+
+func findLegacyStepLoopToken(node *TokenNode) *TokenNode {
+	step := node
+	if !is(step, "STEP") {
+		step = findPrevToken(node, "STEP", 64)
+		if step == nil {
+			step = findNextToken(node, "STEP", 64)
+		}
+	}
+
+	if step == nil {
+		return nil
+	}
+
+	if !hasPrevToken(step, "WHILE", 64) {
+		return nil
+	}
+
+	if !hasPrevToken(step, "FOR", 96) {
+		return nil
+	}
+
+	return step
+}
+
 func hasPrevToken(node *TokenNode, tokenText string, steps int) bool {
-	current := node
-	for i := 0; i < steps && current != nil; i++ {
-		if is(current, tokenText) {
-			return true
-		}
-		current = current.Prev()
-	}
-	return false
+	return findPrevToken(node, tokenText, steps) != nil
 }
 
-// Helper function to find a previous token within n steps
 func findPrevToken(node *TokenNode, tokenText string, steps int) *TokenNode {
 	current := node
 	for i := 0; i < steps && current != nil; i++ {
@@ -229,95 +80,18 @@ func findPrevToken(node *TokenNode, tokenText string, steps int) *TokenNode {
 		}
 		current = current.Prev()
 	}
+
 	return nil
 }
 
-func toUpperTokens(tokens []string) []string {
-	upper := make([]string, len(tokens))
-	for i, t := range tokens {
-		upper[i] = strings.ToUpper(normalizeToken(t))
-	}
-
-	return upper
-}
-
-func lastIndexOfToken(tokens []string, token string) int {
-	needle := strings.ToUpper(token)
-	for i := len(tokens) - 1; i >= 0; i-- {
-		if tokens[i] == needle {
-			return i
-		}
-	}
-
-	return -1
-}
-
-func containsToken(tokens []string, token string) bool {
-	return lastIndexOfToken(tokens, token) >= 0
-}
-
-func hasForEqualsWhilePattern(tokens []string) bool {
-	for i := 0; i+3 < len(tokens); i++ {
-		if tokens[i] == "FOR" && tokens[i+2] == "=" && tokens[i+3] == "WHILE" {
-			return true
-		}
-	}
-
-	return false
-}
-
-func hasForWhileWithoutInitialAssignment(tokens []string) bool {
-	for i := 0; i+2 < len(tokens); i++ {
-		if tokens[i] == "FOR" && isIdentifierToken(tokens[i+1]) && tokens[i+2] == "WHILE" {
-			return true
-		}
-	}
-
-	return false
-}
-
-func findForWhileWithoutInitialAssignmentNode(node *TokenNode, steps int) *TokenNode {
+func findNextToken(node *TokenNode, tokenText string, steps int) *TokenNode {
 	current := node
-
 	for i := 0; i < steps && current != nil; i++ {
-		if is(current, "WHILE") {
-			prev := current.Prev()
-			if prev == nil || !isIdentifier(prev) {
-				continue
-			}
-
-			for walk := prev.Prev(); walk != nil; walk = walk.Prev() {
-				if is(walk, "=") {
-					return nil
-				}
-
-				if is(walk, "FOR") {
-					return prev
-				}
-			}
+		if is(current, tokenText) {
+			return current
 		}
-
-		current = current.Prev()
+		current = current.Next()
 	}
 
 	return nil
-}
-
-var identifierToken = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
-
-func isIdentifierToken(token string) bool {
-	return identifierToken.MatchString(normalizeToken(token))
-}
-
-func normalizeToken(token string) string {
-	if token == "" {
-		return token
-	}
-
-	// Remove escaped whitespace markers that appear in error messages.
-	token = strings.ReplaceAll(token, `\n`, "")
-	token = strings.ReplaceAll(token, `\t`, "")
-	token = strings.ReplaceAll(token, `\r`, "")
-
-	return token
 }

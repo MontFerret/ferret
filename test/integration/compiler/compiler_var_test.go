@@ -89,14 +89,14 @@ func TestVarErrors(t *testing.T) {
 			}, "Parameters cannot be reassigned"),
 		ErrorCase(
 			`
-			FOR i = 0 WHILE i < 2 STEP i = i + 1
+			FOR i WHILE i < 2
 			  i = i + 1
 			  RETURN i
 		`, E{
 				Kind:    parserd.SemanticError,
 				Message: "Variable 'i' cannot be reassigned",
 				Hint:    "Declare it with VAR if you need to update it.",
-			}, "STEP variables cannot be reassigned"),
+			}, "FOR WHILE variables cannot be reassigned"),
 		ErrorCase(
 			`
 			LET obj = {}
@@ -153,6 +153,13 @@ RETURN run()
 FOR item IN [1, 2]
   VAR current = item
   current = current + 1
+  RETURN current
+`,
+		`
+VAR i = 0
+FOR _ WHILE i < 2
+  LET current = i
+  i = i + 1
   RETURN current
 `,
 	}

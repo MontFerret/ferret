@@ -187,17 +187,23 @@ RETURN ((x + 1) * (x + 2) == (x + 3) * (x + 4))
 					department: "Marketing"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(departments))
+			VAR i = 0
+			FOR _ WHILE i < LENGTH(departments)
 				LET d = departments[i]
+				i = i + 1
+				VAR j = 0
 				LET deptUsers = (
-					FOR j = 0 WHILE j < LENGTH(users) STEP j = j + 1
+					FOR _ WHILE j < LENGTH(users)
 						LET u = users[j]
+						j = j + 1
 						FILTER u.department == d.name
 						RETURN u
 				)
+				VAR k = 0
 				LET stats = (
-					FOR k = 0 WHILE k < LENGTH(deptUsers) STEP k = k + 1
+					FOR _ WHILE k < LENGTH(deptUsers)
 						LET u = deptUsers[k]
+						k = k + 1
 						COLLECT AGGREGATE 
 							avgAge = AVERAGE(u.age),
 							totalSalary = SUM(u.salary),
