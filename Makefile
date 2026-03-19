@@ -7,10 +7,10 @@ DIR_PKG = ./pkg
 DIR_INTEG = ./test/integration
 DIR_BENCH = ./test/integration/benchmarks
 DIR_E2E = ./test/e2e
-BENCH_PACKAGES ?= ${DIR_PKG}/... ${DIR_BENCH}/...
 BENCH_RUN ?= '^$$'
 BENCH_FILTER ?= .
 BENCH_COUNT ?= 1
+BENCH_TIMEOUT ?= 30m
 
 default: build
 
@@ -45,8 +45,13 @@ cover:
 e2e:
 	${LAB_BIN} --timeout=120 --attempts=5 --concurrency=1 --wait=http://127.0.0.1:9222/json/version --runtime=bin://./bin/ferret --files=./test/e2e/tests --cdn=./test/e2e/pages/dynamic --cdn=./test/e2e/pages/static
 
-bench:
-	go test ${BENCH_PACKAGES} -run ${BENCH_RUN} -bench ${BENCH_FILTER} -benchmem -count=${BENCH_COUNT}
+bench-unit:
+	go test ${DIR_PKG}/... -run ${BENCH_RUN} -bench ${BENCH_FILTER} -benchmem -count=${BENCH_COUNT} -timeout ${BENCH_TIMEOUT}
+
+bench-integration:
+	go test ${DIR_BENCH}/... -run ${BENCH_RUN} -bench ${BENCH_FILTER} -benchmem -count=${BENCH_COUNT} -timeout ${BENCH_TIMEOUT}
+
+bench: bench-unit bench-integration
 
 generate:
 	go generate ${DIR_PKG}/... && \
