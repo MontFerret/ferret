@@ -110,6 +110,48 @@ func (it *closableRuntimeIterator) Close() error {
 	return nil
 }
 
+type sliceValueCloser []int
+
+func (sliceValueCloser) Close() error {
+	return nil
+}
+
+func (v sliceValueCloser) String() string {
+	return "slice-closer"
+}
+
+func (v sliceValueCloser) Hash() uint64 {
+	return uint64(len(v))
+}
+
+func (v sliceValueCloser) Copy() runtime.Value {
+	cp := append(sliceValueCloser(nil), v...)
+	return cp
+}
+
+type sliceResourceCloser []int
+
+func (sliceResourceCloser) Close() error {
+	return nil
+}
+
+func (v sliceResourceCloser) ResourceID() uint64 {
+	return 42
+}
+
+func (v sliceResourceCloser) String() string {
+	return "slice-resource"
+}
+
+func (v sliceResourceCloser) Hash() uint64 {
+	return uint64(len(v))
+}
+
+func (v sliceResourceCloser) Copy() runtime.Value {
+	cp := append(sliceResourceCloser(nil), v...)
+	return cp
+}
+
 func TestOwnedResourcesResolvedHelpers(t *testing.T) {
 	owned := OwnedResources{}
 	closer := newTestCloser("tracked")
@@ -129,5 +171,81 @@ func TestOwnedResourcesResolvedHelpers(t *testing.T) {
 
 	if owned.OwnsKey(key) {
 		t.Fatal("expected extract by key to retire ownership")
+	}
+}
+
+func TestResourceKeyOfRejectsNonComparablePlainClosers(t *testing.T) {
+	closer := sliceValueCloser{1, 2, 3}
+
+	if !CanTrackValue(closer) {
+		t.Fatal("expected non-comparable plain closer value to reach ResourceKeyOf checks")
+	}
+
+	key, resolved, ok := ResourceKeyOf(closer)
+	if ok {
+		t.Fatalf("expected non-comparable plain closer to have no resource key, got %#v", key)
+	}
+
+	if resolved != nil {
+		t.Fatalf("expected no resolved closer for non-comparable plain closer, got %v", resolved)
+	}
+}
+
+func TestOwnedResourcesSkipNonComparablePlainClosers(t *testing.T) {
+	closer := sliceValueCloser{1, 2, 3}
+	var owned OwnedResources
+	var deferred DeferredClosers
+
+	owned.Track(closer)
+	if owned.Owns(closer) {
+		t.Fatal("expected non-comparable plain closer not to be tracked as owned")
+	}
+
+	if owned.Extract(closer) {
+		t.Fatal("expected extract to report non-comparable plain closer as untracked")
+	}
+
+	if released, ok := owned.Release(closer); ok || released != nil {
+		t.Fatalf("expected release to skip untracked closer, got closer=%v ok=%v", released, ok)
+	}
+
+	owned.Discard(closer, &deferred)
+	owned.DrainTo(&deferred)
+
+	if !owned.Empty() {
+		t.Fatal("expected owned resources to remain empty for untracked closer")
+	}
+
+	if !deferred.Empty() {
+		t.Fatal("expected deferred closers to remain empty for untracked closer")
+	}
+}
+
+func TestResourceKeyOfTracksNonComparableResourcesByID(t *testing.T) {
+	resource := sliceResourceCloser{1, 2, 3}
+
+	key, resolved, ok := ResourceKeyOf(resource)
+	if !ok {
+		t.Fatal("expected runtime.Resource path to track non-comparable resource")
+	}
+
+	if key != (ResourceKey{ID: resource.ResourceID()}) {
+		t.Fatalf("expected resource key by ID, got %#v", key)
+	}
+
+	got, ok := resolved.(sliceResourceCloser)
+	if !ok {
+		t.Fatalf("expected resolved closer to keep sliceResourceCloser type, got %T", resolved)
+	}
+
+	if got.ResourceID() != resource.ResourceID() {
+		t.Fatalf("expected resolved closer to keep resource ID %d, got %d", resource.ResourceID(), got.ResourceID())
+	}
+
+	var owned OwnedResources
+	owned.Track(resource)
+
+	if !owned.Owns(resource) {
+		t.Fatal("expected non-comparable runtime.Resource to remain trackable")
 	}
 }

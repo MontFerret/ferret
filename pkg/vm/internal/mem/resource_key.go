@@ -2,6 +2,7 @@ package mem
 
 import (
 	"io"
+	"reflect"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -11,8 +12,8 @@ import (
 //   - ID is set (non-zero) when the value implements runtime.Resource.
 //     Two values with the same ResourceID share this key regardless of which
 //     Go object holds them, satisfying the stable-identity dedup contract.
-//   - Closer is set (non-nil) for plain io.Closer values; identity is the
-//     pointer itself (compatibility path).
+//   - Closer is set (non-nil) for plain comparable io.Closer values; identity
+//     is the interface value itself (compatibility path).
 //
 // ResourceKey is a comparable struct and is safe to use as a map key.
 type ResourceKey struct {
@@ -52,22 +53,44 @@ func CanTrackValue(val runtime.Value) bool {
 // and the resource as the closer. Two values with the same ResourceID produce
 // equal keys.
 //
-// Compatibility path (plain io.Closer): returns ResourceKey{Closer: val} and
-// the closer. Identity is the pointer value.
+// Compatibility path (plain comparable io.Closer): returns
+// ResourceKey{Closer: val} and the closer. Identity is the interface value.
+// Plain non-comparable closers must implement runtime.Resource if they need VM
+// ownership tracking.
 //
-// Returns (zero, nil, false) if val does not implement io.Closer.
+// Returns (zero, nil, false) if val does not implement io.Closer or cannot be
+// tracked safely.
 func ResourceKeyOf(val runtime.Value) (ResourceKey, io.Closer, bool) {
 	if !CanTrackValue(val) {
 		return ResourceKey{}, nil, false
 	}
 
-	if res, ok := val.(runtime.Resource); ok {
-		return ResourceKey{ID: res.ResourceID()}, res, true
+	closer, ok := val.(io.Closer)
+	if !ok || closer == nil {
+		return ResourceKey{}, nil, false
 	}
 
-	if closer, ok := val.(io.Closer); ok && closer != nil {
-		return ResourceKey{Closer: closer}, closer, true
+	key, ok := closerResourceKey(closer)
+	if !ok {
+		return ResourceKey{}, nil, false
 	}
 
-	return ResourceKey{}, nil, false
+	return key, closer, true
+}
+
+func closerResourceKey(closer io.Closer) (ResourceKey, bool) {
+	if closer == nil {
+		return ResourceKey{}, false
+	}
+
+	if res, ok := closer.(runtime.Resource); ok {
+		return ResourceKey{ID: res.ResourceID()}, true
+	}
+
+	typ := reflect.TypeOf(closer)
+	if typ == nil || !typ.Comparable() {
+		return ResourceKey{}, false
+	}
+
+	return ResourceKey{Closer: closer}, true
 }

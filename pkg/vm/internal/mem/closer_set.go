@@ -3,9 +3,6 @@ package mem
 import (
 	"errors"
 	"io"
-	"reflect"
-
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // CloserSet is an ordered, deduplicated collection of io.Closers.
@@ -27,7 +24,7 @@ func (s *CloserSet) Add(closer io.Closer) bool {
 		return false
 	}
 
-	if key, ok := closerSetKey(closer); ok {
+	if key, ok := closerResourceKey(closer); ok {
 		if s.seen == nil {
 			s.seen = make(map[ResourceKey]struct{})
 		}
@@ -42,19 +39,6 @@ func (s *CloserSet) Add(closer io.Closer) bool {
 	s.closers = append(s.closers, closer)
 
 	return true
-}
-
-func closerSetKey(closer io.Closer) (ResourceKey, bool) {
-	if res, ok := closer.(runtime.Resource); ok {
-		return ResourceKey{ID: res.ResourceID()}, true
-	}
-
-	typ := reflect.TypeOf(closer)
-	if typ == nil || !typ.Comparable() {
-		return ResourceKey{}, false
-	}
-
-	return ResourceKey{Closer: closer}, true
 }
 
 // CloseAll closes every closer in insertion order, joining any errors, then
