@@ -15,9 +15,9 @@ var invalidWhileLoopBindingPatterns = []*regexp.Regexp{
 }
 
 type whileLoopBindingMatch struct {
-	headerStart int
-	bindingSpan file.Span
 	binding     string
+	bindingSpan file.Span
+	headerStart int
 	skipDo      bool
 }
 
