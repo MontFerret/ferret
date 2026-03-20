@@ -22,6 +22,15 @@ type Plan struct {
 	closed       bool
 }
 
+// Params returns the list of parameter names declared in the query.
+func (p *Plan) Params() []string {
+	if p == nil || p.prog == nil {
+		return nil
+	}
+
+	return p.prog.Params
+}
+
 func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Session, error) {
 	if p == nil {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
