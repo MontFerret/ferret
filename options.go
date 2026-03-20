@@ -245,6 +245,14 @@ func WithSessionParam(name string, value runtime.Value) SessionOption {
 	return WithEnvironmentOptions(vm.WithParam(name, value))
 }
 
+// WithoutStdlib disables the standard library, so no built-in functions are registered by default.
+func WithoutStdlib() Option {
+	return func(opts *options) error {
+		opts.noStdlib = true
+		return nil
+	}
+}
+
 // WithModules creates an Option that appends the provided modules to the options if not empty.
 func WithModules(module ...Module) Option {
 	return func(env *options) error {

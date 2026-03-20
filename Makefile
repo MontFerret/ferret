@@ -4,6 +4,7 @@ export CGO_ENABLED=0
 LAB_BIN ?= lab
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
+DIR_COMPAT = ./compat
 DIR_INTEG = ./test/integration
 DIR_BENCH = ./test/integration/benchmarks
 DIR_E2E = ./test/e2e
@@ -31,7 +32,7 @@ compile:
 	${DIR_E2E}/cli.go
 
 test:
-	CGO_ENABLED=1 go test -race ${DIR_PKG}/... && CGO_ENABLED=1 go test -race ${DIR_INTEG}/...
+	CGO_ENABLED=1 go test -race ${DIR_PKG}/... && CGO_ENABLED=1 go test -race ${DIR_INTEG}/... && CGO_ENABLED=1 go test -race ${DIR_COMPAT}/...
 
 clean:
 	rm -rf ${DIR_BIN}/* && \
