@@ -9,8 +9,8 @@ import (
 
 func TestTypeConstants_NotNil(t *testing.T) {
 	all := []struct {
-		name string
 		typ  core.Type
+		name string
 	}{
 		{"None", types.None},
 		{"Boolean", types.Boolean},
@@ -69,8 +69,9 @@ func TestTypeConstants_ID(t *testing.T) {
 
 func TestCompare(t *testing.T) {
 	tests := []struct {
+		a        core.Type
+		b        core.Type
 		name     string
-		a, b     core.Type
 		expected int64
 	}{
 		{"same type", types.Int, types.Int, 0},

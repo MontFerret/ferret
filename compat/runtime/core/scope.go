@@ -8,8 +8,8 @@ import (
 // RootScope manages the lifecycle of disposable resources for an execution scope.
 // Provided for compilation compatibility with v1 code.
 type RootScope struct {
-	closed      bool
 	disposables []io.Closer
+	closed      bool
 }
 
 // AddDisposable registers a Closer to be invoked when the scope is closed.

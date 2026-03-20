@@ -14,10 +14,10 @@ import (
 
 // Options holds the runtime execution options translated from v1-style Option functions.
 type Options struct {
-	params    map[string]interface{}
 	logWriter io.Writer
-	logLevel  runtime.LogLevel
+	params    map[string]interface{}
 	logFields map[string]interface{}
+	logLevel  runtime.LogLevel
 }
 
 // Option is a functional option for configuring a program execution.

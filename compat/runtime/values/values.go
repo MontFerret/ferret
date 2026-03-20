@@ -168,8 +168,8 @@ func ToArray(input core.Value) *Array {
 
 // ObjectProperty pairs a name with a runtime.Value, mirroring v1's values.ObjectProperty.
 type ObjectProperty struct {
-	Name  string
 	Value runtime.Value
+	Name  string
 }
 
 // NewObjectProperty creates a new ObjectProperty.

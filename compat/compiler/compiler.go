@@ -19,9 +19,9 @@ import (
 // re-created whenever the function namespace is modified after a successful compile.
 type Compiler struct {
 	library    runtime.Library
-	noStdlib   bool
-	mu         sync.Mutex
 	engine     *ferret.Engine
+	mu         sync.Mutex
+	noStdlib   bool
 	needReload bool
 }
 

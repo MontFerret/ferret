@@ -119,9 +119,9 @@ func TestNewBinary(t *testing.T) {
 
 func TestParse(t *testing.T) {
 	tests := []struct {
-		name  string
 		input interface{}
 		check func(core.Value) bool
+		name  string
 	}{
 		{"int", 42, func(v core.Value) bool { return v.String() == "42" }},
 		{"string", "hello", func(v core.Value) bool { return v.String() == "hello" }},
