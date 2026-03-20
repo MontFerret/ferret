@@ -86,6 +86,47 @@ func TestCompiler_RegisteredFunctions(t *testing.T) {
 	}
 }
 
+func TestCompiler_RegisterFunctions_duplicate(t *testing.T) {
+	c := compiler.New()
+
+	fns := core.NewFunctionsFromMap(map[string]core.Function{
+		"DUP_FUNC": func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			return core.WrapValue(runtime.NewString("dup")), nil
+		},
+	})
+
+	// First registration must succeed.
+	if err := c.RegisterFunctions(fns); err != nil {
+		t.Fatalf("first RegisterFunctions error: %v", err)
+	}
+
+	// Second registration of the same set should be silently skipped (no error).
+	if err := c.RegisterFunctions(fns); err != nil {
+		t.Fatalf("second RegisterFunctions should silently skip duplicates, got: %v", err)
+	}
+
+	// Most importantly: Compile must succeed — no latent builder error must have
+	// been recorded in the underlying FunctionsBuilder.
+	prog, err := c.Compile(`RETURN DUP_FUNC()`)
+	if err != nil {
+		t.Fatalf("Compile after duplicate RegisterFunctions failed: %v", err)
+	}
+
+	out, err := prog.Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run after duplicate RegisterFunctions failed: %v", err)
+	}
+
+	var result string
+	if err := json.Unmarshal(out, &result); err != nil {
+		t.Fatalf("unmarshal error: %v", err)
+	}
+
+	if result != "dup" {
+		t.Fatalf("expected \"dup\", got %q", result)
+	}
+}
+
 func TestCompiler_RemoveFunction(t *testing.T) {
 	c := compiler.New()
 

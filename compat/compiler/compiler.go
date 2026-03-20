@@ -114,19 +114,18 @@ func (c *Compiler) MustRegisterFunction(name string, fun core.Function) {
 }
 
 // RegisterFunctions registers all functions from a Functions registry.
+// Duplicate names are silently skipped, consistent with RegisterFunction's semantics.
 func (c *Compiler) RegisterFunctions(funcs *core.Functions) error {
 	if funcs == nil {
 		return nil
 	}
 
-	fns := c.library.Function()
-
 	for _, name := range funcs.Names() {
 		fn, _ := funcs.Get(name)
-		fns.Var().Add(name, core.UnwrapFunction(fn))
+		if err := c.RegisterFunction(name, fn); err != nil {
+			return err
+		}
 	}
-
-	c.markDirty()
 
 	return nil
 }
