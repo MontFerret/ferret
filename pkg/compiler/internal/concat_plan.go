@@ -16,8 +16,8 @@ type (
 	}
 
 	concatOperandSegment struct {
-		operand bytecode.Operand
 		literal runtime.String
+		operand bytecode.Operand
 	}
 )
 
