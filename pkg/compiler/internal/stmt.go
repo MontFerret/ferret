@@ -331,6 +331,10 @@ func (c *StmtCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatementCo
 
 	if operator == "=" {
 		src = c.ctx.ExprCompiler.Compile(stmt.Expression())
+	} else if operator == "+=" && binding.Type == core.TypeString {
+		left := c.snapshotBindingValue(binding)
+		parts := append([]concatOperandSegment{{operand: left}}, buildConcatOperandSegmentsFromExpression(c.ctx.ExprCompiler, stmt.Expression())...)
+		src = emitConcatOperandSegments(c.ctx, parts)
 	} else {
 		op, ok := resolveArithmeticBinaryOperator(operator)
 		if !ok {

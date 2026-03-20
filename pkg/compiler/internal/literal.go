@@ -200,25 +200,12 @@ func parseStringLiteralConst(ctx fql.IStringLiteralContext) (runtime.String, boo
 }
 
 func constStringFromExpression(expr fql.IExpressionContext) (string, bool) {
-	if expr == nil {
-		return "", false
-	}
-
-	val, ok := literalValueFromExpression(expr)
+	val, ok := tryConstConcatStringFromExpression(expr)
 	if !ok {
 		return "", false
 	}
 
-	switch val.(type) {
-	case runtime.String, runtime.Int, runtime.Float, runtime.Boolean:
-		return val.String(), true
-	}
-
-	if val == runtime.None {
-		return "", true
-	}
-
-	return "", false
+	return val.String(), true
 }
 
 // CompileStringLiteral processes a string literal from the FQL AST and converts it into a runtime string.
@@ -248,27 +235,23 @@ func (c *LiteralCompiler) CompileTemplateLiteral(ctx fql.ITemplateLiteralContext
 		return bytecode.NoopOperand
 	}
 
-	type part struct {
-		expr    fql.IExpressionContext
-		literal string
-	}
-
 	elements := ctx.AllTemplateElement()
 	if len(elements) == 0 {
 		return loadConstant(c.ctx, runtime.EmptyString)
 	}
 
-	parts := make([]part, 0, len(elements))
-	var buf strings.Builder
-	hasDynamic := false
+	parts := make([]concatOperandSegment, 0, len(elements))
+	var literal strings.Builder
 
 	flushLiteral := func() {
-		if buf.Len() == 0 {
+		if literal.Len() == 0 {
 			return
 		}
 
-		parts = append(parts, part{literal: buf.String()})
-		buf.Reset()
+		parts = append(parts, concatOperandSegment{
+			literal: runtime.NewString(literal.String()),
+		})
+		literal.Reset()
 	}
 
 	for _, el := range elements {
@@ -277,88 +260,20 @@ func (c *LiteralCompiler) CompileTemplateLiteral(ctx fql.ITemplateLiteralContext
 		}
 
 		if chunk := el.TemplateChars(); chunk != nil {
-			buf.WriteString(parseTemplateChunk(chunk.GetText()))
+			literal.WriteString(parseTemplateChunk(chunk.GetText()))
 
 			continue
 		}
 
 		if expr := el.Expression(); expr != nil {
-			if val, ok := constStringFromExpression(expr); ok {
-				buf.WriteString(val)
-
-				continue
-			}
-
-			hasDynamic = true
 			flushLiteral()
-			parts = append(parts, part{expr: expr})
+			parts = append(parts, buildConcatOperandSegmentsFromExpression(c.ctx.ExprCompiler, expr)...)
 		}
-	}
-
-	if !hasDynamic {
-		return loadConstant(c.ctx, runtime.NewString(buf.String()))
 	}
 
 	flushLiteral()
 
-	if len(parts) == 0 {
-		return loadConstant(c.ctx, runtime.EmptyString)
-	}
-
-	if len(parts) == 1 && parts[0].expr == nil {
-		return loadConstant(c.ctx, runtime.NewString(parts[0].literal))
-	}
-
-	if len(parts) == 1 && parts[0].expr != nil {
-		start := c.ctx.ExprCompiler.Compile(parts[0].expr)
-
-		if start.IsConstant() {
-			reg := c.ctx.Registers.Allocate()
-			c.ctx.Emitter.EmitLoadConst(reg, start)
-			start = reg
-		}
-
-		if !start.IsRegister() {
-			return bytecode.NoopOperand
-		}
-
-		c.ctx.Emitter.EmitABC(bytecode.OpConcat, start, start, bytecode.Operand(1))
-		c.ctx.Types.Set(start, core.TypeString)
-
-		return start
-	}
-
-	seq := c.ctx.Registers.AllocateSequence(len(parts))
-
-	for i, part := range parts {
-		target := seq[i]
-
-		if part.expr != nil {
-			op := c.ctx.ExprCompiler.Compile(part.expr)
-			if op.IsConstant() {
-				c.ctx.Emitter.EmitLoadConst(target, op)
-			} else if op.IsRegister() {
-				if op.Equals(target) {
-					continue
-				}
-
-				c.ctx.Emitter.EmitMove(target, op)
-			} else {
-				return bytecode.NoopOperand
-			}
-
-			continue
-		}
-
-		lit := runtime.NewString(part.literal)
-		c.ctx.Emitter.EmitLoadConst(target, c.ctx.Symbols.AddConstant(lit))
-	}
-
-	dst := seq[0]
-	c.ctx.Emitter.EmitABC(bytecode.OpConcat, dst, seq[0], bytecode.Operand(len(seq)))
-	c.ctx.Types.Set(dst, core.TypeString)
-
-	return dst
+	return emitConcatOperandSegments(c.ctx, parts)
 }
 
 // CompileIntegerLiteral processes an integer literal from the FQL AST and converts it into a runtime integer.

@@ -658,6 +658,12 @@ func resolveArithmeticBinaryOperator(operator string) (atomBinaryOperator, bool)
 }
 
 func (c *ExprCompiler) compileBinaryAtom(ctx fql.IExpressionAtomContext, op atomBinaryOperator) bytecode.Operand {
+	if op.opcode == bytecode.OpAdd {
+		if parts, ok := buildConcatOperandSegmentsFromAtom(c, ctx); ok {
+			return emitConcatOperandSegments(c.ctx, parts)
+		}
+	}
+
 	left := c.compileAtom(ctx.ExpressionAtom(0))
 	right := c.compileAtom(ctx.ExpressionAtom(1))
 	dst := c.emitBinaryAtomOperation(ctx, op, left, right)

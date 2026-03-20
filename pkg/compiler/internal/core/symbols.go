@@ -74,28 +74,30 @@ func (t ValueType) IsUntracked() bool {
 	}
 }
 
-type Variable struct {
-	Name     string
-	Kind     SymbolKind
-	Register bytecode.Operand
-	Depth    int
-	Type     ValueType
-	Mutable  bool
-	Storage  BindingStorage
-}
+type (
+	Variable struct {
+		Name     string
+		Kind     SymbolKind
+		Register bytecode.Operand
+		Depth    int
+		Type     ValueType
+		Mutable  bool
+		Storage  BindingStorage
+	}
 
-type SymbolTable struct {
-	registers *RegisterAllocator
-	constants *ConstantPool
+	SymbolTable struct {
+		registers *RegisterAllocator
+		constants *ConstantPool
 
-	params    map[string]int
-	paramList []string
-	functions map[string]int
-	globals   map[string]*Variable
-	locals    []*Variable
+		params    map[string]int
+		paramList []string
+		functions map[string]int
+		globals   map[string]*Variable
+		locals    []*Variable
 
-	scope int
-}
+		scope int
+	}
+)
 
 func NewSymbolTable(registers *RegisterAllocator, constants *ConstantPool) *SymbolTable {
 	if constants == nil {
