@@ -103,7 +103,8 @@ func (a *valueAdapter) Unwrap() interface{} {
 		return u.Unwrap()
 	}
 
-	return nil
+	// Fallback: return the underlying runtime.Value when it cannot be further unwrapped.
+	return a.inner
 }
 
 func (a *valueAdapter) Hash() uint64 {
