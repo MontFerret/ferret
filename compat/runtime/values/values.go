@@ -183,6 +183,9 @@ func NewObjectProperty(name string, value runtime.Value) *ObjectProperty {
 func NewObjectWith(props ...*ObjectProperty) *Object {
 	m := make(map[string]runtime.Value, len(props))
 	for _, p := range props {
+		if p == nil {
+			continue
+		}
 		m[p.Name] = p.Value
 	}
 
