@@ -18,18 +18,18 @@ import (
 // The underlying v2 Engine is created lazily on the first Compile call and is
 // re-created whenever the function namespace is modified after a successful compile.
 type Compiler struct {
-	library  runtime.Library
-	noStdlib bool
-	mu       sync.Mutex
-	engine   *ferret.Engine
-	dirty    bool
+	library    runtime.Library
+	noStdlib   bool
+	mu         sync.Mutex
+	engine     *ferret.Engine
+	needReload bool
 }
 
 // New creates a new Compiler with stdlib enabled.
 func New() *Compiler {
 	return &Compiler{
-		library: runtime.NewLibrary(),
-		dirty:   true,
+		library:    runtime.NewLibrary(),
+		needReload: true,
 	}
 }
 
@@ -58,8 +58,13 @@ func (c *Compiler) getEngine() (*ferret.Engine, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if !c.dirty && c.engine != nil {
+	if !c.needReload && c.engine != nil {
 		return c.engine, nil
+	}
+
+	if c.engine != nil {
+		prev := c.engine
+		_ = prev.Close()
 	}
 
 	opts := []ferret.Option{ferret.WithNamespace(c.library)}
@@ -74,7 +79,7 @@ func (c *Compiler) getEngine() (*ferret.Engine, error) {
 	}
 
 	c.engine = eng
-	c.dirty = false
+	c.needReload = false
 
 	return eng, nil
 }
@@ -82,7 +87,7 @@ func (c *Compiler) getEngine() (*ferret.Engine, error) {
 // markDirty invalidates the cached engine so it will be rebuilt on next Compile.
 func (c *Compiler) markDirty() {
 	c.mu.Lock()
-	c.dirty = true
+	c.needReload = true
 	c.mu.Unlock()
 }
 
