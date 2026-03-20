@@ -191,17 +191,22 @@ Do not treat historical discussion, stale comments, or old branches as authorita
 
 These rules are mandatory unless the task explicitly requires otherwise.
 
+## Go type and file structure rules
+
+These rules are mandatory unless the task explicitly requires otherwise.
+
 - Do not define multiple method-bearing structs in the same `.go` file.
-- A struct with methods must live in its own file.
-- Name the file after the primary type or responsibility whenever practical, for example:
+- Prefer declaring a method-bearing struct as a standalone `type Name struct { ... }`.
+- A method-bearing struct should usually live in its own file, named after the primary type or responsibility whenever practical, for example:
     - `result.go` for `Result`
     - `register_file.go` for `RegisterFile`
     - `call_stack.go` for `CallStack`
 - Grouped `type ( ... )` declarations are allowed for interfaces, passive data-only structs, and other small related helper/value types that belong to the same narrow concern.
-- Do not use grouped `type ( ... )` declarations to hide substantial behavioral types.
-- If a struct has methods, declare it as a standalone `type Name struct { ... }` in its own file.
-- Passive data-only helper structs may share a file when they belong to the same narrow concern.
-- If a helper struct later gains methods, extract it into its own file immediately.
+- A grouped `type ( ... )` block may also contain exactly one method-bearing struct when:
+    - it is the only behavioral type in the file, and
+    - the other grouped types are passive helper/value types from the same narrow concern.
+- Do not use grouped `type ( ... )` declarations to hide multiple substantial behavioral types.
+- If a helper struct later gains methods and would create more than one method-bearing struct in the file, extract it into its own file immediately.
 - Methods for a struct should live in the same file as the struct unless there is a strong, explicit reason to split by concern.
 - Do not place a new method-bearing struct into an existing file just because the code compiles.
 

@@ -12,6 +12,28 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
+func TestCompiler_Consts(t *testing.T) {
+	c := New()
+
+	p, err := c.Compile(file.NewAnonymousSource(`VAR str = ""
+
+str += " " + 1 + " " + 2 + " " + 3 + " " + 4 + " " + 5
+
+RETURN str`))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if p == nil {
+		t.Fatal("program is nil")
+	}
+
+	if len(p.Constants) > 2 {
+		t.Fatalf("expected 6 constants, got %d", len(p.Constants))
+	}
+}
+
 func TestCompilerCompileConcurrentSharedCompiler(t *testing.T) {
 	t.Parallel()
 

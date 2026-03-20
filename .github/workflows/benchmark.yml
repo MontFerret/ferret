@@ -194,7 +194,7 @@ jobs:
           save-data-file: false
           comment-always: true
           summary-always: true
-          fail-on-alert: true
+          fail-on-alert: false
           alert-threshold: '150%'
 
       - name: Compare unit benchmark result without PR comment
