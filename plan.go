@@ -28,7 +28,12 @@ func (p *Plan) Params() []string {
 		return nil
 	}
 
-	return p.prog.Params
+	// Do expose the underlying slice to callers.
+	// External mutation can corrupt the plan/program state.
+	params := make([]string, len(p.prog.Params))
+	copy(params, p.prog.Params)
+
+	return params
 }
 
 func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Session, error) {
