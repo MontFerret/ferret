@@ -12,15 +12,15 @@ func TestTypeConstants_NotNil(t *testing.T) {
 		typ  core.Type
 		name string
 	}{
-		{"None", types.None},
-		{"Boolean", types.Boolean},
-		{"Int", types.Int},
-		{"Float", types.Float},
-		{"String", types.String},
-		{"DateTime", types.DateTime},
-		{"Array", types.Array},
-		{"Object", types.Object},
-		{"Binary", types.Binary},
+		{types.None, "None"},
+		{types.Boolean, "Boolean"},
+		{types.Int, "Int"},
+		{types.Float, "Float"},
+		{types.String, "String"},
+		{types.DateTime, "DateTime"},
+		{types.Array, "Array"},
+		{types.Object, "Object"},
+		{types.Binary, "Binary"},
 	}
 
 	for _, tc := range all {
@@ -74,17 +74,17 @@ func TestCompare(t *testing.T) {
 		name     string
 		expected int64
 	}{
-		{"same type", types.Int, types.Int, 0},
-		{"None < Boolean", types.None, types.Boolean, -1},
-		{"Boolean < Int", types.Boolean, types.Int, -1},
-		{"Int < Float", types.Int, types.Float, -1},
-		{"Float < String", types.Float, types.String, -1},
-		{"String < DateTime", types.String, types.DateTime, -1},
-		{"DateTime < Binary", types.DateTime, types.Binary, -1},
-		{"Binary < Array", types.Binary, types.Array, -1},
-		{"Array < Object", types.Array, types.Object, -1},
-		{"Object > None", types.Object, types.None, 1},
-		{"Float > Boolean", types.Float, types.Boolean, 1},
+		{types.Int, types.Int, "same type", 0},
+		{types.None, types.Boolean, "None < Boolean", -1},
+		{types.Boolean, types.Int, "Boolean < Int", -1},
+		{types.Int, types.Float, "Int < Float", -1},
+		{types.Float, types.String, "Float < String", -1},
+		{types.String, types.DateTime, "String < DateTime", -1},
+		{types.DateTime, types.Binary, "DateTime < Binary", -1},
+		{types.Binary, types.Array, "Binary < Array", -1},
+		{types.Array, types.Object, "Array < Object", -1},
+		{types.Object, types.None, "Object > None", 1},
+		{types.Float, types.Boolean, "Float > Boolean", 1},
 	}
 
 	for _, tc := range tests {

@@ -123,11 +123,11 @@ func TestParse(t *testing.T) {
 		check func(core.Value) bool
 		name  string
 	}{
-		{"int", 42, func(v core.Value) bool { return v.String() == "42" }},
-		{"string", "hello", func(v core.Value) bool { return v.String() == "hello" }},
-		{"bool", true, func(v core.Value) bool { return v.String() == "true" }},
-		{"float", 3.14, func(v core.Value) bool { return v.String() == "3.14" }},
-		{"nil", nil, func(v core.Value) bool { return v.String() == "" }},
+		{42, func(v core.Value) bool { return v.String() == "42" }, "int"},
+		{"hello", func(v core.Value) bool { return v.String() == "hello" }, "string"},
+		{true, func(v core.Value) bool { return v.String() == "true" }, "bool"},
+		{3.14, func(v core.Value) bool { return v.String() == "3.14" }, "float"},
+		{nil, func(v core.Value) bool { return v.String() == "" }, "nil"},
 	}
 
 	for _, tc := range tests {
