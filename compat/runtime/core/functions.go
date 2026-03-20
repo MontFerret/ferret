@@ -79,13 +79,13 @@ func WrapNamespace(ns runtime.Namespace) Namespace {
 	return &namespaceAdapter{ns: ns}
 }
 
-// WrapNamespaceWith wraps a v2 runtime.Namespace into a compat Namespace with an optional change hook.
-func WrapNamespaceWith(ns runtime.Namespace, hook func()) Namespace {
+// WrapNamespaceWithObservability wraps a v2 runtime.Namespace into a compat Namespace with an optional change hook.
+func WrapNamespaceWithObservability(ns runtime.Namespace, hook func()) Namespace {
 	return &namespaceAdapter{ns: ns, onChange: hook}
 }
 
 func (a *namespaceAdapter) Namespace(name string) Namespace {
-	return WrapNamespaceWith(a.ns.Namespace(name), a.onChange)
+	return WrapNamespaceWithObservability(a.ns.Namespace(name), a.onChange)
 }
 
 func (a *namespaceAdapter) RegisterFunction(name string, fun Function) error {

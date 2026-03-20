@@ -95,7 +95,7 @@ func (c *Compiler) markDirty() {
 
 // Namespace returns a child namespace with the given name.
 func (c *Compiler) Namespace(name string) core.Namespace {
-	return core.WrapNamespaceWith(c.library.Namespace(name), func() {
+	return core.WrapNamespaceWithObservability(c.library.Namespace(name), func() {
 		c.markDirty()
 	})
 }
