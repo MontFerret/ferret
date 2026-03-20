@@ -23,6 +23,8 @@ type (
 	}
 
 	FunctionDefs interface {
+		// Size returns the total number of function definitions present in the collection.
+		Size() int
 		// Has checks if an entity with the given name exists in the collection and returns true if found, false otherwise.
 		Has(name string) bool
 		// A0 returns a function definition interface for managing functions with 0 arguments.
@@ -240,6 +242,19 @@ func newFunctionsBuilderInternalFrom(namespace string, other *FunctionsBuilder) 
 		a3:        newFnDefFrom[Function3](namespace, other.a3),
 		a4:        newFnDefFrom[Function4](namespace, other.a4),
 	}
+}
+
+func (b *FunctionsBuilder) Size() int {
+	var size int
+
+	size += len(b.av.data)
+	size += len(b.a0.data)
+	size += len(b.a1.data)
+	size += len(b.a2.data)
+	size += len(b.a3.data)
+	size += len(b.a4.data)
+
+	return size
 }
 
 func (b *FunctionsBuilder) Has(name string) bool {

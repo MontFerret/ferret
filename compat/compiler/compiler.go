@@ -95,7 +95,9 @@ func (c *Compiler) markDirty() {
 
 // Namespace returns a child namespace with the given name.
 func (c *Compiler) Namespace(name string) core.Namespace {
-	return core.WrapNamespace(c.library.Namespace(name))
+	return core.WrapNamespaceWith(c.library.Namespace(name), func() {
+		c.markDirty()
+	})
 }
 
 // RegisterFunction registers a function in the root namespace.

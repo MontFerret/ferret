@@ -10,6 +10,9 @@ type (
 	Library interface {
 		Namespace
 
+		// Size returns the total number of elements or entities in the collection or namespace.
+		Size() int
+
 		// Build constructs and returns a finalized Functions instance or an error if the build process fails.
 		Build() (*Functions, error)
 	}
@@ -50,6 +53,10 @@ func makeFunctionName(namespace, name string) string {
 	}
 
 	return namespace + NamespaceSeparator + name
+}
+
+func (lib *library) Size() int {
+	return lib.builder.Size()
 }
 
 func (lib *library) Namespace(name string) Namespace {

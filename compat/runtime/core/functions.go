@@ -70,7 +70,8 @@ type Namespace interface {
 
 // namespaceAdapter wraps a v2 runtime.Namespace and exposes the v1 Namespace interface.
 type namespaceAdapter struct {
-	ns runtime.Namespace
+	ns       runtime.Namespace
+	onChange func()
 }
 
 // WrapNamespace wraps a v2 runtime.Namespace into a compat Namespace.
@@ -78,8 +79,13 @@ func WrapNamespace(ns runtime.Namespace) Namespace {
 	return &namespaceAdapter{ns: ns}
 }
 
+// WrapNamespaceWith wraps a v2 runtime.Namespace into a compat Namespace with an optional change hook.
+func WrapNamespaceWith(ns runtime.Namespace, hook func()) Namespace {
+	return &namespaceAdapter{ns: ns, onChange: hook}
+}
+
 func (a *namespaceAdapter) Namespace(name string) Namespace {
-	return WrapNamespace(a.ns.Namespace(name))
+	return WrapNamespaceWith(a.ns.Namespace(name), a.onChange)
 }
 
 func (a *namespaceAdapter) RegisterFunction(name string, fun Function) error {
@@ -89,6 +95,7 @@ func (a *namespaceAdapter) RegisterFunction(name string, fun Function) error {
 	}
 
 	fns.Var().Add(name, UnwrapFunction(fun))
+	a.emitOnChange()
 
 	return nil
 }
@@ -162,5 +169,13 @@ func (a *namespaceAdapter) RemoveFunction(name string) {
 		fns.A3().Remove(name)
 	case fns.A4().Has(name):
 		fns.A4().Remove(name)
+	}
+
+	a.emitOnChange()
+}
+
+func (a *namespaceAdapter) emitOnChange() {
+	if a.onChange != nil {
+		a.onChange()
 	}
 }
