@@ -3,11 +3,12 @@ package vm_test
 import (
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestUDFProtectedUnwindDeepFrames(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array(`
 FUNC ok() => 9
 FUNC bomb() => T::FAIL()

@@ -3,12 +3,13 @@ package vm_test
 import (
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/test/spec"
 	"github.com/MontFerret/ferret/v2/test/spec/assert"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestForCollect(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array(`
 			LET users = [
 				{
@@ -46,7 +47,7 @@ func TestForCollect(t *testing.T) {
 				COLLECT gender = i.gender
 				RETURN CONCAT(gender, "0")
 `, []any{"f0", "m0"}),
-		NewSpec(`
+		S(`
 			LET users = [
 				{
 					active: true,
@@ -86,7 +87,7 @@ func TestForCollect(t *testing.T) {
 					gender: gender
 				}
 		`, "Should not have access to initial variables").Skip("TODO: Needs a fix").Expect().CompileError(assert.ShouldNotBeNil),
-		NewSpec(`
+		S(`
 			LET users = [
 				{
 					active: true,

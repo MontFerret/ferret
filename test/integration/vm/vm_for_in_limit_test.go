@@ -2,15 +2,17 @@ package vm_test
 
 import (
 	"context"
-	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
+
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func TestForLimit(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array(
 			`
 			FOR i IN [ 1, 2, 3, 4, 1, 3 ]

@@ -3,11 +3,12 @@ package vm_test
 import (
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestCallArgumentLoweringSemantics(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		S(`
 FUNC f2(x, y) => x + y
 RETURN f2(1, 2)

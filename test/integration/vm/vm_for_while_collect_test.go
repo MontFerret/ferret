@@ -10,8 +10,8 @@ import (
 )
 
 func TestForWhileCollect(t *testing.T) {
-	RunSpecs(t, []Spec{
-		NewSpec(`
+	RunSpecs(t, []spec.Spec{
+		S(`
 			LET users = [
 				{
 					active: true,
@@ -51,7 +51,7 @@ func TestForWhileCollect(t *testing.T) {
 					gender: gender
 				}
 		`, "Should not have access to initial variables").Skip().Expect().CompileError(assert.ShouldNotBeNil),
-		NewSpec(`
+		S(`
 			LET users = [
 				{
 					active: true,

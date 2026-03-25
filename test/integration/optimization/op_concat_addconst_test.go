@@ -1,4 +1,4 @@
-package optimization_test_test
+package optimization_test
 
 import (
 	"context"

@@ -22,7 +22,7 @@ import (
 )
 
 func TestMember(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Nil("LET arr = [1,2,3,4] RETURN arr[10]"),
 		S("LET arr = [1,2,3,4] RETURN arr[1]", 2),
 		S("LET arr = [1,2,3,4] LET idx = 1 RETURN arr[idx]", 2),
@@ -207,7 +207,7 @@ func TestMemberReservedWords(t *testing.T) {
 }
 
 func TestOptionalChaining(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		S(
 			`
 						LET obj = { foo: { bar: "bar" } }
@@ -278,7 +278,7 @@ func TestTaggedTypes(t *testing.T) {
 		IntProp        int   `ferret:"intProp"`
 	}
 
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		S("RETURN GET_VALUE().strProp", "test"),
 		S("RETURN GET_VALUE().intProp", 99),
 		Array("RETURN GET_VALUE().sliceProp", []any{1, 2, 3}),

@@ -9,7 +9,7 @@ import (
 )
 
 func TestForWhileCollectAggregate(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array(`
 			LET users = [
 				{

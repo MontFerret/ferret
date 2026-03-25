@@ -1,12 +1,14 @@
 package vm_test
 
 import (
-	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
+
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestForDistinct(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array(
 			`FOR i IN [ 1, 2, 3, 4, 1, 3 ]
 							RETURN DISTINCT i

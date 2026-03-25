@@ -11,8 +11,8 @@ import (
 )
 
 type Runner struct {
-	Name      string
 	Formatter *formatter.Formatter
+	Name      string
 }
 
 func (r *Runner) Run(t *testing.T, specs []Spec) {

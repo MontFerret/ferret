@@ -1,15 +1,17 @@
 package vm_test
 
 import (
-	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
+
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func TestRange(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array("RETURN 1..10", []any{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "Should return a range from 1 to 10"),
 		Array("RETURN 10..1", []any{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}, "Should return a range from 10 to 1"),
 		Array(

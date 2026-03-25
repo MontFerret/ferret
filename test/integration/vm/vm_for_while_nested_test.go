@@ -9,7 +9,7 @@ import (
 )
 
 func TestForWhileNested(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array(`
 			LET props = ["a"]
 			LET counter1 = [1]

@@ -11,7 +11,7 @@ import (
 )
 
 func TestForWhileSort(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array(`
 			FOR i WHILE UNTIL(5)
 				SORT i DESC

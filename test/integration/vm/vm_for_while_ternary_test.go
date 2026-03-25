@@ -9,7 +9,7 @@ import (
 )
 
 func TestForTernaryWhileExpression(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array(`
 			LET foo = FALSE
 			RETURN foo ? TRUE : (FOR i WHILE false RETURN i*2)

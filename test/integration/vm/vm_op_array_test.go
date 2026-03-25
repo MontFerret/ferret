@@ -3,11 +3,12 @@ package vm_test
 import (
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestArrayComparisonOperator(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		S("RETURN [1,2,3] ALL IN [2,3,4]", false),
 		S("RETURN [1,2,3] ALL IN [1,2,3]", true),
 		S("RETURN [1,2,3] NONE IN [3]", false),

@@ -3,11 +3,12 @@ package vm_test
 import (
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestArrayOperators(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array(`
 					LET friends = [
 						{ name: "John", age: 30 },

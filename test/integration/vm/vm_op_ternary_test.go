@@ -12,7 +12,7 @@ import (
 )
 
 func TestTernaryOperator(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		S("RETURN 1 < 2 ? 3 : 4", 3),
 		S("RETURN 1 > 2 ? 3 : 4", 4),
 		S("RETURN 2 ? : 4", 2),

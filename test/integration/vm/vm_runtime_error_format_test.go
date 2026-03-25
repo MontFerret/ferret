@@ -7,12 +7,13 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestRuntimeErrorFormatting(t *testing.T) {
-	RunSpecs(t, []Spec{
-		NewSpec(
+	RunSpecs(t, []spec.Spec{
+		spec.New(
 			"LET numerator = 10\nRETURN numerator / 0",
 			"script.fql",
 		).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
@@ -26,7 +27,7 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 			},
 			NotContains: []string{"~"},
 		}),
-		NewSpec(
+		spec.New(
 			"LET obj = {}\nRETURN obj.foo.bar",
 			"obj.fql",
 		).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
@@ -38,7 +39,7 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 			},
 			NotContains: []string{"Caused by:"},
 		}),
-		NewSpec(
+		spec.New(
 			`
 FUNC Inner() => FAIL()
 FUNC Outer() (
@@ -54,7 +55,7 @@ RETURN Outer()
 				"called from Outer (#2)",
 				"VM stack: Outer -> Inner",
 			},
-		}).Options(
+		}).Env(
 			vm.WithFunction("FAIL", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 				return runtime.None, errors.New("boom")
 			}),

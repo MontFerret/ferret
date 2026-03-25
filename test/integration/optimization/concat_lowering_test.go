@@ -7,12 +7,14 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
-	"github.com/MontFerret/ferret/v2/test/base/compilation"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	"github.com/MontFerret/ferret/v2/test/spec/compile"
+	. "github.com/MontFerret/ferret/v2/test/spec/optimize"
 )
 
 func TestConcatChainLowering(t *testing.T) {
-	RunUseCases(t, compiler.O1, []UseCase{
-		OpcodeCase(`RETURN "a" + 1 + "b" + 2 + "c" + 3`, compilation.OpcodeCount{
+	RunUseCases(t, compiler.O1, []spec.Spec{
+		Opcode(`RETURN "a" + 1 + "b" + 2 + "c" + 3`, compile.OpcodeCount{
 			Count: map[bytecode.Opcode]int{
 				bytecode.OpAdd:       0,
 				bytecode.OpConcat:    0,
@@ -20,23 +22,23 @@ func TestConcatChainLowering(t *testing.T) {
 			},
 		}, "a1b2c3", "should fold fully constant concat chains into one constant"),
 
-		Options(OpcodeCase(`RETURN "a" + 1 + "b" + 2 + @x + "c" + 3`, compilation.OpcodeCount{
+		Opcode(`RETURN "a" + 1 + "b" + 2 + @x + "c" + 3`, compile.OpcodeCount{
 			Count: map[bytecode.Opcode]int{
 				bytecode.OpAdd:    0,
 				bytecode.OpConcat: 1,
 			},
-		}, "a1b2Xc3", "should keep one concat for mixed chains with merged constant runs"), vm.WithParam("x", runtime.NewString("X"))),
+		}, "a1b2Xc3", "should keep one concat for mixed chains with merged constant runs").Env(vm.WithParam("x", runtime.NewString("X"))),
 
-		Options(OpcodeCase(`VAR str = ""
+		Opcode(`VAR str = ""
 str += "a" + 1 + "b" + 2 + @x + "c" + 3
-RETURN str`, compilation.OpcodeCount{
+RETURN str`, compile.OpcodeCount{
 			Count: map[bytecode.Opcode]int{
 				bytecode.OpAdd:    0,
 				bytecode.OpConcat: 1,
 			},
-		}, "a1b2Xc3", "should route string += through concat-chain lowering"), vm.WithParam("x", runtime.NewString("X"))),
+		}, "a1b2Xc3", "should route string += through concat-chain lowering").Env(vm.WithParam("x", runtime.NewString("X"))),
 
-		OpcodeCase(`RETURN 1 + 2 + "x"`, compilation.OpcodeCount{
+		Opcode(`RETURN 1 + 2 + "x"`, compile.OpcodeCount{
 			Count: map[bytecode.Opcode]int{
 				bytecode.OpAdd:    0,
 				bytecode.OpConcat: 0,

@@ -9,7 +9,7 @@ import (
 )
 
 func TestForWhile(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array("FOR i WHILE false RETURN i", []any{}),
 		Array("FOR i WHILE UNTIL(5) RETURN i", []any{0, 1, 2, 3, 4}),
 		Array(`

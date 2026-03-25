@@ -4,8 +4,8 @@ import "strings"
 
 type (
 	Skip struct {
-		Active bool
 		Reason string
+		Active bool
 	}
 
 	BaseSpec struct {
@@ -60,4 +60,26 @@ func (s BaseSpec) String() string {
 	exp = strings.Join(strings.Fields(exp), " ")
 
 	return exp
+}
+
+func (s BaseSpec) Merge(other BaseSpec) BaseSpec {
+	out := s
+
+	if other.Expression != "" {
+		out.Expression = other.Expression
+	}
+
+	if other.Description != "" {
+		out.Description = other.Description
+	}
+
+	if other.SkipInfo.Active {
+		out.SkipInfo = other.SkipInfo
+	}
+
+	if other.DebugOutput {
+		out.DebugOutput = other.DebugOutput
+	}
+
+	return out
 }

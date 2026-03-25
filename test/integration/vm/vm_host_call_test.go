@@ -3,8 +3,10 @@ package vm_test
 import (
 	"context"
 	"errors"
-	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
+
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -30,7 +32,7 @@ func hostSum(args ...runtime.Value) runtime.Int {
 }
 
 func TestHostFunctionCall(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		S("RETURN TYPENAME(1)", "Int"),
 		S("RETURN TYPENAME(1.1)", "Float"),
 		S("WAIT(10) RETURN 1", 1),
@@ -61,7 +63,7 @@ func TestHostFunctionCall(t *testing.T) {
 }
 
 func TestBuiltinFunctions(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		S("RETURN LENGTH([1,2,3])", 3),
 		S("RETURN length([1,2,3])", 3),
 		S("RETURN TYPENAME([1,2,3])", "Array"),
@@ -91,7 +93,7 @@ func TestHostFunctionCallArities(t *testing.T) {
 		return runtime.NewInt(len(args)), nil
 	})
 
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		S("RETURN FIX0()", "fixed0"),
 		S("RETURN FIX1(1)", 1),
 		S("RETURN FIX2(1, 2)", 3),
@@ -110,7 +112,7 @@ func TestHostFunctionCallArities(t *testing.T) {
 func TestHostFunctionProtectedCall(t *testing.T) {
 	boom := errors.New("boom")
 
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Nil("RETURN FAIL()?", "Protected host call should return none"),
 		Error("RETURN FAIL()", "Non-protected host call should fail"),
 	}, vm.WithFunction("FAIL", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
@@ -127,7 +129,7 @@ func TestHostFunctionLookupIsCaseSensitive(t *testing.T) {
 		return runtime.NewString("lower"), nil
 	})
 
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array("RETURN [Foo(), foo()]", []any{"upper", "lower"}),
 		ErrorStr("RETURN FOO()", "Unresolved function"),
 	}, vm.WithFunctionsBuilder(builder))

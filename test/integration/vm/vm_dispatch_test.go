@@ -7,6 +7,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
@@ -55,7 +56,7 @@ func TestDispatch(t *testing.T) {
 		result: runtime.NewString("ok"),
 	}
 
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		S(`
 			DISPATCH "click" IN @d
 			RETURN 1
@@ -131,12 +132,12 @@ func TestDispatch(t *testing.T) {
 func TestDispatchRuntimeErrors(t *testing.T) {
 	dispatcher := &testDispatcher{result: runtime.NewString("ok")}
 
-	RunSpecs(t, []Spec{
-		NewSpec(`RETURN DISPATCH "click" IN @value`, "Should fail when target is not a dispatcher").Expect().ExecError(
+	RunSpecs(t, []spec.Spec{
+		S(`RETURN DISPATCH "click" IN @value`, "Should fail when target is not a dispatcher").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Message: "Invalid type"},
 		),
-		NewSpec(`RETURN DISPATCH @event IN @d`, "Should fail when event name is not a string").Expect().ExecError(
+		S(`RETURN DISPATCH @event IN @d`, "Should fail when event name is not a string").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Message: "Invalid type"},
 		),

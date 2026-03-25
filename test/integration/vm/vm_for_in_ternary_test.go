@@ -1,12 +1,14 @@
 package vm_test
 
 import (
-	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
+
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestForTernaryExpression(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array(`
 			LET foo = FALSE
 			RETURN foo ? TRUE : (FOR i IN 1..5 RETURN i*2)`,

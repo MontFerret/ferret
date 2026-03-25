@@ -8,7 +8,7 @@ import (
 )
 
 func TestParam(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		ErrorStr(`RETURN @foo`, "Missing parameter"),
 		ErrorStr(`
 FUNC read() => @foo
@@ -45,9 +45,9 @@ FUNC outer() (
 RETURN outer()
 `
 
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		ErrorStr(expr, "Missing parameter", "Should report missing parameter used only in nested UDF path"),
-		S(expr, "bar", "Should resolve parameter in nested UDF path when provided").Options(spec.WithParam("foo", "bar")),
+		S(expr, "bar", "Should resolve parameter in nested UDF path when provided").Env(spec.WithParam("foo", "bar")),
 	},
 	)
 }
@@ -59,7 +59,7 @@ FUNC f() => @beta
 RETURN x + f()
 `
 
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		S(expr1, 30, "Should keep UDF @param slots aligned with program param ordering"),
 	},
 		spec.WithParam("alpha", 10),
@@ -72,7 +72,7 @@ FUNC f() => @beta
 RETURN [x, f()]
 `
 
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array(expr2, []any{1, 2}, "Should resolve different parameters in main body and UDF body"),
 	},
 		spec.WithParam("alpha", 1),

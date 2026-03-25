@@ -9,7 +9,7 @@ import (
 )
 
 func TestForWhileDistinct(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array(
 			`LET arr = [ 1, 2, 3, 4, 1, 3 ]
 			 FOR i WHILE UNTIL(LENGTH(arr))

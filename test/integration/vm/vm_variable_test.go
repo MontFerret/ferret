@@ -3,20 +3,21 @@ package vm_test
 import (
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/test/spec"
 	"github.com/MontFerret/ferret/v2/test/spec/assert"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestVariables(t *testing.T) {
-	RunSpecs(t, []Spec{
-		NewSpec(`RETURN foo`, "Should not compile if a variable not defined").Expect().CompileError(assert.ShouldNotBeNil),
-		NewSpec(`
+	RunSpecs(t, []spec.Spec{
+		spec.New(`RETURN foo`, "Should not compile if a variable not defined").Expect().CompileError(assert.ShouldNotBeNil),
+		spec.New(`
 			LET foo = "bar"
 			LET foo = "baz"
 
 			RETURN foo
 		`, "Should not compile if a variable is not unique").Expect().CompileError(assert.ShouldNotBeNil),
-		NewSpec(`			LET _ = (FOR i IN 1..100 RETURN NONE)
+		spec.New(`			LET _ = (FOR i IN 1..100 RETURN NONE)
 
 			RETURN _`, "Should not allow to use ignorable variable name").Expect().CompileError(assert.ShouldNotBeNil),
 		Nil(`LET i = NONE RETURN i`),

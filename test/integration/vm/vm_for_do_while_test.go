@@ -9,7 +9,7 @@ import (
 )
 
 func TestForDoWhile(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array(`
 			FOR DO WHILE false
 				RETURN 1

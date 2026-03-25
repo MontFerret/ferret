@@ -11,10 +11,16 @@ import (
 )
 
 type Runner struct {
-	Name        string
-	Compiler    *compiler.Compiler
-	EnvOpts     []vm.EnvironmentOption
-	SpecEnvOpts func(index int) []vm.EnvironmentOption
+	Name     string
+	Compiler *compiler.Compiler
+	Env      []vm.EnvironmentOption
+}
+
+func NewRunner(suite string, opts ...compiler.Option) *Runner {
+	return &Runner{
+		Name:     suite,
+		Compiler: compiler.New(opts...),
+	}
 }
 
 func (r *Runner) Run(t *testing.T, specs []Spec) {
@@ -22,7 +28,7 @@ func (r *Runner) Run(t *testing.T, specs []Spec) {
 
 	std := Stdlib()
 
-	for index, spec := range specs {
+	for _, spec := range specs {
 		suiteName := spec.SuiteName(r.Name)
 
 		t.Run(suiteName, func(t *testing.T) {
@@ -69,13 +75,12 @@ func (r *Runner) Run(t *testing.T, specs []Spec) {
 				vm.WithNamespace(std),
 			}
 
-			if len(r.EnvOpts) > 0 {
-				options = append(options, r.EnvOpts...)
+			if len(r.Env) > 0 {
+				options = append(options, r.Env...)
 			}
 
-			if r.SpecEnvOpts != nil {
-				specEnvOpts := r.SpecEnvOpts(index)
-				options = append(options, specEnvOpts...)
+			if len(spec.Exec.Env) > 0 {
+				options = append(options, spec.Exec.Env...)
 			}
 
 			actual, err := Exec(prog, spec.Exec.RawOutput, options...)

@@ -8,9 +8,9 @@ import (
 )
 
 type Spec struct {
+	Output        spec.Outcomes
 	FormatOptions []formatter.Option
 	Base          spec.BaseSpec
-	Output        spec.Outcomes
 }
 
 func NewSpec(expression string, desc ...string) Spec {

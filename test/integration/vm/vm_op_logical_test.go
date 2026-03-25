@@ -3,15 +3,17 @@ package vm_test
 import (
 	"context"
 	"fmt"
-	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
+
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func TestLogicalOperators(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		S("RETURN 1 AND 0", 0),
 		S("RETURN 1 AND 1", 1),
 		S("RETURN 2 > 1 AND 1 > 0", true),

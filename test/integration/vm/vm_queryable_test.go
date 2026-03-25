@@ -7,6 +7,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"github.com/MontFerret/ferret/v2/test/spec/mock"
 )
@@ -14,7 +15,7 @@ import (
 func TestQueryable(t *testing.T) {
 	queryable := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("ok")))
 
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array("RETURN @doc[~ css`.items`]", []any{"ok"}, "Should apply query literal"),
 		S("RETURN @doc[~ css`.items`][0]", "ok", "Should apply query literal and index tail"),
 		Array("RETURN QUERY `.items` IN @doc USING css", []any{"ok"}, "Should apply query expression"),
@@ -23,7 +24,7 @@ func TestQueryable(t *testing.T) {
 		Array("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", []any{"ok"}, "Should apply query literal with params"),
 		Array("RETURN QUERY `SELECT * FROM products` IN @doc USING sql WITH { c: \"phones\" }", []any{"ok"}, "Should apply query expression with options"),
 		Array("RETURN @doc[~ text]", []any{"ok"}, "Should apply query literal with no string payload"),
-		NewSpec("RETURN @val[~ css`x`]").Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+		spec.New("RETURN @val[~ css`x`]").Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Message: "Invalid type",
 		}),
 	}, vm.WithParams(map[string]runtime.Value{
@@ -107,7 +108,7 @@ func TestComplexQueries(t *testing.T) {
 	queryableDB := mock.NewDBQueryable()
 	queryableJSON := mock.NewJSONQueryable()
 
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array(
 			"RETURN @doc\n    [~ css`.product`]\n    [~ css`.title`]\n    [~ text]",
 			[]any{"title"},
@@ -181,7 +182,7 @@ func TestQueryableListInput(t *testing.T) {
 	queryableA := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("a1"), runtime.NewString("a2")))
 	queryableB := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("b1")))
 
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		Array(
 			"RETURN [@qA, @qB][~ text]",
 			[]any{"a1", "a2", "b1"},
@@ -197,7 +198,7 @@ func TestQueryableListInput(t *testing.T) {
 			[]any{"title", "title"},
 			"Should chain queries over list inputs",
 		),
-		NewSpec("RETURN [@qA, 1][~ text]", "Should fail when list element is not queryable").Expect().ExecError(
+		spec.New("RETURN [@qA, 1][~ text]", "Should fail when list element is not queryable").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Message: "Invalid type"},
 		),
@@ -214,7 +215,7 @@ func TestQueryableModifiers(t *testing.T) {
 	queryableOne := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("only")))
 	queryableEmpty := mock.NewQueryable(runtime.NewArray(0))
 
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		S("RETURN QUERY EXISTS `.items` IN @many USING css", true, "EXISTS should return true for non-empty result"),
 		S("RETURN QUERY EXISTS `.items` IN @empty USING css", false, "EXISTS should return false for empty result"),
 		S("RETURN QUERY COUNT `.items` IN @many USING css", 2, "COUNT should return result length"),
@@ -222,23 +223,23 @@ func TestQueryableModifiers(t *testing.T) {
 		S("RETURN QUERY ANY `.items` IN @many USING css", "a", "ANY should return first result"),
 		Nil("RETURN QUERY ANY `.items` IN @empty USING css", "ANY should return NONE for empty result"),
 		S("RETURN QUERY VALUE `.items` IN @many USING css", "a", "VALUE should return first result"),
-		NewSpec("RETURN QUERY VALUE `.items` IN @empty USING css", "VALUE should fail for empty result").Expect().ExecError(
+		spec.New("RETURN QUERY VALUE `.items` IN @empty USING css", "VALUE should fail for empty result").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Contains: []string{"QUERY VALUE expected at least one match"}},
 		),
 		S("RETURN QUERY ONE `.items` IN @one USING css", "only", "ONE should return the only result"),
-		NewSpec("RETURN QUERY ONE `.items` IN @empty USING css", "ONE should fail for empty result").Expect().ExecError(
+		spec.New("RETURN QUERY ONE `.items` IN @empty USING css", "ONE should fail for empty result").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Contains: []string{"QUERY ONE expected exactly one match"}},
 		),
-		NewSpec("RETURN QUERY ONE `.items` IN @many USING css", "ONE should fail for multiple results").Expect().ExecError(
+		spec.New("RETURN QUERY ONE `.items` IN @many USING css", "ONE should fail for multiple results").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Contains: []string{"QUERY ONE expected exactly one match"}},
 		),
 		Nil("LET maybe = (QUERY VALUE `.items` IN @empty USING css)?\nRETURN maybe", "VALUE assertion should be catchable with optional operator"),
 		Nil("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe", "ONE assertion should be catchable for empty result with optional operator"),
 		Nil("LET maybe = (QUERY ONE `.items` IN @many USING css)?\nRETURN maybe", "ONE assertion should be catchable for multi result with optional operator"),
-		NewSpec("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe.foo", "Catch should not swallow the first instruction after a guarded QUERY ONE").Expect().ExecError(
+		spec.New("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe.foo", "Catch should not swallow the first instruction after a guarded QUERY ONE").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Contains: []string{"Cannot read property", "\"foo\""}},
 		),

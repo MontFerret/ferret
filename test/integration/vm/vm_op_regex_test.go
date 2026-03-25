@@ -9,11 +9,12 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestRegexpOperator(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		S(`RETURN "foo" =~ "^f[o].$" `, true),
 		S(`RETURN "foo" !~ "[a-z]+bar$"`, true),
 		S(`RETURN "foo" !~ T::REGEXP()`, true),

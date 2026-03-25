@@ -3,11 +3,12 @@ package vm_test
 import (
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestMatchExpression(t *testing.T) {
-	RunSpecs(t, []Spec{
+	RunSpecs(t, []spec.Spec{
 		S(`RETURN MATCH 2 ( 1 => "one", 2 => "two", _ => "other", )`, "two"),
 		S(`RETURN MATCH 5 ( v WHEN v > 3 => v * 2, _ => 0, )`, 10),
 		S(`RETURN MATCH { a: 1, b: 2 } ( { a: 1, b: v } => v, _ => 0, )`, 2),

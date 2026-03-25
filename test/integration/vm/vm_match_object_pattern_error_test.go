@@ -7,6 +7,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
@@ -19,8 +20,8 @@ func (m *errorMap) ContainsKey(ctx context.Context, key runtime.Value) (runtime.
 }
 
 func TestMatchObjectPatternContainsKeyError(t *testing.T) {
-	RunSpecs(t, []Spec{
-		NewSpec(
+	RunSpecs(t, []spec.Spec{
+		S(
 			`
 LET obj = @obj
 RETURN MATCH obj (
