@@ -1,10 +1,11 @@
 package compiler_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/test/spec"
 )
 
 func TestPredicateJumpLowering_ConstEqNeLiteralSides(t *testing.T) {
@@ -47,12 +48,16 @@ RETURN 1 != a ? 10 : 20
 		},
 	}
 
+	specs := make([]spec.Spec, 0, len(tests))
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			prog := compileWithLevel(t, compiler.O0, tt.expr)
+		specs = append(specs, ProgramCheck(tt.expr, func(prog *bytecode.Program) error {
 			if !hasOpcode(prog.Bytecode, tt.expected) {
-				t.Fatalf("expected opcode %s in lowered predicate jump", tt.expected)
+				return fmt.Errorf("expected opcode %s in lowered predicate jump", tt.expected)
 			}
-		})
+
+			return nil
+		}, tt.name))
 	}
+
+	RunSpecs(t, specs)
 }

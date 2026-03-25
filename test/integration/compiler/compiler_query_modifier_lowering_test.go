@@ -1,11 +1,12 @@
 package compiler_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/test/spec"
 )
 
 func findApplyQueryDescriptorSize(code []bytecode.Instruction, applyIdx int) (int, bool) {
@@ -34,83 +35,97 @@ func findApplyQueryDescriptorSize(code []bytecode.Instruction, applyIdx int) (in
 	return 0, false
 }
 
-func assertThreeSlotQueryDescriptor(t *testing.T, code []bytecode.Instruction) {
-	t.Helper()
-
+func threeSlotQueryDescriptor(code []bytecode.Instruction) error {
 	applyIdx, ok := findFirstOpcodeIndex(code, bytecode.OpQuery)
 	if !ok {
-		t.Fatalf("expected OpQuery in bytecode")
+		return fmt.Errorf("expected OpQuery in bytecode")
 	}
 
 	size, ok := findApplyQueryDescriptorSize(code, applyIdx)
 	if !ok {
-		t.Fatalf("expected OpLoadArray for query descriptor before OpQuery")
+		return fmt.Errorf("expected OpLoadArray for query descriptor before OpQuery")
 	}
 
 	if size != 3 {
-		t.Fatalf("expected 3-slot query descriptor, got %d", size)
+		return fmt.Errorf("expected 3-slot query descriptor, got %d", size)
 	}
+
+	return nil
 }
 
-func assertFailPrelude(t *testing.T, prog *bytecode.Program, expectedMessage runtime.String) {
-	t.Helper()
-
+func failPrelude(prog *bytecode.Program, expectedMessage runtime.String) error {
 	failIdx, ok := findFirstOpcodeIndex(prog.Bytecode, bytecode.OpFail)
 	if !ok {
-		t.Fatalf("expected OpFail in bytecode")
+		return fmt.Errorf("expected OpFail in bytecode")
 	}
 
 	if failIdx == 0 {
-		t.Fatalf("expected OpLoadNone before OpFail")
+		return fmt.Errorf("expected OpLoadNone before OpFail")
 	}
 
 	if got := prog.Bytecode[failIdx-1].Opcode; got != bytecode.OpLoadNone {
-		t.Fatalf("expected OpLoadNone before OpFail, got %s", got)
+		return fmt.Errorf("expected OpLoadNone before OpFail, got %s", got)
 	}
 
 	fail := prog.Bytecode[failIdx]
 	if !fail.Operands[0].IsConstant() {
-		t.Fatalf("expected OpFail to use constant-string payload")
+		return fmt.Errorf("expected OpFail to use constant-string payload")
 	}
 
 	msgIdx := fail.Operands[0].Constant()
 	if msgIdx < 0 || msgIdx >= len(prog.Constants) {
-		t.Fatalf("OpFail message constant index out of bounds: %d", msgIdx)
+		return fmt.Errorf("OpFail message constant index out of bounds: %d", msgIdx)
 	}
 
 	msg, ok := prog.Constants[msgIdx].(runtime.String)
 	if !ok {
-		t.Fatalf("expected OpFail message constant to be string, got %T", prog.Constants[msgIdx])
+		return fmt.Errorf("expected OpFail message constant to be string, got %T", prog.Constants[msgIdx])
 	}
 
 	if msg != expectedMessage {
-		t.Fatalf("unexpected OpFail message: got %q, want %q", msg, expectedMessage)
+		return fmt.Errorf("unexpected OpFail message: got %q, want %q", msg, expectedMessage)
 	}
+
+	return nil
 }
 
 func TestQueryModifierLowering_ValueUsesLoadNoneAndFail(t *testing.T) {
-	prog := compileWithLevel(t, compiler.O0, `RETURN QUERY VALUE ".items" IN @doc USING css`)
+	RunSpecs(t, []spec.Spec{
+		ProgramCheck(`RETURN QUERY VALUE ".items" IN @doc USING css`, func(prog *bytecode.Program) error {
+			if err := threeSlotQueryDescriptor(prog.Bytecode); err != nil {
+				return err
+			}
+			if err := failPrelude(prog, runtime.NewString("QUERY VALUE expected at least one match")); err != nil {
+				return err
+			}
+			if !hasOpcode(prog.Bytecode, bytecode.OpLoadIndexConst) {
+				return fmt.Errorf("expected OpLoadIndexConst success path for QUERY VALUE")
+			}
 
-	assertThreeSlotQueryDescriptor(t, prog.Bytecode)
-	assertFailPrelude(t, prog, runtime.NewString("QUERY VALUE expected at least one match"))
-
-	if !hasOpcode(prog.Bytecode, bytecode.OpLoadIndexConst) {
-		t.Fatalf("expected OpLoadIndexConst success path for QUERY VALUE")
-	}
+			return nil
+		}, "query value lowering"),
+	})
 }
 
 func TestQueryModifierLowering_OneUsesLoadNoneAndFail(t *testing.T) {
-	prog := compileWithLevel(t, compiler.O0, `RETURN QUERY ONE ".items" IN @doc USING css`)
+	RunSpecs(t, []spec.Spec{
+		ProgramCheck(`RETURN QUERY ONE ".items" IN @doc USING css`, func(prog *bytecode.Program) error {
+			if err := threeSlotQueryDescriptor(prog.Bytecode); err != nil {
+				return err
+			}
+			if err := failPrelude(prog, runtime.NewString("QUERY ONE expected exactly one match")); err != nil {
+				return err
+			}
+			if !hasOpcode(prog.Bytecode, bytecode.OpLength) {
+				return fmt.Errorf("expected OpLength for QUERY ONE cardinality check")
+			}
+			if !hasOpcode(prog.Bytecode, bytecode.OpJumpIfEqConst) {
+				return fmt.Errorf("expected OpJumpIfEqConst for QUERY ONE cardinality check")
+			}
 
-	assertThreeSlotQueryDescriptor(t, prog.Bytecode)
-	assertFailPrelude(t, prog, runtime.NewString("QUERY ONE expected exactly one match"))
-
-	if !hasOpcode(prog.Bytecode, bytecode.OpLength) {
-		t.Fatalf("expected OpLength for QUERY ONE cardinality check")
-	}
-	if !hasOpcode(prog.Bytecode, bytecode.OpJumpIfEqConst) {
-		t.Fatalf("expected OpJumpIfEqConst for QUERY ONE cardinality check")
-	}
+			return nil
+		}, "query one lowering"),
+	})
 }
 
 func TestQueryModifierLowering_ExistsCountAny(t *testing.T) {
@@ -124,19 +139,24 @@ func TestQueryModifierLowering_ExistsCountAny(t *testing.T) {
 		{name: "any", expr: `RETURN QUERY ANY ".items" IN @doc USING css`, opcode: bytecode.OpLoadIndexOptionalConst},
 	}
 
+	specs := make([]spec.Spec, 0, len(cases))
 	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			prog := compileWithLevel(t, compiler.O0, tc.expr)
-
-			assertThreeSlotQueryDescriptor(t, prog.Bytecode)
+		specs = append(specs, ProgramCheck(tc.expr, func(prog *bytecode.Program) error {
+			if err := threeSlotQueryDescriptor(prog.Bytecode); err != nil {
+				return err
+			}
 
 			if !hasOpcode(prog.Bytecode, tc.opcode) {
-				t.Fatalf("expected opcode %s for QUERY %s lowering", tc.opcode, tc.name)
+				return fmt.Errorf("expected opcode %s for QUERY %s lowering", tc.opcode, tc.name)
 			}
 
 			if hasOpcode(prog.Bytecode, bytecode.OpFail) {
-				t.Fatalf("did not expect OpFail in QUERY %s lowering", tc.name)
+				return fmt.Errorf("did not expect OpFail in QUERY %s lowering", tc.name)
 			}
-		})
+
+			return nil
+		}, tc.name))
 	}
+
+	RunSpecs(t, specs)
 }

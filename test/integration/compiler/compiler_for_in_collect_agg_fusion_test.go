@@ -6,47 +6,49 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
-	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	"github.com/MontFerret/ferret/v2/test/spec/assert"
 )
 
 func TestCollectAggregateRequiresAtLeastOneArgument(t *testing.T) {
-	query := `
+	RunSpecs(t, []spec.Spec{
+		spec.New(`
 		LET users = [1, 2, 3]
 		FOR u IN users
 			COLLECT AGGREGATE total = COUNT()
 			RETURN total
-	`
+	`).Expect().CompileError(assert.NewUnaryAssertion(func(actual any) error {
+			err, ok := actual.(error)
+			if !ok {
+				return fmt.Errorf("expected error, got %T", actual)
+			}
 
-	c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
-	_, err := c.Compile(file.NewSource("collect-aggregate-arity", query))
+			ce := firstCompilationError(err)
+			if ce == nil {
+				return fmt.Errorf("expected compiler error type, got %T", err)
+			}
 
-	if err == nil {
-		t.Fatal("expected compilation error")
-	}
+			if ce.Kind != parserd.SemanticError {
+				return fmt.Errorf("expected SemanticError, got %s", ce.Kind)
+			}
 
-	ce := firstCompilationError(err)
-	if ce == nil {
-		t.Fatalf("expected compiler error type, got %T", err)
-	}
+			if !strings.Contains(ce.Message, "requires at least one argument") {
+				return fmt.Errorf("expected arity message, got %q", ce.Message)
+			}
 
-	if ce.Kind != diagnostics.Kind("SemanticError") {
-		t.Fatalf("expected SemanticError, got %s", ce.Kind)
-	}
+			if !strings.Contains(ce.Message, "COUNT") {
+				return fmt.Errorf("expected function name in message, got %q", ce.Message)
+			}
 
-	if !strings.Contains(ce.Message, "requires at least one argument") {
-		t.Fatalf("expected arity message, got %q", ce.Message)
-	}
+			formatted := ce.Format()
+			if strings.Contains(formatted, "goroutine ") || strings.Contains(formatted, "unhandled panic") {
+				return fmt.Errorf("diagnostic should not include panic stack trace, got:\n%s", formatted)
+			}
 
-	if !strings.Contains(ce.Message, "COUNT") {
-		t.Fatalf("expected function name in message, got %q", ce.Message)
-	}
-
-	formatted := ce.Format()
-	if strings.Contains(formatted, "goroutine ") || strings.Contains(formatted, "unhandled panic") {
-		t.Fatalf("diagnostic should not include panic stack trace, got:\n%s", formatted)
-	}
+			return nil
+		}), "aggregate requires at least one arg"),
+	})
 }
 
 func TestCollectAggregateGroupedFusionSupportsScalarLiteralKeys(t *testing.T) {
@@ -60,9 +62,9 @@ func TestCollectAggregateGroupedFusionSupportsScalarLiteralKeys(t *testing.T) {
 		{name: "none", key: "NONE"},
 	}
 
+	specs := make([]spec.Spec, 0, len(testCases))
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			query := fmt.Sprintf(`
+		query := fmt.Sprintf(`
 				LET users = [{ age: 1 }, { age: 2 }, { age: 3 }]
 				FOR u IN users
 					COLLECT g = %s
@@ -72,26 +74,25 @@ func TestCollectAggregateGroupedFusionSupportsScalarLiteralKeys(t *testing.T) {
 						min = MIN(u.age)
 					RETURN { g, cnt, sum, min }
 			`, tc.key)
-
-			c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
-			program, err := c.Compile(file.NewSource("collect-aggregate-fused-literal", query))
-			if err != nil {
-				t.Fatalf("unexpected compilation error: %v", err)
-			}
-
+		specs = append(specs, ProgramCheck(query, func(program *bytecode.Program) error {
 			if !hasAggregatePlan(program) {
-				t.Fatalf("expected grouped fused aggregate plan for key expression %q", tc.key)
+				return fmt.Errorf("expected grouped fused aggregate plan for key expression %q", tc.key)
 			}
 
 			if hasFunctionCallOpcode(program) {
-				t.Fatalf("expected fused grouped aggregation to avoid function call opcodes for key expression %q", tc.key)
+				return fmt.Errorf("expected fused grouped aggregation to avoid function call opcodes for key expression %q", tc.key)
 			}
-		})
+
+			return nil
+		}, tc.name))
 	}
+
+	RunSpecs(t, specs)
 }
 
 func TestCollectAggregateGroupedFusionUsesAggregateGroupUpdateOpcode(t *testing.T) {
-	prog := compileWithLevel(t, compiler.O0, `
+	RunSpecs(t, []spec.Spec{
+		ProgramCheck(`
 LET users = [{ age: 1 }, { age: 2 }, { age: 3 }]
 
 FOR u IN users
@@ -101,23 +102,27 @@ FOR u IN users
 		sum = SUM(u.age),
 		min = MIN(u.age)
 	RETURN { g, cnt, sum, min }
-`)
+`, func(prog *bytecode.Program) error {
+			if !hasAggregatePlan(prog) {
+				return fmt.Errorf("expected grouped fused aggregate plan")
+			}
 
-	if !hasAggregatePlan(prog) {
-		t.Fatalf("expected grouped fused aggregate plan")
-	}
+			if !hasOpcode(prog.Bytecode, bytecode.OpAggregateGroupUpdate) {
+				return fmt.Errorf("expected grouped fused aggregation to use OpAggregateGroupUpdate")
+			}
 
-	if !hasOpcode(prog.Bytecode, bytecode.OpAggregateGroupUpdate) {
-		t.Fatalf("expected grouped fused aggregation to use OpAggregateGroupUpdate")
-	}
+			if hasOpcode(prog.Bytecode, bytecode.OpPushKV) {
+				return fmt.Errorf("expected grouped fused aggregation without INTO to avoid raw PushKV group writes")
+			}
 
-	if hasOpcode(prog.Bytecode, bytecode.OpPushKV) {
-		t.Fatalf("expected grouped fused aggregation without INTO to avoid raw PushKV group writes")
-	}
+			return nil
+		}, "grouped fusion uses aggregate group update"),
+	})
 }
 
 func TestCollectAggregateGroupedFusionSupportsComputedKeys(t *testing.T) {
-	prog := compileWithLevel(t, compiler.O0, `
+	RunSpecs(t, []spec.Spec{
+		ProgramCheck(`
 LET users = [{ age: 1 }, { age: 2 }, { age: 3 }]
 
 FOR u IN users
@@ -127,19 +132,23 @@ FOR u IN users
 		sum = SUM(u.age),
 		min = MIN(u.age)
 	RETURN { g, cnt, sum, min }
-`)
+`, func(prog *bytecode.Program) error {
+			if !hasAggregatePlan(prog) {
+				return fmt.Errorf("expected grouped fused aggregate plan for computed group key")
+			}
 
-	if !hasAggregatePlan(prog) {
-		t.Fatalf("expected grouped fused aggregate plan for computed group key")
-	}
+			if !hasOpcode(prog.Bytecode, bytecode.OpAggregateGroupUpdate) {
+				return fmt.Errorf("expected computed-key grouped fusion to use OpAggregateGroupUpdate")
+			}
 
-	if !hasOpcode(prog.Bytecode, bytecode.OpAggregateGroupUpdate) {
-		t.Fatalf("expected computed-key grouped fusion to use OpAggregateGroupUpdate")
-	}
+			return nil
+		}, "computed group key fusion"),
+	})
 }
 
 func TestCollectAggregateGroupedFusionWithIntoKeepsGroupValueWrites(t *testing.T) {
-	prog := compileWithLevel(t, compiler.O0, `
+	RunSpecs(t, []spec.Spec{
+		ProgramCheck(`
 LET users = [{ age: 1 }, { age: 2 }, { age: 3 }]
 
 FOR u IN users
@@ -150,30 +159,18 @@ FOR u IN users
 		min = MIN(u.age)
 	INTO groups
 	RETURN { g, cnt, sum, min, groups }
-`)
+`, func(prog *bytecode.Program) error {
+			if !hasOpcode(prog.Bytecode, bytecode.OpAggregateGroupUpdate) {
+				return fmt.Errorf("expected grouped aggregate INTO to use OpAggregateGroupUpdate")
+			}
 
-	if !hasOpcode(prog.Bytecode, bytecode.OpAggregateGroupUpdate) {
-		t.Fatalf("expected grouped aggregate INTO to use OpAggregateGroupUpdate")
-	}
+			if !hasOpcode(prog.Bytecode, bytecode.OpPushKV) {
+				return fmt.Errorf("expected grouped aggregate INTO to keep raw group value writes")
+			}
 
-	if !hasOpcode(prog.Bytecode, bytecode.OpPushKV) {
-		t.Fatalf("expected grouped aggregate INTO to keep raw group value writes")
-	}
-}
-
-func firstCompilationError(err error) *diagnostics.Diagnostic {
-	switch e := err.(type) {
-	case *diagnostics.Diagnostic:
-		return e
-	case *diagnostics.DiagnosticSet:
-		if e.Size() == 0 {
 			return nil
-		}
-
-		return e.First()
-	default:
-		return nil
-	}
+		}, "grouped aggregate into keeps group writes"),
+	})
 }
 
 func hasAggregatePlan(program *bytecode.Program) bool {

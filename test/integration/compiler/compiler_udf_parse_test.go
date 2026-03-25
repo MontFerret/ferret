@@ -3,12 +3,13 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/test/spec"
 )
 
 func TestUdfNestedLetReturnParses(t *testing.T) {
-	src := `
+	RunSpecs(t, []spec.Spec{
+		spec.New(
+			`
 FUNC outer(a) (
   FUNC inner(b) (
     RETURN b
@@ -17,9 +18,8 @@ FUNC outer(a) (
   RETURN v
 )
 RETURN outer(2)
-`
-	c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
-	if _, err := c.Compile(file.NewSource("udf_nested_let_return", src)); err != nil {
-		t.Fatalf("compile failed: %v", err)
-	}
+`,
+			"nested udf block with let/return",
+		),
+	})
 }

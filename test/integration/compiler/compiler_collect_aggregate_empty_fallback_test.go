@@ -1,27 +1,30 @@
 package compiler_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/test/spec"
 )
 
 func TestCollectAggregateGlobalEmptyFallbackLoadsNone(t *testing.T) {
-	expr := `
+	RunSpecs(t, []spec.Spec{
+		ProgramCheck(`
 LET users = []
 FOR u IN users
 	COLLECT AGGREGATE total = COUNT(u)
 	RETURN total
-`
+`, func(prog *bytecode.Program) error {
+			if !hasOpcode(prog.Bytecode, bytecode.OpJumpIfTrue) {
+				return fmt.Errorf("expected OpJumpIfTrue for empty-aggregator branch")
+			}
 
-	prog := compileWithLevel(t, compiler.O0, expr)
+			if got := countOpcode(prog, bytecode.OpLoadNone); got < 1 {
+				return fmt.Errorf("expected OpLoadNone in global aggregate empty fallback, got %d", got)
+			}
 
-	if !hasOpcode(prog.Bytecode, bytecode.OpJumpIfTrue) {
-		t.Fatalf("expected OpJumpIfTrue for empty-aggregator branch")
-	}
-
-	if got := countOpcode(prog, bytecode.OpLoadNone); got < 1 {
-		t.Fatalf("expected OpLoadNone in global aggregate empty fallback, got %d", got)
-	}
+			return nil
+		}, "global aggregate empty fallback loads none"),
+	})
 }
