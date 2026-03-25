@@ -28,6 +28,6 @@ func RunSpecs(t *testing.T, specs []Spec, opts ...vm.EnvironmentOption) {
 		baseSpecs[i] = s.Base
 	}
 
-	RunSpecsWith(t, "VM O0:", compiler.New(compiler.WithOptimizationLevel(compiler.O0)), specs, baseSpecs, opts...)
-	RunSpecsWith(t, "VM O1:", compiler.New(compiler.WithOptimizationLevel(compiler.O1)), specs, baseSpecs, opts...)
+	RunSpecsWith(t, "VM/O0", compiler.New(compiler.WithOptimizationLevel(compiler.O0)), specs, baseSpecs, opts...)
+	RunSpecsWith(t, "VM/O1", compiler.New(compiler.WithOptimizationLevel(compiler.O1)), specs, baseSpecs, opts...)
 }

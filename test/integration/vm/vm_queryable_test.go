@@ -167,7 +167,7 @@ func TestComplexQueries(t *testing.T) {
 			"Should support nested apply inside projections",
 		),
 		Array("RETURN @doc[~ nil`foo`]", []any{}, "Should return empty array for queryable that returns empty list"),
-		Array("RETURN @doc[~ nil`foo`]?.[*].name", []any{}, "Should return empty array for queryable that returns empty list").Skip(),
+		Array("RETURN @doc[~ nil`foo`]?.[*].name", []any{}, "Should return empty array for queryable that returns empty list"),
 	}, vm.WithParams(map[string]runtime.Value{
 		"doc":  queryableDoc,
 		"db":   queryableDB,

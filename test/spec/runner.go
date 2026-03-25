@@ -26,7 +26,7 @@ func (r *Runner) Run(t *testing.T, specs []Spec) {
 	for index, spec := range specs {
 		specName := spec.String()
 
-		t.Run(fmt.Sprintf("%s: %s", r.Name, specName), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s/%s", r.Name, specName), func(t *testing.T) {
 			t.Helper()
 
 			if spec.ShouldSkip {
