@@ -2,6 +2,7 @@ package vm_test
 
 import (
 	"context"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -25,8 +26,8 @@ func TestForFilter(t *testing.T) {
 			return runtime.None, nil
 		})
 
-	RunUseCases(t, []UseCase{
-		CaseArray(
+	RunSpecs(t, []Spec{
+		Array(
 			`
 			FOR i IN [ 1, 2, 3, 4, 1, 3 ]
 				FILTER i > 2
@@ -34,7 +35,7 @@ func TestForFilter(t *testing.T) {
 		`,
 			[]any{3, 4, 3},
 		),
-		CaseArray(
+		Array(
 			`
 			FOR i IN [ 1, 2, 3, 4, 1, 3 ]
 				FILTER i > 1 AND i < 4
@@ -42,7 +43,7 @@ func TestForFilter(t *testing.T) {
 		`,
 			[]any{2, 3, 3},
 		),
-		CaseArray(
+		Array(
 			`
 			LET users = [
 				{
@@ -67,7 +68,7 @@ func TestForFilter(t *testing.T) {
 		`,
 			[]any{map[string]any{"age": 29, "gender": "f", "name": "Mary"}, map[string]any{"age": 36, "gender": "m", "name": "Peter"}},
 		),
-		CaseArray(
+		Array(
 			`
 					LET users = [
 						{
@@ -93,7 +94,7 @@ func TestForFilter(t *testing.T) {
 				`,
 			[]any{map[string]any{"active": true, "gender": "m", "age": 31}, map[string]any{"active": true, "gender": "f", "age": 29}},
 		),
-		CaseArray(
+		Array(
 			`
 			LET users = [
 				{
@@ -124,7 +125,7 @@ func TestForFilter(t *testing.T) {
 			[]any{map[string]any{"active": true, "gender": "m", "age": 31}, map[string]any{"active": true, "gender": "f", "age": 29}, map[string]any{"active": true, "gender": "m", "age": 36}},
 			"Should compile query with left side expression",
 		),
-		CaseArray(
+		Array(
 			`
 			LET users = [
 				{
@@ -157,7 +158,7 @@ func TestForFilter(t *testing.T) {
 			[]any{map[string]any{"active": true, "gender": "m", "age": 31}},
 			"Should compile query with multiple FILTER statements",
 		),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -195,7 +196,7 @@ func TestForFilter(t *testing.T) {
 				RETURN u
 `, []any{map[string]any{"active": true, "age": 31, "gender": "m", "married": true}, map[string]any{"active": true, "age": 45, "gender": "f", "married": true}},
 			"Should compile query with multiple left side expression"),
-		CaseArray(`
+		Array(`
 LET users = [
 				{
 					active: true,
@@ -233,7 +234,7 @@ LET users = [
 				RETURN u
 `, []any{map[string]any{"active": false, "age": 69, "gender": "m", "married": true}},
 			"Should compile query with multiple left side expression and with binary operator"),
-		CaseArray(`
+		Array(`
 		LET users = [
 				{
 					active: true,
@@ -271,13 +272,13 @@ LET users = [
 				RETURN u
 `, []any{},
 			"Should compile query with multiple left side expression and with binary operator 2"),
-		CaseArray(`
+		Array(`
 			FOR i IN [ 1, 2, 3, 4, 1, 3 ]
 				LET x = 2
 				FILTER i > x
 				RETURN i + x
 `, []any{5, 6, 5}),
-		CaseArray(`
+		Array(`
 			FOR i IN [ 1, 2, 3, 4, 1, 3 ]
 				LET x = 2
 				COUNT_A()

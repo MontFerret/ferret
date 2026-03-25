@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/vm"
-	"github.com/MontFerret/ferret/v2/test/integration/base"
+	spec "github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestForWhileCollectAggregate(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		CaseArray(`
+	RunSpecs(t, []Spec{
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -43,7 +44,7 @@ func TestForWhileCollectAggregate(t *testing.T) {
 			map[string]any{"gender": "f", "minAge": 25, "maxAge": 25},
 			map[string]any{"gender": "m", "minAge": nil, "maxAge": nil},
 		}, "Should handle null values in aggregation"),
-		CaseArray(`
+		Array(`
 LET users = [
 				{
 					active: true,
@@ -90,7 +91,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 			map[string]any{"genderGroup": "f", "minAge": 25, "maxAge": 45},
 			map[string]any{"genderGroup": "m", "minAge": 31, "maxAge": 69},
 		}, "Should collect and aggregate values by a single key"),
-		CaseArray(`
+		Array(`
 LET users = [
 				{
 					active: true,
@@ -136,7 +137,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 			map[string]any{"genderGroup": "f", "minAge": 25, "maxAge": 45},
 			map[string]any{"genderGroup": "m", "minAge": 31, "maxAge": 69},
 		}, "Should handle scoping properly"),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -176,11 +177,11 @@ FOR i WHILE UNTIL(LENGTH(users))
 			]
 			FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
-				COLLECT 
+				COLLECT
 					department = u.department,
 					gender = u.gender
-				AGGREGATE 
-					minAge = MIN(u.age), 
+				AGGREGATE
+					minAge = MIN(u.age),
 					maxAge = MAX(u.age)
 				RETURN {
 					department,
@@ -193,7 +194,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 			map[string]any{"department": "Management", "gender": "m", "minAge": 69, "maxAge": 69},
 			map[string]any{"department": "Marketing", "gender": "f", "minAge": 25, "maxAge": 45},
 		}, "Should aggregate with multiple grouping keys"),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -234,7 +235,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 			FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				COLLECT gender = u.gender
-				AGGREGATE 
+				AGGREGATE
 					activeCount = SUM(u.active ? 1 : 0),
 					marriedCount = SUM(u.married ? 1 : 0),
 					highSalaryCount = SUM(u.salary > 70000 ? 1 : 0)
@@ -258,7 +259,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 				"highSalaryCount": 3,
 			},
 		}, "Should aggregate with conditional expressions"),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -295,13 +296,13 @@ FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
   				COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
   				RETURN {
-    				minAge, 
-    				maxAge 
+    				minAge,
+    				maxAge
   				}
 		`,
 			[]any{map[string]any{"minAge": 25, "maxAge": 69}},
 			"Should collect and aggregate values without grouping"),
-		CaseArray(`
+		Array(`
 			LET users = []
 			FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
@@ -313,7 +314,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 		`,
 			[]any{map[string]any{"minAge": nil, "maxAge": nil}},
 			"Should handle empty arrays gracefully"),
-		CaseArray(`
+		Array(`
 LET users = [
 				{
 					active: true,
@@ -349,11 +350,11 @@ LET users = [
 			FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
   				COLLECT AGGREGATE ages = UNION(u.age, u.age)
-  				RETURN { ages } 
+  				RETURN { ages }
 `, []any{
 			map[string]any{"ages": []any{31, 25, 36, 69, 45, 31, 25, 36, 69, 45}},
 		}, "Should call aggregation functions with more than one argument"),
-		CaseArray(`
+		Array(`
 LET users = [
 				{
 					active: true,
@@ -399,7 +400,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 			map[string]any{"genderGroup": "f", "ages": []any{25, 45, 25, 45}},
 			map[string]any{"genderGroup": "m", "ages": []any{31, 36, 69, 31, 36, 69}},
 		}, "Should collect and aggregate values by a single key"),
-		CaseArray(`
+		Array(`
 		LET users = [
 				{
 					active: true,
@@ -434,12 +435,12 @@ FOR i WHILE UNTIL(LENGTH(users))
 			]
 			FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
-  				COLLECT ageGroup = FLOOR(u.age / 5) * 5 
+  				COLLECT ageGroup = FLOOR(u.age / 5) * 5
   				AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
   				RETURN {
 					ageGroup,
-    				minAge, 
-    				maxAge 
+    				minAge,
+    				maxAge
   				}
 `, []any{
 			map[string]any{"ageGroup": 25, "maxAge": 25, "minAge": 25},
@@ -448,7 +449,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 			map[string]any{"ageGroup": 45, "maxAge": 45, "minAge": 45},
 			map[string]any{"ageGroup": 65, "maxAge": 69, "minAge": 69},
 		}, "Should aggregate values with calculated grouping"),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -494,10 +495,10 @@ FOR i WHILE UNTIL(LENGTH(users))
 			FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				COLLECT department = u.department
-				AGGREGATE 
-					minAge = MIN(u.age), 
-					maxAge = MAX(u.age), 
-					avgSalary = AVERAGE(u.salary), 
+				AGGREGATE
+					minAge = MIN(u.age),
+					maxAge = MAX(u.age),
+					avgSalary = AVERAGE(u.salary),
 					totalSalary = SUM(u.salary),
 					employeeCount = LENGTH(u)
 				RETURN {
@@ -534,7 +535,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 				"employeeCount": 2,
 			},
 		}, "Should aggregate multiple values with complex expressions"),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					name: "John",
@@ -555,7 +556,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 			]
 			FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
-				COLLECT AGGREGATE 
+				COLLECT AGGREGATE
 					allSkills = UNION_DISTINCT(u.skills, u.skills),
 					uniqueSkillCount = COUNT_DISTINCT(u.skills)
 				RETURN {
@@ -573,5 +574,5 @@ FOR i WHILE UNTIL(LENGTH(users))
 				"uniqueSkillCount": 4,
 			},
 		}, "Should aggregate with array operations"),
-	}, vm.WithFunctionsBuilder(base.ForWhileHelpers()))
+	}, vm.WithFunctionsBuilder(spec.ForWhileHelpers()))
 }

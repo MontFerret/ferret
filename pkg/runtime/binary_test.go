@@ -14,17 +14,17 @@ import (
 func TestBinary(t *testing.T) {
 	ctx := context.Background()
 
-	Convey("Binary Operations", t, func() {
+	Convey("binary Operations", t, func() {
 
 		Convey("NewBinary", func() {
-			Convey("Should create Binary from byte slice", func() {
+			Convey("Should create binary from byte slice", func() {
 				data := []byte("hello world")
 				binary := runtime.NewBinary(data)
 				So(binary, ShouldNotBeNil)
 				So([]byte(binary), ShouldResemble, data)
 			})
 
-			Convey("Should create empty Binary", func() {
+			Convey("Should create empty binary", func() {
 				binary := runtime.NewBinary([]byte{})
 				So(binary, ShouldNotBeNil)
 				So([]byte(binary), ShouldResemble, []byte{})
@@ -32,7 +32,7 @@ func TestBinary(t *testing.T) {
 		})
 
 		Convey("NewBinaryFrom", func() {
-			Convey("Should create Binary from reader", func() {
+			Convey("Should create binary from reader", func() {
 				data := "hello world"
 				reader := strings.NewReader(data)
 
@@ -42,7 +42,7 @@ func TestBinary(t *testing.T) {
 				So([]byte(binary), ShouldResemble, []byte(data))
 			})
 
-			Convey("Should create empty Binary from empty reader", func() {
+			Convey("Should create empty binary from empty reader", func() {
 				reader := strings.NewReader("")
 
 				binary, err := runtime.NewBinaryFrom(reader)

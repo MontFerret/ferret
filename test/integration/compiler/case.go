@@ -5,61 +5,18 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/asm"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/file"
-
-	"github.com/MontFerret/ferret/v2/pkg/asm"
-
+	"github.com/MontFerret/ferret/v2/test/base/assert"
+	"github.com/MontFerret/ferret/v2/test/base/compilation"
 	"github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
-	"github.com/MontFerret/ferret/v2/test/integration/base"
 )
 
-func Case(expression string, expected *bytecode.Program, desc ...string) UseCase {
-	return NewCase(expression, expected, convey.ShouldEqual, desc...)
-}
-
-func SkipCase(expression string, expected *bytecode.Program, desc ...string) UseCase {
-	return Skip(Case(expression, expected, desc...))
-}
-
 func ByteCodeCase(expression string, expected []bytecode.Instruction, desc ...string) UseCase {
-	return NewCase(expression, &bytecode.Program{
-		Bytecode: expected,
-	}, ShouldEqualBytecode, desc...)
-}
-
-func ErrorCase(expression string, expected base.ExpectedError, desc ...string) UseCase {
-	uc := NewCase(expression, &expected, nil, desc...)
-	uc.PreAssertion = base.ShouldBeCompilationError
-	uc.Assertions = []convey.Assertion{
-		func(actual any, expected ...any) string {
-			return "expected compilation error"
-		},
-	}
-
-	return uc
-}
-
-func SkipErrorCase(expression string, expected base.ExpectedError, desc ...string) UseCase {
-	return Skip(ErrorCase(expression, expected, desc...))
-}
-
-func MultiErrorCase(expression string, expected base.ExpectedMultiError, desc ...string) UseCase {
-	uc := NewCase(expression, &expected, nil, desc...)
-	uc.PreAssertion = base.ShouldBeCompilationError
-	uc.Assertions = []convey.Assertion{
-		func(actual any, expected ...any) string {
-			return "expected compilation error"
-		},
-	}
-
-	return uc
-}
-
-func SkipMultiErrorCase(expression string, expected base.ExpectedMultiError, desc ...string) UseCase {
-	return Skip(MultiErrorCase(expression, expected, desc...))
+	return compilation.ByteCodeSpec(expression, expected, desc...)
 }
 
 func SkipByteCodeCase(expression string, expected []bytecode.Instruction, desc ...string) UseCase {
@@ -90,10 +47,10 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 			convey.Convey(useCase.Expression, t, func() {
 				actual, err := c.Compile(file.NewSource(name, useCase.Expression))
 
-				if !base.ArePtrsEqual(useCase.PreAssertion, base.ShouldBeCompilationError) {
+				if !spec.ArePtrsEqual(useCase.PostCompilation, assert.IsCompilationError) {
 					convey.So(err, convey.ShouldBeNil)
 				} else {
-					convey.So(err, base.ShouldBeCompilationError, useCase.Expected)
+					convey.So(err, assert.IsCompilationError, useCase.Expected)
 
 					return
 				}
@@ -109,7 +66,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 
 				convey.So(err, convey.ShouldBeNil)
 
-				for _, assertion := range useCase.Assertions {
+				for _, assertion := range useCase.PostRun {
 					convey.So(actual, assertion, useCase.Expected)
 				}
 			})

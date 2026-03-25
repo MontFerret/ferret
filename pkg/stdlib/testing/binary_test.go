@@ -28,7 +28,7 @@ func TestBinary(t *t.T) {
 				_, err := Binary(context.Background(), runtime.NewString("test"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected String 'test' to be Binary")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected String 'test' to be binary")
 			})
 		})
 
@@ -37,7 +37,7 @@ func TestBinary(t *t.T) {
 				_, err := Binary(context.Background(), runtime.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Int '1' to be Binary")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Int '1' to be binary")
 			})
 		})
 
@@ -46,7 +46,7 @@ func TestBinary(t *t.T) {
 				_, err := Binary(context.Background(), runtime.NewArray(0))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Array '[]' to be Binary")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Array '[]' to be binary")
 			})
 		})
 	})
@@ -87,7 +87,7 @@ func TestNotBinary(t *t.T) {
 				_, err := NotBinary(context.Background(), runtime.NewBinary([]byte{}))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Binary '' not to be Binary")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected binary '' not to be binary")
 			})
 		})
 
@@ -96,7 +96,7 @@ func TestNotBinary(t *t.T) {
 				_, err := NotBinary(context.Background(), runtime.NewBinary([]byte{1, 2, 3}))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected Binary '\x01\x02\x03' not to be Binary")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected binary '\x01\x02\x03' not to be binary")
 			})
 		})
 	})

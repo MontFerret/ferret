@@ -1,67 +1,109 @@
-package optimization_test
+package compile
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/smartystreets/goconvey/convey"
-
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-
+	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/test/spec/assert"
+	"github.com/google/go-cmp/cmp"
 )
 
-func CastToProgram(prog any) *bytecode.Program {
-	if p, ok := prog.(*bytecode.Program); ok {
-		return p
-	}
-
-	panic("expected *vm.Program")
-}
-
-// ShouldEqualBytecode asserts that the bytecode of the actual program matches the expected program's bytecode.
+// EqualBytecode asserts that the bytecode of the actual program matches the expected program's bytecode.
 // It compares each instruction's opcode and operands, returning an error message if any mismatch is found.
-func ShouldEqualBytecode(a any, e ...any) string {
+func EqualBytecode(a, e any) error {
 	actual := CastToProgram(a)
-	expected := CastToProgram(e[0])
+	expected := CastToProgram(e)
 
 	for i := 0; i < len(expected.Bytecode); i++ {
 		actualIns := actual.Bytecode[i]
 		expectedIns := expected.Bytecode[i]
 
-		if err := convey.ShouldEqual(actualIns.Opcode, expectedIns.Opcode); err != "" {
+		if err := assert.Equal(actualIns.Opcode, expectedIns.Opcode); err != nil {
 			return err
 		}
 
-		if err := convey.ShouldEqual(len(actualIns.Operands), len(expectedIns.Operands)); err != "" {
-			return fmt.Sprintf("operends length mismatch at index %d: expected %d, got %d", i, len(expectedIns.Operands), len(actualIns.Operands))
+		if !cmp.Equal(len(actualIns.Operands), len(expectedIns.Operands)) {
+			return fmt.Errorf("operends length mismatch at index %d: expected %d, got %d", i, len(expectedIns.Operands), len(actualIns.Operands))
 		}
 
 		for j := 0; j < len(actualIns.Operands); j++ {
-			if err := convey.ShouldEqual(actualIns.Operands[j], expectedIns.Operands[j]); err != "" {
-				return fmt.Sprintf("operands mismatch at index %d, operand %d: expected %s, got %s", i, j, expectedIns.Operands[j], actualIns.Operands[j])
+			if !cmp.Equal(actualIns.Operands[j], expectedIns.Operands[j]) {
+				return fmt.Errorf("operands mismatch at index %d, operand %d: expected %s, got %s", i, j, expectedIns.Operands[j], actualIns.Operands[j])
 			}
 		}
 	}
 
-	return ""
+	return nil
 }
 
-// ShouldCheckOpcode asserts that the actual program's bytecode contains (or does not contain) specific opcodes, or that certain opcodes appear a specific number of times, based on the provided expectation type (OpcodeExistence or OpcodeCount).
-func ShouldCheckOpcode(a any, e ...any) string {
+// ContainsOpcode asserts that the actual program's bytecode contains (or does not contain) specific opcodes, or that certain opcodes appear a specific number of times, based on the provided expectation type (OpcodeExistence or OpcodeCount).
+func ContainsOpcode(a any, e any) error {
 	actual := CastToProgram(a)
 
-	switch expectation := e[0].(type) {
+	switch expectation := e.(type) {
 	case OpcodeExistence:
-		return shouldCheckOpcodeExistence(actual, expectation)
+		return checkOpcodeExistence(actual, expectation)
 	case OpcodeCount:
-		return shouldCheckOpcodeCount(actual, expectation)
+		return checkOpcodeCount(actual, expectation)
 	default:
-		panic(fmt.Sprintf("unsupported opcode expectation type: %T", e[0]))
+		return fmt.Errorf("unsupported opcode expectation type: %T", e)
 	}
 }
 
-func shouldCheckOpcodeCount(actual *bytecode.Program, expected OpcodeCount) string {
+// EqualRegisters asserts that the maximum register index used by the
+// program bytecode is == expected.
+func EqualRegisters(a any, e any) error {
+	expectedMax, ok := toInt(e)
+	if !ok {
+		return fmt.Errorf("expected max registers must be an integer type, got %T", e)
+	}
+
+	actual := CastToProgram(a)
+	maxReg := maxRegisterIndex(actual.Bytecode)
+
+	if maxReg != expectedMax {
+		return fmt.Errorf("expected max register == %d, got %d", expectedMax, maxReg)
+	}
+
+	return nil
+}
+
+func IsCompilationError(actual, expected any) error {
+	var e error
+
+	switch ex := expected.(type) {
+	case *assert.ExpectedError:
+		err, ok := actual.(*diagnostics.Diagnostic)
+
+		if !ok {
+			err2, ok := actual.(*diagnostics.DiagnosticSet)
+
+			if !ok {
+				return fmt.Errorf("expected diagnostic set but got %T", actual)
+			}
+
+			err = err2.First()
+		}
+
+		e = assert.DiagnosticError(err, ex)
+	case *assert.ExpectedMultiError:
+		err, ok := actual.(*diagnostics.DiagnosticSet)
+
+		if !ok {
+			return fmt.Errorf("expected diagnostic set but got %T", actual)
+		}
+
+		e = assert.DiagnosticErrors(err, ex)
+	default:
+		e = fmt.Errorf("expected a compilation error")
+	}
+
+	return e
+}
+
+func checkOpcodeCount(actual *bytecode.Program, expected OpcodeCount) error {
 	current := make(map[bytecode.Opcode]int)
 
 	for _, inst := range actual.Bytecode {
@@ -70,14 +112,14 @@ func shouldCheckOpcodeCount(actual *bytecode.Program, expected OpcodeCount) stri
 
 	for opcode, count := range expected.Count {
 		if current[opcode] != count {
-			return fmt.Sprintf("expected %d occurrences of opcode %s, got %d", count, opcode.String(), current[opcode])
+			return fmt.Errorf("expected %d occurrences of opcode %s, got %d", count, opcode.String(), current[opcode])
 		}
 	}
 
-	return ""
+	return nil
 }
 
-func shouldCheckOpcodeExistence(actual *bytecode.Program, expected OpcodeExistence) string {
+func checkOpcodeExistence(actual *bytecode.Program, expected OpcodeExistence) error {
 	exists := func(op bytecode.Opcode) bool {
 		for _, inst := range actual.Bytecode {
 			if inst.Opcode == op {
@@ -90,62 +132,17 @@ func shouldCheckOpcodeExistence(actual *bytecode.Program, expected OpcodeExisten
 
 	for _, opcode := range expected.Exists {
 		if !exists(opcode) {
-			return fmt.Sprintf("expected opcode %s to be present", opcode.String())
+			return fmt.Errorf("expected opcode %s to be present", opcode.String())
 		}
 	}
 
 	for _, opcode := range expected.NotExists {
 		if exists(opcode) {
-			return fmt.Sprintf("unexpected opcode %s in bytecode", opcode.String())
+			return fmt.Errorf("unexpected opcode %s in bytecode", opcode.String())
 		}
 	}
 
-	return ""
-}
-
-// ShouldUseEqRegisters asserts that the maximum register index used by the
-// program bytecode is == expected.
-func ShouldUseEqRegisters(a any, e ...any) string {
-	if len(e) == 0 {
-		return "expected max registers value is missing"
-	}
-
-	expectedMax, ok := toInt(e[0])
-	if !ok {
-		return fmt.Sprintf("expected max registers must be an integer type, got %T", e[0])
-	}
-
-	actual := CastToProgram(a)
-	maxReg := maxRegisterIndex(actual.Bytecode)
-
-	if maxReg != expectedMax {
-		return fmt.Sprintf("expected max register == %d, got %d", expectedMax, maxReg)
-	}
-
-	return ""
-}
-
-// ShouldEqualJSONValue compares actual and expected by JSON-encoding both values.
-// This normalizes numeric types (e.g., int vs float64) and map ordering.
-func ShouldEqualJSONValue(a any, e ...any) string {
-	if len(e) == 0 {
-		return "expected value is missing"
-	}
-	if len(e) > 1 {
-		return "expected single comparison value"
-	}
-
-	actualBytes, err := json.Marshal(a)
-	if err != nil {
-		return fmt.Sprintf("actual value is not JSON-marshalable: %v", err)
-	}
-
-	expectedBytes, err := json.Marshal(e[0])
-	if err != nil {
-		return fmt.Sprintf("expected value is not JSON-marshalable: %v", err)
-	}
-
-	return convey.ShouldEqual(string(actualBytes), string(expectedBytes))
+	return nil
 }
 
 func maxRegisterIndex(bytecode []bytecode.Instruction) int {
@@ -235,7 +232,7 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 		addDef(dst)
 		return
 
-	// Unary ops.
+	// unary ops.
 	case bytecode.OpIncr, bytecode.OpDecr:
 		addUse(dst)
 		addDef(dst)

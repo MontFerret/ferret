@@ -1,4 +1,4 @@
-package base
+package spec
 
 import (
 	"context"
@@ -20,8 +20,14 @@ type contextKey string
 
 const testSaltKey contextKey = "test-salt"
 
-func Compile(expression string) (*bytecode.Program, error) {
-	c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
+func Compile(expression string, level ...compiler.OptimizationLevel) (*bytecode.Program, error) {
+	var oplevel compiler.OptimizationLevel
+
+	if len(level) > 0 {
+		oplevel = level[0]
+	}
+
+	c := compiler.New(compiler.WithOptimizationLevel(oplevel))
 
 	return c.Compile(file.NewSource("", expression))
 }

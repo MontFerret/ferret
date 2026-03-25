@@ -1,59 +1,60 @@
 package vm_test
 
 import (
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
 )
 
 func TestEqualityOrderOperators(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		Case("RETURN true > NONE", true),
+	RunSpecs(t, []Spec{
+		S("RETURN true > NONE", true),
 
 		// null < ...
-		Case("RETURN NONE < false", true),
-		Case("RETURN NONE < true", true),
-		Case("RETURN NONE < 0", true),
-		Case("RETURN NONE < ''", true),
-		Case("RETURN NONE < ' '", true),
-		Case("RETURN NONE < '0'", true),
-		Case("RETURN NONE < 'abc'", true),
-		Case("RETURN NONE < []", true),
-		Case("RETURN NONE < {}", true),
+		S("RETURN NONE < false", true),
+		S("RETURN NONE < true", true),
+		S("RETURN NONE < 0", true),
+		S("RETURN NONE < ''", true),
+		S("RETURN NONE < ' '", true),
+		S("RETURN NONE < '0'", true),
+		S("RETURN NONE < 'abc'", true),
+		S("RETURN NONE < []", true),
+		S("RETURN NONE < {}", true),
 
 		// false < ...
-		Case("RETURN false < true", true),
-		Case("RETURN false < 0", true),
-		Case("RETURN false < ''", true),
-		Case("RETURN false < ' '", true),
-		Case("RETURN false < '0'", true),
-		Case("RETURN false < 'abc'", true),
-		Case("RETURN false < []", true),
-		Case("RETURN false < {}", true),
+		S("RETURN false < true", true),
+		S("RETURN false < 0", true),
+		S("RETURN false < ''", true),
+		S("RETURN false < ' '", true),
+		S("RETURN false < '0'", true),
+		S("RETURN false < 'abc'", true),
+		S("RETURN false < []", true),
+		S("RETURN false < {}", true),
 
 		// true < ...
-		Case("RETURN true < 0", true),
-		Case("RETURN true < ''", true),
-		Case("RETURN true < ' '", true),
-		Case("RETURN true < '0'", true),
-		Case("RETURN true < 'abc'", true),
-		Case("RETURN true < []", true),
-		Case("RETURN true < {}", true),
+		S("RETURN true < 0", true),
+		S("RETURN true < ''", true),
+		S("RETURN true < ' '", true),
+		S("RETURN true < '0'", true),
+		S("RETURN true < 'abc'", true),
+		S("RETURN true < []", true),
+		S("RETURN true < {}", true),
 
 		// 0 < ...
-		Case("RETURN 0 < ''", true),
-		Case("RETURN 0 < ' '", true),
-		Case("RETURN 0 < '0'", true),
-		Case("RETURN 0 < 'abc'", true),
-		Case("RETURN 0 < []", true),
-		Case("RETURN 0 < {}", true),
+		S("RETURN 0 < ''", true),
+		S("RETURN 0 < ' '", true),
+		S("RETURN 0 < '0'", true),
+		S("RETURN 0 < 'abc'", true),
+		S("RETURN 0 < []", true),
+		S("RETURN 0 < {}", true),
 
 		// '' < ...
-		Case("RETURN '' < ' '", true),
-		Case("RETURN '' < '0'", true),
-		Case("RETURN '' < 'abc'", true),
-		Case("RETURN '' < []", true),
-		Case("RETURN '' < {}", true),
+		S("RETURN '' < ' '", true),
+		S("RETURN '' < '0'", true),
+		S("RETURN '' < 'abc'", true),
+		S("RETURN '' < []", true),
+		S("RETURN '' < {}", true),
 
 		// [] < {}
-		Case("RETURN [] < {}", true),
+		S("RETURN [] < {}", true),
 	})
 }

@@ -1,6 +1,7 @@
 package vm_test
 
 import (
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -8,10 +9,10 @@ import (
 )
 
 func TestRange(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		CaseArray("RETURN 1..10", []any{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "Should return a range from 1 to 10"),
-		CaseArray("RETURN 10..1", []any{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}, "Should return a range from 10 to 1"),
-		CaseArray(
+	RunSpecs(t, []Spec{
+		Array("RETURN 1..10", []any{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "Should return a range from 1 to 10"),
+		Array("RETURN 10..1", []any{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}, "Should return a range from 10 to 1"),
+		Array(
 			`
 		LET start = 1
 		LET end = 10
@@ -20,7 +21,7 @@ func TestRange(t *testing.T) {
 			[]any{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 			"Should be able to use variables in range",
 		),
-		CaseArray(`
+		Array(`
 		LET start = @start
 		LET end = @end
 		RETURN start..end
@@ -29,7 +30,7 @@ func TestRange(t *testing.T) {
 			"Should be able to use parameters in range",
 		),
 
-		CaseArray(`
+		Array(`
 		LET start = @start
 		LET end = @end
 		LET items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -39,7 +40,7 @@ func TestRange(t *testing.T) {
 			"Should be able to use function call in range",
 		),
 
-		CaseArray(`
+		Array(`
 		LET obj = { start: @start, end: @end }
 		RETURN obj.start..obj.end
 		`,

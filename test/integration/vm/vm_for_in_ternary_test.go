@@ -1,61 +1,62 @@
 package vm_test
 
 import (
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
 )
 
 func TestForTernaryExpression(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		CaseArray(`
+	RunSpecs(t, []Spec{
+		Array(`
 			LET foo = FALSE
 			RETURN foo ? TRUE : (FOR i IN 1..5 RETURN i*2)`,
 			[]any{2, 4, 6, 8, 10}),
-		CaseArray(`
+		Array(`
 			LET foo = FALSE
 			RETURN foo ? TRUE : (FOR i IN 1..5 T::FAIL() RETURN i*2)?`,
 			[]any{}),
-		CaseArray(`
+		Array(`
 			LET foo = FALSE
 			RETURN foo ? (FOR i IN 1..5 RETURN i) : (FOR i IN 1..5 RETURN i*2)`,
 			[]any{2, 4, 6, 8, 10}),
-		CaseArray(`
+		Array(`
 			LET foo = FALSE
 			RETURN foo ? (FOR i IN 1..5 RETURN T::FAIL()) : (FOR i IN 1..5 RETURN T::FAIL())?`,
 			[]any{}),
-		CaseArray(`
+		Array(`
 			LET foo = TRUE
 			RETURN foo ? (FOR i IN 1..5 RETURN T::FAIL())? : (FOR i IN 1..5 RETURN T::FAIL())`,
 			[]any{}),
-		CaseArray(`
+		Array(`
 			LET foo = FALSE
 			LET res = foo ? TRUE : (FOR i IN 1..5 RETURN i*2) 
 			RETURN res`,
 			[]any{2, 4, 6, 8, 10}),
-		Case(`
+		S(`
 			LET foo = TRUE
 			LET res = foo ? TRUE : (FOR i IN 1..5 RETURN i*2)
 			RETURN res`,
 			true),
-		CaseArray(`
+		Array(`
 			LET foo = FALSE
 			LET res = foo ? TRUE : (FOR i IN 1..5 RETURN i*2) 
 			RETURN res`,
 			[]any{2, 4, 6, 8, 10}),
-		CaseArray(`
+		Array(`
 			LET foo = FALSE
 			LET res = foo ? (FOR i IN 1..5 RETURN i) : (FOR i IN 1..5 RETURN i*2)
 			RETURN res`,
 			[]any{2, 4, 6, 8, 10}),
-		CaseArray(`
+		Array(`
 			LET foo = TRUE
 			LET res = foo ? (FOR i IN 1..5 RETURN i) : (FOR i IN 1..5 RETURN i*2)
 			RETURN res`,
 			[]any{1, 2, 3, 4, 5}),
-		Case(`
+		S(`
 			LET res = LENGTH((FOR i IN 1..5 RETURN T::FAIL())?) ? TRUE : FALSE
 			RETURN res`,
 			false),
-		Case(`
+		S(`
 			LET res = (FOR i IN 1..5 RETURN i)? ? TRUE : FALSE
 			RETURN res
 `,

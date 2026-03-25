@@ -1,57 +1,39 @@
 package optimization_test
 
 import (
-	"github.com/smartystreets/goconvey/convey"
-
-	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-
 	"github.com/MontFerret/ferret/v2/pkg/vm"
-
-	"github.com/MontFerret/ferret/v2/test/integration/base"
+	"github.com/MontFerret/ferret/v2/test/base/assert"
 )
 
 type (
 	UseCase struct {
-		base.TestCase
+		spec.Spec
 		Execution Execution
 	}
 
 	Execution struct {
 		Expected  any
-		Assertion convey.Assertion
+		Assertion assert.Assertion
 		Options   []vm.EnvironmentOption
 		Run       bool
 	}
-
-	OpcodeExpectation interface {
-		OpcodeExistence | OpcodeCount
-	}
-
-	OpcodeExistence struct {
-		Exists    []bytecode.Opcode
-		NotExists []bytecode.Opcode
-	}
-
-	OpcodeCount struct {
-		Count map[bytecode.Opcode]int
-	}
 )
 
-func NewCase(expression string, expected any, assertion convey.Assertion, exec Execution, desc ...string) UseCase {
+func NewCase(expression string, expected any, assertion assert.Assertion, exec Execution, desc ...string) UseCase {
 	return UseCase{
-		TestCase:  base.NewCase(expression, expected, assertion, desc...),
+		Spec:      spec.NewSpec(expression, expected, assertion, desc...),
 		Execution: exec,
 	}
 }
 
 func Skip(uc UseCase) UseCase {
-	uc.TestCase = base.Skip(uc.TestCase)
+	uc.Spec = spec.Skip(uc.Spec)
 
 	return uc
 }
 
 func Debug(uc UseCase) UseCase {
-	uc.TestCase = base.Debug(uc.TestCase)
+	uc.Spec = spec.Debug(uc.Spec)
 
 	return uc
 }

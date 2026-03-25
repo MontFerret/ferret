@@ -6,31 +6,32 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
-	"github.com/MontFerret/ferret/v2/test/integration/base"
+	spec "github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestForWhileSort(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		CaseArray(`
+	RunSpecs(t, []Spec{
+		Array(`
 			FOR i WHILE UNTIL(5)
 				SORT i DESC
 				RETURN i
 `, []any{4, 3, 2, 1, 0}),
-		CaseArray(`
+		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 
 			FOR i WHILE UNTIL(4)
 				SORT strs[i]
 				RETURN i
 `, []any{3, 1, 0, 2}),
-		CaseArray(`
+		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 
 			FOR i WHILE UNTIL(4)
 				SORT i DESC
 				RETURN strs[i]
 `, []any{"abc", "qaz", "bar", "foo"}),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					name: "Ron",
@@ -57,7 +58,7 @@ func TestForWhileSort(t *testing.T) {
 			map[string]any{"name": "Bob", "age": 36, "gender": "m"},
 			map[string]any{"name": "Ron", "age": 31, "gender": "m"},
 		}),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -84,7 +85,7 @@ func TestForWhileSort(t *testing.T) {
 			map[string]any{"active": true, "age": 31, "gender": "m"},
 			map[string]any{"active": true, "age": 29, "gender": "f"},
 		}),
-		CaseArray(`			
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -117,7 +118,7 @@ func TestForWhileSort(t *testing.T) {
 				map[string]any{"active": true, "age": 31, "gender": "m"},
 				map[string]any{"active": true, "age": 36, "gender": "m"},
 			}),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -152,7 +153,7 @@ func TestForWhileSort(t *testing.T) {
 			map[string]any{"active": true, "age": 31, "gender": "m"},
 			map[string]any{"active": true, "age": 36, "gender": "m"},
 		}),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -179,7 +180,7 @@ func TestForWhileSort(t *testing.T) {
 			map[string]any{"active": true, "age": 31, "gender": "m"},
 			map[string]any{"active": true, "age": 36, "gender": "m"},
 		}),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -205,7 +206,7 @@ func TestForWhileSort(t *testing.T) {
 			map[string]any{"active": true, "age": 31, "gender": "m"},
 			map[string]any{"active": true, "age": 36, "gender": "m"},
 		}),
-		CaseObject(`
+		Object(`
 			LET users = [
 				{
 					active: true,
@@ -227,7 +228,7 @@ func TestForWhileSort(t *testing.T) {
 				SORT users[i].age
 				FILTER users[i].gender == "m"
 				RETURN users[i])
-			
+
 			RETURN sorted[0]
 		`, map[string]any{"active": true, "age": 31, "gender": "m"}),
 	}, vm.WithFunctionsRegistrar(func(fns runtime.FunctionDefs) {
@@ -235,6 +236,6 @@ func TestForWhileSort(t *testing.T) {
 			return runtime.None, nil
 		})
 
-		fns.From(base.ForWhileHelpers())
+		fns.From(spec.ForWhileHelpers())
 	}))
 }

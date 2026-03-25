@@ -715,7 +715,7 @@ func TestMsgpackCodecDecode(t *testing.T) {
 		}
 
 		if _, ok := value.(runtime.Binary); !ok {
-			t.Fatalf("expected Binary, got %T", value)
+			t.Fatalf("expected binary, got %T", value)
 		}
 
 		assertValueEqual(t, value, runtime.NewBinary(data))

@@ -19,32 +19,32 @@ func TestMember(t *testing.T) {
 			I(bytecode.OpMove, 0, 7),
 			I(bytecode.OpReturn, 0, 7),
 		}),
-		//Case("LET arr = [1,2,3,4] RETURN arr[1]", 2),
-		//Case("LET arr = [1,2,3,4] LET idx = 1 RETURN arr[idx]", 2),
-		//Case(`LET obj = { foo: "bar", qaz: "wsx"} RETURN obj["qaz"]`, "wsx"),
-		//Case(fmt.Sprintf(`
+		//Spec("LET arr = [1,2,3,4] RETURN arr[1]", 2),
+		//Spec("LET arr = [1,2,3,4] LET idx = 1 RETURN arr[idx]", 2),
+		//Spec(`LET obj = { foo: "bar", qaz: "wsx"} RETURN obj["qaz"]`, "wsx"),
+		//Spec(fmt.Sprintf(`
 		//						LET obj = { "foo": "bar", %s: "wsx"}
 		//
 		//						RETURN obj["qaz"]
 		//					`, "`qaz`"), "wsx"),
-		//Case(fmt.Sprintf(`
+		//Spec(fmt.Sprintf(`
 		//						LET obj = { "foo": "bar", %s: "wsx"}
 		//
 		//						RETURN obj["let"]
 		//					`, "`let`"),
 		//	"wsx"),
-		//Case(`LET obj = { foo: "bar", qaz: "wsx"} LET key = "qaz" RETURN obj[key]`, "wsx"),
-		//Case(`RETURN { foo: "bar" }.foo`, "bar"),
-		//Case(`LET inexp = 1 IN {'foo': [1]}.foo
+		//Spec(`LET obj = { foo: "bar", qaz: "wsx"} LET key = "qaz" RETURN obj[key]`, "wsx"),
+		//Spec(`RETURN { foo: "bar" }.foo`, "bar"),
+		//Spec(`LET inexp = 1 IN {'foo': [1]}.foo
 		//	LET ternaryexp = FALSE ? TRUE : {foo: TRUE}.foo
 		//	RETURN inexp && ternaryexp`,
 		//	true),
-		//Case(`RETURN ["bar", "foo"][0]`, "bar"),
-		//Case(`LET inexp = 1 IN [[1]][0]
+		//Spec(`RETURN ["bar", "foo"][0]`, "bar"),
+		//Spec(`LET inexp = 1 IN [[1]][0]
 		//						LET ternaryexp = FALSE ? TRUE : [TRUE][0]
 		//						RETURN inexp && ternaryexp`,
 		//	true),
-		//Case(`LET obj = {
+		//Spec(`LET obj = {
 		//					first: {
 		//						second: {
 		//							third: {
@@ -60,7 +60,7 @@ func TestMember(t *testing.T) {
 		//
 		//				RETURN obj.first.second.third.fourth.fifth.bottom`,
 		//	true),
-		//Case(`LET o1 = {
+		//Spec(`LET o1 = {
 		//first: {
 		//  second: {
 		//      ["third"]: {
@@ -79,7 +79,7 @@ func TestMember(t *testing.T) {
 		//RETURN o1["first"]["second"][o2.prop]["fourth"]["fifth"].bottom`,
 		//
 		//	true),
-		//Case(`LET o1 = {
+		//Spec(`LET o1 = {
 		//first: {
 		// second: {
 		//     third: {
@@ -98,7 +98,7 @@ func TestMember(t *testing.T) {
 		//RETURN o1.first["second"][o2.prop].fourth["fifth"]["bottom"]`,
 		//
 		//	true),
-		//Case(`LET obj = {
+		//Spec(`LET obj = {
 		//					attributes: {
 		//						'data-index': 1
 		//					}
@@ -123,7 +123,7 @@ func TestMember(t *testing.T) {
 		//	[]any{
 		//		[]any{"foo", "bar"},
 		//	}),
-		//Case(`RETURN FIRST([[1, 2]][0])`,
+		//Spec(`RETURN FIRST([[1, 2]][0])`,
 		//	1),
 		//CaseArray(`RETURN [[1, 2]][0]`,
 		//	[]any{1, 2}),
@@ -132,7 +132,7 @@ func TestMember(t *testing.T) {
 		//				RETURN i
 		//		`,
 		//	[]any{1, 2}),
-		//Case(`
+		//Spec(`
 		//			LET arr = [{ name: "Bob" }]
 		//
 		//			RETURN FIRST(arr).name

@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/smartystreets/goconvey/convey"
-
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
-	"github.com/MontFerret/ferret/v2/test/integration/base"
+	spec "github.com/MontFerret/ferret/v2/test/spec"
+	specassert "github.com/MontFerret/ferret/v2/test/spec/assert"
 )
 
 type roundTripQueryable struct{}
@@ -63,34 +62,38 @@ func runProgramRoundTrip(t *testing.T, cases []roundTripCase) {
 			name := fmt.Sprintf("Program JSON RoundTrip: %s (O%d)", tc.name(), level)
 
 			t.Run(name, func(t *testing.T) {
-				convey.Convey(tc.expression, t, func() {
-					prog, err := compilerInstance.Compile(file.NewSource(name, tc.expression))
-					convey.So(err, convey.ShouldBeNil)
+				prog, err := compilerInstance.Compile(file.NewSource(name, tc.expression))
+				if err != nil {
+					t.Fatalf("compile failed: %v", err)
+				}
 
-					opts := []vm.EnvironmentOption{
-						vm.WithNamespace(base.Stdlib()),
-					}
-					opts = append(opts, tc.options...)
+				opts := []vm.EnvironmentOption{
+					vm.WithNamespace(spec.Stdlib()),
+				}
+				opts = append(opts, tc.options...)
 
-					expectedJSON, err := json.Marshal(tc.expected)
-					convey.So(err, convey.ShouldBeNil)
+				originalOut, err := spec.Run(prog, opts...)
+				if err != nil {
+					t.Fatalf("original run failed: %v", err)
+				}
 
-					originalOut, err := base.Run(prog, opts...)
-					convey.So(err, convey.ShouldBeNil)
+				encoded, err := json.Marshal(prog)
+				if err != nil {
+					t.Fatalf("program JSON marshal failed: %v", err)
+				}
 
-					encoded, err := json.Marshal(prog)
-					convey.So(err, convey.ShouldBeNil)
+				var decoded bytecode.Program
+				if err := json.Unmarshal(encoded, &decoded); err != nil {
+					t.Fatalf("program JSON unmarshal failed: %v", err)
+				}
 
-					var decoded bytecode.Program
-					err = json.Unmarshal(encoded, &decoded)
-					convey.So(err, convey.ShouldBeNil)
+				roundTripOut, err := spec.Run(&decoded, opts...)
+				if err != nil {
+					t.Fatalf("round-trip run failed: %v", err)
+				}
 
-					roundTripOut, err := base.Run(&decoded, opts...)
-					convey.So(err, convey.ShouldBeNil)
-
-					convey.So(string(originalOut), convey.ShouldEqualJSON, string(expectedJSON))
-					convey.So(string(roundTripOut), convey.ShouldEqualJSON, string(expectedJSON))
-				})
+				specassert.Expect(t, specassert.EqualJSON, json.RawMessage(originalOut), tc.expected, "original program output mismatch")
+				specassert.Expect(t, specassert.EqualJSON, json.RawMessage(roundTripOut), tc.expected, "round-trip program output mismatch")
 			})
 		}
 	}

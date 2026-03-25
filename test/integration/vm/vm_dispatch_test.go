@@ -7,6 +7,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 type testDispatcher struct {
@@ -54,16 +55,16 @@ func TestDispatch(t *testing.T) {
 		result: runtime.NewString("ok"),
 	}
 
-	RunUseCases(t, []UseCase{
-		Case(`
+	RunSpecs(t, []Spec{
+		S(`
 			DISPATCH "click" IN @d
 			RETURN 1
 		`, 1, "Should dispatch as a statement"),
-		Case(`RETURN DISPATCH "click" IN @d`, "ok", "Should dispatch with default payload and options"),
-		Case(`LET event = "hover" RETURN DISPATCH event IN @d`, "ok", "Should dispatch with variable event name"),
-		Case(`RETURN DISPATCH @event_name IN @d`, "ok", "Should dispatch with param event name"),
-		Case(`RETURN DISPATCH "input" IN @d WITH "hello"`, "ok", "Should dispatch with payload"),
-		Case(`RETURN DISPATCH "select" IN @d WITH ["1", "2"] OPTIONS { selector: "#a", delay: 50 }`, "ok", "Should dispatch with options"),
+		S(`RETURN DISPATCH "click" IN @d`, "ok", "Should dispatch with default payload and options"),
+		S(`LET event = "hover" RETURN DISPATCH event IN @d`, "ok", "Should dispatch with variable event name"),
+		S(`RETURN DISPATCH @event_name IN @d`, "ok", "Should dispatch with param event name"),
+		S(`RETURN DISPATCH "input" IN @d WITH "hello"`, "ok", "Should dispatch with payload"),
+		S(`RETURN DISPATCH "select" IN @d WITH ["1", "2"] OPTIONS { selector: "#a", delay: 50 }`, "ok", "Should dispatch with options"),
 	}, vm.WithParams(map[string]runtime.Value{
 		"d":          dispatcher,
 		"event_name": runtime.NewString("submit"),
@@ -130,9 +131,15 @@ func TestDispatch(t *testing.T) {
 func TestDispatchRuntimeErrors(t *testing.T) {
 	dispatcher := &testDispatcher{result: runtime.NewString("ok")}
 
-	RunUseCases(t, []UseCase{
-		RuntimeErrorCase(`RETURN DISPATCH "click" IN @value`, ExpectedRuntimeError{Message: "Invalid type"}, "Should fail when target is not a dispatcher"),
-		RuntimeErrorCase(`RETURN DISPATCH @event IN @d`, ExpectedRuntimeError{Message: "Invalid type"}, "Should fail when event name is not a string"),
+	RunSpecs(t, []Spec{
+		NewSpec(`RETURN DISPATCH "click" IN @value`, "Should fail when target is not a dispatcher").Expect().RunError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Message: "Invalid type"},
+		),
+		NewSpec(`RETURN DISPATCH @event IN @d`, "Should fail when event name is not a string").Expect().RunError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Message: "Invalid type"},
+		),
 	}, vm.WithParams(map[string]runtime.Value{
 		"d":     dispatcher,
 		"event": runtime.NewInt(1),

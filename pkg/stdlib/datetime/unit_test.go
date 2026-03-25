@@ -40,8 +40,8 @@ func TestUnitFromString(t *testing.T) {
 		{"Valid f", "f", false},
 		{"Valid milliseconds", "milliseconds", false},
 		{"Invalid unit", "invalid_unit", true},
-		{"Case insensitive", "YEAR", false},
-		{"Case insensitive", "Hour", false},
+		{"Spec insensitive", "YEAR", false},
+		{"Spec insensitive", "Hour", false},
 	}
 
 	for _, tt := range tests {

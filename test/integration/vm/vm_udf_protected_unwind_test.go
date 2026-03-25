@@ -1,10 +1,14 @@
 package vm_test
 
-import "testing"
+import (
+	"testing"
+
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
+)
 
 func TestUDFProtectedUnwindDeepFrames(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		CaseArray(`
+	RunSpecs(t, []Spec{
+		Array(`
 FUNC ok() => 9
 FUNC bomb() => T::FAIL()
 FUNC level2() => bomb()
@@ -16,7 +20,7 @@ FUNC guard() (
 )
 RETURN guard()
 `, []any{nil, 9}, "Protected unwind drops nested frames and resumes caller"),
-		CaseNil(`
+		Nil(`
 FUNC dive(n) (
   RETURN MATCH n (
     0 => T::FAIL(),
@@ -25,14 +29,14 @@ FUNC dive(n) (
 )
 RETURN dive(8)?
 `, "Protected unwind across deep recursion"),
-		CaseArray(`
+		Array(`
 FUNC bomb() => T::FAIL()
 FUNC level2() => bomb()
 FUNC level1() => level2()
 FUNC once() => level1()?
 RETURN [once(), once(), once()]
 `, []any{nil, nil, nil}, "Repeated protected unwinds in one run"),
-		CaseArray(`
+		Array(`
 FUNC outer() (
   VAR total = 1
   FUNC wrapper(v) (

@@ -2,12 +2,13 @@ package vm_test
 
 import (
 	"fmt"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
 )
 
 func TestString(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		Case(
+	RunSpecs(t, []Spec{
+		S(
 			`
 			RETURN "
 FOO
@@ -15,7 +16,7 @@ BAR
 "
 		`, "\nFOO\nBAR\n", "Should be possible to use multi line string"),
 
-		CaseJSON(
+		JSON(
 			fmt.Sprintf(`
 RETURN %s<!DOCTYPE html>
 		<html lang="en">
@@ -38,7 +39,7 @@ RETURN %s<!DOCTYPE html>
 		</body>
 		</html>`, "Should be possible to use multi line string with nested strings using backtick"),
 
-		CaseJSON(
+		JSON(
 			fmt.Sprintf(`
 RETURN %s<!DOCTYPE html>
 		<html lang="en">
@@ -62,33 +63,33 @@ RETURN %s<!DOCTYPE html>
 		</body>
 		</html>`, "Should be possible to use multi line string with nested strings using tick"),
 
-		Case(
+		S(
 			`
 LET name = "World"
 RETURN `+"`"+`Hello ${name}!`+"`"+`
 		`, "Hello World!", "Should interpolate template literals"),
 
-		Case(
+		S(
 			`
 RETURN `+"`"+`sum=${1 + 2}`+"`"+`
 		`, "sum=3", "Should interpolate expressions inside template literals"),
 
-		Case(
+		S(
 			`
 RETURN `+"`"+`${1 + 2}`+"`"+`
 		`, "3", "Template literals should coerce expressions to strings"),
 
-		CaseObject(
+		Object(
 			`
 RETURN { `+"`"+`foo${1}`+"`"+`: 2 }
 		`, map[string]any{"foo1": 2}, "Template literals should work as property names"),
 
-		Case(
+		S(
 			fmt.Sprintf("\nRETURN %scost=\\${1}%s\n", "`", "`"),
 			"cost=${1}",
 			"Should allow escaping interpolation start in template literals"),
 
-		Case(
+		S(
 			fmt.Sprintf("\nRETURN %suse \\`backtick\\`%s\n", "`", "`"),
 			"use `backtick`",
 			"Should allow escaped backticks in template literals"),

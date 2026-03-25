@@ -1,25 +1,29 @@
 package vm_test
 
-import "testing"
+import (
+	"testing"
+
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
+)
 
 func TestUDFs(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		Case(`
+	RunSpecs(t, []Spec{
+		S(`
 FUNC id(x) => x
 RETURN id(1)
 `, 1, "UDF arrow body"),
-		Case(`
+		S(`
 FUNC id(x) (
   RETURN x
 )
 RETURN id(2)
 `, 2, "UDF with parentheses"),
-		Case(`
+		S(`
 LET base = 5
 FUNC getBase() => base
 RETURN getBase()
 `, 5, "Capture global variable"),
-		Case(`
+		S(`
 FUNC outer(x) (
   FUNC inner(y) (
     RETURN x + y
@@ -28,7 +32,7 @@ FUNC outer(x) (
 )
 RETURN outer(2)
 `, 3, "Nested capture"),
-		Case(`
+		S(`
 LET global = 100
 FUNC outer(a) (
   LET outerLocal = 10
@@ -40,7 +44,7 @@ FUNC outer(a) (
 )
 RETURN outer(3)
 `, 116, "Multi-level capture propagation"),
-		Case(`
+		S(`
 FUNC outer(a) (
   FUNC inner(b) (
     RETURN b
@@ -50,7 +54,7 @@ FUNC outer(a) (
 )
 RETURN outer(2)
 `, 1, "Nested LET before return"),
-		Case(`
+		S(`
 FUNC fact(n) (
   RETURN MATCH n (
     0 => 1,
@@ -59,7 +63,7 @@ FUNC fact(n) (
 )
 RETURN fact(5)
 `, 120, "Recursion"),
-		CaseArray(`
+		Array(`
 FUNC f() => "outer"
 FUNC outer() (
   FUNC f() => "inner"
@@ -67,7 +71,7 @@ FUNC outer() (
 )
 RETURN [outer(), f()]
 `, []any{"inner", "outer"}, "Nested UDF shadows only within lexical scope"),
-		CaseArray(`
+		Array(`
 LET value = 1
 FUNC outer() (
   LET value = 10
@@ -76,32 +80,32 @@ FUNC outer() (
 )
 RETURN [outer(), value]
 `, []any{[]any{10, 10}, 1}, "Nested UDF captures nearest shadowed local"),
-		CaseNil(`
+		Nil(`
 FUNC risky() (
   RETURN T::FAIL()
 )
 RETURN risky()?
 `, "Protected UDF call"),
-		Case(`
+		S(`
 FUNC LENGTH(x) (
   RETURN 42
 )
 RETURN LENGTH([1,2,3])
 `, 42, "UDF shadows builtin"),
-		Case(`
+		S(`
 FUNC a() => 1
 FUNC A() => 2
 RETURN a() + A()
 `, 3, "UDF lookup is case-sensitive"),
-		Case(`
+		S(`
 FUNC length() => 100
 RETURN LENGTH([1,2,3]) + length()
 `, 103, "Lowercase UDF does not shadow differently-cased builtin call"),
-		Case(`
+		S(`
 FUNC LENGTH(x) => 100
 RETURN length([1,2,3])
 `, 3, "Builtin survives differently-cased UDF declaration"),
-		CaseArray(`
+		Array(`
 FUNC f() => "outer-lower"
 FUNC outer() (
   FUNC F() => "inner-upper"
@@ -109,7 +113,7 @@ FUNC outer() (
 )
 RETURN [outer(), f()]
 `, []any{[]any{"outer-lower", "inner-upper"}, "outer-lower"}, "Nested UDF shadowing is exact-case"),
-		CaseArray(`
+		Array(`
 FUNC a0() => 0
 FUNC a1(a) => a
 FUNC a2(a, b) => a + b
@@ -118,7 +122,7 @@ FUNC a4(a, b, c, d) => a + b + c + d
 FUNC a6(a, b, c, d, e, f) => a + b + c + d + e + f
 RETURN [a0(), a1(1), a2(1, 2), a3(1, 2, 3), a4(1, 2, 3, 4), a6(1, 2, 3, 4, 5, 6)]
 `, []any{0, 1, 3, 6, 10, 21}, "UDF arity coverage"),
-		Case(`
+		S(`
 FUNC outer(a, b, c, d, e, f) (
   FUNC inner(x, y, z, w, u, v) (
     RETURN x + y + z + w + u + v
@@ -127,7 +131,7 @@ FUNC outer(a, b, c, d, e, f) (
 )
 RETURN outer(1, 2, 3, 4, 5, 6)
 `, 21, "Nested frame arity preservation"),
-		Case(`
+		S(`
 FUNC sum(n, acc) (
   RETURN MATCH n (
     0 => acc,

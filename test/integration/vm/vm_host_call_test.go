@@ -3,6 +3,7 @@ package vm_test
 import (
 	"context"
 	"errors"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -29,24 +30,24 @@ func hostSum(args ...runtime.Value) runtime.Int {
 }
 
 func TestHostFunctionCall(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		Case("RETURN TYPENAME(1)", "Int"),
-		Case("RETURN TYPENAME(1.1)", "Float"),
-		Case("WAIT(10) RETURN 1", 1),
-		Case("RETURN LENGTH([1,2,3])", 3),
-		Case("RETURN CONCAT('a', 'b', 'c')", "abc"),
-		Case("RETURN CONCAT(CONCAT('a', 'b'), 'c', CONCAT('d', 'e'))", "abcde", "Nested calls"),
-		CaseArray(`
+	RunSpecs(t, []Spec{
+		S("RETURN TYPENAME(1)", "Int"),
+		S("RETURN TYPENAME(1.1)", "Float"),
+		S("WAIT(10) RETURN 1", 1),
+		S("RETURN LENGTH([1,2,3])", 3),
+		S("RETURN CONCAT('a', 'b', 'c')", "abc"),
+		S("RETURN CONCAT(CONCAT('a', 'b'), 'c', CONCAT('d', 'e'))", "abcde", "Nested calls"),
+		Array(`
 		LET arr = []
 		LET a = 1
 		LET res = APPEND(arr, a)
 		RETURN res
 		`,
 			[]any{1}, "Append to array"),
-		Case("LET duration = 10 WAIT(duration) RETURN 1", 1),
-		CaseNil("RETURN (FALSE OR T::FAIL())?"),
-		CaseNil("RETURN T::FAIL()?"),
-		CaseArray(`FOR i IN [1, 2, 3, 4]
+		S("LET duration = 10 WAIT(duration) RETURN 1", 1),
+		Nil("RETURN (FALSE OR T::FAIL())?"),
+		Nil("RETURN T::FAIL()?"),
+		Array(`FOR i IN [1, 2, 3, 4]
 				LET duration = 10
 		
 				WAIT(duration)
@@ -54,18 +55,18 @@ func TestHostFunctionCall(t *testing.T) {
 				RETURN i * 2`,
 			[]any{2, 4, 6, 8}),
 
-		Case(`RETURN FIRST((FOR i IN 1..10 RETURN i * 2))`, 2),
-		CaseArray(`RETURN UNION((FOR i IN 0..5 RETURN i), (FOR i IN 6..10 RETURN i))`, []any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
+		S(`RETURN FIRST((FOR i IN 1..10 RETURN i * 2))`, 2),
+		Array(`RETURN UNION((FOR i IN 0..5 RETURN i), (FOR i IN 6..10 RETURN i))`, []any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
 	})
 }
 
 func TestBuiltinFunctions(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		Case("RETURN LENGTH([1,2,3])", 3),
-		Case("RETURN length([1,2,3])", 3),
-		Case("RETURN TYPENAME([1,2,3])", "Array"),
-		Case("RETURN TYPENAME({ a: 1, b: 2 })", "Object"),
-		Case("WAIT(10) RETURN 1", 1),
+	RunSpecs(t, []Spec{
+		S("RETURN LENGTH([1,2,3])", 3),
+		S("RETURN length([1,2,3])", 3),
+		S("RETURN TYPENAME([1,2,3])", "Array"),
+		S("RETURN TYPENAME({ a: 1, b: 2 })", "Object"),
+		S("WAIT(10) RETURN 1", 1),
 	})
 }
 
@@ -90,28 +91,28 @@ func TestHostFunctionCallArities(t *testing.T) {
 		return runtime.NewInt(len(args)), nil
 	})
 
-	RunUseCases(t, []UseCase{
-		Case("RETURN FIX0()", "fixed0"),
-		Case("RETURN FIX1(1)", 1),
-		Case("RETURN FIX2(1, 2)", 3),
-		Case("RETURN FIX3(1, 2, 3)", 6),
-		Case("RETURN FIX4(1, 2, 3, 4)", 10),
-		Case("RETURN VAR()", 0),
-		Case("RETURN VAR(1)", 1),
-		Case("RETURN VAR(1, 2)", 2),
-		Case("RETURN VAR(1, 2, 3)", 3),
-		Case("RETURN VAR(1, 2, 3, 4)", 4),
-		Case("RETURN VAR(1, 2, 3, 4, 5)", 5),
-		Case("RETURN VAR(1, 2, 3, 4, 5, 6)", 6),
+	RunSpecs(t, []Spec{
+		S("RETURN FIX0()", "fixed0"),
+		S("RETURN FIX1(1)", 1),
+		S("RETURN FIX2(1, 2)", 3),
+		S("RETURN FIX3(1, 2, 3)", 6),
+		S("RETURN FIX4(1, 2, 3, 4)", 10),
+		S("RETURN VAR()", 0),
+		S("RETURN VAR(1)", 1),
+		S("RETURN VAR(1, 2)", 2),
+		S("RETURN VAR(1, 2, 3)", 3),
+		S("RETURN VAR(1, 2, 3, 4)", 4),
+		S("RETURN VAR(1, 2, 3, 4, 5)", 5),
+		S("RETURN VAR(1, 2, 3, 4, 5, 6)", 6),
 	}, vm.WithFunctionsBuilder(builder))
 }
 
 func TestHostFunctionProtectedCall(t *testing.T) {
 	boom := errors.New("boom")
 
-	RunUseCases(t, []UseCase{
-		CaseNil("RETURN FAIL()?", "Protected host call should return none"),
-		CaseRuntimeError("RETURN FAIL()", "Non-protected host call should fail"),
+	RunSpecs(t, []Spec{
+		Nil("RETURN FAIL()?", "Protected host call should return none"),
+		Error("RETURN FAIL()", "Non-protected host call should fail"),
 	}, vm.WithFunction("FAIL", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, boom
 	}))
@@ -126,8 +127,8 @@ func TestHostFunctionLookupIsCaseSensitive(t *testing.T) {
 		return runtime.NewString("lower"), nil
 	})
 
-	RunUseCases(t, []UseCase{
-		CaseArray("RETURN [Foo(), foo()]", []any{"upper", "lower"}),
-		CaseRuntimeErrorStr("RETURN FOO()", "Unresolved function"),
+	RunSpecs(t, []Spec{
+		Array("RETURN [Foo(), foo()]", []any{"upper", "lower"}),
+		ErrorStr("RETURN FOO()", "Unresolved function"),
 	}, vm.WithFunctionsBuilder(builder))
 }

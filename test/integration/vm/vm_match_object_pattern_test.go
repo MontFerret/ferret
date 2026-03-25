@@ -1,6 +1,7 @@
 package vm_test
 
 import (
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -8,8 +9,8 @@ import (
 )
 
 func TestMatchObjectPattern(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		Case(
+	RunSpecs(t, []Spec{
+		S(
 			`
 LET obj = @obj
 RETURN MATCH obj (
@@ -27,8 +28,8 @@ RETURN MATCH obj (
 		}),
 	}))
 
-	RunUseCases(t, []UseCase{
-		Case(
+	RunSpecs(t, []Spec{
+		S(
 			`
 LET obj = @obj
 RETURN MATCH obj (

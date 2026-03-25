@@ -65,7 +65,7 @@ func RunUseCasesWith(t *testing.T, f *formatter.Formatter, useCases []UseCase) {
 
 				actual := out.String()
 
-				for _, assertion := range useCase.Assertions {
+				for _, assertion := range useCase.PostRun {
 					convey.So(actual, assertion, useCase.Expected)
 				}
 			})

@@ -10,7 +10,7 @@ import (
 
 // WRITE writes the given data into the file.
 // @param {String} path - File path to write into.
-// @param {Binary} data - Data to write.
+// @param {binary} data - Data to write.
 // @param {Map} [params] - additional parameters:
 // @param {String} [params.mode] - Write mode.
 // * x - Exclusive: returns an error if the file exist. It can be combined with other modes

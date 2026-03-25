@@ -39,7 +39,7 @@ func typeRank(t core.Type) int {
 		return 4
 	case "DateTime":
 		return 5
-	case "Binary":
+	case "binary":
 		return 6
 	case "Array":
 		return 7

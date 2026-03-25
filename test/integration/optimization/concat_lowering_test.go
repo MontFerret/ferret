@@ -7,11 +7,12 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/base/compilation"
 )
 
 func TestConcatChainLowering(t *testing.T) {
 	RunUseCases(t, compiler.O1, []UseCase{
-		OpcodeCase(`RETURN "a" + 1 + "b" + 2 + "c" + 3`, OpcodeCount{
+		OpcodeCase(`RETURN "a" + 1 + "b" + 2 + "c" + 3`, compilation.OpcodeCount{
 			Count: map[bytecode.Opcode]int{
 				bytecode.OpAdd:       0,
 				bytecode.OpConcat:    0,
@@ -19,7 +20,7 @@ func TestConcatChainLowering(t *testing.T) {
 			},
 		}, "a1b2c3", "should fold fully constant concat chains into one constant"),
 
-		Options(OpcodeCase(`RETURN "a" + 1 + "b" + 2 + @x + "c" + 3`, OpcodeCount{
+		Options(OpcodeCase(`RETURN "a" + 1 + "b" + 2 + @x + "c" + 3`, compilation.OpcodeCount{
 			Count: map[bytecode.Opcode]int{
 				bytecode.OpAdd:    0,
 				bytecode.OpConcat: 1,
@@ -28,14 +29,14 @@ func TestConcatChainLowering(t *testing.T) {
 
 		Options(OpcodeCase(`VAR str = ""
 str += "a" + 1 + "b" + 2 + @x + "c" + 3
-RETURN str`, OpcodeCount{
+RETURN str`, compilation.OpcodeCount{
 			Count: map[bytecode.Opcode]int{
 				bytecode.OpAdd:    0,
 				bytecode.OpConcat: 1,
 			},
 		}, "a1b2Xc3", "should route string += through concat-chain lowering"), vm.WithParam("x", runtime.NewString("X"))),
 
-		OpcodeCase(`RETURN 1 + 2 + "x"`, OpcodeCount{
+		OpcodeCase(`RETURN 1 + 2 + "x"`, compilation.OpcodeCount{
 			Count: map[bytecode.Opcode]int{
 				bytecode.OpAdd:    0,
 				bytecode.OpConcat: 0,

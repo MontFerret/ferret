@@ -32,7 +32,7 @@ func TestGET(t *testing.T) {
 		out, err := http.GET(ctx, runtime.NewString(url))
 
 		So(err, ShouldBeNil)
-		//So(out.Type().ID(), ShouldEqual, types.Binary.ID())
+		//So(out.Type().ID(), ShouldEqual, types.binary.ID())
 		So(out.String(), ShouldEqual, "OK")
 	})
 
@@ -68,7 +68,7 @@ func TestGET(t *testing.T) {
 		))
 
 		So(err, ShouldBeNil)
-		//So(out.Type().ID(), ShouldEqual, types.Binary.ID())
+		//So(out.Type().ID(), ShouldEqual, types.binary.ID())
 		So(out.String(), ShouldEqual, "OK")
 	})
 }

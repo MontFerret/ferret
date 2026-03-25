@@ -1,45 +1,49 @@
 package vm_test
 
-import "testing"
+import (
+	"testing"
+
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
+)
 
 func TestVarBindings(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		Case(`
+	RunSpecs(t, []Spec{
+		S(`
 	VAR x = 1
 	x = x + 1
 	RETURN x
 	`, 2, "Top-level VAR can be reassigned"),
-		Case(`
+		S(`
 	VAR x = 1
 	x += 2
 	RETURN x
 	`, 3, "Top-level VAR supports +="),
-		Case(`
+		S(`
 	VAR x = 5
 	x -= 2
 	RETURN x
 	`, 3, "Top-level VAR supports -="),
-		Case(`
+		S(`
 	VAR x = 3
 	x *= 4
 	RETURN x
 	`, 12, "Top-level VAR supports *="),
-		Case(`
+		S(`
 	VAR x = 12
 	x /= 3
 	RETURN x
 	`, 4, "Top-level VAR supports /="),
-		Case(`
+		S(`
 	VAR x = 1
 	x = "hello"
 	RETURN x
 `, "hello", "Top-level VAR can be reassigned across types"),
-		Case(`
+		S(`
 VAR CURRENT = 1
 CURRENT = CURRENT + 1
 RETURN CURRENT
 `, 2, "Safe reserved words remain valid mutable binding names"),
-		Case(`
+		S(`
 FUNC run() (
   VAR total = 1
   total = total + 2
@@ -47,13 +51,13 @@ FUNC run() (
 )
 RETURN run()
 `, 3, "Function-block VAR can be reassigned"),
-		CaseArray(`
+		Array(`
 FOR item IN [1, 2]
   VAR current = item
   current = current + 1
   RETURN current
 `, []any{2, 3}, "FOR body VAR can be reassigned"),
-		CaseArray(`
+		Array(`
 VAR total = 1
 FUNC bump() (
   total = total + 1
@@ -62,7 +66,7 @@ FUNC bump() (
 LET after = bump()
 RETURN [after, total]
 `, []any{2, 2}, "Nested UDF assignment mutates the captured outer VAR"),
-		CaseArray(`
+		Array(`
 FUNC run() (
   VAR carried = 0
   FUNC setCarried(v) (
@@ -83,7 +87,7 @@ RETURN run()
 			map[string]any{"item": 1, "carried": 10},
 			map[string]any{"item": 3, "carried": 30},
 		}, "SORT snapshots the current value of a promoted VAR"),
-		CaseArray(`
+		Array(`
 FUNC run() (
   VAR carried = 0
   FUNC setCarried(v) (
@@ -115,7 +119,7 @@ RETURN run()
 				},
 			},
 		}, "COLLECT KEEP snapshots the current value of a promoted VAR"),
-		CaseArray(`
+		Array(`
 FUNC run() (
   VAR carried = 0
   FUNC setCarried(v) (
@@ -147,7 +151,7 @@ RETURN run()
 				},
 			},
 		}, "COLLECT INTO projection snapshots the current value of a promoted VAR"),
-		Case(`
+		S(`
 	FUNC run() (
 	  VAR total = 1
 	  FUNC setTotal(v) (
@@ -159,7 +163,7 @@ RETURN run()
 	)
 	RETURN run()
 	`, 11, "Compound assignment snapshots the old VAR value before RHS side effects"),
-		CaseArray(`
+		Array(`
 	FUNC outer() (
 	  VAR total = 1
   FUNC middle(v) (

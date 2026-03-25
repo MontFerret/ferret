@@ -7,6 +7,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 type errorMap struct {
@@ -18,8 +19,8 @@ func (m *errorMap) ContainsKey(ctx context.Context, key runtime.Value) (runtime.
 }
 
 func TestMatchObjectPatternContainsKeyError(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		RuntimeErrorCase(
+	RunSpecs(t, []Spec{
+		NewSpec(
 			`
 LET obj = @obj
 RETURN MATCH obj (
@@ -27,9 +28,8 @@ RETURN MATCH obj (
   _ => 0,
 )
 `,
-			ExpectedRuntimeError{Contains: []string{"boom"}},
 			"Should surface ContainsKey errors",
-		),
+		).Expect().RunError(ShouldBeRuntimeError, &ExpectedRuntimeError{Contains: []string{"boom"}}),
 	}, vm.WithParams(map[string]runtime.Value{
 		"obj": &errorMap{
 			Object: runtime.NewObjectWith(map[string]runtime.Value{

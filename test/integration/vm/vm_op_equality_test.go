@@ -1,18 +1,19 @@
 package vm_test
 
 import (
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
 )
 
 func TestEqualityOperators(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		Case("RETURN 1 == 1", true),
-		Case("RETURN 1 == 2", false),
-		Case("RETURN 1 != 1", false),
-		Case("RETURN 1 != 2", true),
-		Case("RETURN 1 > 1", false),
-		Case("RETURN 1 >= 1", true),
-		Case("RETURN 1 < 1", false),
-		Case("RETURN 1 <= 1", true),
+	RunSpecs(t, []Spec{
+		S("RETURN 1 == 1", true),
+		S("RETURN 1 == 2", false),
+		S("RETURN 1 != 1", false),
+		S("RETURN 1 != 2", true),
+		S("RETURN 1 > 1", false),
+		S("RETURN 1 >= 1", true),
+		S("RETURN 1 < 1", false),
+		S("RETURN 1 <= 1", true),
 	})
 }

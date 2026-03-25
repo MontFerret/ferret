@@ -12,45 +12,44 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/sdk"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 
-	"github.com/MontFerret/ferret/v2/test/integration/base"
-
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/parser"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 
-	. "github.com/smartystreets/goconvey/convey"
+	spec "github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestMember(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		CaseNil("LET arr = [1,2,3,4] RETURN arr[10]"),
-		Case("LET arr = [1,2,3,4] RETURN arr[1]", 2),
-		Case("LET arr = [1,2,3,4] LET idx = 1 RETURN arr[idx]", 2),
-		Case(`LET obj = { foo: "bar", qaz: "wsx"} RETURN obj["qaz"]`, "wsx"),
-		Case(fmt.Sprintf(`
+	RunSpecs(t, []Spec{
+		Nil("LET arr = [1,2,3,4] RETURN arr[10]"),
+		S("LET arr = [1,2,3,4] RETURN arr[1]", 2),
+		S("LET arr = [1,2,3,4] LET idx = 1 RETURN arr[idx]", 2),
+		S(`LET obj = { foo: "bar", qaz: "wsx"} RETURN obj["qaz"]`, "wsx"),
+		S(fmt.Sprintf(`
 								LET obj = { "foo": "bar", %s: "wsx"}
-		
+
 								RETURN obj["qaz"]
 							`, "`qaz`"), "wsx"),
-		Case(fmt.Sprintf(`
+		S(fmt.Sprintf(`
 								LET obj = { "foo": "bar", %s: "wsx"}
-		
+
 								RETURN obj["let"]
 							`, "`let`"),
 			"wsx"),
-		Case(`LET obj = { foo: "bar", qaz: "wsx"} LET key = "qaz" RETURN obj[key]`, "wsx"),
-		Case(`RETURN { foo: "bar" }.foo`, "bar"),
-		Case(`LET inexp = 1 IN {'foo': [1]}.foo
+		S(`LET obj = { foo: "bar", qaz: "wsx"} LET key = "qaz" RETURN obj[key]`, "wsx"),
+		S(`RETURN { foo: "bar" }.foo`, "bar"),
+		S(`LET inexp = 1 IN {'foo': [1]}.foo
 			LET ternaryexp = FALSE ? TRUE : {foo: TRUE}.foo
 			RETURN inexp && ternaryexp`,
 			true),
-		Case(`RETURN ["bar", "foo"][0]`, "bar"),
-		Case(`LET inexp = 1 IN [[1]][0]
+		S(`RETURN ["bar", "foo"][0]`, "bar"),
+		S(`LET inexp = 1 IN [[1]][0]
 								LET ternaryexp = FALSE ? TRUE : [TRUE][0]
 								RETURN inexp && ternaryexp`,
 			true),
-		Case(`LET obj = {
+		S(`LET obj = {
 							first: {
 								second: {
 									third: {
@@ -63,10 +62,10 @@ func TestMember(t *testing.T) {
 								}
 							}
 						}
-		
+
 						RETURN obj.first.second.third.fourth.fifth.bottom`,
 			true),
-		Case(`LET o1 = {
+		S(`LET o1 = {
 		first: {
 		  second: {
 		      ["third"]: {
@@ -79,13 +78,13 @@ func TestMember(t *testing.T) {
 		  }
 		}
 		}
-		
+
 		LET o2 = { prop: "third" }
-		
+
 		RETURN o1["first"]["second"][o2.prop]["fourth"]["fifth"].bottom`,
 
 			true),
-		Case(`LET o1 = {
+		S(`LET o1 = {
 		first: {
 		 second: {
 		     third: {
@@ -98,61 +97,61 @@ func TestMember(t *testing.T) {
 		 }
 		}
 		}
-		
+
 		LET o2 = { prop: "third" }
-		
+
 		RETURN o1.first["second"][o2.prop].fourth["fifth"]["bottom"]`,
 
 			true),
-		Case(`LET obj = {
+		S(`LET obj = {
 							attributes: {
 								'data-index': 1
 							}
 						}
-		
+
 						RETURN obj.attributes['data-index']`,
 			1),
-		Case(`LET obj = { '[1]': 42 } RETURN obj[[1]]`, 42),
-		Case(`LET obj = { '{"a":1}': 7 } RETURN obj[{a:1}]`, 7),
-		CaseRuntimeError(`LET obj = NONE RETURN obj.foo`),
-		CaseNil(`LET obj = NONE RETURN obj?.foo`),
-		CaseObject(`RETURN {first: {second: "third"}}.first`,
+		S(`LET obj = { '[1]': 42 } RETURN obj[[1]]`, 42),
+		S(`LET obj = { '{"a":1}': 7 } RETURN obj[{a:1}]`, 7),
+		Error(`LET obj = NONE RETURN obj.foo`),
+		Nil(`LET obj = NONE RETURN obj?.foo`),
+		Object(`RETURN {first: {second: "third"}}.first`,
 			map[string]any{
 				"second": "third",
 			}),
-		SkipCaseObject(`RETURN KEEP_KEYS({first: {second: "third"}}.first, "second")`,
+		Object(`RETURN KEEP_KEYS({first: {second: "third"}}.first, "second")`,
 			map[string]any{
 				"second": "third",
-			}),
-		CaseArray(`
+			}).Skip(),
+		Array(`
 					FOR v, k IN {f: {foo: "bar"}}.f
 						RETURN [k, v]
 				`,
 			[]any{
 				[]any{"foo", "bar"},
 			}),
-		Case(`RETURN FIRST([[1, 2]][0])`,
+		S(`RETURN FIRST([[1, 2]][0])`,
 			1),
-		CaseArray(`RETURN [[1, 2]][0]`,
+		Array(`RETURN [[1, 2]][0]`,
 			[]any{1, 2}),
-		CaseArray(`
+		Array(`
 					FOR i IN [[1, 2]][0]
 						RETURN i
 				`,
 			[]any{1, 2}),
-		Case(`
+		S(`
 					LET arr = [{ name: "Bob" }]
-		
+
 					RETURN FIRST(arr).name
 				`,
 			"Bob"),
-		Case(`
+		S(`
 					LET arr = [{ name: { first: "Bob" } }]
-	
+
 					RETURN FIRST(arr)['name'].first
 				`,
 			"Bob"),
-		CaseNil(`
+		Nil(`
 					LET obj = { foo: None }
 
 					RETURN obj.foo?.bar
@@ -161,58 +160,63 @@ func TestMember(t *testing.T) {
 }
 
 func TestMemberReservedWords(t *testing.T) {
-	Convey("Reserved words as property name", t, func() {
-		p := parser.New("RETURN TRUE")
+	p := parser.New("RETURN TRUE")
+	r := regexp.MustCompile(`\w+`)
+	c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
 
-		r := regexp.MustCompile(`\w+`)
-
-		for idx, l := range p.GetLiteralNames() {
-			if r.MatchString(l) {
-				if l == "'FUNC'" {
-					continue
-				}
-
-				query := strings.Builder{}
-				query.WriteString("LET o = {\n")
-				query.WriteString(l[1 : len(l)-1])
-				query.WriteString(":")
-				query.WriteString(strconv.Itoa(idx))
-				query.WriteString(",\n")
-				query.WriteString("}\n")
-				query.WriteString("RETURN o")
-
-				expected := strings.Builder{}
-				expected.WriteString("{")
-				expected.WriteString(strings.ReplaceAll(l, "'", "\""))
-				expected.WriteString(":")
-				expected.WriteString(strconv.Itoa(idx))
-				expected.WriteString("}")
-
-				c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
-				prog, err := c.Compile(file.NewAnonymousSource(query.String()))
-
-				So(err, ShouldBeNil)
-
-				out, err := base.Exec(prog, true, vm.WithNamespace(stdlib.New()))
-
-				So(err, ShouldBeNil)
-				So(out, ShouldEqual, expected.String())
-			}
+	for idx, literal := range p.GetLiteralNames() {
+		if !r.MatchString(literal) || literal == "'FUNC'" {
+			continue
 		}
-	})
+
+		idx := idx
+		literal := literal
+
+		t.Run(literal, func(t *testing.T) {
+			query := strings.Builder{}
+			query.WriteString("LET o = {\n")
+			query.WriteString(literal[1 : len(literal)-1])
+			query.WriteString(":")
+			query.WriteString(strconv.Itoa(idx))
+			query.WriteString(",\n")
+			query.WriteString("}\n")
+			query.WriteString("RETURN o")
+
+			expected := strings.Builder{}
+			expected.WriteString("{")
+			expected.WriteString(strings.ReplaceAll(literal, "'", "\""))
+			expected.WriteString(":")
+			expected.WriteString(strconv.Itoa(idx))
+			expected.WriteString("}")
+
+			prog, err := c.Compile(file.NewAnonymousSource(query.String()))
+			if err != nil {
+				t.Fatalf("compile failed: %v", err)
+			}
+
+			out, err := spec.Exec(prog, true, vm.WithNamespace(stdlib.New()))
+			if err != nil {
+				t.Fatalf("exec failed: %v", err)
+			}
+
+			if out != expected.String() {
+				t.Fatalf("unexpected output: got %s, want %s", out, expected.String())
+			}
+		})
+	}
 }
 
 func TestOptionalChaining(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		Case(
+	RunSpecs(t, []Spec{
+		S(
 			`
 						LET obj = { foo: { bar: "bar" } }
-			
+
 						RETURN obj.foo?.bar
 					`,
 			"bar",
 		),
-		Case(
+		S(
 			`
 						LET obj = { prop1: { prop2: 1 } }
 
@@ -220,8 +224,8 @@ func TestOptionalChaining(t *testing.T) {
 					`,
 			1,
 		),
-		CaseNil(`LET obj = NONE RETURN obj?.prop1?.prop2`),
-		Case(
+		Nil(`LET obj = NONE RETURN obj?.prop1?.prop2`),
+		S(
 			`
 						LET obj = { "prop1": { "prop2": 1 } }
 
@@ -229,35 +233,35 @@ func TestOptionalChaining(t *testing.T) {
 					`,
 			1,
 		),
-		CaseNil(`LET obj = NONE RETURN obj?.["prop1"]?.["prop2"]`),
-		CaseNil(`
+		Nil(`LET obj = NONE RETURN obj?.["prop1"]?.["prop2"]`),
+		Nil(`
 						LET obj = { foo: None }
-			
+
 						RETURN obj.foo?.bar?.[0]
 					`),
-		Case(
+		S(
 			`
 					LET obj = { foo: { bar: ["bar"] } }
-		
+
 					RETURN obj.foo?.bar?.[0]
 				`,
 			"bar"),
-		CaseNil(`RETURN FIRST([])?.foo`),
-		Case(
+		Nil(`RETURN FIRST([])?.foo`),
+		S(
 			`
 							RETURN FIRST([{ foo: "bar" }])?.foo
 						`,
 			"bar",
 		),
-		CaseNil(`LET obj = NONE RETURN obj?.foo?.[ERROR()]`),
-		CaseRuntimeError(`LET obj = { foo: { bar: 1 } } RETURN obj?.foo?.[ERROR()]`),
-		Case(`LET obj = { '[1]': 42 } RETURN obj?.[[1]]`, 42),
-		Case(`LET obj = { '{"a":1}': 7 } RETURN obj?.[{a:1}]`, 7),
-		CaseNil("RETURN ERROR()?.foo"),
-		SkipCaseNil(`LET res = (FOR i IN ERROR() RETURN i)? RETURN res`),
+		Nil(`LET obj = NONE RETURN obj?.foo?.[ERROR()]`),
+		Error(`LET obj = { foo: { bar: 1 } } RETURN obj?.foo?.[ERROR()]`),
+		S(`LET obj = { '[1]': 42 } RETURN obj?.[[1]]`, 42),
+		S(`LET obj = { '{"a":1}': 7 } RETURN obj?.[{a:1}]`, 7),
+		Nil("RETURN ERROR()?.foo"),
+		Nil(`LET res = (FOR i IN ERROR() RETURN i)? RETURN res`).Skip(),
 
-		CaseArray(`LET res = (FOR i IN [1, 2, 3, 4] LET y = ERROR() RETURN y+i)? RETURN res`, []any{}, "Error in array comprehension"),
-		CaseArray(`FOR i IN [1, 2, 3, 4] ERROR()? RETURN i`, []any{1, 2, 3, 4}, "Error in FOR loop"),
+		Array(`LET res = (FOR i IN [1, 2, 3, 4] LET y = ERROR() RETURN y+i)? RETURN res`, []any{}, "Error in array comprehension"),
+		Array(`FOR i IN [1, 2, 3, 4] ERROR()? RETURN i`, []any{1, 2, 3, 4}, "Error in FOR loop"),
 	}, vm.WithFunction("ERROR", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return nil, runtime.ErrNotImplemented
 	}))
@@ -274,14 +278,14 @@ func TestTaggedTypes(t *testing.T) {
 		IntProp        int   `ferret:"intProp"`
 	}
 
-	RunUseCases(t, []UseCase{
-		Case("RETURN GET_VALUE().strProp", "test"),
-		Case("RETURN GET_VALUE().intProp", 99),
-		CaseArray("RETURN GET_VALUE().sliceProp", []any{1, 2, 3}),
-		Case("RETURN GET_VALUE().pointerProp.strProp", "nested"),
-		CaseNil("RETURN GET_VALUE().nilPointerProp"),
-		CaseNil("RETURN GET_VALUE().untagged"),
-		CaseNil("RETURN GET_VALUE().privateStrProp"),
+	RunSpecs(t, []Spec{
+		S("RETURN GET_VALUE().strProp", "test"),
+		S("RETURN GET_VALUE().intProp", 99),
+		Array("RETURN GET_VALUE().sliceProp", []any{1, 2, 3}),
+		S("RETURN GET_VALUE().pointerProp.strProp", "nested"),
+		Nil("RETURN GET_VALUE().nilPointerProp"),
+		Nil("RETURN GET_VALUE().untagged"),
+		Nil("RETURN GET_VALUE().privateStrProp"),
 	}, vm.WithFunction("GET_VALUE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return sdk.Encode(SomeValue{
 			StrProp:        "test",

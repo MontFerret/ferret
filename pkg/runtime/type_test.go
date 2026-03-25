@@ -92,7 +92,7 @@ func TestValidateType(t *testing.T) {
 			Failure:  false,
 		},
 		{
-			Name:     "Binary",
+			Name:     "binary",
 			Input:    runtime.NewBinary([]byte{1, 2, 3}),
 			Expected: runtime.TypeBinary,
 			Failure:  false,

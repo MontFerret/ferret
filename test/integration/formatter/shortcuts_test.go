@@ -9,17 +9,17 @@ import (
 )
 
 var (
-	WithParam = base.WithParam
+	WithParam = spec.WithParam
 )
 
 type UseCase struct {
 	Options []formatter.Option
-	base.TestCase
+	spec.Spec
 }
 
 func NewCase(expression string, expected any, assertion convey.Assertion, desc ...string) UseCase {
 	return UseCase{
-		TestCase: base.NewCase(expression, expected, assertion, desc...),
+		Spec: spec.NewSpec(expression, expected, assertion, desc...),
 	}
 }
 

@@ -2,6 +2,7 @@ package vm_test
 
 import (
 	"context"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -9,39 +10,39 @@ import (
 )
 
 func TestForLimit(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		CaseArray(
+	RunSpecs(t, []Spec{
+		Array(
 			`
 			FOR i IN [ 1, 2, 3, 4, 1, 3 ]
 				LIMIT 2
 				RETURN i
 		`,
 			[]any{1, 2}),
-		CaseArray(`
+		Array(`
 			FOR i IN [ 1,2,3,4,5,6,7,8 ]
 				LIMIT 4, 2
 				RETURN i
 			`, []any{5, 6}),
-		CaseArray(`
+		Array(`
 			FOR i IN [ 1,2,3,4,5,6,7,8 ]
 				LET x = i
 				LIMIT 2
 				RETURN i*x
 			`, []any{1, 4},
 			"Should be able to reuse values from a source"),
-		CaseArray(`
+		Array(`
 			FOR i IN [ 1,2,3,4,5,6,7,8 ]
 				LET x = "foo"
 				TYPENAME(x)
 				LIMIT 2
 				RETURN i
 		`, []any{1, 2}, "Should define variables and call functions"),
-		CaseArray(`
+		Array(`
 			FOR i IN [ 1,2,3,4,5,6,7,8 ]
 				LIMIT LIMIT_VALUE()
 				RETURN i
 		`, []any{1, 2}, "Should be able to use function call"),
-		CaseArray(`
+		Array(`
 			LET o = {
 				limit: 2
 			}
@@ -49,7 +50,7 @@ func TestForLimit(t *testing.T) {
 				LIMIT o.limit
 				RETURN i
 		`, []any{1, 2}, "Should be able to use object property"),
-		CaseArray(`
+		Array(`
 			LET o = [1,2]
 
 			FOR i IN [ 1,2,3,4,5,6,7,8 ]

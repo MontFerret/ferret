@@ -73,7 +73,7 @@ func TestPOST(t *testing.T) {
 		))
 
 		So(err, ShouldBeNil)
-		//So(out.Type().ID(), ShouldEqual, types.Binary.ID())
+		//So(out.Type().ID(), ShouldEqual, types.binary.ID())
 		So(out.String(), ShouldEqual, "OK")
 	})
 
@@ -125,7 +125,7 @@ func TestPOST(t *testing.T) {
 		))
 
 		So(err, ShouldBeNil)
-		//So(out.Type().ID(), ShouldEqual, types.Binary.ID())
+		//So(out.Type().ID(), ShouldEqual, types.binary.ID())
 		So(out.String(), ShouldEqual, "OK")
 	})
 }

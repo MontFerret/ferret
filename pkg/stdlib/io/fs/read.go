@@ -9,7 +9,7 @@ import (
 
 // READ reads from a given file.
 // @param {String} path - Path to file to read from.
-// @return {Binary} - File content in binary format.
+// @return {binary} - File content in binary format.
 func Read(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	path, err := runtime.CastArg[runtime.String](arg, 0)
 

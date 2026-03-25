@@ -1,4 +1,4 @@
-package base
+package spec
 
 import (
 	"context"
@@ -58,9 +58,4 @@ func GetFnState[T any](ctx context.Context) FnState[T] {
 	}
 
 	return stateT
-}
-
-func UpdateFnState[T any](ctx context.Context, updater func(current T) T) {
-	state := GetFnState[T](ctx)
-	state.Set(updater(state.Get()))
 }

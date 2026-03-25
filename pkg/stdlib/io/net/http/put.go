@@ -12,7 +12,7 @@ import (
 // @param {String} params.url - Target url
 // @param {Any} params.body - Request data
 // @param {Map} [params.headers] - HTTP headers
-// @return {Binary} - Response in binary format
+// @return {binary} - Response in binary format
 func PUT(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	return execMethod(ctx, h.MethodPut, arg)
 }

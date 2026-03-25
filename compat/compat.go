@@ -9,7 +9,7 @@
 //   - New() now panics on engine initialisation errors (same contract as v1 New).
 //     Use NewE() if you need the error.
 //   - Functions registered via Instance.Functions() after New() are not reflected in
-//     subsequent Compile/Exec calls (v2 builds functions immutably at engine creation).
+//     subsequent Compile/Run calls (v2 builds functions immutably at engine creation).
 //   - The drivers package (CDP, HTTP) has moved to a separate repository.
 //     See the Ferret v2 migration guide for details.
 package compat
@@ -75,7 +75,7 @@ func NewE(setters ...Option) (*Instance, error) {
 // Functions returns a v1-compatible Namespace backed by the engine's function library.
 //
 // WARNING: Functions registered after New() are NOT automatically picked up by
-// subsequent Compile/Exec calls. Pre-register all custom functions before constructing
+// subsequent Compile/Run calls. Pre-register all custom functions before constructing
 // the Instance.
 func (inst *Instance) Functions() core.Namespace {
 	return core.WrapNamespace(inst.library)
