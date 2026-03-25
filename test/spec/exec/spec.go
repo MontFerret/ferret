@@ -33,8 +33,8 @@ func (s Spec) Debug() Spec {
 	return s
 }
 
-func (s Spec) Skip() Spec {
-	s.Base = s.Base.Skip()
+func (s Spec) Skip(reason ...string) Spec {
+	s.Base = s.Base.Skip(reason...)
 	return s
 }
 

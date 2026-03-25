@@ -18,7 +18,7 @@ func SkipHorizontalWhitespaceForward(content string, offset int) int {
 	for offset < len(content) {
 		ch := content[offset]
 
-		// ShouldSkip spaces and tabs only; do NOT cross line breaks
+		// Skip spaces and tabs only; do NOT cross line breaks
 		if ch != ' ' && ch != '\t' {
 			break
 		}

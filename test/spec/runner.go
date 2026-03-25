@@ -29,8 +29,8 @@ func (r *Runner) Run(t *testing.T, specs []Spec) {
 		t.Run(fmt.Sprintf("%s/%s", r.Name, specName), func(t *testing.T) {
 			t.Helper()
 
-			if spec.ShouldSkip {
-				t.Skip()
+			if spec.SkipInfo.Active {
+				t.Skip(spec.SkipInfo.Reason)
 			}
 
 			var prog *bytecode.Program

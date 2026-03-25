@@ -1,8 +1,9 @@
 package vm_test
 
 import (
-	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 	"testing"
+
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestArrayComparisonOperator(t *testing.T) {
@@ -116,7 +117,7 @@ func TestArrayComparisonOperator(t *testing.T) {
 		S("RETURN [true,false] ALL == true", false),
 		S("RETURN [false,false] NONE == true", true),
 
-		S("RETURN [1,2,3] AT LEAST (2) IN [2,3,4]", true).Skip(),        // TODO: Implement in v2.1
-		S(`RETURN ["foo","bar"] AT LEAST (1+1) == "foo"`, false).Skip(), // TODO: Implement in v2.1
+		S("RETURN [1,2,3] AT LEAST (2) IN [2,3,4]", true).Skip("TODO: Implement in v2.1"),
+		S(`RETURN ["foo","bar"] AT LEAST (1+1) == "foo"`, false).Skip("// TODO: Implement in v2.1"),
 	})
 }

@@ -4,15 +4,22 @@ import (
 	"strings"
 )
 
-type Spec struct {
-	Expression  string
-	Description string
-	ShouldSkip  bool
-	RawOutput   bool
-	DebugOutput bool
-	Compile     Expectation
-	Run         Expectation
-}
+type (
+	Skip struct {
+		Active bool
+		Reason string
+	}
+
+	Spec struct {
+		Expression  string
+		Description string
+		SkipInfo    Skip
+		RawOutput   bool
+		DebugOutput bool
+		Compile     Expectation
+		Run         Expectation
+	}
+)
 
 func New(expression string, desc ...string) Spec {
 	return Spec{
@@ -43,8 +50,10 @@ func (s Spec) Suffix(suffix string) Spec {
 	return s
 }
 
-func (s Spec) Skip() Spec {
-	s.ShouldSkip = true
+func (s Spec) Skip(reason ...string) Spec {
+	s.SkipInfo.Active = true
+	s.SkipInfo.Reason = strings.TrimSpace(strings.Join(reason, " "))
+
 	return s
 }
 

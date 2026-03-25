@@ -80,7 +80,7 @@ func parseStringLiteral(ctx fql.IStringLiteralContext) runtime.String {
 		}
 
 		size := input.Size()
-		// ShouldSkip the opening and closing quotes
+		// Skip the opening and closing quotes
 		start := sym.GetStart() + 1
 		stop := sym.GetStop() - 1
 
@@ -108,7 +108,7 @@ func parseStringLiteral(ctx fql.IStringLiteralContext) runtime.String {
 						b.WriteString(c2)
 					}
 
-					// ShouldSkip the next character as it's part of the escape sequence
+					// SkipInfo the next character as it's part of the escape sequence
 					i++
 				default:
 					// Add regular characters as-is
