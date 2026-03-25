@@ -4,22 +4,24 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func TestLogicalOperators(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		SkipByteCodeCase("RETURN 1 AND 0", BC{
+	RunSpecs(t, []spec.Spec{
+		ByteCode("RETURN 1 AND 0", BC{
 			I(bytecode.OpLoadConst, 1, C(0)),
 			I(bytecode.OpJumpIfFalse),
 			I(bytecode.OpLoadConst, 1, C(1)),
 			I(bytecode.OpReturn, 1),
-		}),
-		SkipByteCodeCase("RETURN 1 OR 0", BC{
+		}).Skip(),
+		ByteCode("RETURN 1 OR 0", BC{
 			I(bytecode.OpLoadConst, 1, C(0)),
 			I(bytecode.OpJumpIfFalse),
 			I(bytecode.OpLoadConst, 1, C(1)),
 			I(bytecode.OpReturn, 1),
-		}),
+		}).Skip(),
 		//Spec("RETURN 1 AND 1", 1),
 		//Spec("RETURN 2 > 1 AND 1 > 0", true),
 		//Spec("RETURN NONE && true", nil),

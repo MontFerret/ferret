@@ -35,10 +35,10 @@ func Registers(expression string, num int, desc ...string) spec.Spec {
 	return spec.New(expression, desc...).Expect().Compile(ShouldHaveRegisters, num)
 }
 
-func Error(expression string, expected assert.ExpectedError, desc ...string) spec.Spec {
-	return spec.New(expression, desc...).Expect().Compile(ShouldBeCompilationError, expected)
+func Failure(expression string, expected assert.ExpectedError, desc ...string) spec.Spec {
+	return spec.New(expression, desc...).Expect().CompileError(ShouldBeCompilationError, expected)
 }
 
-func MultiErrorSpec(expression string, expected assert.ExpectedMultiError, desc ...string) spec.Spec {
-	return spec.New(expression, desc...).Expect().Compile(ShouldBeCompilationError, expected)
+func MultiFailure(expression string, expected assert.ExpectedMultiError, desc ...string) spec.Spec {
+	return spec.New(expression, desc...).Expect().CompileError(ShouldBeCompilationError, expected)
 }

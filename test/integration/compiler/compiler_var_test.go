@@ -8,6 +8,8 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func assertNoCellOps(t *testing.T, prog *bytecode.Program) {
@@ -21,8 +23,8 @@ func assertNoCellOps(t *testing.T, prog *bytecode.Program) {
 }
 
 func TestVarSyntaxErrors(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		ErrorCase(
+	RunSpecs(t, []spec.Spec{
+		Failure(
 			`
 			VAR
 			RETURN 1
@@ -31,7 +33,7 @@ func TestVarSyntaxErrors(t *testing.T) {
 				Message: "Expected variable name",
 				Hint:    "Did you forget to provide a variable name?",
 			}, "VAR missing variable name"),
-		ErrorCase(
+		Failure(
 			`
 			VAR x =
 			RETURN x
@@ -40,21 +42,21 @@ func TestVarSyntaxErrors(t *testing.T) {
 				Message: "Expected expression after '=' for variable 'x'",
 				Hint:    "Did you forget to provide a value?",
 			}, "VAR missing assignment value"),
-		ErrorCase(
+		Failure(
 			`
 			VAR _ = 1
 			RETURN 0
 		`, E{
 				Kind: parserd.SyntaxError,
 			}, "VAR cannot use discard binding"),
-		ErrorCase(
+		Failure(
 			`
 				VAR x = 0
 				RETURN (x = 1)
 			`, E{
 				Kind: parserd.SyntaxError,
 			}, "Assignment is not allowed inside expressions"),
-		ErrorCase(
+		Failure(
 			`
 				VAR x = 0
 				x +=
@@ -64,7 +66,7 @@ func TestVarSyntaxErrors(t *testing.T) {
 				Message: "Expected expression after '+=' for variable 'x'",
 				Hint:    "Did you forget to provide a value?",
 			}, "Compound assignment missing assignment value"),
-		ErrorCase(
+		Failure(
 			`
 				VAR x = 0
 				RETURN (x += 1)
@@ -107,8 +109,8 @@ func TestVarCompoundAssignmentMissingValueDiagnosticSpan(t *testing.T) {
 }
 
 func TestVarErrors(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		ErrorCase(
+	RunSpecs(t, []spec.Spec{
+		Failure(
 			`
 				LET x = 1
 				x = 2
@@ -118,7 +120,7 @@ func TestVarErrors(t *testing.T) {
 				Message: "Variable 'x' cannot be reassigned",
 				Hint:    "Declare it with VAR if you need to update it.",
 			}, "LET remains immutable"),
-		ErrorCase(
+		Failure(
 			`
 				LET x = 1
 				x += 1
@@ -128,7 +130,7 @@ func TestVarErrors(t *testing.T) {
 				Message: "Variable 'x' cannot be reassigned",
 				Hint:    "Declare it with VAR if you need to update it.",
 			}, "LET remains immutable for compound assignment"),
-		ErrorCase(
+		Failure(
 			`
 				x = 1
 				RETURN 0
@@ -136,7 +138,7 @@ func TestVarErrors(t *testing.T) {
 				Kind:    parserd.NameError,
 				Message: "Variable 'x' is not defined",
 			}, "Assignment target must already exist"),
-		ErrorCase(
+		Failure(
 			`
 			FUNC bump(x) (
 			  x = x + 1
@@ -148,7 +150,7 @@ func TestVarErrors(t *testing.T) {
 				Message: "Variable 'x' cannot be reassigned",
 				Hint:    "Declare it with VAR if you need to update it.",
 			}, "Parameters cannot be reassigned"),
-		ErrorCase(
+		Failure(
 			`
 			FOR i WHILE i < 2
 			  i = i + 1
@@ -158,7 +160,7 @@ func TestVarErrors(t *testing.T) {
 				Message: "Variable 'i' cannot be reassigned",
 				Hint:    "Declare it with VAR if you need to update it.",
 			}, "FOR WHILE variables cannot be reassigned"),
-		ErrorCase(
+		Failure(
 			`
 			LET obj = {}
 			obj.x = 1
@@ -168,7 +170,7 @@ func TestVarErrors(t *testing.T) {
 				Message: "Assignment target must be a local variable name",
 				Hint:    "Property and index assignment are not supported. Use UPDATE for structural changes.",
 			}, "Property assignment is rejected"),
-		ErrorCase(
+		Failure(
 			`
 				LET obj = {}
 				obj.x += 1
@@ -178,7 +180,7 @@ func TestVarErrors(t *testing.T) {
 				Message: "Assignment target must be a local variable name",
 				Hint:    "Property and index assignment are not supported. Use UPDATE for structural changes.",
 			}, "Compound property assignment is rejected"),
-		ErrorCase(
+		Failure(
 			`
 				LET arr = [0]
 				arr[0] = 1
@@ -188,7 +190,7 @@ func TestVarErrors(t *testing.T) {
 				Message: "Assignment target must be a local variable name",
 				Hint:    "Property and index assignment are not supported. Use UPDATE for structural changes.",
 			}, "Index assignment is rejected"),
-		ErrorCase(
+		Failure(
 			`
 				LET arr = [0]
 				arr[0] += 1
@@ -198,7 +200,7 @@ func TestVarErrors(t *testing.T) {
 				Message: "Assignment target must be a local variable name",
 				Hint:    "Property and index assignment are not supported. Use UPDATE for structural changes.",
 			}, "Compound index assignment is rejected"),
-		ErrorCase(
+		Failure(
 			`
 				VAR x = 1
 				FUNC outer() (

@@ -66,7 +66,7 @@ func (b ExpectationBuilder[T]) CompileError(fn assert.Assertion, val ...any) T {
 	spec := b.base(b.ret)
 
 	if len(val) > 0 {
-		spec.Run.Error = val[0]
+		spec.Compile.Error = val[0]
 	}
 
 	spec.Compile.ErrorAssertion = fn

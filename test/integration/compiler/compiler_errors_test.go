@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func TestErrors(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		ErrorCase(
+	RunSpecs(t, []spec.Spec{
+		Failure(
 			`
 			LET i = NONE
 			LET i = 1
@@ -17,14 +19,14 @@ func TestErrors(t *testing.T) {
 				Kind:    parserd.NameError,
 				Message: "Variable 'i' is already defined",
 			}, "Global variable not unique"),
-		ErrorCase(
+		Failure(
 			`
 			RETURN i
 		`, E{
 				Kind:    parserd.NameError,
 				Message: "Variable 'i' is not defined",
 			}, "Global variable not defined"),
-		ErrorCase(
+		Failure(
 			`
 			LET items = (
 			  FOR i IN [1]

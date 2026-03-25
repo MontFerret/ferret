@@ -27,8 +27,6 @@ func (r *Runner) Run(t *testing.T, specs []Spec) {
 		specName := spec.String()
 
 		t.Run(fmt.Sprintf("%s/%s", r.Name, specName), func(t *testing.T) {
-			t.Helper()
-
 			if spec.SkipInfo.Active {
 				t.Skip(spec.SkipInfo.Reason)
 			}

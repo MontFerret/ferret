@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func TestLiteralsSyntaxErrors(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		ErrorCase(
+	RunSpecs(t, []spec.Spec{
+		Failure(
 			`
 			LET i = "foo
 			RETURN i
@@ -18,7 +20,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching '\"' to close the string.",
 			}, "Incomplete string literal (closing quote missing)"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = "foo bar
 			RETURN i
@@ -28,7 +30,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching '\"' to close the string.",
 			}, "Incomplete multi-string literal  (closing quote missing)"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = foo"
 			RETURN i
@@ -38,7 +40,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching '\"' to close the string.",
 			}, "Incomplete string literal (opening quote missing)"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = foo bar"
 			RETURN i
@@ -48,7 +50,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching '\"' to close the string.",
 			}, "Incomplete multi-string literal  (opening quote missing)"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = 'foo
 			RETURN i
@@ -58,7 +60,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete string literal (closing quote missing) 2"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = 'foo bar
 			RETURN i
@@ -68,7 +70,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete multi-string literal  (closing quote missing) 2"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = foo'
 			RETURN i
@@ -78,7 +80,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete string literal (opening quote missing) 2"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = foo bar'
 			RETURN i
@@ -88,7 +90,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete multi-string literal  (opening quote missing) 2"),
 
-		ErrorCase(
+		Failure(
 			"LET i = `foo "+
 				"RETURN i", E{
 				Kind:    parserd.SyntaxError,
@@ -96,7 +98,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching '`' to close the string.",
 			}, "Incomplete string literal (closing quote missing) 3"),
 
-		ErrorCase(
+		Failure(
 			"LET i = `foo bar"+
 				"RETURN i", E{
 				Kind:    parserd.SyntaxError,
@@ -104,7 +106,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching '`' to close the string.",
 			}, "Incomplete multi-string literal  (closing quote missing) 3"),
 
-		ErrorCase(
+		Failure(
 			"LET i = foo` "+
 				"RETURN i", E{
 				Kind:    parserd.SyntaxError,
@@ -112,7 +114,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching '`' to close the string.",
 			}, "Incomplete string literal (opening quote missing) 3"),
 
-		ErrorCase(
+		Failure(
 			"LET i = foo bar` "+
 				"RETURN i", E{
 				Kind:    parserd.SyntaxError,
@@ -120,7 +122,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching '`' to close the string.",
 			}, "Incomplete multi-string literal  (opening quote missing) 3"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = { "foo: }
 			RETURN i
@@ -130,7 +132,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching '\"' to close the string.",
 			}, "Incomplete string literal (closing quote missing) 4"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = { "foo bar: }
 			RETURN i
@@ -140,7 +142,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching '\"' to close the string.",
 			}, "Incomplete multi-string literal  (closing quote missing) 4"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = { foo": }
 			RETURN i
@@ -150,7 +152,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching '\"' to close the string.",
 			}, "Incomplete string literal (opening quote missing) 4"),
 
-		SkipErrorCase(
+		Failure(
 			`
 			LET i = { foo bar": }
 			RETURN i
@@ -158,9 +160,9 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '\"' to close the string",
-			}, "Incomplete multi-string literal  (opening quote missing) 4"),
+			}, "Incomplete multi-string literal  (opening quote missing) 4").Skip(),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = { 'foo: }
 			RETURN i
@@ -170,7 +172,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete string literal (closing quote missing) 5"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = { foo': }
 			RETURN i
@@ -180,7 +182,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete string literal (opening quote missing) 5"),
 
-		SkipErrorCase(
+		Failure(
 			`
 			LET i = { foo bar': }
 			RETURN i
@@ -188,9 +190,9 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching \"'\" to close the string.",
-			}, "Incomplete multi-string literal  (opening quote missing) 5"),
+			}, "Incomplete multi-string literal  (opening quote missing) 5").Skip(),
 
-		ErrorCase(
+		Failure(
 			"LET i = { 'foo: }"+
 				"RETURN i", E{
 				Kind:    parserd.SyntaxError,
@@ -198,7 +200,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete string literal (closing quote missing) 6"),
 
-		ErrorCase(
+		Failure(
 			"LET i = { 'foo bar: }"+
 				"RETURN i", E{
 				Kind:    parserd.SyntaxError,
@@ -206,7 +208,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete multi-string literal  (closing quote missing) 6"),
 
-		SkipErrorCase(
+		Failure(
 			`
 			LET o = { foo: "bar" }
 			LET i = o.
@@ -215,9 +217,9 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after '=' for variable 'i'",
 				Hint:    "Did you forget to provide a value?",
-			}, "Incomplete member access"),
+			}, "Incomplete member access").Skip(),
 
-		SkipErrorCase(
+		Failure(
 			`
 			LET o = { foo: "bar" }
 			LET i = o.
@@ -227,9 +229,9 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after '=' for variable 'i'",
 				Hint:    "Did you forget to provide a value?",
-			}, "Incomplete member access 2"),
+			}, "Incomplete member access 2").Skip(),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = [
 			RETURN i
@@ -239,7 +241,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a closing ']' to complete the array.",
 			}, "Incomplete array literal"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = [1
 			RETURN i
@@ -249,7 +251,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a closing ']' to complete the array.",
 			}, "Incomplete array literal 2"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = [,]
 			RETURN i
@@ -259,7 +261,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Did you forget to provide a value?",
 			}, "Incomplete array literal 3"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = {
 			RETURN i
@@ -269,7 +271,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a closing '}' to complete the object.",
 			}, "Incomplete object literal"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = { foo: }
 			RETURN i
@@ -279,7 +281,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Provide a value for the property, e.g. { foo: 123 }.",
 			}, "Incomplete object literal 2"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = { : }
 			RETURN i
@@ -289,7 +291,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Object properties must have a name before the colon, e.g. { property: 123 }.",
 			}, "Incomplete object literal 3"),
 
-		SkipErrorCase(
+		Failure(
 			`
 			LET i = { a 123 }
 			RETURN i
@@ -297,9 +299,9 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Kind:    parserd.SyntaxError,
 				Message: "Expected property name before ':'",
 				Hint:    "Object properties must have a name before the colon, e.g. { property: 123 }.",
-			}, "Incomplete object literal 4"),
+			}, "Incomplete object literal 4").Skip(),
 
-		ErrorCase(
+		Failure(
 			`
 			LET arr = [1, 2, 3]
 			LET v = arr[1
@@ -310,7 +312,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a closing ']' to complete the computed property expression.",
 			}, "Unclosed computed property expression"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET arr = [1, 2, 3]
 			LET v = arr[]

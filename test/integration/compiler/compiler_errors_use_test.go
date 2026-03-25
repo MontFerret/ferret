@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func TestUseErrors(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		ErrorCase(
+	RunSpecs(t, []spec.Spec{
+		Failure(
 			`
 			USE IO::FS AS F
 			USE IO::NET AS F

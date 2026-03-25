@@ -74,7 +74,7 @@ func IsCompilationError(actual, expected any) error {
 	var e error
 
 	switch ex := expected.(type) {
-	case *assert.ExpectedError:
+	case *assert.ExpectedError, assert.ExpectedError:
 		err, ok := actual.(*diagnostics.Diagnostic)
 
 		if !ok {
@@ -88,7 +88,7 @@ func IsCompilationError(actual, expected any) error {
 		}
 
 		e = assert.DiagnosticError(err, ex)
-	case *assert.ExpectedMultiError:
+	case *assert.ExpectedMultiError, assert.ExpectedMultiError:
 		err, ok := actual.(*diagnostics.DiagnosticSet)
 
 		if !ok {

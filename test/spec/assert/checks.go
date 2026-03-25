@@ -181,7 +181,7 @@ func DiagnosticError(a, e any) error {
 		return fmt.Errorf("actual value is not diagnostics.Diagnostic: %T", a)
 	}
 
-	expected, ok := e.(*ExpectedError)
+	expected, ok := CastExpectedError(e)
 
 	if !ok {
 		return fmt.Errorf("expected value is not *ExpectedError: %T", e)
@@ -225,7 +225,7 @@ func DiagnosticErrors(a, e any) error {
 		return fmt.Errorf("actual value is not diagnostics.Diagnostics[*diagnostics.Diagnostic]: %T", a)
 	}
 
-	expected, ok := e.(*ExpectedMultiError)
+	expected, ok := CastExpectedMultiError(e)
 
 	if !ok {
 		return fmt.Errorf("expected value is not *ExpectedMultiError: %T", e)

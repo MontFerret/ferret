@@ -5,17 +5,18 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/test/spec"
 )
 
 func TestSort(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		SkipByteCodeCase(`
-FOR s IN []
-	SORT s
-	RETURN s
-`, BC{
-			I(bytecode.OpReturn, 0, 7),
-		}),
+	RunSpecs(t, []spec.Spec{
+		//		SkipByteCodeCase(`
+		//FOR s IN []
+		//	SORT s
+		//	RETURN s
+		//`, BC{
+		//			I(bytecode.OpReturn, 0, 7),
+		//		}),
 	})
 }
 

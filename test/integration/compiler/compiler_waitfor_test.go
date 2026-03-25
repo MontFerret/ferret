@@ -1,24 +1,29 @@
 package compiler_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
+)
 
 func TestWaitforCompilationErrors(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		ErrorCase(`
+	RunSpecs(t, []spec.Spec{
+		Failure(`
 			LET ok = WAITFOR TRUE BACKOFF UNKNOWN
 			RETURN ok
 		`, E{
 			Message: "Unknown BACKOFF strategy",
 			Hint:    "Use one of: NONE, LINEAR, EXPONENTIAL.",
 		}, "Unknown BACKOFF strategy should fail compilation"),
-		ErrorCase(`
+		Failure(`
 			LET ok = WAITFOR TRUE OR THROW
 			RETURN ok
 		`, E{
 			Message: "OR THROW is not supported",
 			Hint:    "Remove OR THROW and handle timeouts explicitly.",
 		}, "OR THROW should fail compilation"),
-		ErrorCase(`
+		Failure(`
 			LET ok = WAITFOR TRUE JITTER 1.5
 			RETURN ok
 		`, E{

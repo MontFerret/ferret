@@ -15,3 +15,25 @@ type (
 		Number int
 	}
 )
+
+func CastExpectedError(err any) (*ExpectedError, bool) {
+	switch e := err.(type) {
+	case ExpectedError:
+		return &e, true
+	case *ExpectedError:
+		return e, true
+	default:
+		return nil, false
+	}
+}
+
+func CastExpectedMultiError(err any) (*ExpectedMultiError, bool) {
+	switch e := err.(type) {
+	case ExpectedMultiError:
+		return &e, true
+	case *ExpectedMultiError:
+		return e, true
+	default:
+		return nil, false
+	}
+}
