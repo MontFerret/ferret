@@ -132,11 +132,11 @@ func TestDispatchRuntimeErrors(t *testing.T) {
 	dispatcher := &testDispatcher{result: runtime.NewString("ok")}
 
 	RunSpecs(t, []Spec{
-		NewSpec(`RETURN DISPATCH "click" IN @value`, "Should fail when target is not a dispatcher").Expect().RunError(
+		NewSpec(`RETURN DISPATCH "click" IN @value`, "Should fail when target is not a dispatcher").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Message: "Invalid type"},
 		),
-		NewSpec(`RETURN DISPATCH @event IN @d`, "Should fail when event name is not a string").Expect().RunError(
+		NewSpec(`RETURN DISPATCH @event IN @d`, "Should fail when event name is not a string").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Message: "Invalid type"},
 		),

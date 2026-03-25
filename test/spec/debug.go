@@ -14,9 +14,8 @@ func PrintDebug(t *testing.T, name string, prog *bytecode.Program) {
 	t.Helper()
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(fmt.Sprintf("VM Test: %s", name))
-	b.WriteString(fmt.Sprintf("Expression: %s", prog.Source.Content()))
-	b.WriteString("\n")
+	b.WriteString(fmt.Sprintf("Suite: %s\n", name))
+	b.WriteString(fmt.Sprintf("Expression: %s\n", prog.Source.Content()))
 	b.WriteString("Bytecode:")
 
 	out, e := asm.Disassemble(prog, asm.WithDebug())

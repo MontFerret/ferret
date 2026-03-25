@@ -5,26 +5,24 @@ import (
 )
 
 type (
-	Skip struct {
-		Active bool
-		Reason string
+	ExecInfo struct {
+		Outcomes
+		RawOutput bool
 	}
 
 	Spec struct {
-		Expression  string
-		Description string
-		SkipInfo    Skip
-		RawOutput   bool
-		DebugOutput bool
-		Compile     Expectation
-		Run         Expectation
+		Base    BaseSpec
+		Compile Outcomes
+		Exec    ExecInfo
 	}
 )
 
 func New(expression string, desc ...string) Spec {
 	return Spec{
-		Expression:  expression,
-		Description: strings.TrimSpace(strings.Join(desc, " ")),
+		Base: BaseSpec{
+			Expression:  expression,
+			Description: strings.Join(desc, " "),
+		},
 	}
 }
 
@@ -35,43 +33,33 @@ func (s Spec) Expect() ExpectationBuilder[Spec] {
 }
 
 func (s Spec) Suffix(suffix string) Spec {
-	suffix = strings.TrimSpace(suffix)
+	s.Base = s.Base.Suffix(suffix)
 
-	if suffix == "" {
-		return s
-	}
-
-	if s.Description == "" {
-		s.Description = suffix
-		return s
-	}
-
-	s.Description = s.Description + " - " + suffix
 	return s
 }
 
 func (s Spec) Skip(reason ...string) Spec {
-	s.SkipInfo.Active = true
-	s.SkipInfo.Reason = strings.TrimSpace(strings.Join(reason, " "))
+	s.Base = s.Base.Skip(reason...)
 
 	return s
 }
 
 func (s Spec) Debug() Spec {
-	s.DebugOutput = true
+	s.Base.DebugOutput = true
+
 	return s
 }
 
+func (s Spec) ExecRaw() Spec {
+	s.Exec.RawOutput = true
+
+	return s
+}
+
+func (s Spec) SuiteName(suite string) string {
+	return s.Base.SuiteName(suite)
+}
+
 func (s Spec) String() string {
-	if s.Description != "" {
-		return strings.TrimSpace(s.Description)
-	}
-
-	exp := strings.TrimSpace(s.Expression)
-	exp = strings.ReplaceAll(exp, "\n", " ")
-	exp = strings.ReplaceAll(exp, "\t", " ")
-	// Replace multiple spaces with a single space
-	exp = strings.Join(strings.Fields(exp), " ")
-
-	return exp
+	return s.Base.String()
 }

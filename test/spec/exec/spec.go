@@ -49,47 +49,47 @@ func (s Spec) String() string {
 }
 
 func S(expression string, expected any, desc ...string) Spec {
-	return NewSpec(expression, desc...).Expect().Run(assert.ShouldEqual, expected)
+	return NewSpec(expression, desc...).Expect().Exec(assert.ShouldEqual, expected)
 }
 
 func Nil(expression string, desc ...string) Spec {
-	return NewSpec(expression, desc...).Expect().Run(assert.ShouldBeNil)
+	return NewSpec(expression, desc...).Expect().Exec(assert.ShouldBeNil)
 }
 
 func Error(expression string, desc ...string) Spec {
-	return NewSpec(expression, desc...).Expect().RunError(assert.ShouldNotBeNil)
+	return NewSpec(expression, desc...).Expect().ExecError(assert.ShouldNotBeNil)
 }
 
 func ErrorAs(expression string, expected error, desc ...string) Spec {
-	return NewSpec(expression, desc...).Expect().RunError(assert.ShouldBeError, expected)
+	return NewSpec(expression, desc...).Expect().ExecError(assert.ShouldBeError, expected)
 }
 
 func ErrorStr(expression string, expected string, desc ...string) Spec {
-	return NewSpec(expression, desc...).Expect().RunError(assert.ShouldBeError, expected)
+	return NewSpec(expression, desc...).Expect().ExecError(assert.ShouldBeError, expected)
 }
 
 func Object(expression string, expected map[string]any, desc ...string) Spec {
-	s := NewSpec(expression, desc...).Expect().Run(assert.ShouldEqualJSON, expected)
-	s.Base.RawOutput = true
+	s := NewSpec(expression, desc...).Expect().Exec(assert.ShouldEqualJSON, expected)
+	s.Base.Exec.RawOutput = true
 	return s
 }
 
 func Array(expression string, expected []any, desc ...string) Spec {
-	s := NewSpec(expression, desc...).Expect().Run(assert.ShouldEqualJSON, expected)
-	s.Base.RawOutput = true
+	s := NewSpec(expression, desc...).Expect().Exec(assert.ShouldEqualJSON, expected)
+	s.Base.Exec.RawOutput = true
 	return s
 }
 
 func Items(expression string, expected ...any) Spec {
-	return NewSpec(expression).Expect().Run(assert.ShouldHaveSameItems, expected)
+	return NewSpec(expression).Expect().Exec(assert.ShouldHaveSameItems, expected)
 }
 
 func Fn(expression string, assertion assert.Unary, desc ...string) Spec {
-	return NewSpec(expression, desc...).Expect().Run(assert.NewUnaryAssertion(assertion))
+	return NewSpec(expression, desc...).Expect().Exec(assert.NewUnaryAssertion(assertion))
 }
 
 func JSON(expression string, expected string, desc ...string) Spec {
-	s := NewSpec(expression, desc...).Expect().Run(assert.ShouldEqualJSON, expected)
-	s.Base.RawOutput = true
+	s := NewSpec(expression, desc...).Expect().Exec(assert.ShouldEqualJSON, expected)
+	s.Base.Exec.RawOutput = true
 	return s
 }

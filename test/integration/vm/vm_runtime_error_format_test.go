@@ -15,7 +15,7 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 		NewSpec(
 			"LET numerator = 10\nRETURN numerator / 0",
 			"script.fql",
-		).Expect().RunError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+		).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Message: "Division by zero",
 			Contains: []string{
 				"DivideByZero: Division by zero",
@@ -29,7 +29,7 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 		NewSpec(
 			"LET obj = {}\nRETURN obj.foo.bar",
 			"obj.fql",
-		).Expect().RunError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+		).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Message: "Cannot read property \"bar\" of None",
 			Contains: []string{
 				"TypeError: Cannot read property \"bar\" of None",
@@ -48,7 +48,7 @@ FUNC Outer() (
 RETURN Outer()
 `,
 			"nested_udf_stack.fql",
-		).Expect().RunError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+		).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Contains: []string{
 				"called from Inner (#1)",
 				"called from Outer (#2)",

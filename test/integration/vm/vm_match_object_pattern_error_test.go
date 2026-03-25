@@ -29,7 +29,7 @@ RETURN MATCH obj (
 )
 `,
 			"Should surface ContainsKey errors",
-		).Expect().RunError(ShouldBeRuntimeError, &ExpectedRuntimeError{Contains: []string{"boom"}}),
+		).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{Contains: []string{"boom"}}),
 	}, vm.WithParams(map[string]runtime.Value{
 		"obj": &errorMap{
 			Object: runtime.NewObjectWith(map[string]runtime.Value{

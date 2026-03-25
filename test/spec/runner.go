@@ -1,7 +1,6 @@
 package spec
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -24,47 +23,45 @@ func (r *Runner) Run(t *testing.T, specs []Spec) {
 	std := Stdlib()
 
 	for index, spec := range specs {
-		specName := spec.String()
+		suiteName := spec.SuiteName(r.Name)
 
-		t.Run(fmt.Sprintf("%s/%s", r.Name, specName), func(t *testing.T) {
-			if spec.SkipInfo.Active {
-				t.Skip(spec.SkipInfo.Reason)
+		t.Run(suiteName, func(t *testing.T) {
+			if spec.Base.SkipInfo.Active {
+				t.Skip(spec.Base.SkipInfo.Reason)
 			}
 
 			var prog *bytecode.Program
 
 			defer func() {
 				if recovered := recover(); recovered != nil {
-					PrintDebug(t, specName, prog)
+					PrintDebug(t, suiteName, prog)
 					t.Fatalf("panic: %v", recovered)
 				}
 			}()
 
-			prog, err := r.Compiler.Compile(file.NewSource(specName, spec.Expression))
+			prog, err := r.Compiler.Compile(file.NewSource(suiteName, spec.Base.Expression))
 			if err != nil {
-				if spec.DebugOutput {
+				if spec.Base.DebugOutput {
 					PrintError(t, err)
 				}
 
-				if spec.Compile.ErrorAssertion != nil {
-					spec.Compile.ErrorAssertion(t, err, spec.Compile.Error)
+				if spec.Compile.Error.Defined() {
+					spec.Compile.Error.Assert(t, err)
 					return
 				}
 
 				t.Fatalf("unexpected compilation error:\n%s", diagnostics.Format(err))
 			}
 
-			if spec.Compile.ErrorAssertion != nil || spec.Compile.Error != nil {
+			if spec.Compile.Error.Defined() {
 				t.Fatal("expected compilation error, got none")
 			}
 
-			if spec.Compile.ValueAssertion != nil {
-				spec.Compile.ValueAssertion(t, prog, spec.Compile.Value)
+			if spec.Compile.Result.Defined() {
+				spec.Compile.Result.Assert(t, prog)
 			}
 
-			exec := spec.Run.ErrorAssertion != nil || spec.Run.ValueAssertion != nil
-
-			if !exec {
+			if !spec.Exec.Result.Defined() && !spec.Exec.Error.Defined() {
 				return
 			}
 
@@ -81,27 +78,27 @@ func (r *Runner) Run(t *testing.T, specs []Spec) {
 				options = append(options, specEnvOpts...)
 			}
 
-			actual, err := Exec(prog, spec.RawOutput, options...)
+			actual, err := Exec(prog, spec.Exec.RawOutput, options...)
 
 			if err != nil {
-				if spec.Run.ErrorAssertion != nil {
-					spec.Run.ErrorAssertion(t, err, spec.Run.Error)
+				if spec.Exec.Error.Defined() {
+					spec.Exec.Error.Assert(t, err)
 					return
 				}
 
 				t.Fatalf("unexpected runtime error: %v", err)
 			}
 
-			if spec.Run.ErrorAssertion != nil || spec.Run.Error != nil {
+			if spec.Exec.Error.Defined() {
 				t.Fatal("expected runtime error, got none")
 			}
 
-			if spec.Run.ValueAssertion != nil {
-				spec.Run.ValueAssertion(t, actual, spec.Run.Value)
+			if spec.Exec.Result.Defined() {
+				spec.Exec.Result.Assert(t, actual)
 			}
 
-			if spec.DebugOutput {
-				PrintDebug(t, specName, prog)
+			if spec.Base.DebugOutput {
+				PrintDebug(t, suiteName, prog)
 			}
 		})
 	}

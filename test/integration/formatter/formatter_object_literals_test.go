@@ -1,30 +1,34 @@
 package formatter_test
 
-import "testing"
+import (
+	"testing"
+
+	. "github.com/MontFerret/ferret/v2/test/spec/format"
+)
 
 func TestFormatterObjectLiterals(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		Case(`
+	RunSpecs(t, []Spec{
+		S(`
 LET    foo =     { a: 1, b: 2,  c: 3,    d: 4 }
  RETURN foo
 `, `LET foo = { a: 1, b: 2, c: 3, d: 4 }
 RETURN foo`),
 
-		Case(`
+		S(`
 LET    foo =      { a: { e: 5 },     
 b: 2, c: 3, d: 4 }
  RETURN foo
 `, `LET foo = { a: { e: 5 }, b: 2, c: 3, d: 4 }
 RETURN foo`),
 
-		Case(`
+		S(`
 LET    foo =      { a: { e: 5 },     
 b: 2, c: 3, d: [ 1, 2,3, 4, 5] }
  RETURN foo
 `, `LET foo = { a: { e: 5 }, b: 2, c: 3, d: [1, 2, 3, 4, 5] }
 RETURN foo`),
 
-		Case(`
+		S(`
 LET    foo =      { a: { e: 5 }, 
                 b: 2, c: 3, d: [ 1, 2,3, 4, 5], f: {
                   g: []
@@ -41,7 +45,7 @@ LET    foo =      { a: { e: 5 },
 }
 RETURN foo`),
 
-		Case(`
+		S(`
 LET    foo =     { 
 // comment
 a: 1, 
