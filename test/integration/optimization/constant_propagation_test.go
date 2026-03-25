@@ -25,11 +25,11 @@ func TestConstantPropagation(t *testing.T) {
 			NotExists: []bytecode.Opcode{bytecode.OpSub, bytecode.OpMul},
 		}, 14, "should fold chain of arithmetic operations"),
 
-		Opcode(`RETURN 1 / 0`, compile.OpcodeExistence{
+		OpcodeErr(`RETURN 1 / 0`, compile.OpcodeExistence{
 			Exists: []bytecode.Opcode{bytecode.OpDiv},
 		}, runtime.ErrInvalidOperation, "should not fold division by zero"),
 
-		Opcode(`RETURN 1 / "0"`, compile.OpcodeExistence{
+		OpcodeErr(`RETURN 1 / "0"`, compile.OpcodeExistence{
 			Exists: []bytecode.Opcode{bytecode.OpDiv},
 		}, runtime.ErrInvalidOperation, "should not fold division by zero with string"),
 	})

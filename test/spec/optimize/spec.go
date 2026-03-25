@@ -11,6 +11,10 @@ func Opcode[T compile.OpcodeExpectation](expression string, expectation T, out a
 	return compile.Opcode(expression, expectation, desc...).Expect().Exec(assert.ShouldEqual, out)
 }
 
+func OpcodeErr[T compile.OpcodeExpectation](expression string, expectation T, out any, desc ...string) spec.Spec {
+	return compile.Opcode(expression, expectation, desc...).Expect().ExecError(assert.ShouldBeError, out)
+}
+
 func Registers(expression string, num int, output any, desc ...string) spec.Spec {
 	return compile.Registers(expression, num, desc...).Expect().Exec(assert.ShouldEqual, output)
 }
