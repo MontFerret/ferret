@@ -1,9 +1,10 @@
 package vm_test
 
 import (
+	"testing"
+
 	"github.com/MontFerret/ferret/v2/test/spec/assert"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
-	"testing"
 )
 
 func TestForCollect(t *testing.T) {
@@ -84,7 +85,7 @@ func TestForCollect(t *testing.T) {
 					user: i,
 					gender: gender
 				}
-		`, "Should not have access to initial variables").Skip().Expect().CompileError(assert.ShouldNotBeNil),
+		`, "Should not have access to initial variables").Skip("TODO: Needs a fix").Expect().CompileError(assert.ShouldNotBeNil),
 		NewSpec(`
 			LET users = [
 				{
@@ -122,7 +123,7 @@ func TestForCollect(t *testing.T) {
 				LET x = "foo"
 				COLLECT gender = i.gender
 				RETURN {x, gender}
-		`, "Should not have access to variables defined before COLLECT").Skip().Expect().CompileError(assert.ShouldNotBeNil),
+		`, "Should not have access to variables defined before COLLECT").Skip("TODO: Needs a fix").Expect().CompileError(assert.ShouldNotBeNil),
 		Array(`
 			LET users = []
 			FOR i IN users

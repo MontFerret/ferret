@@ -122,7 +122,7 @@ func TestMember(t *testing.T) {
 		Object(`RETURN KEEP_KEYS({first: {second: "third"}}.first, "second")`,
 			map[string]any{
 				"second": "third",
-			}).Skip(),
+			}),
 		Array(`
 					FOR v, k IN {f: {foo: "bar"}}.f
 						RETURN [k, v]
@@ -258,7 +258,7 @@ func TestOptionalChaining(t *testing.T) {
 		S(`LET obj = { '[1]': 42 } RETURN obj?.[[1]]`, 42),
 		S(`LET obj = { '{"a":1}': 7 } RETURN obj?.[{a:1}]`, 7),
 		Nil("RETURN ERROR()?.foo"),
-		Nil(`LET res = (FOR i IN ERROR() RETURN i)? RETURN res`).Skip(),
+		Nil(`LET res = (FOR i IN ERROR() RETURN i)? RETURN res`),
 
 		Array(`LET res = (FOR i IN [1, 2, 3, 4] LET y = ERROR() RETURN y+i)? RETURN res`, []any{}, "Error in array comprehension"),
 		Array(`FOR i IN [1, 2, 3, 4] ERROR()? RETURN i`, []any{1, 2, 3, 4}, "Error in FOR loop"),
