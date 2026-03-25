@@ -6,14 +6,15 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
+	. "github.com/MontFerret/ferret/v2/test/spec/mock"
 )
 
 func TestWaitforEvent(t *testing.T) {
-	matchFirst := NewTestObservable([]runtime.Value{
+	matchFirst := NewObservable([]runtime.Value{
 		NewTestEventType("match"),
 		NewTestEventType("other"),
 	})
-	matchSecond := NewTestObservable([]runtime.Value{
+	matchSecond := NewObservable([]runtime.Value{
 		NewTestEventType("other"),
 		NewTestEventType("match"),
 	})

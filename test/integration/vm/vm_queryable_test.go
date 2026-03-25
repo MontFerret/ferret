@@ -2,241 +2,17 @@ package vm_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 
-	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
+	"github.com/MontFerret/ferret/v2/test/spec/mock"
 )
 
-type testQueryable struct {
-	result  runtime.List
-	err     error
-	queries []runtime.Query
-}
-
-func (t *testQueryable) Query(_ context.Context, q runtime.Query) (runtime.List, error) {
-	t.queries = append(t.queries, q)
-	if t.err != nil {
-		return nil, t.err
-	}
-	if t.result != nil {
-		return t.result, nil
-	}
-	return runtime.NewArray(0), nil
-}
-
-func (t *testQueryable) MarshalJSON() ([]byte, error) {
-	return json.Marshal("queryable")
-}
-
-func (t *testQueryable) String() string {
-	return "queryable"
-}
-
-func (t *testQueryable) Unwrap() interface{} {
-	return "queryable"
-}
-
-func (t *testQueryable) Hash() uint64 {
-	return 0
-}
-
-func (t *testQueryable) Copy() runtime.Value {
-	return t
-}
-
-func newObjectWithMap(props map[string]runtime.Value) runtime.Value {
-	obj := runtime.NewObject()
-
-	for key, value := range props {
-		_ = obj.Set(context.Background(), runtime.NewString(key), value)
-	}
-
-	return obj
-}
-
-type mockText struct {
-	value runtime.String
-}
-
-func newMockText(value string) *mockText {
-	return &mockText{value: runtime.NewString(value)}
-}
-
-func (t *mockText) MarshalJSON() ([]byte, error) {
-	return encodingjson.Default.Encode(t.value)
-}
-
-func (t *mockText) String() string {
-	return t.value.String()
-}
-
-func (t *mockText) Hash() uint64 {
-	return t.value.Hash()
-}
-
-func (t *mockText) Copy() runtime.Value {
-	return t
-}
-
-func (t *mockText) Iterate(ctx context.Context) (runtime.Iterator, error) {
-	return runtime.NewArrayWith(t.value).Iterate(ctx)
-}
-
-type mockNode struct {
-	kind string
-}
-
-func newMockNode(kind string) *mockNode {
-	return &mockNode{kind: kind}
-}
-
-func (n *mockNode) MarshalJSON() ([]byte, error) {
-	return encodingjson.Default.Encode(runtime.NewString(n.kind))
-}
-
-func (n *mockNode) String() string {
-	return n.kind
-}
-
-func (n *mockNode) Unwrap() interface{} {
-	return n.kind
-}
-
-func (n *mockNode) Hash() uint64 {
-	return runtime.NewString(n.kind).Hash()
-}
-
-func (n *mockNode) Copy() runtime.Value {
-	return n
-}
-
-func (n *mockNode) Iterate(ctx context.Context) (runtime.Iterator, error) {
-	return runtime.NewArrayWith(n).Iterate(ctx)
-}
-
-func (n *mockNode) Query(_ context.Context, q runtime.Query) (runtime.List, error) {
-	switch q.Kind.String() {
-	case "css":
-		switch q.Payload.String() {
-		case ".product":
-			return runtime.NewArrayWith(newMockNode("product")), nil
-		case ".title":
-			return runtime.NewArrayWith(newMockNode("title")), nil
-		case ".price":
-			return runtime.NewArrayWith(newMockNode("price")), nil
-		default:
-			return runtime.NewArrayWith(newMockNode("node")), nil
-		}
-	case "text":
-		return runtime.NewArrayWith(newMockText(n.kind)), nil
-	default:
-		return runtime.NewArray(0), nil
-	}
-}
-
-type mockDBQueryable struct {
-	testQueryable
-}
-
-func (m *mockDBQueryable) Query(ctx context.Context, q runtime.Query) (runtime.List, error) {
-	m.queries = append(m.queries, q)
-
-	if q.Kind.String() == "nil" {
-		return runtime.NewArray(0), nil
-	}
-
-	if q.Kind.String() != "sql" {
-		return runtime.NewArray(0), nil
-	}
-
-	params, err := runtime.ToMap(ctx, q.Options)
-	if err != nil {
-		return nil, err
-	}
-
-	category, _ := params.Get(ctx, runtime.NewString("c"))
-	if category == runtime.NewString("laptops") {
-		return runtime.NewArrayWith(
-			newObjectWithMap(map[string]runtime.Value{
-				"name":  runtime.NewString("Laptop Pro"),
-				"price": runtime.NewInt(200),
-			}),
-		), nil
-	}
-
-	return runtime.NewArrayWith(
-		newObjectWithMap(map[string]runtime.Value{
-			"name":  runtime.NewString("Laptop Pro"),
-			"price": runtime.NewInt(200),
-		}),
-		newObjectWithMap(map[string]runtime.Value{
-			"name":  runtime.NewString("Mouse"),
-			"price": runtime.NewInt(50),
-		}),
-	), nil
-}
-
-type mockJSONQueryable struct {
-	testQueryable
-}
-
-func (m *mockJSONQueryable) Query(ctx context.Context, q runtime.Query) (runtime.List, error) {
-	m.queries = append(m.queries, q)
-
-	if q.Kind.String() != "jp" {
-		return runtime.NewArray(0), nil
-	}
-
-	orders := runtime.NewArrayWith(
-		newObjectWithMap(map[string]runtime.Value{
-			"id":    runtime.NewInt(1),
-			"total": runtime.NewInt(150),
-			"items": runtime.NewArrayWith(
-				newObjectWithMap(map[string]runtime.Value{"name": runtime.NewString("Item A")}),
-				newObjectWithMap(map[string]runtime.Value{"name": runtime.NewString("Item B")}),
-			),
-		}),
-		newObjectWithMap(map[string]runtime.Value{
-			"id":    runtime.NewInt(2),
-			"total": runtime.NewInt(80),
-			"items": runtime.NewArrayWith(
-				newObjectWithMap(map[string]runtime.Value{"name": runtime.NewString("Item C")}),
-			),
-		}),
-	)
-
-	return orders, nil
-}
-
-type nilListQueryable struct{}
-
-func (n *nilListQueryable) Query(_ context.Context, _ runtime.Query) (runtime.List, error) {
-	return nil, nil
-}
-
-func (n *nilListQueryable) MarshalJSON() ([]byte, error) {
-	return json.Marshal("nil-queryable")
-}
-
-func (n *nilListQueryable) String() string {
-	return "nil-queryable"
-}
-
-func (n *nilListQueryable) Hash() uint64 {
-	return 0
-}
-
-func (n *nilListQueryable) Copy() runtime.Value {
-	return n
-}
-
 func TestQueryable(t *testing.T) {
-	queryable := &testQueryable{result: runtime.NewArrayWith(runtime.NewString("ok"))}
+	queryable := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("ok")))
 
 	RunSpecs(t, []Spec{
 		Array("RETURN @doc[~ css`.items`]", []any{"ok"}, "Should apply query literal"),
@@ -264,7 +40,7 @@ func TestQueryable(t *testing.T) {
 		var hasSQLQueryExpr bool
 		var hasText bool
 
-		for _, q := range queryable.queries {
+		for _, q := range queryable.MockQueries() {
 			switch q.Kind {
 			case runtime.NewString("css"):
 				if q.Payload == runtime.NewString(".items") {
@@ -327,9 +103,9 @@ func TestQueryable(t *testing.T) {
 }
 
 func TestComplexQueries(t *testing.T) {
-	queryableDoc := newMockNode("doc")
-	queryableDB := &mockDBQueryable{}
-	queryableJSON := &mockJSONQueryable{}
+	queryableDoc := mock.NewNode("doc")
+	queryableDB := mock.NewDBQueryable()
+	queryableJSON := mock.NewJSONQueryable()
 
 	RunSpecs(t, []Spec{
 		Array(
@@ -400,14 +176,10 @@ func TestComplexQueries(t *testing.T) {
 }
 
 func TestQueryableListInput(t *testing.T) {
-	queryableDoc := newMockNode("doc")
-	queryableNil := &nilListQueryable{}
-	queryableA := &testQueryable{
-		result: runtime.NewArrayWith(runtime.NewString("a1"), runtime.NewString("a2")),
-	}
-	queryableB := &testQueryable{
-		result: runtime.NewArrayWith(runtime.NewString("b1")),
-	}
+	queryableDoc := mock.NewNode("doc")
+	queryableNil := mock.NewNilListQueryable()
+	queryableA := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("a1"), runtime.NewString("a2")))
+	queryableB := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("b1")))
 
 	RunSpecs(t, []Spec{
 		Array(
@@ -438,15 +210,9 @@ func TestQueryableListInput(t *testing.T) {
 }
 
 func TestQueryableModifiers(t *testing.T) {
-	queryableMany := &testQueryable{
-		result: runtime.NewArrayWith(runtime.NewString("a"), runtime.NewString("b")),
-	}
-	queryableOne := &testQueryable{
-		result: runtime.NewArrayWith(runtime.NewString("only")),
-	}
-	queryableEmpty := &testQueryable{
-		result: runtime.NewArray(0),
-	}
+	queryableMany := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("a"), runtime.NewString("b")))
+	queryableOne := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("only")))
+	queryableEmpty := mock.NewQueryable(runtime.NewArray(0))
 
 	RunSpecs(t, []Spec{
 		S("RETURN QUERY EXISTS `.items` IN @many USING css", true, "EXISTS should return true for non-empty result"),
