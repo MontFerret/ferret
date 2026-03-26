@@ -12,7 +12,7 @@ func PrintDebug(t *testing.T, name string, input string, output strings.Builder)
 	b.WriteString("\n")
 	b.WriteString(fmt.Sprintf("Suite: %s\n", name))
 	b.WriteString(fmt.Sprintf("Input Expression: %s\n", input))
-	b.WriteString(fmt.Sprintf("Output Expression: %s\n", output))
+	b.WriteString(fmt.Sprintf("Output Expression: %s\n", output.String()))
 
 	t.Log(b.String())
 }

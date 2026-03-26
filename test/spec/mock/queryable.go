@@ -21,33 +21,33 @@ func (q *Queryable) MockQueries() []runtime.Query {
 	return q.queries
 }
 
-func (t *Queryable) Query(_ context.Context, q runtime.Query) (runtime.List, error) {
-	t.queries = append(t.queries, q)
-	if t.err != nil {
-		return nil, t.err
+func (q *Queryable) Query(_ context.Context, query runtime.Query) (runtime.List, error) {
+	q.queries = append(q.queries, query)
+	if q.err != nil {
+		return nil, q.err
 	}
-	if t.result != nil {
-		return t.result, nil
+	if q.result != nil {
+		return q.result, nil
 	}
 	return runtime.NewArray(0), nil
 }
 
-func (t *Queryable) MarshalJSON() ([]byte, error) {
+func (q *Queryable) MarshalJSON() ([]byte, error) {
 	return json.Marshal("queryable")
 }
 
-func (t *Queryable) String() string {
+func (q *Queryable) String() string {
 	return "queryable"
 }
 
-func (t *Queryable) Unwrap() interface{} {
+func (q *Queryable) Unwrap() interface{} {
 	return "queryable"
 }
 
-func (t *Queryable) Hash() uint64 {
+func (q *Queryable) Hash() uint64 {
 	return 0
 }
 
-func (t *Queryable) Copy() runtime.Value {
-	return t
+func (q *Queryable) Copy() runtime.Value {
+	return q
 }
