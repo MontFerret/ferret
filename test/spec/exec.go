@@ -59,14 +59,29 @@ func materializeJSONResult(out *vm.Result) ([]byte, error) {
 }
 
 func Run(p *bytecode.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
-	instance, err := vm.New(p)
+	return RunWith(p, nil, opts...)
+}
+
+func RunWith(p *bytecode.Program, vmOpts []vm.Option, opts ...vm.EnvironmentOption) ([]byte, error) {
+	instance, err := vm.NewWith(p, vmOpts...)
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		_ = instance.Close()
+	}()
 
 	env, err := vm.NewEnvironment(opts)
 	if err != nil {
 		return nil, err
+	}
+
+	return RunInstance(instance, env)
+}
+
+func RunInstance(instance *vm.VM, env *vm.Environment) ([]byte, error) {
+	if env == nil {
+		env = vm.NewDefaultEnvironment()
 	}
 
 	ctx := newTestContext()
@@ -81,7 +96,28 @@ func Run(p *bytecode.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
 }
 
 func Exec(p *bytecode.Program, raw bool, opts ...vm.EnvironmentOption) (any, error) {
-	out, err := Run(p, opts...)
+	return ExecWith(p, raw, nil, opts...)
+}
+
+func ExecWith(p *bytecode.Program, raw bool, vmOpts []vm.Option, opts ...vm.EnvironmentOption) (any, error) {
+	instance, err := vm.NewWith(p, vmOpts...)
+	if err != nil {
+		return 0, err
+	}
+	defer func() {
+		_ = instance.Close()
+	}()
+
+	env, err := vm.NewEnvironment(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return ExecInstance(instance, raw, env)
+}
+
+func ExecInstance(instance *vm.VM, raw bool, env *vm.Environment) (any, error) {
+	out, err := RunInstance(instance, env)
 
 	if err != nil {
 		return 0, err

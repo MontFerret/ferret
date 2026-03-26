@@ -1,5 +1,7 @@
 package bytecode
 
+import "fmt"
+
 type Instruction struct {
 	Opcode   Opcode     `json:"opcode"`
 	Operands [3]Operand `json:"operands"`
@@ -23,4 +25,8 @@ func NewInstruction(opcode Opcode, operands ...Operand) Instruction {
 		Opcode:   opcode,
 		Operands: ops,
 	}
+}
+
+func (i Instruction) String() string {
+	return fmt.Sprintf("%s %d %d %d", i.Opcode, i.Operands[0], i.Operands[1], i.Operands[2])
 }

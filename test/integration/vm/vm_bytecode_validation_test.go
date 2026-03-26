@@ -1,13 +1,14 @@
 package vm_test
 
 import (
-	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	"github.com/MontFerret/ferret/v2/test/spec/assert"
 )
 
 func TestRejectsUnsupportedBytecodeVersion(t *testing.T) {
@@ -22,14 +23,21 @@ func TestRejectsUnsupportedBytecodeVersion(t *testing.T) {
 		Registers:  1,
 	}
 
-	_, err := vm.New(program)
-	if err == nil {
-		t.Fatal("expected version validation error")
-	}
+	runProgramSpecs(t, []spec.Spec{
+		spec.NewWith(spec.NewProgramInput(program), "unsupported ISA version").
+			Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
+			err, ok := actual.(error)
+			if !ok || err == nil {
+				return errors.New("expected version validation error")
+			}
 
-	if !strings.Contains(err.Error(), "unsupported bytecode version; recompile query") {
-		t.Fatalf("unexpected error: %v", err)
-	}
+			if !strings.Contains(err.Error(), "unsupported bytecode version; recompile query") {
+				return fmt.Errorf("unexpected error: %v", err)
+			}
+
+			return nil
+		})),
+	})
 }
 
 func TestFailsOnUnknownOpcode(t *testing.T) {
@@ -40,17 +48,20 @@ func TestFailsOnUnknownOpcode(t *testing.T) {
 		Registers:  1,
 	}
 
-	instance, err := vm.New(program)
-	if err != nil {
-		t.Fatalf("unexpected constructor error: %v", err)
-	}
+	runProgramSpecs(t, []spec.Spec{
+		spec.NewWith(spec.NewProgramInput(program), "unknown opcode").
+			Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
+			err, ok := actual.(error)
+			if !ok || err == nil {
+				return errors.New("expected unknown opcode error")
+			}
 
-	_, err = instance.Run(context.Background(), vm.NewDefaultEnvironment())
-	if err == nil {
-		t.Fatal("expected unknown opcode error")
-	}
+			unwrapped := errors.Unwrap(err)
+			if unwrapped == nil || !strings.Contains(unwrapped.Error(), "unknown opcode 255 at pc 0") {
+				return fmt.Errorf("unexpected error: %v", err)
+			}
 
-	if !strings.Contains(errors.Unwrap(err).Error(), "unknown opcode 255 at pc 0") {
-		t.Fatalf("unexpected error: %v", err)
-	}
+			return nil
+		})),
+	})
 }

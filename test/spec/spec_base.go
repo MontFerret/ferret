@@ -9,12 +9,23 @@ type (
 	}
 
 	BaseSpec struct {
-		Expression  string
+		Input       Input
 		Description string
 		SkipInfo    Skip
 		DebugOutput bool
 	}
 )
+
+func NewBaseSpec(expr string, desc ...string) BaseSpec {
+	return NewBaseSpecWith(NewExpressionInput(expr), desc...)
+}
+
+func NewBaseSpecWith(input Input, desc ...string) BaseSpec {
+	return BaseSpec{
+		Input:       input,
+		Description: strings.Join(desc, " "),
+	}
+}
 
 func (s BaseSpec) Suffix(suffix string) BaseSpec {
 	suffix = strings.TrimSpace(suffix)
@@ -49,25 +60,13 @@ func (s BaseSpec) SuiteName(suite string) string {
 }
 
 func (s BaseSpec) String() string {
-	if s.Description != "" {
-		return strings.TrimSpace(s.Description)
-	}
-
-	exp := strings.TrimSpace(s.Expression)
-	exp = strings.ReplaceAll(exp, "\n", " ")
-	exp = strings.ReplaceAll(exp, "\t", " ")
-	// Replace multiple spaces with a single space
-	exp = strings.Join(strings.Fields(exp), " ")
-
-	return exp
+	return s.Input.String()
 }
 
 func (s BaseSpec) Merge(other BaseSpec) BaseSpec {
 	out := s
 
-	if other.Expression != "" {
-		out.Expression = other.Expression
-	}
+	out.Input = s.Input.Merge(other.Input)
 
 	if other.Description != "" {
 		out.Description = other.Description

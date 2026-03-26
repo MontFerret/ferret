@@ -6,7 +6,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -45,7 +44,8 @@ func (r *Runner) Run(t *testing.T, specs []Spec) {
 				}
 			}()
 
-			prog, err := r.Compiler.Compile(file.NewSource(suiteName, spec.Base.Expression))
+			prog, err := spec.Base.Input.ResolveProgram(suiteName, r.Compiler)
+
 			if err != nil {
 				if spec.Base.DebugOutput {
 					PrintError(t, err)
@@ -83,7 +83,7 @@ func (r *Runner) Run(t *testing.T, specs []Spec) {
 				options = append(options, spec.Exec.Env...)
 			}
 
-			actual, err := Exec(prog, spec.Exec.RawOutput, options...)
+			actual, err := ExecWith(prog, spec.Exec.RawOutput, spec.Exec.VM, options...)
 
 			if err != nil {
 				if spec.Exec.Error.Defined() {

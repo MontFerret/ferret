@@ -2,124 +2,172 @@ package vm_test
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	"github.com/MontFerret/ferret/v2/test/spec/assert"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestRunMissingParamPrecedesWarmupHostResolution(t *testing.T) {
-	forEachCompiledVM(t, "RETURN MISSING_FN(@foo)", func(t *testing.T, instance *vm.VM) {
-		_, err := runVM(t, instance, vm.NewDefaultEnvironment())
-		assertRuntimeErrorMessage(t, err, "Missing parameter")
+	runSpecsLevels(t, func() []spec.Spec {
+		return []spec.Spec{
+			spec.New("RETURN MISSING_FN(@foo)").
+				Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Missing parameter"}),
+		}
 	})
 }
 
 func TestStrictWarmupFailsProtectedMissingHostCallForDefaultAndBuiltEnvironment(t *testing.T) {
-	forEachCompiledVM(t, "RETURN MISSING_FN()?", func(t *testing.T, instance *vm.VM) {
-		builtEnv := mustNewEnvironment(t)
-
-		cases := []struct {
-			env  *vm.Environment
-			name string
-		}{
-			{name: "default", env: vm.NewDefaultEnvironment()},
-			{name: "built", env: builtEnv},
-		}
-
-		for _, tc := range cases {
-			t.Run(tc.name, func(t *testing.T) {
-				_, err := runVM(t, instance, tc.env)
-				assertRuntimeErrorMessage(t, err, "Unresolved function")
-			})
+	runSequencesLevels(t, func() []spec.Sequence {
+		return []spec.Sequence{
+			{
+				Base: spec.NewBaseSpec("RETURN MISSING_FN()?"),
+				Steps: []spec.SequenceStep{
+					{
+						Name: "default",
+						EnvFactory: func() (*vm.Environment, error) {
+							return vm.NewDefaultEnvironment(), nil
+						},
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+					},
+					{
+						Name: "built",
+						EnvFactory: func() (*vm.Environment, error) {
+							return vm.NewEnvironment(nil)
+						},
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+					},
+				},
+			},
 		}
 	})
 }
 
 func TestStrictWarmupFailsOnDeadCodeUnresolvedHostCall(t *testing.T) {
-	forEachCompiledVM(t, "RETURN false ? MISSING_FN() : 1", func(t *testing.T, instance *vm.VM) {
-		envWithDummy := mustNewEnvironment(t, vm.WithFunction("DUMMY", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-			return runtime.None, nil
-		}))
-
-		cases := []struct {
-			env  *vm.Environment
-			name string
-		}{
-			{name: "default", env: vm.NewDefaultEnvironment()},
-			{name: "dummy", env: envWithDummy},
-		}
-
-		for _, tc := range cases {
-			t.Run(tc.name, func(t *testing.T) {
-				_, err := runVM(t, instance, tc.env)
-				assertRuntimeErrorMessage(t, err, "Unresolved function")
-			})
+	runSequencesLevels(t, func() []spec.Sequence {
+		return []spec.Sequence{
+			{
+				Base: spec.NewBaseSpec("RETURN false ? MISSING_FN() : 1"),
+				Steps: []spec.SequenceStep{
+					{
+						Name: "default",
+						EnvFactory: func() (*vm.Environment, error) {
+							return vm.NewDefaultEnvironment(), nil
+						},
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+					},
+					{
+						Name: "dummy",
+						Env: []vm.EnvironmentOption{
+							vm.WithFunction("DUMMY", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+								return runtime.None, nil
+							}),
+						},
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+					},
+				},
+			},
 		}
 	})
 }
 
 func TestStrictWarmupAggregatesMissingHostFunctions(t *testing.T) {
-	forEachCompiledVM(t, `
+	runSpecsLevels(t, func() []spec.Spec {
+		return []spec.Spec{
+			spec.New(`
 LET a = MISSING_A()
 LET b = MISSING_B()
 RETURN a + b
-`, func(t *testing.T, instance *vm.VM) {
-		_, err := runVM(t, instance, vm.NewDefaultEnvironment())
-		if err == nil {
-			t.Fatal("expected warmup error")
-		}
+`).Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
+				err, ok := actual.(error)
+				if !ok || err == nil {
+					return errors.New("expected warmup error")
+				}
 
-		formatted := diagnostics.Format(err)
-		if got, want := strings.Count(formatted, "Unresolved function"), 2; got != want {
-			t.Fatalf("unexpected unresolved function count: got %d, want %d\n%s", got, want, formatted)
+				formatted := diagnostics.Format(err)
+				if got, want := strings.Count(formatted, "Unresolved function"), 2; got != want {
+					return fmt.Errorf("unexpected unresolved function count: got %d, want %d\n%s", got, want, formatted)
+				}
+
+				return nil
+			})),
 		}
 	})
 }
 
 func TestStrictWarmupReportsRepeatedUnresolvedHostFunctionPerCallsite(t *testing.T) {
-	forEachCompiledVM(t, `
+	runSpecsLevels(t, func() []spec.Spec {
+		return []spec.Spec{
+			spec.New(`
 LET a = MISSING()
 LET b = MISSING()
 RETURN a + b
-`, func(t *testing.T, instance *vm.VM) {
-		_, err := runVM(t, instance, vm.NewDefaultEnvironment())
-		if err == nil {
-			t.Fatal("expected warmup error")
-		}
+`).Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
+				err, ok := actual.(error)
+				if !ok || err == nil {
+					return errors.New("expected warmup error")
+				}
 
-		formatted := diagnostics.Format(err)
-		if got, want := strings.Count(formatted, "Unresolved function"), 2; got != want {
-			t.Fatalf("unexpected unresolved function count: got %d, want %d\n%s", got, want, formatted)
+				formatted := diagnostics.Format(err)
+				if got, want := strings.Count(formatted, "Unresolved function"), 2; got != want {
+					return fmt.Errorf("unexpected unresolved function count: got %d, want %d\n%s", got, want, formatted)
+				}
+
+				return nil
+			})),
 		}
 	})
 }
 
 func TestStrictWarmupFailureIsRepeatableUntilEnvironmentFixed(t *testing.T) {
-	forEachCompiledVM(t, "RETURN F()", func(t *testing.T, instance *vm.VM) {
-		_, err := runVM(t, instance, vm.NewDefaultEnvironment())
-		assertRuntimeErrorMessage(t, err, "Unresolved function")
-
-		_, err = runVM(t, instance, vm.NewDefaultEnvironment())
-		assertRuntimeErrorMessage(t, err, "Unresolved function")
-
-		validEnv := mustNewEnvironment(t, vm.WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-			return runtime.NewInt(7), nil
-		}))
-
-		out, err := runVM(t, instance, validEnv)
-		if err != nil {
-			t.Fatalf("expected successful run after env fix, got %v", err)
+	runSequencesLevels(t, func() []spec.Sequence {
+		return []spec.Sequence{
+			{
+				Base: spec.NewBaseSpec("RETURN F()"),
+				Steps: []spec.SequenceStep{
+					{
+						Name: "missing first",
+						EnvFactory: func() (*vm.Environment, error) {
+							return vm.NewDefaultEnvironment(), nil
+						},
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+					},
+					{
+						Name: "missing second",
+						EnvFactory: func() (*vm.Environment, error) {
+							return vm.NewDefaultEnvironment(), nil
+						},
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+					},
+					{
+						Name: "fixed env",
+						Env: []vm.EnvironmentOption{
+							vm.WithFunction("F", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+								return runtime.NewInt(7), nil
+							}),
+						},
+						Result: spec.NewExpectation(assert.ShouldEqual, 7),
+					},
+				},
+			},
 		}
-
-		assertRuntimeValueEquals(t, out, runtime.NewInt(7))
 	})
 }
 
 func TestResetDrainsLeakedFramesBetweenFailedRuns(t *testing.T) {
-	forEachCompiledVM(t, `
+	runSequencesLevels(t, func() []spec.Sequence {
+		counts := make([]int, 0, 2)
+
+		return []spec.Sequence{
+			{
+				Base: spec.NewBaseSpec(`
 FUNC inner() (
 	RETURN 1 / 0
 )
@@ -129,61 +177,113 @@ FUNC outer() (
 )
 
 RETURN outer()
-`, func(t *testing.T, instance *vm.VM) {
-		runAndCount := func(label string) int {
-			t.Helper()
+`),
+				Steps: []spec.SequenceStep{
+					{
+						Name: "first failure",
+						Error: spec.NewExpectation(assert.NewUnaryAssertion(func(actual any) error {
+							err, ok := actual.(error)
+							if !ok || err == nil {
+								return errors.New("expected runtime error")
+							}
 
-			_, err := runVM(t, instance, vm.NewDefaultEnvironment())
-			rtErr := assertRuntimeErrorMessage(t, err, "Division by zero")
+							var rtErr *vm.RuntimeError
+							if !errors.As(err, &rtErr) {
+								return fmt.Errorf("expected runtime error, got %T", err)
+							}
 
-			return strings.Count(rtErr.Format(), "called from")
-		}
+							if rtErr.Message != "Division by zero" {
+								return fmt.Errorf("unexpected runtime error message: got %q, want %q", rtErr.Message, "Division by zero")
+							}
 
-		first := runAndCount("first")
-		second := runAndCount("second")
-		if first != second {
-			t.Fatalf("expected stable stack depth across repeated failed runs: first=%d second=%d", first, second)
+							counts = append(counts, strings.Count(rtErr.Format(), "called from"))
+							return nil
+						})),
+					},
+					{
+						Name: "second failure",
+						Error: spec.NewExpectation(assert.NewUnaryAssertion(func(actual any) error {
+							err, ok := actual.(error)
+							if !ok || err == nil {
+								return errors.New("expected runtime error")
+							}
+
+							var rtErr *vm.RuntimeError
+							if !errors.As(err, &rtErr) {
+								return fmt.Errorf("expected runtime error, got %T", err)
+							}
+
+							if rtErr.Message != "Division by zero" {
+								return fmt.Errorf("unexpected runtime error message: got %q, want %q", rtErr.Message, "Division by zero")
+							}
+
+							counts = append(counts, strings.Count(rtErr.Format(), "called from"))
+							if len(counts) != 2 {
+								return fmt.Errorf("expected two recorded counts, got %d", len(counts))
+							}
+
+							if counts[0] != counts[1] {
+								return fmt.Errorf("expected stable stack depth across repeated failed runs: first=%d second=%d", counts[0], counts[1])
+							}
+
+							return nil
+						})),
+					},
+				},
+			},
 		}
 	})
 }
 
 func TestHostNilResultIsNormalizedToNone(t *testing.T) {
-	forEachCompiledVM(t, "RETURN NIL_FN()", func(t *testing.T, instance *vm.VM) {
-		env := mustNewEnvironment(t, vm.WithFunction("NIL_FN", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-			return nil, nil
-		}))
-
-		out, err := runVM(t, instance, env)
-		if err != nil {
-			t.Fatalf("unexpected run error: %v", err)
-		}
-
-		if out != runtime.None {
-			t.Fatalf("expected runtime.None, got %v", out)
+	runSpecsLevels(t, func() []spec.Spec {
+		return []spec.Spec{
+			spec.New("RETURN NIL_FN()").
+				Env(vm.WithFunction("NIL_FN", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+					return nil, nil
+				})).
+				Expect().Exec(assert.ShouldBeNil),
 		}
 	})
 }
 
 func TestModuloTypeErrorNotMisclassifiedAsModuloByZero(t *testing.T) {
-	forEachCompiledVM(t, `RETURN 5 % "x"`, func(t *testing.T, instance *vm.VM) {
-		_, err := runVM(t, instance, vm.NewDefaultEnvironment())
-		if err == nil {
-			t.Fatal("expected runtime error")
-		}
+	runSpecsLevels(t, func() []spec.Spec {
+		return []spec.Spec{
+			spec.New(`RETURN 5 % "x"`).
+				Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
+				err, ok := actual.(error)
+				if !ok || err == nil {
+					return errors.New("expected runtime error")
+				}
 
-		rtErr := assertRuntimeErrorMessage(t, err, "Invalid type")
-		if rtErr.Kind != diagnostics.TypeError {
-			t.Fatalf("unexpected error kind: got %s, want %s", rtErr.Kind, diagnostics.TypeError)
-		}
+				var rtErr *vm.RuntimeError
+				if !errors.As(err, &rtErr) {
+					return fmt.Errorf("expected runtime error, got %T", err)
+				}
 
-		if strings.Contains(strings.ToLower(rtErr.Format()), "modulo by zero") {
-			t.Fatalf("expected non-modulo classification, got:\n%s", rtErr.Format())
+				if rtErr.Message != "Invalid type" {
+					return fmt.Errorf("unexpected runtime error message: got %q, want %q", rtErr.Message, "Invalid type")
+				}
+
+				if rtErr.Kind != diagnostics.TypeError {
+					return fmt.Errorf("unexpected error kind: got %s, want %s", rtErr.Kind, diagnostics.TypeError)
+				}
+
+				if strings.Contains(strings.ToLower(rtErr.Format()), "modulo by zero") {
+					return fmt.Errorf("expected non-modulo classification, got:\n%s", rtErr.Format())
+				}
+
+				return nil
+			})),
 		}
 	})
 }
 
 func TestRuntimeErrorIncludesUDFCallStackContext(t *testing.T) {
-	forEachCompiledVM(t, `
+	runSpecsLevels(t, func() []spec.Spec {
+		return []spec.Spec{
+			spec.New(`
 FUNC inner() (
 	RETURN @x.foo
 )
@@ -196,43 +296,31 @@ FUNC outer() (
 	RETURN value
 )
 RETURN outer()
-`, func(t *testing.T, instance *vm.VM) {
-		env := vm.NewDefaultEnvironment()
-		env.Params["x"] = runtime.None
-
-		_, err := runVM(t, instance, env)
-		rtErr := assertRuntimeErrorMessage(t, err, "Cannot read property \"foo\" of None")
-
-		formatted := rtErr.Format()
-		if !strings.Contains(formatted, "called from inner (#1)") {
-			t.Fatalf("expected VM call stack context, got:\n%s", formatted)
-		}
-
-		if !strings.Contains(formatted, "VM stack: outer -> middle -> inner") {
-			t.Fatalf("expected additive VM stack note, got:\n%s", formatted)
+`).
+				Env(vm.WithParam("x", runtime.None)).
+				Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+				Message:  `Cannot read property "foo" of None`,
+				Contains: []string{"called from inner (#1)", "VM stack: outer -> middle -> inner"},
+			}),
 		}
 	})
 }
 
 func TestRuntimeErrorSingleUdfStackFormattingUsesSourceSpelling(t *testing.T) {
-	forEachCompiledVM(t, `
+	runSpecsLevels(t, func() []spec.Spec {
+		return []spec.Spec{
+			spec.New(`
 FUNC boo() (
 	LET a = 1
 	LET b = 0
 	RETURN a / b
 )
 RETURN boo()
-`, func(t *testing.T, instance *vm.VM) {
-		_, err := runVM(t, instance, vm.NewDefaultEnvironment())
-		rtErr := assertRuntimeErrorMessage(t, err, "Division by zero")
-
-		formatted := rtErr.Format()
-		if !strings.Contains(formatted, "called from boo (#1)") {
-			t.Fatalf("expected call-site label with source-spelling udf name, got:\n%s", formatted)
-		}
-
-		if !strings.Contains(formatted, "VM stack: boo") {
-			t.Fatalf("expected source-spelling VM stack note, got:\n%s", formatted)
+`).
+				Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+				Message:  "Division by zero",
+				Contains: []string{"called from boo (#1)", "VM stack: boo"},
+			}),
 		}
 	})
 }

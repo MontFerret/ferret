@@ -2,7 +2,9 @@ package spec
 
 import (
 	"context"
+	"strings"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -70,4 +72,28 @@ func WithParam(name string, value any) vm.EnvironmentOption {
 	}
 
 	return vm.WithParam(name, parsed)
+}
+
+func joinExpression(exp string) string {
+	res := strings.TrimSpace(exp)
+	res = strings.ReplaceAll(res, "\n", " ")
+	res = strings.ReplaceAll(res, "\t", " ")
+	// Replace multiple spaces with a single space
+	res = strings.Join(strings.Fields(res), " ")
+
+	return res
+}
+
+func joinBytecode(bc []bytecode.Instruction) string {
+	var builder strings.Builder
+
+	for i, b := range bc {
+		builder.WriteString(strings.ReplaceAll(b.String(), " ", "_"))
+
+		if i != len(bc)-1 {
+			builder.WriteString("__")
+		}
+	}
+
+	return builder.String()
 }

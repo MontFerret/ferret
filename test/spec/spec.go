@@ -1,23 +1,24 @@
 package spec
 
 import (
-	"strings"
-
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 type Spec struct {
 	Base    BaseSpec
-	Compile Outcomes
+	Compile CompileInfo
 	Exec    ExecInfo
 }
 
 func New(expression string, desc ...string) Spec {
 	return Spec{
-		Base: BaseSpec{
-			Expression:  expression,
-			Description: strings.Join(desc, " "),
-		},
+		Base: NewBaseSpec(expression, desc...),
+	}
+}
+
+func NewWith(input Input, desc ...string) Spec {
+	return Spec{
+		Base: NewBaseSpecWith(input, desc...),
 	}
 }
 
@@ -57,12 +58,10 @@ func (s Spec) Env(o ...vm.EnvironmentOption) Spec {
 	return s
 }
 
-func (s Spec) SuiteName(suite string) string {
-	return s.Base.SuiteName(suite)
-}
+func (s Spec) VM(o ...vm.Option) Spec {
+	s.Exec.VM = append(s.Exec.VM, o...)
 
-func (s Spec) String() string {
-	return s.Base.String()
+	return s
 }
 
 func (s Spec) Merge(other Spec) Spec {
@@ -72,4 +71,12 @@ func (s Spec) Merge(other Spec) Spec {
 	out.Exec = s.Exec.Merge(other.Exec)
 
 	return out
+}
+
+func (s Spec) SuiteName(suite string) string {
+	return s.Base.SuiteName(suite)
+}
+
+func (s Spec) String() string {
+	return s.Base.String()
 }

@@ -11,6 +11,18 @@ type Expectation struct {
 	Assertion assert.Assertion
 }
 
+func NewExpectation(fn assert.Assertion, val ...any) Expectation {
+	exp := Expectation{
+		Assertion: fn,
+	}
+
+	if len(val) > 0 {
+		exp.Value = val[0]
+	}
+
+	return exp
+}
+
 func (exp Expectation) Defined() bool {
 	return exp.Assertion != nil
 }

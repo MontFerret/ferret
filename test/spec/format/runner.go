@@ -27,8 +27,9 @@ func (r *Runner) Run(t *testing.T, specs []Spec) {
 			}
 
 			var out strings.Builder
+			exp := s.Base.Input.Expression
 
-			err := r.Formatter.Format(&out, file.NewSource("Test case", s.Base.Expression))
+			err := r.Formatter.Format(&out, file.NewSource("Test case", exp))
 
 			if err != nil {
 				if s.Base.DebugOutput {
@@ -44,7 +45,7 @@ func (r *Runner) Run(t *testing.T, specs []Spec) {
 			}
 
 			if s.Base.DebugOutput {
-				PrintDebug(t, suiteName, s.Base.Expression, out)
+				PrintDebug(t, suiteName, exp, out)
 			}
 
 			if s.Output.Result.Defined() {

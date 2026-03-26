@@ -3,12 +3,15 @@ package vm_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	"github.com/MontFerret/ferret/v2/test/spec/assert"
 )
 
 type integrationQueryStub struct {
@@ -62,64 +65,33 @@ func programWithApplyQueryConstSource(src runtime.Value) *bytecode.Program {
 	}
 }
 
-func assertSingleStringArrayResult(t *testing.T, result runtime.Value, expected runtime.String) {
-	t.Helper()
-
-	arr, err := runtime.CastArray(result)
-	if err != nil {
-		t.Fatalf("expected array result, got %T: %v", result, err)
-	}
-
-	length, err := arr.Length(context.Background())
-	if err != nil {
-		t.Fatalf("failed to read result length: %v", err)
-	}
-
-	if length != 1 {
-		t.Fatalf("unexpected result length: got %d, want 1", length)
-	}
-
-	item, err := arr.At(context.Background(), runtime.NewInt(0))
-	if err != nil {
-		t.Fatalf("failed to read result item: %v", err)
-	}
-
-	if item != expected {
-		t.Fatalf("unexpected result item: got %v, want %v", item, expected)
-	}
-}
-
 func TestApplyQueryConstantSource_Strict(t *testing.T) {
 	stub := &integrationQueryStub{
 		result: runtime.NewArrayWith(runtime.NewString("ok")),
 	}
 
-	instance, err := vm.New(programWithApplyQueryConstSource(stub))
-	if err != nil {
-		t.Fatalf("constructor failed: %v", err)
-	}
+	runProgramSpecs(t, []spec.Spec{
+		spec.NewWith(spec.NewProgramInput(programWithApplyQueryConstSource(stub)), "strict constant source").
+			Expect().Exec(assert.NewUnaryAssertion(func(actual any) error {
+			if err := assert.Equal(actual, []any{"ok"}); err != nil {
+				return err
+			}
 
-	result, err := instance.Run(context.Background(), vm.NewDefaultEnvironment())
-	if err != nil {
-		t.Fatalf("run failed: %v", err)
-	}
-	defer func() {
-		_ = result.Close()
-	}()
+			if len(stub.queries) != 1 {
+				return fmt.Errorf("unexpected query count: got %d, want 1", len(stub.queries))
+			}
 
-	assertSingleStringArrayResult(t, result.Root(), runtime.NewString("ok"))
+			if got, want := stub.queries[0].Kind, runtime.NewString("css"); got != want {
+				return fmt.Errorf("unexpected query kind: got %q, want %q", got, want)
+			}
 
-	if len(stub.queries) != 1 {
-		t.Fatalf("unexpected query count: got %d, want 1", len(stub.queries))
-	}
+			if got, want := stub.queries[0].Payload, runtime.NewString(".items"); got != want {
+				return fmt.Errorf("unexpected query payload: got %q, want %q", got, want)
+			}
 
-	if got, want := stub.queries[0].Kind, runtime.NewString("css"); got != want {
-		t.Fatalf("unexpected query kind: got %q, want %q", got, want)
-	}
-
-	if got, want := stub.queries[0].Payload, runtime.NewString(".items"); got != want {
-		t.Fatalf("unexpected query payload: got %q, want %q", got, want)
-	}
+			return nil
+		})),
+	})
 }
 
 func TestApplyQueryConstantSource_FastMode_NoPanic(t *testing.T) {
@@ -127,96 +99,61 @@ func TestApplyQueryConstantSource_FastMode_NoPanic(t *testing.T) {
 		result: runtime.NewArrayWith(runtime.NewString("ok")),
 	}
 
-	instance, err := vm.NewWith(
-		programWithApplyQueryConstSource(stub),
-		vm.WithPanicPolicy(vm.PanicPropagate),
-	)
-	if err != nil {
-		t.Fatalf("constructor failed: %v", err)
-	}
+	runProgramSpecs(t, []spec.Spec{
+		spec.NewWith(spec.NewProgramInput(programWithApplyQueryConstSource(stub)), "fast constant source").
+			VM(vm.WithPanicPolicy(vm.PanicPropagate)).
+			Expect().Exec(assert.NewUnaryAssertion(func(actual any) error {
+			if err := assert.Equal(actual, []any{"ok"}); err != nil {
+				return err
+			}
 
-	defer func() {
-		if recovered := recover(); recovered != nil {
-			t.Fatalf("unexpected panic in fast mode: %v", recovered)
-		}
-	}()
+			if len(stub.queries) != 1 {
+				return fmt.Errorf("unexpected query count: got %d, want 1", len(stub.queries))
+			}
 
-	result, err := instance.Run(context.Background(), vm.NewDefaultEnvironment())
-	if err != nil {
-		t.Fatalf("run failed: %v", err)
-	}
-	defer func() {
-		_ = result.Close()
-	}()
-
-	assertSingleStringArrayResult(t, result.Root(), runtime.NewString("ok"))
+			return nil
+		})),
+	})
 }
 
 func TestApplyQueryConstantSource_NonQueryable_NoPanicTypeError(t *testing.T) {
-	cases := []struct {
-		run  func() (runtime.Value, error)
-		name string
-	}{
-		{
-			name: "strict",
-			run: func() (runtime.Value, error) {
-				instance, err := vm.New(programWithApplyQueryConstSource(runtime.NewInt(1)))
-				if err != nil {
-					return runtime.None, err
-				}
-
-				result, err := instance.Run(context.Background(), vm.NewDefaultEnvironment())
-				if err != nil {
-					return runtime.None, err
-				}
-
-				root := result.Root()
-				return root, result.Close()
-			},
-		},
-		{
-			name: "fast",
-			run: func() (runtime.Value, error) {
-				instance, err := vm.NewWith(
-					programWithApplyQueryConstSource(runtime.NewInt(1)),
-					vm.WithPanicPolicy(vm.PanicPropagate),
-				)
-				if err != nil {
-					return runtime.None, err
-				}
-
-				result, err := instance.Run(context.Background(), vm.NewDefaultEnvironment())
-				if err != nil {
-					return runtime.None, err
-				}
-
-				root := result.Root()
-				return root, result.Close()
-			},
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			defer func() {
-				if recovered := recover(); recovered != nil {
-					t.Fatalf("unexpected panic: %v", recovered)
-				}
-			}()
-
-			_, err := tc.run()
-			if err == nil {
-				t.Fatal("expected type error")
+	runProgramSpecs(t, []spec.Spec{
+		spec.NewWith(spec.NewProgramInput(programWithApplyQueryConstSource(runtime.NewInt(1))), "strict non-queryable").
+			Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
+			err, ok := actual.(error)
+			if !ok || err == nil {
+				return errors.New("expected type error")
 			}
 
 			var rtErr *vm.RuntimeError
 			if !errors.As(err, &rtErr) {
-				t.Fatalf("expected runtime error, got %T", err)
+				return fmt.Errorf("expected runtime error, got %T", err)
 			}
 
 			if !strings.Contains(strings.ToLower(rtErr.Message), "invalid type") {
-				t.Fatalf("expected invalid type error, got %q", rtErr.Message)
+				return fmt.Errorf("expected invalid type error, got %q", rtErr.Message)
 			}
-		})
-	}
+
+			return nil
+		})),
+		spec.NewWith(spec.NewProgramInput(programWithApplyQueryConstSource(runtime.NewInt(1))), "fast non-queryable").
+			VM(vm.WithPanicPolicy(vm.PanicPropagate)).
+			Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
+			err, ok := actual.(error)
+			if !ok || err == nil {
+				return errors.New("expected type error")
+			}
+
+			var rtErr *vm.RuntimeError
+			if !errors.As(err, &rtErr) {
+				return fmt.Errorf("expected runtime error, got %T", err)
+			}
+
+			if !strings.Contains(strings.ToLower(rtErr.Message), "invalid type") {
+				return fmt.Errorf("expected invalid type error, got %q", rtErr.Message)
+			}
+
+			return nil
+		})),
+	})
 }
