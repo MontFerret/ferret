@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func TestUdfErrors(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		ErrorCase(
+	RunSpecs(t, []spec.Spec{
+		Failure(
 			`
 FUNC f(x, x) => x
 RETURN f(1)
@@ -16,7 +18,7 @@ RETURN f(1)
 				Kind:    parserd.NameError,
 				Message: "Parameter 'x' is already defined",
 			}, "Duplicate parameter names"),
-		ErrorCase(
+		Failure(
 			`
 FUNC f(x) => x
 RETURN f(1, 2)
@@ -24,7 +26,7 @@ RETURN f(1, 2)
 				Kind:    parserd.NameError,
 				Message: "Function 'f' expects 1 arguments, got 2",
 			}, "UDF wrong arity"),
-		ErrorCase(
+		Failure(
 			`
 FUNC outer() (
   FUNC f() => 1
@@ -36,7 +38,7 @@ RETURN outer()
 				Kind:    parserd.NameError,
 				Message: "Function 'f' is already defined",
 			}, "Duplicate UDF names in the same scope"),
-		ErrorCase(
+		Failure(
 			`
 FUNC f(x) => x
 FUNC outer() (

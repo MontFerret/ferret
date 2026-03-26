@@ -2,36 +2,39 @@ package vm_test
 
 import (
 	"testing"
+
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestForNested(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		CaseArray(`
+	RunSpecs(t, []spec.Spec{
+		Array(`
 			FOR prop IN ["a"]
 				FOR val IN [1, 2, 3]
 					RETURN {[prop]: val}
 `, []any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
 		),
-		CaseArray(`
+		Array(`
 			FOR val IN 1..3
 				FOR prop IN ["a"]
 					RETURN {[prop]: val}
 `, []any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
 		),
-		CaseArray(`
+		Array(`
 			FOR prop IN ["a"]
 				FOR val IN 1..3
 					RETURN {[prop]: val}
 `, []any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
 		),
-		CaseArray(`
+		Array(`
 			FOR prop IN ["a"]
 				FOR val IN [1, 2, 3]
 					FOR val2 IN [1, 2, 3]
 						RETURN { [prop]: [val, val2] }
 `, []any{map[string]any{"a": []int{1, 1}}, map[string]any{"a": []int{1, 2}}, map[string]any{"a": []int{1, 3}}, map[string]any{"a": []int{2, 1}}, map[string]any{"a": []int{2, 2}}, map[string]any{"a": []int{2, 3}}, map[string]any{"a": []int{3, 1}}, map[string]any{"a": []int{3, 2}}, map[string]any{"a": []int{3, 3}}},
 		),
-		CaseArray(`
+		Array(`
 			FOR val IN [1, 2, 3]
 				RETURN (
 					FOR prop IN ["a", "b", "c"]
@@ -39,7 +42,7 @@ func TestForNested(t *testing.T) {
 				)
 `, []any{[]any{map[string]any{"a": 1}, map[string]any{"b": 1}, map[string]any{"c": 1}}, []any{map[string]any{"a": 2}, map[string]any{"b": 2}, map[string]any{"c": 2}}, []any{map[string]any{"a": 3}, map[string]any{"b": 3}, map[string]any{"c": 3}}},
 		),
-		CaseArray(`
+		Array(`
 			FOR val IN [1, 2, 3]
 			LET sub = (
 				FOR prop IN ["a", "b", "c"]
@@ -48,7 +51,7 @@ func TestForNested(t *testing.T) {
 
 			RETURN sub
 `, []any{[]any{map[string]any{"a": 1}, map[string]any{"b": 1}, map[string]any{"c": 1}}, []any{map[string]any{"a": 2}, map[string]any{"b": 2}, map[string]any{"c": 2}}, []any{map[string]any{"a": 3}, map[string]any{"b": 3}, map[string]any{"c": 3}}}),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					name: "John",
@@ -103,7 +106,7 @@ func TestForNested(t *testing.T) {
 				"hasPython":      false,
 			},
 		}, "Should handle nested FOR loops with array operations"),
-		CaseArray(`
+		Array(`
 			LET departments = ["IT", "Marketing", "HR"]
 			LET budgets = [1000000, 500000, 300000]
 			LET headcounts = [20, 10, 5]
@@ -198,7 +201,7 @@ func TestForNested(t *testing.T) {
 				"headcount":  5,
 			},
 		}, "Should handle nested FOR loops with conditional logic"),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					id: 1,
@@ -257,7 +260,7 @@ func TestForNested(t *testing.T) {
 				"activeProjects": []any{"Project C", "Project D"},
 			},
 		}, "Should handle nested FOR loops with complex data transformation"),
-		CaseArray(`
+		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 			
 			FOR s IN strs
@@ -265,7 +268,7 @@ func TestForNested(t *testing.T) {
 				FOR n IN 0..1
 					RETURN CONCAT(s, n)
 `, []any{"abc0", "abc1", "bar0", "bar1", "foo0", "foo1", "qaz0", "qaz1"}),
-		CaseArray(`
+		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 			
 			FOR n IN 0..1
@@ -273,7 +276,7 @@ func TestForNested(t *testing.T) {
 					SORT s
 					RETURN CONCAT(s, n)
 `, []any{"abc0", "bar0", "foo0", "qaz0", "abc1", "bar1", "foo1", "qaz1"}),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					name: "Ron",
@@ -297,7 +300,7 @@ func TestForNested(t *testing.T) {
 					SORT u.gender, u.age
 					RETURN CONCAT(u.name, n)
 `, []any{"Angela0", "Ron0", "Bob0", "Angela1", "Ron1", "Bob1"}),
-		CaseArray(`
+		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 			
 			FOR n IN 0..1
@@ -306,7 +309,7 @@ func TestForNested(t *testing.T) {
 						SORT s
 						RETURN CONCAT(s, n, m)
 `, []any{"abc00", "bar00", "foo00", "qaz00", "abc01", "bar01", "foo01", "qaz01", "abc10", "bar10", "foo10", "qaz10", "abc11", "bar11", "foo11", "qaz11"}),
-		CaseArray(`
+		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 			
 			FOR n IN 0..1
@@ -315,7 +318,7 @@ func TestForNested(t *testing.T) {
 					FOR m IN 0..1
 						RETURN CONCAT(s, n, m)
 `, []any{"abc00", "abc01", "bar00", "bar01", "foo00", "foo01", "qaz00", "qaz01", "abc10", "abc11", "bar10", "bar11", "foo10", "foo11", "qaz10", "qaz11"}),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -353,7 +356,7 @@ func TestForNested(t *testing.T) {
 					COLLECT gender = i.gender
 					RETURN CONCAT(gender, n)
 `, []any{"f0", "m0", "f1", "m1"}),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -391,7 +394,7 @@ func TestForNested(t *testing.T) {
 				FOR n IN 0..1
 					RETURN CONCAT(gender, n)
 `, []any{"f0", "f1", "m0", "m1"}),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -532,7 +535,7 @@ func TestForNested(t *testing.T) {
 				},
 			},
 		}),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -673,7 +676,7 @@ func TestForNested(t *testing.T) {
 				},
 			},
 		}),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -738,7 +741,7 @@ func TestForNested(t *testing.T) {
 				"minAge": 31,
 			},
 		}),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -803,7 +806,7 @@ func TestForNested(t *testing.T) {
 				"minAge": 31,
 			},
 		}),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -857,7 +860,7 @@ func TestForNested(t *testing.T) {
 				"minAge":    25,
 			},
 		}),
-		CaseArray(`
+		Array(`
 			LET departments = [
 				{ name: "IT", budget: 500000 },
 				{ name: "Marketing", budget: 300000 },

@@ -1,39 +1,26 @@
 package compiler_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
+	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
 )
 
 func TestJumpIfEqConstEmission(t *testing.T) {
-	src := `
+	RunSpecs(t, []spec.Spec{
+		ProgramCheck(`
 LET a = 1
 RETURN a != 1 ? 10 : 20
-`
-	c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
-	prog, err := c.Compile(file.NewSource("jump_if_eq_const", src))
-	if err != nil {
-		t.Fatalf("compile failed: %v", err)
-	}
+`, func(prog *bytecode.Program) error {
+			if !inspect.HasOpcode(prog, bytecode.OpJumpIfEqConst) {
+				return fmt.Errorf("expected bytecode to contain %s", bytecode.OpJumpIfEqConst)
+			}
 
-	if !programHasOpcode(prog, bytecode.OpJumpIfEqConst) {
-		t.Fatalf("expected bytecode to contain %s", bytecode.OpJumpIfEqConst)
-	}
-}
-
-func programHasOpcode(prog *bytecode.Program, op bytecode.Opcode) bool {
-	if prog == nil {
-		return false
-	}
-
-	for _, inst := range prog.Bytecode {
-		if inst.Opcode == op {
-			return true
-		}
-	}
-
-	return false
+			return nil
+		}, "ternary lowering uses JumpIfEqConst"),
+	})
 }

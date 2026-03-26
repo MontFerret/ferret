@@ -6,43 +6,44 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
-	"github.com/MontFerret/ferret/v2/test/integration/base"
+	spec "github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestForWhileLimit(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		CaseArray(
+	RunSpecs(t, []spec.Spec{
+		Array(
 			`
 			FOR i WHILE UNTIL(5)
 				LIMIT 2
 				RETURN i
 		`,
 			[]any{0, 1}),
-		CaseArray(`
+		Array(`
 			FOR i WHILE UNTIL(8)
 				LIMIT 4, 2
 				RETURN i
 			`, []any{4, 5}),
-		CaseArray(`
+		Array(`
 			FOR i WHILE UNTIL(8)
 				LET x = i
 				LIMIT 2
 				RETURN i*x
 			`, []any{0, 1},
 			"Should be able to reuse values from a source"),
-		CaseArray(`
+		Array(`
 			FOR i WHILE UNTIL(8)
 				LET x = "foo"
 				TYPENAME(x)
 				LIMIT 2
 				RETURN i
 		`, []any{0, 1}, "Should define variables and call functions"),
-		CaseArray(`
+		Array(`
 			FOR i WHILE UNTIL(8)
 				LIMIT LIMIT_VALUE()
 				RETURN i
 		`, []any{0, 1}, "Should be able to use function call"),
-		CaseArray(`
+		Array(`
 			LET o = {
 				limit: 2
 			}
@@ -50,7 +51,7 @@ func TestForWhileLimit(t *testing.T) {
 				LIMIT o.limit
 				RETURN i
 		`, []any{0, 1}, "Should be able to use object property"),
-		CaseArray(`
+		Array(`
 			LET o = [1,2]
 
 			FOR i WHILE UNTIL(8)
@@ -62,6 +63,6 @@ func TestForWhileLimit(t *testing.T) {
 			return runtime.NewInt(2), nil
 		})
 
-		fns.From(base.ForWhileHelpers())
+		fns.From(spec.ForWhileHelpers())
 	}))
 }

@@ -5,29 +5,31 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func TestVariables(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		SkipByteCodeCase(
+	RunSpecs(t, []spec.Spec{
+		ByteCode(
 			`
 			LET i = NONE RETURN i"
 		`, BC{
 				I(bytecode.OpLoadNone, 1),
 				I(bytecode.OpReturn, 1),
-			}, "Should be possible to use multi line string"),
-		SkipByteCodeCase(`
+			}, "Should be possible to use multi line string").Skip(),
+		ByteCode(`
 			LET a = TRUE RETURN a
 `, BC{
 			I(bytecode.OpLoadBool, 1, 1),
 			I(bytecode.OpReturn, 1),
-		}),
-		SkipByteCodeCase(`
+		}).Skip(),
+		ByteCode(`
 			LET a = 1 RETURN a
 `, BC{
 			I(bytecode.OpLoadConst, 1, bytecode.NewConstant(0)),
 			I(bytecode.OpReturn, 1),
-		}),
+		}).Skip(),
 	})
 }
 

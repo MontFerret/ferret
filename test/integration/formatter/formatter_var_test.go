@@ -1,17 +1,21 @@
 package formatter_test
 
-import "testing"
+import (
+	"testing"
+
+	. "github.com/MontFerret/ferret/v2/test/spec/format"
+)
 
 func TestFormatterVarBindings(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		Case(`
+	RunSpecs(t, []Spec{
+		S(`
 	VAR    foo =      10
 	 foo    =   foo +   1
 	 RETURN foo
 		`, `VAR foo = 10
 foo = foo + 1
 RETURN foo`),
-		Case(`
+		S(`
 	VAR total=10
 	total+=1
 	total-=2
@@ -24,7 +28,7 @@ total -= 2
 total *= 3
 total /= 3
 RETURN total`),
-		Case(`
+		S(`
 	FUNC   run( )(
 	VAR total= 1
 	 total   =total+2
@@ -37,7 +41,7 @@ RETURN run()
     RETURN total
 )
 RETURN run()`),
-		Case(`
+		S(`
 	FUNC run()(
 	VAR total=10
 	total+=1
@@ -56,12 +60,12 @@ RETURN run()`),
     RETURN total
 )
 RETURN run()`),
-		Case(`
+		S(`
 LET    STEP =  10
 RETURN STEP
 `, `LET STEP = 10
 RETURN STEP`),
-		Case(`
+		S(`
 FOR item IN [ 1, 2 ]
 VAR current = item
 current=current+1

@@ -4,40 +4,41 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/vm"
-	"github.com/MontFerret/ferret/v2/test/integration/base"
+	spec "github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestForWhileDistinct(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		CaseArray(
+	RunSpecs(t, []spec.Spec{
+		Array(
 			`LET arr = [ 1, 2, 3, 4, 1, 3 ]
 			 FOR i WHILE UNTIL(LENGTH(arr))
 				RETURN DISTINCT arr[i]
 		`,
 			[]any{1, 2, 3, 4},
 		),
-		CaseArray(
+		Array(
 			`LET arr = ["foo", "bar", "qaz", "foo", "abc", "bar"]
 			 FOR i WHILE UNTIL(LENGTH(arr))
 				RETURN DISTINCT arr[i]
 		`,
 			[]any{"foo", "bar", "qaz", "abc"},
 		),
-		CaseArray(
+		Array(
 			`LET arr = [["foo"], ["bar"], ["qaz"], ["foo"], ["abc"], ["bar"]]
 			 FOR i WHILE UNTIL(LENGTH(arr))
 				RETURN DISTINCT arr[i]
 		`,
 			[]any{[]any{"foo"}, []any{"bar"}, []any{"qaz"}, []any{"abc"}},
 		),
-		CaseArray(`
+		Array(`
 			LET strs = ["foo", "bar", "qaz", "foo", "abc", "bar"]
 
 			FOR i WHILE UNTIL(LENGTH(strs))
 				SORT strs[i]
 				RETURN DISTINCT strs[i]
 `, []any{"abc", "bar", "foo", "qaz"}, "Should sort and respect DISTINCT keyword"),
-		CaseArray(
+		Array(
 			`
 			LET arr = [ 1, 1, 2, 3, 4, 1, 3 ]
 			FOR i WHILE UNTIL(LENGTH(arr))
@@ -45,7 +46,7 @@ func TestForWhileDistinct(t *testing.T) {
 				RETURN DISTINCT arr[i]
 		`,
 			[]any{1}),
-		CaseArray(
+		Array(
 			`
 			LET arr = [ 1, 1, 1, 3, 4, 1, 3 ]
 			FOR i WHILE UNTIL(LENGTH(arr))
@@ -53,7 +54,7 @@ func TestForWhileDistinct(t *testing.T) {
 				RETURN DISTINCT arr[i]
 		`,
 			[]any{1}),
-		CaseArray(
+		Array(
 			`
 			LET arr = [ 1, 2, 3, 4, 1, 3, 3, 4 ]
 			FOR i WHILE UNTIL(LENGTH(arr))
@@ -62,7 +63,7 @@ func TestForWhileDistinct(t *testing.T) {
 		`,
 			[]any{3, 4},
 		),
-		CaseArray(
+		Array(
 			`LET users = [
 				{
 					active: true,
@@ -102,7 +103,7 @@ func TestForWhileDistinct(t *testing.T) {
 				map[string]any{"gender": "f"},
 				map[string]any{"gender": "m"},
 			}),
-		CaseArray(
+		Array(
 			`LET users = [
 				{
 					active: true,
@@ -141,7 +142,7 @@ func TestForWhileDistinct(t *testing.T) {
 		`, []any{
 				map[string]any{"active": true},
 			}),
-		SkipCaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -179,9 +180,9 @@ func TestForWhileDistinct(t *testing.T) {
 			  }
 `, []any{
 			map[string]any{"maxAge": 45, "minAge": 39},
-		}, "Should collect and aggregate values by a single key"),
+		}, "Should collect and aggregate values by a single key").Skip(),
 		// Test DISTINCT with null values
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -209,7 +210,7 @@ func TestForWhileDistinct(t *testing.T) {
 		`, []any{nil, 25, 45}, "Should handle null values with DISTINCT"),
 
 		// Test DISTINCT with nested FOR loops
-		SkipCaseArray(`
+		Array(`
 			LET departments = ["IT", "Marketing", "HR"]
 			LET genders = ["m", "f"]
 
@@ -225,10 +226,10 @@ func TestForWhileDistinct(t *testing.T) {
 			map[string]any{"department": "Marketing", "gender": "f"},
 			map[string]any{"department": "HR", "gender": "m"},
 			map[string]any{"department": "HR", "gender": "f"},
-		}, "Should handle DISTINCT with nested FOR loops"),
+		}, "Should handle DISTINCT with nested FOR loops").Skip(),
 
 		// Test DISTINCT with complex objects and nested properties
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					name: "John",
@@ -268,7 +269,7 @@ func TestForWhileDistinct(t *testing.T) {
 		}, "Should handle DISTINCT with complex objects and nested properties"),
 
 		// Test DISTINCT with calculated values
-		CaseArray(`
+		Array(`
 			LET users = [
 				{ age: 25 },
 				{ age: 32 },
@@ -281,14 +282,14 @@ func TestForWhileDistinct(t *testing.T) {
 		`, []any{20, 30, 40}, "Should handle DISTINCT with calculated values"),
 
 		// Test DISTINCT with empty arrays
-		CaseArray(`
+		Array(`
 			LET emptyArray = []
 			FOR i WHILE UNTIL(LENGTH(emptyArray))
 				RETURN DISTINCT emptyArray[i]
 		`, []any{}, "Should handle DISTINCT with empty arrays"),
 
 		// Test DISTINCT with SORT BY multiple fields
-		CaseArray(`
+		Array(`
 			LET users = [
 				{ name: "John", age: 30, gender: "m" },
 				{ name: "Jane", age: 25, gender: "f" },
@@ -303,7 +304,7 @@ func TestForWhileDistinct(t *testing.T) {
 		`, []any{35, 30, 25}, "Should handle DISTINCT with SORT BY multiple fields"),
 
 		// Test DISTINCT with multiple levels of nesting
-		SkipCaseArray(`
+		Array(`
 			LET departments = ["IT", "Marketing", "HR"]
 			LET genders = ["m", "f"]
 			LET statuses = ["active", "inactive"]
@@ -313,8 +314,8 @@ func TestForWhileDistinct(t *testing.T) {
 				FOR j WHILE UNTIL(LENGTH(genders))
 					LET gender = genders[j]
 					FOR k WHILE UNTIL(LENGTH(statuses))
-						RETURN DISTINCT { 
-							department: dept, 
+						RETURN DISTINCT {
+							department: dept,
 							gender: gender
 						}
 		`, []any{
@@ -324,10 +325,10 @@ func TestForWhileDistinct(t *testing.T) {
 			map[string]any{"department": "Marketing", "gender": "f"},
 			map[string]any{"department": "HR", "gender": "m"},
 			map[string]any{"department": "HR", "gender": "f"},
-		}, "Should handle DISTINCT with multiple levels of nesting"),
+		}, "Should handle DISTINCT with multiple levels of nesting").Skip(),
 
 		// Test DISTINCT with multiple levels of nesting
-		SkipCaseArray(`
+		Array(`
 			LET departments = ["IT", "Marketing", "HR"]
 			LET genders = ["m", "f"]
 			LET statuses = ["active", "inactive"]
@@ -341,8 +342,8 @@ func TestForWhileDistinct(t *testing.T) {
 					FOR k WHILE UNTIL(LENGTH(statuses))
 						LET status = statuses[k]
 						SORT status
-						RETURN DISTINCT { 
-							department: dept, 
+						RETURN DISTINCT {
+							department: dept,
 							gender: gender
 						}
 		`, []any{
@@ -352,10 +353,10 @@ func TestForWhileDistinct(t *testing.T) {
 			map[string]any{"department": "IT", "gender": "m"},
 			map[string]any{"department": "Marketing", "gender": "f"},
 			map[string]any{"department": "Marketing", "gender": "m"},
-		}, "Should handle DISTINCT with multiple levels of nesting with SORT"),
+		}, "Should handle DISTINCT with multiple levels of nesting with SORT").Skip(),
 
 		// Test DISTINCT with a combination of COLLECT, AGGREGATE, and DISTINCT
-		CaseArray(`
+		Array(`
 			LET users = [
 				{ name: "John", department: "IT", age: 30 },
 				{ name: "Jane", department: "Marketing", age: 25 },
@@ -379,7 +380,7 @@ func TestForWhileDistinct(t *testing.T) {
 		}, "Should handle DISTINCT with a combination of COLLECT, AGGREGATE, and DISTINCT"),
 
 		// Test DISTINCT with array comparison and sorting
-		CaseArray(`
+		Array(`
 			LET users = [
 				{ name: "John", skills: ["JavaScript", "Python"] },
 				{ name: "Jane", skills: ["Java", "C++"] },
@@ -394,5 +395,5 @@ func TestForWhileDistinct(t *testing.T) {
 			[]any{"JavaScript", "Python"},
 			[]any{"C++", "Java"},
 		}, "Should handle DISTINCT with array comparison and sorting"),
-	}, vm.WithFunctionsBuilder(base.ForWhileHelpers()))
+	}, vm.WithFunctionsBuilder(spec.ForWhileHelpers()))
 }

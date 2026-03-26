@@ -1,10 +1,15 @@
 package vm_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
+)
 
 func TestArrayOperators(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		CaseArray(`
+	RunSpecs(t, []spec.Spec{
+		Array(`
 					LET friends = [
 						{ name: "John", age: 30 },
 						{ name: "Mary", age: 25 },
@@ -40,7 +45,7 @@ func TestArrayOperators(t *testing.T) {
 						RETURN user.friends[*].name
 				`,
 			[]any{[]any{"Alice"}, []any{"Tom", "Jane"}, []any{}}),
-		CaseArray(`
+		Array(`
 					LET users = [
 						{ name: "John", age: 30 },
 						{ name: "Mary", age: 25 },
@@ -50,7 +55,7 @@ func TestArrayOperators(t *testing.T) {
 					RETURN users[*].name
 				`,
 			[]any{"John", "Mary", "Bob"}),
-		CaseArray(`
+		Array(`
 					LET users = [
 						{ name: [ { num: [1, 2] }, { num: [4] } ] },
 						{ name: [ { num: [5] } ] }
@@ -67,7 +72,7 @@ func TestArrayOperators(t *testing.T) {
 					[]any{5},
 				},
 			}),
-		CaseArray(`
+		Array(`
 					LET users = [
 						{ name: "Ann", age: 20 },
 						{ name: "Bob", age: 45 },
@@ -77,7 +82,7 @@ func TestArrayOperators(t *testing.T) {
 					RETURN users[*][* FILTER .age > 40].age
 				`,
 			[]any{45, 50}),
-		CaseArray(`
+		Array(`
 					LET users = [
 						{ name: "Ann", age: 20 },
 						{ name: "Bob", age: 35 },
@@ -88,7 +93,7 @@ func TestArrayOperators(t *testing.T) {
 					RETURN users[* FILTER .age > 20][* FILTER .age < 50].name
 				`,
 			[]any{"Bob", "Cat"}),
-		CaseArray(`
+		Array(`
 					LET users = [
 						{ name: "Ann", age: 20 },
 						{ name: "Bob", age: 35 },
@@ -99,19 +104,19 @@ func TestArrayOperators(t *testing.T) {
 					RETURN users[* FILTER .age > 30][*].name
 				`,
 			[]any{"Bob", "Cat", "Dan"}),
-		CaseArray(`
+		Array(`
 					LET arr = [[1, 2], 3, [4, 5], 6]
 
 					RETURN arr[**]
 				`,
 			[]any{1, 2, 3, 4, 5, 6}),
-		CaseArray(`
+		Array(`
 					LET arr = [[[1], [2]], [[3]]]
 
 					RETURN arr[***]
 				`,
 			[]any{1, 2, 3}),
-		CaseArray(`
+		Array(`
 					LET users = [
 						[{ name: "Ann" }, { name: "Ben" }],
 						[{ name: "Cat" }]
@@ -120,7 +125,7 @@ func TestArrayOperators(t *testing.T) {
 					RETURN users[**].name
 				`,
 			[]any{"Ann", "Ben", "Cat"}),
-		CaseArray(`
+		Array(`
 LET users = [
 						{ 
 							name: "John", 
@@ -149,22 +154,22 @@ LET users = [
 					)[**]
 				`,
 			[]any{"Alice", "Tom", "Jane"}),
-		CaseArray(`
+		Array(`
 LET arr = [ [ 1, 2 ], 3, [ 4, 5 ], 6 ]
 RETURN arr[** FILTER . % 2 == 0]`, []any{2, 4, 6}),
-		CaseArray(`
+		Array(`
 LET values = [1, 2, 3, 4]
 RETURN values[* LIMIT 2]`, []any{1, 2}),
-		CaseArray(`
+		Array(`
 LET values = [1, 2, 3, 4]
 RETURN values[* LIMIT 1, 2]`, []any{2, 3}),
-		CaseArray(`
+		Array(`
 LET values = [1, 2, 3]
 RETURN values[* RETURN . * 2]`, []any{2, 4, 6}),
-		CaseArray(`
+		Array(`
 LET values = [1, 2, 3]
 RETURN values[* RETURN .]`, []any{1, 2, 3}),
-		CaseArray(`
+		Array(`
 LET users = [
 	{ name: "Ann", friends: [ { name: "Bob", age: 20 }, { name: "Cat", age: 17 } ] },
 	{ name: "Dan", friends: [ { name: "Eve", age: 19 } ] },
@@ -178,7 +183,7 @@ RETURN users[* RETURN {
 			map[string]any{"name": "Dan", "friends": []any{"Eve"}},
 			map[string]any{"name": "Liz", "friends": []any{}},
 		}),
-		CaseArray(`
+		Array(`
 LET users = [
 	{ name: "Ann", friends: [ { name: "Bob", age: 20 }, { name: "Cat", age: 17 } ] },
 	{ name: "Dan", friends: [ { name: "Eve", age: 19 } ] },
@@ -193,7 +198,7 @@ RETURN users[* RETURN {
 			map[string]any{"name": "Dan", "friends": []any{"Eve"}, "again": "Dan"},
 			map[string]any{"name": "Liz", "friends": []any{"Max"}, "again": "Liz"},
 		}),
-		CaseArray(`
+		Array(`
 LET users = [
 	{ name: "Ann", friends: [ { name: "Bob", age: 20 }, { name: "Cat", age: 17 } ] },
 	{ name: "Dan", friends: [ { name: "Eve", age: 19 } ] },
@@ -207,37 +212,37 @@ RETURN users[* RETURN {
 			map[string]any{"name": "Dan", "hasAdult": true},
 			map[string]any{"name": "Liz", "hasAdult": false},
 		}),
-		CaseArray(`
+		Array(`
 LET values = [1, 2, 3, 4]
 RETURN values[* FILTER . > 2 RETURN . * 10]`, []any{30, 40}),
-		Case(`
+		S(`
 LET arr = [1, 2, 3, 4]
 RETURN arr[? 2 FILTER . % 2 == 0]`, true),
-		Case(`
+		S(`
 LET arr = [1, 3, 5]
 RETURN arr[? FILTER . % 2 == 0]`, false),
-		Case(`
+		S(`
 LET arr = [1]
 RETURN arr[?]`, true),
-		Case(`
+		S(`
 LET arr = []
 RETURN arr[?]`, false),
-		Case(`
+		S(`
 LET arr = [1, 2]
 RETURN arr[? ANY FILTER . > 1]`, true),
-		Case(`
+		S(`
 LET arr = [1, 3, 5]
 RETURN arr[? NONE FILTER . % 2 == 0]`, true),
-		Case(`
+		S(`
 LET arr = [2, 4]
 RETURN arr[? ALL FILTER . % 2 == 0]`, true),
-		Case(`
+		S(`
 LET arr = [2, 4, 6]
 RETURN arr[? AT LEAST (2) FILTER . % 2 == 0]`, true),
-		Case(`
+		S(`
 LET arr = [2, 4, 6]
 RETURN arr[? 2..3 FILTER . % 2 == 0]`, true),
-		CaseArray(`
+		Array(`
 LET docs = [
 	{ name: "A", dimensions: [{ type: "height", value: 45 }] },
 	{ name: "B", dimensions: [{ type: "height", value: 35 }] },
@@ -247,7 +252,7 @@ LET docs = [
 FOR doc IN docs
 	FILTER doc.dimensions[? FILTER .type == "height" AND .value > 40]
 	RETURN doc.name`, []any{"A"}),
-		CaseArray(`
+		Array(`
 LET docs = [
 	{ name: "A", dimensions: [{ part: "frame", measurements: [{ type: "width", value: 80 }] }] },
 	{ name: "B", dimensions: [{ part: "frame", measurements: [{ type: "width", value: 90 }] }] },
@@ -258,37 +263,37 @@ FOR doc IN docs
 	FILTER doc.dimensions[? FILTER .part == "frame" AND
 		.measurements[? FILTER .type == "width" AND .value <= 80]]
 	RETURN doc.name`, []any{"A"}),
-		CaseArray(`
+		Array(`
 LET users = [
 	{ name: "Ann", age: 20 },
 	{ name: "Bob", age: 30 }
 ]
 RETURN users[* FILTER .age > 20].name`, []any{"Bob"}),
-		CaseArray(`
+		Array(`
 LET users = [
 	{ name: "Ann", age: 20 },
 	{ name: "Bob", age: 30 }
 ]
 RETURN users[* RETURN .name]`, []any{"Ann", "Bob"}),
-		CaseArray(`
+		Array(`
 LET users = [
 	{ age: 10 },
 	{ name: "Bob" }
 ]
 RETURN users[* RETURN ?.name]`, []any{nil, "Bob"}),
-		CaseArray(`
+		Array(`
 LET users = [
 	[1, 2],
 	[3]
 ]
 RETURN users[* RETURN .[0]]`, []any{1, 3}),
-		CaseArray(`
+		Array(`
 LET users = [
 	{ name: "Ann", age: 20 },
 	{ name: "Bob", age: 30 }
 ]
 RETURN users[* FILTER .age > 20][* RETURN .name]`, []any{"Bob"}),
-		CaseArray(`
+		Array(`
 LET users = [
 	[{ active: true }, { active: false }],
 	[{ active: false }]
@@ -299,7 +304,7 @@ RETURN users[* FILTER .[? FILTER .active]]`, []any{
 				map[string]any{"active": false},
 			},
 		}),
-		CaseArray(`
+		Array(`
 LET users = [
 	[{ name: "Ann" }],
 	[{ name: "Bob" }, { name: "Cat" }]
@@ -308,7 +313,7 @@ RETURN users[* RETURN .[*].name]`, []any{
 			[]any{"Ann"},
 			[]any{"Bob", "Cat"},
 		}),
-		CaseArray(`
+		Array(`
 LET groups = [
 	[[1, 2], [3]],
 	[[4]]
@@ -317,26 +322,26 @@ RETURN groups[* RETURN .[**]]`, []any{
 			[]any{1, 2, 3},
 			[]any{4},
 		}),
-		CaseArray(`
+		Array(`
 LET users = [
 	{ name: "Ann" },
 	{ name: "Bob" },
 	{ name: "Cat" }
 ]
 RETURN users[* LIMIT 2].name`, []any{"Ann", "Bob"}),
-		CaseArray(`
+		Array(`
 LET users = [
 	{ name: "Ann" },
 	{ name: "Bob" }
 ]
 RETURN users[* RETURN { n: .name }].n`, []any{"Ann", "Bob"}),
-		CaseArray(`
+		Array(`
 LET groups = [
 	[{ name: "Ann", age: 20 }],
 	[{ name: "Bob", age: 30 }]
 ]
 RETURN groups[** FILTER .age > 20].name`, []any{"Bob"}),
-		CaseArray(`
+		Array(`
 LET users = [
 						{ 
 							name: "john", 
@@ -378,7 +383,7 @@ LET users = [
 						"elena is 48",
 					}},
 			}),
-		CaseRuntimeError(`
+		Error(`
 					LET value = 1
 
 					RETURN value[**]

@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func TestSyntaxErrorsQueryExpression(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		ErrorCase(
+	RunSpecs(t, []spec.Spec{
+		Failure(
 			`RETURN QUERY IN doc USING css`,
 			E{
 				Kind:    parserd.SyntaxError,
@@ -17,7 +19,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			},
 			"Missing query literal after QUERY",
 		),
-		ErrorCase(
+		Failure(
 			`RETURN QUERY EXISTS IN doc USING css`,
 			E{
 				Kind:    parserd.SyntaxError,
@@ -26,7 +28,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			},
 			"Missing query literal after QUERY modifier",
 		),
-		ErrorCase(
+		Failure(
 			`RETURN QUERY COUNT IN doc USING css`,
 			E{
 				Kind:    parserd.SyntaxError,
@@ -35,7 +37,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			},
 			"Missing query literal after QUERY COUNT modifier",
 		),
-		ErrorCase(
+		Failure(
 			`RETURN QUERY ONE IN doc USING css`,
 			E{
 				Kind:    parserd.SyntaxError,
@@ -44,7 +46,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			},
 			"Missing query literal after QUERY ONE modifier",
 		),
-		ErrorCase(
+		Failure(
 			"RETURN QUERY `.x` doc USING css",
 			E{
 				Kind:    parserd.SyntaxError,
@@ -53,7 +55,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			},
 			"Missing IN after query literal",
 		),
-		ErrorCase(
+		Failure(
 			"RETURN QUERY `.x` IN USING css",
 			E{
 				Kind:    parserd.SyntaxError,
@@ -62,7 +64,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			},
 			"Missing source expression after IN",
 		),
-		ErrorCase(
+		Failure(
 			"RETURN QUERY `.x` IN doc css",
 			E{
 				Kind:    parserd.SyntaxError,
@@ -71,7 +73,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			},
 			"Missing USING after IN expression",
 		),
-		ErrorCase(
+		Failure(
 			"RETURN QUERY `.x` IN doc USING",
 			E{
 				Kind:    parserd.SyntaxError,
@@ -80,7 +82,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			},
 			"Missing dialect after USING",
 		),
-		ErrorCase(
+		Failure(
 			"RETURN QUERY `.x` IN doc USING \"css\"",
 			E{
 				Kind:    parserd.SyntaxError,
@@ -89,7 +91,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			},
 			"Invalid dialect token after USING",
 		),
-		SkipErrorCase(
+		Failure(
 			"RETURN QUERY `.x` IN @doc USING css WITH )",
 			E{
 				Kind:    parserd.SyntaxError,
@@ -97,6 +99,6 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 				Hint:    "Provide an options expression, e.g. WITH { limit: 10 }.",
 			},
 			"Missing WITH value",
-		),
+		).Skip(),
 	})
 }

@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func TestSyntaxErrors(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		ErrorCase(
+	RunSpecs(t, []spec.Spec{
+		Failure(
 			`
 			LET
 		`, E{
@@ -17,7 +19,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Did you forget to provide a variable name?",
 			}, "Missing variable name"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET
 			RETURN 5
@@ -27,7 +29,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Did you forget to provide a variable name?",
 			}, "Missing variable name 2"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET = 1
 			RETURN NONE
@@ -37,7 +39,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Did you forget to provide a variable name?",
 			}, "Missing variable name 3"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = NONE
 		`, E{
@@ -46,7 +48,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "All queries must return a value. Add a RETURN statement to complete the query.",
 			}, "Missing return statement"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i = NONE
 			RETURN
@@ -55,7 +57,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Message: "Expected expression after 'RETURN'",
 				Hint:    "Did you forget to provide a value to return?",
 			}, "Missing return value"),
-		ErrorCase(
+		Failure(
 			`
 			FUNC f(x)
 			  RETURN x
@@ -65,7 +67,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Message: "Expected '=>' or '(' after function declaration",
 				Hint:    "Use 'FUNC f(x) => expr' or 'FUNC f(x) ( ... RETURN expr )'.",
 			}, "Undelimited function body"),
-		ErrorCase(
+		Failure(
 			`
 				FUNC f() => RETURN 1
 				RETURN f()
@@ -74,13 +76,13 @@ func TestSyntaxErrors(t *testing.T) {
 				Message: "Expected expression after '=>'",
 				Hint:    "Provide an expression, e.g. FUNC f() => x + 1",
 			}, "Missing arrow expression"),
-		ErrorCase(
+		Failure(
 			`=>`, E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after '=>'",
 				Hint:    "Provide an expression, e.g. FUNC f() => x + 1",
 			}, "Missing arrow expression at start of input"),
-		ErrorCase(
+		Failure(
 			`
 			FUNC run() (
 			  VAR i = 0
@@ -95,7 +97,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
 			}, "Standalone WHILE loop inside function block"),
 
-		ErrorCase(
+		Failure(
 			`
 				LET a = 1
 				LET b = 2
@@ -107,7 +109,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Provide an expression after the logical operator, e.g. (a || b).",
 			}, "Incomplete logical expression"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET a = 1
 			LET b = 2
@@ -119,7 +121,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Provide an expression after the logical operator, e.g. (a OR b).",
 			}, "Incomplete logical expression 2"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET a = 1
 			LET b = 2
@@ -131,7 +133,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Provide an expression after the logical operator, e.g. (a && b).",
 			}, "Incomplete logical expression 3"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET a = 1
 			LET b = 2
@@ -143,7 +145,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Provide an expression after the logical operator, e.g. (a AND b).",
 			}, "Incomplete logical expression 4"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET a = 1
 			LET b = 2
@@ -155,7 +157,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Provide an expression after the colon to complete the ternary operation.",
 			}, "Incomplete ternary expression"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET a = 1
 			LET b = 2
@@ -167,7 +169,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Provide an expression after the colon to complete the ternary operation.",
 			}, "Incomplete ternary expression 2"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET a = 1
 			LET b = 2
@@ -179,7 +181,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Provide an expression after the question mark to complete the ternary operation.",
 			}, "Incomplete ternary expression 3"),
 
-		SkipErrorCase(
+		Failure(
 			`
 			LET i = NONE
 			RETURN i,
@@ -187,9 +189,9 @@ func TestSyntaxErrors(t *testing.T) {
 				Kind:    parserd.SyntaxError,
 				Message: "--",
 				Hint:    "--",
-			}, "Dangling comma in return"),
+			}, "Dangling comma in return").Skip(),
 
-		ErrorCase(
+		Failure(
 			`
 			LET a = 1
 			LET b = 2
@@ -201,7 +203,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Add a closing ')' to complete the expression.",
 			}, "Unclosed grouping 2"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i =
 			RETURN i
@@ -211,7 +213,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Did you forget to provide a value?",
 			}, "Missing variable assignment value"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i =
 			LET j = 5
@@ -222,7 +224,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Did you forget to provide a value?",
 			}, "Missing variable assignment value 2"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET i =
 			FOR j IN [1, 2, 3] RETURN j
@@ -232,7 +234,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Did you forget to provide a value?",
 			}, "Missing variable assignment value 3"),
 
-		ErrorCase(
+		Failure(
 			`
 			FN(1,
 			RETURN NONE
@@ -242,7 +244,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Did you forget to provide a value?",
 			}, "Incomplete function call"),
 
-		ErrorCase(
+		Failure(
 			`
 			FN(,)
 			RETURN NONE
@@ -252,7 +254,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Did you forget to provide a value?",
 			}, "Incomplete function call 2"),
 
-		ErrorCase(
+		Failure(
 			`
 			FN(
 			RETURN NONE
@@ -262,7 +264,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Add a closing ')' to complete the function call.",
 			}, "Incomplete function call 3"),
 
-		ErrorCase(
+		Failure(
 			`
 			FN(1
 			RETURN NONE
@@ -272,7 +274,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Add a closing ')' to complete the function call.",
 			}, "Incomplete function call 4"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET r = 0..
 			RETURN r
@@ -282,7 +284,7 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Provide an end value to complete the range, e.g. 0..10.",
 			}, "Incomplete range"),
 
-		ErrorCase(
+		Failure(
 			`
 				LET r = ..0
 				RETURN r

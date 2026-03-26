@@ -9,17 +9,17 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
-
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestRegexpOperator(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		Case(`RETURN "foo" =~ "^f[o].$" `, true),
-		Case(`RETURN "foo" !~ "[a-z]+bar$"`, true),
-		Case(`RETURN "foo" !~ T::REGEXP()`, true),
-		CaseArray(`FOR p IN ["^f..$", "^b..$"] RETURN "foo" =~ p`, []any{true, false}),
-		CaseArray(`FOR p IN [1, 2] RETURN "foo" =~ T::REGEXP_DYNAMIC(p)`, []any{true, false}),
+	RunSpecs(t, []spec.Spec{
+		S(`RETURN "foo" =~ "^f[o].$" `, true),
+		S(`RETURN "foo" !~ "[a-z]+bar$"`, true),
+		S(`RETURN "foo" !~ T::REGEXP()`, true),
+		Array(`FOR p IN ["^f..$", "^b..$"] RETURN "foo" =~ p`, []any{true, false}),
+		Array(`FOR p IN [1, 2] RETURN "foo" =~ T::REGEXP_DYNAMIC(p)`, []any{true, false}),
 	}, vm.WithFunction("T::REGEXP", func(_ context.Context, _ ...runtime.Value) (value runtime.Value, e error) {
 		return runtime.NewString("[a-z]+bar$"), nil
 	}), vm.WithFunction("T::REGEXP_DYNAMIC", func(_ context.Context, args ...runtime.Value) (value runtime.Value, e error) {
@@ -30,16 +30,18 @@ func TestRegexpOperator(t *testing.T) {
 		return runtime.NewString("^b..$"), nil
 	}))
 
-	Convey("Should return an error during compilation when a regexp string invalid", t, func() {
+	t.Run("Should return an error during compilation when a regexp string invalid", func(t *testing.T) {
 		_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).
 			Compile(file.NewAnonymousSource(`
 			RETURN "foo" !~ "[ ]\K(?<!\d )(?=(?: ?\d){8})(?!(?: ?\d){9})\d[ \d]+\d" 
 		`))
 
-		So(err, ShouldBeError)
+		if err == nil {
+			t.Fatal("expected compilation error")
+		}
 	})
 
-	Convey("Should return an error during compilation when a regexp is not a string", t, func() {
+	t.Run("Should return an error during compilation when a regexp is not a string", func(t *testing.T) {
 		right := []string{
 			"[]",
 			"{}",
@@ -49,12 +51,18 @@ func TestRegexpOperator(t *testing.T) {
 		}
 
 		for _, r := range right {
-			_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).
-				Compile(file.NewAnonymousSource(fmt.Sprintf(`
+			r := r
+
+			t.Run(r, func(t *testing.T) {
+				_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).
+					Compile(file.NewAnonymousSource(fmt.Sprintf(`
 			RETURN "foo" !~ %s 
 		`, r)))
 
-			So(err, ShouldBeError)
+				if err == nil {
+					t.Fatal("expected compilation error")
+				}
+			})
 		}
 	})
 }

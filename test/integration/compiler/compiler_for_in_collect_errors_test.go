@@ -4,11 +4,14 @@ import (
 	"testing"
 
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/test/spec"
+
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func TestCollectNameErrors(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		ErrorCase(
+	RunSpecs(t, []spec.Spec{
+		Failure(
 			`
 			LET users = [1, 2, 3]
 			FOR u IN users
@@ -19,7 +22,7 @@ func TestCollectNameErrors(t *testing.T) {
 				Kind:    parserd.NameError,
 				Message: "Variable 'total' is already defined",
 			}, "COLLECT AGGREGATE should reject duplicate output variable names"),
-		ErrorCase(
+		Failure(
 			`
 			LET users = [1, 2, 3]
 			FOR u IN users
@@ -30,7 +33,7 @@ func TestCollectNameErrors(t *testing.T) {
 				Kind:    parserd.NameError,
 				Message: "Variable 'g' is already defined",
 			}, "COLLECT grouping should reject duplicate group variable names"),
-		ErrorCase(
+		Failure(
 			`
 			FOR u IN [1]
 				COLLECT g = u INTO grouped KEEP missing
@@ -39,7 +42,7 @@ func TestCollectNameErrors(t *testing.T) {
 				Kind:    parserd.NameError,
 				Message: "Variable 'missing' is not defined",
 			}, "COLLECT KEEP should report missing variables as diagnostics"),
-		ErrorCase(
+		Failure(
 			`
 				FOR u IN [1, 2, 3]
 					COLLECT WITH sum INTO total

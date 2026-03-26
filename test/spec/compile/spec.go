@@ -1,0 +1,57 @@
+package compile
+
+import (
+	"fmt"
+
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	"github.com/MontFerret/ferret/v2/test/spec/assert"
+)
+
+type (
+	OpcodeExpectation interface {
+		OpcodeExistence | OpcodeCount
+	}
+
+	OpcodeExistence struct {
+		Exists    []bytecode.Opcode
+		NotExists []bytecode.Opcode
+	}
+
+	OpcodeCount struct {
+		Count map[bytecode.Opcode]int
+	}
+)
+
+func ByteCode(expression string, expected []bytecode.Instruction, desc ...string) spec.Spec {
+	return spec.NewSpec(expression, desc...).Expect().Compile(ShouldHaveSameBytecode, &bytecode.Program{
+		Bytecode: expected,
+	})
+}
+
+func Opcode[T OpcodeExpectation](expression string, expectation T, desc ...string) spec.Spec {
+	return spec.NewSpec(expression, desc...).Expect().Compile(ShouldContainOpcode, expectation)
+}
+
+func Registers(expression string, num int, desc ...string) spec.Spec {
+	return spec.NewSpec(expression, desc...).Expect().Compile(ShouldHaveRegisters, num)
+}
+
+func Failure(expression string, expected assert.ExpectedError, desc ...string) spec.Spec {
+	return spec.NewSpec(expression, desc...).Expect().CompileError(ShouldBeCompilationError, expected)
+}
+
+func MultiFailure(expression string, expected assert.ExpectedMultiError, desc ...string) spec.Spec {
+	return spec.NewSpec(expression, desc...).Expect().CompileError(ShouldBeCompilationError, expected)
+}
+
+func ProgramCheck(expression string, fn func(*bytecode.Program) error, desc ...string) spec.Spec {
+	return spec.NewSpec(expression, desc...).Expect().Compile(assert.NewUnaryAssertion(func(actual any) error {
+		prog, ok := actual.(*bytecode.Program)
+		if !ok {
+			return fmt.Errorf("expected *bytecode.Program, got %T", actual)
+		}
+
+		return fn(prog)
+	}))
+}

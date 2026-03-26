@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func TestForLoopSyntaxErrors(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		ErrorCase(
+	RunSpecs(t, []spec.Spec{
+		Failure(
 			`
 			FOR i IN [1, 2, 3]
 				RETURN
@@ -18,7 +20,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Did you forget to provide a value to return?",
 			}, "Missing return value in for loop"),
 
-		ErrorCase(
+		Failure(
 			`
 			FOR i IN 
 				RETURN i
@@ -28,7 +30,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Each FOR loop must iterate over a collection or range.",
 			}, "Missing iterable in FOR"),
 
-		ErrorCase(
+		Failure(
 			`
 			FOR i [1, 2, 3]
 				RETURN i
@@ -38,7 +40,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Use 'FOR x IN [iterable]' syntax.",
 			}, "Missing IN in FOR"),
 
-		ErrorCase(
+		Failure(
 			`
 			FOR i = 0 WHILE i < 5 STEP i = i + 1
 				RETURN i
@@ -46,7 +48,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Kind: parserd.SyntaxError,
 			}, "Legacy STEP syntax fails generically"),
 
-		ErrorCase(
+		Failure(
 			`
 			VAR i = 0
 			WHILE i < 10
@@ -58,7 +60,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
 			}, "Standalone WHILE loop at top level"),
 
-		ErrorCase(
+		Failure(
 			`
 			VAR i = 0
 			DO WHILE i < 10
@@ -70,7 +72,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Use 'FOR DO WHILE [condition]' or 'FOR x DO WHILE [condition]' syntax.",
 			}, "Standalone DO WHILE loop at top level"),
 
-		ErrorCase(
+		Failure(
 			`
 			FOR WHILE
 				RETURN 1
@@ -80,7 +82,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
 			}, "FOR WHILE without condition"),
 
-		ErrorCase(
+		Failure(
 			`
 			FOR DO WHILE
 				RETURN 1
@@ -90,7 +92,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
 			}, "FOR DO WHILE without condition"),
 
-		ErrorCase(
+		Failure(
 			`
 			FOR 123 WHILE TRUE
 				RETURN 1
@@ -100,7 +102,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
 			}, "FOR WHILE with invalid binding"),
 
-		ErrorCase(
+		Failure(
 			`
 			FOR 123 DO WHILE TRUE
 				RETURN 1
@@ -110,7 +112,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
 			}, "FOR DO WHILE with invalid binding"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET ok = (
 				FOR WHILE FALSE
@@ -125,7 +127,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
 			}, "Later FOR WHILE invalid binding is detected"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET ok = (
 				FOR DO WHILE FALSE
@@ -140,7 +142,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
 			}, "Later FOR DO WHILE invalid binding is detected"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET ok = (
 				FOR DO WHILE FALSE
@@ -155,7 +157,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Use 'FOR WHILE [condition]' or 'FOR x WHILE [condition]' syntax.",
 			}, "Mixed while-loop forms still find later invalid binding"),
 
-		ErrorCase(
+		Failure(
 			`
 			FOR IN [1, 2, 3]
 				RETURN i
@@ -165,7 +167,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "FOR must declare a variable.",
 			}, "FOR without variable"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET users = []
 			FOR x IN users
@@ -177,7 +179,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "FILTER requires a boolean expression.",
 			}, "FILTER with no expression"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET users = []
 			FOR x IN users
@@ -189,7 +191,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "FILTER requires a boolean expression.",
 			}, "FILTER with no expression 2"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET users = []
 			FOR x IN users
@@ -201,7 +203,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "LIMIT requires a numeric value.",
 			}, "LIMIT with no value"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET users = []
 			FOR x IN users
@@ -213,7 +215,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "LIMIT accepts at most two arguments: offset and count.",
 			}, "LIMIT with too many values"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET users = []
 			FOR x IN users
@@ -225,7 +227,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "LIMIT accepts at most two arguments: offset and count.",
 			}, "LIMIT unexpected comma"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET users = []
 			FOR x IN users
@@ -237,7 +239,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "LIMIT accepts one or two arguments. Did you forget to add a value?",
 			}, "LIMIT unexpected comma 2"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET users = []
 			FOR x IN users
@@ -249,7 +251,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "LIMIT accepts one or two arguments. Did you forget to add a value?",
 			}, "LIMIT unexpected comma 3"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET users = []
 			FOR x IN users
@@ -261,7 +263,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "LIMIT accepts one or two arguments. Did you forget to add a value?",
 			}, "LIMIT unexpected comma 4"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET users = []
 			FOR x IN users
@@ -273,7 +275,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "COLLECT must group by a variable.",
 			}, "COLLECT with no variable"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET users = []
 			FOR x IN users
@@ -285,7 +287,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "COLLECT must specify a grouping key, an AGGREGATE clause, or WITH COUNT.",
 			}, "COLLECT with no variables"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET users = []
 			FOR i IN users
@@ -299,7 +301,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Provide a variable name to store grouped values, e.g. INTO groups.",
 			}, "COLLECT INTO with no variable"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET users = []
 			FOR x IN users
@@ -311,7 +313,7 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Did you forget to provide a value?",
 			}, "COLLECT AGGREGATE without expression"),
 
-		ErrorCase(
+		Failure(
 			`
 			LET users = []
 			FOR x IN users

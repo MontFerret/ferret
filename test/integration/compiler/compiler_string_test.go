@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func TestString(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		SkipByteCodeCase(
+	RunSpecs(t, []spec.Spec{
+		ByteCode(
 			`
 			RETURN "FOO BAR"
 		`, BC{

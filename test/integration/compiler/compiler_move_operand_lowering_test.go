@@ -6,20 +6,22 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
-func assertNoMoveFromConstant(t *testing.T, prog *bytecode.Program) {
-	t.Helper()
-
+func noMoveFromConstant(prog *bytecode.Program) error {
 	for i, inst := range prog.Bytecode {
 		if inst.Opcode != bytecode.OpMove && inst.Opcode != bytecode.OpMoveTracked {
 			continue
 		}
 
 		if inst.Operands[1].IsConstant() {
-			t.Fatalf("unexpected MOVE from constant at pc %d: %v", i, inst.Operands)
+			return fmt.Errorf("unexpected MOVE from constant at pc %d: %v", i, inst.Operands)
 		}
 	}
+
+	return nil
 }
 
 func TestCompilerNeverEmitsMoveFromConstantOperand(t *testing.T) {
@@ -63,14 +65,12 @@ RETURN items[* RETURN .a]
 		},
 	}
 
-	levels := []compiler.OptimizationLevel{compiler.O0, compiler.O1}
-
+	specs := make([]spec.Spec, 0, len(cases))
 	for _, tc := range cases {
-		for _, level := range levels {
-			t.Run(fmt.Sprintf("%s_O%d", tc.name, int(level)), func(t *testing.T) {
-				prog := compileWithLevel(t, level, tc.expr)
-				assertNoMoveFromConstant(t, prog)
-			})
-		}
+		specs = append(specs, ProgramCheck(tc.expr, func(prog *bytecode.Program) error {
+			return noMoveFromConstant(prog)
+		}, tc.name))
 	}
+
+	RunSpecsLevels(t, specs, compiler.O0, compiler.O1)
 }

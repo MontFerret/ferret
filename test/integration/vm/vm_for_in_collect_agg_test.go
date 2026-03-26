@@ -2,11 +2,14 @@ package vm_test
 
 import (
 	"testing"
+
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestCollectAggregate(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		CaseArray(`
+	RunSpecs(t, []spec.Spec{
+		Array(`
 			LET users = [
 				{ gender: "m", age: 31 },
 				{ gender: "f", age: 25 },
@@ -24,7 +27,7 @@ func TestCollectAggregate(t *testing.T) {
 			map[string]any{"gender": "f", "minAge": 25, "grouped": []map[string]any{{"u": map[string]any{"gender": "f", "age": 25}}}},
 			map[string]any{"gender": "m", "minAge": 31, "grouped": []map[string]any{{"u": map[string]any{"gender": "m", "age": 31}}, {"u": map[string]any{"gender": "m", "age": 45}}}},
 		}, "Should support COLLECT INTO + AGGREGATE"),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{ group: "a", age: 1 },
 				{ group: "a", age: "oops" },
@@ -44,7 +47,7 @@ func TestCollectAggregate(t *testing.T) {
 			map[string]any{"g": "a", "cnt": 2, "sum": 1, "min": 1, "max": 1, "avg": 1},
 			map[string]any{"g": "b", "cnt": 2, "sum": 2, "min": 2, "max": 2, "avg": 2},
 		}, "Should aggregate per group and skip non-numbers in numeric aggregates"),
-		CaseArray(`
+		Array(`
 			LET users = []
 			FOR u IN users
 				COLLECT gender = u.gender
@@ -55,7 +58,7 @@ func TestCollectAggregate(t *testing.T) {
 				}
 		`, []any{}, "Should return empty array for grouped aggregate on empty input"),
 
-		CaseArray(`
+		Array(`
 			LET users = [
 				{ gender: "m", age: null },
 				{ gender: "m", age: 40 },
@@ -75,7 +78,7 @@ func TestCollectAggregate(t *testing.T) {
 			map[string]any{"gender": "f", "count": 2, "sum": 20, "avg": 20},
 			map[string]any{"gender": "m", "count": 2, "sum": 40, "avg": 40},
 		}, "Should skip nulls in COUNT, SUM, AVG"),
-		Case(`
+		S(`
 			LET users = [ { gender: "m", age: 30 }, { gender: "f", age: 40 } ]
 			LET result = (
 				FOR u IN users
@@ -85,7 +88,7 @@ func TestCollectAggregate(t *testing.T) {
 			)
 			RETURN result[0].total
 		`, 1),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -117,7 +120,7 @@ func TestCollectAggregate(t *testing.T) {
 			map[string]any{"gender": "f", "userCount": 1},
 			map[string]any{"gender": "m", "userCount": 2},
 		}),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -150,7 +153,7 @@ func TestCollectAggregate(t *testing.T) {
 			map[string]any{"gender": "f", "minAge": 25, "maxAge": 25},
 			map[string]any{"gender": "m", "minAge": nil, "maxAge": nil},
 		}, "Should handle null values in aggregation"),
-		CaseArray(`
+		Array(`
 LET users = [
 				{
 					active: true,
@@ -196,7 +199,7 @@ FOR u IN users
 			map[string]any{"genderGroup": "f", "minAge": 25, "maxAge": 45},
 			map[string]any{"genderGroup": "m", "minAge": 31, "maxAge": 69},
 		}, "Should collect and aggregate values by a single key"),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -252,7 +255,7 @@ FOR u IN users
 			map[string]any{"department": "Management", "gender": "m", "minAge": 69, "maxAge": 69},
 			map[string]any{"department": "Marketing", "gender": "f", "minAge": 25, "maxAge": 45},
 		}, "Should aggregate with multiple grouping keys"),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -316,7 +319,7 @@ FOR u IN users
 				"highSalaryCount": 3,
 			},
 		}, "Should aggregate with conditional expressions"),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -358,7 +361,7 @@ FOR u IN users
 		`,
 			[]any{map[string]any{"minAge": 25, "maxAge": 69}},
 			"Should collect and aggregate values without grouping"),
-		CaseArray(`
+		Array(`
 			LET users = []
 			FOR u IN users
 				COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
@@ -369,7 +372,7 @@ FOR u IN users
 		`,
 			[]any{map[string]any{"minAge": nil, "maxAge": nil}},
 			"Should handle empty arrays gracefully"),
-		CaseArray(`
+		Array(`
 			LET values = [1, "x", 3, null, 5]
 			FOR v IN values
 				COLLECT AGGREGATE
@@ -388,7 +391,7 @@ FOR u IN users
 		`,
 			[]any{map[string]any{"cnt": 5, "sum": 9, "min": 1, "max": 5, "avg": 3}},
 			"Should handle mixed types in global aggregation"),
-		CaseArray(`
+		Array(`
 			LET values = ["a", null, "b"]
 			FOR v IN values
 				COLLECT AGGREGATE
@@ -407,7 +410,7 @@ FOR u IN users
 		`,
 			[]any{map[string]any{"cnt": 3, "sum": 0, "min": nil, "max": nil, "avg": 0}},
 			"Should handle non-numeric values in global aggregation"),
-		CaseArray(`
+		Array(`
 LET users = [
 				{
 					active: true,
@@ -446,7 +449,7 @@ LET users = [
 `, []any{
 			map[string]any{"ages": []any{31, 25, 36, 69, 45, 31, 25, 36, 69, 45}},
 		}, "Should call aggregation functions with more than one argument"),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -534,7 +537,7 @@ LET users = [
 				"maxAge": 69,
 			},
 		}),
-		CaseArray(`
+		Array(`
 LET users = [
 				{
 					active: true,
@@ -579,7 +582,7 @@ FOR u IN users
 			map[string]any{"genderGroup": "f", "ages": []any{25, 45, 25, 45}},
 			map[string]any{"genderGroup": "m", "ages": []any{31, 36, 69, 31, 36, 69}},
 		}, "Should collect and aggregate values by a single key"),
-		CaseArray(`
+		Array(`
 		LET users = [
 				{
 					active: true,
@@ -627,7 +630,7 @@ FOR u IN users
 			map[string]any{"ageGroup": 45, "maxAge": 45, "minAge": 45},
 			map[string]any{"ageGroup": 65, "maxAge": 69, "minAge": 69},
 		}, "Should aggregate values with calculated grouping"),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,
@@ -712,7 +715,7 @@ FOR u IN users
 				"employeeCount": 2,
 			},
 		}, "Should aggregate multiple values with complex expressions"),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					name: "John",
@@ -750,7 +753,7 @@ FOR u IN users
 				"uniqueSkillCount": 4,
 			},
 		}, "Should aggregate with array operations"),
-		CaseArray(`
+		Array(`
 			LET users = [
 				{
 					active: true,

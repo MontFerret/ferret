@@ -31,8 +31,13 @@ compile:
 	go build -v -o ${DIR_BIN}/ferret \
 	${DIR_E2E}/cli.go
 
-test:
-	CGO_ENABLED=1 go test -race ${DIR_PKG}/... && CGO_ENABLED=1 go test -race ${DIR_INTEG}/... && CGO_ENABLED=1 go test -race ${DIR_COMPAT}/...
+test: test-unit test-integration
+
+test-unit:
+	CGO_ENABLED=1 go test -race ${DIR_PKG}/... && CGO_ENABLED=1 go test -race ${DIR_COMPAT}/...
+
+test-integration:
+	CGO_ENABLED=1 go test -race ${DIR_INTEG}/...
 
 clean:
 	rm -rf ${DIR_BIN}/* && \

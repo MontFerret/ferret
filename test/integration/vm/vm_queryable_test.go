@@ -2,250 +2,31 @@ package vm_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 
-	"github.com/smartystreets/goconvey/convey"
-
-	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
+	"github.com/MontFerret/ferret/v2/test/spec/mock"
 )
 
-type testQueryable struct {
-	result  runtime.List
-	err     error
-	queries []runtime.Query
-}
-
-func (t *testQueryable) Query(_ context.Context, q runtime.Query) (runtime.List, error) {
-	t.queries = append(t.queries, q)
-	if t.err != nil {
-		return nil, t.err
-	}
-	if t.result != nil {
-		return t.result, nil
-	}
-	return runtime.NewArray(0), nil
-}
-
-func (t *testQueryable) MarshalJSON() ([]byte, error) {
-	return json.Marshal("queryable")
-}
-
-func (t *testQueryable) String() string {
-	return "queryable"
-}
-
-func (t *testQueryable) Unwrap() interface{} {
-	return "queryable"
-}
-
-func (t *testQueryable) Hash() uint64 {
-	return 0
-}
-
-func (t *testQueryable) Copy() runtime.Value {
-	return t
-}
-
-func newObjectWithMap(props map[string]runtime.Value) runtime.Value {
-	obj := runtime.NewObject()
-
-	for key, value := range props {
-		_ = obj.Set(context.Background(), runtime.NewString(key), value)
-	}
-
-	return obj
-}
-
-type mockText struct {
-	value runtime.String
-}
-
-func newMockText(value string) *mockText {
-	return &mockText{value: runtime.NewString(value)}
-}
-
-func (t *mockText) MarshalJSON() ([]byte, error) {
-	return encodingjson.Default.Encode(t.value)
-}
-
-func (t *mockText) String() string {
-	return t.value.String()
-}
-
-func (t *mockText) Hash() uint64 {
-	return t.value.Hash()
-}
-
-func (t *mockText) Copy() runtime.Value {
-	return t
-}
-
-func (t *mockText) Iterate(ctx context.Context) (runtime.Iterator, error) {
-	return runtime.NewArrayWith(t.value).Iterate(ctx)
-}
-
-type mockNode struct {
-	kind string
-}
-
-func newMockNode(kind string) *mockNode {
-	return &mockNode{kind: kind}
-}
-
-func (n *mockNode) MarshalJSON() ([]byte, error) {
-	return encodingjson.Default.Encode(runtime.NewString(n.kind))
-}
-
-func (n *mockNode) String() string {
-	return n.kind
-}
-
-func (n *mockNode) Unwrap() interface{} {
-	return n.kind
-}
-
-func (n *mockNode) Hash() uint64 {
-	return runtime.NewString(n.kind).Hash()
-}
-
-func (n *mockNode) Copy() runtime.Value {
-	return n
-}
-
-func (n *mockNode) Iterate(ctx context.Context) (runtime.Iterator, error) {
-	return runtime.NewArrayWith(n).Iterate(ctx)
-}
-
-func (n *mockNode) Query(_ context.Context, q runtime.Query) (runtime.List, error) {
-	switch q.Kind.String() {
-	case "css":
-		switch q.Payload.String() {
-		case ".product":
-			return runtime.NewArrayWith(newMockNode("product")), nil
-		case ".title":
-			return runtime.NewArrayWith(newMockNode("title")), nil
-		case ".price":
-			return runtime.NewArrayWith(newMockNode("price")), nil
-		default:
-			return runtime.NewArrayWith(newMockNode("node")), nil
-		}
-	case "text":
-		return runtime.NewArrayWith(newMockText(n.kind)), nil
-	default:
-		return runtime.NewArray(0), nil
-	}
-}
-
-type mockDBQueryable struct {
-	testQueryable
-}
-
-func (m *mockDBQueryable) Query(ctx context.Context, q runtime.Query) (runtime.List, error) {
-	m.queries = append(m.queries, q)
-
-	if q.Kind.String() == "nil" {
-		return runtime.NewArray(0), nil
-	}
-
-	if q.Kind.String() != "sql" {
-		return runtime.NewArray(0), nil
-	}
-
-	params, err := runtime.ToMap(ctx, q.Options)
-	convey.So(err, convey.ShouldBeNil)
-	category, _ := params.Get(ctx, runtime.NewString("c"))
-	if category == runtime.NewString("laptops") {
-		return runtime.NewArrayWith(
-			newObjectWithMap(map[string]runtime.Value{
-				"name":  runtime.NewString("Laptop Pro"),
-				"price": runtime.NewInt(200),
-			}),
-		), nil
-	}
-
-	return runtime.NewArrayWith(
-		newObjectWithMap(map[string]runtime.Value{
-			"name":  runtime.NewString("Laptop Pro"),
-			"price": runtime.NewInt(200),
-		}),
-		newObjectWithMap(map[string]runtime.Value{
-			"name":  runtime.NewString("Mouse"),
-			"price": runtime.NewInt(50),
-		}),
-	), nil
-}
-
-type mockJSONQueryable struct {
-	testQueryable
-}
-
-func (m *mockJSONQueryable) Query(ctx context.Context, q runtime.Query) (runtime.List, error) {
-	m.queries = append(m.queries, q)
-
-	if q.Kind.String() != "jp" {
-		return runtime.NewArray(0), nil
-	}
-
-	orders := runtime.NewArrayWith(
-		newObjectWithMap(map[string]runtime.Value{
-			"id":    runtime.NewInt(1),
-			"total": runtime.NewInt(150),
-			"items": runtime.NewArrayWith(
-				newObjectWithMap(map[string]runtime.Value{"name": runtime.NewString("Item A")}),
-				newObjectWithMap(map[string]runtime.Value{"name": runtime.NewString("Item B")}),
-			),
-		}),
-		newObjectWithMap(map[string]runtime.Value{
-			"id":    runtime.NewInt(2),
-			"total": runtime.NewInt(80),
-			"items": runtime.NewArrayWith(
-				newObjectWithMap(map[string]runtime.Value{"name": runtime.NewString("Item C")}),
-			),
-		}),
-	)
-
-	return orders, nil
-}
-
-type nilListQueryable struct{}
-
-func (n *nilListQueryable) Query(_ context.Context, _ runtime.Query) (runtime.List, error) {
-	return nil, nil
-}
-
-func (n *nilListQueryable) MarshalJSON() ([]byte, error) {
-	return json.Marshal("nil-queryable")
-}
-
-func (n *nilListQueryable) String() string {
-	return "nil-queryable"
-}
-
-func (n *nilListQueryable) Hash() uint64 {
-	return 0
-}
-
-func (n *nilListQueryable) Copy() runtime.Value {
-	return n
-}
-
 func TestQueryable(t *testing.T) {
-	queryable := &testQueryable{result: runtime.NewArrayWith(runtime.NewString("ok"))}
+	queryable := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("ok")))
 
-	RunUseCases(t, []UseCase{
-		CaseArray("RETURN @doc[~ css`.items`]", []any{"ok"}, "Should apply query literal"),
-		Case("RETURN @doc[~ css`.items`][0]", "ok", "Should apply query literal and index tail"),
-		CaseArray("RETURN QUERY `.items` IN @doc USING css", []any{"ok"}, "Should apply query expression"),
-		CaseArray("RETURN QUERY @q IN @doc USING css", []any{"ok"}, "Should apply query expression with param payload"),
-		CaseArray("LET q = \".dynamic-var\"\nRETURN QUERY q IN @doc USING css", []any{"ok"}, "Should apply query expression with variable payload"),
-		CaseArray("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", []any{"ok"}, "Should apply query literal with params"),
-		CaseArray("RETURN QUERY `SELECT * FROM products` IN @doc USING sql WITH { c: \"phones\" }", []any{"ok"}, "Should apply query expression with options"),
-		CaseArray("RETURN @doc[~ text]", []any{"ok"}, "Should apply query literal with no string payload"),
-		RuntimeErrorCase("RETURN @val[~ css`x`]", ExpectedRuntimeError{Message: "Invalid type"}),
+	RunSpecs(t, []spec.Spec{
+		Array("RETURN @doc[~ css`.items`]", []any{"ok"}, "Should apply query literal"),
+		S("RETURN @doc[~ css`.items`][0]", "ok", "Should apply query literal and index tail"),
+		Array("RETURN QUERY `.items` IN @doc USING css", []any{"ok"}, "Should apply query expression"),
+		Array("RETURN QUERY @q IN @doc USING css", []any{"ok"}, "Should apply query expression with param payload"),
+		Array("LET q = \".dynamic-var\"\nRETURN QUERY q IN @doc USING css", []any{"ok"}, "Should apply query expression with variable payload"),
+		Array("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", []any{"ok"}, "Should apply query literal with params"),
+		Array("RETURN QUERY `SELECT * FROM products` IN @doc USING sql WITH { c: \"phones\" }", []any{"ok"}, "Should apply query expression with options"),
+		Array("RETURN @doc[~ text]", []any{"ok"}, "Should apply query literal with no string payload"),
+		spec.NewSpec("RETURN @val[~ css`x`]").Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message: "Invalid type",
+		}),
 	}, vm.WithParams(map[string]runtime.Value{
 		"doc": queryable,
 		"q":   runtime.NewString(".dynamic-param"),
@@ -253,109 +34,123 @@ func TestQueryable(t *testing.T) {
 	}))
 
 	t.Run("Should receive correct queries", func(t *testing.T) {
-		convey.Convey("Should be ok", t, func() {
-			var hasCSS bool
-			var hasCSSParam bool
-			var hasCSSVar bool
-			var hasSQLParams bool
-			var hasSQLQueryExpr bool
-			var hasText bool
+		var hasCSS bool
+		var hasCSSParam bool
+		var hasCSSVar bool
+		var hasSQLParams bool
+		var hasSQLQueryExpr bool
+		var hasText bool
 
-			for _, q := range queryable.queries {
-				switch q.Kind {
-				case runtime.NewString("css"):
-					if q.Payload == runtime.NewString(".items") {
-						hasCSS = true
-					}
-					if q.Payload == runtime.NewString(".dynamic-param") {
-						hasCSSParam = true
-					}
-					if q.Payload == runtime.NewString(".dynamic-var") {
-						hasCSSVar = true
-					}
-				case runtime.NewString("text"):
-					if q.Payload == runtime.EmptyString {
-						hasText = true
-					}
-				case runtime.NewString("sql"):
-					if q.Payload == runtime.NewString("SELECT * FROM products") {
-						params, err := runtime.ToMap(context.Background(), q.Options)
-						convey.So(err, convey.ShouldBeNil)
-
-						value, err := params.Get(context.Background(), runtime.NewString("c"))
-						if err == nil && value == runtime.NewString("phones") {
-							hasSQLQueryExpr = true
-						}
-					}
-
+		for _, q := range queryable.MockQueries() {
+			switch q.Kind {
+			case runtime.NewString("css"):
+				if q.Payload == runtime.NewString(".items") {
+					hasCSS = true
+				}
+				if q.Payload == runtime.NewString(".dynamic-param") {
+					hasCSSParam = true
+				}
+				if q.Payload == runtime.NewString(".dynamic-var") {
+					hasCSSVar = true
+				}
+			case runtime.NewString("text"):
+				if q.Payload == runtime.EmptyString {
+					hasText = true
+				}
+			case runtime.NewString("sql"):
+				if q.Payload == runtime.NewString("SELECT * FROM products") {
 					params, err := runtime.ToMap(context.Background(), q.Options)
-					convey.So(err, convey.ShouldBeNil)
+					if err != nil {
+						t.Fatalf("sql query expression params decode failed: %v", err)
+					}
 
 					value, err := params.Get(context.Background(), runtime.NewString("c"))
-					if err == nil && value == runtime.NewString("laptops") {
-						hasSQLParams = true
+					if err == nil && value == runtime.NewString("phones") {
+						hasSQLQueryExpr = true
 					}
 				}
-			}
 
-			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and payload %q", "css", ".items"), hasCSS, convey.ShouldBeTrue)
-			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and payload %q", "css", ".dynamic-param"), hasCSSParam, convey.ShouldBeTrue)
-			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and payload %q", "css", ".dynamic-var"), hasCSSVar, convey.ShouldBeTrue)
-			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and empty payload", "text"), hasText, convey.ShouldBeTrue)
-			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and params containing %q=%q", "sql", "c", "phones"), hasSQLQueryExpr, convey.ShouldBeTrue)
-			convey.SoMsg(fmt.Sprintf("Expected to receive a query with kind %q and params containing %q=%q", "sql", "c", "laptops"), hasSQLParams, convey.ShouldBeTrue)
-		})
+				params, err := runtime.ToMap(context.Background(), q.Options)
+				if err != nil {
+					t.Fatalf("sql params decode failed: %v", err)
+				}
+
+				value, err := params.Get(context.Background(), runtime.NewString("c"))
+				if err == nil && value == runtime.NewString("laptops") {
+					hasSQLParams = true
+				}
+			}
+		}
+
+		if !hasCSS {
+			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and payload %q", "css", ".items"))
+		}
+		if !hasCSSParam {
+			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and payload %q", "css", ".dynamic-param"))
+		}
+		if !hasCSSVar {
+			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and payload %q", "css", ".dynamic-var"))
+		}
+		if !hasText {
+			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and empty payload", "text"))
+		}
+		if !hasSQLQueryExpr {
+			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and params containing %q=%q", "sql", "c", "phones"))
+		}
+		if !hasSQLParams {
+			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and params containing %q=%q", "sql", "c", "laptops"))
+		}
 	})
 }
 
 func TestComplexQueries(t *testing.T) {
-	queryableDoc := newMockNode("doc")
-	queryableDB := &mockDBQueryable{}
-	queryableJSON := &mockJSONQueryable{}
+	queryableDoc := mock.NewNode("doc")
+	queryableDB := mock.NewDBQueryable()
+	queryableJSON := mock.NewJSONQueryable()
 
-	RunUseCases(t, []UseCase{
-		CaseArray(
+	RunSpecs(t, []spec.Spec{
+		Array(
 			"RETURN @doc\n    [~ css`.product`]\n    [~ css`.title`]\n    [~ text]",
 			[]any{"title"},
 			"Should chain apply operators",
 		),
-		CaseArray(
+		Array(
 			"RETURN\n  @db[~ sql`\n    SELECT name, price\n    FROM products\n    WHERE category = $c\n  `({ c: \"laptops\" })]",
 			[]any{
 				map[string]any{"name": "Laptop Pro", "price": 200},
 			},
 			"Should pass params to query",
 		),
-		CaseArray(
+		Array(
 			"RETURN @doc\n    [~ css`.product`]\n    [~ css`.title`]\n    [~ text]\n    [* FILTER . != \"\" RETURN UPPER(.)]",
 			[]any{"TITLE"},
 			"Should apply array operators after query chain",
 		),
-		CaseArray(
+		Array(
 			"RETURN @db[~ sql`SELECT name, price FROM products`]\n    [* FILTER .price > 100 RETURN .name]",
 			[]any{"Laptop Pro"},
 			"Should filter results from query",
 		),
-		CaseArray(
+		Array(
 			"RETURN @db[~ sql`SELECT name, price FROM products`]\n    [* FILTER .price > 100 RETURN .name]",
 			[]any{"Laptop Pro"},
 			"Should filter results from query using shorthand",
 		),
-		CaseArray(
+		Array(
 			"RETURN @doc[~ css`.product`]\n    [* RETURN .[~ css`.title`][~ text]]",
 			[]any{
 				[]any{"title"},
 			},
 			"Should apply query shorthand inside implicit current",
 		),
-		CaseArray(
+		Array(
 			"RETURN @doc\n    [~ css`.product`]\n    [* FILTER FIRST(.[~ css`.price`][~ text]) != \"\"]\n    [~ css`.title`]\n    [~ text]",
 			[]any{
 				[]any{"title"},
 			},
 			"Should combine query apply inside array filter",
 		),
-		CaseArray(
+		Array(
 			"RETURN @json\n    [~ jp`$.orders[*]`]\n    [* FILTER .total > 100]\n    [* RETURN {\n         id: .id,\n         items: .items[* RETURN .name]\n       }]",
 			[]any{
 				map[string]any{
@@ -365,15 +160,15 @@ func TestComplexQueries(t *testing.T) {
 			},
 			"Should project nested array operators",
 		),
-		CaseArray(
+		Array(
 			"RETURN @doc\n    [~ css`.product`]\n    [* RETURN {\n         title: FIRST(.[~ css`.title`][~ text]),\n         price: FIRST(.[~ css`.price`][~ text])\n       }]",
 			[]any{
 				map[string]any{"title": "title", "price": "price"},
 			},
 			"Should support nested apply inside projections",
 		),
-		CaseArray("RETURN @doc[~ nil`foo`]", []any{}, "Should return empty array for queryable that returns empty list"),
-		SkipCaseArray("RETURN @doc[~ nil`foo`]?.[*].name", []any{}, "Should return empty array for queryable that returns empty list"),
+		Array("RETURN @doc[~ nil`foo`]", []any{}, "Should return empty array for queryable that returns empty list"),
+		Array("RETURN @doc[~ nil`foo`]?.[*].name", []any{}, "Should return empty array for queryable that returns empty list"),
 	}, vm.WithParams(map[string]runtime.Value{
 		"doc":  queryableDoc,
 		"db":   queryableDB,
@@ -382,35 +177,30 @@ func TestComplexQueries(t *testing.T) {
 }
 
 func TestQueryableListInput(t *testing.T) {
-	queryableDoc := newMockNode("doc")
-	queryableNil := &nilListQueryable{}
-	queryableA := &testQueryable{
-		result: runtime.NewArrayWith(runtime.NewString("a1"), runtime.NewString("a2")),
-	}
-	queryableB := &testQueryable{
-		result: runtime.NewArrayWith(runtime.NewString("b1")),
-	}
+	queryableDoc := mock.NewNode("doc")
+	queryableNil := mock.NewNilListQueryable()
+	queryableA := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("a1"), runtime.NewString("a2")))
+	queryableB := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("b1")))
 
-	RunUseCases(t, []UseCase{
-		CaseArray(
+	RunSpecs(t, []spec.Spec{
+		Array(
 			"RETURN [@qA, @qB][~ text]",
 			[]any{"a1", "a2", "b1"},
 			"Should apply query to list inputs and flatten results",
 		),
-		CaseArray(
+		Array(
 			"RETURN [@qNil, @qA][~ text]",
 			[]any{"a1", "a2"},
 			"Should ignore nil list results when flattening",
 		),
-		CaseArray(
+		Array(
 			"RETURN [@doc, @doc][~ css`.title`][~ text]",
 			[]any{"title", "title"},
 			"Should chain queries over list inputs",
 		),
-		RuntimeErrorCase(
-			"RETURN [@qA, 1][~ text]",
-			ExpectedRuntimeError{Message: "Invalid type"},
-			"Should fail when list element is not queryable",
+		spec.NewSpec("RETURN [@qA, 1][~ text]", "Should fail when list element is not queryable").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Message: "Invalid type"},
 		),
 	}, vm.WithParams(map[string]runtime.Value{
 		"doc":  queryableDoc,
@@ -421,32 +211,38 @@ func TestQueryableListInput(t *testing.T) {
 }
 
 func TestQueryableModifiers(t *testing.T) {
-	queryableMany := &testQueryable{
-		result: runtime.NewArrayWith(runtime.NewString("a"), runtime.NewString("b")),
-	}
-	queryableOne := &testQueryable{
-		result: runtime.NewArrayWith(runtime.NewString("only")),
-	}
-	queryableEmpty := &testQueryable{
-		result: runtime.NewArray(0),
-	}
+	queryableMany := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("a"), runtime.NewString("b")))
+	queryableOne := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("only")))
+	queryableEmpty := mock.NewQueryable(runtime.NewArray(0))
 
-	RunUseCases(t, []UseCase{
-		Case("RETURN QUERY EXISTS `.items` IN @many USING css", true, "EXISTS should return true for non-empty result"),
-		Case("RETURN QUERY EXISTS `.items` IN @empty USING css", false, "EXISTS should return false for empty result"),
-		Case("RETURN QUERY COUNT `.items` IN @many USING css", 2, "COUNT should return result length"),
-		Case("RETURN QUERY COUNT `.items` IN @empty USING css", 0, "COUNT should return zero for empty result"),
-		Case("RETURN QUERY ANY `.items` IN @many USING css", "a", "ANY should return first result"),
-		CaseNil("RETURN QUERY ANY `.items` IN @empty USING css", "ANY should return NONE for empty result"),
-		Case("RETURN QUERY VALUE `.items` IN @many USING css", "a", "VALUE should return first result"),
-		RuntimeErrorCase("RETURN QUERY VALUE `.items` IN @empty USING css", ExpectedRuntimeError{Contains: []string{"QUERY VALUE expected at least one match"}}, "VALUE should fail for empty result"),
-		Case("RETURN QUERY ONE `.items` IN @one USING css", "only", "ONE should return the only result"),
-		RuntimeErrorCase("RETURN QUERY ONE `.items` IN @empty USING css", ExpectedRuntimeError{Contains: []string{"QUERY ONE expected exactly one match"}}, "ONE should fail for empty result"),
-		RuntimeErrorCase("RETURN QUERY ONE `.items` IN @many USING css", ExpectedRuntimeError{Contains: []string{"QUERY ONE expected exactly one match"}}, "ONE should fail for multiple results"),
-		CaseNil("LET maybe = (QUERY VALUE `.items` IN @empty USING css)?\nRETURN maybe", "VALUE assertion should be catchable with optional operator"),
-		CaseNil("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe", "ONE assertion should be catchable for empty result with optional operator"),
-		CaseNil("LET maybe = (QUERY ONE `.items` IN @many USING css)?\nRETURN maybe", "ONE assertion should be catchable for multi result with optional operator"),
-		RuntimeErrorCase("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe.foo", ExpectedRuntimeError{Contains: []string{"Cannot read property", "\"foo\""}}, "Catch should not swallow the first instruction after a guarded QUERY ONE"),
+	RunSpecs(t, []spec.Spec{
+		S("RETURN QUERY EXISTS `.items` IN @many USING css", true, "EXISTS should return true for non-empty result"),
+		S("RETURN QUERY EXISTS `.items` IN @empty USING css", false, "EXISTS should return false for empty result"),
+		S("RETURN QUERY COUNT `.items` IN @many USING css", 2, "COUNT should return result length"),
+		S("RETURN QUERY COUNT `.items` IN @empty USING css", 0, "COUNT should return zero for empty result"),
+		S("RETURN QUERY ANY `.items` IN @many USING css", "a", "ANY should return first result"),
+		Nil("RETURN QUERY ANY `.items` IN @empty USING css", "ANY should return NONE for empty result"),
+		S("RETURN QUERY VALUE `.items` IN @many USING css", "a", "VALUE should return first result"),
+		spec.NewSpec("RETURN QUERY VALUE `.items` IN @empty USING css", "VALUE should fail for empty result").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Contains: []string{"QUERY VALUE expected at least one match"}},
+		),
+		S("RETURN QUERY ONE `.items` IN @one USING css", "only", "ONE should return the only result"),
+		spec.NewSpec("RETURN QUERY ONE `.items` IN @empty USING css", "ONE should fail for empty result").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Contains: []string{"QUERY ONE expected exactly one match"}},
+		),
+		spec.NewSpec("RETURN QUERY ONE `.items` IN @many USING css", "ONE should fail for multiple results").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Contains: []string{"QUERY ONE expected exactly one match"}},
+		),
+		Nil("LET maybe = (QUERY VALUE `.items` IN @empty USING css)?\nRETURN maybe", "VALUE assertion should be catchable with optional operator"),
+		Nil("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe", "ONE assertion should be catchable for empty result with optional operator"),
+		Nil("LET maybe = (QUERY ONE `.items` IN @many USING css)?\nRETURN maybe", "ONE assertion should be catchable for multi result with optional operator"),
+		spec.NewSpec("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe.foo", "Catch should not swallow the first instruction after a guarded QUERY ONE").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Contains: []string{"Cannot read property", "\"foo\""}},
+		),
 	}, vm.WithParams(map[string]runtime.Value{
 		"many":  queryableMany,
 		"one":   queryableOne,

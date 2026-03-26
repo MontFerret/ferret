@@ -1,19 +1,19 @@
-package optimization_test_test
+package optimization_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	"github.com/MontFerret/ferret/v2/test/spec/assert"
 )
 
 func TestOpExists(t *testing.T) {
 	tests := []struct {
 		program  *bytecode.Program
 		name     string
-		expected runtime.Boolean
+		expected bool
 	}{
 		{
 			name: "none is false",
@@ -22,7 +22,7 @@ func TestOpExists(t *testing.T) {
 				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
 				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
-			expected: runtime.False,
+			expected: false,
 		},
 		{
 			name: "empty string is false",
@@ -30,7 +30,7 @@ func TestOpExists(t *testing.T) {
 				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
 				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
-			expected: runtime.False,
+			expected: false,
 		},
 		{
 			name: "non-empty string is true",
@@ -38,7 +38,7 @@ func TestOpExists(t *testing.T) {
 				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
 				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
-			expected: runtime.True,
+			expected: true,
 		},
 		{
 			name: "empty array is false",
@@ -46,7 +46,7 @@ func TestOpExists(t *testing.T) {
 				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
 				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
-			expected: runtime.False,
+			expected: false,
 		},
 		{
 			name: "non-empty array is true",
@@ -54,7 +54,7 @@ func TestOpExists(t *testing.T) {
 				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
 				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
-			expected: runtime.True,
+			expected: true,
 		},
 		{
 			name: "empty object is false",
@@ -62,7 +62,7 @@ func TestOpExists(t *testing.T) {
 				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
 				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
-			expected: runtime.False,
+			expected: false,
 		},
 		{
 			name: "non-empty object is true",
@@ -70,7 +70,7 @@ func TestOpExists(t *testing.T) {
 				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
 				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
-			expected: runtime.True,
+			expected: true,
 		},
 		{
 			name: "non-measurable value is true",
@@ -78,35 +78,16 @@ func TestOpExists(t *testing.T) {
 				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
 				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
-			expected: runtime.True,
+			expected: true,
 		},
 	}
 
+	specs := make([]spec.Spec, 0, len(tests))
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			instance, err := vm.New(test.program)
-			if err != nil {
-				t.Fatalf("unexpected constructor error: %v", err)
-			}
-
-			out, err := instance.Run(context.Background(), vm.NewDefaultEnvironment())
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-			defer func() {
-				_ = out.Close()
-			}()
-
-			val, ok := out.Root().(runtime.Boolean)
-			if !ok {
-				t.Fatalf("expected runtime.Boolean, got %T", out.Root())
-			}
-
-			if val != test.expected {
-				t.Fatalf("expected %v, got %v", test.expected, val)
-			}
-		})
+		specs = append(specs, spec.NewSpecWith(spec.NewProgramInput(test.program), test.name).Expect().Exec(assert.ShouldEqual, test.expected))
 	}
+
+	runProgramSpecs(t, specs)
 }
 
 func programWithConst(value runtime.Value, ops ...bytecode.Instruction) *bytecode.Program {

@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func TestSyntaxErrorsArrayOperators(t *testing.T) {
-	RunUseCases(t, []UseCase{
-		ErrorCase(
+	RunSpecs(t, []spec.Spec{
+		Failure(
 			`RETURN doc[~]`,
 			E{
 				Kind:    parserd.SyntaxError,
@@ -17,7 +19,7 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 			},
 			"Missing query literal after '~'",
 		),
-		ErrorCase(
+		Failure(
 			`RETURN doc[~ 'x']`,
 			E{
 				Kind:    parserd.SyntaxError,
@@ -26,7 +28,7 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 			},
 			"Missing query type before literal",
 		),
-		ErrorCase(
+		Failure(
 			`LET doc = {} RETURN doc[~ css()]`,
 			E{
 				Kind:    parserd.SyntaxError,
@@ -35,7 +37,7 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 			},
 			"Missing query string after type",
 		),
-		ErrorCase(
+		Failure(
 			`LET doc = {} RETURN doc[~ css"x"`,
 			E{
 				Kind:    parserd.SyntaxError,
@@ -44,7 +46,7 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 			},
 			"Missing query type before query literal",
 		),
-		ErrorCase(
+		Failure(
 			`RETURN [1, 2][* RETURN]`,
 			E{
 				Kind:    parserd.SyntaxError,
@@ -53,7 +55,7 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 			},
 			"Missing inline RETURN expression",
 		),
-		ErrorCase(
+		Failure(
 			`RETURN [1, 2][? NONE]`,
 			E{
 				Kind:    parserd.SyntaxError,
