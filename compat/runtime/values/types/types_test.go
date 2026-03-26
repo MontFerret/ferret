@@ -20,7 +20,7 @@ func TestTypeConstants_NotNil(t *testing.T) {
 		{types.DateTime, "DateTime"},
 		{types.Array, "Array"},
 		{types.Object, "Object"},
-		{types.Binary, "binary"},
+		{types.Binary, "Binary"},
 	}
 
 	for _, tc := range all {
@@ -80,8 +80,8 @@ func TestCompare(t *testing.T) {
 		{types.Int, types.Float, "Int < Float", -1},
 		{types.Float, types.String, "Float < String", -1},
 		{types.String, types.DateTime, "String < DateTime", -1},
-		{types.DateTime, types.Binary, "DateTime < binary", -1},
-		{types.Binary, types.Array, "binary < Array", -1},
+		{types.DateTime, types.Binary, "DateTime < Binary", -1},
+		{types.Binary, types.Array, "Binary < Array", -1},
 		{types.Array, types.Object, "Array < Object", -1},
 		{types.Object, types.None, "Object > None", 1},
 		{types.Float, types.Boolean, "Float > Boolean", 1},

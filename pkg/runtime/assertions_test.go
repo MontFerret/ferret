@@ -9,7 +9,7 @@ import (
 )
 
 func TestAssertions(t *testing.T) {
-	Convey("PostRun Builder", t, func() {
+	Convey("Assertion Builder", t, func() {
 
 		Convey("AssertString", func() {
 			Convey("Should pass for String type", func() {
@@ -210,13 +210,13 @@ func TestAssertions(t *testing.T) {
 		})
 
 		Convey("AssertBinary", func() {
-			Convey("Should pass for binary type", func() {
+			Convey("Should pass for Binary type", func() {
 				bin := runtime.NewBinary([]byte("test"))
 				err := runtime.AssertBinary(bin)
 				So(err, ShouldBeNil)
 			})
 
-			Convey("Should fail for non-binary types", func() {
+			Convey("Should fail for non-Binary types", func() {
 				err := runtime.AssertBinary(runtime.NewString("test"))
 				So(err, ShouldNotBeNil)
 
@@ -259,7 +259,7 @@ func TestAssertions(t *testing.T) {
 				err = runtime.AssertMeasurable(str)
 				So(err, ShouldBeNil)
 
-				// binary is Measurable
+				// Binary is Measurable
 				bin := runtime.NewBinary([]byte("test"))
 				err = runtime.AssertMeasurable(bin)
 				So(err, ShouldBeNil)

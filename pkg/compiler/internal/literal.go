@@ -108,7 +108,7 @@ func parseStringLiteral(ctx fql.IStringLiteralContext) runtime.String {
 						b.WriteString(c2)
 					}
 
-					// SkipInfo the next character as it's part of the escape sequence
+					// Skip the next character as it's part of the escape sequence
 					i++
 				default:
 					// Add regular characters as-is

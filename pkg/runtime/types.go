@@ -33,7 +33,7 @@ var (
 		_, ok := v.(ObjectLike)
 		return ok
 	})
-	TypeBinary = newBuiltinType("binary", func(v Value) bool {
+	TypeBinary = newBuiltinType("Binary", func(v Value) bool {
 		_, ok := v.(Binary)
 		return ok
 	})

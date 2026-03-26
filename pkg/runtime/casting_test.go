@@ -143,14 +143,14 @@ func TestCasting(t *testing.T) {
 		})
 
 		Convey("CastBinary", func() {
-			Convey("Should cast binary to binary", func() {
+			Convey("Should cast Binary to Binary", func() {
 				binary := runtime.NewBinary([]byte("test"))
 				result, err := runtime.CastBinary(binary)
 				So(err, ShouldBeNil)
 				So(result, ShouldEqual, binary)
 			})
 
-			Convey("Should return error for non-binary types", func() {
+			Convey("Should return error for non-Binary types", func() {
 				_, err := runtime.CastBinary(runtime.NewString("test"))
 				So(err, ShouldNotBeNil)
 

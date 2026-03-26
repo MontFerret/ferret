@@ -12,7 +12,7 @@ import (
 // @param {String} params.url - Target url
 // @param {Any} params.body - Request data
 // @param {Map} [params.headers] - HTTP headers
-// @return {binary} - Response in binary format
+// @return {Binary} - Response in binary format
 func POST(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	return execMethod(ctx, h.MethodPost, arg)
 }
