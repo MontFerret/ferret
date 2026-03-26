@@ -8,12 +8,12 @@ import (
 	"github.com/MontFerret/ferret/v2/test/spec"
 )
 
-func RunSpecsWith(t *testing.T, name string, c *compiler.Compiler, specs []spec.Spec) {
+func RunSpecsWith(t *testing.T, level compiler.OptimizationLevel, specs []spec.Spec) {
 	t.Helper()
 
 	runner := &spec.Runner{
-		Name:     name,
-		Compiler: c,
+		Name:     fmt.Sprintf("Compiler/O%d", level),
+		Compiler: compiler.New(compiler.WithOptimizationLevel(level)),
 	}
 
 	runner.Run(t, specs)
@@ -21,7 +21,8 @@ func RunSpecsWith(t *testing.T, name string, c *compiler.Compiler, specs []spec.
 
 func RunSpecs(t *testing.T, useCases []spec.Spec) {
 	t.Helper()
-	RunSpecsWith(t, "Compiler/O0", compiler.New(compiler.WithOptimizationLevel(compiler.O0)), useCases)
+
+	RunSpecsWith(t, compiler.O0, useCases)
 }
 
 func RunSpecsLevels(t *testing.T, specs []spec.Spec, levels ...compiler.OptimizationLevel) {
@@ -34,8 +35,7 @@ func RunSpecsLevels(t *testing.T, specs []spec.Spec, levels ...compiler.Optimiza
 	for _, level := range levels {
 		RunSpecsWith(
 			t,
-			fmt.Sprintf("Compiler/O%d", level),
-			compiler.New(compiler.WithOptimizationLevel(level)),
+			level,
 			specs,
 		)
 	}
