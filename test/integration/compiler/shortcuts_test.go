@@ -56,7 +56,7 @@ func RunSpecsLevels(t *testing.T, specs []spec.Spec, levels ...compiler.Optimiza
 }
 
 func ProgramCheck(expression string, fn func(*bytecode.Program) error, desc ...string) spec.Spec {
-	return spec.New(expression, desc...).Expect().Compile(assert.NewUnaryAssertion(func(actual any) error {
+	return spec.NewSpec(expression, desc...).Expect().Compile(assert.NewUnaryAssertion(func(actual any) error {
 		prog, ok := actual.(*bytecode.Program)
 		if !ok {
 			return fmt.Errorf("expected *bytecode.Program, got %T", actual)

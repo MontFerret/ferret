@@ -8,7 +8,7 @@ import (
 
 func TestUdfNestedLetReturnParses(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
-		spec.New(
+		spec.NewSpec(
 			`
 FUNC outer(a) (
   FUNC inner(b) (

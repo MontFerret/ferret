@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
@@ -20,9 +21,22 @@ func RunSequencesWith(t *testing.T, name string, c *compiler.Compiler, sequences
 	runner.Run(t, sequences)
 }
 
+func RunSequenceFactory(t *testing.T, factory func() []spec.Sequence, opts ...vm.EnvironmentOption) {
+	t.Helper()
+
+	levels := []compiler.OptimizationLevel{compiler.O0, compiler.O1}
+
+	for _, level := range levels {
+		RunSequencesWith(t, fmt.Sprintf("VM/O%d", level), compiler.New(compiler.WithOptimizationLevel(level)), factory(), opts...)
+	}
+}
+
 func RunSequences(t *testing.T, sequences []spec.Sequence, opts ...vm.EnvironmentOption) {
 	t.Helper()
 
-	RunSequencesWith(t, "VM/O0", compiler.New(compiler.WithOptimizationLevel(compiler.O0)), sequences, opts...)
-	RunSequencesWith(t, "VM/O1", compiler.New(compiler.WithOptimizationLevel(compiler.O1)), sequences, opts...)
+	levels := []compiler.OptimizationLevel{compiler.O0, compiler.O1}
+
+	for _, level := range levels {
+		RunSequencesWith(t, "VM/O%d", compiler.New(compiler.WithOptimizationLevel(level)), sequences, opts...)
+	}
 }

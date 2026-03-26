@@ -13,7 +13,7 @@ import (
 
 func TestCollectAggregateRequiresAtLeastOneArgument(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
-		spec.New(`
+		spec.NewSpec(`
 		LET users = [1, 2, 3]
 		FOR u IN users
 			COLLECT AGGREGATE total = COUNT()

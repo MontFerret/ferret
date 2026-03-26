@@ -20,9 +20,9 @@ func Registers(expression string, num int, output any, desc ...string) spec.Spec
 }
 
 func RegistersArray(expression string, num int, output []any, desc ...string) spec.Spec {
-	return spec.Compose(spec.New(expression, desc...), compile.Registers(expression, num), exec.Array(expression, output))
+	return spec.Compose(spec.NewSpec(expression, desc...), compile.Registers(expression, num), exec.Array(expression, output))
 }
 
 func RegistersObject(expression string, num int, output map[string]any, desc ...string) spec.Spec {
-	return spec.Compose(spec.New(expression, desc...), compile.Registers(expression, num), exec.Object(expression, output))
+	return spec.Compose(spec.NewSpec(expression, desc...), compile.Registers(expression, num), exec.Object(expression, output))
 }

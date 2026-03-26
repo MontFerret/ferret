@@ -9,21 +9,21 @@ import (
 
 func TestForDoWhileCompiles(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
-		spec.New(
+		spec.NewSpec(
 			`
 FOR DO WHILE false
 	RETURN 1
 `,
 			"anonymous loop variable",
 		),
-		spec.New(
+		spec.NewSpec(
 			`
 FOR i DO WHILE false
 	RETURN i
 `,
 			"named loop variable",
 		),
-		spec.New(
+		spec.NewSpec(
 			`
 FOR _ DO WHILE false
 	RETURN 1

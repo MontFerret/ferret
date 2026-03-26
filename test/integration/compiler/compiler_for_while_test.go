@@ -9,21 +9,21 @@ import (
 
 func TestForWhile(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
-		spec.New(
+		spec.NewSpec(
 			`
 FOR WHILE UNTIL(5)
 	RETURN 1
 `,
 			"anonymous loop variable",
 		),
-		spec.New(
+		spec.NewSpec(
 			`
 FOR i WHILE UNTIL(5)
 	RETURN i
 `,
 			"named loop variable",
 		),
-		spec.New(
+		spec.NewSpec(
 			`
 FOR _ WHILE UNTIL(2)
 	RETURN 1

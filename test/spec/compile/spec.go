@@ -22,23 +22,23 @@ type (
 )
 
 func ByteCode(expression string, expected []bytecode.Instruction, desc ...string) spec.Spec {
-	return spec.New(expression, desc...).Expect().Compile(ShouldHaveSameBytecode, &bytecode.Program{
+	return spec.NewSpec(expression, desc...).Expect().Compile(ShouldHaveSameBytecode, &bytecode.Program{
 		Bytecode: expected,
 	})
 }
 
 func Opcode[T OpcodeExpectation](expression string, expectation T, desc ...string) spec.Spec {
-	return spec.New(expression, desc...).Expect().Compile(ShouldContainOpcode, expectation)
+	return spec.NewSpec(expression, desc...).Expect().Compile(ShouldContainOpcode, expectation)
 }
 
 func Registers(expression string, num int, desc ...string) spec.Spec {
-	return spec.New(expression, desc...).Expect().Compile(ShouldHaveRegisters, num)
+	return spec.NewSpec(expression, desc...).Expect().Compile(ShouldHaveRegisters, num)
 }
 
 func Failure(expression string, expected assert.ExpectedError, desc ...string) spec.Spec {
-	return spec.New(expression, desc...).Expect().CompileError(ShouldBeCompilationError, expected)
+	return spec.NewSpec(expression, desc...).Expect().CompileError(ShouldBeCompilationError, expected)
 }
 
 func MultiFailure(expression string, expected assert.ExpectedMultiError, desc ...string) spec.Spec {
-	return spec.New(expression, desc...).Expect().CompileError(ShouldBeCompilationError, expected)
+	return spec.NewSpec(expression, desc...).Expect().CompileError(ShouldBeCompilationError, expected)
 }

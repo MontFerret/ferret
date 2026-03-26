@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -10,13 +11,19 @@ type Spec struct {
 	Exec    ExecInfo
 }
 
-func New(expression string, desc ...string) Spec {
+func NewSpec(expression string, desc ...string) Spec {
 	return Spec{
 		Base: NewBaseSpec(expression, desc...),
 	}
 }
 
-func NewWith(input Input, desc ...string) Spec {
+func NewProgramSpec(expression *bytecode.Program, desc ...string) Spec {
+	return Spec{
+		Base: NewBaseSpecWith(NewProgramInput(expression), desc...),
+	}
+}
+
+func NewSpecWith(input Input, desc ...string) Spec {
 	return Spec{
 		Base: NewBaseSpecWith(input, desc...),
 	}

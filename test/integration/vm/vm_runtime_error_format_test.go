@@ -13,7 +13,7 @@ import (
 
 func TestRuntimeErrorFormatting(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
-		spec.New(
+		spec.NewSpec(
 			"LET numerator = 10\nRETURN numerator / 0",
 			"script.fql",
 		).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
@@ -27,7 +27,7 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 			},
 			NotContains: []string{"~"},
 		}),
-		spec.New(
+		spec.NewSpec(
 			"LET obj = {}\nRETURN obj.foo.bar",
 			"obj.fql",
 		).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
@@ -39,7 +39,7 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 			},
 			NotContains: []string{"Caused by:"},
 		}),
-		spec.New(
+		spec.NewSpec(
 			`
 FUNC Inner() => FAIL()
 FUNC Outer() (

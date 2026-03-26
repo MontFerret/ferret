@@ -82,7 +82,7 @@ func TestOpConcat(t *testing.T) {
 
 	specs := make([]spec.Spec, 0, len(testCases))
 	for _, tc := range testCases {
-		specs = append(specs, spec.NewWith(spec.NewProgramInput(buildConcatProgram(tc.values, tc.startReg, tc.count)), tc.name).Expect().Exec(assert.ShouldEqual, tc.expected))
+		specs = append(specs, spec.NewSpecWith(spec.NewProgramInput(buildConcatProgram(tc.values, tc.startReg, tc.count)), tc.name).Expect().Exec(assert.ShouldEqual, tc.expected))
 	}
 
 	runProgramSpecs(t, specs)
@@ -137,7 +137,7 @@ func TestOpAddConst(t *testing.T) {
 			Registers: 3,
 		}
 
-		specs = append(specs, spec.NewWith(spec.NewProgramInput(program), tc.name).Expect().Exec(assert.ShouldEqual, tc.expected))
+		specs = append(specs, spec.NewSpecWith(spec.NewProgramInput(program), tc.name).Expect().Exec(assert.ShouldEqual, tc.expected))
 	}
 
 	runProgramSpecs(t, specs)

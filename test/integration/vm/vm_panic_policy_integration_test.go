@@ -13,9 +13,9 @@ import (
 )
 
 func TestPanicPolicyRecoversPanics(t *testing.T) {
-	runSpecsLevels(t, func() []spec.Spec {
+	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
-			spec.New("RETURN PANIC_FN()").
+			spec.NewSpec("RETURN PANIC_FN()").
 				Env(vm.WithFunction("PANIC_FN", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 					panic("panic in host function")
 				})).
@@ -25,7 +25,7 @@ func TestPanicPolicyRecoversPanics(t *testing.T) {
 }
 
 func TestPanicPolicyPropagatesPanics(t *testing.T) {
-	runSequencesLevels(t, func() []spec.Sequence {
+	RunSequenceFactory(t, func() []spec.Sequence {
 		return []spec.Sequence{
 			{
 				Base: spec.NewBaseSpec("RETURN PANIC_FN()"),
@@ -49,9 +49,9 @@ func TestPanicPolicyPropagatesPanics(t *testing.T) {
 }
 
 func TestPanicPolicyPropagateStillWrapsReturnedErrors(t *testing.T) {
-	runSpecsLevels(t, func() []spec.Spec {
+	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
-			spec.New("RETURN FAIL_FN()").
+			spec.NewSpec("RETURN FAIL_FN()").
 				VM(vm.WithPanicPolicy(vm.PanicPropagate)).
 				Env(vm.WithFunction("FAIL_FN", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 					return runtime.None, errors.New("boom")
@@ -62,9 +62,9 @@ func TestPanicPolicyPropagateStillWrapsReturnedErrors(t *testing.T) {
 }
 
 func TestRecoveredPanicRuntimeErrorDoesNotLeakGoStackTrace(t *testing.T) {
-	runSpecsLevels(t, func() []spec.Spec {
+	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
-			spec.New("RETURN PANIC_FN()").
+			spec.NewSpec("RETURN PANIC_FN()").
 				Env(vm.WithFunction("PANIC_FN", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 					panic("panic in host function")
 				})).

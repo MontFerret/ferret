@@ -84,7 +84,7 @@ func TestOpExists(t *testing.T) {
 
 	specs := make([]spec.Spec, 0, len(tests))
 	for _, test := range tests {
-		specs = append(specs, spec.NewWith(spec.NewProgramInput(test.program), test.name).Expect().Exec(assert.ShouldEqual, test.expected))
+		specs = append(specs, spec.NewSpecWith(spec.NewProgramInput(test.program), test.name).Expect().Exec(assert.ShouldEqual, test.expected))
 	}
 
 	runProgramSpecs(t, specs)

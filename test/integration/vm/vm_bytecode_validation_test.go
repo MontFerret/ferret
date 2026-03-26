@@ -9,6 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	"github.com/MontFerret/ferret/v2/test/spec/assert"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestRejectsUnsupportedBytecodeVersion(t *testing.T) {
@@ -23,8 +24,8 @@ func TestRejectsUnsupportedBytecodeVersion(t *testing.T) {
 		Registers:  1,
 	}
 
-	runProgramSpecs(t, []spec.Spec{
-		spec.NewWith(spec.NewProgramInput(program), "unsupported ISA version").
+	RunProgramSpecs(t, []spec.Spec{
+		spec.NewSpecWith(spec.NewProgramInput(program), "unsupported ISA version").
 			Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
 			err, ok := actual.(error)
 			if !ok || err == nil {
@@ -48,8 +49,8 @@ func TestFailsOnUnknownOpcode(t *testing.T) {
 		Registers:  1,
 	}
 
-	runProgramSpecs(t, []spec.Spec{
-		spec.NewWith(spec.NewProgramInput(program), "unknown opcode").
+	RunProgramSpecs(t, []spec.Spec{
+		spec.NewSpecWith(spec.NewProgramInput(program), "unknown opcode").
 			Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
 			err, ok := actual.(error)
 			if !ok || err == nil {

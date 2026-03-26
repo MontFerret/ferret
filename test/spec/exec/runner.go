@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
@@ -19,6 +20,27 @@ func RunSpecsWith(t *testing.T, name string, c *compiler.Compiler, specs []spec.
 }
 
 func RunSpecs(t *testing.T, specs []spec.Spec, opts ...vm.EnvironmentOption) {
-	RunSpecsWith(t, "VM/O0", compiler.New(compiler.WithOptimizationLevel(compiler.O0)), specs, opts...)
-	RunSpecsWith(t, "VM/O1", compiler.New(compiler.WithOptimizationLevel(compiler.O1)), specs, opts...)
+	t.Helper()
+
+	levels := []compiler.OptimizationLevel{compiler.O0, compiler.O1}
+
+	for _, level := range levels {
+		RunSpecsWith(t, fmt.Sprintf("VM/O%d", level), compiler.New(compiler.WithOptimizationLevel(level)), specs, opts...)
+	}
+}
+
+func RunSpecFactory(t *testing.T, factory func() []spec.Spec, opts ...vm.EnvironmentOption) {
+	t.Helper()
+
+	levels := []compiler.OptimizationLevel{compiler.O0, compiler.O1}
+
+	for _, level := range levels {
+		RunSpecsWith(t, fmt.Sprintf("VM/O%d", level), compiler.New(compiler.WithOptimizationLevel(level)), factory(), opts...)
+	}
+}
+
+func RunProgramSpecs(t *testing.T, specs []spec.Spec, opts ...vm.EnvironmentOption) {
+	t.Helper()
+
+	RunSpecsWith(t, "VM/Program", compiler.New(compiler.WithOptimizationLevel(compiler.O0)), specs, opts...)
 }

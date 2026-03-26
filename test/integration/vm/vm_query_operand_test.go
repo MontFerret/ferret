@@ -12,6 +12,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	"github.com/MontFerret/ferret/v2/test/spec/assert"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 type integrationQueryStub struct {
@@ -70,8 +71,8 @@ func TestApplyQueryConstantSource_Strict(t *testing.T) {
 		result: runtime.NewArrayWith(runtime.NewString("ok")),
 	}
 
-	runProgramSpecs(t, []spec.Spec{
-		spec.NewWith(spec.NewProgramInput(programWithApplyQueryConstSource(stub)), "strict constant source").
+	RunProgramSpecs(t, []spec.Spec{
+		spec.NewProgramSpec(programWithApplyQueryConstSource(stub), "strict constant source").
 			Expect().Exec(assert.NewUnaryAssertion(func(actual any) error {
 			if err := assert.Equal(actual, []any{"ok"}); err != nil {
 				return err
@@ -99,8 +100,8 @@ func TestApplyQueryConstantSource_FastMode_NoPanic(t *testing.T) {
 		result: runtime.NewArrayWith(runtime.NewString("ok")),
 	}
 
-	runProgramSpecs(t, []spec.Spec{
-		spec.NewWith(spec.NewProgramInput(programWithApplyQueryConstSource(stub)), "fast constant source").
+	RunProgramSpecs(t, []spec.Spec{
+		spec.NewProgramSpec(programWithApplyQueryConstSource(stub), "fast constant source").
 			VM(vm.WithPanicPolicy(vm.PanicPropagate)).
 			Expect().Exec(assert.NewUnaryAssertion(func(actual any) error {
 			if err := assert.Equal(actual, []any{"ok"}); err != nil {
@@ -117,8 +118,8 @@ func TestApplyQueryConstantSource_FastMode_NoPanic(t *testing.T) {
 }
 
 func TestApplyQueryConstantSource_NonQueryable_NoPanicTypeError(t *testing.T) {
-	runProgramSpecs(t, []spec.Spec{
-		spec.NewWith(spec.NewProgramInput(programWithApplyQueryConstSource(runtime.NewInt(1))), "strict non-queryable").
+	RunProgramSpecs(t, []spec.Spec{
+		spec.NewProgramSpec(programWithApplyQueryConstSource(runtime.NewInt(1)), "strict non-queryable").
 			Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
 			err, ok := actual.(error)
 			if !ok || err == nil {
@@ -136,7 +137,7 @@ func TestApplyQueryConstantSource_NonQueryable_NoPanicTypeError(t *testing.T) {
 
 			return nil
 		})),
-		spec.NewWith(spec.NewProgramInput(programWithApplyQueryConstSource(runtime.NewInt(1))), "fast non-queryable").
+		spec.NewSpecWith(spec.NewProgramInput(programWithApplyQueryConstSource(runtime.NewInt(1))), "fast non-queryable").
 			VM(vm.WithPanicPolicy(vm.PanicPropagate)).
 			Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
 			err, ok := actual.(error)

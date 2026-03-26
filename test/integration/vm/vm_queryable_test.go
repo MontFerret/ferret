@@ -24,7 +24,7 @@ func TestQueryable(t *testing.T) {
 		Array("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", []any{"ok"}, "Should apply query literal with params"),
 		Array("RETURN QUERY `SELECT * FROM products` IN @doc USING sql WITH { c: \"phones\" }", []any{"ok"}, "Should apply query expression with options"),
 		Array("RETURN @doc[~ text]", []any{"ok"}, "Should apply query literal with no string payload"),
-		spec.New("RETURN @val[~ css`x`]").Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+		spec.NewSpec("RETURN @val[~ css`x`]").Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Message: "Invalid type",
 		}),
 	}, vm.WithParams(map[string]runtime.Value{
@@ -198,7 +198,7 @@ func TestQueryableListInput(t *testing.T) {
 			[]any{"title", "title"},
 			"Should chain queries over list inputs",
 		),
-		spec.New("RETURN [@qA, 1][~ text]", "Should fail when list element is not queryable").Expect().ExecError(
+		spec.NewSpec("RETURN [@qA, 1][~ text]", "Should fail when list element is not queryable").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Message: "Invalid type"},
 		),
@@ -223,23 +223,23 @@ func TestQueryableModifiers(t *testing.T) {
 		S("RETURN QUERY ANY `.items` IN @many USING css", "a", "ANY should return first result"),
 		Nil("RETURN QUERY ANY `.items` IN @empty USING css", "ANY should return NONE for empty result"),
 		S("RETURN QUERY VALUE `.items` IN @many USING css", "a", "VALUE should return first result"),
-		spec.New("RETURN QUERY VALUE `.items` IN @empty USING css", "VALUE should fail for empty result").Expect().ExecError(
+		spec.NewSpec("RETURN QUERY VALUE `.items` IN @empty USING css", "VALUE should fail for empty result").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Contains: []string{"QUERY VALUE expected at least one match"}},
 		),
 		S("RETURN QUERY ONE `.items` IN @one USING css", "only", "ONE should return the only result"),
-		spec.New("RETURN QUERY ONE `.items` IN @empty USING css", "ONE should fail for empty result").Expect().ExecError(
+		spec.NewSpec("RETURN QUERY ONE `.items` IN @empty USING css", "ONE should fail for empty result").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Contains: []string{"QUERY ONE expected exactly one match"}},
 		),
-		spec.New("RETURN QUERY ONE `.items` IN @many USING css", "ONE should fail for multiple results").Expect().ExecError(
+		spec.NewSpec("RETURN QUERY ONE `.items` IN @many USING css", "ONE should fail for multiple results").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Contains: []string{"QUERY ONE expected exactly one match"}},
 		),
 		Nil("LET maybe = (QUERY VALUE `.items` IN @empty USING css)?\nRETURN maybe", "VALUE assertion should be catchable with optional operator"),
 		Nil("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe", "ONE assertion should be catchable for empty result with optional operator"),
 		Nil("LET maybe = (QUERY ONE `.items` IN @many USING css)?\nRETURN maybe", "ONE assertion should be catchable for multi result with optional operator"),
-		spec.New("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe.foo", "Catch should not swallow the first instruction after a guarded QUERY ONE").Expect().ExecError(
+		spec.NewSpec("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe.foo", "Catch should not swallow the first instruction after a guarded QUERY ONE").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Contains: []string{"Cannot read property", "\"foo\""}},
 		),

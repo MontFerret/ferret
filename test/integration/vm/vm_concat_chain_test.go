@@ -10,14 +10,15 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	"github.com/MontFerret/ferret/v2/test/spec/assert"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestConcatChainPreservesLeftToRightEvaluationOrder(t *testing.T) {
-	runSpecsLevels(t, func() []spec.Spec {
+	RunSpecFactory(t, func() []spec.Spec {
 		calls := make([]string, 0, 3)
 
 		return []spec.Spec{
-			spec.New(`RETURN TRACE_CALL("a") + "-x-" + TRACE_CALL("b") + "-y-" + TRACE_CALL("c")`).
+			spec.NewSpec(`RETURN TRACE_CALL("a") + "-x-" + TRACE_CALL("b") + "-y-" + TRACE_CALL("c")`).
 				Env(vm.WithFunction("TRACE_CALL", func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 					if len(args) != 1 {
 						return runtime.None, fmt.Errorf("unexpected TRACE_CALL arg count: got %d, want 1", len(args))

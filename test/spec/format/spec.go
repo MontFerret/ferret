@@ -15,7 +15,7 @@ type Spec struct {
 
 func NewSpec(expression string, desc ...string) Spec {
 	return Spec{
-		Base: spec.New(expression, desc...).Base,
+		Base: spec.NewSpec(expression, desc...).Base,
 	}
 }
 

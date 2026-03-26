@@ -16,16 +16,16 @@ import (
 )
 
 func TestRunMissingParamPrecedesWarmupHostResolution(t *testing.T) {
-	runSpecsLevels(t, func() []spec.Spec {
+	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
-			spec.New("RETURN MISSING_FN(@foo)").
+			spec.NewSpec("RETURN MISSING_FN(@foo)").
 				Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Missing parameter"}),
 		}
 	})
 }
 
 func TestStrictWarmupFailsProtectedMissingHostCallForDefaultAndBuiltEnvironment(t *testing.T) {
-	runSequencesLevels(t, func() []spec.Sequence {
+	RunSequenceFactory(t, func() []spec.Sequence {
 		return []spec.Sequence{
 			{
 				Base: spec.NewBaseSpec("RETURN MISSING_FN()?"),
@@ -51,7 +51,7 @@ func TestStrictWarmupFailsProtectedMissingHostCallForDefaultAndBuiltEnvironment(
 }
 
 func TestStrictWarmupFailsOnDeadCodeUnresolvedHostCall(t *testing.T) {
-	runSequencesLevels(t, func() []spec.Sequence {
+	RunSequenceFactory(t, func() []spec.Sequence {
 		return []spec.Sequence{
 			{
 				Base: spec.NewBaseSpec("RETURN false ? MISSING_FN() : 1"),
@@ -79,9 +79,9 @@ func TestStrictWarmupFailsOnDeadCodeUnresolvedHostCall(t *testing.T) {
 }
 
 func TestStrictWarmupAggregatesMissingHostFunctions(t *testing.T) {
-	runSpecsLevels(t, func() []spec.Spec {
+	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
-			spec.New(`
+			spec.NewSpec(`
 LET a = MISSING_A()
 LET b = MISSING_B()
 RETURN a + b
@@ -103,9 +103,9 @@ RETURN a + b
 }
 
 func TestStrictWarmupReportsRepeatedUnresolvedHostFunctionPerCallsite(t *testing.T) {
-	runSpecsLevels(t, func() []spec.Spec {
+	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
-			spec.New(`
+			spec.NewSpec(`
 LET a = MISSING()
 LET b = MISSING()
 RETURN a + b
@@ -127,7 +127,7 @@ RETURN a + b
 }
 
 func TestStrictWarmupFailureIsRepeatableUntilEnvironmentFixed(t *testing.T) {
-	runSequencesLevels(t, func() []spec.Sequence {
+	RunSequenceFactory(t, func() []spec.Sequence {
 		return []spec.Sequence{
 			{
 				Base: spec.NewBaseSpec("RETURN F()"),
@@ -162,7 +162,7 @@ func TestStrictWarmupFailureIsRepeatableUntilEnvironmentFixed(t *testing.T) {
 }
 
 func TestResetDrainsLeakedFramesBetweenFailedRuns(t *testing.T) {
-	runSequencesLevels(t, func() []spec.Sequence {
+	RunSequenceFactory(t, func() []spec.Sequence {
 		counts := make([]int, 0, 2)
 
 		return []spec.Sequence{
@@ -236,9 +236,9 @@ RETURN outer()
 }
 
 func TestHostNilResultIsNormalizedToNone(t *testing.T) {
-	runSpecsLevels(t, func() []spec.Spec {
+	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
-			spec.New("RETURN NIL_FN()").
+			spec.NewSpec("RETURN NIL_FN()").
 				Env(vm.WithFunction("NIL_FN", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 					return nil, nil
 				})).
@@ -248,9 +248,9 @@ func TestHostNilResultIsNormalizedToNone(t *testing.T) {
 }
 
 func TestModuloTypeErrorNotMisclassifiedAsModuloByZero(t *testing.T) {
-	runSpecsLevels(t, func() []spec.Spec {
+	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
-			spec.New(`RETURN 5 % "x"`).
+			spec.NewSpec(`RETURN 5 % "x"`).
 				Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
 				err, ok := actual.(error)
 				if !ok || err == nil {
@@ -281,9 +281,9 @@ func TestModuloTypeErrorNotMisclassifiedAsModuloByZero(t *testing.T) {
 }
 
 func TestRuntimeErrorIncludesUDFCallStackContext(t *testing.T) {
-	runSpecsLevels(t, func() []spec.Spec {
+	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
-			spec.New(`
+			spec.NewSpec(`
 FUNC inner() (
 	RETURN @x.foo
 )
@@ -307,9 +307,9 @@ RETURN outer()
 }
 
 func TestRuntimeErrorSingleUdfStackFormattingUsesSourceSpelling(t *testing.T) {
-	runSpecsLevels(t, func() []spec.Spec {
+	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
-			spec.New(`
+			spec.NewSpec(`
 FUNC boo() (
 	LET a = 1
 	LET b = 0

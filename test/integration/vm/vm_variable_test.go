@@ -10,14 +10,14 @@ import (
 
 func TestVariables(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
-		spec.New(`RETURN foo`, "Should not compile if a variable not defined").Expect().CompileError(assert.ShouldNotBeNil),
-		spec.New(`
+		spec.NewSpec(`RETURN foo`, "Should not compile if a variable not defined").Expect().CompileError(assert.ShouldNotBeNil),
+		spec.NewSpec(`
 			LET foo = "bar"
 			LET foo = "baz"
 
 			RETURN foo
 		`, "Should not compile if a variable is not unique").Expect().CompileError(assert.ShouldNotBeNil),
-		spec.New(`			LET _ = (FOR i IN 1..100 RETURN NONE)
+		spec.NewSpec(`			LET _ = (FOR i IN 1..100 RETURN NONE)
 
 			RETURN _`, "Should not allow to use ignorable variable name").Expect().CompileError(assert.ShouldNotBeNil),
 		Nil(`LET i = NONE RETURN i`),

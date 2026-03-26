@@ -12,7 +12,7 @@ import (
 )
 
 func TestWarmupClearsStaleHostCacheAcrossEnvironments(t *testing.T) {
-	runSequencesLevels(t, func() []spec.Sequence {
+	RunSequenceFactory(t, func() []spec.Sequence {
 		return []spec.Sequence{
 			{
 				Base: spec.BaseSpec{
@@ -42,7 +42,7 @@ func TestWarmupClearsStaleHostCacheAcrossEnvironments(t *testing.T) {
 }
 
 func TestWarmupRebindsWhenEnvironmentFunctionNamesMatch(t *testing.T) {
-	runSequencesLevels(t, func() []spec.Sequence {
+	RunSequenceFactory(t, func() []spec.Sequence {
 		return []spec.Sequence{
 			{
 				Base: spec.NewBaseSpec("RETURN F()"),
@@ -72,7 +72,7 @@ func TestWarmupRebindsWhenEnvironmentFunctionNamesMatch(t *testing.T) {
 }
 
 func TestWarmupRebindThrashesAcrossSameNamedHostImplementations(t *testing.T) {
-	runSequencesLevels(t, func() []spec.Sequence {
+	RunSequenceFactory(t, func() []spec.Sequence {
 		return []spec.Sequence{
 			{
 				Base: spec.NewBaseSpec("RETURN F()"),
@@ -117,7 +117,7 @@ func TestWarmupRebindThrashesAcrossSameNamedHostImplementations(t *testing.T) {
 }
 
 func TestWarmupRebindSwitchesBetweenFixedArityAndVarargImplementations(t *testing.T) {
-	runSequencesLevels(t, func() []spec.Sequence {
+	RunSequenceFactory(t, func() []spec.Sequence {
 		return []spec.Sequence{
 			{
 				Base: spec.NewBaseSpec("RETURN F(1, 2)"),
@@ -160,7 +160,7 @@ func TestWarmupRebindSwitchesBetweenFixedArityAndVarargImplementations(t *testin
 }
 
 func TestWarmupRepeatedMissingRunsAfterSuccessRecoverCleanly(t *testing.T) {
-	runSequencesLevels(t, func() []spec.Sequence {
+	RunSequenceFactory(t, func() []spec.Sequence {
 		return []spec.Sequence{
 			{
 				Base: spec.NewBaseSpec("RETURN F()"),
@@ -208,7 +208,7 @@ func TestWarmupRepeatedMissingRunsAfterSuccessRecoverCleanly(t *testing.T) {
 }
 
 func TestWarmupMultiCallsiteRecoveryAfterPartialMissingRun(t *testing.T) {
-	runSequencesLevels(t, func() []spec.Sequence {
+	RunSequenceFactory(t, func() []spec.Sequence {
 		return []spec.Sequence{
 			{
 				Base: spec.NewBaseSpec(`
