@@ -8,41 +8,16 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
+	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
 )
 
-func findApplyQueryDescriptorSize(code []bytecode.Instruction, applyIdx int) (int, bool) {
-	if applyIdx < 0 || applyIdx >= len(code) {
-		return 0, false
-	}
-
-	queryReg := code[applyIdx].Operands[2]
-	if !queryReg.IsRegister() {
-		return 0, false
-	}
-
-	for i := applyIdx - 1; i >= 0; i-- {
-		inst := code[i]
-		if inst.Opcode != bytecode.OpLoadArray {
-			continue
-		}
-
-		if !inst.Operands[0].IsRegister() || inst.Operands[0].Register() != queryReg.Register() {
-			continue
-		}
-
-		return int(inst.Operands[1]), true
-	}
-
-	return 0, false
-}
-
 func threeSlotQueryDescriptor(code []bytecode.Instruction) error {
-	applyIdx, ok := findFirstOpcodeIndex(code, bytecode.OpQuery)
+	applyIdx, ok := inspect.FindFirstOpcodeIndex(code, bytecode.OpQuery)
 	if !ok {
 		return fmt.Errorf("expected OpQuery in bytecode")
 	}
 
-	size, ok := findApplyQueryDescriptorSize(code, applyIdx)
+	size, ok := inspect.FindApplyQueryDescriptorSize(code, applyIdx)
 	if !ok {
 		return fmt.Errorf("expected OpLoadArray for query descriptor before OpQuery")
 	}
@@ -55,7 +30,7 @@ func threeSlotQueryDescriptor(code []bytecode.Instruction) error {
 }
 
 func failPrelude(prog *bytecode.Program, expectedMessage runtime.String) error {
-	failIdx, ok := findFirstOpcodeIndex(prog.Bytecode, bytecode.OpFail)
+	failIdx, ok := inspect.FindFirstOpcodeIndex(prog.Bytecode, bytecode.OpFail)
 	if !ok {
 		return fmt.Errorf("expected OpFail in bytecode")
 	}
@@ -99,7 +74,7 @@ func TestQueryModifierLowering_ValueUsesLoadNoneAndFail(t *testing.T) {
 			if err := failPrelude(prog, runtime.NewString("QUERY VALUE expected at least one match")); err != nil {
 				return err
 			}
-			if !hasOpcode(prog.Bytecode, bytecode.OpLoadIndexConst) {
+			if !inspect.HasOpcode(prog, bytecode.OpLoadIndexConst) {
 				return fmt.Errorf("expected OpLoadIndexConst success path for QUERY VALUE")
 			}
 
@@ -117,10 +92,10 @@ func TestQueryModifierLowering_OneUsesLoadNoneAndFail(t *testing.T) {
 			if err := failPrelude(prog, runtime.NewString("QUERY ONE expected exactly one match")); err != nil {
 				return err
 			}
-			if !hasOpcode(prog.Bytecode, bytecode.OpLength) {
+			if !inspect.HasOpcode(prog, bytecode.OpLength) {
 				return fmt.Errorf("expected OpLength for QUERY ONE cardinality check")
 			}
-			if !hasOpcode(prog.Bytecode, bytecode.OpJumpIfEqConst) {
+			if !inspect.HasOpcode(prog, bytecode.OpJumpIfEqConst) {
 				return fmt.Errorf("expected OpJumpIfEqConst for QUERY ONE cardinality check")
 			}
 
@@ -147,11 +122,11 @@ func TestQueryModifierLowering_ExistsCountAny(t *testing.T) {
 				return err
 			}
 
-			if !hasOpcode(prog.Bytecode, tc.opcode) {
+			if !inspect.HasOpcode(prog, tc.opcode) {
 				return fmt.Errorf("expected opcode %s for QUERY %s lowering", tc.opcode, tc.name)
 			}
 
-			if hasOpcode(prog.Bytecode, bytecode.OpFail) {
+			if inspect.HasOpcode(prog, bytecode.OpFail) {
 				return fmt.Errorf("did not expect OpFail in QUERY %s lowering", tc.name)
 			}
 

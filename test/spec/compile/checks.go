@@ -7,14 +7,15 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/test/spec/assert"
+	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
 	"github.com/google/go-cmp/cmp"
 )
 
 // EqualBytecode asserts that the bytecode of the actual program matches the expected program's bytecode.
 // It compares each instruction's opcode and operands, returning an error message if any mismatch is found.
 func EqualBytecode(a, e any) error {
-	actual := CastToProgram(a)
-	expected := CastToProgram(e)
+	actual := inspect.CastToProgram(a)
+	expected := inspect.CastToProgram(e)
 
 	for i := 0; i < len(expected.Bytecode); i++ {
 		actualIns := actual.Bytecode[i]
@@ -40,7 +41,7 @@ func EqualBytecode(a, e any) error {
 
 // ContainsOpcode asserts that the actual program's bytecode contains (or does not contain) specific opcodes, or that certain opcodes appear a specific number of times, based on the provided expectation type (OpcodeExistence or OpcodeCount).
 func ContainsOpcode(a any, e any) error {
-	actual := CastToProgram(a)
+	actual := inspect.CastToProgram(a)
 
 	switch expectation := e.(type) {
 	case OpcodeExistence:
@@ -60,7 +61,7 @@ func EqualRegisters(a any, e any) error {
 		return fmt.Errorf("expected max registers must be an integer type, got %T", e)
 	}
 
-	actual := CastToProgram(a)
+	actual := inspect.CastToProgram(a)
 	maxReg := maxRegisterIndex(actual.Bytecode)
 
 	if maxReg != expectedMax {
@@ -101,6 +102,42 @@ func IsCompilationError(actual, expected any) error {
 	}
 
 	return e
+}
+
+func CallArgsLoadedFromConsts(actual, expected any) error {
+	program := inspect.CastToProgram(actual)
+	exp, ok := expected.(CallArgsLoadedExpectation)
+
+	if !ok {
+		return fmt.Errorf("expected CallArgsLoadedExpectation, got %T", expected)
+	}
+
+	code := program.Bytecode
+	call := code[exp.Index]
+
+	if !call.Operands[1].IsRegister() || !call.Operands[2].IsRegister() {
+		return fmt.Errorf("expected register range operands in call, got %v", call.Operands)
+	}
+
+	start := call.Operands[1].Register()
+	end := call.Operands[2].Register()
+
+	if got := end - start + 1; got != exp.ArgsCount {
+		return fmt.Errorf("expected %d call args, got %d (range R%d..R%d)", exp.ArgsCount, got, start, end)
+	}
+
+	for reg := start; reg <= end; reg++ {
+		op, ok := inspect.LastRegisterDefOpcodeBefore(code, exp.Index, reg)
+		if !ok {
+			return fmt.Errorf("expected to find definition for argument register R%d", reg)
+		}
+
+		if op != bytecode.OpLoadConst {
+			return fmt.Errorf("expected argument register R%d to be loaded via LOADC, got %s", reg, op)
+		}
+	}
+
+	return nil
 }
 
 func checkOpcodeCount(actual *bytecode.Program, expected OpcodeCount) error {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
 )
 
 func findNthOpcodeIndex(code []bytecode.Instruction, op bytecode.Opcode, nth int) (int, bool) {
@@ -34,13 +35,13 @@ FOR s IN strs
 	RETURN s
 `)
 
-	pushKVIndex, ok := findFirstOpcodeIndex(prog.Bytecode, bytecode.OpPushKV)
+	pushKVIndex, ok := inspect.FindFirstOpcodeIndex(prog.Bytecode, bytecode.OpPushKV)
 	if !ok {
 		t.Fatalf("expected OpPushKV in bytecode")
 	}
 
 	keyReg := prog.Bytecode[pushKVIndex].Operands[1].Register()
-	keyDef, ok := lastRegisterDefOpcodeBefore(prog.Bytecode, pushKVIndex, keyReg)
+	keyDef, ok := inspect.LastRegisterDefOpcodeBefore(prog.Bytecode, pushKVIndex, keyReg)
 	if !ok {
 		t.Fatalf("expected defining opcode for sort key register R%d", keyReg)
 	}
@@ -49,7 +50,7 @@ FOR s IN strs
 	}
 
 	valueReg := prog.Bytecode[pushKVIndex].Operands[2].Register()
-	valueDef, ok := lastRegisterDefOpcodeBefore(prog.Bytecode, pushKVIndex, valueReg)
+	valueDef, ok := inspect.LastRegisterDefOpcodeBefore(prog.Bytecode, pushKVIndex, valueReg)
 	if !ok {
 		t.Fatalf("expected defining opcode for projected scope register R%d", valueReg)
 	}
@@ -67,13 +68,13 @@ FOR s IN strs
 	RETURN s
 `)
 
-	pushKVIndex, ok := findFirstOpcodeIndex(prog.Bytecode, bytecode.OpPushKV)
+	pushKVIndex, ok := inspect.FindFirstOpcodeIndex(prog.Bytecode, bytecode.OpPushKV)
 	if !ok {
 		t.Fatalf("expected OpPushKV in bytecode")
 	}
 
 	valueReg := prog.Bytecode[pushKVIndex].Operands[2].Register()
-	valueDef, ok := lastRegisterDefOpcodeBefore(prog.Bytecode, pushKVIndex, valueReg)
+	valueDef, ok := inspect.LastRegisterDefOpcodeBefore(prog.Bytecode, pushKVIndex, valueReg)
 	if !ok {
 		t.Fatalf("expected defining opcode for projected scope register R%d", valueReg)
 	}
@@ -87,7 +88,7 @@ FOR s IN strs
 	}
 
 	sortedSrcReg := prog.Bytecode[secondIterIndex].Operands[1].Register()
-	sortedSrcDef, ok := lastRegisterDefOpcodeBefore(prog.Bytecode, secondIterIndex, sortedSrcReg)
+	sortedSrcDef, ok := inspect.LastRegisterDefOpcodeBefore(prog.Bytecode, secondIterIndex, sortedSrcReg)
 	if !ok {
 		t.Fatalf("expected defining opcode for sorted source register R%d", sortedSrcReg)
 	}

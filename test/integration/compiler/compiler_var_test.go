@@ -10,13 +10,14 @@ import (
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
+	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
 )
 
 func assertNoCellOps(t *testing.T, prog *bytecode.Program) {
 	t.Helper()
 
 	for _, op := range []bytecode.Opcode{bytecode.OpMakeCell, bytecode.OpLoadCell, bytecode.OpStoreCell} {
-		if got := countOpcode(prog, op); got != 0 {
+		if got := inspect.CountOpcode(prog, op); got != 0 {
 			t.Fatalf("expected no %s opcodes, got %d", op, got)
 		}
 	}
@@ -333,15 +334,15 @@ RETURN setBase(2)
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		prog := compileWithLevel(t, level, expr)
 
-		if got := countOpcode(prog, bytecode.OpMakeCell); got == 0 {
+		if got := inspect.CountOpcode(prog, bytecode.OpMakeCell); got == 0 {
 			t.Fatalf("expected %s in optimized level %v", bytecode.OpMakeCell, level)
 		}
 
-		if got := countOpcode(prog, bytecode.OpLoadCell); got == 0 {
+		if got := inspect.CountOpcode(prog, bytecode.OpLoadCell); got == 0 {
 			t.Fatalf("expected %s in optimized level %v", bytecode.OpLoadCell, level)
 		}
 
-		if got := countOpcode(prog, bytecode.OpStoreCell); got == 0 {
+		if got := inspect.CountOpcode(prog, bytecode.OpStoreCell); got == 0 {
 			t.Fatalf("expected %s in optimized level %v", bytecode.OpStoreCell, level)
 		}
 	}
@@ -360,15 +361,15 @@ func TestVarWriteCaptureCompoundAssignmentUsesCellOpsAcrossOptimizationLevels(t 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		prog := compileWithLevel(t, level, expr)
 
-		if got := countOpcode(prog, bytecode.OpMakeCell); got == 0 {
+		if got := inspect.CountOpcode(prog, bytecode.OpMakeCell); got == 0 {
 			t.Fatalf("expected %s in optimized level %v", bytecode.OpMakeCell, level)
 		}
 
-		if got := countOpcode(prog, bytecode.OpLoadCell); got == 0 {
+		if got := inspect.CountOpcode(prog, bytecode.OpLoadCell); got == 0 {
 			t.Fatalf("expected %s in optimized level %v", bytecode.OpLoadCell, level)
 		}
 
-		if got := countOpcode(prog, bytecode.OpStoreCell); got == 0 {
+		if got := inspect.CountOpcode(prog, bytecode.OpStoreCell); got == 0 {
 			t.Fatalf("expected %s in optimized level %v", bytecode.OpStoreCell, level)
 		}
 	}
@@ -384,11 +385,11 @@ RETURN x[0]
 	prog := compileWithLevel(t, compiler.O0, expr)
 	assertNoCellOps(t, prog)
 
-	if !hasOpcode(prog.Bytecode, bytecode.OpLoadKeyConst) {
+	if !inspect.HasOpcode(prog, bytecode.OpLoadKeyConst) {
 		t.Fatalf("expected OpLoadKeyConst after straight-line reassignment")
 	}
 
-	if hasOpcode(prog.Bytecode, bytecode.OpLoadPropertyConst) {
+	if inspect.HasOpcode(prog, bytecode.OpLoadPropertyConst) {
 		t.Fatalf("did not expect OpLoadPropertyConst after straight-line reassignment")
 	}
 }
@@ -408,11 +409,11 @@ RETURN x[0]
 	prog := compileWithLevel(t, compiler.O0, expr)
 	assertNoCellOps(t, prog)
 
-	if !hasOpcode(prog.Bytecode, bytecode.OpLoadPropertyConst) {
+	if !inspect.HasOpcode(prog, bytecode.OpLoadPropertyConst) {
 		t.Fatalf("expected OpLoadPropertyConst after loop-scoped conflicting reassignment")
 	}
 
-	if hasOpcode(prog.Bytecode, bytecode.OpLoadIndexConst) || hasOpcode(prog.Bytecode, bytecode.OpLoadKeyConst) {
+	if inspect.HasOpcode(prog, bytecode.OpLoadIndexConst) || inspect.HasOpcode(prog, bytecode.OpLoadKeyConst) {
 		t.Fatalf("did not expect exact container load opcode after loop-scoped conflicting reassignment")
 	}
 }
@@ -435,23 +436,23 @@ RETURN x[0]
 
 	prog := compileWithLevel(t, compiler.O0, expr)
 
-	if got := countOpcode(prog, bytecode.OpMakeCell); got == 0 {
+	if got := inspect.CountOpcode(prog, bytecode.OpMakeCell); got == 0 {
 		t.Fatalf("expected OpMakeCell for captured mutable binding")
 	}
 
-	if got := countOpcode(prog, bytecode.OpLoadCell); got == 0 {
+	if got := inspect.CountOpcode(prog, bytecode.OpLoadCell); got == 0 {
 		t.Fatalf("expected OpLoadCell for captured mutable binding")
 	}
 
-	if got := countOpcode(prog, bytecode.OpStoreCell); got == 0 {
+	if got := inspect.CountOpcode(prog, bytecode.OpStoreCell); got == 0 {
 		t.Fatalf("expected OpStoreCell for captured mutable binding")
 	}
 
-	if !hasOpcode(prog.Bytecode, bytecode.OpLoadPropertyConst) {
+	if !inspect.HasOpcode(prog, bytecode.OpLoadPropertyConst) {
 		t.Fatalf("expected OpLoadPropertyConst after loop-scoped conflicting reassignment through cell binding")
 	}
 
-	if hasOpcode(prog.Bytecode, bytecode.OpLoadIndexConst) || hasOpcode(prog.Bytecode, bytecode.OpLoadKeyConst) {
+	if inspect.HasOpcode(prog, bytecode.OpLoadIndexConst) || inspect.HasOpcode(prog, bytecode.OpLoadKeyConst) {
 		t.Fatalf("did not expect exact container load opcode after loop-scoped conflicting reassignment through cell binding")
 	}
 }
@@ -471,11 +472,11 @@ RETURN x[0]
 	prog := compileWithLevel(t, compiler.O0, expr)
 	assertNoCellOps(t, prog)
 
-	if !hasOpcode(prog.Bytecode, bytecode.OpLoadIndexConst) {
+	if !inspect.HasOpcode(prog, bytecode.OpLoadIndexConst) {
 		t.Fatalf("expected OpLoadIndexConst after same-type loop reassignment")
 	}
 
-	if hasOpcode(prog.Bytecode, bytecode.OpLoadPropertyConst) {
+	if inspect.HasOpcode(prog, bytecode.OpLoadPropertyConst) {
 		t.Fatalf("did not expect OpLoadPropertyConst after same-type loop reassignment")
 	}
 }

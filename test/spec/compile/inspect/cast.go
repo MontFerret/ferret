@@ -1,4 +1,4 @@
-package compile
+package inspect
 
 import "github.com/MontFerret/ferret/v2/pkg/bytecode"
 

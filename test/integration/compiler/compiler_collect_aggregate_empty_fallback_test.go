@@ -7,6 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
+	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
 )
 
 func TestCollectAggregateGlobalEmptyFallbackLoadsNone(t *testing.T) {
@@ -17,11 +18,11 @@ FOR u IN users
 	COLLECT AGGREGATE total = COUNT(u)
 	RETURN total
 `, func(prog *bytecode.Program) error {
-			if !hasOpcode(prog.Bytecode, bytecode.OpJumpIfTrue) {
+			if !inspect.HasOpcode(prog, bytecode.OpJumpIfTrue) {
 				return fmt.Errorf("expected OpJumpIfTrue for empty-aggregator branch")
 			}
 
-			if got := countOpcode(prog, bytecode.OpLoadNone); got < 1 {
+			if got := inspect.CountOpcode(prog, bytecode.OpLoadNone); got < 1 {
 				return fmt.Errorf("expected OpLoadNone in global aggregate empty fallback, got %d", got)
 			}
 

@@ -7,6 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
+	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
 )
 
 func TestMatchLoadPropertyConstEmission(t *testing.T) {
@@ -18,15 +19,15 @@ RETURN MATCH obj (
   _ => 0,
 )
 `, func(prog *bytecode.Program) error {
-			if !programHasOpcode(prog, bytecode.OpMatchLoadPropertyConst) {
+			if !inspect.HasOpcode(prog, bytecode.OpMatchLoadPropertyConst) {
 				return fmt.Errorf("expected bytecode to contain %s", bytecode.OpMatchLoadPropertyConst)
 			}
 
-			if programHasOpcode(prog, bytecode.OpJumpIfMissingPropertyConst) {
+			if inspect.HasOpcode(prog, bytecode.OpJumpIfMissingPropertyConst) {
 				return fmt.Errorf("expected object-pattern lowering to avoid %s", bytecode.OpJumpIfMissingPropertyConst)
 			}
 
-			if programHasOpcode(prog, bytecode.OpLoadPropertyConst) {
+			if inspect.HasOpcode(prog, bytecode.OpLoadPropertyConst) {
 				return fmt.Errorf("expected object-pattern lowering to avoid %s", bytecode.OpLoadPropertyConst)
 			}
 

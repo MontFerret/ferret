@@ -7,6 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
+	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
 )
 
 func TestJumpIfEqConstEmission(t *testing.T) {
@@ -15,7 +16,7 @@ func TestJumpIfEqConstEmission(t *testing.T) {
 LET a = 1
 RETURN a != 1 ? 10 : 20
 `, func(prog *bytecode.Program) error {
-			if !programHasOpcode(prog, bytecode.OpJumpIfEqConst) {
+			if !inspect.HasOpcode(prog, bytecode.OpJumpIfEqConst) {
 				return fmt.Errorf("expected bytecode to contain %s", bytecode.OpJumpIfEqConst)
 			}
 

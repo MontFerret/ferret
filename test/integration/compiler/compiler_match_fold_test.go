@@ -7,6 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
+	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
 )
 
 func TestMatchFold_ConstantScrutinee(t *testing.T) {
@@ -18,7 +19,7 @@ RETURN MATCH 1 (
   _ => 30,
 )
 `, func(prog *bytecode.Program) error {
-			if programHasOpcode(prog, bytecode.OpJumpIfNeConst) {
+			if inspect.HasOpcode(prog, bytecode.OpJumpIfNeConst) {
 				return fmt.Errorf("expected match folding to remove JumpIfNeConst in O0")
 			}
 

@@ -10,6 +10,7 @@ import (
 	"github.com/MontFerret/ferret/v2/test/spec"
 	"github.com/MontFerret/ferret/v2/test/spec/assert"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
+	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
 )
 
 func TestCollectAggregateRequiresAtLeastOneArgument(t *testing.T) {
@@ -76,11 +77,11 @@ func TestCollectAggregateGroupedFusionSupportsScalarLiteralKeys(t *testing.T) {
 					RETURN { g, cnt, sum, min }
 			`, tc.key)
 		specs = append(specs, ProgramCheck(query, func(program *bytecode.Program) error {
-			if !hasAggregatePlan(program) {
+			if !inspect.HasAggregatePlan(program) {
 				return fmt.Errorf("expected grouped fused aggregate plan for key expression %q", tc.key)
 			}
 
-			if hasFunctionCallOpcode(program) {
+			if inspect.HasFunctionCallOpcode(program) {
 				return fmt.Errorf("expected fused grouped aggregation to avoid function call opcodes for key expression %q", tc.key)
 			}
 
@@ -104,15 +105,15 @@ FOR u IN users
 		min = MIN(u.age)
 	RETURN { g, cnt, sum, min }
 `, func(prog *bytecode.Program) error {
-			if !hasAggregatePlan(prog) {
+			if !inspect.HasAggregatePlan(prog) {
 				return fmt.Errorf("expected grouped fused aggregate plan")
 			}
 
-			if !hasOpcode(prog.Bytecode, bytecode.OpAggregateGroupUpdate) {
+			if !inspect.HasOpcode(prog, bytecode.OpAggregateGroupUpdate) {
 				return fmt.Errorf("expected grouped fused aggregation to use OpAggregateGroupUpdate")
 			}
 
-			if hasOpcode(prog.Bytecode, bytecode.OpPushKV) {
+			if inspect.HasOpcode(prog, bytecode.OpPushKV) {
 				return fmt.Errorf("expected grouped fused aggregation without INTO to avoid raw PushKV group writes")
 			}
 
@@ -134,11 +135,11 @@ FOR u IN users
 		min = MIN(u.age)
 	RETURN { g, cnt, sum, min }
 `, func(prog *bytecode.Program) error {
-			if !hasAggregatePlan(prog) {
+			if !inspect.HasAggregatePlan(prog) {
 				return fmt.Errorf("expected grouped fused aggregate plan for computed group key")
 			}
 
-			if !hasOpcode(prog.Bytecode, bytecode.OpAggregateGroupUpdate) {
+			if !inspect.HasOpcode(prog, bytecode.OpAggregateGroupUpdate) {
 				return fmt.Errorf("expected computed-key grouped fusion to use OpAggregateGroupUpdate")
 			}
 
@@ -161,34 +162,15 @@ FOR u IN users
 	INTO groups
 	RETURN { g, cnt, sum, min, groups }
 `, func(prog *bytecode.Program) error {
-			if !hasOpcode(prog.Bytecode, bytecode.OpAggregateGroupUpdate) {
+			if !inspect.HasOpcode(prog, bytecode.OpAggregateGroupUpdate) {
 				return fmt.Errorf("expected grouped aggregate INTO to use OpAggregateGroupUpdate")
 			}
 
-			if !hasOpcode(prog.Bytecode, bytecode.OpPushKV) {
+			if !inspect.HasOpcode(prog, bytecode.OpPushKV) {
 				return fmt.Errorf("expected grouped aggregate INTO to keep raw group value writes")
 			}
 
 			return nil
 		}, "grouped aggregate into keeps group writes"),
 	})
-}
-
-func hasAggregatePlan(program *bytecode.Program) bool {
-	return len(program.Metadata.AggregatePlans) > 0
-}
-
-func hasFunctionCallOpcode(program *bytecode.Program) bool {
-	for _, instruction := range program.Bytecode {
-		switch instruction.Opcode {
-		case bytecode.OpHCall,
-			bytecode.OpProtectedHCall,
-			bytecode.OpCall,
-			bytecode.OpProtectedCall,
-			bytecode.OpTailCall:
-			return true
-		}
-	}
-
-	return false
 }

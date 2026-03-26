@@ -8,6 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
+	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
 )
 
 func TestMatchMerge_PureLiteralResults(t *testing.T) {
@@ -34,7 +35,7 @@ RETURN MATCH x (
   _ => 0,
 )
 `, func(prog *bytecode.Program) error {
-			if got := countOpcode(prog, bytecode.OpLength); got != 2 {
+			if got := inspect.CountOpcode(prog, bytecode.OpLength); got != 2 {
 				return fmt.Errorf("expected 2 LENGTH ops, got %d", got)
 			}
 
