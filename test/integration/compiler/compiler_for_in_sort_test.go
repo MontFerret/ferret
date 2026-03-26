@@ -5,20 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
-	"github.com/MontFerret/ferret/v2/test/spec"
 )
-
-func TestSort(t *testing.T) {
-	RunSpecs(t, []spec.Spec{
-		//		SkipByteCodeCase(`
-		//FOR s IN []
-		//	SORT s
-		//	RETURN s
-		//`, BC{
-		//			I(bytecode.OpReturn, 0, 7),
-		//		}),
-	})
-}
 
 func findNthOpcodeIndex(code []bytecode.Instruction, op bytecode.Opcode, nth int) (int, bool) {
 	count := 0

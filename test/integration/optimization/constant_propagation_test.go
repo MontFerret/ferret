@@ -13,17 +13,11 @@ import (
 
 func TestConstantPropagation(t *testing.T) {
 	RunUseCases(t, compiler.O1, []spec.Spec{
-		Opcode(`LET a = 1 + 2 RETURN a`, compile.OpcodeExistence{
-			NotExists: []bytecode.Opcode{bytecode.OpAdd},
-		}, 3, "should fold constant addition"),
+		OpcodeNotExists(`LET a = 1 + 2 RETURN a`, []bytecode.Opcode{bytecode.OpAdd}, 3, "should fold constant addition"),
 
-		Opcode(`LET a = 1 + 2 RETURN -a`, compile.OpcodeExistence{
-			NotExists: []bytecode.Opcode{bytecode.OpAdd, bytecode.OpFlipNegative},
-		}, -3, "should fold constant addition and unary minus"),
+		OpcodeNotExists(`LET a = 1 + 2 RETURN -a`, []bytecode.Opcode{bytecode.OpAdd, bytecode.OpFlipNegative}, -3, "should fold constant addition and unary minus"),
 
-		Opcode(`LET a = 10 RETURN (a - 3) * 2`, compile.OpcodeExistence{
-			NotExists: []bytecode.Opcode{bytecode.OpSub, bytecode.OpMul},
-		}, 14, "should fold chain of arithmetic operations"),
+		OpcodeNotExists(`LET a = 10 RETURN (a - 3) * 2`, []bytecode.Opcode{bytecode.OpSub, bytecode.OpMul}, 14, "should fold chain of arithmetic operations"),
 
 		OpcodeErr(`RETURN 1 / 0`, compile.OpcodeExistence{
 			Exists: []bytecode.Opcode{bytecode.OpDiv},

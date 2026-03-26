@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func TestUdfNestedLetReturnParses(t *testing.T) {

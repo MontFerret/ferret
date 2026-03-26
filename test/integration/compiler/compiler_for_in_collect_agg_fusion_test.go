@@ -9,6 +9,7 @@ import (
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	"github.com/MontFerret/ferret/v2/test/spec/assert"
+	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func TestCollectAggregateRequiresAtLeastOneArgument(t *testing.T) {

@@ -1,6 +1,8 @@
 package compile
 
 import (
+	"fmt"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	"github.com/MontFerret/ferret/v2/test/spec/assert"
@@ -41,4 +43,15 @@ func Failure(expression string, expected assert.ExpectedError, desc ...string) s
 
 func MultiFailure(expression string, expected assert.ExpectedMultiError, desc ...string) spec.Spec {
 	return spec.NewSpec(expression, desc...).Expect().CompileError(ShouldBeCompilationError, expected)
+}
+
+func ProgramCheck(expression string, fn func(*bytecode.Program) error, desc ...string) spec.Spec {
+	return spec.NewSpec(expression, desc...).Expect().Compile(assert.NewUnaryAssertion(func(actual any) error {
+		prog, ok := actual.(*bytecode.Program)
+		if !ok {
+			return fmt.Errorf("expected *bytecode.Program, got %T", actual)
+		}
+
+		return fn(prog)
+	}))
 }

@@ -1,4 +1,4 @@
-package compiler
+package compiler_test
 
 import (
 	"fmt"
@@ -9,18 +9,18 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 func TestCompiler_Consts(t *testing.T) {
-	c := New()
+	c := compiler.New()
 
 	p, err := c.Compile(file.NewAnonymousSource(`VAR str = ""
 
 str += " " + 1 + " " + 2 + " " + 3 + " " + 4 + " " + 5
 
 RETURN str`))
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,14 +30,14 @@ RETURN str`))
 	}
 
 	if len(p.Constants) > 2 {
-		t.Fatalf("expected 6 constants, got %d", len(p.Constants))
+		t.Fatalf("expected at most 2 constants, got %d", len(p.Constants))
 	}
 }
 
 func TestCompilerCompileConcurrentSharedCompiler(t *testing.T) {
 	t.Parallel()
 
-	compiler := New(WithOptimizationLevel(O1))
+	compilerInstance := compiler.New(compiler.WithOptimizationLevel(compiler.O1))
 	workers := maxInt(8, runtime.GOMAXPROCS(0)*2)
 	iterations := 80
 
@@ -57,24 +57,12 @@ func TestCompilerCompileConcurrentSharedCompiler(t *testing.T) {
 		runConcurrentCompileWorkers(t, workers, iterations, func(worker, iter int) error {
 			source := sources[(worker+iter)%len(sources)]
 
-			program, err := compiler.Compile(source)
+			program, err := compilerInstance.Compile(source)
 			if err != nil {
 				return fmt.Errorf("compile failed: %w", err)
 			}
 
-			if program == nil {
-				return fmt.Errorf("program is nil")
-			}
-
-			if program.Source != source {
-				return fmt.Errorf("unexpected source pointer in output program")
-			}
-
-			if len(program.Bytecode) == 0 {
-				return fmt.Errorf("compiled program has no bytecode")
-			}
-
-			return nil
+			return assertCompiledProgram(program, source)
 		})
 	})
 
@@ -83,24 +71,12 @@ func TestCompilerCompileConcurrentSharedCompiler(t *testing.T) {
 			query := validQueries[(worker+iter)%len(validQueries)]
 			source := file.NewSource(fmt.Sprintf("fresh_%d_%d", worker, iter), query)
 
-			program, err := compiler.Compile(source)
+			program, err := compilerInstance.Compile(source)
 			if err != nil {
 				return fmt.Errorf("compile failed: %w", err)
 			}
 
-			if program == nil {
-				return fmt.Errorf("program is nil")
-			}
-
-			if program.Source != source {
-				return fmt.Errorf("unexpected source pointer in output program")
-			}
-
-			if len(program.Bytecode) == 0 {
-				return fmt.Errorf("compiled program has no bytecode")
-			}
-
-			return nil
+			return assertCompiledProgram(program, source)
 		})
 	})
 
@@ -165,7 +141,7 @@ RETURN wrap()
 		runConcurrentCompileWorkers(t, workers, iterations, func(worker, iter int) error {
 			entry := sources[(worker+iter)%len(sources)]
 
-			program, err := compiler.Compile(entry.source)
+			program, err := compilerInstance.Compile(entry.source)
 			if err != nil {
 				return fmt.Errorf("compile failed: %w", err)
 			}
@@ -183,7 +159,7 @@ RETURN wrap()
 			query := udfQueries[(worker+iter)%len(udfQueries)]
 			source := file.NewSource(fmt.Sprintf("udf_fresh_%d_%d", worker, iter), query.query)
 
-			program, err := compiler.Compile(source)
+			program, err := compilerInstance.Compile(source)
 			if err != nil {
 				return fmt.Errorf("compile failed: %w", err)
 			}
@@ -200,7 +176,7 @@ RETURN wrap()
 func TestCompilerCompileConcurrentInvalidQueries(t *testing.T) {
 	t.Parallel()
 
-	compiler := New(WithOptimizationLevel(O1))
+	compilerInstance := compiler.New(compiler.WithOptimizationLevel(compiler.O1))
 	workers := maxInt(8, runtime.GOMAXPROCS(0)*2)
 	iterations := 80
 
@@ -216,7 +192,7 @@ func TestCompilerCompileConcurrentInvalidQueries(t *testing.T) {
 			query := invalidQueries[(worker+iter)%len(invalidQueries)]
 			source := file.NewSource(fmt.Sprintf("invalid_%d_%d", worker, iter), query)
 
-			program, err := compiler.Compile(source)
+			program, err := compilerInstance.Compile(source)
 			if err == nil {
 				return fmt.Errorf("expected compilation error")
 			}

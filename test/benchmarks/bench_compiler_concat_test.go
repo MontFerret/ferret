@@ -1,32 +1,33 @@
-package compiler
+package benchmarks_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 func BenchmarkCompilerCompileConcatChain_O1(b *testing.B) {
-	benchmarkCompileQuery(b, buildConcatCompileQuery(false), O1)
+	benchmarkCompileQuery(b, buildConcatCompileQuery(false), compiler.O1)
 }
 
 func BenchmarkCompilerCompileStringAppend_O1(b *testing.B) {
-	benchmarkCompileQuery(b, buildConcatCompileQuery(true), O1)
+	benchmarkCompileQuery(b, buildConcatCompileQuery(true), compiler.O1)
 }
 
-func benchmarkCompileQuery(b *testing.B, query string, level OptimizationLevel) {
+func benchmarkCompileQuery(b *testing.B, query string, level compiler.OptimizationLevel) {
 	b.Helper()
 
-	compiler := New(WithOptimizationLevel(level))
+	compilerInstance := compiler.New(compiler.WithOptimizationLevel(level))
 	source := file.NewSource("concat_benchmark", query)
 
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		if _, err := compiler.Compile(source); err != nil {
+		if _, err := compilerInstance.Compile(source); err != nil {
 			b.Fatalf("compile failed: %v", err)
 		}
 	}

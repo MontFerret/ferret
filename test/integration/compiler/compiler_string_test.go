@@ -16,6 +16,6 @@ func TestString(t *testing.T) {
 		`, BC{
 				I(bytecode.OpLoadConst, 1, C(0)),
 				I(bytecode.OpReturn, 1),
-			}, "Should be possible to use multi line string").Skip(),
+			}, "Should be possible to use multi line string"),
 	})
 }
