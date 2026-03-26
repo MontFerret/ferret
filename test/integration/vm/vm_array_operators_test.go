@@ -46,6 +46,204 @@ func TestArrayOperators(t *testing.T) {
 				`,
 			[]any{[]any{"Alice"}, []any{"Tom", "Jane"}, []any{}}),
 		Array(`
+LET data = [
+	{
+		type: "div",
+		children: [
+			{
+				type: "ul",
+				children: [
+					{
+					  type: "li",
+					  innerText: "Foo 1"
+					},
+					{
+					  type: "li",
+					  innerText: "Bar 1"
+					},
+					{
+					  type: "li",
+					  innerText: "Qaz 1"
+					}
+				]
+			},
+			{
+				type: "div",
+				children: [
+					{
+					  type: "span",
+					  innerText: "A1"
+					},
+					{
+					  type: "span",
+					  innerText: "B1"
+					},
+					{
+					  type: "span",
+					  innerText: "C1"
+					}
+				]
+			}
+		]
+     },
+	{
+		type: "div",
+		children: [
+			{
+				type: "ul",
+				children: [
+					{
+					  type: "li",
+					  innerText: "Foo 2"
+					},
+					{
+					  type: "li",
+					  innerText: "Bar 2"
+					},
+					{
+					  type: "li",
+					  innerText: "Qaz 2"
+					}
+				]
+			},
+			{
+				type: "div",
+				children: [
+					{
+					  type: "span",
+					  innerText: "A2"
+					},
+					{
+					  type: "span",
+					  innerText: "B2"
+					},
+					{
+					  type: "span",
+					  innerText: "C2"
+					}
+				]
+			}
+		]
+     }
+]
+
+LET children = data[*].children[*].children
+
+RETURN children[***]
+`, []any{
+			map[string]any{"innerText": "Foo 1", "type": "li"},
+			map[string]any{"innerText": "Bar 1", "type": "li"},
+			map[string]any{"innerText": "Qaz 1", "type": "li"},
+			map[string]any{"innerText": "A1", "type": "span"},
+			map[string]any{"innerText": "B1", "type": "span"},
+			map[string]any{"innerText": "C1", "type": "span"},
+			map[string]any{"innerText": "Foo 2", "type": "li"},
+			map[string]any{"innerText": "Bar 2", "type": "li"},
+			map[string]any{"innerText": "Qaz 2", "type": "li"},
+			map[string]any{"innerText": "A2", "type": "span"},
+			map[string]any{"innerText": "B2", "type": "span"},
+			map[string]any{"innerText": "C2", "type": "span"},
+		}),
+		Array(`
+LET data = [
+	{
+		type: "div",
+		children: [
+			{
+				type: "ul",
+				children: [
+					{
+					  type: "li",
+					  innerText: "Foo 1"
+					},
+					{
+					  type: "li",
+					  innerText: "Bar 1"
+					},
+					{
+					  type: "li",
+					  innerText: "Qaz 1"
+					}
+				]
+			},
+			{
+				type: "div",
+				children: [
+					{
+					  type: "span",
+					  innerText: "A1"
+					},
+					{
+					  type: "span",
+					  innerText: "B1"
+					},
+					{
+					  type: "span",
+					  innerText: "C1"
+					}
+				]
+			}
+		]
+     },
+	{
+		type: "div",
+		children: [
+			{
+				type: "ul",
+				children: [
+					{
+					  type: "li",
+					  innerText: "Foo 2"
+					},
+					{
+					  type: "li",
+					  innerText: "Bar 2"
+					},
+					{
+					  type: "li",
+					  innerText: "Qaz 2"
+					}
+				]
+			},
+			{
+				type: "div",
+				children: [
+					{
+					  type: "span",
+					  innerText: "A2"
+					},
+					{
+					  type: "span",
+					  innerText: "B2"
+					},
+					{
+					  type: "span",
+					  innerText: "C2"
+					}
+				]
+			}
+		]
+     }
+]
+
+LET children = data[*].children[*].children[***]
+
+RETURN children
+`, []any{
+			map[string]any{"innerText": "Foo 1", "type": "li"},
+			map[string]any{"innerText": "Bar 1", "type": "li"},
+			map[string]any{"innerText": "Qaz 1", "type": "li"},
+			map[string]any{"innerText": "A1", "type": "span"},
+			map[string]any{"innerText": "B1", "type": "span"},
+			map[string]any{"innerText": "C1", "type": "span"},
+			map[string]any{"innerText": "Foo 2", "type": "li"},
+			map[string]any{"innerText": "Bar 2", "type": "li"},
+			map[string]any{"innerText": "Qaz 2", "type": "li"},
+			map[string]any{"innerText": "A2", "type": "span"},
+			map[string]any{"innerText": "B2", "type": "span"},
+			map[string]any{"innerText": "C2", "type": "span"},
+		}),
+		Array(`
 					LET users = [
 						{ name: "John", age: 30 },
 						{ name: "Mary", age: 25 },
@@ -157,6 +355,12 @@ LET users = [
 		Array(`
 LET arr = [ [ 1, 2 ], 3, [ 4, 5 ], 6 ]
 RETURN arr[** FILTER . % 2 == 0]`, []any{2, 4, 6}),
+		Array(`
+LET users = [
+	{ children: [[1, 2], [3]] },
+	{ children: [[4], [5, 6]] }
+]
+RETURN users[*].children[*** FILTER . % 2 == 0 RETURN . * 10]`, []any{20, 40, 60}),
 		Array(`
 LET values = [1, 2, 3, 4]
 RETURN values[* LIMIT 2]`, []any{1, 2}),

@@ -2129,6 +2129,22 @@ func splitArrayOperatorTail(segments []fql.IMemberExpressionPathContext) ([]fql.
 	return segments, nil
 }
 
+// splitTerminalArrayContractionTail hoists only the final contraction segment.
+// Earlier array operators stay in the per-element tail so existing projection semantics remain unchanged.
+func splitTerminalArrayContractionTail(segments []fql.IMemberExpressionPathContext) ([]fql.IMemberExpressionPathContext, fql.IArrayContractionContext) {
+	if len(segments) == 0 {
+		return nil, nil
+	}
+
+	last := segments[len(segments)-1].(*fql.MemberExpressionPathContext)
+	contraction := last.ArrayContraction()
+	if contraction == nil {
+		return segments, nil
+	}
+
+	return segments[:len(segments)-1], contraction
+}
+
 func (c *ExprCompiler) compileArrayExpansionChain(src bytecode.Operand, expansion fql.IArrayExpansionContext, tail []fql.IMemberExpressionPathContext) bytecode.Operand {
 	inline := expansion.InlineExpression()
 
@@ -2759,6 +2775,8 @@ func arrayContractionDepth(ctx fql.IArrayContractionContext) int {
 }
 
 func (c *ExprCompiler) compileArrayIteration(src bytecode.Operand, span file.Span, tail []fql.IMemberExpressionPathContext, inline fql.IInlineExpressionContext, extraFilters []fql.IExpressionContext) bytecode.Operand {
+	tail, postLoopContraction := splitTerminalArrayContractionTail(tail)
+
 	loop := &core.Loop{
 		Kind:     core.ForInLoop,
 		Type:     core.NormalLoop,
@@ -2812,6 +2830,10 @@ func (c *ExprCompiler) compileArrayIteration(src bytecode.Operand, span file.Spa
 
 	if loop.Dst.IsRegister() {
 		c.ctx.Types.Set(loop.Dst, core.TypeList)
+	}
+
+	if postLoopContraction != nil {
+		return c.compileArrayContraction(loop.Dst, postLoopContraction, nil)
 	}
 
 	return loop.Dst
