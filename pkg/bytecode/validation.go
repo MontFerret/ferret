@@ -296,8 +296,13 @@ func validateInstructions(program *Program) error {
 				return err
 			}
 
-			if int(src1) < 0 {
+			size := int(src1)
+			if size < 0 {
 				return fmt.Errorf("%w: pc %d src1 must be non-negative", ErrInvalidInstruction, pc)
+			}
+
+			if size > MaxCollectionPreallocation {
+				return fmt.Errorf("%w: pc %d src1 preallocation %d exceeds limit %d", ErrInvalidInstruction, pc, size, MaxCollectionPreallocation)
 			}
 		case OpLoadRange, OpLoadIndex, OpLoadIndexOptional, OpLoadKey, OpLoadKeyOptional,
 			OpLoadProperty, OpLoadPropertyOptional, OpPushKV, OpObjectSet,

@@ -58,6 +58,20 @@ func TestValidateProgram(t *testing.T) {
 			}),
 			target: ErrInvalidInstruction,
 		},
+		{
+			name: "array_preallocation_too_large",
+			program: withProgramMutation(func(program *Program) {
+				program.Bytecode[0] = NewInstruction(OpLoadArray, NewRegister(0), Operand(MaxCollectionPreallocation+1))
+			}),
+			target: ErrInvalidInstruction,
+		},
+		{
+			name: "object_preallocation_too_large",
+			program: withProgramMutation(func(program *Program) {
+				program.Bytecode[0] = NewInstruction(OpLoadObject, NewRegister(0), Operand(MaxCollectionPreallocation+1))
+			}),
+			target: ErrInvalidInstruction,
+		},
 	}
 
 	for _, tc := range tests {
