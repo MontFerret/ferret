@@ -9,11 +9,11 @@
 	<a href="https://codecov.io/gh/MontFerret/ferret">
 		<img src="https://codecov.io/gh/MontFerret/ferret/branch/main/graph/badge.svg" />
 	</a>
-	<a href="https://discord.gg/kzet32U">
-		<img alt="Discord Chat" src="https://img.shields.io/discord/501533080880676864.svg">
+	<a href="https://mastodon.social/@montferret">
+		<img alt="Mastodon Follow" src="https://img.shields.io/mastodon/follow/114576925880917699?domain=mastodon.social">
 	</a>
 	<a href="https://t.me/montferret_chat">
-		<img alt="Discord Chat" src="https://raw.githubusercontent.com/Patrolavia/telegram-badge/master/chat.svg">
+		<img alt="Telegram Group" src="https://raw.githubusercontent.com/Patrolavia/telegram-badge/master/chat.svg">
 	</a>
 	<a href="https://github.com/MontFerret/ferret/releases">
 		<img alt="Ferret release" src="https://img.shields.io/github/release/MontFerret/ferret.svg">

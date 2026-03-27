@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
@@ -21,6 +22,7 @@ type (
 		library           runtime.Library
 		params            runtime.Params
 		encoding          *encoding.Registry
+		programLoader     *artifact.Loader
 		hooks             *hookRegistry
 		compiler          []compiler.Option
 		modules           []Module
@@ -75,11 +77,12 @@ func newSessionOptions(setters []SessionOption) (*sessionOptions, error) {
 
 func newOptions(setters []Option) (*options, error) {
 	opts := &options{
-		compiler: []compiler.Option{},
-		library:  runtime.NewLibrary(),
-		params:   make(map[string]runtime.Value),
-		encoding: encoding.NewRegistry(encodingjson.Default, encodingmsgpack.Default),
-		hooks:    newHookRegistry(),
+		compiler:      []compiler.Option{},
+		library:       runtime.NewLibrary(),
+		params:        make(map[string]runtime.Value),
+		encoding:      encoding.NewRegistry(encodingjson.Default, encodingmsgpack.Default),
+		programLoader: artifact.NewDefaultLoader(),
+		hooks:         newHookRegistry(),
 		logging: runtime.LogSettings{
 			Writer: os.Stdout,
 			Level:  runtime.ErrorLevel,
@@ -195,6 +198,18 @@ func WithEncodingRegistry(registry *encoding.Registry) Option {
 		}
 
 		opts.encoding = registry
+		return nil
+	}
+}
+
+// WithProgramLoader sets a custom artifact loader for Engine.Load.
+func WithProgramLoader(loader *artifact.Loader) Option {
+	return func(opts *options) error {
+		if loader == nil {
+			return fmt.Errorf("program loader cannot be nil")
+		}
+
+		opts.programLoader = loader
 		return nil
 	}
 }
