@@ -32,7 +32,7 @@ type (
 	}
 )
 
-var NoopIter = NewIterator(&noopIter{})
+var NoopIter = NewIterator(runtime.NoopIterator)
 
 func NewIterator(src runtime.Iterator) *Iterator {
 	return &Iterator{
