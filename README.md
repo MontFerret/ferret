@@ -10,7 +10,7 @@
 		<img src="https://codecov.io/gh/MontFerret/ferret/branch/main/graph/badge.svg" />
 	</a>
 	<a href="https://mastodon.social/@montferret">
-		<img alt="Mastodon Follow" src="https://img.shields.io/mastodon/follow/114576925880917699?domain=mastodon.social">
+		<img alt="Mastodon Follow" src="https://img.shields.io/mastodon/follow/114576925880917699?domain=mastodon.social&style=flat">
 	</a>
 	<a href="https://t.me/montferret_chat">
 		<img alt="Telegram Group" src="https://raw.githubusercontent.com/Patrolavia/telegram-badge/master/chat.svg">
