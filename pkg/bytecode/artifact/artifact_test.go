@@ -387,3 +387,45 @@ func TestLoaderRejectsOversizedMultiSorterDirectionCount(t *testing.T) {
 		t.Fatalf("expected bytecode.ErrInvalidInstruction, got %v", err)
 	}
 }
+
+func TestLoaderAcceptsMaxEncodedSortDirections(t *testing.T) {
+	isaVersion := bytecode.Version
+	registers := 1
+	bytecodeFrame := []persist.InstructionFrame{
+		{
+			Opcode:   uint8(bytecode.OpDataSetMultiSorter),
+			Operands: [3]int64{0, int64(1 << (bytecode.MaxEncodedSortDirections - 1)), int64(bytecode.MaxEncodedSortDirections)},
+		},
+		{
+			Opcode:   uint8(bytecode.OpReturn),
+			Operands: [3]int64{0, 0, 0},
+		},
+	}
+
+	frame := persist.ProgramFrame{
+		ISAVersion: &isaVersion,
+		Registers:  &registers,
+		Bytecode:   &bytecodeFrame,
+	}
+
+	payload, err := gojson.Marshal(frame)
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+
+	header := header{
+		Magic:         magic,
+		Format:        FormatJSON,
+		SchemaVersion: schemaVersion,
+		ISAVersion:    uint16(bytecode.Version),
+		PayloadLength: uint32(len(payload)),
+	}
+
+	data := make([]byte, headerSize+len(payload))
+	encodeHeader(data[:headerSize], header)
+	copy(data[headerSize:], payload)
+
+	if _, err := Unmarshal(data); err != nil {
+		t.Fatalf("expected max encoded sort direction count to be accepted, got %v", err)
+	}
+}

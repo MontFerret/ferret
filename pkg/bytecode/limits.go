@@ -8,7 +8,8 @@ import "math/bits"
 const MaxCollectionPreallocation = 1 << 20
 
 // MaxEncodedSortDirections limits the number of sort directions that can be
-// encoded into OpDataSetMultiSorter. The directions are bit-packed into an int,
-// so counts beyond the machine word size are not representable and must be
-// rejected during persisted-program validation.
-const MaxEncodedSortDirections = bits.UintSize
+// encoded into OpDataSetMultiSorter using the current signed-int bit-packing.
+// The highest bit must remain clear so the encoded operand stays non-negative,
+// which caps the supported direction count at one less than the machine word
+// size during persisted-program validation.
+const MaxEncodedSortDirections = bits.UintSize - 1

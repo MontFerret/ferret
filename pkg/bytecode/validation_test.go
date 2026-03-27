@@ -91,6 +91,21 @@ func TestValidateProgram(t *testing.T) {
 	}
 }
 
+func TestValidateProgramAllowsMaxEncodedSortDirections(t *testing.T) {
+	program := withProgramMutation(func(program *Program) {
+		program.Bytecode[0] = NewInstruction(
+			OpDataSetMultiSorter,
+			NewRegister(0),
+			Operand(1<<(MaxEncodedSortDirections-1)),
+			Operand(MaxEncodedSortDirections),
+		)
+	})
+
+	if err := ValidateProgram(program); err != nil {
+		t.Fatalf("expected max encoded sort direction count to be valid, got %v", err)
+	}
+}
+
 func validValidationProgram() *Program {
 	return &Program{
 		Source: file.NewSource("validation.fql", "RETURN 1"),
