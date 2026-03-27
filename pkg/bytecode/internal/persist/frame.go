@@ -3,6 +3,7 @@ package persist
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -273,13 +274,20 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 
 	instructions := make([]bytecode.Instruction, len(*frame.Bytecode))
 	for i, inst := range *frame.Bytecode {
+		var operands [3]bytecode.Operand
+
+		for operandIdx, value := range inst.Operands {
+			decoded, err := decodeInstructionOperand(value)
+			if err != nil {
+				return nil, fmt.Errorf("decode instruction %d operand %d: %w", i, operandIdx, err)
+			}
+
+			operands[operandIdx] = decoded
+		}
+
 		instructions[i] = bytecode.Instruction{
-			Opcode: bytecode.Opcode(inst.Opcode),
-			Operands: [3]bytecode.Operand{
-				bytecode.Operand(inst.Operands[0]),
-				bytecode.Operand(inst.Operands[1]),
-				bytecode.Operand(inst.Operands[2]),
-			},
+			Opcode:   bytecode.Opcode(inst.Opcode),
+			Operands: operands,
 		}
 	}
 
@@ -381,6 +389,29 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 	}
 
 	return program, nil
+}
+
+func decodeInstructionOperand(value int64) (bytecode.Operand, error) {
+	if err := validateInstructionOperandForBitSize(value, strconv.IntSize); err != nil {
+		return 0, err
+	}
+
+	return bytecode.Operand(value), nil
+}
+
+func validateInstructionOperandForBitSize(value int64, bitSize int) error {
+	minValue, maxValue := operandRangeForBitSize(bitSize)
+	if value < minValue || value > maxValue {
+		return fmt.Errorf("%w: operand value %d overflows %d-bit operand range [%d,%d]", bytecode.ErrInvalidProgram, value, bitSize, minValue, maxValue)
+	}
+
+	return nil
+}
+
+func operandRangeForBitSize(bitSize int) (int64, int64) {
+	maxValue := int64((uint64(1) << (bitSize - 1)) - 1)
+
+	return -maxValue - 1, maxValue
 }
 
 func encodeConstant(value runtime.Value) (ConstantFrame, error) {
