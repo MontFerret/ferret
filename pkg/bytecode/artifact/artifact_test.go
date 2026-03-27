@@ -75,6 +75,26 @@ func TestMarshalAllowsConcatImmediateCountAtRegisterLimit(t *testing.T) {
 	}
 }
 
+func TestPayloadLengthForHeader(t *testing.T) {
+	t.Run("max_uint32", func(t *testing.T) {
+		length, err := payloadLengthForHeader(^uint64(0) >> 32)
+		if err != nil {
+			t.Fatalf("expected max uint32 payload length to be valid, got %v", err)
+		}
+
+		if got, want := length, ^uint32(0); got != want {
+			t.Fatalf("unexpected payload length: got %d, want %d", got, want)
+		}
+	})
+
+	t.Run("overflow", func(t *testing.T) {
+		_, err := payloadLengthForHeader(uint64(^uint32(0)) + 1)
+		if !errors.Is(err, ErrInvalidHeader) {
+			t.Fatalf("expected ErrInvalidHeader, got %v", err)
+		}
+	})
+}
+
 func TestLoaderRejectsInvalidHeaders(t *testing.T) {
 	program := newArtifactTestProgram()
 	data, err := Marshal(program, Options{})

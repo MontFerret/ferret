@@ -2,6 +2,7 @@ package artifact
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	programformat "github.com/MontFerret/ferret/v2/pkg/bytecode/format"
@@ -50,8 +51,9 @@ func Marshal(program *bytecode.Program, opts Options) ([]byte, error) {
 		return nil, err
 	}
 
-	if len(payload) > int(^uint32(0)) {
-		return nil, fmt.Errorf("%w: payload length %d overflows header field", ErrInvalidHeader, len(payload))
+	payloadLength, err := payloadLengthForHeader(uint64(len(payload)))
+	if err != nil {
+		return nil, err
 	}
 
 	header := header{
@@ -60,7 +62,7 @@ func Marshal(program *bytecode.Program, opts Options) ([]byte, error) {
 		SchemaVersion: schemaVersion,
 		ISAVersion:    uint16(program.ISAVersion),
 		Flags:         0,
-		PayloadLength: uint32(len(payload)),
+		PayloadLength: payloadLength,
 	}
 
 	data := make([]byte, headerSize+len(payload))
@@ -73,4 +75,12 @@ func Marshal(program *bytecode.Program, opts Options) ([]byte, error) {
 // Unmarshal decodes a self-describing artifact using the built-in loader.
 func Unmarshal(data []byte) (*bytecode.Program, error) {
 	return defaultLoader.Load(data)
+}
+
+func payloadLengthForHeader(length uint64) (uint32, error) {
+	if length > math.MaxUint32 {
+		return 0, fmt.Errorf("%w: payload length %d overflows header field", ErrInvalidHeader, length)
+	}
+
+	return uint32(length), nil
 }

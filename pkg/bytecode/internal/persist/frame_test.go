@@ -10,9 +10,9 @@ import (
 
 func TestValidateInstructionOperandForBitSize(t *testing.T) {
 	tests := []struct {
+		name    string
 		value   int64
 		bitSize int
-		name    string
 		wantErr bool
 	}{
 		{
