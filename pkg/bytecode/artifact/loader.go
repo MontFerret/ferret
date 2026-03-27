@@ -81,8 +81,9 @@ func (l *Loader) Load(data []byte) (*bytecode.Program, error) {
 
 	payload := data[headerSize:]
 	program, err := format.Unmarshal(payload)
+
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidPayload, err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidPayload, err)
 	}
 
 	if program.ISAVersion != int(header.ISAVersion) {
