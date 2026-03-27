@@ -72,6 +72,13 @@ func TestValidateProgram(t *testing.T) {
 			}),
 			target: ErrInvalidInstruction,
 		},
+		{
+			name: "multi_sorter_direction_count_too_large",
+			program: withProgramMutation(func(program *Program) {
+				program.Bytecode[0] = NewInstruction(OpDataSetMultiSorter, NewRegister(0), Operand(0), Operand(MaxEncodedSortDirections+1))
+			}),
+			target: ErrInvalidInstruction,
+		},
 	}
 
 	for _, tc := range tests {

@@ -472,6 +472,10 @@ func validateInstructions(program *Program) error {
 			if int(src1) < 0 || int(src2) < 0 {
 				return fmt.Errorf("%w: pc %d sorter operands must be non-negative", ErrInvalidInstruction, pc)
 			}
+
+			if count := int(src2); count > MaxEncodedSortDirections {
+				return fmt.Errorf("%w: pc %d sorter direction count %d exceeds limit %d", ErrInvalidInstruction, pc, count, MaxEncodedSortDirections)
+			}
 		case OpFlatten:
 			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
 				return err
