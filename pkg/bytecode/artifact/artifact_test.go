@@ -62,6 +62,19 @@ func TestMarshalRejectsUnknownFormat(t *testing.T) {
 	}
 }
 
+func TestMarshalAllowsConcatImmediateCountAtRegisterLimit(t *testing.T) {
+	program := newArtifactTestProgram()
+	program.Registers = 3
+	program.Bytecode = []bytecode.Instruction{
+		bytecode.NewInstruction(bytecode.OpConcat, bytecode.NewRegister(0), bytecode.NewRegister(0), bytecode.Operand(program.Registers)),
+		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+	}
+
+	if _, err := Marshal(program, Options{}); err != nil {
+		t.Fatalf("expected Marshal() to accept valid concat immediate count, got %v", err)
+	}
+}
+
 func TestLoaderRejectsInvalidHeaders(t *testing.T) {
 	program := newArtifactTestProgram()
 	data, err := Marshal(program, Options{})
@@ -348,6 +361,53 @@ func TestLoaderRejectsOversizedMultiSorterDirectionCount(t *testing.T) {
 		{
 			Opcode:   uint8(bytecode.OpDataSetMultiSorter),
 			Operands: [3]int64{0, 0, int64(bytecode.MaxEncodedSortDirections + 1)},
+		},
+		{
+			Opcode:   uint8(bytecode.OpReturn),
+			Operands: [3]int64{0, 0, 0},
+		},
+	}
+
+	frame := persist.ProgramFrame{
+		ISAVersion: &isaVersion,
+		Registers:  &registers,
+		Bytecode:   &bytecodeFrame,
+	}
+
+	payload, err := gojson.Marshal(frame)
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+
+	header := header{
+		Magic:         magic,
+		Format:        FormatJSON,
+		SchemaVersion: schemaVersion,
+		ISAVersion:    uint16(bytecode.Version),
+		PayloadLength: uint32(len(payload)),
+	}
+
+	data := make([]byte, headerSize+len(payload))
+	encodeHeader(data[:headerSize], header)
+	copy(data[headerSize:], payload)
+
+	_, err = Unmarshal(data)
+	if !errors.Is(err, ErrInvalidPayload) {
+		t.Fatalf("expected ErrInvalidPayload, got %v", err)
+	}
+
+	if !errors.Is(err, bytecode.ErrInvalidInstruction) {
+		t.Fatalf("expected bytecode.ErrInvalidInstruction, got %v", err)
+	}
+}
+
+func TestLoaderRejectsConcatRangeOutOfBounds(t *testing.T) {
+	isaVersion := bytecode.Version
+	registers := 3
+	bytecodeFrame := []persist.InstructionFrame{
+		{
+			Opcode:   uint8(bytecode.OpConcat),
+			Operands: [3]int64{0, 2, 2},
 		},
 		{
 			Opcode:   uint8(bytecode.OpReturn),

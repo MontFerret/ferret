@@ -306,7 +306,7 @@ func validateInstructions(program *Program) error {
 			}
 		case OpLoadRange, OpLoadIndex, OpLoadIndexOptional, OpLoadKey, OpLoadKeyOptional,
 			OpLoadProperty, OpLoadPropertyOptional, OpPushKV, OpObjectSet,
-			OpDispatch, OpStream, OpStreamIter, OpAdd, OpConcat, OpSub,
+			OpDispatch, OpStream, OpStreamIter, OpAdd, OpSub,
 			OpMul, OpDiv, OpMod, OpCmp, OpEq, OpNe, OpGt, OpLt, OpGte,
 			OpLte, OpIn, OpLike, OpRegexp, OpAllEq, OpAllNe, OpAllGt,
 			OpAllGte, OpAllLt, OpAllLte, OpAllIn, OpAnyEq, OpAnyNe,
@@ -322,6 +322,18 @@ func validateInstructions(program *Program) error {
 			}
 
 			if err := validateRegisterOperand(src2, registers, pc, "src2"); err != nil {
+				return err
+			}
+		case OpConcat:
+			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
+				return err
+			}
+
+			if err := validateRegisterOperand(src1, registers, pc, "src1"); err != nil {
+				return err
+			}
+
+			if err := validateRegisterCountRange(src1, src2, registers, pc); err != nil {
 				return err
 			}
 		case OpLoadAggregateKey:
@@ -585,6 +597,28 @@ func validateCallRange(start, end Operand, registers, pc int) error {
 
 	if end.Register() >= registers {
 		return fmt.Errorf("%w: pc %d call argument range end %d out of range", ErrInvalidInstruction, pc, end.Register())
+	}
+
+	return nil
+}
+
+func validateRegisterCountRange(start, count Operand, registers, pc int) error {
+	if !start.IsRegister() {
+		return fmt.Errorf("%w: pc %d concat source must start at a register", ErrInvalidInstruction, pc)
+	}
+
+	if count < 0 {
+		return fmt.Errorf("%w: pc %d concat register count must be non-negative", ErrInvalidInstruction, pc)
+	}
+
+	startReg := start.Register()
+	if startReg < 0 || startReg >= registers {
+		return fmt.Errorf("%w: pc %d concat start register %d out of range", ErrInvalidInstruction, pc, startReg)
+	}
+
+	countVal := int(count)
+	if countVal > registers-startReg {
+		return fmt.Errorf("%w: pc %d concat register range [%d,%d) exceeds register file size %d", ErrInvalidInstruction, pc, startReg, startReg+countVal, registers)
 	}
 
 	return nil

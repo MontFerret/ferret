@@ -79,6 +79,13 @@ func TestValidateProgram(t *testing.T) {
 			}),
 			target: ErrInvalidInstruction,
 		},
+		{
+			name: "concat_register_range_out_of_bounds",
+			program: withProgramMutation(func(program *Program) {
+				program.Bytecode[0] = NewInstruction(OpConcat, NewRegister(0), NewRegister(2), Operand(2))
+			}),
+			target: ErrInvalidInstruction,
+		},
 	}
 
 	for _, tc := range tests {
@@ -103,6 +110,16 @@ func TestValidateProgramAllowsMaxEncodedSortDirections(t *testing.T) {
 
 	if err := ValidateProgram(program); err != nil {
 		t.Fatalf("expected max encoded sort direction count to be valid, got %v", err)
+	}
+}
+
+func TestValidateProgramAllowsConcatImmediateCountAtRegisterLimit(t *testing.T) {
+	program := withProgramMutation(func(program *Program) {
+		program.Bytecode[0] = NewInstruction(OpConcat, NewRegister(0), NewRegister(0), Operand(program.Registers))
+	})
+
+	if err := ValidateProgram(program); err != nil {
+		t.Fatalf("expected concat immediate count at register limit to be valid, got %v", err)
 	}
 }
 
