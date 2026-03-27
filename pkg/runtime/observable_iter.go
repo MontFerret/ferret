@@ -14,11 +14,11 @@ type StreamIterator struct {
 	closed      bool
 }
 
-func NewIterator(stream Stream) Iterator {
-	return NewIteratorWithTimeout(stream, DefaultStreamTimeout)
+func NewStreamIterator(stream Stream) Iterator {
+	return NewStreamIteratorWithTimeout(stream, DefaultStreamTimeout)
 }
 
-func NewIteratorWithTimeout(stream Stream, timeout time.Duration) Iterator {
+func NewStreamIteratorWithTimeout(stream Stream, timeout time.Duration) Iterator {
 	return &StreamIterator{
 		stream:  stream,
 		timeout: timeout * time.Millisecond,

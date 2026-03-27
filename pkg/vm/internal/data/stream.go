@@ -20,10 +20,10 @@ func NewStreamValue(stream runtime.Stream) runtime.Value {
 
 func (v *StreamValue) Iterate(timeout runtime.Int) IteratorState {
 	if timeout == 0 {
-		return WrapIterator(runtime.NewIterator(v.Value))
+		return WrapIterator(runtime.NewStreamIterator(v.Value))
 	}
 
-	return WrapIterator(runtime.NewIteratorWithTimeout(v.Value, time.Duration(timeout)))
+	return WrapIterator(runtime.NewStreamIteratorWithTimeout(v.Value, time.Duration(timeout)))
 }
 
 func (v *StreamValue) Close() error {
