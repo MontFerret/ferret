@@ -71,7 +71,7 @@ FOR u IN users
 		{
 			Input:       spec.NewExpressionInput("RETURN @doc[~ text]"),
 			Expected:    []any{"ok"},
-			Env:         []vm.EnvironmentOption{vm.WithParams(map[string]runtime.Value{"doc": queryable})},
+			Env:         []vm.EnvironmentOption{vm.WithParams(runtime.Params{"doc": queryable})},
 			Description: "Query literal without params",
 		},
 		{
