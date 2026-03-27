@@ -11,6 +11,11 @@ type Loader struct {
 	formats map[FormatID]programformat.Format
 }
 
+// NewDefaultLoader creates a loader with the built-in artifact payload formats.
+func NewDefaultLoader() *Loader {
+	return NewLoader(builtinRegisteredFormats()...)
+}
+
 // NewLoader creates an artifact loader with an explicit set of registered
 // payload formats. Nil or duplicate registrations panic.
 func NewLoader(formats ...RegisteredFormat) *Loader {

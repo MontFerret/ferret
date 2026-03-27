@@ -6,6 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
+	formatjson "github.com/MontFerret/ferret/v2/pkg/bytecode/format/json"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -66,6 +69,27 @@ func mustNewSession(t *testing.T, plan *Plan, setters ...SessionOption) *Session
 	}
 
 	return session
+}
+
+func mustMarshalArtifact(t *testing.T, query string, opts ...artifact.Options) []byte {
+	t.Helper()
+
+	prog, err := compiler.New().Compile(file.NewAnonymousSource(query))
+	if err != nil {
+		t.Fatalf("failed to compile query %q: %v", query, err)
+	}
+
+	marshalOpts := artifact.Options{}
+	if len(opts) > 0 {
+		marshalOpts = opts[0]
+	}
+
+	data, err := artifact.Marshal(prog, marshalOpts)
+	if err != nil {
+		t.Fatalf("failed to marshal artifact: %v", err)
+	}
+
+	return data
 }
 
 func TestEngineNewReturnsOptionError(t *testing.T) {
@@ -398,6 +422,153 @@ func TestEngineRunReturnsCompileErrorWithoutPlanClose(t *testing.T) {
 
 	if planCloseCalled {
 		t.Fatal("plan close hooks should not run when plan was never created")
+	}
+}
+
+func TestEngineLoadCreatesExecutablePlan(t *testing.T) {
+	t.Parallel()
+
+	eng := mustNewEngine(t)
+	data := mustMarshalArtifact(t, "RETURN 1 + 1")
+
+	plan, err := eng.Load(data)
+	if err != nil {
+		t.Fatalf("expected load to succeed, got %v", err)
+	}
+
+	session := mustNewSession(t, plan)
+	out, err := session.Run(context.Background())
+	if err != nil {
+		t.Fatalf("expected loaded plan to run, got %v", err)
+	}
+
+	if got, want := string(out.Content), "2"; got != want {
+		t.Fatalf("unexpected output: got %q, want %q", got, want)
+	}
+}
+
+func TestEngineLoadUsesConfiguredProgramLoader(t *testing.T) {
+	t.Parallel()
+
+	eng := mustNewEngine(t, WithProgramLoader(
+		artifact.NewLoader(
+			artifact.RegisteredFormat{ID: artifact.FormatJSON, Format: formatjson.Default},
+		),
+	))
+
+	data := mustMarshalArtifact(t, "RETURN 1")
+
+	plan, err := eng.Load(data)
+	if err == nil {
+		t.Fatal("expected load to fail when configured loader cannot decode default format")
+	}
+
+	if plan != nil {
+		t.Fatal("expected plan to be nil when loader fails")
+	}
+
+	if !errors.Is(err, artifact.ErrUnknownFormat) {
+		t.Fatalf("expected ErrUnknownFormat, got %v", err)
+	}
+}
+
+func TestEngineLoadDoesNotRunCompileHooks(t *testing.T) {
+	t.Parallel()
+
+	beforeCalled := false
+	afterCalled := false
+	eng := mustNewEngine(t,
+		WithBeforeCompileHook(func(context.Context) error {
+			beforeCalled = true
+			return errors.New("before compile should not run")
+		}),
+		WithAfterCompileHook(func(context.Context, error) error {
+			afterCalled = true
+			return errors.New("after compile should not run")
+		}),
+	)
+
+	data := mustMarshalArtifact(t, "RETURN 1")
+
+	plan, err := eng.Load(data)
+	if err != nil {
+		t.Fatalf("expected load to succeed without compile hooks, got %v", err)
+	}
+
+	if plan == nil {
+		t.Fatal("expected load to return a plan")
+	}
+
+	if beforeCalled {
+		t.Fatal("before compile hook must not run on load")
+	}
+
+	if afterCalled {
+		t.Fatal("after compile hook must not run on load")
+	}
+}
+
+func TestEngineLoadFailureDoesNotRunPlanCloseHooks(t *testing.T) {
+	t.Parallel()
+
+	planCloseCalled := false
+	eng := mustNewEngine(t, WithPlanCloseHook(func() error {
+		planCloseCalled = true
+		return nil
+	}))
+
+	plan, err := eng.Load([]byte("bad artifact"))
+	if err == nil {
+		t.Fatal("expected load to fail for invalid artifact")
+	}
+
+	if plan != nil {
+		t.Fatal("expected plan to be nil when load fails")
+	}
+
+	if planCloseCalled {
+		t.Fatal("plan close hooks should not run when plan was never created")
+	}
+}
+
+func TestEngineLoadPlanRunsPlanCloseHooks(t *testing.T) {
+	t.Parallel()
+
+	planCloseCalled := false
+	eng := mustNewEngine(t, WithPlanCloseHook(func() error {
+		planCloseCalled = true
+		return nil
+	}))
+
+	data := mustMarshalArtifact(t, "RETURN 1")
+	plan, err := eng.Load(data)
+	if err != nil {
+		t.Fatalf("expected load to succeed, got %v", err)
+	}
+
+	if err := plan.Close(); err != nil {
+		t.Fatalf("expected close to succeed, got %v", err)
+	}
+
+	if !planCloseCalled {
+		t.Fatal("expected plan close hook to run for loaded plan")
+	}
+}
+
+func TestEngineNewReturnsProgramLoaderOptionError(t *testing.T) {
+	t.Parallel()
+
+	eng, err := New(WithProgramLoader(nil))
+	if err == nil {
+		t.Fatal("expected New to fail for nil program loader")
+	}
+
+	if eng != nil {
+		t.Fatal("expected engine to be nil on program loader option error")
+	}
+
+	if !strings.Contains(err.Error(), "program loader cannot be nil") {
+		t.Fatalf("expected program loader validation error, got: %v", err)
 	}
 }
 

@@ -14,11 +14,15 @@ var (
 		FormatJSON:    formatjson.Default,
 		FormatMsgPack: formatmsgpack.Default,
 	}
-	defaultLoader = NewLoader(
-		RegisteredFormat{ID: FormatJSON, Format: formatjson.Default},
-		RegisteredFormat{ID: FormatMsgPack, Format: formatmsgpack.Default},
-	)
+	defaultLoader = NewDefaultLoader()
 )
+
+func builtinRegisteredFormats() []RegisteredFormat {
+	return []RegisteredFormat{
+		{ID: FormatJSON, Format: formatjson.Default},
+		{ID: FormatMsgPack, Format: formatmsgpack.Default},
+	}
+}
 
 // Marshal serializes a program into a self-describing artifact using one of the
 // built-in payload formats.

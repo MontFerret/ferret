@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -13,6 +15,7 @@ import (
 
 type Engine struct {
 	compiler *compiler.Compiler
+	loader   *artifact.Loader
 	host     *host
 	hooks    *hookRegistry
 	limiter  *sessionLimiter
@@ -62,6 +65,7 @@ func New(setters ...Option) (*Engine, error) {
 
 	return &Engine{
 		compiler: compiler.New(opts.compiler...),
+		loader:   opts.programLoader,
 		host:     h,
 		hooks:    hooks,
 		limiter:  newSessionLimiter(opts.maxActiveSessions),
@@ -71,6 +75,10 @@ func New(setters ...Option) (*Engine, error) {
 }
 
 func (e *Engine) Compile(ctx context.Context, src *file.Source) (*Plan, error) {
+	if e == nil {
+		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is nil")
+	}
+
 	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
 		return nil, fmt.Errorf("before compile hooks: %w", err)
 	}
@@ -86,14 +94,21 @@ func (e *Engine) Compile(ctx context.Context, src *file.Source) (*Plan, error) {
 		return nil, err
 	}
 
-	return &Plan{
-		prog:         prog,
-		host:         e.host,
-		hooks:        e.hooks.plan,
-		sessionHooks: e.hooks.session,
-		limiter:      e.limiter,
-		pool:         vm.NewPoolWithLimits(prog, e.idleCap, e.totalCap),
-	}, nil
+	return e.newPlan(prog)
+}
+
+// Load decodes a serialized program artifact and wraps it in a reusable plan.
+func (e *Engine) Load(data []byte) (*Plan, error) {
+	if e == nil {
+		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is nil")
+	}
+
+	prog, err := e.loader.Load(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return e.newPlan(prog)
 }
 
 func (e *Engine) Run(ctx context.Context, src *file.Source, opts ...SessionOption) (*Output, error) {
@@ -141,4 +156,19 @@ func (e *Engine) Close() error {
 	}
 
 	return nil
+}
+
+func (e *Engine) newPlan(prog *bytecode.Program) (*Plan, error) {
+	if e == nil {
+		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is nil")
+	}
+
+	return &Plan{
+		prog:         prog,
+		host:         e.host,
+		hooks:        e.hooks.plan,
+		sessionHooks: e.hooks.session,
+		limiter:      e.limiter,
+		pool:         vm.NewPoolWithLimits(prog, e.idleCap, e.totalCap),
+	}, nil
 }
