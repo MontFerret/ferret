@@ -166,13 +166,14 @@ func (p *Proxy[T]) Get(ctx context.Context, key runtime.Value) (runtime.Value, e
 }
 
 func (p *Proxy[T]) Iterate(ctx context.Context) (runtime.Iterator, error) {
-	iterable, ok := p.target.(runtime.Iterable)
-
-	if ok {
-		return iterable.Iterate(ctx)
+	switch t := p.target.(type) {
+	case runtime.Iterable:
+		return t.Iterate(ctx)
+	case runtime.Iterator:
+		return t, nil
+	default:
+		return nil, ProxyError(p.target, runtime.TypeIterable, runtime.TypeIterator)
 	}
-
-	return nil, ProxyError(p.target, runtime.TypeIterable)
 }
 
 func (p *Proxy[T]) Dispatch(ctx context.Context, event runtime.DispatchEvent) (runtime.Value, error) {
