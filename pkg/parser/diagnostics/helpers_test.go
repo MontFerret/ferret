@@ -2,8 +2,6 @@ package diagnostics
 
 import (
 	"testing"
-
-	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 func TestHas(t *testing.T) {
@@ -356,11 +354,11 @@ func TestIsValidString(t *testing.T) {
 }
 
 func TestSpanFromTokenSafe_EdgeCases(t *testing.T) {
-	src := file.NewSource("test.fql", "LET x = 1") // Length: 9
+	src := source.NewSource("test.fql", "LET x = 1") // Length: 9
 
 	// Test nil token
 	result := spanFromTokenSafe(nil, src)
-	expected := file.Span{Start: 0, End: 1}
+	expected := source.Span{Start: 0, End: 1}
 	if result != expected {
 		t.Errorf("spanFromTokenSafe(nil, src) = %v, want %v", result, expected)
 	}

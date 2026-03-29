@@ -13,7 +13,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -434,7 +433,7 @@ func resolveArrayPredicateOpcode(op fql.IArrayOperatorContext) (bytecode.Opcode,
 
 func (c *ExprCompiler) emitBinaryPredicate(ctx fql.IPredicateContext, opcode bytecode.Opcode, left, right bytecode.Operand, isNegated bool) bytecode.Operand {
 	dest := c.ctx.Registers.Allocate()
-	span := file.Span{Start: -1, End: -1}
+	span := source.Span{Start: -1, End: -1}
 
 	if prc, ok := ctx.(antlr.ParserRuleContext); ok {
 		span = diagnostics.SpanFromRuleContext(prc)
@@ -687,7 +686,7 @@ func emitBinaryOperation(ctx *CompilerContext, prc antlr.ParserRuleContext, op a
 	}
 
 	dst := ctx.Registers.Allocate()
-	span := file.Span{Start: -1, End: -1}
+	span := source.Span{Start: -1, End: -1}
 
 	if prc != nil {
 		span = diagnostics.SpanFromRuleContext(prc)
@@ -1911,7 +1910,7 @@ func (c *ExprCompiler) compileImplicitSimpleMemberExpressionSegments(src bytecod
 	return result
 }
 
-func (c *ExprCompiler) emitOptionalMemberLoadSegment(span file.Span, src, segmentOp bytecode.Operand, constOperand, optional bool, state *optionalMemberChainState) bytecode.Operand {
+func (c *ExprCompiler) emitOptionalMemberLoadSegment(span source.Span, src, segmentOp bytecode.Operand, constOperand, optional bool, state *optionalMemberChainState) bytecode.Operand {
 	dst := c.allocateOptionalMemberDestination(src, state)
 
 	c.ctx.Emitter.WithSpan(span, func() {
@@ -2448,7 +2447,7 @@ func (c *ExprCompiler) compileQueryExpressionSource(ctx fql.IQueryExpressionCont
 	return source, source != bytecode.NoopOperand
 }
 
-func (c *ExprCompiler) emitQueryEnvelope(ctx fql.IQueryExpressionContext, span file.Span) bytecode.Operand {
+func (c *ExprCompiler) emitQueryEnvelope(ctx fql.IQueryExpressionContext, span source.Span) bytecode.Operand {
 	queryReg := c.ctx.Registers.Allocate()
 
 	c.ctx.Emitter.WithSpan(span, func() {
@@ -2508,13 +2507,13 @@ func (c *ExprCompiler) compileQueryOptionsOperand(ctx fql.IQueryWithOptContext) 
 	return c.Compile(ctx.Expression())
 }
 
-func (c *ExprCompiler) emitQueryEnvelopeOperand(span file.Span, queryReg, value bytecode.Operand) {
+func (c *ExprCompiler) emitQueryEnvelopeOperand(span source.Span, queryReg, value bytecode.Operand) {
 	c.ctx.Emitter.WithSpan(span, func() {
 		c.ctx.Emitter.EmitArrayPush(queryReg, value)
 	})
 }
 
-func (c *ExprCompiler) emitApplyQuery(span file.Span, src, queryReg bytecode.Operand) bytecode.Operand {
+func (c *ExprCompiler) emitApplyQuery(span source.Span, src, queryReg bytecode.Operand) bytecode.Operand {
 	result := c.ctx.Registers.Allocate()
 
 	c.ctx.Emitter.WithSpan(span, func() {
@@ -2524,7 +2523,7 @@ func (c *ExprCompiler) emitApplyQuery(span file.Span, src, queryReg bytecode.Ope
 	return result
 }
 
-func (c *ExprCompiler) lowerQueryModifier(span file.Span, modifier queryModifier, queryResult bytecode.Operand) bytecode.Operand {
+func (c *ExprCompiler) lowerQueryModifier(span source.Span, modifier queryModifier, queryResult bytecode.Operand) bytecode.Operand {
 	switch modifier {
 	case queryModifierExists:
 		dst := c.ctx.Registers.Allocate()
@@ -2592,7 +2591,7 @@ func parseQueryModifier(text string) queryModifier {
 	}
 }
 
-func (c *CompilerContext) lowerQueryModifierValue(span file.Span, queryResult bytecode.Operand) bytecode.Operand {
+func (c *CompilerContext) lowerQueryModifierValue(span source.Span, queryResult bytecode.Operand) bytecode.Operand {
 	dst := c.Registers.Allocate()
 	cond := c.Registers.Allocate()
 	zero := c.Symbols.AddConstant(runtime.NewInt(0))
@@ -2614,7 +2613,7 @@ func (c *CompilerContext) lowerQueryModifierValue(span file.Span, queryResult by
 	return dst
 }
 
-func (c *CompilerContext) lowerQueryModifierOne(span file.Span, queryResult bytecode.Operand) bytecode.Operand {
+func (c *CompilerContext) lowerQueryModifierOne(span source.Span, queryResult bytecode.Operand) bytecode.Operand {
 	dst := c.Registers.Allocate()
 	length := c.Registers.Allocate()
 	one := c.Symbols.AddConstant(runtime.NewInt(1))
@@ -2774,7 +2773,7 @@ func arrayContractionDepth(ctx fql.IArrayContractionContext) int {
 	return 1
 }
 
-func (c *ExprCompiler) compileArrayIteration(src bytecode.Operand, span file.Span, tail []fql.IMemberExpressionPathContext, inline fql.IInlineExpressionContext, extraFilters []fql.IExpressionContext) bytecode.Operand {
+func (c *ExprCompiler) compileArrayIteration(src bytecode.Operand, span source.Span, tail []fql.IMemberExpressionPathContext, inline fql.IInlineExpressionContext, extraFilters []fql.IExpressionContext) bytecode.Operand {
 	tail, postLoopContraction := splitTerminalArrayContractionTail(tail)
 
 	loop := &core.Loop{
@@ -2995,7 +2994,7 @@ func (c *ExprCompiler) CompileFunctionCall(ctx fql.IFunctionCallContext, protect
 //   - An operand representing the function call result
 func (c *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, protected bool, seq core.RegisterSequence) bytecode.Operand {
 	name := getFunctionName(ctx, c.ctx.UseAliases)
-	span := file.Span{Start: -1, End: -1}
+	span := source.Span{Start: -1, End: -1}
 
 	if ctx != nil {
 		if fn := ctx.FunctionName(); fn != nil {
@@ -3272,7 +3271,7 @@ func (c *ExprCompiler) CompileRangeOperator(ctx fql.IRangeOperatorContext) bytec
 	start := c.compileRangeOperand(ctx.GetLeft())
 	end := c.compileRangeOperand(ctx.GetRight())
 
-	span := file.Span{Start: -1, End: -1}
+	span := source.Span{Start: -1, End: -1}
 
 	if prc, ok := ctx.(antlr.ParserRuleContext); ok {
 		span = diagnostics.SpanFromRuleContext(prc)

@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"strings"
 	"testing"
-
-	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 func TestFormatter_TemplateLiteralDoesNotIndentInterpolation(t *testing.T) {
 	input := "RETURN { foo: `line1\n${1}`, veryLongPropertyNameThatForcesMultilineFormatting: 1 }"
-	src := file.NewAnonymousSource(input)
+	src := source.NewAnonymousSource(input)
 	var buf bytes.Buffer
 	fmt := New(WithPrintWidth(10))
 
@@ -29,7 +27,7 @@ func TestFormatter_TemplateLiteralDoesNotIndentInterpolation(t *testing.T) {
 
 func TestFormatter_ArrayTemplateLiteralNewlineForcesMultiline(t *testing.T) {
 	input := "RETURN [`line1\n${1}`]"
-	src := file.NewAnonymousSource(input)
+	src := source.NewAnonymousSource(input)
 	var buf bytes.Buffer
 	fmt := New(WithPrintWidth(200))
 
@@ -48,7 +46,7 @@ func TestFormatter_ArrayTemplateLiteralNewlineForcesMultiline(t *testing.T) {
 
 func TestFormatter_NestedObjectRespectsPrintWidthAtLineStart(t *testing.T) {
 	input := "RETURN [{ a: 1, bb: 2 }]"
-	src := file.NewAnonymousSource(input)
+	src := source.NewAnonymousSource(input)
 	var buf bytes.Buffer
 	fmt := New(WithPrintWidth(18))
 
@@ -77,7 +75,7 @@ func TestFormatter_NestedObjectRespectsPrintWidthAtLineStart(t *testing.T) {
 
 func TestFormatter_BlockCommentPreservesLeadingSpace(t *testing.T) {
 	input := "RETURN 1\n/*\n * a\n * b\n */\nRETURN 2"
-	src := file.NewAnonymousSource(input)
+	src := source.NewAnonymousSource(input)
 	var buf bytes.Buffer
 	fmt := New()
 
@@ -96,7 +94,7 @@ func TestFormatter_BlockCommentPreservesLeadingSpace(t *testing.T) {
 
 func TestFormatter_WaitForEventFilterUsesWhenAndRemainsParseable(t *testing.T) {
 	input := "LET obs = []\nWAITFOR EVENT \"test\" IN obs WHEN .type == \"match\"\nRETURN 1"
-	src := file.NewAnonymousSource(input)
+	src := source.NewAnonymousSource(input)
 	var buf bytes.Buffer
 	fmt := New()
 
@@ -113,7 +111,7 @@ func TestFormatter_WaitForEventFilterUsesWhenAndRemainsParseable(t *testing.T) {
 	}
 
 	var roundTrip bytes.Buffer
-	if err := fmt.Format(&roundTrip, file.NewAnonymousSource(out)); err != nil {
+	if err := fmt.Format(&roundTrip, source.NewAnonymousSource(out)); err != nil {
 		t.Fatalf("formatted output must remain parseable: %v\nformatted:\n%s", err, out)
 	}
 }

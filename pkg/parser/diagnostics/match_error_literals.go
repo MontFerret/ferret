@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
@@ -27,7 +26,7 @@ func isComputedPropertyPrefix(node *TokenNode) bool {
 	return false
 }
 
-func matchLiteralErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchLiteralErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if isUnclosedTemplateLiteral(offending) {
 		span := spanFromTokenSafe(offending.Token(), src)
 		span.Start = span.End
@@ -68,7 +67,7 @@ func matchLiteralErrors(src *file.Source, err *diagnostics.Diagnostic, offending
 		isMissingOpeningQuote := len(token) > 0 && isQuote(token[len(token)-1:]) && !isValidString(token)
 
 		if isMissingClosingQuote || isMissingOpeningQuote {
-			var span file.Span
+			var span source.Span
 			var typeOfQuote string
 			var quote string
 
@@ -124,7 +123,7 @@ func matchLiteralErrors(src *file.Source, err *diagnostics.Diagnostic, offending
 		}
 
 		if is(offending.Prev(), "[") {
-			var span file.Span
+			var span source.Span
 
 			if isKeyword(offending) {
 				span = spanFromTokenSafe(offending.Prev().Token(), src)
@@ -179,7 +178,7 @@ func matchLiteralErrors(src *file.Source, err *diagnostics.Diagnostic, offending
 		}
 
 		if is(offending.Prev(), "{") {
-			var span file.Span
+			var span source.Span
 
 			if isKeyword(offending) {
 				span = spanFromTokenSafe(offending.Prev().Token(), src)
@@ -240,7 +239,7 @@ func matchLiteralErrors(src *file.Source, err *diagnostics.Diagnostic, offending
 		}
 
 		if isQuote(token) {
-			var span file.Span
+			var span source.Span
 			var typeOfQuote string
 
 			if isKeyword(offending) {

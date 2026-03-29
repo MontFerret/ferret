@@ -9,7 +9,6 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/internal/persist"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -34,7 +33,7 @@ func TestFormatRoundTrip(t *testing.T) {
 		t.Fatalf("unexpected source content: got %q, want %q", got, want)
 	}
 
-	if line, col := decoded.Source.LocationAt(file.Span{Start: 7, End: 7}); line == 0 || col == 0 {
+	if line, col := decoded.Source.LocationAt(source.Span{Start: 7, End: 7}); line == 0 || col == 0 {
 		t.Fatalf("expected source lines to be rebuilt, got line=%d col=%d", line, col)
 	}
 
@@ -142,7 +141,7 @@ func validFrame() persist.ProgramFrame {
 
 func newTestProgram() *bytecode.Program {
 	return &bytecode.Program{
-		Source: file.NewSource("roundtrip.fql", "RETURN 1\nRETURN 2"),
+		Source: source.NewSource("roundtrip.fql", "RETURN 1\nRETURN 2"),
 		Functions: bytecode.Functions{
 			Host: map[string]int{
 				"now": 0,
@@ -177,7 +176,7 @@ func newTestProgram() *bytecode.Program {
 			AggregatePlans:         []bytecode.AggregatePlan{bytecode.NewAggregatePlan([]runtime.String{runtime.NewString("group")}, []bytecode.AggregateKind{bytecode.AggregateCount}, true)},
 			AggregateSelectorSlots: []int{-1, -1},
 			MatchFailTargets:       []int{-1, -1},
-			DebugSpans:             []file.Span{{Start: 0, End: 8}, {Start: 9, End: 17}},
+			DebugSpans:             []source.Span{{Start: 0, End: 8}, {Start: 9, End: 17}},
 			OptimizationLevel:      1,
 		},
 		ISAVersion: bytecode.Version,

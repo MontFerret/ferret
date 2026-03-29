@@ -8,7 +8,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -77,7 +76,7 @@ func New(setters ...Option) (*Engine, error) {
 	}, nil
 }
 
-func (e *Engine) Compile(ctx context.Context, src *file.Source) (*Plan, error) {
+func (e *Engine) Compile(ctx context.Context, src *source.Source) (*Plan, error) {
 	if e == nil {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is nil")
 	}
@@ -114,7 +113,7 @@ func (e *Engine) Load(data []byte) (*Plan, error) {
 	return e.newPlan(prog)
 }
 
-func (e *Engine) Run(ctx context.Context, src *file.Source, opts ...SessionOption) (*Output, error) {
+func (e *Engine) Run(ctx context.Context, src *source.Source, opts ...SessionOption) (*Output, error) {
 	plan, err := e.Compile(ctx, src)
 
 	if err != nil {

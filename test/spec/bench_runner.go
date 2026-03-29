@@ -6,7 +6,6 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/asm"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/vm/test"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
@@ -14,7 +13,7 @@ import (
 )
 
 func compileBenchmarkProgram(c *compiler.Compiler, expression string) *bytecode.Program {
-	prog, err := c.Compile(file.NewSource("benchmark", expression))
+	prog, err := c.Compile(source.NewSource("benchmark", expression))
 
 	if err != nil {
 		panic(err)

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 var invalidWhileLoopBindingPatterns = []*regexp.Regexp{
@@ -16,12 +15,12 @@ var invalidWhileLoopBindingPatterns = []*regexp.Regexp{
 
 type whileLoopBindingMatch struct {
 	binding     string
-	bindingSpan file.Span
+	bindingSpan source.Span
 	headerStart int
 	skipDo      bool
 }
 
-func matchWhileLoopErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchWhileLoopErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if matchInvalidWhileLoopBinding(src, err, offending) {
 		return true
 	}
@@ -37,7 +36,7 @@ func matchWhileLoopErrors(src *file.Source, err *diagnostics.Diagnostic, offendi
 	return false
 }
 
-func matchInvalidWhileLoopBinding(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchInvalidWhileLoopBinding(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	span, ok := findInvalidWhileLoopBindingSpan(src)
 	if !ok {
 		return false
@@ -52,9 +51,9 @@ func matchInvalidWhileLoopBinding(src *file.Source, err *diagnostics.Diagnostic,
 	return true
 }
 
-func findInvalidWhileLoopBindingSpan(src *file.Source) (file.Span, bool) {
+func findInvalidWhileLoopBindingSpan(src *source.Source) (source.Span, bool) {
 	if src == nil {
-		return file.Span{}, false
+		return source.Span{}, false
 	}
 
 	content := src.Content()
@@ -68,7 +67,7 @@ func findInvalidWhileLoopBindingSpan(src *file.Source) (file.Span, bool) {
 
 			matches = append(matches, whileLoopBindingMatch{
 				headerStart: indexes[0],
-				bindingSpan: file.Span{
+				bindingSpan: source.Span{
 					Start: indexes[2],
 					End:   indexes[3],
 				},
@@ -98,7 +97,7 @@ func findInvalidWhileLoopBindingSpan(src *file.Source) (file.Span, bool) {
 		return match.bindingSpan, true
 	}
 
-	return file.Span{}, false
+	return source.Span{}, false
 }
 
 func isValidWhileLoopBindingText(text string) bool {
@@ -132,7 +131,7 @@ func isValidWhileLoopBindingText(text string) bool {
 	}
 }
 
-func matchMissingWhileLoopCondition(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchMissingWhileLoopCondition(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	whileToken := findWhileLoopHeaderToken(offending)
 	if whileToken == nil {
 		return false
@@ -148,7 +147,7 @@ func matchMissingWhileLoopCondition(src *file.Source, err *diagnostics.Diagnosti
 	return true
 }
 
-func matchStandaloneWhileLoop(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchStandaloneWhileLoop(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	loopKind, span, ok := findStandaloneWhileLoopSpan(src, err, offending)
 	if !ok {
 		return false
@@ -170,21 +169,21 @@ func matchStandaloneWhileLoop(src *file.Source, err *diagnostics.Diagnostic, off
 	return true
 }
 
-func findStandaloneWhileLoopSpan(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) (string, file.Span, bool) {
+func findStandaloneWhileLoopSpan(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) (string, source.Span, bool) {
 	whileToken := findStandaloneWhileLoopToken(offending)
 	if whileToken == nil {
 		if is(offending, "DO") && err != nil && isNoAlternative(err.Message) && has(err.Message, "do while") && !hasPrevToken(offending, "FOR", 4) {
 			return "DO WHILE", spanFromTokenSafe(offending.Token(), src), true
 		}
 
-		return "", file.Span{}, false
+		return "", source.Span{}, false
 	}
 
 	if is(whileToken.Prev(), "DO") {
 		doSpan := spanFromTokenSafe(whileToken.Prev().Token(), src)
 		whileSpan := spanFromTokenSafe(whileToken.Token(), src)
 
-		return "DO WHILE", file.Span{
+		return "DO WHILE", source.Span{
 			Start: doSpan.Start,
 			End:   whileSpan.End,
 		}, true

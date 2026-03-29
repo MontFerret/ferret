@@ -5,7 +5,6 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -21,12 +20,12 @@ type (
 		AggregatePlans         []AggregatePlan `json:"aggregatePlans"`
 		AggregateSelectorSlots []int           `json:"aggregateSelectorSlots,omitempty"`
 		MatchFailTargets       []int           `json:"matchFailTargets,omitempty"`
-		DebugSpans             []file.Span     `json:"debugSpans"`
+		DebugSpans             []source.Span   `json:"debugSpans"`
 		OptimizationLevel      int             `json:"optimizationLevel"`
 	}
 
 	Program struct {
-		Source     *file.Source
+		Source     *source.Source
 		Functions  Functions
 		Bytecode   []Instruction
 		Constants  []runtime.Value

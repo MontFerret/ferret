@@ -6,18 +6,16 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-
-	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 type ErrorHandler struct {
-	src             *file.Source
+	src             *source.Source
 	errors          *diagnostics.Diagnostics[*diagnostics.Diagnostic]
 	linesWithErrors map[int]bool
 	threshold       int
 }
 
-func NewErrorHandler(src *file.Source, threshold int) *ErrorHandler {
+func NewErrorHandler(src *source.Source, threshold int) *ErrorHandler {
 	if threshold <= 0 {
 		threshold = 10
 	}

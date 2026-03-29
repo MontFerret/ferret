@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
@@ -14,7 +13,7 @@ func TestStatementFormatter_DispatchEventNameString(t *testing.T) {
 	eventName := mustFirst[*fql.DispatchEventNameContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymousSource(input), &buf, DefaultOptions())
 
 	e.statement.formatDispatchEventName(eventName)
 	if got := buf.String(); got != "\"evt\"" {

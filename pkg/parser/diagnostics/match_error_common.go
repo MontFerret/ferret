@@ -5,10 +5,9 @@ import (
 	"regexp"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
-func matchCommonErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchCommonErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if isNoAlternative(err.Message) || isMissing(err.Message) || isMismatched(err.Message) {
 		prev := offending.Prev()
 		if node := anyIs(prev, offending, "=>"); node != nil {
@@ -164,7 +163,7 @@ func matchCommonErrors(src *file.Source, err *diagnostics.Diagnostic, offending 
 
 	if isNoAlternative(err.Message) || isMissing(err.Message) {
 		if is(offending.Prev(), "(") {
-			var span file.Span
+			var span source.Span
 
 			if isKeyword(offending) {
 				span = spanFromTokenSafe(offending.Prev().Token(), src)

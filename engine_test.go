@@ -9,7 +9,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	formatjson "github.com/MontFerret/ferret/v2/pkg/bytecode/format/json"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -52,7 +51,7 @@ func mustNewEngine(t *testing.T, setters ...Option) *Engine {
 func mustCompilePlan(t *testing.T, eng *Engine, query string) *Plan {
 	t.Helper()
 
-	plan, err := eng.Compile(context.Background(), file.NewAnonymousSource(query))
+	plan, err := eng.Compile(context.Background(), source.NewAnonymousSource(query))
 	if err != nil {
 		t.Fatalf("failed to compile query %q: %v", query, err)
 	}
@@ -74,7 +73,7 @@ func mustNewSession(t *testing.T, plan *Plan, setters ...SessionOption) *Session
 func mustMarshalArtifact(t *testing.T, query string, opts ...artifact.Options) []byte {
 	t.Helper()
 
-	prog, err := compiler.New().Compile(file.NewAnonymousSource(query))
+	prog, err := compiler.New().Compile(source.NewAnonymousSource(query))
 	if err != nil {
 		t.Fatalf("failed to compile query %q: %v", query, err)
 	}
@@ -273,7 +272,7 @@ func TestEngineCompileReturnsBeforeHookError(t *testing.T) {
 		}),
 	)
 
-	plan, err := eng.Compile(context.Background(), file.NewAnonymousSource(coverageValidQuery))
+	plan, err := eng.Compile(context.Background(), source.NewAnonymousSource(coverageValidQuery))
 	if err == nil {
 		t.Fatal("expected compile to fail on before hook error")
 	}
@@ -307,7 +306,7 @@ func TestEngineCompileReturnsCompilerErrorWhenAfterHooksSucceed(t *testing.T) {
 		return nil
 	}))
 
-	plan, err := eng.Compile(context.Background(), file.NewAnonymousSource(coverageInvalidQuery))
+	plan, err := eng.Compile(context.Background(), source.NewAnonymousSource(coverageInvalidQuery))
 	if err == nil {
 		t.Fatal("expected compile to fail for invalid query")
 	}
@@ -343,7 +342,7 @@ func TestEngineCompileReturnsAfterHookErrorOnSuccess(t *testing.T) {
 		return afterErr
 	}))
 
-	plan, err := eng.Compile(context.Background(), file.NewAnonymousSource(coverageValidQuery))
+	plan, err := eng.Compile(context.Background(), source.NewAnonymousSource(coverageValidQuery))
 	if err == nil {
 		t.Fatal("expected compile to fail when after hook fails")
 	}
@@ -376,7 +375,7 @@ func TestEngineCompileJoinsCompileAndAfterHookErrors(t *testing.T) {
 		return afterErr
 	}))
 
-	plan, err := eng.Compile(context.Background(), file.NewAnonymousSource(coverageInvalidQuery))
+	plan, err := eng.Compile(context.Background(), source.NewAnonymousSource(coverageInvalidQuery))
 	if err == nil {
 		t.Fatal("expected compile to fail for invalid query and after hook error")
 	}
@@ -411,7 +410,7 @@ func TestEngineRunReturnsCompileErrorWithoutPlanClose(t *testing.T) {
 		return nil
 	}))
 
-	result, err := eng.Run(context.Background(), file.NewAnonymousSource(coverageInvalidQuery))
+	result, err := eng.Run(context.Background(), source.NewAnonymousSource(coverageInvalidQuery))
 	if err == nil {
 		t.Fatal("expected run to fail when compile fails")
 	}

@@ -20,7 +20,6 @@ import (
 	ferret "github.com/MontFerret/ferret/v2"
 	compatruntime "github.com/MontFerret/ferret/v2/compat/runtime"
 	"github.com/MontFerret/ferret/v2/compat/runtime/core"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -98,7 +97,7 @@ func (inst *Instance) MustCompile(query string) *compatruntime.Program {
 
 // Exec compiles and immediately executes the FQL query, returning the JSON result.
 func (inst *Instance) Exec(ctx context.Context, query string, opts ...compatruntime.Option) ([]byte, error) {
-	src := file.NewAnonymousSource(query)
+	src := source.NewAnonymousSource(query)
 
 	out, err := inst.engine.Run(ctx, src, compatruntime.ToSessionOptions(opts)...)
 	if err != nil {

@@ -10,13 +10,12 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type (
 	programJSON struct {
-		Source     *file.Source   `json:"source,omitempty"`
+		Source     *source.Source `json:"source,omitempty"`
 		Functions  Functions      `json:"functions,omitempty"`
 		Bytecode   []Instruction  `json:"bytecode"`
 		Constants  []constantJSON `json:"constants,omitempty"`

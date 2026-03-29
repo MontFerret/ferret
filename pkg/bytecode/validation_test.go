@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -125,7 +124,7 @@ func TestValidateProgramAllowsConcatImmediateCountAtRegisterLimit(t *testing.T) 
 
 func validValidationProgram() *Program {
 	return &Program{
-		Source: file.NewSource("validation.fql", "RETURN 1"),
+		Source: source.NewSource("validation.fql", "RETURN 1"),
 		Functions: Functions{
 			Host: map[string]int{
 				"now": 0,
@@ -155,7 +154,7 @@ func validValidationProgram() *Program {
 			AggregatePlans:         []AggregatePlan{NewAggregatePlan([]runtime.String{runtime.NewString("group")}, []AggregateKind{AggregateCount}, false)},
 			AggregateSelectorSlots: []int{-1, -1},
 			MatchFailTargets:       []int{-1, -1},
-			DebugSpans:             []file.Span{{Start: 0, End: 6}, {Start: 7, End: 8}},
+			DebugSpans:             []source.Span{{Start: 0, End: 6}, {Start: 7, End: 8}},
 			OptimizationLevel:      1,
 		},
 		ISAVersion: Version,

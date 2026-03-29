@@ -2,7 +2,6 @@ package diagnostics
 
 import (
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 const (
@@ -11,7 +10,7 @@ const (
 	SemanticError diagnostics.Kind = "SemanticError"
 )
 
-func NewError(src *file.Source, kind diagnostics.Kind, message string) *diagnostics.Diagnostic {
+func NewError(src *source.Source, kind diagnostics.Kind, message string) *diagnostics.Diagnostic {
 	return &diagnostics.Diagnostic{
 		Message: message,
 		Source:  src,
@@ -19,17 +18,17 @@ func NewError(src *file.Source, kind diagnostics.Kind, message string) *diagnost
 	}
 }
 
-func NewUnexpectedError(src *file.Source, message string) *diagnostics.Diagnostic {
+func NewUnexpectedError(src *source.Source, message string) *diagnostics.Diagnostic {
 	return NewError(src, diagnostics.UnexpectedError, message)
 }
 
-func NewUnexpectedErrorWith(src *file.Source, message string, cause error) *diagnostics.Diagnostic {
+func NewUnexpectedErrorWith(src *source.Source, message string, cause error) *diagnostics.Diagnostic {
 	e := NewUnexpectedError(src, message)
 	e.Cause = cause
 
 	return e
 }
 
-func NewEmptyQueryError(src *file.Source) *diagnostics.Diagnostic {
+func NewEmptyQueryError(src *source.Source) *diagnostics.Diagnostic {
 	return NewError(src, SyntaxError, "Query is empty")
 }

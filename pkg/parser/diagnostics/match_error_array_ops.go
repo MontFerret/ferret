@@ -4,11 +4,10 @@ import (
 	"fmt"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
-func matchArrayOperatorErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchArrayOperatorErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if offending == nil {
 		return false
 	}
@@ -32,7 +31,7 @@ func matchArrayOperatorErrors(src *file.Source, err *diagnostics.Diagnostic, off
 	return false
 }
 
-func matchQueryOperatorErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchQueryOperatorErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if !isMismatched(err.Message) && !isMissing(err.Message) && !isNoAlternative(err.Message) {
 		return false
 	}
@@ -127,7 +126,7 @@ func matchQueryOperatorErrors(src *file.Source, err *diagnostics.Diagnostic, off
 	return false
 }
 
-func matchArrayInlineReturnErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchArrayInlineReturnErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if !isArrayOperatorContext(offending) {
 		return false
 	}
@@ -164,7 +163,7 @@ func matchArrayInlineReturnErrors(src *file.Source, err *diagnostics.Diagnostic,
 	return true
 }
 
-func matchArrayQuestionQuantifierErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchArrayQuestionQuantifierErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if !isMismatched(err.Message) && !isMissing(err.Message) && !isNoAlternative(err.Message) {
 		return false
 	}
@@ -196,7 +195,7 @@ func matchArrayQuestionQuantifierErrors(src *file.Source, err *diagnostics.Diagn
 	return true
 }
 
-func matchArrayOperatorUnclosed(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchArrayOperatorUnclosed(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if !isMismatched(err.Message) && !isMissing(err.Message) && !isNoAlternative(err.Message) {
 		return false
 	}

@@ -4,8 +4,6 @@ import (
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
-
-	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 func TestMultiCompilationError(t *testing.T) {
@@ -47,7 +45,7 @@ func TestMultiCompilationError(t *testing.T) {
 		})
 
 		Convey("Format() should format errors properly", func() {
-			src := file.NewSource("test.fql", "LET x = 1")
+			src := source.NewSource("test.fql", "LET x = 1")
 
 			tests := []struct {
 				name   string

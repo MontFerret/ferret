@@ -6,14 +6,13 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 func compileWithLevel(t *testing.T, level compiler.OptimizationLevel, expr string) *bytecode.Program {
 	t.Helper()
 
 	c := compiler.New(compiler.WithOptimizationLevel(level))
-	prog, err := c.Compile(file.NewAnonymousSource(expr))
+	prog, err := c.Compile(source.NewAnonymousSource(expr))
 	if err != nil {
 		t.Fatalf("compile failed: %v", err)
 	}

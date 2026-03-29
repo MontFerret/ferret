@@ -8,7 +8,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -144,14 +143,14 @@ func (c *DispatchCompiler) ensureRegister(op bytecode.Operand) bytecode.Operand 
 	return dst
 }
 
-func dispatchSpan(ctx fql.IDispatchExpressionContext) file.Span {
+func dispatchSpan(ctx fql.IDispatchExpressionContext) source.Span {
 	if ctx == nil {
-		return file.Span{Start: -1, End: -1}
+		return source.Span{Start: -1, End: -1}
 	}
 
 	if prc, ok := ctx.(antlr.ParserRuleContext); ok {
 		return diagnostics.SpanFromRuleContext(prc)
 	}
 
-	return file.Span{Start: -1, End: -1}
+	return source.Span{Start: -1, End: -1}
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -567,8 +566,8 @@ func (c *WaitCompiler) emitApplyJitter(intervalReg, jitterReg bytecode.Operand) 
 	c.ctx.Emitter.EmitABC(bytecode.OpMul, intervalReg, intervalReg, multiplierReg)
 }
 
-func waitForSpan(source antlr.RuleContext, fallback antlr.RuleContext) file.Span {
-	span := file.Span{Start: -1, End: -1}
+func waitForSpan(source antlr.RuleContext, fallback antlr.RuleContext) source.Span {
+	span := source.Span{Start: -1, End: -1}
 
 	if source != nil {
 		if prc, ok := source.(antlr.ParserRuleContext); ok {

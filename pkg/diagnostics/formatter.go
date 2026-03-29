@@ -6,8 +6,6 @@ import (
 	"io"
 	"sort"
 	"strings"
-
-	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 func FormatDiagnostic(out io.Writer, e *Diagnostic, indent int) {
@@ -56,7 +54,7 @@ func FormatDiagnostic(out io.Writer, e *Diagnostic, indent int) {
 	}
 }
 
-func renderErrorSpan(out io.Writer, prefix string, src *file.Source, s ErrorSpan) {
+func renderErrorSpan(out io.Writer, prefix string, src *source.Source, s ErrorSpan) {
 	renderer := SpanRenderer{
 		Prefix:             prefix,
 		CaretChar:          '^',

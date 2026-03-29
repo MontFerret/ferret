@@ -4,18 +4,16 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-
-	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 type ErrorListener struct {
 	*antlr.DiagnosticErrorListener
-	src     *file.Source
+	src     *source.Source
 	handler *ErrorHandler
 	history *TokenHistory
 }
 
-func NewErrorListener(src *file.Source, handler *ErrorHandler, history *TokenHistory) antlr.ErrorListener {
+func NewErrorListener(src *source.Source, handler *ErrorHandler, history *TokenHistory) antlr.ErrorListener {
 	return &ErrorListener{
 		DiagnosticErrorListener: antlr.NewDiagnosticErrorListener(false),
 		src:                     src,

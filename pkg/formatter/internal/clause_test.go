@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
@@ -14,7 +13,7 @@ func TestClauseFormatter_TimeoutValueFormatsParam(t *testing.T) {
 	timeout := mustFirst[*fql.TimeoutClauseContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymousSource(input), &buf, DefaultOptions())
 
 	e.clause.formatTimeoutClause(timeout)
 	if got := buf.String(); got != "TIMEOUT @t" {
@@ -28,7 +27,7 @@ func TestClauseFormatter_EventFilterClauseUsesWhen(t *testing.T) {
 	filter := mustFirst[*fql.EventFilterClauseContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymousSource(input), &buf, DefaultOptions())
 
 	e.clause.formatEventFilterClause(filter)
 	if got := buf.String(); got != "WHEN .type == \"match\"" {

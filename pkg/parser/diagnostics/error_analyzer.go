@@ -2,12 +2,11 @@ package diagnostics
 
 import (
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
-type SyntaxErrorMatcher func(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool
+type SyntaxErrorMatcher func(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool
 
-func AnalyzeSyntaxError(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func AnalyzeSyntaxError(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	matchers := []SyntaxErrorMatcher{
 		matchArrayOperatorErrors,
 		matchQueryErrors,
