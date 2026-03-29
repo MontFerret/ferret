@@ -10,7 +10,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // Options holds the runtime execution options translated from v1-style Option functions.
@@ -120,12 +119,6 @@ func toSessionOptions(o *Options) []ferret.SessionOption {
 
 	if len(o.logFields) > 0 {
 		opts = append(opts, ferret.WithSessionLogFields(o.logFields))
-	}
-
-	var envOpts []vm.EnvironmentOption
-
-	if len(envOpts) > 0 {
-		opts = append(opts, ferret.WithEnvironmentOptions(envOpts...))
 	}
 
 	return opts
