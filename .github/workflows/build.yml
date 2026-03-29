@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v6
         with:
           go-version: '>=1.23'
 
@@ -32,10 +32,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goVer: [1.23, 1.24, 1.25]
+        goVer: [1.25, 1.26]
     steps:
       - name: Set up Go ${{ matrix.goVer }}
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.goVer }}
         id: go
@@ -85,7 +85,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v6
         with:
           go-version: 1.25
 
@@ -101,7 +101,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v6
         with:
           go-version: 1.25
 
