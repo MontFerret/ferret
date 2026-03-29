@@ -1,8 +1,6 @@
 package vm
 
 import (
-	"os"
-
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -10,7 +8,6 @@ type (
 	environmentBuilder struct {
 		functions *runtime.FunctionsBuilder
 		params    runtime.Params
-		logging   runtime.LogSettings
 	}
 
 	EnvironmentOption func(env *environmentBuilder)
@@ -18,7 +15,6 @@ type (
 	Environment struct {
 		Functions *runtime.Functions
 		Params    runtime.Params
-		Logging   runtime.LogSettings
 	}
 )
 
@@ -31,10 +27,6 @@ func NewDefaultEnvironment() *Environment {
 	return &Environment{
 		Functions: runtime.NewFunctions(),
 		Params:    runtime.NewParams(),
-		Logging: runtime.LogSettings{
-			Writer: os.Stdout,
-			Level:  runtime.ErrorLevel,
-		},
 	}
 }
 
@@ -42,10 +34,6 @@ func NewEnvironment(opts []EnvironmentOption) (*Environment, error) {
 	envBuilder := &environmentBuilder{
 		functions: runtime.NewFunctionsBuilder(),
 		params:    runtime.NewParams(),
-		logging: runtime.LogSettings{
-			Writer: os.Stdout,
-			Level:  runtime.ErrorLevel,
-		},
 	}
 
 	for _, opt := range opts {
@@ -61,7 +49,6 @@ func NewEnvironment(opts []EnvironmentOption) (*Environment, error) {
 	return &Environment{
 		Functions: funcs,
 		Params:    envBuilder.params,
-		Logging:   envBuilder.logging,
 	}, nil
 }
 
@@ -90,13 +77,6 @@ func MergeEnvironments(envs ...*Environment) (*Environment, error) {
 		for name, val := range env.Params {
 			merged.Params[name] = val
 		}
-
-		// merge logging options
-		if env.Logging.Writer != nil {
-			merged.Logging.Writer = env.Logging.Writer
-		}
-
-		merged.Logging.Level = env.Logging.Level
 	}
 
 	builder := runtime.NewFunctionsBuilderFrom(funcsToMerge...)

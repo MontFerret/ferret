@@ -109,19 +109,19 @@ func toSessionOptions(o *Options) []ferret.SessionOption {
 		opts = append(opts, ferret.WithSessionParams(params))
 	}
 
-	var envOpts []vm.EnvironmentOption
-
 	if o.logWriter != nil {
-		envOpts = append(envOpts, vm.WithLog(o.logWriter))
+		opts = append(opts, ferret.WithSessionLog(o.logWriter))
 	}
 
 	if o.logLevel != runtime.ErrorLevel {
-		envOpts = append(envOpts, vm.WithLogLevel(o.logLevel))
+		opts = append(opts, ferret.WithSessionLogLevel(o.logLevel))
 	}
 
 	if len(o.logFields) > 0 {
-		envOpts = append(envOpts, vm.WithLogFields(o.logFields))
+		opts = append(opts, ferret.WithSessionLogFields(o.logFields))
 	}
+
+	var envOpts []vm.EnvironmentOption
 
 	if len(envOpts) > 0 {
 		opts = append(opts, ferret.WithEnvironmentOptions(envOpts...))

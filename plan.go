@@ -78,7 +78,6 @@ func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Sessi
 	env, err := vm.ExtendEnvironment(&vm.Environment{
 		Functions: h.functions,
 		Params:    h.params,
-		Logging:   h.logging,
 	}, sessionOpts.envOptions)
 
 	if err != nil {
@@ -99,6 +98,8 @@ func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Sessi
 	return &Session{
 		vm:                instance,
 		env:               env,
+		logger:            h.logger,
+		fs:                h.fs,
 		encoding:          h.encoding,
 		outputContentType: sessionOpts.outputContentType,
 		hooks:             hooks,

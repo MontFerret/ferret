@@ -15,6 +15,8 @@ type (
 		Fields map[string]interface{}
 		Level  LogLevel
 	}
+
+	Logger = zerolog.Logger
 )
 
 const (

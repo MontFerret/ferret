@@ -29,7 +29,10 @@ func New(setters ...Option) (*Engine, error) {
 		return nil, err
 	}
 
-	boot := newBootstrap(opts)
+	boot, err := newBootstrap(opts)
+	if err != nil {
+		return nil, fmt.Errorf("bootstrap: %w", err)
+	}
 
 	for _, m := range opts.modules {
 		if err := m.Register(boot); err != nil {
@@ -121,7 +124,7 @@ func (e *Engine) Run(ctx context.Context, src *file.Source, opts ...SessionOptio
 	var session *Session
 
 	defer func() {
-		logger := runtime.NewLogger(e.host.logging)
+		logger := e.host.logger
 
 		if session != nil {
 			if closeErr := session.Close(); closeErr != nil {

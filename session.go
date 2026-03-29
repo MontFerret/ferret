@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -32,6 +33,8 @@ type (
 		vm                *vm.VM
 		env               *vm.Environment
 		encoding          *encoding.Registry
+		logger            runtime.Logger
+		fs                fs.FileSystem
 		release           vmReleaseFunc
 		outputContentType string
 		closeOnce         sync.Once

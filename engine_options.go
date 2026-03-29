@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
@@ -13,33 +12,27 @@ import (
 	encodingmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 type (
 	options struct {
-		logging           runtime.LogSettings
 		library           runtime.Library
 		params            runtime.Params
 		encoding          *encoding.Registry
 		programLoader     *artifact.Loader
 		hooks             *hookRegistry
+		logging           runtime.LogSettings
+		fsRoot            string
 		compiler          []compiler.Option
 		modules           []Module
-		noStdlib          bool
 		maxActiveSessions int
 		maxIdleVMsPerPlan int
 		maxVMsPerPlan     int
+		fsReadOnly        bool
+		noStdlib          bool
 	}
 
 	Option func(env *options) error
-
-	sessionOptions struct {
-		outputContentType string
-		envOptions        []vm.EnvironmentOption
-	}
-
-	SessionOption func(*sessionOptions) error
 )
 
 type encodingCodecAlias struct {
@@ -212,52 +205,6 @@ func WithProgramLoader(loader *artifact.Loader) Option {
 		opts.programLoader = loader
 		return nil
 	}
-}
-
-func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
-	return func(session *sessionOptions) error {
-		if session == nil {
-			return nil
-		}
-
-		if len(opts) == 0 {
-			return nil
-		}
-
-		for _, opt := range opts {
-			if opt == nil {
-				continue
-			}
-
-			session.envOptions = append(session.envOptions, opt)
-		}
-
-		return nil
-	}
-}
-
-func WithOutputContentType(contentType string) SessionOption {
-	return func(session *sessionOptions) error {
-		if session == nil {
-			return nil
-		}
-
-		trimmed := strings.TrimSpace(contentType)
-		if trimmed == "" {
-			return fmt.Errorf("output content type cannot be empty")
-		}
-
-		session.outputContentType = trimmed
-		return nil
-	}
-}
-
-func WithSessionParams(params runtime.Params) SessionOption {
-	return WithEnvironmentOptions(vm.WithParams(params))
-}
-
-func WithSessionParam(name string, value runtime.Value) SessionOption {
-	return WithEnvironmentOptions(vm.WithParam(name, value))
 }
 
 // WithoutStdlib disables the standard library, so no built-in functions are registered by default.
@@ -517,6 +464,28 @@ func WithMaxVMsPerPlan(n int) Option {
 		}
 
 		opts.maxVMsPerPlan = n
+		return nil
+	}
+}
+
+// WithFSRoot sets the root directory for the engine's file system.
+func WithFSRoot(root string) Option {
+	return func(opts *options) error {
+		if root == "" {
+			return fmt.Errorf("fs root cannot be empty")
+		}
+
+		opts.fsRoot = root
+
+		return nil
+	}
+}
+
+// WithFSReadOnly sets the engine's file system to read-only mode.
+func WithFSReadOnly() Option {
+	return func(opts *options) error {
+		opts.fsReadOnly = true
+
 		return nil
 	}
 }
