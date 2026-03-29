@@ -5,6 +5,8 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/source"
+
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 )
 

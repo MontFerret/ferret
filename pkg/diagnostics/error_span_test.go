@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestErrorSpan(t *testing.T) {

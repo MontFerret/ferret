@@ -3,6 +3,8 @@ package internal
 import (
 	"io"
 	"strings"
+
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 type (

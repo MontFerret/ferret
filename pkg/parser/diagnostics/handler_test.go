@@ -5,11 +5,12 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 // Simple handler tests without complex ANTLR dependencies
 func TestErrorHandler_BasicOperations(t *testing.T) {
-	src := source.NewSource("test.fql", "LET x = 1")
+	src := source.New("test.fql", "LET x = 1")
 
 	// Test NewErrorHandler with various thresholds
 	handler1 := NewErrorHandler(src, 5)
@@ -47,7 +48,7 @@ func TestErrorHandler_BasicOperations(t *testing.T) {
 }
 
 func TestErrorHandler_AddNilError(t *testing.T) {
-	src := source.NewSource("test.fql", "LET x = 1")
+	src := source.New("test.fql", "LET x = 1")
 	handler := NewErrorHandler(src, 10)
 
 	// Adding nil error should be ignored
@@ -59,7 +60,7 @@ func TestErrorHandler_AddNilError(t *testing.T) {
 }
 
 func TestErrorHandler_AddSingleError(t *testing.T) {
-	src := source.NewSource("test.fql", "LET x = 1")
+	src := source.New("test.fql", "LET x = 1")
 	handler := NewErrorHandler(src, 10)
 
 	err := &diagnostics.Diagnostic{
@@ -95,7 +96,7 @@ func TestErrorHandler_AddSingleError(t *testing.T) {
 }
 
 func TestErrorHandler_AddMultipleErrors(t *testing.T) {
-	src := source.NewSource("test.fql", "LET x = 1")
+	src := source.New("test.fql", "LET x = 1")
 	handler := NewErrorHandler(src, 10)
 
 	err1 := &diagnostics.Diagnostic{
@@ -132,7 +133,7 @@ func TestErrorHandler_AddMultipleErrors(t *testing.T) {
 }
 
 func TestErrorHandler_HasErrorOnLine(t *testing.T) {
-	src := source.NewSource("test.fql", "LET x = 1\nRETURN x") // 2 lines
+	src := source.New("test.fql", "LET x = 1\nRETURN x") // 2 lines
 	handler := NewErrorHandler(src, 10)
 
 	// Initially no errors on any line
@@ -158,7 +159,7 @@ func TestErrorHandler_HasErrorOnLine(t *testing.T) {
 }
 
 func TestErrorHandler_ExceedThreshold(t *testing.T) {
-	src := source.NewSource("test.fql", "LET x = 1")
+	src := source.New("test.fql", "LET x = 1")
 	handler := NewErrorHandler(src, 2) // Low threshold for testing
 
 	// Add errors up to threshold

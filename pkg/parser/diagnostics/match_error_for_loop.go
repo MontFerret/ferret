@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func matchForLoopErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {

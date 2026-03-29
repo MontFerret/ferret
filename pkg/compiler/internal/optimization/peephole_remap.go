@@ -2,6 +2,7 @@ package optimization
 
 import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func applyPeepholeCompactionAndRemap(state *peepholeRunState) {
@@ -113,15 +114,19 @@ func remapDebugSpans(prog *bytecode.Program, keep []bool) {
 	if prog == nil || len(prog.Metadata.DebugSpans) == 0 {
 		return
 	}
+
 	if len(prog.Metadata.DebugSpans) != len(keep) {
 		return
 	}
+
 	updated := make([]source.Span, 0, len(prog.Metadata.DebugSpans))
+
 	for i, span := range prog.Metadata.DebugSpans {
 		if keep[i] {
 			updated = append(updated, span)
 		}
 	}
+
 	prog.Metadata.DebugSpans = updated
 }
 

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 // SpanRenderer renders a source span with line numbers and a caret marker.

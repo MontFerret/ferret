@@ -6,8 +6,8 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestNewSource(t *testing.T) {
-	Convey("NewSource", t, func() {
+func TestNew(t *testing.T) {
+	Convey("New", t, func() {
 		Convey("Should create source with name and text", func() {
 			name := "test.fql"
 			text := "hello\nworld"
@@ -34,8 +34,8 @@ func TestNewSource(t *testing.T) {
 	})
 }
 
-func TestNewAnonymousSource(t *testing.T) {
-	Convey("NewAnonymousSource", t, func() {
+func TestNewAnonymous(t *testing.T) {
+	Convey("NewAnonymous", t, func() {
 		Convey("Should create anonymous source", func() {
 			text := "test content"
 

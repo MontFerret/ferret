@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestTriviaEmitter_PreservesBlockCommentIndent(t *testing.T) {
 	input := "/*\n * a\n * b\n */"
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymousSource(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.trivia.emitTrivia(input, false, false)
 	out := buf.String()

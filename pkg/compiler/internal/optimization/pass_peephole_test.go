@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func runPeephole(t *testing.T, program *bytecode.Program) (*PassResult, error) {

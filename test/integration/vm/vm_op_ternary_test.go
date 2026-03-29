@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	spec "github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
@@ -37,7 +38,7 @@ func TestTernaryOperator(t *testing.T) {
 			val := val
 
 			t.Run(val, func(t *testing.T) {
-				p, err := c.Compile(source.NewAnonymousSource(fmt.Sprintf(`
+				p, err := c.Compile(source.NewAnonymous(fmt.Sprintf(`
 			FOR i IN [%s, 1, 2, 3]
 				RETURN i ? i * 2 : 'no value'
 		`, val)))

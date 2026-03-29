@@ -3,10 +3,12 @@ package diagnostics
 import (
 	"strings"
 	"testing"
+
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestFormatError_Basic(t *testing.T) {
-	src := source.NewSource("test.fql", "LET x = 1")
+	src := source.New("test.fql", "LET x = 1")
 
 	err := &Diagnostic{
 		Kind:    UnexpectedError,
@@ -30,7 +32,7 @@ func TestFormatError_Basic(t *testing.T) {
 }
 
 func TestFormatError_WithSpans(t *testing.T) {
-	src := source.NewSource("test.fql", "LET x = 1")
+	src := source.New("test.fql", "LET x = 1")
 
 	err := &Diagnostic{
 		Kind:    UnexpectedError,
@@ -53,7 +55,7 @@ func TestFormatError_WithSpans(t *testing.T) {
 }
 
 func TestFormatError_WithCause(t *testing.T) {
-	src := source.NewSource("test.fql", "LET x = 1")
+	src := source.New("test.fql", "LET x = 1")
 
 	cause := &Diagnostic{
 		Kind:    UnexpectedError,
@@ -87,7 +89,7 @@ func TestFormatError_WithCause(t *testing.T) {
 }
 
 func TestFormatError_WithIndent(t *testing.T) {
-	src := source.NewSource("test.fql", "LET x = 1")
+	src := source.New("test.fql", "LET x = 1")
 
 	err := &Diagnostic{
 		Kind:    UnexpectedError,
@@ -106,7 +108,7 @@ func TestFormatError_WithIndent(t *testing.T) {
 }
 
 func TestFormatError_NilSpansHandling(t *testing.T) {
-	src := source.NewSource("test.fql", "LET x = 1")
+	src := source.New("test.fql", "LET x = 1")
 
 	err := &Diagnostic{
 		Kind:    UnexpectedError,

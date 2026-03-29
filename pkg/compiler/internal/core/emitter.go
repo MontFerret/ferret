@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 type Emitter struct {

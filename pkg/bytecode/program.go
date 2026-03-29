@@ -5,6 +5,8 @@ import (
 
 	"github.com/goccy/go-json"
 
+	"github.com/MontFerret/ferret/v2/pkg/source"
+
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 

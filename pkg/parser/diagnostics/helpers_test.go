@@ -2,6 +2,8 @@ package diagnostics
 
 import (
 	"testing"
+
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestHas(t *testing.T) {
@@ -354,7 +356,7 @@ func TestIsValidString(t *testing.T) {
 }
 
 func TestSpanFromTokenSafe_EdgeCases(t *testing.T) {
-	src := source.NewSource("test.fql", "LET x = 1") // Length: 9
+	src := source.New("test.fql", "LET x = 1") // Length: 9
 
 	// Test nil token
 	result := spanFromTokenSafe(nil, src)

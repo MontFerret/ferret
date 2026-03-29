@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 var invalidWhileLoopBindingPatterns = []*regexp.Regexp{

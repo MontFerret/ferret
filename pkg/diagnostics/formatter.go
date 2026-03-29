@@ -6,6 +6,8 @@ import (
 	"io"
 	"sort"
 	"strings"
+
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func FormatDiagnostic(out io.Writer, e *Diagnostic, indent int) {

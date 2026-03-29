@@ -1,5 +1,7 @@
 package diagnostics
 
+import "github.com/MontFerret/ferret/v2/pkg/source"
+
 type ErrorSpan struct {
 	Label string
 	Span  source.Span

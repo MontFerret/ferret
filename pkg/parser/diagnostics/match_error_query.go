@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {

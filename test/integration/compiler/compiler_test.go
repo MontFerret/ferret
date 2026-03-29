@@ -10,12 +10,13 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestCompiler_Consts(t *testing.T) {
 	c := compiler.New()
 
-	p, err := c.Compile(source.NewAnonymousSource(`VAR str = ""
+	p, err := c.Compile(source.NewAnonymous(`VAR str = ""
 
 str += " " + 1 + " " + 2 + " " + 3 + " " + 4 + " " + 5
 
@@ -50,7 +51,7 @@ func TestCompilerCompileConcurrentSharedCompiler(t *testing.T) {
 	t.Run("shared_sources", func(t *testing.T) {
 		sources := make([]*source.Source, 0, len(validQueries))
 		for i, query := range validQueries {
-			sources = append(sources, source.NewSource(fmt.Sprintf("shared_%d", i), query))
+			sources = append(sources, source.New(fmt.Sprintf("shared_%d", i), query))
 		}
 
 		runConcurrentCompileWorkers(t, workers, iterations, func(worker, iter int) error {
@@ -68,7 +69,7 @@ func TestCompilerCompileConcurrentSharedCompiler(t *testing.T) {
 	t.Run("fresh_sources", func(t *testing.T) {
 		runConcurrentCompileWorkers(t, workers, iterations, func(worker, iter int) error {
 			query := validQueries[(worker+iter)%len(validQueries)]
-			source := source.NewSource(fmt.Sprintf("fresh_%d_%d", worker, iter), query)
+			source := source.New(fmt.Sprintf("fresh_%d_%d", worker, iter), query)
 
 			program, err := compilerInstance.Compile(source)
 			if err != nil {
@@ -129,7 +130,7 @@ RETURN wrap()
 
 		for i, query := range udfQueries {
 			item := sharedSourceCase{
-				source: source.NewSource(fmt.Sprintf("udf_shared_%d", i), query.query),
+				source: source.New(fmt.Sprintf("udf_shared_%d", i), query.query),
 			}
 
 			item.spec.expectedHost = query.expectedHost
@@ -156,7 +157,7 @@ RETURN wrap()
 	t.Run("udf_isolation_fresh_sources", func(t *testing.T) {
 		runConcurrentCompileWorkers(t, workers, iterations, func(worker, iter int) error {
 			query := udfQueries[(worker+iter)%len(udfQueries)]
-			source := source.NewSource(fmt.Sprintf("udf_fresh_%d_%d", worker, iter), query.query)
+			source := source.New(fmt.Sprintf("udf_fresh_%d_%d", worker, iter), query.query)
 
 			program, err := compilerInstance.Compile(source)
 			if err != nil {
@@ -189,7 +190,7 @@ func TestCompilerCompileConcurrentInvalidQueries(t *testing.T) {
 	t.Run("invalid_sources", func(t *testing.T) {
 		runConcurrentCompileWorkers(t, workers, iterations, func(worker, iter int) error {
 			query := invalidQueries[(worker+iter)%len(invalidQueries)]
-			source := source.NewSource(fmt.Sprintf("invalid_%d_%d", worker, iter), query)
+			source := source.New(fmt.Sprintf("invalid_%d_%d", worker, iter), query)
 
 			program, err := compilerInstance.Compile(source)
 			if err == nil {

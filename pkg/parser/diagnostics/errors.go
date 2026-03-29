@@ -2,6 +2,7 @@ package diagnostics
 
 import (
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 const (

@@ -2,6 +2,7 @@ package diagnostics
 
 import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func SpanAt(program *bytecode.Program, pc int) source.Span {

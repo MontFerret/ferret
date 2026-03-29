@@ -5,6 +5,8 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
+	"github.com/MontFerret/ferret/v2/pkg/source"
+
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 )
 
@@ -21,7 +23,7 @@ func TestCompilationError(t *testing.T) {
 		})
 
 		Convey("Format() should format error with all components", func() {
-			src := source.NewSource("test.fql", "LET x = 1")
+			src := source.New("test.fql", "LET x = 1")
 
 			err := &diagnostics.Diagnostic{
 				Kind:    SyntaxError,

@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 type Visitor struct {

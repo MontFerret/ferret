@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestValidateProgram(t *testing.T) {
@@ -124,7 +125,7 @@ func TestValidateProgramAllowsConcatImmediateCountAtRegisterLimit(t *testing.T) 
 
 func validValidationProgram() *Program {
 	return &Program{
-		Source: source.NewSource("validation.fql", "RETURN 1"),
+		Source: source.New("validation.fql", "RETURN 1"),
 		Functions: Functions{
 			Host: map[string]int{
 				"now": 0,

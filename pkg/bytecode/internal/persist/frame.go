@@ -8,6 +8,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 const (
@@ -355,13 +356,13 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 		labels[label.PC] = label.Name
 	}
 
-	var source *source.Source
+	var src *source.Source
 	if frame.Source != nil {
-		source = source.NewSource(frame.Source.Name, frame.Source.Text)
+		src = source.New(frame.Source.Name, frame.Source.Text)
 	}
 
 	program := &bytecode.Program{
-		Source: source,
+		Source: src,
 		Functions: bytecode.Functions{
 			Host:        host,
 			UserDefined: udfs,

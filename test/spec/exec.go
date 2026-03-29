@@ -11,6 +11,7 @@ import (
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	encodingmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -27,7 +28,7 @@ func Compile(expression string, level ...compiler.OptimizationLevel) (*bytecode.
 
 	c := compiler.New(compiler.WithOptimizationLevel(oplevel))
 
-	return c.Compile(source.NewSource("", expression))
+	return c.Compile(source.New("", expression))
 }
 
 func newTestContext() context.Context {

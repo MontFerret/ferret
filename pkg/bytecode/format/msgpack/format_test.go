@@ -7,6 +7,8 @@ import (
 
 	vmmsgpack "github.com/vmihailenco/msgpack/v5"
 
+	"github.com/MontFerret/ferret/v2/pkg/source"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/internal/persist"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -137,7 +139,7 @@ func validFrame() persist.ProgramFrame {
 
 func newTestProgram() *bytecode.Program {
 	return &bytecode.Program{
-		Source: source.NewSource("roundtrip.fql", "RETURN 1\nRETURN 2"),
+		Source: source.New("roundtrip.fql", "RETURN 1\nRETURN 2"),
 		Functions: bytecode.Functions{
 			Host: map[string]int{
 				"now": 0,

@@ -1,5 +1,5 @@
 import AppComponent from "./components/app.js";
-import { parse } from "./utils/qs.js";
+import {parse} from "./utils/qs.js";
 
 const qs = parse(location.search);
 

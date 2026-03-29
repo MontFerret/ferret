@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func isComputedPropertyPrefix(node *TokenNode) bool {

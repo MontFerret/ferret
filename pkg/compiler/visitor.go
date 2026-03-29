@@ -9,6 +9,7 @@ import (
 	parser "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 type Visitor struct {

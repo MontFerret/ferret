@@ -21,6 +21,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/formatter"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 
 	"github.com/rs/zerolog"
 
@@ -314,7 +315,7 @@ func main() {
 		f := formatter.New()
 
 		if query != "" {
-			err = formatQuery(f, source.NewSource("stdin", query))
+			err = formatQuery(f, source.New("stdin", query))
 		} else {
 			err = formatFiles(ctx, f, files)
 		}
@@ -337,7 +338,7 @@ func main() {
 		}
 
 		if query != "" {
-			err = runQuery(ctx, engine, sessionOptions, source.NewSource("stdin", query))
+			err = runQuery(ctx, engine, sessionOptions, source.New("stdin", query))
 		} else {
 			err = execFiles(ctx, engine, sessionOptions, files)
 		}
@@ -456,7 +457,7 @@ func processFiles(ctx context.Context, files []string, op string, predicate func
 			errList = append(errList, &diagnostics.Diagnostic{
 				Kind:    diagnostics.UnexpectedError,
 				Message: "failed to get path info",
-				Source:  source.NewSource("stdin", path),
+				Source:  source.New("stdin", path),
 				Cause:   err,
 			})
 
@@ -474,7 +475,7 @@ func processFiles(ctx context.Context, files []string, op string, predicate func
 				errList = append(errList, &diagnostics.Diagnostic{
 					Kind:    diagnostics.UnexpectedError,
 					Message: "failed to retrieve list of files",
-					Source:  source.NewSource("stdin", path),
+					Source:  source.New("stdin", path),
 					Cause:   err,
 				})
 
@@ -498,7 +499,7 @@ func processFiles(ctx context.Context, files []string, op string, predicate func
 					errList = append(errList, &diagnostics.Diagnostic{
 						Kind:    diagnostics.UnexpectedError,
 						Message: fmt.Sprintf("failed to %s files", op),
-						Source:  source.NewSource("stdin", path),
+						Source:  source.New("stdin", path),
 						Cause:   err,
 					})
 				} else {
@@ -521,7 +522,7 @@ func processFiles(ctx context.Context, files []string, op string, predicate func
 			errList = append(errList, &diagnostics.Diagnostic{
 				Kind:    diagnostics.UnexpectedError,
 				Message: "failed to read content",
-				Source:  source.NewSource("stdin", path),
+				Source:  source.New("stdin", path),
 				Cause:   err,
 			})
 

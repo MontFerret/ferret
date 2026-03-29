@@ -9,6 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 

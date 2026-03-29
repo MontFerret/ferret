@@ -7,6 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 
 	"github.com/antlr4-go/antlr/v4"
 

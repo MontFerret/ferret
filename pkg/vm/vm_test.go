@@ -10,6 +10,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 	rtdiagnostics "github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
@@ -2428,7 +2429,7 @@ func TestBuildExecPlanRejectsMatchFailTargetLengthMismatch(t *testing.T) {
 func TestWrapRuntimeErrorSingleWarmupFailureReturnsRuntimeError(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
-		Source:     source.NewSource("test", "RETURN 1"),
+		Source:     source.New("test", "RETURN 1"),
 		Metadata: bytecode.Metadata{
 			DebugSpans: []source.Span{{Start: 0, End: 6}},
 		},
@@ -2541,7 +2542,7 @@ func TestNearestBoundaryUsesProtectedUnwindWithoutCatch(t *testing.T) {
 func TestWrapRuntimeErrorPreservesExistingNoteAndDoesNotDuplicateStackDetails(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
-		Source:     source.NewSource("test", "RETURN 1"),
+		Source:     source.New("test", "RETURN 1"),
 		Metadata: bytecode.Metadata{
 			DebugSpans: []source.Span{{Start: 0, End: 6}},
 		},
@@ -2594,7 +2595,7 @@ func TestWrapRuntimeErrorPreservesExistingNoteAndDoesNotDuplicateStackDetails(t 
 func TestWrapRuntimeErrorRecognizesLegacyCallStackLabelWithoutDuplicatingSpans(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
-		Source:     source.NewSource("test", "RETURN 1"),
+		Source:     source.New("test", "RETURN 1"),
 		Metadata: bytecode.Metadata{
 			DebugSpans: []source.Span{{Start: 0, End: 6}},
 		},

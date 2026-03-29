@@ -5,13 +5,15 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
+	"github.com/MontFerret/ferret/v2/pkg/source"
+
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 )
 
 func TestAnalyzeSyntaxError(t *testing.T) {
 	Convey("AnalyzeSyntaxError", t, func() {
 		Convey("Should return boolean for basic syntax error", func() {
-			src := source.NewSource("test.fql", "LET x =")
+			src := source.New("test.fql", "LET x =")
 
 			err := &diagnostics.Diagnostic{
 				Kind:    SyntaxError,
@@ -30,7 +32,7 @@ func TestAnalyzeSyntaxError(t *testing.T) {
 		})
 
 		Convey("Should handle different matcher types", func() {
-			src := source.NewSource("test.fql", "RETURN")
+			src := source.New("test.fql", "RETURN")
 
 			// Test different types of syntax errors that should trigger different matchers
 			testCases := []struct {
@@ -77,7 +79,7 @@ func TestAnalyzeSyntaxError(t *testing.T) {
 		})
 
 		Convey("Should return false when no matcher matches", func() {
-			src := source.NewSource("test.fql", "LET x = 1")
+			src := source.New("test.fql", "LET x = 1")
 
 			err := &diagnostics.Diagnostic{
 				Kind:    SyntaxError,

@@ -7,6 +7,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
@@ -31,7 +32,7 @@ func TestRegexpOperator(t *testing.T) {
 
 	t.Run("Should return an error during compilation when a regexp string invalid", func(t *testing.T) {
 		_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).
-			Compile(source.NewAnonymousSource(`
+			Compile(source.NewAnonymous(`
 			RETURN "foo" !~ "[ ]\K(?<!\d )(?=(?: ?\d){8})(?!(?: ?\d){9})\d[ \d]+\d" 
 		`))
 
@@ -54,7 +55,7 @@ func TestRegexpOperator(t *testing.T) {
 
 			t.Run(r, func(t *testing.T) {
 				_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).
-					Compile(source.NewAnonymousSource(fmt.Sprintf(`
+					Compile(source.NewAnonymous(fmt.Sprintf(`
 			RETURN "foo" !~ %s 
 		`, r)))
 

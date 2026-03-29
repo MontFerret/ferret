@@ -7,6 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
@@ -79,7 +80,7 @@ func TestVarSyntaxErrors(t *testing.T) {
 func TestVarCompoundAssignmentMissingValueDiagnosticSpan(t *testing.T) {
 	src := "VAR x = 0\nx +=\nRETURN x"
 
-	_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).Compile(source.NewSource("var_compound_span", src))
+	_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).Compile(source.New("var_compound_span", src))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}
