@@ -3,6 +3,7 @@ package ferret
 import (
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/fs"
+	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -11,7 +12,7 @@ type (
 		Library() runtime.Library
 		Params() runtime.Params
 		Encoding() encoding.CodecRegistrar
-		Logger() runtime.Logger
+		Logger() logging.Logger
 		FileSystem() fs.FileSystem
 	}
 
@@ -19,7 +20,7 @@ type (
 		functions *runtime.Functions
 		params    runtime.Params
 		encoding  *encoding.Registry
-		logger    runtime.Logger
+		logger    logging.Logger
 		fs        fs.FileSystem
 	}
 
@@ -27,7 +28,7 @@ type (
 		library  runtime.Library
 		params   runtime.Params
 		encoding *encoding.Registry
-		logger   runtime.Logger
+		logger   logging.Logger
 		fs       fs.FileSystem
 	}
 )
@@ -43,12 +44,12 @@ func newHostContext(opts *options) (*hostContext, error) {
 		library:  opts.library,
 		params:   opts.params,
 		encoding: opts.encoding,
-		logger:   runtime.NewLogger(opts.logging),
+		logger:   logging.New(opts.logger...),
 		fs:       rootFs,
 	}, nil
 }
 
-func (h *hostContext) Logger() runtime.Logger {
+func (h *hostContext) Logger() logging.Logger {
 	return h.logger
 }
 

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -154,7 +155,7 @@ func TestRunLogsDeferredCleanupErrorsWithoutChangingRunResult(t *testing.T) {
 
 	eng, err := New(
 		WithLog(logOutput),
-		WithLogLevel(runtime.ErrorLevel),
+		WithLogLevel(logging.ErrorLevel),
 		WithSessionCloseHook(func() error {
 			return sessionCloseErr
 		}),

@@ -20,6 +20,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/formatter"
+	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 
@@ -237,7 +238,7 @@ var (
 
 	logLevel = flag.String(
 		"log-level",
-		runtime.ErrorLevel.String(),
+		logging.ErrorLevel.String(),
 		"log level",
 	)
 )
@@ -260,7 +261,7 @@ func main() {
 		TimeFormat: "15:04:05.999",
 	}
 	logger = zerolog.New(console).
-		Level(zerolog.Level(runtime.MustParseLogLevel(*logLevel))).
+		Level(zerolog.Level(logging.MustParseLogLevel(*logLevel))).
 		With().
 		Timestamp().
 		Logger()

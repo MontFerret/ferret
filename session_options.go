@@ -5,19 +5,39 @@ import (
 	"io"
 	"strings"
 
+	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
+	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 type (
 	sessionOptions struct {
-		logging           runtime.LogSettings
+		logger            []logging.Option
 		outputContentType string
-		envOptions        []vm.EnvironmentOption
+		env               []vm.EnvironmentOption
 	}
 
 	SessionOption func(*sessionOptions) error
 )
+
+func newSessionOptions(setters []SessionOption) (*sessionOptions, error) {
+	opts := &sessionOptions{
+		outputContentType: encodingjson.ContentType,
+	}
+
+	for _, setter := range setters {
+		if setter == nil {
+			continue
+		}
+
+		if err := setter(opts); err != nil {
+			return nil, err
+		}
+	}
+
+	return opts, nil
+}
 
 func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
 	return func(session *sessionOptions) error {
@@ -34,7 +54,7 @@ func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
 				continue
 			}
 
-			session.envOptions = append(session.envOptions, opt)
+			session.env = append(session.env, opt)
 		}
 
 		return nil
@@ -73,20 +93,22 @@ func WithSessionLog(writer io.Writer) SessionOption {
 			return fmt.Errorf("log writer cannot be nil")
 		}
 
-		opts.logging.Writer = writer
+		opts.logger = append(opts.logger, logging.WithWriter(writer))
+
 		return nil
 	}
 }
 
 // WithSessionLogLevel sets the logging level for the session.
 // The logging level determines the severity of log messages that will be recorded.
-func WithSessionLogLevel(lvl runtime.LogLevel) SessionOption {
+func WithSessionLogLevel(lvl logging.LogLevel) SessionOption {
 	return func(opts *sessionOptions) error {
-		if lvl < runtime.TraceLevel || lvl > runtime.Disabled {
+		if lvl < logging.TraceLevel || lvl > logging.Disabled {
 			return fmt.Errorf("invalid log level: %v", lvl)
 		}
 
-		opts.logging.Level = lvl
+		opts.logger = append(opts.logger, logging.WithLevel(lvl))
+
 		return nil
 	}
 }
@@ -99,13 +121,7 @@ func WithSessionLogFields(fields map[string]any) SessionOption {
 			return fmt.Errorf("log fields cannot be nil")
 		}
 
-		if opts.logging.Fields == nil {
-			opts.logging.Fields = make(map[string]any)
-		}
-
-		for k, v := range fields {
-			opts.logging.Fields[k] = v
-		}
+		opts.logger = append(opts.logger, logging.WithFields(fields))
 
 		return nil
 	}

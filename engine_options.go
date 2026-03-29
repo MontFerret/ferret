@@ -3,13 +3,13 @@ package ferret
 import (
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	encodingmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
+	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 )
@@ -21,7 +21,7 @@ type (
 		encoding          *encoding.Registry
 		programLoader     *artifact.Loader
 		hooks             *hookRegistry
-		logging           runtime.LogSettings
+		logger            []logging.Option
 		fsRoot            string
 		compiler          []compiler.Option
 		modules           []Module
@@ -50,36 +50,13 @@ func (c encodingCodecAlias) ContentType() string {
 	return c.contentType
 }
 
-func newSessionOptions(setters []SessionOption) (*sessionOptions, error) {
-	opts := &sessionOptions{
-		outputContentType: encodingjson.ContentType,
-	}
-
-	for _, setter := range setters {
-		if setter == nil {
-			continue
-		}
-
-		if err := setter(opts); err != nil {
-			return nil, err
-		}
-	}
-
-	return opts, nil
-}
-
 func newOptions(setters []Option) (*options, error) {
 	opts := &options{
-		compiler:      []compiler.Option{},
-		library:       runtime.NewLibrary(),
-		params:        make(map[string]runtime.Value),
-		encoding:      encoding.NewRegistry(encodingjson.Default, encodingmsgpack.Default),
-		programLoader: artifact.NewDefaultLoader(),
-		hooks:         newHookRegistry(),
-		logging: runtime.LogSettings{
-			Writer: os.Stdout,
-			Level:  runtime.ErrorLevel,
-		},
+		library:           runtime.NewLibrary(),
+		params:            make(map[string]runtime.Value),
+		encoding:          encoding.NewRegistry(encodingjson.Default, encodingmsgpack.Default),
+		programLoader:     artifact.NewDefaultLoader(),
+		hooks:             newHookRegistry(),
 		maxActiveSessions: defaultMaxActiveSessions,
 		maxIdleVMsPerPlan: defaultVMPoolSize,
 		maxVMsPerPlan:     defaultMaxVMsPerPlan,
@@ -145,20 +122,22 @@ func WithLog(writer io.Writer) Option {
 			return fmt.Errorf("log writer cannot be nil")
 		}
 
-		opts.logging.Writer = writer
+		opts.logger = append(opts.logger, logging.WithWriter(writer))
+
 		return nil
 	}
 }
 
 // WithLogLevel sets the logging level for the engine.
 // The logging level determines the severity of log messages that will be recorded.
-func WithLogLevel(lvl runtime.LogLevel) Option {
+func WithLogLevel(lvl logging.LogLevel) Option {
 	return func(opts *options) error {
-		if lvl < runtime.TraceLevel || lvl > runtime.Disabled {
+		if lvl < logging.TraceLevel || lvl > logging.Disabled {
 			return fmt.Errorf("invalid log level: %v", lvl)
 		}
 
-		opts.logging.Level = lvl
+		opts.logger = append(opts.logger, logging.WithLevel(lvl))
+
 		return nil
 	}
 }
@@ -171,13 +150,7 @@ func WithLogFields(fields map[string]any) Option {
 			return fmt.Errorf("log fields cannot be nil")
 		}
 
-		if opts.logging.Fields == nil {
-			opts.logging.Fields = make(map[string]any)
-		}
-
-		for k, v := range fields {
-			opts.logging.Fields[k] = v
-		}
+		opts.logger = append(opts.logger, logging.WithFields(fields))
 
 		return nil
 	}
@@ -191,6 +164,7 @@ func WithEncodingRegistry(registry *encoding.Registry) Option {
 		}
 
 		opts.encoding = registry
+
 		return nil
 	}
 }
@@ -203,6 +177,7 @@ func WithProgramLoader(loader *artifact.Loader) Option {
 		}
 
 		opts.programLoader = loader
+
 		return nil
 	}
 }
@@ -211,6 +186,7 @@ func WithProgramLoader(loader *artifact.Loader) Option {
 func WithoutStdlib() Option {
 	return func(opts *options) error {
 		opts.noStdlib = true
+
 		return nil
 	}
 }
@@ -283,6 +259,7 @@ func WithEngineInitHook(hook EngineInitHook) Option {
 		}
 
 		opts.hooks.engine.OnInit(hook)
+
 		return nil
 	}
 }
@@ -296,6 +273,7 @@ func WithEngineCloseHook(hook EngineCloseHook) Option {
 		}
 
 		opts.hooks.engine.OnClose(hook)
+
 		return nil
 	}
 }
@@ -309,6 +287,7 @@ func WithBeforeCompileHook(hook BeforeCompileHook) Option {
 		}
 
 		opts.hooks.plan.BeforeCompile(hook)
+
 		return nil
 	}
 }
@@ -322,6 +301,7 @@ func WithAfterCompileHook(hook AfterCompileHook) Option {
 		}
 
 		opts.hooks.plan.AfterCompile(hook)
+
 		return nil
 	}
 }
@@ -335,6 +315,7 @@ func WithPlanCloseHook(hook PlanCloseHook) Option {
 		}
 
 		opts.hooks.plan.OnClose(hook)
+
 		return nil
 	}
 }
@@ -349,6 +330,7 @@ func WithBeforeRunHook(hook BeforeRunHook) Option {
 		}
 
 		opts.hooks.session.BeforeRun(hook)
+
 		return nil
 	}
 }
@@ -362,6 +344,7 @@ func WithAfterRunHook(hook AfterRunHook) Option {
 		}
 
 		opts.hooks.session.AfterRun(hook)
+
 		return nil
 	}
 }
@@ -375,6 +358,7 @@ func WithSessionCloseHook(hook SessionCloseHook) Option {
 		}
 
 		opts.hooks.session.OnClose(hook)
+
 		return nil
 	}
 }
@@ -402,6 +386,7 @@ func WithMaxActiveSessions(n int) Option {
 		}
 
 		opts.maxActiveSessions = n
+
 		return nil
 	}
 }
@@ -431,6 +416,7 @@ func WithMaxIdleVMsPerPlan(n int) Option {
 		}
 
 		opts.maxIdleVMsPerPlan = n
+
 		return nil
 	}
 }
@@ -464,6 +450,7 @@ func WithMaxVMsPerPlan(n int) Option {
 		}
 
 		opts.maxVMsPerPlan = n
+
 		return nil
 	}
 }

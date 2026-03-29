@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -25,7 +26,7 @@ func Print(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		}
 	}
 
-	logger := runtime.GetLogger(ctx)
+	logger := logging.From(ctx)
 	logger.Print(messages...)
 
 	return runtime.None, nil

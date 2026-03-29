@@ -7,6 +7,7 @@ import (
 	"io"
 
 	ferret "github.com/MontFerret/ferret/v2"
+	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -17,7 +18,7 @@ type Options struct {
 	logWriter io.Writer
 	params    map[string]interface{}
 	logFields map[string]interface{}
-	logLevel  runtime.LogLevel
+	logLevel  logging.LogLevel
 }
 
 // Option is a functional option for configuring a program execution.
@@ -56,7 +57,7 @@ func WithLog(writer io.Writer) Option {
 }
 
 // WithLogLevel sets the log level.
-func WithLogLevel(lvl runtime.LogLevel) Option {
+func WithLogLevel(lvl logging.LogLevel) Option {
 	return func(o *Options) {
 		o.logLevel = lvl
 	}
@@ -72,7 +73,7 @@ func WithLogFields(fields map[string]interface{}) Option {
 // newOptions applies the provided setters to a default Options struct.
 func newOptions(setters []Option) *Options {
 	o := &Options{
-		logLevel: runtime.ErrorLevel,
+		logLevel: logging.ErrorLevel,
 	}
 
 	for _, s := range setters {
@@ -113,7 +114,7 @@ func toSessionOptions(o *Options) []ferret.SessionOption {
 		opts = append(opts, ferret.WithSessionLog(o.logWriter))
 	}
 
-	if o.logLevel != runtime.ErrorLevel {
+	if o.logLevel != logging.ErrorLevel {
 		opts = append(opts, ferret.WithSessionLogLevel(o.logLevel))
 	}
 
