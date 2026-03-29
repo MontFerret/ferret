@@ -69,14 +69,14 @@ func TestCompilerCompileConcurrentSharedCompiler(t *testing.T) {
 	t.Run("fresh_sources", func(t *testing.T) {
 		runConcurrentCompileWorkers(t, workers, iterations, func(worker, iter int) error {
 			query := validQueries[(worker+iter)%len(validQueries)]
-			source := source.New(fmt.Sprintf("fresh_%d_%d", worker, iter), query)
+			src := source.New(fmt.Sprintf("fresh_%d_%d", worker, iter), query)
 
-			program, err := compilerInstance.Compile(source)
+			program, err := compilerInstance.Compile(src)
 			if err != nil {
 				return fmt.Errorf("compile failed: %w", err)
 			}
 
-			return assertCompiledProgram(program, source)
+			return assertCompiledProgram(program, src)
 		})
 	})
 
