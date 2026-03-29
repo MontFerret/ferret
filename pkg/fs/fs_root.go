@@ -7,8 +7,8 @@ import (
 )
 
 type rootFS struct {
-	root    *os.Root
-	reaOnly bool
+	root     *os.Root
+	readOnly bool
 }
 
 func (r *rootFS) Close() error {
@@ -47,7 +47,7 @@ func (r *rootFS) Exists(path string) (bool, error) {
 }
 
 func (r *rootFS) WriteFile(path string, data []byte, perm fs.FileMode) error {
-	if r.reaOnly {
+	if r.readOnly {
 		return ErrReadOnly
 	}
 
@@ -62,7 +62,7 @@ func (r *rootFS) WriteFile(path string, data []byte, perm fs.FileMode) error {
 }
 
 func (r *rootFS) AppendFile(path string, data []byte, perm fs.FileMode) error {
-	if r.reaOnly {
+	if r.readOnly {
 		return ErrReadOnly
 	}
 
@@ -77,7 +77,7 @@ func (r *rootFS) AppendFile(path string, data []byte, perm fs.FileMode) error {
 }
 
 func (r *rootFS) Mkdir(path string, perm fs.FileMode) error {
-	if r.reaOnly {
+	if r.readOnly {
 		return ErrReadOnly
 	}
 
@@ -85,7 +85,7 @@ func (r *rootFS) Mkdir(path string, perm fs.FileMode) error {
 }
 
 func (r *rootFS) MkdirAll(path string, perm fs.FileMode) error {
-	if r.reaOnly {
+	if r.readOnly {
 		return ErrReadOnly
 	}
 
@@ -93,7 +93,7 @@ func (r *rootFS) MkdirAll(path string, perm fs.FileMode) error {
 }
 
 func (r *rootFS) Remove(path string) error {
-	if r.reaOnly {
+	if r.readOnly {
 		return ErrReadOnly
 	}
 
@@ -101,7 +101,7 @@ func (r *rootFS) Remove(path string) error {
 }
 
 func (r *rootFS) RemoveAll(path string) error {
-	if r.reaOnly {
+	if r.readOnly {
 		return ErrReadOnly
 	}
 
