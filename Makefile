@@ -32,7 +32,7 @@ compile:
 	go build -v -o ${DIR_BIN}/ferret \
 	${DIR_E2E}/cli.go
 
-test: test-unit test-integration
+test: test-unit test-integration test-security
 
 test-unit:
 	CGO_ENABLED=1 go test -race ${DIR_PKG}/... && CGO_ENABLED=1 go test -race ${DIR_COMPAT}/...

@@ -106,4 +106,4 @@ jobs:
           go-version: 1.25
 
       - name: Run race tests
-        run: go test ./... -race
+        run: make test-unit && make test-integration
