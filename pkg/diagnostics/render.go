@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 // SpanRenderer renders a source span with line numbers and a caret marker.
@@ -16,7 +16,7 @@ type SpanRenderer struct {
 }
 
 // Render prints a span diagnostic block. It returns false when no location can be rendered.
-func (r SpanRenderer) Render(out io.Writer, src *file.Source, span file.Span, label string) bool {
+func (r SpanRenderer) Render(out io.Writer, src *source.Source, span source.Span, label string) bool {
 	if out == nil || src == nil || src.Empty() {
 		return false
 	}

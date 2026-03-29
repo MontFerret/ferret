@@ -6,13 +6,12 @@ import (
 	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	encodingmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
-	"github.com/MontFerret/ferret/v2/pkg/file"
-
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -29,7 +28,7 @@ func Compile(expression string, level ...compiler.OptimizationLevel) (*bytecode.
 
 	c := compiler.New(compiler.WithOptimizationLevel(oplevel))
 
-	return c.Compile(file.NewSource("", expression))
+	return c.Compile(source.New("", expression))
 }
 
 func newTestContext() context.Context {

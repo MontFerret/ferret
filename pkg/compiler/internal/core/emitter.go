@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 type Emitter struct {
@@ -15,15 +15,15 @@ type Emitter struct {
 	instructions     []bytecode.Instruction
 	selectorSlots    []int
 	matchFailTargets []int
-	spans            []file.Span
-	currentSpan      file.Span
+	spans            []source.Span
+	currentSpan      source.Span
 	nextLabelID      labelID
 }
 
 func NewEmitter() *Emitter {
 	return &Emitter{
 		instructions: make([]bytecode.Instruction, 0, 8),
-		currentSpan:  file.Span{Start: -1, End: -1},
+		currentSpan:  source.Span{Start: -1, End: -1},
 	}
 }
 
@@ -31,12 +31,12 @@ func (e *Emitter) Bytecode() []bytecode.Instruction {
 	return e.instructions
 }
 
-func (e *Emitter) Spans() []file.Span {
+func (e *Emitter) Spans() []source.Span {
 	if len(e.spans) == 0 {
 		return nil
 	}
 
-	out := make([]file.Span, len(e.spans))
+	out := make([]source.Span, len(e.spans))
 	copy(out, e.spans)
 
 	return out
@@ -65,7 +65,7 @@ func (e *Emitter) MatchFailTargets() []int {
 }
 
 // WithSpan sets a span for emitted instructions within fn.
-func (e *Emitter) WithSpan(span file.Span, fn func()) {
+func (e *Emitter) WithSpan(span source.Span, fn func()) {
 	if fn == nil {
 		return
 	}
@@ -367,7 +367,7 @@ func (e *Emitter) insertInstructionWithSelectorSlot(label Label, ins bytecode.In
 		append([]int{-1}, e.matchFailTargets[pos:]...)...,
 	)
 	e.spans = append(e.spans[:pos],
-		append([]file.Span{e.currentSpan}, e.spans[pos:]...)...,
+		append([]source.Span{e.currentSpan}, e.spans[pos:]...)...,
 	)
 
 	// Adjust all subsequent label addresses

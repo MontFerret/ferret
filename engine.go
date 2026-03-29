@@ -8,8 +8,8 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -29,7 +29,10 @@ func New(setters ...Option) (*Engine, error) {
 		return nil, err
 	}
 
-	boot := newBootstrap(opts)
+	boot, err := newBootstrap(opts)
+	if err != nil {
+		return nil, fmt.Errorf("bootstrap: %w", err)
+	}
 
 	for _, m := range opts.modules {
 		if err := m.Register(boot); err != nil {
@@ -74,7 +77,7 @@ func New(setters ...Option) (*Engine, error) {
 	}, nil
 }
 
-func (e *Engine) Compile(ctx context.Context, src *file.Source) (*Plan, error) {
+func (e *Engine) Compile(ctx context.Context, src *source.Source) (*Plan, error) {
 	if e == nil {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is nil")
 	}
@@ -111,7 +114,7 @@ func (e *Engine) Load(data []byte) (*Plan, error) {
 	return e.newPlan(prog)
 }
 
-func (e *Engine) Run(ctx context.Context, src *file.Source, opts ...SessionOption) (*Output, error) {
+func (e *Engine) Run(ctx context.Context, src *source.Source, opts ...SessionOption) (*Output, error) {
 	plan, err := e.Compile(ctx, src)
 
 	if err != nil {
@@ -121,7 +124,7 @@ func (e *Engine) Run(ctx context.Context, src *file.Source, opts ...SessionOptio
 	var session *Session
 
 	defer func() {
-		logger := runtime.NewLogger(e.host.logging)
+		logger := e.host.logger
 
 		if session != nil {
 			if closeErr := session.Close(); closeErr != nil {

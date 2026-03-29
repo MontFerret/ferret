@@ -1,4 +1,4 @@
-package file
+package source
 
 type Span struct {
 	Start int `json:"start"`

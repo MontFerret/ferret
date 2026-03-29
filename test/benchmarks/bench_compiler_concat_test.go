@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func BenchmarkCompilerCompileConcatChain_O1(b *testing.B) {
@@ -21,13 +21,13 @@ func benchmarkCompileQuery(b *testing.B, query string, level compiler.Optimizati
 	b.Helper()
 
 	compilerInstance := compiler.New(compiler.WithOptimizationLevel(level))
-	source := file.NewSource("concat_benchmark", query)
+	src := source.New("concat_benchmark", query)
 
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		if _, err := compilerInstance.Compile(source); err != nil {
+		if _, err := compilerInstance.Compile(src); err != nil {
 			b.Fatalf("compile failed: %v", err)
 		}
 	}

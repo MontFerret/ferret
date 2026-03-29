@@ -7,10 +7,9 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 
 	"github.com/antlr4-go/antlr/v4"
-
-	"github.com/MontFerret/ferret/v2/pkg/file"
 
 	"github.com/MontFerret/ferret/v2/pkg/parser"
 )
@@ -45,7 +44,7 @@ func New(setters ...Option) *Compiler {
 // Compile parses and compiles a source into a bytecode program.
 //
 // Compile is safe for concurrent use by multiple goroutines.
-func (c *Compiler) Compile(src *file.Source) (program *bytecode.Program, err error) {
+func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err error) {
 	if src.Empty() {
 		return nil, parserd.NewEmptyQueryError(src)
 	}

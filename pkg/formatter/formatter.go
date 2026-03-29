@@ -6,8 +6,9 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/source"
+
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/formatter/internal"
 	"github.com/MontFerret/ferret/v2/pkg/parser"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
@@ -29,7 +30,7 @@ func New(setters ...Option) *Formatter {
 	}
 }
 
-func (fmt *Formatter) Format(out io.Writer, src *file.Source) error {
+func (fmt *Formatter) Format(out io.Writer, src *source.Source) error {
 	if src.Empty() {
 		return parserd.NewEmptyQueryError(src)
 	}

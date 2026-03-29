@@ -9,8 +9,8 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 	rtdiagnostics "github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
@@ -2429,9 +2429,9 @@ func TestBuildExecPlanRejectsMatchFailTargetLengthMismatch(t *testing.T) {
 func TestWrapRuntimeErrorSingleWarmupFailureReturnsRuntimeError(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
-		Source:     file.NewSource("test", "RETURN 1"),
+		Source:     source.New("test", "RETURN 1"),
 		Metadata: bytecode.Metadata{
-			DebugSpans: []file.Span{{Start: 0, End: 6}},
+			DebugSpans: []source.Span{{Start: 0, End: 6}},
 		},
 	}
 
@@ -2542,9 +2542,9 @@ func TestNearestBoundaryUsesProtectedUnwindWithoutCatch(t *testing.T) {
 func TestWrapRuntimeErrorPreservesExistingNoteAndDoesNotDuplicateStackDetails(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
-		Source:     file.NewSource("test", "RETURN 1"),
+		Source:     source.New("test", "RETURN 1"),
 		Metadata: bytecode.Metadata{
-			DebugSpans: []file.Span{{Start: 0, End: 6}},
+			DebugSpans: []source.Span{{Start: 0, End: 6}},
 		},
 	}
 
@@ -2595,9 +2595,9 @@ func TestWrapRuntimeErrorPreservesExistingNoteAndDoesNotDuplicateStackDetails(t 
 func TestWrapRuntimeErrorRecognizesLegacyCallStackLabelWithoutDuplicatingSpans(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
-		Source:     file.NewSource("test", "RETURN 1"),
+		Source:     source.New("test", "RETURN 1"),
 		Metadata: bytecode.Metadata{
-			DebugSpans: []file.Span{{Start: 0, End: 6}},
+			DebugSpans: []source.Span{{Start: 0, End: 6}},
 		},
 	}
 
@@ -2607,8 +2607,8 @@ func TestWrapRuntimeErrorRecognizesLegacyCallStackLabelWithoutDuplicatingSpans(t
 			Message: "Runtime error",
 			Source:  program.Source,
 			Spans: []diagnostics.ErrorSpan{
-				diagnostics.NewSecondaryErrorSpan(file.Span{Start: 0, End: 6}, "called from (#1)"),
-				diagnostics.NewMainErrorSpan(file.Span{Start: 0, End: 6}, ""),
+				diagnostics.NewSecondaryErrorSpan(source.Span{Start: 0, End: 6}, "called from (#1)"),
+				diagnostics.NewMainErrorSpan(source.Span{Start: 0, End: 6}, ""),
 			},
 		},
 	}

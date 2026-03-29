@@ -1,14 +1,14 @@
 package diagnostics
 
-import "github.com/MontFerret/ferret/v2/pkg/file"
+import "github.com/MontFerret/ferret/v2/pkg/source"
 
 type ErrorSpan struct {
 	Label string
-	Span  file.Span
+	Span  source.Span
 	Main  bool
 }
 
-func NewErrorSpan(span file.Span, label string, main bool) ErrorSpan {
+func NewErrorSpan(span source.Span, label string, main bool) ErrorSpan {
 	return ErrorSpan{
 		Span:  span,
 		Label: label,
@@ -16,10 +16,10 @@ func NewErrorSpan(span file.Span, label string, main bool) ErrorSpan {
 	}
 }
 
-func NewMainErrorSpan(span file.Span, label string) ErrorSpan {
+func NewMainErrorSpan(span source.Span, label string) ErrorSpan {
 	return NewErrorSpan(span, label, true)
 }
 
-func NewSecondaryErrorSpan(span file.Span, label string) ErrorSpan {
+func NewSecondaryErrorSpan(span source.Span, label string) ErrorSpan {
 	return NewErrorSpan(span, label, false)
 }

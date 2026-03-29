@@ -1,4 +1,4 @@
-package file
+package source
 
 import (
 	"testing"
@@ -6,13 +6,13 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestNewSource(t *testing.T) {
-	Convey("NewSource", t, func() {
+func TestNew(t *testing.T) {
+	Convey("New", t, func() {
 		Convey("Should create source with name and text", func() {
 			name := "test.fql"
 			text := "hello\nworld"
 
-			source := NewSource(name, text)
+			source := New(name, text)
 
 			So(source, ShouldNotBeNil)
 			So(source.Name(), ShouldEqual, name)
@@ -24,7 +24,7 @@ func TestNewSource(t *testing.T) {
 			name := "empty.fql"
 			text := ""
 
-			source := NewSource(name, text)
+			source := New(name, text)
 
 			So(source, ShouldNotBeNil)
 			So(source.Name(), ShouldEqual, name)
@@ -34,12 +34,12 @@ func TestNewSource(t *testing.T) {
 	})
 }
 
-func TestNewAnonymousSource(t *testing.T) {
-	Convey("NewAnonymousSource", t, func() {
+func TestNewAnonymous(t *testing.T) {
+	Convey("NewAnonymous", t, func() {
 		Convey("Should create anonymous source", func() {
 			text := "test content"
 
-			source := NewAnonymousSource(text)
+			source := NewAnonymous(text)
 
 			So(source, ShouldNotBeNil)
 			So(source.Name(), ShouldEqual, "anonymous")
@@ -51,7 +51,7 @@ func TestNewAnonymousSource(t *testing.T) {
 func TestSourceName(t *testing.T) {
 	Convey("Source.Name", t, func() {
 		Convey("Should return name for valid source", func() {
-			source := NewSource("test.fql", "content")
+			source := New("test.fql", "content")
 
 			So(source.Name(), ShouldEqual, "test.fql")
 		})
@@ -67,13 +67,13 @@ func TestSourceName(t *testing.T) {
 func TestSourceEmpty(t *testing.T) {
 	Convey("Source.Empty", t, func() {
 		Convey("Should return false for non-empty source", func() {
-			source := NewSource("test.fql", "content")
+			source := New("test.fql", "content")
 
 			So(source.Empty(), ShouldBeFalse)
 		})
 
 		Convey("Should return true for empty text", func() {
-			source := NewSource("test.fql", "")
+			source := New("test.fql", "")
 
 			So(source.Empty(), ShouldBeTrue)
 		})
@@ -89,7 +89,7 @@ func TestSourceEmpty(t *testing.T) {
 func TestSourceLocationAt(t *testing.T) {
 	Convey("Source.LocationAt", t, func() {
 		Convey("Simple single line text", func() {
-			source := NewSource("test.fql", "hello world")
+			source := New("test.fql", "hello world")
 
 			Convey("Should return correct location at start", func() {
 				line, col := source.LocationAt(Span{Start: 0, End: 1})
@@ -111,7 +111,7 @@ func TestSourceLocationAt(t *testing.T) {
 		})
 
 		Convey("Multi-line text", func() {
-			source := NewSource("test.fql", "line1\nline2\nline3")
+			source := New("test.fql", "line1\nline2\nline3")
 
 			Convey("Should return correct location on first line", func() {
 				line, col := source.LocationAt(Span{Start: 2, End: 3})
@@ -145,7 +145,7 @@ func TestSourceLocationAt(t *testing.T) {
 		})
 
 		Convey("Edge cases", func() {
-			source := NewSource("test.fql", "hello\nworld")
+			source := New("test.fql", "hello\nworld")
 
 			Convey("Should handle negative start", func() {
 				line, col := source.LocationAt(Span{Start: -1, End: 0})
@@ -160,7 +160,7 @@ func TestSourceLocationAt(t *testing.T) {
 			})
 
 			Convey("Should handle empty source", func() {
-				emptySource := NewSource("empty.fql", "")
+				emptySource := New("empty.fql", "")
 				line, col := emptySource.LocationAt(Span{Start: 0, End: 1})
 				So(line, ShouldEqual, 0)
 				So(col, ShouldEqual, 0)
@@ -179,7 +179,7 @@ func TestSourceLocationAt(t *testing.T) {
 func TestSourceSnippet(t *testing.T) {
 	Convey("Source.Snippet", t, func() {
 		Convey("Single line source", func() {
-			source := NewSource("test.fql", "hello world")
+			source := New("test.fql", "hello world")
 			span := Span{Start: 6, End: 11}
 
 			snippets := source.Snippet(span)
@@ -191,7 +191,7 @@ func TestSourceSnippet(t *testing.T) {
 		})
 
 		Convey("Multi-line source", func() {
-			source := NewSource("test.fql", "line1\nline2\nline3")
+			source := New("test.fql", "line1\nline2\nline3")
 			span := Span{Start: 8, End: 10} // "in" in "line2"
 
 			snippets := source.Snippet(span)
@@ -206,7 +206,7 @@ func TestSourceSnippet(t *testing.T) {
 		})
 
 		Convey("First line span", func() {
-			source := NewSource("test.fql", "line1\nline2\nline3")
+			source := New("test.fql", "line1\nline2\nline3")
 			span := Span{Start: 2, End: 4} // "ne" in "line1"
 
 			snippets := source.Snippet(span)
@@ -219,7 +219,7 @@ func TestSourceSnippet(t *testing.T) {
 		})
 
 		Convey("Last line span", func() {
-			source := NewSource("test.fql", "line1\nline2\nline3")
+			source := New("test.fql", "line1\nline2\nline3")
 			span := Span{Start: 14, End: 16} // "ne" in "line3"
 
 			snippets := source.Snippet(span)
@@ -232,7 +232,7 @@ func TestSourceSnippet(t *testing.T) {
 		})
 
 		Convey("Empty source", func() {
-			source := NewSource("empty.fql", "")
+			source := New("empty.fql", "")
 			span := Span{Start: 0, End: 1}
 
 			snippets := source.Snippet(span)

@@ -1,4 +1,4 @@
-package file
+package source
 
 func SkipWhitespaceForward(content string, offset int) int {
 	for offset < len(content) {

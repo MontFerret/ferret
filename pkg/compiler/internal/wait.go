@@ -7,12 +7,13 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/source"
+
 	parser "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -567,11 +568,11 @@ func (c *WaitCompiler) emitApplyJitter(intervalReg, jitterReg bytecode.Operand) 
 	c.ctx.Emitter.EmitABC(bytecode.OpMul, intervalReg, intervalReg, multiplierReg)
 }
 
-func waitForSpan(source antlr.RuleContext, fallback antlr.RuleContext) file.Span {
-	span := file.Span{Start: -1, End: -1}
+func waitForSpan(src antlr.RuleContext, fallback antlr.RuleContext) source.Span {
+	span := source.Span{Start: -1, End: -1}
 
-	if source != nil {
-		if prc, ok := source.(antlr.ParserRuleContext); ok {
+	if src != nil {
+		if prc, ok := src.(antlr.ParserRuleContext); ok {
 			span = parser.SpanFromRuleContext(prc)
 			return span
 		}

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestExpressionFormatter_UnaryNot(t *testing.T) {
@@ -14,7 +14,7 @@ func TestExpressionFormatter_UnaryNot(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "NOT a" {
@@ -29,7 +29,7 @@ func TestExpressionFormatter_ImplicitMemberExpression(t *testing.T) {
 	expr := inlineRet.Expression().(*fql.ExpressionContext)
 
 	var buf bytes.Buffer
-	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != ".name" {
@@ -44,7 +44,7 @@ func TestExpressionFormatter_ImplicitMemberExpressionOptional(t *testing.T) {
 	expr := inlineRet.Expression().(*fql.ExpressionContext)
 
 	var buf bytes.Buffer
-	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "?.name" {
@@ -59,7 +59,7 @@ func TestExpressionFormatter_ImplicitCurrentExpression(t *testing.T) {
 	expr := inlineRet.Expression().(*fql.ExpressionContext)
 
 	var buf bytes.Buffer
-	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "." {
@@ -73,7 +73,7 @@ func TestExpressionFormatter_QueryExpressionInline(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "QUERY `.items` IN doc USING css WITH { limit: 10 }" {
@@ -87,7 +87,7 @@ func TestExpressionFormatter_QueryExpressionParamPayload(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "QUERY @q IN doc USING css" {
@@ -101,7 +101,7 @@ func TestExpressionFormatter_QueryExpressionCountModifier(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "QUERY COUNT `.items` IN doc USING css" {
@@ -117,7 +117,7 @@ func TestExpressionFormatter_QueryExpressionOneModifierWithMultiline(t *testing.
 	var buf bytes.Buffer
 	opts := DefaultOptions()
 	opts.printWidth = 20
-	e := newEngine(file.NewAnonymousSource(input), &buf, opts)
+	e := newEngine(source.NewAnonymous(input), &buf, opts)
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "QUERY ONE `.items` IN doc USING css\n    WITH {\n        limit: 10,\n        timeout: 5\n    }" {
@@ -131,7 +131,7 @@ func TestExpressionFormatter_MatchExpressionInline(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "MATCH x ( 1 => 10, _ => 0 )" {
@@ -147,7 +147,7 @@ func TestExpressionFormatter_MatchExpressionGuardMultiline(t *testing.T) {
 	var buf bytes.Buffer
 	opts := DefaultOptions()
 	opts.printWidth = 10
-	e := newEngine(file.NewAnonymousSource(input), &buf, opts)
+	e := newEngine(source.NewAnonymous(input), &buf, opts)
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "MATCH (\n    WHEN a > 0 => a,\n    WHEN a < 0 => -a,\n    _ => 0,\n)" {
@@ -161,7 +161,7 @@ func TestExpressionFormatter_MatchExpressionObjectPattern(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(file.NewAnonymousSource(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != `MATCH obj ( { "a": 1, b: v } => v, _ => 0 )` {

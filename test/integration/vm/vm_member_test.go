@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/sdk"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
@@ -189,7 +189,7 @@ func TestMemberReservedWords(t *testing.T) {
 			expected.WriteString(strconv.Itoa(idx))
 			expected.WriteString("}")
 
-			prog, err := c.Compile(file.NewAnonymousSource(query.String()))
+			prog, err := c.Compile(source.NewAnonymous(query.String()))
 			if err != nil {
 				t.Fatalf("compile failed: %v", err)
 			}

@@ -5,7 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func BenchmarkMarshalMessagePack(b *testing.B) {
@@ -71,7 +71,7 @@ func BenchmarkUnmarshalJSON(b *testing.B) {
 func mustBenchmarkArtifactProgram(b *testing.B) *bytecode.Program {
 	b.Helper()
 
-	src := file.NewSource("bench.fql", `
+	src := source.New("bench.fql", `
 LET users = [
   { gender: "m", age: 31 },
   { gender: "f", age: 25 },

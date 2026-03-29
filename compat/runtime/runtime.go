@@ -7,9 +7,9 @@ import (
 	"io"
 
 	ferret "github.com/MontFerret/ferret/v2"
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 // Options holds the runtime execution options translated from v1-style Option functions.
@@ -17,7 +17,7 @@ type Options struct {
 	logWriter io.Writer
 	params    map[string]interface{}
 	logFields map[string]interface{}
-	logLevel  runtime.LogLevel
+	logLevel  logging.LogLevel
 }
 
 // Option is a functional option for configuring a program execution.
@@ -56,7 +56,7 @@ func WithLog(writer io.Writer) Option {
 }
 
 // WithLogLevel sets the log level.
-func WithLogLevel(lvl runtime.LogLevel) Option {
+func WithLogLevel(lvl logging.LogLevel) Option {
 	return func(o *Options) {
 		o.logLevel = lvl
 	}
@@ -72,7 +72,7 @@ func WithLogFields(fields map[string]interface{}) Option {
 // newOptions applies the provided setters to a default Options struct.
 func newOptions(setters []Option) *Options {
 	o := &Options{
-		logLevel: runtime.ErrorLevel,
+		logLevel: logging.ErrorLevel,
 	}
 
 	for _, s := range setters {
@@ -109,22 +109,16 @@ func toSessionOptions(o *Options) []ferret.SessionOption {
 		opts = append(opts, ferret.WithSessionParams(params))
 	}
 
-	var envOpts []vm.EnvironmentOption
-
 	if o.logWriter != nil {
-		envOpts = append(envOpts, vm.WithLog(o.logWriter))
+		opts = append(opts, ferret.WithSessionLog(o.logWriter))
 	}
 
-	if o.logLevel != runtime.ErrorLevel {
-		envOpts = append(envOpts, vm.WithLogLevel(o.logLevel))
+	if o.logLevel != logging.ErrorLevel {
+		opts = append(opts, ferret.WithSessionLogLevel(o.logLevel))
 	}
 
 	if len(o.logFields) > 0 {
-		envOpts = append(envOpts, vm.WithLogFields(o.logFields))
-	}
-
-	if len(envOpts) > 0 {
-		opts = append(opts, ferret.WithEnvironmentOptions(envOpts...))
+		opts = append(opts, ferret.WithSessionLogFields(o.logFields))
 	}
 
 	return opts
@@ -191,7 +185,7 @@ func (p *Program) MustRun(ctx context.Context, setters ...Option) []byte {
 // compileFromSource is a helper used by compat packages to compile a raw query string
 // using the provided engine and return a wrapped Program.
 func CompileFromSource(ctx context.Context, eng *ferret.Engine, query string) (*Program, error) {
-	src := file.NewAnonymousSource(query)
+	src := source.NewAnonymous(query)
 
 	plan, err := eng.Compile(ctx, src)
 	if err != nil {

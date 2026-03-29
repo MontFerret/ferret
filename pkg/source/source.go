@@ -1,4 +1,4 @@
-package file
+package source
 
 import (
 	"errors"
@@ -21,7 +21,7 @@ type (
 	}
 )
 
-func NewSource(name, text string) *Source {
+func New(name, text string) *Source {
 	lines := strings.Split(text, "\n")
 
 	return &Source{
@@ -31,8 +31,8 @@ func NewSource(name, text string) *Source {
 	}
 }
 
-func NewAnonymousSource(text string) *Source {
-	return NewSource("anonymous", text)
+func NewAnonymous(text string) *Source {
+	return New("anonymous", text)
 }
 
 func (s *Source) MarshalJSON() ([]byte, error) {

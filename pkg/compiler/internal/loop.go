@@ -3,12 +3,13 @@ package internal
 import (
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/source"
+
 	parser "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
@@ -195,7 +196,7 @@ func (c *LoopCompiler) declareLoopCounterVariable(ctx fql.IForExpressionContext,
 }
 
 func (c *LoopCompiler) emitLoopInitialization(ctx fql.IForExpressionContext, loop *core.Loop) {
-	span := file.Span{Start: -1, End: -1}
+	span := source.Span{Start: -1, End: -1}
 
 	if srcCtx := ctx.ForExpressionSource(); srcCtx != nil {
 		if prc, ok := srcCtx.(antlr.ParserRuleContext); ok {
@@ -238,7 +239,7 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 		re := ctx.(*fql.ReturnExpressionContext)
 		expReg := c.ctx.ExprCompiler.Compile(re.Expression())
 
-		span := file.Span{Start: -1, End: -1}
+		span := source.Span{Start: -1, End: -1}
 
 		if exprCtx := re.Expression(); exprCtx != nil {
 			if prc, ok := exprCtx.(antlr.ParserRuleContext); ok {

@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func matchWaitForErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if err == nil || offending == nil {
 		return false
 	}

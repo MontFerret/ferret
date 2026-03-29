@@ -9,24 +9,29 @@ type (
 
 	// Bootstrap defines an interface for configuring the host and registering lifecycle hooks with the runtime engine.
 	Bootstrap interface {
-		Host() HostConfigurer
+		Host() HostContext
 		Hooks() HookRegistrar
 	}
 
 	bootstrap struct {
-		host  *hostBuilder
+		host  *hostContext
 		hooks *hookRegistry
 	}
 )
 
-func newBootstrap(opts *options) *bootstrap {
-	return &bootstrap{
-		host:  newHostBuilder(opts),
-		hooks: opts.hooks,
+func newBootstrap(opts *options) (*bootstrap, error) {
+	hostCtx, err := newHostContext(opts)
+	if err != nil {
+		return nil, err
 	}
+
+	return &bootstrap{
+		host:  hostCtx,
+		hooks: opts.hooks,
+	}, nil
 }
 
-func (b *bootstrap) Host() HostConfigurer {
+func (b *bootstrap) Host() HostContext {
 	return b.host
 }
 

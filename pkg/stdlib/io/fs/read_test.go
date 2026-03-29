@@ -2,6 +2,8 @@ package fs_test
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -11,7 +13,6 @@ import (
 )
 
 func TestRead(t *testing.T) {
-
 	Convey("Arguments passed", t, func() {
 		Convey("Passed not a string", func() {
 			out, err := fs.Read(context.Background(), runtime.NewInt(0))
@@ -22,17 +23,17 @@ func TestRead(t *testing.T) {
 	})
 
 	Convey("Read from file", t, func() {
-
 		Convey("File exists", func() {
-			file, delFile := tempFile()
-			defer delFile()
+			ctx, root, path, cleanup := tempFileSystemContext()
+			defer cleanup()
 
 			text := "s string"
-			file.WriteString(text)
+			err := os.WriteFile(filepath.Join(root, path), []byte(text), 0o666)
+			So(err, ShouldBeNil)
 
-			fname := runtime.NewString(file.Name())
+			fname := runtime.NewString(path)
 
-			out, err := fs.Read(context.Background(), fname)
+			out, err := fs.Read(ctx, fname)
 			So(err, ShouldBeNil)
 
 			SoMsg("Output should be binary", runtime.AssertBinary(out), ShouldBeNil)
@@ -41,9 +42,12 @@ func TestRead(t *testing.T) {
 		})
 
 		Convey("File does not exist", func() {
+			ctx, _, _, cleanup := tempFileSystemContext()
+			defer cleanup()
+
 			fname := runtime.NewString("not_exist.file")
 
-			out, err := fs.Read(context.Background(), fname)
+			out, err := fs.Read(ctx, fname)
 			So(out, ShouldEqual, runtime.None)
 			So(err, ShouldBeError)
 		})

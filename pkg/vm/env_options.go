@@ -1,8 +1,6 @@
 package vm
 
 import (
-	"io"
-
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -67,23 +65,5 @@ func WithFunctionsRegistrar(setter func(fns runtime.FunctionDefs)) EnvironmentOp
 		if setter != nil {
 			setter(env.functions)
 		}
-	}
-}
-
-func WithLog(writer io.Writer) EnvironmentOption {
-	return func(env *environmentBuilder) {
-		env.logging.Writer = writer
-	}
-}
-
-func WithLogLevel(lvl runtime.LogLevel) EnvironmentOption {
-	return func(env *environmentBuilder) {
-		env.logging.Level = lvl
-	}
-}
-
-func WithLogFields(fields map[string]any) EnvironmentOption {
-	return func(env *environmentBuilder) {
-		env.logging.Fields = fields
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 	"sort"
 
+	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -16,7 +17,7 @@ import (
 // * x - Exclusive: returns an error if the file exist. It can be combined with other modes
 // * a - Append: will create a file if the specified file does not exist
 // * w - Write (Default): will create a file if the specified file does not exist
-func Write(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Write(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
 	}
@@ -45,8 +46,14 @@ func Write(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 		params = p
 	}
 
+	filesystem, err := fs.FileSystemFrom(ctx)
+
+	if err != nil {
+		return runtime.None, err
+	}
+
 	// 0666 - read & write
-	file, err := os.OpenFile(string(fpath), params.ModeFlag, 0666)
+	file, err := filesystem.OpenFile(string(fpath), params.ModeFlag, 0666)
 
 	if err != nil {
 		return runtime.None, runtime.Error(err, "open file")

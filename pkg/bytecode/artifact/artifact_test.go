@@ -7,11 +7,12 @@ import (
 
 	gojson "github.com/goccy/go-json"
 
+	"github.com/MontFerret/ferret/v2/pkg/source"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	formatjson "github.com/MontFerret/ferret/v2/pkg/bytecode/format/json"
 	formatmsgpack "github.com/MontFerret/ferret/v2/pkg/bytecode/format/msgpack"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/internal/persist"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -263,7 +264,7 @@ func TestNewLoaderPanicsOnInvalidRegistrations(t *testing.T) {
 
 func newArtifactTestProgram() *bytecode.Program {
 	return &bytecode.Program{
-		Source: file.NewSource("artifact.fql", "RETURN 1"),
+		Source: source.New("artifact.fql", "RETURN 1"),
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
 			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
@@ -277,7 +278,7 @@ func newArtifactTestProgram() *bytecode.Program {
 			AggregatePlans:         []bytecode.AggregatePlan{bytecode.NewAggregatePlan([]runtime.String{runtime.NewString("group")}, []bytecode.AggregateKind{bytecode.AggregateCount}, false)},
 			AggregateSelectorSlots: []int{-1, -1},
 			MatchFailTargets:       []int{-1, -1},
-			DebugSpans:             []file.Span{{Start: 0, End: 8}, {Start: 0, End: 8}},
+			DebugSpans:             []source.Span{{Start: 0, End: 8}, {Start: 0, End: 8}},
 			OptimizationLevel:      1,
 		},
 		ISAVersion: bytecode.Version,

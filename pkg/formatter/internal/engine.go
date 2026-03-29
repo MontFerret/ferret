@@ -4,14 +4,14 @@ import (
 	"io"
 	"strings"
 
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 type (
 	context struct {
 		opts *Options
 		p    *printer
-		src  *file.Source
+		src  *source.Source
 	}
 
 	engine struct {
@@ -28,7 +28,7 @@ type (
 	}
 )
 
-func newEngine(src *file.Source, out io.Writer, opts *Options) *engine {
+func newEngine(src *source.Source, out io.Writer, opts *Options) *engine {
 	ctx := &context{
 		opts: opts,
 		p:    newPrinter(out, opts),

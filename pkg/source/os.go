@@ -1,4 +1,4 @@
-package file
+package source
 
 import "os"
 
@@ -9,5 +9,5 @@ func Read(path string) (*Source, error) {
 		return nil, err
 	}
 
-	return NewSource(path, string(bytes)), nil
+	return New(path, string(bytes)), nil
 }

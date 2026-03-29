@@ -1,5 +1,3 @@
-import random from "../../../utils/random.js";
-
 const e = React.createElement;
 
 export default class PressableComponent extends React.PureComponent {

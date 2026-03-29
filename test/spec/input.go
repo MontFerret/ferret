@@ -3,7 +3,7 @@ package spec
 import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 type (
@@ -84,5 +84,5 @@ func (i Input) ResolveProgram(name string, c *compiler.Compiler) (*bytecode.Prog
 		return i.Source.Build(name, c)
 	}
 
-	return c.Compile(file.NewSource(name, i.Expression))
+	return c.Compile(source.New(name, i.Expression))
 }

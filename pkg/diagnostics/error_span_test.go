@@ -5,13 +5,13 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestErrorSpan(t *testing.T) {
 	Convey("ErrorSpan constructors", t, func() {
 		Convey("NewErrorSpan should create ErrorSpan with all fields", func() {
-			span := file.Span{Start: 0, End: 10}
+			span := source.Span{Start: 0, End: 10}
 			label := "test label"
 			main := true
 
@@ -23,7 +23,7 @@ func TestErrorSpan(t *testing.T) {
 		})
 
 		Convey("NewMainErrorSpan should create main ErrorSpan", func() {
-			span := file.Span{Start: 0, End: 10}
+			span := source.Span{Start: 0, End: 10}
 			label := "main error"
 
 			result := NewMainErrorSpan(span, label)
@@ -34,7 +34,7 @@ func TestErrorSpan(t *testing.T) {
 		})
 
 		Convey("NewSecondaryErrorSpan should create non-main ErrorSpan", func() {
-			span := file.Span{Start: 5, End: 15}
+			span := source.Span{Start: 5, End: 15}
 			label := "secondary error"
 
 			result := NewSecondaryErrorSpan(span, label)

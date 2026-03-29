@@ -6,7 +6,8 @@ DIR_BIN = ./bin
 DIR_PKG = ./pkg
 DIR_COMPAT = ./compat
 DIR_INTEG = ./test/integration
-DIR_BENCH = ./test/integration/benchmarks
+DIR_BENCH = ./test/benchmarks
+DIR_SEC = ./test/security
 DIR_E2E = ./test/e2e
 BENCH_RUN ?= '^$$'
 BENCH_FILTER ?= .
@@ -31,13 +32,16 @@ compile:
 	go build -v -o ${DIR_BIN}/ferret \
 	${DIR_E2E}/cli.go
 
-test: test-unit test-integration
+test: test-unit test-integration test-security
 
 test-unit:
 	CGO_ENABLED=1 go test -race ${DIR_PKG}/... && CGO_ENABLED=1 go test -race ${DIR_COMPAT}/...
 
 test-integration:
 	CGO_ENABLED=1 go test -race ${DIR_INTEG}/...
+
+test-security:
+	go test ${DIR_SEC}/...
 
 clean:
 	rm -rf ${DIR_BIN}/* && \

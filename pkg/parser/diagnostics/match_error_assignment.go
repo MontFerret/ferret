@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func matchMissingAssignmentValue(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchMissingAssignmentValue(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if matchInvalidVarDiscard(src, err, offending) {
 		return true
 	}
@@ -61,7 +61,7 @@ func matchMissingAssignmentValue(src *file.Source, err *diagnostics.Diagnostic, 
 	return false
 }
 
-func matchInvalidVarDiscard(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchInvalidVarDiscard(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if offending == nil {
 		return false
 	}
@@ -84,7 +84,7 @@ func matchInvalidVarDiscard(src *file.Source, err *diagnostics.Diagnostic, offen
 	return true
 }
 
-func matchAssignmentExpression(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchAssignmentExpression(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if offending == nil || (!isNoAlternative(err.Message) && !isMismatched(err.Message) && !isExtraneous(err.Message) && !isMissing(err.Message)) {
 		return false
 	}

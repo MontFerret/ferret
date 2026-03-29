@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -78,8 +79,7 @@ func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Sessi
 	env, err := vm.ExtendEnvironment(&vm.Environment{
 		Functions: h.functions,
 		Params:    h.params,
-		Logging:   h.logging,
-	}, sessionOpts.envOptions)
+	}, sessionOpts.env)
 
 	if err != nil {
 		return nil, err
@@ -99,6 +99,8 @@ func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Sessi
 	return &Session{
 		vm:                instance,
 		env:               env,
+		logger:            logging.NewFrom(h.logger, sessionOpts.logger...),
+		fs:                h.fs,
 		encoding:          h.encoding,
 		outputContentType: sessionOpts.outputContentType,
 		hooks:             hooks,
@@ -136,16 +138,4 @@ func (p *Plan) Close() error {
 	}
 
 	return err
-}
-
-func newSessionRelease(limiter *sessionLimiter, pool *vm.Pool) vmReleaseFunc {
-	var once sync.Once
-
-	return func(instance *vm.VM) {
-		once.Do(func() {
-			// Release the engine-wide session slot even if the plan has already been closed.
-			limiter.Release()
-			pool.Release(instance)
-		})
-	}
 }

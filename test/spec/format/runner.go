@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/formatter"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/test/spec"
 )
 
@@ -29,7 +29,7 @@ func (r *Runner) Run(t *testing.T, specs []Spec) {
 			var out strings.Builder
 			exp := s.Base.Input.Expression
 
-			err := r.Formatter.Format(&out, file.NewSource("Test case", exp))
+			err := r.Formatter.Format(&out, source.New("Test case", exp))
 
 			if err != nil {
 				if s.Base.DebugOutput {

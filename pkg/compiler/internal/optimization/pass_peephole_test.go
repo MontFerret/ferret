@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func runPeephole(t *testing.T, program *bytecode.Program) (*PassResult, error) {
@@ -680,7 +680,7 @@ func TestPeephole_RemapsCatchDebugSpansAndLabels(t *testing.T) {
 		Metadata: bytecode.Metadata{
 			AggregateSelectorSlots: []int{-1, 7, -1, 9},
 			MatchFailTargets:       []int{3, -1, -1, -1},
-			DebugSpans: []file.Span{
+			DebugSpans: []source.Span{
 				{Start: 0, End: 1},
 				{Start: 2, End: 3},
 				{Start: 4, End: 5},

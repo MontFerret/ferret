@@ -6,10 +6,11 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/source"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
@@ -33,7 +34,7 @@ type CompilerContext struct {
 	ExprCompiler        *ExprCompiler
 	DispatchCompiler    *DispatchCompiler
 	StmtCompiler        *StmtCompiler
-	Source              *file.Source
+	Source              *source.Source
 	LoopSortCompiler    *LoopSortCompiler
 	LoopCollectCompiler *LoopCollectCompiler
 	WaitCompiler        *WaitCompiler
@@ -43,7 +44,7 @@ type CompilerContext struct {
 }
 
 // NewCompilerContext initializes a new CompilerContext with default values.
-func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler, level optimization.Level) *CompilerContext {
+func NewCompilerContext(src *source.Source, errors *diagnostics.ErrorHandler, level optimization.Level) *CompilerContext {
 	ctx := &CompilerContext{
 		Source:              src,
 		Errors:              errors,

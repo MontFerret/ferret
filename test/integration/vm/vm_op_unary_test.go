@@ -6,7 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
@@ -32,7 +32,7 @@ func TestUnaryOperators(t *testing.T) {
 	t.Run("RETURN { enabled: !val }", func(t *testing.T) {
 		c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
 
-		p1, err := c.Compile(file.NewAnonymousSource(`
+		p1, err := c.Compile(source.NewAnonymous(`
 			LET val = ""
 			RETURN { enabled: !val }
 		`))
@@ -62,7 +62,7 @@ func TestUnaryOperators(t *testing.T) {
 			t.Fatalf("unexpected single negation output: got %s", string(out1))
 		}
 
-		p2, err := c.Compile(file.NewAnonymousSource(`
+		p2, err := c.Compile(source.NewAnonymous(`
 			LET val = ""
 			RETURN { enabled: !!val }
 		`))

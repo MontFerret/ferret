@@ -8,6 +8,8 @@ import (
 	"sync/atomic"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	"github.com/MontFerret/ferret/v2/pkg/fs"
+	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -32,6 +34,8 @@ type (
 		vm                *vm.VM
 		env               *vm.Environment
 		encoding          *encoding.Registry
+		logger            logging.Logger
+		fs                fs.FileSystem
 		release           vmReleaseFunc
 		outputContentType string
 		closeOnce         sync.Once
@@ -50,8 +54,7 @@ func (s *Session) Run(c context.Context) (*Output, error) {
 		return nil, fmt.Errorf("before run hooks: %w", err)
 	}
 
-	ctx = encoding.WithRegistry(ctx, s.encoding)
-	out, err := s.vm.Run(ctx, s.env)
+	out, err := s.vm.Run(s.extendContext(ctx), s.env)
 
 	// After-run hooks always run and receive the VM run error (if any).
 	if hookErr := s.hooks.runAfterRunHooks(ctx, err); hookErr != nil {
@@ -74,6 +77,13 @@ func (s *Session) Run(c context.Context) (*Output, error) {
 	}
 
 	return output, nil
+}
+
+func (s *Session) extendContext(ctx context.Context) context.Context {
+	ctx = s.logger.WithContext(ctx)
+	ctx = encoding.WithRegistry(ctx, s.encoding)
+	ctx = fs.WithFileSystem(ctx, s.fs)
+	return ctx
 }
 
 // Close releases the session's borrowed VM and runs close hooks.

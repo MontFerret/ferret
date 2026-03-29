@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestListFormatter_TemplateLiteralNewlineForcesMultiline(t *testing.T) {
@@ -17,7 +17,7 @@ func TestListFormatter_TemplateLiteralNewlineForcesMultiline(t *testing.T) {
 	var buf bytes.Buffer
 	opts := DefaultOptions()
 	opts.printWidth = 200
-	e := newEngine(file.NewAnonymousSource(input), &buf, opts)
+	e := newEngine(source.NewAnonymous(input), &buf, opts)
 
 	e.list.formatArrayLiteral(array)
 	out := buf.String()

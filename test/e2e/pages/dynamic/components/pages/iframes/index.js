@@ -1,4 +1,4 @@
-import { parse } from '../../../utils/qs.js';
+import {parse} from '../../../utils/qs.js';
 
 const e = React.createElement;
 

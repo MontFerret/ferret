@@ -6,10 +6,10 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	parser "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 type Visitor struct {
@@ -17,7 +17,7 @@ type Visitor struct {
 	Ctx *internal.CompilerContext
 }
 
-func NewVisitor(src *file.Source, errors *parser.ErrorHandler, level optimization.Level) *Visitor {
+func NewVisitor(src *source.Source, errors *parser.ErrorHandler, level optimization.Level) *Visitor {
 	v := new(Visitor)
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
 	v.Ctx = internal.NewCompilerContext(src, errors, level)

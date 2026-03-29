@@ -4,10 +4,10 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func matchForLoopErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchForLoopErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	prev := offending.Prev()
 
 	if eq := findPrevToken(offending, "=", 4); eq != nil && is(eq.Prev(), "COLLECT") {

@@ -19,9 +19,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/asm"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/formatter"
+	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 
 	"github.com/rs/zerolog"
 
@@ -237,7 +238,7 @@ var (
 
 	logLevel = flag.String(
 		"log-level",
-		runtime.ErrorLevel.String(),
+		logging.ErrorLevel.String(),
 		"log level",
 	)
 )
@@ -260,7 +261,7 @@ func main() {
 		TimeFormat: "15:04:05.999",
 	}
 	logger = zerolog.New(console).
-		Level(zerolog.Level(runtime.MustParseLogLevel(*logLevel))).
+		Level(zerolog.Level(logging.MustParseLogLevel(*logLevel))).
 		With().
 		Timestamp().
 		Logger()
@@ -315,7 +316,7 @@ func main() {
 		f := formatter.New()
 
 		if query != "" {
-			err = formatQuery(f, file.NewSource("stdin", query))
+			err = formatQuery(f, source.New("stdin", query))
 		} else {
 			err = formatFiles(ctx, f, files)
 		}
@@ -338,7 +339,7 @@ func main() {
 		}
 
 		if query != "" {
-			err = runQuery(ctx, engine, sessionOptions, file.NewSource("stdin", query))
+			err = runQuery(ctx, engine, sessionOptions, source.New("stdin", query))
 		} else {
 			err = execFiles(ctx, engine, sessionOptions, files)
 		}
@@ -350,7 +351,7 @@ func main() {
 	}
 }
 
-func formatQuery(f *formatter.Formatter, query *file.Source) error {
+func formatQuery(f *formatter.Formatter, query *source.Source) error {
 	err := f.Format(os.Stdout, query)
 
 	if err != nil {
@@ -361,18 +362,18 @@ func formatQuery(f *formatter.Formatter, query *file.Source) error {
 }
 
 func formatFiles(ctx context.Context, f *formatter.Formatter, files []string) error {
-	return processFiles(ctx, files, "format", func(ctx context.Context, src *file.Source) error {
+	return processFiles(ctx, files, "format", func(ctx context.Context, src *source.Source) error {
 		return formatQuery(f, src)
 	})
 }
 
 func execFiles(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, files []string) error {
-	return processFiles(ctx, files, "execute", func(ctx context.Context, src *file.Source) error {
+	return processFiles(ctx, files, "execute", func(ctx context.Context, src *source.Source) error {
 		return runQuery(ctx, engine, opts, src)
 	})
 }
 
-func runQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, query *file.Source) error {
+func runQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, query *source.Source) error {
 	if !(*dryRun) {
 		return execQuery(ctx, engine, opts, query)
 	}
@@ -380,7 +381,7 @@ func runQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionO
 	return analyzeQuery(query)
 }
 
-func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, query *file.Source) error {
+func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, query *source.Source) error {
 	plan, err := engine.Compile(ctx, query)
 
 	if err != nil {
@@ -442,7 +443,7 @@ func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 	return nil
 }
 
-func processFiles(ctx context.Context, files []string, op string, predicate func(ctx context.Context, src *file.Source) error) error {
+func processFiles(ctx context.Context, files []string, op string, predicate func(ctx context.Context, src *source.Source) error) error {
 	errList := make([]diagnostics.FormattableError, 0, len(files))
 
 	for _, path := range files {
@@ -457,7 +458,7 @@ func processFiles(ctx context.Context, files []string, op string, predicate func
 			errList = append(errList, &diagnostics.Diagnostic{
 				Kind:    diagnostics.UnexpectedError,
 				Message: "failed to get path info",
-				Source:  file.NewSource("stdin", path),
+				Source:  source.New("stdin", path),
 				Cause:   err,
 			})
 
@@ -475,7 +476,7 @@ func processFiles(ctx context.Context, files []string, op string, predicate func
 				errList = append(errList, &diagnostics.Diagnostic{
 					Kind:    diagnostics.UnexpectedError,
 					Message: "failed to retrieve list of files",
-					Source:  file.NewSource("stdin", path),
+					Source:  source.New("stdin", path),
 					Cause:   err,
 				})
 
@@ -499,7 +500,7 @@ func processFiles(ctx context.Context, files []string, op string, predicate func
 					errList = append(errList, &diagnostics.Diagnostic{
 						Kind:    diagnostics.UnexpectedError,
 						Message: fmt.Sprintf("failed to %s files", op),
-						Source:  file.NewSource("stdin", path),
+						Source:  source.New("stdin", path),
 						Cause:   err,
 					})
 				} else {
@@ -514,7 +515,7 @@ func processFiles(ctx context.Context, files []string, op string, predicate func
 
 		log.Debug().Msg("path points to a file. starting to read content")
 
-		src, err := file.Read(path)
+		src, err := source.Read(path)
 
 		if err != nil {
 			log.Debug().Err(err).Msg("failed to read content")
@@ -522,7 +523,7 @@ func processFiles(ctx context.Context, files []string, op string, predicate func
 			errList = append(errList, &diagnostics.Diagnostic{
 				Kind:    diagnostics.UnexpectedError,
 				Message: "failed to read content",
-				Source:  file.NewSource("stdin", path),
+				Source:  source.New("stdin", path),
 				Cause:   err,
 			})
 
@@ -592,7 +593,7 @@ func printResult(_ context.Context, res *ferret.Output) (uint64, error) {
 	return printer.size, err
 }
 
-func analyzeQuery(query *file.Source) error {
+func analyzeQuery(query *source.Source) error {
 	beforeCompilation := "Before Compilation"
 	compilation := "Compilation"
 	afterCompilation := "After Compilation"

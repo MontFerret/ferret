@@ -1,8 +1,6 @@
 module github.com/MontFerret/ferret/v2
 
-go 1.23
-
-toolchain go1.24.5
+go 1.25
 
 require (
 	github.com/antlr4-go/antlr/v4 v4.13.1

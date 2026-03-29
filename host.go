@@ -2,53 +2,74 @@ package ferret
 
 import (
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	"github.com/MontFerret/ferret/v2/pkg/fs"
+	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type (
-	HostConfigurer interface {
-		Params() runtime.Params
+	HostContext interface {
 		Library() runtime.Library
+		Params() runtime.Params
 		Encoding() encoding.CodecRegistrar
+		Logger() logging.Logger
+		FileSystem() fs.FileSystem
 	}
 
 	host struct {
 		functions *runtime.Functions
 		params    runtime.Params
 		encoding  *encoding.Registry
-		logging   runtime.LogSettings
+		logger    logging.Logger
+		fs        fs.FileSystem
 	}
 
-	hostBuilder struct {
+	hostContext struct {
 		library  runtime.Library
 		params   runtime.Params
 		encoding *encoding.Registry
-		logging  runtime.LogSettings
+		logger   logging.Logger
+		fs       fs.FileSystem
 	}
 )
 
-func newHostBuilder(opts *options) *hostBuilder {
-	return &hostBuilder{
+func newHostContext(opts *options) (*hostContext, error) {
+	rootFs, err := fs.New(fs.WithRoot(opts.fsRoot), fs.WithReadOnly(opts.fsReadOnly))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &hostContext{
 		library:  opts.library,
 		params:   opts.params,
-		logging:  opts.logging,
 		encoding: opts.encoding,
-	}
+		logger:   logging.New(opts.logger...),
+		fs:       rootFs,
+	}, nil
 }
 
-func (h *hostBuilder) Params() runtime.Params {
+func (h *hostContext) Logger() logging.Logger {
+	return h.logger
+}
+
+func (h *hostContext) FileSystem() fs.FileSystem {
+	return h.fs
+}
+
+func (h *hostContext) Params() runtime.Params {
 	return h.params
 }
 
-func (h *hostBuilder) Library() runtime.Library {
+func (h *hostContext) Library() runtime.Library {
 	return h.library
 }
 
-func (h *hostBuilder) Encoding() encoding.CodecRegistrar {
+func (h *hostContext) Encoding() encoding.CodecRegistrar {
 	return h.encoding
 }
 
-func (h *hostBuilder) Build() (*host, error) {
+func (h *hostContext) Build() (*host, error) {
 	funcs, err := h.library.Build()
 
 	if err != nil {
@@ -56,9 +77,10 @@ func (h *hostBuilder) Build() (*host, error) {
 	}
 
 	return &host{
-		logging:   h.logging,
 		functions: funcs,
 		params:    h.params.Clone(),
 		encoding:  h.encoding.Clone(),
+		logger:    h.logger,
+		fs:        h.fs,
 	}, nil
 }

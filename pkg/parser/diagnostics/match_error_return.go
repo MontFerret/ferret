@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func matchMissingReturnValue(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchMissingReturnValue(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	// Prefer range-specific error when the parser trips on an incomplete range like "0.. RETURN".
 	if is(offending, "..") || is(offending.Prev(), "..") || has(err.Message, "..") {
 		span := spanFromTokenSafe(offending.Token(), src)

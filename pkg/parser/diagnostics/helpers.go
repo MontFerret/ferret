@@ -6,33 +6,33 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 
-	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
-func SpanFromRuleContext(ctx antlr.ParserRuleContext) file.Span {
+func SpanFromRuleContext(ctx antlr.ParserRuleContext) source.Span {
 	start := ctx.GetStart()
 	stop := ctx.GetStop()
 
 	if start == nil || stop == nil {
-		return file.Span{Start: 0, End: 0}
+		return source.Span{Start: 0, End: 0}
 	}
 
-	return file.Span{Start: start.GetStart(), End: stop.GetStop() + 1}
+	return source.Span{Start: start.GetStart(), End: stop.GetStop() + 1}
 }
 
-func SpanFromToken(tok antlr.Token) file.Span {
+func SpanFromToken(tok antlr.Token) source.Span {
 	if tok == nil {
-		return file.Span{Start: 0, End: 0}
+		return source.Span{Start: 0, End: 0}
 	}
 
-	return file.Span{Start: tok.GetStart(), End: tok.GetStop() + 1}
+	return source.Span{Start: tok.GetStart(), End: tok.GetStop() + 1}
 }
 
-func spanFromTokenSafe(tok antlr.Token, src *file.Source) file.Span {
+func spanFromTokenSafe(tok antlr.Token, src *source.Source) source.Span {
 	if tok == nil {
-		return file.Span{Start: 0, End: 1}
+		return source.Span{Start: 0, End: 1}
 	}
 
 	start := tok.GetStart()
@@ -56,7 +56,7 @@ func spanFromTokenSafe(tok antlr.Token, src *file.Source) file.Span {
 		start = maxLen - 1
 	}
 
-	return file.Span{Start: start, End: end}
+	return source.Span{Start: start, End: end}
 }
 
 func isIdentifier(node *TokenNode) bool {
