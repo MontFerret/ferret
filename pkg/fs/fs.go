@@ -57,5 +57,5 @@ func New(setters ...Option) (FileSystem, error) {
 		return nil, err
 	}
 
-	return &rootFS{root: r}, nil
+	return &rootFS{root: r, readOnly: opts.ReadOnly}, nil
 }
