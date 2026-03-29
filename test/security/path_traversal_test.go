@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,6 +33,11 @@ func TestPathTraversalVulnerability(t *testing.T) {
 	}
 
 	if err := os.MkdirAll(escapedParent, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	engine, err := ferret.New(ferret.WithFSRoot(safeDir))
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -85,11 +91,6 @@ func TestPathTraversalVulnerability(t *testing.T) {
 		return err
 	}
 
-	engine, err := ferret.New()
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	serverCtx, cancelServer := context.WithCancel(context.Background())
 	defer cancelServer()
 
@@ -116,7 +117,7 @@ FOR article IN articles
     RETURN { written: path, name: article.name }
 `, baseURL, safeDir)))
 
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "path escapes from parent") {
 		t.Fatal(err)
 	}
 
@@ -125,6 +126,8 @@ FOR article IN articles
 	if err == nil {
 		t.Fatalf("path traversal vulnerability: write escaped intended directory and created %q", escapedPath)
 	}
+
+	cancelServer()
 
 	select {
 	case err := <-serverErrCh:

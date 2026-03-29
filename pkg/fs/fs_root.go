@@ -25,8 +25,16 @@ func (r *rootFS) ReadFile(path string) ([]byte, error) {
 	return io.ReadAll(f)
 }
 
-func (r *rootFS) Open(path string) (fs.File, error) {
+func (r *rootFS) Open(path string) (ReadableFile, error) {
 	return r.root.Open(path)
+}
+
+func (r *rootFS) OpenFile(path string, flag int, perm fs.FileMode) (WritableFile, error) {
+	if r.readOnly && isWriteOpen(flag) {
+		return nil, ErrReadOnly
+	}
+
+	return r.root.OpenFile(path, flag, perm)
 }
 
 func (r *rootFS) Stat(path string) (fs.FileInfo, error) {

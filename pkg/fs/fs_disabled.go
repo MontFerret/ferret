@@ -12,7 +12,11 @@ func (n disabledFS) ReadFile(_ string) ([]byte, error) {
 	return nil, ErrRootNotConfigured
 }
 
-func (n disabledFS) Open(_ string) (fs.File, error) {
+func (n disabledFS) Open(_ string) (ReadableFile, error) {
+	return nil, ErrRootNotConfigured
+}
+
+func (n disabledFS) OpenFile(_ string, _ int, _ fs.FileMode) (WritableFile, error) {
 	return nil, ErrRootNotConfigured
 }
 
