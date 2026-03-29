@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -115,14 +117,16 @@ func TestWrite(t *testing.T) {
 	})
 
 	Convey("Error cases", t, func() {
-
 		Convey("Write into existing file with `x` mode", func() {
-			file, delFile := tempFile()
-			defer delFile()
+			ctx, root, path, cleanup := tempFileSystemContext()
+			defer cleanup()
+
+			err := os.WriteFile(filepath.Join(root, path), []byte("existing"), 0o666)
+			So(err, ShouldBeNil)
 
 			none, err := fs.Write(
-				context.Background(),
-				runtime.NewString(file.Name()),
+				ctx,
+				runtime.NewString(path),
 				runtime.NewBinary([]byte("3timeslazy")),
 				runtime.NewObjectWith(
 					map[string]runtime.Value{
@@ -135,8 +139,11 @@ func TestWrite(t *testing.T) {
 		})
 
 		Convey("Filepath is empty", func() {
+			ctx, _, _, cleanup := tempFileSystemContext()
+			defer cleanup()
+
 			none, err := fs.Write(
-				context.Background(),
+				ctx,
 				runtime.NewString(""),
 				runtime.NewBinary([]byte("3timeslazy")),
 			)
@@ -146,13 +153,12 @@ func TestWrite(t *testing.T) {
 	})
 
 	Convey("Success cases", t, func() {
-
 		Convey("Mode `w` should truncate file", func() {
-			file, delFile := tempFile()
-			defer delFile()
+			ctx, _, path, cleanup := tempFileSystemContext()
+			defer cleanup()
 
 			data := runtime.NewBinary([]byte("3timeslazy"))
-			fpath := runtime.NewString(file.Name())
+			fpath := runtime.NewString(path)
 			params := runtime.NewObjectWith(
 				map[string]runtime.Value{
 					"mode": runtime.NewString("w"),
@@ -164,21 +170,21 @@ func TestWrite(t *testing.T) {
 				// At second iteration check that `Write` truncates the file and
 				// writes `data` again
 
-				_, err := fs.Write(context.Background(), fpath, data, params)
+				_, err := fs.Write(ctx, fpath, data, params)
 				So(err, ShouldBeNil)
 
-				read, err := fs.Read(context.Background(), fpath)
+				read, err := fs.Read(ctx, fpath)
 				So(err, ShouldBeNil)
 				So(read, ShouldResemble, data)
 			}
 		})
 
 		Convey("Mode `a` should append into file", func() {
-			file, delFile := tempFile()
-			defer delFile()
+			ctx, _, path, cleanup := tempFileSystemContext()
+			defer cleanup()
 
 			data := runtime.NewBinary([]byte("3timeslazy"))
-			fpath := runtime.NewString(file.Name())
+			fpath := runtime.NewString(path)
 			params := runtime.NewObjectWith(
 				map[string]runtime.Value{
 					"mode": runtime.NewString("a"),
@@ -191,10 +197,10 @@ func TestWrite(t *testing.T) {
 				// At second iteration check that `Write` appends `data` into file
 				// one more time using bytes.Repeat
 
-				_, err := fs.Write(context.Background(), fpath, data, params)
+				_, err := fs.Write(ctx, fpath, data, params)
 				So(err, ShouldBeNil)
 
-				read, err := fs.Read(context.Background(), fpath)
+				read, err := fs.Read(ctx, fpath)
 				So(err, ShouldBeNil)
 
 				readBytes := runtime.Unwrap(read)
@@ -203,13 +209,13 @@ func TestWrite(t *testing.T) {
 		})
 
 		Convey("Write string data should error", func() {
-			file, delFile := tempFile()
-			defer delFile()
+			ctx, _, path, cleanup := tempFileSystemContext()
+			defer cleanup()
 
 			text := "test string data"
-			fpath := runtime.NewString(file.Name())
+			fpath := runtime.NewString(path)
 
-			none, err := fs.Write(context.Background(), fpath, runtime.NewString(text))
+			none, err := fs.Write(ctx, fpath, runtime.NewString(text))
 			So(err, ShouldBeError)
 			So(none, ShouldResemble, runtime.None)
 		})

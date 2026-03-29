@@ -17,6 +17,10 @@ func WithFileSystem(ctx context.Context, registry FileSystem) context.Context {
 
 // FileSystemFrom gets FileSystem from context.
 func FileSystemFrom(ctx context.Context) (FileSystem, error) {
+	if ctx == nil {
+		return nil, ErrNotFound
+	}
+
 	val := ctx.Value(fsCtxKey)
 	if val == nil {
 		return nil, ErrNotFound
