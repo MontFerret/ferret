@@ -427,10 +427,10 @@ func TestValueOf_Success(t *testing.T) {
 	var nilIntPtr *int
 
 	tests := []struct {
-		name   string
 		input  any
 		want   runtime.Value
 		sameAs runtime.Value
+		name   string
 	}{
 		{
 			name:  "nil",
