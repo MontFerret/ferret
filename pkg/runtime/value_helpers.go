@@ -182,7 +182,7 @@ func ValueOf(input any) (Value, error) {
 			parsedVal, err := ValueOf(el)
 
 			if err != nil {
-				return None, Errorf(err, "at key %q", key)
+				return None, Errorf(err, "at key %v", key)
 			}
 
 			_ = obj.Set(ctx, NewStringOf(key), parsedVal)
