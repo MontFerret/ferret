@@ -20,6 +20,7 @@ var (
 	ErrTimeout               = errors.New("operation timed out")
 	ErrNotImplemented        = errors.New("not implemented")
 	ErrNotSupported          = errors.New("not supported")
+	ErrRange                 = errors.New("out of range")
 )
 
 const (

@@ -379,45 +379,6 @@ func TestHelpers(t *testing.T) {
 					So(actual.Compare(expected), ShouldEqual, 0)
 				}
 			})
-
-			//Convey("Should create a copy of a given array", func() {
-			//	vals := []core.runtime.Value{
-			//		values.runtime.NewInt(1),
-			//		values.runtime.NewInt(2),
-			//		values.runtime.NewInt(3),
-			//		values.runtime.NewInt(4),
-			//		values.runtime.NewArray(10),
-			//		values.runtime.NewObject(),
-			//	}
-			//
-			//	input := values.runtime.NewArrayWith(vals...)
-			//	arr := values.ToList(context.Background(), input)
-			//
-			//	So(input == arr, ShouldBeFalse)
-			//	So(arr.Length() == input.Length(), ShouldBeTrue)
-			//
-			//	for idx := range vals {
-			//		expected := input.At(values.runtime.NewInt(idx))
-			//		actual := arr.At(values.runtime.NewInt(idx))
-			//
-			//		// same ref
-			//		So(actual == expected, ShouldBeTrue)
-			//		So(actual.CompareValues(expected), ShouldEqual, 0)
-			//	}
-			//})
-
-			//Convey("Should convert object to an array", func() {
-			//	input := values.NewObjectWith(
-			//		values.NewObjectProperty("foo", values.runtime.NewString("bar")),
-			//		values.NewObjectProperty("baz", values.runtime.NewInt(1)),
-			//		values.NewObjectProperty("qaz", values.runtime.NewObject()),
-			//	)
-			//
-			//	arr := values.ToList(context.Background(), input).Sort()
-			//
-			//	So(arr.String(), ShouldEqual, "[1,\"bar\",{}]")
-			//	So(arr.At(values.runtime.NewInt(2)) == input.MustGet("qaz"), ShouldBeTrue)
-			//})
 		})
 
 		Convey("Unmarshal", func() {

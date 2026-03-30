@@ -120,6 +120,24 @@ func ValueOf(input any) (Value, error) {
 		return NewInt(int(value)), nil
 	case int:
 		return NewInt(value), nil
+	case uint:
+		if uint64(value) > math.MaxInt64 {
+			return None, Errorf(ErrRange, "invalid integer %d exceeds int range", value)
+		}
+
+		return Int(value), nil
+	case uint8:
+		return Int(value), nil
+	case uint16:
+		return Int(value), nil
+	case uint32:
+		return Int(value), nil
+	case uint64:
+		if value > math.MaxInt64 {
+			return None, Errorf(ErrRange, "invalid integer %d exceeds int range", value)
+		}
+
+		return Int(value), nil
 	case float64:
 		return NewFloat(value), nil
 	case float32:
@@ -153,6 +171,21 @@ func ValueOf(input any) (Value, error) {
 			}
 
 			_ = obj.Set(ctx, NewString(key), parsed)
+		}
+
+		return obj, nil
+	case map[any]any:
+		ctx := context.Background()
+		obj := NewObject()
+
+		for key, el := range value {
+			parsedVal, err := ValueOf(el)
+
+			if err != nil {
+				return None, Errorf(err, "at key %q", key)
+			}
+
+			_ = obj.Set(ctx, NewStringOf(key), parsedVal)
 		}
 
 		return obj, nil

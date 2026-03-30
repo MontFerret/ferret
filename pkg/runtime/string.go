@@ -22,6 +22,17 @@ func NewString(input string) String {
 	return String(input)
 }
 
+func NewStringOf(input any) String {
+	switch v := input.(type) {
+	case string:
+		return String(v)
+	case fmt.Stringer:
+		return String(v.String())
+	default:
+		return String(fmt.Sprintf("%v", input))
+	}
+}
+
 func NewStringFromRunes(input []rune) String {
 	if len(input) == 0 {
 		return EmptyString
