@@ -111,18 +111,18 @@ func ValueOf(input any) (Value, error) {
 	case string:
 		return NewString(value), nil
 	case int64:
-		return NewInt(int(value)), nil
+		return NewInt64(value), nil
 	case int32:
-		return NewInt(int(value)), nil
+		return Int(value), nil
 	case int16:
-		return NewInt(int(value)), nil
+		return Int(value), nil
 	case int8:
-		return NewInt(int(value)), nil
+		return Int(value), nil
 	case int:
 		return NewInt(value), nil
 	case uint:
 		if uint64(value) > math.MaxInt64 {
-			return None, Errorf(ErrRange, "invalid integer %d exceeds int range", value)
+			return None, Errorf(ErrRange, "invalid integer %d exceeds runtime.Int range", value)
 		}
 
 		return Int(value), nil
@@ -134,7 +134,7 @@ func ValueOf(input any) (Value, error) {
 		return Int(value), nil
 	case uint64:
 		if value > math.MaxInt64 {
-			return None, Errorf(ErrRange, "invalid integer %d exceeds int range", value)
+			return None, Errorf(ErrRange, "invalid integer %d exceeds runtime.Int range", value)
 		}
 
 		return Int(value), nil

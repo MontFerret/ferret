@@ -610,7 +610,7 @@ func TestValueOf_Error(t *testing.T) {
 			name:       "uint64 overflow",
 			input:      uint64(math.MaxInt64) + 1,
 			target:     runtime.ErrRange,
-			substrings: []string{"invalid integer", "exceeds int range"},
+			substrings: []string{"invalid integer", "exceeds runtime.Int range"},
 		},
 		{
 			name:       "slice any nested context",
@@ -628,7 +628,7 @@ func TestValueOf_Error(t *testing.T) {
 			name:       "map any any nested context",
 			input:      map[any]any{"items": []any{make(chan int)}},
 			target:     runtime.ErrInvalidType,
-			substrings: []string{"cannot parse type chan int", "at index 0", `at key "items"`},
+			substrings: []string{"cannot parse type chan int", "at index 0", "at key items"},
 		},
 		{
 			name:       "reflect slice nested context",
@@ -666,7 +666,7 @@ func TestValueOf_Error(t *testing.T) {
 			name:       "uint overflow",
 			input:      ^uint(0),
 			target:     runtime.ErrRange,
-			substrings: []string{"invalid integer", "exceeds int range"},
+			substrings: []string{"invalid integer", "exceeds runtime.Int range"},
 		})
 	}
 
