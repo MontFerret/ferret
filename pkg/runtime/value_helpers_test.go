@@ -1,11 +1,16 @@
 package runtime_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"math"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 	"unsafe"
 
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
@@ -19,6 +24,15 @@ type CustomValue struct {
 }
 
 type DummyStruct struct{}
+
+type valueOfStruct struct {
+	Exported string
+	hidden   int
+}
+
+type valueOfFieldPayload struct {
+	Items []any
+}
 
 func TestIsNil(t *testing.T) {
 	Convey("Should match", t, func() {
@@ -405,73 +419,320 @@ func TestHelpers(t *testing.T) {
 		})
 	})
 }
-func TestValueOfArrayAndMapContext(t *testing.T) {
-	input := map[string]any{
-		"items": []any{
-			1,
-			make(chan int),
+
+func TestValueOf_Success(t *testing.T) {
+	now := time.Date(2024, time.March, 30, 12, 0, 0, 0, time.UTC)
+	passthrough := runtime.NewArrayWith(runtime.NewInt(1))
+	pointedInt := 42
+	var nilIntPtr *int
+
+	tests := []struct {
+		name   string
+		input  any
+		want   runtime.Value
+		sameAs runtime.Value
+	}{
+		{
+			name:  "nil",
+			input: nil,
+			want:  runtime.None,
+		},
+		{
+			name:   "runtime value pass through",
+			input:  passthrough,
+			want:   passthrough,
+			sameAs: passthrough,
+		},
+		{
+			name:  "slice of runtime values",
+			input: []runtime.Value{runtime.NewInt(1), runtime.NewString("two")},
+			want:  runtime.NewArrayWith(runtime.NewInt(1), runtime.NewString("two")),
+		},
+		{
+			name:  "bool",
+			input: true,
+			want:  runtime.True,
+		},
+		{
+			name:  "string",
+			input: "ferret",
+			want:  runtime.NewString("ferret"),
+		},
+		{
+			name:  "int",
+			input: int(1),
+			want:  runtime.NewInt(1),
+		},
+		{
+			name:  "int8",
+			input: int8(2),
+			want:  runtime.NewInt(2),
+		},
+		{
+			name:  "int16",
+			input: int16(3),
+			want:  runtime.NewInt(3),
+		},
+		{
+			name:  "int32",
+			input: int32(4),
+			want:  runtime.NewInt(4),
+		},
+		{
+			name:  "int64",
+			input: int64(5),
+			want:  runtime.NewInt(5),
+		},
+		{
+			name:  "uint",
+			input: uint(6),
+			want:  runtime.NewInt(6),
+		},
+		{
+			name:  "uint8",
+			input: uint8(7),
+			want:  runtime.NewInt(7),
+		},
+		{
+			name:  "uint16",
+			input: uint16(8),
+			want:  runtime.NewInt(8),
+		},
+		{
+			name:  "uint32",
+			input: uint32(9),
+			want:  runtime.NewInt(9),
+		},
+		{
+			name:  "uint64",
+			input: uint64(10),
+			want:  runtime.NewInt(10),
+		},
+		{
+			name:  "float32",
+			input: float32(1.5),
+			want:  runtime.NewFloat(1.5),
+		},
+		{
+			name:  "float64",
+			input: float64(2.5),
+			want:  runtime.NewFloat(2.5),
+		},
+		{
+			name:  "time.Time",
+			input: now,
+			want:  runtime.NewDateTime(now),
+		},
+		{
+			name:  "slice of any",
+			input: []any{1, "two", true},
+			want:  runtime.NewArrayWith(runtime.NewInt(1), runtime.NewString("two"), runtime.True),
+		},
+		{
+			name:  "map string any",
+			input: map[string]any{"ok": true},
+			want:  runtime.NewObjectWith(map[string]runtime.Value{"ok": runtime.True}),
+		},
+		{
+			name:  "map any any",
+			input: map[any]any{7: "seven"},
+			want:  runtime.NewObjectWith(map[string]runtime.Value{"7": runtime.NewString("seven")}),
+		},
+		{
+			name:  "bytes",
+			input: []byte("bin"),
+			want:  runtime.NewBinary([]byte("bin")),
+		},
+		{
+			name:  "pointer dereference",
+			input: &pointedInt,
+			want:  runtime.NewInt(pointedInt),
+		},
+		{
+			name:  "nil pointer",
+			input: nilIntPtr,
+			want:  runtime.None,
+		},
+		{
+			name:  "reflect slice fallback",
+			input: []string{"a", "b"},
+			want:  runtime.NewArrayWith(runtime.NewString("a"), runtime.NewString("b")),
+		},
+		{
+			name:  "reflect array fallback",
+			input: [2]int{1, 2},
+			want:  runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)),
+		},
+		{
+			name:  "reflect map fallback",
+			input: map[int]string{1: "one"},
+			want:  runtime.NewObjectWith(map[string]runtime.Value{"1": runtime.NewString("one")}),
+		},
+		{
+			name:  "struct exported fields only",
+			input: valueOfStruct{Exported: "visible", hidden: 10},
+			want:  runtime.NewObjectWith(map[string]runtime.Value{"Exported": runtime.NewString("visible")}),
 		},
 	}
 
-	_, err := runtime.ValueOf(input)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := runtime.ValueOf(tt.input)
+			if err != nil {
+				t.Fatalf("ValueOf(%T) returned unexpected error: %v", tt.input, err)
+			}
 
-	if err == nil {
-		t.Fatal("expected ValueOf to fail")
-	}
+			if tt.sameAs != nil && got != tt.sameAs {
+				t.Fatalf("expected ValueOf(%T) to return the same instance", tt.input)
+			}
 
-	errMsg := err.Error()
-
-	if !strings.Contains(errMsg, `at index 1`) {
-		t.Fatalf("expected error to include index context, got %q", errMsg)
-	}
-
-	if !strings.Contains(errMsg, `at key "items"`) {
-		t.Fatalf("expected error to include key context, got %q", errMsg)
+			assertRuntimeValueEqual(t, got, tt.want)
+		})
 	}
 }
 
-func TestValueOfStructFieldContext(t *testing.T) {
-	type payload struct {
-		Items []any
-	}
+func TestValueOf_Error(t *testing.T) {
+	keyFailureChan := make(chan int)
 
-	input := payload{
-		Items: []any{
-			make(chan int),
+	tests := []struct {
+		name       string
+		input      any
+		target     error
+		substrings []string
+	}{
+		{
+			name:       "unsupported type",
+			input:      make(chan int),
+			target:     runtime.ErrInvalidType,
+			substrings: []string{"cannot parse type chan int"},
+		},
+		{
+			name:       "uint64 overflow",
+			input:      uint64(math.MaxInt64) + 1,
+			target:     runtime.ErrRange,
+			substrings: []string{"invalid integer", "exceeds int range"},
+		},
+		{
+			name:       "slice any nested context",
+			input:      []any{1, make(chan int)},
+			target:     runtime.ErrInvalidType,
+			substrings: []string{"cannot parse type chan int", "at index 1"},
+		},
+		{
+			name:       "map string any nested context",
+			input:      map[string]any{"items": []any{1, make(chan int)}},
+			target:     runtime.ErrInvalidType,
+			substrings: []string{"cannot parse type chan int", "at index 1", `at key "items"`},
+		},
+		{
+			name:       "map any any nested context",
+			input:      map[any]any{"items": []any{make(chan int)}},
+			target:     runtime.ErrInvalidType,
+			substrings: []string{"cannot parse type chan int", "at index 0", `at key "items"`},
+		},
+		{
+			name:       "reflect slice nested context",
+			input:      []chan int{make(chan int)},
+			target:     runtime.ErrInvalidType,
+			substrings: []string{"cannot parse type chan int", "at index 0"},
+		},
+		{
+			name:       "reflect map value context",
+			input:      map[int]any{7: make(chan int)},
+			target:     runtime.ErrInvalidType,
+			substrings: []string{"cannot parse type chan int", "at key 7"},
+		},
+		{
+			name:       "reflect map key context",
+			input:      map[chan int]string{keyFailureChan: "value"},
+			target:     runtime.ErrInvalidType,
+			substrings: []string{"cannot parse type chan int", "at key "},
+		},
+		{
+			name:       "struct field context",
+			input:      valueOfFieldPayload{Items: []any{make(chan int)}},
+			target:     runtime.ErrInvalidType,
+			substrings: []string{"cannot parse type chan int", "at index 0", `at field "Items"`},
 		},
 	}
 
-	_, err := runtime.ValueOf(input)
-
-	if err == nil {
-		t.Fatal("expected ValueOf to fail")
+	if strconv.IntSize == 64 {
+		tests = append(tests, struct {
+			name       string
+			input      any
+			target     error
+			substrings []string
+		}{
+			name:       "uint overflow",
+			input:      ^uint(0),
+			target:     runtime.ErrRange,
+			substrings: []string{"invalid integer", "exceeds int range"},
+		})
 	}
 
-	errMsg := err.Error()
-
-	if !strings.Contains(errMsg, `at field "Items"`) {
-		t.Fatalf("expected error to include field context, got %q", errMsg)
-	}
-
-	if !strings.Contains(errMsg, `at index 0`) {
-		t.Fatalf("expected error to include index context, got %q", errMsg)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := runtime.ValueOf(tt.input)
+			assertWrappedError(t, err, tt.target, tt.substrings...)
+		})
 	}
 }
 
-func TestValueOfReflectMapContext(t *testing.T) {
-	input := map[int]any{
-		7: make(chan int),
+func assertRuntimeValueEqual(t *testing.T, actual, expected runtime.Value) {
+	t.Helper()
+
+	if reflect.TypeOf(actual) != reflect.TypeOf(expected) {
+		t.Fatalf("unexpected value type: got %T, want %T", actual, expected)
 	}
 
-	_, err := runtime.ValueOf(input)
+	switch expectedValue := expected.(type) {
+	case *runtime.Array:
+		actualValue := actual.(*runtime.Array)
+		if actualValue.Compare(expectedValue) != 0 {
+			t.Fatalf("unexpected array value: got %s, want %s", actualValue, expectedValue)
+		}
+	case *runtime.Object:
+		actualValue := actual.(*runtime.Object)
+		if actualValue.Compare(expectedValue) != 0 {
+			t.Fatalf("unexpected object value: got %s, want %s", actualValue, expectedValue)
+		}
+	case runtime.DateTime:
+		actualValue := actual.(runtime.DateTime)
+		if actualValue.Compare(expectedValue) != 0 {
+			t.Fatalf("unexpected datetime value: got %s, want %s", actualValue, expectedValue)
+		}
+	case runtime.Binary:
+		actualValue := actual.(runtime.Binary)
+		if !bytes.Equal([]byte(actualValue), []byte(expectedValue)) {
+			t.Fatalf("unexpected binary value: got %v, want %v", []byte(actualValue), []byte(expectedValue))
+		}
+	default:
+		if actual != expected {
+			t.Fatalf("unexpected value: got %v, want %v", actual, expected)
+		}
+	}
+}
+
+func assertWrappedError(t *testing.T, err error, target error, substrings ...string) {
+	t.Helper()
 
 	if err == nil {
 		t.Fatal("expected ValueOf to fail")
 	}
 
-	errMsg := err.Error()
+	if !errors.Is(err, target) {
+		t.Fatalf("expected error to match %v, got %v", target, err)
+	}
 
-	if !strings.Contains(errMsg, `at key 7`) {
-		t.Fatalf("expected error to include key context, got %q", errMsg)
+	errMsg := err.Error()
+	start := 0
+
+	for _, substring := range substrings {
+		idx := strings.Index(errMsg[start:], substring)
+		if idx == -1 {
+			t.Fatalf("expected error %q to include substring %q after offset %d", errMsg, substring, start)
+		}
+
+		start += idx + len(substring)
 	}
 }
