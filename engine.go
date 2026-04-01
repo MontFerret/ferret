@@ -13,6 +13,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
+// Engine compiles queries into reusable plans and runs them against the configured host.
 type Engine struct {
 	compiler *compiler.Compiler
 	loader   *artifact.Loader
@@ -23,6 +24,9 @@ type Engine struct {
 	totalCap int
 }
 
+// New constructs an Engine from the provided options, registers all modules,
+// builds the host, and runs engine init hooks. It returns an error if any
+// option, module registration, or init hook fails.
 func New(setters ...Option) (*Engine, error) {
 	opts, err := newOptions(setters)
 	if err != nil {
@@ -77,6 +81,7 @@ func New(setters ...Option) (*Engine, error) {
 	}, nil
 }
 
+// Compile compiles source into a reusable execution plan.
 func (e *Engine) Compile(ctx context.Context, src *source.Source) (*Plan, error) {
 	if e == nil {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is nil")
@@ -114,6 +119,9 @@ func (e *Engine) Load(data []byte) (*Plan, error) {
 	return e.newPlan(prog)
 }
 
+// Run compiles source, executes it in a fresh session, and returns encoded output and an error.
+// Similar to Session.Run, it may return a non-nil *Output together with a non-nil error
+// (for example, if execution produced output but a deferred cleanup step failed).
 func (e *Engine) Run(ctx context.Context, src *source.Source, opts ...SessionOption) (*Output, error) {
 	plan, err := e.Compile(ctx, src)
 
@@ -153,6 +161,7 @@ func (e *Engine) Run(ctx context.Context, src *source.Source, opts ...SessionOpt
 	return session.Run(ctx)
 }
 
+// Close runs the engine close hooks and releases engine-scoped resources.
 func (e *Engine) Close() error {
 	if err := e.hooks.engine.runCloseHooks(); err != nil {
 		return fmt.Errorf("close hooks: %w", err)

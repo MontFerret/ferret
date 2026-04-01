@@ -32,6 +32,7 @@ type (
 		noStdlib          bool
 	}
 
+	// Option configures an Engine during construction.
 	Option func(env *options) error
 )
 
@@ -168,7 +169,7 @@ func WithRuntimeParam(name string, value runtime.Value) Option {
 	}
 }
 
-// WithNamespace creates an Option that sets the library from the provided runtime.Namespace to the options if not nil.
+// WithNamespace merges the functions from the provided runtime.Namespace into the engine's function library.
 func WithNamespace(ns runtime.Namespace) Option {
 	return func(opts *options) error {
 		if ns == nil {
@@ -194,7 +195,7 @@ func WithFunctionsRegistrar(setter func(fns runtime.FunctionDefs)) Option {
 	}
 }
 
-// WithFunctions creates an Option that sets the provided *runtime.Functions to the options if not nil.
+// WithFunctions merges the provided *runtime.Functions into the engine's function library.
 func WithFunctions(funcs *runtime.Functions) Option {
 	return func(opts *options) error {
 		if funcs == nil {

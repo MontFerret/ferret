@@ -18,6 +18,7 @@ type (
 		env               []vm.EnvironmentOption
 	}
 
+	// SessionOption configures a Session created from a Plan.
 	SessionOption func(*sessionOptions) error
 )
 
@@ -39,6 +40,7 @@ func newSessionOptions(setters []SessionOption) (*sessionOptions, error) {
 	return opts, nil
 }
 
+// WithEnvironmentOptions appends VM environment options to the created session.
 func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
 	return func(session *sessionOptions) error {
 		if session == nil {
@@ -61,6 +63,7 @@ func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
 	}
 }
 
+// WithOutputContentType selects the output codec content type for session results.
 func WithOutputContentType(contentType string) SessionOption {
 	return func(session *sessionOptions) error {
 		if session == nil {
@@ -77,6 +80,8 @@ func WithOutputContentType(contentType string) SessionOption {
 	}
 }
 
+// WithSessionParams merges the provided parameter map into the session environment,
+// overriding existing keys while preserving any other previously defined parameters.
 func WithSessionParams(params map[string]any) SessionOption {
 	return func(s *sessionOptions) error {
 		if params == nil {
@@ -93,10 +98,13 @@ func WithSessionParams(params map[string]any) SessionOption {
 	}
 }
 
+// WithSessionRuntimeParams merges the provided runtime.Params into the session environment,
+// overriding existing keys while preserving any other previously defined parameters.
 func WithSessionRuntimeParams(params runtime.Params) SessionOption {
 	return WithEnvironmentOptions(vm.WithParams(params))
 }
 
+// WithSessionParam adds or overrides a single session parameter.
 func WithSessionParam(name string, value any) SessionOption {
 	return func(s *sessionOptions) error {
 		if name == "" {
@@ -116,6 +124,7 @@ func WithSessionParam(name string, value any) SessionOption {
 	}
 }
 
+// WithSessionRuntimeParam adds or overrides a single session parameter using a pre-converted runtime.Value.
 func WithSessionRuntimeParam(name string, value runtime.Value) SessionOption {
 	return WithEnvironmentOptions(vm.WithParam(name, value))
 }

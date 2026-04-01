@@ -6,7 +6,10 @@ import (
 )
 
 var (
-	ParseLogLevel     = logging.ParseLogLevel
+	// ParseLogLevel parses a log level string and returns the corresponding LogLevel and an error if the string is invalid.
+	ParseLogLevel = logging.ParseLogLevel
+	// MustParseLogLevel parses a log level string and panics if the string is not a valid log level.
 	MustParseLogLevel = logging.MustParseLogLevel
-	FormatError       = diagnostics.Format
+	// FormatError formats a diagnostic error into a human-readable string.
+	FormatError = diagnostics.Format
 )

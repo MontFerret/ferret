@@ -43,6 +43,7 @@ type (
 	}
 )
 
+// Run executes the session with the provided context and returns encoded output.
 func (s *Session) Run(c context.Context) (*Output, error) {
 	if s.closed.Load() {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "session is closed")
