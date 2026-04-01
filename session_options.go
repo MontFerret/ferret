@@ -126,7 +126,17 @@ func WithSessionParam(name string, value any) SessionOption {
 
 // WithSessionRuntimeParam adds or overrides a single session parameter using a pre-converted runtime.Value.
 func WithSessionRuntimeParam(name string, value runtime.Value) SessionOption {
-	return WithEnvironmentOptions(vm.WithParam(name, value))
+	return func(s *sessionOptions) error {
+		if name == "" {
+			return fmt.Errorf("param name cannot be empty")
+		}
+
+		if value == nil {
+			return fmt.Errorf("param value cannot be nil")
+		}
+
+		return WithEnvironmentOptions(vm.WithParam(name, value))(s)
+	}
 }
 
 // WithSessionLog sets the writer for logging output.
