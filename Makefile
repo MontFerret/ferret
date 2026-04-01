@@ -35,7 +35,7 @@ compile:
 test: test-unit test-integration test-security
 
 test-unit:
-	CGO_ENABLED=1 go test -race ${DIR_PKG}/... && CGO_ENABLED=1 go test -race ${DIR_COMPAT}/...
+	CGO_ENABLED=1 go test -race ${DIR_PKG}/... && CGO_ENABLED=1 go test -race ${DIR_COMPAT}/... .
 
 test-integration:
 	CGO_ENABLED=1 go test -race ${DIR_INTEG}/...
