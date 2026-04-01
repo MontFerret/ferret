@@ -79,6 +79,16 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 	if hasPrevToken(offending, "USING", 2) {
 		if is(offending, "USING") {
 			if next := offending.Next(); next != nil {
+				if isEOF(next) {
+					span := spanFromTokenSafe(offending.Token(), src)
+					err.Message = "Expected dialect identifier after USING"
+					err.Hint = "Provide a dialect identifier, e.g. USING css."
+					err.Spans = []diagnostics.ErrorSpan{
+						diagnostics.NewMainErrorSpan(span, "missing dialect"),
+					}
+					return true
+				}
+
 				if !isIdentifier(next) {
 					span := spanFromTokenSafe(next.Token(), src)
 					err.Message = "Dialect after USING must be an identifier"

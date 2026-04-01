@@ -12,6 +12,7 @@ func AnalyzeSyntaxError(src *source.Source, err *diagnostics.Diagnostic, offendi
 		matchArrayOperatorErrors,
 		matchQueryErrors,
 		matchWhileLoopErrors,
+		matchDispatchErrors,
 		matchLiteralErrors,
 		matchWaitForErrors,
 		matchMissingAssignmentValue,

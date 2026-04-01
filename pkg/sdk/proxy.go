@@ -176,14 +176,14 @@ func (p *Proxy[T]) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	}
 }
 
-func (p *Proxy[T]) Dispatch(ctx context.Context, event runtime.DispatchEvent) (runtime.Value, error) {
+func (p *Proxy[T]) Dispatch(ctx context.Context, event runtime.DispatchEvent) error {
 	dispatchable, ok := p.target.(runtime.Dispatchable)
 
 	if ok {
 		return dispatchable.Dispatch(ctx, event)
 	}
 
-	return runtime.None, ProxyError(p.target, runtime.TypeDispatchable)
+	return ProxyError(p.target, runtime.TypeDispatchable)
 }
 
 func (p *Proxy[T]) Subscribe(ctx context.Context, subscription runtime.Subscription) (runtime.Stream, error) {

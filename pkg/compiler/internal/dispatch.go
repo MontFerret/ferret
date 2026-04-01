@@ -43,7 +43,7 @@ func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) bytecode.
 		c.ctx.Emitter.EmitABC(bytecode.OpDispatch, dst, eventReg, argsReg)
 	})
 
-	c.ctx.Types.Set(dst, core.TypeAny)
+	c.ctx.Types.Set(dst, core.TypeNone)
 
 	return dst
 }

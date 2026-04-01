@@ -365,17 +365,12 @@ loop:
 				break
 			}
 
-			out, err := dispatcher.Dispatch(ctx, runtime.DispatchEvent{
+			err = dispatcher.Dispatch(ctx, runtime.DispatchEvent{
 				Name:    eventName,
 				Payload: payload,
 				Options: opts,
 			})
-
-			if out == nil {
-				out = runtime.None
-			}
-
-			state.setProducedOrRaiseDefault(pc, dst, out, err)
+			state.setOrRaiseDefault(pc, dst, runtime.None, err)
 		case bytecode.OpMove:
 			reg[dst] = reg[src1]
 		case bytecode.OpMoveTracked:

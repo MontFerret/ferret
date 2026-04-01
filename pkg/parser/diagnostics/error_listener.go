@@ -74,12 +74,61 @@ func (d *ErrorListener) parseError(msg string, offending antlr.Token) *diagnosti
 		},
 	}
 
-	node := d.history.Last()
-	if node == nil && offending != nil {
-		node = &TokenNode{token: offending}
-	}
+	node := analyzedTokenNode(d.history, offending)
 
 	AnalyzeSyntaxError(d.src, err, node)
 
 	return err
+}
+
+func analyzedTokenNode(history *TokenHistory, offending antlr.Token) *TokenNode {
+	var node *TokenNode
+	if history != nil {
+		node = cloneTokenChain(history.Last())
+	}
+
+	if node == nil {
+		if offending == nil {
+			return nil
+		}
+
+		return &TokenNode{token: offending}
+	}
+
+	if offending == nil || sameToken(node.token, offending) {
+		return node
+	}
+
+	offendingNode := &TokenNode{token: offending, prev: node}
+	node.next = offendingNode
+
+	return node
+}
+
+func cloneTokenChain(head *TokenNode) *TokenNode {
+	if head == nil {
+		return nil
+	}
+
+	clonedHead := &TokenNode{token: head.token}
+	clonedPrev := clonedHead
+
+	for curr := head.Prev(); curr != nil; curr = curr.Prev() {
+		cloned := &TokenNode{token: curr.token}
+		clonedPrev.prev = cloned
+		cloned.next = clonedPrev
+		clonedPrev = cloned
+	}
+
+	return clonedHead
+}
+
+func sameToken(a, b antlr.Token) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+
+	return a.GetTokenType() == b.GetTokenType() &&
+		a.GetStart() == b.GetStart() &&
+		a.GetStop() == b.GetStop()
 }
