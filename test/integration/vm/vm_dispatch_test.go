@@ -187,9 +187,25 @@ func TestDispatchRuntimeErrors(t *testing.T) {
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Message: "Invalid type"},
 		),
+		S(`RETURN "click" -> @value`, "Shorthand should fail when target is not a dispatcher").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Message: "Invalid type"},
+		),
 	}, vm.WithParams(map[string]runtime.Value{
 		"d":     dispatcher,
 		"event": runtime.NewInt(1),
 		"value": runtime.NewInt(1),
+	}))
+}
+
+func TestDispatchShorthandContexts(t *testing.T) {
+	dispatcher := &testDispatcher{}
+
+	RunSpecs(t, []spec.Spec{
+		// Dispatch produces NONE; the container captures that NONE element/value.
+		S(`RETURN ["click" -> @d]`, []interface{}{nil}, "Should allow shorthand dispatch in array literal"),
+		S(`RETURN { x: "click" -> @d }`, map[string]interface{}{"x": nil}, "Should allow shorthand dispatch in object literal"),
+	}, vm.WithParams(map[string]runtime.Value{
+		"d": dispatcher,
 	}))
 }

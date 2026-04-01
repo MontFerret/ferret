@@ -134,6 +134,8 @@ func shorthandMissingTargetNode(offending *TokenNode) *TokenNode {
 	}
 
 	next := arrow.Next()
+	// next == offending: the parser reported the token immediately after '->' as
+	// the offending symbol, meaning the arrow's successor is itself the problem token.
 	if next == nil || next == offending || isEOF(next) ||
 		is(next, "RETURN") || is(next, "WITH") || is(next, "OPTIONS") ||
 		is(next, ",") || is(next, ")") || is(next, "]") {
@@ -184,10 +186,14 @@ func shorthandUnsupportedClause(offending *TokenNode) (string, *TokenNode) {
 
 	for _, clause := range []string{"WITH", "OPTIONS"} {
 		if distance, node := prevTokenDistance(offending, clause, 12); node != nil {
-			if distance == 0 || (node.Prev() != nil && !is(node.Prev(), "->")) {
-				if hasPrevToken(node, "->", 8) && !hasPrevToken(node, "DISPATCH", 12) {
-					return node.GetText(), node
-				}
+			// distance == 0: offending token IS the clause keyword itself.
+			// The second condition guards against a long-form clause whose preceding
+			// token is something other than '->' (which would mean it belongs to a
+			// DISPATCH...IN form, not a shorthand). We only flag it as an unsupported
+			// shorthand clause when '->' appears somewhere before it without DISPATCH.
+			clauseIsOffendingOrNotAfterArrow := distance == 0 || (node.Prev() != nil && !is(node.Prev(), "->"))
+			if clauseIsOffendingOrNotAfterArrow && hasPrevToken(node, "->", 8) && !hasPrevToken(node, "DISPATCH", 12) {
+				return node.GetText(), node
 			}
 		}
 	}
