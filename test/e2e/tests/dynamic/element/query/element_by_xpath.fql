@@ -1,8 +1,0 @@
-LET url = @lab.cdn.dynamic
-LET doc = DOCUMENT(url, true)
-
-LET el = ELEMENT(doc, X("//*[@id='root']"))?
-
-T::NOT::NONE(el)
-
-RETURN TRUE

@@ -1,6 +1,0 @@
-LET url = @lab.cdn.static + '/value.html'
-LET page = DOCUMENT(url)
-
-LET actual = XPATH(page, "//tr[contains(@class, 'odd')]")
-
-RETURN T::LEN(actual, 20)

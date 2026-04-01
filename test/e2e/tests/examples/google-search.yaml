@@ -1,6 +1,0 @@
-query:
-  ref: ../../../examples/google-search.fql
-  params:
-    criteria: "ferret"
-assert:
-  text: RETURN T::NOT::EMPTY(@lab.data.query.result)

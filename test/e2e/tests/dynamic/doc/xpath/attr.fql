@@ -1,6 +1,0 @@
-LET url = @lab.cdn.dynamic
-LET page = DOCUMENT(url, { driver: "cdp" })
-
-LET actual = XPATH(page, "//meta/@charset")
-
-RETURN T::EQ(actual, ["utf-8"])

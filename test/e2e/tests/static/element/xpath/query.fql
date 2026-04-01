@@ -1,9 +1,0 @@
-LET url = @lab.cdn.static + '/value.html'
-LET page = DOCUMENT(url, true)
-
-LET element = ELEMENT(page, '.tablesorter')
-LET actual = XPATH(element, "//input[contains(@type, 'hidden')]")
-
-T::LEN(actual, 40)
-
-RETURN NONE

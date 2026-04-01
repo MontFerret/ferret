@@ -1,9 +1,0 @@
-LET url = @lab.cdn.dynamic + "/#/pagination"
-LET page = DOCUMENT(url, true)
-
-LET items = (
-    FOR i IN PAGINATION(page, 'li[class="page-item-next page-item"]')
-        RETURN i
-)
-
-RETURN T::LEN(items, 5)

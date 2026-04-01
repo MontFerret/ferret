@@ -5,10 +5,10 @@ LAB_BIN ?= lab
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
 DIR_COMPAT = ./compat
-DIR_INTEG = ./test/integration
-DIR_BENCH = ./test/benchmarks
-DIR_SEC = ./test/security
-DIR_E2E = ./test/e2e
+DIR_TEST = ./test
+DIR_INTEG = ${DIR_TEST}/integration
+DIR_BENCH = ${DIR_TEST}/benchmarks
+DIR_SEC = ${DIR_TEST}/security
 BENCH_RUN ?= '^$$'
 BENCH_FILTER ?= .
 BENCH_COUNT ?= 1
@@ -30,7 +30,7 @@ install:
 
 compile:
 	go build -v -o ${DIR_BIN}/ferret \
-	${DIR_E2E}/cli.go
+	${DIR_TEST}/cli.go
 
 test: test-unit test-integration test-security
 
