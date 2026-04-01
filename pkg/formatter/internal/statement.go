@@ -600,29 +600,45 @@ func (f *statementFormatter) formatDispatchExpression(ctx *fql.DispatchExpressio
 		return
 	}
 
-	f.writeKeyword(keywordDispatch)
-	f.p.space()
+	if ctx.Dispatch() != nil {
+		f.writeKeyword(keywordDispatch)
+		f.p.space()
+
+		if name := ctx.DispatchEventName(); name != nil {
+			f.formatDispatchEventName(name.(*fql.DispatchEventNameContext))
+		}
+
+		f.p.space()
+		f.writeKeyword(keywordIn)
+		f.p.space()
+
+		if tgt := ctx.DispatchTarget(); tgt != nil {
+			f.formatDispatchTarget(tgt.(*fql.DispatchTargetContext))
+		}
+
+		if with := ctx.DispatchWithClause(); with != nil {
+			f.p.space()
+			f.formatDispatchWithClause(with.(*fql.DispatchWithClauseContext))
+		}
+
+		if opt := ctx.DispatchOptionsClause(); opt != nil {
+			f.p.space()
+			f.formatDispatchOptionsClause(opt.(*fql.DispatchOptionsClauseContext))
+		}
+
+		return
+	}
 
 	if name := ctx.DispatchEventName(); name != nil {
 		f.formatDispatchEventName(name.(*fql.DispatchEventNameContext))
 	}
 
 	f.p.space()
-	f.writeKeyword(keywordIn)
+	f.p.write("->")
 	f.p.space()
 
 	if tgt := ctx.DispatchTarget(); tgt != nil {
 		f.formatDispatchTarget(tgt.(*fql.DispatchTargetContext))
-	}
-
-	if with := ctx.DispatchWithClause(); with != nil {
-		f.p.space()
-		f.formatDispatchWithClause(with.(*fql.DispatchWithClauseContext))
-	}
-
-	if opt := ctx.DispatchOptionsClause(); opt != nil {
-		f.p.space()
-		f.formatDispatchOptionsClause(opt.(*fql.DispatchOptionsClauseContext))
 	}
 }
 

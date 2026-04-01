@@ -363,6 +363,7 @@ waitForExpression
 
 dispatchExpression
     : Dispatch dispatchEventName In dispatchTarget (dispatchWithClause)? (dispatchOptionsClause)?
+    | dispatchEventName DispatchArrow dispatchTarget
     ;
 
 dispatchEventName
