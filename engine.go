@@ -117,7 +117,9 @@ func (e *Engine) Load(data []byte) (*Plan, error) {
 	return e.newPlan(prog)
 }
 
-// Run compiles source, executes it in a fresh session, and returns encoded output.
+// Run compiles source, executes it in a fresh session, and returns encoded output and an error.
+// Similar to Session.Run, it may return a non-nil *Output together with a non-nil error
+// (for example, if execution produced output but a deferred cleanup step failed).
 func (e *Engine) Run(ctx context.Context, src *source.Source, opts ...SessionOption) (*Output, error) {
 	plan, err := e.Compile(ctx, src)
 
