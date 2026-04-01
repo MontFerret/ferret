@@ -3,6 +3,7 @@ package ferret
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
@@ -63,8 +64,12 @@ func newOptions(setters []Option) (*options, error) {
 		maxVMsPerPlan:     defaultMaxVMsPerPlan,
 	}
 
-	for _, opt := range setters {
-		if err := opt(opts); err != nil {
+	for _, setter := range setters {
+		if setter == nil {
+			continue
+		}
+
+		if err := setter(opts); err != nil {
 			return nil, err
 		}
 	}
@@ -81,8 +86,8 @@ func newOptions(setters []Option) (*options, error) {
 // All host values will be converted to a runtime.Value.
 func WithParams(params map[string]any) Option {
 	return func(opts *options) error {
-		if params == nil {
-			return fmt.Errorf("params cannot be nil")
+		if len(params) == 0 {
+			return nil
 		}
 
 		if opts.params == nil {
@@ -105,8 +110,8 @@ func WithParams(params map[string]any) Option {
 // If a parameter already exists, it will be overwritten.
 func WithRuntimeParams(params runtime.Params) Option {
 	return func(opts *options) error {
-		if params == nil {
-			return fmt.Errorf("params cannot be nil")
+		if len(params) == 0 {
+			return nil
 		}
 
 		if opts.params == nil {
@@ -240,8 +245,8 @@ func WithLogLevel(lvl logging.LogLevel) Option {
 // These fields can provide additional context for debugging and monitoring purposes.
 func WithLogFields(fields map[string]any) Option {
 	return func(opts *options) error {
-		if fields == nil {
-			return fmt.Errorf("log fields cannot be nil")
+		if len(fields) == 0 {
+			return nil
 		}
 
 		opts.logger = append(opts.logger, logging.WithFields(fields))
@@ -289,7 +294,7 @@ func WithoutStdlib() Option {
 func WithModules(module ...Module) Option {
 	return func(env *options) error {
 		if len(module) == 0 {
-			return fmt.Errorf("modules cannot be empty")
+			return nil
 		}
 
 		if env.modules == nil {
@@ -334,11 +339,16 @@ func WithCompilerOptions(opts ...compiler.Option) Option {
 		}
 
 		if o.compiler == nil {
-			o.compiler = opts
-			return nil
+			o.compiler = make([]compiler.Option, 0, len(opts))
 		}
 
-		o.compiler = append(o.compiler, opts...)
+		for _, opt := range opts {
+			if opt == nil {
+				return fmt.Errorf("compiler option cannot be nil")
+			}
+
+			o.compiler = append(o.compiler, opt)
+		}
 
 		return nil
 	}
@@ -552,6 +562,8 @@ func WithMaxVMsPerPlan(n int) Option {
 // WithFSRoot sets the root directory for the engine's file system.
 func WithFSRoot(root string) Option {
 	return func(opts *options) error {
+		root = strings.TrimSpace(root)
+
 		if root == "" {
 			return fmt.Errorf("fs root cannot be empty")
 		}

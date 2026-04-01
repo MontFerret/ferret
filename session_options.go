@@ -84,8 +84,8 @@ func WithOutputContentType(contentType string) SessionOption {
 // overriding existing keys while preserving any other previously defined parameters.
 func WithSessionParams(params map[string]any) SessionOption {
 	return func(s *sessionOptions) error {
-		if params == nil {
-			return fmt.Errorf("params cannot be nil")
+		if len(params) == 0 {
+			return nil
 		}
 
 		rtp, err := runtime.NewParamsFrom(params)
@@ -102,8 +102,8 @@ func WithSessionParams(params map[string]any) SessionOption {
 // overriding existing keys while preserving any other previously defined parameters.
 func WithSessionRuntimeParams(params runtime.Params) SessionOption {
 	return func(s *sessionOptions) error {
-		if params == nil {
-			return fmt.Errorf("params cannot be nil")
+		if len(params) == 0 {
+			return nil
 		}
 
 		return WithEnvironmentOptions(vm.WithParams(params))(s)
@@ -177,8 +177,8 @@ func WithSessionLogLevel(lvl logging.LogLevel) SessionOption {
 // These fields can provide additional context for debugging and monitoring purposes.
 func WithSessionLogFields(fields map[string]any) SessionOption {
 	return func(opts *sessionOptions) error {
-		if fields == nil {
-			return fmt.Errorf("log fields cannot be nil")
+		if len(fields) == 0 {
+			return nil
 		}
 
 		opts.logger = append(opts.logger, logging.WithFields(fields))
