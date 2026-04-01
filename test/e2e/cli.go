@@ -180,8 +180,8 @@ func (p *Params) Set(value string) error {
 	return nil
 }
 
-func (p *Params) ToMap() (map[string]runtime.Value, error) {
-	res := make(map[string]runtime.Value)
+func (p *Params) ToMap() (runtime.Params, error) {
+	res := runtime.NewParams()
 
 	for _, entry := range *p {
 		pair := strings.SplitN(entry, ":", 2)
@@ -200,19 +200,16 @@ func (p *Params) ToMap() (map[string]runtime.Value, error) {
 			return nil, err
 		}
 
-		res[key] = runtime.Parse(value)
+		if err := res.Set(key, value); err != nil {
+			fmt.Println(pair[1])
+			return nil, err
+		}
 	}
 
 	return res, nil
 }
 
 var (
-	conn = flag.String(
-		"cdp",
-		"",
-		"set CDP address",
-	)
-
 	dryRun = flag.Bool(
 		"dry-run",
 		false,
@@ -331,11 +328,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		//_ = engine.Drivers().Add(http.NewDriver())
-		//_ = engine.Drivers().Add(cdp.NewDriver(cdp.WithAddress(*conn)))
-
 		sessionOptions := []ferret.SessionOption{
-			ferret.WithSessionParams(p),
+			ferret.WithSessionRuntimeParams(p),
 		}
 
 		if query != "" {

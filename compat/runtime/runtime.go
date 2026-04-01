@@ -106,7 +106,7 @@ func toSessionOptions(o *Options) []ferret.SessionOption {
 			params[k] = parsed
 		}
 
-		opts = append(opts, ferret.WithSessionParams(params))
+		opts = append(opts, ferret.WithSessionRuntimeParams(params))
 	}
 
 	if o.logWriter != nil {

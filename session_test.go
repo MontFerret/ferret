@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
+	"github.com/goccy/go-json"
 )
 
 func TestSessionRunReturnsBeforeHookError(t *testing.T) {
@@ -362,4 +364,148 @@ func TestSessionCloseAfterPlanCloseReleasesLimiter(t *testing.T) {
 		_ = nextSession.Close()
 		_ = nextPlan.Close()
 	}()
+}
+
+func TestSessionParams(t *testing.T) {
+	t.Parallel()
+
+	eng, err := New(WithParams(map[string]any{
+		"param1": 1,
+	}))
+
+	if err != nil {
+		t.Fatalf("expected New to succeed with valid params, got: %v", err)
+	}
+
+	if eng == nil {
+		t.Fatal("expected engine to be non-nil on successful construction")
+	}
+
+	out, err := eng.Run(
+		context.Background(),
+		source.NewAnonymous("RETURN @param1 + @param2"),
+		WithSessionParams(map[string]any{
+			"param2": 2,
+		}),
+	)
+
+	if err != nil {
+		t.Fatalf("expected run to succeed, got: %v", err)
+	}
+
+	var result int
+
+	if err := json.Unmarshal(out.Content, &result); err != nil {
+		t.Fatalf("expected result to be an integer, got: %v", err)
+	}
+
+	if result != 3 {
+		t.Fatalf("expected run to return 3, got: %d", result)
+	}
+}
+
+func TestSessionParam(t *testing.T) {
+	t.Parallel()
+
+	eng, err := New(WithParam("param1", 1))
+
+	if err != nil {
+		t.Fatalf("expected New to succeed with valid params, got: %v", err)
+	}
+
+	if eng == nil {
+		t.Fatal("expected engine to be non-nil on successful construction")
+	}
+
+	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1 + @param2"), WithSessionParam("param2", 2))
+
+	if err != nil {
+		t.Fatalf("expected run to succeed, got: %v", err)
+	}
+
+	var result int
+
+	if err := json.Unmarshal(out.Content, &result); err != nil {
+		t.Fatalf("expected result to be an integer, got: %v", err)
+	}
+
+	if result != 3 {
+		t.Fatalf("expected run to return 3, got: %d", result)
+	}
+}
+
+func TestSessionRuntimeParams(t *testing.T) {
+	t.Parallel()
+
+	rtp, err := runtime.NewParamsFrom(map[string]any{
+		"param1": 1,
+	})
+
+	if err != nil {
+		t.Fatalf("expected runtime.NewParamsFrom to succeed, got: %v", err)
+	}
+
+	eng, err := New(WithRuntimeParams(rtp))
+
+	if err != nil {
+		t.Fatalf("expected New to succeed with valid params, got: %v", err)
+	}
+
+	if eng == nil {
+		t.Fatal("expected engine to be non-nil on successful construction")
+	}
+
+	sessionParams, err := runtime.NewParamsFrom(map[string]any{
+		"param2": 2,
+	})
+
+	if err != nil {
+		t.Fatalf("expected runtime.NewParamsFrom to succeed, got: %v", err)
+	}
+
+	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1 + @param2"), WithSessionRuntimeParams(sessionParams))
+
+	if err != nil {
+		t.Fatalf("expected run to succeed, got: %v", err)
+	}
+
+	var result int
+
+	if err := json.Unmarshal(out.Content, &result); err != nil {
+		t.Fatalf("expected result to be an integer, got: %v", err)
+	}
+
+	if result != 3 {
+		t.Fatalf("expected run to return 3, got: %d", result)
+	}
+}
+
+func TestSessionRuntimeParam(t *testing.T) {
+	t.Parallel()
+
+	eng, err := New(WithRuntimeParam("param1", runtime.NewInt(1)))
+
+	if err != nil {
+		t.Fatalf("expected New to succeed with valid params, got: %v", err)
+	}
+
+	if eng == nil {
+		t.Fatal("expected engine to be non-nil on successful construction")
+	}
+
+	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1 + @param2"), WithSessionRuntimeParam("param2", runtime.NewInt(2)))
+
+	if err != nil {
+		t.Fatalf("expected run to succeed, got: %v", err)
+	}
+
+	var result int
+
+	if err := json.Unmarshal(out.Content, &result); err != nil {
+		t.Fatalf("expected result to be an integer, got: %v", err)
+	}
+
+	if result != 3 {
+		t.Fatalf("expected run to return 3, got: %d", result)
+	}
 }

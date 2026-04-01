@@ -8,8 +8,10 @@ import (
 
 // Output is the encoded result returned from session or engine execution.
 type Output struct {
+	// ContentType is the MIME type of the encoded content (e.g. "application/json").
 	ContentType string
-	Content     []byte
+	// Content holds the encoded output bytes.
+	Content []byte
 }
 
 func newOutput(registry *encoding.Registry, contentType string, res *vm.Result) (*Output, error) {

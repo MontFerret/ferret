@@ -24,7 +24,9 @@ type Engine struct {
 	totalCap int
 }
 
-// New constructs an Engine from the provided options.
+// New constructs an Engine from the provided options, registers all modules,
+// builds the host, and runs engine init hooks. It returns an error if any
+// option, module registration, or init hook fails.
 func New(setters ...Option) (*Engine, error) {
 	opts, err := newOptions(setters)
 	if err != nil {

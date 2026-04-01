@@ -106,7 +106,29 @@ func (p Params) SetAll(values map[string]any) error {
 	return nil
 }
 
-func (p Params) Merge(other Params) Params {
+func (p Params) Merge(other map[string]any) (Params, error) {
+	if p == nil {
+		return NewParamsFrom(other)
+	}
+
+	if other == nil {
+		return p, nil
+	}
+
+	for k, v := range other {
+		if err := p.Set(k, v); err != nil {
+			return p, err
+		}
+	}
+
+	return p, nil
+}
+
+func (p Params) MergeParams(other Params) Params {
+	if p == nil {
+		return NewParams().MergeParams(other)
+	}
+
 	if other == nil {
 		return p
 	}

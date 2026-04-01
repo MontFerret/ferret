@@ -82,13 +82,67 @@ func WithOutputContentType(contentType string) SessionOption {
 
 // WithSessionParams merges the provided parameter map into the session environment,
 // overriding existing keys while preserving any other previously defined parameters.
-func WithSessionParams(params runtime.Params) SessionOption {
-	return WithEnvironmentOptions(vm.WithParams(params))
+func WithSessionParams(params map[string]any) SessionOption {
+	return func(s *sessionOptions) error {
+		if params == nil {
+			return fmt.Errorf("params cannot be nil")
+		}
+
+		rtp, err := runtime.NewParamsFrom(params)
+
+		if err != nil {
+			return fmt.Errorf("failed to convert params to runtime.Params: %w", err)
+		}
+
+		return WithEnvironmentOptions(vm.WithParams(rtp))(s)
+	}
+}
+
+// WithSessionRuntimeParams merges the provided runtime.Params into the session environment,
+// overriding existing keys while preserving any other previously defined parameters.
+func WithSessionRuntimeParams(params runtime.Params) SessionOption {
+	return func(s *sessionOptions) error {
+		if params == nil {
+			return fmt.Errorf("params cannot be nil")
+		}
+
+		return WithEnvironmentOptions(vm.WithParams(params))(s)
+	}
 }
 
 // WithSessionParam adds or overrides a single session parameter.
-func WithSessionParam(name string, value runtime.Value) SessionOption {
-	return WithEnvironmentOptions(vm.WithParam(name, value))
+func WithSessionParam(name string, value any) SessionOption {
+	return func(s *sessionOptions) error {
+		if name == "" {
+			return fmt.Errorf("param name cannot be empty")
+		}
+
+		if value == nil {
+			return fmt.Errorf("param value cannot be nil")
+		}
+
+		rtp, err := runtime.NewParamsFrom(map[string]any{name: value})
+		if err != nil {
+			return fmt.Errorf("failed to convert param to runtime.Params: %w", err)
+		}
+
+		return WithEnvironmentOptions(vm.WithParams(rtp))(s)
+	}
+}
+
+// WithSessionRuntimeParam adds or overrides a single session parameter using a pre-converted runtime.Value.
+func WithSessionRuntimeParam(name string, value runtime.Value) SessionOption {
+	return func(s *sessionOptions) error {
+		if name == "" {
+			return fmt.Errorf("param name cannot be empty")
+		}
+
+		if value == nil {
+			return fmt.Errorf("param value cannot be nil")
+		}
+
+		return WithEnvironmentOptions(vm.WithParam(name, value))(s)
+	}
 }
 
 // WithSessionLog sets the writer for logging output.

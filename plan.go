@@ -30,7 +30,7 @@ func (p *Plan) Params() []string {
 		return nil
 	}
 
-	// Do expose the underlying slice to callers.
+	// Don't expose the underlying slice to callers.
 	// External mutation can corrupt the plan/program state.
 	params := make([]string, len(p.prog.Params))
 	copy(params, p.prog.Params)
