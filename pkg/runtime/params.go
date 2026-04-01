@@ -113,7 +113,7 @@ func (p Params) Merge(other map[string]any) (Params, error) {
 
 	for k, v := range other {
 		if err := p.Set(k, v); err != nil {
-			return nil, err
+			return p, err
 		}
 	}
 
