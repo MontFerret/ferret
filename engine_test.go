@@ -93,7 +93,7 @@ func mustMarshalArtifact(t *testing.T, query string, opts ...artifact.Options) [
 	return data
 }
 
-func TestEngineNewReturnsOptionError(t *testing.T) {
+func TestEngineNewAcceptsEmptyModulesOption(t *testing.T) {
 	t.Parallel()
 
 	eng, err := New(WithModules())
