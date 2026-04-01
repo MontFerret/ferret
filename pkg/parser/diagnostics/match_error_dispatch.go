@@ -2,7 +2,6 @@ package diagnostics
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -15,15 +14,6 @@ func matchDispatchErrors(src *source.Source, err *diagnostics.Diagnostic, offend
 
 	if !isMismatched(err.Message) && !isMissing(err.Message) && !isNoAlternative(err.Message) && !isExtraneous(err.Message) {
 		return false
-	}
-
-	if span, ok := shorthandMissingEventSpan(src); ok {
-		err.Message = "Expected dispatch event before '->'"
-		err.Hint = `Provide an event expression, e.g. "click" -> btn.`
-		err.Spans = []diagnostics.ErrorSpan{
-			diagnostics.NewMainErrorSpan(span, "missing dispatch event"),
-		}
-		return true
 	}
 
 	if spanNode := shorthandMissingEventNode(offending); spanNode != nil {
@@ -96,9 +86,13 @@ func shorthandMissingEventNode(offending *TokenNode) *TokenNode {
 
 	arrow := offending
 	if !is(arrow, "->") {
-		_, arrow = prevTokenDistance(offending, "->", 12)
-		if arrow == nil {
-			return nil
+		if next := findNextToken(offending, "->", 4); next != nil {
+			arrow = next
+		} else {
+			_, arrow = prevTokenDistance(offending, "->", 12)
+			if arrow == nil {
+				return nil
+			}
 		}
 	}
 
@@ -125,6 +119,25 @@ func longFormMissingEventNode(offending *TokenNode) *TokenNode {
 func shorthandMissingTargetNode(offending *TokenNode) *TokenNode {
 	if offending == nil {
 		return nil
+	}
+
+	arrow := offending
+	if !is(arrow, "->") {
+		if next := findNextToken(offending, "->", 4); next != nil {
+			arrow = next
+		} else {
+			_, arrow = prevTokenDistance(offending, "->", 12)
+			if arrow == nil {
+				return nil
+			}
+		}
+	}
+
+	next := arrow.Next()
+	if next == nil || next == offending || isEOF(next) ||
+		is(next, "RETURN") || is(next, "WITH") || is(next, "OPTIONS") ||
+		is(next, ",") || is(next, ")") || is(next, "]") {
+		return arrow
 	}
 
 	if is(offending, "<EOF>") && is(offending.Prev(), "->") {
@@ -169,8 +182,14 @@ func shorthandUnsupportedClause(offending *TokenNode) (string, *TokenNode) {
 		return "", nil
 	}
 
-	if (is(offending, "WITH") || is(offending, "OPTIONS")) && offending.Prev() != nil && !is(offending.Prev(), "->") && hasPrevToken(offending, "->", 6) {
-		return offending.GetText(), offending
+	for _, clause := range []string{"WITH", "OPTIONS"} {
+		if distance, node := prevTokenDistance(offending, clause, 12); node != nil {
+			if distance == 0 || (node.Prev() != nil && !is(node.Prev(), "->")) {
+				if hasPrevToken(node, "->", 8) && !hasPrevToken(node, "DISPATCH", 12) {
+					return node.GetText(), node
+				}
+			}
+		}
 	}
 
 	return "", nil
@@ -227,26 +246,4 @@ func dispatchClauseValueName(clause string) string {
 	default:
 		return "value"
 	}
-}
-
-func shorthandMissingEventSpan(src *source.Source) (source.Span, bool) {
-	if src == nil {
-		return source.Span{}, false
-	}
-
-	match := regexp.MustCompile(`(?i)(?:=|RETURN|\(|,|=>|\?|:)\s*->`).FindStringIndex(src.Content())
-	if match == nil {
-		return source.Span{}, false
-	}
-
-	start := match[0]
-	for start < match[1]-1 {
-		if src.Content()[start] == '-' && src.Content()[start+1] == '>' {
-			return source.Span{Start: start, End: start + 2}, true
-		}
-
-		start++
-	}
-
-	return source.Span{}, false
 }

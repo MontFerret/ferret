@@ -1,9 +1,12 @@
 package compiler_test
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
@@ -48,6 +51,21 @@ func TestSyntaxErrorsDispatch(t *testing.T) {
 			Hint:    `Provide an event expression, e.g. "click" -> btn.`,
 		}, "Missing shorthand dispatch event"),
 		Failure(`
+			RETURN -> obj
+		`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Expected dispatch event before '->'",
+			Hint:    `Provide an event expression, e.g. "click" -> btn.`,
+		}, "Missing shorthand dispatch event after RETURN"),
+		Failure(`
+			LET ok = (-> obj)
+			RETURN ok
+		`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Expected dispatch event before '->'",
+			Hint:    `Provide an event expression, e.g. "click" -> btn.`,
+		}, "Missing shorthand dispatch event in parenthesized expression"),
+		Failure(`
 			LET obj = NONE
 			LET ok = "click" ->
 			RETURN ok
@@ -75,4 +93,63 @@ func TestSyntaxErrorsDispatch(t *testing.T) {
 			Hint:    `Use the long form instead, e.g. DISPATCH "click" IN btn OPTIONS { bubbles: true }.`,
 		}, "Shorthand OPTIONS should fail syntax checks"),
 	})
+}
+
+func TestDispatchSyntaxErrorsIgnoreCommentsAndStrings(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		src  string
+	}{
+		{
+			name: "string literal",
+			src: `
+				LET msg = "RETURN ->"
+				LET x =
+				RETURN x
+			`,
+		},
+		{
+			name: "single-line comment",
+			src: `
+				LET x = 1 // RETURN ->
+				LET y =
+				RETURN y
+			`,
+		},
+		{
+			name: "multi-line comment",
+			src: `
+				/* = -> */
+				LET y =
+				RETURN y
+			`,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).Compile(source.New("dispatch_diag", tc.src))
+			if err == nil {
+				t.Fatal("expected compilation error")
+			}
+
+			diag := firstCompilationError(err)
+			if diag == nil {
+				t.Fatal("expected diagnostic")
+			}
+
+			if diag.Message == "Expected dispatch event before '->'" {
+				t.Fatalf("unexpected dispatch shorthand diagnostic for %s: %q", tc.name, diag.Message)
+			}
+
+			if strings.Contains(diag.Hint, `"click" -> btn`) {
+				t.Fatalf("unexpected dispatch shorthand hint for %s: %q", tc.name, diag.Hint)
+			}
+		})
+	}
 }
