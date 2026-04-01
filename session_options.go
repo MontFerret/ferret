@@ -80,7 +80,8 @@ func WithOutputContentType(contentType string) SessionOption {
 	}
 }
 
-// WithSessionParams adds a full parameter map to the session environment.
+// WithSessionParams merges the provided parameter map into the session environment,
+// overriding existing keys while preserving any other previously defined parameters.
 func WithSessionParams(params runtime.Params) SessionOption {
 	return WithEnvironmentOptions(vm.WithParams(params))
 }
