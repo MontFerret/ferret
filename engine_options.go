@@ -75,6 +75,99 @@ func newOptions(setters []Option) (*options, error) {
 	return opts, nil
 }
 
+// WithParams applies custom parameters to the options by merging them with existing ones, initializing if necessary.
+// If a parameter already exists, it will be overwritten.
+// All host values will be converted to a runtime.Value.
+func WithParams(params map[string]any) Option {
+	return func(opts *options) error {
+		if params == nil {
+			return fmt.Errorf("params cannot be nil")
+		}
+
+		if opts.params == nil {
+			opts.params = runtime.NewParams()
+		}
+
+		merged, err := opts.params.Merge(params)
+
+		if err != nil {
+			return err
+		}
+
+		opts.params = merged
+
+		return nil
+	}
+}
+
+// WithRuntimeParams configures runtime parameters by merging the provided params with existing ones in options.
+// If a parameter already exists, it will be overwritten.
+func WithRuntimeParams(params runtime.Params) Option {
+	return func(opts *options) error {
+		if params == nil {
+			return fmt.Errorf("params cannot be nil")
+		}
+
+		if opts.params == nil {
+			opts.params = runtime.NewParams()
+		}
+
+		opts.params = opts.params.MergeParams(params)
+
+		return nil
+	}
+}
+
+// WithParam returns an Option that sets a parameter with the specified name and value in the options configuration.
+// The name cannot be empty, and the value cannot be nil. It ensures the parameter value is correctly parsed and stored.
+func WithParam(name string, value any) Option {
+	return func(opts *options) error {
+		if name == "" {
+			return fmt.Errorf("param name cannot be empty")
+		}
+
+		if value == nil {
+			return fmt.Errorf("param value cannot be nil")
+		}
+
+		if opts.params == nil {
+			opts.params = runtime.NewParams()
+		}
+
+		parsed, err := runtime.ValueOf(value)
+
+		if err != nil {
+			return fmt.Errorf("invalid param value: %w", err)
+		}
+
+		opts.params.SetValue(name, parsed)
+
+		return nil
+	}
+}
+
+// WithRuntimeParam returns an Option that sets a runtime parameter with the specified name and value in the options configuration.
+// The name cannot be empty, and the value cannot be nil.
+func WithRuntimeParam(name string, value runtime.Value) Option {
+	return func(opts *options) error {
+		if name == "" {
+			return fmt.Errorf("param name cannot be empty")
+		}
+
+		if value == nil {
+			return fmt.Errorf("param value cannot be nil")
+		}
+
+		if opts.params == nil {
+			opts.params = runtime.NewParams()
+		}
+
+		opts.params.SetValue(name, value)
+
+		return nil
+	}
+}
+
 // WithNamespace creates an Option that sets the library from the provided runtime.Namespace to the options if not nil.
 func WithNamespace(ns runtime.Namespace) Option {
 	return func(opts *options) error {

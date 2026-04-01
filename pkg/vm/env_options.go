@@ -14,7 +14,7 @@ func WithParams(params runtime.Params) EnvironmentOption {
 			env.params = runtime.NewParams()
 		}
 
-		env.params.Merge(params)
+		env.params.MergeParams(params)
 	}
 }
 

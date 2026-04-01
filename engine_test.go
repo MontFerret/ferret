@@ -11,6 +11,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
+	"github.com/goccy/go-json"
 )
 
 const (
@@ -596,5 +597,147 @@ func TestEngineClose(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "close hooks") {
 		t.Fatalf("expected close hooks label, got: %v", err)
+	}
+}
+
+func TestEngineParams(t *testing.T) {
+	t.Parallel()
+
+	eng, err := New(WithParams(map[string]any{
+		"param1": "value1",
+	}))
+
+	if err != nil {
+		t.Fatalf("expected New to succeed with valid params, got: %v", err)
+	}
+
+	if eng == nil {
+		t.Fatal("expected engine to be non-nil on successful construction")
+	}
+
+	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1"))
+
+	if err != nil {
+		t.Fatalf("expected run to succeed, got: %v", err)
+	}
+
+	var result any
+
+	json.Unmarshal(out.Content, &result)
+
+	str, ok := result.(string)
+	if !ok {
+		t.Fatalf("expected result to be a string, got: %T", result)
+	}
+
+	if str != "value1" {
+		t.Fatalf("expected run to return value1, got: %q", str)
+	}
+}
+
+func TestEngineParam(t *testing.T) {
+	t.Parallel()
+
+	eng, err := New(WithParam("param1", "value1"))
+
+	if err != nil {
+		t.Fatalf("expected New to succeed with valid params, got: %v", err)
+	}
+
+	if eng == nil {
+		t.Fatal("expected engine to be non-nil on successful construction")
+	}
+
+	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1"))
+
+	if err != nil {
+		t.Fatalf("expected run to succeed, got: %v", err)
+	}
+
+	var result any
+
+	json.Unmarshal(out.Content, &result)
+
+	str, ok := result.(string)
+	if !ok {
+		t.Fatalf("expected result to be a string, got: %T", result)
+	}
+
+	if str != "value1" {
+		t.Fatalf("expected run to return value1, got: %q", str)
+	}
+}
+
+func TestEngineRuntimeParams(t *testing.T) {
+	t.Parallel()
+
+	rtp, err := runtime.NewParamsFrom(map[string]any{
+		"param1": "value1",
+	})
+
+	if err != nil {
+		t.Fatalf("expected runtime.NewParamsFrom to succeed, got: %v", err)
+	}
+
+	eng, err := New(WithRuntimeParams(rtp))
+
+	if err != nil {
+		t.Fatalf("expected New to succeed with valid params, got: %v", err)
+	}
+
+	if eng == nil {
+		t.Fatal("expected engine to be non-nil on successful construction")
+	}
+
+	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1"))
+
+	if err != nil {
+		t.Fatalf("expected run to succeed, got: %v", err)
+	}
+
+	var result any
+
+	json.Unmarshal(out.Content, &result)
+
+	str, ok := result.(string)
+	if !ok {
+		t.Fatalf("expected result to be a string, got: %T", result)
+	}
+
+	if str != "value1" {
+		t.Fatalf("expected run to return value1, got: %q", str)
+	}
+}
+
+func TestEngineRuntimeParam(t *testing.T) {
+	t.Parallel()
+
+	eng, err := New(WithRuntimeParam("param1", runtime.NewString("value1")))
+
+	if err != nil {
+		t.Fatalf("expected New to succeed with valid params, got: %v", err)
+	}
+
+	if eng == nil {
+		t.Fatal("expected engine to be non-nil on successful construction")
+	}
+
+	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1"))
+
+	if err != nil {
+		t.Fatalf("expected run to succeed, got: %v", err)
+	}
+
+	var result any
+
+	json.Unmarshal(out.Content, &result)
+
+	str, ok := result.(string)
+	if !ok {
+		t.Fatalf("expected result to be a string, got: %T", result)
+	}
+
+	if str != "value1" {
+		t.Fatalf("expected run to return value1, got: %q", str)
 	}
 }

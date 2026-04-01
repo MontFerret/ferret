@@ -93,15 +93,15 @@ func TestParams(t *testing.T) {
 
 			before := params.Clone()
 
-			out := params.Merge(nil)
+			out := params.MergeParams(nil)
 			So(out, ShouldResemble, params)
 			So(params, ShouldResemble, before)
 
-			out = params.Merge(runtime.NewParams())
+			out = params.MergeParams(runtime.NewParams())
 			So(out, ShouldResemble, params)
 			So(params, ShouldResemble, before)
 
-			out = params.Merge(runtime.NewParams().
+			out = params.MergeParams(runtime.NewParams().
 				SetValue("shared", runtime.NewString("new")).
 				SetValue("added", runtime.NewInt(9)))
 

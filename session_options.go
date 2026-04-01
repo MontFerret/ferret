@@ -77,11 +77,46 @@ func WithOutputContentType(contentType string) SessionOption {
 	}
 }
 
-func WithSessionParams(params runtime.Params) SessionOption {
+func WithSessionParams(params map[string]any) SessionOption {
+	return func(s *sessionOptions) error {
+		if params == nil {
+			return fmt.Errorf("params cannot be nil")
+		}
+
+		rtp, err := runtime.NewParamsFrom(params)
+
+		if err != nil {
+			return fmt.Errorf("failed to convert params to runtime.Params: %w", err)
+		}
+
+		return WithEnvironmentOptions(vm.WithParams(rtp))(s)
+	}
+}
+
+func WithSessionRuntimeParams(params runtime.Params) SessionOption {
 	return WithEnvironmentOptions(vm.WithParams(params))
 }
 
-func WithSessionParam(name string, value runtime.Value) SessionOption {
+func WithSessionParam(name string, value any) SessionOption {
+	return func(s *sessionOptions) error {
+		if name == "" {
+			return fmt.Errorf("param name cannot be empty")
+		}
+
+		if value == nil {
+			return fmt.Errorf("param value cannot be nil")
+		}
+
+		rtp, err := runtime.NewParamsFrom(map[string]any{name: value})
+		if err != nil {
+			return fmt.Errorf("failed to convert param to runtime.Params: %w", err)
+		}
+
+		return WithEnvironmentOptions(vm.WithParams(rtp))(s)
+	}
+}
+
+func WithSessionRuntimeParam(name string, value runtime.Value) SessionOption {
 	return WithEnvironmentOptions(vm.WithParam(name, value))
 }
 

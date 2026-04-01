@@ -335,7 +335,7 @@ func main() {
 		//_ = engine.Drivers().Add(cdp.NewDriver(cdp.WithAddress(*conn)))
 
 		sessionOptions := []ferret.SessionOption{
-			ferret.WithSessionParams(p),
+			ferret.WithSessionRuntimeParams(p),
 		}
 
 		if query != "" {
