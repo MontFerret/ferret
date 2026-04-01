@@ -623,7 +623,9 @@ func TestEngineParams(t *testing.T) {
 
 	var result any
 
-	json.Unmarshal(out.Content, &result)
+	if err := json.Unmarshal(out.Content, &result); err != nil {
+		t.Fatal("expected output to be valid JSON")
+	}
 
 	str, ok := result.(string)
 	if !ok {
@@ -656,7 +658,9 @@ func TestEngineParam(t *testing.T) {
 
 	var result any
 
-	json.Unmarshal(out.Content, &result)
+	if err := json.Unmarshal(out.Content, &result); err != nil {
+		t.Fatal("expected output to be valid JSON")
+	}
 
 	str, ok := result.(string)
 	if !ok {
@@ -697,7 +701,9 @@ func TestEngineRuntimeParams(t *testing.T) {
 
 	var result any
 
-	json.Unmarshal(out.Content, &result)
+	if err := json.Unmarshal(out.Content, &result); err != nil {
+		t.Fatal("expected output to be valid JSON")
+	}
 
 	str, ok := result.(string)
 	if !ok {
@@ -730,7 +736,9 @@ func TestEngineRuntimeParam(t *testing.T) {
 
 	var result any
 
-	json.Unmarshal(out.Content, &result)
+	if err := json.Unmarshal(out.Content, &result); err != nil {
+		t.Fatal("expected output to be valid JSON")
+	}
 
 	str, ok := result.(string)
 	if !ok {
