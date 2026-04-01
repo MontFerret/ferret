@@ -12,6 +12,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
+// Plan wraps a compiled program together with the host state needed to execute it.
 type Plan struct {
 	prog         *bytecode.Program
 	host         *host
@@ -37,6 +38,7 @@ func (p *Plan) Params() []string {
 	return params
 }
 
+// NewSession creates a session for executing the plan with optional per-run settings.
 func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Session, error) {
 	if p == nil {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
@@ -108,6 +110,7 @@ func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Sessi
 	}, nil
 }
 
+// Close runs plan cleanup hooks and closes the plan's VM pool.
 func (p *Plan) Close() error {
 	if p == nil {
 		return nil
