@@ -18,6 +18,7 @@ type (
 		env               []vm.EnvironmentOption
 	}
 
+	// SessionOption configures a Session created from a Plan.
 	SessionOption func(*sessionOptions) error
 )
 
@@ -39,6 +40,7 @@ func newSessionOptions(setters []SessionOption) (*sessionOptions, error) {
 	return opts, nil
 }
 
+// WithEnvironmentOptions appends VM environment options to the created session.
 func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
 	return func(session *sessionOptions) error {
 		if session == nil {
@@ -61,6 +63,7 @@ func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
 	}
 }
 
+// WithOutputContentType selects the output codec content type for session results.
 func WithOutputContentType(contentType string) SessionOption {
 	return func(session *sessionOptions) error {
 		if session == nil {
@@ -77,10 +80,13 @@ func WithOutputContentType(contentType string) SessionOption {
 	}
 }
 
+// WithSessionParams merges the provided parameter map into the session environment,
+// overriding existing keys while preserving any other previously defined parameters.
 func WithSessionParams(params runtime.Params) SessionOption {
 	return WithEnvironmentOptions(vm.WithParams(params))
 }
 
+// WithSessionParam adds or overrides a single session parameter.
 func WithSessionParam(name string, value runtime.Value) SessionOption {
 	return WithEnvironmentOptions(vm.WithParam(name, value))
 }

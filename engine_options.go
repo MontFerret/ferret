@@ -32,6 +32,7 @@ type (
 		noStdlib          bool
 	}
 
+	// Option configures an Engine during construction.
 	Option func(env *options) error
 )
 
