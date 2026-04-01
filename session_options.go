@@ -101,7 +101,13 @@ func WithSessionParams(params map[string]any) SessionOption {
 // WithSessionRuntimeParams merges the provided runtime.Params into the session environment,
 // overriding existing keys while preserving any other previously defined parameters.
 func WithSessionRuntimeParams(params runtime.Params) SessionOption {
-	return WithEnvironmentOptions(vm.WithParams(params))
+	return func(s *sessionOptions) error {
+		if params == nil {
+			return fmt.Errorf("params cannot be nil")
+		}
+
+		return WithEnvironmentOptions(vm.WithParams(params))(s)
+	}
 }
 
 // WithSessionParam adds or overrides a single session parameter.
