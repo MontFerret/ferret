@@ -30,28 +30,6 @@ func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) bytecode.
 	}
 
 	plan := collectRecoveryPlan(c.ctx, ctx, recoveryPlanOptions{})
-	if hasErrorReturnNoneHandler(plan) {
-		return compileWithErrorPolicy(c.ctx, errorPolicySuppress, catchJumpNone, func() bytecode.Operand {
-			targetReg := c.ensureRegister(c.compileTarget(ctx.DispatchTarget()))
-			eventReg := c.ensureRegister(c.compileEventName(ctx.DispatchEventName()))
-			payloadReg := c.ensureRegister(c.compilePayload(ctx.DispatchWithClause()))
-			optionsReg := c.ensureRegister(c.compileOptions(ctx.DispatchOptionsClause()))
-			argsReg := c.buildDispatchArgs(payloadReg, optionsReg)
-
-			dst := c.ctx.Registers.Allocate()
-			span := dispatchSpan(ctx)
-
-			c.ctx.Emitter.WithSpan(span, func() {
-				c.ctx.Emitter.EmitMove(dst, targetReg)
-				c.ctx.Emitter.EmitABC(bytecode.OpDispatch, dst, eventReg, argsReg)
-			})
-
-			c.ctx.Types.Set(dst, core.TypeNone)
-
-			return dst
-		})
-	}
-
 	return compileWithRecoveryPlan(c.ctx, plan, catchJumpNone, func() bytecode.Operand {
 		targetReg := c.ensureRegister(c.compileTarget(ctx.DispatchTarget()))
 		eventReg := c.ensureRegister(c.compileEventName(ctx.DispatchEventName()))

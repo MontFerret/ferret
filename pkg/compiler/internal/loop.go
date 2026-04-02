@@ -74,19 +74,69 @@ func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) bytecode.Operand {
 		return bytecode.NoopOperand
 	}
 
-	// Compile the loop body (statements and clauses)
-	if body := ctx.AllForExpressionBody(); len(body) > 0 {
-		for _, b := range body {
-			if ec := b.ForExpressionStatement(); ec != nil {
-				c.compileForExpressionStatement(ec)
-			} else if ec := b.ForExpressionClause(); ec != nil {
-				c.compileForExpressionClause(ec)
-			}
-		}
-	}
+	c.compileLoopBody(ctx)
 
 	// Finalize the loop and return the destination operand
 	return c.compileFinalization(returnRuleCtx)
+}
+
+func (c *LoopCompiler) compileWithRecovery(ctx fql.IForExpressionContext, plan recoveryPlan) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
+	if ctx.In() == nil {
+		return compileWithRecoveryPlan(c.ctx, plan, catchJumpNone, func() bytecode.Operand {
+			return c.Compile(ctx)
+		})
+	}
+
+	if plan.onError == nil || plan.onError.actionKind == recoveryActionFail {
+		return c.Compile(ctx)
+	}
+
+	return c.compileForInWithRecovery(ctx, plan)
+}
+
+func (c *LoopCompiler) compileForInWithRecovery(ctx fql.IForExpressionContext, plan recoveryPlan) bytecode.Operand {
+	errorStateReg := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
+
+	startCatch := c.ctx.Emitter.Size()
+	returnRuleCtx := c.compileInitialization(ctx, core.ForInLoop)
+	if returnRuleCtx == nil {
+		return bytecode.NoopOperand
+	}
+
+	loop := c.ctx.Loops.Current()
+	breakLabel := loop.BreakLabel()
+
+	c.compileLoopBody(ctx)
+
+	out := c.compileFinalization(returnRuleCtx)
+	endCatchExclusive := c.ctx.Emitter.Size()
+
+	fallbackLabel := c.ctx.Emitter.NewLabel("recovery", "for", "fallback")
+	endLabel := c.ctx.Emitter.NewLabel("recovery", "for", "end")
+
+	c.ctx.Emitter.EmitJumpIfTrue(errorStateReg, fallbackLabel)
+	c.ctx.Emitter.EmitJump(endLabel)
+
+	errorPreludePC := c.ctx.Emitter.Size()
+	c.ctx.Emitter.EmitBoolean(errorStateReg, true)
+	c.ctx.Emitter.EmitJump(breakLabel)
+
+	c.ctx.Emitter.MarkLabel(fallbackLabel)
+	fallback := c.ctx.ExprCompiler.Compile(plan.onError.expr)
+	c.ctx.EmitMoveAuto(out, ensureRecoveryRegister(c.ctx, fallback))
+	c.ctx.Emitter.EmitJump(endLabel)
+	c.ctx.Emitter.MarkLabel(endLabel)
+
+	if endCatchExclusive > startCatch {
+		c.ctx.CatchTable.Push(startCatch, endCatchExclusive-1, errorPreludePC)
+	}
+
+	return widenRecoveryResultType(c.ctx, out, plan)
 }
 
 // compileInitialization handles the setup of a loop, including determining its type,
@@ -292,6 +342,22 @@ func (c *LoopCompiler) compileForExpressionSource(ctx fql.IForExpressionSourceCo
 		loopOperandArrayLiteral,
 		loopOperandObjectLiteral,
 	)
+}
+
+func (c *LoopCompiler) compileLoopBody(ctx fql.IForExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	if body := ctx.AllForExpressionBody(); len(body) > 0 {
+		for _, b := range body {
+			if ec := b.ForExpressionStatement(); ec != nil {
+				c.compileForExpressionStatement(ec)
+			} else if ec := b.ForExpressionClause(); ec != nil {
+				c.compileForExpressionClause(ec)
+			}
+		}
+	}
 }
 
 // compileForExpressionStatement processes statements within a FOR loop body.

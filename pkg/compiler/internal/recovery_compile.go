@@ -2,6 +2,7 @@ package internal
 
 import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 )
 
 func compileWithRecoveryPlan(
@@ -19,7 +20,8 @@ func compileWithRecoveryPlan(
 	}
 
 	if hasErrorReturnNoneHandler(plan) {
-		return compileWithErrorPolicy(ctx, errorPolicySuppress, jumpMode, compile)
+		out := compileWithErrorPolicy(ctx, errorPolicySuppress, jumpMode, compile)
+		return widenRecoveryResultType(ctx, out, plan)
 	}
 
 	startCatch := ctx.Emitter.Size()
@@ -42,7 +44,7 @@ func compileWithRecoveryPlan(
 
 	ctx.CatchTable.Push(startCatch, endCatch, handlerPC)
 
-	return out
+	return widenRecoveryResultType(ctx, out, plan)
 }
 
 func ensureRecoveryRegister(ctx *CompilerContext, op bytecode.Operand) bytecode.Operand {
@@ -55,4 +57,14 @@ func ensureRecoveryRegister(ctx *CompilerContext, op bytecode.Operand) bytecode.
 	ctx.Types.Set(dst, operandType(ctx, op))
 
 	return dst
+}
+
+func widenRecoveryResultType(ctx *CompilerContext, out bytecode.Operand, plan recoveryPlan) bytecode.Operand {
+	if ctx == nil || !out.IsRegister() || !recoveryPlanHasReturnHandler(plan) {
+		return out
+	}
+
+	ctx.Types.Set(out, core.TypeAny)
+
+	return out
 }

@@ -20,6 +20,14 @@ func findOpcodePC(program *bytecode.Program, opcode bytecode.Opcode) (int, error
 	return -1, fmt.Errorf("opcode %s not found", opcode)
 }
 
+func expectOpcodeAbsent(program *bytecode.Program, opcode bytecode.Opcode) error {
+	if pc, err := findOpcodePC(program, opcode); err == nil {
+		return fmt.Errorf("unexpected opcode %s at pc %d", opcode, pc)
+	}
+
+	return nil
+}
+
 func TestCompiler_OptionalQueryCatchEndsBeforeFollowingInstruction(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck("LET q = (QUERY ONE `.items` IN @empty USING css)?\nRETURN q.foo", func(program *bytecode.Program) error {
@@ -129,5 +137,84 @@ func TestCompiler_WaitForEventSuppressCatchUsesCleanupJump(t *testing.T) {
 
 			return nil
 		}, "waitfor event suppress catch uses cleanup jump"),
+	}, compiler.O0, compiler.O1)
+}
+
+func TestCompiler_GroupedWaitForEventRecoveryUsesTimeoutAwarePath(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck("RETURN (WAITFOR EVENT \"test\" IN @obs TIMEOUT 1ms) ON TIMEOUT RETURN \"timeout\" ON ERROR RETURN \"error\"", func(program *bytecode.Program) error {
+			if _, err := findOpcodePC(program, bytecode.OpIterNextTimeout); err != nil {
+				return err
+			}
+
+			return expectOpcodeAbsent(program, bytecode.OpIterNext)
+		}, "grouped waitfor event recovery should use timeout-aware bytecode"),
+	}, compiler.O0, compiler.O1)
+}
+
+func TestCompiler_GroupedForRecoveryRoutesThroughCleanup(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck("LET xs = (FOR i IN [1, 2] LET y = ERROR() RETURN y + i) ON ERROR RETURN []\nRETURN LENGTH(xs)", func(program *bytecode.Program) error {
+			if got, want := len(program.CatchTable), 1; got != want {
+				return fmt.Errorf("unexpected catch table size: got %d, want %d", got, want)
+			}
+
+			catch := program.CatchTable[0]
+			closePC, err := findOpcodePC(program, bytecode.OpClose)
+			if err != nil {
+				return err
+			}
+
+			lengthPC, err := findOpcodePC(program, bytecode.OpLength)
+			if err != nil {
+				return err
+			}
+
+			if got := catch[2]; got <= closePC || got >= lengthPC {
+				return fmt.Errorf("unexpected grouped for recovery handler pc: got %d, want (%d, %d)", got, closePC, lengthPC)
+			}
+
+			jumpPC := catch[2] + 1
+			if jumpPC >= len(program.Bytecode) {
+				return fmt.Errorf("grouped for recovery jump pc %d out of range", jumpPC)
+			}
+
+			if got, want := program.Bytecode[jumpPC].Opcode, bytecode.OpJump; got != want {
+				return fmt.Errorf("unexpected grouped for recovery opcode at pc %d: got %s, want %s", jumpPC, got, want)
+			}
+
+			if got, want := int(program.Bytecode[jumpPC].Operands[0]), closePC; got != want {
+				return fmt.Errorf("unexpected grouped for recovery cleanup jump: got %d, want %d", got, want)
+			}
+
+			return nil
+		}, "grouped for recovery should route failures through loop cleanup"),
+	}, compiler.O0, compiler.O1)
+}
+
+func TestCompiler_RecoveryReturnWideningKeepsGenericMemberAccess(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck("LET x = QUERY VALUE `.items` IN @doc USING css ON ERROR RETURN { \"0\": \"fallback\" }\nRETURN x[0]", func(program *bytecode.Program) error {
+			lastLoadPC := -1
+			lastLoadOpcode := bytecode.Opcode(0)
+
+			for pc, inst := range program.Bytecode {
+				switch inst.Opcode {
+				case bytecode.OpLoadPropertyConst, bytecode.OpLoadKeyConst, bytecode.OpLoadIndexConst:
+					lastLoadPC = pc
+					lastLoadOpcode = inst.Opcode
+				}
+			}
+
+			if lastLoadPC < 0 {
+				return fmt.Errorf("no member load opcode found")
+			}
+
+			if got, want := lastLoadOpcode, bytecode.OpLoadPropertyConst; got != want {
+				return fmt.Errorf("unexpected final member load opcode at pc %d: got %s, want %s", lastLoadPC, got, want)
+			}
+
+			return nil
+		}, "recovery return should widen result type for later member access"),
 	}, compiler.O0, compiler.O1)
 }

@@ -335,6 +335,27 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 		return reg, true
 	}
 
+	if wfe := atom.WaitForExpression(); wfe != nil {
+		plan := collectRecoveryPlan(c.ctx, atom, recoveryPlanOptions{
+			allowTimeout: true,
+			hasTimeout:   waitForHasExplicitTimeoutClause(wfe),
+		})
+		if plan.onError == nil && plan.onTimeout == nil {
+			return c.compileAtom(atom), true
+		}
+
+		return c.ctx.WaitCompiler.compileWithOuterRecovery(wfe, plan), true
+	}
+
+	if fe := atom.ForExpression(); fe != nil {
+		plan := collectRecoveryPlan(c.ctx, atom, recoveryPlanOptions{})
+		if plan.onError == nil {
+			return c.compileAtom(atom), true
+		}
+
+		return c.ctx.LoopCompiler.compileWithRecovery(fe, plan), true
+	}
+
 	plan := collectRecoveryPlan(c.ctx, atom, recoveryPlanOptions{})
 	if plan.onError == nil {
 		return c.compileAtom(atom), true
@@ -1742,25 +1763,6 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 	}
 
 	plan := collectRecoveryPlan(c.ctx, ctx, recoveryPlanOptions{})
-	if hasErrorReturnNoneHandler(plan) {
-		return compileWithErrorPolicy(c.ctx, errorPolicySuppress, catchJumpNone, func() bytecode.Operand {
-			mes := ctx.MemberExpressionSource()
-			segments := ctx.AllMemberExpressionPath()
-
-			if mes == nil || len(segments) == 0 {
-				return bytecode.NoopOperand
-			}
-
-			src := c.compileMemberExpressionSource(mes, segments)
-
-			if src == bytecode.NoopOperand {
-				return src
-			}
-
-			return c.compileMemberExpressionSegments(src, segments)
-		})
-	}
-
 	return compileWithRecoveryPlan(c.ctx, plan, catchJumpNone, func() bytecode.Operand {
 		mes := ctx.MemberExpressionSource()
 		segments := ctx.AllMemberExpressionPath()
@@ -2453,31 +2455,6 @@ func (c *ExprCompiler) compileQueryExpression(ctx fql.IQueryExpressionContext) b
 	}
 
 	plan := collectRecoveryPlan(c.ctx, ctx, recoveryPlanOptions{})
-	if hasErrorReturnNoneHandler(plan) {
-		return compileWithErrorPolicy(c.ctx, errorPolicySuppress, catchJumpNone, func() bytecode.Operand {
-			if ctx == nil {
-				return bytecode.NoopOperand
-			}
-
-			src, ok := c.compileQueryExpressionSource(ctx)
-			if !ok {
-				return bytecode.NoopOperand
-			}
-
-			span := diagnostics.SpanFromRuleContext(ctx)
-			modifier := queryModifierName(ctx.QueryModifier())
-			queryReg := c.emitQueryEnvelope(ctx, span)
-			queryResult := c.emitApplyQuery(span, src, queryReg)
-			dst := c.lowerQueryModifier(span, modifier, queryResult)
-
-			if dst.IsRegister() {
-				c.ctx.Types.Set(dst, queryResultTypeForModifier(modifier))
-			}
-
-			return dst
-		})
-	}
-
 	return compileWithRecoveryPlan(c.ctx, plan, catchJumpNone, func() bytecode.Operand {
 		if ctx == nil {
 			return bytecode.NoopOperand
@@ -3047,9 +3024,11 @@ func (c *ExprCompiler) CompileFunctionCallExpression(ctx fql.IFunctionCallExpres
 
 	plan := collectRecoveryPlan(c.ctx, ctx, recoveryPlanOptions{})
 	if hasErrorReturnNoneHandler(plan) {
-		return compileWithErrorPolicy(c.ctx, errorPolicySuppress, catchJumpNone, func() bytecode.Operand {
+		out := compileWithErrorPolicy(c.ctx, errorPolicySuppress, catchJumpNone, func() bytecode.Operand {
 			return c.CompileFunctionCall(call, true)
 		})
+
+		return widenRecoveryResultType(c.ctx, out, plan)
 	}
 
 	return compileWithRecoveryPlan(c.ctx, plan, catchJumpNone, func() bytecode.Operand {

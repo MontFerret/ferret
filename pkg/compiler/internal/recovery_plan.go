@@ -211,8 +211,38 @@ func hasErrorReturnNoneHandler(plan recoveryPlan) bool {
 	return isNoneLiteralExpression(plan.onError.expr)
 }
 
+func recoveryPlanHasReturnHandler(plan recoveryPlan) bool {
+	return recoveryHandlerReturns(plan.onError) || recoveryHandlerReturns(plan.onTimeout)
+}
+
+func mergeRecoveryPlans(ctx *CompilerContext, primary, extra recoveryPlan) recoveryPlan {
+	merged := primary
+
+	if extra.onTimeout != nil {
+		if merged.onTimeout != nil {
+			reportInvalidRecoveryTail(ctx, extra.onTimeout.tailNode, "Duplicate ON TIMEOUT handler", "Each operation may define ON TIMEOUT at most once.")
+		} else {
+			merged.onTimeout = extra.onTimeout
+		}
+	}
+
+	if extra.onError != nil {
+		if merged.onError != nil {
+			reportInvalidRecoveryTail(ctx, extra.onError.tailNode, "Duplicate ON ERROR handler", "Each operation may define ON ERROR at most once.")
+		} else {
+			merged.onError = extra.onError
+		}
+	}
+
+	return merged
+}
+
 func allowsTailCallRecovery(plan recoveryPlan) bool {
 	return plan.onError == nil || plan.onError.actionKind == recoveryActionFail
+}
+
+func recoveryHandlerReturns(handler *recoveryHandler) bool {
+	return handler != nil && handler.actionKind == recoveryActionReturn
 }
 
 func isNoneLiteralExpression(expr fql.IExpressionContext) bool {

@@ -85,14 +85,18 @@ const waitForDefaultEveryMs = 100
 
 // Compile processes a WAITFOR expression from the FQL AST and generates the appropriate VM instructions.
 func (c *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) bytecode.Operand {
+	return c.compileWithOuterRecovery(ctx, recoveryPlan{})
+}
+
+func (c *WaitCompiler) compileWithOuterRecovery(ctx fql.IWaitForExpressionContext, outerPlan recoveryPlan) bytecode.Operand {
 	if ctx == nil {
 		return bytecode.NoopOperand
 	}
 
-	plan := collectRecoveryPlan(c.ctx, ctx, recoveryPlanOptions{
+	plan := mergeRecoveryPlans(c.ctx, collectRecoveryPlan(c.ctx, ctx, recoveryPlanOptions{
 		allowTimeout: true,
 		hasTimeout:   waitForHasExplicitTimeoutClause(ctx),
-	})
+	}), outerPlan)
 	c.ctx.Symbols.EnterScope()
 	defer c.ctx.Symbols.ExitScope()
 
@@ -128,7 +132,7 @@ func (c *WaitCompiler) compileEventWithPlan(ctx fql.IWaitForEventExpressionConte
 		return c.compileEvent(ctx)
 	}
 
-	return c.compileEventWithRecovery(ctx, plan)
+	return widenRecoveryResultType(c.ctx, c.compileEventWithRecovery(ctx, plan), plan)
 }
 
 func (c *WaitCompiler) compilePredicateWithPlan(ctx fql.IWaitForPredicateExpressionContext, plan recoveryPlan) bytecode.Operand {
@@ -140,7 +144,7 @@ func (c *WaitCompiler) compilePredicateWithPlan(ctx fql.IWaitForPredicateExpress
 		})
 	}
 
-	return c.compilePredicateWithRecovery(ctx, plan)
+	return widenRecoveryResultType(c.ctx, c.compilePredicateWithRecovery(ctx, plan), plan)
 }
 
 func (c *WaitCompiler) compileEvent(ctx fql.IWaitForEventExpressionContext) bytecode.Operand {

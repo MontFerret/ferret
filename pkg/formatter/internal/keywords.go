@@ -38,7 +38,6 @@ const (
 	keywordQuery     = "QUERY"
 	keywordReturn    = "RETURN"
 	keywordSort      = "SORT"
-	keywordSuppress  = "SUPPRESS"
 	keywordTimeout   = "TIMEOUT"
 	keywordUse       = "USE"
 	keywordUsing     = "USING"

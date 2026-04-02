@@ -18,6 +18,7 @@ func TestCompiler_RecoveryTailCompiles(t *testing.T) {
 		ProgramCheck("RETURN QUERY VALUE `.items` IN @doc USING css ON ERROR RETURN NONE", expectCatchTableSize(1), "QUERY suppression should emit a guarded region"),
 		ProgramCheck("DISPATCH \"click\" IN @d ON ERROR RETURN NONE\nRETURN 1", expectCatchTableSize(1), "DISPATCH suppression should emit a guarded region"),
 		ProgramCheck("LET ok = WAITFOR VALUE NONE TIMEOUT 1ms ON TIMEOUT RETURN NONE ON ERROR FAIL\nRETURN ok", expectCatchTableSize(0), "Explicit timeout recovery should compile"),
+		ProgramCheck("LET ok = (WAITFOR VALUE NONE TIMEOUT 1ms) ON TIMEOUT RETURN NONE\nRETURN ok", expectCatchTableSize(0), "Grouped WAITFOR timeout recovery should compile"),
 		ProgramCheck("LET ok = WAITFOR TRUE ON ERROR FAIL\nRETURN ok", expectCatchTableSize(0), "Explicit FAIL should preserve default propagation"),
 		ProgramCheck("RETURN (FAIL() + 1) ON ERROR RETURN NONE", expectCatchTableSize(1), "Grouped suppression should emit a guarded region"),
 	}, compiler.O0, compiler.O1)
