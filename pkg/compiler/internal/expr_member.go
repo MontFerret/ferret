@@ -109,7 +109,7 @@ func (c *ExprCompiler) emitImplicitMemberStartLoad(src bytecode.Operand, start f
 	optional := start.ErrorOperator() != nil
 
 	c.ctx.Emitter.WithSpan(span, func() {
-		op := memberLoadOpcode(operandType(c.ctx, src), constOperand, optional)
+		op := memberLoadOpcode(c.front.TypeFacts.OperandType(src), constOperand, optional)
 		c.ctx.Emitter.EmitABC(op, dst, src, operand)
 	})
 
@@ -143,8 +143,8 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 		return bytecode.NoopOperand
 	}
 
-	plan := collectRecoveryPlan(c.ctx, ctx, core.RecoveryPlanOptions{})
-	return c.ctx.PolicyCompiler.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
+	plan := c.front.Recovery.CollectPlan(ctx, core.RecoveryPlanOptions{})
+	return c.front.Recovery.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
 		mes := ctx.MemberExpressionSource()
 		segments := ctx.AllMemberExpressionPath()
 
@@ -172,11 +172,11 @@ func (c *ExprCompiler) compileMemberExpressionSource(mes fql.IMemberExpressionSo
 	}
 
 	if ol := mes.ObjectLiteral(); ol != nil {
-		return c.ctx.LiteralCompiler.CompileObjectLiteral(ol)
+		return c.front.Literals.CompileObjectLiteral(ol)
 	}
 
 	if al := mes.ArrayLiteral(); al != nil {
-		return c.ctx.LiteralCompiler.CompileArrayLiteral(al)
+		return c.front.Literals.CompileArrayLiteral(al)
 	}
 
 	if fc := mes.FunctionCall(); fc != nil {
@@ -185,11 +185,11 @@ func (c *ExprCompiler) compileMemberExpressionSource(mes fql.IMemberExpressionSo
 	}
 
 	if fe := mes.ForExpression(); fe != nil {
-		return c.ctx.LoopCompiler.Compile(fe)
+		return c.front.Loops.Compile(fe)
 	}
 
 	if wfe := mes.WaitForExpression(); wfe != nil {
-		return c.ctx.WaitCompiler.Compile(wfe)
+		return c.front.Wait.Compile(wfe)
 	}
 
 	if e := mes.Expression(); e != nil {
@@ -227,7 +227,7 @@ func (c *ExprCompiler) resolveImplicitCurrent(token antlr.Token) (bytecode.Opera
 		return bytecode.NoopOperand, false
 	}
 
-	src := c.ctx.BindingCompiler.LoadBindingValue(binding)
+	src := c.front.Bindings.LoadBindingValue(binding)
 	src = c.ensureRegister(src)
 
 	return src, true
@@ -297,7 +297,7 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src bytecode.Operand, seg
 
 		c.ctx.Emitter.WithSpan(span, func() {
 			optional := p.ErrorOperator() != nil
-			op := memberLoadOpcode(operandType(c.ctx, src), constOperand, optional)
+			op := memberLoadOpcode(c.front.TypeFacts.OperandType(src), constOperand, optional)
 
 			c.ctx.Emitter.EmitABC(op, dst, src, src2)
 		})
@@ -333,7 +333,7 @@ func (c *ExprCompiler) emitOptionalMemberLoadSegment(span source.Span, src, segm
 	dst := c.allocateOptionalMemberDestination(src, state)
 
 	c.ctx.Emitter.WithSpan(span, func() {
-		op := memberLoadOpcode(operandType(c.ctx, src), constOperand, optional)
+		op := memberLoadOpcode(c.front.TypeFacts.OperandType(src), constOperand, optional)
 		c.ctx.Emitter.EmitABC(op, dst, src, segmentOp)
 
 		if optional {
@@ -410,7 +410,7 @@ func (c *ExprCompiler) compileSimpleMemberExpressionSegments(src bytecode.Operan
 		span := diagnostics.SpanFromRuleContext(p)
 
 		c.ctx.Emitter.WithSpan(span, func() {
-			op := memberLoadOpcode(operandType(c.ctx, result), constOperand, optional)
+			op := memberLoadOpcode(c.front.TypeFacts.OperandType(result), constOperand, optional)
 			c.ctx.Emitter.EmitABC(op, dst, result, src2)
 
 			if optional {
@@ -438,24 +438,24 @@ func (c *ExprCompiler) compileSimpleMemberExpressionSegments(src bytecode.Operan
 
 func (c *ExprCompiler) compileMemberPathOperand(p *fql.MemberExpressionPathContext) (bytecode.Operand, bool) {
 	if pn := p.PropertyName(); pn != nil {
-		if constOp, ok := c.ctx.LiteralCompiler.CompilePropertyNameConst(pn); ok {
+		if constOp, ok := c.front.Literals.CompilePropertyNameConst(pn); ok {
 			return constOp, true
 		}
 
-		return c.ctx.LiteralCompiler.CompilePropertyName(pn), false
+		return c.front.Literals.CompilePropertyName(pn), false
 	}
 
 	if cpn := p.ComputedPropertyName(); cpn != nil {
-		if val, ok := literalValueFromExpression(cpn.Expression()); ok {
+		if val, ok := c.front.TypeFacts.LiteralValueFromExpression(cpn.Expression()); ok {
 			switch val.(type) {
 			case *runtime.Array, *runtime.Object:
-				return c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn), false
+				return c.front.Literals.CompileComputedPropertyName(cpn), false
 			default:
 				return c.ctx.Symbols.AddConstant(val), true
 			}
 		}
 
-		return c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn), false
+		return c.front.Literals.CompileComputedPropertyName(cpn), false
 	}
 
 	return bytecode.NoopOperand, false
@@ -463,24 +463,24 @@ func (c *ExprCompiler) compileMemberPathOperand(p *fql.MemberExpressionPathConte
 
 func (c *ExprCompiler) compileImplicitMemberStartOperand(start fql.IImplicitMemberExpressionStartContext) (bytecode.Operand, bool) {
 	if pn := start.PropertyName(); pn != nil {
-		if constOp, ok := c.ctx.LiteralCompiler.CompilePropertyNameConst(pn); ok {
+		if constOp, ok := c.front.Literals.CompilePropertyNameConst(pn); ok {
 			return constOp, true
 		}
 
-		return c.ctx.LiteralCompiler.CompilePropertyName(pn), false
+		return c.front.Literals.CompilePropertyName(pn), false
 	}
 
 	if cpn := start.ComputedPropertyName(); cpn != nil {
-		if val, ok := literalValueFromExpression(cpn.Expression()); ok {
+		if val, ok := c.front.TypeFacts.LiteralValueFromExpression(cpn.Expression()); ok {
 			switch val.(type) {
 			case *runtime.Array, *runtime.Object:
-				return c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn), false
+				return c.front.Literals.CompileComputedPropertyName(cpn), false
 			default:
 				return c.ctx.Symbols.AddConstant(val), true
 			}
 		}
 
-		return c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn), false
+		return c.front.Literals.CompileComputedPropertyName(cpn), false
 	}
 
 	return bytecode.NoopOperand, false
@@ -786,7 +786,7 @@ func (c *ExprCompiler) compileArrayQuestionQuantifierValue(ctx fql.IArrayQuestio
 	}
 
 	if il := ctx.IntegerLiteral(); il != nil {
-		return c.ctx.LiteralCompiler.CompileIntegerLiteral(il)
+		return c.front.Literals.CompileIntegerLiteral(il)
 	}
 
 	if pm := ctx.Param(); pm != nil {
@@ -981,11 +981,11 @@ func (c *ExprCompiler) compileInlineLimit(inline fql.IInlineExpressionContext) {
 
 	c.withImplicitCurrent(func() {
 		if len(clauses) == 1 {
-			c.ctx.LoopCompiler.compileLimit(c.ctx.LoopCompiler.compileLimitClauseValue(clauses[0]))
+			c.front.Loops.compileLimit(c.front.Loops.compileLimitClauseValue(clauses[0]))
 			return
 		}
 
-		c.ctx.LoopCompiler.compileOffset(c.ctx.LoopCompiler.compileLimitClauseValue(clauses[0]))
-		c.ctx.LoopCompiler.compileLimit(c.ctx.LoopCompiler.compileLimitClauseValue(clauses[1]))
+		c.front.Loops.compileOffset(c.front.Loops.compileLimitClauseValue(clauses[0]))
+		c.front.Loops.compileLimit(c.front.Loops.compileLimitClauseValue(clauses[1]))
 	})
 }

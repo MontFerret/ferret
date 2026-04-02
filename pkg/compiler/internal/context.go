@@ -12,12 +12,9 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
-// CompilerContext holds the context for the compilation process, including various compilers and allocators.
-type CompilerContext struct {
+// CompilationSession holds the shared mutable state for a single compilation run.
+type CompilationSession struct {
 	UseAliases          map[string]string
-	WaitCompiler        *WaitCompiler
-	PolicyCompiler      *OperationPolicyCompiler
-	BindingCompiler     *BindingCompiler
 	Emitter             *core.Emitter
 	Registers           *core.RegisterAllocator
 	Constants           *core.ConstantPool
@@ -29,22 +26,14 @@ type CompilerContext struct {
 	UDFScope            *core.UDFScope
 	Errors              *diagnostics.ErrorHandler
 	Source              *source.Source
-	StmtCompiler        *StmtCompiler
 	aggregatePlanByHash map[uint64][]int
-	ExprCompiler        *ExprCompiler
-	LiteralCompiler     *LiteralCompiler
-	UDFCompiler         *UDFCompiler
-	LoopCompiler        *LoopCompiler
-	LoopSortCompiler    *LoopSortCompiler
-	LoopCollectCompiler *LoopCollectCompiler
-	DispatchCompiler    *DispatchCompiler
 	aggregatePlans      []*bytecode.AggregatePlan
 	OptimizationLevel   optimization.Level
 }
 
-// NewCompilerContext initializes a new CompilerContext with default values.
-func NewCompilerContext(src *source.Source, errors *diagnostics.ErrorHandler, level optimization.Level) *CompilerContext {
-	ctx := &CompilerContext{
+// NewCompilationSession initializes a new CompilationSession with default values.
+func NewCompilationSession(src *source.Source, errors *diagnostics.ErrorHandler, level optimization.Level) *CompilationSession {
+	ctx := &CompilationSession{
 		Source:            src,
 		Errors:            errors,
 		OptimizationLevel: level,
@@ -64,22 +53,10 @@ func NewCompilerContext(src *source.Source, errors *diagnostics.ErrorHandler, le
 	ctx.Types = core.NewTypeTracker()
 	ctx.Loops = core.NewLoopTable(ctx.Registers)
 
-	ctx.BindingCompiler = NewBindingCompiler(ctx)
-	ctx.ExprCompiler = NewExprCompiler(ctx)
-	ctx.LiteralCompiler = NewLiteralCompiler(ctx)
-	ctx.StmtCompiler = NewStmtCompiler(ctx)
-	ctx.LoopCompiler = NewLoopCompiler(ctx)
-	ctx.LoopSortCompiler = NewLoopSortCompiler(ctx)
-	ctx.LoopCollectCompiler = NewLoopCollectCompiler(ctx)
-	ctx.WaitCompiler = NewWaitCompiler(ctx)
-	ctx.DispatchCompiler = NewDispatchCompiler(ctx)
-	ctx.UDFCompiler = NewUDFCompiler(ctx)
-	ctx.PolicyCompiler = NewOperationPolicyCompiler(ctx)
-
 	return ctx
 }
 
-func (c *CompilerContext) AddAggregatePlan(plan *bytecode.AggregatePlan) int {
+func (c *CompilationSession) AddAggregatePlan(plan *bytecode.AggregatePlan) int {
 	if plan == nil {
 		return -1
 	}
@@ -101,7 +78,7 @@ func (c *CompilerContext) AddAggregatePlan(plan *bytecode.AggregatePlan) int {
 	return idx
 }
 
-func (c *CompilerContext) AggregatePlans() []bytecode.AggregatePlan {
+func (c *CompilationSession) AggregatePlans() []bytecode.AggregatePlan {
 	plans := make([]bytecode.AggregatePlan, len(c.aggregatePlans))
 
 	for i, p := range c.aggregatePlans {

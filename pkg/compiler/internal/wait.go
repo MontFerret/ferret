@@ -22,7 +22,8 @@ type (
 	// WaitCompiler handles the compilation of WAITFOR expressions in FQL queries.
 	// It transforms wait operations into VM instructions for event streaming and polling.
 	WaitCompiler struct {
-		ctx *CompilerContext
+		ctx   *CompilationSession
+		front *CompilationFrontend
 	}
 
 	waitForPredicateMode int
@@ -59,7 +60,7 @@ const (
 const waitForDefaultEveryMs = 100
 
 // NewWaitCompiler creates a new instance of WaitCompiler with the given compiler context.
-func NewWaitCompiler(ctx *CompilerContext) *WaitCompiler {
+func NewWaitCompiler(ctx *CompilationSession) *WaitCompiler {
 	return &WaitCompiler{
 		ctx: ctx,
 	}
@@ -75,7 +76,7 @@ func (c *WaitCompiler) compileWithOuterRecovery(ctx fql.IWaitForExpressionContex
 		return bytecode.NoopOperand
 	}
 
-	plan := normalizeRecoveryPlan(mergeRecoveryPlans(c.ctx, collectRecoveryPlan(c.ctx, ctx, core.RecoveryPlanOptions{
+	plan := c.front.Recovery.NormalizePlan(c.front.Recovery.MergePlans(c.front.Recovery.CollectPlan(ctx, core.RecoveryPlanOptions{
 		AllowTimeout: true,
 		HasTimeout:   waitForHasExplicitTimeoutClause(ctx),
 	}), outerPlan))
@@ -110,17 +111,17 @@ func waitForHasExplicitTimeoutClause(ctx fql.IWaitForExpressionContext) bool {
 }
 
 func (c *WaitCompiler) compileEventWithPlan(ctx fql.IWaitForEventExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
-	plan = normalizeRecoveryPlan(plan)
+	plan = c.front.Recovery.NormalizePlan(plan)
 
 	if plan.OnTimeout == nil && (plan.OnError == nil || plan.OnError.ActionKind == core.RecoveryActionFail) {
 		return c.compileEvent(ctx)
 	}
 
 	if plan.OnError == nil || plan.OnError.ActionKind == core.RecoveryActionFail {
-		return widenRecoveryResultType(c.ctx, c.compileEventWithTimeoutRecovery(ctx, plan), plan)
+		return c.front.Recovery.WidenResultType(c.compileEventWithTimeoutRecovery(ctx, plan), plan)
 	}
 
-	return widenRecoveryResultType(c.ctx, c.ctx.PolicyCompiler.CompileWithProtectedRecovery(ProtectedRecoverySpec{
+	return c.front.Recovery.WidenResultType(c.front.Recovery.CompileWithProtectedRecovery(ProtectedRecoverySpec{
 		Plan: plan,
 		BuildProtected: func(recoveryLabel, endLabel core.Label) ProtectedRecoveryRegion {
 			return c.buildProtectedEventRecovery(ctx, plan, recoveryLabel, endLabel)
@@ -132,21 +133,21 @@ func (c *WaitCompiler) compileEventWithPlan(ctx fql.IWaitForEventExpressionConte
 }
 
 func (c *WaitCompiler) compilePredicateWithPlan(ctx fql.IWaitForPredicateExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
-	plan = normalizeRecoveryPlan(plan)
+	plan = c.front.Recovery.NormalizePlan(plan)
 
 	if plan.OnTimeout == nil {
 		errorPlan := core.RecoveryPlan{OnError: plan.OnError}
 
-		return c.ctx.PolicyCompiler.CompileWithRecoveryPlan(errorPlan, core.CatchJumpModeNone, func() bytecode.Operand {
+		return c.front.Recovery.CompileWithRecoveryPlan(errorPlan, core.CatchJumpModeNone, func() bytecode.Operand {
 			return c.compilePredicate(ctx)
 		})
 	}
 
 	if plan.OnError == nil || plan.OnError.ActionKind == core.RecoveryActionFail {
-		return widenRecoveryResultType(c.ctx, c.compilePredicateWithTimeoutRecovery(ctx, plan), plan)
+		return c.front.Recovery.WidenResultType(c.compilePredicateWithTimeoutRecovery(ctx, plan), plan)
 	}
 
-	return widenRecoveryResultType(c.ctx, c.ctx.PolicyCompiler.CompileWithProtectedRecovery(ProtectedRecoverySpec{
+	return c.front.Recovery.WidenResultType(c.front.Recovery.CompileWithProtectedRecovery(ProtectedRecoverySpec{
 		Plan: plan,
 		BuildProtected: func(recoveryLabel, endLabel core.Label) ProtectedRecoveryRegion {
 			return c.buildProtectedPredicateRecovery(ctx, plan, recoveryLabel, endLabel)
@@ -199,7 +200,7 @@ func (c *WaitCompiler) compileEvent(ctx fql.IWaitForEventExpressionContext) byte
 			c.ctx.Emitter.EmitAB(bytecode.OpIterValue, eventValReg, streamReg)
 		})
 
-		cond := c.ctx.ExprCompiler.compileWithImplicitCurrent(filter.Expression())
+		cond := c.front.Expressions.compileWithImplicitCurrent(filter.Expression())
 		c.ctx.Emitter.EmitJumpIfFalse(cond, start)
 	}
 
@@ -257,7 +258,7 @@ func (c *WaitCompiler) compileEventWithTimeoutRecovery(ctx fql.IWaitForEventExpr
 			c.ctx.Emitter.EmitAB(bytecode.OpIterValue, eventValReg, streamReg)
 		})
 
-		cond := c.ctx.ExprCompiler.compileWithImplicitCurrent(filter.Expression())
+		cond := c.front.Expressions.compileWithImplicitCurrent(filter.Expression())
 		c.ctx.Emitter.EmitJumpIfFalse(cond, start)
 	}
 
@@ -277,8 +278,8 @@ func (c *WaitCompiler) compileEventWithTimeoutRecovery(ctx fql.IWaitForEventExpr
 
 	switch {
 	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
-		fallback := c.ctx.ExprCompiler.Compile(plan.OnTimeout.Expr)
-		emitMoveAuto(c.ctx, resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		fallback := c.front.Expressions.Compile(plan.OnTimeout.Expr)
+		c.front.TypeFacts.EmitMoveAuto(resultReg, c.front.Recovery.EnsureRegister(fallback))
 		c.ctx.Emitter.EmitJump(end)
 	default:
 		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)
@@ -343,7 +344,7 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 			c.ctx.Emitter.EmitAB(bytecode.OpIterValue, eventValReg, streamReg)
 		})
 
-		cond := c.ctx.ExprCompiler.compileWithImplicitCurrent(filter.Expression())
+		cond := c.front.Expressions.compileWithImplicitCurrent(filter.Expression())
 		c.ctx.Emitter.EmitJumpIfFalse(cond, start)
 	}
 
@@ -370,8 +371,8 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 	c.ctx.Emitter.MarkLabel(timeoutHandler)
 	switch {
 	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
-		fallback := c.ctx.ExprCompiler.Compile(plan.OnTimeout.Expr)
-		emitMoveAuto(c.ctx, resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		fallback := c.front.Expressions.Compile(plan.OnTimeout.Expr)
+		c.front.TypeFacts.EmitMoveAuto(resultReg, c.front.Recovery.EnsureRegister(fallback))
 		c.ctx.Emitter.EmitJump(endLabel)
 	default:
 		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)
@@ -472,7 +473,7 @@ func (c *WaitCompiler) buildProtectedPredicateRecovery(
 
 	c.ctx.Emitter.MarkLabel(start)
 
-	valueReg := c.ctx.ExprCompiler.Compile(config.predExpr)
+	valueReg := c.front.Expressions.Compile(config.predExpr)
 	condReg := c.emitWaitPredicateCondition(config.mode, valueReg)
 	c.ctx.Emitter.EmitJumpIfTrue(condReg, success)
 
@@ -481,7 +482,7 @@ func (c *WaitCompiler) buildProtectedPredicateRecovery(
 	c.emitWaitSleep(sleepIntervalReg, config.timeoutReg, elapsedReg)
 
 	if config.backoff != core.RetryBackoffNone {
-		emitBackoffUpdate(c.ctx, config.backoff, state.intervalReg, state.baseEveryReg)
+		c.front.Recovery.emitBackoffUpdate(config.backoff, state.intervalReg, state.baseEveryReg)
 		if config.capEveryReg != bytecode.NoopOperand {
 			c.emitClampMax(state.intervalReg, config.capEveryReg)
 		}
@@ -500,8 +501,8 @@ func (c *WaitCompiler) buildProtectedPredicateRecovery(
 	c.ctx.Emitter.MarkLabel(timeoutHandler)
 	switch {
 	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
-		fallback := c.ctx.ExprCompiler.Compile(plan.OnTimeout.Expr)
-		emitMoveAuto(c.ctx, state.resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		fallback := c.front.Expressions.Compile(plan.OnTimeout.Expr)
+		c.front.TypeFacts.EmitMoveAuto(state.resultReg, c.front.Recovery.EnsureRegister(fallback))
 		c.ctx.Emitter.EmitJump(endLabel)
 	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionFail:
 		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)
@@ -595,7 +596,7 @@ func (c *WaitCompiler) buildWaitPredicateConfig(ctx fql.IWaitForPredicateExpress
 	return waitPredicateCompileConfig{
 		mode:          resolveWaitPredicateMode(predicate.Value() != nil, predicate.Exists() != nil, predicate.Not() != nil),
 		predExpr:      predExpr,
-		timeoutReg:    compileDurationOperand(c.ctx, ctx.TimeoutClause()),
+		timeoutReg:    c.front.Recovery.CompileDurationOperand(ctx.TimeoutClause()),
 		everyReg:      everyReg,
 		capEveryReg:   capEveryReg,
 		backoff:       c.compileBackoffClause(ctx.BackoffClause()),
@@ -616,7 +617,7 @@ func (c *WaitCompiler) normalizeWaitPredicateConfig(config *waitPredicateCompile
 	}
 
 	if config.jitterLiteral == nil {
-		c.emitClampRange(config.jitterReg, loadConstant(c.ctx, runtime.NewFloat(0)), loadConstant(c.ctx, runtime.NewFloat(1)))
+		c.emitClampRange(config.jitterReg, c.front.TypeFacts.LoadConstant(runtime.NewFloat(0)), c.front.TypeFacts.LoadConstant(runtime.NewFloat(1)))
 	}
 }
 
@@ -651,7 +652,7 @@ func (c *WaitCompiler) tryCompileWaitPredicateFastPath(config waitPredicateCompi
 
 		if cond {
 			if config.mode == waitForPredicateModeValue {
-				return c.ctx.ExprCompiler.Compile(config.predExpr), true
+				return c.front.Expressions.Compile(config.predExpr), true
 			}
 
 			return c.emitImmediateWaitBool(true), true
@@ -711,7 +712,7 @@ func (c *WaitCompiler) initWaitPredicatePollState(config waitPredicateCompileCon
 
 	if config.timeoutReg != bytecode.NoopOperand {
 		state.startReg = c.emitNow()
-		state.unitReg = loadConstant(c.ctx, runtime.NewString("f"))
+		state.unitReg = c.front.TypeFacts.LoadConstant(runtime.NewString("f"))
 	}
 
 	return state
@@ -725,7 +726,7 @@ func (c *WaitCompiler) emitWaitPredicatePollLoop(config waitPredicateCompileConf
 
 	c.ctx.Emitter.MarkLabel(start)
 
-	valueReg := c.ctx.ExprCompiler.Compile(config.predExpr)
+	valueReg := c.front.Expressions.Compile(config.predExpr)
 	condReg := c.emitWaitPredicateCondition(config.mode, valueReg)
 	c.ctx.Emitter.EmitJumpIfTrue(condReg, success)
 
@@ -734,7 +735,7 @@ func (c *WaitCompiler) emitWaitPredicatePollLoop(config waitPredicateCompileConf
 	c.emitWaitSleep(sleepIntervalReg, config.timeoutReg, elapsedReg)
 
 	if config.backoff != core.RetryBackoffNone {
-		emitBackoffUpdate(c.ctx, config.backoff, state.intervalReg, state.baseEveryReg)
+		c.front.Recovery.emitBackoffUpdate(config.backoff, state.intervalReg, state.baseEveryReg)
 		if config.capEveryReg != bytecode.NoopOperand {
 			c.emitClampMax(state.intervalReg, config.capEveryReg)
 		}
@@ -759,7 +760,7 @@ func (c *WaitCompiler) emitWaitPredicatePollLoopWithRecovery(config waitPredicat
 
 	c.ctx.Emitter.MarkLabel(start)
 
-	valueReg := c.ctx.ExprCompiler.Compile(config.predExpr)
+	valueReg := c.front.Expressions.Compile(config.predExpr)
 	condReg := c.emitWaitPredicateCondition(config.mode, valueReg)
 	c.ctx.Emitter.EmitJumpIfTrue(condReg, success)
 
@@ -768,7 +769,7 @@ func (c *WaitCompiler) emitWaitPredicatePollLoopWithRecovery(config waitPredicat
 	c.emitWaitSleep(sleepIntervalReg, config.timeoutReg, elapsedReg)
 
 	if config.backoff != core.RetryBackoffNone {
-		emitBackoffUpdate(c.ctx, config.backoff, state.intervalReg, state.baseEveryReg)
+		c.front.Recovery.emitBackoffUpdate(config.backoff, state.intervalReg, state.baseEveryReg)
 		if config.capEveryReg != bytecode.NoopOperand {
 			c.emitClampMax(state.intervalReg, config.capEveryReg)
 		}
@@ -785,8 +786,8 @@ func (c *WaitCompiler) emitWaitPredicatePollLoopWithRecovery(config waitPredicat
 	c.ctx.Emitter.MarkLabel(timeoutHandler)
 	switch {
 	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
-		fallback := c.ctx.ExprCompiler.Compile(plan.OnTimeout.Expr)
-		emitMoveAuto(c.ctx, state.resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		fallback := c.front.Expressions.Compile(plan.OnTimeout.Expr)
+		c.front.TypeFacts.EmitMoveAuto(state.resultReg, c.front.Recovery.EnsureRegister(fallback))
 		c.ctx.Emitter.EmitJump(end)
 	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionFail:
 		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)
@@ -878,7 +879,7 @@ func (c *WaitCompiler) emitExistsCheck(val bytecode.Operand) bytecode.Operand {
 }
 
 func (c *WaitCompiler) emitNow() bytecode.Operand {
-	return c.ctx.ExprCompiler.CompileFunctionCallByNameWith(nil, runtime.NewString("NOW"), false, nil)
+	return c.front.Expressions.CompileFunctionCallByNameWith(nil, runtime.NewString("NOW"), false, nil)
 }
 
 func (c *WaitCompiler) emitDateDiff(start, end, unit bytecode.Operand) bytecode.Operand {
@@ -887,17 +888,17 @@ func (c *WaitCompiler) emitDateDiff(start, end, unit bytecode.Operand) bytecode.
 
 func (c *WaitCompiler) emitFunctionCall(name runtime.String, args ...bytecode.Operand) bytecode.Operand {
 	if len(args) == 0 {
-		return c.ctx.ExprCompiler.CompileFunctionCallByNameWith(nil, name, false, nil)
+		return c.front.Expressions.CompileFunctionCallByNameWith(nil, name, false, nil)
 	}
 
 	seq := c.ctx.Registers.AllocateSequence(len(args))
 
 	for i, arg := range args {
 		c.ctx.Emitter.EmitMove(seq[i], arg)
-		c.ctx.Types.Set(seq[i], operandType(c.ctx, arg))
+		c.ctx.Types.Set(seq[i], c.front.TypeFacts.OperandType(arg))
 	}
 
-	return c.ctx.ExprCompiler.CompileFunctionCallByNameWith(nil, name, false, seq)
+	return c.front.Expressions.CompileFunctionCallByNameWith(nil, name, false, seq)
 }
 
 func (c *WaitCompiler) emitWaitSleep(intervalReg, timeoutReg, elapsedReg bytecode.Operand) {
@@ -971,8 +972,8 @@ func (c *WaitCompiler) emitApplyJitter(intervalReg, jitterReg bytecode.Operand) 
 	randReg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitA(bytecode.OpRand, randReg)
 
-	twoReg := loadConstant(c.ctx, runtime.NewFloat(2))
-	oneReg := loadConstant(c.ctx, runtime.NewFloat(1))
+	twoReg := c.front.TypeFacts.LoadConstant(runtime.NewFloat(2))
+	oneReg := c.front.TypeFacts.LoadConstant(runtime.NewFloat(1))
 
 	twoJitterReg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitABC(bytecode.OpMul, twoJitterReg, jitterReg, twoReg)
@@ -1017,11 +1018,11 @@ func (c *WaitCompiler) CompileWaitForEventName(ctx fql.IWaitForEventNameContext)
 	fce := ctx.FunctionCall()
 
 	return compileFirstOperand(
-		newOperandBranch(sl != nil, func() bytecode.Operand { return c.ctx.LiteralCompiler.CompileStringLiteral(sl) }),
-		newOperandBranch(v != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileVariable(v) }),
-		newOperandBranch(p != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileParam(p) }),
-		newOperandBranch(me != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileMemberExpression(me) }),
-		newOperandBranch(fce != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileFunctionCall(fce, false) }),
+		newOperandBranch(sl != nil, func() bytecode.Operand { return c.front.Literals.CompileStringLiteral(sl) }),
+		newOperandBranch(v != nil, func() bytecode.Operand { return c.front.Expressions.CompileVariable(v) }),
+		newOperandBranch(p != nil, func() bytecode.Operand { return c.front.Expressions.CompileParam(p) }),
+		newOperandBranch(me != nil, func() bytecode.Operand { return c.front.Expressions.CompileMemberExpression(me) }),
+		newOperandBranch(fce != nil, func() bytecode.Operand { return c.front.Expressions.CompileFunctionCall(fce, false) }),
 	)
 }
 
@@ -1032,16 +1033,16 @@ func (c *WaitCompiler) CompileWaitForEventSource(ctx fql.IWaitForEventSourceCont
 	fce := ctx.FunctionCallExpression()
 
 	return compileFirstOperand(
-		newOperandBranch(v != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileVariable(v) }),
-		newOperandBranch(me != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileMemberExpression(me) }),
-		newOperandBranch(fce != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileFunctionCallExpression(fce) }),
+		newOperandBranch(v != nil, func() bytecode.Operand { return c.front.Expressions.CompileVariable(v) }),
+		newOperandBranch(me != nil, func() bytecode.Operand { return c.front.Expressions.CompileMemberExpression(me) }),
+		newOperandBranch(fce != nil, func() bytecode.Operand { return c.front.Expressions.CompileFunctionCallExpression(fce) }),
 	)
 }
 
 // CompileOptionsClause processes the options clause in a WAITFOR statement.
 func (c *WaitCompiler) CompileOptionsClause(ctx fql.IOptionsClauseContext) bytecode.Operand {
 	if ol := ctx.ObjectLiteral(); ol != nil {
-		return c.ctx.LiteralCompiler.CompileObjectLiteral(ol)
+		return c.front.Literals.CompileObjectLiteral(ol)
 	}
 
 	return bytecode.NoopOperand
@@ -1049,7 +1050,7 @@ func (c *WaitCompiler) CompileOptionsClause(ctx fql.IOptionsClauseContext) bytec
 
 // CompileTimeoutClauseContext processes the timeout clause in a WAITFOR statement.
 func (c *WaitCompiler) CompileTimeoutClauseContext(ctx fql.ITimeoutClauseContext) bytecode.Operand {
-	return compileDurationOperand(c.ctx, ctx)
+	return c.front.Recovery.CompileDurationOperand(ctx)
 }
 
 func (c *WaitCompiler) compileEveryClause(ctx fql.IEveryClauseContext) (bytecode.Operand, bytecode.Operand) {
@@ -1062,9 +1063,9 @@ func (c *WaitCompiler) compileEveryClause(ctx fql.IEveryClauseContext) (bytecode
 		return bytecode.NoopOperand, bytecode.NoopOperand
 	}
 
-	base := compileDurationOperand(c.ctx, values[0])
+	base := c.front.Recovery.CompileDurationOperand(values[0])
 	if len(values) > 1 {
-		return base, compileDurationOperand(c.ctx, values[1])
+		return base, c.front.Recovery.CompileDurationOperand(values[1])
 	}
 
 	return base, bytecode.NoopOperand
@@ -1116,12 +1117,12 @@ func (c *WaitCompiler) compileJitterClauseValue(ctx fql.IJitterClauseValueContex
 	fc := ctx.FunctionCall()
 
 	return compileFirstOperand(
-		newOperandBranch(fl != nil, func() bytecode.Operand { return c.ctx.LiteralCompiler.CompileFloatLiteral(fl) }),
-		newOperandBranch(il != nil, func() bytecode.Operand { return c.ctx.LiteralCompiler.CompileIntegerLiteral(il) }),
-		newOperandBranch(v != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileVariable(v) }),
-		newOperandBranch(p != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileParam(p) }),
-		newOperandBranch(me != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileMemberExpression(me) }),
-		newOperandBranch(fc != nil, func() bytecode.Operand { return c.ctx.ExprCompiler.CompileFunctionCall(fc, false) }),
+		newOperandBranch(fl != nil, func() bytecode.Operand { return c.front.Literals.CompileFloatLiteral(fl) }),
+		newOperandBranch(il != nil, func() bytecode.Operand { return c.front.Literals.CompileIntegerLiteral(il) }),
+		newOperandBranch(v != nil, func() bytecode.Operand { return c.front.Expressions.CompileVariable(v) }),
+		newOperandBranch(p != nil, func() bytecode.Operand { return c.front.Expressions.CompileParam(p) }),
+		newOperandBranch(me != nil, func() bytecode.Operand { return c.front.Expressions.CompileMemberExpression(me) }),
+		newOperandBranch(fc != nil, func() bytecode.Operand { return c.front.Expressions.CompileFunctionCall(fc, false) }),
 	)
 }
 

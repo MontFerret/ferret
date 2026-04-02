@@ -25,7 +25,7 @@ func (c *ExprCompiler) ensureRegister(op bytecode.Operand) bytecode.Operand {
 
 	reg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitLoadConst(reg, op)
-	c.ctx.Types.Set(reg, operandType(c.ctx, op))
+	c.ctx.Types.Set(reg, c.front.TypeFacts.OperandType(op))
 
 	return reg
 }
@@ -82,7 +82,7 @@ func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) bytecode.Operan
 		return bytecode.NoopOperand
 	}
 
-	op := c.ctx.BindingCompiler.LoadBindingValue(binding)
+	op := c.front.Bindings.LoadBindingValue(binding)
 
 	if op.IsRegister() {
 		return op
@@ -116,21 +116,21 @@ func (c *ExprCompiler) CompileFunctionCallExpression(ctx fql.IFunctionCallExpres
 
 	call := ctx.FunctionCall()
 	if ctx.ErrorOperator() != nil {
-		return c.ctx.PolicyCompiler.CompileWithErrorPolicy(core.ErrorPolicySuppress, core.CatchJumpModeNone, func() bytecode.Operand {
+		return c.front.Recovery.CompileWithErrorPolicy(core.ErrorPolicySuppress, core.CatchJumpModeNone, func() bytecode.Operand {
 			return c.CompileFunctionCall(call, true)
 		})
 	}
 
-	plan := collectRecoveryPlan(c.ctx, ctx, core.RecoveryPlanOptions{})
+	plan := c.front.Recovery.CollectPlan(ctx, core.RecoveryPlanOptions{})
 	if hasErrorReturnNoneHandler(plan) {
-		out := c.ctx.PolicyCompiler.CompileWithErrorPolicy(core.ErrorPolicySuppress, core.CatchJumpModeNone, func() bytecode.Operand {
+		out := c.front.Recovery.CompileWithErrorPolicy(core.ErrorPolicySuppress, core.CatchJumpModeNone, func() bytecode.Operand {
 			return c.CompileFunctionCall(call, true)
 		})
 
-		return widenRecoveryResultType(c.ctx, out, plan)
+		return c.front.Recovery.WidenResultType(out, plan)
 	}
 
-	return c.ctx.PolicyCompiler.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
+	return c.front.Recovery.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
 		return c.CompileFunctionCall(call, false)
 	})
 }
@@ -140,7 +140,7 @@ func (c *ExprCompiler) CompileFunctionCall(ctx fql.IFunctionCallContext, protect
 }
 
 func (c *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, protected bool, seq core.RegisterSequence) bytecode.Operand {
-	name := resolveFunctionName(ctx, c.ctx.UseAliases)
+	name := c.front.Calls.ResolveFunctionName(ctx)
 	span := source.Span{Start: -1, End: -1}
 
 	if ctx != nil {
@@ -183,7 +183,7 @@ func (c *ExprCompiler) CompileFunctionCallByNameWith(ctx fql.IFunctionCallContex
 	}
 
 	if !namespaced && c.ctx.UDFs != nil && c.ctx.UDFScope != nil {
-		if fn, ok := c.ctx.UDFCompiler.ResolveCall(ctx); ok {
+		if fn, ok := c.front.Calls.ResolveUDF(ctx); ok {
 			return c.compileUdfCallWith(fn, protected, seq, callCtx)
 		}
 	}
@@ -300,7 +300,7 @@ func (c *ExprCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.RegisterSeq
 
 	for i, src := range seq {
 		c.ctx.Emitter.EmitMove(args[i], src)
-		c.ctx.Types.Set(args[i], operandType(c.ctx, src))
+		c.ctx.Types.Set(args[i], c.front.TypeFacts.OperandType(src))
 	}
 
 	for i, capture := range fn.Captures {
@@ -320,9 +320,9 @@ func (c *ExprCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.RegisterSeq
 			continue
 		}
 
-		src := c.ctx.BindingCompiler.LoadBindingValue(binding)
-		emitMoveAuto(c.ctx, dst, src)
-		c.ctx.Types.Set(dst, operandType(c.ctx, src))
+		src := c.front.Bindings.LoadBindingValue(binding)
+		c.front.TypeFacts.EmitMoveAuto(dst, src)
+		c.ctx.Types.Set(dst, c.front.TypeFacts.OperandType(src))
 	}
 
 	return args
@@ -342,9 +342,9 @@ func (c *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.Re
 		seq = c.ctx.Registers.AllocateSequence(size)
 
 		for i, exp := range exps {
-			if val, ok := literalValueFromExpression(exp); ok && (bool(runtime.IsScalar(val)) || val == runtime.None) {
+			if val, ok := c.front.TypeFacts.LiteralValueFromExpression(exp); ok && (bool(runtime.IsScalar(val)) || val == runtime.None) {
 				c.ctx.Emitter.EmitLoadConst(seq[i], c.ctx.Symbols.AddConstant(val))
-				c.ctx.Types.Set(seq[i], valueTypeFromRuntime(val))
+				c.ctx.Types.Set(seq[i], c.front.TypeFacts.ValueTypeFromRuntime(val))
 				continue
 			}
 
@@ -355,7 +355,7 @@ func (c *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.Re
 			} else {
 				c.ctx.Emitter.EmitMove(seq[i], srcReg)
 			}
-			c.ctx.Types.Set(seq[i], operandType(c.ctx, srcReg))
+			c.ctx.Types.Set(seq[i], c.front.TypeFacts.OperandType(srcReg))
 		}
 	}
 
@@ -392,7 +392,7 @@ func (c *ExprCompiler) compileRangeOperand(ctx fql.IRangeOperandContext) bytecod
 	}
 
 	if il := ctx.IntegerLiteral(); il != nil {
-		return c.ctx.LiteralCompiler.CompileIntegerLiteral(il)
+		return c.front.Literals.CompileIntegerLiteral(il)
 	}
 
 	if me := ctx.MemberExpression(); me != nil {

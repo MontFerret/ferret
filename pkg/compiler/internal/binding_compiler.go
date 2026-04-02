@@ -13,7 +13,8 @@ import (
 
 type (
 	BindingCompiler struct {
-		ctx                  *CompilerContext
+		ctx                  *CompilationSession
+		front                *CompilationFrontend
 		promotedDeclarations map[antlr.ParserRuleContext]struct{}
 	}
 
@@ -24,7 +25,7 @@ type (
 	}
 )
 
-func NewBindingCompiler(ctx *CompilerContext) *BindingCompiler {
+func NewBindingCompiler(ctx *CompilationSession) *BindingCompiler {
 	return &BindingCompiler{
 		ctx:                  ctx,
 		promotedDeclarations: make(map[antlr.ParserRuleContext]struct{}),
@@ -63,8 +64,8 @@ func (c *BindingCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclaratio
 	decl := ctx.(antlr.ParserRuleContext)
 	mutable := c.isMutableDeclaration(ctx)
 	storage := c.declarationStorage(decl, mutable)
-	src := c.ctx.ExprCompiler.Compile(ctx.Expression())
-	srcType := operandType(c.ctx, src)
+	src := c.front.Expressions.Compile(ctx.Expression())
+	srcType := c.front.TypeFacts.OperandType(src)
 
 	if name == core.IgnorePseudoVariable {
 		return bytecode.NoopOperand
@@ -76,7 +77,7 @@ func (c *BindingCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclaratio
 	}
 
 	if storage == core.BindingStorageCell {
-		src = c.ctx.ExprCompiler.ensureRegister(src)
+		src = c.front.Expressions.ensureRegister(src)
 
 		dest, ok := c.declareBinding(name, srcType, src, opts)
 		if !ok {
@@ -155,11 +156,11 @@ func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatemen
 	src := bytecode.NoopOperand
 
 	if operator == "=" {
-		src = c.ctx.ExprCompiler.Compile(stmt.Expression())
+		src = c.front.Expressions.Compile(stmt.Expression())
 	} else if operator == "+=" && binding.Type == core.TypeString {
 		left := c.snapshotBindingValue(binding)
-		parts := append([]concatOperandSegment{{operand: left}}, buildConcatOperandSegmentsFromExpression(c.ctx.ExprCompiler, stmt.Expression())...)
-		src = emitConcatOperandSegments(c.ctx, parts)
+		parts := append([]concatOperandSegment{{operand: left}}, buildConcatOperandSegmentsFromExpression(c.front.Expressions, stmt.Expression())...)
+		src = emitConcatOperandSegments(c.ctx, c.front.TypeFacts, parts)
 	} else {
 		op, ok := resolveArithmeticBinaryOperator(operator)
 		if !ok {
@@ -167,11 +168,11 @@ func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatemen
 		}
 
 		left := c.snapshotBindingValue(binding)
-		right := c.ctx.ExprCompiler.Compile(stmt.Expression())
-		src = emitBinaryOperation(c.ctx, stmt, op, left, right)
+		right := c.front.Expressions.Compile(stmt.Expression())
+		src = emitBinaryOperation(c.ctx, c.front.TypeFacts, stmt, op, left, right)
 	}
 
-	srcType := operandType(c.ctx, src)
+	srcType := c.front.TypeFacts.OperandType(src)
 	publishedType := srcType
 
 	if c.ctx.Loops.Depth() > 0 {
@@ -288,7 +289,7 @@ func (c *BindingCompiler) snapshotBindingValue(binding *core.Variable) bytecode.
 	}
 
 	snapshot := c.ctx.Registers.Allocate()
-	emitMoveAuto(c.ctx, snapshot, binding.Register)
+	c.front.TypeFacts.EmitMoveAuto(snapshot, binding.Register)
 
 	return snapshot
 }
@@ -299,7 +300,7 @@ func (c *BindingCompiler) storeBindingValue(binding *core.Variable, src bytecode
 	}
 
 	if binding.Storage == core.BindingStorageCell {
-		src = c.ctx.ExprCompiler.ensureRegister(src)
+		src = c.front.Expressions.ensureRegister(src)
 		c.ctx.Emitter.EmitStoreCell(binding.Register, src)
 		return binding.Register
 	}
@@ -307,7 +308,7 @@ func (c *BindingCompiler) storeBindingValue(binding *core.Variable, src bytecode
 	if src.IsConstant() {
 		c.ctx.Emitter.EmitLoadConst(binding.Register, src)
 	} else {
-		emitMoveAuto(c.ctx, binding.Register, src)
+		c.front.TypeFacts.EmitMoveAuto(binding.Register, src)
 	}
 
 	c.ctx.Types.Set(binding.Register, publishedType)

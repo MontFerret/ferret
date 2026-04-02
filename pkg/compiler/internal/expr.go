@@ -19,7 +19,8 @@ type (
 	// ExprCompiler handles the compilation of expressions in FQL queries.
 	// It transforms expression operations from the AST into VM instructions.
 	ExprCompiler struct {
-		ctx                  *CompilerContext
+		ctx                  *CompilationSession
+		front                *CompilationFrontend
 		implicitCurrentDepth int
 	}
 
@@ -61,7 +62,7 @@ const (
 )
 
 // NewExprCompiler creates a new instance of ExprCompiler with the given compiler context.
-func NewExprCompiler(ctx *CompilerContext) *ExprCompiler {
+func NewExprCompiler(ctx *CompilationSession) *ExprCompiler {
 	return &ExprCompiler{ctx: ctx}
 }
 

@@ -316,7 +316,7 @@ func (c *ExprCompiler) compileMatchPatternValue(valueReg bytecode.Operand, ctx f
 }
 
 func (c *ExprCompiler) compileMatchLiteralOperand(ctx fql.IMatchLiteralPatternContext) bytecode.Operand {
-	return compileScalarLiteralOperand(c.ctx, ctx)
+	return compileScalarLiteralOperand(c.ctx, c.front.Literals, ctx)
 }
 
 func (c *ExprCompiler) tryCompileMatchConstantFold(scrutinee fql.IExpressionContext, armsCtx fql.IMatchPatternArmsContext, dst bytecode.Operand) bool {
@@ -737,7 +737,7 @@ func (c *ExprCompiler) compileMatchObjectPatternKey(ctx fql.IMatchObjectPatternK
 			return c.ctx.Symbols.AddConstant(val)
 		}
 
-		return c.ctx.LiteralCompiler.CompileStringLiteral(sl)
+		return c.front.Literals.CompileStringLiteral(sl)
 	}
 
 	var name string
@@ -770,7 +770,7 @@ func (c *ExprCompiler) declareMatchBinding(ctx antlr.ParserRuleContext, name str
 	reg, ok := c.ctx.Symbols.DeclareLocal(name, core.TypeAny)
 	if ok {
 		c.ctx.Emitter.EmitMove(reg, valueReg)
-		c.ctx.Types.Set(reg, operandType(c.ctx, valueReg))
+		c.ctx.Types.Set(reg, c.front.TypeFacts.OperandType(valueReg))
 		return reg
 	}
 

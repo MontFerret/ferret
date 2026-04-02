@@ -29,7 +29,7 @@ func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) bytecode.Oper
 }
 
 func (c *ExprCompiler) compileLiteralOperand(lit fql.ILiteralContext) bytecode.Operand {
-	return compileScalarLiteralOperand(c.ctx, lit)
+	return compileScalarLiteralOperand(c.ctx, c.front.Literals, lit)
 }
 
 func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode.Operand, bool) {
@@ -50,7 +50,7 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 			jumpMode = catchJumpModeForWaitForExpression(wfe)
 		}
 
-		reg := c.ctx.PolicyCompiler.CompileWithErrorPolicy(core.ErrorPolicySuppress, jumpMode, func() bytecode.Operand {
+		reg := c.front.Recovery.CompileWithErrorPolicy(core.ErrorPolicySuppress, jumpMode, func() bytecode.Operand {
 			return c.compileAtom(atom)
 		})
 
@@ -58,7 +58,7 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 	}
 
 	if wfe := atom.WaitForExpression(); wfe != nil {
-		plan := collectRecoveryPlan(c.ctx, atom, core.RecoveryPlanOptions{
+		plan := c.front.Recovery.CollectPlan(atom, core.RecoveryPlanOptions{
 			AllowTimeout: true,
 			HasTimeout:   waitForHasExplicitTimeoutClause(wfe),
 		})
@@ -66,19 +66,19 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 			return c.compileAtom(atom), true
 		}
 
-		return c.ctx.WaitCompiler.compileWithOuterRecovery(wfe, plan), true
+		return c.front.Wait.compileWithOuterRecovery(wfe, plan), true
 	}
 
 	if fe := atom.ForExpression(); fe != nil {
-		plan := collectRecoveryPlan(c.ctx, atom, core.RecoveryPlanOptions{})
+		plan := c.front.Recovery.CollectPlan(atom, core.RecoveryPlanOptions{})
 		if plan.OnError == nil {
 			return c.compileAtom(atom), true
 		}
 
-		return c.ctx.LoopCompiler.compileWithRecovery(fe, plan), true
+		return c.front.Loops.compileWithRecovery(fe, plan), true
 	}
 
-	plan := collectRecoveryPlan(c.ctx, atom, core.RecoveryPlanOptions{})
+	plan := c.front.Recovery.CollectPlan(atom, core.RecoveryPlanOptions{})
 	if plan.OnError == nil {
 		return c.compileAtom(atom), true
 	}
@@ -94,7 +94,7 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 		jumpMode = core.CatchJumpModeNone
 	}
 
-	reg := c.ctx.PolicyCompiler.CompileWithRecoveryPlan(plan, jumpMode, func() bytecode.Operand {
+	reg := c.front.Recovery.CompileWithRecoveryPlan(plan, jumpMode, func() bytecode.Operand {
 		return c.compileAtom(atom)
 	})
 
@@ -400,7 +400,7 @@ func resolveArithmeticBinaryOperator(operator string) (atomBinaryOperator, bool)
 func (c *ExprCompiler) compileBinaryAtom(ctx fql.IExpressionAtomContext, op atomBinaryOperator) bytecode.Operand {
 	if op.opcode == bytecode.OpAdd {
 		if parts, ok := buildConcatOperandSegmentsFromAtom(c, ctx); ok {
-			return emitConcatOperandSegments(c.ctx, parts)
+			return emitConcatOperandSegments(c.ctx, c.front.TypeFacts, parts)
 		}
 	}
 
@@ -418,10 +418,10 @@ func (c *ExprCompiler) compileBinaryAtom(ctx fql.IExpressionAtomContext, op atom
 func (c *ExprCompiler) emitBinaryAtomOperation(ctx fql.IExpressionAtomContext, op atomBinaryOperator, left, right bytecode.Operand) bytecode.Operand {
 	prc, _ := ctx.(antlr.ParserRuleContext)
 
-	return emitBinaryOperation(c.ctx, prc, op, left, right)
+	return emitBinaryOperation(c.ctx, c.front.TypeFacts, prc, op, left, right)
 }
 
-func emitBinaryOperation(ctx *CompilerContext, prc antlr.ParserRuleContext, op atomBinaryOperator, left, right bytecode.Operand) bytecode.Operand {
+func emitBinaryOperation(ctx *CompilationSession, facts *TypeFacts, prc antlr.ParserRuleContext, op atomBinaryOperator, left, right bytecode.Operand) bytecode.Operand {
 	if ctx == nil {
 		return bytecode.NoopOperand
 	}
@@ -441,7 +441,7 @@ func emitBinaryOperation(ctx *CompilerContext, prc antlr.ParserRuleContext, op a
 		}
 	})
 
-	resultType := inferBinaryResultType(ctx, op, left, right)
+	resultType := facts.InferBinaryResultType(op, left, right)
 	if op.negated {
 		resultType = core.TypeBool
 	}
@@ -497,7 +497,7 @@ func (c *ExprCompiler) compileLeafAtom(ctx fql.IExpressionAtomContext) bytecode.
 	}
 
 	if l := ctx.Literal(); l != nil {
-		return c.ctx.LiteralCompiler.Compile(l)
+		return c.front.Literals.Compile(l)
 	}
 
 	if v := ctx.Variable(); v != nil {
@@ -521,15 +521,15 @@ func (c *ExprCompiler) compileLeafAtom(ctx fql.IExpressionAtomContext) bytecode.
 	}
 
 	if de := ctx.DispatchExpression(); de != nil {
-		return c.ctx.DispatchCompiler.Compile(de)
+		return c.front.Dispatch.Compile(de)
 	}
 
 	if fe := ctx.ForExpression(); fe != nil {
-		return c.ctx.LoopCompiler.Compile(fe)
+		return c.front.Loops.Compile(fe)
 	}
 
 	if wfe := ctx.WaitForExpression(); wfe != nil {
-		return c.ctx.WaitCompiler.Compile(wfe)
+		return c.front.Wait.Compile(wfe)
 	}
 
 	if e := ctx.Expression(); e != nil {

@@ -24,7 +24,7 @@ type (
 	}
 )
 
-func compileScalarLiteralOperand(ctx *CompilerContext, lit scalarLiteralNode) bytecode.Operand {
+func compileScalarLiteralOperand(ctx *CompilationSession, literals *LiteralCompiler, lit scalarLiteralNode) bytecode.Operand {
 	if lit == nil {
 		return bytecode.NoopOperand
 	}
@@ -46,7 +46,7 @@ func compileScalarLiteralOperand(ctx *CompilerContext, lit scalarLiteralNode) by
 			return ctx.Symbols.AddConstant(val)
 		}
 
-		return ctx.LiteralCompiler.CompileStringLiteral(sl)
+		return literals.CompileStringLiteral(sl)
 	}
 
 	if fl := lit.FloatLiteral(); fl != nil {

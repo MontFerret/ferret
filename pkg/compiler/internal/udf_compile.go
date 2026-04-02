@@ -11,7 +11,8 @@ import (
 type (
 	// UDFCompiler compiles user-defined functions into bytecode.
 	UDFCompiler struct {
-		ctx *CompilerContext
+		ctx   *CompilationSession
+		front *CompilationFrontend
 	}
 
 	udfCompileState struct {
@@ -23,7 +24,7 @@ type (
 	}
 )
 
-func NewUDFCompiler(ctx *CompilerContext) *UDFCompiler {
+func NewUDFCompiler(ctx *CompilationSession) *UDFCompiler {
 	return &UDFCompiler{ctx: ctx}
 }
 
@@ -66,7 +67,7 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 			c.compileExpressionReturn(arrow.Expression())
 		} else if block := body.FunctionBlock(); block != nil {
 			for _, stmt := range block.AllFunctionStatement() {
-				c.ctx.StmtCompiler.CompileFunctionStatement(stmt)
+				c.front.Statements.CompileFunctionStatement(stmt)
 			}
 
 			c.compileReturn(block.FunctionReturn())
@@ -137,18 +138,18 @@ func (c *UDFCompiler) compileExpressionReturn(expr fql.IExpressionContext) {
 		return
 	}
 
-	if fce := directFunctionCall(expr); fce != nil && fce.ErrorOperator() == nil && allowsTailCallRecovery(collectRecoveryPlan(c.ctx, fce, core.RecoveryPlanOptions{})) {
+	if fce := directFunctionCall(expr); fce != nil && fce.ErrorOperator() == nil && allowsTailCallRecovery(c.front.Recovery.CollectPlan(fce, core.RecoveryPlanOptions{})) {
 		call := fce.FunctionCall()
 		if call != nil {
-			if fn, ok := c.ResolveCall(call); ok {
-				seq := c.ctx.ExprCompiler.CompileArgumentList(call.ArgumentList())
-				c.ctx.ExprCompiler.EmitUdfTailCall(fn, seq, call.(antlr.ParserRuleContext))
+			if fn, ok := c.front.Calls.ResolveUDF(call); ok {
+				seq := c.front.Expressions.CompileArgumentList(call.ArgumentList())
+				c.front.Expressions.EmitUdfTailCall(fn, seq, call.(antlr.ParserRuleContext))
 				return
 			}
 		}
 	}
 
-	val := c.ctx.ExprCompiler.ensureRegister(c.ctx.ExprCompiler.Compile(expr))
+	val := c.front.Expressions.ensureRegister(c.front.Expressions.Compile(expr))
 
 	c.ctx.Emitter.EmitA(bytecode.OpReturn, val)
 }

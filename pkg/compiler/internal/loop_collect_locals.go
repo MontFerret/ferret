@@ -10,7 +10,7 @@ import (
 	parser "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
-func (c *LoopCollectCompiler) declareLocalOrReport(ctx antlr.ParserRuleContext, name string, typ core.ValueType) bytecode.Operand {
+func (c *CollectCompiler) declareLocalOrReport(ctx antlr.ParserRuleContext, name string, typ core.ValueType) bytecode.Operand {
 	reg, ok := c.ctx.Symbols.DeclareLocal(name, typ)
 	if ok {
 		return reg
@@ -26,7 +26,7 @@ func (c *LoopCollectCompiler) declareLocalOrReport(ctx antlr.ParserRuleContext, 
 	return bytecode.NoopOperand
 }
 
-func (c *LoopCollectCompiler) assignLocalOrReport(ctx antlr.ParserRuleContext, name string, typ core.ValueType, op bytecode.Operand) bool {
+func (c *CollectCompiler) assignLocalOrReport(ctx antlr.ParserRuleContext, name string, typ core.ValueType, op bytecode.Operand) bool {
 	if c.ctx.Symbols.AssignLocal(name, typ, op) {
 		return true
 	}
@@ -35,7 +35,7 @@ func (c *LoopCollectCompiler) assignLocalOrReport(ctx antlr.ParserRuleContext, n
 	return false
 }
 
-func (c *LoopCollectCompiler) reportDuplicateLocal(ctx antlr.ParserRuleContext, name string) {
+func (c *CollectCompiler) reportDuplicateLocal(ctx antlr.ParserRuleContext, name string) {
 	if ctx != nil {
 		c.ctx.Errors.VariableNotUnique(ctx, name)
 		return

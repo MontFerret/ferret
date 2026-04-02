@@ -5,15 +5,16 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
-// StmtCompiler handles the compilation of FQL statements.
+// StatementCompiler handles the compilation of FQL statements.
 // It transforms statement operations from the AST into VM instructions.
-type StmtCompiler struct {
-	ctx *CompilerContext
+type StatementCompiler struct {
+	ctx   *CompilationSession
+	front *CompilationFrontend
 }
 
-// NewStmtCompiler creates a new instance of StmtCompiler with the given compiler context.
-func NewStmtCompiler(ctx *CompilerContext) *StmtCompiler {
-	return &StmtCompiler{
+// NewStatementCompiler creates a new instance of StatementCompiler with the given compiler context.
+func NewStatementCompiler(ctx *CompilationSession) *StatementCompiler {
+	return &StatementCompiler{
 		ctx: ctx,
 	}
 }
@@ -23,7 +24,7 @@ func NewStmtCompiler(ctx *CompilerContext) *StmtCompiler {
 // and then compiles the body expression (FOR loops or RETURN statements).
 // Parameters:
 //   - ctx: The body context from the AST
-func (c *StmtCompiler) Compile(ctx fql.IBodyContext) {
+func (c *StatementCompiler) Compile(ctx fql.IBodyContext) {
 	if ctx == nil {
 		return
 	}
@@ -42,15 +43,15 @@ func (c *StmtCompiler) Compile(ctx fql.IBodyContext) {
 // and delegates to the appropriate compilation method.
 // Parameters:
 //   - ctx: The body statement context from the AST
-func (c *StmtCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) {
+func (c *StatementCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) {
 	if ctx == nil {
 		return
 	}
 
 	if vd := ctx.VariableDeclaration(); vd != nil {
-		c.ctx.BindingCompiler.CompileVariableDeclaration(vd)
+		c.front.Bindings.CompileVariableDeclaration(vd)
 	} else if as := ctx.AssignmentStatement(); as != nil {
-		c.ctx.BindingCompiler.CompileAssignmentStatement(as)
+		c.front.Bindings.CompileAssignmentStatement(as)
 	} else if fd := ctx.FunctionDeclaration(); fd != nil {
 		// Function declarations are compiled separately.
 		return
@@ -59,9 +60,9 @@ func (c *StmtCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) {
 		c.CompileFunctionCall(fce)
 	} else if wfe := ctx.WaitForExpression(); wfe != nil {
 		// Handle wait expressions (e.g., WAIT FOR x RETURN y)
-		c.ctx.WaitCompiler.Compile(wfe)
+		c.front.Wait.Compile(wfe)
 	} else if de := ctx.DispatchExpression(); de != nil {
-		c.ctx.DispatchCompiler.Compile(de)
+		c.front.Dispatch.Compile(de)
 	}
 }
 
@@ -70,7 +71,7 @@ func (c *StmtCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) {
 // operation of the query and determines what data is returned.
 // Parameters:
 //   - ctx: The body expression context from the AST
-func (c *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
+func (c *StatementCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
 	if ctx == nil {
 		return
 	}
@@ -78,14 +79,14 @@ func (c *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
 	// Handle FOR expressions (e.g., FOR x IN y RETURN z)
 	if fe := ctx.ForExpression(); fe != nil {
 		// Compile the FOR loop and get the destination register
-		out := c.ctx.LoopCompiler.Compile(fe)
+		out := c.front.Loops.Compile(fe)
 
 		// Emit a return instruction with the loop result
 		c.ctx.Emitter.EmitA(bytecode.OpReturn, out)
 	} else if re := ctx.ReturnExpression(); re != nil {
 		// Handle RETURN expressions (e.g., RETURN x)
 		// Compile and normalize into a register because RETURN expects a register operand.
-		valReg := c.ctx.ExprCompiler.ensureRegister(c.ctx.ExprCompiler.Compile(re.Expression()))
+		valReg := c.front.Expressions.ensureRegister(c.front.Expressions.Compile(re.Expression()))
 
 		// Emit a return instruction with the expression result
 		c.ctx.Emitter.EmitA(bytecode.OpReturn, valReg)
@@ -95,7 +96,7 @@ func (c *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
 // CompileFunctionStatement processes a statement inside a UDF body.
 // It supports variable declarations, nested function declarations, expression statements,
 // function calls, and other statements allowed in the main body.
-func (c *StmtCompiler) CompileFunctionStatement(ctx fql.IFunctionStatementContext) {
+func (c *StatementCompiler) CompileFunctionStatement(ctx fql.IFunctionStatementContext) {
 	if ctx == nil {
 		return
 	}
@@ -107,25 +108,25 @@ func (c *StmtCompiler) CompileFunctionStatement(ctx fql.IFunctionStatementContex
 
 	switch {
 	case stmt.VariableDeclaration() != nil:
-		c.ctx.BindingCompiler.CompileVariableDeclaration(stmt.VariableDeclaration())
+		c.front.Bindings.CompileVariableDeclaration(stmt.VariableDeclaration())
 	case stmt.AssignmentStatement() != nil:
-		c.ctx.BindingCompiler.CompileAssignmentStatement(stmt.AssignmentStatement())
+		c.front.Bindings.CompileAssignmentStatement(stmt.AssignmentStatement())
 	case stmt.FunctionDeclaration() != nil:
 		// Nested function declarations are compiled separately.
 		return
 	case stmt.FunctionCallExpression() != nil:
 		c.CompileFunctionCall(stmt.FunctionCallExpression())
 	case stmt.WaitForExpression() != nil:
-		c.ctx.WaitCompiler.Compile(stmt.WaitForExpression())
+		c.front.Wait.Compile(stmt.WaitForExpression())
 	case stmt.DispatchExpression() != nil:
-		c.ctx.DispatchCompiler.Compile(stmt.DispatchExpression())
+		c.front.Dispatch.Compile(stmt.DispatchExpression())
 	case stmt.ExpressionStatement() != nil:
 		c.CompileExpressionStatement(stmt.ExpressionStatement())
 	}
 }
 
 // CompileExpressionStatement evaluates an expression for its side effects and discards the result.
-func (c *StmtCompiler) CompileExpressionStatement(ctx fql.IExpressionStatementContext) {
+func (c *StatementCompiler) CompileExpressionStatement(ctx fql.IExpressionStatementContext) {
 	if ctx == nil {
 		return
 	}
@@ -136,7 +137,7 @@ func (c *StmtCompiler) CompileExpressionStatement(ctx fql.IExpressionStatementCo
 	}
 
 	if expr := stmt.Expression(); expr != nil {
-		c.ctx.ExprCompiler.Compile(expr)
+		c.front.Expressions.Compile(expr)
 	}
 }
 
@@ -148,11 +149,11 @@ func (c *StmtCompiler) CompileExpressionStatement(ctx fql.IExpressionStatementCo
 //
 // Returns:
 //   - An operand representing the register where the function call result is stored
-func (c *StmtCompiler) CompileFunctionCall(ctx fql.IFunctionCallExpressionContext) bytecode.Operand {
+func (c *StatementCompiler) CompileFunctionCall(ctx fql.IFunctionCallExpressionContext) bytecode.Operand {
 	if ctx == nil {
 		return bytecode.NoopOperand
 	}
 
 	// Delegate to the expression compiler for function call compilation
-	return c.ctx.ExprCompiler.CompileFunctionCallExpression(ctx)
+	return c.front.Expressions.CompileFunctionCallExpression(ctx)
 }

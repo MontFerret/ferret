@@ -7,20 +7,21 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// LoopCollectCompiler handles the compilation of COLLECT clauses in FQL queries.
+// CollectCompiler handles the compilation of COLLECT clauses in FQL queries.
 // It transforms COLLECT operations into VM instructions for data aggregation and grouping.
-type LoopCollectCompiler struct {
-	ctx *CompilerContext
+type CollectCompiler struct {
+	ctx   *CompilationSession
+	front *CompilationFrontend
 }
 
-// NewLoopCollectCompiler creates a new instance of LoopCollectCompiler with the given compiler context.
-func NewLoopCollectCompiler(ctx *CompilerContext) *LoopCollectCompiler {
-	return &LoopCollectCompiler{ctx: ctx}
+// NewCollectCompiler creates a new instance of CollectCompiler with the given compiler context.
+func NewCollectCompiler(ctx *CompilationSession) *CollectCompiler {
+	return &CollectCompiler{ctx: ctx}
 }
 
 // Compile processes a COLLECT clause from the FQL AST and generates the appropriate VM instructions.
 // It first compiles the collector specification and then compiles the loop operations based on that spec.
-func (c *LoopCollectCompiler) Compile(ctx fql.ICollectClauseContext) {
+func (c *CollectCompiler) Compile(ctx fql.ICollectClauseContext) {
 	scope := c.compileCollector(ctx)
 
 	c.compileLoop(scope)
@@ -29,7 +30,7 @@ func (c *LoopCollectCompiler) Compile(ctx fql.ICollectClauseContext) {
 // compileCollector processes the COLLECT clause components and creates a Collector.
 // This function handles the initialization of grouping, aggregation, and projection operations,
 // and sets up the appropriate collector type based on the COLLECT clause structure.
-func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *core.Collector {
+func (c *CollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *core.Collector {
 	// Extract all components of the COLLECT clause
 	groupingCtx := ctx.CollectGrouping()
 	projectionCtx := ctx.CollectGroupProjection()
@@ -119,7 +120,7 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 // finalizeCollector completes the collector setup by pushing key-value pairs to the collector
 // and emitting finalization instructions for the current loop.
 // The behavior varies based on whether grouping and aggregation are used.
-func (c *LoopCollectCompiler) finalizeCollector(dst bytecode.Operand, kv *core.KV, spec *core.Collector) {
+func (c *CollectCompiler) finalizeCollector(dst bytecode.Operand, kv *core.KV, spec *core.Collector) {
 	loop := c.ctx.Loops.Current()
 
 	// Fused grouped aggregate collectors without INTO only need direct aggregate updates.
@@ -135,7 +136,7 @@ func (c *LoopCollectCompiler) finalizeCollector(dst bytecode.Operand, kv *core.K
 		c.ctx.Emitter.EmitArrayPush(spec.ProjectionState(), kv.Value)
 	} else if spec.HasProjection() {
 		// For projection without grouping but with aggregation, use the projection variable name as the key
-		key := loadConstant(c.ctx, runtime.String(spec.Projection().VariableName()))
+		key := c.front.TypeFacts.LoadConstant(runtime.String(spec.Projection().VariableName()))
 		c.ctx.Emitter.EmitPushKV(dst, key, kv.Value)
 	}
 
@@ -143,7 +144,7 @@ func (c *LoopCollectCompiler) finalizeCollector(dst bytecode.Operand, kv *core.K
 	loop.EmitFinalization(c.ctx.Emitter)
 }
 
-func (c *LoopCollectCompiler) insertGlobalAggregateProjectionBuffer(loop *core.Loop) bytecode.Operand {
+func (c *CollectCompiler) insertGlobalAggregateProjectionBuffer(loop *core.Loop) bytecode.Operand {
 	buf := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.InsertAx(loop.StartLabel(), bytecode.OpLoadArray, buf, 8)
 	c.ctx.Types.Set(buf, core.TypeArray)
@@ -152,7 +153,7 @@ func (c *LoopCollectCompiler) insertGlobalAggregateProjectionBuffer(loop *core.L
 }
 
 // compileLoop compiles a loop construct by configuring its kind, registers, initialization, and processing based on the specification.
-func (c *LoopCollectCompiler) compileLoop(spec *core.Collector) {
+func (c *CollectCompiler) compileLoop(spec *core.Collector) {
 	loop := c.ctx.Loops.Current()
 
 	// If we are using a projection, we need to ensure the loop is set to ForInLoop

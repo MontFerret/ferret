@@ -16,8 +16,8 @@ func (c *ExprCompiler) compileQueryExpression(ctx fql.IQueryExpressionContext) b
 		return bytecode.NoopOperand
 	}
 
-	plan := collectRecoveryPlan(c.ctx, ctx, core.RecoveryPlanOptions{})
-	return c.ctx.PolicyCompiler.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
+	plan := c.front.Recovery.CollectPlan(ctx, core.RecoveryPlanOptions{})
+	return c.front.Recovery.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
 		if ctx == nil {
 			return bytecode.NoopOperand
 		}
@@ -80,20 +80,20 @@ func (c *ExprCompiler) compileQueryKindOperand(ctx fql.IQueryExpressionContext) 
 		kind = strings.ToLower(ident.GetText())
 	}
 
-	return loadConstant(c.ctx, runtime.NewString(kind))
+	return c.front.TypeFacts.LoadConstant(runtime.NewString(kind))
 }
 
 func (c *ExprCompiler) compileQueryPayloadOperand(ctx fql.IQueryPayloadContext) bytecode.Operand {
 	if ctx == nil {
-		return loadConstant(c.ctx, runtime.EmptyString)
+		return c.front.TypeFacts.LoadConstant(runtime.EmptyString)
 	}
 
 	if literal := ctx.StringLiteral(); literal != nil {
 		if value, ok := parseStringLiteralConst(literal); ok {
-			return loadConstant(c.ctx, value)
+			return c.front.TypeFacts.LoadConstant(value)
 		}
 
-		return c.ctx.LiteralCompiler.CompileStringLiteral(literal)
+		return c.front.Literals.CompileStringLiteral(literal)
 	}
 
 	if param := ctx.Param(); param != nil {
@@ -104,12 +104,12 @@ func (c *ExprCompiler) compileQueryPayloadOperand(ctx fql.IQueryPayloadContext) 
 		return c.CompileVariable(variable)
 	}
 
-	return loadConstant(c.ctx, runtime.EmptyString)
+	return c.front.TypeFacts.LoadConstant(runtime.EmptyString)
 }
 
 func (c *ExprCompiler) compileQueryOptionsOperand(ctx fql.IQueryWithOptContext) bytecode.Operand {
 	if ctx == nil || ctx.Expression() == nil {
-		return loadConstant(c.ctx, runtime.None)
+		return c.front.TypeFacts.LoadConstant(runtime.None)
 	}
 
 	return c.Compile(ctx.Expression())
@@ -261,18 +261,18 @@ func (c *ExprCompiler) compileQueryLiteral(ctx fql.IQueryLiteralContext) bytecod
 		c.ctx.Emitter.EmitArray(dst, 3)
 	})
 
-	kindReg := loadConstant(c.ctx, runtime.NewString(kind))
+	kindReg := c.front.TypeFacts.LoadConstant(runtime.NewString(kind))
 
 	c.ctx.Emitter.WithSpan(span, func() {
 		c.ctx.Emitter.EmitArrayPush(dst, kindReg)
 	})
 
-	payloadReg := loadConstant(c.ctx, runtime.EmptyString)
+	payloadReg := c.front.TypeFacts.LoadConstant(runtime.EmptyString)
 	if str := ctx.StringLiteral(); str != nil {
 		if val, ok := parseStringLiteralConst(str); ok {
-			payloadReg = loadConstant(c.ctx, val)
+			payloadReg = c.front.TypeFacts.LoadConstant(val)
 		} else {
-			payloadReg = c.ctx.LiteralCompiler.CompileStringLiteral(str)
+			payloadReg = c.front.Literals.CompileStringLiteral(str)
 		}
 	}
 
@@ -284,7 +284,7 @@ func (c *ExprCompiler) compileQueryLiteral(ctx fql.IQueryLiteralContext) bytecod
 	var paramsReg bytecode.Operand
 
 	if params == nil {
-		paramsReg = loadConstant(c.ctx, runtime.None)
+		paramsReg = c.front.TypeFacts.LoadConstant(runtime.None)
 	} else {
 		paramsReg = c.Compile(params)
 	}
