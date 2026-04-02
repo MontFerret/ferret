@@ -81,44 +81,44 @@ func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) bytecode.Operand {
 	return c.compileFinalization(returnRuleCtx)
 }
 
-func (c *LoopCompiler) compileWithRecovery(ctx fql.IForExpressionContext, plan recoveryPlan) bytecode.Operand {
+func (c *LoopCompiler) compileWithRecovery(ctx fql.IForExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
 	if ctx == nil {
 		return bytecode.NoopOperand
 	}
 
 	if ctx.In() == nil {
-		return compileWithRecoveryPlan(c.ctx, plan, catchJumpNone, func() bytecode.Operand {
+		return c.ctx.RecoveryCompiler.CompileWithRecoveryPlan(plan, catchJumpNone, func() bytecode.Operand {
 			return c.Compile(ctx)
 		})
 	}
 
-	if plan.onError == nil || plan.onError.actionKind == recoveryActionFail {
+	if plan.OnError == nil || plan.OnError.ActionKind == core.RecoveryActionFail {
 		return c.Compile(ctx)
 	}
 
-	if recoveryHandlerRetries(plan.onError) && plan.onError.retry != nil && plan.onError.retry.finalActionKind != recoveryActionReturn && plan.onError.retry.count <= 0 {
+	if recoveryHandlerRetries(plan.OnError) && plan.OnError.Retry != nil && plan.OnError.Retry.FinalActionKind != core.RecoveryActionReturn && plan.OnError.Retry.Count <= 0 {
 		return c.Compile(ctx)
 	}
 
 	return c.compileForInWithRecovery(ctx, plan)
 }
 
-func (c *LoopCompiler) compileForInWithRecovery(ctx fql.IForExpressionContext, plan recoveryPlan) bytecode.Operand {
+func (c *LoopCompiler) compileForInWithRecovery(ctx fql.IForExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
 	errorStateReg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
 
 	var (
 		zeroReg             bytecode.Operand
 		retriesRemainingReg bytecode.Operand
-		retryDelayState     recoveryRetryDelayState
+		retryDelayState     core.RetryDelayState
 		retryStartLabel     core.Label
 		finalAttemptLabel   core.Label
 	)
 
-	if recoveryHandlerRetries(plan.onError) {
+	if recoveryHandlerRetries(plan.OnError) {
 		zeroReg = loadConstant(c.ctx, runtime.ZeroInt)
-		retriesRemainingReg = loadConstant(c.ctx, runtime.NewInt(plan.onError.retry.count))
-		retryDelayState = initRecoveryRetryDelayState(c.ctx, plan.onError.retry)
+		retriesRemainingReg = loadConstant(c.ctx, runtime.NewInt(plan.OnError.Retry.Count))
+		retryDelayState = initRetryDelayState(c.ctx, plan.OnError.Retry)
 		retryStartLabel = c.ctx.Emitter.NewLabel("recovery", "for", "retry")
 		finalAttemptLabel = c.ctx.Emitter.NewLabel("recovery", "for", "final")
 		c.ctx.Emitter.MarkLabel(retryStartLabel)
@@ -151,16 +151,16 @@ func (c *LoopCompiler) compileForInWithRecovery(ctx fql.IForExpressionContext, p
 	c.ctx.Emitter.MarkLabel(recoveryLabel)
 	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
 
-	if recoveryHandlerRetries(plan.onError) {
+	if recoveryHandlerRetries(plan.OnError) {
 		retriesAvailableReg := c.ctx.Registers.Allocate()
 		c.ctx.Emitter.EmitGt(retriesAvailableReg, retriesRemainingReg, zeroReg)
 
 		onExhausted := c.ctx.Emitter.NewLabel("recovery", "for", "exhausted")
 		c.ctx.Emitter.EmitJumpIfFalse(retriesAvailableReg, onExhausted)
 		c.ctx.Emitter.EmitA(bytecode.OpDecr, retriesRemainingReg)
-		emitRecoveryRetryDelay(c.ctx, plan.onError.retry, retryDelayState)
+		emitRecoveryRetryDelay(c.ctx, plan.OnError.Retry, retryDelayState)
 
-		if plan.onError.retry.finalActionKind == recoveryActionReturn {
+		if plan.OnError.Retry.FinalActionKind == core.RecoveryActionReturn {
 			c.ctx.Emitter.EmitJump(retryStartLabel)
 		} else {
 			moreProtectedReg := c.ctx.Registers.Allocate()
@@ -170,15 +170,15 @@ func (c *LoopCompiler) compileForInWithRecovery(ctx fql.IForExpressionContext, p
 		}
 
 		c.ctx.Emitter.MarkLabel(onExhausted)
-		if plan.onError.retry.finalActionKind == recoveryActionReturn {
-			fallback := c.ctx.ExprCompiler.Compile(plan.onError.retry.finalExpr)
+		if plan.OnError.Retry.FinalActionKind == core.RecoveryActionReturn {
+			fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Retry.FinalExpr)
 			c.ctx.EmitMoveAuto(out, ensureRecoveryRegister(c.ctx, fallback))
 			c.ctx.Emitter.EmitJump(endLabel)
 		} else {
 			c.ctx.Emitter.EmitJump(finalAttemptLabel)
 		}
 	} else {
-		fallback := c.ctx.ExprCompiler.Compile(plan.onError.expr)
+		fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Expr)
 		c.ctx.EmitMoveAuto(out, ensureRecoveryRegister(c.ctx, fallback))
 		c.ctx.Emitter.EmitJump(endLabel)
 	}
@@ -187,7 +187,7 @@ func (c *LoopCompiler) compileForInWithRecovery(ctx fql.IForExpressionContext, p
 		c.ctx.CatchTable.Push(startCatch, endCatchExclusive-1, errorPreludePC)
 	}
 
-	if recoveryHandlerRetries(plan.onError) && plan.onError.retry.finalActionKind != recoveryActionReturn {
+	if recoveryHandlerRetries(plan.OnError) && plan.OnError.Retry.FinalActionKind != core.RecoveryActionReturn {
 		c.ctx.Emitter.MarkLabel(finalAttemptLabel)
 		finalOut := c.Compile(ctx)
 		if finalOut != bytecode.NoopOperand && finalOut != out {

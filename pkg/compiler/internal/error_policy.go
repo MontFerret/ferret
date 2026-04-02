@@ -2,15 +2,8 @@ package internal
 
 import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
-)
-
-type errorPolicy int
-
-const (
-	errorPolicyDefault errorPolicy = iota
-	errorPolicySuppress
-	errorPolicyFail
 )
 
 type catchJumpMode int
@@ -20,8 +13,8 @@ const (
 	catchJumpEnd
 )
 
-func compileWithErrorPolicy(ctx *CompilerContext, policy errorPolicy, jumpMode catchJumpMode, compile func() bytecode.Operand) bytecode.Operand {
-	if ctx == nil || compile == nil || policy != errorPolicySuppress {
+func compileWithErrorPolicy(ctx *CompilerContext, policy core.ErrorPolicy, jumpMode catchJumpMode, compile func() bytecode.Operand) bytecode.Operand {
+	if ctx == nil || compile == nil || policy != core.ErrorPolicySuppress {
 		return compile()
 	}
 

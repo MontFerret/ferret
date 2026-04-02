@@ -328,7 +328,7 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 			jumpMode = catchJumpModeForWaitForExpression(wfe)
 		}
 
-		reg := compileWithErrorPolicy(c.ctx, errorPolicySuppress, jumpMode, func() bytecode.Operand {
+		reg := compileWithErrorPolicy(c.ctx, core.ErrorPolicySuppress, jumpMode, func() bytecode.Operand {
 			return c.compileAtom(atom)
 		})
 
@@ -336,11 +336,11 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 	}
 
 	if wfe := atom.WaitForExpression(); wfe != nil {
-		plan := collectRecoveryPlan(c.ctx, atom, recoveryPlanOptions{
-			allowTimeout: true,
-			hasTimeout:   waitForHasExplicitTimeoutClause(wfe),
+		plan := collectRecoveryPlan(c.ctx, atom, core.RecoveryPlanOptions{
+			AllowTimeout: true,
+			HasTimeout:   waitForHasExplicitTimeoutClause(wfe),
 		})
-		if plan.onError == nil && plan.onTimeout == nil {
+		if plan.OnError == nil && plan.OnTimeout == nil {
 			return c.compileAtom(atom), true
 		}
 
@@ -348,16 +348,16 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 	}
 
 	if fe := atom.ForExpression(); fe != nil {
-		plan := collectRecoveryPlan(c.ctx, atom, recoveryPlanOptions{})
-		if plan.onError == nil {
+		plan := collectRecoveryPlan(c.ctx, atom, core.RecoveryPlanOptions{})
+		if plan.OnError == nil {
 			return c.compileAtom(atom), true
 		}
 
 		return c.ctx.LoopCompiler.compileWithRecovery(fe, plan), true
 	}
 
-	plan := collectRecoveryPlan(c.ctx, atom, recoveryPlanOptions{})
-	if plan.onError == nil {
+	plan := collectRecoveryPlan(c.ctx, atom, core.RecoveryPlanOptions{})
+	if plan.OnError == nil {
 		return c.compileAtom(atom), true
 	}
 
@@ -372,7 +372,7 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 		jumpMode = catchJumpNone
 	}
 
-	reg := compileWithRecoveryPlan(c.ctx, plan, jumpMode, func() bytecode.Operand {
+	reg := c.ctx.RecoveryCompiler.CompileWithRecoveryPlan(plan, jumpMode, func() bytecode.Operand {
 		return c.compileAtom(atom)
 	})
 
@@ -1762,8 +1762,8 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 		return bytecode.NoopOperand
 	}
 
-	plan := collectRecoveryPlan(c.ctx, ctx, recoveryPlanOptions{})
-	return compileWithRecoveryPlan(c.ctx, plan, catchJumpNone, func() bytecode.Operand {
+	plan := collectRecoveryPlan(c.ctx, ctx, core.RecoveryPlanOptions{})
+	return c.ctx.RecoveryCompiler.CompileWithRecoveryPlan(plan, catchJumpNone, func() bytecode.Operand {
 		mes := ctx.MemberExpressionSource()
 		segments := ctx.AllMemberExpressionPath()
 
@@ -2454,8 +2454,8 @@ func (c *ExprCompiler) compileQueryExpression(ctx fql.IQueryExpressionContext) b
 		return bytecode.NoopOperand
 	}
 
-	plan := collectRecoveryPlan(c.ctx, ctx, recoveryPlanOptions{})
-	return compileWithRecoveryPlan(c.ctx, plan, catchJumpNone, func() bytecode.Operand {
+	plan := collectRecoveryPlan(c.ctx, ctx, core.RecoveryPlanOptions{})
+	return c.ctx.RecoveryCompiler.CompileWithRecoveryPlan(plan, catchJumpNone, func() bytecode.Operand {
 		if ctx == nil {
 			return bytecode.NoopOperand
 		}
@@ -3017,21 +3017,21 @@ func (c *ExprCompiler) CompileFunctionCallExpression(ctx fql.IFunctionCallExpres
 
 	call := ctx.FunctionCall()
 	if ctx.ErrorOperator() != nil {
-		return compileWithErrorPolicy(c.ctx, errorPolicySuppress, catchJumpNone, func() bytecode.Operand {
+		return compileWithErrorPolicy(c.ctx, core.ErrorPolicySuppress, catchJumpNone, func() bytecode.Operand {
 			return c.CompileFunctionCall(call, true)
 		})
 	}
 
-	plan := collectRecoveryPlan(c.ctx, ctx, recoveryPlanOptions{})
+	plan := collectRecoveryPlan(c.ctx, ctx, core.RecoveryPlanOptions{})
 	if hasErrorReturnNoneHandler(plan) {
-		out := compileWithErrorPolicy(c.ctx, errorPolicySuppress, catchJumpNone, func() bytecode.Operand {
+		out := compileWithErrorPolicy(c.ctx, core.ErrorPolicySuppress, catchJumpNone, func() bytecode.Operand {
 			return c.CompileFunctionCall(call, true)
 		})
 
 		return widenRecoveryResultType(c.ctx, out, plan)
 	}
 
-	return compileWithRecoveryPlan(c.ctx, plan, catchJumpNone, func() bytecode.Operand {
+	return c.ctx.RecoveryCompiler.CompileWithRecoveryPlan(plan, catchJumpNone, func() bytecode.Operand {
 		return c.CompileFunctionCall(call, false)
 	})
 }

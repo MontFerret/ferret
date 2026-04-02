@@ -4,79 +4,24 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/antlr4-go/antlr/v4"
 )
 
-const suppressRecoveryAction = "SUPPRESS"
-
-type recoveryCondition int
-
-const (
-	recoveryConditionUnknown recoveryCondition = iota
-	recoveryConditionError
-	recoveryConditionTimeout
-)
-
-type recoveryActionKind int
-
-const (
-	recoveryActionUnknown recoveryActionKind = iota
-	recoveryActionFail
-	recoveryActionReturn
-	recoveryActionRetry
-)
-
-type recoveryPlan struct {
-	onError   *recoveryHandler
-	onTimeout *recoveryHandler
-}
-
-type recoveryHandler struct {
-	actionNode antlr.ParserRuleContext
-	expr       fql.IExpressionContext
-	retry      *recoveryRetryPlan
-	tailNode   antlr.ParserRuleContext
-	actionKind recoveryActionKind
-}
-
-type recoveryRetryPlan struct {
-	delay           durationClause
-	actionNode      antlr.ParserRuleContext
-	countNode       antlr.ParserRuleContext
-	delayNode       antlr.ParserRuleContext
-	backoffNode     antlr.ParserRuleContext
-	finalActionNode antlr.ParserRuleContext
-	finalExpr       fql.IExpressionContext
-	count           int
-	backoff         waitForBackoff
-	finalActionKind recoveryActionKind
-	hasDelay        bool
-	hasOr           bool
-}
-
-type recoveryPlanOptions struct {
-	allowTimeout bool
-	hasTimeout   bool
-}
-
-type recoveryTailOwner interface {
-	RecoveryTails() fql.IRecoveryTailsContext
-}
-
-func collectRecoveryPlan(ctx *CompilerContext, owner recoveryTailOwner, options recoveryPlanOptions) recoveryPlan {
+func collectRecoveryPlan(ctx *CompilerContext, owner core.RecoveryTailOwner, options core.RecoveryPlanOptions) core.RecoveryPlan {
 	if ctx == nil || owner == nil {
-		return recoveryPlan{}
+		return core.RecoveryPlan{}
 	}
 
 	tails := owner.RecoveryTails()
 	if tails == nil {
-		return recoveryPlan{}
+		return core.RecoveryPlan{}
 	}
 
-	var plan recoveryPlan
+	var plan core.RecoveryPlan
 
 	for _, tail := range tails.AllRecoveryTail() {
 		condition, ok := resolveRecoveryCondition(ctx, tail)
@@ -84,13 +29,13 @@ func collectRecoveryPlan(ctx *CompilerContext, owner recoveryTailOwner, options 
 			continue
 		}
 
-		if condition == recoveryConditionTimeout {
-			if !options.allowTimeout {
+		if condition == core.RecoveryConditionTimeout {
+			if !options.AllowTimeout {
 				reportInvalidRecoveryTail(ctx, tail, "ON TIMEOUT is only valid on WAITFOR operations", "Use ON TIMEOUT only on WAITFOR expressions that define timeout handling.")
 				continue
 			}
 
-			if !options.hasTimeout {
+			if !options.HasTimeout {
 				reportInvalidRecoveryTail(ctx, tail, "ON TIMEOUT requires a TIMEOUT clause on WAITFOR", "Add a TIMEOUT clause before ON TIMEOUT, e.g. WAITFOR VALUE x TIMEOUT 1s ON TIMEOUT RETURN NONE.")
 				continue
 			}
@@ -102,55 +47,55 @@ func collectRecoveryPlan(ctx *CompilerContext, owner recoveryTailOwner, options 
 		}
 
 		switch condition {
-		case recoveryConditionError:
-			if plan.onError != nil {
+		case core.RecoveryConditionError:
+			if plan.OnError != nil {
 				reportInvalidRecoveryTail(ctx, tail, "Duplicate ON ERROR handler", "Each operation may define ON ERROR at most once.")
 				continue
 			}
 
-			plan.onError = handler
-		case recoveryConditionTimeout:
-			if plan.onTimeout != nil {
+			plan.OnError = handler
+		case core.RecoveryConditionTimeout:
+			if plan.OnTimeout != nil {
 				reportInvalidRecoveryTail(ctx, tail, "Duplicate ON TIMEOUT handler", "Each operation may define ON TIMEOUT at most once.")
 				continue
 			}
 
-			plan.onTimeout = handler
+			plan.OnTimeout = handler
 		}
 	}
 
 	return plan
 }
 
-func resolveRecoveryCondition(ctx *CompilerContext, tail fql.IRecoveryTailContext) (recoveryCondition, bool) {
+func resolveRecoveryCondition(ctx *CompilerContext, tail fql.IRecoveryTailContext) (core.RecoveryCondition, bool) {
 	if tail == nil {
-		return recoveryConditionUnknown, false
+		return core.RecoveryConditionUnknown, false
 	}
 
 	cond := tail.RecoveryCondition()
 	if cond == nil {
 		reportInvalidRecoveryTail(ctx, tail, "Expected ERROR or TIMEOUT after 'ON' in recovery tail", "Complete the tail as ON ERROR FAIL, ON ERROR RETURN <expr>, ON ERROR RETRY <count>, ON TIMEOUT FAIL, or ON TIMEOUT RETURN <expr>.")
-		return recoveryConditionUnknown, false
+		return core.RecoveryConditionUnknown, false
 	}
 
 	switch {
 	case cond.TimeoutKeyword() != nil:
-		return recoveryConditionTimeout, true
+		return core.RecoveryConditionTimeout, true
 	case cond.ErrorKeyword() != nil:
-		return recoveryConditionError, true
+		return core.RecoveryConditionError, true
 	}
 
-	if strings.EqualFold(cond.GetText(), suppressRecoveryAction) {
+	if strings.EqualFold(cond.GetText(), core.SuppressRecoveryAction) {
 		reportInvalidRecoveryTail(ctx, cond.(antlr.ParserRuleContext), "SUPPRESS is not supported in recovery tails", "Use ON ERROR RETURN NONE instead.")
-		return recoveryConditionUnknown, false
+		return core.RecoveryConditionUnknown, false
 	}
 
 	reportInvalidRecoveryTail(ctx, cond.(antlr.ParserRuleContext), "Expected ERROR or TIMEOUT after 'ON' in recovery tail", "Complete the tail as ON ERROR FAIL, ON ERROR RETURN <expr>, ON ERROR RETRY <count>, ON TIMEOUT FAIL, or ON TIMEOUT RETURN <expr>.")
 
-	return recoveryConditionUnknown, false
+	return core.RecoveryConditionUnknown, false
 }
 
-func resolveRecoveryHandler(ctx *CompilerContext, tail fql.IRecoveryTailContext, condition recoveryCondition) (*recoveryHandler, bool) {
+func resolveRecoveryHandler(ctx *CompilerContext, tail fql.IRecoveryTailContext, condition core.RecoveryCondition) (*core.RecoveryHandler, bool) {
 	if tail == nil {
 		return nil, false
 	}
@@ -168,10 +113,10 @@ func resolveRecoveryHandler(ctx *CompilerContext, tail fql.IRecoveryTailContext,
 
 	switch {
 	case action.FailKeyword() != nil:
-		return &recoveryHandler{
-			actionKind: recoveryActionFail,
-			actionNode: action.(antlr.ParserRuleContext),
-			tailNode:   tail.(antlr.ParserRuleContext),
+		return &core.RecoveryHandler{
+			ActionKind: core.RecoveryActionFail,
+			ActionNode: action.(antlr.ParserRuleContext),
+			TailNode:   tail.(antlr.ParserRuleContext),
 		}, true
 	case action.ReturnKeyword() != nil:
 		returnExpr := action.RecoveryReturnExpr()
@@ -180,14 +125,14 @@ func resolveRecoveryHandler(ctx *CompilerContext, tail fql.IRecoveryTailContext,
 			return nil, false
 		}
 
-		return &recoveryHandler{
-			actionKind: recoveryActionReturn,
-			actionNode: action.(antlr.ParserRuleContext),
-			expr:       returnExpr.Expression(),
-			tailNode:   tail.(antlr.ParserRuleContext),
+		return &core.RecoveryHandler{
+			ActionKind: core.RecoveryActionReturn,
+			ActionNode: action.(antlr.ParserRuleContext),
+			Expr:       returnExpr.Expression(),
+			TailNode:   tail.(antlr.ParserRuleContext),
 		}, true
 	case action.RecoveryRetryAction() != nil:
-		if condition != recoveryConditionError {
+		if condition != core.RecoveryConditionError {
 			reportInvalidRecoveryTail(ctx, action.RecoveryRetryAction(), "RETRY is only valid under ON ERROR", "Use ON ERROR RETRY <count> ... to retry failures, or ON TIMEOUT FAIL/RETURN for timeout handling.")
 			return nil, false
 		}
@@ -197,15 +142,15 @@ func resolveRecoveryHandler(ctx *CompilerContext, tail fql.IRecoveryTailContext,
 			return nil, false
 		}
 
-		return &recoveryHandler{
-			actionKind: recoveryActionRetry,
-			actionNode: action.(antlr.ParserRuleContext),
-			retry:      retry,
-			tailNode:   tail.(antlr.ParserRuleContext),
+		return &core.RecoveryHandler{
+			ActionKind: core.RecoveryActionRetry,
+			ActionNode: action.(antlr.ParserRuleContext),
+			Retry:      retry,
+			TailNode:   tail.(antlr.ParserRuleContext),
 		}, true
 	}
 
-	if strings.EqualFold(action.GetText(), suppressRecoveryAction) {
+	if strings.EqualFold(action.GetText(), core.SuppressRecoveryAction) {
 		reportInvalidRecoveryTail(ctx, action.(antlr.ParserRuleContext), "SUPPRESS is not supported in recovery tails", "Use ON ERROR RETURN NONE instead.")
 		return nil, false
 	}
@@ -215,15 +160,17 @@ func resolveRecoveryHandler(ctx *CompilerContext, tail fql.IRecoveryTailContext,
 	return nil, false
 }
 
-func resolveRecoveryRetryPlan(ctx *CompilerContext, action fql.IRecoveryRetryActionContext) (*recoveryRetryPlan, bool) {
+func resolveRecoveryRetryPlan(ctx *CompilerContext, action fql.IRecoveryRetryActionContext) (*core.RecoveryRetryPlan, bool) {
 	if action == nil {
 		return nil, false
 	}
 
-	plan := &recoveryRetryPlan{
-		actionNode:      action.(antlr.ParserRuleContext),
-		backoff:         waitForBackoffNone,
-		finalActionKind: recoveryActionFail,
+	plan := &core.RecoveryRetryPlan{
+		RetryPlan: core.RetryPlan{
+			Backoff: core.RetryBackoffNone,
+		},
+		ActionNode:      action.(antlr.ParserRuleContext),
+		FinalActionKind: core.RecoveryActionFail,
 	}
 
 	valid := true
@@ -233,13 +180,13 @@ func resolveRecoveryRetryPlan(ctx *CompilerContext, action fql.IRecoveryRetryAct
 		reportInvalidRecoveryTail(ctx, action, "Expected retry count after 'RETRY'", "Provide an integer retry count, e.g. ON ERROR RETRY 3.")
 		valid = false
 	} else {
-		plan.countNode = countCtx.(antlr.ParserRuleContext)
+		plan.CountNode = countCtx.(antlr.ParserRuleContext)
 		count, err := strconv.Atoi(countCtx.IntegerLiteral().GetText())
 		if err != nil {
 			reportInvalidRecoveryTail(ctx, countCtx, "Expected retry count after 'RETRY'", "Provide an integer retry count, e.g. ON ERROR RETRY 3.")
 			valid = false
 		} else {
-			plan.count = count
+			plan.Count = count
 		}
 	}
 
@@ -248,9 +195,9 @@ func resolveRecoveryRetryPlan(ctx *CompilerContext, action fql.IRecoveryRetryAct
 		switch {
 		case delayClause.DelayKeyword() != nil:
 			if delayValue := delayClause.RecoveryRetryDelayValue(); delayValue != nil {
-				plan.hasDelay = true
-				plan.delay = delayValue
-				plan.delayNode = delayValue.(antlr.ParserRuleContext)
+				plan.HasDelay = true
+				plan.Delay = delayValue
+				plan.DelayNode = delayValue.(antlr.ParserRuleContext)
 			} else {
 				reportInvalidRecoveryTail(ctx, delayClause.DelayKeyword(), "Expected value after 'DELAY' in retry policy", "Provide a duration or duration-like value, e.g. DELAY 100ms.")
 				valid = false
@@ -258,19 +205,19 @@ func resolveRecoveryRetryPlan(ctx *CompilerContext, action fql.IRecoveryRetryAct
 
 			backoffClause := delayClause.RecoveryRetryBackoffClause()
 			if backoffClause != nil {
-				backoff, ok := resolveRecoveryRetryBackoff(ctx, backoffClause)
+				backoff, ok := resolveRetryBackoff(ctx, backoffClause)
 				if !ok {
 					valid = false
 				} else {
-					plan.backoff = backoff
-					plan.backoffNode = backoffClause.(antlr.ParserRuleContext)
+					plan.Backoff = backoff
+					plan.BackoffNode = backoffClause.(antlr.ParserRuleContext)
 				}
 			}
 		case delayClause.RecoveryRetryBackoffClause() != nil:
 			reportInvalidRecoveryTail(ctx, delayClause.RecoveryRetryBackoffClause(), "BACKOFF requires DELAY in retry policy", "Add DELAY before BACKOFF, e.g. ON ERROR RETRY 3 DELAY 100ms BACKOFF EXPONENTIAL.")
 			valid = false
 
-			if _, ok := resolveRecoveryRetryBackoff(ctx, delayClause.RecoveryRetryBackoffClause()); !ok {
+			if _, ok := resolveRetryBackoff(ctx, delayClause.RecoveryRetryBackoffClause()); !ok {
 				valid = false
 			}
 		}
@@ -285,15 +232,15 @@ func resolveRecoveryRetryPlan(ctx *CompilerContext, action fql.IRecoveryRetryAct
 	}
 
 	if len(orClauses) > 0 {
-		plan.hasOr = true
+		plan.HasOr = true
 
 		finalKind, finalExpr, finalNode, ok := resolveRecoveryRetryFinalAction(ctx, orClauses[0])
 		if !ok {
 			valid = false
 		} else {
-			plan.finalActionKind = finalKind
-			plan.finalExpr = finalExpr
-			plan.finalActionNode = finalNode
+			plan.FinalActionKind = finalKind
+			plan.FinalExpr = finalExpr
+			plan.FinalActionNode = finalNode
 		}
 	}
 
@@ -304,83 +251,46 @@ func resolveRecoveryRetryPlan(ctx *CompilerContext, action fql.IRecoveryRetryAct
 	return plan, true
 }
 
-func resolveRecoveryRetryBackoff(ctx *CompilerContext, clause fql.IRecoveryRetryBackoffClauseContext) (waitForBackoff, bool) {
+func resolveRecoveryRetryFinalAction(ctx *CompilerContext, clause fql.IRecoveryRetryOrClauseContext) (core.RecoveryActionKind, fql.IExpressionContext, antlr.ParserRuleContext, bool) {
 	if clause == nil {
-		return waitForBackoffNone, true
-	}
-
-	kind := clause.RecoveryRetryBackoffKind()
-	if kind == nil {
-		reportInvalidRecoveryTail(ctx, clause, "Expected backoff kind after 'BACKOFF' in retry policy", "Use BACKOFF CONSTANT, BACKOFF LINEAR, or BACKOFF EXPONENTIAL.")
-		return waitForBackoffNone, false
-	}
-
-	raw := ""
-
-	switch {
-	case kind.Identifier() != nil:
-		raw = kind.Identifier().GetText()
-	case kind.StringLiteral() != nil:
-		if parsed, ok := parseStringLiteralConst(kind.StringLiteral()); ok {
-			raw = parsed.String()
-		}
-	case kind.None() != nil:
-		raw = kind.None().GetText()
-	}
-
-	switch strings.ToUpper(strings.TrimSpace(raw)) {
-	case "CONSTANT":
-		return waitForBackoffNone, true
-	case "LINEAR":
-		return waitForBackoffLinear, true
-	case "EXPONENTIAL":
-		return waitForBackoffExponential, true
-	default:
-		reportInvalidRecoveryTail(ctx, kind, "Unknown BACKOFF strategy", "Use one of: CONSTANT, LINEAR, EXPONENTIAL.")
-		return waitForBackoffNone, false
-	}
-}
-
-func resolveRecoveryRetryFinalAction(ctx *CompilerContext, clause fql.IRecoveryRetryOrClauseContext) (recoveryActionKind, fql.IExpressionContext, antlr.ParserRuleContext, bool) {
-	if clause == nil {
-		return recoveryActionUnknown, nil, nil, false
+		return core.RecoveryActionUnknown, nil, nil, false
 	}
 
 	action := clause.RecoveryRetryFinalAction()
 	if action == nil {
 		reportInvalidRecoveryTail(ctx, clause, "Expected FAIL or RETURN after 'OR' in retry fallback", "Complete the retry fallback as OR FAIL or OR RETURN <expr>.")
-		return recoveryActionUnknown, nil, nil, false
+		return core.RecoveryActionUnknown, nil, nil, false
 	}
 
 	switch {
 	case action.FailKeyword() != nil:
-		return recoveryActionFail, nil, action.(antlr.ParserRuleContext), true
+		return core.RecoveryActionFail, nil, action.(antlr.ParserRuleContext), true
 	case action.ReturnKeyword() != nil:
 		returnExpr := action.RecoveryReturnExpr()
 		if returnExpr == nil || returnExpr.Expression() == nil {
 			reportInvalidRecoveryTail(ctx, action, "Expected expression after 'RETURN' in recovery tail", "Provide a fallback expression, e.g. OR RETURN NONE.")
-			return recoveryActionUnknown, nil, nil, false
+			return core.RecoveryActionUnknown, nil, nil, false
 		}
 
-		return recoveryActionReturn, returnExpr.Expression(), action.(antlr.ParserRuleContext), true
+		return core.RecoveryActionReturn, returnExpr.Expression(), action.(antlr.ParserRuleContext), true
 	default:
 		reportInvalidRecoveryTail(ctx, action, "Expected FAIL or RETURN after 'OR' in retry fallback", "Complete the retry fallback as OR FAIL or OR RETURN <expr>.")
-		return recoveryActionUnknown, nil, nil, false
+		return core.RecoveryActionUnknown, nil, nil, false
 	}
 }
 
-func missingRecoveryActionMessage(condition recoveryCondition) string {
+func missingRecoveryActionMessage(condition core.RecoveryCondition) string {
 	switch condition {
-	case recoveryConditionTimeout:
+	case core.RecoveryConditionTimeout:
 		return "Expected FAIL or RETURN after 'ON TIMEOUT'"
 	default:
 		return "Expected FAIL, RETURN, or RETRY after 'ON ERROR'"
 	}
 }
 
-func missingRecoveryActionHint(condition recoveryCondition) string {
+func missingRecoveryActionHint(condition core.RecoveryCondition) string {
 	switch condition {
-	case recoveryConditionTimeout:
+	case core.RecoveryConditionTimeout:
 		return "Use ON TIMEOUT FAIL to propagate timeout expiration or ON TIMEOUT RETURN <expr> to supply a fallback value."
 	default:
 		return "Use ON ERROR FAIL to propagate failures, ON ERROR RETURN <expr> to supply a fallback value, or ON ERROR RETRY <count> to retry."
@@ -397,59 +307,59 @@ func reportInvalidRecoveryTail(ctx *CompilerContext, node antlr.ParserRuleContex
 	ctx.Errors.Add(err)
 }
 
-func hasErrorReturnNoneHandler(plan recoveryPlan) bool {
-	if plan.onError == nil || plan.onError.actionKind != recoveryActionReturn {
+func hasErrorReturnNoneHandler(plan core.RecoveryPlan) bool {
+	if plan.OnError == nil || plan.OnError.ActionKind != core.RecoveryActionReturn {
 		return false
 	}
 
-	return isNoneLiteralExpression(plan.onError.expr)
+	return isNoneLiteralExpression(plan.OnError.Expr)
 }
 
-func recoveryPlanHasReturnHandler(plan recoveryPlan) bool {
-	return recoveryHandlerReturns(plan.onError) || recoveryHandlerReturns(plan.onTimeout)
+func recoveryPlanHasReturnHandler(plan core.RecoveryPlan) bool {
+	return recoveryHandlerReturns(plan.OnError) || recoveryHandlerReturns(plan.OnTimeout)
 }
 
-func mergeRecoveryPlans(ctx *CompilerContext, primary, extra recoveryPlan) recoveryPlan {
+func mergeRecoveryPlans(ctx *CompilerContext, primary, extra core.RecoveryPlan) core.RecoveryPlan {
 	merged := primary
 
-	if extra.onTimeout != nil {
-		if merged.onTimeout != nil {
-			reportInvalidRecoveryTail(ctx, extra.onTimeout.tailNode, "Duplicate ON TIMEOUT handler", "Each operation may define ON TIMEOUT at most once.")
+	if extra.OnTimeout != nil {
+		if merged.OnTimeout != nil {
+			reportInvalidRecoveryTail(ctx, extra.OnTimeout.TailNode, "Duplicate ON TIMEOUT handler", "Each operation may define ON TIMEOUT at most once.")
 		} else {
-			merged.onTimeout = extra.onTimeout
+			merged.OnTimeout = extra.OnTimeout
 		}
 	}
 
-	if extra.onError != nil {
-		if merged.onError != nil {
-			reportInvalidRecoveryTail(ctx, extra.onError.tailNode, "Duplicate ON ERROR handler", "Each operation may define ON ERROR at most once.")
+	if extra.OnError != nil {
+		if merged.OnError != nil {
+			reportInvalidRecoveryTail(ctx, extra.OnError.TailNode, "Duplicate ON ERROR handler", "Each operation may define ON ERROR at most once.")
 		} else {
-			merged.onError = extra.onError
+			merged.OnError = extra.OnError
 		}
 	}
 
 	return merged
 }
 
-func allowsTailCallRecovery(plan recoveryPlan) bool {
-	return plan.onError == nil || plan.onError.actionKind == recoveryActionFail
+func allowsTailCallRecovery(plan core.RecoveryPlan) bool {
+	return plan.OnError == nil || plan.OnError.ActionKind == core.RecoveryActionFail
 }
 
-func recoveryHandlerReturns(handler *recoveryHandler) bool {
+func recoveryHandlerReturns(handler *core.RecoveryHandler) bool {
 	switch {
 	case handler == nil:
 		return false
-	case handler.actionKind == recoveryActionReturn:
+	case handler.ActionKind == core.RecoveryActionReturn:
 		return true
-	case handler.actionKind == recoveryActionRetry && handler.retry != nil:
-		return handler.retry.finalActionKind == recoveryActionReturn
+	case handler.ActionKind == core.RecoveryActionRetry && handler.Retry != nil:
+		return handler.Retry.FinalActionKind == core.RecoveryActionReturn
 	default:
 		return false
 	}
 }
 
-func recoveryHandlerRetries(handler *recoveryHandler) bool {
-	return handler != nil && handler.actionKind == recoveryActionRetry && handler.retry != nil
+func recoveryHandlerRetries(handler *core.RecoveryHandler) bool {
+	return handler != nil && handler.ActionKind == core.RecoveryActionRetry && handler.Retry != nil
 }
 
 func isNoneLiteralExpression(expr fql.IExpressionContext) bool {
@@ -469,4 +379,47 @@ func isNoneLiteralExpression(expr fql.IExpressionContext) bool {
 
 	literal := atom.Literal()
 	return literal != nil && literal.NoneLiteral() != nil
+}
+
+func emitRecoveryRetryDelay(ctx *CompilerContext, retry *core.RecoveryRetryPlan, state core.RetryDelayState) {
+	if ctx == nil || retry == nil || !retry.HasDelay {
+		return
+	}
+
+	delayReady := ctx.Emitter.NewLabel("recovery", "retry", "delay", "ready")
+	ctx.Emitter.EmitJumpIfTrue(state.ReadyReg, delayReady)
+
+	delayValue := ensureRecoveryRegister(ctx, ctx.WaitCompiler.compileDurationClause(retry.Delay))
+	ctx.EmitMoveAuto(state.BaseReg, delayValue)
+	ctx.EmitMoveAuto(state.CurrentReg, state.BaseReg)
+	ctx.Emitter.EmitBoolean(state.ReadyReg, true)
+	ctx.Emitter.MarkLabel(delayReady)
+
+	ctx.Emitter.EmitA(bytecode.OpSleep, state.CurrentReg)
+
+	if retry.Backoff != core.RetryBackoffNone {
+		ctx.WaitCompiler.emitBackoffUpdate(retry.Backoff, state.CurrentReg, state.BaseReg)
+	}
+}
+
+func widenRecoveryResultType(ctx *CompilerContext, out bytecode.Operand, plan core.RecoveryPlan) bytecode.Operand {
+	if ctx == nil || !out.IsRegister() || !recoveryPlanHasReturnHandler(plan) {
+		return out
+	}
+
+	ctx.Types.Set(out, core.TypeAny)
+
+	return out
+}
+
+func ensureRecoveryRegister(ctx *CompilerContext, op bytecode.Operand) bytecode.Operand {
+	if ctx == nil || op == bytecode.NoopOperand || op.IsRegister() {
+		return op
+	}
+
+	dst := ctx.Registers.Allocate()
+	ctx.Emitter.EmitLoadConst(dst, op)
+	ctx.Types.Set(dst, operandType(ctx, op))
+
+	return dst
 }

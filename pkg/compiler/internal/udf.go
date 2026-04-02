@@ -135,7 +135,7 @@ func (c *UDFCompiler) compileExpressionReturn(expr fql.IExpressionContext) {
 		return
 	}
 
-	if fce := directFunctionCall(expr); fce != nil && fce.ErrorOperator() == nil && allowsTailCallRecovery(collectRecoveryPlan(c.ctx, fce, recoveryPlanOptions{})) {
+	if fce := directFunctionCall(expr); fce != nil && fce.ErrorOperator() == nil && allowsTailCallRecovery(collectRecoveryPlan(c.ctx, fce, core.RecoveryPlanOptions{})) {
 		call := fce.FunctionCall()
 		if call != nil {
 			if name, ok := getUDFName(call, c.ctx.UseAliases); ok {
