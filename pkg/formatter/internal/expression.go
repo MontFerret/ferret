@@ -916,13 +916,18 @@ func (f *expressionFormatter) formatErrorPolicyTailWith(p *printer, ctx fql.IErr
 	f.writeKeywordWith(p, keywordError)
 	p.space()
 
-	if ctx.SuppressKeyword() != nil {
+	policy := ctx.GetPolicy()
+	if policy == nil {
+		return
+	}
+
+	if strings.EqualFold(policy.GetText(), keywordSuppress) {
 		f.writeKeywordWith(p, keywordSuppress)
 		return
 	}
 
-	if ctx.Throw() != nil {
-		f.writeKeywordWith(p, keywordThrow)
+	if strings.EqualFold(policy.GetText(), keywordFail) {
+		f.writeKeywordWith(p, keywordFail)
 	}
 }
 

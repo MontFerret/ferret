@@ -15,7 +15,7 @@ type errorPolicy int
 const (
 	errorPolicyDefault errorPolicy = iota
 	errorPolicySuppress
-	errorPolicyThrow
+	errorPolicyFail
 )
 
 type catchJumpMode int
@@ -43,19 +43,24 @@ func resolveErrorPolicyTail(ctx *CompilerContext, tail fql.IErrorPolicyTailConte
 	}
 
 	if tail.ErrorKeyword() == nil || !strings.EqualFold(tail.ErrorKeyword().GetText(), "ERROR") {
-		reportInvalidErrorPolicyTail(ctx, tail.OnKeyword(), "Expected ERROR after 'ON' in error policy tail", "Complete the tail as ON ERROR SUPPRESS or ON ERROR THROW.")
+		reportInvalidErrorPolicyTail(ctx, tail.OnKeyword(), "Expected ERROR after 'ON' in error policy tail", "Complete the tail as ON ERROR SUPPRESS or ON ERROR FAIL.")
 		return errorPolicyDefault
 	}
 
-	if tail.Throw() != nil {
-		return errorPolicyThrow
+	policy := tail.GetPolicy()
+	if policy == nil {
+		reportInvalidErrorPolicyTail(ctx, tail.ErrorKeyword(), "Expected SUPPRESS or FAIL after 'ON ERROR'", "Use ON ERROR SUPPRESS to swallow failures or ON ERROR FAIL to propagate them.")
+		return errorPolicyDefault
 	}
 
-	if tail.SuppressKeyword() != nil && strings.EqualFold(tail.SuppressKeyword().GetText(), "SUPPRESS") {
+	switch text := policy.GetText(); {
+	case strings.EqualFold(text, "FAIL"):
+		return errorPolicyFail
+	case strings.EqualFold(text, "SUPPRESS"):
 		return errorPolicySuppress
 	}
 
-	reportInvalidErrorPolicyTail(ctx, tail.ErrorKeyword(), "Expected SUPPRESS or THROW after 'ON ERROR'", "Use ON ERROR SUPPRESS to swallow failures or ON ERROR THROW to propagate them.")
+	reportInvalidErrorPolicyTail(ctx, tail.ErrorKeyword(), "Expected SUPPRESS or FAIL after 'ON ERROR'", "Use ON ERROR SUPPRESS to swallow failures or ON ERROR FAIL to propagate them.")
 
 	return errorPolicyDefault
 }

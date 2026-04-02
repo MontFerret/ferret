@@ -205,6 +205,9 @@ type FqlParserListener interface {
 	// EnterSuppressKeyword is called when entering the suppressKeyword production.
 	EnterSuppressKeyword(c *SuppressKeywordContext)
 
+	// EnterFailKeyword is called when entering the failKeyword production.
+	EnterFailKeyword(c *FailKeywordContext)
+
 	// EnterParam is called when entering the param production.
 	EnterParam(c *ParamContext)
 
@@ -630,6 +633,9 @@ type FqlParserListener interface {
 
 	// ExitSuppressKeyword is called when exiting the suppressKeyword production.
 	ExitSuppressKeyword(c *SuppressKeywordContext)
+
+	// ExitFailKeyword is called when exiting the failKeyword production.
+	ExitFailKeyword(c *FailKeywordContext)
 
 	// ExitParam is called when exiting the param production.
 	ExitParam(c *ParamContext)

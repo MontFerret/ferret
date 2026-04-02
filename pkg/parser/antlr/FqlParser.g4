@@ -103,7 +103,7 @@ options { tokenVocab=FqlLexer; }
 		switch token {
 		case FqlParserReturn, FqlParserDispatch, FqlParserQuery, FqlParserUsing, FqlParserNone,
 			FqlParserNull, FqlParserLet, FqlParserVar, FqlParserUse, FqlParserWaitfor, FqlParserWhile, FqlParserDo, FqlParserIn,
-			FqlParserLike, FqlParserNot, FqlParserFor, FqlParserBooleanLiteral, FqlParserThrow, FqlParserMatch, FqlParserWhen,
+			FqlParserLike, FqlParserNot, FqlParserFor, FqlParserBooleanLiteral, FqlParserMatch, FqlParserWhen,
 			FqlParserFunc:
 			return true
 		default:
@@ -465,22 +465,25 @@ backoffStrategy
     ;
 
 errorPolicyTail
-    : onKeyword errorKeyword suppressKeyword
-    | onKeyword errorKeyword Throw
+    : onKeyword errorKeyword policy=Identifier
     | onKeyword errorKeyword
     | onKeyword
     ;
 
 onKeyword
-    : Identifier
+    : {p.isCurrentIdentifierText("ON")}? Identifier
     ;
 
 errorKeyword
-    : Identifier
+    : {p.isCurrentIdentifierText("ERROR")}? Identifier
     ;
 
 suppressKeyword
-    : Identifier
+    : {p.isCurrentIdentifierText("SUPPRESS")}? Identifier
+    ;
+
+failKeyword
+    : {p.isCurrentIdentifierText("FAIL")}? Identifier
     ;
 
 param
@@ -704,7 +707,6 @@ unsafeReservedWord
     | Not
     | For
     | BooleanLiteral
-    | Throw
     | Match
     | When
     ;

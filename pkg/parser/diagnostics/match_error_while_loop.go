@@ -125,7 +125,7 @@ func isValidWhileLoopBindingText(text string) bool {
 
 	switch strings.ToUpper(text) {
 	case "RETURN", "DISPATCH", "QUERY", "USING", "NONE", "NULL", "LET", "VAR", "USE", "WAITFOR",
-		"WHILE", "DO", "IN", "LIKE", "NOT", "FOR", "TRUE", "FALSE", "THROW", "MATCH", "WHEN", "FUNC":
+		"WHILE", "DO", "IN", "LIKE", "NOT", "FOR", "TRUE", "FALSE", "MATCH", "WHEN", "FUNC":
 		return false
 	default:
 		return true

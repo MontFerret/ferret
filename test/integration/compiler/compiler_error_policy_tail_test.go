@@ -17,7 +17,7 @@ func TestCompiler_ErrorPolicyTailCompiles(t *testing.T) {
 		ProgramCheck(`RETURN @obj.foo.bar ON ERROR SUPPRESS`, expectCatchTableSize(1), "Member suppression should emit a guarded region"),
 		ProgramCheck("RETURN QUERY VALUE `.items` IN @doc USING css ON ERROR SUPPRESS", expectCatchTableSize(1), "QUERY suppression should emit a guarded region"),
 		ProgramCheck("DISPATCH \"click\" IN @d ON ERROR SUPPRESS\nRETURN 1", expectCatchTableSize(1), "DISPATCH suppression should emit a guarded region"),
-		ProgramCheck("LET ok = WAITFOR TRUE ON ERROR THROW\nRETURN ok", expectCatchTableSize(0), "Explicit THROW should preserve default propagation"),
+		ProgramCheck("LET ok = WAITFOR TRUE ON ERROR FAIL\nRETURN ok", expectCatchTableSize(0), "Explicit FAIL should preserve default propagation"),
 		ProgramCheck("RETURN (FAIL() + 1) ON ERROR SUPPRESS", expectCatchTableSize(1), "Grouped suppression should emit a guarded region"),
 	}, compiler.O0, compiler.O1)
 }
@@ -29,7 +29,7 @@ func TestSyntaxErrorsErrorPolicyTail(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected ERROR after 'ON' in error policy tail",
-				Hint:    "Complete the tail as ON ERROR SUPPRESS or ON ERROR THROW.",
+				Hint:    "Complete the tail as ON ERROR SUPPRESS or ON ERROR FAIL.",
 			},
 			"Missing ERROR in error policy tail",
 		),
@@ -37,8 +37,8 @@ func TestSyntaxErrorsErrorPolicyTail(t *testing.T) {
 			`RETURN FAIL() ON ERROR`,
 			E{
 				Kind:    parserd.SyntaxError,
-				Message: "Expected SUPPRESS or THROW after 'ON ERROR'",
-				Hint:    "Use ON ERROR SUPPRESS to swallow failures or ON ERROR THROW to propagate them.",
+				Message: "Expected SUPPRESS or FAIL after 'ON ERROR'",
+				Hint:    "Use ON ERROR SUPPRESS to swallow failures or ON ERROR FAIL to propagate them.",
 			},
 			"Missing action in error policy tail",
 		),
@@ -46,10 +46,19 @@ func TestSyntaxErrorsErrorPolicyTail(t *testing.T) {
 			`RETURN FAIL() ON ERROR MAYBE`,
 			E{
 				Kind:    parserd.SyntaxError,
-				Message: "Expected SUPPRESS or THROW after 'ON ERROR'",
-				Hint:    "Use ON ERROR SUPPRESS to swallow failures or ON ERROR THROW to propagate them.",
+				Message: "Expected SUPPRESS or FAIL after 'ON ERROR'",
+				Hint:    "Use ON ERROR SUPPRESS to swallow failures or ON ERROR FAIL to propagate them.",
 			},
 			"Invalid action in error policy tail",
+		),
+		Failure(
+			`RETURN FAIL() ON ERROR THROW`,
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected SUPPRESS or FAIL after 'ON ERROR'",
+				Hint:    "Use ON ERROR SUPPRESS to swallow failures or ON ERROR FAIL to propagate them.",
+			},
+			"Legacy THROW spelling should be rejected in error policy tail",
 		),
 		Failure(`RETURN maybeCall?()`, E{}, "Optional call shorthand should remain invalid in v2"),
 		Failure(`RETURN items?[0]`, E{}, "Optional bracket shorthand should remain invalid in v2"),

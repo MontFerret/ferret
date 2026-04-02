@@ -205,6 +205,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#suppressKeyword.
 	VisitSuppressKeyword(ctx *SuppressKeywordContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#failKeyword.
+	VisitFailKeyword(ctx *FailKeywordContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#param.
 	VisitParam(ctx *ParamContext) interface{}
 

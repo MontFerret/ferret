@@ -271,6 +271,10 @@ func (v *BaseFqlParserVisitor) VisitSuppressKeyword(ctx *SuppressKeywordContext)
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitFailKeyword(ctx *FailKeywordContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitParam(ctx *ParamContext) interface{} {
 	return v.VisitChildren(ctx)
 }

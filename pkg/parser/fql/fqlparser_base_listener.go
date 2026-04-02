@@ -420,6 +420,12 @@ func (s *BaseFqlParserListener) EnterSuppressKeyword(ctx *SuppressKeywordContext
 // ExitSuppressKeyword is called when production suppressKeyword is exited.
 func (s *BaseFqlParserListener) ExitSuppressKeyword(ctx *SuppressKeywordContext) {}
 
+// EnterFailKeyword is called when production failKeyword is entered.
+func (s *BaseFqlParserListener) EnterFailKeyword(ctx *FailKeywordContext) {}
+
+// ExitFailKeyword is called when production failKeyword is exited.
+func (s *BaseFqlParserListener) ExitFailKeyword(ctx *FailKeywordContext) {}
+
 // EnterParam is called when production param is entered.
 func (s *BaseFqlParserListener) EnterParam(ctx *ParamContext) {}
 

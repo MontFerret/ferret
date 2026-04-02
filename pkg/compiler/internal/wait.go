@@ -171,6 +171,11 @@ func (c *WaitCompiler) compilePredicate(ctx fql.IWaitForPredicateExpressionConte
 		return bytecode.NoopOperand
 	}
 
+	if legacy := legacyWaitForOrThrowNode(predExpr); legacy != nil {
+		c.ctx.Errors.Add(c.ctx.Errors.Create(parser.SyntaxError, legacy, "Unexpected THROW after OR in WAITFOR predicate"))
+		return bytecode.NoopOperand
+	}
+
 	config := c.buildWaitPredicateConfig(ctx, predicate, predExpr)
 	c.normalizeWaitPredicateConfig(&config)
 
@@ -182,6 +187,60 @@ func (c *WaitCompiler) compilePredicate(ctx fql.IWaitForPredicateExpressionConte
 	c.emitWaitPredicatePollLoop(config, state)
 
 	return state.resultReg
+}
+
+func legacyWaitForOrThrowNode(expr fql.IExpressionContext) antlr.ParserRuleContext {
+	if expr == nil || expr.LogicalOrOperator() == nil {
+		return nil
+	}
+
+	return bareThrowExpressionNode(expr.GetRight())
+}
+
+func bareThrowExpressionNode(expr fql.IExpressionContext) antlr.ParserRuleContext {
+	if expr == nil {
+		return nil
+	}
+
+	if expr.UnaryOperator() != nil || expr.LogicalAndOperator() != nil || expr.LogicalOrOperator() != nil || expr.GetTernaryOperator() != nil {
+		return nil
+	}
+
+	return bareThrowPredicateNode(expr.Predicate())
+}
+
+func bareThrowPredicateNode(pred fql.IPredicateContext) antlr.ParserRuleContext {
+	if pred == nil {
+		return nil
+	}
+
+	if pred.EqualityOperator() != nil || pred.ArrayOperator() != nil || pred.InOperator() != nil || pred.LikeOperator() != nil {
+		return nil
+	}
+
+	return bareThrowAtomNode(pred.ExpressionAtom())
+}
+
+func bareThrowAtomNode(atom fql.IExpressionAtomContext) antlr.ParserRuleContext {
+	if atom == nil {
+		return nil
+	}
+
+	if atom.MultiplicativeOperator() != nil || atom.AdditiveOperator() != nil || atom.RegexpOperator() != nil {
+		return nil
+	}
+
+	variable := atom.Variable()
+	if variable == nil || !strings.EqualFold(matchVariableName(variable), "THROW") {
+		return nil
+	}
+
+	node, ok := variable.(antlr.ParserRuleContext)
+	if !ok {
+		return nil
+	}
+
+	return node
 }
 
 func resolveWaitPredicateMode(hasValue, hasExists, hasNot bool) waitForPredicateMode {

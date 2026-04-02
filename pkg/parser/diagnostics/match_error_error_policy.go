@@ -16,8 +16,8 @@ func matchErrorPolicyErrors(src *source.Source, err *diagnostics.Diagnostic, off
 
 	if errorNode := errorPolicyMissingActionNode(offending); errorNode != nil {
 		span := spanFromTokenSafe(errorNode.Token(), src)
-		err.Message = "Expected SUPPRESS or THROW after 'ON ERROR'"
-		err.Hint = "Use ON ERROR SUPPRESS to swallow failures or ON ERROR THROW to propagate them."
+		err.Message = "Expected SUPPRESS or FAIL after 'ON ERROR'"
+		err.Hint = "Use ON ERROR SUPPRESS to swallow failures or ON ERROR FAIL to propagate them."
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing error policy"),
 		}
@@ -27,7 +27,7 @@ func matchErrorPolicyErrors(src *source.Source, err *diagnostics.Diagnostic, off
 	if on := errorPolicyMissingErrorNode(offending); on != nil {
 		span := spanFromTokenSafe(on.Token(), src)
 		err.Message = "Expected ERROR after 'ON' in error policy tail"
-		err.Hint = "Complete the tail as ON ERROR SUPPRESS or ON ERROR THROW."
+		err.Hint = "Complete the tail as ON ERROR SUPPRESS or ON ERROR FAIL."
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing ERROR"),
 		}
@@ -38,7 +38,9 @@ func matchErrorPolicyErrors(src *source.Source, err *diagnostics.Diagnostic, off
 }
 
 func isErrorPolicyPredicateFailure(msg string) bool {
-	return has(msg, "errorkeyword failed predicate") || has(msg, "suppresskeyword failed predicate")
+	return has(msg, "errorkeyword failed predicate") ||
+		has(msg, "suppresskeyword failed predicate") ||
+		has(msg, "failkeyword failed predicate")
 }
 
 func errorPolicyMissingErrorNode(offending *TokenNode) *TokenNode {
