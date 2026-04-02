@@ -67,6 +67,38 @@ func TestExpressionFormatter_ImplicitCurrentExpression(t *testing.T) {
 	}
 }
 
+func TestExpressionFormatter_RangeOperandImplicitCurrentExpression(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{
+			input: "RETURN [1][* RETURN . .. 10]",
+			want:  "...10",
+		},
+		{
+			input: "RETURN [1][* RETURN 1 .. .]",
+			want:  "1...",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			program := parseProgram(t, tt.input)
+			inlineRet := mustFirst[*fql.InlineReturnContext](t, program)
+			expr := inlineRet.Expression().(*fql.ExpressionContext)
+
+			var buf bytes.Buffer
+			e := newEngine(source.NewAnonymous(tt.input), &buf, DefaultOptions())
+
+			e.expression.formatExpression(expr)
+			if got := buf.String(); got != tt.want {
+				t.Fatalf("unexpected range formatting: got %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestExpressionFormatter_QueryExpressionInline(t *testing.T) {
 	input := "RETURN QUERY `.items` IN doc USING css WITH { limit: 10 }"
 	program := parseProgram(t, input)
@@ -120,6 +152,20 @@ func TestExpressionFormatter_FunctionCallErrorPolicyTail(t *testing.T) {
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "FAIL() ON ERROR RETURN NONE" {
 		t.Fatalf("unexpected function call error policy formatting: %q", got)
+	}
+}
+
+func TestExpressionFormatter_FunctionCallRetryPolicyTail(t *testing.T) {
+	input := "RETURN FAIL() ON ERROR RETRY 3 DELAY 100MS BACKOFF EXPONENTIAL OR RETURN NONE"
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "FAIL() ON ERROR RETRY 3 DELAY 100MS BACKOFF EXPONENTIAL OR RETURN NONE" {
+		t.Fatalf("unexpected function call retry formatting: %q", got)
 	}
 }
 

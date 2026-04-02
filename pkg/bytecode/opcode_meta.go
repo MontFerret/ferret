@@ -161,9 +161,9 @@ func controlFlowRole(op Opcode) ControlFlowRole {
 	case OpJumpIfFalse, OpJumpIfTrue, OpJumpIfNone,
 		OpJumpIfNe, OpJumpIfNeConst, OpJumpIfEq, OpJumpIfEqConst,
 		OpJumpIfMissingProperty, OpJumpIfMissingPropertyConst, OpMatchLoadPropertyConst,
-		OpIterNext, OpIterNextTimeout:
+		OpIterNext, OpIterNextTimeout, OpIterLimit, OpIterSkip:
 		return ControlFlowJumpConditional
-	case OpReturn, OpTailCall:
+	case OpReturn, OpTailCall, OpFail, OpFailTimeout:
 		return ControlFlowTerminator
 	default:
 		return ControlFlowNone

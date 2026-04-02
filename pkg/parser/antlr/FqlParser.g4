@@ -492,14 +492,63 @@ recoveryCondition
     ;
 
 recoveryAction
-    : failKeyword
+    : failKeyword recoveryActionOrClause?
     | returnKeyword recoveryReturnExpr
     | returnKeyword
-    | {!p.isCurrentIdentifierText("FAIL")}? Identifier
+    | recoveryRetryAction
+    | {!p.isCurrentIdentifierText("FAIL") && !p.isCurrentIdentifierText("RETRY")}? Identifier recoveryActionOrClause?
     ;
 
 recoveryReturnExpr
     : expression
+    ;
+
+recoveryRetryAction
+    : retryKeyword recoveryRetryCount? recoveryRetryDelayClause? recoveryRetryOrClause*
+    ;
+
+recoveryRetryCount
+    : integerLiteral
+    ;
+
+recoveryRetryDelayClause
+    : delayKeyword recoveryRetryDelayValue? recoveryRetryBackoffClause?
+    | recoveryRetryBackoffClause
+    ;
+
+recoveryRetryDelayValue
+    : durationLiteral
+    | integerLiteral
+    | floatLiteral
+    | variable
+    | param
+    | memberExpression
+    | functionCall
+    ;
+
+recoveryRetryBackoffClause
+    : Backoff recoveryRetryBackoffKind?
+    ;
+
+recoveryRetryBackoffKind
+    : Identifier
+    | stringLiteral
+    | None
+    ;
+
+recoveryRetryOrClause
+    : Or recoveryRetryFinalAction?
+    ;
+
+recoveryRetryFinalAction
+    : failKeyword
+    | returnKeyword recoveryReturnExpr
+    | returnKeyword
+    | {!p.isCurrentIdentifierText("FAIL") && !p.isCurrentIdentifierText("RETURN")}? Identifier
+    ;
+
+recoveryActionOrClause
+    : Or recoveryRetryFinalAction?
     ;
 
 onKeyword
@@ -516,6 +565,14 @@ timeoutKeyword
 
 failKeyword
     : {p.isCurrentIdentifierText("FAIL")}? Identifier
+    ;
+
+retryKeyword
+    : {p.isCurrentIdentifierText("RETRY")}? Identifier
+    ;
+
+delayKeyword
+    : {p.isCurrentIdentifierText("DELAY")}? Identifier
     ;
 
 returnKeyword

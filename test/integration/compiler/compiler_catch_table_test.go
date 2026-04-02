@@ -80,6 +80,29 @@ func TestCompiler_ExplicitQuerySuppressCatchEndsBeforeFollowingInstruction(t *te
 	}, compiler.O0, compiler.O1)
 }
 
+func TestCompiler_RetryWithoutFallbackLeavesFinalAttemptUnprotected(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck("RETURN FAIL() ON ERROR RETRY 2", func(program *bytecode.Program) error {
+			if got, want := len(program.CatchTable), 1; got != want {
+				return fmt.Errorf("unexpected catch table size: got %d, want %d", got, want)
+			}
+
+			callCount := 0
+			for _, inst := range program.Bytecode {
+				if inst.Opcode == bytecode.OpHCall {
+					callCount++
+				}
+			}
+
+			if got, want := callCount, 2; got != want {
+				return fmt.Errorf("unexpected host call count: got %d, want %d", got, want)
+			}
+
+			return nil
+		}, "retry without fallback should leave one final uncaught attempt"),
+	}, compiler.O0, compiler.O1)
+}
+
 func TestCompiler_OptionalForCatchUsesInclusiveEndAndCleanupJump(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck("LET xs = (FOR i IN ERROR() RETURN i)?\nRETURN xs.foo", func(program *bytecode.Program) error {
@@ -110,45 +133,30 @@ func TestCompiler_OptionalForCatchUsesInclusiveEndAndCleanupJump(t *testing.T) {
 	}, compiler.O0, compiler.O1)
 }
 
-func TestCompiler_WaitForEventSuppressCatchUsesCleanupJump(t *testing.T) {
+func TestCompiler_GroupedForRetryRoutesThroughCleanup(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
-		ProgramCheck("LET ok = WAITFOR EVENT \"test\" IN @obs ON ERROR RETURN NONE\nRETURN ok.foo", func(program *bytecode.Program) error {
+		ProgramCheck("LET xs = (FOR i IN [1, 2] LET y = ERROR() RETURN y + i) ON ERROR RETRY 2 OR RETURN []\nRETURN LENGTH(xs)", func(program *bytecode.Program) error {
 			if got, want := len(program.CatchTable), 1; got != want {
 				return fmt.Errorf("unexpected catch table size: got %d, want %d", got, want)
 			}
 
 			catch := program.CatchTable[0]
-			propPC, err := findOpcodePC(program, bytecode.OpLoadPropertyConst)
-			if err != nil {
-				return err
-			}
 			closePC, err := findOpcodePC(program, bytecode.OpClose)
 			if err != nil {
 				return err
 			}
 
-			if got, want := catch[1], closePC; got != want {
-				return fmt.Errorf("unexpected catch end: got %d, want %d", got, want)
-			}
-
-			if got := catch[2]; got <= closePC || got >= propPC {
-				return fmt.Errorf("unexpected waitfor event recovery jump: got %d, want (%d, %d)", got, closePC, propPC)
-			}
-
-			return nil
-		}, "waitfor event suppress catch uses cleanup jump"),
-	}, compiler.O0, compiler.O1)
-}
-
-func TestCompiler_GroupedWaitForEventRecoveryUsesTimeoutAwarePath(t *testing.T) {
-	RunSpecsLevels(t, []spec.Spec{
-		ProgramCheck("RETURN (WAITFOR EVENT \"test\" IN @obs TIMEOUT 1ms) ON TIMEOUT RETURN \"timeout\" ON ERROR RETURN \"error\"", func(program *bytecode.Program) error {
-			if _, err := findOpcodePC(program, bytecode.OpIterNextTimeout); err != nil {
+			lengthPC, err := findOpcodePC(program, bytecode.OpLength)
+			if err != nil {
 				return err
 			}
 
-			return expectOpcodeAbsent(program, bytecode.OpIterNext)
-		}, "grouped waitfor event recovery should use timeout-aware bytecode"),
+			if got := catch[2]; got <= closePC || got >= lengthPC {
+				return fmt.Errorf("unexpected grouped for retry handler pc: got %d, want (%d, %d)", got, closePC, lengthPC)
+			}
+
+			return nil
+		}, "grouped for retry should route failures through loop cleanup"),
 	}, compiler.O0, compiler.O1)
 }
 
@@ -189,6 +197,85 @@ func TestCompiler_GroupedForRecoveryRoutesThroughCleanup(t *testing.T) {
 
 			return nil
 		}, "grouped for recovery should route failures through loop cleanup"),
+	}, compiler.O0, compiler.O1)
+}
+
+func TestCompiler_WaitForEventSuppressCatchUsesCleanupJump(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck("LET ok = WAITFOR EVENT \"test\" IN @obs ON ERROR RETURN NONE\nRETURN ok.foo", func(program *bytecode.Program) error {
+			if got, want := len(program.CatchTable), 1; got != want {
+				return fmt.Errorf("unexpected catch table size: got %d, want %d", got, want)
+			}
+
+			catch := program.CatchTable[0]
+			propPC, err := findOpcodePC(program, bytecode.OpLoadPropertyConst)
+			if err != nil {
+				return err
+			}
+			closePC, err := findOpcodePC(program, bytecode.OpClose)
+			if err != nil {
+				return err
+			}
+
+			if got, want := catch[1], closePC; got != want {
+				return fmt.Errorf("unexpected catch end: got %d, want %d", got, want)
+			}
+
+			if got := catch[2]; got <= closePC || got >= propPC {
+				return fmt.Errorf("unexpected waitfor event recovery jump: got %d, want (%d, %d)", got, closePC, propPC)
+			}
+
+			return nil
+		}, "waitfor event suppress catch uses cleanup jump"),
+	}, compiler.O0, compiler.O1)
+}
+
+func TestCompiler_WaitForEventRetryUsesCleanupJump(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck("LET ok = WAITFOR EVENT \"test\" IN @obs ON ERROR RETRY 2 OR RETURN NONE\nRETURN ok.foo", func(program *bytecode.Program) error {
+			if got, want := len(program.CatchTable), 1; got != want {
+				return fmt.Errorf("unexpected catch table size: got %d, want %d", got, want)
+			}
+
+			catch := program.CatchTable[0]
+			propPC, err := findOpcodePC(program, bytecode.OpLoadPropertyConst)
+			if err != nil {
+				return err
+			}
+			closePC, err := findOpcodePC(program, bytecode.OpClose)
+			if err != nil {
+				return err
+			}
+
+			if got, want := catch[1], closePC; got != want {
+				return fmt.Errorf("unexpected catch end: got %d, want %d", got, want)
+			}
+
+			if got := catch[2]; got <= closePC || got >= propPC {
+				return fmt.Errorf("unexpected waitfor event retry jump: got %d, want (%d, %d)", got, closePC, propPC)
+			}
+
+			return nil
+		}, "waitfor event retry should route failures through stream cleanup"),
+	}, compiler.O0, compiler.O1)
+}
+
+func TestCompiler_GroupedWaitForEventRecoveryUsesTimeoutAwarePath(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck("RETURN (WAITFOR EVENT \"test\" IN @obs TIMEOUT 1ms) ON TIMEOUT RETURN \"timeout\" ON ERROR RETURN \"error\"", func(program *bytecode.Program) error {
+			if _, err := findOpcodePC(program, bytecode.OpIterNextTimeout); err != nil {
+				return err
+			}
+
+			return expectOpcodeAbsent(program, bytecode.OpIterNext)
+		}, "grouped waitfor event recovery should use timeout-aware bytecode"),
+		ProgramCheck("RETURN (WAITFOR EVENT \"test\" IN @obs TIMEOUT 1ms) ON TIMEOUT RETURN \"timeout\" ON ERROR RETRY 2 OR RETURN \"error\"", func(program *bytecode.Program) error {
+			if _, err := findOpcodePC(program, bytecode.OpIterNextTimeout); err != nil {
+				return err
+			}
+
+			return expectOpcodeAbsent(program, bytecode.OpIterNext)
+		}, "grouped waitfor event retry should use timeout-aware bytecode"),
 	}, compiler.O0, compiler.O1)
 }
 

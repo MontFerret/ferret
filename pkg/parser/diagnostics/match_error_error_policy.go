@@ -20,8 +20,8 @@ func matchErrorPolicyErrors(src *source.Source, err *diagnostics.Diagnostic, off
 			err.Message = "Expected FAIL or RETURN after 'ON TIMEOUT'"
 			err.Hint = "Use ON TIMEOUT FAIL to propagate timeout expiration or ON TIMEOUT RETURN <expr> to supply a fallback value."
 		} else {
-			err.Message = "Expected FAIL or RETURN after 'ON ERROR'"
-			err.Hint = "Use ON ERROR FAIL to propagate failures or ON ERROR RETURN <expr> to supply a fallback value."
+			err.Message = "Expected FAIL, RETURN, or RETRY after 'ON ERROR'"
+			err.Hint = "Use ON ERROR FAIL to propagate failures, ON ERROR RETURN <expr> to supply a fallback value, or ON ERROR RETRY <count> to retry."
 		}
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing recovery action"),
@@ -32,7 +32,7 @@ func matchErrorPolicyErrors(src *source.Source, err *diagnostics.Diagnostic, off
 	if on := errorPolicyMissingErrorNode(offending); on != nil {
 		span := spanFromTokenSafe(on.Token(), src)
 		err.Message = "Expected ERROR or TIMEOUT after 'ON' in recovery tail"
-		err.Hint = "Complete the tail as ON ERROR FAIL, ON ERROR RETURN <expr>, ON TIMEOUT FAIL, or ON TIMEOUT RETURN <expr>."
+		err.Hint = "Complete the tail as ON ERROR FAIL, ON ERROR RETURN <expr>, ON ERROR RETRY <count>, ON TIMEOUT FAIL, or ON TIMEOUT RETURN <expr>."
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing recovery condition"),
 		}
@@ -46,7 +46,9 @@ func isErrorPolicyPredicateFailure(msg string) bool {
 	return has(msg, "errorkeyword failed predicate") ||
 		has(msg, "timeoutkeyword failed predicate") ||
 		has(msg, "failkeyword failed predicate") ||
-		has(msg, "returnkeyword failed predicate")
+		has(msg, "returnkeyword failed predicate") ||
+		has(msg, "retrykeyword failed predicate") ||
+		has(msg, "delaykeyword failed predicate")
 }
 
 func errorPolicyMissingErrorNode(offending *TokenNode) *TokenNode {

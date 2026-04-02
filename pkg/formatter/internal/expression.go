@@ -844,6 +844,8 @@ func (f *expressionFormatter) formatRangeOperand(ctx *fql.RangeOperandContext) {
 		f.formatParam(ctx.Param().(*fql.ParamContext))
 	case ctx.FunctionCallExpression() != nil:
 		f.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
+	case ctx.ImplicitCurrentExpression() != nil:
+		f.p.write(".")
 	case ctx.ImplicitMemberExpression() != nil:
 		f.member.formatImplicitMemberExpression(ctx.ImplicitMemberExpression().(*fql.ImplicitMemberExpressionContext))
 	case ctx.MemberExpression() != nil:
@@ -971,6 +973,8 @@ func (f *expressionFormatter) formatRecoveryTailWith(p *printer, ctx fql.IRecove
 
 	p.space()
 	switch {
+	case action.RecoveryRetryAction() != nil:
+		f.formatRecoveryRetryActionWith(p, action.RecoveryRetryAction())
 	case action.ReturnKeyword() != nil || strings.EqualFold(action.GetText(), keywordReturn):
 		f.writeKeywordWith(p, keywordReturn)
 		if expr := action.RecoveryReturnExpr(); expr != nil && expr.Expression() != nil {
@@ -981,6 +985,81 @@ func (f *expressionFormatter) formatRecoveryTailWith(p *printer, ctx fql.IRecove
 		f.writeKeywordWith(p, keywordFail)
 	default:
 		p.write(applyCase(f.opts.caseMode, action.GetText()))
+	}
+}
+
+func (f *expressionFormatter) formatRecoveryRetryActionWith(p *printer, ctx fql.IRecoveryRetryActionContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeywordWith(p, keywordRetry)
+
+	if count := ctx.RecoveryRetryCount(); count != nil {
+		p.space()
+		p.write(count.GetText())
+	}
+
+	if delayClause := ctx.RecoveryRetryDelayClause(); delayClause != nil {
+		f.formatRecoveryRetryDelayClauseWith(p, delayClause)
+	}
+
+	for _, orClause := range ctx.AllRecoveryRetryOrClause() {
+		f.formatRecoveryRetryOrClauseWith(p, orClause)
+	}
+}
+
+func (f *expressionFormatter) formatRecoveryRetryDelayClauseWith(p *printer, ctx fql.IRecoveryRetryDelayClauseContext) {
+	if ctx == nil {
+		return
+	}
+
+	if ctx.DelayKeyword() != nil {
+		p.space()
+		f.writeKeywordWith(p, keywordDelay)
+		if value := ctx.RecoveryRetryDelayValue(); value != nil {
+			p.space()
+			p.write(value.GetText())
+		}
+	}
+
+	if backoff := ctx.RecoveryRetryBackoffClause(); backoff != nil {
+		p.space()
+		f.writeKeywordWith(p, keywordBackoff)
+		if kind := backoff.RecoveryRetryBackoffKind(); kind != nil {
+			p.space()
+			switch {
+			case kind.None() != nil || kind.Identifier() != nil:
+				p.write(applyCase(f.opts.caseMode, kind.GetText()))
+			default:
+				p.write(kind.GetText())
+			}
+		}
+	}
+}
+
+func (f *expressionFormatter) formatRecoveryRetryOrClauseWith(p *printer, ctx fql.IRecoveryRetryOrClauseContext) {
+	if ctx == nil {
+		return
+	}
+
+	p.space()
+	f.writeKeywordWith(p, keywordOr)
+
+	if action := ctx.RecoveryRetryFinalAction(); action != nil {
+		p.space()
+		switch {
+		case action.FailKeyword() != nil || strings.EqualFold(action.GetText(), keywordFail):
+			f.writeKeywordWith(p, keywordFail)
+		case action.ReturnKeyword() != nil || strings.EqualFold(action.GetText(), keywordReturn):
+			f.writeKeywordWith(p, keywordReturn)
+			if expr := action.RecoveryReturnExpr(); expr != nil && expr.Expression() != nil {
+				p.space()
+				f.formatExpressionWith(p, expr.Expression().(*fql.ExpressionContext))
+			}
+		default:
+			p.write(applyCase(f.opts.caseMode, action.GetText()))
+		}
 	}
 }
 

@@ -275,6 +275,42 @@ func (v *BaseFqlParserVisitor) VisitRecoveryReturnExpr(ctx *RecoveryReturnExprCo
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitRecoveryRetryAction(ctx *RecoveryRetryActionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitRecoveryRetryCount(ctx *RecoveryRetryCountContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitRecoveryRetryDelayClause(ctx *RecoveryRetryDelayClauseContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitRecoveryRetryDelayValue(ctx *RecoveryRetryDelayValueContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitRecoveryRetryBackoffClause(ctx *RecoveryRetryBackoffClauseContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitRecoveryRetryBackoffKind(ctx *RecoveryRetryBackoffKindContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitRecoveryRetryOrClause(ctx *RecoveryRetryOrClauseContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitRecoveryRetryFinalAction(ctx *RecoveryRetryFinalActionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitRecoveryActionOrClause(ctx *RecoveryActionOrClauseContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitOnKeyword(ctx *OnKeywordContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -288,6 +324,14 @@ func (v *BaseFqlParserVisitor) VisitTimeoutKeyword(ctx *TimeoutKeywordContext) i
 }
 
 func (v *BaseFqlParserVisitor) VisitFailKeyword(ctx *FailKeywordContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitRetryKeyword(ctx *RetryKeywordContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitDelayKeyword(ctx *DelayKeywordContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

@@ -426,6 +426,62 @@ func (s *BaseFqlParserListener) EnterRecoveryReturnExpr(ctx *RecoveryReturnExprC
 // ExitRecoveryReturnExpr is called when production recoveryReturnExpr is exited.
 func (s *BaseFqlParserListener) ExitRecoveryReturnExpr(ctx *RecoveryReturnExprContext) {}
 
+// EnterRecoveryRetryAction is called when production recoveryRetryAction is entered.
+func (s *BaseFqlParserListener) EnterRecoveryRetryAction(ctx *RecoveryRetryActionContext) {}
+
+// ExitRecoveryRetryAction is called when production recoveryRetryAction is exited.
+func (s *BaseFqlParserListener) ExitRecoveryRetryAction(ctx *RecoveryRetryActionContext) {}
+
+// EnterRecoveryRetryCount is called when production recoveryRetryCount is entered.
+func (s *BaseFqlParserListener) EnterRecoveryRetryCount(ctx *RecoveryRetryCountContext) {}
+
+// ExitRecoveryRetryCount is called when production recoveryRetryCount is exited.
+func (s *BaseFqlParserListener) ExitRecoveryRetryCount(ctx *RecoveryRetryCountContext) {}
+
+// EnterRecoveryRetryDelayClause is called when production recoveryRetryDelayClause is entered.
+func (s *BaseFqlParserListener) EnterRecoveryRetryDelayClause(ctx *RecoveryRetryDelayClauseContext) {}
+
+// ExitRecoveryRetryDelayClause is called when production recoveryRetryDelayClause is exited.
+func (s *BaseFqlParserListener) ExitRecoveryRetryDelayClause(ctx *RecoveryRetryDelayClauseContext) {}
+
+// EnterRecoveryRetryDelayValue is called when production recoveryRetryDelayValue is entered.
+func (s *BaseFqlParserListener) EnterRecoveryRetryDelayValue(ctx *RecoveryRetryDelayValueContext) {}
+
+// ExitRecoveryRetryDelayValue is called when production recoveryRetryDelayValue is exited.
+func (s *BaseFqlParserListener) ExitRecoveryRetryDelayValue(ctx *RecoveryRetryDelayValueContext) {}
+
+// EnterRecoveryRetryBackoffClause is called when production recoveryRetryBackoffClause is entered.
+func (s *BaseFqlParserListener) EnterRecoveryRetryBackoffClause(ctx *RecoveryRetryBackoffClauseContext) {
+}
+
+// ExitRecoveryRetryBackoffClause is called when production recoveryRetryBackoffClause is exited.
+func (s *BaseFqlParserListener) ExitRecoveryRetryBackoffClause(ctx *RecoveryRetryBackoffClauseContext) {
+}
+
+// EnterRecoveryRetryBackoffKind is called when production recoveryRetryBackoffKind is entered.
+func (s *BaseFqlParserListener) EnterRecoveryRetryBackoffKind(ctx *RecoveryRetryBackoffKindContext) {}
+
+// ExitRecoveryRetryBackoffKind is called when production recoveryRetryBackoffKind is exited.
+func (s *BaseFqlParserListener) ExitRecoveryRetryBackoffKind(ctx *RecoveryRetryBackoffKindContext) {}
+
+// EnterRecoveryRetryOrClause is called when production recoveryRetryOrClause is entered.
+func (s *BaseFqlParserListener) EnterRecoveryRetryOrClause(ctx *RecoveryRetryOrClauseContext) {}
+
+// ExitRecoveryRetryOrClause is called when production recoveryRetryOrClause is exited.
+func (s *BaseFqlParserListener) ExitRecoveryRetryOrClause(ctx *RecoveryRetryOrClauseContext) {}
+
+// EnterRecoveryRetryFinalAction is called when production recoveryRetryFinalAction is entered.
+func (s *BaseFqlParserListener) EnterRecoveryRetryFinalAction(ctx *RecoveryRetryFinalActionContext) {}
+
+// ExitRecoveryRetryFinalAction is called when production recoveryRetryFinalAction is exited.
+func (s *BaseFqlParserListener) ExitRecoveryRetryFinalAction(ctx *RecoveryRetryFinalActionContext) {}
+
+// EnterRecoveryActionOrClause is called when production recoveryActionOrClause is entered.
+func (s *BaseFqlParserListener) EnterRecoveryActionOrClause(ctx *RecoveryActionOrClauseContext) {}
+
+// ExitRecoveryActionOrClause is called when production recoveryActionOrClause is exited.
+func (s *BaseFqlParserListener) ExitRecoveryActionOrClause(ctx *RecoveryActionOrClauseContext) {}
+
 // EnterOnKeyword is called when production onKeyword is entered.
 func (s *BaseFqlParserListener) EnterOnKeyword(ctx *OnKeywordContext) {}
 
@@ -449,6 +505,18 @@ func (s *BaseFqlParserListener) EnterFailKeyword(ctx *FailKeywordContext) {}
 
 // ExitFailKeyword is called when production failKeyword is exited.
 func (s *BaseFqlParserListener) ExitFailKeyword(ctx *FailKeywordContext) {}
+
+// EnterRetryKeyword is called when production retryKeyword is entered.
+func (s *BaseFqlParserListener) EnterRetryKeyword(ctx *RetryKeywordContext) {}
+
+// ExitRetryKeyword is called when production retryKeyword is exited.
+func (s *BaseFqlParserListener) ExitRetryKeyword(ctx *RetryKeywordContext) {}
+
+// EnterDelayKeyword is called when production delayKeyword is entered.
+func (s *BaseFqlParserListener) EnterDelayKeyword(ctx *DelayKeywordContext) {}
+
+// ExitDelayKeyword is called when production delayKeyword is exited.
+func (s *BaseFqlParserListener) ExitDelayKeyword(ctx *DelayKeywordContext) {}
 
 // EnterReturnKeyword is called when production returnKeyword is entered.
 func (s *BaseFqlParserListener) EnterReturnKeyword(ctx *ReturnKeywordContext) {}

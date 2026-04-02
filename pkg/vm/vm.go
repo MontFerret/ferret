@@ -648,7 +648,10 @@ loop:
 				}
 
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
 			}
+
+			state.writeBorrowedRegister(src2, runtime.False)
 		case bytecode.OpIterValue:
 			iterator := reg[src1].(data.IteratorState)
 			state.writeBorrowedRegister(dst, iterator.Value())

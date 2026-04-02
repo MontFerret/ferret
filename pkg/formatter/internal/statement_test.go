@@ -77,3 +77,17 @@ func TestStatementFormatter_WaitForExpressionRecoveryTailCanonicalOrder(t *testi
 		t.Fatalf("unexpected waitfor recovery formatting: %q", got)
 	}
 }
+
+func TestStatementFormatter_WaitForExpressionRetryTailCanonicalOrder(t *testing.T) {
+	input := `WAITFOR VALUE ready TIMEOUT 1 ON ERROR RETRY 3 DELAY 10MS OR RETURN NONE ON TIMEOUT RETURN FALSE`
+	program := parseProgram(t, input+"\nRETURN 1")
+	waitExpr := mustFirst[*fql.WaitForExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.statement.formatWaitForExpression(waitExpr)
+	if got := buf.String(); got != `WAITFOR VALUE ready TIMEOUT 1 ON TIMEOUT RETURN FALSE ON ERROR RETRY 3 DELAY 10MS OR RETURN NONE` {
+		t.Fatalf("unexpected waitfor retry recovery formatting: %q", got)
+	}
+}

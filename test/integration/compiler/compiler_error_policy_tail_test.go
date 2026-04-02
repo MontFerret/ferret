@@ -14,10 +14,13 @@ import (
 func TestCompiler_RecoveryTailCompiles(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(`RETURN FAIL() ON ERROR RETURN NONE`, expectCatchTableSize(1), "Function call suppression should emit a guarded region"),
+		ProgramCheck(`RETURN FAIL() ON ERROR RETRY 3`, expectCatchTableSize(1), "Function call retry should emit a guarded region"),
+		ProgramCheck(`RETURN FAIL() ON ERROR RETRY 3 DELAY 100ms BACKOFF EXPONENTIAL OR RETURN NONE`, expectCatchTableSize(1), "Function call retry fallback should emit a guarded region"),
 		ProgramCheck(`RETURN @obj.foo.bar ON ERROR RETURN NONE`, expectCatchTableSize(1), "Member suppression should emit a guarded region"),
 		ProgramCheck("RETURN QUERY VALUE `.items` IN @doc USING css ON ERROR RETURN NONE", expectCatchTableSize(1), "QUERY suppression should emit a guarded region"),
 		ProgramCheck("DISPATCH \"click\" IN @d ON ERROR RETURN NONE\nRETURN 1", expectCatchTableSize(1), "DISPATCH suppression should emit a guarded region"),
 		ProgramCheck("LET ok = WAITFOR VALUE NONE TIMEOUT 1ms ON TIMEOUT RETURN NONE ON ERROR FAIL\nRETURN ok", expectCatchTableSize(0), "Explicit timeout recovery should compile"),
+		ProgramCheck("LET ok = WAITFOR EVENT \"test\" IN @obs TIMEOUT 1ms ON TIMEOUT RETURN NONE ON ERROR RETRY 2 DELAY 5ms OR RETURN \"error\"\nRETURN ok", expectCatchTableSize(1), "WAITFOR EVENT retry should emit a guarded region"),
 		ProgramCheck("LET ok = (WAITFOR VALUE NONE TIMEOUT 1ms) ON TIMEOUT RETURN NONE\nRETURN ok", expectCatchTableSize(0), "Grouped WAITFOR timeout recovery should compile"),
 		ProgramCheck("LET ok = WAITFOR TRUE ON ERROR FAIL\nRETURN ok", expectCatchTableSize(0), "Explicit FAIL should preserve default propagation"),
 		ProgramCheck("RETURN (FAIL() + 1) ON ERROR RETURN NONE", expectCatchTableSize(1), "Grouped suppression should emit a guarded region"),
@@ -31,7 +34,7 @@ func TestSyntaxErrorsRecoveryTail(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected ERROR or TIMEOUT after 'ON' in recovery tail",
-				Hint:    "Complete the tail as ON ERROR FAIL, ON ERROR RETURN <expr>, ON TIMEOUT FAIL, or ON TIMEOUT RETURN <expr>.",
+				Hint:    "Complete the tail as ON ERROR FAIL, ON ERROR RETURN <expr>, ON ERROR RETRY <count>, ON TIMEOUT FAIL, or ON TIMEOUT RETURN <expr>.",
 			},
 			"Missing condition in recovery tail",
 		),
@@ -39,8 +42,8 @@ func TestSyntaxErrorsRecoveryTail(t *testing.T) {
 			`RETURN FAIL() ON ERROR`,
 			E{
 				Kind:    parserd.SyntaxError,
-				Message: "Expected FAIL or RETURN after 'ON ERROR'",
-				Hint:    "Use ON ERROR FAIL to propagate failures or ON ERROR RETURN <expr> to supply a fallback value.",
+				Message: "Expected FAIL, RETURN, or RETRY after 'ON ERROR'",
+				Hint:    "Use ON ERROR FAIL to propagate failures, ON ERROR RETURN <expr> to supply a fallback value, or ON ERROR RETRY <count> to retry.",
 			},
 			"Missing error action in recovery tail",
 		),
@@ -48,8 +51,8 @@ func TestSyntaxErrorsRecoveryTail(t *testing.T) {
 			`RETURN FAIL() ON ERROR MAYBE`,
 			E{
 				Kind:    parserd.SyntaxError,
-				Message: "Expected FAIL or RETURN after 'ON ERROR'",
-				Hint:    "Use ON ERROR FAIL to propagate failures or ON ERROR RETURN <expr> to supply a fallback value.",
+				Message: "Expected FAIL, RETURN, or RETRY after 'ON ERROR'",
+				Hint:    "Use ON ERROR FAIL to propagate failures, ON ERROR RETURN <expr> to supply a fallback value, or ON ERROR RETRY <count> to retry.",
 			},
 			"Invalid error action in recovery tail",
 		),
@@ -57,8 +60,8 @@ func TestSyntaxErrorsRecoveryTail(t *testing.T) {
 			`RETURN FAIL() ON ERROR THROW`,
 			E{
 				Kind:    parserd.SyntaxError,
-				Message: "Expected FAIL or RETURN after 'ON ERROR'",
-				Hint:    "Use ON ERROR FAIL to propagate failures or ON ERROR RETURN <expr> to supply a fallback value.",
+				Message: "Expected FAIL, RETURN, or RETRY after 'ON ERROR'",
+				Hint:    "Use ON ERROR FAIL to propagate failures, ON ERROR RETURN <expr> to supply a fallback value, or ON ERROR RETRY <count> to retry.",
 			},
 			"Legacy THROW spelling should be rejected in recovery tail",
 		),
@@ -81,6 +84,78 @@ func TestSyntaxErrorsRecoveryTail(t *testing.T) {
 			"Missing fallback expression in recovery tail",
 		),
 		Failure(
+			`RETURN FAIL() ON ERROR RETRY`,
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected retry count after 'RETRY'",
+				Hint:    "Provide an integer retry count, e.g. ON ERROR RETRY 3.",
+			},
+			"Missing retry count in recovery tail",
+		),
+		Failure(
+			`RETURN FAIL() ON ERROR RETRY 3 DELAY`,
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected value after 'DELAY' in retry policy",
+				Hint:    "Provide a duration or duration-like value, e.g. DELAY 100ms.",
+			},
+			"Missing retry delay value should be rejected",
+		),
+		Failure(
+			`RETURN FAIL() ON ERROR RETRY 3 DELAY 10ms BACKOFF`,
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected backoff kind after 'BACKOFF' in retry policy",
+				Hint:    "Use BACKOFF CONSTANT, BACKOFF LINEAR, or BACKOFF EXPONENTIAL.",
+			},
+			"Missing retry backoff kind should be rejected",
+		),
+		Failure(
+			`RETURN FAIL() ON ERROR RETRY 3 DELAY 10ms BACKOFF QUADRATIC`,
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "Unknown BACKOFF strategy",
+				Hint:    "Use one of: CONSTANT, LINEAR, EXPONENTIAL.",
+			},
+			"Unknown retry backoff should be rejected",
+		),
+		Failure(
+			`RETURN FAIL() ON ERROR RETRY 3 BACKOFF EXPONENTIAL`,
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "BACKOFF requires DELAY in retry policy",
+				Hint:    "Add DELAY before BACKOFF, e.g. ON ERROR RETRY 3 DELAY 100ms BACKOFF EXPONENTIAL.",
+			},
+			"BACKOFF without DELAY should be rejected",
+		),
+		Failure(
+			`RETURN FAIL() ON ERROR RETRY 3 OR MAYBE`,
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected FAIL or RETURN after 'OR' in retry fallback",
+				Hint:    "Complete the retry fallback as OR FAIL or OR RETURN <expr>.",
+			},
+			"Invalid retry fallback action should be rejected",
+		),
+		Failure(
+			`RETURN FAIL() ON ERROR RETRY 3 OR FAIL OR RETURN NONE`,
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "Duplicate OR fallback in retry policy",
+				Hint:    "Each retry policy may define OR at most once.",
+			},
+			"Duplicate retry OR should be rejected",
+		),
+		Failure(
+			`RETURN FAIL() ON ERROR FAIL OR RETURN NONE`,
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "OR is only valid inside ON ERROR RETRY",
+				Hint:    "Use OR only after ON ERROR RETRY <count>, e.g. ON ERROR RETRY 3 OR RETURN NONE.",
+			},
+			"OR outside retry should be rejected",
+		),
+		Failure(
 			`RETURN DISPATCH "evt" IN target ON TIMEOUT RETURN NONE`,
 			E{
 				Kind:    parserd.SyntaxError,
@@ -97,6 +172,15 @@ func TestSyntaxErrorsRecoveryTail(t *testing.T) {
 				Hint:    "Add a TIMEOUT clause before ON TIMEOUT, e.g. WAITFOR VALUE x TIMEOUT 1s ON TIMEOUT RETURN NONE.",
 			},
 			"ON TIMEOUT requires explicit timeout clause",
+		),
+		Failure(
+			`RETURN WAITFOR VALUE ready TIMEOUT 1ms ON TIMEOUT RETRY 3`,
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "RETRY is only valid under ON ERROR",
+				Hint:    "Use ON ERROR RETRY <count> ... to retry failures, or ON TIMEOUT FAIL/RETURN for timeout handling.",
+			},
+			"ON TIMEOUT RETRY should be rejected",
 		),
 		Failure(
 			`RETURN FAIL() ON ERROR FAIL ON ERROR RETURN NONE`,

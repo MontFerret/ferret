@@ -208,6 +208,33 @@ type FqlParserListener interface {
 	// EnterRecoveryReturnExpr is called when entering the recoveryReturnExpr production.
 	EnterRecoveryReturnExpr(c *RecoveryReturnExprContext)
 
+	// EnterRecoveryRetryAction is called when entering the recoveryRetryAction production.
+	EnterRecoveryRetryAction(c *RecoveryRetryActionContext)
+
+	// EnterRecoveryRetryCount is called when entering the recoveryRetryCount production.
+	EnterRecoveryRetryCount(c *RecoveryRetryCountContext)
+
+	// EnterRecoveryRetryDelayClause is called when entering the recoveryRetryDelayClause production.
+	EnterRecoveryRetryDelayClause(c *RecoveryRetryDelayClauseContext)
+
+	// EnterRecoveryRetryDelayValue is called when entering the recoveryRetryDelayValue production.
+	EnterRecoveryRetryDelayValue(c *RecoveryRetryDelayValueContext)
+
+	// EnterRecoveryRetryBackoffClause is called when entering the recoveryRetryBackoffClause production.
+	EnterRecoveryRetryBackoffClause(c *RecoveryRetryBackoffClauseContext)
+
+	// EnterRecoveryRetryBackoffKind is called when entering the recoveryRetryBackoffKind production.
+	EnterRecoveryRetryBackoffKind(c *RecoveryRetryBackoffKindContext)
+
+	// EnterRecoveryRetryOrClause is called when entering the recoveryRetryOrClause production.
+	EnterRecoveryRetryOrClause(c *RecoveryRetryOrClauseContext)
+
+	// EnterRecoveryRetryFinalAction is called when entering the recoveryRetryFinalAction production.
+	EnterRecoveryRetryFinalAction(c *RecoveryRetryFinalActionContext)
+
+	// EnterRecoveryActionOrClause is called when entering the recoveryActionOrClause production.
+	EnterRecoveryActionOrClause(c *RecoveryActionOrClauseContext)
+
 	// EnterOnKeyword is called when entering the onKeyword production.
 	EnterOnKeyword(c *OnKeywordContext)
 
@@ -219,6 +246,12 @@ type FqlParserListener interface {
 
 	// EnterFailKeyword is called when entering the failKeyword production.
 	EnterFailKeyword(c *FailKeywordContext)
+
+	// EnterRetryKeyword is called when entering the retryKeyword production.
+	EnterRetryKeyword(c *RetryKeywordContext)
+
+	// EnterDelayKeyword is called when entering the delayKeyword production.
+	EnterDelayKeyword(c *DelayKeywordContext)
 
 	// EnterReturnKeyword is called when entering the returnKeyword production.
 	EnterReturnKeyword(c *ReturnKeywordContext)
@@ -652,6 +685,33 @@ type FqlParserListener interface {
 	// ExitRecoveryReturnExpr is called when exiting the recoveryReturnExpr production.
 	ExitRecoveryReturnExpr(c *RecoveryReturnExprContext)
 
+	// ExitRecoveryRetryAction is called when exiting the recoveryRetryAction production.
+	ExitRecoveryRetryAction(c *RecoveryRetryActionContext)
+
+	// ExitRecoveryRetryCount is called when exiting the recoveryRetryCount production.
+	ExitRecoveryRetryCount(c *RecoveryRetryCountContext)
+
+	// ExitRecoveryRetryDelayClause is called when exiting the recoveryRetryDelayClause production.
+	ExitRecoveryRetryDelayClause(c *RecoveryRetryDelayClauseContext)
+
+	// ExitRecoveryRetryDelayValue is called when exiting the recoveryRetryDelayValue production.
+	ExitRecoveryRetryDelayValue(c *RecoveryRetryDelayValueContext)
+
+	// ExitRecoveryRetryBackoffClause is called when exiting the recoveryRetryBackoffClause production.
+	ExitRecoveryRetryBackoffClause(c *RecoveryRetryBackoffClauseContext)
+
+	// ExitRecoveryRetryBackoffKind is called when exiting the recoveryRetryBackoffKind production.
+	ExitRecoveryRetryBackoffKind(c *RecoveryRetryBackoffKindContext)
+
+	// ExitRecoveryRetryOrClause is called when exiting the recoveryRetryOrClause production.
+	ExitRecoveryRetryOrClause(c *RecoveryRetryOrClauseContext)
+
+	// ExitRecoveryRetryFinalAction is called when exiting the recoveryRetryFinalAction production.
+	ExitRecoveryRetryFinalAction(c *RecoveryRetryFinalActionContext)
+
+	// ExitRecoveryActionOrClause is called when exiting the recoveryActionOrClause production.
+	ExitRecoveryActionOrClause(c *RecoveryActionOrClauseContext)
+
 	// ExitOnKeyword is called when exiting the onKeyword production.
 	ExitOnKeyword(c *OnKeywordContext)
 
@@ -663,6 +723,12 @@ type FqlParserListener interface {
 
 	// ExitFailKeyword is called when exiting the failKeyword production.
 	ExitFailKeyword(c *FailKeywordContext)
+
+	// ExitRetryKeyword is called when exiting the retryKeyword production.
+	ExitRetryKeyword(c *RetryKeywordContext)
+
+	// ExitDelayKeyword is called when exiting the delayKeyword production.
+	ExitDelayKeyword(c *DelayKeywordContext)
 
 	// ExitReturnKeyword is called when exiting the returnKeyword production.
 	ExitReturnKeyword(c *ReturnKeywordContext)

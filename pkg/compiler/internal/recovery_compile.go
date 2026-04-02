@@ -19,32 +19,39 @@ func compileWithRecoveryPlan(
 		return compile()
 	}
 
-	if hasErrorReturnNoneHandler(plan) {
-		out := compileWithErrorPolicy(ctx, errorPolicySuppress, jumpMode, compile)
+	switch plan.onError.actionKind {
+	case recoveryActionReturn:
+		if hasErrorReturnNoneHandler(plan) {
+			out := compileWithErrorPolicy(ctx, errorPolicySuppress, jumpMode, compile)
+			return widenRecoveryResultType(ctx, out, plan)
+		}
+
+		startCatch := ctx.Emitter.Size()
+		out := ensureRecoveryRegister(ctx, compile())
+		endCatchExclusive := ctx.Emitter.Size()
+
+		if out == bytecode.NoopOperand || endCatchExclusive <= startCatch {
+			return out
+		}
+
+		endCatch := endCatchExclusive - 1
+		endLabel := ctx.Emitter.NewLabel("recovery", "end")
+
+		ctx.Emitter.EmitJump(endLabel)
+		handlerPC := ctx.Emitter.Size()
+
+		fallback := ctx.ExprCompiler.Compile(plan.onError.expr)
+		ctx.EmitMoveAuto(out, ensureRecoveryRegister(ctx, fallback))
+		ctx.Emitter.MarkLabel(endLabel)
+
+		ctx.CatchTable.Push(startCatch, endCatch, handlerPC)
+
 		return widenRecoveryResultType(ctx, out, plan)
+	case recoveryActionRetry:
+		return compileWithRetryRecoveryPlan(ctx, plan.onError, compile)
+	default:
+		return compile()
 	}
-
-	startCatch := ctx.Emitter.Size()
-	out := ensureRecoveryRegister(ctx, compile())
-	endCatchExclusive := ctx.Emitter.Size()
-
-	if out == bytecode.NoopOperand || endCatchExclusive <= startCatch {
-		return out
-	}
-
-	endCatch := endCatchExclusive - 1
-	endLabel := ctx.Emitter.NewLabel("recovery", "end")
-
-	ctx.Emitter.EmitJump(endLabel)
-	handlerPC := ctx.Emitter.Size()
-
-	fallback := ctx.ExprCompiler.Compile(plan.onError.expr)
-	ctx.EmitMoveAuto(out, ensureRecoveryRegister(ctx, fallback))
-	ctx.Emitter.MarkLabel(endLabel)
-
-	ctx.CatchTable.Push(startCatch, endCatch, handlerPC)
-
-	return widenRecoveryResultType(ctx, out, plan)
 }
 
 func ensureRecoveryRegister(ctx *CompilerContext, op bytecode.Operand) bytecode.Operand {

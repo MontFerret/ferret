@@ -84,11 +84,61 @@ func TestJumpTargetOperandIndex(t *testing.T) {
 		t.Fatalf("expected OpIterNext target operand index 0")
 	}
 
+	if JumpTargetOperandIndex(OpIterLimit) != 0 {
+		t.Fatalf("expected OpIterLimit target operand index 0")
+	}
+
+	if JumpTargetOperandIndex(OpIterSkip) != 0 {
+		t.Fatalf("expected OpIterSkip target operand index 0")
+	}
+
 	if JumpTargetOperandIndex(OpMatchLoadPropertyConst) != -1 {
 		t.Fatalf("expected OpMatchLoadPropertyConst to use metadata jump targets")
 	}
 
 	if JumpTargetOperandIndex(OpAdd) != -1 {
 		t.Fatalf("expected OpAdd to have no jump target")
+	}
+}
+
+func TestOpcodeInfoControlFlowMetadata(t *testing.T) {
+	tests := []struct {
+		name            string
+		op              Opcode
+		wantConditional bool
+		wantTerminator  bool
+	}{
+		{
+			name:            "iter limit is conditional jump",
+			op:              OpIterLimit,
+			wantConditional: true,
+		},
+		{
+			name:            "iter skip is conditional jump",
+			op:              OpIterSkip,
+			wantConditional: true,
+		},
+		{
+			name:           "fail is terminator",
+			op:             OpFail,
+			wantTerminator: true,
+		},
+		{
+			name:           "fail timeout is terminator",
+			op:             OpFailTimeout,
+			wantTerminator: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsConditionalJumpOpcode(tt.op); got != tt.wantConditional {
+				t.Fatalf("unexpected conditional-jump classification for %s: got %v, want %v", tt.op, got, tt.wantConditional)
+			}
+
+			if got := IsTerminatorOpcode(tt.op); got != tt.wantTerminator {
+				t.Fatalf("unexpected terminator classification for %s: got %v, want %v", tt.op, got, tt.wantTerminator)
+			}
+		})
 	}
 }

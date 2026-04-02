@@ -11,6 +11,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type (
@@ -95,12 +96,33 @@ func (c *LoopCompiler) compileWithRecovery(ctx fql.IForExpressionContext, plan r
 		return c.Compile(ctx)
 	}
 
+	if recoveryHandlerRetries(plan.onError) && plan.onError.retry != nil && plan.onError.retry.finalActionKind != recoveryActionReturn && plan.onError.retry.count <= 0 {
+		return c.Compile(ctx)
+	}
+
 	return c.compileForInWithRecovery(ctx, plan)
 }
 
 func (c *LoopCompiler) compileForInWithRecovery(ctx fql.IForExpressionContext, plan recoveryPlan) bytecode.Operand {
 	errorStateReg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
+
+	var (
+		zeroReg             bytecode.Operand
+		retriesRemainingReg bytecode.Operand
+		retryDelayState     recoveryRetryDelayState
+		retryStartLabel     core.Label
+		finalAttemptLabel   core.Label
+	)
+
+	if recoveryHandlerRetries(plan.onError) {
+		zeroReg = loadConstant(c.ctx, runtime.ZeroInt)
+		retriesRemainingReg = loadConstant(c.ctx, runtime.NewInt(plan.onError.retry.count))
+		retryDelayState = initRecoveryRetryDelayState(c.ctx, plan.onError.retry)
+		retryStartLabel = c.ctx.Emitter.NewLabel("recovery", "for", "retry")
+		finalAttemptLabel = c.ctx.Emitter.NewLabel("recovery", "for", "final")
+		c.ctx.Emitter.MarkLabel(retryStartLabel)
+	}
 
 	startCatch := c.ctx.Emitter.Size()
 	returnRuleCtx := c.compileInitialization(ctx, core.ForInLoop)
@@ -116,25 +138,64 @@ func (c *LoopCompiler) compileForInWithRecovery(ctx fql.IForExpressionContext, p
 	out := c.compileFinalization(returnRuleCtx)
 	endCatchExclusive := c.ctx.Emitter.Size()
 
-	fallbackLabel := c.ctx.Emitter.NewLabel("recovery", "for", "fallback")
+	recoveryLabel := c.ctx.Emitter.NewLabel("recovery", "for", "handle")
 	endLabel := c.ctx.Emitter.NewLabel("recovery", "for", "end")
 
-	c.ctx.Emitter.EmitJumpIfTrue(errorStateReg, fallbackLabel)
+	c.ctx.Emitter.EmitJumpIfTrue(errorStateReg, recoveryLabel)
 	c.ctx.Emitter.EmitJump(endLabel)
 
 	errorPreludePC := c.ctx.Emitter.Size()
 	c.ctx.Emitter.EmitBoolean(errorStateReg, true)
 	c.ctx.Emitter.EmitJump(breakLabel)
 
-	c.ctx.Emitter.MarkLabel(fallbackLabel)
-	fallback := c.ctx.ExprCompiler.Compile(plan.onError.expr)
-	c.ctx.EmitMoveAuto(out, ensureRecoveryRegister(c.ctx, fallback))
-	c.ctx.Emitter.EmitJump(endLabel)
-	c.ctx.Emitter.MarkLabel(endLabel)
+	c.ctx.Emitter.MarkLabel(recoveryLabel)
+	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
+
+	if recoveryHandlerRetries(plan.onError) {
+		retriesAvailableReg := c.ctx.Registers.Allocate()
+		c.ctx.Emitter.EmitGt(retriesAvailableReg, retriesRemainingReg, zeroReg)
+
+		onExhausted := c.ctx.Emitter.NewLabel("recovery", "for", "exhausted")
+		c.ctx.Emitter.EmitJumpIfFalse(retriesAvailableReg, onExhausted)
+		c.ctx.Emitter.EmitA(bytecode.OpDecr, retriesRemainingReg)
+		emitRecoveryRetryDelay(c.ctx, plan.onError.retry, retryDelayState)
+
+		if plan.onError.retry.finalActionKind == recoveryActionReturn {
+			c.ctx.Emitter.EmitJump(retryStartLabel)
+		} else {
+			moreProtectedReg := c.ctx.Registers.Allocate()
+			c.ctx.Emitter.EmitGt(moreProtectedReg, retriesRemainingReg, zeroReg)
+			c.ctx.Emitter.EmitJumpIfTrue(moreProtectedReg, retryStartLabel)
+			c.ctx.Emitter.EmitJump(finalAttemptLabel)
+		}
+
+		c.ctx.Emitter.MarkLabel(onExhausted)
+		if plan.onError.retry.finalActionKind == recoveryActionReturn {
+			fallback := c.ctx.ExprCompiler.Compile(plan.onError.retry.finalExpr)
+			c.ctx.EmitMoveAuto(out, ensureRecoveryRegister(c.ctx, fallback))
+			c.ctx.Emitter.EmitJump(endLabel)
+		} else {
+			c.ctx.Emitter.EmitJump(finalAttemptLabel)
+		}
+	} else {
+		fallback := c.ctx.ExprCompiler.Compile(plan.onError.expr)
+		c.ctx.EmitMoveAuto(out, ensureRecoveryRegister(c.ctx, fallback))
+		c.ctx.Emitter.EmitJump(endLabel)
+	}
 
 	if endCatchExclusive > startCatch {
 		c.ctx.CatchTable.Push(startCatch, endCatchExclusive-1, errorPreludePC)
 	}
+
+	if recoveryHandlerRetries(plan.onError) && plan.onError.retry.finalActionKind != recoveryActionReturn {
+		c.ctx.Emitter.MarkLabel(finalAttemptLabel)
+		finalOut := c.Compile(ctx)
+		if finalOut != bytecode.NoopOperand && finalOut != out {
+			c.ctx.EmitMoveAuto(out, ensureRecoveryRegister(c.ctx, finalOut))
+		}
+	}
+
+	c.ctx.Emitter.MarkLabel(endLabel)
 
 	return widenRecoveryResultType(c.ctx, out, plan)
 }

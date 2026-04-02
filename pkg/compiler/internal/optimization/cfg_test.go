@@ -188,6 +188,60 @@ func TestBuildCFG_MatchLoadPropertyConst(t *testing.T) {
 	}
 }
 
+func TestBuildCFG_IteratorControlFlow(t *testing.T) {
+	tests := []struct {
+		name   string
+		opcode bytecode.Opcode
+	}{
+		{
+			name:   "iter limit",
+			opcode: bytecode.OpIterLimit,
+		},
+		{
+			name:   "iter skip",
+			opcode: bytecode.OpIterSkip,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			program := &bytecode.Program{
+				Bytecode: []bytecode.Instruction{
+					bytecode.NewInstruction(tt.opcode, 3, 1, 2),
+					bytecode.NewInstruction(bytecode.OpLoadZero, 4),
+					bytecode.NewInstruction(bytecode.OpReturn, 4),
+					bytecode.NewInstruction(bytecode.OpLoadConst, 5, 0),
+					bytecode.NewInstruction(bytecode.OpReturn, 5),
+				},
+			}
+
+			builder := NewBuilder(program)
+			cfg, err := builder.Build()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if len(cfg.Blocks) != 4 {
+				t.Fatalf("expected 4 blocks, got %d", len(cfg.Blocks))
+			}
+
+			block0 := cfg.Blocks[0]
+			if len(block0.Successors) != 2 {
+				t.Fatalf("expected 2 successors for %s block, got %d", tt.opcode, len(block0.Successors))
+			}
+
+			successorStarts := make(map[int]bool)
+			for _, succ := range block0.Successors {
+				successorStarts[succ.Start] = true
+			}
+
+			if !successorStarts[1] || !successorStarts[3] {
+				t.Fatalf("expected %s successors at indices 1 and 3", tt.opcode)
+			}
+		})
+	}
+}
+
 func TestBuildCFG_Loop(t *testing.T) {
 	// Program with a loop (back edge)
 	program := &bytecode.Program{
@@ -235,6 +289,66 @@ func TestBuildCFG_Loop(t *testing.T) {
 
 	if block0.Predecessors[0] != block1 {
 		t.Errorf("expected block 0 predecessor to be block 1")
+	}
+}
+
+func TestBuildCFG_FailTerminatorsStartUnreachableBlock(t *testing.T) {
+	tests := []struct {
+		name         string
+		instructions []bytecode.Instruction
+	}{
+		{
+			name: "fail",
+			instructions: []bytecode.Instruction{
+				bytecode.NewInstruction(bytecode.OpFail, bytecode.NewConstant(0)),
+				bytecode.NewInstruction(bytecode.OpLoadZero, 1),
+				bytecode.NewInstruction(bytecode.OpReturn, 1),
+			},
+		},
+		{
+			name: "fail timeout",
+			instructions: []bytecode.Instruction{
+				bytecode.NewInstruction(bytecode.OpFailTimeout),
+				bytecode.NewInstruction(bytecode.OpLoadZero, 1),
+				bytecode.NewInstruction(bytecode.OpReturn, 1),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			program := &bytecode.Program{
+				Bytecode: tt.instructions,
+			}
+
+			builder := NewBuilder(program)
+			cfg, err := builder.Build()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if len(cfg.Blocks) != 3 {
+				t.Fatalf("expected 3 blocks, got %d", len(cfg.Blocks))
+			}
+
+			block0 := cfg.Blocks[0]
+			if block0.Start != 0 || block0.End != 0 {
+				t.Fatalf("expected failing instruction to form its own block, got [%d:%d]", block0.Start, block0.End)
+			}
+
+			if len(block0.Successors) != 1 || block0.Successors[0] != cfg.Exit {
+				t.Fatalf("expected failing block to terminate at exit")
+			}
+
+			block1 := cfg.Blocks[1]
+			if block1.Start != 1 {
+				t.Fatalf("expected unreachable block to start at 1, got %d", block1.Start)
+			}
+
+			if len(block1.Predecessors) != 0 {
+				t.Fatalf("expected unreachable block to have no predecessors, got %d", len(block1.Predecessors))
+			}
+		})
 	}
 }
 
@@ -317,6 +431,10 @@ func TestBasicBlock_IsTerminator(t *testing.T) {
 		{"JumpIfMissingPropertyConst", bytecode.OpJumpIfMissingPropertyConst, true},
 		{"MatchLoadPropertyConst", bytecode.OpMatchLoadPropertyConst, true},
 		{"IterNext", bytecode.OpIterNext, true},
+		{"IterLimit", bytecode.OpIterLimit, true},
+		{"IterSkip", bytecode.OpIterSkip, true},
+		{"Fail", bytecode.OpFail, true},
+		{"FailTimeout", bytecode.OpFailTimeout, true},
 		{"Add", bytecode.OpAdd, false},
 		{"LoadConst", bytecode.OpLoadConst, false},
 	}
