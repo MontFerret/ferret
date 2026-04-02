@@ -4,8 +4,6 @@ import (
 	"encoding/binary"
 	"hash/fnv"
 
-	"github.com/antlr4-go/antlr/v4"
-
 	"github.com/MontFerret/ferret/v2/pkg/source"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -19,6 +17,7 @@ type CompilerContext struct {
 	UseAliases          map[string]string
 	WaitCompiler        *WaitCompiler
 	PolicyCompiler      *OperationPolicyCompiler
+	BindingCompiler     *BindingCompiler
 	Emitter             *core.Emitter
 	Registers           *core.RegisterAllocator
 	Constants           *core.ConstantPool
@@ -38,7 +37,6 @@ type CompilerContext struct {
 	LoopCompiler        *LoopCompiler
 	LoopSortCompiler    *LoopSortCompiler
 	LoopCollectCompiler *LoopCollectCompiler
-	PromotedBindings    map[antlr.ParserRuleContext]struct{}
 	DispatchCompiler    *DispatchCompiler
 	aggregatePlans      []*bytecode.AggregatePlan
 	OptimizationLevel   optimization.Level
@@ -56,8 +54,7 @@ func NewCompilerContext(src *source.Source, errors *diagnostics.ErrorHandler, le
 		Constants:  core.NewConstantPool(),
 		CatchTable: core.NewCatchStack(),
 
-		UseAliases:       make(map[string]string),
-		PromotedBindings: make(map[antlr.ParserRuleContext]struct{}),
+		UseAliases: make(map[string]string),
 
 		aggregatePlans:      make([]*bytecode.AggregatePlan, 0),
 		aggregatePlanByHash: make(map[uint64][]int),
@@ -67,6 +64,7 @@ func NewCompilerContext(src *source.Source, errors *diagnostics.ErrorHandler, le
 	ctx.Types = core.NewTypeTracker()
 	ctx.Loops = core.NewLoopTable(ctx.Registers)
 
+	ctx.BindingCompiler = NewBindingCompiler(ctx)
 	ctx.ExprCompiler = NewExprCompiler(ctx)
 	ctx.LiteralCompiler = NewLiteralCompiler(ctx)
 	ctx.StmtCompiler = NewStmtCompiler(ctx)

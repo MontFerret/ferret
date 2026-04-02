@@ -373,9 +373,9 @@ func (c *LoopCompiler) compileLoopBody(ctx fql.IForExpressionContext) {
 func (c *LoopCompiler) compileForExpressionStatement(ctx fql.IForExpressionStatementContext) {
 	// Handle variable declarations (e.g., LET x = 1)
 	if vd := ctx.VariableDeclaration(); vd != nil {
-		_ = c.ctx.StmtCompiler.CompileVariableDeclaration(vd)
+		_ = c.ctx.BindingCompiler.CompileVariableDeclaration(vd)
 	} else if as := ctx.AssignmentStatement(); as != nil {
-		_ = c.ctx.StmtCompiler.CompileAssignmentStatement(as)
+		_ = c.ctx.BindingCompiler.CompileAssignmentStatement(as)
 	} else if fce := ctx.FunctionCallExpression(); fce != nil {
 		// Handle function calls (e.g., doSomething())
 		_ = c.ctx.ExprCompiler.CompileFunctionCallExpression(fce)

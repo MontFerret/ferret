@@ -82,7 +82,7 @@ func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) bytecode.Operan
 		return bytecode.NoopOperand
 	}
 
-	op := loadBindingValue(c.ctx, binding)
+	op := c.ctx.BindingCompiler.LoadBindingValue(binding)
 
 	if op.IsRegister() {
 		return op
@@ -322,7 +322,7 @@ func (c *ExprCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.RegisterSeq
 			continue
 		}
 
-		src := loadBindingValue(c.ctx, binding)
+		src := c.ctx.BindingCompiler.LoadBindingValue(binding)
 		emitMoveAuto(c.ctx, dst, src)
 		c.ctx.Types.Set(dst, operandType(c.ctx, src))
 	}

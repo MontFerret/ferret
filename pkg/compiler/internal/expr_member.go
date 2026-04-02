@@ -227,7 +227,7 @@ func (c *ExprCompiler) resolveImplicitCurrent(token antlr.Token) (bytecode.Opera
 		return bytecode.NoopOperand, false
 	}
 
-	src := loadBindingValue(c.ctx, binding)
+	src := c.ctx.BindingCompiler.LoadBindingValue(binding)
 	src = c.ensureRegister(src)
 
 	return src, true

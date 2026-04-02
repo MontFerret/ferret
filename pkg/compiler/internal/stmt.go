@@ -1,13 +1,7 @@
 package internal
 
 import (
-	"fmt"
-
-	"github.com/antlr4-go/antlr/v4"
-
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
-	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
@@ -53,11 +47,10 @@ func (c *StmtCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) {
 		return
 	}
 
-	// Handle variable declarations (e.g., LET x = 1)
 	if vd := ctx.VariableDeclaration(); vd != nil {
-		c.CompileVariableDeclaration(vd)
+		c.ctx.BindingCompiler.CompileVariableDeclaration(vd)
 	} else if as := ctx.AssignmentStatement(); as != nil {
-		c.CompileAssignmentStatement(as)
+		c.ctx.BindingCompiler.CompileAssignmentStatement(as)
 	} else if fd := ctx.FunctionDeclaration(); fd != nil {
 		// Function declarations are compiled separately.
 		return
@@ -114,9 +107,9 @@ func (c *StmtCompiler) CompileFunctionStatement(ctx fql.IFunctionStatementContex
 
 	switch {
 	case stmt.VariableDeclaration() != nil:
-		c.CompileVariableDeclaration(stmt.VariableDeclaration())
+		c.ctx.BindingCompiler.CompileVariableDeclaration(stmt.VariableDeclaration())
 	case stmt.AssignmentStatement() != nil:
-		c.CompileAssignmentStatement(stmt.AssignmentStatement())
+		c.ctx.BindingCompiler.CompileAssignmentStatement(stmt.AssignmentStatement())
 	case stmt.FunctionDeclaration() != nil:
 		// Nested function declarations are compiled separately.
 		return
@@ -147,129 +140,6 @@ func (c *StmtCompiler) CompileExpressionStatement(ctx fql.IExpressionStatementCo
 	}
 }
 
-// CompileVariableDeclaration processes a variable declaration statement in an FQL query.
-// It handles both regular identifiers and safe reserved words as variable names,
-// and manages the assignment of values to either global or local variables based on scope.
-// Parameters:
-//   - ctx: The variable declaration context from the AST
-//
-// Returns:
-//   - An operand representing the register where the variable value is stored,
-//     or NoopOperand if the variable is ignored
-func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationContext) bytecode.Operand {
-	if ctx == nil {
-		return bytecode.NoopOperand
-	}
-
-	name := variableDeclarationName(ctx)
-	if name == "" {
-		name = core.IgnorePseudoVariable
-	}
-
-	mutable := isMutableDeclaration(ctx)
-	storage := declarationStorage(c.ctx, ctx.(antlr.ParserRuleContext), mutable)
-
-	// Compile the expression that provides the variable's value
-	src := c.ctx.ExprCompiler.Compile(ctx.Expression())
-	srcType := operandType(c.ctx, src)
-
-	// If this is a real variable (not the ignore pseudo-variable)
-	if name != core.IgnorePseudoVariable {
-		opts := core.BindingOptions{
-			Mutable: mutable,
-			Storage: storage,
-		}
-
-		if storage == core.BindingStorageCell {
-			src = c.ctx.ExprCompiler.ensureRegister(src)
-
-			var (
-				dest bytecode.Operand
-				ok   bool
-			)
-
-			if c.ctx.Symbols.Scope() == 0 {
-				dest, ok = c.ctx.Symbols.DeclareGlobalWithOptions(name, srcType, opts)
-			} else {
-				dest, ok = c.ctx.Symbols.DeclareLocalWithOptions(name, srcType, opts)
-			}
-
-			if !ok {
-				c.ctx.Errors.VariableNotUnique(ctx.(antlr.ParserRuleContext), name)
-				return bytecode.NoopOperand
-			}
-
-			c.ctx.Emitter.EmitMakeCell(dest, src)
-			c.ctx.Types.Set(dest, core.TypeAny)
-
-			return dest
-		}
-
-		if mutable && src.IsConstant() {
-			var (
-				dest bytecode.Operand
-				ok   bool
-			)
-
-			if c.ctx.Symbols.Scope() == 0 {
-				dest, ok = c.ctx.Symbols.DeclareGlobalWithOptions(name, srcType, opts)
-			} else {
-				dest, ok = c.ctx.Symbols.DeclareLocalWithOptions(name, srcType, opts)
-			}
-
-			if !ok {
-				c.ctx.Errors.VariableNotUnique(ctx.(antlr.ParserRuleContext), name)
-				return bytecode.NoopOperand
-			}
-
-			c.ctx.Emitter.EmitLoadConst(dest, src)
-			c.ctx.Types.Set(dest, srcType)
-
-			return dest
-		}
-
-		if src.IsConstant() {
-			var (
-				dest bytecode.Operand
-				ok   bool
-			)
-
-			if c.ctx.Symbols.Scope() == 0 {
-				dest, ok = c.ctx.Symbols.DeclareGlobalWithOptions(name, srcType, opts)
-			} else {
-				dest, ok = c.ctx.Symbols.DeclareLocalWithOptions(name, srcType, opts)
-			}
-
-			if !ok {
-				c.ctx.Errors.VariableNotUnique(ctx.(antlr.ParserRuleContext), name)
-				return bytecode.NoopOperand
-			}
-
-			c.ctx.Emitter.EmitLoadConst(dest, src)
-			c.ctx.Types.Set(dest, srcType)
-
-			src = dest
-		} else if c.ctx.Symbols.Scope() == 0 {
-			if ok := c.ctx.Symbols.AssignGlobalWithOptions(name, srcType, src, opts); !ok {
-				c.ctx.Errors.VariableNotUnique(ctx.(antlr.ParserRuleContext), name)
-				return bytecode.NoopOperand
-			}
-		} else {
-			if ok := c.ctx.Symbols.AssignLocalWithOptions(name, srcType, src, opts); !ok {
-				c.ctx.Errors.VariableNotUnique(ctx.(antlr.ParserRuleContext), name)
-				return bytecode.NoopOperand
-			}
-		}
-
-		c.ctx.Types.Set(src, srcType)
-		// Return the register containing the variable's value
-		return src
-	}
-
-	// For ignored variables, return a no-op operand
-	return bytecode.NoopOperand
-}
-
 // CompileFunctionCall processes a function call expression in an FQL query.
 // It delegates the compilation to the ExprCompiler, which handles the details
 // of compiling function calls with their arguments and return values.
@@ -285,130 +155,4 @@ func (c *StmtCompiler) CompileFunctionCall(ctx fql.IFunctionCallExpressionContex
 
 	// Delegate to the expression compiler for function call compilation
 	return c.ctx.ExprCompiler.CompileFunctionCallExpression(ctx)
-}
-
-func (c *StmtCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatementContext) bytecode.Operand {
-	if ctx == nil {
-		return bytecode.NoopOperand
-	}
-
-	stmt, ok := ctx.(*fql.AssignmentStatementContext)
-	if !ok || stmt == nil {
-		return bytecode.NoopOperand
-	}
-
-	target := stmt.AssignmentTarget()
-	if target == nil {
-		return bytecode.NoopOperand
-	}
-
-	if member := target.MemberExpression(); member != nil {
-		c.reportInvalidAssignmentTarget(member.(antlr.ParserRuleContext))
-		return bytecode.NoopOperand
-	}
-
-	name := textOfBindingIdentifier(target.BindingIdentifier())
-	if name == "" || name == core.IgnorePseudoVariable {
-		c.reportInvalidAssignmentTarget(stmt)
-		return bytecode.NoopOperand
-	}
-
-	binding, found := c.ctx.Symbols.ResolveBinding(name)
-	if !found {
-		c.ctx.Errors.VariableNotFound(stmt.GetStart(), name)
-		return bytecode.NoopOperand
-	}
-
-	if !binding.Mutable {
-		err := c.ctx.Errors.Create(parserd.SemanticError, stmt, fmt.Sprintf("Variable '%s' cannot be reassigned", name))
-		err.Hint = "Declare it with VAR if you need to update it."
-		c.ctx.Errors.Add(err)
-		return bytecode.NoopOperand
-	}
-
-	operator := assignmentOperatorText(stmt)
-	src := bytecode.NoopOperand
-
-	if operator == "=" {
-		src = c.ctx.ExprCompiler.Compile(stmt.Expression())
-	} else if operator == "+=" && binding.Type == core.TypeString {
-		left := c.snapshotBindingValue(binding)
-		parts := append([]concatOperandSegment{{operand: left}}, buildConcatOperandSegmentsFromExpression(c.ctx.ExprCompiler, stmt.Expression())...)
-		src = emitConcatOperandSegments(c.ctx, parts)
-	} else {
-		op, ok := resolveArithmeticBinaryOperator(operator)
-		if !ok {
-			return bytecode.NoopOperand
-		}
-
-		left := c.snapshotBindingValue(binding)
-		right := c.ctx.ExprCompiler.Compile(stmt.Expression())
-		src = emitBinaryOperation(c.ctx, stmt, op, left, right)
-	}
-
-	srcType := operandType(c.ctx, src)
-	publishedType := srcType
-
-	if c.ctx.Loops.Depth() > 0 {
-		publishedType = core.JoinValueTypes(binding.Type, srcType)
-	}
-
-	binding.Type = publishedType
-
-	return c.storeBindingValue(binding, src, publishedType)
-}
-
-func assignmentOperatorText(ctx *fql.AssignmentStatementContext) string {
-	if ctx == nil || ctx.AssignmentOperator() == nil {
-		return ""
-	}
-
-	return ctx.AssignmentOperator().GetText()
-}
-
-func (c *StmtCompiler) snapshotBindingValue(binding *core.Variable) bytecode.Operand {
-	if c == nil || c.ctx == nil || binding == nil {
-		return bytecode.NoopOperand
-	}
-
-	if binding.Storage == core.BindingStorageCell {
-		return loadBindingValue(c.ctx, binding)
-	}
-
-	snapshot := c.ctx.Registers.Allocate()
-	emitMoveAuto(c.ctx, snapshot, binding.Register)
-
-	return snapshot
-}
-
-func (c *StmtCompiler) storeBindingValue(binding *core.Variable, src bytecode.Operand, publishedType core.ValueType) bytecode.Operand {
-	if c == nil || c.ctx == nil || binding == nil {
-		return bytecode.NoopOperand
-	}
-
-	if binding.Storage == core.BindingStorageCell {
-		src = c.ctx.ExprCompiler.ensureRegister(src)
-		c.ctx.Emitter.EmitStoreCell(binding.Register, src)
-		return binding.Register
-	}
-
-	if src.IsConstant() {
-		c.ctx.Emitter.EmitLoadConst(binding.Register, src)
-	} else {
-		emitMoveAuto(c.ctx, binding.Register, src)
-	}
-
-	c.ctx.Types.Set(binding.Register, publishedType)
-
-	return binding.Register
-}
-
-func (c *StmtCompiler) reportInvalidAssignmentTarget(ctx antlr.ParserRuleContext) {
-	if ctx == nil {
-		return
-	}
-
-	err := c.ctx.Errors.Create(parserd.SyntaxError, ctx, "Assignment target must be a local variable name")
-	err.Hint = "Property and index assignment are not supported. Use UPDATE for structural changes."
-	c.ctx.Errors.Add(err)
 }

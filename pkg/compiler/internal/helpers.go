@@ -248,24 +248,12 @@ func collectAndCaptureAssignments(
 		storage := core.BindingStorageValue
 		if binding.Mutable {
 			storage = core.BindingStorageCell
-			if ctx != nil && binding.Decl != nil {
-				ctx.PromotedBindings[binding.Decl] = struct{}{}
+			if ctx != nil && ctx.BindingCompiler != nil && binding.Decl != nil {
+				ctx.BindingCompiler.PromoteDeclaration(binding.Decl)
 			}
 		}
 
 		addCapture(captureSet, captureOrder, name, storage)
-	}
-}
-
-func variableDeclarationBinding(ctx fql.IVariableDeclarationContext) captureBinding {
-	if ctx == nil {
-		return captureBinding{}
-	}
-
-	return captureBinding{
-		Name:    variableDeclarationName(ctx),
-		Mutable: isMutableDeclaration(ctx),
-		Decl:    ctx.(antlr.ParserRuleContext),
 	}
 }
 
@@ -512,7 +500,7 @@ func analyzeCaptures(ctx *CompilerContext, table *core.UDFTable, body *fql.BodyC
 
 		switch {
 		case stmt.VariableDeclaration() != nil:
-			binding := variableDeclarationBinding(stmt.VariableDeclaration())
+			binding := ctx.BindingCompiler.captureBindingForDeclaration(stmt.VariableDeclaration())
 			if binding.Name != "" {
 				env.addBinding(binding)
 			}
@@ -781,7 +769,7 @@ func analyzeFunctionCaptures(ctx *CompilerContext, fn *core.UDFInfo, env *varEnv
 						collectAndCaptureVars(ctx, decl.Expression(), env, captureSet, &captureOrder)
 						collectAndCaptureAssignments(ctx, decl.Expression(), env, captureSet, &captureOrder)
 					}
-					binding := variableDeclarationBinding(decl)
+					binding := ctx.BindingCompiler.captureBindingForDeclaration(decl)
 					if binding.Name != "" {
 						env.addBinding(binding)
 					}

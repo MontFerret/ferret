@@ -127,7 +127,7 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 				continue
 			}
 
-			resolved[i] = loadBindingValue(c.ctx, binding)
+			resolved[i] = c.ctx.BindingCompiler.LoadBindingValue(binding)
 
 			if binding.Register == kv.Value || resolved[i] == kv.Value {
 				useTemp = true
