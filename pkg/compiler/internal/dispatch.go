@@ -29,23 +29,26 @@ func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) bytecode.
 		return bytecode.NoopOperand
 	}
 
-	targetReg := c.ensureRegister(c.compileTarget(ctx.DispatchTarget()))
-	eventReg := c.ensureRegister(c.compileEventName(ctx.DispatchEventName()))
-	payloadReg := c.ensureRegister(c.compilePayload(ctx.DispatchWithClause()))
-	optionsReg := c.ensureRegister(c.compileOptions(ctx.DispatchOptionsClause()))
-	argsReg := c.buildDispatchArgs(payloadReg, optionsReg)
+	plan := collectRecoveryPlan(c.ctx, ctx, core.RecoveryPlanOptions{})
+	return c.ctx.OPCompiler.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
+		targetReg := c.ensureRegister(c.compileTarget(ctx.DispatchTarget()))
+		eventReg := c.ensureRegister(c.compileEventName(ctx.DispatchEventName()))
+		payloadReg := c.ensureRegister(c.compilePayload(ctx.DispatchWithClause()))
+		optionsReg := c.ensureRegister(c.compileOptions(ctx.DispatchOptionsClause()))
+		argsReg := c.buildDispatchArgs(payloadReg, optionsReg)
 
-	dst := c.ctx.Registers.Allocate()
-	span := dispatchSpan(ctx)
+		dst := c.ctx.Registers.Allocate()
+		span := dispatchSpan(ctx)
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitMove(dst, targetReg)
-		c.ctx.Emitter.EmitABC(bytecode.OpDispatch, dst, eventReg, argsReg)
+		c.ctx.Emitter.WithSpan(span, func() {
+			c.ctx.Emitter.EmitMove(dst, targetReg)
+			c.ctx.Emitter.EmitABC(bytecode.OpDispatch, dst, eventReg, argsReg)
+		})
+
+		c.ctx.Types.Set(dst, core.TypeNone)
+
+		return dst
 	})
-
-	c.ctx.Types.Set(dst, core.TypeNone)
-
-	return dst
 }
 
 func (c *DispatchCompiler) compileEventName(ctx fql.IDispatchEventNameContext) bytecode.Operand {

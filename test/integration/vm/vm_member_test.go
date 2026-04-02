@@ -115,6 +115,7 @@ func TestMember(t *testing.T) {
 		S(`LET obj = { '{"a":1}': 7 } RETURN obj[{a:1}]`, 7),
 		Error(`LET obj = NONE RETURN obj.foo`),
 		Nil(`LET obj = NONE RETURN obj?.foo`),
+		Nil(`LET obj = NONE RETURN obj.foo.bar ON ERROR RETURN NONE`),
 		Object(`RETURN {first: {second: "third"}}.first`,
 			map[string]any{
 				"second": "third",
@@ -261,6 +262,8 @@ func TestOptionalChaining(t *testing.T) {
 		Nil(`LET res = (FOR i IN ERROR() RETURN i)? RETURN res`),
 
 		Array(`LET res = (FOR i IN [1, 2, 3, 4] LET y = ERROR() RETURN y+i)? RETURN res`, []any{}, "Error in array comprehension"),
+		Array(`LET res = (FOR i IN [1, 2, 3, 4] LET y = ERROR() RETURN y+i) ON ERROR RETURN []
+RETURN [LENGTH(res), 1]`, []any{0, 1}, "Grouped FOR recovery should return the fallback and continue execution"),
 		Array(`FOR i IN [1, 2, 3, 4] ERROR()? RETURN i`, []any{1, 2, 3, 4}, "Error in FOR loop"),
 	}, vm.WithFunction("ERROR", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return nil, runtime.ErrNotImplemented

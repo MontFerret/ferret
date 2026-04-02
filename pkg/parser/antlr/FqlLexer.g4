@@ -84,7 +84,6 @@ Exists: 'EXISTS';
 Count: 'COUNT';
 Value: 'VALUE';
 One: 'ONE';
-Throw: 'THROW';
 Distinct: 'DISTINCT';
 Filter: 'FILTER';
 Sort: 'SORT';

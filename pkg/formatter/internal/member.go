@@ -16,6 +16,8 @@ func (f *memberFormatter) formatMemberExpression(ctx *fql.MemberExpressionContex
 	for _, path := range ctx.AllMemberExpressionPath() {
 		f.formatMemberExpressionPath(path.(*fql.MemberExpressionPathContext))
 	}
+
+	f.expression.formatRecoveryTails(ctx.RecoveryTails())
 }
 
 func (f *memberFormatter) formatImplicitMemberExpression(ctx *fql.ImplicitMemberExpressionContext) {

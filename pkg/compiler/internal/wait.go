@@ -27,8 +27,6 @@ type (
 
 	waitForPredicateMode int
 
-	waitForBackoff int
-
 	waitPredicateCompileConfig struct {
 		predExpr      fql.IExpressionContext
 		jitterLiteral *float64
@@ -36,7 +34,7 @@ type (
 		timeoutReg    bytecode.Operand
 		everyReg      bytecode.Operand
 		capEveryReg   bytecode.Operand
-		backoff       waitForBackoff
+		backoff       core.RetryBackoff
 		jitterReg     bytecode.Operand
 		hasJitter     bool
 	}
@@ -49,24 +47,7 @@ type (
 		startReg     bytecode.Operand
 		unitReg      bytecode.Operand
 	}
-
-	durationClause interface {
-		DurationLiteral() fql.IDurationLiteralContext
-		IntegerLiteral() fql.IIntegerLiteralContext
-		FloatLiteral() fql.IFloatLiteralContext
-		Variable() fql.IVariableContext
-		Param() fql.IParamContext
-		MemberExpression() fql.IMemberExpressionContext
-		FunctionCall() fql.IFunctionCallContext
-	}
 )
-
-// NewWaitCompiler creates a new instance of WaitCompiler with the given compiler context.
-func NewWaitCompiler(ctx *CompilerContext) *WaitCompiler {
-	return &WaitCompiler{
-		ctx: ctx,
-	}
-}
 
 const (
 	waitForPredicateModeBool waitForPredicateMode = iota
@@ -75,40 +56,93 @@ const (
 	waitForPredicateModeValue
 )
 
-const (
-	waitForBackoffNone waitForBackoff = iota
-	waitForBackoffLinear
-	waitForBackoffExponential
-)
-
 const waitForDefaultEveryMs = 100
+
+// NewWaitCompiler creates a new instance of WaitCompiler with the given compiler context.
+func NewWaitCompiler(ctx *CompilerContext) *WaitCompiler {
+	return &WaitCompiler{
+		ctx: ctx,
+	}
+}
 
 // Compile processes a WAITFOR expression from the FQL AST and generates the appropriate VM instructions.
 func (c *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) bytecode.Operand {
+	return c.compileWithOuterRecovery(ctx, core.RecoveryPlan{})
+}
+
+func (c *WaitCompiler) compileWithOuterRecovery(ctx fql.IWaitForExpressionContext, outerPlan core.RecoveryPlan) bytecode.Operand {
 	if ctx == nil {
 		return bytecode.NoopOperand
 	}
 
+	plan := mergeRecoveryPlans(c.ctx, collectRecoveryPlan(c.ctx, ctx, core.RecoveryPlanOptions{
+		AllowTimeout: true,
+		HasTimeout:   waitForHasExplicitTimeoutClause(ctx),
+	}), outerPlan)
 	c.ctx.Symbols.EnterScope()
 	defer c.ctx.Symbols.ExitScope()
 
-	if orThrow := ctx.WaitForOrThrowClause(); orThrow != nil {
-		if prc, ok := orThrow.(antlr.ParserRuleContext); ok {
-			err := c.ctx.Errors.Create(parser.SemanticError, prc, "OR THROW is not supported")
-			err.Hint = "Remove OR THROW and handle timeouts explicitly."
-			c.ctx.Errors.Add(err)
-		}
-	}
-
 	if ev := ctx.WaitForEventExpression(); ev != nil {
-		return c.compileEvent(ev)
+		return c.compileEventWithPlan(ev, plan)
 	}
 
 	if pred := ctx.WaitForPredicateExpression(); pred != nil {
-		return c.compilePredicate(pred)
+		return c.compilePredicateWithPlan(pred, plan)
 	}
 
 	return bytecode.NoopOperand
+}
+
+func waitForHasExplicitTimeoutClause(ctx fql.IWaitForExpressionContext) bool {
+	if ctx == nil {
+		return false
+	}
+
+	if ev := ctx.WaitForEventExpression(); ev != nil && ev.TimeoutClause() != nil {
+		return true
+	}
+
+	if pred := ctx.WaitForPredicateExpression(); pred != nil && pred.TimeoutClause() != nil {
+		return true
+	}
+
+	return false
+}
+
+func normalizeWaitRecoveryPlan(plan core.RecoveryPlan) core.RecoveryPlan {
+	normalized := plan
+
+	if recoveryHandlerRetries(normalized.OnError) && normalized.OnError.Retry != nil &&
+		normalized.OnError.Retry.FinalActionKind != core.RecoveryActionReturn &&
+		normalized.OnError.Retry.Count <= 0 {
+		normalized.OnError = nil
+	}
+
+	return normalized
+}
+
+func (c *WaitCompiler) compileEventWithPlan(ctx fql.IWaitForEventExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
+	plan = normalizeWaitRecoveryPlan(plan)
+
+	if plan.OnTimeout == nil && (plan.OnError == nil || plan.OnError.ActionKind == core.RecoveryActionFail) {
+		return c.compileEvent(ctx)
+	}
+
+	return widenRecoveryResultType(c.ctx, c.compileEventWithRecovery(ctx, plan), plan)
+}
+
+func (c *WaitCompiler) compilePredicateWithPlan(ctx fql.IWaitForPredicateExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
+	plan = normalizeWaitRecoveryPlan(plan)
+
+	if plan.OnTimeout == nil {
+		errorPlan := core.RecoveryPlan{OnError: plan.OnError}
+
+		return c.ctx.OPCompiler.CompileWithRecoveryPlan(errorPlan, core.CatchJumpModeNone, func() bytecode.Operand {
+			return c.compilePredicate(ctx)
+		})
+	}
+
+	return widenRecoveryResultType(c.ctx, c.compilePredicateWithRecovery(ctx, plan), plan)
 }
 
 func (c *WaitCompiler) compileEvent(ctx fql.IWaitForEventExpressionContext) bytecode.Operand {
@@ -165,6 +199,167 @@ func (c *WaitCompiler) compileEvent(ctx fql.IWaitForEventExpressionContext) byte
 	return resultReg
 }
 
+func (c *WaitCompiler) compileEventWithRecovery(ctx fql.IWaitForEventExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
+	span := waitForSpan(ctx.WaitForEventSource(), ctx)
+	streamReg := c.ctx.Registers.Allocate()
+	resultReg := c.ctx.Registers.Allocate()
+	timeoutStateReg := c.ctx.Registers.Allocate()
+	errorStateReg := c.ctx.Registers.Allocate()
+
+	c.ctx.Emitter.EmitLoadNone(resultReg)
+	c.ctx.Emitter.EmitBoolean(timeoutStateReg, false)
+	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
+
+	var (
+		zeroReg             bytecode.Operand
+		retriesRemainingReg bytecode.Operand
+		retryDelayState     core.RetryDelayState
+		retryStartLabel     core.Label
+		finalAttemptLabel   core.Label
+	)
+
+	if recoveryHandlerRetries(plan.OnError) {
+		zeroReg = loadConstant(c.ctx, runtime.ZeroInt)
+		retriesRemainingReg = loadConstant(c.ctx, runtime.NewInt(plan.OnError.Retry.Count))
+		retryDelayState = initRetryDelayState(c.ctx, plan.OnError.Retry)
+		retryStartLabel = c.ctx.Emitter.NewLabel("waitfor", "event", "retry")
+		if plan.OnError.Retry.FinalActionKind != core.RecoveryActionReturn {
+			finalAttemptLabel = c.ctx.Emitter.NewLabel("waitfor", "event", "final")
+		}
+		c.ctx.Emitter.MarkLabel(retryStartLabel)
+	}
+
+	startCatch := c.ctx.Emitter.Size()
+
+	srcReg := c.CompileWaitForEventSource(ctx.WaitForEventSource())
+	eventReg := c.CompileWaitForEventName(ctx.WaitForEventName())
+
+	var optsReg bytecode.Operand
+	if opts := ctx.OptionsClause(); opts != nil {
+		optsReg = c.CompileOptionsClause(opts)
+	}
+
+	var timeoutReg bytecode.Operand
+	if timeout := ctx.TimeoutClause(); timeout != nil {
+		timeoutReg = c.CompileTimeoutClauseContext(timeout)
+	}
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitMove(streamReg, srcReg)
+		c.ctx.Emitter.EmitABC(bytecode.OpStream, streamReg, eventReg, optsReg)
+		c.ctx.Emitter.EmitABC(bytecode.OpStreamIter, streamReg, streamReg, timeoutReg)
+	})
+
+	start := c.ctx.Emitter.NewLabel()
+	iterationDone := c.ctx.Emitter.NewLabel()
+	cleanup := c.ctx.Emitter.NewLabel()
+	timeoutHandler := c.ctx.Emitter.NewLabel("waitfor", "event", "timeout")
+	errorHandler := c.ctx.Emitter.NewLabel("waitfor", "event", "error")
+	end := c.ctx.Emitter.NewLabel("waitfor", "event", "end")
+
+	c.ctx.Emitter.MarkLabel(start)
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitIterNextTimeout(streamReg, timeoutStateReg, iterationDone)
+	})
+
+	if filter := ctx.EventFilterClause(); filter != nil {
+		eventValReg, _ := c.ctx.Symbols.DeclareLocal(core.PseudoVariable, core.TypeUnknown)
+
+		c.ctx.Emitter.WithSpan(span, func() {
+			c.ctx.Emitter.EmitAB(bytecode.OpIterValue, eventValReg, streamReg)
+		})
+
+		cond := c.ctx.ExprCompiler.compileWithImplicitCurrent(filter.Expression())
+		c.ctx.Emitter.EmitJumpIfFalse(cond, start)
+	}
+
+	c.ctx.Emitter.EmitJump(cleanup)
+	c.ctx.Emitter.MarkLabel(iterationDone)
+	c.ctx.Emitter.EmitJump(cleanup)
+
+	c.ctx.Emitter.MarkLabel(cleanup)
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitA(bytecode.OpClose, streamReg)
+	})
+
+	endCatchExclusive := c.ctx.Emitter.Size()
+
+	c.ctx.Emitter.EmitJumpIfTrue(timeoutStateReg, timeoutHandler)
+	c.ctx.Emitter.EmitJumpIfTrue(errorStateReg, errorHandler)
+	c.ctx.Emitter.EmitJump(end)
+
+	errorPreludePC := -1
+	if plan.OnError != nil && (plan.OnError.ActionKind == core.RecoveryActionReturn || plan.OnError.ActionKind == core.RecoveryActionRetry) {
+		errorPreludePC = c.ctx.Emitter.Size()
+		c.ctx.Emitter.EmitBoolean(errorStateReg, true)
+		c.ctx.Emitter.EmitBoolean(timeoutStateReg, false)
+		c.ctx.Emitter.EmitJump(cleanup)
+	}
+
+	c.ctx.Emitter.MarkLabel(timeoutHandler)
+	switch {
+	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
+		fallback := c.ctx.ExprCompiler.Compile(plan.OnTimeout.Expr)
+		c.ctx.EmitMoveAuto(resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		c.ctx.Emitter.EmitJump(end)
+	default:
+		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)
+	}
+
+	c.ctx.Emitter.MarkLabel(errorHandler)
+	switch {
+	case plan.OnError != nil && plan.OnError.ActionKind == core.RecoveryActionReturn:
+		fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Expr)
+		c.ctx.EmitMoveAuto(resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		c.ctx.Emitter.EmitJump(end)
+	case recoveryHandlerRetries(plan.OnError):
+		c.ctx.Emitter.EmitBoolean(errorStateReg, false)
+		c.ctx.Emitter.EmitBoolean(timeoutStateReg, false)
+
+		retriesAvailableReg := c.ctx.Registers.Allocate()
+		c.ctx.Emitter.EmitGt(retriesAvailableReg, retriesRemainingReg, zeroReg)
+
+		onExhausted := c.ctx.Emitter.NewLabel("waitfor", "event", "exhausted")
+		c.ctx.Emitter.EmitJumpIfFalse(retriesAvailableReg, onExhausted)
+		c.ctx.Emitter.EmitA(bytecode.OpDecr, retriesRemainingReg)
+		emitRecoveryRetryDelay(c.ctx, plan.OnError.Retry, retryDelayState)
+
+		if plan.OnError.Retry.FinalActionKind == core.RecoveryActionReturn {
+			c.ctx.Emitter.EmitJump(retryStartLabel)
+		} else {
+			moreProtectedReg := c.ctx.Registers.Allocate()
+			c.ctx.Emitter.EmitGt(moreProtectedReg, retriesRemainingReg, zeroReg)
+			c.ctx.Emitter.EmitJumpIfTrue(moreProtectedReg, retryStartLabel)
+			c.ctx.Emitter.EmitJump(finalAttemptLabel)
+		}
+
+		c.ctx.Emitter.MarkLabel(onExhausted)
+		if plan.OnError.Retry.FinalActionKind == core.RecoveryActionReturn {
+			fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Retry.FinalExpr)
+			c.ctx.EmitMoveAuto(resultReg, ensureRecoveryRegister(c.ctx, fallback))
+			c.ctx.Emitter.EmitJump(end)
+		} else {
+			c.ctx.Emitter.EmitJump(finalAttemptLabel)
+		}
+	}
+
+	if errorPreludePC >= 0 && endCatchExclusive > startCatch {
+		c.ctx.CatchTable.Push(startCatch, endCatchExclusive-1, errorPreludePC)
+	}
+
+	if recoveryHandlerRetries(plan.OnError) && plan.OnError.Retry.FinalActionKind != core.RecoveryActionReturn {
+		c.ctx.Emitter.MarkLabel(finalAttemptLabel)
+		finalOut := c.compileEventWithPlan(ctx, core.RecoveryPlan{OnTimeout: plan.OnTimeout})
+		if finalOut != bytecode.NoopOperand && finalOut != resultReg {
+			c.ctx.EmitMoveAuto(resultReg, ensureRecoveryRegister(c.ctx, finalOut))
+		}
+	}
+
+	c.ctx.Emitter.MarkLabel(end)
+
+	return resultReg
+}
+
 func (c *WaitCompiler) compilePredicate(ctx fql.IWaitForPredicateExpressionContext) bytecode.Operand {
 	predicate := ctx.WaitForPredicate()
 	if predicate == nil {
@@ -173,6 +368,11 @@ func (c *WaitCompiler) compilePredicate(ctx fql.IWaitForPredicateExpressionConte
 
 	predExpr := predicate.Expression()
 	if predExpr == nil {
+		return bytecode.NoopOperand
+	}
+
+	if legacy := legacyWaitForOrThrowNode(predExpr); legacy != nil {
+		c.ctx.Errors.Add(c.ctx.Errors.Create(parser.SyntaxError, legacy, "Unexpected THROW after OR in WAITFOR predicate"))
 		return bytecode.NoopOperand
 	}
 
@@ -187,6 +387,190 @@ func (c *WaitCompiler) compilePredicate(ctx fql.IWaitForPredicateExpressionConte
 	c.emitWaitPredicatePollLoop(config, state)
 
 	return state.resultReg
+}
+
+func (c *WaitCompiler) compilePredicateWithRecovery(ctx fql.IWaitForPredicateExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
+	predicate := ctx.WaitForPredicate()
+	if predicate == nil {
+		return bytecode.NoopOperand
+	}
+
+	predExpr := predicate.Expression()
+	if predExpr == nil {
+		return bytecode.NoopOperand
+	}
+
+	if legacy := legacyWaitForOrThrowNode(predExpr); legacy != nil {
+		c.ctx.Errors.Add(c.ctx.Errors.Create(parser.SyntaxError, legacy, "Unexpected THROW after OR in WAITFOR predicate"))
+		return bytecode.NoopOperand
+	}
+
+	config := c.buildWaitPredicateConfig(ctx, predicate, predExpr)
+	c.normalizeWaitPredicateConfig(&config)
+
+	if recoveryHandlerRetries(plan.OnError) {
+		return c.compilePredicateWithRetry(config, ctx, plan)
+	}
+
+	state := c.initWaitPredicatePollState(config)
+
+	return c.emitWaitPredicatePollLoopWithRecovery(config, state, plan)
+}
+
+func (c *WaitCompiler) compilePredicateWithRetry(config waitPredicateCompileConfig, ctx fql.IWaitForPredicateExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
+	zeroReg := loadConstant(c.ctx, runtime.ZeroInt)
+	retriesRemainingReg := loadConstant(c.ctx, runtime.NewInt(plan.OnError.Retry.Count))
+	retryDelayState := initRetryDelayState(c.ctx, plan.OnError.Retry)
+	retryStart := c.ctx.Emitter.NewLabel("waitfor", "predicate", "retry")
+	finalAttemptLabel := c.ctx.Emitter.NewLabel("waitfor", "predicate", "final")
+	end := c.ctx.Emitter.NewLabel("waitfor", "predicate", "end")
+
+	c.ctx.Emitter.MarkLabel(retryStart)
+	state := c.initWaitPredicatePollState(config)
+
+	start := c.ctx.Emitter.NewLabel()
+	success := c.ctx.Emitter.NewLabel()
+	protectedTimeout := c.ctx.Emitter.NewLabel()
+	timeoutHandler := c.ctx.Emitter.NewLabel("waitfor", "predicate", "timeout")
+
+	startCatch := c.ctx.Emitter.Size()
+
+	c.ctx.Emitter.MarkLabel(start)
+
+	valueReg := c.ctx.ExprCompiler.Compile(config.predExpr)
+	condReg := c.emitWaitPredicateCondition(config.mode, valueReg)
+	c.ctx.Emitter.EmitJumpIfTrue(condReg, success)
+
+	elapsedReg := c.emitWaitPredicateTimeoutCheck(config.timeoutReg, state.startReg, state.unitReg, protectedTimeout)
+	sleepIntervalReg := c.prepareWaitSleepInterval(config, state.pollReg)
+	c.emitWaitSleep(sleepIntervalReg, config.timeoutReg, elapsedReg)
+
+	if config.backoff != core.RetryBackoffNone {
+		c.emitBackoffUpdate(config.backoff, state.intervalReg, state.baseEveryReg)
+		if config.capEveryReg != bytecode.NoopOperand {
+			c.emitClampMax(state.intervalReg, config.capEveryReg)
+		}
+	}
+
+	c.ctx.Emitter.EmitJump(start)
+	c.ctx.Emitter.MarkLabel(success)
+	c.emitWaitSuccessResult(config.mode, state.resultReg, valueReg)
+	c.ctx.Emitter.EmitJump(end)
+
+	c.ctx.Emitter.MarkLabel(protectedTimeout)
+	c.ctx.Emitter.EmitJump(timeoutHandler)
+
+	endCatchExclusive := c.ctx.Emitter.Size()
+
+	errorHandlerPC := c.ctx.Emitter.Size()
+	retriesAvailableReg := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitGt(retriesAvailableReg, retriesRemainingReg, zeroReg)
+
+	onExhausted := c.ctx.Emitter.NewLabel("waitfor", "predicate", "exhausted")
+	c.ctx.Emitter.EmitJumpIfFalse(retriesAvailableReg, onExhausted)
+	c.ctx.Emitter.EmitA(bytecode.OpDecr, retriesRemainingReg)
+	emitRecoveryRetryDelay(c.ctx, plan.OnError.Retry, retryDelayState)
+
+	if plan.OnError.Retry.FinalActionKind == core.RecoveryActionReturn {
+		c.ctx.Emitter.EmitJump(retryStart)
+	} else {
+		moreProtectedReg := c.ctx.Registers.Allocate()
+		c.ctx.Emitter.EmitGt(moreProtectedReg, retriesRemainingReg, zeroReg)
+		c.ctx.Emitter.EmitJumpIfTrue(moreProtectedReg, retryStart)
+		c.ctx.Emitter.EmitJump(finalAttemptLabel)
+	}
+
+	c.ctx.Emitter.MarkLabel(onExhausted)
+	if plan.OnError.Retry.FinalActionKind == core.RecoveryActionReturn {
+		fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Retry.FinalExpr)
+		c.ctx.EmitMoveAuto(state.resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		c.ctx.Emitter.EmitJump(end)
+	} else {
+		c.ctx.Emitter.EmitJump(finalAttemptLabel)
+	}
+
+	c.ctx.Emitter.MarkLabel(timeoutHandler)
+	switch {
+	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
+		fallback := c.ctx.ExprCompiler.Compile(plan.OnTimeout.Expr)
+		c.ctx.EmitMoveAuto(state.resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		c.ctx.Emitter.EmitJump(end)
+	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionFail:
+		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)
+	default:
+		c.emitWaitTimeoutResult(config.mode, state.resultReg)
+		c.ctx.Emitter.EmitJump(end)
+	}
+
+	if endCatchExclusive > startCatch {
+		c.ctx.CatchTable.Push(startCatch, endCatchExclusive-1, errorHandlerPC)
+	}
+
+	if plan.OnError.Retry.FinalActionKind != core.RecoveryActionReturn {
+		c.ctx.Emitter.MarkLabel(finalAttemptLabel)
+		finalOut := c.compilePredicateWithPlan(ctx, core.RecoveryPlan{OnTimeout: plan.OnTimeout})
+		if finalOut != bytecode.NoopOperand && finalOut != state.resultReg {
+			c.ctx.EmitMoveAuto(state.resultReg, ensureRecoveryRegister(c.ctx, finalOut))
+		}
+	}
+
+	c.ctx.Emitter.MarkLabel(end)
+
+	return state.resultReg
+}
+
+func legacyWaitForOrThrowNode(expr fql.IExpressionContext) antlr.ParserRuleContext {
+	if expr == nil || expr.LogicalOrOperator() == nil {
+		return nil
+	}
+
+	return bareThrowExpressionNode(expr.GetRight())
+}
+
+func bareThrowExpressionNode(expr fql.IExpressionContext) antlr.ParserRuleContext {
+	if expr == nil {
+		return nil
+	}
+
+	if expr.UnaryOperator() != nil || expr.LogicalAndOperator() != nil || expr.LogicalOrOperator() != nil || expr.GetTernaryOperator() != nil {
+		return nil
+	}
+
+	return bareThrowPredicateNode(expr.Predicate())
+}
+
+func bareThrowPredicateNode(pred fql.IPredicateContext) antlr.ParserRuleContext {
+	if pred == nil {
+		return nil
+	}
+
+	if pred.EqualityOperator() != nil || pred.ArrayOperator() != nil || pred.InOperator() != nil || pred.LikeOperator() != nil {
+		return nil
+	}
+
+	return bareThrowAtomNode(pred.ExpressionAtom())
+}
+
+func bareThrowAtomNode(atom fql.IExpressionAtomContext) antlr.ParserRuleContext {
+	if atom == nil {
+		return nil
+	}
+
+	if atom.MultiplicativeOperator() != nil || atom.AdditiveOperator() != nil || atom.RegexpOperator() != nil {
+		return nil
+	}
+
+	variable := atom.Variable()
+	if variable == nil || !strings.EqualFold(matchVariableName(variable), "THROW") {
+		return nil
+	}
+
+	node, ok := variable.(antlr.ParserRuleContext)
+	if !ok {
+		return nil
+	}
+
+	return node
 }
 
 func resolveWaitPredicateMode(hasValue, hasExists, hasNot bool) waitForPredicateMode {
@@ -313,7 +697,7 @@ func (c *WaitCompiler) initWaitPredicatePollState(config waitPredicateCompileCon
 	}
 
 	state.pollReg = state.baseEveryReg
-	if config.backoff != waitForBackoffNone {
+	if config.backoff != core.RetryBackoffNone {
 		state.intervalReg = c.ctx.Registers.Allocate()
 		c.ctx.Emitter.EmitMove(state.intervalReg, state.baseEveryReg)
 		state.pollReg = state.intervalReg
@@ -350,7 +734,7 @@ func (c *WaitCompiler) emitWaitPredicatePollLoop(config waitPredicateCompileConf
 	sleepIntervalReg := c.prepareWaitSleepInterval(config, state.pollReg)
 	c.emitWaitSleep(sleepIntervalReg, config.timeoutReg, elapsedReg)
 
-	if config.backoff != waitForBackoffNone {
+	if config.backoff != core.RetryBackoffNone {
 		c.emitBackoffUpdate(config.backoff, state.intervalReg, state.baseEveryReg)
 		if config.capEveryReg != bytecode.NoopOperand {
 			c.emitClampMax(state.intervalReg, config.capEveryReg)
@@ -365,6 +749,72 @@ func (c *WaitCompiler) emitWaitPredicatePollLoop(config waitPredicateCompileConf
 	c.ctx.Emitter.MarkLabel(timeoutLabel)
 	c.emitWaitTimeoutResult(config.mode, state.resultReg)
 	c.ctx.Emitter.MarkLabel(end)
+}
+
+func (c *WaitCompiler) emitWaitPredicatePollLoopWithRecovery(config waitPredicateCompileConfig, state waitPredicatePollState, plan core.RecoveryPlan) bytecode.Operand {
+	start := c.ctx.Emitter.NewLabel()
+	success := c.ctx.Emitter.NewLabel()
+	protectedTimeout := c.ctx.Emitter.NewLabel()
+	timeoutHandler := c.ctx.Emitter.NewLabel("waitfor", "predicate", "timeout")
+	end := c.ctx.Emitter.NewLabel("waitfor", "predicate", "end")
+
+	startCatch := c.ctx.Emitter.Size()
+
+	c.ctx.Emitter.MarkLabel(start)
+
+	valueReg := c.ctx.ExprCompiler.Compile(config.predExpr)
+	condReg := c.emitWaitPredicateCondition(config.mode, valueReg)
+	c.ctx.Emitter.EmitJumpIfTrue(condReg, success)
+
+	elapsedReg := c.emitWaitPredicateTimeoutCheck(config.timeoutReg, state.startReg, state.unitReg, protectedTimeout)
+	sleepIntervalReg := c.prepareWaitSleepInterval(config, state.pollReg)
+	c.emitWaitSleep(sleepIntervalReg, config.timeoutReg, elapsedReg)
+
+	if config.backoff != core.RetryBackoffNone {
+		c.emitBackoffUpdate(config.backoff, state.intervalReg, state.baseEveryReg)
+		if config.capEveryReg != bytecode.NoopOperand {
+			c.emitClampMax(state.intervalReg, config.capEveryReg)
+		}
+	}
+
+	c.ctx.Emitter.EmitJump(start)
+	c.ctx.Emitter.MarkLabel(success)
+	c.emitWaitSuccessResult(config.mode, state.resultReg, valueReg)
+	c.ctx.Emitter.EmitJump(end)
+
+	c.ctx.Emitter.MarkLabel(protectedTimeout)
+	c.ctx.Emitter.EmitJump(timeoutHandler)
+
+	endCatchExclusive := c.ctx.Emitter.Size()
+
+	errorHandlerPC := -1
+	if plan.OnError != nil && plan.OnError.ActionKind == core.RecoveryActionReturn {
+		errorHandlerPC = c.ctx.Emitter.Size()
+		fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Expr)
+		c.ctx.EmitMoveAuto(state.resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		c.ctx.Emitter.EmitJump(end)
+	}
+
+	c.ctx.Emitter.MarkLabel(timeoutHandler)
+	switch {
+	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
+		fallback := c.ctx.ExprCompiler.Compile(plan.OnTimeout.Expr)
+		c.ctx.EmitMoveAuto(state.resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		c.ctx.Emitter.EmitJump(end)
+	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionFail:
+		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)
+	default:
+		c.emitWaitTimeoutResult(config.mode, state.resultReg)
+		c.ctx.Emitter.EmitJump(end)
+	}
+
+	c.ctx.Emitter.MarkLabel(end)
+
+	if errorHandlerPC >= 0 && endCatchExclusive > startCatch {
+		c.ctx.CatchTable.Push(startCatch, endCatchExclusive-1, errorHandlerPC)
+	}
+
+	return state.resultReg
 }
 
 func (c *WaitCompiler) emitWaitPredicateCondition(mode waitForPredicateMode, valueReg bytecode.Operand) bytecode.Operand {
@@ -495,11 +945,11 @@ func (c *WaitCompiler) emitWaitSleep(intervalReg, timeoutReg, elapsedReg bytecod
 	c.ctx.Emitter.EmitA(bytecode.OpSleep, sleepReg)
 }
 
-func (c *WaitCompiler) emitBackoffUpdate(strategy waitForBackoff, intervalReg, baseEveryReg bytecode.Operand) {
+func (c *WaitCompiler) emitBackoffUpdate(strategy core.RetryBackoff, intervalReg, baseEveryReg bytecode.Operand) {
 	switch strategy {
-	case waitForBackoffLinear:
+	case core.RetryBackoffLinear:
 		c.ctx.Emitter.EmitABC(bytecode.OpAdd, intervalReg, intervalReg, baseEveryReg)
-	case waitForBackoffExponential:
+	case core.RetryBackoffExponential:
 		twoReg := loadConstant(c.ctx, runtime.NewInt(2))
 		c.ctx.Emitter.EmitABC(bytecode.OpMul, intervalReg, intervalReg, twoReg)
 	default:
@@ -649,7 +1099,7 @@ func (c *WaitCompiler) compileEveryClause(ctx fql.IEveryClauseContext) (bytecode
 	return base, bytecode.NoopOperand
 }
 
-func (c *WaitCompiler) compileDurationClause(ctx durationClause) bytecode.Operand {
+func (c *WaitCompiler) compileDurationClause(ctx core.DurationClause) bytecode.Operand {
 	if ctx == nil {
 		return bytecode.NoopOperand
 	}
@@ -735,14 +1185,14 @@ func (c *WaitCompiler) compileJitterClauseValue(ctx fql.IJitterClauseValueContex
 	)
 }
 
-func (c *WaitCompiler) compileBackoffClause(ctx fql.IBackoffClauseContext) waitForBackoff {
+func (c *WaitCompiler) compileBackoffClause(ctx fql.IBackoffClauseContext) core.RetryBackoff {
 	if ctx == nil {
-		return waitForBackoffNone
+		return core.RetryBackoffNone
 	}
 
 	strategyCtx := ctx.BackoffStrategy()
 	if strategyCtx == nil {
-		return waitForBackoffNone
+		return core.RetryBackoffNone
 	}
 
 	var strategy string
@@ -760,21 +1210,21 @@ func (c *WaitCompiler) compileBackoffClause(ctx fql.IBackoffClauseContext) waitF
 				err.Hint = "Use one of: NONE, LINEAR, EXPONENTIAL."
 				c.ctx.Errors.Add(err)
 			}
-			return waitForBackoffNone
+			return core.RetryBackoffNone
 		}
 	default:
-		return waitForBackoffNone
+		return core.RetryBackoffNone
 	}
 
 	strategy = strings.ToUpper(strings.TrimSpace(strategy))
 
 	switch strategy {
 	case "", "NONE":
-		return waitForBackoffNone
+		return core.RetryBackoffNone
 	case "LINEAR":
-		return waitForBackoffLinear
+		return core.RetryBackoffLinear
 	case "EXPONENTIAL":
-		return waitForBackoffExponential
+		return core.RetryBackoffExponential
 	default:
 		if prc, ok := ctx.(antlr.ParserRuleContext); ok {
 			err := c.ctx.Errors.Create(parser.SemanticError, prc, "Unknown BACKOFF strategy")
@@ -782,7 +1232,7 @@ func (c *WaitCompiler) compileBackoffClause(ctx fql.IBackoffClauseContext) waitF
 			c.ctx.Errors.Add(err)
 		}
 
-		return waitForBackoffNone
+		return core.RetryBackoffNone
 	}
 }
 

@@ -508,6 +508,18 @@ func validateInstructions(program *Program) error {
 			if err := validateRegisterOperand(src1, registers, pc, "src1"); err != nil {
 				return err
 			}
+		case OpIterNextTimeout:
+			if err := validatePCOperand(dst, bytecodeLen, pc, "dst"); err != nil {
+				return err
+			}
+
+			if err := validateRegisterOperand(src1, registers, pc, "src1"); err != nil {
+				return err
+			}
+
+			if err := validateRegisterOperand(src2, registers, pc, "src2"); err != nil {
+				return err
+			}
 		case OpIterSkip, OpIterLimit:
 			if err := validatePCOperand(dst, bytecodeLen, pc, "dst"); err != nil {
 				return err
@@ -528,6 +540,8 @@ func validateInstructions(program *Program) error {
 			if _, ok := program.Constants[dst.Constant()].(runtime.String); !ok {
 				return fmt.Errorf("%w: pc %d FAIL expects a string constant", ErrInvalidInstruction, pc)
 			}
+		case OpFailTimeout:
+			// No operands.
 		default:
 			return fmt.Errorf("%w: opcode %d at pc %d is not supported by validator", ErrInvalidInstruction, op, pc)
 		}

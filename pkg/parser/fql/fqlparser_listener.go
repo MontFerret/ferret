@@ -193,8 +193,68 @@ type FqlParserListener interface {
 	// EnterBackoffStrategy is called when entering the backoffStrategy production.
 	EnterBackoffStrategy(c *BackoffStrategyContext)
 
-	// EnterWaitForOrThrowClause is called when entering the waitForOrThrowClause production.
-	EnterWaitForOrThrowClause(c *WaitForOrThrowClauseContext)
+	// EnterRecoveryTails is called when entering the recoveryTails production.
+	EnterRecoveryTails(c *RecoveryTailsContext)
+
+	// EnterRecoveryTail is called when entering the recoveryTail production.
+	EnterRecoveryTail(c *RecoveryTailContext)
+
+	// EnterRecoveryCondition is called when entering the recoveryCondition production.
+	EnterRecoveryCondition(c *RecoveryConditionContext)
+
+	// EnterRecoveryAction is called when entering the recoveryAction production.
+	EnterRecoveryAction(c *RecoveryActionContext)
+
+	// EnterRecoveryReturnExpr is called when entering the recoveryReturnExpr production.
+	EnterRecoveryReturnExpr(c *RecoveryReturnExprContext)
+
+	// EnterRecoveryRetryAction is called when entering the recoveryRetryAction production.
+	EnterRecoveryRetryAction(c *RecoveryRetryActionContext)
+
+	// EnterRecoveryRetryCount is called when entering the recoveryRetryCount production.
+	EnterRecoveryRetryCount(c *RecoveryRetryCountContext)
+
+	// EnterRecoveryRetryDelayClause is called when entering the recoveryRetryDelayClause production.
+	EnterRecoveryRetryDelayClause(c *RecoveryRetryDelayClauseContext)
+
+	// EnterRecoveryRetryDelayValue is called when entering the recoveryRetryDelayValue production.
+	EnterRecoveryRetryDelayValue(c *RecoveryRetryDelayValueContext)
+
+	// EnterRecoveryRetryBackoffClause is called when entering the recoveryRetryBackoffClause production.
+	EnterRecoveryRetryBackoffClause(c *RecoveryRetryBackoffClauseContext)
+
+	// EnterRecoveryRetryBackoffKind is called when entering the recoveryRetryBackoffKind production.
+	EnterRecoveryRetryBackoffKind(c *RecoveryRetryBackoffKindContext)
+
+	// EnterRecoveryRetryOrClause is called when entering the recoveryRetryOrClause production.
+	EnterRecoveryRetryOrClause(c *RecoveryRetryOrClauseContext)
+
+	// EnterRecoveryRetryFinalAction is called when entering the recoveryRetryFinalAction production.
+	EnterRecoveryRetryFinalAction(c *RecoveryRetryFinalActionContext)
+
+	// EnterRecoveryActionOrClause is called when entering the recoveryActionOrClause production.
+	EnterRecoveryActionOrClause(c *RecoveryActionOrClauseContext)
+
+	// EnterOnKeyword is called when entering the onKeyword production.
+	EnterOnKeyword(c *OnKeywordContext)
+
+	// EnterErrorKeyword is called when entering the errorKeyword production.
+	EnterErrorKeyword(c *ErrorKeywordContext)
+
+	// EnterTimeoutKeyword is called when entering the timeoutKeyword production.
+	EnterTimeoutKeyword(c *TimeoutKeywordContext)
+
+	// EnterFailKeyword is called when entering the failKeyword production.
+	EnterFailKeyword(c *FailKeywordContext)
+
+	// EnterRetryKeyword is called when entering the retryKeyword production.
+	EnterRetryKeyword(c *RetryKeywordContext)
+
+	// EnterDelayKeyword is called when entering the delayKeyword production.
+	EnterDelayKeyword(c *DelayKeywordContext)
+
+	// EnterReturnKeyword is called when entering the returnKeyword production.
+	EnterReturnKeyword(c *ReturnKeywordContext)
 
 	// EnterParam is called when entering the param production.
 	EnterParam(c *ParamContext)
@@ -610,8 +670,68 @@ type FqlParserListener interface {
 	// ExitBackoffStrategy is called when exiting the backoffStrategy production.
 	ExitBackoffStrategy(c *BackoffStrategyContext)
 
-	// ExitWaitForOrThrowClause is called when exiting the waitForOrThrowClause production.
-	ExitWaitForOrThrowClause(c *WaitForOrThrowClauseContext)
+	// ExitRecoveryTails is called when exiting the recoveryTails production.
+	ExitRecoveryTails(c *RecoveryTailsContext)
+
+	// ExitRecoveryTail is called when exiting the recoveryTail production.
+	ExitRecoveryTail(c *RecoveryTailContext)
+
+	// ExitRecoveryCondition is called when exiting the recoveryCondition production.
+	ExitRecoveryCondition(c *RecoveryConditionContext)
+
+	// ExitRecoveryAction is called when exiting the recoveryAction production.
+	ExitRecoveryAction(c *RecoveryActionContext)
+
+	// ExitRecoveryReturnExpr is called when exiting the recoveryReturnExpr production.
+	ExitRecoveryReturnExpr(c *RecoveryReturnExprContext)
+
+	// ExitRecoveryRetryAction is called when exiting the recoveryRetryAction production.
+	ExitRecoveryRetryAction(c *RecoveryRetryActionContext)
+
+	// ExitRecoveryRetryCount is called when exiting the recoveryRetryCount production.
+	ExitRecoveryRetryCount(c *RecoveryRetryCountContext)
+
+	// ExitRecoveryRetryDelayClause is called when exiting the recoveryRetryDelayClause production.
+	ExitRecoveryRetryDelayClause(c *RecoveryRetryDelayClauseContext)
+
+	// ExitRecoveryRetryDelayValue is called when exiting the recoveryRetryDelayValue production.
+	ExitRecoveryRetryDelayValue(c *RecoveryRetryDelayValueContext)
+
+	// ExitRecoveryRetryBackoffClause is called when exiting the recoveryRetryBackoffClause production.
+	ExitRecoveryRetryBackoffClause(c *RecoveryRetryBackoffClauseContext)
+
+	// ExitRecoveryRetryBackoffKind is called when exiting the recoveryRetryBackoffKind production.
+	ExitRecoveryRetryBackoffKind(c *RecoveryRetryBackoffKindContext)
+
+	// ExitRecoveryRetryOrClause is called when exiting the recoveryRetryOrClause production.
+	ExitRecoveryRetryOrClause(c *RecoveryRetryOrClauseContext)
+
+	// ExitRecoveryRetryFinalAction is called when exiting the recoveryRetryFinalAction production.
+	ExitRecoveryRetryFinalAction(c *RecoveryRetryFinalActionContext)
+
+	// ExitRecoveryActionOrClause is called when exiting the recoveryActionOrClause production.
+	ExitRecoveryActionOrClause(c *RecoveryActionOrClauseContext)
+
+	// ExitOnKeyword is called when exiting the onKeyword production.
+	ExitOnKeyword(c *OnKeywordContext)
+
+	// ExitErrorKeyword is called when exiting the errorKeyword production.
+	ExitErrorKeyword(c *ErrorKeywordContext)
+
+	// ExitTimeoutKeyword is called when exiting the timeoutKeyword production.
+	ExitTimeoutKeyword(c *TimeoutKeywordContext)
+
+	// ExitFailKeyword is called when exiting the failKeyword production.
+	ExitFailKeyword(c *FailKeywordContext)
+
+	// ExitRetryKeyword is called when exiting the retryKeyword production.
+	ExitRetryKeyword(c *RetryKeywordContext)
+
+	// ExitDelayKeyword is called when exiting the delayKeyword production.
+	ExitDelayKeyword(c *DelayKeywordContext)
+
+	// ExitReturnKeyword is called when exiting the returnKeyword production.
+	ExitReturnKeyword(c *ReturnKeywordContext)
 
 	// ExitParam is called when exiting the param production.
 	ExitParam(c *ParamContext)

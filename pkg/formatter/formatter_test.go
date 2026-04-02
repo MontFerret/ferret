@@ -76,7 +76,7 @@ func TestFormatter_NestedObjectRespectsPrintWidthAtLineStart(t *testing.T) {
 }
 
 func TestFormatter_BlockCommentPreservesLeadingSpace(t *testing.T) {
-	input := "RETURN 1\n/*\n * a\n * b\n */\nRETURN 2"
+	input := "LET x = 1\n/*\n * a\n * b\n */\nRETURN 2"
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
 	fmt := New()

@@ -16,6 +16,16 @@ func (e *Emitter) EmitIterNext(iterator bytecode.Operand, label Label) {
 	e.EmitJumpc(bytecode.OpIterNext, iterator, label)
 }
 
+func (e *Emitter) EmitIterNextTimeout(iterator, timeoutState bytecode.Operand, label Label) {
+	e.emitInstruction(bytecode.Instruction{
+		Opcode:   bytecode.OpIterNextTimeout,
+		Operands: [3]bytecode.Operand{jumpPlaceholder, iterator, timeoutState},
+	})
+
+	pos := len(e.instructions) - 1
+	e.addLabelRef(pos, 0, label)
+}
+
 func (e *Emitter) EmitIterKey(dst, iterator bytecode.Operand) {
 	e.EmitAB(bytecode.OpIterKey, dst, iterator)
 }

@@ -74,6 +74,17 @@ options { tokenVocab=FqlLexer; }
 		return equalsFoldAscii(tok.GetText(), expected)
 	}
 
+	func (p *FqlParser) isRecoveryActionStart() bool {
+		switch p.GetTokenStream().LA(1) {
+		case FqlParserReturn:
+			return true
+		case FqlParserIdentifier:
+			return !p.isCurrentIdentifierText("ON")
+		default:
+			return false
+		}
+	}
+
 	func equalsFoldAscii(actual, expected string) bool {
 		if len(actual) != len(expected) {
 			return false
@@ -103,7 +114,7 @@ options { tokenVocab=FqlLexer; }
 		switch token {
 		case FqlParserReturn, FqlParserDispatch, FqlParserQuery, FqlParserUsing, FqlParserNone,
 			FqlParserNull, FqlParserLet, FqlParserVar, FqlParserUse, FqlParserWaitfor, FqlParserWhile, FqlParserDo, FqlParserIn,
-			FqlParserLike, FqlParserNot, FqlParserFor, FqlParserBooleanLiteral, FqlParserThrow, FqlParserMatch, FqlParserWhen,
+			FqlParserLike, FqlParserNot, FqlParserFor, FqlParserBooleanLiteral, FqlParserMatch, FqlParserWhen,
 			FqlParserFunc:
 			return true
 		default:
@@ -131,7 +142,7 @@ options { tokenVocab=FqlLexer; }
 }
 
 program
-    : head* body
+    : head* body EOF
     ;
 
 head
@@ -154,7 +165,7 @@ bodyStatement
     : variableDeclaration
     | assignmentStatement
     | functionDeclaration
-    | functionCallExpression
+    | {p.GetTokenStream().LA(1) != FqlParserReturn}? functionCallExpression
     | waitForExpression
     | dispatchExpression
     ;
@@ -357,13 +368,13 @@ collectCounter
     ;
 
 waitForExpression
-    : Waitfor waitForEventExpression waitForOrThrowClause?
-    | Waitfor waitForPredicateExpression waitForOrThrowClause?
+    : Waitfor waitForEventExpression (recoveryTails)?
+    | Waitfor waitForPredicateExpression (recoveryTails)?
     ;
 
 dispatchExpression
-    : Dispatch dispatchEventName In dispatchTarget (dispatchWithClause)? (dispatchOptionsClause)?
-    | dispatchEventName DispatchArrow dispatchTarget
+    : Dispatch dispatchEventName In dispatchTarget (dispatchWithClause)? (dispatchOptionsClause)? (recoveryTails)?
+    | dispatchEventName DispatchArrow dispatchTarget (recoveryTails)?
     ;
 
 dispatchEventName
@@ -401,7 +412,7 @@ waitForPredicate
     : Exists expression
     | Not Exists expression
     | Value expression
-    | {!p.isWaitForPredicateStart()}? expression
+    | {!p.isWaitForPredicateStart() && p.GetTokenStream().LA(1) != FqlParserEvent}? expression
     ;
 
 waitForEventName
@@ -415,6 +426,7 @@ waitForEventName
 waitForEventSource
     : functionCallExpression
     | variable
+    | param
     | memberExpression
     ;
 
@@ -463,8 +475,108 @@ backoffStrategy
     | None
     ;
 
-waitForOrThrowClause
-    : Or Throw
+recoveryTails
+    : ({p.isCurrentIdentifierText("ON")}? recoveryTail)+
+    ;
+
+recoveryTail
+    : onKeyword recoveryCondition {p.isRecoveryActionStart()}? recoveryAction
+    | onKeyword recoveryCondition {!p.isRecoveryActionStart()}?
+    | onKeyword
+    ;
+
+recoveryCondition
+    : errorKeyword
+    | timeoutKeyword
+    | {!p.isCurrentIdentifierText("ERROR")}? Identifier
+    ;
+
+recoveryAction
+    : failKeyword recoveryActionOrClause?
+    | returnKeyword recoveryReturnExpr
+    | returnKeyword
+    | recoveryRetryAction
+    | {!p.isCurrentIdentifierText("FAIL") && !p.isCurrentIdentifierText("RETRY")}? Identifier recoveryActionOrClause?
+    ;
+
+recoveryReturnExpr
+    : expression
+    ;
+
+recoveryRetryAction
+    : retryKeyword recoveryRetryCount? recoveryRetryDelayClause? recoveryRetryOrClause*
+    ;
+
+recoveryRetryCount
+    : integerLiteral
+    ;
+
+recoveryRetryDelayClause
+    : delayKeyword recoveryRetryDelayValue? recoveryRetryBackoffClause?
+    | recoveryRetryBackoffClause
+    ;
+
+recoveryRetryDelayValue
+    : durationLiteral
+    | integerLiteral
+    | floatLiteral
+    | variable
+    | param
+    | memberExpression
+    | functionCall
+    ;
+
+recoveryRetryBackoffClause
+    : Backoff recoveryRetryBackoffKind?
+    ;
+
+recoveryRetryBackoffKind
+    : Identifier
+    | stringLiteral
+    | None
+    ;
+
+recoveryRetryOrClause
+    : Or recoveryRetryFinalAction?
+    ;
+
+recoveryRetryFinalAction
+    : failKeyword
+    | returnKeyword recoveryReturnExpr
+    | returnKeyword
+    | {!p.isCurrentIdentifierText("FAIL") && !p.isCurrentIdentifierText("RETURN")}? Identifier
+    ;
+
+recoveryActionOrClause
+    : Or recoveryRetryFinalAction?
+    ;
+
+onKeyword
+    : {p.isCurrentIdentifierText("ON")}? Identifier
+    ;
+
+errorKeyword
+    : {p.isCurrentIdentifierText("ERROR")}? Identifier
+    ;
+
+timeoutKeyword
+    : Timeout
+    ;
+
+failKeyword
+    : {p.isCurrentIdentifierText("FAIL")}? Identifier
+    ;
+
+retryKeyword
+    : {p.isCurrentIdentifierText("RETRY")}? Identifier
+    ;
+
+delayKeyword
+    : {p.isCurrentIdentifierText("DELAY")}? Identifier
+    ;
+
+returnKeyword
+    : Return
     ;
 
 param
@@ -553,7 +665,7 @@ namespace
     ;
 
 memberExpression
-    : memberExpressionSource memberExpressionPath+
+    : memberExpressionSource memberExpressionPath+ (recoveryTails)?
     ;
 
 memberExpressionSource
@@ -566,7 +678,7 @@ memberExpressionSource
     ;
 
 functionCallExpression
-    : functionCall errorOperator?
+    : functionCall (errorOperator | recoveryTails)?
     ;
 
 functionCall
@@ -586,8 +698,8 @@ argumentList
 memberExpressionPath
     : errorOperator? Dot propertyName
     | (errorOperator Dot)? computedPropertyName
+    | (errorOperator Dot)? arrayExpansion
     | arrayContraction
-    | arrayExpansion
     | arrayQuestionMark
     | arrayApply
     ;
@@ -688,7 +800,6 @@ unsafeReservedWord
     | Not
     | For
     | BooleanLiteral
-    | Throw
     | Match
     | When
     ;
@@ -743,7 +854,7 @@ expressionAtom
     | param
     | dispatchExpression
     | waitForExpression
-    | OpenParen (forExpression | waitForExpression | expression) CloseParen errorOperator?
+    | OpenParen (forExpression | waitForExpression | expression) CloseParen (errorOperator | recoveryTails)?
     ;
 
 matchExpression
@@ -835,8 +946,8 @@ implicitMemberExpressionStart
     ;
 
 queryExpression
-    : Query queryModifier queryPayload In expression Using dialect=Identifier queryWithOpt?
-    | Query {!p.isQueryModifierAhead()}? queryPayload In expression Using dialect=Identifier queryWithOpt?
+    : Query queryModifier queryPayload In expression Using dialect=Identifier queryWithOpt? (recoveryTails)?
+    | Query {!p.isQueryModifierAhead()}? queryPayload In expression Using dialect=Identifier queryWithOpt? (recoveryTails)?
     ;
 
 queryModifier

@@ -320,31 +320,61 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 		return bytecode.NoopOperand, false
 	}
 
-	startCatch := c.ctx.Emitter.Size()
-	reg := c.compileAtom(atom)
+	if atom.ErrorOperator() != nil {
+		jumpMode := core.CatchJumpModeNone
+		if fe := atom.ForExpression(); fe != nil {
+			jumpMode = catchJumpModeForForExpression(fe)
+		} else if wfe := atom.WaitForExpression(); wfe != nil {
+			jumpMode = catchJumpModeForWaitForExpression(wfe)
+		}
 
-	if atom.ErrorOperator() == nil {
+		reg := c.ctx.OPCompiler.CompileWithErrorPolicy(core.ErrorPolicySuppress, jumpMode, func() bytecode.Operand {
+			return c.compileAtom(atom)
+		})
+
 		return reg, true
 	}
 
-	jump := -1
-	endCatchExclusive := c.ctx.Emitter.Size()
-	if endCatchExclusive <= startCatch {
-		return reg, true
-	}
+	if wfe := atom.WaitForExpression(); wfe != nil {
+		plan := collectRecoveryPlan(c.ctx, atom, core.RecoveryPlanOptions{
+			AllowTimeout: true,
+			HasTimeout:   waitForHasExplicitTimeoutClause(wfe),
+		})
+		if plan.OnError == nil && plan.OnTimeout == nil {
+			return c.compileAtom(atom), true
+		}
 
-	endCatch := endCatchExclusive - 1
+		return c.ctx.WaitCompiler.compileWithOuterRecovery(wfe, plan), true
+	}
 
 	if fe := atom.ForExpression(); fe != nil {
-		// Since FOR-IN loops depend on custom iterators,
-		// We need to handle cleanup before exiting the loop.
-		// TODO: Find a better way to handle this. The code assumes the knowledge of the internals of the FOR-IN loop.
-		if fe.In() != nil {
-			jump = endCatch
+		plan := collectRecoveryPlan(c.ctx, atom, core.RecoveryPlanOptions{})
+		if plan.OnError == nil {
+			return c.compileAtom(atom), true
 		}
+
+		return c.ctx.LoopCompiler.compileWithRecovery(fe, plan), true
 	}
 
-	c.ctx.CatchTable.Push(startCatch, endCatch, jump)
+	plan := collectRecoveryPlan(c.ctx, atom, core.RecoveryPlanOptions{})
+	if plan.OnError == nil {
+		return c.compileAtom(atom), true
+	}
+
+	jumpMode := core.CatchJumpModeNone
+	if fe := atom.ForExpression(); fe != nil {
+		jumpMode = catchJumpModeForForExpression(fe)
+	} else if wfe := atom.WaitForExpression(); wfe != nil {
+		jumpMode = catchJumpModeForWaitForExpression(wfe)
+	}
+
+	if !hasErrorReturnNoneHandler(plan) {
+		jumpMode = core.CatchJumpModeNone
+	}
+
+	reg := c.ctx.OPCompiler.CompileWithRecoveryPlan(plan, jumpMode, func() bytecode.Operand {
+		return c.compileAtom(atom)
+	})
 
 	return reg, true
 }
@@ -1267,7 +1297,7 @@ func matchPureResultAtom(expr fql.IExpressionContext) (fql.IExpressionAtomContex
 		return nil, false
 	}
 
-	if atom.AdditiveOperator() != nil || atom.MultiplicativeOperator() != nil || atom.RegexpOperator() != nil || atom.ErrorOperator() != nil || atom.RangeOperator() != nil {
+	if atom.AdditiveOperator() != nil || atom.MultiplicativeOperator() != nil || atom.RegexpOperator() != nil || atom.ErrorOperator() != nil || atom.RecoveryTails() != nil || atom.RangeOperator() != nil {
 		return nil, false
 	}
 
@@ -1728,20 +1758,27 @@ func (c *ExprCompiler) withImplicitCurrent(fn func()) {
 // Returns:
 //   - An operand representing the value of the accessed property
 func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext) bytecode.Operand {
-	mes := ctx.MemberExpressionSource()
-	segments := ctx.AllMemberExpressionPath()
-
-	if mes == nil || len(segments) == 0 {
+	if ctx == nil {
 		return bytecode.NoopOperand
 	}
 
-	src := c.compileMemberExpressionSource(mes, segments)
+	plan := collectRecoveryPlan(c.ctx, ctx, core.RecoveryPlanOptions{})
+	return c.ctx.OPCompiler.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
+		mes := ctx.MemberExpressionSource()
+		segments := ctx.AllMemberExpressionPath()
 
-	if src == bytecode.NoopOperand {
-		return src
-	}
+		if mes == nil || len(segments) == 0 {
+			return bytecode.NoopOperand
+		}
 
-	return c.compileMemberExpressionSegments(src, segments)
+		src := c.compileMemberExpressionSource(mes, segments)
+
+		if src == bytecode.NoopOperand {
+			return src
+		}
+
+		return c.compileMemberExpressionSegments(src, segments)
+	})
 }
 
 func (c *ExprCompiler) compileMemberExpressionSource(mes fql.IMemberExpressionSourceContext, segments []fql.IMemberExpressionPathContext) bytecode.Operand {
@@ -2417,22 +2454,29 @@ func (c *ExprCompiler) compileQueryExpression(ctx fql.IQueryExpressionContext) b
 		return bytecode.NoopOperand
 	}
 
-	src, ok := c.compileQueryExpressionSource(ctx)
-	if !ok {
-		return bytecode.NoopOperand
-	}
+	plan := collectRecoveryPlan(c.ctx, ctx, core.RecoveryPlanOptions{})
+	return c.ctx.OPCompiler.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
+		if ctx == nil {
+			return bytecode.NoopOperand
+		}
 
-	span := diagnostics.SpanFromRuleContext(ctx)
-	modifier := queryModifierName(ctx.QueryModifier())
-	queryReg := c.emitQueryEnvelope(ctx, span)
-	queryResult := c.emitApplyQuery(span, src, queryReg)
-	dst := c.lowerQueryModifier(span, modifier, queryResult)
+		src, ok := c.compileQueryExpressionSource(ctx)
+		if !ok {
+			return bytecode.NoopOperand
+		}
 
-	if dst.IsRegister() {
-		c.ctx.Types.Set(dst, queryResultTypeForModifier(modifier))
-	}
+		span := diagnostics.SpanFromRuleContext(ctx)
+		modifier := queryModifierName(ctx.QueryModifier())
+		queryReg := c.emitQueryEnvelope(ctx, span)
+		queryResult := c.emitApplyQuery(span, src, queryReg)
+		dst := c.lowerQueryModifier(span, modifier, queryResult)
 
-	return dst
+		if dst.IsRegister() {
+			c.ctx.Types.Set(dst, queryResultTypeForModifier(modifier))
+		}
+
+		return dst
+	})
 }
 
 func (c *ExprCompiler) compileQueryExpressionSource(ctx fql.IQueryExpressionContext) (bytecode.Operand, bool) {
@@ -2967,10 +3011,29 @@ func (c *ExprCompiler) CompileParam(ctx fql.IParamContext) bytecode.Operand {
 // Returns:
 //   - An operand representing the function call result
 func (c *ExprCompiler) CompileFunctionCallExpression(ctx fql.IFunctionCallExpressionContext) bytecode.Operand {
-	protected := ctx.ErrorOperator() != nil
-	call := ctx.FunctionCall()
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
 
-	return c.CompileFunctionCall(call, protected)
+	call := ctx.FunctionCall()
+	if ctx.ErrorOperator() != nil {
+		return c.ctx.OPCompiler.CompileWithErrorPolicy(core.ErrorPolicySuppress, core.CatchJumpModeNone, func() bytecode.Operand {
+			return c.CompileFunctionCall(call, true)
+		})
+	}
+
+	plan := collectRecoveryPlan(c.ctx, ctx, core.RecoveryPlanOptions{})
+	if hasErrorReturnNoneHandler(plan) {
+		out := c.ctx.OPCompiler.CompileWithErrorPolicy(core.ErrorPolicySuppress, core.CatchJumpModeNone, func() bytecode.Operand {
+			return c.CompileFunctionCall(call, true)
+		})
+
+		return widenRecoveryResultType(c.ctx, out, plan)
+	}
+
+	return c.ctx.OPCompiler.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
+		return c.CompileFunctionCall(call, false)
+	})
 }
 
 // CompileFunctionCall processes a function call from the FQL AST.

@@ -306,6 +306,8 @@ loop:
 
 			callErr := runtime.Error(runtime.ErrInvalidOperation, msg.String())
 			state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+		case bytecode.OpFailTimeout:
+			state.raiseRuntimeAt(pc, runtime.ErrTimeout, recoverDefault, bytecode.NoopOperand, nil, false)
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
 			hostID := inst.InlineSlot
 			if hostID < 0 || hostID >= len(hostFunctions) {
@@ -629,6 +631,27 @@ loop:
 
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 			}
+		case bytecode.OpIterNextTimeout:
+			iterator := reg[src1].(data.IteratorState)
+
+			if err := iterator.Next(ctx); err != nil {
+				if errors.Is(err, io.EOF) {
+					state.writeBorrowedRegister(src2, runtime.False)
+					state.pc = int(dst)
+					continue
+				}
+
+				if errors.Is(err, runtime.ErrTimeout) {
+					state.writeBorrowedRegister(src2, runtime.True)
+					state.pc = int(dst)
+					continue
+				}
+
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
+			state.writeBorrowedRegister(src2, runtime.False)
 		case bytecode.OpIterValue:
 			iterator := reg[src1].(data.IteratorState)
 			state.writeBorrowedRegister(dst, iterator.Value())

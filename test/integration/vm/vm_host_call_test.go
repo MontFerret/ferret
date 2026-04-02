@@ -3,8 +3,10 @@ package vm_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 
@@ -114,10 +116,41 @@ func TestHostFunctionProtectedCall(t *testing.T) {
 
 	RunSpecs(t, []spec.Spec{
 		Nil("RETURN FAIL()?", "Protected host call should return none"),
+		Nil("RETURN FAIL() ON ERROR RETURN NONE", "Explicit suppress should return none"),
+		Nil("RETURN (FAIL() + 1) ON ERROR RETURN NONE", "Grouped explicit suppress should return none"),
 		Error("RETURN FAIL()", "Non-protected host call should fail"),
+		Error("RETURN FAIL() ON ERROR FAIL", "Explicit FAIL should preserve propagation"),
 	}, vm.WithFunction("FAIL", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, boom
 	}))
+}
+
+func TestHostFunctionRecoveryFallbackFailurePropagates(t *testing.T) {
+	specs := []spec.Spec{
+		spec.NewSpec("RETURN STEP() ON ERROR RETURN STEP()", "Fallback failure should escape instead of re-entering the same recovery tail").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Contains: []string{"boom-2"}},
+		),
+	}
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		callCount := 0
+
+		RunSpecsWith(
+			t,
+			fmt.Sprintf("VM/O%d", level),
+			compiler.New(compiler.WithOptimizationLevel(level)),
+			specs,
+			vm.WithFunction("STEP", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+				callCount++
+				if callCount <= 2 {
+					return runtime.None, fmt.Errorf("boom-%d", callCount)
+				}
+
+				return runtime.NewInt(99), nil
+			}),
+		)
+	}
 }
 
 func TestHostFunctionLookupIsCaseSensitive(t *testing.T) {

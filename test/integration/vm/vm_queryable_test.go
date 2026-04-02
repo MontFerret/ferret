@@ -239,7 +239,14 @@ func TestQueryableModifiers(t *testing.T) {
 		Nil("LET maybe = (QUERY VALUE `.items` IN @empty USING css)?\nRETURN maybe", "VALUE assertion should be catchable with optional operator"),
 		Nil("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe", "ONE assertion should be catchable for empty result with optional operator"),
 		Nil("LET maybe = (QUERY ONE `.items` IN @many USING css)?\nRETURN maybe", "ONE assertion should be catchable for multi result with optional operator"),
+		Nil("LET maybe = QUERY VALUE `.items` IN @empty USING css ON ERROR RETURN NONE\nRETURN maybe", "Explicit suppress should catch VALUE assertion failure"),
+		Nil("LET maybe = QUERY ONE `.items` IN @empty USING css ON ERROR RETURN NONE\nRETURN maybe", "Explicit suppress should catch ONE assertion failure"),
+		Nil("LET maybe = QUERY ONE `.items` IN @many USING css ON ERROR RETURN NONE\nRETURN maybe", "Explicit suppress should catch ONE multi-result failure"),
 		spec.NewSpec("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe.foo", "Catch should not swallow the first instruction after a guarded QUERY ONE").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Contains: []string{"Cannot read property", "\"foo\""}},
+		),
+		spec.NewSpec("LET maybe = QUERY ONE `.items` IN @empty USING css ON ERROR RETURN NONE\nRETURN maybe.foo", "Explicit suppress should not swallow the first instruction after a guarded QUERY ONE").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Contains: []string{"Cannot read property", "\"foo\""}},
 		),

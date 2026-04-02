@@ -98,6 +98,24 @@ func (b *Builder) identifyLeaders(instructions []bytecode.Instruction) map[int]b
 		}
 	}
 
+	for _, entry := range b.program.CatchTable {
+		start := entry[0]
+		end := entry[1]
+		handler := entry[2]
+
+		if start >= 0 && start < len(instructions) {
+			leaders[start] = true
+		}
+
+		if end >= 0 && end+1 < len(instructions) {
+			leaders[end+1] = true
+		}
+
+		if handler >= 0 && handler < len(instructions) {
+			leaders[handler] = true
+		}
+	}
+
 	return leaders
 }
 
@@ -179,7 +197,33 @@ func (b *Builder) createEdges(instructions []bytecode.Instruction, blocks []*Bas
 				}
 			}
 		}
+
+		b.addCatchSuccessors(block, indexToBlock)
 	}
+}
+
+func (b *Builder) addCatchSuccessors(block *BasicBlock, indexToBlock map[int]*BasicBlock) {
+	if block == nil || len(block.Instructions) == 0 {
+		return
+	}
+
+	for _, entry := range b.program.CatchTable {
+		if !blockOverlapsCatch(block, entry) {
+			continue
+		}
+
+		handler := entry[2]
+		if handlerBlock, ok := indexToBlock[handler]; ok {
+			block.AddSuccessor(handlerBlock)
+		}
+	}
+}
+
+func blockOverlapsCatch(block *BasicBlock, entry bytecode.Catch) bool {
+	start := entry[0]
+	end := entry[1]
+
+	return start >= 0 && end >= start && block.Start <= end && start <= block.End
 }
 
 func (b *Builder) jumpTarget(pc int, inst bytecode.Instruction) int {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type (
@@ -74,19 +75,129 @@ func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) bytecode.Operand {
 		return bytecode.NoopOperand
 	}
 
-	// Compile the loop body (statements and clauses)
-	if body := ctx.AllForExpressionBody(); len(body) > 0 {
-		for _, b := range body {
-			if ec := b.ForExpressionStatement(); ec != nil {
-				c.compileForExpressionStatement(ec)
-			} else if ec := b.ForExpressionClause(); ec != nil {
-				c.compileForExpressionClause(ec)
-			}
-		}
-	}
+	c.compileLoopBody(ctx)
 
 	// Finalize the loop and return the destination operand
 	return c.compileFinalization(returnRuleCtx)
+}
+
+func (c *LoopCompiler) compileWithRecovery(ctx fql.IForExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
+	if ctx.In() == nil {
+		return c.ctx.OPCompiler.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
+			return c.Compile(ctx)
+		})
+	}
+
+	if plan.OnError == nil || plan.OnError.ActionKind == core.RecoveryActionFail {
+		return c.Compile(ctx)
+	}
+
+	if recoveryHandlerRetries(plan.OnError) && plan.OnError.Retry != nil && plan.OnError.Retry.FinalActionKind != core.RecoveryActionReturn && plan.OnError.Retry.Count <= 0 {
+		return c.Compile(ctx)
+	}
+
+	return c.compileForInWithRecovery(ctx, plan)
+}
+
+func (c *LoopCompiler) compileForInWithRecovery(ctx fql.IForExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
+	errorStateReg := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
+
+	var (
+		zeroReg             bytecode.Operand
+		retriesRemainingReg bytecode.Operand
+		retryDelayState     core.RetryDelayState
+		retryStartLabel     core.Label
+		finalAttemptLabel   core.Label
+	)
+
+	if recoveryHandlerRetries(plan.OnError) {
+		zeroReg = loadConstant(c.ctx, runtime.ZeroInt)
+		retriesRemainingReg = loadConstant(c.ctx, runtime.NewInt(plan.OnError.Retry.Count))
+		retryDelayState = initRetryDelayState(c.ctx, plan.OnError.Retry)
+		retryStartLabel = c.ctx.Emitter.NewLabel("recovery", "for", "retry")
+		finalAttemptLabel = c.ctx.Emitter.NewLabel("recovery", "for", "final")
+		c.ctx.Emitter.MarkLabel(retryStartLabel)
+	}
+
+	startCatch := c.ctx.Emitter.Size()
+	returnRuleCtx := c.compileInitialization(ctx, core.ForInLoop)
+	if returnRuleCtx == nil {
+		return bytecode.NoopOperand
+	}
+
+	loop := c.ctx.Loops.Current()
+	breakLabel := loop.BreakLabel()
+
+	c.compileLoopBody(ctx)
+
+	out := c.compileFinalization(returnRuleCtx)
+	endCatchExclusive := c.ctx.Emitter.Size()
+
+	recoveryLabel := c.ctx.Emitter.NewLabel("recovery", "for", "handle")
+	endLabel := c.ctx.Emitter.NewLabel("recovery", "for", "end")
+
+	c.ctx.Emitter.EmitJumpIfTrue(errorStateReg, recoveryLabel)
+	c.ctx.Emitter.EmitJump(endLabel)
+
+	errorPreludePC := c.ctx.Emitter.Size()
+	c.ctx.Emitter.EmitBoolean(errorStateReg, true)
+	c.ctx.Emitter.EmitJump(breakLabel)
+
+	c.ctx.Emitter.MarkLabel(recoveryLabel)
+	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
+
+	if recoveryHandlerRetries(plan.OnError) {
+		retriesAvailableReg := c.ctx.Registers.Allocate()
+		c.ctx.Emitter.EmitGt(retriesAvailableReg, retriesRemainingReg, zeroReg)
+
+		onExhausted := c.ctx.Emitter.NewLabel("recovery", "for", "exhausted")
+		c.ctx.Emitter.EmitJumpIfFalse(retriesAvailableReg, onExhausted)
+		c.ctx.Emitter.EmitA(bytecode.OpDecr, retriesRemainingReg)
+		emitRecoveryRetryDelay(c.ctx, plan.OnError.Retry, retryDelayState)
+
+		if plan.OnError.Retry.FinalActionKind == core.RecoveryActionReturn {
+			c.ctx.Emitter.EmitJump(retryStartLabel)
+		} else {
+			moreProtectedReg := c.ctx.Registers.Allocate()
+			c.ctx.Emitter.EmitGt(moreProtectedReg, retriesRemainingReg, zeroReg)
+			c.ctx.Emitter.EmitJumpIfTrue(moreProtectedReg, retryStartLabel)
+			c.ctx.Emitter.EmitJump(finalAttemptLabel)
+		}
+
+		c.ctx.Emitter.MarkLabel(onExhausted)
+		if plan.OnError.Retry.FinalActionKind == core.RecoveryActionReturn {
+			fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Retry.FinalExpr)
+			c.ctx.EmitMoveAuto(out, ensureRecoveryRegister(c.ctx, fallback))
+			c.ctx.Emitter.EmitJump(endLabel)
+		} else {
+			c.ctx.Emitter.EmitJump(finalAttemptLabel)
+		}
+	} else {
+		fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Expr)
+		c.ctx.EmitMoveAuto(out, ensureRecoveryRegister(c.ctx, fallback))
+		c.ctx.Emitter.EmitJump(endLabel)
+	}
+
+	if endCatchExclusive > startCatch {
+		c.ctx.CatchTable.Push(startCatch, endCatchExclusive-1, errorPreludePC)
+	}
+
+	if recoveryHandlerRetries(plan.OnError) && plan.OnError.Retry.FinalActionKind != core.RecoveryActionReturn {
+		c.ctx.Emitter.MarkLabel(finalAttemptLabel)
+		finalOut := c.Compile(ctx)
+		if finalOut != bytecode.NoopOperand && finalOut != out {
+			c.ctx.EmitMoveAuto(out, ensureRecoveryRegister(c.ctx, finalOut))
+		}
+	}
+
+	c.ctx.Emitter.MarkLabel(endLabel)
+
+	return widenRecoveryResultType(c.ctx, out, plan)
 }
 
 // compileInitialization handles the setup of a loop, including determining its type,
@@ -292,6 +403,22 @@ func (c *LoopCompiler) compileForExpressionSource(ctx fql.IForExpressionSourceCo
 		loopOperandArrayLiteral,
 		loopOperandObjectLiteral,
 	)
+}
+
+func (c *LoopCompiler) compileLoopBody(ctx fql.IForExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	if body := ctx.AllForExpressionBody(); len(body) > 0 {
+		for _, b := range body {
+			if ec := b.ForExpressionStatement(); ec != nil {
+				c.compileForExpressionStatement(ec)
+			} else if ec := b.ForExpressionClause(); ec != nil {
+				c.compileForExpressionClause(ec)
+			}
+		}
+	}
 }
 
 // compileForExpressionStatement processes statements within a FOR loop body.

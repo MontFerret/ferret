@@ -193,8 +193,68 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#backoffStrategy.
 	VisitBackoffStrategy(ctx *BackoffStrategyContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#waitForOrThrowClause.
-	VisitWaitForOrThrowClause(ctx *WaitForOrThrowClauseContext) interface{}
+	// Visit a parse tree produced by FqlParser#recoveryTails.
+	VisitRecoveryTails(ctx *RecoveryTailsContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryTail.
+	VisitRecoveryTail(ctx *RecoveryTailContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryCondition.
+	VisitRecoveryCondition(ctx *RecoveryConditionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryAction.
+	VisitRecoveryAction(ctx *RecoveryActionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryReturnExpr.
+	VisitRecoveryReturnExpr(ctx *RecoveryReturnExprContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryRetryAction.
+	VisitRecoveryRetryAction(ctx *RecoveryRetryActionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryRetryCount.
+	VisitRecoveryRetryCount(ctx *RecoveryRetryCountContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryRetryDelayClause.
+	VisitRecoveryRetryDelayClause(ctx *RecoveryRetryDelayClauseContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryRetryDelayValue.
+	VisitRecoveryRetryDelayValue(ctx *RecoveryRetryDelayValueContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryRetryBackoffClause.
+	VisitRecoveryRetryBackoffClause(ctx *RecoveryRetryBackoffClauseContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryRetryBackoffKind.
+	VisitRecoveryRetryBackoffKind(ctx *RecoveryRetryBackoffKindContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryRetryOrClause.
+	VisitRecoveryRetryOrClause(ctx *RecoveryRetryOrClauseContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryRetryFinalAction.
+	VisitRecoveryRetryFinalAction(ctx *RecoveryRetryFinalActionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryActionOrClause.
+	VisitRecoveryActionOrClause(ctx *RecoveryActionOrClauseContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#onKeyword.
+	VisitOnKeyword(ctx *OnKeywordContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#errorKeyword.
+	VisitErrorKeyword(ctx *ErrorKeywordContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#timeoutKeyword.
+	VisitTimeoutKeyword(ctx *TimeoutKeywordContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#failKeyword.
+	VisitFailKeyword(ctx *FailKeywordContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#retryKeyword.
+	VisitRetryKeyword(ctx *RetryKeywordContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#delayKeyword.
+	VisitDelayKeyword(ctx *DelayKeywordContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#returnKeyword.
+	VisitReturnKeyword(ctx *ReturnKeywordContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#param.
 	VisitParam(ctx *ParamContext) interface{}
