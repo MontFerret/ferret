@@ -35,3 +35,31 @@ func TestStatementFormatter_DispatchExpressionShorthand(t *testing.T) {
 		t.Fatalf("unexpected shorthand dispatch formatting: %q", got)
 	}
 }
+
+func TestStatementFormatter_DispatchExpressionErrorPolicyTail(t *testing.T) {
+	input := `DISPATCH "evt" IN target ON ERROR SUPPRESS`
+	program := parseProgram(t, input+"\nRETURN 1")
+	dispatchExpr := mustFirst[*fql.DispatchExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.statement.formatDispatchExpression(dispatchExpr)
+	if got := buf.String(); got != `DISPATCH "evt" IN target ON ERROR SUPPRESS` {
+		t.Fatalf("unexpected dispatch error policy formatting: %q", got)
+	}
+}
+
+func TestStatementFormatter_WaitForExpressionErrorPolicyTail(t *testing.T) {
+	input := `WAITFOR VALUE ready ON ERROR THROW`
+	program := parseProgram(t, input+"\nRETURN 1")
+	waitExpr := mustFirst[*fql.WaitForExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.statement.formatWaitForExpression(waitExpr)
+	if got := buf.String(); got != `WAITFOR VALUE ready ON ERROR THROW` {
+		t.Fatalf("unexpected waitfor error policy formatting: %q", got)
+	}
+}

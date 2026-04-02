@@ -114,7 +114,10 @@ func TestHostFunctionProtectedCall(t *testing.T) {
 
 	RunSpecs(t, []spec.Spec{
 		Nil("RETURN FAIL()?", "Protected host call should return none"),
+		Nil("RETURN FAIL() ON ERROR SUPPRESS", "Explicit suppress should return none"),
+		Nil("RETURN (FAIL() + 1) ON ERROR SUPPRESS", "Grouped explicit suppress should return none"),
 		Error("RETURN FAIL()", "Non-protected host call should fail"),
+		Error("RETURN FAIL() ON ERROR THROW", "Explicit THROW should preserve propagation"),
 	}, vm.WithFunction("FAIL", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, boom
 	}))

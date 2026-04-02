@@ -131,7 +131,7 @@ options { tokenVocab=FqlLexer; }
 }
 
 program
-    : head* body
+    : head* body EOF
     ;
 
 head
@@ -357,13 +357,13 @@ collectCounter
     ;
 
 waitForExpression
-    : Waitfor waitForEventExpression waitForOrThrowClause?
-    | Waitfor waitForPredicateExpression waitForOrThrowClause?
+    : Waitfor waitForEventExpression ({p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
+    | Waitfor waitForPredicateExpression ({p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
     ;
 
 dispatchExpression
-    : Dispatch dispatchEventName In dispatchTarget (dispatchWithClause)? (dispatchOptionsClause)?
-    | dispatchEventName DispatchArrow dispatchTarget
+    : Dispatch dispatchEventName In dispatchTarget (dispatchWithClause)? (dispatchOptionsClause)? ({p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
+    | dispatchEventName DispatchArrow dispatchTarget ({p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
     ;
 
 dispatchEventName
@@ -401,7 +401,7 @@ waitForPredicate
     : Exists expression
     | Not Exists expression
     | Value expression
-    | {!p.isWaitForPredicateStart()}? expression
+    | {!p.isWaitForPredicateStart() && p.GetTokenStream().LA(1) != FqlParserEvent}? expression
     ;
 
 waitForEventName
@@ -415,6 +415,7 @@ waitForEventName
 waitForEventSource
     : functionCallExpression
     | variable
+    | param
     | memberExpression
     ;
 
@@ -463,8 +464,23 @@ backoffStrategy
     | None
     ;
 
-waitForOrThrowClause
-    : Or Throw
+errorPolicyTail
+    : onKeyword errorKeyword suppressKeyword
+    | onKeyword errorKeyword Throw
+    | onKeyword errorKeyword
+    | onKeyword
+    ;
+
+onKeyword
+    : Identifier
+    ;
+
+errorKeyword
+    : Identifier
+    ;
+
+suppressKeyword
+    : Identifier
     ;
 
 param
@@ -553,7 +569,7 @@ namespace
     ;
 
 memberExpression
-    : memberExpressionSource memberExpressionPath+
+    : memberExpressionSource memberExpressionPath+ ({p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
     ;
 
 memberExpressionSource
@@ -566,7 +582,7 @@ memberExpressionSource
     ;
 
 functionCallExpression
-    : functionCall errorOperator?
+    : functionCall (errorOperator | {p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
     ;
 
 functionCall
@@ -586,8 +602,8 @@ argumentList
 memberExpressionPath
     : errorOperator? Dot propertyName
     | (errorOperator Dot)? computedPropertyName
+    | (errorOperator Dot)? arrayExpansion
     | arrayContraction
-    | arrayExpansion
     | arrayQuestionMark
     | arrayApply
     ;
@@ -743,7 +759,7 @@ expressionAtom
     | param
     | dispatchExpression
     | waitForExpression
-    | OpenParen (forExpression | waitForExpression | expression) CloseParen errorOperator?
+    | OpenParen (forExpression | waitForExpression | expression) CloseParen (errorOperator | {p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
     ;
 
 matchExpression
@@ -835,8 +851,8 @@ implicitMemberExpressionStart
     ;
 
 queryExpression
-    : Query queryModifier queryPayload In expression Using dialect=Identifier queryWithOpt?
-    | Query {!p.isQueryModifierAhead()}? queryPayload In expression Using dialect=Identifier queryWithOpt?
+    : Query queryModifier queryPayload In expression Using dialect=Identifier queryWithOpt? ({p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
+    | Query {!p.isQueryModifierAhead()}? queryPayload In expression Using dialect=Identifier queryWithOpt? ({p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
     ;
 
 queryModifier

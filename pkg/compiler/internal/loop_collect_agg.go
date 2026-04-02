@@ -100,7 +100,7 @@ func (c *LoopCollectCompiler) parseAggregateSelector(selector fql.ICollectAggreg
 		name,
 		args,
 		funcName,
-		fcx.ErrorOperator() != nil,
+		fcx.ErrorOperator() != nil || resolveErrorPolicyTail(c.ctx, fcx.ErrorPolicyTail()) == errorPolicySuppress,
 		selector,
 	), true
 }
@@ -235,7 +235,7 @@ func (c *LoopCollectCompiler) buildAggregatePlan(selectors []fql.ICollectAggrega
 			return nil, false
 		}
 
-		if fce.ErrorOperator() != nil {
+		if fce.ErrorOperator() != nil || resolveErrorPolicyTail(c.ctx, fce.ErrorPolicyTail()) == errorPolicySuppress {
 			return nil, false
 		}
 

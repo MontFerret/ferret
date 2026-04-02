@@ -26,6 +26,11 @@ func TestWaitforEvent(t *testing.T) {
 WAITFOR EVENT "test" IN obj
 
 RETURN NONE`, "Should compile but return an error during execution because the object does not implement the interface"),
+		S(`LET obj = {}
+
+WAITFOR EVENT "test" IN obj ON ERROR SUPPRESS
+
+RETURN 1`, 1, "Statement suppression should continue after WAITFOR EVENT runtime failure"),
 		Fn(`LET obs = @obs
 WAITFOR EVENT "test" IN obs WHEN .type == "match"
 RETURN 1`, ObservableReturnOneAndReads(matchFirst, 1)).Env(vm.WithParams(map[string]runtime.Value{

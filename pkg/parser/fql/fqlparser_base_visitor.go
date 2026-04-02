@@ -255,7 +255,19 @@ func (v *BaseFqlParserVisitor) VisitBackoffStrategy(ctx *BackoffStrategyContext)
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitWaitForOrThrowClause(ctx *WaitForOrThrowClauseContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitErrorPolicyTail(ctx *ErrorPolicyTailContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitOnKeyword(ctx *OnKeywordContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitErrorKeyword(ctx *ErrorKeywordContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitSuppressKeyword(ctx *SuppressKeywordContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

@@ -29,23 +29,27 @@ func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) bytecode.
 		return bytecode.NoopOperand
 	}
 
-	targetReg := c.ensureRegister(c.compileTarget(ctx.DispatchTarget()))
-	eventReg := c.ensureRegister(c.compileEventName(ctx.DispatchEventName()))
-	payloadReg := c.ensureRegister(c.compilePayload(ctx.DispatchWithClause()))
-	optionsReg := c.ensureRegister(c.compileOptions(ctx.DispatchOptionsClause()))
-	argsReg := c.buildDispatchArgs(payloadReg, optionsReg)
+	policy := resolveErrorPolicyTail(c.ctx, ctx.ErrorPolicyTail())
 
-	dst := c.ctx.Registers.Allocate()
-	span := dispatchSpan(ctx)
+	return compileWithErrorPolicy(c.ctx, policy, catchJumpNone, func() bytecode.Operand {
+		targetReg := c.ensureRegister(c.compileTarget(ctx.DispatchTarget()))
+		eventReg := c.ensureRegister(c.compileEventName(ctx.DispatchEventName()))
+		payloadReg := c.ensureRegister(c.compilePayload(ctx.DispatchWithClause()))
+		optionsReg := c.ensureRegister(c.compileOptions(ctx.DispatchOptionsClause()))
+		argsReg := c.buildDispatchArgs(payloadReg, optionsReg)
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitMove(dst, targetReg)
-		c.ctx.Emitter.EmitABC(bytecode.OpDispatch, dst, eventReg, argsReg)
+		dst := c.ctx.Registers.Allocate()
+		span := dispatchSpan(ctx)
+
+		c.ctx.Emitter.WithSpan(span, func() {
+			c.ctx.Emitter.EmitMove(dst, targetReg)
+			c.ctx.Emitter.EmitABC(bytecode.OpDispatch, dst, eventReg, argsReg)
+		})
+
+		c.ctx.Types.Set(dst, core.TypeNone)
+
+		return dst
 	})
-
-	c.ctx.Types.Set(dst, core.TypeNone)
-
-	return dst
 }
 
 func (c *DispatchCompiler) compileEventName(ctx fql.IDispatchEventNameContext) bytecode.Operand {

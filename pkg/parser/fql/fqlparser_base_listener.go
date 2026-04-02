@@ -396,11 +396,29 @@ func (s *BaseFqlParserListener) EnterBackoffStrategy(ctx *BackoffStrategyContext
 // ExitBackoffStrategy is called when production backoffStrategy is exited.
 func (s *BaseFqlParserListener) ExitBackoffStrategy(ctx *BackoffStrategyContext) {}
 
-// EnterWaitForOrThrowClause is called when production waitForOrThrowClause is entered.
-func (s *BaseFqlParserListener) EnterWaitForOrThrowClause(ctx *WaitForOrThrowClauseContext) {}
+// EnterErrorPolicyTail is called when production errorPolicyTail is entered.
+func (s *BaseFqlParserListener) EnterErrorPolicyTail(ctx *ErrorPolicyTailContext) {}
 
-// ExitWaitForOrThrowClause is called when production waitForOrThrowClause is exited.
-func (s *BaseFqlParserListener) ExitWaitForOrThrowClause(ctx *WaitForOrThrowClauseContext) {}
+// ExitErrorPolicyTail is called when production errorPolicyTail is exited.
+func (s *BaseFqlParserListener) ExitErrorPolicyTail(ctx *ErrorPolicyTailContext) {}
+
+// EnterOnKeyword is called when production onKeyword is entered.
+func (s *BaseFqlParserListener) EnterOnKeyword(ctx *OnKeywordContext) {}
+
+// ExitOnKeyword is called when production onKeyword is exited.
+func (s *BaseFqlParserListener) ExitOnKeyword(ctx *OnKeywordContext) {}
+
+// EnterErrorKeyword is called when production errorKeyword is entered.
+func (s *BaseFqlParserListener) EnterErrorKeyword(ctx *ErrorKeywordContext) {}
+
+// ExitErrorKeyword is called when production errorKeyword is exited.
+func (s *BaseFqlParserListener) ExitErrorKeyword(ctx *ErrorKeywordContext) {}
+
+// EnterSuppressKeyword is called when production suppressKeyword is entered.
+func (s *BaseFqlParserListener) EnterSuppressKeyword(ctx *SuppressKeywordContext) {}
+
+// ExitSuppressKeyword is called when production suppressKeyword is exited.
+func (s *BaseFqlParserListener) ExitSuppressKeyword(ctx *SuppressKeywordContext) {}
 
 // EnterParam is called when production param is entered.
 func (s *BaseFqlParserListener) EnterParam(ctx *ParamContext) {}

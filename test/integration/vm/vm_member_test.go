@@ -115,6 +115,7 @@ func TestMember(t *testing.T) {
 		S(`LET obj = { '{"a":1}': 7 } RETURN obj[{a:1}]`, 7),
 		Error(`LET obj = NONE RETURN obj.foo`),
 		Nil(`LET obj = NONE RETURN obj?.foo`),
+		Nil(`LET obj = NONE RETURN obj.foo.bar ON ERROR SUPPRESS`),
 		Object(`RETURN {first: {second: "third"}}.first`,
 			map[string]any{
 				"second": "third",

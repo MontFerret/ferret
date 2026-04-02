@@ -193,8 +193,17 @@ type FqlParserListener interface {
 	// EnterBackoffStrategy is called when entering the backoffStrategy production.
 	EnterBackoffStrategy(c *BackoffStrategyContext)
 
-	// EnterWaitForOrThrowClause is called when entering the waitForOrThrowClause production.
-	EnterWaitForOrThrowClause(c *WaitForOrThrowClauseContext)
+	// EnterErrorPolicyTail is called when entering the errorPolicyTail production.
+	EnterErrorPolicyTail(c *ErrorPolicyTailContext)
+
+	// EnterOnKeyword is called when entering the onKeyword production.
+	EnterOnKeyword(c *OnKeywordContext)
+
+	// EnterErrorKeyword is called when entering the errorKeyword production.
+	EnterErrorKeyword(c *ErrorKeywordContext)
+
+	// EnterSuppressKeyword is called when entering the suppressKeyword production.
+	EnterSuppressKeyword(c *SuppressKeywordContext)
 
 	// EnterParam is called when entering the param production.
 	EnterParam(c *ParamContext)
@@ -610,8 +619,17 @@ type FqlParserListener interface {
 	// ExitBackoffStrategy is called when exiting the backoffStrategy production.
 	ExitBackoffStrategy(c *BackoffStrategyContext)
 
-	// ExitWaitForOrThrowClause is called when exiting the waitForOrThrowClause production.
-	ExitWaitForOrThrowClause(c *WaitForOrThrowClauseContext)
+	// ExitErrorPolicyTail is called when exiting the errorPolicyTail production.
+	ExitErrorPolicyTail(c *ErrorPolicyTailContext)
+
+	// ExitOnKeyword is called when exiting the onKeyword production.
+	ExitOnKeyword(c *OnKeywordContext)
+
+	// ExitErrorKeyword is called when exiting the errorKeyword production.
+	ExitErrorKeyword(c *ErrorKeywordContext)
+
+	// ExitSuppressKeyword is called when exiting the suppressKeyword production.
+	ExitSuppressKeyword(c *SuppressKeywordContext)
 
 	// ExitParam is called when exiting the param production.
 	ExitParam(c *ParamContext)

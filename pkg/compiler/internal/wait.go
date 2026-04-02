@@ -89,26 +89,21 @@ func (c *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) bytecode.Opera
 		return bytecode.NoopOperand
 	}
 
+	policy := resolveErrorPolicyTail(c.ctx, ctx.ErrorPolicyTail())
 	c.ctx.Symbols.EnterScope()
 	defer c.ctx.Symbols.ExitScope()
 
-	if orThrow := ctx.WaitForOrThrowClause(); orThrow != nil {
-		if prc, ok := orThrow.(antlr.ParserRuleContext); ok {
-			err := c.ctx.Errors.Create(parser.SemanticError, prc, "OR THROW is not supported")
-			err.Hint = "Remove OR THROW and handle timeouts explicitly."
-			c.ctx.Errors.Add(err)
+	return compileWithErrorPolicy(c.ctx, policy, catchJumpModeForWaitForExpression(ctx), func() bytecode.Operand {
+		if ev := ctx.WaitForEventExpression(); ev != nil {
+			return c.compileEvent(ev)
 		}
-	}
 
-	if ev := ctx.WaitForEventExpression(); ev != nil {
-		return c.compileEvent(ev)
-	}
+		if pred := ctx.WaitForPredicateExpression(); pred != nil {
+			return c.compilePredicate(pred)
+		}
 
-	if pred := ctx.WaitForPredicateExpression(); pred != nil {
-		return c.compilePredicate(pred)
-	}
-
-	return bytecode.NoopOperand
+		return bytecode.NoopOperand
+	})
 }
 
 func (c *WaitCompiler) compileEvent(ctx fql.IWaitForEventExpressionContext) bytecode.Operand {

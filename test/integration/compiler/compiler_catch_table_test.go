@@ -33,16 +33,42 @@ func TestCompiler_OptionalQueryCatchEndsBeforeFollowingInstruction(t *testing.T)
 				return err
 			}
 
-			if got, want := catch[1], propPC-1; got != want {
+			if got, want := catch[1], propPC-3; got != want {
 				return fmt.Errorf("unexpected catch end: got %d, want %d", got, want)
 			}
 
-			if got, want := catch[2], -1; got != want {
+			if got, want := catch[2], propPC-1; got != want {
 				return fmt.Errorf("unexpected catch jump: got %d, want %d", got, want)
 			}
 
 			return nil
 		}, "optional query catch ends before following instruction"),
+	}, compiler.O0, compiler.O1)
+}
+
+func TestCompiler_ExplicitQuerySuppressCatchEndsBeforeFollowingInstruction(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck("LET q = QUERY ONE `.items` IN @empty USING css ON ERROR SUPPRESS\nRETURN q.foo", func(program *bytecode.Program) error {
+			if got, want := len(program.CatchTable), 1; got != want {
+				return fmt.Errorf("unexpected catch table size: got %d, want %d", got, want)
+			}
+
+			catch := program.CatchTable[0]
+			propPC, err := findOpcodePC(program, bytecode.OpLoadPropertyConst)
+			if err != nil {
+				return err
+			}
+
+			if got, want := catch[1], propPC-3; got != want {
+				return fmt.Errorf("unexpected catch end: got %d, want %d", got, want)
+			}
+
+			if got, want := catch[2], propPC-1; got != want {
+				return fmt.Errorf("unexpected catch jump: got %d, want %d", got, want)
+			}
+
+			return nil
+		}, "explicit query suppress catch ends before following instruction"),
 	}, compiler.O0, compiler.O1)
 }
 
@@ -73,5 +99,35 @@ func TestCompiler_OptionalForCatchUsesInclusiveEndAndCleanupJump(t *testing.T) {
 
 			return nil
 		}, "optional for catch uses cleanup jump"),
+	}, compiler.O0, compiler.O1)
+}
+
+func TestCompiler_WaitForEventSuppressCatchUsesCleanupJump(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck("LET ok = WAITFOR EVENT \"test\" IN @obs ON ERROR SUPPRESS\nRETURN ok.foo", func(program *bytecode.Program) error {
+			if got, want := len(program.CatchTable), 1; got != want {
+				return fmt.Errorf("unexpected catch table size: got %d, want %d", got, want)
+			}
+
+			catch := program.CatchTable[0]
+			propPC, err := findOpcodePC(program, bytecode.OpLoadPropertyConst)
+			if err != nil {
+				return err
+			}
+			closePC, err := findOpcodePC(program, bytecode.OpClose)
+			if err != nil {
+				return err
+			}
+
+			if got, want := catch[1], propPC-1; got != want {
+				return fmt.Errorf("unexpected catch end: got %d, want %d", got, want)
+			}
+
+			if got, want := catch[2], closePC; got != want {
+				return fmt.Errorf("unexpected catch jump: got %d, want %d", got, want)
+			}
+
+			return nil
+		}, "waitfor event suppress catch uses cleanup jump"),
 	}, compiler.O0, compiler.O1)
 }

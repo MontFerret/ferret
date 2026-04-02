@@ -3,6 +3,7 @@ package compiler_test
 import (
 	"testing"
 
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
@@ -20,9 +21,8 @@ func TestWaitforCompilationErrors(t *testing.T) {
 			LET ok = WAITFOR TRUE OR THROW
 			RETURN ok
 		`, E{
-			Message: "OR THROW is not supported",
-			Hint:    "Remove OR THROW and handle timeouts explicitly.",
-		}, "OR THROW should fail compilation"),
+			Kind: parserd.SyntaxError,
+		}, "OR THROW should fail as a syntax error"),
 		Failure(`
 			LET ok = WAITFOR TRUE JITTER 1.5
 			RETURN ok

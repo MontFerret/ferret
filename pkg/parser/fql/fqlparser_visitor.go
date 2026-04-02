@@ -193,8 +193,17 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#backoffStrategy.
 	VisitBackoffStrategy(ctx *BackoffStrategyContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#waitForOrThrowClause.
-	VisitWaitForOrThrowClause(ctx *WaitForOrThrowClauseContext) interface{}
+	// Visit a parse tree produced by FqlParser#errorPolicyTail.
+	VisitErrorPolicyTail(ctx *ErrorPolicyTailContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#onKeyword.
+	VisitOnKeyword(ctx *OnKeywordContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#errorKeyword.
+	VisitErrorKeyword(ctx *ErrorKeywordContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#suppressKeyword.
+	VisitSuppressKeyword(ctx *SuppressKeywordContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#param.
 	VisitParam(ctx *ParamContext) interface{}

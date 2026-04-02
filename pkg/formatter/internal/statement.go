@@ -496,12 +496,7 @@ func (f *statementFormatter) formatWaitForExpression(ctx *fql.WaitForExpressionC
 		f.formatWaitForPredicateExpression(pred.(*fql.WaitForPredicateExpressionContext))
 	}
 
-	if ctx.WaitForOrThrowClause() != nil {
-		f.p.space()
-		f.writeKeyword(keywordOr)
-		f.p.space()
-		f.writeKeyword(keywordThrow)
-	}
+	f.expression.formatErrorPolicyTail(ctx.ErrorPolicyTail())
 }
 
 func (f *statementFormatter) formatWaitForEventExpression(ctx *fql.WaitForEventExpressionContext) {
@@ -626,6 +621,8 @@ func (f *statementFormatter) formatDispatchExpression(ctx *fql.DispatchExpressio
 			f.formatDispatchOptionsClause(opt.(*fql.DispatchOptionsClauseContext))
 		}
 
+		f.expression.formatErrorPolicyTail(ctx.ErrorPolicyTail())
+
 		return
 	}
 
@@ -640,6 +637,8 @@ func (f *statementFormatter) formatDispatchExpression(ctx *fql.DispatchExpressio
 	if tgt := ctx.DispatchTarget(); tgt != nil {
 		f.formatDispatchTarget(tgt.(*fql.DispatchTargetContext))
 	}
+
+	f.expression.formatErrorPolicyTail(ctx.ErrorPolicyTail())
 }
 
 func (f *statementFormatter) formatDispatchEventName(ctx *fql.DispatchEventNameContext) {

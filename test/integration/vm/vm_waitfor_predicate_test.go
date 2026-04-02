@@ -85,5 +85,9 @@ func TestWaitforPredicate(t *testing.T) {
 			LET token = WAITFOR VALUE NONE TIMEOUT 20ms EVERY 5ms
 			RETURN token
 		`, "Should return NONE on timeout for VALUE"),
+		Nil(`
+			LET token = WAITFOR VALUE NONE TIMEOUT 20ms EVERY 5ms ON ERROR THROW
+			RETURN token
+		`, "Explicit THROW should preserve timeout result semantics"),
 	})
 }

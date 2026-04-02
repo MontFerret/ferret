@@ -638,6 +638,8 @@ func (f *expressionFormatter) formatQueryExpressionWith(p *printer, ctx *fql.Que
 			}
 		}
 	}
+
+	f.formatErrorPolicyTailWith(p, ctx.ErrorPolicyTail())
 }
 
 func (f *expressionFormatter) writeQueryModifierWith(p *printer, modifier fql.IQueryModifierContext) {
@@ -678,9 +680,7 @@ func (f *expressionFormatter) formatParenthesizedExpression(ctx *fql.ExpressionA
 		f.p.newline()
 		f.p.write(")")
 
-		if ctx.ErrorOperator() != nil {
-			f.p.write("?")
-		}
+		f.formatExpressionAtomErrorTail(ctx)
 
 		return
 	}
@@ -689,9 +689,7 @@ func (f *expressionFormatter) formatParenthesizedExpression(ctx *fql.ExpressionA
 		f.statement.formatWaitForExpression(we.(*fql.WaitForExpressionContext))
 		f.p.write(")")
 
-		if ctx.ErrorOperator() != nil {
-			f.p.write("?")
-		}
+		f.formatExpressionAtomErrorTail(ctx)
 
 		return
 	}
@@ -701,10 +699,7 @@ func (f *expressionFormatter) formatParenthesizedExpression(ctx *fql.ExpressionA
 	}
 
 	f.p.write(")")
-
-	if ctx.ErrorOperator() != nil {
-		f.p.write("?")
-	}
+	f.formatExpressionAtomErrorTail(ctx)
 }
 
 func (f *expressionFormatter) formatUnaryOperator(ctx *fql.UnaryOperatorContext) {
@@ -865,7 +860,10 @@ func (f *expressionFormatter) formatFunctionCallExpression(ctx *fql.FunctionCall
 
 	if ctx.ErrorOperator() != nil {
 		f.p.write("?")
+		return
 	}
+
+	f.formatErrorPolicyTail(ctx.ErrorPolicyTail())
 }
 
 func (f *expressionFormatter) formatFunctionCall(ctx *fql.FunctionCallContext) {
@@ -888,6 +886,44 @@ func (f *expressionFormatter) formatFunctionCall(ctx *fql.FunctionCallContext) {
 	}
 
 	f.p.write(")")
+}
+
+func (f *expressionFormatter) formatExpressionAtomErrorTail(ctx *fql.ExpressionAtomContext) {
+	if ctx == nil {
+		return
+	}
+
+	if ctx.ErrorOperator() != nil {
+		f.p.write("?")
+		return
+	}
+
+	f.formatErrorPolicyTail(ctx.ErrorPolicyTail())
+}
+
+func (f *expressionFormatter) formatErrorPolicyTail(ctx fql.IErrorPolicyTailContext) {
+	f.formatErrorPolicyTailWith(f.p, ctx)
+}
+
+func (f *expressionFormatter) formatErrorPolicyTailWith(p *printer, ctx fql.IErrorPolicyTailContext) {
+	if ctx == nil {
+		return
+	}
+
+	p.space()
+	f.writeKeywordWith(p, keywordOn)
+	p.space()
+	f.writeKeywordWith(p, keywordError)
+	p.space()
+
+	if ctx.SuppressKeyword() != nil {
+		f.writeKeywordWith(p, keywordSuppress)
+		return
+	}
+
+	if ctx.Throw() != nil {
+		f.writeKeywordWith(p, keywordThrow)
+	}
 }
 
 func (f *expressionFormatter) formatParam(ctx *fql.ParamContext) {

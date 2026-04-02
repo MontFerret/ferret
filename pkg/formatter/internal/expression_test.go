@@ -109,6 +109,48 @@ func TestExpressionFormatter_QueryExpressionCountModifier(t *testing.T) {
 	}
 }
 
+func TestExpressionFormatter_FunctionCallErrorPolicyTail(t *testing.T) {
+	input := "RETURN FAIL() ON ERROR SUPPRESS"
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "FAIL() ON ERROR SUPPRESS" {
+		t.Fatalf("unexpected function call error policy formatting: %q", got)
+	}
+}
+
+func TestExpressionFormatter_ParenthesizedErrorPolicyTail(t *testing.T) {
+	input := "RETURN (FAIL() + 1) ON ERROR SUPPRESS"
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "(FAIL() + 1) ON ERROR SUPPRESS" {
+		t.Fatalf("unexpected grouped error policy formatting: %q", got)
+	}
+}
+
+func TestExpressionFormatter_QueryExpressionErrorPolicyTail(t *testing.T) {
+	input := "RETURN QUERY `.items` IN doc USING css ON ERROR SUPPRESS"
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "QUERY `.items` IN doc USING css ON ERROR SUPPRESS" {
+		t.Fatalf("unexpected query error policy formatting: %q", got)
+	}
+}
+
 func TestExpressionFormatter_QueryExpressionOneModifierWithMultiline(t *testing.T) {
 	input := "RETURN QUERY ONE `.items` IN doc USING css WITH { limit: 10, timeout: 5 }"
 	program := parseProgram(t, input)
