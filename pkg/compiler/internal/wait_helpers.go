@@ -7,22 +7,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
-func initRetryDelayState(ctx *CompilerContext, retry *core.RecoveryRetryPlan) core.RetryDelayState {
-	if ctx == nil || retry == nil || !retry.HasDelay {
-		return core.RetryDelayState{}
-	}
-
-	state := core.RetryDelayState{
-		BaseReg:    ctx.Registers.Allocate(),
-		CurrentReg: ctx.Registers.Allocate(),
-		ReadyReg:   ctx.Registers.Allocate(),
-	}
-
-	ctx.Emitter.EmitBoolean(state.ReadyReg, false)
-
-	return state
-}
-
 func resolveRetryBackoff(ctx *CompilerContext, clause fql.IRecoveryRetryBackoffClauseContext) (core.RetryBackoff, bool) {
 	if clause == nil {
 		return core.RetryBackoffNone, true

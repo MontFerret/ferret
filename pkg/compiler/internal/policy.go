@@ -6,9 +6,29 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-type OperationPolicyCompiler struct {
-	ctx *CompilerContext
-}
+type (
+	OperationPolicyCompiler struct {
+		ctx *CompilerContext
+	}
+
+	// ProtectedRecoverySpec describes an operation that owns its protected region
+	// shape but delegates generic ON ERROR recovery orchestration to PolicyCompiler.
+	ProtectedRecoverySpec struct {
+		Plan                core.RecoveryPlan
+		BuildProtected      func(recoveryLabel, endLabel core.Label) ProtectedRecoveryRegion
+		CompileFinalAttempt func() bytecode.Operand
+	}
+
+	// ProtectedRecoveryRegion describes the guarded portion of an operation.
+	// CatchHandlerPC == -1 means the catch table should jump directly to the
+	// generic recovery handler emitted by PolicyCompiler.
+	ProtectedRecoveryRegion struct {
+		Result            bytecode.Operand
+		StartCatch        int
+		EndCatchExclusive int
+		CatchHandlerPC    int
+	}
+)
 
 func NewOperationPolicyCompiler(ctx *CompilerContext) *OperationPolicyCompiler {
 	return &OperationPolicyCompiler{ctx: ctx}
@@ -49,6 +69,8 @@ func (c *OperationPolicyCompiler) CompileWithRecoveryPlan(
 	jumpMode core.CatchJumpMode,
 	compile func() bytecode.Operand,
 ) bytecode.Operand {
+	plan = normalizeRecoveryPlan(plan)
+
 	if compile == nil {
 		return bytecode.NoopOperand
 	}
@@ -64,31 +86,39 @@ func (c *OperationPolicyCompiler) CompileWithRecoveryPlan(
 			return widenRecoveryResultType(c.ctx, out, plan)
 		}
 
-		startCatch := c.ctx.Emitter.Size()
-		out := ensureRecoveryRegister(c.ctx, compile())
-		endCatchExclusive := c.ctx.Emitter.Size()
-
-		if out == bytecode.NoopOperand || endCatchExclusive <= startCatch {
-			return out
-		}
-
-		endCatch := endCatchExclusive - 1
-		endLabel := c.ctx.Emitter.NewLabel("recovery", "end")
-
-		c.ctx.Emitter.EmitJump(endLabel)
-		handlerPC := c.ctx.Emitter.Size()
-
-		fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Expr)
-		emitMoveAuto(c.ctx, out, ensureRecoveryRegister(c.ctx, fallback))
-		c.ctx.Emitter.MarkLabel(endLabel)
-
-		c.ctx.CatchTable.Push(startCatch, endCatch, handlerPC)
-
-		return widenRecoveryResultType(c.ctx, out, plan)
+		return c.compileWithErrorReturn(plan, c.directProtectedRegionBuilder(compile))
 	case core.RecoveryActionRetry:
-		return c.CompileWithRecoveryHandler(plan.OnError, compile)
+		return c.compileWithErrorRetry(plan, c.directProtectedRegionBuilder(compile), compile)
 	default:
 		return compile()
+	}
+}
+
+func (c *OperationPolicyCompiler) CompileWithProtectedRecovery(spec ProtectedRecoverySpec) bytecode.Operand {
+	if spec.BuildProtected == nil {
+		return bytecode.NoopOperand
+	}
+
+	plan := normalizeRecoveryPlan(spec.Plan)
+	if plan.OnError == nil || plan.OnError.ActionKind == core.RecoveryActionFail {
+		if spec.CompileFinalAttempt != nil {
+			return spec.CompileFinalAttempt()
+		}
+
+		return bytecode.NoopOperand
+	}
+
+	switch plan.OnError.ActionKind {
+	case core.RecoveryActionReturn:
+		return c.compileWithErrorReturn(plan, spec.BuildProtected)
+	case core.RecoveryActionRetry:
+		return c.compileWithErrorRetry(plan, spec.BuildProtected, spec.CompileFinalAttempt)
+	default:
+		if spec.CompileFinalAttempt != nil {
+			return spec.CompileFinalAttempt()
+		}
+
+		return bytecode.NoopOperand
 	}
 }
 
@@ -100,13 +130,80 @@ func (c *OperationPolicyCompiler) CompileWithRecoveryHandler(
 		return bytecode.NoopOperand
 	}
 
-	retry := handler.Retry
-	if retry == nil {
-		return compile()
+	return c.compileWithErrorRetry(core.RecoveryPlan{OnError: handler}, c.directProtectedRegionBuilder(compile), compile)
+}
+
+func (c *OperationPolicyCompiler) directProtectedRegionBuilder(compile func() bytecode.Operand) func(recoveryLabel, endLabel core.Label) ProtectedRecoveryRegion {
+	return func(_ core.Label, endLabel core.Label) ProtectedRecoveryRegion {
+		startCatch := c.ctx.Emitter.Size()
+		out := ensureRecoveryRegister(c.ctx, compile())
+		endCatchExclusive := c.ctx.Emitter.Size()
+
+		if out == bytecode.NoopOperand || endCatchExclusive <= startCatch {
+			return ProtectedRecoveryRegion{
+				Result:            out,
+				StartCatch:        startCatch,
+				EndCatchExclusive: endCatchExclusive,
+				CatchHandlerPC:    -1,
+			}
+		}
+
+		c.ctx.Emitter.EmitJump(endLabel)
+
+		return ProtectedRecoveryRegion{
+			Result:            out,
+			StartCatch:        startCatch,
+			EndCatchExclusive: endCatchExclusive,
+			CatchHandlerPC:    -1,
+		}
+	}
+}
+
+func (c *OperationPolicyCompiler) compileWithErrorReturn(
+	plan core.RecoveryPlan,
+	buildProtected func(recoveryLabel, endLabel core.Label) ProtectedRecoveryRegion,
+) bytecode.Operand {
+	recoveryLabel := c.ctx.Emitter.NewLabel("recovery", "error", "handle")
+	endLabel := c.ctx.Emitter.NewLabel("recovery", "error", "end")
+	region := buildProtected(recoveryLabel, endLabel)
+
+	if region.Result == bytecode.NoopOperand || region.EndCatchExclusive <= region.StartCatch {
+		return region.Result
 	}
 
+	handlerPC := c.ctx.Emitter.Size()
+	c.ctx.Emitter.MarkLabel(recoveryLabel)
+
+	fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Expr)
+	emitMoveAuto(c.ctx, ensureRecoveryRegister(c.ctx, region.Result), ensureRecoveryRegister(c.ctx, fallback))
+	c.ctx.Emitter.MarkLabel(endLabel)
+
+	c.pushProtectedCatch(region, handlerPC)
+
+	return widenRecoveryResultType(c.ctx, region.Result, plan)
+}
+
+func (c *OperationPolicyCompiler) compileWithErrorRetry(
+	plan core.RecoveryPlan,
+	buildProtected func(recoveryLabel, endLabel core.Label) ProtectedRecoveryRegion,
+	compileFinalAttempt func() bytecode.Operand,
+) bytecode.Operand {
+	handler := plan.OnError
+	if !recoveryHandlerRetries(handler) || handler.Retry == nil {
+		if compileFinalAttempt != nil {
+			return compileFinalAttempt()
+		}
+
+		return bytecode.NoopOperand
+	}
+
+	retry := handler.Retry
 	if retry.FinalActionKind != core.RecoveryActionReturn && retry.Count <= 0 {
-		return compile()
+		if compileFinalAttempt != nil {
+			return compileFinalAttempt()
+		}
+
+		return bytecode.NoopOperand
 	}
 
 	resultReg := bytecode.NoopOperand
@@ -115,23 +212,25 @@ func (c *OperationPolicyCompiler) CompileWithRecoveryHandler(
 
 	state := initRetryDelayState(c.ctx, retry)
 	retryStart := c.ctx.Emitter.NewLabel("recovery", "retry", "start")
+	recoveryLabel := c.ctx.Emitter.NewLabel("recovery", "retry", "handle")
 	endLabel := c.ctx.Emitter.NewLabel("recovery", "retry", "end")
-	finalAttemptLabel := c.ctx.Emitter.NewLabel("recovery", "retry", "final")
+	var finalAttemptLabel core.Label
 
-	c.ctx.Emitter.MarkLabel(retryStart)
-	startCatch := c.ctx.Emitter.Size()
-	protectedOut := ensureRecoveryRegister(c.ctx, compile())
-	endCatchExclusive := c.ctx.Emitter.Size()
-
-	if protectedOut == bytecode.NoopOperand || endCatchExclusive <= startCatch {
-		return protectedOut
+	if retry.FinalActionKind != core.RecoveryActionReturn {
+		finalAttemptLabel = c.ctx.Emitter.NewLabel("recovery", "retry", "final")
 	}
 
-	resultReg = protectedOut
-	endCatch := endCatchExclusive - 1
+	c.ctx.Emitter.MarkLabel(retryStart)
+	region := buildProtected(recoveryLabel, endLabel)
 
-	c.ctx.Emitter.EmitJump(endLabel)
+	if region.Result == bytecode.NoopOperand || region.EndCatchExclusive <= region.StartCatch {
+		return region.Result
+	}
+
+	resultReg = ensureRecoveryRegister(c.ctx, region.Result)
+
 	handlerPC := c.ctx.Emitter.Size()
+	c.ctx.Emitter.MarkLabel(recoveryLabel)
 
 	retriesAvailableReg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitGt(retriesAvailableReg, retriesRemainingReg, zeroReg)
@@ -159,17 +258,33 @@ func (c *OperationPolicyCompiler) CompileWithRecoveryHandler(
 		c.ctx.Emitter.EmitJump(finalAttemptLabel)
 	}
 
-	c.ctx.CatchTable.Push(startCatch, endCatch, handlerPC)
+	c.pushProtectedCatch(region, handlerPC)
 
 	if retry.FinalActionKind != core.RecoveryActionReturn {
 		c.ctx.Emitter.MarkLabel(finalAttemptLabel)
-		finalOut := ensureRecoveryRegister(c.ctx, compile())
-		if finalOut != bytecode.NoopOperand && finalOut != resultReg {
-			emitMoveAuto(c.ctx, resultReg, finalOut)
+
+		if compileFinalAttempt != nil {
+			finalOut := ensureRecoveryRegister(c.ctx, compileFinalAttempt())
+			if finalOut != bytecode.NoopOperand && finalOut != resultReg {
+				emitMoveAuto(c.ctx, resultReg, finalOut)
+			}
 		}
 	}
 
 	c.ctx.Emitter.MarkLabel(endLabel)
 
 	return widenRecoveryResultType(c.ctx, resultReg, core.RecoveryPlan{OnError: handler})
+}
+
+func (c *OperationPolicyCompiler) pushProtectedCatch(region ProtectedRecoveryRegion, handlerPC int) {
+	if region.EndCatchExclusive <= region.StartCatch {
+		return
+	}
+
+	catchHandlerPC := handlerPC
+	if region.CatchHandlerPC >= 0 {
+		catchHandlerPC = region.CatchHandlerPC
+	}
+
+	c.ctx.CatchTable.Push(region.StartCatch, region.EndCatchExclusive-1, catchHandlerPC)
 }

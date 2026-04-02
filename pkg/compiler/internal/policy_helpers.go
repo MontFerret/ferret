@@ -320,6 +320,18 @@ func recoveryPlanHasReturnHandler(plan core.RecoveryPlan) bool {
 	return recoveryHandlerReturns(plan.OnError) || recoveryHandlerReturns(plan.OnTimeout)
 }
 
+func normalizeRecoveryPlan(plan core.RecoveryPlan) core.RecoveryPlan {
+	normalized := plan
+
+	if recoveryHandlerRetries(normalized.OnError) && normalized.OnError.Retry != nil &&
+		normalized.OnError.Retry.FinalActionKind != core.RecoveryActionReturn &&
+		normalized.OnError.Retry.Count <= 0 {
+		normalized.OnError = nil
+	}
+
+	return normalized
+}
+
 func mergeRecoveryPlans(ctx *CompilerContext, primary, extra core.RecoveryPlan) core.RecoveryPlan {
 	merged := primary
 
@@ -390,7 +402,7 @@ func emitRecoveryRetryDelay(ctx *CompilerContext, retry *core.RecoveryRetryPlan,
 	delayReady := ctx.Emitter.NewLabel("recovery", "retry", "delay", "ready")
 	ctx.Emitter.EmitJumpIfTrue(state.ReadyReg, delayReady)
 
-	delayValue := ensureRecoveryRegister(ctx, ctx.WaitCompiler.compileDurationClause(retry.Delay))
+	delayValue := ensureRecoveryRegister(ctx, compileDurationOperand(ctx, retry.Delay))
 	emitMoveAuto(ctx, state.BaseReg, delayValue)
 	emitMoveAuto(ctx, state.CurrentReg, state.BaseReg)
 	ctx.Emitter.EmitBoolean(state.ReadyReg, true)
@@ -399,7 +411,7 @@ func emitRecoveryRetryDelay(ctx *CompilerContext, retry *core.RecoveryRetryPlan,
 	ctx.Emitter.EmitA(bytecode.OpSleep, state.CurrentReg)
 
 	if retry.Backoff != core.RetryBackoffNone {
-		ctx.WaitCompiler.emitBackoffUpdate(retry.Backoff, state.CurrentReg, state.BaseReg)
+		emitBackoffUpdate(ctx, retry.Backoff, state.CurrentReg, state.BaseReg)
 	}
 }
 
