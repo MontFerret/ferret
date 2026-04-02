@@ -25,10 +25,10 @@ type (
 	}
 
 	RecoveryRetryPlan struct {
-		RetryPlan
 		ActionNode      antlr.ParserRuleContext
 		FinalActionNode antlr.ParserRuleContext
 		FinalExpr       fql.IExpressionContext
+		RetryPlan
 		FinalActionKind RecoveryActionKind
 		HasOr           bool
 	}

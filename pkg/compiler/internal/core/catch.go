@@ -4,9 +4,18 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
-type CatchStack struct {
-	entries []bytecode.Catch
-}
+type (
+	CatchJumpMode int
+
+	CatchStack struct {
+		entries []bytecode.Catch
+	}
+)
+
+const (
+	CatchJumpModeNone CatchJumpMode = iota
+	CatchJumpModeEnd
+)
 
 func NewCatchStack() *CatchStack {
 	return &CatchStack{

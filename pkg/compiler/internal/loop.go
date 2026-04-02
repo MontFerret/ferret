@@ -87,7 +87,7 @@ func (c *LoopCompiler) compileWithRecovery(ctx fql.IForExpressionContext, plan c
 	}
 
 	if ctx.In() == nil {
-		return c.ctx.RecoveryCompiler.CompileWithRecoveryPlan(plan, catchJumpNone, func() bytecode.Operand {
+		return c.ctx.OPCompiler.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
 			return c.Compile(ctx)
 		})
 	}

@@ -4,11 +4,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
-	"github.com/antlr4-go/antlr/v4"
 )
 
 func collectRecoveryPlan(ctx *CompilerContext, owner core.RecoveryTailOwner, options core.RecoveryPlanOptions) core.RecoveryPlan {
@@ -422,4 +423,19 @@ func ensureRecoveryRegister(ctx *CompilerContext, op bytecode.Operand) bytecode.
 	ctx.Types.Set(dst, operandType(ctx, op))
 
 	return dst
+}
+func catchJumpModeForForExpression(ctx fql.IForExpressionContext) core.CatchJumpMode {
+	if ctx != nil && ctx.In() != nil {
+		return core.CatchJumpModeEnd
+	}
+
+	return core.CatchJumpModeNone
+}
+
+func catchJumpModeForWaitForExpression(ctx fql.IWaitForExpressionContext) core.CatchJumpMode {
+	if ctx != nil && ctx.WaitForEventExpression() != nil {
+		return core.CatchJumpModeEnd
+	}
+
+	return core.CatchJumpModeNone
 }

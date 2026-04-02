@@ -137,7 +137,7 @@ func (c *WaitCompiler) compilePredicateWithPlan(ctx fql.IWaitForPredicateExpress
 	if plan.OnTimeout == nil {
 		errorPlan := core.RecoveryPlan{OnError: plan.OnError}
 
-		return c.ctx.RecoveryCompiler.CompileWithRecoveryPlan(errorPlan, catchJumpNone, func() bytecode.Operand {
+		return c.ctx.OPCompiler.CompileWithRecoveryPlan(errorPlan, core.CatchJumpModeNone, func() bytecode.Operand {
 			return c.compilePredicate(ctx)
 		})
 	}

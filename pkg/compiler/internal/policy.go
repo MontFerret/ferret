@@ -6,17 +6,47 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-type RecoveryCompiler struct {
+type OperationPolicyCompiler struct {
 	ctx *CompilerContext
 }
 
-func NewRecoveryCompiler(ctx *CompilerContext) *RecoveryCompiler {
-	return &RecoveryCompiler{ctx: ctx}
+func NewOperationPolicyCompiler(ctx *CompilerContext) *OperationPolicyCompiler {
+	return &OperationPolicyCompiler{ctx: ctx}
 }
 
-func (c *RecoveryCompiler) CompileWithRecoveryPlan(
+func (c *OperationPolicyCompiler) CompileWithErrorPolicy(policy core.ErrorPolicy, jumpMode core.CatchJumpMode, compile func() bytecode.Operand) bytecode.Operand {
+	if compile == nil || policy != core.ErrorPolicySuppress {
+		return compile()
+	}
+
+	startCatch := c.ctx.Emitter.Size()
+	out := compile()
+	endCatchExclusive := c.ctx.Emitter.Size()
+	if endCatchExclusive <= startCatch {
+		return out
+	}
+
+	endCatch := endCatchExclusive - 1
+	jump := -1
+
+	if jumpMode == core.CatchJumpModeEnd {
+		jump = endCatch
+	} else {
+		endLabel := c.ctx.Emitter.NewLabel("error", "suppress", "end")
+		c.ctx.Emitter.EmitJump(endLabel)
+		jump = c.ctx.Emitter.Size()
+		c.ctx.Emitter.EmitJump(endLabel)
+		c.ctx.Emitter.MarkLabel(endLabel)
+	}
+
+	c.ctx.CatchTable.Push(startCatch, endCatch, jump)
+
+	return out
+}
+
+func (c *OperationPolicyCompiler) CompileWithRecoveryPlan(
 	plan core.RecoveryPlan,
-	jumpMode catchJumpMode,
+	jumpMode core.CatchJumpMode,
 	compile func() bytecode.Operand,
 ) bytecode.Operand {
 	if compile == nil {
@@ -30,7 +60,7 @@ func (c *RecoveryCompiler) CompileWithRecoveryPlan(
 	switch plan.OnError.ActionKind {
 	case core.RecoveryActionReturn:
 		if hasErrorReturnNoneHandler(plan) {
-			out := compileWithErrorPolicy(c.ctx, core.ErrorPolicySuppress, jumpMode, compile)
+			out := c.CompileWithErrorPolicy(core.ErrorPolicySuppress, jumpMode, compile)
 			return widenRecoveryResultType(c.ctx, out, plan)
 		}
 
@@ -62,7 +92,7 @@ func (c *RecoveryCompiler) CompileWithRecoveryPlan(
 	}
 }
 
-func (c *RecoveryCompiler) CompileWithRecoveryHandler(
+func (c *OperationPolicyCompiler) CompileWithRecoveryHandler(
 	handler *core.RecoveryHandler,
 	compile func() bytecode.Operand,
 ) bytecode.Operand {
