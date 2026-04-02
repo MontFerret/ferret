@@ -42,8 +42,8 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 		return
 	}
 
-	state := c.pushUDFCompileState(fn)
-	defer c.popUDFCompileState(state)
+	state := c.enterFunctionCompileState(fn)
+	defer c.restoreFunctionCompileState(state)
 
 	fn.Entry = c.ctx.Emitter.Size()
 
@@ -76,7 +76,7 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 	fn.Registers = c.ctx.Registers.Size()
 }
 
-func (c *UDFCompiler) pushUDFCompileState(fn *core.UDFInfo) udfCompileState {
+func (c *UDFCompiler) enterFunctionCompileState(fn *core.UDFInfo) udfCompileState {
 	state := udfCompileState{
 		registers: c.ctx.Registers,
 		symbols:   c.ctx.Symbols,
@@ -104,7 +104,7 @@ func (c *UDFCompiler) pushUDFCompileState(fn *core.UDFInfo) udfCompileState {
 	return state
 }
 
-func (c *UDFCompiler) popUDFCompileState(state udfCompileState) {
+func (c *UDFCompiler) restoreFunctionCompileState(state udfCompileState) {
 	udfParams := c.ctx.Symbols.Params()
 	udfFunctions := c.ctx.Symbols.Functions()
 
@@ -140,12 +140,10 @@ func (c *UDFCompiler) compileExpressionReturn(expr fql.IExpressionContext) {
 	if fce := directFunctionCall(expr); fce != nil && fce.ErrorOperator() == nil && allowsTailCallRecovery(collectRecoveryPlan(c.ctx, fce, core.RecoveryPlanOptions{})) {
 		call := fce.FunctionCall()
 		if call != nil {
-			if name, ok := getUDFName(call, c.ctx.UseAliases); ok {
-				if fn, ok := c.ctx.UDFs.Resolve(name, c.ctx.UDFScope); ok {
-					seq := c.ctx.ExprCompiler.CompileArgumentList(call.ArgumentList())
-					c.ctx.ExprCompiler.EmitUdfTailCall(fn, seq, call.(antlr.ParserRuleContext))
-					return
-				}
+			if fn, ok := c.ResolveCall(call); ok {
+				seq := c.ctx.ExprCompiler.CompileArgumentList(call.ArgumentList())
+				c.ctx.ExprCompiler.EmitUdfTailCall(fn, seq, call.(antlr.ParserRuleContext))
+				return
 			}
 		}
 	}

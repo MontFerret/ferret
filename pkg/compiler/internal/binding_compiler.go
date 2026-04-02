@@ -11,10 +11,18 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
-type BindingCompiler struct {
-	ctx                  *CompilerContext
-	promotedDeclarations map[antlr.ParserRuleContext]struct{}
-}
+type (
+	BindingCompiler struct {
+		ctx                  *CompilerContext
+		promotedDeclarations map[antlr.ParserRuleContext]struct{}
+	}
+
+	declarationBindingInfo struct {
+		Decl    antlr.ParserRuleContext
+		Name    string
+		Mutable bool
+	}
+)
 
 func NewBindingCompiler(ctx *CompilerContext) *BindingCompiler {
 	return &BindingCompiler{
@@ -191,12 +199,12 @@ func (c *BindingCompiler) LoadBindingValue(binding *core.Variable) bytecode.Oper
 	return dst
 }
 
-func (c *BindingCompiler) captureBindingForDeclaration(ctx fql.IVariableDeclarationContext) captureBinding {
+func (c *BindingCompiler) captureBindingForDeclaration(ctx fql.IVariableDeclarationContext) declarationBindingInfo {
 	if ctx == nil {
-		return captureBinding{}
+		return declarationBindingInfo{}
 	}
 
-	return captureBinding{
+	return declarationBindingInfo{
 		Name:    c.declarationName(ctx),
 		Mutable: c.isMutableDeclaration(ctx),
 		Decl:    ctx.(antlr.ParserRuleContext),

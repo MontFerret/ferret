@@ -183,10 +183,8 @@ func (c *ExprCompiler) CompileFunctionCallByNameWith(ctx fql.IFunctionCallContex
 	}
 
 	if !namespaced && c.ctx.UDFs != nil && c.ctx.UDFScope != nil {
-		if udfName, ok := getUDFName(ctx, c.ctx.UseAliases); ok {
-			if fn, ok := c.ctx.UDFs.Resolve(udfName, c.ctx.UDFScope); ok {
-				return c.compileUdfCallWith(fn, protected, seq, callCtx)
-			}
+		if fn, ok := c.ctx.UDFCompiler.ResolveCall(ctx); ok {
+			return c.compileUdfCallWith(fn, protected, seq, callCtx)
 		}
 	}
 
