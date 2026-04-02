@@ -58,7 +58,7 @@ func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregato
 				if existing.Storage == core.BindingStorageCell {
 					c.ctx.Emitter.EmitStoreCell(existing.Register, c.ctx.ExprCompiler.ensureRegister(aggregator))
 				} else {
-					c.ctx.EmitMoveAuto(existing.Register, aggregator)
+					emitMoveAuto(c.ctx, existing.Register, aggregator)
 				}
 			}
 		}
@@ -154,7 +154,7 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 		}
 
 		if buildDst != kv.Value {
-			c.ctx.EmitMoveAuto(kv.Value, buildDst)
+			emitMoveAuto(c.ctx, kv.Value, buildDst)
 		}
 	}
 
@@ -169,7 +169,7 @@ func (c *LoopCollectCompiler) compileCustomGroupProjection(kv *core.KV, selector
 	// Compile the selector expression
 	selectorReg := c.ctx.ExprCompiler.Compile(selector.Expression())
 	// Move the result to the value register
-	c.ctx.EmitMoveAuto(kv.Value, selectorReg)
+	emitMoveAuto(c.ctx, kv.Value, selectorReg)
 
 	// Return the selector identifier as the variable name
 	return textOfBindingIdentifier(selector.BindingIdentifier())

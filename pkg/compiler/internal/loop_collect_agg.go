@@ -455,7 +455,7 @@ func (c *LoopCollectCompiler) compileGlobalAggregationProjection(spec *core.Coll
 	if projectionState := spec.ProjectionState(); projectionState != bytecode.NoopOperand {
 		varName := spec.Projection().VariableName()
 		val := c.declareLocalOrReport(spec.Projection().Context(), varName, core.TypeArray)
-		c.ctx.EmitMoveAuto(val, projectionState)
+		emitMoveAuto(c.ctx, val, projectionState)
 
 		return val
 	}

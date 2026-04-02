@@ -391,8 +391,8 @@ func emitRecoveryRetryDelay(ctx *CompilerContext, retry *core.RecoveryRetryPlan,
 	ctx.Emitter.EmitJumpIfTrue(state.ReadyReg, delayReady)
 
 	delayValue := ensureRecoveryRegister(ctx, ctx.WaitCompiler.compileDurationClause(retry.Delay))
-	ctx.EmitMoveAuto(state.BaseReg, delayValue)
-	ctx.EmitMoveAuto(state.CurrentReg, state.BaseReg)
+	emitMoveAuto(ctx, state.BaseReg, delayValue)
+	emitMoveAuto(ctx, state.CurrentReg, state.BaseReg)
 	ctx.Emitter.EmitBoolean(state.ReadyReg, true)
 	ctx.Emitter.MarkLabel(delayReady)
 

@@ -153,9 +153,9 @@ func (c *ExprCompiler) lowerQueryModifier(span source.Span, modifier queryModifi
 		})
 		return dst
 	case queryModifierValue:
-		return c.ctx.lowerQueryModifierValue(span, queryResult)
+		return c.lowerQueryModifierValue(span, queryResult)
 	case queryModifierOne:
-		return c.ctx.lowerQueryModifierOne(span, queryResult)
+		return c.lowerQueryModifierOne(span, queryResult)
 	default:
 		return queryResult
 	}
@@ -199,46 +199,46 @@ func parseQueryModifier(text string) queryModifier {
 	}
 }
 
-func (c *CompilerContext) lowerQueryModifierValue(span source.Span, queryResult bytecode.Operand) bytecode.Operand {
-	dst := c.Registers.Allocate()
-	cond := c.Registers.Allocate()
-	zero := c.Symbols.AddConstant(runtime.NewInt(0))
-	message := c.Symbols.AddConstant(runtime.NewString(queryValueFailMessage))
-	success := c.Emitter.NewLabel("query", string(queryModifierValue), "ok")
-	end := c.Emitter.NewLabel("query", string(queryModifierValue), "end")
+func (c *ExprCompiler) lowerQueryModifierValue(span source.Span, queryResult bytecode.Operand) bytecode.Operand {
+	dst := c.ctx.Registers.Allocate()
+	cond := c.ctx.Registers.Allocate()
+	zero := c.ctx.Symbols.AddConstant(runtime.NewInt(0))
+	message := c.ctx.Symbols.AddConstant(runtime.NewString(queryValueFailMessage))
+	success := c.ctx.Emitter.NewLabel("query", string(queryModifierValue), "ok")
+	end := c.ctx.Emitter.NewLabel("query", string(queryModifierValue), "end")
 
-	c.Emitter.WithSpan(span, func() {
-		c.Emitter.EmitAB(bytecode.OpExists, cond, queryResult)
-		c.Emitter.EmitJumpIfTrue(cond, success)
-		c.Emitter.EmitLoadNone(dst)
-		c.Emitter.EmitA(bytecode.OpFail, message)
-		c.Emitter.EmitJump(end)
-		c.Emitter.MarkLabel(success)
-		c.Emitter.EmitABC(bytecode.OpLoadIndexConst, dst, queryResult, zero)
-		c.Emitter.MarkLabel(end)
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitAB(bytecode.OpExists, cond, queryResult)
+		c.ctx.Emitter.EmitJumpIfTrue(cond, success)
+		c.ctx.Emitter.EmitLoadNone(dst)
+		c.ctx.Emitter.EmitA(bytecode.OpFail, message)
+		c.ctx.Emitter.EmitJump(end)
+		c.ctx.Emitter.MarkLabel(success)
+		c.ctx.Emitter.EmitABC(bytecode.OpLoadIndexConst, dst, queryResult, zero)
+		c.ctx.Emitter.MarkLabel(end)
 	})
 
 	return dst
 }
 
-func (c *CompilerContext) lowerQueryModifierOne(span source.Span, queryResult bytecode.Operand) bytecode.Operand {
-	dst := c.Registers.Allocate()
-	length := c.Registers.Allocate()
-	one := c.Symbols.AddConstant(runtime.NewInt(1))
-	zero := c.Symbols.AddConstant(runtime.NewInt(0))
-	message := c.Symbols.AddConstant(runtime.NewString(queryOneFailMessage))
-	success := c.Emitter.NewLabel("query", string(queryModifierOne), "ok")
-	end := c.Emitter.NewLabel("query", string(queryModifierOne), "end")
+func (c *ExprCompiler) lowerQueryModifierOne(span source.Span, queryResult bytecode.Operand) bytecode.Operand {
+	dst := c.ctx.Registers.Allocate()
+	length := c.ctx.Registers.Allocate()
+	one := c.ctx.Symbols.AddConstant(runtime.NewInt(1))
+	zero := c.ctx.Symbols.AddConstant(runtime.NewInt(0))
+	message := c.ctx.Symbols.AddConstant(runtime.NewString(queryOneFailMessage))
+	success := c.ctx.Emitter.NewLabel("query", string(queryModifierOne), "ok")
+	end := c.ctx.Emitter.NewLabel("query", string(queryModifierOne), "end")
 
-	c.Emitter.WithSpan(span, func() {
-		c.Emitter.EmitAB(bytecode.OpLength, length, queryResult)
-		c.Emitter.EmitJumpCompare(bytecode.OpJumpIfEqConst, length, one, success)
-		c.Emitter.EmitLoadNone(dst)
-		c.Emitter.EmitA(bytecode.OpFail, message)
-		c.Emitter.EmitJump(end)
-		c.Emitter.MarkLabel(success)
-		c.Emitter.EmitABC(bytecode.OpLoadIndexConst, dst, queryResult, zero)
-		c.Emitter.MarkLabel(end)
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitAB(bytecode.OpLength, length, queryResult)
+		c.ctx.Emitter.EmitJumpCompare(bytecode.OpJumpIfEqConst, length, one, success)
+		c.ctx.Emitter.EmitLoadNone(dst)
+		c.ctx.Emitter.EmitA(bytecode.OpFail, message)
+		c.ctx.Emitter.EmitJump(end)
+		c.ctx.Emitter.MarkLabel(success)
+		c.ctx.Emitter.EmitABC(bytecode.OpLoadIndexConst, dst, queryResult, zero)
+		c.ctx.Emitter.MarkLabel(end)
 	})
 
 	return dst

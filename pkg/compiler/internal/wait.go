@@ -300,7 +300,7 @@ func (c *WaitCompiler) compileEventWithRecovery(ctx fql.IWaitForEventExpressionC
 	switch {
 	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
 		fallback := c.ctx.ExprCompiler.Compile(plan.OnTimeout.Expr)
-		c.ctx.EmitMoveAuto(resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		emitMoveAuto(c.ctx, resultReg, ensureRecoveryRegister(c.ctx, fallback))
 		c.ctx.Emitter.EmitJump(end)
 	default:
 		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)
@@ -310,7 +310,7 @@ func (c *WaitCompiler) compileEventWithRecovery(ctx fql.IWaitForEventExpressionC
 	switch {
 	case plan.OnError != nil && plan.OnError.ActionKind == core.RecoveryActionReturn:
 		fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Expr)
-		c.ctx.EmitMoveAuto(resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		emitMoveAuto(c.ctx, resultReg, ensureRecoveryRegister(c.ctx, fallback))
 		c.ctx.Emitter.EmitJump(end)
 	case recoveryHandlerRetries(plan.OnError):
 		c.ctx.Emitter.EmitBoolean(errorStateReg, false)
@@ -336,7 +336,7 @@ func (c *WaitCompiler) compileEventWithRecovery(ctx fql.IWaitForEventExpressionC
 		c.ctx.Emitter.MarkLabel(onExhausted)
 		if plan.OnError.Retry.FinalActionKind == core.RecoveryActionReturn {
 			fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Retry.FinalExpr)
-			c.ctx.EmitMoveAuto(resultReg, ensureRecoveryRegister(c.ctx, fallback))
+			emitMoveAuto(c.ctx, resultReg, ensureRecoveryRegister(c.ctx, fallback))
 			c.ctx.Emitter.EmitJump(end)
 		} else {
 			c.ctx.Emitter.EmitJump(finalAttemptLabel)
@@ -351,7 +351,7 @@ func (c *WaitCompiler) compileEventWithRecovery(ctx fql.IWaitForEventExpressionC
 		c.ctx.Emitter.MarkLabel(finalAttemptLabel)
 		finalOut := c.compileEventWithPlan(ctx, core.RecoveryPlan{OnTimeout: plan.OnTimeout})
 		if finalOut != bytecode.NoopOperand && finalOut != resultReg {
-			c.ctx.EmitMoveAuto(resultReg, ensureRecoveryRegister(c.ctx, finalOut))
+			emitMoveAuto(c.ctx, resultReg, ensureRecoveryRegister(c.ctx, finalOut))
 		}
 	}
 
@@ -483,7 +483,7 @@ func (c *WaitCompiler) compilePredicateWithRetry(config waitPredicateCompileConf
 	c.ctx.Emitter.MarkLabel(onExhausted)
 	if plan.OnError.Retry.FinalActionKind == core.RecoveryActionReturn {
 		fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Retry.FinalExpr)
-		c.ctx.EmitMoveAuto(state.resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		emitMoveAuto(c.ctx, state.resultReg, ensureRecoveryRegister(c.ctx, fallback))
 		c.ctx.Emitter.EmitJump(end)
 	} else {
 		c.ctx.Emitter.EmitJump(finalAttemptLabel)
@@ -493,7 +493,7 @@ func (c *WaitCompiler) compilePredicateWithRetry(config waitPredicateCompileConf
 	switch {
 	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
 		fallback := c.ctx.ExprCompiler.Compile(plan.OnTimeout.Expr)
-		c.ctx.EmitMoveAuto(state.resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		emitMoveAuto(c.ctx, state.resultReg, ensureRecoveryRegister(c.ctx, fallback))
 		c.ctx.Emitter.EmitJump(end)
 	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionFail:
 		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)
@@ -510,7 +510,7 @@ func (c *WaitCompiler) compilePredicateWithRetry(config waitPredicateCompileConf
 		c.ctx.Emitter.MarkLabel(finalAttemptLabel)
 		finalOut := c.compilePredicateWithPlan(ctx, core.RecoveryPlan{OnTimeout: plan.OnTimeout})
 		if finalOut != bytecode.NoopOperand && finalOut != state.resultReg {
-			c.ctx.EmitMoveAuto(state.resultReg, ensureRecoveryRegister(c.ctx, finalOut))
+			emitMoveAuto(c.ctx, state.resultReg, ensureRecoveryRegister(c.ctx, finalOut))
 		}
 	}
 
@@ -791,7 +791,7 @@ func (c *WaitCompiler) emitWaitPredicatePollLoopWithRecovery(config waitPredicat
 	if plan.OnError != nil && plan.OnError.ActionKind == core.RecoveryActionReturn {
 		errorHandlerPC = c.ctx.Emitter.Size()
 		fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Expr)
-		c.ctx.EmitMoveAuto(state.resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		emitMoveAuto(c.ctx, state.resultReg, ensureRecoveryRegister(c.ctx, fallback))
 		c.ctx.Emitter.EmitJump(end)
 	}
 
@@ -799,7 +799,7 @@ func (c *WaitCompiler) emitWaitPredicatePollLoopWithRecovery(config waitPredicat
 	switch {
 	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
 		fallback := c.ctx.ExprCompiler.Compile(plan.OnTimeout.Expr)
-		c.ctx.EmitMoveAuto(state.resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		emitMoveAuto(c.ctx, state.resultReg, ensureRecoveryRegister(c.ctx, fallback))
 		c.ctx.Emitter.EmitJump(end)
 	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionFail:
 		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)

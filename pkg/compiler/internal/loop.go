@@ -172,14 +172,14 @@ func (c *LoopCompiler) compileForInWithRecovery(ctx fql.IForExpressionContext, p
 		c.ctx.Emitter.MarkLabel(onExhausted)
 		if plan.OnError.Retry.FinalActionKind == core.RecoveryActionReturn {
 			fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Retry.FinalExpr)
-			c.ctx.EmitMoveAuto(out, ensureRecoveryRegister(c.ctx, fallback))
+			emitMoveAuto(c.ctx, out, ensureRecoveryRegister(c.ctx, fallback))
 			c.ctx.Emitter.EmitJump(endLabel)
 		} else {
 			c.ctx.Emitter.EmitJump(finalAttemptLabel)
 		}
 	} else {
 		fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Expr)
-		c.ctx.EmitMoveAuto(out, ensureRecoveryRegister(c.ctx, fallback))
+		emitMoveAuto(c.ctx, out, ensureRecoveryRegister(c.ctx, fallback))
 		c.ctx.Emitter.EmitJump(endLabel)
 	}
 
@@ -191,7 +191,7 @@ func (c *LoopCompiler) compileForInWithRecovery(ctx fql.IForExpressionContext, p
 		c.ctx.Emitter.MarkLabel(finalAttemptLabel)
 		finalOut := c.Compile(ctx)
 		if finalOut != bytecode.NoopOperand && finalOut != out {
-			c.ctx.EmitMoveAuto(out, ensureRecoveryRegister(c.ctx, finalOut))
+			emitMoveAuto(c.ctx, out, ensureRecoveryRegister(c.ctx, finalOut))
 		}
 	}
 

@@ -79,7 +79,7 @@ func (c *OperationPolicyCompiler) CompileWithRecoveryPlan(
 		handlerPC := c.ctx.Emitter.Size()
 
 		fallback := c.ctx.ExprCompiler.Compile(plan.OnError.Expr)
-		c.ctx.EmitMoveAuto(out, ensureRecoveryRegister(c.ctx, fallback))
+		emitMoveAuto(c.ctx, out, ensureRecoveryRegister(c.ctx, fallback))
 		c.ctx.Emitter.MarkLabel(endLabel)
 
 		c.ctx.CatchTable.Push(startCatch, endCatch, handlerPC)
@@ -153,7 +153,7 @@ func (c *OperationPolicyCompiler) CompileWithRecoveryHandler(
 	c.ctx.Emitter.MarkLabel(onExhausted)
 	if retry.FinalActionKind == core.RecoveryActionReturn {
 		fallback := c.ctx.ExprCompiler.Compile(retry.FinalExpr)
-		c.ctx.EmitMoveAuto(resultReg, ensureRecoveryRegister(c.ctx, fallback))
+		emitMoveAuto(c.ctx, resultReg, ensureRecoveryRegister(c.ctx, fallback))
 		c.ctx.Emitter.EmitJump(endLabel)
 	} else {
 		c.ctx.Emitter.EmitJump(finalAttemptLabel)
@@ -165,7 +165,7 @@ func (c *OperationPolicyCompiler) CompileWithRecoveryHandler(
 		c.ctx.Emitter.MarkLabel(finalAttemptLabel)
 		finalOut := ensureRecoveryRegister(c.ctx, compile())
 		if finalOut != bytecode.NoopOperand && finalOut != resultReg {
-			c.ctx.EmitMoveAuto(resultReg, finalOut)
+			emitMoveAuto(c.ctx, resultReg, finalOut)
 		}
 	}
 

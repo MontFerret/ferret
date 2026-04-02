@@ -323,7 +323,7 @@ func (c *ExprCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.RegisterSeq
 		}
 
 		src := loadBindingValue(c.ctx, binding)
-		c.ctx.EmitMoveAuto(dst, src)
+		emitMoveAuto(c.ctx, dst, src)
 		c.ctx.Types.Set(dst, operandType(c.ctx, src))
 	}
 

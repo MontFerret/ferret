@@ -376,7 +376,7 @@ func (c *StmtCompiler) snapshotBindingValue(binding *core.Variable) bytecode.Ope
 	}
 
 	snapshot := c.ctx.Registers.Allocate()
-	c.ctx.EmitMoveAuto(snapshot, binding.Register)
+	emitMoveAuto(c.ctx, snapshot, binding.Register)
 
 	return snapshot
 }
@@ -395,7 +395,7 @@ func (c *StmtCompiler) storeBindingValue(binding *core.Variable, src bytecode.Op
 	if src.IsConstant() {
 		c.ctx.Emitter.EmitLoadConst(binding.Register, src)
 	} else {
-		c.ctx.EmitMoveAuto(binding.Register, src)
+		emitMoveAuto(c.ctx, binding.Register, src)
 	}
 
 	c.ctx.Types.Set(binding.Register, publishedType)

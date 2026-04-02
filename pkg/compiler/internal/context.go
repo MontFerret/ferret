@@ -16,30 +16,30 @@ import (
 
 // CompilerContext holds the context for the compilation process, including various compilers and allocators.
 type CompilerContext struct {
-	LoopCompiler        *LoopCompiler
-	Loops               *core.LoopTable
-	Registers           *core.RegisterAllocator
-	Symbols             *core.SymbolTable
-	Constants           *core.ConstantPool
-	Types               *core.TypeTracker
-	UDFScope            *core.UDFScope
-	CatchTable          *core.CatchStack
-	Errors              *diagnostics.ErrorHandler
 	UseAliases          map[string]string
-	Emitter             *core.Emitter
-	UDFs                *core.UDFTable
-	LiteralCompiler     *LiteralCompiler
-	UDFCompiler         *UDFCompiler
-	aggregatePlanByHash map[uint64][]int
-	ExprCompiler        *ExprCompiler
-	DispatchCompiler    *DispatchCompiler
-	StmtCompiler        *StmtCompiler
-	Source              *source.Source
-	LoopSortCompiler    *LoopSortCompiler
-	LoopCollectCompiler *LoopCollectCompiler
 	WaitCompiler        *WaitCompiler
 	PolicyCompiler      *OperationPolicyCompiler
+	Emitter             *core.Emitter
+	Registers           *core.RegisterAllocator
+	Constants           *core.ConstantPool
+	Types               *core.TypeTracker
+	CatchTable          *core.CatchStack
+	Symbols             *core.SymbolTable
+	Loops               *core.LoopTable
+	UDFs                *core.UDFTable
+	UDFScope            *core.UDFScope
+	Errors              *diagnostics.ErrorHandler
+	Source              *source.Source
+	StmtCompiler        *StmtCompiler
+	aggregatePlanByHash map[uint64][]int
+	ExprCompiler        *ExprCompiler
+	LiteralCompiler     *LiteralCompiler
+	UDFCompiler         *UDFCompiler
+	LoopCompiler        *LoopCompiler
+	LoopSortCompiler    *LoopSortCompiler
+	LoopCollectCompiler *LoopCollectCompiler
 	PromotedBindings    map[antlr.ParserRuleContext]struct{}
+	DispatchCompiler    *DispatchCompiler
 	aggregatePlans      []*bytecode.AggregatePlan
 	OptimizationLevel   optimization.Level
 }
@@ -47,19 +47,20 @@ type CompilerContext struct {
 // NewCompilerContext initializes a new CompilerContext with default values.
 func NewCompilerContext(src *source.Source, errors *diagnostics.ErrorHandler, level optimization.Level) *CompilerContext {
 	ctx := &CompilerContext{
-		Source:              src,
-		Errors:              errors,
-		Emitter:             core.NewEmitter(),
-		Registers:           core.NewRegisterAllocator(),
-		Symbols:             nil, // set later
-		Constants:           core.NewConstantPool(),
-		Loops:               nil, // set later
-		CatchTable:          core.NewCatchStack(),
-		UseAliases:          make(map[string]string),
+		Source:            src,
+		Errors:            errors,
+		OptimizationLevel: level,
+
+		Emitter:    core.NewEmitter(),
+		Registers:  core.NewRegisterAllocator(),
+		Constants:  core.NewConstantPool(),
+		CatchTable: core.NewCatchStack(),
+
+		UseAliases:       make(map[string]string),
+		PromotedBindings: make(map[antlr.ParserRuleContext]struct{}),
+
 		aggregatePlans:      make([]*bytecode.AggregatePlan, 0),
 		aggregatePlanByHash: make(map[uint64][]int),
-		OptimizationLevel:   level,
-		PromotedBindings:    make(map[antlr.ParserRuleContext]struct{}),
 	}
 
 	ctx.Symbols = core.NewSymbolTable(ctx.Registers, ctx.Constants)
@@ -78,20 +79,6 @@ func NewCompilerContext(src *source.Source, errors *diagnostics.ErrorHandler, le
 	ctx.PolicyCompiler = NewOperationPolicyCompiler(ctx)
 
 	return ctx
-}
-
-// EmitMoveAuto emits OpMove (plain) when the source is known to be untracked,
-// otherwise emits OpMoveTracked (ownership-aware).
-func (c *CompilerContext) EmitMoveAuto(dst, src bytecode.Operand) {
-	srcType := operandType(c, src)
-
-	if srcType.IsUntracked() {
-		c.Emitter.EmitPlainMove(dst, src)
-	} else {
-		c.Emitter.EmitMoveTracked(dst, src)
-	}
-
-	c.Types.Set(dst, srcType)
 }
 
 func (c *CompilerContext) AddAggregatePlan(plan *bytecode.AggregatePlan) int {
