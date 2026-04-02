@@ -285,6 +285,23 @@ Avoid:
 func (r *Result) Close() error
 ```
 
+### Function and method ownership rules
+
+These rules are mandatory unless the task explicitly requires otherwise.
+
+- A file centered on a method-bearing type should primarily contain:
+    - the type declaration
+    - its methods
+    - its constructor functions, if any
+- Do not mix unrelated package-level functions into a file that already owns a method-bearing type.
+- In files built around a method-bearing type, the only package-level functions that are normally allowed are constructor functions for that type or closely related helper constructors.
+- If logic conceptually belongs to a type, make it a method instead of a free function.
+- Package-level functions are preferred only when:
+    - there is no owning method-bearing type
+    - the function is truly package-level behavior rather than type behavior
+    - introducing a receiver would be artificial
+- If a file contains non-constructor package-level functions and also contains methods, that is usually a structure violation and the code should be split or refactored.
+
 ## Development practice expectations
 
 Agents must follow repository-specific engineering discipline rather than generic style preferences.

@@ -3,34 +3,11 @@ package internal
 import (
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func loadConstant(ctx *CompilerContext, value runtime.Value) bytecode.Operand {
-	reg := ctx.Registers.Allocate()
-	ctx.Emitter.EmitLoadConst(reg, ctx.Symbols.AddConstant(value))
-	ctx.Types.Set(reg, valueTypeFromRuntime(value))
-
-	return reg
-}
-
-func sortDirection(dir antlr.TerminalNode) runtime.SortDirection {
-	if dir == nil {
-		return runtime.SortDirectionAsc
-	}
-
-	if strings.ToLower(dir.GetText()) == "desc" {
-		return runtime.SortDirectionDesc
-	}
-
-	return runtime.SortDirectionAsc
-}
-
-func getFunctionName(ctx fql.IFunctionCallContext, aliases map[string]string) runtime.String {
+func resolveFunctionName(ctx fql.IFunctionCallContext, aliases map[string]string) runtime.String {
 	var name string
 	funcNS := ctx.Namespace()
 	nsText := ""

@@ -140,7 +140,7 @@ func (c *ExprCompiler) CompileFunctionCall(ctx fql.IFunctionCallContext, protect
 }
 
 func (c *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, protected bool, seq core.RegisterSequence) bytecode.Operand {
-	name := getFunctionName(ctx, c.ctx.UseAliases)
+	name := resolveFunctionName(ctx, c.ctx.UseAliases)
 	span := source.Span{Start: -1, End: -1}
 
 	if ctx != nil {

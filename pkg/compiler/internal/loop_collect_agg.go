@@ -84,7 +84,7 @@ func (c *LoopCollectCompiler) parseAggregateSelector(selector fql.ICollectAggreg
 		return nil, false
 	}
 
-	funcName := getFunctionName(fcx.FunctionCall(), c.ctx.UseAliases)
+	funcName := resolveFunctionName(fcx.FunctionCall(), c.ctx.UseAliases)
 	args := c.ctx.ExprCompiler.CompileArgumentList(fcx.FunctionCall().ArgumentList())
 
 	if len(args) == 0 {
@@ -252,7 +252,7 @@ func (c *LoopCollectCompiler) buildAggregatePlan(selectors []fql.ICollectAggrega
 			return nil, false
 		}
 
-		funcName := getFunctionName(fce.FunctionCall(), c.ctx.UseAliases)
+		funcName := resolveFunctionName(fce.FunctionCall(), c.ctx.UseAliases)
 		kind, ok := aggregateKind(funcName)
 
 		if !ok {
