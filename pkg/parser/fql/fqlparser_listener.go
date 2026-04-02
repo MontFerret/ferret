@@ -193,8 +193,20 @@ type FqlParserListener interface {
 	// EnterBackoffStrategy is called when entering the backoffStrategy production.
 	EnterBackoffStrategy(c *BackoffStrategyContext)
 
-	// EnterErrorPolicyTail is called when entering the errorPolicyTail production.
-	EnterErrorPolicyTail(c *ErrorPolicyTailContext)
+	// EnterRecoveryTails is called when entering the recoveryTails production.
+	EnterRecoveryTails(c *RecoveryTailsContext)
+
+	// EnterRecoveryTail is called when entering the recoveryTail production.
+	EnterRecoveryTail(c *RecoveryTailContext)
+
+	// EnterRecoveryCondition is called when entering the recoveryCondition production.
+	EnterRecoveryCondition(c *RecoveryConditionContext)
+
+	// EnterRecoveryAction is called when entering the recoveryAction production.
+	EnterRecoveryAction(c *RecoveryActionContext)
+
+	// EnterRecoveryReturnExpr is called when entering the recoveryReturnExpr production.
+	EnterRecoveryReturnExpr(c *RecoveryReturnExprContext)
 
 	// EnterOnKeyword is called when entering the onKeyword production.
 	EnterOnKeyword(c *OnKeywordContext)
@@ -202,11 +214,14 @@ type FqlParserListener interface {
 	// EnterErrorKeyword is called when entering the errorKeyword production.
 	EnterErrorKeyword(c *ErrorKeywordContext)
 
-	// EnterSuppressKeyword is called when entering the suppressKeyword production.
-	EnterSuppressKeyword(c *SuppressKeywordContext)
+	// EnterTimeoutKeyword is called when entering the timeoutKeyword production.
+	EnterTimeoutKeyword(c *TimeoutKeywordContext)
 
 	// EnterFailKeyword is called when entering the failKeyword production.
 	EnterFailKeyword(c *FailKeywordContext)
+
+	// EnterReturnKeyword is called when entering the returnKeyword production.
+	EnterReturnKeyword(c *ReturnKeywordContext)
 
 	// EnterParam is called when entering the param production.
 	EnterParam(c *ParamContext)
@@ -622,8 +637,20 @@ type FqlParserListener interface {
 	// ExitBackoffStrategy is called when exiting the backoffStrategy production.
 	ExitBackoffStrategy(c *BackoffStrategyContext)
 
-	// ExitErrorPolicyTail is called when exiting the errorPolicyTail production.
-	ExitErrorPolicyTail(c *ErrorPolicyTailContext)
+	// ExitRecoveryTails is called when exiting the recoveryTails production.
+	ExitRecoveryTails(c *RecoveryTailsContext)
+
+	// ExitRecoveryTail is called when exiting the recoveryTail production.
+	ExitRecoveryTail(c *RecoveryTailContext)
+
+	// ExitRecoveryCondition is called when exiting the recoveryCondition production.
+	ExitRecoveryCondition(c *RecoveryConditionContext)
+
+	// ExitRecoveryAction is called when exiting the recoveryAction production.
+	ExitRecoveryAction(c *RecoveryActionContext)
+
+	// ExitRecoveryReturnExpr is called when exiting the recoveryReturnExpr production.
+	ExitRecoveryReturnExpr(c *RecoveryReturnExprContext)
 
 	// ExitOnKeyword is called when exiting the onKeyword production.
 	ExitOnKeyword(c *OnKeywordContext)
@@ -631,11 +658,14 @@ type FqlParserListener interface {
 	// ExitErrorKeyword is called when exiting the errorKeyword production.
 	ExitErrorKeyword(c *ErrorKeywordContext)
 
-	// ExitSuppressKeyword is called when exiting the suppressKeyword production.
-	ExitSuppressKeyword(c *SuppressKeywordContext)
+	// ExitTimeoutKeyword is called when exiting the timeoutKeyword production.
+	ExitTimeoutKeyword(c *TimeoutKeywordContext)
 
 	// ExitFailKeyword is called when exiting the failKeyword production.
 	ExitFailKeyword(c *FailKeywordContext)
+
+	// ExitReturnKeyword is called when exiting the returnKeyword production.
+	ExitReturnKeyword(c *ReturnKeywordContext)
 
 	// ExitParam is called when exiting the param production.
 	ExitParam(c *ParamContext)

@@ -48,6 +48,7 @@ func isJumpOpcode(op bytecode.Opcode) bool {
 		bytecode.OpJumpIfMissingPropertyConst,
 		bytecode.OpMatchLoadPropertyConst,
 		bytecode.OpIterNext,
+		bytecode.OpIterNextTimeout,
 		bytecode.OpIterSkip,
 		bytecode.OpIterLimit:
 		return true

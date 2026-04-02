@@ -639,7 +639,7 @@ func (f *expressionFormatter) formatQueryExpressionWith(p *printer, ctx *fql.Que
 		}
 	}
 
-	f.formatErrorPolicyTailWith(p, ctx.ErrorPolicyTail())
+	f.formatRecoveryTailsWith(p, ctx.RecoveryTails())
 }
 
 func (f *expressionFormatter) writeQueryModifierWith(p *printer, modifier fql.IQueryModifierContext) {
@@ -863,7 +863,7 @@ func (f *expressionFormatter) formatFunctionCallExpression(ctx *fql.FunctionCall
 		return
 	}
 
-	f.formatErrorPolicyTail(ctx.ErrorPolicyTail())
+	f.formatRecoveryTails(ctx.RecoveryTails())
 }
 
 func (f *expressionFormatter) formatFunctionCall(ctx *fql.FunctionCallContext) {
@@ -898,36 +898,89 @@ func (f *expressionFormatter) formatExpressionAtomErrorTail(ctx *fql.ExpressionA
 		return
 	}
 
-	f.formatErrorPolicyTail(ctx.ErrorPolicyTail())
+	f.formatRecoveryTails(ctx.RecoveryTails())
 }
 
-func (f *expressionFormatter) formatErrorPolicyTail(ctx fql.IErrorPolicyTailContext) {
-	f.formatErrorPolicyTailWith(f.p, ctx)
+func (f *expressionFormatter) formatRecoveryTails(ctx fql.IRecoveryTailsContext) {
+	f.formatRecoveryTailsWith(f.p, ctx)
 }
 
-func (f *expressionFormatter) formatErrorPolicyTailWith(p *printer, ctx fql.IErrorPolicyTailContext) {
+func (f *expressionFormatter) formatRecoveryTailsWith(p *printer, ctx fql.IRecoveryTailsContext) {
+	if ctx == nil {
+		return
+	}
+
+	var timeoutTail fql.IRecoveryTailContext
+	var errorTail fql.IRecoveryTailContext
+	var otherTails []fql.IRecoveryTailContext
+
+	for _, tail := range ctx.AllRecoveryTail() {
+		cond := tail.RecoveryCondition()
+		if cond == nil {
+			otherTails = append(otherTails, tail)
+			continue
+		}
+
+		switch {
+		case cond.TimeoutKeyword() != nil || strings.EqualFold(cond.GetText(), keywordTimeout):
+			if timeoutTail == nil {
+				timeoutTail = tail
+			}
+		case cond.ErrorKeyword() != nil || strings.EqualFold(cond.GetText(), keywordError):
+			if errorTail == nil {
+				errorTail = tail
+			}
+		default:
+			otherTails = append(otherTails, tail)
+		}
+	}
+
+	for _, tail := range []fql.IRecoveryTailContext{timeoutTail, errorTail} {
+		f.formatRecoveryTailWith(p, tail)
+	}
+
+	for _, tail := range otherTails {
+		f.formatRecoveryTailWith(p, tail)
+	}
+}
+
+func (f *expressionFormatter) formatRecoveryTailWith(p *printer, ctx fql.IRecoveryTailContext) {
 	if ctx == nil {
 		return
 	}
 
 	p.space()
 	f.writeKeywordWith(p, keywordOn)
-	p.space()
-	f.writeKeywordWith(p, keywordError)
-	p.space()
 
-	policy := ctx.GetPolicy()
-	if policy == nil {
+	if cond := ctx.RecoveryCondition(); cond != nil {
+		p.space()
+		switch {
+		case cond.TimeoutKeyword() != nil || strings.EqualFold(cond.GetText(), keywordTimeout):
+			f.writeKeywordWith(p, keywordTimeout)
+		case cond.ErrorKeyword() != nil || strings.EqualFold(cond.GetText(), keywordError):
+			f.writeKeywordWith(p, keywordError)
+		default:
+			p.write(applyCase(f.opts.caseMode, cond.GetText()))
+		}
+	}
+
+	action := ctx.RecoveryAction()
+	if action == nil {
 		return
 	}
 
-	if strings.EqualFold(policy.GetText(), keywordSuppress) {
-		f.writeKeywordWith(p, keywordSuppress)
-		return
-	}
-
-	if strings.EqualFold(policy.GetText(), keywordFail) {
+	p.space()
+	switch {
+	case action.ReturnKeyword() != nil || strings.EqualFold(action.GetText(), keywordReturn):
+		f.writeKeywordWith(p, keywordReturn)
+		if expr := action.RecoveryReturnExpr(); expr != nil && expr.Expression() != nil {
+			p.space()
+			f.formatExpressionWith(p, expr.Expression().(*fql.ExpressionContext))
+		}
+	case action.FailKeyword() != nil || strings.EqualFold(action.GetText(), keywordFail):
 		f.writeKeywordWith(p, keywordFail)
+	default:
+		p.write(applyCase(f.opts.caseMode, action.GetText()))
 	}
 }
 

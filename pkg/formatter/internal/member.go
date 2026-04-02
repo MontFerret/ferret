@@ -17,7 +17,7 @@ func (f *memberFormatter) formatMemberExpression(ctx *fql.MemberExpressionContex
 		f.formatMemberExpressionPath(path.(*fql.MemberExpressionPathContext))
 	}
 
-	f.expression.formatErrorPolicyTail(ctx.ErrorPolicyTail())
+	f.expression.formatRecoveryTails(ctx.RecoveryTails())
 }
 
 func (f *memberFormatter) formatImplicitMemberExpression(ctx *fql.ImplicitMemberExpressionContext) {

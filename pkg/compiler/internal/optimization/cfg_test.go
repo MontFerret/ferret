@@ -238,6 +238,44 @@ func TestBuildCFG_Loop(t *testing.T) {
 	}
 }
 
+func TestBuildCFG_CatchTableAddsHandlerSuccessor(t *testing.T) {
+	program := &bytecode.Program{
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, 0, 0),
+			bytecode.NewInstruction(bytecode.OpJump, 3),
+			bytecode.NewInstruction(bytecode.OpLoadNone, 0),
+			bytecode.NewInstruction(bytecode.OpReturn, 0),
+		},
+		CatchTable: []bytecode.Catch{
+			{0, 0, 2},
+		},
+	}
+
+	builder := NewBuilder(program)
+	cfg, err := builder.Build()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(cfg.Blocks) != 5 {
+		t.Fatalf("expected 5 blocks, got %d", len(cfg.Blocks))
+	}
+
+	block0 := cfg.Blocks[0]
+	if len(block0.Successors) != 2 {
+		t.Fatalf("expected 2 successors for protected block, got %d", len(block0.Successors))
+	}
+
+	successorStarts := make(map[int]bool)
+	for _, succ := range block0.Successors {
+		successorStarts[succ.Start] = true
+	}
+
+	if !successorStarts[1] || !successorStarts[2] {
+		t.Fatalf("expected protected block successors at indices 1 and 2")
+	}
+}
+
 func TestBasicBlock_AddSuccessor(t *testing.T) {
 	block1 := NewBasicBlock(1, 0)
 	block2 := NewBasicBlock(2, 5)

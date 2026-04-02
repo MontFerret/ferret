@@ -74,6 +74,17 @@ options { tokenVocab=FqlLexer; }
 		return equalsFoldAscii(tok.GetText(), expected)
 	}
 
+	func (p *FqlParser) isRecoveryActionStart() bool {
+		switch p.GetTokenStream().LA(1) {
+		case FqlParserReturn:
+			return true
+		case FqlParserIdentifier:
+			return !p.isCurrentIdentifierText("ON")
+		default:
+			return false
+		}
+	}
+
 	func equalsFoldAscii(actual, expected string) bool {
 		if len(actual) != len(expected) {
 			return false
@@ -154,7 +165,7 @@ bodyStatement
     : variableDeclaration
     | assignmentStatement
     | functionDeclaration
-    | functionCallExpression
+    | {p.GetTokenStream().LA(1) != FqlParserReturn}? functionCallExpression
     | waitForExpression
     | dispatchExpression
     ;
@@ -357,13 +368,13 @@ collectCounter
     ;
 
 waitForExpression
-    : Waitfor waitForEventExpression ({p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
-    | Waitfor waitForPredicateExpression ({p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
+    : Waitfor waitForEventExpression (recoveryTails)?
+    | Waitfor waitForPredicateExpression (recoveryTails)?
     ;
 
 dispatchExpression
-    : Dispatch dispatchEventName In dispatchTarget (dispatchWithClause)? (dispatchOptionsClause)? ({p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
-    | dispatchEventName DispatchArrow dispatchTarget ({p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
+    : Dispatch dispatchEventName In dispatchTarget (dispatchWithClause)? (dispatchOptionsClause)? (recoveryTails)?
+    | dispatchEventName DispatchArrow dispatchTarget (recoveryTails)?
     ;
 
 dispatchEventName
@@ -464,10 +475,31 @@ backoffStrategy
     | None
     ;
 
-errorPolicyTail
-    : onKeyword errorKeyword policy=Identifier
-    | onKeyword errorKeyword
+recoveryTails
+    : ({p.isCurrentIdentifierText("ON")}? recoveryTail)+
+    ;
+
+recoveryTail
+    : onKeyword recoveryCondition {p.isRecoveryActionStart()}? recoveryAction
+    | onKeyword recoveryCondition {!p.isRecoveryActionStart()}?
     | onKeyword
+    ;
+
+recoveryCondition
+    : errorKeyword
+    | timeoutKeyword
+    | {!p.isCurrentIdentifierText("ERROR")}? Identifier
+    ;
+
+recoveryAction
+    : failKeyword
+    | returnKeyword recoveryReturnExpr
+    | returnKeyword
+    | {!p.isCurrentIdentifierText("FAIL")}? Identifier
+    ;
+
+recoveryReturnExpr
+    : expression
     ;
 
 onKeyword
@@ -478,12 +510,16 @@ errorKeyword
     : {p.isCurrentIdentifierText("ERROR")}? Identifier
     ;
 
-suppressKeyword
-    : {p.isCurrentIdentifierText("SUPPRESS")}? Identifier
+timeoutKeyword
+    : Timeout
     ;
 
 failKeyword
     : {p.isCurrentIdentifierText("FAIL")}? Identifier
+    ;
+
+returnKeyword
+    : Return
     ;
 
 param
@@ -572,7 +608,7 @@ namespace
     ;
 
 memberExpression
-    : memberExpressionSource memberExpressionPath+ ({p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
+    : memberExpressionSource memberExpressionPath+ (recoveryTails)?
     ;
 
 memberExpressionSource
@@ -585,7 +621,7 @@ memberExpressionSource
     ;
 
 functionCallExpression
-    : functionCall (errorOperator | {p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
+    : functionCall (errorOperator | recoveryTails)?
     ;
 
 functionCall
@@ -761,7 +797,7 @@ expressionAtom
     | param
     | dispatchExpression
     | waitForExpression
-    | OpenParen (forExpression | waitForExpression | expression) CloseParen (errorOperator | {p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
+    | OpenParen (forExpression | waitForExpression | expression) CloseParen (errorOperator | recoveryTails)?
     ;
 
 matchExpression
@@ -853,8 +889,8 @@ implicitMemberExpressionStart
     ;
 
 queryExpression
-    : Query queryModifier queryPayload In expression Using dialect=Identifier queryWithOpt? ({p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
-    | Query {!p.isQueryModifierAhead()}? queryPayload In expression Using dialect=Identifier queryWithOpt? ({p.isCurrentIdentifierText("ON")}? errorPolicyTail)?
+    : Query queryModifier queryPayload In expression Using dialect=Identifier queryWithOpt? (recoveryTails)?
+    | Query {!p.isQueryModifierAhead()}? queryPayload In expression Using dialect=Identifier queryWithOpt? (recoveryTails)?
     ;
 
 queryModifier

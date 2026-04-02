@@ -37,7 +37,7 @@ func TestStatementFormatter_DispatchExpressionShorthand(t *testing.T) {
 }
 
 func TestStatementFormatter_DispatchExpressionErrorPolicyTail(t *testing.T) {
-	input := `DISPATCH "evt" IN target ON ERROR SUPPRESS`
+	input := `DISPATCH "evt" IN target ON ERROR RETURN NONE`
 	program := parseProgram(t, input+"\nRETURN 1")
 	dispatchExpr := mustFirst[*fql.DispatchExpressionContext](t, program)
 
@@ -45,7 +45,7 @@ func TestStatementFormatter_DispatchExpressionErrorPolicyTail(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.statement.formatDispatchExpression(dispatchExpr)
-	if got := buf.String(); got != `DISPATCH "evt" IN target ON ERROR SUPPRESS` {
+	if got := buf.String(); got != `DISPATCH "evt" IN target ON ERROR RETURN NONE` {
 		t.Fatalf("unexpected dispatch error policy formatting: %q", got)
 	}
 }
@@ -61,5 +61,19 @@ func TestStatementFormatter_WaitForExpressionErrorPolicyTail(t *testing.T) {
 	e.statement.formatWaitForExpression(waitExpr)
 	if got := buf.String(); got != `WAITFOR VALUE ready ON ERROR FAIL` {
 		t.Fatalf("unexpected waitfor error policy formatting: %q", got)
+	}
+}
+
+func TestStatementFormatter_WaitForExpressionRecoveryTailCanonicalOrder(t *testing.T) {
+	input := `WAITFOR VALUE ready TIMEOUT 1 ON ERROR FAIL ON TIMEOUT RETURN NONE`
+	program := parseProgram(t, input+"\nRETURN 1")
+	waitExpr := mustFirst[*fql.WaitForExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.statement.formatWaitForExpression(waitExpr)
+	if got := buf.String(); got != `WAITFOR VALUE ready TIMEOUT 1 ON TIMEOUT RETURN NONE ON ERROR FAIL` {
+		t.Fatalf("unexpected waitfor recovery formatting: %q", got)
 	}
 }

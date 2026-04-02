@@ -293,6 +293,8 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 		return idx == 1
 	case bytecode.OpIterNext:
 		return idx == 1
+	case bytecode.OpIterNextTimeout:
+		return idx == 1 || idx == 2
 	case bytecode.OpIterSkip, bytecode.OpIterLimit:
 		return idx == 1 || idx == 2
 	case bytecode.OpConcat:
@@ -318,6 +320,8 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 	case bytecode.OpCounterInc:
 		return idx == 0
 	case bytecode.OpFail:
+		return false
+	case bytecode.OpFailTimeout:
 		return false
 	case bytecode.OpIncr, bytecode.OpDecr, bytecode.OpClose, bytecode.OpSleep, bytecode.OpReturn:
 		return idx == 0

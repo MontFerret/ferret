@@ -300,6 +300,10 @@ func applyIteratorUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operan
 	case bytecode.OpIterNext:
 		collector.addUse(src1)
 		return true
+	case bytecode.OpIterNextTimeout:
+		collector.addUse(src1)
+		collector.addDef(src2)
+		return true
 	default:
 		return false
 	}
@@ -347,6 +351,8 @@ func applyUtilityUseDef(opcode bytecode.Opcode, dst bytecode.Operand, collector 
 		return true
 	case bytecode.OpSleep:
 		collector.addUse(dst)
+		return true
+	case bytecode.OpFailTimeout:
 		return true
 	default:
 		return false

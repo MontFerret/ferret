@@ -137,10 +137,11 @@ const (
 	OpStreamIter // Consumes a stream
 
 	// Iterator Operations
-	OpIter      // Creates an iterator
-	OpIterNext  // Moves to the next element
-	OpIterValue // Returns the current value
-	OpIterKey   // Returns the current key
+	OpIter            // Creates an iterator
+	OpIterNext        // Moves to the next element
+	OpIterNextTimeout // Moves to the next element and records timeout completion
+	OpIterValue       // Returns the current value
+	OpIterKey         // Returns the current key
 	OpIterLimit
 	OpIterSkip
 
@@ -160,7 +161,8 @@ const (
 	OpJumpIfEqConst
 	OpJumpIfMissingProperty
 	OpJumpIfMissingPropertyConst
-	OpFail // Raises a runtime failure with a constant message
+	OpFail        // Raises a runtime failure with a constant message
+	OpFailTimeout // Raises a runtime timeout failure
 
 	// Internal Aggregate Operations
 	OpLoadAggregateKey // Creates an internal grouped-aggregate selector key
@@ -195,6 +197,8 @@ func (op Opcode) String() string {
 		return "JMPMISSPROPC"
 	case OpFail:
 		return "FAIL"
+	case OpFailTimeout:
+		return "FAILTIMEOUT"
 	case OpLoadAggregateKey:
 		return "LOADAGGK"
 
@@ -427,6 +431,8 @@ func (op Opcode) String() string {
 		return "ITER"
 	case OpIterNext:
 		return "ITNEXT"
+	case OpIterNextTimeout:
+		return "ITNXTTO"
 	case OpIterValue:
 		return "ITVAL"
 	case OpIterKey:

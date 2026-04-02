@@ -16,20 +16,25 @@ func matchErrorPolicyErrors(src *source.Source, err *diagnostics.Diagnostic, off
 
 	if errorNode := errorPolicyMissingActionNode(offending); errorNode != nil {
 		span := spanFromTokenSafe(errorNode.Token(), src)
-		err.Message = "Expected SUPPRESS or FAIL after 'ON ERROR'"
-		err.Hint = "Use ON ERROR SUPPRESS to swallow failures or ON ERROR FAIL to propagate them."
+		if is(errorNode, "TIMEOUT") {
+			err.Message = "Expected FAIL or RETURN after 'ON TIMEOUT'"
+			err.Hint = "Use ON TIMEOUT FAIL to propagate timeout expiration or ON TIMEOUT RETURN <expr> to supply a fallback value."
+		} else {
+			err.Message = "Expected FAIL or RETURN after 'ON ERROR'"
+			err.Hint = "Use ON ERROR FAIL to propagate failures or ON ERROR RETURN <expr> to supply a fallback value."
+		}
 		err.Spans = []diagnostics.ErrorSpan{
-			diagnostics.NewMainErrorSpan(span, "missing error policy"),
+			diagnostics.NewMainErrorSpan(span, "missing recovery action"),
 		}
 		return true
 	}
 
 	if on := errorPolicyMissingErrorNode(offending); on != nil {
 		span := spanFromTokenSafe(on.Token(), src)
-		err.Message = "Expected ERROR after 'ON' in error policy tail"
-		err.Hint = "Complete the tail as ON ERROR SUPPRESS or ON ERROR FAIL."
+		err.Message = "Expected ERROR or TIMEOUT after 'ON' in recovery tail"
+		err.Hint = "Complete the tail as ON ERROR FAIL, ON ERROR RETURN <expr>, ON TIMEOUT FAIL, or ON TIMEOUT RETURN <expr>."
 		err.Spans = []diagnostics.ErrorSpan{
-			diagnostics.NewMainErrorSpan(span, "missing ERROR"),
+			diagnostics.NewMainErrorSpan(span, "missing recovery condition"),
 		}
 		return true
 	}
@@ -39,8 +44,9 @@ func matchErrorPolicyErrors(src *source.Source, err *diagnostics.Diagnostic, off
 
 func isErrorPolicyPredicateFailure(msg string) bool {
 	return has(msg, "errorkeyword failed predicate") ||
-		has(msg, "suppresskeyword failed predicate") ||
-		has(msg, "failkeyword failed predicate")
+		has(msg, "timeoutkeyword failed predicate") ||
+		has(msg, "failkeyword failed predicate") ||
+		has(msg, "returnkeyword failed predicate")
 }
 
 func errorPolicyMissingErrorNode(offending *TokenNode) *TokenNode {
@@ -71,11 +77,11 @@ func errorPolicyMissingActionNode(offending *TokenNode) *TokenNode {
 		return nil
 	}
 
-	if is(offending, "<EOF>") && is(offending.Prev(), "ERROR") && hasPrevToken(offending, "ON", 3) {
+	if is(offending, "<EOF>") && (is(offending.Prev(), "ERROR") || is(offending.Prev(), "TIMEOUT")) && hasPrevToken(offending, "ON", 3) {
 		return offending.Prev()
 	}
 
-	if prev := offending.Prev(); prev != nil && is(prev, "ERROR") && hasPrevToken(prev, "ON", 3) {
+	if prev := offending.Prev(); prev != nil && (is(prev, "ERROR") || is(prev, "TIMEOUT")) && hasPrevToken(prev, "ON", 3) {
 		return prev
 	}
 

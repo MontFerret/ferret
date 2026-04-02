@@ -96,11 +96,13 @@ func (c *LoopCollectCompiler) parseAggregateSelector(selector fql.ICollectAggreg
 		return nil, false
 	}
 
+	plan := collectRecoveryPlan(c.ctx, fcx, recoveryPlanOptions{})
+
 	return core.NewCompiledAggregateSelector(
 		name,
 		args,
 		funcName,
-		fcx.ErrorOperator() != nil || resolveErrorPolicyTail(c.ctx, fcx.ErrorPolicyTail()) == errorPolicySuppress,
+		fcx.ErrorOperator() != nil || hasErrorReturnNoneHandler(plan),
 		selector,
 	), true
 }
@@ -235,7 +237,8 @@ func (c *LoopCollectCompiler) buildAggregatePlan(selectors []fql.ICollectAggrega
 			return nil, false
 		}
 
-		if fce.ErrorOperator() != nil || resolveErrorPolicyTail(c.ctx, fce.ErrorPolicyTail()) == errorPolicySuppress {
+		plan := collectRecoveryPlan(c.ctx, fce, recoveryPlanOptions{})
+		if fce.ErrorOperator() != nil || plan.onError != nil {
 			return nil, false
 		}
 

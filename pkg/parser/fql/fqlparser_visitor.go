@@ -193,8 +193,20 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#backoffStrategy.
 	VisitBackoffStrategy(ctx *BackoffStrategyContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#errorPolicyTail.
-	VisitErrorPolicyTail(ctx *ErrorPolicyTailContext) interface{}
+	// Visit a parse tree produced by FqlParser#recoveryTails.
+	VisitRecoveryTails(ctx *RecoveryTailsContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryTail.
+	VisitRecoveryTail(ctx *RecoveryTailContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryCondition.
+	VisitRecoveryCondition(ctx *RecoveryConditionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryAction.
+	VisitRecoveryAction(ctx *RecoveryActionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#recoveryReturnExpr.
+	VisitRecoveryReturnExpr(ctx *RecoveryReturnExprContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#onKeyword.
 	VisitOnKeyword(ctx *OnKeywordContext) interface{}
@@ -202,11 +214,14 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#errorKeyword.
 	VisitErrorKeyword(ctx *ErrorKeywordContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#suppressKeyword.
-	VisitSuppressKeyword(ctx *SuppressKeywordContext) interface{}
+	// Visit a parse tree produced by FqlParser#timeoutKeyword.
+	VisitTimeoutKeyword(ctx *TimeoutKeywordContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#failKeyword.
 	VisitFailKeyword(ctx *FailKeywordContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#returnKeyword.
+	VisitReturnKeyword(ctx *ReturnKeywordContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#param.
 	VisitParam(ctx *ParamContext) interface{}

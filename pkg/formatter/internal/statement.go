@@ -496,7 +496,7 @@ func (f *statementFormatter) formatWaitForExpression(ctx *fql.WaitForExpressionC
 		f.formatWaitForPredicateExpression(pred.(*fql.WaitForPredicateExpressionContext))
 	}
 
-	f.expression.formatErrorPolicyTail(ctx.ErrorPolicyTail())
+	f.expression.formatRecoveryTails(ctx.RecoveryTails())
 }
 
 func (f *statementFormatter) formatWaitForEventExpression(ctx *fql.WaitForEventExpressionContext) {
@@ -621,7 +621,7 @@ func (f *statementFormatter) formatDispatchExpression(ctx *fql.DispatchExpressio
 			f.formatDispatchOptionsClause(opt.(*fql.DispatchOptionsClauseContext))
 		}
 
-		f.expression.formatErrorPolicyTail(ctx.ErrorPolicyTail())
+		f.expression.formatRecoveryTails(ctx.RecoveryTails())
 
 		return
 	}
@@ -638,7 +638,7 @@ func (f *statementFormatter) formatDispatchExpression(ctx *fql.DispatchExpressio
 		f.formatDispatchTarget(tgt.(*fql.DispatchTargetContext))
 	}
 
-	f.expression.formatErrorPolicyTail(ctx.ErrorPolicyTail())
+	f.expression.formatRecoveryTails(ctx.RecoveryTails())
 }
 
 func (f *statementFormatter) formatDispatchEventName(ctx *fql.DispatchEventNameContext) {

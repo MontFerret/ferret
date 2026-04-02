@@ -137,7 +137,7 @@ func opcodeClass(op Opcode) OpcodeClass {
 		OpNoneEq, OpNoneNe, OpNoneGt, OpNoneGte, OpNoneLt, OpNoneLte, OpNoneIn,
 		OpAllEq, OpAllNe, OpAllGt, OpAllGte, OpAllLt, OpAllLte, OpAllIn:
 		return OpcodeClassArray
-	case OpLength, OpClose, OpSleep, OpExists, OpRand, OpDispatch, OpFail, OpStoreCell:
+	case OpLength, OpClose, OpSleep, OpExists, OpRand, OpDispatch, OpFail, OpFailTimeout, OpStoreCell:
 		return OpcodeClassUtility
 	case OpHCall, OpProtectedHCall, OpCall, OpProtectedCall, OpTailCall:
 		return OpcodeClassCall
@@ -147,7 +147,7 @@ func opcodeClass(op Opcode) OpcodeClass {
 		return OpcodeClassDataset
 	case OpStream, OpStreamIter:
 		return OpcodeClassStream
-	case OpIter, OpIterNext, OpIterValue, OpIterKey, OpIterLimit, OpIterSkip:
+	case OpIter, OpIterNext, OpIterNextTimeout, OpIterValue, OpIterKey, OpIterLimit, OpIterSkip:
 		return OpcodeClassIterator
 	default:
 		return OpcodeClassUnknown
@@ -161,7 +161,7 @@ func controlFlowRole(op Opcode) ControlFlowRole {
 	case OpJumpIfFalse, OpJumpIfTrue, OpJumpIfNone,
 		OpJumpIfNe, OpJumpIfNeConst, OpJumpIfEq, OpJumpIfEqConst,
 		OpJumpIfMissingProperty, OpJumpIfMissingPropertyConst, OpMatchLoadPropertyConst,
-		OpIterNext:
+		OpIterNext, OpIterNextTimeout:
 		return ControlFlowJumpConditional
 	case OpReturn, OpTailCall:
 		return ControlFlowTerminator

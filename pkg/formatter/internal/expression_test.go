@@ -110,7 +110,7 @@ func TestExpressionFormatter_QueryExpressionCountModifier(t *testing.T) {
 }
 
 func TestExpressionFormatter_FunctionCallErrorPolicyTail(t *testing.T) {
-	input := "RETURN FAIL() ON ERROR SUPPRESS"
+	input := "RETURN FAIL() ON ERROR RETURN NONE"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -118,13 +118,13 @@ func TestExpressionFormatter_FunctionCallErrorPolicyTail(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "FAIL() ON ERROR SUPPRESS" {
+	if got := buf.String(); got != "FAIL() ON ERROR RETURN NONE" {
 		t.Fatalf("unexpected function call error policy formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_ParenthesizedErrorPolicyTail(t *testing.T) {
-	input := "RETURN (FAIL() + 1) ON ERROR SUPPRESS"
+	input := "RETURN (FAIL() + 1) ON ERROR RETURN NONE"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -132,13 +132,13 @@ func TestExpressionFormatter_ParenthesizedErrorPolicyTail(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "(FAIL() + 1) ON ERROR SUPPRESS" {
+	if got := buf.String(); got != "(FAIL() + 1) ON ERROR RETURN NONE" {
 		t.Fatalf("unexpected grouped error policy formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_QueryExpressionErrorPolicyTail(t *testing.T) {
-	input := "RETURN QUERY `.items` IN doc USING css ON ERROR SUPPRESS"
+	input := "RETURN QUERY `.items` IN doc USING css ON ERROR RETURN NONE"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -146,7 +146,7 @@ func TestExpressionFormatter_QueryExpressionErrorPolicyTail(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "QUERY `.items` IN doc USING css ON ERROR SUPPRESS" {
+	if got := buf.String(); got != "QUERY `.items` IN doc USING css ON ERROR RETURN NONE" {
 		t.Fatalf("unexpected query error policy formatting: %q", got)
 	}
 }

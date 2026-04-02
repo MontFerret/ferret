@@ -48,7 +48,7 @@ func TestCompiler_OptionalQueryCatchEndsBeforeFollowingInstruction(t *testing.T)
 
 func TestCompiler_ExplicitQuerySuppressCatchEndsBeforeFollowingInstruction(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
-		ProgramCheck("LET q = QUERY ONE `.items` IN @empty USING css ON ERROR SUPPRESS\nRETURN q.foo", func(program *bytecode.Program) error {
+		ProgramCheck("LET q = QUERY ONE `.items` IN @empty USING css ON ERROR RETURN NONE\nRETURN q.foo", func(program *bytecode.Program) error {
 			if got, want := len(program.CatchTable), 1; got != want {
 				return fmt.Errorf("unexpected catch table size: got %d, want %d", got, want)
 			}
@@ -104,7 +104,7 @@ func TestCompiler_OptionalForCatchUsesInclusiveEndAndCleanupJump(t *testing.T) {
 
 func TestCompiler_WaitForEventSuppressCatchUsesCleanupJump(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
-		ProgramCheck("LET ok = WAITFOR EVENT \"test\" IN @obs ON ERROR SUPPRESS\nRETURN ok.foo", func(program *bytecode.Program) error {
+		ProgramCheck("LET ok = WAITFOR EVENT \"test\" IN @obs ON ERROR RETURN NONE\nRETURN ok.foo", func(program *bytecode.Program) error {
 			if got, want := len(program.CatchTable), 1; got != want {
 				return fmt.Errorf("unexpected catch table size: got %d, want %d", got, want)
 			}
@@ -119,12 +119,12 @@ func TestCompiler_WaitForEventSuppressCatchUsesCleanupJump(t *testing.T) {
 				return err
 			}
 
-			if got, want := catch[1], propPC-1; got != want {
+			if got, want := catch[1], closePC; got != want {
 				return fmt.Errorf("unexpected catch end: got %d, want %d", got, want)
 			}
 
-			if got, want := catch[2], closePC; got != want {
-				return fmt.Errorf("unexpected catch jump: got %d, want %d", got, want)
+			if got := catch[2]; got <= closePC || got >= propPC {
+				return fmt.Errorf("unexpected waitfor event recovery jump: got %d, want (%d, %d)", got, closePC, propPC)
 			}
 
 			return nil

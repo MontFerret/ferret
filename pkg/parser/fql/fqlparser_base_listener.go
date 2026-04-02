@@ -396,11 +396,35 @@ func (s *BaseFqlParserListener) EnterBackoffStrategy(ctx *BackoffStrategyContext
 // ExitBackoffStrategy is called when production backoffStrategy is exited.
 func (s *BaseFqlParserListener) ExitBackoffStrategy(ctx *BackoffStrategyContext) {}
 
-// EnterErrorPolicyTail is called when production errorPolicyTail is entered.
-func (s *BaseFqlParserListener) EnterErrorPolicyTail(ctx *ErrorPolicyTailContext) {}
+// EnterRecoveryTails is called when production recoveryTails is entered.
+func (s *BaseFqlParserListener) EnterRecoveryTails(ctx *RecoveryTailsContext) {}
 
-// ExitErrorPolicyTail is called when production errorPolicyTail is exited.
-func (s *BaseFqlParserListener) ExitErrorPolicyTail(ctx *ErrorPolicyTailContext) {}
+// ExitRecoveryTails is called when production recoveryTails is exited.
+func (s *BaseFqlParserListener) ExitRecoveryTails(ctx *RecoveryTailsContext) {}
+
+// EnterRecoveryTail is called when production recoveryTail is entered.
+func (s *BaseFqlParserListener) EnterRecoveryTail(ctx *RecoveryTailContext) {}
+
+// ExitRecoveryTail is called when production recoveryTail is exited.
+func (s *BaseFqlParserListener) ExitRecoveryTail(ctx *RecoveryTailContext) {}
+
+// EnterRecoveryCondition is called when production recoveryCondition is entered.
+func (s *BaseFqlParserListener) EnterRecoveryCondition(ctx *RecoveryConditionContext) {}
+
+// ExitRecoveryCondition is called when production recoveryCondition is exited.
+func (s *BaseFqlParserListener) ExitRecoveryCondition(ctx *RecoveryConditionContext) {}
+
+// EnterRecoveryAction is called when production recoveryAction is entered.
+func (s *BaseFqlParserListener) EnterRecoveryAction(ctx *RecoveryActionContext) {}
+
+// ExitRecoveryAction is called when production recoveryAction is exited.
+func (s *BaseFqlParserListener) ExitRecoveryAction(ctx *RecoveryActionContext) {}
+
+// EnterRecoveryReturnExpr is called when production recoveryReturnExpr is entered.
+func (s *BaseFqlParserListener) EnterRecoveryReturnExpr(ctx *RecoveryReturnExprContext) {}
+
+// ExitRecoveryReturnExpr is called when production recoveryReturnExpr is exited.
+func (s *BaseFqlParserListener) ExitRecoveryReturnExpr(ctx *RecoveryReturnExprContext) {}
 
 // EnterOnKeyword is called when production onKeyword is entered.
 func (s *BaseFqlParserListener) EnterOnKeyword(ctx *OnKeywordContext) {}
@@ -414,17 +438,23 @@ func (s *BaseFqlParserListener) EnterErrorKeyword(ctx *ErrorKeywordContext) {}
 // ExitErrorKeyword is called when production errorKeyword is exited.
 func (s *BaseFqlParserListener) ExitErrorKeyword(ctx *ErrorKeywordContext) {}
 
-// EnterSuppressKeyword is called when production suppressKeyword is entered.
-func (s *BaseFqlParserListener) EnterSuppressKeyword(ctx *SuppressKeywordContext) {}
+// EnterTimeoutKeyword is called when production timeoutKeyword is entered.
+func (s *BaseFqlParserListener) EnterTimeoutKeyword(ctx *TimeoutKeywordContext) {}
 
-// ExitSuppressKeyword is called when production suppressKeyword is exited.
-func (s *BaseFqlParserListener) ExitSuppressKeyword(ctx *SuppressKeywordContext) {}
+// ExitTimeoutKeyword is called when production timeoutKeyword is exited.
+func (s *BaseFqlParserListener) ExitTimeoutKeyword(ctx *TimeoutKeywordContext) {}
 
 // EnterFailKeyword is called when production failKeyword is entered.
 func (s *BaseFqlParserListener) EnterFailKeyword(ctx *FailKeywordContext) {}
 
 // ExitFailKeyword is called when production failKeyword is exited.
 func (s *BaseFqlParserListener) ExitFailKeyword(ctx *FailKeywordContext) {}
+
+// EnterReturnKeyword is called when production returnKeyword is entered.
+func (s *BaseFqlParserListener) EnterReturnKeyword(ctx *ReturnKeywordContext) {}
+
+// ExitReturnKeyword is called when production returnKeyword is exited.
+func (s *BaseFqlParserListener) ExitReturnKeyword(ctx *ReturnKeywordContext) {}
 
 // EnterParam is called when production param is entered.
 func (s *BaseFqlParserListener) EnterParam(ctx *ParamContext) {}

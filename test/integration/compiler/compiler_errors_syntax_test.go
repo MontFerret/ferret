@@ -281,7 +281,7 @@ func TestSyntaxErrors(t *testing.T) {
 		`, E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected end value after '..' in range expression",
-				Hint:    "Provide an end value to complete the range, e.g. 0..10.",
+				Hint:    "Provide an end value to complete the range, e.g. ..10.",
 			}, "Incomplete range"),
 
 		Failure(

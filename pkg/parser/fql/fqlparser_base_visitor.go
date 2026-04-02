@@ -255,7 +255,23 @@ func (v *BaseFqlParserVisitor) VisitBackoffStrategy(ctx *BackoffStrategyContext)
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitErrorPolicyTail(ctx *ErrorPolicyTailContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitRecoveryTails(ctx *RecoveryTailsContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitRecoveryTail(ctx *RecoveryTailContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitRecoveryCondition(ctx *RecoveryConditionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitRecoveryAction(ctx *RecoveryActionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitRecoveryReturnExpr(ctx *RecoveryReturnExprContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -267,11 +283,15 @@ func (v *BaseFqlParserVisitor) VisitErrorKeyword(ctx *ErrorKeywordContext) inter
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitSuppressKeyword(ctx *SuppressKeywordContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitTimeoutKeyword(ctx *TimeoutKeywordContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
 func (v *BaseFqlParserVisitor) VisitFailKeyword(ctx *FailKeywordContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitReturnKeyword(ctx *ReturnKeywordContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

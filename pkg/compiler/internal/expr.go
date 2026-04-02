@@ -320,8 +320,23 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 		return bytecode.NoopOperand, false
 	}
 
-	policy := resolveErrorPolicy(c.ctx, atom.ErrorOperator() != nil, atom.ErrorPolicyTail())
-	if policy == errorPolicyDefault {
+	if atom.ErrorOperator() != nil {
+		jumpMode := catchJumpNone
+		if fe := atom.ForExpression(); fe != nil {
+			jumpMode = catchJumpModeForForExpression(fe)
+		} else if wfe := atom.WaitForExpression(); wfe != nil {
+			jumpMode = catchJumpModeForWaitForExpression(wfe)
+		}
+
+		reg := compileWithErrorPolicy(c.ctx, errorPolicySuppress, jumpMode, func() bytecode.Operand {
+			return c.compileAtom(atom)
+		})
+
+		return reg, true
+	}
+
+	plan := collectRecoveryPlan(c.ctx, atom, recoveryPlanOptions{})
+	if plan.onError == nil {
 		return c.compileAtom(atom), true
 	}
 
@@ -332,13 +347,13 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 		jumpMode = catchJumpModeForWaitForExpression(wfe)
 	}
 
-	reg := compileWithErrorPolicy(c.ctx, policy, jumpMode, func() bytecode.Operand {
+	if !hasErrorReturnNoneHandler(plan) {
+		jumpMode = catchJumpNone
+	}
+
+	reg := compileWithRecoveryPlan(c.ctx, plan, jumpMode, func() bytecode.Operand {
 		return c.compileAtom(atom)
 	})
-
-	if policy != errorPolicySuppress {
-		return reg, true
-	}
 
 	return reg, true
 }
@@ -1261,7 +1276,7 @@ func matchPureResultAtom(expr fql.IExpressionContext) (fql.IExpressionAtomContex
 		return nil, false
 	}
 
-	if atom.AdditiveOperator() != nil || atom.MultiplicativeOperator() != nil || atom.RegexpOperator() != nil || atom.ErrorOperator() != nil || atom.ErrorPolicyTail() != nil || atom.RangeOperator() != nil {
+	if atom.AdditiveOperator() != nil || atom.MultiplicativeOperator() != nil || atom.RegexpOperator() != nil || atom.ErrorOperator() != nil || atom.RecoveryTails() != nil || atom.RangeOperator() != nil {
 		return nil, false
 	}
 
@@ -1726,9 +1741,27 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 		return bytecode.NoopOperand
 	}
 
-	policy := resolveErrorPolicyTail(c.ctx, ctx.ErrorPolicyTail())
+	plan := collectRecoveryPlan(c.ctx, ctx, recoveryPlanOptions{})
+	if hasErrorReturnNoneHandler(plan) {
+		return compileWithErrorPolicy(c.ctx, errorPolicySuppress, catchJumpNone, func() bytecode.Operand {
+			mes := ctx.MemberExpressionSource()
+			segments := ctx.AllMemberExpressionPath()
 
-	return compileWithErrorPolicy(c.ctx, policy, catchJumpNone, func() bytecode.Operand {
+			if mes == nil || len(segments) == 0 {
+				return bytecode.NoopOperand
+			}
+
+			src := c.compileMemberExpressionSource(mes, segments)
+
+			if src == bytecode.NoopOperand {
+				return src
+			}
+
+			return c.compileMemberExpressionSegments(src, segments)
+		})
+	}
+
+	return compileWithRecoveryPlan(c.ctx, plan, catchJumpNone, func() bytecode.Operand {
 		mes := ctx.MemberExpressionSource()
 		segments := ctx.AllMemberExpressionPath()
 
@@ -2419,9 +2452,33 @@ func (c *ExprCompiler) compileQueryExpression(ctx fql.IQueryExpressionContext) b
 		return bytecode.NoopOperand
 	}
 
-	policy := resolveErrorPolicyTail(c.ctx, ctx.ErrorPolicyTail())
+	plan := collectRecoveryPlan(c.ctx, ctx, recoveryPlanOptions{})
+	if hasErrorReturnNoneHandler(plan) {
+		return compileWithErrorPolicy(c.ctx, errorPolicySuppress, catchJumpNone, func() bytecode.Operand {
+			if ctx == nil {
+				return bytecode.NoopOperand
+			}
 
-	return compileWithErrorPolicy(c.ctx, policy, catchJumpNone, func() bytecode.Operand {
+			src, ok := c.compileQueryExpressionSource(ctx)
+			if !ok {
+				return bytecode.NoopOperand
+			}
+
+			span := diagnostics.SpanFromRuleContext(ctx)
+			modifier := queryModifierName(ctx.QueryModifier())
+			queryReg := c.emitQueryEnvelope(ctx, span)
+			queryResult := c.emitApplyQuery(span, src, queryReg)
+			dst := c.lowerQueryModifier(span, modifier, queryResult)
+
+			if dst.IsRegister() {
+				c.ctx.Types.Set(dst, queryResultTypeForModifier(modifier))
+			}
+
+			return dst
+		})
+	}
+
+	return compileWithRecoveryPlan(c.ctx, plan, catchJumpNone, func() bytecode.Operand {
 		if ctx == nil {
 			return bytecode.NoopOperand
 		}
@@ -2981,11 +3038,22 @@ func (c *ExprCompiler) CompileFunctionCallExpression(ctx fql.IFunctionCallExpres
 		return bytecode.NoopOperand
 	}
 
-	policy := resolveErrorPolicy(c.ctx, ctx.ErrorOperator() != nil, ctx.ErrorPolicyTail())
 	call := ctx.FunctionCall()
+	if ctx.ErrorOperator() != nil {
+		return compileWithErrorPolicy(c.ctx, errorPolicySuppress, catchJumpNone, func() bytecode.Operand {
+			return c.CompileFunctionCall(call, true)
+		})
+	}
 
-	return compileWithErrorPolicy(c.ctx, policy, catchJumpNone, func() bytecode.Operand {
-		return c.CompileFunctionCall(call, policy == errorPolicySuppress)
+	plan := collectRecoveryPlan(c.ctx, ctx, recoveryPlanOptions{})
+	if hasErrorReturnNoneHandler(plan) {
+		return compileWithErrorPolicy(c.ctx, errorPolicySuppress, catchJumpNone, func() bytecode.Operand {
+			return c.CompileFunctionCall(call, true)
+		})
+	}
+
+	return compileWithRecoveryPlan(c.ctx, plan, catchJumpNone, func() bytecode.Operand {
+		return c.CompileFunctionCall(call, false)
 	})
 }
 
