@@ -289,18 +289,13 @@ func (r *Result) Close() error
 
 These rules are mandatory unless the task explicitly requires otherwise.
 
-- A file centered on a method-bearing type should primarily contain:
-    - the type declaration
-    - its methods
-    - its constructor functions, if any
-- Do not mix unrelated package-level functions into a file that already owns a method-bearing type.
-- In files built around a method-bearing type, the only package-level functions that are normally allowed are constructor functions for that type or closely related helper constructors.
-- If logic conceptually belongs to a type, make it a method instead of a free function.
-- Package-level functions are preferred only when:
-    - there is no owning method-bearing type
-    - the function is truly package-level behavior rather than type behavior
-    - introducing a receiver would be artificial
-- If a file contains non-constructor package-level functions and also contains methods, that is usually a structure violation and the code should be split or refactored.
+- A file centered on a method-bearing type should contain the type, its methods, and its constructors only.
+- Do not mix package-level helper functions into a file that already contains methods for a primary type.
+- In type-centered files, constructor functions are the only normally allowed package-level functions.
+- If logic conceptually belongs to the primary type, implement it as a method.
+- If logic does not belong to the type and must remain a package-level function, place it in a separate helper-focused file.
+- Package-level functions are preferred only when there is no natural owning type or when the behavior is genuinely package-level.
+- If a file contains both methods and non-constructor package-level functions, that is usually a structure violation and should be refactored.
 
 ## Development practice expectations
 
