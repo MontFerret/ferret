@@ -257,26 +257,6 @@ func collectAndCaptureAssignments(
 	}
 }
 
-func variableDeclarationName(ctx fql.IVariableDeclarationContext) string {
-	if ctx == nil {
-		return ""
-	}
-
-	if id := ctx.BindingIdentifier(); id != nil {
-		return textOfBindingIdentifier(id)
-	}
-
-	if id := ctx.Identifier(); id != nil {
-		return id.GetText()
-	}
-
-	if id := ctx.SafeReservedWord(); id != nil {
-		return id.GetText()
-	}
-
-	return ""
-}
-
 func variableDeclarationBinding(ctx fql.IVariableDeclarationContext) captureBinding {
 	if ctx == nil {
 		return captureBinding{}

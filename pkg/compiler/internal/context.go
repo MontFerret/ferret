@@ -38,7 +38,7 @@ type CompilerContext struct {
 	LoopSortCompiler    *LoopSortCompiler
 	LoopCollectCompiler *LoopCollectCompiler
 	WaitCompiler        *WaitCompiler
-	OPCompiler          *OperationPolicyCompiler
+	PolicyCompiler      *OperationPolicyCompiler
 	PromotedBindings    map[antlr.ParserRuleContext]struct{}
 	aggregatePlans      []*bytecode.AggregatePlan
 	OptimizationLevel   optimization.Level
@@ -71,11 +71,11 @@ func NewCompilerContext(src *source.Source, errors *diagnostics.ErrorHandler, le
 	ctx.StmtCompiler = NewStmtCompiler(ctx)
 	ctx.LoopCompiler = NewLoopCompiler(ctx)
 	ctx.LoopSortCompiler = NewLoopSortCompiler(ctx)
-	ctx.LoopCollectCompiler = NewCollectCompiler(ctx)
+	ctx.LoopCollectCompiler = NewLoopCollectCompiler(ctx)
 	ctx.WaitCompiler = NewWaitCompiler(ctx)
 	ctx.DispatchCompiler = NewDispatchCompiler(ctx)
 	ctx.UDFCompiler = NewUDFCompiler(ctx)
-	ctx.OPCompiler = NewOperationPolicyCompiler(ctx)
+	ctx.PolicyCompiler = NewOperationPolicyCompiler(ctx)
 
 	return ctx
 }

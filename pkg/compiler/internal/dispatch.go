@@ -30,7 +30,7 @@ func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) bytecode.
 	}
 
 	plan := collectRecoveryPlan(c.ctx, ctx, core.RecoveryPlanOptions{})
-	return c.ctx.OPCompiler.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
+	return c.ctx.PolicyCompiler.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
 		targetReg := c.ensureRegister(c.compileTarget(ctx.DispatchTarget()))
 		eventReg := c.ensureRegister(c.compileEventName(ctx.DispatchEventName()))
 		payloadReg := c.ensureRegister(c.compilePayload(ctx.DispatchWithClause()))

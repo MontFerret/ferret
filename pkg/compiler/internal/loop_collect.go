@@ -13,8 +13,8 @@ type LoopCollectCompiler struct {
 	ctx *CompilerContext
 }
 
-// NewCollectCompiler creates a new instance of LoopCollectCompiler with the given compiler context.
-func NewCollectCompiler(ctx *CompilerContext) *LoopCollectCompiler {
+// NewLoopCollectCompiler creates a new instance of LoopCollectCompiler with the given compiler context.
+func NewLoopCollectCompiler(ctx *CompilerContext) *LoopCollectCompiler {
 	return &LoopCollectCompiler{ctx: ctx}
 }
 

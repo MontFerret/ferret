@@ -45,3 +45,23 @@ func loadBindingValue(ctx *CompilerContext, binding *core.Variable) bytecode.Ope
 
 	return dst
 }
+
+func variableDeclarationName(ctx fql.IVariableDeclarationContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	if id := ctx.BindingIdentifier(); id != nil {
+		return textOfBindingIdentifier(id)
+	}
+
+	if id := ctx.Identifier(); id != nil {
+		return id.GetText()
+	}
+
+	if id := ctx.SafeReservedWord(); id != nil {
+		return id.GetText()
+	}
+
+	return ""
+}

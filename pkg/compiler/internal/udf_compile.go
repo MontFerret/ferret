@@ -3,8 +3,6 @@ package internal
 import (
 	"github.com/antlr4-go/antlr/v4"
 
-	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
-
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
@@ -44,31 +42,8 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 		return
 	}
 
-	state := udfCompileState{
-		registers: c.ctx.Registers,
-		symbols:   c.ctx.Symbols,
-		types:     c.ctx.Types,
-		loops:     c.ctx.Loops,
-		udfScope:  c.ctx.UDFScope,
-	}
-
-	var outerParams []string
-	if state.symbols != nil {
-		outerParams = state.symbols.Params()
-	}
-
-	c.ctx.Registers = core.NewRegisterAllocator()
-	c.ctx.Symbols = core.NewSymbolTable(c.ctx.Registers, c.ctx.Constants)
-
-	// Pre-seed param bindings from the outer table so UDF-emitted LOADP slots
-	// remain aligned with program-level param ordering.
-	for _, name := range outerParams {
-		c.ctx.Symbols.BindParam(name)
-	}
-
-	c.ctx.Types = core.NewTypeTracker()
-	c.ctx.Loops = core.NewLoopTable(c.ctx.Registers)
-	c.ctx.UDFScope = fn.BodyScope
+	state := c.pushUDFCompileState(fn)
+	defer c.popUDFCompileState(state)
 
 	fn.Entry = c.ctx.Emitter.Size()
 
@@ -99,10 +74,37 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 	}
 
 	fn.Registers = c.ctx.Registers.Size()
+}
 
-	// Preserve metadata discovered while compiling UDF bodies. UDF compilation
-	// uses a temporary symbol table pre-seeded with outer param bindings, and
-	// then merges any newly discovered params/host function bindings back.
+func (c *UDFCompiler) pushUDFCompileState(fn *core.UDFInfo) udfCompileState {
+	state := udfCompileState{
+		registers: c.ctx.Registers,
+		symbols:   c.ctx.Symbols,
+		types:     c.ctx.Types,
+		loops:     c.ctx.Loops,
+		udfScope:  c.ctx.UDFScope,
+	}
+
+	var outerParams []string
+	if state.symbols != nil {
+		outerParams = state.symbols.Params()
+	}
+
+	c.ctx.Registers = core.NewRegisterAllocator()
+	c.ctx.Symbols = core.NewSymbolTable(c.ctx.Registers, c.ctx.Constants)
+
+	for _, name := range outerParams {
+		c.ctx.Symbols.BindParam(name)
+	}
+
+	c.ctx.Types = core.NewTypeTracker()
+	c.ctx.Loops = core.NewLoopTable(c.ctx.Registers)
+	c.ctx.UDFScope = fn.BodyScope
+
+	return state
+}
+
+func (c *UDFCompiler) popUDFCompileState(state udfCompileState) {
 	udfParams := c.ctx.Symbols.Params()
 	udfFunctions := c.ctx.Symbols.Functions()
 
@@ -153,34 +155,6 @@ func (c *UDFCompiler) compileExpressionReturn(expr fql.IExpressionContext) {
 	c.ctx.Emitter.EmitA(bytecode.OpReturn, val)
 }
 
-func CollectUDFs(ctx *CompilerContext, program *fql.ProgramContext) *core.UDFTable {
-	table := core.NewUDFTable()
-	table.GlobalScope = core.NewUDFScope(nil)
-
-	if program == nil || program.Body() == nil {
-		return table
-	}
-
-	body, ok := program.Body().(*fql.BodyContext)
-	if !ok {
-		return table
-	}
-
-	top := collectScopeFunctionsFromBody(ctx, table, table.GlobalScope, body)
-
-	for _, fn := range top {
-		collectNestedFunctions(ctx, table, fn)
-	}
-
-	if ctx != nil && ctx.OptimizationLevel > optimization.LevelNone {
-		pruneUnusedUDFs(ctx, table, body)
-	}
-
-	analyzeCaptures(ctx, table, body)
-
-	return table
-}
-
 func directFunctionCall(expr fql.IExpressionContext) fql.IFunctionCallExpressionContext {
 	if expr == nil {
 		return nil
@@ -219,7 +193,7 @@ func directFunctionCall(expr fql.IExpressionContext) fql.IFunctionCallExpression
 		return nil
 	}
 
-	if atomCtx.GetLeft() != nil || atomCtx.GetRight() != nil {
+	if atomCtx.ExpressionAtom(0) != nil || atomCtx.ExpressionAtom(1) != nil {
 		return nil
 	}
 
