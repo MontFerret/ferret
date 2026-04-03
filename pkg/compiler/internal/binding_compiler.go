@@ -17,12 +17,6 @@ type (
 		front                *CompilationFrontend
 		promotedDeclarations map[antlr.ParserRuleContext]struct{}
 	}
-
-	declarationBindingInfo struct {
-		Decl    antlr.ParserRuleContext
-		Name    string
-		Mutable bool
-	}
 )
 
 func NewBindingCompiler(ctx *CompilationSession) *BindingCompiler {
@@ -200,12 +194,12 @@ func (c *BindingCompiler) LoadBindingValue(binding *core.Variable) bytecode.Oper
 	return dst
 }
 
-func (c *BindingCompiler) captureBindingForDeclaration(ctx fql.IVariableDeclarationContext) declarationBindingInfo {
+func (c *BindingCompiler) captureBindingForDeclaration(ctx fql.IVariableDeclarationContext) captureBindingInfo {
 	if ctx == nil {
-		return declarationBindingInfo{}
+		return captureBindingInfo{}
 	}
 
-	return declarationBindingInfo{
+	return captureBindingInfo{
 		Name:    c.declarationName(ctx),
 		Mutable: c.isMutableDeclaration(ctx),
 		Decl:    ctx.(antlr.ParserRuleContext),

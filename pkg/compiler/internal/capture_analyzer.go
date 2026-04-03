@@ -33,11 +33,7 @@ func (c *CaptureAnalyzer) AnalyzeProgram(body *fql.BodyContext) {
 		case stmt.VariableDeclaration() != nil:
 			binding := c.front.Bindings.captureBindingForDeclaration(stmt.VariableDeclaration())
 			if binding.Name != "" {
-				env.addBinding(udfCaptureBinding{
-					Decl:    binding.Decl,
-					Name:    binding.Name,
-					Mutable: binding.Mutable,
-				})
+				env.addBinding(binding)
 			}
 		case stmt.FunctionDeclaration() != nil:
 			decl := stmt.FunctionDeclaration().(*fql.FunctionDeclarationContext)
@@ -87,11 +83,7 @@ func (c *CaptureAnalyzer) analyzeFunction(fn *core.UDFInfo, env *udfCaptureEnv) 
 
 					binding := c.front.Bindings.captureBindingForDeclaration(decl)
 					if binding.Name != "" {
-						env.addBinding(udfCaptureBinding{
-							Decl:    binding.Decl,
-							Name:    binding.Name,
-							Mutable: binding.Mutable,
-						})
+						env.addBinding(binding)
 					}
 				case stmt.AssignmentStatement() != nil:
 					c.collectVars(stmt.AssignmentStatement(), env, captureSet, &captureOrder)

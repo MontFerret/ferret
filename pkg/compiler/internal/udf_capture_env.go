@@ -1,21 +1,13 @@
 package internal
 
-import "github.com/antlr4-go/antlr/v4"
-
 type (
 	udfCaptureEnv struct {
-		scopes []map[string]udfCaptureBinding
-	}
-
-	udfCaptureBinding struct {
-		Decl    antlr.ParserRuleContext
-		Name    string
-		Mutable bool
+		scopes []map[string]captureBindingInfo
 	}
 )
 
 func (e *udfCaptureEnv) push() {
-	e.scopes = append(e.scopes, make(map[string]udfCaptureBinding))
+	e.scopes = append(e.scopes, make(map[string]captureBindingInfo))
 }
 
 func (e *udfCaptureEnv) pop() {
@@ -25,10 +17,10 @@ func (e *udfCaptureEnv) pop() {
 }
 
 func (e *udfCaptureEnv) add(name string) {
-	e.addBinding(udfCaptureBinding{Name: name})
+	e.addBinding(captureBindingInfo{Name: name})
 }
 
-func (e *udfCaptureEnv) addBinding(binding udfCaptureBinding) {
+func (e *udfCaptureEnv) addBinding(binding captureBindingInfo) {
 	if len(e.scopes) == 0 {
 		return
 	}
@@ -45,12 +37,12 @@ func (e *udfCaptureEnv) currentHas(name string) bool {
 	return ok
 }
 
-func (e *udfCaptureEnv) resolveBinding(name string) (udfCaptureBinding, bool) {
+func (e *udfCaptureEnv) resolveBinding(name string) (captureBindingInfo, bool) {
 	for i := len(e.scopes) - 1; i >= 0; i-- {
 		if binding, ok := e.scopes[i][name]; ok {
 			return binding, true
 		}
 	}
 
-	return udfCaptureBinding{}, false
+	return captureBindingInfo{}, false
 }

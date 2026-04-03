@@ -1,0 +1,250 @@
+package internal
+
+import (
+	"testing"
+
+	"github.com/antlr4-go/antlr/v4"
+
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/source"
+)
+
+type bindingCompilerTestState struct {
+	body    *fql.BodyContext
+	errors  *parserd.ErrorHandler
+	front   *CompilationFrontend
+	program *fql.ProgramContext
+	session *CompilationSession
+	source  *source.Source
+}
+
+func TestBindingCompilerCapturedMutableDeclarationPromotesToCellStorage(t *testing.T) {
+	state := newBindingCompilerTestState(t, `
+VAR base = 1
+FUNC outer() (
+  FUNC inner() (
+    base = base + 1
+    RETURN base
+  )
+  RETURN inner()
+)
+RETURN outer()
+`)
+
+	prepareBindingCompilerTestState(t, state)
+
+	decl := findBindingCompilerTestDeclaration(t, state, "base")
+	if !state.front.Bindings.IsPromotedDeclaration(decl) {
+		t.Fatal("expected captured mutable declaration to be promoted before lowering")
+	}
+
+	state.front.Statements.Compile(state.body)
+	state.front.UDFs.CompileAll()
+
+	assertBindingCompilerTestNoErrors(t, state)
+
+	binding, ok := state.session.Symbols.ResolveBinding("base")
+	if !ok {
+		t.Fatal("expected top-level binding 'base' to exist")
+	}
+
+	if binding.Storage != core.BindingStorageCell {
+		t.Fatalf("unexpected binding storage: got %v want %v", binding.Storage, core.BindingStorageCell)
+	}
+
+	instructions := state.session.Emitter.Bytecode()
+	for _, opcode := range []bytecode.Opcode{bytecode.OpMakeCell, bytecode.OpLoadCell, bytecode.OpStoreCell} {
+		if got := countBindingCompilerTestOpcode(instructions, opcode); got == 0 {
+			t.Fatalf("expected %s in emitted bytecode", opcode)
+		}
+	}
+}
+
+func TestBindingCompilerImmutableLetReassignmentReportsError(t *testing.T) {
+	state := newBindingCompilerTestState(t, `
+LET x = 1
+x = 2
+RETURN x
+`)
+
+	prepareBindingCompilerTestState(t, state)
+	state.front.Statements.Compile(state.body)
+	state.front.UDFs.CompileAll()
+
+	if !state.errors.HasErrors() {
+		t.Fatal("expected reassignment diagnostic")
+	}
+
+	diag := state.errors.Errors().First()
+	if diag == nil {
+		t.Fatal("expected first diagnostic")
+	}
+
+	if diag.Kind != parserd.SemanticError {
+		t.Fatalf("unexpected diagnostic kind: got %v want %v", diag.Kind, parserd.SemanticError)
+	}
+
+	if diag.Message != "Variable 'x' cannot be reassigned" {
+		t.Fatalf("unexpected diagnostic message: got %q", diag.Message)
+	}
+
+	if diag.Hint != "Declare it with VAR if you need to update it." {
+		t.Fatalf("unexpected diagnostic hint: got %q", diag.Hint)
+	}
+}
+
+func TestBindingCompilerStringCompoundAssignmentUsesConcatPath(t *testing.T) {
+	state := newBindingCompilerTestState(t, `
+VAR text = ""
+text += "a"
+RETURN text
+`)
+
+	compileBindingCompilerTestState(t, state)
+	assertBindingCompilerTestNoErrors(t, state)
+
+	instructions := state.session.Emitter.Bytecode()
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpAddConst); got != 1 {
+		t.Fatalf("unexpected %s count: got %d want 1", bytecode.OpAddConst, got)
+	}
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpAdd); got != 0 {
+		t.Fatalf("unexpected %s count: got %d want 0", bytecode.OpAdd, got)
+	}
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpConcat); got != 0 {
+		t.Fatalf("unexpected %s count: got %d want 0", bytecode.OpConcat, got)
+	}
+}
+
+func TestBindingCompilerNumericCompoundAssignmentUsesArithmeticPath(t *testing.T) {
+	state := newBindingCompilerTestState(t, `
+VAR total = 1
+total += 2
+RETURN total
+`)
+
+	compileBindingCompilerTestState(t, state)
+	assertBindingCompilerTestNoErrors(t, state)
+
+	instructions := state.session.Emitter.Bytecode()
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpAdd); got != 1 {
+		t.Fatalf("unexpected %s count: got %d want 1", bytecode.OpAdd, got)
+	}
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpAddConst); got != 0 {
+		t.Fatalf("unexpected %s count: got %d want 0", bytecode.OpAddConst, got)
+	}
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpConcat); got != 0 {
+		t.Fatalf("unexpected %s count: got %d want 0", bytecode.OpConcat, got)
+	}
+}
+
+func newBindingCompilerTestState(t *testing.T, query string) *bindingCompilerTestState {
+	t.Helper()
+
+	src := source.New("binding_compiler_test.fql", query)
+	errors := parserd.NewErrorHandler(src, 10)
+	session := NewCompilationSession(src, errors, optimization.LevelNone)
+	front := NewCompilationFrontend(session)
+	program := parseBindingCompilerTestProgram(t, src, errors)
+
+	body, ok := program.Body().(*fql.BodyContext)
+	if !ok || body == nil {
+		t.Fatal("expected program body context")
+	}
+
+	return &bindingCompilerTestState{
+		body:    body,
+		errors:  errors,
+		front:   front,
+		program: program,
+		session: session,
+		source:  src,
+	}
+}
+
+func parseBindingCompilerTestProgram(t *testing.T, src *source.Source, errors *parserd.ErrorHandler) *fql.ProgramContext {
+	t.Helper()
+
+	input := antlr.NewInputStream(src.Content())
+	lexer := fql.NewFqlLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	history := parserd.NewTokenHistory(10)
+	parser := fql.NewFqlParser(parserd.NewTrackingTokenStream(stream, history))
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	parser.AddErrorListener(parserd.NewErrorListener(src, errors, history))
+
+	program, ok := parser.Program().(*fql.ProgramContext)
+	if !ok || program == nil {
+		t.Fatal("expected program context")
+	}
+
+	if errors.HasErrors() {
+		t.Fatalf("unexpected parse errors:\n%s", errors.Errors().Format())
+	}
+
+	return program
+}
+
+func prepareBindingCompilerTestState(t *testing.T, state *bindingCompilerTestState) {
+	t.Helper()
+
+	state.front.UDFCatalog.BuildCatalog(state.program)
+	state.front.CaptureAnalyzer.AnalyzeProgram(state.body)
+}
+
+func compileBindingCompilerTestState(t *testing.T, state *bindingCompilerTestState) {
+	t.Helper()
+
+	prepareBindingCompilerTestState(t, state)
+	state.front.Statements.Compile(state.body)
+	state.front.UDFs.CompileAll()
+}
+
+func findBindingCompilerTestDeclaration(t *testing.T, state *bindingCompilerTestState, name string) antlr.ParserRuleContext {
+	t.Helper()
+
+	for _, stmt := range state.body.AllBodyStatement() {
+		if stmt == nil || stmt.VariableDeclaration() == nil {
+			continue
+		}
+
+		decl := stmt.VariableDeclaration()
+		if state.front.Bindings.declarationName(decl) == name {
+			return decl.(antlr.ParserRuleContext)
+		}
+	}
+
+	t.Fatalf("expected declaration for %q", name)
+
+	return nil
+}
+
+func assertBindingCompilerTestNoErrors(t *testing.T, state *bindingCompilerTestState) {
+	t.Helper()
+
+	if state.errors.HasErrors() {
+		t.Fatalf("unexpected diagnostics:\n%s", state.errors.Errors().Format())
+	}
+}
+
+func countBindingCompilerTestOpcode(instructions []bytecode.Instruction, opcode bytecode.Opcode) int {
+	count := 0
+
+	for _, inst := range instructions {
+		if inst.Opcode == opcode {
+			count++
+		}
+	}
+
+	return count
+}
