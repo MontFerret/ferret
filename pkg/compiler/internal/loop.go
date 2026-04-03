@@ -540,7 +540,7 @@ func (c *LoopCompiler) compileFilterClause(ctx fql.IFilterClauseContext) {
 	// Get the jump label for the current loop
 	label := c.ctx.Loops.Current().ContinueLabel()
 	// Emit a jump instruction that skips to the next iteration if the filter condition is false
-	c.exprs.emitConditionJump(ctx.Expression(), label, false)
+	c.exprs.EmitConditionJump(ctx.Expression(), label, false)
 }
 
 // compileSortClause processes a SORT clause in a FOR loop.

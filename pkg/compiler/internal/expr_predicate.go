@@ -314,7 +314,9 @@ func resolveEqNeJumpOpcode(opText string, jumpOnTrue, constOperand bool) bytecod
 	return bytecode.OpJumpIfEq
 }
 
-func (c *ExprCompiler) emitConditionJump(expr fql.IExpressionContext, label core.Label, jumpOnTrue bool) {
+// EmitConditionJump is the supported cross-compiler entrypoint for branching on
+// expression truthiness while preserving expression-level predicate lowering.
+func (c *ExprCompiler) EmitConditionJump(expr fql.IExpressionContext, label core.Label, jumpOnTrue bool) {
 	if expr == nil {
 		return
 	}

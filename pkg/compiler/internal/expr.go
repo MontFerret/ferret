@@ -22,9 +22,12 @@ type (
 		ctx                  *CompilationSession
 		bindings             *BindingCompiler
 		calls                *CallResolver
+		callCompiler         *exprCallCompiler
 		dispatch             *DispatchCompiler
 		literals             *LiteralCompiler
 		loops                *LoopCompiler
+		matchCompiler        *exprMatchCompiler
+		queryCompiler        *exprQueryCompiler
 		recovery             *RecoveryCompiler
 		facts                *TypeFacts
 		wait                 *WaitCompiler
@@ -70,7 +73,25 @@ const (
 
 // NewExprCompiler creates a new instance of ExprCompiler with the given compiler context.
 func NewExprCompiler(ctx *CompilationSession) *ExprCompiler {
-	return &ExprCompiler{ctx: ctx}
+	c := &ExprCompiler{ctx: ctx}
+	c.callCompiler = newExprCallCompiler(ctx, exprCallCallbacks{
+		compileExpr:            c.Compile,
+		compileMember:          c.CompileMemberExpression,
+		compileImplicitCurrent: c.CompileImplicitCurrentExpression,
+		compileImplicitMember:  c.CompileImplicitMemberExpression,
+	})
+	c.queryCompiler = newExprQueryCompiler(ctx, exprQueryCallbacks{
+		compileExpr:     c.Compile,
+		compileParam:    c.CompileParam,
+		compileVariable: c.CompileVariable,
+	})
+	c.matchCompiler = newExprMatchCompiler(ctx, exprMatchCallbacks{
+		compileExpr:                   c.Compile,
+		emitConditionJump:             c.EmitConditionJump,
+		compileFunctionCallByNameWith: c.CompileFunctionCallByNameWith,
+	})
+
+	return c
 }
 
 func (c *ExprCompiler) bind(
@@ -95,6 +116,10 @@ func (c *ExprCompiler) bind(
 	c.recovery = recovery
 	c.facts = facts
 	c.wait = wait
+
+	c.callCompiler.bind(bindings, calls, literals, recovery, facts)
+	c.queryCompiler.bind(literals, recovery, facts)
+	c.matchCompiler.bind(literals, facts)
 }
 
 // Compile processes an expression from the FQL AST and delegates to the appropriate
@@ -222,7 +247,7 @@ func (c *ExprCompiler) compileTernary(ctx fql.IExpressionContext) bytecode.Opera
 		c.ctx.Emitter.EmitMove(dst, condReg)
 		c.ctx.Emitter.EmitJumpIfFalse(condReg, elseLabel)
 	} else if cond != nil {
-		c.emitConditionJump(cond, elseLabel, false)
+		c.EmitConditionJump(cond, elseLabel, false)
 	}
 
 	if onTrue != nil {
