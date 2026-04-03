@@ -43,7 +43,10 @@ func (c *WaitCompiler) compilePredicate(ctx fql.IWaitForPredicateExpressionConte
 	return state.resultReg
 }
 
-func (c *WaitCompiler) compilePredicateWithTimeoutRecovery(ctx fql.IWaitForPredicateExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
+func (c *WaitCompiler) compilePredicateWithTimeoutRecovery(
+	ctx fql.IWaitForPredicateExpressionContext,
+	timeoutLabel, endLabel core.Label,
+) bytecode.Operand {
 	config, ok := c.prepareWaitPredicateConfig(ctx)
 	if !ok {
 		return bytecode.NoopOperand
@@ -51,7 +54,7 @@ func (c *WaitCompiler) compilePredicateWithTimeoutRecovery(ctx fql.IWaitForPredi
 
 	state := c.initWaitPredicatePollState(config)
 
-	return c.emitWaitPredicatePollLoopWithRecovery(config, state, plan)
+	return c.emitWaitPredicatePollLoopWithRecovery(config, state, timeoutLabel, endLabel)
 }
 
 func (c *WaitCompiler) prepareWaitPredicateConfig(ctx fql.IWaitForPredicateExpressionContext) (waitPredicateCompileConfig, bool) {

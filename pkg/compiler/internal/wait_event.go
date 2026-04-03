@@ -38,7 +38,10 @@ func (c *WaitCompiler) compileEvent(ctx fql.IWaitForEventExpressionContext) byte
 	return resultReg
 }
 
-func (c *WaitCompiler) compileEventWithTimeoutRecovery(ctx fql.IWaitForEventExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
+func (c *WaitCompiler) compileEventWithTimeoutRecovery(
+	ctx fql.IWaitForEventExpressionContext,
+	timeoutLabel, endLabel core.Label,
+) bytecode.Operand {
 	streamReg := c.ctx.Registers.Allocate()
 	resultReg := c.ctx.Registers.Allocate()
 	timeoutStateReg := c.ctx.Registers.Allocate()
@@ -52,8 +55,6 @@ func (c *WaitCompiler) compileEventWithTimeoutRecovery(ctx fql.IWaitForEventExpr
 	start := c.ctx.Emitter.NewLabel()
 	iterationDone := c.ctx.Emitter.NewLabel()
 	cleanup := c.ctx.Emitter.NewLabel()
-	timeoutHandler := c.ctx.Emitter.NewLabel("waitfor", "event", "timeout")
-	end := c.ctx.Emitter.NewLabel("waitfor", "event", "end")
 
 	c.ctx.Emitter.MarkLabel(start)
 	c.emitWaitEventIteration(ctx, state, streamReg, timeoutStateReg, start, iterationDone)
@@ -65,20 +66,8 @@ func (c *WaitCompiler) compileEventWithTimeoutRecovery(ctx fql.IWaitForEventExpr
 	c.ctx.Emitter.MarkLabel(cleanup)
 	c.emitWaitEventCleanup(state, streamReg)
 
-	c.ctx.Emitter.EmitJumpIfTrue(timeoutStateReg, timeoutHandler)
-	c.ctx.Emitter.EmitJump(end)
-
-	c.ctx.Emitter.MarkLabel(timeoutHandler)
-	switch {
-	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
-		fallback := c.front.Expressions.Compile(plan.OnTimeout.Expr)
-		c.front.TypeFacts.EmitMoveAuto(resultReg, c.front.Recovery.EnsureRegister(fallback))
-		c.ctx.Emitter.EmitJump(end)
-	default:
-		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)
-	}
-
-	c.ctx.Emitter.MarkLabel(end)
+	c.ctx.Emitter.EmitJumpIfTrue(timeoutStateReg, timeoutLabel)
+	c.ctx.Emitter.EmitJump(endLabel)
 
 	return resultReg
 }

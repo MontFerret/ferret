@@ -143,22 +143,25 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 		return bytecode.NoopOperand
 	}
 
-	plan := c.front.Recovery.CollectPlan(ctx, core.RecoveryPlanOptions{})
-	return c.front.Recovery.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
-		mes := ctx.MemberExpressionSource()
-		segments := ctx.AllMemberExpressionPath()
+	return c.front.Recovery.CompileOperation(OperationRecoverySpec{
+		Owner:    ctx,
+		JumpMode: core.CatchJumpModeNone,
+		CompilePlain: func() bytecode.Operand {
+			mes := ctx.MemberExpressionSource()
+			segments := ctx.AllMemberExpressionPath()
 
-		if mes == nil || len(segments) == 0 {
-			return bytecode.NoopOperand
-		}
+			if mes == nil || len(segments) == 0 {
+				return bytecode.NoopOperand
+			}
 
-		src := c.compileMemberExpressionSource(mes, segments)
+			src := c.compileMemberExpressionSource(mes, segments)
 
-		if src == bytecode.NoopOperand {
-			return src
-		}
+			if src == bytecode.NoopOperand {
+				return src
+			}
 
-		return c.compileMemberExpressionSegments(src, segments)
+			return c.compileMemberExpressionSegments(src, segments)
+		},
 	})
 }
 

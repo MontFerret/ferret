@@ -58,44 +58,25 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 	}
 
 	if wfe := atom.WaitForExpression(); wfe != nil {
-		plan := c.front.Recovery.CollectPlan(atom, core.RecoveryPlanOptions{
+		outerPlan := c.front.Recovery.CollectPlan(atom, core.RecoveryPlanOptions{
 			AllowTimeout: true,
 			HasTimeout:   waitForHasExplicitTimeoutClause(wfe),
 		})
-		if plan.OnError == nil && plan.OnTimeout == nil {
-			return c.compileAtom(atom), true
-		}
 
-		return c.front.Wait.compileWithOuterRecovery(wfe, plan), true
+		return c.front.Recovery.CompileOperation(c.front.Wait.newWaitOperationRecoverySpec(wfe, outerPlan)), true
 	}
 
 	if fe := atom.ForExpression(); fe != nil {
-		plan := c.front.Recovery.CollectPlan(atom, core.RecoveryPlanOptions{})
-		if plan.OnError == nil {
-			return c.compileAtom(atom), true
-		}
-
-		return c.front.Loops.compileWithRecovery(fe, plan), true
+		outerPlan := c.front.Recovery.CollectPlan(atom, core.RecoveryPlanOptions{})
+		return c.front.Recovery.CompileOperation(c.front.Loops.newLoopOperationRecoverySpec(fe, outerPlan)), true
 	}
 
-	plan := c.front.Recovery.CollectPlan(atom, core.RecoveryPlanOptions{})
-	if plan.OnError == nil {
-		return c.compileAtom(atom), true
-	}
-
-	jumpMode := core.CatchJumpModeNone
-	if fe := atom.ForExpression(); fe != nil {
-		jumpMode = catchJumpModeForForExpression(fe)
-	} else if wfe := atom.WaitForExpression(); wfe != nil {
-		jumpMode = catchJumpModeForWaitForExpression(wfe)
-	}
-
-	if !hasErrorReturnNoneHandler(plan) {
-		jumpMode = core.CatchJumpModeNone
-	}
-
-	reg := c.front.Recovery.CompileWithRecoveryPlan(plan, jumpMode, func() bytecode.Operand {
-		return c.compileAtom(atom)
+	reg := c.front.Recovery.CompileOperation(OperationRecoverySpec{
+		Owner:    atom,
+		JumpMode: core.CatchJumpModeNone,
+		CompilePlain: func() bytecode.Operand {
+			return c.compileAtom(atom)
+		},
 	})
 
 	return reg, true

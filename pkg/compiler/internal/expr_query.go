@@ -16,28 +16,31 @@ func (c *ExprCompiler) compileQueryExpression(ctx fql.IQueryExpressionContext) b
 		return bytecode.NoopOperand
 	}
 
-	plan := c.front.Recovery.CollectPlan(ctx, core.RecoveryPlanOptions{})
-	return c.front.Recovery.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
-		if ctx == nil {
-			return bytecode.NoopOperand
-		}
+	return c.front.Recovery.CompileOperation(OperationRecoverySpec{
+		Owner:    ctx,
+		JumpMode: core.CatchJumpModeNone,
+		CompilePlain: func() bytecode.Operand {
+			if ctx == nil {
+				return bytecode.NoopOperand
+			}
 
-		src, ok := c.compileQueryExpressionSource(ctx)
-		if !ok {
-			return bytecode.NoopOperand
-		}
+			src, ok := c.compileQueryExpressionSource(ctx)
+			if !ok {
+				return bytecode.NoopOperand
+			}
 
-		span := diagnostics.SpanFromRuleContext(ctx)
-		modifier := queryModifierName(ctx.QueryModifier())
-		queryReg := c.emitQueryEnvelope(ctx, span)
-		queryResult := c.emitApplyQuery(span, src, queryReg)
-		dst := c.lowerQueryModifier(span, modifier, queryResult)
+			span := diagnostics.SpanFromRuleContext(ctx)
+			modifier := queryModifierName(ctx.QueryModifier())
+			queryReg := c.emitQueryEnvelope(ctx, span)
+			queryResult := c.emitApplyQuery(span, src, queryReg)
+			dst := c.lowerQueryModifier(span, modifier, queryResult)
 
-		if dst.IsRegister() {
-			c.ctx.Types.Set(dst, queryResultTypeForModifier(modifier))
-		}
+			if dst.IsRegister() {
+				c.ctx.Types.Set(dst, queryResultTypeForModifier(modifier))
+			}
 
-		return dst
+			return dst
+		},
 	})
 }
 

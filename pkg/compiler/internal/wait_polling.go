@@ -135,38 +135,17 @@ func (c *WaitCompiler) emitWaitPredicatePollLoop(config waitPredicateCompileConf
 func (c *WaitCompiler) emitWaitPredicatePollLoopWithRecovery(
 	config waitPredicateCompileConfig,
 	state waitPredicatePollState,
-	plan core.RecoveryPlan,
+	timeoutLabel, endLabel core.Label,
 ) bytecode.Operand {
 	start := c.ctx.Emitter.NewLabel()
 	success := c.ctx.Emitter.NewLabel()
-	protectedTimeout := c.ctx.Emitter.NewLabel()
-	timeoutHandler := c.ctx.Emitter.NewLabel("waitfor", "predicate", "timeout")
-	end := c.ctx.Emitter.NewLabel("waitfor", "predicate", "end")
 
 	c.ctx.Emitter.MarkLabel(start)
-	valueReg := c.emitWaitPredicatePollIteration(config, state, start, success, protectedTimeout)
+	valueReg := c.emitWaitPredicatePollIteration(config, state, start, success, timeoutLabel)
 
 	c.ctx.Emitter.MarkLabel(success)
 	c.emitWaitSuccessResult(config.mode, state.resultReg, valueReg)
-	c.ctx.Emitter.EmitJump(end)
-
-	c.ctx.Emitter.MarkLabel(protectedTimeout)
-	c.ctx.Emitter.EmitJump(timeoutHandler)
-
-	c.ctx.Emitter.MarkLabel(timeoutHandler)
-	switch {
-	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
-		fallback := c.front.Expressions.Compile(plan.OnTimeout.Expr)
-		c.front.TypeFacts.EmitMoveAuto(state.resultReg, c.front.Recovery.EnsureRegister(fallback))
-		c.ctx.Emitter.EmitJump(end)
-	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionFail:
-		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)
-	default:
-		c.emitWaitTimeoutResult(config.mode, state.resultReg)
-		c.ctx.Emitter.EmitJump(end)
-	}
-
-	c.ctx.Emitter.MarkLabel(end)
+	c.ctx.Emitter.EmitJump(endLabel)
 
 	return state.resultReg
 }

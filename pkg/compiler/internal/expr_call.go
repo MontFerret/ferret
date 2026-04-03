@@ -121,17 +121,15 @@ func (c *ExprCompiler) CompileFunctionCallExpression(ctx fql.IFunctionCallExpres
 		})
 	}
 
-	plan := c.front.Recovery.CollectPlan(ctx, core.RecoveryPlanOptions{})
-	if hasErrorReturnNoneHandler(plan) {
-		out := c.front.Recovery.CompileWithErrorPolicy(core.ErrorPolicySuppress, core.CatchJumpModeNone, func() bytecode.Operand {
+	return c.front.Recovery.CompileOperation(OperationRecoverySpec{
+		Owner:    ctx,
+		JumpMode: core.CatchJumpModeNone,
+		CompileSuppressed: func() bytecode.Operand {
 			return c.CompileFunctionCall(call, true)
-		})
-
-		return c.front.Recovery.WidenResultType(out, plan)
-	}
-
-	return c.front.Recovery.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
-		return c.CompileFunctionCall(call, false)
+		},
+		CompilePlain: func() bytecode.Operand {
+			return c.CompileFunctionCall(call, false)
+		},
 	})
 }
 

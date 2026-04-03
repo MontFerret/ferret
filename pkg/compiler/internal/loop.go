@@ -78,37 +78,26 @@ func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) bytecode.Operand {
 	return c.compileFinalization(returnRuleCtx)
 }
 
-func (c *LoopCompiler) compileWithRecovery(ctx fql.IForExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
-	if ctx == nil {
-		return bytecode.NoopOperand
-	}
-
-	plan = c.front.Recovery.NormalizePlan(plan)
-
-	if ctx.In() == nil {
-		return c.front.Recovery.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
-			return c.Compile(ctx)
-		})
-	}
-
-	if plan.OnError == nil || plan.OnError.ActionKind == core.RecoveryActionFail {
-		return c.Compile(ctx)
-	}
-
-	return c.front.Recovery.WidenResultType(c.front.Recovery.CompileWithProtectedRecovery(ProtectedRecoverySpec{
-		Plan: plan,
-		BuildProtected: func(recoveryLabel, endLabel core.Label) ProtectedRecoveryRegion {
-			return c.buildProtectedForInRecovery(ctx, recoveryLabel, endLabel)
-		},
-		CompileFinalAttempt: func() bytecode.Operand {
+func (c *LoopCompiler) newLoopOperationRecoverySpec(ctx fql.IForExpressionContext, outerPlan core.RecoveryPlan) OperationRecoverySpec {
+	spec := OperationRecoverySpec{
+		OuterPlan: outerPlan,
+		CompilePlain: func() bytecode.Operand {
 			return c.Compile(ctx)
 		},
-	}), plan)
+	}
+
+	if ctx != nil && ctx.In() != nil {
+		spec.BuildProtected = func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion {
+			return c.buildProtectedForInRecovery(ctx, recoveryLabel, timeoutLabel, endLabel)
+		}
+	}
+
+	return spec
 }
 
 func (c *LoopCompiler) buildProtectedForInRecovery(
 	ctx fql.IForExpressionContext,
-	recoveryLabel, endLabel core.Label,
+	recoveryLabel, _ core.Label, endLabel core.Label,
 ) ProtectedRecoveryRegion {
 	errorStateReg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
@@ -144,6 +133,7 @@ func (c *LoopCompiler) buildProtectedForInRecovery(
 		StartCatch:        startCatch,
 		EndCatchExclusive: endCatchExclusive,
 		CatchHandlerPC:    errorPreludePC,
+		HasTimeout:        false,
 	}
 }
 

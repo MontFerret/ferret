@@ -22,30 +22,14 @@ func NewWaitCompiler(ctx *CompilationSession) *WaitCompiler {
 
 // Compile processes a WAITFOR expression from the FQL AST and generates the appropriate VM instructions.
 func (c *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) bytecode.Operand {
-	return c.compileWithOuterRecovery(ctx, core.RecoveryPlan{})
-}
-
-func (c *WaitCompiler) compileWithOuterRecovery(ctx fql.IWaitForExpressionContext, outerPlan core.RecoveryPlan) bytecode.Operand {
 	if ctx == nil {
 		return bytecode.NoopOperand
 	}
 
-	plan := c.front.Recovery.NormalizePlan(c.front.Recovery.MergePlans(c.front.Recovery.CollectPlan(ctx, core.RecoveryPlanOptions{
-		AllowTimeout: true,
-		HasTimeout:   waitForHasExplicitTimeoutClause(ctx),
-	}), outerPlan))
 	c.ctx.Symbols.EnterScope()
 	defer c.ctx.Symbols.ExitScope()
 
-	if ev := ctx.WaitForEventExpression(); ev != nil {
-		return c.compileEventWithPlan(ev, plan)
-	}
-
-	if pred := ctx.WaitForPredicateExpression(); pred != nil {
-		return c.compilePredicateWithPlan(pred, plan)
-	}
-
-	return bytecode.NoopOperand
+	return c.front.Recovery.CompileOperation(c.newWaitOperationRecoverySpec(ctx, core.RecoveryPlan{}))
 }
 
 func waitForHasExplicitTimeoutClause(ctx fql.IWaitForExpressionContext) bool {
@@ -64,77 +48,83 @@ func waitForHasExplicitTimeoutClause(ctx fql.IWaitForExpressionContext) bool {
 	return false
 }
 
-func (c *WaitCompiler) compileEventWithPlan(ctx fql.IWaitForEventExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
-	plan = c.front.Recovery.NormalizePlan(plan)
-
-	if plan.OnTimeout == nil && (plan.OnError == nil || plan.OnError.ActionKind == core.RecoveryActionFail) {
-		return c.compileEvent(ctx)
+func (c *WaitCompiler) newWaitOperationRecoverySpec(ctx fql.IWaitForExpressionContext, outerPlan core.RecoveryPlan) OperationRecoverySpec {
+	spec := OperationRecoverySpec{
+		Owner: ctx,
+		Options: core.RecoveryPlanOptions{
+			AllowTimeout: true,
+			HasTimeout:   waitForHasExplicitTimeoutClause(ctx),
+		},
+		OuterPlan: outerPlan,
 	}
 
-	if plan.OnError == nil || plan.OnError.ActionKind == core.RecoveryActionFail {
-		return c.front.Recovery.WidenResultType(c.compileEventWithTimeoutRecovery(ctx, plan), plan)
+	if ctx == nil {
+		return spec
 	}
 
-	return c.front.Recovery.WidenResultType(c.front.Recovery.CompileWithProtectedRecovery(ProtectedRecoverySpec{
-		Plan: plan,
-		BuildProtected: func(recoveryLabel, endLabel core.Label) ProtectedRecoveryRegion {
-			return c.buildProtectedEventRecovery(ctx, plan, recoveryLabel, endLabel)
-		},
-		CompileFinalAttempt: func() bytecode.Operand {
-			return c.compileEventWithPlan(ctx, core.RecoveryPlan{OnTimeout: plan.OnTimeout})
-		},
-	}), plan)
-}
+	if ev := ctx.WaitForEventExpression(); ev != nil {
+		spec.CompilePlain = func() bytecode.Operand {
+			return c.compileEvent(ev)
+		}
+		spec.BuildProtected = func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion {
+			return c.buildProtectedEventRecovery(ev, recoveryLabel, timeoutLabel, endLabel)
+		}
 
-func (c *WaitCompiler) compilePredicateWithPlan(ctx fql.IWaitForPredicateExpressionContext, plan core.RecoveryPlan) bytecode.Operand {
-	plan = c.front.Recovery.NormalizePlan(plan)
+		if ev.TimeoutClause() != nil {
+			spec.CompileTimeoutAware = func(timeoutLabel, endLabel core.Label) bytecode.Operand {
+				return c.compileEventWithTimeoutRecovery(ev, timeoutLabel, endLabel)
+			}
+		}
 
-	if plan.OnTimeout == nil {
-		errorPlan := core.RecoveryPlan{OnError: plan.OnError}
-
-		return c.front.Recovery.CompileWithRecoveryPlan(errorPlan, core.CatchJumpModeNone, func() bytecode.Operand {
-			return c.compilePredicate(ctx)
-		})
+		return spec
 	}
 
-	if plan.OnError == nil || plan.OnError.ActionKind == core.RecoveryActionFail {
-		return c.front.Recovery.WidenResultType(c.compilePredicateWithTimeoutRecovery(ctx, plan), plan)
+	if pred := ctx.WaitForPredicateExpression(); pred != nil {
+		spec.CompilePlain = func() bytecode.Operand {
+			return c.compilePredicate(pred)
+		}
+
+		if pred.TimeoutClause() != nil {
+			spec.CompileTimeoutAware = func(timeoutLabel, endLabel core.Label) bytecode.Operand {
+				return c.compilePredicateWithTimeoutRecovery(pred, timeoutLabel, endLabel)
+			}
+			spec.BuildProtected = func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion {
+				return c.buildProtectedPredicateRecovery(pred, recoveryLabel, timeoutLabel, endLabel)
+			}
+			spec.ShouldBuildProtected = func(plan core.RecoveryPlan) bool {
+				return plan.OnTimeout != nil
+			}
+		}
 	}
 
-	return c.front.Recovery.WidenResultType(c.front.Recovery.CompileWithProtectedRecovery(ProtectedRecoverySpec{
-		Plan: plan,
-		BuildProtected: func(recoveryLabel, endLabel core.Label) ProtectedRecoveryRegion {
-			return c.buildProtectedPredicateRecovery(ctx, plan, recoveryLabel, endLabel)
-		},
-		CompileFinalAttempt: func() bytecode.Operand {
-			return c.compilePredicateWithPlan(ctx, core.RecoveryPlan{OnTimeout: plan.OnTimeout})
-		},
-	}), plan)
+	return spec
 }
 
 func (c *WaitCompiler) buildProtectedEventRecovery(
 	ctx fql.IWaitForEventExpressionContext,
-	plan core.RecoveryPlan,
-	recoveryLabel, endLabel core.Label,
+	recoveryLabel, timeoutLabel, endLabel core.Label,
 ) ProtectedRecoveryRegion {
+	hasTimeout := ctx != nil && ctx.TimeoutClause() != nil
 	streamReg := c.ctx.Registers.Allocate()
 	resultReg := c.ctx.Registers.Allocate()
-	timeoutStateReg := c.ctx.Registers.Allocate()
 	errorStateReg := c.ctx.Registers.Allocate()
+	timeoutStateReg := bytecode.NoopOperand
+
+	if hasTimeout {
+		timeoutStateReg = c.ctx.Registers.Allocate()
+		c.ctx.Emitter.EmitBoolean(timeoutStateReg, false)
+	}
 
 	c.ctx.Emitter.EmitLoadNone(resultReg)
-	c.ctx.Emitter.EmitBoolean(timeoutStateReg, false)
 	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
 
 	startCatch := c.ctx.Emitter.Size()
 	state := c.buildWaitEventState(ctx)
-
 	c.emitWaitEventStreamSetup(state, streamReg)
 
 	start := c.ctx.Emitter.NewLabel()
 	iterationDone := c.ctx.Emitter.NewLabel()
 	cleanup := c.ctx.Emitter.NewLabel()
-	timeoutHandler := c.ctx.Emitter.NewLabel("waitfor", "event", "timeout")
 	routeRecovery := c.ctx.Emitter.NewLabel("waitfor", "event", "recover")
 
 	c.ctx.Emitter.MarkLabel(start)
@@ -149,28 +139,24 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 
 	endCatchExclusive := c.ctx.Emitter.Size()
 
-	c.ctx.Emitter.EmitJumpIfTrue(timeoutStateReg, timeoutHandler)
+	if hasTimeout {
+		c.ctx.Emitter.EmitJumpIfTrue(timeoutStateReg, timeoutLabel)
+	}
 	c.ctx.Emitter.EmitJumpIfTrue(errorStateReg, routeRecovery)
 	c.ctx.Emitter.EmitJump(endLabel)
 
 	errorPreludePC := c.ctx.Emitter.Size()
 	c.ctx.Emitter.EmitBoolean(errorStateReg, true)
-	c.ctx.Emitter.EmitBoolean(timeoutStateReg, false)
-	c.ctx.Emitter.EmitJump(cleanup)
-
-	c.ctx.Emitter.MarkLabel(timeoutHandler)
-	switch {
-	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
-		fallback := c.front.Expressions.Compile(plan.OnTimeout.Expr)
-		c.front.TypeFacts.EmitMoveAuto(resultReg, c.front.Recovery.EnsureRegister(fallback))
-		c.ctx.Emitter.EmitJump(endLabel)
-	default:
-		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)
+	if hasTimeout {
+		c.ctx.Emitter.EmitBoolean(timeoutStateReg, false)
 	}
+	c.ctx.Emitter.EmitJump(cleanup)
 
 	c.ctx.Emitter.MarkLabel(routeRecovery)
 	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
-	c.ctx.Emitter.EmitBoolean(timeoutStateReg, false)
+	if hasTimeout {
+		c.ctx.Emitter.EmitBoolean(timeoutStateReg, false)
+	}
 	c.ctx.Emitter.EmitJump(recoveryLabel)
 
 	return ProtectedRecoveryRegion{
@@ -178,33 +164,30 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 		StartCatch:        startCatch,
 		EndCatchExclusive: endCatchExclusive,
 		CatchHandlerPC:    errorPreludePC,
+		HasTimeout:        hasTimeout,
 	}
 }
 
 func (c *WaitCompiler) buildProtectedPredicateRecovery(
 	ctx fql.IWaitForPredicateExpressionContext,
-	plan core.RecoveryPlan,
 	_ core.Label,
+	timeoutLabel core.Label,
 	endLabel core.Label,
 ) ProtectedRecoveryRegion {
-	predicate := ctx.WaitForPredicate()
-	if predicate == nil {
+	config, ok := c.prepareWaitPredicateConfig(ctx)
+	if !ok {
 		return ProtectedRecoveryRegion{Result: bytecode.NoopOperand}
 	}
 
-	predExpr := predicate.Expression()
-	if predExpr == nil {
-		return ProtectedRecoveryRegion{Result: bytecode.NoopOperand}
-	}
-
-	config := c.buildWaitPredicateConfig(ctx, predicate, predExpr)
-	c.normalizeWaitPredicateConfig(&config)
 	state := c.initWaitPredicatePollState(config)
+	hasTimeout := config.timeoutReg != bytecode.NoopOperand
 
 	start := c.ctx.Emitter.NewLabel()
 	success := c.ctx.Emitter.NewLabel()
-	protectedTimeout := c.ctx.Emitter.NewLabel()
-	timeoutHandler := c.ctx.Emitter.NewLabel("waitfor", "predicate", "timeout")
+	protectedTimeout := core.Label{}
+	if hasTimeout {
+		protectedTimeout = c.ctx.Emitter.NewLabel()
+	}
 
 	startCatch := c.ctx.Emitter.Size()
 
@@ -215,22 +198,11 @@ func (c *WaitCompiler) buildProtectedPredicateRecovery(
 	c.emitWaitSuccessResult(config.mode, state.resultReg, valueReg)
 	c.ctx.Emitter.EmitJump(endLabel)
 
-	c.ctx.Emitter.MarkLabel(protectedTimeout)
-	c.ctx.Emitter.EmitJump(timeoutHandler)
-
 	endCatchExclusive := c.ctx.Emitter.Size()
 
-	c.ctx.Emitter.MarkLabel(timeoutHandler)
-	switch {
-	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
-		fallback := c.front.Expressions.Compile(plan.OnTimeout.Expr)
-		c.front.TypeFacts.EmitMoveAuto(state.resultReg, c.front.Recovery.EnsureRegister(fallback))
-		c.ctx.Emitter.EmitJump(endLabel)
-	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionFail:
-		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)
-	default:
-		c.emitWaitTimeoutResult(config.mode, state.resultReg)
-		c.ctx.Emitter.EmitJump(endLabel)
+	if hasTimeout {
+		c.ctx.Emitter.MarkLabel(protectedTimeout)
+		c.ctx.Emitter.EmitJump(timeoutLabel)
 	}
 
 	return ProtectedRecoveryRegion{
@@ -238,5 +210,6 @@ func (c *WaitCompiler) buildProtectedPredicateRecovery(
 		StartCatch:        startCatch,
 		EndCatchExclusive: endCatchExclusive,
 		CatchHandlerPC:    -1,
+		HasTimeout:        hasTimeout,
 	}
 }

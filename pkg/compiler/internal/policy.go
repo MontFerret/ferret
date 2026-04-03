@@ -12,12 +12,20 @@ type (
 		front *CompilationFrontend
 	}
 
-	// ProtectedRecoverySpec describes an operation that owns its protected region
-	// shape but delegates generic ON ERROR recovery orchestration to RecoveryCompiler.
-	ProtectedRecoverySpec struct {
-		Plan                core.RecoveryPlan
-		BuildProtected      func(recoveryLabel, endLabel core.Label) ProtectedRecoveryRegion
-		CompileFinalAttempt func() bytecode.Operand
+	// OperationRecoverySpec describes one operation's recovery-owned execution surface.
+	// Operation compilers provide execution shapes while RecoveryCompiler owns plan
+	// collection, plan merging, widening, retry/fallback orchestration, and catch setup.
+	OperationRecoverySpec struct {
+		Owner                core.RecoveryTailOwner
+		OuterPlan            core.RecoveryPlan
+		CompilePlain         func() bytecode.Operand
+		CompileSuppressed    func() bytecode.Operand
+		CompileTimeoutAware  func(timeoutLabel, endLabel core.Label) bytecode.Operand
+		BuildProtected       func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion
+		ShouldBuildProtected func(plan core.RecoveryPlan) bool
+		CompileFinalAttempt  func(plan core.RecoveryPlan) bytecode.Operand
+		JumpMode             core.CatchJumpMode
+		Options              core.RecoveryPlanOptions
 	}
 
 	// ProtectedRecoveryRegion describes the guarded portion of an operation.
@@ -28,6 +36,7 @@ type (
 		StartCatch        int
 		EndCatchExclusive int
 		CatchHandlerPC    int
+		HasTimeout        bool
 	}
 )
 
@@ -65,77 +74,106 @@ func (c *RecoveryCompiler) CompileWithErrorPolicy(policy core.ErrorPolicy, jumpM
 	return out
 }
 
-func (c *RecoveryCompiler) CompileWithRecoveryPlan(
-	plan core.RecoveryPlan,
-	jumpMode core.CatchJumpMode,
-	compile func() bytecode.Operand,
-) bytecode.Operand {
-	plan = c.NormalizePlan(plan)
+func (c *RecoveryCompiler) CompileOperation(spec OperationRecoverySpec) bytecode.Operand {
+	plan := c.NormalizePlan(c.MergePlans(c.CollectPlan(spec.Owner, spec.Options), spec.OuterPlan))
 
+	if plan.OnError != nil && plan.OnError.ActionKind != core.RecoveryActionFail {
+		if spec.shouldBuildProtected(plan) {
+			return c.compileProtectedOperation(plan, spec)
+		}
+
+		return c.compileDirectOperation(plan, spec)
+	}
+
+	return c.WidenResultType(c.compileOperationFinalAttempt(spec, plan), plan)
+}
+
+func (c *RecoveryCompiler) compileDirectOperation(plan core.RecoveryPlan, spec OperationRecoverySpec) bytecode.Operand {
+	if spec.CompilePlain == nil {
+		return bytecode.NoopOperand
+	}
+
+	if hasErrorReturnNoneHandler(plan) {
+		compile := spec.CompileSuppressed
+		if compile == nil {
+			compile = spec.CompilePlain
+		}
+
+		out := c.CompileWithErrorPolicy(core.ErrorPolicySuppress, spec.JumpMode, compile)
+		return c.WidenResultType(out, plan)
+	}
+
+	buildProtected := c.directProtectedRegionBuilder(spec.CompilePlain)
+
+	switch plan.OnError.ActionKind {
+	case core.RecoveryActionReturn:
+		return c.compileOperationWithErrorReturn(plan, buildProtected)
+	case core.RecoveryActionRetry:
+		return c.compileOperationWithErrorRetry(plan, buildProtected, func() bytecode.Operand {
+			return c.compileOperationFinalAttempt(spec, core.RecoveryPlan{OnTimeout: plan.OnTimeout})
+		})
+	default:
+		return c.WidenResultType(c.compileOperationFinalAttempt(spec, plan), plan)
+	}
+}
+
+func (c *RecoveryCompiler) compileProtectedOperation(plan core.RecoveryPlan, spec OperationRecoverySpec) bytecode.Operand {
+	if spec.BuildProtected == nil {
+		return c.WidenResultType(c.compileOperationFinalAttempt(spec, plan), plan)
+	}
+
+	switch plan.OnError.ActionKind {
+	case core.RecoveryActionReturn:
+		return c.compileOperationWithErrorReturn(plan, spec.BuildProtected)
+	case core.RecoveryActionRetry:
+		return c.compileOperationWithErrorRetry(plan, spec.BuildProtected, func() bytecode.Operand {
+			return c.compileOperationFinalAttempt(spec, core.RecoveryPlan{OnTimeout: plan.OnTimeout})
+		})
+	default:
+		return c.WidenResultType(c.compileOperationFinalAttempt(spec, plan), plan)
+	}
+}
+
+func (c *RecoveryCompiler) compileOperationFinalAttempt(spec OperationRecoverySpec, plan core.RecoveryPlan) bytecode.Operand {
+	if spec.CompileFinalAttempt != nil {
+		return spec.CompileFinalAttempt(plan)
+	}
+
+	if plan.OnTimeout != nil && spec.CompileTimeoutAware != nil {
+		return c.compileWithTimeoutRecovery(plan, spec.CompileTimeoutAware)
+	}
+
+	if spec.CompilePlain != nil {
+		return spec.CompilePlain()
+	}
+
+	return bytecode.NoopOperand
+}
+
+func (c *RecoveryCompiler) compileWithTimeoutRecovery(
+	plan core.RecoveryPlan,
+	compile func(timeoutLabel, endLabel core.Label) bytecode.Operand,
+) bytecode.Operand {
 	if compile == nil {
 		return bytecode.NoopOperand
 	}
 
-	if plan.OnError == nil || plan.OnError.ActionKind == core.RecoveryActionFail {
-		return compile()
+	timeoutLabel := c.ctx.Emitter.NewLabel("recovery", "timeout", "handle")
+	endLabel := c.ctx.Emitter.NewLabel("recovery", "timeout", "end")
+	out := c.EnsureRegister(compile(timeoutLabel, endLabel))
+
+	if out == bytecode.NoopOperand {
+		return out
 	}
 
-	switch plan.OnError.ActionKind {
-	case core.RecoveryActionReturn:
-		if hasErrorReturnNoneHandler(plan) {
-			out := c.CompileWithErrorPolicy(core.ErrorPolicySuppress, jumpMode, compile)
-			return c.WidenResultType(out, plan)
-		}
+	c.emitTimeoutHandler(out, plan, timeoutLabel, endLabel)
+	c.ctx.Emitter.MarkLabel(endLabel)
 
-		return c.compileWithErrorReturn(plan, c.directProtectedRegionBuilder(compile))
-	case core.RecoveryActionRetry:
-		return c.compileWithErrorRetry(plan, c.directProtectedRegionBuilder(compile), compile)
-	default:
-		return compile()
-	}
+	return c.WidenResultType(out, plan)
 }
 
-func (c *RecoveryCompiler) CompileWithProtectedRecovery(spec ProtectedRecoverySpec) bytecode.Operand {
-	if spec.BuildProtected == nil {
-		return bytecode.NoopOperand
-	}
-
-	plan := c.NormalizePlan(spec.Plan)
-	if plan.OnError == nil || plan.OnError.ActionKind == core.RecoveryActionFail {
-		if spec.CompileFinalAttempt != nil {
-			return spec.CompileFinalAttempt()
-		}
-
-		return bytecode.NoopOperand
-	}
-
-	switch plan.OnError.ActionKind {
-	case core.RecoveryActionReturn:
-		return c.compileWithErrorReturn(plan, spec.BuildProtected)
-	case core.RecoveryActionRetry:
-		return c.compileWithErrorRetry(plan, spec.BuildProtected, spec.CompileFinalAttempt)
-	default:
-		if spec.CompileFinalAttempt != nil {
-			return spec.CompileFinalAttempt()
-		}
-
-		return bytecode.NoopOperand
-	}
-}
-
-func (c *RecoveryCompiler) CompileWithRecoveryHandler(
-	handler *core.RecoveryHandler,
-	compile func() bytecode.Operand,
-) bytecode.Operand {
-	if compile == nil || !recoveryHandlerRetries(handler) {
-		return bytecode.NoopOperand
-	}
-
-	return c.compileWithErrorRetry(core.RecoveryPlan{OnError: handler}, c.directProtectedRegionBuilder(compile), compile)
-}
-
-func (c *RecoveryCompiler) directProtectedRegionBuilder(compile func() bytecode.Operand) func(recoveryLabel, endLabel core.Label) ProtectedRecoveryRegion {
-	return func(_ core.Label, endLabel core.Label) ProtectedRecoveryRegion {
+func (c *RecoveryCompiler) directProtectedRegionBuilder(compile func() bytecode.Operand) func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion {
+	return func(_ core.Label, _ core.Label, endLabel core.Label) ProtectedRecoveryRegion {
 		startCatch := c.ctx.Emitter.Size()
 		out := c.EnsureRegister(compile())
 		endCatchExclusive := c.ctx.Emitter.Size()
@@ -156,17 +194,22 @@ func (c *RecoveryCompiler) directProtectedRegionBuilder(compile func() bytecode.
 			StartCatch:        startCatch,
 			EndCatchExclusive: endCatchExclusive,
 			CatchHandlerPC:    -1,
+			HasTimeout:        false,
 		}
 	}
 }
 
-func (c *RecoveryCompiler) compileWithErrorReturn(
+func (c *RecoveryCompiler) compileOperationWithErrorReturn(
 	plan core.RecoveryPlan,
-	buildProtected func(recoveryLabel, endLabel core.Label) ProtectedRecoveryRegion,
+	buildProtected func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion,
 ) bytecode.Operand {
 	recoveryLabel := c.ctx.Emitter.NewLabel("recovery", "error", "handle")
+	var timeoutLabel core.Label
+	if plan.OnTimeout != nil {
+		timeoutLabel = c.ctx.Emitter.NewLabel("recovery", "timeout", "handle")
+	}
 	endLabel := c.ctx.Emitter.NewLabel("recovery", "error", "end")
-	region := buildProtected(recoveryLabel, endLabel)
+	region := buildProtected(recoveryLabel, timeoutLabel, endLabel)
 
 	if region.Result == bytecode.NoopOperand || region.EndCatchExclusive <= region.StartCatch {
 		return region.Result
@@ -177,6 +220,12 @@ func (c *RecoveryCompiler) compileWithErrorReturn(
 
 	fallback := c.front.Expressions.Compile(plan.OnError.Expr)
 	c.front.TypeFacts.EmitMoveAuto(c.EnsureRegister(region.Result), c.EnsureRegister(fallback))
+	c.ctx.Emitter.EmitJump(endLabel)
+
+	if region.HasTimeout {
+		c.emitTimeoutHandler(region.Result, plan, timeoutLabel, endLabel)
+	}
+
 	c.ctx.Emitter.MarkLabel(endLabel)
 
 	c.pushProtectedCatch(region, handlerPC)
@@ -184,9 +233,9 @@ func (c *RecoveryCompiler) compileWithErrorReturn(
 	return c.WidenResultType(region.Result, plan)
 }
 
-func (c *RecoveryCompiler) compileWithErrorRetry(
+func (c *RecoveryCompiler) compileOperationWithErrorRetry(
 	plan core.RecoveryPlan,
-	buildProtected func(recoveryLabel, endLabel core.Label) ProtectedRecoveryRegion,
+	buildProtected func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion,
 	compileFinalAttempt func() bytecode.Operand,
 ) bytecode.Operand {
 	handler := plan.OnError
@@ -214,6 +263,10 @@ func (c *RecoveryCompiler) compileWithErrorRetry(
 	state := c.initRetryDelayState(retry)
 	retryStart := c.ctx.Emitter.NewLabel("recovery", "retry", "start")
 	recoveryLabel := c.ctx.Emitter.NewLabel("recovery", "retry", "handle")
+	var timeoutLabel core.Label
+	if plan.OnTimeout != nil {
+		timeoutLabel = c.ctx.Emitter.NewLabel("recovery", "timeout", "handle")
+	}
 	endLabel := c.ctx.Emitter.NewLabel("recovery", "retry", "end")
 	var finalAttemptLabel core.Label
 
@@ -222,7 +275,7 @@ func (c *RecoveryCompiler) compileWithErrorRetry(
 	}
 
 	c.ctx.Emitter.MarkLabel(retryStart)
-	region := buildProtected(recoveryLabel, endLabel)
+	region := buildProtected(recoveryLabel, timeoutLabel, endLabel)
 
 	if region.Result == bytecode.NoopOperand || region.EndCatchExclusive <= region.StartCatch {
 		return region.Result
@@ -259,7 +312,9 @@ func (c *RecoveryCompiler) compileWithErrorRetry(
 		c.ctx.Emitter.EmitJump(finalAttemptLabel)
 	}
 
-	c.pushProtectedCatch(region, handlerPC)
+	if region.HasTimeout {
+		c.emitTimeoutHandler(resultReg, plan, timeoutLabel, endLabel)
+	}
 
 	if retry.FinalActionKind != core.RecoveryActionReturn {
 		c.ctx.Emitter.MarkLabel(finalAttemptLabel)
@@ -272,9 +327,39 @@ func (c *RecoveryCompiler) compileWithErrorRetry(
 		}
 	}
 
+	c.pushProtectedCatch(region, handlerPC)
 	c.ctx.Emitter.MarkLabel(endLabel)
 
-	return c.WidenResultType(resultReg, core.RecoveryPlan{OnError: handler})
+	return c.WidenResultType(resultReg, plan)
+}
+
+func (c *RecoveryCompiler) emitTimeoutHandler(
+	result bytecode.Operand,
+	plan core.RecoveryPlan,
+	timeoutLabel, endLabel core.Label,
+) {
+	c.ctx.Emitter.MarkLabel(timeoutLabel)
+
+	switch {
+	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
+		fallback := c.front.Expressions.Compile(plan.OnTimeout.Expr)
+		c.front.TypeFacts.EmitMoveAuto(c.EnsureRegister(result), c.EnsureRegister(fallback))
+		c.ctx.Emitter.EmitJump(endLabel)
+	default:
+		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)
+	}
+}
+
+func (spec OperationRecoverySpec) shouldBuildProtected(plan core.RecoveryPlan) bool {
+	if spec.BuildProtected == nil {
+		return false
+	}
+
+	if spec.ShouldBuildProtected != nil {
+		return spec.ShouldBuildProtected(plan)
+	}
+
+	return true
 }
 
 func (c *RecoveryCompiler) pushProtectedCatch(region ProtectedRecoveryRegion, handlerPC int) {
