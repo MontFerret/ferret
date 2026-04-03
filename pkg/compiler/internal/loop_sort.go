@@ -16,11 +16,21 @@ import (
 // and values are the original loop elements.
 type LoopSortCompiler struct {
 	ctx   *CompilationSession
-	front *CompilationFrontend
+	exprs *ExprCompiler
+	facts *TypeFacts
 }
 
 func NewLoopSortCompiler(ctx *CompilationSession) *LoopSortCompiler {
 	return &LoopSortCompiler{ctx: ctx}
+}
+
+func (c *LoopSortCompiler) bind(exprs *ExprCompiler, facts *TypeFacts) {
+	if c == nil {
+		return
+	}
+
+	c.exprs = exprs
+	c.facts = facts
 }
 
 func sortDirection(dir antlr.TerminalNode) runtime.SortDirection {
@@ -78,7 +88,7 @@ func (c *LoopSortCompiler) compileMultipleSortKeys(clauses []fql.ISortClauseExpr
 
 	// Compile each sort expression and store direction
 	for i, clause := range clauses {
-		clauseReg := c.front.Expressions.Compile(clause.Expression())
+		clauseReg := c.exprs.Compile(clause.Expression())
 		c.ctx.Emitter.EmitArrayPush(kvKeyReg, clauseReg)
 		directions[i] = sortDirection(clause.SortDirection())
 	}
@@ -88,8 +98,8 @@ func (c *LoopSortCompiler) compileMultipleSortKeys(clauses []fql.ISortClauseExpr
 
 // compileSingleSortKey handles compilation when there is only one sort expression.
 func (c *LoopSortCompiler) compileSingleSortKey(clause fql.ISortClauseExpressionContext, kvKeyReg bytecode.Operand, directions []runtime.SortDirection) (bytecode.Operand, []runtime.SortDirection) {
-	clauseReg := c.front.Expressions.Compile(clause.Expression())
-	c.front.TypeFacts.EmitMoveAuto(kvKeyReg, clauseReg)
+	clauseReg := c.exprs.Compile(clause.Expression())
+	c.facts.EmitMoveAuto(kvKeyReg, clauseReg)
 	directions[0] = sortDirection(clause.SortDirection())
 
 	return kvKeyReg, directions

@@ -8,8 +8,12 @@ import (
 // StatementCompiler handles the compilation of FQL statements.
 // It transforms statement operations from the AST into VM instructions.
 type StatementCompiler struct {
-	ctx   *CompilationSession
-	front *CompilationFrontend
+	ctx      *CompilationSession
+	bindings *BindingCompiler
+	dispatch *DispatchCompiler
+	exprs    *ExprCompiler
+	loops    *LoopCompiler
+	wait     *WaitCompiler
 }
 
 // NewStatementCompiler creates a new instance of StatementCompiler with the given compiler context.
@@ -17,6 +21,18 @@ func NewStatementCompiler(ctx *CompilationSession) *StatementCompiler {
 	return &StatementCompiler{
 		ctx: ctx,
 	}
+}
+
+func (c *StatementCompiler) bind(bindings *BindingCompiler, dispatch *DispatchCompiler, exprs *ExprCompiler, loops *LoopCompiler, wait *WaitCompiler) {
+	if c == nil {
+		return
+	}
+
+	c.bindings = bindings
+	c.dispatch = dispatch
+	c.exprs = exprs
+	c.loops = loops
+	c.wait = wait
 }
 
 // Compile processes the main body of an FQL query.
@@ -49,9 +65,9 @@ func (c *StatementCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) 
 	}
 
 	if vd := ctx.VariableDeclaration(); vd != nil {
-		c.front.Bindings.CompileVariableDeclaration(vd)
+		c.bindings.CompileVariableDeclaration(vd)
 	} else if as := ctx.AssignmentStatement(); as != nil {
-		c.front.Bindings.CompileAssignmentStatement(as)
+		c.bindings.CompileAssignmentStatement(as)
 	} else if fd := ctx.FunctionDeclaration(); fd != nil {
 		// Function declarations are compiled separately.
 		return
@@ -60,9 +76,9 @@ func (c *StatementCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) 
 		c.CompileFunctionCall(fce)
 	} else if wfe := ctx.WaitForExpression(); wfe != nil {
 		// Handle wait expressions (e.g., WAIT FOR x RETURN y)
-		c.front.Wait.Compile(wfe)
+		c.wait.Compile(wfe)
 	} else if de := ctx.DispatchExpression(); de != nil {
-		c.front.Dispatch.Compile(de)
+		c.dispatch.Compile(de)
 	}
 }
 
@@ -79,14 +95,14 @@ func (c *StatementCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext
 	// Handle FOR expressions (e.g., FOR x IN y RETURN z)
 	if fe := ctx.ForExpression(); fe != nil {
 		// Compile the FOR loop and get the destination register
-		out := c.front.Loops.Compile(fe)
+		out := c.loops.Compile(fe)
 
 		// Emit a return instruction with the loop result
 		c.ctx.Emitter.EmitA(bytecode.OpReturn, out)
 	} else if re := ctx.ReturnExpression(); re != nil {
 		// Handle RETURN expressions (e.g., RETURN x)
 		// Compile and normalize into a register because RETURN expects a register operand.
-		valReg := c.front.Expressions.ensureRegister(c.front.Expressions.Compile(re.Expression()))
+		valReg := c.exprs.ensureRegister(c.exprs.Compile(re.Expression()))
 
 		// Emit a return instruction with the expression result
 		c.ctx.Emitter.EmitA(bytecode.OpReturn, valReg)
@@ -108,18 +124,18 @@ func (c *StatementCompiler) CompileFunctionStatement(ctx fql.IFunctionStatementC
 
 	switch {
 	case stmt.VariableDeclaration() != nil:
-		c.front.Bindings.CompileVariableDeclaration(stmt.VariableDeclaration())
+		c.bindings.CompileVariableDeclaration(stmt.VariableDeclaration())
 	case stmt.AssignmentStatement() != nil:
-		c.front.Bindings.CompileAssignmentStatement(stmt.AssignmentStatement())
+		c.bindings.CompileAssignmentStatement(stmt.AssignmentStatement())
 	case stmt.FunctionDeclaration() != nil:
 		// Nested function declarations are compiled separately.
 		return
 	case stmt.FunctionCallExpression() != nil:
 		c.CompileFunctionCall(stmt.FunctionCallExpression())
 	case stmt.WaitForExpression() != nil:
-		c.front.Wait.Compile(stmt.WaitForExpression())
+		c.wait.Compile(stmt.WaitForExpression())
 	case stmt.DispatchExpression() != nil:
-		c.front.Dispatch.Compile(stmt.DispatchExpression())
+		c.dispatch.Compile(stmt.DispatchExpression())
 	case stmt.ExpressionStatement() != nil:
 		c.CompileExpressionStatement(stmt.ExpressionStatement())
 	}
@@ -137,7 +153,7 @@ func (c *StatementCompiler) CompileExpressionStatement(ctx fql.IExpressionStatem
 	}
 
 	if expr := stmt.Expression(); expr != nil {
-		c.front.Expressions.Compile(expr)
+		c.exprs.Compile(expr)
 	}
 }
 
@@ -155,5 +171,5 @@ func (c *StatementCompiler) CompileFunctionCall(ctx fql.IFunctionCallExpressionC
 	}
 
 	// Delegate to the expression compiler for function call compilation
-	return c.front.Expressions.CompileFunctionCallExpression(ctx)
+	return c.exprs.CompileFunctionCallExpression(ctx)
 }

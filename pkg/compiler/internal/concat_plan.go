@@ -42,12 +42,12 @@ func buildConcatOperandSegmentsFromExpression(c *ExprCompiler, expr fql.IExpress
 }
 
 func buildConcatOperandSegmentsFromAtom(c *ExprCompiler, atom fql.IExpressionAtomContext) ([]concatOperandSegment, bool) {
-	if c == nil || !isConcatCompatibleAdditive(c.ctx, c.front.TypeFacts, atom) {
+	if c == nil || !isConcatCompatibleAdditive(c.ctx, c.facts, atom) {
 		return nil, false
 	}
 
 	parts := make([]concatAtomPart, 0, 4)
-	collectConcatAtomParts(c.ctx, c.front.TypeFacts, atom, &parts)
+	collectConcatAtomParts(c.ctx, c.facts, atom, &parts)
 
 	segments := make([]concatOperandSegment, 0, len(parts))
 

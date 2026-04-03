@@ -8,12 +8,20 @@ import (
 )
 
 type CaptureAnalyzer struct {
-	ctx   *CompilationSession
-	front *CompilationFrontend
+	ctx      *CompilationSession
+	bindings *BindingCompiler
 }
 
 func NewCaptureAnalyzer(ctx *CompilationSession) *CaptureAnalyzer {
 	return &CaptureAnalyzer{ctx: ctx}
+}
+
+func (c *CaptureAnalyzer) bind(bindings *BindingCompiler) {
+	if c == nil {
+		return
+	}
+
+	c.bindings = bindings
 }
 
 func (c *CaptureAnalyzer) AnalyzeProgram(body *fql.BodyContext) {
@@ -31,7 +39,7 @@ func (c *CaptureAnalyzer) AnalyzeProgram(body *fql.BodyContext) {
 
 		switch {
 		case stmt.VariableDeclaration() != nil:
-			binding := c.front.Bindings.captureBindingForDeclaration(stmt.VariableDeclaration())
+			binding := c.bindings.captureBindingForDeclaration(stmt.VariableDeclaration())
 			if binding.Name != "" {
 				env.addBinding(binding)
 			}
@@ -81,7 +89,7 @@ func (c *CaptureAnalyzer) analyzeFunction(fn *core.UDFInfo, env *udfCaptureEnv) 
 						c.collectAssignments(decl.Expression(), env, captureSet, &captureOrder)
 					}
 
-					binding := c.front.Bindings.captureBindingForDeclaration(decl)
+					binding := c.bindings.captureBindingForDeclaration(decl)
 					if binding.Name != "" {
 						env.addBinding(binding)
 					}
@@ -187,7 +195,7 @@ func (c *CaptureAnalyzer) collectAssignments(
 		if binding.Mutable {
 			storage = core.BindingStorageCell
 			if binding.Decl != nil {
-				c.front.Bindings.PromoteDeclaration(binding.Decl)
+				c.bindings.PromoteDeclaration(binding.Decl)
 			}
 		}
 

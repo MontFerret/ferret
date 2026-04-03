@@ -84,8 +84,8 @@ func (c *CollectCompiler) parseAggregateSelector(selector fql.ICollectAggregateS
 		return nil, false
 	}
 
-	funcName := c.front.Calls.ResolveFunctionName(fcx.FunctionCall())
-	args := c.front.Expressions.CompileArgumentList(fcx.FunctionCall().ArgumentList())
+	funcName := c.calls.ResolveFunctionName(fcx.FunctionCall())
+	args := c.exprs.CompileArgumentList(fcx.FunctionCall().ArgumentList())
 
 	if len(args) == 0 {
 		c.reportAggregateSemanticError(
@@ -96,7 +96,7 @@ func (c *CollectCompiler) parseAggregateSelector(selector fql.ICollectAggregateS
 		return nil, false
 	}
 
-	plan := c.front.Recovery.CollectPlan(fcx, core.RecoveryPlanOptions{})
+	plan := c.recovery.CollectPlan(fcx, core.RecoveryPlanOptions{})
 
 	return core.NewCompiledAggregateSelector(
 		name,
@@ -206,7 +206,7 @@ func (c *CollectCompiler) initializeGlobalAggregationSelectors(selectors []fql.I
 				return c.loadGlobalSelectorKey(parsed.Name(), argIndex)
 			}
 
-			return c.front.TypeFacts.LoadConstant(parsed.Name())
+			return c.facts.LoadConstant(parsed.Name())
 		})
 
 		return true
@@ -237,7 +237,7 @@ func (c *CollectCompiler) buildAggregatePlan(selectors []fql.ICollectAggregateSe
 			return nil, false
 		}
 
-		plan := c.front.Recovery.CollectPlan(fce, core.RecoveryPlanOptions{})
+		plan := c.recovery.CollectPlan(fce, core.RecoveryPlanOptions{})
 		if fce.ErrorOperator() != nil || plan.OnError != nil {
 			return nil, false
 		}
@@ -252,7 +252,7 @@ func (c *CollectCompiler) buildAggregatePlan(selectors []fql.ICollectAggregateSe
 			return nil, false
 		}
 
-		funcName := c.front.Calls.ResolveFunctionName(fce.FunctionCall())
+		funcName := c.calls.ResolveFunctionName(fce.FunctionCall())
 		kind, ok := aggregateKind(funcName)
 
 		if !ok {
@@ -385,7 +385,7 @@ func (c *CollectCompiler) emitGlobalAggregationEmptyGuard(spec *core.Collector) 
 	cond := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitAB(bytecode.OpLength, cond, aggregator)
 
-	zero := c.front.TypeFacts.LoadConstant(runtime.ZeroInt)
+	zero := c.facts.LoadConstant(runtime.ZeroInt)
 	c.ctx.Emitter.EmitEq(cond, cond, zero)
 
 	elseLabel := c.ctx.Emitter.NewLabel()
@@ -413,7 +413,7 @@ func (c *CollectCompiler) compilePlanBackedGlobalAggregationSelectors(selectors 
 		varReg := c.declareLocalOrReport(selector.Context(), selector.Name().String(), core.TypeUnknown)
 		selectorRegs[i] = varReg
 
-		key := c.front.TypeFacts.LoadConstant(selector.Name())
+		key := c.facts.LoadConstant(selector.Name())
 		c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, varReg, aggregator, key)
 	}
 }
@@ -421,7 +421,7 @@ func (c *CollectCompiler) compilePlanBackedGlobalAggregationSelectors(selectors 
 func (c *CollectCompiler) compileGenericGlobalAggregationSelectors(selectors []*core.AggregateSelector, aggregator bytecode.Operand, selectorRegs []bytecode.Operand) {
 	for i, selector := range selectors {
 		args := c.compileGlobalAggregationSelectorArgs(selector, aggregator)
-		result := c.front.Expressions.CompileFunctionCallByNameWith(nil, selector.FuncName(), selector.ProtectedCall(), args)
+		result := c.exprs.CompileFunctionCallByNameWith(nil, selector.FuncName(), selector.ProtectedCall(), args)
 
 		varReg := c.declareLocalOrReport(selector.Context(), selector.Name().String(), core.TypeUnknown)
 		selectorRegs[i] = varReg
@@ -431,7 +431,7 @@ func (c *CollectCompiler) compileGenericGlobalAggregationSelectors(selectors []*
 
 func (c *CollectCompiler) compileGlobalAggregationSelectorArgs(selector *core.AggregateSelector, aggregator bytecode.Operand) core.RegisterSequence {
 	if selector.Args() <= 1 {
-		key := c.front.TypeFacts.LoadConstant(selector.Name())
+		key := c.facts.LoadConstant(selector.Name())
 		value := c.ctx.Registers.Allocate()
 		c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, value, aggregator, key)
 		return core.RegisterSequence{value}
@@ -454,7 +454,7 @@ func (c *CollectCompiler) compileGlobalAggregationProjection(spec *core.Collecto
 	if projectionState := spec.ProjectionState(); projectionState != bytecode.NoopOperand {
 		varName := spec.Projection().VariableName()
 		val := c.declareLocalOrReport(spec.Projection().Context(), varName, core.TypeArray)
-		c.front.TypeFacts.EmitMoveAuto(val, projectionState)
+		c.facts.EmitMoveAuto(val, projectionState)
 
 		return val
 	}
@@ -511,7 +511,7 @@ func (c *CollectCompiler) compileGroupedAggregationFuncCall(selector *core.Aggre
 		args = core.RegisterSequence{value}
 	}
 
-	resArg := c.front.Expressions.CompileFunctionCallByNameWith(nil, selector.FuncName(), selector.ProtectedCall(), args)
+	resArg := c.exprs.CompileFunctionCallByNameWith(nil, selector.FuncName(), selector.ProtectedCall(), args)
 
 	c.ctx.Emitter.EmitMove(valReg, resArg)
 }
@@ -523,17 +523,17 @@ func (c *CollectCompiler) loadGlobalSelectorKey(selector runtime.String, arg int
 	// Create a key with format "selectorName:argIndex"
 	argKey := selector.String() + ":" + strconv.Itoa(arg)
 	// Load the key as a string constant
-	return c.front.TypeFacts.LoadConstant(runtime.String(argKey))
+	return c.facts.LoadConstant(runtime.String(argKey))
 }
 
 func (c *CollectCompiler) loadSelectorKey(key bytecode.Operand, selector runtime.String, arg int) bytecode.Operand {
 	selectorKey := c.ctx.Registers.Allocate()
-	selectorName := c.front.TypeFacts.LoadConstant(selector)
+	selectorName := c.facts.LoadConstant(selector)
 
 	c.ctx.Emitter.EmitABC(bytecode.OpAdd, selectorKey, key, selectorName)
 
 	if arg >= 0 {
-		selectorIndex := c.front.TypeFacts.LoadConstant(runtime.String(strconv.Itoa(arg)))
+		selectorIndex := c.facts.LoadConstant(runtime.String(strconv.Itoa(arg)))
 		c.ctx.Emitter.EmitABC(bytecode.OpAdd, selectorKey, selectorKey, selectorIndex)
 	}
 

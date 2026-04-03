@@ -26,31 +26,31 @@ func (c *RecoveryCompiler) CompileDurationOperand(clause core.DurationClause) by
 			return bytecode.NoopOperand
 		}
 
-		return c.front.TypeFacts.LoadConstant(val)
+		return c.facts.LoadConstant(val)
 	}
 
 	if il := clause.IntegerLiteral(); il != nil {
-		return c.front.Literals.CompileIntegerLiteral(il)
+		return c.literals.CompileIntegerLiteral(il)
 	}
 
 	if fl := clause.FloatLiteral(); fl != nil {
-		return c.front.Literals.CompileFloatLiteral(fl)
+		return c.literals.CompileFloatLiteral(fl)
 	}
 
 	if v := clause.Variable(); v != nil {
-		return c.front.Expressions.CompileVariable(v)
+		return c.exprs.CompileVariable(v)
 	}
 
 	if p := clause.Param(); p != nil {
-		return c.front.Expressions.CompileParam(p)
+		return c.exprs.CompileParam(p)
 	}
 
 	if me := clause.MemberExpression(); me != nil {
-		return c.front.Expressions.CompileMemberExpression(me)
+		return c.exprs.CompileMemberExpression(me)
 	}
 
 	if fc := clause.FunctionCall(); fc != nil {
-		return c.front.Expressions.CompileFunctionCall(fc, false)
+		return c.exprs.CompileFunctionCall(fc, false)
 	}
 
 	return bytecode.NoopOperand
@@ -69,8 +69,8 @@ func (c *RecoveryCompiler) EmitRetryDelay(retry *core.RecoveryRetryPlan, state c
 		return
 	}
 
-	c.front.TypeFacts.EmitMoveAuto(state.BaseReg, delayValue)
-	c.front.TypeFacts.EmitMoveAuto(state.CurrentReg, state.BaseReg)
+	c.facts.EmitMoveAuto(state.BaseReg, delayValue)
+	c.facts.EmitMoveAuto(state.CurrentReg, state.BaseReg)
 	c.ctx.Emitter.EmitBoolean(state.ReadyReg, true)
 	c.ctx.Emitter.MarkLabel(delayReady)
 
@@ -102,7 +102,7 @@ func (c *RecoveryCompiler) emitBackoffUpdate(strategy core.RetryBackoff, interva
 	case core.RetryBackoffLinear:
 		c.ctx.Emitter.EmitABC(bytecode.OpAdd, intervalReg, intervalReg, baseEveryReg)
 	case core.RetryBackoffExponential:
-		twoReg := c.front.TypeFacts.LoadConstant(runtime.NewInt(2))
+		twoReg := c.facts.LoadConstant(runtime.NewInt(2))
 		c.ctx.Emitter.EmitABC(bytecode.OpMul, intervalReg, intervalReg, twoReg)
 	}
 }

@@ -14,8 +14,13 @@ type (
 	// LoopCompiler handles the compilation of FOR loop expressions in FQL queries.
 	// It transforms loop operations into VM instructions for iteration, filtering, and data manipulation.
 	LoopCompiler struct {
-		ctx   *CompilationSession
-		front *CompilationFrontend
+		ctx      *CompilationSession
+		bindings *BindingCompiler
+		collects *CollectCompiler
+		exprs    *ExprCompiler
+		literals *LiteralCompiler
+		sorts    *LoopSortCompiler
+		facts    *TypeFacts
 	}
 
 	loopOperandKind int
@@ -50,6 +55,26 @@ const (
 // NewLoopCompiler creates a new instance of LoopCompiler with the given compiler context.
 func NewLoopCompiler(ctx *CompilationSession) *LoopCompiler {
 	return &LoopCompiler{ctx: ctx}
+}
+
+func (c *LoopCompiler) bind(
+	bindings *BindingCompiler,
+	collects *CollectCompiler,
+	exprs *ExprCompiler,
+	literals *LiteralCompiler,
+	sorts *LoopSortCompiler,
+	facts *TypeFacts,
+) {
+	if c == nil {
+		return
+	}
+
+	c.bindings = bindings
+	c.collects = collects
+	c.exprs = exprs
+	c.literals = literals
+	c.sorts = sorts
+	c.facts = facts
 }
 
 // Compile processes a FOR expression from the FQL AST and generates the appropriate VM instructions.
@@ -196,7 +221,7 @@ func (c *LoopCompiler) configureLoopRuntime(loop *core.Loop, ctx fql.IForExpress
 		loop.Src = c.compileForExpressionSource(ctx.ForExpressionSource())
 	default:
 		loop.ConditionFn = func() bytecode.Operand {
-			return c.front.Expressions.Compile(ctx.Expression())
+			return c.exprs.Compile(ctx.Expression())
 		}
 	}
 }
@@ -281,7 +306,7 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 	if loop.Type != core.PassThroughLoop {
 		// For normal loops, compile the return expression and push the result to the destination
 		re := ctx.(*fql.ReturnExpressionContext)
-		expReg := c.front.Expressions.Compile(re.Expression())
+		expReg := c.exprs.Compile(re.Expression())
 
 		span := source.Span{Start: -1, End: -1}
 
@@ -360,12 +385,12 @@ func (c *LoopCompiler) compileLoopBody(ctx fql.IForExpressionContext) {
 func (c *LoopCompiler) compileForExpressionStatement(ctx fql.IForExpressionStatementContext) {
 	// Handle variable declarations (e.g., LET x = 1)
 	if vd := ctx.VariableDeclaration(); vd != nil {
-		_ = c.front.Bindings.CompileVariableDeclaration(vd)
+		_ = c.bindings.CompileVariableDeclaration(vd)
 	} else if as := ctx.AssignmentStatement(); as != nil {
-		_ = c.front.Bindings.CompileAssignmentStatement(as)
+		_ = c.bindings.CompileAssignmentStatement(as)
 	} else if fce := ctx.FunctionCallExpression(); fce != nil {
 		// Handle function calls (e.g., doSomething())
-		_ = c.front.Expressions.CompileFunctionCallExpression(fce)
+		_ = c.exprs.CompileFunctionCallExpression(fce)
 	}
 }
 
@@ -435,31 +460,31 @@ func (c *LoopCompiler) compileLoopOperand(source loopOperandContext, order ...lo
 	for _, kind := range order {
 		switch kind {
 		case loopOperandParam:
-			branches = append(branches, newOperandBranch(source.param != nil, func() bytecode.Operand { return c.front.Expressions.CompileParam(source.param) }))
+			branches = append(branches, newOperandBranch(source.param != nil, func() bytecode.Operand { return c.exprs.CompileParam(source.param) }))
 		case loopOperandIntegerLiteral:
-			branches = append(branches, newOperandBranch(source.integerLiteral != nil, func() bytecode.Operand { return c.front.Literals.CompileIntegerLiteral(source.integerLiteral) }))
+			branches = append(branches, newOperandBranch(source.integerLiteral != nil, func() bytecode.Operand { return c.literals.CompileIntegerLiteral(source.integerLiteral) }))
 		case loopOperandVariable:
-			branches = append(branches, newOperandBranch(source.variable != nil, func() bytecode.Operand { return c.front.Expressions.CompileVariable(source.variable) }))
+			branches = append(branches, newOperandBranch(source.variable != nil, func() bytecode.Operand { return c.exprs.CompileVariable(source.variable) }))
 		case loopOperandMemberExpression:
-			branches = append(branches, newOperandBranch(source.memberExpression != nil, func() bytecode.Operand { return c.front.Expressions.CompileMemberExpression(source.memberExpression) }))
+			branches = append(branches, newOperandBranch(source.memberExpression != nil, func() bytecode.Operand { return c.exprs.CompileMemberExpression(source.memberExpression) }))
 		case loopOperandImplicitCurrent:
 			branches = append(branches, newOperandBranch(source.implicitCurrentExpr != nil, func() bytecode.Operand {
-				return c.front.Expressions.CompileImplicitCurrentExpression(source.implicitCurrentExpr)
+				return c.exprs.CompileImplicitCurrentExpression(source.implicitCurrentExpr)
 			}))
 		case loopOperandImplicitMember:
 			branches = append(branches, newOperandBranch(source.implicitMemberExpr != nil, func() bytecode.Operand {
-				return c.front.Expressions.CompileImplicitMemberExpression(source.implicitMemberExpr)
+				return c.exprs.CompileImplicitMemberExpression(source.implicitMemberExpr)
 			}))
 		case loopOperandFunctionCallExpression:
 			branches = append(branches, newOperandBranch(source.functionCallExpression != nil, func() bytecode.Operand {
-				return c.front.Expressions.CompileFunctionCallExpression(source.functionCallExpression)
+				return c.exprs.CompileFunctionCallExpression(source.functionCallExpression)
 			}))
 		case loopOperandRangeOperator:
-			branches = append(branches, newOperandBranch(source.rangeOperator != nil, func() bytecode.Operand { return c.front.Expressions.CompileRangeOperator(source.rangeOperator) }))
+			branches = append(branches, newOperandBranch(source.rangeOperator != nil, func() bytecode.Operand { return c.exprs.CompileRangeOperator(source.rangeOperator) }))
 		case loopOperandArrayLiteral:
-			branches = append(branches, newOperandBranch(source.arrayLiteral != nil, func() bytecode.Operand { return c.front.Literals.CompileArrayLiteral(source.arrayLiteral) }))
+			branches = append(branches, newOperandBranch(source.arrayLiteral != nil, func() bytecode.Operand { return c.literals.CompileArrayLiteral(source.arrayLiteral) }))
 		case loopOperandObjectLiteral:
-			branches = append(branches, newOperandBranch(source.objectLiteral != nil, func() bytecode.Operand { return c.front.Literals.CompileObjectLiteral(source.objectLiteral) }))
+			branches = append(branches, newOperandBranch(source.objectLiteral != nil, func() bytecode.Operand { return c.literals.CompileObjectLiteral(source.objectLiteral) }))
 		}
 	}
 
@@ -494,21 +519,21 @@ func (c *LoopCompiler) compileFilterClause(ctx fql.IFilterClauseContext) {
 	// Get the jump label for the current loop
 	label := c.ctx.Loops.Current().ContinueLabel()
 	// Emit a jump instruction that skips to the next iteration if the filter condition is false
-	c.front.Expressions.emitConditionJump(ctx.Expression(), label, false)
+	c.exprs.emitConditionJump(ctx.Expression(), label, false)
 }
 
 // compileSortClause processes a SORT clause in a FOR loop.
 // It delegates the compilation to the specialized LoopSortCompiler.
 func (c *LoopCompiler) compileSortClause(ctx fql.ISortClauseContext) {
 	// Delegate to the specialized sort compiler
-	c.front.Sorts.Compile(ctx)
+	c.sorts.Compile(ctx)
 }
 
 // compileCollectClause processes a COLLECT clause in a FOR loop.
 // It delegates the compilation to the specialized CollectCompiler.
 func (c *LoopCompiler) compileCollectClause(ctx fql.ICollectClauseContext) {
 	// Delegate to the specialized collect compiler
-	c.front.Collects.Compile(ctx)
+	c.collects.Compile(ctx)
 }
 
 func (c *LoopCompiler) inferForInTypes(srcCtx fql.IForExpressionSourceContext, src bytecode.Operand) (core.ValueType, core.ValueType) {
@@ -539,10 +564,10 @@ func (c *LoopCompiler) inferForInTypes(srcCtx fql.IForExpressionSourceContext, s
 	}
 
 	if srcCtx.MemberExpression() != nil {
-		return c.inferValueKeyFromCollection(c.front.TypeFacts.OperandType(src))
+		return c.inferValueKeyFromCollection(c.facts.OperandType(src))
 	}
 
-	return c.inferValueKeyFromCollection(c.front.TypeFacts.OperandType(src))
+	return c.inferValueKeyFromCollection(c.facts.OperandType(src))
 }
 
 func (c *LoopCompiler) inferValueKeyFromCollection(typ core.ValueType) (core.ValueType, core.ValueType) {
@@ -622,7 +647,7 @@ func (c *LoopCompiler) inferExpressionAtomType(ctx fql.IExpressionAtomContext) c
 	}
 
 	if lit := ctx.Literal(); lit != nil {
-		return c.front.TypeFacts.LiteralType(lit)
+		return c.facts.LiteralType(lit)
 	}
 
 	if v := ctx.Variable(); v != nil {

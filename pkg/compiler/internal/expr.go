@@ -20,7 +20,14 @@ type (
 	// It transforms expression operations from the AST into VM instructions.
 	ExprCompiler struct {
 		ctx                  *CompilationSession
-		front                *CompilationFrontend
+		bindings             *BindingCompiler
+		calls                *CallResolver
+		dispatch             *DispatchCompiler
+		literals             *LiteralCompiler
+		loops                *LoopCompiler
+		recovery             *RecoveryCompiler
+		facts                *TypeFacts
+		wait                 *WaitCompiler
 		implicitCurrentDepth int
 	}
 
@@ -64,6 +71,30 @@ const (
 // NewExprCompiler creates a new instance of ExprCompiler with the given compiler context.
 func NewExprCompiler(ctx *CompilationSession) *ExprCompiler {
 	return &ExprCompiler{ctx: ctx}
+}
+
+func (c *ExprCompiler) bind(
+	bindings *BindingCompiler,
+	calls *CallResolver,
+	dispatch *DispatchCompiler,
+	literals *LiteralCompiler,
+	loops *LoopCompiler,
+	recovery *RecoveryCompiler,
+	facts *TypeFacts,
+	wait *WaitCompiler,
+) {
+	if c == nil {
+		return
+	}
+
+	c.bindings = bindings
+	c.calls = calls
+	c.dispatch = dispatch
+	c.literals = literals
+	c.loops = loops
+	c.recovery = recovery
+	c.facts = facts
+	c.wait = wait
 }
 
 // Compile processes an expression from the FQL AST and delegates to the appropriate

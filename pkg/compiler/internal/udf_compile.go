@@ -10,12 +10,26 @@ import (
 
 // UDFCompiler compiles user-defined functions into bytecode.
 type UDFCompiler struct {
-	ctx   *CompilationSession
-	front *CompilationFrontend
+	ctx      *CompilationSession
+	calls    *CallResolver
+	exprs    *ExprCompiler
+	recovery *RecoveryCompiler
+	stmts    *StatementCompiler
 }
 
 func NewUDFCompiler(ctx *CompilationSession) *UDFCompiler {
 	return &UDFCompiler{ctx: ctx}
+}
+
+func (c *UDFCompiler) bind(calls *CallResolver, exprs *ExprCompiler, recovery *RecoveryCompiler, stmts *StatementCompiler) {
+	if c == nil {
+		return
+	}
+
+	c.calls = calls
+	c.exprs = exprs
+	c.recovery = recovery
+	c.stmts = stmts
 }
 
 func (c *UDFCompiler) CompileAll() {
@@ -55,7 +69,7 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 				c.compileExpressionReturn(arrow.Expression())
 			} else if block := body.FunctionBlock(); block != nil {
 				for _, stmt := range block.AllFunctionStatement() {
-					c.front.Statements.CompileFunctionStatement(stmt)
+					c.stmts.CompileFunctionStatement(stmt)
 				}
 
 				c.compileReturn(block.FunctionReturn())
@@ -127,18 +141,18 @@ func (c *UDFCompiler) compileExpressionReturn(expr fql.IExpressionContext) {
 		return
 	}
 
-	if fce := directFunctionCall(expr); fce != nil && fce.ErrorOperator() == nil && allowsTailCallRecovery(c.front.Recovery.CollectPlan(fce, core.RecoveryPlanOptions{})) {
+	if fce := directFunctionCall(expr); fce != nil && fce.ErrorOperator() == nil && allowsTailCallRecovery(c.recovery.CollectPlan(fce, core.RecoveryPlanOptions{})) {
 		call := fce.FunctionCall()
 		if call != nil {
-			if fn, ok := c.front.Calls.ResolveUDF(call); ok {
-				seq := c.front.Expressions.CompileArgumentList(call.ArgumentList())
-				c.front.Expressions.EmitUdfTailCall(fn, seq, call.(antlr.ParserRuleContext))
+			if fn, ok := c.calls.ResolveUDF(call); ok {
+				seq := c.exprs.CompileArgumentList(call.ArgumentList())
+				c.exprs.EmitUdfTailCall(fn, seq, call.(antlr.ParserRuleContext))
 				return
 			}
 		}
 	}
 
-	val := c.front.Expressions.ensureRegister(c.front.Expressions.Compile(expr))
+	val := c.exprs.ensureRegister(c.exprs.Compile(expr))
 
 	c.ctx.Emitter.EmitA(bytecode.OpReturn, val)
 }

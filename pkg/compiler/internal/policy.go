@@ -8,8 +8,10 @@ import (
 
 type (
 	RecoveryCompiler struct {
-		ctx   *CompilationSession
-		front *CompilationFrontend
+		ctx      *CompilationSession
+		exprs    *ExprCompiler
+		literals *LiteralCompiler
+		facts    *TypeFacts
 	}
 
 	// OperationRecoverySpec describes one operation's recovery-owned execution surface.
@@ -42,6 +44,16 @@ type (
 
 func NewRecoveryCompiler(ctx *CompilationSession) *RecoveryCompiler {
 	return &RecoveryCompiler{ctx: ctx}
+}
+
+func (c *RecoveryCompiler) bind(exprs *ExprCompiler, literals *LiteralCompiler, facts *TypeFacts) {
+	if c == nil {
+		return
+	}
+
+	c.exprs = exprs
+	c.literals = literals
+	c.facts = facts
 }
 
 func (c *RecoveryCompiler) CompileWithErrorPolicy(policy core.ErrorPolicy, jumpMode core.CatchJumpMode, compile func() bytecode.Operand) bytecode.Operand {
@@ -218,8 +230,8 @@ func (c *RecoveryCompiler) compileOperationWithErrorReturn(
 	handlerPC := c.ctx.Emitter.Size()
 	c.ctx.Emitter.MarkLabel(recoveryLabel)
 
-	fallback := c.front.Expressions.Compile(plan.OnError.Expr)
-	c.front.TypeFacts.EmitMoveAuto(c.EnsureRegister(region.Result), c.EnsureRegister(fallback))
+	fallback := c.exprs.Compile(plan.OnError.Expr)
+	c.facts.EmitMoveAuto(c.EnsureRegister(region.Result), c.EnsureRegister(fallback))
 	c.ctx.Emitter.EmitJump(endLabel)
 
 	if region.HasTimeout {
@@ -257,8 +269,8 @@ func (c *RecoveryCompiler) compileOperationWithErrorRetry(
 	}
 
 	resultReg := bytecode.NoopOperand
-	zeroReg := c.front.TypeFacts.LoadConstant(runtime.ZeroInt)
-	retriesRemainingReg := c.front.TypeFacts.LoadConstant(runtime.NewInt(retry.Count))
+	zeroReg := c.facts.LoadConstant(runtime.ZeroInt)
+	retriesRemainingReg := c.facts.LoadConstant(runtime.NewInt(retry.Count))
 
 	state := c.initRetryDelayState(retry)
 	retryStart := c.ctx.Emitter.NewLabel("recovery", "retry", "start")
@@ -305,8 +317,8 @@ func (c *RecoveryCompiler) compileOperationWithErrorRetry(
 
 	c.ctx.Emitter.MarkLabel(onExhausted)
 	if retry.FinalActionKind == core.RecoveryActionReturn {
-		fallback := c.front.Expressions.Compile(retry.FinalExpr)
-		c.front.TypeFacts.EmitMoveAuto(resultReg, c.EnsureRegister(fallback))
+		fallback := c.exprs.Compile(retry.FinalExpr)
+		c.facts.EmitMoveAuto(resultReg, c.EnsureRegister(fallback))
 		c.ctx.Emitter.EmitJump(endLabel)
 	} else {
 		c.ctx.Emitter.EmitJump(finalAttemptLabel)
@@ -322,7 +334,7 @@ func (c *RecoveryCompiler) compileOperationWithErrorRetry(
 		if compileFinalAttempt != nil {
 			finalOut := c.EnsureRegister(compileFinalAttempt())
 			if finalOut != bytecode.NoopOperand && finalOut != resultReg {
-				c.front.TypeFacts.EmitMoveAuto(resultReg, finalOut)
+				c.facts.EmitMoveAuto(resultReg, finalOut)
 			}
 		}
 	}
@@ -342,8 +354,8 @@ func (c *RecoveryCompiler) emitTimeoutHandler(
 
 	switch {
 	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
-		fallback := c.front.Expressions.Compile(plan.OnTimeout.Expr)
-		c.front.TypeFacts.EmitMoveAuto(c.EnsureRegister(result), c.EnsureRegister(fallback))
+		fallback := c.exprs.Compile(plan.OnTimeout.Expr)
+		c.facts.EmitMoveAuto(c.EnsureRegister(result), c.EnsureRegister(fallback))
 		c.ctx.Emitter.EmitJump(endLabel)
 	default:
 		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)

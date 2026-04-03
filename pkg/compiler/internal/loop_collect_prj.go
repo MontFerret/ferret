@@ -56,9 +56,9 @@ func (c *CollectCompiler) finalizeProjection(spec *core.Collector, aggregator by
 		if !c.assignLocalOrReport(spec.Projection().Context(), loop.ValueName, core.TypeUnknown, aggregator) {
 			if existing, found := c.ctx.Symbols.ResolveBinding(loop.ValueName); found {
 				if existing.Storage == core.BindingStorageCell {
-					c.ctx.Emitter.EmitStoreCell(existing.Register, c.front.Expressions.ensureRegister(aggregator))
+					c.ctx.Emitter.EmitStoreCell(existing.Register, c.exprs.ensureRegister(aggregator))
 				} else {
-					c.front.TypeFacts.EmitMoveAuto(existing.Register, aggregator)
+					c.facts.EmitMoveAuto(existing.Register, aggregator)
 				}
 			}
 		}
@@ -68,7 +68,7 @@ func (c *CollectCompiler) finalizeProjection(spec *core.Collector, aggregator by
 
 	// For cases with aggregation but without grouping:
 	// Load the value from the aggregator using the projection variable name as key
-	key := c.front.TypeFacts.LoadConstant(runtime.String(varName))
+	key := c.facts.LoadConstant(runtime.String(varName))
 	val := c.declareLocalOrReport(spec.Projection().Context(), varName, core.TypeUnknown)
 	c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, val, aggregator, key)
 
@@ -127,7 +127,7 @@ func (c *CollectCompiler) compileDefaultGroupProjection(kv *core.KV, identifier 
 				continue
 			}
 
-			resolved[i] = c.front.Bindings.LoadBindingValue(binding)
+			resolved[i] = c.bindings.LoadBindingValue(binding)
 
 			if binding.Register == kv.Value || resolved[i] == kv.Value {
 				useTemp = true
@@ -154,7 +154,7 @@ func (c *CollectCompiler) compileDefaultGroupProjection(kv *core.KV, identifier 
 		}
 
 		if buildDst != kv.Value {
-			c.front.TypeFacts.EmitMoveAuto(kv.Value, buildDst)
+			c.facts.EmitMoveAuto(kv.Value, buildDst)
 		}
 	}
 
@@ -167,9 +167,9 @@ func (c *CollectCompiler) compileDefaultGroupProjection(kv *core.KV, identifier 
 // Returns the selector identifier text as the variable name for the projection.
 func (c *CollectCompiler) compileCustomGroupProjection(kv *core.KV, selector fql.ICollectSelectorContext) string {
 	// Compile the selector expression
-	selectorReg := c.front.Expressions.Compile(selector.Expression())
+	selectorReg := c.exprs.Compile(selector.Expression())
 	// Move the result to the value register
-	c.front.TypeFacts.EmitMoveAuto(kv.Value, selectorReg)
+	c.facts.EmitMoveAuto(kv.Value, selectorReg)
 
 	// Return the selector identifier as the variable name
 	return textOfBindingIdentifier(selector.BindingIdentifier())

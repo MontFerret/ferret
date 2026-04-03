@@ -92,7 +92,7 @@ func (c *WaitCompiler) buildWaitEventState(ctx fql.IWaitForEventExpressionContex
 	}
 
 	if timeout := ctx.TimeoutClause(); timeout != nil {
-		state.timeoutReg = c.front.Recovery.CompileDurationOperand(timeout)
+		state.timeoutReg = c.recovery.CompileDurationOperand(timeout)
 		if state.timeoutReg == bytecode.NoopOperand {
 			return waitEventCompileState{}, false
 		}
@@ -131,7 +131,7 @@ func (c *WaitCompiler) emitWaitEventIteration(
 			c.ctx.Emitter.EmitAB(bytecode.OpIterValue, eventValReg, streamReg)
 		})
 
-		cond := c.front.Expressions.compileWithImplicitCurrent(filter.Expression())
+		cond := c.exprs.compileWithImplicitCurrent(filter.Expression())
 		c.ctx.Emitter.EmitJumpIfFalse(cond, restartLabel)
 	}
 }
@@ -170,11 +170,11 @@ func (c *WaitCompiler) CompileWaitForEventName(ctx fql.IWaitForEventNameContext)
 	fce := ctx.FunctionCall()
 
 	return compileFirstOperand(
-		newOperandBranch(sl != nil, func() bytecode.Operand { return c.front.Literals.CompileStringLiteral(sl) }),
-		newOperandBranch(v != nil, func() bytecode.Operand { return c.front.Expressions.CompileVariable(v) }),
-		newOperandBranch(p != nil, func() bytecode.Operand { return c.front.Expressions.CompileParam(p) }),
-		newOperandBranch(me != nil, func() bytecode.Operand { return c.front.Expressions.CompileMemberExpression(me) }),
-		newOperandBranch(fce != nil, func() bytecode.Operand { return c.front.Expressions.CompileFunctionCall(fce, false) }),
+		newOperandBranch(sl != nil, func() bytecode.Operand { return c.literals.CompileStringLiteral(sl) }),
+		newOperandBranch(v != nil, func() bytecode.Operand { return c.exprs.CompileVariable(v) }),
+		newOperandBranch(p != nil, func() bytecode.Operand { return c.exprs.CompileParam(p) }),
+		newOperandBranch(me != nil, func() bytecode.Operand { return c.exprs.CompileMemberExpression(me) }),
+		newOperandBranch(fce != nil, func() bytecode.Operand { return c.exprs.CompileFunctionCall(fce, false) }),
 	)
 }
 
@@ -185,16 +185,16 @@ func (c *WaitCompiler) CompileWaitForEventSource(ctx fql.IWaitForEventSourceCont
 	fce := ctx.FunctionCallExpression()
 
 	return compileFirstOperand(
-		newOperandBranch(v != nil, func() bytecode.Operand { return c.front.Expressions.CompileVariable(v) }),
-		newOperandBranch(me != nil, func() bytecode.Operand { return c.front.Expressions.CompileMemberExpression(me) }),
-		newOperandBranch(fce != nil, func() bytecode.Operand { return c.front.Expressions.CompileFunctionCallExpression(fce) }),
+		newOperandBranch(v != nil, func() bytecode.Operand { return c.exprs.CompileVariable(v) }),
+		newOperandBranch(me != nil, func() bytecode.Operand { return c.exprs.CompileMemberExpression(me) }),
+		newOperandBranch(fce != nil, func() bytecode.Operand { return c.exprs.CompileFunctionCallExpression(fce) }),
 	)
 }
 
 // CompileOptionsClause processes the options clause in a WAITFOR statement.
 func (c *WaitCompiler) CompileOptionsClause(ctx fql.IOptionsClauseContext) bytecode.Operand {
 	if ol := ctx.ObjectLiteral(); ol != nil {
-		return c.front.Literals.CompileObjectLiteral(ol)
+		return c.literals.CompileObjectLiteral(ol)
 	}
 
 	return bytecode.NoopOperand

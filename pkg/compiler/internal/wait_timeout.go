@@ -47,7 +47,7 @@ func (c *WaitCompiler) prepareWaitSleepInterval(config waitPredicateCompileConfi
 }
 
 func (c *WaitCompiler) emitNow() bytecode.Operand {
-	return c.front.Expressions.CompileFunctionCallByNameWith(nil, runtime.NewString("NOW"), false, nil)
+	return c.exprs.CompileFunctionCallByNameWith(nil, runtime.NewString("NOW"), false, nil)
 }
 
 func (c *WaitCompiler) emitDateDiff(start, end, unit bytecode.Operand) bytecode.Operand {
@@ -56,17 +56,17 @@ func (c *WaitCompiler) emitDateDiff(start, end, unit bytecode.Operand) bytecode.
 
 func (c *WaitCompiler) emitFunctionCall(name runtime.String, args ...bytecode.Operand) bytecode.Operand {
 	if len(args) == 0 {
-		return c.front.Expressions.CompileFunctionCallByNameWith(nil, name, false, nil)
+		return c.exprs.CompileFunctionCallByNameWith(nil, name, false, nil)
 	}
 
 	seq := c.ctx.Registers.AllocateSequence(len(args))
 
 	for i, arg := range args {
 		c.ctx.Emitter.EmitMove(seq[i], arg)
-		c.ctx.Types.Set(seq[i], c.front.TypeFacts.OperandType(arg))
+		c.ctx.Types.Set(seq[i], c.facts.OperandType(arg))
 	}
 
-	return c.front.Expressions.CompileFunctionCallByNameWith(nil, name, false, seq)
+	return c.exprs.CompileFunctionCallByNameWith(nil, name, false, seq)
 }
 
 func (c *WaitCompiler) emitWaitSleep(intervalReg, timeoutReg, elapsedReg bytecode.Operand) {
@@ -140,8 +140,8 @@ func (c *WaitCompiler) emitApplyJitter(intervalReg, jitterReg bytecode.Operand) 
 	randReg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitA(bytecode.OpRand, randReg)
 
-	twoReg := c.front.TypeFacts.LoadConstant(runtime.NewFloat(2))
-	oneReg := c.front.TypeFacts.LoadConstant(runtime.NewFloat(1))
+	twoReg := c.facts.LoadConstant(runtime.NewFloat(2))
+	oneReg := c.facts.LoadConstant(runtime.NewFloat(1))
 
 	twoJitterReg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitABC(bytecode.OpMul, twoJitterReg, jitterReg, twoReg)

@@ -9,8 +9,11 @@ import (
 // WaitCompiler handles the compilation of WAITFOR expressions in FQL queries.
 // It transforms wait operations into VM instructions for event streaming and polling.
 type WaitCompiler struct {
-	ctx   *CompilationSession
-	front *CompilationFrontend
+	ctx      *CompilationSession
+	exprs    *ExprCompiler
+	literals *LiteralCompiler
+	recovery *RecoveryCompiler
+	facts    *TypeFacts
 }
 
 // NewWaitCompiler creates a new instance of WaitCompiler with the given compiler context.
@@ -18,6 +21,17 @@ func NewWaitCompiler(ctx *CompilationSession) *WaitCompiler {
 	return &WaitCompiler{
 		ctx: ctx,
 	}
+}
+
+func (c *WaitCompiler) bind(exprs *ExprCompiler, literals *LiteralCompiler, recovery *RecoveryCompiler, facts *TypeFacts) {
+	if c == nil {
+		return
+	}
+
+	c.exprs = exprs
+	c.literals = literals
+	c.recovery = recovery
+	c.facts = facts
 }
 
 // Compile processes a WAITFOR expression from the FQL AST and generates the appropriate VM instructions.
@@ -29,7 +43,7 @@ func (c *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) bytecode.Opera
 	c.ctx.Symbols.EnterScope()
 	defer c.ctx.Symbols.ExitScope()
 
-	return c.front.Recovery.CompileOperation(c.newWaitOperationRecoverySpec(ctx, core.RecoveryPlan{}))
+	return c.recovery.CompileOperation(c.newWaitOperationRecoverySpec(ctx, core.RecoveryPlan{}))
 }
 
 func waitForHasExplicitTimeoutClause(ctx fql.IWaitForExpressionContext) bool {

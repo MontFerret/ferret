@@ -70,7 +70,7 @@ func (c *CollectCompiler) compileGroupKeys(ctx fql.ICollectGroupingContext) (byt
 
 		// Process each selector expression and push into the array
 		for i, selector := range selectors {
-			reg := c.front.Expressions.Compile(selector.Expression())
+			reg := c.exprs.Compile(selector.Expression())
 			c.ctx.Emitter.EmitArrayPush(kvKeyReg, reg)
 
 			// Create a CollectSelector for each selector with its identifier
@@ -79,7 +79,7 @@ func (c *CollectCompiler) compileGroupKeys(ctx fql.ICollectGroupingContext) (byt
 	} else {
 		// Handle single selector case - simpler, no need for array
 		selector := selectors[0]
-		kvKeyReg = c.front.Expressions.Compile(selector.Expression())
+		kvKeyReg = c.exprs.Compile(selector.Expression())
 		collectSelectors = []*core.CollectSelector{core.NewCollectSelector(runtime.String(textOfBindingIdentifier(selector.BindingIdentifier())), selector)}
 	}
 
@@ -101,7 +101,7 @@ func (c *CollectCompiler) finalizeGrouping(spec *core.Collector) {
 			reg := c.declareLocalOrReport(selector.Context(), name.String(), core.TypeUnknown)
 
 			// Load the value at index i from the group key array into the local variable.
-			c.ctx.Emitter.EmitABC(bytecode.OpLoadIndex, reg, groupKeyReg, c.front.TypeFacts.LoadConstant(runtime.Int(i)))
+			c.ctx.Emitter.EmitABC(bytecode.OpLoadIndex, reg, groupKeyReg, c.facts.LoadConstant(runtime.Int(i)))
 		}
 	} else {
 		// Handle single group selector - simpler case

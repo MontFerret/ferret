@@ -167,7 +167,7 @@ func (c *WaitCompiler) buildWaitPredicateConfig(
 	timeoutReg := bytecode.NoopOperand
 
 	if timeout := ctx.TimeoutClause(); timeout != nil {
-		timeoutReg = c.front.Recovery.CompileDurationOperand(timeout)
+		timeoutReg = c.recovery.CompileDurationOperand(timeout)
 		if timeoutReg == bytecode.NoopOperand {
 			return waitPredicateCompileConfig{}, false
 		}
@@ -197,7 +197,7 @@ func (c *WaitCompiler) normalizeWaitPredicateConfig(config *waitPredicateCompile
 	}
 
 	if config.jitterLiteral == nil {
-		c.emitClampRange(config.jitterReg, c.front.TypeFacts.LoadConstant(runtime.NewFloat(0)), c.front.TypeFacts.LoadConstant(runtime.NewFloat(1)))
+		c.emitClampRange(config.jitterReg, c.facts.LoadConstant(runtime.NewFloat(0)), c.facts.LoadConstant(runtime.NewFloat(1)))
 	}
 }
 
@@ -211,13 +211,13 @@ func (c *WaitCompiler) compileEveryClause(ctx fql.IEveryClauseContext) (bytecode
 		return bytecode.NoopOperand, bytecode.NoopOperand, true
 	}
 
-	base := c.front.Recovery.CompileDurationOperand(values[0])
+	base := c.recovery.CompileDurationOperand(values[0])
 	if base == bytecode.NoopOperand {
 		return bytecode.NoopOperand, bytecode.NoopOperand, false
 	}
 
 	if len(values) > 1 {
-		cap := c.front.Recovery.CompileDurationOperand(values[1])
+		cap := c.recovery.CompileDurationOperand(values[1])
 		if cap == bytecode.NoopOperand {
 			return bytecode.NoopOperand, bytecode.NoopOperand, false
 		}
@@ -274,12 +274,12 @@ func (c *WaitCompiler) compileJitterClauseValue(ctx fql.IJitterClauseValueContex
 	fc := ctx.FunctionCall()
 
 	return compileFirstOperand(
-		newOperandBranch(fl != nil, func() bytecode.Operand { return c.front.Literals.CompileFloatLiteral(fl) }),
-		newOperandBranch(il != nil, func() bytecode.Operand { return c.front.Literals.CompileIntegerLiteral(il) }),
-		newOperandBranch(v != nil, func() bytecode.Operand { return c.front.Expressions.CompileVariable(v) }),
-		newOperandBranch(p != nil, func() bytecode.Operand { return c.front.Expressions.CompileParam(p) }),
-		newOperandBranch(me != nil, func() bytecode.Operand { return c.front.Expressions.CompileMemberExpression(me) }),
-		newOperandBranch(fc != nil, func() bytecode.Operand { return c.front.Expressions.CompileFunctionCall(fc, false) }),
+		newOperandBranch(fl != nil, func() bytecode.Operand { return c.literals.CompileFloatLiteral(fl) }),
+		newOperandBranch(il != nil, func() bytecode.Operand { return c.literals.CompileIntegerLiteral(il) }),
+		newOperandBranch(v != nil, func() bytecode.Operand { return c.exprs.CompileVariable(v) }),
+		newOperandBranch(p != nil, func() bytecode.Operand { return c.exprs.CompileParam(p) }),
+		newOperandBranch(me != nil, func() bytecode.Operand { return c.exprs.CompileMemberExpression(me) }),
+		newOperandBranch(fc != nil, func() bytecode.Operand { return c.exprs.CompileFunctionCall(fc, false) }),
 	)
 }
 

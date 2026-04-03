@@ -48,7 +48,7 @@ func (c *WaitCompiler) tryCompileWaitPredicateFastPath(config waitPredicateCompi
 
 		if cond {
 			if config.mode == waitForPredicateModeValue {
-				return c.front.Expressions.Compile(config.predExpr), true
+				return c.exprs.Compile(config.predExpr), true
 			}
 
 			return c.emitImmediateWaitBool(true), true
@@ -108,7 +108,7 @@ func (c *WaitCompiler) initWaitPredicatePollState(config waitPredicateCompileCon
 
 	if config.timeoutReg != bytecode.NoopOperand {
 		state.startReg = c.emitNow()
-		state.unitReg = c.front.TypeFacts.LoadConstant(runtime.NewString("f"))
+		state.unitReg = c.facts.LoadConstant(runtime.NewString("f"))
 	}
 
 	return state
@@ -155,7 +155,7 @@ func (c *WaitCompiler) emitWaitPredicatePollIteration(
 	state waitPredicatePollState,
 	startLabel, successLabel, timeoutLabel core.Label,
 ) bytecode.Operand {
-	valueReg := c.front.Expressions.Compile(config.predExpr)
+	valueReg := c.exprs.Compile(config.predExpr)
 	condReg := c.emitWaitPredicateCondition(config.mode, valueReg)
 	c.ctx.Emitter.EmitJumpIfTrue(condReg, successLabel)
 
@@ -164,7 +164,7 @@ func (c *WaitCompiler) emitWaitPredicatePollIteration(
 	c.emitWaitSleep(sleepIntervalReg, config.timeoutReg, elapsedReg)
 
 	if config.backoff != core.RetryBackoffNone {
-		c.front.Recovery.emitBackoffUpdate(config.backoff, state.intervalReg, state.baseEveryReg)
+		c.recovery.emitBackoffUpdate(config.backoff, state.intervalReg, state.baseEveryReg)
 		if config.capEveryReg != bytecode.NoopOperand {
 			c.emitClampMax(state.intervalReg, config.capEveryReg)
 		}

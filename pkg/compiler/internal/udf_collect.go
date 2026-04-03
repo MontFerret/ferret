@@ -13,11 +13,19 @@ import (
 
 type UDFCatalogBuilder struct {
 	ctx   *CompilationSession
-	front *CompilationFrontend
+	calls *CallResolver
 }
 
 func NewUDFCatalogBuilder(ctx *CompilationSession) *UDFCatalogBuilder {
 	return &UDFCatalogBuilder{ctx: ctx}
+}
+
+func (c *UDFCatalogBuilder) bind(calls *CallResolver) {
+	if c == nil {
+		return
+	}
+
+	c.calls = calls
 }
 
 func (c *UDFCatalogBuilder) BuildCatalog(program *fql.ProgramContext) {
@@ -345,7 +353,7 @@ func (c *UDFCatalogBuilder) resolveCallInScope(ctx fql.IFunctionCallContext, sco
 		return nil, false
 	}
 
-	name, ok := c.front.Calls.ResolveLocalFunctionName(ctx)
+	name, ok := c.calls.ResolveLocalFunctionName(ctx)
 	if !ok {
 		return nil, false
 	}

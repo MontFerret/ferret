@@ -119,7 +119,7 @@ func (c *RecoveryCompiler) EnsureRegister(op bytecode.Operand) bytecode.Operand 
 
 	dst := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitLoadConst(dst, op)
-	c.ctx.Types.Set(dst, c.front.TypeFacts.OperandType(op))
+	c.ctx.Types.Set(dst, c.facts.OperandType(op))
 
 	return dst
 }

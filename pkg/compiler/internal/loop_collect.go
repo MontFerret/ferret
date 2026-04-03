@@ -10,13 +10,29 @@ import (
 // CollectCompiler handles the compilation of COLLECT clauses in FQL queries.
 // It transforms COLLECT operations into VM instructions for data aggregation and grouping.
 type CollectCompiler struct {
-	ctx   *CompilationSession
-	front *CompilationFrontend
+	ctx      *CompilationSession
+	bindings *BindingCompiler
+	calls    *CallResolver
+	exprs    *ExprCompiler
+	recovery *RecoveryCompiler
+	facts    *TypeFacts
 }
 
 // NewCollectCompiler creates a new instance of CollectCompiler with the given compiler context.
 func NewCollectCompiler(ctx *CompilationSession) *CollectCompiler {
 	return &CollectCompiler{ctx: ctx}
+}
+
+func (c *CollectCompiler) bind(bindings *BindingCompiler, calls *CallResolver, exprs *ExprCompiler, recovery *RecoveryCompiler, facts *TypeFacts) {
+	if c == nil {
+		return
+	}
+
+	c.bindings = bindings
+	c.calls = calls
+	c.exprs = exprs
+	c.recovery = recovery
+	c.facts = facts
 }
 
 // Compile processes a COLLECT clause from the FQL AST and generates the appropriate VM instructions.
@@ -136,7 +152,7 @@ func (c *CollectCompiler) finalizeCollector(dst bytecode.Operand, kv *core.KV, s
 		c.ctx.Emitter.EmitArrayPush(spec.ProjectionState(), kv.Value)
 	} else if spec.HasProjection() {
 		// For projection without grouping but with aggregation, use the projection variable name as the key
-		key := c.front.TypeFacts.LoadConstant(runtime.String(spec.Projection().VariableName()))
+		key := c.facts.LoadConstant(runtime.String(spec.Projection().VariableName()))
 		c.ctx.Emitter.EmitPushKV(dst, key, kv.Value)
 	}
 

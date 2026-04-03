@@ -15,8 +15,11 @@ import (
 )
 
 type DispatchCompiler struct {
-	ctx   *CompilationSession
-	front *CompilationFrontend
+	ctx      *CompilationSession
+	exprs    *ExprCompiler
+	literals *LiteralCompiler
+	recovery *RecoveryCompiler
+	facts    *TypeFacts
 }
 
 func NewDispatchCompiler(ctx *CompilationSession) *DispatchCompiler {
@@ -25,12 +28,23 @@ func NewDispatchCompiler(ctx *CompilationSession) *DispatchCompiler {
 	}
 }
 
+func (c *DispatchCompiler) bind(exprs *ExprCompiler, literals *LiteralCompiler, recovery *RecoveryCompiler, facts *TypeFacts) {
+	if c == nil {
+		return
+	}
+
+	c.exprs = exprs
+	c.literals = literals
+	c.recovery = recovery
+	c.facts = facts
+}
+
 func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) bytecode.Operand {
 	if ctx == nil {
 		return bytecode.NoopOperand
 	}
 
-	return c.front.Recovery.CompileOperation(OperationRecoverySpec{
+	return c.recovery.CompileOperation(OperationRecoverySpec{
 		Owner:    ctx,
 		JumpMode: core.CatchJumpModeNone,
 		CompilePlain: func() bytecode.Operand {
@@ -61,23 +75,23 @@ func (c *DispatchCompiler) compileEventName(ctx fql.IDispatchEventNameContext) b
 	}
 
 	if sl := ctx.StringLiteral(); sl != nil {
-		return c.front.Literals.CompileStringLiteral(sl)
+		return c.literals.CompileStringLiteral(sl)
 	}
 
 	if v := ctx.Variable(); v != nil {
-		return c.front.Expressions.CompileVariable(v)
+		return c.exprs.CompileVariable(v)
 	}
 
 	if p := ctx.Param(); p != nil {
-		return c.front.Expressions.CompileParam(p)
+		return c.exprs.CompileParam(p)
 	}
 
 	if me := ctx.MemberExpression(); me != nil {
-		return c.front.Expressions.CompileMemberExpression(me)
+		return c.exprs.CompileMemberExpression(me)
 	}
 
 	if fc := ctx.FunctionCall(); fc != nil {
-		return c.front.Expressions.CompileFunctionCall(fc, false)
+		return c.exprs.CompileFunctionCall(fc, false)
 	}
 
 	return bytecode.NoopOperand
@@ -89,19 +103,19 @@ func (c *DispatchCompiler) compileTarget(ctx fql.IDispatchTargetContext) bytecod
 	}
 
 	if v := ctx.Variable(); v != nil {
-		return c.front.Expressions.CompileVariable(v)
+		return c.exprs.CompileVariable(v)
 	}
 
 	if p := ctx.Param(); p != nil {
-		return c.front.Expressions.CompileParam(p)
+		return c.exprs.CompileParam(p)
 	}
 
 	if me := ctx.MemberExpression(); me != nil {
-		return c.front.Expressions.CompileMemberExpression(me)
+		return c.exprs.CompileMemberExpression(me)
 	}
 
 	if fc := ctx.FunctionCallExpression(); fc != nil {
-		return c.front.Expressions.CompileFunctionCallExpression(fc)
+		return c.exprs.CompileFunctionCallExpression(fc)
 	}
 
 	return bytecode.NoopOperand
@@ -109,18 +123,18 @@ func (c *DispatchCompiler) compileTarget(ctx fql.IDispatchTargetContext) bytecod
 
 func (c *DispatchCompiler) compilePayload(ctx fql.IDispatchWithClauseContext) bytecode.Operand {
 	if ctx == nil || ctx.Expression() == nil {
-		return c.front.TypeFacts.LoadConstant(runtime.None)
+		return c.facts.LoadConstant(runtime.None)
 	}
 
-	return c.front.Expressions.Compile(ctx.Expression())
+	return c.exprs.Compile(ctx.Expression())
 }
 
 func (c *DispatchCompiler) compileOptions(ctx fql.IDispatchOptionsClauseContext) bytecode.Operand {
 	if ctx == nil || ctx.Expression() == nil {
-		return c.front.TypeFacts.LoadConstant(runtime.None)
+		return c.facts.LoadConstant(runtime.None)
 	}
 
-	return c.front.Expressions.Compile(ctx.Expression())
+	return c.exprs.Compile(ctx.Expression())
 }
 
 func (c *DispatchCompiler) buildDispatchArgs(payload, options bytecode.Operand) bytecode.Operand {
@@ -138,7 +152,7 @@ func (c *DispatchCompiler) buildDispatchArgs(payload, options bytecode.Operand) 
 
 func (c *DispatchCompiler) ensureRegister(op bytecode.Operand) bytecode.Operand {
 	if op == bytecode.NoopOperand {
-		return c.front.TypeFacts.LoadConstant(runtime.None)
+		return c.facts.LoadConstant(runtime.None)
 	}
 
 	if op.IsRegister() {
@@ -147,7 +161,7 @@ func (c *DispatchCompiler) ensureRegister(op bytecode.Operand) bytecode.Operand 
 
 	dst := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitLoadConst(dst, op)
-	c.ctx.Types.Set(dst, c.front.TypeFacts.OperandType(op))
+	c.ctx.Types.Set(dst, c.facts.OperandType(op))
 
 	return dst
 }

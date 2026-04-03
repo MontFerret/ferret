@@ -19,7 +19,8 @@ import (
 // It transforms literal expressions from the AST into VM instructions and constants.
 type LiteralCompiler struct {
 	ctx   *CompilationSession
-	front *CompilationFrontend
+	exprs *ExprCompiler
+	facts *TypeFacts
 }
 
 // NewLiteralCompiler creates a new instance of LiteralCompiler with the given compiler context.
@@ -27,6 +28,15 @@ func NewLiteralCompiler(ctx *CompilationSession) *LiteralCompiler {
 	return &LiteralCompiler{
 		ctx: ctx,
 	}
+}
+
+func (c *LiteralCompiler) bind(exprs *ExprCompiler, facts *TypeFacts) {
+	if c == nil {
+		return
+	}
+
+	c.exprs = exprs
+	c.facts = facts
 }
 
 // Compile processes a literal expression from the FQL AST and delegates to the appropriate
@@ -228,7 +238,7 @@ func (c *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) by
 	}
 
 	// Create a runtime string and load it as a constant
-	return c.front.TypeFacts.LoadConstant(parseStringLiteral(ctx))
+	return c.facts.LoadConstant(parseStringLiteral(ctx))
 }
 
 // CompileTemplateLiteral processes a template literal from the FQL AST.
@@ -240,7 +250,7 @@ func (c *LiteralCompiler) CompileTemplateLiteral(ctx fql.ITemplateLiteralContext
 
 	elements := ctx.AllTemplateElement()
 	if len(elements) == 0 {
-		return c.front.TypeFacts.LoadConstant(runtime.EmptyString)
+		return c.facts.LoadConstant(runtime.EmptyString)
 	}
 
 	parts := make([]concatOperandSegment, 0, len(elements))
@@ -270,13 +280,13 @@ func (c *LiteralCompiler) CompileTemplateLiteral(ctx fql.ITemplateLiteralContext
 
 		if expr := el.Expression(); expr != nil {
 			flushLiteral()
-			parts = append(parts, buildConcatOperandSegmentsFromExpression(c.front.Expressions, expr)...)
+			parts = append(parts, buildConcatOperandSegmentsFromExpression(c.exprs, expr)...)
 		}
 	}
 
 	flushLiteral()
 
-	return emitConcatOperandSegments(c.ctx, c.front.TypeFacts, parts)
+	return emitConcatOperandSegments(c.ctx, c.facts, parts)
 }
 
 // CompileIntegerLiteral processes an integer literal from the FQL AST and converts it into a runtime integer.
@@ -287,7 +297,7 @@ func (c *LiteralCompiler) CompileIntegerLiteral(ctx fql.IIntegerLiteralContext) 
 		return bytecode.NoopOperand
 	}
 
-	return c.front.TypeFacts.LoadConstant(runtime.NewInt(val))
+	return c.facts.LoadConstant(runtime.NewInt(val))
 }
 
 // CompileFloatLiteral processes a float literal from the FQL AST and converts it into a runtime float.
@@ -298,7 +308,7 @@ func (c *LiteralCompiler) CompileFloatLiteral(ctx fql.IFloatLiteralContext) byte
 		return bytecode.NoopOperand
 	}
 
-	return c.front.TypeFacts.LoadConstant(runtime.NewFloat(val))
+	return c.facts.LoadConstant(runtime.NewFloat(val))
 }
 
 func (c *LiteralCompiler) reportInvalidNumericLiteral(ctx antlr.ParserRuleContext, kind string, err error) {
@@ -398,7 +408,7 @@ func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) byte
 		// Compile each expression in the array and push it to the array register
 		for _, exp := range exps {
 			// Compile expression
-			itemReg := c.front.Expressions.Compile(exp)
+			itemReg := c.exprs.Compile(exp)
 
 			c.ctx.Emitter.EmitArrayPush(destReg, itemReg)
 		}
@@ -437,7 +447,7 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) by
 			if prop := pac.PropertyName(); prop != nil {
 				// Regular property name (e.g., { name: value }).
 				// Evaluate value first to shorten the live range of the key register.
-				valOp := c.front.Expressions.Compile(pac.Expression())
+				valOp := c.exprs.Compile(pac.Expression())
 				if constOp, ok := c.CompilePropertyNameConst(prop); ok {
 					c.ctx.Emitter.EmitObjectSetConst(dst, constOp, valOp)
 				} else {
@@ -446,12 +456,12 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) by
 				}
 			} else if comProp := pac.ComputedPropertyName(); comProp != nil {
 				// Computed property name (e.g., { [expr]: value })
-				if val, ok := c.front.TypeFacts.LiteralValueFromExpression(comProp.Expression()); ok {
+				if val, ok := c.facts.LiteralValueFromExpression(comProp.Expression()); ok {
 					switch val.(type) {
 					case *runtime.Array, *runtime.Object:
 						// Fall back to the generic computed path to preserve side effects.
 					default:
-						valOp := c.front.Expressions.Compile(pac.Expression())
+						valOp := c.exprs.Compile(pac.Expression())
 						keyConst := c.ctx.Symbols.AddConstant(runtime.ToString(val))
 						c.ctx.Emitter.EmitObjectSetConst(dst, keyConst, valOp)
 						continue
@@ -459,12 +469,12 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) by
 				}
 
 				propOp := c.CompileComputedPropertyName(comProp)
-				valOp := c.front.Expressions.Compile(pac.Expression())
+				valOp := c.exprs.Compile(pac.Expression())
 				c.ctx.Emitter.EmitObjectSet(dst, propOp, valOp)
 			} else if variable := pac.Variable(); variable != nil {
 				// Shorthand property (e.g., { variable })
 				// Evaluate value first to shorten the live range of the key register.
-				valOp := c.front.Expressions.CompileVariable(variable)
+				valOp := c.exprs.CompileVariable(variable)
 				propOp := c.ctx.Symbols.AddConstant(runtime.NewString(variable.GetText()))
 				c.ctx.Emitter.EmitObjectSetConst(dst, propOp, valOp)
 			}
@@ -493,7 +503,7 @@ func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) byte
 	// Handle string literal property names (e.g., { "property": value })
 	if str := ctx.StringLiteral(); str != nil {
 		if val, ok := parseStringLiteralConst(str); ok {
-			return c.front.TypeFacts.LoadConstant(val)
+			return c.facts.LoadConstant(val)
 		}
 		return c.CompileStringLiteral(str)
 	}
@@ -515,7 +525,7 @@ func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) byte
 	}
 
 	// Create a runtime string from the property name and load it as a constant
-	return c.front.TypeFacts.LoadConstant(runtime.NewString(name))
+	return c.facts.LoadConstant(runtime.NewString(name))
 }
 
 // CompilePropertyNameConst compiles a property name into a constant operand without emitting instructions.
@@ -561,5 +571,5 @@ func (c *LiteralCompiler) CompilePropertyNameConst(ctx fql.IPropertyNameContext)
 //   - An operand representing the compiled expression that will evaluate to the property name
 func (c *LiteralCompiler) CompileComputedPropertyName(ctx fql.IComputedPropertyNameContext) bytecode.Operand {
 	// Delegate to the expression compiler to compile the expression inside the brackets
-	return c.front.Expressions.Compile(ctx.Expression())
+	return c.exprs.Compile(ctx.Expression())
 }
