@@ -119,7 +119,11 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
 
 	startCatch := c.ctx.Emitter.Size()
-	state := c.buildWaitEventState(ctx)
+	state, ok := c.buildWaitEventState(ctx)
+	if !ok {
+		return ProtectedRecoveryRegion{Result: bytecode.NoopOperand}
+	}
+
 	c.emitWaitEventStreamSetup(state, streamReg)
 
 	start := c.ctx.Emitter.NewLabel()

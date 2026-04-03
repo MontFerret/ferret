@@ -1,10 +1,15 @@
 package internal
 
 import (
+	"errors"
+	"strconv"
 	"strings"
+
+	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -17,27 +22,38 @@ func (c *RecoveryCompiler) CompileDurationOperand(clause core.DurationClause) by
 	if dl := clause.DurationLiteral(); dl != nil {
 		val, err := parseDurationLiteral(dl.GetText())
 		if err != nil {
-			panic(err)
+			c.reportInvalidDurationLiteral(dl, err)
+			return bytecode.NoopOperand
 		}
 
 		return c.front.TypeFacts.LoadConstant(val)
 	}
 
-	il := clause.IntegerLiteral()
-	fl := clause.FloatLiteral()
-	v := clause.Variable()
-	p := clause.Param()
-	me := clause.MemberExpression()
-	fc := clause.FunctionCall()
+	if il := clause.IntegerLiteral(); il != nil {
+		return c.front.Literals.CompileIntegerLiteral(il)
+	}
 
-	return compileFirstOperand(
-		newOperandBranch(il != nil, func() bytecode.Operand { return c.front.Literals.CompileIntegerLiteral(il) }),
-		newOperandBranch(fl != nil, func() bytecode.Operand { return c.front.Literals.CompileFloatLiteral(fl) }),
-		newOperandBranch(v != nil, func() bytecode.Operand { return c.front.Expressions.CompileVariable(v) }),
-		newOperandBranch(p != nil, func() bytecode.Operand { return c.front.Expressions.CompileParam(p) }),
-		newOperandBranch(me != nil, func() bytecode.Operand { return c.front.Expressions.CompileMemberExpression(me) }),
-		newOperandBranch(fc != nil, func() bytecode.Operand { return c.front.Expressions.CompileFunctionCall(fc, false) }),
-	)
+	if fl := clause.FloatLiteral(); fl != nil {
+		return c.front.Literals.CompileFloatLiteral(fl)
+	}
+
+	if v := clause.Variable(); v != nil {
+		return c.front.Expressions.CompileVariable(v)
+	}
+
+	if p := clause.Param(); p != nil {
+		return c.front.Expressions.CompileParam(p)
+	}
+
+	if me := clause.MemberExpression(); me != nil {
+		return c.front.Expressions.CompileMemberExpression(me)
+	}
+
+	if fc := clause.FunctionCall(); fc != nil {
+		return c.front.Expressions.CompileFunctionCall(fc, false)
+	}
+
+	return bytecode.NoopOperand
 }
 
 func (c *RecoveryCompiler) EmitRetryDelay(retry *core.RecoveryRetryPlan, state core.RetryDelayState) {
@@ -49,6 +65,10 @@ func (c *RecoveryCompiler) EmitRetryDelay(retry *core.RecoveryRetryPlan, state c
 	c.ctx.Emitter.EmitJumpIfTrue(state.ReadyReg, delayReady)
 
 	delayValue := c.EnsureRegister(c.CompileDurationOperand(retry.Delay))
+	if delayValue == bytecode.NoopOperand {
+		return
+	}
+
 	c.front.TypeFacts.EmitMoveAuto(state.BaseReg, delayValue)
 	c.front.TypeFacts.EmitMoveAuto(state.CurrentReg, state.BaseReg)
 	c.ctx.Emitter.EmitBoolean(state.ReadyReg, true)
@@ -122,4 +142,22 @@ func (c *RecoveryCompiler) resolveRetryBackoff(clause fql.IRecoveryRetryBackoffC
 		c.reportInvalidTail(kind, "Unknown BACKOFF strategy", "Use one of: CONSTANT, LINEAR, EXPONENTIAL.")
 		return core.RetryBackoffNone, false
 	}
+}
+
+func (c *RecoveryCompiler) reportInvalidDurationLiteral(ctx antlr.ParserRuleContext, err error) {
+	if c == nil || c.ctx == nil || c.ctx.Errors == nil || ctx == nil {
+		core.PanicInvariant("cannot report invalid duration literal")
+	}
+
+	message := "Invalid duration literal"
+	hint := "Use a valid duration, e.g. 100ms, 2s, or 1.5m."
+
+	if errors.Is(err, strconv.ErrRange) {
+		message = "Duration literal is out of range"
+		hint = "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m."
+	}
+
+	diag := c.ctx.Errors.Create(parserd.SyntaxError, ctx, message)
+	diag.Hint = hint
+	c.ctx.Errors.Add(diag)
 }

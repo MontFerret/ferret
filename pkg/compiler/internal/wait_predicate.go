@@ -73,7 +73,11 @@ func (c *WaitCompiler) prepareWaitPredicateConfig(ctx fql.IWaitForPredicateExpre
 		return waitPredicateCompileConfig{}, false
 	}
 
-	config := c.buildWaitPredicateConfig(ctx, predicate, predExpr)
+	config, ok := c.buildWaitPredicateConfig(ctx, predicate, predExpr)
+	if !ok {
+		return waitPredicateCompileConfig{}, false
+	}
+
 	c.normalizeWaitPredicateConfig(&config)
 
 	return config, true
@@ -153,21 +157,33 @@ func (c *WaitCompiler) buildWaitPredicateConfig(
 	ctx fql.IWaitForPredicateExpressionContext,
 	predicate fql.IWaitForPredicateContext,
 	predExpr fql.IExpressionContext,
-) waitPredicateCompileConfig {
-	everyReg, capEveryReg := c.compileEveryClause(ctx.EveryClause())
+) (waitPredicateCompileConfig, bool) {
+	everyReg, capEveryReg, ok := c.compileEveryClause(ctx.EveryClause())
+	if !ok {
+		return waitPredicateCompileConfig{}, false
+	}
+
 	jitterReg, jitterLiteral, hasJitter := c.compileJitterClause(ctx.JitterClause())
+	timeoutReg := bytecode.NoopOperand
+
+	if timeout := ctx.TimeoutClause(); timeout != nil {
+		timeoutReg = c.front.Recovery.CompileDurationOperand(timeout)
+		if timeoutReg == bytecode.NoopOperand {
+			return waitPredicateCompileConfig{}, false
+		}
+	}
 
 	return waitPredicateCompileConfig{
 		mode:          resolveWaitPredicateMode(predicate.Value() != nil, predicate.Exists() != nil, predicate.Not() != nil),
 		predExpr:      predExpr,
-		timeoutReg:    c.front.Recovery.CompileDurationOperand(ctx.TimeoutClause()),
+		timeoutReg:    timeoutReg,
 		everyReg:      everyReg,
 		capEveryReg:   capEveryReg,
 		backoff:       c.compileBackoffClause(ctx.BackoffClause()),
 		jitterReg:     jitterReg,
 		jitterLiteral: jitterLiteral,
 		hasJitter:     hasJitter,
-	}
+	}, true
 }
 
 func (c *WaitCompiler) normalizeWaitPredicateConfig(config *waitPredicateCompileConfig) {
@@ -185,22 +201,31 @@ func (c *WaitCompiler) normalizeWaitPredicateConfig(config *waitPredicateCompile
 	}
 }
 
-func (c *WaitCompiler) compileEveryClause(ctx fql.IEveryClauseContext) (bytecode.Operand, bytecode.Operand) {
+func (c *WaitCompiler) compileEveryClause(ctx fql.IEveryClauseContext) (bytecode.Operand, bytecode.Operand, bool) {
 	if ctx == nil {
-		return bytecode.NoopOperand, bytecode.NoopOperand
+		return bytecode.NoopOperand, bytecode.NoopOperand, true
 	}
 
 	values := ctx.AllEveryClauseValue()
 	if len(values) == 0 {
-		return bytecode.NoopOperand, bytecode.NoopOperand
+		return bytecode.NoopOperand, bytecode.NoopOperand, true
 	}
 
 	base := c.front.Recovery.CompileDurationOperand(values[0])
-	if len(values) > 1 {
-		return base, c.front.Recovery.CompileDurationOperand(values[1])
+	if base == bytecode.NoopOperand {
+		return bytecode.NoopOperand, bytecode.NoopOperand, false
 	}
 
-	return base, bytecode.NoopOperand
+	if len(values) > 1 {
+		cap := c.front.Recovery.CompileDurationOperand(values[1])
+		if cap == bytecode.NoopOperand {
+			return bytecode.NoopOperand, bytecode.NoopOperand, false
+		}
+
+		return base, cap, true
+	}
+
+	return base, bytecode.NoopOperand, true
 }
 
 func (c *WaitCompiler) compileJitterClause(ctx fql.IJitterClauseContext) (bytecode.Operand, *float64, bool) {

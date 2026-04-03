@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -278,43 +280,55 @@ func (c *LiteralCompiler) CompileTemplateLiteral(ctx fql.ITemplateLiteralContext
 }
 
 // CompileIntegerLiteral processes an integer literal from the FQL AST and converts it into a runtime integer.
-// Parameters:
-//   - ctx: The integer literal context from the AST
-//
-// Returns:
-//   - An operand representing the compiled integer constant
-//
-// Panics if the integer value cannot be parsed.
 func (c *LiteralCompiler) CompileIntegerLiteral(ctx fql.IIntegerLiteralContext) bytecode.Operand {
-	// Parse the integer value from the text representation
 	val, err := strconv.Atoi(ctx.GetText())
-
 	if err != nil {
-		panic(err)
+		c.reportInvalidNumericLiteral(ctx, "integer", err)
+		return bytecode.NoopOperand
 	}
 
-	// Create a runtime integer and load it as a constant
 	return c.front.TypeFacts.LoadConstant(runtime.NewInt(val))
 }
 
 // CompileFloatLiteral processes a float literal from the FQL AST and converts it into a runtime float.
-// Parameters:
-//   - ctx: The float literal context from the AST
-//
-// Returns:
-//   - An operand representing the compiled float constant
-//
-// Panics if the float value cannot be parsed.
 func (c *LiteralCompiler) CompileFloatLiteral(ctx fql.IFloatLiteralContext) bytecode.Operand {
-	// Parse the float value from the text representation with 64-bit precision
 	val, err := strconv.ParseFloat(ctx.GetText(), 64)
-
 	if err != nil {
-		panic(err)
+		c.reportInvalidNumericLiteral(ctx, "float", err)
+		return bytecode.NoopOperand
 	}
 
-	// Create a runtime float and load it as a constant
 	return c.front.TypeFacts.LoadConstant(runtime.NewFloat(val))
+}
+
+func (c *LiteralCompiler) reportInvalidNumericLiteral(ctx antlr.ParserRuleContext, kind string, err error) {
+	if c == nil || c.ctx == nil || c.ctx.Errors == nil || ctx == nil {
+		core.PanicInvariantf("cannot report invalid %s literal", kind)
+	}
+
+	message, hint := invalidNumericLiteralDetails(kind, err)
+	diag := c.ctx.Errors.Create(parserd.SyntaxError, ctx, message)
+	diag.Hint = hint
+	c.ctx.Errors.Add(diag)
+}
+
+func invalidNumericLiteralDetails(kind string, err error) (string, string) {
+	switch kind {
+	case "integer":
+		if errors.Is(err, strconv.ErrRange) {
+			return "Integer literal is out of range", "Use an integer value that fits within the supported range."
+		}
+
+		return "Invalid integer literal", "Use a valid integer value, e.g. 42."
+	case "float":
+		if errors.Is(err, strconv.ErrRange) {
+			return "Float literal is out of range", "Use a finite float value within the supported range."
+		}
+
+		return "Invalid float literal", "Use a valid float value, e.g. 1.5."
+	default:
+		return "Invalid numeric literal", "Use a valid numeric value."
+	}
 }
 
 // CompileBooleanLiteral processes a boolean literal from the FQL AST and converts it into a runtime boolean.

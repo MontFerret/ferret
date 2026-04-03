@@ -19,7 +19,11 @@ type waitEventCompileState struct {
 }
 
 func (c *WaitCompiler) compileEvent(ctx fql.IWaitForEventExpressionContext) bytecode.Operand {
-	state := c.buildWaitEventState(ctx)
+	state, ok := c.buildWaitEventState(ctx)
+	if !ok {
+		return bytecode.NoopOperand
+	}
+
 	streamReg := c.ctx.Registers.Allocate()
 	resultReg := c.ctx.Registers.Allocate()
 
@@ -49,7 +53,11 @@ func (c *WaitCompiler) compileEventWithTimeoutRecovery(
 	c.ctx.Emitter.EmitLoadNone(resultReg)
 	c.ctx.Emitter.EmitBoolean(timeoutStateReg, false)
 
-	state := c.buildWaitEventState(ctx)
+	state, ok := c.buildWaitEventState(ctx)
+	if !ok {
+		return bytecode.NoopOperand
+	}
+
 	c.emitWaitEventStreamSetup(state, streamReg)
 
 	start := c.ctx.Emitter.NewLabel()
@@ -72,7 +80,7 @@ func (c *WaitCompiler) compileEventWithTimeoutRecovery(
 	return resultReg
 }
 
-func (c *WaitCompiler) buildWaitEventState(ctx fql.IWaitForEventExpressionContext) waitEventCompileState {
+func (c *WaitCompiler) buildWaitEventState(ctx fql.IWaitForEventExpressionContext) (waitEventCompileState, bool) {
 	state := waitEventCompileState{
 		span:     waitForSpan(ctx.WaitForEventSource(), ctx),
 		srcReg:   c.CompileWaitForEventSource(ctx.WaitForEventSource()),
@@ -85,9 +93,12 @@ func (c *WaitCompiler) buildWaitEventState(ctx fql.IWaitForEventExpressionContex
 
 	if timeout := ctx.TimeoutClause(); timeout != nil {
 		state.timeoutReg = c.front.Recovery.CompileDurationOperand(timeout)
+		if state.timeoutReg == bytecode.NoopOperand {
+			return waitEventCompileState{}, false
+		}
 	}
 
-	return state
+	return state, true
 }
 
 func (c *WaitCompiler) emitWaitEventStreamSetup(state waitEventCompileState, streamReg bytecode.Operand) {

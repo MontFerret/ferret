@@ -50,21 +50,19 @@ func compileScalarLiteralOperand(ctx *CompilationSession, literals *LiteralCompi
 	}
 
 	if fl := lit.FloatLiteral(); fl != nil {
-		val, err := strconv.ParseFloat(fl.GetText(), 64)
-		if err != nil {
-			panic(err)
+		if val, ok := literalFloatValue(fl.GetText()); ok {
+			return ctx.Symbols.AddConstant(val)
 		}
 
-		return ctx.Symbols.AddConstant(runtime.NewFloat(val))
+		return literals.CompileFloatLiteral(fl)
 	}
 
 	if il := lit.IntegerLiteral(); il != nil {
-		val, err := strconv.Atoi(il.GetText())
-		if err != nil {
-			panic(err)
+		if val, ok := literalIntValue(il.GetText()); ok {
+			return ctx.Symbols.AddConstant(val)
 		}
 
-		return ctx.Symbols.AddConstant(runtime.NewInt(val))
+		return literals.CompileIntegerLiteral(il)
 	}
 
 	return bytecode.NoopOperand

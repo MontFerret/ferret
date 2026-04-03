@@ -179,7 +179,23 @@ func parseDurationLiteral(text string) (runtime.Value, error) {
 		return runtime.None, strconv.ErrSyntax
 	}
 
-	return durationValueFromMilliseconds(value * multiplier), nil
+	ms := value * multiplier
+	if math.IsNaN(ms) || math.IsInf(ms, 0) {
+		return runtime.None, strconv.ErrRange
+	}
+
+	if frac := math.Mod(ms, 1); frac == 0 {
+		const (
+			maxInt64Float = float64(1<<63 - 1)
+			minInt64Float = -float64(1 << 63)
+		)
+
+		if ms < minInt64Float || ms > maxInt64Float {
+			return runtime.None, strconv.ErrRange
+		}
+	}
+
+	return durationValueFromMilliseconds(ms), nil
 }
 
 func normalizeDurationLiteral(text string) string {

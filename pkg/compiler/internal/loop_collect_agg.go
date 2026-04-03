@@ -359,8 +359,7 @@ func (c *CollectCompiler) finalizeGlobalAggregation(spec *core.Collector) {
 
 	// If not allocating, use the parent loop's destination
 	if !loop.Allocate {
-		parent := c.ctx.Loops.FindParent(c.ctx.Loops.Depth())
-		loop.Dst = parent.Dst
+		loop.Dst = c.ctx.Loops.RequiredParent(c.ctx.Loops.Depth()).Dst
 	}
 
 	// Initialize the loop

@@ -191,8 +191,8 @@ func (c *ExprCompiler) CompileFunctionCallByNameWith(ctx fql.IFunctionCallContex
 		case runtimeLength:
 			dst := c.ctx.Registers.Allocate()
 
-			if seq == nil || len(seq) != 1 {
-				panic(runtime.Error(runtime.ErrInvalidArgument, runtimeLength+": expected 1 argument"))
+			if len(seq) != 1 {
+				return c.reportFunctionArityError(callCtx, builtinName, 1, len(seq))
 			}
 
 			c.ctx.Emitter.EmitAB(bytecode.OpLength, dst, seq[0])
@@ -201,8 +201,8 @@ func (c *ExprCompiler) CompileFunctionCallByNameWith(ctx fql.IFunctionCallContex
 		case runtimeTypename:
 			dst := c.ctx.Registers.Allocate()
 
-			if seq == nil || len(seq) != 1 {
-				panic(runtime.Error(runtime.ErrInvalidArgument, runtimeTypename+": expected 1 argument"))
+			if len(seq) != 1 {
+				return c.reportFunctionArityError(callCtx, builtinName, 1, len(seq))
 			}
 
 			c.ctx.Emitter.EmitAB(bytecode.OpType, dst, seq[0])
@@ -210,7 +210,7 @@ func (c *ExprCompiler) CompileFunctionCallByNameWith(ctx fql.IFunctionCallContex
 			return dst
 		case runtimeWait:
 			if len(seq) != 1 {
-				panic(runtime.Error(runtime.ErrInvalidArgument, runtimeWait+": expected 1 argument"))
+				return c.reportFunctionArityError(callCtx, builtinName, 1, len(seq))
 			}
 
 			c.ctx.Emitter.EmitA(bytecode.OpSleep, seq[0])
@@ -220,6 +220,20 @@ func (c *ExprCompiler) CompileFunctionCallByNameWith(ctx fql.IFunctionCallContex
 	}
 
 	return c.compileHostFunctionCallWith(name, protected, seq)
+}
+
+func (c *ExprCompiler) reportFunctionArityError(ctx antlr.ParserRuleContext, name string, expected, got int) bytecode.Operand {
+	if c == nil || c.ctx == nil || c.ctx.Errors == nil || ctx == nil {
+		core.PanicInvariantf("cannot report arity error for function %q", name)
+	}
+
+	c.ctx.Errors.Add(c.ctx.Errors.Create(
+		diagnostics.NameError,
+		ctx,
+		fmt.Sprintf("Function '%s' expects %d arguments, got %d", name, expected, got),
+	))
+
+	return bytecode.NoopOperand
 }
 
 func (c *ExprCompiler) compileHostFunctionCallWith(name runtime.String, protected bool, seq core.RegisterSequence) bytecode.Operand {

@@ -94,7 +94,7 @@ func (c *ExprCompiler) Compile(ctx fql.IExpressionContext) bytecode.Operand {
 
 func (c *ExprCompiler) CompileIncDec(token antlr.Token, target bytecode.Operand) bytecode.Operand {
 	if target.IsConstant() {
-		panic("cannot increment/decrement a constant")
+		core.PanicInvariant("cannot increment/decrement a constant")
 	}
 
 	operator := token.GetText()

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -286,7 +285,7 @@ func (e *Emitter) Patchx(label Label, arg int) {
 	pos, ok := e.LabelPosition(label)
 
 	if !ok {
-		panic(fmt.Errorf("label not marked: %s", label))
+		PanicInvariantf("label not marked: %s", label)
 	}
 
 	current := e.instructions[pos]
@@ -336,7 +335,7 @@ func (e *Emitter) swapInstructionWithSelectorSlot(label Label, ins bytecode.Inst
 	pos, ok := e.LabelPosition(label)
 
 	if !ok {
-		panic(fmt.Errorf("label not marked: %s", label))
+		PanicInvariantf("label not marked: %s", label)
 	}
 
 	e.instructions[pos] = ins
@@ -353,7 +352,7 @@ func (e *Emitter) insertInstructionWithSelectorSlot(label Label, ins bytecode.In
 	pos, ok := e.LabelPosition(label)
 
 	if !ok {
-		panic(fmt.Errorf("label not marked: %s", label))
+		PanicInvariantf("label not marked: %s", label)
 	}
 
 	// Insert instruction at position

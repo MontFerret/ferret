@@ -420,11 +420,7 @@ FUNC outer() (
 FUNC sibling() => onlyInside()
 RETURN sibling()
 `, func(prog *bytecode.Program) error {
-			if err := hostArity(prog.Functions.Host, "onlyInside", 0); err != nil {
-				return err
-			}
-
-			return nil
+			return hostArity(prog.Functions.Host, "onlyInside", 0)
 		}, "sibling udf compilation does not reuse prior nested scope"),
 	}, compiler.O0, compiler.O1)
 }

@@ -264,11 +264,7 @@ func (c *LoopCompiler) patchDistinctLoopDestination(loop *core.Loop) {
 		return
 	}
 
-	parent := c.ctx.Loops.FindParent(c.ctx.Loops.Depth())
-	if parent == nil {
-		panic("parent loop not found in loop table")
-	}
-
+	parent := c.ctx.Loops.RequiredParent(c.ctx.Loops.Depth())
 	c.ctx.Emitter.Patchx(parent.StartLabel(), 1)
 }
 
