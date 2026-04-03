@@ -8,21 +8,11 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
-type (
-	// UDFCompiler compiles user-defined functions into bytecode.
-	UDFCompiler struct {
-		ctx   *CompilationSession
-		front *CompilationFrontend
-	}
-
-	udfCompileState struct {
-		registers *core.RegisterAllocator
-		symbols   *core.SymbolTable
-		types     *core.TypeTracker
-		loops     *core.LoopTable
-		udfScope  *core.UDFScope
-	}
-)
+// UDFCompiler compiles user-defined functions into bytecode.
+type UDFCompiler struct {
+	ctx   *CompilationSession
+	front *CompilationFrontend
+}
 
 func NewUDFCompiler(ctx *CompilationSession) *UDFCompiler {
 	return &UDFCompiler{ctx: ctx}
@@ -43,85 +33,84 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 		return
 	}
 
-	state := c.enterFunctionCompileState(fn)
-	defer c.restoreFunctionCompileState(state)
+	c.withFunctionCompileState(fn, func() {
+		fn.Entry = c.ctx.Emitter.Size()
 
-	fn.Entry = c.ctx.Emitter.Size()
+		c.ctx.Symbols.EnterScope()
 
-	c.ctx.Symbols.EnterScope()
-
-	for _, name := range fn.Params {
-		c.ctx.Symbols.DeclareLocal(name, core.TypeAny)
-	}
-
-	for _, capture := range fn.Captures {
-		c.ctx.Symbols.DeclareLocalWithOptions(capture.Name, core.TypeAny, core.BindingOptions{
-			Mutable: capture.Mutable,
-			Storage: capture.Storage,
-		})
-	}
-
-	body := fn.Decl.FunctionBody()
-	if body != nil {
-		if arrow := body.FunctionArrow(); arrow != nil {
-			c.compileExpressionReturn(arrow.Expression())
-		} else if block := body.FunctionBlock(); block != nil {
-			for _, stmt := range block.AllFunctionStatement() {
-				c.front.Statements.CompileFunctionStatement(stmt)
-			}
-
-			c.compileReturn(block.FunctionReturn())
+		for _, name := range fn.Params {
+			c.ctx.Symbols.DeclareLocal(name, core.TypeAny)
 		}
-	}
 
-	fn.Registers = c.ctx.Registers.Size()
+		for _, capture := range fn.Captures {
+			c.ctx.Symbols.DeclareLocalWithOptions(capture.Name, core.TypeAny, core.BindingOptions{
+				Mutable: capture.Mutable,
+				Storage: capture.Storage,
+			})
+		}
+
+		body := fn.Decl.FunctionBody()
+		if body != nil {
+			if arrow := body.FunctionArrow(); arrow != nil {
+				c.compileExpressionReturn(arrow.Expression())
+			} else if block := body.FunctionBlock(); block != nil {
+				for _, stmt := range block.AllFunctionStatement() {
+					c.front.Statements.CompileFunctionStatement(stmt)
+				}
+
+				c.compileReturn(block.FunctionReturn())
+			}
+		}
+
+		fn.Registers = c.ctx.Registers.Size()
+	})
 }
 
-func (c *UDFCompiler) enterFunctionCompileState(fn *core.UDFInfo) udfCompileState {
-	state := udfCompileState{
-		registers: c.ctx.Registers,
-		symbols:   c.ctx.Symbols,
-		types:     c.ctx.Types,
-		loops:     c.ctx.Loops,
-		udfScope:  c.ctx.UDFScope,
+// withFunctionCompileState is the single save/restore path for UDF-local
+// session state. New UDF-local compiler fields must live on
+// CompilationSession.functionCompileState so this value swap stays exhaustive.
+func (c *UDFCompiler) withFunctionCompileState(fn *core.UDFInfo, compile func()) {
+	if c == nil || c.ctx == nil || fn == nil || compile == nil {
+		return
 	}
+
+	outerState := c.ctx.functionCompileState
 
 	var outerParams []string
-	if state.symbols != nil {
-		outerParams = state.symbols.Params()
+	if outerState.Symbols != nil {
+		outerParams = outerState.Symbols.Params()
 	}
 
-	c.ctx.Registers = core.NewRegisterAllocator()
-	c.ctx.Symbols = core.NewSymbolTable(c.ctx.Registers, c.ctx.Constants)
+	localState := functionCompileState{
+		Registers: core.NewRegisterAllocator(),
+		Types:     core.NewTypeTracker(),
+		UDFScope:  fn.BodyScope,
+	}
+	localState.Symbols = core.NewSymbolTable(localState.Registers, c.ctx.Constants)
+	localState.Loops = core.NewLoopTable(localState.Registers)
+
+	c.ctx.functionCompileState = localState
 
 	for _, name := range outerParams {
 		c.ctx.Symbols.BindParam(name)
 	}
 
-	c.ctx.Types = core.NewTypeTracker()
-	c.ctx.Loops = core.NewLoopTable(c.ctx.Registers)
-	c.ctx.UDFScope = fn.BodyScope
+	defer func() {
+		udfParams := c.ctx.Symbols.Params()
+		udfFunctions := c.ctx.Symbols.Functions()
 
-	return state
-}
+		c.ctx.functionCompileState = outerState
 
-func (c *UDFCompiler) restoreFunctionCompileState(state udfCompileState) {
-	udfParams := c.ctx.Symbols.Params()
-	udfFunctions := c.ctx.Symbols.Functions()
+		for _, name := range udfParams {
+			c.ctx.Symbols.BindParam(name)
+		}
 
-	c.ctx.Registers = state.registers
-	c.ctx.Symbols = state.symbols
-	c.ctx.Types = state.types
-	c.ctx.Loops = state.loops
-	c.ctx.UDFScope = state.udfScope
+		for name, args := range udfFunctions {
+			c.ctx.Symbols.BindFunction(name, args)
+		}
+	}()
 
-	for _, name := range udfParams {
-		c.ctx.Symbols.BindParam(name)
-	}
-
-	for name, args := range udfFunctions {
-		c.ctx.Symbols.BindFunction(name, args)
-	}
+	compile()
 }
 
 func (c *UDFCompiler) compileReturn(ctx fql.IFunctionReturnContext) {

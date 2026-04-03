@@ -12,18 +12,26 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
+// functionCompileState contains the compiler state that is intentionally local
+// to a single function body compilation. New UDF-local session state must be
+// added here so save/restore stays exhaustive when swapped by value.
+type functionCompileState struct {
+	Registers *core.RegisterAllocator
+	Symbols   *core.SymbolTable
+	Types     *core.TypeTracker
+	Loops     *core.LoopTable
+	UDFScope  *core.UDFScope
+}
+
 // CompilationSession holds the shared mutable state for a single compilation run.
 type CompilationSession struct {
+	functionCompileState
+
 	UseAliases          map[string]string
 	Emitter             *core.Emitter
-	Registers           *core.RegisterAllocator
 	Constants           *core.ConstantPool
-	Types               *core.TypeTracker
 	CatchTable          *core.CatchStack
-	Symbols             *core.SymbolTable
-	Loops               *core.LoopTable
 	UDFs                *core.UDFTable
-	UDFScope            *core.UDFScope
 	Errors              *diagnostics.ErrorHandler
 	Source              *source.Source
 	aggregatePlanByHash map[uint64][]int
@@ -39,7 +47,6 @@ func NewCompilationSession(src *source.Source, errors *diagnostics.ErrorHandler,
 		OptimizationLevel: level,
 
 		Emitter:    core.NewEmitter(),
-		Registers:  core.NewRegisterAllocator(),
 		Constants:  core.NewConstantPool(),
 		CatchTable: core.NewCatchStack(),
 
@@ -49,8 +56,11 @@ func NewCompilationSession(src *source.Source, errors *diagnostics.ErrorHandler,
 		aggregatePlanByHash: make(map[uint64][]int),
 	}
 
+	ctx.functionCompileState = functionCompileState{
+		Registers: core.NewRegisterAllocator(),
+		Types:     core.NewTypeTracker(),
+	}
 	ctx.Symbols = core.NewSymbolTable(ctx.Registers, ctx.Constants)
-	ctx.Types = core.NewTypeTracker()
 	ctx.Loops = core.NewLoopTable(ctx.Registers)
 
 	return ctx
