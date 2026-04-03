@@ -131,7 +131,7 @@ func (c *WaitCompiler) emitWaitEventIteration(
 			c.ctx.Emitter.EmitAB(bytecode.OpIterValue, eventValReg, streamReg)
 		})
 
-		cond := c.exprs.compileWithImplicitCurrent(filter.Expression())
+		cond := c.exprs.CompileWithImplicitCurrent(filter.Expression())
 		c.ctx.Emitter.EmitJumpIfFalse(cond, restartLabel)
 	}
 }

@@ -13,6 +13,7 @@ type StatementCompiler struct {
 	dispatch *DispatchCompiler
 	exprs    *ExprCompiler
 	loops    *LoopCompiler
+	facts    *TypeFacts
 	wait     *WaitCompiler
 }
 
@@ -23,7 +24,7 @@ func NewStatementCompiler(ctx *CompilationSession) *StatementCompiler {
 	}
 }
 
-func (c *StatementCompiler) bind(bindings *BindingCompiler, dispatch *DispatchCompiler, exprs *ExprCompiler, loops *LoopCompiler, wait *WaitCompiler) {
+func (c *StatementCompiler) bind(bindings *BindingCompiler, dispatch *DispatchCompiler, exprs *ExprCompiler, loops *LoopCompiler, facts *TypeFacts, wait *WaitCompiler) {
 	if c == nil {
 		return
 	}
@@ -32,6 +33,7 @@ func (c *StatementCompiler) bind(bindings *BindingCompiler, dispatch *DispatchCo
 	c.dispatch = dispatch
 	c.exprs = exprs
 	c.loops = loops
+	c.facts = facts
 	c.wait = wait
 }
 
@@ -102,7 +104,7 @@ func (c *StatementCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext
 	} else if re := ctx.ReturnExpression(); re != nil {
 		// Handle RETURN expressions (e.g., RETURN x)
 		// Compile and normalize into a register because RETURN expects a register operand.
-		valReg := c.exprs.ensureRegister(c.exprs.Compile(re.Expression()))
+		valReg := ensureOperandRegister(c.ctx, c.facts, c.exprs.Compile(re.Expression()))
 
 		// Emit a return instruction with the expression result
 		c.ctx.Emitter.EmitA(bytecode.OpReturn, valReg)

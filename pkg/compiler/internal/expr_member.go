@@ -116,7 +116,9 @@ func (c *ExprCompiler) emitImplicitMemberStartLoad(src bytecode.Operand, start f
 	return dst, true
 }
 
-func (c *ExprCompiler) compileWithImplicitCurrent(expr fql.IExpressionContext) bytecode.Operand {
+// CompileWithImplicitCurrent is the supported cross-compiler entrypoint for
+// evaluating an expression against the current implicit item.
+func (c *ExprCompiler) CompileWithImplicitCurrent(expr fql.IExpressionContext) bytecode.Operand {
 	if expr == nil {
 		return bytecode.NoopOperand
 	}
@@ -710,7 +712,7 @@ func (c *ExprCompiler) compileArrayQuestionMark(src bytecode.Operand, question f
 	c.ctx.Emitter.EmitA(bytecode.OpIncr, total)
 
 	if filter := question.Expression(); filter != nil {
-		cond := c.compileWithImplicitCurrent(filter)
+		cond := c.CompileWithImplicitCurrent(filter)
 		label := c.ctx.Loops.Current().ContinueLabel()
 		c.ctx.Emitter.EmitJumpIfFalse(cond, label)
 	}
@@ -916,7 +918,7 @@ func (c *ExprCompiler) compileArrayIteration(src bytecode.Operand, span source.S
 
 	if inline != nil {
 		if ret := inline.InlineReturn(); ret != nil {
-			projection = c.compileWithImplicitCurrent(ret.Expression())
+			projection = c.CompileWithImplicitCurrent(ret.Expression())
 		}
 	}
 
@@ -952,7 +954,7 @@ func (c *ExprCompiler) compileInlineFilter(inline fql.IInlineExpressionContext) 
 		return
 	}
 
-	src := c.compileWithImplicitCurrent(filter.Expression())
+	src := c.CompileWithImplicitCurrent(filter.Expression())
 	label := c.ctx.Loops.Current().ContinueLabel()
 	c.ctx.Emitter.EmitJumpIfFalse(src, label)
 }
@@ -962,7 +964,7 @@ func (c *ExprCompiler) compileInlineFilterExpr(expr fql.IExpressionContext) {
 		return
 	}
 
-	src := c.compileWithImplicitCurrent(expr)
+	src := c.CompileWithImplicitCurrent(expr)
 	label := c.ctx.Loops.Current().ContinueLabel()
 	c.ctx.Emitter.EmitJumpIfFalse(src, label)
 }
@@ -984,11 +986,45 @@ func (c *ExprCompiler) compileInlineLimit(inline fql.IInlineExpressionContext) {
 
 	c.withImplicitCurrent(func() {
 		if len(clauses) == 1 {
-			c.loops.compileLimit(c.loops.compileLimitClauseValue(clauses[0]))
+			c.emitInlineLimit(c.compileInlineLimitClauseValue(clauses[0]))
 			return
 		}
 
-		c.loops.compileOffset(c.loops.compileLimitClauseValue(clauses[0]))
-		c.loops.compileLimit(c.loops.compileLimitClauseValue(clauses[1]))
+		c.emitInlineOffset(c.compileInlineLimitClauseValue(clauses[0]))
+		c.emitInlineLimit(c.compileInlineLimitClauseValue(clauses[1]))
 	})
+}
+
+func (c *ExprCompiler) compileInlineLimitClauseValue(ctx fql.ILimitClauseValueContext) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
+	return compileFirstOperand(
+		newOperandBranch(ctx.Param() != nil, func() bytecode.Operand { return c.CompileParam(ctx.Param()) }),
+		newOperandBranch(ctx.IntegerLiteral() != nil, func() bytecode.Operand { return c.literals.CompileIntegerLiteral(ctx.IntegerLiteral()) }),
+		newOperandBranch(ctx.Variable() != nil, func() bytecode.Operand { return c.CompileVariable(ctx.Variable()) }),
+		newOperandBranch(ctx.MemberExpression() != nil, func() bytecode.Operand { return c.CompileMemberExpression(ctx.MemberExpression()) }),
+		newOperandBranch(ctx.ImplicitCurrentExpression() != nil, func() bytecode.Operand {
+			return c.CompileImplicitCurrentExpression(ctx.ImplicitCurrentExpression())
+		}),
+		newOperandBranch(ctx.ImplicitMemberExpression() != nil, func() bytecode.Operand {
+			return c.CompileImplicitMemberExpression(ctx.ImplicitMemberExpression())
+		}),
+		newOperandBranch(ctx.FunctionCallExpression() != nil, func() bytecode.Operand {
+			return c.CompileFunctionCallExpression(ctx.FunctionCallExpression())
+		}),
+	)
+}
+
+func (c *ExprCompiler) emitInlineLimit(src bytecode.Operand) {
+	state := c.ctx.Registers.Allocate()
+	c.ctx.Loops.Current().RegisterReset(state)
+	c.ctx.Emitter.EmitIterLimit(state, src, c.ctx.Loops.Current().BreakLabel())
+}
+
+func (c *ExprCompiler) emitInlineOffset(src bytecode.Operand) {
+	state := c.ctx.Registers.Allocate()
+	c.ctx.Loops.Current().RegisterReset(state)
+	c.ctx.Emitter.EmitIterSkip(state, src, c.ctx.Loops.Current().ContinueLabel())
 }

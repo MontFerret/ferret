@@ -19,6 +19,7 @@ type (
 		collects *CollectCompiler
 		exprs    *ExprCompiler
 		literals *LiteralCompiler
+		recovery *RecoveryCompiler
 		sorts    *LoopSortCompiler
 		facts    *TypeFacts
 	}
@@ -62,6 +63,7 @@ func (c *LoopCompiler) bind(
 	collects *CollectCompiler,
 	exprs *ExprCompiler,
 	literals *LiteralCompiler,
+	recovery *RecoveryCompiler,
 	sorts *LoopSortCompiler,
 	facts *TypeFacts,
 ) {
@@ -73,6 +75,7 @@ func (c *LoopCompiler) bind(
 	c.collects = collects
 	c.exprs = exprs
 	c.literals = literals
+	c.recovery = recovery
 	c.sorts = sorts
 	c.facts = facts
 }
@@ -82,6 +85,24 @@ func (c *LoopCompiler) bind(
 // or a FOR WHILE/DO WHILE loop.
 // Returns an operand representing the destination of the loop results.
 func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) bytecode.Operand {
+	return c.CompileWithOuterRecoveryPlan(ctx, core.RecoveryPlan{})
+}
+
+// CompileWithOuterRecoveryPlan is the supported cross-compiler entrypoint for
+// FOR expressions that need their recovery tails merged with an outer plan.
+func (c *LoopCompiler) CompileWithOuterRecoveryPlan(ctx fql.IForExpressionContext, outerPlan core.RecoveryPlan) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
+	if outerPlan.OnError == nil && outerPlan.OnTimeout == nil {
+		return c.compilePlain(ctx)
+	}
+
+	return c.recovery.CompileOperation(c.newLoopOperationRecoverySpec(ctx, outerPlan))
+}
+
+func (c *LoopCompiler) compilePlain(ctx fql.IForExpressionContext) bytecode.Operand {
 	var returnRuleCtx antlr.RuleContext
 
 	if ctx.In() != nil {
@@ -107,7 +128,7 @@ func (c *LoopCompiler) newLoopOperationRecoverySpec(ctx fql.IForExpressionContex
 	spec := OperationRecoverySpec{
 		OuterPlan: outerPlan,
 		CompilePlain: func() bytecode.Operand {
-			return c.Compile(ctx)
+			return c.compilePlain(ctx)
 		},
 	}
 

@@ -36,6 +36,12 @@ func (c *WaitCompiler) bind(exprs *ExprCompiler, literals *LiteralCompiler, reco
 
 // Compile processes a WAITFOR expression from the FQL AST and generates the appropriate VM instructions.
 func (c *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) bytecode.Operand {
+	return c.CompileWithOuterRecoveryPlan(ctx, core.RecoveryPlan{})
+}
+
+// CompileWithOuterRecoveryPlan is the supported cross-compiler entrypoint for
+// WAITFOR expressions that need their recovery tails merged with an outer plan.
+func (c *WaitCompiler) CompileWithOuterRecoveryPlan(ctx fql.IWaitForExpressionContext, outerPlan core.RecoveryPlan) bytecode.Operand {
 	if ctx == nil {
 		return bytecode.NoopOperand
 	}
@@ -43,7 +49,7 @@ func (c *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) bytecode.Opera
 	c.ctx.Symbols.EnterScope()
 	defer c.ctx.Symbols.ExitScope()
 
-	return c.recovery.CompileOperation(c.newWaitOperationRecoverySpec(ctx, core.RecoveryPlan{}))
+	return c.recovery.CompileOperation(c.newWaitOperationRecoverySpec(ctx, outerPlan))
 }
 
 func waitForHasExplicitTimeoutClause(ctx fql.IWaitForExpressionContext) bool {

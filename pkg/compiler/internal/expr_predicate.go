@@ -63,12 +63,12 @@ func (c *ExprCompiler) compilePredicateAtom(ctx fql.IPredicateContext) (bytecode
 			HasTimeout:   waitForHasExplicitTimeoutClause(wfe),
 		})
 
-		return c.recovery.CompileOperation(c.wait.newWaitOperationRecoverySpec(wfe, outerPlan)), true
+		return c.wait.CompileWithOuterRecoveryPlan(wfe, outerPlan), true
 	}
 
 	if fe := atom.ForExpression(); fe != nil {
 		outerPlan := c.recovery.CollectPlan(atom, core.RecoveryPlanOptions{})
-		return c.recovery.CompileOperation(c.loops.newLoopOperationRecoverySpec(fe, outerPlan)), true
+		return c.loops.CompileWithOuterRecoveryPlan(fe, outerPlan), true
 	}
 
 	reg := c.recovery.CompileOperation(OperationRecoverySpec{

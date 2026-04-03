@@ -13,6 +13,7 @@ type UDFCompiler struct {
 	ctx      *CompilationSession
 	calls    *CallResolver
 	exprs    *ExprCompiler
+	facts    *TypeFacts
 	recovery *RecoveryCompiler
 	stmts    *StatementCompiler
 }
@@ -21,13 +22,14 @@ func NewUDFCompiler(ctx *CompilationSession) *UDFCompiler {
 	return &UDFCompiler{ctx: ctx}
 }
 
-func (c *UDFCompiler) bind(calls *CallResolver, exprs *ExprCompiler, recovery *RecoveryCompiler, stmts *StatementCompiler) {
+func (c *UDFCompiler) bind(calls *CallResolver, exprs *ExprCompiler, facts *TypeFacts, recovery *RecoveryCompiler, stmts *StatementCompiler) {
 	if c == nil {
 		return
 	}
 
 	c.calls = calls
 	c.exprs = exprs
+	c.facts = facts
 	c.recovery = recovery
 	c.stmts = stmts
 }
@@ -152,7 +154,7 @@ func (c *UDFCompiler) compileExpressionReturn(expr fql.IExpressionContext) {
 		}
 	}
 
-	val := c.exprs.ensureRegister(c.exprs.Compile(expr))
+	val := ensureOperandRegister(c.ctx, c.facts, c.exprs.Compile(expr))
 
 	c.ctx.Emitter.EmitA(bytecode.OpReturn, val)
 }

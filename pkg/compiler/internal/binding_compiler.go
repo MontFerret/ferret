@@ -81,7 +81,7 @@ func (c *BindingCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclaratio
 	}
 
 	if storage == core.BindingStorageCell {
-		src = c.exprs.ensureRegister(src)
+		src = ensureOperandRegister(c.ctx, c.facts, src)
 
 		dest, ok := c.declareBinding(name, srcType, src, opts)
 		if !ok {
@@ -304,7 +304,7 @@ func (c *BindingCompiler) storeBindingValue(binding *core.Variable, src bytecode
 	}
 
 	if binding.Storage == core.BindingStorageCell {
-		src = c.exprs.ensureRegister(src)
+		src = ensureOperandRegister(c.ctx, c.facts, src)
 		c.ctx.Emitter.EmitStoreCell(binding.Register, src)
 		return binding.Register
 	}

@@ -56,7 +56,7 @@ func (c *CollectCompiler) finalizeProjection(spec *core.Collector, aggregator by
 		if !c.assignLocalOrReport(spec.Projection().Context(), loop.ValueName, core.TypeUnknown, aggregator) {
 			if existing, found := c.ctx.Symbols.ResolveBinding(loop.ValueName); found {
 				if existing.Storage == core.BindingStorageCell {
-					c.ctx.Emitter.EmitStoreCell(existing.Register, c.exprs.ensureRegister(aggregator))
+					c.ctx.Emitter.EmitStoreCell(existing.Register, ensureOperandRegister(c.ctx, c.facts, aggregator))
 				} else {
 					c.facts.EmitMoveAuto(existing.Register, aggregator)
 				}

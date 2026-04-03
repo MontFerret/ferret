@@ -15,19 +15,7 @@ import (
 )
 
 func (c *ExprCompiler) ensureRegister(op bytecode.Operand) bytecode.Operand {
-	if op == bytecode.NoopOperand {
-		return op
-	}
-
-	if op.IsRegister() {
-		return op
-	}
-
-	reg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitLoadConst(reg, op)
-	c.ctx.Types.Set(reg, c.facts.OperandType(op))
-
-	return reg
+	return ensureOperandRegister(c.ctx, c.facts, op)
 }
 
 func (c *ExprCompiler) emitComparison(op bytecode.Opcode, left, right bytecode.Operand) bytecode.Operand {

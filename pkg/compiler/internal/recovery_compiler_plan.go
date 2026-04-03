@@ -112,18 +112,6 @@ func (c *RecoveryCompiler) WidenResultType(out bytecode.Operand, plan core.Recov
 	return out
 }
 
-func (c *RecoveryCompiler) EnsureRegister(op bytecode.Operand) bytecode.Operand {
-	if c == nil || c.ctx == nil || op == bytecode.NoopOperand || op.IsRegister() {
-		return op
-	}
-
-	dst := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitLoadConst(dst, op)
-	c.ctx.Types.Set(dst, c.facts.OperandType(op))
-
-	return dst
-}
-
 func (c *RecoveryCompiler) resolveCondition(tail fql.IRecoveryTailContext) (core.RecoveryCondition, bool) {
 	if tail == nil {
 		return core.RecoveryConditionUnknown, false

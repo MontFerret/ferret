@@ -64,7 +64,7 @@ func (c *RecoveryCompiler) EmitRetryDelay(retry *core.RecoveryRetryPlan, state c
 	delayReady := c.ctx.Emitter.NewLabel("recovery", "retry", "delay", "ready")
 	c.ctx.Emitter.EmitJumpIfTrue(state.ReadyReg, delayReady)
 
-	delayValue := c.EnsureRegister(c.CompileDurationOperand(retry.Delay))
+	delayValue := ensureOperandRegister(c.ctx, c.facts, c.CompileDurationOperand(retry.Delay))
 	if delayValue == bytecode.NoopOperand {
 		return
 	}

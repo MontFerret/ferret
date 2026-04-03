@@ -48,10 +48,10 @@ func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) bytecode.
 		Owner:    ctx,
 		JumpMode: core.CatchJumpModeNone,
 		CompilePlain: func() bytecode.Operand {
-			targetReg := c.ensureRegister(c.compileTarget(ctx.DispatchTarget()))
-			eventReg := c.ensureRegister(c.compileEventName(ctx.DispatchEventName()))
-			payloadReg := c.ensureRegister(c.compilePayload(ctx.DispatchWithClause()))
-			optionsReg := c.ensureRegister(c.compileOptions(ctx.DispatchOptionsClause()))
+			targetReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compileTarget(ctx.DispatchTarget()))
+			eventReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compileEventName(ctx.DispatchEventName()))
+			payloadReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compilePayload(ctx.DispatchWithClause()))
+			optionsReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compileOptions(ctx.DispatchOptionsClause()))
 			argsReg := c.buildDispatchArgs(payloadReg, optionsReg)
 
 			dst := c.ctx.Registers.Allocate()
@@ -146,22 +146,6 @@ func (c *DispatchCompiler) buildDispatchArgs(payload, options bytecode.Operand) 
 	c.ctx.Emitter.EmitObjectSetConst(dst, payloadKey, payload)
 	c.ctx.Emitter.EmitObjectSetConst(dst, optionsKey, options)
 	c.ctx.Types.Set(dst, core.TypeObject)
-
-	return dst
-}
-
-func (c *DispatchCompiler) ensureRegister(op bytecode.Operand) bytecode.Operand {
-	if op == bytecode.NoopOperand {
-		return c.facts.LoadConstant(runtime.None)
-	}
-
-	if op.IsRegister() {
-		return op
-	}
-
-	dst := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitLoadConst(dst, op)
-	c.ctx.Types.Set(dst, c.facts.OperandType(op))
 
 	return dst
 }
