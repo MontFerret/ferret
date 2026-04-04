@@ -103,7 +103,7 @@ func (c *exprCallCompiler) compileParam(ctx fql.IParamContext) bytecode.Operand 
 	}
 
 	reg := c.ctx.Function.Registers.Allocate()
-	c.ctx.Program.Emitter.EmitLoadParam(reg, c.ctx.Function.Symbols.BindParam(name))
+	c.ctx.Program.Emitter.EmitLoadParam(reg, c.ctx.Program.HostParams.Bind(name))
 	c.ctx.Function.Types.Set(reg, core.TypeAny)
 
 	return reg
@@ -239,7 +239,7 @@ func (c *exprCallCompiler) reportFunctionArityError(ctx antlr.ParserRuleContext,
 func (c *exprCallCompiler) compileHostFunctionCallWith(name runtime.String, protected bool, seq core.RegisterSequence) bytecode.Operand {
 	dest := c.ctx.Function.Registers.Allocate()
 	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(name))
-	c.ctx.Function.Symbols.BindFunction(name.String(), len(seq))
+	c.ctx.Program.HostFunctions.Bind(name.String(), len(seq))
 
 	opcode := bytecode.OpHCall
 	if protected {

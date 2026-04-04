@@ -106,7 +106,7 @@ func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err e
 	program = &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Functions: bytecode.Functions{
-			Host:        l.Session.Function.Symbols.Functions(),
+			Host:        l.Session.Program.HostFunctions.All(),
 			UserDefined: udfs,
 		},
 		Metadata: bytecode.Metadata{
@@ -123,7 +123,7 @@ func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err e
 		Constants:  l.Session.Function.Symbols.Constants(),
 		CatchTable: l.Session.Program.CatchTable.All(),
 		Registers:  registers,
-		Params:     l.Session.Function.Symbols.Params(),
+		Params:     l.Session.Program.HostParams.Names(),
 	}
 
 	if err := optimization.Run(program, c.opts.Level); err != nil {

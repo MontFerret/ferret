@@ -82,9 +82,19 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 	})
 }
 
-// withFunctionCompileState isolates function-local compiler state for a single
-// UDF body compilation. It swaps in a fresh FunctionContext and restores the
-// outer one when compilation finishes.
+// withFunctionCompileState isolates function-local compiler state for a
+// single UDF body compilation.
+//
+// A fresh FunctionContext is created per UDF and carries no state from the
+// enclosing function: registers, symbol table, type tracker, loop table, and
+// UDFScope all start empty (UDFScope is wired to fn.BodyScope so inner UDF
+// name lookups walk the right chain). Anything that must survive the
+// function boundary - host params, host function refs, constants, UDF
+// metadata, emitter, catch table, errors - lives on ProgramContext and is
+// shared, so no copying across the boundary is required.
+//
+// The deferred restore guarantees the outer FunctionContext is reinstated on
+// every exit path, including panics.
 func (c *UDFCompiler) withFunctionCompileState(fn *core.UDFInfo, compile func()) {
 	if c == nil || c.ctx == nil || fn == nil || compile == nil {
 		return
@@ -92,34 +102,12 @@ func (c *UDFCompiler) withFunctionCompileState(fn *core.UDFInfo, compile func())
 
 	outerFunction := c.ctx.Function
 
-	var outerParams []string
-	if outerFunction.Symbols != nil {
-		outerParams = outerFunction.Symbols.Params()
-	}
-
-	// Create fresh function context for this UDF.
 	localFunction := NewFunctionContext(c.ctx.Program.Constants)
 	localFunction.UDFScope = fn.BodyScope
-
 	c.ctx.Function = localFunction
 
-	for _, name := range outerParams {
-		c.ctx.Function.Symbols.BindParam(name)
-	}
-
 	defer func() {
-		udfParams := c.ctx.Function.Symbols.Params()
-		udfFunctions := c.ctx.Function.Symbols.Functions()
-
 		c.ctx.Function = outerFunction
-
-		for _, name := range udfParams {
-			c.ctx.Function.Symbols.BindParam(name)
-		}
-
-		for name, args := range udfFunctions {
-			c.ctx.Function.Symbols.BindFunction(name, args)
-		}
 	}()
 
 	compile()

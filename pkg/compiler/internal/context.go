@@ -14,11 +14,18 @@ import (
 
 // ProgramContext holds state that lives for the entire compilation of one
 // source file. It is shared across the main body and all UDF compilations.
+//
+// Everything in ProgramContext is program-wide: writes from any function
+// compile (top-level body or a nested UDF body) are observable globally and
+// persist for the whole compilation. The final bytecode.Program reads its
+// metadata almost entirely from here.
 type ProgramContext struct {
 	Emitter             *core.Emitter
 	Constants           *core.ConstantPool
 	CatchTable          *core.CatchStack
 	UDFs                *core.UDFTable
+	HostParams          *core.HostParamTable
+	HostFunctions       *core.HostFunctionTable
 	Errors              *diagnostics.ErrorHandler
 	Source              *source.Source
 	UseAliases          map[string]string
@@ -28,7 +35,19 @@ type ProgramContext struct {
 }
 
 // FunctionContext holds state that is local to a single function body
-// compilation. A fresh FunctionContext is created for each UDF body.
+// compilation. A fresh FunctionContext is created for the top-level body
+// and for every UDF body.
+//
+// Function-local state is NEVER inherited from an enclosing function: a
+// nested UDF starts with an empty RegisterAllocator, an empty SymbolTable
+// (locals and globals), a fresh TypeTracker, a fresh LoopTable, and its
+// own UDFScope pointing at the UDF's body scope for inner UDF name
+// lookup. Carrying any of these over from a parent function would produce
+// wrong bytecode.
+//
+// Anything that must be visible across function boundaries (host params,
+// host function refs, constants, catch table, UDF metadata, the emitter)
+// lives on ProgramContext instead.
 type FunctionContext struct {
 	Registers *core.RegisterAllocator
 	Symbols   *core.SymbolTable
@@ -39,6 +58,8 @@ type FunctionContext struct {
 
 // CompilationSession is the thin coordinator passed to all compilers.
 // It provides access to both program-wide and function-local state.
+// The Function pointer is swapped by withFunctionCompileState during UDF
+// compilation; the Program pointer never changes during a single Compile.
 type CompilationSession struct {
 	Program  *ProgramContext
 	Function *FunctionContext
@@ -63,9 +84,11 @@ func NewCompilationSession(src *source.Source, errors *diagnostics.ErrorHandler,
 		Errors:            errors,
 		OptimizationLevel: level,
 
-		Emitter:    core.NewEmitter(),
-		Constants:  core.NewConstantPool(),
-		CatchTable: core.NewCatchStack(),
+		Emitter:       core.NewEmitter(),
+		Constants:     core.NewConstantPool(),
+		CatchTable:    core.NewCatchStack(),
+		HostParams:    core.NewHostParamTable(),
+		HostFunctions: core.NewHostFunctionTable(),
 
 		UseAliases: make(map[string]string),
 
