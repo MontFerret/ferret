@@ -69,6 +69,10 @@ func (c *BindingCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclaratio
 	mutable := c.isMutableDeclaration(ctx)
 	storage := c.declarationStorage(decl, mutable)
 	src := c.exprs.Compile(ctx.Expression())
+	if src == bytecode.NoopOperand {
+		return bytecode.NoopOperand
+	}
+
 	srcType := c.facts.OperandType(src)
 
 	if name == core.IgnorePseudoVariable {

@@ -147,6 +147,109 @@ RETURN total
 	}
 }
 
+func TestBindingCompilerFailedInitializerDoesNotDeclareBinding(t *testing.T) {
+	state := newBindingCompilerTestState(t, `
+LET x = missing
+RETURN 1
+`)
+
+	prepareBindingCompilerTestState(t, state)
+	state.front.Statements.Compile(state.body)
+
+	if !state.errors.HasErrors() {
+		t.Fatal("expected initializer diagnostic")
+	}
+
+	if _, ok := state.session.Function.Symbols.ResolveBinding("x"); ok {
+		t.Fatal("expected failed declaration not to bind x")
+	}
+}
+
+func TestBindingCompilerFailedInitializerDoesNotPoisonLaterDeclarations(t *testing.T) {
+	state := newBindingCompilerTestState(t, `
+LET x = missing
+LET y = 1
+RETURN y
+`)
+
+	prepareBindingCompilerTestState(t, state)
+	state.front.Statements.Compile(state.body)
+
+	if !state.errors.HasErrors() {
+		t.Fatal("expected initializer diagnostic")
+	}
+
+	if _, ok := state.session.Function.Symbols.ResolveBinding("x"); ok {
+		t.Fatal("expected failed declaration not to bind x")
+	}
+
+	binding, ok := state.session.Function.Symbols.ResolveBinding("y")
+	if !ok {
+		t.Fatal("expected y binding to exist")
+	}
+
+	if binding.Register == bytecode.NoopOperand {
+		t.Fatal("expected y binding to use a real register")
+	}
+
+	instructions := state.session.Program.Emitter.Bytecode()
+	if got, want := len(instructions), 2; got != want {
+		t.Fatalf("unexpected instruction count: got %d want %d", got, want)
+	}
+
+	if got, want := instructions[0].Opcode, bytecode.OpLoadConst; got != want {
+		t.Fatalf("unexpected first opcode: got %s want %s", got, want)
+	}
+
+	if got := instructions[0].Operands[0]; got == bytecode.NoopOperand {
+		t.Fatal("expected valid destination register for y declaration")
+	}
+
+	if got, want := instructions[1].Opcode, bytecode.OpReturn; got != want {
+		t.Fatalf("unexpected second opcode: got %s want %s", got, want)
+	}
+
+	if got, want := instructions[1].Operands[0], instructions[0].Operands[0]; got != want {
+		t.Fatalf("unexpected return register: got %s want %s", got, want)
+	}
+}
+
+func TestBindingCompilerPromotedFailedInitializerSkipsCellBinding(t *testing.T) {
+	state := newBindingCompilerTestState(t, `
+VAR base = missing
+FUNC outer() (
+  FUNC inner() (
+    base = 1
+    RETURN base
+  )
+  RETURN inner()
+)
+RETURN 1
+`)
+
+	prepareBindingCompilerTestState(t, state)
+
+	decl := findBindingCompilerTestDeclaration(t, state, "base")
+	if !state.front.Bindings.IsPromotedDeclaration(decl) {
+		t.Fatal("expected base declaration to be promoted before lowering")
+	}
+
+	state.front.Statements.Compile(state.body)
+
+	if !state.errors.HasErrors() {
+		t.Fatal("expected initializer diagnostic")
+	}
+
+	if _, ok := state.session.Function.Symbols.ResolveBinding("base"); ok {
+		t.Fatal("expected failed promoted declaration not to bind base")
+	}
+
+	instructions := state.session.Program.Emitter.Bytecode()
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpMakeCell); got != 0 {
+		t.Fatalf("unexpected %s count: got %d want 0", bytecode.OpMakeCell, got)
+	}
+}
+
 func newBindingCompilerTestState(t *testing.T, query string) *bindingCompilerTestState {
 	t.Helper()
 
