@@ -20,21 +20,31 @@ func (c *RecoveryCompiler) CompileDurationOperand(clause core.DurationClause) by
 	}
 
 	if dl := clause.DurationLiteral(); dl != nil {
-		val, err := parseDurationLiteral(dl.GetText())
-		if err != nil {
-			c.reportInvalidDurationLiteral(dl, err)
-			return bytecode.NoopOperand
-		}
-
-		return c.facts.LoadConstant(val)
+		return c.compileDurationConstant(dl, func() (runtime.Value, error) {
+			return parseDurationLiteral(dl.GetText())
+		})
 	}
 
 	if il := clause.IntegerLiteral(); il != nil {
-		return c.literals.CompileIntegerLiteral(il)
+		return c.compileDurationConstant(il, func() (runtime.Value, error) {
+			value, err := strconv.ParseInt(il.GetText(), 10, 64)
+			if err != nil {
+				return runtime.None, err
+			}
+
+			return parseDurationMillisecondsValue(float64(value))
+		})
 	}
 
 	if fl := clause.FloatLiteral(); fl != nil {
-		return c.literals.CompileFloatLiteral(fl)
+		return c.compileDurationConstant(fl, func() (runtime.Value, error) {
+			value, err := strconv.ParseFloat(fl.GetText(), 64)
+			if err != nil {
+				return runtime.None, err
+			}
+
+			return parseDurationMillisecondsValue(value)
+		})
 	}
 
 	if v := clause.Variable(); v != nil {
@@ -54,6 +64,20 @@ func (c *RecoveryCompiler) CompileDurationOperand(clause core.DurationClause) by
 	}
 
 	return bytecode.NoopOperand
+}
+
+func (c *RecoveryCompiler) compileDurationConstant(ctx antlr.ParserRuleContext, parse func() (runtime.Value, error)) bytecode.Operand {
+	if parse == nil {
+		return bytecode.NoopOperand
+	}
+
+	val, err := parse()
+	if err != nil {
+		c.reportInvalidDurationLiteral(ctx, err)
+		return bytecode.NoopOperand
+	}
+
+	return c.facts.LoadConstant(val)
 }
 
 func (c *RecoveryCompiler) EmitRetryDelay(retry *core.RecoveryRetryPlan, state core.RetryDelayState) {

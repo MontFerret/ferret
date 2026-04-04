@@ -238,3 +238,14 @@ func TestParseDurationLiteral_Invalid(t *testing.T) {
 		})
 	}
 }
+
+func TestParseDurationLiteral_OutOfRange(t *testing.T) {
+	actual, err := parseDurationLiteral("1e20ms")
+	if !errors.Is(err, strconv.ErrRange) {
+		t.Fatalf("expected range error, got %v", err)
+	}
+
+	if actual != runtime.None {
+		t.Fatalf("expected runtime.None on error, got %v", actual)
+	}
+}
