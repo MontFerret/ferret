@@ -152,7 +152,7 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 	routeRecovery := c.ctx.Program.Emitter.NewLabel("waitfor", "event", "recover")
 
 	c.ctx.Program.Emitter.MarkLabel(start)
-	c.emitWaitEventIteration(ctx, state, streamReg, timeoutStateReg, start, iterationDone)
+	c.emitWaitEventIteration(ctx, state, streamReg, resultReg, timeoutStateReg, start, iterationDone)
 
 	c.ctx.Program.Emitter.EmitJump(cleanup)
 	c.ctx.Program.Emitter.MarkLabel(iterationDone)

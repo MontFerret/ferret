@@ -34,7 +34,7 @@ func (c *WaitCompiler) compileEvent(ctx fql.IWaitForEventExpressionContext) byte
 	end := c.ctx.Program.Emitter.NewLabel()
 
 	c.ctx.Program.Emitter.MarkLabel(start)
-	c.emitWaitEventIteration(ctx, state, streamReg, bytecode.NoopOperand, start, end)
+	c.emitWaitEventIteration(ctx, state, streamReg, resultReg, bytecode.NoopOperand, start, end)
 
 	c.ctx.Program.Emitter.MarkLabel(end)
 	c.emitWaitEventCleanup(state, streamReg)
@@ -65,7 +65,7 @@ func (c *WaitCompiler) compileEventWithTimeoutRecovery(
 	cleanup := c.ctx.Program.Emitter.NewLabel()
 
 	c.ctx.Program.Emitter.MarkLabel(start)
-	c.emitWaitEventIteration(ctx, state, streamReg, timeoutStateReg, start, iterationDone)
+	c.emitWaitEventIteration(ctx, state, streamReg, resultReg, timeoutStateReg, start, iterationDone)
 
 	c.ctx.Program.Emitter.EmitJump(cleanup)
 	c.ctx.Program.Emitter.MarkLabel(iterationDone)
@@ -112,7 +112,7 @@ func (c *WaitCompiler) emitWaitEventStreamSetup(state waitEventCompileState, str
 func (c *WaitCompiler) emitWaitEventIteration(
 	ctx fql.IWaitForEventExpressionContext,
 	state waitEventCompileState,
-	streamReg, timeoutStateReg bytecode.Operand,
+	streamReg, resultReg, timeoutStateReg bytecode.Operand,
 	restartLabel, doneLabel core.Label,
 ) {
 	c.ctx.Program.Emitter.WithSpan(state.span, func() {
@@ -124,16 +124,26 @@ func (c *WaitCompiler) emitWaitEventIteration(
 		c.ctx.Program.Emitter.EmitIterNext(streamReg, doneLabel)
 	})
 
-	if filter := ctx.EventFilterClause(); filter != nil {
-		eventValReg, _ := c.ctx.Function.Symbols.DeclareLocal(core.PseudoVariable, core.TypeUnknown)
-
+	filter := ctx.EventFilterClause()
+	if filter == nil {
 		c.ctx.Program.Emitter.WithSpan(state.span, func() {
-			c.ctx.Program.Emitter.EmitAB(bytecode.OpIterValue, eventValReg, streamReg)
+			c.ctx.Program.Emitter.EmitIterValue(resultReg, streamReg)
 		})
-
-		cond := c.exprs.CompileWithImplicitCurrent(filter.Expression())
-		c.ctx.Program.Emitter.EmitJumpIfFalse(cond, restartLabel)
+		return
 	}
+
+	eventValReg, _ := c.ctx.Function.Symbols.DeclareLocal(core.PseudoVariable, core.TypeUnknown)
+
+	c.ctx.Program.Emitter.WithSpan(state.span, func() {
+		c.ctx.Program.Emitter.EmitIterValue(eventValReg, streamReg)
+	})
+
+	cond := c.exprs.CompileWithImplicitCurrent(filter.Expression())
+	c.ctx.Program.Emitter.EmitJumpIfFalse(cond, restartLabel)
+
+	c.ctx.Program.Emitter.WithSpan(state.span, func() {
+		c.ctx.Program.Emitter.EmitMove(resultReg, eventValReg)
+	})
 }
 
 func (c *WaitCompiler) emitWaitEventCleanup(state waitEventCompileState, streamReg bytecode.Operand) {
