@@ -85,7 +85,7 @@ func (c *BindingCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclaratio
 	if storage == core.BindingStorageCell {
 		src = ensureOperandRegister(c.ctx, c.facts, src)
 
-		dest, ok := c.declareBinding(name, srcType, src, opts)
+		dest, ok := c.declareBinding(name, srcType, opts)
 		if !ok {
 			c.ctx.Program.Errors.VariableNotUnique(decl, name)
 			return bytecode.NoopOperand
@@ -98,7 +98,7 @@ func (c *BindingCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclaratio
 	}
 
 	if src.IsConstant() {
-		dest, ok := c.declareBinding(name, srcType, src, opts)
+		dest, ok := c.declareBinding(name, srcType, opts)
 		if !ok {
 			c.ctx.Program.Errors.VariableNotUnique(decl, name)
 			return bytecode.NoopOperand
@@ -262,7 +262,6 @@ func (c *BindingCompiler) declarationStorage(decl antlr.ParserRuleContext, mutab
 func (c *BindingCompiler) declareBinding(
 	name string,
 	srcType core.ValueType,
-	src bytecode.Operand,
 	opts core.BindingOptions,
 ) (bytecode.Operand, bool) {
 	if c.ctx.Function.Symbols.Scope() == 0 {
