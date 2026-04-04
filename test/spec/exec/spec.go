@@ -13,6 +13,10 @@ func Nil(expression string, desc ...string) spec.Spec {
 	return spec.NewSpec(expression, desc...).Expect().Exec(assert.ShouldBeNil)
 }
 
+func NotNil(expression string, desc ...string) spec.Spec {
+	return spec.NewSpec(expression, desc...).Expect().Exec(assert.ShouldNotBeNil)
+}
+
 func Error(expression string, desc ...string) spec.Spec {
 	return spec.NewSpec(expression, desc...).Expect().ExecError(assert.ShouldNotBeNil)
 }
