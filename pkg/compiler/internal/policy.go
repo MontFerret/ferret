@@ -57,7 +57,11 @@ func (c *RecoveryCompiler) bind(exprs *ExprCompiler, literals *LiteralCompiler, 
 }
 
 func (c *RecoveryCompiler) CompileWithErrorPolicy(policy core.ErrorPolicy, jumpMode core.CatchJumpMode, compile func() bytecode.Operand) bytecode.Operand {
-	if compile == nil || policy != core.ErrorPolicySuppress {
+	if compile == nil {
+		return bytecode.NoopOperand
+	}
+
+	if policy != core.ErrorPolicySuppress {
 		return compile()
 	}
 
