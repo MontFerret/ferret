@@ -28,7 +28,7 @@ func (r *CallResolver) ResolveFunctionName(ctx fql.IFunctionCallContext) runtime
 	if nsText != "" {
 		ns := nsText
 
-		if len(r.session.UseAliases) > 0 {
+		if len(r.session.Program.UseAliases) > 0 {
 			ns = r.applyNamespaceAlias(ns)
 		}
 
@@ -40,8 +40,8 @@ func (r *CallResolver) ResolveFunctionName(ctx fql.IFunctionCallContext) runtime
 
 	fn := ctx.FunctionName().GetText()
 
-	if len(r.session.UseAliases) > 0 {
-		if target, ok := r.session.UseAliases[fn]; ok && target != "" {
+	if len(r.session.Program.UseAliases) > 0 {
+		if target, ok := r.session.Program.UseAliases[fn]; ok && target != "" {
 			if strings.Contains(target, runtime.NamespaceSeparator) {
 				return runtime.NewString(target)
 			}
@@ -72,8 +72,8 @@ func (r *CallResolver) ResolveLocalFunctionName(ctx fql.IFunctionCallContext) (s
 		return "", false
 	}
 
-	if len(r.session.UseAliases) > 0 {
-		if target, ok := r.session.UseAliases[name]; ok && target != "" {
+	if len(r.session.Program.UseAliases) > 0 {
+		if target, ok := r.session.Program.UseAliases[name]; ok && target != "" {
 			if strings.Contains(target, runtime.NamespaceSeparator) {
 				return "", false
 			}
@@ -84,7 +84,7 @@ func (r *CallResolver) ResolveLocalFunctionName(ctx fql.IFunctionCallContext) (s
 }
 
 func (r *CallResolver) ResolveUDF(ctx fql.IFunctionCallContext) (*core.UDFInfo, bool) {
-	if r == nil || r.session == nil || r.session.UDFs == nil || r.session.UDFScope == nil {
+	if r == nil || r.session == nil || r.session.Program.UDFs == nil || r.session.Function.UDFScope == nil {
 		return nil, false
 	}
 
@@ -93,11 +93,11 @@ func (r *CallResolver) ResolveUDF(ctx fql.IFunctionCallContext) (*core.UDFInfo, 
 		return nil, false
 	}
 
-	return r.session.UDFs.Resolve(name, r.session.UDFScope)
+	return r.session.Program.UDFs.Resolve(name, r.session.Function.UDFScope)
 }
 
 func (r *CallResolver) applyNamespaceAlias(ns string) string {
-	if ns == "" || len(r.session.UseAliases) == 0 {
+	if ns == "" || len(r.session.Program.UseAliases) == 0 {
 		return ns
 	}
 
@@ -111,7 +111,7 @@ func (r *CallResolver) applyNamespaceAlias(ns string) string {
 		return ns
 	}
 
-	target, ok := r.session.UseAliases[parts[0]]
+	target, ok := r.session.Program.UseAliases[parts[0]]
 	if !ok {
 		return ns
 	}

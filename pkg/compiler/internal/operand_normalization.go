@@ -12,9 +12,9 @@ func ensureOperandRegister(ctx *CompilationSession, facts *TypeFacts, op bytecod
 		return op
 	}
 
-	reg := ctx.Registers.Allocate()
-	ctx.Emitter.EmitLoadConst(reg, op)
-	ctx.Types.Set(reg, facts.OperandType(op))
+	reg := ctx.Function.Registers.Allocate()
+	ctx.Program.Emitter.EmitLoadConst(reg, op)
+	ctx.Function.Types.Set(reg, facts.OperandType(op))
 
 	return reg
 }

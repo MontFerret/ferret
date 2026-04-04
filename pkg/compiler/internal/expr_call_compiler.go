@@ -75,9 +75,9 @@ func (c *exprCallCompiler) compileVariable(ctx fql.IVariableContext) bytecode.Op
 		return bytecode.NoopOperand
 	}
 
-	binding, found := c.ctx.Symbols.ResolveBinding(name)
+	binding, found := c.ctx.Function.Symbols.ResolveBinding(name)
 	if !found {
-		c.ctx.Errors.VariableNotFound(token, name)
+		c.ctx.Program.Errors.VariableNotFound(token, name)
 
 		return bytecode.NoopOperand
 	}
@@ -102,9 +102,9 @@ func (c *exprCallCompiler) compileParam(ctx fql.IParamContext) bytecode.Operand 
 		return bytecode.NoopOperand
 	}
 
-	reg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitLoadParam(reg, c.ctx.Symbols.BindParam(name))
-	c.ctx.Types.Set(reg, core.TypeAny)
+	reg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitLoadParam(reg, c.ctx.Function.Symbols.BindParam(name))
+	c.ctx.Function.Types.Set(reg, core.TypeAny)
 
 	return reg
 }
@@ -155,7 +155,7 @@ func (c *exprCallCompiler) compileFunctionCallWith(ctx fql.IFunctionCallContext,
 
 	var out bytecode.Operand
 
-	c.ctx.Emitter.WithSpan(span, func() {
+	c.ctx.Program.Emitter.WithSpan(span, func() {
 		out = c.compileFunctionCallByNameWith(ctx, name, protected, seq)
 	})
 
@@ -180,7 +180,7 @@ func (c *exprCallCompiler) compileFunctionCallByNameWith(ctx fql.IFunctionCallCo
 		}
 	}
 
-	if !namespaced && c.ctx.UDFs != nil && c.ctx.UDFScope != nil {
+	if !namespaced && c.ctx.Program.UDFs != nil && c.ctx.Function.UDFScope != nil {
 		if fn, ok := c.calls.ResolveUDF(ctx); ok {
 			return c.compileUdfCallWith(fn, protected, seq, callCtx)
 		}
@@ -189,23 +189,23 @@ func (c *exprCallCompiler) compileFunctionCallByNameWith(ctx fql.IFunctionCallCo
 	if !namespaced {
 		switch builtinName {
 		case runtimeLength:
-			dst := c.ctx.Registers.Allocate()
+			dst := c.ctx.Function.Registers.Allocate()
 
 			if len(seq) != 1 {
 				return c.reportFunctionArityError(callCtx, builtinName, 1, len(seq))
 			}
 
-			c.ctx.Emitter.EmitAB(bytecode.OpLength, dst, seq[0])
+			c.ctx.Program.Emitter.EmitAB(bytecode.OpLength, dst, seq[0])
 
 			return dst
 		case runtimeTypename:
-			dst := c.ctx.Registers.Allocate()
+			dst := c.ctx.Function.Registers.Allocate()
 
 			if len(seq) != 1 {
 				return c.reportFunctionArityError(callCtx, builtinName, 1, len(seq))
 			}
 
-			c.ctx.Emitter.EmitAB(bytecode.OpType, dst, seq[0])
+			c.ctx.Program.Emitter.EmitAB(bytecode.OpType, dst, seq[0])
 
 			return dst
 		case runtimeWait:
@@ -213,7 +213,7 @@ func (c *exprCallCompiler) compileFunctionCallByNameWith(ctx fql.IFunctionCallCo
 				return c.reportFunctionArityError(callCtx, builtinName, 1, len(seq))
 			}
 
-			c.ctx.Emitter.EmitA(bytecode.OpSleep, seq[0])
+			c.ctx.Program.Emitter.EmitA(bytecode.OpSleep, seq[0])
 
 			return seq[0]
 		}
@@ -223,11 +223,11 @@ func (c *exprCallCompiler) compileFunctionCallByNameWith(ctx fql.IFunctionCallCo
 }
 
 func (c *exprCallCompiler) reportFunctionArityError(ctx antlr.ParserRuleContext, name string, expected, got int) bytecode.Operand {
-	if c == nil || c.ctx == nil || c.ctx.Errors == nil || ctx == nil {
+	if c == nil || c.ctx == nil || c.ctx.Program.Errors == nil || ctx == nil {
 		core.PanicInvariantf("cannot report arity error for function %q", name)
 	}
 
-	c.ctx.Errors.Add(c.ctx.Errors.Create(
+	c.ctx.Program.Errors.Add(c.ctx.Program.Errors.Create(
 		diagnostics.NameError,
 		ctx,
 		fmt.Sprintf("Function '%s' expects %d arguments, got %d", name, expected, got),
@@ -237,18 +237,18 @@ func (c *exprCallCompiler) reportFunctionArityError(ctx antlr.ParserRuleContext,
 }
 
 func (c *exprCallCompiler) compileHostFunctionCallWith(name runtime.String, protected bool, seq core.RegisterSequence) bytecode.Operand {
-	dest := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitLoadConst(dest, c.ctx.Symbols.AddConstant(name))
-	c.ctx.Symbols.BindFunction(name.String(), len(seq))
+	dest := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(name))
+	c.ctx.Function.Symbols.BindFunction(name.String(), len(seq))
 
 	opcode := bytecode.OpHCall
 	if protected {
 		opcode = bytecode.OpProtectedHCall
 	}
 
-	c.ctx.Emitter.EmitAs(opcode, dest, seq)
+	c.ctx.Program.Emitter.EmitAs(opcode, dest, seq)
 
-	c.ctx.Types.Set(dest, core.TypeAny)
+	c.ctx.Function.Types.Set(dest, core.TypeAny)
 
 	return dest
 }
@@ -256,17 +256,17 @@ func (c *exprCallCompiler) compileHostFunctionCallWith(name runtime.String, prot
 func (c *exprCallCompiler) compileUdfCallWith(fn *core.UDFInfo, protected bool, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) bytecode.Operand {
 	args := c.prepareUdfCallArgs(fn, seq, callCtx)
 
-	dest := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitLoadConst(dest, c.ctx.Symbols.AddConstant(runtime.NewInt(fn.ID)))
+	dest := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(runtime.NewInt(fn.ID)))
 
 	opcode := bytecode.OpCall
 	if protected {
 		opcode = bytecode.OpProtectedCall
 	}
 
-	c.ctx.Emitter.EmitAs(opcode, dest, args)
+	c.ctx.Program.Emitter.EmitAs(opcode, dest, args)
 
-	c.ctx.Types.Set(dest, core.TypeAny)
+	c.ctx.Function.Types.Set(dest, core.TypeAny)
 
 	return dest
 }
@@ -274,10 +274,10 @@ func (c *exprCallCompiler) compileUdfCallWith(fn *core.UDFInfo, protected bool, 
 func (c *exprCallCompiler) emitUdfTailCall(fn *core.UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) {
 	args := c.prepareUdfCallArgs(fn, seq, callCtx)
 
-	dest := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitLoadConst(dest, c.ctx.Symbols.AddConstant(runtime.NewInt(fn.ID)))
+	dest := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(runtime.NewInt(fn.ID)))
 
-	c.ctx.Emitter.EmitAs(bytecode.OpTailCall, dest, args)
+	c.ctx.Program.Emitter.EmitAs(bytecode.OpTailCall, dest, args)
 }
 
 func (c *exprCallCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) core.RegisterSequence {
@@ -285,7 +285,7 @@ func (c *exprCallCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.Registe
 		return seq
 	}
 
-	if len(seq) != len(fn.Params) && c.ctx.Errors != nil {
+	if len(seq) != len(fn.Params) && c.ctx.Program.Errors != nil {
 		ctx := callCtx
 		if ctx == nil && fn.Decl != nil {
 			if prc, ok := fn.Decl.(antlr.ParserRuleContext); ok {
@@ -299,7 +299,7 @@ func (c *exprCallCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.Registe
 				name = fn.Name
 			}
 
-			c.ctx.Errors.Add(c.ctx.Errors.Create(diagnostics.NameError, ctx, fmt.Sprintf("Function '%s' expects %d arguments, got %d", name, len(fn.Params), len(seq))))
+			c.ctx.Program.Errors.Add(c.ctx.Program.Errors.Create(diagnostics.NameError, ctx, fmt.Sprintf("Function '%s' expects %d arguments, got %d", name, len(fn.Params), len(seq))))
 		}
 	}
 
@@ -308,18 +308,18 @@ func (c *exprCallCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.Registe
 	}
 
 	total := len(seq) + len(fn.Captures)
-	args := c.ctx.Registers.AllocateSequence(total)
+	args := c.ctx.Function.Registers.AllocateSequence(total)
 
 	for i, src := range seq {
-		c.ctx.Emitter.EmitMove(args[i], src)
-		c.ctx.Types.Set(args[i], c.facts.OperandType(src))
+		c.ctx.Program.Emitter.EmitMove(args[i], src)
+		c.ctx.Function.Types.Set(args[i], c.facts.OperandType(src))
 	}
 
 	for i, capture := range fn.Captures {
-		binding, ok := c.ctx.Symbols.ResolveBinding(capture.Name)
+		binding, ok := c.ctx.Function.Symbols.ResolveBinding(capture.Name)
 		if !ok {
 			if callCtx != nil {
-				c.ctx.Errors.VariableNotFound(callCtx.GetStart(), capture.Name)
+				c.ctx.Program.Errors.VariableNotFound(callCtx.GetStart(), capture.Name)
 			}
 			continue
 		}
@@ -327,14 +327,14 @@ func (c *exprCallCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.Registe
 		dst := args[len(seq)+i]
 
 		if capture.Storage == core.BindingStorageCell {
-			c.ctx.Emitter.EmitPlainMove(dst, binding.Register)
-			c.ctx.Types.Set(dst, core.TypeAny)
+			c.ctx.Program.Emitter.EmitPlainMove(dst, binding.Register)
+			c.ctx.Function.Types.Set(dst, core.TypeAny)
 			continue
 		}
 
 		src := c.bindings.LoadBindingValue(binding)
 		c.facts.EmitMoveAuto(dst, src)
-		c.ctx.Types.Set(dst, c.facts.OperandType(src))
+		c.ctx.Function.Types.Set(dst, c.facts.OperandType(src))
 	}
 
 	return args
@@ -351,23 +351,23 @@ func (c *exprCallCompiler) compileArgumentList(ctx fql.IArgumentListContext) cor
 	size := len(exps)
 
 	if size > 0 {
-		seq = c.ctx.Registers.AllocateSequence(size)
+		seq = c.ctx.Function.Registers.AllocateSequence(size)
 
 		for i, exp := range exps {
 			if val, ok := c.facts.LiteralValueFromExpression(exp); ok && (bool(runtime.IsScalar(val)) || val == runtime.None) {
-				c.ctx.Emitter.EmitLoadConst(seq[i], c.ctx.Symbols.AddConstant(val))
-				c.ctx.Types.Set(seq[i], c.facts.ValueTypeFromRuntime(val))
+				c.ctx.Program.Emitter.EmitLoadConst(seq[i], c.ctx.Function.Symbols.AddConstant(val))
+				c.ctx.Function.Types.Set(seq[i], c.facts.ValueTypeFromRuntime(val))
 				continue
 			}
 
 			srcReg := c.callbacks.compileExpr(exp)
 
 			if srcReg.IsConstant() {
-				c.ctx.Emitter.EmitLoadConst(seq[i], srcReg)
+				c.ctx.Program.Emitter.EmitLoadConst(seq[i], srcReg)
 			} else {
-				c.ctx.Emitter.EmitMove(seq[i], srcReg)
+				c.ctx.Program.Emitter.EmitMove(seq[i], srcReg)
 			}
-			c.ctx.Types.Set(seq[i], c.facts.OperandType(srcReg))
+			c.ctx.Function.Types.Set(seq[i], c.facts.OperandType(srcReg))
 		}
 	}
 
@@ -375,7 +375,7 @@ func (c *exprCallCompiler) compileArgumentList(ctx fql.IArgumentListContext) cor
 }
 
 func (c *exprCallCompiler) compileRangeOperator(ctx fql.IRangeOperatorContext) bytecode.Operand {
-	dst := c.ctx.Registers.Allocate()
+	dst := c.ctx.Function.Registers.Allocate()
 	start := c.compileRangeOperand(ctx.GetLeft())
 	end := c.compileRangeOperand(ctx.GetRight())
 
@@ -385,11 +385,11 @@ func (c *exprCallCompiler) compileRangeOperator(ctx fql.IRangeOperatorContext) b
 		span = diagnostics.SpanFromRuleContext(prc)
 	}
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitRange(dst, start, end)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitRange(dst, start, end)
 	})
 
-	c.ctx.Types.Set(dst, core.TypeList)
+	c.ctx.Function.Types.Set(dst, core.TypeList)
 
 	return dst
 }

@@ -25,7 +25,7 @@ func (c *CaptureAnalyzer) bind(bindings *BindingCompiler) {
 }
 
 func (c *CaptureAnalyzer) AnalyzeProgram(body *fql.BodyContext) {
-	if c == nil || c.ctx == nil || c.ctx.UDFs == nil || body == nil {
+	if c == nil || c.ctx == nil || c.ctx.Program.UDFs == nil || body == nil {
 		return
 	}
 
@@ -46,7 +46,7 @@ func (c *CaptureAnalyzer) AnalyzeProgram(body *fql.BodyContext) {
 		case stmt.FunctionDeclaration() != nil:
 			decl := stmt.FunctionDeclaration().(*fql.FunctionDeclarationContext)
 			name := decl.FunctionName().GetText()
-			if fn, ok := c.ctx.UDFs.Resolve(name, c.ctx.UDFs.GlobalScope); ok {
+			if fn, ok := c.ctx.Program.UDFs.Resolve(name, c.ctx.Program.UDFs.GlobalScope); ok {
 				c.analyzeFunction(fn, env)
 			}
 		}

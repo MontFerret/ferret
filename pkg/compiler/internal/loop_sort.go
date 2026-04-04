@@ -51,7 +51,7 @@ func sortDirection(dir antlr.TerminalNode) runtime.SortDirection {
 // 3. Patching the loop with appropriate sorter operations
 // 4. Reinitializing the loop with sorted data
 func (c *LoopSortCompiler) Compile(ctx fql.ISortClauseContext) {
-	loop := c.ctx.Loops.Current()
+	loop := c.ctx.Function.Loops.Current()
 	clauses := ctx.AllSortClauseExpression()
 
 	// Compile sort keys and get sort directions
@@ -70,7 +70,7 @@ func (c *LoopSortCompiler) Compile(ctx fql.ISortClauseContext) {
 // compileSortKeys processes all sort expressions and returns the key register and directions.
 // For multiple expressions, it creates an array of keys; for single expression, uses the key directly.
 func (c *LoopSortCompiler) compileSortKeys(clauses []fql.ISortClauseExpressionContext) (bytecode.Operand, []runtime.SortDirection) {
-	kvKeyReg := c.ctx.Registers.Allocate()
+	kvKeyReg := c.ctx.Function.Registers.Allocate()
 	directions := make([]runtime.SortDirection, len(clauses))
 	isSortMany := len(clauses) > 1
 
@@ -84,12 +84,12 @@ func (c *LoopSortCompiler) compileSortKeys(clauses []fql.ISortClauseExpressionCo
 // compileMultipleSortKeys handles compilation when there are multiple sort expressions.
 // It creates an array of compiled expressions for multi-key sorting.
 func (c *LoopSortCompiler) compileMultipleSortKeys(clauses []fql.ISortClauseExpressionContext, kvKeyReg bytecode.Operand, directions []runtime.SortDirection) (bytecode.Operand, []runtime.SortDirection) {
-	c.ctx.Emitter.EmitArray(kvKeyReg, len(clauses))
+	c.ctx.Program.Emitter.EmitArray(kvKeyReg, len(clauses))
 
 	// Compile each sort expression and store direction
 	for i, clause := range clauses {
 		clauseReg := c.exprs.Compile(clause.Expression())
-		c.ctx.Emitter.EmitArrayPush(kvKeyReg, clauseReg)
+		c.ctx.Program.Emitter.EmitArrayPush(kvKeyReg, clauseReg)
 		directions[i] = sortDirection(clause.SortDirection())
 	}
 
@@ -116,8 +116,8 @@ func (c *LoopSortCompiler) resolveValueRegister(loop *core.Loop) bytecode.Operan
 		}
 
 		// Otherwise, allocate a new register and load the value from iterator
-		kvValReg := c.ctx.Registers.Allocate()
-		loop.EmitValue(kvValReg, c.ctx.Emitter)
+		kvValReg := c.ctx.Function.Registers.Allocate()
+		loop.EmitValue(kvValReg, c.ctx.Program.Emitter)
 
 		return kvValReg
 	}
@@ -135,13 +135,13 @@ func (c *LoopSortCompiler) compileSorter(loop *core.Loop, clauses []fql.ISortCla
 		encoded := runtime.EncodeSortDirections(directions)
 		count := len(clauses)
 
-		return loop.PatchDestinationAxy(c.ctx.Registers, c.ctx.Emitter, bytecode.OpDataSetMultiSorter, encoded, count)
+		return loop.PatchDestinationAxy(c.ctx.Function.Registers, c.ctx.Program.Emitter, bytecode.OpDataSetMultiSorter, encoded, count)
 	}
 
 	// Single-key sorting only needs the direction
 	dir := sortDirection(clauses[0].SortDirection())
 
-	return loop.PatchDestinationAx(c.ctx.Registers, c.ctx.Emitter, bytecode.OpDataSetSorter, int(dir))
+	return loop.PatchDestinationAx(c.ctx.Function.Registers, c.ctx.Program.Emitter, bytecode.OpDataSetSorter, int(dir))
 }
 
 // finalizeSorting completes the sorting process by:
@@ -156,18 +156,18 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 	scope := c.storeScope(kv)
 
 	// Add the KeyValuePair to the dataset
-	c.ctx.Emitter.EmitABC(bytecode.OpPushKV, sorter, kv.Key, kv.Value)
+	c.ctx.Program.Emitter.EmitABC(bytecode.OpPushKV, sorter, kv.Key, kv.Value)
 
 	// Finalize the current loop iteration
-	loop.EmitFinalization(c.ctx.Emitter)
+	loop.EmitFinalization(c.ctx.Program.Emitter)
 
-	c.ctx.Symbols.ExitScope()
-	c.ctx.Symbols.EnterScope()
+	c.ctx.Function.Symbols.ExitScope()
+	c.ctx.Function.Symbols.EnterScope()
 
 	// Replace the loop source with sorted results
-	loop.LabelBase = c.ctx.Loops.NextBase()
-	loop.Src = c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitMoveTracked(loop.Src, sorter)
+	loop.LabelBase = c.ctx.Function.Loops.NextBase()
+	loop.Src = c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitMoveTracked(loop.Src, sorter)
 
 	if loop.Kind != core.ForInLoop {
 		// We switched from a WhileLoop to a ForInLoop because the underlying data is Iterable now.
@@ -178,7 +178,7 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 	loop.Key = bytecode.NoopOperand
 
 	// Reinitialize the loop to iterate over sorted data
-	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+	loop.EmitInitialization(c.ctx.Function.Registers, c.ctx.Program.Emitter)
 
 	// Unpack the scope to restore local variables
 	c.restoreScope(loop, scope)
@@ -187,13 +187,13 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 // storeScope collects all local variables in the current scope, packs them into an array, and assigns it to the provided KV.
 func (c *LoopSortCompiler) storeScope(kv *core.KV) *core.ScopeProjection {
 	// No state to reset in this compiler
-	vars := c.ctx.Symbols.ProjectionVariables()
+	vars := c.ctx.Function.Symbols.ProjectionVariables()
 
 	if len(vars) == 0 {
 		return nil
 	}
 
-	sp := core.NewScopeProjection(c.ctx.Registers, c.ctx.Emitter, c.ctx.Symbols, c.ctx.Types, vars)
+	sp := core.NewScopeProjection(c.ctx.Function.Registers, c.ctx.Program.Emitter, c.ctx.Function.Symbols, c.ctx.Function.Types, vars)
 	sp.EmitAsArray(kv.Value)
 
 	return sp
@@ -205,28 +205,28 @@ func (c *LoopSortCompiler) restoreScope(loop *core.Loop, scope *core.ScopeProjec
 	if scope == nil {
 		if loop.KeyName != "" {
 			// TODO: Handle error if the key variable is not found
-			loop.DeclareKeyVar(loop.KeyName, c.ctx.Symbols, core.TypeUnknown)
+			loop.DeclareKeyVar(loop.KeyName, c.ctx.Function.Symbols, core.TypeUnknown)
 		}
 
 		if loop.ValueName != "" {
 			// TODO: Handle error if the key variable is not found
-			loop.DeclareValueVar(loop.ValueName, c.ctx.Symbols, core.TypeUnknown)
+			loop.DeclareValueVar(loop.ValueName, c.ctx.Function.Symbols, core.TypeUnknown)
 		}
 
 		return
 	}
 
-	value := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitIterValue(value, loop.State)
+	value := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitIterValue(value, loop.State)
 	scope.RestoreFromArray(value)
 
 	if loop.KeyName != "" {
-		found, _ := c.ctx.Symbols.Lookup(loop.KeyName)
+		found, _ := c.ctx.Function.Symbols.Lookup(loop.KeyName)
 		loop.Key = found.Register
 	}
 
 	if loop.ValueName != "" {
-		found, _ := c.ctx.Symbols.Lookup(loop.ValueName)
+		found, _ := c.ctx.Function.Symbols.Lookup(loop.ValueName)
 		loop.Value = found.Register
 	}
 }

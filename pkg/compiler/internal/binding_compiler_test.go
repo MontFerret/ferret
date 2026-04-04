@@ -47,7 +47,7 @@ RETURN outer()
 
 	assertBindingCompilerTestNoErrors(t, state)
 
-	binding, ok := state.session.Symbols.ResolveBinding("base")
+	binding, ok := state.session.Function.Symbols.ResolveBinding("base")
 	if !ok {
 		t.Fatal("expected top-level binding 'base' to exist")
 	}
@@ -56,7 +56,7 @@ RETURN outer()
 		t.Fatalf("unexpected binding storage: got %v want %v", binding.Storage, core.BindingStorageCell)
 	}
 
-	instructions := state.session.Emitter.Bytecode()
+	instructions := state.session.Program.Emitter.Bytecode()
 	for _, opcode := range []bytecode.Opcode{bytecode.OpMakeCell, bytecode.OpLoadCell, bytecode.OpStoreCell} {
 		if got := countBindingCompilerTestOpcode(instructions, opcode); got == 0 {
 			t.Fatalf("expected %s in emitted bytecode", opcode)
@@ -107,7 +107,7 @@ RETURN text
 	compileBindingCompilerTestState(t, state)
 	assertBindingCompilerTestNoErrors(t, state)
 
-	instructions := state.session.Emitter.Bytecode()
+	instructions := state.session.Program.Emitter.Bytecode()
 
 	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpAddConst); got != 1 {
 		t.Fatalf("unexpected %s count: got %d want 1", bytecode.OpAddConst, got)
@@ -132,7 +132,7 @@ RETURN total
 	compileBindingCompilerTestState(t, state)
 	assertBindingCompilerTestNoErrors(t, state)
 
-	instructions := state.session.Emitter.Bytecode()
+	instructions := state.session.Program.Emitter.Bytecode()
 
 	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpAdd); got != 1 {
 		t.Fatalf("unexpected %s count: got %d want 1", bytecode.OpAdd, got)

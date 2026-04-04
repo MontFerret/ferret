@@ -109,10 +109,10 @@ func (f *TypeFacts) OperandType(op bytecode.Operand) core.ValueType {
 	}
 
 	if op.IsConstant() {
-		return f.ValueTypeFromRuntime(f.session.Symbols.Constant(op))
+		return f.ValueTypeFromRuntime(f.session.Function.Symbols.Constant(op))
 	}
 
-	return f.session.Types.Resolve(op)
+	return f.session.Function.Types.Resolve(op)
 }
 
 func (f *TypeFacts) InferBinaryResultType(op atomBinaryOperator, left, right bytecode.Operand) core.ValueType {
@@ -141,9 +141,9 @@ func (f *TypeFacts) InferBinaryResultType(op atomBinaryOperator, left, right byt
 }
 
 func (f *TypeFacts) LoadConstant(value runtime.Value) bytecode.Operand {
-	reg := f.session.Registers.Allocate()
-	f.session.Emitter.EmitLoadConst(reg, f.session.Symbols.AddConstant(value))
-	f.session.Types.Set(reg, f.ValueTypeFromRuntime(value))
+	reg := f.session.Function.Registers.Allocate()
+	f.session.Program.Emitter.EmitLoadConst(reg, f.session.Function.Symbols.AddConstant(value))
+	f.session.Function.Types.Set(reg, f.ValueTypeFromRuntime(value))
 
 	return reg
 }
@@ -152,10 +152,10 @@ func (f *TypeFacts) EmitMoveAuto(dst, src bytecode.Operand) {
 	srcType := f.OperandType(src)
 
 	if srcType.IsUntracked() {
-		f.session.Emitter.EmitPlainMove(dst, src)
+		f.session.Program.Emitter.EmitPlainMove(dst, src)
 	} else {
-		f.session.Emitter.EmitMoveTracked(dst, src)
+		f.session.Program.Emitter.EmitMoveTracked(dst, src)
 	}
 
-	f.session.Types.Set(dst, srcType)
+	f.session.Function.Types.Set(dst, srcType)
 }

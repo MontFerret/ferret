@@ -69,7 +69,7 @@ func (c *exprQueryCompiler) compileQueryExpression(ctx fql.IQueryExpressionConte
 			dst := c.lowerQueryModifier(span, modifier, queryResult)
 
 			if dst.IsRegister() {
-				c.ctx.Types.Set(dst, queryResultTypeForModifier(modifier))
+				c.ctx.Function.Types.Set(dst, queryResultTypeForModifier(modifier))
 			}
 
 			return dst
@@ -93,10 +93,10 @@ func (c *exprQueryCompiler) compileQueryExpressionSource(ctx fql.IQueryExpressio
 }
 
 func (c *exprQueryCompiler) emitQueryEnvelope(ctx fql.IQueryExpressionContext, span source.Span) bytecode.Operand {
-	queryReg := c.ctx.Registers.Allocate()
+	queryReg := c.ctx.Function.Registers.Allocate()
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitArray(queryReg, 3)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitArray(queryReg, 3)
 	})
 
 	kind := c.compileQueryKindOperand(ctx)
@@ -153,16 +153,16 @@ func (c *exprQueryCompiler) compileQueryOptionsOperand(ctx fql.IQueryWithOptCont
 }
 
 func (c *exprQueryCompiler) emitQueryEnvelopeOperand(span source.Span, queryReg, value bytecode.Operand) {
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitArrayPush(queryReg, value)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitArrayPush(queryReg, value)
 	})
 }
 
 func (c *exprQueryCompiler) emitApplyQuery(span source.Span, src, queryReg bytecode.Operand) bytecode.Operand {
-	result := c.ctx.Registers.Allocate()
+	result := c.ctx.Function.Registers.Allocate()
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitABC(bytecode.OpQuery, result, src, queryReg)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitABC(bytecode.OpQuery, result, src, queryReg)
 	})
 
 	return result
@@ -171,24 +171,24 @@ func (c *exprQueryCompiler) emitApplyQuery(span source.Span, src, queryReg bytec
 func (c *exprQueryCompiler) lowerQueryModifier(span source.Span, modifier queryModifier, queryResult bytecode.Operand) bytecode.Operand {
 	switch modifier {
 	case queryModifierExists:
-		dst := c.ctx.Registers.Allocate()
-		c.ctx.Emitter.WithSpan(span, func() {
-			c.ctx.Emitter.EmitAB(bytecode.OpExists, dst, queryResult)
+		dst := c.ctx.Function.Registers.Allocate()
+		c.ctx.Program.Emitter.WithSpan(span, func() {
+			c.ctx.Program.Emitter.EmitAB(bytecode.OpExists, dst, queryResult)
 		})
 
 		return dst
 	case queryModifierCount:
-		dst := c.ctx.Registers.Allocate()
-		c.ctx.Emitter.WithSpan(span, func() {
-			c.ctx.Emitter.EmitAB(bytecode.OpLength, dst, queryResult)
+		dst := c.ctx.Function.Registers.Allocate()
+		c.ctx.Program.Emitter.WithSpan(span, func() {
+			c.ctx.Program.Emitter.EmitAB(bytecode.OpLength, dst, queryResult)
 		})
 
 		return dst
 	case queryModifierAny:
-		dst := c.ctx.Registers.Allocate()
-		zero := c.ctx.Symbols.AddConstant(runtime.NewInt(0))
-		c.ctx.Emitter.WithSpan(span, func() {
-			c.ctx.Emitter.EmitABC(bytecode.OpLoadIndexOptionalConst, dst, queryResult, zero)
+		dst := c.ctx.Function.Registers.Allocate()
+		zero := c.ctx.Function.Symbols.AddConstant(runtime.NewInt(0))
+		c.ctx.Program.Emitter.WithSpan(span, func() {
+			c.ctx.Program.Emitter.EmitABC(bytecode.OpLoadIndexOptionalConst, dst, queryResult, zero)
 		})
 
 		return dst
@@ -202,45 +202,45 @@ func (c *exprQueryCompiler) lowerQueryModifier(span source.Span, modifier queryM
 }
 
 func (c *exprQueryCompiler) lowerQueryModifierValue(span source.Span, queryResult bytecode.Operand) bytecode.Operand {
-	dst := c.ctx.Registers.Allocate()
-	cond := c.ctx.Registers.Allocate()
-	zero := c.ctx.Symbols.AddConstant(runtime.NewInt(0))
-	message := c.ctx.Symbols.AddConstant(runtime.NewString(queryValueFailMessage))
-	success := c.ctx.Emitter.NewLabel("query", string(queryModifierValue), "ok")
-	end := c.ctx.Emitter.NewLabel("query", string(queryModifierValue), "end")
+	dst := c.ctx.Function.Registers.Allocate()
+	cond := c.ctx.Function.Registers.Allocate()
+	zero := c.ctx.Function.Symbols.AddConstant(runtime.NewInt(0))
+	message := c.ctx.Function.Symbols.AddConstant(runtime.NewString(queryValueFailMessage))
+	success := c.ctx.Program.Emitter.NewLabel("query", string(queryModifierValue), "ok")
+	end := c.ctx.Program.Emitter.NewLabel("query", string(queryModifierValue), "end")
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitAB(bytecode.OpExists, cond, queryResult)
-		c.ctx.Emitter.EmitJumpIfTrue(cond, success)
-		c.ctx.Emitter.EmitLoadNone(dst)
-		c.ctx.Emitter.EmitA(bytecode.OpFail, message)
-		c.ctx.Emitter.EmitJump(end)
-		c.ctx.Emitter.MarkLabel(success)
-		c.ctx.Emitter.EmitABC(bytecode.OpLoadIndexConst, dst, queryResult, zero)
-		c.ctx.Emitter.MarkLabel(end)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitAB(bytecode.OpExists, cond, queryResult)
+		c.ctx.Program.Emitter.EmitJumpIfTrue(cond, success)
+		c.ctx.Program.Emitter.EmitLoadNone(dst)
+		c.ctx.Program.Emitter.EmitA(bytecode.OpFail, message)
+		c.ctx.Program.Emitter.EmitJump(end)
+		c.ctx.Program.Emitter.MarkLabel(success)
+		c.ctx.Program.Emitter.EmitABC(bytecode.OpLoadIndexConst, dst, queryResult, zero)
+		c.ctx.Program.Emitter.MarkLabel(end)
 	})
 
 	return dst
 }
 
 func (c *exprQueryCompiler) lowerQueryModifierOne(span source.Span, queryResult bytecode.Operand) bytecode.Operand {
-	dst := c.ctx.Registers.Allocate()
-	length := c.ctx.Registers.Allocate()
-	one := c.ctx.Symbols.AddConstant(runtime.NewInt(1))
-	zero := c.ctx.Symbols.AddConstant(runtime.NewInt(0))
-	message := c.ctx.Symbols.AddConstant(runtime.NewString(queryOneFailMessage))
-	success := c.ctx.Emitter.NewLabel("query", string(queryModifierOne), "ok")
-	end := c.ctx.Emitter.NewLabel("query", string(queryModifierOne), "end")
+	dst := c.ctx.Function.Registers.Allocate()
+	length := c.ctx.Function.Registers.Allocate()
+	one := c.ctx.Function.Symbols.AddConstant(runtime.NewInt(1))
+	zero := c.ctx.Function.Symbols.AddConstant(runtime.NewInt(0))
+	message := c.ctx.Function.Symbols.AddConstant(runtime.NewString(queryOneFailMessage))
+	success := c.ctx.Program.Emitter.NewLabel("query", string(queryModifierOne), "ok")
+	end := c.ctx.Program.Emitter.NewLabel("query", string(queryModifierOne), "end")
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitAB(bytecode.OpLength, length, queryResult)
-		c.ctx.Emitter.EmitJumpCompare(bytecode.OpJumpIfEqConst, length, one, success)
-		c.ctx.Emitter.EmitLoadNone(dst)
-		c.ctx.Emitter.EmitA(bytecode.OpFail, message)
-		c.ctx.Emitter.EmitJump(end)
-		c.ctx.Emitter.MarkLabel(success)
-		c.ctx.Emitter.EmitABC(bytecode.OpLoadIndexConst, dst, queryResult, zero)
-		c.ctx.Emitter.MarkLabel(end)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitAB(bytecode.OpLength, length, queryResult)
+		c.ctx.Program.Emitter.EmitJumpCompare(bytecode.OpJumpIfEqConst, length, one, success)
+		c.ctx.Program.Emitter.EmitLoadNone(dst)
+		c.ctx.Program.Emitter.EmitA(bytecode.OpFail, message)
+		c.ctx.Program.Emitter.EmitJump(end)
+		c.ctx.Program.Emitter.MarkLabel(success)
+		c.ctx.Program.Emitter.EmitABC(bytecode.OpLoadIndexConst, dst, queryResult, zero)
+		c.ctx.Program.Emitter.MarkLabel(end)
 	})
 
 	return dst
@@ -256,17 +256,17 @@ func (c *exprQueryCompiler) compileQueryLiteral(ctx fql.IQueryLiteralContext) by
 		kind = strings.ToLower(ident.GetText())
 	}
 
-	dst := c.ctx.Registers.Allocate()
+	dst := c.ctx.Function.Registers.Allocate()
 	span := diagnostics.SpanFromRuleContext(ctx)
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitArray(dst, 3)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitArray(dst, 3)
 	})
 
 	kindReg := c.facts.LoadConstant(runtime.NewString(kind))
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitArrayPush(dst, kindReg)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitArrayPush(dst, kindReg)
 	})
 
 	payloadReg := c.facts.LoadConstant(runtime.EmptyString)
@@ -278,8 +278,8 @@ func (c *exprQueryCompiler) compileQueryLiteral(ctx fql.IQueryLiteralContext) by
 		}
 	}
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitArrayPush(dst, payloadReg)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitArrayPush(dst, payloadReg)
 	})
 
 	params := ctx.Expression()
@@ -291,12 +291,12 @@ func (c *exprQueryCompiler) compileQueryLiteral(ctx fql.IQueryLiteralContext) by
 		paramsReg = c.callbacks.compileExpr(params)
 	}
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitArrayPush(dst, paramsReg)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitArrayPush(dst, paramsReg)
 	})
 
 	if dst.IsRegister() {
-		c.ctx.Types.Set(dst, core.TypeAny)
+		c.ctx.Function.Types.Set(dst, core.TypeAny)
 	}
 
 	return dst

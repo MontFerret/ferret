@@ -107,7 +107,7 @@ func (c *RecoveryCompiler) WidenResultType(out bytecode.Operand, plan core.Recov
 		return out
 	}
 
-	c.ctx.Types.Set(out, core.TypeAny)
+	c.ctx.Function.Types.Set(out, core.TypeAny)
 
 	return out
 }
@@ -325,11 +325,11 @@ func (c *RecoveryCompiler) resolveRetryFinalAction(clause fql.IRecoveryRetryOrCl
 }
 
 func (c *RecoveryCompiler) reportInvalidTail(node antlr.ParserRuleContext, message, hint string) {
-	if c == nil || c.ctx == nil || c.ctx.Errors == nil || node == nil {
+	if c == nil || c.ctx == nil || c.ctx.Program.Errors == nil || node == nil {
 		return
 	}
 
-	err := c.ctx.Errors.Create(parserd.SyntaxError, node, message)
+	err := c.ctx.Program.Errors.Create(parserd.SyntaxError, node, message)
 	err.Hint = hint
-	c.ctx.Errors.Add(err)
+	c.ctx.Program.Errors.Add(err)
 }

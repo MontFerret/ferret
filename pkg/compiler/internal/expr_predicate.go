@@ -166,18 +166,18 @@ func resolveArrayPredicateOpcode(op fql.IArrayOperatorContext) (bytecode.Opcode,
 }
 
 func (c *ExprCompiler) emitBinaryPredicate(ctx fql.IPredicateContext, opcode bytecode.Opcode, left, right bytecode.Operand, isNegated bool) bytecode.Operand {
-	dest := c.ctx.Registers.Allocate()
+	dest := c.ctx.Function.Registers.Allocate()
 	span := source.Span{Start: -1, End: -1}
 
 	if prc, ok := ctx.(antlr.ParserRuleContext); ok {
 		span = diagnostics.SpanFromRuleContext(prc)
 	}
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitABC(opcode, dest, left, right)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitABC(opcode, dest, left, right)
 
 		if isNegated {
-			c.ctx.Emitter.EmitAB(bytecode.OpNot, dest, dest)
+			c.ctx.Program.Emitter.EmitAB(bytecode.OpNot, dest, dest)
 		}
 	})
 
@@ -279,7 +279,7 @@ func (c *ExprCompiler) emitPredicateJumpWithLiteralOperand(opText string, jumpOn
 
 func (c *ExprCompiler) emitPredicateJumpCompare(opText string, jumpOnTrue bool, left, right bytecode.Operand, label core.Label, constOperand bool) {
 	opcode := resolveEqNeJumpOpcode(opText, jumpOnTrue, constOperand)
-	c.ctx.Emitter.EmitJumpCompare(opcode, left, right, label)
+	c.ctx.Program.Emitter.EmitJumpCompare(opcode, left, right, label)
 }
 
 func resolveEqNeJumpOpcode(opText string, jumpOnTrue, constOperand bool) bytecode.Opcode {
@@ -329,9 +329,9 @@ func (c *ExprCompiler) EmitConditionJump(expr fql.IExpressionContext, label core
 
 	cond := c.Compile(expr)
 	if jumpOnTrue {
-		c.ctx.Emitter.EmitJumpIfTrue(cond, label)
+		c.ctx.Program.Emitter.EmitJumpIfTrue(cond, label)
 	} else {
-		c.ctx.Emitter.EmitJumpIfFalse(cond, label)
+		c.ctx.Program.Emitter.EmitJumpIfFalse(cond, label)
 	}
 }
 
@@ -409,18 +409,18 @@ func emitBinaryOperation(ctx *CompilationSession, facts *TypeFacts, prc antlr.Pa
 		return bytecode.NoopOperand
 	}
 
-	dst := ctx.Registers.Allocate()
+	dst := ctx.Function.Registers.Allocate()
 	span := source.Span{Start: -1, End: -1}
 
 	if prc != nil {
 		span = diagnostics.SpanFromRuleContext(prc)
 	}
 
-	ctx.Emitter.WithSpan(span, func() {
-		ctx.Emitter.EmitABC(op.opcode, dst, left, right)
+	ctx.Program.Emitter.WithSpan(span, func() {
+		ctx.Program.Emitter.EmitABC(op.opcode, dst, left, right)
 
 		if op.negated {
-			ctx.Emitter.EmitAB(bytecode.OpNot, dst, dst)
+			ctx.Program.Emitter.EmitAB(bytecode.OpNot, dst, dst)
 		}
 	})
 
@@ -429,7 +429,7 @@ func emitBinaryOperation(ctx *CompilationSession, facts *TypeFacts, prc antlr.Pa
 		resultType = core.TypeBool
 	}
 	if resultType != core.TypeUnknown {
-		ctx.Types.Set(dst, resultType)
+		ctx.Function.Types.Set(dst, resultType)
 	}
 
 	return dst
@@ -453,13 +453,13 @@ func (c *ExprCompiler) validateRegexpOperand(ctx fql.IExpressionAtomContext) {
 		}
 
 		if _, err := regexp.Compile(exp.String()); err != nil {
-			c.ctx.Errors.InvalidRegexExpression(ctx, exp.String())
+			c.ctx.Program.Errors.InvalidRegexExpression(ctx, exp.String())
 		}
 
 		return
 	}
 
-	c.ctx.Errors.InvalidRegexExpression(ctx, lit.GetText())
+	c.ctx.Program.Errors.InvalidRegexExpression(ctx, lit.GetText())
 }
 
 func (c *ExprCompiler) compileLeafAtom(ctx fql.IExpressionAtomContext) bytecode.Operand {

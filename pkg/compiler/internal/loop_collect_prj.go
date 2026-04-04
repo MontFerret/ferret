@@ -27,9 +27,9 @@ func (c *CollectCompiler) initializeProjection(kv *core.KV, projection fql.IColl
 		// Extract the target variable after INTO
 		varName := textOfBindingIdentifier(counter.BindingIdentifier())
 		if varName == "" {
-			err := c.ctx.Errors.Create(parser.SemanticError, counter, "Missing counter projection variable")
+			err := c.ctx.Program.Errors.Create(parser.SemanticError, counter, "Missing counter projection variable")
 			err.Hint = "Use WITH COUNT INTO <variable>."
-			c.ctx.Errors.Add(err)
+			c.ctx.Program.Errors.Add(err)
 			return nil
 		}
 
@@ -45,7 +45,7 @@ func (c *CollectCompiler) initializeProjection(kv *core.KV, projection fql.IColl
 // It handles different behaviors based on whether grouping and aggregation are used.
 // Returns the register containing the projected value.
 func (c *CollectCompiler) finalizeProjection(spec *core.Collector, aggregator bytecode.Operand) bytecode.Operand {
-	loop := c.ctx.Loops.Current()
+	loop := c.ctx.Function.Loops.Current()
 	varName := spec.Projection().VariableName()
 
 	if spec.HasGrouping() || !spec.HasAggregation() {
@@ -54,9 +54,9 @@ func (c *CollectCompiler) finalizeProjection(spec *core.Collector, aggregator by
 		loop.ValueName = varName
 		// Assign the aggregator value to the local variable with the projection name
 		if !c.assignLocalOrReport(spec.Projection().Context(), loop.ValueName, core.TypeUnknown, aggregator) {
-			if existing, found := c.ctx.Symbols.ResolveBinding(loop.ValueName); found {
+			if existing, found := c.ctx.Function.Symbols.ResolveBinding(loop.ValueName); found {
 				if existing.Storage == core.BindingStorageCell {
-					c.ctx.Emitter.EmitStoreCell(existing.Register, ensureOperandRegister(c.ctx, c.facts, aggregator))
+					c.ctx.Program.Emitter.EmitStoreCell(existing.Register, ensureOperandRegister(c.ctx, c.facts, aggregator))
 				} else {
 					c.facts.EmitMoveAuto(existing.Register, aggregator)
 				}
@@ -70,7 +70,7 @@ func (c *CollectCompiler) finalizeProjection(spec *core.Collector, aggregator by
 	// Load the value from the aggregator using the projection variable name as key
 	key := c.facts.LoadConstant(runtime.String(varName))
 	val := c.declareLocalOrReport(spec.Projection().Context(), varName, core.TypeUnknown)
-	c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, val, aggregator, key)
+	c.ctx.Program.Emitter.EmitABC(bytecode.OpLoadKey, val, aggregator, key)
 
 	return val
 }
@@ -102,9 +102,9 @@ func (c *CollectCompiler) compileGroupVariableProjection(kv *core.KV, groupVar f
 func (c *CollectCompiler) compileDefaultGroupProjection(kv *core.KV, identifier fql.IBindingIdentifierContext, keeper fql.ICollectGroupProjectionFilterContext) string {
 	if keeper == nil {
 		// If no filter is provided, project all local variables
-		variables := c.ctx.Symbols.LocalVariables()
+		variables := c.ctx.Function.Symbols.LocalVariables()
 		// Create a scope projection with all local variables
-		scope := core.NewScopeProjection(c.ctx.Registers, c.ctx.Emitter, c.ctx.Symbols, c.ctx.Types, variables)
+		scope := core.NewScopeProjection(c.ctx.Function.Registers, c.ctx.Program.Emitter, c.ctx.Function.Symbols, c.ctx.Function.Types, variables)
 		// Emit the scope as an object to the value register
 		scope.EmitAsObject(kv.Value)
 	} else {
@@ -116,13 +116,13 @@ func (c *CollectCompiler) compileDefaultGroupProjection(kv *core.KV, identifier 
 		for i, variable := range variables {
 			varName := variable.GetText()
 			// Resolve the variable from the symbol table
-			binding, found := c.ctx.Symbols.ResolveBinding(varName)
+			binding, found := c.ctx.Function.Symbols.ResolveBinding(varName)
 
 			if !found {
-				c.ctx.Errors.VariableNotFound(variable.GetSymbol(), varName)
-				noneReg := c.ctx.Registers.Allocate()
-				c.ctx.Emitter.EmitA(bytecode.OpLoadNone, noneReg)
-				c.ctx.Types.Set(noneReg, core.TypeNone)
+				c.ctx.Program.Errors.VariableNotFound(variable.GetSymbol(), varName)
+				noneReg := c.ctx.Function.Registers.Allocate()
+				c.ctx.Program.Emitter.EmitA(bytecode.OpLoadNone, noneReg)
+				c.ctx.Function.Types.Set(noneReg, core.TypeNone)
 				resolved[i] = noneReg
 				continue
 			}
@@ -137,20 +137,20 @@ func (c *CollectCompiler) compileDefaultGroupProjection(kv *core.KV, identifier 
 		buildDst := kv.Value
 
 		if useTemp {
-			buildDst = c.ctx.Registers.Allocate()
+			buildDst = c.ctx.Function.Registers.Allocate()
 		}
 
-		c.ctx.Emitter.EmitObject(buildDst, len(variables))
-		c.ctx.Types.Set(buildDst, core.TypeObject)
+		c.ctx.Program.Emitter.EmitObject(buildDst, len(variables))
+		c.ctx.Function.Types.Set(buildDst, core.TypeObject)
 
 		// Process each variable in the filter
 		for i, variable := range variables {
 			varName := variable.GetText()
 			// Store the variable name as a string constant
-			keyConst := c.ctx.Symbols.AddConstant(runtime.String(varName))
+			keyConst := c.ctx.Function.Symbols.AddConstant(runtime.String(varName))
 			// Set the key-value pair in the object directly.
 			// If kv.Value is referenced in the projection, buildDst is switched to a temp register.
-			c.ctx.Emitter.EmitObjectSetConst(buildDst, keyConst, resolved[i])
+			c.ctx.Program.Emitter.EmitObjectSetConst(buildDst, keyConst, resolved[i])
 		}
 
 		if buildDst != kv.Value {

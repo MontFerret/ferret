@@ -46,8 +46,8 @@ func (c *WaitCompiler) CompileWithOuterRecoveryPlan(ctx fql.IWaitForExpressionCo
 		return bytecode.NoopOperand
 	}
 
-	c.ctx.Symbols.EnterScope()
-	defer c.ctx.Symbols.ExitScope()
+	c.ctx.Function.Symbols.EnterScope()
+	defer c.ctx.Function.Symbols.ExitScope()
 
 	return c.recovery.CompileOperation(c.newWaitOperationRecoverySpec(ctx, outerPlan))
 }
@@ -125,20 +125,20 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 	recoveryLabel, timeoutLabel, endLabel core.Label,
 ) ProtectedRecoveryRegion {
 	hasTimeout := ctx != nil && ctx.TimeoutClause() != nil
-	streamReg := c.ctx.Registers.Allocate()
-	resultReg := c.ctx.Registers.Allocate()
-	errorStateReg := c.ctx.Registers.Allocate()
+	streamReg := c.ctx.Function.Registers.Allocate()
+	resultReg := c.ctx.Function.Registers.Allocate()
+	errorStateReg := c.ctx.Function.Registers.Allocate()
 	timeoutStateReg := bytecode.NoopOperand
 
 	if hasTimeout {
-		timeoutStateReg = c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitBoolean(timeoutStateReg, false)
+		timeoutStateReg = c.ctx.Function.Registers.Allocate()
+		c.ctx.Program.Emitter.EmitBoolean(timeoutStateReg, false)
 	}
 
-	c.ctx.Emitter.EmitLoadNone(resultReg)
-	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
+	c.ctx.Program.Emitter.EmitLoadNone(resultReg)
+	c.ctx.Program.Emitter.EmitBoolean(errorStateReg, false)
 
-	startCatch := c.ctx.Emitter.Size()
+	startCatch := c.ctx.Program.Emitter.Size()
 	state, ok := c.buildWaitEventState(ctx)
 	if !ok {
 		return ProtectedRecoveryRegion{Result: bytecode.NoopOperand}
@@ -146,42 +146,42 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 
 	c.emitWaitEventStreamSetup(state, streamReg)
 
-	start := c.ctx.Emitter.NewLabel()
-	iterationDone := c.ctx.Emitter.NewLabel()
-	cleanup := c.ctx.Emitter.NewLabel()
-	routeRecovery := c.ctx.Emitter.NewLabel("waitfor", "event", "recover")
+	start := c.ctx.Program.Emitter.NewLabel()
+	iterationDone := c.ctx.Program.Emitter.NewLabel()
+	cleanup := c.ctx.Program.Emitter.NewLabel()
+	routeRecovery := c.ctx.Program.Emitter.NewLabel("waitfor", "event", "recover")
 
-	c.ctx.Emitter.MarkLabel(start)
+	c.ctx.Program.Emitter.MarkLabel(start)
 	c.emitWaitEventIteration(ctx, state, streamReg, timeoutStateReg, start, iterationDone)
 
-	c.ctx.Emitter.EmitJump(cleanup)
-	c.ctx.Emitter.MarkLabel(iterationDone)
-	c.ctx.Emitter.EmitJump(cleanup)
+	c.ctx.Program.Emitter.EmitJump(cleanup)
+	c.ctx.Program.Emitter.MarkLabel(iterationDone)
+	c.ctx.Program.Emitter.EmitJump(cleanup)
 
-	c.ctx.Emitter.MarkLabel(cleanup)
+	c.ctx.Program.Emitter.MarkLabel(cleanup)
 	c.emitWaitEventCleanup(state, streamReg)
 
-	endCatchExclusive := c.ctx.Emitter.Size()
+	endCatchExclusive := c.ctx.Program.Emitter.Size()
 
 	if hasTimeout {
-		c.ctx.Emitter.EmitJumpIfTrue(timeoutStateReg, timeoutLabel)
+		c.ctx.Program.Emitter.EmitJumpIfTrue(timeoutStateReg, timeoutLabel)
 	}
-	c.ctx.Emitter.EmitJumpIfTrue(errorStateReg, routeRecovery)
-	c.ctx.Emitter.EmitJump(endLabel)
+	c.ctx.Program.Emitter.EmitJumpIfTrue(errorStateReg, routeRecovery)
+	c.ctx.Program.Emitter.EmitJump(endLabel)
 
-	errorPreludePC := c.ctx.Emitter.Size()
-	c.ctx.Emitter.EmitBoolean(errorStateReg, true)
+	errorPreludePC := c.ctx.Program.Emitter.Size()
+	c.ctx.Program.Emitter.EmitBoolean(errorStateReg, true)
 	if hasTimeout {
-		c.ctx.Emitter.EmitBoolean(timeoutStateReg, false)
+		c.ctx.Program.Emitter.EmitBoolean(timeoutStateReg, false)
 	}
-	c.ctx.Emitter.EmitJump(cleanup)
+	c.ctx.Program.Emitter.EmitJump(cleanup)
 
-	c.ctx.Emitter.MarkLabel(routeRecovery)
-	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
+	c.ctx.Program.Emitter.MarkLabel(routeRecovery)
+	c.ctx.Program.Emitter.EmitBoolean(errorStateReg, false)
 	if hasTimeout {
-		c.ctx.Emitter.EmitBoolean(timeoutStateReg, false)
+		c.ctx.Program.Emitter.EmitBoolean(timeoutStateReg, false)
 	}
-	c.ctx.Emitter.EmitJump(recoveryLabel)
+	c.ctx.Program.Emitter.EmitJump(recoveryLabel)
 
 	return ProtectedRecoveryRegion{
 		Result:            resultReg,
@@ -206,27 +206,27 @@ func (c *WaitCompiler) buildProtectedPredicateRecovery(
 	state := c.initWaitPredicatePollState(config)
 	hasTimeout := config.timeoutReg != bytecode.NoopOperand
 
-	start := c.ctx.Emitter.NewLabel()
-	success := c.ctx.Emitter.NewLabel()
+	start := c.ctx.Program.Emitter.NewLabel()
+	success := c.ctx.Program.Emitter.NewLabel()
 	protectedTimeout := core.Label{}
 	if hasTimeout {
-		protectedTimeout = c.ctx.Emitter.NewLabel()
+		protectedTimeout = c.ctx.Program.Emitter.NewLabel()
 	}
 
-	startCatch := c.ctx.Emitter.Size()
+	startCatch := c.ctx.Program.Emitter.Size()
 
-	c.ctx.Emitter.MarkLabel(start)
+	c.ctx.Program.Emitter.MarkLabel(start)
 	valueReg := c.emitWaitPredicatePollIteration(config, state, start, success, protectedTimeout)
 
-	c.ctx.Emitter.MarkLabel(success)
+	c.ctx.Program.Emitter.MarkLabel(success)
 	c.emitWaitSuccessResult(config.mode, state.resultReg, valueReg)
-	c.ctx.Emitter.EmitJump(endLabel)
+	c.ctx.Program.Emitter.EmitJump(endLabel)
 
-	endCatchExclusive := c.ctx.Emitter.Size()
+	endCatchExclusive := c.ctx.Program.Emitter.Size()
 
 	if hasTimeout {
-		c.ctx.Emitter.MarkLabel(protectedTimeout)
-		c.ctx.Emitter.EmitJump(timeoutLabel)
+		c.ctx.Program.Emitter.MarkLabel(protectedTimeout)
+		c.ctx.Program.Emitter.EmitJump(timeoutLabel)
 	}
 
 	return ProtectedRecoveryRegion{

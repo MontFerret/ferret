@@ -30,7 +30,7 @@ func (c *WaitCompiler) tryCompileWaitPredicateFastPath(config waitPredicateCompi
 		}
 
 		if config.timeoutReg != bytecode.NoopOperand {
-			c.ctx.Emitter.EmitA(bytecode.OpSleep, config.timeoutReg)
+			c.ctx.Program.Emitter.EmitA(bytecode.OpSleep, config.timeoutReg)
 			return c.emitImmediateWaitBool(false), true
 		}
 
@@ -55,7 +55,7 @@ func (c *WaitCompiler) tryCompileWaitPredicateFastPath(config waitPredicateCompi
 		}
 
 		if config.timeoutReg != bytecode.NoopOperand {
-			c.ctx.Emitter.EmitA(bytecode.OpSleep, config.timeoutReg)
+			c.ctx.Program.Emitter.EmitA(bytecode.OpSleep, config.timeoutReg)
 			if config.mode == waitForPredicateModeValue {
 				return c.emitImmediateWaitNone(), true
 			}
@@ -68,42 +68,42 @@ func (c *WaitCompiler) tryCompileWaitPredicateFastPath(config waitPredicateCompi
 }
 
 func (c *WaitCompiler) emitImmediateWaitBool(value bool) bytecode.Operand {
-	resultReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitBoolean(resultReg, value)
+	resultReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitBoolean(resultReg, value)
 
 	return resultReg
 }
 
 func (c *WaitCompiler) emitImmediateWaitNone() bytecode.Operand {
-	resultReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitLoadNone(resultReg)
+	resultReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitLoadNone(resultReg)
 
 	return resultReg
 }
 
 func (c *WaitCompiler) initWaitPredicatePollState(config waitPredicateCompileConfig) waitPredicatePollState {
 	state := waitPredicatePollState{
-		baseEveryReg: c.ctx.Registers.Allocate(),
+		baseEveryReg: c.ctx.Function.Registers.Allocate(),
 	}
 
 	if config.everyReg != bytecode.NoopOperand {
-		c.ctx.Emitter.EmitMove(state.baseEveryReg, config.everyReg)
+		c.ctx.Program.Emitter.EmitMove(state.baseEveryReg, config.everyReg)
 	} else {
-		c.ctx.Emitter.EmitLoadConst(state.baseEveryReg, c.ctx.Symbols.AddConstant(runtime.NewInt(waitForDefaultEveryMs)))
+		c.ctx.Program.Emitter.EmitLoadConst(state.baseEveryReg, c.ctx.Function.Symbols.AddConstant(runtime.NewInt(waitForDefaultEveryMs)))
 	}
 
 	state.pollReg = state.baseEveryReg
 	if config.backoff != core.RetryBackoffNone {
-		state.intervalReg = c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitMove(state.intervalReg, state.baseEveryReg)
+		state.intervalReg = c.ctx.Function.Registers.Allocate()
+		c.ctx.Program.Emitter.EmitMove(state.intervalReg, state.baseEveryReg)
 		state.pollReg = state.intervalReg
 	}
 
-	state.resultReg = c.ctx.Registers.Allocate()
+	state.resultReg = c.ctx.Function.Registers.Allocate()
 	if config.mode == waitForPredicateModeValue {
-		c.ctx.Emitter.EmitLoadNone(state.resultReg)
+		c.ctx.Program.Emitter.EmitLoadNone(state.resultReg)
 	} else {
-		c.ctx.Emitter.EmitBoolean(state.resultReg, false)
+		c.ctx.Program.Emitter.EmitBoolean(state.resultReg, false)
 	}
 
 	if config.timeoutReg != bytecode.NoopOperand {
@@ -115,21 +115,21 @@ func (c *WaitCompiler) initWaitPredicatePollState(config waitPredicateCompileCon
 }
 
 func (c *WaitCompiler) emitWaitPredicatePollLoop(config waitPredicateCompileConfig, state waitPredicatePollState) {
-	start := c.ctx.Emitter.NewLabel()
-	success := c.ctx.Emitter.NewLabel()
-	timeoutLabel := c.ctx.Emitter.NewLabel()
-	end := c.ctx.Emitter.NewLabel()
+	start := c.ctx.Program.Emitter.NewLabel()
+	success := c.ctx.Program.Emitter.NewLabel()
+	timeoutLabel := c.ctx.Program.Emitter.NewLabel()
+	end := c.ctx.Program.Emitter.NewLabel()
 
-	c.ctx.Emitter.MarkLabel(start)
+	c.ctx.Program.Emitter.MarkLabel(start)
 	valueReg := c.emitWaitPredicatePollIteration(config, state, start, success, timeoutLabel)
 
-	c.ctx.Emitter.MarkLabel(success)
+	c.ctx.Program.Emitter.MarkLabel(success)
 	c.emitWaitSuccessResult(config.mode, state.resultReg, valueReg)
-	c.ctx.Emitter.EmitJump(end)
+	c.ctx.Program.Emitter.EmitJump(end)
 
-	c.ctx.Emitter.MarkLabel(timeoutLabel)
+	c.ctx.Program.Emitter.MarkLabel(timeoutLabel)
 	c.emitWaitTimeoutResult(config.mode, state.resultReg)
-	c.ctx.Emitter.MarkLabel(end)
+	c.ctx.Program.Emitter.MarkLabel(end)
 }
 
 func (c *WaitCompiler) emitWaitPredicatePollLoopWithRecovery(
@@ -137,15 +137,15 @@ func (c *WaitCompiler) emitWaitPredicatePollLoopWithRecovery(
 	state waitPredicatePollState,
 	timeoutLabel, endLabel core.Label,
 ) bytecode.Operand {
-	start := c.ctx.Emitter.NewLabel()
-	success := c.ctx.Emitter.NewLabel()
+	start := c.ctx.Program.Emitter.NewLabel()
+	success := c.ctx.Program.Emitter.NewLabel()
 
-	c.ctx.Emitter.MarkLabel(start)
+	c.ctx.Program.Emitter.MarkLabel(start)
 	valueReg := c.emitWaitPredicatePollIteration(config, state, start, success, timeoutLabel)
 
-	c.ctx.Emitter.MarkLabel(success)
+	c.ctx.Program.Emitter.MarkLabel(success)
 	c.emitWaitSuccessResult(config.mode, state.resultReg, valueReg)
-	c.ctx.Emitter.EmitJump(endLabel)
+	c.ctx.Program.Emitter.EmitJump(endLabel)
 
 	return state.resultReg
 }
@@ -157,7 +157,7 @@ func (c *WaitCompiler) emitWaitPredicatePollIteration(
 ) bytecode.Operand {
 	valueReg := c.exprs.Compile(config.predExpr)
 	condReg := c.emitWaitPredicateCondition(config.mode, valueReg)
-	c.ctx.Emitter.EmitJumpIfTrue(condReg, successLabel)
+	c.ctx.Program.Emitter.EmitJumpIfTrue(condReg, successLabel)
 
 	elapsedReg := c.emitWaitPredicateTimeoutCheck(config.timeoutReg, state.startReg, state.unitReg, timeoutLabel)
 	sleepIntervalReg := c.prepareWaitSleepInterval(config, state.pollReg)
@@ -170,7 +170,7 @@ func (c *WaitCompiler) emitWaitPredicatePollIteration(
 		}
 	}
 
-	c.ctx.Emitter.EmitJump(startLabel)
+	c.ctx.Program.Emitter.EmitJump(startLabel)
 
 	return valueReg
 }
@@ -181,13 +181,13 @@ func (c *WaitCompiler) emitWaitPredicateCondition(mode waitForPredicateMode, val
 		return c.emitExistsCheck(valueReg)
 	case waitForPredicateModeNotExists:
 		existsReg := c.emitExistsCheck(valueReg)
-		condReg := c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitAB(bytecode.OpNot, condReg, existsReg)
+		condReg := c.ctx.Function.Registers.Allocate()
+		c.ctx.Program.Emitter.EmitAB(bytecode.OpNot, condReg, existsReg)
 
 		return condReg
 	default:
-		condReg := c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitAB(bytecode.OpCastBool, condReg, valueReg)
+		condReg := c.ctx.Function.Registers.Allocate()
+		c.ctx.Program.Emitter.EmitAB(bytecode.OpCastBool, condReg, valueReg)
 
 		return condReg
 	}
@@ -195,26 +195,26 @@ func (c *WaitCompiler) emitWaitPredicateCondition(mode waitForPredicateMode, val
 
 func (c *WaitCompiler) emitWaitSuccessResult(mode waitForPredicateMode, resultReg, valueReg bytecode.Operand) {
 	if mode == waitForPredicateModeValue {
-		c.ctx.Emitter.EmitMove(resultReg, valueReg)
+		c.ctx.Program.Emitter.EmitMove(resultReg, valueReg)
 		return
 	}
 
-	c.ctx.Emitter.EmitBoolean(resultReg, true)
+	c.ctx.Program.Emitter.EmitBoolean(resultReg, true)
 }
 
 func (c *WaitCompiler) emitWaitTimeoutResult(mode waitForPredicateMode, resultReg bytecode.Operand) {
 	if mode == waitForPredicateModeValue {
-		c.ctx.Emitter.EmitLoadNone(resultReg)
+		c.ctx.Program.Emitter.EmitLoadNone(resultReg)
 		return
 	}
 
-	c.ctx.Emitter.EmitBoolean(resultReg, false)
+	c.ctx.Program.Emitter.EmitBoolean(resultReg, false)
 }
 
 func (c *WaitCompiler) emitExistsCheck(val bytecode.Operand) bytecode.Operand {
-	dst := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitAB(bytecode.OpExists, dst, val)
-	c.ctx.Types.Set(dst, core.TypeBool)
+	dst := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitAB(bytecode.OpExists, dst, val)
+	c.ctx.Function.Types.Set(dst, core.TypeBool)
 
 	return dst
 }

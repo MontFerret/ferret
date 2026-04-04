@@ -100,14 +100,14 @@ func (c *StatementCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext
 		out := c.loops.Compile(fe)
 
 		// Emit a return instruction with the loop result
-		c.ctx.Emitter.EmitA(bytecode.OpReturn, out)
+		c.ctx.Program.Emitter.EmitA(bytecode.OpReturn, out)
 	} else if re := ctx.ReturnExpression(); re != nil {
 		// Handle RETURN expressions (e.g., RETURN x)
 		// Compile and normalize into a register because RETURN expects a register operand.
 		valReg := ensureOperandRegister(c.ctx, c.facts, c.exprs.Compile(re.Expression()))
 
 		// Emit a return instruction with the expression result
-		c.ctx.Emitter.EmitA(bytecode.OpReturn, valReg)
+		c.ctx.Program.Emitter.EmitA(bytecode.OpReturn, valReg)
 	}
 }
 

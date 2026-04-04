@@ -71,7 +71,7 @@ func (c *CollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *core.
 			collectorType = bytecode.CollectorTypeAggregate
 			useAggregateCollector = true
 			globalAggregatePlan = plan
-			aggregatePlanIndex = c.ctx.AddAggregatePlan(plan)
+			aggregatePlanIndex = c.ctx.Program.AddAggregatePlan(plan)
 		}
 	}
 
@@ -90,18 +90,18 @@ func (c *CollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *core.
 	}
 
 	// We replace DataSet initialization with Collector initialization
-	loop := c.ctx.Loops.Current()
+	loop := c.ctx.Function.Loops.Current()
 	var dst bytecode.Operand
 
 	// Aggregate collectors store their plan index in the collector opcode arguments.
 	// Generic collectors do not require an aggregate plan operand.
 	if useAggregateCollector {
-		dst = loop.PatchDestinationAxy(c.ctx.Registers, c.ctx.Emitter, bytecode.OpDataSetCollector, int(collectorType), aggregatePlanIndex)
+		dst = loop.PatchDestinationAxy(c.ctx.Function.Registers, c.ctx.Program.Emitter, bytecode.OpDataSetCollector, int(collectorType), aggregatePlanIndex)
 	} else if useGroupedAggregateCollector {
-		planIdx := c.ctx.AddAggregatePlan(groupedAggregatePlan)
-		dst = loop.PatchDestinationAxy(c.ctx.Registers, c.ctx.Emitter, bytecode.OpDataSetCollector, int(collectorType), planIdx)
+		planIdx := c.ctx.Program.AddAggregatePlan(groupedAggregatePlan)
+		dst = loop.PatchDestinationAxy(c.ctx.Function.Registers, c.ctx.Program.Emitter, bytecode.OpDataSetCollector, int(collectorType), planIdx)
 	} else {
-		dst = loop.PatchDestinationAx(c.ctx.Registers, c.ctx.Emitter, bytecode.OpDataSetCollector, int(collectorType))
+		dst = loop.PatchDestinationAx(c.ctx.Function.Registers, c.ctx.Program.Emitter, bytecode.OpDataSetCollector, int(collectorType))
 	}
 
 	var aggregation *core.CollectorAggregation
@@ -137,40 +137,40 @@ func (c *CollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *core.
 // and emitting finalization instructions for the current loop.
 // The behavior varies based on whether grouping and aggregation are used.
 func (c *CollectCompiler) finalizeCollector(dst bytecode.Operand, kv *core.KV, spec *core.Collector) {
-	loop := c.ctx.Loops.Current()
+	loop := c.ctx.Function.Loops.Current()
 
 	// Fused grouped aggregate collectors without INTO only need direct aggregate updates.
 	if spec.HasGrouping() {
 		if spec.Type() != bytecode.CollectorTypeAggregateGroup || spec.HasProjection() {
-			c.ctx.Emitter.EmitPushKV(dst, kv.Key, kv.Value)
+			c.ctx.Program.Emitter.EmitPushKV(dst, kv.Key, kv.Value)
 		}
 	} else if spec.Type() == bytecode.CollectorTypeCounter {
-		c.ctx.Emitter.EmitCounterInc(dst)
+		c.ctx.Program.Emitter.EmitCounterInc(dst)
 	} else if !spec.HasAggregation() {
-		c.ctx.Emitter.EmitPushKV(dst, kv.Key, kv.Value)
+		c.ctx.Program.Emitter.EmitPushKV(dst, kv.Key, kv.Value)
 	} else if spec.ProjectionState() != bytecode.NoopOperand {
-		c.ctx.Emitter.EmitArrayPush(spec.ProjectionState(), kv.Value)
+		c.ctx.Program.Emitter.EmitArrayPush(spec.ProjectionState(), kv.Value)
 	} else if spec.HasProjection() {
 		// For projection without grouping but with aggregation, use the projection variable name as the key
 		key := c.facts.LoadConstant(runtime.String(spec.Projection().VariableName()))
-		c.ctx.Emitter.EmitPushKV(dst, key, kv.Value)
+		c.ctx.Program.Emitter.EmitPushKV(dst, key, kv.Value)
 	}
 
 	// Emit finalization instructions for the current loop
-	loop.EmitFinalization(c.ctx.Emitter)
+	loop.EmitFinalization(c.ctx.Program.Emitter)
 }
 
 func (c *CollectCompiler) insertGlobalAggregateProjectionBuffer(loop *core.Loop) bytecode.Operand {
-	buf := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.InsertAx(loop.StartLabel(), bytecode.OpLoadArray, buf, 8)
-	c.ctx.Types.Set(buf, core.TypeArray)
+	buf := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.InsertAx(loop.StartLabel(), bytecode.OpLoadArray, buf, 8)
+	c.ctx.Function.Types.Set(buf, core.TypeArray)
 
 	return buf
 }
 
 // compileLoop compiles a loop construct by configuring its kind, registers, initialization, and processing based on the specification.
 func (c *CollectCompiler) compileLoop(spec *core.Collector) {
-	loop := c.ctx.Loops.Current()
+	loop := c.ctx.Function.Loops.Current()
 
 	// If we are using a projection, we need to ensure the loop is set to ForInLoop
 	if loop.Kind != core.ForInLoop {
@@ -179,12 +179,12 @@ func (c *CollectCompiler) compileLoop(spec *core.Collector) {
 
 	// Ensure loop value register is allocated
 	if loop.Value == bytecode.NoopOperand {
-		loop.Value = c.ctx.Registers.Allocate()
+		loop.Value = c.ctx.Function.Registers.Allocate()
 	}
 
 	// Ensure loop key register is allocated
 	if loop.Key == bytecode.NoopOperand {
-		loop.Key = c.ctx.Registers.Allocate()
+		loop.Key = c.ctx.Function.Registers.Allocate()
 	}
 
 	// Determine if we need to initialize the loop
@@ -195,19 +195,19 @@ func (c *CollectCompiler) compileLoop(spec *core.Collector) {
 	if doInit {
 		if loop.Allocate {
 			// Move the collector to the next loop source
-			c.ctx.Emitter.EmitMove(loop.Src, spec.Destination())
+			c.ctx.Program.Emitter.EmitMove(loop.Src, spec.Destination())
 		} else {
 			// We do not control the source of the loop, so we just set it to the destination
 			loop.Src = spec.Destination()
 		}
 
-		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+		loop.EmitInitialization(c.ctx.Function.Registers, c.ctx.Program.Emitter)
 
 		if spec.HasProjection() && loop.Value.IsRegister() {
 			if spec.Projection().IsCounted() {
-				c.ctx.Types.Set(loop.Value, core.TypeInt)
+				c.ctx.Function.Types.Set(loop.Value, core.TypeInt)
 			} else {
-				c.ctx.Types.Set(loop.Value, core.TypeArray)
+				c.ctx.Function.Types.Set(loop.Value, core.TypeArray)
 			}
 		}
 	}

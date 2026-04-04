@@ -71,7 +71,7 @@ func collectMatchResultMerges(ctx *CompilationSession, arms []fql.IMatchPatternA
 			continue
 		}
 
-		label := ctx.Emitter.NewLabel("match.result")
+		label := ctx.Program.Emitter.NewLabel("match.result")
 		group.label = label
 		for _, idx := range group.arms {
 			labels[idx] = label

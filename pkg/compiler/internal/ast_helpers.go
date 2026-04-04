@@ -30,12 +30,12 @@ func compileScalarLiteralOperand(ctx *CompilationSession, literals *LiteralCompi
 	}
 
 	if lit.NoneLiteral() != nil {
-		return ctx.Symbols.AddConstant(runtime.None)
+		return ctx.Function.Symbols.AddConstant(runtime.None)
 	}
 
 	if bl := lit.BooleanLiteral(); bl != nil {
 		if val, ok := literalBooleanValue(bl.GetText()); ok {
-			return ctx.Symbols.AddConstant(val)
+			return ctx.Function.Symbols.AddConstant(val)
 		}
 
 		return bytecode.NoopOperand
@@ -43,7 +43,7 @@ func compileScalarLiteralOperand(ctx *CompilationSession, literals *LiteralCompi
 
 	if sl := lit.StringLiteral(); sl != nil {
 		if val, ok := parseStringLiteralConst(sl); ok {
-			return ctx.Symbols.AddConstant(val)
+			return ctx.Function.Symbols.AddConstant(val)
 		}
 
 		return literals.CompileStringLiteral(sl)
@@ -51,7 +51,7 @@ func compileScalarLiteralOperand(ctx *CompilationSession, literals *LiteralCompi
 
 	if fl := lit.FloatLiteral(); fl != nil {
 		if val, ok := literalFloatValue(fl.GetText()); ok {
-			return ctx.Symbols.AddConstant(val)
+			return ctx.Function.Symbols.AddConstant(val)
 		}
 
 		return literals.CompileFloatLiteral(fl)
@@ -59,7 +59,7 @@ func compileScalarLiteralOperand(ctx *CompilationSession, literals *LiteralCompi
 
 	if il := lit.IntegerLiteral(); il != nil {
 		if val, ok := literalIntValue(il.GetText()); ok {
-			return ctx.Symbols.AddConstant(val)
+			return ctx.Function.Symbols.AddConstant(val)
 		}
 
 		return literals.CompileIntegerLiteral(il)

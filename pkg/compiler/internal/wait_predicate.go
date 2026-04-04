@@ -69,7 +69,7 @@ func (c *WaitCompiler) prepareWaitPredicateConfig(ctx fql.IWaitForPredicateExpre
 	}
 
 	if legacy := legacyWaitForOrThrowNode(predExpr); legacy != nil {
-		c.ctx.Errors.Add(c.ctx.Errors.Create(parserd.SyntaxError, legacy, "Unexpected THROW after OR in WAITFOR predicate"))
+		c.ctx.Program.Errors.Add(c.ctx.Program.Errors.Create(parserd.SyntaxError, legacy, "Unexpected THROW after OR in WAITFOR predicate"))
 		return waitPredicateCompileConfig{}, false
 	}
 
@@ -252,9 +252,9 @@ func (c *WaitCompiler) compileJitterClause(ctx fql.IJitterClauseContext) (byteco
 
 	if literal != nil && (*literal < 0 || *literal > 1) {
 		if prc, ok := valueCtx.(antlr.ParserRuleContext); ok {
-			err := c.ctx.Errors.Create(parserd.SemanticError, prc, "JITTER must be between 0 and 1")
+			err := c.ctx.Program.Errors.Create(parserd.SemanticError, prc, "JITTER must be between 0 and 1")
 			err.Hint = "Use a value between 0 and 1, e.g. JITTER 0.2."
-			c.ctx.Errors.Add(err)
+			c.ctx.Program.Errors.Add(err)
 		}
 	}
 
@@ -304,9 +304,9 @@ func (c *WaitCompiler) compileBackoffClause(ctx fql.IBackoffClauseContext) core.
 			strategy = val.String()
 		} else {
 			if prc, ok := ctx.(antlr.ParserRuleContext); ok {
-				err := c.ctx.Errors.Create(parserd.SemanticError, prc, "BACKOFF strategy must be a constant string")
+				err := c.ctx.Program.Errors.Create(parserd.SemanticError, prc, "BACKOFF strategy must be a constant string")
 				err.Hint = "Use one of: NONE, LINEAR, EXPONENTIAL."
-				c.ctx.Errors.Add(err)
+				c.ctx.Program.Errors.Add(err)
 			}
 			return core.RetryBackoffNone
 		}
@@ -325,9 +325,9 @@ func (c *WaitCompiler) compileBackoffClause(ctx fql.IBackoffClauseContext) core.
 		return core.RetryBackoffExponential
 	default:
 		if prc, ok := ctx.(antlr.ParserRuleContext); ok {
-			err := c.ctx.Errors.Create(parserd.SemanticError, prc, "Unknown BACKOFF strategy")
+			err := c.ctx.Program.Errors.Create(parserd.SemanticError, prc, "Unknown BACKOFF strategy")
 			err.Hint = "Use one of: NONE, LINEAR, EXPONENTIAL."
-			c.ctx.Errors.Add(err)
+			c.ctx.Program.Errors.Add(err)
 		}
 
 		return core.RetryBackoffNone

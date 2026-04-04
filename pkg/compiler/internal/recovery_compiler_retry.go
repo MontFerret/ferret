@@ -61,8 +61,8 @@ func (c *RecoveryCompiler) EmitRetryDelay(retry *core.RecoveryRetryPlan, state c
 		return
 	}
 
-	delayReady := c.ctx.Emitter.NewLabel("recovery", "retry", "delay", "ready")
-	c.ctx.Emitter.EmitJumpIfTrue(state.ReadyReg, delayReady)
+	delayReady := c.ctx.Program.Emitter.NewLabel("recovery", "retry", "delay", "ready")
+	c.ctx.Program.Emitter.EmitJumpIfTrue(state.ReadyReg, delayReady)
 
 	delayValue := ensureOperandRegister(c.ctx, c.facts, c.CompileDurationOperand(retry.Delay))
 	if delayValue == bytecode.NoopOperand {
@@ -71,10 +71,10 @@ func (c *RecoveryCompiler) EmitRetryDelay(retry *core.RecoveryRetryPlan, state c
 
 	c.facts.EmitMoveAuto(state.BaseReg, delayValue)
 	c.facts.EmitMoveAuto(state.CurrentReg, state.BaseReg)
-	c.ctx.Emitter.EmitBoolean(state.ReadyReg, true)
-	c.ctx.Emitter.MarkLabel(delayReady)
+	c.ctx.Program.Emitter.EmitBoolean(state.ReadyReg, true)
+	c.ctx.Program.Emitter.MarkLabel(delayReady)
 
-	c.ctx.Emitter.EmitA(bytecode.OpSleep, state.CurrentReg)
+	c.ctx.Program.Emitter.EmitA(bytecode.OpSleep, state.CurrentReg)
 
 	if retry.Backoff != core.RetryBackoffNone {
 		c.emitBackoffUpdate(retry.Backoff, state.CurrentReg, state.BaseReg)
@@ -87,12 +87,12 @@ func (c *RecoveryCompiler) initRetryDelayState(retry *core.RecoveryRetryPlan) co
 	}
 
 	state := core.RetryDelayState{
-		BaseReg:    c.ctx.Registers.Allocate(),
-		CurrentReg: c.ctx.Registers.Allocate(),
-		ReadyReg:   c.ctx.Registers.Allocate(),
+		BaseReg:    c.ctx.Function.Registers.Allocate(),
+		CurrentReg: c.ctx.Function.Registers.Allocate(),
+		ReadyReg:   c.ctx.Function.Registers.Allocate(),
 	}
 
-	c.ctx.Emitter.EmitBoolean(state.ReadyReg, false)
+	c.ctx.Program.Emitter.EmitBoolean(state.ReadyReg, false)
 
 	return state
 }
@@ -100,10 +100,10 @@ func (c *RecoveryCompiler) initRetryDelayState(retry *core.RecoveryRetryPlan) co
 func (c *RecoveryCompiler) emitBackoffUpdate(strategy core.RetryBackoff, intervalReg, baseEveryReg bytecode.Operand) {
 	switch strategy {
 	case core.RetryBackoffLinear:
-		c.ctx.Emitter.EmitABC(bytecode.OpAdd, intervalReg, intervalReg, baseEveryReg)
+		c.ctx.Program.Emitter.EmitABC(bytecode.OpAdd, intervalReg, intervalReg, baseEveryReg)
 	case core.RetryBackoffExponential:
 		twoReg := c.facts.LoadConstant(runtime.NewInt(2))
-		c.ctx.Emitter.EmitABC(bytecode.OpMul, intervalReg, intervalReg, twoReg)
+		c.ctx.Program.Emitter.EmitABC(bytecode.OpMul, intervalReg, intervalReg, twoReg)
 	}
 }
 
@@ -145,7 +145,7 @@ func (c *RecoveryCompiler) resolveRetryBackoff(clause fql.IRecoveryRetryBackoffC
 }
 
 func (c *RecoveryCompiler) reportInvalidDurationLiteral(ctx antlr.ParserRuleContext, err error) {
-	if c == nil || c.ctx == nil || c.ctx.Errors == nil || ctx == nil {
+	if c == nil || c.ctx == nil || c.ctx.Program.Errors == nil || ctx == nil {
 		core.PanicInvariant("cannot report invalid duration literal")
 	}
 
@@ -157,7 +157,7 @@ func (c *RecoveryCompiler) reportInvalidDurationLiteral(ctx antlr.ParserRuleCont
 		hint = "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m."
 	}
 
-	diag := c.ctx.Errors.Create(parserd.SyntaxError, ctx, message)
+	diag := c.ctx.Program.Errors.Create(parserd.SyntaxError, ctx, message)
 	diag.Hint = hint
-	c.ctx.Errors.Add(diag)
+	c.ctx.Program.Errors.Add(diag)
 }

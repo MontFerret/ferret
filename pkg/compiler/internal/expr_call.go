@@ -14,32 +14,32 @@ func (c *ExprCompiler) ensureRegister(op bytecode.Operand) bytecode.Operand {
 }
 
 func (c *ExprCompiler) emitComparison(op bytecode.Opcode, left, right bytecode.Operand) bytecode.Operand {
-	dst := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitABC(op, dst, left, right)
+	dst := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitABC(op, dst, left, right)
 
 	if dst.IsRegister() {
-		c.ctx.Types.Set(dst, core.TypeBool)
+		c.ctx.Function.Types.Set(dst, core.TypeBool)
 	}
 
 	return dst
 }
 
 func (c *ExprCompiler) emitBooleanAnd(left, right bytecode.Operand) bytecode.Operand {
-	dst := c.ctx.Registers.Allocate()
-	skip := c.ctx.Emitter.NewLabel("and.false")
-	done := c.ctx.Emitter.NewLabel("and.done")
+	dst := c.ctx.Function.Registers.Allocate()
+	skip := c.ctx.Program.Emitter.NewLabel("and.false")
+	done := c.ctx.Program.Emitter.NewLabel("and.done")
 
-	c.ctx.Emitter.EmitJumpIfFalse(left, skip)
-	c.ctx.Emitter.EmitJumpIfFalse(right, skip)
-	c.ctx.Emitter.EmitAb(bytecode.OpLoadBool, dst, true)
-	c.ctx.Emitter.EmitJump(done)
+	c.ctx.Program.Emitter.EmitJumpIfFalse(left, skip)
+	c.ctx.Program.Emitter.EmitJumpIfFalse(right, skip)
+	c.ctx.Program.Emitter.EmitAb(bytecode.OpLoadBool, dst, true)
+	c.ctx.Program.Emitter.EmitJump(done)
 
-	c.ctx.Emitter.MarkLabel(skip)
-	c.ctx.Emitter.EmitAb(bytecode.OpLoadBool, dst, false)
-	c.ctx.Emitter.MarkLabel(done)
+	c.ctx.Program.Emitter.MarkLabel(skip)
+	c.ctx.Program.Emitter.EmitAb(bytecode.OpLoadBool, dst, false)
+	c.ctx.Program.Emitter.MarkLabel(done)
 
 	if dst.IsRegister() {
-		c.ctx.Types.Set(dst, core.TypeBool)
+		c.ctx.Function.Types.Set(dst, core.TypeBool)
 	}
 
 	return dst

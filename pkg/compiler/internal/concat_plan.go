@@ -149,7 +149,7 @@ func inferConcatAtomType(ctx *CompilationSession, facts *TypeFacts, atom fql.IEx
 	}
 
 	if v := atom.Variable(); v != nil {
-		if binding, ok := ctx.Symbols.ResolveBinding(v.GetText()); ok {
+		if binding, ok := ctx.Function.Symbols.ResolveBinding(v.GetText()); ok {
 			return binding.Type
 		}
 
@@ -346,8 +346,8 @@ func emitConcatOperandSegments(ctx *CompilationSession, facts *TypeFacts, parts 
 			return bytecode.NoopOperand
 		}
 
-		ctx.Emitter.EmitABC(bytecode.OpConcat, start, start, bytecode.Operand(1))
-		ctx.Types.Set(start, core.TypeString)
+		ctx.Program.Emitter.EmitABC(bytecode.OpConcat, start, start, bytecode.Operand(1))
+		ctx.Function.Types.Set(start, core.TypeString)
 
 		return start
 	}
@@ -358,14 +358,14 @@ func emitConcatOperandSegments(ctx *CompilationSession, facts *TypeFacts, parts 
 			return bytecode.NoopOperand
 		}
 
-		dst := ctx.Registers.Allocate()
-		ctx.Emitter.EmitABC(bytecode.OpAddConst, dst, left, ctx.Symbols.AddConstant(merged[1].literal))
-		ctx.Types.Set(dst, core.TypeString)
+		dst := ctx.Function.Registers.Allocate()
+		ctx.Program.Emitter.EmitABC(bytecode.OpAddConst, dst, left, ctx.Function.Symbols.AddConstant(merged[1].literal))
+		ctx.Function.Types.Set(dst, core.TypeString)
 
 		return dst
 	}
 
-	seq := ctx.Registers.AllocateSequence(len(merged))
+	seq := ctx.Function.Registers.AllocateSequence(len(merged))
 
 	for i, part := range merged {
 		target := seq[i]
@@ -378,13 +378,13 @@ func emitConcatOperandSegments(ctx *CompilationSession, facts *TypeFacts, parts 
 			continue
 		}
 
-		ctx.Emitter.EmitLoadConst(target, ctx.Symbols.AddConstant(part.literal))
-		ctx.Types.Set(target, core.TypeString)
+		ctx.Program.Emitter.EmitLoadConst(target, ctx.Function.Symbols.AddConstant(part.literal))
+		ctx.Function.Types.Set(target, core.TypeString)
 	}
 
 	dst := seq[0]
-	ctx.Emitter.EmitABC(bytecode.OpConcat, dst, seq[0], bytecode.Operand(len(seq)))
-	ctx.Types.Set(dst, core.TypeString)
+	ctx.Program.Emitter.EmitABC(bytecode.OpConcat, dst, seq[0], bytecode.Operand(len(seq)))
+	ctx.Function.Types.Set(dst, core.TypeString)
 
 	return dst
 }
@@ -436,9 +436,9 @@ func ensureConcatRegister(ctx *CompilationSession, facts *TypeFacts, op bytecode
 		return op
 	}
 
-	reg := ctx.Registers.Allocate()
-	ctx.Emitter.EmitLoadConst(reg, op)
-	ctx.Types.Set(reg, facts.OperandType(op))
+	reg := ctx.Function.Registers.Allocate()
+	ctx.Program.Emitter.EmitLoadConst(reg, op)
+	ctx.Function.Types.Set(reg, facts.OperandType(op))
 
 	return reg
 }
@@ -449,8 +449,8 @@ func loadConcatOperandIntoRegister(ctx *CompilationSession, facts *TypeFacts, ta
 	}
 
 	if op.IsConstant() {
-		ctx.Emitter.EmitLoadConst(target, op)
-		ctx.Types.Set(target, facts.OperandType(op))
+		ctx.Program.Emitter.EmitLoadConst(target, op)
+		ctx.Function.Types.Set(target, facts.OperandType(op))
 		return true
 	}
 
@@ -459,10 +459,10 @@ func loadConcatOperandIntoRegister(ctx *CompilationSession, facts *TypeFacts, ta
 	}
 
 	if !op.Equals(target) {
-		ctx.Emitter.EmitMove(target, op)
+		ctx.Program.Emitter.EmitMove(target, op)
 	}
 
-	ctx.Types.Set(target, facts.OperandType(op))
+	ctx.Function.Types.Set(target, facts.OperandType(op))
 
 	return true
 }

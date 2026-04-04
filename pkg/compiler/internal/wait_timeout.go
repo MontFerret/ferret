@@ -20,9 +20,9 @@ func (c *WaitCompiler) emitWaitPredicateTimeoutCheck(
 
 	nowReg := c.emitNow()
 	elapsedReg := c.emitDateDiff(startReg, nowReg, unitReg)
-	reachedReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitGte(reachedReg, elapsedReg, timeoutReg)
-	c.ctx.Emitter.EmitJumpIfTrue(reachedReg, timeoutLabel)
+	reachedReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitGte(reachedReg, elapsedReg, timeoutReg)
+	c.ctx.Program.Emitter.EmitJumpIfTrue(reachedReg, timeoutLabel)
 
 	return elapsedReg
 }
@@ -32,8 +32,8 @@ func (c *WaitCompiler) prepareWaitSleepInterval(config waitPredicateCompileConfi
 		return pollReg
 	}
 
-	sleepIntervalReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitMove(sleepIntervalReg, pollReg)
+	sleepIntervalReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitMove(sleepIntervalReg, pollReg)
 
 	if config.hasJitter {
 		c.emitApplyJitter(sleepIntervalReg, config.jitterReg)
@@ -59,11 +59,11 @@ func (c *WaitCompiler) emitFunctionCall(name runtime.String, args ...bytecode.Op
 		return c.exprs.CompileFunctionCallByNameWith(nil, name, false, nil)
 	}
 
-	seq := c.ctx.Registers.AllocateSequence(len(args))
+	seq := c.ctx.Function.Registers.AllocateSequence(len(args))
 
 	for i, arg := range args {
-		c.ctx.Emitter.EmitMove(seq[i], arg)
-		c.ctx.Types.Set(seq[i], c.facts.OperandType(arg))
+		c.ctx.Program.Emitter.EmitMove(seq[i], arg)
+		c.ctx.Function.Types.Set(seq[i], c.facts.OperandType(arg))
 	}
 
 	return c.exprs.CompileFunctionCallByNameWith(nil, name, false, seq)
@@ -71,60 +71,60 @@ func (c *WaitCompiler) emitFunctionCall(name runtime.String, args ...bytecode.Op
 
 func (c *WaitCompiler) emitWaitSleep(intervalReg, timeoutReg, elapsedReg bytecode.Operand) {
 	if timeoutReg == bytecode.NoopOperand {
-		c.ctx.Emitter.EmitA(bytecode.OpSleep, intervalReg)
+		c.ctx.Program.Emitter.EmitA(bytecode.OpSleep, intervalReg)
 		return
 	}
 
-	sleepReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitMove(sleepReg, intervalReg)
+	sleepReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitMove(sleepReg, intervalReg)
 
-	remainingReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitABC(bytecode.OpSub, remainingReg, timeoutReg, elapsedReg)
+	remainingReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitABC(bytecode.OpSub, remainingReg, timeoutReg, elapsedReg)
 
-	shouldTrim := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitLt(shouldTrim, remainingReg, sleepReg)
+	shouldTrim := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitLt(shouldTrim, remainingReg, sleepReg)
 
-	useRemaining := c.ctx.Emitter.NewLabel()
-	continueSleep := c.ctx.Emitter.NewLabel()
+	useRemaining := c.ctx.Program.Emitter.NewLabel()
+	continueSleep := c.ctx.Program.Emitter.NewLabel()
 
-	c.ctx.Emitter.EmitJumpIfTrue(shouldTrim, useRemaining)
-	c.ctx.Emitter.EmitJump(continueSleep)
+	c.ctx.Program.Emitter.EmitJumpIfTrue(shouldTrim, useRemaining)
+	c.ctx.Program.Emitter.EmitJump(continueSleep)
 
-	c.ctx.Emitter.MarkLabel(useRemaining)
-	c.ctx.Emitter.EmitMove(sleepReg, remainingReg)
-	c.ctx.Emitter.MarkLabel(continueSleep)
+	c.ctx.Program.Emitter.MarkLabel(useRemaining)
+	c.ctx.Program.Emitter.EmitMove(sleepReg, remainingReg)
+	c.ctx.Program.Emitter.MarkLabel(continueSleep)
 
-	c.ctx.Emitter.EmitA(bytecode.OpSleep, sleepReg)
+	c.ctx.Program.Emitter.EmitA(bytecode.OpSleep, sleepReg)
 }
 
 func (c *WaitCompiler) emitClampMin(target, min bytecode.Operand) {
-	lessReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitLt(lessReg, target, min)
+	lessReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitLt(lessReg, target, min)
 
-	useMin := c.ctx.Emitter.NewLabel()
-	end := c.ctx.Emitter.NewLabel()
+	useMin := c.ctx.Program.Emitter.NewLabel()
+	end := c.ctx.Program.Emitter.NewLabel()
 
-	c.ctx.Emitter.EmitJumpIfTrue(lessReg, useMin)
-	c.ctx.Emitter.EmitJump(end)
+	c.ctx.Program.Emitter.EmitJumpIfTrue(lessReg, useMin)
+	c.ctx.Program.Emitter.EmitJump(end)
 
-	c.ctx.Emitter.MarkLabel(useMin)
-	c.ctx.Emitter.EmitMove(target, min)
-	c.ctx.Emitter.MarkLabel(end)
+	c.ctx.Program.Emitter.MarkLabel(useMin)
+	c.ctx.Program.Emitter.EmitMove(target, min)
+	c.ctx.Program.Emitter.MarkLabel(end)
 }
 
 func (c *WaitCompiler) emitClampMax(target, max bytecode.Operand) {
-	greaterReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitGt(greaterReg, target, max)
+	greaterReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitGt(greaterReg, target, max)
 
-	useMax := c.ctx.Emitter.NewLabel()
-	end := c.ctx.Emitter.NewLabel()
+	useMax := c.ctx.Program.Emitter.NewLabel()
+	end := c.ctx.Program.Emitter.NewLabel()
 
-	c.ctx.Emitter.EmitJumpIfTrue(greaterReg, useMax)
-	c.ctx.Emitter.EmitJump(end)
+	c.ctx.Program.Emitter.EmitJumpIfTrue(greaterReg, useMax)
+	c.ctx.Program.Emitter.EmitJump(end)
 
-	c.ctx.Emitter.MarkLabel(useMax)
-	c.ctx.Emitter.EmitMove(target, max)
-	c.ctx.Emitter.MarkLabel(end)
+	c.ctx.Program.Emitter.MarkLabel(useMax)
+	c.ctx.Program.Emitter.EmitMove(target, max)
+	c.ctx.Program.Emitter.MarkLabel(end)
 }
 
 func (c *WaitCompiler) emitClampRange(target, min, max bytecode.Operand) {
@@ -137,25 +137,25 @@ func (c *WaitCompiler) emitApplyJitter(intervalReg, jitterReg bytecode.Operand) 
 		return
 	}
 
-	randReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitA(bytecode.OpRand, randReg)
+	randReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitA(bytecode.OpRand, randReg)
 
 	twoReg := c.facts.LoadConstant(runtime.NewFloat(2))
 	oneReg := c.facts.LoadConstant(runtime.NewFloat(1))
 
-	twoJitterReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitABC(bytecode.OpMul, twoJitterReg, jitterReg, twoReg)
+	twoJitterReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitABC(bytecode.OpMul, twoJitterReg, jitterReg, twoReg)
 
-	randScaleReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitABC(bytecode.OpMul, randScaleReg, randReg, twoJitterReg)
+	randScaleReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitABC(bytecode.OpMul, randScaleReg, randReg, twoJitterReg)
 
-	oneMinusReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitABC(bytecode.OpSub, oneMinusReg, oneReg, jitterReg)
+	oneMinusReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitABC(bytecode.OpSub, oneMinusReg, oneReg, jitterReg)
 
-	multiplierReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitABC(bytecode.OpAdd, multiplierReg, oneMinusReg, randScaleReg)
+	multiplierReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitABC(bytecode.OpAdd, multiplierReg, oneMinusReg, randScaleReg)
 
-	c.ctx.Emitter.EmitABC(bytecode.OpMul, intervalReg, intervalReg, multiplierReg)
+	c.ctx.Program.Emitter.EmitABC(bytecode.OpMul, intervalReg, intervalReg, multiplierReg)
 }
 
 func parseDurationLiteral(text string) (runtime.Value, error) {

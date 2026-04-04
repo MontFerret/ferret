@@ -12,10 +12,24 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
-// functionCompileState contains the compiler state that is intentionally local
-// to a single function body compilation. New UDF-local session state must be
-// added here so save/restore stays exhaustive when swapped by value.
-type functionCompileState struct {
+// ProgramContext holds state that lives for the entire compilation of one
+// source file. It is shared across the main body and all UDF compilations.
+type ProgramContext struct {
+	Emitter             *core.Emitter
+	Constants           *core.ConstantPool
+	CatchTable          *core.CatchStack
+	UDFs                *core.UDFTable
+	Errors              *diagnostics.ErrorHandler
+	Source              *source.Source
+	UseAliases          map[string]string
+	aggregatePlanByHash map[uint64][]int
+	aggregatePlans      []*bytecode.AggregatePlan
+	OptimizationLevel   optimization.Level
+}
+
+// FunctionContext holds state that is local to a single function body
+// compilation. A fresh FunctionContext is created for each UDF body.
+type FunctionContext struct {
 	Registers *core.RegisterAllocator
 	Symbols   *core.SymbolTable
 	Types     *core.TypeTracker
@@ -23,25 +37,28 @@ type functionCompileState struct {
 	UDFScope  *core.UDFScope
 }
 
-// CompilationSession holds the shared mutable state for a single compilation run.
+// CompilationSession is the thin coordinator passed to all compilers.
+// It provides access to both program-wide and function-local state.
 type CompilationSession struct {
-	functionCompileState
+	Program  *ProgramContext
+	Function *FunctionContext
+}
 
-	UseAliases          map[string]string
-	Emitter             *core.Emitter
-	Constants           *core.ConstantPool
-	CatchTable          *core.CatchStack
-	UDFs                *core.UDFTable
-	Errors              *diagnostics.ErrorHandler
-	Source              *source.Source
-	aggregatePlanByHash map[uint64][]int
-	aggregatePlans      []*bytecode.AggregatePlan
-	OptimizationLevel   optimization.Level
+// NewFunctionContext creates a fresh function-local compilation state.
+func NewFunctionContext(constants *core.ConstantPool) *FunctionContext {
+	fc := &FunctionContext{
+		Registers: core.NewRegisterAllocator(),
+		Types:     core.NewTypeTracker(),
+	}
+	fc.Symbols = core.NewSymbolTable(fc.Registers, constants)
+	fc.Loops = core.NewLoopTable(fc.Registers)
+
+	return fc
 }
 
 // NewCompilationSession initializes a new CompilationSession with default values.
 func NewCompilationSession(src *source.Source, errors *diagnostics.ErrorHandler, level optimization.Level) *CompilationSession {
-	ctx := &CompilationSession{
+	program := &ProgramContext{
 		Source:            src,
 		Errors:            errors,
 		OptimizationLevel: level,
@@ -56,17 +73,13 @@ func NewCompilationSession(src *source.Source, errors *diagnostics.ErrorHandler,
 		aggregatePlanByHash: make(map[uint64][]int),
 	}
 
-	ctx.functionCompileState = functionCompileState{
-		Registers: core.NewRegisterAllocator(),
-		Types:     core.NewTypeTracker(),
+	return &CompilationSession{
+		Program:  program,
+		Function: NewFunctionContext(program.Constants),
 	}
-	ctx.Symbols = core.NewSymbolTable(ctx.Registers, ctx.Constants)
-	ctx.Loops = core.NewLoopTable(ctx.Registers)
-
-	return ctx
 }
 
-func (c *CompilationSession) AddAggregatePlan(plan *bytecode.AggregatePlan) int {
+func (c *ProgramContext) AddAggregatePlan(plan *bytecode.AggregatePlan) int {
 	if plan == nil {
 		return -1
 	}
@@ -88,7 +101,7 @@ func (c *CompilationSession) AddAggregatePlan(plan *bytecode.AggregatePlan) int 
 	return idx
 }
 
-func (c *CompilationSession) AggregatePlans() []bytecode.AggregatePlan {
+func (c *ProgramContext) AggregatePlans() []bytecode.AggregatePlan {
 	plans := make([]bytecode.AggregatePlan, len(c.aggregatePlans))
 
 	for i, p := range c.aggregatePlans {

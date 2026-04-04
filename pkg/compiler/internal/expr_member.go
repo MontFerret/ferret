@@ -104,13 +104,13 @@ func (c *ExprCompiler) emitImplicitMemberStartLoad(src bytecode.Operand, start f
 		return bytecode.NoopOperand, false
 	}
 
-	dst := c.ctx.Registers.Allocate()
+	dst := c.ctx.Function.Registers.Allocate()
 	span := diagnostics.SpanFromRuleContext(start.(antlr.ParserRuleContext))
 	optional := start.ErrorOperator() != nil
 
-	c.ctx.Emitter.WithSpan(span, func() {
+	c.ctx.Program.Emitter.WithSpan(span, func() {
 		op := memberLoadOpcode(c.facts.OperandType(src), constOperand, optional)
-		c.ctx.Emitter.EmitABC(op, dst, src, operand)
+		c.ctx.Program.Emitter.EmitABC(op, dst, src, operand)
 	})
 
 	return dst, true
@@ -222,13 +222,13 @@ func (c *ExprCompiler) CompileImplicitCurrentExpression(ctx fql.IImplicitCurrent
 // It returns a register operand and true on success.
 func (c *ExprCompiler) resolveImplicitCurrent(token antlr.Token) (bytecode.Operand, bool) {
 	if c.implicitCurrentDepth == 0 {
-		c.ctx.Errors.VariableNotFound(token, core.PseudoVariable)
+		c.ctx.Program.Errors.VariableNotFound(token, core.PseudoVariable)
 		return bytecode.NoopOperand, false
 	}
 
-	binding, found := c.ctx.Symbols.ResolveBinding(core.PseudoVariable)
+	binding, found := c.ctx.Function.Symbols.ResolveBinding(core.PseudoVariable)
 	if !found {
-		c.ctx.Errors.VariableNotFound(token, core.PseudoVariable)
+		c.ctx.Program.Errors.VariableNotFound(token, core.PseudoVariable)
 		return bytecode.NoopOperand, false
 	}
 
@@ -297,14 +297,14 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src bytecode.Operand, seg
 		}
 
 		src2, constOperand := c.compileMemberPathOperand(p)
-		dst := c.ctx.Registers.Allocate()
+		dst := c.ctx.Function.Registers.Allocate()
 		span := diagnostics.SpanFromRuleContext(p)
 
-		c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.WithSpan(span, func() {
 			optional := p.ErrorOperator() != nil
 			op := memberLoadOpcode(c.facts.OperandType(src), constOperand, optional)
 
-			c.ctx.Emitter.EmitABC(op, dst, src, src2)
+			c.ctx.Program.Emitter.EmitABC(op, dst, src, src2)
 		})
 
 		src = dst
@@ -337,12 +337,12 @@ func (c *ExprCompiler) compileImplicitSimpleMemberExpressionSegments(src bytecod
 func (c *ExprCompiler) emitOptionalMemberLoadSegment(span source.Span, src, segmentOp bytecode.Operand, constOperand, optional bool, state *optionalMemberChainState) bytecode.Operand {
 	dst := c.allocateOptionalMemberDestination(src, state)
 
-	c.ctx.Emitter.WithSpan(span, func() {
+	c.ctx.Program.Emitter.WithSpan(span, func() {
 		op := memberLoadOpcode(c.facts.OperandType(src), constOperand, optional)
-		c.ctx.Emitter.EmitABC(op, dst, src, segmentOp)
+		c.ctx.Program.Emitter.EmitABC(op, dst, src, segmentOp)
 
 		if optional {
-			c.ctx.Emitter.EmitJumpIfNone(dst, c.optionalMemberEndLabel(state))
+			c.ctx.Program.Emitter.EmitJumpIfNone(dst, c.optionalMemberEndLabel(state))
 		}
 	})
 
@@ -358,7 +358,7 @@ func (c *ExprCompiler) allocateOptionalMemberDestination(src bytecode.Operand, s
 		return src
 	}
 
-	return c.ctx.Registers.Allocate()
+	return c.ctx.Function.Registers.Allocate()
 }
 
 func (c *ExprCompiler) optionalMemberEndLabel(state *optionalMemberChainState) core.Label {
@@ -370,7 +370,7 @@ func (c *ExprCompiler) optionalMemberEndLabel(state *optionalMemberChainState) c
 		return state.endLabel
 	}
 
-	state.endLabel = c.ctx.Emitter.NewLabel("member", "optional", "end")
+	state.endLabel = c.ctx.Program.Emitter.NewLabel("member", "optional", "end")
 	state.hasJump = true
 
 	return state.endLabel
@@ -381,7 +381,7 @@ func (c *ExprCompiler) finalizeOptionalMemberChain(state *optionalMemberChainSta
 		return
 	}
 
-	c.ctx.Emitter.MarkLabel(state.endLabel)
+	c.ctx.Program.Emitter.MarkLabel(state.endLabel)
 }
 
 func isSimpleMemberPathChain(segments []fql.IMemberExpressionPathContext) bool {
@@ -409,21 +409,21 @@ func (c *ExprCompiler) compileSimpleMemberExpressionSegments(src bytecode.Operan
 
 		dst := result
 		if !stickyDst || !dst.IsRegister() {
-			dst = c.ctx.Registers.Allocate()
+			dst = c.ctx.Function.Registers.Allocate()
 		}
 
 		span := diagnostics.SpanFromRuleContext(p)
 
-		c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.WithSpan(span, func() {
 			op := memberLoadOpcode(c.facts.OperandType(result), constOperand, optional)
-			c.ctx.Emitter.EmitABC(op, dst, result, src2)
+			c.ctx.Program.Emitter.EmitABC(op, dst, result, src2)
 
 			if optional {
 				if !hasJump {
-					endLabel = c.ctx.Emitter.NewLabel("member", "optional", "end")
+					endLabel = c.ctx.Program.Emitter.NewLabel("member", "optional", "end")
 					hasJump = true
 				}
-				c.ctx.Emitter.EmitJumpIfNone(dst, endLabel)
+				c.ctx.Program.Emitter.EmitJumpIfNone(dst, endLabel)
 			}
 		})
 
@@ -435,7 +435,7 @@ func (c *ExprCompiler) compileSimpleMemberExpressionSegments(src bytecode.Operan
 	}
 
 	if hasJump {
-		c.ctx.Emitter.MarkLabel(endLabel)
+		c.ctx.Program.Emitter.MarkLabel(endLabel)
 	}
 
 	return result
@@ -456,7 +456,7 @@ func (c *ExprCompiler) compileMemberPathOperand(p *fql.MemberExpressionPathConte
 			case *runtime.Array, *runtime.Object:
 				return c.literals.CompileComputedPropertyName(cpn), false
 			default:
-				return c.ctx.Symbols.AddConstant(val), true
+				return c.ctx.Function.Symbols.AddConstant(val), true
 			}
 		}
 
@@ -481,7 +481,7 @@ func (c *ExprCompiler) compileImplicitMemberStartOperand(start fql.IImplicitMemb
 			case *runtime.Array, *runtime.Object:
 				return c.literals.CompileComputedPropertyName(cpn), false
 			default:
-				return c.ctx.Symbols.AddConstant(val), true
+				return c.ctx.Function.Symbols.AddConstant(val), true
 			}
 		}
 
@@ -691,38 +691,38 @@ func (c *ExprCompiler) compileArrayQuestionMark(src bytecode.Operand, question f
 		Src:      src,
 	}
 
-	c.ctx.Loops.Push(loop)
-	c.ctx.Symbols.EnterScope()
+	c.ctx.Function.Loops.Push(loop)
+	c.ctx.Function.Symbols.EnterScope()
 
-	loop.DeclareValueVar(core.PseudoVariable, c.ctx.Symbols, core.TypeAny)
+	loop.DeclareValueVar(core.PseudoVariable, c.ctx.Function.Symbols, core.TypeAny)
 
 	if loop.Value.IsRegister() {
-		c.ctx.Types.Set(loop.Value, core.TypeAny)
+		c.ctx.Function.Types.Set(loop.Value, core.TypeAny)
 	}
 
-	count := c.ctx.Registers.Allocate()
-	total := c.ctx.Registers.Allocate()
+	count := c.ctx.Function.Registers.Allocate()
+	total := c.ctx.Function.Registers.Allocate()
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitA(bytecode.OpLoadZero, count)
-		c.ctx.Emitter.EmitA(bytecode.OpLoadZero, total)
-		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitA(bytecode.OpLoadZero, count)
+		c.ctx.Program.Emitter.EmitA(bytecode.OpLoadZero, total)
+		loop.EmitInitialization(c.ctx.Function.Registers, c.ctx.Program.Emitter)
 	})
 
-	c.ctx.Emitter.EmitA(bytecode.OpIncr, total)
+	c.ctx.Program.Emitter.EmitA(bytecode.OpIncr, total)
 
 	if filter := question.Expression(); filter != nil {
 		cond := c.CompileWithImplicitCurrent(filter)
-		label := c.ctx.Loops.Current().ContinueLabel()
-		c.ctx.Emitter.EmitJumpIfFalse(cond, label)
+		label := c.ctx.Function.Loops.Current().ContinueLabel()
+		c.ctx.Program.Emitter.EmitJumpIfFalse(cond, label)
 	}
 
-	c.ctx.Emitter.EmitA(bytecode.OpIncr, count)
+	c.ctx.Program.Emitter.EmitA(bytecode.OpIncr, count)
 
-	loop.EmitFinalization(c.ctx.Emitter)
+	loop.EmitFinalization(c.ctx.Program.Emitter)
 
-	c.ctx.Symbols.ExitScope()
-	c.ctx.Loops.Pop()
+	c.ctx.Function.Symbols.ExitScope()
+	c.ctx.Function.Loops.Pop()
 
 	result := c.compileArrayQuestionQuantifier(question, count, total)
 
@@ -731,7 +731,7 @@ func (c *ExprCompiler) compileArrayQuestionMark(src bytecode.Operand, question f
 	}
 
 	if result.IsRegister() {
-		c.ctx.Types.Set(result, core.TypeBool)
+		c.ctx.Function.Types.Set(result, core.TypeBool)
 	}
 
 	return result
@@ -739,8 +739,8 @@ func (c *ExprCompiler) compileArrayQuestionMark(src bytecode.Operand, question f
 
 func (c *ExprCompiler) compileArrayQuestionQuantifier(question fql.IArrayQuestionMarkContext, count, total bytecode.Operand) bytecode.Operand {
 	quant := question.ArrayQuestionQuantifier()
-	zero := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitA(bytecode.OpLoadZero, zero)
+	zero := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitA(bytecode.OpLoadZero, zero)
 
 	if quant == nil || quant.Any() != nil {
 		return c.emitComparison(bytecode.OpGt, count, zero)
@@ -811,11 +811,11 @@ func (c *ExprCompiler) compileArrayApply(src bytecode.Operand, apply fql.IArrayA
 		return bytecode.NoopOperand
 	}
 
-	dst := c.ctx.Registers.Allocate()
+	dst := c.ctx.Function.Registers.Allocate()
 	span := diagnostics.SpanFromRuleContext(apply)
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitABC(bytecode.OpQuery, dst, src, query)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitABC(bytecode.OpQuery, dst, src, query)
 	})
 
 	if len(tail) > 0 {
@@ -823,7 +823,7 @@ func (c *ExprCompiler) compileArrayApply(src bytecode.Operand, apply fql.IArrayA
 	}
 
 	if dst.IsRegister() {
-		c.ctx.Types.Set(dst, core.TypeList)
+		c.ctx.Function.Types.Set(dst, core.TypeList)
 	}
 
 	return dst
@@ -845,14 +845,14 @@ func (c *ExprCompiler) compileArrayContraction(src bytecode.Operand, contraction
 	}
 
 	span := diagnostics.SpanFromRuleContext(contraction)
-	dst := c.ctx.Registers.Allocate()
+	dst := c.ctx.Function.Registers.Allocate()
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		c.ctx.Emitter.EmitABx(bytecode.OpFlatten, dst, src, depth)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitABx(bytecode.OpFlatten, dst, src, depth)
 	})
 
 	if dst.IsRegister() {
-		c.ctx.Types.Set(dst, core.TypeList)
+		c.ctx.Function.Types.Set(dst, core.TypeList)
 	}
 
 	inline := contraction.InlineExpression()
@@ -886,20 +886,20 @@ func (c *ExprCompiler) compileArrayIteration(src bytecode.Operand, span source.S
 		Type:     core.NormalLoop,
 		Distinct: false,
 		Allocate: true,
-		Dst:      c.ctx.Registers.Allocate(),
+		Dst:      c.ctx.Function.Registers.Allocate(),
 		Src:      src,
 	}
 
-	c.ctx.Loops.Push(loop)
-	c.ctx.Symbols.EnterScope()
+	c.ctx.Function.Loops.Push(loop)
+	c.ctx.Function.Symbols.EnterScope()
 
-	loop.DeclareValueVar(core.PseudoVariable, c.ctx.Symbols, core.TypeAny)
+	loop.DeclareValueVar(core.PseudoVariable, c.ctx.Function.Symbols, core.TypeAny)
 	if loop.Value.IsRegister() {
-		c.ctx.Types.Set(loop.Value, core.TypeAny)
+		c.ctx.Function.Types.Set(loop.Value, core.TypeAny)
 	}
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		loop.EmitInitialization(c.ctx.Function.Registers, c.ctx.Program.Emitter)
 	})
 
 	if inline != nil {
@@ -926,14 +926,14 @@ func (c *ExprCompiler) compileArrayIteration(src bytecode.Operand, span source.S
 		projection = c.compileMemberExpressionSegments(projection, tail)
 	}
 
-	c.ctx.Emitter.EmitAB(bytecode.OpPush, loop.Dst, projection)
-	loop.EmitFinalization(c.ctx.Emitter)
+	c.ctx.Program.Emitter.EmitAB(bytecode.OpPush, loop.Dst, projection)
+	loop.EmitFinalization(c.ctx.Program.Emitter)
 
-	c.ctx.Symbols.ExitScope()
-	c.ctx.Loops.Pop()
+	c.ctx.Function.Symbols.ExitScope()
+	c.ctx.Function.Loops.Pop()
 
 	if loop.Dst.IsRegister() {
-		c.ctx.Types.Set(loop.Dst, core.TypeList)
+		c.ctx.Function.Types.Set(loop.Dst, core.TypeList)
 	}
 
 	if postLoopContraction != nil {
@@ -955,8 +955,8 @@ func (c *ExprCompiler) compileInlineFilter(inline fql.IInlineExpressionContext) 
 	}
 
 	src := c.CompileWithImplicitCurrent(filter.Expression())
-	label := c.ctx.Loops.Current().ContinueLabel()
-	c.ctx.Emitter.EmitJumpIfFalse(src, label)
+	label := c.ctx.Function.Loops.Current().ContinueLabel()
+	c.ctx.Program.Emitter.EmitJumpIfFalse(src, label)
 }
 
 func (c *ExprCompiler) compileInlineFilterExpr(expr fql.IExpressionContext) {
@@ -965,8 +965,8 @@ func (c *ExprCompiler) compileInlineFilterExpr(expr fql.IExpressionContext) {
 	}
 
 	src := c.CompileWithImplicitCurrent(expr)
-	label := c.ctx.Loops.Current().ContinueLabel()
-	c.ctx.Emitter.EmitJumpIfFalse(src, label)
+	label := c.ctx.Function.Loops.Current().ContinueLabel()
+	c.ctx.Program.Emitter.EmitJumpIfFalse(src, label)
 }
 
 func (c *ExprCompiler) compileInlineLimit(inline fql.IInlineExpressionContext) {
@@ -1018,13 +1018,13 @@ func (c *ExprCompiler) compileInlineLimitClauseValue(ctx fql.ILimitClauseValueCo
 }
 
 func (c *ExprCompiler) emitInlineLimit(src bytecode.Operand) {
-	state := c.ctx.Registers.Allocate()
-	c.ctx.Loops.Current().RegisterReset(state)
-	c.ctx.Emitter.EmitIterLimit(state, src, c.ctx.Loops.Current().BreakLabel())
+	state := c.ctx.Function.Registers.Allocate()
+	c.ctx.Function.Loops.Current().RegisterReset(state)
+	c.ctx.Program.Emitter.EmitIterLimit(state, src, c.ctx.Function.Loops.Current().BreakLabel())
 }
 
 func (c *ExprCompiler) emitInlineOffset(src bytecode.Operand) {
-	state := c.ctx.Registers.Allocate()
-	c.ctx.Loops.Current().RegisterReset(state)
-	c.ctx.Emitter.EmitIterSkip(state, src, c.ctx.Loops.Current().ContinueLabel())
+	state := c.ctx.Function.Registers.Allocate()
+	c.ctx.Function.Loops.Current().RegisterReset(state)
+	c.ctx.Program.Emitter.EmitIterSkip(state, src, c.ctx.Function.Loops.Current().ContinueLabel())
 }

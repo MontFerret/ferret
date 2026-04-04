@@ -54,15 +54,15 @@ func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) bytecode.
 			optionsReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compileOptions(ctx.DispatchOptionsClause()))
 			argsReg := c.buildDispatchArgs(payloadReg, optionsReg)
 
-			dst := c.ctx.Registers.Allocate()
+			dst := c.ctx.Function.Registers.Allocate()
 			span := dispatchSpan(ctx)
 
-			c.ctx.Emitter.WithSpan(span, func() {
-				c.ctx.Emitter.EmitMove(dst, targetReg)
-				c.ctx.Emitter.EmitABC(bytecode.OpDispatch, dst, eventReg, argsReg)
+			c.ctx.Program.Emitter.WithSpan(span, func() {
+				c.ctx.Program.Emitter.EmitMove(dst, targetReg)
+				c.ctx.Program.Emitter.EmitABC(bytecode.OpDispatch, dst, eventReg, argsReg)
 			})
 
-			c.ctx.Types.Set(dst, core.TypeNone)
+			c.ctx.Function.Types.Set(dst, core.TypeNone)
 
 			return dst
 		},
@@ -138,14 +138,14 @@ func (c *DispatchCompiler) compileOptions(ctx fql.IDispatchOptionsClauseContext)
 }
 
 func (c *DispatchCompiler) buildDispatchArgs(payload, options bytecode.Operand) bytecode.Operand {
-	dst := c.ctx.Registers.Allocate()
-	payloadKey := c.ctx.Symbols.AddConstant(runtime.NewString("payload"))
-	optionsKey := c.ctx.Symbols.AddConstant(runtime.NewString("options"))
+	dst := c.ctx.Function.Registers.Allocate()
+	payloadKey := c.ctx.Function.Symbols.AddConstant(runtime.NewString("payload"))
+	optionsKey := c.ctx.Function.Symbols.AddConstant(runtime.NewString("options"))
 
-	c.ctx.Emitter.EmitObject(dst, 2)
-	c.ctx.Emitter.EmitObjectSetConst(dst, payloadKey, payload)
-	c.ctx.Emitter.EmitObjectSetConst(dst, optionsKey, options)
-	c.ctx.Types.Set(dst, core.TypeObject)
+	c.ctx.Program.Emitter.EmitObject(dst, 2)
+	c.ctx.Program.Emitter.EmitObjectSetConst(dst, payloadKey, payload)
+	c.ctx.Program.Emitter.EmitObjectSetConst(dst, optionsKey, options)
+	c.ctx.Function.Types.Set(dst, core.TypeObject)
 
 	return dst
 }

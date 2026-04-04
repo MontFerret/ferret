@@ -312,14 +312,14 @@ func (c *LiteralCompiler) CompileFloatLiteral(ctx fql.IFloatLiteralContext) byte
 }
 
 func (c *LiteralCompiler) reportInvalidNumericLiteral(ctx antlr.ParserRuleContext, kind string, err error) {
-	if c == nil || c.ctx == nil || c.ctx.Errors == nil || ctx == nil {
+	if c == nil || c.ctx == nil || c.ctx.Program.Errors == nil || ctx == nil {
 		core.PanicInvariantf("cannot report invalid %s literal", kind)
 	}
 
 	message, hint := invalidNumericLiteralDetails(kind, err)
-	diag := c.ctx.Errors.Create(parserd.SyntaxError, ctx, message)
+	diag := c.ctx.Program.Errors.Create(parserd.SyntaxError, ctx, message)
 	diag.Hint = hint
-	c.ctx.Errors.Add(diag)
+	c.ctx.Program.Errors.Add(diag)
 }
 
 func invalidNumericLiteralDetails(kind string, err error) (string, string) {
@@ -351,20 +351,20 @@ func invalidNumericLiteralDetails(kind string, err error) (string, string) {
 // Panics if the text is neither "true" nor "false".
 func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) bytecode.Operand {
 	// Allocate a temporary register for the boolean value
-	reg := c.ctx.Registers.Allocate()
+	reg := c.ctx.Function.Registers.Allocate()
 
 	// Convert the text to lowercase and determine the boolean value
 	switch strings.ToLower(ctx.GetText()) {
 	case "true":
-		c.ctx.Emitter.EmitBoolean(reg, true)
+		c.ctx.Program.Emitter.EmitBoolean(reg, true)
 	case "false":
-		c.ctx.Emitter.EmitBoolean(reg, false)
+		c.ctx.Program.Emitter.EmitBoolean(reg, false)
 	default:
 		reg = bytecode.NoopOperand
 	}
 
 	if reg.IsRegister() {
-		c.ctx.Types.Set(reg, core.TypeBool)
+		c.ctx.Function.Types.Set(reg, core.TypeBool)
 	}
 
 	return reg
@@ -378,10 +378,10 @@ func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) 
 //   - An operand representing the compiled none value
 func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) bytecode.Operand {
 	// Allocate a temporary register for the none value
-	reg := c.ctx.Registers.Allocate()
+	reg := c.ctx.Function.Registers.Allocate()
 	// Emit instruction to load the none value into the register
-	c.ctx.Emitter.EmitA(bytecode.OpLoadNone, reg)
-	c.ctx.Types.Set(reg, core.TypeNone)
+	c.ctx.Program.Emitter.EmitA(bytecode.OpLoadNone, reg)
+	c.ctx.Function.Types.Set(reg, core.TypeNone)
 
 	return reg
 }
@@ -395,7 +395,7 @@ func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) bytecode
 //   - An operand representing the compiled array
 func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) bytecode.Operand {
 	// Allocate destination register for the array
-	destReg := c.ctx.Registers.Allocate()
+	destReg := c.ctx.Function.Registers.Allocate()
 
 	args := ctx.ArgumentList()
 
@@ -403,21 +403,21 @@ func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) byte
 		exps := args.AllExpression()
 
 		// Emit instruction to create an array with the specified size
-		c.ctx.Emitter.EmitArray(destReg, len(exps))
+		c.ctx.Program.Emitter.EmitArray(destReg, len(exps))
 
 		// Compile each expression in the array and push it to the array register
 		for _, exp := range exps {
 			// Compile expression
 			itemReg := c.exprs.Compile(exp)
 
-			c.ctx.Emitter.EmitArrayPush(destReg, itemReg)
+			c.ctx.Program.Emitter.EmitArrayPush(destReg, itemReg)
 		}
 	} else {
 		// Emit instruction to create an empty array
-		c.ctx.Emitter.EmitArray(destReg, 0)
+		c.ctx.Program.Emitter.EmitArray(destReg, 0)
 	}
 
-	c.ctx.Types.Set(destReg, core.TypeArray)
+	c.ctx.Function.Types.Set(destReg, core.TypeArray)
 	return destReg
 }
 
@@ -430,14 +430,14 @@ func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) byte
 //   - An operand representing the compiled object
 func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) bytecode.Operand {
 	// Allocate destination register for the object
-	dst := c.ctx.Registers.Allocate()
+	dst := c.ctx.Function.Registers.Allocate()
 	// Get all property assignments from the object literal
 	assignments := ctx.AllPropertyAssignment()
 	size := len(assignments)
 
 	if size > 0 {
 		// Emit instruction to create an object with the specified number of properties
-		c.ctx.Emitter.EmitObject(dst, size)
+		c.ctx.Program.Emitter.EmitObject(dst, size)
 
 		// Process each property assignment
 		for i := 0; i < size; i++ {
@@ -449,10 +449,10 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) by
 				// Evaluate value first to shorten the live range of the key register.
 				valOp := c.exprs.Compile(pac.Expression())
 				if constOp, ok := c.CompilePropertyNameConst(prop); ok {
-					c.ctx.Emitter.EmitObjectSetConst(dst, constOp, valOp)
+					c.ctx.Program.Emitter.EmitObjectSetConst(dst, constOp, valOp)
 				} else {
 					propOp := c.CompilePropertyName(prop)
-					c.ctx.Emitter.EmitObjectSet(dst, propOp, valOp)
+					c.ctx.Program.Emitter.EmitObjectSet(dst, propOp, valOp)
 				}
 			} else if comProp := pac.ComputedPropertyName(); comProp != nil {
 				// Computed property name (e.g., { [expr]: value })
@@ -462,29 +462,29 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) by
 						// Fall back to the generic computed path to preserve side effects.
 					default:
 						valOp := c.exprs.Compile(pac.Expression())
-						keyConst := c.ctx.Symbols.AddConstant(runtime.ToString(val))
-						c.ctx.Emitter.EmitObjectSetConst(dst, keyConst, valOp)
+						keyConst := c.ctx.Function.Symbols.AddConstant(runtime.ToString(val))
+						c.ctx.Program.Emitter.EmitObjectSetConst(dst, keyConst, valOp)
 						continue
 					}
 				}
 
 				propOp := c.CompileComputedPropertyName(comProp)
 				valOp := c.exprs.Compile(pac.Expression())
-				c.ctx.Emitter.EmitObjectSet(dst, propOp, valOp)
+				c.ctx.Program.Emitter.EmitObjectSet(dst, propOp, valOp)
 			} else if variable := pac.Variable(); variable != nil {
 				// Shorthand property (e.g., { variable })
 				// Evaluate value first to shorten the live range of the key register.
 				valOp := c.exprs.CompileVariable(variable)
-				propOp := c.ctx.Symbols.AddConstant(runtime.NewString(variable.GetText()))
-				c.ctx.Emitter.EmitObjectSetConst(dst, propOp, valOp)
+				propOp := c.ctx.Function.Symbols.AddConstant(runtime.NewString(variable.GetText()))
+				c.ctx.Program.Emitter.EmitObjectSetConst(dst, propOp, valOp)
 			}
 		}
 	} else {
 		// Emit instruction to create an empty object
-		c.ctx.Emitter.EmitObject(dst, 0)
+		c.ctx.Program.Emitter.EmitObject(dst, 0)
 	}
 
-	c.ctx.Types.Set(dst, core.TypeObject)
+	c.ctx.Function.Types.Set(dst, core.TypeObject)
 
 	return dst
 }
@@ -538,7 +538,7 @@ func (c *LiteralCompiler) CompilePropertyNameConst(ctx fql.IPropertyNameContext)
 	// Handle string literal property names (e.g., { "property": value })
 	if str := ctx.StringLiteral(); str != nil {
 		if value, ok := parseStringLiteralConst(str); ok {
-			return c.ctx.Symbols.AddConstant(value), true
+			return c.ctx.Function.Symbols.AddConstant(value), true
 		}
 		return bytecode.NoopOperand, false
 	}
@@ -559,7 +559,7 @@ func (c *LiteralCompiler) CompilePropertyNameConst(ctx fql.IPropertyNameContext)
 		return bytecode.NoopOperand, false
 	}
 
-	return c.ctx.Symbols.AddConstant(runtime.NewString(name)), true
+	return c.ctx.Function.Symbols.AddConstant(runtime.NewString(name)), true
 }
 
 // CompileComputedPropertyName processes a computed property name from an object literal in the FQL AST.

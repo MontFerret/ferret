@@ -61,9 +61,9 @@ func (c *RecoveryCompiler) CompileWithErrorPolicy(policy core.ErrorPolicy, jumpM
 		return compile()
 	}
 
-	startCatch := c.ctx.Emitter.Size()
+	startCatch := c.ctx.Program.Emitter.Size()
 	out := compile()
-	endCatchExclusive := c.ctx.Emitter.Size()
+	endCatchExclusive := c.ctx.Program.Emitter.Size()
 	if endCatchExclusive <= startCatch {
 		return out
 	}
@@ -74,14 +74,14 @@ func (c *RecoveryCompiler) CompileWithErrorPolicy(policy core.ErrorPolicy, jumpM
 	if jumpMode == core.CatchJumpModeEnd {
 		jump = endCatch
 	} else {
-		endLabel := c.ctx.Emitter.NewLabel("error", "suppress", "end")
-		c.ctx.Emitter.EmitJump(endLabel)
-		jump = c.ctx.Emitter.Size()
-		c.ctx.Emitter.EmitJump(endLabel)
-		c.ctx.Emitter.MarkLabel(endLabel)
+		endLabel := c.ctx.Program.Emitter.NewLabel("error", "suppress", "end")
+		c.ctx.Program.Emitter.EmitJump(endLabel)
+		jump = c.ctx.Program.Emitter.Size()
+		c.ctx.Program.Emitter.EmitJump(endLabel)
+		c.ctx.Program.Emitter.MarkLabel(endLabel)
 	}
 
-	c.ctx.CatchTable.Push(startCatch, endCatch, jump)
+	c.ctx.Program.CatchTable.Push(startCatch, endCatch, jump)
 
 	return out
 }
@@ -170,8 +170,8 @@ func (c *RecoveryCompiler) compileWithTimeoutRecovery(
 		return bytecode.NoopOperand
 	}
 
-	timeoutLabel := c.ctx.Emitter.NewLabel("recovery", "timeout", "handle")
-	endLabel := c.ctx.Emitter.NewLabel("recovery", "timeout", "end")
+	timeoutLabel := c.ctx.Program.Emitter.NewLabel("recovery", "timeout", "handle")
+	endLabel := c.ctx.Program.Emitter.NewLabel("recovery", "timeout", "end")
 	out := ensureOperandRegister(c.ctx, c.facts, compile(timeoutLabel, endLabel))
 
 	if out == bytecode.NoopOperand {
@@ -179,16 +179,16 @@ func (c *RecoveryCompiler) compileWithTimeoutRecovery(
 	}
 
 	c.emitTimeoutHandler(out, plan, timeoutLabel, endLabel)
-	c.ctx.Emitter.MarkLabel(endLabel)
+	c.ctx.Program.Emitter.MarkLabel(endLabel)
 
 	return c.WidenResultType(out, plan)
 }
 
 func (c *RecoveryCompiler) directProtectedRegionBuilder(compile func() bytecode.Operand) func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion {
 	return func(_ core.Label, _ core.Label, endLabel core.Label) ProtectedRecoveryRegion {
-		startCatch := c.ctx.Emitter.Size()
+		startCatch := c.ctx.Program.Emitter.Size()
 		out := ensureOperandRegister(c.ctx, c.facts, compile())
-		endCatchExclusive := c.ctx.Emitter.Size()
+		endCatchExclusive := c.ctx.Program.Emitter.Size()
 
 		if out == bytecode.NoopOperand || endCatchExclusive <= startCatch {
 			return ProtectedRecoveryRegion{
@@ -199,7 +199,7 @@ func (c *RecoveryCompiler) directProtectedRegionBuilder(compile func() bytecode.
 			}
 		}
 
-		c.ctx.Emitter.EmitJump(endLabel)
+		c.ctx.Program.Emitter.EmitJump(endLabel)
 
 		return ProtectedRecoveryRegion{
 			Result:            out,
@@ -215,30 +215,30 @@ func (c *RecoveryCompiler) compileOperationWithErrorReturn(
 	plan core.RecoveryPlan,
 	buildProtected func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion,
 ) bytecode.Operand {
-	recoveryLabel := c.ctx.Emitter.NewLabel("recovery", "error", "handle")
+	recoveryLabel := c.ctx.Program.Emitter.NewLabel("recovery", "error", "handle")
 	var timeoutLabel core.Label
 	if plan.OnTimeout != nil {
-		timeoutLabel = c.ctx.Emitter.NewLabel("recovery", "timeout", "handle")
+		timeoutLabel = c.ctx.Program.Emitter.NewLabel("recovery", "timeout", "handle")
 	}
-	endLabel := c.ctx.Emitter.NewLabel("recovery", "error", "end")
+	endLabel := c.ctx.Program.Emitter.NewLabel("recovery", "error", "end")
 	region := buildProtected(recoveryLabel, timeoutLabel, endLabel)
 
 	if region.Result == bytecode.NoopOperand || region.EndCatchExclusive <= region.StartCatch {
 		return region.Result
 	}
 
-	handlerPC := c.ctx.Emitter.Size()
-	c.ctx.Emitter.MarkLabel(recoveryLabel)
+	handlerPC := c.ctx.Program.Emitter.Size()
+	c.ctx.Program.Emitter.MarkLabel(recoveryLabel)
 
 	fallback := c.exprs.Compile(plan.OnError.Expr)
 	c.facts.EmitMoveAuto(ensureOperandRegister(c.ctx, c.facts, region.Result), ensureOperandRegister(c.ctx, c.facts, fallback))
-	c.ctx.Emitter.EmitJump(endLabel)
+	c.ctx.Program.Emitter.EmitJump(endLabel)
 
 	if region.HasTimeout {
 		c.emitTimeoutHandler(region.Result, plan, timeoutLabel, endLabel)
 	}
 
-	c.ctx.Emitter.MarkLabel(endLabel)
+	c.ctx.Program.Emitter.MarkLabel(endLabel)
 
 	c.pushProtectedCatch(region, handlerPC)
 
@@ -273,20 +273,20 @@ func (c *RecoveryCompiler) compileOperationWithErrorRetry(
 	retriesRemainingReg := c.facts.LoadConstant(runtime.NewInt(retry.Count))
 
 	state := c.initRetryDelayState(retry)
-	retryStart := c.ctx.Emitter.NewLabel("recovery", "retry", "start")
-	recoveryLabel := c.ctx.Emitter.NewLabel("recovery", "retry", "handle")
+	retryStart := c.ctx.Program.Emitter.NewLabel("recovery", "retry", "start")
+	recoveryLabel := c.ctx.Program.Emitter.NewLabel("recovery", "retry", "handle")
 	var timeoutLabel core.Label
 	if plan.OnTimeout != nil {
-		timeoutLabel = c.ctx.Emitter.NewLabel("recovery", "timeout", "handle")
+		timeoutLabel = c.ctx.Program.Emitter.NewLabel("recovery", "timeout", "handle")
 	}
-	endLabel := c.ctx.Emitter.NewLabel("recovery", "retry", "end")
+	endLabel := c.ctx.Program.Emitter.NewLabel("recovery", "retry", "end")
 	var finalAttemptLabel core.Label
 
 	if retry.FinalActionKind != core.RecoveryActionReturn {
-		finalAttemptLabel = c.ctx.Emitter.NewLabel("recovery", "retry", "final")
+		finalAttemptLabel = c.ctx.Program.Emitter.NewLabel("recovery", "retry", "final")
 	}
 
-	c.ctx.Emitter.MarkLabel(retryStart)
+	c.ctx.Program.Emitter.MarkLabel(retryStart)
 	region := buildProtected(recoveryLabel, timeoutLabel, endLabel)
 
 	if region.Result == bytecode.NoopOperand || region.EndCatchExclusive <= region.StartCatch {
@@ -295,33 +295,33 @@ func (c *RecoveryCompiler) compileOperationWithErrorRetry(
 
 	resultReg = ensureOperandRegister(c.ctx, c.facts, region.Result)
 
-	handlerPC := c.ctx.Emitter.Size()
-	c.ctx.Emitter.MarkLabel(recoveryLabel)
+	handlerPC := c.ctx.Program.Emitter.Size()
+	c.ctx.Program.Emitter.MarkLabel(recoveryLabel)
 
-	retriesAvailableReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitGt(retriesAvailableReg, retriesRemainingReg, zeroReg)
+	retriesAvailableReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitGt(retriesAvailableReg, retriesRemainingReg, zeroReg)
 
-	onExhausted := c.ctx.Emitter.NewLabel("recovery", "retry", "exhausted")
-	c.ctx.Emitter.EmitJumpIfFalse(retriesAvailableReg, onExhausted)
-	c.ctx.Emitter.EmitA(bytecode.OpDecr, retriesRemainingReg)
+	onExhausted := c.ctx.Program.Emitter.NewLabel("recovery", "retry", "exhausted")
+	c.ctx.Program.Emitter.EmitJumpIfFalse(retriesAvailableReg, onExhausted)
+	c.ctx.Program.Emitter.EmitA(bytecode.OpDecr, retriesRemainingReg)
 	c.EmitRetryDelay(retry, state)
 
 	if retry.FinalActionKind == core.RecoveryActionReturn {
-		c.ctx.Emitter.EmitJump(retryStart)
+		c.ctx.Program.Emitter.EmitJump(retryStart)
 	} else {
-		moreProtectedReg := c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitGt(moreProtectedReg, retriesRemainingReg, zeroReg)
-		c.ctx.Emitter.EmitJumpIfTrue(moreProtectedReg, retryStart)
-		c.ctx.Emitter.EmitJump(finalAttemptLabel)
+		moreProtectedReg := c.ctx.Function.Registers.Allocate()
+		c.ctx.Program.Emitter.EmitGt(moreProtectedReg, retriesRemainingReg, zeroReg)
+		c.ctx.Program.Emitter.EmitJumpIfTrue(moreProtectedReg, retryStart)
+		c.ctx.Program.Emitter.EmitJump(finalAttemptLabel)
 	}
 
-	c.ctx.Emitter.MarkLabel(onExhausted)
+	c.ctx.Program.Emitter.MarkLabel(onExhausted)
 	if retry.FinalActionKind == core.RecoveryActionReturn {
 		fallback := c.exprs.Compile(retry.FinalExpr)
 		c.facts.EmitMoveAuto(resultReg, ensureOperandRegister(c.ctx, c.facts, fallback))
-		c.ctx.Emitter.EmitJump(endLabel)
+		c.ctx.Program.Emitter.EmitJump(endLabel)
 	} else {
-		c.ctx.Emitter.EmitJump(finalAttemptLabel)
+		c.ctx.Program.Emitter.EmitJump(finalAttemptLabel)
 	}
 
 	if region.HasTimeout {
@@ -329,7 +329,7 @@ func (c *RecoveryCompiler) compileOperationWithErrorRetry(
 	}
 
 	if retry.FinalActionKind != core.RecoveryActionReturn {
-		c.ctx.Emitter.MarkLabel(finalAttemptLabel)
+		c.ctx.Program.Emitter.MarkLabel(finalAttemptLabel)
 
 		if compileFinalAttempt != nil {
 			finalOut := ensureOperandRegister(c.ctx, c.facts, compileFinalAttempt())
@@ -340,7 +340,7 @@ func (c *RecoveryCompiler) compileOperationWithErrorRetry(
 	}
 
 	c.pushProtectedCatch(region, handlerPC)
-	c.ctx.Emitter.MarkLabel(endLabel)
+	c.ctx.Program.Emitter.MarkLabel(endLabel)
 
 	return c.WidenResultType(resultReg, plan)
 }
@@ -350,15 +350,15 @@ func (c *RecoveryCompiler) emitTimeoutHandler(
 	plan core.RecoveryPlan,
 	timeoutLabel, endLabel core.Label,
 ) {
-	c.ctx.Emitter.MarkLabel(timeoutLabel)
+	c.ctx.Program.Emitter.MarkLabel(timeoutLabel)
 
 	switch {
 	case plan.OnTimeout != nil && plan.OnTimeout.ActionKind == core.RecoveryActionReturn:
 		fallback := c.exprs.Compile(plan.OnTimeout.Expr)
 		c.facts.EmitMoveAuto(ensureOperandRegister(c.ctx, c.facts, result), ensureOperandRegister(c.ctx, c.facts, fallback))
-		c.ctx.Emitter.EmitJump(endLabel)
+		c.ctx.Program.Emitter.EmitJump(endLabel)
 	default:
-		c.ctx.Emitter.Emit(bytecode.OpFailTimeout)
+		c.ctx.Program.Emitter.Emit(bytecode.OpFailTimeout)
 	}
 }
 
@@ -384,5 +384,5 @@ func (c *RecoveryCompiler) pushProtectedCatch(region ProtectedRecoveryRegion, ha
 		catchHandlerPC = region.CatchHandlerPC
 	}
 
-	c.ctx.CatchTable.Push(region.StartCatch, region.EndCatchExclusive-1, catchHandlerPC)
+	c.ctx.Program.CatchTable.Push(region.StartCatch, region.EndCatchExclusive-1, catchHandlerPC)
 }

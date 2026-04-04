@@ -85,12 +85,12 @@ func (c *BindingCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclaratio
 
 		dest, ok := c.declareBinding(name, srcType, src, opts)
 		if !ok {
-			c.ctx.Errors.VariableNotUnique(decl, name)
+			c.ctx.Program.Errors.VariableNotUnique(decl, name)
 			return bytecode.NoopOperand
 		}
 
-		c.ctx.Emitter.EmitMakeCell(dest, src)
-		c.ctx.Types.Set(dest, core.TypeAny)
+		c.ctx.Program.Emitter.EmitMakeCell(dest, src)
+		c.ctx.Function.Types.Set(dest, core.TypeAny)
 
 		return dest
 	}
@@ -98,22 +98,22 @@ func (c *BindingCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclaratio
 	if src.IsConstant() {
 		dest, ok := c.declareBinding(name, srcType, src, opts)
 		if !ok {
-			c.ctx.Errors.VariableNotUnique(decl, name)
+			c.ctx.Program.Errors.VariableNotUnique(decl, name)
 			return bytecode.NoopOperand
 		}
 
-		c.ctx.Emitter.EmitLoadConst(dest, src)
-		c.ctx.Types.Set(dest, srcType)
+		c.ctx.Program.Emitter.EmitLoadConst(dest, src)
+		c.ctx.Function.Types.Set(dest, srcType)
 
 		return dest
 	}
 
 	if !c.assignBinding(name, srcType, src, opts) {
-		c.ctx.Errors.VariableNotUnique(decl, name)
+		c.ctx.Program.Errors.VariableNotUnique(decl, name)
 		return bytecode.NoopOperand
 	}
 
-	c.ctx.Types.Set(src, srcType)
+	c.ctx.Function.Types.Set(src, srcType)
 	return src
 }
 
@@ -143,16 +143,16 @@ func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatemen
 		return bytecode.NoopOperand
 	}
 
-	binding, found := c.ctx.Symbols.ResolveBinding(name)
+	binding, found := c.ctx.Function.Symbols.ResolveBinding(name)
 	if !found {
-		c.ctx.Errors.VariableNotFound(stmt.GetStart(), name)
+		c.ctx.Program.Errors.VariableNotFound(stmt.GetStart(), name)
 		return bytecode.NoopOperand
 	}
 
 	if !binding.Mutable {
-		err := c.ctx.Errors.Create(parserd.SemanticError, stmt, fmt.Sprintf("Variable '%s' cannot be reassigned", name))
+		err := c.ctx.Program.Errors.Create(parserd.SemanticError, stmt, fmt.Sprintf("Variable '%s' cannot be reassigned", name))
 		err.Hint = "Declare it with VAR if you need to update it."
-		c.ctx.Errors.Add(err)
+		c.ctx.Program.Errors.Add(err)
 		return bytecode.NoopOperand
 	}
 
@@ -179,7 +179,7 @@ func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatemen
 	srcType := c.facts.OperandType(src)
 	publishedType := srcType
 
-	if c.ctx.Loops.Depth() > 0 {
+	if c.ctx.Function.Loops.Depth() > 0 {
 		publishedType = core.JoinValueTypes(binding.Type, srcType)
 	}
 
@@ -197,9 +197,9 @@ func (c *BindingCompiler) LoadBindingValue(binding *core.Variable) bytecode.Oper
 		return binding.Register
 	}
 
-	dst := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitLoadCell(dst, binding.Register)
-	c.ctx.Types.Set(dst, binding.Type)
+	dst := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitLoadCell(dst, binding.Register)
+	c.ctx.Function.Types.Set(dst, binding.Type)
 
 	return dst
 }
@@ -263,11 +263,11 @@ func (c *BindingCompiler) declareBinding(
 	src bytecode.Operand,
 	opts core.BindingOptions,
 ) (bytecode.Operand, bool) {
-	if c.ctx.Symbols.Scope() == 0 {
-		return c.ctx.Symbols.DeclareGlobalWithOptions(name, srcType, opts)
+	if c.ctx.Function.Symbols.Scope() == 0 {
+		return c.ctx.Function.Symbols.DeclareGlobalWithOptions(name, srcType, opts)
 	}
 
-	return c.ctx.Symbols.DeclareLocalWithOptions(name, srcType, opts)
+	return c.ctx.Function.Symbols.DeclareLocalWithOptions(name, srcType, opts)
 }
 
 func (c *BindingCompiler) assignBinding(
@@ -276,11 +276,11 @@ func (c *BindingCompiler) assignBinding(
 	src bytecode.Operand,
 	opts core.BindingOptions,
 ) bool {
-	if c.ctx.Symbols.Scope() == 0 {
-		return c.ctx.Symbols.AssignGlobalWithOptions(name, srcType, src, opts)
+	if c.ctx.Function.Symbols.Scope() == 0 {
+		return c.ctx.Function.Symbols.AssignGlobalWithOptions(name, srcType, src, opts)
 	}
 
-	return c.ctx.Symbols.AssignLocalWithOptions(name, srcType, src, opts)
+	return c.ctx.Function.Symbols.AssignLocalWithOptions(name, srcType, src, opts)
 }
 
 func (c *BindingCompiler) snapshotBindingValue(binding *core.Variable) bytecode.Operand {
@@ -292,7 +292,7 @@ func (c *BindingCompiler) snapshotBindingValue(binding *core.Variable) bytecode.
 		return c.LoadBindingValue(binding)
 	}
 
-	snapshot := c.ctx.Registers.Allocate()
+	snapshot := c.ctx.Function.Registers.Allocate()
 	c.facts.EmitMoveAuto(snapshot, binding.Register)
 
 	return snapshot
@@ -305,17 +305,17 @@ func (c *BindingCompiler) storeBindingValue(binding *core.Variable, src bytecode
 
 	if binding.Storage == core.BindingStorageCell {
 		src = ensureOperandRegister(c.ctx, c.facts, src)
-		c.ctx.Emitter.EmitStoreCell(binding.Register, src)
+		c.ctx.Program.Emitter.EmitStoreCell(binding.Register, src)
 		return binding.Register
 	}
 
 	if src.IsConstant() {
-		c.ctx.Emitter.EmitLoadConst(binding.Register, src)
+		c.ctx.Program.Emitter.EmitLoadConst(binding.Register, src)
 	} else {
 		c.facts.EmitMoveAuto(binding.Register, src)
 	}
 
-	c.ctx.Types.Set(binding.Register, publishedType)
+	c.ctx.Function.Types.Set(binding.Register, publishedType)
 
 	return binding.Register
 }
@@ -325,9 +325,9 @@ func (c *BindingCompiler) reportInvalidAssignmentTarget(ctx antlr.ParserRuleCont
 		return
 	}
 
-	err := c.ctx.Errors.Create(parserd.SyntaxError, ctx, "Assignment target must be a local variable name")
+	err := c.ctx.Program.Errors.Create(parserd.SyntaxError, ctx, "Assignment target must be a local variable name")
 	err.Hint = "Property and index assignment are not supported. Use UPDATE for structural changes."
-	c.ctx.Errors.Add(err)
+	c.ctx.Program.Errors.Add(err)
 }
 
 func assignmentOperatorText(ctx *fql.AssignmentStatementContext) string {

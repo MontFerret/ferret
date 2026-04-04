@@ -45,8 +45,8 @@ func (c *exprMatchCompiler) compileMatchExpression(ctx fql.IMatchExpressionConte
 		return bytecode.NoopOperand
 	}
 
-	dst := c.ctx.Registers.Allocate()
-	end := c.ctx.Emitter.NewLabel("match.end")
+	dst := c.ctx.Function.Registers.Allocate()
+	end := c.ctx.Program.Emitter.NewLabel("match.end")
 
 	if arms := ctx.MatchPatternArms(); arms != nil {
 		scrutinee := ctx.Expression()
@@ -55,7 +55,7 @@ func (c *exprMatchCompiler) compileMatchExpression(ctx fql.IMatchExpressionConte
 		}
 
 		if c.tryCompileMatchConstantFold(scrutinee, arms, dst) {
-			c.ctx.Types.Set(dst, core.TypeAny)
+			c.ctx.Function.Types.Set(dst, core.TypeAny)
 
 			return dst
 		}
@@ -66,10 +66,10 @@ func (c *exprMatchCompiler) compileMatchExpression(ctx fql.IMatchExpressionConte
 		c.compileMatchGuardArms(guards, dst, end)
 	}
 
-	c.ctx.Emitter.MarkLabel(end)
+	c.ctx.Program.Emitter.MarkLabel(end)
 
 	if dst.IsRegister() {
-		c.ctx.Types.Set(dst, core.TypeAny)
+		c.ctx.Function.Types.Set(dst, core.TypeAny)
 	}
 
 	return dst
@@ -100,7 +100,7 @@ func (c *exprMatchCompiler) matchMergeDefaultLabel(groups []matchResultGroup) (c
 		return core.Label{}, false
 	}
 
-	return c.ctx.Emitter.NewLabel("match.default"), true
+	return c.ctx.Program.Emitter.NewLabel("match.default"), true
 }
 
 func (c *exprMatchCompiler) compileMatchPatternArm(scrReg bytecode.Operand, arm fql.IMatchPatternArmContext, idx int, mergeLabels map[int]core.Label, dst bytecode.Operand, end core.Label) {
@@ -108,12 +108,12 @@ func (c *exprMatchCompiler) compileMatchPatternArm(scrReg bytecode.Operand, arm 
 		return
 	}
 
-	next := c.ctx.Emitter.NewLabel("match.next")
-	c.ctx.Symbols.EnterScope()
+	next := c.ctx.Program.Emitter.NewLabel("match.next")
+	c.ctx.Function.Symbols.EnterScope()
 	c.compileMatchPatternArmConditions(scrReg, arm, next)
 	c.compileMatchPatternArmResult(arm, idx, mergeLabels, dst, end)
-	c.ctx.Symbols.ExitScope()
-	c.ctx.Emitter.MarkLabel(next)
+	c.ctx.Function.Symbols.ExitScope()
+	c.ctx.Program.Emitter.MarkLabel(next)
 }
 
 func (c *exprMatchCompiler) compileMatchPatternArmConditions(scrReg bytecode.Operand, arm fql.IMatchPatternArmContext, next core.Label) {
@@ -137,40 +137,40 @@ func (c *exprMatchCompiler) compileMatchPatternArmConditions(scrReg bytecode.Ope
 func (c *exprMatchCompiler) compileMatchPatternArmResult(arm fql.IMatchPatternArmContext, idx int, mergeLabels map[int]core.Label, dst bytecode.Operand, end core.Label) {
 	result := arm.Expression()
 	if result == nil {
-		c.ctx.Emitter.EmitJump(end)
+		c.ctx.Program.Emitter.EmitJump(end)
 
 		return
 	}
 
 	if label, ok := mergeLabels[idx]; ok {
-		c.ctx.Emitter.EmitJump(label)
+		c.ctx.Program.Emitter.EmitJump(label)
 
 		return
 	}
 
 	out := ensureOperandRegister(c.ctx, c.facts, c.callbacks.compileExpr(result))
 	if out != bytecode.NoopOperand && out != dst {
-		c.ctx.Emitter.EmitMove(dst, out)
+		c.ctx.Program.Emitter.EmitMove(dst, out)
 	}
 
-	c.ctx.Emitter.EmitJump(end)
+	c.ctx.Program.Emitter.EmitJump(end)
 }
 
 func (c *exprMatchCompiler) compileMatchMergedResults(groups []matchResultGroup, defaultLabel core.Label, dst bytecode.Operand, end core.Label) {
-	c.ctx.Emitter.EmitJump(defaultLabel)
+	c.ctx.Program.Emitter.EmitJump(defaultLabel)
 
 	for _, group := range groups {
-		c.ctx.Emitter.MarkLabel(group.label)
-		c.ctx.Symbols.EnterScope()
+		c.ctx.Program.Emitter.MarkLabel(group.label)
+		c.ctx.Function.Symbols.EnterScope()
 		out := ensureOperandRegister(c.ctx, c.facts, c.callbacks.compileExpr(group.result))
 		if out != bytecode.NoopOperand && out != dst {
-			c.ctx.Emitter.EmitMove(dst, out)
+			c.ctx.Program.Emitter.EmitMove(dst, out)
 		}
-		c.ctx.Symbols.ExitScope()
-		c.ctx.Emitter.EmitJump(end)
+		c.ctx.Function.Symbols.ExitScope()
+		c.ctx.Program.Emitter.EmitJump(end)
 	}
 
-	c.ctx.Emitter.MarkLabel(defaultLabel)
+	c.ctx.Program.Emitter.MarkLabel(defaultLabel)
 }
 
 func (c *exprMatchCompiler) compileMatchPatternDefaultArm(def fql.IMatchDefaultArmContext, dst bytecode.Operand) {
@@ -178,15 +178,15 @@ func (c *exprMatchCompiler) compileMatchPatternDefaultArm(def fql.IMatchDefaultA
 		return
 	}
 
-	c.ctx.Symbols.EnterScope()
+	c.ctx.Function.Symbols.EnterScope()
 	result := def.Expression()
 	if result != nil {
 		out := ensureOperandRegister(c.ctx, c.facts, c.callbacks.compileExpr(result))
 		if out != bytecode.NoopOperand && out != dst {
-			c.ctx.Emitter.EmitMove(dst, out)
+			c.ctx.Program.Emitter.EmitMove(dst, out)
 		}
 	}
-	c.ctx.Symbols.ExitScope()
+	c.ctx.Function.Symbols.ExitScope()
 }
 
 func (c *exprMatchCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext, dst bytecode.Operand, end core.Label) {
@@ -204,8 +204,8 @@ func (c *exprMatchCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext
 			continue
 		}
 
-		next := c.ctx.Emitter.NewLabel("match.next")
-		c.ctx.Symbols.EnterScope()
+		next := c.ctx.Program.Emitter.NewLabel("match.next")
+		c.ctx.Function.Symbols.EnterScope()
 
 		exprs := arm.AllExpression()
 		if len(exprs) > 0 {
@@ -215,24 +215,24 @@ func (c *exprMatchCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext
 		if len(exprs) > 1 {
 			out := ensureOperandRegister(c.ctx, c.facts, c.callbacks.compileExpr(exprs[1]))
 			if out != bytecode.NoopOperand && out != dst {
-				c.ctx.Emitter.EmitMove(dst, out)
+				c.ctx.Program.Emitter.EmitMove(dst, out)
 			}
 		}
 
-		c.ctx.Emitter.EmitJump(end)
-		c.ctx.Symbols.ExitScope()
-		c.ctx.Emitter.MarkLabel(next)
+		c.ctx.Program.Emitter.EmitJump(end)
+		c.ctx.Function.Symbols.ExitScope()
+		c.ctx.Program.Emitter.MarkLabel(next)
 	}
 
 	if def := ctx.MatchDefaultArm(); def != nil {
-		c.ctx.Symbols.EnterScope()
+		c.ctx.Function.Symbols.EnterScope()
 		if result := def.Expression(); result != nil {
 			out := ensureOperandRegister(c.ctx, c.facts, c.callbacks.compileExpr(result))
 			if out != bytecode.NoopOperand && out != dst {
-				c.ctx.Emitter.EmitMove(dst, out)
+				c.ctx.Program.Emitter.EmitMove(dst, out)
 			}
 		}
-		c.ctx.Symbols.ExitScope()
+		c.ctx.Function.Symbols.ExitScope()
 	}
 }
 
@@ -249,9 +249,9 @@ func (c *exprMatchCompiler) compileMatchPatternValue(valueReg bytecode.Operand, 
 		}
 
 		if litOp.IsConstant() {
-			c.ctx.Emitter.EmitJumpCompare(bytecode.OpJumpIfNeConst, valueReg, litOp, onFail)
+			c.ctx.Program.Emitter.EmitJumpCompare(bytecode.OpJumpIfNeConst, valueReg, litOp, onFail)
 		} else {
-			c.ctx.Emitter.EmitJumpCompare(bytecode.OpJumpIfNe, valueReg, litOp, onFail)
+			c.ctx.Program.Emitter.EmitJumpCompare(bytecode.OpJumpIfNe, valueReg, litOp, onFail)
 		}
 	case ctx.MatchBindingPattern() != nil:
 		binding := ctx.MatchBindingPattern()
@@ -297,12 +297,12 @@ func (c *exprMatchCompiler) emitMatchConstantFoldExpression(expr fql.IExpression
 		return false
 	}
 
-	c.ctx.Symbols.EnterScope()
+	c.ctx.Function.Symbols.EnterScope()
 	out := ensureOperandRegister(c.ctx, c.facts, c.callbacks.compileExpr(expr))
 	if out != bytecode.NoopOperand && out != dst {
-		c.ctx.Emitter.EmitMove(dst, out)
+		c.ctx.Program.Emitter.EmitMove(dst, out)
 	}
-	c.ctx.Symbols.ExitScope()
+	c.ctx.Function.Symbols.ExitScope()
 
 	return true
 }
@@ -315,7 +315,7 @@ func (c *exprMatchCompiler) compileMatchObjectPattern(valueReg bytecode.Operand,
 	props := ctx.AllMatchObjectPatternProperty()
 	if len(props) == 0 {
 		keys := c.emitObjectsKeys(valueReg)
-		c.ctx.Emitter.EmitJumpIfNone(keys, onFail)
+		c.ctx.Program.Emitter.EmitJumpIfNone(keys, onFail)
 
 		return
 	}
@@ -330,12 +330,12 @@ func (c *exprMatchCompiler) compileMatchObjectPattern(valueReg bytecode.Operand,
 			continue
 		}
 
-		val := c.ctx.Registers.Allocate()
+		val := c.ctx.Function.Registers.Allocate()
 		if keyOp.IsConstant() {
-			c.ctx.Emitter.EmitMatchLoadPropertyConst(val, valueReg, keyOp, onFail)
+			c.ctx.Program.Emitter.EmitMatchLoadPropertyConst(val, valueReg, keyOp, onFail)
 		} else {
-			c.ctx.Emitter.EmitJumpCompare(bytecode.OpJumpIfMissingProperty, valueReg, keyOp, onFail)
-			c.ctx.Emitter.EmitABC(bytecode.OpLoadProperty, val, valueReg, keyOp)
+			c.ctx.Program.Emitter.EmitJumpCompare(bytecode.OpJumpIfMissingProperty, valueReg, keyOp, onFail)
+			c.ctx.Program.Emitter.EmitABC(bytecode.OpLoadProperty, val, valueReg, keyOp)
 		}
 
 		c.compileMatchPatternValue(val, prop.MatchPattern(), onFail)
@@ -349,7 +349,7 @@ func (c *exprMatchCompiler) compileMatchObjectPatternKey(ctx fql.IMatchObjectPat
 
 	if sl := ctx.StringLiteral(); sl != nil {
 		if val, ok := parseStringLiteralConst(sl); ok {
-			return c.ctx.Symbols.AddConstant(val)
+			return c.ctx.Function.Symbols.AddConstant(val)
 		}
 
 		return c.literals.CompileStringLiteral(sl)
@@ -369,32 +369,32 @@ func (c *exprMatchCompiler) compileMatchObjectPatternKey(ctx fql.IMatchObjectPat
 		return bytecode.NoopOperand
 	}
 
-	return c.ctx.Symbols.AddConstant(runtime.NewString(name))
+	return c.ctx.Function.Symbols.AddConstant(runtime.NewString(name))
 }
 
 func (c *exprMatchCompiler) emitObjectsKeys(scrReg bytecode.Operand) bytecode.Operand {
 	scrReg = ensureOperandRegister(c.ctx, c.facts, scrReg)
-	seq := c.ctx.Registers.AllocateSequence(1)
-	c.ctx.Emitter.EmitMove(seq[0], scrReg)
+	seq := c.ctx.Function.Registers.AllocateSequence(1)
+	c.ctx.Program.Emitter.EmitMove(seq[0], scrReg)
 
 	return c.callbacks.compileFunctionCallByNameWith(nil, runtime.NewString("KEYS"), true, seq)
 }
 
 func (c *exprMatchCompiler) declareMatchBinding(ctx antlr.ParserRuleContext, name string, valueReg bytecode.Operand) bytecode.Operand {
 	valueReg = ensureOperandRegister(c.ctx, c.facts, valueReg)
-	reg, ok := c.ctx.Symbols.DeclareLocal(name, core.TypeAny)
+	reg, ok := c.ctx.Function.Symbols.DeclareLocal(name, core.TypeAny)
 	if ok {
-		c.ctx.Emitter.EmitMove(reg, valueReg)
-		c.ctx.Types.Set(reg, c.facts.OperandType(valueReg))
+		c.ctx.Program.Emitter.EmitMove(reg, valueReg)
+		c.ctx.Function.Types.Set(reg, c.facts.OperandType(valueReg))
 
 		return reg
 	}
 
 	if ctx != nil {
-		c.ctx.Errors.DuplicateMatchBinding(ctx, name)
+		c.ctx.Program.Errors.DuplicateMatchBinding(ctx, name)
 	}
 
-	if existing, _, found := c.ctx.Symbols.Resolve(name); found {
+	if existing, _, found := c.ctx.Function.Symbols.Resolve(name); found {
 		return existing
 	}
 

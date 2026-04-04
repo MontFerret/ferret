@@ -11,7 +11,7 @@ import (
 )
 
 func (c *CollectCompiler) declareLocalOrReport(ctx antlr.ParserRuleContext, name string, typ core.ValueType) bytecode.Operand {
-	reg, ok := c.ctx.Symbols.DeclareLocal(name, typ)
+	reg, ok := c.ctx.Function.Symbols.DeclareLocal(name, typ)
 	if ok {
 		return reg
 	}
@@ -19,7 +19,7 @@ func (c *CollectCompiler) declareLocalOrReport(ctx antlr.ParserRuleContext, name
 	c.reportDuplicateLocal(ctx, name)
 
 	// Keep bytecode emission valid after the diagnostic.
-	if existing, _, found := c.ctx.Symbols.Resolve(name); found {
+	if existing, _, found := c.ctx.Function.Symbols.Resolve(name); found {
 		return existing
 	}
 
@@ -27,7 +27,7 @@ func (c *CollectCompiler) declareLocalOrReport(ctx antlr.ParserRuleContext, name
 }
 
 func (c *CollectCompiler) assignLocalOrReport(ctx antlr.ParserRuleContext, name string, typ core.ValueType, op bytecode.Operand) bool {
-	if c.ctx.Symbols.AssignLocal(name, typ, op) {
+	if c.ctx.Function.Symbols.AssignLocal(name, typ, op) {
 		return true
 	}
 
@@ -37,12 +37,12 @@ func (c *CollectCompiler) assignLocalOrReport(ctx antlr.ParserRuleContext, name 
 
 func (c *CollectCompiler) reportDuplicateLocal(ctx antlr.ParserRuleContext, name string) {
 	if ctx != nil {
-		c.ctx.Errors.VariableNotUnique(ctx, name)
+		c.ctx.Program.Errors.VariableNotUnique(ctx, name)
 		return
 	}
 
-	c.ctx.Errors.Add(parser.NewError(
-		c.ctx.Source,
+	c.ctx.Program.Errors.Add(parser.NewError(
+		c.ctx.Program.Source,
 		parser.NameError,
 		fmt.Sprintf("Variable '%s' is already defined", name),
 	))

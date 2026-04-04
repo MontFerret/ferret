@@ -157,11 +157,11 @@ func (c *ExprCompiler) CompileIncDec(token antlr.Token, target bytecode.Operand)
 
 	switch operator {
 	case "++":
-		c.ctx.Emitter.EmitA(bytecode.OpIncr, target)
+		c.ctx.Program.Emitter.EmitA(bytecode.OpIncr, target)
 	case "--":
-		c.ctx.Emitter.EmitA(bytecode.OpDecr, target)
+		c.ctx.Program.Emitter.EmitA(bytecode.OpDecr, target)
 	default:
-		c.ctx.Errors.InvalidToken(token)
+		c.ctx.Program.Errors.InvalidToken(token)
 
 		return bytecode.NoopOperand
 	}
@@ -171,7 +171,7 @@ func (c *ExprCompiler) CompileIncDec(token antlr.Token, target bytecode.Operand)
 
 func (c *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.IExpressionContext) bytecode.Operand {
 	src := c.Compile(parent.GetRight())
-	dst := c.ctx.Registers.Allocate()
+	dst := c.ctx.Function.Registers.Allocate()
 
 	var op bytecode.Opcode
 
@@ -185,7 +185,7 @@ func (c *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.IE
 		return bytecode.NoopOperand
 	}
 
-	c.ctx.Emitter.EmitAB(op, dst, src)
+	c.ctx.Program.Emitter.EmitAB(op, dst, src)
 
 	return dst
 }
@@ -193,20 +193,20 @@ func (c *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.IE
 func (c *ExprCompiler) compileLogicalAnd(ctx fql.IExpressionContext) bytecode.Operand {
 	left := c.Compile(ctx.GetLeft())
 
-	skip := c.ctx.Emitter.NewLabel("and.false")
-	done := c.ctx.Emitter.NewLabel("and.done")
-	dst := c.ctx.Registers.Allocate()
+	skip := c.ctx.Program.Emitter.NewLabel("and.false")
+	done := c.ctx.Program.Emitter.NewLabel("and.done")
+	dst := c.ctx.Function.Registers.Allocate()
 
-	c.ctx.Emitter.EmitJumpIfFalse(left, skip)
+	c.ctx.Program.Emitter.EmitJumpIfFalse(left, skip)
 
 	right := c.Compile(ctx.GetRight())
-	c.ctx.Emitter.EmitMove(dst, right)
-	c.ctx.Emitter.EmitJump(done)
+	c.ctx.Program.Emitter.EmitMove(dst, right)
+	c.ctx.Program.Emitter.EmitJump(done)
 
-	c.ctx.Emitter.MarkLabel(skip)
-	c.ctx.Emitter.EmitMove(dst, left)
+	c.ctx.Program.Emitter.MarkLabel(skip)
+	c.ctx.Program.Emitter.EmitMove(dst, left)
 
-	c.ctx.Emitter.MarkLabel(done)
+	c.ctx.Program.Emitter.MarkLabel(done)
 
 	return dst
 }
@@ -214,29 +214,29 @@ func (c *ExprCompiler) compileLogicalAnd(ctx fql.IExpressionContext) bytecode.Op
 func (c *ExprCompiler) compileLogicalOr(ctx fql.IExpressionContext) bytecode.Operand {
 	left := c.Compile(ctx.GetLeft())
 
-	next := c.ctx.Emitter.NewLabel("or.false")
-	done := c.ctx.Emitter.NewLabel("or.done")
-	dst := c.ctx.Registers.Allocate()
+	next := c.ctx.Program.Emitter.NewLabel("or.false")
+	done := c.ctx.Program.Emitter.NewLabel("or.done")
+	dst := c.ctx.Function.Registers.Allocate()
 
-	c.ctx.Emitter.EmitJumpIfTrue(left, next)
+	c.ctx.Program.Emitter.EmitJumpIfTrue(left, next)
 
 	right := c.Compile(ctx.GetRight())
-	c.ctx.Emitter.EmitMove(dst, right)
-	c.ctx.Emitter.EmitJump(done)
+	c.ctx.Program.Emitter.EmitMove(dst, right)
+	c.ctx.Program.Emitter.EmitJump(done)
 
-	c.ctx.Emitter.MarkLabel(next)
-	c.ctx.Emitter.EmitMove(dst, left)
+	c.ctx.Program.Emitter.MarkLabel(next)
+	c.ctx.Program.Emitter.EmitMove(dst, left)
 
-	c.ctx.Emitter.MarkLabel(done)
+	c.ctx.Program.Emitter.MarkLabel(done)
 
 	return dst
 }
 
 func (c *ExprCompiler) compileTernary(ctx fql.IExpressionContext) bytecode.Operand {
-	dst := c.ctx.Registers.Allocate()
+	dst := c.ctx.Function.Registers.Allocate()
 
-	elseLabel := c.ctx.Emitter.NewLabel()
-	endLabel := c.ctx.Emitter.NewLabel()
+	elseLabel := c.ctx.Program.Emitter.NewLabel()
+	endLabel := c.ctx.Program.Emitter.NewLabel()
 
 	onTrue := ctx.GetOnTrue()
 	onFalse := ctx.GetOnFalse()
@@ -244,26 +244,26 @@ func (c *ExprCompiler) compileTernary(ctx fql.IExpressionContext) bytecode.Opera
 
 	if onTrue == nil && cond != nil {
 		condReg := c.Compile(cond)
-		c.ctx.Emitter.EmitMove(dst, condReg)
-		c.ctx.Emitter.EmitJumpIfFalse(condReg, elseLabel)
+		c.ctx.Program.Emitter.EmitMove(dst, condReg)
+		c.ctx.Program.Emitter.EmitJumpIfFalse(condReg, elseLabel)
 	} else if cond != nil {
 		c.EmitConditionJump(cond, elseLabel, false)
 	}
 
 	if onTrue != nil {
 		trueReg := c.Compile(onTrue)
-		c.ctx.Emitter.EmitMove(dst, trueReg)
+		c.ctx.Program.Emitter.EmitMove(dst, trueReg)
 	}
 
-	c.ctx.Emitter.EmitJump(endLabel)
-	c.ctx.Emitter.MarkLabel(elseLabel)
+	c.ctx.Program.Emitter.EmitJump(endLabel)
+	c.ctx.Program.Emitter.MarkLabel(elseLabel)
 
 	if onFalse != nil {
 		falseReg := c.Compile(onFalse)
-		c.ctx.Emitter.EmitMove(dst, falseReg)
+		c.ctx.Program.Emitter.EmitMove(dst, falseReg)
 	}
 
-	c.ctx.Emitter.MarkLabel(endLabel)
+	c.ctx.Program.Emitter.MarkLabel(endLabel)
 
 	return dst
 }

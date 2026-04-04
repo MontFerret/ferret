@@ -36,8 +36,8 @@ func (c *UDFCatalogBuilder) BuildCatalog(program *fql.ProgramContext) {
 	table := core.NewUDFTable()
 	table.GlobalScope = core.NewUDFScope(nil)
 
-	c.ctx.UDFs = table
-	c.ctx.UDFScope = table.GlobalScope
+	c.ctx.Program.UDFs = table
+	c.ctx.Function.UDFScope = table.GlobalScope
 
 	if program == nil || program.Body() == nil {
 		return
@@ -53,14 +53,14 @@ func (c *UDFCatalogBuilder) BuildCatalog(program *fql.ProgramContext) {
 		c.collectNestedFunctions(fn)
 	}
 
-	if c.ctx.OptimizationLevel > optimization.LevelNone {
+	if c.ctx.Program.OptimizationLevel > optimization.LevelNone {
 		c.pruneUnusedFunctions(body)
 	}
 
 }
 
 func (c *UDFCatalogBuilder) collectScopeFunctionsFromBody(body *fql.BodyContext, scope *core.UDFScope) []*core.UDFInfo {
-	if c == nil || c.ctx == nil || c.ctx.UDFs == nil || body == nil {
+	if c == nil || c.ctx == nil || c.ctx.Program.UDFs == nil || body == nil {
 		return nil
 	}
 
@@ -82,7 +82,7 @@ func (c *UDFCatalogBuilder) collectScopeFunctionsFromBody(body *fql.BodyContext,
 }
 
 func (c *UDFCatalogBuilder) collectNestedFunctions(fn *core.UDFInfo) {
-	if c == nil || c.ctx == nil || c.ctx.UDFs == nil || fn == nil || fn.Decl == nil {
+	if c == nil || c.ctx == nil || c.ctx.Program.UDFs == nil || fn == nil || fn.Decl == nil {
 		return
 	}
 
@@ -113,7 +113,7 @@ func (c *UDFCatalogBuilder) collectNestedFunctions(fn *core.UDFInfo) {
 }
 
 func (c *UDFCatalogBuilder) registerFunction(scope *core.UDFScope, decl *fql.FunctionDeclarationContext) *core.UDFInfo {
-	if c == nil || c.ctx == nil || c.ctx.UDFs == nil || scope == nil || decl == nil {
+	if c == nil || c.ctx == nil || c.ctx.Program.UDFs == nil || scope == nil || decl == nil {
 		return nil
 	}
 
@@ -121,12 +121,12 @@ func (c *UDFCatalogBuilder) registerFunction(scope *core.UDFScope, decl *fql.Fun
 	name := displayName
 
 	if _, exists := scope.Functions[name]; exists {
-		c.ctx.Errors.Add(c.ctx.Errors.Create(parserd.NameError, decl, fmt.Sprintf("Function '%s' is already defined", displayName)))
+		c.ctx.Program.Errors.Add(c.ctx.Program.Errors.Create(parserd.NameError, decl, fmt.Sprintf("Function '%s' is already defined", displayName)))
 		return nil
 	}
 
 	fn := &core.UDFInfo{
-		ID:          len(c.ctx.UDFs.Functions),
+		ID:          len(c.ctx.Program.UDFs.Functions),
 		Name:        name,
 		DisplayName: displayName,
 		Params:      c.collectFunctionParams(decl),
@@ -136,7 +136,7 @@ func (c *UDFCatalogBuilder) registerFunction(scope *core.UDFScope, decl *fql.Fun
 	}
 
 	scope.Functions[name] = fn
-	c.ctx.UDFs.Functions = append(c.ctx.UDFs.Functions, fn)
+	c.ctx.Program.UDFs.Functions = append(c.ctx.Program.UDFs.Functions, fn)
 
 	return fn
 }
@@ -161,7 +161,7 @@ func (c *UDFCatalogBuilder) collectFunctionParams(decl *fql.FunctionDeclarationC
 
 		name := param.Identifier().GetText()
 		if _, exists := seen[name]; exists {
-			c.ctx.Errors.Add(c.ctx.Errors.Create(parserd.NameError, param.(antlr.ParserRuleContext), fmt.Sprintf("Parameter '%s' is already defined", name)))
+			c.ctx.Program.Errors.Add(c.ctx.Program.Errors.Create(parserd.NameError, param.(antlr.ParserRuleContext), fmt.Sprintf("Parameter '%s' is already defined", name)))
 			continue
 		}
 
@@ -173,23 +173,23 @@ func (c *UDFCatalogBuilder) collectFunctionParams(decl *fql.FunctionDeclarationC
 }
 
 func (c *UDFCatalogBuilder) pruneUnusedFunctions(body *fql.BodyContext) {
-	if c == nil || c.ctx == nil || c.ctx.UDFs == nil || body == nil {
+	if c == nil || c.ctx == nil || c.ctx.Program.UDFs == nil || body == nil {
 		return
 	}
 
 	reachable := c.computeReachableFunctions(body)
 	if len(reachable) == 0 {
-		for _, fn := range c.ctx.UDFs.Functions {
+		for _, fn := range c.ctx.Program.UDFs.Functions {
 			if fn != nil && fn.Scope != nil {
 				delete(fn.Scope.Functions, fn.Name)
 			}
 		}
-		c.ctx.UDFs.Functions = nil
+		c.ctx.Program.UDFs.Functions = nil
 		return
 	}
 
 	filtered := make([]*core.UDFInfo, 0, len(reachable))
-	for _, fn := range c.ctx.UDFs.Functions {
+	for _, fn := range c.ctx.Program.UDFs.Functions {
 		if fn == nil {
 			continue
 		}
@@ -208,16 +208,16 @@ func (c *UDFCatalogBuilder) pruneUnusedFunctions(body *fql.BodyContext) {
 		fn.ID = i
 	}
 
-	c.ctx.UDFs.Functions = filtered
+	c.ctx.Program.UDFs.Functions = filtered
 }
 
 func (c *UDFCatalogBuilder) computeReachableFunctions(body *fql.BodyContext) map[*core.UDFInfo]struct{} {
 	reachable := make(map[*core.UDFInfo]struct{})
-	if c == nil || c.ctx == nil || c.ctx.UDFs == nil || body == nil || c.ctx.UDFs.GlobalScope == nil {
+	if c == nil || c.ctx == nil || c.ctx.Program.UDFs == nil || body == nil || c.ctx.Program.UDFs.GlobalScope == nil {
 		return reachable
 	}
 
-	roots := c.collectCallsInTopLevel(body, c.ctx.UDFs.GlobalScope)
+	roots := c.collectCallsInTopLevel(body, c.ctx.Program.UDFs.GlobalScope)
 	if len(roots) == 0 {
 		return reachable
 	}
@@ -349,7 +349,7 @@ func (c *UDFCatalogBuilder) collectCallsInExpression(
 }
 
 func (c *UDFCatalogBuilder) resolveCallInScope(ctx fql.IFunctionCallContext, scope *core.UDFScope) (*core.UDFInfo, bool) {
-	if c == nil || c.ctx == nil || c.ctx.UDFs == nil || ctx == nil || scope == nil {
+	if c == nil || c.ctx == nil || c.ctx.Program.UDFs == nil || ctx == nil || scope == nil {
 		return nil, false
 	}
 
@@ -358,7 +358,7 @@ func (c *UDFCatalogBuilder) resolveCallInScope(ctx fql.IFunctionCallContext, sco
 		return nil, false
 	}
 
-	return c.ctx.UDFs.Resolve(name, scope)
+	return c.ctx.Program.UDFs.Resolve(name, scope)
 }
 
 func variableName(ctx *fql.VariableContext) (string, antlr.Token) {

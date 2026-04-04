@@ -77,15 +77,15 @@ func (v *Visitor) VisitHead(ctx *fql.HeadContext) interface{} {
 		return nil
 	}
 
-	if existing, ok := v.Session.UseAliases[alias]; ok {
+	if existing, ok := v.Session.Program.UseAliases[alias]; ok {
 		if existing != namespace {
-			v.Session.Errors.Add(v.Session.Errors.Create(parser.NameError, ctx, fmt.Sprintf("USE alias '%s' is already defined", alias)))
+			v.Session.Program.Errors.Add(v.Session.Program.Errors.Create(parser.NameError, ctx, fmt.Sprintf("USE alias '%s' is already defined", alias)))
 		}
 
 		return nil
 	}
 
-	v.Session.UseAliases[alias] = namespace
+	v.Session.Program.UseAliases[alias] = namespace
 
 	return nil
 }

@@ -145,34 +145,34 @@ func (c *LoopCompiler) buildProtectedForInRecovery(
 	ctx fql.IForExpressionContext,
 	recoveryLabel, _ core.Label, endLabel core.Label,
 ) ProtectedRecoveryRegion {
-	errorStateReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
+	errorStateReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitBoolean(errorStateReg, false)
 
-	startCatch := c.ctx.Emitter.Size()
+	startCatch := c.ctx.Program.Emitter.Size()
 	returnRuleCtx := c.compileInitialization(ctx, core.ForInLoop)
 	if returnRuleCtx == nil {
 		return ProtectedRecoveryRegion{Result: bytecode.NoopOperand}
 	}
 
-	loop := c.ctx.Loops.Current()
+	loop := c.ctx.Function.Loops.Current()
 	breakLabel := loop.BreakLabel()
 
 	c.compileLoopBody(ctx)
 
 	out := c.compileFinalization(returnRuleCtx)
-	endCatchExclusive := c.ctx.Emitter.Size()
+	endCatchExclusive := c.ctx.Program.Emitter.Size()
 
-	routeRecovery := c.ctx.Emitter.NewLabel("recovery", "for", "route")
-	c.ctx.Emitter.EmitJumpIfTrue(errorStateReg, routeRecovery)
-	c.ctx.Emitter.EmitJump(endLabel)
+	routeRecovery := c.ctx.Program.Emitter.NewLabel("recovery", "for", "route")
+	c.ctx.Program.Emitter.EmitJumpIfTrue(errorStateReg, routeRecovery)
+	c.ctx.Program.Emitter.EmitJump(endLabel)
 
-	errorPreludePC := c.ctx.Emitter.Size()
-	c.ctx.Emitter.EmitBoolean(errorStateReg, true)
-	c.ctx.Emitter.EmitJump(breakLabel)
+	errorPreludePC := c.ctx.Program.Emitter.Size()
+	c.ctx.Program.Emitter.EmitBoolean(errorStateReg, true)
+	c.ctx.Program.Emitter.EmitJump(breakLabel)
 
-	c.ctx.Emitter.MarkLabel(routeRecovery)
-	c.ctx.Emitter.EmitBoolean(errorStateReg, false)
-	c.ctx.Emitter.EmitJump(recoveryLabel)
+	c.ctx.Program.Emitter.MarkLabel(routeRecovery)
+	c.ctx.Program.Emitter.EmitBoolean(errorStateReg, false)
+	c.ctx.Program.Emitter.EmitJump(recoveryLabel)
 
 	return ProtectedRecoveryRegion{
 		Result:            out,
@@ -197,14 +197,14 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	}
 
 	// Create a new loop with the determined properties
-	loop := c.ctx.Loops.NewLoop(kind, loopType, distinct)
+	loop := c.ctx.Function.Loops.NewLoop(kind, loopType, distinct)
 	c.setLoopDestinationType(loop)
 
 	c.configureLoopRuntime(loop, ctx, kind)
 
 	// Push the loop onto the stack and enter a new symbol scope
-	c.ctx.Loops.Push(loop)
-	c.ctx.Symbols.EnterScope()
+	c.ctx.Function.Loops.Push(loop)
+	c.ctx.Function.Symbols.EnterScope()
 
 	valueType, keyType := c.inferLoopVariableTypes(ctx, loop, kind)
 	c.declareLoopVariables(ctx, loop, valueType, keyType)
@@ -232,7 +232,7 @@ func (c *LoopCompiler) resolveLoopReturnSpec(returnCtx fql.IForExpressionReturnC
 
 func (c *LoopCompiler) setLoopDestinationType(loop *core.Loop) {
 	if loop != nil && loop.Dst.IsRegister() {
-		c.ctx.Types.Set(loop.Dst, core.TypeList)
+		c.ctx.Function.Types.Set(loop.Dst, core.TypeList)
 	}
 }
 
@@ -270,10 +270,10 @@ func (c *LoopCompiler) declareLoopValueVariable(ctx fql.IForExpressionContext, l
 	}
 
 	varName := textOfLoopVariable(val)
-	loop.DeclareValueVar(varName, c.ctx.Symbols, valueType)
+	loop.DeclareValueVar(varName, c.ctx.Function.Symbols, valueType)
 
 	if loop.Value.IsRegister() {
-		c.ctx.Types.Set(loop.Value, valueType)
+		c.ctx.Function.Types.Set(loop.Value, valueType)
 	}
 }
 
@@ -283,9 +283,9 @@ func (c *LoopCompiler) declareLoopCounterVariable(ctx fql.IForExpressionContext,
 		return
 	}
 
-	loop.DeclareKeyVar(textOfBindingIdentifier(ctr), c.ctx.Symbols, keyType)
+	loop.DeclareKeyVar(textOfBindingIdentifier(ctr), c.ctx.Function.Symbols, keyType)
 	if loop.Key.IsRegister() {
-		c.ctx.Types.Set(loop.Key, keyType)
+		c.ctx.Function.Types.Set(loop.Key, keyType)
 	}
 }
 
@@ -300,8 +300,8 @@ func (c *LoopCompiler) emitLoopInitialization(ctx fql.IForExpressionContext, loo
 		span = parser.SpanFromRuleContext(prc)
 	}
 
-	c.ctx.Emitter.WithSpan(span, func() {
-		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		loop.EmitInitialization(c.ctx.Function.Registers, c.ctx.Program.Emitter)
 	})
 }
 
@@ -310,8 +310,8 @@ func (c *LoopCompiler) patchDistinctLoopDestination(loop *core.Loop) {
 		return
 	}
 
-	parent := c.ctx.Loops.RequiredParent(c.ctx.Loops.Depth())
-	c.ctx.Emitter.Patchx(parent.StartLabel(), 1)
+	parent := c.ctx.Function.Loops.RequiredParent(c.ctx.Function.Loops.Depth())
+	c.ctx.Program.Emitter.Patchx(parent.StartLabel(), 1)
 }
 
 // compileFinalization handles the teardown of a loop, including processing the return expression,
@@ -321,7 +321,7 @@ func (c *LoopCompiler) patchDistinctLoopDestination(loop *core.Loop) {
 //
 // Returns the destination operand containing the loop results.
 func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Operand {
-	loop := c.ctx.Loops.Current()
+	loop := c.ctx.Function.Loops.Current()
 
 	// Process the return expression based on the loop type
 	if loop.Type != core.PassThroughLoop {
@@ -339,8 +339,8 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 			span = parser.SpanFromRuleContext(re)
 		}
 
-		c.ctx.Emitter.WithSpan(span, func() {
-			c.ctx.Emitter.EmitAB(bytecode.OpPush, loop.Dst, expReg)
+		c.ctx.Program.Emitter.WithSpan(span, func() {
+			c.ctx.Program.Emitter.EmitAB(bytecode.OpPush, loop.Dst, expReg)
 		})
 	} else if ctx != nil {
 		// For pass-through loops, recursively compile the nested FOR expression
@@ -350,11 +350,11 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 	}
 
 	// Emit VM instructions for loop finalization
-	loop.EmitFinalization(c.ctx.Emitter)
+	loop.EmitFinalization(c.ctx.Program.Emitter)
 
 	// Clean up the symbol scope and pop the loop from the stack
-	c.ctx.Symbols.ExitScope()
-	c.ctx.Loops.Pop()
+	c.ctx.Function.Symbols.ExitScope()
+	c.ctx.Function.Loops.Pop()
 
 	return loop.Dst
 }
@@ -516,20 +516,20 @@ func (c *LoopCompiler) compileLoopOperand(source loopOperandContext, order ...lo
 // It allocates a state register and emits an iterator limit instruction with the loop's end label.
 func (c *LoopCompiler) compileLimit(src bytecode.Operand) {
 	// Allocate a state register for the limit operation
-	state := c.ctx.Registers.Allocate()
-	c.ctx.Loops.Current().RegisterReset(state)
+	state := c.ctx.Function.Registers.Allocate()
+	c.ctx.Function.Loops.Current().RegisterReset(state)
 	// Emit the iterator limit instruction with the loop's end label
-	c.ctx.Emitter.EmitIterLimit(state, src, c.ctx.Loops.Current().BreakLabel())
+	c.ctx.Program.Emitter.EmitIterLimit(state, src, c.ctx.Function.Loops.Current().BreakLabel())
 }
 
 // compileOffset emits VM instructions to skip a number of iterations at the start of a loop.
 // It allocates a state register and emits an iterator skip instruction with the loop's jump label.
 func (c *LoopCompiler) compileOffset(src bytecode.Operand) {
 	// Allocate a state register for the offset operation
-	state := c.ctx.Registers.Allocate()
-	c.ctx.Loops.Current().RegisterReset(state)
+	state := c.ctx.Function.Registers.Allocate()
+	c.ctx.Function.Loops.Current().RegisterReset(state)
 	// Emit the iterator skip instruction with the loop's jump label
-	c.ctx.Emitter.EmitIterSkip(state, src, c.ctx.Loops.Current().ContinueLabel())
+	c.ctx.Program.Emitter.EmitIterSkip(state, src, c.ctx.Function.Loops.Current().ContinueLabel())
 }
 
 // compileFilterClause processes a FILTER clause in a FOR loop.
@@ -538,7 +538,7 @@ func (c *LoopCompiler) compileOffset(src bytecode.Operand) {
 func (c *LoopCompiler) compileFilterClause(ctx fql.IFilterClauseContext) {
 	// Compile the filter expression (e.g., FILTER x > 5)
 	// Get the jump label for the current loop
-	label := c.ctx.Loops.Current().ContinueLabel()
+	label := c.ctx.Function.Loops.Current().ContinueLabel()
 	// Emit a jump instruction that skips to the next iteration if the filter condition is false
 	c.exprs.EmitConditionJump(ctx.Expression(), label, false)
 }
@@ -575,7 +575,7 @@ func (c *LoopCompiler) inferForInTypes(srcCtx fql.IForExpressionSourceContext, s
 	}
 
 	if v := srcCtx.Variable(); v != nil {
-		if binding, ok := c.ctx.Symbols.ResolveBinding(v.GetText()); ok {
+		if binding, ok := c.ctx.Function.Symbols.ResolveBinding(v.GetText()); ok {
 			return c.inferValueKeyFromCollection(binding.Type)
 		}
 	}
@@ -672,7 +672,7 @@ func (c *LoopCompiler) inferExpressionAtomType(ctx fql.IExpressionAtomContext) c
 	}
 
 	if v := ctx.Variable(); v != nil {
-		if binding, ok := c.ctx.Symbols.ResolveBinding(v.GetText()); ok {
+		if binding, ok := c.ctx.Function.Symbols.ResolveBinding(v.GetText()); ok {
 			return binding.Type
 		}
 		return core.TypeUnknown
