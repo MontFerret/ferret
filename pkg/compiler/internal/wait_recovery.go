@@ -52,22 +52,6 @@ func (c *WaitCompiler) CompileWithOuterRecoveryPlan(ctx fql.IWaitForExpressionCo
 	return c.recovery.CompileOperation(c.newWaitOperationRecoverySpec(ctx, outerPlan))
 }
 
-func waitForHasExplicitTimeoutClause(ctx fql.IWaitForExpressionContext) bool {
-	if ctx == nil {
-		return false
-	}
-
-	if ev := ctx.WaitForEventExpression(); ev != nil && ev.TimeoutClause() != nil {
-		return true
-	}
-
-	if pred := ctx.WaitForPredicateExpression(); pred != nil && pred.TimeoutClause() != nil {
-		return true
-	}
-
-	return false
-}
-
 func (c *WaitCompiler) newWaitOperationRecoverySpec(ctx fql.IWaitForExpressionContext, outerPlan core.RecoveryPlan) OperationRecoverySpec {
 	spec := OperationRecoverySpec{
 		Owner: ctx,

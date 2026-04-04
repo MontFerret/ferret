@@ -147,6 +147,186 @@ RETURN total
 	}
 }
 
+func TestBindingCompilerCapturedReadOnlyMutableDoesNotPromote(t *testing.T) {
+	state := newBindingCompilerTestState(t, `
+VAR x = 1
+FUNC f() (
+  RETURN x
+)
+RETURN f()
+`)
+
+	prepareBindingCompilerTestState(t, state)
+
+	decl := findBindingCompilerTestDeclaration(t, state, "x")
+	if state.front.Bindings.IsPromotedDeclaration(decl) {
+		t.Fatal("expected read-only captured mutable declaration not to be promoted")
+	}
+
+	state.front.Statements.Compile(state.body)
+	state.front.UDFs.CompileAll()
+
+	assertBindingCompilerTestNoErrors(t, state)
+
+	binding, ok := state.session.Function.Symbols.ResolveBinding("x")
+	if !ok {
+		t.Fatal("expected top-level binding 'x' to exist")
+	}
+
+	if binding.Storage != core.BindingStorageValue {
+		t.Fatalf("unexpected binding storage: got %v want %v", binding.Storage, core.BindingStorageValue)
+	}
+
+	instructions := state.session.Program.Emitter.Bytecode()
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpMakeCell); got != 0 {
+		t.Fatalf("unexpected %s count: got %d want 0", bytecode.OpMakeCell, got)
+	}
+}
+
+func TestBindingCompilerSingleLevelCapturedReassignmentPromotesToCell(t *testing.T) {
+	state := newBindingCompilerTestState(t, `
+VAR counter = 0
+FUNC inc() (
+  counter = counter + 1
+  RETURN counter
+)
+RETURN inc()
+`)
+
+	prepareBindingCompilerTestState(t, state)
+
+	decl := findBindingCompilerTestDeclaration(t, state, "counter")
+	if !state.front.Bindings.IsPromotedDeclaration(decl) {
+		t.Fatal("expected single-level captured mutable declaration to be promoted")
+	}
+
+	state.front.Statements.Compile(state.body)
+	state.front.UDFs.CompileAll()
+
+	assertBindingCompilerTestNoErrors(t, state)
+
+	binding, ok := state.session.Function.Symbols.ResolveBinding("counter")
+	if !ok {
+		t.Fatal("expected top-level binding 'counter' to exist")
+	}
+
+	if binding.Storage != core.BindingStorageCell {
+		t.Fatalf("unexpected binding storage: got %v want %v", binding.Storage, core.BindingStorageCell)
+	}
+}
+
+func TestBindingCompilerImmutableLetCompoundReassignmentReportsError(t *testing.T) {
+	state := newBindingCompilerTestState(t, `
+LET x = 1
+x += 2
+RETURN x
+`)
+
+	compileBindingCompilerTestState(t, state)
+
+	if !state.errors.HasErrors() {
+		t.Fatal("expected reassignment diagnostic for compound assignment on immutable LET")
+	}
+
+	diag := state.errors.Errors().First()
+	if diag == nil {
+		t.Fatal("expected first diagnostic")
+	}
+
+	if diag.Kind != parserd.SemanticError {
+		t.Fatalf("unexpected diagnostic kind: got %v want %v", diag.Kind, parserd.SemanticError)
+	}
+
+	if diag.Message != "Variable 'x' cannot be reassigned" {
+		t.Fatalf("unexpected diagnostic message: got %q", diag.Message)
+	}
+}
+
+func TestBindingCompilerSubtractionCompoundAssignmentUsesArithmeticPath(t *testing.T) {
+	state := newBindingCompilerTestState(t, `
+VAR total = 10
+total -= 3
+RETURN total
+`)
+
+	compileBindingCompilerTestState(t, state)
+	assertBindingCompilerTestNoErrors(t, state)
+
+	instructions := state.session.Program.Emitter.Bytecode()
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpSub); got != 1 {
+		t.Fatalf("unexpected %s count: got %d want 1", bytecode.OpSub, got)
+	}
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpConcat); got != 0 {
+		t.Fatalf("unexpected %s count: got %d want 0", bytecode.OpConcat, got)
+	}
+}
+
+func TestBindingCompilerMultiplicationCompoundAssignmentUsesArithmeticPath(t *testing.T) {
+	state := newBindingCompilerTestState(t, `
+VAR total = 2
+total *= 5
+RETURN total
+`)
+
+	compileBindingCompilerTestState(t, state)
+	assertBindingCompilerTestNoErrors(t, state)
+
+	instructions := state.session.Program.Emitter.Bytecode()
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpMul); got != 1 {
+		t.Fatalf("unexpected %s count: got %d want 1", bytecode.OpMul, got)
+	}
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpConcat); got != 0 {
+		t.Fatalf("unexpected %s count: got %d want 0", bytecode.OpConcat, got)
+	}
+}
+
+func TestBindingCompilerSequentialStringConcatAssignments(t *testing.T) {
+	state := newBindingCompilerTestState(t, `
+VAR text = ""
+text += "hello"
+text += " world"
+RETURN text
+`)
+
+	compileBindingCompilerTestState(t, state)
+	assertBindingCompilerTestNoErrors(t, state)
+
+	instructions := state.session.Program.Emitter.Bytecode()
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpAddConst); got != 2 {
+		t.Fatalf("unexpected %s count: got %d want 2", bytecode.OpAddConst, got)
+	}
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpAdd); got != 0 {
+		t.Fatalf("unexpected %s count: got %d want 0", bytecode.OpAdd, got)
+	}
+}
+
+func TestBindingCompilerDivisionCompoundAssignmentUsesArithmeticPath(t *testing.T) {
+	state := newBindingCompilerTestState(t, `
+VAR total = 100
+total /= 4
+RETURN total
+`)
+
+	compileBindingCompilerTestState(t, state)
+	assertBindingCompilerTestNoErrors(t, state)
+
+	instructions := state.session.Program.Emitter.Bytecode()
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpDiv); got != 1 {
+		t.Fatalf("unexpected %s count: got %d want 1", bytecode.OpDiv, got)
+	}
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpConcat); got != 0 {
+		t.Fatalf("unexpected %s count: got %d want 0", bytecode.OpConcat, got)
+	}
+}
+
 func TestBindingCompilerFailedInitializerDoesNotDeclareBinding(t *testing.T) {
 	state := newBindingCompilerTestState(t, `
 LET x = missing

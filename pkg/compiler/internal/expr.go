@@ -8,13 +8,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
-// Runtime functions
-const (
-	runtimeTypename = "TYPENAME"
-	runtimeLength   = "LENGTH"
-	runtimeWait     = "WAIT"
-)
-
 type (
 	// ExprCompiler handles the compilation of expressions in FQL queries.
 	// It transforms expression operations from the AST into VM instructions.
@@ -55,6 +48,13 @@ type (
 		stickyDst bool
 		hasJump   bool
 	}
+)
+
+// Runtime functions
+const (
+	runtimeTypename = "TYPENAME"
+	runtimeLength   = "LENGTH"
+	runtimeWait     = "WAIT"
 )
 
 const (

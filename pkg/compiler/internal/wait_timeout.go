@@ -1,10 +1,6 @@
 package internal
 
 import (
-	"math"
-	"strconv"
-	"strings"
-
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -156,104 +152,4 @@ func (c *WaitCompiler) emitApplyJitter(intervalReg, jitterReg bytecode.Operand) 
 	c.ctx.Program.Emitter.EmitABC(bytecode.OpAdd, multiplierReg, oneMinusReg, randScaleReg)
 
 	c.ctx.Program.Emitter.EmitABC(bytecode.OpMul, intervalReg, intervalReg, multiplierReg)
-}
-
-func parseDurationLiteral(text string) (runtime.Value, error) {
-	raw := normalizeDurationLiteral(text)
-	if raw == "" {
-		return runtime.None, strconv.ErrSyntax
-	}
-
-	number, unit, ok := splitDurationLiteral(raw)
-	if !ok || number == "" {
-		return runtime.None, strconv.ErrSyntax
-	}
-
-	value, err := parseDurationLiteralNumber(number)
-	if err != nil {
-		return runtime.None, err
-	}
-
-	multiplier, ok := durationUnitMultiplier(unit)
-	if !ok {
-		return runtime.None, strconv.ErrSyntax
-	}
-
-	ms := value * multiplier
-	return parseDurationMillisecondsValue(ms)
-}
-
-func normalizeDurationLiteral(text string) string {
-	return strings.ToUpper(strings.TrimSpace(text))
-}
-
-func splitDurationLiteral(raw string) (string, string, bool) {
-	switch {
-	case strings.HasSuffix(raw, "MS"):
-		return strings.TrimSuffix(raw, "MS"), "MS", true
-	case strings.HasSuffix(raw, "S"):
-		return strings.TrimSuffix(raw, "S"), "S", true
-	case strings.HasSuffix(raw, "M"):
-		return strings.TrimSuffix(raw, "M"), "M", true
-	case strings.HasSuffix(raw, "H"):
-		return strings.TrimSuffix(raw, "H"), "H", true
-	case strings.HasSuffix(raw, "D"):
-		return strings.TrimSuffix(raw, "D"), "D", true
-	default:
-		return "", "", false
-	}
-}
-
-func parseDurationLiteralNumber(raw string) (float64, error) {
-	return strconv.ParseFloat(raw, 64)
-}
-
-func durationUnitMultiplier(unit string) (float64, bool) {
-	switch unit {
-	case "MS":
-		return 1, true
-	case "S":
-		return 1000, true
-	case "M":
-		return 60000, true
-	case "H":
-		return 3600000, true
-	case "D":
-		return 86400000, true
-	default:
-		return 0, false
-	}
-}
-
-func parseDurationMillisecondsValue(ms float64) (runtime.Value, error) {
-	if err := validateDurationMilliseconds(ms); err != nil {
-		return runtime.None, err
-	}
-
-	return durationValueFromMilliseconds(ms), nil
-}
-
-func validateDurationMilliseconds(ms float64) error {
-	if math.IsNaN(ms) || math.IsInf(ms, 0) {
-		return strconv.ErrRange
-	}
-
-	const (
-		maxInt64Float = float64(1<<63 - 1)
-		minInt64Float = -float64(1 << 63)
-	)
-
-	if ms < minInt64Float || ms > maxInt64Float {
-		return strconv.ErrRange
-	}
-
-	return nil
-}
-
-func durationValueFromMilliseconds(ms float64) runtime.Value {
-	if frac := math.Mod(ms, 1); frac == 0 {
-		return runtime.NewInt64(int64(ms))
-	}
-
-	return runtime.NewFloat(ms)
 }

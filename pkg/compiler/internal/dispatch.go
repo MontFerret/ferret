@@ -55,7 +55,7 @@ func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) bytecode.
 			argsReg := c.buildDispatchArgs(payloadReg, optionsReg)
 
 			dst := c.ctx.Function.Registers.Allocate()
-			span := dispatchSpan(ctx)
+			span := c.dispatchSpan(ctx)
 
 			c.ctx.Program.Emitter.WithSpan(span, func() {
 				c.ctx.Program.Emitter.EmitMove(dst, targetReg)
@@ -150,7 +150,7 @@ func (c *DispatchCompiler) buildDispatchArgs(payload, options bytecode.Operand) 
 	return dst
 }
 
-func dispatchSpan(ctx fql.IDispatchExpressionContext) source.Span {
+func (c *DispatchCompiler) dispatchSpan(ctx fql.IDispatchExpressionContext) source.Span {
 	if ctx == nil {
 		return source.Span{Start: -1, End: -1}
 	}

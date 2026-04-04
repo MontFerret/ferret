@@ -11,14 +11,12 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
-type (
-	BindingCompiler struct {
-		ctx                  *CompilationSession
-		exprs                *ExprCompiler
-		facts                *TypeFacts
-		promotedDeclarations map[antlr.ParserRuleContext]struct{}
-	}
-)
+type BindingCompiler struct {
+	ctx                  *CompilationSession
+	exprs                *ExprCompiler
+	facts                *TypeFacts
+	promotedDeclarations map[antlr.ParserRuleContext]struct{}
+}
 
 func NewBindingCompiler(ctx *CompilationSession) *BindingCompiler {
 	return &BindingCompiler{

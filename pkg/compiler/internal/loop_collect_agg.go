@@ -3,7 +3,6 @@ package internal
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -282,29 +281,6 @@ func (c *CollectCompiler) shouldFuseGroupedAggregation(grouping fql.ICollectGrou
 
 	groupSelectors := grouping.AllCollectSelector()
 	return len(groupSelectors) == 1
-}
-
-func aggregateKind(name runtime.String) (bytecode.AggregateKind, bool) {
-	fn := strings.ToUpper(name.String())
-	if strings.Contains(fn, runtime.NamespaceSeparator) {
-		parts := strings.Split(fn, runtime.NamespaceSeparator)
-		fn = parts[len(parts)-1]
-	}
-
-	switch fn {
-	case "COUNT":
-		return bytecode.AggregateCount, true
-	case "SUM":
-		return bytecode.AggregateSum, true
-	case "MIN":
-		return bytecode.AggregateMin, true
-	case "MAX":
-		return bytecode.AggregateMax, true
-	case "AVERAGE":
-		return bytecode.AggregateAverage, true
-	default:
-		return 0, false
-	}
 }
 
 // finalizeAggregation processes the aggregation operations based on the collector specification.

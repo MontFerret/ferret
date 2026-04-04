@@ -1,10 +1,6 @@
 package internal
 
 import (
-	"strings"
-
-	"github.com/antlr4-go/antlr/v4"
-
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
@@ -31,18 +27,6 @@ func (c *LoopSortCompiler) bind(exprs *ExprCompiler, facts *TypeFacts) {
 
 	c.exprs = exprs
 	c.facts = facts
-}
-
-func sortDirection(dir antlr.TerminalNode) runtime.SortDirection {
-	if dir == nil {
-		return runtime.SortDirectionAsc
-	}
-
-	if strings.ToLower(dir.GetText()) == "desc" {
-		return runtime.SortDirectionDesc
-	}
-
-	return runtime.SortDirectionAsc
 }
 
 // Compile processes a SORT clause by:

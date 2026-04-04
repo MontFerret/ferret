@@ -122,49 +122,6 @@ func (c *ExprCompiler) resolvePredicateOperator(ctx fql.IPredicateContext) (byte
 	return bytecode.Opcode(0), false, false
 }
 
-func resolveArrayPredicateOpcode(op fql.IArrayOperatorContext) (bytecode.Opcode, bool) {
-	if op == nil {
-		return bytecode.Opcode(0), false
-	}
-
-	var pos int
-
-	switch {
-	case op.All() != nil:
-		pos = int(bytecode.OpAllEq)
-	case op.Any() != nil:
-		pos = int(bytecode.OpAnyEq)
-	case op.None() != nil:
-		pos = int(bytecode.OpNoneEq)
-	}
-
-	if eo := op.EqualityOperator(); eo != nil {
-		switch eo.GetText() {
-		case "!=":
-			pos += int(bytecode.OpAllNe) - int(bytecode.OpAllEq)
-		case ">":
-			pos += int(bytecode.OpAllGt) - int(bytecode.OpAllEq)
-		case ">=":
-			pos += int(bytecode.OpAllGte) - int(bytecode.OpAllEq)
-		case "<":
-			pos += int(bytecode.OpAllLt) - int(bytecode.OpAllEq)
-		case "<=":
-			pos += int(bytecode.OpAllLte) - int(bytecode.OpAllEq)
-		default:
-		}
-
-		return bytecode.Opcode(pos), true
-	}
-
-	if op.InOperator() != nil {
-		pos += int(bytecode.OpAllIn) - int(bytecode.OpAllEq)
-
-		return bytecode.Opcode(pos), true
-	}
-
-	return bytecode.Opcode(0), false
-}
-
 func (c *ExprCompiler) emitBinaryPredicate(ctx fql.IPredicateContext, opcode bytecode.Opcode, left, right bytecode.Operand, isNegated bool) bytecode.Operand {
 	dest := c.ctx.Function.Registers.Allocate()
 	span := source.Span{Start: -1, End: -1}
@@ -205,30 +162,6 @@ func (c *ExprCompiler) emitPredicateJump(ctx fql.IPredicateContext, label core.L
 	c.emitPredicateJumpCompare(opText, jumpOnTrue, leftOp, rightOp, label, false)
 
 	return true
-}
-
-func resolvePredicateEqNeJump(ctx fql.IPredicateContext) (string, fql.IPredicateContext, fql.IPredicateContext, bool) {
-	if ctx == nil {
-		return "", nil, nil, false
-	}
-
-	op := ctx.EqualityOperator()
-	if op == nil {
-		return "", nil, nil, false
-	}
-
-	opText := op.GetText()
-	if opText != "==" && opText != "!=" {
-		return "", nil, nil, false
-	}
-
-	leftCtx := ctx.Predicate(0)
-	rightCtx := ctx.Predicate(1)
-	if leftCtx == nil || rightCtx == nil {
-		return "", nil, nil, false
-	}
-
-	return opText, leftCtx, rightCtx, true
 }
 
 func (c *ExprCompiler) compilePredicateLiteralOperand(ctx fql.IPredicateContext) bytecode.Operand {
@@ -282,38 +215,6 @@ func (c *ExprCompiler) emitPredicateJumpCompare(opText string, jumpOnTrue bool, 
 	c.ctx.Program.Emitter.EmitJumpCompare(opcode, left, right, label)
 }
 
-func resolveEqNeJumpOpcode(opText string, jumpOnTrue, constOperand bool) bytecode.Opcode {
-	if constOperand {
-		if opText == "==" {
-			if jumpOnTrue {
-				return bytecode.OpJumpIfEqConst
-			}
-
-			return bytecode.OpJumpIfNeConst
-		}
-
-		if jumpOnTrue {
-			return bytecode.OpJumpIfNeConst
-		}
-
-		return bytecode.OpJumpIfEqConst
-	}
-
-	if opText == "==" {
-		if jumpOnTrue {
-			return bytecode.OpJumpIfEq
-		}
-
-		return bytecode.OpJumpIfNe
-	}
-
-	if jumpOnTrue {
-		return bytecode.OpJumpIfNe
-	}
-
-	return bytecode.OpJumpIfEq
-}
-
 // EmitConditionJump is the supported cross-compiler entrypoint for branching on
 // expression truthiness while preserving expression-level predicate lowering.
 func (c *ExprCompiler) EmitConditionJump(expr fql.IExpressionContext, label core.Label, jumpOnTrue bool) {
@@ -343,43 +244,6 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) bytecode.Oper
 	return c.compileLeafAtom(ctx)
 }
 
-func resolveAtomBinaryOperator(ctx fql.IExpressionAtomContext) (atomBinaryOperator, bool) {
-	if op := ctx.MultiplicativeOperator(); op != nil {
-		return resolveArithmeticBinaryOperator(op.GetText())
-	}
-
-	if op := ctx.AdditiveOperator(); op != nil {
-		return resolveArithmeticBinaryOperator(op.GetText())
-	}
-
-	if op := ctx.RegexpOperator(); op != nil {
-		return atomBinaryOperator{
-			opcode:  bytecode.OpRegexp,
-			negated: op.GetText() == "!~",
-			regexp:  true,
-		}, true
-	}
-
-	return atomBinaryOperator{}, false
-}
-
-func resolveArithmeticBinaryOperator(operator string) (atomBinaryOperator, bool) {
-	switch operator {
-	case "+", "+=":
-		return atomBinaryOperator{opcode: bytecode.OpAdd}, true
-	case "-", "-=":
-		return atomBinaryOperator{opcode: bytecode.OpSub}, true
-	case "*", "*=":
-		return atomBinaryOperator{opcode: bytecode.OpMul}, true
-	case "/", "/=":
-		return atomBinaryOperator{opcode: bytecode.OpDiv}, true
-	case "%":
-		return atomBinaryOperator{opcode: bytecode.OpMod}, true
-	default:
-		return atomBinaryOperator{}, false
-	}
-}
-
 func (c *ExprCompiler) compileBinaryAtom(ctx fql.IExpressionAtomContext, op atomBinaryOperator) bytecode.Operand {
 	if op.opcode == bytecode.OpAdd {
 		if parts, ok := buildConcatOperandSegmentsFromAtom(c, ctx); ok {
@@ -402,37 +266,6 @@ func (c *ExprCompiler) emitBinaryAtomOperation(ctx fql.IExpressionAtomContext, o
 	prc, _ := ctx.(antlr.ParserRuleContext)
 
 	return emitBinaryOperation(c.ctx, c.facts, prc, op, left, right)
-}
-
-func emitBinaryOperation(ctx *CompilationSession, facts *TypeFacts, prc antlr.ParserRuleContext, op atomBinaryOperator, left, right bytecode.Operand) bytecode.Operand {
-	if ctx == nil {
-		return bytecode.NoopOperand
-	}
-
-	dst := ctx.Function.Registers.Allocate()
-	span := source.Span{Start: -1, End: -1}
-
-	if prc != nil {
-		span = diagnostics.SpanFromRuleContext(prc)
-	}
-
-	ctx.Program.Emitter.WithSpan(span, func() {
-		ctx.Program.Emitter.EmitABC(op.opcode, dst, left, right)
-
-		if op.negated {
-			ctx.Program.Emitter.EmitAB(bytecode.OpNot, dst, dst)
-		}
-	})
-
-	resultType := facts.InferBinaryResultType(op, left, right)
-	if op.negated {
-		resultType = core.TypeBool
-	}
-	if resultType != core.TypeUnknown {
-		ctx.Function.Types.Set(dst, resultType)
-	}
-
-	return dst
 }
 
 func (c *ExprCompiler) validateRegexpOperand(ctx fql.IExpressionAtomContext) {

@@ -1,11 +1,8 @@
 package internal
 
 import (
-	"github.com/antlr4-go/antlr/v4"
-
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
-	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
@@ -150,25 +147,6 @@ func (c *WaitCompiler) emitWaitEventCleanup(state waitEventCompileState, streamR
 	c.ctx.Program.Emitter.WithSpan(state.span, func() {
 		c.ctx.Program.Emitter.EmitA(bytecode.OpClose, streamReg)
 	})
-}
-
-func waitForSpan(src antlr.RuleContext, fallback antlr.RuleContext) source.Span {
-	span := source.Span{Start: -1, End: -1}
-
-	if src != nil {
-		if prc, ok := src.(antlr.ParserRuleContext); ok {
-			span = parserd.SpanFromRuleContext(prc)
-			return span
-		}
-	}
-
-	if fallback != nil {
-		if prc, ok := fallback.(antlr.ParserRuleContext); ok {
-			span = parserd.SpanFromRuleContext(prc)
-		}
-	}
-
-	return span
 }
 
 // CompileWaitForEventName processes the event name expression in a WAITFOR statement.
