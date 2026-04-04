@@ -9,6 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -16,14 +17,25 @@ import (
 // LiteralCompiler handles the compilation of literal values in FQL queries.
 // It transforms literal expressions from the AST into VM instructions and constants.
 type LiteralCompiler struct {
-	ctx *CompilerContext
+	ctx   *CompilationSession
+	exprs *ExprCompiler
+	facts *TypeFacts
 }
 
 // NewLiteralCompiler creates a new instance of LiteralCompiler with the given compiler context.
-func NewLiteralCompiler(ctx *CompilerContext) *LiteralCompiler {
+func NewLiteralCompiler(ctx *CompilationSession) *LiteralCompiler {
 	return &LiteralCompiler{
 		ctx: ctx,
 	}
+}
+
+func (c *LiteralCompiler) bind(exprs *ExprCompiler, facts *TypeFacts) {
+	if c == nil {
+		return
+	}
+
+	c.exprs = exprs
+	c.facts = facts
 }
 
 // Compile processes a literal expression from the FQL AST and delegates to the appropriate
@@ -62,159 +74,6 @@ func (c *LiteralCompiler) Compile(ctx fql.ILiteralContext) bytecode.Operand {
 //
 // Returns:
 //   - An operand representing the compiled string constant
-func parseStringLiteral(ctx fql.IStringLiteralContext) runtime.String {
-	if ctx == nil || ctx.StringLiteral() == nil {
-		return runtime.EmptyString
-	}
-
-	var b strings.Builder
-
-	// Process each child node in the string literal
-	for _, child := range ctx.GetChildren() {
-		tree := child.(antlr.TerminalNode)
-		sym := tree.GetSymbol()
-		input := sym.GetInputStream()
-
-		if input == nil {
-			continue
-		}
-
-		size := input.Size()
-		// Skip the opening and closing quotes
-		start := sym.GetStart() + 1
-		stop := sym.GetStop() - 1
-
-		// Ensure we don't go beyond the input size
-		if stop >= size {
-			stop = size - 1
-		}
-
-		if start < size && stop < size {
-			// Process each character in the string
-			for i := start; i <= stop; i++ {
-				ch := input.GetText(i, i)
-
-				switch ch {
-				case "\\":
-					// Handle escape sequences
-					c2 := input.GetText(i, i+1)
-
-					switch c2 {
-					case "\\n":
-						b.WriteString("\n")
-					case "\\t":
-						b.WriteString("\t")
-					default:
-						b.WriteString(c2)
-					}
-
-					// Skip the next character as it's part of the escape sequence
-					i++
-				default:
-					// Add regular characters as-is
-					b.WriteString(ch)
-				}
-			}
-		}
-	}
-
-	return runtime.NewString(b.String())
-}
-
-func parseTemplateChunk(text string) string {
-	if text == "" {
-		return ""
-	}
-
-	var b strings.Builder
-	b.Grow(len(text))
-
-	for i := 0; i < len(text); i++ {
-		ch := text[i]
-		if ch == '\\' && i+1 < len(text) {
-			next := text[i+1]
-			switch next {
-			case 'n':
-				b.WriteByte('\n')
-			case 't':
-				b.WriteByte('\t')
-			case '`':
-				b.WriteByte('`')
-			case '$':
-				b.WriteByte('$')
-			case '\\':
-				b.WriteByte('\\')
-			default:
-				b.WriteByte('\\')
-				b.WriteByte(next)
-			}
-			i++
-			continue
-		}
-		b.WriteByte(ch)
-	}
-
-	return b.String()
-}
-
-func parseTemplateLiteralConst(ctx fql.ITemplateLiteralContext) (runtime.String, bool) {
-	if ctx == nil {
-		return runtime.EmptyString, false
-	}
-
-	var b strings.Builder
-
-	for _, el := range ctx.AllTemplateElement() {
-		if el == nil {
-			continue
-		}
-		if expr := el.Expression(); expr != nil {
-			if val, ok := constStringFromExpression(expr); ok {
-				b.WriteString(val)
-				continue
-			}
-			return runtime.EmptyString, false
-		}
-		if chunk := el.TemplateChars(); chunk != nil {
-			b.WriteString(parseTemplateChunk(chunk.GetText()))
-		}
-	}
-
-	return runtime.NewString(b.String()), true
-}
-
-func parseStringLiteralConst(ctx fql.IStringLiteralContext) (runtime.String, bool) {
-	if ctx == nil {
-		return runtime.EmptyString, false
-	}
-
-	if ctx.StringLiteral() != nil {
-		return parseStringLiteral(ctx), true
-	}
-
-	if tmpl := ctx.TemplateLiteral(); tmpl != nil {
-		return parseTemplateLiteralConst(tmpl)
-	}
-
-	return runtime.EmptyString, false
-}
-
-func constStringFromExpression(expr fql.IExpressionContext) (string, bool) {
-	val, ok := tryConstConcatStringFromExpression(expr)
-	if !ok {
-		return "", false
-	}
-
-	return val.String(), true
-}
-
-// CompileStringLiteral processes a string literal from the FQL AST and converts it into a runtime string.
-// It handles escape sequences like \n and \t, and properly extracts the string content without quotes.
-// Parameters:
-//   - ctx: The string literal context from the AST
-//
-// Returns:
-//   - An operand representing the compiled string constant
 func (c *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) bytecode.Operand {
 	if ctx == nil {
 		return bytecode.NoopOperand
@@ -225,7 +84,7 @@ func (c *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) by
 	}
 
 	// Create a runtime string and load it as a constant
-	return loadConstant(c.ctx, parseStringLiteral(ctx))
+	return c.facts.LoadConstant(parseStringLiteral(ctx))
 }
 
 // CompileTemplateLiteral processes a template literal from the FQL AST.
@@ -237,7 +96,7 @@ func (c *LiteralCompiler) CompileTemplateLiteral(ctx fql.ITemplateLiteralContext
 
 	elements := ctx.AllTemplateElement()
 	if len(elements) == 0 {
-		return loadConstant(c.ctx, runtime.EmptyString)
+		return c.facts.LoadConstant(runtime.EmptyString)
 	}
 
 	parts := make([]concatOperandSegment, 0, len(elements))
@@ -267,53 +126,46 @@ func (c *LiteralCompiler) CompileTemplateLiteral(ctx fql.ITemplateLiteralContext
 
 		if expr := el.Expression(); expr != nil {
 			flushLiteral()
-			parts = append(parts, buildConcatOperandSegmentsFromExpression(c.ctx.ExprCompiler, expr)...)
+			parts = append(parts, buildConcatOperandSegmentsFromExpression(c.exprs, expr)...)
 		}
 	}
 
 	flushLiteral()
 
-	return emitConcatOperandSegments(c.ctx, parts)
+	return emitConcatOperandSegments(c.ctx, c.facts, parts)
 }
 
 // CompileIntegerLiteral processes an integer literal from the FQL AST and converts it into a runtime integer.
-// Parameters:
-//   - ctx: The integer literal context from the AST
-//
-// Returns:
-//   - An operand representing the compiled integer constant
-//
-// Panics if the integer value cannot be parsed.
 func (c *LiteralCompiler) CompileIntegerLiteral(ctx fql.IIntegerLiteralContext) bytecode.Operand {
-	// Parse the integer value from the text representation
 	val, err := strconv.Atoi(ctx.GetText())
-
 	if err != nil {
-		panic(err)
+		c.reportInvalidNumericLiteral(ctx, "integer", err)
+		return bytecode.NoopOperand
 	}
 
-	// Create a runtime integer and load it as a constant
-	return loadConstant(c.ctx, runtime.NewInt(val))
+	return c.facts.LoadConstant(runtime.NewInt(val))
 }
 
 // CompileFloatLiteral processes a float literal from the FQL AST and converts it into a runtime float.
-// Parameters:
-//   - ctx: The float literal context from the AST
-//
-// Returns:
-//   - An operand representing the compiled float constant
-//
-// Panics if the float value cannot be parsed.
 func (c *LiteralCompiler) CompileFloatLiteral(ctx fql.IFloatLiteralContext) bytecode.Operand {
-	// Parse the float value from the text representation with 64-bit precision
 	val, err := strconv.ParseFloat(ctx.GetText(), 64)
-
 	if err != nil {
-		panic(err)
+		c.reportInvalidNumericLiteral(ctx, "float", err)
+		return bytecode.NoopOperand
 	}
 
-	// Create a runtime float and load it as a constant
-	return loadConstant(c.ctx, runtime.NewFloat(val))
+	return c.facts.LoadConstant(runtime.NewFloat(val))
+}
+
+func (c *LiteralCompiler) reportInvalidNumericLiteral(ctx antlr.ParserRuleContext, kind string, err error) {
+	if c == nil || c.ctx == nil || c.ctx.Program.Errors == nil || ctx == nil {
+		core.PanicInvariantf("cannot report invalid %s literal", kind)
+	}
+
+	message, hint := invalidNumericLiteralDetails(kind, err)
+	diag := c.ctx.Program.Errors.Create(parserd.SyntaxError, ctx, message)
+	diag.Hint = hint
+	c.ctx.Program.Errors.Add(diag)
 }
 
 // CompileBooleanLiteral processes a boolean literal from the FQL AST and converts it into a runtime boolean.
@@ -326,20 +178,20 @@ func (c *LiteralCompiler) CompileFloatLiteral(ctx fql.IFloatLiteralContext) byte
 // Panics if the text is neither "true" nor "false".
 func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) bytecode.Operand {
 	// Allocate a temporary register for the boolean value
-	reg := c.ctx.Registers.Allocate()
+	reg := c.ctx.Function.Registers.Allocate()
 
 	// Convert the text to lowercase and determine the boolean value
 	switch strings.ToLower(ctx.GetText()) {
 	case "true":
-		c.ctx.Emitter.EmitBoolean(reg, true)
+		c.ctx.Program.Emitter.EmitBoolean(reg, true)
 	case "false":
-		c.ctx.Emitter.EmitBoolean(reg, false)
+		c.ctx.Program.Emitter.EmitBoolean(reg, false)
 	default:
 		reg = bytecode.NoopOperand
 	}
 
 	if reg.IsRegister() {
-		c.ctx.Types.Set(reg, core.TypeBool)
+		c.ctx.Function.Types.Set(reg, core.TypeBool)
 	}
 
 	return reg
@@ -353,10 +205,10 @@ func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) 
 //   - An operand representing the compiled none value
 func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) bytecode.Operand {
 	// Allocate a temporary register for the none value
-	reg := c.ctx.Registers.Allocate()
+	reg := c.ctx.Function.Registers.Allocate()
 	// Emit instruction to load the none value into the register
-	c.ctx.Emitter.EmitA(bytecode.OpLoadNone, reg)
-	c.ctx.Types.Set(reg, core.TypeNone)
+	c.ctx.Program.Emitter.EmitA(bytecode.OpLoadNone, reg)
+	c.ctx.Function.Types.Set(reg, core.TypeNone)
 
 	return reg
 }
@@ -370,7 +222,7 @@ func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) bytecode
 //   - An operand representing the compiled array
 func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) bytecode.Operand {
 	// Allocate destination register for the array
-	destReg := c.ctx.Registers.Allocate()
+	destReg := c.ctx.Function.Registers.Allocate()
 
 	args := ctx.ArgumentList()
 
@@ -378,21 +230,21 @@ func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) byte
 		exps := args.AllExpression()
 
 		// Emit instruction to create an array with the specified size
-		c.ctx.Emitter.EmitArray(destReg, len(exps))
+		c.ctx.Program.Emitter.EmitArray(destReg, len(exps))
 
 		// Compile each expression in the array and push it to the array register
 		for _, exp := range exps {
 			// Compile expression
-			itemReg := c.ctx.ExprCompiler.Compile(exp)
+			itemReg := c.exprs.Compile(exp)
 
-			c.ctx.Emitter.EmitArrayPush(destReg, itemReg)
+			c.ctx.Program.Emitter.EmitArrayPush(destReg, itemReg)
 		}
 	} else {
 		// Emit instruction to create an empty array
-		c.ctx.Emitter.EmitArray(destReg, 0)
+		c.ctx.Program.Emitter.EmitArray(destReg, 0)
 	}
 
-	c.ctx.Types.Set(destReg, core.TypeArray)
+	c.ctx.Function.Types.Set(destReg, core.TypeArray)
 	return destReg
 }
 
@@ -405,14 +257,14 @@ func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) byte
 //   - An operand representing the compiled object
 func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) bytecode.Operand {
 	// Allocate destination register for the object
-	dst := c.ctx.Registers.Allocate()
+	dst := c.ctx.Function.Registers.Allocate()
 	// Get all property assignments from the object literal
 	assignments := ctx.AllPropertyAssignment()
 	size := len(assignments)
 
 	if size > 0 {
 		// Emit instruction to create an object with the specified number of properties
-		c.ctx.Emitter.EmitObject(dst, size)
+		c.ctx.Program.Emitter.EmitObject(dst, size)
 
 		// Process each property assignment
 		for i := 0; i < size; i++ {
@@ -422,44 +274,44 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) by
 			if prop := pac.PropertyName(); prop != nil {
 				// Regular property name (e.g., { name: value }).
 				// Evaluate value first to shorten the live range of the key register.
-				valOp := c.ctx.ExprCompiler.Compile(pac.Expression())
+				valOp := c.exprs.Compile(pac.Expression())
 				if constOp, ok := c.CompilePropertyNameConst(prop); ok {
-					c.ctx.Emitter.EmitObjectSetConst(dst, constOp, valOp)
+					c.ctx.Program.Emitter.EmitObjectSetConst(dst, constOp, valOp)
 				} else {
 					propOp := c.CompilePropertyName(prop)
-					c.ctx.Emitter.EmitObjectSet(dst, propOp, valOp)
+					c.ctx.Program.Emitter.EmitObjectSet(dst, propOp, valOp)
 				}
 			} else if comProp := pac.ComputedPropertyName(); comProp != nil {
 				// Computed property name (e.g., { [expr]: value })
-				if val, ok := literalValueFromExpression(comProp.Expression()); ok {
+				if val, ok := c.facts.LiteralValueFromExpression(comProp.Expression()); ok {
 					switch val.(type) {
 					case *runtime.Array, *runtime.Object:
 						// Fall back to the generic computed path to preserve side effects.
 					default:
-						valOp := c.ctx.ExprCompiler.Compile(pac.Expression())
-						keyConst := c.ctx.Symbols.AddConstant(runtime.ToString(val))
-						c.ctx.Emitter.EmitObjectSetConst(dst, keyConst, valOp)
+						valOp := c.exprs.Compile(pac.Expression())
+						keyConst := c.ctx.Function.Symbols.AddConstant(runtime.ToString(val))
+						c.ctx.Program.Emitter.EmitObjectSetConst(dst, keyConst, valOp)
 						continue
 					}
 				}
 
 				propOp := c.CompileComputedPropertyName(comProp)
-				valOp := c.ctx.ExprCompiler.Compile(pac.Expression())
-				c.ctx.Emitter.EmitObjectSet(dst, propOp, valOp)
+				valOp := c.exprs.Compile(pac.Expression())
+				c.ctx.Program.Emitter.EmitObjectSet(dst, propOp, valOp)
 			} else if variable := pac.Variable(); variable != nil {
 				// Shorthand property (e.g., { variable })
 				// Evaluate value first to shorten the live range of the key register.
-				valOp := c.ctx.ExprCompiler.CompileVariable(variable)
-				propOp := c.ctx.Symbols.AddConstant(runtime.NewString(variable.GetText()))
-				c.ctx.Emitter.EmitObjectSetConst(dst, propOp, valOp)
+				valOp := c.exprs.CompileVariable(variable)
+				propOp := c.ctx.Function.Symbols.AddConstant(runtime.NewString(variable.GetText()))
+				c.ctx.Program.Emitter.EmitObjectSetConst(dst, propOp, valOp)
 			}
 		}
 	} else {
 		// Emit instruction to create an empty object
-		c.ctx.Emitter.EmitObject(dst, 0)
+		c.ctx.Program.Emitter.EmitObject(dst, 0)
 	}
 
-	c.ctx.Types.Set(dst, core.TypeObject)
+	c.ctx.Function.Types.Set(dst, core.TypeObject)
 
 	return dst
 }
@@ -478,7 +330,7 @@ func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) byte
 	// Handle string literal property names (e.g., { "property": value })
 	if str := ctx.StringLiteral(); str != nil {
 		if val, ok := parseStringLiteralConst(str); ok {
-			return loadConstant(c.ctx, val)
+			return c.facts.LoadConstant(val)
 		}
 		return c.CompileStringLiteral(str)
 	}
@@ -500,7 +352,7 @@ func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) byte
 	}
 
 	// Create a runtime string from the property name and load it as a constant
-	return loadConstant(c.ctx, runtime.NewString(name))
+	return c.facts.LoadConstant(runtime.NewString(name))
 }
 
 // CompilePropertyNameConst compiles a property name into a constant operand without emitting instructions.
@@ -513,7 +365,7 @@ func (c *LiteralCompiler) CompilePropertyNameConst(ctx fql.IPropertyNameContext)
 	// Handle string literal property names (e.g., { "property": value })
 	if str := ctx.StringLiteral(); str != nil {
 		if value, ok := parseStringLiteralConst(str); ok {
-			return c.ctx.Symbols.AddConstant(value), true
+			return c.ctx.Function.Symbols.AddConstant(value), true
 		}
 		return bytecode.NoopOperand, false
 	}
@@ -534,7 +386,7 @@ func (c *LiteralCompiler) CompilePropertyNameConst(ctx fql.IPropertyNameContext)
 		return bytecode.NoopOperand, false
 	}
 
-	return c.ctx.Symbols.AddConstant(runtime.NewString(name)), true
+	return c.ctx.Function.Symbols.AddConstant(runtime.NewString(name)), true
 }
 
 // CompileComputedPropertyName processes a computed property name from an object literal in the FQL AST.
@@ -546,5 +398,5 @@ func (c *LiteralCompiler) CompilePropertyNameConst(ctx fql.IPropertyNameContext)
 //   - An operand representing the compiled expression that will evaluate to the property name
 func (c *LiteralCompiler) CompileComputedPropertyName(ctx fql.IComputedPropertyNameContext) bytecode.Operand {
 	// Delegate to the expression compiler to compile the expression inside the brackets
-	return c.ctx.ExprCompiler.Compile(ctx.Expression())
+	return c.exprs.Compile(ctx.Expression())
 }

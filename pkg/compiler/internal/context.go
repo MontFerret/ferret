@@ -4,8 +4,6 @@ import (
 	"encoding/binary"
 	"hash/fnv"
 
-	"github.com/antlr4-go/antlr/v4"
-
 	"github.com/MontFerret/ferret/v2/pkg/source"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -14,96 +12,109 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
-// CompilerContext holds the context for the compilation process, including various compilers and allocators.
-type CompilerContext struct {
-	LoopCompiler        *LoopCompiler
-	Loops               *core.LoopTable
-	Registers           *core.RegisterAllocator
-	Symbols             *core.SymbolTable
-	Constants           *core.ConstantPool
-	Types               *core.TypeTracker
-	UDFScope            *core.UDFScope
-	CatchTable          *core.CatchStack
-	Errors              *diagnostics.ErrorHandler
-	UseAliases          map[string]string
-	Emitter             *core.Emitter
-	UDFs                *core.UDFTable
-	LiteralCompiler     *LiteralCompiler
-	UDFCompiler         *UDFCompiler
-	aggregatePlanByHash map[uint64][]int
-	ExprCompiler        *ExprCompiler
-	DispatchCompiler    *DispatchCompiler
-	StmtCompiler        *StmtCompiler
-	Source              *source.Source
-	LoopSortCompiler    *LoopSortCompiler
-	LoopCollectCompiler *LoopCollectCompiler
-	WaitCompiler        *WaitCompiler
-	OPCompiler          *OperationPolicyCompiler
-	PromotedBindings    map[antlr.ParserRuleContext]struct{}
-	aggregatePlans      []*bytecode.AggregatePlan
-	OptimizationLevel   optimization.Level
+type (
+	// ProgramContext holds state that lives for the entire compilation of one
+	// source file. It is shared across the main body and all UDF compilations.
+	//
+	// Everything in ProgramContext is program-wide: writes from any function
+	// compile (top-level body or a nested UDF body) are observable globally and
+	// persist for the whole compilation. The final bytecode.Program reads its
+	// metadata almost entirely from here.
+	ProgramContext struct {
+		Emitter             *core.Emitter
+		Constants           *core.ConstantPool
+		CatchTable          *core.CatchStack
+		UDFs                *core.UDFTable
+		HostParams          *core.HostParamTable
+		HostFunctions       *core.HostFunctionTable
+		Errors              *diagnostics.ErrorHandler
+		Source              *source.Source
+		UseAliases          map[string]string
+		aggregatePlanByHash map[uint64][]int
+		aggregatePlans      []*bytecode.AggregatePlan
+		OptimizationLevel   optimization.Level
+	}
+
+	// FunctionContext holds state that is local to a single function body
+	// compilation. A fresh FunctionContext is created for the top-level body
+	// and for every UDF body.
+	//
+	// Function-local state is NEVER inherited from an enclosing function: a
+	// nested UDF starts with an empty RegisterAllocator, an empty SymbolTable
+	// (locals and globals), a fresh TypeTracker, a fresh LoopTable, and its
+	// own UDFScope pointing at the UDF's body scope for inner UDF name
+	// lookup. Carrying any of these over from a parent function would produce
+	// wrong bytecode.
+	//
+	// Anything that must be visible across function boundaries (host params,
+	// host function refs, constants, catch table, UDF metadata, the emitter)
+	// lives on ProgramContext instead.
+	FunctionContext struct {
+		Registers *core.RegisterAllocator
+		Symbols   *core.SymbolTable
+		Types     *core.TypeTracker
+		Loops     *core.LoopTable
+		UDFScope  *core.UDFScope
+	}
+
+	// CompilationSession is the thin coordinator passed to all compilers.
+	// It provides access to both program-wide and function-local state.
+	// The Function pointer is swapped by withFunctionCompileState during UDF
+	// compilation; the Program pointer never changes during a single Compile.
+
+	CompilationSession struct {
+		Program  *ProgramContext
+		Function *FunctionContext
+	}
+)
+
+// NewFunctionContext creates a fresh function-local compilation state.
+func NewFunctionContext(constants *core.ConstantPool) *FunctionContext {
+	fc := &FunctionContext{
+		Registers: core.NewRegisterAllocator(),
+		Types:     core.NewTypeTracker(),
+	}
+	fc.Symbols = core.NewSymbolTable(fc.Registers, constants)
+	fc.Loops = core.NewLoopTable(fc.Registers)
+
+	return fc
 }
 
-// NewCompilerContext initializes a new CompilerContext with default values.
-func NewCompilerContext(src *source.Source, errors *diagnostics.ErrorHandler, level optimization.Level) *CompilerContext {
-	ctx := &CompilerContext{
-		Source:              src,
-		Errors:              errors,
-		Emitter:             core.NewEmitter(),
-		Registers:           core.NewRegisterAllocator(),
-		Symbols:             nil, // set later
-		Constants:           core.NewConstantPool(),
-		Loops:               nil, // set later
-		CatchTable:          core.NewCatchStack(),
-		UseAliases:          make(map[string]string),
+// NewCompilationSession initializes a new CompilationSession with default values.
+func NewCompilationSession(src *source.Source, errors *diagnostics.ErrorHandler, level optimization.Level) *CompilationSession {
+	program := &ProgramContext{
+		Source:            src,
+		Errors:            errors,
+		OptimizationLevel: level,
+
+		Emitter:       core.NewEmitter(),
+		Constants:     core.NewConstantPool(),
+		CatchTable:    core.NewCatchStack(),
+		HostParams:    core.NewHostParamTable(),
+		HostFunctions: core.NewHostFunctionTable(),
+
+		UseAliases: make(map[string]string),
+
 		aggregatePlans:      make([]*bytecode.AggregatePlan, 0),
 		aggregatePlanByHash: make(map[uint64][]int),
-		OptimizationLevel:   level,
-		PromotedBindings:    make(map[antlr.ParserRuleContext]struct{}),
 	}
 
-	ctx.Symbols = core.NewSymbolTable(ctx.Registers, ctx.Constants)
-	ctx.Types = core.NewTypeTracker()
-	ctx.Loops = core.NewLoopTable(ctx.Registers)
-
-	ctx.ExprCompiler = NewExprCompiler(ctx)
-	ctx.LiteralCompiler = NewLiteralCompiler(ctx)
-	ctx.StmtCompiler = NewStmtCompiler(ctx)
-	ctx.LoopCompiler = NewLoopCompiler(ctx)
-	ctx.LoopSortCompiler = NewLoopSortCompiler(ctx)
-	ctx.LoopCollectCompiler = NewCollectCompiler(ctx)
-	ctx.WaitCompiler = NewWaitCompiler(ctx)
-	ctx.DispatchCompiler = NewDispatchCompiler(ctx)
-	ctx.UDFCompiler = NewUDFCompiler(ctx)
-	ctx.OPCompiler = NewOperationPolicyCompiler(ctx)
-
-	return ctx
-}
-
-// EmitMoveAuto emits OpMove (plain) when the source is known to be untracked,
-// otherwise emits OpMoveTracked (ownership-aware).
-func (c *CompilerContext) EmitMoveAuto(dst, src bytecode.Operand) {
-	srcType := operandType(c, src)
-
-	if srcType.IsUntracked() {
-		c.Emitter.EmitPlainMove(dst, src)
-	} else {
-		c.Emitter.EmitMoveTracked(dst, src)
+	return &CompilationSession{
+		Program:  program,
+		Function: NewFunctionContext(program.Constants),
 	}
-
-	c.Types.Set(dst, srcType)
 }
 
-func (c *CompilerContext) AddAggregatePlan(plan *bytecode.AggregatePlan) int {
+func (c *ProgramContext) AddAggregatePlan(plan *bytecode.AggregatePlan) int {
 	if plan == nil {
 		return -1
 	}
 
-	hash := aggregatePlanHash(plan)
+	hash := c.aggregatePlanHash(plan)
 
 	if existing, ok := c.aggregatePlanByHash[hash]; ok {
 		for _, idx := range existing {
-			if idx >= 0 && idx < len(c.aggregatePlans) && areAggregatePlansEqual(c.aggregatePlans[idx], plan) {
+			if idx >= 0 && idx < len(c.aggregatePlans) && c.areAggregatePlansEqual(c.aggregatePlans[idx], plan) {
 				return idx
 			}
 		}
@@ -116,7 +127,7 @@ func (c *CompilerContext) AddAggregatePlan(plan *bytecode.AggregatePlan) int {
 	return idx
 }
 
-func (c *CompilerContext) AggregatePlans() []bytecode.AggregatePlan {
+func (c *ProgramContext) AggregatePlans() []bytecode.AggregatePlan {
 	plans := make([]bytecode.AggregatePlan, len(c.aggregatePlans))
 
 	for i, p := range c.aggregatePlans {
@@ -128,7 +139,7 @@ func (c *CompilerContext) AggregatePlans() []bytecode.AggregatePlan {
 	return plans
 }
 
-func areAggregatePlansEqual(a, b *bytecode.AggregatePlan) bool {
+func (c *ProgramContext) areAggregatePlansEqual(a, b *bytecode.AggregatePlan) bool {
 	if len(a.Keys) == 0 || len(b.Keys) == 0 {
 		return a == b
 	}
@@ -146,7 +157,7 @@ func areAggregatePlansEqual(a, b *bytecode.AggregatePlan) bool {
 	return true
 }
 
-func aggregatePlanHash(plan *bytecode.AggregatePlan) uint64 {
+func (c *ProgramContext) aggregatePlanHash(plan *bytecode.AggregatePlan) uint64 {
 	h := fnv.New64a()
 	h.Write([]byte("aggregate_plan:"))
 

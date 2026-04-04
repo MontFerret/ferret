@@ -42,6 +42,13 @@ RETURN status`, "error", "WAITFOR EVENT should choose ON ERROR for runtime failu
 LET status = (WAITFOR EVENT "test" IN obj TIMEOUT 1ms) ON TIMEOUT RETURN "timeout" ON ERROR RETURN "error"
 
 RETURN status`, "error", "Grouped WAITFOR EVENT should choose ON ERROR for runtime failures"),
+		S(`LET obs = @obs
+
+LET evt = WAITFOR EVENT "test" IN obs
+
+RETURN evt.type`, "match", "WAITFOR EVENT should return the received event value").Env(vm.WithParams(map[string]runtime.Value{
+			"obs": matchFirst,
+		})),
 		Fn(`LET obs = @obs
 WAITFOR EVENT "test" IN obs WHEN .type == "match"
 RETURN 1`, ObservableReturnOneAndReads(matchFirst, 1)).Env(vm.WithParams(map[string]runtime.Value{
@@ -51,6 +58,27 @@ RETURN 1`, ObservableReturnOneAndReads(matchFirst, 1)).Env(vm.WithParams(map[str
 WAITFOR EVENT "test" IN obs WHEN .type == "match"
 RETURN 1`, ObservableReturnOneAndReads(matchSecond, 2)).Env(vm.WithParams(map[string]runtime.Value{
 			"obs": matchSecond,
+		})),
+		S(`LET obs = @obs
+
+LET evt = WAITFOR EVENT "test" IN obs WHEN .type == "match"
+
+RETURN evt.type`, "match", "WAITFOR EVENT filter should return the matched event value").Env(vm.WithParams(map[string]runtime.Value{
+			"obs": matchSecond,
+		})),
+		S(`LET obs = @obs
+
+LET evt = WAITFOR EVENT "test" IN obs TIMEOUT 1ms ON TIMEOUT RETURN NONE
+
+RETURN evt.type`, "match", "WAITFOR EVENT timeout-aware success should return the event value").Env(vm.WithParams(map[string]runtime.Value{
+			"obs": matchFirst,
+		})),
+		S(`LET obs = @obs
+
+LET evt = WAITFOR EVENT "test" IN obs ON ERROR RETURN NONE
+
+RETURN evt.type`, "match", "WAITFOR EVENT protected recovery success should return the event value").Env(vm.WithParams(map[string]runtime.Value{
+			"obs": matchFirst,
 		})),
 		S(`LET obs = @obs
 

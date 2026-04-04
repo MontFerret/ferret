@@ -18,7 +18,7 @@ func NewObservable(events []runtime.Value) *Observable {
 	}
 }
 
-func (o *Observable) Subscribe(ctx context.Context, subscription runtime.Subscription) (runtime.Stream, error) {
+func (o *Observable) Subscribe(_ context.Context, _ runtime.Subscription) (runtime.Stream, error) {
 	atomic.StoreInt32(&o.readCount, 0)
 
 	ch := make(chan runtime.Message, len(o.events))

@@ -1,8 +1,6 @@
 package internal
 
 import (
-	"github.com/antlr4-go/antlr/v4"
-
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
@@ -20,12 +18,4 @@ func textOfLoopVariable(loopVar fql.ILoopVariableContext) string {
 	}
 
 	return loopVar.GetText()
-}
-
-func tokenOfLoopVariable(loopVar fql.ILoopVariableContext) antlr.Token {
-	if loopVar == nil {
-		return nil
-	}
-
-	return loopVar.GetStart()
 }

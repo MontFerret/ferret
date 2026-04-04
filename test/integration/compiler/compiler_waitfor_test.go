@@ -30,5 +30,37 @@ func TestWaitforCompilationErrors(t *testing.T) {
 			Message: "JITTER must be between 0 and 1",
 			Hint:    "Use a value between 0 and 1, e.g. JITTER 0.2.",
 		}, "Out-of-range JITTER should fail compilation"),
+		Failure(`
+			LET ok = WAITFOR TRUE TIMEOUT 1e999s
+			RETURN ok
+		`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Duration literal is out of range",
+			Hint:    "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m.",
+		}, "Out-of-range WAITFOR TIMEOUT duration should fail compilation"),
+		Failure(`
+			LET ok = WAITFOR TRUE EVERY 1e999s
+			RETURN ok
+		`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Duration literal is out of range",
+			Hint:    "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m.",
+		}, "Out-of-range WAITFOR EVERY duration should fail compilation"),
+		Failure(`
+			LET ok = WAITFOR TRUE TIMEOUT 1e20
+			RETURN ok
+		`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Duration literal is out of range",
+			Hint:    "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m.",
+		}, "Out-of-range WAITFOR TIMEOUT float constant should fail compilation"),
+		Failure(`
+			LET ok = WAITFOR TRUE EVERY 1e20
+			RETURN ok
+		`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Duration literal is out of range",
+			Hint:    "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m.",
+		}, "Out-of-range WAITFOR EVERY float constant should fail compilation"),
 	})
 }

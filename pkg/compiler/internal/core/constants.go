@@ -1,8 +1,6 @@
 package core
 
 import (
-	"fmt"
-
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -46,13 +44,13 @@ func (cp *ConstantPool) Add(val runtime.Value) bytecode.Operand {
 
 func (cp *ConstantPool) Get(addr bytecode.Operand) runtime.Value {
 	if !addr.IsConstant() {
-		panic(fmt.Errorf("invalid operand type used in the constant pool: %s", addr))
+		PanicInvariantf("invalid operand used in the constant pool: %s", addr)
 	}
 
 	idx := addr.Constant()
 
 	if idx < 0 || idx >= len(cp.values) {
-		panic(fmt.Errorf("invalid operand type used in the constant pool: %s", addr))
+		PanicInvariantf("constant operand out of range: %s", addr)
 	}
 
 	return cp.values[idx]

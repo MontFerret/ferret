@@ -15,13 +15,28 @@ import (
 )
 
 type DispatchCompiler struct {
-	ctx *CompilerContext
+	ctx      *CompilationSession
+	exprs    *ExprCompiler
+	literals *LiteralCompiler
+	recovery *RecoveryCompiler
+	facts    *TypeFacts
 }
 
-func NewDispatchCompiler(ctx *CompilerContext) *DispatchCompiler {
+func NewDispatchCompiler(ctx *CompilationSession) *DispatchCompiler {
 	return &DispatchCompiler{
 		ctx: ctx,
 	}
+}
+
+func (c *DispatchCompiler) bind(exprs *ExprCompiler, literals *LiteralCompiler, recovery *RecoveryCompiler, facts *TypeFacts) {
+	if c == nil {
+		return
+	}
+
+	c.exprs = exprs
+	c.literals = literals
+	c.recovery = recovery
+	c.facts = facts
 }
 
 func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) bytecode.Operand {
@@ -29,25 +44,28 @@ func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) bytecode.
 		return bytecode.NoopOperand
 	}
 
-	plan := collectRecoveryPlan(c.ctx, ctx, core.RecoveryPlanOptions{})
-	return c.ctx.OPCompiler.CompileWithRecoveryPlan(plan, core.CatchJumpModeNone, func() bytecode.Operand {
-		targetReg := c.ensureRegister(c.compileTarget(ctx.DispatchTarget()))
-		eventReg := c.ensureRegister(c.compileEventName(ctx.DispatchEventName()))
-		payloadReg := c.ensureRegister(c.compilePayload(ctx.DispatchWithClause()))
-		optionsReg := c.ensureRegister(c.compileOptions(ctx.DispatchOptionsClause()))
-		argsReg := c.buildDispatchArgs(payloadReg, optionsReg)
+	return c.recovery.CompileOperation(OperationRecoverySpec{
+		Owner:    ctx,
+		JumpMode: core.CatchJumpModeNone,
+		CompilePlain: func() bytecode.Operand {
+			targetReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compileTarget(ctx.DispatchTarget()))
+			eventReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compileEventName(ctx.DispatchEventName()))
+			payloadReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compilePayload(ctx.DispatchWithClause()))
+			optionsReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compileOptions(ctx.DispatchOptionsClause()))
+			argsReg := c.buildDispatchArgs(payloadReg, optionsReg)
 
-		dst := c.ctx.Registers.Allocate()
-		span := dispatchSpan(ctx)
+			dst := c.ctx.Function.Registers.Allocate()
+			span := c.dispatchSpan(ctx)
 
-		c.ctx.Emitter.WithSpan(span, func() {
-			c.ctx.Emitter.EmitMove(dst, targetReg)
-			c.ctx.Emitter.EmitABC(bytecode.OpDispatch, dst, eventReg, argsReg)
-		})
+			c.ctx.Program.Emitter.WithSpan(span, func() {
+				c.ctx.Program.Emitter.EmitMove(dst, targetReg)
+				c.ctx.Program.Emitter.EmitABC(bytecode.OpDispatch, dst, eventReg, argsReg)
+			})
 
-		c.ctx.Types.Set(dst, core.TypeNone)
+			c.ctx.Function.Types.Set(dst, core.TypeNone)
 
-		return dst
+			return dst
+		},
 	})
 }
 
@@ -57,23 +75,23 @@ func (c *DispatchCompiler) compileEventName(ctx fql.IDispatchEventNameContext) b
 	}
 
 	if sl := ctx.StringLiteral(); sl != nil {
-		return c.ctx.LiteralCompiler.CompileStringLiteral(sl)
+		return c.literals.CompileStringLiteral(sl)
 	}
 
 	if v := ctx.Variable(); v != nil {
-		return c.ctx.ExprCompiler.CompileVariable(v)
+		return c.exprs.CompileVariable(v)
 	}
 
 	if p := ctx.Param(); p != nil {
-		return c.ctx.ExprCompiler.CompileParam(p)
+		return c.exprs.CompileParam(p)
 	}
 
 	if me := ctx.MemberExpression(); me != nil {
-		return c.ctx.ExprCompiler.CompileMemberExpression(me)
+		return c.exprs.CompileMemberExpression(me)
 	}
 
 	if fc := ctx.FunctionCall(); fc != nil {
-		return c.ctx.ExprCompiler.CompileFunctionCall(fc, false)
+		return c.exprs.CompileFunctionCall(fc, false)
 	}
 
 	return bytecode.NoopOperand
@@ -85,19 +103,19 @@ func (c *DispatchCompiler) compileTarget(ctx fql.IDispatchTargetContext) bytecod
 	}
 
 	if v := ctx.Variable(); v != nil {
-		return c.ctx.ExprCompiler.CompileVariable(v)
+		return c.exprs.CompileVariable(v)
 	}
 
 	if p := ctx.Param(); p != nil {
-		return c.ctx.ExprCompiler.CompileParam(p)
+		return c.exprs.CompileParam(p)
 	}
 
 	if me := ctx.MemberExpression(); me != nil {
-		return c.ctx.ExprCompiler.CompileMemberExpression(me)
+		return c.exprs.CompileMemberExpression(me)
 	}
 
 	if fc := ctx.FunctionCallExpression(); fc != nil {
-		return c.ctx.ExprCompiler.CompileFunctionCallExpression(fc)
+		return c.exprs.CompileFunctionCallExpression(fc)
 	}
 
 	return bytecode.NoopOperand
@@ -105,50 +123,34 @@ func (c *DispatchCompiler) compileTarget(ctx fql.IDispatchTargetContext) bytecod
 
 func (c *DispatchCompiler) compilePayload(ctx fql.IDispatchWithClauseContext) bytecode.Operand {
 	if ctx == nil || ctx.Expression() == nil {
-		return loadConstant(c.ctx, runtime.None)
+		return c.facts.LoadConstant(runtime.None)
 	}
 
-	return c.ctx.ExprCompiler.Compile(ctx.Expression())
+	return c.exprs.Compile(ctx.Expression())
 }
 
 func (c *DispatchCompiler) compileOptions(ctx fql.IDispatchOptionsClauseContext) bytecode.Operand {
 	if ctx == nil || ctx.Expression() == nil {
-		return loadConstant(c.ctx, runtime.None)
+		return c.facts.LoadConstant(runtime.None)
 	}
 
-	return c.ctx.ExprCompiler.Compile(ctx.Expression())
+	return c.exprs.Compile(ctx.Expression())
 }
 
 func (c *DispatchCompiler) buildDispatchArgs(payload, options bytecode.Operand) bytecode.Operand {
-	dst := c.ctx.Registers.Allocate()
-	payloadKey := c.ctx.Symbols.AddConstant(runtime.NewString("payload"))
-	optionsKey := c.ctx.Symbols.AddConstant(runtime.NewString("options"))
+	dst := c.ctx.Function.Registers.Allocate()
+	payloadKey := c.ctx.Function.Symbols.AddConstant(runtime.NewString("payload"))
+	optionsKey := c.ctx.Function.Symbols.AddConstant(runtime.NewString("options"))
 
-	c.ctx.Emitter.EmitObject(dst, 2)
-	c.ctx.Emitter.EmitObjectSetConst(dst, payloadKey, payload)
-	c.ctx.Emitter.EmitObjectSetConst(dst, optionsKey, options)
-	c.ctx.Types.Set(dst, core.TypeObject)
-
-	return dst
-}
-
-func (c *DispatchCompiler) ensureRegister(op bytecode.Operand) bytecode.Operand {
-	if op == bytecode.NoopOperand {
-		return loadConstant(c.ctx, runtime.None)
-	}
-
-	if op.IsRegister() {
-		return op
-	}
-
-	dst := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitLoadConst(dst, op)
-	c.ctx.Types.Set(dst, operandType(c.ctx, op))
+	c.ctx.Program.Emitter.EmitObject(dst, 2)
+	c.ctx.Program.Emitter.EmitObjectSetConst(dst, payloadKey, payload)
+	c.ctx.Program.Emitter.EmitObjectSetConst(dst, optionsKey, options)
+	c.ctx.Function.Types.Set(dst, core.TypeObject)
 
 	return dst
 }
 
-func dispatchSpan(ctx fql.IDispatchExpressionContext) source.Span {
+func (c *DispatchCompiler) dispatchSpan(ctx fql.IDispatchExpressionContext) source.Span {
 	if ctx == nil {
 		return source.Span{Start: -1, End: -1}
 	}

@@ -1,16 +1,21 @@
 package internal
 
 import (
-	"strconv"
-	"strings"
-
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func valueTypeFromRuntime(value runtime.Value) core.ValueType {
+type TypeFacts struct {
+	session *CompilationSession
+}
+
+func NewTypeFacts(session *CompilationSession) *TypeFacts {
+	return &TypeFacts{session: session}
+}
+
+func (f *TypeFacts) ValueTypeFromRuntime(value runtime.Value) core.ValueType {
 	if value == runtime.None {
 		return core.TypeNone
 	}
@@ -33,7 +38,7 @@ func valueTypeFromRuntime(value runtime.Value) core.ValueType {
 	}
 }
 
-func literalType(ctx fql.ILiteralContext) core.ValueType {
+func (f *TypeFacts) LiteralType(ctx fql.ILiteralContext) core.ValueType {
 	if ctx == nil {
 		return core.TypeUnknown
 	}
@@ -58,95 +63,61 @@ func literalType(ctx fql.ILiteralContext) core.ValueType {
 	}
 }
 
-func literalValue(ctx fql.ILiteralContext) (runtime.Value, bool) {
-	if ctx == nil {
-		return nil, false
-	}
-
-	switch {
-	case ctx.NoneLiteral() != nil:
-		return runtime.None, true
-	case ctx.StringLiteral() != nil:
-		return parseStringLiteralConst(ctx.StringLiteral())
-	case ctx.IntegerLiteral() != nil:
-		val, err := strconv.Atoi(ctx.IntegerLiteral().GetText())
-		if err != nil {
-			return nil, false
-		}
-		return runtime.NewInt(val), true
-	case ctx.FloatLiteral() != nil:
-		val, err := strconv.ParseFloat(ctx.FloatLiteral().GetText(), 64)
-		if err != nil {
-			return nil, false
-		}
-		return runtime.NewFloat(val), true
-	case ctx.BooleanLiteral() != nil:
-		switch strings.ToLower(ctx.BooleanLiteral().GetText()) {
-		case "true":
-			return runtime.True, true
-		case "false":
-			return runtime.False, true
-		}
-	case ctx.ArrayLiteral() != nil:
-		return runtime.NewArray(0), true
-	case ctx.ObjectLiteral() != nil:
-		return runtime.NewObject(), true
-	}
-
-	return nil, false
+func (f *TypeFacts) LiteralValue(ctx fql.ILiteralContext) (runtime.Value, bool) {
+	return literalValueOf(ctx)
 }
 
-func literalValueFromExpression(ctx fql.IExpressionContext) (runtime.Value, bool) {
+func (f *TypeFacts) LiteralValueFromExpression(ctx fql.IExpressionContext) (runtime.Value, bool) {
 	if ctx == nil {
 		return nil, false
 	}
 
 	if p := ctx.Predicate(); p != nil {
-		return literalValueFromPredicate(p)
+		return f.LiteralValueFromPredicate(p)
 	}
 
 	return nil, false
 }
 
-func literalValueFromPredicate(ctx fql.IPredicateContext) (runtime.Value, bool) {
+func (f *TypeFacts) LiteralValueFromPredicate(ctx fql.IPredicateContext) (runtime.Value, bool) {
 	if ctx == nil {
 		return nil, false
 	}
 
 	if atom := ctx.ExpressionAtom(); atom != nil {
-		return literalValueFromAtom(atom)
+		return f.LiteralValueFromAtom(atom)
 	}
 
 	return nil, false
 }
 
-func literalValueFromAtom(ctx fql.IExpressionAtomContext) (runtime.Value, bool) {
+func (f *TypeFacts) LiteralValueFromAtom(ctx fql.IExpressionAtomContext) (runtime.Value, bool) {
 	if ctx == nil {
 		return nil, false
 	}
 
 	if lit := ctx.Literal(); lit != nil {
-		return literalValue(lit)
+		return f.LiteralValue(lit)
 	}
 
 	return nil, false
 }
 
-func operandType(ctx *CompilerContext, op bytecode.Operand) core.ValueType {
-	if ctx == nil {
+func (f *TypeFacts) OperandType(op bytecode.Operand) core.ValueType {
+	if f == nil || f.session == nil {
 		return core.TypeUnknown
 	}
 
 	if op.IsConstant() {
-		return valueTypeFromRuntime(ctx.Symbols.Constant(op))
+		return f.ValueTypeFromRuntime(f.session.Function.Symbols.Constant(op))
 	}
 
-	return ctx.Types.Resolve(op)
+	return f.session.Function.Types.Resolve(op)
 }
 
-func inferBinaryResultType(ctx *CompilerContext, op atomBinaryOperator, left, right bytecode.Operand) core.ValueType {
-	leftType := operandType(ctx, left)
-	rightType := operandType(ctx, right)
+func (f *TypeFacts) InferBinaryResultType(op atomBinaryOperator, left, right bytecode.Operand) core.ValueType {
+	leftType := f.OperandType(left)
+	rightType := f.OperandType(right)
 
 	switch op.opcode {
 	case bytecode.OpAdd:
@@ -167,4 +138,24 @@ func inferBinaryResultType(ctx *CompilerContext, op atomBinaryOperator, left, ri
 	}
 
 	return core.TypeUnknown
+}
+
+func (f *TypeFacts) LoadConstant(value runtime.Value) bytecode.Operand {
+	reg := f.session.Function.Registers.Allocate()
+	f.session.Program.Emitter.EmitLoadConst(reg, f.session.Function.Symbols.AddConstant(value))
+	f.session.Function.Types.Set(reg, f.ValueTypeFromRuntime(value))
+
+	return reg
+}
+
+func (f *TypeFacts) EmitMoveAuto(dst, src bytecode.Operand) {
+	srcType := f.OperandType(src)
+
+	if srcType.IsUntracked() {
+		f.session.Program.Emitter.EmitPlainMove(dst, src)
+	} else {
+		f.session.Program.Emitter.EmitMoveTracked(dst, src)
+	}
+
+	f.session.Function.Types.Set(dst, srcType)
 }

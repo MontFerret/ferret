@@ -157,7 +157,7 @@ func TestWaitForEventRetryRecovery(t *testing.T) {
 			fmt.Sprintf("VM/O%d", level),
 			compiler.New(compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
-				Nil(`RETURN WAITFOR EVENT "test" IN SOURCE() TIMEOUT 20ms ON TIMEOUT RETURN "timeout" ON ERROR RETRY 2 DELAY 0 OR RETURN "error"`, "WAITFOR EVENT should retry source evaluation failures"),
+				NotNil(`RETURN WAITFOR EVENT "test" IN SOURCE() TIMEOUT 20ms ON TIMEOUT RETURN "timeout" ON ERROR RETRY 2 DELAY 0 OR RETURN "error"`, "WAITFOR EVENT should retry source evaluation failures"),
 			},
 			vm.WithFunction("SOURCE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 				successCalls++

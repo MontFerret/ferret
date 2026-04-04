@@ -195,7 +195,7 @@ func (l *Loop) emitForInLoopIteration(alloc *RegisterAllocator, emitter *Emitter
 
 func (l *Loop) emitForWhileLoopIteration(_ *RegisterAllocator, emitter *Emitter) {
 	if l.ConditionFn == nil {
-		panic("condition function must be defined for while loop")
+		PanicInvariant("condition function must be defined for while loop")
 	}
 
 	if l.Value != bytecode.NoopOperand {
@@ -223,7 +223,7 @@ func (l *Loop) emitForWhileLoopIteration(_ *RegisterAllocator, emitter *Emitter)
 
 func (l *Loop) emitForDoWhileLoopIteration(_ *RegisterAllocator, emitter *Emitter) {
 	if l.ConditionFn == nil {
-		panic("condition function must be defined for while loop")
+		PanicInvariant("condition function must be defined for while loop")
 	}
 
 	if l.Value != bytecode.NoopOperand {

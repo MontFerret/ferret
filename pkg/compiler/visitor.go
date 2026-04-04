@@ -14,13 +14,15 @@ import (
 
 type Visitor struct {
 	*fql.BaseFqlParserVisitor
-	Ctx *internal.CompilerContext
+	Session  *internal.CompilationSession
+	Frontend *internal.CompilationFrontend
 }
 
 func NewVisitor(src *source.Source, errors *parser.ErrorHandler, level optimization.Level) *Visitor {
 	v := new(Visitor)
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
-	v.Ctx = internal.NewCompilerContext(src, errors, level)
+	v.Session = internal.NewCompilationSession(src, errors, level)
+	v.Frontend = internal.NewCompilationFrontend(v.Session)
 
 	return v
 }
@@ -30,13 +32,14 @@ func (v *Visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
 		v.VisitHead(head.(*fql.HeadContext))
 	}
 
-	v.Ctx.UDFs = internal.CollectUDFs(v.Ctx, ctx)
-	if v.Ctx.UDFs != nil {
-		v.Ctx.UDFScope = v.Ctx.UDFs.GlobalScope
+	v.Frontend.UDFCatalog.BuildCatalog(ctx)
+	if ctx != nil {
+		if body, ok := ctx.Body().(*fql.BodyContext); ok {
+			v.Frontend.CaptureAnalyzer.AnalyzeProgram(body)
+		}
 	}
-
-	v.Ctx.StmtCompiler.Compile(ctx.Body())
-	v.Ctx.UDFCompiler.CompileAll()
+	v.Frontend.Statements.Compile(ctx.Body())
+	v.Frontend.UDFs.CompileAll()
 
 	return nil
 }
@@ -74,15 +77,15 @@ func (v *Visitor) VisitHead(ctx *fql.HeadContext) interface{} {
 		return nil
 	}
 
-	if existing, ok := v.Ctx.UseAliases[alias]; ok {
+	if existing, ok := v.Session.Program.UseAliases[alias]; ok {
 		if existing != namespace {
-			v.Ctx.Errors.Add(v.Ctx.Errors.Create(parser.NameError, ctx, fmt.Sprintf("USE alias '%s' is already defined", alias)))
+			v.Session.Program.Errors.Add(v.Session.Program.Errors.Create(parser.NameError, ctx, fmt.Sprintf("USE alias '%s' is already defined", alias)))
 		}
 
 		return nil
 	}
 
-	v.Ctx.UseAliases[alias] = namespace
+	v.Session.Program.UseAliases[alias] = namespace
 
 	return nil
 }

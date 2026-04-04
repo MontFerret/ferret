@@ -42,12 +42,12 @@ func buildConcatOperandSegmentsFromExpression(c *ExprCompiler, expr fql.IExpress
 }
 
 func buildConcatOperandSegmentsFromAtom(c *ExprCompiler, atom fql.IExpressionAtomContext) ([]concatOperandSegment, bool) {
-	if c == nil || !isConcatCompatibleAdditive(c.ctx, atom) {
+	if c == nil || !isConcatCompatibleAdditive(c.ctx, c.facts, atom) {
 		return nil, false
 	}
 
 	parts := make([]concatAtomPart, 0, 4)
-	collectConcatAtomParts(c.ctx, atom, &parts)
+	collectConcatAtomParts(c.ctx, c.facts, atom, &parts)
 
 	segments := make([]concatOperandSegment, 0, len(parts))
 
@@ -66,27 +66,27 @@ func buildConcatOperandSegmentsFromAtom(c *ExprCompiler, atom fql.IExpressionAto
 	return segments, true
 }
 
-func collectConcatAtomParts(ctx *CompilerContext, atom fql.IExpressionAtomContext, parts *[]concatAtomPart) {
+func collectConcatAtomParts(ctx *CompilationSession, facts *TypeFacts, atom fql.IExpressionAtomContext, parts *[]concatAtomPart) {
 	if atom == nil || parts == nil {
 		return
 	}
 
-	if !isConcatCompatibleAdditive(ctx, atom) {
-		appendConcatAtomPart(ctx, atom, parts)
+	if !isConcatCompatibleAdditive(ctx, facts, atom) {
+		appendConcatAtomPart(ctx, facts, atom, parts)
 		return
 	}
 
-	appendConcatAtomPart(ctx, atom.ExpressionAtom(0), parts)
-	appendConcatAtomPart(ctx, atom.ExpressionAtom(1), parts)
+	appendConcatAtomPart(ctx, facts, atom.ExpressionAtom(0), parts)
+	appendConcatAtomPart(ctx, facts, atom.ExpressionAtom(1), parts)
 }
 
-func appendConcatAtomPart(ctx *CompilerContext, atom fql.IExpressionAtomContext, parts *[]concatAtomPart) {
+func appendConcatAtomPart(ctx *CompilationSession, facts *TypeFacts, atom fql.IExpressionAtomContext, parts *[]concatAtomPart) {
 	if atom == nil || parts == nil {
 		return
 	}
 
-	if isConcatCompatibleAdditive(ctx, atom) {
-		collectConcatAtomParts(ctx, atom, parts)
+	if isConcatCompatibleAdditive(ctx, facts, atom) {
+		collectConcatAtomParts(ctx, facts, atom, parts)
 		return
 	}
 
@@ -98,7 +98,7 @@ func appendConcatAtomPart(ctx *CompilerContext, atom fql.IExpressionAtomContext,
 	*parts = append(*parts, concatAtomPart{atom: atom})
 }
 
-func isConcatCompatibleAdditive(ctx *CompilerContext, atom fql.IExpressionAtomContext) bool {
+func isConcatCompatibleAdditive(ctx *CompilationSession, facts *TypeFacts, atom fql.IExpressionAtomContext) bool {
 	if ctx == nil || atom == nil {
 		return false
 	}
@@ -108,48 +108,48 @@ func isConcatCompatibleAdditive(ctx *CompilerContext, atom fql.IExpressionAtomCo
 		return false
 	}
 
-	return inferConcatAtomType(ctx, atom) == core.TypeString
+	return inferConcatAtomType(ctx, facts, atom) == core.TypeString
 }
 
-func inferConcatExpressionType(ctx *CompilerContext, expr fql.IExpressionContext) core.ValueType {
+func inferConcatExpressionType(ctx *CompilationSession, facts *TypeFacts, expr fql.IExpressionContext) core.ValueType {
 	if expr == nil {
 		return core.TypeUnknown
 	}
 
 	if predicate := expr.Predicate(); predicate != nil {
-		return inferConcatPredicateType(ctx, predicate)
+		return inferConcatPredicateType(ctx, facts, predicate)
 	}
 
 	return core.TypeUnknown
 }
 
-func inferConcatPredicateType(ctx *CompilerContext, predicate fql.IPredicateContext) core.ValueType {
+func inferConcatPredicateType(ctx *CompilationSession, facts *TypeFacts, predicate fql.IPredicateContext) core.ValueType {
 	if predicate == nil {
 		return core.TypeUnknown
 	}
 
 	if atom := predicate.ExpressionAtom(); atom != nil {
-		return inferConcatAtomType(ctx, atom)
+		return inferConcatAtomType(ctx, facts, atom)
 	}
 
 	return core.TypeUnknown
 }
 
-func inferConcatAtomType(ctx *CompilerContext, atom fql.IExpressionAtomContext) core.ValueType {
+func inferConcatAtomType(ctx *CompilationSession, facts *TypeFacts, atom fql.IExpressionAtomContext) core.ValueType {
 	if ctx == nil || atom == nil {
 		return core.TypeUnknown
 	}
 
 	if lit := atom.Literal(); lit != nil {
-		return literalType(lit)
+		return facts.LiteralType(lit)
 	}
 
 	if inner := atom.Expression(); inner != nil {
-		return inferConcatExpressionType(ctx, inner)
+		return inferConcatExpressionType(ctx, facts, inner)
 	}
 
 	if v := atom.Variable(); v != nil {
-		if binding, ok := ctx.Symbols.ResolveBinding(v.GetText()); ok {
+		if binding, ok := ctx.Function.Symbols.ResolveBinding(v.GetText()); ok {
 			return binding.Type
 		}
 
@@ -171,8 +171,8 @@ func inferConcatAtomType(ctx *CompilerContext, atom fql.IExpressionAtomContext) 
 		left := atom.ExpressionAtom(0)
 		right := atom.ExpressionAtom(1)
 
-		leftType := inferConcatAtomType(ctx, left)
-		rightType := inferConcatAtomType(ctx, right)
+		leftType := inferConcatAtomType(ctx, facts, left)
+		rightType := inferConcatAtomType(ctx, facts, right)
 
 		if op.GetText() == "+" {
 			switch {
@@ -205,8 +205,8 @@ func inferConcatAtomType(ctx *CompilerContext, atom fql.IExpressionAtomContext) 
 	}
 
 	if op := atom.MultiplicativeOperator(); op != nil {
-		left := inferConcatAtomType(ctx, atom.ExpressionAtom(0))
-		right := inferConcatAtomType(ctx, atom.ExpressionAtom(1))
+		left := inferConcatAtomType(ctx, facts, atom.ExpressionAtom(0))
+		right := inferConcatAtomType(ctx, facts, atom.ExpressionAtom(1))
 
 		if left == core.TypeFloat || right == core.TypeFloat {
 			if isNumericType(left) && isNumericType(right) {
@@ -280,7 +280,7 @@ func tryConcatConstValueFromAtom(atom fql.IExpressionAtomContext) (runtime.Value
 	}
 
 	if lit := atom.Literal(); lit != nil {
-		return literalValue(lit)
+		return literalValueOf(lit)
 	}
 
 	if inner := atom.Expression(); inner != nil {
@@ -325,66 +325,66 @@ func tryConstConcatStringFromValue(val runtime.Value) (runtime.String, bool) {
 	}
 }
 
-func emitConcatOperandSegments(ctx *CompilerContext, parts []concatOperandSegment) bytecode.Operand {
+func emitConcatOperandSegments(ctx *CompilationSession, facts *TypeFacts, parts []concatOperandSegment) bytecode.Operand {
 	if ctx == nil {
 		return bytecode.NoopOperand
 	}
 
 	merged := mergeConcatOperandSegments(parts)
 	if len(merged) == 0 {
-		return loadConstant(ctx, runtime.EmptyString)
+		return facts.LoadConstant(runtime.EmptyString)
 	}
 
 	if len(merged) == 1 {
 		part := merged[0]
 		if part.operand == bytecode.NoopOperand {
-			return loadConstant(ctx, part.literal)
+			return facts.LoadConstant(part.literal)
 		}
 
-		start := ensureConcatRegister(ctx, part.operand)
+		start := ensureConcatRegister(ctx, facts, part.operand)
 		if !start.IsRegister() {
 			return bytecode.NoopOperand
 		}
 
-		ctx.Emitter.EmitABC(bytecode.OpConcat, start, start, bytecode.Operand(1))
-		ctx.Types.Set(start, core.TypeString)
+		ctx.Program.Emitter.EmitABC(bytecode.OpConcat, start, start, bytecode.Operand(1))
+		ctx.Function.Types.Set(start, core.TypeString)
 
 		return start
 	}
 
 	if len(merged) == 2 && merged[0].operand != bytecode.NoopOperand && merged[1].operand == bytecode.NoopOperand {
-		left := ensureConcatRegister(ctx, merged[0].operand)
+		left := ensureConcatRegister(ctx, facts, merged[0].operand)
 		if !left.IsRegister() {
 			return bytecode.NoopOperand
 		}
 
-		dst := ctx.Registers.Allocate()
-		ctx.Emitter.EmitABC(bytecode.OpAddConst, dst, left, ctx.Symbols.AddConstant(merged[1].literal))
-		ctx.Types.Set(dst, core.TypeString)
+		dst := ctx.Function.Registers.Allocate()
+		ctx.Program.Emitter.EmitABC(bytecode.OpAddConst, dst, left, ctx.Function.Symbols.AddConstant(merged[1].literal))
+		ctx.Function.Types.Set(dst, core.TypeString)
 
 		return dst
 	}
 
-	seq := ctx.Registers.AllocateSequence(len(merged))
+	seq := ctx.Function.Registers.AllocateSequence(len(merged))
 
 	for i, part := range merged {
 		target := seq[i]
 
 		if part.operand != bytecode.NoopOperand {
-			if !loadConcatOperandIntoRegister(ctx, target, part.operand) {
+			if !loadConcatOperandIntoRegister(ctx, facts, target, part.operand) {
 				return bytecode.NoopOperand
 			}
 
 			continue
 		}
 
-		ctx.Emitter.EmitLoadConst(target, ctx.Symbols.AddConstant(part.literal))
-		ctx.Types.Set(target, core.TypeString)
+		ctx.Program.Emitter.EmitLoadConst(target, ctx.Function.Symbols.AddConstant(part.literal))
+		ctx.Function.Types.Set(target, core.TypeString)
 	}
 
 	dst := seq[0]
-	ctx.Emitter.EmitABC(bytecode.OpConcat, dst, seq[0], bytecode.Operand(len(seq)))
-	ctx.Types.Set(dst, core.TypeString)
+	ctx.Program.Emitter.EmitABC(bytecode.OpConcat, dst, seq[0], bytecode.Operand(len(seq)))
+	ctx.Function.Types.Set(dst, core.TypeString)
 
 	return dst
 }
@@ -427,7 +427,7 @@ func mergeConcatOperandSegments(parts []concatOperandSegment) []concatOperandSeg
 	return merged
 }
 
-func ensureConcatRegister(ctx *CompilerContext, op bytecode.Operand) bytecode.Operand {
+func ensureConcatRegister(ctx *CompilationSession, facts *TypeFacts, op bytecode.Operand) bytecode.Operand {
 	if op == bytecode.NoopOperand || ctx == nil {
 		return bytecode.NoopOperand
 	}
@@ -436,21 +436,21 @@ func ensureConcatRegister(ctx *CompilerContext, op bytecode.Operand) bytecode.Op
 		return op
 	}
 
-	reg := ctx.Registers.Allocate()
-	ctx.Emitter.EmitLoadConst(reg, op)
-	ctx.Types.Set(reg, operandType(ctx, op))
+	reg := ctx.Function.Registers.Allocate()
+	ctx.Program.Emitter.EmitLoadConst(reg, op)
+	ctx.Function.Types.Set(reg, facts.OperandType(op))
 
 	return reg
 }
 
-func loadConcatOperandIntoRegister(ctx *CompilerContext, target, op bytecode.Operand) bool {
+func loadConcatOperandIntoRegister(ctx *CompilationSession, facts *TypeFacts, target, op bytecode.Operand) bool {
 	if ctx == nil || target == bytecode.NoopOperand || op == bytecode.NoopOperand {
 		return false
 	}
 
 	if op.IsConstant() {
-		ctx.Emitter.EmitLoadConst(target, op)
-		ctx.Types.Set(target, operandType(ctx, op))
+		ctx.Program.Emitter.EmitLoadConst(target, op)
+		ctx.Function.Types.Set(target, facts.OperandType(op))
 		return true
 	}
 
@@ -459,10 +459,10 @@ func loadConcatOperandIntoRegister(ctx *CompilerContext, target, op bytecode.Ope
 	}
 
 	if !op.Equals(target) {
-		ctx.Emitter.EmitMove(target, op)
+		ctx.Program.Emitter.EmitMove(target, op)
 	}
 
-	ctx.Types.Set(target, operandType(ctx, op))
+	ctx.Function.Types.Set(target, facts.OperandType(op))
 
 	return true
 }

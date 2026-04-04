@@ -14,7 +14,7 @@ func Nil(actual any) error {
 		return nil
 	}
 
-	return fmt.Errorf("actual value is not nil")
+	return fmt.Errorf("actual value is not nil: %v", actual)
 }
 
 func NotNil(actual any) error {

@@ -24,18 +24,18 @@ type (
 	}
 )
 
-func compileScalarLiteralOperand(ctx *CompilerContext, lit scalarLiteralNode) bytecode.Operand {
+func compileScalarLiteralOperand(ctx *CompilationSession, literals *LiteralCompiler, lit scalarLiteralNode) bytecode.Operand {
 	if lit == nil {
 		return bytecode.NoopOperand
 	}
 
 	if lit.NoneLiteral() != nil {
-		return ctx.Symbols.AddConstant(runtime.None)
+		return ctx.Function.Symbols.AddConstant(runtime.None)
 	}
 
 	if bl := lit.BooleanLiteral(); bl != nil {
 		if val, ok := literalBooleanValue(bl.GetText()); ok {
-			return ctx.Symbols.AddConstant(val)
+			return ctx.Function.Symbols.AddConstant(val)
 		}
 
 		return bytecode.NoopOperand
@@ -43,28 +43,26 @@ func compileScalarLiteralOperand(ctx *CompilerContext, lit scalarLiteralNode) by
 
 	if sl := lit.StringLiteral(); sl != nil {
 		if val, ok := parseStringLiteralConst(sl); ok {
-			return ctx.Symbols.AddConstant(val)
+			return ctx.Function.Symbols.AddConstant(val)
 		}
 
-		return ctx.LiteralCompiler.CompileStringLiteral(sl)
+		return literals.CompileStringLiteral(sl)
 	}
 
 	if fl := lit.FloatLiteral(); fl != nil {
-		val, err := strconv.ParseFloat(fl.GetText(), 64)
-		if err != nil {
-			panic(err)
+		if val, ok := literalFloatValue(fl.GetText()); ok {
+			return ctx.Function.Symbols.AddConstant(val)
 		}
 
-		return ctx.Symbols.AddConstant(runtime.NewFloat(val))
+		return literals.CompileFloatLiteral(fl)
 	}
 
 	if il := lit.IntegerLiteral(); il != nil {
-		val, err := strconv.Atoi(il.GetText())
-		if err != nil {
-			panic(err)
+		if val, ok := literalIntValue(il.GetText()); ok {
+			return ctx.Function.Symbols.AddConstant(val)
 		}
 
-		return ctx.Symbols.AddConstant(runtime.NewInt(val))
+		return literals.CompileIntegerLiteral(il)
 	}
 
 	return bytecode.NoopOperand

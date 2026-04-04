@@ -76,6 +76,15 @@ func (lt *LoopTable) FindParent(pos int) *Loop {
 	return nil
 }
 
+func (lt *LoopTable) RequiredParent(pos int) *Loop {
+	parent := lt.FindParent(pos)
+	if parent == nil {
+		PanicInvariantf("parent loop not found in loop table at depth %d", pos)
+	}
+
+	return parent
+}
+
 func (lt *LoopTable) Current() *Loop {
 	if len(lt.stack) == 0 {
 		return nil

@@ -354,6 +354,77 @@ RETURN outer(3)
 	}, compiler.O0, compiler.O1)
 }
 
+func TestUdfNestedCompileStatePropagatesMetadata(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck(`
+LET base = 10
+FUNC outer(a) (
+  FUNC middle(b) (
+    FUNC inner(c) => TEST_FN(@foo, base + a + b + c)
+    RETURN inner(1)
+  )
+  RETURN middle(2)
+)
+RETURN outer(3)
+`, func(prog *bytecode.Program) error {
+			if err := hostArity(prog.Functions.Host, "TEST_FN", 2); err != nil {
+				return err
+			}
+
+			return paramSet(prog.Params, "foo")
+		}, "nested udf compile restores metadata after inner state swap"),
+	}, compiler.O0, compiler.O1)
+}
+
+func TestUdfNestedDirectReturnStillLowersToTailCall(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck(`
+LET base = 1
+FUNC outer(a) (
+  FUNC target(x) => x + 1
+  FUNC forward(x) => target(x + base + a)
+  RETURN forward(2)
+)
+RETURN outer(3)
+`, func(prog *bytecode.Program) error {
+			forward, err := findUserDefined(prog, "forward")
+			if err != nil {
+				return err
+			}
+
+			nextEntry := len(prog.Bytecode)
+			for _, udf := range prog.Functions.UserDefined {
+				if udf.Entry > forward.Entry && udf.Entry < nextEntry {
+					nextEntry = udf.Entry
+				}
+			}
+
+			for idx := forward.Entry; idx < nextEntry; idx++ {
+				if prog.Bytecode[idx].Opcode == bytecode.OpTailCall {
+					return nil
+				}
+			}
+
+			return fmt.Errorf("expected tail call in forward body between %d and %d", forward.Entry, nextEntry)
+		}, "nested udf direct return preserves tail-call lowering"),
+	}, compiler.O0, compiler.O1)
+}
+
+func TestUdfNestedScopeDoesNotLeakToSiblingCompilation(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck(`
+FUNC outer() (
+  FUNC onlyInside() => 1
+  RETURN onlyInside()
+)
+FUNC sibling() => onlyInside()
+RETURN sibling()
+`, func(prog *bytecode.Program) error {
+			return hostArity(prog.Functions.Host, "onlyInside", 0)
+		}, "sibling udf compilation does not reuse prior nested scope"),
+	}, compiler.O0, compiler.O1)
+}
+
 func TestUdfMetadataO1(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(`

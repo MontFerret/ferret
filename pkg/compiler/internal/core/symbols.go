@@ -89,11 +89,8 @@ type (
 		registers *RegisterAllocator
 		constants *ConstantPool
 
-		params    map[string]int
-		paramList []string
-		functions map[string]int
-		globals   map[string]*Variable
-		locals    []*Variable
+		globals map[string]*Variable
+		locals  []*Variable
 
 		scope int
 	}
@@ -107,8 +104,6 @@ func NewSymbolTable(registers *RegisterAllocator, constants *ConstantPool) *Symb
 	return &SymbolTable{
 		registers: registers,
 		constants: constants,
-		params:    make(map[string]int),
-		paramList: make([]string, 0),
 		globals:   make(map[string]*Variable),
 		locals:    make([]*Variable, 0),
 	}
@@ -282,34 +277,6 @@ func (st *SymbolTable) AssignGlobalWithOptions(name string, typ ValueType, op by
 	return true
 }
 
-func (st *SymbolTable) BindParam(name string) bytecode.Operand {
-	if slot, exists := st.params[name]; exists {
-		return bytecode.Operand(slot + 1)
-	}
-
-	slot := len(st.paramList)
-	st.params[name] = slot
-	st.paramList = append(st.paramList, name)
-
-	return bytecode.Operand(slot + 1)
-}
-
-func (st *SymbolTable) BindFunction(name string, args int) {
-	if st.functions == nil {
-		st.functions = make(map[string]int)
-	}
-
-	if currArgs, exists := st.functions[name]; exists {
-		// we need to ensure that the number of arguments is not greater than the current one
-		// if it is not, we will not override the current one
-		if currArgs > args {
-			return
-		}
-	}
-
-	st.functions[name] = args
-}
-
 func (st *SymbolTable) Constants() []runtime.Value {
 	return st.constants.All()
 }
@@ -347,22 +314,4 @@ func (st *SymbolTable) ResolveBinding(name string) (*Variable, bool) {
 
 func (st *SymbolTable) Lookup(name string) (*Variable, bool) {
 	return st.ResolveBinding(name)
-}
-
-func (st *SymbolTable) Params() []string {
-	out := make([]string, len(st.paramList))
-	copy(out, st.paramList)
-
-	return out
-}
-
-func (st *SymbolTable) Functions() map[string]int {
-	// Returns a copy of the functions map to avoid external modifications
-	funcs := make(map[string]int, len(st.functions))
-
-	for k, v := range st.functions {
-		funcs[k] = v
-	}
-
-	return funcs
 }

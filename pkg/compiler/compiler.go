@@ -84,19 +84,19 @@ func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err e
 	// Remove all default error listeners
 	p.RemoveErrorListeners()
 	// Add custom error listener
-	p.AddErrorListener(parserd.NewErrorListener(src, l.Ctx.Errors, tokenHistory))
+	p.AddErrorListener(parserd.NewErrorListener(src, l.Session.Program.Errors, tokenHistory))
 	p.Visit(l)
 
-	if l.Ctx.Errors.HasErrors() {
-		return nil, l.Ctx.Errors.Unwrap()
+	if l.Session.Program.Errors.HasErrors() {
+		return nil, l.Session.Program.Errors.Unwrap()
 	}
 
 	var udfs []bytecode.UDF
-	if l.Ctx.UDFs != nil {
-		udfs = l.Ctx.UDFs.Metadata()
+	if l.Session.Program.UDFs != nil {
+		udfs = l.Session.Program.UDFs.Metadata()
 	}
 
-	registers := l.Ctx.Registers.Size()
+	registers := l.Session.Function.Registers.Size()
 	for _, udf := range udfs {
 		if udf.Registers > registers {
 			registers = udf.Registers
@@ -106,24 +106,24 @@ func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err e
 	program = &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Functions: bytecode.Functions{
-			Host:        l.Ctx.Symbols.Functions(),
+			Host:        l.Session.Program.HostFunctions.All(),
 			UserDefined: udfs,
 		},
 		Metadata: bytecode.Metadata{
 			CompilerVersion:        Version,
 			OptimizationLevel:      int(c.opts.Level),
-			AggregatePlans:         l.Ctx.AggregatePlans(),
-			AggregateSelectorSlots: l.Ctx.Emitter.AggregateSelectorSlots(),
-			MatchFailTargets:       l.Ctx.Emitter.MatchFailTargets(),
-			DebugSpans:             l.Ctx.Emitter.Spans(),
-			Labels:                 l.Ctx.Emitter.Labels(),
+			AggregatePlans:         l.Session.Program.AggregatePlans(),
+			AggregateSelectorSlots: l.Session.Program.Emitter.AggregateSelectorSlots(),
+			MatchFailTargets:       l.Session.Program.Emitter.MatchFailTargets(),
+			DebugSpans:             l.Session.Program.Emitter.Spans(),
+			Labels:                 l.Session.Program.Emitter.Labels(),
 		},
 		Source:     src,
-		Bytecode:   l.Ctx.Emitter.Bytecode(),
-		Constants:  l.Ctx.Symbols.Constants(),
-		CatchTable: l.Ctx.CatchTable.All(),
+		Bytecode:   l.Session.Program.Emitter.Bytecode(),
+		Constants:  l.Session.Function.Symbols.Constants(),
+		CatchTable: l.Session.Program.CatchTable.All(),
 		Registers:  registers,
-		Params:     l.Ctx.Symbols.Params(),
+		Params:     l.Session.Program.HostParams.Names(),
 	}
 
 	if err := optimization.Run(program, c.opts.Level); err != nil {

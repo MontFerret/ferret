@@ -141,5 +141,18 @@ FUNC sum(n, acc) (
 )
 RETURN sum(10, 0)
 `, 55, "Tail recursion semantics"),
+		S(`
+LET base = 10
+FUNC outer(seed) (
+  FUNC loop(n, acc) (
+    RETURN MATCH n (
+      0 => acc + base + seed,
+      _ => loop(n - 1, acc + n),
+    )
+  )
+  RETURN loop(4, 0)
+)
+RETURN outer(1)
+`, 21, "Nested UDF captures survive tail-recursive paths"),
 	})
 }
