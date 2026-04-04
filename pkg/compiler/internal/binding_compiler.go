@@ -331,11 +331,3 @@ func (c *BindingCompiler) reportInvalidAssignmentTarget(ctx antlr.ParserRuleCont
 	err.Hint = "Property and index assignment are not supported. Use UPDATE for structural changes."
 	c.ctx.Program.Errors.Add(err)
 }
-
-func assignmentOperatorText(ctx *fql.AssignmentStatementContext) string {
-	if ctx == nil || ctx.AssignmentOperator() == nil {
-		return ""
-	}
-
-	return ctx.AssignmentOperator().GetText()
-}
