@@ -114,6 +114,7 @@ func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err e
 			OptimizationLevel:      int(c.opts.Level),
 			AggregatePlans:         l.Session.Program.AggregatePlans(),
 			AggregateSelectorSlots: l.Session.Program.Emitter.AggregateSelectorSlots(),
+			CallArgumentSpans:      l.Session.Program.Emitter.CallArgumentSpans(),
 			MatchFailTargets:       l.Session.Program.Emitter.MatchFailTargets(),
 			DebugSpans:             l.Session.Program.Emitter.Spans(),
 			Labels:                 l.Session.Program.Emitter.Labels(),

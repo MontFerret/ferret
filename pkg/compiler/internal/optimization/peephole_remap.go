@@ -11,6 +11,7 @@ func applyPeepholeCompactionAndRemap(state *peepholeRunState) {
 
 	state.prog.Bytecode = newCode
 	remapAggregateSelectorSlots(state.prog, state.keep)
+	remapCallArgumentSpans(state.prog, state.keep)
 	remapMatchFailTargets(state.prog, indexMap, state.keep)
 	remapDebugSpans(state.prog, state.keep)
 	remapLabels(state.prog, indexMap)
@@ -148,6 +149,35 @@ func remapAggregateSelectorSlots(prog *bytecode.Program, keep []bool) {
 	}
 
 	prog.Metadata.AggregateSelectorSlots = updated
+}
+
+func remapCallArgumentSpans(prog *bytecode.Program, keep []bool) {
+	if prog == nil || len(prog.Metadata.CallArgumentSpans) == 0 {
+		return
+	}
+
+	if len(prog.Metadata.CallArgumentSpans) != len(keep) {
+		return
+	}
+
+	updated := make([][]source.Span, 0, len(prog.Metadata.CallArgumentSpans))
+
+	for i, spans := range prog.Metadata.CallArgumentSpans {
+		if !keep[i] {
+			continue
+		}
+
+		if len(spans) == 0 {
+			updated = append(updated, nil)
+			continue
+		}
+
+		next := make([]source.Span, len(spans))
+		copy(next, spans)
+		updated = append(updated, next)
+	}
+
+	prog.Metadata.CallArgumentSpans = updated
 }
 
 func remapMatchFailTargets(prog *bytecode.Program, indexMap []int, keep []bool) {

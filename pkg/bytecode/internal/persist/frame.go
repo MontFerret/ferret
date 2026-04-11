@@ -78,6 +78,7 @@ type (
 		CompilerVersion        string               `json:"compilerVersion,omitempty" msgpack:"compilerVersion,omitempty"`
 		AggregatePlans         []AggregatePlanFrame `json:"aggregatePlans,omitempty" msgpack:"aggregatePlans,omitempty"`
 		AggregateSelectorSlots []int                `json:"aggregateSelectorSlots,omitempty" msgpack:"aggregateSelectorSlots,omitempty"`
+		CallArgumentSpans      [][]SpanFrame        `json:"callArgumentSpans,omitempty" msgpack:"callArgumentSpans,omitempty"`
 		MatchFailTargets       []int                `json:"matchFailTargets,omitempty" msgpack:"matchFailTargets,omitempty"`
 		DebugSpans             []SpanFrame          `json:"debugSpans,omitempty" msgpack:"debugSpans,omitempty"`
 		OptimizationLevel      int                  `json:"optimizationLevel" msgpack:"optimizationLevel"`
@@ -196,6 +197,21 @@ func FromProgram(program *bytecode.Program) (ProgramFrame, error) {
 		}
 	}
 
+	callArgumentSpans := make([][]SpanFrame, len(program.Metadata.CallArgumentSpans))
+	for i, spans := range program.Metadata.CallArgumentSpans {
+		if len(spans) == 0 {
+			continue
+		}
+
+		callArgumentSpans[i] = make([]SpanFrame, len(spans))
+		for j, span := range spans {
+			callArgumentSpans[i][j] = SpanFrame{
+				Start: span.Start,
+				End:   span.End,
+			}
+		}
+	}
+
 	labels := make([]LabelFrame, 0, len(program.Metadata.Labels))
 	if len(program.Metadata.Labels) > 0 {
 		pcs := make([]int, 0, len(program.Metadata.Labels))
@@ -241,6 +257,7 @@ func FromProgram(program *bytecode.Program) (ProgramFrame, error) {
 			CompilerVersion:        program.Metadata.CompilerVersion,
 			AggregatePlans:         aggregatePlans,
 			AggregateSelectorSlots: append([]int(nil), program.Metadata.AggregateSelectorSlots...),
+			CallArgumentSpans:      callArgumentSpans,
 			MatchFailTargets:       append([]int(nil), program.Metadata.MatchFailTargets...),
 			DebugSpans:             debugSpans,
 			OptimizationLevel:      program.Metadata.OptimizationLevel,
@@ -343,6 +360,21 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 		}
 	}
 
+	callArgumentSpans := make([][]source.Span, len(frame.Metadata.CallArgumentSpans))
+	for i, spans := range frame.Metadata.CallArgumentSpans {
+		if len(spans) == 0 {
+			continue
+		}
+
+		callArgumentSpans[i] = make([]source.Span, len(spans))
+		for j, span := range spans {
+			callArgumentSpans[i][j] = source.Span{
+				Start: span.Start,
+				End:   span.End,
+			}
+		}
+	}
+
 	var labels map[int]string
 	if len(frame.Metadata.Labels) > 0 {
 		labels = make(map[int]string, len(frame.Metadata.Labels))
@@ -376,6 +408,7 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 			CompilerVersion:        frame.Metadata.CompilerVersion,
 			AggregatePlans:         aggregatePlans,
 			AggregateSelectorSlots: append([]int(nil), frame.Metadata.AggregateSelectorSlots...),
+			CallArgumentSpans:      callArgumentSpans,
 			MatchFailTargets:       append([]int(nil), frame.Metadata.MatchFailTargets...),
 			DebugSpans:             debugSpans,
 			OptimizationLevel:      frame.Metadata.OptimizationLevel,

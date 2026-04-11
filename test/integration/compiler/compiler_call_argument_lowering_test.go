@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
@@ -74,4 +75,45 @@ RETURN TEST(x, 2)
 			return nil
 		}, "non-literal arg keeps tracked move"),
 	})
+}
+
+func TestCallArgumentSpansRecordedForCallInstructions(t *testing.T) {
+	const query = "RETURN TEST(1 + 2, [3, 4])"
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+			prog := compileWithLevel(t, level, query)
+
+			callIndex, ok := inspect.FindFirstOpcodeIndex(prog.Bytecode, bytecode.OpHCall)
+			if !ok {
+				t.Fatal("expected OpHCall in bytecode")
+			}
+
+			if got, want := len(prog.Metadata.CallArgumentSpans), len(prog.Bytecode); got != want {
+				t.Fatalf("unexpected call argument span metadata length: got %d, want %d", got, want)
+			}
+
+			for i, spans := range prog.Metadata.CallArgumentSpans {
+				if i == callIndex {
+					continue
+				}
+
+				if len(spans) != 0 {
+					t.Fatalf("expected non-call instruction %d to have no call argument spans, got %#v", i, spans)
+				}
+			}
+
+			spans := prog.Metadata.CallArgumentSpans[callIndex]
+			if got, want := len(spans), 2; got != want {
+				t.Fatalf("unexpected call argument span count: got %d, want %d", got, want)
+			}
+
+			wantFragments := []string{"1 + 2", "[3, 4]"}
+			for i, span := range spans {
+				if got := query[span.Start:span.End]; got != wantFragments[i] {
+					t.Fatalf("unexpected call argument %d span: got %q, want %q", i, got, wantFragments[i])
+				}
+			}
+		})
+	}
 }

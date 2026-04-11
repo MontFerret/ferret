@@ -1,17 +1,11 @@
 package runtime
 
-import (
-	"fmt"
-)
+import "fmt"
 
 // ArgError creates an error for an invalid argument at the specified position.
 // The position is 0-based internally but reported as 1-based to users.
 func ArgError(err error, pos int) error {
-	return fmt.Errorf(
-		"%w at position %d - %w",
-		ErrInvalidArgument,
-		pos+1, err,
-	)
+	return newInvalidArgumentError(err, pos)
 }
 
 // ValidateArgs validates that the number of arguments is within the specified range.

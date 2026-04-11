@@ -8,6 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 )
 
@@ -99,7 +100,7 @@ func RuntimeErrorFromPanic(program *bytecode.Program, pc int, callStack []frame.
 			Message: fmt.Sprintf("%s. %s", message, cause.Error()),
 			Source:  program.Source,
 			Note:    stackNote(callStack),
-			Spans:   buildSpans(program, pc, callStack, ""),
+			Spans:   buildSpans(program, callStack, SpanAt(program, pc-1), ""),
 			Cause:   cause,
 		},
 	}
@@ -124,6 +125,8 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 	var cause error
 	var memberErr *MemberAccessError
 	var invariantErr *InvariantError
+	mainSpan := runtimeErrorSpan(program, pc, err)
+	argPos, hasArg, argCause := runtime.InvalidArgumentDetails(err)
 
 	switch {
 	case errors.Is(err, ErrDivisionByZero):
@@ -146,6 +149,19 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		}
 		label = memberErr.Label()
 		hint = memberErr.Hint()
+	case hasArg && (errors.Is(argCause, runtime.ErrInvalidType) || errors.Is(argCause, runtime.ErrInvalidArgumentType)):
+		index := argPos + 1
+		kind = diagnostics.TypeError
+		message = fmt.Sprintf("Invalid argument %d type", index)
+		label = fmt.Sprintf("argument %d type mismatch", index)
+		hint = fmt.Sprintf("Ensure argument %d matches the expected type", index)
+		cause = argCause
+
+		msg, cs := diagnostics.Unwrap(argCause)
+
+		if msg != nil && cs != nil {
+			cause = cs
+		}
 	case errors.Is(err, runtime.ErrInvalidType):
 		kind = diagnostics.TypeError
 		message = "Invalid type"
@@ -181,11 +197,24 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		hint = "Check the function arguments"
 		cause = err
 
-		msg, cs := diagnostics.Unwrap(err)
+		if hasArg {
+			index := argPos + 1
+			message = fmt.Sprintf("Invalid argument %d", index)
+			label = fmt.Sprintf("invalid argument %d", index)
+			hint = fmt.Sprintf("Check argument %d", index)
+			cause = argCause
 
-		if msg != nil && cs != nil {
-			message = diagnostics.FormatMessage(msg.Error())
-			cause = cs
+			_, cs := diagnostics.Unwrap(cause)
+			if cs != nil {
+				cause = cs
+			}
+		} else {
+			msg, cs := diagnostics.Unwrap(cause)
+
+			if msg != nil && cs != nil {
+				message = diagnostics.FormatMessage(msg.Error())
+				cause = cs
+			}
 		}
 	case errors.Is(err, ErrMissedParam):
 		kind = UnresolvedSymbol
@@ -234,8 +263,24 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 			Hint:    hint,
 			Note:    appendStackNote(note, callStack),
 			Source:  program.Source,
-			Spans:   buildSpans(program, pc, callStack, label),
+			Spans:   buildSpans(program, callStack, mainSpan, label),
 			Cause:   cause,
 		},
 	}
+}
+
+func runtimeErrorSpan(program *bytecode.Program, pc int, err error) source.Span {
+	mainSpan := SpanAt(program, pc-1)
+
+	argPos, ok, _ := runtime.InvalidArgumentDetails(err)
+	if !ok {
+		return mainSpan
+	}
+
+	argSpan := CallArgumentSpanAt(program, pc-1, argPos)
+	if argSpan.Start < 0 || argSpan.End < 0 {
+		return mainSpan
+	}
+
+	return argSpan
 }

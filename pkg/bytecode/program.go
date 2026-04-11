@@ -21,6 +21,7 @@ type (
 		CompilerVersion        string          `json:"compilerVersion"`
 		AggregatePlans         []AggregatePlan `json:"aggregatePlans"`
 		AggregateSelectorSlots []int           `json:"aggregateSelectorSlots,omitempty"`
+		CallArgumentSpans      [][]source.Span `json:"callArgumentSpans,omitempty"`
 		MatchFailTargets       []int           `json:"matchFailTargets,omitempty"`
 		DebugSpans             []source.Span   `json:"debugSpans"`
 		OptimizationLevel      int             `json:"optimizationLevel"`
