@@ -34,7 +34,7 @@ func Write(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	params := defaultParams
 
 	if len(args) == 3 {
-		p, err := parseParams(args[2])
+		p, err := parseParams(args[2], 2)
 
 		if err != nil {
 			return runtime.None, runtime.Error(
@@ -80,8 +80,8 @@ var defaultParams = parsedParams{
 	ModeFlag: os.O_WRONLY | os.O_CREATE | os.O_TRUNC,
 }
 
-func parseParams(value runtime.Value) (parsedParams, error) {
-	err := runtime.ValidateType(value, runtime.TypeObject, runtime.TypeMap)
+func parseParams(value runtime.Value, pos int) (parsedParams, error) {
+	err := runtime.ValidateArgType(value, pos, runtime.TypeObject, runtime.TypeMap)
 
 	if err != nil {
 		return parsedParams{}, err

@@ -23,7 +23,7 @@ var randSrc = rand.NewSource(time.Now().UnixNano())
 // @param {Int} len - The desired string length for the token. It must be greater than 0 and at most 65536.
 // @return {String} - A generated token consisting of lowercase letters, uppercase letters and numbers.
 func RandomToken(_ context.Context, arg runtime.Value) (runtime.Value, error) {
-	size, err := runtime.CastInt(arg)
+	size, err := runtime.CastArg[runtime.Int](arg, 0)
 
 	if err != nil {
 		return runtime.EmptyString, err

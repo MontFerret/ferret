@@ -16,7 +16,7 @@ func Substring(_ context.Context, args ...runtime.Value) (runtime.Value, error) 
 		return runtime.EmptyString, err
 	}
 
-	offsetArg, err := runtime.CastInt(args[1])
+	offsetArg, err := runtime.CastArg[runtime.Int](args[1], 1)
 
 	if err != nil {
 		return runtime.EmptyString, err

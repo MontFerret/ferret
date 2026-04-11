@@ -10,7 +10,7 @@ import (
 // @param {Any} value - Input value of arbitrary type.
 // @return {Boolean} - Returns true if value is NaN, otherwise false.
 func IsNaN(_ context.Context, arg runtime.Value) (runtime.Value, error) {
-	val, err := runtime.CastFloat(arg)
+	val, err := runtime.CastArg[runtime.Float](arg, 0)
 
 	if err != nil {
 		return runtime.False, nil

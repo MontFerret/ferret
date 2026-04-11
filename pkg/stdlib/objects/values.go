@@ -10,7 +10,7 @@ import (
 // @param {Map} map - Target map.
 // @return {Any[]} - Values of document returned in any order.
 func Values(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateType(arg, runtime.TypeMap); err != nil {
+	if err := runtime.ValidateArgType(arg, 0, runtime.TypeMap); err != nil {
 		return runtime.None, err
 	}
 

@@ -17,7 +17,7 @@ func Append(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	list, err := runtime.CastList(args[0])
+	list, err := runtime.CastArgAt[runtime.List](args, 0)
 
 	if err != nil {
 		return runtime.None, err
@@ -27,7 +27,7 @@ func Append(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	unique := runtime.False
 
 	if len(args) > 2 {
-		arg3, err := runtime.CastBoolean(args[2])
+		arg3, err := runtime.CastArgAt[runtime.Boolean](args, 2)
 
 		if err != nil {
 			return runtime.None, err

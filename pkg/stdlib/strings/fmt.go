@@ -21,7 +21,7 @@ func Fmt(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	arg0, err := runtime.CastString(args[0])
+	arg0, err := runtime.CastArg[runtime.String](args[0], 0)
 
 	if err != nil {
 		return runtime.None, err

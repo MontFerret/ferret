@@ -12,11 +12,11 @@ import (
 // @param {String} name - The name.
 // @return {Boolean} - True if the name matches the pattern.
 func Match(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateType(arg1, runtime.TypeString); err != nil {
+	if err := runtime.ValidateArgType(arg1, 0, runtime.TypeString); err != nil {
 		return runtime.False, err
 	}
 
-	if err := runtime.ValidateType(arg2, runtime.TypeString); err != nil {
+	if err := runtime.ValidateArgType(arg2, 1, runtime.TypeString); err != nil {
 		return runtime.False, err
 	}
 
