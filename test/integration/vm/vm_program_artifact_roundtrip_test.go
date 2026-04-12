@@ -87,6 +87,10 @@ RETURN add(2, 3)
 				if !reflect.DeepEqual(original.Functions.UserDefined, decoded.Functions.UserDefined) {
 					t.Fatalf("udf metadata mismatch: got %#v, want %#v", decoded.Functions.UserDefined, original.Functions.UserDefined)
 				}
+
+				if !reflect.DeepEqual(original.Metadata.CallArgumentSpans, decoded.Metadata.CallArgumentSpans) {
+					t.Fatalf("call argument spans mismatch: got %#v, want %#v", decoded.Metadata.CallArgumentSpans, original.Metadata.CallArgumentSpans)
+				}
 			},
 		},
 		{

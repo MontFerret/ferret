@@ -8,15 +8,16 @@ import (
 )
 
 type Emitter struct {
-	labels           map[labelID]Label
-	patches          map[labelID][]labelRef
-	matchFailPatches map[labelID][]int
-	instructions     []bytecode.Instruction
-	selectorSlots    []int
-	matchFailTargets []int
-	spans            []source.Span
-	currentSpan      source.Span
-	nextLabelID      labelID
+	labels            map[labelID]Label
+	patches           map[labelID][]labelRef
+	matchFailPatches  map[labelID][]int
+	instructions      []bytecode.Instruction
+	selectorSlots     []int
+	matchFailTargets  []int
+	callArgumentSpans [][]source.Span
+	spans             []source.Span
+	currentSpan       source.Span
+	nextLabelID       labelID
 }
 
 func NewEmitter() *Emitter {
@@ -48,6 +49,20 @@ func (e *Emitter) AggregateSelectorSlots() []int {
 
 	out := make([]int, len(e.selectorSlots))
 	copy(out, e.selectorSlots)
+
+	return out
+}
+
+func (e *Emitter) CallArgumentSpans() [][]source.Span {
+	if len(e.callArgumentSpans) == 0 {
+		return nil
+	}
+
+	out := make([][]source.Span, len(e.callArgumentSpans))
+
+	for i, spans := range e.callArgumentSpans {
+		out[i] = e.copyCallArgumentSpans(spans)
+	}
 
 	return out
 }
@@ -200,6 +215,23 @@ func (e *Emitter) EmitAs(op bytecode.Opcode, dest bytecode.Operand, seq Register
 	}
 }
 
+func (e *Emitter) EmitAsWithCallArgumentSpans(op bytecode.Opcode, dest bytecode.Operand, seq RegisterSequence, spans []source.Span) {
+	if len(seq) > 0 {
+		src1 := seq[0]
+		src2 := seq[len(seq)-1]
+		e.emitInstructionWithMetadata(bytecode.Instruction{
+			Opcode:   op,
+			Operands: [3]bytecode.Operand{dest, src1, src2},
+		}, -1, -1, spans)
+		return
+	}
+
+	e.emitInstructionWithMetadata(bytecode.Instruction{
+		Opcode:   op,
+		Operands: [3]bytecode.Operand{dest, 0, 0},
+	}, -1, -1, spans)
+}
+
 // EmitABx emits an opcode with a destination and source value and a custom argument.
 func (e *Emitter) EmitABx(op bytecode.Opcode, dest bytecode.Operand, src bytecode.Operand, arg int) {
 	e.EmitABC(op, dest, src, bytecode.Operand(arg))
@@ -214,22 +246,34 @@ func (e *Emitter) EmitABC(op bytecode.Opcode, dest, src1, src2 bytecode.Operand)
 }
 
 func (e *Emitter) emitInstruction(ins bytecode.Instruction) {
-	e.emitInstructionWithMetadata(ins, -1, -1)
+	e.emitInstructionWithMetadata(ins, -1, -1, nil)
 }
 
 func (e *Emitter) emitInstructionWithSelectorSlot(ins bytecode.Instruction, selectorSlot int) {
-	e.emitInstructionWithMetadata(ins, selectorSlot, -1)
+	e.emitInstructionWithMetadata(ins, selectorSlot, -1, nil)
 }
 
 func (e *Emitter) emitInstructionWithMatchFailTarget(ins bytecode.Instruction, matchFailTarget int) {
-	e.emitInstructionWithMetadata(ins, -1, matchFailTarget)
+	e.emitInstructionWithMetadata(ins, -1, matchFailTarget, nil)
 }
 
-func (e *Emitter) emitInstructionWithMetadata(ins bytecode.Instruction, selectorSlot, matchFailTarget int) {
+func (e *Emitter) emitInstructionWithMetadata(ins bytecode.Instruction, selectorSlot, matchFailTarget int, callArgumentSpans []source.Span) {
 	e.instructions = append(e.instructions, ins)
 	e.selectorSlots = append(e.selectorSlots, selectorSlot)
 	e.matchFailTargets = append(e.matchFailTargets, matchFailTarget)
+	e.callArgumentSpans = append(e.callArgumentSpans, e.copyCallArgumentSpans(callArgumentSpans))
 	e.spans = append(e.spans, e.currentSpan)
+}
+
+func (e *Emitter) copyCallArgumentSpans(spans []source.Span) []source.Span {
+	if len(spans) == 0 {
+		return nil
+	}
+
+	out := make([]source.Span, len(spans))
+	copy(out, spans)
+
+	return out
 }
 
 // SwapAB modifies an instruction at the given position to swap operands and update its operation and destination.
@@ -341,6 +385,7 @@ func (e *Emitter) swapInstructionWithSelectorSlot(label Label, ins bytecode.Inst
 	e.instructions[pos] = ins
 	e.selectorSlots[pos] = selectorSlot
 	e.matchFailTargets[pos] = -1
+	e.callArgumentSpans[pos] = nil
 }
 
 // swapInstruction swaps the operands of an instruction at a given position.
@@ -364,6 +409,9 @@ func (e *Emitter) insertInstructionWithSelectorSlot(label Label, ins bytecode.In
 	)
 	e.matchFailTargets = append(e.matchFailTargets[:pos],
 		append([]int{-1}, e.matchFailTargets[pos:]...)...,
+	)
+	e.callArgumentSpans = append(e.callArgumentSpans[:pos],
+		append([][]source.Span{nil}, e.callArgumentSpans[pos:]...)...,
 	)
 	e.spans = append(e.spans[:pos],
 		append([]source.Span{e.currentSpan}, e.spans[pos:]...)...,

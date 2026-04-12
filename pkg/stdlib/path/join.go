@@ -31,7 +31,7 @@ func Join(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 
 	for idx := runtime.ZeroInt; idx < size; idx++ {
 		arrElem, _ := arr.At(ctx, idx)
-		err := runtime.ValidateType(arrElem, runtime.TypeString)
+		err := runtime.ValidateArgType(arrElem, 0, runtime.TypeString)
 
 		if err != nil {
 			return runtime.None, err

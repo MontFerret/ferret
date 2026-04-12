@@ -30,7 +30,7 @@ func REQUEST(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 }
 
 func execMethod(ctx context.Context, method runtime.String, arg runtime.Value) (runtime.Value, error) {
-	params, err := runtime.CastMap(arg)
+	params, err := runtime.CastArg[runtime.Map](arg, 0)
 
 	if err != nil {
 		return runtime.None, err
@@ -126,7 +126,7 @@ func newParamsFrom(ctx context.Context, obj runtime.Map) (Params, error) {
 			return Params{}, err
 		}
 
-		if err := runtime.ValidateType(headers, runtime.TypeObject, runtime.TypeMap); err != nil {
+		if err := runtime.ValidateArgType(headers, 0, runtime.TypeObject, runtime.TypeMap); err != nil {
 			return Params{}, runtime.Error(err, ".headers")
 		}
 

@@ -11,7 +11,7 @@ import (
 // @param {String} path - The path
 // @return {Any[]} - First item is a directory component, and second is a filename component.
 func Separate(_ context.Context, arg runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateType(arg, runtime.TypeString); err != nil {
+	if err := runtime.ValidateArgType(arg, 0, runtime.TypeString); err != nil {
 		return runtime.None, err
 	}
 

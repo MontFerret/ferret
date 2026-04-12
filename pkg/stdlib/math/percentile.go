@@ -34,7 +34,7 @@ func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 		return runtime.NewFloat(math.NaN()), nil
 	}
 
-	num, err := runtime.CastInt(args[1])
+	num, err := runtime.CastArg[runtime.Int](args[1], 1)
 
 	if err != nil {
 		return runtime.None, err
@@ -45,7 +45,7 @@ func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 	method := "rank"
 
 	if len(args) > 2 {
-		if err := runtime.ValidateType(args[2], runtime.TypeString); err != nil {
+		if err := runtime.ValidateArgType(args[2], 2, runtime.TypeString); err != nil {
 			return runtime.None, err
 		}
 

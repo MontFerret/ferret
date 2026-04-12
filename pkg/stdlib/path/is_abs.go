@@ -11,7 +11,7 @@ import (
 // @param {String} path - The path.
 // @return {Boolean} - True if the path is absolute.
 func IsAbs(_ context.Context, arg runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateType(arg, runtime.TypeString); err != nil {
+	if err := runtime.ValidateArgType(arg, 0, runtime.TypeString); err != nil {
 		return runtime.False, err
 	}
 

@@ -51,6 +51,15 @@ func TestValidateProgram(t *testing.T) {
 			target: ErrInvalidProgram,
 		},
 		{
+			name: "invalid_call_argument_span_metadata",
+			program: withProgramMutation(func(program *Program) {
+				program.Metadata.CallArgumentSpans = [][]source.Span{
+					{{Start: 0, End: 1}},
+				}
+			}),
+			target: ErrInvalidProgram,
+		},
+		{
 			name: "required_constant_type_check",
 			program: withProgramMutation(func(program *Program) {
 				program.Bytecode[0] = NewInstruction(OpFail, NewConstant(0))
@@ -154,6 +163,7 @@ func validValidationProgram() *Program {
 			CompilerVersion:        "test",
 			AggregatePlans:         []AggregatePlan{NewAggregatePlan([]runtime.String{runtime.NewString("group")}, []AggregateKind{AggregateCount}, false)},
 			AggregateSelectorSlots: []int{-1, -1},
+			CallArgumentSpans:      nil,
 			MatchFailTargets:       []int{-1, -1},
 			DebugSpans:             []source.Span{{Start: 0, End: 6}, {Start: 7, End: 8}},
 			OptimizationLevel:      1,

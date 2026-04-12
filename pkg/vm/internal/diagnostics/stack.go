@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/frame"
 )
 
@@ -57,9 +58,9 @@ func callStackSpans(program *bytecode.Program, callStack []frame.TraceEntry) []d
 	return spans
 }
 
-func buildSpans(program *bytecode.Program, pc int, callStack []frame.TraceEntry, label string) []diagnostics.ErrorSpan {
+func buildSpans(program *bytecode.Program, callStack []frame.TraceEntry, mainSpan source.Span, label string) []diagnostics.ErrorSpan {
 	spans := callStackSpans(program, callStack)
-	spans = append(spans, diagnostics.NewMainErrorSpan(SpanAt(program, pc-1), label))
+	spans = append(spans, diagnostics.NewMainErrorSpan(mainSpan, label))
 
 	return spans
 }

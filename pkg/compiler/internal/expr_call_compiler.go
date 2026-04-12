@@ -165,12 +165,15 @@ func (c *exprCallCompiler) compileFunctionCallWith(ctx fql.IFunctionCallContext,
 func (c *exprCallCompiler) compileFunctionCallByNameWith(ctx fql.IFunctionCallContext, name runtime.String, protected bool, seq core.RegisterSequence) bytecode.Operand {
 	nameStr := name.String()
 	builtinName := strings.ToUpper(nameStr)
+	argSpans := c.argumentSpansFromList(nil)
 
 	namespaced := strings.Contains(nameStr, runtime.NamespaceSeparator)
 	if ctx != nil {
 		if ns := ctx.Namespace(); ns != nil && ns.GetText() != "" {
 			namespaced = true
 		}
+
+		argSpans = c.argumentSpansFromList(ctx.ArgumentList())
 	}
 
 	var callCtx antlr.ParserRuleContext
@@ -182,7 +185,7 @@ func (c *exprCallCompiler) compileFunctionCallByNameWith(ctx fql.IFunctionCallCo
 
 	if !namespaced && c.ctx.Program.UDFs != nil && c.ctx.Function.UDFScope != nil {
 		if fn, ok := c.calls.ResolveUDF(ctx); ok {
-			return c.compileUdfCallWith(fn, protected, seq, callCtx)
+			return c.compileUdfCallWith(fn, protected, seq, callCtx, argSpans)
 		}
 	}
 
@@ -219,7 +222,7 @@ func (c *exprCallCompiler) compileFunctionCallByNameWith(ctx fql.IFunctionCallCo
 		}
 	}
 
-	return c.compileHostFunctionCallWith(name, protected, seq)
+	return c.compileHostFunctionCallWith(name, protected, seq, argSpans)
 }
 
 func (c *exprCallCompiler) reportFunctionArityError(ctx antlr.ParserRuleContext, name string, expected, got int) bytecode.Operand {
@@ -236,7 +239,7 @@ func (c *exprCallCompiler) reportFunctionArityError(ctx antlr.ParserRuleContext,
 	return bytecode.NoopOperand
 }
 
-func (c *exprCallCompiler) compileHostFunctionCallWith(name runtime.String, protected bool, seq core.RegisterSequence) bytecode.Operand {
+func (c *exprCallCompiler) compileHostFunctionCallWith(name runtime.String, protected bool, seq core.RegisterSequence, argSpans []source.Span) bytecode.Operand {
 	dest := c.ctx.Function.Registers.Allocate()
 	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(name))
 	c.ctx.Program.HostFunctions.Bind(name.String(), len(seq))
@@ -246,14 +249,14 @@ func (c *exprCallCompiler) compileHostFunctionCallWith(name runtime.String, prot
 		opcode = bytecode.OpProtectedHCall
 	}
 
-	c.ctx.Program.Emitter.EmitAs(opcode, dest, seq)
+	c.ctx.Program.Emitter.EmitAsWithCallArgumentSpans(opcode, dest, seq, argSpans)
 
 	c.ctx.Function.Types.Set(dest, core.TypeAny)
 
 	return dest
 }
 
-func (c *exprCallCompiler) compileUdfCallWith(fn *core.UDFInfo, protected bool, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) bytecode.Operand {
+func (c *exprCallCompiler) compileUdfCallWith(fn *core.UDFInfo, protected bool, seq core.RegisterSequence, callCtx antlr.ParserRuleContext, argSpans []source.Span) bytecode.Operand {
 	args := c.prepareUdfCallArgs(fn, seq, callCtx)
 
 	dest := c.ctx.Function.Registers.Allocate()
@@ -264,7 +267,7 @@ func (c *exprCallCompiler) compileUdfCallWith(fn *core.UDFInfo, protected bool, 
 		opcode = bytecode.OpProtectedCall
 	}
 
-	c.ctx.Program.Emitter.EmitAs(opcode, dest, args)
+	c.ctx.Program.Emitter.EmitAsWithCallArgumentSpans(opcode, dest, args, argSpans)
 
 	c.ctx.Function.Types.Set(dest, core.TypeAny)
 
@@ -273,11 +276,12 @@ func (c *exprCallCompiler) compileUdfCallWith(fn *core.UDFInfo, protected bool, 
 
 func (c *exprCallCompiler) emitUdfTailCall(fn *core.UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) {
 	args := c.prepareUdfCallArgs(fn, seq, callCtx)
+	argSpans := c.argumentSpansFromCall(callCtx)
 
 	dest := c.ctx.Function.Registers.Allocate()
 	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(runtime.NewInt(fn.ID)))
 
-	c.ctx.Program.Emitter.EmitAs(bytecode.OpTailCall, dest, args)
+	c.ctx.Program.Emitter.EmitAsWithCallArgumentSpans(bytecode.OpTailCall, dest, args, argSpans)
 }
 
 func (c *exprCallCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) core.RegisterSequence {
@@ -372,6 +376,41 @@ func (c *exprCallCompiler) compileArgumentList(ctx fql.IArgumentListContext) cor
 	}
 
 	return seq
+}
+
+func (c *exprCallCompiler) argumentSpansFromCall(ctx antlr.ParserRuleContext) []source.Span {
+	call, ok := ctx.(fql.IFunctionCallContext)
+	if !ok {
+		return nil
+	}
+
+	return c.argumentSpansFromList(call.ArgumentList())
+}
+
+func (c *exprCallCompiler) argumentSpansFromList(ctx fql.IArgumentListContext) []source.Span {
+	if ctx == nil {
+		return nil
+	}
+
+	exps := ctx.AllExpression()
+	if len(exps) == 0 {
+		return nil
+	}
+
+	spans := make([]source.Span, len(exps))
+
+	for i, exp := range exps {
+		spans[i] = source.Span{Start: -1, End: -1}
+
+		prc, ok := exp.(antlr.ParserRuleContext)
+		if !ok {
+			continue
+		}
+
+		spans[i] = diagnostics.SpanFromRuleContext(prc)
+	}
+
+	return spans
 }
 
 func (c *exprCallCompiler) compileRangeOperator(ctx fql.IRangeOperatorContext) bytecode.Operand {

@@ -86,6 +86,24 @@ func validateMetadata(program *Program) error {
 		}
 	}
 
+	if len(program.Metadata.CallArgumentSpans) > 0 {
+		if len(program.Metadata.CallArgumentSpans) != bytecodeLen {
+			return fmt.Errorf("%w: call argument span metadata length %d does not match bytecode length %d", ErrInvalidProgram, len(program.Metadata.CallArgumentSpans), bytecodeLen)
+		}
+
+		for pc, spans := range program.Metadata.CallArgumentSpans {
+			for _, span := range spans {
+				if span.Start == -1 && span.End == -1 {
+					continue
+				}
+
+				if span.Start < 0 || span.End < span.Start {
+					return fmt.Errorf("%w: invalid call argument span at pc %d", ErrInvalidProgram, pc)
+				}
+			}
+		}
+	}
+
 	if len(program.Metadata.MatchFailTargets) > 0 {
 		if len(program.Metadata.MatchFailTargets) != bytecodeLen {
 			return fmt.Errorf("%w: match fail target metadata length %d does not match bytecode length %d", ErrInvalidProgram, len(program.Metadata.MatchFailTargets), bytecodeLen)

@@ -7,12 +7,33 @@ import (
 
 func SpanAt(program *bytecode.Program, pc int) source.Span {
 	if program == nil {
-		return source.Span{Start: -1, End: -1}
+		return invalidSpan()
 	}
 
 	if pc < 0 || pc >= len(program.Metadata.DebugSpans) {
-		return source.Span{Start: -1, End: -1}
+		return invalidSpan()
 	}
 
 	return program.Metadata.DebugSpans[pc]
+}
+
+func CallArgumentSpanAt(program *bytecode.Program, pc int, pos int) source.Span {
+	if program == nil || pos < 0 {
+		return invalidSpan()
+	}
+
+	if pc < 0 || pc >= len(program.Metadata.CallArgumentSpans) {
+		return invalidSpan()
+	}
+
+	spans := program.Metadata.CallArgumentSpans[pc]
+	if pos >= len(spans) {
+		return invalidSpan()
+	}
+
+	return spans[pos]
+}
+
+func invalidSpan() source.Span {
+	return source.Span{Start: -1, End: -1}
 }
