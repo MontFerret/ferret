@@ -64,13 +64,12 @@ func NewType(pkg, name string, assert TypeMatcher) Type {
 	return &runtimeType{name: pkg + "." + name, assert: assert}
 }
 
-// NewTypeFor creates a new Type with the given package name and type name, using a TypeMatcher that checks if a value is of type T.
-// The pkg parameter is the package name of the type, and the name parameter is the name of the type.
-// The resulting Type's Name will be in the format "pkg.name". If pkg is empty, it will panic. If name is empty, it will panic.
+// NewTypeFor creates a new Type for T, using a TypeMatcher that checks if a value is of type T.
+// The resulting Type's Name is derived from T's package path and type name.
 // Example usage:
 //
 //	type MyType struct{}
-//	myType := runtime.NewTypeFor[MyType]("myPackage", "MyType")
+//	myType := runtime.NewTypeFor[MyType]()
 //
 // This will create a Type that matches any value of type MyType.
 func NewTypeFor[T Value]() Type {
