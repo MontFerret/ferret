@@ -20,7 +20,7 @@ func TypeAssertion(expected runtime.Type) Assertion {
 			Min: 1,
 			Max: 2,
 		},
-		Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
+		Fn: func(_ context.Context, args []runtime.Value) (bool, error) {
 			return expected.Is(args[0]), nil
 		},
 	}
@@ -35,11 +35,7 @@ func EqualityAssertion(op CompareOperator) Assertion {
 			Min: 2,
 			Max: 3,
 		},
-		Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
-			if len(args) != 2 {
-				return false, fmt.Errorf("expected 2 arguments, got %d", len(args))
-			}
-
+		Fn: func(_ context.Context, args []runtime.Value) (bool, error) {
 			return op.Compare(args)
 		},
 	}
