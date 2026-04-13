@@ -191,6 +191,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 	case errors.Is(err, runtime.ErrInvalidArgumentNumber):
 		kind = ArityError
 		message = "Invalid number of arguments"
+		label = "invalid number of arguments"
 		hint = "Check the function signature for the expected argument count"
 		cause = runtime.ErrInvalidArgumentNumber
 
