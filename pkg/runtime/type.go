@@ -74,6 +74,11 @@ func NewType(pkg, name string, assert TypeMatcher) Type {
 // This will create a Type that matches any value of type MyType.
 func NewTypeFor[T Value]() Type {
 	t := reflect.TypeFor[T]()
+
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+
 	return NewType(t.PkgPath(), t.Name(), func(v Value) bool {
 		_, ok := v.(T)
 

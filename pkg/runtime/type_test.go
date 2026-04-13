@@ -3,6 +3,7 @@ package runtime_test
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -183,5 +184,28 @@ func TestTypeOfTypedOverrideForList(t *testing.T) {
 
 		So(runtime.IsSameType(runtime.TypeOf(val), typeTypedList), ShouldBeTrue)
 		So(runtime.IsType(val, runtime.TypeList), ShouldBeTrue)
+	})
+}
+
+func TestNewTypeFor(t *testing.T) {
+	Convey("NewTypeFor should derive type metadata and matcher for value type parameter", t, func() {
+		typ := runtime.NewTypeFor[typedOnly]()
+		tInfo := reflect.TypeFor[typedOnly]()
+
+		So(typ.Name(), ShouldEqual, tInfo.PkgPath()+"."+tInfo.Name())
+		So(typ.Is(typedOnly{}), ShouldBeTrue)
+		So(typ.Is(&typedOnly{}), ShouldBeFalse)
+	})
+
+	Convey("NewTypeFor should derive type metadata from the element type for pointer parameter", t, func() {
+		typ := runtime.NewTypeFor[*typedOnly]()
+		tInfo := reflect.TypeFor[typedOnly]()
+
+		So(typ.Name(), ShouldEqual, tInfo.PkgPath()+"."+tInfo.Name())
+		So(typ.Is(typedOnly{}), ShouldBeFalse)
+		So(typ.Is(&typedOnly{}), ShouldBeTrue)
+
+		var nilTyped *typedOnly
+		So(typ.Is(nilTyped), ShouldBeTrue)
 	})
 }
