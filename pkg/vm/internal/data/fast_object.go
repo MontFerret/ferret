@@ -15,8 +15,6 @@ type FastObject struct {
 	dictThreshold int
 }
 
-func (*FastObject) VMUntracked() {}
-
 func NewFastObject(cache *ShapeCache, dictThreshold int) *FastObject {
 	if cache == nil {
 		cache = NewShapeCache(0)
@@ -43,6 +41,8 @@ func NewFastObjectOf(cache *ShapeCache, dictThreshold int, size int) *FastObject
 
 	return obj
 }
+
+func (*FastObject) VMUntracked() {}
 
 func (t *FastObject) Shape() *Shape {
 	if t == nil || t.dict != nil {
