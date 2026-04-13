@@ -18,7 +18,51 @@ func warmup(vm *VM, env *Environment) error {
 		return err
 	}
 
+	if err := ensureParamsBound(vm, env); err != nil {
+		return err
+	}
+
 	return ensureRegexpsWarmed(vm)
+}
+
+func ensureParamsBound(vm *VM, env *Environment) error {
+	paramLoadDescriptors := vm.plan.paramLoadDescriptors
+	if len(paramLoadDescriptors) == 0 {
+		return nil
+	}
+
+	params := vm.program.Params
+	missingSlots := make([]bool, len(params))
+	hasMissing := false
+
+	for idx, name := range params {
+		if _, exists := env.Params[name]; exists {
+			continue
+		}
+
+		missingSlots[idx] = true
+		hasMissing = true
+	}
+
+	if !hasMissing {
+		return nil
+	}
+
+	var warmupErrs diagnostics.WarmupErrorSet
+
+	for _, descriptor := range paramLoadDescriptors {
+		if !missingSlots[descriptor.Slot] {
+			continue
+		}
+
+		warmupErrs.Add(runtime.Error(ErrMissedParam, "@"+params[descriptor.Slot]), descriptor.PC, descriptor.Dst)
+	}
+
+	if warmupErrs.Size() > 0 {
+		return &warmupErrs
+	}
+
+	return nil
 }
 
 func ensureRegexpsWarmed(vm *VM) error {

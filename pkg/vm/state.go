@@ -148,7 +148,6 @@ func (s *execState) bindParams(env *Environment) error {
 
 	for idx, name := range required {
 		val, exists := env.Params[name]
-		s.scratch.MissingParams[idx] = !exists
 
 		if !exists {
 			val = runtime.None

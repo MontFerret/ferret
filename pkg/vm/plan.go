@@ -8,12 +8,21 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
 )
 
-type execPlan struct {
-	instructions           []execInstruction
-	hostCallDescriptors    []callDescriptor
-	udfCallDescriptors     []callDescriptor
-	udfTailCallDescriptors []callDescriptor
-}
+type (
+	execPlan struct {
+		instructions           []execInstruction
+		hostCallDescriptors    []callDescriptor
+		udfCallDescriptors     []callDescriptor
+		udfTailCallDescriptors []callDescriptor
+		paramLoadDescriptors   []paramLoadDescriptor
+	}
+
+	paramLoadDescriptor struct {
+		PC   int
+		Dst  bytecode.Operand
+		Slot int
+	}
+)
 
 func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 	if program == nil || len(program.Bytecode) == 0 {
@@ -29,6 +38,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 	hostCallDesc := make([]callDescriptor, 0, 4)
 	udfCallDesc := make([]callDescriptor, 0, 4)
 	udfTailCallDesc := make([]callDescriptor, 0, 4)
+	paramLoadDesc := make([]paramLoadDescriptor, 0, 4)
 	errs := diagnostics.NewInitializationErrorSet(4)
 
 	if len(aggregateSelectorSlots) > 0 && len(aggregateSelectorSlots) != len(program.Bytecode) {
@@ -129,6 +139,18 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 			descriptor.DisplayName = fnName
 			hostCallDesc = append(hostCallDesc, descriptor)
 			instructions[pc].InlineSlot = descriptor.ID
+		case bytecode.OpLoadParam:
+			slot, err := paramSlotAt(len(program.Params), src1, pc)
+			if err != nil {
+				errs.Add(err, pc, dst)
+				continue
+			}
+
+			paramLoadDesc = append(paramLoadDesc, paramLoadDescriptor{
+				PC:   pc,
+				Dst:  dst,
+				Slot: slot,
+			})
 		case bytecode.OpAggregateUpdate, bytecode.OpAggregateGroupUpdate:
 			slot, err := aggregateSelectorSlotAt(aggregateSelectorSlots, pc)
 			if err != nil {
@@ -168,11 +190,16 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 		udfTailCallDesc = nil
 	}
 
+	if len(paramLoadDesc) == 0 {
+		paramLoadDesc = nil
+	}
+
 	return execPlan{
 		instructions:           instructions,
 		hostCallDescriptors:    hostCallDesc,
 		udfCallDescriptors:     udfCallDesc,
 		udfTailCallDescriptors: udfTailCallDesc,
+		paramLoadDescriptors:   paramLoadDesc,
 	}, nil
 }
 
@@ -200,6 +227,15 @@ func matchFailTargetAt(targets []int, bytecodeLen, pc int) (int, error) {
 	}
 
 	return target, nil
+}
+
+func paramSlotAt(paramCount int, slot bytecode.Operand, pc int) (int, error) {
+	idx := int(slot) - 1
+	if idx < 0 || idx >= paramCount {
+		return -1, fmt.Errorf("invalid parameter slot %d at pc %d", slot, pc)
+	}
+
+	return idx, nil
 }
 
 func resolveHostFnName(reg map[bytecode.Operand]runtime.Value, dst bytecode.Operand) (string, error) {

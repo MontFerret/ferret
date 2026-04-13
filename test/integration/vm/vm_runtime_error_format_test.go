@@ -202,14 +202,237 @@ RETURN outer()
 				" --> missing_param_udf.fql:1:17",
 				"FUNC inner() => @foo",
 				"^^^^ missing parameter",
-				"called from inner (#1)",
-				"called from middle (#2)",
-				"called from outer (#3)",
-				"Note: VM stack: outer -> middle -> inner",
 				"Caused by: missed parameter: @foo",
 			} {
 				if !strings.Contains(formatted, needle) {
 					t.Fatalf("expected formatted runtime error to contain %q, got:\n%s", needle, formatted)
+				}
+			}
+
+			for _, needle := range []string{
+				"called from",
+				"VM stack:",
+				"RETURN outer()",
+				"RETURN value",
+			} {
+				if strings.Contains(formatted, needle) {
+					t.Fatalf("expected formatted runtime error to not contain %q, got:\n%s", needle, formatted)
+				}
+			}
+		})
+	}
+}
+
+func TestRuntimeErrorFormatsAggregatedMissingParams(t *testing.T) {
+	const query = `RETURN @foo + @bar`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+			program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("missing_params.fql", query))
+			if err != nil {
+				t.Fatalf("compile failed: %v", err)
+			}
+
+			instance, err := vm.New(program)
+			if err != nil {
+				t.Fatalf("vm init failed: %v", err)
+			}
+			defer func() {
+				if closeErr := instance.Close(); closeErr != nil {
+					t.Fatalf("vm close failed: %v", closeErr)
+				}
+			}()
+
+			_, err = instance.Run(context.Background(), vm.NewDefaultEnvironment())
+			if err == nil {
+				t.Fatal("expected aggregated runtime error")
+			}
+
+			var runtimeErr *vm.RuntimeError
+			if errors.As(err, &runtimeErr) {
+				t.Fatalf("expected aggregated runtime error, got single runtime error: %v", runtimeErr)
+			}
+
+			formatted := pkgdiagnostics.Format(err)
+			for _, needle := range []string{
+				" --> missing_params.fql:1:8",
+				" --> missing_params.fql:1:15",
+				"Caused by: missed parameter: @foo",
+				"Caused by: missed parameter: @bar",
+			} {
+				if !strings.Contains(formatted, needle) {
+					t.Fatalf("expected formatted runtime error set to contain %q, got:\n%s", needle, formatted)
+				}
+			}
+
+			if got, want := strings.Count(formatted, "UnresolvedSymbol: Missing parameter"), 2; got != want {
+				t.Fatalf("unexpected missing parameter diagnostic count: got %d, want %d\n%s", got, want, formatted)
+			}
+		})
+	}
+}
+
+func TestRuntimeErrorFormatsAggregatedRepeatedMissingParamCallsites(t *testing.T) {
+	const query = `RETURN @foo + @foo`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+			program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("missing_param_repeated.fql", query))
+			if err != nil {
+				t.Fatalf("compile failed: %v", err)
+			}
+
+			instance, err := vm.New(program)
+			if err != nil {
+				t.Fatalf("vm init failed: %v", err)
+			}
+			defer func() {
+				if closeErr := instance.Close(); closeErr != nil {
+					t.Fatalf("vm close failed: %v", closeErr)
+				}
+			}()
+
+			_, err = instance.Run(context.Background(), vm.NewDefaultEnvironment())
+			if err == nil {
+				t.Fatal("expected aggregated runtime error")
+			}
+
+			formatted := pkgdiagnostics.Format(err)
+			for _, needle := range []string{
+				" --> missing_param_repeated.fql:1:8",
+				" --> missing_param_repeated.fql:1:15",
+			} {
+				if !strings.Contains(formatted, needle) {
+					t.Fatalf("expected formatted runtime error set to contain %q, got:\n%s", needle, formatted)
+				}
+			}
+
+			if got, want := strings.Count(formatted, "UnresolvedSymbol: Missing parameter"), 2; got != want {
+				t.Fatalf("unexpected missing parameter diagnostic count: got %d, want %d\n%s", got, want, formatted)
+			}
+
+			if got, want := strings.Count(formatted, "Caused by: missed parameter: @foo"), 2; got != want {
+				t.Fatalf("unexpected repeated missing parameter cause count: got %d, want %d\n%s", got, want, formatted)
+			}
+		})
+	}
+}
+
+func TestRuntimeErrorFormatsAggregatedUdfMissingParamCallsites(t *testing.T) {
+	const query = `FUNC read() => @foo
+LET left = read()
+LET right = read()
+RETURN left + right
+`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+			program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("missing_param_udf_callsites.fql", query))
+			if err != nil {
+				t.Fatalf("compile failed: %v", err)
+			}
+
+			instance, err := vm.New(program)
+			if err != nil {
+				t.Fatalf("vm init failed: %v", err)
+			}
+			defer func() {
+				if closeErr := instance.Close(); closeErr != nil {
+					t.Fatalf("vm close failed: %v", closeErr)
+				}
+			}()
+
+			_, err = instance.Run(context.Background(), vm.NewDefaultEnvironment())
+			if err == nil {
+				t.Fatal("expected aggregated runtime error")
+			}
+
+			formatted := pkgdiagnostics.Format(err)
+			for _, needle := range []string{
+				" --> missing_param_udf_callsites.fql:1:16",
+			} {
+				if !strings.Contains(formatted, needle) {
+					t.Fatalf("expected formatted runtime error set to contain %q, got:\n%s", needle, formatted)
+				}
+			}
+
+			if got, want := strings.Count(formatted, "UnresolvedSymbol: Missing parameter"), 1; got != want {
+				t.Fatalf("unexpected missing parameter diagnostic count: got %d, want %d\n%s", got, want, formatted)
+			}
+
+			if got, want := strings.Count(formatted, "Caused by: missed parameter: @foo"), 1; got != want {
+				t.Fatalf("unexpected missing parameter cause count: got %d, want %d\n%s", got, want, formatted)
+			}
+
+			for _, needle := range []string{
+				"called from",
+				"VM stack:",
+			} {
+				if strings.Contains(formatted, needle) {
+					t.Fatalf("expected formatted runtime error set to not contain %q, got:\n%s", needle, formatted)
+				}
+			}
+		})
+	}
+}
+
+func TestRuntimeErrorFormatsAggregatedTopLevelAndUdfMissingParams(t *testing.T) {
+	const query = `LET val = @foo
+LET val2 = @bar
+
+FUNC TEST() (
+  RETURN @baz
+)
+
+RETURN [val, val2, TEST()]
+`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+			program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("missing_param_mixed_sites.fql", query))
+			if err != nil {
+				t.Fatalf("compile failed: %v", err)
+			}
+
+			instance, err := vm.New(program)
+			if err != nil {
+				t.Fatalf("vm init failed: %v", err)
+			}
+			defer func() {
+				if closeErr := instance.Close(); closeErr != nil {
+					t.Fatalf("vm close failed: %v", closeErr)
+				}
+			}()
+
+			_, err = instance.Run(context.Background(), vm.NewDefaultEnvironment())
+			if err == nil {
+				t.Fatal("expected aggregated runtime error")
+			}
+
+			formatted := pkgdiagnostics.Format(err)
+			for _, needle := range []string{
+				"LET val = @foo",
+				"LET val2 = @bar",
+				"RETURN @baz",
+				"Caused by: missed parameter: @foo",
+				"Caused by: missed parameter: @bar",
+				"Caused by: missed parameter: @baz",
+			} {
+				if !strings.Contains(formatted, needle) {
+					t.Fatalf("expected formatted runtime error set to contain %q, got:\n%s", needle, formatted)
+				}
+			}
+
+			if got, want := strings.Count(formatted, "UnresolvedSymbol: Missing parameter"), 3; got != want {
+				t.Fatalf("unexpected missing parameter diagnostic count: got %d, want %d\n%s", got, want, formatted)
+			}
+
+			for _, needle := range []string{
+				"called from",
+				"VM stack:",
+			} {
+				if strings.Contains(formatted, needle) {
+					t.Fatalf("expected formatted runtime error set to not contain %q, got:\n%s", needle, formatted)
 				}
 			}
 		})

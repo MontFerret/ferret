@@ -72,7 +72,7 @@ func WrapRuntimeError(program *bytecode.Program, pc int, callStack []frame.Trace
 			return ToRuntimeError(program, wer.PC+1, nil, wer.Cause)
 		}
 
-		errs := NewRuntimeErrorSet(5)
+		errs := NewRuntimeErrorSet(wpErrorSet.Size())
 
 		for _, wer := range wpErrorSet.Errors() {
 			// warmup PCs are zero-based instruction indices (no pre-increment),

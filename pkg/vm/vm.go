@@ -178,8 +178,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, err
 	udfCallDescriptors := vm.plan.udfCallDescriptors
 	udfTailCallDescriptors := vm.plan.udfTailCallDescriptors
 	paramSlots := state.scratch.Params
-	missingParamSlots := state.scratch.MissingParams
-	params := vm.program.Params
 loop:
 	for state.pc < len(instructions) {
 		pc := state.pc
@@ -388,13 +386,7 @@ loop:
 		case bytecode.OpLoadConst:
 			reg[dst] = constants[src1.Constant()]
 		case bytecode.OpLoadParam:
-			slot := int(src1) - 1
-			if missingParamSlots[slot] {
-				state.raiseRuntimeAt(pc, runtime.Error(ErrMissedParam, "@"+params[slot]), recoverDefault, bytecode.NoopOperand, nil, false)
-				break
-			}
-
-			state.writeBorrowedRegister(dst, paramSlots[slot])
+			state.writeBorrowedRegister(dst, paramSlots[int(src1)-1])
 		case bytecode.OpMakeCell:
 			state.makeCell(dst, state.valueOf(constants, src1))
 		case bytecode.OpLoadCell:
