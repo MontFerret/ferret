@@ -222,6 +222,20 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		label = "missing parameter"
 		hint = "Provide all required parameters"
 		cause = err
+	case errors.Is(err, runtime.ErrInvalidArgumentNumber):
+		kind = ArityError
+		message = "Wrong number of arguments"
+		label = "wrong number of arguments"
+		hint = "Check the function signature for the expected argument count"
+		cause = err
+
+		_, detail := diagnostics.Unwrap(err)
+		if detail != nil {
+			s := detail.Error()
+			if len(s) > 0 {
+				note = strings.ToUpper(s[:1]) + s[1:]
+			}
+		}
 	case errors.Is(err, ErrUnresolvedFunction):
 		kind = UnresolvedSymbol
 		message = "Unresolved function"

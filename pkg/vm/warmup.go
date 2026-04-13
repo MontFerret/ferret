@@ -1,6 +1,11 @@
 package vm
 
 import (
+	"errors"
+	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
@@ -156,18 +161,54 @@ func warmupBindHostCall(descriptor callDescriptor, functions *runtime.Functions)
 
 	argCount := descriptor.ArgCount
 
+	var cached mem.CachedHostFunction
+	var err error
+
 	switch argCount {
 	case 0:
-		return resolveHostFn(functions.A0().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function0) { f.Fn0 = fn }, descriptor.DisplayName)
+		cached, err = resolveHostFn(functions.A0().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function0) { f.Fn0 = fn }, descriptor.DisplayName)
 	case 1:
-		return resolveHostFn(functions.A1().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function1) { f.Fn1 = fn }, descriptor.DisplayName)
+		cached, err = resolveHostFn(functions.A1().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function1) { f.Fn1 = fn }, descriptor.DisplayName)
 	case 2:
-		return resolveHostFn(functions.A2().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function2) { f.Fn2 = fn }, descriptor.DisplayName)
+		cached, err = resolveHostFn(functions.A2().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function2) { f.Fn2 = fn }, descriptor.DisplayName)
 	case 3:
-		return resolveHostFn(functions.A3().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function3) { f.Fn3 = fn }, descriptor.DisplayName)
+		cached, err = resolveHostFn(functions.A3().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function3) { f.Fn3 = fn }, descriptor.DisplayName)
 	case 4:
-		return resolveHostFn(functions.A4().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function4) { f.Fn4 = fn }, descriptor.DisplayName)
+		cached, err = resolveHostFn(functions.A4().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function4) { f.Fn4 = fn }, descriptor.DisplayName)
 	default:
-		return resolveHostFn(functions.Var().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function) { f.FnV = fn }, descriptor.DisplayName)
+		cached, err = resolveHostFn(functions.Var().Get, functions.Var(), func(f *mem.CachedHostFunction, fn runtime.Function) { f.FnV = fn }, descriptor.DisplayName)
 	}
+
+	if err != nil && errors.Is(err, ErrUnresolvedFunction) && functions.Has(descriptor.DisplayName) {
+		available := resolveAvailableArities(descriptor.DisplayName, functions)
+
+		return mem.CachedHostFunction{}, fmt.Errorf(
+			"%w: expected number of arguments %s, but got %d",
+			runtime.ErrInvalidArgumentNumber, strings.Join(available, " or "), argCount,
+		)
+	}
+
+	return cached, err
+}
+
+func resolveAvailableArities(name string, functions *runtime.Functions) []string {
+	var arities []string
+
+	for i, col := range []interface{ Has(string) bool }{
+		functions.A0(),
+		functions.A1(),
+		functions.A2(),
+		functions.A3(),
+		functions.A4(),
+	} {
+		if col.Has(name) {
+			arities = append(arities, strconv.Itoa(i))
+		}
+	}
+
+	if functions.Var().Has(name) {
+		arities = append(arities, "variadic")
+	}
+
+	return arities
 }
