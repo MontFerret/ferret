@@ -20,6 +20,16 @@ type Functions struct {
 	size  int
 }
 
+var (
+	// Shared empty collections keep sparse registries read-only on lookup paths.
+	emptyFunctionsVar = NewFunctionCollection[Function]()
+	emptyFunctions0   = NewFunctionCollection[Function0]()
+	emptyFunctions1   = NewFunctionCollection[Function1]()
+	emptyFunctions2   = NewFunctionCollection[Function2]()
+	emptyFunctions3   = NewFunctionCollection[Function3]()
+	emptyFunctions4   = NewFunctionCollection[Function4]()
+)
+
 // NewFunctions creates and returns a new empty Functions container.
 func NewFunctions() *Functions {
 	return &Functions{}
@@ -105,7 +115,7 @@ func (f *Functions) List() []string {
 
 func (f *Functions) A0() FunctionCollection[Function0] {
 	if f.a0 == nil {
-		f.a0 = NewFunctionCollection[Function0]()
+		return emptyFunctions0
 	}
 
 	return f.a0
@@ -113,7 +123,7 @@ func (f *Functions) A0() FunctionCollection[Function0] {
 
 func (f *Functions) A1() FunctionCollection[Function1] {
 	if f.a1 == nil {
-		f.a1 = NewFunctionCollection[Function1]()
+		return emptyFunctions1
 	}
 
 	return f.a1
@@ -121,7 +131,7 @@ func (f *Functions) A1() FunctionCollection[Function1] {
 
 func (f *Functions) A2() FunctionCollection[Function2] {
 	if f.a2 == nil {
-		f.a2 = NewFunctionCollection[Function2]()
+		return emptyFunctions2
 	}
 
 	return f.a2
@@ -129,7 +139,7 @@ func (f *Functions) A2() FunctionCollection[Function2] {
 
 func (f *Functions) A3() FunctionCollection[Function3] {
 	if f.a3 == nil {
-		f.a3 = NewFunctionCollection[Function3]()
+		return emptyFunctions3
 	}
 
 	return f.a3
@@ -137,7 +147,7 @@ func (f *Functions) A3() FunctionCollection[Function3] {
 
 func (f *Functions) A4() FunctionCollection[Function4] {
 	if f.a4 == nil {
-		f.a4 = NewFunctionCollection[Function4]()
+		return emptyFunctions4
 	}
 
 	return f.a4
@@ -145,7 +155,7 @@ func (f *Functions) A4() FunctionCollection[Function4] {
 
 func (f *Functions) Var() FunctionCollection[Function] {
 	if f.av == nil {
-		f.av = NewFunctionCollection[Function]()
+		return emptyFunctionsVar
 	}
 
 	return f.av

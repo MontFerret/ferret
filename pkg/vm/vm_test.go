@@ -746,7 +746,7 @@ func TestOpLoadParam_MissingParamsPreserveRuntimeError(t *testing.T) {
 		Registers:  3,
 		Params:     []string{"foo", "bar"},
 		Bytecode: []bytecode.Instruction{
-			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(1), bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(1), bytecode.Operand(2)),
 			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
 		},
 	}
@@ -770,6 +770,173 @@ func TestOpLoadParam_MissingParamsPreserveRuntimeError(t *testing.T) {
 
 	if !strings.Contains(cause.Error(), "@bar") {
 		t.Fatalf("expected missing parameter name in error, got %v (cause: %v)", err, cause)
+	}
+}
+
+func TestWarmupMissingParamsSingleSiteReturnsRuntimeError(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Source:     source.New("single_missing_param.fql", "RETURN @foo"),
+		Registers:  2,
+		Params:     []string{"foo"},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(1), bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+		Metadata: bytecode.Metadata{
+			DebugSpans: []source.Span{
+				{Start: 7, End: 11},
+				{Start: 0, End: 11},
+			},
+		},
+	}
+
+	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected missing parameter error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	var rtErrSet *rtdiagnostics.RuntimeErrorSet
+	if errors.As(err, &rtErrSet) {
+		t.Fatalf("expected single runtime error, got set")
+	}
+
+	if got, want := rtErr.Message, "Missing parameter"; got != want {
+		t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
+	}
+
+	cause := errors.Unwrap(rtErr)
+	if cause == nil {
+		t.Fatal("expected missing parameter cause")
+	}
+
+	if !strings.Contains(cause.Error(), "@foo") {
+		t.Fatalf("expected missing parameter name in cause, got %v", cause)
+	}
+}
+
+func TestWarmupMissingParamsAggregateDifferentSlotsByCallsite(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  4,
+		Params:     []string{"foo", "bar"},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(1), bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(2), bytecode.Operand(2)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+	}
+
+	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected aggregated missing parameter error")
+	}
+
+	var rtErrSet *rtdiagnostics.RuntimeErrorSet
+	if !errors.As(err, &rtErrSet) {
+		t.Fatalf("expected runtime error set, got %T", err)
+	}
+
+	if got, want := rtErrSet.Size(), 2; got != want {
+		t.Fatalf("unexpected runtime error set size: got %d, want %d", got, want)
+	}
+
+	first := rtErrSet.First()
+	last := rtErrSet.Last()
+	if first == nil || last == nil {
+		t.Fatal("expected aggregated runtime errors")
+	}
+
+	if !strings.Contains(first.Cause.Error(), "@foo") {
+		t.Fatalf("expected first missing param cause to mention @foo, got %v", first.Cause)
+	}
+
+	if !strings.Contains(last.Cause.Error(), "@bar") {
+		t.Fatalf("expected second missing param cause to mention @bar, got %v", last.Cause)
+	}
+}
+
+func TestWarmupMissingParamsAggregateRepeatedCallsites(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  4,
+		Params:     []string{"foo"},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(1), bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(2), bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+	}
+
+	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected aggregated missing parameter error")
+	}
+
+	var rtErrSet *rtdiagnostics.RuntimeErrorSet
+	if !errors.As(err, &rtErrSet) {
+		t.Fatalf("expected runtime error set, got %T", err)
+	}
+
+	if got, want := rtErrSet.Size(), 2; got != want {
+		t.Fatalf("unexpected runtime error set size: got %d, want %d", got, want)
+	}
+
+	for i, rtErr := range [](*RuntimeError){rtErrSet.First(), rtErrSet.Last()} {
+		if rtErr == nil {
+			t.Fatalf("expected runtime error at index %d", i)
+		}
+
+		if got, want := rtErr.Message, "Missing parameter"; got != want {
+			t.Fatalf("unexpected runtime error message at index %d: got %q, want %q", i, got, want)
+		}
+
+		if !strings.Contains(rtErr.Cause.Error(), "@foo") {
+			t.Fatalf("expected missing parameter cause at index %d to mention @foo, got %v", i, rtErr.Cause)
+		}
+	}
+}
+
+func TestWarmupHostResolutionPrecedesMissingParamAggregation(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Source:     source.New("missing_host_precedence.fql", "RETURN MISSING_FN(@foo)"),
+		Registers:  2,
+		Params:     []string{"foo"},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(1), bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+		Constants: []runtime.Value{runtime.NewString("MISSING_FN")},
+		Metadata: bytecode.Metadata{
+			DebugSpans: []source.Span{
+				{Start: 7, End: 17},
+				{Start: 7, End: 17},
+				{Start: 18, End: 22},
+				{Start: 0, End: 22},
+			},
+		},
+	}
+
+	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
+	if err == nil {
+		t.Fatal("expected warmup error")
+	}
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	if got, want := rtErr.Message, "Unresolved function"; got != want {
+		t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
 	}
 }
 

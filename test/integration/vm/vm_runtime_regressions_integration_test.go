@@ -15,11 +15,108 @@ import (
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
-func TestRunMissingParamPrecedesWarmupHostResolution(t *testing.T) {
+func TestWarmupHostResolutionPrecedesMissingParamExecution(t *testing.T) {
 	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
 			spec.NewSpec("RETURN MISSING_FN(@foo)").
-				Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Missing parameter"}),
+				Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+		}
+	})
+}
+
+func TestStrictWarmupAggregatesMissingParams(t *testing.T) {
+	RunSpecFactory(t, func() []spec.Spec {
+		return []spec.Spec{
+			spec.NewSpec(`
+LET left = @foo
+LET right = @bar
+RETURN left + right
+`).Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
+				err, ok := actual.(error)
+				if !ok || err == nil {
+					return errors.New("expected warmup error")
+				}
+
+				formatted := diagnostics.Format(err)
+				if got, want := strings.Count(formatted, "Missing parameter"), 2; got != want {
+					return fmt.Errorf("unexpected missing parameter count: got %d, want %d\n%s", got, want, formatted)
+				}
+
+				return nil
+			})),
+		}
+	})
+}
+
+func TestStrictWarmupReportsRepeatedMissingParamPerCallsite(t *testing.T) {
+	RunSpecFactory(t, func() []spec.Spec {
+		return []spec.Spec{
+			spec.NewSpec(`
+LET left = @foo
+LET right = @foo
+RETURN left + right
+`).Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
+				err, ok := actual.(error)
+				if !ok || err == nil {
+					return errors.New("expected warmup error")
+				}
+
+				formatted := diagnostics.Format(err)
+				if got, want := strings.Count(formatted, "Missing parameter"), 2; got != want {
+					return fmt.Errorf("unexpected missing parameter count: got %d, want %d\n%s", got, want, formatted)
+				}
+
+				if got, want := strings.Count(formatted, "missed parameter: @foo"), 2; got != want {
+					return fmt.Errorf("unexpected repeated missing parameter cause count: got %d, want %d\n%s", got, want, formatted)
+				}
+
+				return nil
+			})),
+		}
+	})
+}
+
+func TestStrictWarmupReportsRepeatedUdfMissingParamPerLoadSite(t *testing.T) {
+	RunSpecFactory(t, func() []spec.Spec {
+		return []spec.Spec{
+			spec.NewSpec(`
+FUNC read() => @foo
+LET left = read()
+LET right = read()
+RETURN left + right
+`).Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
+				err, ok := actual.(error)
+				if !ok || err == nil {
+					return errors.New("expected warmup error")
+				}
+
+				formatted := diagnostics.Format(err)
+				if got, want := strings.Count(formatted, "Missing parameter"), 1; got != want {
+					return fmt.Errorf("unexpected missing parameter count: got %d, want %d\n%s", got, want, formatted)
+				}
+
+				for _, needle := range []string{"called from", "VM stack:"} {
+					if strings.Contains(formatted, needle) {
+						return fmt.Errorf("expected no warmup trace details, got:\n%s", formatted)
+					}
+				}
+
+				return nil
+			})),
+		}
+	})
+}
+
+func TestStrictWarmupFailsProtectedMissingParamUdfCall(t *testing.T) {
+	RunSpecFactory(t, func() []spec.Spec {
+		return []spec.Spec{
+			spec.NewSpec(`
+FUNC risky() => @foo
+RETURN risky()?
+`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+				Message:     "Missing parameter",
+				NotContains: []string{"called from", "VM stack:"},
+			}),
 		}
 	})
 }

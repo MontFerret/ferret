@@ -103,7 +103,10 @@ func (c *exprCallCompiler) compileParam(ctx fql.IParamContext) bytecode.Operand 
 	}
 
 	reg := c.ctx.Function.Registers.Allocate()
-	c.ctx.Program.Emitter.EmitLoadParam(reg, c.ctx.Program.HostParams.Bind(name))
+	span := diagnostics.SpanFromRuleContext(ctx)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitLoadParam(reg, c.ctx.Program.HostParams.Bind(name))
+	})
 	c.ctx.Function.Types.Set(reg, core.TypeAny)
 
 	return reg

@@ -8,22 +8,33 @@ func ArgError(err error, pos int) error {
 	return newInvalidArgumentError(err, pos)
 }
 
-// ValidateArgs validates that the number of arguments is within the specified range.
-// It returns an error if the argument count is outside the [minimum, maximum] range.
-func ValidateArgs(args []Value, minimum, maximum int) error {
-	count := len(args)
-
+// ArityError returns an error if the number of arguments is outside the [minimum, maximum] range.
+// The minimum and maximum values are inclusive.
+func ArityError(count, minimum, maximum int) error {
 	if count < minimum || count > maximum {
+		var num string
+
+		if minimum == maximum {
+			num = fmt.Sprintf("%d", minimum)
+		} else {
+			num = fmt.Sprintf("%d-%d", minimum, maximum)
+		}
+
 		return Error(
 			ErrInvalidArgumentNumber,
 			fmt.Sprintf(
-				"expected number of arguments %d-%d, but got %d",
-				minimum,
-				maximum,
-				len(args)))
+				"expected number of arguments %s, but got %d",
+				num,
+				count))
 	}
 
 	return nil
+}
+
+// ValidateArgs validates that the number of arguments is within the specified range.
+// It returns an error if the argument count is outside the [minimum, maximum] range.
+func ValidateArgs(args []Value, minimum, maximum int) error {
+	return ArityError(len(args), minimum, maximum)
 }
 
 // ValidateArgsType validates that each argument in the provided slice matches at least one of the expected types.

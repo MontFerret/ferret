@@ -334,7 +334,7 @@ func TestLifecycle_MissingParamDoesNotCloseBorrowedParamResource(t *testing.T) {
 		Registers:  1,
 		Params:     []string{"foo", "bar"},
 		Bytecode: []bytecode.Instruction{
-			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(0), bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(0), bytecode.Operand(2)),
 			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
 		},
 	}
@@ -350,7 +350,7 @@ func TestLifecycle_MissingParamDoesNotCloseBorrowedParamResource(t *testing.T) {
 	}
 
 	if got := param.closed; got != 0 {
-		t.Fatalf("expected borrowed param to remain open after bind failure, got %d closes", got)
+		t.Fatalf("expected borrowed param to remain open after missing param failure, got %d closes", got)
 	}
 }
 
