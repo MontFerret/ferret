@@ -187,3 +187,49 @@ func TestFunctionLookupIsCaseSensitive(t *testing.T) {
 		t.Fatalf("unexpected foo result: %v", got)
 	}
 }
+
+func assertEmptyFunctionCollection[T FunctionConstraint](t *testing.T, name string, col FunctionCollection[T]) {
+	t.Helper()
+
+	if col.Size() != 0 {
+		t.Fatalf("expected %s collection to be empty, got size %d", name, col.Size())
+	}
+
+	if col.Has("one") {
+		t.Fatalf("expected %s collection to miss registered A1 function", name)
+	}
+
+	if _, ok := col.Get("missing"); ok {
+		t.Fatalf("expected %s collection lookup to miss", name)
+	}
+}
+
+func TestEmptyFunctionAccessorsRemainSparse(t *testing.T) {
+	builder := NewFunctionsBuilder()
+	builder.A1().Add("one", func(_ context.Context, arg Value) (Value, error) {
+		return arg, nil
+	})
+
+	funcs, err := builder.Build()
+	if err != nil {
+		t.Fatalf("build functions: %v", err)
+	}
+
+	if funcs.a1 == nil {
+		t.Fatal("expected populated A1 collection")
+	}
+
+	if funcs.av != nil || funcs.a0 != nil || funcs.a2 != nil || funcs.a3 != nil || funcs.a4 != nil {
+		t.Fatalf("expected sparse registry, got av=%v a0=%v a2=%v a3=%v a4=%v", funcs.av, funcs.a0, funcs.a2, funcs.a3, funcs.a4)
+	}
+
+	assertEmptyFunctionCollection(t, "var", funcs.Var())
+	assertEmptyFunctionCollection(t, "a0", funcs.A0())
+	assertEmptyFunctionCollection(t, "a2", funcs.A2())
+	assertEmptyFunctionCollection(t, "a3", funcs.A3())
+	assertEmptyFunctionCollection(t, "a4", funcs.A4())
+
+	if funcs.av != nil || funcs.a0 != nil || funcs.a2 != nil || funcs.a3 != nil || funcs.a4 != nil {
+		t.Fatalf("expected empty accessors to preserve sparse registry, got av=%v a0=%v a2=%v a3=%v a4=%v", funcs.av, funcs.a0, funcs.a2, funcs.a3, funcs.a4)
+	}
+}
