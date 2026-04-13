@@ -12,6 +12,7 @@ func RegisterLib(ns runtime.Namespace) {
 	registerNOT(t)
 
 	t.Function().Var().
+		Add("EMPTY", base.NewPositiveAssertion(Empty)).
 		Add("EQ", base.NewPositiveAssertion(Equal)).
 		Add("FAIL", base.NewPositiveAssertion(Fail)).
 		Add("FALSE", base.NewPositiveAssertion(False)).
