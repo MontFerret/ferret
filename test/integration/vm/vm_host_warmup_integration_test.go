@@ -259,7 +259,7 @@ func TestWarmupArityMismatchRecovery(t *testing.T) {
 								})
 							}),
 						},
-						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Wrong number of arguments"}),
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Invalid number of arguments"}),
 					},
 					{
 						Name: "recovered",
