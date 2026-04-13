@@ -132,21 +132,23 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 	case errors.Is(err, ErrDivisionByZero):
 		kind = DivideByZero
 		message = "Division by zero"
-		label = "attempt to divide by zero"
+		label = "denominator evaluates to zero"
 		hint = "Ensure the denominator is non-zero before division"
-		note = "Add a conditional check before dividing"
+		cause = ErrDivisionByZero
 	case errors.Is(err, ErrModuloByZero):
 		kind = ModuloByZero
 		message = "Modulo by zero"
-		label = "attempt to take modulo by zero"
+		label = "divisor evaluates to zero"
 		hint = "Ensure the divisor is non-zero before modulo"
-		note = "Add a conditional check before modulo"
+		cause = ErrModuloByZero
 	case errors.As(err, &memberErr):
 		kind = diagnostics.TypeError
 		message = memberErr.Error()
+
 		if message != "" {
 			message = strings.ToUpper(message[:1]) + message[1:]
 		}
+
 		label = memberErr.Label()
 		hint = memberErr.Hint()
 	case hasArg && (errors.Is(argCause, runtime.ErrInvalidType) || errors.Is(argCause, runtime.ErrInvalidArgumentType)):
@@ -167,7 +169,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		message = "Invalid type"
 		label = "type mismatch"
 		hint = "Ensure the value has the expected type"
-		cause = err
+		cause = runtime.ErrInvalidType
 
 		msg, cs := diagnostics.Unwrap(err)
 
@@ -179,7 +181,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		kind = diagnostics.TypeError
 		message = "Invalid argument type"
 		hint = "Ensure the argument types match the function signature"
-
+		cause = runtime.ErrInvalidArgumentType
 		msg, cs := diagnostics.Unwrap(err)
 
 		if msg != nil && cs != nil {
@@ -190,12 +192,20 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		kind = ArityError
 		message = "Invalid number of arguments"
 		hint = "Check the function signature for the expected argument count"
-		cause = err
+		cause = runtime.ErrInvalidArgumentNumber
+
+		_, detail := diagnostics.Unwrap(err)
+		if detail != nil {
+			s := detail.Error()
+			if len(s) > 0 {
+				note = strings.ToUpper(s[:1]) + s[1:]
+			}
+		}
 	case errors.Is(err, runtime.ErrInvalidArgument):
 		kind = ArityError
 		message = "Invalid argument"
 		hint = "Check the function arguments"
-		cause = err
+		cause = runtime.ErrInvalidArgument
 
 		if hasArg {
 			index := argPos + 1
@@ -221,32 +231,20 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		message = "Missing parameter"
 		label = "missing parameter"
 		hint = "Provide all required parameters"
-		cause = err
-	case errors.Is(err, runtime.ErrInvalidArgumentNumber):
-		kind = ArityError
-		message = "Wrong number of arguments"
-		label = "wrong number of arguments"
-		hint = "Check the function signature for the expected argument count"
-		cause = err
-
-		_, detail := diagnostics.Unwrap(err)
-		if detail != nil {
-			s := detail.Error()
-			if len(s) > 0 {
-				note = strings.ToUpper(s[:1]) + s[1:]
-			}
-		}
+		cause = ErrMissedParam
 	case errors.Is(err, ErrUnresolvedFunction):
 		kind = UnresolvedSymbol
 		message = "Unresolved function"
 		label = "unresolved function"
 		hint = "Ensure the function is registered and accessible in the current context"
 		note = "Add the function to the registry if it's missing"
+		cause = ErrUnresolvedFunction
 	case errors.Is(err, ErrInvalidFunctionName):
 		kind = UnresolvedSymbol
 		message = "Invalid function name"
 		label = "invalid function name"
 		hint = "Ensure the function name is valid and does not contain illegal characters"
+		cause = ErrInvalidFunctionName
 	case errors.As(err, &invariantErr):
 		kind = diagnostics.UnexpectedError
 		message = "VM invariant violation"

@@ -224,7 +224,7 @@ func TestWarmupArityMismatchProducesDescriptiveError(t *testing.T) {
 						},
 						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{
 							Message:  "Invalid number of arguments",
-							Contains: []string{"expected number of arguments 1, but got 2"},
+							Contains: []string{"Expected number of arguments 1, but got 2"},
 						}),
 					},
 				},

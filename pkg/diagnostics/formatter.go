@@ -36,12 +36,12 @@ func FormatDiagnostic(out io.Writer, e *Diagnostic, indent int) {
 		renderErrorSpan(out, prefix, e.Source, mainSpan)
 	}
 
-	if e.Hint != "" {
-		fmt.Fprintf(out, "%sHint: %s\n", prefix, e.Hint)
-	}
-
 	if e.Note != "" {
 		fmt.Fprintf(out, "%sNote: %s\n", prefix, e.Note)
+	}
+
+	if e.Hint != "" {
+		fmt.Fprintf(out, "%sHint: %s\n", prefix, e.Hint)
 	}
 
 	if e.Cause != nil {
