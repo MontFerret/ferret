@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
@@ -65,6 +66,154 @@ RETURN Outer()
 			}),
 		),
 	})
+}
+
+func TestRuntimeErrorFormatsMissingParamWithParamSpan(t *testing.T) {
+	const query = `RETURN @foo`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+			program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("missing_param.fql", query))
+			if err != nil {
+				t.Fatalf("compile failed: %v", err)
+			}
+
+			instance, err := vm.New(program)
+			if err != nil {
+				t.Fatalf("vm init failed: %v", err)
+			}
+			defer func() {
+				if closeErr := instance.Close(); closeErr != nil {
+					t.Fatalf("vm close failed: %v", closeErr)
+				}
+			}()
+
+			_, err = instance.Run(context.Background(), vm.NewDefaultEnvironment())
+			if err == nil {
+				t.Fatal("expected runtime error")
+			}
+
+			var runtimeErr *vm.RuntimeError
+			if !errors.As(err, &runtimeErr) {
+				t.Fatalf("expected runtime error, got %T", err)
+			}
+
+			if got, want := runtimeErr.Message, "Missing parameter"; got != want {
+				t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
+			}
+
+			mainSpanFound := false
+			for _, span := range runtimeErr.Spans {
+				if !span.Main {
+					continue
+				}
+
+				mainSpanFound = true
+
+				if got, want := query[span.Span.Start:span.Span.End], "@foo"; got != want {
+					t.Fatalf("unexpected main span fragment: got %q, want %q", got, want)
+				}
+
+				if got, want := span.Label, "missing parameter"; got != want {
+					t.Fatalf("unexpected main span label: got %q, want %q", got, want)
+				}
+			}
+
+			if !mainSpanFound {
+				t.Fatal("expected a main error span")
+			}
+
+			formatted := runtimeErr.Format()
+			for _, needle := range []string{
+				"UnresolvedSymbol: Missing parameter",
+				" --> missing_param.fql:1:8",
+				"RETURN @foo",
+				"^^^^ missing parameter",
+				"Hint: Provide all required parameters",
+				"Caused by: missed parameter: @foo",
+			} {
+				if !strings.Contains(formatted, needle) {
+					t.Fatalf("expected formatted runtime error to contain %q, got:\n%s", needle, formatted)
+				}
+			}
+		})
+	}
+}
+
+func TestRuntimeErrorFormatsNestedMissingParamAtInnerUsage(t *testing.T) {
+	const query = `FUNC inner() => @foo
+FUNC middle() (
+  LET value = inner()
+  RETURN value
+)
+FUNC outer() (
+  LET value = middle()
+  RETURN value
+)
+RETURN outer()
+`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+			program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("missing_param_udf.fql", query))
+			if err != nil {
+				t.Fatalf("compile failed: %v", err)
+			}
+
+			instance, err := vm.New(program)
+			if err != nil {
+				t.Fatalf("vm init failed: %v", err)
+			}
+			defer func() {
+				if closeErr := instance.Close(); closeErr != nil {
+					t.Fatalf("vm close failed: %v", closeErr)
+				}
+			}()
+
+			_, err = instance.Run(context.Background(), vm.NewDefaultEnvironment())
+			if err == nil {
+				t.Fatal("expected runtime error")
+			}
+
+			var runtimeErr *vm.RuntimeError
+			if !errors.As(err, &runtimeErr) {
+				t.Fatalf("expected runtime error, got %T", err)
+			}
+
+			mainSpanFound := false
+			for _, span := range runtimeErr.Spans {
+				if !span.Main {
+					continue
+				}
+
+				mainSpanFound = true
+
+				if got, want := query[span.Span.Start:span.Span.End], "@foo"; got != want {
+					t.Fatalf("unexpected main span fragment: got %q, want %q", got, want)
+				}
+			}
+
+			if !mainSpanFound {
+				t.Fatal("expected a main error span")
+			}
+
+			formatted := runtimeErr.Format()
+			for _, needle := range []string{
+				" --> missing_param_udf.fql:1:17",
+				"FUNC inner() => @foo",
+				"^^^^ missing parameter",
+				"called from inner (#1)",
+				"called from middle (#2)",
+				"called from outer (#3)",
+				"Note: VM stack: outer -> middle -> inner",
+				"Caused by: missed parameter: @foo",
+			} {
+				if !strings.Contains(formatted, needle) {
+					t.Fatalf("expected formatted runtime error to contain %q, got:\n%s", needle, formatted)
+				}
+			}
+		})
+	}
 }
 
 func TestRuntimeErrorFormatsArgumentTypeFailuresWithArgumentSpan(t *testing.T) {

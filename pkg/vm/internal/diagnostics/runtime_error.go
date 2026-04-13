@@ -231,7 +231,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		message = "Missing parameter"
 		label = "missing parameter"
 		hint = "Provide all required parameters"
-		cause = errors.Unwrap(err)
+		cause = err
 	case errors.Is(err, ErrUnresolvedFunction):
 		kind = UnresolvedSymbol
 		message = "Unresolved function"

@@ -19,6 +19,16 @@ func TestNewScratch_InitializesSlotsWithNone(t *testing.T) {
 		}
 	}
 
+	if got, want := len(s.MissingParams), 3; got != want {
+		t.Fatalf("unexpected missing params size: got %d, want %d", got, want)
+	}
+
+	for i := range s.MissingParams {
+		if s.MissingParams[i] {
+			t.Fatalf("expected missing param slot %d to be false", i)
+		}
+	}
+
 	if got := len(s.HostArgs); got != 0 {
 		t.Fatalf("unexpected host args size: got %d, want %d", got, 0)
 	}
@@ -27,6 +37,7 @@ func TestNewScratch_InitializesSlotsWithNone(t *testing.T) {
 func TestScratchResizeParams_GrowBeyondCapacityInitializesNewSlotsWithNone(t *testing.T) {
 	s := NewScratch(1)
 	s.Params[0] = runtime.NewInt(7)
+	s.MissingParams[0] = true
 
 	s.ResizeParams(4)
 
@@ -38,6 +49,10 @@ func TestScratchResizeParams_GrowBeyondCapacityInitializesNewSlotsWithNone(t *te
 		t.Fatalf("unexpected preserved slot value: got %v, want %v", got, want)
 	}
 
+	if !s.MissingParams[0] {
+		t.Fatal("expected missing param flag for existing slot to be preserved")
+	}
+
 	for i := 1; i < len(s.Params); i++ {
 		if s.Params[i] == nil {
 			t.Fatalf("expected slot %d to not be nil", i)
@@ -46,6 +61,10 @@ func TestScratchResizeParams_GrowBeyondCapacityInitializesNewSlotsWithNone(t *te
 		if got := s.Params[i]; got != runtime.None {
 			t.Fatalf("expected slot %d to be runtime.None, got %v", i, got)
 		}
+
+		if s.MissingParams[i] {
+			t.Fatalf("expected missing param slot %d to be false", i)
+		}
 	}
 }
 
@@ -53,6 +72,8 @@ func TestScratchResizeParams_GrowWithinCapacityResetsExposedSlotsToNone(t *testi
 	s := NewScratch(3)
 	s.Params[1] = runtime.NewInt(11)
 	s.Params[2] = runtime.NewInt(13)
+	s.MissingParams[1] = true
+	s.MissingParams[2] = true
 
 	s.ResizeParams(1)
 	s.ResizeParams(3)
@@ -68,6 +89,10 @@ func TestScratchResizeParams_GrowWithinCapacityResetsExposedSlotsToNone(t *testi
 
 		if got := s.Params[i]; got != runtime.None {
 			t.Fatalf("expected slot %d to be runtime.None after regrowth, got %v", i, got)
+		}
+
+		if s.MissingParams[i] {
+			t.Fatalf("expected missing param slot %d to be false after regrowth", i)
 		}
 	}
 }
@@ -127,6 +152,7 @@ func TestScratchReset_ScrubsParamsAndHostArgsWithoutClosing(t *testing.T) {
 	param := newTestCloser("param")
 	hostArg := newTestCloser("host")
 	s.Params[0] = param
+	s.MissingParams[0] = true
 	s.ResizeHostArgs(1)
 	s.HostArgs[0] = hostArg
 
@@ -142,6 +168,10 @@ func TestScratchReset_ScrubsParamsAndHostArgsWithoutClosing(t *testing.T) {
 
 	if got := s.Params[0]; got != runtime.None {
 		t.Fatalf("expected param slot to reset to runtime.None, got %v", got)
+	}
+
+	if s.MissingParams[0] {
+		t.Fatal("expected missing param slot to reset to false")
 	}
 
 	if got := s.HostArgs[0]; got != runtime.None {

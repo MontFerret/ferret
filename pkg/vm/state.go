@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -147,26 +146,16 @@ func (s *execState) bindParams(env *Environment) error {
 
 	s.scratch.ResizeParams(len(required))
 
-	var missedParams []string
-
 	for idx, name := range required {
 		val, exists := env.Params[name]
+		s.scratch.MissingParams[idx] = !exists
 
 		if !exists {
-			if missedParams == nil {
-				missedParams = make([]string, 0, len(required))
-			}
-
-			missedParams = append(missedParams, "@"+name)
 			val = runtime.None
 		}
 
 		val = normalizeValue(val)
 		s.scratch.Params[idx] = val
-	}
-
-	if len(missedParams) > 0 {
-		return runtime.Error(ErrMissedParam, strings.Join(missedParams, ", "))
 	}
 
 	return nil

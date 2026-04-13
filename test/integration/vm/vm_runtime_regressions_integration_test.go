@@ -15,11 +15,11 @@ import (
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
-func TestRunMissingParamPrecedesWarmupHostResolution(t *testing.T) {
+func TestWarmupHostResolutionPrecedesMissingParamExecution(t *testing.T) {
 	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
 			spec.NewSpec("RETURN MISSING_FN(@foo)").
-				Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Missing parameter"}),
+				Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
 		}
 	})
 }

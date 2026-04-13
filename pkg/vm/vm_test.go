@@ -746,7 +746,7 @@ func TestOpLoadParam_MissingParamsPreserveRuntimeError(t *testing.T) {
 		Registers:  3,
 		Params:     []string{"foo", "bar"},
 		Bytecode: []bytecode.Instruction{
-			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(1), bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(1), bytecode.Operand(2)),
 			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
 		},
 	}
@@ -770,6 +770,27 @@ func TestOpLoadParam_MissingParamsPreserveRuntimeError(t *testing.T) {
 
 	if !strings.Contains(cause.Error(), "@bar") {
 		t.Fatalf("expected missing parameter name in error, got %v (cause: %v)", err, cause)
+	}
+}
+
+func TestOpLoadParam_UnusedMissingSlotDoesNotFailRun(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  3,
+		Params:     []string{"foo", "bar"},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(1), bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+	}
+
+	env := NewDefaultEnvironment()
+	env.Params["foo"] = runtime.NewInt(1)
+
+	out := mustResultRootAndClose(t, mustRunResult(t, mustNewVM(t, program), env))
+
+	if out != runtime.NewInt(1) {
+		t.Fatalf("unexpected result: got %v, want %v", out, runtime.NewInt(1))
 	}
 }
 
