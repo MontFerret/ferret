@@ -169,7 +169,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		message = "Invalid type"
 		label = "type mismatch"
 		hint = "Ensure the value has the expected type"
-		cause = runtime.ErrInvalidType
+		cause = err
 
 		msg, cs := diagnostics.Unwrap(err)
 
@@ -181,7 +181,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		kind = diagnostics.TypeError
 		message = "Invalid argument type"
 		hint = "Ensure the argument types match the function signature"
-		cause = runtime.ErrInvalidArgumentType
+		cause = err
 		msg, cs := diagnostics.Unwrap(err)
 
 		if msg != nil && cs != nil {
@@ -205,7 +205,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		kind = ArityError
 		message = "Invalid argument"
 		hint = "Check the function arguments"
-		cause = runtime.ErrInvalidArgument
+		cause = err
 
 		if hasArg {
 			index := argPos + 1
@@ -231,7 +231,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		message = "Missing parameter"
 		label = "missing parameter"
 		hint = "Provide all required parameters"
-		cause = ErrMissedParam
+		cause = errors.Unwrap(err)
 	case errors.Is(err, ErrUnresolvedFunction):
 		kind = UnresolvedSymbol
 		message = "Unresolved function"
