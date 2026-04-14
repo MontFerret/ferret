@@ -50,22 +50,22 @@ func runtimeErrorSource(program *bytecode.Program) *source.Source {
 	return program.Source
 }
 
-func unwrapRuntimeDetail(err error) (error, string) {
+func unwrapRuntimeDetail(err error) (string, error) {
 	if err == nil {
-		return nil, ""
+		return "", nil
 	}
 
 	wrapped, detail := diagnostics.Unwrap(err)
 	if wrapped == nil || detail == nil {
-		return err, ""
+		return "", err
 	}
 
 	text := strings.TrimSpace(detail.Error())
 	if text == "" {
-		return wrapped, ""
+		return "", wrapped
 	}
 
-	return wrapped, text
+	return text, wrapped
 }
 
 func detailNote(detail string) string {
@@ -90,7 +90,7 @@ func argumentDetailNote(index int, detail string) string {
 }
 
 func fallbackRuntimeMessage(err error) string {
-	cause, _ := unwrapRuntimeDetail(err)
+	_, cause := unwrapRuntimeDetail(err)
 	if cause == nil {
 		return "runtime error"
 	}

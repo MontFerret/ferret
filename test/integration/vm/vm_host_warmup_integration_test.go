@@ -226,7 +226,7 @@ func TestWarmupArityMismatchProducesDescriptiveError(t *testing.T) {
 							Message: "invalid number of arguments",
 							Contains: []string{
 								"wrong number of arguments in call to F",
-								"Note: F expects 1 arguments, but got 2",
+								"Note: F expects 1 argument, but got 2",
 								"Hint: Pass 1 argument to F",
 							},
 						}),

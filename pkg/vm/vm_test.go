@@ -3143,7 +3143,7 @@ func TestUdfRuntimeMessageUsesSourceSpellingName(t *testing.T) {
 		t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
 	}
 
-	if got, want := rtErr.Note, "UDF 'boo' expects 1 arguments, but got 0"; got != want {
+	if got, want := rtErr.Note, "UDF 'boo' expects 1 argument, but got 0"; got != want {
 		t.Fatalf("unexpected runtime error note: got %q, want %q", got, want)
 	}
 

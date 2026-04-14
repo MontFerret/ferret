@@ -2,6 +2,7 @@ package vm
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	rtdiagnostics "github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
@@ -66,3 +67,19 @@ var (
 	ErrPoolExhausted         = errors.New("pool exhausted")
 	ErrPoolClosed            = errors.New("pool closed")
 )
+
+func argumentWordForCount(count int) string {
+	if count == 1 {
+		return "argument"
+	}
+
+	return "arguments"
+}
+
+func argumentWordForExpectation(expected string) string {
+	if strings.TrimSpace(expected) == "1" {
+		return "argument"
+	}
+
+	return "arguments"
+}

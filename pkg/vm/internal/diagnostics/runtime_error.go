@@ -158,7 +158,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		spec.Cause = runtime.ErrInvalidType
 	case hasArg && (errors.Is(argCause, runtime.ErrInvalidType) || errors.Is(argCause, runtime.ErrInvalidArgumentType)):
 		index := argPos + 1
-		cause, detail := unwrapRuntimeDetail(argCause)
+		detail, cause := unwrapRuntimeDetail(argCause)
 
 		spec.Kind = diagnostics.TypeError
 		spec.Message = "invalid argument type"
@@ -166,7 +166,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		spec.Note = argumentDetailNote(index, detail)
 		spec.Cause = cause
 	case errors.Is(err, runtime.ErrInvalidType):
-		cause, detail := unwrapRuntimeDetail(err)
+		detail, cause := unwrapRuntimeDetail(err)
 
 		spec.Kind = diagnostics.TypeError
 		spec.Message = "invalid type"
@@ -174,7 +174,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		spec.Note = detailNote(detail)
 		spec.Cause = cause
 	case errors.Is(err, runtime.ErrInvalidArgumentType):
-		cause, detail := unwrapRuntimeDetail(err)
+		detail, cause := unwrapRuntimeDetail(err)
 
 		spec.Kind = diagnostics.TypeError
 		spec.Message = "invalid argument type"
@@ -182,7 +182,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		spec.Note = detailNote(detail)
 		spec.Cause = cause
 	case errors.Is(err, runtime.ErrInvalidArgumentNumber):
-		cause, detail := unwrapRuntimeDetail(err)
+		detail, cause := unwrapRuntimeDetail(err)
 
 		spec.Kind = ArityError
 		spec.Message = "invalid number of arguments"
@@ -195,20 +195,20 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 
 		if hasArg {
 			index := argPos + 1
-			cause, detail := unwrapRuntimeDetail(argCause)
+			detail, cause := unwrapRuntimeDetail(argCause)
 
 			spec.Label = fmt.Sprintf("argument %d is invalid", index)
 			spec.Note = argumentDetailNote(index, detail)
 			spec.Cause = cause
 		} else {
-			cause, detail := unwrapRuntimeDetail(err)
+			detail, cause := unwrapRuntimeDetail(err)
 
 			spec.Label = "invalid argument"
 			spec.Note = detailNote(detail)
 			spec.Cause = cause
 		}
 	case errors.Is(err, ErrMissedParam):
-		cause, detail := unwrapRuntimeDetail(err)
+		detail, cause := unwrapRuntimeDetail(err)
 		name := detailNote(detail)
 
 		spec.Kind = UnresolvedSymbol
@@ -246,7 +246,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		spec.Hint = "This indicates an internal VM bug; please report it with the query and stack context"
 		spec.Cause = invariantErr.Cause
 	default:
-		cause, detail := unwrapRuntimeDetail(err)
+		detail, cause := unwrapRuntimeDetail(err)
 
 		spec.Message = fallbackRuntimeMessage(err)
 		spec.Note = detailNote(detail)
