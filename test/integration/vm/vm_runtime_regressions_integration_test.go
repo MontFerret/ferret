@@ -19,7 +19,7 @@ func TestWarmupHostResolutionPrecedesMissingParamExecution(t *testing.T) {
 	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
 			spec.NewSpec("RETURN MISSING_FN(@foo)").
-				Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+				Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "unresolved function"}),
 		}
 	})
 }
@@ -38,7 +38,7 @@ RETURN left + right
 				}
 
 				formatted := diagnostics.Format(err)
-				if got, want := strings.Count(formatted, "Missing parameter"), 2; got != want {
+				if got, want := strings.Count(formatted, "UnresolvedSymbol: missing parameter"), 2; got != want {
 					return fmt.Errorf("unexpected missing parameter count: got %d, want %d\n%s", got, want, formatted)
 				}
 
@@ -62,12 +62,12 @@ RETURN left + right
 				}
 
 				formatted := diagnostics.Format(err)
-				if got, want := strings.Count(formatted, "Missing parameter"), 2; got != want {
+				if got, want := strings.Count(formatted, "UnresolvedSymbol: missing parameter"), 2; got != want {
 					return fmt.Errorf("unexpected missing parameter count: got %d, want %d\n%s", got, want, formatted)
 				}
 
-				if got, want := strings.Count(formatted, "missed parameter: @foo"), 2; got != want {
-					return fmt.Errorf("unexpected repeated missing parameter cause count: got %d, want %d\n%s", got, want, formatted)
+				if got, want := strings.Count(formatted, "parameter '@foo' was not provided"), 2; got != want {
+					return fmt.Errorf("unexpected repeated missing parameter label count: got %d, want %d\n%s", got, want, formatted)
 				}
 
 				return nil
@@ -91,7 +91,7 @@ RETURN left + right
 				}
 
 				formatted := diagnostics.Format(err)
-				if got, want := strings.Count(formatted, "Missing parameter"), 1; got != want {
+				if got, want := strings.Count(formatted, "UnresolvedSymbol: missing parameter"), 1; got != want {
 					return fmt.Errorf("unexpected missing parameter count: got %d, want %d\n%s", got, want, formatted)
 				}
 
@@ -114,7 +114,7 @@ func TestStrictWarmupFailsProtectedMissingParamUdfCall(t *testing.T) {
 FUNC risky() => @foo
 RETURN risky()?
 `).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-				Message:     "Missing parameter",
+				Message:     "missing parameter",
 				NotContains: []string{"called from", "VM stack:"},
 			}),
 		}
@@ -132,14 +132,14 @@ func TestStrictWarmupFailsProtectedMissingHostCallForDefaultAndBuiltEnvironment(
 						EnvFactory: func() (*vm.Environment, error) {
 							return vm.NewDefaultEnvironment(), nil
 						},
-						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "unresolved function"}),
 					},
 					{
 						Name: "built",
 						EnvFactory: func() (*vm.Environment, error) {
 							return vm.NewEnvironment(nil)
 						},
-						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "unresolved function"}),
 					},
 				},
 			},
@@ -158,7 +158,7 @@ func TestStrictWarmupFailsOnDeadCodeUnresolvedHostCall(t *testing.T) {
 						EnvFactory: func() (*vm.Environment, error) {
 							return vm.NewDefaultEnvironment(), nil
 						},
-						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "unresolved function"}),
 					},
 					{
 						Name: "dummy",
@@ -167,7 +167,7 @@ func TestStrictWarmupFailsOnDeadCodeUnresolvedHostCall(t *testing.T) {
 								return runtime.None, nil
 							}),
 						},
-						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "unresolved function"}),
 					},
 				},
 			},
@@ -189,7 +189,7 @@ RETURN a + b
 				}
 
 				formatted := diagnostics.Format(err)
-				if got, want := strings.Count(formatted, "Unresolved function"), 2; got != want {
+				if got, want := strings.Count(formatted, "UnresolvedSymbol: unresolved function"), 2; got != want {
 					return fmt.Errorf("unexpected unresolved function count: got %d, want %d\n%s", got, want, formatted)
 				}
 
@@ -213,7 +213,7 @@ RETURN a + b
 				}
 
 				formatted := diagnostics.Format(err)
-				if got, want := strings.Count(formatted, "Unresolved function"), 2; got != want {
+				if got, want := strings.Count(formatted, "UnresolvedSymbol: unresolved function"), 2; got != want {
 					return fmt.Errorf("unexpected unresolved function count: got %d, want %d\n%s", got, want, formatted)
 				}
 
@@ -234,14 +234,14 @@ func TestStrictWarmupFailureIsRepeatableUntilEnvironmentFixed(t *testing.T) {
 						EnvFactory: func() (*vm.Environment, error) {
 							return vm.NewDefaultEnvironment(), nil
 						},
-						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "unresolved function"}),
 					},
 					{
 						Name: "missing second",
 						EnvFactory: func() (*vm.Environment, error) {
 							return vm.NewDefaultEnvironment(), nil
 						},
-						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "unresolved function"}),
 					},
 					{
 						Name: "fixed env",
@@ -289,8 +289,8 @@ RETURN outer()
 								return fmt.Errorf("expected runtime error, got %T", err)
 							}
 
-							if rtErr.Message != "Division by zero" {
-								return fmt.Errorf("unexpected runtime error message: got %q, want %q", rtErr.Message, "Division by zero")
+							if rtErr.Message != "division by zero" {
+								return fmt.Errorf("unexpected runtime error message: got %q, want %q", rtErr.Message, "division by zero")
 							}
 
 							counts = append(counts, strings.Count(rtErr.Format(), "called from"))
@@ -310,8 +310,8 @@ RETURN outer()
 								return fmt.Errorf("expected runtime error, got %T", err)
 							}
 
-							if rtErr.Message != "Division by zero" {
-								return fmt.Errorf("unexpected runtime error message: got %q, want %q", rtErr.Message, "Division by zero")
+							if rtErr.Message != "division by zero" {
+								return fmt.Errorf("unexpected runtime error message: got %q, want %q", rtErr.Message, "division by zero")
 							}
 
 							counts = append(counts, strings.Count(rtErr.Format(), "called from"))
@@ -359,8 +359,8 @@ func TestModuloTypeErrorNotMisclassifiedAsModuloByZero(t *testing.T) {
 					return fmt.Errorf("expected runtime error, got %T", err)
 				}
 
-				if rtErr.Message != "Invalid type" {
-					return fmt.Errorf("unexpected runtime error message: got %q, want %q", rtErr.Message, "Invalid type")
+				if rtErr.Message != "invalid type" {
+					return fmt.Errorf("unexpected runtime error message: got %q, want %q", rtErr.Message, "invalid type")
 				}
 
 				if rtErr.Kind != diagnostics.TypeError {
@@ -396,8 +396,8 @@ RETURN outer()
 `).
 				Env(vm.WithParam("x", runtime.None)).
 				Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-				Message:  `Cannot read property "foo" of None`,
-				Contains: []string{"called from inner (#1)", "VM stack: outer -> middle -> inner"},
+				Message:  "invalid type",
+				Contains: []string{`cannot read property "foo" of None`, "called from inner (#1)", "VM stack: outer -> middle -> inner"},
 			}),
 		}
 	})
@@ -415,7 +415,7 @@ FUNC boo() (
 RETURN boo()
 `).
 				Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-				Message:  "Division by zero",
+				Message:  "division by zero",
 				Contains: []string{"called from boo (#1)", "VM stack: boo"},
 			}),
 		}

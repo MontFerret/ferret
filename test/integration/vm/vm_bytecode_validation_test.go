@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	"github.com/MontFerret/ferret/v2/test/spec/assert"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
@@ -57,8 +58,12 @@ func TestFailsOnUnknownOpcode(t *testing.T) {
 				return errors.New("expected unknown opcode error")
 			}
 
-			unwrapped := errors.Unwrap(err)
-			if unwrapped == nil || !strings.Contains(unwrapped.Error(), "unknown opcode 255 at pc 0") {
+			var rtErr *vm.RuntimeError
+			if !errors.As(err, &rtErr) {
+				return fmt.Errorf("expected runtime error, got %T", err)
+			}
+
+			if rtErr.Note != "unknown opcode 255 at pc 0" {
 				return fmt.Errorf("unexpected error: %v", err)
 			}
 

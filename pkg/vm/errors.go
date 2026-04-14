@@ -47,6 +47,7 @@ const (
 
 const (
 	ArityError       diagnostics.Kind = rtdiagnostics.ArityError
+	InvalidArgument  diagnostics.Kind = rtdiagnostics.InvalidArgument
 	NullDereferenced diagnostics.Kind = rtdiagnostics.NullDereferenced
 	DivideByZero     diagnostics.Kind = rtdiagnostics.DivideByZero
 	ModuloByZero     diagnostics.Kind = rtdiagnostics.ModuloByZero

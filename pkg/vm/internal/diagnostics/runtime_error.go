@@ -3,7 +3,6 @@ package diagnostics
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
@@ -34,17 +33,17 @@ func NewRuntimeError(
 	label string,
 	hint string,
 	note string,
+	cause error,
 ) *RuntimeError {
-	return &RuntimeError{
-		Diagnostic: &diagnostics.Diagnostic{
-			Kind:    kind,
-			Message: message,
-			Hint:    hint,
-			Note:    note,
-			Source:  program.Source,
-			Spans:   []diagnostics.ErrorSpan{diagnostics.NewMainErrorSpan(SpanAt(program, pc-1), label)},
-		},
-	}
+	return newRuntimeErrorWithSpec(program, nil, runtimeDiagnosticSpec{
+		Cause:   cause,
+		Kind:    kind,
+		Span:    SpanAt(program, pc-1),
+		Hint:    hint,
+		Label:   label,
+		Message: message,
+		Note:    note,
+	})
 }
 
 func NewRuntimeErrorSet(size int) *RuntimeErrorSet {
@@ -87,23 +86,21 @@ func WrapRuntimeError(program *bytecode.Program, pc int, callStack []frame.Trace
 }
 
 func RuntimeErrorFromPanic(program *bytecode.Program, pc int, callStack []frame.TraceEntry, r any) error {
-	message := "unexpected runtime panic"
 	cause := fmt.Errorf("panic: %v", r)
 
 	if err, ok := r.(error); ok {
 		cause = err
 	}
 
-	return &RuntimeError{
-		Diagnostic: &diagnostics.Diagnostic{
-			Kind:    diagnostics.UnexpectedError,
-			Message: fmt.Sprintf("%s. %s", message, cause.Error()),
-			Source:  program.Source,
-			Note:    stackNote(callStack),
-			Spans:   buildSpans(program, callStack, SpanAt(program, pc-1), ""),
-			Cause:   cause,
-		},
-	}
+	return newRuntimeErrorWithSpec(program, callStack, runtimeDiagnosticSpec{
+		Cause:   cause,
+		Kind:    diagnostics.UnexpectedError,
+		Span:    SpanAt(program, pc-1),
+		Hint:    "This indicates an internal VM bug; please report it with the query and stack context",
+		Label:   "panic occurred during VM execution",
+		Message: "unexpected runtime panic",
+		Note:    panicValueNote(r),
+	})
 }
 
 func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEntry, err error) *RuntimeError {
@@ -117,169 +114,146 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		return runtimeError
 	}
 
-	kind := diagnostics.Unknown
-	message := ""
-	label := ""
-	hint := ""
-	note := ""
-	var cause error
+	spec := runtimeDiagnosticSpec{
+		Cause:   err,
+		Kind:    UncaughtError,
+		Span:    runtimeErrorSpan(program, pc, err),
+		Message: "runtime error",
+	}
+
 	var memberErr *MemberAccessError
 	var invariantErr *InvariantError
-	mainSpan := runtimeErrorSpan(program, pc, err)
 	argPos, hasArg, argCause := runtime.InvalidArgumentDetails(err)
+
+	if hasArg {
+		for {
+			_, ok, nestedCause := runtime.InvalidArgumentDetails(argCause)
+			if !ok {
+				break
+			}
+
+			argCause = nestedCause
+		}
+	}
 
 	switch {
 	case errors.Is(err, ErrDivisionByZero):
-		kind = DivideByZero
-		message = "Division by zero"
-		label = "denominator evaluates to zero"
-		hint = "Ensure the denominator is non-zero before division"
-		cause = ErrDivisionByZero
+		spec.Kind = DivideByZero
+		spec.Message = "division by zero"
+		spec.Label = "denominator evaluates to zero"
+		spec.Hint = "Ensure the denominator is non-zero before division"
+		spec.Cause = ErrDivisionByZero
 	case errors.Is(err, ErrModuloByZero):
-		kind = ModuloByZero
-		message = "Modulo by zero"
-		label = "divisor evaluates to zero"
-		hint = "Ensure the divisor is non-zero before modulo"
-		cause = ErrModuloByZero
+		spec.Kind = ModuloByZero
+		spec.Message = "modulo by zero"
+		spec.Label = "divisor evaluates to zero"
+		spec.Hint = "Ensure the divisor is non-zero before modulo"
+		spec.Cause = ErrModuloByZero
 	case errors.As(err, &memberErr):
-		kind = diagnostics.TypeError
-		message = memberErr.Error()
-
-		if message != "" {
-			message = strings.ToUpper(message[:1]) + message[1:]
-		}
-
-		label = memberErr.Label()
-		hint = memberErr.Hint()
+		spec.Kind = diagnostics.TypeError
+		spec.Message = "invalid type"
+		spec.Label = memberErr.Label()
+		spec.Note = memberErr.Note()
+		spec.Hint = memberErr.Hint()
+		spec.Cause = runtime.ErrInvalidType
 	case hasArg && (errors.Is(argCause, runtime.ErrInvalidType) || errors.Is(argCause, runtime.ErrInvalidArgumentType)):
 		index := argPos + 1
-		kind = diagnostics.TypeError
-		message = fmt.Sprintf("Invalid argument %d type", index)
-		label = fmt.Sprintf("argument %d type mismatch", index)
-		hint = fmt.Sprintf("Ensure argument %d matches the expected type", index)
-		cause = argCause
+		cause, detail := unwrapRuntimeDetail(argCause)
 
-		msg, cs := diagnostics.Unwrap(argCause)
-
-		if msg != nil && cs != nil {
-			cause = cs
-		}
+		spec.Kind = diagnostics.TypeError
+		spec.Message = "invalid argument type"
+		spec.Label = fmt.Sprintf("argument %d has incompatible type", index)
+		spec.Note = argumentDetailNote(index, detail)
+		spec.Cause = cause
 	case errors.Is(err, runtime.ErrInvalidType):
-		kind = diagnostics.TypeError
-		message = "Invalid type"
-		label = "type mismatch"
-		hint = "Ensure the value has the expected type"
-		cause = err
+		cause, detail := unwrapRuntimeDetail(err)
 
-		msg, cs := diagnostics.Unwrap(err)
-
-		if msg != nil && cs != nil {
-			message = diagnostics.FormatMessage(msg.Error())
-			cause = cs
-		}
+		spec.Kind = diagnostics.TypeError
+		spec.Message = "invalid type"
+		spec.Label = "value has incompatible type"
+		spec.Note = detailNote(detail)
+		spec.Cause = cause
 	case errors.Is(err, runtime.ErrInvalidArgumentType):
-		kind = diagnostics.TypeError
-		message = "Invalid argument type"
-		hint = "Ensure the argument types match the function signature"
-		cause = err
-		msg, cs := diagnostics.Unwrap(err)
+		cause, detail := unwrapRuntimeDetail(err)
 
-		if msg != nil && cs != nil {
-			message = diagnostics.FormatMessage(msg.Error())
-			cause = cs
-		}
+		spec.Kind = diagnostics.TypeError
+		spec.Message = "invalid argument type"
+		spec.Label = "argument has incompatible type"
+		spec.Note = detailNote(detail)
+		spec.Cause = cause
 	case errors.Is(err, runtime.ErrInvalidArgumentNumber):
-		kind = ArityError
-		message = "Invalid number of arguments"
-		label = "invalid number of arguments"
-		hint = "Check the function signature for the expected argument count"
-		cause = runtime.ErrInvalidArgumentNumber
+		cause, detail := unwrapRuntimeDetail(err)
 
-		_, detail := diagnostics.Unwrap(err)
-		if detail != nil {
-			s := detail.Error()
-			if len(s) > 0 {
-				note = strings.ToUpper(s[:1]) + s[1:]
-			}
-		}
+		spec.Kind = ArityError
+		spec.Message = "invalid number of arguments"
+		spec.Note = detailNote(detail)
+		spec.Label = arityLabel(spec.Note)
+		spec.Cause = cause
 	case errors.Is(err, runtime.ErrInvalidArgument):
-		kind = ArityError
-		message = "Invalid argument"
-		hint = "Check the function arguments"
-		cause = err
+		spec.Kind = InvalidArgument
+		spec.Message = "invalid argument"
 
 		if hasArg {
 			index := argPos + 1
-			message = fmt.Sprintf("Invalid argument %d", index)
-			label = fmt.Sprintf("invalid argument %d", index)
-			hint = fmt.Sprintf("Check argument %d", index)
-			cause = argCause
+			cause, detail := unwrapRuntimeDetail(argCause)
 
-			_, cs := diagnostics.Unwrap(cause)
-			if cs != nil {
-				cause = cs
-			}
+			spec.Label = fmt.Sprintf("argument %d is invalid", index)
+			spec.Note = argumentDetailNote(index, detail)
+			spec.Cause = cause
 		} else {
-			msg, cs := diagnostics.Unwrap(cause)
+			cause, detail := unwrapRuntimeDetail(err)
 
-			if msg != nil && cs != nil {
-				message = diagnostics.FormatMessage(msg.Error())
-				cause = cs
-			}
+			spec.Label = "invalid argument"
+			spec.Note = detailNote(detail)
+			spec.Cause = cause
 		}
 	case errors.Is(err, ErrMissedParam):
-		kind = UnresolvedSymbol
-		message = "Missing parameter"
-		label = "missing parameter"
-		hint = "Provide all required parameters"
-		cause = err
+		cause, detail := unwrapRuntimeDetail(err)
+		name := detailNote(detail)
+
+		spec.Kind = UnresolvedSymbol
+		spec.Message = "missing parameter"
+		spec.Cause = cause
+
+		if name == "" {
+			spec.Label = "parameter was not provided"
+			spec.Hint = "Provide all required parameters before executing this query"
+			break
+		}
+
+		spec.Label = fmt.Sprintf("parameter '%s' was not provided", name)
+		spec.Note = fmt.Sprintf("this query requires parameter '%s'", name)
+		spec.Hint = fmt.Sprintf("Provide a value for %s before executing this query", name)
 	case errors.Is(err, ErrUnresolvedFunction):
-		kind = UnresolvedSymbol
-		message = "Unresolved function"
-		label = "unresolved function"
-		hint = "Ensure the function is registered and accessible in the current context"
-		note = "Add the function to the registry if it's missing"
-		cause = ErrUnresolvedFunction
+		spec.Kind = UnresolvedSymbol
+		spec.Message = "unresolved function"
+		spec.Label = "function is not registered"
+		spec.Note = "function could not be resolved in the current registry"
+		spec.Hint = "Register the function before executing this query"
+		spec.Cause = ErrUnresolvedFunction
 	case errors.Is(err, ErrInvalidFunctionName):
-		kind = UnresolvedSymbol
-		message = "Invalid function name"
-		label = "invalid function name"
-		hint = "Ensure the function name is valid and does not contain illegal characters"
-		cause = ErrInvalidFunctionName
+		spec.Kind = UnresolvedSymbol
+		spec.Message = "invalid function name"
+		spec.Label = "function name is invalid"
+		spec.Note = "host call target must resolve to a string function name"
+		spec.Hint = "Pass a string function name to the host call"
+		spec.Cause = ErrInvalidFunctionName
 	case errors.As(err, &invariantErr):
-		kind = diagnostics.UnexpectedError
-		message = "VM invariant violation"
-		if invariantErr.Message != "" {
-			message = invariantErr.Message
-		}
-
-		label = "internal invariant violated"
-		hint = "This indicates an internal VM bug; please report it with the query and stack context"
-		cause = invariantErr.Cause
+		spec.Kind = diagnostics.UnexpectedError
+		spec.Message = "vm invariant violation"
+		spec.Label = "internal invariant violated"
+		spec.Note = detailNote(invariantErr.Message)
+		spec.Hint = "This indicates an internal VM bug; please report it with the query and stack context"
+		spec.Cause = invariantErr.Cause
 	default:
-		kind = UncaughtError
-		msg, cs := diagnostics.Unwrap(err)
+		cause, detail := unwrapRuntimeDetail(err)
 
-		if msg != nil && cs != nil {
-			message = diagnostics.FormatMessage(msg.Error())
-			cause = cs
-		} else {
-			message = "Runtime Error"
-			cause = err
-		}
+		spec.Message = fallbackRuntimeMessage(err)
+		spec.Note = detailNote(detail)
+		spec.Cause = cause
 	}
 
-	return &RuntimeError{
-		Diagnostic: &diagnostics.Diagnostic{
-			Kind:    kind,
-			Message: message,
-			Hint:    hint,
-			Note:    appendStackNote(note, callStack),
-			Source:  program.Source,
-			Spans:   buildSpans(program, callStack, mainSpan, label),
-			Cause:   cause,
-		},
-	}
+	return newRuntimeErrorWithSpec(program, callStack, spec)
 }
 
 func runtimeErrorSpan(program *bytecode.Program, pc int, err error) source.Span {

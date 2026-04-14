@@ -181,17 +181,17 @@ func TestDispatchRuntimeErrors(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		S(`RETURN DISPATCH "click" IN @value`, "Should fail when target is not a dispatcher").Expect().ExecError(
 			ShouldBeRuntimeError,
-			&ExpectedRuntimeError{Message: "Invalid type"},
+			&ExpectedRuntimeError{Message: "invalid type"},
 		),
 		S("DISPATCH \"click\" IN @value ON ERROR RETURN NONE\nRETURN 1", 1, "Statement suppression should continue after dispatch failure"),
 		S(`RETURN DISPATCH @event IN @d`, "Should fail when event name is not a string").Expect().ExecError(
 			ShouldBeRuntimeError,
-			&ExpectedRuntimeError{Message: "Invalid type"},
+			&ExpectedRuntimeError{Message: "invalid type"},
 		),
 		Nil(`RETURN DISPATCH @event IN @d ON ERROR RETURN NONE`, "Expression suppression should return none on dispatch failure"),
 		S(`RETURN "click" -> @value`, "Shorthand should fail when target is not a dispatcher").Expect().ExecError(
 			ShouldBeRuntimeError,
-			&ExpectedRuntimeError{Message: "Invalid type"},
+			&ExpectedRuntimeError{Message: "invalid type"},
 		),
 	}, vm.WithParams(map[string]runtime.Value{
 		"d":     dispatcher,

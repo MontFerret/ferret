@@ -36,14 +36,14 @@ RETURN Fn()`, true, "Should compile and resolve alias to the namespaced function
 		ErrorStr(`
 USE Foo AS F
 
-RETURN f::Test_FN()`, "Unresolved function", "Namespace alias resolution is case-sensitive"),
+RETURN f::Test_FN()`, "unresolved function", "Namespace alias resolution is case-sensitive"),
 		ErrorStr(`
 USE Foo::Test_FN AS Fn
 
-RETURN FN()`, "Unresolved function", "Function alias resolution is case-sensitive"),
+RETURN FN()`, "unresolved function", "Function alias resolution is case-sensitive"),
 		ErrorStr(`
 USE Foo AS F
 
-RETURN F::test_fn()`, "Unresolved function", "Host lookup remains case-sensitive after alias expansion"),
+RETURN F::test_fn()`, "unresolved function", "Host lookup remains case-sensitive after alias expansion"),
 	}, vm.WithNamespace(ns))
 }

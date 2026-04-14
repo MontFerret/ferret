@@ -22,13 +22,12 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 			"LET numerator = 10\nRETURN numerator / 0",
 			"script.fql",
 		).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Message: "Division by zero",
+			Message: "division by zero",
 			Contains: []string{
-				"DivideByZero: Division by zero",
+				"DivideByZero: division by zero",
 				":2:8",
 				"attempt to divide by zero",
 				"Hint: Ensure the denominator is non-zero before division",
-				"Note: Add a conditional check before dividing",
 			},
 			NotContains: []string{"~"},
 		}),
@@ -36,13 +35,14 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 			"LET obj = {}\nRETURN obj.foo.bar",
 			"obj.fql",
 		).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Message: "Cannot read property \"bar\" of None",
+			Message: "invalid type",
 			Contains: []string{
-				"TypeError: Cannot read property \"bar\" of None",
-				"property access on None",
+				"TypeError: invalid type",
+				"property \"bar\" cannot be read from this value",
+				"Note: cannot read property \"bar\" of None",
 				"Hint: Use optional chaining (?.) or check for None before accessing a member",
+				"Caused by: invalid type",
 			},
-			NotContains: []string{"Caused by:"},
 		}),
 		spec.NewSpec(
 			`
@@ -98,7 +98,7 @@ func TestRuntimeErrorFormatsMissingParamWithParamSpan(t *testing.T) {
 				t.Fatalf("expected runtime error, got %T", err)
 			}
 
-			if got, want := runtimeErr.Message, "Missing parameter"; got != want {
+			if got, want := runtimeErr.Message, "missing parameter"; got != want {
 				t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
 			}
 
@@ -114,7 +114,7 @@ func TestRuntimeErrorFormatsMissingParamWithParamSpan(t *testing.T) {
 					t.Fatalf("unexpected main span fragment: got %q, want %q", got, want)
 				}
 
-				if got, want := span.Label, "missing parameter"; got != want {
+				if got, want := span.Label, "parameter '@foo' was not provided"; got != want {
 					t.Fatalf("unexpected main span label: got %q, want %q", got, want)
 				}
 			}
@@ -125,12 +125,13 @@ func TestRuntimeErrorFormatsMissingParamWithParamSpan(t *testing.T) {
 
 			formatted := runtimeErr.Format()
 			for _, needle := range []string{
-				"UnresolvedSymbol: Missing parameter",
+				"UnresolvedSymbol: missing parameter",
 				" --> missing_param.fql:1:8",
 				"RETURN @foo",
-				"^^^^ missing parameter",
-				"Hint: Provide all required parameters",
-				"Caused by: missed parameter: @foo",
+				"^^^^ parameter '@foo' was not provided",
+				"Note: this query requires parameter '@foo'",
+				"Hint: Provide a value for @foo before executing this query",
+				"Caused by: missed parameter",
 			} {
 				if !strings.Contains(formatted, needle) {
 					t.Fatalf("expected formatted runtime error to contain %q, got:\n%s", needle, formatted)
@@ -201,8 +202,9 @@ RETURN outer()
 			for _, needle := range []string{
 				" --> missing_param_udf.fql:1:17",
 				"FUNC inner() => @foo",
-				"^^^^ missing parameter",
-				"Caused by: missed parameter: @foo",
+				"^^^^ parameter '@foo' was not provided",
+				"Note: this query requires parameter '@foo'",
+				"Caused by: missed parameter",
 			} {
 				if !strings.Contains(formatted, needle) {
 					t.Fatalf("expected formatted runtime error to contain %q, got:\n%s", needle, formatted)
@@ -257,15 +259,15 @@ func TestRuntimeErrorFormatsAggregatedMissingParams(t *testing.T) {
 			for _, needle := range []string{
 				" --> missing_params.fql:1:8",
 				" --> missing_params.fql:1:15",
-				"Caused by: missed parameter: @foo",
-				"Caused by: missed parameter: @bar",
+				"parameter '@foo' was not provided",
+				"parameter '@bar' was not provided",
 			} {
 				if !strings.Contains(formatted, needle) {
 					t.Fatalf("expected formatted runtime error set to contain %q, got:\n%s", needle, formatted)
 				}
 			}
 
-			if got, want := strings.Count(formatted, "UnresolvedSymbol: Missing parameter"), 2; got != want {
+			if got, want := strings.Count(formatted, "UnresolvedSymbol: missing parameter"), 2; got != want {
 				t.Fatalf("unexpected missing parameter diagnostic count: got %d, want %d\n%s", got, want, formatted)
 			}
 		})
@@ -307,12 +309,12 @@ func TestRuntimeErrorFormatsAggregatedRepeatedMissingParamCallsites(t *testing.T
 				}
 			}
 
-			if got, want := strings.Count(formatted, "UnresolvedSymbol: Missing parameter"), 2; got != want {
+			if got, want := strings.Count(formatted, "UnresolvedSymbol: missing parameter"), 2; got != want {
 				t.Fatalf("unexpected missing parameter diagnostic count: got %d, want %d\n%s", got, want, formatted)
 			}
 
-			if got, want := strings.Count(formatted, "Caused by: missed parameter: @foo"), 2; got != want {
-				t.Fatalf("unexpected repeated missing parameter cause count: got %d, want %d\n%s", got, want, formatted)
+			if got, want := strings.Count(formatted, "parameter '@foo' was not provided"), 2; got != want {
+				t.Fatalf("unexpected repeated missing parameter label count: got %d, want %d\n%s", got, want, formatted)
 			}
 		})
 	}
@@ -356,12 +358,12 @@ RETURN left + right
 				}
 			}
 
-			if got, want := strings.Count(formatted, "UnresolvedSymbol: Missing parameter"), 1; got != want {
+			if got, want := strings.Count(formatted, "UnresolvedSymbol: missing parameter"), 1; got != want {
 				t.Fatalf("unexpected missing parameter diagnostic count: got %d, want %d\n%s", got, want, formatted)
 			}
 
-			if got, want := strings.Count(formatted, "Caused by: missed parameter: @foo"), 1; got != want {
-				t.Fatalf("unexpected missing parameter cause count: got %d, want %d\n%s", got, want, formatted)
+			if got, want := strings.Count(formatted, "parameter '@foo' was not provided"), 1; got != want {
+				t.Fatalf("unexpected missing parameter label count: got %d, want %d\n%s", got, want, formatted)
 			}
 
 			for _, needle := range []string{
@@ -414,16 +416,16 @@ RETURN [val, val2, TEST()]
 				"LET val = @foo",
 				"LET val2 = @bar",
 				"RETURN @baz",
-				"Caused by: missed parameter: @foo",
-				"Caused by: missed parameter: @bar",
-				"Caused by: missed parameter: @baz",
+				"parameter '@foo' was not provided",
+				"parameter '@bar' was not provided",
+				"parameter '@baz' was not provided",
 			} {
 				if !strings.Contains(formatted, needle) {
 					t.Fatalf("expected formatted runtime error set to contain %q, got:\n%s", needle, formatted)
 				}
 			}
 
-			if got, want := strings.Count(formatted, "UnresolvedSymbol: Missing parameter"), 3; got != want {
+			if got, want := strings.Count(formatted, "UnresolvedSymbol: missing parameter"), 3; got != want {
 				t.Fatalf("unexpected missing parameter diagnostic count: got %d, want %d\n%s", got, want, formatted)
 			}
 
@@ -478,7 +480,7 @@ func TestRuntimeErrorFormatsArgumentTypeFailuresWithArgumentSpan(t *testing.T) {
 				t.Fatalf("expected runtime error, got %T", err)
 			}
 
-			if got, want := runtimeErr.Message, "Invalid argument 2 type"; got != want {
+			if got, want := runtimeErr.Message, "invalid argument type"; got != want {
 				t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
 			}
 
@@ -498,7 +500,7 @@ func TestRuntimeErrorFormatsArgumentTypeFailuresWithArgumentSpan(t *testing.T) {
 					t.Fatalf("unexpected main span fragment: got %q, want %q", got, want)
 				}
 
-				if got, want := span.Label, "argument 2 type mismatch"; got != want {
+				if got, want := span.Label, "argument 2 has incompatible type"; got != want {
 					t.Fatalf("unexpected main span label: got %q, want %q", got, want)
 				}
 			}
@@ -511,7 +513,19 @@ func TestRuntimeErrorFormatsArgumentTypeFailuresWithArgumentSpan(t *testing.T) {
 				t.Fatal("expected nested runtime error cause")
 			}
 
-			if got, want := runtimeErr.Cause.Error(), "expected String or Int or Object, but got Array"; got != want {
+			if got, want := runtimeErr.Note, "argument 2 expects String or Int or Object, but got Array"; got != want {
+				t.Fatalf("unexpected runtime error note: got %q, want %q", got, want)
+			}
+
+			if got, want := runtimeErr.Hint, "Convert argument 2 to String or Int or Object before this call"; got != want {
+				t.Fatalf("unexpected runtime error hint: got %q, want %q", got, want)
+			}
+
+			if !strings.Contains(runtimeErr.Format(), "Hint: Convert argument 2 to String or Int or Object before this call") {
+				t.Fatalf("expected formatted runtime error to include synthesized hint, got:\n%s", runtimeErr.Format())
+			}
+
+			if got, want := runtimeErr.Cause.Error(), "invalid type"; got != want {
 				t.Fatalf("unexpected runtime error cause: got %q, want %q", got, want)
 			}
 		})
