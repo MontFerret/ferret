@@ -98,7 +98,7 @@ func assertUnresolvedFunctionError(t *testing.T, err error) *RuntimeError {
 		t.Fatalf("expected runtime error, got %T", err)
 	}
 
-	if got, want := rtErr.Message, "Unresolved function"; got != want {
+	if got, want := rtErr.Message, "unresolved function"; got != want {
 		t.Fatalf("unexpected message: got %q, want %q", got, want)
 	}
 
@@ -759,17 +759,17 @@ func TestOpLoadParam_MissingParamsPreserveRuntimeError(t *testing.T) {
 		t.Fatal("expected missing parameter error")
 	}
 
-	if !strings.Contains(err.Error(), "Missing parameter") {
+	if !strings.Contains(err.Error(), "missing parameter") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	cause := errors.Unwrap(err)
-	if cause == nil {
-		cause = err
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
 	}
 
-	if !strings.Contains(cause.Error(), "@bar") {
-		t.Fatalf("expected missing parameter name in error, got %v (cause: %v)", err, cause)
+	if !strings.Contains(rtErr.Note, "@bar") {
+		t.Fatalf("expected missing parameter note to mention @bar, got %q", rtErr.Note)
 	}
 }
 
@@ -806,17 +806,12 @@ func TestWarmupMissingParamsSingleSiteReturnsRuntimeError(t *testing.T) {
 		t.Fatalf("expected single runtime error, got set")
 	}
 
-	if got, want := rtErr.Message, "Missing parameter"; got != want {
+	if got, want := rtErr.Message, "missing parameter"; got != want {
 		t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
 	}
 
-	cause := errors.Unwrap(rtErr)
-	if cause == nil {
-		t.Fatal("expected missing parameter cause")
-	}
-
-	if !strings.Contains(cause.Error(), "@foo") {
-		t.Fatalf("expected missing parameter name in cause, got %v", cause)
+	if !strings.Contains(rtErr.Note, "@foo") {
+		t.Fatalf("expected missing parameter note to mention @foo, got %q", rtErr.Note)
 	}
 }
 
@@ -852,12 +847,12 @@ func TestWarmupMissingParamsAggregateDifferentSlotsByCallsite(t *testing.T) {
 		t.Fatal("expected aggregated runtime errors")
 	}
 
-	if !strings.Contains(first.Cause.Error(), "@foo") {
-		t.Fatalf("expected first missing param cause to mention @foo, got %v", first.Cause)
+	if !strings.Contains(first.Note, "@foo") {
+		t.Fatalf("expected first missing param note to mention @foo, got %q", first.Note)
 	}
 
-	if !strings.Contains(last.Cause.Error(), "@bar") {
-		t.Fatalf("expected second missing param cause to mention @bar, got %v", last.Cause)
+	if !strings.Contains(last.Note, "@bar") {
+		t.Fatalf("expected second missing param note to mention @bar, got %q", last.Note)
 	}
 }
 
@@ -892,12 +887,12 @@ func TestWarmupMissingParamsAggregateRepeatedCallsites(t *testing.T) {
 			t.Fatalf("expected runtime error at index %d", i)
 		}
 
-		if got, want := rtErr.Message, "Missing parameter"; got != want {
+		if got, want := rtErr.Message, "missing parameter"; got != want {
 			t.Fatalf("unexpected runtime error message at index %d: got %q, want %q", i, got, want)
 		}
 
-		if !strings.Contains(rtErr.Cause.Error(), "@foo") {
-			t.Fatalf("expected missing parameter cause at index %d to mention @foo, got %v", i, rtErr.Cause)
+		if !strings.Contains(rtErr.Note, "@foo") {
+			t.Fatalf("expected missing parameter note at index %d to mention @foo, got %q", i, rtErr.Note)
 		}
 	}
 }
@@ -935,7 +930,7 @@ func TestWarmupHostResolutionPrecedesMissingParamAggregation(t *testing.T) {
 		t.Fatalf("expected runtime error, got %T", err)
 	}
 
-	if got, want := rtErr.Message, "Unresolved function"; got != want {
+	if got, want := rtErr.Message, "unresolved function"; got != want {
 		t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
 	}
 }
@@ -2408,6 +2403,295 @@ func TestOpFail_InvalidMessageTypeReturnsTypeError(t *testing.T) {
 	if !strings.Contains(strings.ToLower(rtErr.Format()), "invalid type") {
 		t.Fatalf("expected invalid type error, got:\n%s", rtErr.Format())
 	}
+
+	if got, want := rtErr.Message, "invalid type"; got != want {
+		t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
+	}
+
+	if got, want := rtErr.Note, "expected String, but got Int"; got != want {
+		t.Fatalf("unexpected runtime error note: got %q, want %q", got, want)
+	}
+
+	if got, want := rtErr.Hint, "Convert the value to String before this operation"; got != want {
+		t.Fatalf("unexpected runtime error hint: got %q, want %q", got, want)
+	}
+
+	if rtErr.Cause == nil || rtErr.Cause.Error() != runtime.ErrInvalidType.Error() {
+		t.Fatalf("expected invalid type cause, got %v", rtErr.Cause)
+	}
+}
+
+func TestToRuntimeError_InvalidArgumentTypeUsesArgumentSpanAndSeparatesNoteFromCause(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Source:     source.New("test.fql", "F(1,true)"),
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpCall, bytecode.NewRegister(0)),
+		},
+		Metadata: bytecode.Metadata{
+			DebugSpans: []source.Span{
+				{Start: 0, End: 9},
+			},
+			CallArgumentSpans: [][]source.Span{
+				{
+					{Start: 2, End: 3},
+					{Start: 4, End: 8},
+				},
+			},
+		},
+	}
+
+	rtErr := rtdiagnostics.ToRuntimeError(
+		program,
+		1,
+		nil,
+		runtime.ArgError(runtime.TypeErrorOf(runtime.True, runtime.TypeString), 1),
+	)
+
+	if rtErr == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	if got, want := rtErr.Kind, diagnostics.TypeError; got != want {
+		t.Fatalf("unexpected runtime error kind: got %s, want %s", got, want)
+	}
+
+	if got, want := rtErr.Message, "invalid argument type"; got != want {
+		t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
+	}
+
+	if got, want := rtErr.Note, "argument 2 expects String, but got Boolean"; got != want {
+		t.Fatalf("unexpected runtime error note: got %q, want %q", got, want)
+	}
+
+	if got, want := rtErr.Hint, "Convert argument 2 to String before this call"; got != want {
+		t.Fatalf("unexpected runtime error hint: got %q, want %q", got, want)
+	}
+
+	if rtErr.Cause == nil || rtErr.Cause.Error() != runtime.ErrInvalidType.Error() {
+		t.Fatalf("expected invalid type cause, got %v", rtErr.Cause)
+	}
+
+	formatted := rtErr.Format()
+	if !strings.Contains(formatted, "--> test.fql:1:5") {
+		t.Fatalf("expected argument span highlight, got:\n%s", formatted)
+	}
+
+	if !strings.Contains(formatted, "argument 2 has incompatible type") {
+		t.Fatalf("expected concrete argument label, got:\n%s", formatted)
+	}
+
+	if !strings.Contains(formatted, "Hint: Convert argument 2 to String before this call") {
+		t.Fatalf("expected synthesized argument type hint in formatted output, got:\n%s", formatted)
+	}
+
+	if !strings.Contains(formatted, "Caused by: invalid type") {
+		t.Fatalf("expected technical cause in formatted output, got:\n%s", formatted)
+	}
+}
+
+func TestToRuntimeError_InvalidArgumentUsesDedicatedKind(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Source:     source.New("test.fql", "F(-1)"),
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpCall, bytecode.NewRegister(0)),
+		},
+		Metadata: bytecode.Metadata{
+			DebugSpans: []source.Span{
+				{Start: 0, End: 5},
+			},
+			CallArgumentSpans: [][]source.Span{
+				{
+					{Start: 2, End: 4},
+				},
+			},
+		},
+	}
+
+	rtErr := rtdiagnostics.ToRuntimeError(
+		program,
+		1,
+		nil,
+		runtime.ArgError(runtime.Error(runtime.ErrInvalidArgument, "must be positive"), 0),
+	)
+
+	if rtErr == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	if got, want := rtErr.Kind, InvalidArgument; got != want {
+		t.Fatalf("unexpected runtime error kind: got %s, want %s", got, want)
+	}
+
+	if got, want := rtErr.Message, "invalid argument"; got != want {
+		t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
+	}
+
+	if got, want := rtErr.Note, "argument 1 must be positive"; got != want {
+		t.Fatalf("unexpected runtime error note: got %q, want %q", got, want)
+	}
+
+	if got, want := rtErr.Hint, "Pass argument 1 with a value that is positive"; got != want {
+		t.Fatalf("unexpected runtime error hint: got %q, want %q", got, want)
+	}
+
+	if rtErr.Cause == nil || rtErr.Cause.Error() != runtime.ErrInvalidArgument.Error() {
+		t.Fatalf("expected invalid argument cause, got %v", rtErr.Cause)
+	}
+
+	if formatted := rtErr.Format(); !strings.Contains(formatted, "argument 1 is invalid") {
+		t.Fatalf("expected concrete invalid argument label, got:\n%s", formatted)
+	}
+}
+
+func TestToRuntimeError_GenericInvalidArgumentWithoutStructuredDetailOmitsHint(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Source:     source.New("test.fql", "F(1)"),
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpCall, bytecode.NewRegister(0)),
+		},
+		Metadata: bytecode.Metadata{
+			DebugSpans: []source.Span{
+				{Start: 0, End: 4},
+			},
+		},
+	}
+
+	rtErr := rtdiagnostics.ToRuntimeError(
+		program,
+		1,
+		nil,
+		runtime.Error(runtime.ErrInvalidArgument, "constraint violated"),
+	)
+
+	if rtErr == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	if rtErr.Hint != "" {
+		t.Fatalf("expected opaque invalid argument hint to be omitted, got %q", rtErr.Hint)
+	}
+}
+
+func TestToRuntimeError_GenericArityErrorSynthesizesHint(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Source:     source.New("test.fql", "F(1)"),
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpCall, bytecode.NewRegister(0)),
+		},
+		Metadata: bytecode.Metadata{
+			DebugSpans: []source.Span{
+				{Start: 0, End: 4},
+			},
+		},
+	}
+
+	rtErr := rtdiagnostics.ToRuntimeError(program, 1, nil, runtime.ArityError(1, 2, 3))
+	if rtErr == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	mainSpan := rtErr.Spans[0]
+	if got, want := mainSpan.Label, "wrong number of arguments"; got != want {
+		t.Fatalf("unexpected runtime error label: got %q, want %q", got, want)
+	}
+
+	if got, want := rtErr.Note, "expected number of arguments 2-3, but got 1"; got != want {
+		t.Fatalf("unexpected runtime error note: got %q, want %q", got, want)
+	}
+
+	if got, want := rtErr.Hint, "Pass 2-3 arguments to this call"; got != want {
+		t.Fatalf("unexpected runtime error hint: got %q, want %q", got, want)
+	}
+}
+
+func TestToRuntimeError_MissingParameterPromotesDetailIntoNote(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Source:     source.New("test.fql", "@foo"),
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(0), bytecode.Operand(1)),
+		},
+		Metadata: bytecode.Metadata{
+			DebugSpans: []source.Span{
+				{Start: 0, End: 4},
+			},
+		},
+	}
+
+	rtErr := rtdiagnostics.ToRuntimeError(program, 1, nil, runtime.Error(ErrMissedParam, "@foo"))
+	if rtErr == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	if got, want := rtErr.Kind, UnresolvedSymbol; got != want {
+		t.Fatalf("unexpected runtime error kind: got %s, want %s", got, want)
+	}
+
+	if got, want := rtErr.Message, "missing parameter"; got != want {
+		t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
+	}
+
+	if got, want := rtErr.Note, "this query requires parameter '@foo'"; got != want {
+		t.Fatalf("unexpected runtime error note: got %q, want %q", got, want)
+	}
+
+	if got, want := rtErr.Hint, "Provide a value for @foo before executing this query"; got != want {
+		t.Fatalf("unexpected runtime error hint: got %q, want %q", got, want)
+	}
+
+	if rtErr.Cause == nil || rtErr.Cause.Error() != ErrMissedParam.Error() {
+		t.Fatalf("expected missing parameter cause, got %v", rtErr.Cause)
+	}
+
+	formatted := rtErr.Format()
+	if !strings.Contains(formatted, "parameter '@foo' was not provided") {
+		t.Fatalf("expected parameter-specific label, got:\n%s", formatted)
+	}
+
+	if !strings.Contains(formatted, "Note: this query requires parameter '@foo'") {
+		t.Fatalf("expected factual note in formatted output, got:\n%s", formatted)
+	}
+}
+
+func TestRuntimeErrorFromPanicUsesStableMessageAndBugHint(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Source:     source.New("test.fql", "RETURN 1"),
+		Metadata: bytecode.Metadata{
+			DebugSpans: []source.Span{{Start: 0, End: 6}},
+		},
+	}
+
+	err := rtdiagnostics.RuntimeErrorFromPanic(program, 1, nil, errors.New("boom"))
+
+	var rtErr *RuntimeError
+	if !errors.As(err, &rtErr) {
+		t.Fatalf("expected runtime error, got %T", err)
+	}
+
+	if got, want := rtErr.Kind, diagnostics.UnexpectedError; got != want {
+		t.Fatalf("unexpected runtime error kind: got %s, want %s", got, want)
+	}
+
+	if got, want := rtErr.Message, "unexpected runtime panic"; got != want {
+		t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
+	}
+
+	if got, want := rtErr.Note, "panic value: boom"; got != want {
+		t.Fatalf("unexpected runtime error note: got %q, want %q", got, want)
+	}
+
+	if !strings.Contains(rtErr.Hint, "internal VM bug") {
+		t.Fatalf("expected bug-report hint, got %q", rtErr.Hint)
+	}
+
+	if rtErr.Cause == nil || rtErr.Cause.Error() != "boom" {
+		t.Fatalf("expected panic cause to be preserved, got %v", rtErr.Cause)
+	}
 }
 
 func TestStrictWarmupInvalidTargetReturnsInvalidFunctionName(t *testing.T) {
@@ -2619,6 +2903,22 @@ func TestWrapRuntimeErrorSingleWarmupFailureReturnsRuntimeError(t *testing.T) {
 	if errors.As(err, &rtErrSet) {
 		t.Fatalf("expected single runtime error, got set")
 	}
+
+	if got, want := rtErr.Kind, UnresolvedSymbol; got != want {
+		t.Fatalf("unexpected runtime error kind: got %s, want %s", got, want)
+	}
+
+	if got, want := rtErr.Message, "invalid function name"; got != want {
+		t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
+	}
+
+	if got, want := rtErr.Note, "host call target must resolve to a string function name"; got != want {
+		t.Fatalf("unexpected runtime error note: got %q, want %q", got, want)
+	}
+
+	if rtErr.Cause == nil || rtErr.Cause.Error() != ErrInvalidFunctionName.Error() {
+		t.Fatalf("expected invalid function name cause, got %v", rtErr.Cause)
+	}
 }
 
 func TestNearestBoundaryPrefersCatchOverProtectedUnwind(t *testing.T) {
@@ -2719,10 +3019,11 @@ func TestWrapRuntimeErrorPreservesExistingNoteAndDoesNotDuplicateStackDetails(t 
 		program,
 		1,
 		UncaughtError,
-		"Runtime error",
+		"runtime error",
 		"",
 		"",
 		"existing note",
+		nil,
 	)
 
 	stack := []frame.TraceEntry{
@@ -2834,7 +3135,27 @@ func TestUdfRuntimeMessageUsesSourceSpellingName(t *testing.T) {
 		t.Fatalf("expected runtime error, got %T", err)
 	}
 
+	if got, want := rtErr.Kind, ArityError; got != want {
+		t.Fatalf("unexpected runtime error kind: got %s, want %s", got, want)
+	}
+
+	if got, want := rtErr.Message, "invalid number of arguments"; got != want {
+		t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
+	}
+
+	if got, want := rtErr.Note, "UDF 'boo' expects 1 argument, but got 0"; got != want {
+		t.Fatalf("unexpected runtime error note: got %q, want %q", got, want)
+	}
+
 	formatted := rtErr.Format()
+	if got, want := rtErr.Hint, "Pass 1 argument to boo"; got != want {
+		t.Fatalf("unexpected runtime error hint: got %q, want %q", got, want)
+	}
+
+	if !strings.Contains(formatted, "Hint: Pass 1 argument to boo") {
+		t.Fatalf("expected callable-aware arity hint, got:\n%s", formatted)
+	}
+
 	if !strings.Contains(formatted, "'boo'") {
 		t.Fatalf("expected source-spelling name in runtime diagnostic, got:\n%s", formatted)
 	}
@@ -2873,8 +3194,12 @@ func TestInvariantInRecoverModeBecomesUnexpectedRuntimeError(t *testing.T) {
 		t.Fatalf("unexpected kind: got %s, want %s", rtErr.Kind, diagnostics.UnexpectedError)
 	}
 
-	if !strings.Contains(strings.ToLower(rtErr.Message), "invalid aggregate plan index") {
+	if got, want := rtErr.Message, "vm invariant violation"; got != want {
 		t.Fatalf("unexpected message: %q", rtErr.Message)
+	}
+
+	if got, want := rtErr.Note, "invalid aggregate plan index"; got != want {
+		t.Fatalf("unexpected note: %q", rtErr.Note)
 	}
 }
 
@@ -2907,8 +3232,12 @@ func TestInvalidCollectorTypeInvariantInRecoverModeBecomesUnexpectedRuntimeError
 		t.Fatalf("unexpected kind: got %s, want %s", rtErr.Kind, diagnostics.UnexpectedError)
 	}
 
-	if !strings.Contains(strings.ToLower(rtErr.Message), "invalid collector configuration") {
+	if got, want := rtErr.Message, "vm invariant violation"; got != want {
 		t.Fatalf("unexpected message: %q", rtErr.Message)
+	}
+
+	if got, want := rtErr.Note, "invalid collector configuration"; got != want {
+		t.Fatalf("unexpected note: %q", rtErr.Note)
 	}
 }
 

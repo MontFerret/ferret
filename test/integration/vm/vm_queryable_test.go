@@ -25,7 +25,7 @@ func TestQueryable(t *testing.T) {
 		Array("RETURN QUERY `SELECT * FROM products` IN @doc USING sql WITH { c: \"phones\" }", []any{"ok"}, "Should apply query expression with options"),
 		Array("RETURN @doc[~ text]", []any{"ok"}, "Should apply query literal with no string payload"),
 		spec.NewSpec("RETURN @val[~ css`x`]").Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Message: "Invalid type",
+			Message: "invalid type",
 		}),
 	}, vm.WithParams(map[string]runtime.Value{
 		"doc": queryable,
@@ -200,7 +200,7 @@ func TestQueryableListInput(t *testing.T) {
 		),
 		spec.NewSpec("RETURN [@qA, 1][~ text]", "Should fail when list element is not queryable").Expect().ExecError(
 			ShouldBeRuntimeError,
-			&ExpectedRuntimeError{Message: "Invalid type"},
+			&ExpectedRuntimeError{Message: "invalid type"},
 		),
 	}, vm.WithParams(map[string]runtime.Value{
 		"doc":  queryableDoc,
@@ -244,11 +244,11 @@ func TestQueryableModifiers(t *testing.T) {
 		Nil("LET maybe = QUERY ONE `.items` IN @many USING css ON ERROR RETURN NONE\nRETURN maybe", "Explicit suppress should catch ONE multi-result failure"),
 		spec.NewSpec("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe.foo", "Catch should not swallow the first instruction after a guarded QUERY ONE").Expect().ExecError(
 			ShouldBeRuntimeError,
-			&ExpectedRuntimeError{Contains: []string{"Cannot read property", "\"foo\""}},
+			&ExpectedRuntimeError{Contains: []string{"cannot read property", "\"foo\""}},
 		),
 		spec.NewSpec("LET maybe = QUERY ONE `.items` IN @empty USING css ON ERROR RETURN NONE\nRETURN maybe.foo", "Explicit suppress should not swallow the first instruction after a guarded QUERY ONE").Expect().ExecError(
 			ShouldBeRuntimeError,
-			&ExpectedRuntimeError{Contains: []string{"Cannot read property", "\"foo\""}},
+			&ExpectedRuntimeError{Contains: []string{"cannot read property", "\"foo\""}},
 		),
 	}, vm.WithParams(map[string]runtime.Value{
 		"many":  queryableMany,

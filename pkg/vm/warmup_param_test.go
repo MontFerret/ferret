@@ -113,7 +113,7 @@ RETURN outer()
 			formatted := rtErr.Format()
 			for _, needle := range []string{
 				"FUNC inner() => @foo",
-				"^^^^ missing parameter",
+				"^^^^ parameter '@foo' was not provided",
 			} {
 				if !strings.Contains(formatted, needle) {
 					t.Fatalf("expected formatted error to contain %q, got:\n%s", needle, formatted)
@@ -161,7 +161,7 @@ RETURN left + right
 			}
 
 			formatted := rtErr.Format()
-			if got, want := strings.Count(formatted, "Missing parameter"), 1; got != want {
+			if got, want := strings.Count(formatted, "missing parameter"), 1; got != want {
 				t.Fatalf("unexpected missing parameter count: got %d, want %d\n%s", got, want, formatted)
 			}
 
@@ -197,7 +197,7 @@ RETURN risky()?
 				t.Fatalf("expected runtime error, got %T", err)
 			}
 
-			if got, want := rtErr.Message, "Missing parameter"; got != want {
+			if got, want := rtErr.Message, "missing parameter"; got != want {
 				t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
 			}
 

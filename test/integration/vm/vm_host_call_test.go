@@ -164,6 +164,6 @@ func TestHostFunctionLookupIsCaseSensitive(t *testing.T) {
 
 	RunSpecs(t, []spec.Spec{
 		Array("RETURN [Foo(), foo()]", []any{"upper", "lower"}),
-		ErrorStr("RETURN FOO()", "Unresolved function"),
+		ErrorStr("RETURN FOO()", "unresolved function"),
 	}, vm.WithFunctionsBuilder(builder))
 }

@@ -46,7 +46,10 @@ func collectUdfArgsInto(dst, src []runtime.Value, start, count int) int {
 
 func callUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
 	if desc.ArgCount != udf.Params {
-		return runtime.Error(runtime.ErrInvalidArgument, fmt.Sprintf("UDF '%s' expects %d arguments, got %d", desc.DisplayName, udf.Params, desc.ArgCount))
+		return runtime.Error(
+			runtime.ErrInvalidArgumentNumber,
+			fmt.Sprintf("UDF '%s' expects %d %s, but got %d", desc.DisplayName, udf.Params, argumentWordForCount(udf.Params), desc.ArgCount),
+		)
 	}
 
 	if udf.Registers <= 0 {
@@ -64,7 +67,10 @@ func tailCallUdf(s *execState, desc *callDescriptor, udf *bytecode.UDF) error {
 	argCount := desc.ArgCount
 
 	if udf.Params != desc.ArgCount {
-		return runtime.Error(runtime.ErrInvalidArgument, fmt.Sprintf("UDF '%s' expects %d arguments, got %d", desc.DisplayName, udf.Params, desc.ArgCount))
+		return runtime.Error(
+			runtime.ErrInvalidArgumentNumber,
+			fmt.Sprintf("UDF '%s' expects %d %s, but got %d", desc.DisplayName, udf.Params, argumentWordForCount(udf.Params), desc.ArgCount),
+		)
 	}
 
 	if udf.Registers <= 0 {

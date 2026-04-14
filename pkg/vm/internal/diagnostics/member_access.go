@@ -63,16 +63,30 @@ func (e *MemberAccessError) Label() string {
 		return ""
 	}
 
-	access := string(e.Access)
-	if access == "" {
-		access = "member"
-	}
+	switch e.Access {
+	case MemberAccessIndex:
+		if e.Member == "" {
+			return "index cannot be read from this value"
+		}
 
-	if runtime.TypeName(e.Target) == "" {
-		return fmt.Sprintf("%s access", access)
-	}
+		return fmt.Sprintf("index %s cannot be read from this value", e.Member)
+	case MemberAccessProperty:
+		if e.Member == "" {
+			return "property cannot be read from this value"
+		}
 
-	return fmt.Sprintf("%s access on %s", access, e.Target)
+		return fmt.Sprintf("property %q cannot be read from this value", e.Member)
+	default:
+		if e.Member == "" {
+			return "member cannot be read from this value"
+		}
+
+		return fmt.Sprintf("member %q cannot be read from this value", e.Member)
+	}
+}
+
+func (e *MemberAccessError) Note() string {
+	return e.Error()
 }
 
 func (e *MemberAccessError) Hint() string {

@@ -11,6 +11,7 @@ import (
 
 const (
 	ArityError       diagnostics.Kind = "ArityError"
+	InvalidArgument  diagnostics.Kind = "InvalidArgument"
 	NullDereferenced diagnostics.Kind = "NullDereference"
 	DivideByZero     diagnostics.Kind = "DivideByZero"
 	ModuloByZero     diagnostics.Kind = "ModuloByZero"
@@ -46,10 +47,11 @@ func CheckDivisionByZero(
 			program,
 			pc,
 			DivideByZero,
-			"Division by zero",
+			"division by zero",
 			"attempt to divide by zero",
 			"Ensure the denominator is non-zero before division",
-			"Add a conditional check before dividing",
+			"",
+			ErrDivisionByZero,
 		)
 	}
 
@@ -77,10 +79,11 @@ func CheckModuloByZero(
 			program,
 			pc,
 			ModuloByZero,
-			"Modulo by zero",
+			"modulo by zero",
 			"attempt to take modulo by zero",
 			"Ensure the divisor is non-zero before modulo",
-			"Add a conditional check before modulo",
+			"",
+			ErrModuloByZero,
 		)
 	}
 

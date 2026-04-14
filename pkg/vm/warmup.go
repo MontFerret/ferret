@@ -225,10 +225,15 @@ func warmupBindHostCall(descriptor callDescriptor, functions *runtime.Functions)
 
 	if err != nil && errors.Is(err, ErrUnresolvedFunction) && functions.Has(descriptor.DisplayName) {
 		available := resolveAvailableArities(descriptor.DisplayName, functions)
+		expected := strings.Join(available, " or ")
 
 		return mem.CachedHostFunction{}, fmt.Errorf(
-			"%w: expected number of arguments %s, but got %d",
-			runtime.ErrInvalidArgumentNumber, strings.Join(available, " or "), argCount,
+			"%w: %s expects %s %s, but got %d",
+			runtime.ErrInvalidArgumentNumber,
+			descriptor.DisplayName,
+			expected,
+			argumentWordForExpectation(expected),
+			argCount,
 		)
 	}
 

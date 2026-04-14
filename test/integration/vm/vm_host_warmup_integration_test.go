@@ -33,7 +33,7 @@ func TestWarmupClearsStaleHostCacheAcrossEnvironments(t *testing.T) {
 						EnvFactory: func() (*vm.Environment, error) {
 							return vm.NewDefaultEnvironment(), nil
 						},
-						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "unresolved function"}),
 					},
 				},
 			},
@@ -181,14 +181,14 @@ func TestWarmupRepeatedMissingRunsAfterSuccessRecoverCleanly(t *testing.T) {
 						EnvFactory: func() (*vm.Environment, error) {
 							return vm.NewDefaultEnvironment(), nil
 						},
-						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "unresolved function"}),
 					},
 					{
 						Name: "missing second",
 						EnvFactory: func() (*vm.Environment, error) {
 							return vm.NewDefaultEnvironment(), nil
 						},
-						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "unresolved function"}),
 					},
 					{
 						Name: "recovered",
@@ -223,8 +223,12 @@ func TestWarmupArityMismatchProducesDescriptiveError(t *testing.T) {
 							}),
 						},
 						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{
-							Message:  "Invalid number of arguments",
-							Contains: []string{"Expected number of arguments 1, but got 2"},
+							Message: "invalid number of arguments",
+							Contains: []string{
+								"wrong number of arguments in call to F",
+								"Note: F expects 1 argument, but got 2",
+								"Hint: Pass 1 argument to F",
+							},
 						}),
 					},
 				},
@@ -259,7 +263,7 @@ func TestWarmupArityMismatchRecovery(t *testing.T) {
 								})
 							}),
 						},
-						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Invalid number of arguments"}),
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "invalid number of arguments"}),
 					},
 					{
 						Name: "recovered",
@@ -289,7 +293,7 @@ func TestWarmupTrulyMissingFunctionStillReportsUnresolved(t *testing.T) {
 						EnvFactory: func() (*vm.Environment, error) {
 							return vm.NewDefaultEnvironment(), nil
 						},
-						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "unresolved function"}),
 					},
 				},
 			},
@@ -332,7 +336,7 @@ RETURN [a, b, c]
 								})
 							}),
 						},
-						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "Unresolved function"}),
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "unresolved function"}),
 					},
 					{
 						Name: "recovered",

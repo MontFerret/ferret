@@ -9,11 +9,11 @@ import (
 
 func TestParam(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
-		ErrorStr(`RETURN @foo`, "Missing parameter"),
+		ErrorStr(`RETURN @foo`, "missing parameter"),
 		ErrorStr(`
 FUNC read() => @foo
 RETURN read()
-`, "Missing parameter"),
+`, "missing parameter"),
 		S(`RETURN @str`, "bar", "Should return a value of a parameter"),
 		S(`RETURN @int + @int`, 2, "Should return a sum of two parameters"),
 		S(`RETURN @obj.str1 + @obj.str2`, "foobar", "Should return a concatenated string of two parameter properties"),
@@ -46,7 +46,7 @@ RETURN outer()
 `
 
 	RunSpecs(t, []spec.Spec{
-		ErrorStr(expr, "Missing parameter", "Should report missing parameter used only in nested UDF path"),
+		ErrorStr(expr, "missing parameter", "Should report missing parameter used only in nested UDF path"),
 		S(expr, "bar", "Should resolve parameter in nested UDF path when provided").Env(spec.WithParam("foo", "bar")),
 	},
 	)

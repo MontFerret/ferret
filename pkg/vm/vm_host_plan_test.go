@@ -216,7 +216,7 @@ func TestRunReturnsUnresolvedFunctionWhenHostCacheEntryIsMissing(t *testing.T) {
 
 	_, err := instance.Run(context.Background(), env)
 	rtErr := assertUnresolvedFunctionError(t, err)
-	if rtErr.Message != "Unresolved function" {
+	if rtErr.Message != "unresolved function" {
 		t.Fatalf("expected unresolved function message, got %q", rtErr.Message)
 	}
 }
