@@ -8,6 +8,12 @@ func ArgError(err error, pos int) error {
 	return newInvalidArgumentError(err, pos)
 }
 
+// ArgTypeError returns an error indicating that the argument at the specified position does not match the expected type.
+// The position is 0-based internally but reported as 1-based to users.
+func ArgTypeError(arg Value, pos int, expected ...Type) error {
+	return ArgError(TypeErrorOf(arg, expected...), pos)
+}
+
 // ArityError returns an error if the number of arguments is outside the [minimum, maximum] range.
 // The minimum and maximum values are inclusive.
 func ArityError(count, minimum, maximum int) error {
