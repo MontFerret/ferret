@@ -9,6 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	formatjson "github.com/MontFerret/ferret/v2/pkg/bytecode/format/json"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/module"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/goccy/go-json"
@@ -20,14 +21,14 @@ const (
 )
 
 type coverageModule struct {
-	registerFn func(boot Bootstrap) error
+	registerFn func(boot module.Bootstrap) error
 }
 
 func (m coverageModule) Name() string {
 	return "coverage-module"
 }
 
-func (m coverageModule) Register(boot Bootstrap) error {
+func (m coverageModule) Register(boot module.Bootstrap) error {
 	if m.registerFn == nil {
 		return nil
 	}
@@ -114,7 +115,7 @@ func TestEngineNewReturnsModuleRegistrationError(t *testing.T) {
 
 	eng, err := New(WithModules(
 		coverageModule{
-			registerFn: func(boot Bootstrap) error {
+			registerFn: func(boot module.Bootstrap) error {
 				boot.Hooks().Engine().OnClose(func() error {
 					closeCalled = true
 					return nil
@@ -124,7 +125,7 @@ func TestEngineNewReturnsModuleRegistrationError(t *testing.T) {
 			},
 		},
 		coverageModule{
-			registerFn: func(Bootstrap) error {
+			registerFn: func(boot module.Bootstrap) error {
 				return registerErr
 			},
 		},
@@ -154,7 +155,7 @@ func TestEngineNewJoinsModuleRegistrationAndCloseHookErrors(t *testing.T) {
 
 	_, err := New(WithModules(
 		coverageModule{
-			registerFn: func(boot Bootstrap) error {
+			registerFn: func(boot module.Bootstrap) error {
 				boot.Hooks().Engine().OnClose(func() error {
 					return closeErr
 				})
@@ -163,7 +164,7 @@ func TestEngineNewJoinsModuleRegistrationAndCloseHookErrors(t *testing.T) {
 			},
 		},
 		coverageModule{
-			registerFn: func(Bootstrap) error {
+			registerFn: func(boot module.Bootstrap) error {
 				return registerErr
 			},
 		},
@@ -191,7 +192,7 @@ func TestEngineNewJoinsHostBuildAndCloseHookErrors(t *testing.T) {
 	closeErr := errors.New("close hook failed")
 
 	_, err := New(WithModules(coverageModule{
-		registerFn: func(boot Bootstrap) error {
+		registerFn: func(boot module.Bootstrap) error {
 			boot.Hooks().Engine().OnClose(func() error {
 				return closeErr
 			})

@@ -4,89 +4,8 @@ import (
 	"context"
 	"errors"
 	"slices"
-)
 
-type (
-	// HookRegistrar provides access to lifecycle hook registrars for engine, plan, and session stages.
-	HookRegistrar interface {
-		// Engine returns the registrar for engine lifecycle hooks.
-		Engine() EngineHookRegistrar
-		// Plan returns the registrar for plan lifecycle hooks.
-		Plan() PlanHookRegistrar
-		// Session returns the registrar for session lifecycle hooks.
-		Session() SessionHookRegistrar
-	}
-
-	// EngineHookRegistrar registers hooks for engine initialization and shutdown.
-	EngineHookRegistrar interface {
-		// OnInit registers a hook executed in FIFO order during engine initialization.
-		// A nil hook is ignored.
-		OnInit(hook EngineInitHook)
-		// OnClose registers a hook executed in LIFO order when the engine is closed.
-		// A nil hook is ignored.
-		OnClose(hook EngineCloseHook)
-	}
-
-	// PlanHookRegistrar registers hooks for compilation and plan shutdown.
-	PlanHookRegistrar interface {
-		// BeforeCompile registers a hook executed in FIFO order before compilation starts.
-		// A nil hook is ignored.
-		BeforeCompile(hook BeforeCompileHook)
-		// AfterCompile registers a hook executed in LIFO order after each compilation attempt.
-		// It receives the compilation error (if any), and a nil hook is ignored.
-		AfterCompile(hook AfterCompileHook)
-		// OnClose registers a hook executed in LIFO order when a plan is closed.
-		// A nil hook is ignored.
-		OnClose(hook PlanCloseHook)
-	}
-
-	// SessionHookRegistrar registers hooks for session execution and shutdown.
-	SessionHookRegistrar interface {
-		// BeforeRun registers a hook executed in FIFO order before each session run.
-		// Hooks can replace the context passed to subsequent hooks and VM execution.
-		// A nil hook is ignored.
-		BeforeRun(hook BeforeRunHook)
-		// AfterRun registers a hook executed in LIFO order after each run attempt.
-		// It receives the run error (if any), and a nil hook is ignored.
-		AfterRun(hook AfterRunHook)
-		// OnClose registers a hook executed in LIFO order when a session is closed.
-		// A nil hook is ignored.
-		OnClose(hook SessionCloseHook)
-	}
-)
-
-type (
-	// EngineInitHook runs during engine initialization.
-	// Returning an error stops initialization immediately.
-	EngineInitHook func() error
-
-	// EngineCloseHook runs during engine shutdown.
-	// Close hooks are executed in LIFO order and their errors are aggregated.
-	EngineCloseHook func() error
-
-	// BeforeCompileHook runs before compilation starts.
-	// Hooks run in FIFO order and stop on the first error.
-	BeforeCompileHook func(ctx context.Context) error
-
-	// AfterCompileHook runs after each compilation attempt.
-	// Hooks run in LIFO order and receive the compilation error (if any).
-	AfterCompileHook func(ctx context.Context, err error) error
-
-	// PlanCloseHook runs when a plan is closed.
-	// Close hooks are executed in LIFO order and their errors are aggregated.
-	PlanCloseHook func() error
-
-	// BeforeRunHook runs before each session run.
-	// It can return a derived context for subsequent hooks and VM execution.
-	BeforeRunHook func(ctx context.Context) (context.Context, error)
-
-	// AfterRunHook runs after each session run attempt.
-	// Hooks run in LIFO order, receive the run error (if any), and aggregate hook errors.
-	AfterRunHook func(ctx context.Context, err error) error
-
-	// SessionCloseHook runs when a session is closed.
-	// Close hooks are executed in LIFO order and their errors are aggregated.
-	SessionCloseHook func() error
+	"github.com/MontFerret/ferret/v2/pkg/module"
 )
 
 type (
@@ -114,20 +33,20 @@ type (
 	}
 
 	engineHookRegistry struct {
-		onInit  []EngineInitHook
-		onClose []EngineCloseHook
+		onInit  []module.EngineInitHook
+		onClose []module.EngineCloseHook
 	}
 
 	planHookRegistry struct {
-		beforeCompile []BeforeCompileHook
-		afterCompile  []AfterCompileHook
-		onClose       []PlanCloseHook
+		beforeCompile []module.BeforeCompileHook
+		afterCompile  []module.AfterCompileHook
+		onClose       []module.PlanCloseHook
 	}
 
 	sessionHookRegistry struct {
-		beforeRun []BeforeRunHook
-		afterRun  []AfterRunHook
-		onClose   []SessionCloseHook
+		beforeRun []module.BeforeRunHook
+		afterRun  []module.AfterRunHook
+		onClose   []module.SessionCloseHook
 	}
 )
 
@@ -139,15 +58,15 @@ func newHookRegistry() *hookRegistry {
 	}
 }
 
-func (hr *hookRegistry) Engine() EngineHookRegistrar {
+func (hr *hookRegistry) Engine() module.EngineHookRegistrar {
 	return hr.engine
 }
 
-func (hr *hookRegistry) Plan() PlanHookRegistrar {
+func (hr *hookRegistry) Plan() module.PlanHookRegistrar {
 	return hr.plan
 }
 
-func (hr *hookRegistry) Session() SessionHookRegistrar {
+func (hr *hookRegistry) Session() module.SessionHookRegistrar {
 	return hr.session
 }
 
@@ -159,25 +78,25 @@ func (hr *hookRegistry) clone() *hookRegistry {
 	}
 }
 
-func (e *engineHookRegistry) OnInit(hook EngineInitHook) {
+func (e *engineHookRegistry) OnInit(hook module.EngineInitHook) {
 	if hook == nil {
 		return
 	}
 
 	if e.onInit == nil {
-		e.onInit = make([]EngineInitHook, 0, 1)
+		e.onInit = make([]module.EngineInitHook, 0, 1)
 	}
 
 	e.onInit = append(e.onInit, hook)
 }
 
-func (e *engineHookRegistry) OnClose(hook EngineCloseHook) {
+func (e *engineHookRegistry) OnClose(hook module.EngineCloseHook) {
 	if hook == nil {
 		return
 	}
 
 	if e.onClose == nil {
-		e.onClose = make([]EngineCloseHook, 0, 1)
+		e.onClose = make([]module.EngineCloseHook, 0, 1)
 	}
 
 	e.onClose = append(e.onClose, hook)
@@ -224,37 +143,37 @@ func (e *engineHookRegistry) runCloseHooks() error {
 	return errors.Join(errs...)
 }
 
-func (p *planHookRegistry) BeforeCompile(hook BeforeCompileHook) {
+func (p *planHookRegistry) BeforeCompile(hook module.BeforeCompileHook) {
 	if hook == nil {
 		return
 	}
 
 	if p.beforeCompile == nil {
-		p.beforeCompile = make([]BeforeCompileHook, 0, 1)
+		p.beforeCompile = make([]module.BeforeCompileHook, 0, 1)
 	}
 
 	p.beforeCompile = append(p.beforeCompile, hook)
 }
 
-func (p *planHookRegistry) AfterCompile(hook AfterCompileHook) {
+func (p *planHookRegistry) AfterCompile(hook module.AfterCompileHook) {
 	if hook == nil {
 		return
 	}
 
 	if p.afterCompile == nil {
-		p.afterCompile = make([]AfterCompileHook, 0, 1)
+		p.afterCompile = make([]module.AfterCompileHook, 0, 1)
 	}
 
 	p.afterCompile = append(p.afterCompile, hook)
 }
 
-func (p *planHookRegistry) OnClose(hook PlanCloseHook) {
+func (p *planHookRegistry) OnClose(hook module.PlanCloseHook) {
 	if hook == nil {
 		return
 	}
 
 	if p.onClose == nil {
-		p.onClose = make([]PlanCloseHook, 0, 1)
+		p.onClose = make([]module.PlanCloseHook, 0, 1)
 	}
 
 	p.onClose = append(p.onClose, hook)
@@ -321,37 +240,37 @@ func (p *planHookRegistry) runCloseHooks() error {
 	return errors.Join(errs...)
 }
 
-func (s *sessionHookRegistry) BeforeRun(hook BeforeRunHook) {
+func (s *sessionHookRegistry) BeforeRun(hook module.BeforeRunHook) {
 	if hook == nil {
 		return
 	}
 
 	if s.beforeRun == nil {
-		s.beforeRun = make([]BeforeRunHook, 0, 1)
+		s.beforeRun = make([]module.BeforeRunHook, 0, 1)
 	}
 
 	s.beforeRun = append(s.beforeRun, hook)
 }
 
-func (s *sessionHookRegistry) AfterRun(hook AfterRunHook) {
+func (s *sessionHookRegistry) AfterRun(hook module.AfterRunHook) {
 	if hook == nil {
 		return
 	}
 
 	if s.afterRun == nil {
-		s.afterRun = make([]AfterRunHook, 0, 1)
+		s.afterRun = make([]module.AfterRunHook, 0, 1)
 	}
 
 	s.afterRun = append(s.afterRun, hook)
 }
 
-func (s *sessionHookRegistry) OnClose(hook SessionCloseHook) {
+func (s *sessionHookRegistry) OnClose(hook module.SessionCloseHook) {
 	if hook == nil {
 		return
 	}
 
 	if s.onClose == nil {
-		s.onClose = make([]SessionCloseHook, 0, 1)
+		s.onClose = make([]module.SessionCloseHook, 0, 1)
 	}
 
 	s.onClose = append(s.onClose, hook)
