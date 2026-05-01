@@ -11,6 +11,7 @@ import (
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	encodingmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
+	"github.com/MontFerret/ferret/v2/pkg/module"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 )
@@ -25,7 +26,7 @@ type (
 		logger            []logging.Option
 		fsRoot            string
 		compiler          []compiler.Option
-		modules           []Module
+		modules           []module.Module
 		maxActiveSessions int
 		maxIdleVMsPerPlan int
 		maxVMsPerPlan     int
@@ -291,17 +292,17 @@ func WithoutStdlib() Option {
 }
 
 // WithModules creates an Option that appends the provided modules to the options if not empty.
-func WithModules(module ...Module) Option {
+func WithModules(mods ...module.Module) Option {
 	return func(env *options) error {
-		if len(module) == 0 {
+		if len(mods) == 0 {
 			return nil
 		}
 
 		if env.modules == nil {
-			env.modules = make([]Module, 0, len(module))
+			env.modules = make([]module.Module, 0, len(mods))
 		}
 
-		for _, m := range module {
+		for _, m := range mods {
 			if m == nil {
 				return fmt.Errorf("module cannot be nil")
 			}
@@ -356,7 +357,7 @@ func WithCompilerOptions(opts ...compiler.Option) Option {
 
 // WithEngineInitHook returns an Option that registers a hook to execute during engine initialization.
 // It returns an error if hook is nil.
-func WithEngineInitHook(hook EngineInitHook) Option {
+func WithEngineInitHook(hook module.EngineInitHook) Option {
 	return func(opts *options) error {
 		if hook == nil {
 			return fmt.Errorf("engine init hook is nil")
@@ -370,7 +371,7 @@ func WithEngineInitHook(hook EngineInitHook) Option {
 
 // WithEngineCloseHook returns an Option that registers a hook to execute when the engine is closed.
 // It returns an error if hook is nil.
-func WithEngineCloseHook(hook EngineCloseHook) Option {
+func WithEngineCloseHook(hook module.EngineCloseHook) Option {
 	return func(opts *options) error {
 		if hook == nil {
 			return fmt.Errorf("engine close hook is nil")
@@ -384,7 +385,7 @@ func WithEngineCloseHook(hook EngineCloseHook) Option {
 
 // WithBeforeCompileHook returns an Option that registers a hook to execute before each compilation attempt.
 // It returns an error if hook is nil.
-func WithBeforeCompileHook(hook BeforeCompileHook) Option {
+func WithBeforeCompileHook(hook module.BeforeCompileHook) Option {
 	return func(opts *options) error {
 		if hook == nil {
 			return fmt.Errorf("before compile hook is nil")
@@ -398,7 +399,7 @@ func WithBeforeCompileHook(hook BeforeCompileHook) Option {
 
 // WithAfterCompileHook returns an Option that registers a hook to execute after each compilation attempt.
 // The hook receives the compilation error (if any). It returns an error if hook is nil.
-func WithAfterCompileHook(hook AfterCompileHook) Option {
+func WithAfterCompileHook(hook module.AfterCompileHook) Option {
 	return func(opts *options) error {
 		if hook == nil {
 			return fmt.Errorf("after compile hook is nil")
@@ -412,7 +413,7 @@ func WithAfterCompileHook(hook AfterCompileHook) Option {
 
 // WithPlanCloseHook returns an Option that registers a hook to execute when a plan is closed.
 // It returns an error if hook is nil.
-func WithPlanCloseHook(hook PlanCloseHook) Option {
+func WithPlanCloseHook(hook module.PlanCloseHook) Option {
 	return func(opts *options) error {
 		if hook == nil {
 			return fmt.Errorf("plan close hook is nil")
@@ -427,7 +428,7 @@ func WithPlanCloseHook(hook PlanCloseHook) Option {
 // WithBeforeRunHook returns an Option that registers a hook to execute before each session run.
 // The hook can replace the context used by subsequent hooks and VM execution.
 // It returns an error if hook is nil.
-func WithBeforeRunHook(hook BeforeRunHook) Option {
+func WithBeforeRunHook(hook module.BeforeRunHook) Option {
 	return func(opts *options) error {
 		if hook == nil {
 			return fmt.Errorf("before run hook is nil")
@@ -441,7 +442,7 @@ func WithBeforeRunHook(hook BeforeRunHook) Option {
 
 // WithAfterRunHook returns an Option that registers a hook to execute after each session run attempt.
 // The hook receives the run error (if any). It returns an error if hook is nil.
-func WithAfterRunHook(hook AfterRunHook) Option {
+func WithAfterRunHook(hook module.AfterRunHook) Option {
 	return func(opts *options) error {
 		if hook == nil {
 			return fmt.Errorf("after run hook is nil")
@@ -455,7 +456,7 @@ func WithAfterRunHook(hook AfterRunHook) Option {
 
 // WithSessionCloseHook returns an Option that registers a hook to execute when a session is closed.
 // It returns an error if hook is nil.
-func WithSessionCloseHook(hook SessionCloseHook) Option {
+func WithSessionCloseHook(hook module.SessionCloseHook) Option {
 	return func(opts *options) error {
 		if hook == nil {
 			return fmt.Errorf("session close hook is nil")

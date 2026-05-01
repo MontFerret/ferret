@@ -8,13 +8,14 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/logging"
+	"github.com/MontFerret/ferret/v2/pkg/module"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 type testModule struct {
-	registerFn func(boot Bootstrap) error
+	registerFn func(boot module.Bootstrap) error
 	name       string
 }
 
@@ -26,7 +27,7 @@ func (m testModule) Name() string {
 	return m.name
 }
 
-func (m testModule) Register(boot Bootstrap) error {
+func (m testModule) Register(boot module.Bootstrap) error {
 	if m.registerFn == nil {
 		return nil
 	}
@@ -51,7 +52,7 @@ func TestNewRunsCloseHooksWhenHostBuildFails(t *testing.T) {
 	)
 
 	mod := testModule{
-		registerFn: func(boot Bootstrap) error {
+		registerFn: func(boot module.Bootstrap) error {
 			moduleRegistered = true
 			boot.Hooks().Engine().OnClose(func() error {
 				closeHookCalled = true

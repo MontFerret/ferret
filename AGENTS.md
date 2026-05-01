@@ -114,7 +114,6 @@ Agents should begin with the package whose responsibility owns the requested beh
 - `pkg/stdlib` registers the built-in namespaces and functions.
 - `pkg/vm` executes bytecode programs.
 - `test/integration/compiler`, `test/integration/optimization`, and `test/integration/vm` are the main regression suites.
-- `test/e2e` covers CLI and browser-backed flows.
 
 ## Where to start by task
 
@@ -158,7 +157,7 @@ Agents should begin with the package whose responsibility owns the requested beh
 - Change embedding API:
     - inspect top-level package (`Engine`, `Plan`, `Session`)
     - inspect downstream compiler/runtime/VM interactions
-    - validate public behavior with integration or e2e coverage as appropriate
+    - validate public behavior with integration coverage as appropriate
 
 - Change built-in functions/modules:
     - inspect `pkg/stdlib`
@@ -413,7 +412,6 @@ When uncertain:
 - Go must be installed.
 - make is optional but is the preferred entrypoint for repo-defined workflows.
 - Java plus ANTLR 4.13.2 are required when regenerating parser artifacts.
-- lab plus a reachable Chromium instance are required for e2e coverage.
 - staticcheck, goimports, and revive are needed for lint/format flows; install them with make install-tools.
 
 ## Command matrix
@@ -424,9 +422,6 @@ When uncertain:
 - Regenerate parser/codegen artifacts: make generate
 - Run this only when grammar or generator inputs change.
 - Build the CLI binary: make compile
-- Run e2e coverage: LAB_BIN=/absolute/path/to/lab make e2e
-- Ensure Chromium is reachable at http://127.0.0.1:9222/json/version.
-- CI uses docker run -d -p 9222:9222 ghcr.io/montferret/chromium:92.0.4512.0.
 
 ## Editing rules
 
@@ -440,7 +435,6 @@ When uncertain:
     - Package-local changes: run the affected `go test` package(s).
     - Compiler, optimizer, or VM changes: run the relevant integration suite(s).
     - Cross-cutting changes: finish with `go test ./...` or `make test`.
-- Do not assume e2e is available locally. If Chromium or `lab` is missing, state that explicitly.
 
 ### Validation expectations
 - After code changes, run the narrowest tests that prove the behavior you touched.
