@@ -19,7 +19,8 @@ type HostContext interface {
 	// Encoding returns the codec registrar used to configure output encoding for
 	// the engine.
 	Encoding() encoding.CodecRegistrar
-	// Logger returns the engine logger that derived plans and sessions inherit.
+	// Logger returns the engine logger used by the engine and inherited by
+	// sessions created from it.
 	Logger() logging.Logger
 	// FileSystem returns the file system used by the engine and derived
 	// executions.
