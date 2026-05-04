@@ -10,7 +10,7 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ### Prerequisites
 
-- Go 1.23 or later
+- Go 1.25 or later
 - Make (optional, for running Makefile commands)
 
 ### Setting Up the Development Environment
@@ -73,12 +73,12 @@ make test
 
 4. Ensure all tests pass:
    ```bash
-   go test ./...
+   make test
    ```
 
 5. Run the linter:
    ```bash
-   golangci-lint run
+   make lint
    ```
 
 6. Commit your changes with a clear message:
