@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 )
 
 func mustNewOptionsForTest(t *testing.T, setters ...Option) *options {
@@ -168,5 +169,64 @@ func TestNewOptionsRejectsBlankFSRoot(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "fs root cannot be empty") {
 		t.Fatalf("expected blank fs root validation error, got: %v", err)
+	}
+}
+
+func TestWithStdlibSafeRegistersSelectedGroups(t *testing.T) {
+	t.Parallel()
+
+	eng := mustNewEngine(t, WithStdlib(stdlib.Safe()))
+	defer func() { _ = eng.Close() }()
+
+	if !eng.host.functions.Has("CONCAT") {
+		t.Fatal("expected safe stdlib to register non-IO functions")
+	}
+
+	for _, name := range []string{"IO::FS::READ", "IO::NET::HTTP::GET"} {
+		if eng.host.functions.Has(name) {
+			t.Fatalf("expected safe stdlib to exclude %s", name)
+		}
+	}
+}
+
+func TestWithStdlibEmptyMatchesWithoutStdlib(t *testing.T) {
+	t.Parallel()
+
+	eng := mustNewEngine(t, WithStdlib(stdlib.Empty()))
+	defer func() { _ = eng.Close() }()
+
+	if eng.host.functions.Size() != 0 {
+		t.Fatalf("expected empty stdlib to register no functions, got %d", eng.host.functions.Size())
+	}
+}
+
+func TestStdlibOptionsUseLastSelection(t *testing.T) {
+	t.Parallel()
+
+	withoutThenFull := mustNewEngine(t, WithoutStdlib(), WithStdlib(stdlib.Full()))
+	defer func() { _ = withoutThenFull.Close() }()
+
+	if !withoutThenFull.host.functions.Has("CONCAT") {
+		t.Fatal("expected WithStdlib after WithoutStdlib to restore full stdlib")
+	}
+
+	fullThenWithout := mustNewEngine(t, WithStdlib(stdlib.Full()), WithoutStdlib())
+	defer func() { _ = fullThenWithout.Close() }()
+
+	if fullThenWithout.host.functions.Size() != 0 {
+		t.Fatalf("expected WithoutStdlib after WithStdlib to disable stdlib, got %d functions", fullThenWithout.host.functions.Size())
+	}
+}
+
+func TestWithStdlibRejectsInvalidGroup(t *testing.T) {
+	t.Parallel()
+
+	_, err := New(WithStdlib(stdlib.Only(stdlib.Group("unknown"))))
+	if err == nil {
+		t.Fatal("expected invalid stdlib group to fail engine creation")
+	}
+
+	if !strings.Contains(err.Error(), "stdlib: invalid stdlib group(s): unknown") {
+		t.Fatalf("expected invalid stdlib group error, got: %v", err)
 	}
 }
