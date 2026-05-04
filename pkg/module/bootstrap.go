@@ -1,9 +1,11 @@
 package module
 
-// Bootstrap defines an interface for configuring the host and registering lifecycle hooks with the runtime engine.
+// Bootstrap exposes the mutable engine bootstrap state passed to Module.Register.
 type Bootstrap interface {
-	// Host returns access to host-level registration surfaces.
+	// Host returns the host-scoped registries and services that a module can
+	// populate during engine construction.
 	Host() HostContext
-	// Hooks returns access to engine, plan, and session hook registrars.
+	// Hooks returns the lifecycle hook registrars for the engine, plan, and
+	// session stages created from this engine.
 	Hooks() HookRegistrar
 }
