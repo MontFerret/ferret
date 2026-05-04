@@ -44,18 +44,18 @@ type groupRegistration struct {
 }
 
 var groupRegistrations = []groupRegistration{
-	{Types, types.RegisterLib},
-	{Strings, stdlibstrings.RegisterLib},
-	{Math, math.RegisterLib},
-	{Collections, collections.RegisterLib},
-	{DateTime, datetime.RegisterLib},
-	{Arrays, arrays.RegisterLib},
-	{Objects, objects.RegisterLib},
-	{FS, registerFS},
-	{NET, registerNET},
-	{Path, path.RegisterLib},
-	{Utils, utils.RegisterLib},
-	{Testing, testing.RegisterLib},
+	{group: Types, register: types.RegisterLib},
+	{group: Strings, register: stdlibstrings.RegisterLib},
+	{group: Math, register: math.RegisterLib},
+	{group: Collections, register: collections.RegisterLib},
+	{group: DateTime, register: datetime.RegisterLib},
+	{group: Arrays, register: arrays.RegisterLib},
+	{group: Objects, register: objects.RegisterLib},
+	{group: FS, register: registerFS},
+	{group: NET, register: registerNET},
+	{group: Path, register: path.RegisterLib},
+	{group: Utils, register: utils.RegisterLib},
+	{group: Testing, register: testing.RegisterLib},
 }
 
 func expandGroup(group Group) ([]Group, bool) {
