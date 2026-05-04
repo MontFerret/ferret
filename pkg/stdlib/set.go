@@ -25,7 +25,7 @@ func Full() Set {
 
 // Safe returns the full standard library without filesystem or network groups.
 func Safe() Set {
-	return Full().Without(FS, NET)
+	return Full().Without(IO)
 }
 
 // Empty returns a set containing no standard library groups.

@@ -1,6 +1,8 @@
 package stdlib_test
 
 import (
+	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
@@ -22,6 +24,13 @@ func buildFunctions(t *testing.T, set stdlib.Set) *runtime.Functions {
 	}
 
 	return funcs
+}
+
+func functionNames(funcs *runtime.Functions) []string {
+	names := funcs.List()
+	sort.Strings(names)
+
+	return names
 }
 
 func TestFullRegistersRepresentativeFunctions(t *testing.T) {
@@ -58,6 +67,17 @@ func TestSafeExcludesExternalIO(t *testing.T) {
 		if funcs.Has(name) {
 			t.Fatalf("expected safe stdlib to exclude %s", name)
 		}
+	}
+}
+
+func TestSafeMatchesFullWithoutIO(t *testing.T) {
+	t.Parallel()
+
+	safeNames := functionNames(buildFunctions(t, stdlib.Safe()))
+	withoutIONames := functionNames(buildFunctions(t, stdlib.Full().Without(stdlib.IO)))
+
+	if !reflect.DeepEqual(safeNames, withoutIONames) {
+		t.Fatalf("expected Safe to match Full().Without(IO), got %v vs %v", safeNames, withoutIONames)
 	}
 }
 
