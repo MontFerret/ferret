@@ -23,15 +23,15 @@ type (
 		encoding          *encoding.Registry
 		programLoader     *artifact.Loader
 		hooks             *hookRegistry
-		logger            []logging.Option
 		fsRoot            string
+		stdlib            stdlib.Set
+		logger            []logging.Option
 		compiler          []compiler.Option
 		modules           []module.Module
 		maxActiveSessions int
 		maxIdleVMsPerPlan int
 		maxVMsPerPlan     int
 		fsReadOnly        bool
-		noStdlib          bool
 	}
 
 	// Option configures an Engine during construction.
@@ -63,6 +63,7 @@ func newOptions(setters []Option) (*options, error) {
 		maxActiveSessions: defaultMaxActiveSessions,
 		maxIdleVMsPerPlan: defaultVMPoolSize,
 		maxVMsPerPlan:     defaultMaxVMsPerPlan,
+		stdlib:            stdlib.Full(),
 	}
 
 	for _, setter := range setters {
@@ -75,8 +76,8 @@ func newOptions(setters []Option) (*options, error) {
 		}
 	}
 
-	if !opts.noStdlib {
-		stdlib.RegisterLib(opts.library)
+	if err := opts.stdlib.Register(opts.library); err != nil {
+		return nil, fmt.Errorf("stdlib: %w", err)
 	}
 
 	return opts, nil
@@ -285,7 +286,16 @@ func WithProgramLoader(loader *artifact.Loader) Option {
 // WithoutStdlib disables the standard library, so no built-in functions are registered by default.
 func WithoutStdlib() Option {
 	return func(opts *options) error {
-		opts.noStdlib = true
+		opts.stdlib = stdlib.Empty()
+
+		return nil
+	}
+}
+
+// WithStdlib configures which standard library groups are registered by default.
+func WithStdlib(set stdlib.Set) Option {
+	return func(opts *options) error {
+		opts.stdlib = set
 
 		return nil
 	}
