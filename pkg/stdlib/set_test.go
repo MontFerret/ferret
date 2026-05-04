@@ -182,6 +182,19 @@ func TestSetRegisterRejectsInvalidGroup(t *testing.T) {
 	}
 }
 
+func TestSetRegisterRejectsNilNamespace(t *testing.T) {
+	t.Parallel()
+
+	err := stdlib.Full().Register(nil)
+	if err == nil {
+		t.Fatal("expected nil namespace to fail registration")
+	}
+
+	if !strings.Contains(err.Error(), "stdlib namespace cannot be nil") {
+		t.Fatalf("expected nil namespace error, got: %v", err)
+	}
+}
+
 func TestZeroValueSetRegistersNoFunctions(t *testing.T) {
 	t.Parallel()
 
