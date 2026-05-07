@@ -281,6 +281,15 @@ func applyDatasetUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand
 		collector.addUse(src1)
 		collector.addUse(src2)
 		return true
+	case bytecode.OpSetIndex, bytecode.OpSetKey, bytecode.OpSetProperty:
+		collector.addUse(dst)
+		collector.addUse(src1)
+		collector.addUse(src2)
+		return true
+	case bytecode.OpSetIndexConst, bytecode.OpSetKeyConst, bytecode.OpSetPropertyConst:
+		collector.addUse(dst)
+		collector.addUse(src2)
+		return true
 	default:
 		return false
 	}

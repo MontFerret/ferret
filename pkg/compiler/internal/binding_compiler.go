@@ -135,23 +135,28 @@ func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatemen
 		return bytecode.NoopOperand
 	}
 
-	if member := target.MemberExpression(); member != nil {
-		c.reportInvalidAssignmentTarget(member.(antlr.ParserRuleContext))
-		return bytecode.NoopOperand
-	}
-
-	name := textOfBindingIdentifier(target.BindingIdentifier())
-	if name == "" || name == core.IgnorePseudoVariable {
+	assignment, ok := newAssignmentTarget(target)
+	if !ok {
 		c.reportInvalidAssignmentTarget(stmt)
 		return bytecode.NoopOperand
 	}
 
-	binding, found := c.ctx.Function.Symbols.ResolveBinding(name)
-	if !found {
-		c.ctx.Program.Errors.VariableNotFound(stmt.GetStart(), name)
+	if assignment.Root == "" || assignment.Root == core.IgnorePseudoVariable {
+		c.reportInvalidAssignmentTarget(stmt)
 		return bytecode.NoopOperand
 	}
 
+	binding, found := c.ctx.Function.Symbols.ResolveBinding(assignment.Root)
+	if !found {
+		c.ctx.Program.Errors.VariableNotFound(assignment.RootTok, assignment.Root)
+		return bytecode.NoopOperand
+	}
+
+	if len(assignment.Segments) > 0 {
+		return c.compilePathAssignmentStatement(stmt, assignment, binding)
+	}
+
+	name := assignment.Root
 	if !binding.Mutable {
 		err := c.ctx.Program.Errors.Create(parserd.SemanticError, stmt, fmt.Sprintf("Variable '%s' cannot be reassigned", name))
 		err.Hint = "Declare it with VAR if you need to update it."
@@ -164,6 +169,9 @@ func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatemen
 
 	if operator == "=" {
 		src = c.exprs.Compile(stmt.Expression())
+	} else if !augmentedAssignmentKnownTypeAllowed(operator, binding.Type) {
+		c.reportInvalidAugmentedAssignment(stmt, operator)
+		return bytecode.NoopOperand
 	} else if operator == "+=" && binding.Type == core.TypeString {
 		left := c.snapshotBindingValue(binding)
 		parts := append([]concatOperandSegment{{operand: left}}, buildConcatOperandSegmentsFromExpression(c.exprs, stmt.Expression())...)
@@ -327,7 +335,17 @@ func (c *BindingCompiler) reportInvalidAssignmentTarget(ctx antlr.ParserRuleCont
 		return
 	}
 
-	err := c.ctx.Program.Errors.Create(parserd.SyntaxError, ctx, "Assignment target must be a local variable name")
-	err.Hint = "Property and index assignment are not supported. Use UPDATE for structural changes."
+	err := c.ctx.Program.Errors.Create(parserd.SyntaxError, ctx, "Assignment target must be a binding or writable binding path")
+	err.Hint = "Use a declared binding name followed by member or index access."
+	c.ctx.Program.Errors.Add(err)
+}
+
+func (c *BindingCompiler) reportInvalidAugmentedAssignment(ctx antlr.ParserRuleContext, operator string) {
+	if ctx == nil {
+		return
+	}
+
+	err := c.ctx.Program.Errors.Create(parserd.SemanticError, ctx, fmt.Sprintf("Operator '%s' cannot be applied to this assignment target", operator))
+	err.Hint = "Use a numeric binding for arithmetic assignment, or a string binding with +=."
 	c.ctx.Program.Errors.Add(err)
 }

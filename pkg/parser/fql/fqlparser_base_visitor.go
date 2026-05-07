@@ -47,6 +47,10 @@ func (v *BaseFqlParserVisitor) VisitAssignmentTarget(ctx *AssignmentTargetContex
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitAssignmentTargetPath(ctx *AssignmentTargetPathContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitAssignmentOperator(ctx *AssignmentOperatorContext) interface{} {
 	return v.VisitChildren(ctx)
 }

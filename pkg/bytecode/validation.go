@@ -330,7 +330,7 @@ func validateInstructions(program *Program) error {
 			OpAllGte, OpAllLt, OpAllLte, OpAllIn, OpAnyEq, OpAnyNe,
 			OpAnyGt, OpAnyGte, OpAnyLt, OpAnyLte, OpAnyIn, OpNoneEq,
 			OpNoneNe, OpNoneGt, OpNoneGte, OpNoneLt, OpNoneLte, OpNoneIn,
-			OpAggregateGroupUpdate:
+			OpAggregateGroupUpdate, OpSetIndex, OpSetKey, OpSetProperty:
 			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
 				return err
 			}
@@ -417,6 +417,18 @@ func validateInstructions(program *Program) error {
 				return err
 			}
 		case OpObjectSetConst:
+			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
+				return err
+			}
+
+			if err := validateConstantOperand(src1, constantsLen, pc, "src1"); err != nil {
+				return err
+			}
+
+			if err := validateRegisterOperand(src2, registers, pc, "src2"); err != nil {
+				return err
+			}
+		case OpSetIndexConst, OpSetKeyConst, OpSetPropertyConst:
 			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
 				return err
 			}

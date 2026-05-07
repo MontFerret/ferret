@@ -181,13 +181,23 @@ func (c *CaptureAnalyzer) collectAssignments(
 			continue
 		}
 
-		name := textOfBindingIdentifier(stmt.AssignmentTarget().BindingIdentifier())
+		target, ok := newAssignmentTarget(stmt.AssignmentTarget())
+		if !ok {
+			continue
+		}
+
+		name := target.Root
 		if name == "" || env.currentHas(name) {
 			continue
 		}
 
 		binding, ok := env.resolveBinding(name)
 		if !ok {
+			continue
+		}
+
+		if len(target.Segments) > 0 {
+			addUDFCapture(captureSet, captureOrder, name, core.BindingStorageValue)
 			continue
 		}
 

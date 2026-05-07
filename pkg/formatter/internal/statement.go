@@ -81,11 +81,12 @@ func (f *statementFormatter) formatAssignmentStatement(ctx *fql.AssignmentStatem
 	}
 
 	if target := ctx.AssignmentTarget(); target != nil {
-		switch {
-		case target.BindingIdentifier() != nil:
+		if target.BindingIdentifier() != nil {
 			f.p.write(target.BindingIdentifier().GetText())
-		case target.MemberExpression() != nil:
-			f.member.formatMemberExpression(target.MemberExpression().(*fql.MemberExpressionContext))
+		}
+
+		for _, path := range target.AllAssignmentTargetPath() {
+			f.member.formatAssignmentTargetPath(path.(*fql.AssignmentTargetPathContext))
 		}
 	}
 

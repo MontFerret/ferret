@@ -163,46 +163,6 @@ func TestVarErrors(t *testing.T) {
 			}, "FOR WHILE variables cannot be reassigned"),
 		Failure(
 			`
-			LET obj = {}
-			obj.x = 1
-			RETURN obj
-		`, E{
-				Kind:    parserd.SyntaxError,
-				Message: "Assignment target must be a local variable name",
-				Hint:    "Property and index assignment are not supported. Use UPDATE for structural changes.",
-			}, "Property assignment is rejected"),
-		Failure(
-			`
-				LET obj = {}
-				obj.x += 1
-				RETURN obj
-			`, E{
-				Kind:    parserd.SyntaxError,
-				Message: "Assignment target must be a local variable name",
-				Hint:    "Property and index assignment are not supported. Use UPDATE for structural changes.",
-			}, "Compound property assignment is rejected"),
-		Failure(
-			`
-				LET arr = [0]
-				arr[0] = 1
-				RETURN arr
-		`, E{
-				Kind:    parserd.SyntaxError,
-				Message: "Assignment target must be a local variable name",
-				Hint:    "Property and index assignment are not supported. Use UPDATE for structural changes.",
-			}, "Index assignment is rejected"),
-		Failure(
-			`
-				LET arr = [0]
-				arr[0] += 1
-				RETURN arr
-			`, E{
-				Kind:    parserd.SyntaxError,
-				Message: "Assignment target must be a local variable name",
-				Hint:    "Property and index assignment are not supported. Use UPDATE for structural changes.",
-			}, "Compound index assignment is rejected"),
-		Failure(
-			`
 				VAR x = 1
 				FUNC outer() (
 			  LET x = 2
@@ -215,6 +175,96 @@ func TestVarErrors(t *testing.T) {
 				Message: "Variable 'x' cannot be reassigned",
 				Hint:    "Declare it with VAR if you need to update it.",
 			}, "Nearest shadowed binding controls reassignment"),
+	})
+}
+
+func TestDirectMutationCompile(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		ProgramCheck(`
+			LET obj = {}
+			obj.x = 1
+			RETURN obj
+		`, func(program *bytecode.Program) error {
+			if got := inspect.CountOpcode(program, bytecode.OpSetKeyConst); got == 0 {
+				t.Fatalf("expected %s opcode", bytecode.OpSetKeyConst)
+			}
+
+			return nil
+		}, "Property assignment compiles to key write"),
+		ProgramCheck(`
+			LET arr = [0]
+			arr[0] = 1
+			RETURN arr
+		`, func(program *bytecode.Program) error {
+			if got := inspect.CountOpcode(program, bytecode.OpSetIndexConst); got == 0 {
+				t.Fatalf("expected %s opcode", bytecode.OpSetIndexConst)
+			}
+
+			return nil
+		}, "Index assignment compiles to index write"),
+		ProgramCheck(`
+			LET obj = { count: 1 }
+			obj?.count += 1
+			RETURN obj
+		`, func(program *bytecode.Program) error {
+			if got := inspect.CountOpcode(program, bytecode.OpLoadKeyOptionalConst); got == 0 {
+				t.Fatalf("expected %s opcode", bytecode.OpLoadKeyOptionalConst)
+			}
+
+			if got := inspect.CountOpcode(program, bytecode.OpSetKeyConst); got == 0 {
+				t.Fatalf("expected %s opcode", bytecode.OpSetKeyConst)
+			}
+
+			return nil
+		}, "Safe augmented assignment compiles to optional read and write"),
+		Failure(
+			`
+				LOWER("x") = 1
+				RETURN 0
+			`, E{
+				Kind: parserd.SyntaxError,
+			}, "Function call assignment target is invalid"),
+		Failure(
+			`
+				(1 + 2) = 3
+				RETURN 0
+			`, E{
+				Kind: parserd.SyntaxError,
+			}, "Expression assignment target is invalid"),
+		Failure(
+			`
+				LET obj = []
+				obj[*] = 1
+				RETURN obj
+			`, E{
+				Kind: parserd.SyntaxError,
+			}, "Array operator assignment target is invalid"),
+		Failure(
+			`
+				LET obj = []
+				obj?[0] = 1
+				RETURN obj
+			`, E{
+				Kind: parserd.SyntaxError,
+			}, "Malformed safe index assignment target is invalid"),
+		Failure(
+			`
+				missing?.x = 1
+				RETURN 0
+			`, E{
+				Kind:    parserd.NameError,
+				Message: "Variable 'missing' is not defined",
+			}, "Safe assignment still requires a declared root"),
+		Failure(
+			`
+				VAR obj = {}
+				obj += 1
+				RETURN obj
+			`, E{
+				Kind:    parserd.SemanticError,
+				Message: "Operator '+=' cannot be applied to this assignment target",
+				Hint:    "Use a numeric binding for arithmetic assignment, or a string binding with +=.",
+			}, "Invalid augmented assignment target types are rejected"),
 	})
 }
 
