@@ -20,6 +20,7 @@ type CompilationFrontend struct {
 	UDFCatalog      *UDFCatalogBuilder
 	UDFs            *UDFCompiler
 	Wait            *WaitCompiler
+	NameCollisions  *NameCollisionValidator
 }
 
 func NewCompilationFrontend(session *CompilationSession) *CompilationFrontend {
@@ -35,6 +36,7 @@ func NewCompilationFrontend(session *CompilationSession) *CompilationFrontend {
 		Collects:        NewCollectCompiler(session),
 		Wait:            NewWaitCompiler(session),
 		Dispatch:        NewDispatchCompiler(session),
+		NameCollisions:  NewNameCollisionValidator(session),
 		TypeFacts:       NewTypeFacts(session),
 		CaptureAnalyzer: NewCaptureAnalyzer(session),
 		UDFs:            NewUDFCompiler(session),
