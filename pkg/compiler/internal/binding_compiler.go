@@ -228,23 +228,7 @@ func (c *BindingCompiler) captureBindingForDeclaration(ctx fql.IVariableDeclarat
 }
 
 func (c *BindingCompiler) declarationName(ctx fql.IVariableDeclarationContext) string {
-	if ctx == nil {
-		return ""
-	}
-
-	if id := ctx.BindingIdentifier(); id != nil {
-		return textOfBindingIdentifier(id)
-	}
-
-	if id := ctx.Identifier(); id != nil {
-		return id.GetText()
-	}
-
-	if id := ctx.SafeReservedWord(); id != nil {
-		return id.GetText()
-	}
-
-	return ""
+	return bindingDeclarationName(ctx)
 }
 
 func (c *BindingCompiler) isMutableDeclaration(ctx fql.IVariableDeclarationContext) bool {

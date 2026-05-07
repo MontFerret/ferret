@@ -53,6 +53,8 @@ func (c *UDFCatalogBuilder) BuildCatalog(program *fql.ProgramContext) {
 		c.collectNestedFunctions(fn)
 	}
 
+	c.validateBindingConflicts(body, table.GlobalScope)
+
 	if c.ctx.Program.OptimizationLevel > optimization.LevelNone {
 		c.pruneUnusedFunctions(body)
 	}
@@ -110,6 +112,85 @@ func (c *UDFCatalogBuilder) collectNestedFunctions(fn *core.UDFInfo) {
 	for _, nested := range out {
 		c.collectNestedFunctions(nested)
 	}
+}
+
+func (c *UDFCatalogBuilder) validateBindingConflicts(body *fql.BodyContext, scope *core.UDFScope) {
+	if c == nil || c.ctx == nil || body == nil || scope == nil {
+		return
+	}
+
+	for _, stmt := range body.AllBodyStatement() {
+		if stmt == nil {
+			continue
+		}
+
+		if decl := stmt.VariableDeclaration(); decl != nil {
+			c.validateVariableDeclarationConflict(decl, scope)
+			continue
+		}
+
+		if decl := stmt.FunctionDeclaration(); decl != nil {
+			fn, ok := scope.Functions[decl.FunctionName().GetText()]
+			if ok {
+				c.validateFunctionBindingConflicts(fn)
+			}
+		}
+	}
+}
+
+func (c *UDFCatalogBuilder) validateFunctionBindingConflicts(fn *core.UDFInfo) {
+	if c == nil || c.ctx == nil || fn == nil || fn.Decl == nil || fn.BodyScope == nil {
+		return
+	}
+
+	body := fn.Decl.FunctionBody()
+	if body == nil {
+		return
+	}
+
+	block := body.FunctionBlock()
+	if block == nil {
+		return
+	}
+
+	for _, stmt := range block.AllFunctionStatement() {
+		if stmt == nil {
+			continue
+		}
+
+		if decl := stmt.VariableDeclaration(); decl != nil {
+			c.validateVariableDeclarationConflict(decl, fn.BodyScope)
+			continue
+		}
+
+		if decl := stmt.FunctionDeclaration(); decl != nil {
+			nested, ok := fn.BodyScope.Functions[decl.FunctionName().GetText()]
+			if ok {
+				c.validateFunctionBindingConflicts(nested)
+			}
+		}
+	}
+}
+
+func (c *UDFCatalogBuilder) validateVariableDeclarationConflict(decl fql.IVariableDeclarationContext, scope *core.UDFScope) {
+	if c == nil || c.ctx == nil || decl == nil || scope == nil {
+		return
+	}
+
+	name := bindingDeclarationName(decl)
+	if name == "" {
+		return
+	}
+
+	if _, exists := scope.Functions[name]; !exists {
+		return
+	}
+
+	c.ctx.Program.Errors.Add(c.ctx.Program.Errors.Create(
+		parserd.NameError,
+		decl.(antlr.ParserRuleContext),
+		fmt.Sprintf("Variable '%s' is already defined", name),
+	))
 }
 
 func (c *UDFCatalogBuilder) registerFunction(scope *core.UDFScope, decl *fql.FunctionDeclarationContext) *core.UDFInfo {
