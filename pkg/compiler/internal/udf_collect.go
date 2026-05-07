@@ -201,7 +201,7 @@ func (c *UDFCatalogBuilder) registerFunction(scope *core.UDFScope, decl *fql.Fun
 	displayName := decl.FunctionName().GetText()
 	name := displayName
 
-	if _, exists := scope.Functions[name]; exists {
+	if _, exists := scope.Declared[name]; exists {
 		c.ctx.Program.Errors.Add(c.ctx.Program.Errors.Create(parserd.NameError, decl, fmt.Sprintf("Function '%s' is already defined", displayName)))
 		return nil
 	}
@@ -217,6 +217,7 @@ func (c *UDFCatalogBuilder) registerFunction(scope *core.UDFScope, decl *fql.Fun
 	}
 
 	scope.Functions[name] = fn
+	scope.Declared[name] = fn
 	c.ctx.Program.UDFs.Functions = append(c.ctx.Program.UDFs.Functions, fn)
 
 	return fn

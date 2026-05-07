@@ -148,6 +148,10 @@ func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatemen
 
 	binding, found := c.ctx.Function.Symbols.ResolveBinding(assignment.Root)
 	if !found {
+		if c.reportFunctionAssignmentTarget(assignment) {
+			return bytecode.NoopOperand
+		}
+
 		c.ctx.Program.Errors.VariableNotFound(assignment.RootTok, assignment.Root)
 		return bytecode.NoopOperand
 	}
@@ -322,6 +326,33 @@ func (c *BindingCompiler) reportInvalidAssignmentTarget(ctx antlr.ParserRuleCont
 	err := c.ctx.Program.Errors.Create(parserd.SyntaxError, ctx, "Assignment target must be a binding or writable binding path")
 	err.Hint = "Use a declared binding name followed by member or index access."
 	c.ctx.Program.Errors.Add(err)
+}
+
+func (c *BindingCompiler) reportFunctionAssignmentTarget(target assignmentTarget) bool {
+	if c == nil || c.ctx == nil || c.ctx.Program.UDFs == nil || c.ctx.Function.UDFScope == nil {
+		return false
+	}
+
+	fn, found := c.ctx.Program.UDFs.ResolveDeclared(target.Root, c.ctx.Function.UDFScope)
+	if !found {
+		return false
+	}
+
+	name := fn.DisplayName
+	if name == "" {
+		name = target.Root
+	}
+
+	err := c.ctx.Program.Errors.Create(
+		parserd.SemanticError,
+		target.RootCtx,
+		fmt.Sprintf("Function '%s' cannot be used as an assignment target", name),
+	)
+	err.Spans[0].Label = "function is not a writable binding"
+	err.Hint = fmt.Sprintf("Call it as %s(...), or assign to a declared VAR binding instead.", name)
+	c.ctx.Program.Errors.Add(err)
+
+	return true
 }
 
 func (c *BindingCompiler) reportInvalidAugmentedAssignment(ctx antlr.ParserRuleContext, operator string) {

@@ -178,6 +178,110 @@ func TestVarErrors(t *testing.T) {
 	})
 }
 
+func TestVarErrorsFunctionAssignmentTargets(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		Failure(
+			`
+			FUNC test() => 1
+			test.foo = 42
+			RETURN NONE
+		`, E{
+				Kind:    parserd.SemanticError,
+				Message: "Function 'test' cannot be used as an assignment target",
+				Hint:    "Call it as test(...), or assign to a declared VAR binding instead.",
+			}, "UDF path assignment reports function-specific diagnostic"),
+		Failure(
+			`
+			FUNC test() => 1
+			test = 42
+			RETURN NONE
+		`, E{
+				Kind:    parserd.SemanticError,
+				Message: "Function 'test' cannot be used as an assignment target",
+				Hint:    "Call it as test(...), or assign to a declared VAR binding instead.",
+			}, "UDF bare assignment reports function-specific diagnostic"),
+		Failure(
+			`
+			FUNC test() => 1
+			test += 1
+			RETURN NONE
+		`, E{
+				Kind:    parserd.SemanticError,
+				Message: "Function 'test' cannot be used as an assignment target",
+				Hint:    "Call it as test(...), or assign to a declared VAR binding instead.",
+			}, "UDF compound assignment reports function-specific diagnostic"),
+		Failure(
+			`
+			FUNC outer() (
+			  FUNC inner() => 1
+			  inner.foo = 42
+			  RETURN NONE
+			)
+			RETURN outer()
+		`, E{
+				Kind:    parserd.SemanticError,
+				Message: "Function 'inner' cannot be used as an assignment target",
+				Hint:    "Call it as inner(...), or assign to a declared VAR binding instead.",
+			}, "Nested UDF path assignment reports function-specific diagnostic"),
+	}, compiler.O0, compiler.O1)
+}
+
+func TestVarErrorsFunctionAssignmentTargetSpanLabel(t *testing.T) {
+	src := `
+FUNC test() => 1
+test.foo = 42
+RETURN NONE
+`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		_, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.NewAnonymous(src))
+		if err == nil {
+			t.Fatalf("expected compilation error at O%d", level)
+		}
+
+		diag := firstCompilationError(err)
+		if diag == nil {
+			t.Fatalf("expected diagnostic at O%d", level)
+		}
+
+		if diag.Kind != parserd.SemanticError {
+			t.Fatalf("expected semantic error at O%d, got %s", level, diag.Kind)
+		}
+
+		if diag.Message != "Function 'test' cannot be used as an assignment target" {
+			t.Fatalf("unexpected diagnostic message at O%d: %q", level, diag.Message)
+		}
+
+		if diag.Hint != "Call it as test(...), or assign to a declared VAR binding instead." {
+			t.Fatalf("unexpected diagnostic hint at O%d: %q", level, diag.Hint)
+		}
+
+		if len(diag.Spans) == 0 {
+			t.Fatalf("expected diagnostic span at O%d", level)
+		}
+
+		if diag.Spans[0].Label != "function is not a writable binding" {
+			t.Fatalf("unexpected diagnostic span label at O%d: %q", level, diag.Spans[0].Label)
+		}
+	}
+}
+
+func TestVarFunctionNameShadowedByBindingUsesBinding(t *testing.T) {
+	expr := `
+FUNC target() => 1
+FUNC outer() (
+  LET target = {}
+  target.foo = 42
+  RETURN target
+)
+RETURN outer()
+`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		_ = compileWithLevel(t, level, expr)
+	}
+}
+
 func TestDirectMutationCompile(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck(`
