@@ -121,7 +121,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		Message: "runtime error",
 	}
 
-	var memberErr *MemberAccessError
+	memberErr, hasMemberErr := memberRuntimeDiagnostic(err)
 	var invariantErr *InvariantError
 	argPos, hasArg, argCause := runtime.InvalidArgumentDetails(err)
 
@@ -149,7 +149,7 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		spec.Label = "divisor evaluates to zero"
 		spec.Hint = "Ensure the divisor is non-zero before modulo"
 		spec.Cause = ErrModuloByZero
-	case errors.As(err, &memberErr):
+	case hasMemberErr:
 		spec.Kind = diagnostics.TypeError
 		spec.Message = "invalid type"
 		spec.Label = memberErr.Label()
