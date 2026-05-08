@@ -307,6 +307,30 @@ func TestDirectMutationCompile(t *testing.T) {
 			return nil
 		}, "Index assignment compiles to index write"),
 		ProgramCheck(`
+			LET obj = {}
+			obj?.count = 1
+			RETURN obj
+		`, func(program *bytecode.Program) error {
+			loadIdx, ok := inspect.FindFirstOpcodeIndex(program.Bytecode, bytecode.OpLoadKeyOptionalConst)
+			if !ok {
+				t.Fatalf("expected %s opcode", bytecode.OpLoadKeyOptionalConst)
+			}
+
+			storeIdx, ok := inspect.FindFirstOpcodeIndex(program.Bytecode, bytecode.OpSetKeyConst)
+			if !ok {
+				t.Fatalf("expected %s opcode", bytecode.OpSetKeyConst)
+			}
+
+			for idx := loadIdx + 1; idx < storeIdx; idx++ {
+				if program.Bytecode[idx].Opcode == bytecode.OpJumpIfNone {
+					return nil
+				}
+			}
+
+			t.Fatalf("expected %s between %s and %s", bytecode.OpJumpIfNone, bytecode.OpLoadKeyOptionalConst, bytecode.OpSetKeyConst)
+			return nil
+		}, "Safe plain assignment compiles final guard before write"),
+		ProgramCheck(`
 			LET obj = { count: 1 }
 			obj?.count += 1
 			RETURN obj

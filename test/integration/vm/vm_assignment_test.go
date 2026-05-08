@@ -123,6 +123,16 @@ user?.profile?.city = FAIL()
 RETURN 1
 `, 1, "Safe assignment skips RHS on missing guarded intermediate"),
 		S(`
+LET user = { profile: {} }
+user?.profile?.count = FAIL()
+RETURN 1
+`, 1, "Safe assignment skips RHS on missing final member"),
+		S(`
+LET arr = []
+arr?.[0] = FAIL()
+RETURN 1
+`, 1, "Safe assignment skips RHS on missing final index"),
+		S(`
 LET user = NONE
 user?.profile.count += FAIL()
 RETURN 1

@@ -34,6 +34,13 @@ func (c *BindingCompiler) compilePathAssignmentStatement(stmt *fql.AssignmentSta
 	operator := assignmentOperatorText(stmt)
 
 	if operator == "=" {
+		if final.Safe {
+			guard := c.emitAssignmentLoadSegment(parent, final, key, constKey, endLabel, true)
+			if guard == bytecode.NoopOperand {
+				return bytecode.NoopOperand
+			}
+		}
+
 		value = c.exprs.Compile(stmt.Expression())
 	} else {
 		current := c.emitAssignmentLoadSegment(parent, final, key, constKey, endLabel, final.Safe)
