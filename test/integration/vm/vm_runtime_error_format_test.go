@@ -45,6 +45,19 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 			},
 		}),
 		spec.NewSpec(
+			"LET value = 1\nvalue.foo = 2\nRETURN value",
+			"mutation.fql",
+		).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message: "invalid type",
+			Contains: []string{
+				"TypeError: invalid type",
+				"property \"foo\" cannot be written to this value",
+				"Note: cannot write property \"foo\" of Int",
+				"Hint: Ensure the value supports property writes (for example, a mutable object)",
+				"Caused by: invalid type",
+			},
+		}),
+		spec.NewSpec(
 			`
 FUNC Inner() => FAIL()
 FUNC Outer() (

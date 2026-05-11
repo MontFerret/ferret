@@ -151,6 +151,31 @@ func (f *memberFormatter) formatMemberExpressionPath(ctx *fql.MemberExpressionPa
 	}
 }
 
+func (f *memberFormatter) formatAssignmentTargetPath(ctx *fql.AssignmentTargetPathContext) {
+	if ctx == nil {
+		return
+	}
+
+	if ctx.PropertyName() != nil {
+		if ctx.ErrorOperator() != nil {
+			f.p.write("?")
+		}
+
+		f.p.write(".")
+		f.literal.formatPropertyNameWith(f.p, ctx.PropertyName().(*fql.PropertyNameContext))
+		return
+	}
+
+	if ctx.ComputedPropertyName() != nil {
+		if ctx.ErrorOperator() != nil {
+			f.p.write("?")
+			f.p.write(".")
+		}
+
+		f.literal.formatComputedPropertyNameWith(f.p, ctx.ComputedPropertyName().(*fql.ComputedPropertyNameContext))
+	}
+}
+
 func (f *memberFormatter) formatArrayExpansion(ctx *fql.ArrayExpansionContext) {
 	if ctx == nil {
 		return

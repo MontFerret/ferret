@@ -43,6 +43,12 @@ const (
 	OpLoadPropertyConst // Load a property from a map or list to a register using a constant key
 	OpLoadPropertyOptionalConst
 	OpMatchLoadPropertyConst // Load an object-pattern property or jump to the arm fail target
+	OpSetIndex               // Set a value on an index-writable value
+	OpSetIndexConst          // Set a value on an index-writable value using a constant index
+	OpSetKey                 // Set a value on a key-writable value
+	OpSetKeyConst            // Set a value on a key-writable value using a constant key
+	OpSetProperty            // Set a property on a map or list
+	OpSetPropertyConst       // Set a property on a map or list using a constant key
 
 	// Integrated Query Operations
 	OpQuery // Apply a query to a value
@@ -249,6 +255,18 @@ func (op Opcode) String() string {
 		return "LOADPROC"
 	case OpMatchLoadPropertyConst:
 		return "MATCHPRC"
+	case OpSetIndex:
+		return "SETI"
+	case OpSetIndexConst:
+		return "SETIC"
+	case OpSetKey:
+		return "SETK"
+	case OpSetKeyConst:
+		return "SETKC"
+	case OpSetProperty:
+		return "SETPR"
+	case OpSetPropertyConst:
+		return "SETPRC"
 	case OpQuery:
 		return "QRY"
 	case OpLoadProperty:

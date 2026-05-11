@@ -176,6 +176,30 @@ func (e *Emitter) EmitLoadPropertyOptional(dst, obj, prop bytecode.Operand) {
 	e.EmitABC(bytecode.OpLoadPropertyOptional, dst, obj, prop)
 }
 
+func (e *Emitter) EmitSetIndex(target, index, value bytecode.Operand) {
+	e.EmitABC(bytecode.OpSetIndex, target, index, value)
+}
+
+func (e *Emitter) EmitSetIndexConst(target, indexConst, value bytecode.Operand) {
+	e.EmitABC(bytecode.OpSetIndexConst, target, indexConst, value)
+}
+
+func (e *Emitter) EmitSetKey(target, key, value bytecode.Operand) {
+	e.EmitABC(bytecode.OpSetKey, target, key, value)
+}
+
+func (e *Emitter) EmitSetKeyConst(target, keyConst, value bytecode.Operand) {
+	e.EmitABC(bytecode.OpSetKeyConst, target, keyConst, value)
+}
+
+func (e *Emitter) EmitSetProperty(target, prop, value bytecode.Operand) {
+	e.EmitABC(bytecode.OpSetProperty, target, prop, value)
+}
+
+func (e *Emitter) EmitSetPropertyConst(target, propConst, value bytecode.Operand) {
+	e.EmitABC(bytecode.OpSetPropertyConst, target, propConst, value)
+}
+
 func (e *Emitter) EmitMatchLoadPropertyConst(dst, obj, prop bytecode.Operand, label Label) {
 	e.emitInstructionWithMatchFailTarget(bytecode.Instruction{
 		Opcode:   bytecode.OpMatchLoadPropertyConst,

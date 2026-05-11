@@ -602,6 +602,74 @@ loop:
 
 			callErr := runtime.TypeErrorOf(reg[dst], runtime.TypeObject)
 			state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+		case bytecode.OpSetIndex:
+			value := reg[src2]
+			if err := vm.setIndex(ctx, reg[dst], reg[src1], value); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
+			state.retireOwnership(value)
+		case bytecode.OpSetIndexConst:
+			value := reg[src2]
+			if err := vm.setIndex(ctx, reg[dst], constants[src1.Constant()], value); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
+			state.retireOwnership(value)
+		case bytecode.OpSetKey:
+			value := reg[src2]
+			if err := vm.setKey(ctx, reg[dst], reg[src1], value); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
+			state.retireOwnership(value)
+		case bytecode.OpSetKeyConst:
+			target := reg[dst]
+			key := constants[src1.Constant()]
+			value := reg[src2]
+
+			if obj, ok := target.(*data.FastObject); ok {
+				vm.objectSetConstCached(inst, obj, runtime.ToString(key), value)
+				state.retireOwnership(value)
+				continue
+			}
+
+			if err := vm.setKey(ctx, target, key, value); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
+			state.retireOwnership(value)
+		case bytecode.OpSetProperty:
+			value := reg[src2]
+			if err := vm.setProperty(ctx, reg[dst], reg[src1], value); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
+			state.retireOwnership(value)
+		case bytecode.OpSetPropertyConst:
+			target := reg[dst]
+			prop := constants[src1.Constant()]
+			value := reg[src2]
+
+			if obj, ok := target.(*data.FastObject); ok {
+				if key, ok := prop.(runtime.String); ok {
+					vm.objectSetConstCached(inst, obj, key, value)
+					state.retireOwnership(value)
+					continue
+				}
+			}
+
+			if err := vm.setProperty(ctx, target, prop, value); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
+			state.retireOwnership(value)
 		case bytecode.OpIter:
 			input := reg[src1]
 			iterable, ok := input.(runtime.Iterable)

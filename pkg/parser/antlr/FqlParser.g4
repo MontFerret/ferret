@@ -135,6 +135,100 @@ options { tokenVocab=FqlLexer; }
 
 		return true
 	}
+
+	func (p *FqlParser) isAssignmentStatementStart() bool {
+		next, ok := p.scanAssignmentTarget(1)
+		if !ok {
+			return false
+		}
+
+		switch p.GetTokenStream().LA(next) {
+		case FqlParserAssign, FqlParserPlusAssign, FqlParserMinusAssign, FqlParserMultiAssign, FqlParserDivAssign:
+			return true
+		default:
+			return false
+		}
+	}
+
+	func (p *FqlParser) scanAssignmentTarget(offset int) (int, bool) {
+		if !p.isBindingIdentifierStart(p.GetTokenStream().LA(offset)) {
+			return offset, false
+		}
+
+		offset++
+
+		for {
+			switch p.GetTokenStream().LA(offset) {
+			case FqlParserQuestionMark:
+				if p.GetTokenStream().LA(offset + 1) != FqlParserDot {
+					return offset, true
+				}
+
+				if p.GetTokenStream().LA(offset + 2) == FqlParserOpenBracket {
+					next, ok := p.skipComputedProperty(offset + 2)
+					if !ok {
+						return offset, false
+					}
+
+					offset = next
+					continue
+				}
+
+				if !p.isPropertyNameStart(p.GetTokenStream().LA(offset + 2)) {
+					return offset, false
+				}
+
+				offset += 3
+			case FqlParserDot:
+				if !p.isPropertyNameStart(p.GetTokenStream().LA(offset + 1)) {
+					return offset, false
+				}
+
+				offset += 2
+			case FqlParserOpenBracket:
+				next, ok := p.skipComputedProperty(offset)
+				if !ok {
+					return offset, false
+				}
+
+				offset = next
+			default:
+				return offset, true
+			}
+		}
+	}
+
+	func (p *FqlParser) isBindingIdentifierStart(token int) bool {
+		return token == FqlParserIdentifier || p.isSafeReservedWordToken(token)
+	}
+
+	func (p *FqlParser) isPropertyNameStart(token int) bool {
+		return token == FqlParserIdentifier || token == FqlParserStringLiteral || token == FqlParserParam ||
+			p.isSafeReservedWordToken(token) || p.isUnsafeReservedWordToken(token)
+	}
+
+	func (p *FqlParser) skipComputedProperty(offset int) (int, bool) {
+		depth := 0
+
+		for {
+			switch p.GetTokenStream().LA(offset) {
+			case FqlParserEOF:
+				return offset, false
+			case FqlParserOpenBracket, FqlParserOpenParen, FqlParserOpenBrace:
+				depth++
+			case FqlParserCloseBracket, FqlParserCloseParen, FqlParserCloseBrace:
+				depth--
+				if depth == 0 {
+					return offset + 1, true
+				}
+				if depth < 0 {
+					return offset, false
+				}
+			}
+
+			offset++
+		}
+	}
 }
 
 @parser::structmembers {
@@ -186,8 +280,12 @@ assignmentStatement
     ;
 
 assignmentTarget
-    : bindingIdentifier
-    | memberExpression
+    : bindingIdentifier assignmentTargetPath*
+    ;
+
+assignmentTargetPath
+    : errorOperator? Dot propertyName
+    | (errorOperator Dot)? computedPropertyName
     ;
 
 assignmentOperator
@@ -230,7 +328,7 @@ functionStatement
     | functionCallExpression
     | waitForExpression
     | dispatchExpression
-    | expressionStatement
+    | {!p.isAssignmentStatementStart()}? expressionStatement
     ;
 
 expressionStatement

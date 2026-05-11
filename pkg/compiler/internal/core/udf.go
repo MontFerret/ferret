@@ -20,6 +20,7 @@ type (
 	UDFScope struct {
 		Parent    *UDFScope
 		Functions map[string]*UDFInfo
+		Declared  map[string]*UDFInfo
 	}
 
 	UDFInfo struct {
@@ -40,6 +41,7 @@ func NewUDFScope(parent *UDFScope) *UDFScope {
 	return &UDFScope{
 		Parent:    parent,
 		Functions: make(map[string]*UDFInfo),
+		Declared:  make(map[string]*UDFInfo),
 	}
 }
 
@@ -79,6 +81,22 @@ func (t *UDFTable) Resolve(name string, scope *UDFScope) (*UDFInfo, bool) {
 
 	for s := scope; s != nil; s = s.Parent {
 		if fn, ok := s.Functions[name]; ok {
+			return fn, true
+		}
+	}
+
+	return nil, false
+}
+
+// ResolveDeclared finds a source-level UDF declaration even after optimization
+// pruning has removed it from the executable function set.
+func (t *UDFTable) ResolveDeclared(name string, scope *UDFScope) (*UDFInfo, bool) {
+	if scope == nil {
+		return nil, false
+	}
+
+	for s := scope; s != nil; s = s.Parent {
+		if fn, ok := s.Declared[name]; ok {
 			return fn, true
 		}
 	}

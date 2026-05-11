@@ -3,34 +3,40 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
 func TestVariables(t *testing.T) {
-	RunSpecs(t, []spec.Spec{
-		ByteCode(
-			`
-			LET i = NONE RETURN i"
-		`, BC{
-				I(bytecode.OpLoadNone, 1),
-				I(bytecode.OpReturn, 1),
-			}, "Should be possible to use multi line string").Skip(),
-		ByteCode(`
-			LET a = TRUE RETURN a
-`, BC{
-			I(bytecode.OpLoadBool, 1, 1),
-			I(bytecode.OpReturn, 1),
-		}).Skip(),
-		ByteCode(`
-			LET a = 1 RETURN a
-`, BC{
-			I(bytecode.OpLoadConst, 1, bytecode.NewConstant(0)),
-			I(bytecode.OpReturn, 1),
-		}).Skip(),
-	})
+	RunSpecsLevels(t, []spec.Spec{
+		Failure(`
+FUNC test() (
+  LET x = 1
+  RETURN x
+)
+
+LET test = 1
+
+RETURN NONE
+`, E{
+			Kind:    parserd.NameError,
+			Message: "Variable 'test' is already defined",
+		}, "Should fail to compile because of variable name conflict between function and variable"),
+		Failure(`
+FUNC outer() (
+  FUNC inner() => 1
+  LET inner = 2
+  RETURN inner
+)
+
+RETURN outer()
+`, E{
+			Kind:    parserd.NameError,
+			Message: "Variable 'inner' is already defined",
+		}, "Should fail to compile because of nested variable name conflict between function and variable"),
+	}, compiler.O0, compiler.O1)
 }
 
 func TestVariablesInnerScopeConstantShadowingCompiles(t *testing.T) {
