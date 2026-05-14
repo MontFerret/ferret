@@ -11,7 +11,7 @@ import (
 func matchCommonErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if isNoAlternative(err.Message) || isMissing(err.Message) || isMismatched(err.Message) {
 		prev := offending.Prev()
-		if node := anyIs(prev, offending, "=>"); node != nil {
+		if node := anyIs(prev, offending, "=>"); node != nil && !isArrowBodyStart(node, offending) {
 			span := spanFromTokenSafe(node.Token(), src)
 			span.Start += 2
 			span.End += 2
@@ -274,6 +274,19 @@ func matchCommonErrors(src *source.Source, err *diagnostics.Diagnostic, offendin
 	}
 
 	return false
+}
+
+func isArrowBodyStart(arrow, offending *TokenNode) bool {
+	if arrow == nil || offending == nil || arrow == offending {
+		return false
+	}
+
+	switch offending.GetText() {
+	case "", "<EOF>", ",", ")", "]", "}", "=>", ":", "?":
+		return false
+	default:
+		return isExpressionStart(offending)
+	}
 }
 
 func findGroupingParen(node *TokenNode, max int) *TokenNode {
