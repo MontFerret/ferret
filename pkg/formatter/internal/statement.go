@@ -231,7 +231,7 @@ func (f *statementFormatter) formatFunctionParameterList(ctx *fql.FunctionParame
 			continue
 		}
 
-		if id := pctx.Identifier(); id != nil {
+		if id := pctx.BindingIdentifier(); id != nil {
 			f.p.write(id.GetText())
 		}
 

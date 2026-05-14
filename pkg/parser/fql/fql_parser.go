@@ -378,7 +378,7 @@ func fqlparserParserInit() {
 		413, 411, 1, 0, 0, 0, 414, 417, 1, 0, 0, 0, 415, 413, 1, 0, 0, 0, 415,
 		416, 1, 0, 0, 0, 416, 419, 1, 0, 0, 0, 417, 415, 1, 0, 0, 0, 418, 420,
 		5, 9, 0, 0, 419, 418, 1, 0, 0, 0, 419, 420, 1, 0, 0, 0, 420, 27, 1, 0,
-		0, 0, 421, 422, 5, 89, 0, 0, 422, 29, 1, 0, 0, 0, 423, 426, 3, 32, 16,
+		0, 0, 421, 422, 3, 70, 35, 0, 422, 29, 1, 0, 0, 0, 423, 426, 3, 32, 16,
 		0, 424, 426, 3, 34, 17, 0, 425, 423, 1, 0, 0, 0, 425, 424, 1, 0, 0, 0,
 		426, 31, 1, 0, 0, 0, 427, 428, 5, 37, 0, 0, 428, 429, 3, 246, 123, 0, 429,
 		33, 1, 0, 0, 0, 430, 434, 5, 13, 0, 0, 431, 433, 3, 36, 18, 0, 432, 431,
@@ -3701,7 +3701,7 @@ func (p *FqlParser) FunctionDeclaration() (localctx IFunctionDeclarationContext)
 	}
 	_la = p.GetTokenStream().LA(1)
 
-	if _la == FqlParserIdentifier {
+	if (int64((_la-34)) & ^0x3f) == 0 && ((int64(1)<<(_la-34))&36591225133596675) != 0 {
 		{
 			p.SetState(404)
 			p.FunctionParameterList()
@@ -3949,7 +3949,7 @@ type IFunctionParameterContext interface {
 	GetParser() antlr.Parser
 
 	// Getter signatures
-	Identifier() antlr.TerminalNode
+	BindingIdentifier() IBindingIdentifierContext
 
 	// IsFunctionParameterContext differentiates from other interfaces.
 	IsFunctionParameterContext()
@@ -3987,8 +3987,20 @@ func NewFunctionParameterContext(parser antlr.Parser, parent antlr.ParserRuleCon
 
 func (s *FunctionParameterContext) GetParser() antlr.Parser { return s.parser }
 
-func (s *FunctionParameterContext) Identifier() antlr.TerminalNode {
-	return s.GetToken(FqlParserIdentifier, 0)
+func (s *FunctionParameterContext) BindingIdentifier() IBindingIdentifierContext {
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IBindingIdentifierContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
+
+	if t == nil {
+		return nil
+	}
+
+	return t.(IBindingIdentifierContext)
 }
 
 func (s *FunctionParameterContext) GetRuleContext() antlr.RuleContext {
@@ -4027,11 +4039,7 @@ func (p *FqlParser) FunctionParameter() (localctx IFunctionParameterContext) {
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(421)
-		p.Match(FqlParserIdentifier)
-		if p.HasError() {
-			// Recognition error - abort rule
-			goto errorExit
-		}
+		p.BindingIdentifier()
 	}
 
 errorExit:

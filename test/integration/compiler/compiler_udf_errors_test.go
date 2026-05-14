@@ -20,6 +20,14 @@ RETURN f(1)
 			}, "Duplicate parameter names"),
 		Failure(
 			`
+FUNC f(value, value) => value
+RETURN f(1)
+`, E{
+				Kind:    parserd.NameError,
+				Message: "Parameter 'value' is already defined",
+			}, "Duplicate safe reserved parameter names"),
+		Failure(
+			`
 FUNC f(x) => x
 RETURN f(1, 2)
 `, E{

@@ -305,7 +305,7 @@ functionParameterList
     ;
 
 functionParameter
-    : Identifier
+    : bindingIdentifier
     ;
 
 functionBody
