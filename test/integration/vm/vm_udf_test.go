@@ -94,6 +94,27 @@ FUNC normalizePrice(value) (
 LET price = normalizePrice("$19.99")
 RETURN price
 `, 19.99, "Safe reserved words are valid UDF parameter names"),
+		Object(`
+FUNC foo() (
+  RETURN NONE
+)
+FUNC normalizePrice(input) (
+  LET cleaned = TRIM(input)
+  LET numeric = SUBSTITUTE(cleaned, "$", "")
+  RETURN TO_FLOAT(numeric)
+)
+FUNC f1(product) (
+  foo()
+  RETURN {
+    title: product.name,
+    price: normalizePrice(product.price)
+  }
+)
+RETURN f1({
+  name: "Widget",
+  price: "$19.99"
+})
+`, map[string]any{"title": "Widget", "price": 19.99}, "UDF block allows a bare function call statement before RETURN"),
 		Nil(`
 FUNC risky() (
   RETURN T::FAIL()
