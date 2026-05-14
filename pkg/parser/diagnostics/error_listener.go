@@ -62,7 +62,7 @@ func (d *ErrorListener) SyntaxError(_ antlr.Recognizer, offendingSymbol interfac
 	if !d.handler.HasErrorOnLine(line) {
 		if err := d.parseError(msg, offending); err != nil {
 			d.handler.Add(err)
-			d.stopAfterSyntaxError = isMixedFunctionBodySyntaxDiagnostic(err)
+			d.stopAfterSyntaxError = isFunctionBodySyntaxDiagnostic(err)
 		}
 	}
 }
