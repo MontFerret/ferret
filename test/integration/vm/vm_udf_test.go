@@ -81,6 +81,15 @@ FUNC outer() (
 )
 RETURN [outer(), value]
 `, []any{[]any{10, 10}, 1}, "Nested UDF captures nearest shadowed local"),
+		S(`
+FUNC normalizePrice(value) (
+  LET cleaned = TRIM(value)
+  LET numeric = SUBSTITUTE(cleaned, "$", "")
+  RETURN TO_FLOAT(numeric)
+)
+LET price = normalizePrice("$19.99")
+RETURN price
+`, 19.99, "Safe reserved words are valid UDF parameter names"),
 		Nil(`
 FUNC risky() (
   RETURN T::FAIL()

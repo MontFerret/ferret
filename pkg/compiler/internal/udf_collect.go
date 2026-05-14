@@ -237,11 +237,11 @@ func (c *UDFCatalogBuilder) collectFunctionParams(decl *fql.FunctionDeclarationC
 	}
 
 	for _, param := range list.AllFunctionParameter() {
-		if param == nil || param.Identifier() == nil {
+		if param == nil || param.BindingIdentifier() == nil {
 			continue
 		}
 
-		name := param.Identifier().GetText()
+		name := textOfBindingIdentifier(param.BindingIdentifier())
 		if _, exists := seen[name]; exists {
 			c.ctx.Program.Errors.Add(c.ctx.Program.Errors.Create(parserd.NameError, param.(antlr.ParserRuleContext), fmt.Sprintf("Parameter '%s' is already defined", name)))
 			continue
