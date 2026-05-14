@@ -59,7 +59,7 @@ func (fmt *Formatter) Format(out io.Writer, src *source.Source) error {
 		}
 	}()
 
-	tokenHistory := parserd.NewTokenHistory(10)
+	tokenHistory := parserd.NewTokenHistory(64)
 	p := parser.New(src.Content(), func(stream antlr.TokenStream) antlr.TokenStream {
 		return parserd.NewTrackingTokenStream(stream, tokenHistory)
 	})
@@ -67,6 +67,12 @@ func (fmt *Formatter) Format(out io.Writer, src *source.Source) error {
 	p.RemoveErrorListeners()
 	// Add custom error listener
 	p.AddErrorListener(parserd.NewErrorListener(src, errorHandler, tokenHistory))
+	p.Program()
+
+	if errorHandler.HasErrors() {
+		return errorHandler.Unwrap()
+	}
+
 	l := internal.NewVisitor(src, out, fmt.opts)
 	p.Visit(l)
 

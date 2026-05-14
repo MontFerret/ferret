@@ -10,9 +10,10 @@ import (
 
 type ErrorListener struct {
 	*antlr.DiagnosticErrorListener
-	src     *source.Source
-	handler *ErrorHandler
-	history *TokenHistory
+	src                  *source.Source
+	handler              *ErrorHandler
+	history              *TokenHistory
+	stopAfterSyntaxError bool
 }
 
 func NewErrorListener(src *source.Source, handler *ErrorHandler, history *TokenHistory) antlr.ErrorListener {
@@ -47,6 +48,10 @@ func (d *ErrorListener) ReportAmbiguity(recognizer antlr.Parser, dfa *antlr.DFA,
 }
 
 func (d *ErrorListener) SyntaxError(_ antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
+	if d.stopAfterSyntaxError {
+		return
+	}
+
 	var offending antlr.Token
 
 	// Get offending token
@@ -57,6 +62,7 @@ func (d *ErrorListener) SyntaxError(_ antlr.Recognizer, offendingSymbol interfac
 	if !d.handler.HasErrorOnLine(line) {
 		if err := d.parseError(msg, offending); err != nil {
 			d.handler.Add(err)
+			d.stopAfterSyntaxError = isFunctionBodySyntaxDiagnostic(err)
 		}
 	}
 }
