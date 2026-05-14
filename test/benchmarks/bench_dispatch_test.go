@@ -13,7 +13,7 @@ DISPATCH "click" IN @d
 RETURN 1`
 
 const dispatchShorthandStatementQuery = `
-"click" -> @d
+@d <- "click"
 RETURN 1`
 
 type benchmarkDispatcher struct{}

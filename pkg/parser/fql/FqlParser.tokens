@@ -35,7 +35,7 @@ And=34
 Or=35
 Range=36
 Arrow=37
-DispatchArrow=38
+DispatchReceive=38
 Assign=39
 QuestionMark=40
 RegexNotMatch=41
@@ -127,7 +127,7 @@ BacktickClose=100
 '++'=32
 '--'=33
 '=>'=37
-'->'=38
+'<-'=38
 '='=39
 '?'=40
 '!~'=41

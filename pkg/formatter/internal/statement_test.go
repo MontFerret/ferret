@@ -23,7 +23,7 @@ func TestStatementFormatter_DispatchEventNameString(t *testing.T) {
 }
 
 func TestStatementFormatter_DispatchExpressionShorthand(t *testing.T) {
-	input := `"click"->target`
+	input := `target<-"click"`
 	program := parseProgram(t, input+"\nRETURN 1")
 	dispatchExpr := mustFirst[*fql.DispatchExpressionContext](t, program)
 
@@ -31,7 +31,7 @@ func TestStatementFormatter_DispatchExpressionShorthand(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.statement.formatDispatchExpression(dispatchExpr)
-	if got := buf.String(); got != `"click" -> target` {
+	if got := buf.String(); got != `target <- "click"` {
 		t.Fatalf("unexpected shorthand dispatch formatting: %q", got)
 	}
 }

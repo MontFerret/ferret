@@ -16,12 +16,12 @@ func matchDispatchErrors(src *source.Source, err *diagnostics.Diagnostic, offend
 		return false
 	}
 
-	if spanNode := shorthandMissingEventNode(offending); spanNode != nil {
+	if spanNode := shorthandMissingTargetNode(offending); spanNode != nil {
 		span := spanFromTokenSafe(spanNode.Token(), src)
-		err.Message = "Expected dispatch event before '->'"
-		err.Hint = `Provide an event expression, e.g. "click" -> btn.`
+		err.Message = "Expected dispatch target before '<-'"
+		err.Hint = `Provide a dispatchable target, e.g. btn <- "click".`
 		err.Spans = []diagnostics.ErrorSpan{
-			diagnostics.NewMainErrorSpan(span, "missing dispatch event"),
+			diagnostics.NewMainErrorSpan(span, "missing dispatch target"),
 		}
 		return true
 	}
@@ -36,12 +36,12 @@ func matchDispatchErrors(src *source.Source, err *diagnostics.Diagnostic, offend
 		return true
 	}
 
-	if spanNode := shorthandMissingTargetNode(offending); spanNode != nil {
+	if spanNode := shorthandMissingEventNode(offending); spanNode != nil {
 		span := spanFromTokenSafe(spanNode.Token(), src)
-		err.Message = "Expected dispatch target after '->'"
-		err.Hint = `Provide a dispatchable target, e.g. "click" -> btn.`
+		err.Message = "Expected dispatch event after '<-'"
+		err.Hint = `Provide an event expression, e.g. btn <- "click".`
 		err.Spans = []diagnostics.ErrorSpan{
-			diagnostics.NewMainErrorSpan(span, "missing dispatch target"),
+			diagnostics.NewMainErrorSpan(span, "missing dispatch event"),
 		}
 		return true
 	}
@@ -84,21 +84,38 @@ func shorthandMissingEventNode(offending *TokenNode) *TokenNode {
 		return nil
 	}
 
-	arrow := offending
-	if !is(arrow, "->") {
-		if next := findNextToken(offending, "->", 4); next != nil {
-			arrow = next
+	receive := offending
+	if !is(receive, "<-") {
+		if next := findNextToken(offending, "<-", 4); next != nil {
+			receive = next
 		} else {
-			_, arrow = prevTokenDistance(offending, "->", 12)
-			if arrow == nil {
+			_, receive = prevTokenDistance(offending, "<-", 12)
+			if receive == nil {
 				return nil
 			}
 		}
 	}
 
-	prev := arrow.Prev()
-	if prev == nil || is(prev, "=") || is(prev, "RETURN") || is(prev, "(") || is(prev, ",") || is(prev, "=>") || is(prev, "?") || is(prev, ":") {
-		return arrow
+	next := receive.Next()
+	// next == offending: the parser reported the token immediately after '<-' as
+	// the offending symbol, meaning the receive token's successor is itself the problem token.
+	if next == nil || next == offending || isEOF(next) ||
+		is(next, "RETURN") || is(next, "WITH") || is(next, "OPTIONS") ||
+		is(next, ",") || is(next, ")") || is(next, "]") {
+		return receive
+	}
+
+	if is(offending, "<EOF>") && is(offending.Prev(), "<-") {
+		return offending.Prev()
+	}
+
+	prev := offending.Prev()
+	if prev == nil || !is(prev, "<-") {
+		return nil
+	}
+
+	if is(offending, "RETURN") || is(offending, "WITH") || is(offending, "OPTIONS") || is(offending, ",") || is(offending, ")") || is(offending, "]") {
+		return prev
 	}
 
 	return nil
@@ -121,38 +138,21 @@ func shorthandMissingTargetNode(offending *TokenNode) *TokenNode {
 		return nil
 	}
 
-	arrow := offending
-	if !is(arrow, "->") {
-		if next := findNextToken(offending, "->", 4); next != nil {
-			arrow = next
+	receive := offending
+	if !is(receive, "<-") {
+		if next := findNextToken(offending, "<-", 4); next != nil {
+			receive = next
 		} else {
-			_, arrow = prevTokenDistance(offending, "->", 12)
-			if arrow == nil {
+			_, receive = prevTokenDistance(offending, "<-", 12)
+			if receive == nil {
 				return nil
 			}
 		}
 	}
 
-	next := arrow.Next()
-	// next == offending: the parser reported the token immediately after '->' as
-	// the offending symbol, meaning the arrow's successor is itself the problem token.
-	if next == nil || next == offending || isEOF(next) ||
-		is(next, "RETURN") || is(next, "WITH") || is(next, "OPTIONS") ||
-		is(next, ",") || is(next, ")") || is(next, "]") {
-		return arrow
-	}
-
-	if is(offending, "<EOF>") && is(offending.Prev(), "->") {
-		return offending.Prev()
-	}
-
-	prev := offending.Prev()
-	if prev == nil || !is(prev, "->") {
-		return nil
-	}
-
-	if is(offending, "RETURN") || is(offending, "WITH") || is(offending, "OPTIONS") || is(offending, ",") || is(offending, ")") || is(offending, "]") {
-		return prev
+	prev := receive.Prev()
+	if prev == nil || is(prev, "=") || is(prev, "RETURN") || is(prev, "(") || is(prev, ",") || is(prev, "=>") || is(prev, "?") || is(prev, ":") {
+		return receive
 	}
 
 	return nil
@@ -188,11 +188,11 @@ func shorthandUnsupportedClause(offending *TokenNode) (string, *TokenNode) {
 		if distance, node := prevTokenDistance(offending, clause, 12); node != nil {
 			// distance == 0: offending token IS the clause keyword itself.
 			// The second condition guards against a long-form clause whose preceding
-			// token is something other than '->' (which would mean it belongs to a
+			// token is something other than '<-' (which would mean it belongs to a
 			// DISPATCH...IN form, not a shorthand). We only flag it as an unsupported
-			// shorthand clause when '->' appears somewhere before it without DISPATCH.
-			clauseIsOffendingOrNotAfterArrow := distance == 0 || (node.Prev() != nil && !is(node.Prev(), "->"))
-			if clauseIsOffendingOrNotAfterArrow && hasPrevToken(node, "->", 8) && !hasPrevToken(node, "DISPATCH", 12) {
+			// shorthand clause when '<-' appears somewhere before it without DISPATCH.
+			clauseIsOffendingOrNotAfterReceive := distance == 0 || (node.Prev() != nil && !is(node.Prev(), "<-"))
+			if clauseIsOffendingOrNotAfterReceive && hasPrevToken(node, "<-", 8) && !hasPrevToken(node, "DISPATCH", 12) {
 				return node.GetText(), node
 			}
 		}
