@@ -48,7 +48,7 @@ func fqllexerLexerInit() {
 		"", "", "", "", "", "", "':'", "';'", "'.'", "','", "'~'", "'['", "']'",
 		"'('", "')'", "'{'", "'}'", "'>'", "'<'", "'=='", "'>='", "'<='", "'!='",
 		"'*='", "'/='", "'+='", "'-='", "'*'", "'/'", "'%'", "'+'", "'-'", "'++'",
-		"'--'", "", "", "", "'=>'", "'->'", "'='", "'?'", "'!~'", "'=~'", "'MATCH'",
+		"'--'", "", "", "", "'=>'", "'<-'", "'='", "'?'", "'!~'", "'=~'", "'MATCH'",
 		"'WHEN'", "'FUNC'", "'FOR'", "'RETURN'", "'QUERY'", "'USING'", "'WAITFOR'",
 		"'DISPATCH'", "'OPTIONS'", "'TIMEOUT'", "'EVERY'", "'BACKOFF'", "'JITTER'",
 		"'EXISTS'", "'COUNT'", "'VALUE'", "'ONE'", "'DISTINCT'", "'FILTER'",
@@ -63,7 +63,7 @@ func fqllexerLexerInit() {
 		"CloseBracket", "OpenParen", "CloseParen", "OpenBrace", "CloseBrace",
 		"Gt", "Lt", "Eq", "Gte", "Lte", "Neq", "MultiAssign", "DivAssign", "PlusAssign",
 		"MinusAssign", "Multi", "Div", "Mod", "Plus", "Minus", "Increment",
-		"Decrement", "And", "Or", "Range", "Arrow", "DispatchArrow", "Assign",
+		"Decrement", "And", "Or", "Range", "Arrow", "DispatchReceive", "Assign",
 		"QuestionMark", "RegexNotMatch", "RegexMatch", "Match", "When", "Func",
 		"For", "Return", "Query", "Using", "Waitfor", "Dispatch", "Options",
 		"Timeout", "Every", "Backoff", "Jitter", "Exists", "Count", "Value",
@@ -81,18 +81,19 @@ func fqllexerLexerInit() {
 		"OpenParen", "CloseParen", "OpenBrace", "CloseBrace", "Gt", "Lt", "Eq",
 		"Gte", "Lte", "Neq", "MultiAssign", "DivAssign", "PlusAssign", "MinusAssign",
 		"Multi", "Div", "Mod", "Plus", "Minus", "Increment", "Decrement", "And",
-		"Or", "Range", "Arrow", "DispatchArrow", "Assign", "QuestionMark", "RegexNotMatch",
-		"RegexMatch", "Match", "When", "Func", "For", "Return", "Query", "Using",
-		"Waitfor", "Dispatch", "Options", "Timeout", "Every", "Backoff", "Jitter",
-		"Exists", "Count", "Value", "One", "Distinct", "Filter", "Sort", "Limit",
-		"Let", "Var", "Collect", "SortDirection", "None", "Null", "BooleanLiteral",
-		"Use", "As", "At", "Least", "Into", "Keep", "With", "All", "Any", "Aggregate",
-		"Event", "Like", "Not", "In", "Do", "While", "Param", "Identifier",
-		"IgnoreIdentifier", "StringLiteral", "BacktickOpen", "DurationLiteral",
-		"IntegerLiteral", "FloatLiteral", "NamespaceSegment", "UnknownIdentifier",
-		"HexDigit", "DecimalIntegerLiteral", "ExponentPart", "Letter", "Symbols",
-		"Underscore", "Digit", "DQSring", "SQString", "TickString", "NamespaceSeparator",
-		"DurationUnit", "TemplateExprStart", "TemplateChars", "BacktickClose",
+		"Or", "Range", "Arrow", "DispatchReceive", "Assign", "QuestionMark",
+		"RegexNotMatch", "RegexMatch", "Match", "When", "Func", "For", "Return",
+		"Query", "Using", "Waitfor", "Dispatch", "Options", "Timeout", "Every",
+		"Backoff", "Jitter", "Exists", "Count", "Value", "One", "Distinct",
+		"Filter", "Sort", "Limit", "Let", "Var", "Collect", "SortDirection",
+		"None", "Null", "BooleanLiteral", "Use", "As", "At", "Least", "Into",
+		"Keep", "With", "All", "Any", "Aggregate", "Event", "Like", "Not", "In",
+		"Do", "While", "Param", "Identifier", "IgnoreIdentifier", "StringLiteral",
+		"BacktickOpen", "DurationLiteral", "IntegerLiteral", "FloatLiteral",
+		"NamespaceSegment", "UnknownIdentifier", "HexDigit", "DecimalIntegerLiteral",
+		"ExponentPart", "Letter", "Symbols", "Underscore", "Digit", "DQSring",
+		"SQString", "TickString", "NamespaceSeparator", "DurationUnit", "TemplateExprStart",
+		"TemplateChars", "BacktickClose",
 	}
 	staticData.PredictionContextCache = antlr.NewPredictionContextCache()
 	staticData.serializedATN = []int32{
@@ -294,8 +295,8 @@ func fqllexerLexerInit() {
 		340, 5, 82, 0, 0, 337, 338, 5, 124, 0, 0, 338, 340, 5, 124, 0, 0, 339,
 		335, 1, 0, 0, 0, 339, 337, 1, 0, 0, 0, 340, 69, 1, 0, 0, 0, 341, 342, 3,
 		14, 6, 0, 342, 343, 3, 14, 6, 0, 343, 71, 1, 0, 0, 0, 344, 345, 5, 61,
-		0, 0, 345, 346, 5, 62, 0, 0, 346, 73, 1, 0, 0, 0, 347, 348, 5, 45, 0, 0,
-		348, 349, 5, 62, 0, 0, 349, 75, 1, 0, 0, 0, 350, 351, 5, 61, 0, 0, 351,
+		0, 0, 345, 346, 5, 62, 0, 0, 346, 73, 1, 0, 0, 0, 347, 348, 5, 60, 0, 0,
+		348, 349, 5, 45, 0, 0, 349, 75, 1, 0, 0, 0, 350, 351, 5, 61, 0, 0, 351,
 		77, 1, 0, 0, 0, 352, 353, 5, 63, 0, 0, 353, 79, 1, 0, 0, 0, 354, 355, 5,
 		33, 0, 0, 355, 356, 5, 126, 0, 0, 356, 81, 1, 0, 0, 0, 357, 358, 5, 61,
 		0, 0, 358, 359, 5, 126, 0, 0, 359, 83, 1, 0, 0, 0, 360, 361, 5, 77, 0,
@@ -532,7 +533,7 @@ const (
 	FqlLexerOr                = 35
 	FqlLexerRange             = 36
 	FqlLexerArrow             = 37
-	FqlLexerDispatchArrow     = 38
+	FqlLexerDispatchReceive   = 38
 	FqlLexerAssign            = 39
 	FqlLexerQuestionMark      = 40
 	FqlLexerRegexNotMatch     = 41

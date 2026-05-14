@@ -59,20 +59,20 @@ func TestDispatch(t *testing.T) {
 		S(`RETURN DISPATCH @event_name IN @d`, nil, "Should dispatch with param event name"),
 		S(`RETURN DISPATCH "input" IN @d WITH "hello"`, nil, "Should dispatch with payload"),
 		S(`RETURN DISPATCH "select" IN @d WITH ["1", "2"] OPTIONS { selector: "#a", delay: 50 }`, nil, "Should dispatch with options"),
-		S(`RETURN "focus" -> @d`, nil, "Should dispatch shorthand as an expression"),
+		S(`RETURN @d <- "focus"`, nil, "Should dispatch shorthand as an expression"),
 		S(`
-			LET result = "commit" -> @d
+			LET result = @d <- "commit"
 			RETURN result
 		`, nil, "Should assign NONE from shorthand dispatch"),
 		S(`
 			LET tag = MATCH @kind (
-				"click" => "press" -> @d,
-				_ => "hover" -> @d,
+				"click" => @d <- "press",
+				_ => @d <- "hover",
 			)
 			RETURN tag
 		`, nil, "Should allow shorthand dispatch in MATCH arms"),
 		S(`
-			FUNC fire() => "blur" -> @d
+			FUNC fire() => @d <- "blur"
 			RETURN fire()
 		`, nil, "Should allow shorthand dispatch in UDF arrow bodies"),
 	}, vm.WithParams(map[string]runtime.Value{
@@ -189,7 +189,7 @@ func TestDispatchRuntimeErrors(t *testing.T) {
 			&ExpectedRuntimeError{Message: "invalid type"},
 		),
 		Nil(`RETURN DISPATCH @event IN @d ON ERROR RETURN NONE`, "Expression suppression should return none on dispatch failure"),
-		S(`RETURN "click" -> @value`, "Shorthand should fail when target is not a dispatcher").Expect().ExecError(
+		S(`RETURN @value <- "click"`, "Shorthand should fail when target is not a dispatcher").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Message: "invalid type"},
 		),
@@ -205,8 +205,8 @@ func TestDispatchShorthandContexts(t *testing.T) {
 
 	RunSpecs(t, []spec.Spec{
 		// Dispatch produces NONE; the container captures that NONE element/value.
-		S(`RETURN ["click" -> @d]`, []interface{}{nil}, "Should allow shorthand dispatch in array literal"),
-		S(`RETURN { x: "click" -> @d }`, map[string]interface{}{"x": nil}, "Should allow shorthand dispatch in object literal"),
+		S(`RETURN [@d <- "click"]`, []interface{}{nil}, "Should allow shorthand dispatch in array literal"),
+		S(`RETURN { x: @d <- "click" }`, map[string]interface{}{"x": nil}, "Should allow shorthand dispatch in object literal"),
 	}, vm.WithParams(map[string]runtime.Value{
 		"d": dispatcher,
 	}))

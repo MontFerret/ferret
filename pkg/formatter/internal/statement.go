@@ -627,16 +627,16 @@ func (f *statementFormatter) formatDispatchExpression(ctx *fql.DispatchExpressio
 		return
 	}
 
-	if name := ctx.DispatchEventName(); name != nil {
-		f.formatDispatchEventName(name.(*fql.DispatchEventNameContext))
+	if tgt := ctx.DispatchTarget(); tgt != nil {
+		f.formatDispatchTarget(tgt.(*fql.DispatchTargetContext))
 	}
 
 	f.p.space()
-	f.p.write("->")
+	f.p.write("<-")
 	f.p.space()
 
-	if tgt := ctx.DispatchTarget(); tgt != nil {
-		f.formatDispatchTarget(tgt.(*fql.DispatchTargetContext))
+	if name := ctx.DispatchEventName(); name != nil {
+		f.formatDispatchEventName(name.(*fql.DispatchEventNameContext))
 	}
 
 	f.expression.formatRecoveryTails(ctx.RecoveryTails())

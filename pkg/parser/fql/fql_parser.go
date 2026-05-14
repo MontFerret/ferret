@@ -38,7 +38,7 @@ func fqlparserParserInit() {
 		"", "", "", "", "", "", "':'", "';'", "'.'", "','", "'~'", "'['", "']'",
 		"'('", "')'", "'{'", "'}'", "'>'", "'<'", "'=='", "'>='", "'<='", "'!='",
 		"'*='", "'/='", "'+='", "'-='", "'*'", "'/'", "'%'", "'+'", "'-'", "'++'",
-		"'--'", "", "", "", "'=>'", "'->'", "'='", "'?'", "'!~'", "'=~'", "'MATCH'",
+		"'--'", "", "", "", "'=>'", "'<-'", "'='", "'?'", "'!~'", "'=~'", "'MATCH'",
 		"'WHEN'", "'FUNC'", "'FOR'", "'RETURN'", "'QUERY'", "'USING'", "'WAITFOR'",
 		"'DISPATCH'", "'OPTIONS'", "'TIMEOUT'", "'EVERY'", "'BACKOFF'", "'JITTER'",
 		"'EXISTS'", "'COUNT'", "'VALUE'", "'ONE'", "'DISTINCT'", "'FILTER'",
@@ -53,7 +53,7 @@ func fqlparserParserInit() {
 		"CloseBracket", "OpenParen", "CloseParen", "OpenBrace", "CloseBrace",
 		"Gt", "Lt", "Eq", "Gte", "Lte", "Neq", "MultiAssign", "DivAssign", "PlusAssign",
 		"MinusAssign", "Multi", "Div", "Mod", "Plus", "Minus", "Increment",
-		"Decrement", "And", "Or", "Range", "Arrow", "DispatchArrow", "Assign",
+		"Decrement", "And", "Or", "Range", "Arrow", "DispatchReceive", "Assign",
 		"QuestionMark", "RegexNotMatch", "RegexMatch", "Match", "When", "Func",
 		"For", "Return", "Query", "Using", "Waitfor", "Dispatch", "Options",
 		"Timeout", "Every", "Backoff", "Jitter", "Exists", "Count", "Value",
@@ -474,8 +474,8 @@ func fqlparserParserInit() {
 		0, 662, 664, 3, 96, 48, 0, 663, 662, 1, 0, 0, 0, 663, 664, 1, 0, 0, 0,
 		664, 666, 1, 0, 0, 0, 665, 667, 3, 98, 49, 0, 666, 665, 1, 0, 0, 0, 666,
 		667, 1, 0, 0, 0, 667, 669, 1, 0, 0, 0, 668, 670, 3, 126, 63, 0, 669, 668,
-		1, 0, 0, 0, 669, 670, 1, 0, 0, 0, 670, 678, 1, 0, 0, 0, 671, 672, 3, 92,
-		46, 0, 672, 673, 5, 38, 0, 0, 673, 675, 3, 94, 47, 0, 674, 676, 3, 126,
+		1, 0, 0, 0, 669, 670, 1, 0, 0, 0, 670, 678, 1, 0, 0, 0, 671, 672, 3, 94,
+		47, 0, 672, 673, 5, 38, 0, 0, 673, 675, 3, 92, 46, 0, 674, 676, 3, 126,
 		63, 0, 675, 674, 1, 0, 0, 0, 675, 676, 1, 0, 0, 0, 676, 678, 1, 0, 0, 0,
 		677, 658, 1, 0, 0, 0, 677, 671, 1, 0, 0, 0, 678, 91, 1, 0, 0, 0, 679, 685,
 		3, 180, 90, 0, 680, 685, 3, 170, 85, 0, 681, 685, 3, 168, 84, 0, 682, 685,
@@ -1145,7 +1145,7 @@ const (
 	FqlParserOr                = 35
 	FqlParserRange             = 36
 	FqlParserArrow             = 37
-	FqlParserDispatchArrow     = 38
+	FqlParserDispatchReceive   = 38
 	FqlParserAssign            = 39
 	FqlParserQuestionMark      = 40
 	FqlParserRegexNotMatch     = 41
@@ -9676,7 +9676,7 @@ type IDispatchExpressionContext interface {
 	DispatchWithClause() IDispatchWithClauseContext
 	DispatchOptionsClause() IDispatchOptionsClauseContext
 	RecoveryTails() IRecoveryTailsContext
-	DispatchArrow() antlr.TerminalNode
+	DispatchReceive() antlr.TerminalNode
 
 	// IsDispatchExpressionContext differentiates from other interfaces.
 	IsDispatchExpressionContext()
@@ -9802,8 +9802,8 @@ func (s *DispatchExpressionContext) RecoveryTails() IRecoveryTailsContext {
 	return t.(IRecoveryTailsContext)
 }
 
-func (s *DispatchExpressionContext) DispatchArrow() antlr.TerminalNode {
-	return s.GetToken(FqlParserDispatchArrow, 0)
+func (s *DispatchExpressionContext) DispatchReceive() antlr.TerminalNode {
+	return s.GetToken(FqlParserDispatchReceive, 0)
 }
 
 func (s *DispatchExpressionContext) GetRuleContext() antlr.RuleContext {
@@ -9913,11 +9913,11 @@ func (p *FqlParser) DispatchExpression() (localctx IDispatchExpressionContext) {
 		p.EnterOuterAlt(localctx, 2)
 		{
 			p.SetState(671)
-			p.DispatchEventName()
+			p.DispatchTarget()
 		}
 		{
 			p.SetState(672)
-			p.Match(FqlParserDispatchArrow)
+			p.Match(FqlParserDispatchReceive)
 			if p.HasError() {
 				// Recognition error - abort rule
 				goto errorExit
@@ -9925,7 +9925,7 @@ func (p *FqlParser) DispatchExpression() (localctx IDispatchExpressionContext) {
 		}
 		{
 			p.SetState(673)
-			p.DispatchTarget()
+			p.DispatchEventName()
 		}
 		p.SetState(675)
 		p.GetErrorHandler().Sync(p)

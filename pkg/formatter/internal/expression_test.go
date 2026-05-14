@@ -258,7 +258,7 @@ func TestExpressionFormatter_MatchExpressionObjectPattern(t *testing.T) {
 }
 
 func TestExpressionFormatter_MatchExpressionDispatchShorthand(t *testing.T) {
-	input := `RETURN MATCH kind("click"=>"click"->btn,_=>"focus"->input)`
+	input := `RETURN MATCH kind("click"=>btn<-"click",_=>input<-"focus")`
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -266,7 +266,7 @@ func TestExpressionFormatter_MatchExpressionDispatchShorthand(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != `MATCH kind ( "click" => "click" -> btn, _ => "focus" -> input )` {
+	if got := buf.String(); got != `MATCH kind ( "click" => btn <- "click", _ => input <- "focus" )` {
 		t.Fatalf("unexpected MATCH dispatch shorthand formatting: %q", got)
 	}
 }

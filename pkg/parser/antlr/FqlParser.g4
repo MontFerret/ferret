@@ -472,7 +472,7 @@ waitForExpression
 
 dispatchExpression
     : Dispatch dispatchEventName In dispatchTarget (dispatchWithClause)? (dispatchOptionsClause)? (recoveryTails)?
-    | dispatchEventName DispatchArrow dispatchTarget (recoveryTails)?
+    | dispatchTarget DispatchReceive dispatchEventName (recoveryTails)?
     ;
 
 dispatchEventName

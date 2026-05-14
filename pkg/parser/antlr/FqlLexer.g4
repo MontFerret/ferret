@@ -58,7 +58,7 @@ Or: 'OR' | '||';
 // Other operators
 Range: Dot Dot;
 Arrow: '=>';
-DispatchArrow: '->';
+DispatchReceive: '<-';
 Assign: '=';
 QuestionMark: '?';
 RegexNotMatch: '!~';

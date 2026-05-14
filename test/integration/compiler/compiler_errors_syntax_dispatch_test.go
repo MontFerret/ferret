@@ -43,40 +43,40 @@ func TestSyntaxErrorsDispatch(t *testing.T) {
 		}, "Missing DISPATCH options"),
 		Failure(`
 			LET obj = NONE
-			LET ok = -> obj
+			LET ok = <- "click"
 			RETURN ok
 		`, E{
 			Kind:    parserd.SyntaxError,
-			Message: "Expected dispatch event before '->'",
-			Hint:    `Provide an event expression, e.g. "click" -> btn.`,
-		}, "Missing shorthand dispatch event"),
-		Failure(`
-			RETURN -> obj
-		`, E{
-			Kind:    parserd.SyntaxError,
-			Message: "Expected dispatch event before '->'",
-			Hint:    `Provide an event expression, e.g. "click" -> btn.`,
-		}, "Missing shorthand dispatch event after RETURN"),
-		Failure(`
-			LET ok = (-> obj)
-			RETURN ok
-		`, E{
-			Kind:    parserd.SyntaxError,
-			Message: "Expected dispatch event before '->'",
-			Hint:    `Provide an event expression, e.g. "click" -> btn.`,
-		}, "Missing shorthand dispatch event in parenthesized expression"),
-		Failure(`
-			LET obj = NONE
-			LET ok = "click" ->
-			RETURN ok
-		`, E{
-			Kind:    parserd.SyntaxError,
-			Message: "Expected dispatch target after '->'",
-			Hint:    `Provide a dispatchable target, e.g. "click" -> btn.`,
+			Message: "Expected dispatch target before '<-'",
+			Hint:    `Provide a dispatchable target, e.g. btn <- "click".`,
 		}, "Missing shorthand dispatch target"),
 		Failure(`
+			RETURN <- "click"
+		`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Expected dispatch target before '<-'",
+			Hint:    `Provide a dispatchable target, e.g. btn <- "click".`,
+		}, "Missing shorthand dispatch target after RETURN"),
+		Failure(`
+			LET ok = (<- "click")
+			RETURN ok
+		`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Expected dispatch target before '<-'",
+			Hint:    `Provide a dispatchable target, e.g. btn <- "click".`,
+		}, "Missing shorthand dispatch target in parenthesized expression"),
+		Failure(`
 			LET obj = NONE
-			LET ok = "input" -> obj WITH { value: "x" }
+			LET ok = obj <-
+			RETURN ok
+		`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Expected dispatch event after '<-'",
+			Hint:    `Provide an event expression, e.g. btn <- "click".`,
+		}, "Missing shorthand dispatch event"),
+		Failure(`
+			LET obj = NONE
+			LET ok = obj <- "input" WITH { value: "x" }
 			RETURN ok
 		`, E{
 			Kind:    parserd.SyntaxError,
@@ -85,13 +85,20 @@ func TestSyntaxErrorsDispatch(t *testing.T) {
 		}, "Shorthand WITH should fail syntax checks"),
 		Failure(`
 			LET obj = NONE
-			LET ok = "click" -> obj OPTIONS { bubbles: true }
+			LET ok = obj <- "click" OPTIONS { bubbles: true }
 			RETURN ok
 		`, E{
 			Kind:    parserd.SyntaxError,
 			Message: "Dispatch shorthand does not support OPTIONS",
 			Hint:    `Use the long form instead, e.g. DISPATCH "click" IN btn OPTIONS { bubbles: true }.`,
 		}, "Shorthand OPTIONS should fail syntax checks"),
+		Failure(`
+			LET obj = NONE
+			LET ok = "click" -> obj
+			RETURN ok
+		`, E{
+			Kind: parserd.SyntaxError,
+		}, "Old event-first shorthand should fail as plain syntax"),
 	})
 }
 
@@ -105,7 +112,7 @@ func TestDispatchSyntaxErrorsIgnoreCommentsAndStrings(t *testing.T) {
 		{
 			name: "string literal",
 			src: `
-				LET msg = "RETURN ->"
+				LET msg = "RETURN <-"
 				LET x =
 				RETURN x
 			`,
@@ -113,7 +120,7 @@ func TestDispatchSyntaxErrorsIgnoreCommentsAndStrings(t *testing.T) {
 		{
 			name: "single-line comment",
 			src: `
-				LET x = 1 // RETURN ->
+				LET x = 1 // RETURN <-
 				LET y =
 				RETURN y
 			`,
@@ -121,7 +128,7 @@ func TestDispatchSyntaxErrorsIgnoreCommentsAndStrings(t *testing.T) {
 		{
 			name: "multi-line comment",
 			src: `
-				/* = -> */
+				/* = <- */
 				LET y =
 				RETURN y
 			`,
@@ -143,11 +150,11 @@ func TestDispatchSyntaxErrorsIgnoreCommentsAndStrings(t *testing.T) {
 				t.Fatal("expected diagnostic")
 			}
 
-			if diag.Message == "Expected dispatch event before '->'" {
+			if diag.Message == "Expected dispatch target before '<-'" {
 				t.Fatalf("unexpected dispatch shorthand diagnostic for %s: %q", tc.name, diag.Message)
 			}
 
-			if strings.Contains(diag.Hint, `"click" -> btn`) {
+			if strings.Contains(diag.Hint, `btn <- "click"`) {
 				t.Fatalf("unexpected dispatch shorthand hint for %s: %q", tc.name, diag.Hint)
 			}
 		})
