@@ -1,9 +1,13 @@
 package compiler_test
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	pkgdiagnostics "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
@@ -262,6 +266,16 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			}, "Incomplete array literal 3"),
 
 		Failure(
+			`RETURN [1 2]`,
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected ',' between array items",
+				Hint:    "Separate array items with commas, e.g. [1, 2, 3].",
+			},
+			"Missing comma between array items",
+		),
+
+		Failure(
 			`
 			LET i = {
 			RETURN i
@@ -323,4 +337,79 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Hint:    "Add a closing ']' to complete the computed property expression.",
 			}, "Invalid computed property expression"),
 	})
+}
+
+func TestArrayMissingCommaDiagnosticSpanDoesNotCascade(t *testing.T) {
+	query := `LET products = [
+    { name: "Widget", price: 19.99 },
+    { name: "Gadget", price: 149.99 },
+    { name: "Thingamajig", price: 49.99 },
+    { name: "Doodad", price: 9.99 },
+    { name: "Doohickey", price: 199.99 },
+    { name: "Whatchamacallit", price: 129.99 }
+    { name: "Contraption", price: 89.99 },
+    { name: "Gizmo", price: 179.99 }
+]
+
+RETURN products[*
+    FILTER TO_FLOAT(.price) > 100
+    LIMIT 3
+    RETURN {
+        title: .name,
+        price: TO_FLOAT(.price)
+    }
+]`
+
+	_, err := compiler.New().Compile(source.NewAnonymous(query))
+	if err == nil {
+		t.Fatal("expected compilation error")
+	}
+
+	diag := firstCompilationError(err)
+	if diag == nil {
+		t.Fatalf("expected diagnostic, got %T", err)
+	}
+
+	if diag.Kind != parserd.SyntaxError {
+		t.Fatalf("unexpected diagnostic kind: %s", diag.Kind)
+	}
+
+	if diag.Message != "Expected ',' between array items" {
+		t.Fatalf("unexpected diagnostic message: %q", diag.Message)
+	}
+
+	if diag.Hint != "Separate array items with commas, e.g. [1, 2, 3]." {
+		t.Fatalf("unexpected diagnostic hint: %q", diag.Hint)
+	}
+
+	if len(diag.Spans) == 0 {
+		t.Fatal("expected diagnostic span")
+	}
+
+	if diag.Spans[0].Label != "missing comma" {
+		t.Fatalf("unexpected span label: %q", diag.Spans[0].Label)
+	}
+
+	line, col := diag.Source.LocationAt(diag.Spans[0].Span)
+	if line != 7 || col != 47 {
+		t.Fatalf("unexpected span location: got %d:%d, want 7:47", line, col)
+	}
+
+	formatted := pkgdiagnostics.Format(err)
+	if got := strings.Count(formatted, "SyntaxError:"); got != 1 {
+		t.Fatalf("expected one syntax diagnostic, got %d:\n%s", got, formatted)
+	}
+
+	if !strings.Contains(formatted, "7 |     { name: \"Whatchamacallit\", price: 129.99 }\n  |                                               ^ missing comma\n8 |     { name: \"Contraption\", price: 89.99 },") {
+		t.Fatalf("diagnostic should point after previous array item, got:\n%s", formatted)
+	}
+
+	for _, unexpected := range []string{
+		"no viable alternative at input",
+		"mismatched input ']'",
+	} {
+		if strings.Contains(formatted, unexpected) {
+			t.Fatalf("formatted diagnostic contains cascade %q:\n%s", unexpected, formatted)
+		}
+	}
 }
