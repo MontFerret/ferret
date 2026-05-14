@@ -75,6 +75,14 @@ func TestSyntaxErrorsDispatch(t *testing.T) {
 			Hint:    `Provide an event expression, e.g. btn <- "click".`,
 		}, "Missing shorthand dispatch event"),
 		Failure(`
+			LET a = @d
+			RETURN a<-1
+		`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Expected dispatch event after '<-'",
+			Hint:    `Provide an event expression, e.g. btn <- "click".`,
+		}, "Numeric compact shorthand event should fail as dispatch syntax"),
+		Failure(`
 			LET obj = NONE
 			LET ok = obj <- "input" WITH { value: "x" }
 			RETURN ok
