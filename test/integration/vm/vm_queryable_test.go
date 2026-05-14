@@ -14,6 +14,8 @@ import (
 
 func TestQueryable(t *testing.T) {
 	queryable := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("ok")))
+	sectionA := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("one")))
+	sectionB := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("two")))
 
 	RunSpecs(t, []spec.Spec{
 		Array("RETURN @doc[~ css`.items`]", []any{"ok"}, "Should apply query literal"),
@@ -24,13 +26,15 @@ func TestQueryable(t *testing.T) {
 		Array("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", []any{"ok"}, "Should apply query literal with params"),
 		Array("RETURN QUERY `SELECT * FROM products` IN @doc USING sql WITH { c: \"phones\" }", []any{"ok"}, "Should apply query expression with options"),
 		Array("RETURN @doc[~ text]", []any{"ok"}, "Should apply query literal with no string payload"),
+		Array(`RETURN @sections[* RETURN (QUERY "a" IN . USING css)][**]`, []any{"one", "two"}, "Should apply query expression to implicit current source"),
 		spec.NewSpec("RETURN @val[~ css`x`]").Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Message: "invalid type",
 		}),
 	}, vm.WithParams(map[string]runtime.Value{
-		"doc": queryable,
-		"q":   runtime.NewString(".dynamic-param"),
-		"val": runtime.NewInt(1),
+		"doc":      queryable,
+		"q":        runtime.NewString(".dynamic-param"),
+		"sections": runtime.NewArrayWith(sectionA, sectionB),
+		"val":      runtime.NewInt(1),
 	}))
 
 	t.Run("Should receive correct queries", func(t *testing.T) {

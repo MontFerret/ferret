@@ -999,6 +999,10 @@ func (p *FqlParser) isUnsafeReservedWordToken(token int) bool {
 
 func (p *FqlParser) isImplicitCurrentValue() bool {
 	la1 := p.GetTokenStream().LA(2)
+	if la1 == FqlParserUsing {
+		return true
+	}
+
 	switch la1 {
 	case FqlParserIdentifier, FqlParserStringLiteral, FqlParserParam, FqlParserOpenBracket, FqlParserBacktickOpen:
 		return false

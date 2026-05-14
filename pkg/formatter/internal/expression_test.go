@@ -127,6 +127,20 @@ func TestExpressionFormatter_QueryExpressionParamPayload(t *testing.T) {
 	}
 }
 
+func TestExpressionFormatter_QueryExpressionImplicitCurrentSource(t *testing.T) {
+	input := `RETURN [1][* RETURN (QUERY "a" IN . USING css)]`
+	program := parseProgram(t, input)
+	query := mustFirst[*fql.QueryExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.expression.formatQueryExpression(query)
+	if got := buf.String(); got != `QUERY "a" IN . USING css` {
+		t.Fatalf("unexpected query expression formatting: %q", got)
+	}
+}
+
 func TestExpressionFormatter_QueryExpressionCountModifier(t *testing.T) {
 	input := "RETURN QUERY COUNT `.items` IN doc USING css"
 	program := parseProgram(t, input)

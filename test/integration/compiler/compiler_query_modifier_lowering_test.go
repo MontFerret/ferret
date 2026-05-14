@@ -65,6 +65,17 @@ func failPrelude(prog *bytecode.Program, expectedMessage runtime.String) error {
 	return nil
 }
 
+func TestQueryExpressionSourceImplicitCurrentCompiles(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		ProgramCheck(`
+LET sections = @sections
+LET linksBySection = sections[* RETURN (QUERY "a" IN . USING css)]
+RETURN linksBySection[**]`, func(prog *bytecode.Program) error {
+			return threeSlotQueryDescriptor(prog.Bytecode)
+		}, "Should compile query expression with implicit current source"),
+	})
+}
+
 func TestQueryModifierLowering_ValueUsesLoadNoneAndFail(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck(`RETURN QUERY VALUE ".items" IN @doc USING css`, func(prog *bytecode.Program) error {
