@@ -9,7 +9,8 @@ import (
 )
 
 type Parser struct {
-	tree *fql.FqlParser
+	tree    *fql.FqlParser
+	program *fql.ProgramContext
 }
 
 func New(query string, tr ...TokenStreamTransformer) *Parser {
@@ -45,10 +46,20 @@ func (p *Parser) RemoveErrorListeners() {
 	p.tree.RemoveErrorListeners()
 }
 
+// Program parses and returns the source program, caching the parse tree so
+// syntax diagnostics can be inspected before visitors consume it.
+func (p *Parser) Program() *fql.ProgramContext {
+	if p.program == nil {
+		p.program = p.tree.Program().(*fql.ProgramContext)
+	}
+
+	return p.program
+}
+
 func (p *Parser) Visit(visitor fql.FqlParserVisitor) interface{} {
-	return visitor.VisitProgram(p.tree.Program().(*fql.ProgramContext))
+	return visitor.VisitProgram(p.Program())
 }
 
 func (p *Parser) Walk(listener fql.FqlParserListener) {
-	antlr.ParseTreeWalkerDefault.Walk(listener, p.tree.Program())
+	antlr.ParseTreeWalkerDefault.Walk(listener, p.Program())
 }

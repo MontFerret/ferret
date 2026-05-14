@@ -1,9 +1,13 @@
 package compiler_test
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	pkgdiagnostics "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
@@ -294,4 +298,62 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Provide an end value to complete the range, e.g. ..10.",
 			}, "Incomplete range 2"),
 	})
+}
+
+func TestMixedFunctionBodySyntaxDiagnosticDoesNotCascade(t *testing.T) {
+	query := `
+FUNC fib(n) => (
+    RETURN MATCH n (
+        0 => 0,
+        1 => 1,
+        _ => fib(n - 1) + fib(n - 2)
+    )
+)
+
+RETURN fib(10)`
+
+	_, err := compiler.New().Compile(source.NewAnonymous(query))
+	if err == nil {
+		t.Fatal("expected compilation error")
+	}
+
+	diag := firstCompilationError(err)
+	if diag == nil {
+		t.Fatalf("expected diagnostic, got %T", err)
+	}
+
+	if diag.Kind != parserd.SyntaxError {
+		t.Fatalf("unexpected diagnostic kind: %s", diag.Kind)
+	}
+
+	if diag.Message != "Cannot combine arrow and block function body syntax" {
+		t.Fatalf("unexpected diagnostic message: %q", diag.Message)
+	}
+
+	if diag.Hint != "Use either 'FUNC f(x) => expr' or 'FUNC f(x) ( ... RETURN expr )'." {
+		t.Fatalf("unexpected diagnostic hint: %q", diag.Hint)
+	}
+
+	if diag.Note != "Remove '=>' to use a block body, or remove RETURN and keep a single expression after '=>'." {
+		t.Fatalf("unexpected diagnostic note: %q", diag.Note)
+	}
+
+	if len(diag.Spans) == 0 {
+		t.Fatal("expected diagnostic span")
+	}
+
+	if diag.Spans[0].Label != "RETURN is only valid in a block function body" {
+		t.Fatalf("unexpected span label: %q", diag.Spans[0].Label)
+	}
+
+	formatted := pkgdiagnostics.Format(err)
+	for _, unexpected := range []string{
+		"Unclosed parenthesized expression",
+		"mismatched input ')' expecting <EOF>",
+		"Variable 'n' is not defined",
+	} {
+		if strings.Contains(formatted, unexpected) {
+			t.Fatalf("formatted diagnostic contains cascade %q:\n%s", unexpected, formatted)
+		}
+	}
 }

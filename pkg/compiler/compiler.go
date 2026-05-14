@@ -76,19 +76,25 @@ func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err e
 		}
 	}()
 
-	l := NewVisitor(src, errorHandler, c.opts.Level)
-	tokenHistory := parserd.NewTokenHistory(10)
+	tokenHistory := parserd.NewTokenHistory(64)
 	p := parser.New(src.Content(), func(stream antlr.TokenStream) antlr.TokenStream {
 		return parserd.NewTrackingTokenStream(stream, tokenHistory)
 	})
 	// Remove all default error listeners
 	p.RemoveErrorListeners()
 	// Add custom error listener
-	p.AddErrorListener(parserd.NewErrorListener(src, l.Session.Program.Errors, tokenHistory))
+	p.AddErrorListener(parserd.NewErrorListener(src, errorHandler, tokenHistory))
+	p.Program()
+
+	if errorHandler.HasErrors() {
+		return nil, errorHandler.Unwrap()
+	}
+
+	l := NewVisitor(src, errorHandler, c.opts.Level)
 	p.Visit(l)
 
-	if l.Session.Program.Errors.HasErrors() {
-		return nil, l.Session.Program.Errors.Unwrap()
+	if errorHandler.HasErrors() {
+		return nil, errorHandler.Unwrap()
 	}
 
 	var udfs []bytecode.UDF

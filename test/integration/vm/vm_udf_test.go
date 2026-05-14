@@ -14,6 +14,10 @@ FUNC id(x) => x
 RETURN id(1)
 `, 1, "UDF arrow body"),
 		S(`
+FUNC grouped() => (1 + 2)
+RETURN grouped()
+`, 3, "UDF arrow grouped expression"),
+		S(`
 FUNC id(x) (
   RETURN x
 )
