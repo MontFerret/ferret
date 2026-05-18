@@ -112,7 +112,7 @@ options { tokenVocab=FqlLexer; }
 
 	func (p *FqlParser) isUnsafeReservedWordToken(token int) bool {
 		switch token {
-		case FqlParserReturn, FqlParserDispatch, FqlParserQuery, FqlParserUsing, FqlParserNone,
+		case FqlParserReturn, FqlParserDispatch, FqlParserDelete, FqlParserQuery, FqlParserUsing, FqlParserNone,
 			FqlParserNull, FqlParserLet, FqlParserVar, FqlParserUse, FqlParserWaitfor, FqlParserWhile, FqlParserDo, FqlParserIn,
 			FqlParserLike, FqlParserNot, FqlParserFor, FqlParserBooleanLiteral, FqlParserMatch, FqlParserWhen,
 			FqlParserFunc:
@@ -262,6 +262,7 @@ body
 bodyStatement
     : variableDeclaration
     | assignmentStatement
+    | deleteStatement
     | functionDeclaration
     | {p.GetTokenStream().LA(1) != FqlParserReturn}? functionCallExpression
     | waitForExpression
@@ -281,6 +282,10 @@ variableDeclaration
 
 assignmentStatement
     : assignmentTarget assignmentOperator expression
+    ;
+
+deleteStatement
+    : Delete assignmentTarget
     ;
 
 assignmentTarget
@@ -328,6 +333,7 @@ functionBlock
 functionStatement
     : variableDeclaration
     | assignmentStatement
+    | deleteStatement
     | functionDeclaration
     | functionCallExpression
     | waitForExpression
@@ -376,6 +382,7 @@ forExpressionClause
 forExpressionStatement
     : variableDeclaration
     | assignmentStatement
+    | deleteStatement
     | functionCallExpression
     ;
 
@@ -887,6 +894,7 @@ safeReservedWord
 unsafeReservedWord
     : Return
     | Dispatch
+    | Delete
     | Query
     | Using
     | None

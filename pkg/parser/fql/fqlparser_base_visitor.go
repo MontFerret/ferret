@@ -43,6 +43,10 @@ func (v *BaseFqlParserVisitor) VisitAssignmentStatement(ctx *AssignmentStatement
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitDeleteStatement(ctx *DeleteStatementContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitAssignmentTarget(ctx *AssignmentTargetContext) interface{} {
 	return v.VisitChildren(ctx)
 }

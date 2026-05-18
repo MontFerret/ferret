@@ -2490,6 +2490,75 @@ func TestToRuntimeError_MemberMutationUsesStructuredDiagnostic(t *testing.T) {
 	}
 }
 
+func TestToRuntimeError_MemberDeletionUsesStructuredDiagnostic(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Source:     source.New("test.fql", "DELETE value.foo"),
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpDeleteKeyConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("foo"),
+		},
+		Metadata: bytecode.Metadata{
+			DebugSpans: []source.Span{
+				{Start: 0, End: 16},
+			},
+		},
+	}
+
+	rtErr := rtdiagnostics.ToRuntimeError(
+		program,
+		1,
+		nil,
+		rtdiagnostics.MemberDeletionErrorOf(
+			runtime.NewInt(1),
+			rtdiagnostics.MemberAccessProperty,
+			runtime.NewString("foo"),
+		),
+	)
+
+	if rtErr == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	if got, want := rtErr.Kind, diagnostics.TypeError; got != want {
+		t.Fatalf("unexpected runtime error kind: got %s, want %s", got, want)
+	}
+
+	if got, want := rtErr.Message, "invalid type"; got != want {
+		t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
+	}
+
+	if got, want := rtErr.Note, `cannot delete property "foo" from Int`; got != want {
+		t.Fatalf("unexpected runtime error note: got %q, want %q", got, want)
+	}
+
+	if got, want := rtErr.Hint, "Ensure the value supports property deletion (for example, a mutable object)"; got != want {
+		t.Fatalf("unexpected runtime error hint: got %q, want %q", got, want)
+	}
+
+	if rtErr.Cause == nil || rtErr.Cause.Error() != runtime.ErrInvalidType.Error() {
+		t.Fatalf("expected invalid type cause, got %v", rtErr.Cause)
+	}
+
+	mainSpanFound := false
+	for _, span := range rtErr.Spans {
+		if !span.Main {
+			continue
+		}
+
+		mainSpanFound = true
+		if got, want := span.Label, `property "foo" cannot be deleted from this value`; got != want {
+			t.Fatalf("unexpected runtime error label: got %q, want %q", got, want)
+		}
+	}
+
+	if !mainSpanFound {
+		t.Fatal("expected main runtime error span")
+	}
+}
+
 func TestToRuntimeError_InvalidArgumentTypeUsesArgumentSpanAndSeparatesNoteFromCause(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,

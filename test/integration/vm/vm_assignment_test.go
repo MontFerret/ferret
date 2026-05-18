@@ -107,6 +107,57 @@ RETURN user
 `, map[string]any{
 			"count": 2,
 		}, "UDF path mutation captures the root without rebinding it"),
+		Object(`
+LET item = { id: 1, deprecated: true }
+DELETE item.deprecated
+RETURN item
+`, map[string]any{
+			"id": 1,
+		}, "DELETE removes an object property"),
+		Object(`
+LET key = "debug"
+LET payload = { id: 1, debug: { trace: true } }
+DELETE payload[key]
+RETURN payload
+`, map[string]any{
+			"id": 1,
+		}, "DELETE removes a computed key"),
+		Object(`
+LET item = { meta: { deprecated: true, keep: true } }
+DELETE item.meta.deprecated
+RETURN item
+`, map[string]any{
+			"meta": map[string]any{
+				"keep": true,
+			},
+		}, "DELETE removes the final member from a nested parent"),
+		Object(`
+LET item = {}
+DELETE item.missing
+RETURN item
+`, map[string]any{}, "DELETE missing property is a no-op"),
+		Object(`
+LET assigned = { foo: 1 }
+assigned.foo = NONE
+LET deleted = { foo: 1 }
+DELETE deleted.foo
+RETURN { assigned: assigned, deleted: deleted }
+`, map[string]any{
+			"assigned": map[string]any{
+				"foo": nil,
+			},
+			"deleted": map[string]any{},
+		}, "DELETE removes a property instead of assigning NONE"),
+		Object(`
+LET item = {}
+DELETE item.meta?.deprecated
+RETURN item
+`, map[string]any{}, "Safe DELETE no-ops on missing optional parent"),
+		Nil(`
+LET value = NONE
+DELETE value?.foo
+RETURN value
+`, "Safe DELETE no-ops on NONE parent"),
 		Nil(`
 LET user = NONE
 user?.profile?.city = "Berlin"
@@ -177,6 +228,21 @@ LET text = "abc"
 text[0] = "x"
 RETURN text
 `, "Assignment rejects unsupported target mutation"),
+		Error(`
+LET value = NONE
+DELETE value.foo
+RETURN value
+`, "Strict DELETE from NONE parent errors"),
+		Error(`
+LET value = 42
+DELETE value.foo
+RETURN value
+`, "DELETE from non-object parent errors"),
+		Error(`
+LET arr = [1, 2, 3]
+DELETE arr[1]
+RETURN arr
+`, "DELETE rejects array index removal"),
 	}, vm.WithFunction("FAIL", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, errors.New("should not execute")
 	}))

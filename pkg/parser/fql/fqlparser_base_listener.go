@@ -74,6 +74,12 @@ func (s *BaseFqlParserListener) EnterAssignmentStatement(ctx *AssignmentStatemen
 // ExitAssignmentStatement is called when production assignmentStatement is exited.
 func (s *BaseFqlParserListener) ExitAssignmentStatement(ctx *AssignmentStatementContext) {}
 
+// EnterDeleteStatement is called when production deleteStatement is entered.
+func (s *BaseFqlParserListener) EnterDeleteStatement(ctx *DeleteStatementContext) {}
+
+// ExitDeleteStatement is called when production deleteStatement is exited.
+func (s *BaseFqlParserListener) ExitDeleteStatement(ctx *DeleteStatementContext) {}
+
 // EnterAssignmentTarget is called when production assignmentTarget is entered.
 func (s *BaseFqlParserListener) EnterAssignmentTarget(ctx *AssignmentTargetContext) {}
 

@@ -10,6 +10,7 @@ const (
 	keywordCollect     = "COLLECT"
 	keywordCount       = "COUNT"
 	keywordDelay       = "DELAY"
+	keywordDelete      = "DELETE"
 	keywordDispatch    = "DISPATCH"
 	keywordDistinct    = "DISTINCT"
 	keywordDo          = "DO"

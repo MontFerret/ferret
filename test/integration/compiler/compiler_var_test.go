@@ -396,6 +396,149 @@ func TestDirectMutationCompile(t *testing.T) {
 	})
 }
 
+func TestDirectDeletionCompile(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		ProgramCheck(`
+			LET obj = { x: 1 }
+			DELETE obj.x
+			RETURN obj
+		`, func(program *bytecode.Program) error {
+			if got := inspect.CountOpcode(program, bytecode.OpDeleteKeyConst); got == 0 {
+				t.Fatalf("expected %s opcode", bytecode.OpDeleteKeyConst)
+			}
+
+			return nil
+		}, "Literal property deletion compiles to key delete"),
+		ProgramCheck(`
+			LET obj = { x: 1 }
+			LET key = "x"
+			DELETE obj[key]
+			RETURN obj
+		`, func(program *bytecode.Program) error {
+			if got := inspect.CountOpcode(program, bytecode.OpDeleteKey); got == 0 {
+				t.Fatalf("expected %s opcode", bytecode.OpDeleteKey)
+			}
+
+			return nil
+		}, "Computed property deletion compiles to dynamic key delete"),
+		ProgramCheck(`
+			FUNC remove(value, key) (
+				DELETE value[key]
+				RETURN value
+			)
+			RETURN remove({ x: 1 }, "x")
+		`, func(program *bytecode.Program) error {
+			if got := inspect.CountOpcode(program, bytecode.OpDeleteKey); got == 0 {
+				t.Fatalf("expected %s opcode", bytecode.OpDeleteKey)
+			}
+
+			if got := inspect.CountOpcode(program, bytecode.OpDeleteProperty); got != 0 {
+				t.Fatalf("expected computed target to avoid %s opcode, got %d", bytecode.OpDeleteProperty, got)
+			}
+
+			return nil
+		}, "Computed deletion compiles to key delete for unknown parent type"),
+		ProgramCheck(`
+			LET obj = { meta: { deprecated: true } }
+			DELETE obj.meta.deprecated
+			RETURN obj
+		`, func(program *bytecode.Program) error {
+			loadIdx, ok := inspect.FindFirstOpcodeIndex(program.Bytecode, bytecode.OpLoadKeyConst)
+			if !ok {
+				t.Fatalf("expected %s opcode", bytecode.OpLoadKeyConst)
+			}
+
+			deleteIdx, ok := inspect.FindFirstOpcodeIndex(program.Bytecode, bytecode.OpDeletePropertyConst)
+			if !ok {
+				deleteIdx, ok = inspect.FindFirstOpcodeIndex(program.Bytecode, bytecode.OpDeleteKeyConst)
+			}
+
+			if !ok {
+				t.Fatalf("expected const delete opcode")
+			}
+
+			if loadIdx >= deleteIdx {
+				t.Fatalf("expected parent load before delete, got load=%d delete=%d", loadIdx, deleteIdx)
+			}
+
+			return nil
+		}, "Nested deletion lowers parent before final key delete"),
+		ProgramCheck(`
+			LET obj = NONE
+			DELETE obj?.x
+			RETURN obj
+		`, func(program *bytecode.Program) error {
+			jumpIdx, ok := inspect.FindFirstOpcodeIndex(program.Bytecode, bytecode.OpJumpIfNone)
+			if !ok {
+				t.Fatalf("expected %s opcode", bytecode.OpJumpIfNone)
+			}
+
+			deleteIdx, ok := inspect.FindFirstOpcodeIndex(program.Bytecode, bytecode.OpDeletePropertyConst)
+			if !ok {
+				t.Fatalf("expected %s opcode", bytecode.OpDeletePropertyConst)
+			}
+
+			if jumpIdx >= deleteIdx {
+				t.Fatalf("expected optional jump before delete, got jump=%d delete=%d", jumpIdx, deleteIdx)
+			}
+
+			return nil
+		}, "Optional deletion compiles no-op jump before delete"),
+		Failure(
+			`
+				LET obj = {}
+				DELETE obj
+				RETURN obj
+			`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "DELETE requires a property or computed-key target",
+				Hint:    `Use DELETE obj.foo or DELETE obj["foo"] to remove a property.`,
+			}, "Bare delete target is invalid"),
+		Failure(
+			`
+				DELETE 1
+				RETURN 0
+			`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "DELETE requires a property or computed-key target",
+				Hint:    `Use DELETE obj.foo or DELETE obj["foo"] to remove a property.`,
+			}, "Literal delete target is invalid"),
+		Failure(
+			`
+				DELETE LOWER("x")
+				RETURN 0
+			`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "DELETE requires a property or computed-key target",
+			}, "Function call delete target is invalid"),
+		Failure(
+			`
+				DELETE QUERY ".item" IN doc USING css
+				RETURN 0
+			`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "DELETE requires a property or computed-key target",
+			}, "Query delete target is invalid"),
+		Failure(
+			`
+				DELETE missing?.x
+				RETURN 0
+			`, E{
+				Kind:    parserd.NameError,
+				Message: "Variable 'missing' is not defined",
+			}, "Safe deletion still requires a declared root"),
+		Failure(
+			`
+				FUNC test() => 1
+				DELETE test.x
+				RETURN 0
+			`, E{
+				Kind:    parserd.SemanticError,
+				Message: "Function 'test' cannot be used as a delete target",
+			}, "UDF path deletion reports function-specific diagnostic"),
+	})
+}
+
 func TestVarSupportedStatementPositionsCompile(t *testing.T) {
 	expressions := []string{
 		`

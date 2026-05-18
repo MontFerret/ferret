@@ -670,6 +670,26 @@ loop:
 			}
 
 			state.retireOwnership(value)
+		case bytecode.OpDeleteKey:
+			if err := vm.deleteKey(ctx, reg[dst], reg[src1]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+		case bytecode.OpDeleteKeyConst:
+			if err := vm.deleteKey(ctx, reg[dst], constants[src1.Constant()]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+		case bytecode.OpDeleteProperty:
+			if err := vm.deleteProperty(ctx, reg[dst], reg[src1]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+		case bytecode.OpDeletePropertyConst:
+			if err := vm.deleteProperty(ctx, reg[dst], constants[src1.Constant()]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
 		case bytecode.OpIter:
 			input := reg[src1]
 			iterable, ok := input.(runtime.Iterable)

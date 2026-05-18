@@ -74,5 +74,30 @@ RETURN current
     VAR current = item
     current = current + 1
     RETURN current`),
+		S(`
+LET item={ deprecated: true, keep: true}
+DELETE    item.deprecated
+RETURN item
+`, `LET item = { deprecated: true, keep: true }
+DELETE item.deprecated
+RETURN item`),
+		S(`
+FUNC clean(payload)(
+DELETE  payload["debug"]
+RETURN payload
+)
+RETURN clean({})
+`, `FUNC clean(payload) (
+    DELETE payload["debug"]
+    RETURN payload
+)
+RETURN clean({})`),
+		S(`
+FOR item IN [{ stale: true }]
+DELETE item.stale
+RETURN item
+`, `FOR item IN [{ stale: true }]
+    DELETE item.stale
+    RETURN item`),
 	})
 }

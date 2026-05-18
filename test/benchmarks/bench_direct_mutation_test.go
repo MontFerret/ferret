@@ -28,6 +28,9 @@ arr[1] = obj.count
 obj.items[0].count += 1
 obj?.profile?.nested.value = arr[1]
 obj?.missing?.count += 1
+obj.transient = "drop"
+DELETE obj.transient
+DELETE obj?.missing?.legacy
 
 RETURN obj.items[0].count + arr[1]
 `
@@ -83,6 +86,25 @@ FUNC inc() (
   RETURN user.count
 )
 RETURN inc()
+`
+
+	directMutationDeletePropertyQuery = `
+LET obj = { count: 1, extra: 2 }
+DELETE obj.extra
+RETURN obj.count
+`
+
+	directMutationDeleteDynamicKeyQuery = `
+LET obj = { debug: 1, keep: 2 }
+LET key = "debug"
+DELETE obj[key]
+RETURN obj.keep
+`
+
+	directMutationDeleteSafeNoopQuery = `
+LET obj = NONE
+DELETE obj?.debug
+RETURN 1
 `
 )
 
@@ -156,4 +178,28 @@ func BenchmarkDirectMutation_UDFCapturedRoot_O0(b *testing.B) {
 
 func BenchmarkDirectMutation_UDFCapturedRoot_O1(b *testing.B) {
 	RunBenchmarkO1(b, directMutationUDFCapturedRootQuery)
+}
+
+func BenchmarkDirectMutation_DeleteProperty_O0(b *testing.B) {
+	RunBenchmarkO0(b, directMutationDeletePropertyQuery)
+}
+
+func BenchmarkDirectMutation_DeleteProperty_O1(b *testing.B) {
+	RunBenchmarkO1(b, directMutationDeletePropertyQuery)
+}
+
+func BenchmarkDirectMutation_DeleteDynamicKey_O0(b *testing.B) {
+	RunBenchmarkO0(b, directMutationDeleteDynamicKeyQuery)
+}
+
+func BenchmarkDirectMutation_DeleteDynamicKey_O1(b *testing.B) {
+	RunBenchmarkO1(b, directMutationDeleteDynamicKeyQuery)
+}
+
+func BenchmarkDirectMutation_DeleteSafeNoop_O0(b *testing.B) {
+	RunBenchmarkO0(b, directMutationDeleteSafeNoopQuery)
+}
+
+func BenchmarkDirectMutation_DeleteSafeNoop_O1(b *testing.B) {
+	RunBenchmarkO1(b, directMutationDeleteSafeNoopQuery)
 }

@@ -75,6 +75,7 @@ Query: 'QUERY';
 Using: 'USING';
 Waitfor: 'WAITFOR';
 Dispatch: 'DISPATCH';
+Delete: 'DELETE';
 Options: 'OPTIONS';
 Timeout: 'TIMEOUT';
 Every: 'EVERY';
