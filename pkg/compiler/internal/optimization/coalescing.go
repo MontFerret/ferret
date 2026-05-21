@@ -313,6 +313,10 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 		return idx == 0 || idx == 1
 	case bytecode.OpAggregateGroupUpdate:
 		return idx == 0 || idx == 1 || idx == 2
+	case bytecode.OpDeleteKey, bytecode.OpDeleteProperty:
+		return idx == 0 || idx == 1
+	case bytecode.OpDeleteKeyConst, bytecode.OpDeletePropertyConst:
+		return idx == 0
 	case bytecode.OpFlatten:
 		return idx == 0 || idx == 1
 	case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:

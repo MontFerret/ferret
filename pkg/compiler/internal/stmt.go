@@ -70,6 +70,8 @@ func (c *StatementCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) 
 		c.bindings.CompileVariableDeclaration(vd)
 	} else if as := ctx.AssignmentStatement(); as != nil {
 		c.bindings.CompileAssignmentStatement(as)
+	} else if ds := ctx.DeleteStatement(); ds != nil {
+		c.bindings.CompileDeleteStatement(ds)
 	} else if fd := ctx.FunctionDeclaration(); fd != nil {
 		// Function declarations are compiled separately.
 		return
@@ -129,6 +131,8 @@ func (c *StatementCompiler) CompileFunctionStatement(ctx fql.IFunctionStatementC
 		c.bindings.CompileVariableDeclaration(stmt.VariableDeclaration())
 	case stmt.AssignmentStatement() != nil:
 		c.bindings.CompileAssignmentStatement(stmt.AssignmentStatement())
+	case stmt.DeleteStatement() != nil:
+		c.bindings.CompileDeleteStatement(stmt.DeleteStatement())
 	case stmt.FunctionDeclaration() != nil:
 		// Nested function declarations are compiled separately.
 		return

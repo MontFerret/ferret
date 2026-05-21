@@ -174,6 +174,12 @@ const (
 	OpLoadAggregateKey // Creates an internal grouped-aggregate selector key
 	OpAggregateUpdate
 	OpAggregateGroupUpdate
+
+	// Property Deletion Operations
+	OpDeleteKey
+	OpDeleteKeyConst
+	OpDeleteProperty
+	OpDeletePropertyConst
 )
 
 func (op Opcode) String() string {
@@ -437,6 +443,14 @@ func (op Opcode) String() string {
 		return "AGGUPD"
 	case OpAggregateGroupUpdate:
 		return "AGGGRPUPD"
+	case OpDeleteKey:
+		return "DELK"
+	case OpDeleteKeyConst:
+		return "DELKC"
+	case OpDeleteProperty:
+		return "DELPR"
+	case OpDeletePropertyConst:
+		return "DELPRC"
 
 	// Stream Operations
 	case OpStream:

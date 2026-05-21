@@ -58,6 +58,19 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 			},
 		}),
 		spec.NewSpec(
+			"LET value = 1\nDELETE value.foo\nRETURN value",
+			"deletion.fql",
+		).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message: "invalid type",
+			Contains: []string{
+				"TypeError: invalid type",
+				"property \"foo\" cannot be deleted from this value",
+				"Note: cannot delete property \"foo\" from Int",
+				"Hint: Ensure the value supports property deletion (for example, a mutable object)",
+				"Caused by: invalid type",
+			},
+		}),
+		spec.NewSpec(
 			`
 FUNC Inner() => FAIL()
 FUNC Outer() (

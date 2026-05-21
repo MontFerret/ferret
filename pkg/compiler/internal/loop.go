@@ -409,6 +409,8 @@ func (c *LoopCompiler) compileForExpressionStatement(ctx fql.IForExpressionState
 		_ = c.bindings.CompileVariableDeclaration(vd)
 	} else if as := ctx.AssignmentStatement(); as != nil {
 		_ = c.bindings.CompileAssignmentStatement(as)
+	} else if ds := ctx.DeleteStatement(); ds != nil {
+		_ = c.bindings.CompileDeleteStatement(ds)
 	} else if fce := ctx.FunctionCallExpression(); fce != nil {
 		// Handle function calls (e.g., doSomething())
 		_ = c.exprs.CompileFunctionCallExpression(fce)

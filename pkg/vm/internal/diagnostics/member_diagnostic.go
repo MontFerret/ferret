@@ -19,5 +19,10 @@ func memberRuntimeDiagnostic(err error) (memberDiagnostic, bool) {
 		return mutationErr, true
 	}
 
+	var deletionErr *MemberDeletionError
+	if errors.As(err, &deletionErr) {
+		return deletionErr, true
+	}
+
 	return nil, false
 }

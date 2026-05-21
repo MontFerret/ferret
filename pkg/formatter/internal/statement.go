@@ -20,6 +20,8 @@ func (f *statementFormatter) formatBodyStatement(ctx *fql.BodyStatementContext) 
 		f.formatVariableDeclaration(ctx.VariableDeclaration().(*fql.VariableDeclarationContext))
 	case ctx.AssignmentStatement() != nil:
 		f.formatAssignmentStatement(ctx.AssignmentStatement().(*fql.AssignmentStatementContext))
+	case ctx.DeleteStatement() != nil:
+		f.formatDeleteStatement(ctx.DeleteStatement().(*fql.DeleteStatementContext))
 	case ctx.FunctionDeclaration() != nil:
 		f.formatFunctionDeclaration(ctx.FunctionDeclaration().(*fql.FunctionDeclarationContext))
 	case ctx.FunctionCallExpression() != nil:
@@ -100,6 +102,25 @@ func (f *statementFormatter) formatAssignmentStatement(ctx *fql.AssignmentStatem
 
 	if expr := ctx.Expression(); expr != nil {
 		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+	}
+}
+
+func (f *statementFormatter) formatDeleteStatement(ctx *fql.DeleteStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordDelete)
+	f.p.space()
+
+	if target := ctx.AssignmentTarget(); target != nil {
+		if target.BindingIdentifier() != nil {
+			f.p.write(target.BindingIdentifier().GetText())
+		}
+
+		for _, path := range target.AllAssignmentTargetPath() {
+			f.member.formatAssignmentTargetPath(path.(*fql.AssignmentTargetPathContext))
+		}
 	}
 }
 
@@ -252,6 +273,8 @@ func (f *statementFormatter) formatFunctionStatement(ctx *fql.FunctionStatementC
 		f.formatVariableDeclaration(ctx.VariableDeclaration().(*fql.VariableDeclarationContext))
 	case ctx.AssignmentStatement() != nil:
 		f.formatAssignmentStatement(ctx.AssignmentStatement().(*fql.AssignmentStatementContext))
+	case ctx.DeleteStatement() != nil:
+		f.formatDeleteStatement(ctx.DeleteStatement().(*fql.DeleteStatementContext))
 	case ctx.FunctionDeclaration() != nil:
 		f.formatFunctionDeclaration(ctx.FunctionDeclaration().(*fql.FunctionDeclarationContext))
 	case ctx.FunctionCallExpression() != nil:
@@ -451,6 +474,8 @@ func (f *statementFormatter) formatForExpressionBody(ctx *fql.ForExpressionBodyC
 			f.formatVariableDeclaration(stmt.VariableDeclaration().(*fql.VariableDeclarationContext))
 		case stmt.AssignmentStatement() != nil:
 			f.formatAssignmentStatement(stmt.AssignmentStatement().(*fql.AssignmentStatementContext))
+		case stmt.DeleteStatement() != nil:
+			f.formatDeleteStatement(stmt.DeleteStatement().(*fql.DeleteStatementContext))
 		case stmt.FunctionCallExpression() != nil:
 			f.expression.formatFunctionCallExpression(stmt.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
 		}

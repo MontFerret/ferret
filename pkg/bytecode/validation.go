@@ -342,6 +342,14 @@ func validateInstructions(program *Program) error {
 			if err := validateRegisterOperand(src2, registers, pc, "src2"); err != nil {
 				return err
 			}
+		case OpDeleteKey, OpDeleteProperty:
+			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
+				return err
+			}
+
+			if err := validateRegisterOperand(src1, registers, pc, "src1"); err != nil {
+				return err
+			}
 		case OpConcat:
 			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
 				return err
@@ -438,6 +446,14 @@ func validateInstructions(program *Program) error {
 			}
 
 			if err := validateRegisterOperand(src2, registers, pc, "src2"); err != nil {
+				return err
+			}
+		case OpDeleteKeyConst, OpDeletePropertyConst:
+			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
+				return err
+			}
+
+			if err := validateConstantOperand(src1, constantsLen, pc, "src1"); err != nil {
 				return err
 			}
 		case OpAddConst:

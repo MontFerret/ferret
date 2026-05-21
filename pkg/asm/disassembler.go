@@ -315,6 +315,13 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 		if slot, ok := aggregateSelectorSlot(p, ip); ok {
 			out += formatComment(fmt.Sprintf("slot=%d", slot))
 		}
+	case bytecode.OpDeleteKey, bytecode.OpDeleteProperty:
+		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]))
+	case bytecode.OpDeleteKeyConst, bytecode.OpDeletePropertyConst:
+		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]))
+		if ops[1].IsConstant() {
+			out += formatComment(constValue(p, ops[1].Constant()))
+		}
 
 	// Op R C
 	case bytecode.OpLoadConst:

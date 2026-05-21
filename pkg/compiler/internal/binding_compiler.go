@@ -328,6 +328,16 @@ func (c *BindingCompiler) reportInvalidAssignmentTarget(ctx antlr.ParserRuleCont
 	c.ctx.Program.Errors.Add(err)
 }
 
+func (c *BindingCompiler) reportInvalidDeleteTarget(ctx antlr.ParserRuleContext) {
+	if ctx == nil {
+		return
+	}
+
+	err := c.ctx.Program.Errors.Create(parserd.SyntaxError, ctx, "DELETE requires a property or computed-key target")
+	err.Hint = `Use DELETE obj.foo or DELETE obj["foo"] to remove a property.`
+	c.ctx.Program.Errors.Add(err)
+}
+
 func (c *BindingCompiler) reportFunctionAssignmentTarget(target assignmentTarget) bool {
 	if c == nil || c.ctx == nil || c.ctx.Program.UDFs == nil || c.ctx.Function.UDFScope == nil {
 		return false
@@ -350,6 +360,33 @@ func (c *BindingCompiler) reportFunctionAssignmentTarget(target assignmentTarget
 	)
 	err.Spans[0].Label = "function is not a writable binding"
 	err.Hint = fmt.Sprintf("Call it as %s(...), or assign to a declared VAR binding instead.", name)
+	c.ctx.Program.Errors.Add(err)
+
+	return true
+}
+
+func (c *BindingCompiler) reportFunctionDeleteTarget(target assignmentTarget) bool {
+	if c == nil || c.ctx == nil || c.ctx.Program.UDFs == nil || c.ctx.Function.UDFScope == nil {
+		return false
+	}
+
+	fn, found := c.ctx.Program.UDFs.ResolveDeclared(target.Root, c.ctx.Function.UDFScope)
+	if !found {
+		return false
+	}
+
+	name := fn.DisplayName
+	if name == "" {
+		name = target.Root
+	}
+
+	err := c.ctx.Program.Errors.Create(
+		parserd.SemanticError,
+		target.RootCtx,
+		fmt.Sprintf("Function '%s' cannot be used as a delete target", name),
+	)
+	err.Spans[0].Label = "function is not a deletable binding"
+	err.Hint = fmt.Sprintf("Call it as %s(...), or delete a property from a declared binding instead.", name)
 	c.ctx.Program.Errors.Add(err)
 
 	return true

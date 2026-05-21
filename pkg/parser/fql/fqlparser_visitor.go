@@ -34,6 +34,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#assignmentStatement.
 	VisitAssignmentStatement(ctx *AssignmentStatementContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#deleteStatement.
+	VisitDeleteStatement(ctx *DeleteStatementContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#assignmentTarget.
 	VisitAssignmentTarget(ctx *AssignmentTargetContext) interface{}
 

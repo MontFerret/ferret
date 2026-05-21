@@ -95,6 +95,20 @@ func TestValidateProgram(t *testing.T) {
 			}),
 			target: ErrInvalidInstruction,
 		},
+		{
+			name: "delete_key_register_out_of_range",
+			program: withProgramMutation(func(program *Program) {
+				program.Bytecode[0] = NewInstruction(OpDeleteKey, NewRegister(0), NewRegister(3))
+			}),
+			target: ErrInvalidInstruction,
+		},
+		{
+			name: "delete_key_const_out_of_range",
+			program: withProgramMutation(func(program *Program) {
+				program.Bytecode[0] = NewInstruction(OpDeleteKeyConst, NewRegister(0), NewConstant(99))
+			}),
+			target: ErrInvalidInstruction,
+		},
 	}
 
 	for _, tc := range tests {
@@ -129,6 +143,28 @@ func TestValidateProgramAllowsConcatImmediateCountAtRegisterLimit(t *testing.T) 
 
 	if err := ValidateProgram(program); err != nil {
 		t.Fatalf("expected concat immediate count at register limit to be valid, got %v", err)
+	}
+}
+
+func TestValidateProgramAllowsDeleteOpcodes(t *testing.T) {
+	program := withProgramMutation(func(program *Program) {
+		program.Bytecode = []Instruction{
+			NewInstruction(OpLoadObject, NewRegister(0), Operand(0)),
+			NewInstruction(OpLoadConst, NewRegister(1), NewConstant(0)),
+			NewInstruction(OpDeleteKey, NewRegister(0), NewRegister(1)),
+			NewInstruction(OpDeleteKeyConst, NewRegister(0), NewConstant(0)),
+			NewInstruction(OpDeleteProperty, NewRegister(0), NewRegister(1)),
+			NewInstruction(OpDeletePropertyConst, NewRegister(0), NewConstant(0)),
+			NewInstruction(OpReturn, NewRegister(0)),
+		}
+		program.Metadata.Labels = nil
+		program.Metadata.AggregateSelectorSlots = nil
+		program.Metadata.MatchFailTargets = nil
+		program.Metadata.DebugSpans = nil
+	})
+
+	if err := ValidateProgram(program); err != nil {
+		t.Fatalf("expected delete opcodes to be valid, got %v", err)
 	}
 }
 
