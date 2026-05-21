@@ -16,7 +16,7 @@ func matchDeleteStatementErrors(src *source.Source, err *diagnostics.Diagnostic,
 		return false
 	}
 
-	deleteToken := findPrevDeleteToken(offending, 16)
+	deleteToken := findPrevToken(offending, "DELETE", 16)
 	if deleteToken == nil {
 		return false
 	}
@@ -35,17 +35,4 @@ func matchDeleteStatementErrors(src *source.Source, err *diagnostics.Diagnostic,
 	}
 
 	return true
-}
-
-func findPrevDeleteToken(node *TokenNode, steps int) *TokenNode {
-	current := node
-	for i := 0; i < steps && current != nil; i++ {
-		if is(current, "DELETE") {
-			return current
-		}
-
-		current = current.Prev()
-	}
-
-	return nil
 }
