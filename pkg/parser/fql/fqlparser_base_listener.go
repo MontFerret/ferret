@@ -206,6 +206,14 @@ func (s *BaseFqlParserListener) EnterEventFilterClause(ctx *EventFilterClauseCon
 // ExitEventFilterClause is called when production eventFilterClause is exited.
 func (s *BaseFqlParserListener) ExitEventFilterClause(ctx *EventFilterClauseContext) {}
 
+// EnterWaitForPredicateWhenClause is called when production waitForPredicateWhenClause is entered.
+func (s *BaseFqlParserListener) EnterWaitForPredicateWhenClause(ctx *WaitForPredicateWhenClauseContext) {
+}
+
+// ExitWaitForPredicateWhenClause is called when production waitForPredicateWhenClause is exited.
+func (s *BaseFqlParserListener) ExitWaitForPredicateWhenClause(ctx *WaitForPredicateWhenClauseContext) {
+}
+
 // EnterLimitClause is called when production limitClause is entered.
 func (s *BaseFqlParserListener) EnterLimitClause(ctx *LimitClauseContext) {}
 

@@ -100,6 +100,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#eventFilterClause.
 	VisitEventFilterClause(ctx *EventFilterClauseContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#waitForPredicateWhenClause.
+	VisitWaitForPredicateWhenClause(ctx *WaitForPredicateWhenClauseContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#limitClause.
 	VisitLimitClause(ctx *LimitClauseContext) interface{}
 

@@ -100,6 +100,9 @@ type FqlParserListener interface {
 	// EnterEventFilterClause is called when entering the eventFilterClause production.
 	EnterEventFilterClause(c *EventFilterClauseContext)
 
+	// EnterWaitForPredicateWhenClause is called when entering the waitForPredicateWhenClause production.
+	EnterWaitForPredicateWhenClause(c *WaitForPredicateWhenClauseContext)
+
 	// EnterLimitClause is called when entering the limitClause production.
 	EnterLimitClause(c *LimitClauseContext)
 
@@ -582,6 +585,9 @@ type FqlParserListener interface {
 
 	// ExitEventFilterClause is called when exiting the eventFilterClause production.
 	ExitEventFilterClause(c *EventFilterClauseContext)
+
+	// ExitWaitForPredicateWhenClause is called when exiting the waitForPredicateWhenClause production.
+	ExitWaitForPredicateWhenClause(c *WaitForPredicateWhenClauseContext)
 
 	// ExitLimitClause is called when exiting the limitClause production.
 	ExitLimitClause(c *LimitClauseContext)

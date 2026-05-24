@@ -102,6 +102,14 @@ func resolveWaitPredicateMode(hasValue, hasExists, hasNot bool) waitForPredicate
 	return waitForPredicateModeBool
 }
 
+func waitPredicateWhenExpression(ctx fql.IWaitForPredicateWhenClauseContext) fql.IExpressionContext {
+	if ctx == nil {
+		return nil
+	}
+
+	return ctx.Expression()
+}
+
 func literalFromExpression(ctx fql.IExpressionContext) fql.ILiteralContext {
 	if ctx == nil {
 		return nil

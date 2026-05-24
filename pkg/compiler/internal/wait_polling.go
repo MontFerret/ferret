@@ -18,6 +18,10 @@ type waitPredicatePollState struct {
 const waitForDefaultEveryMs = 100
 
 func (c *WaitCompiler) tryCompileWaitPredicateFastPath(config waitPredicateCompileConfig) (bytecode.Operand, bool) {
+	if config.whenExpr != nil {
+		return bytecode.NoopOperand, false
+	}
+
 	switch config.mode {
 	case waitForPredicateModeBool:
 		truth, ok := literalTruthinessFromExpression(config.predExpr)
@@ -157,7 +161,16 @@ func (c *WaitCompiler) emitWaitPredicatePollIteration(
 ) bytecode.Operand {
 	valueReg := c.exprs.Compile(config.predExpr)
 	condReg := c.emitWaitPredicateCondition(config.mode, valueReg)
-	c.ctx.Program.Emitter.EmitJumpIfTrue(condReg, successLabel)
+
+	if config.whenExpr == nil {
+		c.ctx.Program.Emitter.EmitJumpIfTrue(condReg, successLabel)
+	} else {
+		retryLabel := c.ctx.Program.Emitter.NewLabel()
+		c.ctx.Program.Emitter.EmitJumpIfFalse(condReg, retryLabel)
+		whenReg := c.emitWaitPredicateWhenCondition(config, valueReg)
+		c.ctx.Program.Emitter.EmitJumpIfTrue(whenReg, successLabel)
+		c.ctx.Program.Emitter.MarkLabel(retryLabel)
+	}
 
 	elapsedReg := c.emitWaitPredicateTimeoutCheck(config.timeoutReg, state.startReg, state.unitReg, timeoutLabel)
 	sleepIntervalReg := c.prepareWaitSleepInterval(config, state.pollReg)
@@ -173,6 +186,19 @@ func (c *WaitCompiler) emitWaitPredicatePollIteration(
 	c.ctx.Program.Emitter.EmitJump(startLabel)
 
 	return valueReg
+}
+
+func (c *WaitCompiler) emitWaitPredicateWhenCondition(config waitPredicateCompileConfig, valueReg bytecode.Operand) bytecode.Operand {
+	if config.whenExpr == nil {
+		return bytecode.NoopOperand
+	}
+
+	c.ctx.Function.Symbols.EnterScope()
+	defer c.ctx.Function.Symbols.ExitScope()
+
+	c.ctx.Function.Symbols.AssignLocal(core.PseudoVariable, core.TypeUnknown, valueReg)
+
+	return c.exprs.CompileWithImplicitCurrent(config.whenExpr)
 }
 
 func (c *WaitCompiler) emitWaitPredicateCondition(mode waitForPredicateMode, valueReg bytecode.Operand) bytecode.Operand {

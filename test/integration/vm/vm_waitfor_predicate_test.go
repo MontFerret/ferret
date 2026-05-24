@@ -1,8 +1,13 @@
 package vm_test
 
 import (
+	"context"
+	"fmt"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
@@ -89,5 +94,97 @@ func TestWaitforPredicate(t *testing.T) {
 			LET token = WAITFOR VALUE NONE TIMEOUT 20ms EVERY 5ms ON ERROR FAIL
 			RETURN token
 		`, "Explicit FAIL should preserve timeout result semantics"),
+		Object(`
+			LET value = WAITFOR VALUE { ok: true, kind: "candidate" } WHEN .ok
+			RETURN value
+		`, map[string]any{"ok": true, "kind": "candidate"}, "WAITFOR VALUE WHEN should return the candidate value"),
+		S(`
+			LET ok = WAITFOR EXISTS [1, 2, 3] WHEN LENGTH(.) >= 3
+			RETURN ok
+		`, true, "WAITFOR EXISTS WHEN should bind the full candidate array"),
+		S(`
+			LET ok = WAITFOR NOT EXISTS [] WHEN LENGTH(.) == 0
+			RETURN ok
+		`, true, "WAITFOR NOT EXISTS WHEN should bind the not-existing candidate value"),
+		Nil(`
+			LET token = WAITFOR VALUE "ok" WHEN false TIMEOUT 20ms EVERY 5ms ON TIMEOUT RETURN NONE
+			RETURN token
+		`, "WAITFOR VALUE WHEN should honor ON TIMEOUT when the predicate never passes"),
+		S(`
+			LET ok = WAITFOR EXISTS [1] WHEN false TIMEOUT 20ms EVERY 5ms ON TIMEOUT RETURN false
+			RETURN ok
+		`, false, "WAITFOR EXISTS WHEN should honor ON TIMEOUT when the predicate never passes"),
 	})
+}
+
+func TestWaitforPredicateWhenRetriesUntilTrue(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		callCount := 0
+
+		RunSpecsWith(
+			t,
+			fmt.Sprintf("VM/O%d", level),
+			compiler.New(compiler.WithOptimizationLevel(level)),
+			[]spec.Spec{
+				S(`
+					LET token = WAITFOR VALUE CANDIDATE() WHEN .state == "ready" TIMEOUT 100ms EVERY 0
+					RETURN token.value
+				`, "ok", "WAITFOR VALUE WHEN should retry until the predicate passes"),
+			},
+			vm.WithFunction("CANDIDATE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+				callCount++
+
+				state := "pending"
+				if callCount >= 3 {
+					state = "ready"
+				}
+
+				return runtime.NewObjectWith(map[string]runtime.Value{
+					"state": runtime.NewString(state),
+					"value": runtime.NewString("ok"),
+				}), nil
+			}),
+		)
+
+		if got, want := callCount, 3; got != want {
+			t.Fatalf("unexpected WAITFOR VALUE WHEN candidate call count for O%d: got %d, want %d", level, got, want)
+		}
+	}
+}
+
+func TestWaitforPredicateWhenSkipsPredicateUntilBasePasses(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		predicateCalls := 0
+
+		RunSpecsWith(
+			t,
+			fmt.Sprintf("VM/O%d", level),
+			compiler.New(compiler.WithOptimizationLevel(level)),
+			[]spec.Spec{
+				S(`
+					LET ok = WAITFOR EXISTS NONE WHEN PREDICATE(.) TIMEOUT 20ms EVERY 1ms ON TIMEOUT RETURN false
+					RETURN ok
+				`, false, "WAITFOR EXISTS WHEN should not evaluate the predicate before existence passes"),
+			},
+			vm.WithFunction("PREDICATE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+				predicateCalls++
+
+				return runtime.True, nil
+			}),
+		)
+
+		if got := predicateCalls; got != 0 {
+			t.Fatalf("WAITFOR EXISTS WHEN evaluated predicate before existence passed for O%d: got %d calls", level, got)
+		}
+	}
+}
+
+func TestWaitforPredicateWhenUsesOperationErrorPolicy(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		S(`
+			RETURN WAITFOR VALUE "ok" WHEN FAIL_PREDICATE(.) TIMEOUT 20ms EVERY 0 ON ERROR RETURN "error"
+		`, "error", "WAITFOR VALUE WHEN predicate errors should use the wait error policy"),
+	}, vm.WithFunction("FAIL_PREDICATE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+		return runtime.None, fmt.Errorf("predicate failed")
+	}))
 }

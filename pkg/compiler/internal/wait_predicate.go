@@ -18,6 +18,7 @@ type (
 
 	waitPredicateCompileConfig struct {
 		predExpr      fql.IExpressionContext
+		whenExpr      fql.IExpressionContext
 		jitterLiteral *float64
 		mode          waitForPredicateMode
 		timeoutReg    bytecode.Operand
@@ -115,6 +116,7 @@ func (c *WaitCompiler) buildWaitPredicateConfig(
 	return waitPredicateCompileConfig{
 		mode:          resolveWaitPredicateMode(predicate.Value() != nil, predicate.Exists() != nil, predicate.Not() != nil),
 		predExpr:      predExpr,
+		whenExpr:      waitPredicateWhenExpression(ctx.WaitForPredicateWhenClause()),
 		timeoutReg:    timeoutReg,
 		everyReg:      everyReg,
 		capEveryReg:   capEveryReg,

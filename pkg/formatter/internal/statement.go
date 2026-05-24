@@ -572,6 +572,11 @@ func (f *statementFormatter) formatWaitForPredicateExpression(ctx *fql.WaitForPr
 		f.formatWaitForPredicate(pred.(*fql.WaitForPredicateContext))
 	}
 
+	if when := ctx.WaitForPredicateWhenClause(); when != nil {
+		f.p.space()
+		f.clause.formatWaitForPredicateWhenClause(when.(*fql.WaitForPredicateWhenClauseContext))
+	}
+
 	if timeout := ctx.TimeoutClause(); timeout != nil {
 		f.p.space()
 		f.clause.formatTimeoutClause(timeout.(*fql.TimeoutClauseContext))
