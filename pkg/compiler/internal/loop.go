@@ -17,6 +17,7 @@ type (
 		ctx      *CompilationSession
 		bindings *BindingCompiler
 		collects *CollectCompiler
+		dispatch *DispatchCompiler
 		exprs    *ExprCompiler
 		literals *LiteralCompiler
 		recovery *RecoveryCompiler
@@ -61,6 +62,7 @@ func NewLoopCompiler(ctx *CompilationSession) *LoopCompiler {
 func (c *LoopCompiler) bind(
 	bindings *BindingCompiler,
 	collects *CollectCompiler,
+	dispatch *DispatchCompiler,
 	exprs *ExprCompiler,
 	literals *LiteralCompiler,
 	recovery *RecoveryCompiler,
@@ -73,6 +75,7 @@ func (c *LoopCompiler) bind(
 
 	c.bindings = bindings
 	c.collects = collects
+	c.dispatch = dispatch
 	c.exprs = exprs
 	c.literals = literals
 	c.recovery = recovery
@@ -401,7 +404,7 @@ func (c *LoopCompiler) compileLoopBody(ctx fql.IForExpressionContext) {
 }
 
 // compileForExpressionStatement processes statements within a FOR loop body.
-// These can be variable declarations or function calls.
+// These can be declarations, assignments, deletes, function calls, or dispatches.
 // The results of these statements are not used directly in the loop result.
 func (c *LoopCompiler) compileForExpressionStatement(ctx fql.IForExpressionStatementContext) {
 	// Handle variable declarations (e.g., LET x = 1)
@@ -414,6 +417,8 @@ func (c *LoopCompiler) compileForExpressionStatement(ctx fql.IForExpressionState
 	} else if fce := ctx.FunctionCallExpression(); fce != nil {
 		// Handle function calls (e.g., doSomething())
 		_ = c.exprs.CompileFunctionCallExpression(fce)
+	} else if de := ctx.DispatchExpression(); de != nil {
+		_ = c.dispatch.Compile(de)
 	}
 }
 

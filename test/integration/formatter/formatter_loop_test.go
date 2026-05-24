@@ -21,7 +21,11 @@ RETURN 1
 		S(`
 FOR n WHILE i < 2
 RETURN n
-`, `FOR n WHILE i < 2
-    RETURN n`),
+`, "FOR n WHILE i < 2\n    RETURN n"),
+		S(`
+FOR WHILE i < 1
+	DISPATCH "click" IN @d
+	RETURN i
+	`, "FOR WHILE i < 1\n    DISPATCH \"click\" IN @d\n    RETURN i"),
 	})
 }

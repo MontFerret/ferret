@@ -384,6 +384,7 @@ forExpressionStatement
     | assignmentStatement
     | deleteStatement
     | functionCallExpression
+    | dispatchExpression
     ;
 
 forExpressionBody

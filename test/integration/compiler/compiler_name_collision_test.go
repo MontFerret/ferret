@@ -49,6 +49,31 @@ FOR item IN [1]
   COLLECT foo = item
   RETURN foo()
 `, expectedHostCallBindingCollision("foo"), "COLLECT grouping output should collide with same-scope host call"),
+		Failure(`
+LET x = { a: 1 }
+LET foo = "a"
+DELETE x[foo()]
+RETURN x
+`, expectedHostCallBindingCollision("foo"), "DELETE computed target call should collide with top-level binding"),
+		Failure(`
+FUNC f() (
+  LET x = { a: 1 }
+  LET foo = "a"
+  DELETE x[foo()]
+  RETURN x
+)
+RETURN f()
+`, expectedHostCallBindingCollision("foo"), "DELETE computed target call should collide with UDF body binding"),
+		Failure(`
+LET x = { a: 1 }
+LET values = (
+  FOR item IN [1]
+    LET foo = "a"
+    DELETE x[foo()]
+    RETURN x
+)
+RETURN values
+`, expectedHostCallBindingCollision("foo"), "DELETE computed target call should collide with FOR body binding"),
 		ProgramCheck(`
 foo()
 LET values = (
@@ -75,6 +100,12 @@ RETURN foo
 foo()
 RETURN 1
 `, compileOnly, "Unresolved host call without binding collision should remain a runtime warmup concern"),
+		ProgramCheck(`
+LET x = { a: 1 }
+LET foo = "a"
+DELETE x.a
+RETURN x
+`, compileOnly, "Property DELETE target should not create a host-call collision"),
 	}, compiler.O0, compiler.O1)
 }
 

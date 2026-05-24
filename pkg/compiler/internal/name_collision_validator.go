@@ -80,6 +80,8 @@ func (v *NameCollisionValidator) collectBodyStatement(scope *nameCollisionScope,
 		v.collectVariableDeclaration(scope, ctx.VariableDeclaration())
 	case ctx.AssignmentStatement() != nil:
 		v.collectCallsInNode(scope, ctx.AssignmentStatement())
+	case ctx.DeleteStatement() != nil:
+		v.collectCallsInNode(scope, ctx.DeleteStatement())
 	case ctx.FunctionDeclaration() != nil:
 		v.validateFunctionDeclaration(ctx.FunctionDeclaration())
 	case ctx.FunctionCallExpression() != nil:
@@ -141,6 +143,8 @@ func (v *NameCollisionValidator) collectFunctionStatement(scope *nameCollisionSc
 		v.collectVariableDeclaration(scope, ctx.VariableDeclaration())
 	case ctx.AssignmentStatement() != nil:
 		v.collectCallsInNode(scope, ctx.AssignmentStatement())
+	case ctx.DeleteStatement() != nil:
+		v.collectCallsInNode(scope, ctx.DeleteStatement())
 	case ctx.FunctionDeclaration() != nil:
 		v.validateFunctionDeclaration(ctx.FunctionDeclaration())
 	case ctx.FunctionCallExpression() != nil:
@@ -209,8 +213,12 @@ func (v *NameCollisionValidator) collectForExpressionStatement(scope *nameCollis
 		v.collectVariableDeclaration(scope, ctx.VariableDeclaration())
 	case ctx.AssignmentStatement() != nil:
 		v.collectCallsInNode(scope, ctx.AssignmentStatement())
+	case ctx.DeleteStatement() != nil:
+		v.collectCallsInNode(scope, ctx.DeleteStatement())
 	case ctx.FunctionCallExpression() != nil:
 		v.collectCallsInNode(scope, ctx.FunctionCallExpression())
+	case ctx.DispatchExpression() != nil:
+		v.collectCallsInNode(scope, ctx.DispatchExpression())
 	}
 }
 
