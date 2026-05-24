@@ -478,6 +478,8 @@ func (f *statementFormatter) formatForExpressionBody(ctx *fql.ForExpressionBodyC
 			f.formatDeleteStatement(stmt.DeleteStatement().(*fql.DeleteStatementContext))
 		case stmt.FunctionCallExpression() != nil:
 			f.expression.formatFunctionCallExpression(stmt.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
+		case stmt.DispatchExpression() != nil:
+			f.formatDispatchExpression(stmt.DispatchExpression().(*fql.DispatchExpressionContext))
 		}
 	case ctx.ForExpressionClause() != nil:
 		clause := ctx.ForExpressionClause().(*fql.ForExpressionClauseContext)

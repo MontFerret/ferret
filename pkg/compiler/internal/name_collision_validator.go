@@ -211,6 +211,8 @@ func (v *NameCollisionValidator) collectForExpressionStatement(scope *nameCollis
 		v.collectCallsInNode(scope, ctx.AssignmentStatement())
 	case ctx.FunctionCallExpression() != nil:
 		v.collectCallsInNode(scope, ctx.FunctionCallExpression())
+	case ctx.DispatchExpression() != nil:
+		v.collectCallsInNode(scope, ctx.DispatchExpression())
 	}
 }
 

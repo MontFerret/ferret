@@ -175,6 +175,47 @@ func TestDispatch(t *testing.T) {
 	}
 }
 
+func TestDispatchInForBodies(t *testing.T) {
+	dispatcher := &testDispatcher{}
+
+	RunSpecs(t, []spec.Spec{
+		Array(`
+			VAR i = 0
+			FOR WHILE i < 1
+				i += 1
+				DISPATCH "loop-click" IN @d
+				RETURN i
+		`, []any{1}, "Should dispatch long form in FOR WHILE body"),
+		Array(`
+			FOR item IN [1]
+				@d <- "loop-shorthand"
+				RETURN item
+		`, []any{1}, "Should dispatch shorthand in FOR IN body"),
+	}, vm.WithParams(map[string]runtime.Value{
+		"d": dispatcher,
+	}))
+
+	var hasLoopClick bool
+	var hasLoopShorthand bool
+
+	for _, evt := range dispatcher.events {
+		switch evt.Name {
+		case runtime.NewString("loop-click"):
+			hasLoopClick = true
+		case runtime.NewString("loop-shorthand"):
+			hasLoopShorthand = true
+		}
+	}
+
+	if !hasLoopClick {
+		t.Fatalf("expected long-form dispatch event from FOR body")
+	}
+
+	if !hasLoopShorthand {
+		t.Fatalf("expected shorthand dispatch event from FOR body")
+	}
+}
+
 func TestDispatchRuntimeErrors(t *testing.T) {
 	dispatcher := &testDispatcher{}
 

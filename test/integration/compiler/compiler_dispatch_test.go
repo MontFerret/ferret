@@ -72,3 +72,33 @@ func TestDispatchShorthandCompiles(t *testing.T) {
 		}, "Should compile member-target shorthand dispatch"),
 	})
 }
+
+func TestDispatchInForBodiesCompiles(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		Opcode(`
+			VAR i = 0
+			FOR WHILE i < 1
+				i += 1
+				DISPATCH "click" IN @d
+				RETURN i
+		`, OpcodeExistence{
+			Exists: []bytecode.Opcode{bytecode.OpDispatch},
+		}, "Should compile long-form dispatch in FOR WHILE body"),
+		Opcode(`
+			VAR i = 0
+			FOR WHILE i < 1
+				i += 1
+				@d <- "click"
+				RETURN i
+		`, OpcodeExistence{
+			Exists: []bytecode.Opcode{bytecode.OpDispatch},
+		}, "Should compile shorthand dispatch in FOR WHILE body"),
+		Opcode(`
+			FOR item IN [1]
+				DISPATCH "click" IN @d
+				RETURN item
+		`, OpcodeExistence{
+			Exists: []bytecode.Opcode{bytecode.OpDispatch},
+		}, "Should compile long-form dispatch in FOR IN body"),
+	})
+}
