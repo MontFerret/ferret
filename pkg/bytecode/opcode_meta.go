@@ -128,7 +128,7 @@ func opcodeClass(op Opcode) OpcodeClass {
 		OpLoadKeyConst, OpLoadKeyOptionalConst, OpLoadPropertyConst, OpLoadPropertyOptionalConst,
 		OpMatchLoadPropertyConst, OpSetIndex, OpSetIndexConst, OpSetKey, OpSetKeyConst,
 		OpSetProperty, OpSetPropertyConst, OpDeleteKey, OpDeleteKeyConst,
-		OpDeleteProperty, OpDeletePropertyConst, OpQuery:
+		OpDeleteProperty, OpDeletePropertyConst, OpQuery, OpQueryExists, OpQueryCount, OpQueryOne:
 		return OpcodeClassAccess
 	case OpAdd, OpAddConst, OpConcat, OpSub, OpMul, OpDiv, OpMod, OpIncr, OpDecr:
 		return OpcodeClassArithmetic

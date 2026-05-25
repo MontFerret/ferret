@@ -32,6 +32,18 @@ func (q *Queryable) Query(_ context.Context, query runtime.Query) (runtime.List,
 	return runtime.NewArray(0), nil
 }
 
+func (q *Queryable) QueryOne(ctx context.Context, query runtime.Query) (runtime.Value, error) {
+	return runtime.DefaultQueryOne(ctx, query, q.Query)
+}
+
+func (q *Queryable) QueryCount(ctx context.Context, query runtime.Query) (runtime.Int, error) {
+	return runtime.DefaultQueryCount(ctx, query, q.Query)
+}
+
+func (q *Queryable) QueryExists(ctx context.Context, query runtime.Query) (runtime.Boolean, error) {
+	return runtime.DefaultQueryExists(ctx, query, q.Query)
+}
+
 func (q *Queryable) MarshalJSON() ([]byte, error) {
 	return json.Marshal("queryable")
 }

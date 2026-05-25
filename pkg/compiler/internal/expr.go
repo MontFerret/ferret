@@ -68,7 +68,6 @@ const (
 
 const (
 	queryValueFailMessage = "QUERY VALUE expected at least one match"
-	queryOneFailMessage   = "QUERY ONE expected exactly one match"
 )
 
 // NewExprCompiler creates a new instance of ExprCompiler with the given compiler context.

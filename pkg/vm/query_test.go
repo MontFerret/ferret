@@ -9,12 +9,25 @@ import (
 )
 
 type queryStub struct {
-	result  runtime.List
-	err     error
-	queries []runtime.Query
+	result           runtime.List
+	err              error
+	oneResult        runtime.Value
+	oneErr           error
+	countResult      runtime.Int
+	countResultSet   bool
+	countErr         error
+	existsResult     runtime.Boolean
+	existsResultSet  bool
+	existsErr        error
+	queries          []runtime.Query
+	queryCalls       int
+	queryOneCalls    int
+	queryCountCalls  int
+	queryExistsCalls int
 }
 
 func (q *queryStub) Query(_ context.Context, query runtime.Query) (runtime.List, error) {
+	q.queryCalls++
 	q.queries = append(q.queries, query)
 
 	if q.err != nil {
@@ -26,6 +39,42 @@ func (q *queryStub) Query(_ context.Context, query runtime.Query) (runtime.List,
 	}
 
 	return runtime.NewArray(0), nil
+}
+
+func (q *queryStub) QueryOne(ctx context.Context, query runtime.Query) (runtime.Value, error) {
+	q.queryOneCalls++
+	if q.oneErr != nil {
+		return runtime.None, q.oneErr
+	}
+	if q.oneResult != nil {
+		return q.oneResult, nil
+	}
+
+	return runtime.DefaultQueryOne(ctx, query, q.Query)
+}
+
+func (q *queryStub) QueryCount(ctx context.Context, query runtime.Query) (runtime.Int, error) {
+	q.queryCountCalls++
+	if q.countErr != nil {
+		return runtime.ZeroInt, q.countErr
+	}
+	if q.countResultSet {
+		return q.countResult, nil
+	}
+
+	return runtime.DefaultQueryCount(ctx, query, q.Query)
+}
+
+func (q *queryStub) QueryExists(ctx context.Context, query runtime.Query) (runtime.Boolean, error) {
+	q.queryExistsCalls++
+	if q.existsErr != nil {
+		return runtime.False, q.existsErr
+	}
+	if q.existsResultSet {
+		return q.existsResult, nil
+	}
+
+	return runtime.DefaultQueryExists(ctx, query, q.Query)
 }
 
 func (q *queryStub) String() string {
@@ -197,5 +246,131 @@ func TestApplyQuery_NonQueryableSourceTypeError(t *testing.T) {
 
 	if !strings.Contains(strings.ToLower(err.Error()), "invalid type") {
 		t.Fatalf("expected invalid type error, got %v", err)
+	}
+}
+
+func TestApplyQueryExists_UsesQueryableModifier(t *testing.T) {
+	src := &queryStub{
+		existsResult:    runtime.True,
+		existsResultSet: true,
+	}
+
+	out, err := applyQueryExists(context.Background(), src, validDescriptor())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if out != runtime.True {
+		t.Fatalf("expected true, got %v", out)
+	}
+	if src.queryExistsCalls != 1 || src.queryCalls != 0 {
+		t.Fatalf("expected QueryExists only, got exists=%d query=%d", src.queryExistsCalls, src.queryCalls)
+	}
+}
+
+func TestApplyQueryCount_UsesQueryableModifier(t *testing.T) {
+	src := &queryStub{
+		countResult:    runtime.NewInt(3),
+		countResultSet: true,
+	}
+
+	out, err := applyQueryCount(context.Background(), src, validDescriptor())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if out != runtime.NewInt(3) {
+		t.Fatalf("expected count 3, got %v", out)
+	}
+	if src.queryCountCalls != 1 || src.queryCalls != 0 {
+		t.Fatalf("expected QueryCount only, got count=%d query=%d", src.queryCountCalls, src.queryCalls)
+	}
+}
+
+func TestApplyQueryOne_UsesQueryableModifier(t *testing.T) {
+	src := &queryStub{
+		oneResult: runtime.NewString("only"),
+	}
+
+	out, err := applyQueryOne(context.Background(), src, validDescriptor())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if out != runtime.NewString("only") {
+		t.Fatalf("expected only result, got %v", out)
+	}
+	if src.queryOneCalls != 1 || src.queryCalls != 0 {
+		t.Fatalf("expected QueryOne only, got one=%d query=%d", src.queryOneCalls, src.queryCalls)
+	}
+}
+
+func TestApplyQueryCount_ListSourceSumsCounts(t *testing.T) {
+	a := &queryStub{countResult: runtime.NewInt(2), countResultSet: true}
+	b := &queryStub{countResult: runtime.NewInt(3), countResultSet: true}
+
+	out, err := applyQueryCount(context.Background(), runtime.NewArrayWith(a, b), validDescriptor())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if out != runtime.NewInt(5) {
+		t.Fatalf("expected count 5, got %v", out)
+	}
+	if a.queryCountCalls != 1 || b.queryCountCalls != 1 {
+		t.Fatalf("expected both queryables to receive QueryCount, got a=%d b=%d", a.queryCountCalls, b.queryCountCalls)
+	}
+}
+
+func TestApplyQueryExists_ListSourceShortCircuits(t *testing.T) {
+	a := &queryStub{existsResult: runtime.False, existsResultSet: true}
+	b := &queryStub{existsResult: runtime.True, existsResultSet: true}
+	c := &queryStub{existsResult: runtime.True, existsResultSet: true}
+
+	out, err := applyQueryExists(context.Background(), runtime.NewArrayWith(a, b, c), validDescriptor())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if out != runtime.True {
+		t.Fatalf("expected true, got %v", out)
+	}
+	if a.queryExistsCalls != 1 || b.queryExistsCalls != 1 || c.queryExistsCalls != 0 {
+		t.Fatalf("expected short-circuit after second queryable, got a=%d b=%d c=%d", a.queryExistsCalls, b.queryExistsCalls, c.queryExistsCalls)
+	}
+}
+
+func TestApplyQueryOne_ListSourceUsesCountThenOne(t *testing.T) {
+	a := &queryStub{countResult: runtime.ZeroInt, countResultSet: true}
+	b := &queryStub{countResult: runtime.NewInt(1), countResultSet: true, oneResult: runtime.NewString("only")}
+	c := &queryStub{countResult: runtime.ZeroInt, countResultSet: true}
+
+	out, err := applyQueryOne(context.Background(), runtime.NewArrayWith(a, b, c), validDescriptor())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if out != runtime.NewString("only") {
+		t.Fatalf("expected only result, got %v", out)
+	}
+	if a.queryCountCalls != 1 || b.queryCountCalls != 1 || c.queryCountCalls != 1 || b.queryOneCalls != 1 {
+		t.Fatalf("expected count across all and one on matching queryable, got aCount=%d bCount=%d cCount=%d bOne=%d", a.queryCountCalls, b.queryCountCalls, c.queryCountCalls, b.queryOneCalls)
+	}
+}
+
+func TestApplyQueryOne_ListSourceFailsForMultipleCombinedMatches(t *testing.T) {
+	a := &queryStub{countResult: runtime.NewInt(1), countResultSet: true, oneResult: runtime.NewString("a")}
+	b := &queryStub{countResult: runtime.NewInt(1), countResultSet: true, oneResult: runtime.NewString("b")}
+
+	_, err := applyQueryOne(context.Background(), runtime.NewArrayWith(a, b), validDescriptor())
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	if !strings.Contains(err.Error(), runtime.QueryOneErrorMessage) {
+		t.Fatalf("expected QUERY ONE cardinality error, got %v", err)
+	}
+	if a.queryOneCalls != 0 || b.queryOneCalls != 0 {
+		t.Fatalf("did not expect QueryOne after combined count failure, got a=%d b=%d", a.queryOneCalls, b.queryOneCalls)
 	}
 }

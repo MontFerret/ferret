@@ -3,6 +3,7 @@ package internal
 import (
 	"strings"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
@@ -25,6 +26,19 @@ func queryResultTypeForModifier(modifier queryModifier) core.ValueType {
 		return core.TypeAny
 	default:
 		return core.TypeList
+	}
+}
+
+func queryOpcodeForModifier(modifier queryModifier) bytecode.Opcode {
+	switch modifier {
+	case queryModifierExists:
+		return bytecode.OpQueryExists
+	case queryModifierCount:
+		return bytecode.OpQueryCount
+	case queryModifierOne:
+		return bytecode.OpQueryOne
+	default:
+		return bytecode.OpQuery
 	}
 }
 

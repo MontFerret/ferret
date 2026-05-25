@@ -41,3 +41,15 @@ func (m *JSONQueryable) Query(_ context.Context, q runtime.Query) (runtime.List,
 
 	return orders, nil
 }
+
+func (m *JSONQueryable) QueryOne(ctx context.Context, q runtime.Query) (runtime.Value, error) {
+	return runtime.DefaultQueryOne(ctx, q, m.Query)
+}
+
+func (m *JSONQueryable) QueryCount(ctx context.Context, q runtime.Query) (runtime.Int, error) {
+	return runtime.DefaultQueryCount(ctx, q, m.Query)
+}
+
+func (m *JSONQueryable) QueryExists(ctx context.Context, q runtime.Query) (runtime.Boolean, error) {
+	return runtime.DefaultQueryExists(ctx, q, m.Query)
+}

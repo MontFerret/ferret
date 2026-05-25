@@ -17,6 +17,18 @@ func (q *roundTripQueryable) Query(_ context.Context, _ runtime.Query) (runtime.
 	return runtime.NewArrayWith(runtime.NewString("ok")), nil
 }
 
+func (q *roundTripQueryable) QueryOne(ctx context.Context, query runtime.Query) (runtime.Value, error) {
+	return runtime.DefaultQueryOne(ctx, query, q.Query)
+}
+
+func (q *roundTripQueryable) QueryCount(ctx context.Context, query runtime.Query) (runtime.Int, error) {
+	return runtime.DefaultQueryCount(ctx, query, q.Query)
+}
+
+func (q *roundTripQueryable) QueryExists(ctx context.Context, query runtime.Query) (runtime.Boolean, error) {
+	return runtime.DefaultQueryExists(ctx, query, q.Query)
+}
+
 func (q *roundTripQueryable) MarshalJSON() ([]byte, error) {
 	return json.Marshal("queryable")
 }
