@@ -22,7 +22,7 @@ func queryResultTypeForModifier(modifier queryModifier) core.ValueType {
 		return core.TypeBool
 	case queryModifierCount:
 		return core.TypeInt
-	case queryModifierAny, queryModifierValue, queryModifierOne:
+	case queryModifierOne:
 		return core.TypeAny
 	default:
 		return core.TypeList
@@ -48,10 +48,6 @@ func parseQueryModifier(text string) queryModifier {
 		return queryModifierExists
 	case string(queryModifierCount):
 		return queryModifierCount
-	case string(queryModifierAny):
-		return queryModifierAny
-	case string(queryModifierValue):
-		return queryModifierValue
 	case string(queryModifierOne):
 		return queryModifierOne
 	default:

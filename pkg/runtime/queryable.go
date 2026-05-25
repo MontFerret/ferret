@@ -4,11 +4,6 @@ import (
 	"context"
 )
 
-const (
-	// QueryOneErrorMessage is the standard runtime failure for QUERY ONE cardinality mismatches.
-	QueryOneErrorMessage = "QUERY ONE expected exactly one match"
-)
-
 type (
 	// Query represents a query literal used by the operator index.
 	Query struct {
@@ -22,9 +17,13 @@ type (
 
 	// Queryable allows values to handle operator index queries and query modifiers.
 	Queryable interface {
+		// Query returns every matching value.
 		Query(ctx context.Context, q Query) (List, error)
+		// QueryOne returns the first matching value or None when there is no match.
 		QueryOne(ctx context.Context, q Query) (Value, error)
+		// QueryCount returns the number of matching values.
 		QueryCount(ctx context.Context, q Query) (Int, error)
+		// QueryExists reports whether at least one value matches.
 		QueryExists(ctx context.Context, q Query) (Boolean, error)
 	}
 )
@@ -41,8 +40,8 @@ func DefaultQueryOne(ctx context.Context, q Query, query QueryFunc) (Value, erro
 		return None, err
 	}
 
-	if length != 1 {
-		return None, Error(ErrInvalidOperation, QueryOneErrorMessage)
+	if length == 0 {
+		return None, nil
 	}
 
 	return out.At(ctx, ZeroInt)

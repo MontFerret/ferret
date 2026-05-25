@@ -17,7 +17,7 @@ func TestCompiler_RecoveryTailCompiles(t *testing.T) {
 		ProgramCheck(`RETURN FAIL() ON ERROR RETRY 3`, expectCatchTableSize(1), "Function call retry should emit a guarded region"),
 		ProgramCheck(`RETURN FAIL() ON ERROR RETRY 3 DELAY 100ms BACKOFF EXPONENTIAL OR RETURN NONE`, expectCatchTableSize(1), "Function call retry fallback should emit a guarded region"),
 		ProgramCheck(`RETURN @obj.foo.bar ON ERROR RETURN NONE`, expectCatchTableSize(1), "Member suppression should emit a guarded region"),
-		ProgramCheck("RETURN QUERY VALUE `.items` IN @doc USING css ON ERROR RETURN NONE", expectCatchTableSize(1), "QUERY suppression should emit a guarded region"),
+		ProgramCheck("RETURN QUERY ONE `.items` IN @doc USING css ON ERROR RETURN NONE", expectCatchTableSize(1), "QUERY suppression should emit a guarded region"),
 		ProgramCheck("DISPATCH \"click\" IN @d ON ERROR RETURN NONE\nRETURN 1", expectCatchTableSize(1), "DISPATCH suppression should emit a guarded region"),
 		ProgramCheck("LET ok = WAITFOR VALUE NONE TIMEOUT 1ms ON TIMEOUT RETURN NONE ON ERROR FAIL\nRETURN ok", expectCatchTableSize(0), "Explicit timeout recovery should compile"),
 		ProgramCheck("LET ok = WAITFOR EVENT \"test\" IN @obs TIMEOUT 1ms ON TIMEOUT RETURN NONE ON ERROR RETRY 2 DELAY 5ms OR RETURN \"error\"\nRETURN ok", expectCatchTableSize(1), "WAITFOR EVENT retry should emit a guarded region"),

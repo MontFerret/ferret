@@ -61,13 +61,7 @@ const (
 	queryModifierUnknown queryModifier = ""
 	queryModifierExists  queryModifier = "exists"
 	queryModifierCount   queryModifier = "count"
-	queryModifierAny     queryModifier = "any"
-	queryModifierValue   queryModifier = "value"
 	queryModifierOne     queryModifier = "one"
-)
-
-const (
-	queryValueFailMessage = "QUERY VALUE expected at least one match"
 )
 
 // NewExprCompiler creates a new instance of ExprCompiler with the given compiler context.

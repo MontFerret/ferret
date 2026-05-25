@@ -9,21 +9,22 @@ import (
 )
 
 type queryStub struct {
+	countErr         error
 	result           runtime.List
 	err              error
 	oneResult        runtime.Value
 	oneErr           error
-	countResult      runtime.Int
-	countResultSet   bool
-	countErr         error
-	existsResult     runtime.Boolean
-	existsResultSet  bool
 	existsErr        error
 	queries          []runtime.Query
 	queryCalls       int
+	countResult      runtime.Int
 	queryOneCalls    int
 	queryCountCalls  int
 	queryExistsCalls int
+	existsResult     runtime.Boolean
+	existsResultSet  bool
+	countResultSet   bool
+	nilResult        bool
 }
 
 func (q *queryStub) Query(_ context.Context, query runtime.Query) (runtime.List, error) {
@@ -32,6 +33,10 @@ func (q *queryStub) Query(_ context.Context, query runtime.Query) (runtime.List,
 
 	if q.err != nil {
 		return nil, q.err
+	}
+
+	if q.nilResult {
+		return nil, nil
 	}
 
 	if q.result != nil {
@@ -305,6 +310,48 @@ func TestApplyQueryOne_UsesQueryableModifier(t *testing.T) {
 	}
 }
 
+func TestApplyQueryOne_DefaultHelperReturnsFirstOrNone(t *testing.T) {
+	tests := []struct {
+		want runtime.Value
+		src  *queryStub
+		name string
+	}{
+		{
+			name: "empty",
+			src:  &queryStub{result: runtime.NewArray(0)},
+			want: runtime.None,
+		},
+		{
+			name: "one",
+			src:  &queryStub{result: runtime.NewArrayWith(runtime.NewString("only"))},
+			want: runtime.NewString("only"),
+		},
+		{
+			name: "many",
+			src:  &queryStub{result: runtime.NewArrayWith(runtime.NewString("first"), runtime.NewString("second"))},
+			want: runtime.NewString("first"),
+		},
+		{
+			name: "nil-list",
+			src:  &queryStub{nilResult: true},
+			want: runtime.None,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out, err := applyQueryOne(context.Background(), tt.src, validDescriptor())
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if out != tt.want {
+				t.Fatalf("unexpected result: got %v want %v", out, tt.want)
+			}
+		})
+	}
+}
+
 func TestApplyQueryCount_ListSourceSumsCounts(t *testing.T) {
 	a := &queryStub{countResult: runtime.NewInt(2), countResultSet: true}
 	b := &queryStub{countResult: runtime.NewInt(3), countResultSet: true}
@@ -340,10 +387,10 @@ func TestApplyQueryExists_ListSourceShortCircuits(t *testing.T) {
 	}
 }
 
-func TestApplyQueryOne_ListSourceUsesCountThenOne(t *testing.T) {
-	a := &queryStub{countResult: runtime.ZeroInt, countResultSet: true}
-	b := &queryStub{countResult: runtime.NewInt(1), countResultSet: true, oneResult: runtime.NewString("only")}
-	c := &queryStub{countResult: runtime.ZeroInt, countResultSet: true}
+func TestApplyQueryOne_ListSourceShortCircuitsOnFirstMatch(t *testing.T) {
+	a := &queryStub{oneResult: runtime.None}
+	b := &queryStub{oneResult: runtime.NewString("only")}
+	c := &queryStub{oneResult: runtime.NewString("later")}
 
 	out, err := applyQueryOne(context.Background(), runtime.NewArrayWith(a, b, c), validDescriptor())
 	if err != nil {
@@ -353,24 +400,63 @@ func TestApplyQueryOne_ListSourceUsesCountThenOne(t *testing.T) {
 	if out != runtime.NewString("only") {
 		t.Fatalf("expected only result, got %v", out)
 	}
-	if a.queryCountCalls != 1 || b.queryCountCalls != 1 || c.queryCountCalls != 1 || b.queryOneCalls != 1 {
-		t.Fatalf("expected count across all and one on matching queryable, got aCount=%d bCount=%d cCount=%d bOne=%d", a.queryCountCalls, b.queryCountCalls, c.queryCountCalls, b.queryOneCalls)
+	if a.queryOneCalls != 1 || b.queryOneCalls != 1 || c.queryOneCalls != 0 {
+		t.Fatalf("expected query-one short-circuit after second queryable, got a=%d b=%d c=%d", a.queryOneCalls, b.queryOneCalls, c.queryOneCalls)
+	}
+	if a.queryCountCalls != 0 || b.queryCountCalls != 0 || c.queryCountCalls != 0 {
+		t.Fatalf("did not expect QueryCount for QUERY ONE, got a=%d b=%d c=%d", a.queryCountCalls, b.queryCountCalls, c.queryCountCalls)
 	}
 }
 
-func TestApplyQueryOne_ListSourceFailsForMultipleCombinedMatches(t *testing.T) {
-	a := &queryStub{countResult: runtime.NewInt(1), countResultSet: true, oneResult: runtime.NewString("a")}
-	b := &queryStub{countResult: runtime.NewInt(1), countResultSet: true, oneResult: runtime.NewString("b")}
+func TestApplyQueryOne_ListSourceReturnsNoneWhenNoChildMatches(t *testing.T) {
+	a := &queryStub{oneResult: runtime.None}
+	b := &queryStub{oneResult: runtime.None}
 
-	_, err := applyQueryOne(context.Background(), runtime.NewArrayWith(a, b), validDescriptor())
+	out, err := applyQueryOne(context.Background(), runtime.NewArrayWith(a, b), validDescriptor())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if out != runtime.None {
+		t.Fatalf("expected NONE, got %v", out)
+	}
+}
+
+func TestApplyQueryOne_ListSourceDoesNotFailForMultipleMatches(t *testing.T) {
+	a := &queryStub{oneResult: runtime.NewString("a")}
+	b := &queryStub{oneResult: runtime.NewString("b")}
+
+	out, err := applyQueryOne(context.Background(), runtime.NewArrayWith(a, b), validDescriptor())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if out != runtime.NewString("a") {
+		t.Fatalf("expected first result, got %v", out)
+	}
+	if a.queryOneCalls != 1 || b.queryOneCalls != 0 {
+		t.Fatalf("expected first match to short-circuit, got a=%d b=%d", a.queryOneCalls, b.queryOneCalls)
+	}
+}
+
+func TestApplyQueryOne_ListSourceErrorsForNonQueryableBeforeMatch(t *testing.T) {
+	_, err := applyQueryOne(context.Background(), runtime.NewArrayWith(runtime.NewInt(1), &queryStub{oneResult: runtime.NewString("a")}), validDescriptor())
 	if err == nil {
-		t.Fatal("expected runtime error")
+		t.Fatal("expected type error")
 	}
 
-	if !strings.Contains(err.Error(), runtime.QueryOneErrorMessage) {
-		t.Fatalf("expected QUERY ONE cardinality error, got %v", err)
+	if !strings.Contains(strings.ToLower(err.Error()), "invalid type") {
+		t.Fatalf("expected invalid type error, got %v", err)
 	}
-	if a.queryOneCalls != 0 || b.queryOneCalls != 0 {
-		t.Fatalf("did not expect QueryOne after combined count failure, got a=%d b=%d", a.queryOneCalls, b.queryOneCalls)
+}
+
+func TestApplyQueryOne_ListSourceStopsBeforeNonQueryableAfterMatch(t *testing.T) {
+	out, err := applyQueryOne(context.Background(), runtime.NewArrayWith(&queryStub{oneResult: runtime.NewString("a")}, runtime.NewInt(1)), validDescriptor())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if out != runtime.NewString("a") {
+		t.Fatalf("expected first result, got %v", out)
 	}
 }

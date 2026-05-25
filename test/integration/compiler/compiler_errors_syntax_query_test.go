@@ -20,6 +20,24 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			"Missing query literal after QUERY",
 		),
 		Failure(
+			"RETURN QUERY ANY `.items` IN doc USING css",
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "QUERY ANY is no longer supported",
+				Hint:    "Use QUERY ONE for first-or-none results, QUERY EXISTS for booleans, or plain QUERY for all matches.",
+			},
+			"Legacy QUERY ANY modifier",
+		),
+		Failure(
+			"RETURN QUERY VALUE `.items` IN doc USING css",
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "QUERY VALUE is no longer supported",
+				Hint:    "Use QUERY ONE for first-or-none results, QUERY EXISTS for booleans, or plain QUERY for all matches.",
+			},
+			"Legacy QUERY VALUE modifier",
+		),
+		Failure(
 			`RETURN QUERY EXISTS IN doc USING css`,
 			E{
 				Kind:    parserd.SyntaxError,

@@ -1067,8 +1067,6 @@ queryExpression
 
 queryModifier
     : Exists
-    | Any
-    | Value
     | Count
     | One
     ;

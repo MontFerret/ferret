@@ -24,16 +24,6 @@ func TestParseQueryModifier(t *testing.T) {
 			expected: queryModifierCount,
 		},
 		{
-			name:     "mixed any",
-			input:    "AnY",
-			expected: queryModifierAny,
-		},
-		{
-			name:     "value",
-			input:    "value",
-			expected: queryModifierValue,
-		},
-		{
 			name:     "one",
 			input:    "one",
 			expected: queryModifierOne,
@@ -70,16 +60,6 @@ func TestQueryResultTypeForModifier(t *testing.T) {
 			name:     "count",
 			modifier: queryModifierCount,
 			expected: core.TypeInt,
-		},
-		{
-			name:     "any",
-			modifier: queryModifierAny,
-			expected: core.TypeAny,
-		},
-		{
-			name:     "value",
-			modifier: queryModifierValue,
-			expected: core.TypeAny,
 		},
 		{
 			name:     "one",

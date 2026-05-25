@@ -294,7 +294,7 @@ func fqlparserParserInit() {
 		294, 296, 298, 300, 302, 304, 306, 308, 310, 312, 314, 316, 318, 320, 322,
 		0, 12, 1, 0, 90, 91, 2, 0, 23, 26, 39, 39, 1, 0, 70, 71, 4, 0, 34, 35,
 		53, 65, 68, 69, 74, 83, 5, 0, 43, 44, 46, 52, 66, 67, 70, 73, 84, 88, 2,
-		0, 58, 61, 81, 81, 2, 0, 70, 70, 80, 81, 1, 0, 17, 22, 2, 0, 30, 31, 85,
+		0, 58, 59, 61, 61, 2, 0, 70, 70, 80, 81, 1, 0, 17, 22, 2, 0, 30, 31, 85,
 		85, 1, 0, 41, 42, 1, 0, 27, 29, 1, 0, 30, 31, 1669, 0, 327, 1, 0, 0, 0,
 		2, 333, 1, 0, 0, 0, 4, 335, 1, 0, 0, 0, 6, 337, 1, 0, 0, 0, 8, 345, 1,
 		0, 0, 0, 10, 358, 1, 0, 0, 0, 12, 362, 1, 0, 0, 0, 14, 378, 1, 0, 0, 0,
@@ -29481,8 +29481,6 @@ type IQueryModifierContext interface {
 
 	// Getter signatures
 	Exists() antlr.TerminalNode
-	Any() antlr.TerminalNode
-	Value() antlr.TerminalNode
 	Count() antlr.TerminalNode
 	One() antlr.TerminalNode
 
@@ -29524,14 +29522,6 @@ func (s *QueryModifierContext) GetParser() antlr.Parser { return s.parser }
 
 func (s *QueryModifierContext) Exists() antlr.TerminalNode {
 	return s.GetToken(FqlParserExists, 0)
-}
-
-func (s *QueryModifierContext) Any() antlr.TerminalNode {
-	return s.GetToken(FqlParserAny, 0)
-}
-
-func (s *QueryModifierContext) Value() antlr.TerminalNode {
-	return s.GetToken(FqlParserValue, 0)
 }
 
 func (s *QueryModifierContext) Count() antlr.TerminalNode {
@@ -29582,7 +29572,7 @@ func (p *FqlParser) QueryModifier() (localctx IQueryModifierContext) {
 		p.SetState(1486)
 		_la = p.GetTokenStream().LA(1)
 
-		if !((int64((_la-58)) & ^0x3f) == 0 && ((int64(1)<<(_la-58))&8388623) != 0) {
+		if !((int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&3170534137668829184) != 0) {
 			p.GetErrorHandler().RecoverInline(p)
 		} else {
 			p.GetErrorHandler().ReportMatch(p)

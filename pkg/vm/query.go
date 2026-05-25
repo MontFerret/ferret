@@ -164,8 +164,7 @@ func applyQueryOne(ctx context.Context, src runtime.Value, descriptor runtime.Va
 	}
 
 	if list, ok := src.(runtime.List); ok {
-		var found runtime.Queryable
-		countTotal := runtime.ZeroInt
+		var result runtime.Value = runtime.None
 
 		err := runtime.ForEach(ctx, list, func(ctx context.Context, value, _ runtime.Value) (runtime.Boolean, error) {
 			queryable, ok := value.(runtime.Queryable)
@@ -173,37 +172,22 @@ func applyQueryOne(ctx context.Context, src runtime.Value, descriptor runtime.Va
 				return runtime.False, runtime.TypeErrorOf(value, runtime.TypeQueryable)
 			}
 
-			count, err := queryable.QueryCount(ctx, query)
+			out, err := normalizeQueryOneResult(queryable.QueryOne(ctx, query))
 			if err != nil {
 				return runtime.False, err
 			}
-
-			if count == 0 {
+			if runtime.TypeNone.Is(out) {
 				return runtime.True, nil
 			}
 
-			if count < 0 {
-				return runtime.False, runtime.Errorf(runtime.ErrInvalidOperation, "query count must be non-negative, got %d", count)
-			}
-
-			countTotal += count
-			if countTotal > 1 {
-				return runtime.False, nil
-			}
-
-			found = queryable
-
-			return runtime.True, nil
+			result = out
+			return runtime.False, nil
 		})
 		if err != nil {
 			return runtime.None, err
 		}
 
-		if countTotal != 1 {
-			return runtime.None, runtime.Error(runtime.ErrInvalidOperation, runtime.QueryOneErrorMessage)
-		}
-
-		return normalizeQueryOneResult(found.QueryOne(ctx, query))
+		return result, nil
 	}
 
 	return runtime.None, runtime.TypeErrorOf(src, runtime.TypeQueryable, runtime.TypeList)

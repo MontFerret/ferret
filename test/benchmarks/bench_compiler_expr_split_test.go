@@ -18,8 +18,8 @@ const compilerMatchQueryMixQuery = `
 LET doc = @doc
 RETURN MATCH QUERY COUNT ".items" IN doc USING css (
 	0 => "empty",
-	count WHEN count > 2 => UPPER(QUERY VALUE ".featured" IN doc USING css ON ERROR RETURN "fallback"),
-	_ => QUERY ANY ".items" IN doc USING css,
+	count WHEN count > 2 => UPPER(QUERY ONE ".featured" IN doc USING css),
+	_ => QUERY ONE ".items" IN doc USING css,
 )
 `
 

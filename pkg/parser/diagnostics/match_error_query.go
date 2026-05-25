@@ -31,6 +31,16 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 		return true
 	}
 
+	if legacy := legacyQueryModifierNearQuery(offending); legacy != nil {
+		span := spanFromTokenSafe(legacy.Token(), src)
+		err.Message = "QUERY " + strings.ToUpper(legacy.GetText()) + " is no longer supported"
+		err.Hint = "Use QUERY ONE for first-or-none results, QUERY EXISTS for booleans, or plain QUERY for all matches."
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "unsupported query modifier"),
+		}
+		return true
+	}
+
 	if isMissingQueryLiteral(err.Message, offending) {
 		spanNode := offending
 		if prev := offending.Prev(); prev != nil && is(prev, "QUERY") {
@@ -149,6 +159,28 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 	}
 
 	return false
+}
+
+func isLegacyQueryModifier(node *TokenNode) bool {
+	return is(node, "ANY") || is(node, "VALUE")
+}
+
+func legacyQueryModifierNearQuery(node *TokenNode) *TokenNode {
+	for current := node; current != nil; current = current.Prev() {
+		if is(current, "QUERY") {
+			if next := current.Next(); isLegacyQueryModifier(next) {
+				return next
+			}
+
+			return nil
+		}
+
+		if isLegacyQueryModifier(current) && is(current.Prev(), "QUERY") {
+			return current
+		}
+	}
+
+	return nil
 }
 
 func isMissingQueryLiteral(msg string, offending *TokenNode) bool {
