@@ -32,6 +32,19 @@ func (f *clauseFormatter) formatEventFilterClause(ctx *fql.EventFilterClauseCont
 	}
 }
 
+func (f *clauseFormatter) formatWaitForPredicateWhenClause(ctx *fql.WaitForPredicateWhenClauseContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordWhen)
+	f.p.space()
+
+	if expr := ctx.Expression(); expr != nil {
+		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+	}
+}
+
 func (f *clauseFormatter) formatLimitClause(ctx *fql.LimitClauseContext) {
 	if ctx == nil {
 		return

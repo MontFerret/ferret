@@ -3,6 +3,7 @@ package compiler_test
 import (
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
@@ -63,4 +64,32 @@ func TestWaitforCompilationErrors(t *testing.T) {
 			Hint:    "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m.",
 		}, "Out-of-range WAITFOR EVERY float constant should fail compilation"),
 	})
+}
+
+func TestWaitforPredicateWhenCompiles(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		ProgramCheck(`
+			RETURN WAITFOR VALUE { state: "ready" }
+				WHEN .state == "ready"
+				TIMEOUT 5ms
+				EVERY 1ms
+				ON TIMEOUT RETURN NONE
+		`, noCompilerError, "WAITFOR VALUE should compile with WHEN and wait tails"),
+		ProgramCheck(`
+			RETURN WAITFOR EXISTS [1, 2, 3]
+				WHEN LENGTH(.) >= 3
+				TIMEOUT 5ms
+				EVERY 1ms
+		`, noCompilerError, "WAITFOR EXISTS should compile with WHEN and wait tails"),
+		ProgramCheck(`
+			RETURN WAITFOR NOT EXISTS []
+				WHEN LENGTH(.) == 0
+				TIMEOUT 5ms
+				EVERY 1ms
+		`, noCompilerError, "WAITFOR NOT EXISTS should compile with WHEN and wait tails"),
+	})
+}
+
+func noCompilerError(*bytecode.Program) error {
+	return nil
 }

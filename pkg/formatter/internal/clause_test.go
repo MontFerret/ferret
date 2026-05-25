@@ -35,3 +35,17 @@ func TestClauseFormatter_EventFilterClauseUsesWhen(t *testing.T) {
 		t.Fatalf("unexpected event filter formatting: %q", got)
 	}
 }
+
+func TestClauseFormatter_WaitForPredicateWhenClause(t *testing.T) {
+	input := "WAITFOR VALUE ready WHEN .state == \"ready\""
+	program := parseProgram(t, input)
+	when := mustFirst[*fql.WaitForPredicateWhenClauseContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.clause.formatWaitForPredicateWhenClause(when)
+	if got := buf.String(); got != "WHEN .state == \"ready\"" {
+		t.Fatalf("unexpected waitfor predicate WHEN formatting: %q", got)
+	}
+}

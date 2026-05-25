@@ -131,6 +131,10 @@ func (v *BaseFqlParserVisitor) VisitEventFilterClause(ctx *EventFilterClauseCont
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitWaitForPredicateWhenClause(ctx *WaitForPredicateWhenClauseContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitLimitClause(ctx *LimitClauseContext) interface{} {
 	return v.VisitChildren(ctx)
 }

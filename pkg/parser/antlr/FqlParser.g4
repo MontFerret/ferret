@@ -405,6 +405,10 @@ eventFilterClause
     : When {p.pushImplicitCurrent()} expression {p.popImplicitCurrent()}
     ;
 
+waitForPredicateWhenClause
+    : When {p.pushImplicitCurrent()} expression {p.popImplicitCurrent()}
+    ;
+
 limitClause
     : Limit limitClauseValue (Comma limitClauseValue)?
     ;
@@ -515,7 +519,7 @@ waitForEventExpression
     ;
 
 waitForPredicateExpression
-    : waitForPredicate (timeoutClause)? (everyClause)? (backoffClause)? (jitterClause)?
+    : waitForPredicate (waitForPredicateWhenClause)? (timeoutClause)? (everyClause)? (backoffClause)? (jitterClause)?
     ;
 
 waitForPredicate
