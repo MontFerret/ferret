@@ -1,6 +1,7 @@
 package compiler_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -71,25 +72,50 @@ func TestWaitforPredicateWhenCompiles(t *testing.T) {
 		ProgramCheck(`
 			RETURN WAITFOR VALUE { state: "ready" }
 				WHEN .state == "ready"
+				WHEN .state != "pending"
 				TIMEOUT 5ms
 				EVERY 1ms
 				ON TIMEOUT RETURN NONE
-		`, noCompilerError, "WAITFOR VALUE should compile with WHEN and wait tails"),
+		`, noCompilerError, "WAITFOR VALUE should compile with repeated WHEN and wait tails"),
 		ProgramCheck(`
 			RETURN WAITFOR EXISTS [1, 2, 3]
 				WHEN LENGTH(.) >= 3
+				WHEN .[0] == 1
 				TIMEOUT 5ms
 				EVERY 1ms
-		`, noCompilerError, "WAITFOR EXISTS should compile with WHEN and wait tails"),
+		`, noCompilerError, "WAITFOR EXISTS should compile with repeated WHEN and wait tails"),
 		ProgramCheck(`
 			RETURN WAITFOR NOT EXISTS []
 				WHEN LENGTH(.) == 0
+				WHEN . != NONE
 				TIMEOUT 5ms
 				EVERY 1ms
-		`, noCompilerError, "WAITFOR NOT EXISTS should compile with WHEN and wait tails"),
+		`, noCompilerError, "WAITFOR NOT EXISTS should compile with repeated WHEN and wait tails"),
+		ProgramCheck(`
+			LET obs = []
+			RETURN WAITFOR EVENT "test" IN obs
+				WHEN .type == "match"
+				WHEN BOOM(.)
+				TIMEOUT 5ms
+				ON TIMEOUT RETURN NONE
+		`, expectHostFunction("BOOM", 1), "WAITFOR EVENT should compile repeated WHEN host calls and timeout tail"),
 	})
 }
 
 func noCompilerError(*bytecode.Program) error {
 	return nil
+}
+
+func expectHostFunction(name string, arity int) func(*bytecode.Program) error {
+	return func(program *bytecode.Program) error {
+		got, ok := program.Functions.Host[name]
+		if !ok {
+			return fmt.Errorf("expected host function %q in %v", name, program.Functions.Host)
+		}
+		if got != arity {
+			return fmt.Errorf("expected host function %q arity %d, got %d", name, arity, got)
+		}
+
+		return nil
+	}
 }

@@ -121,8 +121,8 @@ func (c *WaitCompiler) emitWaitEventIteration(
 		c.ctx.Program.Emitter.EmitIterNext(streamReg, doneLabel)
 	})
 
-	filter := ctx.EventFilterClause()
-	if filter == nil {
+	filters := ctx.AllEventFilterClause()
+	if len(filters) == 0 {
 		c.ctx.Program.Emitter.WithSpan(state.span, func() {
 			c.ctx.Program.Emitter.EmitIterValue(resultReg, streamReg)
 		})
@@ -135,8 +135,10 @@ func (c *WaitCompiler) emitWaitEventIteration(
 		c.ctx.Program.Emitter.EmitIterValue(eventValReg, streamReg)
 	})
 
-	cond := c.exprs.CompileWithImplicitCurrent(filter.Expression())
-	c.ctx.Program.Emitter.EmitJumpIfFalse(cond, restartLabel)
+	for _, filter := range filters {
+		cond := c.exprs.CompileWithImplicitCurrent(filter.Expression())
+		c.ctx.Program.Emitter.EmitJumpIfFalse(cond, restartLabel)
+	}
 
 	c.ctx.Program.Emitter.WithSpan(state.span, func() {
 		c.ctx.Program.Emitter.EmitMove(resultReg, eventValReg)

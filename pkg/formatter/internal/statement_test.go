@@ -79,7 +79,7 @@ func TestStatementFormatter_WaitForExpressionRecoveryTailCanonicalOrder(t *testi
 }
 
 func TestStatementFormatter_WaitForExpressionPredicateWhenClause(t *testing.T) {
-	input := `WAITFOR EXISTS rows WHEN LENGTH(.) >= 10 TIMEOUT 1 EVERY 10`
+	input := `WAITFOR EXISTS rows WHEN LENGTH(.) >= 10 WHEN LENGTH(.) > 0 TIMEOUT 1 EVERY 10`
 	program := parseProgram(t, input+"\nRETURN 1")
 	waitExpr := mustFirst[*fql.WaitForExpressionContext](t, program)
 
@@ -87,7 +87,7 @@ func TestStatementFormatter_WaitForExpressionPredicateWhenClause(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.statement.formatWaitForExpression(waitExpr)
-	if got := buf.String(); got != `WAITFOR EXISTS rows WHEN LENGTH(.) >= 10 TIMEOUT 1 EVERY 10` {
+	if got := buf.String(); got != `WAITFOR EXISTS rows WHEN LENGTH(.) >= 10 WHEN LENGTH(.) > 0 TIMEOUT 1 EVERY 10` {
 		t.Fatalf("unexpected waitfor predicate WHEN formatting: %q", got)
 	}
 }
