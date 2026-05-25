@@ -99,6 +99,12 @@ func TestWaitforPredicateWhenCompiles(t *testing.T) {
 				TIMEOUT 5ms
 				ON TIMEOUT RETURN NONE
 		`, expectHostFunction("BOOM", 1), "WAITFOR EVENT should compile repeated WHEN host calls and timeout tail"),
+		ProgramCheck(`
+			LET obs = []
+			FOR i IN [1, 2]
+				WAITFOR EVENT "test" IN obs TIMEOUT 5ms ON TIMEOUT RETURN NONE
+				RETURN i
+		`, noCompilerError, "WAITFOR EVENT should compile as a FOR loop body statement"),
 	})
 }
 

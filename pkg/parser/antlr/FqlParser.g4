@@ -382,6 +382,7 @@ forExpressionStatement
     | assignmentStatement
     | deleteStatement
     | functionCallExpression
+    | waitForExpression
     | dispatchExpression
     ;
 
