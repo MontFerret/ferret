@@ -59,11 +59,23 @@ WAITFOR EVENT "test" IN obs WHEN .type == "match"
 RETURN 1`, ObservableReturnOneAndReads(matchSecond, 2)).Env(vm.WithParams(map[string]runtime.Value{
 			"obs": matchSecond,
 		})),
+		Fn(`LET obs = @obs
+WAITFOR EVENT "test" IN obs WHEN .type != "" WHEN .type == "match"
+RETURN 1`, ObservableReturnOneAndReads(matchSecond, 2)).Env(vm.WithParams(map[string]runtime.Value{
+			"obs": matchSecond,
+		})),
 		S(`LET obs = @obs
 
 LET evt = WAITFOR EVENT "test" IN obs WHEN .type == "match"
 
 RETURN evt.type`, "match", "WAITFOR EVENT filter should return the matched event value").Env(vm.WithParams(map[string]runtime.Value{
+			"obs": matchSecond,
+		})),
+		S(`LET obs = @obs
+
+LET evt = WAITFOR EVENT "test" IN obs WHEN .type != "" WHEN .type == "match"
+
+RETURN evt.type`, "match", "WAITFOR EVENT repeated filters should return the matched event value").Env(vm.WithParams(map[string]runtime.Value{
 			"obs": matchSecond,
 		})),
 		S(`LET obs = @obs

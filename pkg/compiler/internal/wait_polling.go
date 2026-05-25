@@ -18,7 +18,7 @@ type waitPredicatePollState struct {
 const waitForDefaultEveryMs = 100
 
 func (c *WaitCompiler) tryCompileWaitPredicateFastPath(config waitPredicateCompileConfig) (bytecode.Operand, bool) {
-	if config.whenExpr != nil {
+	if len(config.whenExprs) > 0 {
 		return bytecode.NoopOperand, false
 	}
 
@@ -162,13 +162,13 @@ func (c *WaitCompiler) emitWaitPredicatePollIteration(
 	valueReg := c.exprs.Compile(config.predExpr)
 	condReg := c.emitWaitPredicateCondition(config.mode, valueReg)
 
-	if config.whenExpr == nil {
+	if len(config.whenExprs) == 0 {
 		c.ctx.Program.Emitter.EmitJumpIfTrue(condReg, successLabel)
 	} else {
 		retryLabel := c.ctx.Program.Emitter.NewLabel()
 		c.ctx.Program.Emitter.EmitJumpIfFalse(condReg, retryLabel)
-		whenReg := c.emitWaitPredicateWhenCondition(config, valueReg)
-		c.ctx.Program.Emitter.EmitJumpIfTrue(whenReg, successLabel)
+		c.emitWaitPredicateWhenConditions(config, valueReg, retryLabel)
+		c.ctx.Program.Emitter.EmitJump(successLabel)
 		c.ctx.Program.Emitter.MarkLabel(retryLabel)
 	}
 
@@ -188,9 +188,13 @@ func (c *WaitCompiler) emitWaitPredicatePollIteration(
 	return valueReg
 }
 
-func (c *WaitCompiler) emitWaitPredicateWhenCondition(config waitPredicateCompileConfig, valueReg bytecode.Operand) bytecode.Operand {
-	if config.whenExpr == nil {
-		return bytecode.NoopOperand
+func (c *WaitCompiler) emitWaitPredicateWhenConditions(
+	config waitPredicateCompileConfig,
+	valueReg bytecode.Operand,
+	retryLabel core.Label,
+) {
+	if len(config.whenExprs) == 0 {
+		return
 	}
 
 	c.ctx.Function.Symbols.EnterScope()
@@ -198,7 +202,10 @@ func (c *WaitCompiler) emitWaitPredicateWhenCondition(config waitPredicateCompil
 
 	c.ctx.Function.Symbols.AssignLocal(core.PseudoVariable, core.TypeUnknown, valueReg)
 
-	return c.exprs.CompileWithImplicitCurrent(config.whenExpr)
+	for _, whenExpr := range config.whenExprs {
+		condReg := c.exprs.CompileWithImplicitCurrent(whenExpr)
+		c.ctx.Program.Emitter.EmitJumpIfFalse(condReg, retryLabel)
+	}
 }
 
 func (c *WaitCompiler) emitWaitPredicateCondition(mode waitForPredicateMode, valueReg bytecode.Operand) bytecode.Operand {

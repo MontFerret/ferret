@@ -23,29 +23,37 @@ func TestClauseFormatter_TimeoutValueFormatsParam(t *testing.T) {
 }
 
 func TestClauseFormatter_EventFilterClauseUsesWhen(t *testing.T) {
-	input := "WAITFOR EVENT \"test\" IN obs WHEN .type == \"match\""
+	input := "WAITFOR EVENT \"test\" IN obs WHEN .type == \"match\" WHEN .visible"
 	program := parseProgram(t, input)
-	filter := mustFirst[*fql.EventFilterClauseContext](t, program)
+	waitExpr := mustFirst[*fql.WaitForEventExpressionContext](t, program)
+	filters := waitExpr.AllEventFilterClause()
+	if len(filters) != 2 {
+		t.Fatalf("expected two event filters, got %d", len(filters))
+	}
 
 	var buf bytes.Buffer
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
-	e.clause.formatEventFilterClause(filter)
-	if got := buf.String(); got != "WHEN .type == \"match\"" {
+	e.clause.formatEventFilterClause(filters[1].(*fql.EventFilterClauseContext))
+	if got := buf.String(); got != "WHEN .visible" {
 		t.Fatalf("unexpected event filter formatting: %q", got)
 	}
 }
 
 func TestClauseFormatter_WaitForPredicateWhenClause(t *testing.T) {
-	input := "WAITFOR VALUE ready WHEN .state == \"ready\""
+	input := "WAITFOR VALUE ready WHEN .state == \"ready\" WHEN .visible"
 	program := parseProgram(t, input)
-	when := mustFirst[*fql.WaitForPredicateWhenClauseContext](t, program)
+	waitExpr := mustFirst[*fql.WaitForPredicateExpressionContext](t, program)
+	clauses := waitExpr.AllWaitForPredicateWhenClause()
+	if len(clauses) != 2 {
+		t.Fatalf("expected two predicate WHEN clauses, got %d", len(clauses))
+	}
 
 	var buf bytes.Buffer
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
-	e.clause.formatWaitForPredicateWhenClause(when)
-	if got := buf.String(); got != "WHEN .state == \"ready\"" {
+	e.clause.formatWaitForPredicateWhenClause(clauses[1].(*fql.WaitForPredicateWhenClauseContext))
+	if got := buf.String(); got != "WHEN .visible" {
 		t.Fatalf("unexpected waitfor predicate WHEN formatting: %q", got)
 	}
 }

@@ -98,18 +98,34 @@ func TestWaitforPredicate(t *testing.T) {
 			LET value = WAITFOR VALUE { ok: true, kind: "candidate" } WHEN .ok
 			RETURN value
 		`, map[string]any{"ok": true, "kind": "candidate"}, "WAITFOR VALUE WHEN should return the candidate value"),
+		Object(`
+			LET value = WAITFOR VALUE { ok: true, kind: "candidate" } WHEN .ok WHEN .kind == "candidate"
+			RETURN value
+		`, map[string]any{"ok": true, "kind": "candidate"}, "WAITFOR VALUE repeated WHEN clauses should return the candidate value"),
 		S(`
 			LET ok = WAITFOR EXISTS [1, 2, 3] WHEN LENGTH(.) >= 3
 			RETURN ok
 		`, true, "WAITFOR EXISTS WHEN should bind the full candidate array"),
 		S(`
+			LET ok = WAITFOR EXISTS [1, 2, 3] WHEN LENGTH(.) >= 3 WHEN LENGTH(.) > 0
+			RETURN ok
+		`, true, "WAITFOR EXISTS repeated WHEN clauses should bind the full candidate array"),
+		S(`
 			LET ok = WAITFOR NOT EXISTS [] WHEN LENGTH(.) == 0
 			RETURN ok
 		`, true, "WAITFOR NOT EXISTS WHEN should bind the not-existing candidate value"),
+		S(`
+			LET ok = WAITFOR NOT EXISTS [] WHEN LENGTH(.) == 0 WHEN . != NONE
+			RETURN ok
+		`, true, "WAITFOR NOT EXISTS repeated WHEN clauses should bind the not-existing candidate value"),
 		Nil(`
 			LET token = WAITFOR VALUE "ok" WHEN false TIMEOUT 20ms EVERY 5ms ON TIMEOUT RETURN NONE
 			RETURN token
 		`, "WAITFOR VALUE WHEN should honor ON TIMEOUT when the predicate never passes"),
+		Nil(`
+			LET token = WAITFOR VALUE "ok" WHEN true WHEN false TIMEOUT 20ms EVERY 5ms ON TIMEOUT RETURN NONE
+			RETURN token
+		`, "WAITFOR VALUE repeated WHEN clauses should honor ON TIMEOUT when any predicate never passes"),
 		S(`
 			LET ok = WAITFOR EXISTS [1] WHEN false TIMEOUT 20ms EVERY 5ms ON TIMEOUT RETURN false
 			RETURN ok
@@ -179,11 +195,50 @@ func TestWaitforPredicateWhenSkipsPredicateUntilBasePasses(t *testing.T) {
 	}
 }
 
+func TestWaitforPredicateMultipleWhenShortCircuits(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		firstCalls := 0
+		secondCalls := 0
+
+		RunSpecsWith(
+			t,
+			fmt.Sprintf("VM/O%d", level),
+			compiler.New(compiler.WithOptimizationLevel(level)),
+			[]spec.Spec{
+				Nil(`
+					LET token = WAITFOR VALUE "ok" WHEN REPEATED_WHEN_FIRST(.) WHEN REPEATED_WHEN_SECOND(.) TIMEOUT 20ms EVERY 1ms ON TIMEOUT RETURN NONE
+					RETURN token
+				`, "WAITFOR VALUE repeated WHEN clauses should short-circuit after the first false predicate"),
+			},
+			vm.WithFunction("REPEATED_WHEN_FIRST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+				firstCalls++
+
+				return runtime.False, nil
+			}),
+			vm.WithFunction("REPEATED_WHEN_SECOND", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+				secondCalls++
+
+				return runtime.True, nil
+			}),
+		)
+
+		if firstCalls == 0 {
+			t.Fatalf("WAITFOR VALUE repeated WHEN did not evaluate the first predicate for O%d", level)
+		}
+		if secondCalls != 0 {
+			t.Fatalf("WAITFOR VALUE repeated WHEN evaluated a later predicate after false for O%d: got %d calls", level, secondCalls)
+		}
+	}
+}
+
 func TestWaitforPredicateWhenUsesOperationErrorPolicy(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		S(`
 			RETURN WAITFOR VALUE "ok" WHEN FAIL_PREDICATE(.) TIMEOUT 20ms EVERY 0 ON ERROR RETURN "error"
 		`, "error", "WAITFOR VALUE WHEN predicate errors should use the wait error policy"),
+		S(`
+			RETURN WAITFOR VALUE "ok" WHEN true WHEN FAIL_PREDICATE(.) TIMEOUT 20ms EVERY 0 ON ERROR RETURN "error"
+		`, "error", "WAITFOR VALUE repeated WHEN predicate errors should use the wait error policy"),
 	}, vm.WithFunction("FAIL_PREDICATE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, fmt.Errorf("predicate failed")
 	}))

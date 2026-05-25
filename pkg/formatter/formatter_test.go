@@ -95,7 +95,7 @@ func TestFormatter_BlockCommentPreservesLeadingSpace(t *testing.T) {
 }
 
 func TestFormatter_WaitForEventFilterUsesWhenAndRemainsParseable(t *testing.T) {
-	input := "LET obs = []\nWAITFOR EVENT \"test\" IN obs WHEN .type == \"match\"\nRETURN 1"
+	input := "LET obs = []\nWAITFOR EVENT \"test\" IN obs WHEN .type == \"match\" WHEN .visible\nRETURN 1"
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
 	fmt := New()
@@ -108,8 +108,32 @@ func TestFormatter_WaitForEventFilterUsesWhenAndRemainsParseable(t *testing.T) {
 	if !strings.Contains(out, "WHEN .type == \"match\"") {
 		t.Fatalf("expected WAITFOR event filter to use WHEN; got:\n%s", out)
 	}
+	if !strings.Contains(out, "WHEN .visible") {
+		t.Fatalf("expected WAITFOR event filter to preserve repeated WHEN; got:\n%s", out)
+	}
 	if strings.Contains(out, "FILTER .type == \"match\"") {
 		t.Fatalf("unexpected legacy FILTER in WAITFOR event filter; got:\n%s", out)
+	}
+
+	var roundTrip bytes.Buffer
+	if err := fmt.Format(&roundTrip, source.NewAnonymous(out)); err != nil {
+		t.Fatalf("formatted output must remain parseable: %v\nformatted:\n%s", err, out)
+	}
+}
+
+func TestFormatter_WaitForPredicateRepeatedWhenRemainsParseable(t *testing.T) {
+	input := "LET value = WAITFOR VALUE { ok: true } WHEN .ok WHEN .ok == true TIMEOUT 1\nRETURN value"
+	src := source.NewAnonymous(input)
+	var buf bytes.Buffer
+	fmt := New()
+
+	if err := fmt.Format(&buf, src); err != nil {
+		t.Fatalf("format failed: %v", err)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "WHEN .ok WHEN .ok == TRUE") {
+		t.Fatalf("expected WAITFOR predicate repeated WHEN clauses; got:\n%s", out)
 	}
 
 	var roundTrip bytes.Buffer

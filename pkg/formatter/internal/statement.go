@@ -552,7 +552,7 @@ func (f *statementFormatter) formatWaitForEventExpression(ctx *fql.WaitForEventE
 		f.clause.formatOptionsClause(opt.(*fql.OptionsClauseContext))
 	}
 
-	if filter := ctx.EventFilterClause(); filter != nil {
+	for _, filter := range ctx.AllEventFilterClause() {
 		f.p.space()
 		f.clause.formatEventFilterClause(filter.(*fql.EventFilterClauseContext))
 	}
@@ -572,7 +572,7 @@ func (f *statementFormatter) formatWaitForPredicateExpression(ctx *fql.WaitForPr
 		f.formatWaitForPredicate(pred.(*fql.WaitForPredicateContext))
 	}
 
-	if when := ctx.WaitForPredicateWhenClause(); when != nil {
+	for _, when := range ctx.AllWaitForPredicateWhenClause() {
 		f.p.space()
 		f.clause.formatWaitForPredicateWhenClause(when.(*fql.WaitForPredicateWhenClauseContext))
 	}

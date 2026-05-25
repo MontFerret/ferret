@@ -102,12 +102,21 @@ func resolveWaitPredicateMode(hasValue, hasExists, hasNot bool) waitForPredicate
 	return waitForPredicateModeBool
 }
 
-func waitPredicateWhenExpression(ctx fql.IWaitForPredicateWhenClauseContext) fql.IExpressionContext {
-	if ctx == nil {
+func waitPredicateWhenExpressions(ctxs []fql.IWaitForPredicateWhenClauseContext) []fql.IExpressionContext {
+	if len(ctxs) == 0 {
 		return nil
 	}
 
-	return ctx.Expression()
+	exprs := make([]fql.IExpressionContext, 0, len(ctxs))
+	for _, ctx := range ctxs {
+		if ctx == nil || ctx.Expression() == nil {
+			continue
+		}
+
+		exprs = append(exprs, ctx.Expression())
+	}
+
+	return exprs
 }
 
 func literalFromExpression(ctx fql.IExpressionContext) fql.ILiteralContext {

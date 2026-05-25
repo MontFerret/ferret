@@ -513,11 +513,11 @@ dispatchOptionsClause
     ;
 
 waitForEventExpression
-    : Event waitForEventName In waitForEventSource (optionsClause)? (eventFilterClause)? (timeoutClause)?
+    : Event waitForEventName In waitForEventSource (optionsClause)? (eventFilterClause)* (timeoutClause)?
     ;
 
 waitForPredicateExpression
-    : waitForPredicate (waitForPredicateWhenClause)? (timeoutClause)? (everyClause)? (backoffClause)? (jitterClause)?
+    : waitForPredicate (waitForPredicateWhenClause)* (timeoutClause)? (everyClause)? (backoffClause)? (jitterClause)?
     ;
 
 waitForPredicate
