@@ -27,5 +27,10 @@ FOR WHILE i < 1
 	DISPATCH "click" IN @d
 	RETURN i
 	`, "FOR WHILE i < 1\n    DISPATCH \"click\" IN @d\n    RETURN i"),
+		S(`
+FOR WHILE ready
+WAITFOR EVENT "navigation" IN doc WHEN .type == "match" TIMEOUT 10s
+RETURN ready
+`, "FOR WHILE ready\n    WAITFOR EVENT \"navigation\" IN doc WHEN .type == \"match\" TIMEOUT 10s\n    RETURN ready"),
 	})
 }

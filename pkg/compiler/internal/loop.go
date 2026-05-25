@@ -23,6 +23,7 @@ type (
 		recovery *RecoveryCompiler
 		sorts    *LoopSortCompiler
 		facts    *TypeFacts
+		wait     *WaitCompiler
 	}
 
 	loopOperandKind int
@@ -68,6 +69,7 @@ func (c *LoopCompiler) bind(
 	recovery *RecoveryCompiler,
 	sorts *LoopSortCompiler,
 	facts *TypeFacts,
+	wait *WaitCompiler,
 ) {
 	if c == nil {
 		return
@@ -81,6 +83,7 @@ func (c *LoopCompiler) bind(
 	c.recovery = recovery
 	c.sorts = sorts
 	c.facts = facts
+	c.wait = wait
 }
 
 // Compile processes a FOR expression from the FQL AST and generates the appropriate VM instructions.
@@ -417,6 +420,8 @@ func (c *LoopCompiler) compileForExpressionStatement(ctx fql.IForExpressionState
 	} else if fce := ctx.FunctionCallExpression(); fce != nil {
 		// Handle function calls (e.g., doSomething())
 		_ = c.exprs.CompileFunctionCallExpression(fce)
+	} else if wfe := ctx.WaitForExpression(); wfe != nil {
+		_ = c.wait.Compile(wfe)
 	} else if de := ctx.DispatchExpression(); de != nil {
 		_ = c.dispatch.Compile(de)
 	}
