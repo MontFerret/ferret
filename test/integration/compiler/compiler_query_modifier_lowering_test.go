@@ -67,6 +67,40 @@ func TestQueryModifierLowering_OneUsesDirectOpcode(t *testing.T) {
 	})
 }
 
+func TestQueryShorthandLowering(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		ProgramCheck("RETURN @doc[~ css`.items`]", func(prog *bytecode.Program) error {
+			if err := threeSlotQueryDescriptorFor(prog.Bytecode, bytecode.OpQuery); err != nil {
+				return err
+			}
+			if inspect.HasOpcode(prog, bytecode.OpQueryOne) {
+				return fmt.Errorf("did not expect OpQueryOne for regular query shorthand")
+			}
+
+			return nil
+		}, "regular query shorthand lowering"),
+		ProgramCheck("RETURN @doc[~? css`.items`]", func(prog *bytecode.Program) error {
+			if err := threeSlotQueryDescriptorFor(prog.Bytecode, bytecode.OpQueryOne); err != nil {
+				return err
+			}
+			if inspect.HasOpcode(prog, bytecode.OpQuery) {
+				return fmt.Errorf("did not expect OpQuery for query-one shorthand")
+			}
+			if inspect.HasOpcode(prog, bytecode.OpLength) {
+				return fmt.Errorf("did not expect OpLength for query-one shorthand")
+			}
+			if inspect.HasOpcode(prog, bytecode.OpLoadIndexConst) {
+				return fmt.Errorf("did not expect OpLoadIndexConst for query-one shorthand")
+			}
+			if inspect.HasOpcode(prog, bytecode.OpFail) {
+				return fmt.Errorf("did not expect OpFail for query-one shorthand")
+			}
+
+			return nil
+		}, "query-one shorthand lowering"),
+	})
+}
+
 func TestQueryModifierLowering_ExistsCount(t *testing.T) {
 	cases := []struct {
 		name   string

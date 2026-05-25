@@ -637,9 +637,15 @@ func (c *ExprCompiler) compileArrayApply(src bytecode.Operand, apply fql.IArrayA
 
 	dst := c.ctx.Function.Registers.Allocate()
 	span := diagnostics.SpanFromRuleContext(apply)
+	op := bytecode.OpQuery
+	resultType := core.TypeList
+	if apply.TildeQuestion() != nil {
+		op = bytecode.OpQueryOne
+		resultType = core.TypeAny
+	}
 
 	c.ctx.Program.Emitter.WithSpan(span, func() {
-		c.ctx.Program.Emitter.EmitABC(bytecode.OpQuery, dst, src, query)
+		c.ctx.Program.Emitter.EmitABC(op, dst, src, query)
 	})
 
 	if len(tail) > 0 {
@@ -647,7 +653,7 @@ func (c *ExprCompiler) compileArrayApply(src bytecode.Operand, apply fql.IArrayA
 	}
 
 	if dst.IsRegister() {
-		c.ctx.Function.Types.Set(dst, core.TypeList)
+		c.ctx.Function.Types.Set(dst, resultType)
 	}
 
 	return dst

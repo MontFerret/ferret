@@ -24,6 +24,7 @@ func TestQueryable(t *testing.T) {
 		Array("RETURN QUERY @q IN @doc USING css", []any{"ok"}, "Should apply query expression with param payload"),
 		Array("LET q = \".dynamic-var\"\nRETURN QUERY q IN @doc USING css", []any{"ok"}, "Should apply query expression with variable payload"),
 		Array("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", []any{"ok"}, "Should apply query literal with params"),
+		S("RETURN @doc[~? sql`SELECT * FROM featured`({ c: \"tablets\" })]", "ok", "Should apply query-one literal with params"),
 		Array("RETURN QUERY `SELECT * FROM products` IN @doc USING sql WITH { c: \"phones\" }", []any{"ok"}, "Should apply query expression with options"),
 		Array("RETURN @doc[~ text]", []any{"ok"}, "Should apply query literal with no string payload"),
 		Array(`RETURN @sections[* RETURN (QUERY "a" IN . USING css)][**]`, []any{"one", "two"}, "Should apply query expression to implicit current source"),
@@ -42,6 +43,7 @@ func TestQueryable(t *testing.T) {
 		var hasCSSParam bool
 		var hasCSSVar bool
 		var hasSQLParams bool
+		var hasSQLParamsOne bool
 		var hasSQLQueryExpr bool
 		var hasText bool
 
@@ -71,6 +73,17 @@ func TestQueryable(t *testing.T) {
 					value, err := params.Get(context.Background(), runtime.NewString("c"))
 					if err == nil && value == runtime.NewString("phones") {
 						hasSQLQueryExpr = true
+					}
+				}
+				if q.Payload == runtime.NewString("SELECT * FROM featured") {
+					params, err := runtime.ToMap(context.Background(), q.Options)
+					if err != nil {
+						t.Fatalf("sql query-one params decode failed: %v", err)
+					}
+
+					value, err := params.Get(context.Background(), runtime.NewString("c"))
+					if err == nil && value == runtime.NewString("tablets") {
+						hasSQLParamsOne = true
 					}
 				}
 
@@ -103,6 +116,9 @@ func TestQueryable(t *testing.T) {
 		}
 		if !hasSQLParams {
 			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and params containing %q=%q", "sql", "c", "laptops"))
+		}
+		if !hasSQLParamsOne {
+			t.Fatal(fmt.Sprintf("expected to receive a query-one shorthand with kind %q and params containing %q=%q", "sql", "c", "tablets"))
 		}
 	})
 }
@@ -218,6 +234,9 @@ func TestQueryableModifiers(t *testing.T) {
 	queryableMany := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("a"), runtime.NewString("b")))
 	queryableOne := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("only")))
 	queryableEmpty := mock.NewQueryable(runtime.NewArray(0))
+	queryableObject := mock.NewQueryable(runtime.NewArrayWith(runtime.NewObjectWith(map[string]runtime.Value{
+		"innerText": runtime.NewString("Title"),
+	})))
 
 	RunSpecs(t, []spec.Spec{
 		S("RETURN QUERY EXISTS `.items` IN @many USING css", true, "EXISTS should return true for non-empty result"),
@@ -227,6 +246,12 @@ func TestQueryableModifiers(t *testing.T) {
 		S("RETURN QUERY ONE `.items` IN @one USING css", "only", "ONE should return the only result"),
 		S("RETURN QUERY ONE `.items` IN @many USING css", "a", "ONE should return the first result"),
 		Nil("RETURN QUERY ONE `.items` IN @empty USING css", "ONE should return NONE for empty result"),
+		S("RETURN @many[~? css`.items`]", "a", "query-one shorthand should return the first result"),
+		Nil("RETURN @empty[~? css`.items`]", "query-one shorthand should return NONE for empty result"),
+		S("RETURN [@empty, @many][~? css`.items`]", "a", "query-one shorthand should short-circuit list source on first match"),
+		S("RETURN @node[~? css`h1`]?.innerText", "Title", "query-one shorthand should compose with optional access"),
+		Nil("RETURN @empty[~? css`.missing`]?.innerText", "query-one shorthand should allow optional access on NONE"),
+		Nil("LET obj = NONE RETURN obj?.prop", "safe member access should remain valid"),
 		spec.NewSpec("LET maybe = (QUERY ONE `.items` IN @empty USING css)?\nRETURN maybe.foo", "Optional query should not swallow the next instruction").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Contains: []string{"cannot read property", "\"foo\""}},
@@ -239,5 +264,6 @@ func TestQueryableModifiers(t *testing.T) {
 		"many":  queryableMany,
 		"one":   queryableOne,
 		"empty": queryableEmpty,
+		"node":  queryableObject,
 	}))
 }

@@ -845,7 +845,7 @@ arrayQuestionQuantifierValue
     ;
 
 arrayApply
-    : OpenBracket Tilde queryLiteral CloseBracket
+    : OpenBracket operator=(TildeQuestion | Tilde) queryLiteral CloseBracket
     ;
 
 inlineExpression

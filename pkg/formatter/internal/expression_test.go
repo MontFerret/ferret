@@ -155,6 +155,37 @@ func TestExpressionFormatter_QueryExpressionCountModifier(t *testing.T) {
 	}
 }
 
+func TestExpressionFormatter_QueryShorthand(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{
+			input: "RETURN doc[~css`h1`]",
+			want:  "doc[~ css`h1`]",
+		},
+		{
+			input: "RETURN doc[~?css`h1`]",
+			want:  "doc[~? css`h1`]",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			program := parseProgram(t, tt.input)
+			expr := mustFirst[*fql.ExpressionContext](t, program)
+
+			var buf bytes.Buffer
+			e := newEngine(source.NewAnonymous(tt.input), &buf, DefaultOptions())
+
+			e.expression.formatExpression(expr)
+			if got := buf.String(); got != tt.want {
+				t.Fatalf("unexpected query shorthand formatting: got %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestExpressionFormatter_FunctionCallErrorPolicyTail(t *testing.T) {
 	input := "RETURN FAIL() ON ERROR RETURN NONE"
 	program := parseProgram(t, input)
