@@ -281,7 +281,7 @@ func TestCompiler_GroupedWaitForEventRecoveryUsesTimeoutAwarePath(t *testing.T) 
 
 func TestCompiler_RecoveryReturnWideningKeepsGenericMemberAccess(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
-		ProgramCheck("LET x = QUERY VALUE `.items` IN @doc USING css ON ERROR RETURN { \"0\": \"fallback\" }\nRETURN x[0]", func(program *bytecode.Program) error {
+		ProgramCheck("LET x = QUERY ONE `.items` IN @doc USING css ON ERROR RETURN { \"0\": \"fallback\" }\nRETURN x[0]", func(program *bytecode.Program) error {
 			lastLoadPC := -1
 			lastLoadOpcode := bytecode.Opcode(0)
 

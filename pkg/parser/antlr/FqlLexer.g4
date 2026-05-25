@@ -13,6 +13,7 @@ Colon: ':';
 SemiColon: ';';
 Dot: '.';
 Comma: ',';
+TildeQuestion: '~?';
 Tilde: '~';
 OpenBracket: '[';
 CloseBracket: ']';

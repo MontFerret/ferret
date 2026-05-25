@@ -288,7 +288,11 @@ func (f *memberFormatter) formatArrayApply(ctx *fql.ArrayApplyContext) {
 	}
 
 	f.p.write("[")
-	f.p.write("~")
+	if ctx.TildeQuestion() != nil {
+		f.p.write("~?")
+	} else {
+		f.p.write("~")
+	}
 	f.p.space()
 
 	if q := ctx.QueryLiteral(); q != nil {
@@ -379,7 +383,6 @@ func (f *memberFormatter) formatQueryLiteral(ctx *fql.QueryLiteralContext) {
 	}
 
 	if sl := ctx.StringLiteral(); sl != nil {
-		f.p.space()
 		f.literal.formatStringLiteralNode(sl)
 
 		if ctx.OpenParen() != nil && ctx.Expression() != nil {

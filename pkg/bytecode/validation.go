@@ -287,7 +287,7 @@ func validateInstructions(program *Program) error {
 			if slot <= 0 || slot > paramsLen {
 				return fmt.Errorf("%w: pc %d parameter slot %d out of range", ErrInvalidInstruction, pc, slot)
 			}
-		case OpMakeCell, OpStoreCell, OpQuery:
+		case OpMakeCell, OpStoreCell, OpQuery, OpQueryExists, OpQueryCount, OpQueryOne:
 			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
 				return err
 			}
@@ -296,7 +296,8 @@ func validateInstructions(program *Program) error {
 				return err
 			}
 
-			if op == OpQuery {
+			switch op {
+			case OpQuery, OpQueryExists, OpQueryCount, OpQueryOne:
 				if err := validateValueOperand(src2, registers, constantsLen, pc, "src2"); err != nil {
 					return err
 				}

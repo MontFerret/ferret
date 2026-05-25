@@ -35,6 +35,18 @@ func (q *integrationQueryStub) Query(_ context.Context, query runtime.Query) (ru
 	return runtime.NewArray(0), nil
 }
 
+func (q *integrationQueryStub) QueryOne(ctx context.Context, query runtime.Query) (runtime.Value, error) {
+	return runtime.DefaultQueryOne(ctx, query, q.Query)
+}
+
+func (q *integrationQueryStub) QueryCount(ctx context.Context, query runtime.Query) (runtime.Int, error) {
+	return runtime.DefaultQueryCount(ctx, query, q.Query)
+}
+
+func (q *integrationQueryStub) QueryExists(ctx context.Context, query runtime.Query) (runtime.Boolean, error) {
+	return runtime.DefaultQueryExists(ctx, query, q.Query)
+}
+
 func (q *integrationQueryStub) String() string {
 	return "integration-query-stub"
 }

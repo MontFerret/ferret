@@ -205,3 +205,33 @@ func (p *Proxy[T]) Query(ctx context.Context, q runtime.Query) (runtime.List, er
 
 	return nil, ProxyError(p.target, runtime.TypeQueryable)
 }
+
+func (p *Proxy[T]) QueryOne(ctx context.Context, q runtime.Query) (runtime.Value, error) {
+	queryable, ok := p.target.(runtime.Queryable)
+
+	if ok {
+		return queryable.QueryOne(ctx, q)
+	}
+
+	return runtime.None, ProxyError(p.target, runtime.TypeQueryable)
+}
+
+func (p *Proxy[T]) QueryCount(ctx context.Context, q runtime.Query) (runtime.Int, error) {
+	queryable, ok := p.target.(runtime.Queryable)
+
+	if ok {
+		return queryable.QueryCount(ctx, q)
+	}
+
+	return runtime.ZeroInt, ProxyError(p.target, runtime.TypeQueryable)
+}
+
+func (p *Proxy[T]) QueryExists(ctx context.Context, q runtime.Query) (runtime.Boolean, error) {
+	queryable, ok := p.target.(runtime.Queryable)
+
+	if ok {
+		return queryable.QueryExists(ctx, q)
+	}
+
+	return runtime.False, ProxyError(p.target, runtime.TypeQueryable)
+}

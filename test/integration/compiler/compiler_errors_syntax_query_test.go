@@ -20,6 +20,24 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			"Missing query literal after QUERY",
 		),
 		Failure(
+			"RETURN QUERY ANY `.items` IN doc USING css",
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected IN after query literal",
+				Hint:    "Add IN <expr>, e.g. QUERY `.items` IN doc USING css.",
+			},
+			"Invalid ANY query payload",
+		),
+		Failure(
+			"RETURN QUERY VALUE `.items` IN doc USING css",
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected IN after query literal",
+				Hint:    "Add IN <expr>, e.g. QUERY `.items` IN doc USING css.",
+			},
+			"Invalid VALUE query payload",
+		),
+		Failure(
 			`RETURN QUERY EXISTS IN doc USING css`,
 			E{
 				Kind:    parserd.SyntaxError,

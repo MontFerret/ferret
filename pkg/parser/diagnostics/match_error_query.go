@@ -261,8 +261,6 @@ func isQueryModifierToken(node *TokenNode) bool {
 
 	switch node.Token().GetTokenType() {
 	case fql.FqlLexerExists,
-		fql.FqlLexerAny,
-		fql.FqlLexerValue,
 		fql.FqlLexerCount,
 		fql.FqlLexerOne:
 		return true

@@ -58,3 +58,15 @@ func (n *Node) Query(_ context.Context, q runtime.Query) (runtime.List, error) {
 		return runtime.NewArray(0), nil
 	}
 }
+
+func (n *Node) QueryOne(ctx context.Context, q runtime.Query) (runtime.Value, error) {
+	return runtime.DefaultQueryOne(ctx, q, n.Query)
+}
+
+func (n *Node) QueryCount(ctx context.Context, q runtime.Query) (runtime.Int, error) {
+	return runtime.DefaultQueryCount(ctx, q, n.Query)
+}
+
+func (n *Node) QueryExists(ctx context.Context, q runtime.Query) (runtime.Boolean, error) {
+	return runtime.DefaultQueryExists(ctx, q, n.Query)
+}

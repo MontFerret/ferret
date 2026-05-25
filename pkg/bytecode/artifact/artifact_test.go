@@ -3,6 +3,7 @@ package artifact
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"testing"
 
 	gojson "github.com/goccy/go-json"
@@ -222,7 +223,12 @@ func TestLoaderRejectsInvalidHeaders(t *testing.T) {
 		}
 
 		payload := append([]byte(nil), jsonData[headerSize:]...)
-		payload = bytes.Replace(payload, []byte(`"isaVersion":1`), []byte(`"isaVersion":2`), 1)
+		payload = bytes.Replace(
+			payload,
+			[]byte(fmt.Sprintf(`"isaVersion":%d`, header.ISAVersion)),
+			[]byte(fmt.Sprintf(`"isaVersion":%d`, header.ISAVersion+1)),
+			1,
+		)
 
 		mutated := make([]byte, headerSize+len(payload))
 		copy(mutated[:headerSize], jsonData[:headerSize])

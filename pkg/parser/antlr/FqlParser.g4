@@ -43,7 +43,7 @@ options { tokenVocab=FqlLexer; }
 	func (p *FqlParser) isQueryModifierAhead() bool {
 		la1 := p.GetTokenStream().LA(1)
 		switch la1 {
-		case FqlParserExists, FqlParserAny, FqlParserValue, FqlParserCount, FqlParserOne:
+		case FqlParserExists, FqlParserCount, FqlParserOne:
 			return true
 		case FqlParserIdentifier:
 			tok := p.GetTokenStream().LT(1)
@@ -60,8 +60,6 @@ options { tokenVocab=FqlLexer; }
 	func (p *FqlParser) isQueryModifierText(text string) bool {
 		return equalsFoldAscii(text, "EXISTS") ||
 			equalsFoldAscii(text, "COUNT") ||
-			equalsFoldAscii(text, "ANY") ||
-			equalsFoldAscii(text, "VALUE") ||
 			equalsFoldAscii(text, "ONE")
 	}
 
@@ -845,7 +843,7 @@ arrayQuestionQuantifierValue
     ;
 
 arrayApply
-    : OpenBracket Tilde queryLiteral CloseBracket
+    : OpenBracket operator=(TildeQuestion | Tilde) queryLiteral CloseBracket
     ;
 
 inlineExpression
@@ -1067,8 +1065,6 @@ queryExpression
 
 queryModifier
     : Exists
-    | Any
-    | Value
     | Count
     | One
     ;

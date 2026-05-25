@@ -803,6 +803,24 @@ loop:
 			out, err := applyQuery(ctx, src, descriptor)
 
 			state.setProducedOrRaiseDefault(pc, dst, out, err)
+		case bytecode.OpQueryExists:
+			src := readOperandValue(reg, constants, src1)
+			descriptor := readOperandValue(reg, constants, src2)
+			out, err := applyQueryExists(ctx, src, descriptor)
+
+			state.setOrRaiseDefault(pc, dst, out, err)
+		case bytecode.OpQueryCount:
+			src := readOperandValue(reg, constants, src1)
+			descriptor := readOperandValue(reg, constants, src2)
+			out, err := applyQueryCount(ctx, src, descriptor)
+
+			state.setOrRaiseDefault(pc, dst, out, err)
+		case bytecode.OpQueryOne:
+			src := readOperandValue(reg, constants, src1)
+			descriptor := readOperandValue(reg, constants, src2)
+			out, err := applyQueryOne(ctx, src, descriptor)
+
+			state.setProducedOrRaiseDefault(pc, dst, out, err)
 		case bytecode.OpDataSet:
 			state.writeBorrowedRegister(dst, data.NewDataSet(src1 == 1))
 		case bytecode.OpDataSetCollector:

@@ -51,7 +51,10 @@ const (
 	OpSetPropertyConst       // Set a property on a map or list using a constant key
 
 	// Integrated Query Operations
-	OpQuery // Apply a query to a value
+	OpQuery       // Apply a query to a value
+	OpQueryExists // Apply QUERY EXISTS to a value
+	OpQueryCount  // Apply QUERY COUNT to a value
+	OpQueryOne    // Apply QUERY ONE to a value
 
 	// Arithmetic Operations
 	OpAdd
@@ -275,6 +278,12 @@ func (op Opcode) String() string {
 		return "SETPRC"
 	case OpQuery:
 		return "QRY"
+	case OpQueryExists:
+		return "QRYEXISTS"
+	case OpQueryCount:
+		return "QRYCOUNT"
+	case OpQueryOne:
+		return "QRYONE"
 	case OpLoadProperty:
 		return "LOADPR"
 	case OpLoadPropertyOptional:

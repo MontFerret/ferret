@@ -535,7 +535,7 @@ func TestDisassemble_FailCommentWithMessageConstant(t *testing.T) {
 			bytecode.NewInstruction(bytecode.OpFail, bytecode.NewConstant(0)),
 		},
 		Constants: []runtime.Value{
-			runtime.NewString("QUERY VALUE expected at least one match"),
+			runtime.NewString("disassembler fail message"),
 		},
 	}
 
@@ -544,7 +544,7 @@ func TestDisassemble_FailCommentWithMessageConstant(t *testing.T) {
 		t.Fatalf("Disassemble() error: %v", err)
 	}
 
-	if !strings.Contains(out, `0: FAIL C0 ; "QUERY VALUE expected at least one match"`) {
+	if !strings.Contains(out, `0: FAIL C0 ; "disassembler fail message"`) {
 		t.Fatalf("expected FAIL line with message constant comment:\n%s", out)
 	}
 }

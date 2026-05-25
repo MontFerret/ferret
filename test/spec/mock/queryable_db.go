@@ -51,3 +51,15 @@ func (m *DBQueryable) Query(ctx context.Context, q runtime.Query) (runtime.List,
 		}),
 	), nil
 }
+
+func (m *DBQueryable) QueryOne(ctx context.Context, q runtime.Query) (runtime.Value, error) {
+	return runtime.DefaultQueryOne(ctx, q, m.Query)
+}
+
+func (m *DBQueryable) QueryCount(ctx context.Context, q runtime.Query) (runtime.Int, error) {
+	return runtime.DefaultQueryCount(ctx, q, m.Query)
+}
+
+func (m *DBQueryable) QueryExists(ctx context.Context, q runtime.Query) (runtime.Boolean, error) {
+	return runtime.DefaultQueryExists(ctx, q, m.Query)
+}

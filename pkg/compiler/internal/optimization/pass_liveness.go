@@ -225,7 +225,7 @@ func isBinaryUseDefOpcode(opcode bytecode.Opcode) bool {
 		bytecode.OpLoadIndex, bytecode.OpLoadIndexOptional, bytecode.OpLoadIndexConst, bytecode.OpLoadIndexOptionalConst,
 		bytecode.OpLoadKey, bytecode.OpLoadKeyOptional, bytecode.OpLoadKeyConst, bytecode.OpLoadKeyOptionalConst,
 		bytecode.OpLoadProperty, bytecode.OpLoadPropertyOptional, bytecode.OpLoadPropertyConst, bytecode.OpLoadPropertyOptionalConst,
-		bytecode.OpQuery:
+		bytecode.OpQuery, bytecode.OpQueryExists, bytecode.OpQueryCount, bytecode.OpQueryOne:
 		return true
 	default:
 		return false

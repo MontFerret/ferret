@@ -41,10 +41,16 @@ func matchQueryOperatorErrors(src *source.Source, err *diagnostics.Diagnostic, o
 		return false
 	}
 
-	if isStringLiteral(offending) && hasPrevToken(offending, "~", 4) && !isMissingStringLiteral(err.Message) {
+	operator := arrayApplyOperator(offending)
+	if operator == "" {
+		operator = "~"
+	}
+	example := fmt.Sprintf("doc[%s css`...`]", operator)
+
+	if isStringLiteral(offending) && hasPrevToken(offending, operator, 4) && !isMissingStringLiteral(err.Message) {
 		span := spanFromTokenSafe(offending.Token(), src)
 		err.Message = "Expected query type before query literal"
-		err.Hint = "Provide a type name before the query string, e.g. doc[~ css`...`]."
+		err.Hint = fmt.Sprintf("Provide a type name before the query string, e.g. %s.", example)
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing query type"),
 		}
@@ -52,13 +58,24 @@ func matchQueryOperatorErrors(src *source.Source, err *diagnostics.Diagnostic, o
 		return true
 	}
 
-	if is(offending, "~") {
+	if is(offending, operator) {
+		if next := offending.Next(); operator == "~?" && isStringLiteral(next) && !isMissingStringLiteral(err.Message) {
+			span := spanFromTokenSafe(next.Token(), src)
+			err.Message = "Expected query type before query literal"
+			err.Hint = fmt.Sprintf("Provide a type name before the query string, e.g. %s.", example)
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing query type"),
+			}
+
+			return true
+		}
+
 		span := spanFromTokenSafe(offending.Token(), src)
 		span.Start = span.End
 		span.End = span.Start + 1
 
-		err.Message = "Expected query literal after '~'"
-		err.Hint = "Provide a query literal, e.g. doc[~ css`...`]."
+		err.Message = fmt.Sprintf("Expected query literal after '%s'", operator)
+		err.Hint = fmt.Sprintf("Provide a query literal, e.g. %s.", example)
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing query literal"),
 		}
@@ -66,7 +83,7 @@ func matchQueryOperatorErrors(src *source.Source, err *diagnostics.Diagnostic, o
 		return true
 	}
 
-	if prev := offending.Prev(); prev != nil && is(prev, "~") {
+	if prev := offending.Prev(); prev != nil && is(prev, operator) {
 		if isIdentifier(offending) {
 			queryType := offending.GetText()
 			span := spanFromTokenSafe(offending.Token(), src)
@@ -74,7 +91,7 @@ func matchQueryOperatorErrors(src *source.Source, err *diagnostics.Diagnostic, o
 			span.End = span.Start + 1
 
 			err.Message = fmt.Sprintf("Expected query string after '%s'", queryType)
-			err.Hint = "Provide a query string, e.g. doc[~ css`...`]."
+			err.Hint = fmt.Sprintf("Provide a query string, e.g. %s.", example)
 			err.Spans = []diagnostics.ErrorSpan{
 				diagnostics.NewMainErrorSpan(span, "missing query string"),
 			}
@@ -86,8 +103,8 @@ func matchQueryOperatorErrors(src *source.Source, err *diagnostics.Diagnostic, o
 		span.Start = span.End
 		span.End = span.Start + 1
 
-		err.Message = "Expected query literal after '~'"
-		err.Hint = "Provide a query literal, e.g. doc[~ css`...`]."
+		err.Message = fmt.Sprintf("Expected query literal after '%s'", operator)
+		err.Hint = fmt.Sprintf("Provide a query literal, e.g. %s.", example)
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing query literal"),
 		}
@@ -95,14 +112,14 @@ func matchQueryOperatorErrors(src *source.Source, err *diagnostics.Diagnostic, o
 		return true
 	}
 
-	if prev := offending.Prev(); prev != nil && isIdentifier(prev) && hasPrevToken(prev, "~", 4) {
+	if prev := offending.Prev(); prev != nil && isIdentifier(prev) && hasPrevToken(prev, operator, 4) {
 		queryType := prev.GetText()
 		span := spanFromTokenSafe(prev.Token(), src)
 		span.Start = span.End
 		span.End = span.Start + 1
 
 		err.Message = fmt.Sprintf("Expected query string after '%s'", queryType)
-		err.Hint = "Provide a query string, e.g. doc[~ css`...`]."
+		err.Hint = fmt.Sprintf("Provide a query string, e.g. %s.", example)
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing query string"),
 		}
@@ -261,12 +278,39 @@ func isArrayQuestionHead(node *TokenNode) bool {
 }
 
 func isArrayApplyContext(node *TokenNode) bool {
-	_, tilde := prevTokenDistance(node, "~", 8)
-	if tilde == nil {
+	_, operator := prevArrayApplyOperator(node, 8)
+	if operator == nil {
 		return false
 	}
 
-	return tilde.Prev() != nil && is(tilde.Prev(), "[")
+	return operator.Prev() != nil && is(operator.Prev(), "[")
+}
+
+func arrayApplyOperator(node *TokenNode) string {
+	_, operator := prevArrayApplyOperator(node, 8)
+	if operator == nil {
+		return ""
+	}
+
+	return operator.GetText()
+}
+
+func prevArrayApplyOperator(node *TokenNode, max int) (int, *TokenNode) {
+	tildeQuestionDistance, tildeQuestion := prevTokenDistance(node, "~?", max)
+	tildeDistance, tilde := prevTokenDistance(node, "~", max)
+
+	switch {
+	case tildeQuestion != nil && tilde != nil:
+		if tildeQuestionDistance <= tildeDistance {
+			return tildeQuestionDistance, tildeQuestion
+		}
+
+		return tildeDistance, tilde
+	case tildeQuestion != nil:
+		return tildeQuestionDistance, tildeQuestion
+	default:
+		return tildeDistance, tilde
+	}
 }
 
 func isArrayStarHead(star *TokenNode) bool {
