@@ -45,7 +45,22 @@
 
 ---
 
-> **📢 Notice:** This branch contains the upcoming **Ferret v2**. For the stable v1 release, please visit [Ferret v1](https://github.com/MontFerret/ferret/tree/v1).
+[Try it!](https://www.montferret.dev/try/) [Docs](https://www.montferret.dev/docs/) [CLI](https://github.com/MontFerret/cli) [Test runner](https://github.com/MontFerret/lab) [Web worker](https://github.com/MontFerret/worker)
+
+---
+
+## Explore Ferret v2
+
+Ferret v2 is currently in alpha. You can try the new syntax in the playground and read more about the design behind the new runtime and language capabilities:
+
+- [Try Ferret v2 in the Playground](https://www.montferret.dev/try/next/)
+- [On the Road to Ferret v2](https://www.montferret.dev/blog/ferret-v2-announcement/)
+- [Inside Ferret v2: The New Execution Model](https://www.montferret.dev/blog/ferret-v2-execution-model/)
+- [Inside Ferret v2: New Language Capabilities](https://www.montferret.dev/blog/ferret-v2-new-syntax/)
+
+---
+
+> **Notice:** This branch contains the upcoming **Ferret v2**. For the stable v1 release, please visit [Ferret v1](https://github.com/MontFerret/ferret/tree/v1).
 
 ---
 
