@@ -45,10 +45,6 @@
 
 ---
 
-[Try it!](https://www.montferret.dev/try/) [Docs](https://www.montferret.dev/docs/) [CLI](https://github.com/MontFerret/cli) [Test runner](https://github.com/MontFerret/lab) [Web worker](https://github.com/MontFerret/worker)
-
----
-
 ## Explore Ferret v2
 
 Ferret v2 is currently in alpha. You can try the new syntax in the playground and read more about the design behind the new runtime and language capabilities:
