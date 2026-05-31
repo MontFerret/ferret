@@ -129,6 +129,11 @@ func (c *WaitCompiler) compileWaitForTriggerClause(ctx fql.IWaitForTriggerClause
 	c.ctx.Function.Symbols.EnterScope()
 	defer c.ctx.Function.Symbols.ExitScope()
 
+	if inline := ctx.WaitForTriggerInlineStatement(); inline != nil {
+		c.compileWaitForTriggerInlineStatement(inline)
+		return
+	}
+
 	for _, stmt := range ctx.AllWaitForTriggerStatement() {
 		c.compileWaitForTriggerStatement(stmt)
 	}
@@ -152,6 +157,38 @@ func (c *WaitCompiler) compileWaitForTriggerStatement(ctx fql.IWaitForTriggerSta
 	} else if de := ctx.DispatchExpression(); de != nil {
 		c.dispatch.Compile(de)
 	}
+}
+
+func (c *WaitCompiler) compileWaitForTriggerInlineStatement(ctx fql.IWaitForTriggerInlineStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	if vd := ctx.VariableDeclaration(); vd != nil {
+		c.bindings.CompileVariableDeclaration(vd)
+	} else if as := ctx.AssignmentStatement(); as != nil {
+		c.bindings.CompileAssignmentStatement(as)
+	} else if ds := ctx.DeleteStatement(); ds != nil {
+		c.bindings.CompileDeleteStatement(ds)
+	} else if fce := ctx.FunctionCallExpression(); fce != nil {
+		c.exprs.CompileFunctionCallExpression(fce)
+	} else if dispatch := ctx.WaitForTriggerInlineDispatchStatement(); dispatch != nil {
+		c.compileWaitForTriggerInlineDispatchStatement(dispatch)
+	}
+}
+
+func (c *WaitCompiler) compileWaitForTriggerInlineDispatchStatement(ctx fql.IWaitForTriggerInlineDispatchStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	c.dispatch.compileCore(
+		ctx.DispatchTarget(),
+		ctx.DispatchEventName(),
+		ctx.DispatchWithClause(),
+		ctx.DispatchOptionsClause(),
+		c.dispatch.dispatchSpan(ctx),
+	)
 }
 
 func (c *WaitCompiler) emitWaitEventIteration(

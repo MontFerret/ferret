@@ -354,6 +354,22 @@ func (s *BaseFqlParserListener) EnterWaitForTriggerStatement(ctx *WaitForTrigger
 // ExitWaitForTriggerStatement is called when production waitForTriggerStatement is exited.
 func (s *BaseFqlParserListener) ExitWaitForTriggerStatement(ctx *WaitForTriggerStatementContext) {}
 
+// EnterWaitForTriggerInlineStatement is called when production waitForTriggerInlineStatement is entered.
+func (s *BaseFqlParserListener) EnterWaitForTriggerInlineStatement(ctx *WaitForTriggerInlineStatementContext) {
+}
+
+// ExitWaitForTriggerInlineStatement is called when production waitForTriggerInlineStatement is exited.
+func (s *BaseFqlParserListener) ExitWaitForTriggerInlineStatement(ctx *WaitForTriggerInlineStatementContext) {
+}
+
+// EnterWaitForTriggerInlineDispatchStatement is called when production waitForTriggerInlineDispatchStatement is entered.
+func (s *BaseFqlParserListener) EnterWaitForTriggerInlineDispatchStatement(ctx *WaitForTriggerInlineDispatchStatementContext) {
+}
+
+// ExitWaitForTriggerInlineDispatchStatement is called when production waitForTriggerInlineDispatchStatement is exited.
+func (s *BaseFqlParserListener) ExitWaitForTriggerInlineDispatchStatement(ctx *WaitForTriggerInlineDispatchStatementContext) {
+}
+
 // EnterWaitForPredicateExpression is called when production waitForPredicateExpression is entered.
 func (s *BaseFqlParserListener) EnterWaitForPredicateExpression(ctx *WaitForPredicateExpressionContext) {
 }

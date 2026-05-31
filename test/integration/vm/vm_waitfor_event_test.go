@@ -150,9 +150,7 @@ func TestWaitforEventTrigger(t *testing.T) {
 		return []spec.Spec{
 			Fn(`LET target = @target
 LET evt = WAITFOR EVENT "test" IN target
-	TRIGGER (
-		target <- "test"
-	)
+	TRIGGER target <- "test"
 	TIMEOUT 20ms
 RETURN evt.type`, expectTriggerObservable(armed, "test", 1, 1, 1), "WAITFOR EVENT trigger should run after subscription is armed").Env(vm.WithParams(map[string]runtime.Value{
 				"target": armed,

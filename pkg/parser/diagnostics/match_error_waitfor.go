@@ -37,12 +37,22 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 		}
 	}
 
-	if spanNode := waitForTriggerMissingBlock(offending); spanNode != nil {
+	if spanNode := waitForTriggerInlineWaitfor(offending); spanNode != nil {
 		span := spanFromTokenSafe(spanNode.Token(), src)
-		err.Message = "Expected parenthesized block after 'TRIGGER' in WAITFOR EVENT"
-		err.Hint = "Use TRIGGER (...), e.g. TRIGGER (target <- \"click\")."
+		err.Message = "Nested WAITFOR in TRIGGER shorthand must use a parenthesized block"
+		err.Hint = "Use TRIGGER (...), e.g. TRIGGER (WAITFOR EVENT \"ready\" IN target)."
 		err.Spans = []diagnostics.ErrorSpan{
-			diagnostics.NewMainErrorSpan(span, "missing trigger block"),
+			diagnostics.NewMainErrorSpan(span, "parenthesize nested wait"),
+		}
+		return true
+	}
+
+	if spanNode := waitForTriggerInvalidBody(offending); spanNode != nil {
+		span := spanFromTokenSafe(spanNode.Token(), src)
+		err.Message = "Expected trigger statement after 'TRIGGER' in WAITFOR EVENT"
+		err.Hint = "Use a side-effect statement or TRIGGER (...), e.g. TRIGGER target <- \"click\"."
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing trigger statement"),
 		}
 		return true
 	}
@@ -97,7 +107,25 @@ func waitForPredicateKeyword(offending *TokenNode) (string, *TokenNode) {
 	return "", nil
 }
 
-func waitForTriggerMissingBlock(offending *TokenNode) *TokenNode {
+func waitForTriggerInlineWaitfor(offending *TokenNode) *TokenNode {
+	if offending == nil {
+		return nil
+	}
+
+	for curr := offending; curr != nil; curr = curr.Prev() {
+		if is(curr, "TRIGGER") {
+			return nil
+		}
+
+		if is(curr, "WAITFOR") && is(curr.Prev(), "TRIGGER") && hasWaitforBefore(curr.Prev()) {
+			return curr.Prev()
+		}
+	}
+
+	return nil
+}
+
+func waitForTriggerInvalidBody(offending *TokenNode) *TokenNode {
 	if offending == nil {
 		return nil
 	}

@@ -93,19 +93,30 @@ func TestSyntaxErrorsWaitfor(t *testing.T) {
 			RETURN ok
 		`, E{
 			Kind:    parserd.SyntaxError,
-			Message: "Expected parenthesized block after 'TRIGGER' in WAITFOR EVENT",
-			Hint:    "Use TRIGGER (...), e.g. TRIGGER (target <- \"click\").",
-		}, "WAITFOR EVENT TRIGGER requires a parenthesized block"),
+			Message: "Expected trigger statement after 'TRIGGER' in WAITFOR EVENT",
+			Hint:    "Use a side-effect statement or TRIGGER (...), e.g. TRIGGER target <- \"click\".",
+		}, "WAITFOR EVENT TRIGGER requires a body"),
 		Failure(`
 			LET obs = {}
 			LET ok = WAITFOR EVENT "test" IN obs
-				TRIGGER button <- "click"
+				TRIGGER WAITFOR EVENT "inner" IN obs
 				TIMEOUT 5s
 			RETURN ok
 		`, E{
 			Kind:    parserd.SyntaxError,
-			Message: "Expected parenthesized block after 'TRIGGER' in WAITFOR EVENT",
-			Hint:    "Use TRIGGER (...), e.g. TRIGGER (target <- \"click\").",
-		}, "WAITFOR EVENT TRIGGER rejects non-parenthesized statements"),
+			Message: "Nested WAITFOR in TRIGGER shorthand must use a parenthesized block",
+			Hint:    "Use TRIGGER (...), e.g. TRIGGER (WAITFOR EVENT \"ready\" IN target).",
+		}, "WAITFOR EVENT TRIGGER shorthand rejects nested WAITFOR"),
+		Failure(`
+			LET obs = {}
+			LET ok = WAITFOR EVENT "test" IN obs
+				TRIGGER 1 + 2
+				TIMEOUT 5s
+			RETURN ok
+		`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Expected trigger statement after 'TRIGGER' in WAITFOR EVENT",
+			Hint:    "Use a side-effect statement or TRIGGER (...), e.g. TRIGGER target <- \"click\".",
+		}, "WAITFOR EVENT TRIGGER shorthand rejects arbitrary expressions"),
 	})
 }

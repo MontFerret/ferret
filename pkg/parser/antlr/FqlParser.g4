@@ -519,6 +519,7 @@ waitForEventExpression
 
 waitForTriggerClause
     : Trigger OpenParen waitForTriggerStatement* CloseParen
+    | Trigger waitForTriggerInlineStatement
     ;
 
 waitForTriggerStatement
@@ -528,6 +529,19 @@ waitForTriggerStatement
     | functionCallExpression
     | waitForExpression
     | dispatchExpression
+    ;
+
+waitForTriggerInlineStatement
+    : variableDeclaration
+    | assignmentStatement
+    | deleteStatement
+    | functionCallExpression
+    | waitForTriggerInlineDispatchStatement
+    ;
+
+waitForTriggerInlineDispatchStatement
+    : Dispatch dispatchEventName In dispatchTarget (dispatchWithClause)? (dispatchOptionsClause)?
+    | dispatchTarget DispatchReceive dispatchEventName
     ;
 
 waitForPredicateExpression

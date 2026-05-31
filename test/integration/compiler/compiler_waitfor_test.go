@@ -113,6 +113,29 @@ func TestWaitforPredicateWhenCompiles(t *testing.T) {
 		`, noCompilerError, "WAITFOR EVENT should compile a trigger before timeout"),
 		ProgramCheck(`
 			LET obs = []
+			LET button = {}
+			RETURN WAITFOR EVENT "test" IN obs
+				TRIGGER button <- "click"
+				TIMEOUT 5ms
+				ON TIMEOUT RETURN NONE
+		`, noCompilerError, "WAITFOR EVENT should compile inline dispatch trigger before timeout"),
+		ProgramCheck(`
+			LET obs = []
+			VAR clicked = false
+			RETURN WAITFOR EVENT "test" IN obs
+				TRIGGER clicked = true
+				TIMEOUT 5ms
+				ON TIMEOUT RETURN NONE
+		`, noCompilerError, "WAITFOR EVENT should compile inline assignment trigger before timeout"),
+		ProgramCheck(`
+			LET obs = []
+			RETURN WAITFOR EVENT "test" IN obs
+				TRIGGER ()
+				TIMEOUT 5ms
+				ON TIMEOUT RETURN NONE
+		`, noCompilerError, "WAITFOR EVENT should compile empty trigger block before timeout"),
+		ProgramCheck(`
+			LET obs = []
 			FOR i IN [1, 2]
 				WAITFOR EVENT "test" IN obs TIMEOUT 5ms ON TIMEOUT RETURN NONE
 				RETURN i
