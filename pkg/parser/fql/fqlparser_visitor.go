@@ -166,6 +166,12 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#waitForEventExpression.
 	VisitWaitForEventExpression(ctx *WaitForEventExpressionContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#waitForTriggerClause.
+	VisitWaitForTriggerClause(ctx *WaitForTriggerClauseContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForTriggerStatement.
+	VisitWaitForTriggerStatement(ctx *WaitForTriggerStatementContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#waitForPredicateExpression.
 	VisitWaitForPredicateExpression(ctx *WaitForPredicateExpressionContext) interface{}
 

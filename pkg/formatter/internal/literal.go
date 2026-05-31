@@ -139,6 +139,8 @@ func (f *literalFormatter) formatPropertyNameWith(p *printer, ctx *fql.PropertyN
 		f.formatStringLiteralNodeWith(p, ctx.StringLiteral())
 	case ctx.Param() != nil:
 		f.expression.formatParamWith(p, ctx.Param().(*fql.ParamContext))
+	case ctx.Trigger() != nil:
+		p.write(ctx.Trigger().GetText())
 	case ctx.SafeReservedWord() != nil:
 		p.write(ctx.SafeReservedWord().GetText())
 	case ctx.UnsafeReservedWord() != nil:

@@ -10,6 +10,8 @@ import (
 // It transforms wait operations into VM instructions for event streaming and polling.
 type WaitCompiler struct {
 	ctx      *CompilationSession
+	bindings *BindingCompiler
+	dispatch *DispatchCompiler
 	exprs    *ExprCompiler
 	literals *LiteralCompiler
 	recovery *RecoveryCompiler
@@ -23,11 +25,13 @@ func NewWaitCompiler(ctx *CompilationSession) *WaitCompiler {
 	}
 }
 
-func (c *WaitCompiler) bind(exprs *ExprCompiler, literals *LiteralCompiler, recovery *RecoveryCompiler, facts *TypeFacts) {
+func (c *WaitCompiler) bind(bindings *BindingCompiler, dispatch *DispatchCompiler, exprs *ExprCompiler, literals *LiteralCompiler, recovery *RecoveryCompiler, facts *TypeFacts) {
 	if c == nil {
 		return
 	}
 
+	c.bindings = bindings
+	c.dispatch = dispatch
 	c.exprs = exprs
 	c.literals = literals
 	c.recovery = recovery
@@ -129,6 +133,7 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 	}
 
 	c.emitWaitEventStreamSetup(state, streamReg)
+	c.compileWaitEventTrigger(ctx)
 
 	start := c.ctx.Program.Emitter.NewLabel()
 	iterationDone := c.ctx.Program.Emitter.NewLabel()

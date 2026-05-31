@@ -559,9 +559,77 @@ func (f *statementFormatter) formatWaitForEventExpression(ctx *fql.WaitForEventE
 		f.clause.formatEventFilterClause(filter.(*fql.EventFilterClauseContext))
 	}
 
+	if trigger := ctx.WaitForTriggerClause(); trigger != nil {
+		f.p.space()
+		f.formatWaitForTriggerClause(trigger.(*fql.WaitForTriggerClauseContext))
+	}
+
 	if timeout := ctx.TimeoutClause(); timeout != nil {
 		f.p.space()
 		f.clause.formatTimeoutClause(timeout.(*fql.TimeoutClauseContext))
+	}
+}
+
+func (f *statementFormatter) formatWaitForTriggerClause(ctx *fql.WaitForTriggerClauseContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordTrigger)
+	f.p.space()
+	f.p.write("(")
+
+	stmts := ctx.AllWaitForTriggerStatement()
+	if len(stmts) == 0 {
+		f.p.write(")")
+		return
+	}
+
+	start := f.trivia.stopIndex(ctx) + 1
+	if openParen := ctx.OpenParen(); openParen != nil {
+		if sym := openParen.GetSymbol(); sym != nil {
+			start = sym.GetStop() + 1
+		}
+	}
+
+	first := stmts[0].(antlr.ParserRuleContext)
+	f.p.withIndent(func() {
+		f.trivia.emitBetweenIndices(start, f.trivia.startIndex(first))
+
+		for i, stmt := range stmts {
+			f.formatWaitForTriggerStatement(stmt.(*fql.WaitForTriggerStatementContext))
+
+			if i < len(stmts)-1 {
+				f.trivia.emitBetween(stmt.(antlr.ParserRuleContext), stmts[i+1].(antlr.ParserRuleContext))
+			}
+		}
+	})
+
+	if !f.p.atLineStart {
+		f.p.newline()
+	}
+
+	f.p.write(")")
+}
+
+func (f *statementFormatter) formatWaitForTriggerStatement(ctx *fql.WaitForTriggerStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	switch {
+	case ctx.VariableDeclaration() != nil:
+		f.formatVariableDeclaration(ctx.VariableDeclaration().(*fql.VariableDeclarationContext))
+	case ctx.AssignmentStatement() != nil:
+		f.formatAssignmentStatement(ctx.AssignmentStatement().(*fql.AssignmentStatementContext))
+	case ctx.DeleteStatement() != nil:
+		f.formatDeleteStatement(ctx.DeleteStatement().(*fql.DeleteStatementContext))
+	case ctx.FunctionCallExpression() != nil:
+		f.expression.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
+	case ctx.WaitForExpression() != nil:
+		f.formatWaitForExpression(ctx.WaitForExpression().(*fql.WaitForExpressionContext))
+	case ctx.DispatchExpression() != nil:
+		f.formatDispatchExpression(ctx.DispatchExpression().(*fql.DispatchExpressionContext))
 	}
 }
 

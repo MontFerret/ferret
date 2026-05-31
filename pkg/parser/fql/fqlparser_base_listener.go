@@ -342,6 +342,18 @@ func (s *BaseFqlParserListener) EnterWaitForEventExpression(ctx *WaitForEventExp
 // ExitWaitForEventExpression is called when production waitForEventExpression is exited.
 func (s *BaseFqlParserListener) ExitWaitForEventExpression(ctx *WaitForEventExpressionContext) {}
 
+// EnterWaitForTriggerClause is called when production waitForTriggerClause is entered.
+func (s *BaseFqlParserListener) EnterWaitForTriggerClause(ctx *WaitForTriggerClauseContext) {}
+
+// ExitWaitForTriggerClause is called when production waitForTriggerClause is exited.
+func (s *BaseFqlParserListener) ExitWaitForTriggerClause(ctx *WaitForTriggerClauseContext) {}
+
+// EnterWaitForTriggerStatement is called when production waitForTriggerStatement is entered.
+func (s *BaseFqlParserListener) EnterWaitForTriggerStatement(ctx *WaitForTriggerStatementContext) {}
+
+// ExitWaitForTriggerStatement is called when production waitForTriggerStatement is exited.
+func (s *BaseFqlParserListener) ExitWaitForTriggerStatement(ctx *WaitForTriggerStatementContext) {}
+
 // EnterWaitForPredicateExpression is called when production waitForPredicateExpression is entered.
 func (s *BaseFqlParserListener) EnterWaitForPredicateExpression(ctx *WaitForPredicateExpressionContext) {
 }

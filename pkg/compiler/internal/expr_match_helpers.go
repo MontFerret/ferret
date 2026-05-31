@@ -422,6 +422,8 @@ func matchPropertyNameKey(ctx fql.IPropertyNameContext) (string, bool) {
 
 	if id := ctx.Identifier(); id != nil {
 		name = id.GetText()
+	} else if trigger := ctx.Trigger(); trigger != nil {
+		name = trigger.GetText()
 	} else if srw := ctx.SafeReservedWord(); srw != nil {
 		name = srw.GetText()
 	} else if urw := ctx.UnsafeReservedWord(); urw != nil {

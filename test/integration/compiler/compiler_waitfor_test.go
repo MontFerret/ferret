@@ -96,9 +96,21 @@ func TestWaitforPredicateWhenCompiles(t *testing.T) {
 			RETURN WAITFOR EVENT "test" IN obs
 				WHEN .type == "match"
 				WHEN BOOM(.)
+				TRIGGER (
+					LET local = 1
+				)
 				TIMEOUT 5ms
 				ON TIMEOUT RETURN NONE
-		`, expectHostFunction("BOOM", 1), "WAITFOR EVENT should compile repeated WHEN host calls and timeout tail"),
+		`, expectHostFunction("BOOM", 1), "WAITFOR EVENT should compile repeated WHEN, trigger, and timeout tail"),
+		ProgramCheck(`
+			LET obs = []
+			RETURN WAITFOR EVENT "test" IN obs
+				TRIGGER (
+					LET local = 1
+				)
+				TIMEOUT 5ms
+				ON TIMEOUT RETURN NONE
+		`, noCompilerError, "WAITFOR EVENT should compile a trigger before timeout"),
 		ProgramCheck(`
 			LET obs = []
 			FOR i IN [1, 2]

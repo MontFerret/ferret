@@ -26,6 +26,7 @@ func (c *WaitCompiler) compileEvent(ctx fql.IWaitForEventExpressionContext) byte
 
 	c.ctx.Program.Emitter.EmitLoadNone(resultReg)
 	c.emitWaitEventStreamSetup(state, streamReg)
+	c.compileWaitEventTrigger(ctx)
 
 	start := c.ctx.Program.Emitter.NewLabel()
 	end := c.ctx.Program.Emitter.NewLabel()
@@ -56,6 +57,7 @@ func (c *WaitCompiler) compileEventWithTimeoutRecovery(
 	}
 
 	c.emitWaitEventStreamSetup(state, streamReg)
+	c.compileWaitEventTrigger(ctx)
 
 	start := c.ctx.Program.Emitter.NewLabel()
 	iterationDone := c.ctx.Program.Emitter.NewLabel()
@@ -104,6 +106,52 @@ func (c *WaitCompiler) emitWaitEventStreamSetup(state waitEventCompileState, str
 		c.ctx.Program.Emitter.EmitABC(bytecode.OpStream, streamReg, state.eventReg, state.optsReg)
 		c.ctx.Program.Emitter.EmitABC(bytecode.OpStreamIter, streamReg, streamReg, state.timeoutReg)
 	})
+}
+
+func (c *WaitCompiler) compileWaitEventTrigger(ctx fql.IWaitForEventExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	trigger := ctx.WaitForTriggerClause()
+	if trigger == nil {
+		return
+	}
+
+	c.compileWaitForTriggerClause(trigger)
+}
+
+func (c *WaitCompiler) compileWaitForTriggerClause(ctx fql.IWaitForTriggerClauseContext) {
+	if ctx == nil {
+		return
+	}
+
+	c.ctx.Function.Symbols.EnterScope()
+	defer c.ctx.Function.Symbols.ExitScope()
+
+	for _, stmt := range ctx.AllWaitForTriggerStatement() {
+		c.compileWaitForTriggerStatement(stmt)
+	}
+}
+
+func (c *WaitCompiler) compileWaitForTriggerStatement(ctx fql.IWaitForTriggerStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	if vd := ctx.VariableDeclaration(); vd != nil {
+		c.bindings.CompileVariableDeclaration(vd)
+	} else if as := ctx.AssignmentStatement(); as != nil {
+		c.bindings.CompileAssignmentStatement(as)
+	} else if ds := ctx.DeleteStatement(); ds != nil {
+		c.bindings.CompileDeleteStatement(ds)
+	} else if fce := ctx.FunctionCallExpression(); fce != nil {
+		c.exprs.CompileFunctionCallExpression(fce)
+	} else if wfe := ctx.WaitForExpression(); wfe != nil {
+		c.Compile(wfe)
+	} else if de := ctx.DispatchExpression(); de != nil {
+		c.dispatch.Compile(de)
+	}
 }
 
 func (c *WaitCompiler) emitWaitEventIteration(

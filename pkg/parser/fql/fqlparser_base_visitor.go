@@ -219,6 +219,14 @@ func (v *BaseFqlParserVisitor) VisitWaitForEventExpression(ctx *WaitForEventExpr
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitWaitForTriggerClause(ctx *WaitForTriggerClauseContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForTriggerStatement(ctx *WaitForTriggerStatementContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitWaitForPredicateExpression(ctx *WaitForPredicateExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }

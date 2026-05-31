@@ -85,5 +85,27 @@ func TestSyntaxErrorsWaitfor(t *testing.T) {
 		`, E{
 			Kind: parserd.SyntaxError,
 		}, "Legacy FILTER keyword is invalid in WAITFOR EVENT"),
+		Failure(`
+			LET obs = {}
+			LET ok = WAITFOR EVENT "test" IN obs
+				TRIGGER
+				TIMEOUT 5s
+			RETURN ok
+		`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Expected parenthesized block after 'TRIGGER' in WAITFOR EVENT",
+			Hint:    "Use TRIGGER (...), e.g. TRIGGER (target <- \"click\").",
+		}, "WAITFOR EVENT TRIGGER requires a parenthesized block"),
+		Failure(`
+			LET obs = {}
+			LET ok = WAITFOR EVENT "test" IN obs
+				TRIGGER button <- "click"
+				TIMEOUT 5s
+			RETURN ok
+		`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Expected parenthesized block after 'TRIGGER' in WAITFOR EVENT",
+			Hint:    "Use TRIGGER (...), e.g. TRIGGER (target <- \"click\").",
+		}, "WAITFOR EVENT TRIGGER rejects non-parenthesized statements"),
 	})
 }

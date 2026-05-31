@@ -220,10 +220,7 @@ func (c *RecoveryCompiler) compileOperationWithErrorReturn(
 	buildProtected func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion,
 ) bytecode.Operand {
 	recoveryLabel := c.ctx.Program.Emitter.NewLabel("recovery", "error", "handle")
-	var timeoutLabel core.Label
-	if plan.OnTimeout != nil {
-		timeoutLabel = c.ctx.Program.Emitter.NewLabel("recovery", "timeout", "handle")
-	}
+	timeoutLabel := c.ctx.Program.Emitter.NewLabel("recovery", "timeout", "handle")
 	endLabel := c.ctx.Program.Emitter.NewLabel("recovery", "error", "end")
 	region := buildProtected(recoveryLabel, timeoutLabel, endLabel)
 
@@ -279,10 +276,7 @@ func (c *RecoveryCompiler) compileOperationWithErrorRetry(
 	state := c.initRetryDelayState(retry)
 	retryStart := c.ctx.Program.Emitter.NewLabel("recovery", "retry", "start")
 	recoveryLabel := c.ctx.Program.Emitter.NewLabel("recovery", "retry", "handle")
-	var timeoutLabel core.Label
-	if plan.OnTimeout != nil {
-		timeoutLabel = c.ctx.Program.Emitter.NewLabel("recovery", "timeout", "handle")
-	}
+	timeoutLabel := c.ctx.Program.Emitter.NewLabel("recovery", "timeout", "handle")
 	endLabel := c.ctx.Program.Emitter.NewLabel("recovery", "retry", "end")
 	var finalAttemptLabel core.Label
 

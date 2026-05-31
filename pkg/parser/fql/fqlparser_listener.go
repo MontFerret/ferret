@@ -166,6 +166,12 @@ type FqlParserListener interface {
 	// EnterWaitForEventExpression is called when entering the waitForEventExpression production.
 	EnterWaitForEventExpression(c *WaitForEventExpressionContext)
 
+	// EnterWaitForTriggerClause is called when entering the waitForTriggerClause production.
+	EnterWaitForTriggerClause(c *WaitForTriggerClauseContext)
+
+	// EnterWaitForTriggerStatement is called when entering the waitForTriggerStatement production.
+	EnterWaitForTriggerStatement(c *WaitForTriggerStatementContext)
+
 	// EnterWaitForPredicateExpression is called when entering the waitForPredicateExpression production.
 	EnterWaitForPredicateExpression(c *WaitForPredicateExpressionContext)
 
@@ -651,6 +657,12 @@ type FqlParserListener interface {
 
 	// ExitWaitForEventExpression is called when exiting the waitForEventExpression production.
 	ExitWaitForEventExpression(c *WaitForEventExpressionContext)
+
+	// ExitWaitForTriggerClause is called when exiting the waitForTriggerClause production.
+	ExitWaitForTriggerClause(c *WaitForTriggerClauseContext)
+
+	// ExitWaitForTriggerStatement is called when exiting the waitForTriggerStatement production.
+	ExitWaitForTriggerStatement(c *WaitForTriggerStatementContext)
 
 	// ExitWaitForPredicateExpression is called when exiting the waitForPredicateExpression production.
 	ExitWaitForPredicateExpression(c *WaitForPredicateExpressionContext)

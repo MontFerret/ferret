@@ -43,6 +43,7 @@ const (
 	keywordReturn      = "RETURN"
 	keywordSort        = "SORT"
 	keywordTimeout     = "TIMEOUT"
+	keywordTrigger     = "TRIGGER"
 	keywordUse         = "USE"
 	keywordUsing       = "USING"
 	keywordVar         = "VAR"

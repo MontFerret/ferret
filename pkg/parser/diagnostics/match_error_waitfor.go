@@ -37,6 +37,16 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 		}
 	}
 
+	if spanNode := waitForTriggerMissingBlock(offending); spanNode != nil {
+		span := spanFromTokenSafe(spanNode.Token(), src)
+		err.Message = "Expected parenthesized block after 'TRIGGER' in WAITFOR EVENT"
+		err.Hint = "Use TRIGGER (...), e.g. TRIGGER (target <- \"click\")."
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing trigger block"),
+		}
+		return true
+	}
+
 	if clause, spanNode := waitForMissingClauseValue(offending); clause != "" {
 		span := spanFromTokenSafe(spanNode.Token(), src)
 		err.Message = fmt.Sprintf("Expected value after '%s' in WAITFOR clause", clause)
@@ -85,6 +95,23 @@ func waitForPredicateKeyword(offending *TokenNode) (string, *TokenNode) {
 	}
 
 	return "", nil
+}
+
+func waitForTriggerMissingBlock(offending *TokenNode) *TokenNode {
+	if offending == nil {
+		return nil
+	}
+
+	if is(offending, "TRIGGER") && hasWaitforBefore(offending) {
+		return offending
+	}
+
+	prev := offending.Prev()
+	if is(prev, "TRIGGER") && hasWaitforBefore(prev) {
+		return prev
+	}
+
+	return nil
 }
 
 func waitForMissingClauseValue(offending *TokenNode) (string, *TokenNode) {

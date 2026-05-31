@@ -78,6 +78,7 @@ Waitfor: 'WAITFOR';
 Dispatch: 'DISPATCH';
 Delete: 'DELETE';
 Options: 'OPTIONS';
+Trigger: 'TRIGGER';
 Timeout: 'TIMEOUT';
 Every: 'EVERY';
 Backoff: 'BACKOFF';

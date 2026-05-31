@@ -514,7 +514,20 @@ dispatchOptionsClause
     ;
 
 waitForEventExpression
-    : Event waitForEventName In waitForEventSource (optionsClause)? (eventFilterClause)* (timeoutClause)?
+    : Event waitForEventName In waitForEventSource (optionsClause)? (eventFilterClause)* (waitForTriggerClause)? (timeoutClause)?
+    ;
+
+waitForTriggerClause
+    : Trigger OpenParen waitForTriggerStatement* CloseParen
+    ;
+
+waitForTriggerStatement
+    : variableDeclaration
+    | assignmentStatement
+    | deleteStatement
+    | functionCallExpression
+    | waitForExpression
+    | dispatchExpression
     ;
 
 waitForPredicateExpression
@@ -765,6 +778,7 @@ propertyName
     : Identifier
     | stringLiteral
     | param
+    | Trigger
     | safeReservedWord
     | unsafeReservedWord
     ;
@@ -1038,6 +1052,7 @@ matchObjectPatternProperty
 matchObjectPatternKey
     : Identifier
     | stringLiteral
+    | Trigger
     | safeReservedWord
     | unsafeReservedWord
     ;

@@ -341,6 +341,8 @@ func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) byte
 	if id := ctx.Identifier(); id != nil {
 		// Regular identifier (e.g., { property: value })
 		name = id.GetText()
+	} else if trigger := ctx.Trigger(); trigger != nil {
+		name = trigger.GetText()
 	} else if word := ctx.SafeReservedWord(); word != nil {
 		// Safe reserved word (e.g., { return: value })
 		name = word.GetText()
@@ -376,6 +378,8 @@ func (c *LiteralCompiler) CompilePropertyNameConst(ctx fql.IPropertyNameContext)
 	if id := ctx.Identifier(); id != nil {
 		// Regular identifier (e.g., { property: value })
 		name = id.GetText()
+	} else if trigger := ctx.Trigger(); trigger != nil {
+		name = trigger.GetText()
 	} else if word := ctx.SafeReservedWord(); word != nil {
 		// Safe reserved word (e.g., { return: value })
 		name = word.GetText()
