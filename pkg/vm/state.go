@@ -17,6 +17,7 @@ type (
 		err         error
 		fallback    runtime.Value
 		pc          int
+		originPC    int
 		dst         bytecode.Operand
 		kind        errorKind
 		mode        recoveryMode
@@ -37,9 +38,11 @@ type (
 		aliases     mem.AliasTracker
 		deferred    mem.DeferredClosers
 		failure     pendingFailure
+		caught      pendingFailure
 		pc          int
 		lastPC      int
 		hasFail     bool
+		hasCaught   bool
 	}
 )
 
@@ -62,6 +65,7 @@ func (s *execState) startRun(env *Environment) error {
 	s.pc = 0
 	s.lastPC = -1
 	s.clearFailure()
+	s.clearCaughtFailure()
 
 	return s.bindParams(env)
 }
@@ -136,6 +140,7 @@ func (s *execState) resetRunStorage() {
 	s.pc = 0
 	s.lastPC = -1
 	s.clearFailure()
+	s.clearCaughtFailure()
 }
 
 func (s *execState) bindParams(env *Environment) error {
@@ -187,11 +192,31 @@ func (s *execState) raise(pc int, err error, kind errorKind, mode recoveryMode, 
 		kind:        kind,
 		mode:        mode,
 		pc:          pc,
+		originPC:    pc,
 		dst:         dst,
 		fallback:    fallback,
 		setFallback: setFallback,
 	}
 	s.hasFail = true
+}
+
+func (s *execState) rethrowRuntimeAt(pc int) {
+	if !s.hasCaught {
+		err := runtime.Error(runtime.ErrInvalidOperation, "RETHROW requires a caught runtime failure")
+		s.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+		return
+	}
+
+	caught := s.caught
+	originPC := caught.originPC
+	if originPC < 0 {
+		originPC = caught.pc
+	}
+
+	s.raise(pc, caught.err, caught.kind, recoverDefault, bytecode.NoopOperand, nil, false)
+	if s.hasFail {
+		s.failure.originPC = originPC
+	}
 }
 
 func (s *execState) hasFailure() bool {
@@ -213,6 +238,20 @@ func (s *execState) clearFailure() {
 
 	s.failure = pendingFailure{}
 	s.hasFail = false
+}
+
+func (s *execState) rememberCaughtFailure(failure pendingFailure) {
+	s.caught = failure
+	s.hasCaught = true
+}
+
+func (s *execState) clearCaughtFailure() {
+	if !s.hasCaught {
+		return
+	}
+
+	s.caught = pendingFailure{}
+	s.hasCaught = false
 }
 
 func (s *execState) resolveFailure() errAction {
@@ -257,6 +296,7 @@ func (s *execState) resolveFailure() errAction {
 
 func (s *execState) resolveRuntimeDefault(failure pendingFailure) errAction {
 	if catch, ok := s.tryCatch(failure.pc); ok {
+		s.rememberCaughtFailure(failure)
 		s.applyFailureFallback(failure)
 
 		if catch[2] >= 0 {
@@ -300,7 +340,7 @@ func (s *execState) isNullMemberDereference(err error) bool {
 
 func (s *execState) errorPC() int {
 	if s.hasFail {
-		return s.failure.pc
+		return s.failure.originPC
 	}
 
 	if s.lastPC >= 0 {

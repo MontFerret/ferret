@@ -308,6 +308,8 @@ loop:
 			state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
 		case bytecode.OpFailTimeout:
 			state.raiseRuntimeAt(pc, runtime.ErrTimeout, recoverDefault, bytecode.NoopOperand, nil, false)
+		case bytecode.OpRethrow:
+			state.rethrowRuntimeAt(pc)
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
 			hostID := inst.InlineSlot
 			if hostID < 0 || hostID >= len(hostFunctions) {

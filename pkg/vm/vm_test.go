@@ -2378,6 +2378,91 @@ func TestOpFail_CaughtUsesCatchJumpTarget(t *testing.T) {
 	}
 }
 
+func TestOpRethrow_CaughtUsesOuterCatchJumpTarget(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpFail, bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpRethrow),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+		Constants: []runtime.Value{
+			runtime.NewString("boom"),
+			runtime.NewInt(7),
+		},
+		CatchTable: []bytecode.Catch{
+			{0, 0, 1},
+			{1, 1, 3},
+		},
+	})
+
+	result := mustRunResult(t, instance, nil)
+	defer func() {
+		_ = result.Close()
+	}()
+
+	if got := result.Root(); got != runtime.NewInt(7) {
+		t.Fatalf("expected outer catch target return value 7, got %v", got)
+	}
+}
+
+func TestRethrowRuntimeAt_PreservesOriginAndUsesRethrowPCForCatch(t *testing.T) {
+	instance := mustNewVM(t, &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(0)),
+		},
+		CatchTable: []bytecode.Catch{
+			{1, 1, 3},
+			{3, 3, 7},
+		},
+	})
+
+	state := mustAcquireRunState(t, instance)
+	defer state.endRun()
+
+	wantErr := errors.New("boom")
+	state.raiseRuntimeAt(1, wantErr, recoverDefault, bytecode.NoopOperand, nil, false)
+	if action := state.resolveFailure(); action != errContinue {
+		t.Fatalf("expected initial catch to continue, got %v", action)
+	}
+	if got, want := state.pc, 3; got != want {
+		t.Fatalf("expected initial catch target %d, got %d", want, got)
+	}
+
+	state.rethrowRuntimeAt(3)
+	if !state.hasFailure() {
+		t.Fatal("expected rethrow to record a pending failure")
+	}
+	if got, want := state.failure.pc, 3; got != want {
+		t.Fatalf("expected rethrow catch pc %d, got %d", want, got)
+	}
+	if got, want := state.failure.originPC, 1; got != want {
+		t.Fatalf("expected original diagnostic pc %d, got %d", want, got)
+	}
+	if got := state.failureError(); !errors.Is(got, wantErr) {
+		t.Fatalf("expected original error, got %v", got)
+	}
+
+	if action := state.resolveFailure(); action != errContinue {
+		t.Fatalf("expected outer catch to continue, got %v", action)
+	}
+	if got, want := state.pc, 7; got != want {
+		t.Fatalf("expected outer catch target %d, got %d", want, got)
+	}
+}
+
 func TestOpFail_InvalidMessageTypeReturnsTypeError(t *testing.T) {
 	instance := mustNewVM(t, &bytecode.Program{
 		ISAVersion: bytecode.Version,

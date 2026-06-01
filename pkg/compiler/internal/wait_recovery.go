@@ -116,6 +116,7 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 	streamReg := c.ctx.Function.Registers.Allocate()
 	resultReg := c.ctx.Function.Registers.Allocate()
 	errorStateReg := c.ctx.Function.Registers.Allocate()
+	streamReadyReg := c.ctx.Function.Registers.Allocate()
 	timeoutStateReg := bytecode.NoopOperand
 
 	if hasTimeout {
@@ -125,6 +126,7 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 
 	c.ctx.Program.Emitter.EmitLoadNone(resultReg)
 	c.ctx.Program.Emitter.EmitBoolean(errorStateReg, false)
+	c.ctx.Program.Emitter.EmitBoolean(streamReadyReg, false)
 
 	startCatch := c.ctx.Program.Emitter.Size()
 	state, ok := c.buildWaitEventState(ctx)
@@ -132,7 +134,7 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 		return ProtectedRecoveryRegion{Result: bytecode.NoopOperand}
 	}
 
-	c.emitWaitEventStreamSetup(state, streamReg)
+	c.emitWaitEventStreamSetupWithReady(state, streamReg, streamReadyReg)
 	c.compileWaitEventTrigger(ctx)
 
 	start := c.ctx.Program.Emitter.NewLabel()
@@ -148,7 +150,7 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 	c.ctx.Program.Emitter.EmitJump(cleanup)
 
 	c.ctx.Program.Emitter.MarkLabel(cleanup)
-	c.emitWaitEventCleanup(state, streamReg)
+	c.emitWaitEventCleanupIfReady(state, streamReg, streamReadyReg)
 
 	endCatchExclusive := c.ctx.Program.Emitter.Size()
 

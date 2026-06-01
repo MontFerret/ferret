@@ -257,7 +257,7 @@ func applyControlFlowUseDef(opcode bytecode.Opcode, src1, src2 bytecode.Operand,
 		collector.addUse(src1)
 		collector.addUse(src2)
 		return true
-	case bytecode.OpJump, bytecode.OpFail:
+	case bytecode.OpJump, bytecode.OpFail, bytecode.OpRethrow:
 		return true
 	default:
 		return false

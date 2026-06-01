@@ -128,6 +128,11 @@ func TestOpcodeInfoControlFlowMetadata(t *testing.T) {
 			op:             OpFailTimeout,
 			wantTerminator: true,
 		},
+		{
+			name:           "rethrow is terminator",
+			op:             OpRethrow,
+			wantTerminator: true,
+		},
 	}
 
 	for _, tt := range tests {
