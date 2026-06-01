@@ -3,7 +3,10 @@ package compiler_test
 import (
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	pkgdiagnostics "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
@@ -194,6 +197,18 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 		Failure(
 			`
 			LET users = []
+			FOR user IN users
+				FILTER user.active += true
+				RETURN user
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Assignment is not valid in a FILTER predicate",
+				Hint:    "Move the assignment to a standalone statement before FILTER. FILTER predicates must be expressions.",
+			}, "FILTER with augmented assignment"),
+
+		Failure(
+			`
+			LET users = []
 			FOR x IN users
 				LIMIT
 				RETURN x
@@ -325,4 +340,52 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Provide at least one variable assignment, e.g. AGGREGATE total = COUNT(x).",
 			}, "COLLECT AGGREGATE without expression 2"),
 	})
+}
+
+func TestFilterAssignmentDiagnosticPointsAtAssignmentOperator(t *testing.T) {
+	query := `LET users = [
+    { name: "Ada", active: true },
+    { name: "Grace", active: false },
+    { name: "Linus", active: true }
+]
+
+FOR user IN users
+    FILTER user.active = true
+    RETURN user.name`
+
+	_, err := compiler.New().Compile(source.NewAnonymous(query))
+	if err == nil {
+		t.Fatal("expected compilation error")
+	}
+
+	diag := firstCompilationError(err)
+	if diag == nil {
+		t.Fatalf("expected diagnostic, got %T", err)
+	}
+
+	if diag.Kind != parserd.SyntaxError {
+		t.Fatalf("unexpected diagnostic kind: %s", diag.Kind)
+	}
+
+	if diag.Message != "Assignment is not valid in a FILTER predicate" {
+		t.Fatalf("unexpected diagnostic message: %q", diag.Message)
+	}
+
+	if diag.Hint != "Use '==' to compare values, e.g. FILTER user.active == true." {
+		t.Fatalf("unexpected diagnostic hint: %q", diag.Hint)
+	}
+
+	formatted := pkgdiagnostics.Format(err)
+	expected := `SyntaxError: Assignment is not valid in a FILTER predicate
+ --> anonymous:8:24
+  |
+7 | FOR user IN users
+8 |     FILTER user.active = true
+  |                        ^ use '==' for comparison
+9 |     RETURN user.name
+Hint: Use '==' to compare values, e.g. FILTER user.active == true.
+`
+	if formatted != expected {
+		t.Fatalf("unexpected formatted diagnostic:\n%s", formatted)
+	}
 }

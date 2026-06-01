@@ -3,8 +3,16 @@ package diagnostics
 import (
 	"fmt"
 
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
+)
+
+const (
+	filterAssignmentMessage        = "Assignment is not valid in a FILTER predicate"
+	filterComparisonAssignmentHint = "Use '==' to compare values, e.g. FILTER user.active == true."
+	filterStatementAssignmentHint  = "Move the assignment to a standalone statement before FILTER. FILTER predicates must be expressions."
 )
 
 func matchMissingAssignmentValue(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
@@ -89,6 +97,10 @@ func matchAssignmentExpression(src *source.Source, err *diagnostics.Diagnostic, 
 		return false
 	}
 
+	if matchFilterAssignmentExpression(src, err, offending) {
+		return true
+	}
+
 	operator := findPrevAssignmentOperator(offending, 16)
 	if operator == nil {
 		return false
@@ -120,6 +132,268 @@ func matchAssignmentExpression(src *source.Source, err *diagnostics.Diagnostic, 
 	return true
 }
 
+func matchFilterAssignmentExpression(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+	if src == nil || err == nil || offending == nil || offending.Token() == nil {
+		return false
+	}
+
+	tokens := lexDefaultTokens(src.Content())
+	offendingIdx := findLexedTokenIndex(tokens, offending.Token())
+	if offendingIdx < 0 {
+		return false
+	}
+
+	filterIdx := findFilterPredicateStart(tokens, offendingIdx)
+	if filterIdx < 0 {
+		return false
+	}
+
+	operatorIdx := findFilterAssignmentOperator(tokens, filterIdx+1)
+	if operatorIdx < 0 || !isFilterAssignmentTarget(tokens, filterIdx+1, operatorIdx) {
+		return false
+	}
+
+	operator := tokens[operatorIdx]
+	span := spanFromTokenSafe(operator, src)
+	label := "assignment is not an expression"
+	hint := filterStatementAssignmentHint
+
+	if isTokenText(operator, "=") {
+		label = "use '==' for comparison"
+		hint = filterComparisonAssignmentHint
+	}
+
+	err.Message = filterAssignmentMessage
+	err.Hint = hint
+	err.Spans = []diagnostics.ErrorSpan{
+		diagnostics.NewMainErrorSpan(span, label),
+	}
+
+	return true
+}
+
+func findFilterPredicateStart(tokens []antlr.Token, offendingIdx int) int {
+	depth := 0
+
+	for i := offendingIdx; i >= 0; i-- {
+		text := tokenText(tokens[i])
+
+		switch text {
+		case ")", "]", "}":
+			depth++
+		case "(", "[", "{":
+			if depth > 0 {
+				depth--
+			}
+		default:
+			if depth != 0 {
+				continue
+			}
+
+			if text == "FILTER" {
+				return i
+			}
+
+			if i != offendingIdx && isFilterPredicateBoundary(text) {
+				return -1
+			}
+		}
+	}
+
+	return -1
+}
+
+func findFilterAssignmentOperator(tokens []antlr.Token, startIdx int) int {
+	depth := 0
+
+	for i := startIdx; i < len(tokens); i++ {
+		text := tokenText(tokens[i])
+
+		switch text {
+		case "(", "[", "{":
+			depth++
+		case ")", "]", "}":
+			if depth == 0 {
+				return -1
+			}
+
+			depth--
+		default:
+			if depth != 0 {
+				continue
+			}
+
+			if isFilterPredicateBoundary(text) {
+				return -1
+			}
+
+			if isAssignmentOperatorText(text) {
+				if hasFilterAssignmentValue(tokens, i+1) {
+					return i
+				}
+
+				return -1
+			}
+		}
+	}
+
+	return -1
+}
+
+func hasFilterAssignmentValue(tokens []antlr.Token, startIdx int) bool {
+	depth := 0
+	seenValue := false
+
+	for i := startIdx; i < len(tokens); i++ {
+		text := tokenText(tokens[i])
+
+		switch text {
+		case "(", "[", "{":
+			depth++
+			seenValue = true
+		case ")", "]", "}":
+			if depth == 0 {
+				return seenValue
+			}
+
+			depth--
+		case ",":
+			if depth == 0 {
+				return seenValue
+			}
+		default:
+			if depth == 0 && isFilterPredicateBoundary(text) {
+				return seenValue
+			}
+
+			seenValue = true
+			if depth == 0 {
+				return true
+			}
+		}
+	}
+
+	return seenValue && depth == 0
+}
+
+func isFilterAssignmentTarget(tokens []antlr.Token, startIdx, operatorIdx int) bool {
+	if startIdx >= operatorIdx || startIdx < 0 || operatorIdx > len(tokens) {
+		return false
+	}
+
+	if !isFilterAssignmentIdentifier(tokens[startIdx]) {
+		return false
+	}
+
+	for i := startIdx + 1; i < operatorIdx; {
+		text := tokenText(tokens[i])
+
+		switch text {
+		case ".":
+			i++
+			if i >= operatorIdx || !isFilterAssignmentPathToken(tokens[i]) {
+				return false
+			}
+
+			i++
+		case "?":
+			if i+1 >= operatorIdx || !isTokenText(tokens[i+1], ".") {
+				return false
+			}
+
+			i += 2
+			if i >= operatorIdx {
+				return false
+			}
+
+			if isTokenText(tokens[i], "[") {
+				closeIdx := findFilterAssignmentComputedEnd(tokens, i, operatorIdx)
+				if closeIdx < 0 {
+					return false
+				}
+
+				i = closeIdx + 1
+				continue
+			}
+
+			if !isFilterAssignmentPathToken(tokens[i]) {
+				return false
+			}
+
+			i++
+		case "[":
+			closeIdx := findFilterAssignmentComputedEnd(tokens, i, operatorIdx)
+			if closeIdx < 0 {
+				return false
+			}
+
+			i = closeIdx + 1
+		default:
+			return false
+		}
+	}
+
+	return true
+}
+
+func findFilterAssignmentComputedEnd(tokens []antlr.Token, openIdx, limitIdx int) int {
+	depth := 0
+
+	for i := openIdx; i < limitIdx; i++ {
+		text := tokenText(tokens[i])
+
+		switch text {
+		case "(", "[", "{":
+			depth++
+		case ")", "]", "}":
+			depth--
+			if depth < 0 {
+				return -1
+			}
+
+			if depth == 0 {
+				if delimitersMatch(tokenText(tokens[openIdx]), text) {
+					return i
+				}
+
+				return -1
+			}
+		}
+	}
+
+	return -1
+}
+
+func isFilterAssignmentIdentifier(token antlr.Token) bool {
+	if token == nil || tokenText(token) == "_" {
+		return false
+	}
+
+	return isLoopVariableToken(&TokenNode{token: token})
+}
+
+func isFilterAssignmentPathToken(token antlr.Token) bool {
+	if token == nil {
+		return false
+	}
+
+	switch tokenText(token) {
+	case "", "(", ")", "[", "]", "{", "}", ".", "?", ",", ":", "+", "-", "*", "/", "%", "=", "==", "!=", ">", "<", ">=", "<=", "=~", "!~", "=>", "<-", "&&", "||", "AND", "OR":
+		return false
+	default:
+		return true
+	}
+}
+
+func isFilterPredicateBoundary(text string) bool {
+	switch text {
+	case "RETURN", "FOR", "FILTER", "SORT", "LIMIT", "COLLECT", "LET", "VAR", "DELETE", "WAITFOR", "DISPATCH", "FUNC", "USE":
+		return true
+	default:
+		return false
+	}
+}
+
 func anyAssignmentOperator(nodes ...*TokenNode) *TokenNode {
 	for _, node := range nodes {
 		if isAssignmentOperator(node) {
@@ -144,5 +418,18 @@ func findPrevAssignmentOperator(node *TokenNode, steps int) *TokenNode {
 }
 
 func isAssignmentOperator(node *TokenNode) bool {
-	return is(node, "=") || is(node, "+=") || is(node, "-=") || is(node, "*=") || is(node, "/=")
+	if node == nil {
+		return false
+	}
+
+	return isAssignmentOperatorText(node.GetText())
+}
+
+func isAssignmentOperatorText(text string) bool {
+	switch text {
+	case "=", "+=", "-=", "*=", "/=":
+		return true
+	default:
+		return false
+	}
 }
