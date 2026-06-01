@@ -4,6 +4,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 type (
@@ -26,6 +27,7 @@ type (
 		BuildProtected       func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion
 		ShouldBuildProtected func(plan core.RecoveryPlan) bool
 		CompileFinalAttempt  func(plan core.RecoveryPlan) bytecode.Operand
+		TimeoutSpan          source.Span
 		JumpMode             core.CatchJumpMode
 		Options              core.RecoveryPlanOptions
 	}
@@ -123,9 +125,9 @@ func (c *RecoveryCompiler) compileDirectOperation(plan core.RecoveryPlan, spec O
 
 	switch plan.OnError.ActionKind {
 	case core.RecoveryActionReturn:
-		return c.compileOperationWithErrorReturn(plan, buildProtected)
+		return c.compileOperationWithErrorReturn(plan, spec.TimeoutSpan, buildProtected)
 	case core.RecoveryActionRetry:
-		return c.compileOperationWithErrorRetry(plan, buildProtected, func() bytecode.Operand {
+		return c.compileOperationWithErrorRetry(plan, spec.TimeoutSpan, buildProtected, func() bytecode.Operand {
 			return c.compileOperationFinalAttempt(spec, core.RecoveryPlan{OnTimeout: plan.OnTimeout})
 		})
 	default:
@@ -140,9 +142,9 @@ func (c *RecoveryCompiler) compileProtectedOperation(plan core.RecoveryPlan, spe
 
 	switch plan.OnError.ActionKind {
 	case core.RecoveryActionReturn:
-		return c.compileOperationWithErrorReturn(plan, spec.BuildProtected)
+		return c.compileOperationWithErrorReturn(plan, spec.TimeoutSpan, spec.BuildProtected)
 	case core.RecoveryActionRetry:
-		return c.compileOperationWithErrorRetry(plan, spec.BuildProtected, func() bytecode.Operand {
+		return c.compileOperationWithErrorRetry(plan, spec.TimeoutSpan, spec.BuildProtected, func() bytecode.Operand {
 			return c.compileOperationFinalAttempt(spec, core.RecoveryPlan{OnTimeout: plan.OnTimeout})
 		})
 	default:
@@ -156,7 +158,7 @@ func (c *RecoveryCompiler) compileOperationFinalAttempt(spec OperationRecoverySp
 	}
 
 	if plan.OnTimeout != nil && spec.CompileTimeoutAware != nil {
-		return c.compileWithTimeoutRecovery(plan, spec.CompileTimeoutAware)
+		return c.compileWithTimeoutRecovery(plan, spec.TimeoutSpan, spec.CompileTimeoutAware)
 	}
 
 	if spec.CompilePlain != nil {
@@ -168,6 +170,7 @@ func (c *RecoveryCompiler) compileOperationFinalAttempt(spec OperationRecoverySp
 
 func (c *RecoveryCompiler) compileWithTimeoutRecovery(
 	plan core.RecoveryPlan,
+	timeoutSpan source.Span,
 	compile func(timeoutLabel, endLabel core.Label) bytecode.Operand,
 ) bytecode.Operand {
 	if compile == nil {
@@ -182,7 +185,7 @@ func (c *RecoveryCompiler) compileWithTimeoutRecovery(
 		return out
 	}
 
-	c.emitTimeoutHandler(out, plan, timeoutLabel, endLabel)
+	c.emitTimeoutHandler(out, plan, timeoutSpan, timeoutLabel, endLabel)
 	c.ctx.Program.Emitter.MarkLabel(endLabel)
 
 	return c.WidenResultType(out, plan)
@@ -217,6 +220,7 @@ func (c *RecoveryCompiler) directProtectedRegionBuilder(compile func() bytecode.
 
 func (c *RecoveryCompiler) compileOperationWithErrorReturn(
 	plan core.RecoveryPlan,
+	timeoutSpan source.Span,
 	buildProtected func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion,
 ) bytecode.Operand {
 	recoveryLabel := c.ctx.Program.Emitter.NewLabel("recovery", "error", "handle")
@@ -236,7 +240,7 @@ func (c *RecoveryCompiler) compileOperationWithErrorReturn(
 	c.ctx.Program.Emitter.EmitJump(endLabel)
 
 	if region.HasTimeout {
-		c.emitTimeoutHandler(region.Result, plan, timeoutLabel, endLabel)
+		c.emitTimeoutHandler(region.Result, plan, timeoutSpan, timeoutLabel, endLabel)
 	}
 
 	c.ctx.Program.Emitter.MarkLabel(endLabel)
@@ -248,6 +252,7 @@ func (c *RecoveryCompiler) compileOperationWithErrorReturn(
 
 func (c *RecoveryCompiler) compileOperationWithErrorRetry(
 	plan core.RecoveryPlan,
+	timeoutSpan source.Span,
 	buildProtected func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion,
 	compileFinalAttempt func() bytecode.Operand,
 ) bytecode.Operand {
@@ -323,7 +328,7 @@ func (c *RecoveryCompiler) compileOperationWithErrorRetry(
 	}
 
 	if region.HasTimeout {
-		c.emitTimeoutHandler(resultReg, plan, timeoutLabel, endLabel)
+		c.emitTimeoutHandler(resultReg, plan, timeoutSpan, timeoutLabel, endLabel)
 	}
 
 	if retry.FinalActionKind != core.RecoveryActionReturn {
@@ -346,6 +351,7 @@ func (c *RecoveryCompiler) compileOperationWithErrorRetry(
 func (c *RecoveryCompiler) emitTimeoutHandler(
 	result bytecode.Operand,
 	plan core.RecoveryPlan,
+	timeoutSpan source.Span,
 	timeoutLabel, endLabel core.Label,
 ) {
 	c.ctx.Program.Emitter.MarkLabel(timeoutLabel)
@@ -356,7 +362,9 @@ func (c *RecoveryCompiler) emitTimeoutHandler(
 		c.facts.EmitMoveAuto(ensureOperandRegister(c.ctx, c.facts, result), ensureOperandRegister(c.ctx, c.facts, fallback))
 		c.ctx.Program.Emitter.EmitJump(endLabel)
 	default:
-		c.ctx.Program.Emitter.Emit(bytecode.OpFailTimeout)
+		c.ctx.Program.Emitter.WithSpan(timeoutFailureSpan(plan, timeoutSpan), func() {
+			c.ctx.Program.Emitter.Emit(bytecode.OpFailTimeout)
+		})
 	}
 }
 

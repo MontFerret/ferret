@@ -196,19 +196,23 @@ func literalTruthinessFromExpression(ctx fql.IExpressionContext) (bool, bool) {
 }
 
 func waitForHasExplicitTimeoutClause(ctx fql.IWaitForExpressionContext) bool {
+	return waitForTimeoutClause(ctx) != nil
+}
+
+func waitForTimeoutClause(ctx fql.IWaitForExpressionContext) fql.ITimeoutClauseContext {
 	if ctx == nil {
-		return false
+		return nil
 	}
 
-	if ev := ctx.WaitForEventExpression(); ev != nil && waitForEventTimeoutClause(ev) != nil {
-		return true
+	if ev := ctx.WaitForEventExpression(); ev != nil {
+		return waitForEventTimeoutClause(ev)
 	}
 
-	if pred := ctx.WaitForPredicateExpression(); pred != nil && pred.TimeoutClause() != nil {
-		return true
+	if pred := ctx.WaitForPredicateExpression(); pred != nil {
+		return pred.TimeoutClause()
 	}
 
-	return false
+	return nil
 }
 
 func parseDurationLiteral(text string) (runtime.Value, error) {

@@ -2,7 +2,9 @@ package internal
 
 import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func missingRecoveryActionMessage(condition core.RecoveryCondition) string {
@@ -54,6 +56,28 @@ func recoveryHandlerReturns(handler *core.RecoveryHandler) bool {
 
 func recoveryHandlerRetries(handler *core.RecoveryHandler) bool {
 	return handler != nil && handler.ActionKind == core.RecoveryActionRetry && handler.Retry != nil
+}
+
+func timeoutFailureSpan(plan core.RecoveryPlan, fallback source.Span) source.Span {
+	if plan.OnTimeout == nil || plan.OnTimeout.ActionKind != core.RecoveryActionFail {
+		return fallback
+	}
+
+	if plan.OnTimeout.TailNode != nil {
+		span := parserd.SpanFromRuleContext(plan.OnTimeout.TailNode)
+		if span.End > span.Start {
+			return span
+		}
+	}
+
+	if plan.OnTimeout.ActionNode != nil {
+		span := parserd.SpanFromRuleContext(plan.OnTimeout.ActionNode)
+		if span.End > span.Start {
+			return span
+		}
+	}
+
+	return fallback
 }
 
 func isNoneLiteralExpression(expr fql.IExpressionContext) bool {
