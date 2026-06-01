@@ -37,6 +37,26 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 		}
 	}
 
+	if spanNode := waitForTriggerInlineWaitfor(offending); spanNode != nil {
+		span := spanFromTokenSafe(spanNode.Token(), src)
+		err.Message = "Nested WAITFOR in TRIGGER shorthand must use a parenthesized block"
+		err.Hint = "Use TRIGGER (...), e.g. TRIGGER (WAITFOR EVENT \"ready\" IN target)."
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "parenthesize nested wait"),
+		}
+		return true
+	}
+
+	if spanNode := waitForTriggerInvalidBody(offending); spanNode != nil {
+		span := spanFromTokenSafe(spanNode.Token(), src)
+		err.Message = "Expected trigger statement after 'TRIGGER' in WAITFOR EVENT"
+		err.Hint = "Use a side-effect statement or TRIGGER (...), e.g. TRIGGER target <- \"click\"."
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing trigger statement"),
+		}
+		return true
+	}
+
 	if clause, spanNode := waitForMissingClauseValue(offending); clause != "" {
 		span := spanFromTokenSafe(spanNode.Token(), src)
 		err.Message = fmt.Sprintf("Expected value after '%s' in WAITFOR clause", clause)
@@ -85,6 +105,45 @@ func waitForPredicateKeyword(offending *TokenNode) (string, *TokenNode) {
 	}
 
 	return "", nil
+}
+
+func waitForTriggerInlineWaitfor(offending *TokenNode) *TokenNode {
+	if offending == nil {
+		return nil
+	}
+
+	if is(offending, "TRIGGER") && is(offending.Next(), "WAITFOR") && hasWaitforBefore(offending) {
+		return offending
+	}
+
+	for curr := offending; curr != nil; curr = curr.Prev() {
+		if is(curr, "TRIGGER") {
+			return nil
+		}
+
+		if is(curr, "WAITFOR") && is(curr.Prev(), "TRIGGER") && hasWaitforBefore(curr.Prev()) {
+			return curr.Prev()
+		}
+	}
+
+	return nil
+}
+
+func waitForTriggerInvalidBody(offending *TokenNode) *TokenNode {
+	if offending == nil {
+		return nil
+	}
+
+	if is(offending, "TRIGGER") && hasWaitforBefore(offending) {
+		return offending
+	}
+
+	prev := offending.Prev()
+	if is(prev, "TRIGGER") && hasWaitforBefore(prev) {
+		return prev
+	}
+
+	return nil
 }
 
 func waitForMissingClauseValue(offending *TokenNode) (string, *TokenNode) {

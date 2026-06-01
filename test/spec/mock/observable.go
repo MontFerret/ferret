@@ -2,6 +2,7 @@ package mock
 
 import (
 	"context"
+	"sync"
 	"sync/atomic"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -47,7 +48,9 @@ func (o *Observable) Copy() runtime.Value {
 }
 
 type TestStream struct {
-	ch <-chan runtime.Message
+	ch      <-chan runtime.Message
+	onClose func()
+	once    sync.Once
 }
 
 func (s *TestStream) Read(ctx context.Context) <-chan runtime.Message {
@@ -55,6 +58,12 @@ func (s *TestStream) Read(ctx context.Context) <-chan runtime.Message {
 }
 
 func (s *TestStream) Close() error {
+	s.once.Do(func() {
+		if s.onClose != nil {
+			s.onClose()
+		}
+	})
+
 	return nil
 }
 

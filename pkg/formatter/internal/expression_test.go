@@ -302,6 +302,20 @@ func TestExpressionFormatter_MatchExpressionObjectPattern(t *testing.T) {
 	}
 }
 
+func TestExpressionFormatter_MatchExpressionTriggerObjectPattern(t *testing.T) {
+	input := `RETURN MATCH obj({ TRIGGER: v }=>v,_=>0)`
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != `MATCH obj ( { TRIGGER: v } => v, _ => 0 )` {
+		t.Fatalf("unexpected MATCH object pattern formatting: %q", got)
+	}
+}
+
 func TestExpressionFormatter_MatchExpressionDispatchShorthand(t *testing.T) {
 	input := `RETURN MATCH kind("click"=>btn<-"click",_=>input<-"focus")`
 	program := parseProgram(t, input)

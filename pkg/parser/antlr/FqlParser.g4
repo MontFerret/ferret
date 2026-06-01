@@ -33,7 +33,7 @@ options { tokenVocab=FqlLexer; }
 			FqlParserLimit, FqlParserCollect, FqlParserSortDirection, FqlParserInto, FqlParserKeep, FqlParserWith,
 			FqlParserAll, FqlParserAny, FqlParserAt, FqlParserLeast, FqlParserAggregate, FqlParserEvent, FqlParserTimeout,
 			FqlParserOptions, FqlParserEvery, FqlParserBackoff, FqlParserJitter, FqlParserExists, FqlParserValue,
-			FqlParserOne, FqlParserCount:
+			FqlParserOne, FqlParserCount, FqlParserTrigger:
 			return true
 		default:
 			return false
@@ -514,7 +514,40 @@ dispatchOptionsClause
     ;
 
 waitForEventExpression
-    : Event waitForEventName In waitForEventSource (optionsClause)? (eventFilterClause)* (timeoutClause)?
+    : Event waitForEventName In waitForEventSource (optionsClause)? (eventFilterClause)* waitForEventTail
+    ;
+
+waitForEventTail
+    : waitForTriggerClause (timeoutClause)?
+    | timeoutClause
+    | {p.GetTokenStream().LA(1) != FqlParserTrigger && p.GetTokenStream().LA(1) != FqlParserTimeout}?
+    ;
+
+waitForTriggerClause
+    : Trigger OpenParen waitForTriggerStatement* CloseParen
+    | Trigger {p.GetTokenStream().LA(1) != FqlParserOpenParen}? waitForTriggerInlineStatement
+    ;
+
+waitForTriggerStatement
+    : variableDeclaration
+    | assignmentStatement
+    | deleteStatement
+    | functionCallExpression
+    | waitForExpression
+    | dispatchExpression
+    ;
+
+waitForTriggerInlineStatement
+    : variableDeclaration
+    | assignmentStatement
+    | deleteStatement
+    | functionCallNoRecoveryExpression
+    | waitForTriggerInlineDispatchStatement
+    ;
+
+waitForTriggerInlineDispatchStatement
+    : Dispatch dispatchEventName In dispatchTarget (dispatchWithClause)? (dispatchOptionsClause)?
+    | dispatchTarget DispatchReceive dispatchEventName
     ;
 
 waitForPredicateExpression
@@ -794,6 +827,10 @@ functionCallExpression
     : functionCall (errorOperator | recoveryTails)?
     ;
 
+functionCallNoRecoveryExpression
+    : functionCall errorOperator?
+    ;
+
 functionCall
     : namespace functionName OpenParen argumentList? CloseParen
     ;
@@ -893,6 +930,7 @@ safeReservedWord
     | Exists
     | Value
     | One
+    | Trigger
     ;
 
 unsafeReservedWord

@@ -559,9 +559,155 @@ func (f *statementFormatter) formatWaitForEventExpression(ctx *fql.WaitForEventE
 		f.clause.formatEventFilterClause(filter.(*fql.EventFilterClauseContext))
 	}
 
-	if timeout := ctx.TimeoutClause(); timeout != nil {
+	if tail := ctx.WaitForEventTail(); tail != nil {
+		if trigger := tail.WaitForTriggerClause(); trigger != nil {
+			f.p.space()
+			f.formatWaitForTriggerClause(trigger.(*fql.WaitForTriggerClauseContext))
+		}
+
+		if timeout := tail.TimeoutClause(); timeout != nil {
+			f.p.space()
+			f.clause.formatTimeoutClause(timeout.(*fql.TimeoutClauseContext))
+		}
+	}
+}
+
+func (f *statementFormatter) formatWaitForTriggerClause(ctx *fql.WaitForTriggerClauseContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordTrigger)
+	f.p.space()
+
+	if inline := ctx.WaitForTriggerInlineStatement(); inline != nil {
+		f.formatWaitForTriggerInlineStatement(inline.(*fql.WaitForTriggerInlineStatementContext))
+		return
+	}
+
+	f.p.write("(")
+
+	stmts := ctx.AllWaitForTriggerStatement()
+	if len(stmts) == 0 {
+		f.p.write(")")
+		return
+	}
+
+	start := f.trivia.stopIndex(ctx) + 1
+	if openParen := ctx.OpenParen(); openParen != nil {
+		if sym := openParen.GetSymbol(); sym != nil {
+			start = sym.GetStop() + 1
+		}
+	}
+
+	first := stmts[0].(antlr.ParserRuleContext)
+	f.p.withIndent(func() {
+		f.trivia.emitBetweenIndices(start, f.trivia.startIndex(first))
+
+		for i, stmt := range stmts {
+			f.formatWaitForTriggerStatement(stmt.(*fql.WaitForTriggerStatementContext))
+
+			if i < len(stmts)-1 {
+				f.trivia.emitBetween(stmt.(antlr.ParserRuleContext), stmts[i+1].(antlr.ParserRuleContext))
+			}
+		}
+	})
+
+	if !f.p.atLineStart {
+		f.p.newline()
+	}
+
+	f.p.write(")")
+}
+
+func (f *statementFormatter) formatWaitForTriggerStatement(ctx *fql.WaitForTriggerStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	switch {
+	case ctx.VariableDeclaration() != nil:
+		f.formatVariableDeclaration(ctx.VariableDeclaration().(*fql.VariableDeclarationContext))
+	case ctx.AssignmentStatement() != nil:
+		f.formatAssignmentStatement(ctx.AssignmentStatement().(*fql.AssignmentStatementContext))
+	case ctx.DeleteStatement() != nil:
+		f.formatDeleteStatement(ctx.DeleteStatement().(*fql.DeleteStatementContext))
+	case ctx.FunctionCallExpression() != nil:
+		f.expression.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
+	case ctx.WaitForExpression() != nil:
+		f.formatWaitForExpression(ctx.WaitForExpression().(*fql.WaitForExpressionContext))
+	case ctx.DispatchExpression() != nil:
+		f.formatDispatchExpression(ctx.DispatchExpression().(*fql.DispatchExpressionContext))
+	}
+}
+
+func (f *statementFormatter) formatWaitForTriggerInlineStatement(ctx *fql.WaitForTriggerInlineStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	switch {
+	case ctx.VariableDeclaration() != nil:
+		f.formatVariableDeclaration(ctx.VariableDeclaration().(*fql.VariableDeclarationContext))
+	case ctx.AssignmentStatement() != nil:
+		f.formatAssignmentStatement(ctx.AssignmentStatement().(*fql.AssignmentStatementContext))
+	case ctx.DeleteStatement() != nil:
+		f.formatDeleteStatement(ctx.DeleteStatement().(*fql.DeleteStatementContext))
+	case ctx.FunctionCallNoRecoveryExpression() != nil:
+		f.expression.formatFunctionCallNoRecoveryExpression(
+			ctx.FunctionCallNoRecoveryExpression().(*fql.FunctionCallNoRecoveryExpressionContext),
+		)
+	case ctx.WaitForTriggerInlineDispatchStatement() != nil:
+		f.formatWaitForTriggerInlineDispatchStatement(
+			ctx.WaitForTriggerInlineDispatchStatement().(*fql.WaitForTriggerInlineDispatchStatementContext),
+		)
+	}
+}
+
+func (f *statementFormatter) formatWaitForTriggerInlineDispatchStatement(ctx *fql.WaitForTriggerInlineDispatchStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	if ctx.Dispatch() != nil {
+		f.writeKeyword(keywordDispatch)
 		f.p.space()
-		f.clause.formatTimeoutClause(timeout.(*fql.TimeoutClauseContext))
+
+		if name := ctx.DispatchEventName(); name != nil {
+			f.formatDispatchEventName(name.(*fql.DispatchEventNameContext))
+		}
+
+		f.p.space()
+		f.writeKeyword(keywordIn)
+		f.p.space()
+
+		if tgt := ctx.DispatchTarget(); tgt != nil {
+			f.formatDispatchTarget(tgt.(*fql.DispatchTargetContext))
+		}
+
+		if with := ctx.DispatchWithClause(); with != nil {
+			f.p.space()
+			f.formatDispatchWithClause(with.(*fql.DispatchWithClauseContext))
+		}
+
+		if opt := ctx.DispatchOptionsClause(); opt != nil {
+			f.p.space()
+			f.formatDispatchOptionsClause(opt.(*fql.DispatchOptionsClauseContext))
+		}
+
+		return
+	}
+
+	if tgt := ctx.DispatchTarget(); tgt != nil {
+		f.formatDispatchTarget(tgt.(*fql.DispatchTargetContext))
+	}
+
+	f.p.space()
+	f.p.write("<-")
+	f.p.space()
+
+	if name := ctx.DispatchEventName(); name != nil {
+		f.formatDispatchEventName(name.(*fql.DispatchEventNameContext))
 	}
 }
 

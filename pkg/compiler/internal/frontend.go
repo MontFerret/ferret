@@ -51,7 +51,7 @@ func NewCompilationFrontend(session *CompilationSession) *CompilationFrontend {
 	front.Sorts.bind(front.Expressions, front.TypeFacts)
 	front.Recovery.bind(front.Expressions, front.Literals, front.TypeFacts)
 	front.Dispatch.bind(front.Expressions, front.Literals, front.Recovery, front.TypeFacts)
-	front.Wait.bind(front.Expressions, front.Literals, front.Recovery, front.TypeFacts)
+	front.Wait.bind(front.Bindings, front.Dispatch, front.Expressions, front.Literals, front.Recovery, front.TypeFacts)
 	front.Collects.bind(front.Bindings, front.Calls, front.Expressions, front.Recovery, front.TypeFacts)
 	front.Statements.bind(front.Bindings, front.Dispatch, front.Expressions, front.Loops, front.TypeFacts, front.Wait)
 	front.UDFs.bind(front.Calls, front.Expressions, front.TypeFacts, front.Recovery, front.Statements)

@@ -589,6 +589,8 @@ func validateInstructions(program *Program) error {
 			}
 		case OpFailTimeout:
 			// No operands.
+		case OpRethrow:
+			// No operands.
 		default:
 			return fmt.Errorf("%w: opcode %d at pc %d is not supported by validator", ErrInvalidInstruction, op, pc)
 		}

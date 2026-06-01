@@ -16,6 +16,10 @@ type waitEventCompileState struct {
 }
 
 func (c *WaitCompiler) compileEvent(ctx fql.IWaitForEventExpressionContext) bytecode.Operand {
+	if waitForEventTriggerClause(ctx) != nil {
+		return c.compileEventWithTriggerCleanup(ctx)
+	}
+
 	state, ok := c.buildWaitEventState(ctx)
 	if !ok {
 		return bytecode.NoopOperand
@@ -26,6 +30,7 @@ func (c *WaitCompiler) compileEvent(ctx fql.IWaitForEventExpressionContext) byte
 
 	c.ctx.Program.Emitter.EmitLoadNone(resultReg)
 	c.emitWaitEventStreamSetup(state, streamReg)
+	c.compileWaitEventTrigger(ctx)
 
 	start := c.ctx.Program.Emitter.NewLabel()
 	end := c.ctx.Program.Emitter.NewLabel()
@@ -43,6 +48,10 @@ func (c *WaitCompiler) compileEventWithTimeoutRecovery(
 	ctx fql.IWaitForEventExpressionContext,
 	timeoutLabel, endLabel core.Label,
 ) bytecode.Operand {
+	if waitForEventTriggerClause(ctx) != nil {
+		return c.compileEventWithTriggerTimeoutCleanup(ctx, timeoutLabel, endLabel)
+	}
+
 	streamReg := c.ctx.Function.Registers.Allocate()
 	resultReg := c.ctx.Function.Registers.Allocate()
 	timeoutStateReg := c.ctx.Function.Registers.Allocate()
@@ -56,6 +65,7 @@ func (c *WaitCompiler) compileEventWithTimeoutRecovery(
 	}
 
 	c.emitWaitEventStreamSetup(state, streamReg)
+	c.compileWaitEventTrigger(ctx)
 
 	start := c.ctx.Program.Emitter.NewLabel()
 	iterationDone := c.ctx.Program.Emitter.NewLabel()
@@ -77,6 +87,96 @@ func (c *WaitCompiler) compileEventWithTimeoutRecovery(
 	return resultReg
 }
 
+func (c *WaitCompiler) compileEventWithTriggerCleanup(ctx fql.IWaitForEventExpressionContext) bytecode.Operand {
+	streamReg := c.ctx.Function.Registers.Allocate()
+	resultReg := c.ctx.Function.Registers.Allocate()
+	streamReadyReg := c.ctx.Function.Registers.Allocate()
+
+	c.ctx.Program.Emitter.EmitLoadNone(resultReg)
+	c.ctx.Program.Emitter.EmitBoolean(streamReadyReg, false)
+
+	startCatch := c.ctx.Program.Emitter.Size()
+	state, ok := c.buildWaitEventState(ctx)
+	if !ok {
+		return bytecode.NoopOperand
+	}
+
+	c.emitWaitEventStreamSetupWithReady(state, streamReg, streamReadyReg)
+	c.compileWaitEventTrigger(ctx)
+
+	start := c.ctx.Program.Emitter.NewLabel()
+	iterationDone := c.ctx.Program.Emitter.NewLabel()
+	exit := c.ctx.Program.Emitter.NewLabel("waitfor", "event", "trigger", "exit")
+
+	c.ctx.Program.Emitter.MarkLabel(start)
+	c.emitWaitEventIteration(ctx, state, streamReg, resultReg, bytecode.NoopOperand, start, iterationDone)
+
+	c.ctx.Program.Emitter.MarkLabel(iterationDone)
+	c.emitWaitEventCleanupIfReady(state, streamReg, streamReadyReg)
+	c.ctx.Program.Emitter.EmitJump(exit)
+
+	endCatchExclusive := c.ctx.Program.Emitter.Size()
+	errorHandlerPC := c.ctx.Program.Emitter.Size()
+	c.emitWaitEventCleanupIfReady(state, streamReg, streamReadyReg)
+	c.ctx.Program.Emitter.Emit(bytecode.OpRethrow)
+
+	c.ctx.Program.Emitter.MarkLabel(exit)
+	c.ctx.Program.Emitter.EmitAB(bytecode.OpMove, resultReg, resultReg)
+
+	c.ctx.Program.CatchTable.Push(startCatch, endCatchExclusive-1, errorHandlerPC)
+
+	return resultReg
+}
+
+func (c *WaitCompiler) compileEventWithTriggerTimeoutCleanup(
+	ctx fql.IWaitForEventExpressionContext,
+	timeoutLabel, endLabel core.Label,
+) bytecode.Operand {
+	streamReg := c.ctx.Function.Registers.Allocate()
+	resultReg := c.ctx.Function.Registers.Allocate()
+	timeoutStateReg := c.ctx.Function.Registers.Allocate()
+	streamReadyReg := c.ctx.Function.Registers.Allocate()
+
+	c.ctx.Program.Emitter.EmitLoadNone(resultReg)
+	c.ctx.Program.Emitter.EmitBoolean(timeoutStateReg, false)
+	c.ctx.Program.Emitter.EmitBoolean(streamReadyReg, false)
+
+	startCatch := c.ctx.Program.Emitter.Size()
+	state, ok := c.buildWaitEventState(ctx)
+	if !ok {
+		return bytecode.NoopOperand
+	}
+
+	c.emitWaitEventStreamSetupWithReady(state, streamReg, streamReadyReg)
+	c.compileWaitEventTrigger(ctx)
+
+	start := c.ctx.Program.Emitter.NewLabel()
+	iterationDone := c.ctx.Program.Emitter.NewLabel()
+	cleanup := c.ctx.Program.Emitter.NewLabel()
+
+	c.ctx.Program.Emitter.MarkLabel(start)
+	c.emitWaitEventIteration(ctx, state, streamReg, resultReg, timeoutStateReg, start, iterationDone)
+
+	c.ctx.Program.Emitter.EmitJump(cleanup)
+	c.ctx.Program.Emitter.MarkLabel(iterationDone)
+	c.ctx.Program.Emitter.EmitJump(cleanup)
+
+	c.ctx.Program.Emitter.MarkLabel(cleanup)
+	c.emitWaitEventCleanupIfReady(state, streamReg, streamReadyReg)
+
+	c.ctx.Program.Emitter.EmitJumpIfTrue(timeoutStateReg, timeoutLabel)
+	c.ctx.Program.Emitter.EmitJump(endLabel)
+
+	endCatchExclusive := c.ctx.Program.Emitter.Size()
+	errorHandlerPC := c.ctx.Program.Emitter.Size()
+	c.emitWaitEventCleanupIfReady(state, streamReg, streamReadyReg)
+	c.ctx.Program.Emitter.Emit(bytecode.OpRethrow)
+
+	c.ctx.Program.CatchTable.Push(startCatch, endCatchExclusive-1, errorHandlerPC)
+
+	return resultReg
+}
+
 func (c *WaitCompiler) buildWaitEventState(ctx fql.IWaitForEventExpressionContext) (waitEventCompileState, bool) {
 	state := waitEventCompileState{
 		span:     waitForSpan(ctx.WaitForEventSource(), ctx),
@@ -88,7 +188,7 @@ func (c *WaitCompiler) buildWaitEventState(ctx fql.IWaitForEventExpressionContex
 		state.optsReg = c.CompileOptionsClause(opts)
 	}
 
-	if timeout := ctx.TimeoutClause(); timeout != nil {
+	if timeout := waitForEventTimeoutClause(ctx); timeout != nil {
 		state.timeoutReg = c.recovery.CompileDurationOperand(timeout)
 		if state.timeoutReg == bytecode.NoopOperand {
 			return waitEventCompileState{}, false
@@ -99,11 +199,101 @@ func (c *WaitCompiler) buildWaitEventState(ctx fql.IWaitForEventExpressionContex
 }
 
 func (c *WaitCompiler) emitWaitEventStreamSetup(state waitEventCompileState, streamReg bytecode.Operand) {
+	c.emitWaitEventStreamSetupWithReady(state, streamReg, bytecode.NoopOperand)
+}
+
+func (c *WaitCompiler) emitWaitEventStreamSetupWithReady(state waitEventCompileState, streamReg, streamReadyReg bytecode.Operand) {
 	c.ctx.Program.Emitter.WithSpan(state.span, func() {
 		c.ctx.Program.Emitter.EmitMove(streamReg, state.srcReg)
 		c.ctx.Program.Emitter.EmitABC(bytecode.OpStream, streamReg, state.eventReg, state.optsReg)
+		if streamReadyReg != bytecode.NoopOperand {
+			c.ctx.Program.Emitter.EmitBoolean(streamReadyReg, true)
+		}
 		c.ctx.Program.Emitter.EmitABC(bytecode.OpStreamIter, streamReg, streamReg, state.timeoutReg)
 	})
+}
+
+func (c *WaitCompiler) compileWaitEventTrigger(ctx fql.IWaitForEventExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	trigger := waitForEventTriggerClause(ctx)
+	if trigger == nil {
+		return
+	}
+
+	c.compileWaitForTriggerClause(trigger)
+}
+
+func (c *WaitCompiler) compileWaitForTriggerClause(ctx fql.IWaitForTriggerClauseContext) {
+	if ctx == nil {
+		return
+	}
+
+	c.ctx.Function.Symbols.EnterScope()
+	defer c.ctx.Function.Symbols.ExitScope()
+
+	if inline := ctx.WaitForTriggerInlineStatement(); inline != nil {
+		c.compileWaitForTriggerInlineStatement(inline)
+		return
+	}
+
+	for _, stmt := range ctx.AllWaitForTriggerStatement() {
+		c.compileWaitForTriggerStatement(stmt)
+	}
+}
+
+func (c *WaitCompiler) compileWaitForTriggerStatement(ctx fql.IWaitForTriggerStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	if vd := ctx.VariableDeclaration(); vd != nil {
+		c.bindings.CompileVariableDeclaration(vd)
+	} else if as := ctx.AssignmentStatement(); as != nil {
+		c.bindings.CompileAssignmentStatement(as)
+	} else if ds := ctx.DeleteStatement(); ds != nil {
+		c.bindings.CompileDeleteStatement(ds)
+	} else if fce := ctx.FunctionCallExpression(); fce != nil {
+		c.exprs.CompileFunctionCallExpression(fce)
+	} else if wfe := ctx.WaitForExpression(); wfe != nil {
+		c.Compile(wfe)
+	} else if de := ctx.DispatchExpression(); de != nil {
+		c.dispatch.Compile(de)
+	}
+}
+
+func (c *WaitCompiler) compileWaitForTriggerInlineStatement(ctx fql.IWaitForTriggerInlineStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	if vd := ctx.VariableDeclaration(); vd != nil {
+		c.bindings.CompileVariableDeclaration(vd)
+	} else if as := ctx.AssignmentStatement(); as != nil {
+		c.bindings.CompileAssignmentStatement(as)
+	} else if ds := ctx.DeleteStatement(); ds != nil {
+		c.bindings.CompileDeleteStatement(ds)
+	} else if fce := ctx.FunctionCallNoRecoveryExpression(); fce != nil {
+		c.exprs.CompileFunctionCallNoRecoveryExpression(fce)
+	} else if dispatch := ctx.WaitForTriggerInlineDispatchStatement(); dispatch != nil {
+		c.compileWaitForTriggerInlineDispatchStatement(dispatch)
+	}
+}
+
+func (c *WaitCompiler) compileWaitForTriggerInlineDispatchStatement(ctx fql.IWaitForTriggerInlineDispatchStatementContext) {
+	if ctx == nil {
+		return
+	}
+
+	c.dispatch.compileCore(
+		ctx.DispatchTarget(),
+		ctx.DispatchEventName(),
+		ctx.DispatchWithClause(),
+		ctx.DispatchOptionsClause(),
+		c.dispatch.dispatchSpan(ctx),
+	)
 }
 
 func (c *WaitCompiler) emitWaitEventIteration(
@@ -149,6 +339,19 @@ func (c *WaitCompiler) emitWaitEventCleanup(state waitEventCompileState, streamR
 	c.ctx.Program.Emitter.WithSpan(state.span, func() {
 		c.ctx.Program.Emitter.EmitA(bytecode.OpClose, streamReg)
 	})
+}
+
+func (c *WaitCompiler) emitWaitEventCleanupIfReady(state waitEventCompileState, streamReg, streamReadyReg bytecode.Operand) {
+	if streamReadyReg == bytecode.NoopOperand {
+		c.emitWaitEventCleanup(state, streamReg)
+		return
+	}
+
+	skip := c.ctx.Program.Emitter.NewLabel("waitfor", "event", "cleanup", "skip")
+	c.ctx.Program.Emitter.EmitJumpIfFalse(streamReadyReg, skip)
+	c.emitWaitEventCleanup(state, streamReg)
+	c.ctx.Program.Emitter.EmitBoolean(streamReadyReg, false)
+	c.ctx.Program.Emitter.MarkLabel(skip)
 }
 
 // CompileWaitForEventName processes the event name expression in a WAITFOR statement.

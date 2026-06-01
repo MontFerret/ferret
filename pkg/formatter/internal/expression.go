@@ -868,6 +868,18 @@ func (f *expressionFormatter) formatFunctionCallExpression(ctx *fql.FunctionCall
 	f.formatRecoveryTails(ctx.RecoveryTails())
 }
 
+func (f *expressionFormatter) formatFunctionCallNoRecoveryExpression(ctx *fql.FunctionCallNoRecoveryExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.formatFunctionCall(ctx.FunctionCall().(*fql.FunctionCallContext))
+
+	if ctx.ErrorOperator() != nil {
+		f.p.write("?")
+	}
+}
+
 func (f *expressionFormatter) formatFunctionCall(ctx *fql.FunctionCallContext) {
 	if ctx == nil {
 		return

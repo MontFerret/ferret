@@ -217,12 +217,20 @@ func TestCompiler_WaitForEventSuppressCatchUsesCleanupJump(t *testing.T) {
 				return err
 			}
 
-			if got, want := catch[1], closePC; got != want {
+			cleanupDonePC := closePC + 1
+			if cleanupDonePC >= len(program.Bytecode) {
+				return fmt.Errorf("waitfor event cleanup completion pc %d out of range", cleanupDonePC)
+			}
+			if got, want := program.Bytecode[cleanupDonePC].Opcode, bytecode.OpLoadBool; got != want {
+				return fmt.Errorf("unexpected waitfor event cleanup completion opcode at pc %d: got %s, want %s", cleanupDonePC, got, want)
+			}
+
+			if got, want := catch[1], cleanupDonePC; got != want {
 				return fmt.Errorf("unexpected catch end: got %d, want %d", got, want)
 			}
 
-			if got := catch[2]; got <= closePC || got >= propPC {
-				return fmt.Errorf("unexpected waitfor event recovery jump: got %d, want (%d, %d)", got, closePC, propPC)
+			if got := catch[2]; got <= cleanupDonePC || got >= propPC {
+				return fmt.Errorf("unexpected waitfor event recovery jump: got %d, want (%d, %d)", got, cleanupDonePC, propPC)
 			}
 
 			return nil
@@ -247,12 +255,20 @@ func TestCompiler_WaitForEventRetryUsesCleanupJump(t *testing.T) {
 				return err
 			}
 
-			if got, want := catch[1], closePC; got != want {
+			cleanupDonePC := closePC + 1
+			if cleanupDonePC >= len(program.Bytecode) {
+				return fmt.Errorf("waitfor event cleanup completion pc %d out of range", cleanupDonePC)
+			}
+			if got, want := program.Bytecode[cleanupDonePC].Opcode, bytecode.OpLoadBool; got != want {
+				return fmt.Errorf("unexpected waitfor event cleanup completion opcode at pc %d: got %s, want %s", cleanupDonePC, got, want)
+			}
+
+			if got, want := catch[1], cleanupDonePC; got != want {
 				return fmt.Errorf("unexpected catch end: got %d, want %d", got, want)
 			}
 
-			if got := catch[2]; got <= closePC || got >= propPC {
-				return fmt.Errorf("unexpected waitfor event retry jump: got %d, want (%d, %d)", got, closePC, propPC)
+			if got := catch[2]; got <= cleanupDonePC || got >= propPC {
+				return fmt.Errorf("unexpected waitfor event retry jump: got %d, want (%d, %d)", got, cleanupDonePC, propPC)
 			}
 
 			return nil

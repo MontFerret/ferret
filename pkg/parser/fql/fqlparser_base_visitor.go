@@ -219,6 +219,26 @@ func (v *BaseFqlParserVisitor) VisitWaitForEventExpression(ctx *WaitForEventExpr
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitWaitForEventTail(ctx *WaitForEventTailContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForTriggerClause(ctx *WaitForTriggerClauseContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForTriggerStatement(ctx *WaitForTriggerStatementContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForTriggerInlineStatement(ctx *WaitForTriggerInlineStatementContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForTriggerInlineDispatchStatement(ctx *WaitForTriggerInlineDispatchStatementContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitWaitForPredicateExpression(ctx *WaitForPredicateExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -428,6 +448,10 @@ func (v *BaseFqlParserVisitor) VisitMemberExpressionSource(ctx *MemberExpression
 }
 
 func (v *BaseFqlParserVisitor) VisitFunctionCallExpression(ctx *FunctionCallExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitFunctionCallNoRecoveryExpression(ctx *FunctionCallNoRecoveryExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

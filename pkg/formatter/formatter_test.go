@@ -121,6 +121,66 @@ func TestFormatter_WaitForEventFilterUsesWhenAndRemainsParseable(t *testing.T) {
 	}
 }
 
+func TestFormatter_WaitForEventTriggerRemainsParseable(t *testing.T) {
+	input := "LET obs = []\nLET button = @button\nWAITFOR EVENT \"test\" IN obs WHEN .type == \"match\" TRIGGER (button <- \"click\") TIMEOUT 1\nRETURN 1"
+	src := source.NewAnonymous(input)
+	var buf bytes.Buffer
+	fmt := New()
+
+	if err := fmt.Format(&buf, src); err != nil {
+		t.Fatalf("format failed: %v", err)
+	}
+
+	out := buf.String()
+	whenIdx := strings.Index(out, "WHEN .type == \"match\"")
+	triggerIdx := strings.Index(out, "TRIGGER (")
+	timeoutIdx := strings.Index(out, "TIMEOUT 1")
+	if whenIdx < 0 || triggerIdx < 0 || timeoutIdx < 0 {
+		t.Fatalf("expected WAITFOR trigger clauses in formatted output; got:\n%s", out)
+	}
+	if !(whenIdx < triggerIdx && triggerIdx < timeoutIdx) {
+		t.Fatalf("expected WHEN -> TRIGGER -> TIMEOUT order; got:\n%s", out)
+	}
+	if !strings.Contains(out, "\n    button <- \"click\"\n") {
+		t.Fatalf("expected trigger body to be formatted as a block; got:\n%s", out)
+	}
+
+	var roundTrip bytes.Buffer
+	if err := fmt.Format(&roundTrip, source.NewAnonymous(out)); err != nil {
+		t.Fatalf("formatted output must remain parseable: %v\nformatted:\n%s", err, out)
+	}
+}
+
+func TestFormatter_WaitForEventInlineTriggerRemainsInline(t *testing.T) {
+	input := "LET obs = []\nLET button = @button\nWAITFOR EVENT \"test\" IN obs WHEN .type == \"match\" TRIGGER button <- \"click\" TIMEOUT 1\nRETURN 1"
+	src := source.NewAnonymous(input)
+	var buf bytes.Buffer
+	fmt := New()
+
+	if err := fmt.Format(&buf, src); err != nil {
+		t.Fatalf("format failed: %v", err)
+	}
+
+	out := buf.String()
+	whenIdx := strings.Index(out, "WHEN .type == \"match\"")
+	triggerIdx := strings.Index(out, "TRIGGER button <- \"click\"")
+	timeoutIdx := strings.Index(out, "TIMEOUT 1")
+	if whenIdx < 0 || triggerIdx < 0 || timeoutIdx < 0 {
+		t.Fatalf("expected inline WAITFOR trigger clauses in formatted output; got:\n%s", out)
+	}
+	if !(whenIdx < triggerIdx && triggerIdx < timeoutIdx) {
+		t.Fatalf("expected WHEN -> TRIGGER -> TIMEOUT order; got:\n%s", out)
+	}
+	if strings.Contains(out, "TRIGGER (") {
+		t.Fatalf("expected trigger shorthand to remain inline; got:\n%s", out)
+	}
+
+	var roundTrip bytes.Buffer
+	if err := fmt.Format(&roundTrip, source.NewAnonymous(out)); err != nil {
+		t.Fatalf("formatted output must remain parseable: %v\nformatted:\n%s", err, out)
+	}
+}
+
 func TestFormatter_WaitForPredicateRepeatedWhenRemainsParseable(t *testing.T) {
 	input := "LET value = WAITFOR VALUE { ok: true } WHEN .ok WHEN .ok == true TIMEOUT 1\nRETURN value"
 	src := source.NewAnonymous(input)

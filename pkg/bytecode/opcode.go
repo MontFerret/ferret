@@ -172,6 +172,7 @@ const (
 	OpJumpIfMissingPropertyConst
 	OpFail        // Raises a runtime failure with a constant message
 	OpFailTimeout // Raises a runtime timeout failure
+	OpRethrow     // Raises the currently handled runtime failure
 
 	// Internal Aggregate Operations
 	OpLoadAggregateKey // Creates an internal grouped-aggregate selector key
@@ -214,6 +215,8 @@ func (op Opcode) String() string {
 		return "FAIL"
 	case OpFailTimeout:
 		return "FAILTIMEOUT"
+	case OpRethrow:
+		return "RETHROW"
 	case OpLoadAggregateKey:
 		return "LOADAGGK"
 

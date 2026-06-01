@@ -200,7 +200,7 @@ func waitForHasExplicitTimeoutClause(ctx fql.IWaitForExpressionContext) bool {
 		return false
 	}
 
-	if ev := ctx.WaitForEventExpression(); ev != nil && ev.TimeoutClause() != nil {
+	if ev := ctx.WaitForEventExpression(); ev != nil && waitForEventTimeoutClause(ev) != nil {
 		return true
 	}
 

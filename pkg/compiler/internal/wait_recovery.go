@@ -10,6 +10,8 @@ import (
 // It transforms wait operations into VM instructions for event streaming and polling.
 type WaitCompiler struct {
 	ctx      *CompilationSession
+	bindings *BindingCompiler
+	dispatch *DispatchCompiler
 	exprs    *ExprCompiler
 	literals *LiteralCompiler
 	recovery *RecoveryCompiler
@@ -23,11 +25,13 @@ func NewWaitCompiler(ctx *CompilationSession) *WaitCompiler {
 	}
 }
 
-func (c *WaitCompiler) bind(exprs *ExprCompiler, literals *LiteralCompiler, recovery *RecoveryCompiler, facts *TypeFacts) {
+func (c *WaitCompiler) bind(bindings *BindingCompiler, dispatch *DispatchCompiler, exprs *ExprCompiler, literals *LiteralCompiler, recovery *RecoveryCompiler, facts *TypeFacts) {
 	if c == nil {
 		return
 	}
 
+	c.bindings = bindings
+	c.dispatch = dispatch
 	c.exprs = exprs
 	c.literals = literals
 	c.recovery = recovery
@@ -74,7 +78,7 @@ func (c *WaitCompiler) newWaitOperationRecoverySpec(ctx fql.IWaitForExpressionCo
 			return c.buildProtectedEventRecovery(ev, recoveryLabel, timeoutLabel, endLabel)
 		}
 
-		if ev.TimeoutClause() != nil {
+		if waitForEventTimeoutClause(ev) != nil {
 			spec.CompileTimeoutAware = func(timeoutLabel, endLabel core.Label) bytecode.Operand {
 				return c.compileEventWithTimeoutRecovery(ev, timeoutLabel, endLabel)
 			}
@@ -108,10 +112,11 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 	ctx fql.IWaitForEventExpressionContext,
 	recoveryLabel, timeoutLabel, endLabel core.Label,
 ) ProtectedRecoveryRegion {
-	hasTimeout := ctx != nil && ctx.TimeoutClause() != nil
+	hasTimeout := waitForEventTimeoutClause(ctx) != nil
 	streamReg := c.ctx.Function.Registers.Allocate()
 	resultReg := c.ctx.Function.Registers.Allocate()
 	errorStateReg := c.ctx.Function.Registers.Allocate()
+	streamReadyReg := c.ctx.Function.Registers.Allocate()
 	timeoutStateReg := bytecode.NoopOperand
 
 	if hasTimeout {
@@ -121,6 +126,7 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 
 	c.ctx.Program.Emitter.EmitLoadNone(resultReg)
 	c.ctx.Program.Emitter.EmitBoolean(errorStateReg, false)
+	c.ctx.Program.Emitter.EmitBoolean(streamReadyReg, false)
 
 	startCatch := c.ctx.Program.Emitter.Size()
 	state, ok := c.buildWaitEventState(ctx)
@@ -128,7 +134,8 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 		return ProtectedRecoveryRegion{Result: bytecode.NoopOperand}
 	}
 
-	c.emitWaitEventStreamSetup(state, streamReg)
+	c.emitWaitEventStreamSetupWithReady(state, streamReg, streamReadyReg)
+	c.compileWaitEventTrigger(ctx)
 
 	start := c.ctx.Program.Emitter.NewLabel()
 	iterationDone := c.ctx.Program.Emitter.NewLabel()
@@ -143,7 +150,7 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 	c.ctx.Program.Emitter.EmitJump(cleanup)
 
 	c.ctx.Program.Emitter.MarkLabel(cleanup)
-	c.emitWaitEventCleanup(state, streamReg)
+	c.emitWaitEventCleanupIfReady(state, streamReg, streamReadyReg)
 
 	endCatchExclusive := c.ctx.Program.Emitter.Size()
 

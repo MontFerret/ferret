@@ -343,6 +343,8 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 		if ops[0].IsConstant() {
 			out += formatComment(constValue(p, ops[0].Constant()))
 		}
+	case bytecode.OpRethrow:
+		out = fmt.Sprintf("%d: %s", ip, opcode)
 
 	// Op R R
 	case bytecode.OpMove, bytecode.OpMoveTracked, bytecode.OpMakeCell, bytecode.OpLoadCell, bytecode.OpStoreCell,

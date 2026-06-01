@@ -48,25 +48,40 @@ func (c *DispatchCompiler) Compile(ctx fql.IDispatchExpressionContext) bytecode.
 		Owner:    ctx,
 		JumpMode: core.CatchJumpModeNone,
 		CompilePlain: func() bytecode.Operand {
-			targetReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compileTarget(ctx.DispatchTarget()))
-			eventReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compileEventName(ctx.DispatchEventName()))
-			payloadReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compilePayload(ctx.DispatchWithClause()))
-			optionsReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compileOptions(ctx.DispatchOptionsClause()))
-			argsReg := c.buildDispatchArgs(payloadReg, optionsReg)
-
-			dst := c.ctx.Function.Registers.Allocate()
-			span := c.dispatchSpan(ctx)
-
-			c.ctx.Program.Emitter.WithSpan(span, func() {
-				c.ctx.Program.Emitter.EmitMove(dst, targetReg)
-				c.ctx.Program.Emitter.EmitABC(bytecode.OpDispatch, dst, eventReg, argsReg)
-			})
-
-			c.ctx.Function.Types.Set(dst, core.TypeNone)
-
-			return dst
+			return c.compileCore(
+				ctx.DispatchTarget(),
+				ctx.DispatchEventName(),
+				ctx.DispatchWithClause(),
+				ctx.DispatchOptionsClause(),
+				c.dispatchSpan(ctx),
+			)
 		},
 	})
+}
+
+func (c *DispatchCompiler) compileCore(
+	target fql.IDispatchTargetContext,
+	event fql.IDispatchEventNameContext,
+	with fql.IDispatchWithClauseContext,
+	options fql.IDispatchOptionsClauseContext,
+	span source.Span,
+) bytecode.Operand {
+	targetReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compileTarget(target))
+	eventReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compileEventName(event))
+	payloadReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compilePayload(with))
+	optionsReg := ensureDispatchOperandRegister(c.ctx, c.facts, c.compileOptions(options))
+	argsReg := c.buildDispatchArgs(payloadReg, optionsReg)
+
+	dst := c.ctx.Function.Registers.Allocate()
+
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitMove(dst, targetReg)
+		c.ctx.Program.Emitter.EmitABC(bytecode.OpDispatch, dst, eventReg, argsReg)
+	})
+
+	c.ctx.Function.Types.Set(dst, core.TypeNone)
+
+	return dst
 }
 
 func (c *DispatchCompiler) compileEventName(ctx fql.IDispatchEventNameContext) bytecode.Operand {
@@ -150,14 +165,10 @@ func (c *DispatchCompiler) buildDispatchArgs(payload, options bytecode.Operand) 
 	return dst
 }
 
-func (c *DispatchCompiler) dispatchSpan(ctx fql.IDispatchExpressionContext) source.Span {
+func (c *DispatchCompiler) dispatchSpan(ctx antlr.ParserRuleContext) source.Span {
 	if ctx == nil {
 		return source.Span{Start: -1, End: -1}
 	}
 
-	if prc, ok := ctx.(antlr.ParserRuleContext); ok {
-		return diagnostics.SpanFromRuleContext(prc)
-	}
-
-	return source.Span{Start: -1, End: -1}
+	return diagnostics.SpanFromRuleContext(ctx)
 }

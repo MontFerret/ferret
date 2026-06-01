@@ -96,9 +96,61 @@ func TestWaitforPredicateWhenCompiles(t *testing.T) {
 			RETURN WAITFOR EVENT "test" IN obs
 				WHEN .type == "match"
 				WHEN BOOM(.)
+				TRIGGER (
+					LET local = 1
+				)
 				TIMEOUT 5ms
 				ON TIMEOUT RETURN NONE
-		`, expectHostFunction("BOOM", 1), "WAITFOR EVENT should compile repeated WHEN host calls and timeout tail"),
+		`, expectHostFunction("BOOM", 1), "WAITFOR EVENT should compile repeated WHEN, trigger, and timeout tail"),
+		ProgramCheck(`
+			LET obs = []
+			RETURN WAITFOR EVENT "test" IN obs
+				WHEN .TRIGGER == "match"
+				TIMEOUT 5ms
+				ON TIMEOUT RETURN NONE
+		`, noCompilerError, "WAITFOR EVENT should compile TRIGGER as an implicit-current property"),
+		ProgramCheck(`
+			LET obs = []
+			RETURN WAITFOR EVENT "test" IN obs
+				TRIGGER (
+					LET local = 1
+				)
+				TIMEOUT 5ms
+				ON TIMEOUT RETURN NONE
+		`, noCompilerError, "WAITFOR EVENT should compile a trigger before timeout"),
+		ProgramCheck(`
+			LET obs = []
+			LET button = {}
+			RETURN WAITFOR EVENT "test" IN obs
+				TRIGGER button <- "click"
+				TIMEOUT 5ms
+				ON TIMEOUT RETURN NONE
+		`, noCompilerError, "WAITFOR EVENT should compile inline dispatch trigger before timeout"),
+		ProgramCheck(`
+			LET obs = []
+			VAR clicked = false
+			RETURN WAITFOR EVENT "test" IN obs
+				TRIGGER clicked = true
+				TIMEOUT 5ms
+				ON TIMEOUT RETURN NONE
+		`, noCompilerError, "WAITFOR EVENT should compile inline assignment trigger before timeout"),
+		ProgramCheck(`
+			LET obs = []
+			RETURN WAITFOR EVENT "test" IN obs
+				TRIGGER ()
+				TIMEOUT 5ms
+				ON TIMEOUT RETURN NONE
+		`, noCompilerError, "WAITFOR EVENT should compile empty trigger block before timeout"),
+		ProgramCheck(`
+			LET TRIGGER = 1
+			RETURN TRIGGER
+		`, noCompilerError, "TRIGGER should compile as a safe reserved variable name"),
+		ProgramCheck(`
+			RETURN @TRIGGER
+		`, noCompilerError, "TRIGGER should compile as a safe reserved param name"),
+		ProgramCheck(`
+			RETURN TRIGGER()
+		`, expectHostFunction("TRIGGER", 0), "TRIGGER should compile as a safe reserved function name"),
 		ProgramCheck(`
 			LET obs = []
 			FOR i IN [1, 2]
