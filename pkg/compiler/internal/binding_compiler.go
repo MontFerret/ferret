@@ -152,7 +152,7 @@ func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatemen
 			return bytecode.NoopOperand
 		}
 
-		c.ctx.Program.Errors.VariableNotFound(assignment.RootTok, assignment.Root)
+		reportVariableNotFound(c.ctx, assignment.RootTok, assignment.Root)
 		return bytecode.NoopOperand
 	}
 

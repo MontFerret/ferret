@@ -33,6 +33,7 @@ func (v *Visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
 	}
 
 	v.Frontend.UDFCatalog.BuildCatalog(ctx)
+	v.Frontend.ForwardBindings.BuildProgram(ctx)
 	v.Frontend.NameCollisions.ValidateProgram(ctx)
 	if ctx != nil {
 		if body, ok := ctx.Body().(*fql.BodyContext); ok {

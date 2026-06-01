@@ -119,7 +119,7 @@ func (c *CollectCompiler) compileDefaultGroupProjection(kv *core.KV, identifier 
 			binding, found := c.ctx.Function.Symbols.ResolveBinding(varName)
 
 			if !found {
-				c.ctx.Program.Errors.VariableNotFound(variable.GetSymbol(), varName)
+				reportVariableNotFound(c.ctx, variable.GetSymbol(), varName)
 				noneReg := c.ctx.Function.Registers.Allocate()
 				c.ctx.Program.Emitter.EmitA(bytecode.OpLoadNone, noneReg)
 				c.ctx.Function.Types.Set(noneReg, core.TypeNone)

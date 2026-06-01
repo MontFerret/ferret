@@ -77,7 +77,7 @@ func (c *exprCallCompiler) compileVariable(ctx fql.IVariableContext) bytecode.Op
 
 	binding, found := c.ctx.Function.Symbols.ResolveBinding(name)
 	if !found {
-		c.ctx.Program.Errors.VariableNotFound(token, name)
+		reportVariableNotFound(c.ctx, token, name)
 
 		return bytecode.NoopOperand
 	}
