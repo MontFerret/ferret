@@ -342,6 +342,12 @@ func (s *BaseFqlParserListener) EnterWaitForEventExpression(ctx *WaitForEventExp
 // ExitWaitForEventExpression is called when production waitForEventExpression is exited.
 func (s *BaseFqlParserListener) ExitWaitForEventExpression(ctx *WaitForEventExpressionContext) {}
 
+// EnterWaitForEventTail is called when production waitForEventTail is entered.
+func (s *BaseFqlParserListener) EnterWaitForEventTail(ctx *WaitForEventTailContext) {}
+
+// ExitWaitForEventTail is called when production waitForEventTail is exited.
+func (s *BaseFqlParserListener) ExitWaitForEventTail(ctx *WaitForEventTailContext) {}
+
 // EnterWaitForTriggerClause is called when production waitForTriggerClause is entered.
 func (s *BaseFqlParserListener) EnterWaitForTriggerClause(ctx *WaitForTriggerClauseContext) {}
 
@@ -691,6 +697,14 @@ func (s *BaseFqlParserListener) EnterFunctionCallExpression(ctx *FunctionCallExp
 
 // ExitFunctionCallExpression is called when production functionCallExpression is exited.
 func (s *BaseFqlParserListener) ExitFunctionCallExpression(ctx *FunctionCallExpressionContext) {}
+
+// EnterFunctionCallNoRecoveryExpression is called when production functionCallNoRecoveryExpression is entered.
+func (s *BaseFqlParserListener) EnterFunctionCallNoRecoveryExpression(ctx *FunctionCallNoRecoveryExpressionContext) {
+}
+
+// ExitFunctionCallNoRecoveryExpression is called when production functionCallNoRecoveryExpression is exited.
+func (s *BaseFqlParserListener) ExitFunctionCallNoRecoveryExpression(ctx *FunctionCallNoRecoveryExpressionContext) {
+}
 
 // EnterFunctionCall is called when production functionCall is entered.
 func (s *BaseFqlParserListener) EnterFunctionCall(ctx *FunctionCallContext) {}

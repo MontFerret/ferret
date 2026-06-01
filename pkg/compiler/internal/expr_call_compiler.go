@@ -136,6 +136,21 @@ func (c *exprCallCompiler) compileFunctionCallExpression(ctx fql.IFunctionCallEx
 	})
 }
 
+func (c *exprCallCompiler) compileFunctionCallNoRecoveryExpression(ctx fql.IFunctionCallNoRecoveryExpressionContext) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
+	call := ctx.FunctionCall()
+	if ctx.ErrorOperator() != nil {
+		return c.recovery.CompileWithErrorPolicy(core.ErrorPolicySuppress, core.CatchJumpModeNone, func() bytecode.Operand {
+			return c.compileFunctionCall(call, true)
+		})
+	}
+
+	return c.compileFunctionCall(call, false)
+}
+
 func (c *exprCallCompiler) compileFunctionCall(ctx fql.IFunctionCallContext, protected bool) bytecode.Operand {
 	return c.compileFunctionCallWith(ctx, protected, c.compileArgumentList(ctx.ArgumentList()))
 }

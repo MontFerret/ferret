@@ -57,6 +57,10 @@ func (c *ExprCompiler) CompileFunctionCallExpression(ctx fql.IFunctionCallExpres
 	return c.callCompiler.compileFunctionCallExpression(ctx)
 }
 
+func (c *ExprCompiler) CompileFunctionCallNoRecoveryExpression(ctx fql.IFunctionCallNoRecoveryExpressionContext) bytecode.Operand {
+	return c.callCompiler.compileFunctionCallNoRecoveryExpression(ctx)
+}
+
 func (c *ExprCompiler) CompileFunctionCall(ctx fql.IFunctionCallContext, protected bool) bytecode.Operand {
 	return c.callCompiler.compileFunctionCall(ctx, protected)
 }

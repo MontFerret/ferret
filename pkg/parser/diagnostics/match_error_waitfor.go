@@ -112,6 +112,10 @@ func waitForTriggerInlineWaitfor(offending *TokenNode) *TokenNode {
 		return nil
 	}
 
+	if is(offending, "TRIGGER") && is(offending.Next(), "WAITFOR") && hasWaitforBefore(offending) {
+		return offending
+	}
+
 	for curr := offending; curr != nil; curr = curr.Prev() {
 		if is(curr, "TRIGGER") {
 			return nil

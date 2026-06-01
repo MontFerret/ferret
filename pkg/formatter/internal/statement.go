@@ -559,14 +559,16 @@ func (f *statementFormatter) formatWaitForEventExpression(ctx *fql.WaitForEventE
 		f.clause.formatEventFilterClause(filter.(*fql.EventFilterClauseContext))
 	}
 
-	if trigger := ctx.WaitForTriggerClause(); trigger != nil {
-		f.p.space()
-		f.formatWaitForTriggerClause(trigger.(*fql.WaitForTriggerClauseContext))
-	}
+	if tail := ctx.WaitForEventTail(); tail != nil {
+		if trigger := tail.WaitForTriggerClause(); trigger != nil {
+			f.p.space()
+			f.formatWaitForTriggerClause(trigger.(*fql.WaitForTriggerClauseContext))
+		}
 
-	if timeout := ctx.TimeoutClause(); timeout != nil {
-		f.p.space()
-		f.clause.formatTimeoutClause(timeout.(*fql.TimeoutClauseContext))
+		if timeout := tail.TimeoutClause(); timeout != nil {
+			f.p.space()
+			f.clause.formatTimeoutClause(timeout.(*fql.TimeoutClauseContext))
+		}
 	}
 }
 
@@ -651,8 +653,10 @@ func (f *statementFormatter) formatWaitForTriggerInlineStatement(ctx *fql.WaitFo
 		f.formatAssignmentStatement(ctx.AssignmentStatement().(*fql.AssignmentStatementContext))
 	case ctx.DeleteStatement() != nil:
 		f.formatDeleteStatement(ctx.DeleteStatement().(*fql.DeleteStatementContext))
-	case ctx.FunctionCallExpression() != nil:
-		f.expression.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
+	case ctx.FunctionCallNoRecoveryExpression() != nil:
+		f.expression.formatFunctionCallNoRecoveryExpression(
+			ctx.FunctionCallNoRecoveryExpression().(*fql.FunctionCallNoRecoveryExpressionContext),
+		)
 	case ctx.WaitForTriggerInlineDispatchStatement() != nil:
 		f.formatWaitForTriggerInlineDispatchStatement(
 			ctx.WaitForTriggerInlineDispatchStatement().(*fql.WaitForTriggerInlineDispatchStatementContext),

@@ -33,7 +33,7 @@ options { tokenVocab=FqlLexer; }
 			FqlParserLimit, FqlParserCollect, FqlParserSortDirection, FqlParserInto, FqlParserKeep, FqlParserWith,
 			FqlParserAll, FqlParserAny, FqlParserAt, FqlParserLeast, FqlParserAggregate, FqlParserEvent, FqlParserTimeout,
 			FqlParserOptions, FqlParserEvery, FqlParserBackoff, FqlParserJitter, FqlParserExists, FqlParserValue,
-			FqlParserOne, FqlParserCount:
+			FqlParserOne, FqlParserCount, FqlParserTrigger:
 			return true
 		default:
 			return false
@@ -514,12 +514,18 @@ dispatchOptionsClause
     ;
 
 waitForEventExpression
-    : Event waitForEventName In waitForEventSource (optionsClause)? (eventFilterClause)* (waitForTriggerClause)? (timeoutClause)?
+    : Event waitForEventName In waitForEventSource (optionsClause)? (eventFilterClause)* waitForEventTail
+    ;
+
+waitForEventTail
+    : waitForTriggerClause (timeoutClause)?
+    | timeoutClause
+    | {p.GetTokenStream().LA(1) != FqlParserTrigger && p.GetTokenStream().LA(1) != FqlParserTimeout}?
     ;
 
 waitForTriggerClause
     : Trigger OpenParen waitForTriggerStatement* CloseParen
-    | Trigger waitForTriggerInlineStatement
+    | Trigger {p.GetTokenStream().LA(1) != FqlParserOpenParen}? waitForTriggerInlineStatement
     ;
 
 waitForTriggerStatement
@@ -535,7 +541,7 @@ waitForTriggerInlineStatement
     : variableDeclaration
     | assignmentStatement
     | deleteStatement
-    | functionCallExpression
+    | functionCallNoRecoveryExpression
     | waitForTriggerInlineDispatchStatement
     ;
 
@@ -792,7 +798,6 @@ propertyName
     : Identifier
     | stringLiteral
     | param
-    | Trigger
     | safeReservedWord
     | unsafeReservedWord
     ;
@@ -820,6 +825,10 @@ memberExpressionSource
 
 functionCallExpression
     : functionCall (errorOperator | recoveryTails)?
+    ;
+
+functionCallNoRecoveryExpression
+    : functionCall errorOperator?
     ;
 
 functionCall
@@ -921,6 +930,7 @@ safeReservedWord
     | Exists
     | Value
     | One
+    | Trigger
     ;
 
 unsafeReservedWord
@@ -1066,7 +1076,6 @@ matchObjectPatternProperty
 matchObjectPatternKey
     : Identifier
     | stringLiteral
-    | Trigger
     | safeReservedWord
     | unsafeReservedWord
     ;

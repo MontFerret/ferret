@@ -78,7 +78,7 @@ func (c *WaitCompiler) newWaitOperationRecoverySpec(ctx fql.IWaitForExpressionCo
 			return c.buildProtectedEventRecovery(ev, recoveryLabel, timeoutLabel, endLabel)
 		}
 
-		if ev.TimeoutClause() != nil {
+		if waitForEventTimeoutClause(ev) != nil {
 			spec.CompileTimeoutAware = func(timeoutLabel, endLabel core.Label) bytecode.Operand {
 				return c.compileEventWithTimeoutRecovery(ev, timeoutLabel, endLabel)
 			}
@@ -112,7 +112,7 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 	ctx fql.IWaitForEventExpressionContext,
 	recoveryLabel, timeoutLabel, endLabel core.Label,
 ) ProtectedRecoveryRegion {
-	hasTimeout := ctx != nil && ctx.TimeoutClause() != nil
+	hasTimeout := waitForEventTimeoutClause(ctx) != nil
 	streamReg := c.ctx.Function.Registers.Allocate()
 	resultReg := c.ctx.Function.Registers.Allocate()
 	errorStateReg := c.ctx.Function.Registers.Allocate()

@@ -166,6 +166,9 @@ type FqlParserListener interface {
 	// EnterWaitForEventExpression is called when entering the waitForEventExpression production.
 	EnterWaitForEventExpression(c *WaitForEventExpressionContext)
 
+	// EnterWaitForEventTail is called when entering the waitForEventTail production.
+	EnterWaitForEventTail(c *WaitForEventTailContext)
+
 	// EnterWaitForTriggerClause is called when entering the waitForTriggerClause production.
 	EnterWaitForTriggerClause(c *WaitForTriggerClauseContext)
 
@@ -336,6 +339,9 @@ type FqlParserListener interface {
 
 	// EnterFunctionCallExpression is called when entering the functionCallExpression production.
 	EnterFunctionCallExpression(c *FunctionCallExpressionContext)
+
+	// EnterFunctionCallNoRecoveryExpression is called when entering the functionCallNoRecoveryExpression production.
+	EnterFunctionCallNoRecoveryExpression(c *FunctionCallNoRecoveryExpressionContext)
 
 	// EnterFunctionCall is called when entering the functionCall production.
 	EnterFunctionCall(c *FunctionCallContext)
@@ -664,6 +670,9 @@ type FqlParserListener interface {
 	// ExitWaitForEventExpression is called when exiting the waitForEventExpression production.
 	ExitWaitForEventExpression(c *WaitForEventExpressionContext)
 
+	// ExitWaitForEventTail is called when exiting the waitForEventTail production.
+	ExitWaitForEventTail(c *WaitForEventTailContext)
+
 	// ExitWaitForTriggerClause is called when exiting the waitForTriggerClause production.
 	ExitWaitForTriggerClause(c *WaitForTriggerClauseContext)
 
@@ -834,6 +843,9 @@ type FqlParserListener interface {
 
 	// ExitFunctionCallExpression is called when exiting the functionCallExpression production.
 	ExitFunctionCallExpression(c *FunctionCallExpressionContext)
+
+	// ExitFunctionCallNoRecoveryExpression is called when exiting the functionCallNoRecoveryExpression production.
+	ExitFunctionCallNoRecoveryExpression(c *FunctionCallNoRecoveryExpressionContext)
 
 	// ExitFunctionCall is called when exiting the functionCall production.
 	ExitFunctionCall(c *FunctionCallContext)

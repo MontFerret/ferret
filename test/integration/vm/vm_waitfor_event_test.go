@@ -1,6 +1,7 @@
 package vm_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -142,6 +143,7 @@ func TestWaitforEventTrigger(t *testing.T) {
 		timeout := NewTriggerObservable()
 		triggerFailure := NewTriggerObservable()
 		triggerFailure.FailNextDispatches(1, errors.New("trigger failed"))
+		triggerCallFailure := NewTriggerObservable()
 		waitFailure := NewTriggerObservable()
 		waitFailure.FailReadsWith(errors.New("stream failed"))
 		retry := NewTriggerObservable()
@@ -171,6 +173,18 @@ RETURN WAITFOR EVENT "test" IN target
 	ON ERROR RETURN "error"`, expectTriggerObservable(triggerFailure, "error", 1, 1, 1), "WAITFOR EVENT trigger failure should clean up and use ON ERROR").Env(vm.WithParams(map[string]runtime.Value{
 				"target": triggerFailure,
 			})),
+			Fn(`LET target = @target
+RETURN WAITFOR EVENT "test" IN target
+	TRIGGER FAIL()
+	TIMEOUT 1ms
+	ON ERROR RETURN "error"`, expectTriggerObservable(triggerCallFailure, "error", 1, 0, 1), "WAITFOR EVENT inline trigger call failure should belong to outer recovery").Env(
+				vm.WithParams(map[string]runtime.Value{
+					"target": triggerCallFailure,
+				}),
+				vm.WithFunction("FAIL", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+					return runtime.None, errors.New("trigger failed")
+				}),
+			),
 			Fn(`LET target = @target
 RETURN WAITFOR EVENT "test" IN target
 	TRIGGER (

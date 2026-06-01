@@ -166,6 +166,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#waitForEventExpression.
 	VisitWaitForEventExpression(ctx *WaitForEventExpressionContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#waitForEventTail.
+	VisitWaitForEventTail(ctx *WaitForEventTailContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#waitForTriggerClause.
 	VisitWaitForTriggerClause(ctx *WaitForTriggerClauseContext) interface{}
 
@@ -336,6 +339,9 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#functionCallExpression.
 	VisitFunctionCallExpression(ctx *FunctionCallExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#functionCallNoRecoveryExpression.
+	VisitFunctionCallNoRecoveryExpression(ctx *FunctionCallNoRecoveryExpressionContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#functionCall.
 	VisitFunctionCall(ctx *FunctionCallContext) interface{}

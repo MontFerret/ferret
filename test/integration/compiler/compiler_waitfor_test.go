@@ -105,6 +105,13 @@ func TestWaitforPredicateWhenCompiles(t *testing.T) {
 		ProgramCheck(`
 			LET obs = []
 			RETURN WAITFOR EVENT "test" IN obs
+				WHEN .TRIGGER == "match"
+				TIMEOUT 5ms
+				ON TIMEOUT RETURN NONE
+		`, noCompilerError, "WAITFOR EVENT should compile TRIGGER as an implicit-current property"),
+		ProgramCheck(`
+			LET obs = []
+			RETURN WAITFOR EVENT "test" IN obs
 				TRIGGER (
 					LET local = 1
 				)
@@ -134,6 +141,16 @@ func TestWaitforPredicateWhenCompiles(t *testing.T) {
 				TIMEOUT 5ms
 				ON TIMEOUT RETURN NONE
 		`, noCompilerError, "WAITFOR EVENT should compile empty trigger block before timeout"),
+		ProgramCheck(`
+			LET TRIGGER = 1
+			RETURN TRIGGER
+		`, noCompilerError, "TRIGGER should compile as a safe reserved variable name"),
+		ProgramCheck(`
+			RETURN @TRIGGER
+		`, noCompilerError, "TRIGGER should compile as a safe reserved param name"),
+		ProgramCheck(`
+			RETURN TRIGGER()
+		`, expectHostFunction("TRIGGER", 0), "TRIGGER should compile as a safe reserved function name"),
 		ProgramCheck(`
 			LET obs = []
 			FOR i IN [1, 2]

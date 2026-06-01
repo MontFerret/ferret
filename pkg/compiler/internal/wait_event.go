@@ -90,7 +90,7 @@ func (c *WaitCompiler) buildWaitEventState(ctx fql.IWaitForEventExpressionContex
 		state.optsReg = c.CompileOptionsClause(opts)
 	}
 
-	if timeout := ctx.TimeoutClause(); timeout != nil {
+	if timeout := waitForEventTimeoutClause(ctx); timeout != nil {
 		state.timeoutReg = c.recovery.CompileDurationOperand(timeout)
 		if state.timeoutReg == bytecode.NoopOperand {
 			return waitEventCompileState{}, false
@@ -113,7 +113,7 @@ func (c *WaitCompiler) compileWaitEventTrigger(ctx fql.IWaitForEventExpressionCo
 		return
 	}
 
-	trigger := ctx.WaitForTriggerClause()
+	trigger := waitForEventTriggerClause(ctx)
 	if trigger == nil {
 		return
 	}
@@ -170,8 +170,8 @@ func (c *WaitCompiler) compileWaitForTriggerInlineStatement(ctx fql.IWaitForTrig
 		c.bindings.CompileAssignmentStatement(as)
 	} else if ds := ctx.DeleteStatement(); ds != nil {
 		c.bindings.CompileDeleteStatement(ds)
-	} else if fce := ctx.FunctionCallExpression(); fce != nil {
-		c.exprs.CompileFunctionCallExpression(fce)
+	} else if fce := ctx.FunctionCallNoRecoveryExpression(); fce != nil {
+		c.exprs.CompileFunctionCallNoRecoveryExpression(fce)
 	} else if dispatch := ctx.WaitForTriggerInlineDispatchStatement(); dispatch != nil {
 		c.compileWaitForTriggerInlineDispatchStatement(dispatch)
 	}
