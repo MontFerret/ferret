@@ -171,7 +171,6 @@ func (c *WaitCompiler) compileEventWithTriggerTimeoutCleanup(
 	errorHandlerPC := c.ctx.Program.Emitter.Size()
 	c.emitWaitEventCleanupIfReady(state, streamReg, streamReadyReg)
 	c.ctx.Program.Emitter.Emit(bytecode.OpRethrow)
-	c.ctx.Program.Emitter.EmitAB(bytecode.OpMove, resultReg, resultReg)
 
 	c.ctx.Program.CatchTable.Push(startCatch, endCatchExclusive-1, errorHandlerPC)
 
