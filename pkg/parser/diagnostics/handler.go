@@ -115,6 +115,26 @@ func (h *ErrorHandler) VariableNotFound(token antlr.Token, name string) {
 	})
 }
 
+// VariableUsedBeforeDeclaration reports a binding reference that resolves to a
+// declaration which appears later in the same visible lexical scope.
+func (h *ErrorHandler) VariableUsedBeforeDeclaration(token antlr.Token, name string, declaration antlr.ParserRuleContext) {
+	spans := []diagnostics.ErrorSpan{
+		diagnostics.NewMainErrorSpan(SpanFromToken(token), "used before declaration"),
+	}
+
+	if declaration != nil {
+		spans = append(spans, diagnostics.NewSecondaryErrorSpan(SpanFromRuleContext(declaration), "declared later"))
+	}
+
+	h.Add(&diagnostics.Diagnostic{
+		Message: fmt.Sprintf("Variable '%s' is used before declaration", name),
+		Source:  h.src,
+		Spans:   spans,
+		Kind:    NameError,
+		Hint:    "Move the declaration before this use.",
+	})
+}
+
 func (h *ErrorHandler) DuplicateMatchBinding(ctx antlr.ParserRuleContext, name string) {
 	h.Add(&diagnostics.Diagnostic{
 		Message: fmt.Sprintf("duplicate binding '%s' in MATCH pattern", name),

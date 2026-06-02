@@ -29,6 +29,7 @@ type (
 		HostFunctions       *core.HostFunctionTable
 		Errors              *diagnostics.ErrorHandler
 		Source              *source.Source
+		ForwardBindings     *ForwardBindingIndex
 		UseAliases          map[string]string
 		aggregatePlanByHash map[uint64][]int
 		aggregatePlans      []*bytecode.AggregatePlan

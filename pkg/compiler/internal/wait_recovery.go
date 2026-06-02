@@ -70,6 +70,10 @@ func (c *WaitCompiler) newWaitOperationRecoverySpec(ctx fql.IWaitForExpressionCo
 		return spec
 	}
 
+	if timeout := waitForTimeoutClause(ctx); timeout != nil {
+		spec.TimeoutSpan = waitForSpan(timeout, nil)
+	}
+
 	if ev := ctx.WaitForEventExpression(); ev != nil {
 		spec.CompilePlain = func() bytecode.Operand {
 			return c.compileEvent(ev)

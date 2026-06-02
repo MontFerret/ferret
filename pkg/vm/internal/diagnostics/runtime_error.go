@@ -149,6 +149,10 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		spec.Label = "divisor evaluates to zero"
 		spec.Hint = "Ensure the divisor is non-zero before modulo"
 		spec.Cause = ErrModuloByZero
+	case errors.Is(err, runtime.ErrTimeout):
+		spec.Message = runtime.ErrTimeout.Error()
+		spec.Label = "operation timed out here"
+		spec.Cause = runtime.ErrTimeout
 	case hasMemberErr:
 		spec.Kind = diagnostics.TypeError
 		spec.Message = "invalid type"

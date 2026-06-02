@@ -21,6 +21,7 @@ type CompilationFrontend struct {
 	UDFs            *UDFCompiler
 	Wait            *WaitCompiler
 	NameCollisions  *NameCollisionValidator
+	ForwardBindings *ForwardBindingIndex
 }
 
 func NewCompilationFrontend(session *CompilationSession) *CompilationFrontend {
@@ -37,12 +38,15 @@ func NewCompilationFrontend(session *CompilationSession) *CompilationFrontend {
 		Wait:            NewWaitCompiler(session),
 		Dispatch:        NewDispatchCompiler(session),
 		NameCollisions:  NewNameCollisionValidator(session),
+		ForwardBindings: NewForwardBindingIndex(session),
 		TypeFacts:       NewTypeFacts(session),
 		CaptureAnalyzer: NewCaptureAnalyzer(session),
 		UDFs:            NewUDFCompiler(session),
 		UDFCatalog:      NewUDFCatalogBuilder(session),
 		Recovery:        NewRecoveryCompiler(session),
 	}
+
+	session.Program.ForwardBindings = front.ForwardBindings
 
 	front.Bindings.bind(front.Expressions, front.TypeFacts)
 	front.Literals.bind(front.Expressions, front.TypeFacts)

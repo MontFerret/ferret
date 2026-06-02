@@ -40,7 +40,7 @@ func (c *BindingCompiler) CompileDeleteStatement(ctx fql.IDeleteStatementContext
 			return bytecode.NoopOperand
 		}
 
-		c.ctx.Program.Errors.VariableNotFound(deletion.RootTok, deletion.Root)
+		reportVariableNotFound(c.ctx, deletion.RootTok, deletion.Root)
 		return bytecode.NoopOperand
 	}
 

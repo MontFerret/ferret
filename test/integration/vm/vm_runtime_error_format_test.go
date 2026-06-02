@@ -11,6 +11,7 @@ import (
 	pkgdiagnostics "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
@@ -92,6 +93,92 @@ RETURN Outer()
 			}),
 		),
 	})
+}
+
+func TestWaitForTimeoutFailureFormatsSourceSnippet(t *testing.T) {
+	const query = `RETURN WAITFOR EXISTS []
+    TIMEOUT 1ms
+    EVERY 1ms
+    ON TIMEOUT FAIL`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+			program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("wait_timeout_fail.fql", query))
+			if err != nil {
+				t.Fatalf("compile failed: %v", err)
+			}
+
+			instance, err := vm.New(program)
+			if err != nil {
+				t.Fatalf("vm init failed: %v", err)
+			}
+			defer func() {
+				if closeErr := instance.Close(); closeErr != nil {
+					t.Fatalf("vm close failed: %v", closeErr)
+				}
+			}()
+
+			env, err := vm.NewEnvironment([]vm.EnvironmentOption{
+				vm.WithNamespace(stdlib.New()),
+			})
+			if err != nil {
+				t.Fatalf("environment init failed: %v", err)
+			}
+
+			_, err = instance.Run(context.Background(), env)
+			if err == nil {
+				t.Fatal("expected runtime error")
+			}
+
+			var runtimeErr *vm.RuntimeError
+			if !errors.As(err, &runtimeErr) {
+				t.Fatalf("expected runtime error, got %T", err)
+			}
+
+			if got, want := runtimeErr.Message, "operation timed out"; got != want {
+				t.Fatalf("unexpected runtime error message: got %q, want %q", got, want)
+			}
+
+			mainSpanFound := false
+			for _, span := range runtimeErr.Spans {
+				if !span.Main {
+					continue
+				}
+
+				mainSpanFound = true
+
+				if span.Span.Start < 0 || span.Span.End > len(query) || span.Span.End <= span.Span.Start {
+					t.Fatalf("unexpected main span bounds: %+v", span.Span)
+				}
+
+				if got, want := query[span.Span.Start:span.Span.End], "ON TIMEOUT FAIL"; got != want {
+					t.Fatalf("unexpected main span fragment: got %q, want %q", got, want)
+				}
+
+				if got, want := span.Label, "operation timed out here"; got != want {
+					t.Fatalf("unexpected main span label: got %q, want %q", got, want)
+				}
+			}
+
+			if !mainSpanFound {
+				t.Fatal("expected a main error span")
+			}
+
+			formatted := runtimeErr.Format()
+			for _, needle := range []string{
+				"UncaughtError: operation timed out",
+				" --> wait_timeout_fail.fql:4:5",
+				"3 |     EVERY 1ms",
+				"4 |     ON TIMEOUT FAIL",
+				"^^^^^^^^^^^^^^^ operation timed out here",
+				"Caused by: operation timed out",
+			} {
+				if !strings.Contains(formatted, needle) {
+					t.Fatalf("expected formatted runtime error to contain %q, got:\n%s", needle, formatted)
+				}
+			}
+		})
+	}
 }
 
 func TestRuntimeErrorFormatsMissingParamWithParamSpan(t *testing.T) {
