@@ -1,6 +1,7 @@
 package compiler_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
@@ -340,6 +341,77 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Hint:    "Provide at least one variable assignment, e.g. AGGREGATE total = COUNT(x).",
 			}, "COLLECT AGGREGATE without expression 2"),
 	})
+}
+
+func TestFilterAssignmentDiagnosticRecognizesGroupedPredicates(t *testing.T) {
+	tests := []struct {
+		name      string
+		predicate string
+	}{
+		{
+			name:      "grouped predicate",
+			predicate: "(user.active = true)",
+		},
+		{
+			name:      "logical prefix predicate",
+			predicate: "user.name != NONE AND (user.active = true)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			query := `LET users = [
+    { name: "Ada", active: true },
+    { name: "Grace", active: false },
+    { name: "Linus", active: true }
+]
+
+FOR user IN users
+    FILTER ` + tt.predicate + `
+    RETURN user.name`
+
+			_, err := compiler.New().Compile(source.NewAnonymous(query))
+			if err == nil {
+				t.Fatal("expected compilation error")
+			}
+
+			diag := firstCompilationError(err)
+			if diag == nil {
+				t.Fatalf("expected diagnostic, got %T", err)
+			}
+
+			if diag.Kind != parserd.SyntaxError {
+				t.Fatalf("unexpected diagnostic kind: %s", diag.Kind)
+			}
+			if diag.Message != "Assignment is not valid in a FILTER predicate" {
+				t.Fatalf("unexpected diagnostic message: %q", diag.Message)
+			}
+			if diag.Hint != "Use '==' to compare values, e.g. FILTER user.active == true." {
+				t.Fatalf("unexpected diagnostic hint: %q", diag.Hint)
+			}
+			if len(diag.Spans) != 1 {
+				t.Fatalf("expected 1 span, got %d", len(diag.Spans))
+			}
+
+			span := diag.Spans[0]
+			if !span.Main {
+				t.Fatal("expected main span")
+			}
+			if span.Label != "use '==' for comparison" {
+				t.Fatalf("unexpected span label: %q", span.Label)
+			}
+
+			operatorStart := strings.Index(query, " = true")
+			if operatorStart < 0 {
+				t.Fatal("test query is missing assignment operator")
+			}
+			operatorStart++
+
+			if span.Span.Start != operatorStart || span.Span.End != operatorStart+1 {
+				t.Fatalf("unexpected operator span: %#v, want [%d,%d)", span.Span, operatorStart, operatorStart+1)
+			}
+		})
+	}
 }
 
 func TestFilterAssignmentDiagnosticPointsAtAssignmentOperator(t *testing.T) {
