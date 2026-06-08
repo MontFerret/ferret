@@ -188,7 +188,7 @@ func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatemen
 
 		left := c.snapshotBindingValue(binding)
 		right := c.exprs.Compile(stmt.Expression())
-		src = emitBinaryOperation(c.ctx, c.facts, stmt, op, left, right)
+		src = emitBinaryOperation(c.ctx, c.facts, assignmentOperationSpans(stmt), op, left, right)
 	}
 
 	srcType := c.facts.OperandType(src)

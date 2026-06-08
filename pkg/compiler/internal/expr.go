@@ -40,6 +40,13 @@ type (
 		regexp  bool
 	}
 
+	binaryOperationSpans struct {
+		expression   source.Span
+		operator     source.Span
+		leftOperand  source.Span
+		rightOperand source.Span
+	}
+
 	matchResultGroup struct {
 		result fql.IExpressionContext
 		arms   []int
@@ -150,7 +157,13 @@ func (c *ExprCompiler) CompileIncDec(token antlr.Token, target bytecode.Operand)
 	}
 
 	operator := token.GetText()
-	if !validateKnownNumericOperands(c.ctx, c.facts, parserd.SpanFromToken(token), operator, target) {
+	if !validateKnownNumericOperands(
+		c.ctx,
+		c.facts,
+		parserd.SpanFromToken(token),
+		operator,
+		numericOperandDiagnostic{operand: target},
+	) {
 		return bytecode.NoopOperand
 	}
 
@@ -189,7 +202,17 @@ func (c *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.IE
 		span = parserd.SpanFromRuleContext(prc)
 	}
 
-	if op != bytecode.OpNot && !validateKnownNumericOperands(c.ctx, c.facts, span, ctx.GetText(), src) {
+	if op != bytecode.OpNot && !validateKnownNumericOperands(
+		c.ctx,
+		c.facts,
+		parserd.SpanFromRuleContext(ctx),
+		ctx.GetText(),
+		numericOperandDiagnostic{
+			operand: src,
+			span:    parserd.SpanFromRuleContext(parent.GetRight()),
+			label:   "operand",
+		},
+	) {
 		return bytecode.NoopOperand
 	}
 

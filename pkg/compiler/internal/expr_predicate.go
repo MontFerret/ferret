@@ -263,9 +263,7 @@ func (c *ExprCompiler) compileBinaryAtom(ctx fql.IExpressionAtomContext, op atom
 }
 
 func (c *ExprCompiler) emitBinaryAtomOperation(ctx fql.IExpressionAtomContext, op atomBinaryOperator, left, right bytecode.Operand) bytecode.Operand {
-	prc, _ := ctx.(antlr.ParserRuleContext)
-
-	return emitBinaryOperation(c.ctx, c.facts, prc, op, left, right)
+	return emitBinaryOperation(c.ctx, c.facts, binaryAtomOperationSpans(ctx), op, left, right)
 }
 
 func (c *ExprCompiler) validateRegexpOperand(ctx fql.IExpressionAtomContext) {

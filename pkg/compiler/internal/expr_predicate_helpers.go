@@ -150,23 +150,30 @@ func resolveArithmeticBinaryOperator(operator string) (atomBinaryOperator, bool)
 	}
 }
 
-func emitBinaryOperation(ctx *CompilationSession, facts *TypeFacts, prc antlr.ParserRuleContext, op atomBinaryOperator, left, right bytecode.Operand) bytecode.Operand {
+type numericOperandDiagnostic struct {
+	operand bytecode.Operand
+	span    source.Span
+	label   string
+}
+
+func emitBinaryOperation(ctx *CompilationSession, facts *TypeFacts, spans binaryOperationSpans, op atomBinaryOperator, left, right bytecode.Operand) bytecode.Operand {
 	if ctx == nil {
 		return bytecode.NoopOperand
 	}
 
-	span := source.Span{Start: -1, End: -1}
-
-	if prc != nil {
-		span = parserd.SpanFromRuleContext(prc)
-	}
-
-	if isStrictNumericBinaryOpcode(op.opcode) && !validateKnownNumericOperands(ctx, facts, span, op.text, left, right) {
+	if isStrictNumericBinaryOpcode(op.opcode) && !validateKnownNumericOperands(
+		ctx,
+		facts,
+		spans.operator,
+		op.text,
+		numericOperandDiagnostic{operand: left, span: spans.leftOperand, label: "left operand"},
+		numericOperandDiagnostic{operand: right, span: spans.rightOperand, label: "right operand"},
+	) {
 		return bytecode.NoopOperand
 	}
 
 	dst := ctx.Function.Registers.Allocate()
-	ctx.Program.Emitter.WithSpan(span, func() {
+	ctx.Program.Emitter.WithSpan(spans.expression, func() {
 		ctx.Program.Emitter.EmitABC(op.opcode, dst, left, right)
 
 		if op.negated {
@@ -197,26 +204,42 @@ func isStrictNumericBinaryOpcode(op bytecode.Opcode) bool {
 func validateKnownNumericOperands(
 	ctx *CompilationSession,
 	facts *TypeFacts,
-	span source.Span,
+	operatorSpan source.Span,
 	operator string,
-	operands ...bytecode.Operand,
+	operands ...numericOperandDiagnostic,
 ) bool {
+	spans := []pkgdiagnostics.ErrorSpan{
+		pkgdiagnostics.NewMainErrorSpan(operatorSpan, ""),
+	}
+	invalid := false
+
 	for _, operand := range operands {
-		if knownNumericOperandTypeAllowed(facts.OperandType(operand)) {
+		typ := facts.OperandType(operand.operand)
+		if knownNumericOperandTypeAllowed(typ) {
 			continue
 		}
 
-		ctx.Program.Errors.Add(&pkgdiagnostics.Diagnostic{
-			Kind:    parserd.SemanticError,
-			Message: fmt.Sprintf("Operator '%s' requires numeric operands", operator),
-			Hint:    "Use Int or Float values with this operator.",
-			Spans:   []pkgdiagnostics.ErrorSpan{pkgdiagnostics.NewMainErrorSpan(span, "")},
-		})
-
-		return false
+		invalid = true
+		if operand.label != "" && validDiagnosticSpan(operand.span) {
+			spans = append(spans, pkgdiagnostics.NewSecondaryErrorSpan(
+				operand.span,
+				fmt.Sprintf("%s is %s", operand.label, numericDiagnosticTypeName(typ)),
+			))
+		}
 	}
 
-	return true
+	if !invalid {
+		return true
+	}
+
+	ctx.Program.Errors.Add(&pkgdiagnostics.Diagnostic{
+		Kind:    parserd.SemanticError,
+		Message: fmt.Sprintf("Operator '%s' requires numeric operands", operator),
+		Hint:    "Use Int or Float values with this operator.",
+		Spans:   spans,
+	})
+
+	return false
 }
 
 func knownNumericOperandTypeAllowed(typ core.ValueType) bool {
@@ -225,5 +248,73 @@ func knownNumericOperandTypeAllowed(typ core.ValueType) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+func binaryAtomOperationSpans(ctx fql.IExpressionAtomContext) binaryOperationSpans {
+	spans := binaryOperationSpans{
+		expression:   spanFromParserRuleContext(ctx),
+		leftOperand:  spanFromParserRuleContext(ctx.GetLeft()),
+		rightOperand: spanFromParserRuleContext(ctx.GetRight()),
+	}
+
+	if op := ctx.MultiplicativeOperator(); op != nil {
+		spans.operator = parserd.SpanFromRuleContext(op)
+	} else if op := ctx.AdditiveOperator(); op != nil {
+		spans.operator = parserd.SpanFromRuleContext(op)
+	}
+
+	return spans
+}
+
+func assignmentOperationSpans(ctx *fql.AssignmentStatementContext) binaryOperationSpans {
+	if ctx == nil {
+		return binaryOperationSpans{}
+	}
+
+	return binaryOperationSpans{
+		expression:   parserd.SpanFromRuleContext(ctx),
+		operator:     spanFromParserRuleContext(ctx.AssignmentOperator()),
+		leftOperand:  spanFromParserRuleContext(ctx.AssignmentTarget()),
+		rightOperand: spanFromParserRuleContext(ctx.Expression()),
+	}
+}
+
+func spanFromParserRuleContext(ctx antlr.ParserRuleContext) source.Span {
+	if ctx == nil {
+		return source.Span{Start: -1, End: -1}
+	}
+
+	return parserd.SpanFromRuleContext(ctx)
+}
+
+func validDiagnosticSpan(span source.Span) bool {
+	return span.Start >= 0 && span.End > span.Start
+}
+
+func numericDiagnosticTypeName(typ core.ValueType) string {
+	switch typ {
+	case core.TypeNone:
+		return "None"
+	case core.TypeInt:
+		return "Int"
+	case core.TypeFloat:
+		return "Float"
+	case core.TypeString:
+		return "String"
+	case core.TypeBool:
+		return "Bool"
+	case core.TypeArray:
+		return "Array"
+	case core.TypeObject:
+		return "Object"
+	case core.TypeList:
+		return "List"
+	case core.TypeMap:
+		return "Map"
+	case core.TypeAny:
+		return "Any"
+	default:
+		return "Unknown"
 	}
 }

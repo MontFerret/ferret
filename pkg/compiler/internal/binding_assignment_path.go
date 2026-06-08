@@ -63,7 +63,7 @@ func (c *BindingCompiler) compilePathAssignmentStatement(stmt *fql.AssignmentSta
 			return bytecode.NoopOperand
 		}
 
-		value = emitBinaryOperation(c.ctx, c.facts, stmt, op, current, right)
+		value = emitBinaryOperation(c.ctx, c.facts, assignmentOperationSpans(stmt), op, current, right)
 	}
 
 	if value == bytecode.NoopOperand {
