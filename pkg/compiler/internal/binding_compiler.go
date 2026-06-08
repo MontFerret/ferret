@@ -188,7 +188,15 @@ func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatemen
 
 		left := c.snapshotBindingValue(binding)
 		right := c.exprs.Compile(stmt.Expression())
+		if right == bytecode.NoopOperand {
+			return bytecode.NoopOperand
+		}
+
 		src = emitBinaryOperation(c.ctx, c.facts, assignmentOperationSpans(stmt), op, left, right)
+	}
+
+	if src == bytecode.NoopOperand {
+		return bytecode.NoopOperand
 	}
 
 	srcType := c.facts.OperandType(src)

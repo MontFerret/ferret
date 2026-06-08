@@ -327,6 +327,89 @@ RETURN total
 	}
 }
 
+func TestBindingCompilerFailedAssignmentsDoNotReachStorage(t *testing.T) {
+	tests := []struct {
+		name             string
+		query            string
+		diagnostic       string
+		forbiddenOpcodes []bytecode.Opcode
+	}{
+		{
+			name: "plain assignment invalid rhs",
+			query: `
+VAR total = 2
+total = -"x"
+RETURN total
+`,
+			diagnostic: "Operator '-' requires numeric operands",
+		},
+		{
+			name: "augmented assignment invalid numeric operand",
+			query: `
+VAR total = 2
+total *= "x"
+RETURN total
+`,
+			diagnostic:       "Operator '*=' requires numeric operands",
+			forbiddenOpcodes: []bytecode.Opcode{bytecode.OpMul},
+		},
+		{
+			name: "augmented assignment invalid rhs",
+			query: `
+VAR total = 2
+total *= -"x"
+RETURN total
+`,
+			diagnostic:       "Operator '-' requires numeric operands",
+			forbiddenOpcodes: []bytecode.Opcode{bytecode.OpMul},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			state := newBindingCompilerTestState(t, test.query)
+			compileBindingCompilerTestState(t, state)
+
+			assertBindingCompilerTestFailedAssignment(t, state, "total", core.TypeInt, test.diagnostic)
+
+			instructions := state.session.Program.Emitter.Bytecode()
+			assertBindingCompilerTestNoWriteFromNoop(t, instructions)
+
+			for _, opcode := range test.forbiddenOpcodes {
+				if got := countBindingCompilerTestOpcode(instructions, opcode); got != 0 {
+					t.Fatalf("unexpected %s count: got %d want 0", opcode, got)
+				}
+			}
+		})
+	}
+}
+
+func TestBindingCompilerFailedCellAssignmentDoesNotStore(t *testing.T) {
+	state := newBindingCompilerTestState(t, `
+VAR total = 2
+FUNC update() (
+  total *= "x"
+  RETURN total
+)
+RETURN total
+`)
+
+	compileBindingCompilerTestState(t, state)
+
+	assertBindingCompilerTestFailedAssignment(t, state, "total", core.TypeInt, "Operator '*=' requires numeric operands")
+
+	instructions := state.session.Program.Emitter.Bytecode()
+	assertBindingCompilerTestNoWriteFromNoop(t, instructions)
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpStoreCell); got != 0 {
+		t.Fatalf("unexpected %s count: got %d want 0", bytecode.OpStoreCell, got)
+	}
+
+	if got := countBindingCompilerTestOpcode(instructions, bytecode.OpMul); got != 0 {
+		t.Fatalf("unexpected %s count: got %d want 0", bytecode.OpMul, got)
+	}
+}
+
 func TestBindingCompilerFailedInitializerDoesNotDeclareBinding(t *testing.T) {
 	state := newBindingCompilerTestState(t, `
 LET x = missing
@@ -517,6 +600,45 @@ func assertBindingCompilerTestNoErrors(t *testing.T, state *bindingCompilerTestS
 
 	if state.errors.HasErrors() {
 		t.Fatalf("unexpected diagnostics:\n%s", state.errors.Errors().Format())
+	}
+}
+
+func assertBindingCompilerTestFailedAssignment(t *testing.T, state *bindingCompilerTestState, name string, expectedType core.ValueType, message string) {
+	t.Helper()
+
+	if got := state.errors.Errors().Size(); got != 1 {
+		t.Fatalf("unexpected diagnostic count: got %d want 1\n%s", got, state.errors.Errors().Format())
+	}
+
+	diag := state.errors.Errors().First()
+	if diag.Kind != parserd.SemanticError {
+		t.Fatalf("unexpected diagnostic kind: got %v want %v", diag.Kind, parserd.SemanticError)
+	}
+
+	if diag.Message != message {
+		t.Fatalf("unexpected diagnostic message: got %q want %q", diag.Message, message)
+	}
+
+	binding, ok := state.session.Function.Symbols.ResolveBinding(name)
+	if !ok {
+		t.Fatalf("expected binding %q to exist", name)
+	}
+
+	if binding.Type != expectedType {
+		t.Fatalf("unexpected binding type: got %v want %v", binding.Type, expectedType)
+	}
+}
+
+func assertBindingCompilerTestNoWriteFromNoop(t *testing.T, instructions []bytecode.Instruction) {
+	t.Helper()
+
+	for i, inst := range instructions {
+		switch inst.Opcode {
+		case bytecode.OpMove, bytecode.OpMoveTracked, bytecode.OpStoreCell:
+			if inst.Operands[1] == bytecode.NoopOperand {
+				t.Fatalf("instruction %d writes from %s: %s", i, bytecode.NoopOperand, inst)
+			}
+		}
 	}
 }
 
