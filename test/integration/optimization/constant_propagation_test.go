@@ -6,6 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	"github.com/MontFerret/ferret/v2/test/spec/compile"
 	. "github.com/MontFerret/ferret/v2/test/spec/optimize"
@@ -23,8 +24,8 @@ func TestConstantPropagation(t *testing.T) {
 			Exists: []bytecode.Opcode{bytecode.OpDiv},
 		}, runtime.ErrInvalidOperation, "should not fold division by zero"),
 
-		OpcodeErr(`RETURN 1 / "0"`, compile.OpcodeExistence{
+		OpcodeErr(`RETURN 1 / @zero`, compile.OpcodeExistence{
 			Exists: []bytecode.Opcode{bytecode.OpDiv},
-		}, runtime.ErrInvalidOperation, "should not fold division by zero with string"),
+		}, runtime.ErrInvalidOperation, "should not fold division by zero with dynamic value").Env(vm.WithParam("zero", runtime.ZeroInt)),
 	})
 }

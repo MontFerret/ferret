@@ -58,8 +58,16 @@ func foldUnary(op bytecode.Opcode, val runtime.Value, bg context.Context) (runti
 	case bytecode.OpNegate:
 		return negate(val), true
 	case bytecode.OpFlipPositive:
+		if !isNumericValue(val) {
+			return nil, false
+		}
+
 		return positive(val), true
 	case bytecode.OpFlipNegative:
+		if !isNumericValue(val) {
+			return nil, false
+		}
+
 		return negative(val), true
 	default:
 		return nil, false
@@ -71,21 +79,32 @@ func foldBinary(op bytecode.Opcode, left, right runtime.Value, bg context.Contex
 	case bytecode.OpAdd:
 		return runtime.Add(bg, left, right), true
 	case bytecode.OpSub:
+		if !areNumericValues(left, right) {
+			return nil, false
+		}
+
 		return runtime.Subtract(bg, left, right), true
 	case bytecode.OpMul:
+		if !areNumericValues(left, right) {
+			return nil, false
+		}
+
 		return runtime.Multiply(bg, left, right), true
 	case bytecode.OpDiv:
-		lv := runtime.ToNumberOnly(bg, left)
+		if !areNumericValues(left, right) {
+			return nil, false
+		}
 
-		if _, ok := lv.(runtime.Int); ok {
-			rv := runtime.ToNumberOnly(bg, right)
-			if ri, ok := rv.(runtime.Int); ok && ri == 0 {
-				return nil, false
-			}
+		if ri, ok := right.(runtime.Int); ok && ri == 0 {
+			return nil, false
 		}
 
 		return runtime.Divide(bg, left, right), true
 	case bytecode.OpMod:
+		if !areNumericValues(left, right) {
+			return nil, false
+		}
+
 		if r, _ := runtime.ToInt(bg, right); r == 0 {
 			return nil, false
 		}
@@ -269,6 +288,19 @@ func increment(ctx context.Context, input runtime.Value) runtime.Value {
 	default:
 		return runtime.None
 	}
+}
+
+func isNumericValue(value runtime.Value) bool {
+	switch value.(type) {
+	case runtime.Int, runtime.Float:
+		return true
+	default:
+		return false
+	}
+}
+
+func areNumericValues(left, right runtime.Value) bool {
+	return isNumericValue(left) && isNumericValue(right)
 }
 
 func decrement(ctx context.Context, input runtime.Value) runtime.Value {

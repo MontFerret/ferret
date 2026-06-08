@@ -347,7 +347,8 @@ func TestHostNilResultIsNormalizedToNone(t *testing.T) {
 func TestModuloTypeErrorNotMisclassifiedAsModuloByZero(t *testing.T) {
 	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
-			spec.NewSpec(`RETURN 5 % "x"`).
+			spec.NewSpec(`RETURN 5 % @value`).
+				Env(vm.WithParam("value", runtime.NewString("x"))).
 				Expect().ExecError(assert.NewUnaryAssertion(func(actual any) error {
 				err, ok := actual.(error)
 				if !ok || err == nil {

@@ -96,6 +96,10 @@ func foldIncDecInstruction(inst *bytecode.Instruction, env constFoldEnv, result 
 }
 
 func foldIncDecValue(op bytecode.Opcode, val runtime.Value, bg context.Context) (runtime.Value, bool) {
+	if !isNumericValue(val) {
+		return nil, false
+	}
+
 	if op == bytecode.OpIncr {
 		return increment(bg, val), true
 	}

@@ -5,7 +5,9 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 type (
@@ -32,6 +34,7 @@ type (
 
 	// atomBinaryOperator represents binary operators used in FQL expressions.
 	atomBinaryOperator struct {
+		text    string
 		opcode  bytecode.Opcode
 		negated bool
 		regexp  bool
@@ -147,6 +150,9 @@ func (c *ExprCompiler) CompileIncDec(token antlr.Token, target bytecode.Operand)
 	}
 
 	operator := token.GetText()
+	if !validateKnownNumericOperands(c.ctx, c.facts, parserd.SpanFromToken(token), operator, target) {
+		return bytecode.NoopOperand
+	}
 
 	switch operator {
 	case "++":
@@ -164,7 +170,6 @@ func (c *ExprCompiler) CompileIncDec(token antlr.Token, target bytecode.Operand)
 
 func (c *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.IExpressionContext) bytecode.Operand {
 	src := c.Compile(parent.GetRight())
-	dst := c.ctx.Function.Registers.Allocate()
 
 	var op bytecode.Opcode
 
@@ -178,7 +183,24 @@ func (c *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.IE
 		return bytecode.NoopOperand
 	}
 
-	c.ctx.Program.Emitter.EmitAB(op, dst, src)
+	prc, _ := parent.(antlr.ParserRuleContext)
+	span := source.Span{Start: -1, End: -1}
+	if prc != nil {
+		span = parserd.SpanFromRuleContext(prc)
+	}
+
+	if op != bytecode.OpNot && !validateKnownNumericOperands(c.ctx, c.facts, span, ctx.GetText(), src) {
+		return bytecode.NoopOperand
+	}
+
+	dst := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitAB(op, dst, src)
+	})
+
+	if op != bytecode.OpNot {
+		c.ctx.Function.Types.Set(dst, c.facts.OperandType(src))
+	}
 
 	return dst
 }

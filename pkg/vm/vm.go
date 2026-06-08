@@ -883,10 +883,25 @@ loop:
 		case bytecode.OpConcat:
 			reg[dst] = concatStrings(reg, src1, src2)
 		case bytecode.OpSub:
+			if err := assertNumericOperands(reg[src1], reg[src2]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
 			reg[dst] = runtime.Subtract(ctx, reg[src1], reg[src2])
 		case bytecode.OpMul:
+			if err := assertNumericOperands(reg[src1], reg[src2]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
 			reg[dst] = runtime.Multiply(ctx, reg[src1], reg[src2])
 		case bytecode.OpDiv:
+			if err := assertNumericOperands(reg[src1], reg[src2]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
 			if err := state.checkDivisionByZeroAt(ctx, pc, reg[src1], reg[src2]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
@@ -894,6 +909,11 @@ loop:
 
 			reg[dst] = runtime.Divide(ctx, reg[src1], reg[src2])
 		case bytecode.OpMod:
+			if err := assertNumericOperands(reg[src1], reg[src2]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
 			if err := state.checkModuloByZeroAt(ctx, pc, reg[src2]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
@@ -901,14 +921,34 @@ loop:
 
 			reg[dst] = runtime.Modulus(ctx, reg[src1], reg[src2])
 		case bytecode.OpIncr:
+			if err := assertNumericOperand(reg[dst]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
 			reg[dst] = runtime.Increment(ctx, reg[dst])
 		case bytecode.OpDecr:
+			if err := assertNumericOperand(reg[dst]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
 			reg[dst] = runtime.Decrement(ctx, reg[dst])
 		case bytecode.OpNegate:
 			reg[dst] = negate(reg[src1])
 		case bytecode.OpFlipPositive:
+			if err := assertNumericOperand(reg[src1]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
 			reg[dst] = positive(reg[src1])
 		case bytecode.OpFlipNegative:
+			if err := assertNumericOperand(reg[src1]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
 			reg[dst] = negative(reg[src1])
 		case bytecode.OpCastBool:
 			reg[dst] = coerceBool(reg[src1])

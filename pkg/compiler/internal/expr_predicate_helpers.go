@@ -1,11 +1,14 @@
 package internal
 
 import (
+	"fmt"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
-	"github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	pkgdiagnostics "github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
@@ -121,6 +124,7 @@ func resolveAtomBinaryOperator(ctx fql.IExpressionAtomContext) (atomBinaryOperat
 	if op := ctx.RegexpOperator(); op != nil {
 		return atomBinaryOperator{
 			opcode:  bytecode.OpRegexp,
+			text:    op.GetText(),
 			negated: op.GetText() == "!~",
 			regexp:  true,
 		}, true
@@ -132,15 +136,15 @@ func resolveAtomBinaryOperator(ctx fql.IExpressionAtomContext) (atomBinaryOperat
 func resolveArithmeticBinaryOperator(operator string) (atomBinaryOperator, bool) {
 	switch operator {
 	case "+", "+=":
-		return atomBinaryOperator{opcode: bytecode.OpAdd}, true
+		return atomBinaryOperator{opcode: bytecode.OpAdd, text: operator}, true
 	case "-", "-=":
-		return atomBinaryOperator{opcode: bytecode.OpSub}, true
+		return atomBinaryOperator{opcode: bytecode.OpSub, text: operator}, true
 	case "*", "*=":
-		return atomBinaryOperator{opcode: bytecode.OpMul}, true
+		return atomBinaryOperator{opcode: bytecode.OpMul, text: operator}, true
 	case "/", "/=":
-		return atomBinaryOperator{opcode: bytecode.OpDiv}, true
+		return atomBinaryOperator{opcode: bytecode.OpDiv, text: operator}, true
 	case "%":
-		return atomBinaryOperator{opcode: bytecode.OpMod}, true
+		return atomBinaryOperator{opcode: bytecode.OpMod, text: operator}, true
 	default:
 		return atomBinaryOperator{}, false
 	}
@@ -151,13 +155,17 @@ func emitBinaryOperation(ctx *CompilationSession, facts *TypeFacts, prc antlr.Pa
 		return bytecode.NoopOperand
 	}
 
-	dst := ctx.Function.Registers.Allocate()
 	span := source.Span{Start: -1, End: -1}
 
 	if prc != nil {
-		span = diagnostics.SpanFromRuleContext(prc)
+		span = parserd.SpanFromRuleContext(prc)
 	}
 
+	if isStrictNumericBinaryOpcode(op.opcode) && !validateKnownNumericOperands(ctx, facts, span, op.text, left, right) {
+		return bytecode.NoopOperand
+	}
+
+	dst := ctx.Function.Registers.Allocate()
 	ctx.Program.Emitter.WithSpan(span, func() {
 		ctx.Program.Emitter.EmitABC(op.opcode, dst, left, right)
 
@@ -175,4 +183,47 @@ func emitBinaryOperation(ctx *CompilationSession, facts *TypeFacts, prc antlr.Pa
 	}
 
 	return dst
+}
+
+func isStrictNumericBinaryOpcode(op bytecode.Opcode) bool {
+	switch op {
+	case bytecode.OpSub, bytecode.OpMul, bytecode.OpDiv, bytecode.OpMod:
+		return true
+	default:
+		return false
+	}
+}
+
+func validateKnownNumericOperands(
+	ctx *CompilationSession,
+	facts *TypeFacts,
+	span source.Span,
+	operator string,
+	operands ...bytecode.Operand,
+) bool {
+	for _, operand := range operands {
+		if knownNumericOperandTypeAllowed(facts.OperandType(operand)) {
+			continue
+		}
+
+		ctx.Program.Errors.Add(&pkgdiagnostics.Diagnostic{
+			Kind:    parserd.SemanticError,
+			Message: fmt.Sprintf("Operator '%s' requires numeric operands", operator),
+			Hint:    "Use Int or Float values with this operator.",
+			Spans:   []pkgdiagnostics.ErrorSpan{pkgdiagnostics.NewMainErrorSpan(span, "")},
+		})
+
+		return false
+	}
+
+	return true
+}
+
+func knownNumericOperandTypeAllowed(typ core.ValueType) bool {
+	switch typ {
+	case core.TypeUnknown, core.TypeAny, core.TypeInt, core.TypeFloat:
+		return true
+	default:
+		return false
+	}
 }
