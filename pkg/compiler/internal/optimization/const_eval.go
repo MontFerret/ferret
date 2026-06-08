@@ -95,8 +95,10 @@ func foldBinary(op bytecode.Opcode, left, right runtime.Value, bg context.Contex
 			return nil, false
 		}
 
-		if ri, ok := right.(runtime.Int); ok && ri == 0 {
-			return nil, false
+		if _, ok := left.(runtime.Int); ok {
+			if ri, ok := right.(runtime.Int); ok && ri == 0 {
+				return nil, false
+			}
 		}
 
 		return runtime.Divide(bg, left, right), true

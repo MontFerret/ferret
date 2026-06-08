@@ -20,6 +20,13 @@ func TestConstantPropagation(t *testing.T) {
 
 		OpcodeNotExists(`LET a = 10 RETURN (a - 3) * 2`, []bytecode.Opcode{bytecode.OpSub, bytecode.OpMul}, 14, "should fold chain of arithmetic operations"),
 
+		OpcodeNotExists(`RETURN 1.0 / 0`, []bytecode.Opcode{bytecode.OpDiv}, "+Inf", "should fold float division by integer zero").
+			Raw(),
+
+		OpcodeExists(`RETURN 1.0 / @zero`, []bytecode.Opcode{bytecode.OpDiv}, "+Inf", "should preserve dynamic float division by integer zero").
+			Raw().
+			Env(vm.WithParam("zero", runtime.ZeroInt)),
+
 		OpcodeErr(`RETURN 1 / 0`, compile.OpcodeExistence{
 			Exists: []bytecode.Opcode{bytecode.OpDiv},
 		}, runtime.ErrInvalidOperation, "should not fold division by zero"),
