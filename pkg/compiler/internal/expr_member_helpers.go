@@ -123,11 +123,12 @@ func isFilterOnlyInline(inline fql.IInlineExpressionContext) bool {
 // runtime.Measurable, allowing a direct OpLength without iteration.
 func isMeasurableType(t core.ValueType) bool {
 	switch t {
-	case core.TypeString, core.TypeArray, core.TypeList, core.TypeMap:
+	case core.TypeString, core.TypeArray, core.TypeList, core.TypeMap, core.TypeObject:
 		return true
 	default:
 		return false
 	}
+}
 }
 
 func nextArrayExpansion(segments []fql.IMemberExpressionPathContext) (fql.IArrayExpansionContext, []fql.IMemberExpressionPathContext) {
