@@ -523,7 +523,10 @@ func (c *ExprCompiler) compileArrayQuestionMark(src bytecode.Operand, question f
 
 			result = c.emitComparison(bytecode.OpGt, length, zero)
 		} else {
-			// General path: create an iterator, try one advance, close.
+			// General path: iterator-based early-exit.
+			// Pre-set result to false, attempt one iteration; if it succeeds
+			// the source is non-empty so overwrite with true. Either way,
+			// close the iterator immediately (O(1) regardless of size).
 			iter := c.ctx.Function.Registers.Allocate()
 			result = c.ctx.Function.Registers.Allocate()
 			doneLabel := c.ctx.Program.Emitter.NewLabel("aq.done")

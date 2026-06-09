@@ -119,6 +119,8 @@ func isFilterOnlyInline(inline fql.IInlineExpressionContext) bool {
 	return inline.InlineFilter() != nil && inline.InlineLimit() == nil && inline.InlineReturn() == nil
 }
 
+// isMeasurableType reports whether the compile-time type is known to implement
+// runtime.Measurable, allowing a direct OpLength without iteration.
 func isMeasurableType(t core.ValueType) bool {
 	switch t {
 	case core.TypeString, core.TypeArray, core.TypeList, core.TypeMap:
