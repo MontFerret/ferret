@@ -514,11 +514,10 @@ func (c *ExprCompiler) compileArrayQuestionMark(src bytecode.Operand, question f
 		if isMeasurableType(srcType) {
 			// Fast path: emit OpLength directly on the source.
 			length := c.ctx.Function.Registers.Allocate()
-			zero := c.ctx.Function.Registers.Allocate()
+			zero := c.ctx.Function.Symbols.AddConstant(runtime.ZeroInt)
 
 			c.ctx.Program.Emitter.WithSpan(span, func() {
 				c.ctx.Program.Emitter.EmitAB(bytecode.OpLength, length, src)
-				c.ctx.Program.Emitter.EmitA(bytecode.OpLoadZero, zero)
 			})
 
 			result = c.emitComparison(bytecode.OpGt, length, zero)
