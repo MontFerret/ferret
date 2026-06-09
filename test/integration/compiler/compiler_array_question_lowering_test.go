@@ -20,18 +20,22 @@ func TestArrayQuestionLowering(t *testing.T) {
 }
 
 func expectBareArrayQuestionLowering(prog *bytecode.Program) error {
-	expected := map[bytecode.Opcode]int{
-		bytecode.OpDataSet: 1,
-		bytecode.OpPush:    1,
-		bytecode.OpLength:  1,
-		bytecode.OpGt:      1,
-		bytecode.OpIncr:    0,
+	// The bare array question should NOT materialize a list (no OpDataSet, no OpPush).
+	// It should either use OpLength directly or an iterator early-exit (OpIter + OpIterNext).
+	if inspect.HasOpcode(prog, bytecode.OpDataSet) {
+		return fmt.Errorf("did not expect OpDataSet for bare array question (should not materialize a list)")
 	}
 
-	for opcode, count := range expected {
-		if got := inspect.CountOpcode(prog, opcode); got != count {
-			return fmt.Errorf("expected %d %s ops, got %d", count, opcode, got)
-		}
+	if inspect.HasOpcode(prog, bytecode.OpIncr) {
+		return fmt.Errorf("did not expect OpIncr for bare array question (should not use counting loop)")
+	}
+
+	// Must have either OpLength (measurable fast path) or OpIter (general iterator path).
+	hasLength := inspect.HasOpcode(prog, bytecode.OpLength)
+	hasIter := inspect.HasOpcode(prog, bytecode.OpIter)
+
+	if !hasLength && !hasIter {
+		return fmt.Errorf("expected OpLength or OpIter for bare array question, found neither")
 	}
 
 	return nil

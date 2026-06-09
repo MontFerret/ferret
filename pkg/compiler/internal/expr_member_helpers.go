@@ -119,6 +119,15 @@ func isFilterOnlyInline(inline fql.IInlineExpressionContext) bool {
 	return inline.InlineFilter() != nil && inline.InlineLimit() == nil && inline.InlineReturn() == nil
 }
 
+func isMeasurableType(t core.ValueType) bool {
+	switch t {
+	case core.TypeString, core.TypeArray, core.TypeList, core.TypeMap:
+		return true
+	default:
+		return false
+	}
+}
+
 func nextArrayExpansion(segments []fql.IMemberExpressionPathContext) (fql.IArrayExpansionContext, []fql.IMemberExpressionPathContext) {
 	if len(segments) == 0 {
 		return nil, segments
