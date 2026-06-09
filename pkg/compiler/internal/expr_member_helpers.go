@@ -129,7 +129,6 @@ func isMeasurableType(t core.ValueType) bool {
 		return false
 	}
 }
-}
 
 func nextArrayExpansion(segments []fql.IMemberExpressionPathContext) (fql.IArrayExpansionContext, []fql.IMemberExpressionPathContext) {
 	if len(segments) == 0 {
