@@ -26,5 +26,14 @@ RETURN unique([1, 1])
     RETURN DISTINCT values
 )
 RETURN unique([1, 1])`),
+		S(`
+FUNC read( DISTINCT )(
+RETURN ( DISTINCT.values )
+)
+RETURN ( DISTINCT.values )
+`, `FUNC read(DISTINCT) (
+    RETURN (DISTINCT.values)
+)
+RETURN (DISTINCT.values)`),
 	})
 }

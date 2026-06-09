@@ -65,6 +65,7 @@ func TestReturnDistinctRejectsKnownNonArrayTypes(t *testing.T) {
 		Failure("RETURN DISTINCT true", E{Kind: parserd.SemanticError, Message: message}),
 		Failure(`RETURN DISTINCT "value"`, E{Kind: parserd.SemanticError, Message: message}),
 		Failure("RETURN DISTINCT { value: 1 }", E{Kind: parserd.SemanticError, Message: message}),
+		Failure("RETURN DISTINCT(1)", E{Kind: parserd.SemanticError, Message: message}, "DISTINCT immediately after RETURN is the modifier"),
 		Failure(`
 FUNC invalid() (
 	RETURN DISTINCT 1

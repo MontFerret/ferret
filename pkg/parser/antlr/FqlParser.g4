@@ -57,6 +57,10 @@ options { tokenVocab=FqlLexer; }
 		}
 	}
 
+	func (p *FqlParser) isReturnDistinctAhead() bool {
+		return p.GetTokenStream().LA(1) == FqlParserDistinct
+	}
+
 	func (p *FqlParser) isQueryModifierText(text string) bool {
 		return equalsFoldAscii(text, "EXISTS") ||
 			equalsFoldAscii(text, "COUNT") ||
@@ -344,11 +348,11 @@ expressionStatement
     ;
 
 functionReturn
-    : Return (Distinct)? expression
+    : Return (Distinct expression | {!p.isReturnDistinctAhead()}? expression)
     ;
 
 returnExpression
-    : Return (Distinct)? expression
+    : Return (Distinct expression | {!p.isReturnDistinctAhead()}? expression)
     ;
 
 forExpression

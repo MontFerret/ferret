@@ -7,6 +7,31 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
+func matchMissingReturnDistinctValue(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+	if offending == nil {
+		return false
+	}
+
+	// DISTINCT is a contextual RETURN modifier. Parentheses explicitly select
+	// the safe-reserved identifier interpretation instead.
+	distinct := anyIs(offending, offending.Prev(), "DISTINCT")
+	if distinct == nil || !is(distinct.Prev(), "RETURN") ||
+		(!is(offending, "DISTINCT") && !is(offending, "<EOF>") && !is(offending, ")")) {
+		return false
+	}
+
+	span := spanFromTokenSafe(distinct.Token(), src)
+	span.Start = span.End
+	span.End = span.Start + 1
+	err.Message = "Expected expression after 'RETURN DISTINCT'"
+	err.Hint = "RETURN DISTINCT treats DISTINCT as a modifier. To return an identifier named DISTINCT, wrap it in parentheses, e.g. RETURN (DISTINCT)."
+	err.Spans = []diagnostics.ErrorSpan{
+		diagnostics.NewMainErrorSpan(span, "missing return value"),
+	}
+
+	return true
+}
+
 func matchMissingReturnValue(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	// Prefer range-specific error when the parser trips on an incomplete range like "0.. RETURN".
 	if is(offending, "..") || is(offending.Prev(), "..") || has(err.Message, "..") {

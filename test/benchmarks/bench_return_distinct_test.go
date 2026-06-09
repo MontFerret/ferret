@@ -1,6 +1,10 @@
 package benchmarks_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
+)
 
 const (
 	returnDistinctQuery = `
@@ -37,6 +41,13 @@ RETURN COUNT_DISTINCT([
 	1, 2, 3, 4, 5, 6, 7, 8,
 	1, 2, 3, 4, 5, 6, 7, 8
 ])
+`
+
+	compilerReturnDistinctQuery = `
+FUNC unique(values) (
+	RETURN DISTINCT values
+)
+RETURN DISTINCT unique([1, 2, 1, 3])
 `
 )
 
@@ -78,4 +89,12 @@ func BenchmarkCountDistinct_O0(b *testing.B) {
 
 func BenchmarkCountDistinct_O1(b *testing.B) {
 	RunBenchmarkO1(b, countDistinctQuery)
+}
+
+func BenchmarkCompilerCompileReturnDistinct_O0(b *testing.B) {
+	benchmarkCompileQuery(b, compilerReturnDistinctQuery, compiler.O0)
+}
+
+func BenchmarkCompilerCompileReturnDistinct_O1(b *testing.B) {
+	benchmarkCompileQuery(b, compilerReturnDistinctQuery, compiler.O1)
 }

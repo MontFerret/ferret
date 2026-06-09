@@ -55,3 +55,35 @@ RETURN unique()
 			Env(spec.WithParam("value", 42)),
 	})
 }
+
+func TestReturnDistinctIdentifierEscape(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		Array(`
+LET DISTINCT = [1, 2]
+RETURN (DISTINCT)
+`, []any{1, 2}, "returns a parenthesized DISTINCT variable"),
+		Array(`
+LET DISTINCT = { values: [1, 2] }
+RETURN (DISTINCT.values)
+`, []any{1, 2}, "returns a parenthesized DISTINCT member expression"),
+		Array(`
+LET DISTINCT = [[1, 2]]
+RETURN (DISTINCT[0])
+`, []any{1, 2}, "returns a parenthesized DISTINCT index expression"),
+		Array(`
+FUNC DISTINCT() => [1, 2]
+RETURN (DISTINCT())
+`, []any{1, 2}, "returns a parenthesized DISTINCT call expression"),
+		Array(`
+FOR DISTINCT IN [[1], [2]]
+	RETURN (DISTINCT)
+`, []any{[]any{1}, []any{2}}, "returns a parenthesized DISTINCT loop variable"),
+		Array(`
+FUNC read() (
+	LET DISTINCT = { values: [1, 2] }
+	RETURN (DISTINCT.values)
+)
+RETURN read()
+`, []any{1, 2}, "returns a parenthesized DISTINCT expression from a UDF block"),
+	})
+}

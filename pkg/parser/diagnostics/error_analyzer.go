@@ -23,6 +23,7 @@ func AnalyzeSyntaxError(src *source.Source, err *diagnostics.Diagnostic, offendi
 		matchMatchArmSeparatorErrors,
 		matchMissingFunctionParamsClose,
 		matchMixedFunctionBodySyntax,
+		matchMissingReturnDistinctValue,
 		matchCommonErrors,
 		matchMissingReturnValue,
 	}
