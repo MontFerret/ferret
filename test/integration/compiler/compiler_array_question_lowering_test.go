@@ -13,10 +13,27 @@ import (
 
 func TestArrayQuestionLowering(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
-		ProgramCheck(`RETURN @arr[?]`, expectBareArrayQuestionLowering, "bare array question uses expansion length"),
+		ProgramCheck(`RETURN [1][?]`, expectBareArrayQuestionLengthLowering, "bare array question uses OpLength on measurable source"),
+		ProgramCheck(`RETURN @arr[?]`, expectBareArrayQuestionLowering, "bare array question avoids counting loop"),
 		ProgramCheck(`RETURN @arr[? FILTER . > 1]`, expectFilteredArrayQuestionLowering, "filtered array question keeps counting loop"),
 		ProgramCheck(`RETURN @arr[? ANY FILTER . > 1]`, expectFilteredArrayQuestionLowering, "quantified array question keeps counting loop"),
 	}, compiler.O0, compiler.O1)
+}
+
+func expectBareArrayQuestionLengthLowering(prog *bytecode.Program) error {
+	if err := expectBareArrayQuestionLowering(prog); err != nil {
+		return err
+	}
+
+	if !inspect.HasOpcode(prog, bytecode.OpLength) {
+		return fmt.Errorf("expected OpLength for measurable bare array question")
+	}
+
+	if inspect.HasOpcode(prog, bytecode.OpIter) {
+		return fmt.Errorf("did not expect OpIter when OpLength fast path is applicable")
+	}
+
+	return nil
 }
 
 func expectBareArrayQuestionLowering(prog *bytecode.Program) error {
