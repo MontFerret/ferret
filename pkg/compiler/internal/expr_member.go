@@ -506,6 +506,29 @@ func (c *ExprCompiler) compileArrayExpansionChainWithFilters(src bytecode.Operan
 func (c *ExprCompiler) compileArrayQuestionMark(src bytecode.Operand, question fql.IArrayQuestionMarkContext, tail []fql.IMemberExpressionPathContext) bytecode.Operand {
 	span := diagnostics.SpanFromRuleContext(question)
 
+	if question.ArrayQuestionQuantifier() == nil && question.Expression() == nil {
+		expanded := c.compileArrayIteration(src, span, nil, nil, nil)
+		length := c.ctx.Function.Registers.Allocate()
+		zero := c.ctx.Function.Registers.Allocate()
+
+		c.ctx.Program.Emitter.WithSpan(span, func() {
+			c.ctx.Program.Emitter.EmitAB(bytecode.OpLength, length, expanded)
+			c.ctx.Program.Emitter.EmitA(bytecode.OpLoadZero, zero)
+		})
+
+		result := c.emitComparison(bytecode.OpGt, length, zero)
+
+		if len(tail) > 0 {
+			result = c.compileMemberExpressionSegments(result, tail)
+		}
+
+		if result.IsRegister() {
+			c.ctx.Function.Types.Set(result, core.TypeBool)
+		}
+
+		return result
+	}
+
 	loop := &core.Loop{
 		Kind:     core.ForInLoop,
 		Type:     core.NormalLoop,
