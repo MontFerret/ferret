@@ -49,7 +49,7 @@
 
 Ferret v2 is currently in alpha. You can try the new syntax in the playground and read more about the design behind the new runtime and language capabilities:
 
-- [Try Ferret v2 in the Playground](https://ferretlang.org/try/next/)
+- [Try Ferret v2 in the Playground](https://ferretlang.org/try/)
 - [On the Road to Ferret v2](https://ferretlang.org/blog/ferret-v2-announcement/)
 - [Inside Ferret v2: The New Execution Model](https://ferretlang.org/blog/ferret-v2-execution-model/)
 - [Inside Ferret v2: New Language Capabilities](https://ferretlang.org/blog/ferret-v2-new-syntax/)
