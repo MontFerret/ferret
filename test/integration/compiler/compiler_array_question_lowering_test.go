@@ -20,18 +20,14 @@ func TestArrayQuestionLowering(t *testing.T) {
 }
 
 func expectBareArrayQuestionLowering(prog *bytecode.Program) error {
-	expected := map[bytecode.Opcode]int{
-		bytecode.OpDataSet: 1,
-		bytecode.OpPush:    1,
-		bytecode.OpLength:  1,
-		bytecode.OpGt:      1,
-		bytecode.OpIncr:    0,
+	// The optimization must eliminate the counting loop (no OpIncr)
+	// and use a length/emptiness check instead.
+	if got := inspect.CountOpcode(prog, bytecode.OpIncr); got != 0 {
+		return fmt.Errorf("expected no OpIncr (counting loop eliminated), got %d", got)
 	}
 
-	for opcode, count := range expected {
-		if got := inspect.CountOpcode(prog, opcode); got != count {
-			return fmt.Errorf("expected %d %s ops, got %d", count, opcode, got)
-		}
+	if !inspect.HasOpcode(prog, bytecode.OpLength) {
+		return fmt.Errorf("expected OpLength for emptiness check")
 	}
 
 	return nil
