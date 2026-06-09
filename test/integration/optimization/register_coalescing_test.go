@@ -278,5 +278,10 @@ RETURN ((x + 1) * (x + 2) == (x + 3) * (x + 4))
 		`,
 			3, []any{1, 2, 3, 4},
 		),
+		RegistersArray(
+			`RETURN DISTINCT [1, 2, 1, 3]`,
+			2, []any{1, 2, 3},
+			"Should coalesce registers around top-level RETURN DISTINCT",
+		),
 	})
 }

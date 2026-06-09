@@ -876,6 +876,10 @@ loop:
 			res, err := arrayFlatten(ctx, reg[src1], depth)
 
 			state.setOrRaiseDefault(pc, dst, res, err)
+		case bytecode.OpDistinct:
+			res, err := arrayDistinct(ctx, reg[src1])
+
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpAdd:
 			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
 		case bytecode.OpAddConst:

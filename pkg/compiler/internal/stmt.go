@@ -2,6 +2,8 @@ package internal
 
 import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
@@ -105,12 +107,40 @@ func (c *StatementCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext
 		c.ctx.Program.Emitter.EmitA(bytecode.OpReturn, out)
 	} else if re := ctx.ReturnExpression(); re != nil {
 		// Handle RETURN expressions (e.g., RETURN x)
-		// Compile and normalize into a register because RETURN expects a register operand.
-		valReg := ensureOperandRegister(c.ctx, c.facts, c.exprs.Compile(re.Expression()))
+		valReg := c.CompileReturnValue(re.Expression(), re.Distinct() != nil)
 
 		// Emit a return instruction with the expression result
 		c.ctx.Program.Emitter.EmitA(bytecode.OpReturn, valReg)
 	}
+}
+
+// CompileReturnValue compiles a non-loop return expression and applies its
+// statement-level result modifiers.
+func (c *StatementCompiler) CompileReturnValue(expr fql.IExpressionContext, distinct bool) bytecode.Operand {
+	if expr == nil {
+		return bytecode.NoopOperand
+	}
+
+	valReg := ensureOperandRegister(c.ctx, c.facts, c.exprs.Compile(expr))
+	if !distinct {
+		return valReg
+	}
+
+	switch c.facts.OperandType(valReg) {
+	case core.TypeArray, core.TypeList, core.TypeUnknown, core.TypeAny:
+	default:
+		err := c.ctx.Program.Errors.Create(parserd.SemanticError, expr, "RETURN DISTINCT requires an array expression")
+		c.ctx.Program.Errors.Add(err)
+		return valReg
+	}
+
+	dst := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.WithSpan(parserd.SpanFromRuleContext(expr), func() {
+		c.ctx.Program.Emitter.EmitAB(bytecode.OpDistinct, dst, valReg)
+	})
+	c.ctx.Function.Types.Set(dst, core.TypeArray)
+
+	return dst
 }
 
 // CompileFunctionStatement processes a statement inside a UDF body.

@@ -3,7 +3,7 @@ package bytecode
 import "testing"
 
 func TestOpcodeInfoCompleteness(t *testing.T) {
-	for op := Opcode(0); op <= OpDeletePropertyConst; op++ {
+	for op := Opcode(0); op <= OpDistinct; op++ {
 		info := OpcodeInfoOf(op)
 
 		if info.Class == OpcodeClassUnknown {

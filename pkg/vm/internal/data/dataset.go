@@ -3,25 +3,26 @@ package data
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/valueset"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type DataSet struct {
 	values     runtime.List
-	uniqueness map[uint64]bool
+	uniqueness *valueset.Set
 }
 
 func (*DataSet) VMUntracked() {}
 
 func NewDataSet(distinct bool) runtime.List {
-	var hashmap map[uint64]bool
+	var uniqueness *valueset.Set
 
 	if distinct {
-		hashmap = make(map[uint64]bool)
+		uniqueness = valueset.New(0)
 	}
 
 	return &DataSet{
-		uniqueness: hashmap,
+		uniqueness: uniqueness,
 		values:     runtime.NewArray(16),
 	}
 }
@@ -156,15 +157,5 @@ func (ds *DataSet) canAdd(_ context.Context, value runtime.Value) (bool, error) 
 		return true, nil
 	}
 
-	hash := value.Hash()
-
-	_, exists := ds.uniqueness[hash]
-
-	if exists {
-		return false, nil
-	}
-
-	ds.uniqueness[hash] = true
-
-	return true, nil
+	return ds.uniqueness.Add(value), nil
 }

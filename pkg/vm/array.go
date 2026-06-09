@@ -3,6 +3,7 @@ package vm
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/valueset"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -111,6 +112,36 @@ func arrayFlatten(ctx context.Context, value runtime.Value, depth int) (runtime.
 	}
 
 	if err := flatten(list, 1); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func arrayDistinct(ctx context.Context, value runtime.Value) (runtime.List, error) {
+	list, err := runtime.CastList(value)
+	if err != nil {
+		return nil, err
+	}
+
+	size, err := list.Length(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := runtime.NewArray64(size)
+	seen := valueset.New(int(size))
+
+	err = list.ForEach(ctx, func(ctx context.Context, item runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
+		if seen.Add(item) {
+			if err := result.Append(ctx, item); err != nil {
+				return runtime.False, err
+			}
+		}
+
+		return runtime.True, nil
+	})
+	if err != nil {
 		return nil, err
 	}
 

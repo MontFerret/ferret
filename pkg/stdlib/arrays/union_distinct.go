@@ -3,6 +3,7 @@ package arrays
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/valueset"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -32,7 +33,7 @@ func UnionDistinct(ctx context.Context, args ...runtime.Value) (runtime.Value, e
 		capacity = len(args) * 5
 	}
 
-	hashTable := make(map[uint64]bool)
+	seen := valueset.New(0)
 	result := runtime.NewArray(capacity)
 
 	for i, arg := range args {
@@ -43,13 +44,10 @@ func UnionDistinct(ctx context.Context, args ...runtime.Value) (runtime.Value, e
 		}
 
 		err = currList.ForEach(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-			h := value.Hash()
-
-			if _, exists := hashTable[h]; exists {
+			if !seen.Add(value) {
 				return true, nil
 			}
 
-			hashTable[h] = true
 			return true, result.Append(ctx, value)
 		})
 

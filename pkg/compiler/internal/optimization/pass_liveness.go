@@ -238,7 +238,7 @@ func applyUnaryUseDef(opcode bytecode.Opcode, dst, src1 bytecode.Operand, collec
 		collector.addUse(dst)
 		collector.addDef(dst)
 		return true
-	case bytecode.OpCastBool, bytecode.OpNegate, bytecode.OpNot, bytecode.OpFlipPositive, bytecode.OpFlipNegative, bytecode.OpLength, bytecode.OpType, bytecode.OpFlatten, bytecode.OpExists:
+	case bytecode.OpCastBool, bytecode.OpNegate, bytecode.OpNot, bytecode.OpFlipPositive, bytecode.OpFlipNegative, bytecode.OpLength, bytecode.OpType, bytecode.OpFlatten, bytecode.OpDistinct, bytecode.OpExists:
 		collector.addUse(src1)
 		collector.addDef(dst)
 		return true

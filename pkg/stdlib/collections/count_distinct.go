@@ -3,6 +3,7 @@ package collections
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/valueset"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -14,19 +15,10 @@ func CountDistinct(ctx context.Context, arg runtime.Value) (runtime.Value, error
 		return runtime.ZeroInt, err
 	}
 
-	// TODO: Use storage backend
-	hashmap := map[uint64]bool{}
-	var res runtime.Int
+	seen := valueset.New(0)
 
 	err = runtime.ForEach(ctx, collection, func(c context.Context, value, idx runtime.Value) (runtime.Boolean, error) {
-		hash := value.Hash()
-
-		_, exists := hashmap[hash]
-
-		if !exists {
-			hashmap[hash] = true
-			res++
-		}
+		seen.Add(value)
 
 		return true, nil
 	})
@@ -35,5 +27,5 @@ func CountDistinct(ctx context.Context, arg runtime.Value) (runtime.Value, error
 		return runtime.ZeroInt, err
 	}
 
-	return res, nil
+	return runtime.Int(seen.Len()), nil
 }

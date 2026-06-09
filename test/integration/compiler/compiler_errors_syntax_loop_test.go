@@ -23,6 +23,15 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 				Message: "Expected expression after 'RETURN'",
 				Hint:    "Did you forget to provide a value to return?",
 			}, "Missing return value in for loop"),
+		Failure(
+			`
+			FOR i IN [1, 2, 3]
+				RETURN DISTINCT
+		`, E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected expression after 'RETURN DISTINCT'",
+				Hint:    "RETURN DISTINCT treats DISTINCT as a modifier. To return an identifier named DISTINCT, wrap it in parentheses, e.g. RETURN (DISTINCT).",
+			}, "Missing RETURN DISTINCT expression in for loop"),
 
 		Failure(
 			`

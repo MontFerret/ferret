@@ -17,5 +17,23 @@ RETURN normalizePrice(1)
     RETURN value
 )
 RETURN normalizePrice(1)`),
+		S(`
+FUNC unique( values )(
+RETURN DISTINCT values
+)
+RETURN unique([1, 1])
+`, `FUNC unique(values) (
+    RETURN DISTINCT values
+)
+RETURN unique([1, 1])`),
+		S(`
+FUNC read( DISTINCT )(
+RETURN ( DISTINCT.values )
+)
+RETURN ( DISTINCT.values )
+`, `FUNC read(DISTINCT) (
+    RETURN (DISTINCT.values)
+)
+RETURN (DISTINCT.values)`),
 	})
 }

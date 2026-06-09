@@ -250,7 +250,7 @@ func validateInstructions(program *Program) error {
 			if _, ok := program.Constants[src2.Constant()].(runtime.String); !ok {
 				return fmt.Errorf("%w: pc %d expects string constant in src2", ErrInvalidInstruction, pc)
 			}
-		case OpMove, OpMoveTracked:
+		case OpMove, OpMoveTracked, OpDistinct:
 			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
 				return err
 			}

@@ -68,7 +68,7 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 		body := fn.Decl.FunctionBody()
 		if body != nil {
 			if arrow := body.FunctionArrow(); arrow != nil {
-				c.compileExpressionReturn(arrow.Expression())
+				c.compileExpressionReturn(arrow.Expression(), false)
 			} else if block := body.FunctionBlock(); block != nil {
 				for _, stmt := range block.AllFunctionStatement() {
 					c.stmts.CompileFunctionStatement(stmt)
@@ -119,26 +119,28 @@ func (c *UDFCompiler) compileReturn(ctx fql.IFunctionReturnContext) {
 	}
 
 	expr := ctx.Expression()
-	c.compileExpressionReturn(expr)
+	c.compileExpressionReturn(expr, ctx.Distinct() != nil)
 }
 
-func (c *UDFCompiler) compileExpressionReturn(expr fql.IExpressionContext) {
+func (c *UDFCompiler) compileExpressionReturn(expr fql.IExpressionContext, distinct bool) {
 	if expr == nil {
 		return
 	}
 
-	if fce := directFunctionCall(expr); fce != nil && fce.ErrorOperator() == nil && allowsTailCallRecovery(c.recovery.CollectPlan(fce, core.RecoveryPlanOptions{})) {
-		call := fce.FunctionCall()
-		if call != nil {
-			if fn, ok := c.calls.ResolveUDF(call); ok {
-				seq := c.exprs.CompileArgumentList(call.ArgumentList())
-				c.exprs.EmitUdfTailCall(fn, seq, call.(antlr.ParserRuleContext))
-				return
+	if !distinct {
+		if fce := directFunctionCall(expr); fce != nil && fce.ErrorOperator() == nil && allowsTailCallRecovery(c.recovery.CollectPlan(fce, core.RecoveryPlanOptions{})) {
+			call := fce.FunctionCall()
+			if call != nil {
+				if fn, ok := c.calls.ResolveUDF(call); ok {
+					seq := c.exprs.CompileArgumentList(call.ArgumentList())
+					c.exprs.EmitUdfTailCall(fn, seq, call.(antlr.ParserRuleContext))
+					return
+				}
 			}
 		}
 	}
 
-	val := ensureOperandRegister(c.ctx, c.facts, c.exprs.Compile(expr))
+	val := c.stmts.CompileReturnValue(expr, distinct)
 
 	c.ctx.Program.Emitter.EmitA(bytecode.OpReturn, val)
 }
