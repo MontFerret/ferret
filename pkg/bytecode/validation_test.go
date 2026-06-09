@@ -168,6 +168,24 @@ func TestValidateProgramAllowsDeleteOpcodes(t *testing.T) {
 	}
 }
 
+func TestValidateProgramAllowsDistinctOpcode(t *testing.T) {
+	program := withProgramMutation(func(program *Program) {
+		program.Bytecode = []Instruction{
+			NewInstruction(OpLoadArray, NewRegister(0), Operand(0)),
+			NewInstruction(OpDistinct, NewRegister(1), NewRegister(0)),
+			NewInstruction(OpReturn, NewRegister(1)),
+		}
+		program.Metadata.Labels = nil
+		program.Metadata.AggregateSelectorSlots = nil
+		program.Metadata.MatchFailTargets = nil
+		program.Metadata.DebugSpans = nil
+	})
+
+	if err := ValidateProgram(program); err != nil {
+		t.Fatalf("expected distinct opcode to be valid, got %v", err)
+	}
+}
+
 func validValidationProgram() *Program {
 	return &Program{
 		Source: source.New("validation.fql", "RETURN 1"),

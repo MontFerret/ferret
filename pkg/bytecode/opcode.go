@@ -184,6 +184,9 @@ const (
 	OpDeleteKeyConst
 	OpDeleteProperty
 	OpDeletePropertyConst
+
+	// Array Result Operations
+	OpDistinct
 )
 
 func (op Opcode) String() string {
@@ -487,6 +490,8 @@ func (op Opcode) String() string {
 		return "ITSKP"
 	case OpFlatten:
 		return "FLATTEN"
+	case OpDistinct:
+		return "DISTINCT"
 
 	default:
 		return "UNKNOWN"

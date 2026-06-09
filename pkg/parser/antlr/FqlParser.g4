@@ -344,7 +344,7 @@ expressionStatement
     ;
 
 functionReturn
-    : Return expression
+    : Return (Distinct)? expression
     ;
 
 returnExpression

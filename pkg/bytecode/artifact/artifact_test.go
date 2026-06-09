@@ -77,6 +77,34 @@ func TestMarshalAllowsConcatImmediateCountAtRegisterLimit(t *testing.T) {
 	}
 }
 
+func TestMarshalAllowsDistinctOpcode(t *testing.T) {
+	program := newArtifactTestProgram()
+	program.Registers = 2
+	program.Bytecode = []bytecode.Instruction{
+		bytecode.NewInstruction(bytecode.OpLoadArray, bytecode.NewRegister(0), bytecode.Operand(0)),
+		bytecode.NewInstruction(bytecode.OpDistinct, bytecode.NewRegister(1), bytecode.NewRegister(0)),
+		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+	}
+	program.Metadata.Labels = nil
+	program.Metadata.AggregateSelectorSlots = nil
+	program.Metadata.MatchFailTargets = nil
+	program.Metadata.DebugSpans = nil
+
+	data, err := Marshal(program, Options{})
+	if err != nil {
+		t.Fatalf("expected Marshal() to accept OpDistinct, got %v", err)
+	}
+
+	decoded, err := Unmarshal(data)
+	if err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+
+	if got := decoded.Bytecode[1].Opcode; got != bytecode.OpDistinct {
+		t.Fatalf("expected OpDistinct after round trip, got %s", got)
+	}
+}
+
 func TestPayloadLengthForHeader(t *testing.T) {
 	t.Run("max_uint32", func(t *testing.T) {
 		length, err := payloadLengthForHeader(^uint64(0) >> 32)

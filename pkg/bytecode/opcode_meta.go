@@ -136,7 +136,7 @@ func opcodeClass(op Opcode) OpcodeClass {
 		return OpcodeClassType
 	case OpCmp, OpNot, OpEq, OpNe, OpGt, OpLt, OpGte, OpLte, OpIn, OpLike, OpRegexp:
 		return OpcodeClassComparison
-	case OpFlatten, OpAnyEq, OpAnyNe, OpAnyGt, OpAnyGte, OpAnyLt, OpAnyLte, OpAnyIn,
+	case OpFlatten, OpDistinct, OpAnyEq, OpAnyNe, OpAnyGt, OpAnyGte, OpAnyLt, OpAnyLte, OpAnyIn,
 		OpNoneEq, OpNoneNe, OpNoneGt, OpNoneGte, OpNoneLt, OpNoneLte, OpNoneIn,
 		OpAllEq, OpAllNe, OpAllGt, OpAllGte, OpAllLt, OpAllLte, OpAllIn:
 		return OpcodeClassArray

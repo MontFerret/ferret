@@ -317,7 +317,7 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 		return idx == 0 || idx == 1
 	case bytecode.OpDeleteKeyConst, bytecode.OpDeletePropertyConst:
 		return idx == 0
-	case bytecode.OpFlatten:
+	case bytecode.OpFlatten, bytecode.OpDistinct:
 		return idx == 0 || idx == 1
 	case bytecode.OpDataSet, bytecode.OpDataSetCollector, bytecode.OpDataSetSorter, bytecode.OpDataSetMultiSorter:
 		return idx == 0

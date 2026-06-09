@@ -294,6 +294,12 @@ func (f *statementFormatter) formatFunctionReturn(ctx *fql.FunctionReturnContext
 	}
 
 	f.writeKeyword(keywordReturn)
+
+	if ctx.Distinct() != nil {
+		f.p.space()
+		f.writeKeyword(keywordDistinct)
+	}
+
 	f.p.space()
 
 	if expr := ctx.Expression(); expr != nil {

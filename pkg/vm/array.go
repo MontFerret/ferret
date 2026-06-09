@@ -116,3 +116,55 @@ func arrayFlatten(ctx context.Context, value runtime.Value, depth int) (runtime.
 
 	return result, nil
 }
+
+func arrayDistinct(ctx context.Context, value runtime.Value) (runtime.List, error) {
+	list, err := runtime.CastList(value)
+	if err != nil {
+		return nil, err
+	}
+
+	size, err := list.Length(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := runtime.NewArray64(size)
+	firstByHash := make(map[uint64]runtime.Value, int(size))
+	var collisions map[uint64][]runtime.Value
+
+	err = list.ForEach(ctx, func(ctx context.Context, item runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
+		hash := item.Hash()
+		first, exists := firstByHash[hash]
+
+		if exists {
+			if runtime.CompareValues(first, item) == 0 {
+				return runtime.True, nil
+			}
+
+			for _, existing := range collisions[hash] {
+				if runtime.CompareValues(existing, item) == 0 {
+					return runtime.True, nil
+				}
+			}
+
+			if collisions == nil {
+				collisions = make(map[uint64][]runtime.Value)
+			}
+
+			collisions[hash] = append(collisions[hash], item)
+		} else {
+			firstByHash[hash] = item
+		}
+
+		if err := result.Append(ctx, item); err != nil {
+			return runtime.False, err
+		}
+
+		return runtime.True, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
