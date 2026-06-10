@@ -61,17 +61,23 @@ Ferret v2 is currently in alpha. You can try the new syntax in the playground an
 ---
 
 ## What is it?
-Ferret is a declarative system for working with web data - extracting it, querying it, and turning it into structured results for testing, analytics, machine learning, and other workflows. 
-It allows users to focus on the data they need while abstracting away the complexity of browser automation, page interaction, and underlying execution details.
+
+Ferret is a declarative runtime for structured data extraction and automation.
+
+It lets you query web pages, browser state, documents, APIs, and host-provided data sources with a dedicated query language, then return the result as structured data.
+
+Instead of writing page-specific glue code for browser control, DOM traversal, waiting, extraction, and transformation, Ferret lets you describe the data you want and run that workflow from the CLI, a worker, or an embedded Go application.
 
 ### Features
 
-- Declarative query language
-- Works with static and dynamic web pages
-- Embeddable in Go applications
-- Extensible runtime and function system
-- Portable and fast
+- Declarative query language for structured data workflows
+- Support for static pages, dynamic pages, and browser-driven extraction
+- CLI and embeddable Go runtime
+- Extensible module, function, and runtime capability system
+- Structured results for testing, analytics, AI/ML, and automation pipelines
+- Portable execution model with a focused VM
 
+- 
 ## Getting started
 
 ```bash
