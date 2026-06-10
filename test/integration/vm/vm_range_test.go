@@ -14,6 +14,11 @@ func TestRange(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		Array("RETURN 1..10", []any{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "Should return a range from 1 to 10"),
 		Array("RETURN 10..1", []any{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}, "Should return a range from 10 to 1"),
+		Array("LET start = -3 LET end = -1 RETURN start..end", []any{-3, -2, -1}, "Should return an ascending negative range"),
+		Array("LET start = -1 LET end = -3 RETURN start..end", []any{-1, -2, -3}, "Should return a descending negative range"),
+		S("RETURN LENGTH(1..3)", 3, "Should return ascending range length"),
+		S("RETURN LENGTH(3..1)", 3, "Should return descending range length"),
+		S("RETURN (1..3)[?]", true, "Should report that a range contains values"),
 		Array(
 			`
 		LET start = 1

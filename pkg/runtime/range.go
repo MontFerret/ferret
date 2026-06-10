@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"hash/fnv"
+	"math"
 
 	"github.com/wI2L/jettison"
 )
@@ -70,17 +71,31 @@ func (r *Range) Iterate(_ context.Context) (Iterator, error) {
 	return NewRangeIterator(r), nil
 }
 
+func (r *Range) Length(_ context.Context) (Int, error) {
+	var distance uint64
+	if r.start <= r.end {
+		distance = uint64(r.end) - uint64(r.start)
+	} else {
+		distance = uint64(r.start) - uint64(r.end)
+	}
+
+	if distance >= uint64(math.MaxInt64) {
+		return ZeroInt, Error(ErrRange, "range length exceeds runtime.Int capacity")
+	}
+
+	return Int(distance + 1), nil
+}
+
 func (r *Range) MarshalJSON() ([]byte, error) {
 	start := r.start
 	end := r.end
 
-	var arr []Int
-
-	if start <= end {
-		arr = r.populateArray(start, end, r.calculateCapacity(start, end), true)
-	} else {
-		arr = r.populateArray(start, end, r.calculateCapacity(start, end), false)
+	capacity, err := r.Length(context.Background())
+	if err != nil {
+		return nil, err
 	}
+
+	arr := r.populateArray(start, capacity, start <= end)
 
 	return jettison.MarshalOpts(arr, jettison.NoHTMLEscaping())
 }
@@ -103,37 +118,16 @@ func (r *Range) Compare(_ context.Context, other Value) (int, error) {
 	return 1, nil
 }
 
-func (r *Range) calculateCapacity(start, end Int) Int {
-	var capacity Int
-	if start <= end {
-		if end < 0 {
-			capacity = start + (end * -1) + 1
-		} else {
-			capacity = end - start + 1
-		}
-	} else {
-		if start < 0 {
-			capacity = end + (start * -1) + 1
-		} else {
-			capacity = start - end + 1
-		}
-	}
-	return capacity
-}
-
-func (r *Range) populateArray(start, end, capacity Int, ascending bool) []Int {
+func (r *Range) populateArray(start, capacity Int, ascending bool) []Int {
 	arr := make([]Int, 0, capacity)
 
-	if ascending {
-		// start to end
-		for i := start; i <= end; i++ {
-			arr = append(arr, i)
-		}
-	} else {
-		// end to start
-		for i := start; i >= end; i-- {
-			arr = append(arr, i)
+	for offset := Int(0); offset < capacity; offset++ {
+		if ascending {
+			arr = append(arr, start+offset)
+		} else {
+			arr = append(arr, start-offset)
 		}
 	}
+
 	return arr
 }

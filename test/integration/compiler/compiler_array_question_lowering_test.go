@@ -14,6 +14,7 @@ import (
 func TestArrayQuestionLowering(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(`RETURN [1][?]`, expectBareArrayQuestionLengthLowering, "bare array question uses OpLength on measurable source"),
+		ProgramCheck(`RETURN (1..3)[?]`, expectBareArrayQuestionLengthLowering, "bare range question uses OpLength without iteration"),
 		ProgramCheck(`RETURN @arr[?]`, expectBareArrayQuestionLowering, "bare array question avoids counting loop"),
 		ProgramCheck(`RETURN @arr[? FILTER . > 1]`, expectFilteredArrayQuestionLowering, "filtered array question keeps counting loop"),
 		ProgramCheck(`RETURN @arr[? ANY FILTER . > 1]`, expectFilteredArrayQuestionLowering, "quantified array question keeps counting loop"),
