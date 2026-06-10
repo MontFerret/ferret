@@ -77,7 +77,6 @@ Instead of writing page-specific glue code for browser control, DOM traversal, w
 - Structured results for testing, analytics, AI/ML, and automation pipelines
 - Portable execution model with a focused VM
 
-- 
 ## Getting started
 
 ```bash
