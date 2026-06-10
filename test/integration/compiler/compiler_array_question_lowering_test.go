@@ -25,6 +25,10 @@ func expectBareArrayQuestionLengthLowering(prog *bytecode.Program) error {
 		return err
 	}
 
+	if err := bytecode.ValidateProgram(prog); err != nil {
+		return fmt.Errorf("expected valid measurable bare array question bytecode: %w", err)
+	}
+
 	if !inspect.HasOpcode(prog, bytecode.OpLength) {
 		return fmt.Errorf("expected OpLength for measurable bare array question")
 	}
