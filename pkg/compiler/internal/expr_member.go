@@ -506,6 +506,52 @@ func (c *ExprCompiler) compileArrayExpansionChainWithFilters(src bytecode.Operan
 func (c *ExprCompiler) compileArrayQuestionMark(src bytecode.Operand, question fql.IArrayQuestionMarkContext, tail []fql.IMemberExpressionPathContext) bytecode.Operand {
 	span := diagnostics.SpanFromRuleContext(question)
 
+	if question.ArrayQuestionQuantifier() == nil && question.Expression() == nil {
+		srcType := c.ctx.Function.Types.Resolve(src)
+
+		var result bytecode.Operand
+
+		if isMeasurableType(srcType) {
+			// Fast path: emit OpLength directly on the source.
+			length := c.ctx.Function.Registers.Allocate()
+			zero := c.ctx.Function.Registers.Allocate()
+
+			c.ctx.Program.Emitter.WithSpan(span, func() {
+				c.ctx.Program.Emitter.EmitAB(bytecode.OpLength, length, src)
+				c.ctx.Program.Emitter.EmitA(bytecode.OpLoadZero, zero)
+			})
+
+			result = c.emitComparison(bytecode.OpGt, length, zero)
+		} else {
+			// General path: iterator-based early-exit.
+			// Pre-set result to false, attempt one iteration; if it succeeds
+			// the source is non-empty so overwrite with true. Either way,
+			// close the iterator immediately (O(1) regardless of size).
+			iter := c.ctx.Function.Registers.Allocate()
+			result = c.ctx.Function.Registers.Allocate()
+			doneLabel := c.ctx.Program.Emitter.NewLabel("aq.done")
+
+			c.ctx.Program.Emitter.WithSpan(span, func() {
+				c.ctx.Program.Emitter.EmitIter(iter, src)
+				c.ctx.Program.Emitter.EmitBoolean(result, false)
+				c.ctx.Program.Emitter.EmitIterNext(iter, doneLabel)
+				c.ctx.Program.Emitter.EmitBoolean(result, true)
+				c.ctx.Program.Emitter.MarkLabel(doneLabel)
+				c.ctx.Program.Emitter.EmitA(bytecode.OpClose, iter)
+			})
+		}
+
+		if len(tail) > 0 {
+			result = c.compileMemberExpressionSegments(result, tail)
+		}
+
+		if result.IsRegister() {
+			c.ctx.Function.Types.Set(result, core.TypeBool)
+		}
+
+		return result
+	}
+
 	loop := &core.Loop{
 		Kind:     core.ForInLoop,
 		Type:     core.NormalLoop,
