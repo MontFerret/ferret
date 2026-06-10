@@ -26,10 +26,10 @@
 ![ferret](https://raw.githubusercontent.com/MontFerret/ferret/main/assets/intro.jpg)
 
 <p align="center">
-	<a href="https://www.montferret.dev/try" style="margin: 0 15px">
+	<a href="https://ferretlang.org/try" style="margin: 0 15px">
 		<span>Try it!</span>
 	</a>
-	<a href="https://www.montferret.dev/docs/introduction" style="margin: 0 15px">
+	<a href="https://ferretlang.org/docs/introduction" style="margin: 0 15px">
 		<span>Docs</span>
 	</a>
 	<a href="https://github.com/MontFerret/cli" style="margin: 0 15px">
@@ -49,10 +49,10 @@
 
 Ferret v2 is currently in alpha. You can try the new syntax in the playground and read more about the design behind the new runtime and language capabilities:
 
-- [Try Ferret v2 in the Playground](https://www.montferret.dev/try/next/)
-- [On the Road to Ferret v2](https://www.montferret.dev/blog/ferret-v2-announcement/)
-- [Inside Ferret v2: The New Execution Model](https://www.montferret.dev/blog/ferret-v2-execution-model/)
-- [Inside Ferret v2: New Language Capabilities](https://www.montferret.dev/blog/ferret-v2-new-syntax/)
+- [Try Ferret v2 in the Playground](https://ferretlang.org/try/)
+- [On the Road to Ferret v2](https://ferretlang.org/blog/ferret-v2-announcement/)
+- [Inside Ferret v2: The New Execution Model](https://ferretlang.org/blog/ferret-v2-execution-model/)
+- [Inside Ferret v2: New Language Capabilities](https://ferretlang.org/blog/ferret-v2-new-syntax/)
 
 ---
 
@@ -71,12 +71,6 @@ It allows users to focus on the data they need while abstracting away the comple
 - Embeddable in Go applications
 - Extensible runtime and function system
 - Portable and fast
-
-### Direct mutation
-
-Ferret supports statement-level direct mutation with `=`, `+=`, `-=`, `*=`, and `/=`. Assignment targets may be declared bindings or writable paths such as `obj.prop`, `obj["key"]`, `arr[i]`, and mixed member/index chains.
-
-Assignments use the same safe-navigation syntax as reads, for example `obj?.profile?.city = "Berlin"` or `obj?.items?.[i] = value`. When a guarded hop is absent, the assignment is a no-op and the right-hand side is not evaluated. Strict missing path segments still fail, and assignment is not an expression.
 
 ## Getting started
 
