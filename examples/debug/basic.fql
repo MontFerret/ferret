@@ -1,0 +1,5 @@
+FUNC double(value) => value * 2
+
+LET input = @input
+LET result = double(input)
+RETURN result

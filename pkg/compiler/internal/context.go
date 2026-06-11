@@ -21,19 +21,21 @@ type (
 	// persist for the whole compilation. The final bytecode.Program reads its
 	// metadata almost entirely from here.
 	ProgramContext struct {
-		Emitter             *core.Emitter
-		Constants           *core.ConstantPool
+		Errors              *diagnostics.ErrorHandler
+		aggregatePlanByHash map[uint64][]int
 		CatchTable          *core.CatchStack
 		UDFs                *core.UDFTable
 		HostParams          *core.HostParamTable
 		HostFunctions       *core.HostFunctionTable
-		Errors              *diagnostics.ErrorHandler
-		Source              *source.Source
+		Constants           *core.ConstantPool
 		ForwardBindings     *ForwardBindingIndex
+		Emitter             *core.Emitter
 		UseAliases          map[string]string
-		aggregatePlanByHash map[uint64][]int
+		Source              *source.Source
 		aggregatePlans      []*bytecode.AggregatePlan
+		DebugPoints         []bytecode.DebugPoint
 		OptimizationLevel   optimization.Level
+		DebugInfo           bool
 	}
 
 	// FunctionContext holds state that is local to a single function body
@@ -51,11 +53,12 @@ type (
 	// host function refs, constants, catch table, UDF metadata, the emitter)
 	// lives on ProgramContext instead.
 	FunctionContext struct {
-		Registers *core.RegisterAllocator
-		Symbols   *core.SymbolTable
-		Types     *core.TypeTracker
-		Loops     *core.LoopTable
-		UDFScope  *core.UDFScope
+		Registers  *core.RegisterAllocator
+		Symbols    *core.SymbolTable
+		Types      *core.TypeTracker
+		Loops      *core.LoopTable
+		UDFScope   *core.UDFScope
+		FunctionID int
 	}
 
 	// CompilationSession is the thin coordinator passed to all compilers.
@@ -72,8 +75,9 @@ type (
 // NewFunctionContext creates a fresh function-local compilation state.
 func NewFunctionContext(constants *core.ConstantPool) *FunctionContext {
 	fc := &FunctionContext{
-		Registers: core.NewRegisterAllocator(),
-		Types:     core.NewTypeTracker(),
+		Registers:  core.NewRegisterAllocator(),
+		Types:      core.NewTypeTracker(),
+		FunctionID: -1,
 	}
 	fc.Symbols = core.NewSymbolTable(fc.Registers, constants)
 	fc.Loops = core.NewLoopTable(fc.Registers)

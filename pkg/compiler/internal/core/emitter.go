@@ -95,6 +95,18 @@ func (e *Emitter) Size() int {
 	return len(e.instructions)
 }
 
+// Truncate removes instructions and their parallel metadata from size onward.
+func (e *Emitter) Truncate(size int) {
+	if size < 0 || size > len(e.instructions) {
+		PanicInvariantf("invalid emitter truncate size: %d", size)
+	}
+	e.instructions = e.instructions[:size]
+	e.selectorSlots = e.selectorSlots[:size]
+	e.matchFailTargets = e.matchFailTargets[:size]
+	e.callArgumentSpans = e.callArgumentSpans[:size]
+	e.spans = e.spans[:size]
+}
+
 func (e *Emitter) Labels() map[int]string {
 	if e.labels == nil {
 		return nil

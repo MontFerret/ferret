@@ -16,6 +16,7 @@ type (
 		logger            []logging.Option
 		outputContentType string
 		env               []vm.EnvironmentOption
+		debugFormat       vm.DebugFormatOptions
 	}
 
 	// SessionOption configures a Session created from a Plan.
@@ -25,6 +26,7 @@ type (
 func newSessionOptions(setters []SessionOption) (*sessionOptions, error) {
 	opts := &sessionOptions{
 		outputContentType: encodingjson.ContentType,
+		debugFormat:       vm.DefaultDebugFormatOptions(),
 	}
 
 	for _, setter := range setters {
@@ -38,6 +40,17 @@ func newSessionOptions(setters []SessionOption) (*sessionOptions, error) {
 	}
 
 	return opts, nil
+}
+
+// WithDebugFormat configures bounded debugger value formatting.
+func WithDebugFormat(options vm.DebugFormatOptions) SessionOption {
+	return func(session *sessionOptions) error {
+		if options.MaxDepth <= 0 || options.MaxItems <= 0 || options.MaxBytes <= 0 {
+			return fmt.Errorf("debug format limits must be positive")
+		}
+		session.debugFormat = options
+		return nil
+	}
 }
 
 // WithEnvironmentOptions appends VM environment options to the created session.

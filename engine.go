@@ -15,13 +15,14 @@ import (
 
 // Engine compiles queries into reusable plans and runs them against the configured host.
 type Engine struct {
-	compiler *compiler.Compiler
-	loader   *artifact.Loader
-	host     *host
-	hooks    *hookRegistry
-	limiter  *sessionLimiter
-	idleCap  int
-	totalCap int
+	compiler      *compiler.Compiler
+	debugCompiler *compiler.Compiler
+	loader        *artifact.Loader
+	host          *host
+	hooks         *hookRegistry
+	limiter       *sessionLimiter
+	idleCap       int
+	totalCap      int
 }
 
 // New constructs an Engine from the provided options, registers all modules,
@@ -71,14 +72,35 @@ func New(setters ...Option) (*Engine, error) {
 	}
 
 	return &Engine{
-		compiler: compiler.New(opts.compiler...),
-		loader:   opts.programLoader,
-		host:     h,
-		hooks:    hooks,
-		limiter:  newSessionLimiter(opts.maxActiveSessions),
-		idleCap:  opts.maxIdleVMsPerPlan,
-		totalCap: opts.maxVMsPerPlan,
+		compiler:      compiler.New(opts.compiler...),
+		debugCompiler: compiler.New(append(append([]compiler.Option(nil), opts.compiler...), compiler.WithDebugInfo())...),
+		loader:        opts.programLoader,
+		host:          h,
+		hooks:         hooks,
+		limiter:       newSessionLimiter(opts.maxActiveSessions),
+		idleCap:       opts.maxIdleVMsPerPlan,
+		totalCap:      opts.maxVMsPerPlan,
 	}, nil
+}
+
+// CompileDebug compiles source into a reusable plan with source-level debugger
+// metadata. Debug compilation uses effective O0 optimization.
+func (e *Engine) CompileDebug(ctx context.Context, src *source.Source) (*Plan, error) {
+	if e == nil {
+		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is nil")
+	}
+	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
+		return nil, fmt.Errorf("before compile hooks: %w", err)
+	}
+
+	prog, err := e.debugCompiler.Compile(src)
+	if hookErr := e.hooks.plan.runAfterCompileHooks(ctx, err); hookErr != nil {
+		return nil, errors.Join(err, fmt.Errorf("after compile hooks: %w", hookErr))
+	}
+	if err != nil {
+		return nil, err
+	}
+	return e.newPlan(prog)
 }
 
 // Compile compiles source into a reusable execution plan.

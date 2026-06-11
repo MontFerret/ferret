@@ -24,7 +24,25 @@ type (
 		CallArgumentSpans      [][]source.Span `json:"callArgumentSpans,omitempty"`
 		MatchFailTargets       []int           `json:"matchFailTargets,omitempty"`
 		DebugSpans             []source.Span   `json:"debugSpans"`
+		DebugPoints            []DebugPoint    `json:"debugPoints,omitempty"`
 		OptimizationLevel      int             `json:"optimizationLevel"`
+	}
+
+	// DebugBinding records one source-visible binding at a logical debug point.
+	DebugBinding struct {
+		Name     string  `json:"name"`
+		Register Operand `json:"register"`
+		Mutable  bool    `json:"mutable,omitempty"`
+		Cell     bool    `json:"cell,omitempty"`
+	}
+
+	// DebugPoint identifies an executable logical source location and the
+	// bindings visible before it executes.
+	DebugPoint struct {
+		Bindings   []DebugBinding `json:"bindings,omitempty"`
+		Span       source.Span    `json:"span"`
+		PC         int            `json:"pc"`
+		FunctionID int            `json:"functionId"`
 	}
 
 	Program struct {

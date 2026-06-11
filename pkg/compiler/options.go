@@ -15,12 +15,22 @@ type (
 	Option func(opts *options)
 
 	options struct {
-		Level optimization.Level
+		Level     optimization.Level
+		DebugInfo bool
 	}
 )
 
 func WithOptimizationLevel(level optimization.Level) Option {
 	return func(opts *options) {
 		opts.Level = level
+	}
+}
+
+// WithDebugInfo emits source-level debugger metadata and disables optimization
+// so debugger-visible register bindings remain stable.
+func WithDebugInfo() Option {
+	return func(opts *options) {
+		opts.DebugInfo = true
+		opts.Level = optimization.LevelNone
 	}
 }

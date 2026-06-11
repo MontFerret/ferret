@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
@@ -68,6 +70,13 @@ func (c *StatementCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) 
 		return
 	}
 
+	rule, _ := ctx.(antlr.ParserRuleContext)
+	c.ctx.WithDebugPoint(rule, func() {
+		c.compileBodyStatement(ctx)
+	})
+}
+
+func (c *StatementCompiler) compileBodyStatement(ctx fql.IBodyStatementContext) {
 	if vd := ctx.VariableDeclaration(); vd != nil {
 		c.bindings.CompileVariableDeclaration(vd)
 	} else if as := ctx.AssignmentStatement(); as != nil {
@@ -98,6 +107,13 @@ func (c *StatementCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext
 		return
 	}
 
+	rule, _ := ctx.(antlr.ParserRuleContext)
+	c.ctx.WithDebugPoint(rule, func() {
+		c.compileBodyExpression(ctx)
+	})
+}
+
+func (c *StatementCompiler) compileBodyExpression(ctx fql.IBodyExpressionContext) {
 	// Handle FOR expressions (e.g., FOR x IN y RETURN z)
 	if fe := ctx.ForExpression(); fe != nil {
 		// Compile the FOR loop and get the destination register
@@ -156,6 +172,12 @@ func (c *StatementCompiler) CompileFunctionStatement(ctx fql.IFunctionStatementC
 		return
 	}
 
+	c.ctx.WithDebugPoint(stmt, func() {
+		c.compileFunctionStatement(stmt)
+	})
+}
+
+func (c *StatementCompiler) compileFunctionStatement(stmt *fql.FunctionStatementContext) {
 	switch {
 	case stmt.VariableDeclaration() != nil:
 		c.bindings.CompileVariableDeclaration(stmt.VariableDeclaration())

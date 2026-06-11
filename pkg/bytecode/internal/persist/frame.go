@@ -81,7 +81,22 @@ type (
 		CallArgumentSpans      [][]SpanFrame        `json:"callArgumentSpans,omitempty" msgpack:"callArgumentSpans,omitempty"`
 		MatchFailTargets       []int                `json:"matchFailTargets,omitempty" msgpack:"matchFailTargets,omitempty"`
 		DebugSpans             []SpanFrame          `json:"debugSpans,omitempty" msgpack:"debugSpans,omitempty"`
+		DebugPoints            []DebugPointFrame    `json:"debugPoints,omitempty" msgpack:"debugPoints,omitempty"`
 		OptimizationLevel      int                  `json:"optimizationLevel" msgpack:"optimizationLevel"`
+	}
+
+	DebugBindingFrame struct {
+		Name     string `json:"name" msgpack:"name"`
+		Register int64  `json:"register" msgpack:"register"`
+		Mutable  bool   `json:"mutable,omitempty" msgpack:"mutable,omitempty"`
+		Cell     bool   `json:"cell,omitempty" msgpack:"cell,omitempty"`
+	}
+
+	DebugPointFrame struct {
+		Bindings   []DebugBindingFrame `json:"bindings,omitempty" msgpack:"bindings,omitempty"`
+		Span       SpanFrame           `json:"span" msgpack:"span"`
+		PC         int                 `json:"pc" msgpack:"pc"`
+		FunctionID int                 `json:"functionId" msgpack:"functionId"`
 	}
 
 	LabelFrame struct {
@@ -197,6 +212,25 @@ func FromProgram(program *bytecode.Program) (ProgramFrame, error) {
 		}
 	}
 
+	debugPoints := make([]DebugPointFrame, len(program.Metadata.DebugPoints))
+	for i, point := range program.Metadata.DebugPoints {
+		bindings := make([]DebugBindingFrame, len(point.Bindings))
+		for j, binding := range point.Bindings {
+			bindings[j] = DebugBindingFrame{
+				Name:     binding.Name,
+				Register: int64(binding.Register),
+				Mutable:  binding.Mutable,
+				Cell:     binding.Cell,
+			}
+		}
+		debugPoints[i] = DebugPointFrame{
+			PC:         point.PC,
+			FunctionID: point.FunctionID,
+			Span:       SpanFrame{Start: point.Span.Start, End: point.Span.End},
+			Bindings:   bindings,
+		}
+	}
+
 	callArgumentSpans := make([][]SpanFrame, len(program.Metadata.CallArgumentSpans))
 	for i, spans := range program.Metadata.CallArgumentSpans {
 		if len(spans) == 0 {
@@ -260,6 +294,7 @@ func FromProgram(program *bytecode.Program) (ProgramFrame, error) {
 			CallArgumentSpans:      callArgumentSpans,
 			MatchFailTargets:       append([]int(nil), program.Metadata.MatchFailTargets...),
 			DebugSpans:             debugSpans,
+			DebugPoints:            debugPoints,
 			OptimizationLevel:      program.Metadata.OptimizationLevel,
 		},
 		Source: source,
@@ -360,6 +395,29 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 		}
 	}
 
+	debugPoints := make([]bytecode.DebugPoint, len(frame.Metadata.DebugPoints))
+	for i, point := range frame.Metadata.DebugPoints {
+		bindings := make([]bytecode.DebugBinding, len(point.Bindings))
+		for j, binding := range point.Bindings {
+			op, err := decodeInstructionOperand(binding.Register)
+			if err != nil {
+				return nil, fmt.Errorf("decode debug point %d binding %d: %w", i, j, err)
+			}
+			bindings[j] = bytecode.DebugBinding{
+				Name:     binding.Name,
+				Register: op,
+				Mutable:  binding.Mutable,
+				Cell:     binding.Cell,
+			}
+		}
+		debugPoints[i] = bytecode.DebugPoint{
+			PC:         point.PC,
+			FunctionID: point.FunctionID,
+			Span:       source.Span{Start: point.Span.Start, End: point.Span.End},
+			Bindings:   bindings,
+		}
+	}
+
 	callArgumentSpans := make([][]source.Span, len(frame.Metadata.CallArgumentSpans))
 	for i, spans := range frame.Metadata.CallArgumentSpans {
 		if len(spans) == 0 {
@@ -411,6 +469,7 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 			CallArgumentSpans:      callArgumentSpans,
 			MatchFailTargets:       append([]int(nil), frame.Metadata.MatchFailTargets...),
 			DebugSpans:             debugSpans,
+			DebugPoints:            debugPoints,
 			OptimizationLevel:      frame.Metadata.OptimizationLevel,
 		},
 		ISAVersion: *frame.ISAVersion,

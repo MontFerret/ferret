@@ -333,20 +333,22 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 	if loop.Type != core.PassThroughLoop {
 		// For normal loops, compile the return expression and push the result to the destination
 		re := ctx.(*fql.ReturnExpressionContext)
-		expReg := c.exprs.Compile(re.Expression())
+		c.ctx.WithDebugPoint(re, func() {
+			expReg := c.exprs.Compile(re.Expression())
 
-		span := source.Span{Start: -1, End: -1}
+			span := source.Span{Start: -1, End: -1}
 
-		if exprCtx := re.Expression(); exprCtx != nil {
-			if prc, ok := exprCtx.(antlr.ParserRuleContext); ok {
-				span = parser.SpanFromRuleContext(prc)
+			if exprCtx := re.Expression(); exprCtx != nil {
+				if prc, ok := exprCtx.(antlr.ParserRuleContext); ok {
+					span = parser.SpanFromRuleContext(prc)
+				}
+			} else {
+				span = parser.SpanFromRuleContext(re)
 			}
-		} else {
-			span = parser.SpanFromRuleContext(re)
-		}
 
-		c.ctx.Program.Emitter.WithSpan(span, func() {
-			c.ctx.Program.Emitter.EmitAB(bytecode.OpPush, loop.Dst, expReg)
+			c.ctx.Program.Emitter.WithSpan(span, func() {
+				c.ctx.Program.Emitter.EmitAB(bytecode.OpPush, loop.Dst, expReg)
+			})
 		})
 	} else if ctx != nil {
 		// For pass-through loops, recursively compile the nested FOR expression
@@ -410,6 +412,13 @@ func (c *LoopCompiler) compileLoopBody(ctx fql.IForExpressionContext) {
 // These can be declarations, assignments, deletes, function calls, or dispatches.
 // The results of these statements are not used directly in the loop result.
 func (c *LoopCompiler) compileForExpressionStatement(ctx fql.IForExpressionStatementContext) {
+	rule, _ := ctx.(antlr.ParserRuleContext)
+	c.ctx.WithDebugPoint(rule, func() {
+		c.compileForExpressionStatementInner(ctx)
+	})
+}
+
+func (c *LoopCompiler) compileForExpressionStatementInner(ctx fql.IForExpressionStatementContext) {
 	// Handle variable declarations (e.g., LET x = 1)
 	if vd := ctx.VariableDeclaration(); vd != nil {
 		_ = c.bindings.CompileVariableDeclaration(vd)
@@ -431,6 +440,13 @@ func (c *LoopCompiler) compileForExpressionStatement(ctx fql.IForExpressionState
 // These can be LIMIT, FILTER, SORT, or COLLECT clauses that modify the loop behavior.
 // Each clause type is delegated to a specific compilation method.
 func (c *LoopCompiler) compileForExpressionClause(ctx fql.IForExpressionClauseContext) {
+	rule, _ := ctx.(antlr.ParserRuleContext)
+	c.ctx.WithDebugPoint(rule, func() {
+		c.compileForExpressionClauseInner(ctx)
+	})
+}
+
+func (c *LoopCompiler) compileForExpressionClauseInner(ctx fql.IForExpressionClauseContext) {
 	// Handle LIMIT clause (e.g., LIMIT 10)
 	if lc := ctx.LimitClause(); lc != nil {
 		c.compileLimitClause(lc)

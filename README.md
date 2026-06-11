@@ -150,6 +150,35 @@ A small helper script for rewriting import paths is planned to simplify this pro
 
 The compatibility layer is intended as a migration aid, not the long-term preferred API. New projects should use the native v2 packages directly.
 
+### Source-level debugger API
+
+Ferret v2 exposes a local debugger core for embedding tools such as CLIs and
+editors. Compile with debugger metadata, create a debug session, then drive it
+with breakpoints and stepping commands:
+
+```go
+plan, err := eng.CompileDebug(ctx, source.New("query.fql", query))
+session, err := plan.NewDebugSession(ctx, ferret.WithSessionParam("input", 21))
+defer session.Close()
+
+_, err = session.SetBreakpoint("query.fql", 4)
+event, err := session.Start(ctx)
+event, err = session.Continue(ctx)
+locals, err := session.Locals()
+value, err := session.Evaluate(ctx, "result")
+```
+
+`Step` enters calls, `Next` stays at the same or shallower call depth, and
+`Out` stops in the caller. Runtime errors pause before state is released so
+frames and locals remain inspectable. Evaluation is deliberately
+side-effect-free and supports scalar expressions plus built-in object/array
+reads; calls, queries, waits, dispatch, mutation, recovery expressions, and
+opaque host-value reads are rejected.
+
+Phase 1 supports one source file and top-frame locals. Tail calls retain call
+depth, so `Next` and `Out` cannot always distinguish tail-call boundaries. The
+interactive `ferret debug` command belongs to the separate CLI repository.
+
 ### Alpha status
 
 Ferret v2 is currently in active development.

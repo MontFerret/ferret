@@ -90,7 +90,12 @@ func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err e
 		return nil, errorHandler.Unwrap()
 	}
 
-	l := NewVisitor(src, errorHandler, c.opts.Level)
+	level := c.opts.Level
+	if c.opts.DebugInfo {
+		level = optimization.LevelNone
+	}
+	l := NewVisitor(src, errorHandler, level)
+	l.Session.Program.DebugInfo = c.opts.DebugInfo
 	p.Visit(l)
 
 	if errorHandler.HasErrors() {
@@ -117,12 +122,13 @@ func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err e
 		},
 		Metadata: bytecode.Metadata{
 			CompilerVersion:        Version,
-			OptimizationLevel:      int(c.opts.Level),
+			OptimizationLevel:      int(level),
 			AggregatePlans:         l.Session.Program.AggregatePlans(),
 			AggregateSelectorSlots: l.Session.Program.Emitter.AggregateSelectorSlots(),
 			CallArgumentSpans:      l.Session.Program.Emitter.CallArgumentSpans(),
 			MatchFailTargets:       l.Session.Program.Emitter.MatchFailTargets(),
 			DebugSpans:             l.Session.Program.Emitter.Spans(),
+			DebugPoints:            l.Session.Program.DebugPoints,
 			Labels:                 l.Session.Program.Emitter.Labels(),
 		},
 		Source:     src,
@@ -133,7 +139,7 @@ func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err e
 		Params:     l.Session.Program.HostParams.Names(),
 	}
 
-	if err := optimization.Run(program, c.opts.Level); err != nil {
+	if err := optimization.Run(program, level); err != nil {
 		return nil, err
 	}
 

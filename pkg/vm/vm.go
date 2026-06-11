@@ -135,11 +135,11 @@ func (vm *VM) runRecovered(ctx context.Context, env *Environment) (result runtim
 		}
 	}()
 
-	return vm.runCore(ctx, env)
+	return vm.runCore(ctx, env, false)
 }
 
 func (vm *VM) runUnchecked(ctx context.Context, env *Environment) (runtime.Value, error) {
-	result, err := vm.runCore(ctx, env)
+	result, err := vm.runCore(ctx, env, false)
 
 	if err != nil {
 		var invariantErr *diagnostics.InvariantError
@@ -153,19 +153,21 @@ func (vm *VM) runUnchecked(ctx context.Context, env *Environment) (runtime.Value
 	return result, nil
 }
 
-func (vm *VM) runCore(ctx context.Context, env *Environment) (runtime.Value, error) {
-	if env == nil {
-		env = noopEnv
-	}
-
+func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (runtime.Value, error) {
 	state := &vm.state
 
-	if err := state.startRun(env); err != nil {
-		return nil, err
-	}
+	if !retained {
+		if env == nil {
+			env = noopEnv
+		}
 
-	if err := warmup(vm, env); err != nil {
-		return nil, err
+		if err := state.startRun(env); err != nil {
+			return nil, err
+		}
+
+		if err := warmup(vm, env); err != nil {
+			return nil, err
+		}
 	}
 
 	instructions := vm.plan.instructions
