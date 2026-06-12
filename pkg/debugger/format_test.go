@@ -56,8 +56,8 @@ func TestBoundedText(t *testing.T) {
 	tests := []struct {
 		name  string
 		value string
-		max   int
 		want  string
+		max   int
 	}{
 		{name: "ascii", value: "product", max: 4, want: "prod..."},
 		{name: "unicode", value: "éclair", max: 3, want: "éc..."},

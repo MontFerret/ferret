@@ -9,14 +9,15 @@ import (
 	"sync/atomic"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/internal/debugpoint"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // Session controls one retained-state source-level debug execution.
-// It is not safe for concurrent command calls. Pause is safe to call
-// concurrently with a running command.
+// Command calls are serialized. Pause is safe to call concurrently with a
+// running command.
 type Session struct {
 	closeErr          error
 	runCtx            context.Context
@@ -27,9 +28,11 @@ type Session struct {
 	boundBreakpointPC map[int]int
 	source            *source.Source
 	debugPoints       []bytecode.DebugPoint
+	pointIndex        debugpoint.Index
 	params            []string
 	format            FormatOptions
 	nextBreakpointID  int
+	commandMu         sync.Mutex
 	closeOnce         sync.Once
 	closed            atomic.Bool
 	started           atomic.Bool
@@ -59,12 +62,15 @@ func NewSession(config Config) (*Session, error) {
 		format = DefaultFormatOptions()
 	}
 
+	debugPoints := append([]bytecode.DebugPoint(nil), config.DebugPoints...)
+
 	return &Session{
 		execution:         config.Execution,
 		values:            config.Values,
 		services:          config.Services,
 		source:            config.Source,
-		debugPoints:       append([]bytecode.DebugPoint(nil), config.DebugPoints...),
+		debugPoints:       debugPoints,
+		pointIndex:        debugpoint.New(debugPoints),
 		params:            append([]string(nil), config.Params...),
 		format:            format,
 		breakpoints:       make(map[int]Breakpoint),
@@ -75,6 +81,11 @@ func NewSession(config Config) (*Session, error) {
 
 // Start begins execution and stops at the first executable source location.
 func (s *Session) Start(ctx context.Context) (*Event, error) {
+	if err := s.lockCommand(); err != nil {
+		return nil, err
+	}
+	defer s.commandMu.Unlock()
+
 	if err := s.ensureOpen(); err != nil {
 		return nil, err
 	}
@@ -105,21 +116,41 @@ func (s *Session) Start(ctx context.Context) (*Event, error) {
 
 // Continue resumes execution until a breakpoint, pause request, error, or completion.
 func (s *Session) Continue(ctx context.Context) (*Event, error) {
+	if err := s.lockCommand(); err != nil {
+		return nil, err
+	}
+	defer s.commandMu.Unlock()
+
 	return s.resume(ctx, vm.DebugResumeContinue)
 }
 
 // Step stops at the next logical source location, including inside calls.
 func (s *Session) Step(ctx context.Context) (*Event, error) {
+	if err := s.lockCommand(); err != nil {
+		return nil, err
+	}
+	defer s.commandMu.Unlock()
+
 	return s.resume(ctx, vm.DebugResumeStep)
 }
 
 // Next stops at the next logical source location at the same or shallower call depth.
 func (s *Session) Next(ctx context.Context) (*Event, error) {
+	if err := s.lockCommand(); err != nil {
+		return nil, err
+	}
+	defer s.commandMu.Unlock()
+
 	return s.resume(ctx, vm.DebugResumeNext)
 }
 
 // Out stops at the next logical source location in a caller. At main it runs to completion.
 func (s *Session) Out(ctx context.Context) (*Event, error) {
+	if err := s.lockCommand(); err != nil {
+		return nil, err
+	}
+	defer s.commandMu.Unlock()
+
 	return s.resume(ctx, vm.DebugResumeOut)
 }
 
@@ -140,6 +171,11 @@ func (s *Session) Pause() error {
 // SetBreakpoint adds a source-line breakpoint. When the requested line is not
 // executable, it binds to the next executable line in the same source.
 func (s *Session) SetBreakpoint(file string, line int) (Breakpoint, error) {
+	if err := s.lockCommand(); err != nil {
+		return Breakpoint{}, err
+	}
+	defer s.commandMu.Unlock()
+
 	if err := s.ensureOpen(); err != nil {
 		return Breakpoint{}, err
 	}
@@ -186,6 +222,11 @@ func (s *Session) SetBreakpoint(file string, line int) (Breakpoint, error) {
 
 // DeleteBreakpoint removes a breakpoint by ID.
 func (s *Session) DeleteBreakpoint(id int) error {
+	if err := s.lockCommand(); err != nil {
+		return err
+	}
+	defer s.commandMu.Unlock()
+
 	if err := s.ensureOpen(); err != nil {
 		return err
 	}
@@ -206,6 +247,9 @@ func (s *Session) Breakpoints() []Breakpoint {
 		return nil
 	}
 
+	s.commandMu.Lock()
+	defer s.commandMu.Unlock()
+
 	out := make([]Breakpoint, 0, len(s.breakpoints))
 	for _, breakpoint := range s.breakpoints {
 		out = append(out, breakpoint)
@@ -218,6 +262,11 @@ func (s *Session) Breakpoints() []Breakpoint {
 
 // Frames returns the current frame followed by callers.
 func (s *Session) Frames() ([]Frame, error) {
+	if err := s.lockCommand(); err != nil {
+		return nil, err
+	}
+	defer s.commandMu.Unlock()
+
 	if err := s.ensureOpen(); err != nil {
 		return nil, err
 	}
@@ -241,6 +290,11 @@ func (s *Session) Frames() ([]Frame, error) {
 
 // Locals returns the visible top-frame locals followed by bound parameters.
 func (s *Session) Locals() ([]Variable, error) {
+	if err := s.lockCommand(); err != nil {
+		return nil, err
+	}
+	defer s.commandMu.Unlock()
+
 	if err := s.ensureOpen(); err != nil {
 		return nil, err
 	}
@@ -272,6 +326,11 @@ func (s *Session) Locals() ([]Variable, error) {
 // Evaluate evaluates a conservative, side-effect-free expression against the
 // paused top frame.
 func (s *Session) Evaluate(ctx context.Context, expression string) (Value, error) {
+	if err := s.lockCommand(); err != nil {
+		return Value{}, err
+	}
+	defer s.commandMu.Unlock()
+
 	if err := s.ensureOpen(); err != nil {
 		return Value{}, err
 	}
@@ -422,25 +481,12 @@ func (s *Session) location(span source.Span) Location {
 }
 
 func (s *Session) locationForPC(pc, functionID int) Location {
-	var found *bytecode.DebugPoint
-
-	for i := range s.debugPoints {
-		point := &s.debugPoints[i]
-
-		if point.PC > pc {
-			break
-		}
-
-		if point.FunctionID == functionID {
-			found = point
-		}
-	}
-
-	if found == nil {
+	point := s.pointIndex.NearestBeforeOrAtInFunction(functionID, pc)
+	if point == nil {
 		return Location{File: s.source.Name()}
 	}
 
-	return s.location(found.Span)
+	return s.location(point.Span)
 }
 
 func (s *Session) ensureOpen() error {
@@ -451,11 +497,24 @@ func (s *Session) ensureOpen() error {
 	return nil
 }
 
+func (s *Session) lockCommand() error {
+	if s == nil {
+		return &StateError{Operation: "use", State: "closed"}
+	}
+
+	s.commandMu.Lock()
+
+	return nil
+}
+
 // Close releases retained VM state and embedding-owned session resources.
 func (s *Session) Close() error {
 	if s == nil {
 		return nil
 	}
+
+	s.commandMu.Lock()
+	defer s.commandMu.Unlock()
 
 	s.closeOnce.Do(func() {
 		s.closed.Store(true)

@@ -9,8 +9,8 @@ import (
 
 type debugControl struct {
 	owner       *debugExecution
-	points      []*bytecode.DebugPoint
 	breakpoints map[int]struct{}
+	points      []*bytecode.DebugPoint
 	startDepth  int
 	skipPC      int
 	skipDepth   int

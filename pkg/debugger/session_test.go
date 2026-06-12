@@ -68,6 +68,33 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 	}
 }
 
+func TestSessionCloseReturnsAndCachesExecutionCloseError(t *testing.T) {
+	closeErr := errors.New("execution close failed")
+	src := source.New("close.fql", "RETURN 1")
+	point := bytecode.DebugPoint{PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	execution := &fakeExecution{
+		closeErr: closeErr,
+		status:   vm.DebugExecutionNew,
+	}
+	session, err := NewSession(Config{
+		Execution:   execution,
+		Values:      &fakeValueAccess{inner: vm.NewDebugValueAccess()},
+		Services:    &fakeSessionServices{},
+		Source:      src,
+		DebugPoints: []bytecode.DebugPoint{point},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := session.Close(); !errors.Is(err, closeErr) {
+		t.Fatalf("expected execution close error, got %v", err)
+	}
+	if err := session.Close(); !errors.Is(err, closeErr) {
+		t.Fatalf("expected cached execution close error, got %v", err)
+	}
+}
+
 func BenchmarkSessionContinueThroughExecutionInterface(b *testing.B) {
 	src := source.New("debug.fql", "RETURN 1")
 	point := bytecode.DebugPoint{PC: 0, Span: source.Span{Start: 0, End: 6}, FunctionID: -1}

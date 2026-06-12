@@ -14,13 +14,14 @@ import (
 )
 
 type VM struct {
+	closeErr            error
+	sourcePointObserver sourcePointObserver
 	cache               *mem.Cache
 	program             *bytecode.Program
 	testing             test.Testing[*Result]
 	plan                execPlan
 	state               execState
 	options             options
-	sourcePointObserver sourcePointObserver
 	closed              bool
 }
 
@@ -103,13 +104,17 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (*Result, error) {
 
 // Close permanently releases the VM's execution state. Closed VMs must not be reused.
 func (vm *VM) Close() error {
-	if vm == nil || vm.closed {
+	if vm == nil {
 		return nil
+	}
+
+	if vm.closed {
+		return vm.closeErr
 	}
 
 	vm.closed = true
 	vm.testing.Close()
-	vm.state.endRun()
+	vm.closeErr = errors.Join(vm.closeErr, vm.state.endRunWithError())
 	vm.cache = nil
 	vm.program = nil
 	vm.plan = execPlan{}
@@ -118,7 +123,7 @@ func (vm *VM) Close() error {
 	vm.options = options{}
 	vm.sourcePointObserver = nil
 
-	return nil
+	return vm.closeErr
 }
 
 func (vm *VM) runRecovered(ctx context.Context, env *Environment) (result runtime.Value, err error) {
@@ -211,6 +216,7 @@ loop:
 				pointID: int(dst),
 				depth:   state.frames.Len(),
 			})
+
 			if err != nil {
 				return nil, sourcePointTerminate, err
 			}

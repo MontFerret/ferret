@@ -8,11 +8,12 @@ import (
 )
 
 type fakeExecution struct {
+	closeErr          error
 	startEvent        *vm.DebugExecutionEvent
 	resumeEvent       *vm.DebugExecutionEvent
 	resumeBreakpoints map[int]struct{}
-	locals            []vm.DebugLocal
 	params            runtime.Params
+	locals            []vm.DebugLocal
 	frames            []vm.DebugFrame
 	status            vm.DebugExecutionStatus
 	closed            bool
@@ -49,5 +50,5 @@ func (f *fakeExecution) Frames() ([]vm.DebugFrame, error) {
 
 func (f *fakeExecution) Close() error {
 	f.closed = true
-	return nil
+	return f.closeErr
 }

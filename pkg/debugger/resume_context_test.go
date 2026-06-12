@@ -10,12 +10,11 @@ import (
 
 type trackingContext struct {
 	context.Context
-
-	mu      sync.Mutex
 	done    chan struct{}
+	pending map[int]func()
 	nextID  int
 	stopped int
-	pending map[int]func()
+	mu      sync.Mutex
 }
 
 func (c *trackingContext) Done() <-chan struct{} {
@@ -92,8 +91,8 @@ func TestResumeContextUsesRunContextWhenCommandIsNil(t *testing.T) {
 
 func TestResumeContextHonorsRunAndCommandCancellation(t *testing.T) {
 	for _, tc := range []struct {
-		name   string
 		cancel func(context.CancelCauseFunc, context.CancelCauseFunc, error)
+		name   string
 	}{
 		{
 			name: "run",

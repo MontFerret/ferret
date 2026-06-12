@@ -2,10 +2,12 @@ package vm
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"sync/atomic"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/internal/debugpoint"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -56,9 +58,11 @@ type (
 
 	debugExecution struct {
 		terminalErr    error
+		closeErr       error
 		vm             *VM
 		env            *Environment
 		current        *bytecode.DebugPoint
+		points         debugpoint.Index
 		control        debugControl
 		mu             sync.Mutex
 		pauseRequested atomic.Bool
@@ -115,7 +119,12 @@ func NewDebugExecution(instance *VM, env *Environment) (DebugExecution, error) {
 		env = noopEnv
 	}
 
-	exec := &debugExecution{vm: instance, env: env, status: DebugExecutionNew}
+	exec := &debugExecution{
+		vm:     instance,
+		env:    env,
+		points: debugpoint.New(instance.program.Metadata.DebugPoints),
+		status: DebugExecutionNew,
+	}
 	exec.control = debugControl{
 		owner:  exec,
 		points: make([]*bytecode.DebugPoint, len(instance.program.Metadata.DebugPoints)),
@@ -265,41 +274,23 @@ func (d *debugExecution) Frames() ([]DebugFrame, error) {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "debug execution is not paused")
 	}
 
-	currentID := -1
+	currentID := d.vm.state.frames.CurrentFunctionID()
 	currentPC := d.vm.state.pc
-	name := "<main>"
+	name := d.functionName(currentID)
 
 	if d.current != nil {
 		currentID = d.current.FunctionID
 		currentPC = d.current.PC
-
-		if currentID >= 0 && currentID < len(d.vm.program.Functions.UserDefined) {
-			name = d.vm.program.Functions.UserDefined[currentID].DisplayName
-
-			if name == "" {
-				name = d.vm.program.Functions.UserDefined[currentID].Name
-			}
-		}
+		name = d.functionName(currentID)
 	}
 
 	out := []DebugFrame{{Name: name, FunctionID: currentID, PC: currentPC}}
-	for _, trace := range d.vm.state.frames.TraceEntries() {
-		callerID := -1
-		callerName := "<main>"
-
-		if point := d.nearestPoint(trace.CallSitePC); point != nil {
-			callerID = point.FunctionID
-
-			if callerID >= 0 && callerID < len(d.vm.program.Functions.UserDefined) {
-				callerName = d.vm.program.Functions.UserDefined[callerID].DisplayName
-
-				if callerName == "" {
-					callerName = d.vm.program.Functions.UserDefined[callerID].Name
-				}
-			}
-		}
-
-		out = append(out, DebugFrame{Name: callerName, FunctionID: callerID, PC: trace.CallSitePC})
+	for _, trace := range d.vm.state.frames.DebugTraceEntries() {
+		out = append(out, DebugFrame{
+			Name:       d.functionName(trace.FunctionID),
+			FunctionID: trace.FunctionID,
+			PC:         trace.PC,
+		})
 	}
 
 	return out, nil
@@ -312,6 +303,7 @@ func (d *debugExecution) runLocked(ctx context.Context) (event *DebugExecutionEv
 		if recovered := recover(); recovered != nil {
 			d.terminalErr = d.vm.state.runtimeErrorFromPanic(recovered)
 			d.status = DebugExecutionPaused
+			d.current = d.errorPoint()
 			event = &DebugExecutionEvent{Reason: DebugStopRuntimeError, Error: d.terminalErr, Depth: d.vm.state.frames.Len(), Point: d.current}
 			err = nil
 		}
@@ -322,7 +314,7 @@ func (d *debugExecution) runLocked(ctx context.Context) (event *DebugExecutionEv
 	if runErr != nil {
 		d.terminalErr = d.vm.state.wrapRuntimeError(runErr)
 		d.status = DebugExecutionPaused
-		d.current = d.nearestPoint(d.vm.state.lastPC)
+		d.current = d.errorPoint()
 
 		return &DebugExecutionEvent{Reason: DebugStopRuntimeError, Error: d.terminalErr, Point: d.current, Depth: d.vm.state.frames.Len()}, nil
 	}
@@ -345,20 +337,24 @@ func (d *debugExecution) runLocked(ctx context.Context) (event *DebugExecutionEv
 	return &DebugExecutionEvent{Reason: DebugStopCompleted, Result: result}, nil
 }
 
-func (d *debugExecution) nearestPoint(pc int) *bytecode.DebugPoint {
-	var found *bytecode.DebugPoint
+func (d *debugExecution) errorPoint() *bytecode.DebugPoint {
+	return d.points.NearestBeforeOrAtInFunction(
+		d.vm.state.frames.CurrentFunctionID(),
+		d.vm.state.errorPC(),
+	)
+}
 
-	for i := range d.vm.program.Metadata.DebugPoints {
-		point := &d.vm.program.Metadata.DebugPoints[i]
-
-		if point.PC > pc {
-			break
-		}
-
-		found = point
+func (d *debugExecution) functionName(functionID int) string {
+	if functionID < 0 || functionID >= len(d.vm.program.Functions.UserDefined) {
+		return "<main>"
 	}
 
-	return found
+	name := d.vm.program.Functions.UserDefined[functionID].DisplayName
+	if name == "" {
+		name = d.vm.program.Functions.UserDefined[functionID].Name
+	}
+
+	return name
 }
 
 // Close releases retained execution state and permanently closes the VM.
@@ -371,16 +367,14 @@ func (d *debugExecution) Close() error {
 	defer d.mu.Unlock()
 
 	if d.status == DebugExecutionClosed {
-		return nil
+		return d.closeErr
 	}
 
 	if d.vm != nil {
-		d.vm.sourcePointObserver = nil
-		d.vm.state.endRun()
-		_ = d.vm.Close()
+		d.closeErr = errors.Join(d.closeErr, d.vm.Close())
 	}
 
 	d.status = DebugExecutionClosed
 
-	return nil
+	return d.closeErr
 }

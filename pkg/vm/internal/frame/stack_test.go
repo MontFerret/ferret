@@ -69,6 +69,41 @@ func TestCallStackPushPopTopAndLen(t *testing.T) {
 	}
 }
 
+func TestCallStackCurrentFunctionAndDebugTraceEntries(t *testing.T) {
+	stack := NewCallStack()
+	if got := stack.CurrentFunctionID(); got != -1 {
+		t.Fatalf("unexpected top-level function id: %d", got)
+	}
+
+	stack.Push(CallFrame{
+		FnID:        1,
+		CallSitePC:  10,
+		ReturnPC:    12,
+		HasCallSite: true,
+	})
+	stack.Push(CallFrame{
+		FnID:        2,
+		CallSitePC:  20,
+		ReturnPC:    22,
+		HasCallSite: true,
+	})
+
+	if got := stack.CurrentFunctionID(); got != 2 {
+		t.Fatalf("unexpected current function id: %d", got)
+	}
+
+	traces := stack.DebugTraceEntries()
+	if len(traces) != 2 {
+		t.Fatalf("unexpected debug trace count: %#v", traces)
+	}
+	if traces[0].FunctionID != 1 || traces[0].PC != 20 {
+		t.Fatalf("unexpected nearest caller: %#v", traces[0])
+	}
+	if traces[1].FunctionID != -1 || traces[1].PC != 10 {
+		t.Fatalf("unexpected farthest caller: %#v", traces[1])
+	}
+}
+
 func TestCallStackNearestRecoveryBoundary(t *testing.T) {
 	var stack CallStack
 
@@ -106,6 +141,9 @@ func TestCallStackSetTopMetadata(t *testing.T) {
 	stack.Push(CallFrame{
 		FnID:            1,
 		FnName:          "outer",
+		CallSitePC:      12,
+		ReturnPC:        12,
+		HasCallSite:     true,
 		CallerRegisters: make([]runtime.Value, 1),
 	})
 
@@ -129,8 +167,16 @@ func TestCallStackSetTopMetadata(t *testing.T) {
 	if got, want := top.CallSitePC, 33; got != want {
 		t.Fatalf("unexpected callsite pc: got %d, want %d", got, want)
 	}
+	if got, want := top.structuralCallSitePC(), 10; got != want {
+		t.Fatalf("unexpected structural caller pc: got %d, want %d", got, want)
+	}
 	if !top.HasCallSite {
 		t.Fatal("expected top frame callsite metadata to be marked present")
+	}
+
+	traces := stack.DebugTraceEntries()
+	if len(traces) != 1 || traces[0].FunctionID != -1 || traces[0].PC != 10 {
+		t.Fatalf("unexpected structural debug trace: %#v", traces)
 	}
 }
 
