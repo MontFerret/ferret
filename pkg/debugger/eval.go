@@ -18,51 +18,63 @@ func evaluateExpression(ctx context.Context, text string, scope evalScope) (runt
 	if strings.TrimSpace(text) == "" {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug expression is empty")
 	}
+
 	if ctx == nil {
 		ctx = context.Background()
 	}
+
 	p := parser.New(text)
 	listener := newDebugEvalErrorListener()
 	p.RemoveErrorListeners()
 	p.AddErrorListener(listener)
 	expr := p.Expression()
+
 	if len(listener.errs) > 0 {
 		return nil, errors.Join(listener.errs...)
 	}
+
 	if !p.AtEOF() {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug expression contains unsupported trailing input")
 	}
+
 	return evalDebugExpression(ctx, expr, scope)
 }
 
 func evalDebugExpression(ctx context.Context, expr fql.IExpressionContext, scope evalScope) (runtime.Value, error) {
 	node, ok := expr.(*fql.ExpressionContext)
+
 	if !ok || node == nil {
 		return nil, unsupportedDebugExpression(expr)
 	}
+
 	if node.UnaryOperator() != nil {
 		value, err := evalDebugExpression(ctx, node.GetRight(), scope)
 		if err != nil {
 			return nil, err
 		}
+
 		return evalDebugUnary(node.UnaryOperator().GetText(), value, scope.values)
 	}
+
 	if node.GetLeft() != nil && node.GetRight() != nil {
 		left, err := evalDebugExpression(ctx, node.GetLeft(), scope)
 		if err != nil {
 			return nil, err
 		}
+
 		op := ""
 		if node.LogicalAndOperator() != nil {
 			op = node.LogicalAndOperator().GetText()
 		} else if node.LogicalOrOperator() != nil {
 			op = node.LogicalOrOperator().GetText()
 		}
+
 		if strings.EqualFold(op, "AND") {
 			leftBool, ok := left.(runtime.Boolean)
 			if !ok {
 				return nil, debugEvalTypeError(left, runtime.TypeBoolean.Name(), scope.values)
 			}
+
 			if !leftBool {
 				return runtime.False, nil
 			}
@@ -71,14 +83,17 @@ func evalDebugExpression(ctx context.Context, expr fql.IExpressionContext, scope
 			if !ok {
 				return nil, debugEvalTypeError(left, runtime.TypeBoolean.Name(), scope.values)
 			}
+
 			if leftBool {
 				return runtime.True, nil
 			}
 		}
+
 		right, err := evalDebugExpression(ctx, node.GetRight(), scope)
 		if err != nil {
 			return nil, err
 		}
+
 		return evalDebugLogical(op, left, right)
 	}
 	if node.GetCondition() != nil {
@@ -86,18 +101,23 @@ func evalDebugExpression(ctx context.Context, expr fql.IExpressionContext, scope
 		if err != nil {
 			return nil, err
 		}
+
 		ok, isBool := condition.(runtime.Boolean)
 		if !isBool {
 			return nil, debugEvalTypeError(condition, runtime.TypeBoolean.Name(), scope.values)
 		}
+
 		if ok && node.GetOnTrue() != nil {
 			return evalDebugExpression(ctx, node.GetOnTrue(), scope)
 		}
+
 		return evalDebugExpression(ctx, node.GetOnFalse(), scope)
 	}
+
 	if node.Predicate() != nil {
 		return evalDebugPredicate(ctx, node.Predicate(), scope)
 	}
+
 	return nil, unsupportedDebugExpression(expr)
 }
 
@@ -106,20 +126,25 @@ func evalDebugPredicate(ctx context.Context, predicate fql.IPredicateContext, sc
 	if !ok || node == nil {
 		return nil, unsupportedDebugExpression(predicate)
 	}
+
 	if node.GetLeft() != nil && node.GetRight() != nil {
 		if node.EqualityOperator() == nil {
 			return nil, unsupportedDebugExpression(predicate)
 		}
 		left, err := evalDebugPredicate(ctx, node.GetLeft(), scope)
+
 		if err != nil {
 			return nil, err
 		}
+
 		right, err := evalDebugPredicate(ctx, node.GetRight(), scope)
 		if err != nil {
 			return nil, err
 		}
+
 		return evalDebugComparison(node.EqualityOperator().GetText(), left, right)
 	}
+
 	return evalDebugAtom(ctx, node.ExpressionAtom(), scope)
 }
 
@@ -128,15 +153,18 @@ func evalDebugAtom(ctx context.Context, atom fql.IExpressionAtomContext, scope e
 	if !ok || node == nil {
 		return nil, unsupportedDebugExpression(atom)
 	}
+
 	if node.GetLeft() != nil && node.GetRight() != nil {
 		left, err := evalDebugAtom(ctx, node.GetLeft(), scope)
 		if err != nil {
 			return nil, err
 		}
+
 		right, err := evalDebugAtom(ctx, node.GetRight(), scope)
 		if err != nil {
 			return nil, err
 		}
+
 		op := ""
 		if node.MultiplicativeOperator() != nil {
 			op = node.MultiplicativeOperator().GetText()
@@ -145,8 +173,10 @@ func evalDebugAtom(ctx context.Context, atom fql.IExpressionAtomContext, scope e
 		} else {
 			return nil, unsupportedDebugExpression(atom)
 		}
+
 		return evalDebugArithmetic(ctx, op, left, right)
 	}
+
 	switch {
 	case node.Literal() != nil:
 		return evalDebugLiteral(node.Literal())
@@ -155,13 +185,16 @@ func evalDebugAtom(ctx context.Context, atom fql.IExpressionAtomContext, scope e
 		if !exists {
 			return nil, runtime.Errorf(runtime.ErrNotFound, "debug variable %q", node.Variable().GetText())
 		}
+
 		return value, nil
 	case node.Param() != nil:
 		name := strings.TrimPrefix(node.Param().GetText(), "@")
 		value, exists := scope.params.Get(name)
+
 		if !exists {
 			return nil, runtime.Errorf(runtime.ErrNotFound, "debug parameter %q", name)
 		}
+
 		return value, nil
 	case node.MemberExpression() != nil:
 		return evalDebugMember(ctx, node.MemberExpression(), scope)
@@ -177,20 +210,25 @@ func evalDebugMember(ctx context.Context, member fql.IMemberExpressionContext, s
 	if !ok || node == nil || node.RecoveryTails() != nil {
 		return nil, unsupportedDebugExpression(member)
 	}
+
 	source := node.MemberExpressionSource()
 	var value runtime.Value
 	var err error
+
 	switch {
 	case source.Variable() != nil:
 		var exists bool
 		value, exists = scope.locals[source.Variable().GetText()]
+
 		if !exists {
 			return nil, runtime.Errorf(runtime.ErrNotFound, "debug variable %q", source.Variable().GetText())
 		}
 	case source.Param() != nil:
 		name := strings.TrimPrefix(source.Param().GetText(), "@")
+
 		var exists bool
 		value, exists = scope.params.Get(name)
+
 		if !exists {
 			return nil, runtime.Errorf(runtime.ErrNotFound, "debug parameter %q", name)
 		}
@@ -199,20 +237,26 @@ func evalDebugMember(ctx context.Context, member fql.IMemberExpressionContext, s
 	default:
 		return nil, unsupportedDebugExpression(member)
 	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	for _, path := range node.AllMemberExpressionPath() {
 		if path.ErrorOperator() != nil || path.ArrayExpansion() != nil || path.ArrayContraction() != nil || path.ArrayQuestionMark() != nil || path.ArrayApply() != nil {
 			return nil, unsupportedDebugExpression(path)
 		}
+
 		var key runtime.Value
 		if property := path.PropertyName(); property != nil {
 			text := property.GetText()
+
 			if property.Param() != nil {
 				name := strings.TrimPrefix(text, "@")
+
 				var exists bool
 				key, exists = scope.params.Get(name)
+
 				if !exists {
 					return nil, runtime.Errorf(runtime.ErrNotFound, "debug parameter %q", name)
 				}
@@ -221,6 +265,7 @@ func evalDebugMember(ctx context.Context, member fql.IMemberExpressionContext, s
 				if err != nil {
 					return nil, err
 				}
+
 				key = runtime.NewString(text)
 			} else {
 				key = runtime.NewString(text)
@@ -233,11 +278,13 @@ func evalDebugMember(ctx context.Context, member fql.IMemberExpressionContext, s
 		} else {
 			return nil, unsupportedDebugExpression(path)
 		}
+
 		value, err = scope.values.Lookup(value, key)
 		if err != nil {
 			return nil, err
 		}
 	}
+
 	return value, nil
 }
 
@@ -268,6 +315,7 @@ func evalDebugUnary(op string, value runtime.Value, access vm.DebugValueAccess) 
 		if !ok {
 			return nil, debugEvalTypeError(value, runtime.TypeBoolean.Name(), access)
 		}
+
 		return runtime.NewBoolean(!bool(boolean)), nil
 	case "+":
 		if _, ok := value.(runtime.Int); ok {
@@ -284,21 +332,26 @@ func evalDebugUnary(op string, value runtime.Value, access vm.DebugValueAccess) 
 			return -value, nil
 		}
 	}
+
 	return nil, runtime.Errorf(runtime.ErrInvalidArgument, "unsupported debugger unary operation %s", op)
 }
 
 func evalDebugLogical(op string, left, right runtime.Value) (runtime.Value, error) {
 	l, lok := left.(runtime.Boolean)
 	r, rok := right.(runtime.Boolean)
+
 	if !lok || !rok {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debugger logical operations require booleans")
 	}
+
 	if strings.EqualFold(op, "AND") {
 		return runtime.NewBoolean(bool(l) && bool(r)), nil
 	}
+
 	if strings.EqualFold(op, "OR") {
 		return runtime.NewBoolean(bool(l) || bool(r)), nil
 	}
+
 	return nil, unsupportedDebugExpression(nil)
 }
 
@@ -306,6 +359,7 @@ func evalDebugArithmetic(ctx context.Context, op string, left, right runtime.Val
 	if !debugScalar(left) || !debugScalar(right) {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debugger arithmetic supports scalar values only")
 	}
+
 	switch op {
 	case "+":
 		return runtime.Add(ctx, left, right), nil
@@ -317,11 +371,13 @@ func evalDebugArithmetic(ctx context.Context, op string, left, right runtime.Val
 		if debugZero(right) {
 			return nil, runtime.Error(runtime.ErrInvalidOperation, "division by zero")
 		}
+
 		return runtime.Divide(ctx, left, right), nil
 	case "%":
 		if debugZero(right) {
 			return nil, runtime.Error(runtime.ErrInvalidOperation, "modulo by zero")
 		}
+
 		return runtime.Modulus(ctx, left, right), nil
 	default:
 		return nil, unsupportedDebugExpression(nil)
@@ -332,7 +388,9 @@ func evalDebugComparison(op string, left, right runtime.Value) (runtime.Value, e
 	if !debugScalar(left) || !debugScalar(right) {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debugger comparisons support scalar values only")
 	}
+
 	cmp := runtime.CompareValues(left, right)
+
 	switch op {
 	case "==":
 		return runtime.NewBoolean(cmp == 0), nil
@@ -355,6 +413,7 @@ func debugScalar(value runtime.Value) bool {
 	if value == nil || reflect.TypeOf(value) == reflect.TypeOf(runtime.None) {
 		return true
 	}
+
 	switch value.(type) {
 	case runtime.Boolean, runtime.Int, runtime.Float, runtime.String:
 		return true
@@ -382,9 +441,11 @@ func unquoteDebugString(text string) (string, error) {
 	content := text[1 : len(text)-1]
 	var b strings.Builder
 	b.Grow(len(content))
+
 	for i := 0; i < len(content); i++ {
 		if content[i] != '\\' || i+1 >= len(content) {
 			b.WriteByte(content[i])
+
 			continue
 		}
 
@@ -399,6 +460,7 @@ func unquoteDebugString(text string) (string, error) {
 			b.WriteByte(content[i])
 		}
 	}
+
 	return b.String(), nil
 }
 
@@ -406,6 +468,7 @@ func unsupportedDebugExpression(value any) error {
 	if value == nil {
 		return runtime.Error(runtime.ErrInvalidOperation, "expression is not supported by the safe debugger evaluator")
 	}
+
 	return fmt.Errorf("%w: %s", runtime.Error(runtime.ErrInvalidOperation, "expression is not supported by the safe debugger evaluator"), value.(interface{ GetText() string }).GetText())
 }
 

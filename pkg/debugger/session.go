@@ -262,22 +262,31 @@ func (s *Session) resume(ctx context.Context, mode vm.DebugResumeMode) (*Event, 
 	if err := s.ensureOpen(); err != nil {
 		return nil, err
 	}
+
 	if !s.started.Load() {
 		return nil, &StateError{Operation: "resume", State: "new"}
 	}
+
 	switch s.execution.Status() {
 	case vm.DebugExecutionCompleted:
 		return nil, &StateError{Operation: "resume", State: "completed"}
 	case vm.DebugExecutionTerminated:
 		return nil, &StateError{Operation: "resume", State: "terminated"}
 	}
-	if ctx == nil {
+
+	if ctx == nil || ctx == s.runCtx {
 		ctx = s.runCtx
+	} else {
+		var cleanup func()
+		ctx, cleanup = newResumeContext(s.runCtx, ctx)
+		defer cleanup()
 	}
+
 	event, err := s.execution.Resume(s.services.ExtendContext(ctx), mode, s.breakpointPCs())
 	if err != nil {
 		return nil, err
 	}
+
 	return s.convertEvent(event)
 }
 
@@ -308,7 +317,9 @@ func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
 		out.Reason = ReasonPause
 	case vm.DebugStopRuntimeError:
 		out.Reason = ReasonRuntimeError
-		out.Error = errors.Join(out.Error, s.runAfterHooks(event.Error))
+		if hookErr := s.runAfterHooks(event.Error); hookErr != nil {
+			out.Error = errors.Join(out.Error, hookErr)
+		}
 	case vm.DebugStopCompleted:
 		out.Reason = ReasonCompleted
 		output, outputErr := s.services.Materialize(event.Result)
@@ -320,7 +331,9 @@ func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
 		out.Output = output
 	case vm.DebugStopTerminated:
 		out.Reason = ReasonTerminated
-		out.Error = errors.Join(out.Error, s.runAfterHooks(event.Error))
+		if hookErr := s.runAfterHooks(event.Error); hookErr != nil {
+			out.Error = errors.Join(out.Error, hookErr)
+		}
 	}
 	return out, nil
 }

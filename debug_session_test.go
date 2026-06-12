@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
@@ -310,6 +312,13 @@ func TestDebugSessionRuntimeErrorPreservesLocals(t *testing.T) {
 	if event.Reason != DebugReasonRuntimeError || event.Error == nil {
 		t.Fatalf("expected runtime error pause, got %#v", event)
 	}
+	if _, ok := event.Error.(diagnostics.Formattable); !ok {
+		t.Fatalf("expected formattable runtime error, got %T", event.Error)
+	}
+	formatted := diagnostics.Format(event.Error)
+	if !strings.Contains(formatted, "error.fql:2") || !strings.Contains(formatted, "RETURN x / 0") {
+		t.Fatalf("expected formatted source diagnostic, got:\n%s", formatted)
+	}
 	locals, err := session.Locals()
 	if err != nil {
 		t.Fatal(err)
@@ -323,6 +332,93 @@ func TestDebugSessionRuntimeErrorPreservesLocals(t *testing.T) {
 	}
 	if event.Reason != DebugReasonTerminated || event.Error == nil || !strings.Contains(event.Error.Error(), "division") {
 		t.Fatalf("unexpected termination: %#v", event)
+	}
+	if _, ok := event.Error.(diagnostics.Formattable); !ok {
+		t.Fatalf("expected formattable termination error, got %T", event.Error)
+	}
+}
+
+func TestDebugSessionRuntimeErrorJoinsAfterRunHookFailure(t *testing.T) {
+	afterErr := errors.New("after run failed")
+	engine, err := New(WithAfterRunHook(func(context.Context, error) error {
+		return afterErr
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	plan, err := engine.CompileDebug(context.Background(), source.New("error.fql", "RETURN 1 / 0"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	event, err := session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != DebugReasonRuntimeError || !errors.Is(event.Error, afterErr) {
+		t.Fatalf("expected joined after-run hook failure, got %#v", event)
+	}
+	var runtimeErr diagnostics.FormattableError
+	if !errors.As(event.Error, &runtimeErr) {
+		t.Fatalf("expected joined runtime diagnostic, got %T", event.Error)
+	}
+}
+
+func TestDebugSessionResumePreservesBeforeRunContextValues(t *testing.T) {
+	type contextKey string
+
+	const key contextKey = "debug-session-value"
+	engine, err := New(
+		WithBeforeRunHook(func(ctx context.Context) (context.Context, error) {
+			return context.WithValue(ctx, key, "hook-value"), nil
+		}),
+		WithFunctionsRegistrar(func(fns runtime.FunctionDefs) {
+			fns.A0().Add("DEBUG_CONTEXT_VALUE", func(ctx context.Context) (runtime.Value, error) {
+				value, _ := ctx.Value(key).(string)
+				return runtime.NewString(value), nil
+			})
+		}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	plan, err := engine.CompileDebug(
+		context.Background(),
+		source.New("context.fql", "LET x = 1\nRETURN DEBUG_CONTEXT_VALUE()"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	event, err := session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != DebugReasonCompleted || event.Output == nil || string(event.Output.Content) != `"hook-value"` {
+		t.Fatalf("unexpected completion event: %#v", event)
 	}
 }
 

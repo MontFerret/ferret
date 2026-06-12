@@ -13,28 +13,35 @@ import (
 
 func formatValue(value runtime.Value, access vm.DebugValueAccess, options FormatOptions) string {
 	info, _ := access.DebugInfo(value)
+
 	return formatValueWithInfo(value, info, access, options)
 }
 
 func formatValueWithInfo(value runtime.Value, info runtime.DebugInfo, access vm.DebugValueAccess, options FormatOptions) string {
 	var b strings.Builder
+
 	writeValue(&b, value, info, access, options, 0)
 	out := b.String()
+
 	if len(out) > options.MaxBytes {
 		return out[:options.MaxBytes] + "..."
 	}
+
 	return out
 }
 
 func writeValue(b *strings.Builder, value runtime.Value, info runtime.DebugInfo, access vm.DebugValueAccess, options FormatOptions, depth int) {
 	if info.Display != "" {
 		b.WriteString(boundedText(info.Display, options.MaxBytes))
+
 		return
 	}
+
 	if value == nil || reflect.TypeOf(value) == reflect.TypeOf(runtime.None) {
 		b.WriteString("NONE")
 		return
 	}
+
 	switch value := value.(type) {
 	case runtime.Boolean:
 		if value {
@@ -54,18 +61,23 @@ func writeValue(b *strings.Builder, value runtime.Value, info runtime.DebugInfo,
 		fmt.Fprintf(b, "Binary(%d)", len(value))
 	default:
 		inspection, ok := access.Inspect(value, options.MaxItems)
+
 		if !ok {
 			typeName := info.TypeName
+
 			if typeName == "" {
 				typeName = access.TypeName(value)
 			}
+
 			fmt.Fprintf(b, "HostValue(%s)", typeName)
 			return
 		}
+
 		if depth >= options.MaxDepth || inspection.Length > options.MaxItems || !inspection.Complete {
 			writeCollectionSummary(b, inspection)
 			return
 		}
+
 		writeInspection(b, inspection, access, options, depth)
 	}
 }
@@ -73,28 +85,36 @@ func writeValue(b *strings.Builder, value runtime.Value, info runtime.DebugInfo,
 func writeInspection(b *strings.Builder, inspection vm.DebugValueInspection, access vm.DebugValueAccess, options FormatOptions, depth int) {
 	if inspection.Kind == vm.DebugValueArray {
 		b.WriteByte('[')
+
 		for i, item := range inspection.Items {
 			if i > 0 {
 				b.WriteString(", ")
 			}
+
 			info, _ := access.DebugInfo(item.Value)
 			writeValue(b, item.Value, info, access, options, depth+1)
 		}
+
 		b.WriteByte(']')
+
 		return
 	}
+
 	items := append([]vm.DebugValueItem(nil), inspection.Items...)
 	sort.Slice(items, func(i, j int) bool { return items[i].Key < items[j].Key })
 	b.WriteByte('{')
+
 	for i, item := range items {
 		if i > 0 {
 			b.WriteString(", ")
 		}
+
 		b.WriteString(strconv.Quote(boundedText(item.Key, options.MaxBytes)))
 		b.WriteString(": ")
 		info, _ := access.DebugInfo(item.Value)
 		writeValue(b, item.Value, info, access, options, depth+1)
 	}
+
 	b.WriteByte('}')
 }
 
@@ -103,6 +123,7 @@ func writeCollectionSummary(b *strings.Builder, inspection vm.DebugValueInspecti
 		fmt.Fprintf(b, "Array(%d)", inspection.Length)
 		return
 	}
+
 	fmt.Fprintf(b, "Object(%d)", inspection.Length)
 }
 
@@ -110,5 +131,6 @@ func boundedText(value string, max int) string {
 	if len(value) <= max {
 		return value
 	}
+
 	return value[:max] + "..."
 }
