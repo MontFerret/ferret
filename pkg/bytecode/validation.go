@@ -137,27 +137,34 @@ func validateMetadata(program *Program) error {
 		if point.PC < 0 || point.PC >= bytecodeLen {
 			return fmt.Errorf("%w: debug point %d references pc %d out of range", ErrInvalidProgram, i, point.PC)
 		}
+
 		marker := program.Bytecode[point.PC]
 		if marker.Opcode != OpJump || int(marker.Operands[0]) != point.PC+1 {
 			return fmt.Errorf("%w: debug point %d pc %d does not reference a debugger marker", ErrInvalidProgram, i, point.PC)
 		}
+
 		if point.PC <= lastDebugPC {
 			return fmt.Errorf("%w: debug points are not strictly ordered by pc at index %d", ErrInvalidProgram, i)
 		}
+
 		if point.FunctionID < -1 || point.FunctionID >= len(program.Functions.UserDefined) {
 			return fmt.Errorf("%w: debug point %d has invalid function id %d", ErrInvalidProgram, i, point.FunctionID)
 		}
+
 		if point.Span.Start < 0 || point.Span.End < point.Span.Start {
 			return fmt.Errorf("%w: debug point %d has invalid span", ErrInvalidProgram, i)
 		}
+
 		for _, binding := range point.Bindings {
 			if binding.Name == "" {
 				return fmt.Errorf("%w: debug point %d has empty binding name", ErrInvalidProgram, i)
 			}
+
 			if !binding.Register.IsRegister() || binding.Register.Register() >= program.Registers {
 				return fmt.Errorf("%w: debug point %d binding %q has invalid register %s", ErrInvalidProgram, i, binding.Name, binding.Register)
 			}
 		}
+
 		lastDebugPC = point.PC
 	}
 

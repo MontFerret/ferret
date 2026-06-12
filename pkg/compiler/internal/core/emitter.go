@@ -100,6 +100,7 @@ func (e *Emitter) Truncate(size int) {
 	if size < 0 || size > len(e.instructions) {
 		PanicInvariantf("invalid emitter truncate size: %d", size)
 	}
+
 	e.instructions = e.instructions[:size]
 	e.selectorSlots = e.selectorSlots[:size]
 	e.matchFailTargets = e.matchFailTargets[:size]
@@ -231,10 +232,12 @@ func (e *Emitter) EmitAsWithCallArgumentSpans(op bytecode.Opcode, dest bytecode.
 	if len(seq) > 0 {
 		src1 := seq[0]
 		src2 := seq[len(seq)-1]
+
 		e.emitInstructionWithMetadata(bytecode.Instruction{
 			Opcode:   op,
 			Operands: [3]bytecode.Operand{dest, src1, src2},
 		}, -1, -1, spans)
+
 		return
 	}
 

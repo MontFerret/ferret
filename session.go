@@ -84,6 +84,7 @@ func (s *Session) extendContext(ctx context.Context) context.Context {
 	ctx = s.logger.WithContext(ctx)
 	ctx = encoding.WithRegistry(ctx, s.encoding)
 	ctx = fs.WithFileSystem(ctx, s.fs)
+
 	return ctx
 }
 

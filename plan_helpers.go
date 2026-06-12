@@ -14,6 +14,7 @@ func newSessionPermitRelease(limiter *sessionLimiter, pool *vm.Pool) sessionPerm
 	return func(instance *vm.VM) {
 		once.Do(func() {
 			limiter.Release()
+
 			if pool != nil {
 				// Return borrowed VMs even if the plan has already been closed.
 				pool.Release(instance)

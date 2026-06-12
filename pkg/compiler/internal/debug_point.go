@@ -14,6 +14,7 @@ func (c *CompilationSession) WithDebugPoint(ctx antlr.ParserRuleContext, compile
 	if compile == nil {
 		return
 	}
+
 	if c == nil || c.Program == nil || c.Function == nil || !c.Program.DebugInfo || ctx == nil {
 		compile()
 		return
@@ -22,6 +23,7 @@ func (c *CompilationSession) WithDebugPoint(ctx antlr.ParserRuleContext, compile
 	pc := c.Program.Emitter.Size()
 	vars := c.Function.Symbols.VisibleVariables()
 	bindings := make([]bytecode.DebugBinding, 0, len(vars))
+
 	for _, variable := range vars {
 		bindings = append(bindings, bytecode.DebugBinding{
 			Name:     variable.Name,
@@ -38,10 +40,13 @@ func (c *CompilationSession) WithDebugPoint(ctx antlr.ParserRuleContext, compile
 		Span:       span,
 		Bindings:   bindings,
 	})
+
 	c.Program.Emitter.WithSpan(span, func() {
 		c.Program.Emitter.EmitA(bytecode.OpJump, bytecode.Operand(pc+1))
 	})
+
 	compile()
+
 	if c.Program.Emitter.Size() == pc+1 {
 		c.Program.Emitter.Truncate(pc)
 		c.Program.DebugPoints = c.Program.DebugPoints[:len(c.Program.DebugPoints)-1]

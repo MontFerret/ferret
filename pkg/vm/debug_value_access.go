@@ -8,16 +8,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 )
 
-// DebugValueKind identifies a built-in collection shape available for safe
-// debugger inspection.
-type DebugValueKind uint8
-
-const (
-	DebugValueArray DebugValueKind = iota + 1
-	DebugValueObject
-)
-
 type (
+	// DebugValueKind identifies a built-in collection shape available for safe
+	// debugger inspection.
+	DebugValueKind uint8
 	// DebugValueItem is one safely inspected collection item. Key is populated
 	// for object values.
 	DebugValueItem struct {
@@ -42,6 +36,11 @@ type (
 		Lookup(runtime.Value, runtime.Value) (runtime.Value, error)
 		Inspect(runtime.Value, int) (DebugValueInspection, bool)
 	}
+)
+
+const (
+	DebugValueArray DebugValueKind = iota + 1
+	DebugValueObject
 )
 
 type debugValueAccess struct{}
@@ -88,6 +87,7 @@ func (debugValueAccess) defaultTypeName(value runtime.Value) string {
 	if value == nil || reflect.TypeOf(value) == reflect.TypeOf(runtime.None) {
 		return runtime.TypeNone.Name()
 	}
+
 	switch value.(type) {
 	case runtime.Boolean:
 		return runtime.TypeBoolean.Name()
@@ -112,24 +112,28 @@ func (debugValueAccess) defaultTypeName(value runtime.Value) string {
 
 func (a debugValueAccess) Lookup(value, key runtime.Value) (runtime.Value, error) {
 	ctx := context.Background()
+
 	switch value := value.(type) {
 	case *runtime.Array:
 		index, ok := key.(runtime.Int)
 		if !ok {
 			return nil, a.lookupTypeError(key, runtime.TypeInt.Name())
 		}
+
 		return value.At(ctx, index)
 	case *runtime.Object:
 		property, ok := key.(runtime.String)
 		if !ok {
 			return nil, a.lookupTypeError(key, runtime.TypeString.Name())
 		}
+
 		return value.Get(ctx, property)
 	case *data.FastObject:
 		property, ok := key.(runtime.String)
 		if !ok {
 			return nil, a.lookupTypeError(key, runtime.TypeString.Name())
 		}
+
 		return value.Get(ctx, property)
 	default:
 		return nil, runtime.Errorf(runtime.ErrInvalidOperation, "debugger cannot inspect %s", a.TypeName(value))
@@ -141,15 +145,20 @@ func (debugValueAccess) Inspect(value runtime.Value, maxItems int) (DebugValueIn
 	case *runtime.Array:
 		length, _ := value.Length(context.Background())
 		out := DebugValueInspection{Kind: DebugValueArray, Length: int(length)}
+
 		if maxItems <= 0 || out.Length > maxItems {
 			return out, true
 		}
+
 		out.Items = make([]DebugValueItem, 0, out.Length)
+
 		for i := 0; i < out.Length; i++ {
 			item, _ := value.At(context.Background(), runtime.Int(i))
 			out.Items = append(out.Items, DebugValueItem{Value: item})
 		}
+
 		out.Complete = true
+
 		return out, true
 	case *runtime.Object:
 		return inspectDebugMap(value, maxItems), true

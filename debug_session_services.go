@@ -30,6 +30,7 @@ func (s *debugSessionServices) AfterRun(ctx context.Context, runErr error) error
 func (s *debugSessionServices) ExtendContext(ctx context.Context) context.Context {
 	ctx = s.logger.WithContext(ctx)
 	ctx = encoding.WithRegistry(ctx, s.encoding)
+
 	return fs.WithFileSystem(ctx, s.fs)
 }
 
@@ -39,14 +40,17 @@ func (s *debugSessionServices) Materialize(result *vm.Result) (*encoding.Output,
 
 func (s *debugSessionServices) Close() error {
 	var err error
+
 	if s.hooks != nil {
 		if hookErr := s.hooks.runCloseHooks(); hookErr != nil {
 			err = fmt.Errorf("close hooks: %w", hookErr)
 		}
 	}
+
 	if s.releasePermit != nil {
 		s.releasePermit(nil)
 		s.releasePermit = nil
 	}
+
 	return err
 }

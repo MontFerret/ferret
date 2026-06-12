@@ -149,9 +149,11 @@ func (st *SymbolTable) VisibleVariables() []Variable {
 		if v == nil || v.Name == IgnorePseudoVariable || v.Name == PseudoVariable {
 			return
 		}
+
 		if _, exists := seen[v.Name]; exists {
 			return
 		}
+
 		seen[v.Name] = struct{}{}
 		vars = append(vars, *v)
 	}
@@ -164,7 +166,9 @@ func (st *SymbolTable) VisibleVariables() []Variable {
 	for name := range st.globals {
 		names = append(names, name)
 	}
+
 	sort.Strings(names)
+
 	for _, name := range names {
 		add(st.globals[name])
 	}

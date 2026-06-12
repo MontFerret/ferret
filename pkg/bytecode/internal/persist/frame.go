@@ -223,6 +223,7 @@ func FromProgram(program *bytecode.Program) (ProgramFrame, error) {
 				Cell:     binding.Cell,
 			}
 		}
+
 		debugPoints[i] = DebugPointFrame{
 			PC:         point.PC,
 			FunctionID: point.FunctionID,
@@ -398,11 +399,13 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 	debugPoints := make([]bytecode.DebugPoint, len(frame.Metadata.DebugPoints))
 	for i, point := range frame.Metadata.DebugPoints {
 		bindings := make([]bytecode.DebugBinding, len(point.Bindings))
+
 		for j, binding := range point.Bindings {
 			op, err := decodeInstructionOperand(binding.Register)
 			if err != nil {
 				return nil, fmt.Errorf("decode debug point %d binding %d: %w", i, j, err)
 			}
+
 			bindings[j] = bytecode.DebugBinding{
 				Name:     binding.Name,
 				Register: op,
@@ -410,6 +413,7 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 				Cell:     binding.Cell,
 			}
 		}
+
 		debugPoints[i] = bytecode.DebugPoint{
 			PC:         point.PC,
 			FunctionID: point.FunctionID,

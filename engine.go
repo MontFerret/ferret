@@ -8,7 +8,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -83,32 +82,8 @@ func New(setters ...Option) (*Engine, error) {
 	}, nil
 }
 
-// CompileDebug compiles source into a reusable plan with source-level debugger
-// metadata. Debug compilation uses effective O0 optimization.
-func (e *Engine) CompileDebug(ctx context.Context, src *source.Source) (*Plan, error) {
-	if e == nil {
-		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is nil")
-	}
-	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
-		return nil, fmt.Errorf("before compile hooks: %w", err)
-	}
-
-	prog, err := e.debugCompiler.Compile(src)
-	if hookErr := e.hooks.plan.runAfterCompileHooks(ctx, err); hookErr != nil {
-		return nil, errors.Join(err, fmt.Errorf("after compile hooks: %w", hookErr))
-	}
-	if err != nil {
-		return nil, err
-	}
-	return e.newPlan(prog)
-}
-
 // Compile compiles source into a reusable execution plan.
 func (e *Engine) Compile(ctx context.Context, src *source.Source) (*Plan, error) {
-	if e == nil {
-		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is nil")
-	}
-
 	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
 		return nil, fmt.Errorf("before compile hooks: %w", err)
 	}
@@ -127,12 +102,27 @@ func (e *Engine) Compile(ctx context.Context, src *source.Source) (*Plan, error)
 	return e.newPlan(prog)
 }
 
-// Load decodes a serialized program artifact and wraps it in a reusable plan.
-func (e *Engine) Load(data []byte) (*Plan, error) {
-	if e == nil {
-		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is nil")
+// CompileDebug compiles source into a reusable plan with source-level debugger
+// metadata. Debug compilation uses effective O0 optimization.
+func (e *Engine) CompileDebug(ctx context.Context, src *source.Source) (*Plan, error) {
+	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
+		return nil, fmt.Errorf("before compile hooks: %w", err)
 	}
 
+	prog, err := e.debugCompiler.Compile(src)
+	if hookErr := e.hooks.plan.runAfterCompileHooks(ctx, err); hookErr != nil {
+		return nil, errors.Join(err, fmt.Errorf("after compile hooks: %w", hookErr))
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return e.newPlan(prog)
+}
+
+// Load decodes a serialized program artifact and wraps it in a reusable plan.
+func (e *Engine) Load(data []byte) (*Plan, error) {
 	prog, err := e.loader.Load(data)
 	if err != nil {
 		return nil, err
@@ -193,10 +183,6 @@ func (e *Engine) Close() error {
 }
 
 func (e *Engine) newPlan(prog *bytecode.Program) (*Plan, error) {
-	if e == nil {
-		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is nil")
-	}
-
 	return &Plan{
 		prog:         prog,
 		host:         e.host,

@@ -9,20 +9,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-// Reason identifies why a debug execution stopped.
-type Reason string
-
-const (
-	ReasonEntry        Reason = "entry"
-	ReasonBreakpoint   Reason = "breakpoint"
-	ReasonStep         Reason = "step"
-	ReasonPause        Reason = "pause"
-	ReasonRuntimeError Reason = "runtime-error"
-	ReasonCompleted    Reason = "completed"
-	ReasonTerminated   Reason = "terminated"
-)
-
 type (
+	// Reason identifies why a debug execution stopped.
+	Reason string
+
 	// Location identifies a source location in the debugged file.
 	Location struct {
 		File   string
@@ -98,6 +88,16 @@ type (
 		Params      []string
 		Format      FormatOptions
 	}
+)
+
+const (
+	ReasonEntry        Reason = "entry"
+	ReasonBreakpoint   Reason = "breakpoint"
+	ReasonStep         Reason = "step"
+	ReasonPause        Reason = "pause"
+	ReasonRuntimeError Reason = "runtime-error"
+	ReasonCompleted    Reason = "completed"
+	ReasonTerminated   Reason = "terminated"
 )
 
 // DefaultFormatOptions returns conservative debugger formatting limits.

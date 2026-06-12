@@ -41,19 +41,24 @@ func NewSession(config Config) (*Session, error) {
 	if config.Execution == nil {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug execution is required")
 	}
+
 	if config.Values == nil {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug value access is required")
 	}
+
 	if config.Services == nil {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug session services are required")
 	}
+
 	if config.Source == nil {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug source is required")
 	}
+
 	format := config.Format
 	if format.MaxDepth <= 0 || format.MaxItems <= 0 || format.MaxBytes <= 0 {
 		format = DefaultFormatOptions()
 	}
+
 	return &Session{
 		execution:         config.Execution,
 		values:            config.Values,
@@ -73,22 +78,28 @@ func (s *Session) Start(ctx context.Context) (*Event, error) {
 	if err := s.ensureOpen(); err != nil {
 		return nil, err
 	}
+
 	if s.started.Load() {
 		return nil, &StateError{Operation: "start", State: "started"}
 	}
+
 	if ctx == nil {
 		ctx = context.Background()
 	}
+
 	runCtx, err := s.services.BeforeRun(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("before run hooks: %w", err)
 	}
+
 	s.started.Store(true)
 	s.runCtx = runCtx
+
 	event, err := s.execution.Start(s.services.ExtendContext(runCtx))
 	if err != nil {
 		return nil, err
 	}
+
 	return s.convertEvent(event)
 }
 
@@ -117,10 +128,12 @@ func (s *Session) Pause() error {
 	if err := s.ensureOpen(); err != nil {
 		return err
 	}
+
 	if !s.started.Load() {
 		return &StateError{Operation: "pause", State: "new"}
 	}
 	s.execution.RequestPause()
+
 	return nil
 }
 
@@ -130,21 +143,26 @@ func (s *Session) SetBreakpoint(file string, line int) (Breakpoint, error) {
 	if err := s.ensureOpen(); err != nil {
 		return Breakpoint{}, err
 	}
+
 	if line <= 0 {
 		return Breakpoint{}, runtime.Error(runtime.ErrInvalidArgument, "breakpoint line must be positive")
 	}
+
 	if file == "" {
 		file = s.source.Name()
 	}
 
 	breakpoint := Breakpoint{ID: s.nextBreakpointID, File: file, RequestedLine: line}
 	s.nextBreakpointID++
+
 	if file == s.source.Name() {
 		bestLine := 0
 		bestColumn := 0
 		bestPC := -1
+
 		for _, point := range s.debugPoints {
 			pointLine, pointColumn := s.source.LocationAt(point.Span)
+
 			if pointLine >= line &&
 				(bestLine == 0 || pointLine < bestLine || (pointLine == bestLine && pointColumn < bestColumn)) {
 				bestLine = pointLine
@@ -152,6 +170,7 @@ func (s *Session) SetBreakpoint(file string, line int) (Breakpoint, error) {
 				bestPC = point.PC
 			}
 		}
+
 		if bestLine != 0 {
 			breakpoint.Bound = true
 			breakpoint.Line = bestLine
@@ -159,7 +178,9 @@ func (s *Session) SetBreakpoint(file string, line int) (Breakpoint, error) {
 			s.boundBreakpointPC[breakpoint.ID] = bestPC
 		}
 	}
+
 	s.breakpoints[breakpoint.ID] = breakpoint
+
 	return breakpoint, nil
 }
 
@@ -168,11 +189,14 @@ func (s *Session) DeleteBreakpoint(id int) error {
 	if err := s.ensureOpen(); err != nil {
 		return err
 	}
+
 	if _, exists := s.breakpoints[id]; !exists {
 		return runtime.Errorf(runtime.ErrNotFound, "breakpoint %d", id)
 	}
+
 	delete(s.breakpoints, id)
 	delete(s.boundBreakpointPC, id)
+
 	return nil
 }
 
@@ -181,11 +205,14 @@ func (s *Session) Breakpoints() []Breakpoint {
 	if s == nil {
 		return nil
 	}
+
 	out := make([]Breakpoint, 0, len(s.breakpoints))
 	for _, breakpoint := range s.breakpoints {
 		out = append(out, breakpoint)
 	}
+
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+
 	return out
 }
 
@@ -195,10 +222,12 @@ func (s *Session) Frames() ([]Frame, error) {
 		return nil, err
 	}
 	frames, err := s.execution.Frames()
+
 	if err != nil {
 		return nil, err
 	}
 	out := make([]Frame, 0, len(frames))
+
 	for _, frame := range frames {
 		out = append(out, Frame{
 			Name:       frame.Name,
@@ -206,6 +235,7 @@ func (s *Session) Frames() ([]Frame, error) {
 			Location:   s.locationForPC(frame.PC, frame.FunctionID),
 		})
 	}
+
 	return out, nil
 }
 
@@ -215,21 +245,27 @@ func (s *Session) Locals() ([]Variable, error) {
 		return nil, err
 	}
 	locals, err := s.execution.Locals()
+
 	if err != nil {
 		return nil, err
 	}
 	out := make([]Variable, 0, len(locals)+len(s.execution.Params()))
+
 	for _, local := range locals {
 		out = append(out, Variable{Name: local.Name, Mutable: local.Mutable, Value: s.debugValue(local.Value)})
 	}
+
 	params := s.execution.Params()
 	names := append([]string(nil), s.params...)
+
 	sort.Strings(names)
+
 	for _, name := range names {
 		if value, exists := params.Get(name); exists {
 			out = append(out, Variable{Name: "@" + name, Param: true, Value: s.debugValue(value)})
 		}
 	}
+
 	return out, nil
 }
 
@@ -240,21 +276,26 @@ func (s *Session) Evaluate(ctx context.Context, expression string) (Value, error
 		return Value{}, err
 	}
 	locals, err := s.execution.Locals()
+
 	if err != nil {
 		return Value{}, err
 	}
 	values := make(map[string]runtime.Value, len(locals))
+
 	for _, local := range locals {
 		values[local.Name] = local.Value
 	}
+
 	value, err := evaluateExpression(ctx, expression, evalScope{
 		locals: values,
 		params: s.execution.Params(),
 		values: s.values,
 	})
+
 	if err != nil {
 		return Value{}, err
 	}
+
 	return s.debugValue(value), nil
 }
 
@@ -292,9 +333,11 @@ func (s *Session) resume(ctx context.Context, mode vm.DebugResumeMode) (*Event, 
 
 func (s *Session) breakpointPCs() map[int]struct{} {
 	out := make(map[int]struct{}, len(s.boundBreakpointPC))
+
 	for _, pc := range s.boundBreakpointPC {
 		out[pc] = struct{}{}
 	}
+
 	return out
 }
 
@@ -303,9 +346,11 @@ func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
 		return nil, runtime.Error(runtime.ErrUnexpected, "debug execution returned no event")
 	}
 	out := &Event{Depth: event.Depth, Error: event.Error}
+
 	if event.Point != nil {
 		out.Location = s.location(event.Point.Span)
 	}
+
 	switch event.Reason {
 	case vm.DebugStopEntry:
 		out.Reason = ReasonEntry
@@ -335,6 +380,7 @@ func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
 			out.Error = errors.Join(out.Error, hookErr)
 		}
 	}
+
 	return out, nil
 }
 
@@ -342,16 +388,20 @@ func (s *Session) runAfterHooks(runErr error) error {
 	if s.afterRun {
 		return nil
 	}
+
 	s.afterRun = true
+
 	if hookErr := s.services.AfterRun(s.runCtx, runErr); hookErr != nil {
 		return fmt.Errorf("after run hooks: %w", hookErr)
 	}
+
 	return nil
 }
 
 func (s *Session) debugValue(value runtime.Value) Value {
 	info, _ := s.values.DebugInfo(value)
 	typeName := info.TypeName
+
 	if typeName == "" {
 		typeName = s.values.TypeName(value)
 		info.TypeName = typeName
@@ -367,23 +417,29 @@ func (s *Session) debugValue(value runtime.Value) Value {
 
 func (s *Session) location(span source.Span) Location {
 	line, column := s.source.LocationAt(span)
+
 	return Location{File: s.source.Name(), Line: line, Column: column, Span: span}
 }
 
 func (s *Session) locationForPC(pc, functionID int) Location {
 	var found *bytecode.DebugPoint
+
 	for i := range s.debugPoints {
 		point := &s.debugPoints[i]
+
 		if point.PC > pc {
 			break
 		}
+
 		if point.FunctionID == functionID {
 			found = point
 		}
 	}
+
 	if found == nil {
 		return Location{File: s.source.Name()}
 	}
+
 	return s.location(found.Span)
 }
 
@@ -391,6 +447,7 @@ func (s *Session) ensureOpen() error {
 	if s == nil || s.closed.Load() {
 		return &StateError{Operation: "use", State: "closed"}
 	}
+
 	return nil
 }
 
@@ -399,14 +456,18 @@ func (s *Session) Close() error {
 	if s == nil {
 		return nil
 	}
+
 	s.closeOnce.Do(func() {
 		s.closed.Store(true)
+
 		if s.execution != nil {
 			s.closeErr = errors.Join(s.closeErr, s.execution.Close())
 		}
+
 		if s.services != nil {
 			s.closeErr = errors.Join(s.closeErr, s.services.Close())
 		}
 	})
+
 	return s.closeErr
 }

@@ -20,9 +20,11 @@ func newResumeContext(run, command context.Context) (context.Context, func()) {
 
 	base := context.Background()
 	cancelDeadline := func() {}
+
 	if deadline, ok := earliestDeadline(run, command); ok {
 		base, cancelDeadline = context.WithDeadline(base, deadline)
 	}
+
 	cancelCtx, cancel := context.WithCancelCause(base)
 	stopRun := propagateCancellation(run, cancel)
 	stopCommand := propagateCancellation(command, cancel)
@@ -32,6 +34,7 @@ func newResumeContext(run, command context.Context) (context.Context, func()) {
 		run:     run,
 		command: command,
 	}
+
 	var once sync.Once
 
 	return ctx, func() {
@@ -48,11 +51,14 @@ func (c *resumeContext) Value(key any) any {
 	if value := c.Context.Value(key); value != nil {
 		return value
 	}
+
 	if value := c.command.Value(key); value != nil {
 		return value
 	}
+
 	if c.run == nil {
 		return nil
 	}
+
 	return c.run.Value(key)
 }

@@ -23,6 +23,7 @@ func TestEvaluateDebugExpressionParsesFerretStringEscapes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if got, want := value, runtime.NewString("a\n\t\\\\b"); got != want {
 		t.Fatalf("unexpected string value: got %q, want %q", got, want)
 	}
