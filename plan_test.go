@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -172,7 +173,7 @@ func TestPlanNewSessionReleasesLimiterOnPoolExhaustion(t *testing.T) {
 	}()
 }
 
-func TestNewSessionReleaseIsConcurrentSafeAndIdempotent(t *testing.T) {
+func TestSessionPermitReleaseIsConcurrentSafeAndIdempotent(t *testing.T) {
 	t.Parallel()
 
 	eng := mustNewEngine(t, WithMaxActiveSessions(1), WithMaxIdleVMsPerPlan(1), WithMaxVMsPerPlan(1))
@@ -190,7 +191,7 @@ func TestNewSessionReleaseIsConcurrentSafeAndIdempotent(t *testing.T) {
 		t.Fatalf("expected limiter acquire to succeed, got: %v", err)
 	}
 
-	release := newSessionRelease(plan.limiter, plan.pool)
+	release := newSessionPermitRelease(plan.limiter, plan.pool)
 
 	const callers = 8
 
@@ -234,4 +235,141 @@ func TestNewSessionReleaseIsConcurrentSafeAndIdempotent(t *testing.T) {
 	}
 
 	plan.pool.Release(reused)
+}
+
+func TestPlanNewDebugSessionReleasesLimiterOnEnvironmentError(t *testing.T) {
+	t.Parallel()
+
+	eng := mustNewEngine(t, WithMaxActiveSessions(1))
+	plan, err := eng.CompileDebug(context.Background(), source.NewAnonymous(coverageValidQuery))
+	if err != nil {
+		t.Fatalf("failed to compile debug plan: %v", err)
+	}
+
+	_, err = plan.NewDebugSession(
+		context.Background(),
+		WithEnvironmentOptions(
+			vm.WithFunction("DEBUG_SESSION_DUP_LIMIT", coverageVarFn),
+			vm.WithFunction("DEBUG_SESSION_DUP_LIMIT", coverageVarFn),
+		),
+	)
+	if err == nil {
+		t.Fatal("expected plan.NewDebugSession to fail on conflicting session options")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	session, err := plan.NewDebugSession(ctx)
+	if err != nil {
+		t.Fatalf("expected limiter permit to be released after failed debug session creation, got: %v", err)
+	}
+	defer func() {
+		_ = session.Close()
+	}()
+}
+
+func TestPlanNewDebugSessionMetadataRejectionDoesNotAcquireLimiter(t *testing.T) {
+	t.Parallel()
+
+	eng := mustNewEngine(t, WithMaxActiveSessions(1))
+	plan := mustCompilePlan(t, eng, coverageValidQuery)
+
+	_, err := plan.NewDebugSession(context.Background())
+	if err == nil {
+		t.Fatal("expected non-debug plan to be rejected")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	session, err := plan.NewSession(ctx)
+	if err != nil {
+		t.Fatalf("expected debug metadata rejection not to consume a limiter permit, got: %v", err)
+	}
+	defer func() {
+		_ = session.Close()
+	}()
+}
+
+func TestNewPlanSessionReleasesLimiterOnBuilderPanic(t *testing.T) {
+	t.Parallel()
+
+	eng := mustNewEngine(t, WithMaxActiveSessions(1))
+	plan := mustCompilePlan(t, eng, coverageValidQuery)
+
+	func() {
+		defer func() {
+			if recover() == nil {
+				t.Fatal("expected session builder panic")
+			}
+		}()
+
+		_, _ = newPlanSession(
+			plan,
+			context.Background(),
+			nil,
+			planSessionSetup{},
+			func(planSessionDependencies) (struct{}, error) {
+				panic("session builder failed")
+			},
+		)
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	session, err := plan.NewSession(ctx)
+	if err != nil {
+		t.Fatalf("expected builder panic to release limiter permit, got: %v", err)
+	}
+	defer func() {
+		_ = session.Close()
+	}()
+}
+
+func TestDebugSessionCloseReleasesLimiterOnce(t *testing.T) {
+	t.Parallel()
+
+	eng := mustNewEngine(t, WithMaxActiveSessions(2))
+	plan, err := eng.CompileDebug(context.Background(), source.NewAnonymous(coverageValidQuery))
+	if err != nil {
+		t.Fatalf("failed to compile debug plan: %v", err)
+	}
+
+	debugSession, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatalf("failed to create debug session: %v", err)
+	}
+
+	firstSession, err := plan.NewSession(context.Background())
+	if err != nil {
+		t.Fatalf("failed to create first normal session: %v", err)
+	}
+	defer func() {
+		_ = firstSession.Close()
+	}()
+
+	if err := debugSession.Close(); err != nil {
+		t.Fatalf("expected debug session close to succeed, got: %v", err)
+	}
+	if err := debugSession.Close(); err != nil {
+		t.Fatalf("expected repeated debug session close to succeed, got: %v", err)
+	}
+
+	secondSession, err := plan.NewSession(context.Background())
+	if err != nil {
+		t.Fatalf("expected debug session close to release one limiter permit, got: %v", err)
+	}
+	defer func() {
+		_ = secondSession.Close()
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+
+	_, err = plan.NewSession(ctx)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected repeated debug session close not to release an extra permit, got: %v", err)
+	}
 }

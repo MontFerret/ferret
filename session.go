@@ -15,7 +15,7 @@ import (
 )
 
 type (
-	vmReleaseFunc func(*vm.VM)
+	sessionPermitRelease func(*vm.VM)
 
 	// Session represents the execution of a compiled Ferret program.
 	// It holds the state of the execution, including the virtual machine, environment, and encoding registry.
@@ -36,7 +36,7 @@ type (
 		encoding          *encoding.Registry
 		logger            logging.Logger
 		fs                fs.FileSystem
-		release           vmReleaseFunc
+		release           sessionPermitRelease
 		outputContentType string
 		closeOnce         sync.Once
 		closed            atomic.Bool

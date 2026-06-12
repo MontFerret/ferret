@@ -7,9 +7,6 @@ import (
 	"sync"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/debugger"
-	"github.com/MontFerret/ferret/v2/pkg/logging"
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -41,157 +38,12 @@ func (p *Plan) Params() []string {
 
 // NewSession creates a session for executing the plan with optional per-run settings.
 func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Session, error) {
-	if p == nil {
-		return nil, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
-	}
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	p.mu.RLock()
-	if p.closed {
-		p.mu.RUnlock()
-		return nil, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
-	}
-
-	h := p.host
-	hooks := p.sessionHooks
-	limiter := p.limiter
-	pool := p.pool
-	p.mu.RUnlock()
-
-	sessionOpts, err := newSessionOptions(setters)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := limiter.Acquire(ctx); err != nil {
-		return nil, err
-	}
-
-	releaseLimiter := true
-	defer func() {
-		// Session construction can still fail after the limiter is acquired.
-		// Roll back the permit unless ownership is handed to the Session.
-		if releaseLimiter {
-			limiter.Release()
-		}
-	}()
-
-	env, err := vm.ExtendEnvironment(&vm.Environment{
-		Functions: h.functions,
-		Params:    h.params,
-	}, sessionOpts.env)
-
-	if err != nil {
-		return nil, err
-	}
-
-	instance, err := pool.Acquire()
-	if err != nil {
-		if errors.Is(err, vm.ErrPoolClosed) {
-			return nil, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
-		}
-
-		return nil, err
-	}
-
-	releaseLimiter = false
-
-	return &Session{
-		vm:                instance,
-		env:               env,
-		logger:            logging.NewFrom(h.logger, sessionOpts.logger...),
-		fs:                h.fs,
-		encoding:          h.encoding,
-		outputContentType: sessionOpts.outputContentType,
-		hooks:             hooks,
-		release:           newSessionRelease(limiter, pool),
-	}, nil
+	return newPlanSession(p, ctx, setters, planSessionSetup{}, buildSession)
 }
 
 // NewDebugSession creates a retained-state source-level debugging session.
 func (p *Plan) NewDebugSession(ctx context.Context, setters ...SessionOption) (*DebugSession, error) {
-	if p == nil {
-		return nil, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
-	}
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	p.mu.RLock()
-	if p.closed {
-		p.mu.RUnlock()
-		return nil, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
-	}
-
-	prog := p.prog
-	h := p.host
-	hooks := p.sessionHooks
-	limiter := p.limiter
-	p.mu.RUnlock()
-
-	if len(prog.Metadata.DebugPoints) == 0 {
-		return nil, runtime.Error(runtime.ErrInvalidOperation, "plan was not compiled for debugging")
-	}
-
-	sessionOpts, err := newSessionOptions(setters)
-	if err != nil {
-		return nil, err
-	}
-	if err := limiter.Acquire(ctx); err != nil {
-		return nil, err
-	}
-
-	releaseLimiter := true
-	defer func() {
-		if releaseLimiter {
-			limiter.Release()
-		}
-	}()
-
-	env, err := vm.ExtendEnvironment(&vm.Environment{Functions: h.functions, Params: h.params}, sessionOpts.env)
-	if err != nil {
-		return nil, err
-	}
-
-	instance, err := vm.New(prog)
-	if err != nil {
-		return nil, err
-	}
-
-	execution, err := vm.NewDebugExecution(instance, env)
-	if err != nil {
-		_ = instance.Close()
-		return nil, err
-	}
-
-	session, err := debugger.NewSession(debugger.Config{
-		Execution: execution,
-		Values:    vm.NewDebugValueAccess(),
-		Services: &debugSessionServices{
-			hooks:             hooks,
-			limiter:           limiter,
-			encoding:          h.encoding,
-			outputContentType: sessionOpts.outputContentType,
-			logger:            logging.NewFrom(h.logger, sessionOpts.logger...),
-			fs:                h.fs,
-		},
-		Source:      prog.Source,
-		DebugPoints: prog.Metadata.DebugPoints,
-		Params:      prog.Params,
-		Format:      sessionOpts.debugFormat,
-	})
-
-	if err != nil {
-		_ = execution.Close()
-		return nil, err
-	}
-
-	releaseLimiter = false
-	return session, nil
+	return newPlanSession(p, ctx, setters, planSessionSetup{requiresDebugInfo: true}, buildDebugSession)
 }
 
 // Close runs plan cleanup hooks and closes the plan's VM pool.

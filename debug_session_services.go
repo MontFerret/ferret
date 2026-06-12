@@ -12,10 +12,10 @@ import (
 
 type debugSessionServices struct {
 	hooks             sessionHooks
-	limiter           *sessionLimiter
 	encoding          *encoding.Registry
 	logger            logging.Logger
 	fs                fs.FileSystem
+	releasePermit     sessionPermitRelease
 	outputContentType string
 }
 
@@ -44,9 +44,9 @@ func (s *debugSessionServices) Close() error {
 			err = fmt.Errorf("close hooks: %w", hookErr)
 		}
 	}
-	if s.limiter != nil {
-		s.limiter.Release()
-		s.limiter = nil
+	if s.releasePermit != nil {
+		s.releasePermit(nil)
+		s.releasePermit = nil
 	}
 	return err
 }

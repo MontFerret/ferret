@@ -21,16 +21,16 @@ type (
 	// DebugValueItem is one safely inspected collection item. Key is populated
 	// for object values.
 	DebugValueItem struct {
-		Key   string
 		Value runtime.Value
+		Key   string
 	}
 
 	// DebugValueInspection is a bounded snapshot of a built-in or VM-owned
 	// collection.
 	DebugValueInspection struct {
 		Items    []DebugValueItem
-		Kind     DebugValueKind
 		Length   int
+		Kind     DebugValueKind
 		Complete bool
 	}
 
