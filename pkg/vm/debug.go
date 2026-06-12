@@ -69,10 +69,21 @@ type DebugFrame struct {
 	PC         int
 }
 
-// DebugExecution owns one retained-state execution of a debug-enabled program.
-// It is not safe for concurrent resume calls. RequestPause and Close are safe
-// to call concurrently with execution.
-type DebugExecution struct {
+// DebugExecution controls one retained-state execution of a debug-enabled
+// program. Resume calls must be serialized. RequestPause and Close are safe to
+// call concurrently with execution.
+type DebugExecution interface {
+	Start(context.Context) (*DebugExecutionEvent, error)
+	Resume(context.Context, DebugResumeMode, map[int]struct{}) (*DebugExecutionEvent, error)
+	RequestPause()
+	Status() DebugExecutionStatus
+	Locals() ([]DebugLocal, error)
+	Params() runtime.Params
+	Frames() ([]DebugFrame, error)
+	Close() error
+}
+
+type debugExecution struct {
 	terminalErr    error
 	vm             *VM
 	env            *Environment
@@ -85,7 +96,7 @@ type DebugExecution struct {
 
 // NewDebugExecution creates an incremental execution for a program compiled
 // with debugger metadata.
-func NewDebugExecution(instance *VM, env *Environment) (*DebugExecution, error) {
+func NewDebugExecution(instance *VM, env *Environment) (DebugExecution, error) {
 	if instance == nil || instance.closed {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "vm is closed")
 	}
@@ -99,7 +110,7 @@ func NewDebugExecution(instance *VM, env *Environment) (*DebugExecution, error) 
 		env = noopEnv
 	}
 
-	exec := &DebugExecution{vm: instance, env: env, status: DebugExecutionNew}
+	exec := &debugExecution{vm: instance, env: env, status: DebugExecutionNew}
 	exec.control = debugControl{
 		owner:  exec,
 		points: make(map[int]*bytecode.DebugPoint, len(instance.program.Metadata.DebugPoints)),
@@ -120,7 +131,7 @@ func NewDebugExecution(instance *VM, env *Environment) (*DebugExecution, error) 
 }
 
 // Start begins execution and stops at the first executable source location.
-func (d *DebugExecution) Start(ctx context.Context) (*DebugExecutionEvent, error) {
+func (d *debugExecution) Start(ctx context.Context) (*DebugExecutionEvent, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -146,7 +157,7 @@ func (d *DebugExecution) Start(ctx context.Context) (*DebugExecutionEvent, error
 
 // Resume continues a paused execution according to mode and the active
 // breakpoint PCs.
-func (d *DebugExecution) Resume(ctx context.Context, mode DebugResumeMode, breakpoints map[int]struct{}) (*DebugExecutionEvent, error) {
+func (d *debugExecution) Resume(ctx context.Context, mode DebugResumeMode, breakpoints map[int]struct{}) (*DebugExecutionEvent, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -176,13 +187,13 @@ func (d *DebugExecution) Resume(ctx context.Context, mode DebugResumeMode, break
 }
 
 // RequestPause asks a running execution to pause at its next debug point.
-func (d *DebugExecution) RequestPause() {
+func (d *debugExecution) RequestPause() {
 	if d != nil {
 		d.pauseRequested.Store(true)
 	}
 }
 
-func (d *DebugExecution) Status() DebugExecutionStatus {
+func (d *debugExecution) Status() DebugExecutionStatus {
 	if d == nil {
 		return DebugExecutionClosed
 	}
@@ -192,7 +203,7 @@ func (d *DebugExecution) Status() DebugExecutionStatus {
 }
 
 // Locals returns values for bindings visible at the current stop.
-func (d *DebugExecution) Locals() ([]DebugLocal, error) {
+func (d *debugExecution) Locals() ([]DebugLocal, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if d.status != DebugExecutionPaused || d.current == nil {
@@ -215,7 +226,7 @@ func (d *DebugExecution) Locals() ([]DebugLocal, error) {
 }
 
 // Params returns the bound host parameters for the current execution.
-func (d *DebugExecution) Params() runtime.Params {
+func (d *debugExecution) Params() runtime.Params {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	out := runtime.NewParams()
@@ -228,7 +239,7 @@ func (d *DebugExecution) Params() runtime.Params {
 }
 
 // Frames returns the current frame followed by callers from nearest to farthest.
-func (d *DebugExecution) Frames() ([]DebugFrame, error) {
+func (d *debugExecution) Frames() ([]DebugFrame, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if d.status != DebugExecutionPaused {
@@ -266,7 +277,7 @@ func (d *DebugExecution) Frames() ([]DebugFrame, error) {
 	return out, nil
 }
 
-func (d *DebugExecution) runLocked(ctx context.Context) (event *DebugExecutionEvent, err error) {
+func (d *debugExecution) runLocked(ctx context.Context) (event *DebugExecutionEvent, err error) {
 	d.status = DebugExecutionRunning
 	defer func() {
 		if recovered := recover(); recovered != nil {
@@ -303,7 +314,7 @@ func (d *DebugExecution) runLocked(ctx context.Context) (event *DebugExecutionEv
 	}
 }
 
-func (d *DebugExecution) debugTrapPC() (int, bool) {
+func (d *debugExecution) debugTrapPC() (int, bool) {
 	pc := d.vm.state.pc - 1
 	if pc < 0 || pc >= len(d.vm.plan.instructions) {
 		return 0, false
@@ -314,7 +325,7 @@ func (d *DebugExecution) debugTrapPC() (int, bool) {
 	return pc, true
 }
 
-func (d *DebugExecution) nearestPoint(pc int) *bytecode.DebugPoint {
+func (d *debugExecution) nearestPoint(pc int) *bytecode.DebugPoint {
 	var found *bytecode.DebugPoint
 	for i := range d.vm.program.Metadata.DebugPoints {
 		point := &d.vm.program.Metadata.DebugPoints[i]
@@ -327,7 +338,7 @@ func (d *DebugExecution) nearestPoint(pc int) *bytecode.DebugPoint {
 }
 
 // Close releases retained execution state and permanently closes the VM.
-func (d *DebugExecution) Close() error {
+func (d *debugExecution) Close() error {
 	if d == nil {
 		return nil
 	}

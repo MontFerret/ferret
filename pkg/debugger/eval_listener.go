@@ -1,4 +1,4 @@
-package ferret
+package debugger
 
 import (
 	"fmt"

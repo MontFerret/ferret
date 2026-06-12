@@ -3,7 +3,7 @@ package vm
 import "github.com/MontFerret/ferret/v2/pkg/bytecode"
 
 type debugControl struct {
-	owner       *DebugExecution
+	owner       *debugExecution
 	points      map[int]*bytecode.DebugPoint
 	breakpoints map[int]struct{}
 	startDepth  int

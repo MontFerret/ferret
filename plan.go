@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -115,6 +116,7 @@ func (p *Plan) NewDebugSession(ctx context.Context, setters ...SessionOption) (*
 	if p == nil {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
 	}
+
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -124,6 +126,7 @@ func (p *Plan) NewDebugSession(ctx context.Context, setters ...SessionOption) (*
 		p.mu.RUnlock()
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
 	}
+
 	prog := p.prog
 	h := p.host
 	hooks := p.sessionHooks
@@ -133,6 +136,7 @@ func (p *Plan) NewDebugSession(ctx context.Context, setters ...SessionOption) (*
 	if len(prog.Metadata.DebugPoints) == 0 {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "plan was not compiled for debugging")
 	}
+
 	sessionOpts, err := newSessionOptions(setters)
 	if err != nil {
 		return nil, err
@@ -152,30 +156,42 @@ func (p *Plan) NewDebugSession(ctx context.Context, setters ...SessionOption) (*
 	if err != nil {
 		return nil, err
 	}
+
 	instance, err := vm.New(prog)
 	if err != nil {
 		return nil, err
 	}
+
 	execution, err := vm.NewDebugExecution(instance, env)
 	if err != nil {
 		_ = instance.Close()
 		return nil, err
 	}
 
+	session, err := debugger.NewSession(debugger.Config{
+		Execution: execution,
+		Values:    vm.NewDebugValueAccess(),
+		Services: &debugSessionServices{
+			hooks:             hooks,
+			limiter:           limiter,
+			encoding:          h.encoding,
+			outputContentType: sessionOpts.outputContentType,
+			logger:            logging.NewFrom(h.logger, sessionOpts.logger...),
+			fs:                h.fs,
+		},
+		Source:      prog.Source,
+		DebugPoints: prog.Metadata.DebugPoints,
+		Params:      prog.Params,
+		Format:      sessionOpts.debugFormat,
+	})
+
+	if err != nil {
+		_ = execution.Close()
+		return nil, err
+	}
+
 	releaseLimiter = false
-	return newDebugSession(debugSessionConfig{
-		execution:         execution,
-		source:            prog.Source,
-		debugPoints:       prog.Metadata.DebugPoints,
-		params:            prog.Params,
-		hooks:             hooks,
-		limiter:           limiter,
-		encoding:          h.encoding,
-		outputContentType: sessionOpts.outputContentType,
-		logger:            logging.NewFrom(h.logger, sessionOpts.logger...),
-		fs:                h.fs,
-		format:            sessionOpts.debugFormat,
-	}), nil
+	return session, nil
 }
 
 // Close runs plan cleanup hooks and closes the plan's VM pool.

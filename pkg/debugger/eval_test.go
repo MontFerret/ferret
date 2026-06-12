@@ -1,10 +1,11 @@
-package ferret
+package debugger
 
 import (
 	"context"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 type hostileDebugEvalValue struct{}
@@ -15,7 +16,10 @@ func (hostileDebugEvalValue) Copy() runtime.Value { panic("Copy called") }
 func (hostileDebugEvalValue) Type() runtime.Type  { panic("Type called") }
 
 func TestEvaluateDebugExpressionParsesFerretStringEscapes(t *testing.T) {
-	value, err := evaluateDebugExpression(context.Background(), `'a\n\t\\b'`, nil, runtime.NewParams())
+	value, err := evaluateExpression(context.Background(), `'a\n\t\\b'`, evalScope{
+		params: runtime.NewParams(),
+		values: vm.NewDebugValueAccess(),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,11 +29,14 @@ func TestEvaluateDebugExpressionParsesFerretStringEscapes(t *testing.T) {
 }
 
 func TestEvaluateDebugExpressionRejectsOpaqueValuesWithoutCallingHostMethods(t *testing.T) {
-	_, err := evaluateDebugExpression(
+	_, err := evaluateExpression(
 		context.Background(),
 		"opaque AND true",
-		map[string]runtime.Value{"opaque": hostileDebugEvalValue{}},
-		runtime.NewParams(),
+		evalScope{
+			locals: map[string]runtime.Value{"opaque": hostileDebugEvalValue{}},
+			params: runtime.NewParams(),
+			values: vm.NewDebugValueAccess(),
+		},
 	)
 	if err == nil {
 		t.Fatal("expected opaque value to be rejected")

@@ -122,8 +122,15 @@ func TestDebugSessionBreakpointBindsOnePointPerLine(t *testing.T) {
 	if !breakpoint.Bound {
 		t.Fatalf("expected bound breakpoint: %#v", breakpoint)
 	}
-	if got := len(session.breakpointPCs()); got != 1 {
-		t.Fatalf("expected one bound PC, got %d", got)
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	event, err := session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != DebugReasonCompleted {
+		t.Fatalf("expected breakpoint to bind only the first same-line point, got %#v", event)
 	}
 }
 

@@ -168,6 +168,10 @@ locals, err := session.Locals()
 value, err := session.Evaluate(ctx, "result")
 ```
 
+The canonical debugger models and advanced composition API live in
+`pkg/debugger`. The top-level package retains `DebugSession`, event/value
+types, reasons, and formatting options as compatibility aliases.
+
 `Step` enters calls, `Next` stays at the same or shallower call depth, and
 `Out` stops in the caller. Runtime errors pause before state is released so
 frames and locals remain inspectable. Evaluation is deliberately

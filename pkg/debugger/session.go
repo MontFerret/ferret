@@ -1,4 +1,4 @@
-package ferret
+package debugger
 
 import (
 	"context"
@@ -9,33 +9,26 @@ import (
 	"sync/atomic"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/encoding"
-	"github.com/MontFerret/ferret/v2/pkg/fs"
-	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-// DebugSession controls one retained-state source-level debug execution.
+// Session controls one retained-state source-level debug execution.
 // It is not safe for concurrent command calls. Pause is safe to call
 // concurrently with a running command.
-type DebugSession struct {
-	logger            logging.Logger
+type Session struct {
 	closeErr          error
 	runCtx            context.Context
-	hooks             sessionHooks
-	fs                fs.FileSystem
-	limiter           *sessionLimiter
-	encoding          *encoding.Registry
-	execution         *vm.DebugExecution
-	breakpoints       map[int]DebugBreakpoint
+	execution         vm.DebugExecution
+	values            vm.DebugValueAccess
+	services          SessionServices
+	breakpoints       map[int]Breakpoint
 	boundBreakpointPC map[int]int
 	source            *source.Source
-	outputContentType string
 	debugPoints       []bytecode.DebugPoint
 	params            []string
-	format            vm.DebugFormatOptions
+	format            FormatOptions
 	nextBreakpointID  int
 	closeOnce         sync.Once
 	closed            atomic.Bool
@@ -43,43 +36,56 @@ type DebugSession struct {
 	afterRun          bool
 }
 
-func newDebugSession(config debugSessionConfig) *DebugSession {
-	return &DebugSession{
-		execution:         config.execution,
-		source:            config.source,
-		debugPoints:       config.debugPoints,
-		params:            append([]string(nil), config.params...),
-		hooks:             config.hooks,
-		limiter:           config.limiter,
-		encoding:          config.encoding,
-		logger:            config.logger,
-		fs:                config.fs,
-		outputContentType: config.outputContentType,
-		format:            config.format,
-		breakpoints:       make(map[int]DebugBreakpoint),
+// NewSession creates an advanced debugger session from explicit dependencies.
+func NewSession(config Config) (*Session, error) {
+	if config.Execution == nil {
+		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug execution is required")
+	}
+	if config.Values == nil {
+		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug value access is required")
+	}
+	if config.Services == nil {
+		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug session services are required")
+	}
+	if config.Source == nil {
+		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug source is required")
+	}
+	format := config.Format
+	if format.MaxDepth <= 0 || format.MaxItems <= 0 || format.MaxBytes <= 0 {
+		format = DefaultFormatOptions()
+	}
+	return &Session{
+		execution:         config.Execution,
+		values:            config.Values,
+		services:          config.Services,
+		source:            config.Source,
+		debugPoints:       append([]bytecode.DebugPoint(nil), config.DebugPoints...),
+		params:            append([]string(nil), config.Params...),
+		format:            format,
+		breakpoints:       make(map[int]Breakpoint),
 		boundBreakpointPC: make(map[int]int),
 		nextBreakpointID:  1,
-	}
+	}, nil
 }
 
 // Start begins execution and stops at the first executable source location.
-func (s *DebugSession) Start(ctx context.Context) (*DebugEvent, error) {
+func (s *Session) Start(ctx context.Context) (*Event, error) {
 	if err := s.ensureOpen(); err != nil {
 		return nil, err
 	}
 	if s.started.Load() {
-		return nil, &DebugStateError{Operation: "start", State: "started"}
+		return nil, &StateError{Operation: "start", State: "started"}
 	}
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	runCtx, err := s.hooks.runBeforeRunHooks(ctx)
+	runCtx, err := s.services.BeforeRun(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("before run hooks: %w", err)
 	}
 	s.started.Store(true)
 	s.runCtx = runCtx
-	event, err := s.execution.Start(s.extendContext(runCtx))
+	event, err := s.execution.Start(s.services.ExtendContext(runCtx))
 	if err != nil {
 		return nil, err
 	}
@@ -87,32 +93,32 @@ func (s *DebugSession) Start(ctx context.Context) (*DebugEvent, error) {
 }
 
 // Continue resumes execution until a breakpoint, pause request, error, or completion.
-func (s *DebugSession) Continue(ctx context.Context) (*DebugEvent, error) {
+func (s *Session) Continue(ctx context.Context) (*Event, error) {
 	return s.resume(ctx, vm.DebugResumeContinue)
 }
 
 // Step stops at the next logical source location, including inside calls.
-func (s *DebugSession) Step(ctx context.Context) (*DebugEvent, error) {
+func (s *Session) Step(ctx context.Context) (*Event, error) {
 	return s.resume(ctx, vm.DebugResumeStep)
 }
 
 // Next stops at the next logical source location at the same or shallower call depth.
-func (s *DebugSession) Next(ctx context.Context) (*DebugEvent, error) {
+func (s *Session) Next(ctx context.Context) (*Event, error) {
 	return s.resume(ctx, vm.DebugResumeNext)
 }
 
 // Out stops at the next logical source location in a caller. At main it runs to completion.
-func (s *DebugSession) Out(ctx context.Context) (*DebugEvent, error) {
+func (s *Session) Out(ctx context.Context) (*Event, error) {
 	return s.resume(ctx, vm.DebugResumeOut)
 }
 
 // Pause requests a stop at the next logical source location.
-func (s *DebugSession) Pause() error {
+func (s *Session) Pause() error {
 	if err := s.ensureOpen(); err != nil {
 		return err
 	}
 	if !s.started.Load() {
-		return &DebugStateError{Operation: "pause", State: "new"}
+		return &StateError{Operation: "pause", State: "new"}
 	}
 	s.execution.RequestPause()
 	return nil
@@ -120,20 +126,20 @@ func (s *DebugSession) Pause() error {
 
 // SetBreakpoint adds a source-line breakpoint. When the requested line is not
 // executable, it binds to the next executable line in the same source.
-func (s *DebugSession) SetBreakpoint(file string, line int) (DebugBreakpoint, error) {
+func (s *Session) SetBreakpoint(file string, line int) (Breakpoint, error) {
 	if err := s.ensureOpen(); err != nil {
-		return DebugBreakpoint{}, err
+		return Breakpoint{}, err
 	}
 	if line <= 0 {
-		return DebugBreakpoint{}, runtime.Error(runtime.ErrInvalidArgument, "breakpoint line must be positive")
+		return Breakpoint{}, runtime.Error(runtime.ErrInvalidArgument, "breakpoint line must be positive")
 	}
-	if file == "" && s.source != nil {
+	if file == "" {
 		file = s.source.Name()
 	}
 
-	breakpoint := DebugBreakpoint{ID: s.nextBreakpointID, File: file, RequestedLine: line}
+	breakpoint := Breakpoint{ID: s.nextBreakpointID, File: file, RequestedLine: line}
 	s.nextBreakpointID++
-	if s.source != nil && file == s.source.Name() {
+	if file == s.source.Name() {
 		bestLine := 0
 		bestColumn := 0
 		bestPC := -1
@@ -158,7 +164,7 @@ func (s *DebugSession) SetBreakpoint(file string, line int) (DebugBreakpoint, er
 }
 
 // DeleteBreakpoint removes a breakpoint by ID.
-func (s *DebugSession) DeleteBreakpoint(id int) error {
+func (s *Session) DeleteBreakpoint(id int) error {
 	if err := s.ensureOpen(); err != nil {
 		return err
 	}
@@ -171,11 +177,11 @@ func (s *DebugSession) DeleteBreakpoint(id int) error {
 }
 
 // Breakpoints returns a stable ID-ordered snapshot.
-func (s *DebugSession) Breakpoints() []DebugBreakpoint {
+func (s *Session) Breakpoints() []Breakpoint {
 	if s == nil {
 		return nil
 	}
-	out := make([]DebugBreakpoint, 0, len(s.breakpoints))
+	out := make([]Breakpoint, 0, len(s.breakpoints))
 	for _, breakpoint := range s.breakpoints {
 		out = append(out, breakpoint)
 	}
@@ -184,7 +190,7 @@ func (s *DebugSession) Breakpoints() []DebugBreakpoint {
 }
 
 // Frames returns the current frame followed by callers.
-func (s *DebugSession) Frames() ([]DebugFrame, error) {
+func (s *Session) Frames() ([]Frame, error) {
 	if err := s.ensureOpen(); err != nil {
 		return nil, err
 	}
@@ -192,9 +198,9 @@ func (s *DebugSession) Frames() ([]DebugFrame, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := make([]DebugFrame, 0, len(frames))
+	out := make([]Frame, 0, len(frames))
 	for _, frame := range frames {
-		out = append(out, DebugFrame{
+		out = append(out, Frame{
 			Name:       frame.Name,
 			FunctionID: frame.FunctionID,
 			Location:   s.locationForPC(frame.PC, frame.FunctionID),
@@ -204,7 +210,7 @@ func (s *DebugSession) Frames() ([]DebugFrame, error) {
 }
 
 // Locals returns the visible top-frame locals followed by bound parameters.
-func (s *DebugSession) Locals() ([]DebugVariable, error) {
+func (s *Session) Locals() ([]Variable, error) {
 	if err := s.ensureOpen(); err != nil {
 		return nil, err
 	}
@@ -212,16 +218,16 @@ func (s *DebugSession) Locals() ([]DebugVariable, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := make([]DebugVariable, 0, len(locals)+len(s.execution.Params()))
+	out := make([]Variable, 0, len(locals)+len(s.execution.Params()))
 	for _, local := range locals {
-		out = append(out, DebugVariable{Name: local.Name, Mutable: local.Mutable, Value: s.debugValue(local.Value)})
+		out = append(out, Variable{Name: local.Name, Mutable: local.Mutable, Value: s.debugValue(local.Value)})
 	}
 	params := s.execution.Params()
 	names := append([]string(nil), s.params...)
 	sort.Strings(names)
 	for _, name := range names {
 		if value, exists := params.Get(name); exists {
-			out = append(out, DebugVariable{Name: "@" + name, Param: true, Value: s.debugValue(value)})
+			out = append(out, Variable{Name: "@" + name, Param: true, Value: s.debugValue(value)})
 		}
 	}
 	return out, nil
@@ -229,49 +235,53 @@ func (s *DebugSession) Locals() ([]DebugVariable, error) {
 
 // Evaluate evaluates a conservative, side-effect-free expression against the
 // paused top frame.
-func (s *DebugSession) Evaluate(ctx context.Context, expression string) (DebugValue, error) {
+func (s *Session) Evaluate(ctx context.Context, expression string) (Value, error) {
 	if err := s.ensureOpen(); err != nil {
-		return DebugValue{}, err
+		return Value{}, err
 	}
 	locals, err := s.execution.Locals()
 	if err != nil {
-		return DebugValue{}, err
+		return Value{}, err
 	}
 	values := make(map[string]runtime.Value, len(locals))
 	for _, local := range locals {
 		values[local.Name] = local.Value
 	}
-	value, err := evaluateDebugExpression(ctx, expression, values, s.execution.Params())
+	value, err := evaluateExpression(ctx, expression, evalScope{
+		locals: values,
+		params: s.execution.Params(),
+		values: s.values,
+	})
 	if err != nil {
-		return DebugValue{}, err
+		return Value{}, err
 	}
 	return s.debugValue(value), nil
 }
 
-func (s *DebugSession) resume(ctx context.Context, mode vm.DebugResumeMode) (*DebugEvent, error) {
+func (s *Session) resume(ctx context.Context, mode vm.DebugResumeMode) (*Event, error) {
 	if err := s.ensureOpen(); err != nil {
 		return nil, err
 	}
 	if !s.started.Load() {
-		return nil, &DebugStateError{Operation: "resume", State: "new"}
+		return nil, &StateError{Operation: "resume", State: "new"}
 	}
 	switch s.execution.Status() {
 	case vm.DebugExecutionCompleted:
-		return nil, &DebugStateError{Operation: "resume", State: "completed"}
+		return nil, &StateError{Operation: "resume", State: "completed"}
 	case vm.DebugExecutionTerminated:
-		return nil, &DebugStateError{Operation: "resume", State: "terminated"}
+		return nil, &StateError{Operation: "resume", State: "terminated"}
 	}
 	if ctx == nil {
 		ctx = s.runCtx
 	}
-	event, err := s.execution.Resume(s.extendContext(ctx), mode, s.breakpointPCs())
+	event, err := s.execution.Resume(s.services.ExtendContext(ctx), mode, s.breakpointPCs())
 	if err != nil {
 		return nil, err
 	}
 	return s.convertEvent(event)
 }
 
-func (s *DebugSession) breakpointPCs() map[int]struct{} {
+func (s *Session) breakpointPCs() map[int]struct{} {
 	out := make(map[int]struct{}, len(s.boundBreakpointPC))
 	for _, pc := range s.boundBreakpointPC {
 		out[pc] = struct{}{}
@@ -279,29 +289,29 @@ func (s *DebugSession) breakpointPCs() map[int]struct{} {
 	return out
 }
 
-func (s *DebugSession) convertEvent(event *vm.DebugExecutionEvent) (*DebugEvent, error) {
+func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
 	if event == nil {
 		return nil, runtime.Error(runtime.ErrUnexpected, "debug execution returned no event")
 	}
-	out := &DebugEvent{Depth: event.Depth, Error: event.Error}
+	out := &Event{Depth: event.Depth, Error: event.Error}
 	if event.Point != nil {
 		out.Location = s.location(event.Point.Span)
 	}
 	switch event.Reason {
 	case vm.DebugStopEntry:
-		out.Reason = DebugReasonEntry
+		out.Reason = ReasonEntry
 	case vm.DebugStopBreakpoint:
-		out.Reason = DebugReasonBreakpoint
+		out.Reason = ReasonBreakpoint
 	case vm.DebugStopStep:
-		out.Reason = DebugReasonStep
+		out.Reason = ReasonStep
 	case vm.DebugStopPause:
-		out.Reason = DebugReasonPause
+		out.Reason = ReasonPause
 	case vm.DebugStopRuntimeError:
-		out.Reason = DebugReasonRuntimeError
+		out.Reason = ReasonRuntimeError
 		out.Error = errors.Join(out.Error, s.runAfterHooks(event.Error))
 	case vm.DebugStopCompleted:
-		out.Reason = DebugReasonCompleted
-		output, outputErr := newOutput(s.encoding, s.outputContentType, event.Result)
+		out.Reason = ReasonCompleted
+		output, outputErr := s.services.Materialize(event.Result)
 		closeErr := event.Result.Close()
 		hookErr := s.runAfterHooks(nil)
 		if outputErr != nil || closeErr != nil || hookErr != nil {
@@ -309,36 +319,36 @@ func (s *DebugSession) convertEvent(event *vm.DebugExecutionEvent) (*DebugEvent,
 		}
 		out.Output = output
 	case vm.DebugStopTerminated:
-		out.Reason = DebugReasonTerminated
+		out.Reason = ReasonTerminated
 		out.Error = errors.Join(out.Error, s.runAfterHooks(event.Error))
 	}
 	return out, nil
 }
 
-func (s *DebugSession) runAfterHooks(runErr error) error {
+func (s *Session) runAfterHooks(runErr error) error {
 	if s.afterRun {
 		return nil
 	}
 	s.afterRun = true
-	if hookErr := s.hooks.runAfterRunHooks(s.runCtx, runErr); hookErr != nil {
+	if hookErr := s.services.AfterRun(s.runCtx, runErr); hookErr != nil {
 		return fmt.Errorf("after run hooks: %w", hookErr)
 	}
 	return nil
 }
 
-func (s *DebugSession) debugValue(value runtime.Value) DebugValue {
-	return DebugValue{
-		Type:    vm.DebugValueTypeName(value),
-		Display: vm.DebugFormatValue(value, s.format),
+func (s *Session) debugValue(value runtime.Value) Value {
+	return Value{
+		Type:    s.values.TypeName(value),
+		Display: formatValue(value, s.values, s.format),
 	}
 }
 
-func (s *DebugSession) location(span source.Span) DebugLocation {
+func (s *Session) location(span source.Span) Location {
 	line, column := s.source.LocationAt(span)
-	return DebugLocation{File: s.source.Name(), Line: line, Column: column, Span: span}
+	return Location{File: s.source.Name(), Line: line, Column: column, Span: span}
 }
 
-func (s *DebugSession) locationForPC(pc, functionID int) DebugLocation {
+func (s *Session) locationForPC(pc, functionID int) Location {
 	var found *bytecode.DebugPoint
 	for i := range s.debugPoints {
 		point := &s.debugPoints[i]
@@ -350,28 +360,20 @@ func (s *DebugSession) locationForPC(pc, functionID int) DebugLocation {
 		}
 	}
 	if found == nil {
-		return DebugLocation{File: s.source.Name()}
+		return Location{File: s.source.Name()}
 	}
 	return s.location(found.Span)
 }
 
-func (s *DebugSession) extendContext(ctx context.Context) context.Context {
-	ctx = s.logger.WithContext(ctx)
-	ctx = encoding.WithRegistry(ctx, s.encoding)
-	ctx = fs.WithFileSystem(ctx, s.fs)
-	return ctx
-}
-
-func (s *DebugSession) ensureOpen() error {
+func (s *Session) ensureOpen() error {
 	if s == nil || s.closed.Load() {
-		return &DebugStateError{Operation: "use", State: "closed"}
+		return &StateError{Operation: "use", State: "closed"}
 	}
 	return nil
 }
 
-// Close releases retained VM state, runs close hooks, and releases the plan's
-// active-session permit.
-func (s *DebugSession) Close() error {
+// Close releases retained VM state and embedding-owned session resources.
+func (s *Session) Close() error {
 	if s == nil {
 		return nil
 	}
@@ -380,14 +382,8 @@ func (s *DebugSession) Close() error {
 		if s.execution != nil {
 			s.closeErr = errors.Join(s.closeErr, s.execution.Close())
 		}
-		if s.hooks != nil {
-			if err := s.hooks.runCloseHooks(); err != nil {
-				s.closeErr = errors.Join(s.closeErr, fmt.Errorf("close hooks: %w", err))
-			}
-		}
-		if s.limiter != nil {
-			s.limiter.Release()
-			s.limiter = nil
+		if s.services != nil {
+			s.closeErr = errors.Join(s.closeErr, s.services.Close())
 		}
 	})
 	return s.closeErr

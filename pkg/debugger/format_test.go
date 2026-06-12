@@ -1,9 +1,10 @@
-package vm
+package debugger
 
 import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 type hostileDebugValue struct{}
@@ -13,19 +14,20 @@ func (hostileDebugValue) Hash() uint64        { panic("Hash called") }
 func (hostileDebugValue) Copy() runtime.Value { panic("Copy called") }
 func (hostileDebugValue) Type() runtime.Type  { panic("Type called") }
 
-func TestDebugFormatValueDoesNotInvokeOpaqueHostValue(t *testing.T) {
+func TestFormatValueDoesNotInvokeOpaqueHostValue(t *testing.T) {
 	value := hostileDebugValue{}
-	if got := DebugFormatValue(value, DefaultDebugFormatOptions()); got != "HostValue(vm.hostileDebugValue)" {
+	access := vm.NewDebugValueAccess()
+	if got := formatValue(value, access, DefaultFormatOptions()); got != "HostValue(debugger.hostileDebugValue)" {
 		t.Fatalf("unexpected host summary: %q", got)
 	}
-	if got := DebugValueTypeName(value); got != "vm.hostileDebugValue" {
+	if got := access.TypeName(value); got != "debugger.hostileDebugValue" {
 		t.Fatalf("unexpected host type name: %q", got)
 	}
 }
 
-func TestDebugFormatValueBoundsStrings(t *testing.T) {
+func TestFormatValueBoundsStrings(t *testing.T) {
 	const maxBytes = 8
-	got := DebugFormatValue(runtime.NewString("abcdefghijklmnopqrstuvwxyz"), DebugFormatOptions{
+	got := formatValue(runtime.NewString("abcdefghijklmnopqrstuvwxyz"), vm.NewDebugValueAccess(), FormatOptions{
 		MaxDepth: 1,
 		MaxItems: 1,
 		MaxBytes: maxBytes,
@@ -35,9 +37,9 @@ func TestDebugFormatValueBoundsStrings(t *testing.T) {
 	}
 }
 
-func TestDebugLookupValueRejectsOpaqueKeys(t *testing.T) {
+func TestValueAccessRejectsOpaqueKeys(t *testing.T) {
 	value := runtime.NewObject()
-	if _, err := DebugLookupValue(value, hostileDebugValue{}); err == nil {
+	if _, err := vm.NewDebugValueAccess().Lookup(value, hostileDebugValue{}); err == nil {
 		t.Fatal("expected opaque object key to be rejected")
 	}
 }

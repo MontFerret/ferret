@@ -1,4 +1,4 @@
-package ferret
+package debugger
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-func evaluateDebugExpression(ctx context.Context, text string, locals map[string]runtime.Value, params runtime.Params) (runtime.Value, error) {
+func evaluateExpression(ctx context.Context, text string, scope evalScope) (runtime.Value, error) {
 	if strings.TrimSpace(text) == "" {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug expression is empty")
 	}
@@ -32,23 +32,23 @@ func evaluateDebugExpression(ctx context.Context, text string, locals map[string
 	if !p.AtEOF() {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug expression contains unsupported trailing input")
 	}
-	return evalDebugExpression(ctx, expr, locals, params)
+	return evalDebugExpression(ctx, expr, scope)
 }
 
-func evalDebugExpression(ctx context.Context, expr fql.IExpressionContext, locals map[string]runtime.Value, params runtime.Params) (runtime.Value, error) {
+func evalDebugExpression(ctx context.Context, expr fql.IExpressionContext, scope evalScope) (runtime.Value, error) {
 	node, ok := expr.(*fql.ExpressionContext)
 	if !ok || node == nil {
 		return nil, unsupportedDebugExpression(expr)
 	}
 	if node.UnaryOperator() != nil {
-		value, err := evalDebugExpression(ctx, node.GetRight(), locals, params)
+		value, err := evalDebugExpression(ctx, node.GetRight(), scope)
 		if err != nil {
 			return nil, err
 		}
-		return evalDebugUnary(node.UnaryOperator().GetText(), value)
+		return evalDebugUnary(node.UnaryOperator().GetText(), value, scope.values)
 	}
 	if node.GetLeft() != nil && node.GetRight() != nil {
-		left, err := evalDebugExpression(ctx, node.GetLeft(), locals, params)
+		left, err := evalDebugExpression(ctx, node.GetLeft(), scope)
 		if err != nil {
 			return nil, err
 		}
@@ -61,7 +61,7 @@ func evalDebugExpression(ctx context.Context, expr fql.IExpressionContext, local
 		if strings.EqualFold(op, "AND") {
 			leftBool, ok := left.(runtime.Boolean)
 			if !ok {
-				return nil, debugEvalTypeError(left, runtime.TypeBoolean.Name())
+				return nil, debugEvalTypeError(left, runtime.TypeBoolean.Name(), scope.values)
 			}
 			if !leftBool {
 				return runtime.False, nil
@@ -69,39 +69,39 @@ func evalDebugExpression(ctx context.Context, expr fql.IExpressionContext, local
 		} else if strings.EqualFold(op, "OR") {
 			leftBool, ok := left.(runtime.Boolean)
 			if !ok {
-				return nil, debugEvalTypeError(left, runtime.TypeBoolean.Name())
+				return nil, debugEvalTypeError(left, runtime.TypeBoolean.Name(), scope.values)
 			}
 			if leftBool {
 				return runtime.True, nil
 			}
 		}
-		right, err := evalDebugExpression(ctx, node.GetRight(), locals, params)
+		right, err := evalDebugExpression(ctx, node.GetRight(), scope)
 		if err != nil {
 			return nil, err
 		}
 		return evalDebugLogical(op, left, right)
 	}
 	if node.GetCondition() != nil {
-		condition, err := evalDebugExpression(ctx, node.GetCondition(), locals, params)
+		condition, err := evalDebugExpression(ctx, node.GetCondition(), scope)
 		if err != nil {
 			return nil, err
 		}
 		ok, isBool := condition.(runtime.Boolean)
 		if !isBool {
-			return nil, debugEvalTypeError(condition, runtime.TypeBoolean.Name())
+			return nil, debugEvalTypeError(condition, runtime.TypeBoolean.Name(), scope.values)
 		}
 		if ok && node.GetOnTrue() != nil {
-			return evalDebugExpression(ctx, node.GetOnTrue(), locals, params)
+			return evalDebugExpression(ctx, node.GetOnTrue(), scope)
 		}
-		return evalDebugExpression(ctx, node.GetOnFalse(), locals, params)
+		return evalDebugExpression(ctx, node.GetOnFalse(), scope)
 	}
 	if node.Predicate() != nil {
-		return evalDebugPredicate(ctx, node.Predicate(), locals, params)
+		return evalDebugPredicate(ctx, node.Predicate(), scope)
 	}
 	return nil, unsupportedDebugExpression(expr)
 }
 
-func evalDebugPredicate(ctx context.Context, predicate fql.IPredicateContext, locals map[string]runtime.Value, params runtime.Params) (runtime.Value, error) {
+func evalDebugPredicate(ctx context.Context, predicate fql.IPredicateContext, scope evalScope) (runtime.Value, error) {
 	node, ok := predicate.(*fql.PredicateContext)
 	if !ok || node == nil {
 		return nil, unsupportedDebugExpression(predicate)
@@ -110,30 +110,30 @@ func evalDebugPredicate(ctx context.Context, predicate fql.IPredicateContext, lo
 		if node.EqualityOperator() == nil {
 			return nil, unsupportedDebugExpression(predicate)
 		}
-		left, err := evalDebugPredicate(ctx, node.GetLeft(), locals, params)
+		left, err := evalDebugPredicate(ctx, node.GetLeft(), scope)
 		if err != nil {
 			return nil, err
 		}
-		right, err := evalDebugPredicate(ctx, node.GetRight(), locals, params)
+		right, err := evalDebugPredicate(ctx, node.GetRight(), scope)
 		if err != nil {
 			return nil, err
 		}
 		return evalDebugComparison(node.EqualityOperator().GetText(), left, right)
 	}
-	return evalDebugAtom(ctx, node.ExpressionAtom(), locals, params)
+	return evalDebugAtom(ctx, node.ExpressionAtom(), scope)
 }
 
-func evalDebugAtom(ctx context.Context, atom fql.IExpressionAtomContext, locals map[string]runtime.Value, params runtime.Params) (runtime.Value, error) {
+func evalDebugAtom(ctx context.Context, atom fql.IExpressionAtomContext, scope evalScope) (runtime.Value, error) {
 	node, ok := atom.(*fql.ExpressionAtomContext)
 	if !ok || node == nil {
 		return nil, unsupportedDebugExpression(atom)
 	}
 	if node.GetLeft() != nil && node.GetRight() != nil {
-		left, err := evalDebugAtom(ctx, node.GetLeft(), locals, params)
+		left, err := evalDebugAtom(ctx, node.GetLeft(), scope)
 		if err != nil {
 			return nil, err
 		}
-		right, err := evalDebugAtom(ctx, node.GetRight(), locals, params)
+		right, err := evalDebugAtom(ctx, node.GetRight(), scope)
 		if err != nil {
 			return nil, err
 		}
@@ -151,28 +151,28 @@ func evalDebugAtom(ctx context.Context, atom fql.IExpressionAtomContext, locals 
 	case node.Literal() != nil:
 		return evalDebugLiteral(node.Literal())
 	case node.Variable() != nil:
-		value, exists := locals[node.Variable().GetText()]
+		value, exists := scope.locals[node.Variable().GetText()]
 		if !exists {
 			return nil, runtime.Errorf(runtime.ErrNotFound, "debug variable %q", node.Variable().GetText())
 		}
 		return value, nil
 	case node.Param() != nil:
 		name := strings.TrimPrefix(node.Param().GetText(), "@")
-		value, exists := params.Get(name)
+		value, exists := scope.params.Get(name)
 		if !exists {
 			return nil, runtime.Errorf(runtime.ErrNotFound, "debug parameter %q", name)
 		}
 		return value, nil
 	case node.MemberExpression() != nil:
-		return evalDebugMember(ctx, node.MemberExpression(), locals, params)
+		return evalDebugMember(ctx, node.MemberExpression(), scope)
 	case node.Expression() != nil && node.ForExpression() == nil && node.WaitForExpression() == nil && node.ErrorOperator() == nil && node.RecoveryTails() == nil:
-		return evalDebugExpression(ctx, node.Expression(), locals, params)
+		return evalDebugExpression(ctx, node.Expression(), scope)
 	default:
 		return nil, unsupportedDebugExpression(atom)
 	}
 }
 
-func evalDebugMember(ctx context.Context, member fql.IMemberExpressionContext, locals map[string]runtime.Value, params runtime.Params) (runtime.Value, error) {
+func evalDebugMember(ctx context.Context, member fql.IMemberExpressionContext, scope evalScope) (runtime.Value, error) {
 	node, ok := member.(*fql.MemberExpressionContext)
 	if !ok || node == nil || node.RecoveryTails() != nil {
 		return nil, unsupportedDebugExpression(member)
@@ -183,19 +183,19 @@ func evalDebugMember(ctx context.Context, member fql.IMemberExpressionContext, l
 	switch {
 	case source.Variable() != nil:
 		var exists bool
-		value, exists = locals[source.Variable().GetText()]
+		value, exists = scope.locals[source.Variable().GetText()]
 		if !exists {
 			return nil, runtime.Errorf(runtime.ErrNotFound, "debug variable %q", source.Variable().GetText())
 		}
 	case source.Param() != nil:
 		name := strings.TrimPrefix(source.Param().GetText(), "@")
 		var exists bool
-		value, exists = params.Get(name)
+		value, exists = scope.params.Get(name)
 		if !exists {
 			return nil, runtime.Errorf(runtime.ErrNotFound, "debug parameter %q", name)
 		}
 	case source.Expression() != nil:
-		value, err = evalDebugExpression(ctx, source.Expression(), locals, params)
+		value, err = evalDebugExpression(ctx, source.Expression(), scope)
 	default:
 		return nil, unsupportedDebugExpression(member)
 	}
@@ -212,7 +212,7 @@ func evalDebugMember(ctx context.Context, member fql.IMemberExpressionContext, l
 			if property.Param() != nil {
 				name := strings.TrimPrefix(text, "@")
 				var exists bool
-				key, exists = params.Get(name)
+				key, exists = scope.params.Get(name)
 				if !exists {
 					return nil, runtime.Errorf(runtime.ErrNotFound, "debug parameter %q", name)
 				}
@@ -226,14 +226,14 @@ func evalDebugMember(ctx context.Context, member fql.IMemberExpressionContext, l
 				key = runtime.NewString(text)
 			}
 		} else if computed := path.ComputedPropertyName(); computed != nil {
-			key, err = evalDebugExpression(ctx, computed.Expression(), locals, params)
+			key, err = evalDebugExpression(ctx, computed.Expression(), scope)
 			if err != nil {
 				return nil, err
 			}
 		} else {
 			return nil, unsupportedDebugExpression(path)
 		}
-		value, err = vm.DebugLookupValue(value, key)
+		value, err = scope.values.Lookup(value, key)
 		if err != nil {
 			return nil, err
 		}
@@ -261,12 +261,12 @@ func evalDebugLiteral(literal fql.ILiteralContext) (runtime.Value, error) {
 	}
 }
 
-func evalDebugUnary(op string, value runtime.Value) (runtime.Value, error) {
+func evalDebugUnary(op string, value runtime.Value, access vm.DebugValueAccess) (runtime.Value, error) {
 	switch strings.ToUpper(op) {
 	case "NOT":
 		boolean, ok := value.(runtime.Boolean)
 		if !ok {
-			return nil, debugEvalTypeError(value, runtime.TypeBoolean.Name())
+			return nil, debugEvalTypeError(value, runtime.TypeBoolean.Name(), access)
 		}
 		return runtime.NewBoolean(!bool(boolean)), nil
 	case "+":
@@ -409,6 +409,6 @@ func unsupportedDebugExpression(value any) error {
 	return fmt.Errorf("%w: %s", runtime.Error(runtime.ErrInvalidOperation, "expression is not supported by the safe debugger evaluator"), value.(interface{ GetText() string }).GetText())
 }
 
-func debugEvalTypeError(value runtime.Value, expected string) error {
-	return runtime.Errorf(runtime.ErrInvalidArgument, "debugger expression requires %s, got %s", expected, vm.DebugValueTypeName(value))
+func debugEvalTypeError(value runtime.Value, expected string, access vm.DebugValueAccess) error {
+	return runtime.Errorf(runtime.ErrInvalidArgument, "debugger expression requires %s, got %s", expected, access.TypeName(value))
 }
