@@ -187,6 +187,9 @@ const (
 
 	// Array Result Operations
 	OpDistinct
+
+	// Source Observation Operations
+	OpSourcePoint
 )
 
 func (op Opcode) String() string {
@@ -492,6 +495,8 @@ func (op Opcode) String() string {
 		return "FLATTEN"
 	case OpDistinct:
 		return "DISTINCT"
+	case OpSourcePoint:
+		return "SOURCEPOINT"
 
 	default:
 		return "UNKNOWN"

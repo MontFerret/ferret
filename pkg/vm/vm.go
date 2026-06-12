@@ -14,13 +14,14 @@ import (
 )
 
 type VM struct {
-	cache   *mem.Cache
-	program *bytecode.Program
-	testing test.Testing[*Result]
-	plan    execPlan
-	state   execState
-	options options
-	closed  bool
+	cache               *mem.Cache
+	program             *bytecode.Program
+	testing             test.Testing[*Result]
+	plan                execPlan
+	state               execState
+	options             options
+	sourcePointObserver sourcePointObserver
+	closed              bool
 }
 
 func New(program *bytecode.Program) (*VM, error) {
@@ -115,6 +116,7 @@ func (vm *VM) Close() error {
 	vm.state = execState{}
 	vm.testing = test.Testing[*Result]{}
 	vm.options = options{}
+	vm.sourcePointObserver = nil
 
 	return nil
 }
@@ -135,11 +137,20 @@ func (vm *VM) runRecovered(ctx context.Context, env *Environment) (result runtim
 		}
 	}()
 
-	return vm.runCore(ctx, env, false)
+	var action sourcePointAction
+	result, action, err = vm.runCore(ctx, env, false)
+	if err == nil && action != sourcePointContinue {
+		err = runtime.Error(runtime.ErrInvalidOperation, "source point observer interrupted normal execution")
+	}
+
+	return result, err
 }
 
 func (vm *VM) runUnchecked(ctx context.Context, env *Environment) (runtime.Value, error) {
-	result, err := vm.runCore(ctx, env, false)
+	result, action, err := vm.runCore(ctx, env, false)
+	if err == nil && action != sourcePointContinue {
+		err = runtime.Error(runtime.ErrInvalidOperation, "source point observer interrupted normal execution")
+	}
 
 	if err != nil {
 		var invariantErr *diagnostics.InvariantError
@@ -153,7 +164,7 @@ func (vm *VM) runUnchecked(ctx context.Context, env *Environment) (runtime.Value
 	return result, nil
 }
 
-func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (runtime.Value, error) {
+func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (runtime.Value, sourcePointAction, error) {
 	state := &vm.state
 
 	if !retained {
@@ -162,11 +173,11 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		}
 
 		if err := state.startRun(env); err != nil {
-			return nil, err
+			return nil, sourcePointContinue, err
 		}
 
 		if err := warmup(vm, env); err != nil {
-			return nil, err
+			return nil, sourcePointContinue, err
 		}
 	}
 
@@ -190,6 +201,29 @@ loop:
 		state.pc = pc + 1
 
 		switch op {
+		case bytecode.OpSourcePoint:
+			if vm.sourcePointObserver == nil {
+				continue
+			}
+
+			action, err := vm.sourcePointObserver.onSourcePoint(ctx, sourcePointState{
+				pc:      pc,
+				pointID: int(dst),
+				depth:   state.frames.Len(),
+			})
+			if err != nil {
+				return nil, sourcePointTerminate, err
+			}
+
+			switch action {
+			case sourcePointContinue:
+				continue
+			case sourcePointPause, sourcePointTerminate:
+				state.pc = pc
+				return nil, action, nil
+			default:
+				return nil, sourcePointTerminate, runtime.Errorf(runtime.ErrUnexpected, "unknown source point action %d at pc %d", action, pc)
+			}
 		case bytecode.OpReturn:
 			retVal := reg[dst]
 
@@ -1048,20 +1082,20 @@ loop:
 		case bytecode.OpRand:
 			state.writeBorrowedRegister(dst, runtime.NewFloat(runtime.RandomDefault()))
 		default:
-			return nil, runtime.Errorf(runtime.ErrUnexpected, "unknown opcode %d at pc %d", op, pc)
+			return nil, sourcePointContinue, runtime.Errorf(runtime.ErrUnexpected, "unknown opcode %d at pc %d", op, pc)
 		}
 
 		// Sticky checkpoint: opcode branches only raise failures; resolution happens here.
 		if state.hasFail {
 			if state.resolveFailure() == errReturn {
-				return nil, state.failure.err
+				return nil, sourcePointContinue, state.failure.err
 			}
 
 			continue
 		}
 	}
 
-	return state.registers[bytecode.NoopOperand], nil
+	return state.registers[bytecode.NoopOperand], sourcePointContinue, nil
 }
 
 func (vm *VM) regexpCached(pc int, value runtime.Value) (*data.Regexp, error) {

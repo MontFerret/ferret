@@ -1,10 +1,15 @@
 package vm
 
-import "github.com/MontFerret/ferret/v2/pkg/bytecode"
+import (
+	"context"
+
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+)
 
 type debugControl struct {
 	owner       *debugExecution
-	points      map[int]*bytecode.DebugPoint
+	points      []*bytecode.DebugPoint
 	breakpoints map[int]struct{}
 	startDepth  int
 	skipPC      int
@@ -15,13 +20,25 @@ type debugControl struct {
 	entry       bool
 }
 
-func (c *debugControl) shouldStop(pc, depth int) bool {
-	point := c.points[pc]
-	if point == nil {
-		return false
+func (c *debugControl) onSourcePoint(_ context.Context, state sourcePointState) (sourcePointAction, error) {
+	if state.pointID < 0 || state.pointID >= len(c.points) {
+		return sourcePointTerminate, runtime.Errorf(runtime.ErrUnexpected, "source point id %d out of range at pc %d", state.pointID, state.pc)
+	}
+
+	point := c.points[state.pointID]
+	if point == nil || point.PC != state.pc {
+		return sourcePointTerminate, runtime.Errorf(runtime.ErrUnexpected, "source point id %d does not match pc %d", state.pointID, state.pc)
 	}
 
 	c.owner.current = point
+	if c.shouldStop(state.pc, state.depth) {
+		return sourcePointPause, nil
+	}
+
+	return sourcePointContinue, nil
+}
+
+func (c *debugControl) shouldStop(pc, depth int) bool {
 	if c.skip && c.skipPC == pc && c.skipDepth == depth {
 		c.skip = false
 		return false

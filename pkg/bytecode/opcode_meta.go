@@ -140,7 +140,7 @@ func opcodeClass(op Opcode) OpcodeClass {
 		OpNoneEq, OpNoneNe, OpNoneGt, OpNoneGte, OpNoneLt, OpNoneLte, OpNoneIn,
 		OpAllEq, OpAllNe, OpAllGt, OpAllGte, OpAllLt, OpAllLte, OpAllIn:
 		return OpcodeClassArray
-	case OpLength, OpClose, OpSleep, OpExists, OpRand, OpDispatch, OpFail, OpFailTimeout, OpRethrow, OpStoreCell:
+	case OpLength, OpClose, OpSleep, OpExists, OpRand, OpDispatch, OpFail, OpFailTimeout, OpRethrow, OpStoreCell, OpSourcePoint:
 		return OpcodeClassUtility
 	case OpHCall, OpProtectedHCall, OpCall, OpProtectedCall, OpTailCall:
 		return OpcodeClassCall

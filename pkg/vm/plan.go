@@ -169,7 +169,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 			instructions[pc].InlineSlot = target
 		}
 
-		if op != bytecode.OpLoadConst && op != bytecode.OpMove && op != bytecode.OpMoveTracked && dst.IsRegister() {
+		if op != bytecode.OpLoadConst && op != bytecode.OpMove && op != bytecode.OpMoveTracked && op != bytecode.OpSourcePoint && dst.IsRegister() {
 			delete(reg, dst)
 		}
 	}

@@ -34,6 +34,7 @@ func (c *CompilationSession) WithDebugPoint(ctx antlr.ParserRuleContext, compile
 	}
 
 	span := diagnostics.SpanFromRuleContext(ctx)
+	pointID := len(c.Program.DebugPoints)
 	c.Program.DebugPoints = append(c.Program.DebugPoints, bytecode.DebugPoint{
 		PC:         pc,
 		FunctionID: c.Function.FunctionID,
@@ -42,7 +43,7 @@ func (c *CompilationSession) WithDebugPoint(ctx antlr.ParserRuleContext, compile
 	})
 
 	c.Program.Emitter.WithSpan(span, func() {
-		c.Program.Emitter.EmitA(bytecode.OpJump, bytecode.Operand(pc+1))
+		c.Program.Emitter.EmitA(bytecode.OpSourcePoint, bytecode.Operand(pointID))
 	})
 
 	compile()

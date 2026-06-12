@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"reflect"
 	"testing"
 
 	gojson "github.com/goccy/go-json"
@@ -102,6 +103,39 @@ func TestMarshalAllowsDistinctOpcode(t *testing.T) {
 
 	if got := decoded.Bytecode[1].Opcode; got != bytecode.OpDistinct {
 		t.Fatalf("expected OpDistinct after round trip, got %s", got)
+	}
+}
+
+func TestMarshalPreservesSourcePoint(t *testing.T) {
+	program := newArtifactTestProgram()
+	program.Bytecode = []bytecode.Instruction{
+		bytecode.NewInstruction(bytecode.OpSourcePoint, bytecode.Operand(0)),
+		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+	}
+	program.Metadata.Labels = nil
+	program.Metadata.AggregateSelectorSlots = nil
+	program.Metadata.MatchFailTargets = nil
+	program.Metadata.DebugSpans = nil
+	program.Metadata.DebugPoints = []bytecode.DebugPoint{
+		{PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1, Bindings: []bytecode.DebugBinding{}},
+	}
+
+	data, err := Marshal(program, Options{})
+	if err != nil {
+		t.Fatalf("expected Marshal() to accept OpSourcePoint, got %v", err)
+	}
+
+	decoded, err := Unmarshal(data)
+	if err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+
+	if got := decoded.Bytecode[0]; got.Opcode != bytecode.OpSourcePoint || got.Operands[0] != 0 {
+		t.Fatalf("unexpected source point after round trip: %#v", got)
+	}
+	if !reflect.DeepEqual(decoded.Metadata.DebugPoints, program.Metadata.DebugPoints) {
+		t.Fatalf("debug points mismatch: got %#v, want %#v", decoded.Metadata.DebugPoints, program.Metadata.DebugPoints)
 	}
 }
 

@@ -107,6 +107,10 @@ func NewDebugExecution(instance *VM, env *Environment) (DebugExecution, error) {
 		return nil, err
 	}
 
+	if instance.sourcePointObserver != nil {
+		return nil, runtime.Error(runtime.ErrInvalidOperation, "vm is already configured for debugging")
+	}
+
 	if env == nil {
 		env = noopEnv
 	}
@@ -114,23 +118,15 @@ func NewDebugExecution(instance *VM, env *Environment) (DebugExecution, error) {
 	exec := &debugExecution{vm: instance, env: env, status: DebugExecutionNew}
 	exec.control = debugControl{
 		owner:  exec,
-		points: make(map[int]*bytecode.DebugPoint, len(instance.program.Metadata.DebugPoints)),
+		points: make([]*bytecode.DebugPoint, len(instance.program.Metadata.DebugPoints)),
 	}
 
 	for i := range instance.program.Metadata.DebugPoints {
 		point := &instance.program.Metadata.DebugPoints[i]
-
-		if instance.plan.instructions[point.PC].Opcode != bytecode.OpJump {
-			return nil, runtime.Error(runtime.ErrInvalidOperation, "vm is already configured for debugging")
-		}
-
-		exec.control.points[point.PC] = point
+		exec.control.points[i] = point
 	}
 
-	for i := range instance.program.Metadata.DebugPoints {
-		point := &instance.program.Metadata.DebugPoints[i]
-		instance.plan.instructions[point.PC].Opcode = debugTrapOpcode
-	}
+	instance.sourcePointObserver = &exec.control
 
 	return exec, nil
 }
@@ -321,48 +317,32 @@ func (d *debugExecution) runLocked(ctx context.Context) (event *DebugExecutionEv
 		}
 	}()
 
-	for {
-		root, runErr := d.vm.runCore(ctx, nil, true)
+	root, action, runErr := d.vm.runCore(ctx, nil, true)
 
-		if runErr != nil {
-			if pc, ok := d.debugTrapPC(); ok {
-				if d.control.shouldStop(pc, d.vm.state.frames.Len()) {
-					d.vm.state.pc = pc
-					d.status = DebugExecutionPaused
-					d.current = d.control.points[pc]
-					return &DebugExecutionEvent{Reason: d.control.reason, Point: d.current, Depth: d.vm.state.frames.Len()}, nil
-				}
+	if runErr != nil {
+		d.terminalErr = d.vm.state.wrapRuntimeError(runErr)
+		d.status = DebugExecutionPaused
+		d.current = d.nearestPoint(d.vm.state.lastPC)
 
-				continue
-			}
-
-			d.terminalErr = d.vm.state.wrapRuntimeError(runErr)
-			d.status = DebugExecutionPaused
-			d.current = d.nearestPoint(d.vm.state.lastPC)
-
-			return &DebugExecutionEvent{Reason: DebugStopRuntimeError, Error: d.terminalErr, Point: d.current, Depth: d.vm.state.frames.Len()}, nil
-		}
-
-		result := d.vm.state.finishRun(root)
-		d.status = DebugExecutionCompleted
-		d.current = nil
-
-		return &DebugExecutionEvent{Reason: DebugStopCompleted, Result: result}, nil
-	}
-}
-
-func (d *debugExecution) debugTrapPC() (int, bool) {
-	pc := d.vm.state.pc - 1
-
-	if pc < 0 || pc >= len(d.vm.plan.instructions) {
-		return 0, false
+		return &DebugExecutionEvent{Reason: DebugStopRuntimeError, Error: d.terminalErr, Point: d.current, Depth: d.vm.state.frames.Len()}, nil
 	}
 
-	if d.vm.plan.instructions[pc].Opcode != debugTrapOpcode || d.control.points[pc] == nil {
-		return 0, false
+	switch action {
+	case sourcePointPause:
+		d.status = DebugExecutionPaused
+		return &DebugExecutionEvent{Reason: d.control.reason, Point: d.current, Depth: d.vm.state.frames.Len()}, nil
+	case sourcePointTerminate:
+		depth := d.vm.state.frames.Len()
+		d.vm.state.endRun()
+		d.status = DebugExecutionTerminated
+		return &DebugExecutionEvent{Reason: DebugStopTerminated, Point: d.current, Depth: depth}, nil
 	}
 
-	return pc, true
+	result := d.vm.state.finishRun(root)
+	d.status = DebugExecutionCompleted
+	d.current = nil
+
+	return &DebugExecutionEvent{Reason: DebugStopCompleted, Result: result}, nil
 }
 
 func (d *debugExecution) nearestPoint(pc int) *bytecode.DebugPoint {
@@ -395,6 +375,7 @@ func (d *debugExecution) Close() error {
 	}
 
 	if d.vm != nil {
+		d.vm.sourcePointObserver = nil
 		d.vm.state.endRun()
 		_ = d.vm.Close()
 	}

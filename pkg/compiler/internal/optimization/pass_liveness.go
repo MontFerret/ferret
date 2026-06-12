@@ -370,6 +370,8 @@ func applyUtilityUseDef(opcode bytecode.Opcode, dst bytecode.Operand, collector 
 		return true
 	case bytecode.OpFailTimeout:
 		return true
+	case bytecode.OpSourcePoint:
+		return true
 	default:
 		return false
 	}

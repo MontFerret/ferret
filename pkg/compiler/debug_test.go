@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
@@ -23,6 +24,7 @@ func TestWithDebugInfoEmitsLogicalPointsAndForcesO0(t *testing.T) {
 	if len(program.Metadata.DebugPoints) != 4 {
 		t.Fatalf("expected four debug points, got %#v", program.Metadata.DebugPoints)
 	}
+	assertSourcePointsMatchDebugPoints(t, program)
 
 	if len(program.Metadata.DebugPoints[0].Bindings) != 0 {
 		t.Fatalf("first declaration must not be visible before execution: %#v", program.Metadata.DebugPoints[0])
@@ -56,6 +58,10 @@ func TestDebugInfoArtifactRoundTrip(t *testing.T) {
 	if !reflect.DeepEqual(decoded.Metadata.DebugPoints, program.Metadata.DebugPoints) {
 		t.Fatalf("debug points mismatch: got %#v, want %#v", decoded.Metadata.DebugPoints, program.Metadata.DebugPoints)
 	}
+	if !reflect.DeepEqual(decoded.Bytecode, program.Bytecode) {
+		t.Fatalf("bytecode mismatch: got %#v, want %#v", decoded.Bytecode, program.Bytecode)
+	}
+	assertSourcePointsMatchDebugPoints(t, decoded)
 }
 
 func TestNormalCompilationDoesNotEmitDebugPoints(t *testing.T) {
@@ -66,6 +72,12 @@ func TestNormalCompilationDoesNotEmitDebugPoints(t *testing.T) {
 
 	if len(program.Metadata.DebugPoints) != 0 {
 		t.Fatalf("normal compilation emitted debug points: %#v", program.Metadata.DebugPoints)
+	}
+
+	for pc, inst := range program.Bytecode {
+		if inst.Opcode == bytecode.OpSourcePoint {
+			t.Fatalf("normal compilation emitted source point at pc %d", pc)
+		}
 	}
 
 	if program.Metadata.OptimizationLevel != int(O1) {
@@ -144,4 +156,19 @@ RETURN (
 	}
 
 	t.Fatal("expected loop return debug point")
+}
+
+func assertSourcePointsMatchDebugPoints(t *testing.T, program *bytecode.Program) {
+	t.Helper()
+
+	for pointID, point := range program.Metadata.DebugPoints {
+		if point.PC < 0 || point.PC >= len(program.Bytecode) {
+			t.Fatalf("debug point %d pc %d out of range", pointID, point.PC)
+		}
+
+		inst := program.Bytecode[point.PC]
+		if inst.Opcode != bytecode.OpSourcePoint || int(inst.Operands[0]) != pointID {
+			t.Fatalf("debug point %d does not match source point at pc %d: %#v", pointID, point.PC, inst)
+		}
+	}
 }

@@ -138,9 +138,9 @@ func validateMetadata(program *Program) error {
 			return fmt.Errorf("%w: debug point %d references pc %d out of range", ErrInvalidProgram, i, point.PC)
 		}
 
-		marker := program.Bytecode[point.PC]
-		if marker.Opcode != OpJump || int(marker.Operands[0]) != point.PC+1 {
-			return fmt.Errorf("%w: debug point %d pc %d does not reference a debugger marker", ErrInvalidProgram, i, point.PC)
+		sourcePoint := program.Bytecode[point.PC]
+		if sourcePoint.Opcode != OpSourcePoint || int(sourcePoint.Operands[0]) != i {
+			return fmt.Errorf("%w: debug point %d pc %d does not reference its source point", ErrInvalidProgram, i, point.PC)
 		}
 
 		if point.PC <= lastDebugPC {
@@ -166,6 +166,21 @@ func validateMetadata(program *Program) error {
 		}
 
 		lastDebugPC = point.PC
+	}
+
+	for pc, inst := range program.Bytecode {
+		if inst.Opcode != OpSourcePoint {
+			continue
+		}
+
+		pointID := int(inst.Operands[0])
+		if pointID < 0 || pointID >= len(program.Metadata.DebugPoints) {
+			return fmt.Errorf("%w: source point at pc %d references debug point %d out of range", ErrInvalidProgram, pc, pointID)
+		}
+
+		if program.Metadata.DebugPoints[pointID].PC != pc {
+			return fmt.Errorf("%w: source point at pc %d does not match debug point %d pc %d", ErrInvalidProgram, pc, pointID, program.Metadata.DebugPoints[pointID].PC)
+		}
 	}
 
 	for pc, name := range program.Metadata.Labels {
@@ -233,6 +248,10 @@ func validateInstructions(program *Program) error {
 		case OpReturn:
 			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
 				return err
+			}
+		case OpSourcePoint:
+			if dst < 0 {
+				return fmt.Errorf("%w: pc %d source point id must be non-negative", ErrInvalidInstruction, pc)
 			}
 		case OpJump:
 			if err := validatePCOperand(dst, bytecodeLen, pc, "dst"); err != nil {
