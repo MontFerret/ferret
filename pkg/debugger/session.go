@@ -337,9 +337,18 @@ func (s *Session) runAfterHooks(runErr error) error {
 }
 
 func (s *Session) debugValue(value runtime.Value) Value {
+	info, _ := s.values.DebugInfo(value)
+	typeName := info.TypeName
+	if typeName == "" {
+		typeName = s.values.TypeName(value)
+		info.TypeName = typeName
+	} else {
+		typeName = boundedText(typeName, s.format.MaxBytes)
+	}
+
 	return Value{
-		Type:    s.values.TypeName(value),
-		Display: formatValue(value, s.values, s.format),
+		Type:    typeName,
+		Display: formatValueWithInfo(value, info, s.values, s.format),
 	}
 }
 

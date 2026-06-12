@@ -12,8 +12,13 @@ import (
 )
 
 func formatValue(value runtime.Value, access vm.DebugValueAccess, options FormatOptions) string {
+	info, _ := access.DebugInfo(value)
+	return formatValueWithInfo(value, info, access, options)
+}
+
+func formatValueWithInfo(value runtime.Value, info runtime.DebugInfo, access vm.DebugValueAccess, options FormatOptions) string {
 	var b strings.Builder
-	writeValue(&b, value, access, options, 0)
+	writeValue(&b, value, info, access, options, 0)
 	out := b.String()
 	if len(out) > options.MaxBytes {
 		return out[:options.MaxBytes] + "..."
@@ -21,7 +26,11 @@ func formatValue(value runtime.Value, access vm.DebugValueAccess, options Format
 	return out
 }
 
-func writeValue(b *strings.Builder, value runtime.Value, access vm.DebugValueAccess, options FormatOptions, depth int) {
+func writeValue(b *strings.Builder, value runtime.Value, info runtime.DebugInfo, access vm.DebugValueAccess, options FormatOptions, depth int) {
+	if info.Display != "" {
+		b.WriteString(boundedText(info.Display, options.MaxBytes))
+		return
+	}
 	if value == nil || reflect.TypeOf(value) == reflect.TypeOf(runtime.None) {
 		b.WriteString("NONE")
 		return
@@ -46,7 +55,11 @@ func writeValue(b *strings.Builder, value runtime.Value, access vm.DebugValueAcc
 	default:
 		inspection, ok := access.Inspect(value, options.MaxItems)
 		if !ok {
-			fmt.Fprintf(b, "HostValue(%s)", access.TypeName(value))
+			typeName := info.TypeName
+			if typeName == "" {
+				typeName = access.TypeName(value)
+			}
+			fmt.Fprintf(b, "HostValue(%s)", typeName)
 			return
 		}
 		if depth >= options.MaxDepth || inspection.Length > options.MaxItems || !inspection.Complete {
@@ -64,7 +77,8 @@ func writeInspection(b *strings.Builder, inspection vm.DebugValueInspection, acc
 			if i > 0 {
 				b.WriteString(", ")
 			}
-			writeValue(b, item.Value, access, options, depth+1)
+			info, _ := access.DebugInfo(item.Value)
+			writeValue(b, item.Value, info, access, options, depth+1)
 		}
 		b.WriteByte(']')
 		return
@@ -78,7 +92,8 @@ func writeInspection(b *strings.Builder, inspection vm.DebugValueInspection, acc
 		}
 		b.WriteString(strconv.Quote(boundedText(item.Key, options.MaxBytes)))
 		b.WriteString(": ")
-		writeValue(b, item.Value, access, options, depth+1)
+		info, _ := access.DebugInfo(item.Value)
+		writeValue(b, item.Value, info, access, options, depth+1)
 	}
 	b.WriteByte('}')
 }

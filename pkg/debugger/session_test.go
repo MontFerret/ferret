@@ -57,7 +57,7 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if value.Display != "2" || values.typeCalls == 0 {
+	if value.Display != "2" || values.typeCalls == 0 || values.debugInfoCalls == 0 {
 		t.Fatalf("unexpected evaluated value: %#v", value)
 	}
 	if err := session.Close(); err != nil {

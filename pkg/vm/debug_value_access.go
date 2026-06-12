@@ -38,6 +38,7 @@ type (
 	// by source-level debugger policy.
 	DebugValueAccess interface {
 		TypeName(runtime.Value) string
+		DebugInfo(runtime.Value) (runtime.DebugInfo, bool)
 		Lookup(runtime.Value, runtime.Value) (runtime.Value, error)
 		Inspect(runtime.Value, int) (DebugValueInspection, bool)
 	}
@@ -51,7 +52,39 @@ func NewDebugValueAccess() DebugValueAccess {
 	return debugValueAccess{}
 }
 
-func (debugValueAccess) TypeName(value runtime.Value) string {
+func (a debugValueAccess) TypeName(value runtime.Value) string {
+	if info, ok := a.DebugInfo(value); ok && info.TypeName != "" {
+		return info.TypeName
+	}
+
+	return a.defaultTypeName(value)
+}
+
+// DebugInfo returns optional presentation metadata supplied by a runtime
+// value.
+func (a debugValueAccess) DebugInfo(value runtime.Value) (runtime.DebugInfo, bool) {
+	inspectable, ok := value.(runtime.DebugInspectable)
+	if !ok {
+		return runtime.DebugInfo{}, false
+	}
+
+	return a.safeDebugInfo(inspectable)
+}
+
+// safeDebugInfo isolates panic recovery to implementations of the optional
+// runtime hook.
+func (debugValueAccess) safeDebugInfo(inspectable runtime.DebugInspectable) (info runtime.DebugInfo, ok bool) {
+	defer func() {
+		if recover() != nil {
+			info = runtime.DebugInfo{}
+			ok = false
+		}
+	}()
+
+	return inspectable.DebugInfo(), true
+}
+
+func (debugValueAccess) defaultTypeName(value runtime.Value) string {
 	if value == nil || reflect.TypeOf(value) == reflect.TypeOf(runtime.None) {
 		return runtime.TypeNone.Name()
 	}

@@ -179,6 +179,11 @@ side-effect-free and supports scalar expressions plus built-in object/array
 reads; calls, queries, waits, dispatch, mutation, recovery expressions, and
 opaque host-value reads are rejected.
 
+Custom runtime values may implement `runtime.DebugInspectable` to provide
+optional debugger type-name and display hints. These hints are presentation
+only and must be cheap, deterministic, side-effect free, and must not consume
+lazy values or perform external work.
+
 Phase 1 supports one source file and top-frame locals. Tail calls retain call
 depth, so `Next` and `Out` cannot always distinguish tail-call boundaries. The
 interactive `ferret debug` command belongs to the separate CLI repository.

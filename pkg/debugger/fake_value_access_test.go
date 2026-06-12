@@ -6,13 +6,19 @@ import (
 )
 
 type fakeValueAccess struct {
-	inner     vm.DebugValueAccess
-	typeCalls int
+	inner          vm.DebugValueAccess
+	debugInfoCalls int
+	typeCalls      int
 }
 
 func (f *fakeValueAccess) TypeName(value runtime.Value) string {
 	f.typeCalls++
 	return f.inner.TypeName(value)
+}
+
+func (f *fakeValueAccess) DebugInfo(value runtime.Value) (runtime.DebugInfo, bool) {
+	f.debugInfoCalls++
+	return f.inner.DebugInfo(value)
 }
 
 func (f *fakeValueAccess) Lookup(value, key runtime.Value) (runtime.Value, error) {
