@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -18,16 +19,20 @@ func formatValue(value runtime.Value, access vm.DebugValueAccess, options Format
 }
 
 func formatValueWithInfo(value runtime.Value, info runtime.DebugInfo, access vm.DebugValueAccess, options FormatOptions) string {
+	if info.Display != "" {
+		return boundedText(info.Display, options.MaxBytes)
+	}
+
 	var b strings.Builder
 
 	writeValue(&b, value, info, access, options, 0)
 	out := b.String()
 
-	if len(out) > options.MaxBytes {
-		return out[:options.MaxBytes] + "..."
+	if len(out) <= options.MaxBytes {
+		return out
 	}
 
-	return out
+	return boundedText(out, options.MaxBytes)
 }
 
 func writeValue(b *strings.Builder, value runtime.Value, info runtime.DebugInfo, access vm.DebugValueAccess, options FormatOptions, depth int) {
@@ -56,7 +61,7 @@ func writeValue(b *strings.Builder, value runtime.Value, info runtime.DebugInfo,
 	case runtime.String:
 		b.WriteString(strconv.Quote(boundedText(value.String(), options.MaxBytes)))
 	case runtime.DateTime:
-		b.WriteString(value.String())
+		b.WriteString(boundedText(value.String(), options.MaxBytes))
 	case runtime.Binary:
 		fmt.Fprintf(b, "Binary(%d)", len(value))
 	default:
@@ -69,7 +74,7 @@ func writeValue(b *strings.Builder, value runtime.Value, info runtime.DebugInfo,
 				typeName = access.TypeName(value)
 			}
 
-			fmt.Fprintf(b, "HostValue(%s)", typeName)
+			fmt.Fprintf(b, "HostValue(%s)", boundedText(typeName, options.MaxBytes))
 			return
 		}
 
@@ -128,8 +133,24 @@ func writeCollectionSummary(b *strings.Builder, inspection vm.DebugValueInspecti
 }
 
 func boundedText(value string, max int) string {
+	if value == "" {
+		return value
+	}
+
+	if max <= 0 {
+		return "..."
+	}
+
+	if !utf8.ValidString(value) {
+		value = strings.ToValidUTF8(value, "\uFFFD")
+	}
+
 	if len(value) <= max {
 		return value
+	}
+
+	for max > 0 && !utf8.RuneStart(value[max]) {
+		max--
 	}
 
 	return value[:max] + "..."

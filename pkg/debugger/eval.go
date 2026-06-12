@@ -465,11 +465,16 @@ func unquoteDebugString(text string) (string, error) {
 }
 
 func unsupportedDebugExpression(value any) error {
+	base := runtime.Error(runtime.ErrInvalidOperation, "expression is not supported by the safe debugger evaluator")
 	if value == nil {
-		return runtime.Error(runtime.ErrInvalidOperation, "expression is not supported by the safe debugger evaluator")
+		return base
 	}
 
-	return fmt.Errorf("%w: %s", runtime.Error(runtime.ErrInvalidOperation, "expression is not supported by the safe debugger evaluator"), value.(interface{ GetText() string }).GetText())
+	if text, ok := value.(interface{ GetText() string }); ok {
+		return fmt.Errorf("%w: %s", base, text.GetText())
+	}
+
+	return base
 }
 
 func debugEvalTypeError(value runtime.Value, expected string, access vm.DebugValueAccess) error {

@@ -66,8 +66,6 @@ type (
 	}
 )
 
-const debugTrapOpcode = bytecode.Opcode(255)
-
 const (
 	DebugStopEntry DebugStopReason = iota
 	DebugStopBreakpoint

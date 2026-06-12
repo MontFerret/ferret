@@ -2,8 +2,11 @@ package debugger
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/parser"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -41,5 +44,32 @@ func TestEvaluateDebugExpressionRejectsOpaqueValuesWithoutCallingHostMethods(t *
 	)
 	if err == nil {
 		t.Fatal("expected opaque value to be rejected")
+	}
+}
+
+func TestUnsupportedDebugExpressionIncludesParsedText(t *testing.T) {
+	p := parser.New("[1]")
+	err := unsupportedDebugExpression(p.Expression())
+
+	if !errors.Is(err, runtime.ErrInvalidOperation) {
+		t.Fatalf("expected invalid operation, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "[1]") {
+		t.Fatalf("expected expression text in error, got %v", err)
+	}
+}
+
+func TestUnsupportedDebugExpressionHandlesValuesWithoutText(t *testing.T) {
+	const want = "invalid operation: expression is not supported by the safe debugger evaluator"
+
+	for _, value := range []any{nil, struct{}{}} {
+		err := unsupportedDebugExpression(value)
+
+		if !errors.Is(err, runtime.ErrInvalidOperation) {
+			t.Fatalf("expected invalid operation for %#v, got %v", value, err)
+		}
+		if err.Error() != want {
+			t.Fatalf("unexpected error for %#v: got %q, want %q", value, err, want)
+		}
 	}
 }
