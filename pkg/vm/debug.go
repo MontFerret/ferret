@@ -119,10 +119,15 @@ func NewDebugExecution(instance *VM, env *Environment) (DebugExecution, error) {
 		env = noopEnv
 	}
 
+	points, err := debugpoint.New(instance.program.Metadata.DebugPoints)
+	if err != nil {
+		return nil, runtime.Errorf(runtime.ErrInvalidOperation, "invalid debug points: %s", err)
+	}
+
 	exec := &debugExecution{
 		vm:     instance,
 		env:    env,
-		points: debugpoint.New(instance.program.Metadata.DebugPoints),
+		points: points,
 		status: DebugExecutionNew,
 	}
 	exec.control = debugControl{

@@ -62,7 +62,7 @@ func TestResumeContextPreservesRunValuesAndOverridesWithCommandValues(t *testing
 	command := context.WithValue(context.Background(), key("command"), "command-value")
 	command = context.WithValue(command, key("shared"), "command-value")
 
-	ctx, cleanup := newResumeContext(run, command)
+	ctx, cleanup, _ := newResumeContext(run, command)
 	defer cleanup()
 
 	if got := ctx.Value(key("run")); got != "run-value" {
@@ -81,7 +81,7 @@ func TestResumeContextUsesRunContextWhenCommandIsNil(t *testing.T) {
 
 	run := context.WithValue(context.Background(), key{}, "run-value")
 
-	ctx, cleanup := newResumeContext(run, nil)
+	ctx, cleanup, _ := newResumeContext(run, nil)
 	defer cleanup()
 
 	if ctx != run {
@@ -110,7 +110,7 @@ func TestResumeContextHonorsRunAndCommandCancellation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			run, cancelRun := context.WithCancelCause(context.Background())
 			command, cancelCommand := context.WithCancelCause(context.Background())
-			ctx, cleanup := newResumeContext(run, command)
+			ctx, cleanup, _ := newResumeContext(run, command)
 			defer cleanup()
 
 			cause := errors.New(tc.name + " canceled")
@@ -138,7 +138,7 @@ func TestResumeContextReportsEarliestDeadline(t *testing.T) {
 	command, cancelCommand := context.WithDeadline(context.Background(), now.Add(2*time.Hour))
 	defer cancelCommand()
 
-	ctx, cleanup := newResumeContext(run, command)
+	ctx, cleanup, _ := newResumeContext(run, command)
 	defer cleanup()
 
 	deadline, ok := ctx.Deadline()
@@ -151,7 +151,7 @@ func TestResumeContextCleanupStopsCancellationHooks(t *testing.T) {
 	run := &trackingContext{Context: context.Background(), done: make(chan struct{})}
 	command := &trackingContext{Context: context.Background(), done: make(chan struct{})}
 
-	_, cleanup := newResumeContext(run, command)
+	_, cleanup, _ := newResumeContext(run, command)
 	cleanup()
 	cleanup()
 

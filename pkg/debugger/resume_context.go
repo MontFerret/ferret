@@ -13,9 +13,9 @@ type resumeContext struct {
 
 // newResumeContext preserves values installed by before-run hooks while giving
 // the current debugger command control over cancellation and value overrides.
-func newResumeContext(run, command context.Context) (context.Context, func()) {
+func newResumeContext(run, command context.Context) (context.Context, func(), context.CancelCauseFunc) {
 	if command == nil || run == command {
-		return run, func() {}
+		return run, func() {}, nil
 	}
 
 	base := context.Background()
@@ -44,7 +44,7 @@ func newResumeContext(run, command context.Context) (context.Context, func()) {
 			cancel(context.Canceled)
 			cancelDeadline()
 		})
-	}
+	}, cancel
 }
 
 func (c *resumeContext) Value(key any) any {

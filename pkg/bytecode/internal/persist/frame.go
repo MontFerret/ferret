@@ -98,6 +98,7 @@ type (
 		ID         int                 `json:"id" msgpack:"id"`
 		PC         int                 `json:"pc" msgpack:"pc"`
 		FunctionID int                 `json:"functionId" msgpack:"functionId"`
+		Kind       int                 `json:"kind,omitempty" msgpack:"kind,omitempty"`
 	}
 
 	LabelFrame struct {
@@ -229,6 +230,7 @@ func FromProgram(program *bytecode.Program) (ProgramFrame, error) {
 			ID:         int(point.ID),
 			PC:         point.PC,
 			FunctionID: point.FunctionID,
+			Kind:       int(point.Kind),
 			Span:       SpanFrame{Start: point.Span.Start, End: point.Span.End},
 			Bindings:   bindings,
 		}
@@ -420,6 +422,7 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 			ID:         bytecode.DebugPointID(point.ID),
 			PC:         point.PC,
 			FunctionID: point.FunctionID,
+			Kind:       bytecode.DebugPointKind(point.Kind),
 			Span:       source.Span{Start: point.Span.Start, End: point.Span.End},
 			Bindings:   bindings,
 		}

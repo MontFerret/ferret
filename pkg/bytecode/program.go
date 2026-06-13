@@ -19,6 +19,9 @@ type (
 	// DebugPointID identifies a debug point within one compiled program.
 	DebugPointID int
 
+	// DebugPointKind identifies the source-level role of a debug point.
+	DebugPointKind int
+
 	Metadata struct {
 		Labels                 map[int]string  `json:"labels"`
 		CompilerVersion        string          `json:"compilerVersion"`
@@ -47,6 +50,7 @@ type (
 		ID         DebugPointID   `json:"id"`
 		PC         int            `json:"pc"`
 		FunctionID int            `json:"functionId"`
+		Kind       DebugPointKind `json:"kind,omitempty"`
 	}
 
 	Program struct {
@@ -60,6 +64,15 @@ type (
 		ISAVersion int
 		Registers  int
 	}
+)
+
+const (
+	DebugPointStatement DebugPointKind = iota
+	DebugPointReturn
+	DebugPointFunctionEntry
+	DebugPointCallSite
+	DebugPointLoop
+	DebugPointSynthetic
 )
 
 func (p *Program) MarshalJSON() ([]byte, error) {

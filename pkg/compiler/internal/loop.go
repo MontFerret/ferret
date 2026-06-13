@@ -333,7 +333,7 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 	if loop.Type != core.PassThroughLoop {
 		// For normal loops, compile the return expression and push the result to the destination
 		re := ctx.(*fql.ReturnExpressionContext)
-		c.ctx.WithDebugPoint(re, func() {
+		c.ctx.WithDebugPointKind(re, bytecode.DebugPointReturn, func() {
 			expReg := c.exprs.Compile(re.Expression())
 
 			span := source.Span{Start: -1, End: -1}

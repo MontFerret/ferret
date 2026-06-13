@@ -51,6 +51,7 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 
 	c.withFunctionCompileState(fn, func() {
 		fn.Entry = c.ctx.Program.Emitter.Size()
+		firstPoint := len(c.ctx.Program.DebugPoints)
 
 		c.ctx.Function.Symbols.EnterScope()
 		c.ctx.Function.FunctionID = fn.ID
@@ -77,6 +78,10 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 
 				c.compileReturn(block.FunctionReturn())
 			}
+		}
+
+		if firstPoint < len(c.ctx.Program.DebugPoints) {
+			c.ctx.Program.DebugPoints[firstPoint].Kind = bytecode.DebugPointFunctionEntry
 		}
 
 		fn.Registers = c.ctx.Function.Registers.Size()
@@ -129,7 +134,7 @@ func (c *UDFCompiler) compileExpressionReturn(expr fql.IExpressionContext, disti
 	}
 
 	rule, _ := expr.(antlr.ParserRuleContext)
-	c.ctx.WithDebugPoint(rule, func() {
+	c.ctx.WithDebugPointKind(rule, bytecode.DebugPointReturn, func() {
 		c.compileExpressionReturnInner(expr, distinct)
 	})
 }

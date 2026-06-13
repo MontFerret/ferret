@@ -1,6 +1,8 @@
 package debugpoint
 
 import (
+	"fmt"
+	"slices"
 	"sort"
 	"sync"
 
@@ -16,16 +18,56 @@ type Index struct {
 	functions  sync.Once
 }
 
-// New creates an index over points that are strictly ordered by PC.
-func New(points []bytecode.DebugPoint) Index {
-	byID := make(map[bytecode.DebugPointID]*bytecode.DebugPoint, len(points))
+// New creates an index over a validated defensive copy of points.
+func New(points []bytecode.DebugPoint) (Index, error) {
+	ordered := append([]bytecode.DebugPoint(nil), points...)
+	slices.SortFunc(ordered, func(left, right bytecode.DebugPoint) int {
+		if left.PC < right.PC {
+			return -1
+		}
+		if left.PC > right.PC {
+			return 1
+		}
+		if left.ID < right.ID {
+			return -1
+		}
+		if left.ID > right.ID {
+			return 1
+		}
 
-	for pos := range points {
-		point := &points[pos]
+		return 0
+	})
+
+	byID := make(map[bytecode.DebugPointID]*bytecode.DebugPoint, len(ordered))
+
+	for pos := range ordered {
+		point := &ordered[pos]
+		if point.ID < 0 {
+			return Index{}, fmt.Errorf("debug point %d has invalid id %d", pos, point.ID)
+		}
+		if _, exists := byID[point.ID]; exists {
+			return Index{}, fmt.Errorf("debug point %d duplicates id %d", pos, point.ID)
+		}
+		if point.PC < 0 {
+			return Index{}, fmt.Errorf("debug point %d has invalid pc %d", point.ID, point.PC)
+		}
+		if pos > 0 && ordered[pos-1].PC == point.PC {
+			return Index{}, fmt.Errorf("debug point %d duplicates pc %d", point.ID, point.PC)
+		}
+		if point.FunctionID < -1 {
+			return Index{}, fmt.Errorf("debug point %d has invalid function id %d", point.ID, point.FunctionID)
+		}
+		if point.Kind < bytecode.DebugPointStatement || point.Kind > bytecode.DebugPointSynthetic {
+			return Index{}, fmt.Errorf("debug point %d has invalid kind %d", point.ID, point.Kind)
+		}
+		if point.Span.Start < 0 || point.Span.End < point.Span.Start {
+			return Index{}, fmt.Errorf("debug point %d has invalid span", point.ID)
+		}
+
 		byID[point.ID] = point
 	}
 
-	return Index{points: points, byID: byID}
+	return Index{points: ordered, byID: byID}, nil
 }
 
 // Points returns all debug points in PC order.

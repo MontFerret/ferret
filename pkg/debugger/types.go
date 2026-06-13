@@ -16,6 +16,18 @@ type (
 	// BreakpointID identifies a breakpoint within one debugger session.
 	BreakpointID int
 
+	// BreakpointBindingMode selects how a requested source location resolves to
+	// an executable debug point.
+	BreakpointBindingMode int
+
+	// SourceLocation identifies a requested location in debugger source.
+	// Line and Column are 1-based; Column 0 means no column was requested.
+	SourceLocation struct {
+		File   string
+		Line   int
+		Column int
+	}
+
 	// Location identifies a source location in the debugged file.
 	Location struct {
 		File   string
@@ -45,7 +57,7 @@ type (
 		FunctionID int
 	}
 
-	// Breakpoint describes a requested source-line breakpoint and its resolved
+	// Breakpoint describes a requested source-location breakpoint and its resolved
 	// executable location, when one exists.
 	Breakpoint struct {
 		File            string
@@ -56,16 +68,23 @@ type (
 		FunctionID      int
 		Line            int
 		Column          int
+		BindingMode     BreakpointBindingMode
 		Bound           bool
+	}
+
+	// BreakpointOptions configures how a requested source location binds.
+	BreakpointOptions struct {
+		BindingMode BreakpointBindingMode
 	}
 
 	// Event reports a debugger stop, completion, or termination.
 	Event struct {
-		Error    error
-		Output   *encoding.Output
-		Reason   Reason
-		Location Location
-		Depth    int
+		Error            error
+		Output           *encoding.Output
+		Reason           Reason
+		HitBreakpointIDs []BreakpointID
+		Location         Location
+		Depth            int
 	}
 
 	// FormatOptions bounds debugger value traversal and rendered output.
@@ -104,6 +123,14 @@ const (
 	ReasonRuntimeError Reason = "runtime-error"
 	ReasonCompleted    Reason = "completed"
 	ReasonTerminated   Reason = "terminated"
+)
+
+const (
+	// BreakpointBindNextExecutableInFile preserves the friendly legacy binding
+	// behavior and is the zero-value default.
+	BreakpointBindNextExecutableInFile BreakpointBindingMode = iota
+	BreakpointBindExact
+	BreakpointBindNextExecutableInFunction
 )
 
 // DefaultFormatOptions returns conservative debugger formatting limits.

@@ -161,7 +161,10 @@ plan, err := eng.CompileDebug(ctx, source.New("query.fql", query))
 session, err := plan.NewDebugSession(ctx, ferret.WithSessionParam("input", 21))
 defer session.Close()
 
-_, err = session.SetBreakpoint("query.fql", 4)
+_, err = session.SetBreakpointAt(
+    ferret.DebugSourceLocation{File: "query.fql", Line: 4},
+    ferret.DebugBreakpointOptions{},
+)
 event, err := session.Start(ctx)
 event, err = session.Continue(ctx)
 locals, err := session.Locals()
@@ -170,14 +173,19 @@ value, err := session.Evaluate(ctx, "result")
 
 The canonical debugger models and advanced composition API live in
 `pkg/debugger`. The top-level package retains `DebugSession`, event/value
-types, reasons, and formatting options as compatibility aliases.
+types, reasons, breakpoint locations/options, and formatting options as
+compatibility aliases. `SetBreakpoint(file, line)` remains a convenience
+helper that binds to the next executable location in the file.
 
 `Step` enters calls, `Next` stays at the same or shallower call depth, and
 `Out` stops in the caller. Runtime errors pause before state is released so
-frames and locals remain inspectable. Evaluation is deliberately
-side-effect-free and supports scalar expressions plus built-in object/array
-reads; calls, queries, waits, dispatch, mutation, recovery expressions, and
-opaque host-value reads are rejected.
+frames and locals remain inspectable. Evaluation is deliberately conservative
+and side-effect-free. It supports literals, locals and parameters, supported
+member reads, scalar arithmetic and comparison, boolean logic, and simple
+conditional expressions. It does not execute arbitrary Ferret code: function,
+host, and module calls; queries and full collection semantics; mutation;
+wait/async/event behavior; dispatch; recovery expressions; and opaque
+host-value reads are rejected.
 
 Custom runtime values may implement `runtime.DebugInspectable` to provide
 optional debugger type-name and display hints. These hints are presentation

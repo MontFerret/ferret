@@ -10,7 +10,11 @@ import (
 
 func BenchmarkDebugSourcePointDispatch(b *testing.B) {
 	point := bytecode.DebugPoint{ID: 0, PC: 7, FunctionID: -1}
-	execution := &debugExecution{points: debugpoint.New([]bytecode.DebugPoint{point})}
+	points, err := debugpoint.New([]bytecode.DebugPoint{point})
+	if err != nil {
+		b.Fatal(err)
+	}
+	execution := &debugExecution{points: points}
 	control := debugControl{
 		owner: execution,
 		mode:  DebugResumeContinue,

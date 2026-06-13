@@ -58,7 +58,8 @@ func TestDebugSessionBreakpointsLocalsEvaluateAndComplete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonBreakpoint || event.Location.Line != 3 {
+	if event.Reason != DebugReasonBreakpoint || event.Location.Line != 3 ||
+		len(event.HitBreakpointIDs) != 1 || event.HitBreakpointIDs[0] != breakpoint.ID {
 		t.Fatalf("unexpected breakpoint event: %#v", event)
 	}
 	locals, err = session.Locals()

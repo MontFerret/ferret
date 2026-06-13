@@ -3,17 +3,20 @@ package ferret
 import "github.com/MontFerret/ferret/v2/pkg/debugger"
 
 type (
-	DebugSession       = debugger.Session
-	DebugReason        = debugger.Reason
-	DebugLocation      = debugger.Location
-	DebugValue         = debugger.Value
-	DebugVariable      = debugger.Variable
-	DebugFrame         = debugger.Frame
-	DebugBreakpoint    = debugger.Breakpoint
-	DebugBreakpointID  = debugger.BreakpointID
-	DebugEvent         = debugger.Event
-	DebugStateError    = debugger.StateError
-	DebugFormatOptions = debugger.FormatOptions
+	DebugSession               = debugger.Session
+	DebugReason                = debugger.Reason
+	DebugLocation              = debugger.Location
+	DebugValue                 = debugger.Value
+	DebugVariable              = debugger.Variable
+	DebugFrame                 = debugger.Frame
+	DebugBreakpoint            = debugger.Breakpoint
+	DebugBreakpointID          = debugger.BreakpointID
+	DebugBreakpointOptions     = debugger.BreakpointOptions
+	DebugBreakpointBindingMode = debugger.BreakpointBindingMode
+	DebugSourceLocation        = debugger.SourceLocation
+	DebugEvent                 = debugger.Event
+	DebugStateError            = debugger.StateError
+	DebugFormatOptions         = debugger.FormatOptions
 )
 
 const (
@@ -24,4 +27,8 @@ const (
 	DebugReasonRuntimeError = debugger.ReasonRuntimeError
 	DebugReasonCompleted    = debugger.ReasonCompleted
 	DebugReasonTerminated   = debugger.ReasonTerminated
+
+	DebugBreakpointBindNextExecutableInFile     = debugger.BreakpointBindNextExecutableInFile
+	DebugBreakpointBindExact                    = debugger.BreakpointBindExact
+	DebugBreakpointBindNextExecutableInFunction = debugger.BreakpointBindNextExecutableInFunction
 )

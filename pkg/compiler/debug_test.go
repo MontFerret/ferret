@@ -163,6 +163,56 @@ RETURN (
 	t.Fatal("expected loop return debug point")
 }
 
+func TestDebugInfoClassifiesReturnAndFunctionEntryPoints(t *testing.T) {
+	program, err := New(WithDebugInfo()).Compile(source.New("kinds.fql", `LET seed = 1
+FUNC add(a) (
+  LET b = a + 1
+  RETURN b
+)
+RETURN add(seed)`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	kinds := make(map[[2]int]bytecode.DebugPointKind)
+	for _, point := range program.Metadata.DebugPoints {
+		line, _ := program.Source.LocationAt(point.Span)
+		kinds[[2]int{line, point.FunctionID}] = point.Kind
+	}
+
+	if got := kinds[[2]int{1, -1}]; got != bytecode.DebugPointStatement {
+		t.Fatalf("unexpected top-level statement kind: %d", got)
+	}
+	if got := kinds[[2]int{6, -1}]; got != bytecode.DebugPointReturn {
+		t.Fatalf("unexpected top-level return kind: %d", got)
+	}
+	if got := kinds[[2]int{3, 0}]; got != bytecode.DebugPointFunctionEntry {
+		t.Fatalf("unexpected function entry kind: %d", got)
+	}
+	if got := kinds[[2]int{4, 0}]; got != bytecode.DebugPointReturn {
+		t.Fatalf("unexpected function return kind: %d", got)
+	}
+}
+
+func TestDebugInfoFunctionEntryTakesPrecedenceForSinglePointUDF(t *testing.T) {
+	program, err := New(WithDebugInfo()).Compile(source.New("entry.fql", "FUNC one() => 1\nRETURN one()"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, point := range program.Metadata.DebugPoints {
+		if point.FunctionID == 0 {
+			if point.Kind != bytecode.DebugPointFunctionEntry {
+				t.Fatalf("unexpected single-point UDF kind: %#v", point)
+			}
+
+			return
+		}
+	}
+
+	t.Fatal("expected UDF debug point")
+}
+
 func assertSourcePointsMatchDebugPoints(t *testing.T, program *bytecode.Program) {
 	t.Helper()
 

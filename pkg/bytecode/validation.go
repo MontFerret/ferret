@@ -162,6 +162,10 @@ func validateMetadata(program *Program) error {
 			return fmt.Errorf("%w: debug point %d has invalid function id %d", ErrInvalidProgram, i, point.FunctionID)
 		}
 
+		if point.Kind < DebugPointStatement || point.Kind > DebugPointSynthetic {
+			return fmt.Errorf("%w: debug point %d has invalid kind %d", ErrInvalidProgram, i, point.Kind)
+		}
+
 		if point.Span.Start < 0 || point.Span.End < point.Span.Start {
 			return fmt.Errorf("%w: debug point %d has invalid span", ErrInvalidProgram, i)
 		}

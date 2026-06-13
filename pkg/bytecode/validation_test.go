@@ -228,6 +228,12 @@ func TestValidateProgramRejectsInvalidSourcePointMapping(t *testing.T) {
 				program.Bytecode[2] = NewInstruction(OpSourcePoint, Operand(program.Metadata.DebugPoints[0].ID))
 			},
 		},
+		{
+			name: "invalid_debug_point_kind",
+			mutate: func(program *Program) {
+				program.Metadata.DebugPoints[0].Kind = DebugPointSynthetic + 1
+			},
+		},
 	}
 
 	for _, tc := range tests {

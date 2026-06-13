@@ -144,6 +144,67 @@ RETURN a + b`
 	}
 }
 
+func TestDebugSessionNextInFunctionBindingStaysWithinUDFBoundaries(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	query := `LET seed = 1
+FUNC add(a) (
+  LET b = a + 1
+
+  RETURN b
+)
+
+RETURN add(seed)`
+	plan, err := engine.CompileDebug(context.Background(), source.New("udf-binding.fql", query))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	inside, err := session.SetBreakpointAt(
+		DebugSourceLocation{File: "udf-binding.fql", Line: 4},
+		DebugBreakpointOptions{BindingMode: DebugBreakpointBindNextExecutableInFunction},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !inside.Bound || inside.Line != 5 || inside.FunctionID < 0 {
+		t.Fatalf("expected blank line inside UDF to bind within the UDF: %#v", inside)
+	}
+
+	before, err := session.SetBreakpointAt(
+		DebugSourceLocation{File: "udf-binding.fql", Line: 2},
+		DebugBreakpointOptions{BindingMode: DebugBreakpointBindNextExecutableInFunction},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before.Bound {
+		t.Fatalf("function-scoped binding entered a UDF from its declaration boundary: %#v", before)
+	}
+
+	after, err := session.SetBreakpointAt(
+		DebugSourceLocation{File: "udf-binding.fql", Line: 7},
+		DebugBreakpointOptions{BindingMode: DebugBreakpointBindNextExecutableInFunction},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.Bound {
+		t.Fatalf("function-scoped binding left a UDF at its trailing boundary: %#v", after)
+	}
+}
+
 func TestDebugSessionUDFFramesLocalsAndRuntimeErrorLocation(t *testing.T) {
 	engine, err := New()
 	if err != nil {

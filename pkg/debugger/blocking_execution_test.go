@@ -10,26 +10,28 @@ import (
 )
 
 type blockingExecution struct {
-	resumeStarted chan struct{}
-	resumeRelease chan struct{}
-	pauseCalled   chan struct{}
-	point         bytecode.DebugPoint
-	resumeCalls   int
-	active        int
-	maxActive     int
-	closeCalls    int
-	releaseOnce   sync.Once
-	mu            sync.Mutex
-	status        vm.DebugExecutionStatus
+	resumeStarted  chan struct{}
+	resumeRelease  chan struct{}
+	resumeCanceled chan struct{}
+	pauseCalled    chan struct{}
+	point          bytecode.DebugPoint
+	resumeCalls    int
+	active         int
+	maxActive      int
+	closeCalls     int
+	releaseOnce    sync.Once
+	mu             sync.Mutex
+	status         vm.DebugExecutionStatus
 }
 
 func newBlockingExecution(point bytecode.DebugPoint) *blockingExecution {
 	return &blockingExecution{
-		point:         point,
-		resumeStarted: make(chan struct{}, 4),
-		resumeRelease: make(chan struct{}),
-		pauseCalled:   make(chan struct{}, 1),
-		status:        vm.DebugExecutionNew,
+		point:          point,
+		resumeStarted:  make(chan struct{}, 4),
+		resumeRelease:  make(chan struct{}),
+		resumeCanceled: make(chan struct{}, 1),
+		pauseCalled:    make(chan struct{}, 1),
+		status:         vm.DebugExecutionNew,
 	}
 }
 
@@ -41,7 +43,7 @@ func (b *blockingExecution) Start(context.Context) (*vm.DebugExecutionEvent, err
 	return &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &b.point}, nil
 }
 
-func (b *blockingExecution) Resume(context.Context, vm.DebugResumeMode, map[int]struct{}) (*vm.DebugExecutionEvent, error) {
+func (b *blockingExecution) Resume(ctx context.Context, _ vm.DebugResumeMode, _ map[int]struct{}) (*vm.DebugExecutionEvent, error) {
 	b.mu.Lock()
 	b.status = vm.DebugExecutionRunning
 	b.resumeCalls++
@@ -53,6 +55,12 @@ func (b *blockingExecution) Resume(context.Context, vm.DebugResumeMode, map[int]
 
 	b.resumeStarted <- struct{}{}
 	<-b.resumeRelease
+	if ctx.Err() != nil {
+		select {
+		case b.resumeCanceled <- struct{}{}:
+		default:
+		}
+	}
 
 	b.mu.Lock()
 	b.active--

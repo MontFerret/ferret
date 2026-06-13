@@ -11,6 +11,12 @@ import (
 // WithDebugPoint records a logical source stop only when compiling the location
 // emits executable bytecode. Bindings are captured before compilation.
 func (c *CompilationSession) WithDebugPoint(ctx antlr.ParserRuleContext, compile func()) {
+	c.WithDebugPointKind(ctx, bytecode.DebugPointStatement, compile)
+}
+
+// WithDebugPointKind records a logical source stop with an explicit semantic
+// role only when compiling the location emits executable bytecode.
+func (c *CompilationSession) WithDebugPointKind(ctx antlr.ParserRuleContext, kind bytecode.DebugPointKind, compile func()) {
 	if compile == nil {
 		return
 	}
@@ -39,6 +45,7 @@ func (c *CompilationSession) WithDebugPoint(ctx antlr.ParserRuleContext, compile
 		ID:         pointID,
 		PC:         pc,
 		FunctionID: c.Function.FunctionID,
+		Kind:       kind,
 		Span:       span,
 		Bindings:   bindings,
 	})

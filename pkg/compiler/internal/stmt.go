@@ -108,7 +108,11 @@ func (c *StatementCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext
 	}
 
 	rule, _ := ctx.(antlr.ParserRuleContext)
-	c.ctx.WithDebugPoint(rule, func() {
+	kind := bytecode.DebugPointStatement
+	if ctx.ReturnExpression() != nil {
+		kind = bytecode.DebugPointReturn
+	}
+	c.ctx.WithDebugPointKind(rule, kind, func() {
 		c.compileBodyExpression(ctx)
 	})
 }

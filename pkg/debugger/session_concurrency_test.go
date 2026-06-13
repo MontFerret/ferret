@@ -74,7 +74,7 @@ func TestSessionPauseDoesNotWaitForRunningCommand(t *testing.T) {
 	waitForError(t, continueDone, "continue")
 }
 
-func TestSessionCloseSerializesWithCommandsAndPreservesBreakpointSnapshot(t *testing.T) {
+func TestSessionCloseInterruptsActiveCommandAndPreservesBreakpointSnapshot(t *testing.T) {
 	session, execution := newBlockingSession(t)
 	breakpoint, err := session.SetBreakpoint("", 1)
 	if err != nil {
@@ -84,10 +84,13 @@ func TestSessionCloseSerializesWithCommandsAndPreservesBreakpointSnapshot(t *tes
 		t.Fatal(err)
 	}
 
-	continueDone := make(chan error, 1)
+	continueDone := make(chan *Event, 1)
 	go func() {
-		_, err := session.Continue(context.Background())
-		continueDone <- err
+		event, continueErr := session.Continue(context.Background())
+		if continueErr != nil {
+			t.Errorf("continue failed: %v", continueErr)
+		}
+		continueDone <- event
 	}()
 	waitForSignal(t, execution.resumeStarted, "resume")
 
@@ -95,15 +98,12 @@ func TestSessionCloseSerializesWithCommandsAndPreservesBreakpointSnapshot(t *tes
 	go func() {
 		closeDone <- session.Close()
 	}()
-	assertBlocked(t, closeDone, "close")
-	if _, _, calls := execution.stats(); calls != 0 {
-		t.Fatalf("close entered execution while command was running: %d", calls)
+	waitForSignal(t, execution.pauseCalled, "close pause request")
+	waitForSignal(t, execution.resumeCanceled, "resume context cancellation")
+	event := <-continueDone
+	if event == nil || event.Reason != ReasonTerminated || !errors.Is(event.Error, context.Canceled) {
+		t.Fatalf("expected close-triggered termination event, got %#v", event)
 	}
-
-	if err := session.Pause(); err != nil {
-		t.Fatal(err)
-	}
-	waitForError(t, continueDone, "continue")
 	waitForError(t, closeDone, "close")
 
 	if _, _, calls := execution.stats(); calls != 1 {
@@ -114,6 +114,9 @@ func TestSessionCloseSerializesWithCommandsAndPreservesBreakpointSnapshot(t *tes
 	}
 	if _, err := session.Continue(context.Background()); err == nil || !errors.Is(err, &StateError{}) {
 		t.Fatalf("expected closed-state error, got %v", err)
+	}
+	if err := session.Pause(); err == nil || !errors.Is(err, &StateError{}) {
+		t.Fatalf("expected closed-state pause error, got %v", err)
 	}
 	if err := session.Close(); err != nil {
 		t.Fatal(err)

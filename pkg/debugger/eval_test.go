@@ -73,3 +73,24 @@ func TestUnsupportedDebugExpressionHandlesValuesWithoutText(t *testing.T) {
 		}
 	}
 }
+
+func TestEvaluateDebugExpressionRejectsExecutionAndCollectionExpressions(t *testing.T) {
+	for _, expression := range []string{
+		"LENGTH([1])",
+		"[1, 2]",
+		"FOR item IN [1] RETURN item",
+	} {
+		t.Run(expression, func(t *testing.T) {
+			_, err := evaluateExpression(context.Background(), expression, evalScope{
+				params: runtime.NewParams(),
+				values: vm.NewDebugValueAccess(),
+			})
+			if err == nil {
+				t.Fatal("expected unsupported expression error")
+			}
+			if strings.TrimSpace(err.Error()) == "" {
+				t.Fatal("expected clear evaluator rejection")
+			}
+		})
+	}
+}

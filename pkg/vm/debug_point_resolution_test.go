@@ -17,12 +17,16 @@ func TestDebugExecutionErrorPointDoesNotCrossFunctionBoundaries(t *testing.T) {
 	instance := &VM{program: &bytecode.Program{}}
 	instance.state.lastPC = 5
 	instance.state.frames.Push(frame.CallFrame{FnID: 0})
+	index, err := debugpoint.New(points)
+	if err != nil {
+		t.Fatal(err)
+	}
 	execution := &debugExecution{
 		vm:     instance,
-		points: debugpoint.New(points),
+		points: index,
 	}
 
-	if got := execution.errorPoint(); got != &points[0] {
+	if got := execution.errorPoint(); got == nil || got.ID != points[0].ID {
 		t.Fatalf("resolved runtime error through another function's point: %#v", got)
 	}
 }

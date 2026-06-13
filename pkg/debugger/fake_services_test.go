@@ -8,14 +8,19 @@ import (
 )
 
 type fakeSessionServices struct {
-	closed bool
+	afterRunErr error
+	afterCalls  int
+	closed      bool
 }
 
 func (f *fakeSessionServices) BeforeRun(ctx context.Context) (context.Context, error) {
 	return ctx, nil
 }
 
-func (f *fakeSessionServices) AfterRun(context.Context, error) error {
+func (f *fakeSessionServices) AfterRun(_ context.Context, runErr error) error {
+	f.afterCalls++
+	f.afterRunErr = runErr
+
 	return nil
 }
 

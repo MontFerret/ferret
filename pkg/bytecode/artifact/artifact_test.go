@@ -118,7 +118,7 @@ func TestMarshalPreservesSourcePoint(t *testing.T) {
 	program.Metadata.MatchFailTargets = nil
 	program.Metadata.DebugSpans = nil
 	program.Metadata.DebugPoints = []bytecode.DebugPoint{
-		{ID: 17, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1, Bindings: []bytecode.DebugBinding{}},
+		{ID: 17, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1, Kind: bytecode.DebugPointReturn, Bindings: []bytecode.DebugBinding{}},
 	}
 
 	data, err := Marshal(program, Options{})
