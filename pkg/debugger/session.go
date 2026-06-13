@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"sync"
 	"sync/atomic"
 
@@ -30,10 +31,12 @@ type Session struct {
 	boundPointIDs    map[BreakpointID]bytecode.DebugPointID
 	source           *source.Source
 	activeCancel     context.CancelCauseFunc
+	valueRefs        map[ValueReference]runtime.Value
 	params           []string
 	pointIndex       debugpoint.Index
 	format           FormatOptions
 	nextBreakpointID BreakpointID
+	nextValueRef     ValueReference
 	activeCancelID   uint64
 	closeOnce        sync.Once
 	commandMu        sync.Mutex
@@ -82,6 +85,8 @@ func NewSession(config Config) (*Session, error) {
 		breakpoints:      make(map[BreakpointID]Breakpoint),
 		boundPointIDs:    make(map[BreakpointID]bytecode.DebugPointID),
 		nextBreakpointID: 1,
+		valueRefs:        make(map[ValueReference]runtime.Value),
+		nextValueRef:     1,
 	}, nil
 }
 
@@ -114,6 +119,7 @@ func (s *Session) Start(ctx context.Context) (*Event, error) {
 	s.runCtx = runCtx
 	s.executionCtx = executionCtx
 	s.setRunCancel(runCancel)
+	s.resetValueReferences()
 
 	event, err := s.execution.Start(s.services.ExtendContext(executionCtx))
 	if err != nil {
@@ -340,6 +346,57 @@ func (s *Session) Locals() ([]Variable, error) {
 	return out, nil
 }
 
+// Variables returns the child variables for one expandable debugger value from
+// the current paused state.
+func (s *Session) Variables(reference ValueReference) ([]Variable, error) {
+	if err := s.lockCommand(); err != nil {
+		return nil, err
+	}
+	defer s.commandMu.Unlock()
+
+	if err := s.ensureOpen(); err != nil {
+		return nil, err
+	}
+	if !reference.Valid() {
+		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug value reference must be positive")
+	}
+
+	value, exists := s.valueRefs[reference]
+	if !exists {
+		return nil, runtime.Errorf(runtime.ErrNotFound, "debug value reference %d", reference)
+	}
+
+	inspection, ok := s.expandableInspection(value)
+	if !ok {
+		return nil, runtime.Errorf(runtime.ErrInvalidOperation, "debug value reference %d is not expandable", reference)
+	}
+
+	if inspection.Kind == vm.DebugValueArray {
+		out := make([]Variable, 0, len(inspection.Items))
+		for i, item := range inspection.Items {
+			out = append(out, Variable{
+				Name:  strconv.Itoa(i),
+				Value: s.debugValue(item.Value),
+			})
+		}
+
+		return out, nil
+	}
+
+	items := append([]vm.DebugValueItem(nil), inspection.Items...)
+	sort.Slice(items, func(i, j int) bool { return items[i].Key < items[j].Key })
+
+	out := make([]Variable, 0, len(items))
+	for _, item := range items {
+		out = append(out, Variable{
+			Name:  item.Key,
+			Value: s.debugValue(item.Value),
+		})
+	}
+
+	return out, nil
+}
+
 // Evaluate evaluates a conservative, side-effect-free expression against the
 // paused top frame. It supports literals, locals, parameters, supported member
 // reads, scalar arithmetic/comparisons, boolean logic, and conditionals. It
@@ -404,6 +461,8 @@ func (s *Session) resume(ctx context.Context, mode vm.DebugResumeMode) (*Event, 
 		activeID := s.setActiveCancel(cancel)
 		defer s.clearActiveCancel(activeID)
 	}
+
+	s.resetValueReferences()
 
 	event, err := s.execution.Resume(s.services.ExtendContext(ctx), mode, s.breakpointPCs())
 	if err != nil {
@@ -577,6 +636,7 @@ func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
 			out.Error = errors.Join(out.Error, hookErr)
 		}
 	case vm.DebugStopCompleted:
+		s.resetValueReferences()
 		out.Reason = ReasonCompleted
 		output, outputErr := s.services.Materialize(event.Result)
 		closeErr := event.Result.Close()
@@ -586,6 +646,7 @@ func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
 		}
 		out.Output = output
 	case vm.DebugStopTerminated:
+		s.resetValueReferences()
 		out.Reason = ReasonTerminated
 		if hookErr := s.runAfterHooks(event.Error); hookErr != nil {
 			out.Error = errors.Join(out.Error, hookErr)
@@ -625,8 +686,9 @@ func (s *Session) debugValue(value runtime.Value) Value {
 	}
 
 	return Value{
-		Type:    typeName,
-		Display: formatValueWithInfo(value, info, s.values, s.format),
+		Reference: s.referenceForValue(value),
+		Type:      typeName,
+		Display:   formatValueWithInfo(value, info, s.values, s.format),
 	}
 }
 
@@ -721,6 +783,38 @@ func (s *Session) requestTermination() {
 	}
 }
 
+func (s *Session) resetValueReferences() {
+	if len(s.valueRefs) == 0 {
+		return
+	}
+
+	clear(s.valueRefs)
+}
+
+func (s *Session) referenceForValue(value runtime.Value) ValueReference {
+	if _, ok := s.expandableInspection(value); !ok {
+		return 0
+	}
+
+	reference := s.nextValueRef
+	s.nextValueRef++
+	s.valueRefs[reference] = value
+
+	return reference
+}
+
+func (s *Session) expandableInspection(value runtime.Value) (vm.DebugValueInspection, bool) {
+	inspection, ok := s.values.Inspect(value, s.format.MaxItems)
+	if !ok || !inspection.Complete || inspection.Length <= 0 || inspection.Length > s.format.MaxItems {
+		return vm.DebugValueInspection{}, false
+	}
+	if inspection.Kind != vm.DebugValueArray && inspection.Kind != vm.DebugValueObject {
+		return vm.DebugValueInspection{}, false
+	}
+
+	return inspection, true
+}
+
 // Close requests termination, then releases retained VM state and
 // embedding-owned session resources after any active command exits.
 func (s *Session) Close() error {
@@ -733,6 +827,7 @@ func (s *Session) Close() error {
 
 	s.commandMu.Lock()
 	defer s.commandMu.Unlock()
+	s.resetValueReferences()
 
 	s.closeOnce.Do(func() {
 		if s.started.Load() {

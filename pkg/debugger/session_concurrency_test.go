@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -120,6 +121,64 @@ func TestSessionCloseInterruptsActiveCommandAndPreservesBreakpointSnapshot(t *te
 	}
 	if err := session.Close(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestSessionCloseClearsReferencesCreatedByActiveInspection(t *testing.T) {
+	src := source.New("concurrent.fql", "RETURN 1")
+	point := bytecode.DebugPoint{ID: 5, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	execution := &fakeExecution{
+		startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
+		locals: []vm.DebugLocal{{
+			Name:  "value",
+			Value: runtime.NewArrayWith(runtime.NewInt(1)),
+		}},
+		status: vm.DebugExecutionNew,
+	}
+	inspectStarted := make(chan struct{}, 1)
+	inspectRelease := make(chan struct{})
+	inner := vm.NewDebugValueAccess()
+	session, err := NewSession(Config{
+		Execution: execution,
+		Values: &fakeValueAccess{
+			inner: inner,
+			inspect: func(value runtime.Value, maxItems int) (vm.DebugValueInspection, bool) {
+				inspectStarted <- struct{}{}
+				<-inspectRelease
+				return inner.Inspect(value, maxItems)
+			},
+		},
+		Services:    &fakeSessionServices{},
+		Source:      src,
+		DebugPoints: []bytecode.DebugPoint{point},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	localsDone := make(chan error, 1)
+	go func() {
+		_, err := session.Locals()
+		localsDone <- err
+	}()
+	waitForSignal(t, inspectStarted, "value inspection")
+
+	closeDone := make(chan error, 1)
+	go func() {
+		closeDone <- session.Close()
+	}()
+	for !session.closed.Load() {
+		time.Sleep(time.Millisecond)
+	}
+
+	close(inspectRelease)
+	waitForError(t, localsDone, "locals")
+	waitForError(t, closeDone, "close")
+	if len(session.valueRefs) != 0 {
+		t.Fatalf("close retained references created by active inspection: %#v", session.valueRefs)
 	}
 }
 

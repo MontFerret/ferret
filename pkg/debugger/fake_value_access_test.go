@@ -7,6 +7,7 @@ import (
 
 type fakeValueAccess struct {
 	inner          vm.DebugValueAccess
+	inspect        func(runtime.Value, int) (vm.DebugValueInspection, bool)
 	debugInfoCalls int
 	typeCalls      int
 }
@@ -26,5 +27,9 @@ func (f *fakeValueAccess) Lookup(value, key runtime.Value) (runtime.Value, error
 }
 
 func (f *fakeValueAccess) Inspect(value runtime.Value, maxItems int) (vm.DebugValueInspection, bool) {
+	if f.inspect != nil {
+		return f.inspect(value, maxItems)
+	}
+
 	return f.inner.Inspect(value, maxItems)
 }

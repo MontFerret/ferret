@@ -192,9 +192,30 @@ optional debugger type-name and display hints. These hints are presentation
 only and must be cheap, deterministic, side-effect free, and must not consume
 lazy values or perform external work.
 
-Phase 1 supports one source file and top-frame locals. Tail calls retain call
-depth, so `Next` and `Out` cannot always distinguish tail-call boundaries. The
-interactive `ferret debug` command belongs to the separate CLI repository.
+The reusable Phase 1 DAP adapter lives in `pkg/dap`. For local protocol testing,
+the repository's test CLI can run it over stdin/stdout:
+
+```bash
+./bin/ferret --dap
+./bin/ferret --dap --dap-trace
+./bin/ferret --dap --dap-trace --dap-log-file ./ferret-dap.log
+```
+
+This is a test harness, not the production DAP server. A complete editor-facing
+server belongs in a downstream integration repository. The adapter speaks
+standard DAP framing over stdin/stdout, supports one launch source file and one
+thread, and exposes top-frame locals, parameters, safe expression evaluation,
+and bounded array/object expansion. Stdout is reserved exclusively for DAP
+messages; trace output goes to stderr unless `--dap-log-file` is set.
+
+Phase 1 does not support attach or remote transports, multiple sources or
+threads, source maps, frame-specific locals or evaluation, mutation,
+conditional breakpoints, hit conditions, logpoints, or a bundled VS Code
+extension. Tail calls retain call depth, so `Next` and `Out` cannot always
+distinguish tail-call boundaries.
+
+The interactive `ferret debug` command still belongs to the separate CLI
+repository.
 
 ### Alpha status
 

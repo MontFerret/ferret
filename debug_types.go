@@ -14,6 +14,7 @@ type (
 	DebugBreakpointOptions     = debugger.BreakpointOptions
 	DebugBreakpointBindingMode = debugger.BreakpointBindingMode
 	DebugSourceLocation        = debugger.SourceLocation
+	DebugValueReference        = debugger.ValueReference
 	DebugEvent                 = debugger.Event
 	DebugStateError            = debugger.StateError
 	DebugFormatOptions         = debugger.FormatOptions

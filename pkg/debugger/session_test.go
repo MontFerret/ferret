@@ -137,6 +137,244 @@ func TestSessionBreakpointBindingUsesSourceOrderAndStableTieBreaks(t *testing.T)
 	}
 }
 
+func TestSessionVariablesExpandNestedCollections(t *testing.T) {
+	src := source.New("debug.fql", "RETURN 1")
+	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	execution := &fakeExecution{
+		startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
+		locals: []vm.DebugLocal{{
+			Name: "value",
+			Value: runtime.NewObjectWith(map[string]runtime.Value{
+				"nested": runtime.NewArrayWith(
+					runtime.NewInt(1),
+					runtime.NewObjectWith(map[string]runtime.Value{
+						"answer": runtime.NewInt(42),
+					}),
+				),
+			}),
+		}},
+		status: vm.DebugExecutionNew,
+	}
+	session, err := NewSession(Config{
+		Execution:   execution,
+		Values:      &fakeValueAccess{inner: vm.NewDebugValueAccess()},
+		Services:    &fakeSessionServices{},
+		Source:      src,
+		DebugPoints: []bytecode.DebugPoint{point},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	locals, err := session.Locals()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(locals) != 1 || !locals[0].Value.Reference.Valid() {
+		t.Fatalf("expected expandable local, got %#v", locals)
+	}
+
+	children, err := session.Variables(locals[0].Value.Reference)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(children) != 1 || children[0].Name != "nested" || !children[0].Value.Reference.Valid() {
+		t.Fatalf("unexpected object children: %#v", children)
+	}
+
+	items, err := session.Variables(children[0].Value.Reference)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 2 || items[0].Name != "0" || items[0].Value.Display != "1" || items[1].Name != "1" || !items[1].Value.Reference.Valid() {
+		t.Fatalf("unexpected array children: %#v", items)
+	}
+
+	nested, err := session.Variables(items[1].Value.Reference)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(nested) != 1 || nested[0].Name != "answer" || nested[0].Value.Display != "42" {
+		t.Fatalf("unexpected nested object children: %#v", nested)
+	}
+}
+
+func TestSessionVariablesStaySummarizedWhenCollectionExceedsBounds(t *testing.T) {
+	src := source.New("debug.fql", "RETURN 1")
+	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	execution := &fakeExecution{
+		startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
+		locals: []vm.DebugLocal{{
+			Name:  "value",
+			Value: runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)),
+		}},
+		status: vm.DebugExecutionNew,
+	}
+	session, err := NewSession(Config{
+		Execution:   execution,
+		Values:      &fakeValueAccess{inner: vm.NewDebugValueAccess()},
+		Services:    &fakeSessionServices{},
+		Source:      src,
+		DebugPoints: []bytecode.DebugPoint{point},
+		Format:      FormatOptions{MaxDepth: 3, MaxItems: 1, MaxBytes: 1024},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	locals, err := session.Locals()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(locals) != 1 || locals[0].Value.Reference.Valid() || locals[0].Value.Display != "Array(2)" {
+		t.Fatalf("expected bounded summary without reference, got %#v", locals)
+	}
+
+	if _, err := session.Variables(0); !errors.Is(err, runtime.ErrInvalidArgument) {
+		t.Fatalf("expected invalid reference error, got %v", err)
+	}
+}
+
+func TestSessionVariablesInvalidateReferencesAfterResume(t *testing.T) {
+	src := source.New("debug.fql", "RETURN 1")
+	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	execution := &fakeExecution{
+		startEvent:  &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
+		resumeEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopStep, Point: &point},
+		locals: []vm.DebugLocal{{
+			Name:  "value",
+			Value: runtime.NewArrayWith(runtime.NewInt(1)),
+		}},
+		status: vm.DebugExecutionNew,
+	}
+	session, err := NewSession(Config{
+		Execution:   execution,
+		Values:      &fakeValueAccess{inner: vm.NewDebugValueAccess()},
+		Services:    &fakeSessionServices{},
+		Source:      src,
+		DebugPoints: []bytecode.DebugPoint{point},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	locals, err := session.Locals()
+	if err != nil {
+		t.Fatal(err)
+	}
+	reference := locals[0].Value.Reference
+	if !reference.Valid() {
+		t.Fatalf("expected expandable reference, got %#v", locals[0].Value)
+	}
+
+	if _, err := session.Continue(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := session.Variables(reference); !errors.Is(err, runtime.ErrNotFound) {
+		t.Fatalf("expected stale reference to be rejected, got %v", err)
+	}
+}
+
+func TestSessionVariablesInvalidateReferencesAtStart(t *testing.T) {
+	src := source.New("debug.fql", "RETURN 1")
+	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	execution := &fakeExecution{
+		startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
+		locals: []vm.DebugLocal{{
+			Name:  "value",
+			Value: runtime.NewArrayWith(runtime.NewInt(1)),
+		}},
+		status: vm.DebugExecutionNew,
+	}
+	session, err := NewSession(Config{
+		Execution:   execution,
+		Values:      &fakeValueAccess{inner: vm.NewDebugValueAccess()},
+		Services:    &fakeSessionServices{},
+		Source:      src,
+		DebugPoints: []bytecode.DebugPoint{point},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	locals, err := session.Locals()
+	if err != nil {
+		t.Fatal(err)
+	}
+	reference := locals[0].Value.Reference
+	if !reference.Valid() {
+		t.Fatalf("expected expandable reference, got %#v", locals[0].Value)
+	}
+
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := session.Variables(reference); !errors.Is(err, runtime.ErrNotFound) {
+		t.Fatalf("expected pre-start reference to be rejected, got %v", err)
+	}
+}
+
+func TestSessionVariablesRejectUnknownCollectionKind(t *testing.T) {
+	src := source.New("debug.fql", "RETURN 1")
+	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	value := runtime.NewArrayWith(runtime.NewInt(1))
+	execution := &fakeExecution{
+		startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
+		locals:     []vm.DebugLocal{{Name: "value", Value: value}},
+		status:     vm.DebugExecutionNew,
+	}
+	values := &fakeValueAccess{
+		inner: vm.NewDebugValueAccess(),
+		inspect: func(runtime.Value, int) (vm.DebugValueInspection, bool) {
+			return vm.DebugValueInspection{
+				Kind:     vm.DebugValueKind(255),
+				Length:   1,
+				Items:    []vm.DebugValueItem{{Value: runtime.NewInt(1)}},
+				Complete: true,
+			}, true
+		},
+	}
+	session, err := NewSession(Config{
+		Execution:   execution,
+		Values:      values,
+		Services:    &fakeSessionServices{},
+		Source:      src,
+		DebugPoints: []bytecode.DebugPoint{point},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	locals, err := session.Locals()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(locals) != 1 || locals[0].Value.Reference.Valid() {
+		t.Fatalf("expected unknown collection kind to remain non-expandable, got %#v", locals)
+	}
+}
+
 func BenchmarkSessionContinueThroughExecutionInterface(b *testing.B) {
 	src := source.New("debug.fql", "RETURN 1")
 	point := bytecode.DebugPoint{ID: 7, PC: 0, Span: source.Span{Start: 0, End: 6}, FunctionID: -1}
