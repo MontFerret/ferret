@@ -215,6 +215,19 @@ func TestValidateProgramRejectsInvalidSourcePointMapping(t *testing.T) {
 				program.Metadata.DebugPoints = nil
 			},
 		},
+		{
+			name: "negative_debug_point_id",
+			mutate: func(program *Program) {
+				program.Metadata.DebugPoints[0].ID = -1
+			},
+		},
+		{
+			name: "duplicate_debug_point_id",
+			mutate: func(program *Program) {
+				program.Metadata.DebugPoints[1].ID = program.Metadata.DebugPoints[0].ID
+				program.Bytecode[2] = NewInstruction(OpSourcePoint, Operand(program.Metadata.DebugPoints[0].ID))
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -273,8 +286,9 @@ func validValidationProgram() *Program {
 func validSourcePointProgram() *Program {
 	program := validValidationProgram()
 	program.Bytecode = []Instruction{
-		NewInstruction(OpSourcePoint, Operand(0)),
+		NewInstruction(OpSourcePoint, Operand(9)),
 		NewInstruction(OpLoadConst, NewRegister(0), NewConstant(0)),
+		NewInstruction(OpSourcePoint, Operand(3)),
 		NewInstruction(OpReturn, NewRegister(0)),
 	}
 	program.Functions.UserDefined[0].Entry = 1
@@ -283,7 +297,8 @@ func validSourcePointProgram() *Program {
 	program.Metadata.MatchFailTargets = nil
 	program.Metadata.DebugSpans = nil
 	program.Metadata.DebugPoints = []DebugPoint{
-		{PC: 0, Span: source.Span{Start: 0, End: 6}, FunctionID: -1},
+		{ID: 9, PC: 0, Span: source.Span{Start: 0, End: 6}, FunctionID: -1},
+		{ID: 3, PC: 2, Span: source.Span{Start: 7, End: 8}, FunctionID: -1},
 	}
 
 	return program

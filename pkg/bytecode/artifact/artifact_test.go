@@ -109,7 +109,7 @@ func TestMarshalAllowsDistinctOpcode(t *testing.T) {
 func TestMarshalPreservesSourcePoint(t *testing.T) {
 	program := newArtifactTestProgram()
 	program.Bytecode = []bytecode.Instruction{
-		bytecode.NewInstruction(bytecode.OpSourcePoint, bytecode.Operand(0)),
+		bytecode.NewInstruction(bytecode.OpSourcePoint, bytecode.Operand(17)),
 		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
 		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
 	}
@@ -118,7 +118,7 @@ func TestMarshalPreservesSourcePoint(t *testing.T) {
 	program.Metadata.MatchFailTargets = nil
 	program.Metadata.DebugSpans = nil
 	program.Metadata.DebugPoints = []bytecode.DebugPoint{
-		{PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1, Bindings: []bytecode.DebugBinding{}},
+		{ID: 17, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1, Bindings: []bytecode.DebugBinding{}},
 	}
 
 	data, err := Marshal(program, Options{})
@@ -131,7 +131,7 @@ func TestMarshalPreservesSourcePoint(t *testing.T) {
 		t.Fatalf("Unmarshal() error = %v", err)
 	}
 
-	if got := decoded.Bytecode[0]; got.Opcode != bytecode.OpSourcePoint || got.Operands[0] != 0 {
+	if got := decoded.Bytecode[0]; got.Opcode != bytecode.OpSourcePoint || got.Operands[0] != 17 {
 		t.Fatalf("unexpected source point after round trip: %#v", got)
 	}
 	if !reflect.DeepEqual(decoded.Metadata.DebugPoints, program.Metadata.DebugPoints) {

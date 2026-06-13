@@ -30,9 +30,10 @@ func TestRunNotifiesSourcePointObserver(t *testing.T) {
 	if len(observer.states) != 2 {
 		t.Fatalf("expected two observed source points, got %#v", observer.states)
 	}
-	for pointID, state := range observer.states {
-		if state.pointID != pointID || state.pc != pointID*2 || state.depth != 0 {
-			t.Fatalf("unexpected source point state %d: %#v", pointID, state)
+	expectedIDs := []bytecode.DebugPointID{11, 7}
+	for pointIndex, state := range observer.states {
+		if state.pointID != expectedIDs[pointIndex] || state.pc != pointIndex*2 || state.depth != 0 {
+			t.Fatalf("unexpected source point state %d: %#v", pointIndex, state)
 		}
 	}
 }
@@ -124,16 +125,16 @@ func sourcePointTestProgram() *bytecode.Program {
 		Registers:  2,
 		Source:     source.New("source_point.fql", "LET x = 1\nRETURN x"),
 		Bytecode: []bytecode.Instruction{
-			bytecode.NewInstruction(bytecode.OpSourcePoint, bytecode.Operand(0)),
+			bytecode.NewInstruction(bytecode.OpSourcePoint, bytecode.Operand(11)),
 			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)),
-			bytecode.NewInstruction(bytecode.OpSourcePoint, bytecode.Operand(1)),
+			bytecode.NewInstruction(bytecode.OpSourcePoint, bytecode.Operand(7)),
 			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
 		},
 		Constants: []runtime.Value{runtime.NewInt(1)},
 		Metadata: bytecode.Metadata{
 			DebugPoints: []bytecode.DebugPoint{
-				{PC: 0, Span: source.Span{Start: 0, End: 9}, FunctionID: -1},
-				{PC: 2, Span: source.Span{Start: 10, End: 18}, FunctionID: -1},
+				{ID: 11, PC: 0, Span: source.Span{Start: 0, End: 9}, FunctionID: -1},
+				{ID: 7, PC: 2, Span: source.Span{Start: 10, End: 18}, FunctionID: -1},
 			},
 		},
 	}

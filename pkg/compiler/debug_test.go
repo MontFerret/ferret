@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -45,23 +46,27 @@ func TestDebugInfoArtifactRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	data, err := artifact.Marshal(program, artifact.Options{Format: artifact.FormatMsgPack})
-	if err != nil {
-		t.Fatal(err)
-	}
+	for _, format := range []artifact.FormatID{artifact.FormatJSON, artifact.FormatMsgPack} {
+		t.Run(fmt.Sprintf("format_%d", format), func(t *testing.T) {
+			data, err := artifact.Marshal(program, artifact.Options{Format: format})
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	decoded, err := artifact.Unmarshal(data)
-	if err != nil {
-		t.Fatal(err)
-	}
+			decoded, err := artifact.Unmarshal(data)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	if !reflect.DeepEqual(decoded.Metadata.DebugPoints, program.Metadata.DebugPoints) {
-		t.Fatalf("debug points mismatch: got %#v, want %#v", decoded.Metadata.DebugPoints, program.Metadata.DebugPoints)
+			if !reflect.DeepEqual(decoded.Metadata.DebugPoints, program.Metadata.DebugPoints) {
+				t.Fatalf("debug points mismatch: got %#v, want %#v", decoded.Metadata.DebugPoints, program.Metadata.DebugPoints)
+			}
+			if !reflect.DeepEqual(decoded.Bytecode, program.Bytecode) {
+				t.Fatalf("bytecode mismatch: got %#v, want %#v", decoded.Bytecode, program.Bytecode)
+			}
+			assertSourcePointsMatchDebugPoints(t, decoded)
+		})
 	}
-	if !reflect.DeepEqual(decoded.Bytecode, program.Bytecode) {
-		t.Fatalf("bytecode mismatch: got %#v, want %#v", decoded.Bytecode, program.Bytecode)
-	}
-	assertSourcePointsMatchDebugPoints(t, decoded)
 }
 
 func TestNormalCompilationDoesNotEmitDebugPoints(t *testing.T) {
@@ -161,14 +166,24 @@ RETURN (
 func assertSourcePointsMatchDebugPoints(t *testing.T, program *bytecode.Program) {
 	t.Helper()
 
-	for pointID, point := range program.Metadata.DebugPoints {
+	ids := make(map[bytecode.DebugPointID]struct{}, len(program.Metadata.DebugPoints))
+
+	for pointIndex, point := range program.Metadata.DebugPoints {
+		if point.ID != bytecode.DebugPointID(pointIndex) {
+			t.Fatalf("debug point %d has non-monotonic id %d", pointIndex, point.ID)
+		}
+		if _, exists := ids[point.ID]; exists {
+			t.Fatalf("duplicate debug point id %d", point.ID)
+		}
+		ids[point.ID] = struct{}{}
+
 		if point.PC < 0 || point.PC >= len(program.Bytecode) {
-			t.Fatalf("debug point %d pc %d out of range", pointID, point.PC)
+			t.Fatalf("debug point %d pc %d out of range", point.ID, point.PC)
 		}
 
 		inst := program.Bytecode[point.PC]
-		if inst.Opcode != bytecode.OpSourcePoint || int(inst.Operands[0]) != pointID {
-			t.Fatalf("debug point %d does not match source point at pc %d: %#v", pointID, point.PC, inst)
+		if inst.Opcode != bytecode.OpSourcePoint || bytecode.DebugPointID(inst.Operands[0]) != point.ID {
+			t.Fatalf("debug point %d does not match source point at pc %d: %#v", point.ID, point.PC, inst)
 		}
 	}
 }

@@ -126,13 +126,7 @@ func NewDebugExecution(instance *VM, env *Environment) (DebugExecution, error) {
 		status: DebugExecutionNew,
 	}
 	exec.control = debugControl{
-		owner:  exec,
-		points: make([]*bytecode.DebugPoint, len(instance.program.Metadata.DebugPoints)),
-	}
-
-	for i := range instance.program.Metadata.DebugPoints {
-		point := &instance.program.Metadata.DebugPoints[i]
-		exec.control.points[i] = point
+		owner: exec,
 	}
 
 	instance.sourcePointObserver = &exec.control

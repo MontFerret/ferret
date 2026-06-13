@@ -13,6 +13,9 @@ type (
 	// Reason identifies why a debug execution stopped.
 	Reason string
 
+	// BreakpointID identifies a breakpoint within one debugger session.
+	BreakpointID int
+
 	// Location identifies a source location in the debugged file.
 	Location struct {
 		File   string
@@ -45,12 +48,15 @@ type (
 	// Breakpoint describes a requested source-line breakpoint and its resolved
 	// executable location, when one exists.
 	Breakpoint struct {
-		File          string
-		RequestedLine int
-		ID            int
-		Line          int
-		Column        int
-		Bound         bool
+		File            string
+		RequestedLine   int
+		RequestedColumn int
+		ID              BreakpointID
+		PointID         bytecode.DebugPointID
+		FunctionID      int
+		Line            int
+		Column          int
+		Bound           bool
 	}
 
 	// Event reports a debugger stop, completion, or termination.

@@ -1,13 +1,17 @@
 package vm
 
-import "context"
+import (
+	"context"
+
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+)
 
 type (
 	sourcePointAction uint8
 
 	sourcePointState struct {
 		pc      int
-		pointID int
+		pointID bytecode.DebugPointID
 		depth   int
 	}
 

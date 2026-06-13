@@ -124,6 +124,9 @@ func TestDebugSessionBreakpointBindsOnePointPerLine(t *testing.T) {
 	if !breakpoint.Bound {
 		t.Fatalf("expected bound breakpoint: %#v", breakpoint)
 	}
+	if breakpoint.RequestedColumn != 0 || breakpoint.FunctionID != -1 {
+		t.Fatalf("unexpected same-line breakpoint identity: %#v", breakpoint)
+	}
 	if _, err := session.Start(context.Background()); err != nil {
 		t.Fatal(err)
 	}

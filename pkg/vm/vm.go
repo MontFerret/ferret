@@ -213,7 +213,7 @@ loop:
 
 			action, err := vm.sourcePointObserver.onSourcePoint(ctx, sourcePointState{
 				pc:      pc,
-				pointID: int(dst),
+				pointID: bytecode.DebugPointID(dst),
 				depth:   state.frames.Len(),
 			})
 

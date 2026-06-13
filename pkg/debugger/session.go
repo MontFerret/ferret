@@ -19,24 +19,23 @@ import (
 // Command calls are serialized. Pause is safe to call concurrently with a
 // running command.
 type Session struct {
-	closeErr          error
-	runCtx            context.Context
-	execution         vm.DebugExecution
-	values            vm.DebugValueAccess
-	services          SessionServices
-	breakpoints       map[int]Breakpoint
-	boundBreakpointPC map[int]int
-	source            *source.Source
-	debugPoints       []bytecode.DebugPoint
-	pointIndex        debugpoint.Index
-	params            []string
-	format            FormatOptions
-	nextBreakpointID  int
-	commandMu         sync.Mutex
-	closeOnce         sync.Once
-	closed            atomic.Bool
-	started           atomic.Bool
-	afterRun          bool
+	runCtx           context.Context
+	execution        vm.DebugExecution
+	values           vm.DebugValueAccess
+	services         SessionServices
+	closeErr         error
+	breakpoints      map[BreakpointID]Breakpoint
+	boundPointIDs    map[BreakpointID]bytecode.DebugPointID
+	source           *source.Source
+	params           []string
+	pointIndex       debugpoint.Index
+	format           FormatOptions
+	nextBreakpointID BreakpointID
+	closeOnce        sync.Once
+	commandMu        sync.Mutex
+	closed           atomic.Bool
+	started          atomic.Bool
+	afterRun         bool
 }
 
 // NewSession creates an advanced debugger session from explicit dependencies.
@@ -65,17 +64,16 @@ func NewSession(config Config) (*Session, error) {
 	debugPoints := append([]bytecode.DebugPoint(nil), config.DebugPoints...)
 
 	return &Session{
-		execution:         config.Execution,
-		values:            config.Values,
-		services:          config.Services,
-		source:            config.Source,
-		debugPoints:       debugPoints,
-		pointIndex:        debugpoint.New(debugPoints),
-		params:            append([]string(nil), config.Params...),
-		format:            format,
-		breakpoints:       make(map[int]Breakpoint),
-		boundBreakpointPC: make(map[int]int),
-		nextBreakpointID:  1,
+		execution:        config.Execution,
+		values:           config.Values,
+		services:         config.Services,
+		source:           config.Source,
+		pointIndex:       debugpoint.New(debugPoints),
+		params:           append([]string(nil), config.Params...),
+		format:           format,
+		breakpoints:      make(map[BreakpointID]Breakpoint),
+		boundPointIDs:    make(map[BreakpointID]bytecode.DebugPointID),
+		nextBreakpointID: 1,
 	}, nil
 }
 
@@ -188,30 +186,23 @@ func (s *Session) SetBreakpoint(file string, line int) (Breakpoint, error) {
 		file = s.source.Name()
 	}
 
-	breakpoint := Breakpoint{ID: s.nextBreakpointID, File: file, RequestedLine: line}
+	breakpoint := Breakpoint{
+		ID:              s.nextBreakpointID,
+		File:            file,
+		RequestedLine:   line,
+		RequestedColumn: 0,
+	}
 	s.nextBreakpointID++
 
 	if file == s.source.Name() {
-		bestLine := 0
-		bestColumn := 0
-		bestPC := -1
-
-		for _, point := range s.debugPoints {
-			pointLine, pointColumn := s.source.LocationAt(point.Span)
-
-			if pointLine >= line &&
-				(bestLine == 0 || pointLine < bestLine || (pointLine == bestLine && pointColumn < bestColumn)) {
-				bestLine = pointLine
-				bestColumn = pointColumn
-				bestPC = point.PC
-			}
-		}
-
-		if bestLine != 0 {
+		if point := s.breakpointPoint(line, breakpoint.RequestedColumn); point != nil {
+			bestLine, bestColumn := s.source.LocationAt(point.Span)
 			breakpoint.Bound = true
+			breakpoint.PointID = point.ID
+			breakpoint.FunctionID = point.FunctionID
 			breakpoint.Line = bestLine
 			breakpoint.Column = bestColumn
-			s.boundBreakpointPC[breakpoint.ID] = bestPC
+			s.boundPointIDs[breakpoint.ID] = point.ID
 		}
 	}
 
@@ -221,7 +212,7 @@ func (s *Session) SetBreakpoint(file string, line int) (Breakpoint, error) {
 }
 
 // DeleteBreakpoint removes a breakpoint by ID.
-func (s *Session) DeleteBreakpoint(id int) error {
+func (s *Session) DeleteBreakpoint(id BreakpointID) error {
 	if err := s.lockCommand(); err != nil {
 		return err
 	}
@@ -236,7 +227,7 @@ func (s *Session) DeleteBreakpoint(id int) error {
 	}
 
 	delete(s.breakpoints, id)
-	delete(s.boundBreakpointPC, id)
+	delete(s.boundPointIDs, id)
 
 	return nil
 }
@@ -391,13 +382,43 @@ func (s *Session) resume(ctx context.Context, mode vm.DebugResumeMode) (*Event, 
 }
 
 func (s *Session) breakpointPCs() map[int]struct{} {
-	out := make(map[int]struct{}, len(s.boundBreakpointPC))
+	out := make(map[int]struct{}, len(s.boundPointIDs))
 
-	for _, pc := range s.boundBreakpointPC {
-		out[pc] = struct{}{}
+	for _, pointID := range s.boundPointIDs {
+		if point := s.pointIndex.PointByID(pointID); point != nil {
+			out[point.PC] = struct{}{}
+		}
 	}
 
 	return out
+}
+
+func (s *Session) breakpointPoint(line, column int) *bytecode.DebugPoint {
+	var best *bytecode.DebugPoint
+	bestLine := 0
+	bestColumn := 0
+	points := s.pointIndex.Points()
+
+	for i := range points {
+		point := &points[i]
+		pointLine, pointColumn := s.source.LocationAt(point.Span)
+
+		if pointLine < line || (pointLine == line && pointColumn < column) {
+			continue
+		}
+
+		if best == nil ||
+			pointLine < bestLine ||
+			(pointLine == bestLine && pointColumn < bestColumn) ||
+			(pointLine == bestLine && pointColumn == bestColumn && point.PC < best.PC) ||
+			(pointLine == bestLine && pointColumn == bestColumn && point.PC == best.PC && point.ID < best.ID) {
+			best = point
+			bestLine = pointLine
+			bestColumn = pointColumn
+		}
+	}
+
+	return best
 }
 
 func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
@@ -481,7 +502,14 @@ func (s *Session) location(span source.Span) Location {
 }
 
 func (s *Session) locationForPC(pc, functionID int) Location {
-	point := s.pointIndex.NearestBeforeOrAtInFunction(functionID, pc)
+	var point *bytecode.DebugPoint
+
+	if functionID >= -1 {
+		point = s.pointIndex.NearestBeforeOrAtInFunction(functionID, pc)
+	} else {
+		point = s.pointIndex.NearestBeforeOrAt(pc)
+	}
+
 	if point == nil {
 		return Location{File: s.source.Name()}
 	}

@@ -124,7 +124,7 @@ func newBlockingSession(t *testing.T) (*Session, *blockingExecution) {
 	t.Helper()
 
 	src := source.New("concurrent.fql", "RETURN 1")
-	point := bytecode.DebugPoint{PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	point := bytecode.DebugPoint{ID: 5, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
 	execution := newBlockingExecution(point)
 	session, err := NewSession(Config{
 		Execution:   execution,

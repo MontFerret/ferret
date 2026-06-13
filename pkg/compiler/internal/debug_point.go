@@ -34,8 +34,9 @@ func (c *CompilationSession) WithDebugPoint(ctx antlr.ParserRuleContext, compile
 	}
 
 	span := diagnostics.SpanFromRuleContext(ctx)
-	pointID := len(c.Program.DebugPoints)
+	pointID := bytecode.DebugPointID(len(c.Program.DebugPoints))
 	c.Program.DebugPoints = append(c.Program.DebugPoints, bytecode.DebugPoint{
+		ID:         pointID,
 		PC:         pc,
 		FunctionID: c.Function.FunctionID,
 		Span:       span,

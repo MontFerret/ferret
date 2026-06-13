@@ -10,9 +10,9 @@ import (
 
 func TestDebugExecutionErrorPointDoesNotCrossFunctionBoundaries(t *testing.T) {
 	points := []bytecode.DebugPoint{
-		{PC: 2, FunctionID: 0},
-		{PC: 4, FunctionID: 1},
-		{PC: 6, FunctionID: 0},
+		{ID: 4, PC: 2, FunctionID: 0},
+		{ID: 7, PC: 4, FunctionID: 1},
+		{ID: 2, PC: 6, FunctionID: 0},
 	}
 	instance := &VM{program: &bytecode.Program{}}
 	instance.state.lastPC = 5

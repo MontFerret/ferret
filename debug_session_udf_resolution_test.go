@@ -9,6 +9,141 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
+func TestDebugSessionBreakpointsDistinguishUDFBodyAndCallSite(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	query := `LET seed = 1
+FUNC add(a) (
+  LET b = a + 1
+  RETURN b
+)
+LET value = add(seed)
+RETURN value`
+	plan, err := engine.CompileDebug(context.Background(), source.New("udf-breakpoints.fql", query))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	beforeBody, err := session.SetBreakpoint("udf-breakpoints.fql", 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := session.SetBreakpoint("udf-breakpoints.fql", 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	callSite, err := session.SetBreakpoint("udf-breakpoints.fql", 6)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !beforeBody.Bound || beforeBody.Line != 3 || beforeBody.PointID != body.PointID || beforeBody.FunctionID != body.FunctionID {
+		t.Fatalf("non-executable UDF declaration did not bind to its body: before=%#v body=%#v", beforeBody, body)
+	}
+	if !body.Bound || body.FunctionID < 0 {
+		t.Fatalf("expected UDF body breakpoint identity: %#v", body)
+	}
+	if !callSite.Bound || callSite.FunctionID != -1 || callSite.PointID == body.PointID {
+		t.Fatalf("expected distinct caller breakpoint identity: body=%#v call=%#v", body, callSite)
+	}
+
+	event, err := session.Start(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Location.Line != 1 {
+		t.Fatalf("unexpected entry: %#v", event)
+	}
+	event, err = session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != DebugReasonBreakpoint || event.Location.Line != 6 {
+		t.Fatalf("expected caller breakpoint, got %#v", event)
+	}
+	event, err = session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != DebugReasonBreakpoint || event.Location.Line != 3 || event.Depth != 1 {
+		t.Fatalf("expected UDF body breakpoint, got %#v", event)
+	}
+}
+
+func TestDebugSessionBreakpointsDistinguishMultipleUDFs(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	query := `FUNC first() (
+  RETURN 1
+)
+FUNC second() (
+  RETURN 2
+)
+LET a = first()
+LET b = second()
+RETURN a + b`
+	plan, err := engine.CompileDebug(context.Background(), source.New("multiple-udfs.fql", query))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	first, err := session.SetBreakpoint("multiple-udfs.fql", 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := session.SetBreakpoint("multiple-udfs.fql", 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.Bound || !second.Bound || first.PointID == second.PointID || first.FunctionID == second.FunctionID {
+		t.Fatalf("UDF breakpoints were not function-distinct: first=%#v second=%#v", first, second)
+	}
+
+	event, err := session.Start(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Location.Line != 7 {
+		t.Fatalf("unexpected entry: %#v", event)
+	}
+	event, err = session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != DebugReasonBreakpoint || event.Location.Line != 2 {
+		t.Fatalf("expected first UDF breakpoint, got %#v", event)
+	}
+	event, err = session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != DebugReasonBreakpoint || event.Location.Line != 5 {
+		t.Fatalf("expected second UDF breakpoint, got %#v", event)
+	}
+}
+
 func TestDebugSessionUDFFramesLocalsAndRuntimeErrorLocation(t *testing.T) {
 	engine, err := New()
 	if err != nil {

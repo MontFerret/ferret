@@ -133,14 +133,25 @@ func validateMetadata(program *Program) error {
 	}
 
 	lastDebugPC := -1
+	debugPointsByID := make(map[DebugPointID]int, len(program.Metadata.DebugPoints))
 	for i, point := range program.Metadata.DebugPoints {
+		if point.ID < 0 {
+			return fmt.Errorf("%w: debug point %d has invalid id %d", ErrInvalidProgram, i, point.ID)
+		}
+
+		if previous, exists := debugPointsByID[point.ID]; exists {
+			return fmt.Errorf("%w: debug point %d duplicates id %d from index %d", ErrInvalidProgram, i, point.ID, previous)
+		}
+
+		debugPointsByID[point.ID] = i
+
 		if point.PC < 0 || point.PC >= bytecodeLen {
 			return fmt.Errorf("%w: debug point %d references pc %d out of range", ErrInvalidProgram, i, point.PC)
 		}
 
 		sourcePoint := program.Bytecode[point.PC]
-		if sourcePoint.Opcode != OpSourcePoint || int(sourcePoint.Operands[0]) != i {
-			return fmt.Errorf("%w: debug point %d pc %d does not reference its source point", ErrInvalidProgram, i, point.PC)
+		if sourcePoint.Opcode != OpSourcePoint || DebugPointID(sourcePoint.Operands[0]) != point.ID {
+			return fmt.Errorf("%w: debug point %d id %d pc %d does not reference its source point", ErrInvalidProgram, i, point.ID, point.PC)
 		}
 
 		if point.PC <= lastDebugPC {
@@ -173,13 +184,14 @@ func validateMetadata(program *Program) error {
 			continue
 		}
 
-		pointID := int(inst.Operands[0])
-		if pointID < 0 || pointID >= len(program.Metadata.DebugPoints) {
-			return fmt.Errorf("%w: source point at pc %d references debug point %d out of range", ErrInvalidProgram, pc, pointID)
+		pointID := DebugPointID(inst.Operands[0])
+		pointIndex, exists := debugPointsByID[pointID]
+		if !exists {
+			return fmt.Errorf("%w: source point at pc %d references unknown debug point id %d", ErrInvalidProgram, pc, pointID)
 		}
 
-		if program.Metadata.DebugPoints[pointID].PC != pc {
-			return fmt.Errorf("%w: source point at pc %d does not match debug point %d pc %d", ErrInvalidProgram, pc, pointID, program.Metadata.DebugPoints[pointID].PC)
+		if program.Metadata.DebugPoints[pointIndex].PC != pc {
+			return fmt.Errorf("%w: source point at pc %d does not match debug point id %d pc %d", ErrInvalidProgram, pc, pointID, program.Metadata.DebugPoints[pointIndex].PC)
 		}
 	}
 

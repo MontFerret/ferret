@@ -16,6 +16,9 @@ type (
 	// Catch stores an inclusive instruction range [start, end] and an optional recovery jump target.
 	Catch [3]int
 
+	// DebugPointID identifies a debug point within one compiled program.
+	DebugPointID int
+
 	Metadata struct {
 		Labels                 map[int]string  `json:"labels"`
 		CompilerVersion        string          `json:"compilerVersion"`
@@ -41,6 +44,7 @@ type (
 	DebugPoint struct {
 		Bindings   []DebugBinding `json:"bindings,omitempty"`
 		Span       source.Span    `json:"span"`
+		ID         DebugPointID   `json:"id"`
 		PC         int            `json:"pc"`
 		FunctionID int            `json:"functionId"`
 	}

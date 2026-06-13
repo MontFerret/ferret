@@ -10,6 +10,7 @@ type (
 	DebugVariable      = debugger.Variable
 	DebugFrame         = debugger.Frame
 	DebugBreakpoint    = debugger.Breakpoint
+	DebugBreakpointID  = debugger.BreakpointID
 	DebugEvent         = debugger.Event
 	DebugStateError    = debugger.StateError
 	DebugFormatOptions = debugger.FormatOptions

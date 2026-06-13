@@ -13,7 +13,7 @@ import (
 
 func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T) {
 	src := source.New("debug.fql", "LET x = 1 RETURN x")
-	point := bytecode.DebugPoint{PC: 3, Span: source.Span{Start: 0, End: 3}, FunctionID: -1}
+	point := bytecode.DebugPoint{ID: 9, PC: 3, Span: source.Span{Start: 0, End: 3}, FunctionID: -1}
 	execution := &fakeExecution{
 		startEvent:  &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
 		resumeEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopStep, Point: &point},
@@ -38,8 +38,11 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !breakpoint.Bound {
+	if !breakpoint.Bound || breakpoint.PointID != point.ID || breakpoint.FunctionID != point.FunctionID || breakpoint.RequestedColumn != 0 {
 		t.Fatalf("expected bound breakpoint: %#v", breakpoint)
+	}
+	if got := session.Breakpoints(); len(got) != 1 || got[0].PointID != point.ID || got[0].FunctionID != point.FunctionID {
+		t.Fatalf("breakpoint snapshot lost bound identity: %#v", got)
 	}
 	if _, err := session.Start(context.Background()); err != nil {
 		t.Fatal(err)
@@ -52,6 +55,9 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 	}
 	if len(execution.resumeBreakpoints) != 1 {
 		t.Fatalf("expected one exact breakpoint PC, got %#v", execution.resumeBreakpoints)
+	}
+	if _, exists := execution.resumeBreakpoints[point.PC]; !exists {
+		t.Fatalf("expected point id %d to resolve to pc %d, got %#v", point.ID, point.PC, execution.resumeBreakpoints)
 	}
 	value, err := session.Evaluate(context.Background(), "x + 1")
 	if err != nil {
@@ -95,9 +101,45 @@ func TestSessionCloseReturnsAndCachesExecutionCloseError(t *testing.T) {
 	}
 }
 
+func TestSessionBreakpointBindingUsesSourceOrderAndStableTieBreaks(t *testing.T) {
+	src := source.New("binding.fql", "RETURN 1\nRETURN 2")
+	points := []bytecode.DebugPoint{
+		{ID: 8, PC: 2, Span: source.Span{Start: 9, End: 17}, FunctionID: 1},
+		{ID: 4, PC: 5, Span: source.Span{Start: 0, End: 8}, FunctionID: -1},
+		{ID: 3, PC: 7, Span: source.Span{Start: 0, End: 8}, FunctionID: 0},
+	}
+	session, err := NewSession(Config{
+		Execution:   &fakeExecution{status: vm.DebugExecutionNew},
+		Values:      &fakeValueAccess{inner: vm.NewDebugValueAccess()},
+		Services:    &fakeSessionServices{},
+		Source:      src,
+		DebugPoints: points,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	breakpoint, err := session.SetBreakpoint("", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !breakpoint.Bound || breakpoint.PointID != 4 || breakpoint.FunctionID != -1 || breakpoint.Line != 1 {
+		t.Fatalf("unexpected source-ordered breakpoint: %#v", breakpoint)
+	}
+
+	unbound, err := session.SetBreakpoint("other.fql", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if unbound.Bound {
+		t.Fatalf("breakpoint crossed source boundary: %#v", unbound)
+	}
+}
+
 func BenchmarkSessionContinueThroughExecutionInterface(b *testing.B) {
 	src := source.New("debug.fql", "RETURN 1")
-	point := bytecode.DebugPoint{PC: 0, Span: source.Span{Start: 0, End: 6}, FunctionID: -1}
+	point := bytecode.DebugPoint{ID: 7, PC: 0, Span: source.Span{Start: 0, End: 6}, FunctionID: -1}
 	execution := &fakeExecution{
 		startEvent:  &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
 		resumeEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopStep, Point: &point},

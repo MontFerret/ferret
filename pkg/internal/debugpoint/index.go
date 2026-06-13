@@ -10,6 +10,7 @@ import (
 // Index resolves ordered debug points globally or within a function.
 // It must not be copied after its first lookup.
 type Index struct {
+	byID       map[bytecode.DebugPointID]*bytecode.DebugPoint
 	byFunction map[int][]*bytecode.DebugPoint
 	points     []bytecode.DebugPoint
 	functions  sync.Once
@@ -17,7 +18,29 @@ type Index struct {
 
 // New creates an index over points that are strictly ordered by PC.
 func New(points []bytecode.DebugPoint) Index {
-	return Index{points: points}
+	byID := make(map[bytecode.DebugPointID]*bytecode.DebugPoint, len(points))
+
+	for pos := range points {
+		point := &points[pos]
+		byID[point.ID] = point
+	}
+
+	return Index{points: points, byID: byID}
+}
+
+// Points returns all debug points in PC order.
+func (i *Index) Points() []bytecode.DebugPoint {
+	return i.points
+}
+
+// PointByID returns the point with id, when one exists.
+func (i *Index) PointByID(id bytecode.DebugPointID) *bytecode.DebugPoint {
+	pos := int(id)
+	if pos >= 0 && pos < len(i.points) && i.points[pos].ID == id {
+		return &i.points[pos]
+	}
+
+	return i.byID[id]
 }
 
 // PointForPC returns the point at pc, when one exists.
@@ -61,6 +84,13 @@ func (i *Index) NearestBeforeOrAtInFunction(functionID, pc int) *bytecode.DebugP
 	}
 
 	return points[pos-1]
+}
+
+// PointsInFunction returns the debug points in functionID ordered by PC.
+func (i *Index) PointsInFunction(functionID int) []*bytecode.DebugPoint {
+	i.functions.Do(i.indexFunctions)
+
+	return i.byFunction[functionID]
 }
 
 func (i *Index) indexFunctions() {

@@ -95,6 +95,7 @@ type (
 	DebugPointFrame struct {
 		Bindings   []DebugBindingFrame `json:"bindings,omitempty" msgpack:"bindings,omitempty"`
 		Span       SpanFrame           `json:"span" msgpack:"span"`
+		ID         int                 `json:"id" msgpack:"id"`
 		PC         int                 `json:"pc" msgpack:"pc"`
 		FunctionID int                 `json:"functionId" msgpack:"functionId"`
 	}
@@ -225,6 +226,7 @@ func FromProgram(program *bytecode.Program) (ProgramFrame, error) {
 		}
 
 		debugPoints[i] = DebugPointFrame{
+			ID:         int(point.ID),
 			PC:         point.PC,
 			FunctionID: point.FunctionID,
 			Span:       SpanFrame{Start: point.Span.Start, End: point.Span.End},
@@ -415,6 +417,7 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 		}
 
 		debugPoints[i] = bytecode.DebugPoint{
+			ID:         bytecode.DebugPointID(point.ID),
 			PC:         point.PC,
 			FunctionID: point.FunctionID,
 			Span:       source.Span{Start: point.Span.Start, End: point.Span.End},

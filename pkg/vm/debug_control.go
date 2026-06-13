@@ -3,14 +3,12 @@ package vm
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type debugControl struct {
 	owner       *debugExecution
 	breakpoints map[int]struct{}
-	points      []*bytecode.DebugPoint
 	startDepth  int
 	skipPC      int
 	skipDepth   int
@@ -21,11 +19,7 @@ type debugControl struct {
 }
 
 func (c *debugControl) onSourcePoint(_ context.Context, state sourcePointState) (sourcePointAction, error) {
-	if state.pointID < 0 || state.pointID >= len(c.points) {
-		return sourcePointTerminate, runtime.Errorf(runtime.ErrUnexpected, "source point id %d out of range at pc %d", state.pointID, state.pc)
-	}
-
-	point := c.points[state.pointID]
+	point := c.owner.points.PointByID(state.pointID)
 	if point == nil || point.PC != state.pc {
 		return sourcePointTerminate, runtime.Errorf(runtime.ErrUnexpected, "source point id %d does not match pc %d", state.pointID, state.pc)
 	}
