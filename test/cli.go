@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -15,12 +14,10 @@ import (
 	rt "runtime"
 	"runtime/pprof"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/asm"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
-	ferretdap "github.com/MontFerret/ferret/v2/pkg/dap"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/formatter"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
@@ -241,24 +238,6 @@ var (
 		logging.ErrorLevel.String(),
 		"log level",
 	)
-
-	dapMode = flag.Bool(
-		"dap",
-		false,
-		"runs the test CLI as a DAP server over stdin/stdout",
-	)
-
-	dapTrace = flag.Bool(
-		"dap-trace",
-		false,
-		"enables DAP request/response tracing",
-	)
-
-	dapLogFile = flag.String(
-		"dap-log-file",
-		"",
-		"writes DAP logs to the given file",
-	)
 )
 
 var logger zerolog.Logger
@@ -273,15 +252,6 @@ func main() {
 	)
 
 	flag.Parse()
-
-	if *dapMode {
-		if err := runDAP(); err != nil {
-			_, _ = fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-
-		return
-	}
 
 	console := zerolog.ConsoleWriter{
 		Out:        os.Stderr,
@@ -373,42 +343,6 @@ func main() {
 		fmt.Println(ferret.FormatError(err))
 		os.Exit(1)
 	}
-}
-
-func runDAP() (err error) {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
-
-	return serveDAP(ctx, os.Stdin, os.Stdout, os.Stderr, *dapTrace, *dapLogFile)
-}
-
-func serveDAP(ctx context.Context, in io.Reader, out, errOut io.Writer, trace bool, logFilePath string) (err error) {
-	logWriter := io.Writer(io.Discard)
-	var logFile *os.File
-	if logFilePath != "" {
-		logFile, err = os.Create(logFilePath)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			err = errors.Join(err, logFile.Close())
-		}()
-		logWriter = logFile
-	} else if trace {
-		logWriter = errOut
-	}
-
-	adapter, err := ferretdap.New(ferretdap.Config{
-		In:    in,
-		Out:   out,
-		Log:   logWriter,
-		Trace: trace,
-	})
-	if err != nil {
-		return err
-	}
-
-	return adapter.Serve(ctx)
 }
 
 func formatQuery(f *formatter.Formatter, query *source.Source) error {
