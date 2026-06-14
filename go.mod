@@ -18,9 +18,10 @@ require (
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/smarty/assertions v1.15.0 // indirect
+	github.com/mattn/go-isatty v0.0.22 // indirect
+	github.com/smarty/assertions v1.16.0 // indirect
+	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
-	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
-	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
+	golang.org/x/sys v0.45.0 // indirect
 )

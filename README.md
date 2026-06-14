@@ -23,8 +23,6 @@
 	</a>
 </p>
 
-![ferret](https://raw.githubusercontent.com/MontFerret/ferret/main/assets/intro.jpg)
-
 <p align="center">
 	<a href="https://ferretlang.org/try" style="margin: 0 15px">
 		<span>Try it!</span>
