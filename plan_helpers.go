@@ -6,14 +6,19 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-func newSessionRelease(limiter *sessionLimiter, pool *vm.Pool) vmReleaseFunc {
+// newSessionPermitRelease transfers permit ownership to an idempotent callback.
+// Normal sessions also use it to return their borrowed VM to the plan pool.
+func newSessionPermitRelease(limiter *sessionLimiter, pool *vm.Pool) sessionPermitRelease {
 	var once sync.Once
 
 	return func(instance *vm.VM) {
 		once.Do(func() {
-			// Release the engine-wide session slot even if the plan has already been closed.
 			limiter.Release()
-			pool.Release(instance)
+
+			if pool != nil {
+				// Return borrowed VMs even if the plan has already been closed.
+				pool.Release(instance)
+			}
 		})
 	}
 }

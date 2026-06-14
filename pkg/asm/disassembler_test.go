@@ -568,3 +568,21 @@ func TestDisassemble_LoadParamUsesSlotComment(t *testing.T) {
 		t.Fatalf("expected LOADP slot comment in output:\n%s", out)
 	}
 }
+
+func TestDisassemble_SourcePointUsesImmediateID(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpSourcePoint, bytecode.Operand(7)),
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	if !strings.Contains(out, "0: SOURCEPOINT 7") {
+		t.Fatalf("expected source point immediate in output:\n%s", out)
+	}
+}

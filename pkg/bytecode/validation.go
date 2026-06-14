@@ -132,6 +132,73 @@ func validateMetadata(program *Program) error {
 		}
 	}
 
+	lastDebugPC := -1
+	debugPointsByID := make(map[DebugPointID]int, len(program.Metadata.DebugPoints))
+	for i, point := range program.Metadata.DebugPoints {
+		if point.ID < 0 {
+			return fmt.Errorf("%w: debug point %d has invalid id %d", ErrInvalidProgram, i, point.ID)
+		}
+
+		if previous, exists := debugPointsByID[point.ID]; exists {
+			return fmt.Errorf("%w: debug point %d duplicates id %d from index %d", ErrInvalidProgram, i, point.ID, previous)
+		}
+
+		debugPointsByID[point.ID] = i
+
+		if point.PC < 0 || point.PC >= bytecodeLen {
+			return fmt.Errorf("%w: debug point %d references pc %d out of range", ErrInvalidProgram, i, point.PC)
+		}
+
+		sourcePoint := program.Bytecode[point.PC]
+		if sourcePoint.Opcode != OpSourcePoint || DebugPointID(sourcePoint.Operands[0]) != point.ID {
+			return fmt.Errorf("%w: debug point %d id %d pc %d does not reference its source point", ErrInvalidProgram, i, point.ID, point.PC)
+		}
+
+		if point.PC <= lastDebugPC {
+			return fmt.Errorf("%w: debug points are not strictly ordered by pc at index %d", ErrInvalidProgram, i)
+		}
+
+		if point.FunctionID < -1 || point.FunctionID >= len(program.Functions.UserDefined) {
+			return fmt.Errorf("%w: debug point %d has invalid function id %d", ErrInvalidProgram, i, point.FunctionID)
+		}
+
+		if point.Kind < DebugPointStatement || point.Kind > DebugPointSynthetic {
+			return fmt.Errorf("%w: debug point %d has invalid kind %d", ErrInvalidProgram, i, point.Kind)
+		}
+
+		if point.Span.Start < 0 || point.Span.End < point.Span.Start {
+			return fmt.Errorf("%w: debug point %d has invalid span", ErrInvalidProgram, i)
+		}
+
+		for _, binding := range point.Bindings {
+			if binding.Name == "" {
+				return fmt.Errorf("%w: debug point %d has empty binding name", ErrInvalidProgram, i)
+			}
+
+			if !binding.Register.IsRegister() || binding.Register.Register() >= program.Registers {
+				return fmt.Errorf("%w: debug point %d binding %q has invalid register %s", ErrInvalidProgram, i, binding.Name, binding.Register)
+			}
+		}
+
+		lastDebugPC = point.PC
+	}
+
+	for pc, inst := range program.Bytecode {
+		if inst.Opcode != OpSourcePoint {
+			continue
+		}
+
+		pointID := DebugPointID(inst.Operands[0])
+		pointIndex, exists := debugPointsByID[pointID]
+		if !exists {
+			return fmt.Errorf("%w: source point at pc %d references unknown debug point id %d", ErrInvalidProgram, pc, pointID)
+		}
+
+		if program.Metadata.DebugPoints[pointIndex].PC != pc {
+			return fmt.Errorf("%w: source point at pc %d does not match debug point id %d pc %d", ErrInvalidProgram, pc, pointID, program.Metadata.DebugPoints[pointIndex].PC)
+		}
+	}
+
 	for pc, name := range program.Metadata.Labels {
 		if pc < 0 || pc >= bytecodeLen {
 			return fmt.Errorf("%w: label %q references pc %d out of range", ErrInvalidProgram, name, pc)
@@ -197,6 +264,10 @@ func validateInstructions(program *Program) error {
 		case OpReturn:
 			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
 				return err
+			}
+		case OpSourcePoint:
+			if dst < 0 {
+				return fmt.Errorf("%w: pc %d source point id must be non-negative", ErrInvalidInstruction, pc)
 			}
 		case OpJump:
 			if err := validatePCOperand(dst, bytecodeLen, pc, "dst"); err != nil {
@@ -587,9 +658,7 @@ func validateInstructions(program *Program) error {
 			if _, ok := program.Constants[dst.Constant()].(runtime.String); !ok {
 				return fmt.Errorf("%w: pc %d FAIL expects a string constant", ErrInvalidInstruction, pc)
 			}
-		case OpFailTimeout:
-			// No operands.
-		case OpRethrow:
+		case OpFailTimeout, OpRethrow:
 			// No operands.
 		default:
 			return fmt.Errorf("%w: opcode %d at pc %d is not supported by validator", ErrInvalidInstruction, op, pc)

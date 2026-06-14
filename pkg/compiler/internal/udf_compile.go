@@ -51,8 +51,10 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 
 	c.withFunctionCompileState(fn, func() {
 		fn.Entry = c.ctx.Program.Emitter.Size()
+		firstPoint := len(c.ctx.Program.DebugPoints)
 
 		c.ctx.Function.Symbols.EnterScope()
+		c.ctx.Function.FunctionID = fn.ID
 
 		for _, name := range fn.Params {
 			c.ctx.Function.Symbols.DeclareLocal(name, core.TypeAny)
@@ -76,6 +78,10 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 
 				c.compileReturn(block.FunctionReturn())
 			}
+		}
+
+		if firstPoint < len(c.ctx.Program.DebugPoints) {
+			c.ctx.Program.DebugPoints[firstPoint].Kind = bytecode.DebugPointFunctionEntry
 		}
 
 		fn.Registers = c.ctx.Function.Registers.Size()
@@ -127,6 +133,13 @@ func (c *UDFCompiler) compileExpressionReturn(expr fql.IExpressionContext, disti
 		return
 	}
 
+	rule, _ := expr.(antlr.ParserRuleContext)
+	c.ctx.WithDebugPointKind(rule, bytecode.DebugPointReturn, func() {
+		c.compileExpressionReturnInner(expr, distinct)
+	})
+}
+
+func (c *UDFCompiler) compileExpressionReturnInner(expr fql.IExpressionContext, distinct bool) {
 	if !distinct {
 		if fce := directFunctionCall(expr); fce != nil && fce.ErrorOperator() == nil && allowsTailCallRecovery(c.recovery.CollectPlan(fce, core.RecoveryPlanOptions{})) {
 			call := fce.FunctionCall()

@@ -57,6 +57,12 @@ var instructionUseDefCases = []instructionUseDefCase{
 		wantUses: []int{4},
 		wantDefs: []int{4},
 	},
+	{
+		name:     "source point immediate is not a register",
+		inst:     bytecode.NewInstruction(bytecode.OpSourcePoint, bytecode.Operand(4)),
+		wantUses: nil,
+		wantDefs: nil,
+	},
 }
 
 func runInstructionUseDefCase(t *testing.T, tc instructionUseDefCase) {

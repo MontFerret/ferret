@@ -140,6 +140,42 @@ func (st *SymbolTable) LocalVariables() []Variable {
 	return locals
 }
 
+// VisibleVariables returns debugger-visible bindings with innermost shadowing.
+func (st *SymbolTable) VisibleVariables() []Variable {
+	vars := make([]Variable, 0, len(st.locals)+len(st.globals))
+	seen := make(map[string]struct{}, len(st.locals)+len(st.globals))
+
+	add := func(v *Variable) {
+		if v == nil || v.Name == IgnorePseudoVariable || v.Name == PseudoVariable {
+			return
+		}
+
+		if _, exists := seen[v.Name]; exists {
+			return
+		}
+
+		seen[v.Name] = struct{}{}
+		vars = append(vars, *v)
+	}
+
+	for i := len(st.locals) - 1; i >= 0; i-- {
+		add(st.locals[i])
+	}
+
+	names := make([]string, 0, len(st.globals))
+	for name := range st.globals {
+		names = append(names, name)
+	}
+
+	sort.Strings(names)
+
+	for _, name := range names {
+		add(st.globals[name])
+	}
+
+	return vars
+}
+
 func (st *SymbolTable) ProjectionVariables() []Variable {
 	vars := make([]Variable, 0)
 	seen := make(map[string]struct{})

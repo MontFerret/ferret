@@ -58,7 +58,7 @@ func (i Int) Type() Type {
 }
 
 func (i Int) String() string {
-	return strconv.Itoa(int(i))
+	return strconv.FormatInt(int64(i), 10)
 }
 
 func (i Int) Hash() uint64 {

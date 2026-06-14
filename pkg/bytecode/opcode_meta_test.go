@@ -3,7 +3,7 @@ package bytecode
 import "testing"
 
 func TestOpcodeInfoCompleteness(t *testing.T) {
-	for op := Opcode(0); op <= OpDistinct; op++ {
+	for op := Opcode(0); op <= OpSourcePoint; op++ {
 		info := OpcodeInfoOf(op)
 
 		if info.Class == OpcodeClassUnknown {
@@ -40,6 +40,17 @@ func TestOpcodeInfoCallMetadata(t *testing.T) {
 		if info.ProtectedCall != c.protected {
 			t.Fatalf("opcode %s: expected protected=%v, got %v", c.op, c.protected, info.ProtectedCall)
 		}
+	}
+}
+
+func TestOpcodeInfoSourcePointMetadata(t *testing.T) {
+	info := OpcodeInfoOf(OpSourcePoint)
+
+	if info.Class != OpcodeClassUtility {
+		t.Fatalf("expected source point utility class, got %d", info.Class)
+	}
+	if info.ControlFlow != ControlFlowNone {
+		t.Fatalf("expected source point to have no control-flow role, got %d", info.ControlFlow)
 	}
 }
 

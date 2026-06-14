@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -16,6 +17,7 @@ type (
 		logger            []logging.Option
 		outputContentType string
 		env               []vm.EnvironmentOption
+		debugFormat       debugger.FormatOptions
 	}
 
 	// SessionOption configures a Session created from a Plan.
@@ -25,6 +27,7 @@ type (
 func newSessionOptions(setters []SessionOption) (*sessionOptions, error) {
 	opts := &sessionOptions{
 		outputContentType: encodingjson.ContentType,
+		debugFormat:       debugger.DefaultFormatOptions(),
 	}
 
 	for _, setter := range setters {
@@ -38,6 +41,17 @@ func newSessionOptions(setters []SessionOption) (*sessionOptions, error) {
 	}
 
 	return opts, nil
+}
+
+// WithDebugFormat configures bounded debugger value formatting.
+func WithDebugFormat(options DebugFormatOptions) SessionOption {
+	return func(session *sessionOptions) error {
+		if options.MaxDepth <= 0 || options.MaxItems <= 0 || options.MaxBytes <= 0 {
+			return fmt.Errorf("debug format limits must be positive")
+		}
+		session.debugFormat = options
+		return nil
+	}
 }
 
 // WithEnvironmentOptions appends VM environment options to the created session.

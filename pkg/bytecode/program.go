@@ -16,6 +16,12 @@ type (
 	// Catch stores an inclusive instruction range [start, end] and an optional recovery jump target.
 	Catch [3]int
 
+	// DebugPointID identifies a debug point within one compiled program.
+	DebugPointID int
+
+	// DebugPointKind identifies the source-level role of a debug point.
+	DebugPointKind int
+
 	Metadata struct {
 		Labels                 map[int]string  `json:"labels"`
 		CompilerVersion        string          `json:"compilerVersion"`
@@ -24,7 +30,27 @@ type (
 		CallArgumentSpans      [][]source.Span `json:"callArgumentSpans,omitempty"`
 		MatchFailTargets       []int           `json:"matchFailTargets,omitempty"`
 		DebugSpans             []source.Span   `json:"debugSpans"`
+		DebugPoints            []DebugPoint    `json:"debugPoints,omitempty"`
 		OptimizationLevel      int             `json:"optimizationLevel"`
+	}
+
+	// DebugBinding records one source-visible binding at a logical debug point.
+	DebugBinding struct {
+		Name     string  `json:"name"`
+		Register Operand `json:"register"`
+		Mutable  bool    `json:"mutable,omitempty"`
+		Cell     bool    `json:"cell,omitempty"`
+	}
+
+	// DebugPoint identifies an executable logical source location and the
+	// bindings visible before it executes.
+	DebugPoint struct {
+		Bindings   []DebugBinding `json:"bindings,omitempty"`
+		Span       source.Span    `json:"span"`
+		ID         DebugPointID   `json:"id"`
+		PC         int            `json:"pc"`
+		FunctionID int            `json:"functionId"`
+		Kind       DebugPointKind `json:"kind,omitempty"`
 	}
 
 	Program struct {
@@ -38,6 +64,15 @@ type (
 		ISAVersion int
 		Registers  int
 	}
+)
+
+const (
+	DebugPointStatement DebugPointKind = iota
+	DebugPointReturn
+	DebugPointFunctionEntry
+	DebugPointCallSite
+	DebugPointLoop
+	DebugPointSynthetic
 )
 
 func (p *Program) MarshalJSON() ([]byte, error) {

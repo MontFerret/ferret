@@ -186,6 +186,68 @@ func TestValidateProgramAllowsDistinctOpcode(t *testing.T) {
 	}
 }
 
+func TestValidateProgramAllowsSourcePoints(t *testing.T) {
+	if err := ValidateProgram(validSourcePointProgram()); err != nil {
+		t.Fatalf("expected source point program to be valid, got %v", err)
+	}
+}
+
+func TestValidateProgramRejectsInvalidSourcePointMapping(t *testing.T) {
+	tests := []struct {
+		mutate func(*Program)
+		name   string
+	}{
+		{
+			name: "debug_point_does_not_reference_source_point",
+			mutate: func(program *Program) {
+				program.Metadata.DebugPoints[0].PC = 1
+			},
+		},
+		{
+			name: "source_point_id_out_of_range",
+			mutate: func(program *Program) {
+				program.Bytecode[0] = NewInstruction(OpSourcePoint, Operand(1))
+			},
+		},
+		{
+			name: "source_point_without_debug_point",
+			mutate: func(program *Program) {
+				program.Metadata.DebugPoints = nil
+			},
+		},
+		{
+			name: "negative_debug_point_id",
+			mutate: func(program *Program) {
+				program.Metadata.DebugPoints[0].ID = -1
+			},
+		},
+		{
+			name: "duplicate_debug_point_id",
+			mutate: func(program *Program) {
+				program.Metadata.DebugPoints[1].ID = program.Metadata.DebugPoints[0].ID
+				program.Bytecode[2] = NewInstruction(OpSourcePoint, Operand(program.Metadata.DebugPoints[0].ID))
+			},
+		},
+		{
+			name: "invalid_debug_point_kind",
+			mutate: func(program *Program) {
+				program.Metadata.DebugPoints[0].Kind = DebugPointSynthetic + 1
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			program := validSourcePointProgram()
+			tc.mutate(program)
+
+			if err := ValidateProgram(program); !errors.Is(err, ErrInvalidProgram) {
+				t.Fatalf("expected invalid program, got %v", err)
+			}
+		})
+	}
+}
+
 func validValidationProgram() *Program {
 	return &Program{
 		Source: source.New("validation.fql", "RETURN 1"),
@@ -225,6 +287,27 @@ func validValidationProgram() *Program {
 		ISAVersion: Version,
 		Registers:  3,
 	}
+}
+
+func validSourcePointProgram() *Program {
+	program := validValidationProgram()
+	program.Bytecode = []Instruction{
+		NewInstruction(OpSourcePoint, Operand(9)),
+		NewInstruction(OpLoadConst, NewRegister(0), NewConstant(0)),
+		NewInstruction(OpSourcePoint, Operand(3)),
+		NewInstruction(OpReturn, NewRegister(0)),
+	}
+	program.Functions.UserDefined[0].Entry = 1
+	program.Metadata.Labels = nil
+	program.Metadata.AggregateSelectorSlots = nil
+	program.Metadata.MatchFailTargets = nil
+	program.Metadata.DebugSpans = nil
+	program.Metadata.DebugPoints = []DebugPoint{
+		{ID: 9, PC: 0, Span: source.Span{Start: 0, End: 6}, FunctionID: -1},
+		{ID: 3, PC: 2, Span: source.Span{Start: 7, End: 8}, FunctionID: -1},
+	}
+
+	return program
 }
 
 func withProgramMutation(mutate func(program *Program)) *Program {

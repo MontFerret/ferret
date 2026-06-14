@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file is the canonical operating guide for coding agents working in this repository. It is written for Ferret v2 only. If you see documentation that conflicts with this file, prefer `Makefile`, `go.mod`, and `.github/workflows/build.yml`.
+This file is the canonical operating guide for coding agents working in this repository. It is written for Ferret v2 only. If repository documentation conflicts with this file, prefer `Makefile`, `go.mod`, and `.github/workflows/build.yml` for commands, toolchain, and CI behavior.
 
 ## Repo snapshot
 
@@ -15,21 +15,23 @@ This file is the canonical operating guide for coding agents working in this rep
 Ferret v2 is a compiled query language and runtime.
 
 Primary pipeline:
-`source -> parser -> diagnostics/AST -> compiler -> bytecode.Program -> vm.VM -> runtime values/results`
 
-Subsystem responsibilities:
-- `pkg/parser` handles syntax, parse-tree processing, and parser diagnostics.
-- `pkg/compiler` performs lowering, semantic checks, bytecode emission, and optimization.
-- `pkg/bytecode` defines executable program structures.
-- `pkg/vm` executes bytecode programs.
-- `pkg/runtime` defines value semantics and runtime-facing contracts.
-- `pkg/stdlib` provides built-in host modules and functions.
-- Top-level package exposes the embedding surface used by applications.
+```text
+source -> parser -> diagnostics/AST -> compiler -> bytecode.Program -> vm.VM -> runtime values/results
+```
 
-Agents should reason about changes by pipeline stage:
+Agents should reason about changes by pipeline stage and ownership boundary:
+- Source identity, source ranges, and source-origin behavior usually begin in `pkg/source` and affect parser, diagnostics, compiler, formatter, or tooling call sites.
 - Syntax changes usually begin in grammar/parser and continue into compiler lowering.
+- Diagnostic changes usually involve `pkg/diagnostics` plus the parser/compiler/runtime call sites that create or wrap the diagnostic.
 - Semantic/runtime changes usually live in compiler, runtime, or VM.
+- Bytecode changes usually require coordinated updates in `pkg/bytecode`, compiler emission, VM execution, and low-level tooling such as `pkg/asm` or debugger metadata.
+- Runtime value behavior usually belongs in `pkg/runtime`; VM, stdlib, encoding, and debugger should consume those semantics rather than redefine them.
+- Output and materialization changes usually involve `pkg/encoding`, runtime values, and VM result handling.
+- Debugging changes usually involve `pkg/debugger`, VM execution hooks/state, compiler or bytecode metadata, and runtime value inspection contracts.
+- Built-in module/function changes usually belong in `pkg/stdlib`, while reusable module contracts belong in `pkg/module` or `pkg/sdk`.
 - Embedding/API changes usually affect the top-level package and integration boundaries.
+- File system access, sandboxing, or path-policy behavior usually belongs in `pkg/fs`, not parser/compiler logic directly.
 
 ## Canonical invariants
 
@@ -40,6 +42,7 @@ Agents should reason about changes by pipeline stage:
 - Optimizations must preserve correctness before performance.
 - Runtime execution errors and internal invariant violations are different classes of failure and should not be collapsed conceptually.
 - Do not assume behavior from old design notes or the v1 codebase unless it is reflected in the current v2 code.
+- Do not change FQL language semantics as a side effect of refactoring.
 
 ## Package map
 
@@ -47,73 +50,96 @@ Agents should begin with the package whose responsibility owns the requested beh
 
 ### Core execution pipeline
 
-- `pkg/parser`
-    - Grammar, parser pipeline, parse-tree processing, and parser-side diagnostics for FQL source code.
-    - Do not hand-edit generated parser artifacts; edit grammar sources and regenerate.
+* `pkg/source`
+    * Owns source text, source identity, source ranges, and source-origin metadata.
+    * Prefer this package when behavior depends on where code came from.
+    * Parser, diagnostics, compiler, formatter, and tooling may depend on it, but source identity should not be reimplemented in those packages.
+* `pkg/parser`
+    * Owns FQL syntax parsing, parse-tree processing, parser diagnostics, and parser-generated code integration.
+    * Grammar changes should begin under pkg/parser/antlr.
+    * pkg/parser/antlr contains grammar sources.
+    * pkg/parser/fql contains generated parser and lexer code.
+    * Do not hand-edit generated parser artifacts; edit grammar sources and regenerate.
+* `pkg/diagnostics`
+    * Owns shared diagnostic primitives and formatting support for errors, warnings, spans, labels, notes, hints, and user-facing messages.
+    * Parser, compiler, runtime, formatter, and tooling should use shared diagnostic concepts rather than inventing local diagnostic formats.
+    * Changes here should preserve diagnostic category, span, label, note, and hint quality.
+* `pkg/compiler`
+    * Owns semantic analysis, lowering from parsed FQL into bytecode.Program, bytecode emission, and optimization/code generation passes.
+    * Compiler changes must preserve the runtime semantics expected by the VM.
+    * Do not move runtime-only behavior into the compiler unless the behavior is explicitly compile-time validation or compile-time semantics.
+* `pkg/bytecode`
+    * Owns the executable program model consumed by the VM and produced by the compiler.
+    * Includes instructions, operands, programs, and related executable metadata.
+    * Changes here are cross-cutting and usually require coordinated updates in compiler emission, VM execution, debugger metadata, and low-level tooling such as pkg/asm.
+* `pkg/vm`
+    * Owns bytecode execution, VM state, instruction dispatch, runtime coordination, cleanup, and VM-facing result handling.
+    * This package is performance-sensitive and semantics-sensitive.
+    * Verify compiler, bytecode, and runtime assumptions before changing VM internals.
+* `pkg/runtime`
+    * Owns core runtime semantics: values, value comparison/equality behavior, type behavior, function registries, runtime contracts, and execution-facing interfaces.
+    * VM, stdlib, encoding, and debugger should consume runtime semantics rather than redefine them locally.
+    * Prefer this package for shared value behavior that must remain consistent across execution, materialization, stdlib functions, and debugging.
 
-- `pkg/compiler`
-    - Lowers parsed FQL into `bytecode.Program`, performs semantic analysis, and runs optimization/code generation passes.
+Output, formatting, and low-level tooling
 
-- `pkg/bytecode`
-    - Core executable program model: instructions, operands, programs, and related structures consumed by the VM and produced by the compiler.
-    - Changes here are cross-cutting and usually require corresponding compiler and VM updates.
+* `pkg/encoding`
+    * Owns output encoding and materialization infrastructure for turning runtime values into external representations.
+    * Changes here must account for runtime value semantics, resource ownership, cleanup behavior, and result lifetimes.
+* `pkg/formatter`
+    * Owns Ferret source formatting and pretty-printing behavior.
+    * Formatting changes should preserve source semantics and should be validated with targeted tests or fixtures.
+* `pkg/asm`
+    * Owns assembly-layer support for Ferret bytecode programs.
+    * Includes parsing, encoding, and low-level textual representations used by bytecode tooling and debugging.
+    * Opcode or bytecode shape changes may require corresponding updates here.
 
-- `pkg/runtime`
-    - Core runtime semantics: values, function and module contracts, execution-facing interfaces, and shared language/runtime behavior.
+Debugging and developer tooling
 
-- `pkg/vm`
-    - Bytecode execution engine for Ferret v2, including program execution, runtime coordination, cleanup, and VM-facing result handling.
-    - Performance-sensitive and semantics-sensitive; verify compiler/runtime assumptions before changing internals.
+* `pkg/debugger`
+    * Owns Ferret debugging support: debugger state, breakpoints, stepping coordination, execution inspection, and debugger-facing protocol adaptation.
+    * It should consume VM execution hooks, compiler/bytecode metadata, and runtime value inspection contracts.
+    * It should not own core runtime value semantics.
+* `pkg/logging`
+    * Owns internal logging support.
+    * Logging should remain observational.
+    * Do not make language semantics, diagnostics, execution behavior, or control flow depend on log output.
 
-### Language and developer tooling
+Integration and extension surfaces
 
-- `pkg/asm`
-    - Assembly-layer support for Ferret bytecode programs, including parsing and encoding of assembly representations used for low-level tooling and debugging.
+* `pkg/module`
+    * Owns Ferret module API contracts, host module interfaces, and module registration boundaries.
+    * Use this package for reusable module integration concepts.
+    * Do not place stdlib-specific behavior here.
+* `pkg/sdk`
+    * Owns extension-facing helpers and contracts for developers building on top of Ferret internals.
+    * Prefer `pkg/sdk` when the goal is to support external integrations, tools, or custom runtime/module implementations.
+    * Do not move internals into `pkg/sdk` only to make cross-package access easier.
+* `pkg/stdlib`
+    * Owns built-in Ferret namespaces, modules, and host functions registered as the standard library.
+    * Built-in functions should delegate shared semantics to runtime-owned helpers when behavior must be consistent outside stdlib.
+    * Do not duplicate runtime value semantics inside stdlib functions.
 
-- `pkg/diagnostics`
-    - Shared diagnostic primitives and formatting support for errors, warnings, spans, labels, and user-facing parser/compiler messages.
+File systems, internals, and support packages
 
-- `pkg/encoding`
-    - Output encoding and materialization infrastructure for turning runtime values into external representations.
+* `pkg/fs`
+    * Owns file system abstractions and security-aware file access.
+    * Use this package for controlled file access, virtual file systems, path policy, and sandbox-like behavior.
+    * Do not confuse it with pkg/source; source identity and file system access are related but separate concerns.
+* `pkg/internal`
+    * Owns implementation-only packages that are not intended for use outside of the Ferret project.
+    * Prefer `pkg/internal` for shared implementation details that should not become public or extension contracts.
+    * Do not expose APIs from here to external users.
 
-- `pkg/file`
-    - Ferret file abstraction and loaders for bringing query sources into the parser/compiler pipeline, including path-aware source handling used by embedding and tooling flows.
-    - Prefer this package when the behavior involves source origin, file-backed input, or file identity rather than general OS-level file utilities.
+Top-level package and regression suites
 
-- `pkg/formatter`
-    - Source formatting and pretty-printing support for Ferret code and related textual representations.
-
-### Integration and extension surfaces
-
-- `pkg/sdk`
-    - Extension-oriented developer surface for building on top of Ferret internals, including helpers and contracts intended for external integrations, tools, and custom runtime/module implementations.
-    - Prefer `pkg/sdk` when the goal is to support consumers building with Ferret rather than changing the core execution pipeline itself.
-
-- `pkg/stdlib`
-    - Built-in Ferret modules, namespaces, and host functions registered as the standard library.
-
-## Primary surfaces
-
-- Top-level package exposes the embedding API:
-    - `Engine` compiles and runs FQL sources.
-    - `Plan` wraps compiled bytecode plus environment state.
-    - `Session` executes a plan.
-    - `Module` and `ModuleRegistry` are the extension points for host modules.
-- `pkg/asm` provides assembly-oriented support for working with Ferret bytecode at a lower level.
-- `pkg/bytecode` defines instructions, operands, programs, and related executable structures.
-- `pkg/compiler` lowers parsed FQL into bytecode and runs optimization passes.
-- `pkg/diagnostics` provides shared diagnostics infrastructure used across parsing, compilation, and formatting of user-facing errors.
-- `pkg/encoding` handles output encoding and materialization of runtime values.
-- `pkg/file` provides file-backed source abstractions and related loading support used by parsing, compilation, and tooling flows.
-- `pkg/formatter` provides source formatting and pretty-printing for Ferret code.
-- `pkg/parser` parses FQL and assembles diagnostics.
-- `pkg/parser/antlr` contains the grammar sources.
-- `pkg/parser/fql` contains generated parser and lexer code.
-- `pkg/runtime` defines runtime values, function registries, and core semantics.
-- `pkg/sdk` contains extension-facing helpers and contracts for developers building on top of Ferret.
-- `pkg/stdlib` registers the built-in namespaces and functions.
-- `pkg/vm` executes bytecode programs.
-- `test/integration/compiler`, `test/integration/optimization`, and `test/integration/vm` are the main regression suites.
+* The top-level package owns the embedding surface used by applications:
+    * Engine compiles and runs FQL sources.
+    * Plan wraps compiled bytecode plus environment state.
+    * Session executes a plan.
+    * Module and ModuleRegistry expose extension points for host modules.
+* Changes here are API-sensitive and should be treated as embedding-facing behavior changes.
+* `test/integration/compiler`, `test/integration/optimization`, and `test/integration/vm` are the main regression suites.
 
 ## Where to start by task
 
@@ -132,7 +158,7 @@ Agents should begin with the package whose responsibility owns the requested beh
 
 - Change runtime value semantics:
     - inspect `pkg/runtime`
-    - inspect any relevant assumptions in `pkg/vm`
+    - inspect relevant assumptions in `pkg/vm`
     - inspect result/materialization behavior if affected
 
 - Change diagnostics behavior:
@@ -150,7 +176,7 @@ Agents should begin with the package whose responsibility owns the requested beh
     - validate formatting stability with targeted tests or fixtures
 
 - Change file-backed source handling or source loading behavior:
-    - inspect `pkg/file`
+    - inspect `pkg/source`
     - inspect parser/compiler call sites that consume source objects
     - validate path-aware diagnostics and any embedding/tooling behavior that depends on source identity
 
@@ -168,27 +194,85 @@ Agents should begin with the package whose responsibility owns the requested beh
     - validate that the change belongs to an extension-facing surface rather than the core pipeline
 
 - Change developer tooling or low-level program tooling:
-    - inspect `pkg/asm`, `pkg/formatter`, `pkg/diagnostics`, or `pkg/sdk` depending on which surface owns the behavior
+    - inspect `pkg/asm`, `pkg/debugger`, `pkg/formatter`, `pkg/diagnostics`, or `pkg/sdk` depending on which surface owns the behavior
 
 ## Stability guide
 
 Treat these as relatively stable unless the task explicitly targets them:
+
 - the overall pipeline shape: parser -> compiler -> bytecode -> VM
 - the parser generation workflow
 - the top-level embedding entry points
 
 Treat these as implementation-sensitive and verify current code before proposing changes:
+
 - optimizer internals
 - diagnostics plumbing
 - VM execution internals
 - runtime value behavior and cleanup/resource semantics
 - encoding/materialization behavior
+- debugger integration points
 
 Do not treat historical discussion, stale comments, or old branches as authoritative.
 
-## Go type and file structure rules
+## Public API and package boundary rules
 
-These rules are mandatory unless the task explicitly requires otherwise.
+- Treat the top-level package, `pkg/module`, `pkg/runtime`, and `pkg/sdk` as API-sensitive.
+- Do not export new symbols from API-sensitive packages unless the task explicitly requires an external contract.
+- Prefer unexported helpers inside the owning package before adding exported APIs.
+- If a new exported symbol is necessary, add a doc comment that explains the external contract and stability expectation.
+- Do not move internals into `pkg/sdk` only to make tests or cross-package access easier.
+- Do not expose debugger-only APIs through the public embedding surface unless explicitly requested.
+
+## Language behavior change rules
+
+- Do not change FQL language semantics as a side effect of refactoring.
+- Any intentional language behavior change must be called out explicitly in the final summary.
+- Backward-incompatible behavior changes require tests showing both the old edge case and the new expected behavior.
+- When behavior differs from v1 or from old docs, prefer current v2 tests and this file.
+- Preserve existing behavior unless the task explicitly requires changing it.
+
+## Runtime value correctness rules
+
+- Hashes are acceleration hints, not proof of equality.
+- Any uniqueness, `DISTINCT`, set, grouping, or deduplication behavior must verify equality after hash comparison.
+- Reuse shared runtime equality/comparison semantics instead of inventing local equality rules.
+- Do not introduce hash-only correctness paths unless the behavior is explicitly probabilistic, which language semantics normally are not.
+- Preserve Ferret type ordering and comparison semantics consistently across compiler, VM, stdlib, and encoding behavior.
+
+## Resource and lifecycle rules
+
+- Values or results that own resources must document ownership and cleanup behavior.
+- Cleanup must be deterministic where the API exposes `Close` or equivalent lifecycle methods.
+- VM execution must preserve cleanup behavior on normal return, runtime error, and cancellation paths.
+- Do not materialize lazy or streaming values eagerly unless the task explicitly requires it.
+- Encoding/materialization changes must consider resource ownership and whether values can outlive the current execution frame.
+
+## Debugging architecture rules
+
+- Debugger support must not change normal execution semantics.
+- Debugger-disabled execution paths must remain allocation-conscious and should avoid debugger-specific work on hot VM paths.
+- Runtime values may expose debugger-facing metadata or display information through runtime-owned contracts, not debugger-owned runtime type checks.
+- Debugger contracts should live near the value/runtime boundary when they describe value behavior.
+- `pkg/debugger` should consume those contracts and translate them into debugger state, protocol state, or user-facing inspection data; it should not own core runtime semantics.
+- Prefer optional interfaces over modifying every runtime value type.
+- Debugger integration in the VM must be explicit, measurable, and easy to bypass when debugging is disabled.
+
+## Diagnostic quality rules
+
+- User-facing errors should include accurate source spans whenever source information is available.
+- Prefer actionable hints when an error is likely caused by a common misuse.
+- Do not replace specific diagnostics with generic errors.
+- Parser/compiler diagnostics should distinguish syntax errors, semantic errors, runtime type errors, and internal invariants.
+- Tests for diagnostics should verify message category and span accuracy for behavior changes.
+
+## Standard library rules
+
+- Built-in functions should keep Ferret-facing argument validation close to the function boundary.
+- Prefer small host functions that delegate core behavior to runtime-owned helpers when behavior is shared.
+- Do not duplicate runtime semantics inside stdlib functions.
+- Stdlib errors should be user-facing and should preserve argument context where practical.
+- Test stdlib behavior at the Ferret-language level whenever practical.
 
 ## Go type and file structure rules
 
@@ -246,19 +330,33 @@ type (
 )
 ```
 
-### Rationale:
+Rationale:
+
 - one method-bearing type per file keeps ownership of behavior obvious
 - standalone method-bearing types make diffs and reviews clearer
 - grouped type blocks are fine for passive, closely related types, but should not hide substantial behavioral types
 
-Comment rules for functions and methods
+## Function and method ownership rules
+
+These rules are mandatory unless the task explicitly requires otherwise.
+
+- A file centered on a method-bearing type should contain the type, its methods, and its constructors only.
+- Do not mix package-level helper functions into a file that already contains methods for a primary type.
+- In type-centered files, constructor functions are the only normally allowed package-level functions.
+- If logic conceptually belongs to the primary type, implement it as a method.
+- If logic does not belong to the type and must remain a package-level function, place it in a separate helper-focused file.
+- Package-level functions are preferred only when there is no natural owning type or when the behavior is genuinely package-level.
+- If a file contains both methods and non-constructor package-level functions, that is usually a structure violation and should be refactored.
+
+## Comment rules for functions and methods
+
 - Do not add comments to every function or method by default.
 - Exported functions and methods should usually have doc comments, especially in public, embedding-facing, or extension-facing packages.
 - Unexported functions and methods should be commented only when they carry non-obvious behavior, invariants, side effects, ownership rules, cleanup expectations, or protocol/lifecycle constraints.
 - Comments must explain intent, contract, invariants, side effects, or lifecycle behavior.
 - Prefer comments that explain why the code exists, what must remain true, or how the method is meant to be used.
 - Do not write comments that merely restate the method name or signature.
-- For VM, runtime, compiler, encoding, and diagnostics internals, prefer comments on semantics and invariants over implementation narration.
+- For VM, runtime, compiler, encoding, diagnostics, and debugger internals, prefer comments on semantics and invariants over implementation narration.
 - Avoid comment wallpaper. Dense, meaningful comments are preferred over mechanically documenting obvious code.
 
 Preferred:
@@ -284,23 +382,29 @@ Avoid:
 func (r *Result) Close() error
 ```
 
-### Function and method ownership rules
+## Response and code style
 
-These rules are mandatory unless the task explicitly requires otherwise.
+When assisting with this repository, avoid large unstructured blocks of prose or code.
 
-- A file centered on a method-bearing type should contain the type, its methods, and its constructors only.
-- Do not mix package-level helper functions into a file that already contains methods for a primary type.
-- In type-centered files, constructor functions are the only normally allowed package-level functions.
-- If logic conceptually belongs to the primary type, implement it as a method.
-- If logic does not belong to the type and must remain a package-level function, place it in a separate helper-focused file.
-- Package-level functions are preferred only when there is no natural owning type or when the behavior is genuinely package-level.
-- If a file contains both methods and non-constructor package-level functions, that is usually a structure violation and should be refactored.
+Prefer responses that are easy to scan:
+
+- Use short sections with clear headings.
+- Use bullet points for decisions, trade-offs, and follow-up work.
+- Use code blocks only for actual code, commands, or configuration.
+- Prefer focused snippets or diffs over full-file dumps.
+- Explain why a change is needed before showing how to implement it.
+- Keep comments in code useful and minimal.
+- Avoid repeating the same context in multiple places.
+- When the change touches multiple files, summarize the role of each file first.
+
+The expected tone is practical, concise, and engineering-focused.
 
 ## Development practice expectations
 
 Agents must follow repository-specific engineering discipline rather than generic style preferences.
 
 ### Core principles
+
 - Preserve correctness first.
 - Preserve subsystem boundaries and invariants.
 - Prefer the smallest local change that fully solves the task.
@@ -309,6 +413,7 @@ Agents must follow repository-specific engineering discipline rather than generi
 - Keep behavioral ownership obvious in code structure, naming, and file layout.
 
 ### Mandatory expectations
+
 - Identify the owning subsystem before making a non-trivial change.
 - Preserve existing behavior unless the task explicitly requires changing it.
 - Add or update tests for any behavior change.
@@ -321,17 +426,19 @@ Agents must follow repository-specific engineering discipline rather than generi
 ### Required workflow for non-trivial changes
 
 Before making a non-trivial change, agents must:
-1.	Identify the owning subsystem.
-2.	Identify the contract, invariant, or behavior being preserved or changed.
-3.	Choose the smallest reasonable implementation that fits the existing design.
-4.	Determine whether the change is significant.
-5.	Add or update correctness tests.
-6.	Add or update benchmarks if the change is significant.
-7.	Run relevant validation and summarize the results accurately.
+
+1. Identify the owning subsystem.
+2. Identify the contract, invariant, or behavior being preserved or changed.
+3. Choose the smallest reasonable implementation that fits the existing design.
+4. Determine whether the change is significant.
+5. Add or update correctness tests.
+6. Add or update benchmarks if the change is significant.
+7. Run relevant validation and summarize the results accurately.
 
 ### Significant changes
 
 A change is significant when it could reasonably affect:
+
 - execution throughput
 - compile-time performance
 - latency on common paths
@@ -341,15 +448,18 @@ A change is significant when it could reasonably affect:
 - optimizer or code generation output relevant to performance
 
 This includes, but is not limited to, changes in:
-- pkg/vm
-- pkg/runtime
-- pkg/compiler
-- pkg/bytecode
-- pkg/encoding
+
+- `pkg/vm`
+- `pkg/runtime`
+- `pkg/compiler`
+- `pkg/bytecode`
+- `pkg/encoding`
 - parser/compiler hot paths
 - caching, pooling, register allocation, ownership tracking, or materialization logic
+- debugger hooks on execution hot paths
 
 This usually does not include:
+
 - comment-only, docs-only, or formatting-only edits
 - pure renames with no behavior change
 - test-only changes
@@ -360,19 +470,31 @@ When in doubt, treat the change as significant and benchmark it.
 ### Benchmark workflow for significant changes
 
 For significant changes, agents must:
+
 - run relevant benchmarks before making the change and save the results as a baseline
 - implement the change
 - run the same benchmarks again after the change
-- compare before/after results, preferably including ns/op, B/op, and allocs/op
+- compare before/after results, preferably including `ns/op`, `B/op`, and `allocs/op`
 - report the benchmark command used and summarize the performance delta
 
 If no relevant benchmark exists for the changed hot path, add one.
 
 If benchmark tooling or environment is unavailable, state that explicitly and do not claim benchmark validation was completed.
 
+## Test placement rules
+
+- Parser syntax behavior should have parser-focused tests or fixtures.
+- Compiler semantic behavior should have compiler tests and diagnostics/span assertions when relevant.
+- Bytecode emission changes should include compiler or integration tests that verify emitted behavior, not just VM behavior.
+- VM opcode behavior should have VM-level tests plus integration coverage when user-visible.
+- Stdlib behavior should be tested at the Ferret-language level whenever practical.
+- Public embedding behavior should have top-level API tests, not only package-internal tests.
+- Debugger behavior should test protocol/inspection output separately from VM execution semantics when possible.
+
 ## Validation and evidence
 
 When finishing a non-trivial change, agents should report:
+
 - owning subsystem
 - files changed
 - tests added or updated
@@ -382,11 +504,13 @@ When finishing a non-trivial change, agents should report:
 - notable invariants preserved or intentionally changed
 
 For significant changes:
+
 - tests alone are not sufficient
 - both correctness tests and benchmarks are required
 - benchmark results must be compared against a baseline when the environment allows it
 
 ### Change discipline
+
 - Prefer adapting an existing local pattern over introducing a new architectural pattern.
 - Do not add new helper layers, wrappers, interfaces, or abstractions only for aesthetic reasons.
 - Do not move code across packages unless the ownership boundary is genuinely wrong.
@@ -394,6 +518,7 @@ For significant changes:
 - If a cleanup is necessary to make the requested change safe, keep it tightly scoped and explain why it was needed.
 
 ### Comment and documentation discipline
+
 - Add comments where semantics, invariants, side effects, ownership, lifecycle, or recovery behavior are non-obvious.
 - Do not add comment wallpaper.
 - Prefer comments that explain why, contract, or invariants rather than implementation narration.
@@ -402,6 +527,7 @@ For significant changes:
 ### Decision bias when uncertain
 
 When uncertain:
+
 - preserve existing behavior
 - prefer the smaller local change
 - add a focused test
@@ -409,19 +535,22 @@ When uncertain:
 - verify ownership before introducing a new abstraction or package-level dependency
 
 ## Tooling prerequisites
+
 - Go must be installed.
-- make is optional but is the preferred entrypoint for repo-defined workflows.
+- `make` is optional but is the preferred entrypoint for repo-defined workflows.
 - Java plus ANTLR 4.13.2 are required when regenerating parser artifacts.
-- staticcheck, goimports, and revive are needed for lint/format flows; install them with make install-tools.
+- `staticcheck`, `goimports`, and `revive` are needed for lint/format flows; install them with `make install-tools`.
 
 ## Command matrix
-- Broad validation: go test ./...
-- Race-heavy package and integration coverage: make test
-- Lint: make lint
-- Format: make fmt
-- Regenerate parser/codegen artifacts: make generate
-- Run this only when grammar or generator inputs change.
-- Build the CLI binary: make compile
+
+- Broad validation: `go test ./...`
+- Race-heavy package and integration coverage: `make test`
+- Lint: `make lint`
+- Format: `make fmt`
+- Regenerate parser/codegen artifacts: `make generate`
+- Build the CLI binary: `make compile`
+
+Run `make generate` only when grammar or generator inputs change.
 
 ## Editing rules
 
@@ -432,20 +561,22 @@ When uncertain:
 - If you change grammar files in `pkg/parser/antlr`, run `make generate` and commit the generated output in the same change.
 - Treat `Makefile` and `.github/workflows/build.yml` as the source of truth for validation commands.
 - Prefer narrow validation first, then broaden:
-    - Package-local changes: run the affected `go test` package(s).
-    - Compiler, optimizer, or VM changes: run the relevant integration suite(s).
+    - Package-local changes: run the affected `go test` package or packages.
+    - Compiler, optimizer, or VM changes: run the relevant integration suites.
     - Cross-cutting changes: finish with `go test ./...` or `make test`.
 
 ### Validation expectations
+
 - After code changes, run the narrowest tests that prove the behavior you touched.
 - Before finishing broader changes, run the relevant repo-level command from the matrix above.
-- If you changed formatting-sensitive files, run make fmt.
-- If you changed lint-sensitive code paths or public behavior, run make lint when the toolchain is available.
+- If you changed formatting-sensitive files, run `make fmt`.
+- If you changed lint-sensitive code paths or public behavior, run `make lint` when the toolchain is available.
 - If you changed parser grammar, generated lexer/parser output must be included and reviewed.
 
 ### Expectations for non-trivial changes
 
 When proposing or implementing non-trivial changes:
+
 - identify the owning subsystem first
 - preserve invariants unless the task explicitly changes them
 - prefer local, comprehensible changes before introducing new abstractions
@@ -453,6 +584,7 @@ When proposing or implementing non-trivial changes:
 - do not perform opportunistic refactors unrelated to the requested task unless they are necessary for correctness
 
 ## Secondary references
-- README.md for product context and links to the broader Ferret ecosystem.
-- CONTRIBUTING.md for human contributor process.
-- .github/workflows/build.yml for the current CI validation path.
+
+- `README.md` for product context and links to the broader Ferret ecosystem.
+- `CONTRIBUTING.md` for human contributor process.
+- `.github/workflows/build.yml` for the current CI validation path.

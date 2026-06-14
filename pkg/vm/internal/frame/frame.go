@@ -20,3 +20,11 @@ type CallFrame struct {
 	HasCallSite      bool
 	RecoveryBoundary bool
 }
+
+// structuralCallSitePC returns the original caller source PC even after a
+// tail call replaces the diagnostic call-site metadata.
+func (f *CallFrame) structuralCallSitePC() int {
+	// runCore advances PC before entering the UDF, while call descriptors map
+	// the source location to the instruction immediately before the call.
+	return f.ReturnPC - 2
+}

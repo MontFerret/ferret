@@ -71,6 +71,10 @@ func (s *execState) startRun(env *Environment) error {
 }
 
 func (s *execState) endRun() {
+	_ = s.endRunWithError()
+}
+
+func (s *execState) endRunWithError() error {
 	for {
 		s.cleanupCurrentCells()
 		s.owned.DrainTo(&s.deferred)
@@ -87,8 +91,10 @@ func (s *execState) endRun() {
 		s.aliases = caller.Aliases
 	}
 
-	_ = s.deferred.CloseAll()
+	err := s.deferred.CloseAll()
 	s.resetRunStorage()
+
+	return err
 }
 
 func (s *execState) finishRun(root runtime.Value) *Result {

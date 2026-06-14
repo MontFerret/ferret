@@ -11,6 +11,11 @@ type (
 		CallSitePC int
 		FnID       int
 	}
+
+	DebugTraceEntry struct {
+		FunctionID int
+		PC         int
+	}
 )
 
 func NewCallStack() CallStack {
@@ -47,6 +52,16 @@ func (s *CallStack) Top() *CallFrame {
 	}
 
 	return &s.frames[len(s.frames)-1]
+}
+
+// CurrentFunctionID returns the active UDF ID or -1 for the top-level body.
+func (s *CallStack) CurrentFunctionID() int {
+	top := s.Top()
+	if top == nil {
+		return -1
+	}
+
+	return top.FnID
 }
 
 // NearestRecoveryBoundary returns the index of the nearest protected frame.
@@ -103,6 +118,38 @@ func (s *CallStack) TraceEntries() []TraceEntry {
 			CallSitePC: frame.CallSitePC,
 			FnID:       frame.FnID,
 			FnName:     frame.FnName,
+		})
+	}
+
+	if len(traces) == 0 {
+		return nil
+	}
+
+	return traces
+}
+
+// DebugTraceEntries returns structural callers from nearest to farthest.
+func (s *CallStack) DebugTraceEntries() []DebugTraceEntry {
+	if len(s.frames) == 0 {
+		return nil
+	}
+
+	traces := make([]DebugTraceEntry, 0, len(s.frames))
+
+	for i := len(s.frames) - 1; i >= 0; i-- {
+		frame := &s.frames[i]
+		if !frame.HasCallSite {
+			continue
+		}
+
+		functionID := -1
+		if i > 0 {
+			functionID = s.frames[i-1].FnID
+		}
+
+		traces = append(traces, DebugTraceEntry{
+			FunctionID: functionID,
+			PC:         frame.structuralCallSitePC(),
 		})
 	}
 

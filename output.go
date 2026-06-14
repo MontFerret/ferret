@@ -7,37 +7,30 @@ import (
 )
 
 // Output is the encoded result returned from session or engine execution.
-type Output struct {
-	// ContentType is the MIME type of the encoded content (e.g. "application/json").
-	ContentType string
-	// Content holds the encoded output bytes.
-	Content []byte
-}
+type Output = encoding.Output
 
-func newOutput(registry *encoding.Registry, contentType string, res *vm.Result) (*Output, error) {
+func newOutput(registry *encoding.Registry, contentType string, res *vm.Result) (*encoding.Output, error) {
 	codec, err := registry.Codec(contentType)
 	if err != nil {
 		return nil, err
 	}
 
-	return vm.Materialize[*Output](res, func(value runtime.Value) (vm.Materialized[*Output], error) {
+	return vm.Materialize[*encoding.Output](res, func(value runtime.Value) (vm.Materialized[*encoding.Output], error) {
 		enc := codec.EncodeWith().PreHook(func(value runtime.Value) error {
 			res.AdoptValue(value)
 			return nil
 		}).Encoder()
 
 		data, err := enc.Encode(value)
-
 		if err != nil {
-			return vm.Materialized[*Output]{}, err
+			return vm.Materialized[*encoding.Output]{}, err
 		}
 
-		return vm.Materialized[*Output]{
-			Value: &Output{
+		return vm.Materialized[*encoding.Output]{
+			Value: &encoding.Output{
 				ContentType: codec.ContentType(),
 				Content:     data,
 			},
 		}, nil
-
 	})
 }

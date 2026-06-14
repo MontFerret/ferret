@@ -34,6 +34,16 @@ func New(query string, tr ...TokenStreamTransformer) *Parser {
 	return &Parser{tree: p}
 }
 
+// Expression parses a standalone expression.
+func (p *Parser) Expression() fql.IExpressionContext {
+	return p.tree.Expression()
+}
+
+// AtEOF reports whether the parser consumed the complete input.
+func (p *Parser) AtEOF() bool {
+	return p.tree.GetCurrentToken().GetTokenType() == antlr.TokenEOF
+}
+
 func (p *Parser) GetLiteralNames() []string {
 	return p.tree.GetLiteralNames()[:]
 }
