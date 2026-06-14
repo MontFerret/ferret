@@ -72,7 +72,8 @@ Instead of writing page-specific glue code for browser control, DOM traversal, w
 
 - Declarative query language for structured data workflows
 - Support for static pages, dynamic pages, and browser-driven extraction
-- CLI and embeddable Go runtime
+- CLI tooling, including formatting and debugging support
+- Embeddable Go runtime for integrating Ferret into applications
 - Extensible module, function, and runtime capability system
 - Structured results for testing, analytics, AI/ML, and automation pipelines
 - Portable execution model with a focused VM
