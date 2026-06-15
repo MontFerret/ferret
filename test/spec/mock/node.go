@@ -42,7 +42,7 @@ func (n *Node) Iterate(ctx context.Context) (runtime.Iterator, error) {
 func (n *Node) Query(_ context.Context, q runtime.Query) (runtime.List, error) {
 	switch q.Kind.String() {
 	case "css":
-		switch q.Payload.String() {
+		switch q.Expression.String() {
 		case ".product":
 			return runtime.NewArrayWith(NewNode("product")), nil
 		case ".title":

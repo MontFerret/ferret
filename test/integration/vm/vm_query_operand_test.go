@@ -73,6 +73,7 @@ func programWithApplyQueryConstSource(src runtime.Value) *bytecode.Program {
 				runtime.NewString("css"),
 				runtime.NewString(".items"),
 				runtime.None,
+				runtime.None,
 			),
 		},
 	}
@@ -98,8 +99,8 @@ func TestApplyQueryConstantSource_Strict(t *testing.T) {
 				return fmt.Errorf("unexpected query kind: got %q, want %q", got, want)
 			}
 
-			if got, want := stub.queries[0].Payload, runtime.NewString(".items"); got != want {
-				return fmt.Errorf("unexpected query payload: got %q, want %q", got, want)
+			if got, want := stub.queries[0].Expression, runtime.NewString(".items"); got != want {
+				return fmt.Errorf("unexpected query expression: got %q, want %q", got, want)
 			}
 
 			return nil

@@ -98,12 +98,40 @@ func coerceDispatchArgs(
 func coerceQueryDescriptor(ctx context.Context, descriptor runtime.Value) (runtime.Query, error) {
 	switch value := descriptor.(type) {
 	case runtime.ObjectLike:
+		length, err := value.Length(ctx)
+		if err != nil {
+			return runtime.Query{}, err
+		}
+		if length != 4 {
+			return runtime.Query{}, runtime.Error(runtime.ErrInvalidOperation, errQueryFormatUnexpected)
+		}
+
+		for _, key := range []runtime.Value{
+			queryDescriptorKeyKind,
+			queryDescriptorKeyExpression,
+			queryDescriptorKeyParams,
+			queryDescriptorKeyOptions,
+		} {
+			ok, err := value.ContainsKey(ctx, key)
+			if err != nil {
+				return runtime.Query{}, err
+			}
+			if !ok {
+				return runtime.Query{}, runtime.Error(runtime.ErrInvalidOperation, errQueryFormatUnexpected)
+			}
+		}
+
 		kind, err := value.Get(ctx, queryDescriptorKeyKind)
 		if err != nil {
 			return runtime.Query{}, err
 		}
 
-		payload, err := value.Get(ctx, queryDescriptorKeyPayload)
+		expression, err := value.Get(ctx, queryDescriptorKeyExpression)
+		if err != nil {
+			return runtime.Query{}, err
+		}
+
+		params, err := value.Get(ctx, queryDescriptorKeyParams)
 		if err != nil {
 			return runtime.Query{}, err
 		}
@@ -113,10 +141,21 @@ func coerceQueryDescriptor(ctx context.Context, descriptor runtime.Value) (runti
 			return runtime.Query{}, err
 		}
 
+		kindString, err := runtime.CastString(kind)
+		if err != nil {
+			return runtime.Query{}, runtime.TypeErrorOf(kind, runtime.TypeString)
+		}
+
+		expressionString, err := runtime.CastString(expression)
+		if err != nil {
+			return runtime.Query{}, runtime.TypeErrorOf(expression, runtime.TypeString)
+		}
+
 		return runtime.Query{
-			Kind:    runtime.CastOr[runtime.String](kind, runtime.EmptyString),
-			Payload: runtime.CastOr[runtime.String](payload, runtime.EmptyString),
-			Options: options,
+			Kind:       kindString,
+			Expression: expressionString,
+			Params:     params,
+			Options:    options,
 		}, nil
 	case *runtime.Array:
 		length, err := value.Length(ctx)
@@ -124,7 +163,7 @@ func coerceQueryDescriptor(ctx context.Context, descriptor runtime.Value) (runti
 			return runtime.Query{}, err
 		}
 
-		if length != 3 {
+		if length != 4 {
 			return runtime.Query{}, runtime.Error(runtime.ErrInvalidOperation, errQueryFormatUnexpected)
 		}
 
@@ -133,12 +172,17 @@ func coerceQueryDescriptor(ctx context.Context, descriptor runtime.Value) (runti
 			return runtime.Query{}, err
 		}
 
-		payloadVal, err := value.At(ctx, runtime.NewInt(1))
+		expressionVal, err := value.At(ctx, runtime.NewInt(1))
 		if err != nil {
 			return runtime.Query{}, err
 		}
 
-		optionsVal, err := value.At(ctx, runtime.NewInt(2))
+		paramsVal, err := value.At(ctx, runtime.NewInt(2))
+		if err != nil {
+			return runtime.Query{}, err
+		}
+
+		optionsVal, err := value.At(ctx, runtime.NewInt(3))
 		if err != nil {
 			return runtime.Query{}, err
 		}
@@ -148,18 +192,19 @@ func coerceQueryDescriptor(ctx context.Context, descriptor runtime.Value) (runti
 			return runtime.Query{}, runtime.TypeErrorOf(kindVal, runtime.TypeString)
 		}
 
-		payload := runtime.EmptyString
-		if payloadVal != runtime.None {
-			payload, err = runtime.CastString(payloadVal)
+		expression := runtime.EmptyString
+		if expressionVal != runtime.None {
+			expression, err = runtime.CastString(expressionVal)
 			if err != nil {
-				return runtime.Query{}, runtime.TypeErrorOf(payloadVal, runtime.TypeString, runtime.TypeNone)
+				return runtime.Query{}, runtime.TypeErrorOf(expressionVal, runtime.TypeString, runtime.TypeNone)
 			}
 		}
 
 		return runtime.Query{
-			Kind:    kind,
-			Payload: payload,
-			Options: optionsVal,
+			Kind:       kind,
+			Expression: expression,
+			Params:     paramsVal,
+			Options:    optionsVal,
 		}, nil
 	default:
 		return runtime.Query{}, runtime.Error(runtime.ErrInvalidOperation, errQueryFormatUnexpected)

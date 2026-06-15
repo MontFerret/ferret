@@ -113,6 +113,20 @@ func TestExpressionFormatter_QueryExpressionInline(t *testing.T) {
 	}
 }
 
+func TestExpressionFormatter_QueryExpressionOptionsInline(t *testing.T) {
+	input := "RETURN QUERY `.items` IN doc USING css OPTIONS { timeout: 5000 }"
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "QUERY `.items` IN doc USING css OPTIONS { timeout: 5000 }" {
+		t.Fatalf("unexpected query expression formatting: %q", got)
+	}
+}
+
 func TestExpressionFormatter_QueryExpressionParamPayload(t *testing.T) {
 	input := "RETURN QUERY @q IN doc USING css"
 	program := parseProgram(t, input)
@@ -229,7 +243,7 @@ func TestExpressionFormatter_ParenthesizedErrorPolicyTail(t *testing.T) {
 }
 
 func TestExpressionFormatter_QueryExpressionErrorPolicyTail(t *testing.T) {
-	input := "RETURN QUERY `.items` IN doc USING css ON ERROR RETURN NONE"
+	input := "RETURN QUERY `.items` IN doc USING css OPTIONS { timeout: 5000 } ON ERROR RETURN NONE"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -237,13 +251,13 @@ func TestExpressionFormatter_QueryExpressionErrorPolicyTail(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "QUERY `.items` IN doc USING css ON ERROR RETURN NONE" {
+	if got := buf.String(); got != "QUERY `.items` IN doc USING css OPTIONS { timeout: 5000 } ON ERROR RETURN NONE" {
 		t.Fatalf("unexpected query error policy formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_QueryExpressionOneModifierWithMultiline(t *testing.T) {
-	input := "RETURN QUERY ONE `.items` IN doc USING css WITH { limit: 10, timeout: 5 }"
+	input := "RETURN QUERY ONE `.items` IN doc USING css WITH { limit: 10, timeout: 5 } OPTIONS { retry: 2, delay: 50 }"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -253,7 +267,7 @@ func TestExpressionFormatter_QueryExpressionOneModifierWithMultiline(t *testing.
 	e := newEngine(source.NewAnonymous(input), &buf, opts)
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "QUERY ONE `.items` IN doc USING css\n    WITH {\n        limit: 10,\n        timeout: 5\n    }" {
+	if got := buf.String(); got != "QUERY ONE `.items` IN doc USING css\n    WITH {\n        limit: 10,\n        timeout: 5\n    }\n    OPTIONS {\n        retry: 2,\n        delay: 50\n    }" {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }

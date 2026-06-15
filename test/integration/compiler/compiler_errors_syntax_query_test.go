@@ -3,7 +3,9 @@ package compiler_test
 import (
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
@@ -113,10 +115,47 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			"RETURN QUERY `.x` IN @doc USING css WITH )",
 			E{
 				Kind:    parserd.SyntaxError,
-				Message: "Expected options expression after WITH",
-				Hint:    "Provide an options expression, e.g. WITH { limit: 10 }.",
+				Message: "Expected query params expression after WITH",
+				Hint:    "Provide a params expression, e.g. WITH { params: [1] }.",
 			},
 			"Missing WITH value",
-		).Skip(),
+		),
+		Failure(
+			"RETURN QUERY `.x` IN @doc USING css OPTIONS )",
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected query options expression after OPTIONS",
+				Hint:    "Provide an options expression, e.g. OPTIONS { timeout: 5000 }.",
+			},
+			"Missing OPTIONS value",
+		),
+		Failure(
+			"RETURN QUERY `.x` IN @doc USING css OPTIONS { timeout: 5000 } WITH { params: [1] }",
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "WITH must appear before OPTIONS in QUERY",
+				Hint:    "Move the WITH clause before OPTIONS.",
+			},
+			"WITH after OPTIONS",
+		),
 	})
+}
+
+func TestSyntaxErrorsQueryExpressionWithAfterOptionsSpan(t *testing.T) {
+	query := "RETURN QUERY `.x` IN @doc USING css OPTIONS { timeout: 5000 } WITH { params: [1] }"
+
+	_, err := compiler.New().Compile(source.NewAnonymous(query))
+	if err == nil {
+		t.Fatal("expected compilation error")
+	}
+
+	diag := firstCompilationError(err)
+	if diag == nil || len(diag.Spans) == 0 {
+		t.Fatalf("expected diagnostic span, got %v", err)
+	}
+
+	span := diag.Spans[0].Span
+	if got := query[span.Start:span.End]; got != "WITH" {
+		t.Fatalf("expected diagnostic to point at WITH, got %q", got)
+	}
 }

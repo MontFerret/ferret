@@ -75,6 +75,12 @@ FOR u IN users
 			Description: "Query literal with params",
 		},
 		{
+			Input:       spec.NewExpressionInput("RETURN QUERY `.items` IN @doc USING css WITH { value: 1 } OPTIONS { timeout: 5000 }"),
+			Expected:    []any{"ok"},
+			Env:         []vm.EnvironmentOption{vm.WithParams(runtime.Params{"doc": queryable})},
+			Description: "Configured query expression",
+		},
+		{
 			Input: spec.NewExpressionInput(`
 FUNC add(x, y) => x + y
 RETURN add(2, 3)

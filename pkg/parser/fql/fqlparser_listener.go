@@ -475,6 +475,9 @@ type FqlParserListener interface {
 	// EnterQueryWithOpt is called when entering the queryWithOpt production.
 	EnterQueryWithOpt(c *QueryWithOptContext)
 
+	// EnterQueryOptionsOpt is called when entering the queryOptionsOpt production.
+	EnterQueryOptionsOpt(c *QueryOptionsOptContext)
+
 	// EnterQueryLiteral is called when entering the queryLiteral production.
 	EnterQueryLiteral(c *QueryLiteralContext)
 
@@ -978,6 +981,9 @@ type FqlParserListener interface {
 
 	// ExitQueryWithOpt is called when exiting the queryWithOpt production.
 	ExitQueryWithOpt(c *QueryWithOptContext)
+
+	// ExitQueryOptionsOpt is called when exiting the queryOptionsOpt production.
+	ExitQueryOptionsOpt(c *QueryOptionsOptContext)
 
 	// ExitQueryLiteral is called when exiting the queryLiteral production.
 	ExitQueryLiteral(c *QueryLiteralContext)

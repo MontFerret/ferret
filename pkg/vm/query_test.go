@@ -99,6 +99,7 @@ func validDescriptor() runtime.Value {
 		runtime.NewString("css"),
 		runtime.NewString(".items"),
 		runtime.None,
+		runtime.None,
 	)
 }
 
@@ -131,7 +132,7 @@ func assertStringArray(t *testing.T, out runtime.Value, expected ...runtime.Stri
 	}
 }
 
-func TestApplyQuery_ObjectDescriptorIgnoresModifier(t *testing.T) {
+func TestApplyQuery_ObjectDescriptorUsesCanonicalShape(t *testing.T) {
 	src := &queryStub{
 		result: runtime.NewArrayWith(runtime.NewString("ok")),
 	}
@@ -139,9 +140,9 @@ func TestApplyQuery_ObjectDescriptorIgnoresModifier(t *testing.T) {
 	obj := runtime.NewObject()
 	ctx := context.Background()
 	_ = obj.Set(ctx, runtime.NewString("kind"), runtime.NewString("css"))
-	_ = obj.Set(ctx, runtime.NewString("payload"), runtime.NewString(".items"))
+	_ = obj.Set(ctx, runtime.NewString("expression"), runtime.NewString(".items"))
+	_ = obj.Set(ctx, runtime.NewString("params"), runtime.NewString("input"))
 	_ = obj.Set(ctx, runtime.NewString("options"), runtime.None)
-	_ = obj.Set(ctx, runtime.NewString("modifier"), runtime.NewString("ONE"))
 
 	out, err := applyQuery(ctx, src, obj)
 	if err != nil {
@@ -153,21 +154,21 @@ func TestApplyQuery_ObjectDescriptorIgnoresModifier(t *testing.T) {
 	if len(src.queries) != 1 {
 		t.Fatalf("unexpected query count: got %d, want 1", len(src.queries))
 	}
+	if src.queries[0].Params != runtime.NewString("input") || src.queries[0].Options != runtime.None {
+		t.Fatalf("unexpected query params/options: %#v", src.queries[0])
+	}
 }
 
-func TestApplyQuery_ArrayDescriptorRequiresExactTupleSize(t *testing.T) {
-	src := &queryStub{
-		result: runtime.NewArrayWith(runtime.NewString("ok")),
-	}
+func TestApplyQuery_ObjectDescriptorRejectsExtraFields(t *testing.T) {
+	obj := runtime.NewObjectWith(map[string]runtime.Value{
+		"kind":       runtime.NewString("css"),
+		"expression": runtime.NewString(".items"),
+		"params":     runtime.None,
+		"options":    runtime.None,
+		"modifier":   runtime.NewString("ONE"),
+	})
 
-	descriptor := runtime.NewArrayWith(
-		runtime.NewString("css"),
-		runtime.NewString(".items"),
-		runtime.None,
-		runtime.NewString("count"),
-	)
-
-	_, err := applyQuery(context.Background(), src, descriptor)
+	_, err := applyQuery(context.Background(), &queryStub{}, obj)
 	if err == nil {
 		t.Fatal("expected runtime error")
 	}
@@ -177,7 +178,51 @@ func TestApplyQuery_ArrayDescriptorRequiresExactTupleSize(t *testing.T) {
 	}
 }
 
-func TestApplyQuery_ArrayDescriptorPayloadTypeValidation(t *testing.T) {
+func TestApplyQuery_ObjectDescriptorRejectsLegacyPayloadShape(t *testing.T) {
+	obj := runtime.NewObjectWith(map[string]runtime.Value{
+		"kind":    runtime.NewString("css"),
+		"payload": runtime.NewString(".items"),
+		"params":  runtime.None,
+		"options": runtime.None,
+	})
+
+	_, err := applyQuery(context.Background(), &queryStub{}, obj)
+	if err == nil {
+		t.Fatal("expected runtime error")
+	}
+
+	if !strings.Contains(strings.ToLower(err.Error()), "unexpected query format") {
+		t.Fatalf("expected unexpected query format error, got %v", err)
+	}
+}
+
+func TestApplyQuery_ArrayDescriptorRequiresExactTupleSize(t *testing.T) {
+	for _, descriptor := range []*runtime.Array{
+		runtime.NewArrayWith(
+			runtime.NewString("css"),
+			runtime.NewString(".items"),
+			runtime.None,
+		),
+		runtime.NewArrayWith(
+			runtime.NewString("css"),
+			runtime.NewString(".items"),
+			runtime.None,
+			runtime.None,
+			runtime.None,
+		),
+	} {
+		_, err := applyQuery(context.Background(), &queryStub{}, descriptor)
+		if err == nil {
+			t.Fatal("expected runtime error")
+		}
+
+		if !strings.Contains(strings.ToLower(err.Error()), "unexpected query format") {
+			t.Fatalf("expected unexpected query format error, got %v", err)
+		}
+	}
+}
+
+func TestApplyQuery_ArrayDescriptorExpressionTypeValidation(t *testing.T) {
 	src := &queryStub{
 		result: runtime.NewArrayWith(runtime.NewString("ok")),
 	}
@@ -185,6 +230,7 @@ func TestApplyQuery_ArrayDescriptorPayloadTypeValidation(t *testing.T) {
 	descriptor := runtime.NewArrayWith(
 		runtime.NewString("css"),
 		runtime.NewInt(1),
+		runtime.None,
 		runtime.None,
 	)
 

@@ -95,16 +95,19 @@ func (c *exprQueryCompiler) emitQueryEnvelope(ctx fql.IQueryExpressionContext, s
 	queryReg := c.ctx.Function.Registers.Allocate()
 
 	c.ctx.Program.Emitter.WithSpan(span, func() {
-		c.ctx.Program.Emitter.EmitArray(queryReg, 3)
+		c.ctx.Program.Emitter.EmitArray(queryReg, 4)
 	})
 
 	kind := c.compileQueryKindOperand(ctx)
 	c.emitQueryEnvelopeOperand(span, queryReg, kind)
 
-	payload := c.compileQueryPayloadOperand(ctx.QueryPayload())
-	c.emitQueryEnvelopeOperand(span, queryReg, payload)
+	expression := c.compileQueryExpressionOperand(ctx.QueryPayload())
+	c.emitQueryEnvelopeOperand(span, queryReg, expression)
 
-	options := c.compileQueryOptionsOperand(ctx.QueryWithOpt())
+	params := c.compileQueryParamsOperand(ctx.QueryWithOpt())
+	c.emitQueryEnvelopeOperand(span, queryReg, params)
+
+	options := c.compileQueryOptionsOperand(ctx.QueryOptionsOpt())
 	c.emitQueryEnvelopeOperand(span, queryReg, options)
 
 	return queryReg
@@ -119,7 +122,7 @@ func (c *exprQueryCompiler) compileQueryKindOperand(ctx fql.IQueryExpressionCont
 	return c.facts.LoadConstant(runtime.NewString(kind))
 }
 
-func (c *exprQueryCompiler) compileQueryPayloadOperand(ctx fql.IQueryPayloadContext) bytecode.Operand {
+func (c *exprQueryCompiler) compileQueryExpressionOperand(ctx fql.IQueryPayloadContext) bytecode.Operand {
 	if ctx == nil {
 		return c.facts.LoadConstant(runtime.EmptyString)
 	}
@@ -143,7 +146,15 @@ func (c *exprQueryCompiler) compileQueryPayloadOperand(ctx fql.IQueryPayloadCont
 	return c.facts.LoadConstant(runtime.EmptyString)
 }
 
-func (c *exprQueryCompiler) compileQueryOptionsOperand(ctx fql.IQueryWithOptContext) bytecode.Operand {
+func (c *exprQueryCompiler) compileQueryParamsOperand(ctx fql.IQueryWithOptContext) bytecode.Operand {
+	if ctx == nil || ctx.Expression() == nil {
+		return c.facts.LoadConstant(runtime.None)
+	}
+
+	return c.callbacks.compileExpr(ctx.Expression())
+}
+
+func (c *exprQueryCompiler) compileQueryOptionsOperand(ctx fql.IQueryOptionsOptContext) bytecode.Operand {
 	if ctx == nil || ctx.Expression() == nil {
 		return c.facts.LoadConstant(runtime.None)
 	}
@@ -181,7 +192,7 @@ func (c *exprQueryCompiler) compileQueryLiteral(ctx fql.IQueryLiteralContext) by
 	span := diagnostics.SpanFromRuleContext(ctx)
 
 	c.ctx.Program.Emitter.WithSpan(span, func() {
-		c.ctx.Program.Emitter.EmitArray(dst, 3)
+		c.ctx.Program.Emitter.EmitArray(dst, 4)
 	})
 
 	kindReg := c.facts.LoadConstant(runtime.NewString(kind))
@@ -190,17 +201,17 @@ func (c *exprQueryCompiler) compileQueryLiteral(ctx fql.IQueryLiteralContext) by
 		c.ctx.Program.Emitter.EmitArrayPush(dst, kindReg)
 	})
 
-	payloadReg := c.facts.LoadConstant(runtime.EmptyString)
+	expressionReg := c.facts.LoadConstant(runtime.EmptyString)
 	if str := ctx.StringLiteral(); str != nil {
 		if val, ok := parseStringLiteralConst(str); ok {
-			payloadReg = c.facts.LoadConstant(val)
+			expressionReg = c.facts.LoadConstant(val)
 		} else {
-			payloadReg = c.literals.CompileStringLiteral(str)
+			expressionReg = c.literals.CompileStringLiteral(str)
 		}
 	}
 
 	c.ctx.Program.Emitter.WithSpan(span, func() {
-		c.ctx.Program.Emitter.EmitArrayPush(dst, payloadReg)
+		c.ctx.Program.Emitter.EmitArrayPush(dst, expressionReg)
 	})
 
 	params := ctx.Expression()
@@ -212,8 +223,11 @@ func (c *exprQueryCompiler) compileQueryLiteral(ctx fql.IQueryLiteralContext) by
 		paramsReg = c.callbacks.compileExpr(params)
 	}
 
+	optionsReg := c.facts.LoadConstant(runtime.None)
+
 	c.ctx.Program.Emitter.WithSpan(span, func() {
 		c.ctx.Program.Emitter.EmitArrayPush(dst, paramsReg)
+		c.ctx.Program.Emitter.EmitArrayPush(dst, optionsReg)
 	})
 
 	if dst.IsRegister() {

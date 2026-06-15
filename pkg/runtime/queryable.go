@@ -5,11 +5,14 @@ import (
 )
 
 type (
-	// Query represents a query literal used by the operator index.
+	// Query describes a query operation passed to a Queryable value.
+	// Params contains query input supplied by WITH, while Options contains
+	// execution policy supplied by OPTIONS.
 	Query struct {
-		Options Value  `json:"options"`
-		Kind    String `json:"kind"`
-		Payload String `json:"payload"` // TODO: Rename to "expression" or "value"
+		Options    Value  `json:"options"`
+		Params     Value  `json:"params"`
+		Kind       String `json:"kind"`
+		Expression String `json:"expression"`
 	}
 
 	// QueryFunc is the list-returning query implementation used by default modifier helpers.

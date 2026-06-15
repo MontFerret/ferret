@@ -3,6 +3,7 @@ package vm_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -21,12 +22,16 @@ func TestQueryable(t *testing.T) {
 		Array("RETURN @doc[~ css`.items`]", []any{"ok"}, "Should apply query literal"),
 		S("RETURN @doc[~ css`.items`][0]", "ok", "Should apply query literal and index tail"),
 		Array("RETURN QUERY `.items` IN @doc USING css", []any{"ok"}, "Should apply query expression"),
-		Array("RETURN QUERY @q IN @doc USING css", []any{"ok"}, "Should apply query expression with param payload"),
-		Array("LET q = \".dynamic-var\"\nRETURN QUERY q IN @doc USING css", []any{"ok"}, "Should apply query expression with variable payload"),
+		Array("RETURN QUERY @q IN @doc USING css", []any{"ok"}, "Should apply query expression with param expression"),
+		Array("LET q = \".dynamic-var\"\nRETURN QUERY q IN @doc USING css", []any{"ok"}, "Should apply query expression with variable expression"),
+		Array("RETURN QUERY `.with` IN @doc USING css WITH { value: 1 }", []any{"ok"}, "Should apply query expression with params"),
+		Array("RETURN QUERY `.options` IN @doc USING css OPTIONS { timeout: 5000 }", []any{"ok"}, "Should apply query expression with options"),
+		Array("RETURN QUERY `.both` IN @doc USING css WITH { value: 2 } OPTIONS { timeout: 6000 }", []any{"ok"}, "Should apply query expression with params and options"),
+		S("RETURN QUERY ONE `.one-both` IN @doc USING css WITH { value: 3 } OPTIONS { timeout: 7000 }", "ok", "Should apply query-one expression with params and options"),
 		Array("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", []any{"ok"}, "Should apply query literal with params"),
 		S("RETURN @doc[~? sql`SELECT * FROM featured`({ c: \"tablets\" })]", "ok", "Should apply query-one literal with params"),
 		Array("RETURN QUERY `SELECT * FROM products` IN @doc USING sql WITH { c: \"phones\" }", []any{"ok"}, "Should apply query expression with options"),
-		Array("RETURN @doc[~ text]", []any{"ok"}, "Should apply query literal with no string payload"),
+		Array("RETURN @doc[~ text]", []any{"ok"}, "Should apply query literal with no string expression"),
 		Array(`RETURN @sections[* RETURN (QUERY "a" IN . USING css)][**]`, []any{"one", "two"}, "Should apply query expression to implicit current source"),
 		spec.NewSpec("RETURN @val[~ css`x`]").Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Message: "invalid type",
@@ -46,26 +51,46 @@ func TestQueryable(t *testing.T) {
 		var hasSQLParamsOne bool
 		var hasSQLQueryExpr bool
 		var hasText bool
+		var hasNoClauses bool
+		var hasWithOnly bool
+		var hasOptionsOnly bool
+		var hasBoth bool
+		var hasOneBoth bool
 
 		for _, q := range queryable.MockQueries() {
 			switch q.Kind {
 			case runtime.NewString("css"):
-				if q.Payload == runtime.NewString(".items") {
+				if q.Expression == runtime.NewString(".items") {
 					hasCSS = true
+					hasNoClauses = q.Params == runtime.None && q.Options == runtime.None
 				}
-				if q.Payload == runtime.NewString(".dynamic-param") {
+				if q.Expression == runtime.NewString(".dynamic-param") {
 					hasCSSParam = true
 				}
-				if q.Payload == runtime.NewString(".dynamic-var") {
+				if q.Expression == runtime.NewString(".dynamic-var") {
 					hasCSSVar = true
 				}
+				if q.Expression == runtime.NewString(".with") {
+					hasWithOnly = queryMapValue(t, q.Params, "value") == runtime.NewInt(1) && q.Options == runtime.None
+				}
+				if q.Expression == runtime.NewString(".options") {
+					hasOptionsOnly = q.Params == runtime.None && queryMapValue(t, q.Options, "timeout") == runtime.NewInt(5000)
+				}
+				if q.Expression == runtime.NewString(".both") {
+					hasBoth = queryMapValue(t, q.Params, "value") == runtime.NewInt(2) &&
+						queryMapValue(t, q.Options, "timeout") == runtime.NewInt(6000)
+				}
+				if q.Expression == runtime.NewString(".one-both") {
+					hasOneBoth = queryMapValue(t, q.Params, "value") == runtime.NewInt(3) &&
+						queryMapValue(t, q.Options, "timeout") == runtime.NewInt(7000)
+				}
 			case runtime.NewString("text"):
-				if q.Payload == runtime.EmptyString {
+				if q.Expression == runtime.EmptyString {
 					hasText = true
 				}
 			case runtime.NewString("sql"):
-				if q.Payload == runtime.NewString("SELECT * FROM products") {
-					params, err := runtime.ToMap(context.Background(), q.Options)
+				if q.Expression == runtime.NewString("SELECT * FROM products") {
+					params, err := runtime.ToMap(context.Background(), q.Params)
 					if err != nil {
 						t.Fatalf("sql query expression params decode failed: %v", err)
 					}
@@ -75,41 +100,56 @@ func TestQueryable(t *testing.T) {
 						hasSQLQueryExpr = true
 					}
 				}
-				if q.Payload == runtime.NewString("SELECT * FROM featured") {
-					params, err := runtime.ToMap(context.Background(), q.Options)
+				if q.Expression == runtime.NewString("SELECT * FROM featured") {
+					params, err := runtime.ToMap(context.Background(), q.Params)
 					if err != nil {
 						t.Fatalf("sql query-one params decode failed: %v", err)
 					}
 
 					value, err := params.Get(context.Background(), runtime.NewString("c"))
-					if err == nil && value == runtime.NewString("tablets") {
+					if err == nil && value == runtime.NewString("tablets") && q.Options == runtime.None {
 						hasSQLParamsOne = true
 					}
 				}
 
-				params, err := runtime.ToMap(context.Background(), q.Options)
+				params, err := runtime.ToMap(context.Background(), q.Params)
 				if err != nil {
 					t.Fatalf("sql params decode failed: %v", err)
 				}
 
 				value, err := params.Get(context.Background(), runtime.NewString("c"))
-				if err == nil && value == runtime.NewString("laptops") {
+				if err == nil && value == runtime.NewString("laptops") && q.Options == runtime.None {
 					hasSQLParams = true
 				}
 			}
 		}
 
 		if !hasCSS {
-			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and payload %q", "css", ".items"))
+			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and expression %q", "css", ".items"))
 		}
 		if !hasCSSParam {
-			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and payload %q", "css", ".dynamic-param"))
+			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and expression %q", "css", ".dynamic-param"))
 		}
 		if !hasCSSVar {
-			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and payload %q", "css", ".dynamic-var"))
+			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and expression %q", "css", ".dynamic-var"))
 		}
 		if !hasText {
-			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and empty payload", "text"))
+			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and empty expression", "text"))
+		}
+		if !hasNoClauses {
+			t.Fatal("expected omitted WITH and OPTIONS clauses to produce NONE")
+		}
+		if !hasWithOnly {
+			t.Fatal("expected WITH to populate params without options")
+		}
+		if !hasOptionsOnly {
+			t.Fatal("expected OPTIONS to populate options without params")
+		}
+		if !hasBoth {
+			t.Fatal("expected WITH and OPTIONS to remain distinct")
+		}
+		if !hasOneBoth {
+			t.Fatal("expected QUERY ONE to receive distinct params and options")
 		}
 		if !hasSQLQueryExpr {
 			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and params containing %q=%q", "sql", "c", "phones"))
@@ -121,6 +161,69 @@ func TestQueryable(t *testing.T) {
 			t.Fatal(fmt.Sprintf("expected to receive a query-one shorthand with kind %q and params containing %q=%q", "sql", "c", "tablets"))
 		}
 	})
+}
+
+func TestQueryExpressionClausesEvaluatedOnce(t *testing.T) {
+	queryable := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("ok")))
+	paramsCalls := 0
+	optionsCalls := 0
+	var clauseOrder []string
+
+	RunSpecs(t, []spec.Spec{
+		Array(
+			"RETURN QUERY `.once` IN @doc USING css WITH PARAMS_FN() OPTIONS OPTIONS_FN()",
+			[]any{"ok"},
+			"Should evaluate query params and options once",
+		),
+	},
+		vm.WithParam("doc", queryable),
+		vm.WithFunction("PARAMS_FN", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+			paramsCalls++
+			clauseOrder = append(clauseOrder, "params")
+			return runtime.NewObjectWith(map[string]runtime.Value{"value": runtime.NewInt(1)}), nil
+		}),
+		vm.WithFunction("OPTIONS_FN", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+			optionsCalls++
+			clauseOrder = append(clauseOrder, "options")
+			return runtime.NewObjectWith(map[string]runtime.Value{"timeout": runtime.NewInt(5000)}), nil
+		}),
+	)
+
+	if paramsCalls != 2 || optionsCalls != 2 {
+		t.Fatalf("expected params and options to be evaluated once per O0/O1 execution, got params=%d options=%d", paramsCalls, optionsCalls)
+	}
+	if got, want := strings.Join(clauseOrder, ","), "params,options,params,options"; got != want {
+		t.Fatalf("unexpected clause evaluation order: got %q, want %q", got, want)
+	}
+
+	queries := queryable.MockQueries()
+	if len(queries) != 2 {
+		t.Fatalf("expected one captured query per O0/O1 execution, got %d", len(queries))
+	}
+	for _, query := range queries {
+		if queryMapValue(t, query.Params, "value") != runtime.NewInt(1) {
+			t.Fatal("expected captured params")
+		}
+		if queryMapValue(t, query.Options, "timeout") != runtime.NewInt(5000) {
+			t.Fatal("expected captured options")
+		}
+	}
+}
+
+func queryMapValue(t *testing.T, value runtime.Value, key string) runtime.Value {
+	t.Helper()
+
+	out, err := runtime.ToMap(context.Background(), value)
+	if err != nil {
+		t.Fatalf("failed to decode query map: %v", err)
+	}
+
+	item, err := out.Get(context.Background(), runtime.NewString(key))
+	if err != nil {
+		t.Fatalf("failed to read query map key %q: %v", key, err)
+	}
+
+	return item
 }
 
 func TestComplexQueries(t *testing.T) {

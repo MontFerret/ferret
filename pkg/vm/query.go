@@ -7,17 +7,19 @@ import (
 )
 
 const (
-	queryDescriptorKind    = "kind"
-	queryDescriptorPayload = "payload"
-	queryDescriptorOptions = "options"
+	queryDescriptorKind       = "kind"
+	queryDescriptorExpression = "expression"
+	queryDescriptorParams     = "params"
+	queryDescriptorOptions    = "options"
 
 	errQueryFormatUnexpected = "unexpected query format"
 )
 
 var (
-	queryDescriptorKeyKind    = runtime.NewString(queryDescriptorKind)
-	queryDescriptorKeyPayload = runtime.NewString(queryDescriptorPayload)
-	queryDescriptorKeyOptions = runtime.NewString(queryDescriptorOptions)
+	queryDescriptorKeyKind       = runtime.NewString(queryDescriptorKind)
+	queryDescriptorKeyExpression = runtime.NewString(queryDescriptorExpression)
+	queryDescriptorKeyParams     = runtime.NewString(queryDescriptorParams)
+	queryDescriptorKeyOptions    = runtime.NewString(queryDescriptorOptions)
 )
 
 func applyQuery(ctx context.Context, src runtime.Value, descriptor runtime.Value) (runtime.Value, error) {

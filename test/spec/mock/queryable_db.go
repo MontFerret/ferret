@@ -25,7 +25,7 @@ func (m *DBQueryable) Query(ctx context.Context, q runtime.Query) (runtime.List,
 		return runtime.NewArray(0), nil
 	}
 
-	params, err := runtime.ToMap(ctx, q.Options)
+	params, err := runtime.ToMap(ctx, q.Params)
 	if err != nil {
 		return nil, err
 	}

@@ -631,6 +631,10 @@ func (v *BaseFqlParserVisitor) VisitQueryWithOpt(ctx *QueryWithOptContext) inter
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitQueryOptionsOpt(ctx *QueryOptionsOptContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitQueryLiteral(ctx *QueryLiteralContext) interface{} {
 	return v.VisitChildren(ctx)
 }

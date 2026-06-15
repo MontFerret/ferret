@@ -569,7 +569,7 @@ func (f *expressionFormatter) formatQueryExpression(ctx *fql.QueryExpressionCont
 		return
 	}
 
-	if ctx.QueryWithOpt() == nil || f.p.forceSingleLine {
+	if (ctx.QueryWithOpt() == nil && ctx.QueryOptionsOpt() == nil) || f.p.forceSingleLine {
 		f.formatQueryExpressionWith(f.p, ctx, true)
 		return
 	}
@@ -623,23 +623,34 @@ func (f *expressionFormatter) formatQueryExpressionWith(p *printer, ctx *fql.Que
 
 	if with := ctx.QueryWithOpt(); with != nil {
 		if expr := with.Expression(); expr != nil {
-			if inline {
-				p.space()
-				f.writeKeywordWith(p, keywordWith)
-				p.space()
-				f.formatExpressionWith(p, expr.(*fql.ExpressionContext))
-			} else {
-				p.newline()
-				p.withIndent(func() {
-					f.writeKeywordWith(p, keywordWith)
-					p.space()
-					f.formatExpressionWith(p, expr.(*fql.ExpressionContext))
-				})
-			}
+			f.formatQueryClauseWith(p, keywordWith, expr, inline)
+		}
+	}
+
+	if options := ctx.QueryOptionsOpt(); options != nil {
+		if expr := options.Expression(); expr != nil {
+			f.formatQueryClauseWith(p, keywordOptions, expr, inline)
 		}
 	}
 
 	f.formatRecoveryTailsWith(p, ctx.RecoveryTails())
+}
+
+func (f *expressionFormatter) formatQueryClauseWith(p *printer, keyword string, expr fql.IExpressionContext, inline bool) {
+	if inline {
+		p.space()
+		f.writeKeywordWith(p, keyword)
+		p.space()
+		f.formatExpressionWith(p, expr.(*fql.ExpressionContext))
+		return
+	}
+
+	p.newline()
+	p.withIndent(func() {
+		f.writeKeywordWith(p, keyword)
+		p.space()
+		f.formatExpressionWith(p, expr.(*fql.ExpressionContext))
+	})
 }
 
 func (f *expressionFormatter) writeQueryModifierWith(p *printer, modifier fql.IQueryModifierContext) {
