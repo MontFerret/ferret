@@ -10,7 +10,7 @@ import (
 	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
 )
 
-func threeSlotQueryDescriptorFor(code []bytecode.Instruction, opcode bytecode.Opcode) error {
+func fourSlotQueryDescriptorFor(code []bytecode.Instruction, opcode bytecode.Opcode) error {
 	applyIdx, ok := inspect.FindFirstOpcodeIndex(code, opcode)
 	if !ok {
 		return fmt.Errorf("expected %s in bytecode", opcode)
@@ -21,15 +21,15 @@ func threeSlotQueryDescriptorFor(code []bytecode.Instruction, opcode bytecode.Op
 		return fmt.Errorf("expected OpLoadArray for query descriptor before OpQuery")
 	}
 
-	if size != 3 {
-		return fmt.Errorf("expected 3-slot query descriptor, got %d", size)
+	if size != 4 {
+		return fmt.Errorf("expected 4-slot query descriptor, got %d", size)
 	}
 
 	return nil
 }
 
-func threeSlotQueryDescriptor(code []bytecode.Instruction) error {
-	return threeSlotQueryDescriptorFor(code, bytecode.OpQuery)
+func fourSlotQueryDescriptor(code []bytecode.Instruction) error {
+	return fourSlotQueryDescriptorFor(code, bytecode.OpQuery)
 }
 
 func TestQueryExpressionSourceImplicitCurrentCompiles(t *testing.T) {
@@ -38,7 +38,7 @@ func TestQueryExpressionSourceImplicitCurrentCompiles(t *testing.T) {
 LET sections = @sections
 LET linksBySection = sections[* RETURN (QUERY "a" IN . USING css)]
 RETURN linksBySection[**]`, func(prog *bytecode.Program) error {
-			return threeSlotQueryDescriptor(prog.Bytecode)
+			return fourSlotQueryDescriptor(prog.Bytecode)
 		}, "Should compile query expression with implicit current source"),
 	})
 }
@@ -46,7 +46,7 @@ RETURN linksBySection[**]`, func(prog *bytecode.Program) error {
 func TestQueryModifierLowering_OneUsesDirectOpcode(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck(`RETURN QUERY ONE ".items" IN @doc USING css`, func(prog *bytecode.Program) error {
-			if err := threeSlotQueryDescriptorFor(prog.Bytecode, bytecode.OpQueryOne); err != nil {
+			if err := fourSlotQueryDescriptorFor(prog.Bytecode, bytecode.OpQueryOne); err != nil {
 				return err
 			}
 			if inspect.HasOpcode(prog, bytecode.OpLength) {
@@ -70,7 +70,7 @@ func TestQueryModifierLowering_OneUsesDirectOpcode(t *testing.T) {
 func TestQueryShorthandLowering(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck("RETURN @doc[~ css`.items`]", func(prog *bytecode.Program) error {
-			if err := threeSlotQueryDescriptorFor(prog.Bytecode, bytecode.OpQuery); err != nil {
+			if err := fourSlotQueryDescriptorFor(prog.Bytecode, bytecode.OpQuery); err != nil {
 				return err
 			}
 			if inspect.HasOpcode(prog, bytecode.OpQueryOne) {
@@ -80,7 +80,7 @@ func TestQueryShorthandLowering(t *testing.T) {
 			return nil
 		}, "regular query shorthand lowering"),
 		ProgramCheck("RETURN @doc[~? css`.items`]", func(prog *bytecode.Program) error {
-			if err := threeSlotQueryDescriptorFor(prog.Bytecode, bytecode.OpQueryOne); err != nil {
+			if err := fourSlotQueryDescriptorFor(prog.Bytecode, bytecode.OpQueryOne); err != nil {
 				return err
 			}
 			if inspect.HasOpcode(prog, bytecode.OpQuery) {
@@ -115,7 +115,7 @@ func TestQueryModifierLowering_ExistsCount(t *testing.T) {
 	specs := make([]spec.Spec, 0, len(cases))
 	for _, tc := range cases {
 		specs = append(specs, ProgramCheck(tc.expr, func(prog *bytecode.Program) error {
-			if err := threeSlotQueryDescriptorFor(prog.Bytecode, tc.opcode); err != nil {
+			if err := fourSlotQueryDescriptorFor(prog.Bytecode, tc.opcode); err != nil {
 				return err
 			}
 

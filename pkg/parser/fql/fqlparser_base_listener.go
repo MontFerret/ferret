@@ -978,6 +978,12 @@ func (s *BaseFqlParserListener) EnterQueryWithOpt(ctx *QueryWithOptContext) {}
 // ExitQueryWithOpt is called when production queryWithOpt is exited.
 func (s *BaseFqlParserListener) ExitQueryWithOpt(ctx *QueryWithOptContext) {}
 
+// EnterQueryOptionsOpt is called when production queryOptionsOpt is entered.
+func (s *BaseFqlParserListener) EnterQueryOptionsOpt(ctx *QueryOptionsOptContext) {}
+
+// ExitQueryOptionsOpt is called when production queryOptionsOpt is exited.
+func (s *BaseFqlParserListener) ExitQueryOptionsOpt(ctx *QueryOptionsOptContext) {}
+
 // EnterQueryLiteral is called when production queryLiteral is entered.
 func (s *BaseFqlParserListener) EnterQueryLiteral(ctx *QueryLiteralContext) {}
 

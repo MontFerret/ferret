@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 )
 
@@ -45,5 +46,34 @@ func TestDefaultQueryOneReturnsFirstOrNone(t *testing.T) {
 				t.Fatalf("unexpected value: got %v want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestQueryJSONFieldNames(t *testing.T) {
+	data, err := json.Marshal(Query{
+		Options:    None,
+		Params:     NewObjectWith(map[string]Value{"value": NewInt(1)}),
+		Kind:       NewString("capture"),
+		Expression: NewString("test"),
+	})
+	if err != nil {
+		t.Fatalf("failed to marshal query: %v", err)
+	}
+
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		t.Fatalf("failed to unmarshal query fields: %v", err)
+	}
+
+	for _, key := range []string{"options", "params", "kind", "expression"} {
+		if _, ok := fields[key]; !ok {
+			t.Fatalf("expected query JSON field %q in %s", key, data)
+		}
+	}
+	if len(fields) != 4 {
+		t.Fatalf("expected exactly four query JSON fields, got %d in %s", len(fields), data)
+	}
+	if _, ok := fields["payload"]; ok {
+		t.Fatalf("did not expect legacy payload field in %s", data)
 	}
 }

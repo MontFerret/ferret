@@ -1,6 +1,7 @@
 package diagnostics
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
@@ -17,14 +18,46 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 		return false
 	}
 
-	if !hasPrevToken(offending, "QUERY", 10) && !is(offending, "QUERY") && !hasPrevToken(offending, "USING", 10) {
+	if with := outOfOrderQueryWithNode(src, offending); with != nil {
+		span := spanFromTokenSafe(with.Token(), src)
+		err.Message = "WITH must appear before OPTIONS in QUERY"
+		err.Hint = "Move the WITH clause before OPTIONS."
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "out-of-order WITH clause"),
+		}
+		return true
+	}
+
+	if !hasPrevToken(offending, "QUERY", 64) && !is(offending, "QUERY") && !hasPrevToken(offending, "USING", 64) && !sourceHasQueryBefore(src, offending) {
 		return false
 	}
 
-	if prev := offending.Prev(); prev != nil && is(prev, "WITH") {
+	if is(offending, "WITH") && (hasTokenBefore(offending, "QUERY", "OPTIONS", 64) || sourceHasQueryOptionsBefore(src, offending)) {
+		span := spanFromTokenSafe(offending.Token(), src)
+		err.Message = "WITH must appear before OPTIONS in QUERY"
+		err.Hint = "Move the WITH clause before OPTIONS."
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "out-of-order WITH clause"),
+		}
+		return true
+	}
+
+	if (is(offending, "WITH") || is(offending, "OPTIONS")) && !hasPrevToken(offending, "USING", 2) {
+		clause := offending.GetText()
+		span := spanFromTokenSafe(offending.Token(), src)
+		err.Message = fmt.Sprintf("Expected query %s expression after %s", queryClauseValueName(clause), clause)
+		err.Hint = queryClauseHint(clause)
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing expression"),
+		}
+		return true
+	}
+
+	if prev := offending.Prev(); prev != nil && (is(prev, "WITH") || is(prev, "OPTIONS")) {
 		span := spanFromTokenSafe(prev.Token(), src)
-		err.Message = "Expected options expression after WITH"
-		err.Hint = "Provide an options expression, e.g. WITH { limit: 10 }."
+		clause := prev.GetText()
+		err.Message = fmt.Sprintf("Expected query %s expression after %s", queryClauseValueName(clause), clause)
+		err.Hint = queryClauseHint(clause)
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing expression"),
 		}
@@ -56,7 +89,7 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 		return true
 	}
 
-	if (is(offending, "USING") || is(offending, "WITH") || isEOF(offending)) && hasPrevToken(offending, "IN", 2) {
+	if (is(offending, "USING") || is(offending, "WITH") || is(offending, "OPTIONS") || isEOF(offending)) && hasPrevToken(offending, "IN", 2) {
 		span := spanFromTokenSafe(offending.Token(), src)
 		err.Message = "Expected expression after IN"
 		err.Hint = "Provide a source expression, e.g. QUERY `.items` IN doc USING css."
@@ -106,7 +139,7 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 					diagnostics.NewMainErrorSpan(span, "invalid dialect"),
 				}
 				return true
-			} else if next := offending.Next(); next == nil || isEOF(next) || is(next, "WITH") {
+			} else if next := offending.Next(); next == nil || isEOF(next) || is(next, "WITH") || is(next, "OPTIONS") {
 				span := spanFromTokenSafe(offending.Token(), src)
 				err.Message = "Expected dialect identifier after USING"
 				err.Hint = "Provide a dialect identifier, e.g. USING css."
@@ -117,7 +150,7 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 			}
 		}
 
-		if is(offending, "WITH") || isEOF(offending) {
+		if is(offending, "WITH") || is(offending, "OPTIONS") || isEOF(offending) {
 			span := spanFromTokenSafe(offending.Token(), src)
 			err.Message = "Expected dialect identifier after USING"
 			err.Hint = "Provide a dialect identifier, e.g. USING css."
@@ -149,6 +182,87 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 	}
 
 	return false
+}
+
+func queryClauseHint(clause string) string {
+	switch clause {
+	case "WITH":
+		return "Provide a params expression, e.g. WITH { params: [1] }."
+	case "OPTIONS":
+		return "Provide an options expression, e.g. OPTIONS { timeout: 5000 }."
+	default:
+		return "Provide a query clause expression."
+	}
+}
+
+func queryClauseValueName(clause string) string {
+	switch clause {
+	case "WITH":
+		return "params"
+	case "OPTIONS":
+		return "options"
+	default:
+		return "clause"
+	}
+}
+
+func sourceHasQueryBefore(src *source.Source, offending *TokenNode) bool {
+	prefix := sourcePrefixBefore(src, offending)
+	query := strings.LastIndex(prefix, "QUERY")
+	using := strings.LastIndex(prefix, "USING")
+	dispatch := strings.LastIndex(prefix, "DISPATCH")
+
+	return query >= 0 && using > query && dispatch < query
+}
+
+func sourceHasQueryOptionsBefore(src *source.Source, offending *TokenNode) bool {
+	prefix := sourcePrefixBefore(src, offending)
+	query := strings.LastIndex(prefix, "QUERY")
+	options := strings.LastIndex(prefix, "OPTIONS")
+
+	return query >= 0 && options > query
+}
+
+func sourceHasOutOfOrderQueryWith(src *source.Source) bool {
+	if src == nil {
+		return false
+	}
+
+	content := strings.ToUpper(src.Content())
+	query := strings.LastIndex(content, "QUERY")
+	options := strings.LastIndex(content, "OPTIONS")
+	with := strings.LastIndex(content, "WITH")
+	dispatch := strings.LastIndex(content, "DISPATCH")
+
+	return query >= 0 && options > query && with > options && dispatch < query
+}
+
+func outOfOrderQueryWithNode(src *source.Source, offending *TokenNode) *TokenNode {
+	if !sourceHasOutOfOrderQueryWith(src) {
+		return nil
+	}
+	if is(offending, "WITH") {
+		return offending
+	}
+	if next := offending.Next(); is(next, "WITH") {
+		return next
+	}
+
+	return nil
+}
+
+func sourcePrefixBefore(src *source.Source, offending *TokenNode) string {
+	if src == nil || offending == nil || offending.Token() == nil {
+		return ""
+	}
+
+	content := []rune(src.Content())
+	end := offending.Token().GetStart()
+	if end < 0 || end > len(content) {
+		end = len(content)
+	}
+
+	return strings.ToUpper(string(content[:end]))
 }
 
 func isMissingQueryLiteral(msg string, offending *TokenNode) bool {
