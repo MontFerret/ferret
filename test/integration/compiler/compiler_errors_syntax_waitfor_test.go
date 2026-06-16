@@ -87,6 +87,30 @@ func TestSyntaxErrorsWaitfor(t *testing.T) {
 		}, "Legacy FILTER keyword is invalid in WAITFOR EVENT"),
 		Failure(`
 			LET obs = {}
+			LET ok = WAITFOR EVENT "test" IN obs TIMEOUT 5s EVERY 250ms
+			RETURN ok
+		`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "EVERY is not valid for WAITFOR EVENT",
+			Hint:    "Remove EVERY; event waits subscribe to the event stream and use TIMEOUT as the wait deadline. Use WAITFOR VALUE ... EVERY ... for polling expressions.",
+		}, "WAITFOR EVENT rejects EVERY after TIMEOUT"),
+		Failure(`
+			LET obs = {}
+			LET btn = {}
+			LET ok = WAITFOR EVENT "test" IN obs
+				TRIGGER (
+					btn <- "click"
+				)
+				TIMEOUT 5s
+				EVERY 250ms
+			RETURN ok
+		`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "EVERY is not valid for WAITFOR EVENT",
+			Hint:    "Remove EVERY; event waits subscribe to the event stream and use TIMEOUT as the wait deadline. Use WAITFOR VALUE ... EVERY ... for polling expressions.",
+		}, "WAITFOR EVENT trigger block rejects EVERY after TIMEOUT"),
+		Failure(`
+			LET obs = {}
 			LET ok = WAITFOR EVENT "test" IN obs
 				TRIGGER
 				TIMEOUT 5s
