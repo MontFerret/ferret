@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
@@ -53,6 +56,15 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 		err.Hint = "Use a side-effect statement or TRIGGER (...), e.g. TRIGGER target <- \"click\"."
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing trigger statement"),
+		}
+		return true
+	}
+
+	if span, ok := waitForEventEveryClause(src, offending); ok {
+		err.Message = "EVERY is not valid for WAITFOR EVENT"
+		err.Hint = "Remove EVERY; event waits subscribe to the event stream and use TIMEOUT as the wait deadline. Use WAITFOR VALUE ... EVERY ... for polling expressions."
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "unsupported clause"),
 		}
 		return true
 	}
@@ -146,6 +158,102 @@ func waitForTriggerInvalidBody(offending *TokenNode) *TokenNode {
 	return nil
 }
 
+func waitForEventEveryClause(src *source.Source, offending *TokenNode) (source.Span, bool) {
+	if src == nil || offending == nil || !hasWaitForEventBefore(offending) {
+		return source.Span{}, false
+	}
+
+	if node := waitForEventEveryNode(offending); node != nil {
+		return spanFromTokenSafe(node.Token(), src), true
+	}
+
+	return waitForEventEverySpanAfter(src, offending)
+}
+
+func waitForEventEveryNode(offending *TokenNode) *TokenNode {
+	for curr := offending; curr != nil; curr = curr.Prev() {
+		if is(curr, "WAITFOR") {
+			return nil
+		}
+
+		if is(curr, "EVERY") {
+			return curr
+		}
+	}
+
+	return nil
+}
+
+func waitForEventEverySpanAfter(src *source.Source, offending *TokenNode) (source.Span, bool) {
+	tok := offending.Token()
+	if tok == nil {
+		return source.Span{}, false
+	}
+
+	content := src.Content()
+	start := tok.GetStop() + 1
+	if start < 0 {
+		start = tok.GetStart()
+	}
+	if start < 0 {
+		start = 0
+	}
+	if start >= len(content) {
+		return source.Span{}, false
+	}
+
+	lexer := fql.NewFqlLexer(antlr.NewInputStream(asciiUpper(content[start:])))
+	for i := 0; i < 16; {
+		next := lexer.NextToken()
+		if next == nil || next.GetTokenType() == antlr.TokenEOF {
+			return source.Span{}, false
+		}
+		if next.GetChannel() != antlr.TokenDefaultChannel {
+			continue
+		}
+
+		i++
+		if next.GetTokenType() == fql.FqlLexerEvery {
+			return source.Span{Start: start + next.GetStart(), End: start + next.GetStop() + 1}, true
+		}
+		if stopsWaitForEventEveryScan(next) {
+			return source.Span{}, false
+		}
+	}
+
+	return source.Span{}, false
+}
+
+func stopsWaitForEventEveryScan(tok antlr.Token) bool {
+	switch tok.GetTokenType() {
+	case fql.FqlLexerSemiColon,
+		fql.FqlLexerReturn,
+		fql.FqlLexerLet,
+		fql.FqlLexerVar,
+		fql.FqlLexerFor,
+		fql.FqlLexerWaitfor,
+		fql.FqlLexerDispatch,
+		fql.FqlLexerDelete,
+		fql.FqlLexerQuery:
+		return true
+	case fql.FqlLexerIdentifier:
+		return strings.EqualFold(tok.GetText(), "ON")
+	default:
+		return false
+	}
+}
+
+func asciiUpper(input string) string {
+	out := []byte(input)
+	for i, ch := range out {
+		if ch >= 'a' && ch <= 'z' {
+			out[i] = ch - ('a' - 'A')
+		}
+	}
+
+	return string(out)
+}
+
 func waitForMissingClauseValue(offending *TokenNode) (string, *TokenNode) {
 	if offending == nil {
 		return "", nil
@@ -167,6 +275,16 @@ func waitForMissingClauseValue(offending *TokenNode) (string, *TokenNode) {
 	}
 
 	return "", nil
+}
+
+func hasWaitForEventBefore(node *TokenNode) bool {
+	for curr := node; curr != nil; curr = curr.Prev() {
+		if is(curr, "WAITFOR") {
+			return is(curr.Next(), "EVENT")
+		}
+	}
+
+	return false
 }
 
 func hasWaitforBefore(node *TokenNode) bool {
