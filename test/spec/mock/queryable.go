@@ -8,13 +8,18 @@ import (
 )
 
 type Queryable struct {
-	result  runtime.List
-	err     error
-	queries []runtime.Query
+	result         runtime.List
+	err            error
+	queries        []runtime.Query
+	requireDialect bool
 }
 
 func NewQueryable(result runtime.List) *Queryable {
 	return &Queryable{result: result}
+}
+
+func NewQueryableWithoutDefault(result runtime.List) *Queryable {
+	return &Queryable{result: result, requireDialect: true}
 }
 
 func (q *Queryable) MockQueries() []runtime.Query {
@@ -23,6 +28,9 @@ func (q *Queryable) MockQueries() []runtime.Query {
 
 func (q *Queryable) Query(_ context.Context, query runtime.Query) (runtime.List, error) {
 	q.queries = append(q.queries, query)
+	if q.requireDialect && query.Kind == runtime.EmptyString {
+		return nil, runtime.Error(runtime.ErrInvalidOperation, "query dialect is required for this value; use USING <dialect>")
+	}
 	if q.err != nil {
 		return nil, q.err
 	}

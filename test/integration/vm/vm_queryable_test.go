@@ -15,15 +15,20 @@ import (
 
 func TestQueryable(t *testing.T) {
 	queryable := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("ok")))
+	queryableWithoutDefault := mock.NewQueryableWithoutDefault(runtime.NewArrayWith(runtime.NewString("ok")))
 	sectionA := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("one")))
 	sectionB := mock.NewQueryable(runtime.NewArrayWith(runtime.NewString("two")))
 
 	RunSpecs(t, []spec.Spec{
 		Array("RETURN @doc[~ css`.items`]", []any{"ok"}, "Should apply query literal"),
+		Array(`RETURN @doc[~ "shortcut"]`, []any{"ok"}, "Should apply raw-string query shorthand with default dialect"),
+		S(`RETURN @doc[~? "shortcut-one"]`, "ok", "Should apply raw-string query-one shorthand with default dialect"),
 		S("RETURN @doc[~ css`.items`][0]", "ok", "Should apply query literal and index tail"),
+		Array("RETURN QUERY `.default` IN @doc", []any{"ok"}, "Should apply query expression with default dialect"),
 		Array("RETURN QUERY `.items` IN @doc USING css", []any{"ok"}, "Should apply query expression"),
 		Array("RETURN QUERY @q IN @doc USING css", []any{"ok"}, "Should apply query expression with param expression"),
 		Array("LET q = \".dynamic-var\"\nRETURN QUERY q IN @doc USING css", []any{"ok"}, "Should apply query expression with variable expression"),
+		Array("RETURN QUERY `.default-with` IN @doc WITH { value: 4 }", []any{"ok"}, "Should apply default query expression with params"),
 		Array("RETURN QUERY `.with` IN @doc USING css WITH { value: 1 }", []any{"ok"}, "Should apply query expression with params"),
 		Array("RETURN QUERY `.options` IN @doc USING css OPTIONS { timeout: 5000 }", []any{"ok"}, "Should apply query expression with options"),
 		Array("RETURN QUERY `.both` IN @doc USING css WITH { value: 2 } OPTIONS { timeout: 6000 }", []any{"ok"}, "Should apply query expression with params and options"),
@@ -36,14 +41,24 @@ func TestQueryable(t *testing.T) {
 		spec.NewSpec("RETURN @val[~ css`x`]").Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Message: "invalid type",
 		}),
+		spec.NewSpec("RETURN QUERY `.x` IN @noDefault", "Should fail when default dialect is unsupported").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Contains: []string{"query dialect is required for this value; use USING <dialect>"}},
+		),
+		Array("RETURN QUERY `.x` IN @noDefault USING css", []any{"ok"}, "Should preserve explicit dialect for values without default query behavior"),
 	}, vm.WithParams(map[string]runtime.Value{
-		"doc":      queryable,
-		"q":        runtime.NewString(".dynamic-param"),
-		"sections": runtime.NewArrayWith(sectionA, sectionB),
-		"val":      runtime.NewInt(1),
+		"doc":       queryable,
+		"noDefault": queryableWithoutDefault,
+		"q":         runtime.NewString(".dynamic-param"),
+		"sections":  runtime.NewArrayWith(sectionA, sectionB),
+		"val":       runtime.NewInt(1),
 	}))
 
 	t.Run("Should receive correct queries", func(t *testing.T) {
+		var hasDefault bool
+		var hasDefaultWith bool
+		var hasDefaultShortcut bool
+		var hasDefaultShortcutOne bool
 		var hasCSS bool
 		var hasCSSParam bool
 		var hasCSSVar bool
@@ -59,6 +74,19 @@ func TestQueryable(t *testing.T) {
 
 		for _, q := range queryable.MockQueries() {
 			switch q.Kind {
+			case runtime.EmptyString:
+				if q.Expression == runtime.NewString(".default") {
+					hasDefault = q.Params == runtime.None && q.Options == runtime.None
+				}
+				if q.Expression == runtime.NewString(".default-with") {
+					hasDefaultWith = queryMapValue(t, q.Params, "value") == runtime.NewInt(4) && q.Options == runtime.None
+				}
+				if q.Expression == runtime.NewString("shortcut") {
+					hasDefaultShortcut = q.Params == runtime.None && q.Options == runtime.None
+				}
+				if q.Expression == runtime.NewString("shortcut-one") {
+					hasDefaultShortcutOne = q.Params == runtime.None && q.Options == runtime.None
+				}
 			case runtime.NewString("css"):
 				if q.Expression == runtime.NewString(".items") {
 					hasCSS = true
@@ -124,6 +152,18 @@ func TestQueryable(t *testing.T) {
 			}
 		}
 
+		if !hasDefault {
+			t.Fatal("expected omitted USING to produce an empty query kind")
+		}
+		if !hasDefaultWith {
+			t.Fatal("expected default query WITH to populate params without options")
+		}
+		if !hasDefaultShortcut {
+			t.Fatal("expected raw-string query shorthand to produce an empty query kind")
+		}
+		if !hasDefaultShortcutOne {
+			t.Fatal("expected raw-string query-one shorthand to produce an empty query kind")
+		}
 		if !hasCSS {
 			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and expression %q", "css", ".items"))
 		}

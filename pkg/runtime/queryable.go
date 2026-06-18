@@ -6,6 +6,9 @@ import (
 
 type (
 	// Query describes a query operation passed to a Queryable value.
+	// Kind contains the explicit dialect supplied by USING. EmptyString means
+	// the caller did not provide a dialect and the queryable should use its
+	// default query behavior or return a user-facing error if it has none.
 	// Params contains query input supplied by WITH, while Options contains
 	// execution policy supplied by OPTIONS.
 	Query struct {

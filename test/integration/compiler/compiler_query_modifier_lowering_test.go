@@ -43,6 +43,28 @@ RETURN linksBySection[**]`, func(prog *bytecode.Program) error {
 	})
 }
 
+func TestQueryExpressionOptionalUsingCompiles(t *testing.T) {
+	cases := []string{
+		`RETURN QUERY "x" IN @doc`,
+		`RETURN QUERY "x" IN @doc WITH {}`,
+		`RETURN QUERY "x" IN @doc OPTIONS {}`,
+		`RETURN QUERY "x" IN @doc WITH {} OPTIONS {}`,
+		`RETURN QUERY "x" IN @doc USING css`,
+		`RETURN QUERY "x" IN @doc USING css WITH {}`,
+		`RETURN QUERY "x" IN @doc USING css OPTIONS {}`,
+		`RETURN QUERY "x" IN @doc USING css WITH {} OPTIONS {}`,
+	}
+
+	specs := make([]spec.Spec, 0, len(cases))
+	for _, query := range cases {
+		specs = append(specs, ProgramCheck(query, func(prog *bytecode.Program) error {
+			return fourSlotQueryDescriptor(prog.Bytecode)
+		}, query))
+	}
+
+	RunSpecs(t, specs)
+}
+
 func TestQueryModifierLowering_OneUsesDirectOpcode(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck(`RETURN QUERY ONE ".items" IN @doc USING css`, func(prog *bytecode.Program) error {
@@ -69,6 +91,16 @@ func TestQueryModifierLowering_OneUsesDirectOpcode(t *testing.T) {
 
 func TestQueryShorthandLowering(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
+		ProgramCheck("RETURN @doc[~ \"x\"]", func(prog *bytecode.Program) error {
+			if err := fourSlotQueryDescriptorFor(prog.Bytecode, bytecode.OpQuery); err != nil {
+				return err
+			}
+			if inspect.HasOpcode(prog, bytecode.OpQueryOne) {
+				return fmt.Errorf("did not expect OpQueryOne for regular raw-string query shorthand")
+			}
+
+			return nil
+		}, "regular raw-string query shorthand lowering"),
 		ProgramCheck("RETURN @doc[~ css`.items`]", func(prog *bytecode.Program) error {
 			if err := fourSlotQueryDescriptorFor(prog.Bytecode, bytecode.OpQuery); err != nil {
 				return err
@@ -79,6 +111,25 @@ func TestQueryShorthandLowering(t *testing.T) {
 
 			return nil
 		}, "regular query shorthand lowering"),
+		ProgramCheck("RETURN @doc[~? \"x\"]", func(prog *bytecode.Program) error {
+			if err := fourSlotQueryDescriptorFor(prog.Bytecode, bytecode.OpQueryOne); err != nil {
+				return err
+			}
+			if inspect.HasOpcode(prog, bytecode.OpQuery) {
+				return fmt.Errorf("did not expect OpQuery for raw-string query-one shorthand")
+			}
+			if inspect.HasOpcode(prog, bytecode.OpLength) {
+				return fmt.Errorf("did not expect OpLength for raw-string query-one shorthand")
+			}
+			if inspect.HasOpcode(prog, bytecode.OpLoadIndexConst) {
+				return fmt.Errorf("did not expect OpLoadIndexConst for raw-string query-one shorthand")
+			}
+			if inspect.HasOpcode(prog, bytecode.OpFail) {
+				return fmt.Errorf("did not expect OpFail for raw-string query-one shorthand")
+			}
+
+			return nil
+		}, "raw-string query-one shorthand lowering"),
 		ProgramCheck("RETURN @doc[~? css`.items`]", func(prog *bytecode.Program) error {
 			if err := fourSlotQueryDescriptorFor(prog.Bytecode, bytecode.OpQueryOne); err != nil {
 				return err

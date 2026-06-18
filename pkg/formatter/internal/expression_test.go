@@ -113,6 +113,20 @@ func TestExpressionFormatter_QueryExpressionInline(t *testing.T) {
 	}
 }
 
+func TestExpressionFormatter_QueryExpressionWithoutUsingInline(t *testing.T) {
+	input := "RETURN QUERY `.items` IN doc WITH { limit: 10 }"
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "QUERY `.items` IN doc WITH { limit: 10 }" {
+		t.Fatalf("unexpected query expression formatting: %q", got)
+	}
+}
+
 func TestExpressionFormatter_QueryExpressionOptionsInline(t *testing.T) {
 	input := "RETURN QUERY `.items` IN doc USING css OPTIONS { timeout: 5000 }"
 	program := parseProgram(t, input)
@@ -123,6 +137,22 @@ func TestExpressionFormatter_QueryExpressionOptionsInline(t *testing.T) {
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "QUERY `.items` IN doc USING css OPTIONS { timeout: 5000 }" {
+		t.Fatalf("unexpected query expression formatting: %q", got)
+	}
+}
+
+func TestExpressionFormatter_QueryExpressionWithoutUsingMultiline(t *testing.T) {
+	input := "RETURN QUERY ONE `.items` IN doc WITH { limit: 10, timeout: 5, extra: 1 } OPTIONS { retry: 2, delay: 50 }"
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	opts := DefaultOptions()
+	opts.printWidth = 20
+	e := newEngine(source.NewAnonymous(input), &buf, opts)
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "QUERY ONE `.items` IN doc\n    WITH {\n        limit: 10,\n        timeout: 5,\n        extra: 1\n    }\n    OPTIONS {\n        retry: 2,\n        delay: 50\n    }" {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }
@@ -174,6 +204,14 @@ func TestExpressionFormatter_QueryShorthand(t *testing.T) {
 		input string
 		want  string
 	}{
+		{
+			input: `RETURN doc[~"h1"]`,
+			want:  `doc[~ "h1"]`,
+		},
+		{
+			input: `RETURN doc[~?"h1"]`,
+			want:  `doc[~? "h1"]`,
+		},
 		{
 			input: "RETURN doc[~css`h1`]",
 			want:  "doc[~ css`h1`]",
