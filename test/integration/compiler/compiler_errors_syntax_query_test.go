@@ -17,7 +17,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "QUERY requires a query literal",
-				Hint:    "Provide a query literal, e.g. QUERY `.items` IN doc USING css or QUERY @q IN doc USING css.",
+				Hint:    "Provide a query literal, e.g. QUERY `.items` IN doc or QUERY @q IN doc USING css.",
 			},
 			"Missing query literal after QUERY",
 		),
@@ -26,7 +26,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected IN after query literal",
-				Hint:    "Add IN <expr>, e.g. QUERY `.items` IN doc USING css.",
+				Hint:    "Add IN <expr>, e.g. QUERY `.items` IN doc.",
 			},
 			"Invalid ANY query payload",
 		),
@@ -35,7 +35,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected IN after query literal",
-				Hint:    "Add IN <expr>, e.g. QUERY `.items` IN doc USING css.",
+				Hint:    "Add IN <expr>, e.g. QUERY `.items` IN doc.",
 			},
 			"Invalid VALUE query payload",
 		),
@@ -44,7 +44,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "QUERY requires a query literal",
-				Hint:    "Provide a query literal, e.g. QUERY `.items` IN doc USING css or QUERY @q IN doc USING css.",
+				Hint:    "Provide a query literal, e.g. QUERY `.items` IN doc or QUERY @q IN doc USING css.",
 			},
 			"Missing query literal after QUERY modifier",
 		),
@@ -53,7 +53,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "QUERY requires a query literal",
-				Hint:    "Provide a query literal, e.g. QUERY `.items` IN doc USING css or QUERY @q IN doc USING css.",
+				Hint:    "Provide a query literal, e.g. QUERY `.items` IN doc or QUERY @q IN doc USING css.",
 			},
 			"Missing query literal after QUERY COUNT modifier",
 		),
@@ -62,7 +62,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "QUERY requires a query literal",
-				Hint:    "Provide a query literal, e.g. QUERY `.items` IN doc USING css or QUERY @q IN doc USING css.",
+				Hint:    "Provide a query literal, e.g. QUERY `.items` IN doc or QUERY @q IN doc USING css.",
 			},
 			"Missing query literal after QUERY ONE modifier",
 		),
@@ -71,7 +71,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected IN after query literal",
-				Hint:    "Add IN <expr>, e.g. QUERY `.items` IN doc USING css.",
+				Hint:    "Add IN <expr>, e.g. QUERY `.items` IN doc.",
 			},
 			"Missing IN after query literal",
 		),
@@ -80,18 +80,16 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after IN",
-				Hint:    "Provide a source expression, e.g. QUERY `.items` IN doc USING css.",
+				Hint:    "Provide a source expression, e.g. QUERY `.items` IN doc.",
 			},
 			"Missing source expression after IN",
 		),
 		Failure(
 			"RETURN QUERY `.x` IN doc css",
 			E{
-				Kind:    parserd.SyntaxError,
-				Message: "Expected USING <dialect> after IN expression",
-				Hint:    "Add USING <dialect>, e.g. QUERY `.items` IN doc USING css.",
+				Kind: parserd.SyntaxError,
 			},
-			"Missing USING after IN expression",
+			"Unexpected trailing token after query source",
 		),
 		Failure(
 			"RETURN QUERY `.x` IN doc USING",

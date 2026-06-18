@@ -613,11 +613,10 @@ func (f *expressionFormatter) formatQueryExpressionWith(p *printer, ctx *fql.Que
 		f.formatExpressionWith(p, expr.(*fql.ExpressionContext))
 	}
 
-	p.space()
-	f.writeKeywordWith(p, keywordUsing)
-	p.space()
-
 	if id := ctx.GetDialect(); id != nil {
+		p.space()
+		f.writeKeywordWith(p, keywordUsing)
+		p.space()
 		p.write(id.GetText())
 	}
 

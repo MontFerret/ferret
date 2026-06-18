@@ -222,6 +222,33 @@ func TestApplyQuery_ArrayDescriptorRequiresExactTupleSize(t *testing.T) {
 	}
 }
 
+func TestApplyQuery_ArrayDescriptorAllowsEmptyKind(t *testing.T) {
+	src := &queryStub{
+		result: runtime.NewArrayWith(runtime.NewString("ok")),
+	}
+
+	descriptor := runtime.NewArrayWith(
+		runtime.EmptyString,
+		runtime.NewString(".items"),
+		runtime.None,
+		runtime.None,
+	)
+
+	out, err := applyQuery(context.Background(), src, descriptor)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	assertStringArray(t, out, runtime.NewString("ok"))
+
+	if len(src.queries) != 1 {
+		t.Fatalf("unexpected query count: got %d, want 1", len(src.queries))
+	}
+	if src.queries[0].Kind != runtime.EmptyString {
+		t.Fatalf("expected empty query kind, got %q", src.queries[0].Kind)
+	}
+}
+
 func TestApplyQuery_ArrayDescriptorExpressionTypeValidation(t *testing.T) {
 	src := &queryStub{
 		result: runtime.NewArrayWith(runtime.NewString("ok")),

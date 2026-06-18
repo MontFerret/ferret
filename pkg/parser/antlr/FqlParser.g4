@@ -1102,8 +1102,8 @@ implicitMemberExpressionStart
     ;
 
 queryExpression
-    : Query queryModifier queryPayload In expression Using dialect=Identifier queryWithOpt? queryOptionsOpt? (recoveryTails)?
-    | Query {!p.isQueryModifierAhead()}? queryPayload In expression Using dialect=Identifier queryWithOpt? queryOptionsOpt? (recoveryTails)?
+    : Query queryModifier queryPayload In expression (Using dialect=Identifier)? queryWithOpt? queryOptionsOpt? (recoveryTails)?
+    | Query {!p.isQueryModifierAhead()}? queryPayload In expression (Using dialect=Identifier)? queryWithOpt? queryOptionsOpt? (recoveryTails)?
     ;
 
 queryModifier
@@ -1128,6 +1128,7 @@ queryOptionsOpt
 
 queryLiteral
     : Identifier (stringLiteral (OpenParen expression CloseParen)?)?
+    | stringLiteral
     ;
 
 arrayOperator

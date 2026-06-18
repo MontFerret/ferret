@@ -72,40 +72,54 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 
 		span := spanFromTokenSafe(spanNode.Token(), src)
 		err.Message = "QUERY requires a query literal"
-		err.Hint = "Provide a query literal, e.g. QUERY `.items` IN doc USING css or QUERY @q IN doc USING css."
+		err.Hint = "Provide a query literal, e.g. QUERY `.items` IN doc or QUERY @q IN doc USING css."
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing query literal"),
 		}
+
 		return true
 	}
 
 	if expectsKeyword(err.Message, "in") && hasPrevToken(offending, "QUERY", 10) && hasQueryLiteralBetween(offending, 10) && !hasTokenBefore(offending, "QUERY", "IN", 10) {
 		span := spanFromTokenSafe(offending.Token(), src)
 		err.Message = "Expected IN after query literal"
-		err.Hint = "Add IN <expr>, e.g. QUERY `.items` IN doc USING css."
+		err.Hint = "Add IN <expr>, e.g. QUERY `.items` IN doc."
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing 'IN'"),
 		}
+
 		return true
 	}
 
 	if (is(offending, "USING") || is(offending, "WITH") || is(offending, "OPTIONS") || isEOF(offending)) && hasPrevToken(offending, "IN", 2) {
 		span := spanFromTokenSafe(offending.Token(), src)
 		err.Message = "Expected expression after IN"
-		err.Hint = "Provide a source expression, e.g. QUERY `.items` IN doc USING css."
+		err.Hint = "Provide a source expression, e.g. QUERY `.items` IN doc."
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing expression"),
 		}
+
 		return true
 	}
 
-	if expectsKeyword(err.Message, "using") && hasTokenBefore(offending, "QUERY", "IN", 10) && !hasTokenBefore(offending, "QUERY", "USING", 10) {
-		span := spanFromTokenSafe(offending.Token(), src)
-		err.Message = "Expected USING <dialect> after IN expression"
-		err.Hint = "Add USING <dialect>, e.g. QUERY `.items` IN doc USING css."
+	if span, ok := queryInvalidDialectLiteralSpan(src, offending); ok {
+		err.Message = "Dialect after USING must be an identifier"
+		err.Hint = "Provide a dialect identifier such as css or xpath."
 		err.Spans = []diagnostics.ErrorSpan{
-			diagnostics.NewMainErrorSpan(span, "missing 'USING'"),
+			diagnostics.NewMainErrorSpan(span, "invalid dialect"),
 		}
+
+		return true
+	}
+
+	if invalidDialect := queryInvalidDialectStringNode(offending); invalidDialect != nil {
+		span := spanFromTokenSafe(invalidDialect.Token(), src)
+		err.Message = "Dialect after USING must be an identifier"
+		err.Hint = "Provide a dialect identifier such as css or xpath."
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "invalid dialect"),
+		}
+
 		return true
 	}
 
@@ -119,6 +133,7 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 					err.Spans = []diagnostics.ErrorSpan{
 						diagnostics.NewMainErrorSpan(span, "missing dialect"),
 					}
+
 					return true
 				}
 
@@ -129,6 +144,7 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 					err.Spans = []diagnostics.ErrorSpan{
 						diagnostics.NewMainErrorSpan(span, "invalid dialect"),
 					}
+
 					return true
 				}
 			} else if dialectTokenInMessage(err.Message) {
@@ -138,6 +154,7 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 				err.Spans = []diagnostics.ErrorSpan{
 					diagnostics.NewMainErrorSpan(span, "invalid dialect"),
 				}
+
 				return true
 			} else if next := offending.Next(); next == nil || isEOF(next) || is(next, "WITH") || is(next, "OPTIONS") {
 				span := spanFromTokenSafe(offending.Token(), src)
@@ -146,6 +163,7 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 				err.Spans = []diagnostics.ErrorSpan{
 					diagnostics.NewMainErrorSpan(span, "missing dialect"),
 				}
+
 				return true
 			}
 		}
@@ -182,6 +200,65 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 	}
 
 	return false
+}
+
+func queryInvalidDialectLiteralSpan(src *source.Source, offending *TokenNode) (source.Span, bool) {
+	if src == nil || offending == nil || !hasPrevToken(offending, "USING", 64) {
+		return source.Span{}, false
+	}
+
+	content := src.Content()
+	using := strings.LastIndex(strings.ToUpper(content), "USING")
+	if using < 0 {
+		return source.Span{}, false
+	}
+
+	start := using + len("USING")
+	for start < len(content) {
+		switch content[start] {
+		case ' ', '\t', '\n', '\r':
+			start++
+			continue
+		}
+		break
+	}
+
+	if start >= len(content) {
+		return source.Span{}, false
+	}
+
+	switch content[start] {
+	case '"', '\'', '`':
+	default:
+		return source.Span{}, false
+	}
+
+	end := start + 1
+	for end < len(content) {
+		switch content[end] {
+		case ' ', '\t', '\n', '\r':
+			return source.Span{Start: start, End: end}, true
+		}
+		end++
+	}
+
+	return source.Span{Start: start, End: end}, true
+}
+
+func queryInvalidDialectStringNode(offending *TokenNode) *TokenNode {
+	for current, steps := offending, 0; current != nil && steps < 6; current, steps = current.Prev(), steps+1 {
+		if isStringLiteral(current) && hasPrevToken(current, "USING", 4) {
+			return current
+		}
+	}
+
+	for current, steps := offending.Next(), 0; current != nil && steps < 6; current, steps = current.Next(), steps+1 {
+		if isStringLiteral(current) && hasPrevToken(current, "USING", 4) {
+			return current
+		}
+	}
+
+	return nil
 }
 
 func queryClauseHint(clause string) string {

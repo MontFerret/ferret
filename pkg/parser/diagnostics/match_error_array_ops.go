@@ -45,37 +45,17 @@ func matchQueryOperatorErrors(src *source.Source, err *diagnostics.Diagnostic, o
 	if operator == "" {
 		operator = "~"
 	}
-	example := fmt.Sprintf("doc[%s css`...`]", operator)
 
-	if isStringLiteral(offending) && hasPrevToken(offending, operator, 4) && !isMissingStringLiteral(err.Message) {
-		span := spanFromTokenSafe(offending.Token(), src)
-		err.Message = "Expected query type before query literal"
-		err.Hint = fmt.Sprintf("Provide a type name before the query string, e.g. %s.", example)
-		err.Spans = []diagnostics.ErrorSpan{
-			diagnostics.NewMainErrorSpan(span, "missing query type"),
-		}
-
-		return true
-	}
+	literalExample := fmt.Sprintf("doc[%s \"...\"] or doc[%s css`...`]", operator, operator)
+	typedExample := fmt.Sprintf("doc[%s css`...`]", operator)
 
 	if is(offending, operator) {
-		if next := offending.Next(); operator == "~?" && isStringLiteral(next) && !isMissingStringLiteral(err.Message) {
-			span := spanFromTokenSafe(next.Token(), src)
-			err.Message = "Expected query type before query literal"
-			err.Hint = fmt.Sprintf("Provide a type name before the query string, e.g. %s.", example)
-			err.Spans = []diagnostics.ErrorSpan{
-				diagnostics.NewMainErrorSpan(span, "missing query type"),
-			}
-
-			return true
-		}
-
 		span := spanFromTokenSafe(offending.Token(), src)
 		span.Start = span.End
 		span.End = span.Start + 1
 
 		err.Message = fmt.Sprintf("Expected query literal after '%s'", operator)
-		err.Hint = fmt.Sprintf("Provide a query literal, e.g. %s.", example)
+		err.Hint = fmt.Sprintf("Provide a query literal, e.g. %s.", literalExample)
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing query literal"),
 		}
@@ -91,7 +71,7 @@ func matchQueryOperatorErrors(src *source.Source, err *diagnostics.Diagnostic, o
 			span.End = span.Start + 1
 
 			err.Message = fmt.Sprintf("Expected query string after '%s'", queryType)
-			err.Hint = fmt.Sprintf("Provide a query string, e.g. %s.", example)
+			err.Hint = fmt.Sprintf("Provide a query string, e.g. %s.", typedExample)
 			err.Spans = []diagnostics.ErrorSpan{
 				diagnostics.NewMainErrorSpan(span, "missing query string"),
 			}
@@ -104,7 +84,7 @@ func matchQueryOperatorErrors(src *source.Source, err *diagnostics.Diagnostic, o
 		span.End = span.Start + 1
 
 		err.Message = fmt.Sprintf("Expected query literal after '%s'", operator)
-		err.Hint = fmt.Sprintf("Provide a query literal, e.g. %s.", example)
+		err.Hint = fmt.Sprintf("Provide a query literal, e.g. %s.", literalExample)
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing query literal"),
 		}
@@ -119,7 +99,7 @@ func matchQueryOperatorErrors(src *source.Source, err *diagnostics.Diagnostic, o
 		span.End = span.Start + 1
 
 		err.Message = fmt.Sprintf("Expected query string after '%s'", queryType)
-		err.Hint = fmt.Sprintf("Provide a query string, e.g. %s.", example)
+		err.Hint = fmt.Sprintf("Provide a query string, e.g. %s.", typedExample)
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing query string"),
 		}

@@ -15,18 +15,9 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected query literal after '~'",
-				Hint:    "Provide a query literal, e.g. doc[~ css`...`].",
+				Hint:    "Provide a query literal, e.g. doc[~ \"...\"] or doc[~ css`...`].",
 			},
 			"Missing query literal after '~'",
-		),
-		Failure(
-			`RETURN doc[~ 'x']`,
-			E{
-				Kind:    parserd.SyntaxError,
-				Message: "Expected query literal after '~'",
-				Hint:    "Provide a query literal, e.g. doc[~ css`...`].",
-			},
-			"Missing query type before literal",
 		),
 		Failure(
 			`LET doc = {} RETURN doc[~ css()]`,
@@ -42,18 +33,9 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected query literal after '~?'",
-				Hint:    "Provide a query literal, e.g. doc[~? css`...`].",
+				Hint:    "Provide a query literal, e.g. doc[~? \"...\"] or doc[~? css`...`].",
 			},
 			"Missing query literal after '~?'",
-		),
-		Failure(
-			`RETURN doc[~? 'x']`,
-			E{
-				Kind:    parserd.SyntaxError,
-				Message: "Expected query type before query literal",
-				Hint:    "Provide a type name before the query string, e.g. doc[~? css`...`].",
-			},
-			"Missing query type before literal after '~?'",
 		),
 		Failure(
 			`LET doc = {} RETURN doc[~? css()]`,
@@ -68,10 +50,10 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 			`LET doc = {} RETURN doc[~ css"x"`,
 			E{
 				Kind:    parserd.SyntaxError,
-				Message: "Expected query type before query literal",
-				Hint:    "Provide a type name before the query string, e.g. doc[~ css`...`].",
+				Message: "Expected query string after 'css'",
+				Hint:    "Provide a query string, e.g. doc[~ css`...`].",
 			},
-			"Missing query type before query literal",
+			"Missing template query string after query type",
 		),
 		Failure(
 			`RETURN [1, 2][* RETURN]`,
