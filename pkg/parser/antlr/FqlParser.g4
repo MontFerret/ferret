@@ -365,13 +365,7 @@ forExpression
     ;
 
 forExpressionSource
-    : functionCallExpression
-    | arrayLiteral
-    | objectLiteral
-    | variable
-    | memberExpression
-    | rangeOperator
-    | param
+    : expression
     ;
 
 forExpressionClause

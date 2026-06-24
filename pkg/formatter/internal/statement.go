@@ -448,21 +448,8 @@ func (f *statementFormatter) formatForExpressionSource(ctx *fql.ForExpressionSou
 		return
 	}
 
-	switch {
-	case ctx.FunctionCallExpression() != nil:
-		f.expression.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
-	case ctx.ArrayLiteral() != nil:
-		f.list.formatArrayLiteral(ctx.ArrayLiteral().(*fql.ArrayLiteralContext))
-	case ctx.ObjectLiteral() != nil:
-		f.list.formatObjectLiteral(ctx.ObjectLiteral().(*fql.ObjectLiteralContext))
-	case ctx.Variable() != nil:
-		f.expression.formatVariable(ctx.Variable().(*fql.VariableContext))
-	case ctx.MemberExpression() != nil:
-		f.member.formatMemberExpression(ctx.MemberExpression().(*fql.MemberExpressionContext))
-	case ctx.RangeOperator() != nil:
-		f.expression.formatRangeOperator(ctx.RangeOperator().(*fql.RangeOperatorContext))
-	case ctx.Param() != nil:
-		f.expression.formatParam(ctx.Param().(*fql.ParamContext))
+	if expr := ctx.Expression(); expr != nil {
+		f.expression.formatExpression(expr.(*fql.ExpressionContext))
 	}
 }
 
