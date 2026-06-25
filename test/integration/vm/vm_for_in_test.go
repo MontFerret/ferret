@@ -9,9 +9,15 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
+	"github.com/MontFerret/ferret/v2/test/spec/mock"
 )
 
 func TestForIn(t *testing.T) {
+	queryable := mock.NewQueryable(runtime.NewArrayWith(
+		runtime.NewObjectWith(map[string]runtime.Value{"id": runtime.NewString("a")}),
+		runtime.NewObjectWith(map[string]runtime.Value{"id": runtime.NewString("b")}),
+	))
+
 	// Should not allocate memory if NONE is a return statement
 	//{
 	//	`FOR i IN 0..100
@@ -118,7 +124,62 @@ func TestForIn(t *testing.T) {
 			FOR i IN { items: [{name: 'foo'}, {name: 'bar'}, {name: 'qaz'}] }.items RETURN i.name`,
 			[]any{"foo", "bar", "qaz"},
 		),
+		Array(`
+			FOR i IN GET_ITEMS()
+				RETURN i
+		`, []any{1, 2, 3}, "Should iterate over a function call source"),
+		Array(`
+			FOR order IN QUERY "/orders" IN @api
+				RETURN order.id
+		`, []any{"a", "b"}, "Should iterate over a query source with nested IN"),
+		Array(`
+			FOR order IN QUERY "/orders" IN @api WITH {
+				query: {
+					status: "open"
+				}
+			}
+				RETURN order.id
+		`, []any{"a", "b"}, "Should iterate over a query source with WITH"),
+		Array(`
+			FOR order IN (
+				QUERY "/orders" IN @api WITH {
+					query: {
+						status: "open"
+					}
+				}
+			)
+				RETURN order.id
+		`, []any{"a", "b"}, "Should iterate over a parenthesized query source"),
+		Array(`
+			FOR item IN WAITFOR VALUE [1, 2]
+				RETURN item
+		`, []any{1, 2}, "Should iterate over a WAITFOR VALUE source"),
+		Array(`
+			FOR item IN MATCH "a" ("a" => [1], _ => [2])
+				RETURN item
+		`, []any{1}, "Should iterate over a MATCH source"),
 	}, vm.WithFunction("TEST_FN", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return nil, nil
-	}))
+	}), vm.WithFunction("GET_ITEMS", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+		return runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2), runtime.NewInt(3)), nil
+	}), vm.WithParam("api", queryable))
+}
+
+func TestForInNonIterableSourceErrors(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		spec.NewSpec(`
+			FOR item IN 42
+				RETURN item
+		`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid type",
+			Contains: []string{"expected Iterable", "got Int"},
+		}),
+		spec.NewSpec(`
+			FOR item IN TRUE
+				RETURN item
+		`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid type",
+			Contains: []string{"expected Iterable", "got Boolean"},
+		}),
+	})
 }

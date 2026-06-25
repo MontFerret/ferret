@@ -32,5 +32,13 @@ FOR WHILE ready
 WAITFOR EVENT "navigation" IN doc WHEN .type == "match" TIMEOUT 10s
 RETURN ready
 `, "FOR WHILE ready\n    WAITFOR EVENT \"navigation\" IN doc WHEN .type == \"match\" TIMEOUT 10s\n    RETURN ready"),
+		S(`
+FOR order IN QUERY "/orders" IN api WITH { query: { status: "open" } }
+RETURN order
+`, "FOR order IN QUERY \"/orders\" IN api WITH { query: { status: \"open\" } }\n    RETURN order"),
+		S(`
+FOR order IN (QUERY "/orders" IN api WITH { query: { status: "open" } })
+RETURN order
+`, "FOR order IN (QUERY \"/orders\" IN api WITH { query: { status: \"open\" } })\n    RETURN order"),
 	})
 }

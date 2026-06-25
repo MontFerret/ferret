@@ -368,28 +368,12 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 }
 
 // compileForExpressionSource processes the source expression for a FOR IN loop.
-// It handles various types of expressions that can be used as the source collection,
-// such as function calls, member expressions, variables, parameters, range operators, and literals.
-// Returns an operand representing the compiled source expression.
 func (c *LoopCompiler) compileForExpressionSource(ctx fql.IForExpressionSourceContext) bytecode.Operand {
-	return c.compileLoopOperand(
-		loopOperandContext{
-			param:                  ctx.Param(),
-			variable:               ctx.Variable(),
-			memberExpression:       ctx.MemberExpression(),
-			functionCallExpression: ctx.FunctionCallExpression(),
-			rangeOperator:          ctx.RangeOperator(),
-			arrayLiteral:           ctx.ArrayLiteral(),
-			objectLiteral:          ctx.ObjectLiteral(),
-		},
-		loopOperandFunctionCallExpression,
-		loopOperandMemberExpression,
-		loopOperandVariable,
-		loopOperandParam,
-		loopOperandRangeOperator,
-		loopOperandArrayLiteral,
-		loopOperandObjectLiteral,
-	)
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
+	return c.exprs.Compile(ctx.Expression())
 }
 
 func (c *LoopCompiler) compileLoopBody(ctx fql.IForExpressionContext) {
@@ -590,33 +574,66 @@ func (c *LoopCompiler) inferForInTypes(srcCtx fql.IForExpressionSourceContext, s
 		return core.TypeUnknown, core.TypeUnknown
 	}
 
-	if srcCtx.RangeOperator() != nil {
+	return c.inferForInExpressionTypes(srcCtx.Expression(), src)
+}
+
+func (c *LoopCompiler) inferForInExpressionTypes(ctx fql.IExpressionContext, src bytecode.Operand) (core.ValueType, core.ValueType) {
+	atom := c.sourceExpressionAtom(ctx)
+
+	if atom == nil {
+		return c.inferValueKeyFromCollection(c.facts.OperandType(src))
+	}
+
+	if atom.RangeOperator() != nil {
 		return core.TypeInt, core.TypeInt
 	}
 
-	if al := srcCtx.ArrayLiteral(); al != nil {
-		return c.inferArrayLiteralElementType(al), core.TypeInt
+	if lit := atom.Literal(); lit != nil {
+		switch {
+		case lit.ArrayLiteral() != nil:
+			return c.inferArrayLiteralElementType(lit.ArrayLiteral()), core.TypeInt
+		case lit.ObjectLiteral() != nil:
+			return core.TypeAny, core.TypeString
+		}
 	}
 
-	if srcCtx.ObjectLiteral() != nil {
-		return core.TypeAny, core.TypeString
-	}
-
-	if v := srcCtx.Variable(); v != nil {
+	if v := atom.Variable(); v != nil {
 		if binding, ok := c.ctx.Function.Symbols.ResolveBinding(v.GetText()); ok {
 			return c.inferValueKeyFromCollection(binding.Type)
 		}
 	}
 
-	if srcCtx.Param() != nil || srcCtx.FunctionCallExpression() != nil {
+	if atom.Param() != nil || atom.FunctionCallExpression() != nil {
 		return core.TypeAny, core.TypeAny
 	}
 
-	if srcCtx.MemberExpression() != nil {
+	if atom.MemberExpression() != nil {
 		return c.inferValueKeyFromCollection(c.facts.OperandType(src))
 	}
 
 	return c.inferValueKeyFromCollection(c.facts.OperandType(src))
+}
+
+func (c *LoopCompiler) sourceExpressionAtom(ctx fql.IExpressionContext) fql.IExpressionAtomContext {
+	if ctx == nil {
+		return nil
+	}
+
+	predicate := ctx.Predicate()
+	if predicate == nil {
+		return nil
+	}
+
+	atom := predicate.ExpressionAtom()
+	if atom == nil {
+		return nil
+	}
+
+	if nested := atom.Expression(); nested != nil {
+		return c.sourceExpressionAtom(nested)
+	}
+
+	return atom
 }
 
 func (c *LoopCompiler) inferValueKeyFromCollection(typ core.ValueType) (core.ValueType, core.ValueType) {
