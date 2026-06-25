@@ -154,7 +154,7 @@ RETURN add(2, 3)
 					t.Fatalf("original run failed: %v", err)
 				}
 
-				data, err := artifact.Marshal(program, artifact.Options{})
+				data, err := artifact.Marshal(program)
 				if err != nil {
 					t.Fatalf("artifact marshal failed: %v", err)
 				}

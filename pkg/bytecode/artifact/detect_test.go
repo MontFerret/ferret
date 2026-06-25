@@ -4,7 +4,7 @@ import "testing"
 
 func TestHasMagic(t *testing.T) {
 	program := newArtifactTestProgram()
-	artifactData, err := Marshal(program, Options{})
+	artifactData, err := Marshal(program)
 	if err != nil {
 		t.Fatalf("Marshal() error = %v", err)
 	}

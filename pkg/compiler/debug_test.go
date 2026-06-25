@@ -48,7 +48,7 @@ func TestDebugInfoArtifactRoundTrip(t *testing.T) {
 
 	for _, format := range []artifact.FormatID{artifact.FormatJSON, artifact.FormatMsgPack} {
 		t.Run(fmt.Sprintf("format_%d", format), func(t *testing.T) {
-			data, err := artifact.Marshal(program, artifact.Options{Format: format})
+			data, err := artifact.Marshal(program, artifact.WithFormat(format))
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -73,7 +73,7 @@ func mustNewSession(t *testing.T, plan *Plan, setters ...SessionOption) *Session
 	return session
 }
 
-func mustMarshalArtifact(t *testing.T, query string, opts ...artifact.Options) []byte {
+func mustMarshalArtifact(t *testing.T, query string, opts ...artifact.Option) []byte {
 	t.Helper()
 
 	prog, err := compiler.New().Compile(source.NewAnonymous(query))
@@ -81,12 +81,7 @@ func mustMarshalArtifact(t *testing.T, query string, opts ...artifact.Options) [
 		t.Fatalf("failed to compile query %q: %v", query, err)
 	}
 
-	marshalOpts := artifact.Options{}
-	if len(opts) > 0 {
-		marshalOpts = opts[0]
-	}
-
-	data, err := artifact.Marshal(prog, marshalOpts)
+	data, err := artifact.Marshal(prog, opts...)
 	if err != nil {
 		t.Fatalf("failed to marshal artifact: %v", err)
 	}
