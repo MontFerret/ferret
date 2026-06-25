@@ -93,8 +93,8 @@ func TestSessionRunReturnsVMError(t *testing.T) {
 	t.Parallel()
 
 	vmErr := errors.New("vm run failed")
-	eng := mustNewEngine(t, WithFunctionsRegistrar(func(fns runtime.FunctionDefs) {
-		fns.A0().Add("SESSION_FAIL_FN", func(context.Context) (runtime.Value, error) {
+	eng := mustNewEngine(t, WithFunctionsRegistrar(func(ns runtime.Namespace) {
+		ns.Function().A0().Add("SESSION_FAIL_FN", func(context.Context) (runtime.Value, error) {
 			return runtime.None, vmErr
 		})
 	}))
@@ -127,8 +127,8 @@ func TestSessionRunJoinsVMAndAfterHookErrors(t *testing.T) {
 	var seenRunErr error
 
 	eng := mustNewEngine(t,
-		WithFunctionsRegistrar(func(fns runtime.FunctionDefs) {
-			fns.A0().Add("SESSION_FAIL_FN_JOIN", func(context.Context) (runtime.Value, error) {
+		WithFunctionsRegistrar(func(ns runtime.Namespace) {
+			ns.Function().A0().Add("SESSION_FAIL_FN_JOIN", func(context.Context) (runtime.Value, error) {
 				return runtime.None, vmErr
 			})
 		}),

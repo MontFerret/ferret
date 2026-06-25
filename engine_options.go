@@ -189,14 +189,14 @@ func WithNamespace(ns runtime.Namespace) Option {
 	}
 }
 
-// WithFunctionsRegistrar creates an Option that invokes the provided registrar with the engine's runtime.FunctionDefs if the registrar is not nil.
-func WithFunctionsRegistrar(setter func(fns runtime.FunctionDefs)) Option {
+// WithFunctionsRegistrar creates an Option that invokes the provided registrar with the engine's runtime.Namespace if the registrar is not nil.
+func WithFunctionsRegistrar(setter func(ns runtime.Namespace)) Option {
 	return func(env *options) error {
 		if setter == nil {
 			return fmt.Errorf("functions registrar cannot be nil")
 		}
 
-		setter(env.library.Function())
+		setter(env.library)
 
 		return nil
 	}

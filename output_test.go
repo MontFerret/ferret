@@ -115,8 +115,8 @@ func TestSessionRunUsesRequestedOutputCodec(t *testing.T) {
 func TestSessionRunClosesResultWhenRequestedCodecIsMissing(t *testing.T) {
 	root := newTrackingJSONCloser("root-missing-codec", "1")
 
-	eng := mustNewEngine(t, WithFunctionsRegistrar(func(fns runtime.FunctionDefs) {
-		fns.A0().Add("MAKE", func(context.Context) (runtime.Value, error) {
+	eng := mustNewEngine(t, WithFunctionsRegistrar(func(ns runtime.Namespace) {
+		ns.Function().A0().Add("MAKE", func(context.Context) (runtime.Value, error) {
 			return root, nil
 		})
 	}))
@@ -146,8 +146,8 @@ func TestSessionRunReturnsOutputWhenResultCleanupFails(t *testing.T) {
 	closer := newTrackingJSONCloser("cleanup-failure", "1")
 	closer.closeErr = closeErr
 
-	eng := mustNewEngine(t, WithFunctionsRegistrar(func(fns runtime.FunctionDefs) {
-		fns.A0().Add("MAKE", func(context.Context) (runtime.Value, error) {
+	eng := mustNewEngine(t, WithFunctionsRegistrar(func(ns runtime.Namespace) {
+		ns.Function().A0().Add("MAKE", func(context.Context) (runtime.Value, error) {
 			return closer, nil
 		})
 	}))
@@ -171,8 +171,8 @@ func TestSessionRunReturnsOutputWhenResultCleanupFails(t *testing.T) {
 func TestSessionRunClosesNestedLiveValuesDiscoveredDuringEncoding(t *testing.T) {
 	nested := newTrackingJSONCloser("nested-live", `"ok"`)
 
-	eng := mustNewEngine(t, WithFunctionsRegistrar(func(fns runtime.FunctionDefs) {
-		fns.A0().Add("MAKE", func(context.Context) (runtime.Value, error) {
+	eng := mustNewEngine(t, WithFunctionsRegistrar(func(ns runtime.Namespace) {
+		ns.Function().A0().Add("MAKE", func(context.Context) (runtime.Value, error) {
 			return runtime.NewArrayWith(nested), nil
 		})
 	}))
