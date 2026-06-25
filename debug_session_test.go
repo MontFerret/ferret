@@ -387,8 +387,8 @@ func TestDebugSessionResumePreservesBeforeRunContextValues(t *testing.T) {
 		WithBeforeRunHook(func(ctx context.Context) (context.Context, error) {
 			return context.WithValue(ctx, key, "hook-value"), nil
 		}),
-		WithFunctionsRegistrar(func(fns runtime.FunctionDefs) {
-			fns.A0().Add("DEBUG_CONTEXT_VALUE", func(ctx context.Context) (runtime.Value, error) {
+		WithFunctionsRegistrar(func(ns runtime.Namespace) {
+			ns.Function().A0().Add("DEBUG_CONTEXT_VALUE", func(ctx context.Context) (runtime.Value, error) {
 				value, _ := ctx.Value(key).(string)
 				return runtime.NewString(value), nil
 			})
