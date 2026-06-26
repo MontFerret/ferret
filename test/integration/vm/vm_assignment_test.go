@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/sdk"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
@@ -266,4 +267,26 @@ RETURN arr
 	}, vm.WithFunction("FAIL", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, errors.New("should not execute")
 	}))
+}
+
+func TestDirectMutationProxyRemovable(t *testing.T) {
+	RunSpecFactory(t, func() []spec.Spec {
+		return []spec.Spec{
+			Array(`
+LET arr = @arr
+DELETE arr[1]
+RETURN arr
+`, []any{1, 3}, "DELETE removes a proxy slice index").Env(vm.WithParam("arr", sdk.NewProxySlice([]int{1, 2, 3}))),
+			Object(`
+LET obj = @obj
+DELETE obj.one
+RETURN obj
+`, map[string]any{
+				"two": 2,
+			}, "DELETE removes a proxy map key").Env(vm.WithParam("obj", sdk.NewProxyMap(map[string]int{
+				"one": 1,
+				"two": 2,
+			}))),
+		}
+	})
 }

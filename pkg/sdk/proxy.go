@@ -165,6 +165,49 @@ func (p *Proxy[T]) Get(ctx context.Context, key runtime.Value) (runtime.Value, e
 	return runtime.None, ProxyError(p.target, runtime.TypeKeyReadable)
 }
 
+func (p *Proxy[T]) RemoveAt(ctx context.Context, idx runtime.Int) (runtime.Value, error) {
+	indexRemovable, ok := p.target.(runtime.IndexRemovable)
+
+	if ok {
+		return indexRemovable.RemoveAt(ctx, idx)
+	}
+
+	return runtime.None, ProxyError(p.target, runtime.TypeIndexRemovable)
+}
+
+func (p *Proxy[T]) RemoveKey(ctx context.Context, key runtime.Value) error {
+	keyRemovable, ok := p.target.(runtime.KeyRemovable)
+
+	if ok {
+		return keyRemovable.RemoveKey(ctx, key)
+	}
+
+	indexRemovable, ok := p.target.(runtime.IndexRemovable)
+
+	if ok {
+		switch idx := key.(type) {
+		case runtime.Int:
+			_, err := indexRemovable.RemoveAt(ctx, idx)
+
+			return err
+		case runtime.Float:
+			return runtime.TypeErrorOf(idx, runtime.TypeInt)
+		}
+	}
+
+	return ProxyError(p.target, runtime.TypeKeyRemovable)
+}
+
+func (p *Proxy[T]) Remove(ctx context.Context, value runtime.Value) error {
+	valueRemovable, ok := p.target.(runtime.ValueRemovable)
+
+	if ok {
+		return valueRemovable.Remove(ctx, value)
+	}
+
+	return ProxyError(p.target, runtime.TypeValueRemovable)
+}
+
 func (p *Proxy[T]) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	switch t := p.target.(type) {
 	case runtime.Iterable:

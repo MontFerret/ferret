@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// ProxySlice is a proxy for a slice of type T that implements runtime.KeyReadable, runtime.KeyWritable, runtime.Sortable, and runtime.Iterable interfaces if the underlying slice supports them.
+// ProxySlice is a proxy for a slice of type T that implements indexed access, index removal, value removal, sorting, and iteration interfaces.
 type ProxySlice[T any] struct {
 	*Proxy[[]T]
 	itemTypeName runtime.Type
@@ -51,6 +51,63 @@ func (p *ProxySlice[T]) SetAt(_ context.Context, idx runtime.Int, value runtime.
 	target[int(idx)] = proxy.Target()
 
 	return nil
+}
+
+func (p *ProxySlice[T]) RemoveAt(ctx context.Context, idx runtime.Int) (runtime.Value, error) {
+	indexRemovable, ok := p.target.(runtime.IndexRemovable)
+
+	if ok {
+		return indexRemovable.RemoveAt(ctx, idx)
+	}
+
+	target := p.Target()
+	edge := runtime.Int(len(target) - 1)
+
+	if idx > edge {
+		return runtime.None, nil
+	}
+
+	if idx < 0 {
+		return runtime.None, runtime.Error(runtime.ErrInvalidOperation, "out of bounds")
+	}
+
+	item := target[idx]
+	p.target = append(target[:idx], target[idx+1:]...)
+
+	return p.itemToProxy(item), nil
+}
+
+func (p *ProxySlice[T]) Remove(ctx context.Context, value runtime.Value) error {
+	valueRemovable, ok := p.target.(runtime.ValueRemovable)
+
+	if ok {
+		return valueRemovable.Remove(ctx, value)
+	}
+
+	target := p.Target()
+
+	for idx, item := range target {
+		if proxyValueEqual(value, item, p.itemToProxy(item)) {
+			_, err := p.RemoveAt(ctx, runtime.Int(idx))
+
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (p *ProxySlice[T]) RemoveKey(ctx context.Context, key runtime.Value) error {
+	switch idx := key.(type) {
+	case runtime.Int:
+		_, err := p.RemoveAt(ctx, idx)
+
+		return err
+	case runtime.Float:
+		return runtime.TypeErrorOf(idx, runtime.TypeInt)
+	default:
+		return ProxyError(p.target, runtime.TypeIndexRemovable)
+	}
 }
 
 func (p *ProxySlice[T]) SortAsc(_ context.Context) error {
