@@ -238,11 +238,31 @@ LET value = 42
 DELETE value.foo
 RETURN value
 `, "DELETE from non-object parent errors"),
-		Error(`
+		Array(`
 LET arr = [1, 2, 3]
 DELETE arr[1]
 RETURN arr
-`, "DELETE rejects array index removal"),
+`, []any{1, 3}, "DELETE removes an array index"),
+		Array(`
+LET arr = [1, 2, 3]
+DELETE arr[100]
+RETURN arr
+`, []any{1, 2, 3}, "DELETE missing array index is a no-op"),
+		Error(`
+LET arr = [1, 2, 3]
+DELETE arr[-1]
+RETURN arr
+`, "DELETE rejects negative array index"),
+		Error(`
+LET arr = [1, 2, 3]
+DELETE arr[1.5]
+RETURN arr
+`, "DELETE rejects float array index"),
+		Error(`
+LET arr = [1, 2, 3]
+DELETE arr["1"]
+RETURN arr
+`, "DELETE rejects non-integer array index"),
 	}, vm.WithFunction("FAIL", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, errors.New("should not execute")
 	}))
