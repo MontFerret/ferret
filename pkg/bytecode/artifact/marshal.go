@@ -15,19 +15,13 @@ var (
 		FormatJSON:    formatjson.Default,
 		FormatMsgPack: formatmsgpack.Default,
 	}
+
 	defaultLoader = NewDefaultLoader()
 )
 
-func builtinRegisteredFormats() []RegisteredFormat {
-	return []RegisteredFormat{
-		{ID: FormatJSON, Format: formatjson.Default},
-		{ID: FormatMsgPack, Format: formatmsgpack.Default},
-	}
-}
-
 // Marshal serializes a program into a self-describing artifact using one of the
 // built-in payload formats.
-func Marshal(program *bytecode.Program, opts Options) ([]byte, error) {
+func Marshal(program *bytecode.Program, setters ...Option) ([]byte, error) {
 	if err := bytecode.ValidateProgram(program); err != nil {
 		return nil, err
 	}
@@ -35,6 +29,8 @@ func Marshal(program *bytecode.Program, opts Options) ([]byte, error) {
 	if program.ISAVersion < 0 || program.ISAVersion > int(^uint16(0)) {
 		return nil, fmt.Errorf("%w: program isaVersion %d overflows header field", ErrInvalidHeader, program.ISAVersion)
 	}
+
+	opts := newOptions(setters...)
 
 	formatID := opts.Format
 	if formatID == 0 {
@@ -56,7 +52,7 @@ func Marshal(program *bytecode.Program, opts Options) ([]byte, error) {
 		return nil, err
 	}
 
-	header := header{
+	h := header{
 		Magic:         magic,
 		Format:        formatID,
 		SchemaVersion: schemaVersion,
@@ -66,7 +62,7 @@ func Marshal(program *bytecode.Program, opts Options) ([]byte, error) {
 	}
 
 	data := make([]byte, headerSize+len(payload))
-	encodeHeader(data[:headerSize], header)
+	encodeHeader(data[:headerSize], h)
 	copy(data[headerSize:], payload)
 
 	return data, nil
@@ -75,6 +71,13 @@ func Marshal(program *bytecode.Program, opts Options) ([]byte, error) {
 // Unmarshal decodes a self-describing artifact using the built-in loader.
 func Unmarshal(data []byte) (*bytecode.Program, error) {
 	return defaultLoader.Load(data)
+}
+
+func builtinRegisteredFormats() []RegisteredFormat {
+	return []RegisteredFormat{
+		{ID: FormatJSON, Format: formatjson.Default},
+		{ID: FormatMsgPack, Format: formatmsgpack.Default},
+	}
 }
 
 func payloadLengthForHeader(length uint64) (uint32, error) {

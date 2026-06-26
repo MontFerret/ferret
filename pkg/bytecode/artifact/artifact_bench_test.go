@@ -15,7 +15,7 @@ func BenchmarkMarshalMessagePack(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		if _, err := Marshal(program, Options{Format: FormatMsgPack}); err != nil {
+		if _, err := Marshal(program, WithFormat(FormatMsgPack)); err != nil {
 			b.Fatalf("Marshal() error = %v", err)
 		}
 	}
@@ -23,7 +23,7 @@ func BenchmarkMarshalMessagePack(b *testing.B) {
 
 func BenchmarkUnmarshalMessagePack(b *testing.B) {
 	program := mustBenchmarkArtifactProgram(b)
-	data, err := Marshal(program, Options{Format: FormatMsgPack})
+	data, err := Marshal(program, WithFormat(FormatMsgPack))
 	if err != nil {
 		b.Fatalf("Marshal() error = %v", err)
 	}
@@ -45,7 +45,7 @@ func BenchmarkMarshalJSON(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		if _, err := Marshal(program, Options{Format: FormatJSON}); err != nil {
+		if _, err := Marshal(program, WithFormat(FormatJSON)); err != nil {
 			b.Fatalf("Marshal() error = %v", err)
 		}
 	}
@@ -53,7 +53,7 @@ func BenchmarkMarshalJSON(b *testing.B) {
 
 func BenchmarkUnmarshalJSON(b *testing.B) {
 	program := mustBenchmarkArtifactProgram(b)
-	data, err := Marshal(program, Options{Format: FormatJSON})
+	data, err := Marshal(program, WithFormat(FormatJSON))
 	if err != nil {
 		b.Fatalf("Marshal() error = %v", err)
 	}

@@ -21,7 +21,7 @@ import (
 func TestMarshalAndUnmarshal_DefaultMessagePack(t *testing.T) {
 	program := newArtifactTestProgram()
 
-	data, err := Marshal(program, Options{})
+	data, err := Marshal(program)
 	if err != nil {
 		t.Fatalf("Marshal() error = %v", err)
 	}
@@ -39,7 +39,7 @@ func TestMarshalAndUnmarshal_DefaultMessagePack(t *testing.T) {
 func TestMarshalAndUnmarshal_JSON(t *testing.T) {
 	program := newArtifactTestProgram()
 
-	data, err := Marshal(program, Options{Format: FormatJSON})
+	data, err := Marshal(program, WithFormat(FormatJSON))
 	if err != nil {
 		t.Fatalf("Marshal() error = %v", err)
 	}
@@ -59,7 +59,7 @@ func TestMarshalAndUnmarshal_JSON(t *testing.T) {
 }
 
 func TestMarshalRejectsUnknownFormat(t *testing.T) {
-	_, err := Marshal(newArtifactTestProgram(), Options{Format: FormatID(99)})
+	_, err := Marshal(newArtifactTestProgram(), WithFormat(99))
 	if !errors.Is(err, ErrUnknownFormat) {
 		t.Fatalf("expected ErrUnknownFormat, got %v", err)
 	}
@@ -73,7 +73,7 @@ func TestMarshalAllowsConcatImmediateCountAtRegisterLimit(t *testing.T) {
 		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
 	}
 
-	if _, err := Marshal(program, Options{}); err != nil {
+	if _, err := Marshal(program); err != nil {
 		t.Fatalf("expected Marshal() to accept valid concat immediate count, got %v", err)
 	}
 }
@@ -91,7 +91,7 @@ func TestMarshalAllowsDistinctOpcode(t *testing.T) {
 	program.Metadata.MatchFailTargets = nil
 	program.Metadata.DebugSpans = nil
 
-	data, err := Marshal(program, Options{})
+	data, err := Marshal(program)
 	if err != nil {
 		t.Fatalf("expected Marshal() to accept OpDistinct, got %v", err)
 	}
@@ -121,7 +121,7 @@ func TestMarshalPreservesSourcePoint(t *testing.T) {
 		{ID: 17, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1, Kind: bytecode.DebugPointReturn, Bindings: []bytecode.DebugBinding{}},
 	}
 
-	data, err := Marshal(program, Options{})
+	data, err := Marshal(program)
 	if err != nil {
 		t.Fatalf("expected Marshal() to accept OpSourcePoint, got %v", err)
 	}
@@ -161,7 +161,7 @@ func TestPayloadLengthForHeader(t *testing.T) {
 
 func TestLoaderRejectsInvalidHeaders(t *testing.T) {
 	program := newArtifactTestProgram()
-	data, err := Marshal(program, Options{})
+	data, err := Marshal(program)
 	if err != nil {
 		t.Fatalf("Marshal() error = %v", err)
 	}
@@ -204,7 +204,7 @@ func TestLoaderRejectsInvalidHeaders(t *testing.T) {
 	})
 
 	t.Run("unregistered_format", func(t *testing.T) {
-		jsonData, err := Marshal(program, Options{Format: FormatJSON})
+		jsonData, err := Marshal(program, WithFormat(FormatJSON))
 		if err != nil {
 			t.Fatalf("Marshal() error = %v", err)
 		}
@@ -274,7 +274,7 @@ func TestLoaderRejectsInvalidHeaders(t *testing.T) {
 	})
 
 	t.Run("payload_header_isa_mismatch", func(t *testing.T) {
-		jsonData, err := Marshal(program, Options{Format: FormatJSON})
+		jsonData, err := Marshal(program, WithFormat(FormatJSON))
 		if err != nil {
 			t.Fatalf("Marshal() error = %v", err)
 		}
