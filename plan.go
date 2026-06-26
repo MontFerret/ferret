@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -44,6 +45,18 @@ func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Sessi
 // NewDebugSession creates a retained-state source-level debugging session.
 func (p *Plan) NewDebugSession(ctx context.Context, setters ...SessionOption) (*DebugSession, error) {
 	return newPlanSession(p, ctx, setters, planSessionSetup{requiresDebugInfo: true}, buildDebugSession)
+}
+
+// Marshal serializes the plan's compiled program into a byte slice using the provided artifact options.
+func (p *Plan) Marshal(opts ...ProgramArtifactOption) ([]byte, error) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	if p.closed {
+		return nil, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
+	}
+
+	return MarshalProgram(p.prog, opts...)
 }
 
 // Close runs plan cleanup hooks and closes the plan's VM pool.
