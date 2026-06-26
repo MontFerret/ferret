@@ -4,9 +4,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 )
 
-// ProgramArtifactOption is a type alias for artifact.Option, used to define functional options for artifact marshaling.
-type ProgramArtifactOption = artifact.Option
-
 var (
 	// WithProgramFormat specifies an artifact format by applying the provided FormatID to the options configuration.
 	WithProgramFormat = artifact.WithFormat
@@ -17,4 +14,12 @@ var (
 
 	// UnmarshalProgram decodes a byte slice into a *bytecode.Program object or returns an error if unmarshaling fails.
 	UnmarshalProgram = artifact.Unmarshal
+)
+
+const (
+	// ProgramFormatJSON specifies the JSON format identifier for program serialization or artifact representation.
+	ProgramFormatJSON = artifact.FormatJSON
+
+	// ProgramFormatMsgPack specifies the MsgPack format identifier for program serialization or artifact representation.
+	ProgramFormatMsgPack = artifact.FormatMsgPack
 )
