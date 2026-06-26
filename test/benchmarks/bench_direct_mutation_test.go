@@ -101,6 +101,12 @@ DELETE obj[key]
 RETURN obj.keep
 `
 
+	directMutationDeleteArrayIndexQuery = `
+LET arr = [1, 2, 3]
+DELETE arr[1]
+RETURN arr[1]
+`
+
 	directMutationDeleteSafeNoopQuery = `
 LET obj = NONE
 DELETE obj?.debug
@@ -194,6 +200,14 @@ func BenchmarkDirectMutation_DeleteDynamicKey_O0(b *testing.B) {
 
 func BenchmarkDirectMutation_DeleteDynamicKey_O1(b *testing.B) {
 	RunBenchmarkO1(b, directMutationDeleteDynamicKeyQuery)
+}
+
+func BenchmarkDirectMutation_DeleteArrayIndex_O0(b *testing.B) {
+	RunBenchmarkO0(b, directMutationDeleteArrayIndexQuery)
+}
+
+func BenchmarkDirectMutation_DeleteArrayIndex_O1(b *testing.B) {
+	RunBenchmarkO1(b, directMutationDeleteArrayIndexQuery)
 }
 
 func BenchmarkDirectMutation_DeleteSafeNoop_O0(b *testing.B) {
