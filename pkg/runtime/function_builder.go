@@ -45,13 +45,14 @@ type (
 
 	FunctionsBuilder struct {
 		FunctionDefs
-		av        *defaultFnDef[Function]
-		a0        *defaultFnDef[Function0]
-		a1        *defaultFnDef[Function1]
-		a2        *defaultFnDef[Function2]
-		a3        *defaultFnDef[Function3]
-		a4        *defaultFnDef[Function4]
-		namespace string
+		av          *defaultFnDef[Function]
+		a0          *defaultFnDef[Function0]
+		a1          *defaultFnDef[Function1]
+		a2          *defaultFnDef[Function2]
+		a3          *defaultFnDef[Function3]
+		a4          *defaultFnDef[Function4]
+		namespace   string
+		descriptors map[string]FunctionDescriptor
 	}
 
 	listable interface {
@@ -68,6 +69,7 @@ type (
 		errors    *fnErrors
 		data      map[string]T
 		namespace string
+		arity     int
 	}
 )
 

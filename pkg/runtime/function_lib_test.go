@@ -89,3 +89,23 @@ func TestNamespaceAllowsCaseDistinctQualifiedNames(t *testing.T) {
 		t.Fatalf("expected wrong-case qualified lookup to fail, got %v", names)
 	}
 }
+
+func TestNamespaceDisallowsArityDistinctQualifiedNames(t *testing.T) {
+	root := NewLibrary()
+	ns := root.Namespace("FOO")
+
+	ns.Function().A0().
+		Add("Bar", func(ctx context.Context) (Value, error) {
+			return NewString("A0"), nil
+		})
+
+	ns.Function().A1().
+		Add("Bar", func(ctx context.Context, _ Value) (Value, error) {
+			return NewString("A1"), nil
+		})
+
+	_, err := root.Build()
+	if err == nil {
+		t.Fatalf("Expected error for arity distinct qualified names")
+	}
+}

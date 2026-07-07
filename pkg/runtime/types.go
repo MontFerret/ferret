@@ -2,6 +2,9 @@ package runtime
 
 var (
 	// Actual types
+	TypeAny = newBuiltinType("Any", func(value Value) bool {
+		return true
+	})
 	TypeNone = newBuiltinType("None", func(v Value) bool {
 		return v == None || v == nil
 	})
@@ -16,6 +19,14 @@ var (
 	TypeFloat = newBuiltinType("Float", func(v Value) bool {
 		_, ok := v.(Float)
 		return ok
+	})
+	TypeNumber = newBuiltinType("Number", func(v Value) bool {
+		switch v.(type) {
+		case Int, Float:
+			return true
+		default:
+			return false
+		}
 	})
 	TypeString = newBuiltinType("String", func(v Value) bool {
 		_, ok := v.(String)

@@ -9,15 +9,16 @@ import (
 // It provides separate storage for functions with fixed argument counts (0-4) and
 // functions with variable argument counts for optimal performance.
 type Functions struct {
-	av    FunctionCollection[Function]
-	a0    FunctionCollection[Function0]
-	a1    FunctionCollection[Function1]
-	a2    FunctionCollection[Function2]
-	a3    FunctionCollection[Function3]
-	a4    FunctionCollection[Function4]
-	names []string
-	hash  uint64
-	size  int
+	av          FunctionCollection[Function]
+	a0          FunctionCollection[Function0]
+	a1          FunctionCollection[Function1]
+	a2          FunctionCollection[Function2]
+	a3          FunctionCollection[Function3]
+	a4          FunctionCollection[Function4]
+	names       []string
+	hash        uint64
+	size        int
+	descriptors map[string]FunctionDescriptor
 }
 
 var (
