@@ -1,13 +1,12 @@
 package http
 
 import (
-	"bytes"
 	"context"
-	"io"
-	h "net/http"
 
 	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
+	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
+	nethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -50,38 +49,49 @@ func execMethod(ctx context.Context, method runtime.String, arg runtime.Value) (
 }
 
 func makeRequest(ctx context.Context, params Params) (runtime.Value, error) {
-	client := h.Client{}
-	req, err := h.NewRequest(params.Method.String(), params.URL.String(), bytes.NewBuffer(params.Body))
-
+	client, err := ferretnet.HTTPClientFrom(ctx)
 	if err != nil {
 		return runtime.None, err
 	}
 
-	req.Header = h.Header{}
-
-	if params.Headers != nil {
-		params.Headers.ForEach(ctx, func(c context.Context, value, key runtime.Value) (runtime.Boolean, error) {
-			req.Header.Set(key.String(), value.String())
-
-			return true, nil
-		})
-	}
-
-	resp, err := client.Do(req.WithContext(ctx))
-
+	headers, err := headersFromMap(ctx, params.Headers)
 	if err != nil {
 		return runtime.None, err
 	}
 
-	data, err := io.ReadAll(resp.Body)
-
+	res, err := client.Do(ctx, &nethttp.Request{
+		Method:  params.Method.String(),
+		URL:     params.URL.String(),
+		Headers: headers,
+		Body:    params.Body,
+	})
 	if err != nil {
 		return runtime.None, err
 	}
 
-	defer resp.Body.Close()
+	if res == nil {
+		return runtime.None, runtime.Error(runtime.ErrUnexpected, "http response is nil")
+	}
 
-	return runtime.NewBinary(data), nil
+	return runtime.NewBinary(res.Body), nil
+}
+
+func headersFromMap(ctx context.Context, headers runtime.Map) (nethttp.Headers, error) {
+	if headers == nil {
+		return nil, nil
+	}
+
+	out := make(nethttp.Headers)
+	err := headers.ForEach(ctx, func(_ context.Context, value, key runtime.Value) (runtime.Boolean, error) {
+		out[key.String()] = []string{value.String()}
+
+		return true, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 func newParamsFrom(ctx context.Context, obj runtime.Map) (Params, error) {
@@ -105,6 +115,7 @@ func newParamsFrom(ctx context.Context, obj runtime.Map) (Params, error) {
 	if err != nil {
 		return Params{}, err
 	}
+
 	if !hasURL {
 		return Params{}, runtime.Error(runtime.ErrMissedArgument, ".url")
 	}
@@ -113,6 +124,7 @@ func newParamsFrom(ctx context.Context, obj runtime.Map) (Params, error) {
 	if err != nil {
 		return Params{}, err
 	}
+
 	p.URL = runtime.String(url.String())
 
 	headersKey := runtime.String("headers")
@@ -120,6 +132,7 @@ func newParamsFrom(ctx context.Context, obj runtime.Map) (Params, error) {
 	if err != nil {
 		return Params{}, err
 	}
+
 	if hasHeaders {
 		headers, err := obj.Get(ctx, headersKey)
 		if err != nil {
@@ -138,6 +151,7 @@ func newParamsFrom(ctx context.Context, obj runtime.Map) (Params, error) {
 	if err != nil {
 		return Params{}, err
 	}
+
 	if hasBody {
 		body, err := obj.Get(ctx, bodyKey)
 		if err != nil {

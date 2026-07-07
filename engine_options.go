@@ -12,6 +12,7 @@ import (
 	encodingmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/module"
+	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 )
@@ -26,6 +27,7 @@ type (
 		fsRoot            string
 		stdlib            stdlib.Set
 		logger            []logging.Option
+		network           ferretnet.Network
 		compiler          []compiler.Option
 		modules           []module.Module
 		maxActiveSessions int
@@ -589,6 +591,19 @@ func WithFSRoot(root string) Option {
 func WithFSReadOnly() Option {
 	return func(opts *options) error {
 		opts.fsReadOnly = true
+
+		return nil
+	}
+}
+
+// WithNetwork sets the engine network service used by derived executions.
+func WithNetwork(network ferretnet.Network) Option {
+	return func(opts *options) error {
+		if network == nil {
+			return fmt.Errorf("network cannot be nil")
+		}
+
+		opts.network = network
 
 		return nil
 	}

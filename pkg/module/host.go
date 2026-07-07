@@ -4,6 +4,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
+	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -25,4 +26,7 @@ type HostContext interface {
 	// FileSystem returns the file system used by the engine and derived
 	// executions.
 	FileSystem() fs.FileSystem
+	// Network returns the network service used by the engine and derived
+	// executions.
+	Network() ferretnet.Network
 }

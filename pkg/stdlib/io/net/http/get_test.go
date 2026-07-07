@@ -1,7 +1,6 @@
 package http_test
 
 import (
-	"context"
 	"fmt"
 	h "net/http"
 	"testing"
@@ -27,7 +26,7 @@ func TestGET(t *testing.T) {
 				return httpmock.NewStringResponse(200, "OK"), nil
 			})
 
-		ctx := context.Background()
+		ctx := testNetworkContext()
 
 		out, err := http.GET(ctx, runtime.NewString(url))
 
@@ -53,7 +52,7 @@ func TestGET(t *testing.T) {
 				return httpmock.NewStringResponse(200, "OK"), nil
 			})
 
-		ctx := context.Background()
+		ctx := testNetworkContext()
 
 		out, err := http.GET(ctx, runtime.NewObjectWith(
 			map[string]runtime.Value{

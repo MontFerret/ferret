@@ -1,7 +1,6 @@
 package http_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -56,7 +55,7 @@ func TestDELETE(t *testing.T) {
 				return httpmock.NewStringResponse(200, "OK"), nil
 			})
 
-		ctx := context.Background()
+		ctx := testNetworkContext()
 
 		b, err := json.Marshal(User{
 			FirstName: "Rob",

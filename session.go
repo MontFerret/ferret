@@ -10,6 +10,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
+	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -36,6 +37,7 @@ type (
 		encoding          *encoding.Registry
 		logger            logging.Logger
 		fs                fs.FileSystem
+		network           ferretnet.Network
 		release           sessionPermitRelease
 		outputContentType string
 		closeOnce         sync.Once
@@ -84,6 +86,7 @@ func (s *Session) extendContext(ctx context.Context) context.Context {
 	ctx = s.logger.WithContext(ctx)
 	ctx = encoding.WithRegistry(ctx, s.encoding)
 	ctx = fs.WithFileSystem(ctx, s.fs)
+	ctx = ferretnet.WithNetwork(ctx, s.network)
 
 	return ctx
 }

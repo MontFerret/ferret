@@ -2,17 +2,17 @@ package fs
 
 import "context"
 
-type fsContextKey struct{}
+type contextKey struct{}
 
-var fsCtxKey = fsContextKey{}
+var ctxKey = contextKey{}
 
 // WithFileSystem adds FileSystem to context.
-func WithFileSystem(ctx context.Context, registry FileSystem) context.Context {
+func WithFileSystem(ctx context.Context, fs FileSystem) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	return context.WithValue(ctx, fsCtxKey, registry)
+	return context.WithValue(ctx, ctxKey, fs)
 }
 
 // FileSystemFrom gets FileSystem from context.
@@ -21,7 +21,7 @@ func FileSystemFrom(ctx context.Context) (FileSystem, error) {
 		return nil, ErrNotFound
 	}
 
-	val := ctx.Value(fsCtxKey)
+	val := ctx.Value(ctxKey)
 	if val == nil {
 		return nil, ErrNotFound
 	}
