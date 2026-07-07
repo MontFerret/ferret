@@ -48,7 +48,7 @@ func HTTPClientFrom(ctx context.Context) (ferrethttp.Client, error) {
 
 	client := net.HTTP()
 	if client == nil {
-		return nil, ErrNotFound
+		return nil, ErrHTTPClientNotFound
 	}
 
 	return client, nil
