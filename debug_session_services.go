@@ -7,6 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
+	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -15,6 +16,7 @@ type debugSessionServices struct {
 	encoding          *encoding.Registry
 	logger            logging.Logger
 	fs                fs.FileSystem
+	network           ferretnet.Network
 	releasePermit     sessionPermitRelease
 	outputContentType string
 }
@@ -30,8 +32,9 @@ func (s *debugSessionServices) AfterRun(ctx context.Context, runErr error) error
 func (s *debugSessionServices) ExtendContext(ctx context.Context) context.Context {
 	ctx = s.logger.WithContext(ctx)
 	ctx = encoding.WithRegistry(ctx, s.encoding)
+	ctx = fs.WithFileSystem(ctx, s.fs)
 
-	return fs.WithFileSystem(ctx, s.fs)
+	return ferretnet.WithNetwork(ctx, s.network)
 }
 
 func (s *debugSessionServices) Materialize(result *vm.Result) (*encoding.Output, error) {

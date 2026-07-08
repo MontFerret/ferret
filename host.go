@@ -4,6 +4,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
+	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -14,6 +15,7 @@ type (
 		encoding  *encoding.Registry
 		logger    logging.Logger
 		fs        fs.FileSystem
+		network   ferretnet.Network
 	}
 
 	hostContext struct {
@@ -22,6 +24,7 @@ type (
 		encoding *encoding.Registry
 		logger   logging.Logger
 		fs       fs.FileSystem
+		network  ferretnet.Network
 	}
 )
 
@@ -32,12 +35,18 @@ func newHostContext(opts *options) (*hostContext, error) {
 		return nil, err
 	}
 
+	network := opts.network
+	if network == nil {
+		network = ferretnet.New()
+	}
+
 	return &hostContext{
 		library:  opts.library,
 		params:   opts.params,
 		encoding: opts.encoding,
 		logger:   logging.New(opts.logger...),
 		fs:       rootFs,
+		network:  network,
 	}, nil
 }
 
@@ -47,6 +56,10 @@ func (h *hostContext) Logger() logging.Logger {
 
 func (h *hostContext) FileSystem() fs.FileSystem {
 	return h.fs
+}
+
+func (h *hostContext) Network() ferretnet.Network {
+	return h.network
 }
 
 func (h *hostContext) Params() runtime.Params {
@@ -74,5 +87,6 @@ func (h *hostContext) Build() (*host, error) {
 		encoding:  h.encoding.Clone(),
 		logger:    h.logger,
 		fs:        h.fs,
+		network:   h.network,
 	}, nil
 }
