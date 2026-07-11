@@ -33,6 +33,7 @@ func TestQueryable(t *testing.T) {
 		Array("RETURN QUERY `.options` IN @doc USING css OPTIONS { timeout: 5000 }", []any{"ok"}, "Should apply query expression with options"),
 		Array("RETURN QUERY `.both` IN @doc USING css WITH { value: 2 } OPTIONS { timeout: 6000 }", []any{"ok"}, "Should apply query expression with params and options"),
 		S("RETURN QUERY ONE `.one-both` IN @doc USING css WITH { value: 3 } OPTIONS { timeout: 7000 }", "ok", "Should apply query-one expression with params and options"),
+		S("LET email = { body: \".dynamic-member\" }\nLET model = @doc\nRETURN QUERY ONE email.body IN model USING summarize", "ok", "Should apply query expression with member payload"),
 		Array("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", []any{"ok"}, "Should apply query literal with params"),
 		S("RETURN @doc[~? sql`SELECT * FROM featured`({ c: \"tablets\" })]", "ok", "Should apply query-one literal with params"),
 		Array("RETURN QUERY `SELECT * FROM products` IN @doc USING sql WITH { c: \"phones\" }", []any{"ok"}, "Should apply query expression with options"),
@@ -71,6 +72,7 @@ func TestQueryable(t *testing.T) {
 		var hasOptionsOnly bool
 		var hasBoth bool
 		var hasOneBoth bool
+		var hasMemberPayload bool
 
 		for _, q := range queryable.MockQueries() {
 			switch q.Kind {
@@ -115,6 +117,10 @@ func TestQueryable(t *testing.T) {
 			case runtime.NewString("text"):
 				if q.Expression == runtime.EmptyString {
 					hasText = true
+				}
+			case runtime.NewString("summarize"):
+				if q.Expression == runtime.NewString(".dynamic-member") {
+					hasMemberPayload = q.Params == runtime.None && q.Options == runtime.None
 				}
 			case runtime.NewString("sql"):
 				if q.Expression == runtime.NewString("SELECT * FROM products") {
@@ -190,6 +196,9 @@ func TestQueryable(t *testing.T) {
 		}
 		if !hasOneBoth {
 			t.Fatal("expected QUERY ONE to receive distinct params and options")
+		}
+		if !hasMemberPayload {
+			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and expression %q", "summarize", ".dynamic-member"))
 		}
 		if !hasSQLQueryExpr {
 			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and params containing %q=%q", "sql", "c", "phones"))

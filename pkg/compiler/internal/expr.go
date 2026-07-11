@@ -75,6 +75,7 @@ func NewExprCompiler(ctx *CompilationSession) *ExprCompiler {
 	})
 	c.queryCompiler = newExprQueryCompiler(ctx, exprQueryCallbacks{
 		compileExpr:     c.Compile,
+		compileMember:   c.CompileMemberExpression,
 		compileParam:    c.CompileParam,
 		compileVariable: c.CompileVariable,
 	})

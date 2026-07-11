@@ -114,7 +114,7 @@ func fqlparserParserInit() {
 	}
 	staticData.PredictionContextCache = antlr.NewPredictionContextCache()
 	staticData.serializedATN = []int32{
-		4, 1, 103, 1633, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2, 4,
+		4, 1, 103, 1634, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2, 4,
 		7, 4, 2, 5, 7, 5, 2, 6, 7, 6, 2, 7, 7, 7, 2, 8, 7, 8, 2, 9, 7, 9, 2, 10,
 		7, 10, 2, 11, 7, 11, 2, 12, 7, 12, 2, 13, 7, 13, 2, 14, 7, 14, 2, 15, 7,
 		15, 2, 16, 7, 16, 2, 17, 7, 17, 2, 18, 7, 18, 2, 19, 7, 19, 2, 20, 7, 20,
@@ -289,12 +289,12 @@ func fqlparserParserInit() {
 		1551, 8, 152, 1, 152, 3, 152, 1554, 8, 152, 1, 152, 1, 152, 1, 152, 1,
 		152, 1, 152, 1, 152, 1, 152, 3, 152, 1563, 8, 152, 1, 152, 3, 152, 1566,
 		8, 152, 1, 152, 3, 152, 1569, 8, 152, 1, 152, 3, 152, 1572, 8, 152, 3,
-		152, 1574, 8, 152, 1, 153, 1, 153, 1, 154, 1, 154, 1, 154, 3, 154, 1581,
-		8, 154, 1, 155, 1, 155, 1, 155, 1, 156, 1, 156, 1, 156, 1, 157, 1, 157,
-		1, 157, 1, 157, 1, 157, 1, 157, 3, 157, 1595, 8, 157, 3, 157, 1597, 8,
-		157, 1, 157, 3, 157, 1600, 8, 157, 1, 158, 1, 158, 1, 158, 3, 158, 1605,
-		8, 158, 1, 159, 1, 159, 1, 160, 3, 160, 1610, 8, 160, 1, 160, 1, 160, 1,
-		161, 3, 161, 1615, 8, 161, 1, 161, 1, 161, 1, 162, 1, 162, 1, 163, 1, 163,
+		152, 1574, 8, 152, 1, 153, 1, 153, 1, 154, 1, 154, 1, 154, 1, 154, 3, 154,
+		1582, 8, 154, 1, 155, 1, 155, 1, 155, 1, 156, 1, 156, 1, 156, 1, 157, 1,
+		157, 1, 157, 1, 157, 1, 157, 1, 157, 3, 157, 1596, 8, 157, 3, 157, 1598,
+		8, 157, 1, 157, 3, 157, 1601, 8, 157, 1, 158, 1, 158, 1, 158, 3, 158, 1606,
+		8, 158, 1, 159, 1, 159, 1, 160, 3, 160, 1611, 8, 160, 1, 160, 1, 160, 1,
+		161, 3, 161, 1616, 8, 161, 1, 161, 1, 161, 1, 162, 1, 162, 1, 163, 1, 163,
 		1, 164, 1, 164, 1, 165, 1, 165, 1, 166, 1, 166, 1, 167, 1, 167, 1, 168,
 		1, 168, 1, 168, 0, 3, 262, 264, 266, 169, 0, 2, 4, 6, 8, 10, 12, 14, 16,
 		18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52,
@@ -311,7 +311,7 @@ func fqlparserParserInit() {
 		1, 0, 10, 11, 4, 0, 35, 36, 54, 67, 70, 71, 76, 85, 5, 0, 44, 45, 47, 53,
 		68, 69, 72, 75, 86, 90, 2, 0, 60, 61, 63, 63, 2, 0, 72, 72, 82, 83, 1,
 		0, 18, 23, 2, 0, 31, 32, 87, 87, 1, 0, 42, 43, 1, 0, 28, 30, 1, 0, 31,
-		32, 1776, 0, 341, 1, 0, 0, 0, 2, 347, 1, 0, 0, 0, 4, 349, 1, 0, 0, 0, 6,
+		32, 1778, 0, 341, 1, 0, 0, 0, 2, 347, 1, 0, 0, 0, 4, 349, 1, 0, 0, 0, 6,
 		351, 1, 0, 0, 0, 8, 359, 1, 0, 0, 0, 10, 372, 1, 0, 0, 0, 12, 376, 1, 0,
 		0, 0, 14, 392, 1, 0, 0, 0, 16, 394, 1, 0, 0, 0, 18, 398, 1, 0, 0, 0, 20,
 		401, 1, 0, 0, 0, 22, 419, 1, 0, 0, 0, 24, 421, 1, 0, 0, 0, 26, 423, 1,
@@ -358,11 +358,11 @@ func fqlparserParserInit() {
 		1, 0, 0, 0, 290, 1479, 1, 0, 0, 0, 292, 1481, 1, 0, 0, 0, 294, 1497, 1,
 		0, 0, 0, 296, 1505, 1, 0, 0, 0, 298, 1507, 1, 0, 0, 0, 300, 1514, 1, 0,
 		0, 0, 302, 1535, 1, 0, 0, 0, 304, 1573, 1, 0, 0, 0, 306, 1575, 1, 0, 0,
-		0, 308, 1580, 1, 0, 0, 0, 310, 1582, 1, 0, 0, 0, 312, 1585, 1, 0, 0, 0,
-		314, 1599, 1, 0, 0, 0, 316, 1601, 1, 0, 0, 0, 318, 1606, 1, 0, 0, 0, 320,
-		1609, 1, 0, 0, 0, 322, 1614, 1, 0, 0, 0, 324, 1618, 1, 0, 0, 0, 326, 1620,
-		1, 0, 0, 0, 328, 1622, 1, 0, 0, 0, 330, 1624, 1, 0, 0, 0, 332, 1626, 1,
-		0, 0, 0, 334, 1628, 1, 0, 0, 0, 336, 1630, 1, 0, 0, 0, 338, 340, 3, 2,
+		0, 308, 1581, 1, 0, 0, 0, 310, 1583, 1, 0, 0, 0, 312, 1586, 1, 0, 0, 0,
+		314, 1600, 1, 0, 0, 0, 316, 1602, 1, 0, 0, 0, 318, 1607, 1, 0, 0, 0, 320,
+		1610, 1, 0, 0, 0, 322, 1615, 1, 0, 0, 0, 324, 1619, 1, 0, 0, 0, 326, 1621,
+		1, 0, 0, 0, 328, 1623, 1, 0, 0, 0, 330, 1625, 1, 0, 0, 0, 332, 1627, 1,
+		0, 0, 0, 334, 1629, 1, 0, 0, 0, 336, 1631, 1, 0, 0, 0, 338, 340, 3, 2,
 		1, 0, 339, 338, 1, 0, 0, 0, 340, 343, 1, 0, 0, 0, 341, 339, 1, 0, 0, 0,
 		341, 342, 1, 0, 0, 0, 342, 344, 1, 0, 0, 0, 343, 341, 1, 0, 0, 0, 344,
 		345, 3, 8, 4, 0, 345, 346, 5, 0, 0, 1, 346, 1, 1, 0, 0, 0, 347, 348, 3,
@@ -871,42 +871,42 @@ func fqlparserParserInit() {
 		0, 0, 1568, 1569, 1, 0, 0, 0, 1569, 1571, 1, 0, 0, 0, 1570, 1572, 3, 140,
 		70, 0, 1571, 1570, 1, 0, 0, 0, 1571, 1572, 1, 0, 0, 0, 1572, 1574, 1, 0,
 		0, 0, 1573, 1537, 1, 0, 0, 0, 1573, 1555, 1, 0, 0, 0, 1574, 305, 1, 0,
-		0, 0, 1575, 1576, 7, 6, 0, 0, 1576, 307, 1, 0, 0, 0, 1577, 1581, 3, 194,
-		97, 0, 1578, 1581, 3, 182, 91, 0, 1579, 1581, 3, 184, 92, 0, 1580, 1577,
-		1, 0, 0, 0, 1580, 1578, 1, 0, 0, 0, 1580, 1579, 1, 0, 0, 0, 1581, 309,
-		1, 0, 0, 0, 1582, 1583, 5, 81, 0, 0, 1583, 1584, 3, 262, 131, 0, 1584,
-		311, 1, 0, 0, 0, 1585, 1586, 5, 54, 0, 0, 1586, 1587, 3, 262, 131, 0, 1587,
-		313, 1, 0, 0, 0, 1588, 1596, 5, 92, 0, 0, 1589, 1594, 3, 194, 97, 0, 1590,
-		1591, 5, 14, 0, 0, 1591, 1592, 3, 262, 131, 0, 1592, 1593, 5, 15, 0, 0,
-		1593, 1595, 1, 0, 0, 0, 1594, 1590, 1, 0, 0, 0, 1594, 1595, 1, 0, 0, 0,
-		1595, 1597, 1, 0, 0, 0, 1596, 1589, 1, 0, 0, 0, 1596, 1597, 1, 0, 0, 0,
-		1597, 1600, 1, 0, 0, 0, 1598, 1600, 3, 194, 97, 0, 1599, 1588, 1, 0, 0,
-		0, 1599, 1598, 1, 0, 0, 0, 1600, 315, 1, 0, 0, 0, 1601, 1604, 7, 7, 0,
-		0, 1602, 1605, 3, 320, 160, 0, 1603, 1605, 3, 318, 159, 0, 1604, 1602,
-		1, 0, 0, 0, 1604, 1603, 1, 0, 0, 0, 1605, 317, 1, 0, 0, 0, 1606, 1607,
-		7, 8, 0, 0, 1607, 319, 1, 0, 0, 0, 1608, 1610, 5, 87, 0, 0, 1609, 1608,
-		1, 0, 0, 0, 1609, 1610, 1, 0, 0, 0, 1610, 1611, 1, 0, 0, 0, 1611, 1612,
-		5, 88, 0, 0, 1612, 321, 1, 0, 0, 0, 1613, 1615, 5, 87, 0, 0, 1614, 1613,
-		1, 0, 0, 0, 1614, 1615, 1, 0, 0, 0, 1615, 1616, 1, 0, 0, 0, 1616, 1617,
-		5, 86, 0, 0, 1617, 323, 1, 0, 0, 0, 1618, 1619, 7, 9, 0, 0, 1619, 325,
-		1, 0, 0, 0, 1620, 1621, 7, 10, 0, 0, 1621, 327, 1, 0, 0, 0, 1622, 1623,
-		5, 35, 0, 0, 1623, 329, 1, 0, 0, 0, 1624, 1625, 5, 36, 0, 0, 1625, 331,
-		1, 0, 0, 0, 1626, 1627, 7, 11, 0, 0, 1627, 333, 1, 0, 0, 0, 1628, 1629,
-		7, 12, 0, 0, 1629, 335, 1, 0, 0, 0, 1630, 1631, 5, 41, 0, 0, 1631, 337,
-		1, 0, 0, 0, 176, 341, 359, 372, 376, 392, 405, 409, 416, 419, 427, 437,
-		441, 447, 456, 471, 480, 487, 493, 500, 507, 510, 517, 522, 530, 538, 542,
-		546, 565, 575, 583, 588, 617, 621, 625, 636, 649, 657, 659, 667, 678, 683,
-		685, 692, 695, 698, 704, 706, 713, 723, 736, 741, 748, 752, 759, 766, 774,
-		781, 788, 791, 797, 803, 807, 810, 813, 816, 827, 834, 840, 853, 859, 868,
-		882, 887, 893, 905, 911, 915, 925, 927, 933, 936, 941, 948, 951, 954, 963,
-		967, 972, 976, 985, 989, 1014, 1018, 1027, 1031, 1041, 1045, 1047, 1055,
-		1061, 1071, 1088, 1099, 1107, 1114, 1117, 1128, 1132, 1137, 1141, 1147,
-		1154, 1161, 1165, 1168, 1175, 1181, 1187, 1192, 1201, 1204, 1221, 1239,
-		1243, 1252, 1255, 1259, 1262, 1274, 1301, 1308, 1321, 1325, 1327, 1349,
-		1351, 1372, 1377, 1379, 1393, 1395, 1404, 1408, 1412, 1421, 1428, 1432,
-		1441, 1448, 1468, 1472, 1479, 1487, 1491, 1493, 1505, 1511, 1518, 1523,
-		1535, 1544, 1547, 1550, 1553, 1562, 1565, 1568, 1571, 1573, 1580, 1594,
-		1596, 1599, 1604, 1609, 1614,
+		0, 0, 1575, 1576, 7, 6, 0, 0, 1576, 307, 1, 0, 0, 0, 1577, 1582, 3, 194,
+		97, 0, 1578, 1582, 3, 216, 108, 0, 1579, 1582, 3, 182, 91, 0, 1580, 1582,
+		3, 184, 92, 0, 1581, 1577, 1, 0, 0, 0, 1581, 1578, 1, 0, 0, 0, 1581, 1579,
+		1, 0, 0, 0, 1581, 1580, 1, 0, 0, 0, 1582, 309, 1, 0, 0, 0, 1583, 1584,
+		5, 81, 0, 0, 1584, 1585, 3, 262, 131, 0, 1585, 311, 1, 0, 0, 0, 1586, 1587,
+		5, 54, 0, 0, 1587, 1588, 3, 262, 131, 0, 1588, 313, 1, 0, 0, 0, 1589, 1597,
+		5, 92, 0, 0, 1590, 1595, 3, 194, 97, 0, 1591, 1592, 5, 14, 0, 0, 1592,
+		1593, 3, 262, 131, 0, 1593, 1594, 5, 15, 0, 0, 1594, 1596, 1, 0, 0, 0,
+		1595, 1591, 1, 0, 0, 0, 1595, 1596, 1, 0, 0, 0, 1596, 1598, 1, 0, 0, 0,
+		1597, 1590, 1, 0, 0, 0, 1597, 1598, 1, 0, 0, 0, 1598, 1601, 1, 0, 0, 0,
+		1599, 1601, 3, 194, 97, 0, 1600, 1589, 1, 0, 0, 0, 1600, 1599, 1, 0, 0,
+		0, 1601, 315, 1, 0, 0, 0, 1602, 1605, 7, 7, 0, 0, 1603, 1606, 3, 320, 160,
+		0, 1604, 1606, 3, 318, 159, 0, 1605, 1603, 1, 0, 0, 0, 1605, 1604, 1, 0,
+		0, 0, 1606, 317, 1, 0, 0, 0, 1607, 1608, 7, 8, 0, 0, 1608, 319, 1, 0, 0,
+		0, 1609, 1611, 5, 87, 0, 0, 1610, 1609, 1, 0, 0, 0, 1610, 1611, 1, 0, 0,
+		0, 1611, 1612, 1, 0, 0, 0, 1612, 1613, 5, 88, 0, 0, 1613, 321, 1, 0, 0,
+		0, 1614, 1616, 5, 87, 0, 0, 1615, 1614, 1, 0, 0, 0, 1615, 1616, 1, 0, 0,
+		0, 1616, 1617, 1, 0, 0, 0, 1617, 1618, 5, 86, 0, 0, 1618, 323, 1, 0, 0,
+		0, 1619, 1620, 7, 9, 0, 0, 1620, 325, 1, 0, 0, 0, 1621, 1622, 7, 10, 0,
+		0, 1622, 327, 1, 0, 0, 0, 1623, 1624, 5, 35, 0, 0, 1624, 329, 1, 0, 0,
+		0, 1625, 1626, 5, 36, 0, 0, 1626, 331, 1, 0, 0, 0, 1627, 1628, 7, 11, 0,
+		0, 1628, 333, 1, 0, 0, 0, 1629, 1630, 7, 12, 0, 0, 1630, 335, 1, 0, 0,
+		0, 1631, 1632, 5, 41, 0, 0, 1632, 337, 1, 0, 0, 0, 176, 341, 359, 372,
+		376, 392, 405, 409, 416, 419, 427, 437, 441, 447, 456, 471, 480, 487, 493,
+		500, 507, 510, 517, 522, 530, 538, 542, 546, 565, 575, 583, 588, 617, 621,
+		625, 636, 649, 657, 659, 667, 678, 683, 685, 692, 695, 698, 704, 706, 713,
+		723, 736, 741, 748, 752, 759, 766, 774, 781, 788, 791, 797, 803, 807, 810,
+		813, 816, 827, 834, 840, 853, 859, 868, 882, 887, 893, 905, 911, 915, 925,
+		927, 933, 936, 941, 948, 951, 954, 963, 967, 972, 976, 985, 989, 1014,
+		1018, 1027, 1031, 1041, 1045, 1047, 1055, 1061, 1071, 1088, 1099, 1107,
+		1114, 1117, 1128, 1132, 1137, 1141, 1147, 1154, 1161, 1165, 1168, 1175,
+		1181, 1187, 1192, 1201, 1204, 1221, 1239, 1243, 1252, 1255, 1259, 1262,
+		1274, 1301, 1308, 1321, 1325, 1327, 1349, 1351, 1372, 1377, 1379, 1393,
+		1395, 1404, 1408, 1412, 1421, 1428, 1432, 1441, 1448, 1468, 1472, 1479,
+		1487, 1491, 1493, 1505, 1511, 1518, 1523, 1535, 1544, 1547, 1550, 1553,
+		1562, 1565, 1568, 1571, 1573, 1581, 1595, 1597, 1600, 1605, 1610, 1615,
 	}
 	deserializer := antlr.NewATNDeserializer(nil)
 	staticData.atn = deserializer.Deserialize(staticData.serializedATN)
@@ -31091,6 +31091,7 @@ type IQueryPayloadContext interface {
 
 	// Getter signatures
 	StringLiteral() IStringLiteralContext
+	MemberExpression() IMemberExpressionContext
 	Param() IParamContext
 	Variable() IVariableContext
 
@@ -31144,6 +31145,22 @@ func (s *QueryPayloadContext) StringLiteral() IStringLiteralContext {
 	}
 
 	return t.(IStringLiteralContext)
+}
+
+func (s *QueryPayloadContext) MemberExpression() IMemberExpressionContext {
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IMemberExpressionContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
+
+	if t == nil {
+		return nil
+	}
+
+	return t.(IMemberExpressionContext)
 }
 
 func (s *QueryPayloadContext) Param() IParamContext {
@@ -31211,36 +31228,42 @@ func (s *QueryPayloadContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 func (p *FqlParser) QueryPayload() (localctx IQueryPayloadContext) {
 	localctx = NewQueryPayloadContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 308, FqlParserRULE_queryPayload)
-	p.SetState(1580)
+	p.SetState(1581)
 	p.GetErrorHandler().Sync(p)
 	if p.HasError() {
 		goto errorExit
 	}
 
-	switch p.GetTokenStream().LA(1) {
-	case FqlParserStringLiteral, FqlParserBacktickOpen:
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 169, p.GetParserRuleContext()) {
+	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
 			p.SetState(1577)
 			p.StringLiteral()
 		}
 
-	case FqlParserParam:
+	case 2:
 		p.EnterOuterAlt(localctx, 2)
 		{
 			p.SetState(1578)
-			p.Param()
+			p.MemberExpression()
 		}
 
-	case FqlParserAnd, FqlParserOr, FqlParserOptions, FqlParserTrigger, FqlParserTimeout, FqlParserEvery, FqlParserBackoff, FqlParserJitter, FqlParserExists, FqlParserCount, FqlParserValue, FqlParserOne, FqlParserDistinct, FqlParserFilter, FqlParserSort, FqlParserLimit, FqlParserCollect, FqlParserSortDirection, FqlParserAs, FqlParserAt, FqlParserLeast, FqlParserInto, FqlParserKeep, FqlParserWith, FqlParserAll, FqlParserAny, FqlParserAggregate, FqlParserEvent, FqlParserIdentifier:
+	case 3:
 		p.EnterOuterAlt(localctx, 3)
 		{
 			p.SetState(1579)
+			p.Param()
+		}
+
+	case 4:
+		p.EnterOuterAlt(localctx, 4)
+		{
+			p.SetState(1580)
 			p.Variable()
 		}
 
-	default:
-		p.SetError(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+	case antlr.ATNInvalidAltNumber:
 		goto errorExit
 	}
 
@@ -31359,7 +31382,7 @@ func (p *FqlParser) QueryWithOpt() (localctx IQueryWithOptContext) {
 	p.EnterRule(localctx, 310, FqlParserRULE_queryWithOpt)
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(1582)
+		p.SetState(1583)
 		p.Match(FqlParserWith)
 		if p.HasError() {
 			// Recognition error - abort rule
@@ -31367,7 +31390,7 @@ func (p *FqlParser) QueryWithOpt() (localctx IQueryWithOptContext) {
 		}
 	}
 	{
-		p.SetState(1583)
+		p.SetState(1584)
 		p.expression(0)
 	}
 
@@ -31486,7 +31509,7 @@ func (p *FqlParser) QueryOptionsOpt() (localctx IQueryOptionsOptContext) {
 	p.EnterRule(localctx, 312, FqlParserRULE_queryOptionsOpt)
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(1585)
+		p.SetState(1586)
 		p.Match(FqlParserOptions)
 		if p.HasError() {
 			// Recognition error - abort rule
@@ -31494,7 +31517,7 @@ func (p *FqlParser) QueryOptionsOpt() (localctx IQueryOptionsOptContext) {
 		}
 	}
 	{
-		p.SetState(1586)
+		p.SetState(1587)
 		p.expression(0)
 	}
 
@@ -31640,7 +31663,7 @@ func (p *FqlParser) QueryLiteral() (localctx IQueryLiteralContext) {
 	p.EnterRule(localctx, 314, FqlParserRULE_queryLiteral)
 	var _la int
 
-	p.SetState(1599)
+	p.SetState(1600)
 	p.GetErrorHandler().Sync(p)
 	if p.HasError() {
 		goto errorExit
@@ -31650,14 +31673,14 @@ func (p *FqlParser) QueryLiteral() (localctx IQueryLiteralContext) {
 	case FqlParserIdentifier:
 		p.EnterOuterAlt(localctx, 1)
 		{
-			p.SetState(1588)
+			p.SetState(1589)
 			p.Match(FqlParserIdentifier)
 			if p.HasError() {
 				// Recognition error - abort rule
 				goto errorExit
 			}
 		}
-		p.SetState(1596)
+		p.SetState(1597)
 		p.GetErrorHandler().Sync(p)
 		if p.HasError() {
 			goto errorExit
@@ -31666,10 +31689,10 @@ func (p *FqlParser) QueryLiteral() (localctx IQueryLiteralContext) {
 
 		if _la == FqlParserStringLiteral || _la == FqlParserBacktickOpen {
 			{
-				p.SetState(1589)
+				p.SetState(1590)
 				p.StringLiteral()
 			}
-			p.SetState(1594)
+			p.SetState(1595)
 			p.GetErrorHandler().Sync(p)
 			if p.HasError() {
 				goto errorExit
@@ -31678,7 +31701,7 @@ func (p *FqlParser) QueryLiteral() (localctx IQueryLiteralContext) {
 
 			if _la == FqlParserOpenParen {
 				{
-					p.SetState(1590)
+					p.SetState(1591)
 					p.Match(FqlParserOpenParen)
 					if p.HasError() {
 						// Recognition error - abort rule
@@ -31686,11 +31709,11 @@ func (p *FqlParser) QueryLiteral() (localctx IQueryLiteralContext) {
 					}
 				}
 				{
-					p.SetState(1591)
+					p.SetState(1592)
 					p.expression(0)
 				}
 				{
-					p.SetState(1592)
+					p.SetState(1593)
 					p.Match(FqlParserCloseParen)
 					if p.HasError() {
 						// Recognition error - abort rule
@@ -31705,7 +31728,7 @@ func (p *FqlParser) QueryLiteral() (localctx IQueryLiteralContext) {
 	case FqlParserStringLiteral, FqlParserBacktickOpen:
 		p.EnterOuterAlt(localctx, 2)
 		{
-			p.SetState(1598)
+			p.SetState(1599)
 			p.StringLiteral()
 		}
 
@@ -31869,7 +31892,7 @@ func (p *FqlParser) ArrayOperator() (localctx IArrayOperatorContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(1601)
+		p.SetState(1602)
 
 		var _lt = p.GetTokenStream().LT(1)
 
@@ -31886,7 +31909,7 @@ func (p *FqlParser) ArrayOperator() (localctx IArrayOperatorContext) {
 			p.Consume()
 		}
 	}
-	p.SetState(1604)
+	p.SetState(1605)
 	p.GetErrorHandler().Sync(p)
 	if p.HasError() {
 		goto errorExit
@@ -31895,13 +31918,13 @@ func (p *FqlParser) ArrayOperator() (localctx IArrayOperatorContext) {
 	switch p.GetTokenStream().LA(1) {
 	case FqlParserNot, FqlParserIn:
 		{
-			p.SetState(1602)
+			p.SetState(1603)
 			p.InOperator()
 		}
 
 	case FqlParserGt, FqlParserLt, FqlParserEq, FqlParserGte, FqlParserLte, FqlParserNeq:
 		{
-			p.SetState(1603)
+			p.SetState(1604)
 			p.EqualityOperator()
 		}
 
@@ -32035,7 +32058,7 @@ func (p *FqlParser) EqualityOperator() (localctx IEqualityOperatorContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(1606)
+		p.SetState(1607)
 		_la = p.GetTokenStream().LA(1)
 
 		if !((int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&16515072) != 0) {
@@ -32150,7 +32173,7 @@ func (p *FqlParser) InOperator() (localctx IInOperatorContext) {
 	var _la int
 
 	p.EnterOuterAlt(localctx, 1)
-	p.SetState(1609)
+	p.SetState(1610)
 	p.GetErrorHandler().Sync(p)
 	if p.HasError() {
 		goto errorExit
@@ -32159,7 +32182,7 @@ func (p *FqlParser) InOperator() (localctx IInOperatorContext) {
 
 	if _la == FqlParserNot {
 		{
-			p.SetState(1608)
+			p.SetState(1609)
 			p.Match(FqlParserNot)
 			if p.HasError() {
 				// Recognition error - abort rule
@@ -32169,7 +32192,7 @@ func (p *FqlParser) InOperator() (localctx IInOperatorContext) {
 
 	}
 	{
-		p.SetState(1611)
+		p.SetState(1612)
 		p.Match(FqlParserIn)
 		if p.HasError() {
 			// Recognition error - abort rule
@@ -32281,7 +32304,7 @@ func (p *FqlParser) LikeOperator() (localctx ILikeOperatorContext) {
 	var _la int
 
 	p.EnterOuterAlt(localctx, 1)
-	p.SetState(1614)
+	p.SetState(1615)
 	p.GetErrorHandler().Sync(p)
 	if p.HasError() {
 		goto errorExit
@@ -32290,7 +32313,7 @@ func (p *FqlParser) LikeOperator() (localctx ILikeOperatorContext) {
 
 	if _la == FqlParserNot {
 		{
-			p.SetState(1613)
+			p.SetState(1614)
 			p.Match(FqlParserNot)
 			if p.HasError() {
 				// Recognition error - abort rule
@@ -32300,7 +32323,7 @@ func (p *FqlParser) LikeOperator() (localctx ILikeOperatorContext) {
 
 	}
 	{
-		p.SetState(1616)
+		p.SetState(1617)
 		p.Match(FqlParserLike)
 		if p.HasError() {
 			// Recognition error - abort rule
@@ -32418,7 +32441,7 @@ func (p *FqlParser) UnaryOperator() (localctx IUnaryOperatorContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(1618)
+		p.SetState(1619)
 		_la = p.GetTokenStream().LA(1)
 
 		if !((int64((_la-31)) & ^0x3f) == 0 && ((int64(1)<<(_la-31))&72057594037927939) != 0) {
@@ -32534,7 +32557,7 @@ func (p *FqlParser) RegexpOperator() (localctx IRegexpOperatorContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(1620)
+		p.SetState(1621)
 		_la = p.GetTokenStream().LA(1)
 
 		if !(_la == FqlParserRegexNotMatch || _la == FqlParserRegexMatch) {
@@ -32643,7 +32666,7 @@ func (p *FqlParser) LogicalAndOperator() (localctx ILogicalAndOperatorContext) {
 	p.EnterRule(localctx, 328, FqlParserRULE_logicalAndOperator)
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(1622)
+		p.SetState(1623)
 		p.Match(FqlParserAnd)
 		if p.HasError() {
 			// Recognition error - abort rule
@@ -32749,7 +32772,7 @@ func (p *FqlParser) LogicalOrOperator() (localctx ILogicalOrOperatorContext) {
 	p.EnterRule(localctx, 330, FqlParserRULE_logicalOrOperator)
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(1624)
+		p.SetState(1625)
 		p.Match(FqlParserOr)
 		if p.HasError() {
 			// Recognition error - abort rule
@@ -32867,7 +32890,7 @@ func (p *FqlParser) MultiplicativeOperator() (localctx IMultiplicativeOperatorCo
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(1626)
+		p.SetState(1627)
 		_la = p.GetTokenStream().LA(1)
 
 		if !((int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&1879048192) != 0) {
@@ -32983,7 +33006,7 @@ func (p *FqlParser) AdditiveOperator() (localctx IAdditiveOperatorContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(1628)
+		p.SetState(1629)
 		_la = p.GetTokenStream().LA(1)
 
 		if !(_la == FqlParserPlus || _la == FqlParserMinus) {
@@ -33092,7 +33115,7 @@ func (p *FqlParser) ErrorOperator() (localctx IErrorOperatorContext) {
 	p.EnterRule(localctx, 336, FqlParserRULE_errorOperator)
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(1630)
+		p.SetState(1631)
 		p.Match(FqlParserQuestionMark)
 		if p.HasError() {
 			// Recognition error - abort rule

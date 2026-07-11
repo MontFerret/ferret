@@ -43,6 +43,17 @@ RETURN linksBySection[**]`, func(prog *bytecode.Program) error {
 	})
 }
 
+func TestQueryExpressionMemberPayloadCompiles(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		ProgramCheck(`
+LET email = { body: ".dynamic-member" }
+LET model = @doc
+RETURN QUERY ONE email.body IN model USING summarize`, func(prog *bytecode.Program) error {
+			return fourSlotQueryDescriptorFor(prog.Bytecode, bytecode.OpQueryOne)
+		}, "Should compile query expression with member payload"),
+	})
+}
+
 func TestQueryExpressionOptionalUsingCompiles(t *testing.T) {
 	cases := []string{
 		`RETURN QUERY "x" IN @doc`,

@@ -1109,6 +1109,7 @@ queryModifier
 
 queryPayload
     : stringLiteral
+    | memberExpression
     | param
     | variable
     ;

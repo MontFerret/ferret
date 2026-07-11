@@ -598,6 +598,8 @@ func (f *expressionFormatter) formatQueryExpressionWith(p *printer, ctx *fql.Que
 	if payload := ctx.QueryPayload(); payload != nil {
 		if lit := payload.StringLiteral(); lit != nil {
 			f.literal.formatStringLiteralNodeWith(p, lit)
+		} else if member := payload.MemberExpression(); member != nil {
+			f.formatMemberExpressionWith(p, member.(*fql.MemberExpressionContext))
 		} else if param := payload.Param(); param != nil {
 			f.formatParamWith(p, param.(*fql.ParamContext))
 		} else if variable := payload.Variable(); variable != nil {
@@ -1128,6 +1130,18 @@ func (f *expressionFormatter) formatExpressionWith(p *printer, ctx *fql.Expressi
 	orig := f.p
 	f.p = p
 	f.formatExpression(ctx)
+	f.p = orig
+}
+
+func (f *expressionFormatter) formatMemberExpressionWith(p *printer, ctx *fql.MemberExpressionContext) {
+	if p == f.p {
+		f.member.formatMemberExpression(ctx)
+		return
+	}
+
+	orig := f.p
+	f.p = p
+	f.member.formatMemberExpression(ctx)
 	f.p = orig
 }
 

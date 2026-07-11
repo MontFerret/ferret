@@ -171,6 +171,20 @@ func TestExpressionFormatter_QueryExpressionParamPayload(t *testing.T) {
 	}
 }
 
+func TestExpressionFormatter_QueryExpressionMemberPayload(t *testing.T) {
+	input := "RETURN QUERY ONE email.body IN model USING summarize"
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "QUERY ONE email.body IN model USING summarize" {
+		t.Fatalf("unexpected query expression formatting: %q", got)
+	}
+}
+
 func TestExpressionFormatter_QueryExpressionImplicitCurrentSource(t *testing.T) {
 	input := `RETURN [1][* RETURN (QUERY "a" IN . USING css)]`
 	program := parseProgram(t, input)

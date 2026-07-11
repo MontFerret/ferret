@@ -14,6 +14,7 @@ import (
 type (
 	exprQueryCallbacks struct {
 		compileExpr     func(fql.IExpressionContext) bytecode.Operand
+		compileMember   func(fql.IMemberExpressionContext) bytecode.Operand
 		compileParam    func(fql.IParamContext) bytecode.Operand
 		compileVariable func(fql.IVariableContext) bytecode.Operand
 	}
@@ -133,6 +134,10 @@ func (c *exprQueryCompiler) compileQueryExpressionOperand(ctx fql.IQueryPayloadC
 		}
 
 		return c.literals.CompileStringLiteral(literal)
+	}
+
+	if member := ctx.MemberExpression(); member != nil {
+		return c.callbacks.compileMember(member)
 	}
 
 	if param := ctx.Param(); param != nil {
