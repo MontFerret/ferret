@@ -133,6 +133,10 @@ func (c *DispatchCompiler) compileTarget(ctx fql.IDispatchTargetContext) bytecod
 		return c.exprs.CompileFunctionCallExpression(fc)
 	}
 
+	if expr := ctx.Expression(); expr != nil {
+		return c.exprs.Compile(expr)
+	}
+
 	return bytecode.NoopOperand
 }
 

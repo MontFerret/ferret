@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -14,6 +15,10 @@ RETURN 1`
 
 const dispatchShorthandStatementQuery = `
 @d <- "click"
+RETURN 1`
+
+const dispatchGroupedTargetQuery = `
+DISPATCH "click" IN (QUERY ONE "#submit" IN @page USING css)
 RETURN 1`
 
 type benchmarkDispatcher struct{}
@@ -56,4 +61,12 @@ func BenchmarkDispatchShorthandStatement_O0(b *testing.B) {
 
 func BenchmarkDispatchShorthandStatement_O1(b *testing.B) {
 	RunBenchmarkO1(b, dispatchShorthandStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
+}
+
+func BenchmarkCompilerCompileDispatchGroupedTarget_O0(b *testing.B) {
+	benchmarkCompileQuery(b, dispatchGroupedTargetQuery, compiler.O0)
+}
+
+func BenchmarkCompilerCompileDispatchGroupedTarget_O1(b *testing.B) {
+	benchmarkCompileQuery(b, dispatchGroupedTargetQuery, compiler.O1)
 }
