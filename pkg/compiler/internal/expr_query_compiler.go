@@ -13,10 +13,11 @@ import (
 
 type (
 	exprQueryCallbacks struct {
-		compileExpr     func(fql.IExpressionContext) bytecode.Operand
-		compileMember   func(fql.IMemberExpressionContext) bytecode.Operand
-		compileParam    func(fql.IParamContext) bytecode.Operand
-		compileVariable func(fql.IVariableContext) bytecode.Operand
+		compileExpr         func(fql.IExpressionContext) bytecode.Operand
+		compileFunctionCall func(fql.IFunctionCallExpressionContext) bytecode.Operand
+		compileMember       func(fql.IMemberExpressionContext) bytecode.Operand
+		compileParam        func(fql.IParamContext) bytecode.Operand
+		compileVariable     func(fql.IVariableContext) bytecode.Operand
 	}
 
 	exprQueryCompiler struct {
@@ -128,16 +129,20 @@ func (c *exprQueryCompiler) compileQueryExpressionOperand(ctx fql.IQueryPayloadC
 		return c.facts.LoadConstant(runtime.EmptyString)
 	}
 
-	if literal := ctx.StringLiteral(); literal != nil {
-		if value, ok := parseStringLiteralConst(literal); ok {
-			return c.facts.LoadConstant(value)
-		}
-
-		return c.literals.CompileStringLiteral(literal)
+	if expression := ctx.Expression(); expression != nil {
+		return c.callbacks.compileExpr(expression)
 	}
 
 	if member := ctx.MemberExpression(); member != nil {
 		return c.callbacks.compileMember(member)
+	}
+
+	if literal := ctx.Literal(); literal != nil {
+		return c.literals.Compile(literal)
+	}
+
+	if call := ctx.FunctionCallExpression(); call != nil {
+		return c.callbacks.compileFunctionCall(call)
 	}
 
 	if param := ctx.Param(); param != nil {

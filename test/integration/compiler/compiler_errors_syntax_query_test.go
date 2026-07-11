@@ -17,7 +17,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "QUERY requires a query expression",
-				Hint:    "Provide a query expression, e.g. QUERY `.items` IN doc, QUERY email.body IN doc, or QUERY @q IN doc USING css.",
+				Hint:    "Provide a query expression, e.g. QUERY `.items` IN doc, QUERY email.body IN doc, or QUERY (prefix + selector) IN doc.",
 			},
 			"Missing query expression after QUERY",
 		),
@@ -26,7 +26,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected IN after query expression",
-				Hint:    "Add IN <expr>, e.g. QUERY `.items` IN doc or QUERY email.body IN doc.",
+				Hint:    "Add IN <expr> after the query expression. Wrap computed query payloads in parentheses, e.g. QUERY (prefix + selector) IN doc.",
 			},
 			"Invalid ANY query payload",
 		),
@@ -35,7 +35,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected IN after query expression",
-				Hint:    "Add IN <expr>, e.g. QUERY `.items` IN doc or QUERY email.body IN doc.",
+				Hint:    "Add IN <expr> after the query expression. Wrap computed query payloads in parentheses, e.g. QUERY (prefix + selector) IN doc.",
 			},
 			"Invalid VALUE query payload",
 		),
@@ -44,7 +44,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "QUERY requires a query expression",
-				Hint:    "Provide a query expression, e.g. QUERY `.items` IN doc, QUERY email.body IN doc, or QUERY @q IN doc USING css.",
+				Hint:    "Provide a query expression, e.g. QUERY `.items` IN doc, QUERY email.body IN doc, or QUERY (prefix + selector) IN doc.",
 			},
 			"Missing query expression after QUERY modifier",
 		),
@@ -53,7 +53,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "QUERY requires a query expression",
-				Hint:    "Provide a query expression, e.g. QUERY `.items` IN doc, QUERY email.body IN doc, or QUERY @q IN doc USING css.",
+				Hint:    "Provide a query expression, e.g. QUERY `.items` IN doc, QUERY email.body IN doc, or QUERY (prefix + selector) IN doc.",
 			},
 			"Missing query expression after QUERY COUNT modifier",
 		),
@@ -62,7 +62,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "QUERY requires a query expression",
-				Hint:    "Provide a query expression, e.g. QUERY `.items` IN doc, QUERY email.body IN doc, or QUERY @q IN doc USING css.",
+				Hint:    "Provide a query expression, e.g. QUERY `.items` IN doc, QUERY email.body IN doc, or QUERY (prefix + selector) IN doc.",
 			},
 			"Missing query expression after QUERY ONE modifier",
 		),
@@ -71,7 +71,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected IN after query expression",
-				Hint:    "Add IN <expr>, e.g. QUERY `.items` IN doc or QUERY email.body IN doc.",
+				Hint:    "Add IN <expr> after the query expression. Wrap computed query payloads in parentheses, e.g. QUERY (prefix + selector) IN doc.",
 			},
 			"Missing IN after query expression",
 		),
@@ -80,9 +80,27 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected IN after query expression",
-				Hint:    "Add IN <expr>, e.g. QUERY `.items` IN doc or QUERY email.body IN doc.",
+				Hint:    "Add IN <expr> after the query expression. Wrap computed query payloads in parentheses, e.g. QUERY (prefix + selector) IN doc.",
 			},
 			"Missing IN after member query expression",
+		),
+		Failure(
+			"RETURN QUERY prefix + selector IN page",
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected IN after query expression",
+				Hint:    "Add IN <expr> after the query expression. Wrap computed query payloads in parentheses, e.g. QUERY (prefix + selector) IN doc.",
+			},
+			"Unparenthesized additive query payload",
+		),
+		Failure(
+			"RETURN QUERY enabled ? primary : fallback IN page",
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "Expected IN after query expression",
+				Hint:    "Add IN <expr> after the query expression. Wrap computed query payloads in parentheses, e.g. QUERY (prefix + selector) IN doc.",
+			},
+			"Unparenthesized ternary query payload",
 		),
 		Failure(
 			"RETURN QUERY `.x` IN USING css",

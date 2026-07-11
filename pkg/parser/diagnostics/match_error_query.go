@@ -72,7 +72,7 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 
 		span := spanFromTokenSafe(spanNode.Token(), src)
 		err.Message = "QUERY requires a query expression"
-		err.Hint = "Provide a query expression, e.g. QUERY `.items` IN doc, QUERY email.body IN doc, or QUERY @q IN doc USING css."
+		err.Hint = "Provide a query expression, e.g. QUERY `.items` IN doc, QUERY email.body IN doc, or QUERY (prefix + selector) IN doc."
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing query expression"),
 		}
@@ -83,7 +83,7 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 	if expectsKeyword(err.Message, "in") && hasPrevToken(offending, "QUERY", 10) && hasQueryLiteralBetween(offending, 10) && !hasTokenBefore(offending, "QUERY", "IN", 10) {
 		span := spanFromTokenSafe(offending.Token(), src)
 		err.Message = "Expected IN after query expression"
-		err.Hint = "Add IN <expr>, e.g. QUERY `.items` IN doc or QUERY email.body IN doc."
+		err.Hint = "Add IN <expr> after the query expression. Wrap computed query payloads in parentheses, e.g. QUERY (prefix + selector) IN doc."
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing 'IN'"),
 		}

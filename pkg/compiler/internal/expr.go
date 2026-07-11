@@ -74,10 +74,11 @@ func NewExprCompiler(ctx *CompilationSession) *ExprCompiler {
 		compileImplicitMember:  c.CompileImplicitMemberExpression,
 	})
 	c.queryCompiler = newExprQueryCompiler(ctx, exprQueryCallbacks{
-		compileExpr:     c.Compile,
-		compileMember:   c.CompileMemberExpression,
-		compileParam:    c.CompileParam,
-		compileVariable: c.CompileVariable,
+		compileExpr:         c.Compile,
+		compileFunctionCall: c.CompileFunctionCallExpression,
+		compileMember:       c.CompileMemberExpression,
+		compileParam:        c.CompileParam,
+		compileVariable:     c.CompileVariable,
 	})
 	c.matchCompiler = newExprMatchCompiler(ctx, exprMatchCallbacks{
 		compileExpr:                   c.Compile,

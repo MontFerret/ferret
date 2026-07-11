@@ -34,6 +34,7 @@ func TestQueryable(t *testing.T) {
 		Array("RETURN QUERY `.both` IN @doc USING css WITH { value: 2 } OPTIONS { timeout: 6000 }", []any{"ok"}, "Should apply query expression with params and options"),
 		S("RETURN QUERY ONE `.one-both` IN @doc USING css WITH { value: 3 } OPTIONS { timeout: 7000 }", "ok", "Should apply query-one expression with params and options"),
 		S("LET email = { body: \".dynamic-member\" }\nLET model = @doc\nRETURN QUERY ONE email.body IN model USING summarize", "ok", "Should apply query expression with member payload"),
+		Array("LET category = \"books\"\nRETURN QUERY (\".item-\" + category) IN @doc USING css", []any{"ok"}, "Should apply query expression with computed payload"),
 		Array("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", []any{"ok"}, "Should apply query literal with params"),
 		S("RETURN @doc[~? sql`SELECT * FROM featured`({ c: \"tablets\" })]", "ok", "Should apply query-one literal with params"),
 		Array("RETURN QUERY `SELECT * FROM products` IN @doc USING sql WITH { c: \"phones\" }", []any{"ok"}, "Should apply query expression with options"),
@@ -73,6 +74,7 @@ func TestQueryable(t *testing.T) {
 		var hasBoth bool
 		var hasOneBoth bool
 		var hasMemberPayload bool
+		var hasComputedPayload bool
 
 		for _, q := range queryable.MockQueries() {
 			switch q.Kind {
@@ -113,6 +115,9 @@ func TestQueryable(t *testing.T) {
 				if q.Expression == runtime.NewString(".one-both") {
 					hasOneBoth = queryMapValue(t, q.Params, "value") == runtime.NewInt(3) &&
 						queryMapValue(t, q.Options, "timeout") == runtime.NewInt(7000)
+				}
+				if q.Expression == runtime.NewString(".item-books") {
+					hasComputedPayload = q.Params == runtime.None && q.Options == runtime.None
 				}
 			case runtime.NewString("text"):
 				if q.Expression == runtime.EmptyString {
@@ -199,6 +204,9 @@ func TestQueryable(t *testing.T) {
 		}
 		if !hasMemberPayload {
 			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and expression %q", "summarize", ".dynamic-member"))
+		}
+		if !hasComputedPayload {
+			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and expression %q", "css", ".item-books"))
 		}
 		if !hasSQLQueryExpr {
 			t.Fatal(fmt.Sprintf("expected to receive a query with kind %q and params containing %q=%q", "sql", "c", "phones"))
