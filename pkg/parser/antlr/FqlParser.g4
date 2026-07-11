@@ -1108,9 +1108,12 @@ queryModifier
     ;
 
 queryPayload
-    : stringLiteral
+    : memberExpression
+    | literal
+    | functionCallExpression
     | param
     | variable
+    | OpenParen expression CloseParen
     ;
 
 queryWithOpt

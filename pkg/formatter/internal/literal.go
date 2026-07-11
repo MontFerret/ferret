@@ -29,6 +29,18 @@ func (f *literalFormatter) formatLiteral(ctx *fql.LiteralContext) {
 	}
 }
 
+func (f *literalFormatter) formatLiteralWith(p *printer, ctx *fql.LiteralContext) {
+	if p == f.p {
+		f.formatLiteral(ctx)
+		return
+	}
+
+	orig := f.p
+	f.p = p
+	f.formatLiteral(ctx)
+	f.p = orig
+}
+
 func (f *literalFormatter) formatBooleanLiteral(ctx *fql.BooleanLiteralContext) {
 	if ctx == nil || ctx.BooleanLiteral() == nil {
 		return

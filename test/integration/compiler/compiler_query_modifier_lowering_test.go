@@ -43,6 +43,63 @@ RETURN linksBySection[**]`, func(prog *bytecode.Program) error {
 	})
 }
 
+func TestQueryExpressionMemberPayloadCompiles(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		ProgramCheck(`
+LET email = { body: ".dynamic-member" }
+LET model = @doc
+RETURN QUERY ONE email.body IN model USING summarize`, func(prog *bytecode.Program) error {
+			return fourSlotQueryDescriptorFor(prog.Bytecode, bytecode.OpQueryOne)
+		}, "Should compile query expression with member payload"),
+	})
+}
+
+func TestQueryExpressionAtomicPayloadsCompile(t *testing.T) {
+	cases := []string{
+		`RETURN QUERY "div" IN @doc`,
+		`LET selector = ".item" RETURN QUERY selector IN @doc`,
+		`RETURN QUERY @selector IN @doc`,
+		`LET config = { selector: ".item" } RETURN QUERY config.selector IN @doc`,
+		`LET selectors = [".item"] LET index = 0 RETURN QUERY selectors[index] IN @doc`,
+		`FUNC GET_SELECTOR() => ".item" RETURN QUERY GET_SELECTOR() IN @doc`,
+		`FUNC factory() => { selector: ".item" } RETURN QUERY factory().selector IN @doc`,
+	}
+
+	specs := make([]spec.Spec, 0, len(cases))
+	for _, query := range cases {
+		specs = append(specs, ProgramCheck(query, func(prog *bytecode.Program) error {
+			return fourSlotQueryDescriptor(prog.Bytecode)
+		}, query))
+	}
+
+	RunSpecs(t, specs)
+}
+
+func TestQueryExpressionComputedPayloadsCompile(t *testing.T) {
+	cases := []string{
+		`LET prefix = ".item-" LET selector = "card" RETURN QUERY (prefix + selector) IN @doc`,
+		`LET enabled = TRUE LET primary = ".primary" LET fallback = ".fallback" RETURN QUERY (enabled ? primary : fallback) IN @doc`,
+		`LET selector = ".item" LET selectors = [".item"] RETURN QUERY (selector IN selectors) IN @doc`,
+		`FUNC BUILD_SELECTOR(options) => ".built" RETURN QUERY (BUILD_SELECTOR({})) IN @doc`,
+	}
+
+	specs := make([]spec.Spec, 0, len(cases))
+	for _, query := range cases {
+		specs = append(specs, ProgramCheck(query, func(prog *bytecode.Program) error {
+			return fourSlotQueryDescriptor(prog.Bytecode)
+		}, query))
+	}
+
+	specs = append(specs, ProgramCheck(`
+LET prefix = ".item-"
+LET selector = "card"
+RETURN QUERY ONE (prefix + selector) IN @doc USING css`, func(prog *bytecode.Program) error {
+		return fourSlotQueryDescriptorFor(prog.Bytecode, bytecode.OpQueryOne)
+	}, "Should compile QUERY ONE with computed payload using direct opcode"))
+
+	RunSpecs(t, specs)
+}
+
 func TestQueryExpressionOptionalUsingCompiles(t *testing.T) {
 	cases := []string{
 		`RETURN QUERY "x" IN @doc`,

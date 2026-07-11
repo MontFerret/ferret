@@ -171,6 +171,85 @@ func TestExpressionFormatter_QueryExpressionParamPayload(t *testing.T) {
 	}
 }
 
+func TestExpressionFormatter_QueryExpressionMemberPayload(t *testing.T) {
+	input := "RETURN QUERY ONE email.body IN model USING summarize"
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "QUERY ONE email.body IN model USING summarize" {
+		t.Fatalf("unexpected query expression formatting: %q", got)
+	}
+}
+
+func TestExpressionFormatter_QueryExpressionAtomicPayloads(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{
+			input: "RETURN QUERY selectors[index] IN page USING css",
+			want:  "QUERY selectors[index] IN page USING css",
+		},
+		{
+			input: "RETURN QUERY GET_SELECTOR() IN page USING css",
+			want:  "QUERY GET_SELECTOR() IN page USING css",
+		},
+		{
+			input: "RETURN QUERY factory().selector IN page USING css",
+			want:  "QUERY factory().selector IN page USING css",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			program := parseProgram(t, tt.input)
+			expr := mustFirst[*fql.ExpressionContext](t, program)
+
+			var buf bytes.Buffer
+			e := newEngine(source.NewAnonymous(tt.input), &buf, DefaultOptions())
+
+			e.expression.formatExpression(expr)
+			if got := buf.String(); got != tt.want {
+				t.Fatalf("unexpected query expression formatting: got %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestExpressionFormatter_QueryExpressionComputedPayload(t *testing.T) {
+	input := `RETURN QUERY (prefix+selector) IN page USING css WITH { visible: true } OPTIONS { timeout: 1000 }`
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "QUERY (prefix + selector) IN page USING css\n    WITH { visible: TRUE }\n    OPTIONS { timeout: 1000 }" {
+		t.Fatalf("unexpected query expression formatting: %q", got)
+	}
+}
+
+func TestExpressionFormatter_QueryExpressionComputedPayloadMultilineClauses(t *testing.T) {
+	input := `RETURN QUERY (prefix+selector) IN page WITH { visible: true, enabled: true } OPTIONS { timeout: 1000, retries: 2 }`
+	program := parseProgram(t, input)
+	expr := mustFirst[*fql.ExpressionContext](t, program)
+
+	var buf bytes.Buffer
+	opts := DefaultOptions()
+	opts.printWidth = 20
+	e := newEngine(source.NewAnonymous(input), &buf, opts)
+
+	e.expression.formatExpression(expr)
+	if got := buf.String(); got != "QUERY (prefix + selector) IN page\n    WITH {\n        visible: TRUE,\n        enabled: TRUE\n    }\n    OPTIONS {\n        timeout: 1000,\n        retries: 2\n    }" {
+		t.Fatalf("unexpected query expression formatting: %q", got)
+	}
+}
+
 func TestExpressionFormatter_QueryExpressionImplicitCurrentSource(t *testing.T) {
 	input := `RETURN [1][* RETURN (QUERY "a" IN . USING css)]`
 	program := parseProgram(t, input)
