@@ -834,6 +834,13 @@ func (f *statementFormatter) formatDispatchTarget(ctx *fql.DispatchTargetContext
 		return
 	}
 
+	if expr := ctx.Expression(); expr != nil {
+		f.p.write("(")
+		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+		f.p.write(")")
+		return
+	}
+
 	f.values.formatRefValueWithCallExpr(
 		ctx.FunctionCallExpression(),
 		ctx.Variable(),

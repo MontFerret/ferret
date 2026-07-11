@@ -501,6 +501,7 @@ dispatchTarget
     | variable
     | param
     | memberExpression
+    | OpenParen expression CloseParen
     ;
 
 dispatchWithClause

@@ -9,6 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
+	"github.com/MontFerret/ferret/v2/test/spec/mock"
 )
 
 type testDispatcher struct {
@@ -172,6 +173,39 @@ func TestDispatch(t *testing.T) {
 
 	if !hasShorthandBlur {
 		t.Fatalf("expected shorthand blur dispatch event")
+	}
+}
+
+func TestDispatchGroupedQueryTarget(t *testing.T) {
+	dispatcher := &testDispatcher{}
+	queryable := mock.NewQueryable(runtime.NewArrayWith(dispatcher))
+
+	RunSpecs(t, []spec.Spec{
+		S(`
+			RETURN DISPATCH "input" IN (QUERY ONE "#query" IN @page USING css)
+				WITH { value: "ferret" }
+				OPTIONS { bubbles: true }
+		`, nil, "Should dispatch to a value returned by a grouped query"),
+	}, vm.WithParam("page", queryable))
+
+	if got := len(queryable.MockQueries()); got != 2 {
+		t.Fatalf("expected one query evaluation per optimization level, got %d", got)
+	}
+
+	if got := len(dispatcher.events); got != 2 {
+		t.Fatalf("expected one dispatched event per optimization level, got %d", got)
+	}
+
+	for _, event := range dispatcher.events {
+		if event.Name != runtime.NewString("input") {
+			t.Fatalf("expected input event, got %q", event.Name)
+		}
+		if got := queryMapValue(t, event.Payload, "value"); got != runtime.NewString("ferret") {
+			t.Fatalf("expected payload value ferret, got %v", got)
+		}
+		if got := queryMapValue(t, event.Options, "bubbles"); got != runtime.True {
+			t.Fatalf("expected bubbles option true, got %v", got)
+		}
 	}
 }
 

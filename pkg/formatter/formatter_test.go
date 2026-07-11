@@ -94,6 +94,32 @@ func TestFormatter_BlockCommentPreservesLeadingSpace(t *testing.T) {
 	}
 }
 
+func TestFormatter_DispatchGroupedQueryTargetRemainsParseable(t *testing.T) {
+	input := "DISPATCH \"input\" IN (QUERY ONE \"#query\" IN page USING css) WITH { value: \"ferret\" }\nRETURN 1"
+	src := source.NewAnonymous(input)
+	var buf bytes.Buffer
+	fmt := New()
+
+	if err := fmt.Format(&buf, src); err != nil {
+		t.Fatalf("format failed: %v", err)
+	}
+
+	out := buf.String()
+	target := `DISPATCH "input" IN (QUERY ONE "#query" IN page USING css)`
+	if targetIdx, withIdx := strings.Index(out, target), strings.Index(out, "WITH {"); targetIdx < 0 || withIdx < targetIdx+len(target) {
+		t.Fatalf("expected grouped query target and dispatch payload to remain distinct; got:\n%s", out)
+	}
+
+	var roundTrip bytes.Buffer
+	if err := fmt.Format(&roundTrip, source.NewAnonymous(out)); err != nil {
+		t.Fatalf("formatted output must remain parseable: %v\nformatted:\n%s", err, out)
+	}
+
+	if roundTrip.String() != out {
+		t.Fatalf("formatted output must be stable:\nfirst:\n%s\nsecond:\n%s", out, roundTrip.String())
+	}
+}
+
 func TestFormatter_WaitForEventFilterUsesWhenAndRemainsParseable(t *testing.T) {
 	input := "LET obs = []\nWAITFOR EVENT \"test\" IN obs WHEN .type == \"match\" WHEN .visible\nRETURN 1"
 	src := source.NewAnonymous(input)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -56,4 +57,12 @@ func BenchmarkDispatchShorthandStatement_O0(b *testing.B) {
 
 func BenchmarkDispatchShorthandStatement_O1(b *testing.B) {
 	RunBenchmarkO1(b, dispatchShorthandStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
+}
+
+func BenchmarkCompilerCompileDispatchLongStatement_O0(b *testing.B) {
+	benchmarkCompileQuery(b, dispatchLongStatementQuery, compiler.O0)
+}
+
+func BenchmarkCompilerCompileDispatchLongStatement_O1(b *testing.B) {
+	benchmarkCompileQuery(b, dispatchLongStatementQuery, compiler.O1)
 }
