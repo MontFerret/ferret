@@ -17,6 +17,10 @@ const dispatchShorthandStatementQuery = `
 @d <- "click"
 RETURN 1`
 
+const dispatchGroupedTargetQuery = `
+DISPATCH "click" IN (QUERY ONE "#submit" IN @page USING css)
+RETURN 1`
+
 type benchmarkDispatcher struct{}
 
 func (d *benchmarkDispatcher) Dispatch(_ context.Context, event runtime.DispatchEvent) error {
@@ -59,10 +63,10 @@ func BenchmarkDispatchShorthandStatement_O1(b *testing.B) {
 	RunBenchmarkO1(b, dispatchShorthandStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
 }
 
-func BenchmarkCompilerCompileDispatchLongStatement_O0(b *testing.B) {
-	benchmarkCompileQuery(b, dispatchLongStatementQuery, compiler.O0)
+func BenchmarkCompilerCompileDispatchGroupedTarget_O0(b *testing.B) {
+	benchmarkCompileQuery(b, dispatchGroupedTargetQuery, compiler.O0)
 }
 
-func BenchmarkCompilerCompileDispatchLongStatement_O1(b *testing.B) {
-	benchmarkCompileQuery(b, dispatchLongStatementQuery, compiler.O1)
+func BenchmarkCompilerCompileDispatchGroupedTarget_O1(b *testing.B) {
+	benchmarkCompileQuery(b, dispatchGroupedTargetQuery, compiler.O1)
 }
