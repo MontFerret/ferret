@@ -23,8 +23,8 @@ func TestMapIterator(t *testing.T) {
 		values := make(map[string]bool)
 
 		err := runtime.ForEachIter(t.Context(), iter, func(ctx context.Context, value, idx runtime.Value) (runtime.Boolean, error) {
-			keys[value.String()] = true
-			values[idx.String()] = true
+			keys[idx.String()] = true
+			values[value.String()] = true
 
 			return runtime.True, nil
 		})

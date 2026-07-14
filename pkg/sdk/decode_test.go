@@ -2,7 +2,6 @@ package sdk_test
 
 import (
 	"context"
-	"io"
 	"testing"
 	"time"
 
@@ -17,6 +16,7 @@ type (
 	someOthers struct {
 		Other string `json:"other"`
 	}
+
 	bindParams struct {
 		Pointer  *someOthers `ferret:"pointer"`
 		Name     string      `ferret:"name"`
@@ -27,94 +27,55 @@ type (
 		Age      int      `ferret:"age"`
 		Count    int64    `json:"count"`
 	}
+
 	nestedAddress struct {
 		City string `ferret:"city"`
 		Zip  int    `ferret:"zip"`
 	}
+
 	nestedProfile struct {
 		Name    string        `ferret:"name"`
 		Address nestedAddress `ferret:"address"`
 	}
+
 	nestedFriendMeta struct {
 		Active bool `ferret:"active"`
 	}
+
 	nestedFriend struct {
 		Meta *nestedFriendMeta `ferret:"meta"`
 		Tags []string          `ferret:"tags"`
 		ID   int               `ferret:"id"`
 	}
+
 	nestedPayload struct {
 		Profile nestedProfile  `ferret:"profile"`
 		Matrix  [][]int        `ferret:"matrix"`
 		Friends []nestedFriend `ferret:"friends"`
 	}
+
 	EmbeddedParams struct {
 		URL         string `json:"url"`
 		UserAgent   string `json:"userAgent"`
 		Charset     string `json:"charset"`
 		KeepCookies bool   `json:"keepCookies"`
 	}
+
 	EmbeddedPageLoadParams struct {
 		Driver string `json:"driver"`
 		EmbeddedParams
 		Timeout time.Duration `json:"timeout"`
 	}
+
 	EmbeddedOuterPointer struct {
 		*EmbeddedParams
 		Driver string `json:"driver"`
 	}
+
 	EmbeddedNode struct {
 		*EmbeddedNode
 	}
-	closableIterable struct {
-		closed *bool
-		values []runtime.Value
-	}
-	closableIterator struct {
-		closed *bool
-		values []runtime.Value
-		index  int
-	}
 )
-
-func (c closableIterable) String() string {
-	return "closableIterable"
-}
-
-func (c closableIterable) Hash() uint64 {
-	return 0
-}
-
-func (c closableIterable) Copy() runtime.Value {
-	return c
-}
-
-func (c closableIterable) Iterate(_ context.Context) (runtime.Iterator, error) {
-	return &closableIterator{
-		values: c.values,
-		closed: c.closed,
-	}, nil
-}
-
-func (it *closableIterator) Next(_ context.Context) (runtime.Value, runtime.Value, error) {
-	if it.index >= len(it.values) {
-		return runtime.None, runtime.None, io.EOF
-	}
-
-	index := it.index
-	value := it.values[index]
-	it.index++
-
-	return value, runtime.NewInt(index), nil
-}
-
-func (it *closableIterator) Close() error {
-	if it.closed != nil {
-		*it.closed = true
-	}
-
-	return nil
-}
 
 func TestDecode(t *testing.T) {
 	Convey("Should bind values into a struct", t, func() {
@@ -135,7 +96,7 @@ func TestDecode(t *testing.T) {
 		})), ShouldBeNil)
 
 		var out bindParams
-		err := sdk.Decode(obj, &out)
+		err := sdk.Decode(t.Context(), obj, &out)
 
 		So(err, ShouldBeNil)
 		So(out, ShouldResemble, bindParams{
@@ -183,7 +144,7 @@ func TestDecode(t *testing.T) {
 		})
 
 		var out nestedPayload
-		err := sdk.Decode(obj, &out)
+		err := sdk.Decode(t.Context(), obj, &out)
 
 		So(err, ShouldBeNil)
 		So(out, ShouldResemble, nestedPayload{
@@ -221,7 +182,7 @@ func TestDecode(t *testing.T) {
 		})
 
 		var out EmbeddedPageLoadParams
-		err := sdk.Decode(obj, &out)
+		err := sdk.Decode(t.Context(), obj, &out)
 
 		So(err, ShouldBeNil)
 		So(out, ShouldResemble, EmbeddedPageLoadParams{
@@ -243,7 +204,7 @@ func TestDecode(t *testing.T) {
 			})
 
 			var out EmbeddedOuterPointer
-			err := sdk.Decode(obj, &out)
+			err := sdk.Decode(t.Context(), obj, &out)
 
 			So(err, ShouldBeNil)
 			So(out, ShouldResemble, EmbeddedOuterPointer{
@@ -259,7 +220,7 @@ func TestDecode(t *testing.T) {
 			})
 
 			var out EmbeddedOuterPointer
-			err := sdk.Decode(obj, &out)
+			err := sdk.Decode(t.Context(), obj, &out)
 
 			So(err, ShouldBeNil)
 			So(out, ShouldResemble, EmbeddedOuterPointer{
@@ -286,7 +247,7 @@ func TestDecode(t *testing.T) {
 			Driver: "old-driver",
 		}
 
-		err := sdk.Decode(obj, &out)
+		err := sdk.Decode(t.Context(), obj, &out)
 
 		So(err, ShouldBeNil)
 		So(out, ShouldResemble, EmbeddedOuterPointer{
@@ -304,28 +265,26 @@ func TestDecode(t *testing.T) {
 		obj := runtime.NewObject()
 
 		var out EmbeddedNode
-		err := sdk.Decode(obj, &out)
+		err := sdk.Decode(t.Context(), obj, &out)
 
 		So(err, ShouldBeNil)
 		So(out.EmbeddedNode, ShouldBeNil)
 	})
 
 	Convey("Should close iterators when decoding slices", t, func() {
-		closed := false
-		source := closableIterable{
+		source := &conversionIteratorValue{
 			values: []runtime.Value{
 				runtime.NewString("a"),
 				runtime.NewString("b"),
 			},
-			closed: &closed,
 		}
 
 		var out []string
-		err := sdk.Decode(source, &out)
+		err := sdk.Decode(t.Context(), source, &out)
 
 		So(err, ShouldBeNil)
 		So(out, ShouldResemble, []string{"a", "b"})
-		So(closed, ShouldBeTrue)
+		So(source.closed, ShouldBeTrue)
 	})
 
 	Convey("Should decode arrays with exact source length and reject overflow", t, func() {
@@ -333,7 +292,7 @@ func TestDecode(t *testing.T) {
 			src := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2))
 			var out [2]int
 
-			err := sdk.Decode(src, &out)
+			err := sdk.Decode(t.Context(), src, &out)
 
 			So(err, ShouldBeNil)
 			So(out, ShouldResemble, [2]int{1, 2})
@@ -343,7 +302,7 @@ func TestDecode(t *testing.T) {
 			src := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2))
 			var out [1]int
 
-			err := sdk.Decode(src, &out)
+			err := sdk.Decode(t.Context(), src, &out)
 
 			So(err, ShouldNotBeNil)
 		})
@@ -352,21 +311,21 @@ func TestDecode(t *testing.T) {
 	Convey("Should reject non-pointer targets", t, func() {
 		obj := runtime.NewObject()
 		var out bindParams
-		err := sdk.Decode(obj, out)
+		err := sdk.Decode(t.Context(), obj, out)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("Should reject nil pointer targets", t, func() {
 		obj := runtime.NewObject()
 		var out *bindParams
-		err := sdk.Decode(obj, out)
+		err := sdk.Decode(t.Context(), obj, out)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("Should reject non-string map keys", t, func() {
 		obj := runtime.NewObject()
 		var out map[int]string
-		err := sdk.Decode(obj, &out)
+		err := sdk.Decode(t.Context(), obj, &out)
 		So(err, ShouldNotBeNil)
 	})
 }

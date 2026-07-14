@@ -269,21 +269,21 @@ RETURN arr
 	}))
 }
 
-func TestDirectMutationProxyRemovable(t *testing.T) {
+func TestDirectMutationSDKViews(t *testing.T) {
 	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
 			Array(`
 LET arr = @arr
 DELETE arr[1]
 RETURN arr
-`, []any{1, 3}, "DELETE removes a proxy slice index").Env(vm.WithParam("arr", sdk.NewProxySlice([]int{1, 2, 3}))),
+`, []any{1, 3}, "DELETE removes a live slice view index").Env(vm.WithParam("arr", sdk.NewSliceView([]int{1, 2, 3}))),
 			Object(`
 LET obj = @obj
 DELETE obj.one
 RETURN obj
 `, map[string]any{
 				"two": 2,
-			}, "DELETE removes a proxy map key").Env(vm.WithParam("obj", sdk.NewProxyMap(map[string]int{
+			}, "DELETE removes a live map view key").Env(vm.WithParam("obj", sdk.NewMapView(map[string]int{
 				"one": 1,
 				"two": 2,
 			}))),

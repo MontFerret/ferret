@@ -290,7 +290,7 @@ func TestTaggedTypes(t *testing.T) {
 		Nil("RETURN GET_VALUE().untagged"),
 		Nil("RETURN GET_VALUE().privateStrProp"),
 	}, vm.WithFunction("GET_VALUE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-		return sdk.Encode(SomeValue{
+		return sdk.Encode(ctx, SomeValue{
 			StrProp:        "test",
 			IntProp:        99,
 			SliceProp:      []int{1, 2, 3},
@@ -298,6 +298,6 @@ func TestTaggedTypes(t *testing.T) {
 			NilPointerProp: nil,
 			UntaggedProp:   "untagged",
 			privateStrProp: "private",
-		}), nil
+		})
 	}))
 }

@@ -1,73 +1,82 @@
 package main
 
-func main() {
-	//strs, err := getStrings()
-	//
-	//if err != nil {
-	//	fmt.Println(err)
-	//	os.Exit(1)
-	//}
-	//
-	//for _, str := range strs {
-	//	fmt.Println(str)
-	//}
+import (
+	"context"
+	"fmt"
+	"os"
+	"strings"
+
+	ferret "github.com/MontFerret/ferret/v2"
+	"github.com/MontFerret/ferret/v2/pkg/module"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/sdk"
+	"github.com/MontFerret/ferret/v2/pkg/source"
+)
+
+type formatOptions struct {
+	Prefix string `ferret:"prefix"`
 }
 
-//func getStrings() ([]string, error) {
-//	// function implements is a type of a function that ferret supports as a runtime function
-//	transform := func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-//		// it's just a helper function which helps to validate a number of passed args
-//		err := runtime.ValidateArgs(args, 1, 1)
-//
-//		if err != nil {
-//			// it's recommended to return built-in None type, instead of nil
-//			return runtime.None, err
-//		}
-//
-//		// this is another helper functions allowing to do type validation
-//		err = core.ValidateType(args[0], types.String)
-//
-//		if err != nil {
-//			return runtime.None, err
-//		}
-//
-//		// cast to built-in string type
-//		str := args[0].(runtime.String)
-//
-//		return runtime.NewString(strings.ToUpper(str.String() + "_ferret")), nil
-//	}
-//
-//	query := `
-//		FOR el IN ["foo", "bar", "qaz"]
-//			// conventionally all functions are registered in upper case
-//			RETURN TRANSFORM(el)
-//	`
-//
-//	comp := compiler.New()
-//
-//	if err := comp.RegisterFunction("transform", transform); err != nil {
-//		return nil, err
-//	}
-//
-//	program, err := comp.Compile(query)
-//
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	out, err := program.Run(context.Background())
-//
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	res := make([]string, 0, 3)
-//
-//	err = json.Unmarshal(out, &res)
-//
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	return res, nil
-//}
+func main() {
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	engine, err := ferret.New(ferret.WithModules(newExampleModule()))
+	if err != nil {
+		return err
+	}
+	defer func() { _ = engine.Close() }()
+
+	output, err := engine.Run(
+		context.Background(),
+		source.NewAnonymous(`RETURN EXAMPLE::FORMAT("ferret", { prefix: "hello " })`),
+	)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(output.Content))
+	return nil
+}
+
+func newExampleModule() module.Module {
+	return sdk.NewModule("example", func(bootstrap module.Bootstrap) error {
+		return sdk.RegisterFunctions(
+			bootstrap.Host().Library().Namespace("EXAMPLE"),
+			sdk.Func("UPPER", sdk.Bind1(upper)),
+			sdk.Func("FORMAT", runtime.Function(format)),
+		)
+	})
+}
+
+func upper(_ context.Context, value runtime.String) (runtime.String, error) {
+	return runtime.NewString(strings.ToUpper(value.String())), nil
+}
+
+func format(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 1, 2); err != nil {
+		return runtime.None, err
+	}
+
+	value, err := runtime.CastArgAt[runtime.String](args, 0)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	options, err := sdk.DecodeArgOr(
+		ctx,
+		args,
+		1,
+		formatOptions{},
+		sdk.DisallowUnknownFields(),
+	)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	return runtime.NewString(options.Prefix + strings.ToUpper(value.String())), nil
+}
