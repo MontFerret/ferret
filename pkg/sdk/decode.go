@@ -3,433 +3,587 @@ package sdk
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"reflect"
+	"sort"
 	"strings"
-	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-var timeType = reflect.TypeOf(time.Time{})
+type decodeState struct {
+	ctx    context.Context
+	path   conversionPath
+	config decodeConfig
+}
 
-// Decode binds a runtime Value into the provided target.
-// Target must be a non-nil pointer.
-// It uses tags (ferret or json) for struct fields.
-func Decode(src runtime.Value, target any) error {
-	src = normalizeSrc(src)
+// Decode binds a Ferret runtime value into a non-nil pointer target.
+func Decode(ctx context.Context, src runtime.Value, target any, options ...DecodeOption) error {
+	if ctx == nil {
+		return runtime.Error(runtime.ErrInvalidArgument, "context cannot be nil")
+	}
 
-	targetValue, err := validateTarget(target)
+	targetValue, err := validateDecodeTarget(target)
 	if err != nil {
 		return err
 	}
 
-	return bindValue(src, targetValue.Elem())
-}
-
-func bindValue(src runtime.Value, dst reflect.Value) error {
-	if !dst.CanSet() {
-		return runtime.Error(runtime.ErrInvalidArgumentType, "target is not settable")
+	state := &decodeState{
+		ctx:  ctx,
+		path: newConversionPath(),
 	}
 
-	src = normalizeSrc(src)
+	for _, option := range options {
+		if option != nil {
+			option(&state.config)
+		}
+	}
 
-	if dst.Kind() == reflect.Pointer {
-		return bindPointer(src, dst)
+	return bindRuntimeValue(state, normalizeRuntimeValue(src), targetValue.Elem())
+}
+
+func bindRuntimeValue(state *decodeState, src runtime.Value, dst reflect.Value) error {
+	if err := state.ctx.Err(); err != nil {
+		return fmt.Errorf("%s: %w", state.path, err)
+	}
+
+	if !dst.CanSet() {
+		return fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "target is not settable"))
 	}
 
 	if src == runtime.None {
 		dst.Set(reflect.Zero(dst.Type()))
-
 		return nil
 	}
 
-	srcVal := reflect.ValueOf(src)
-	if srcVal.IsValid() && srcVal.Type().AssignableTo(dst.Type()) {
-		dst.Set(srcVal)
+	srcValue := reflect.ValueOf(src)
+	if srcValue.IsValid() && srcValue.Type().AssignableTo(dst.Type()) {
+		dst.Set(srcValue)
 		return nil
 	}
 
-	if handled, err := bindScalar(src, dst); handled {
+	if bindRuntimeUnwrappedExact(src, dst) {
+		return nil
+	}
+
+	if dst.Kind() == reflect.Pointer {
+		return bindRuntimePointer(state, src, dst)
+	}
+
+	if handled, err := bindRuntimeScalar(state, src, dst); handled {
 		return err
 	}
 
-	return bindComposite(src, dst)
+	switch dst.Kind() {
+	case reflect.Slice:
+		return bindRuntimeSlice(state, src, dst)
+	case reflect.Array:
+		return bindRuntimeArray(state, src, dst)
+	case reflect.Map:
+		return bindRuntimeMap(state, src, dst)
+	case reflect.Struct:
+		if dateTime, ok := src.(runtime.DateTime); ok && dst.Type() == timeType {
+			dst.Set(reflect.ValueOf(dateTime.Time))
+			return nil
+		}
+
+		return bindRuntimeStruct(state, src, dst)
+	case reflect.Interface:
+		return bindRuntimeInterface(state, src, dst)
+	default:
+		return bindRuntimeUnwrapped(state, src, dst, true)
+	}
 }
 
-func bindPointer(src runtime.Value, dst reflect.Value) error {
+func bindRuntimePointer(state *decodeState, src runtime.Value, dst reflect.Value) error {
 	if src == runtime.None {
 		dst.Set(reflect.Zero(dst.Type()))
-
 		return nil
 	}
 
 	if dst.IsNil() {
-		elem := reflect.New(dst.Type().Elem())
-		if err := bindValue(src, elem.Elem()); err != nil {
+		element := reflect.New(dst.Type().Elem())
+		if err := bindRuntimeValue(state, src, element.Elem()); err != nil {
 			return err
 		}
 
-		dst.Set(elem)
-
+		dst.Set(element)
 		return nil
 	}
 
-	return bindValue(src, dst.Elem())
+	return bindRuntimeValue(state, src, dst.Elem())
 }
 
-func bindScalar(src runtime.Value, dst reflect.Value) (bool, error) {
+func bindRuntimeScalar(state *decodeState, src runtime.Value, dst reflect.Value) (bool, error) {
 	switch dst.Kind() {
 	case reflect.Bool:
-		val, ok := src.(runtime.Boolean)
-
+		value, ok := src.(runtime.Boolean)
 		if !ok {
-			return true, bindTypeError(src, dst.Type())
+			return true, decodeTypeError(&state.path, src, dst.Type())
 		}
 
-		dst.SetBool(bool(val))
+		dst.SetBool(bool(value))
 
 		return true, nil
 	case reflect.String:
-		val, ok := src.(runtime.String)
-
+		value, ok := src.(runtime.String)
 		if !ok {
-			return true, bindTypeError(src, dst.Type())
+			return true, decodeTypeError(&state.path, src, dst.Type())
 		}
 
-		dst.SetString(val.String())
+		dst.SetString(value.String())
 
 		return true, nil
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		switch v := src.(type) {
-		case runtime.Int:
-			return true, setInt(dst, int64(v))
-		case runtime.Float:
-			return true, bindTypeError(src, dst.Type())
-		default:
-			return true, bindTypeError(src, dst.Type())
+		value, ok := src.(runtime.Int)
+		if !ok {
+			return true, decodeTypeError(&state.path, src, dst.Type())
 		}
+
+		if dst.OverflowInt(int64(value)) {
+			return true, fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "integer overflow"))
+		}
+
+		dst.SetInt(int64(value))
+
+		return true, nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		switch v := src.(type) {
-		case runtime.Int:
-			return true, setUint(dst, int64(v))
-		case runtime.Float:
-			return true, bindTypeError(src, dst.Type())
-		default:
-			return true, bindTypeError(src, dst.Type())
+		value, ok := src.(runtime.Int)
+		if !ok {
+			return true, decodeTypeError(&state.path, src, dst.Type())
 		}
+
+		if value < 0 || dst.OverflowUint(uint64(value)) {
+			return true, fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "unsigned integer overflow"))
+		}
+
+		dst.SetUint(uint64(value))
+
+		return true, nil
 	case reflect.Float32, reflect.Float64:
-		switch v := src.(type) {
+		var number float64
+
+		switch value := src.(type) {
 		case runtime.Float:
-			dst.SetFloat(float64(v))
-			return true, nil
+			number = float64(value)
 		case runtime.Int:
-			dst.SetFloat(float64(v))
-			return true, nil
+			number = float64(value)
 		default:
-			return true, bindTypeError(src, dst.Type())
+			return true, decodeTypeError(&state.path, src, dst.Type())
 		}
+
+		if dst.OverflowFloat(number) {
+			return true, fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "floating-point overflow"))
+		}
+
+		dst.SetFloat(number)
+
+		return true, nil
 	default:
 		return false, nil
 	}
 }
 
-func bindComposite(src runtime.Value, dst reflect.Value) error {
-	switch dst.Kind() {
-	case reflect.Slice:
-		return bindSlice(src, dst)
-	case reflect.Array:
-		return bindArray(src, dst)
-	case reflect.Map:
-		return bindMap(src, dst)
-	case reflect.Struct:
-		if dt, ok := src.(runtime.DateTime); ok && dst.Type() == timeType {
-			dst.Set(reflect.ValueOf(dt.Time))
-
-			return nil
-		}
-
-		return bindStruct(src, dst)
-	case reflect.Interface:
-		return bindInterface(src, dst)
-	default:
-		return bindFallback(src, dst)
-	}
-}
-
-func bindInterface(src runtime.Value, dst reflect.Value) error {
-	srcVal := reflect.ValueOf(src)
-
-	if srcVal.IsValid() && srcVal.Type().AssignableTo(dst.Type()) {
-		dst.Set(srcVal)
-
-		return nil
-	}
-
-	return bindUnwrapped(src, dst, false)
-}
-
-func bindFallback(src runtime.Value, dst reflect.Value) error {
-	return bindUnwrapped(src, dst, true)
-}
-
-func bindUnwrapped(src runtime.Value, dst reflect.Value, allowConvert bool) error {
-	unwrappable, ok := src.(runtime.Unwrappable)
-
-	if !ok {
-		return nil
-	}
-
-	unwrapped := unwrappable.Unwrap()
-	if unwrapped == nil {
-		dst.Set(reflect.Zero(dst.Type()))
-		return nil
-	}
-
-	unwrapVal := reflect.ValueOf(unwrapped)
-	if unwrapVal.Type().AssignableTo(dst.Type()) {
-		dst.Set(unwrapVal)
-		return nil
-	}
-
-	if allowConvert && unwrapVal.Type().ConvertibleTo(dst.Type()) {
-		dst.Set(unwrapVal.Convert(dst.Type()))
-		return nil
-	}
-
-	return bindTypeError(src, dst.Type())
-}
-
-func bindSlice(src runtime.Value, dst reflect.Value) (retErr error) {
+func bindRuntimeSlice(state *decodeState, src runtime.Value, dst reflect.Value) (retErr error) {
 	iterable, ok := src.(runtime.Iterable)
 	if !ok {
-		return bindTypeError(src, dst.Type())
+		return decodeTypeError(&state.path, src, dst.Type())
 	}
 
-	ctx := context.Background()
-	iter, err := iterable.Iterate(ctx)
+	iterator, err := iterable.Iterate(state.ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: %w", state.path, err)
 	}
-	defer closeIterOnReturn(iter, &retErr)
 
-	elemType := dst.Type().Elem()
-	out := reflect.MakeSlice(dst.Type(), 0, 0)
+	defer func() {
+		retErr = errors.Join(retErr, closeIteratorAt(iterator, &state.path))
+	}()
 
-	for {
-		val, _, err := iter.Next(ctx)
-		if errors.Is(err, io.EOF) || errors.Is(err, runtime.ErrTimeout) {
+	capacity := 0
+	if measurable, ok := src.(runtime.Measurable); ok {
+		length, lengthErr := measurable.Length(state.ctx)
+		if lengthErr != nil {
+			return fmt.Errorf("%s: %w", state.path, lengthErr)
+		}
+
+		if length > runtime.Int(int(^uint(0)>>1)) {
+			return fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "collection length overflows int"))
+		}
+
+		if length > 0 {
+			capacity = int(length)
+		}
+	}
+
+	output := reflect.MakeSlice(dst.Type(), 0, capacity)
+
+	for index := 0; ; index++ {
+		value, _, nextErr := iterator.Next(state.ctx)
+		if nextErr == io.EOF {
 			break
 		}
+
+		if nextErr != nil {
+			mark := state.path.PushIndex(index)
+			err := fmt.Errorf("%s: %w", state.path, nextErr)
+			state.path.Restore(mark)
+
+			return err
+		}
+
+		element := reflect.New(dst.Type().Elem()).Elem()
+		mark := state.path.PushIndex(index)
+		err := bindRuntimeValue(state, value, element)
+		state.path.Restore(mark)
 
 		if err != nil {
 			return err
 		}
 
-		elem := reflect.New(elemType).Elem()
-		if err := bindValue(val, elem); err != nil {
-			return err
-		}
-
-		out = reflect.Append(out, elem)
+		output = reflect.Append(output, element)
 	}
 
-	dst.Set(out)
+	dst.Set(output)
 
 	return nil
 }
 
-func bindArray(src runtime.Value, dst reflect.Value) (retErr error) {
+func bindRuntimeArray(state *decodeState, src runtime.Value, dst reflect.Value) (retErr error) {
 	iterable, ok := src.(runtime.Iterable)
 	if !ok {
-		return bindTypeError(src, dst.Type())
+		return decodeTypeError(&state.path, src, dst.Type())
 	}
 
-	ctx := context.Background()
-	iter, err := iterable.Iterate(ctx)
+	iterator, err := iterable.Iterate(state.ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: %w", state.path, err)
 	}
-	defer closeIterOnReturn(iter, &retErr)
 
-	elemType := dst.Type().Elem()
-	index := 0
+	defer func() {
+		retErr = errors.Join(retErr, closeIteratorAt(iterator, &state.path))
+	}()
 
-	for {
-		val, _, err := iter.Next(ctx)
-		if errors.Is(err, io.EOF) || errors.Is(err, runtime.ErrTimeout) {
+	for index := 0; ; index++ {
+		value, _, nextErr := iterator.Next(state.ctx)
+		if nextErr == io.EOF {
 			break
 		}
 
-		if err != nil {
+		if nextErr != nil {
+			mark := state.path.PushIndex(index)
+			err := fmt.Errorf("%s: %w", state.path, nextErr)
+			state.path.Restore(mark)
+
 			return err
 		}
 
 		if index >= dst.Len() {
-			return runtime.Error(runtime.ErrInvalidArgumentType, "source has more elements than target array")
+			return fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "source has more elements than target array"))
 		}
 
-		elem := reflect.New(elemType).Elem()
-		if err := bindValue(val, elem); err != nil {
+		mark := state.path.PushIndex(index)
+		err := bindRuntimeValue(state, value, dst.Index(index))
+		state.path.Restore(mark)
+
+		if err != nil {
 			return err
 		}
-
-		dst.Index(index).Set(elem)
-		index++
 	}
 
 	return nil
 }
 
-func bindMap(src runtime.Value, dst reflect.Value) error {
+func bindRuntimeMap(state *decodeState, src runtime.Value, dst reflect.Value) error {
 	if dst.Type().Key().Kind() != reflect.String {
-		return runtime.Error(runtime.ErrInvalidArgumentType, "map key type must be string")
+		return fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "map key type must be string"))
 	}
 
-	entries, err := collectEntries(src)
+	entries, err := collectRuntimeEntries(state, src)
 	if err != nil {
 		return err
 	}
 
-	elemType := dst.Type().Elem()
-	out := reflect.MakeMap(dst.Type())
+	output := reflect.MakeMapWithSize(dst.Type(), len(entries))
 
 	for key, value := range entries {
-		elem := reflect.New(elemType).Elem()
+		element := reflect.New(dst.Type().Elem()).Elem()
+		mark := state.path.PushKey(key)
+		err := bindRuntimeValue(state, value, element)
+		state.path.Restore(mark)
 
-		if err := bindValue(value, elem); err != nil {
+		if err != nil {
 			return err
 		}
 
-		out.SetMapIndex(reflect.ValueOf(key), elem)
+		mapKey := reflect.ValueOf(key).Convert(dst.Type().Key())
+		output.SetMapIndex(mapKey, element)
 	}
 
-	dst.Set(out)
+	dst.Set(output)
 
 	return nil
 }
 
-func bindStruct(src runtime.Value, dst reflect.Value) error {
-	entries, err := collectEntries(src)
+func bindRuntimeStruct(state *decodeState, src runtime.Value, dst reflect.Value) error {
+	entries, err := collectRuntimeEntries(state, src)
 	if err != nil {
 		return err
 	}
 
-	lowerKeys := buildLowerKeyMap(entries)
+	lowerKeys := buildLowerRuntimeKeyMap(entries)
 	used := make(map[string]struct{}, len(entries))
-	visiting := make(map[reflect.Type]int)
+	visiting := make(map[reflect.Type]bool)
 
-	_, err = bindStructEntries(dst, entries, lowerKeys, used, visiting)
-	return err
+	if _, err := bindRuntimeStructEntries(state, dst, entries, lowerKeys, used, visiting); err != nil {
+		return err
+	}
+
+	if state.config.disallowUnknownFields {
+		unknown := make([]string, 0)
+
+		for key := range entries {
+			if _, exists := used[key]; !exists {
+				unknown = append(unknown, key)
+			}
+		}
+
+		if len(unknown) > 0 {
+			sort.Strings(unknown)
+
+			return fmt.Errorf(
+				"%s: %w",
+				state.path,
+				runtime.Errorf(runtime.ErrInvalidArgument, "unknown field %q", unknown[0]),
+			)
+		}
+	}
+
+	return nil
 }
 
-func bindStructEntries(dst reflect.Value, entries map[string]runtime.Value, lowerKeys map[string]string, used map[string]struct{}, visiting map[reflect.Type]int) (bool, error) {
-	dstType := dst.Type()
-	if visiting[dstType] > 0 {
+func bindRuntimeStructEntries(
+	state *decodeState,
+	dst reflect.Value,
+	entries map[string]runtime.Value,
+	lowerKeys map[string]string,
+	used map[string]struct{},
+	visiting map[reflect.Type]bool,
+) (bool, error) {
+	typ := dst.Type()
+	if visiting[typ] {
 		return false, nil
 	}
 
-	visiting[dstType]++
-	defer func() {
-		visiting[dstType]--
-		if visiting[dstType] == 0 {
-			delete(visiting, dstType)
-		}
-	}()
+	visiting[typ] = true
+	defer delete(visiting, typ)
 
 	matched := false
 
-	for i := 0; i < dstType.NumField(); i++ {
-		field := dstType.Field(i)
-
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
 		if field.PkgPath != "" {
 			continue
 		}
 
-		name, ok := Tag(field)
-		if !ok {
+		name, tagged := Tag(field)
+		if !tagged {
 			continue
 		}
 
-		value, key, ok := lookupEntry(name, entries, lowerKeys, used)
-		if !ok {
+		value, actualKey, found := lookupRuntimeEntry(name, entries, lowerKeys, used)
+		if !found {
 			continue
 		}
 
-		if err := bindValue(value, dst.Field(i)); err != nil {
+		mark := state.path.PushField(name)
+		err := bindRuntimeValue(state, value, dst.Field(i))
+
+		state.path.Restore(mark)
+
+		if err != nil {
 			return false, err
 		}
 
-		used[key] = struct{}{}
+		used[actualKey] = struct{}{}
 		matched = true
 	}
 
-	for i := 0; i < dstType.NumField(); i++ {
-		field := dstType.Field(i)
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
 		if field.PkgPath != "" || !field.Anonymous {
 			continue
 		}
 
-		if _, ok := Tag(field); ok {
+		if _, tagged := Tag(field); tagged {
 			continue
 		}
 
-		fieldVal := dst.Field(i)
-		fieldType := fieldVal.Type()
+		fieldValue := dst.Field(i)
 
-		switch fieldType.Kind() {
+		switch fieldValue.Kind() {
 		case reflect.Struct:
-			subMatched, err := bindStructEntries(fieldVal, entries, lowerKeys, used, visiting)
+			subMatched, err := bindRuntimeStructEntries(state, fieldValue, entries, lowerKeys, used, visiting)
 			if err != nil {
 				return false, err
 			}
-			if subMatched {
-				matched = true
-			}
+
+			matched = matched || subMatched
 		case reflect.Pointer:
-			if fieldType.Elem().Kind() != reflect.Struct {
+			if fieldValue.Type().Elem().Kind() != reflect.Struct || visiting[fieldValue.Type().Elem()] {
 				continue
 			}
 
-			if visiting[fieldType.Elem()] > 0 {
-				continue
-			}
-
-			if fieldVal.IsNil() {
-				elem := reflect.New(fieldType.Elem())
-				subMatched, err := bindStructEntries(elem.Elem(), entries, lowerKeys, used, visiting)
-
+			if fieldValue.IsNil() {
+				element := reflect.New(fieldValue.Type().Elem())
+				subMatched, err := bindRuntimeStructEntries(state, element.Elem(), entries, lowerKeys, used, visiting)
 				if err != nil {
 					return false, err
 				}
 
 				if subMatched {
-					fieldVal.Set(elem)
+					fieldValue.Set(element)
 					matched = true
 				}
 
-				break
+				continue
 			}
 
-			subMatched, err := bindStructEntries(fieldVal.Elem(), entries, lowerKeys, used, visiting)
+			subMatched, err := bindRuntimeStructEntries(state, fieldValue.Elem(), entries, lowerKeys, used, visiting)
 			if err != nil {
 				return false, err
 			}
 
-			if subMatched {
-				matched = true
-			}
-		default:
-			continue
+			matched = matched || subMatched
 		}
 	}
 
 	return matched, nil
 }
 
-func buildLowerKeyMap(entries map[string]runtime.Value) map[string]string {
-	lowerKeys := make(map[string]string, len(entries))
+func bindRuntimeInterface(state *decodeState, src runtime.Value, dst reflect.Value) error {
+	srcValue := reflect.ValueOf(src)
+
+	if srcValue.IsValid() && srcValue.Type().AssignableTo(dst.Type()) {
+		dst.Set(srcValue)
+
+		return nil
+	}
+
+	return bindRuntimeUnwrapped(state, src, dst, false)
+}
+
+func bindRuntimeUnwrappedExact(src runtime.Value, dst reflect.Value) bool {
+	unwrappable, ok := src.(runtime.Unwrappable)
+	if !ok {
+		return false
+	}
+
+	unwrapped := unwrappable.Unwrap()
+	if unwrapped == nil {
+		dst.Set(reflect.Zero(dst.Type()))
+
+		return true
+	}
+
+	value := reflect.ValueOf(unwrapped)
+	if !value.Type().AssignableTo(dst.Type()) {
+		return false
+	}
+
+	dst.Set(value)
+
+	return true
+}
+
+func bindRuntimeUnwrapped(state *decodeState, src runtime.Value, dst reflect.Value, allowConvert bool) error {
+	unwrappable, ok := src.(runtime.Unwrappable)
+	if !ok {
+		return decodeTypeError(&state.path, src, dst.Type())
+	}
+
+	unwrapped := unwrappable.Unwrap()
+	if unwrapped == nil {
+		dst.Set(reflect.Zero(dst.Type()))
+
+		return nil
+	}
+
+	value := reflect.ValueOf(unwrapped)
+	if value.Type().AssignableTo(dst.Type()) {
+		dst.Set(value)
+
+		return nil
+	}
+
+	if allowConvert && value.Type().ConvertibleTo(dst.Type()) {
+		dst.Set(value.Convert(dst.Type()))
+
+		return nil
+	}
+
+	return decodeTypeError(&state.path, src, dst.Type())
+}
+
+func collectRuntimeEntries(state *decodeState, src runtime.Value) (out map[string]runtime.Value, retErr error) {
+	input, readable := src.(runtime.KeyReadable)
+	iterable, iterableOK := src.(runtime.Iterable)
+	if !readable || !iterableOK {
+		return nil, decodeTypeError(&state.path, src, reflect.TypeOf(map[string]any{}))
+	}
+
+	iterator, err := iterable.Iterate(state.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", state.path, err)
+	}
+
+	defer func() {
+		retErr = errors.Join(retErr, closeIteratorAt(iterator, &state.path))
+	}()
+
+	out = make(map[string]runtime.Value)
+	for {
+		_, keyValue, nextErr := iterator.Next(state.ctx)
+		if nextErr == io.EOF {
+			break
+		}
+
+		if nextErr != nil {
+			return nil, fmt.Errorf("%s: %w", state.path, nextErr)
+		}
+
+		key, ok := keyValue.(runtime.String)
+		if !ok {
+			return nil, fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "map key type must be string"))
+		}
+
+		value, getErr := input.Get(state.ctx, keyValue)
+		if getErr != nil {
+			mark := state.path.PushKey(key.String())
+			err := fmt.Errorf("%s: %w", state.path, getErr)
+
+			state.path.Restore(mark)
+
+			return nil, err
+		}
+
+		out[key.String()] = value
+	}
+
+	return out, nil
+}
+
+func buildLowerRuntimeKeyMap(entries map[string]runtime.Value) map[string]string {
+	keys := make([]string, 0, len(entries))
+
 	for key := range entries {
+		keys = append(keys, key)
+	}
+
+	sort.Strings(keys)
+
+	lowerKeys := make(map[string]string, len(entries))
+	for _, key := range keys {
 		lower := strings.ToLower(key)
 
 		if _, exists := lowerKeys[lower]; !exists {
@@ -440,148 +594,64 @@ func buildLowerKeyMap(entries map[string]runtime.Value) map[string]string {
 	return lowerKeys
 }
 
-func lookupEntry(name string, entries map[string]runtime.Value, lowerKeys map[string]string, used map[string]struct{}) (runtime.Value, string, bool) {
+func lookupRuntimeEntry(
+	name string,
+	entries map[string]runtime.Value,
+	lowerKeys map[string]string,
+	used map[string]struct{},
+) (runtime.Value, string, bool) {
 	if _, taken := used[name]; !taken {
-		if value, ok := entries[name]; ok {
+		if value, exists := entries[name]; exists {
 			return value, name, true
 		}
 	}
 
-	lower := strings.ToLower(name)
-	if original, ok := lowerKeys[lower]; ok {
-		if _, taken := used[original]; !taken {
-			return entries[original], original, true
-		}
+	original, exists := lowerKeys[strings.ToLower(name)]
+	if !exists {
+		return nil, "", false
 	}
 
-	return nil, "", false
+	if _, taken := used[original]; taken {
+		return nil, "", false
+	}
+
+	return entries[original], original, true
 }
 
-func collectEntries(src runtime.Value) (out map[string]runtime.Value, retErr error) {
-	m, ok := src.(runtime.Map)
+func closeIteratorAt(iterator runtime.Iterator, path *conversionPath) error {
+	closer, ok := iterator.(io.Closer)
 	if !ok {
-		return nil, bindTypeError(src, reflect.TypeOf(map[string]any{}))
-	}
-
-	ctx := context.Background()
-	keys, err := m.Keys(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	iter, err := keys.Iterate(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer closeIterOnReturn(iter, &retErr)
-
-	out = make(map[string]runtime.Value)
-
-	for {
-		keyVal, _, err := iter.Next(ctx)
-		if errors.Is(err, io.EOF) || errors.Is(err, runtime.ErrTimeout) {
-			break
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		key, ok := keyVal.(runtime.String)
-		if !ok {
-			return nil, runtime.Error(runtime.ErrInvalidArgumentType, "map key type must be string")
-		}
-
-		val, err := m.Get(ctx, keyVal)
-		if err != nil {
-			return nil, err
-		}
-
-		out[key.String()] = val
-	}
-
-	return out, nil
-}
-
-func setInt(dst reflect.Value, value int64) error {
-	switch dst.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		if dst.OverflowInt(value) {
-			return runtime.Error(runtime.ErrInvalidArgumentType, "integer overflow")
-		}
-
-		dst.SetInt(value)
-
 		return nil
-	case reflect.Float32, reflect.Float64:
-		dst.SetFloat(float64(value))
-
-		return nil
-	default:
-		return runtime.Error(runtime.ErrInvalidArgumentType, "invalid integer target type")
-	}
-}
-
-func setUint(dst reflect.Value, value int64) error {
-	if value < 0 {
-		return runtime.Error(runtime.ErrInvalidArgumentType, "negative value for unsigned target")
 	}
 
-	u := uint64(value)
-
-	switch dst.Kind() {
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		if dst.OverflowUint(u) {
-			return runtime.Error(runtime.ErrInvalidArgumentType, "unsigned integer overflow")
-		}
-
-		dst.SetUint(u)
-
-		return nil
-	default:
-		return runtime.Error(runtime.ErrInvalidArgumentType, "invalid unsigned target type")
-	}
-}
-
-func bindTypeError(src runtime.Value, target reflect.Type) error {
-	return runtime.Errorf(runtime.ErrInvalidArgumentType, "cannot bind %s to %s", runtime.TypeOf(src), target.String())
-}
-
-func closeIter(iter runtime.Iterator) error {
-	if closable, ok := iter.(io.Closer); ok {
-		return closable.Close()
+	if err := closer.Close(); err != nil {
+		return fmt.Errorf("%s: close iterator: %w", path, err)
 	}
 
 	return nil
 }
 
-func closeIterOnReturn(iter runtime.Iterator, retErr *error) {
-	if err := closeIter(iter); *retErr == nil && err != nil {
-		*retErr = err
-	}
+func decodeTypeError(path *conversionPath, src runtime.Value, target reflect.Type) error {
+	return fmt.Errorf(
+		"%s: %w",
+		path,
+		runtime.Errorf(runtime.ErrInvalidArgumentType, "cannot bind %s to %s", runtime.TypeOf(src), target),
+	)
 }
 
-func normalizeSrc(src runtime.Value) runtime.Value {
-	if src == nil {
-		return runtime.None
-	}
-
-	return src
-}
-
-func validateTarget(target any) (reflect.Value, error) {
-	targetValue := reflect.ValueOf(target)
-	if !targetValue.IsValid() {
+func validateDecodeTarget(target any) (reflect.Value, error) {
+	value := reflect.ValueOf(target)
+	if !value.IsValid() {
 		return reflect.Value{}, runtime.Error(runtime.ErrInvalidArgumentType, "target is invalid")
 	}
 
-	if targetValue.Kind() != reflect.Pointer {
+	if value.Kind() != reflect.Pointer {
 		return reflect.Value{}, runtime.Error(runtime.ErrInvalidArgumentType, "target must be a pointer")
 	}
 
-	if targetValue.IsNil() {
+	if value.IsNil() {
 		return reflect.Value{}, runtime.Error(runtime.ErrInvalidArgumentType, "target must be a non-nil pointer")
 	}
 
-	return targetValue, nil
+	return value, nil
 }

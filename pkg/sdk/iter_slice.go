@@ -2,37 +2,51 @@ package sdk
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
+// SliceIterator iterates over a fixed-length view of a Go slice using an Encoder.
 type SliceIterator[T any] struct {
-	data   []T
-	length int
-	pos    int
+	encoder Encoder[T]
+	data    []T
+	length  int
+	pos     int
 }
 
+// NewSliceIterator creates an iterator using DefaultCodec.
 func NewSliceIterator[T any](data []T) runtime.Iterator {
-	return &SliceIterator[T]{data: data, length: len(data), pos: 0}
+	return NewSliceIteratorWithEncoding(data, DefaultCodec[T]())
 }
 
-func (iter *SliceIterator[T]) Next(_ context.Context) (runtime.Value, runtime.Value, error) {
-	if iter.pos >= iter.length {
+// NewSliceIteratorWithEncoding creates an iterator using encoder.
+func NewSliceIteratorWithEncoding[T any](data []T, encoder Encoder[T]) runtime.Iterator {
+	return &SliceIterator[T]{
+		data:    data,
+		length:  len(data),
+		encoder: encoder,
+	}
+}
+
+// Next encodes the next item and returns its zero-based index.
+func (iterator *SliceIterator[T]) Next(ctx context.Context) (runtime.Value, runtime.Value, error) {
+	if err := ctx.Err(); err != nil {
+		return runtime.None, runtime.None, err
+	}
+	if iterator.pos >= iterator.length {
 		return runtime.None, runtime.None, io.EOF
 	}
 
-	value := iter.data[iter.pos]
-	key := runtime.NewInt(iter.pos)
-	iter.pos++
+	position := iterator.pos
+	value, err := iterator.encoder.Encode(ctx, iterator.data[position])
 
-	var runtimeValue runtime.Value
-
-	if v, ok := any(value).(runtime.Value); ok {
-		runtimeValue = v
-	} else {
-		runtimeValue = NewProxy[T](value)
+	if err != nil {
+		return runtime.None, runtime.None, fmt.Errorf("slice index %d: %w", position, err)
 	}
 
-	return runtimeValue, key, nil
+	iterator.pos++
+
+	return normalizeRuntimeValue(value), runtime.NewInt(position), nil
 }

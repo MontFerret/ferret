@@ -2,57 +2,68 @@ package sdk
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// MapIterator is an implementation of runtime.Iterator for maps.
-// It iterates over the keys of the map and returns the corresponding values.
+// MapIterator iterates over a snapshot of Go map keys using explicit encoders.
 type MapIterator[TKey comparable, TValue any] struct {
-	data map[TKey]TValue
-	keys []TKey
-	pos  int
+	data     map[TKey]TValue
+	keyEnc   Encoder[TKey]
+	valueEnc Encoder[TValue]
+	keys     []TKey
+	pos      int
 }
 
-// NewMapIterator creates a new MapIterator for the given map.
+// NewMapIterator creates an iterator using DefaultCodec for keys and values.
 func NewMapIterator[TKey comparable, TValue any](data map[TKey]TValue) runtime.Iterator {
-	iter := &MapIterator[TKey, TValue]{data: data, keys: make([]TKey, len(data))}
+	return NewMapIteratorWithEncoding(data, DefaultCodec[TKey](), DefaultCodec[TValue]())
+}
 
-	i := 0
-
-	for key := range iter.data {
-		iter.keys[i] = key
-		i++
+// NewMapIteratorWithEncoding creates an iterator using the provided key and value encoders.
+func NewMapIteratorWithEncoding[TKey comparable, TValue any](
+	data map[TKey]TValue,
+	keyEnc Encoder[TKey],
+	valueEnc Encoder[TValue],
+) runtime.Iterator {
+	iterator := &MapIterator[TKey, TValue]{
+		data:     data,
+		keys:     make([]TKey, 0, len(data)),
+		keyEnc:   keyEnc,
+		valueEnc: valueEnc,
 	}
 
-	return iter
+	for key := range data {
+		iterator.keys = append(iterator.keys, key)
+	}
+
+	return iterator
 }
 
-func (iter *MapIterator[TKey, TValue]) Next(_ context.Context) (runtime.Value, runtime.Value, error) {
-	if iter.pos >= len(iter.keys) {
+// Next encodes the next map value and key.
+func (iterator *MapIterator[TKey, TValue]) Next(ctx context.Context) (runtime.Value, runtime.Value, error) {
+	if err := ctx.Err(); err != nil {
+		return runtime.None, runtime.None, err
+	}
+	if iterator.pos >= len(iterator.keys) {
 		return runtime.None, runtime.None, io.EOF
 	}
 
-	key := iter.keys[iter.pos]
-	value := iter.data[key]
-	iter.pos++
+	key := iterator.keys[iterator.pos]
+	value := iterator.data[key]
 
-	var runtimeKey runtime.Value
-
-	if k, ok := any(key).(runtime.Value); ok {
-		runtimeKey = k
-	} else {
-		runtimeKey = NewProxy[TKey](key)
+	runtimeKey, err := iterator.keyEnc.Encode(ctx, key)
+	if err != nil {
+		return runtime.None, runtime.None, fmt.Errorf("map key at position %d: %w", iterator.pos, err)
 	}
 
-	var runtimeValue runtime.Value
-
-	if v, ok := any(value).(runtime.Value); ok {
-		runtimeValue = v
-	} else {
-		runtimeValue = NewProxy[TValue](value)
+	runtimeValue, err := iterator.valueEnc.Encode(ctx, value)
+	if err != nil {
+		return runtime.None, runtime.None, fmt.Errorf("map value at position %d: %w", iterator.pos, err)
 	}
 
-	return runtimeKey, runtimeValue, nil
+	iterator.pos++
+	return normalizeRuntimeValue(runtimeValue), normalizeRuntimeValue(runtimeKey), nil
 }

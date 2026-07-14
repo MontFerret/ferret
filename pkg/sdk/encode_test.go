@@ -84,7 +84,8 @@ func TestEncode(t *testing.T) {
 			private: "secret",
 		}
 
-		out := sdk.Encode(input)
+		out, err := sdk.Encode(t.Context(), input)
+		So(err, ShouldBeNil)
 
 		expected := runtime.NewObjectWith(
 			map[string]runtime.Value{
@@ -120,7 +121,8 @@ func TestEncode(t *testing.T) {
 			},
 		}
 
-		out := sdk.Encode(input)
+		out, err := sdk.Encode(t.Context(), input)
+		So(err, ShouldBeNil)
 
 		expected := runtime.NewObjectWith(
 			map[string]runtime.Value{
@@ -179,7 +181,8 @@ func TestEncode(t *testing.T) {
 			URL:    "parent-url",
 		}
 
-		out := sdk.Encode(input)
+		out, err := sdk.Encode(t.Context(), input)
+		So(err, ShouldBeNil)
 
 		expected := runtime.NewObjectWith(
 			map[string]runtime.Value{
@@ -192,29 +195,24 @@ func TestEncode(t *testing.T) {
 		So(out, ShouldResemble, expected)
 	})
 
-	Convey("Should avoid infinite recursion on self-embedded pointers", t, func() {
+	Convey("Should reject self-embedded pointer cycles", t, func() {
 		node := EncodeEmbeddedNode{}
 		node.EncodeEmbeddedNode = &node
 
-		out := sdk.Encode(node)
-
-		So(out, ShouldResemble, runtime.NewObject())
+		_, err := sdk.Encode(t.Context(), node)
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldContainSubstring, "cycle detected")
 	})
 
-	Convey("Should encode tagged pointer cycles as none", t, func() {
+	Convey("Should reject tagged pointer cycles", t, func() {
 		node := &encodeTaggedNode{
 			Value: "root",
 		}
 		node.Next = node
 
-		out := sdk.Encode(node)
-
-		expected := runtime.NewObjectWith(map[string]runtime.Value{
-			"value": runtime.NewString("root"),
-			"next":  runtime.None,
-		})
-
-		So(out, ShouldResemble, expected)
+		_, err := sdk.Encode(t.Context(), node)
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldContainSubstring, "$.next")
 	})
 
 	Convey("Should encode tagged pointer chains without cycles", t, func() {
@@ -226,7 +224,8 @@ func TestEncode(t *testing.T) {
 			Next:  tail,
 		}
 
-		out := sdk.Encode(head)
+		out, err := sdk.Encode(t.Context(), head)
+		So(err, ShouldBeNil)
 
 		expected := runtime.NewObjectWith(map[string]runtime.Value{
 			"value": runtime.NewString("head"),
@@ -248,7 +247,8 @@ func TestEncode(t *testing.T) {
 			Count: 2,
 		}
 
-		out := sdk.Encode(input)
+		out, err := sdk.Encode(t.Context(), input)
+		So(err, ShouldBeNil)
 
 		expected := runtime.NewObjectWith(
 			map[string]runtime.Value{
