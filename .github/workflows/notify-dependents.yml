@@ -82,7 +82,7 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ vars.FERRET_RELEASE_APP_CLIENT_ID }}
+          client-id: ${{ secrets.FERRET_RELEASE_APP_CLIENT_ID }}
           private-key: ${{ secrets.FERRET_RELEASE_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ matrix.repository }}
