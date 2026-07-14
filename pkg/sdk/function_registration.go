@@ -17,11 +17,14 @@ func RegisterFunctions(ns runtime.Namespace, definitions ...FunctionDef) error {
 	functions := ns.Function()
 	seen := make(map[string]struct{}, len(definitions))
 
-	for _, definition := range definitions {
-		if strings.TrimSpace(definition.name) == "" {
+	for i := range definitions {
+		definitions[i].name = strings.TrimSpace(definitions[i].name)
+		if definitions[i].name == "" {
 			return fmt.Errorf("function name cannot be empty")
 		}
+	}
 
+	for _, definition := range definitions {
 		if _, exists := seen[definition.name]; exists {
 			return fmt.Errorf("function %q is defined more than once", definition.name)
 		}
