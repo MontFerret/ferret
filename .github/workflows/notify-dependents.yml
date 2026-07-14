@@ -3,29 +3,71 @@ name: Notify dependents
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Ferret Core release tag to dispatch, for example v2.0.0-alpha.31.
+        required: true
+        type: string
+      repository:
+        description: Dependent repository to notify, or "all".
+        required: false
+        default: all
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   validate-release:
-    if: startsWith(github.event.release.tag_name, 'v2.')
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'v2.')
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      repositories: ${{ steps.version.outputs.repositories }}
     steps:
       - name: Validate release version
         id: version
         env:
-          FERRET_VERSION: ${{ github.event.release.tag_name }}
+          FERRET_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.event.release.tag_name }}
+          TARGET_REPOSITORY: ${{ github.event_name == 'workflow_dispatch' && inputs.repository || 'all' }}
         run: |
+          # Names must match the actual repositories in the MontFerret organization.
+          repositories=(cli lab worker ferret-js contrib)
+
           semver_pattern='^v2\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
           if [[ ! "$FERRET_VERSION" =~ $semver_pattern ]]; then
             echo "::error title=Invalid Ferret release version::Expected a v2 SemVer tag, got '$FERRET_VERSION'."
             exit 1
           fi
 
+          selected_repositories=()
+          if [[ "$TARGET_REPOSITORY" == "all" ]]; then
+            selected_repositories=("${repositories[@]}")
+          else
+            for repository in "${repositories[@]}"; do
+              if [[ "$repository" == "$TARGET_REPOSITORY" ]]; then
+                selected_repositories=("$repository")
+                break
+              fi
+            done
+          fi
+
+          if [[ "${#selected_repositories[@]}" -eq 0 ]]; then
+            echo "::error title=Invalid dependent repository::Expected 'all' or one of: ${repositories[*]}. Got '$TARGET_REPOSITORY'."
+            exit 1
+          fi
+
+          repositories_json="["
+          separator=""
+          for repository in "${selected_repositories[@]}"; do
+            repositories_json="${repositories_json}${separator}\"${repository}\""
+            separator=","
+          done
+          repositories_json="${repositories_json}]"
+
           echo "version=$FERRET_VERSION" >> "$GITHUB_OUTPUT"
+          echo "repositories=$repositories_json" >> "$GITHUB_OUTPUT"
 
   notify:
     needs: validate-release
@@ -34,13 +76,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        repository:
-          # Names must match the actual repositories in the MontFerret organization.
-          - cli
-          - lab
-          - worker
-          - ferret-js
-          - contrib
+        repository: ${{ fromJSON(needs.validate-release.outputs.repositories) }}
     steps:
       - name: Create repository-scoped GitHub App token
         id: app-token
