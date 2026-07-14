@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// SliceIterator iterates over a fixed-length view of a Go slice using a Codec.
+// SliceIterator iterates over a fixed-length view of a Go slice using an Encoder.
 type SliceIterator[T any] struct {
 	encoder Encoder[T]
 	data    []T
@@ -18,11 +18,11 @@ type SliceIterator[T any] struct {
 
 // NewSliceIterator creates an iterator using DefaultCodec.
 func NewSliceIterator[T any](data []T) runtime.Iterator {
-	return NewSliceIteratorWithCodec(data, DefaultCodec[T]())
+	return NewSliceIteratorWithEncoding(data, DefaultCodec[T]())
 }
 
-// NewSliceIteratorWithCodec creates an iterator using codec.
-func NewSliceIteratorWithCodec[T any](data []T, encoder Encoder[T]) runtime.Iterator {
+// NewSliceIteratorWithEncoding creates an iterator using encoder.
+func NewSliceIteratorWithEncoding[T any](data []T, encoder Encoder[T]) runtime.Iterator {
 	return &SliceIterator[T]{
 		data:    data,
 		length:  len(data),

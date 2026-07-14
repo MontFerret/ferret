@@ -218,7 +218,7 @@ func TestCollectionViewsUseCodecs(t *testing.T) {
 		})
 
 	data := []codecRecord{{ID: 1}}
-	view := sdk.NewSliceViewWithCodec(data, codec)
+	view := sdk.NewSliceViewWithEncoding(data, codec)
 	value, err := view.At(t.Context(), 0)
 	if err != nil || value != runtime.NewString("1") {
 		t.Fatalf("custom encode: value=%v err=%v", value, err)
@@ -227,7 +227,7 @@ func TestCollectionViewsUseCodecs(t *testing.T) {
 		t.Fatalf("custom decode: data=%v err=%v", data, err)
 	}
 
-	view = sdk.NewSliceViewWithCodec([]codecRecord{{ID: -1}}, codec)
+	view = sdk.NewSliceViewWithEncoding([]codecRecord{{ID: -1}}, codec)
 	_, err = view.At(t.Context(), 0)
 	if !errors.Is(err, codecErr) {
 		t.Fatalf("expected codec error, got %v", err)
@@ -248,7 +248,7 @@ func TestNativeIteratorsEncodeValues(t *testing.T) {
 	}
 
 	codecErr := errors.New("encode failed")
-	failing := sdk.NewMapIteratorWithCodec(
+	failing := sdk.NewMapIteratorWithEncoding(
 		map[string]int{"bad": 2},
 		sdk.DefaultCodec[string](),
 		sdk.NewCodec[int](func(context.Context, int) (runtime.Value, error) {

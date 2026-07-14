@@ -17,11 +17,11 @@ type SliceView[T any] struct {
 
 // NewSliceView creates a live slice view using DefaultCodec.
 func NewSliceView[T any](data []T) *SliceView[T] {
-	return NewSliceViewWithCodec(data, DefaultCodec[T]())
+	return NewSliceViewWithEncoding(data, DefaultCodec[T]())
 }
 
-// NewSliceViewWithCodec creates a live slice view using codec.
-func NewSliceViewWithCodec[T any](data []T, codec Codec[T]) *SliceView[T] {
+// NewSliceViewWithEncoding creates a live slice view using codec.
+func NewSliceViewWithEncoding[T any](data []T, codec Codec[T]) *SliceView[T] {
 	return &SliceView[T]{
 		HostValue: NewHostValue(data),
 		codec:     codec,
@@ -148,7 +148,7 @@ func (view *SliceView[T]) Iterate(ctx context.Context) (runtime.Iterator, error)
 		return nil, err
 	}
 
-	return NewSliceIteratorWithCodec(view.Target(), view.codec), nil
+	return NewSliceIteratorWithEncoding(view.Target(), view.codec), nil
 }
 
 // SortAsc stably sorts the live backing slice by encoded runtime values.

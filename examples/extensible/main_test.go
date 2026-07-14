@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	ferret "github.com/MontFerret/ferret/v2"
-	sdktest "github.com/MontFerret/ferret/v2/test/spec/sdk"
+	"github.com/MontFerret/ferret/v2/pkg/sdk/sdktest"
 )
 
 func TestExampleModule(t *testing.T) {

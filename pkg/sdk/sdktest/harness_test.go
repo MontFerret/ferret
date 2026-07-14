@@ -1,4 +1,4 @@
-package sdk_test
+package sdktest_test
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/module"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/sdk"
-	sdktest "github.com/MontFerret/ferret/v2/test/spec/sdk"
+	"github.com/MontFerret/ferret/v2/pkg/sdk/sdktest"
 )
 
 func TestHarnessRunsExternalModuleAndCleansUp(t *testing.T) {

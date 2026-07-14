@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// MapIterator iterates over a snapshot of Go map keys using explicit codecs.
+// MapIterator iterates over a snapshot of Go map keys using explicit encoders.
 type MapIterator[TKey comparable, TValue any] struct {
 	data     map[TKey]TValue
 	keyEnc   Encoder[TKey]
@@ -19,11 +19,11 @@ type MapIterator[TKey comparable, TValue any] struct {
 
 // NewMapIterator creates an iterator using DefaultCodec for keys and values.
 func NewMapIterator[TKey comparable, TValue any](data map[TKey]TValue) runtime.Iterator {
-	return NewMapIteratorWithCodec(data, DefaultCodec[TKey](), DefaultCodec[TValue]())
+	return NewMapIteratorWithEncoding(data, DefaultCodec[TKey](), DefaultCodec[TValue]())
 }
 
-// NewMapIteratorWithCodec creates an iterator using the provided key and value codecs.
-func NewMapIteratorWithCodec[TKey comparable, TValue any](
+// NewMapIteratorWithEncoding creates an iterator using the provided key and value encoders.
+func NewMapIteratorWithEncoding[TKey comparable, TValue any](
 	data map[TKey]TValue,
 	keyEnc Encoder[TKey],
 	valueEnc Encoder[TValue],

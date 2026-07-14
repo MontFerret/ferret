@@ -17,11 +17,11 @@ type MapView[TKey comparable, TValue any] struct {
 
 // NewMapView creates a live map view using DefaultCodec for keys and values.
 func NewMapView[TKey comparable, TValue any](data map[TKey]TValue) *MapView[TKey, TValue] {
-	return NewMapViewWithCodec(data, DefaultCodec[TKey](), DefaultCodec[TValue]())
+	return NewMapViewWithEncoding(data, DefaultCodec[TKey](), DefaultCodec[TValue]())
 }
 
-// NewMapViewWithCodec creates a live map view using explicit key and value codecs.
-func NewMapViewWithCodec[TKey comparable, TValue any](
+// NewMapViewWithEncoding creates a live map view using explicit key and value codecs.
+func NewMapViewWithEncoding[TKey comparable, TValue any](
 	data map[TKey]TValue,
 	keyCodec Codec[TKey],
 	valueCodec Codec[TValue],
@@ -144,7 +144,7 @@ func (view *MapView[TKey, TValue]) Iterate(ctx context.Context) (runtime.Iterato
 		return nil, err
 	}
 
-	return NewMapIteratorWithCodec(view.Target(), view.keyCodec, view.valueCodec), nil
+	return NewMapIteratorWithEncoding(view.Target(), view.keyCodec, view.valueCodec), nil
 }
 
 // Copy creates a shallow view that preserves codecs, backing map, type, and identity.
