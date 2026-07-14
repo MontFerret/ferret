@@ -1,0 +1,66 @@
+name: Notify dependents
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-release:
+    if: startsWith(github.event.release.tag_name, 'v2.')
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Validate release version
+        id: version
+        env:
+          FERRET_VERSION: ${{ github.event.release.tag_name }}
+        run: |
+          semver_pattern='^v2\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
+          if [[ ! "$FERRET_VERSION" =~ $semver_pattern ]]; then
+            echo "::error title=Invalid Ferret release version::Expected a v2 SemVer tag, got '$FERRET_VERSION'."
+            exit 1
+          fi
+
+          echo "version=$FERRET_VERSION" >> "$GITHUB_OUTPUT"
+
+  notify:
+    needs: validate-release
+    name: Notify ${{ matrix.repository }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repository:
+          # Names must match the actual repositories in the MontFerret organization.
+          - cli
+          - lab
+          - worker
+          - ferret-js
+    steps:
+      - name: Create repository-scoped GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.FERRET_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.FERRET_RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ matrix.repository }}
+          permission-contents: write
+
+      - name: Dispatch Ferret Core release
+        env:
+          DOWNSTREAM_REPOSITORY: ${{ matrix.repository }}
+          FERRET_VERSION: ${{ needs.validate-release.outputs.version }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          endpoint="/repos/${GITHUB_REPOSITORY_OWNER}/${DOWNSTREAM_REPOSITORY}/dispatches"
+          if ! gh api --method POST "$endpoint" \
+            --field event_type=ferret-core-released \
+            --field "client_payload[version]=$FERRET_VERSION"; then
+            echo "::error title=Dependency dispatch failed::Failed to notify ${GITHUB_REPOSITORY_OWNER}/${DOWNSTREAM_REPOSITORY} about Ferret Core ${FERRET_VERSION}."
+            exit 1
+          fi
