@@ -1,4 +1,4 @@
-package sdk
+package sdktest
 
 import (
 	"context"
