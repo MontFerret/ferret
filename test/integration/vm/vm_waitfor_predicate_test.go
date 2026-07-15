@@ -48,20 +48,32 @@ func TestWaitforPredicate(t *testing.T) {
 			RETURN token
 		`, "ok", "Should return value once it exists"),
 		S(`
+			RETURN WAITFOR VALUE "" TIMEOUT 20ms
+		`, "", "Should return an empty string value immediately"),
+		Object(`
+			RETURN WAITFOR VALUE {} TIMEOUT 20ms
+		`, map[string]any{}, "Should return an empty object value immediately"),
+		Array(`
+			RETURN WAITFOR VALUE [] TIMEOUT 20ms
+		`, []any{}, "Should return an empty array value immediately"),
+		Array(`
+			RETURN WAITFOR VALUE [] WHEN LENGTH(.) == 0 TIMEOUT 20ms
+		`, []any{}, "Should evaluate WHEN for an empty non-NONE value"),
+		S(`
 			LET start = NOW()
 			LET ok = WAITFOR EXISTS (DATE_DIFF(start, NOW(), "f") > 20 ? { foo: 1 } : {}) TIMEOUT 0.5s EVERY 10ms
 			RETURN ok
 		`, true, "Should wait for non-empty object with EXISTS"),
 		Object(`
 			LET start = NOW()
-			LET obj = WAITFOR VALUE (DATE_DIFF(start, NOW(), "f") > 20 ? { foo: 1 } : {}) TIMEOUT 0.5s EVERY 10ms
+			LET obj = WAITFOR VALUE (DATE_DIFF(start, NOW(), "f") > 20 ? { foo: 1 } : {}) WHEN LENGTH(.) > 0 TIMEOUT 0.5s EVERY 10ms
 			RETURN obj
-		`, map[string]any{"foo": 1}, "Should return object once it exists"),
+		`, map[string]any{"foo": 1}, "Should return object once WHEN accepts the candidate"),
 		Array(`
 			LET start = NOW()
-			LET arr = WAITFOR VALUE (DATE_DIFF(start, NOW(), "f") > 20 ? [1, 2] : []) TIMEOUT 0.5s EVERY 10ms
+			LET arr = WAITFOR VALUE (DATE_DIFF(start, NOW(), "f") > 20 ? [1, 2] : []) WHEN LENGTH(.) > 0 TIMEOUT 0.5s EVERY 10ms
 			RETURN arr
-		`, []any{1, 2}, "Should return array once it exists"),
+		`, []any{1, 2}, "Should return array once WHEN accepts the candidate"),
 		S(`
 			LET start = NOW()
 			LET ok = WAITFOR EXISTS (DATE_DIFF(start, NOW(), "f") > 20 ? "ok" : "") TIMEOUT 0.5s EVERY 10ms
@@ -181,6 +193,10 @@ func TestWaitforPredicateWhenSkipsPredicateUntilBasePasses(t *testing.T) {
 					LET ok = WAITFOR EXISTS NONE WHEN PREDICATE(.) TIMEOUT 20ms EVERY 1ms ON TIMEOUT RETURN false
 					RETURN ok
 				`, false, "WAITFOR EXISTS WHEN should not evaluate the predicate before existence passes"),
+				Nil(`
+					LET value = WAITFOR VALUE NONE WHEN PREDICATE(.) TIMEOUT 20ms EVERY 1ms ON TIMEOUT RETURN NONE
+					RETURN value
+				`, "WAITFOR VALUE WHEN should not evaluate the predicate before presence passes"),
 			},
 			vm.WithFunction("PREDICATE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 				predicateCalls++

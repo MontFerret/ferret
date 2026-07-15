@@ -116,7 +116,7 @@ func TestDispatchGroupedTargetsCompile(t *testing.T) {
 			DISPATCH "click" IN (QUERY ONE "#search-form button[type='submit']" IN page USING css)
 
 			LET result = WAITFOR VALUE (QUERY ONE "#form-result" IN page USING css)
-				WHEN .attributes.disabled == false
+				WHEN .textContent != ""
 				TIMEOUT 10s
 
 			RETURN result.textContent

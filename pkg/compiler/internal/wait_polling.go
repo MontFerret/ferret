@@ -39,6 +39,22 @@ func (c *WaitCompiler) tryCompileWaitPredicateFastPath(config waitPredicateCompi
 		}
 
 		return bytecode.NoopOperand, false
+	case waitForPredicateModeValue:
+		present, ok := literalPresentFromExpression(config.predExpr)
+		if !ok {
+			return bytecode.NoopOperand, false
+		}
+
+		if present {
+			return c.exprs.Compile(config.predExpr), true
+		}
+
+		if config.timeoutReg != bytecode.NoopOperand {
+			c.ctx.Program.Emitter.EmitA(bytecode.OpSleep, config.timeoutReg)
+			return c.emitImmediateWaitNone(), true
+		}
+
+		return bytecode.NoopOperand, false
 	default:
 		exists, ok := literalExistsFromExpression(config.predExpr)
 		if !ok {
@@ -51,19 +67,11 @@ func (c *WaitCompiler) tryCompileWaitPredicateFastPath(config waitPredicateCompi
 		}
 
 		if cond {
-			if config.mode == waitForPredicateModeValue {
-				return c.exprs.Compile(config.predExpr), true
-			}
-
 			return c.emitImmediateWaitBool(true), true
 		}
 
 		if config.timeoutReg != bytecode.NoopOperand {
 			c.ctx.Program.Emitter.EmitA(bytecode.OpSleep, config.timeoutReg)
-			if config.mode == waitForPredicateModeValue {
-				return c.emitImmediateWaitNone(), true
-			}
-
 			return c.emitImmediateWaitBool(false), true
 		}
 
@@ -160,16 +168,24 @@ func (c *WaitCompiler) emitWaitPredicatePollIteration(
 	startLabel, successLabel, timeoutLabel core.Label,
 ) bytecode.Operand {
 	valueReg := c.exprs.Compile(config.predExpr)
-	condReg := c.emitWaitPredicateCondition(config.mode, valueReg)
-
-	if len(config.whenExprs) == 0 {
-		c.ctx.Program.Emitter.EmitJumpIfTrue(condReg, successLabel)
-	} else {
+	if config.mode == waitForPredicateModeValue {
 		retryLabel := c.ctx.Program.Emitter.NewLabel()
-		c.ctx.Program.Emitter.EmitJumpIfFalse(condReg, retryLabel)
+		c.ctx.Program.Emitter.EmitJumpIfNone(valueReg, retryLabel)
 		c.emitWaitPredicateWhenConditions(config, valueReg, retryLabel)
 		c.ctx.Program.Emitter.EmitJump(successLabel)
 		c.ctx.Program.Emitter.MarkLabel(retryLabel)
+	} else {
+		condReg := c.emitWaitPredicateCondition(config.mode, valueReg)
+
+		if len(config.whenExprs) == 0 {
+			c.ctx.Program.Emitter.EmitJumpIfTrue(condReg, successLabel)
+		} else {
+			retryLabel := c.ctx.Program.Emitter.NewLabel()
+			c.ctx.Program.Emitter.EmitJumpIfFalse(condReg, retryLabel)
+			c.emitWaitPredicateWhenConditions(config, valueReg, retryLabel)
+			c.ctx.Program.Emitter.EmitJump(successLabel)
+			c.ctx.Program.Emitter.MarkLabel(retryLabel)
+		}
 	}
 
 	elapsedReg := c.emitWaitPredicateTimeoutCheck(config.timeoutReg, state.startReg, state.unitReg, timeoutLabel)
@@ -210,7 +226,7 @@ func (c *WaitCompiler) emitWaitPredicateWhenConditions(
 
 func (c *WaitCompiler) emitWaitPredicateCondition(mode waitForPredicateMode, valueReg bytecode.Operand) bytecode.Operand {
 	switch mode {
-	case waitForPredicateModeValue, waitForPredicateModeExists:
+	case waitForPredicateModeExists:
 		return c.emitExistsCheck(valueReg)
 	case waitForPredicateModeNotExists:
 		existsReg := c.emitExistsCheck(valueReg)
