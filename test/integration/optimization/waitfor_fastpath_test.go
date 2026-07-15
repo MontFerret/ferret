@@ -26,6 +26,18 @@ func TestWaitforFastPath(t *testing.T) {
 			NotExists: []bytecode.Opcode{bytecode.OpJump, bytecode.OpJumpIfTrue, bytecode.OpJumpIfFalse},
 		}, nil, "should include sleep for none value"),
 
+		Opcode(`RETURN WAITFOR VALUE [] TIMEOUT 10ms`, compile.OpcodeExistence{
+			NotExists: []bytecode.Opcode{bytecode.OpSleep},
+		}, []any{}, "should skip sleep for empty array value"),
+
+		Opcode(`RETURN WAITFOR VALUE {} TIMEOUT 10ms`, compile.OpcodeExistence{
+			NotExists: []bytecode.Opcode{bytecode.OpSleep},
+		}, map[string]any{}, "should skip sleep for empty object value"),
+
+		Opcode(`RETURN WAITFOR VALUE "" TIMEOUT 10ms`, compile.OpcodeExistence{
+			NotExists: []bytecode.Opcode{bytecode.OpSleep},
+		}, "", "should skip sleep for empty string value"),
+
 		Opcode(`RETURN WAITFOR EXISTS [] TIMEOUT 10ms`, compile.OpcodeExistence{
 			Exists:    []bytecode.Opcode{bytecode.OpSleep},
 			NotExists: []bytecode.Opcode{bytecode.OpJump, bytecode.OpJumpIfTrue, bytecode.OpJumpIfFalse},

@@ -137,6 +137,15 @@ func literalFromExpression(ctx fql.IExpressionContext) fql.ILiteralContext {
 	return atom.Literal()
 }
 
+func literalPresentFromExpression(ctx fql.IExpressionContext) (bool, bool) {
+	lit := literalFromExpression(ctx)
+	if lit == nil {
+		return false, false
+	}
+
+	return lit.NoneLiteral() == nil, true
+}
+
 func literalExistsFromExpression(ctx fql.IExpressionContext) (bool, bool) {
 	lit := literalFromExpression(ctx)
 	if lit == nil {

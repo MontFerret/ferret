@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
@@ -158,6 +159,19 @@ func TestWaitforPredicateWhenCompiles(t *testing.T) {
 				RETURN i
 		`, noCompilerError, "WAITFOR EVENT should compile as a FOR loop body statement"),
 	})
+}
+
+func TestWaitforValuePresenceLowering(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		Opcode(`RETURN WAITFOR VALUE @candidate TIMEOUT 1ms`, OpcodeExistence{
+			Exists:    []bytecode.Opcode{bytecode.OpJumpIfNone},
+			NotExists: []bytecode.Opcode{bytecode.OpExists},
+		}, "WAITFOR VALUE should use NONE presence without EXISTS semantics"),
+		Opcode(`RETURN WAITFOR EXISTS @candidate TIMEOUT 1ms`, OpcodeExistence{
+			Exists:    []bytecode.Opcode{bytecode.OpExists},
+			NotExists: []bytecode.Opcode{bytecode.OpJumpIfNone},
+		}, "WAITFOR EXISTS should preserve EXISTS semantics"),
+	}, compiler.O0, compiler.O1)
 }
 
 func noCompilerError(*bytecode.Program) error {
