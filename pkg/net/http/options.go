@@ -92,6 +92,13 @@ func WithAllowPrivateNetworks(allow bool) Policy {
 	}
 }
 
+// WithAllowLinkLocal controls whether IPv4 and IPv6 link-local addresses are allowed.
+func WithAllowLinkLocal(allow bool) Policy {
+	return func(p *Policies) {
+		p.AllowLinkLocal = allow
+	}
+}
+
 // WithDefaultHeader sets a default request header when the request does not already provide it.
 func WithDefaultHeader(key, value string) Policy {
 	return func(p *Policies) {

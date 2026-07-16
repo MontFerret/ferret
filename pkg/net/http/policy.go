@@ -2,8 +2,8 @@ package http
 
 import (
 	"fmt"
-	"net"
 	stdhttp "net/http"
+	"net/netip"
 	"net/url"
 	"strings"
 	"time"
@@ -27,16 +27,17 @@ type (
 		FollowRedirects       bool
 		AllowLocalhost        bool
 		AllowPrivateNetworks  bool
+		AllowLinkLocal        bool
 	}
 )
 
 // NewPolicies builds a policy set with Ferret's default HTTP policy values.
+// By default, requests are limited to public destinations; localhost, private,
+// and link-local destinations require their corresponding explicit opt-in.
 func NewPolicies(setters ...Policy) Policies {
 	p := Policies{
-		FollowRedirects:      true,
-		AllowedSchemes:       []string{"http", "https"},
-		AllowLocalhost:       true,
-		AllowPrivateNetworks: true,
+		FollowRedirects: true,
+		AllowedSchemes:  []string{"http", "https"},
 	}
 
 	for _, setter := range setters {
@@ -48,8 +49,8 @@ func NewPolicies(setters ...Policy) Policies {
 	}
 
 	p.AllowedSchemes = normalizeValues(p.AllowedSchemes)
-	p.AllowedHosts = normalizeValues(p.AllowedHosts)
-	p.BlockedHosts = normalizeValues(p.BlockedHosts)
+	p.AllowedHosts = normalizeHosts(p.AllowedHosts)
+	p.BlockedHosts = normalizeHosts(p.BlockedHosts)
 	p.BlockedRequestHeaders = normalizeHeaders(p.BlockedRequestHeaders)
 
 	if len(p.DefaultHeaders) > 0 {
@@ -88,7 +89,7 @@ func (p Policies) Eval(req *Request) error {
 		return err
 	}
 
-	if err := p.validateURL(u); err != nil {
+	if err := p.validateURL(u, policyTargetRequest); err != nil {
 		return err
 	}
 
@@ -103,32 +104,84 @@ func (p Policies) Eval(req *Request) error {
 	return nil
 }
 
-func (p *Policies) validateURL(u *url.URL) error {
+func (p *Policies) validateURL(u *url.URL, target policyTarget) error {
 	scheme := strings.ToLower(u.Scheme)
 	if !containsValue(p.AllowedSchemes, scheme) {
-		return fmt.Errorf("http: scheme %q is not allowed", u.Scheme)
+		return newPolicyError(target, fmt.Sprintf("scheme %q", u.Scheme), "scheme is not allowed")
 	}
 
-	hostname := strings.ToLower(u.Hostname())
+	hostname := canonicalHostKey(u.Hostname())
 	if hostname == "" {
 		return fmt.Errorf("http: url host is required")
 	}
 
 	if containsHost(p.BlockedHosts, u) {
-		return fmt.Errorf("http: host %q is blocked", hostname)
+		return newPolicyError(target, fmt.Sprintf("host %q", hostname), "host is blocked")
 	}
 
 	if len(p.AllowedHosts) > 0 && !containsHost(p.AllowedHosts, u) {
-		return fmt.Errorf("http: host %q is not allowed", hostname)
+		return newPolicyError(target, fmt.Sprintf("host %q", hostname), "host is not allowed")
 	}
 
-	ip := net.ParseIP(hostname)
-	if isLocalhost(hostname, ip) && !p.AllowLocalhost {
-		return fmt.Errorf("http: localhost is not allowed")
+	if isLocalhostName(hostname) && !p.AllowLocalhost {
+		return newPolicyError(target, fmt.Sprintf("host %q", hostname), "localhost is not allowed")
 	}
 
-	if ip != nil && ip.IsPrivate() && !p.AllowPrivateNetworks {
-		return fmt.Errorf("http: private network address %q is not allowed", hostname)
+	if addr, ok := parseIPAddress(hostname); ok {
+		return p.validateAddress(target, addressSubject(addr), addr)
+	}
+
+	return nil
+}
+
+func (p *Policies) validateAddress(target policyTarget, subject string, addr netip.Addr) error {
+	if !addr.IsValid() {
+		return newPolicyError(target, subject, "invalid address is not allowed")
+	}
+
+	addr = addr.Unmap()
+	if embedded, ok := wellKnownNAT64IPv4(addr); ok {
+		return p.validateAddress(target, subject, embedded)
+	}
+
+	if addr.IsLoopback() {
+		if p.AllowLocalhost {
+			return nil
+		}
+
+		return newPolicyError(target, subject, "localhost is not allowed")
+	}
+
+	if addr.IsPrivate() || carrierGradeNAT.Contains(addr) {
+		if p.AllowPrivateNetworks {
+			return nil
+		}
+
+		return newPolicyError(target, subject, "private networks are not allowed")
+	}
+
+	if addr.IsLinkLocalUnicast() {
+		if p.AllowLinkLocal {
+			return nil
+		}
+
+		return newPolicyError(target, subject, "link-local addresses are not allowed")
+	}
+
+	if addr.IsUnspecified() || ipv4CurrentNetwork.Contains(addr) {
+		return newPolicyError(target, subject, "unspecified addresses are not allowed")
+	}
+
+	if addr.IsMulticast() {
+		return newPolicyError(target, subject, "multicast addresses are not allowed")
+	}
+
+	if ipv4Reserved.Contains(addr) || ipv6SiteLocal.Contains(addr) {
+		return newPolicyError(target, subject, "reserved addresses are not allowed")
+	}
+
+	if isAlwaysBlockedAddress(addr) || !addr.IsGlobalUnicast() {
+		return newPolicyError(target, subject, "non-public addresses are not allowed")
 	}
 
 	return nil
@@ -136,16 +189,4 @@ func (p *Policies) validateURL(u *url.URL) error {
 
 func (p *Policies) isBlockedHeader(key string) bool {
 	return containsValue(p.BlockedRequestHeaders, stdhttp.CanonicalHeaderKey(key))
-}
-
-func (p *Policies) checkRedirect(req *stdhttp.Request, via []*stdhttp.Request) error {
-	if !p.FollowRedirects {
-		return stdhttp.ErrUseLastResponse
-	}
-
-	if p.MaxRedirects > 0 && len(via) >= p.MaxRedirects {
-		return fmt.Errorf("http: stopped after %d redirect(s)", p.MaxRedirects)
-	}
-
-	return p.validateURL(req.URL)
 }

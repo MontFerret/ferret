@@ -48,3 +48,21 @@ func TestNetworkFromError(t *testing.T) {
 		t.Fatalf("expected ErrNotFound for missing http client, got %v", err)
 	}
 }
+
+func TestDefaultNetworkForwardsIdleConnectionCleanup(t *testing.T) {
+	t.Parallel()
+
+	client := &trackingHTTPClient{}
+	network := New(WithHTTPClient(client))
+	closer, ok := network.(interface{ CloseIdleConnections() })
+	if !ok {
+		t.Fatalf("expected default network to expose idle-connection cleanup")
+	}
+
+	closer.CloseIdleConnections()
+	closer.CloseIdleConnections()
+
+	if got := client.idleCloseCount(); got != 2 {
+		t.Fatalf("expected cleanup to be forwarded twice, got %d", got)
+	}
+}

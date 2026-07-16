@@ -37,3 +37,9 @@ func New(setters ...Option) Network {
 func (n *defaultNetwork) HTTP() ferrethttp.Client {
 	return n.http
 }
+
+func (n *defaultNetwork) CloseIdleConnections() {
+	if closer, ok := n.http.(ferrethttp.IdleConnectionCloser); ok {
+		closer.CloseIdleConnections()
+	}
+}

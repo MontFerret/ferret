@@ -7,6 +7,7 @@ import (
 	stdhttp "net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
@@ -23,7 +24,7 @@ func TestClientDoSuccessDefaultsAndMaterializesResponse(t *testing.T) {
 	}))
 	defer server.Close()
 
-	res, err := ferrethttp.New().Do(nil, &ferrethttp.Request{URL: server.URL})
+	res, err := ferrethttp.New(ferrethttp.WithAllowLocalhost(true)).Do(nil, &ferrethttp.Request{URL: server.URL})
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -82,6 +83,7 @@ func TestClientDoSendsHeadersAndBodyWithPolicy(t *testing.T) {
 	client := ferrethttp.New(
 		ferrethttp.WithDefaultHeader("X-Default", "default"),
 		ferrethttp.WithBlockedRequestHeaders("X-Blocked"),
+		ferrethttp.WithAllowLocalhost(true),
 	)
 
 	_, err := client.Do(context.Background(), &ferrethttp.Request{
@@ -118,7 +120,10 @@ func TestClientDoResponseBodyLimit(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := ferrethttp.New(ferrethttp.WithMaxResponseSize(3)).Do(
+	_, err := ferrethttp.New(
+		ferrethttp.WithMaxResponseSize(3),
+		ferrethttp.WithAllowLocalhost(true),
+	).Do(
 		context.Background(),
 		&ferrethttp.Request{URL: server.URL},
 	)
@@ -142,7 +147,10 @@ func TestClientDoRedirectPolicy(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	res, err := ferrethttp.New().Do(context.Background(), &ferrethttp.Request{URL: server.URL + "/start"})
+	res, err := ferrethttp.New(ferrethttp.WithAllowLocalhost(true)).Do(
+		context.Background(),
+		&ferrethttp.Request{URL: server.URL + "/start"},
+	)
 	if err != nil {
 		t.Fatalf("default redirect request failed: %v", err)
 	}
@@ -150,7 +158,10 @@ func TestClientDoRedirectPolicy(t *testing.T) {
 		t.Fatalf("expected followed redirect body %q, got %q", "done", got)
 	}
 
-	res, err = ferrethttp.New(ferrethttp.WithFollowRedirects(false)).Do(
+	res, err = ferrethttp.New(
+		ferrethttp.WithFollowRedirects(false),
+		ferrethttp.WithAllowLocalhost(true),
+	).Do(
 		context.Background(),
 		&ferrethttp.Request{URL: server.URL + "/start"},
 	)
@@ -161,7 +172,10 @@ func TestClientDoRedirectPolicy(t *testing.T) {
 		t.Fatalf("expected redirect response status, got %d", res.StatusCode)
 	}
 
-	_, err = ferrethttp.New(ferrethttp.WithMaxRedirects(1)).Do(
+	_, err = ferrethttp.New(
+		ferrethttp.WithMaxRedirects(1),
+		ferrethttp.WithAllowLocalhost(true),
+	).Do(
 		context.Background(),
 		&ferrethttp.Request{URL: server.URL + "/start"},
 	)
@@ -234,13 +248,13 @@ func TestClientDoPolicyURLChecks(t *testing.T) {
 		},
 		{
 			name:   "localhost",
-			client: ferrethttp.New(ferrethttp.WithAllowLocalhost(false)),
+			client: ferrethttp.New(),
 			url:    localServer.URL,
 			want:   "localhost is not allowed",
 		},
 		{
 			name:   "private network",
-			client: ferrethttp.New(ferrethttp.WithAllowPrivateNetworks(false)),
+			client: ferrethttp.New(),
 			url:    "http://10.0.0.1",
 			want:   "private network",
 		},
@@ -256,5 +270,36 @@ func TestClientDoPolicyURLChecks(t *testing.T) {
 				t.Fatalf("expected error containing %q, got %v", tt.want, err)
 			}
 		})
+	}
+}
+
+func TestClientDoDefaultRejectsLoopbackBeforeRequest(t *testing.T) {
+	var requests atomic.Int64
+	server := httptest.NewServer(stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, _ *stdhttp.Request) {
+		requests.Add(1)
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer server.Close()
+
+	_, err := ferrethttp.New().Do(context.Background(), &ferrethttp.Request{URL: server.URL})
+	if err == nil || !strings.Contains(err.Error(), "localhost is not allowed") {
+		t.Fatalf("expected default loopback policy error, got %v", err)
+	}
+	if got := requests.Load(); got != 0 {
+		t.Fatalf("expected blocked request not to reach server, got %d request(s)", got)
+	}
+
+	res, err := ferrethttp.New(ferrethttp.WithAllowLocalhost(true)).Do(
+		context.Background(),
+		&ferrethttp.Request{URL: server.URL},
+	)
+	if err != nil {
+		t.Fatalf("expected explicit localhost access to succeed, got %v", err)
+	}
+	if got := string(res.Body); got != "ok" {
+		t.Fatalf("expected response body %q, got %q", "ok", got)
+	}
+	if got := requests.Load(); got != 1 {
+		t.Fatalf("expected one explicitly allowed request, got %d", got)
 	}
 }

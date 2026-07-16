@@ -9,6 +9,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/module"
+	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -50,10 +51,17 @@ func TestNewRunsCloseHooksWhenHostBuildFails(t *testing.T) {
 		moduleRegistered bool
 		closeHookCalled  bool
 	)
+	client := &recordingHTTPClient{}
 
 	mod := testModule{
 		registerFn: func(boot module.Bootstrap) error {
 			moduleRegistered = true
+			internal, ok := boot.(*bootstrap)
+			if !ok {
+				t.Fatalf("expected internal bootstrap, got %T", boot)
+			}
+			internal.host.network = ferretnet.New(ferretnet.WithHTTPClient(client))
+
 			boot.Hooks().Engine().OnClose(func() error {
 				closeHookCalled = true
 				return nil
@@ -77,6 +85,10 @@ func TestNewRunsCloseHooksWhenHostBuildFails(t *testing.T) {
 
 	if !closeHookCalled {
 		t.Fatal("expected engine close hooks to run on host build failure")
+	}
+
+	if got := client.idleCloseCount(); got != 1 {
+		t.Fatalf("expected host-build-failure cleanup, got %d calls", got)
 	}
 }
 
@@ -112,6 +124,119 @@ func TestNewReturnsJoinedErrorWhenInitAndCloseHooksFail(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "close hooks") {
 		t.Fatalf("expected error to include close hooks label, got: %v", err)
+	}
+}
+
+func TestEngineCloseClosesOwnedNetworkIdleConnections(t *testing.T) {
+	t.Parallel()
+
+	client := &recordingHTTPClient{}
+	eng := mustNewEngine(t)
+	eng.host.network = ferretnet.New(ferretnet.WithHTTPClient(client))
+
+	if err := eng.Close(); err != nil {
+		t.Fatalf("close engine: %v", err)
+	}
+
+	if got := client.idleCloseCount(); got != 1 {
+		t.Fatalf("expected one idle-connection cleanup, got %d", got)
+	}
+}
+
+func TestEngineCloseCleansOwnedNetworkAfterHookFailure(t *testing.T) {
+	t.Parallel()
+
+	hookErr := errors.New("close hook failed")
+	client := &recordingHTTPClient{}
+	eng := mustNewEngine(t, WithEngineCloseHook(func() error {
+		return hookErr
+	}))
+	eng.host.network = ferretnet.New(ferretnet.WithHTTPClient(client))
+
+	err := eng.Close()
+	if !errors.Is(err, hookErr) {
+		t.Fatalf("expected close hook error, got %v", err)
+	}
+
+	if got := client.idleCloseCount(); got != 1 {
+		t.Fatalf("expected cleanup after hook failure, got %d calls", got)
+	}
+}
+
+func TestEngineCloseDoesNotCleanInjectedNetwork(t *testing.T) {
+	t.Parallel()
+
+	client := &recordingHTTPClient{}
+	network := ferretnet.New(ferretnet.WithHTTPClient(client))
+	eng := mustNewEngine(t, WithNetwork(network))
+
+	if err := eng.Close(); err != nil {
+		t.Fatalf("close engine: %v", err)
+	}
+
+	if got := client.idleCloseCount(); got != 0 {
+		t.Fatalf("expected injected network ownership to remain with caller, got %d cleanup calls", got)
+	}
+}
+
+func TestNewCleansOwnedNetworkOnRegistrationFailure(t *testing.T) {
+	t.Parallel()
+
+	registerErr := errors.New("register failed")
+	client := &recordingHTTPClient{}
+	mod := testModule{
+		registerFn: func(boot module.Bootstrap) error {
+			internal, ok := boot.(*bootstrap)
+			if !ok {
+				t.Fatalf("expected internal bootstrap, got %T", boot)
+			}
+
+			internal.host.network = ferretnet.New(ferretnet.WithHTTPClient(client))
+
+			return registerErr
+		},
+	}
+
+	_, err := New(WithModules(mod))
+	if !errors.Is(err, registerErr) {
+		t.Fatalf("expected registration error, got %v", err)
+	}
+
+	if got := client.idleCloseCount(); got != 1 {
+		t.Fatalf("expected construction-failure cleanup, got %d calls", got)
+	}
+}
+
+func TestNewCleansOwnedNetworkOnInitFailure(t *testing.T) {
+	t.Parallel()
+
+	initErr := errors.New("init failed")
+	client := &recordingHTTPClient{}
+	mod := testModule{
+		registerFn: func(boot module.Bootstrap) error {
+			internal, ok := boot.(*bootstrap)
+			if !ok {
+				t.Fatalf("expected internal bootstrap, got %T", boot)
+			}
+
+			internal.host.network = ferretnet.New(ferretnet.WithHTTPClient(client))
+
+			return nil
+		},
+	}
+
+	_, err := New(
+		WithModules(mod),
+		WithEngineInitHook(func() error {
+			return initErr
+		}),
+	)
+	if !errors.Is(err, initErr) {
+		t.Fatalf("expected init error, got %v", err)
+	}
+
+	if got := client.idleCloseCount(); got != 1 {
+		t.Fatalf("expected init-failure cleanup, got %d calls", got)
 	}
 }
 

@@ -7,5 +7,8 @@ import (
 )
 
 func testNetworkContext() context.Context {
-	return ferretnet.WithNetwork(context.Background(), ferretnet.New())
+	return ferretnet.WithNetwork(
+		context.Background(),
+		ferretnet.New(ferretnet.WithHTTPClient(testHTTPClient{})),
+	)
 }

@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"fmt"
 	stdhttp "net/http"
 )
 
@@ -9,6 +10,14 @@ type (
 	// Client executes HTTP requests for Ferret host integrations.
 	Client interface {
 		Do(ctx context.Context, req *Request) (*Response, error)
+	}
+
+	// IdleConnectionCloser is an optional capability implemented by clients that
+	// can release pooled idle connections. Standalone callers may type-assert a
+	// Client to this interface when deterministic cleanup is needed. Calls are
+	// safe to repeat and do not interrupt active requests.
+	IdleConnectionCloser interface {
+		CloseIdleConnections()
 	}
 
 	defaultHTTPClient struct {
@@ -20,9 +29,13 @@ type (
 // New constructs an HTTP client with the provided policies.
 func New(setters ...Policy) Client {
 	policies := NewPolicies(setters...)
+	dialer := newPolicyDialer(&policies)
 
 	return &defaultHTTPClient{
 		policy: &policies,
+		transport: stdhttp.Client{
+			Transport: newPolicyTransport(dialer),
+		},
 	}
 }
 
@@ -36,6 +49,7 @@ func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, er
 	}
 
 	p := d.policy
+
 	if p == nil {
 		policies := NewPolicies()
 		p = &policies
@@ -47,10 +61,12 @@ func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, er
 	}
 
 	client := d.transport
+
 	if p.Timeout > 0 {
 		client.Timeout = p.Timeout
 	}
-	client.CheckRedirect = p.checkRedirect
+
+	client.CheckRedirect = d.checkRedirect
 
 	res, err := client.Do(stdReq)
 	if err != nil {
@@ -58,4 +74,33 @@ func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, er
 	}
 
 	return fromStdResponse(res, p)
+}
+
+func (d *defaultHTTPClient) CloseIdleConnections() {
+	d.transport.CloseIdleConnections()
+}
+
+func (d *defaultHTTPClient) checkRedirect(req *stdhttp.Request, via []*stdhttp.Request) error {
+	p := d.policy
+
+	if p == nil {
+		policies := NewPolicies()
+		p = &policies
+	}
+
+	if !p.FollowRedirects {
+		return stdhttp.ErrUseLastResponse
+	}
+
+	limit := p.MaxRedirects
+
+	if limit == 0 {
+		limit = 10
+	}
+
+	if len(via) >= limit {
+		return fmt.Errorf("http: stopped after %d redirect(s)", limit)
+	}
+
+	return p.validateURL(req.URL, policyTargetRedirect)
 }

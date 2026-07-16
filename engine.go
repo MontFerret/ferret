@@ -22,6 +22,7 @@ type Engine struct {
 	limiter       *sessionLimiter
 	idleCap       int
 	totalCap      int
+	ownsNetwork   bool
 }
 
 // New constructs an Engine from the provided options, registers all modules,
@@ -33,6 +34,8 @@ func New(setters ...Option) (*Engine, error) {
 		return nil, err
 	}
 
+	ownsNetwork := opts.network == nil
+
 	boot, err := newBootstrap(opts)
 	if err != nil {
 		return nil, fmt.Errorf("bootstrap: %w", err)
@@ -40,7 +43,13 @@ func New(setters ...Option) (*Engine, error) {
 
 	for _, m := range opts.modules {
 		if err := m.Register(boot); err != nil {
-			if closeErr := boot.hooks.engine.runCloseHooks(); closeErr != nil {
+			closeErr := boot.hooks.engine.runCloseHooks()
+
+			if ownsNetwork {
+				closeIdleNetworkConnections(boot.host.Network())
+			}
+
+			if closeErr != nil {
 				return nil, errors.Join(err, fmt.Errorf("close hooks: %w", closeErr))
 			}
 
@@ -50,7 +59,13 @@ func New(setters ...Option) (*Engine, error) {
 
 	h, err := boot.host.Build()
 	if err != nil {
-		if closeErr := boot.hooks.engine.runCloseHooks(); closeErr != nil {
+		closeErr := boot.hooks.engine.runCloseHooks()
+
+		if ownsNetwork {
+			closeIdleNetworkConnections(boot.host.Network())
+		}
+
+		if closeErr != nil {
 			return nil, errors.Join(err, fmt.Errorf("close hooks: %w", closeErr))
 		}
 
@@ -62,8 +77,13 @@ func New(setters ...Option) (*Engine, error) {
 	// Run init hooks after bootstrap is finalized and before returning the engine.
 	if err := hooks.engine.runInitHooks(); err != nil {
 		initErr := fmt.Errorf("init hooks: %w", err)
+		closeErr := hooks.engine.runCloseHooks()
 
-		if closeErr := hooks.engine.runCloseHooks(); closeErr != nil {
+		if ownsNetwork {
+			closeIdleNetworkConnections(h.network)
+		}
+
+		if closeErr != nil {
 			return nil, errors.Join(initErr, fmt.Errorf("close hooks: %w", closeErr))
 		}
 
@@ -79,6 +99,7 @@ func New(setters ...Option) (*Engine, error) {
 		limiter:       newSessionLimiter(opts.maxActiveSessions),
 		idleCap:       opts.maxIdleVMsPerPlan,
 		totalCap:      opts.maxVMsPerPlan,
+		ownsNetwork:   ownsNetwork,
 	}, nil
 }
 
@@ -175,7 +196,13 @@ func (e *Engine) Run(ctx context.Context, src *source.Source, opts ...SessionOpt
 
 // Close runs the engine close hooks and releases engine-scoped resources.
 func (e *Engine) Close() error {
-	if err := e.hooks.engine.runCloseHooks(); err != nil {
+	err := e.hooks.engine.runCloseHooks()
+
+	if e.ownsNetwork {
+		closeIdleNetworkConnections(e.host.network)
+	}
+
+	if err != nil {
 		return fmt.Errorf("close hooks: %w", err)
 	}
 
