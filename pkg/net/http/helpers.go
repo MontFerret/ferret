@@ -11,6 +11,10 @@ import (
 )
 
 func toStdRequest(ctx context.Context, req *Request) (*stdhttp.Request, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	if req == nil {
 		return nil, ErrNilRequest
 	}
