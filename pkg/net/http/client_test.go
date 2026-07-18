@@ -1,4 +1,4 @@
-package http_test
+package http
 
 import (
 	"context"
@@ -9,8 +9,6 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
-
-	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
 )
 
 func TestClientDoSuccessDefaultsAndMaterializesResponse(t *testing.T) {
@@ -24,7 +22,7 @@ func TestClientDoSuccessDefaultsAndMaterializesResponse(t *testing.T) {
 	}))
 	defer server.Close()
 
-	res, err := ferrethttp.New(ferrethttp.WithAllowLocalhost(true)).Do(nil, &ferrethttp.Request{URL: server.URL})
+	res, err := New(WithAllowLocalhost(true)).Do(nil, &Request{URL: server.URL})
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -80,16 +78,16 @@ func TestClientDoSendsHeadersAndBodyWithPolicy(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := ferrethttp.New(
-		ferrethttp.WithDefaultHeader("X-Default", "default"),
-		ferrethttp.WithBlockedRequestHeaders("X-Blocked"),
-		ferrethttp.WithAllowLocalhost(true),
+	client := New(
+		WithDefaultHeader("X-Default", "default"),
+		WithBlockedRequestHeaders("X-Blocked"),
+		WithAllowLocalhost(true),
 	)
 
-	_, err := client.Do(context.Background(), &ferrethttp.Request{
+	_, err := client.Do(context.Background(), &Request{
 		Method: stdhttp.MethodPost,
 		URL:    server.URL,
-		Headers: ferrethttp.Headers{
+		Headers: Headers{
 			"X-Token":   {"a", "b"},
 			"X-Blocked": {"secret"},
 		},
@@ -101,9 +99,9 @@ func TestClientDoSendsHeadersAndBodyWithPolicy(t *testing.T) {
 }
 
 func TestClientDoRequestBodyLimit(t *testing.T) {
-	_, err := ferrethttp.New(ferrethttp.WithMaxRequestSize(3)).Do(
+	_, err := New(WithMaxRequestSize(3)).Do(
 		context.Background(),
-		&ferrethttp.Request{
+		&Request{
 			Method: stdhttp.MethodPost,
 			URL:    "http://example.com",
 			Body:   []byte("four"),
@@ -120,12 +118,12 @@ func TestClientDoResponseBodyLimit(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := ferrethttp.New(
-		ferrethttp.WithMaxResponseSize(3),
-		ferrethttp.WithAllowLocalhost(true),
+	_, err := New(
+		WithMaxResponseSize(3),
+		WithAllowLocalhost(true),
 	).Do(
 		context.Background(),
-		&ferrethttp.Request{URL: server.URL},
+		&Request{URL: server.URL},
 	)
 	if err == nil || !strings.Contains(err.Error(), "response body exceeds limit") {
 		t.Fatalf("expected response body limit error, got %v", err)
@@ -147,9 +145,9 @@ func TestClientDoRedirectPolicy(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	res, err := ferrethttp.New(ferrethttp.WithAllowLocalhost(true)).Do(
+	res, err := New(WithAllowLocalhost(true)).Do(
 		context.Background(),
-		&ferrethttp.Request{URL: server.URL + "/start"},
+		&Request{URL: server.URL + "/start"},
 	)
 	if err != nil {
 		t.Fatalf("default redirect request failed: %v", err)
@@ -158,12 +156,12 @@ func TestClientDoRedirectPolicy(t *testing.T) {
 		t.Fatalf("expected followed redirect body %q, got %q", "done", got)
 	}
 
-	res, err = ferrethttp.New(
-		ferrethttp.WithFollowRedirects(false),
-		ferrethttp.WithAllowLocalhost(true),
+	res, err = New(
+		WithFollowRedirects(false),
+		WithAllowLocalhost(true),
 	).Do(
 		context.Background(),
-		&ferrethttp.Request{URL: server.URL + "/start"},
+		&Request{URL: server.URL + "/start"},
 	)
 	if err != nil {
 		t.Fatalf("no-follow redirect request failed: %v", err)
@@ -172,12 +170,12 @@ func TestClientDoRedirectPolicy(t *testing.T) {
 		t.Fatalf("expected redirect response status, got %d", res.StatusCode)
 	}
 
-	_, err = ferrethttp.New(
-		ferrethttp.WithMaxRedirects(1),
-		ferrethttp.WithAllowLocalhost(true),
+	_, err = New(
+		WithMaxRedirects(1),
+		WithAllowLocalhost(true),
 	).Do(
 		context.Background(),
-		&ferrethttp.Request{URL: server.URL + "/start"},
+		&Request{URL: server.URL + "/start"},
 	)
 	if err == nil || !strings.Contains(err.Error(), "stopped after 1 redirect") {
 		t.Fatalf("expected max redirect error, got %v", err)
@@ -186,25 +184,25 @@ func TestClientDoRedirectPolicy(t *testing.T) {
 
 func TestClientDoValidatesRequest(t *testing.T) {
 	tests := []struct {
-		req  *ferrethttp.Request
+		req  *Request
 		name string
 		want string
 	}{
-		{name: "nil", req: nil, want: ferrethttp.ErrNilRequest.Error()},
-		{name: "invalid method", req: &ferrethttp.Request{Method: "BAD METHOD", URL: "http://example.com"}, want: "invalid method"},
-		{name: "missing url", req: &ferrethttp.Request{}, want: "url is required"},
-		{name: "missing scheme", req: &ferrethttp.Request{URL: "example.com"}, want: "url scheme is required"},
-		{name: "missing host", req: &ferrethttp.Request{URL: "http:///path"}, want: "url host is required"},
+		{name: "nil", req: nil, want: ErrNilRequest.Error()},
+		{name: "invalid method", req: &Request{Method: "BAD METHOD", URL: "http://example.com"}, want: "invalid method"},
+		{name: "missing url", req: &Request{}, want: "url is required"},
+		{name: "missing scheme", req: &Request{URL: "example.com"}, want: "url scheme is required"},
+		{name: "missing host", req: &Request{URL: "http:///path"}, want: "url host is required"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ferrethttp.New().Do(context.Background(), tt.req)
+			_, err := New().Do(context.Background(), tt.req)
 			if err == nil {
 				t.Fatal("expected error")
 			}
 			if tt.req == nil {
-				if !errors.Is(err, ferrethttp.ErrNilRequest) {
+				if !errors.Is(err, ErrNilRequest) {
 					t.Fatalf("expected ErrNilRequest, got %v", err)
 				}
 				return
@@ -223,38 +221,38 @@ func TestClientDoPolicyURLChecks(t *testing.T) {
 	defer localServer.Close()
 
 	tests := []struct {
-		client ferrethttp.Client
+		client Client
 		name   string
 		url    string
 		want   string
 	}{
 		{
 			name:   "scheme",
-			client: ferrethttp.New(ferrethttp.WithAllowedSchemes("https")),
+			client: New(WithAllowedSchemes("https")),
 			url:    "http://example.com",
 			want:   "scheme",
 		},
 		{
 			name:   "blocked host",
-			client: ferrethttp.New(ferrethttp.WithBlockedHosts("example.com")),
+			client: New(WithBlockedHosts("example.com")),
 			url:    "http://example.com",
 			want:   "blocked",
 		},
 		{
 			name:   "allowed host",
-			client: ferrethttp.New(ferrethttp.WithAllowedHosts("allowed.example")),
+			client: New(WithAllowedHosts("allowed.example")),
 			url:    "http://other.example",
 			want:   "not allowed",
 		},
 		{
 			name:   "localhost",
-			client: ferrethttp.New(),
+			client: New(),
 			url:    localServer.URL,
 			want:   "localhost is not allowed",
 		},
 		{
 			name:   "private network",
-			client: ferrethttp.New(),
+			client: New(),
 			url:    "http://10.0.0.1",
 			want:   "private network",
 		},
@@ -262,7 +260,7 @@ func TestClientDoPolicyURLChecks(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := tt.client.Do(context.Background(), &ferrethttp.Request{URL: tt.url})
+			_, err := tt.client.Do(context.Background(), &Request{URL: tt.url})
 			if err == nil {
 				t.Fatal("expected error")
 			}
@@ -281,7 +279,7 @@ func TestClientDoDefaultRejectsLoopbackBeforeRequest(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := ferrethttp.New().Do(context.Background(), &ferrethttp.Request{URL: server.URL})
+	_, err := New().Do(context.Background(), &Request{URL: server.URL})
 	if err == nil || !strings.Contains(err.Error(), "localhost is not allowed") {
 		t.Fatalf("expected default loopback policy error, got %v", err)
 	}
@@ -289,9 +287,9 @@ func TestClientDoDefaultRejectsLoopbackBeforeRequest(t *testing.T) {
 		t.Fatalf("expected blocked request not to reach server, got %d request(s)", got)
 	}
 
-	res, err := ferrethttp.New(ferrethttp.WithAllowLocalhost(true)).Do(
+	res, err := New(WithAllowLocalhost(true)).Do(
 		context.Background(),
-		&ferrethttp.Request{URL: server.URL},
+		&Request{URL: server.URL},
 	)
 	if err != nil {
 		t.Fatalf("expected explicit localhost access to succeed, got %v", err)
