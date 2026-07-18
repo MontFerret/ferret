@@ -9,11 +9,11 @@ import (
 func WithTimeout(timeout time.Duration) Policy {
 	return func(p *Policies) {
 		if timeout <= 0 {
-			p.Timeout = 0
+			p.timeout = 0
 			return
 		}
 
-		p.Timeout = timeout
+		p.timeout = timeout
 	}
 }
 
@@ -24,7 +24,7 @@ func WithMaxRequestSize(size int64) Policy {
 			size = 0
 		}
 
-		p.MaxRequestSize = size
+		p.maxRequestSize = size
 	}
 }
 
@@ -35,14 +35,14 @@ func WithMaxResponseSize(size int64) Policy {
 			size = 0
 		}
 
-		p.MaxResponseSize = size
+		p.maxResponseSize = size
 	}
 }
 
 // WithFollowRedirects controls whether redirects are followed.
 func WithFollowRedirects(follow bool) Policy {
 	return func(p *Policies) {
-		p.FollowRedirects = follow
+		p.followRedirects = follow
 	}
 }
 
@@ -53,49 +53,49 @@ func WithMaxRedirects(count int) Policy {
 			count = 0
 		}
 
-		p.MaxRedirects = count
+		p.maxRedirects = count
 	}
 }
 
 // WithAllowedSchemes replaces the set of permitted URL schemes.
 func WithAllowedSchemes(schemes ...string) Policy {
 	return func(p *Policies) {
-		p.AllowedSchemes = append([]string(nil), schemes...)
+		p.allowedSchemes = append([]string(nil), schemes...)
 	}
 }
 
 // WithAllowedHosts restricts requests to the provided host names.
 func WithAllowedHosts(hosts ...string) Policy {
 	return func(p *Policies) {
-		p.AllowedHosts = append([]string(nil), hosts...)
+		p.allowedHosts = append([]string(nil), hosts...)
 	}
 }
 
 // WithBlockedHosts blocks requests to the provided host names.
 func WithBlockedHosts(hosts ...string) Policy {
 	return func(p *Policies) {
-		p.BlockedHosts = append([]string(nil), hosts...)
+		p.blockedHosts = append([]string(nil), hosts...)
 	}
 }
 
 // WithAllowLocalhost controls whether localhost and loopback addresses are allowed.
 func WithAllowLocalhost(allow bool) Policy {
 	return func(p *Policies) {
-		p.AllowLocalhost = allow
+		p.allowLocalhost = allow
 	}
 }
 
 // WithAllowPrivateNetworks controls whether private IP network addresses are allowed.
 func WithAllowPrivateNetworks(allow bool) Policy {
 	return func(p *Policies) {
-		p.AllowPrivateNetworks = allow
+		p.allowPrivateNetworks = allow
 	}
 }
 
 // WithAllowLinkLocal controls whether IPv4 and IPv6 link-local addresses are allowed.
 func WithAllowLinkLocal(allow bool) Policy {
 	return func(p *Policies) {
-		p.AllowLinkLocal = allow
+		p.allowLinkLocal = allow
 	}
 }
 
@@ -107,11 +107,11 @@ func WithDefaultHeader(key, value string) Policy {
 			return
 		}
 
-		if p.DefaultHeaders == nil {
-			p.DefaultHeaders = make(map[string]string)
+		if p.defaultHeaders == nil {
+			p.defaultHeaders = make(map[string]string)
 		}
 
-		p.DefaultHeaders[key] = value
+		p.defaultHeaders[key] = value
 	}
 }
 
@@ -122,8 +122,8 @@ func WithDefaultHeaders(headers map[string]string) Policy {
 			return
 		}
 
-		if p.DefaultHeaders == nil {
-			p.DefaultHeaders = make(map[string]string, len(headers))
+		if p.defaultHeaders == nil {
+			p.defaultHeaders = make(map[string]string, len(headers))
 		}
 
 		for key, value := range headers {
@@ -132,7 +132,7 @@ func WithDefaultHeaders(headers map[string]string) Policy {
 				continue
 			}
 
-			p.DefaultHeaders[key] = value
+			p.defaultHeaders[key] = value
 		}
 	}
 }
@@ -140,6 +140,6 @@ func WithDefaultHeaders(headers map[string]string) Policy {
 // WithBlockedRequestHeaders removes the provided header names from outbound requests.
 func WithBlockedRequestHeaders(headers ...string) Policy {
 	return func(p *Policies) {
-		p.BlockedRequestHeaders = append([]string(nil), headers...)
+		p.blockedRequestHeaders = append([]string(nil), headers...)
 	}
 }

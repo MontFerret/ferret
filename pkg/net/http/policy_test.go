@@ -27,35 +27,35 @@ func TestNewPoliciesDefaultsAndOptions(t *testing.T) {
 		ferrethttp.WithMaxResponseSize(4),
 	)
 
-	if policies.Timeout != time.Second {
-		t.Fatalf("expected timeout to be configured, got %s", policies.Timeout)
+	if policies.timeout != time.Second {
+		t.Fatalf("expected timeout to be configured, got %s", policies.timeout)
 	}
-	if policies.FollowRedirects {
+	if policies.followRedirects {
 		t.Fatal("expected redirects to be disabled")
 	}
-	if policies.MaxRedirects != 2 || policies.MaxRequestSize != 3 || policies.MaxResponseSize != 4 {
+	if policies.maxRedirects != 2 || policies.maxRequestSize != 3 || policies.maxResponseSize != 4 {
 		t.Fatalf("expected configured limits, got redirects=%d request=%d response=%d",
-			policies.MaxRedirects,
-			policies.MaxRequestSize,
-			policies.MaxResponseSize,
+			policies.maxRedirects,
+			policies.maxRequestSize,
+			policies.maxResponseSize,
 		)
 	}
-	if policies.AllowLocalhost || policies.AllowPrivateNetworks || policies.AllowLinkLocal {
+	if policies.allowLocalhost || policies.allowPrivateNetworks || policies.allowLinkLocal {
 		t.Fatal("expected localhost, private networks, and link-local addresses to be disabled")
 	}
-	if got := policies.AllowedSchemes; len(got) != 1 || got[0] != "https" {
+	if got := policies.allowedSchemes; len(got) != 1 || got[0] != "https" {
 		t.Fatalf("expected normalized allowed scheme, got %v", got)
 	}
-	if got := policies.AllowedHosts; len(got) != 1 || got[0] != "example.com" {
+	if got := policies.allowedHosts; len(got) != 1 || got[0] != "example.com" {
 		t.Fatalf("expected normalized allowed host, got %v", got)
 	}
-	if got := policies.BlockedHosts; len(got) != 1 || got[0] != "blocked.example" {
+	if got := policies.blockedHosts; len(got) != 1 || got[0] != "blocked.example" {
 		t.Fatalf("expected normalized blocked host, got %v", got)
 	}
-	if got := policies.BlockedRequestHeaders; len(got) != 1 || got[0] != "X-Token" {
+	if got := policies.blockedRequestHeaders; len(got) != 1 || got[0] != "X-Token" {
 		t.Fatalf("expected normalized blocked request header, got %v", got)
 	}
-	if got := policies.DefaultHeaders["X-Default"]; got != "value" {
+	if got := policies.defaultHeaders["X-Default"]; got != "value" {
 		t.Fatalf("expected normalized default header, got %q", got)
 	}
 }
@@ -63,13 +63,13 @@ func TestNewPoliciesDefaultsAndOptions(t *testing.T) {
 func TestNewPoliciesDefaultValues(t *testing.T) {
 	policies := ferrethttp.NewPolicies()
 
-	if !policies.FollowRedirects {
+	if !policies.followRedirects {
 		t.Fatal("expected redirects to be enabled by default")
 	}
-	if policies.AllowLocalhost || policies.AllowPrivateNetworks || policies.AllowLinkLocal {
+	if policies.allowLocalhost || policies.allowPrivateNetworks || policies.allowLinkLocal {
 		t.Fatal("expected localhost, private networks, and link-local addresses to be denied by default")
 	}
-	if got := policies.AllowedSchemes; len(got) != 2 || got[0] != "http" || got[1] != "https" {
+	if got := policies.allowedSchemes; len(got) != 2 || got[0] != "http" || got[1] != "https" {
 		t.Fatalf("expected default http/https schemes, got %v", got)
 	}
 }

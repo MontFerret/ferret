@@ -33,7 +33,7 @@ func TestPolicyDialerValidatesConcreteAddresses(t *testing.T) {
 	}
 
 	policies := NewPolicies()
-	dialer := newPolicyDialer(&policies)
+	dialer := newPolicyDialer(policies)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -59,7 +59,7 @@ func TestPolicyDialerValidatesConcreteAddresses(t *testing.T) {
 
 func TestPolicyDialerRejectsReboundConcreteAddress(t *testing.T) {
 	policies := NewPolicies()
-	dialer := newPolicyDialer(&policies)
+	dialer := newPolicyDialer(policies)
 
 	if err := dialer.controlContext(
 		context.Background(),
@@ -80,7 +80,7 @@ func TestDefaultHTTPClientValidatesRedirectDestinations(t *testing.T) {
 	policies := NewPolicies()
 	requested := make(map[string]int)
 	client := &defaultHTTPClient{
-		policy: &policies,
+		policy: policies,
 		transport: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
 			requested[req.URL.String()]++
 			switch req.URL.Path {
@@ -118,7 +118,7 @@ func TestDefaultHTTPClientValidatesRedirectDestinations(t *testing.T) {
 func TestDefaultHTTPClientNoFollowSkipsRedirectValidation(t *testing.T) {
 	policies := NewPolicies(WithFollowRedirects(false))
 	client := &defaultHTTPClient{
-		policy: &policies,
+		policy: policies,
 		transport: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 			return responseWithBody(stdhttp.StatusFound, "", stdhttp.Header{"Location": {"http://10.0.0.10/private"}}), nil
 		})},
@@ -137,7 +137,7 @@ func TestDefaultHTTPClientUsesStandardRedirectLimit(t *testing.T) {
 	policies := NewPolicies()
 	roundTrips := 0
 	client := &defaultHTTPClient{
-		policy: &policies,
+		policy: policies,
 		transport: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 			roundTrips++
 			return responseWithBody(stdhttp.StatusFound, "", stdhttp.Header{"Location": {"/next"}}), nil
@@ -155,8 +155,9 @@ func TestDefaultHTTPClientUsesStandardRedirectLimit(t *testing.T) {
 
 func TestDefaultHTTPClientTimeoutCoversDNSResolution(t *testing.T) {
 	policies := NewPolicies(WithTimeout(50 * time.Millisecond))
-	dialer := newPolicyDialer(&policies)
+	dialer := newPolicyDialer(policies)
 	lookupStarted := make(chan struct{})
+
 	var startOnce sync.Once
 	dialer.dialer.Resolver = &net.Resolver{
 		PreferGo: true,
@@ -168,7 +169,7 @@ func TestDefaultHTTPClientTimeoutCoversDNSResolution(t *testing.T) {
 		},
 	}
 	client := &defaultHTTPClient{
-		policy: &policies,
+		policy: policies,
 		transport: stdhttp.Client{
 			Transport: newPolicyTransport(dialer),
 		},
@@ -177,12 +178,15 @@ func TestDefaultHTTPClientTimeoutCoversDNSResolution(t *testing.T) {
 	started := time.Now()
 	_, err := client.Do(context.Background(), &Request{URL: "http://timeout.example"})
 	elapsed := time.Since(started)
+
 	if err == nil || !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("expected DNS resolution deadline error, got %v", err)
 	}
+
 	if elapsed >= time.Second {
 		t.Fatalf("expected configured timeout to cancel DNS promptly, took %s", elapsed)
 	}
+
 	select {
 	case <-lookupStarted:
 	default:
@@ -208,6 +212,7 @@ func TestNewUsesDedicatedPolicyTransportWithoutProxy(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected built-in client, got %T", client)
 	}
+
 	if _, ok := any(client).(IdleConnectionCloser); !ok {
 		t.Fatalf("expected built-in client to implement IdleConnectionCloser")
 	}
@@ -216,9 +221,11 @@ func TestNewUsesDedicatedPolicyTransportWithoutProxy(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected dedicated HTTP transport, got %T", client.transport.Transport)
 	}
+
 	if transport.Proxy != nil {
 		t.Fatal("expected ambient proxy lookup to be disabled")
 	}
+
 	if transport.DialContext == nil {
 		t.Fatal("expected policy-aware dialer")
 	}

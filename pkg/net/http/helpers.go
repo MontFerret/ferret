@@ -32,23 +32,28 @@ func toStdRequest(ctx context.Context, req *Request, p *Policies) (*stdhttp.Requ
 		u.String(),
 		bytes.NewReader(req.Body),
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("http: build request: %w", err)
 	}
+
 	for key, values := range req.Headers {
 		key = strings.TrimSpace(key)
 		if key == "" {
 			continue
 		}
+
 		canonicalKey := stdhttp.CanonicalHeaderKey(key)
 		if p.isBlockedHeader(canonicalKey) {
 			continue
 		}
+
 		for _, value := range values {
 			stdReq.Header.Add(canonicalKey, value)
 		}
 	}
-	for key, value := range p.DefaultHeaders {
+
+	for key, value := range p.defaultHeaders {
 		if stdReq.Header.Get(key) == "" && !p.isBlockedHeader(key) {
 			stdReq.Header.Set(key, value)
 		}
@@ -94,7 +99,7 @@ func fromStdResponse(res *stdhttp.Response, p *Policies) (*Response, error) {
 	}
 	defer res.Body.Close()
 
-	body, err := readResponseBody(res.Body, p.MaxResponseSize)
+	body, err := readResponseBody(res.Body, p.maxResponseSize)
 	if err != nil {
 		return nil, err
 	}

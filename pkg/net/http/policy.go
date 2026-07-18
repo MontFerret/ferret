@@ -15,29 +15,29 @@ type (
 
 	// Policies describes HTTP request policy and validation behavior.
 	Policies struct {
-		DefaultHeaders        map[string]string
-		AllowedSchemes        []string
-		AllowedHosts          []string
-		BlockedHosts          []string
-		BlockedRequestHeaders []string
-		Timeout               time.Duration
-		MaxRequestSize        int64
-		MaxResponseSize       int64
-		MaxRedirects          int
-		FollowRedirects       bool
-		AllowLocalhost        bool
-		AllowPrivateNetworks  bool
-		AllowLinkLocal        bool
+		defaultHeaders        map[string]string
+		allowedSchemes        []string
+		allowedHosts          []string
+		blockedHosts          []string
+		blockedRequestHeaders []string
+		timeout               time.Duration
+		maxRequestSize        int64
+		maxResponseSize       int64
+		maxRedirects          int
+		followRedirects       bool
+		allowLocalhost        bool
+		allowPrivateNetworks  bool
+		allowLinkLocal        bool
 	}
 )
 
 // NewPolicies builds a policy set with Ferret's default HTTP policy values.
 // By default, requests are limited to public destinations; localhost, private,
 // and link-local destinations require their corresponding explicit opt-in.
-func NewPolicies(setters ...Policy) Policies {
-	p := Policies{
-		FollowRedirects: true,
-		AllowedSchemes:  []string{"http", "https"},
+func NewPolicies(setters ...Policy) *Policies {
+	p := &Policies{
+		followRedirects: true,
+		allowedSchemes:  []string{"http", "https"},
 	}
 
 	for _, setter := range setters {
@@ -45,32 +45,35 @@ func NewPolicies(setters ...Policy) Policies {
 			continue
 		}
 
-		setter(&p)
+		setter(p)
 	}
 
-	p.AllowedSchemes = normalizeValues(p.AllowedSchemes)
-	p.AllowedHosts = normalizeHosts(p.AllowedHosts)
-	p.BlockedHosts = normalizeHosts(p.BlockedHosts)
-	p.BlockedRequestHeaders = normalizeHeaders(p.BlockedRequestHeaders)
+	p.allowedSchemes = normalizeValues(p.allowedSchemes)
+	p.allowedHosts = normalizeHosts(p.allowedHosts)
+	p.blockedHosts = normalizeHosts(p.blockedHosts)
+	p.blockedRequestHeaders = normalizeHeaders(p.blockedRequestHeaders)
 
-	if len(p.DefaultHeaders) > 0 {
-		headers := make(map[string]string, len(p.DefaultHeaders))
-		for key, value := range p.DefaultHeaders {
+	if len(p.defaultHeaders) > 0 {
+		headers := make(map[string]string, len(p.defaultHeaders))
+
+		for key, value := range p.defaultHeaders {
 			key = strings.TrimSpace(key)
+
 			if key == "" {
 				continue
 			}
 
 			headers[stdhttp.CanonicalHeaderKey(key)] = value
 		}
-		p.DefaultHeaders = headers
+
+		p.defaultHeaders = headers
 	}
 
 	return p
 }
 
 // Eval validates an outbound request against the policy.
-func (p Policies) Eval(req *Request) error {
+func (p *Policies) Eval(req *Request) error {
 	if req == nil {
 		return ErrNilRequest
 	}
@@ -93,11 +96,11 @@ func (p Policies) Eval(req *Request) error {
 		return err
 	}
 
-	if p.MaxRequestSize > 0 && int64(len(req.Body)) > p.MaxRequestSize {
+	if p.maxRequestSize > 0 && int64(len(req.Body)) > p.maxRequestSize {
 		return fmt.Errorf(
 			"http: request body exceeds limit: %d > %d",
 			len(req.Body),
-			p.MaxRequestSize,
+			p.maxRequestSize,
 		)
 	}
 
@@ -106,7 +109,7 @@ func (p Policies) Eval(req *Request) error {
 
 func (p *Policies) validateURL(u *url.URL, target policyTarget) error {
 	scheme := strings.ToLower(u.Scheme)
-	if !containsValue(p.AllowedSchemes, scheme) {
+	if !containsValue(p.allowedSchemes, scheme) {
 		return newPolicyError(target, fmt.Sprintf("scheme %q", u.Scheme), "scheme is not allowed")
 	}
 
@@ -115,15 +118,15 @@ func (p *Policies) validateURL(u *url.URL, target policyTarget) error {
 		return fmt.Errorf("http: url host is required")
 	}
 
-	if containsHost(p.BlockedHosts, u) {
+	if containsHost(p.blockedHosts, u) {
 		return newPolicyError(target, fmt.Sprintf("host %q", hostname), "host is blocked")
 	}
 
-	if len(p.AllowedHosts) > 0 && !containsHost(p.AllowedHosts, u) {
+	if len(p.allowedHosts) > 0 && !containsHost(p.allowedHosts, u) {
 		return newPolicyError(target, fmt.Sprintf("host %q", hostname), "host is not allowed")
 	}
 
-	if isLocalhostName(hostname) && !p.AllowLocalhost {
+	if isLocalhostName(hostname) && !p.allowLocalhost {
 		return newPolicyError(target, fmt.Sprintf("host %q", hostname), "localhost is not allowed")
 	}
 
@@ -145,7 +148,7 @@ func (p *Policies) validateAddress(target policyTarget, subject string, addr net
 	}
 
 	if addr.IsLoopback() {
-		if p.AllowLocalhost {
+		if p.allowLocalhost {
 			return nil
 		}
 
@@ -153,7 +156,7 @@ func (p *Policies) validateAddress(target policyTarget, subject string, addr net
 	}
 
 	if addr.IsPrivate() || carrierGradeNAT.Contains(addr) {
-		if p.AllowPrivateNetworks {
+		if p.allowPrivateNetworks {
 			return nil
 		}
 
@@ -161,7 +164,7 @@ func (p *Policies) validateAddress(target policyTarget, subject string, addr net
 	}
 
 	if addr.IsLinkLocalUnicast() {
-		if p.AllowLinkLocal {
+		if p.allowLinkLocal {
 			return nil
 		}
 
@@ -188,5 +191,5 @@ func (p *Policies) validateAddress(target policyTarget, subject string, addr net
 }
 
 func (p *Policies) isBlockedHeader(key string) bool {
-	return containsValue(p.BlockedRequestHeaders, stdhttp.CanonicalHeaderKey(key))
+	return containsValue(p.blockedRequestHeaders, stdhttp.CanonicalHeaderKey(key))
 }

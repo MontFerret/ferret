@@ -29,10 +29,10 @@ type (
 // New constructs an HTTP client with the provided policies.
 func New(setters ...Policy) Client {
 	policies := NewPolicies(setters...)
-	dialer := newPolicyDialer(&policies)
+	dialer := newPolicyDialer(policies)
 
 	return &defaultHTTPClient{
-		policy: &policies,
+		policy: policies,
 		transport: stdhttp.Client{
 			Transport: newPolicyTransport(dialer),
 		},
@@ -49,10 +49,9 @@ func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, er
 	}
 
 	p := d.policy
-
 	if p == nil {
 		policies := NewPolicies()
-		p = &policies
+		p = policies
 	}
 
 	stdReq, err := toStdRequest(ctx, req, p)
@@ -62,8 +61,8 @@ func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, er
 
 	client := d.transport
 
-	if p.Timeout > 0 {
-		client.Timeout = p.Timeout
+	if p.timeout > 0 {
+		client.Timeout = p.timeout
 	}
 
 	client.CheckRedirect = d.checkRedirect
@@ -85,14 +84,14 @@ func (d *defaultHTTPClient) checkRedirect(req *stdhttp.Request, via []*stdhttp.R
 
 	if p == nil {
 		policies := NewPolicies()
-		p = &policies
+		p = policies
 	}
 
-	if !p.FollowRedirects {
+	if !p.followRedirects {
 		return stdhttp.ErrUseLastResponse
 	}
 
-	limit := p.MaxRedirects
+	limit := p.maxRedirects
 
 	if limit == 0 {
 		limit = 10

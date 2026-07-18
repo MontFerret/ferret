@@ -48,7 +48,7 @@ func (d *policyDialer) controlContext(
 	p := d.policy
 	if p == nil {
 		policies := NewPolicies()
-		p = &policies
+		p = policies
 	}
 
 	return p.validateAddress(policyTargetRequest, addressSubject(addr), addr)
