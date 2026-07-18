@@ -112,11 +112,10 @@ func (p *Policy) Eval(req *Request) error {
 	}
 
 	if p.maxRequestSize > 0 && int64(len(req.Body)) > p.maxRequestSize {
-		return fmt.Errorf(
-			"http: request body exceeds limit: %d > %d",
-			len(req.Body),
-			p.maxRequestSize,
-		)
+		return &RequestBodyLimitError{
+			Size:  int64(len(req.Body)),
+			Limit: p.maxRequestSize,
+		}
 	}
 
 	return nil
@@ -126,7 +125,7 @@ func (p *Policy) validateMethod(method string, target PolicyTarget) error {
 	normalized := normalizeRequestMethod(method)
 
 	if !isValidMethod(normalized) {
-		return fmt.Errorf("http: invalid method %q", method)
+		return &InvalidMethodError{Method: method}
 	}
 
 	if !containsValue(p.allowedMethods, normalized) {
@@ -177,7 +176,7 @@ func (p *Policy) validateURL(u *url.URL, target PolicyTarget) error {
 
 	rawHostname := u.Hostname()
 	if rawHostname == "" {
-		return fmt.Errorf("http: url host is required")
+		return &URLValidationError{Field: "host", Reason: "is required"}
 	}
 
 	if !isASCII(rawHostname) {

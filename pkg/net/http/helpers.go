@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	stdhttp "net/http"
 	"net/url"
@@ -31,7 +30,7 @@ func toStdRequest(ctx context.Context, req *Request, p *Policy) (*stdhttp.Reques
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("http: build request: %w", err)
+		return nil, &RequestBuildError{Err: err}
 	}
 
 	for key, values := range req.Headers {
@@ -65,13 +64,13 @@ func parseRequestURL(raw string) (*url.URL, error) {
 
 	u, err := url.Parse(rawURL)
 	if err != nil {
-		return nil, fmt.Errorf("http: parse url: %w", err)
+		return nil, &URLParseError{Err: err}
 	}
 	if u.Scheme == "" {
 		return nil, errors.New("http: url scheme is required")
 	}
 	if u.Host == "" {
-		return nil, errors.New("http: url host is required")
+		return nil, &URLValidationError{Field: "host", Reason: "is required"}
 	}
 
 	u.Scheme = asciiLower(u.Scheme)
@@ -118,7 +117,7 @@ func readResponseBody(body io.Reader, limit int64) ([]byte, error) {
 	}
 
 	if int64(len(data)) > limit {
-		return nil, fmt.Errorf("http: response body exceeds limit of %d bytes", limit)
+		return nil, &ResponseBodyLimitError{Limit: limit}
 	}
 
 	return data, nil

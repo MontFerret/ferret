@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"errors"
-	"fmt"
 	stdhttp "net/http"
 )
 
@@ -99,7 +98,7 @@ func (d *defaultHTTPClient) checkRedirect(req *stdhttp.Request, via []*stdhttp.R
 	}
 
 	if len(via) >= limit {
-		return fmt.Errorf("http: stopped after %d redirect(s)", limit)
+		return &RedirectLimitError{Limit: limit}
 	}
 
 	if err := p.validateMethod(req.Method, PolicyTargetRedirect); err != nil {
