@@ -28,8 +28,20 @@
 //		http.WithMaxResponseSize(32 << 20),
 //	)
 //	if err != nil {
+//		if errors.Is(err, http.ErrInvalidPolicyConfiguration) {
+//			var issue *http.PolicyConfigurationError
+//			if errors.As(err, &issue) {
+//				log.Printf("invalid %s: %s", issue.Option, issue.Reason)
+//			}
+//		}
 //		return err
 //	}
+//
+// A single configuration failure is returned as PolicyConfigurationError;
+// multiple failures are returned as MultiPolicyConfigurationError. The
+// aggregate unwraps its individual failures, so errors.As can inspect either
+// the aggregate or its first PolicyConfigurationError. Its Errors field
+// provides all failures in deterministic validation order.
 //
 // Structural, configuration, limit, and policy failures are typed. Callers
 // should inspect them with errors.Is and errors.As; error strings are intended

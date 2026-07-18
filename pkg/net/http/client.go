@@ -26,8 +26,11 @@ type (
 	}
 )
 
-// New constructs an HTTP client with the provided policy options. It returns a
-// PolicyConfigurationError when an option is malformed or contradictory.
+// New constructs an HTTP client with the provided policy options. Invalid
+// configuration returns a PolicyConfigurationError for one failure or a
+// MultiPolicyConfigurationError for multiple failures. Both match
+// ErrInvalidPolicyConfiguration with errors.Is and expose details through
+// errors.As.
 func New(options ...PolicyOption) (Client, error) {
 	policy, err := NewPolicy(options...)
 	if err != nil {

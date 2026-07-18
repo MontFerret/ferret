@@ -16,7 +16,7 @@ type (
 	// Policy describes HTTP request policy and validation behavior. Its zero
 	// value is a deny-all policy; use NewPolicy for Ferret's secure defaults.
 	Policy struct {
-		configurationError    error
+		configurationErrors   []*PolicyConfigurationError
 		defaultHeaders        map[string]string
 		allowedSchemes        []string
 		allowedMethods        []string
@@ -46,9 +46,10 @@ type (
 )
 
 // NewPolicy builds a reusable policy with Ferret's secure HTTP defaults.
-// Construction fails when an option is malformed or contradictory. The zero
-// value of Policy is intentionally deny-all; embedders should call NewPolicy
-// when they want the standard defaults.
+// Construction returns a PolicyConfigurationError for one failure or a
+// MultiPolicyConfigurationError for multiple failures. The zero value of
+// Policy is intentionally deny-all; embedders should call NewPolicy when they
+// want the standard defaults.
 func NewPolicy(options ...PolicyOption) (*Policy, error) {
 	p := &Policy{
 		followRedirects: true,
@@ -85,12 +86,8 @@ func NewPolicy(options ...PolicyOption) (*Policy, error) {
 }
 
 func (p *Policy) validateConfiguration() error {
-	if p.configurationError != nil {
-		return p.configurationError
-	}
-
 	if p.timeout < 0 {
-		return newPolicyConfigurationError(
+		p.setConfigurationErrorIfMissing(
 			"WithTimeout",
 			p.timeout.String(),
 			"must not be negative",
@@ -98,7 +95,7 @@ func (p *Policy) validateConfiguration() error {
 	}
 
 	if p.maxRedirects < 0 {
-		return newPolicyConfigurationError(
+		p.setConfigurationErrorIfMissing(
 			"WithMaxRedirects",
 			fmt.Sprint(p.maxRedirects),
 			"must not be negative",
@@ -106,7 +103,7 @@ func (p *Policy) validateConfiguration() error {
 	}
 
 	if p.maxRequestSize < 0 {
-		return newPolicyConfigurationError(
+		p.setConfigurationErrorIfMissing(
 			"WithMaxRequestSize",
 			fmt.Sprint(p.maxRequestSize),
 			"must not be negative",
@@ -114,7 +111,7 @@ func (p *Policy) validateConfiguration() error {
 	}
 
 	if p.maxResponseSize < 0 {
-		return newPolicyConfigurationError(
+		p.setConfigurationErrorIfMissing(
 			"WithMaxResponseSize",
 			fmt.Sprint(p.maxResponseSize),
 			"must not be negative",
@@ -122,7 +119,7 @@ func (p *Policy) validateConfiguration() error {
 	}
 
 	if p.maxResponseHeaderSize <= 0 {
-		return newPolicyConfigurationError(
+		p.setConfigurationErrorIfMissing(
 			"WithMaxResponseHeaderSize",
 			fmt.Sprint(p.maxResponseHeaderSize),
 			"must be positive",
@@ -131,13 +128,13 @@ func (p *Policy) validateConfiguration() error {
 
 	for _, scheme := range p.allowedSchemes {
 		if err := validateConfiguredScheme(scheme); err != nil {
-			return newPolicyConfigurationError("WithAllowedSchemes", scheme, err.Error())
+			p.setConfigurationErrorIfMissing("WithAllowedSchemes", scheme, err.Error())
 		}
 	}
 
 	for _, method := range p.allowedMethods {
 		if !isValidMethod(normalizeMethod(method)) {
-			return newPolicyConfigurationError(
+			p.setConfigurationErrorIfMissing(
 				"WithAllowedMethods",
 				method,
 				"must be a non-empty HTTP method token",
@@ -147,19 +144,19 @@ func (p *Policy) validateConfiguration() error {
 
 	for _, host := range p.allowedHosts {
 		if _, err := normalizeConfiguredHost(host); err != nil {
-			return newPolicyConfigurationError("WithAllowedHosts", host, err.Error())
+			p.setConfigurationErrorIfMissing("WithAllowedHosts", host, err.Error())
 		}
 	}
 
 	for _, host := range p.blockedHosts {
 		if _, err := normalizeConfiguredHost(host); err != nil {
-			return newPolicyConfigurationError("WithBlockedHosts", host, err.Error())
+			p.setConfigurationErrorIfMissing("WithBlockedHosts", host, err.Error())
 		}
 	}
 
 	for _, header := range p.blockedRequestHeaders {
 		if err := validateHeaderName(strings.TrimSpace(header)); err != nil {
-			return newPolicyConfigurationError(
+			p.setConfigurationErrorIfMissing(
 				"WithBlockedRequestHeaders",
 				header,
 				err.Reason,
@@ -173,10 +170,12 @@ func (p *Policy) validateConfiguration() error {
 	p.blockedHosts = normalizeHosts(p.blockedHosts)
 	p.blockedRequestHeaders = normalizeHeaders(p.blockedRequestHeaders)
 
-	return p.normalizeDefaultHeaders()
+	p.normalizeDefaultHeaders()
+
+	return newMultiPolicyConfigurationError(p.configurationErrors)
 }
 
-func (p *Policy) normalizeDefaultHeaders() error {
+func (p *Policy) normalizeDefaultHeaders() {
 	inputs := append([]defaultHeaderInput(nil), p.defaultHeaderInputs...)
 
 	if len(p.defaultHeaders) > 0 {
@@ -204,26 +203,32 @@ func (p *Policy) normalizeDefaultHeaders() error {
 		key := strings.TrimSpace(input.key)
 
 		if err := validateHeaderName(key); err != nil {
-			return newPolicyConfigurationError(input.option, input.key, err.Reason)
+			p.setConfigurationErrorIfMissing(input.option, input.key, err.Reason)
+
+			continue
 		}
 
 		canonicalKey := stdhttp.CanonicalHeaderKey(key)
 
 		if isReservedRequestHeader(canonicalKey) {
-			return newPolicyConfigurationError(
+			p.setConfigurationErrorIfMissing(
 				input.option,
 				canonicalKey,
 				"request header is reserved for the transport",
 			)
+
+			continue
 		}
 
 		if err := validateHeaderValue(canonicalKey, input.value); err != nil {
-			return newPolicyConfigurationError(input.option, canonicalKey, err.Reason)
+			p.setConfigurationErrorIfMissing(input.option, canonicalKey, err.Reason)
+
+			continue
 		}
 
 		if value, exists := headers[canonicalKey]; exists {
 			if value != input.value {
-				return newPolicyConfigurationError(
+				p.setConfigurationError(
 					input.option,
 					canonicalKey,
 					"conflicts with another default for the same header",
@@ -247,7 +252,7 @@ func (p *Policy) normalizeDefaultHeaders() error {
 
 	for _, header := range keys {
 		if p.isBlockedHeader(header) {
-			return newPolicyConfigurationError(
+			p.setConfigurationError(
 				sources[header],
 				header,
 				"default header is also configured as blocked",
@@ -257,8 +262,6 @@ func (p *Policy) normalizeDefaultHeaders() error {
 
 	p.defaultHeaders = headers
 	p.defaultHeaderInputs = nil
-
-	return nil
 }
 
 func (p *Policy) addDefaultHeader(option, key, value string) {
@@ -292,11 +295,20 @@ func (p *Policy) addDefaultHeader(option, key, value string) {
 }
 
 func (p *Policy) setConfigurationError(option, value, reason string) {
-	if p.configurationError != nil {
-		return
+	p.configurationErrors = append(
+		p.configurationErrors,
+		newPolicyConfigurationError(option, value, reason),
+	)
+}
+
+func (p *Policy) setConfigurationErrorIfMissing(option, value, reason string) {
+	for _, err := range p.configurationErrors {
+		if err != nil && err.Option == option && err.Value == value && err.Reason == reason {
+			return
+		}
 	}
 
-	p.configurationError = newPolicyConfigurationError(option, value, reason)
+	p.setConfigurationError(option, value, reason)
 }
 
 // Eval validates an outbound request against the policy.

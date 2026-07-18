@@ -188,8 +188,6 @@ func validateConfiguredHosts(p *Policy, option string, hosts []string) {
 	for _, host := range hosts {
 		if _, err := normalizeConfiguredHost(host); err != nil {
 			p.setConfigurationError(option, host, err.Error())
-
-			return
 		}
 	}
 }

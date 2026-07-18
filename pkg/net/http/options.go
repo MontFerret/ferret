@@ -153,8 +153,6 @@ func WithAllowedSchemes(schemes ...string) PolicyOption {
 		for _, scheme := range schemes {
 			if err := validateConfiguredScheme(scheme); err != nil {
 				p.setConfigurationError("WithAllowedSchemes", scheme, err.Error())
-
-				return
 			}
 		}
 	}
@@ -173,8 +171,6 @@ func WithAllowedMethods(methods ...string) PolicyOption {
 					method,
 					"must be a non-empty HTTP method token",
 				)
-
-				return
 			}
 		}
 	}
@@ -262,8 +258,6 @@ func WithBlockedRequestHeaders(headers ...string) PolicyOption {
 		for _, header := range headers {
 			if err := validateHeaderName(strings.TrimSpace(header)); err != nil {
 				p.setConfigurationError("WithBlockedRequestHeaders", header, err.Reason)
-
-				return
 			}
 		}
 	}

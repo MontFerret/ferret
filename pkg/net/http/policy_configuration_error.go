@@ -12,7 +12,7 @@ type PolicyConfigurationError struct {
 	Reason string
 }
 
-func newPolicyConfigurationError(option, value, reason string) error {
+func newPolicyConfigurationError(option, value, reason string) *PolicyConfigurationError {
 	return &PolicyConfigurationError{
 		Option: option,
 		Value:  value,
@@ -22,21 +22,24 @@ func newPolicyConfigurationError(option, value, reason string) error {
 
 // Error returns the human-readable policy configuration failure.
 func (e *PolicyConfigurationError) Error() string {
-	if e == nil {
+	detail := e.sanitizedDetail()
+	if detail == "" {
 		return ErrInvalidPolicyConfiguration.Error()
 	}
 
-	if e.Value == "" {
-		return fmt.Sprintf("%s: %s: %s", ErrInvalidPolicyConfiguration, e.Option, e.Reason)
+	return fmt.Sprintf("%s: %s", ErrInvalidPolicyConfiguration, detail)
+}
+
+func (e *PolicyConfigurationError) sanitizedDetail() string {
+	if e == nil {
+		return ""
 	}
 
-	return fmt.Sprintf(
-		"%s: %s value %q: %s",
-		ErrInvalidPolicyConfiguration,
-		e.Option,
-		e.Value,
-		e.Reason,
-	)
+	if e.Value == "" {
+		return fmt.Sprintf("%s: %s", e.Option, e.Reason)
+	}
+
+	return fmt.Sprintf("%s value %q: %s", e.Option, e.Value, e.Reason)
 }
 
 // Unwrap makes configuration failures detectable with errors.Is.

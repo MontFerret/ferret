@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -257,19 +258,334 @@ func TestNewPolicyNilAndZeroArgumentOptions(t *testing.T) {
 	)
 }
 
-func TestNewPolicyReportsFirstMalformedOption(t *testing.T) {
+func TestNewPolicyReturnsLeafForSingleConfigurationError(t *testing.T) {
+	policy, err := NewPolicy(WithMaxRequestSize(-1))
+	if policy != nil {
+		t.Fatalf("expected no policy, got %#v", policy)
+	}
+
+	configErr := requirePolicyConfigurationError(t, err)
+	want := PolicyConfigurationError{
+		Option: "WithMaxRequestSize",
+		Value:  "-1",
+		Reason: "must not be negative",
+	}
+	if got := *configErr; got != want {
+		t.Fatalf("unexpected configuration error: got %#v, want %#v", got, want)
+	}
+
+	var multiErr *MultiPolicyConfigurationError
+	if errors.As(err, &multiErr) {
+		t.Fatalf("expected a single leaf error, got aggregate %#v", multiErr)
+	}
+}
+
+func TestNewPolicyAggregatesMultipleEntriesFromOneOption(t *testing.T) {
+	policy, err := NewPolicy(WithAllowedSchemes(
+		"://",
+		"https",
+		"bad scheme",
+		"",
+		"://",
+	))
+	if policy != nil {
+		t.Fatalf("expected no policy, got %#v", policy)
+	}
+
+	multiErr := requireMultiPolicyConfigurationError(t, err)
+	assertPolicyConfigurationErrors(t, multiErr.Errors, []PolicyConfigurationError{
+		{
+			Option: "WithAllowedSchemes",
+			Value:  "://",
+			Reason: "must be a valid URL scheme",
+		},
+		{
+			Option: "WithAllowedSchemes",
+			Value:  "bad scheme",
+			Reason: "must be a valid URL scheme",
+		},
+		{
+			Option: "WithAllowedSchemes",
+			Reason: "must be a non-empty URL scheme",
+		},
+		{
+			Option: "WithAllowedSchemes",
+			Value:  "://",
+			Reason: "must be a valid URL scheme",
+		},
+	})
+}
+
+func TestNewPolicyOrdersMapBackedDefaultHeaderErrorsByKey(t *testing.T) {
+	policy, err := NewPolicy(WithDefaultHeaders(map[string]string{
+		"Z Bad Header": "last-secret",
+		"A Bad Header": "first-secret",
+	}))
+	if policy != nil {
+		t.Fatalf("expected no policy, got %#v", policy)
+	}
+
+	multiErr := requireMultiPolicyConfigurationError(t, err)
+	assertPolicyConfigurationErrors(t, multiErr.Errors, []PolicyConfigurationError{
+		{
+			Option: "WithDefaultHeaders",
+			Value:  "A Bad Header",
+			Reason: "name is not a valid HTTP field-name token",
+		},
+		{
+			Option: "WithDefaultHeaders",
+			Value:  "Z Bad Header",
+			Reason: "name is not a valid HTTP field-name token",
+		},
+	})
+
+	for _, secret := range []string{"first-secret", "last-secret"} {
+		if strings.Contains(err.Error(), secret) {
+			t.Fatalf("aggregate configuration error leaked default value %q: %v", secret, err)
+		}
+	}
+}
+
+func TestNewPolicyAggregatesMixedOptionFailures(t *testing.T) {
 	policy, err := NewPolicy(
-		WithAllowedSchemes("://"),
+		WithAllowedMethods("BAD METHOD"),
+		WithAllowedSchemes("bad scheme"),
+		WithAllowedHosts(""),
+		WithBlockedHosts("*.example.com"),
+		WithBlockedRequestHeaders("Bad Header"),
+		WithDefaultHeader("Another Bad Header", "configured-secret"),
 		WithMaxResponseSize(-1),
 	)
 	if policy != nil {
 		t.Fatalf("expected no policy, got %#v", policy)
 	}
 
-	configErr := requirePolicyConfigurationError(t, err)
-	if configErr.Option != "WithAllowedSchemes" || configErr.Value != "://" {
-		t.Fatalf("expected first malformed option metadata, got %#v", configErr)
+	multiErr := requireMultiPolicyConfigurationError(t, err)
+	assertPolicyConfigurationErrors(t, multiErr.Errors, []PolicyConfigurationError{
+		{
+			Option: "WithAllowedMethods",
+			Value:  "BAD METHOD",
+			Reason: "must be a non-empty HTTP method token",
+		},
+		{
+			Option: "WithAllowedSchemes",
+			Value:  "bad scheme",
+			Reason: "must be a valid URL scheme",
+		},
+		{
+			Option: "WithAllowedHosts",
+			Reason: "must not be blank",
+		},
+		{
+			Option: "WithBlockedHosts",
+			Value:  "*.example.com",
+			Reason: "wildcards are not supported",
+		},
+		{
+			Option: "WithBlockedRequestHeaders",
+			Value:  "Bad Header",
+			Reason: "name is not a valid HTTP field-name token",
+		},
+		{
+			Option: "WithDefaultHeader",
+			Value:  "Another Bad Header",
+			Reason: "name is not a valid HTTP field-name token",
+		},
+		{
+			Option: "WithMaxResponseSize",
+			Value:  "-1",
+			Reason: "must not be negative",
+		},
+	})
+
+	if strings.Contains(err.Error(), "configured-secret") {
+		t.Fatalf("aggregate configuration error leaked a default header value: %v", err)
 	}
+}
+
+func TestNewPolicyOrdersMixedImmediateAndDeferredConfigurationErrors(t *testing.T) {
+	const (
+		firstSecret  = "first-configured-secret"
+		secondSecret = "second-configured-secret"
+	)
+
+	policy, err := NewPolicy(
+		WithMaxResponseSize(-2),
+		WithDefaultHeader("X-Conflict", firstSecret),
+		WithDefaultHeader("x-conflict", secondSecret),
+		WithMaxRequestSize(-1),
+	)
+	if policy != nil {
+		t.Fatalf("expected no policy, got %#v", policy)
+	}
+
+	multiErr := requireMultiPolicyConfigurationError(t, err)
+	assertPolicyConfigurationErrors(t, multiErr.Errors, []PolicyConfigurationError{
+		{
+			Option: "WithMaxResponseSize",
+			Value:  "-2",
+			Reason: "must not be negative",
+		},
+		{
+			Option: "WithMaxRequestSize",
+			Value:  "-1",
+			Reason: "must not be negative",
+		},
+		{
+			Option: "WithDefaultHeader",
+			Value:  "X-Conflict",
+			Reason: "conflicts with another default for the same header",
+		},
+	})
+
+	for _, secret := range []string{firstSecret, secondSecret} {
+		if strings.Contains(err.Error(), secret) {
+			t.Fatalf("aggregate configuration error leaked header value %q: %v", secret, err)
+		}
+		for _, child := range multiErr.Errors {
+			if strings.Contains(child.Error(), secret) || strings.Contains(child.Value, secret) {
+				t.Fatalf("configuration child leaked header value %q: %#v", secret, child)
+			}
+		}
+	}
+}
+
+func TestPolicyConfigurationAggregateSupportsStandardErrorDiscovery(t *testing.T) {
+	_, err := NewPolicy(
+		WithMaxRequestSize(-1),
+		WithMaxResponseSize(-2),
+	)
+	multiErr := requireMultiPolicyConfigurationError(t, err)
+	wrapped := fmt.Errorf("construct HTTP policy: %w", err)
+
+	if !errors.Is(wrapped, ErrInvalidPolicyConfiguration) {
+		t.Fatalf("expected wrapped aggregate to match ErrInvalidPolicyConfiguration: %v", wrapped)
+	}
+
+	var discoveredMulti *MultiPolicyConfigurationError
+	if !errors.As(wrapped, &discoveredMulti) || discoveredMulti != multiErr {
+		t.Fatalf("expected wrapped aggregate to expose the exact multi-error, got %#v", discoveredMulti)
+	}
+
+	var discoveredLeaf *PolicyConfigurationError
+	if !errors.As(wrapped, &discoveredLeaf) || discoveredLeaf != multiErr.Errors[0] {
+		t.Fatalf("expected wrapped aggregate to expose its first leaf, got %#v", discoveredLeaf)
+	}
+
+	for index, child := range multiErr.Errors {
+		if !errors.Is(wrapped, child) {
+			t.Fatalf("expected wrapped aggregate to match exact child %d (%#v)", index, child)
+		}
+	}
+
+	rendered := multiErr.Error()
+	if count := strings.Count(rendered, ErrInvalidPolicyConfiguration.Error()); count != 1 {
+		t.Fatalf("expected the shared sentinel once, got %d occurrences in %q", count, rendered)
+	}
+	for _, child := range multiErr.Errors {
+		if !strings.Contains(rendered, child.Option) || !strings.Contains(rendered, child.Reason) {
+			t.Fatalf("aggregate text omitted child %#v: %q", child, rendered)
+		}
+	}
+}
+
+func TestNewPolicyAggregatesDefaultBlockedConflictsInBothOptionOrders(t *testing.T) {
+	const secret = "configured-secret"
+
+	policy, err := NewPolicy(
+		WithDefaultHeader("X-Default-First", secret),
+		WithBlockedRequestHeaders("x-default-first", "x-blocked-first"),
+		WithDefaultHeader("X-Blocked-First", secret),
+		WithTimeout(-time.Nanosecond),
+	)
+	if policy != nil {
+		t.Fatalf("expected no policy, got %#v", policy)
+	}
+
+	multiErr := requireMultiPolicyConfigurationError(t, err)
+	assertPolicyConfigurationErrors(t, multiErr.Errors, []PolicyConfigurationError{
+		{
+			Option: "WithTimeout",
+			Value:  "-1ns",
+			Reason: "must not be negative",
+		},
+		{
+			Option: "WithDefaultHeader",
+			Value:  "X-Blocked-First",
+			Reason: "default header is also configured as blocked",
+		},
+		{
+			Option: "WithDefaultHeader",
+			Value:  "X-Default-First",
+			Reason: "default header is also configured as blocked",
+		},
+	})
+
+	if strings.Contains(err.Error(), secret) {
+		t.Fatalf("aggregate configuration error leaked a default header value: %v", err)
+	}
+}
+
+func TestNewPolicyExcludesInvalidDefaultsFromConflictChecks(t *testing.T) {
+	const secret = "configured-secret\r\nInjected: true"
+
+	policy, err := NewPolicy(
+		WithDefaultHeader("Authorization", secret),
+		WithBlockedRequestHeaders("authorization"),
+	)
+	if policy != nil {
+		t.Fatalf("expected no policy, got %#v", policy)
+	}
+
+	configErr := requirePolicyConfigurationError(t, err)
+	if configErr.Option != "WithDefaultHeader" || configErr.Reason != "value contains a newline" {
+		t.Fatalf("unexpected configuration error: %#v", configErr)
+	}
+
+	var multiErr *MultiPolicyConfigurationError
+	if errors.As(err, &multiErr) {
+		t.Fatalf("invalid default produced a spurious blocked-header conflict: %#v", multiErr.Errors)
+	}
+	if strings.Contains(err.Error(), secret) || strings.Contains(configErr.Value, secret) {
+		t.Fatalf("configuration error leaked a default header value: %v", err)
+	}
+}
+
+func TestNewPolicyRetainsErrorsFromOverriddenOptions(t *testing.T) {
+	policy, err := NewPolicy(
+		WithAllowedSchemes("://"),
+		WithAllowedSchemes("https"),
+		WithMaxRequestSize(-1),
+		WithMaxRequestSize(1024),
+	)
+	if policy != nil {
+		t.Fatalf("expected no policy, got %#v", policy)
+	}
+
+	multiErr := requireMultiPolicyConfigurationError(t, err)
+	assertPolicyConfigurationErrors(t, multiErr.Errors, []PolicyConfigurationError{
+		{
+			Option: "WithAllowedSchemes",
+			Value:  "://",
+			Reason: "must be a valid URL scheme",
+		},
+		{
+			Option: "WithMaxRequestSize",
+			Value:  "-1",
+			Reason: "must not be negative",
+		},
+	})
+}
+
+func TestNewReturnsNilClientForAggregatedPolicyConfigurationError(t *testing.T) {
+	client, err := New(
+		WithMaxRequestSize(-1),
+		WithMaxResponseSize(-2),
+	)
+	if client != nil {
+		t.Fatalf("expected no client, got %T", client)
+	}
+	requireMultiPolicyConfigurationError(t, err)
 }
 
 func TestZeroPolicyIsDenyAll(t *testing.T) {
@@ -298,4 +614,51 @@ func requirePolicyConfigurationError(t *testing.T, err error) *PolicyConfigurati
 	}
 
 	return configErr
+}
+
+func requireMultiPolicyConfigurationError(t *testing.T, err error) *MultiPolicyConfigurationError {
+	t.Helper()
+
+	if err == nil {
+		t.Fatal("expected multiple policy configuration errors")
+	}
+	if !errors.Is(err, ErrInvalidPolicyConfiguration) {
+		t.Fatalf("expected ErrInvalidPolicyConfiguration, got %v", err)
+	}
+
+	var multiErr *MultiPolicyConfigurationError
+	if !errors.As(err, &multiErr) {
+		t.Fatalf("expected MultiPolicyConfigurationError, got %T: %v", err, err)
+	}
+	if len(multiErr.Errors) < 2 {
+		t.Fatalf("expected aggregate with at least two children, got %#v", multiErr)
+	}
+
+	return multiErr
+}
+
+func assertPolicyConfigurationErrors(
+	t *testing.T,
+	got []*PolicyConfigurationError,
+	want []PolicyConfigurationError,
+) {
+	t.Helper()
+
+	if len(got) != len(want) {
+		t.Fatalf("unexpected configuration error count: got %d (%#v), want %d", len(got), got, len(want))
+	}
+
+	for index := range want {
+		if got[index] == nil {
+			t.Fatalf("configuration error %d is nil", index)
+		}
+		if actual := *got[index]; actual != want[index] {
+			t.Fatalf(
+				"unexpected configuration error %d: got %#v, want %#v",
+				index,
+				actual,
+				want[index],
+			)
+		}
+	}
 }
