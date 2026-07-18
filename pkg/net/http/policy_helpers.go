@@ -9,13 +9,6 @@ import (
 	"strings"
 )
 
-type policyTarget string
-
-const (
-	policyTargetRequest  policyTarget = "request"
-	policyTargetRedirect policyTarget = "redirect destination"
-)
-
 var (
 	ipv4CurrentNetwork  = netip.MustParsePrefix("0.0.0.0/8")
 	carrierGradeNAT     = netip.MustParsePrefix("100.64.0.0/10")
@@ -54,7 +47,7 @@ func normalizeValues(values []string) []string {
 
 	normalized := make([]string, 0, len(values))
 	for _, value := range values {
-		value = strings.ToLower(strings.TrimSpace(value))
+		value = asciiLower(strings.TrimSpace(value))
 		if value == "" {
 			continue
 		}
@@ -63,6 +56,40 @@ func normalizeValues(values []string) []string {
 	}
 
 	return normalized
+}
+
+func normalizeMethods(methods []string) []string {
+	if methods == nil {
+		return nil
+	}
+
+	normalized := make([]string, 0, len(methods))
+
+	for _, method := range methods {
+		method = normalizeMethod(method)
+
+		if !isValidMethod(method) {
+			continue
+		}
+
+		normalized = append(normalized, method)
+	}
+
+	return normalized
+}
+
+func normalizeRequestMethod(method string) string {
+	method = normalizeMethod(method)
+
+	if method == "" {
+		return stdhttp.MethodGet
+	}
+
+	return method
+}
+
+func normalizeMethod(method string) string {
+	return asciiUpper(strings.TrimSpace(method))
 }
 
 func normalizeHeaders(headers []string) []string {
@@ -81,6 +108,23 @@ func normalizeHeaders(headers []string) []string {
 	}
 
 	return normalized
+}
+
+func isReservedRequestHeader(key string) bool {
+	switch stdhttp.CanonicalHeaderKey(key) {
+	case "Connection",
+		"Keep-Alive",
+		"Proxy-Authenticate",
+		"Proxy-Authorization",
+		"Proxy-Connection",
+		"Te",
+		"Trailer",
+		"Transfer-Encoding",
+		"Upgrade":
+		return true
+	default:
+		return false
+	}
 }
 
 func normalizeHosts(hosts []string) []string {
@@ -104,10 +148,8 @@ func normalizeHosts(hosts []string) []string {
 }
 
 func containsValue(values []string, needle string) bool {
-	needle = strings.ToLower(strings.TrimSpace(needle))
-
 	for _, value := range values {
-		if strings.ToLower(strings.TrimSpace(value)) == needle {
+		if value == needle {
 			return true
 		}
 	}
@@ -133,7 +175,7 @@ func containsHost(hosts []string, u *url.URL) bool {
 }
 
 func normalizeHostValue(value string) string {
-	value = strings.ToLower(strings.TrimSpace(value))
+	value = asciiLower(strings.TrimSpace(value))
 	if value == "" {
 		return ""
 	}
@@ -150,7 +192,7 @@ func normalizeHostValue(value string) string {
 }
 
 func canonicalHostname(hostname string) string {
-	hostname = strings.ToLower(strings.TrimSpace(hostname))
+	hostname = asciiLower(strings.TrimSpace(hostname))
 
 	return strings.TrimSuffix(hostname, ".")
 }
@@ -162,6 +204,52 @@ func canonicalHostKey(hostname string) string {
 	}
 
 	return hostname
+}
+
+func isASCII(value string) bool {
+	for idx := range len(value) {
+		if value[idx] >= 0x80 {
+			return false
+		}
+	}
+
+	return true
+}
+
+func asciiLower(value string) string {
+	for idx := range len(value) {
+		if value[idx] >= 'A' && value[idx] <= 'Z' {
+			data := []byte(value)
+
+			for dataIdx := idx; dataIdx < len(data); dataIdx++ {
+				if data[dataIdx] >= 'A' && data[dataIdx] <= 'Z' {
+					data[dataIdx] += 'a' - 'A'
+				}
+			}
+
+			return string(data)
+		}
+	}
+
+	return value
+}
+
+func asciiUpper(value string) string {
+	for idx := range len(value) {
+		if value[idx] >= 'a' && value[idx] <= 'z' {
+			data := []byte(value)
+
+			for dataIdx := idx; dataIdx < len(data); dataIdx++ {
+				if data[dataIdx] >= 'a' && data[dataIdx] <= 'z' {
+					data[dataIdx] -= 'a' - 'A'
+				}
+			}
+
+			return string(data)
+		}
+	}
+
+	return value
 }
 
 func isLocalhostName(hostname string) bool {
@@ -287,10 +375,6 @@ func prefixContains(prefixes []netip.Prefix, addr netip.Addr) bool {
 	}
 
 	return false
-}
-
-func newPolicyError(target policyTarget, subject, reason string) error {
-	return fmt.Errorf("http: %s blocked by access policy: %s: %s", target, subject, reason)
 }
 
 func addressSubject(addr netip.Addr) string {

@@ -8,10 +8,11 @@ import (
 	"time"
 )
 
-func TestNewPoliciesDefaultsAndOptions(t *testing.T) {
-	policies := NewPolicies(
+func TestNewPolicyDefaultsAndOptions(t *testing.T) {
+	policies := NewPolicy(
 		WithTimeout(time.Second),
 		WithAllowedSchemes("HTTPS", " "),
+		WithAllowedMethods("post", "CUSTOM-METHOD", "BAD METHOD", " "),
 		WithAllowedHosts("Example.COM"),
 		WithBlockedHosts("Blocked.EXAMPLE"),
 		WithBlockedRequestHeaders("x-token"),
@@ -23,6 +24,7 @@ func TestNewPoliciesDefaultsAndOptions(t *testing.T) {
 		WithMaxRedirects(2),
 		WithMaxRequestSize(3),
 		WithMaxResponseSize(4),
+		WithMaxResponseHeaderSize(5),
 	)
 
 	if policies.timeout != time.Second {
@@ -31,11 +33,12 @@ func TestNewPoliciesDefaultsAndOptions(t *testing.T) {
 	if policies.followRedirects {
 		t.Fatal("expected redirects to be disabled")
 	}
-	if policies.maxRedirects != 2 || policies.maxRequestSize != 3 || policies.maxResponseSize != 4 {
-		t.Fatalf("expected configured limits, got redirects=%d request=%d response=%d",
+	if policies.maxRedirects != 2 || policies.maxRequestSize != 3 || policies.maxResponseSize != 4 || policies.maxResponseHeaderSize != 5 {
+		t.Fatalf("expected configured limits, got redirects=%d request=%d response=%d response-headers=%d",
 			policies.maxRedirects,
 			policies.maxRequestSize,
 			policies.maxResponseSize,
+			policies.maxResponseHeaderSize,
 		)
 	}
 	if policies.allowLocalhost || policies.allowPrivateNetworks || policies.allowLinkLocal {
@@ -43,6 +46,9 @@ func TestNewPoliciesDefaultsAndOptions(t *testing.T) {
 	}
 	if got := policies.allowedSchemes; len(got) != 1 || got[0] != "https" {
 		t.Fatalf("expected normalized allowed scheme, got %v", got)
+	}
+	if got := policies.allowedMethods; len(got) != 2 || got[0] != "POST" || got[1] != "CUSTOM-METHOD" {
+		t.Fatalf("expected normalized allowed methods, got %v", got)
 	}
 	if got := policies.allowedHosts; len(got) != 1 || got[0] != "example.com" {
 		t.Fatalf("expected normalized allowed host, got %v", got)
@@ -58,8 +64,8 @@ func TestNewPoliciesDefaultsAndOptions(t *testing.T) {
 	}
 }
 
-func TestNewPoliciesDefaultValues(t *testing.T) {
-	policies := NewPolicies()
+func TestNewPolicyDefaultValues(t *testing.T) {
+	policies := NewPolicy()
 
 	if !policies.followRedirects {
 		t.Fatal("expected redirects to be enabled by default")
@@ -70,87 +76,96 @@ func TestNewPoliciesDefaultValues(t *testing.T) {
 	if got := policies.allowedSchemes; len(got) != 2 || got[0] != "http" || got[1] != "https" {
 		t.Fatalf("expected default http/https schemes, got %v", got)
 	}
+	if policies.timeout != defaultTimeout {
+		t.Fatalf("expected default timeout %s, got %s", defaultTimeout, policies.timeout)
+	}
+	if policies.maxResponseHeaderSize != defaultMaxResponseHeaderSize {
+		t.Fatalf("expected default response header limit %d, got %d", defaultMaxResponseHeaderSize, policies.maxResponseHeaderSize)
+	}
+	if len(policies.allowedMethods) != 7 {
+		t.Fatalf("expected seven default methods, got %v", policies.allowedMethods)
+	}
 }
 
-func TestPoliciesEvalAddressClasses(t *testing.T) {
-	allAddressOptIns := NewPolicies(
+func TestPolicyEvalAddressClasses(t *testing.T) {
+	allAddressOptIns := NewPolicy(
 		WithAllowLocalhost(true),
 		WithAllowPrivateNetworks(true),
 		WithAllowLinkLocal(true),
 	)
 
 	tests := []struct {
+		policies *Policy
 		name     string
 		url      string
 		want     string
-		policies *Policies
 	}{
-		{name: "localhost", url: "http://localhost", want: "localhost is not allowed", policies: NewPolicies()},
-		{name: "localhost port", url: "http://localhost:8080", want: "localhost is not allowed", policies: NewPolicies()},
-		{name: "localhost subdomain", url: "http://service.localhost", want: "localhost is not allowed", policies: NewPolicies()},
-		{name: "localhost trailing dot", url: "http://localhost.", want: "localhost is not allowed", policies: NewPolicies()},
-		{name: "ipv4 loopback", url: "http://127.0.0.1", want: "localhost is not allowed", policies: NewPolicies()},
-		{name: "abbreviated ipv4 loopback", url: "http://127.1", want: "localhost is not allowed", policies: NewPolicies()},
-		{name: "decimal ipv4 loopback", url: "http://2130706433", want: "localhost is not allowed", policies: NewPolicies()},
-		{name: "ipv6 loopback", url: "http://[::1]", want: "localhost is not allowed", policies: NewPolicies()},
-		{name: "private 10", url: "http://10.0.0.1", want: "private networks are not allowed", policies: NewPolicies()},
-		{name: "private 172", url: "http://172.16.0.1", want: "private networks are not allowed", policies: NewPolicies()},
-		{name: "private 192", url: "http://192.168.0.1", want: "private networks are not allowed", policies: NewPolicies()},
-		{name: "private ipv6 ula", url: "http://[fc00::1]", want: "private networks are not allowed", policies: NewPolicies()},
-		{name: "carrier grade nat", url: "http://100.64.0.1", want: "private networks are not allowed", policies: NewPolicies()},
-		{name: "ipv4 link local", url: "http://169.254.169.254", want: "link-local addresses are not allowed", policies: NewPolicies()},
-		{name: "ipv6 link local", url: "http://[fe80::1]", want: "link-local addresses are not allowed", policies: NewPolicies()},
-		{name: "ipv4 unspecified", url: "http://0.0.0.0", want: "unspecified addresses are not allowed", policies: NewPolicies()},
-		{name: "ipv4 current network", url: "http://0.1.2.3", want: "unspecified addresses are not allowed", policies: NewPolicies()},
-		{name: "ipv6 unspecified", url: "http://[::]", want: "unspecified addresses are not allowed", policies: NewPolicies()},
-		{name: "ipv4 multicast", url: "http://224.0.0.1", want: "multicast addresses are not allowed", policies: NewPolicies()},
-		{name: "ipv6 multicast", url: "http://[ff02::1]", want: "multicast addresses are not allowed", policies: NewPolicies()},
-		{name: "ipv4 reserved", url: "http://240.0.0.1", want: "reserved addresses are not allowed", policies: NewPolicies()},
-		{name: "ipv4 limited broadcast", url: "http://255.255.255.255", want: "reserved addresses are not allowed", policies: NewPolicies()},
-		{name: "ipv6 site local", url: "http://[fec0::1]", want: "reserved addresses are not allowed", policies: NewPolicies()},
-		{name: "mapped loopback", url: "http://[::ffff:127.0.0.1]", want: "localhost is not allowed", policies: NewPolicies()},
-		{name: "mapped private", url: "http://[::ffff:10.0.0.1]", want: "private networks are not allowed", policies: NewPolicies()},
-		{name: "mapped link local", url: "http://[::ffff:169.254.169.254]", want: "link-local addresses are not allowed", policies: NewPolicies()},
-		{name: "mapped public", url: "http://[::ffff:8.8.8.8]", policies: NewPolicies()},
-		{name: "ietf protocol assignments", url: "http://192.0.0.8", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "pcp anycast", url: "http://192.0.0.9", policies: NewPolicies()},
-		{name: "turn anycast", url: "http://192.0.0.10", policies: NewPolicies()},
-		{name: "ietf protocol assignment remainder", url: "http://192.0.0.11", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "documentation ipv4 one", url: "http://192.0.2.1", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "deprecated relay anycast", url: "http://192.88.99.1", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "benchmarking ipv4 first", url: "http://198.18.0.1", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "benchmarking ipv4 last", url: "http://198.19.255.254", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "documentation ipv4 two", url: "http://198.51.100.1", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "documentation ipv4 three", url: "http://203.0.113.1", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "nat64 loopback", url: "http://[64:ff9b::127.0.0.1]", want: "localhost is not allowed", policies: NewPolicies()},
-		{name: "nat64 private", url: "http://[64:ff9b::10.0.0.1]", want: "private networks are not allowed", policies: NewPolicies()},
-		{name: "nat64 link local", url: "http://[64:ff9b::169.254.169.254]", want: "link-local addresses are not allowed", policies: NewPolicies()},
-		{name: "nat64 public", url: "http://[64:ff9b::8.8.8.8]", policies: NewPolicies()},
-		{name: "allow nat64 loopback", url: "http://[64:ff9b::127.0.0.1]", policies: NewPolicies(WithAllowLocalhost(true))},
-		{name: "allow nat64 private", url: "http://[64:ff9b::10.0.0.1]", policies: NewPolicies(WithAllowPrivateNetworks(true))},
-		{name: "allow nat64 link local", url: "http://[64:ff9b::169.254.169.254]", policies: NewPolicies(WithAllowLinkLocal(true))},
-		{name: "local use nat64", url: "http://[64:ff9b:1::1]", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "discard only ipv6", url: "http://[100::1]", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "dummy ipv6", url: "http://[100:0:0:1::1]", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "teredo ipv6", url: "http://[2001::1]", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "benchmarking ipv6", url: "http://[2001:2::1]", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "deprecated orchid", url: "http://[2001:10::1]", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "documentation ipv6", url: "http://[2001:db8::1]", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "six to four", url: "http://[2002::1]", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "documentation ipv6 two", url: "http://[3fff::1]", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "segment routing ipv6", url: "http://[5f00::1]", want: "non-public addresses are not allowed", policies: NewPolicies()},
-		{name: "public ipv4", url: "http://8.8.8.8", policies: NewPolicies()},
-		{name: "public ipv6 with port", url: "http://[2606:4700:4700::1111]:8080", policies: NewPolicies()},
-		{name: "allow localhost", url: "http://127.1", policies: NewPolicies(WithAllowLocalhost(true))},
-		{name: "allow private", url: "http://10.0.0.1", policies: NewPolicies(WithAllowPrivateNetworks(true))},
-		{name: "allow carrier grade nat", url: "http://100.64.0.1", policies: NewPolicies(WithAllowPrivateNetworks(true))},
-		{name: "allow link local", url: "http://169.254.169.254", policies: NewPolicies(WithAllowLinkLocal(true))},
-		{name: "allow ipv6 link local", url: "http://[fe80::1]", policies: NewPolicies(WithAllowLinkLocal(true))},
-		{name: "localhost does not allow private", url: "http://10.0.0.1", want: "private networks are not allowed", policies: NewPolicies(WithAllowLocalhost(true))},
-		{name: "private does not allow link local", url: "http://169.254.169.254", want: "link-local addresses are not allowed", policies: NewPolicies(WithAllowPrivateNetworks(true))},
-		{name: "link local does not allow private", url: "http://10.0.0.1", want: "private networks are not allowed", policies: NewPolicies(WithAllowLinkLocal(true))},
-		{name: "allowlist does not allow loopback", url: "http://127.0.0.1", want: "localhost is not allowed", policies: NewPolicies(WithAllowedHosts("127.0.0.1"))},
-		{name: "canonical trailing dot allowlist", url: "http://example.com.", policies: NewPolicies(WithAllowedHosts("example.com"))},
+		{name: "localhost", url: "http://localhost", want: "localhost is not allowed", policies: NewPolicy()},
+		{name: "localhost port", url: "http://localhost:8080", want: "localhost is not allowed", policies: NewPolicy()},
+		{name: "localhost subdomain", url: "http://service.localhost", want: "localhost is not allowed", policies: NewPolicy()},
+		{name: "localhost trailing dot", url: "http://localhost.", want: "localhost is not allowed", policies: NewPolicy()},
+		{name: "ipv4 loopback", url: "http://127.0.0.1", want: "localhost is not allowed", policies: NewPolicy()},
+		{name: "abbreviated ipv4 loopback", url: "http://127.1", want: "localhost is not allowed", policies: NewPolicy()},
+		{name: "decimal ipv4 loopback", url: "http://2130706433", want: "localhost is not allowed", policies: NewPolicy()},
+		{name: "ipv6 loopback", url: "http://[::1]", want: "localhost is not allowed", policies: NewPolicy()},
+		{name: "private 10", url: "http://10.0.0.1", want: "private networks are not allowed", policies: NewPolicy()},
+		{name: "private 172", url: "http://172.16.0.1", want: "private networks are not allowed", policies: NewPolicy()},
+		{name: "private 192", url: "http://192.168.0.1", want: "private networks are not allowed", policies: NewPolicy()},
+		{name: "private ipv6 ula", url: "http://[fc00::1]", want: "private networks are not allowed", policies: NewPolicy()},
+		{name: "carrier grade nat", url: "http://100.64.0.1", want: "private networks are not allowed", policies: NewPolicy()},
+		{name: "ipv4 link local", url: "http://169.254.169.254", want: "link-local addresses are not allowed", policies: NewPolicy()},
+		{name: "ipv6 link local", url: "http://[fe80::1]", want: "link-local addresses are not allowed", policies: NewPolicy()},
+		{name: "ipv4 unspecified", url: "http://0.0.0.0", want: "unspecified addresses are not allowed", policies: NewPolicy()},
+		{name: "ipv4 current network", url: "http://0.1.2.3", want: "unspecified addresses are not allowed", policies: NewPolicy()},
+		{name: "ipv6 unspecified", url: "http://[::]", want: "unspecified addresses are not allowed", policies: NewPolicy()},
+		{name: "ipv4 multicast", url: "http://224.0.0.1", want: "multicast addresses are not allowed", policies: NewPolicy()},
+		{name: "ipv6 multicast", url: "http://[ff02::1]", want: "multicast addresses are not allowed", policies: NewPolicy()},
+		{name: "ipv4 reserved", url: "http://240.0.0.1", want: "reserved addresses are not allowed", policies: NewPolicy()},
+		{name: "ipv4 limited broadcast", url: "http://255.255.255.255", want: "reserved addresses are not allowed", policies: NewPolicy()},
+		{name: "ipv6 site local", url: "http://[fec0::1]", want: "reserved addresses are not allowed", policies: NewPolicy()},
+		{name: "mapped loopback", url: "http://[::ffff:127.0.0.1]", want: "localhost is not allowed", policies: NewPolicy()},
+		{name: "mapped private", url: "http://[::ffff:10.0.0.1]", want: "private networks are not allowed", policies: NewPolicy()},
+		{name: "mapped link local", url: "http://[::ffff:169.254.169.254]", want: "link-local addresses are not allowed", policies: NewPolicy()},
+		{name: "mapped public", url: "http://[::ffff:8.8.8.8]", policies: NewPolicy()},
+		{name: "ietf protocol assignments", url: "http://192.0.0.8", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "pcp anycast", url: "http://192.0.0.9", policies: NewPolicy()},
+		{name: "turn anycast", url: "http://192.0.0.10", policies: NewPolicy()},
+		{name: "ietf protocol assignment remainder", url: "http://192.0.0.11", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "documentation ipv4 one", url: "http://192.0.2.1", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "deprecated relay anycast", url: "http://192.88.99.1", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "benchmarking ipv4 first", url: "http://198.18.0.1", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "benchmarking ipv4 last", url: "http://198.19.255.254", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "documentation ipv4 two", url: "http://198.51.100.1", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "documentation ipv4 three", url: "http://203.0.113.1", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "nat64 loopback", url: "http://[64:ff9b::127.0.0.1]", want: "localhost is not allowed", policies: NewPolicy()},
+		{name: "nat64 private", url: "http://[64:ff9b::10.0.0.1]", want: "private networks are not allowed", policies: NewPolicy()},
+		{name: "nat64 link local", url: "http://[64:ff9b::169.254.169.254]", want: "link-local addresses are not allowed", policies: NewPolicy()},
+		{name: "nat64 public", url: "http://[64:ff9b::8.8.8.8]", policies: NewPolicy()},
+		{name: "allow nat64 loopback", url: "http://[64:ff9b::127.0.0.1]", policies: NewPolicy(WithAllowLocalhost(true))},
+		{name: "allow nat64 private", url: "http://[64:ff9b::10.0.0.1]", policies: NewPolicy(WithAllowPrivateNetworks(true))},
+		{name: "allow nat64 link local", url: "http://[64:ff9b::169.254.169.254]", policies: NewPolicy(WithAllowLinkLocal(true))},
+		{name: "local use nat64", url: "http://[64:ff9b:1::1]", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "discard only ipv6", url: "http://[100::1]", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "dummy ipv6", url: "http://[100:0:0:1::1]", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "teredo ipv6", url: "http://[2001::1]", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "benchmarking ipv6", url: "http://[2001:2::1]", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "deprecated orchid", url: "http://[2001:10::1]", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "documentation ipv6", url: "http://[2001:db8::1]", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "six to four", url: "http://[2002::1]", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "documentation ipv6 two", url: "http://[3fff::1]", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "segment routing ipv6", url: "http://[5f00::1]", want: "non-public addresses are not allowed", policies: NewPolicy()},
+		{name: "public ipv4", url: "http://8.8.8.8", policies: NewPolicy()},
+		{name: "public ipv6 with port", url: "http://[2606:4700:4700::1111]:8080", policies: NewPolicy()},
+		{name: "allow localhost", url: "http://127.1", policies: NewPolicy(WithAllowLocalhost(true))},
+		{name: "allow private", url: "http://10.0.0.1", policies: NewPolicy(WithAllowPrivateNetworks(true))},
+		{name: "allow carrier grade nat", url: "http://100.64.0.1", policies: NewPolicy(WithAllowPrivateNetworks(true))},
+		{name: "allow link local", url: "http://169.254.169.254", policies: NewPolicy(WithAllowLinkLocal(true))},
+		{name: "allow ipv6 link local", url: "http://[fe80::1]", policies: NewPolicy(WithAllowLinkLocal(true))},
+		{name: "localhost does not allow private", url: "http://10.0.0.1", want: "private networks are not allowed", policies: NewPolicy(WithAllowLocalhost(true))},
+		{name: "private does not allow link local", url: "http://169.254.169.254", want: "link-local addresses are not allowed", policies: NewPolicy(WithAllowPrivateNetworks(true))},
+		{name: "link local does not allow private", url: "http://10.0.0.1", want: "private networks are not allowed", policies: NewPolicy(WithAllowLinkLocal(true))},
+		{name: "allowlist does not allow loopback", url: "http://127.0.0.1", want: "localhost is not allowed", policies: NewPolicy(WithAllowedHosts("127.0.0.1"))},
+		{name: "canonical trailing dot allowlist", url: "http://example.com.", policies: NewPolicy(WithAllowedHosts("example.com"))},
 		{name: "opt ins do not allow unspecified", url: "http://0.1.2.3", want: "unspecified addresses are not allowed", policies: allAddressOptIns},
 		{name: "opt ins do not allow multicast", url: "http://224.0.0.1", want: "multicast addresses are not allowed", policies: allAddressOptIns},
 		{name: "opt ins do not allow reserved", url: "http://240.0.0.1", want: "reserved addresses are not allowed", policies: allAddressOptIns},
@@ -176,24 +191,24 @@ func TestPoliciesEvalAddressClasses(t *testing.T) {
 	}
 }
 
-func TestPoliciesCanonicalHostPolicies(t *testing.T) {
+func TestPolicyCanonicalHostPolicies(t *testing.T) {
 	tests := []struct {
+		policies *Policy
 		name     string
 		url      string
 		want     string
-		policies *Policies
 	}{
 		{
 			name:     "blocked integer ipv4",
 			url:      "http://134744072",
 			want:     "host is blocked",
-			policies: NewPolicies(WithBlockedHosts("8.8.8.8")),
+			policies: NewPolicy(WithBlockedHosts("8.8.8.8")),
 		},
 		{
 			name: "blocked abbreviated ipv4 with port",
 			url:  "http://127.1:8080",
 			want: "host is blocked",
-			policies: NewPolicies(
+			policies: NewPolicy(
 				WithAllowLocalhost(true),
 				WithBlockedHosts("127.0.0.1:8080"),
 			),
@@ -202,28 +217,28 @@ func TestPoliciesCanonicalHostPolicies(t *testing.T) {
 			name:     "blocked mapped ipv4",
 			url:      "http://[::ffff:8.8.8.8]",
 			want:     "host is blocked",
-			policies: NewPolicies(WithBlockedHosts("8.8.8.8")),
+			policies: NewPolicy(WithBlockedHosts("8.8.8.8")),
 		},
 		{
 			name:     "blocked port remains specific",
 			url:      "http://134744072:80",
-			policies: NewPolicies(WithBlockedHosts("8.8.8.8:443")),
+			policies: NewPolicy(WithBlockedHosts("8.8.8.8:443")),
 		},
 		{
 			name:     "allowlist port remains specific",
 			url:      "http://134744072:80",
 			want:     "host is not allowed",
-			policies: NewPolicies(WithAllowedHosts("8.8.8.8:443")),
+			policies: NewPolicy(WithAllowedHosts("8.8.8.8:443")),
 		},
 		{
 			name:     "allowed integer ipv4",
 			url:      "http://134744072",
-			policies: NewPolicies(WithAllowedHosts("8.8.8.8")),
+			policies: NewPolicy(WithAllowedHosts("8.8.8.8")),
 		},
 		{
 			name: "allowed abbreviated ipv4 with port",
 			url:  "http://127.1:8080",
-			policies: NewPolicies(
+			policies: NewPolicy(
 				WithAllowLocalhost(true),
 				WithAllowedHosts("127.0.0.1:8080"),
 			),
@@ -231,7 +246,7 @@ func TestPoliciesCanonicalHostPolicies(t *testing.T) {
 		{
 			name:     "allowed mapped ipv4",
 			url:      "http://[::ffff:8.8.8.8]",
-			policies: NewPolicies(WithAllowedHosts("8.8.8.8")),
+			policies: NewPolicy(WithAllowedHosts("8.8.8.8")),
 		},
 	}
 
@@ -252,81 +267,81 @@ func TestPoliciesCanonicalHostPolicies(t *testing.T) {
 	}
 }
 
-func TestPoliciesEval(t *testing.T) {
+func TestPolicyEval(t *testing.T) {
 	tests := []struct {
 		req      *Request
+		policies *Policy
 		name     string
 		want     string
-		policies *Policies
 	}{
 		{
 			name:     "valid default get",
-			policies: NewPolicies(),
+			policies: NewPolicy(),
 			req:      &Request{URL: "http://example.com"},
 		},
 		{
 			name:     "nil request",
-			policies: NewPolicies(),
+			policies: NewPolicy(),
 			req:      nil,
 			want:     ErrNilRequest.Error(),
 		},
 		{
 			name:     "invalid method",
-			policies: NewPolicies(),
+			policies: NewPolicy(),
 			req:      &Request{Method: "BAD METHOD", URL: "http://example.com"},
 			want:     "invalid method",
 		},
 		{
 			name:     "missing url",
-			policies: NewPolicies(),
+			policies: NewPolicy(),
 			req:      &Request{},
 			want:     "url is required",
 		},
 		{
 			name:     "missing scheme",
-			policies: NewPolicies(),
+			policies: NewPolicy(),
 			req:      &Request{URL: "example.com"},
 			want:     "url scheme is required",
 		},
 		{
 			name:     "missing host",
-			policies: NewPolicies(),
+			policies: NewPolicy(),
 			req:      &Request{URL: "http:///path"},
 			want:     "url host is required",
 		},
 		{
 			name:     "disallowed scheme",
-			policies: NewPolicies(WithAllowedSchemes("https")),
+			policies: NewPolicy(WithAllowedSchemes("https")),
 			req:      &Request{URL: "http://example.com"},
 			want:     "scheme",
 		},
 		{
 			name:     "blocked host",
-			policies: NewPolicies(WithBlockedHosts("example.com")),
+			policies: NewPolicy(WithBlockedHosts("example.com")),
 			req:      &Request{URL: "http://example.com"},
 			want:     "blocked",
 		},
 		{
 			name:     "not allowed host",
-			policies: NewPolicies(WithAllowedHosts("allowed.example")),
+			policies: NewPolicy(WithAllowedHosts("allowed.example")),
 			req:      &Request{URL: "http://other.example"},
 			want:     "not allowed",
 		},
 		{
 			name:     "localhost",
-			policies: NewPolicies(WithAllowLocalhost(false)),
+			policies: NewPolicy(WithAllowLocalhost(false)),
 			req:      &Request{URL: "http://127.0.0.1"},
 			want:     "localhost is not allowed",
 		},
 		{
 			name:     "private network",
-			policies: NewPolicies(WithAllowPrivateNetworks(false)),
+			policies: NewPolicy(WithAllowPrivateNetworks(false)),
 			req:      &Request{URL: "http://10.0.0.1"},
 			want:     "private network",
 		},
 		{
 			name:     "request body limit",
-			policies: NewPolicies(WithMaxRequestSize(3)),
+			policies: NewPolicy(WithMaxRequestSize(3)),
 			req:      &Request{Method: stdhttp.MethodPost, URL: "http://example.com", Body: []byte("four")},
 			want:     "request body exceeds limit",
 		},
@@ -357,8 +372,8 @@ func TestPoliciesEval(t *testing.T) {
 	}
 }
 
-func TestPoliciesEvalDoesNotMutateRequest(t *testing.T) {
-	policies := NewPolicies(
+func TestPolicyEvalDoesNotMutateRequest(t *testing.T) {
+	policies := NewPolicy(
 		WithDefaultHeader("X-Default", "default"),
 		WithBlockedRequestHeaders("X-Blocked"),
 	)
@@ -369,9 +384,8 @@ func TestPoliciesEvalDoesNotMutateRequest(t *testing.T) {
 		},
 	}
 
-	if err := policies.Eval(req); err != nil {
-		t.Fatalf("expected policy evaluation to pass, got %v", err)
-	}
+	err := policies.Eval(req)
+	requirePolicyError(t, err, PolicyTargetRequest)
 
 	if req.Method != "" {
 		t.Fatalf("expected method to remain empty, got %q", req.Method)

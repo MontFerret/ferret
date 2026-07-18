@@ -5,14 +5,23 @@ import (
 	"time"
 )
 
-func newPolicyTransport(dialer *policyDialer) *stdhttp.Transport {
+const (
+	defaultMaxIdleConnections        = 100
+	defaultMaxIdleConnectionsPerHost = 10
+	defaultMaxConnectionsPerHost     = 20
+)
+
+func newPolicyTransport(dialer *policyDialer, maxResponseHeaderSize int64) *stdhttp.Transport {
 	return &stdhttp.Transport{
-		Proxy:                 nil,
-		DialContext:           dialer.DialContext,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: time.Second,
+		Proxy:                  nil,
+		DialContext:            dialer.DialContext,
+		ForceAttemptHTTP2:      true,
+		MaxIdleConns:           defaultMaxIdleConnections,
+		MaxIdleConnsPerHost:    defaultMaxIdleConnectionsPerHost,
+		MaxConnsPerHost:        defaultMaxConnectionsPerHost,
+		MaxResponseHeaderBytes: maxResponseHeaderSize,
+		IdleConnTimeout:        90 * time.Second,
+		TLSHandshakeTimeout:    10 * time.Second,
+		ExpectContinueTimeout:  time.Second,
 	}
 }

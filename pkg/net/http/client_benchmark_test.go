@@ -8,10 +8,17 @@ import (
 )
 
 func BenchmarkClientDoPolicy(b *testing.B) {
-	policies := NewPolicies()
+	benchmarkClientDoPolicy(b, NewPolicy())
+}
+
+func BenchmarkClientDoPolicyWithoutTimeout(b *testing.B) {
+	benchmarkClientDoPolicy(b, NewPolicy(WithTimeout(0)))
+}
+
+func benchmarkClientDoPolicy(b *testing.B, policy *Policy) {
 	client := &defaultHTTPClient{
-		policy: policies,
-		transport: stdhttp.Client{
+		policy: policy,
+		client: stdhttp.Client{
 			Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 				return &stdhttp.Response{
 					StatusCode: stdhttp.StatusOK,
@@ -35,7 +42,7 @@ func BenchmarkClientDoPolicy(b *testing.B) {
 }
 
 func BenchmarkPolicyDialerControl(b *testing.B) {
-	policies := NewPolicies()
+	policies := NewPolicy()
 	dialer := newPolicyDialer(policies)
 	ctx := b.Context()
 

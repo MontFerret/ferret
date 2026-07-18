@@ -8,11 +8,11 @@ import (
 )
 
 type policyDialer struct {
-	policy *Policies
+	policy *Policy
 	dialer net.Dialer
 }
 
-func newPolicyDialer(policy *Policies) *policyDialer {
+func newPolicyDialer(policy *Policy) *policyDialer {
 	d := &policyDialer{
 		policy: policy,
 	}
@@ -37,19 +37,18 @@ func (d *policyDialer) controlContext(
 ) error {
 	host, _, err := net.SplitHostPort(address)
 	if err != nil {
-		return newPolicyError(policyTargetRequest, "destination address", "invalid address is not allowed")
+		return newPolicyError(PolicyTargetRequest, "destination address", "invalid address is not allowed")
 	}
 
 	addr, ok := parseIPAddress(host)
 	if !ok {
-		return newPolicyError(policyTargetRequest, "destination address", "invalid address is not allowed")
+		return newPolicyError(PolicyTargetRequest, "destination address", "invalid address is not allowed")
 	}
 
 	p := d.policy
 	if p == nil {
-		policies := NewPolicies()
-		p = policies
+		p = NewPolicy()
 	}
 
-	return p.validateAddress(policyTargetRequest, addressSubject(addr), addr)
+	return p.validateAddress(PolicyTargetRequest, addressSubject(addr), addr)
 }

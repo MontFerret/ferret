@@ -11,15 +11,12 @@ import (
 	"strings"
 )
 
-func toStdRequest(ctx context.Context, req *Request, p *Policies) (*stdhttp.Request, error) {
+func toStdRequest(ctx context.Context, req *Request, p *Policy) (*stdhttp.Request, error) {
 	if err := p.Eval(req); err != nil {
 		return nil, err
 	}
 
-	method := strings.TrimSpace(req.Method)
-	if method == "" {
-		method = stdhttp.MethodGet
-	}
+	method := normalizeRequestMethod(req.Method)
 
 	u, err := parseRequestURL(req.URL)
 	if err != nil {
@@ -44,17 +41,15 @@ func toStdRequest(ctx context.Context, req *Request, p *Policies) (*stdhttp.Requ
 		}
 
 		canonicalKey := stdhttp.CanonicalHeaderKey(key)
-		if p.isBlockedHeader(canonicalKey) {
-			continue
-		}
-
-		for _, value := range values {
-			stdReq.Header.Add(canonicalKey, value)
-		}
+		stdReq.Header[canonicalKey] = append(stdReq.Header[canonicalKey], values...)
 	}
 
 	for key, value := range p.defaultHeaders {
-		if stdReq.Header.Get(key) == "" && !p.isBlockedHeader(key) {
+		if isReservedRequestHeader(key) || p.isBlockedHeader(key) {
+			continue
+		}
+
+		if _, exists := stdReq.Header[key]; !exists {
 			stdReq.Header.Set(key, value)
 		}
 	}
@@ -79,13 +74,13 @@ func parseRequestURL(raw string) (*url.URL, error) {
 		return nil, errors.New("http: url host is required")
 	}
 
-	u.Scheme = strings.ToLower(u.Scheme)
-	u.Host = strings.ToLower(u.Host)
+	u.Scheme = asciiLower(u.Scheme)
+	u.Host = asciiLower(u.Host)
 
 	return u, nil
 }
 
-func fromStdResponse(res *stdhttp.Response, p *Policies) (*Response, error) {
+func fromStdResponse(res *stdhttp.Response, p *Policy) (*Response, error) {
 	if res == nil {
 		return nil, errors.New("http: response is nil")
 	}
@@ -123,7 +118,7 @@ func readResponseBody(body io.Reader, limit int64) ([]byte, error) {
 	}
 
 	if int64(len(data)) > limit {
-		return nil, fmt.Errorf("http: response body exceeds limit: %d > %d", len(data), limit)
+		return nil, fmt.Errorf("http: response body exceeds limit of %d bytes", limit)
 	}
 
 	return data, nil

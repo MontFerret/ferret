@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	stdhttp "net/http"
 )
@@ -21,20 +22,21 @@ type (
 	}
 
 	defaultHTTPClient struct {
-		policy    *Policies
-		transport stdhttp.Client
+		policy *Policy
+		client stdhttp.Client
 	}
 )
 
-// New constructs an HTTP client with the provided policies.
-func New(setters ...Policy) Client {
-	policies := NewPolicies(setters...)
-	dialer := newPolicyDialer(policies)
+// New constructs an HTTP client with the provided policy options.
+func New(options ...PolicyOption) Client {
+	policy := NewPolicy(options...)
+	dialer := newPolicyDialer(policy)
 
 	return &defaultHTTPClient{
-		policy: policies,
-		transport: stdhttp.Client{
-			Transport: newPolicyTransport(dialer),
+		policy: policy,
+		client: stdhttp.Client{
+			Transport: newPolicyTransport(dialer, policy.maxResponseHeaderSize),
+			Timeout:   policy.timeout,
 		},
 	}
 }
@@ -50,8 +52,7 @@ func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, er
 
 	p := d.policy
 	if p == nil {
-		policies := NewPolicies()
-		p = policies
+		p = NewPolicy()
 	}
 
 	stdReq, err := toStdRequest(ctx, req, p)
@@ -59,16 +60,17 @@ func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, er
 		return nil, err
 	}
 
-	client := d.transport
-
-	if p.timeout > 0 {
-		client.Timeout = p.timeout
-	}
-
+	client := d.client
+	client.Timeout = p.timeout
 	client.CheckRedirect = d.checkRedirect
 
 	res, err := client.Do(stdReq)
 	if err != nil {
+		var policyErr *PolicyError
+		if errors.As(err, &policyErr) {
+			return nil, policyErr
+		}
+
 		return nil, err
 	}
 
@@ -76,15 +78,14 @@ func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, er
 }
 
 func (d *defaultHTTPClient) CloseIdleConnections() {
-	d.transport.CloseIdleConnections()
+	d.client.CloseIdleConnections()
 }
 
 func (d *defaultHTTPClient) checkRedirect(req *stdhttp.Request, via []*stdhttp.Request) error {
 	p := d.policy
 
 	if p == nil {
-		policies := NewPolicies()
-		p = policies
+		p = NewPolicy()
 	}
 
 	if !p.followRedirects {
@@ -101,5 +102,13 @@ func (d *defaultHTTPClient) checkRedirect(req *stdhttp.Request, via []*stdhttp.R
 		return fmt.Errorf("http: stopped after %d redirect(s)", limit)
 	}
 
-	return p.validateURL(req.URL, policyTargetRedirect)
+	if err := p.validateMethod(req.Method, PolicyTargetRedirect); err != nil {
+		return err
+	}
+
+	if err := p.validateURL(req.URL, PolicyTargetRedirect); err != nil {
+		return err
+	}
+
+	return p.validateRequestHeaders(req.Header, PolicyTargetRedirect)
 }

@@ -56,12 +56,6 @@ func TestClientDoSendsHeadersAndBodyWithPolicy(t *testing.T) {
 			stdhttp.Error(w, "bad default header", stdhttp.StatusBadRequest)
 			return
 		}
-		if got := r.Header.Get("X-Blocked"); got != "" {
-			t.Errorf("expected blocked header to be omitted, got %q", got)
-			stdhttp.Error(w, "blocked header present", stdhttp.StatusBadRequest)
-			return
-		}
-
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Errorf("read request body: %v", err)
@@ -88,8 +82,7 @@ func TestClientDoSendsHeadersAndBodyWithPolicy(t *testing.T) {
 		Method: stdhttp.MethodPost,
 		URL:    server.URL,
 		Headers: Headers{
-			"X-Token":   {"a", "b"},
-			"X-Blocked": {"secret"},
+			"X-Token": {"a", "b"},
 		},
 		Body: []byte("payload"),
 	})
@@ -125,8 +118,8 @@ func TestClientDoResponseBodyLimit(t *testing.T) {
 		context.Background(),
 		&Request{URL: server.URL},
 	)
-	if err == nil || !strings.Contains(err.Error(), "response body exceeds limit") {
-		t.Fatalf("expected response body limit error, got %v", err)
+	if err == nil || err.Error() != "http: response body exceeds limit of 3 bytes" {
+		t.Fatalf("expected precise response body limit error, got %v", err)
 	}
 }
 

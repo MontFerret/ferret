@@ -32,7 +32,7 @@ func TestPolicyDialerValidatesConcreteAddresses(t *testing.T) {
 		{name: "nat64 public", address: "64:ff9b::8.8.8.8"},
 	}
 
-	policies := NewPolicies()
+	policies := NewPolicy()
 	dialer := newPolicyDialer(policies)
 
 	for _, tt := range tests {
@@ -53,12 +53,13 @@ func TestPolicyDialerValidatesConcreteAddresses(t *testing.T) {
 			if err == nil || !strings.Contains(err.Error(), tt.want) {
 				t.Fatalf("expected error containing %q, got %v", tt.want, err)
 			}
+			requirePolicyError(t, err, PolicyTargetRequest)
 		})
 	}
 }
 
 func TestPolicyDialerRejectsReboundConcreteAddress(t *testing.T) {
-	policies := NewPolicies()
+	policies := NewPolicy()
 	dialer := newPolicyDialer(policies)
 
 	if err := dialer.controlContext(
@@ -77,11 +78,11 @@ func TestPolicyDialerRejectsReboundConcreteAddress(t *testing.T) {
 }
 
 func TestDefaultHTTPClientValidatesRedirectDestinations(t *testing.T) {
-	policies := NewPolicies()
+	policies := NewPolicy()
 	requested := make(map[string]int)
 	client := &defaultHTTPClient{
 		policy: policies,
-		transport: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
+		client: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
 			requested[req.URL.String()]++
 			switch req.URL.Path {
 			case "/loopback":
@@ -116,10 +117,10 @@ func TestDefaultHTTPClientValidatesRedirectDestinations(t *testing.T) {
 }
 
 func TestDefaultHTTPClientNoFollowSkipsRedirectValidation(t *testing.T) {
-	policies := NewPolicies(WithFollowRedirects(false))
+	policies := NewPolicy(WithFollowRedirects(false))
 	client := &defaultHTTPClient{
 		policy: policies,
-		transport: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+		client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 			return responseWithBody(stdhttp.StatusFound, "", stdhttp.Header{"Location": {"http://10.0.0.10/private"}}), nil
 		})},
 	}
@@ -134,11 +135,11 @@ func TestDefaultHTTPClientNoFollowSkipsRedirectValidation(t *testing.T) {
 }
 
 func TestDefaultHTTPClientUsesStandardRedirectLimit(t *testing.T) {
-	policies := NewPolicies()
+	policies := NewPolicy()
 	roundTrips := 0
 	client := &defaultHTTPClient{
 		policy: policies,
-		transport: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+		client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 			roundTrips++
 			return responseWithBody(stdhttp.StatusFound, "", stdhttp.Header{"Location": {"/next"}}), nil
 		})},
@@ -154,7 +155,7 @@ func TestDefaultHTTPClientUsesStandardRedirectLimit(t *testing.T) {
 }
 
 func TestDefaultHTTPClientTimeoutCoversDNSResolution(t *testing.T) {
-	policies := NewPolicies(WithTimeout(50 * time.Millisecond))
+	policies := NewPolicy(WithTimeout(50 * time.Millisecond))
 	dialer := newPolicyDialer(policies)
 	lookupStarted := make(chan struct{})
 
@@ -170,8 +171,8 @@ func TestDefaultHTTPClientTimeoutCoversDNSResolution(t *testing.T) {
 	}
 	client := &defaultHTTPClient{
 		policy: policies,
-		transport: stdhttp.Client{
-			Transport: newPolicyTransport(dialer),
+		client: stdhttp.Client{
+			Transport: newPolicyTransport(dialer, policies.maxResponseHeaderSize),
 		},
 	}
 
@@ -195,13 +196,13 @@ func TestDefaultHTTPClientTimeoutCoversDNSResolution(t *testing.T) {
 }
 
 func TestPolicyRejectsInvalidAddress(t *testing.T) {
-	policies := NewPolicies(
+	policies := NewPolicy(
 		WithAllowLocalhost(true),
 		WithAllowPrivateNetworks(true),
 		WithAllowLinkLocal(true),
 	)
 
-	err := policies.validateAddress(policyTargetRequest, "destination address", netip.Addr{})
+	err := policies.validateAddress(PolicyTargetRequest, "destination address", netip.Addr{})
 	if err == nil || !strings.Contains(err.Error(), "invalid address is not allowed") {
 		t.Fatalf("expected invalid address rejection, got %v", err)
 	}
@@ -217,9 +218,9 @@ func TestNewUsesDedicatedPolicyTransportWithoutProxy(t *testing.T) {
 		t.Fatalf("expected built-in client to implement IdleConnectionCloser")
 	}
 
-	transport, ok := client.transport.Transport.(*stdhttp.Transport)
+	transport, ok := client.client.Transport.(*stdhttp.Transport)
 	if !ok {
-		t.Fatalf("expected dedicated HTTP transport, got %T", client.transport.Transport)
+		t.Fatalf("expected dedicated HTTP transport, got %T", client.client.Transport)
 	}
 
 	if transport.Proxy != nil {
@@ -234,7 +235,7 @@ func TestNewUsesDedicatedPolicyTransportWithoutProxy(t *testing.T) {
 func TestDefaultHTTPClientClosesIdleConnections(t *testing.T) {
 	transport := &trackingIdleTransport{}
 	client := &defaultHTTPClient{
-		transport: stdhttp.Client{Transport: transport},
+		client: stdhttp.Client{Transport: transport},
 	}
 
 	client.CloseIdleConnections()
