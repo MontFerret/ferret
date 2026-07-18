@@ -1,74 +1,37 @@
 package http
 
 import (
-	"bytes"
 	"context"
-	"errors"
 	"io"
+	"math"
 	stdhttp "net/http"
 	"net/url"
 	"strings"
 )
 
 func toStdRequest(ctx context.Context, req *Request, p *Policy) (*stdhttp.Request, error) {
-	if err := p.Eval(req); err != nil {
-		return nil, err
+	if p == nil {
+		p = &Policy{}
 	}
 
-	method := normalizeRequestMethod(req.Method)
-
-	u, err := parseRequestURL(req.URL)
-	if err != nil {
-		return nil, err
-	}
-
-	stdReq, err := stdhttp.NewRequestWithContext(
-		ctx,
-		method,
-		u.String(),
-		bytes.NewReader(req.Body),
-	)
-
-	if err != nil {
-		return nil, &RequestBuildError{Err: err}
-	}
-
-	for key, values := range req.Headers {
-		key = strings.TrimSpace(key)
-		if key == "" {
-			continue
-		}
-
-		canonicalKey := stdhttp.CanonicalHeaderKey(key)
-		stdReq.Header[canonicalKey] = append(stdReq.Header[canonicalKey], values...)
-	}
-
-	for key, value := range p.defaultHeaders {
-		if isReservedRequestHeader(key) || p.isBlockedHeader(key) {
-			continue
-		}
-
-		if _, exists := stdReq.Header[key]; !exists {
-			stdReq.Header.Set(key, value)
-		}
-	}
-
-	return stdReq, nil
+	return p.prepareRequest(ctx, req)
 }
 
 func parseRequestURL(raw string) (*url.URL, error) {
 	rawURL := strings.TrimSpace(raw)
 	if rawURL == "" {
-		return nil, errors.New("http: url is required")
+		return nil, &URLValidationError{Field: "url", Reason: "is required"}
 	}
 
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, &URLParseError{Err: err}
 	}
+
 	if u.Scheme == "" {
-		return nil, errors.New("http: url scheme is required")
+		return nil, &URLValidationError{Field: "scheme", Reason: "is required"}
 	}
+
 	if u.Host == "" {
 		return nil, &URLValidationError{Field: "host", Reason: "is required"}
 	}
@@ -81,7 +44,7 @@ func parseRequestURL(raw string) (*url.URL, error) {
 
 func fromStdResponse(res *stdhttp.Response, p *Policy) (*Response, error) {
 	if res == nil {
-		return nil, errors.New("http: response is nil")
+		return nil, ErrNilResponse
 	}
 
 	if res.Body == nil {
@@ -111,16 +74,29 @@ func readResponseBody(body io.Reader, limit int64) ([]byte, error) {
 		return io.ReadAll(body)
 	}
 
-	data, err := io.ReadAll(io.LimitReader(body, limit+1))
+	readLimit := saturatedIncrement(limit)
+	data, err := io.ReadAll(io.LimitReader(body, readLimit))
+
+	if int64(len(data)) > limit {
+		return nil, &ResponseBodyLimitError{
+			Size:  saturatedIncrement(limit),
+			Limit: limit,
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
-	if int64(len(data)) > limit {
-		return nil, &ResponseBodyLimitError{Limit: limit}
+	return data, nil
+}
+
+func saturatedIncrement(value int64) int64 {
+	if value == math.MaxInt64 {
+		return math.MaxInt64
 	}
 
-	return data, nil
+	return value + 1
 }
 
 func copyHeaders(src stdhttp.Header) Headers {
@@ -129,6 +105,7 @@ func copyHeaders(src stdhttp.Header) Headers {
 	}
 
 	dst := make(Headers, len(src))
+
 	for key, values := range src {
 		dst[key] = append([]string(nil), values...)
 	}

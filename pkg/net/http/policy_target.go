@@ -10,4 +10,8 @@ const (
 
 	// PolicyTargetRedirect identifies a redirect destination.
 	PolicyTargetRedirect PolicyTarget = "redirect destination"
+
+	// PolicyTargetConnection identifies the concrete address selected while
+	// establishing an outbound connection.
+	PolicyTargetConnection PolicyTarget = "connection destination"
 )

@@ -42,10 +42,19 @@ RETURN TO_STRING(IO::NET::HTTP::GET(@url))
 		t.Fatal(err)
 	}
 
-	localClient := ferrethttp.New(ferrethttp.WithAllowLocalhost(true))
+	localClient, err := ferrethttp.New(ferrethttp.WithAllowLocalhost(true))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	localNetwork, err := ferretnet.New(ferretnet.WithHTTPClient(localClient))
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	engine, err = ferret.New(
 		ferret.WithParam("url", server.URL),
-		ferret.WithNetwork(ferretnet.New(ferretnet.WithHTTPClient(localClient))),
+		ferret.WithNetwork(localNetwork),
 	)
 	if err != nil {
 		t.Fatal(err)

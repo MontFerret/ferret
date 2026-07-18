@@ -26,18 +26,26 @@ type (
 	}
 )
 
-// New constructs an HTTP client with the provided policy options.
-func New(options ...PolicyOption) Client {
-	policy := NewPolicy(options...)
+// New constructs an HTTP client with the provided policy options. It returns a
+// PolicyConfigurationError when an option is malformed or contradictory.
+func New(options ...PolicyOption) (Client, error) {
+	policy, err := NewPolicy(options...)
+	if err != nil {
+		return nil, err
+	}
+
 	dialer := newPolicyDialer(policy)
+	transport := newResponseValidatingTransport(
+		newPolicyTransport(dialer, policy.maxResponseHeaderSize),
+	)
 
 	return &defaultHTTPClient{
 		policy: policy,
 		client: stdhttp.Client{
-			Transport: newPolicyTransport(dialer, policy.maxResponseHeaderSize),
+			Transport: transport,
 			Timeout:   policy.timeout,
 		},
-	}
+	}, nil
 }
 
 func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, error) {
@@ -51,7 +59,7 @@ func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, er
 
 	p := d.policy
 	if p == nil {
-		p = NewPolicy()
+		p = &Policy{}
 	}
 
 	stdReq, err := toStdRequest(ctx, req, p)
@@ -60,6 +68,7 @@ func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, er
 	}
 
 	client := d.client
+	client.Transport = newResponseValidatingTransport(client.Transport)
 	client.Timeout = p.timeout
 	client.CheckRedirect = d.checkRedirect
 
@@ -84,7 +93,7 @@ func (d *defaultHTTPClient) checkRedirect(req *stdhttp.Request, via []*stdhttp.R
 	p := d.policy
 
 	if p == nil {
-		p = NewPolicy()
+		p = &Policy{}
 	}
 
 	if !p.followRedirects {
@@ -92,12 +101,7 @@ func (d *defaultHTTPClient) checkRedirect(req *stdhttp.Request, via []*stdhttp.R
 	}
 
 	limit := p.maxRedirects
-
-	if limit == 0 {
-		limit = 10
-	}
-
-	if len(via) >= limit {
+	if len(via) > limit {
 		return &RedirectLimitError{Limit: limit}
 	}
 

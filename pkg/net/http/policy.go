@@ -1,44 +1,55 @@
 package http
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	stdhttp "net/http"
 	"net/netip"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 )
 
 type (
-	// Policy describes HTTP request policy and validation behavior.
+	// Policy describes HTTP request policy and validation behavior. Its zero
+	// value is a deny-all policy; use NewPolicy for Ferret's secure defaults.
 	Policy struct {
+		configurationError    error
 		defaultHeaders        map[string]string
 		allowedSchemes        []string
 		allowedMethods        []string
 		allowedHosts          []string
 		blockedHosts          []string
 		blockedRequestHeaders []string
-		timeout               time.Duration
-		maxRequestSize        int64
+		defaultHeaderInputs   []defaultHeaderInput
 		maxResponseSize       int64
 		maxResponseHeaderSize int64
 		maxRedirects          int
+		maxRequestSize        int64
+		timeout               time.Duration
 		followRedirects       bool
 		allowLocalhost        bool
 		allowPrivateNetworks  bool
 		allowLinkLocal        bool
 	}
 
-	// PolicyOption configures a Policy.
+	defaultHeaderInput struct {
+		option string
+		key    string
+		value  string
+	}
+
+	// PolicyOption configures a Policy during NewPolicy construction.
 	PolicyOption func(*Policy)
 )
 
-// NewPolicy builds a policy with Ferret's secure HTTP defaults. Requests are
-// limited to public destinations; GET, HEAD, POST, PUT, PATCH, DELETE, and
-// OPTIONS; ASCII/punycode hosts; 1 MiB response headers; and a 30-second
-// overall timeout. Localhost, private, and link-local destinations require
-// their corresponding opt-in.
-func NewPolicy(options ...PolicyOption) *Policy {
+// NewPolicy builds a reusable policy with Ferret's secure HTTP defaults.
+// Construction fails when an option is malformed or contradictory. The zero
+// value of Policy is intentionally deny-all; embedders should call NewPolicy
+// when they want the standard defaults.
+func NewPolicy(options ...PolicyOption) (*Policy, error) {
 	p := &Policy{
 		followRedirects: true,
 		allowedSchemes:  []string{"http", "https"},
@@ -52,6 +63,9 @@ func NewPolicy(options ...PolicyOption) *Policy {
 			stdhttp.MethodOptions,
 		},
 		timeout:               defaultTimeout,
+		maxRedirects:          defaultMaxRedirects,
+		maxRequestSize:        defaultMaxRequestSize,
+		maxResponseSize:       defaultMaxResponseSize,
 		maxResponseHeaderSize: defaultMaxResponseHeaderSize,
 	}
 
@@ -63,62 +77,296 @@ func NewPolicy(options ...PolicyOption) *Policy {
 		option(p)
 	}
 
+	if err := p.validateConfiguration(); err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
+
+func (p *Policy) validateConfiguration() error {
+	if p.configurationError != nil {
+		return p.configurationError
+	}
+
+	if p.timeout < 0 {
+		return newPolicyConfigurationError(
+			"WithTimeout",
+			p.timeout.String(),
+			"must not be negative",
+		)
+	}
+
+	if p.maxRedirects < 0 {
+		return newPolicyConfigurationError(
+			"WithMaxRedirects",
+			fmt.Sprint(p.maxRedirects),
+			"must not be negative",
+		)
+	}
+
+	if p.maxRequestSize < 0 {
+		return newPolicyConfigurationError(
+			"WithMaxRequestSize",
+			fmt.Sprint(p.maxRequestSize),
+			"must not be negative",
+		)
+	}
+
+	if p.maxResponseSize < 0 {
+		return newPolicyConfigurationError(
+			"WithMaxResponseSize",
+			fmt.Sprint(p.maxResponseSize),
+			"must not be negative",
+		)
+	}
+
+	if p.maxResponseHeaderSize <= 0 {
+		return newPolicyConfigurationError(
+			"WithMaxResponseHeaderSize",
+			fmt.Sprint(p.maxResponseHeaderSize),
+			"must be positive",
+		)
+	}
+
+	for _, scheme := range p.allowedSchemes {
+		if err := validateConfiguredScheme(scheme); err != nil {
+			return newPolicyConfigurationError("WithAllowedSchemes", scheme, err.Error())
+		}
+	}
+
+	for _, method := range p.allowedMethods {
+		if !isValidMethod(normalizeMethod(method)) {
+			return newPolicyConfigurationError(
+				"WithAllowedMethods",
+				method,
+				"must be a non-empty HTTP method token",
+			)
+		}
+	}
+
+	for _, host := range p.allowedHosts {
+		if _, err := normalizeConfiguredHost(host); err != nil {
+			return newPolicyConfigurationError("WithAllowedHosts", host, err.Error())
+		}
+	}
+
+	for _, host := range p.blockedHosts {
+		if _, err := normalizeConfiguredHost(host); err != nil {
+			return newPolicyConfigurationError("WithBlockedHosts", host, err.Error())
+		}
+	}
+
+	for _, header := range p.blockedRequestHeaders {
+		if err := validateHeaderName(strings.TrimSpace(header)); err != nil {
+			return newPolicyConfigurationError(
+				"WithBlockedRequestHeaders",
+				header,
+				err.Reason,
+			)
+		}
+	}
+
 	p.allowedSchemes = normalizeValues(p.allowedSchemes)
 	p.allowedMethods = normalizeMethods(p.allowedMethods)
 	p.allowedHosts = normalizeHosts(p.allowedHosts)
 	p.blockedHosts = normalizeHosts(p.blockedHosts)
 	p.blockedRequestHeaders = normalizeHeaders(p.blockedRequestHeaders)
 
+	return p.normalizeDefaultHeaders()
+}
+
+func (p *Policy) normalizeDefaultHeaders() error {
+	inputs := append([]defaultHeaderInput(nil), p.defaultHeaderInputs...)
+
 	if len(p.defaultHeaders) > 0 {
-		headers := make(map[string]string, len(p.defaultHeaders))
+		keys := make([]string, 0, len(p.defaultHeaders))
 
-		for key, value := range p.defaultHeaders {
-			key = strings.TrimSpace(key)
-
-			if key == "" {
-				continue
-			}
-
-			headers[stdhttp.CanonicalHeaderKey(key)] = value
+		for key := range p.defaultHeaders {
+			keys = append(keys, key)
 		}
 
-		p.defaultHeaders = headers
+		sort.Strings(keys)
+
+		for _, key := range keys {
+			inputs = append(inputs, defaultHeaderInput{
+				option: "WithDefaultHeaders",
+				key:    key,
+				value:  p.defaultHeaders[key],
+			})
+		}
 	}
 
-	return p
+	headers := make(map[string]string, len(inputs))
+	sources := make(map[string]string, len(inputs))
+
+	for _, input := range inputs {
+		key := strings.TrimSpace(input.key)
+
+		if err := validateHeaderName(key); err != nil {
+			return newPolicyConfigurationError(input.option, input.key, err.Reason)
+		}
+
+		canonicalKey := stdhttp.CanonicalHeaderKey(key)
+
+		if isReservedRequestHeader(canonicalKey) {
+			return newPolicyConfigurationError(
+				input.option,
+				canonicalKey,
+				"request header is reserved for the transport",
+			)
+		}
+
+		if err := validateHeaderValue(canonicalKey, input.value); err != nil {
+			return newPolicyConfigurationError(input.option, canonicalKey, err.Reason)
+		}
+
+		if value, exists := headers[canonicalKey]; exists {
+			if value != input.value {
+				return newPolicyConfigurationError(
+					input.option,
+					canonicalKey,
+					"conflicts with another default for the same header",
+				)
+			}
+
+			continue
+		}
+
+		headers[canonicalKey] = input.value
+		sources[canonicalKey] = input.option
+	}
+
+	keys := make([]string, 0, len(headers))
+
+	for header := range headers {
+		keys = append(keys, header)
+	}
+
+	sort.Strings(keys)
+
+	for _, header := range keys {
+		if p.isBlockedHeader(header) {
+			return newPolicyConfigurationError(
+				sources[header],
+				header,
+				"default header is also configured as blocked",
+			)
+		}
+	}
+
+	p.defaultHeaders = headers
+	p.defaultHeaderInputs = nil
+
+	return nil
+}
+
+func (p *Policy) addDefaultHeader(option, key, value string) {
+	key = strings.TrimSpace(key)
+	p.defaultHeaderInputs = append(p.defaultHeaderInputs, defaultHeaderInput{
+		option: option,
+		key:    key,
+		value:  value,
+	})
+
+	if err := validateHeaderName(key); err != nil {
+		p.setConfigurationError(option, key, err.Reason)
+
+		return
+	}
+
+	canonicalKey := stdhttp.CanonicalHeaderKey(key)
+	if isReservedRequestHeader(canonicalKey) {
+		p.setConfigurationError(
+			option,
+			canonicalKey,
+			"request header is reserved for the transport",
+		)
+
+		return
+	}
+
+	if err := validateHeaderValue(canonicalKey, value); err != nil {
+		p.setConfigurationError(option, canonicalKey, err.Reason)
+	}
+}
+
+func (p *Policy) setConfigurationError(option, value, reason string) {
+	if p.configurationError != nil {
+		return
+	}
+
+	p.configurationError = newPolicyConfigurationError(option, value, reason)
 }
 
 // Eval validates an outbound request against the policy.
 func (p *Policy) Eval(req *Request) error {
+	_, err := p.prepareRequest(context.Background(), req)
+
+	return err
+}
+
+func (p *Policy) prepareRequest(ctx context.Context, req *Request) (*stdhttp.Request, error) {
 	if req == nil {
-		return ErrNilRequest
+		return nil, ErrNilRequest
 	}
 
 	if err := p.validateMethod(req.Method, PolicyTargetRequest); err != nil {
-		return err
+		return nil, err
 	}
 
-	u, err := parseRequestURL(req.URL)
+	rawURL := strings.TrimSpace(req.URL)
+	if rawURL == "" {
+		return nil, &URLValidationError{Field: "url", Reason: "is required"}
+	}
+
+	method := normalizeRequestMethod(req.Method)
+	stdReq, err := stdhttp.NewRequestWithContext(ctx, method, rawURL, bytes.NewReader(req.Body))
+
 	if err != nil {
-		return err
+		if ctx == nil {
+			return nil, &RequestBuildError{Err: err}
+		}
+
+		return nil, &URLParseError{Err: err}
 	}
 
-	if err := p.validateURL(u, PolicyTargetRequest); err != nil {
-		return err
+	if stdReq.URL.Scheme == "" {
+		return nil, &URLValidationError{Field: "scheme", Reason: "is required"}
 	}
 
-	if err := p.validateRequestHeaders(req.Headers, PolicyTargetRequest); err != nil {
-		return err
+	if stdReq.URL.Host == "" {
+		return nil, &URLValidationError{Field: "host", Reason: "is required"}
+	}
+
+	stdReq.URL.Scheme = asciiLower(stdReq.URL.Scheme)
+	stdReq.URL.Host = asciiLower(stdReq.URL.Host)
+
+	if err := p.validateURL(stdReq.URL, PolicyTargetRequest); err != nil {
+		return nil, err
+	}
+
+	headers, err := p.copyValidatedRequestHeaders(req.Headers, PolicyTargetRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	stdReq.Header = headers
+
+	for key, value := range p.defaultHeaders {
+		if _, exists := stdReq.Header[key]; !exists {
+			stdReq.Header.Set(key, value)
+		}
 	}
 
 	if p.maxRequestSize > 0 && int64(len(req.Body)) > p.maxRequestSize {
-		return &RequestBodyLimitError{
+		return nil, &RequestBodyLimitError{
 			Size:  int64(len(req.Body)),
 			Limit: p.maxRequestSize,
 		}
 	}
 
-	return nil
+	return stdReq, nil
 }
 
 func (p *Policy) validateMethod(method string, target PolicyTarget) error {
@@ -136,16 +384,33 @@ func (p *Policy) validateMethod(method string, target PolicyTarget) error {
 }
 
 func (p *Policy) validateRequestHeaders(headers map[string][]string, target PolicyTarget) error {
-	for key := range headers {
-		key = strings.TrimSpace(key)
+	_, err := p.copyValidatedRequestHeaders(headers, target)
 
-		if key == "" {
-			continue
+	return err
+}
+
+func (p *Policy) copyValidatedRequestHeaders(
+	headers map[string][]string,
+	target PolicyTarget,
+) (stdhttp.Header, error) {
+	result := make(stdhttp.Header, len(headers))
+	keys := make([]string, 0, len(headers))
+
+	for key := range headers {
+		keys = append(keys, key)
+	}
+
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		values := headers[key]
+		if err := validateHeaderName(key); err != nil {
+			return nil, err
 		}
 
 		canonicalKey := stdhttp.CanonicalHeaderKey(key)
 		if isReservedRequestHeader(canonicalKey) {
-			return newPolicyError(
+			return nil, newPolicyError(
 				target,
 				fmt.Sprintf("header %q", canonicalKey),
 				"request header is reserved for the transport",
@@ -153,18 +418,38 @@ func (p *Policy) validateRequestHeaders(headers map[string][]string, target Poli
 		}
 
 		if p.isBlockedHeader(canonicalKey) {
-			return newPolicyError(
+			return nil, newPolicyError(
 				target,
 				fmt.Sprintf("header %q", canonicalKey),
 				"request header is not allowed",
 			)
 		}
+
+		for _, value := range values {
+			if err := validateHeaderValue(canonicalKey, value); err != nil {
+				return nil, err
+			}
+		}
+
+		result[canonicalKey] = append(result[canonicalKey], values...)
 	}
 
-	return nil
+	return result, nil
 }
 
 func (p *Policy) validateURL(u *url.URL, target PolicyTarget) error {
+	if u == nil {
+		return &URLValidationError{Field: "url", Reason: "is required"}
+	}
+
+	if u.Scheme == "" {
+		return &URLValidationError{Field: "scheme", Reason: "is required"}
+	}
+
+	if u.Host == "" {
+		return &URLValidationError{Field: "host", Reason: "is required"}
+	}
+
 	if u.User != nil {
 		return newPolicyError(target, "URL credentials", "URL user information is not allowed")
 	}
@@ -175,9 +460,6 @@ func (p *Policy) validateURL(u *url.URL, target PolicyTarget) error {
 	}
 
 	rawHostname := u.Hostname()
-	if rawHostname == "" {
-		return &URLValidationError{Field: "host", Reason: "is required"}
-	}
 
 	if !isASCII(rawHostname) {
 		return newPolicyError(

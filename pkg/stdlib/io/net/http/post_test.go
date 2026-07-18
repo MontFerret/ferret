@@ -55,7 +55,7 @@ func TestPOST(t *testing.T) {
 				return httpmock.NewStringResponse(200, "OK"), nil
 			})
 
-		ctx := testNetworkContext()
+		ctx := testNetworkContext(t)
 
 		b, err := json.Marshal(User{
 			FirstName: "Rob",
@@ -107,7 +107,7 @@ func TestPOST(t *testing.T) {
 				return httpmock.NewStringResponse(200, "OK"), nil
 			})
 
-		ctx := testNetworkContext()
+		ctx := testNetworkContext(t)
 
 		j := runtime.NewObjectWith(
 			map[string]runtime.Value{

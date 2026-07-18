@@ -4,6 +4,8 @@ import "fmt"
 
 // ResponseBodyLimitError reports a response body larger than the configured limit.
 type ResponseBodyLimitError struct {
+	// Size is the number of response body bytes observed before reading stopped.
+	Size int64
 	// Limit is the configured response body limit in bytes.
 	Limit int64
 }
@@ -14,5 +16,5 @@ func (e *ResponseBodyLimitError) Error() string {
 		return "http: response body exceeds limit"
 	}
 
-	return fmt.Sprintf("http: response body exceeds limit of %d bytes", e.Limit)
+	return fmt.Sprintf("http: response body exceeds limit: %d > %d", e.Size, e.Limit)
 }

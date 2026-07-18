@@ -1,6 +1,10 @@
 package net
 
-import ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
+import (
+	"fmt"
+
+	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
+)
 
 type (
 	// Network defines an interface to provide access to HTTP operations via an HTTP client.
@@ -14,7 +18,8 @@ type (
 )
 
 // New constructs a Network with a default HTTP client unless one is supplied.
-func New(setters ...Option) Network {
+// It returns an error when the default client cannot be initialized.
+func New(setters ...Option) (Network, error) {
 	opts := options{}
 
 	for _, option := range setters {
@@ -26,12 +31,17 @@ func New(setters ...Option) Network {
 	}
 
 	if opts.http == nil {
-		opts.http = ferrethttp.New()
+		client, err := ferrethttp.New()
+		if err != nil {
+			return nil, fmt.Errorf("http client: %w", err)
+		}
+
+		opts.http = client
 	}
 
 	return &defaultNetwork{
 		http: opts.http,
-	}
+	}, nil
 }
 
 func (n *defaultNetwork) HTTP() ferrethttp.Client {

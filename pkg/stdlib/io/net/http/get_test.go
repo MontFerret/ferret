@@ -26,7 +26,7 @@ func TestGET(t *testing.T) {
 				return httpmock.NewStringResponse(200, "OK"), nil
 			})
 
-		ctx := testNetworkContext()
+		ctx := testNetworkContext(t)
 
 		out, err := http.GET(ctx, runtime.NewString(url))
 
@@ -52,7 +52,7 @@ func TestGET(t *testing.T) {
 				return httpmock.NewStringResponse(200, "OK"), nil
 			})
 
-		ctx := testNetworkContext()
+		ctx := testNetworkContext(t)
 
 		out, err := http.GET(ctx, runtime.NewObjectWith(
 			map[string]runtime.Value{

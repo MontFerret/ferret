@@ -37,18 +37,26 @@ func (d *policyDialer) controlContext(
 ) error {
 	host, _, err := net.SplitHostPort(address)
 	if err != nil {
-		return newPolicyError(PolicyTargetRequest, "destination address", "invalid address is not allowed")
+		return newPolicyError(
+			PolicyTargetConnection,
+			"destination address",
+			"invalid address is not allowed",
+		)
 	}
 
 	addr, ok := parseIPAddress(host)
 	if !ok {
-		return newPolicyError(PolicyTargetRequest, "destination address", "invalid address is not allowed")
+		return newPolicyError(
+			PolicyTargetConnection,
+			"destination address",
+			"invalid address is not allowed",
+		)
 	}
 
 	p := d.policy
 	if p == nil {
-		p = NewPolicy()
+		p = &Policy{}
 	}
 
-	return p.validateAddress(PolicyTargetRequest, addressSubject(addr), addr)
+	return p.validateAddress(PolicyTargetConnection, addressSubject(addr), addr)
 }

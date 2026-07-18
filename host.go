@@ -1,6 +1,8 @@
 package ferret
 
 import (
+	"fmt"
+
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
@@ -37,7 +39,10 @@ func newHostContext(opts *options) (*hostContext, error) {
 
 	network := opts.network
 	if network == nil {
-		network = ferretnet.New()
+		network, err = ferretnet.New()
+		if err != nil {
+			return nil, fmt.Errorf("network: %w", err)
+		}
 	}
 
 	return &hostContext{

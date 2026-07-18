@@ -38,11 +38,19 @@ func TestPathTraversalVulnerability(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	httpClient, err := ferrethttp.New(ferrethttp.WithAllowLocalhost(true))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	network, err := ferretnet.New(ferretnet.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	engine, err := ferret.New(
 		ferret.WithFSRoot(safeDir),
-		ferret.WithNetwork(ferretnet.New(ferretnet.WithHTTPClient(
-			ferrethttp.New(ferrethttp.WithAllowLocalhost(true)),
-		))),
+		ferret.WithNetwork(network),
 	)
 	if err != nil {
 		t.Fatal(err)

@@ -22,7 +22,7 @@ func TestClientDoSuccessDefaultsAndMaterializesResponse(t *testing.T) {
 	}))
 	defer server.Close()
 
-	res, err := New(WithAllowLocalhost(true)).Do(nil, &Request{URL: server.URL})
+	res, err := newTestClient(t, WithAllowLocalhost(true)).Do(nil, &Request{URL: server.URL})
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestClientDoSendsHeadersAndBodyWithPolicy(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(
+	client := newTestClient(t,
 		WithDefaultHeader("X-Default", "default"),
 		WithBlockedRequestHeaders("X-Blocked"),
 		WithAllowLocalhost(true),
@@ -92,7 +92,7 @@ func TestClientDoSendsHeadersAndBodyWithPolicy(t *testing.T) {
 }
 
 func TestClientDoRequestBodyLimit(t *testing.T) {
-	_, err := New(WithMaxRequestSize(3)).Do(
+	_, err := newTestClient(t, WithMaxRequestSize(3)).Do(
 		context.Background(),
 		&Request{
 			Method: stdhttp.MethodPost,
@@ -111,15 +111,16 @@ func TestClientDoResponseBodyLimit(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := New(
+	_, err := newTestClient(t,
 		WithMaxResponseSize(3),
 		WithAllowLocalhost(true),
 	).Do(
 		context.Background(),
 		&Request{URL: server.URL},
 	)
-	if err == nil || err.Error() != "http: response body exceeds limit of 3 bytes" {
-		t.Fatalf("expected precise response body limit error, got %v", err)
+	limitErr := requireResponseBodyLimitError(t, err)
+	if limitErr.Size != 4 || limitErr.Limit != 3 {
+		t.Fatalf("unexpected response body limit error: %#v", limitErr)
 	}
 }
 
@@ -138,7 +139,7 @@ func TestClientDoRedirectPolicy(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	res, err := New(WithAllowLocalhost(true)).Do(
+	res, err := newTestClient(t, WithAllowLocalhost(true)).Do(
 		context.Background(),
 		&Request{URL: server.URL + "/start"},
 	)
@@ -149,7 +150,7 @@ func TestClientDoRedirectPolicy(t *testing.T) {
 		t.Fatalf("expected followed redirect body %q, got %q", "done", got)
 	}
 
-	res, err = New(
+	res, err = newTestClient(t,
 		WithFollowRedirects(false),
 		WithAllowLocalhost(true),
 	).Do(
@@ -163,7 +164,7 @@ func TestClientDoRedirectPolicy(t *testing.T) {
 		t.Fatalf("expected redirect response status, got %d", res.StatusCode)
 	}
 
-	_, err = New(
+	_, err = newTestClient(t,
 		WithMaxRedirects(1),
 		WithAllowLocalhost(true),
 	).Do(
@@ -190,7 +191,7 @@ func TestClientDoValidatesRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := New().Do(context.Background(), tt.req)
+			_, err := newTestClient(t).Do(context.Background(), tt.req)
 			if err == nil {
 				t.Fatal("expected error")
 			}
@@ -221,31 +222,31 @@ func TestClientDoPolicyURLChecks(t *testing.T) {
 	}{
 		{
 			name:   "scheme",
-			client: New(WithAllowedSchemes("https")),
+			client: newTestClient(t, WithAllowedSchemes("https")),
 			url:    "http://example.com",
 			want:   "scheme",
 		},
 		{
 			name:   "blocked host",
-			client: New(WithBlockedHosts("example.com")),
+			client: newTestClient(t, WithBlockedHosts("example.com")),
 			url:    "http://example.com",
 			want:   "blocked",
 		},
 		{
 			name:   "allowed host",
-			client: New(WithAllowedHosts("allowed.example")),
+			client: newTestClient(t, WithAllowedHosts("allowed.example")),
 			url:    "http://other.example",
 			want:   "not allowed",
 		},
 		{
 			name:   "localhost",
-			client: New(),
+			client: newTestClient(t),
 			url:    localServer.URL,
 			want:   "localhost is not allowed",
 		},
 		{
 			name:   "private network",
-			client: New(),
+			client: newTestClient(t),
 			url:    "http://10.0.0.1",
 			want:   "private network",
 		},
@@ -272,7 +273,7 @@ func TestClientDoDefaultRejectsLoopbackBeforeRequest(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := New().Do(context.Background(), &Request{URL: server.URL})
+	_, err := newTestClient(t).Do(context.Background(), &Request{URL: server.URL})
 	if err == nil || !strings.Contains(err.Error(), "localhost is not allowed") {
 		t.Fatalf("expected default loopback policy error, got %v", err)
 	}
@@ -280,7 +281,7 @@ func TestClientDoDefaultRejectsLoopbackBeforeRequest(t *testing.T) {
 		t.Fatalf("expected blocked request not to reach server, got %d request(s)", got)
 	}
 
-	res, err := New(WithAllowLocalhost(true)).Do(
+	res, err := newTestClient(t, WithAllowLocalhost(true)).Do(
 		context.Background(),
 		&Request{URL: server.URL},
 	)

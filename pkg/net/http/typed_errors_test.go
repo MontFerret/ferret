@@ -10,7 +10,7 @@ import (
 )
 
 func TestRequestBuildErrorPreservesCause(t *testing.T) {
-	_, err := toStdRequest(nil, &Request{URL: "https://example.com"}, NewPolicy())
+	_, err := toStdRequest(nil, &Request{URL: "https://example.com"}, newTestPolicy(t))
 	if err == nil {
 		t.Fatal("expected request build error")
 	}
@@ -41,14 +41,72 @@ func TestURLParseErrorPreservesCause(t *testing.T) {
 	if parseErr.Err == nil || !errors.Is(err, parseErr.Err) {
 		t.Fatalf("expected wrapped URL parse cause, got %v", err)
 	}
-	if got, want := err.Error(), "http: parse url: "+parseErr.Err.Error(); got != want {
-		t.Fatalf("expected %q, got %q", want, got)
+	if got := err.Error(); !strings.Contains(got, "invalid URL escape") {
+		t.Fatalf("expected safe parse reason, got %q", got)
+	} else if strings.Contains(got, "http://%") {
+		t.Fatalf("URL parse error included the raw URL: %q", got)
 	}
 	assertNotPolicyError(t, err)
 }
 
+func TestURLParseErrorRedactsMalformedCredentials(t *testing.T) {
+	const (
+		rawURL = "https://user:malformed-secret@%"
+		secret = "malformed-secret"
+	)
+
+	err := newTestPolicy(t).Eval(&Request{URL: rawURL})
+	var parseErr *URLParseError
+	if !errors.As(err, &parseErr) || parseErr.Err == nil {
+		t.Fatalf("expected URLParseError with a cause, got %T: %v", err, err)
+	}
+	if strings.Contains(err.Error(), secret) || strings.Contains(err.Error(), rawURL) {
+		t.Fatalf("URL parse error leaked malformed credentials: %v", err)
+	}
+}
+
+func TestURLParseErrorOnPreparedRequestPath(t *testing.T) {
+	tests := []struct {
+		run  func() error
+		name string
+	}{
+		{
+			name: "policy eval",
+			run: func() error {
+				return newTestPolicy(t).Eval(&Request{URL: "http://%"})
+			},
+		},
+		{
+			name: "client do",
+			run: func() error {
+				_, err := newTestClient(t).Do(
+					context.Background(),
+					&Request{URL: "http://%"},
+				)
+
+				return err
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.run()
+			if err == nil {
+				t.Fatal("expected URL parse error")
+			}
+
+			var parseErr *URLParseError
+			if !errors.As(err, &parseErr) || parseErr.Err == nil {
+				t.Fatalf("expected URLParseError with a cause, got %T: %v", err, err)
+			}
+			assertNotPolicyError(t, err)
+		})
+	}
+}
+
 func TestInvalidMethodError(t *testing.T) {
-	err := NewPolicy().Eval(&Request{Method: "BAD METHOD", URL: "https://example.com"})
+	err := newTestPolicy(t).Eval(&Request{Method: "BAD METHOD", URL: "https://example.com"})
 	if err == nil {
 		t.Fatal("expected invalid method error")
 	}
@@ -66,29 +124,20 @@ func TestInvalidMethodError(t *testing.T) {
 	assertNotPolicyError(t, err)
 }
 
-func TestURLValidationErrorForMissingHost(t *testing.T) {
+func TestURLValidationErrorsForMissingStructuralFields(t *testing.T) {
 	tests := []struct {
-		validate func() error
-		name     string
+		name   string
+		rawURL string
+		field  string
 	}{
-		{
-			name: "parsed request URL",
-			validate: func() error {
-				_, err := parseRequestURL("http:///path")
-				return err
-			},
-		},
-		{
-			name: "policy URL validation",
-			validate: func() error {
-				return NewPolicy().validateURL(&url.URL{Scheme: "http"}, PolicyTargetRequest)
-			},
-		},
+		{name: "url", field: "url"},
+		{name: "scheme", rawURL: "example.com", field: "scheme"},
+		{name: "host", rawURL: "http:///path", field: "host"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.validate()
+			_, err := parseRequestURL(tt.rawURL)
 			if err == nil {
 				t.Fatal("expected URL validation error")
 			}
@@ -97,19 +146,24 @@ func TestURLValidationErrorForMissingHost(t *testing.T) {
 			if !errors.As(err, &validationErr) {
 				t.Fatalf("expected URLValidationError, got %T: %v", err, err)
 			}
-			if validationErr.Field != "host" || validationErr.Reason != "is required" {
+			if validationErr.Field != tt.field || validationErr.Reason != "is required" {
 				t.Fatalf("unexpected URL validation error: %#v", validationErr)
 			}
-			if got, want := err.Error(), "http: url host is required"; got != want {
+			if got, want := err.Error(), "http: url "+tt.field+" is required"; got != want {
 				t.Fatalf("expected %q, got %q", want, got)
 			}
 			assertNotPolicyError(t, err)
+
+			err = newTestPolicy(t).Eval(&Request{URL: tt.rawURL})
+			if !errors.As(err, &validationErr) || validationErr.Field != tt.field {
+				t.Fatalf("expected Policy.Eval URLValidationError for %q, got %T: %v", tt.field, err, err)
+			}
 		})
 	}
 }
 
 func TestRequestBodyLimitError(t *testing.T) {
-	err := NewPolicy(WithMaxRequestSize(3)).Eval(&Request{
+	err := newTestPolicy(t, WithMaxRequestSize(3)).Eval(&Request{
 		URL:  "https://example.com",
 		Body: []byte("four"),
 	})
@@ -140,18 +194,18 @@ func TestResponseBodyLimitError(t *testing.T) {
 	if !errors.As(err, &limitErr) {
 		t.Fatalf("expected ResponseBodyLimitError, got %T: %v", err, err)
 	}
-	if limitErr.Limit != 3 {
-		t.Fatalf("expected response body limit 3, got %d", limitErr.Limit)
+	if limitErr.Size != 4 || limitErr.Limit != 3 {
+		t.Fatalf("unexpected response body limit error: %#v", limitErr)
 	}
-	if got, want := err.Error(), "http: response body exceeds limit of 3 bytes"; got != want {
-		t.Fatalf("expected %q, got %q", want, got)
+	if got := err.Error(); !strings.Contains(got, "response body exceeds limit") {
+		t.Fatalf("expected response limit message, got %q", got)
 	}
 	assertNotPolicyError(t, err)
 }
 
 func TestRedirectLimitErrorSurvivesURLErrorWrapping(t *testing.T) {
 	roundTrips := 0
-	policy := NewPolicy(WithMaxRedirects(1))
+	policy := newTestPolicy(t, WithMaxRedirects(1))
 	client := &defaultHTTPClient{
 		policy: policy,
 		client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
@@ -184,14 +238,14 @@ func TestRedirectLimitErrorSurvivesURLErrorWrapping(t *testing.T) {
 	if got, want := limitErr.Error(), "http: stopped after 1 redirect(s)"; got != want {
 		t.Fatalf("expected %q, got %q", want, got)
 	}
-	if roundTrips != 1 {
-		t.Fatalf("expected one request before redirect rejection, got %d", roundTrips)
+	if roundTrips != 2 {
+		t.Fatalf("expected initial request plus one followed redirect, got %d request(s)", roundTrips)
 	}
 	assertNotPolicyError(t, err)
 }
 
 func TestPolicyErrorClassificationRemainsDistinct(t *testing.T) {
-	err := NewPolicy().Eval(&Request{Method: stdhttp.MethodConnect, URL: "https://example.com"})
+	err := newTestPolicy(t).Eval(&Request{Method: stdhttp.MethodConnect, URL: "https://example.com"})
 	if err == nil {
 		t.Fatal("expected policy denial")
 	}

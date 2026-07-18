@@ -5,12 +5,6 @@ import (
 	"time"
 )
 
-const (
-	defaultMaxIdleConnections        = 100
-	defaultMaxIdleConnectionsPerHost = 10
-	defaultMaxConnectionsPerHost     = 20
-)
-
 func newPolicyTransport(dialer *policyDialer, maxResponseHeaderSize int64) *stdhttp.Transport {
 	return &stdhttp.Transport{
 		Proxy:                  nil,

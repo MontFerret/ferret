@@ -60,7 +60,7 @@ func TestNewRunsCloseHooksWhenHostBuildFails(t *testing.T) {
 			if !ok {
 				t.Fatalf("expected internal bootstrap, got %T", boot)
 			}
-			internal.host.network = ferretnet.New(ferretnet.WithHTTPClient(client))
+			internal.host.network = mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
 
 			boot.Hooks().Engine().OnClose(func() error {
 				closeHookCalled = true
@@ -132,7 +132,7 @@ func TestEngineCloseClosesOwnedNetworkIdleConnections(t *testing.T) {
 
 	client := &recordingHTTPClient{}
 	eng := mustNewEngine(t)
-	eng.host.network = ferretnet.New(ferretnet.WithHTTPClient(client))
+	eng.host.network = mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
 
 	if err := eng.Close(); err != nil {
 		t.Fatalf("close engine: %v", err)
@@ -151,7 +151,7 @@ func TestEngineCloseCleansOwnedNetworkAfterHookFailure(t *testing.T) {
 	eng := mustNewEngine(t, WithEngineCloseHook(func() error {
 		return hookErr
 	}))
-	eng.host.network = ferretnet.New(ferretnet.WithHTTPClient(client))
+	eng.host.network = mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
 
 	err := eng.Close()
 	if !errors.Is(err, hookErr) {
@@ -167,7 +167,7 @@ func TestEngineCloseDoesNotCleanInjectedNetwork(t *testing.T) {
 	t.Parallel()
 
 	client := &recordingHTTPClient{}
-	network := ferretnet.New(ferretnet.WithHTTPClient(client))
+	network := mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
 	eng := mustNewEngine(t, WithNetwork(network))
 
 	if err := eng.Close(); err != nil {
@@ -191,7 +191,7 @@ func TestNewCleansOwnedNetworkOnRegistrationFailure(t *testing.T) {
 				t.Fatalf("expected internal bootstrap, got %T", boot)
 			}
 
-			internal.host.network = ferretnet.New(ferretnet.WithHTTPClient(client))
+			internal.host.network = mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
 
 			return registerErr
 		},
@@ -219,7 +219,7 @@ func TestNewCleansOwnedNetworkOnInitFailure(t *testing.T) {
 				t.Fatalf("expected internal bootstrap, got %T", boot)
 			}
 
-			internal.host.network = ferretnet.New(ferretnet.WithHTTPClient(client))
+			internal.host.network = mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
 
 			return nil
 		},

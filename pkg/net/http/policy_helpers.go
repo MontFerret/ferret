@@ -6,6 +6,7 @@ import (
 	stdhttp "net/http"
 	"net/netip"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -46,12 +47,16 @@ func normalizeValues(values []string) []string {
 	}
 
 	normalized := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+
 	for _, value := range values {
 		value = asciiLower(strings.TrimSpace(value))
-		if value == "" {
+
+		if _, exists := seen[value]; exists {
 			continue
 		}
 
+		seen[value] = struct{}{}
 		normalized = append(normalized, value)
 	}
 
@@ -64,14 +69,16 @@ func normalizeMethods(methods []string) []string {
 	}
 
 	normalized := make([]string, 0, len(methods))
+	seen := make(map[string]struct{}, len(methods))
 
 	for _, method := range methods {
 		method = normalizeMethod(method)
 
-		if !isValidMethod(method) {
+		if _, exists := seen[method]; exists {
 			continue
 		}
 
+		seen[method] = struct{}{}
 		normalized = append(normalized, method)
 	}
 
@@ -98,13 +105,18 @@ func normalizeHeaders(headers []string) []string {
 	}
 
 	normalized := make([]string, 0, len(headers))
+	seen := make(map[string]struct{}, len(headers))
+
 	for _, header := range headers {
 		header = strings.TrimSpace(header)
-		if header == "" {
+		header = stdhttp.CanonicalHeaderKey(header)
+
+		if _, exists := seen[header]; exists {
 			continue
 		}
 
-		normalized = append(normalized, stdhttp.CanonicalHeaderKey(header))
+		seen[header] = struct{}{}
+		normalized = append(normalized, header)
 	}
 
 	return normalized
@@ -113,6 +125,8 @@ func normalizeHeaders(headers []string) []string {
 func isReservedRequestHeader(key string) bool {
 	switch stdhttp.CanonicalHeaderKey(key) {
 	case "Connection",
+		"Content-Length",
+		"Host",
 		"Keep-Alive",
 		"Proxy-Authenticate",
 		"Proxy-Authorization",
@@ -133,18 +147,241 @@ func normalizeHosts(hosts []string) []string {
 	}
 
 	normalized := make([]string, 0, len(hosts))
+	seen := make(map[string]struct{}, len(hosts))
 
 	for _, host := range hosts {
-		host = normalizeHostValue(host)
+		host, _ = normalizeConfiguredHost(host)
 
-		if host == "" {
+		if _, exists := seen[host]; exists {
 			continue
 		}
 
+		seen[host] = struct{}{}
 		normalized = append(normalized, host)
 	}
 
 	return normalized
+}
+
+func validateConfiguredScheme(value string) error {
+	scheme := strings.TrimSpace(value)
+	if scheme == "" {
+		return fmt.Errorf("must be a non-empty URL scheme")
+	}
+
+	if !isASCII(scheme) || !isASCIIAlpha(scheme[0]) {
+		return fmt.Errorf("must be a valid URL scheme")
+	}
+
+	for idx := 1; idx < len(scheme); idx++ {
+		char := scheme[idx]
+
+		if !isASCIIAlpha(char) && (char < '0' || char > '9') && char != '+' && char != '-' && char != '.' {
+			return fmt.Errorf("must be a valid URL scheme")
+		}
+	}
+
+	return nil
+}
+
+func validateConfiguredHosts(p *Policy, option string, hosts []string) {
+	for _, host := range hosts {
+		if _, err := normalizeConfiguredHost(host); err != nil {
+			p.setConfigurationError(option, host, err.Error())
+
+			return
+		}
+	}
+}
+
+func normalizeConfiguredHost(value string) (string, error) {
+	raw := strings.TrimSpace(value)
+
+	if raw == "" {
+		return "", fmt.Errorf("must not be blank")
+	}
+
+	if !isASCII(raw) {
+		return "", fmt.Errorf("must use ASCII/punycode")
+	}
+
+	if strings.Contains(raw, "*") {
+		return "", fmt.Errorf("wildcards are not supported")
+	}
+
+	host := raw
+	port := ""
+	hasPort := false
+
+	if strings.HasPrefix(raw, "[") {
+		if strings.HasSuffix(raw, "]") {
+			host = raw[1 : len(raw)-1]
+
+			if !strings.Contains(host, ":") {
+				return "", fmt.Errorf("brackets require an IPv6 literal")
+			}
+
+			if _, ok := parseIPAddress(host); !ok {
+				return "", fmt.Errorf("must contain a valid bracketed IP literal")
+			}
+		} else {
+			var err error
+			host, port, err = net.SplitHostPort(raw)
+
+			if err != nil {
+				return "", fmt.Errorf("must be a valid host or host:port")
+			}
+
+			if !strings.Contains(host, ":") {
+				return "", fmt.Errorf("brackets require an IPv6 literal")
+			}
+
+			hasPort = true
+		}
+	} else if addr, ok := parseIPAddress(raw); ok {
+		if addr.Zone() != "" {
+			return "", fmt.Errorf("IPv6 zones are not supported")
+		}
+
+		return addr.Unmap().String(), nil
+	} else if strings.Count(raw, ":") == 1 {
+		var err error
+
+		host, port, err = net.SplitHostPort(raw)
+
+		if err != nil {
+			return "", fmt.Errorf("must be a valid host or host:port")
+		}
+
+		hasPort = true
+	} else if strings.Contains(raw, ":") {
+		return "", fmt.Errorf("must be a valid IP literal")
+	}
+
+	host = strings.TrimSpace(host)
+
+	if host == "" {
+		return "", fmt.Errorf("host must not be blank")
+	}
+
+	if strings.Contains(host, "%") {
+		return "", fmt.Errorf("IPv6 zones are not supported")
+	}
+
+	canonicalHost := ""
+	canonicalInput := canonicalHostname(host)
+
+	if addr, ok := parseIPAddress(canonicalInput); ok {
+		if addr.Zone() != "" {
+			return "", fmt.Errorf("IPv6 zones are not supported")
+		}
+
+		canonicalHost = addr.Unmap().String()
+	} else {
+		if err := validateDNSHostname(host); err != nil {
+			return "", err
+		}
+
+		canonicalHost = canonicalHostname(host)
+	}
+
+	if !hasPort {
+		return canonicalHost, nil
+	}
+
+	parsedPort, err := strconv.ParseUint(port, 10, 16)
+
+	if err != nil || port == "" {
+		return "", fmt.Errorf("port must be a number from 0 through 65535")
+	}
+
+	return net.JoinHostPort(canonicalHost, strconv.FormatUint(parsedPort, 10)), nil
+}
+
+func validateDNSHostname(value string) error {
+	hostname := canonicalHostname(value)
+	if hostname == "" || len(hostname) > 253 {
+		return fmt.Errorf("must be a valid DNS name")
+	}
+
+	numeric := true
+	for idx := range len(hostname) {
+		if hostname[idx] < '0' || hostname[idx] > '9' {
+			if hostname[idx] != '.' {
+				numeric = false
+			}
+		}
+	}
+
+	if numeric {
+		return fmt.Errorf("must be a valid IP literal")
+	}
+
+	for _, label := range strings.Split(hostname, ".") {
+		if label == "" || len(label) > 63 || label[0] == '-' || label[len(label)-1] == '-' {
+			return fmt.Errorf("must be a valid DNS name")
+		}
+
+		for idx := range len(label) {
+			char := label[idx]
+
+			if !isASCIIAlpha(char) && (char < '0' || char > '9') && char != '-' {
+				return fmt.Errorf("must be a valid DNS name")
+			}
+		}
+	}
+
+	return nil
+}
+
+func validateHeaderName(header string) *HeaderValidationError {
+	if header == "" {
+		return &HeaderValidationError{
+			Header: header,
+			Reason: "name is not a valid HTTP field-name token",
+		}
+	}
+
+	for idx := range len(header) {
+		if !isTokenByte(header[idx]) {
+			return &HeaderValidationError{
+				Header: header,
+				Reason: "name is not a valid HTTP field-name token",
+			}
+		}
+	}
+
+	return nil
+}
+
+func validateHeaderValue(header, value string) *HeaderValidationError {
+	for idx := range len(value) {
+		char := value[idx]
+
+		switch {
+		case char == '\r' || char == '\n':
+			return &HeaderValidationError{Header: header, Reason: "value contains a newline"}
+		case (char < 0x20 && char != '\t') || char == 0x7f:
+			return &HeaderValidationError{
+				Header: header,
+				Reason: "value contains a prohibited control character",
+			}
+		}
+	}
+
+	return nil
+}
+
+func isASCIIAlpha(value byte) bool {
+	return value >= 'a' && value <= 'z' || value >= 'A' && value <= 'Z'
+}
+
+func isTokenByte(value byte) bool {
+	if isASCIIAlpha(value) || value >= '0' && value <= '9' {
+		return true
+	}
+
+	return strings.ContainsRune("!#$%&'*+-.^_`|~", rune(value))
 }
 
 func containsValue(values []string, needle string) bool {
@@ -175,6 +412,10 @@ func containsHost(hosts []string, u *url.URL) bool {
 }
 
 func normalizeHostValue(value string) string {
+	if normalized, err := normalizeConfiguredHost(value); err == nil {
+		return normalized
+	}
+
 	value = asciiLower(strings.TrimSpace(value))
 	if value == "" {
 		return ""
@@ -258,6 +499,7 @@ func isLocalhostName(hostname string) bool {
 
 func parseIPAddress(hostname string) (netip.Addr, bool) {
 	addr, err := netip.ParseAddr(hostname)
+
 	if err == nil {
 		return addr.Unmap(), true
 	}

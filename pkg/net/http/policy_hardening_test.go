@@ -20,7 +20,7 @@ func TestPolicyAllowedMethods(t *testing.T) {
 		" post ",
 	} {
 		t.Run("default_"+strings.TrimSpace(method), func(t *testing.T) {
-			err := NewPolicy().Eval(&Request{Method: method, URL: "https://example.com"})
+			err := newTestPolicy(t).Eval(&Request{Method: method, URL: "https://example.com"})
 			if err != nil {
 				t.Fatalf("expected method %q to be allowed, got %v", method, err)
 			}
@@ -29,7 +29,7 @@ func TestPolicyAllowedMethods(t *testing.T) {
 
 	for _, method := range []string{stdhttp.MethodConnect, stdhttp.MethodTrace, "CUSTOM-METHOD"} {
 		t.Run("denied_"+method, func(t *testing.T) {
-			err := NewPolicy().Eval(&Request{Method: method, URL: "https://example.com"})
+			err := newTestPolicy(t).Eval(&Request{Method: method, URL: "https://example.com"})
 			policyErr := requirePolicyError(t, err, PolicyTargetRequest)
 			if policyErr.Subject != `method "`+method+`"` || policyErr.Reason != "method is not allowed" {
 				t.Fatalf("unexpected method policy error: %#v", policyErr)
@@ -37,7 +37,7 @@ func TestPolicyAllowedMethods(t *testing.T) {
 		})
 	}
 
-	err := NewPolicy(WithAllowedMethods("SET")).Eval(
+	err := newTestPolicy(t, WithAllowedMethods("SET")).Eval(
 		&Request{Method: "ſET", URL: "https://example.com"},
 	)
 	if err == nil || errors.Is(err, ErrPolicyDenied) {
@@ -46,7 +46,7 @@ func TestPolicyAllowedMethods(t *testing.T) {
 }
 
 func TestPolicyConfiguredAllowedMethodsReplaceDefaults(t *testing.T) {
-	policy := NewPolicy(WithAllowedMethods(" custom-method ", "connect", "BAD METHOD", ""))
+	policy := newTestPolicy(t, WithAllowedMethods(" custom-method ", "connect", "CUSTOM-METHOD"))
 
 	for _, method := range []string{"custom-method", " CONNECT "} {
 		if err := policy.Eval(&Request{Method: method, URL: "https://example.com"}); err != nil {
@@ -58,16 +58,6 @@ func TestPolicyConfiguredAllowedMethodsReplaceDefaults(t *testing.T) {
 		err := policy.Eval(&Request{Method: method, URL: "https://example.com"})
 		requirePolicyError(t, err, PolicyTargetRequest)
 	}
-
-	err := NewPolicy(WithAllowedMethods("", "BAD METHOD")).Eval(
-		&Request{URL: "https://example.com"},
-	)
-	requirePolicyError(t, err, PolicyTargetRequest)
-
-	err = NewPolicy(WithAllowedMethods("ſET")).Eval(
-		&Request{Method: "SET", URL: "https://example.com"},
-	)
-	requirePolicyError(t, err, PolicyTargetRequest)
 }
 
 func TestPolicyRejectsURLCredentials(t *testing.T) {
@@ -79,7 +69,7 @@ func TestPolicyRejectsURLCredentials(t *testing.T) {
 		"https://user%40name:password@example.com",
 	} {
 		t.Run(rawURL, func(t *testing.T) {
-			err := NewPolicy(WithBlockedRequestHeaders("Authorization")).Eval(&Request{URL: rawURL})
+			err := newTestPolicy(t, WithBlockedRequestHeaders("Authorization")).Eval(&Request{URL: rawURL})
 			policyErr := requirePolicyError(t, err, PolicyTargetRequest)
 			if policyErr.Subject != "URL credentials" || policyErr.Reason != "URL user information is not allowed" {
 				t.Fatalf("unexpected URL credential policy error: %#v", policyErr)
@@ -90,7 +80,7 @@ func TestPolicyRejectsURLCredentials(t *testing.T) {
 		})
 	}
 
-	err := NewPolicy().Eval(&Request{
+	err := newTestPolicy(t).Eval(&Request{
 		URL: "https://example.com",
 		Headers: Headers{
 			"Authorization": {"Bearer token"},
@@ -103,20 +93,20 @@ func TestPolicyRejectsURLCredentials(t *testing.T) {
 
 func TestPolicyRequiresASCIIPunycodeHosts(t *testing.T) {
 	for _, rawURL := range []string{"https://éxample.com", "https://K.example"} {
-		err := NewPolicy().Eval(&Request{URL: rawURL})
+		err := newTestPolicy(t).Eval(&Request{URL: rawURL})
 		policyErr := requirePolicyError(t, err, PolicyTargetRequest)
 		if policyErr.Reason != "internationalized hostnames must use ASCII/punycode" {
 			t.Fatalf("unexpected non-ASCII host reason: %q", policyErr.Reason)
 		}
 	}
 
-	if err := NewPolicy().Eval(&Request{URL: "https://xn--xample-9ua.com"}); err != nil {
+	if err := newTestPolicy(t).Eval(&Request{URL: "https://xn--xample-9ua.com"}); err != nil {
 		t.Fatalf("expected punycode hostname to be allowed, got %v", err)
 	}
 }
 
 func TestPolicyHostMatchingIsExactAndPortAware(t *testing.T) {
-	policy := NewPolicy(WithAllowedHosts("example.com"))
+	policy := newTestPolicy(t, WithAllowedHosts("example.com"))
 	for _, rawURL := range []string{"https://example.com", "https://example.com:8443"} {
 		if err := policy.Eval(&Request{URL: rawURL}); err != nil {
 			t.Fatalf("expected hostname-only rule to allow %q, got %v", rawURL, err)
@@ -126,7 +116,7 @@ func TestPolicyHostMatchingIsExactAndPortAware(t *testing.T) {
 	err := policy.Eval(&Request{URL: "https://api.example.com"})
 	requirePolicyError(t, err, PolicyTargetRequest)
 
-	portPolicy := NewPolicy(WithAllowedHosts("example.com:8443"))
+	portPolicy := newTestPolicy(t, WithAllowedHosts("example.com:8443"))
 	if err := portPolicy.Eval(&Request{URL: "https://example.com:8443"}); err != nil {
 		t.Fatalf("expected matching port-specific rule to pass, got %v", err)
 	}
@@ -138,7 +128,7 @@ func TestPolicyHostMatchingIsExactAndPortAware(t *testing.T) {
 }
 
 func TestPolicyRejectsBlockedAndReservedRequestHeaders(t *testing.T) {
-	err := NewPolicy(WithBlockedRequestHeaders("authorization")).Eval(&Request{
+	err := newTestPolicy(t, WithBlockedRequestHeaders("authorization")).Eval(&Request{
 		URL: "https://example.com",
 		Headers: Headers{
 			"AUTHORIZATION": nil,
@@ -151,6 +141,8 @@ func TestPolicyRejectsBlockedAndReservedRequestHeaders(t *testing.T) {
 
 	reserved := []string{
 		"Connection",
+		"Content-Length",
+		"Host",
 		"Proxy-Connection",
 		"Keep-Alive",
 		"TE",
@@ -162,7 +154,7 @@ func TestPolicyRejectsBlockedAndReservedRequestHeaders(t *testing.T) {
 	}
 	for _, header := range reserved {
 		t.Run(header, func(t *testing.T) {
-			err := NewPolicy().Eval(&Request{
+			err := newTestPolicy(t).Eval(&Request{
 				URL:     "https://example.com",
 				Headers: Headers{strings.ToLower(header): nil},
 			})
@@ -175,7 +167,7 @@ func TestPolicyRejectsBlockedAndReservedRequestHeaders(t *testing.T) {
 }
 
 func TestPolicyErrorsRemainDistinctFromValidationErrors(t *testing.T) {
-	err := NewPolicy().Eval(&Request{Method: "BAD METHOD", URL: "https://example.com"})
+	err := newTestPolicy(t).Eval(&Request{Method: "BAD METHOD", URL: "https://example.com"})
 	if err == nil {
 		t.Fatal("expected invalid method error")
 	}

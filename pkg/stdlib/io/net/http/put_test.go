@@ -55,7 +55,7 @@ func TestPUT(t *testing.T) {
 				return httpmock.NewStringResponse(200, "OK"), nil
 			})
 
-		ctx := testNetworkContext()
+		ctx := testNetworkContext(t)
 
 		b, err := json.Marshal(User{
 			FirstName: "Rob",
