@@ -20,8 +20,31 @@
 // dial-time denials use PolicyTargetConnection. Ambient proxy configuration is
 // disabled.
 //
-// Embedders may reuse Policy.Eval with their own Client implementation. Policy
-// construction is fallible, so callers should handle its error at startup:
+// Policy.Eval validates an already constructed *net/http.Request without
+// mutating it. Policy.Prepare adds any missing default headers to the request,
+// then calls Eval; defaults added before a later validation failure remain on
+// the request. Neither method accepts a separate context parameter. Attach a
+// context when constructing the standard request or by calling its WithContext
+// method.
+//
+// Eval accepts only strict outbound client-request state. RequestURI must be
+// empty; Host, when set, must be canonically authority-equivalent to URL.Host;
+// Close must be false; and TransferEncoding and Trailer must be empty. Reserved
+// transport-controlled entries in Header are rejected. With a finite request
+// body limit, a non-empty body must have a positive, known ContentLength; an
+// unknown-length body is rejected before transport with RequestBodyLengthError.
+//
+// Eval and Prepare are preflight checks. A custom transport remains responsible
+// for validating redirects, DNS results, and concrete dial addresses, and for
+// enforcing timeouts and response-header and response-body limits. Ferret's
+// built-in Client supplies those controls.
+//
+// Policy.Eval accepting *net/http.Request instead of Ferret's *Request is an
+// intentional source break. Call Prepare when migrating code that needs policy
+// defaults, or Eval when defaults have already been applied.
+//
+// Policy construction is fallible, so callers should handle its error at
+// startup:
 //
 //	policy, err := http.NewPolicy(
 //		http.WithAllowedHosts("api.example.com"),
@@ -36,6 +59,21 @@
 //		}
 //		return err
 //	}
+//
+// Apply defaults and validate a standard-library request before passing it to
+// a custom client:
+//
+//	stdReq, err := nethttp.NewRequestWithContext(ctx, nethttp.MethodGet, targetURL, nil)
+//	if err != nil {
+//		return err
+//	}
+//	if err := policy.Prepare(stdReq); err != nil {
+//		return err
+//	}
+//	response, err := customClient.Do(stdReq)
+//
+// When policy defaults are not needed, call policy.Eval(stdReq) instead to
+// validate the request without modifying it.
 //
 // A single configuration failure is returned as PolicyConfigurationError;
 // multiple failures are returned as MultiPolicyConfigurationError. The

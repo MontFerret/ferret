@@ -1,45 +1,76 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"math"
 	stdhttp "net/http"
-	"net/url"
+	"sort"
 	"strings"
 )
 
-func toStdRequest(ctx context.Context, req *Request, p *Policy) (*stdhttp.Request, error) {
-	if p == nil {
-		p = &Policy{}
+func toStdRequest(ctx context.Context, req *Request) (*stdhttp.Request, error) {
+	if req == nil {
+		return nil, ErrNilRequest
 	}
 
-	return p.prepareRequest(ctx, req)
-}
+	method := normalizeRequestMethod(req.Method)
+	if !isValidMethod(method) {
+		return nil, &InvalidMethodError{Method: req.Method}
+	}
 
-func parseRequestURL(raw string) (*url.URL, error) {
-	rawURL := strings.TrimSpace(raw)
+	rawURL := strings.TrimSpace(req.URL)
+	stdReq, err := stdhttp.NewRequestWithContext(ctx, method, rawURL, bytes.NewReader(req.Body))
+	if err != nil {
+		if ctx == nil {
+			return nil, &RequestBuildError{Err: err}
+		}
+
+		return nil, &URLParseError{Err: err}
+	}
+
 	if rawURL == "" {
 		return nil, &URLValidationError{Field: "url", Reason: "is required"}
 	}
 
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return nil, &URLParseError{Err: err}
-	}
-
-	if u.Scheme == "" {
+	if stdReq.URL.Scheme == "" {
 		return nil, &URLValidationError{Field: "scheme", Reason: "is required"}
 	}
 
-	if u.Host == "" {
+	if stdReq.URL.Host == "" {
 		return nil, &URLValidationError{Field: "host", Reason: "is required"}
 	}
 
-	u.Scheme = asciiLower(u.Scheme)
-	u.Host = asciiLower(u.Host)
+	stdReq.URL.Scheme = asciiLower(stdReq.URL.Scheme)
+	stdReq.URL.Host = asciiLower(stdReq.URL.Host)
+	stdReq.Host = stdReq.URL.Host
+	stdReq.Header = copyRequestHeaders(req.Headers)
 
-	return u, nil
+	return stdReq, nil
+}
+
+func copyRequestHeaders(src Headers) stdhttp.Header {
+	dst := make(stdhttp.Header, len(src))
+	var keyBuffer [8]string
+	keys := keyBuffer[:0]
+
+	if len(src) > len(keyBuffer) {
+		keys = make([]string, 0, len(src))
+	}
+
+	for key := range src {
+		keys = append(keys, key)
+	}
+
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		canonicalKey := stdhttp.CanonicalHeaderKey(key)
+		dst[canonicalKey] = append(dst[canonicalKey], src[key]...)
+	}
+
+	return dst
 }
 
 func fromStdResponse(res *stdhttp.Response, p *Policy) (*Response, error) {

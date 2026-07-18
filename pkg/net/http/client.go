@@ -56,17 +56,16 @@ func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, er
 		ctx = context.Background()
 	}
 
-	if req == nil {
-		return nil, ErrNilRequest
-	}
-
 	p := d.policy
 	if p == nil {
 		p = &Policy{}
 	}
 
-	stdReq, err := toStdRequest(ctx, req, p)
+	stdReq, err := toStdRequest(ctx, req)
 	if err != nil {
+		return nil, err
+	}
+	if err := p.Prepare(stdReq); err != nil {
 		return nil, err
 	}
 
@@ -108,13 +107,5 @@ func (d *defaultHTTPClient) checkRedirect(req *stdhttp.Request, via []*stdhttp.R
 		return &RedirectLimitError{Limit: limit}
 	}
 
-	if err := p.validateMethod(req.Method, PolicyTargetRedirect); err != nil {
-		return err
-	}
-
-	if err := p.validateURL(req.URL, PolicyTargetRedirect); err != nil {
-		return err
-	}
-
-	return p.validateRequestHeaders(req.Header, PolicyTargetRedirect)
+	return p.eval(req, PolicyTargetRedirect)
 }

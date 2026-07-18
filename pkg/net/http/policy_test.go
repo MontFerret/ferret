@@ -1,8 +1,11 @@
 package http
 
 import (
+	"context"
 	"errors"
+	"io"
 	stdhttp "net/http"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -186,7 +189,7 @@ func TestPolicyEvalAddressClasses(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.policies.Eval(&Request{URL: tt.url})
+			err := tt.policies.Eval(newTestPolicyGETRequest(t, tt.url))
 			if tt.want == "" {
 				if err != nil {
 					t.Fatalf("expected address to be allowed, got %v", err)
@@ -261,7 +264,7 @@ func TestPolicyCanonicalHostPolicies(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.policies.Eval(&Request{URL: tt.url})
+			err := tt.policies.Eval(newTestPolicyGETRequest(t, tt.url))
 			if tt.want == "" {
 				if err != nil {
 					t.Fatalf("expected host policy to allow request, got %v", err)
@@ -277,8 +280,12 @@ func TestPolicyCanonicalHostPolicies(t *testing.T) {
 }
 
 func TestPolicyEval(t *testing.T) {
+	limitedRequest := newTestPolicyRequest(t, stdhttp.MethodPost, "http://example.com")
+	limitedRequest.Body = io.NopCloser(strings.NewReader("four"))
+	limitedRequest.ContentLength = 4
+
 	tests := []struct {
-		req      *Request
+		req      *stdhttp.Request
 		policies *Policy
 		name     string
 		want     string
@@ -286,7 +293,7 @@ func TestPolicyEval(t *testing.T) {
 		{
 			name:     "valid default get",
 			policies: newTestPolicy(t),
-			req:      &Request{URL: "http://example.com"},
+			req:      newTestPolicyRequest(t, "", "http://example.com"),
 		},
 		{
 			name:     "nil request",
@@ -297,61 +304,61 @@ func TestPolicyEval(t *testing.T) {
 		{
 			name:     "invalid method",
 			policies: newTestPolicy(t),
-			req:      &Request{Method: "BAD METHOD", URL: "http://example.com"},
+			req:      newTestPolicyRequest(t, "BAD METHOD", "http://example.com"),
 			want:     "invalid method",
 		},
 		{
 			name:     "missing url",
 			policies: newTestPolicy(t),
-			req:      &Request{},
+			req:      &stdhttp.Request{Method: stdhttp.MethodGet},
 			want:     "url is required",
 		},
 		{
 			name:     "missing scheme",
 			policies: newTestPolicy(t),
-			req:      &Request{URL: "example.com"},
+			req:      newTestPolicyGETRequest(t, "example.com"),
 			want:     "url scheme is required",
 		},
 		{
 			name:     "missing host",
 			policies: newTestPolicy(t),
-			req:      &Request{URL: "http:///path"},
+			req:      newTestPolicyGETRequest(t, "http:///path"),
 			want:     "url host is required",
 		},
 		{
 			name:     "disallowed scheme",
 			policies: newTestPolicy(t, WithAllowedSchemes("https")),
-			req:      &Request{URL: "http://example.com"},
+			req:      newTestPolicyGETRequest(t, "http://example.com"),
 			want:     "scheme",
 		},
 		{
 			name:     "blocked host",
 			policies: newTestPolicy(t, WithBlockedHosts("example.com")),
-			req:      &Request{URL: "http://example.com"},
+			req:      newTestPolicyGETRequest(t, "http://example.com"),
 			want:     "blocked",
 		},
 		{
 			name:     "not allowed host",
 			policies: newTestPolicy(t, WithAllowedHosts("allowed.example")),
-			req:      &Request{URL: "http://other.example"},
+			req:      newTestPolicyGETRequest(t, "http://other.example"),
 			want:     "not allowed",
 		},
 		{
 			name:     "localhost",
 			policies: newTestPolicy(t, WithAllowLocalhost(false)),
-			req:      &Request{URL: "http://127.0.0.1"},
+			req:      newTestPolicyGETRequest(t, "http://127.0.0.1"),
 			want:     "localhost is not allowed",
 		},
 		{
 			name:     "private network",
 			policies: newTestPolicy(t, WithAllowPrivateNetworks(false)),
-			req:      &Request{URL: "http://10.0.0.1"},
+			req:      newTestPolicyGETRequest(t, "http://10.0.0.1"),
 			want:     "private network",
 		},
 		{
 			name:     "request body limit",
 			policies: newTestPolicy(t, WithMaxRequestSize(3)),
-			req:      &Request{Method: stdhttp.MethodPost, URL: "http://example.com", Body: []byte("four")},
+			req:      limitedRequest,
 			want:     "request body exceeds limit",
 		},
 	}
@@ -386,26 +393,48 @@ func TestPolicyEvalDoesNotMutateRequest(t *testing.T) {
 		WithDefaultHeader("X-Default", "default"),
 		WithBlockedRequestHeaders("X-Blocked"),
 	)
-	req := &Request{
-		URL: "HTTP://EXAMPLE.COM/path",
-		Headers: Headers{
-			"X-Blocked": {"secret"},
-		},
+	type contextKey struct{}
+
+	tests := []struct {
+		headers stdhttp.Header
+		name    string
+		wantErr bool
+	}{
+		{name: "success", headers: stdhttp.Header{"x-existing": {"one", "two"}}},
+		{name: "policy failure", headers: stdhttp.Header{"x-blocked": {"secret"}}, wantErr: true},
 	}
 
-	err := policies.Eval(req)
-	requirePolicyError(t, err, PolicyTargetRequest)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.WithValue(context.Background(), contextKey{}, tt.name)
+			req := newTestPolicyGETRequest(t, "HTTP://EXAMPLE.COM/path")
+			req = req.WithContext(ctx)
+			req.Header = tt.headers.Clone()
+			req.Body = io.NopCloser(strings.NewReader("body"))
+			req.ContentLength = 4
 
-	if req.Method != "" {
-		t.Fatalf("expected method to remain empty, got %q", req.Method)
-	}
-	if req.URL != "HTTP://EXAMPLE.COM/path" {
-		t.Fatalf("expected URL to remain unchanged, got %q", req.URL)
-	}
-	if got := req.Headers["X-Blocked"]; len(got) != 1 || got[0] != "secret" {
-		t.Fatalf("expected blocked header to remain unchanged, got %v", got)
-	}
-	if _, ok := req.Headers["X-Default"]; ok {
-		t.Fatalf("expected default header not to be added during Eval")
+			wantMethod := req.Method
+			wantURL := *req.URL
+			wantHeaders := req.Header.Clone()
+			wantBody := req.Body
+			wantContentLength := req.ContentLength
+			wantContext := req.Context()
+
+			err := policies.Eval(req)
+			if tt.wantErr {
+				requirePolicyError(t, err, PolicyTargetRequest)
+			} else if err != nil {
+				t.Fatalf("evaluate request: %v", err)
+			}
+
+			if req.Method != wantMethod || !reflect.DeepEqual(*req.URL, wantURL) ||
+				!reflect.DeepEqual(req.Header, wantHeaders) || req.Body != wantBody ||
+				req.ContentLength != wantContentLength || req.Context() != wantContext {
+				t.Fatalf("Eval mutated request: %#v", req)
+			}
+			if _, ok := req.Header["X-Default"]; ok {
+				t.Fatal("Eval added a policy default header")
+			}
+		})
 	}
 }

@@ -1,8 +1,6 @@
 package http
 
 import (
-	"bytes"
-	"context"
 	"fmt"
 	stdhttp "net/http"
 	"net/netip"
@@ -311,102 +309,148 @@ func (p *Policy) setConfigurationErrorIfMissing(option, value, reason string) {
 	p.setConfigurationError(option, value, reason)
 }
 
-// Eval validates an outbound request against the policy.
-func (p *Policy) Eval(req *Request) error {
-	_, err := p.prepareRequest(context.Background(), req)
-
-	return err
+// Eval validates an outbound standard-library request against the policy
+// without modifying it.
+func (p *Policy) Eval(req *stdhttp.Request) error {
+	return p.eval(req, PolicyTargetRequest)
 }
 
-func (p *Policy) prepareRequest(ctx context.Context, req *Request) (*stdhttp.Request, error) {
+// Prepare adds configured default headers that are missing from req, then
+// validates the effective outbound request. Defaults added before a validation
+// failure remain on req; no other request fields are modified.
+func (p *Policy) Prepare(req *stdhttp.Request) error {
+	if err := p.applyDefaults(req); err != nil {
+		return err
+	}
+
+	return p.Eval(req)
+}
+
+func (p *Policy) applyDefaults(req *stdhttp.Request) error {
 	if req == nil {
-		return nil, ErrNilRequest
+		return ErrNilRequest
 	}
 
-	if err := p.validateMethod(req.Method, PolicyTargetRequest); err != nil {
-		return nil, err
+	if len(p.defaultHeaders) == 0 {
+		return nil
 	}
 
-	rawURL := strings.TrimSpace(req.URL)
-	if rawURL == "" {
-		return nil, &URLValidationError{Field: "url", Reason: "is required"}
+	if req.Header == nil {
+		req.Header = make(stdhttp.Header, len(p.defaultHeaders))
 	}
 
-	method := normalizeRequestMethod(req.Method)
-	stdReq, err := stdhttp.NewRequestWithContext(ctx, method, rawURL, bytes.NewReader(req.Body))
+	keys := make([]string, 0, len(p.defaultHeaders))
+	for key := range p.defaultHeaders {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
 
-	if err != nil {
-		if ctx == nil {
-			return nil, &RequestBuildError{Err: err}
+	for _, key := range keys {
+		present := false
+		for requestKey := range req.Header {
+			if strings.EqualFold(requestKey, key) {
+				present = true
+
+				break
+			}
 		}
 
-		return nil, &URLParseError{Err: err}
-	}
-
-	if stdReq.URL.Scheme == "" {
-		return nil, &URLValidationError{Field: "scheme", Reason: "is required"}
-	}
-
-	if stdReq.URL.Host == "" {
-		return nil, &URLValidationError{Field: "host", Reason: "is required"}
-	}
-
-	stdReq.URL.Scheme = asciiLower(stdReq.URL.Scheme)
-	stdReq.URL.Host = asciiLower(stdReq.URL.Host)
-
-	if err := p.validateURL(stdReq.URL, PolicyTargetRequest); err != nil {
-		return nil, err
-	}
-
-	headers, err := p.copyValidatedRequestHeaders(req.Headers, PolicyTargetRequest)
-	if err != nil {
-		return nil, err
-	}
-
-	stdReq.Header = headers
-
-	for key, value := range p.defaultHeaders {
-		if _, exists := stdReq.Header[key]; !exists {
-			stdReq.Header.Set(key, value)
+		if !present {
+			req.Header[key] = []string{p.defaultHeaders[key]}
 		}
-	}
-
-	if p.maxRequestSize > 0 && int64(len(req.Body)) > p.maxRequestSize {
-		return nil, &RequestBodyLimitError{
-			Size:  int64(len(req.Body)),
-			Limit: p.maxRequestSize,
-		}
-	}
-
-	return stdReq, nil
-}
-
-func (p *Policy) validateMethod(method string, target PolicyTarget) error {
-	normalized := normalizeRequestMethod(method)
-
-	if !isValidMethod(normalized) {
-		return &InvalidMethodError{Method: method}
-	}
-
-	if !containsValue(p.allowedMethods, normalized) {
-		return newPolicyError(target, fmt.Sprintf("method %q", normalized), "method is not allowed")
 	}
 
 	return nil
 }
 
-func (p *Policy) validateRequestHeaders(headers map[string][]string, target PolicyTarget) error {
-	_, err := p.copyValidatedRequestHeaders(headers, target)
+func (p *Policy) eval(req *stdhttp.Request, target PolicyTarget) error {
+	if req == nil {
+		return ErrNilRequest
+	}
 
-	return err
+	if err := p.validateMethod(req.Method, target); err != nil {
+		return err
+	}
+
+	if err := p.validateURL(req.URL, target); err != nil {
+		return err
+	}
+
+	if err := p.validateOutboundRequest(req, target); err != nil {
+		return err
+	}
+
+	if err := p.validateRequestHeaders(req.Header, target); err != nil {
+		return err
+	}
+
+	return p.validateRequestBody(req)
 }
 
-func (p *Policy) copyValidatedRequestHeaders(
-	headers map[string][]string,
-	target PolicyTarget,
-) (stdhttp.Header, error) {
-	result := make(stdhttp.Header, len(headers))
-	keys := make([]string, 0, len(headers))
+func (p *Policy) validateMethod(method string, target PolicyTarget) error {
+	effectiveMethod := method
+	if effectiveMethod == "" {
+		effectiveMethod = stdhttp.MethodGet
+	}
+
+	if !isValidMethod(effectiveMethod) {
+		return &InvalidMethodError{Method: method}
+	}
+
+	if !containsValue(p.allowedMethods, effectiveMethod) {
+		return newPolicyError(
+			target,
+			fmt.Sprintf("method %q", effectiveMethod),
+			"method is not allowed",
+		)
+	}
+
+	return nil
+}
+
+func (p *Policy) validateOutboundRequest(req *stdhttp.Request, target PolicyTarget) error {
+	if req.RequestURI != "" {
+		return newPolicyError(
+			target,
+			"request URI",
+			"must be empty for outbound requests",
+		)
+	}
+
+	if req.Host != "" && !requestAuthoritiesEquivalent(req.Host, req.URL.Host) {
+		return p.reservedRequestHeaderError(target, "Host")
+	}
+
+	if req.Close {
+		return p.reservedRequestHeaderError(target, "Connection")
+	}
+
+	if len(req.TransferEncoding) > 0 {
+		return p.reservedRequestHeaderError(target, "Transfer-Encoding")
+	}
+
+	if len(req.Trailer) > 0 {
+		return p.reservedRequestHeaderError(target, "Trailer")
+	}
+
+	return nil
+}
+
+func (p *Policy) reservedRequestHeaderError(target PolicyTarget, header string) error {
+	return newPolicyError(
+		target,
+		fmt.Sprintf("header %q", stdhttp.CanonicalHeaderKey(header)),
+		"request header is reserved for the transport",
+	)
+}
+
+func (p *Policy) validateRequestHeaders(headers stdhttp.Header, target PolicyTarget) error {
+	var keyBuffer [8]string
+	keys := keyBuffer[:0]
+
+	if len(headers) > len(keyBuffer) {
+		keys = make([]string, 0, len(headers))
+	}
 
 	for key := range headers {
 		keys = append(keys, key)
@@ -417,12 +461,12 @@ func (p *Policy) copyValidatedRequestHeaders(
 	for _, key := range keys {
 		values := headers[key]
 		if err := validateHeaderName(key); err != nil {
-			return nil, err
+			return err
 		}
 
 		canonicalKey := stdhttp.CanonicalHeaderKey(key)
 		if isReservedRequestHeader(canonicalKey) {
-			return nil, newPolicyError(
+			return newPolicyError(
 				target,
 				fmt.Sprintf("header %q", canonicalKey),
 				"request header is reserved for the transport",
@@ -430,7 +474,7 @@ func (p *Policy) copyValidatedRequestHeaders(
 		}
 
 		if p.isBlockedHeader(canonicalKey) {
-			return nil, newPolicyError(
+			return newPolicyError(
 				target,
 				fmt.Sprintf("header %q", canonicalKey),
 				"request header is not allowed",
@@ -439,18 +483,38 @@ func (p *Policy) copyValidatedRequestHeaders(
 
 		for _, value := range values {
 			if err := validateHeaderValue(canonicalKey, value); err != nil {
-				return nil, err
+				return err
 			}
 		}
-
-		result[canonicalKey] = append(result[canonicalKey], values...)
 	}
 
-	return result, nil
+	return nil
+}
+
+func (p *Policy) validateRequestBody(req *stdhttp.Request) error {
+	if p.maxRequestSize <= 0 || req.Body == nil || req.Body == stdhttp.NoBody {
+		return nil
+	}
+
+	if req.ContentLength > p.maxRequestSize {
+		return &RequestBodyLimitError{
+			Size:  req.ContentLength,
+			Limit: p.maxRequestSize,
+		}
+	}
+
+	if req.ContentLength <= 0 {
+		return &RequestBodyLengthError{
+			ContentLength: req.ContentLength,
+			Limit:         p.maxRequestSize,
+		}
+	}
+
+	return nil
 }
 
 func (p *Policy) validateURL(u *url.URL, target PolicyTarget) error {
-	if u == nil {
+	if u == nil || *u == (url.URL{}) {
 		return &URLValidationError{Field: "url", Reason: "is required"}
 	}
 

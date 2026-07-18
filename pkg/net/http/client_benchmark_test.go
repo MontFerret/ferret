@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"io"
 	stdhttp "net/http"
 	"strings"
@@ -24,6 +25,62 @@ func BenchmarkClientDoPolicyWithHeaders(b *testing.B) {
 			"X-Trace":       {"one", "two"},
 		},
 	})
+}
+
+func BenchmarkToStdRequest(b *testing.B) {
+	req := &Request{
+		URL: "https://api.example.test/resource",
+		Headers: Headers{
+			"Accept":  {"application/json"},
+			"X-Trace": {"one", "two"},
+		},
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for b.Loop() {
+		if _, err := toStdRequest(context.Background(), req); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkPolicyEval(b *testing.B) {
+	policy := newTestPolicy(b)
+	req := newTestPolicyGETRequest(b, "https://api.example.test/resource")
+	req.Header = stdhttp.Header{
+		"Accept":  {"application/json"},
+		"X-Trace": {"one", "two"},
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for b.Loop() {
+		if err := policy.Eval(req); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkPolicyPrepareDefaults(b *testing.B) {
+	policy := newTestPolicy(b,
+		WithDefaultHeader("Accept", "application/json"),
+		WithDefaultHeader("X-Trace", "benchmark"),
+	)
+	base := newTestPolicyGETRequest(b, "https://api.example.test/resource")
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for b.Loop() {
+		req := *base
+		req.Header = make(stdhttp.Header)
+		if err := policy.Prepare(&req); err != nil {
+			b.Fatal(err)
+		}
+	}
 }
 
 func benchmarkClientDoPolicy(b *testing.B, policy *Policy) {

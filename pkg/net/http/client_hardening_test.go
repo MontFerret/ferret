@@ -162,6 +162,81 @@ func TestClientAppliesHeaderPolicyToRedirects(t *testing.T) {
 	}
 }
 
+func TestClientPreservesPreparedHeadersOnSameOriginRedirect(t *testing.T) {
+	tests := []struct {
+		headers Headers
+		name    string
+		want    string
+	}{
+		{name: "default", want: "default"},
+		{name: "request value", headers: Headers{"X-Value": {"request"}}, want: "request"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			roundTrips := 0
+			seen := make([]string, 0, 2)
+			client := &defaultHTTPClient{
+				policy: newTestPolicy(t, WithDefaultHeader("X-Value", "default")),
+				client: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
+					roundTrips++
+					seen = append(seen, req.Header.Get("X-Value"))
+					if roundTrips == 1 {
+						return responseWithBody(
+							stdhttp.StatusFound,
+							"",
+							stdhttp.Header{"Location": {"/next"}},
+						), nil
+					}
+
+					return responseWithBody(stdhttp.StatusOK, "ok", nil), nil
+				})},
+			}
+
+			if _, err := client.Do(context.Background(), &Request{
+				URL:     "https://example.com/start",
+				Headers: tt.headers,
+			}); err != nil {
+				t.Fatalf("request failed: %v", err)
+			}
+			if !equalStrings(seen, []string{tt.want, tt.want}) {
+				t.Fatalf("expected prepared value on initial and redirect requests, got %v", seen)
+			}
+		})
+	}
+}
+
+func TestClientDoesNotReapplySensitiveDefaultAcrossOriginRedirect(t *testing.T) {
+	roundTrips := 0
+	seen := make([]string, 0, 2)
+	client := &defaultHTTPClient{
+		policy: newTestPolicy(t, WithDefaultHeader("Authorization", "Bearer default-token")),
+		client: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
+			roundTrips++
+			seen = append(seen, req.Header.Get("Authorization"))
+			if roundTrips == 1 {
+				return responseWithBody(
+					stdhttp.StatusFound,
+					"",
+					stdhttp.Header{"Location": {"https://8.8.8.8/next"}},
+				), nil
+			}
+
+			return responseWithBody(stdhttp.StatusOK, "ok", nil), nil
+		})},
+	}
+
+	if _, err := client.Do(
+		context.Background(),
+		&Request{URL: "https://1.1.1.1/start"},
+	); err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if !equalStrings(seen, []string{"Bearer default-token", ""}) {
+		t.Fatalf("expected sensitive default only on the initial origin, got %v", seen)
+	}
+}
+
 func TestClientRejectsNonASCIIRedirect(t *testing.T) {
 	policy := newTestPolicy(t)
 	client := &defaultHTTPClient{

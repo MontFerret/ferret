@@ -1,8 +1,11 @@
 package http
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
-func FuzzParseRequestURL(f *testing.F) {
+func FuzzToStdRequestURL(f *testing.F) {
 	for _, seed := range []string{
 		"https://example.com/path",
 		"HTTP://127.1:8080",
@@ -15,12 +18,12 @@ func FuzzParseRequestURL(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, rawURL string) {
-		u, err := parseRequestURL(rawURL)
+		req, err := toStdRequest(context.Background(), &Request{URL: rawURL})
 		if err != nil {
 			return
 		}
-		if u.Scheme == "" || u.Host == "" {
-			t.Fatalf("successful parse returned incomplete URL: %#v", u)
+		if req.URL.Scheme == "" || req.URL.Host == "" {
+			t.Fatalf("successful conversion returned incomplete URL: %#v", req.URL)
 		}
 	})
 }

@@ -430,6 +430,109 @@ func normalizeHostValue(value string) string {
 	return canonicalHostKey(value)
 }
 
+// requestAuthoritiesEquivalent rejects malformed Host overrides before
+// canonical comparison so normalization cannot make invalid syntax acceptable.
+func requestAuthoritiesEquivalent(left, right string) bool {
+	if !isValidRequestAuthority(left) || !isValidRequestAuthority(right) {
+		return false
+	}
+
+	if left == right {
+		return true
+	}
+
+	left, leftErr := normalizeConfiguredHost(left)
+	right, rightErr := normalizeConfiguredHost(right)
+
+	return leftErr == nil && rightErr == nil && left == right
+}
+
+func isValidRequestAuthority(value string) bool {
+	if value == "" {
+		return false
+	}
+
+	if value[0] == '[' {
+		for idx := range len(value) {
+			if !isValidRequestAuthorityByte(value[idx]) {
+				return false
+			}
+		}
+
+		closingBracket := strings.LastIndexByte(value, ']')
+		if closingBracket < 0 {
+			return false
+		}
+
+		addr, err := netip.ParseAddr(value[1:closingBracket])
+		if err != nil || !addr.Is6() {
+			return false
+		}
+
+		remainder := value[closingBracket+1:]
+		if remainder == "" {
+			return true
+		}
+
+		return remainder[0] == ':' && isValidRequestPort(remainder[1:])
+	}
+
+	separator := -1
+	for idx := range len(value) {
+		char := value[idx]
+		if !isValidRequestAuthorityByte(char) || char == '[' || char == ']' {
+			return false
+		}
+
+		if char == ':' {
+			if separator >= 0 {
+				return false
+			}
+
+			separator = idx
+		}
+	}
+
+	hostEnd := len(value)
+	if separator >= 0 {
+		hostEnd = separator
+		if !isValidRequestPort(value[separator+1:]) {
+			return false
+		}
+	}
+
+	return hostEnd > 0
+}
+
+func isValidRequestAuthorityByte(value byte) bool {
+	if isASCIIAlpha(value) || value >= '0' && value <= '9' {
+		return true
+	}
+
+	return strings.ContainsRune("!$%&'()*+,-.:;=[]_~", rune(value))
+}
+
+func isValidRequestPort(value string) bool {
+	if value == "" {
+		return false
+	}
+
+	port := uint64(0)
+	for idx := range len(value) {
+		char := value[idx]
+		if char < '0' || char > '9' {
+			return false
+		}
+
+		port = port*10 + uint64(char-'0')
+		if port > 65535 {
+			return false
+		}
+	}
+
+	return true
+}
+
 func canonicalHostname(hostname string) string {
 	hostname = asciiLower(strings.TrimSpace(hostname))
 

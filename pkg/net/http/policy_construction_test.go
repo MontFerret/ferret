@@ -3,6 +3,7 @@ package http
 import (
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"testing"
 	"time"
@@ -125,14 +126,14 @@ func TestNewPolicyAcceptsAndDeduplicatesCanonicalHosts(t *testing.T) {
 		"https://example.net:8443",
 		"https://[2606:4700:4700::1111]:443",
 	} {
-		if err := policy.Eval(&Request{URL: rawURL}); err != nil {
+		if err := policy.Eval(newTestPolicyGETRequest(t, rawURL)); err != nil {
 			t.Fatalf("expected canonical host %q to be allowed: %v", rawURL, err)
 		}
 	}
 
 	requirePolicyError(
 		t,
-		policy.Eval(&Request{URL: "https://sub.example.com"}),
+		policy.Eval(newTestPolicyGETRequest(t, "https://sub.example.com")),
 		PolicyTargetRequest,
 	)
 }
@@ -211,10 +212,10 @@ func TestExplicitUnlimitedBodyOptionsDisableOnlyTheirLimits(t *testing.T) {
 		WithMaxRequestSize(3),
 		WithUnlimitedRequestSize(),
 	)
-	if err := requestPolicy.Eval(&Request{
-		URL:  "https://example.com",
-		Body: []byte("four"),
-	}); err != nil {
+	request := newTestPolicyGETRequest(t, "https://example.com")
+	request.Body = io.NopCloser(strings.NewReader("four"))
+	request.ContentLength = 4
+	if err := requestPolicy.Eval(request); err != nil {
 		t.Fatalf("unlimited request policy rejected body: %v", err)
 	}
 	if requestPolicy.maxResponseSize != defaultMaxResponseSize {
@@ -239,21 +240,21 @@ func TestExplicitUnlimitedBodyOptionsDisableOnlyTheirLimits(t *testing.T) {
 
 func TestNewPolicyNilAndZeroArgumentOptions(t *testing.T) {
 	policy := newTestPolicy(t, nil)
-	if err := policy.Eval(&Request{URL: "https://example.com"}); err != nil {
+	if err := policy.Eval(newTestPolicyGETRequest(t, "https://example.com")); err != nil {
 		t.Fatalf("nil option changed defaults: %v", err)
 	}
 
 	methodsCleared := newTestPolicy(t, WithAllowedMethods())
 	requirePolicyError(
 		t,
-		methodsCleared.Eval(&Request{URL: "https://example.com"}),
+		methodsCleared.Eval(newTestPolicyGETRequest(t, "https://example.com")),
 		PolicyTargetRequest,
 	)
 
 	schemesCleared := newTestPolicy(t, WithAllowedSchemes())
 	requirePolicyError(
 		t,
-		schemesCleared.Eval(&Request{URL: "https://example.com"}),
+		schemesCleared.Eval(newTestPolicyGETRequest(t, "https://example.com")),
 		PolicyTargetRequest,
 	)
 }
@@ -591,7 +592,7 @@ func TestNewReturnsNilClientForAggregatedPolicyConfigurationError(t *testing.T) 
 func TestZeroPolicyIsDenyAll(t *testing.T) {
 	var policy Policy
 
-	err := policy.Eval(&Request{URL: "https://example.com"})
+	err := policy.Eval(newTestPolicyGETRequest(t, "https://example.com"))
 	policyErr := requirePolicyError(t, err, PolicyTargetRequest)
 	if policyErr.Subject != `method "GET"` {
 		t.Fatalf("expected zero policy to deny the normalized method, got %#v", policyErr)
