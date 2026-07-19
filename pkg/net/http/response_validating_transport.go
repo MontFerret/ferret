@@ -34,7 +34,7 @@ func (t *responseValidatingTransport) RoundTrip(req *stdhttp.Request) (*stdhttp.
 }
 
 func (t *responseValidatingTransport) CloseIdleConnections() {
-	if closer, ok := t.next.(interface{ CloseIdleConnections() }); ok {
+	if closer, ok := t.next.(interface{ CloseIdleConnections() }); ok && closer != nil {
 		closer.CloseIdleConnections()
 	}
 }
