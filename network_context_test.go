@@ -26,7 +26,8 @@ func TestSessionRunInjectsConfiguredNetwork(t *testing.T) {
 	t.Parallel()
 
 	client := &recordingHTTPClient{body: []byte("session-network")}
-	engine := mustNewEngine(t, WithNetwork(ferretnet.New(ferretnet.WithHTTPClient(client))))
+	network := mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
+	engine := mustNewEngine(t, WithNetwork(network))
 	defer func() { _ = engine.Close() }()
 
 	out, err := engine.Run(context.Background(), source.NewAnonymous(`
@@ -55,7 +56,8 @@ func TestDebugSessionRunInjectsConfiguredNetwork(t *testing.T) {
 	t.Parallel()
 
 	client := &recordingHTTPClient{body: []byte("debug-network")}
-	engine := mustNewEngine(t, WithNetwork(ferretnet.New(ferretnet.WithHTTPClient(client))))
+	network := mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
+	engine := mustNewEngine(t, WithNetwork(network))
 	defer func() { _ = engine.Close() }()
 
 	plan, err := engine.CompileDebug(context.Background(), source.New("debug-network.fql", `

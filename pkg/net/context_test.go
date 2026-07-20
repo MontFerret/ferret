@@ -7,7 +7,10 @@ import (
 )
 
 func TestWithNetworkRoundTrip(t *testing.T) {
-	network := New()
+	network, err := New()
+	if err != nil {
+		t.Fatalf("create network: %v", err)
+	}
 	ctx := WithNetwork(context.Background(), network)
 
 	resolved, err := NetworkFrom(ctx)
@@ -22,7 +25,10 @@ func TestWithNetworkRoundTrip(t *testing.T) {
 
 func TestHTTPClientFrom(t *testing.T) {
 	client := stubHTTPClient{}
-	network := New(WithHTTPClient(client))
+	network, err := New(WithHTTPClient(client))
+	if err != nil {
+		t.Fatalf("create network: %v", err)
+	}
 	ctx := WithNetwork(context.Background(), network)
 
 	resolved, err := HTTPClientFrom(ctx)
@@ -46,5 +52,26 @@ func TestNetworkFromError(t *testing.T) {
 
 	if _, err := HTTPClientFrom(context.Background()); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("expected ErrNotFound for missing http client, got %v", err)
+	}
+}
+
+func TestDefaultNetworkForwardsIdleConnectionCleanup(t *testing.T) {
+	t.Parallel()
+
+	client := &trackingHTTPClient{}
+	network, err := New(WithHTTPClient(client))
+	if err != nil {
+		t.Fatalf("create network: %v", err)
+	}
+	closer, ok := network.(interface{ CloseIdleConnections() })
+	if !ok {
+		t.Fatalf("expected default network to expose idle-connection cleanup")
+	}
+
+	closer.CloseIdleConnections()
+	closer.CloseIdleConnections()
+
+	if got := client.idleCloseCount(); got != 2 {
+		t.Fatalf("expected cleanup to be forwarded twice, got %d", got)
 	}
 }

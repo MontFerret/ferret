@@ -71,7 +71,7 @@ func TestREQUEST(t *testing.T) {
 				return httpmock.NewStringResponse(200, "GET OK"), nil
 			})
 
-		ctx := testNetworkContext()
+		ctx := testNetworkContext(t)
 
 		out, err := http.REQUEST(ctx, runtime.NewObjectWith(
 			map[string]runtime.Value{
@@ -93,7 +93,7 @@ func TestREQUEST(t *testing.T) {
 				return httpmock.NewStringResponse(200, "POST OK"), nil
 			})
 
-		ctx := testNetworkContext()
+		ctx := testNetworkContext(t)
 
 		out, err := http.REQUEST(ctx, runtime.NewObjectWith(
 			map[string]runtime.Value{
@@ -119,7 +119,7 @@ func TestREQUEST(t *testing.T) {
 				return httpmock.NewStringResponse(200, "Headers OK"), nil
 			})
 
-		ctx := testNetworkContext()
+		ctx := testNetworkContext(t)
 
 		out, err := http.REQUEST(ctx, runtime.NewObjectWith(
 			map[string]runtime.Value{
@@ -149,7 +149,7 @@ func TestREQUEST(t *testing.T) {
 				return httpmock.NewStringResponse(200, "JSON OK"), nil
 			})
 
-		ctx := testNetworkContext()
+		ctx := testNetworkContext(t)
 
 		out, err := http.REQUEST(ctx, runtime.NewObjectWith(
 			map[string]runtime.Value{
@@ -168,7 +168,7 @@ func TestREQUEST(t *testing.T) {
 	})
 
 	Convey("Should return error when url is missing", t, func() {
-		ctx := testNetworkContext()
+		ctx := testNetworkContext(t)
 
 		out, err := http.REQUEST(ctx, runtime.NewObjectWith(
 			map[string]runtime.Value{
@@ -182,7 +182,7 @@ func TestREQUEST(t *testing.T) {
 	})
 
 	Convey("Should return error with invalid argument type", t, func() {
-		ctx := testNetworkContext()
+		ctx := testNetworkContext(t)
 
 		out, err := http.REQUEST(ctx, runtime.NewString("invalid"))
 

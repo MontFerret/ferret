@@ -1,138 +1,264 @@
 package http
 
 import (
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
 
-// WithTimeout sets the underlying HTTP client timeout.
-func WithTimeout(timeout time.Duration) Policy {
-	return func(p *Policies) {
-		if timeout <= 0 {
-			p.Timeout = 0
+// WithTimeout sets the overall HTTP client timeout. Zero restores the secure
+// 30-second default; negative values make policy construction fail.
+func WithTimeout(timeout time.Duration) PolicyOption {
+	return func(p *Policy) {
+		if timeout < 0 {
+			p.setConfigurationError("WithTimeout", timeout.String(), "must not be negative")
+
 			return
 		}
 
-		p.Timeout = timeout
-	}
-}
-
-// WithMaxRequestSize limits request body size in bytes. A non-positive value disables the limit.
-func WithMaxRequestSize(size int64) Policy {
-	return func(p *Policies) {
-		if size < 0 {
-			size = 0
+		if timeout == 0 {
+			timeout = defaultTimeout
 		}
 
-		p.MaxRequestSize = size
+		p.timeout = timeout
 	}
 }
 
-// WithMaxResponseSize limits response body size in bytes. A non-positive value disables the limit.
-func WithMaxResponseSize(size int64) Policy {
-	return func(p *Policies) {
+// WithNoTimeout explicitly disables the overall HTTP client timeout. Request
+// contexts may still impose deadlines.
+func WithNoTimeout() PolicyOption {
+	return func(p *Policy) {
+		p.timeout = 0
+	}
+}
+
+// WithMaxRequestSize limits request bodies in bytes. Zero restores the secure
+// 16 MiB default; negative values make policy construction fail.
+func WithMaxRequestSize(size int64) PolicyOption {
+	return func(p *Policy) {
 		if size < 0 {
-			size = 0
+			p.setConfigurationError(
+				"WithMaxRequestSize",
+				strconv.FormatInt(size, 10),
+				"must not be negative",
+			)
+
+			return
 		}
 
-		p.MaxResponseSize = size
+		if size == 0 {
+			size = defaultMaxRequestSize
+		}
+
+		p.maxRequestSize = size
 	}
 }
 
-// WithFollowRedirects controls whether redirects are followed.
-func WithFollowRedirects(follow bool) Policy {
-	return func(p *Policies) {
-		p.FollowRedirects = follow
+// WithUnlimitedRequestSize explicitly disables the request body size limit.
+func WithUnlimitedRequestSize() PolicyOption {
+	return func(p *Policy) {
+		p.maxRequestSize = 0
 	}
 }
 
-// WithMaxRedirects limits followed redirects. A value of 0 allows the standard library default.
-func WithMaxRedirects(count int) Policy {
-	return func(p *Policies) {
+// WithMaxResponseSize limits materialized response bodies in bytes. Zero
+// restores the secure 16 MiB default; negative values make construction fail.
+func WithMaxResponseSize(size int64) PolicyOption {
+	return func(p *Policy) {
+		if size < 0 {
+			p.setConfigurationError(
+				"WithMaxResponseSize",
+				strconv.FormatInt(size, 10),
+				"must not be negative",
+			)
+
+			return
+		}
+
+		if size == 0 {
+			size = defaultMaxResponseSize
+		}
+
+		p.maxResponseSize = size
+	}
+}
+
+// WithUnlimitedResponseSize explicitly disables the response body size limit.
+func WithUnlimitedResponseSize() PolicyOption {
+	return func(p *Policy) {
+		p.maxResponseSize = 0
+	}
+}
+
+// WithMaxResponseHeaderSize limits response headers in bytes. Zero restores
+// the secure 1 MiB default; negative values make policy construction fail.
+// Response headers cannot be configured as unlimited.
+func WithMaxResponseHeaderSize(size int64) PolicyOption {
+	return func(p *Policy) {
+		if size < 0 {
+			p.setConfigurationError(
+				"WithMaxResponseHeaderSize",
+				strconv.FormatInt(size, 10),
+				"must not be negative",
+			)
+
+			return
+		}
+
+		if size == 0 {
+			size = defaultMaxResponseHeaderSize
+		}
+
+		p.maxResponseHeaderSize = size
+	}
+}
+
+// WithFollowRedirects controls whether redirects are followed. Disabling
+// redirects is distinct from configuring the maximum redirect count.
+func WithFollowRedirects(follow bool) PolicyOption {
+	return func(p *Policy) {
+		p.followRedirects = follow
+	}
+}
+
+// WithMaxRedirects limits how many redirects may be followed. Zero restores
+// the secure default of 10; negative values make policy construction fail.
+func WithMaxRedirects(count int) PolicyOption {
+	return func(p *Policy) {
 		if count < 0 {
-			count = 0
+			p.setConfigurationError(
+				"WithMaxRedirects",
+				strconv.Itoa(count),
+				"must not be negative",
+			)
+
+			return
 		}
 
-		p.MaxRedirects = count
+		if count == 0 {
+			count = defaultMaxRedirects
+		}
+
+		p.maxRedirects = count
 	}
 }
 
-// WithAllowedSchemes replaces the set of permitted URL schemes.
-func WithAllowedSchemes(schemes ...string) Policy {
-	return func(p *Policies) {
-		p.AllowedSchemes = append([]string(nil), schemes...)
+// WithAllowedSchemes replaces the set of permitted URL schemes. Entries are
+// trimmed, normalized to lowercase ASCII, validated, and deduplicated.
+func WithAllowedSchemes(schemes ...string) PolicyOption {
+	return func(p *Policy) {
+		p.allowedSchemes = append([]string(nil), schemes...)
+
+		for _, scheme := range schemes {
+			if err := validateConfiguredScheme(scheme); err != nil {
+				p.setConfigurationError("WithAllowedSchemes", scheme, err.Error())
+			}
+		}
 	}
 }
 
-// WithAllowedHosts restricts requests to the provided host names.
-func WithAllowedHosts(hosts ...string) Policy {
-	return func(p *Policies) {
-		p.AllowedHosts = append([]string(nil), hosts...)
+// WithAllowedMethods replaces the set of permitted HTTP methods. Entries are
+// trimmed, normalized to uppercase ASCII, validated, and deduplicated.
+func WithAllowedMethods(methods ...string) PolicyOption {
+	return func(p *Policy) {
+		p.allowedMethods = append([]string(nil), methods...)
+
+		for _, method := range methods {
+			if !isValidMethod(normalizeMethod(method)) {
+				p.setConfigurationError(
+					"WithAllowedMethods",
+					method,
+					"must be a non-empty HTTP method token",
+				)
+			}
+		}
 	}
 }
 
-// WithBlockedHosts blocks requests to the provided host names.
-func WithBlockedHosts(hosts ...string) Policy {
-	return func(p *Policies) {
-		p.BlockedHosts = append([]string(nil), hosts...)
+// WithAllowedHosts restricts requests to the provided exact hosts. Entries
+// must be ASCII DNS names or IP literals, optionally with a numeric port. A
+// hostname-only entry matches every port; subdomains are not implicit.
+func WithAllowedHosts(hosts ...string) PolicyOption {
+	return func(p *Policy) {
+		p.allowedHosts = append([]string(nil), hosts...)
+
+		validateConfiguredHosts(p, "WithAllowedHosts", hosts)
+	}
+}
+
+// WithBlockedHosts blocks the provided exact hosts. Entries must be ASCII DNS
+// names or IP literals, optionally with a numeric port. A hostname-only entry
+// matches every port; subdomains are not implicit.
+func WithBlockedHosts(hosts ...string) PolicyOption {
+	return func(p *Policy) {
+		p.blockedHosts = append([]string(nil), hosts...)
+
+		validateConfiguredHosts(p, "WithBlockedHosts", hosts)
 	}
 }
 
 // WithAllowLocalhost controls whether localhost and loopback addresses are allowed.
-func WithAllowLocalhost(allow bool) Policy {
-	return func(p *Policies) {
-		p.AllowLocalhost = allow
+func WithAllowLocalhost(allow bool) PolicyOption {
+	return func(p *Policy) {
+		p.allowLocalhost = allow
 	}
 }
 
 // WithAllowPrivateNetworks controls whether private IP network addresses are allowed.
-func WithAllowPrivateNetworks(allow bool) Policy {
-	return func(p *Policies) {
-		p.AllowPrivateNetworks = allow
+func WithAllowPrivateNetworks(allow bool) PolicyOption {
+	return func(p *Policy) {
+		p.allowPrivateNetworks = allow
 	}
 }
 
-// WithDefaultHeader sets a default request header when the request does not already provide it.
-func WithDefaultHeader(key, value string) Policy {
-	return func(p *Policies) {
-		key = strings.TrimSpace(key)
-		if key == "" {
-			return
-		}
-
-		if p.DefaultHeaders == nil {
-			p.DefaultHeaders = make(map[string]string)
-		}
-
-		p.DefaultHeaders[key] = value
+// WithAllowLinkLocal controls whether IPv4 and IPv6 link-local addresses are allowed.
+func WithAllowLinkLocal(allow bool) PolicyOption {
+	return func(p *Policy) {
+		p.allowLinkLocal = allow
 	}
 }
 
-// WithDefaultHeaders sets default request headers when the request does not already provide them.
-func WithDefaultHeaders(headers map[string]string) Policy {
-	return func(p *Policies) {
+// WithDefaultHeader sets a validated default request header when a request
+// does not already supply that header.
+func WithDefaultHeader(key, value string) PolicyOption {
+	return func(p *Policy) {
+		p.addDefaultHeader("WithDefaultHeader", key, value)
+	}
+}
+
+// WithDefaultHeaders adds validated default request headers. Empty maps are a
+// no-op. Keys are processed deterministically.
+func WithDefaultHeaders(headers map[string]string) PolicyOption {
+	return func(p *Policy) {
 		if len(headers) == 0 {
 			return
 		}
 
-		if p.DefaultHeaders == nil {
-			p.DefaultHeaders = make(map[string]string, len(headers))
+		keys := make([]string, 0, len(headers))
+
+		for key := range headers {
+			keys = append(keys, key)
 		}
 
-		for key, value := range headers {
-			key = strings.TrimSpace(key)
-			if key == "" {
-				continue
-			}
+		sort.Strings(keys)
 
-			p.DefaultHeaders[key] = value
+		for _, key := range keys {
+			p.addDefaultHeader("WithDefaultHeaders", key, headers[key])
 		}
 	}
 }
 
-// WithBlockedRequestHeaders removes the provided header names from outbound requests.
-func WithBlockedRequestHeaders(headers ...string) Policy {
-	return func(p *Policies) {
-		p.BlockedRequestHeaders = append([]string(nil), headers...)
+// WithBlockedRequestHeaders rejects outbound requests that supply any of the
+// provided header names. Transport-controlled headers are always rejected.
+func WithBlockedRequestHeaders(headers ...string) PolicyOption {
+	return func(p *Policy) {
+		p.blockedRequestHeaders = append([]string(nil), headers...)
+
+		for _, header := range headers {
+			if err := validateHeaderName(strings.TrimSpace(header)); err != nil {
+				p.setConfigurationError("WithBlockedRequestHeaders", header, err.Reason)
+			}
+		}
 	}
 }

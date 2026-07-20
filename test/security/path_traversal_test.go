@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/v2"
+	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
+	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/goccy/go-json"
 )
@@ -36,10 +38,24 @@ func TestPathTraversalVulnerability(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	engine, err := ferret.New(ferret.WithFSRoot(safeDir))
+	httpClient, err := ferrethttp.New(ferrethttp.WithAllowLocalhost(true))
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	network, err := ferretnet.New(ferretnet.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	engine, err := ferret.New(
+		ferret.WithFSRoot(safeDir),
+		ferret.WithNetwork(network),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
 
 	startServer := func(ctx context.Context, ln net.Listener) error {
 		mux := http.NewServeMux()

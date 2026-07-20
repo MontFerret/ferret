@@ -8,10 +8,11 @@ import (
 )
 
 type recordingHTTPClient struct {
-	lastURL string
-	body    []byte
-	calls   int
-	mu      sync.Mutex
+	lastURL    string
+	body       []byte
+	calls      int
+	idleCloses int
+	mu         sync.Mutex
 }
 
 func (c *recordingHTTPClient) Do(_ context.Context, req *nethttp.Request) (*nethttp.Response, error) {
@@ -28,4 +29,18 @@ func (c *recordingHTTPClient) Do(_ context.Context, req *nethttp.Request) (*neth
 		Status:     "200 OK",
 		Body:       append([]byte(nil), c.body...),
 	}, nil
+}
+
+func (c *recordingHTTPClient) CloseIdleConnections() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.idleCloses++
+}
+
+func (c *recordingHTTPClient) idleCloseCount() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.idleCloses
 }
