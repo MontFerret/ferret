@@ -8,6 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -46,7 +47,7 @@ func New(setters ...Option) (*Engine, error) {
 			closeErr := boot.hooks.engine.runCloseHooks()
 
 			if ownsNetwork {
-				closeIdleNetworkConnections(boot.host.Network())
+				ferretnet.CloseIdleNetworkConnections(boot.host.Network())
 			}
 
 			if closeErr != nil {
@@ -62,7 +63,7 @@ func New(setters ...Option) (*Engine, error) {
 		closeErr := boot.hooks.engine.runCloseHooks()
 
 		if ownsNetwork {
-			closeIdleNetworkConnections(boot.host.Network())
+			ferretnet.CloseIdleNetworkConnections(boot.host.Network())
 		}
 
 		if closeErr != nil {
@@ -80,7 +81,7 @@ func New(setters ...Option) (*Engine, error) {
 		closeErr := hooks.engine.runCloseHooks()
 
 		if ownsNetwork {
-			closeIdleNetworkConnections(h.network)
+			ferretnet.CloseIdleNetworkConnections(h.network)
 		}
 
 		if closeErr != nil {
@@ -199,7 +200,7 @@ func (e *Engine) Close() error {
 	err := e.hooks.engine.runCloseHooks()
 
 	if e.ownsNetwork {
-		closeIdleNetworkConnections(e.host.network)
+		ferretnet.CloseIdleNetworkConnections(e.host.network)
 	}
 
 	if err != nil {

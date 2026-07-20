@@ -49,7 +49,7 @@ func (n *defaultNetwork) HTTP() ferrethttp.Client {
 }
 
 func (n *defaultNetwork) CloseIdleConnections() {
-	if closer, ok := n.http.(ferrethttp.IdleConnectionCloser); ok {
+	if closer, ok := n.http.(ferrethttp.IdleConnectionCloser); ok && closer != nil {
 		closer.CloseIdleConnections()
 	}
 }
