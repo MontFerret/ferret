@@ -30,17 +30,18 @@ func New(setters ...Option) (Network, error) {
 		option(&opts)
 	}
 
-	if opts.http == nil {
-		client, err := ferrethttp.New()
+	if opts.httpClient == nil {
+		client, err := ferrethttp.New(opts.httpPolicies...)
+
 		if err != nil {
 			return nil, fmt.Errorf("http client: %w", err)
 		}
 
-		opts.http = client
+		opts.httpClient = client
 	}
 
 	return &defaultNetwork{
-		http: opts.http,
+		http: opts.httpClient,
 	}, nil
 }
 

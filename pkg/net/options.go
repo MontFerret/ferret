@@ -6,7 +6,8 @@ type (
 	Option func(*options)
 
 	options struct {
-		http ferrethttp.Client
+		httpClient   ferrethttp.Client
+		httpPolicies []ferrethttp.PolicyOption
 	}
 )
 
@@ -17,6 +18,17 @@ func WithHTTPClient(client ferrethttp.Client) Option {
 			return
 		}
 
-		opts.http = client
+		opts.httpClient = client
+	}
+}
+
+// WithHTTPPolicies sets the HTTP policies used by a Network.
+func WithHTTPPolicies(policies ...ferrethttp.PolicyOption) Option {
+	return func(opts *options) {
+		if len(policies) == 0 {
+			return
+		}
+
+		opts.httpPolicies = append(opts.httpPolicies, policies...)
 	}
 }

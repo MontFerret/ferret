@@ -277,6 +277,7 @@ func (p *Policy) addDefaultHeader(option, key, value string) {
 	}
 
 	canonicalKey := stdhttp.CanonicalHeaderKey(key)
+
 	if isReservedRequestHeader(canonicalKey) {
 		p.setConfigurationError(
 			option,
