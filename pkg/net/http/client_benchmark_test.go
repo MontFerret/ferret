@@ -111,13 +111,14 @@ func benchmarkClientDoPolicyRequest(b *testing.B, policy *Policy, req *Request) 
 
 func BenchmarkReadResponseBodyBounded(b *testing.B) {
 	body := strings.Repeat("x", 4<<10)
+	policy := newTestPolicy(b, WithMaxResponseSize(8<<10))
 
 	b.ReportAllocs()
 	b.SetBytes(int64(len(body)))
 	b.ResetTimer()
 
 	for b.Loop() {
-		if _, err := readResponseBody(strings.NewReader(body), 8<<10); err != nil {
+		if _, err := policy.ReadResponseBody(strings.NewReader(body)); err != nil {
 			b.Fatal(err)
 		}
 	}

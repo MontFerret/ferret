@@ -128,11 +128,11 @@ func TestClientValidatesRedirectHeaders(t *testing.T) {
 		t.Fatalf("parse redirect URL: %v", err)
 	}
 
-	client := newDefaultHTTPClient(newTestPolicy(t), stdhttp.Client{})
+	policy := newTestPolicy(t)
 
 	for _, header := range transportControlledRequestHeadersForTest() {
 		t.Run("reserved_"+header, func(t *testing.T) {
-			err := client.checkRedirect(&stdhttp.Request{
+			err := policy.CheckRedirect(&stdhttp.Request{
 				Method: stdhttp.MethodGet,
 				URL:    redirectURL,
 				Header: stdhttp.Header{strings.ToLower(header): {"value"}},
@@ -145,7 +145,7 @@ func TestClientValidatesRedirectHeaders(t *testing.T) {
 	}
 
 	t.Run("invalid value", func(t *testing.T) {
-		err := client.checkRedirect(&stdhttp.Request{
+		err := policy.CheckRedirect(&stdhttp.Request{
 			Method: stdhttp.MethodGet,
 			URL:    redirectURL,
 			Header: stdhttp.Header{"Authorization": {"Bearer redirect-secret\r\nInjected: true"}},

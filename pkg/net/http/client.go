@@ -40,7 +40,7 @@ func New(options ...PolicyOption) (Client, error) {
 	dialer := newPolicyDialer(policy)
 
 	return newDefaultHTTPClient(policy, stdhttp.Client{
-		Transport: newPolicyTransport(dialer, policy.maxResponseHeaderSize),
+		Transport: newPolicyTransport(dialer, policy.MaxResponseHeaderSize()),
 	}), nil
 }
 
@@ -68,7 +68,7 @@ func NewWithClient(client *stdhttp.Client, options ...PolicyOption) (Client, err
 
 	if stdClient.Transport == nil {
 		dialer := newPolicyDialer(policy)
-		stdClient.Transport = newPolicyTransport(dialer, policy.maxResponseHeaderSize)
+		stdClient.Transport = newPolicyTransport(dialer, policy.MaxResponseHeaderSize())
 	}
 
 	return newDefaultHTTPClient(policy, stdClient), nil
@@ -81,9 +81,9 @@ func newDefaultHTTPClient(policy *Policy, client stdhttp.Client) *defaultHTTPCli
 		policy: policy,
 		client: client,
 	}
-	result.client.Transport = newResponseValidatingTransport(result.client.Transport)
-	result.client.Timeout = policy.timeout
-	result.client.CheckRedirect = result.checkRedirect
+	result.client.Transport = newNilResponseGuardTransport(result.client.Transport)
+	result.client.Timeout = policy.Timeout()
+	result.client.CheckRedirect = policy.CheckRedirect
 
 	return result
 }
@@ -117,17 +117,4 @@ func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, er
 
 func (d *defaultHTTPClient) CloseIdleConnections() {
 	d.client.CloseIdleConnections()
-}
-
-func (d *defaultHTTPClient) checkRedirect(req *stdhttp.Request, via []*stdhttp.Request) error {
-	if !d.policy.followRedirects {
-		return stdhttp.ErrUseLastResponse
-	}
-
-	limit := d.policy.maxRedirects
-	if len(via) > limit {
-		return &RedirectLimitError{Limit: limit}
-	}
-
-	return d.policy.eval(req, PolicyTargetRedirect)
 }

@@ -226,7 +226,7 @@ func TestExplicitUnlimitedBodyOptionsDisableOnlyTheirLimits(t *testing.T) {
 		WithMaxResponseSize(3),
 		WithUnlimitedResponseSize(),
 	)
-	body, err := readResponseBody(strings.NewReader("four"), responsePolicy.maxResponseSize)
+	body, err := responsePolicy.ReadResponseBody(strings.NewReader("four"))
 	if err != nil {
 		t.Fatalf("unlimited response policy rejected body: %v", err)
 	}

@@ -119,9 +119,9 @@ func TestNewWithClientSnapshotsClientAndSharesResources(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected built-in client, got %T", client)
 	}
-	validatingTransport, ok := adapted.client.Transport.(*responseValidatingTransport)
+	validatingTransport, ok := adapted.client.Transport.(*nilResponseGuardTransport)
 	if !ok {
-		t.Fatalf("expected response-validating transport, got %T", adapted.client.Transport)
+		t.Fatalf("expected nil-response-guard transport, got %T", adapted.client.Transport)
 	}
 	if validatingTransport.next != originalTransport {
 		t.Fatalf("expected original underlying transport, got %T", validatingTransport.next)

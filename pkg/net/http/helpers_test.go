@@ -56,9 +56,9 @@ func policyTransportForTest(tb testing.TB, transport stdhttp.RoundTripper) *stdh
 		return policyTransport
 	}
 
-	validated, ok := transport.(*responseValidatingTransport)
+	validated, ok := transport.(*nilResponseGuardTransport)
 	if !ok {
-		tb.Fatalf("expected policy or response-validating transport, got %T", transport)
+		tb.Fatalf("expected policy or nil-response-guard transport, got %T", transport)
 	}
 	policyTransport, ok := validated.next.(*stdhttp.Transport)
 	if !ok {

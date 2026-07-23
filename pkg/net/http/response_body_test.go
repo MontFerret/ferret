@@ -18,19 +18,20 @@ func TestReadResponseBodyBoundaries(t *testing.T) {
 		name      string
 		body      string
 		want      string
-		limit     int64
+		options   []PolicyOption
 		wantSize  int64
 		wantLimit int64
 	}{
-		{name: "below", body: "12", limit: 3, want: "12"},
-		{name: "at", body: "123", limit: 3, want: "123"},
-		{name: "above", body: "1234", limit: 3, wantSize: 4, wantLimit: 3},
-		{name: "unlimited", body: "1234", limit: 0, want: "1234"},
+		{name: "below", body: "12", options: []PolicyOption{WithMaxResponseSize(3)}, want: "12"},
+		{name: "at", body: "123", options: []PolicyOption{WithMaxResponseSize(3)}, want: "123"},
+		{name: "above", body: "1234", options: []PolicyOption{WithMaxResponseSize(3)}, wantSize: 4, wantLimit: 3},
+		{name: "unlimited", body: "1234", options: []PolicyOption{WithUnlimitedResponseSize()}, want: "1234"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			body, err := readResponseBody(strings.NewReader(tt.body), tt.limit)
+			policy := newTestPolicy(t, tt.options...)
+			body, err := policy.ReadResponseBody(strings.NewReader(tt.body))
 			if tt.wantLimit == 0 {
 				if err != nil {
 					t.Fatalf("read response body: %v", err)
@@ -53,7 +54,8 @@ func TestReadResponseBodyBoundaries(t *testing.T) {
 }
 
 func TestReadResponseBodyMaxInt64DoesNotOverflow(t *testing.T) {
-	body, err := readResponseBody(strings.NewReader("tiny"), math.MaxInt64)
+	policy := newTestPolicy(t, WithMaxResponseSize(math.MaxInt64))
+	body, err := policy.ReadResponseBody(strings.NewReader("tiny"))
 	if err != nil {
 		t.Fatalf("read with maximum limit: %v", err)
 	}
@@ -70,7 +72,7 @@ func TestReadResponseBodyStopsAfterLimitPlusOne(t *testing.T) {
 	)
 
 	source := strings.NewReader(strings.Repeat("x", bodySize))
-	body, err := readResponseBody(source, limit)
+	body, err := newTestPolicy(t, WithMaxResponseSize(limit)).ReadResponseBody(source)
 	if body != nil {
 		t.Fatalf("expected oversized body not to be returned, got %q", body)
 	}
@@ -86,7 +88,8 @@ func TestReadResponseBodyStopsAfterLimitPlusOne(t *testing.T) {
 
 func TestReadResponseBodyLimitTakesPrecedenceAfterExtraByte(t *testing.T) {
 	readErr := errors.New("read failed after data")
-	body, err := readResponseBody(newTerminalErrorReader("four", readErr), 3)
+	body, err := newTestPolicy(t, WithMaxResponseSize(3)).
+		ReadResponseBody(newTerminalErrorReader("four", readErr))
 	if body != nil {
 		t.Fatalf("expected oversized body not to be returned, got %q", body)
 	}

@@ -2,14 +2,14 @@ package http
 
 import stdhttp "net/http"
 
-// responseValidatingTransport turns a broken RoundTripper's nil response into
+// nilResponseGuardTransport turns a broken RoundTripper's nil response into
 // Ferret's stable structural error before net/http replaces it with a generic
 // contract error.
-type responseValidatingTransport struct {
+type nilResponseGuardTransport struct {
 	next stdhttp.RoundTripper
 }
 
-func newResponseValidatingTransport(next stdhttp.RoundTripper) stdhttp.RoundTripper {
+func newNilResponseGuardTransport(next stdhttp.RoundTripper) stdhttp.RoundTripper {
 	if next == nil {
 		next = stdhttp.DefaultTransport
 	}
@@ -17,14 +17,14 @@ func newResponseValidatingTransport(next stdhttp.RoundTripper) stdhttp.RoundTrip
 	// The standard transport enforces its own response contract. Keeping it
 	// unwrapped also preserves net/http's optimized cancellation path.
 	switch next.(type) {
-	case *stdhttp.Transport, *responseValidatingTransport:
+	case *stdhttp.Transport, *nilResponseGuardTransport:
 		return next
 	}
 
-	return &responseValidatingTransport{next: next}
+	return &nilResponseGuardTransport{next: next}
 }
 
-func (t *responseValidatingTransport) RoundTrip(req *stdhttp.Request) (*stdhttp.Response, error) {
+func (t *nilResponseGuardTransport) RoundTrip(req *stdhttp.Request) (*stdhttp.Response, error) {
 	res, err := t.next.RoundTrip(req)
 	if res == nil && err == nil {
 		return nil, ErrNilResponse
@@ -33,7 +33,7 @@ func (t *responseValidatingTransport) RoundTrip(req *stdhttp.Request) (*stdhttp.
 	return res, err
 }
 
-func (t *responseValidatingTransport) CloseIdleConnections() {
+func (t *nilResponseGuardTransport) CloseIdleConnections() {
 	if closer, ok := t.next.(interface{ CloseIdleConnections() }); ok && closer != nil {
 		closer.CloseIdleConnections()
 	}
@@ -41,7 +41,7 @@ func (t *responseValidatingTransport) CloseIdleConnections() {
 
 // CancelRequest preserves cancellation for legacy custom transports that do
 // not consume Request.Context.
-func (t *responseValidatingTransport) CancelRequest(req *stdhttp.Request) {
+func (t *nilResponseGuardTransport) CancelRequest(req *stdhttp.Request) {
 	if canceler, ok := t.next.(interface{ CancelRequest(*stdhttp.Request) }); ok {
 		canceler.CancelRequest(req)
 	}

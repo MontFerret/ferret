@@ -201,7 +201,7 @@ func TestRedirectPrivateResolutionUsesConnectionTarget(t *testing.T) {
 	resolver, dnsQueries := newLoopbackResolver(t)
 	dialer.dialer.Resolver = resolver
 
-	policyTransport := newPolicyTransport(dialer, policy.maxResponseHeaderSize)
+	policyTransport := newPolicyTransport(dialer, policy.MaxResponseHeaderSize())
 	t.Cleanup(policyTransport.CloseIdleConnections)
 
 	client := newDefaultHTTPClient(policy, stdhttp.Client{
@@ -284,7 +284,7 @@ func TestDefaultHTTPClientTimeoutCoversDNSResolution(t *testing.T) {
 		},
 	}
 	client := newDefaultHTTPClient(policies, stdhttp.Client{
-		Transport: newPolicyTransport(dialer, policies.maxResponseHeaderSize),
+		Transport: newPolicyTransport(dialer, policies.MaxResponseHeaderSize()),
 	})
 
 	started := time.Now()

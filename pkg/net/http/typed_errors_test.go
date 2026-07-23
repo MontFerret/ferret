@@ -262,7 +262,8 @@ func TestPolicyEvalAllowsUnknownBodyLengthWhenUnlimited(t *testing.T) {
 }
 
 func TestResponseBodyLimitError(t *testing.T) {
-	_, err := readResponseBody(strings.NewReader("four"), 3)
+	_, err := newTestPolicy(t, WithMaxResponseSize(3)).
+		ReadResponseBody(strings.NewReader("four"))
 	if err == nil {
 		t.Fatal("expected response body limit error")
 	}

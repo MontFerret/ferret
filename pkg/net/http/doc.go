@@ -34,10 +34,21 @@
 // body limit, a non-empty body must have a positive, known ContentLength; an
 // unknown-length body is rejected before transport with RequestBodyLengthError.
 //
-// Eval and Prepare are preflight checks. A custom transport remains responsible
-// for validating redirects, DNS results, and concrete dial addresses, and for
-// enforcing timeouts and response-header and response-body limits. Ferret's
-// built-in Client supplies those controls.
+// Eval and Prepare are request preflight checks. Embedders implementing a
+// custom Client must integrate every policy stage exposed by Policy:
+//
+//   - call Prepare or Eval before the initial request;
+//   - apply Timeout to the backend or request context;
+//   - call CheckRedirect before following every redirect;
+//   - call EvalConnection on the resolved address immediately before connect;
+//   - apply MaxResponseHeaderSize before parsing response headers; and
+//   - apply MaxResponseSize natively or materialize with ReadResponseBody.
+//
+// ReadResponseBody does not close its reader. The caller retains response-body
+// ownership. Header limits cannot provide a memory bound when checked only
+// after a backend has parsed the headers. Ferret's built-in Client supplies all
+// of these controls; custom transports passed to NewWithClient retain the
+// documented transport-level responsibilities.
 //
 // Policy.Eval accepting *net/http.Request instead of Ferret's *Request is an
 // intentional source break. Call Prepare when migrating code that needs policy
