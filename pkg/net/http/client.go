@@ -65,8 +65,9 @@ func NewWithClient(client *stdhttp.Client, options ...PolicyOption) (Client, err
 	}
 
 	stdClient := *client
+	transport, isStandardTransport := stdClient.Transport.(*stdhttp.Transport)
 
-	if stdClient.Transport == nil {
+	if stdClient.Transport == nil || (isStandardTransport && transport == nil) {
 		dialer := newPolicyDialer(policy)
 		stdClient.Transport = newPolicyTransport(dialer, policy.MaxResponseHeaderSize())
 	}

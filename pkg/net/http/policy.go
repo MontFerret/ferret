@@ -332,6 +332,10 @@ func (p *Policy) Prepare(req *stdhttp.Request) error {
 // net/http.Client. When redirects are disabled it returns net/http.ErrUseLastResponse
 // so callers can retain the redirect response.
 func (p *Policy) CheckRedirect(req *stdhttp.Request, via []*stdhttp.Request) error {
+	if req == nil {
+		return ErrNilRequest
+	}
+
 	if !p.followRedirects {
 		return stdhttp.ErrUseLastResponse
 	}
@@ -404,12 +408,12 @@ func (p *Policy) ReadResponseBody(body io.Reader) ([]byte, error) {
 
 	data, err := io.ReadAll(io.LimitReader(body, saturatedIncrement(limit)))
 
-	if err != nil {
-		return nil, err
-	}
-
 	if sizeErr := p.EvalResponseSize(int64(len(data))); sizeErr != nil {
 		return nil, sizeErr
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	return data, nil

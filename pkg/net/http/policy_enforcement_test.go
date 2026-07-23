@@ -93,9 +93,34 @@ func TestPolicyCheckRedirect(t *testing.T) {
 	})
 
 	t.Run("nil request", func(t *testing.T) {
-		err := newTestPolicy(t).CheckRedirect(nil, []*stdhttp.Request{{}})
-		if !errors.Is(err, ErrNilRequest) {
-			t.Fatalf("expected ErrNilRequest, got %v", err)
+		tests := []struct {
+			name   string
+			policy *Policy
+			via    []*stdhttp.Request
+		}{
+			{
+				name:   "enabled",
+				policy: newTestPolicy(t),
+				via:    []*stdhttp.Request{{}},
+			},
+			{
+				name:   "disabled",
+				policy: newTestPolicy(t, WithFollowRedirects(false)),
+			},
+			{
+				name:   "over limit",
+				policy: newTestPolicy(t, WithMaxRedirects(0)),
+				via:    []*stdhttp.Request{{}},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				err := tt.policy.CheckRedirect(nil, tt.via)
+				if !errors.Is(err, ErrNilRequest) {
+					t.Fatalf("expected ErrNilRequest, got %v", err)
+				}
+			})
 		}
 	})
 }

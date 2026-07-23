@@ -80,6 +80,36 @@ func TestNewWithClientInstallsPolicyTransportWhenMissing(t *testing.T) {
 	}
 }
 
+func TestNewWithClientInstallsPolicyTransportForTypedNilStandardTransport(t *testing.T) {
+	var typedNilTransport *stdhttp.Transport
+	stdClient := &stdhttp.Client{Transport: typedNilTransport}
+
+	client, err := NewWithClient(stdClient)
+	if err != nil {
+		t.Fatalf("construct HTTP client: %v", err)
+	}
+
+	originalTransport, ok := stdClient.Transport.(*stdhttp.Transport)
+	if !ok || originalTransport != nil {
+		t.Fatalf("expected supplied typed-nil transport to remain unchanged, got %T", stdClient.Transport)
+	}
+
+	adapted, ok := client.(*defaultHTTPClient)
+	if !ok {
+		t.Fatalf("expected built-in client, got %T", client)
+	}
+	transport := policyTransportForTest(t, adapted.client.Transport)
+	if transport == nil {
+		t.Fatal("expected non-nil policy transport")
+	}
+	if transport.Proxy != nil {
+		t.Fatal("expected ambient proxy lookup to be disabled")
+	}
+	if transport.DialContext == nil {
+		t.Fatal("expected policy-aware dialer")
+	}
+}
+
 func TestNewWithClientSnapshotsClientAndSharesResources(t *testing.T) {
 	originalTransport := &trackingIdleTransport{}
 	replacementTransport := &trackingIdleTransport{}
