@@ -93,9 +93,8 @@ func TestPolicyDialerRejectsMalformedDialAddressAsConnectionTarget(t *testing.T)
 func TestDefaultHTTPClientValidatesRedirectDestinations(t *testing.T) {
 	policies := newTestPolicy(t)
 	requested := make(map[string]int)
-	client := &defaultHTTPClient{
-		policy: policies,
-		client: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(policies, stdhttp.Client{
+		Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
 			requested[req.URL.String()]++
 			switch req.URL.Path {
 			case "/loopback":
@@ -108,7 +107,7 @@ func TestDefaultHTTPClientValidatesRedirectDestinations(t *testing.T) {
 				return responseWithBody(stdhttp.StatusOK, "done", nil), nil
 			}
 		})},
-	}
+	)
 
 	for _, path := range []string{"/loopback", "/private"} {
 		_, err := client.Do(context.Background(), &Request{URL: "https://93.184.216.34" + path})
@@ -131,12 +130,11 @@ func TestDefaultHTTPClientValidatesRedirectDestinations(t *testing.T) {
 
 func TestDefaultHTTPClientNoFollowSkipsRedirectValidation(t *testing.T) {
 	policies := newTestPolicy(t, WithFollowRedirects(false))
-	client := &defaultHTTPClient{
-		policy: policies,
-		client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(policies, stdhttp.Client{
+		Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 			return responseWithBody(stdhttp.StatusFound, "", stdhttp.Header{"Location": {"http://10.0.0.10/private"}}), nil
 		})},
-	}
+	)
 
 	res, err := client.Do(context.Background(), &Request{URL: "https://93.184.216.34/start"})
 	if err != nil {
@@ -150,13 +148,12 @@ func TestDefaultHTTPClientNoFollowSkipsRedirectValidation(t *testing.T) {
 func TestDefaultHTTPClientUsesStandardRedirectLimit(t *testing.T) {
 	policies := newTestPolicy(t)
 	roundTrips := 0
-	client := &defaultHTTPClient{
-		policy: policies,
-		client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(policies, stdhttp.Client{
+		Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 			roundTrips++
 			return responseWithBody(stdhttp.StatusFound, "", stdhttp.Header{"Location": {"/next"}}), nil
 		})},
-	}
+	)
 
 	_, err := client.Do(context.Background(), &Request{URL: "https://93.184.216.34/start"})
 	if err == nil || !strings.Contains(err.Error(), "stopped after 10 redirect(s)") {
@@ -171,9 +168,9 @@ func TestDefaultHTTPClientFollowsExactlyConfiguredRedirects(t *testing.T) {
 	for _, limit := range []int{1, 2, 3} {
 		t.Run(fmt.Sprintf("limit_%d", limit), func(t *testing.T) {
 			roundTrips := 0
-			client := &defaultHTTPClient{
-				policy: newTestPolicy(t, WithMaxRedirects(limit)),
-				client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+			client := newDefaultHTTPClient(
+				newTestPolicy(t, WithMaxRedirects(limit)),
+				stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 					roundTrips++
 					return responseWithBody(
 						stdhttp.StatusFound,
@@ -181,7 +178,7 @@ func TestDefaultHTTPClientFollowsExactlyConfiguredRedirects(t *testing.T) {
 						stdhttp.Header{"Location": {"/next"}},
 					), nil
 				})},
-			}
+			)
 
 			_, err := client.Do(context.Background(), &Request{URL: "https://example.com/start"})
 			var limitErr *RedirectLimitError
@@ -204,12 +201,11 @@ func TestRedirectPrivateResolutionUsesConnectionTarget(t *testing.T) {
 	resolver, dnsQueries := newLoopbackResolver(t)
 	dialer.dialer.Resolver = resolver
 
-	policyTransport := newPolicyTransport(dialer, policy.maxResponseHeaderSize)
+	policyTransport := newPolicyTransport(dialer, policy.MaxResponseHeaderSize())
 	t.Cleanup(policyTransport.CloseIdleConnections)
 
-	client := &defaultHTTPClient{
-		policy: policy,
-		client: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(policy, stdhttp.Client{
+		Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
 			if req.URL.Hostname() == "public.example" {
 				return responseWithBody(
 					stdhttp.StatusFound,
@@ -220,7 +216,7 @@ func TestRedirectPrivateResolutionUsesConnectionTarget(t *testing.T) {
 
 			return policyTransport.RoundTrip(req)
 		})},
-	}
+	)
 
 	_, err := client.Do(context.Background(), &Request{URL: "https://public.example/start"})
 	policyErr := requirePolicyError(t, err, PolicyTargetConnection)
@@ -233,12 +229,11 @@ func TestRedirectPrivateResolutionUsesConnectionTarget(t *testing.T) {
 }
 
 func TestDefaultHTTPClientConcurrentDo(t *testing.T) {
-	client := &defaultHTTPClient{
-		policy: newTestPolicy(t),
-		client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(newTestPolicy(t), stdhttp.Client{
+		Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 			return responseWithBody(stdhttp.StatusOK, "ok", nil), nil
 		})},
-	}
+	)
 
 	const (
 		goroutines = 32
@@ -288,12 +283,9 @@ func TestDefaultHTTPClientTimeoutCoversDNSResolution(t *testing.T) {
 			return nil, ctx.Err()
 		},
 	}
-	client := &defaultHTTPClient{
-		policy: policies,
-		client: stdhttp.Client{
-			Transport: newPolicyTransport(dialer, policies.maxResponseHeaderSize),
-		},
-	}
+	client := newDefaultHTTPClient(policies, stdhttp.Client{
+		Transport: newPolicyTransport(dialer, policies.MaxResponseHeaderSize()),
+	})
 
 	started := time.Now()
 	_, err := client.Do(context.Background(), &Request{URL: "http://timeout.example"})
@@ -350,9 +342,9 @@ func TestNewUsesDedicatedPolicyTransportWithoutProxy(t *testing.T) {
 
 func TestDefaultHTTPClientClosesIdleConnections(t *testing.T) {
 	transport := &trackingIdleTransport{}
-	client := &defaultHTTPClient{
-		client: stdhttp.Client{Transport: newResponseValidatingTransport(transport)},
-	}
+	client := newDefaultHTTPClient(newTestPolicy(t), stdhttp.Client{
+		Transport: transport,
+	})
 
 	client.CloseIdleConnections()
 	if !transport.closed.Load() {

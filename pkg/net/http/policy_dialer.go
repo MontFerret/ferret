@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"net"
+	"net/netip"
 	"syscall"
 	"time"
 )
@@ -35,28 +36,20 @@ func (d *policyDialer) controlContext(
 	address string,
 	_ syscall.RawConn,
 ) error {
-	host, _, err := net.SplitHostPort(address)
-	if err != nil {
-		return newPolicyError(
-			PolicyTargetConnection,
-			"destination address",
-			"invalid address is not allowed",
-		)
-	}
-
-	addr, ok := parseIPAddress(host)
-	if !ok {
-		return newPolicyError(
-			PolicyTargetConnection,
-			"destination address",
-			"invalid address is not allowed",
-		)
-	}
-
 	p := d.policy
 	if p == nil {
 		p = &Policy{}
 	}
 
-	return p.validateAddress(PolicyTargetConnection, addressSubject(addr), addr)
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return p.EvalConnection(netip.Addr{})
+	}
+
+	addr, ok := parseIPAddress(host)
+	if !ok {
+		return p.EvalConnection(netip.Addr{})
+	}
+
+	return p.EvalConnection(addr)
 }

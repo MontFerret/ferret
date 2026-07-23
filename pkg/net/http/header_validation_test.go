@@ -44,13 +44,12 @@ func TestClientRejectsMalformedRequestHeadersBeforeTransport(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			called := false
-			client := &defaultHTTPClient{
-				policy: newTestPolicy(t),
-				client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+			client := newDefaultHTTPClient(newTestPolicy(t), stdhttp.Client{
+				Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 					called = true
 					return responseWithBody(stdhttp.StatusOK, "ok", nil), nil
 				})},
-			}
+			)
 
 			_, err := client.Do(context.Background(), &Request{
 				URL:     "https://example.com",
@@ -77,9 +76,8 @@ func TestClientRejectsMalformedRequestHeadersBeforeTransport(t *testing.T) {
 
 func TestClientAllowsHorizontalTabInRequestAndDefaultHeaders(t *testing.T) {
 	policy := newTestPolicy(t, WithDefaultHeader("X-Default", "left\tright"))
-	client := &defaultHTTPClient{
-		policy: policy,
-		client: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(policy, stdhttp.Client{
+		Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
 			if got := req.Header.Get("X-Default"); got != "left\tright" {
 				t.Fatalf("expected default HTAB value, got %q", got)
 			}
@@ -88,7 +86,7 @@ func TestClientAllowsHorizontalTabInRequestAndDefaultHeaders(t *testing.T) {
 			}
 			return responseWithBody(stdhttp.StatusOK, "ok", nil), nil
 		})},
-	}
+	)
 
 	if _, err := client.Do(context.Background(), &Request{
 		URL:     "https://example.com",
@@ -102,13 +100,12 @@ func TestClientRejectsTransportControlledHeadersBeforeTransport(t *testing.T) {
 	for _, header := range transportControlledRequestHeadersForTest() {
 		t.Run(header, func(t *testing.T) {
 			called := false
-			client := &defaultHTTPClient{
-				policy: newTestPolicy(t),
-				client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+			client := newDefaultHTTPClient(newTestPolicy(t), stdhttp.Client{
+				Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 					called = true
 					return responseWithBody(stdhttp.StatusOK, "ok", nil), nil
 				})},
-			}
+			)
 
 			_, err := client.Do(context.Background(), &Request{
 				URL:     "https://example.com",
@@ -131,11 +128,11 @@ func TestClientValidatesRedirectHeaders(t *testing.T) {
 		t.Fatalf("parse redirect URL: %v", err)
 	}
 
-	client := &defaultHTTPClient{policy: newTestPolicy(t)}
+	policy := newTestPolicy(t)
 
 	for _, header := range transportControlledRequestHeadersForTest() {
 		t.Run("reserved_"+header, func(t *testing.T) {
-			err := client.checkRedirect(&stdhttp.Request{
+			err := policy.CheckRedirect(&stdhttp.Request{
 				Method: stdhttp.MethodGet,
 				URL:    redirectURL,
 				Header: stdhttp.Header{strings.ToLower(header): {"value"}},
@@ -148,7 +145,7 @@ func TestClientValidatesRedirectHeaders(t *testing.T) {
 	}
 
 	t.Run("invalid value", func(t *testing.T) {
-		err := client.checkRedirect(&stdhttp.Request{
+		err := policy.CheckRedirect(&stdhttp.Request{
 			Method: stdhttp.MethodGet,
 			URL:    redirectURL,
 			Header: stdhttp.Header{"Authorization": {"Bearer redirect-secret\r\nInjected: true"}},

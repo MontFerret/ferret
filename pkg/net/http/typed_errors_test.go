@@ -262,7 +262,8 @@ func TestPolicyEvalAllowsUnknownBodyLengthWhenUnlimited(t *testing.T) {
 }
 
 func TestResponseBodyLimitError(t *testing.T) {
-	_, err := readResponseBody(strings.NewReader("four"), 3)
+	_, err := newTestPolicy(t, WithMaxResponseSize(3)).
+		ReadResponseBody(strings.NewReader("four"))
 	if err == nil {
 		t.Fatal("expected response body limit error")
 	}
@@ -283,9 +284,8 @@ func TestResponseBodyLimitError(t *testing.T) {
 func TestRedirectLimitErrorSurvivesURLErrorWrapping(t *testing.T) {
 	roundTrips := 0
 	policy := newTestPolicy(t, WithMaxRedirects(1))
-	client := &defaultHTTPClient{
-		policy: policy,
-		client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(policy, stdhttp.Client{
+		Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 			roundTrips++
 			return responseWithBody(
 				stdhttp.StatusFound,
@@ -293,7 +293,7 @@ func TestRedirectLimitErrorSurvivesURLErrorWrapping(t *testing.T) {
 				stdhttp.Header{"Location": {"/next"}},
 			), nil
 		})},
-	}
+	)
 
 	_, err := client.Do(context.Background(), &Request{URL: "https://example.com/start"})
 	if err == nil {

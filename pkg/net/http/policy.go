@@ -2,6 +2,7 @@ package http
 
 import (
 	"fmt"
+	"io"
 	stdhttp "net/http"
 	"net/netip"
 	"net/url"
@@ -277,6 +278,7 @@ func (p *Policy) addDefaultHeader(option, key, value string) {
 	}
 
 	canonicalKey := stdhttp.CanonicalHeaderKey(key)
+
 	if isReservedRequestHeader(canonicalKey) {
 		p.setConfigurationError(
 			option,
@@ -324,6 +326,97 @@ func (p *Policy) Prepare(req *stdhttp.Request) error {
 	}
 
 	return p.Eval(req)
+}
+
+// CheckRedirect validates a redirect using the callback contract expected by
+// net/http.Client. When redirects are disabled it returns net/http.ErrUseLastResponse
+// so callers can retain the redirect response.
+func (p *Policy) CheckRedirect(req *stdhttp.Request, via []*stdhttp.Request) error {
+	if req == nil {
+		return ErrNilRequest
+	}
+
+	if !p.followRedirects {
+		return stdhttp.ErrUseLastResponse
+	}
+
+	limit := p.maxRedirects
+	if len(via) > limit {
+		return &RedirectLimitError{Limit: limit}
+	}
+
+	return p.eval(req, PolicyTargetRedirect)
+}
+
+// EvalConnection validates an already-resolved concrete destination address.
+// Callers must invoke it immediately before connecting so DNS rebinding cannot
+// bypass request-time host validation.
+func (p *Policy) EvalConnection(addr netip.Addr) error {
+	subject := "destination address"
+
+	if addr.IsValid() {
+		subject = addressSubject(addr)
+	}
+
+	return p.validateAddress(PolicyTargetConnection, subject, addr)
+}
+
+// Timeout returns the overall request timeout. Zero means no policy timeout.
+func (p *Policy) Timeout() time.Duration {
+	return p.timeout
+}
+
+// MaxResponseSize returns the materialized response-body limit in bytes. Zero
+// means response bodies are unlimited.
+func (p *Policy) MaxResponseSize() int64 {
+	return p.maxResponseSize
+}
+
+// MaxResponseHeaderSize returns the response-header limit in bytes. Backends
+// must apply it before parsing response headers for the limit to bound memory.
+func (p *Policy) MaxResponseHeaderSize() int64 {
+	return p.maxResponseHeaderSize
+}
+
+// EvalResponseSize validates an observed or materialized response-body size.
+// A negative size represents an unknown length and must instead be enforced
+// while reading, for example with ReadResponseBody.
+func (p *Policy) EvalResponseSize(size int64) error {
+	limit := p.maxResponseSize
+
+	if size < 0 || limit <= 0 || size <= limit {
+		return nil
+	}
+
+	return &ResponseBodyLimitError{
+		Size:  size,
+		Limit: limit,
+	}
+}
+
+// ReadResponseBody materializes a response body while enforcing the configured
+// size limit. It does not close body; ownership remains with the caller.
+func (p *Policy) ReadResponseBody(body io.Reader) ([]byte, error) {
+	if body == nil {
+		return nil, nil
+	}
+
+	limit := p.maxResponseSize
+	if limit <= 0 {
+		return io.ReadAll(body)
+	}
+
+	data, err := io.ReadAll(io.LimitReader(body, saturatedIncrement(limit)))
+
+	if sizeErr := p.EvalResponseSize(int64(len(data))); sizeErr != nil {
+		return nil, sizeErr
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 func (p *Policy) applyDefaults(req *stdhttp.Request) error {

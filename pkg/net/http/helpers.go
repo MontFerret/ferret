@@ -3,7 +3,6 @@ package http
 import (
 	"bytes"
 	"context"
-	"io"
 	"math"
 	stdhttp "net/http"
 	"sort"
@@ -87,7 +86,7 @@ func fromStdResponse(res *stdhttp.Response, p *Policy) (*Response, error) {
 	}
 	defer res.Body.Close()
 
-	body, err := readResponseBody(res.Body, p.maxResponseSize)
+	body, err := p.ReadResponseBody(res.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -98,28 +97,6 @@ func fromStdResponse(res *stdhttp.Response, p *Policy) (*Response, error) {
 		Headers:    copyHeaders(res.Header),
 		Body:       body,
 	}, nil
-}
-
-func readResponseBody(body io.Reader, limit int64) ([]byte, error) {
-	if limit <= 0 {
-		return io.ReadAll(body)
-	}
-
-	readLimit := saturatedIncrement(limit)
-	data, err := io.ReadAll(io.LimitReader(body, readLimit))
-
-	if int64(len(data)) > limit {
-		return nil, &ResponseBodyLimitError{
-			Size:  saturatedIncrement(limit),
-			Limit: limit,
-		}
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
 }
 
 func saturatedIncrement(value int64) int64 {
