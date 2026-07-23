@@ -47,8 +47,8 @@
 // ReadResponseBody does not close its reader. The caller retains response-body
 // ownership. Header limits cannot provide a memory bound when checked only
 // after a backend has parsed the headers. Ferret's built-in Client supplies all
-// of these controls; custom transports passed to NewWithClient retain the
-// documented transport-level responsibilities.
+// of these controls; custom transports passed to NewWithClient or
+// NewWithTransport retain the documented transport-level responsibilities.
 //
 // Policy.Eval accepting *net/http.Request instead of Ferret's *Request is an
 // intentional source break. Call Prepare when migrating code that needs policy

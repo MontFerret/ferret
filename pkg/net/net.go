@@ -31,7 +31,19 @@ func New(setters ...Option) (Network, error) {
 	}
 
 	if opts.httpClient == nil {
-		client, err := ferrethttp.New(opts.httpPolicies...)
+		var (
+			client ferrethttp.Client
+			err    error
+		)
+
+		if opts.httpTransport == nil {
+			client, err = ferrethttp.New(opts.httpPolicies...)
+		} else {
+			client, err = ferrethttp.NewWithTransport(
+				opts.httpTransport,
+				opts.httpPolicies...,
+			)
+		}
 
 		if err != nil {
 			return nil, fmt.Errorf("http client: %w", err)

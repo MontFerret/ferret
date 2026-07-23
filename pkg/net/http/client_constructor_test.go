@@ -37,6 +37,102 @@ func TestNewWithClientRejectsInvalidPolicyConfiguration(t *testing.T) {
 	}
 }
 
+func TestNewWithTransportRejectsInvalidPolicyConfiguration(t *testing.T) {
+	client, err := NewWithTransport(
+		&trackingIdleTransport{},
+		WithMaxRequestSize(-1),
+		WithMaxResponseSize(-2),
+	)
+	if client != nil {
+		t.Fatalf("expected no client, got %T", client)
+	}
+	if !errors.Is(err, ErrInvalidPolicyConfiguration) {
+		t.Fatalf("expected ErrInvalidPolicyConfiguration, got %v", err)
+	}
+}
+
+func TestNewWithTransportInstallsPolicyTransportWhenMissing(t *testing.T) {
+	const maxResponseHeaderSize = 2048
+
+	var typedNilTransport *stdhttp.Transport
+	tests := []struct {
+		transport stdhttp.RoundTripper
+		name      string
+	}{
+		{name: "nil"},
+		{name: "typed nil standard transport", transport: typedNilTransport},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, err := NewWithTransport(
+				tt.transport,
+				WithMaxResponseHeaderSize(maxResponseHeaderSize),
+			)
+			if err != nil {
+				t.Fatalf("construct HTTP client: %v", err)
+			}
+
+			adapted, ok := client.(*defaultHTTPClient)
+			if !ok {
+				t.Fatalf("expected built-in client, got %T", client)
+			}
+
+			transport := policyTransportForTest(t, adapted.client.Transport)
+			if transport.Proxy != nil {
+				t.Fatal("expected ambient proxy lookup to be disabled")
+			}
+			if transport.DialContext == nil {
+				t.Fatal("expected policy-aware dialer")
+			}
+			if transport.MaxResponseHeaderBytes != maxResponseHeaderSize {
+				t.Fatalf(
+					"expected max response header size %d, got %d",
+					maxResponseHeaderSize,
+					transport.MaxResponseHeaderBytes,
+				)
+			}
+		})
+	}
+}
+
+func TestNewWithTransportSharesAndNormalizesCustomTransport(t *testing.T) {
+	const timeout = time.Second
+
+	transport := &trackingIdleTransport{}
+	client, err := NewWithTransport(transport, WithTimeout(timeout))
+	if err != nil {
+		t.Fatalf("construct HTTP client: %v", err)
+	}
+
+	adapted, ok := client.(*defaultHTTPClient)
+	if !ok {
+		t.Fatalf("expected built-in client, got %T", client)
+	}
+	guard, ok := adapted.client.Transport.(*nilResponseGuardTransport)
+	if !ok {
+		t.Fatalf("expected nil-response-guard transport, got %T", adapted.client.Transport)
+	}
+	if guard.next != transport {
+		t.Fatalf("expected supplied transport to be shared, got %T", guard.next)
+	}
+	if adapted.client.Timeout != timeout {
+		t.Fatalf("expected policy timeout %s, got %s", timeout, adapted.client.Timeout)
+	}
+	if adapted.client.CheckRedirect == nil {
+		t.Fatal("expected policy redirect callback")
+	}
+
+	closer, ok := client.(IdleConnectionCloser)
+	if !ok {
+		t.Fatalf("expected client to implement IdleConnectionCloser, got %T", client)
+	}
+	closer.CloseIdleConnections()
+	if !transport.closed.Load() {
+		t.Fatal("expected idle connection cleanup to reach supplied transport")
+	}
+}
+
 func TestNewWithClientInstallsPolicyTransportWhenMissing(t *testing.T) {
 	const maxResponseHeaderSize = 2048
 

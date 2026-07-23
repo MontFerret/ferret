@@ -44,6 +44,20 @@ func New(options ...PolicyOption) (Client, error) {
 	}), nil
 }
 
+// NewWithTransport constructs a policy-aware client that uses transport. The
+// supplied transport is shared with the returned Client, so closing idle
+// connections affects its connection pool.
+//
+// A nil transport, including a typed-nil *net/http.Transport, selects Ferret's
+// policy-aware transport. A non-nil transport remains responsible for proxy
+// behavior, DNS and concrete-address enforcement, and response-header limits.
+func NewWithTransport(
+	transport stdhttp.RoundTripper,
+	options ...PolicyOption,
+) (Client, error) {
+	return NewWithClient(&stdhttp.Client{Transport: transport}, options...)
+}
+
 // NewWithClient constructs a policy-aware client from a standard-library
 // client. It snapshots the supplied client's fields without mutating it.
 // Policy timeout and redirect settings take precedence over the corresponding
