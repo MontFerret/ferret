@@ -38,17 +38,54 @@ func New(options ...PolicyOption) (Client, error) {
 	}
 
 	dialer := newPolicyDialer(policy)
-	transport := newResponseValidatingTransport(
-		newPolicyTransport(dialer, policy.maxResponseHeaderSize),
-	)
 
-	return &defaultHTTPClient{
+	return newDefaultHTTPClient(policy, stdhttp.Client{
+		Transport: newPolicyTransport(dialer, policy.maxResponseHeaderSize),
+	}), nil
+}
+
+// NewWithClient constructs a policy-aware client from a standard-library
+// client. It snapshots the supplied client's fields without mutating it.
+// Policy timeout and redirect settings take precedence over the corresponding
+// client fields.
+//
+// A nil Transport is replaced with Ferret's policy-aware transport. A non-nil
+// Transport is preserved and remains responsible for proxy behavior, DNS and
+// concrete-address enforcement, and response-header limits. The transport and
+// cookie jar remain shared with the supplied client; closing idle connections
+// through the returned Client affects the shared transport pool.
+func NewWithClient(client *stdhttp.Client, options ...PolicyOption) (Client, error) {
+	if client == nil {
+		return nil, ErrNilClient
+	}
+
+	policy, err := NewPolicy(options...)
+	if err != nil {
+		return nil, err
+	}
+
+	stdClient := *client
+
+	if stdClient.Transport == nil {
+		dialer := newPolicyDialer(policy)
+		stdClient.Transport = newPolicyTransport(dialer, policy.maxResponseHeaderSize)
+	}
+
+	return newDefaultHTTPClient(policy, stdClient), nil
+}
+
+// newDefaultHTTPClient snapshots and normalizes a standard-library client so
+// the stored client can be reused safely across concurrent requests.
+func newDefaultHTTPClient(policy *Policy, client stdhttp.Client) *defaultHTTPClient {
+	result := &defaultHTTPClient{
 		policy: policy,
-		client: stdhttp.Client{
-			Transport: transport,
-			Timeout:   policy.timeout,
-		},
-	}, nil
+		client: client,
+	}
+	result.client.Transport = newResponseValidatingTransport(result.client.Transport)
+	result.client.Timeout = policy.timeout
+	result.client.CheckRedirect = result.checkRedirect
+
+	return result
 }
 
 func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, error) {
@@ -56,25 +93,16 @@ func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, er
 		ctx = context.Background()
 	}
 
-	p := d.policy
-	if p == nil {
-		p = &Policy{}
-	}
-
 	stdReq, err := toStdRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	if err := p.Prepare(stdReq); err != nil {
+
+	if err := d.policy.Prepare(stdReq); err != nil {
 		return nil, err
 	}
 
-	client := d.client
-	client.Transport = newResponseValidatingTransport(client.Transport)
-	client.Timeout = p.timeout
-	client.CheckRedirect = d.checkRedirect
-
-	res, err := client.Do(stdReq)
+	res, err := d.client.Do(stdReq)
 	if err != nil {
 		var policyErr *PolicyError
 		if errors.As(err, &policyErr) {
@@ -84,7 +112,7 @@ func (d *defaultHTTPClient) Do(ctx context.Context, req *Request) (*Response, er
 		return nil, err
 	}
 
-	return fromStdResponse(res, p)
+	return fromStdResponse(res, d.policy)
 }
 
 func (d *defaultHTTPClient) CloseIdleConnections() {
@@ -92,20 +120,14 @@ func (d *defaultHTTPClient) CloseIdleConnections() {
 }
 
 func (d *defaultHTTPClient) checkRedirect(req *stdhttp.Request, via []*stdhttp.Request) error {
-	p := d.policy
-
-	if p == nil {
-		p = &Policy{}
-	}
-
-	if !p.followRedirects {
+	if !d.policy.followRedirects {
 		return stdhttp.ErrUseLastResponse
 	}
 
-	limit := p.maxRedirects
+	limit := d.policy.maxRedirects
 	if len(via) > limit {
 		return &RedirectLimitError{Limit: limit}
 	}
 
-	return p.eval(req, PolicyTargetRedirect)
+	return d.policy.eval(req, PolicyTargetRedirect)
 }

@@ -88,19 +88,16 @@ func benchmarkClientDoPolicy(b *testing.B, policy *Policy) {
 }
 
 func benchmarkClientDoPolicyRequest(b *testing.B, policy *Policy, req *Request) {
-	client := &defaultHTTPClient{
-		policy: policy,
-		client: stdhttp.Client{
-			Transport: newResponseValidatingTransport(testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
-				return &stdhttp.Response{
-					StatusCode: stdhttp.StatusOK,
-					Status:     "200 OK",
-					Header:     make(stdhttp.Header),
-					Body:       io.NopCloser(strings.NewReader("ok")),
-				}, nil
-			})),
-		},
-	}
+	client := newDefaultHTTPClient(policy, stdhttp.Client{
+		Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+			return &stdhttp.Response{
+				StatusCode: stdhttp.StatusOK,
+				Status:     "200 OK",
+				Header:     make(stdhttp.Header),
+				Body:       io.NopCloser(strings.NewReader("ok")),
+			}, nil
+		}),
+	})
 
 	b.ReportAllocs()
 	b.ResetTimer()

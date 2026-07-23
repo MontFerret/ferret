@@ -3,6 +3,9 @@ package http
 import "errors"
 
 var (
+	// ErrNilClient indicates a standard-library HTTP client is nil.
+	ErrNilClient = errors.New("http: client is nil")
+
 	// ErrNilRequest indicates an HTTP client received a nil request.
 	ErrNilRequest = errors.New("http: request is nil")
 

@@ -155,12 +155,11 @@ func TestFromStdResponseNilResponse(t *testing.T) {
 }
 
 func TestClientNilResponsePreservesErrNilResponse(t *testing.T) {
-	client := &defaultHTTPClient{
-		policy: newTestPolicy(t),
-		client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(newTestPolicy(t), stdhttp.Client{
+		Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 			return nil, nil
 		})},
-	}
+	)
 
 	response, err := client.Do(context.Background(), &Request{URL: "https://example.com"})
 	if response != nil {
@@ -178,9 +177,8 @@ func TestClientNilResponsePreservesErrNilResponse(t *testing.T) {
 
 func TestClientEnforcesDefaultResponseBodyLimit(t *testing.T) {
 	policy := newTestPolicy(t)
-	client := &defaultHTTPClient{
-		policy: policy,
-		client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(policy, stdhttp.Client{
+		Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 			return &stdhttp.Response{
 				StatusCode: stdhttp.StatusOK,
 				Status:     "200 OK",
@@ -191,7 +189,7 @@ func TestClientEnforcesDefaultResponseBodyLimit(t *testing.T) {
 				)),
 			}, nil
 		})},
-	}
+	)
 
 	response, err := client.Do(context.Background(), &Request{URL: "https://example.com"})
 	if response != nil {

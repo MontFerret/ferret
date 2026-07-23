@@ -13,13 +13,12 @@ import (
 func TestClientNormalizesConfiguredMethod(t *testing.T) {
 	var seenMethod string
 	policy := newTestPolicy(t, WithAllowedMethods("custom-method"))
-	client := &defaultHTTPClient{
-		policy: policy,
-		client: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(policy, stdhttp.Client{
+		Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
 			seenMethod = req.Method
 			return responseWithBody(stdhttp.StatusOK, "ok", nil), nil
 		})},
-	}
+	)
 
 	_, err := client.Do(context.Background(), &Request{
 		Method: " custom-method ",
@@ -36,9 +35,8 @@ func TestClientNormalizesConfiguredMethod(t *testing.T) {
 func TestClientRejectsCredentialedRedirect(t *testing.T) {
 	requested := make(map[string]int)
 	policy := newTestPolicy(t)
-	client := &defaultHTTPClient{
-		policy: policy,
-		client: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(policy, stdhttp.Client{
+		Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
 			requested[req.URL.String()]++
 			return responseWithBody(
 				stdhttp.StatusFound,
@@ -46,7 +44,7 @@ func TestClientRejectsCredentialedRedirect(t *testing.T) {
 				stdhttp.Header{"Location": {"https://user:password@1.1.1.1/secret"}},
 			), nil
 		})},
-	}
+	)
 
 	_, err := client.Do(context.Background(), &Request{URL: "https://1.1.1.1/start"})
 	policyErr := requirePolicyError(t, err, PolicyTargetRedirect)
@@ -65,9 +63,8 @@ func TestClientAppliesMethodPolicyToRedirects(t *testing.T) {
 	t.Run("rewritten method denied", func(t *testing.T) {
 		roundTrips := 0
 		policy := newTestPolicy(t, WithAllowedMethods(stdhttp.MethodPost))
-		client := &defaultHTTPClient{
-			policy: policy,
-			client: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
+		client := newDefaultHTTPClient(policy, stdhttp.Client{
+			Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
 				roundTrips++
 				if roundTrips == 1 {
 					if req.Method != stdhttp.MethodPost {
@@ -82,7 +79,7 @@ func TestClientAppliesMethodPolicyToRedirects(t *testing.T) {
 
 				return responseWithBody(stdhttp.StatusOK, "unexpected", nil), nil
 			})},
-		}
+		)
 
 		_, err := client.Do(context.Background(), &Request{
 			Method: stdhttp.MethodPost,
@@ -100,9 +97,8 @@ func TestClientAppliesMethodPolicyToRedirects(t *testing.T) {
 	t.Run("preserved method allowed", func(t *testing.T) {
 		roundTrips := 0
 		policy := newTestPolicy(t, WithAllowedMethods(stdhttp.MethodPost))
-		client := &defaultHTTPClient{
-			policy: policy,
-			client: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
+		client := newDefaultHTTPClient(policy, stdhttp.Client{
+			Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
 				roundTrips++
 				if req.Method != stdhttp.MethodPost {
 					t.Fatalf("expected POST on round trip %d, got %q", roundTrips, req.Method)
@@ -117,7 +113,7 @@ func TestClientAppliesMethodPolicyToRedirects(t *testing.T) {
 
 				return responseWithBody(stdhttp.StatusOK, "ok", nil), nil
 			})},
-		}
+		)
 
 		res, err := client.Do(context.Background(), &Request{
 			Method: stdhttp.MethodPost,
@@ -136,9 +132,8 @@ func TestClientAppliesMethodPolicyToRedirects(t *testing.T) {
 func TestClientAppliesHeaderPolicyToRedirects(t *testing.T) {
 	roundTrips := 0
 	policy := newTestPolicy(t, WithBlockedRequestHeaders("Referer"))
-	client := &defaultHTTPClient{
-		policy: policy,
-		client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(policy, stdhttp.Client{
+		Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 			roundTrips++
 			if roundTrips == 1 {
 				return responseWithBody(
@@ -150,7 +145,7 @@ func TestClientAppliesHeaderPolicyToRedirects(t *testing.T) {
 
 			return responseWithBody(stdhttp.StatusOK, "unexpected", nil), nil
 		})},
-	}
+	)
 
 	_, err := client.Do(context.Background(), &Request{URL: "https://example.com/start"})
 	policyErr := requirePolicyError(t, err, PolicyTargetRedirect)
@@ -176,9 +171,9 @@ func TestClientPreservesPreparedHeadersOnSameOriginRedirect(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			roundTrips := 0
 			seen := make([]string, 0, 2)
-			client := &defaultHTTPClient{
-				policy: newTestPolicy(t, WithDefaultHeader("X-Value", "default")),
-				client: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
+			client := newDefaultHTTPClient(
+				newTestPolicy(t, WithDefaultHeader("X-Value", "default")),
+				stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
 					roundTrips++
 					seen = append(seen, req.Header.Get("X-Value"))
 					if roundTrips == 1 {
@@ -191,7 +186,7 @@ func TestClientPreservesPreparedHeadersOnSameOriginRedirect(t *testing.T) {
 
 					return responseWithBody(stdhttp.StatusOK, "ok", nil), nil
 				})},
-			}
+			)
 
 			if _, err := client.Do(context.Background(), &Request{
 				URL:     "https://example.com/start",
@@ -209,9 +204,9 @@ func TestClientPreservesPreparedHeadersOnSameOriginRedirect(t *testing.T) {
 func TestClientDoesNotReapplySensitiveDefaultAcrossOriginRedirect(t *testing.T) {
 	roundTrips := 0
 	seen := make([]string, 0, 2)
-	client := &defaultHTTPClient{
-		policy: newTestPolicy(t, WithDefaultHeader("Authorization", "Bearer default-token")),
-		client: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(
+		newTestPolicy(t, WithDefaultHeader("Authorization", "Bearer default-token")),
+		stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
 			roundTrips++
 			seen = append(seen, req.Header.Get("Authorization"))
 			if roundTrips == 1 {
@@ -224,7 +219,7 @@ func TestClientDoesNotReapplySensitiveDefaultAcrossOriginRedirect(t *testing.T) 
 
 			return responseWithBody(stdhttp.StatusOK, "ok", nil), nil
 		})},
-	}
+	)
 
 	if _, err := client.Do(
 		context.Background(),
@@ -239,16 +234,15 @@ func TestClientDoesNotReapplySensitiveDefaultAcrossOriginRedirect(t *testing.T) 
 
 func TestClientRejectsNonASCIIRedirect(t *testing.T) {
 	policy := newTestPolicy(t)
-	client := &defaultHTTPClient{
-		policy: policy,
-		client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(policy, stdhttp.Client{
+		Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 			return responseWithBody(
 				stdhttp.StatusFound,
 				"",
 				stdhttp.Header{"Location": {"https://K.example/secret"}},
 			), nil
 		})},
-	}
+	)
 
 	_, err := client.Do(context.Background(), &Request{URL: "https://1.1.1.1/start"})
 	policyErr := requirePolicyError(t, err, PolicyTargetRedirect)
@@ -262,13 +256,12 @@ func TestClientRejectsBlockedHeaderBeforeRoundTrip(t *testing.T) {
 	policy := newTestPolicy(t,
 		WithBlockedRequestHeaders("Authorization"),
 	)
-	client := &defaultHTTPClient{
-		policy: policy,
-		client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(policy, stdhttp.Client{
+		Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 			called = true
 			return responseWithBody(stdhttp.StatusOK, "ok", nil), nil
 		})},
-	}
+	)
 
 	_, err := client.Do(context.Background(), &Request{
 		URL:     "https://example.com",
@@ -303,14 +296,13 @@ func TestClientAppliesDefaultHeadersByPresence(t *testing.T) {
 				gotExists bool
 			)
 			policy := newTestPolicy(t, WithDefaultHeader("x-value", "default"))
-			client := &defaultHTTPClient{
-				policy: policy,
-				client: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
+			client := newDefaultHTTPClient(policy, stdhttp.Client{
+				Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
 					gotValues, gotExists = req.Header["X-Value"]
 					gotValues = append([]string(nil), gotValues...)
 					return responseWithBody(stdhttp.StatusOK, "ok", nil), nil
 				})},
-			}
+			)
 
 			_, err := client.Do(context.Background(), &Request{
 				URL:     "https://example.com",
@@ -400,13 +392,12 @@ func TestClientSecureTransportDefaultsAndOverrides(t *testing.T) {
 
 func TestClientRequestContextCanShortenPolicyTimeout(t *testing.T) {
 	policy := newTestPolicy(t, WithTimeout(time.Hour))
-	client := &defaultHTTPClient{
-		policy: policy,
-		client: stdhttp.Client{Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(policy, stdhttp.Client{
+		Transport: testRoundTripper(func(req *stdhttp.Request) (*stdhttp.Response, error) {
 			<-req.Context().Done()
 			return nil, req.Context().Err()
 		})},
-	}
+	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
@@ -423,12 +414,11 @@ func TestClientRequestContextCanShortenPolicyTimeout(t *testing.T) {
 func TestClientOrdinaryTransportErrorIsNotPolicyDenial(t *testing.T) {
 	want := errors.New("transport failed")
 	policy := newTestPolicy(t)
-	client := &defaultHTTPClient{
-		policy: policy,
-		client: stdhttp.Client{Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
+	client := newDefaultHTTPClient(policy, stdhttp.Client{
+		Transport: testRoundTripper(func(*stdhttp.Request) (*stdhttp.Response, error) {
 			return nil, want
 		})},
-	}
+	)
 
 	_, err := client.Do(context.Background(), &Request{URL: "https://example.com"})
 	if !errors.Is(err, want) {
