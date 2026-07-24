@@ -43,6 +43,10 @@ func (path *conversionPath) Restore(mark int) {
 	path.data = path.data[:mark]
 }
 
+func (path conversionPath) IsRoot() bool {
+	return len(path.data) == 1
+}
+
 func (path conversionPath) String() string {
 	return string(path.data)
 }
