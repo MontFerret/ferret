@@ -12,21 +12,28 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
+var runtimeValueReflectType = reflect.TypeFor[runtime.Value]()
+
 type decodeState struct {
 	ctx    context.Context
+	config *decodeConfig
 	path   conversionPath
-	config decodeConfig
 }
 
 // Decode binds a Ferret runtime value into a non-nil pointer target.
 func Decode(ctx context.Context, src runtime.Value, target any, options ...DecodeOption) error {
 	if ctx == nil {
-		return runtime.Error(runtime.ErrInvalidArgument, "context cannot be nil")
+		return newDecodeErrorWithoutPath(
+			"$",
+			DecodeErrorKindType,
+			runtime.Error(runtime.ErrInvalidArgument, "context cannot be nil"),
+			true,
+		)
 	}
 
 	targetValue, err := validateDecodeTarget(target)
 	if err != nil {
-		return err
+		return newDecodeErrorWithoutPath("$", DecodeErrorKindType, err, true)
 	}
 
 	state := &decodeState{
@@ -34,25 +41,73 @@ func Decode(ctx context.Context, src runtime.Value, target any, options ...Decod
 		path: newConversionPath(),
 	}
 
-	for _, option := range options {
-		if option != nil {
-			option(&state.config)
+	if len(options) > 0 {
+		state.config = &decodeConfig{}
+
+		for _, option := range options {
+			if option != nil {
+				option(state.config)
+			}
 		}
 	}
 
-	return bindRuntimeValue(state, normalizeRuntimeValue(src), targetValue.Elem())
+	if err := validateDecodeConfig(state.config, targetValue.Elem().Type()); err != nil {
+		return newDecodeError("$", DecodeErrorKindType, err, true)
+	}
+
+	src = normalizeRuntimeValue(src)
+
+	if src == runtime.None &&
+		state.config != nil &&
+		state.config.disallowNoneValues &&
+		targetValue.Elem().Type() != runtimeValueReflectType {
+		return newDecodeError(
+			"$",
+			DecodeErrorKindNone,
+			runtime.Error(runtime.ErrInvalidArgument, "none is not allowed"),
+			true,
+		)
+	}
+
+	if state.config != nil && len(state.config.requiredTypes) > 0 {
+		if err := runtime.ValidateType(src, state.config.requiredTypes...); err != nil {
+			return newDecodeError("$", DecodeErrorKindType, err, true)
+		}
+	}
+
+	return bindRuntimeValue(state, src, targetValue.Elem())
 }
 
 func bindRuntimeValue(state *decodeState, src runtime.Value, dst reflect.Value) error {
 	if err := state.ctx.Err(); err != nil {
-		return fmt.Errorf("%s: %w", state.path, err)
+		return newDecodeError(state.path.String(), DecodeErrorKindSource, err, false)
 	}
 
 	if !dst.CanSet() {
-		return fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "target is not settable"))
+		return newDecodeError(
+			state.path.String(),
+			DecodeErrorKindType,
+			runtime.Error(runtime.ErrInvalidArgumentType, "target is not settable"),
+			true,
+		)
 	}
 
 	if src == runtime.None {
+		if dst.Type() == runtimeValueReflectType {
+			dst.Set(reflect.ValueOf(src))
+
+			return nil
+		}
+
+		if state.config != nil && state.config.disallowNoneValues {
+			return newDecodeError(
+				state.path.String(),
+				DecodeErrorKindNone,
+				runtime.Error(runtime.ErrInvalidArgument, "none is not allowed"),
+				true,
+			)
+		}
+
 		dst.Set(reflect.Zero(dst.Type()))
 		return nil
 	}
@@ -142,7 +197,12 @@ func bindRuntimeScalar(state *decodeState, src runtime.Value, dst reflect.Value)
 		}
 
 		if dst.OverflowInt(int64(value)) {
-			return true, fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "integer overflow"))
+			return true, newDecodeError(
+				state.path.String(),
+				DecodeErrorKindRange,
+				runtime.Error(runtime.ErrInvalidArgumentType, "integer overflow"),
+				true,
+			)
 		}
 
 		dst.SetInt(int64(value))
@@ -155,7 +215,12 @@ func bindRuntimeScalar(state *decodeState, src runtime.Value, dst reflect.Value)
 		}
 
 		if value < 0 || dst.OverflowUint(uint64(value)) {
-			return true, fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "unsigned integer overflow"))
+			return true, newDecodeError(
+				state.path.String(),
+				DecodeErrorKindRange,
+				runtime.Error(runtime.ErrInvalidArgumentType, "unsigned integer overflow"),
+				true,
+			)
 		}
 
 		dst.SetUint(uint64(value))
@@ -174,7 +239,12 @@ func bindRuntimeScalar(state *decodeState, src runtime.Value, dst reflect.Value)
 		}
 
 		if dst.OverflowFloat(number) {
-			return true, fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "floating-point overflow"))
+			return true, newDecodeError(
+				state.path.String(),
+				DecodeErrorKindRange,
+				runtime.Error(runtime.ErrInvalidArgumentType, "floating-point overflow"),
+				true,
+			)
 		}
 
 		dst.SetFloat(number)
@@ -193,22 +263,27 @@ func bindRuntimeSlice(state *decodeState, src runtime.Value, dst reflect.Value) 
 
 	iterator, err := iterable.Iterate(state.ctx)
 	if err != nil {
-		return fmt.Errorf("%s: %w", state.path, err)
+		return newDecodeError(state.path.String(), DecodeErrorKindSource, err, false)
 	}
 
 	defer func() {
-		retErr = errors.Join(retErr, closeIteratorAt(iterator, &state.path))
+		retErr = joinDecodeErrors(retErr, closeIteratorAt(iterator, &state.path), &state.path)
 	}()
 
 	capacity := 0
 	if measurable, ok := src.(runtime.Measurable); ok {
 		length, lengthErr := measurable.Length(state.ctx)
 		if lengthErr != nil {
-			return fmt.Errorf("%s: %w", state.path, lengthErr)
+			return newDecodeError(state.path.String(), DecodeErrorKindSource, lengthErr, false)
 		}
 
 		if length > runtime.Int(int(^uint(0)>>1)) {
-			return fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "collection length overflows int"))
+			return newDecodeError(
+				state.path.String(),
+				DecodeErrorKindRange,
+				runtime.Error(runtime.ErrInvalidArgumentType, "collection length overflows int"),
+				true,
+			)
 		}
 
 		if length > 0 {
@@ -226,7 +301,7 @@ func bindRuntimeSlice(state *decodeState, src runtime.Value, dst reflect.Value) 
 
 		if nextErr != nil {
 			mark := state.path.PushIndex(index)
-			err := fmt.Errorf("%s: %w", state.path, nextErr)
+			err := newDecodeError(state.path.String(), DecodeErrorKindSource, nextErr, false)
 			state.path.Restore(mark)
 
 			return err
@@ -257,11 +332,11 @@ func bindRuntimeArray(state *decodeState, src runtime.Value, dst reflect.Value) 
 
 	iterator, err := iterable.Iterate(state.ctx)
 	if err != nil {
-		return fmt.Errorf("%s: %w", state.path, err)
+		return newDecodeError(state.path.String(), DecodeErrorKindSource, err, false)
 	}
 
 	defer func() {
-		retErr = errors.Join(retErr, closeIteratorAt(iterator, &state.path))
+		retErr = joinDecodeErrors(retErr, closeIteratorAt(iterator, &state.path), &state.path)
 	}()
 
 	for index := 0; ; index++ {
@@ -272,14 +347,19 @@ func bindRuntimeArray(state *decodeState, src runtime.Value, dst reflect.Value) 
 
 		if nextErr != nil {
 			mark := state.path.PushIndex(index)
-			err := fmt.Errorf("%s: %w", state.path, nextErr)
+			err := newDecodeError(state.path.String(), DecodeErrorKindSource, nextErr, false)
 			state.path.Restore(mark)
 
 			return err
 		}
 
 		if index >= dst.Len() {
-			return fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "source has more elements than target array"))
+			return newDecodeError(
+				state.path.String(),
+				DecodeErrorKindRange,
+				runtime.Error(runtime.ErrInvalidArgumentType, "source has more elements than target array"),
+				true,
+			)
 		}
 
 		mark := state.path.PushIndex(index)
@@ -296,7 +376,12 @@ func bindRuntimeArray(state *decodeState, src runtime.Value, dst reflect.Value) 
 
 func bindRuntimeMap(state *decodeState, src runtime.Value, dst reflect.Value) error {
 	if dst.Type().Key().Kind() != reflect.String {
-		return fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "map key type must be string"))
+		return newDecodeError(
+			state.path.String(),
+			DecodeErrorKindType,
+			runtime.Error(runtime.ErrInvalidArgumentType, "map key type must be string"),
+			true,
+		)
 	}
 
 	entries, err := collectRuntimeEntries(state, src)
@@ -331,6 +416,12 @@ func bindRuntimeStruct(state *decodeState, src runtime.Value, dst reflect.Value)
 		return err
 	}
 
+	if state.path.IsRoot() && state.config != nil && state.config.onlyFields != nil {
+		if err := rejectDisallowedFields(state, entries); err != nil {
+			return err
+		}
+	}
+
 	lowerKeys := buildLowerRuntimeKeyMap(entries)
 	used := make(map[string]struct{}, len(entries))
 	visiting := make(map[reflect.Type]bool)
@@ -339,7 +430,7 @@ func bindRuntimeStruct(state *decodeState, src runtime.Value, dst reflect.Value)
 		return err
 	}
 
-	if state.config.disallowUnknownFields {
+	if state.config != nil && state.config.disallowUnknownFields {
 		unknown := make([]string, 0)
 
 		for key := range entries {
@@ -351,10 +442,11 @@ func bindRuntimeStruct(state *decodeState, src runtime.Value, dst reflect.Value)
 		if len(unknown) > 0 {
 			sort.Strings(unknown)
 
-			return fmt.Errorf(
-				"%s: %w",
-				state.path,
+			return newDecodeError(
+				state.path.String(),
+				DecodeErrorKindUnknownField,
 				runtime.Errorf(runtime.ErrInvalidArgument, "unknown field %q", unknown[0]),
+				true,
 			)
 		}
 	}
@@ -534,11 +626,11 @@ func collectRuntimeEntries(state *decodeState, src runtime.Value) (out map[strin
 
 	iterator, err := iterable.Iterate(state.ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", state.path, err)
+		return nil, newDecodeError(state.path.String(), DecodeErrorKindSource, err, false)
 	}
 
 	defer func() {
-		retErr = errors.Join(retErr, closeIteratorAt(iterator, &state.path))
+		retErr = joinDecodeErrors(retErr, closeIteratorAt(iterator, &state.path), &state.path)
 	}()
 
 	out = make(map[string]runtime.Value)
@@ -549,18 +641,23 @@ func collectRuntimeEntries(state *decodeState, src runtime.Value) (out map[strin
 		}
 
 		if nextErr != nil {
-			return nil, fmt.Errorf("%s: %w", state.path, nextErr)
+			return nil, newDecodeError(state.path.String(), DecodeErrorKindSource, nextErr, false)
 		}
 
 		key, ok := keyValue.(runtime.String)
 		if !ok {
-			return nil, fmt.Errorf("%s: %w", state.path, runtime.Error(runtime.ErrInvalidArgumentType, "map key type must be string"))
+			return nil, newDecodeError(
+				state.path.String(),
+				DecodeErrorKindType,
+				runtime.Error(runtime.ErrInvalidArgumentType, "map key type must be string"),
+				true,
+			)
 		}
 
 		value, getErr := input.Get(state.ctx, keyValue)
 		if getErr != nil {
 			mark := state.path.PushKey(key.String())
-			err := fmt.Errorf("%s: %w", state.path, getErr)
+			err := newDecodeError(state.path.String(), DecodeErrorKindSource, getErr, false)
 
 			state.path.Restore(mark)
 
@@ -625,17 +722,87 @@ func closeIteratorAt(iterator runtime.Iterator, path *conversionPath) error {
 	}
 
 	if err := closer.Close(); err != nil {
-		return fmt.Errorf("%s: close iterator: %w", path, err)
+		return newDecodeError(
+			path.String(),
+			DecodeErrorKindSource,
+			fmt.Errorf("close iterator: %w", err),
+			false,
+		)
 	}
 
 	return nil
 }
 
 func decodeTypeError(path *conversionPath, src runtime.Value, target reflect.Type) error {
-	return fmt.Errorf(
-		"%s: %w",
-		path,
+	return newDecodeError(
+		path.String(),
+		DecodeErrorKindType,
 		runtime.Errorf(runtime.ErrInvalidArgumentType, "cannot bind %s to %s", runtime.TypeOf(src), target),
+		true,
+	)
+}
+
+func validateDecodeConfig(config *decodeConfig, target reflect.Type) error {
+	if config == nil {
+		return nil
+	}
+
+	if config.err != nil {
+		return config.err
+	}
+
+	if config.onlyFields == nil {
+		return nil
+	}
+
+	for target.Kind() == reflect.Pointer {
+		target = target.Elem()
+	}
+
+	if target.Kind() != reflect.Struct {
+		return runtime.Error(runtime.ErrInvalidArgument, "OnlyFields requires a struct target")
+	}
+
+	return nil
+}
+
+func rejectDisallowedFields(state *decodeState, entries map[string]runtime.Value) error {
+	unknown := make([]string, 0)
+
+	for key := range entries {
+		if _, allowed := state.config.onlyFields[strings.ToLower(key)]; !allowed {
+			unknown = append(unknown, key)
+		}
+	}
+
+	if len(unknown) == 0 {
+		return nil
+	}
+
+	sort.Strings(unknown)
+
+	return newDecodeError(
+		state.path.String(),
+		DecodeErrorKindUnknownField,
+		runtime.Errorf(runtime.ErrInvalidArgument, "unknown field %q", unknown[0]),
+		true,
+	)
+}
+
+func joinDecodeErrors(primary, secondary error, path *conversionPath) error {
+	if secondary == nil {
+		return primary
+	}
+
+	if primary == nil {
+		return secondary
+	}
+
+	return newDecodeErrorWithoutPath(
+		path.String(),
+		DecodeErrorKindSource,
+		errors.Join(primary, secondary),
+		false,
 	)
 }
 

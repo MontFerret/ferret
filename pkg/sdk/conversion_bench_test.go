@@ -64,6 +64,30 @@ func BenchmarkDecodeNested(b *testing.B) {
 	}
 }
 
+func BenchmarkDecodeNestedStrict(b *testing.B) {
+	input, err := sdk.Encode(b.Context(), benchmarkInput)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	options := []sdk.DecodeOption{
+		sdk.RequireType(runtime.TypeMap),
+		sdk.OnlyFields("name", "address", "tags"),
+		sdk.DisallowUnknownFields(),
+		sdk.DisallowNoneValues(),
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for b.Loop() {
+		var output benchmarkUser
+		if err := sdk.Decode(b.Context(), input, &output, options...); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func BenchmarkTypedBinder(b *testing.B) {
 	left := runtime.NewString("value")
 	right := runtime.NewInt(42)
