@@ -3,6 +3,8 @@ package fs
 import (
 	"io/fs"
 	"os"
+
+	"github.com/ziflex/go-options"
 )
 
 type (
@@ -40,13 +42,9 @@ type (
 )
 
 func New(setters ...Option) (FileSystem, error) {
-	opts := &options{
-		Root:     "",
-		ReadOnly: false,
-	}
-
-	for _, opt := range setters {
-		opt(opts)
+	opts, err := options.Apply[config](setters...)
+	if err != nil {
+		return nil, err
 	}
 
 	if opts.Root == "" {

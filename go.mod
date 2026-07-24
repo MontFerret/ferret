@@ -1,6 +1,6 @@
 module github.com/MontFerret/ferret/v2
 
-go 1.25.0
+go 1.26.5
 
 require (
 	github.com/antlr4-go/antlr/v4 v4.13.1
@@ -12,6 +12,7 @@ require (
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/wI2L/jettison v0.7.4
+	github.com/ziflex/go-options v1.0.0
 )
 
 require (
