@@ -76,7 +76,12 @@ func mustNewSession(t *testing.T, plan *Plan, setters ...SessionOption) *Session
 func mustMarshalArtifact(t *testing.T, query string, opts ...artifact.Option) []byte {
 	t.Helper()
 
-	prog, err := compiler.New().Compile(source.NewAnonymous(query))
+	c, err := compiler.New()
+	if err != nil {
+		t.Fatalf("failed to create compiler: %v", err)
+	}
+
+	prog, err := c.Compile(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatalf("failed to compile query %q: %v", query, err)
 	}

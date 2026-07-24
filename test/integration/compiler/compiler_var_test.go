@@ -80,7 +80,7 @@ func TestVarSyntaxErrors(t *testing.T) {
 func TestVarCompoundAssignmentMissingValueDiagnosticSpan(t *testing.T) {
 	src := "VAR x = 0\nx +=\nRETURN x"
 
-	_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).Compile(source.New("var_compound_span", src))
+	_, err := spec.NewCompiler(t, compiler.WithOptimizationLevel(compiler.O0)).Compile(source.New("var_compound_span", src))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}
@@ -234,7 +234,7 @@ RETURN NONE
 `
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		_, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.NewAnonymous(src))
+		_, err := spec.NewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.NewAnonymous(src))
 		if err == nil {
 			t.Fatalf("expected compilation error at O%d", level)
 		}

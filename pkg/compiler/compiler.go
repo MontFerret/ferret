@@ -8,6 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
+	"github.com/ziflex/go-options"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -21,24 +22,26 @@ const Version = "2.0.0"
 // A Compiler is immutable after construction and safe for concurrent use.
 // Multiple goroutines can call Compile on the same Compiler instance.
 type Compiler struct {
-	opts *options
+	opts config
 }
 
 // New creates a compiler with optional configuration.
 //
 // The returned compiler is immutable and can be shared safely across goroutines.
-func New(setters ...Option) *Compiler {
+func New(setters ...Option) (*Compiler, error) {
+	conf, err := options.ApplyWithValues(config{
+		Level: optimization.LevelBasic,
+	}, setters...)
+
+	if err != nil {
+		return nil, err
+	}
+
 	c := &Compiler{
-		opts: &options{
-			Level: optimization.LevelBasic,
-		},
+		opts: conf,
 	}
 
-	for _, setter := range setters {
-		setter(c.opts)
-	}
-
-	return c
+	return c, nil
 }
 
 // Compile parses and compiles a source into a bytecode program.

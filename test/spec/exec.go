@@ -26,7 +26,10 @@ func Compile(expression string, level ...compiler.OptimizationLevel) (*bytecode.
 		oplevel = level[0]
 	}
 
-	c := compiler.New(compiler.WithOptimizationLevel(oplevel))
+	c, err := compiler.New(compiler.WithOptimizationLevel(oplevel))
+	if err != nil {
+		return nil, err
+	}
 
 	return c.Compile(source.New("", expression))
 }

@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	pkgdiagnostics "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -68,7 +67,7 @@ func TestMatchErrors(t *testing.T) {
 }
 
 func TestMatchMissingCommaDiagnosticSpan(t *testing.T) {
-	c := compiler.New()
+	c := spec.NewCompiler(t)
 	query := `FUNC fib(n) (
     RETURN MATCH n (
         0 => 0

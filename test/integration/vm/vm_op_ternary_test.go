@@ -32,7 +32,7 @@ func TestTernaryOperator(t *testing.T) {
 			"FALSE",
 		}
 
-		c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
+		c := spec.NewCompiler(t, compiler.WithOptimizationLevel(compiler.O0))
 
 		for _, val := range vals {
 			val := val

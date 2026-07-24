@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	pkgdiagnostics "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -379,7 +378,7 @@ FOR user IN users
     FILTER ` + tt.predicate + `
     RETURN user.name`
 
-			_, err := compiler.New().Compile(source.NewAnonymous(query))
+			_, err := spec.NewCompiler(t).Compile(source.NewAnonymous(query))
 			if err == nil {
 				t.Fatal("expected compilation error")
 			}
@@ -434,7 +433,7 @@ FOR user IN users
     FILTER user.active = true
     RETURN user.name`
 
-	_, err := compiler.New().Compile(source.NewAnonymous(query))
+	_, err := spec.NewCompiler(t).Compile(source.NewAnonymous(query))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}

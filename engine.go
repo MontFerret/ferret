@@ -35,6 +35,16 @@ func New(setters ...Option) (*Engine, error) {
 		return nil, err
 	}
 
+	c, err := compiler.New(opts.compiler...)
+	if err != nil {
+		return nil, err
+	}
+
+	dc, err := compiler.New(append(append([]compiler.Option(nil), opts.compiler...), compiler.WithDebugInfo())...)
+	if err != nil {
+		return nil, err
+	}
+
 	ownsNetwork := opts.network == nil
 
 	boot, err := newBootstrap(opts)
@@ -92,8 +102,8 @@ func New(setters ...Option) (*Engine, error) {
 	}
 
 	return &Engine{
-		compiler:      compiler.New(opts.compiler...),
-		debugCompiler: compiler.New(append(append([]compiler.Option(nil), opts.compiler...), compiler.WithDebugInfo())...),
+		compiler:      c,
+		debugCompiler: dc,
 		loader:        opts.programLoader,
 		host:          h,
 		hooks:         hooks,

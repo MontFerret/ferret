@@ -152,7 +152,7 @@ func TestWaitforPredicateWhenRetriesUntilTrue(t *testing.T) {
 		RunSpecsWith(
 			t,
 			fmt.Sprintf("VM/O%d", level),
-			compiler.New(compiler.WithOptimizationLevel(level)),
+			spec.NewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				S(`
 					LET token = WAITFOR VALUE CANDIDATE() WHEN .state == "ready" TIMEOUT 100ms EVERY 0
@@ -187,7 +187,7 @@ func TestWaitforPredicateWhenSkipsPredicateUntilBasePasses(t *testing.T) {
 		RunSpecsWith(
 			t,
 			fmt.Sprintf("VM/O%d", level),
-			compiler.New(compiler.WithOptimizationLevel(level)),
+			spec.NewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				S(`
 					LET ok = WAITFOR EXISTS NONE WHEN PREDICATE(.) TIMEOUT 20ms EVERY 1ms ON TIMEOUT RETURN false
@@ -219,7 +219,7 @@ func TestWaitforPredicateMultipleWhenShortCircuits(t *testing.T) {
 		RunSpecsWith(
 			t,
 			fmt.Sprintf("VM/O%d", level),
-			compiler.New(compiler.WithOptimizationLevel(level)),
+			spec.NewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				Nil(`
 					LET token = WAITFOR VALUE "ok" WHEN REPEATED_WHEN_FIRST(.) WHEN REPEATED_WHEN_SECOND(.) TIMEOUT 20ms EVERY 1ms ON TIMEOUT RETURN NONE

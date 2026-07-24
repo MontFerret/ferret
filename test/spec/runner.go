@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -16,9 +17,14 @@ type Runner struct {
 }
 
 func NewRunner(suite string, opts ...compiler.Option) *Runner {
+	c, err := compiler.New(opts...)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create compiler: %v", err))
+	}
+
 	return &Runner{
 		Name:     suite,
-		Compiler: compiler.New(opts...),
+		Compiler: c,
 	}
 }
 

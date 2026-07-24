@@ -18,9 +18,14 @@ type SequenceRunner struct {
 }
 
 func NewSequenceRunner(suite string, opts ...compiler.Option) *SequenceRunner {
+	c, err := compiler.New(opts...)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create compiler: %v", err))
+	}
+
 	return &SequenceRunner{
 		Name:     suite,
-		Compiler: compiler.New(opts...),
+		Compiler: c,
 	}
 }
 

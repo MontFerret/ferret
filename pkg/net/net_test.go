@@ -182,14 +182,14 @@ func TestWithHTTPTransportPropagatesPolicyConfigurationError(t *testing.T) {
 	}
 }
 
-func TestWithHTTPTransportNilIsNoOp(t *testing.T) {
+func TestWithHTTPTransportNilIsErr(t *testing.T) {
 	network, err := New(
 		WithHTTPTransport(nil, ferrethttp.WithMaxResponseSize(-1)),
 	)
-	if err != nil {
-		t.Fatalf("expected nil transport option to be ignored: %v", err)
+	if err == nil {
+		t.Fatalf("expected error for nil transport, got nil")
 	}
-	if network == nil {
-		t.Fatal("expected default network")
+	if network != nil {
+		t.Fatalf("expected no network, got %T", network)
 	}
 }

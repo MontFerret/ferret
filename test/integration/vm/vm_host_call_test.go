@@ -139,7 +139,7 @@ func TestHostFunctionRecoveryFallbackFailurePropagates(t *testing.T) {
 		RunSpecsWith(
 			t,
 			fmt.Sprintf("VM/O%d", level),
-			compiler.New(compiler.WithOptimizationLevel(level)),
+			spec.NewCompiler(t, compiler.WithOptimizationLevel(level)),
 			specs,
 			vm.WithFunction("STEP", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 				callCount++

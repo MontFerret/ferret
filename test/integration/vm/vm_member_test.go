@@ -163,7 +163,7 @@ func TestMember(t *testing.T) {
 func TestMemberReservedWords(t *testing.T) {
 	p := parser.New("RETURN TRUE")
 	r := regexp.MustCompile(`\w+`)
-	c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
+	c := spec.NewCompiler(t, compiler.WithOptimizationLevel(compiler.O0))
 
 	for idx, literal := range p.GetLiteralNames() {
 		if !r.MatchString(literal) || literal == "'FUNC'" {

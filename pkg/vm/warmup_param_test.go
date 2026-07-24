@@ -17,7 +17,12 @@ import (
 func mustCompileProgram(t *testing.T, level compiler.OptimizationLevel, name, query string) *bytecode.Program {
 	t.Helper()
 
-	program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New(name, query))
+	c, err := compiler.New(compiler.WithOptimizationLevel(level))
+	if err != nil {
+		t.Fatalf("failed to create compiler: %v", err)
+	}
+
+	program, err := c.Compile(source.New(name, query))
 	if err != nil {
 		t.Fatalf("compile failed: %v", err)
 	}

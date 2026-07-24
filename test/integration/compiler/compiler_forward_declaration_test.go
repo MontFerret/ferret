@@ -8,6 +8,7 @@ import (
 	diagpkg "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
+	"github.com/MontFerret/ferret/v2/test/spec"
 )
 
 func TestForwardDeclarationDiagnosticsTopLevel(t *testing.T) {
@@ -88,7 +89,7 @@ RETURN value
 func compileDiagnostics(t *testing.T, src string) []*diagpkg.Diagnostic {
 	t.Helper()
 
-	_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).Compile(source.NewAnonymous(src))
+	_, err := spec.NewCompiler(t, compiler.WithOptimizationLevel(compiler.O0)).Compile(source.NewAnonymous(src))
 	if err == nil {
 		t.Fatal("expected compile diagnostics")
 	}

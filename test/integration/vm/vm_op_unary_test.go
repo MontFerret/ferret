@@ -30,7 +30,7 @@ func TestUnaryOperators(t *testing.T) {
 	})
 
 	t.Run("RETURN { enabled: !val }", func(t *testing.T) {
-		c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
+		c := spec.NewCompiler(t, compiler.WithOptimizationLevel(compiler.O0))
 
 		p1, err := c.Compile(source.NewAnonymous(`
 			LET val = ""

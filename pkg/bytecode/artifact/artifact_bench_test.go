@@ -84,7 +84,12 @@ FOR u IN users
   RETURN { gender, minAge }
 `)
 
-	program, err := compiler.New().Compile(src)
+	c, err := compiler.New()
+	if err != nil {
+		b.Fatalf("failed to create compiler: %v", err)
+	}
+
+	program, err := c.Compile(src)
 	if err != nil {
 		b.Fatalf("compile failed: %v", err)
 	}

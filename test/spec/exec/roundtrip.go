@@ -80,10 +80,15 @@ func RunRoundTrips(t *testing.T, cases []RoundTrip, opts ...vm.EnvironmentOption
 	levels := []compiler.OptimizationLevel{compiler.O0, compiler.O1}
 
 	for _, level := range levels {
+		c, err := compiler.New(compiler.WithOptimizationLevel(level))
+		if err != nil {
+			t.Fatalf("failed to create compiler: %v", err)
+		}
+
 		RunRoundTripsWith(
 			t,
 			fmt.Sprintf("VM/O%d", level),
-			compiler.New(compiler.WithOptimizationLevel(level)),
+			c,
 			cases,
 			opts...,
 		)

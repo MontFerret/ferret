@@ -13,7 +13,7 @@ func RunSpecsWith(t *testing.T, level compiler.OptimizationLevel, specs []spec.S
 
 	runner := &spec.Runner{
 		Name:     fmt.Sprintf("Compiler/O%d", level),
-		Compiler: compiler.New(compiler.WithOptimizationLevel(level)),
+		Compiler: spec.NewCompiler(t, compiler.WithOptimizationLevel(level)),
 	}
 
 	runner.Run(t, specs)

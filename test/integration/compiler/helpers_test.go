@@ -7,12 +7,13 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
+	"github.com/MontFerret/ferret/v2/test/spec"
 )
 
 func compileWithLevel(t *testing.T, level compiler.OptimizationLevel, expr string) *bytecode.Program {
 	t.Helper()
 
-	c := compiler.New(compiler.WithOptimizationLevel(level))
+	c := spec.NewCompiler(t, compiler.WithOptimizationLevel(level))
 	prog, err := c.Compile(source.NewAnonymous(expr))
 	if err != nil {
 		t.Fatalf("compile failed: %v", err)

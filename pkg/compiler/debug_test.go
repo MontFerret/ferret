@@ -10,8 +10,20 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
+func newDebugCompiler(t *testing.T, opts ...Option) *Compiler {
+	t.Helper()
+
+	o := append([]Option{WithDebugInfo()}, opts...)
+	c, err := New(o...)
+	if err != nil {
+		t.Fatalf("failed to create compiler: %v", err)
+	}
+
+	return c
+}
+
 func TestWithDebugInfoEmitsLogicalPointsAndForcesO0(t *testing.T) {
-	program, err := New(WithOptimizationLevel(O1), WithDebugInfo()).Compile(
+	program, err := newDebugCompiler(t, WithOptimizationLevel(O1)).Compile(
 		source.New("debug.fql", "LET x = 1\nVAR y = 2\ny = y + x\nRETURN y"),
 	)
 	if err != nil {
@@ -41,7 +53,7 @@ func TestWithDebugInfoEmitsLogicalPointsAndForcesO0(t *testing.T) {
 }
 
 func TestDebugInfoArtifactRoundTrip(t *testing.T) {
-	program, err := New(WithDebugInfo()).Compile(source.New("debug.fql", "FOR i IN 1..2\n  RETURN i"))
+	program, err := newDebugCompiler(t).Compile(source.New("debug.fql", "FOR i IN 1..2\n  RETURN i"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +82,12 @@ func TestDebugInfoArtifactRoundTrip(t *testing.T) {
 }
 
 func TestNormalCompilationDoesNotEmitDebugPoints(t *testing.T) {
-	program, err := New(WithOptimizationLevel(O1)).Compile(source.NewAnonymous("LET x = 1\nRETURN x"))
+	c, err := New(WithOptimizationLevel(O1))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	program, err := c.Compile(source.NewAnonymous("LET x = 1\nRETURN x"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +108,7 @@ func TestNormalCompilationDoesNotEmitDebugPoints(t *testing.T) {
 }
 
 func TestDebugInfoIncludesUDFArgumentsCapturesAndLoopVariables(t *testing.T) {
-	program, err := New(WithDebugInfo()).Compile(source.New("bindings.fql", `
+	program, err := newDebugCompiler(t).Compile(source.New("bindings.fql", `
 LET base = 10
 FUNC add(value) => base + value
 RETURN (
@@ -130,7 +147,7 @@ RETURN (
 }
 
 func TestDebugInfoPreservesLexicalShadowing(t *testing.T) {
-	program, err := New(WithDebugInfo()).Compile(source.New("shadow.fql", `LET x = 1
+	program, err := newDebugCompiler(t).Compile(source.New("shadow.fql", `LET x = 1
 RETURN (
   FOR x IN [2]
     RETURN x
@@ -164,7 +181,7 @@ RETURN (
 }
 
 func TestDebugInfoClassifiesReturnAndFunctionEntryPoints(t *testing.T) {
-	program, err := New(WithDebugInfo()).Compile(source.New("kinds.fql", `LET seed = 1
+	program, err := newDebugCompiler(t).Compile(source.New("kinds.fql", `LET seed = 1
 FUNC add(a) (
   LET b = a + 1
   RETURN b
@@ -195,7 +212,7 @@ RETURN add(seed)`))
 }
 
 func TestDebugInfoFunctionEntryTakesPrecedenceForSinglePointUDF(t *testing.T) {
-	program, err := New(WithDebugInfo()).Compile(source.New("entry.fql", "FUNC one() => 1\nRETURN one()"))
+	program, err := newDebugCompiler(t).Compile(source.New("entry.fql", "FUNC one() => 1\nRETURN one()"))
 	if err != nil {
 		t.Fatal(err)
 	}

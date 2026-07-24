@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	pkgdiagnostics "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -335,7 +334,7 @@ FUNC fib(n) => (
 
 RETURN fib(10)`
 
-	_, err := compiler.New().Compile(source.NewAnonymous(query))
+	_, err := spec.NewCompiler(t).Compile(source.NewAnonymous(query))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}
@@ -392,7 +391,7 @@ func TestMissingFunctionParamsCloseDiagnosticDoesNotCascade(t *testing.T) {
 
 RETURN fib(10)`
 
-	_, err := compiler.New().Compile(source.NewAnonymous(query))
+	_, err := spec.NewCompiler(t).Compile(source.NewAnonymous(query))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}

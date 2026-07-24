@@ -25,7 +25,12 @@ func RunSpecs(t *testing.T, specs []spec.Spec, opts ...vm.EnvironmentOption) {
 	levels := []compiler.OptimizationLevel{compiler.O0, compiler.O1}
 
 	for _, level := range levels {
-		RunSpecsWith(t, fmt.Sprintf("VM/O%d", level), compiler.New(compiler.WithOptimizationLevel(level)), specs, opts...)
+		c, err := compiler.New(compiler.WithOptimizationLevel(level))
+		if err != nil {
+			t.Fatalf("failed to create compiler: %v", err)
+		}
+
+		RunSpecsWith(t, fmt.Sprintf("VM/O%d", level), c, specs, opts...)
 	}
 }
 
@@ -35,12 +40,22 @@ func RunSpecFactory(t *testing.T, factory func() []spec.Spec, opts ...vm.Environ
 	levels := []compiler.OptimizationLevel{compiler.O0, compiler.O1}
 
 	for _, level := range levels {
-		RunSpecsWith(t, fmt.Sprintf("VM/O%d", level), compiler.New(compiler.WithOptimizationLevel(level)), factory(), opts...)
+		c, err := compiler.New(compiler.WithOptimizationLevel(level))
+		if err != nil {
+			t.Fatalf("failed to create compiler: %v", err)
+		}
+
+		RunSpecsWith(t, fmt.Sprintf("VM/O%d", level), c, factory(), opts...)
 	}
 }
 
 func RunProgramSpecs(t *testing.T, specs []spec.Spec, opts ...vm.EnvironmentOption) {
 	t.Helper()
 
-	RunSpecsWith(t, "VM/Program", compiler.New(compiler.WithOptimizationLevel(compiler.O0)), specs, opts...)
+	c, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
+	if err != nil {
+		t.Fatalf("failed to create compiler: %v", err)
+	}
+
+	RunSpecsWith(t, "VM/Program", c, specs, opts...)
 }

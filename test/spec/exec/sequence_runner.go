@@ -12,9 +12,14 @@ import (
 func RunSequencesWith(t *testing.T, level compiler.OptimizationLevel, sequences []spec.Sequence, opts ...vm.EnvironmentOption) {
 	t.Helper()
 
+	c, err := compiler.New(compiler.WithOptimizationLevel(level))
+	if err != nil {
+		t.Fatalf("failed to create compiler: %v", err)
+	}
+
 	runner := spec.SequenceRunner{
 		Name:     fmt.Sprintf("VM/O%d", level),
-		Compiler: compiler.New(compiler.WithOptimizationLevel(level)),
+		Compiler: c,
 		Env:      opts,
 	}
 
