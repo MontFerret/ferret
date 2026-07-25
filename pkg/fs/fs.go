@@ -11,6 +11,7 @@ type (
 		Open(path string) (ReadableFile, error)
 		OpenFile(path string, flag int, perm fs.FileMode) (WritableFile, error)
 		Stat(path string) (fs.FileInfo, error)
+		Lstat(path string) (fs.FileInfo, error)
 		Exists(path string) (bool, error)
 	}
 
