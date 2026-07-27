@@ -8,7 +8,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
-	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -44,33 +43,13 @@ func New(setters ...Option) (*Engine, error) {
 
 	for _, m := range opts.modules {
 		if err := m.Register(boot); err != nil {
-			closeErr := boot.hooks.engine.runCloseHooks()
-
-			if ownsNetwork {
-				ferretnet.CloseIdleNetworkConnections(boot.host.Network())
-			}
-
-			if closeErr != nil {
-				return nil, errors.Join(err, fmt.Errorf("close hooks: %w", closeErr))
-			}
-
-			return nil, err
+			return nil, closeEngineOnError(err, boot.hooks.engine, boot.host.Network(), ownsNetwork)
 		}
 	}
 
 	h, err := boot.host.Build()
 	if err != nil {
-		closeErr := boot.hooks.engine.runCloseHooks()
-
-		if ownsNetwork {
-			ferretnet.CloseIdleNetworkConnections(boot.host.Network())
-		}
-
-		if closeErr != nil {
-			return nil, errors.Join(err, fmt.Errorf("close hooks: %w", closeErr))
-		}
-
-		return nil, err
+		return nil, closeEngineOnError(err, boot.hooks.engine, boot.host.Network(), ownsNetwork)
 	}
 
 	hooks := boot.hooks.clone()
@@ -78,17 +57,8 @@ func New(setters ...Option) (*Engine, error) {
 	// Run init hooks after bootstrap is finalized and before returning the engine.
 	if err := hooks.engine.runInitHooks(); err != nil {
 		initErr := fmt.Errorf("init hooks: %w", err)
-		closeErr := hooks.engine.runCloseHooks()
 
-		if ownsNetwork {
-			ferretnet.CloseIdleNetworkConnections(h.network)
-		}
-
-		if closeErr != nil {
-			return nil, errors.Join(initErr, fmt.Errorf("close hooks: %w", closeErr))
-		}
-
-		return nil, initErr
+		return nil, closeEngineOnError(initErr, hooks.engine, h.network, ownsNetwork)
 	}
 
 	return &Engine{
@@ -197,17 +167,7 @@ func (e *Engine) Run(ctx context.Context, src *source.Source, opts ...SessionOpt
 
 // Close runs the engine close hooks and releases engine-scoped resources.
 func (e *Engine) Close() error {
-	err := e.hooks.engine.runCloseHooks()
-
-	if e.ownsNetwork {
-		ferretnet.CloseIdleNetworkConnections(e.host.network)
-	}
-
-	if err != nil {
-		return fmt.Errorf("close hooks: %w", err)
-	}
-
-	return nil
+	return closeEngine(e.hooks.engine, e.host.network, e.ownsNetwork)
 }
 
 func (e *Engine) newPlan(prog *bytecode.Program) (*Plan, error) {

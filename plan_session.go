@@ -45,6 +45,7 @@ func newPlanSession[T any](
 	plan.mu.RLock()
 	if plan.closed {
 		plan.mu.RUnlock()
+
 		return session, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
 	}
 
@@ -86,6 +87,7 @@ func newPlanSession[T any](
 		options: options,
 		logger:  logging.NewFrom(h.logger, options.logger...),
 	})
+
 	if err == nil {
 		releaseOnReturn = false
 	}
@@ -155,6 +157,7 @@ func buildDebugSession(dependencies planSessionDependencies) (*DebugSession, err
 		Params:      dependencies.program.Params,
 		Format:      dependencies.options.debugFormat,
 	})
+
 	if err != nil {
 		_ = execution.Close()
 		return nil, err
