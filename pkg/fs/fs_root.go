@@ -41,6 +41,10 @@ func (r *rootFS) Stat(path string) (fs.FileInfo, error) {
 	return r.root.Stat(path)
 }
 
+func (r *rootFS) Lstat(path string) (fs.FileInfo, error) {
+	return r.root.Lstat(path)
+}
+
 func (r *rootFS) Exists(path string) (bool, error) {
 	_, err := r.root.Stat(path)
 	if err == nil {

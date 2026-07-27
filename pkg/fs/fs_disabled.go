@@ -24,6 +24,10 @@ func (n disabledFS) Stat(_ string) (fs.FileInfo, error) {
 	return nil, ErrRootNotConfigured
 }
 
+func (n disabledFS) Lstat(_ string) (fs.FileInfo, error) {
+	return nil, ErrRootNotConfigured
+}
+
 func (n disabledFS) Exists(_ string) (bool, error) {
 	return false, ErrRootNotConfigured
 }
