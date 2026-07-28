@@ -7,7 +7,7 @@ require (
 	github.com/gobwas/glob v0.2.3
 	github.com/goccy/go-json v0.10.6
 	github.com/google/go-cmp v0.7.0
-	github.com/jarcoal/httpmock v1.4.1
+	github.com/jarcoal/httpmock v1.4.2
 	github.com/rs/zerolog v1.35.1
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/vmihailenco/msgpack/v5 v5.4.1
