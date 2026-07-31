@@ -160,6 +160,43 @@ func TestMember(t *testing.T) {
 	})
 }
 
+func TestUdfMemberStatements(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		Array(`
+FUNC make() => { nested: { value: 40 } }
+FUNC read(value) (
+  LET dot = value.foo
+  VAR computed = value["fallback"]
+  VAR reassigned = NONE
+  reassigned = value.nested["answer"]
+  LET mixed = value.nested["answer"]
+  LET fromCall = make().nested.value
+  LET fromObject = { result: 2 }.result
+  LET fromArray = [0, 3][1]
+  RETURN [dot, computed, reassigned, mixed, fromCall, fromObject, fromArray]
+)
+RETURN read({
+  foo: 1,
+  fallback: 0,
+  nested: { answer: 42 },
+})
+`, []any{1, 0, 42, 42, 40, 2, 3}, "UDF member initializers preserve dot, computed, mixed, call, object, and array sources"),
+		S(`
+FUNC run() (
+  VAR calls = 0
+  FUNC nextKey() (
+    calls += 1
+    RETURN "value"
+  )
+  LET payload = { value: 1 }
+  payload[nextKey()]
+  RETURN calls
+)
+RETURN run()
+`, 1, "UDF member expression statements preserve computed-key side effects"),
+	})
+}
+
 func TestMemberReservedWords(t *testing.T) {
 	p := parser.New("RETURN TRUE")
 	r := regexp.MustCompile(`\w+`)

@@ -28,10 +28,34 @@ FUNC unusedTop() => base
 RETURN outer(3)
 `
 
+const compilerUdfMemberStatementsQuery = `
+FUNC read(value) (
+  LET brand = value.product.brand
+  VAR price = value["prices"]["current"]
+  price = value.prices["sale"]
+  value.metadata.lastSeen
+  RETURN [brand, price]
+)
+
+RETURN read({
+  product: { brand: "Ferret" },
+  prices: { current: 1000, sale: 900 },
+  metadata: { lastSeen: 1 }
+})
+`
+
 func BenchmarkCompilerCompileUdfLifecycle_O0(b *testing.B) {
 	benchmarkCompileQuery(b, compilerUdfLifecycleQuery, compiler.O0)
 }
 
 func BenchmarkCompilerCompileUdfLifecycle_O1(b *testing.B) {
 	benchmarkCompileQuery(b, compilerUdfLifecycleQuery, compiler.O1)
+}
+
+func BenchmarkCompilerCompileUdfMemberStatements_O0(b *testing.B) {
+	benchmarkCompileQuery(b, compilerUdfMemberStatementsQuery, compiler.O0)
+}
+
+func BenchmarkCompilerCompileUdfMemberStatements_O1(b *testing.B) {
+	benchmarkCompileQuery(b, compilerUdfMemberStatementsQuery, compiler.O1)
 }

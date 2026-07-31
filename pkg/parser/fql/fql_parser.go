@@ -776,10 +776,10 @@ func fqlparserParserInit() {
 		1, 0, 0, 0, 1349, 1345, 1, 0, 0, 0, 1350, 1353, 1, 0, 0, 0, 1351, 1349,
 		1, 0, 0, 0, 1351, 1352, 1, 0, 0, 0, 1352, 265, 1, 0, 0, 0, 1353, 1351,
 		1, 0, 0, 0, 1354, 1355, 6, 133, -1, 0, 1355, 1380, 3, 268, 134, 0, 1356,
-		1380, 3, 304, 152, 0, 1357, 1380, 3, 220, 110, 0, 1358, 1380, 3, 258, 129,
-		0, 1359, 1380, 3, 186, 93, 0, 1360, 1380, 3, 184, 92, 0, 1361, 1380, 3,
-		300, 150, 0, 1362, 1363, 4, 133, 27, 0, 1363, 1380, 3, 298, 149, 0, 1364,
-		1380, 3, 216, 108, 0, 1365, 1380, 3, 182, 91, 0, 1366, 1380, 3, 94, 47,
+		1380, 3, 304, 152, 0, 1357, 1380, 3, 216, 108, 0, 1358, 1380, 3, 220, 110,
+		0, 1359, 1380, 3, 258, 129, 0, 1360, 1380, 3, 186, 93, 0, 1361, 1380, 3,
+		184, 92, 0, 1362, 1380, 3, 300, 150, 0, 1363, 1364, 4, 133, 27, 0, 1364,
+		1380, 3, 298, 149, 0, 1365, 1380, 3, 182, 91, 0, 1366, 1380, 3, 94, 47,
 		0, 1367, 1380, 3, 92, 46, 0, 1368, 1372, 5, 14, 0, 0, 1369, 1373, 3, 46,
 		23, 0, 1370, 1373, 3, 92, 46, 0, 1371, 1373, 3, 262, 131, 0, 1372, 1369,
 		1, 0, 0, 0, 1372, 1370, 1, 0, 0, 0, 1372, 1371, 1, 0, 0, 0, 1373, 1374,
@@ -788,7 +788,7 @@ func fqlparserParserInit() {
 		1378, 1, 0, 0, 0, 1378, 1380, 1, 0, 0, 0, 1379, 1354, 1, 0, 0, 0, 1379,
 		1356, 1, 0, 0, 0, 1379, 1357, 1, 0, 0, 0, 1379, 1358, 1, 0, 0, 0, 1379,
 		1359, 1, 0, 0, 0, 1379, 1360, 1, 0, 0, 0, 1379, 1361, 1, 0, 0, 0, 1379,
-		1362, 1, 0, 0, 0, 1379, 1364, 1, 0, 0, 0, 1379, 1365, 1, 0, 0, 0, 1379,
+		1362, 1, 0, 0, 0, 1379, 1363, 1, 0, 0, 0, 1379, 1365, 1, 0, 0, 0, 1379,
 		1366, 1, 0, 0, 0, 1379, 1367, 1, 0, 0, 0, 1379, 1368, 1, 0, 0, 0, 1380,
 		1395, 1, 0, 0, 0, 1381, 1382, 10, 16, 0, 0, 1382, 1383, 3, 332, 166, 0,
 		1383, 1384, 3, 266, 133, 17, 1384, 1394, 1, 0, 0, 0, 1385, 1386, 10, 15,
@@ -26441,13 +26441,13 @@ type IExpressionAtomContext interface {
 	// Getter signatures
 	MatchExpression() IMatchExpressionContext
 	QueryExpression() IQueryExpressionContext
+	MemberExpression() IMemberExpressionContext
 	FunctionCallExpression() IFunctionCallExpressionContext
 	RangeOperator() IRangeOperatorContext
 	Literal() ILiteralContext
 	Variable() IVariableContext
 	ImplicitCurrentExpression() IImplicitCurrentExpressionContext
 	ImplicitMemberExpression() IImplicitMemberExpressionContext
-	MemberExpression() IMemberExpressionContext
 	Param() IParamContext
 	DispatchExpression() IDispatchExpressionContext
 	WaitForExpression() IWaitForExpressionContext
@@ -26539,6 +26539,22 @@ func (s *ExpressionAtomContext) QueryExpression() IQueryExpressionContext {
 	}
 
 	return t.(IQueryExpressionContext)
+}
+
+func (s *ExpressionAtomContext) MemberExpression() IMemberExpressionContext {
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IMemberExpressionContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
+
+	if t == nil {
+		return nil
+	}
+
+	return t.(IMemberExpressionContext)
 }
 
 func (s *ExpressionAtomContext) FunctionCallExpression() IFunctionCallExpressionContext {
@@ -26635,22 +26651,6 @@ func (s *ExpressionAtomContext) ImplicitMemberExpression() IImplicitMemberExpres
 	}
 
 	return t.(IImplicitMemberExpressionContext)
-}
-
-func (s *ExpressionAtomContext) MemberExpression() IMemberExpressionContext {
-	var t antlr.RuleContext
-	for _, ctx := range s.GetChildren() {
-		if _, ok := ctx.(IMemberExpressionContext); ok {
-			t = ctx.(antlr.RuleContext)
-			break
-		}
-	}
-
-	if t == nil {
-		return nil
-	}
-
-	return t.(IMemberExpressionContext)
 }
 
 func (s *ExpressionAtomContext) Param() IParamContext {
@@ -26930,49 +26930,49 @@ func (p *FqlParser) expressionAtom(_p int) (localctx IExpressionAtomContext) {
 	case 3:
 		{
 			p.SetState(1357)
-			p.FunctionCallExpression()
+			p.MemberExpression()
 		}
 
 	case 4:
 		{
 			p.SetState(1358)
-			p.RangeOperator()
+			p.FunctionCallExpression()
 		}
 
 	case 5:
 		{
 			p.SetState(1359)
-			p.Literal()
+			p.RangeOperator()
 		}
 
 	case 6:
 		{
 			p.SetState(1360)
-			p.Variable()
+			p.Literal()
 		}
 
 	case 7:
 		{
 			p.SetState(1361)
-			p.ImplicitCurrentExpression()
+			p.Variable()
 		}
 
 	case 8:
-		p.SetState(1362)
+		{
+			p.SetState(1362)
+			p.ImplicitCurrentExpression()
+		}
+
+	case 9:
+		p.SetState(1363)
 
 		if !(p.allowImplicitCurrent()) {
 			p.SetError(antlr.NewFailedPredicateException(p, "p.allowImplicitCurrent()", ""))
 			goto errorExit
 		}
 		{
-			p.SetState(1363)
-			p.ImplicitMemberExpression()
-		}
-
-	case 9:
-		{
 			p.SetState(1364)
-			p.MemberExpression()
+			p.ImplicitMemberExpression()
 		}
 
 	case 10:

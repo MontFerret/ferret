@@ -550,6 +550,15 @@ func ToInt(ctx context.Context, input Value) (Int, error) {
 	}
 }
 
+func ToNumber(ctx context.Context, input Value) (Value, error) {
+	switch value := input.(type) {
+	case Int, Float:
+		return value, nil
+	default:
+		return ToFloat(ctx, input)
+	}
+}
+
 func ToIntSafe(ctx context.Context, input Value) Int {
 	result, err := ToInt(ctx, input)
 

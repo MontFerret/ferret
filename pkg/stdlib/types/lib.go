@@ -13,6 +13,7 @@ func RegisterLib(ns runtime.Namespace) {
 		Add("TO_DATETIME", ToDateTime).
 		Add("TO_ARRAY", ToArray).
 		Add("TO_BINARY", ToBinary).
+		Add("TO_NUMBER", ToNumber).
 		Add("TO_OBJECT", ToObject).
 		Add("IS_NONE", IsNone).
 		Add("IS_BOOL", IsBool).
