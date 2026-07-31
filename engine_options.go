@@ -20,20 +20,20 @@ import (
 type (
 	options struct {
 		library           runtime.Library
-		params            runtime.Params
-		encoding          *encoding.Registry
-		programLoader     *artifact.Loader
+		network           ferretnet.Network
 		hooks             *hookRegistry
+		encoding          *encoding.Registry
+		params            runtime.Params
+		programLoader     *artifact.Loader
 		fsRoot            string
 		stdlib            stdlib.Set
-		logger            []logging.Option
-		network           ferretnet.Network
-		hostNetwork       bool
-		compiler          []compiler.Option
 		modules           []module.Module
+		logger            []logging.Option
+		compiler          []compiler.Option
 		maxActiveSessions int
 		maxIdleVMsPerPlan int
 		maxVMsPerPlan     int
+		hostNetwork       bool
 		fsReadOnly        bool
 	}
 
