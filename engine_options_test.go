@@ -1,10 +1,13 @@
 package ferret
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
+	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 )
@@ -169,6 +172,40 @@ func TestNewOptionsRejectsBlankFSRoot(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "fs root cannot be empty") {
 		t.Fatalf("expected blank fs root validation error, got: %v", err)
+	}
+}
+
+func TestWithNetworkOptionsWithoutSettersIsNoOp(t *testing.T) {
+	t.Parallel()
+
+	network := mustNewTestNetwork(t)
+	opts := mustNewOptionsForTest(t, WithNetwork(network), WithNetworkOptions())
+
+	if opts.network != network {
+		t.Fatalf("expected injected network to remain configured, got %T", opts.network)
+	}
+
+	if !opts.hostNetwork {
+		t.Fatal("expected injected network to remain caller-owned")
+	}
+}
+
+func TestWithNetworkOptionsReturnsNetworkConstructionError(t *testing.T) {
+	t.Parallel()
+
+	_, err := newOptions([]Option{WithNetworkOptions(
+		ferretnet.WithHTTPPolicies(ferrethttp.WithMaxResponseSize(-1)),
+	)})
+	if err == nil {
+		t.Fatal("expected invalid network options to fail")
+	}
+
+	if !errors.Is(err, ferrethttp.ErrInvalidPolicyConfiguration) {
+		t.Fatalf("expected invalid policy configuration error, got: %v", err)
+	}
+
+	if !strings.Contains(err.Error(), "create network: http client:") {
+		t.Fatalf("expected network construction context, got: %v", err)
 	}
 }
 

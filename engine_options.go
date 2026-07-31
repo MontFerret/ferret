@@ -28,6 +28,7 @@ type (
 		stdlib            stdlib.Set
 		logger            []logging.Option
 		network           ferretnet.Network
+		hostNetwork       bool
 		compiler          []compiler.Option
 		modules           []module.Module
 		maxActiveSessions int
@@ -597,6 +598,8 @@ func WithFSReadOnly() Option {
 }
 
 // WithNetwork sets the engine network service used by derived executions.
+// If a network is provided, the engine will use it directly and will not manage its lifecycle.
+// The host application is responsible for closing the network when it is no longer needed.
 func WithNetwork(network ferretnet.Network) Option {
 	return func(opts *options) error {
 		if network == nil {
@@ -604,6 +607,28 @@ func WithNetwork(network ferretnet.Network) Option {
 		}
 
 		opts.network = network
+		opts.hostNetwork = true
+
+		return nil
+	}
+}
+
+// WithNetworkOptions creates an Option that constructs a new network service using the provided Ferret network options.
+// If no options are provided, the engine will use the default network service.
+func WithNetworkOptions(setters ...ferretnet.Option) Option {
+	return func(opts *options) error {
+		if len(setters) == 0 {
+			return nil
+		}
+
+		net, err := ferretnet.New(setters...)
+
+		if err != nil {
+			return fmt.Errorf("create network: %w", err)
+		}
+
+		opts.network = net
+		opts.hostNetwork = false
 
 		return nil
 	}

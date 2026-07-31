@@ -179,6 +179,88 @@ func TestEngineCloseDoesNotCleanInjectedNetwork(t *testing.T) {
 	}
 }
 
+func TestEngineNetworkOwnershipFollowsLastOption(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		managedLast bool
+	}{
+		{name: "network options last", managedLast: true},
+		{name: "injected network last", managedLast: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			managedClient := &recordingHTTPClient{}
+			injectedClient := &recordingHTTPClient{}
+			injectedNetwork := mustNewTestNetwork(t, ferretnet.WithHTTPClient(injectedClient))
+
+			var setters []Option
+			if tt.managedLast {
+				setters = []Option{
+					WithNetwork(injectedNetwork),
+					WithNetworkOptions(ferretnet.WithHTTPClient(managedClient)),
+				}
+			} else {
+				setters = []Option{
+					WithNetworkOptions(ferretnet.WithHTTPClient(managedClient)),
+					WithNetwork(injectedNetwork),
+				}
+			}
+
+			eng := mustNewEngine(t, setters...)
+			if tt.managedLast {
+				if got := eng.host.network.HTTP(); got != managedClient {
+					t.Fatalf("expected network options client, got %T", got)
+				}
+			} else if eng.host.network != injectedNetwork {
+				t.Fatalf("expected injected network, got %T", eng.host.network)
+			}
+
+			if err := eng.Close(); err != nil {
+				t.Fatalf("close engine: %v", err)
+			}
+
+			wantManagedCloses := 0
+			if tt.managedLast {
+				wantManagedCloses = 1
+			}
+
+			if got := managedClient.idleCloseCount(); got != wantManagedCloses {
+				t.Fatalf("expected %d managed network cleanup calls, got %d", wantManagedCloses, got)
+			}
+
+			if got := injectedClient.idleCloseCount(); got != 0 {
+				t.Fatalf("expected injected network to remain caller-owned, got %d cleanup calls", got)
+			}
+		})
+	}
+}
+
+func TestNewCleansNetworkCreatedFromOptionsOnInitFailure(t *testing.T) {
+	t.Parallel()
+
+	initErr := errors.New("init failed")
+	client := &recordingHTTPClient{}
+
+	_, err := New(
+		WithNetworkOptions(ferretnet.WithHTTPClient(client)),
+		WithEngineInitHook(func() error {
+			return initErr
+		}),
+	)
+	if !errors.Is(err, initErr) {
+		t.Fatalf("expected init error, got %v", err)
+	}
+
+	if got := client.idleCloseCount(); got != 1 {
+		t.Fatalf("expected construction-failure cleanup, got %d calls", got)
+	}
+}
+
 func TestNewCleansOwnedNetworkOnRegistrationFailure(t *testing.T) {
 	t.Parallel()
 

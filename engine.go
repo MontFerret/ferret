@@ -34,8 +34,7 @@ func New(setters ...Option) (*Engine, error) {
 		return nil, err
 	}
 
-	ownsNetwork := opts.network == nil
-
+	ownsNetwork := opts.hostNetwork == false
 	boot, err := newBootstrap(opts)
 	if err != nil {
 		return nil, fmt.Errorf("bootstrap: %w", err)
@@ -53,7 +52,6 @@ func New(setters ...Option) (*Engine, error) {
 	}
 
 	hooks := boot.hooks.clone()
-
 	// Run init hooks after bootstrap is finalized and before returning the engine.
 	if err := hooks.engine.runInitHooks(); err != nil {
 		initErr := fmt.Errorf("init hooks: %w", err)
@@ -81,7 +79,6 @@ func (e *Engine) Compile(ctx context.Context, src *source.Source) (*Plan, error)
 	}
 
 	prog, err := e.compiler.Compile(src)
-
 	// After-compile hooks always run and receive the compilation error (if any).
 	if hookErr := e.hooks.plan.runAfterCompileHooks(ctx, err); hookErr != nil {
 		return nil, errors.Join(err, fmt.Errorf("after compile hooks: %w", hookErr))
