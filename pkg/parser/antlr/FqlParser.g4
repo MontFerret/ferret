@@ -995,13 +995,13 @@ expressionAtom
     | left=expressionAtom regexpOperator right=expressionAtom
     | matchExpression
     | queryExpression
+    | memberExpression
     | functionCallExpression
     | rangeOperator
     | literal
     | variable
     | implicitCurrentExpression
     | {p.allowImplicitCurrent()}? implicitMemberExpression
-    | memberExpression
     | param
     | dispatchExpression
     | waitForExpression
