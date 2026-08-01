@@ -126,6 +126,48 @@ func TestSymbolTable_GetVariable(t *testing.T) {
 	})
 }
 
+func TestSymbolTable_HiddenBindingIdentity(t *testing.T) {
+	Convey("SymbolTable should resolve hidden captures by identity without exposing them by name", t, func() {
+		st := newSymbolTable()
+		st.EnterScope()
+
+		hidden, ok := st.DeclareLocalWithOptions("value", core.TypeInt, core.BindingOptions{
+			ID:     core.BindingID(1),
+			Hidden: true,
+		})
+		So(ok, ShouldBeTrue)
+
+		visible, ok := st.DeclareLocalWithOptions("value", core.TypeString, core.BindingOptions{
+			ID: core.BindingID(2),
+		})
+		So(ok, ShouldBeTrue)
+
+		binding, found := st.ResolveBinding("value")
+		So(found, ShouldBeTrue)
+		So(binding.Register, ShouldEqual, visible)
+
+		binding, found = st.ResolveBindingByID(core.BindingID(1))
+		So(found, ShouldBeTrue)
+		So(binding.Register, ShouldEqual, hidden)
+		So(binding.Hidden, ShouldBeTrue)
+
+		binding, found = st.ResolveBindingByID(core.BindingID(2))
+		So(found, ShouldBeTrue)
+		So(binding.Register, ShouldEqual, visible)
+
+		visibleVariables := st.VisibleVariables()
+		So(visibleVariables, ShouldHaveLength, 1)
+		So(visibleVariables[0].ID, ShouldEqual, core.BindingID(2))
+
+		localVariables := st.LocalVariables()
+		So(localVariables, ShouldHaveLength, 1)
+		So(localVariables[0].ID, ShouldEqual, core.BindingID(2))
+
+		projectedVariables := st.ProjectionVariables()
+		So(projectedVariables, ShouldHaveLength, 2)
+	})
+}
+
 func TestSymbolTable_GetVariableOrConstant(t *testing.T) {
 	Convey("SymbolTable should enforce duplicate checks for AssignLocal and AssignGlobal", t, func() {
 		st := newSymbolTable()

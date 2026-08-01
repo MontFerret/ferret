@@ -129,6 +129,48 @@ RETURN (
 	}
 }
 
+func TestDebugInfoHidesForwardingOnlyCaptures(t *testing.T) {
+	program, err := New(WithDebugInfo()).Compile(source.New("hidden_capture.fql", `
+LET base = 10
+FUNC target(value) => base + value
+FUNC forward(value) => target(value)
+RETURN forward(1)
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	forwardID := -1
+	for id, fn := range program.Functions.UserDefined {
+		if fn.Name == "forward" {
+			forwardID = id
+			break
+		}
+	}
+
+	if forwardID < 0 {
+		t.Fatal("expected forward UDF metadata")
+	}
+
+	found := false
+	for _, point := range program.Metadata.DebugPoints {
+		if point.FunctionID != forwardID {
+			continue
+		}
+
+		found = true
+		for _, binding := range point.Bindings {
+			if binding.Name == "base" {
+				t.Fatalf("forwarding-only capture leaked into debugger bindings: %#v", point.Bindings)
+			}
+		}
+	}
+
+	if !found {
+		t.Fatal("expected forward UDF debug point")
+	}
+}
+
 func TestDebugInfoPreservesLexicalShadowing(t *testing.T) {
 	program, err := New(WithDebugInfo()).Compile(source.New("shadow.fql", `LET x = 1
 RETURN (

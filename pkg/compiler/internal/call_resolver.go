@@ -88,12 +88,21 @@ func (r *CallResolver) ResolveUDF(ctx fql.IFunctionCallContext) (*core.UDFInfo, 
 		return nil, false
 	}
 
+	return r.ResolveUDFInScope(ctx, r.session.Function.UDFScope)
+}
+
+// ResolveUDFInScope resolves an unqualified source call against an explicit lexical UDF scope.
+func (r *CallResolver) ResolveUDFInScope(ctx fql.IFunctionCallContext, scope *core.UDFScope) (*core.UDFInfo, bool) {
+	if r == nil || r.session == nil || r.session.Program.UDFs == nil || scope == nil {
+		return nil, false
+	}
+
 	name, ok := r.ResolveLocalFunctionName(ctx)
 	if !ok {
 		return nil, false
 	}
 
-	return r.session.Program.UDFs.Resolve(name, r.session.Function.UDFScope)
+	return r.session.Program.UDFs.Resolve(name, scope)
 }
 
 func (r *CallResolver) applyNamespaceAlias(ns string) string {

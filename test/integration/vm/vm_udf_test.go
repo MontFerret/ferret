@@ -190,3 +190,78 @@ RETURN outer(1)
 `, 21, "Nested UDF captures survive tail-recursive paths"),
 	})
 }
+
+func TestUDFTransitiveCaptures(t *testing.T) {
+	expected := make([]any, 100)
+	for i := range expected {
+		expected[i] = i + 2
+	}
+
+	RunSpecs(t, []spec.Spec{
+		Array(`
+LET a = 1
+
+FUNC FB(i) (
+    RETURN a + i
+)
+
+FUNC FA(i) (
+    RETURN FB(i)
+)
+
+FOR i IN 1..100
+    RETURN FA(i)
+`, expected, "Transitive capture through a forwarding UDF"),
+		S(`
+LET base = 5
+FUNC first(value) => second(value)
+FUNC second(value) => third(value)
+FUNC third(value) => base + value
+RETURN first(2)
+`, 7, "Forward multi-hop calls propagate captures"),
+		S(`
+LET base = 5
+FUNC first(value) (
+  RETURN MATCH value (
+    0 => 0,
+    _ => second(value - 1),
+  )
+)
+FUNC second(value) (
+  RETURN MATCH value (
+    0 => base,
+    _ => first(value - 1),
+  )
+)
+RETURN first(3)
+`, 5, "Recursive call graph capture propagation converges"),
+		Array(`
+VAR total = 1
+FUNC increment() (
+  total += 1
+  RETURN total
+)
+FUNC forward() => increment()
+LET result = forward()
+RETURN [result, total]
+`, []any{2, 2}, "Forwarding UDF preserves captured cell identity"),
+		Array(`
+LET value = 1
+FUNC captured() => value
+FUNC forward() (
+  LET value = 2
+  RETURN [value, captured()]
+)
+RETURN forward()
+`, []any{2, 1}, "Forwarded capture keeps its lexical binding when shadowed"),
+		Array(`
+LET value = 1
+FUNC captured() => value
+FUNC outer(value) (
+  FUNC forward() => [value, captured()]
+  RETURN forward()
+)
+RETURN outer(2)
+`, []any{2, 1}, "Forwarding UDF keeps same-named captures from distinct lexical scopes"),
+	})
+}

@@ -219,12 +219,68 @@ func updateRegisterCount(program *bytecode.Program) bool {
 		newCount = 1
 	}
 
+	modified := false
+
 	if program.Registers != newCount {
 		program.Registers = newCount
-		return true
+		modified = true
 	}
 
-	return false
+	return updateUDFRegisterCounts(program) || modified
+}
+
+// updateUDFRegisterCounts keeps VM register-window metadata aligned with
+// register operands rewritten by optimization passes.
+func updateUDFRegisterCounts(program *bytecode.Program) bool {
+	if program == nil || len(program.Functions.UserDefined) == 0 {
+		return false
+	}
+
+	modified := false
+	for i := range program.Functions.UserDefined {
+		udf := &program.Functions.UserDefined[i]
+		start := udf.Entry
+		end := len(program.Bytecode)
+
+		if i+1 < len(program.Functions.UserDefined) {
+			end = program.Functions.UserDefined[i+1].Entry
+		}
+
+		maxReg := 0
+		if start >= 0 && start < end && end <= len(program.Bytecode) {
+			for pc := start; pc < end; pc++ {
+				uses, defs := instructionUseDef(program.Bytecode[pc])
+
+				for _, reg := range uses {
+					if reg > maxReg {
+						maxReg = reg
+					}
+				}
+
+				for _, reg := range defs {
+					if reg > maxReg {
+						maxReg = reg
+					}
+				}
+			}
+		}
+
+		registers := maxReg + 1
+		if minimum := udf.Params + 1; registers < minimum {
+			registers = minimum
+		}
+
+		if registers < 1 {
+			registers = 1
+		}
+
+		if udf.Registers != registers {
+			udf.Registers = registers
+			modified = true
+		}
+	}
+
+	return modified
 }
 
 func applyLinearRenumbering(program *bytecode.Program, unsafeRegs map[int]bool) bool {
@@ -244,14 +300,17 @@ func applyLinearRenumbering(program *bytecode.Program, unsafeRegs map[int]bool) 
 
 	allocate := func() int {
 		newReg := 1
+
 		for {
 			if unsafeRegs[newReg] {
 				newReg++
 				continue
 			}
+
 			if !inUse[newReg] {
 				return newReg
 			}
+
 			newReg++
 		}
 	}
@@ -266,6 +325,7 @@ func applyLinearRenumbering(program *bytecode.Program, unsafeRegs map[int]bool) 
 			useSet[r] = true
 			usedSet[r] = true
 		}
+
 		for _, r := range defs {
 			usedSet[r] = true
 		}
@@ -275,6 +335,7 @@ func applyLinearRenumbering(program *bytecode.Program, unsafeRegs map[int]bool) 
 			if unsafeRegs[reg] {
 				continue
 			}
+
 			if _, ok := mapping[reg]; !ok {
 				newReg := allocate()
 				mapping[reg] = newReg
@@ -283,7 +344,6 @@ func applyLinearRenumbering(program *bytecode.Program, unsafeRegs map[int]bool) 
 		}
 
 		liveAfterSet := liveAfter[i]
-
 		// Collect reuse candidates from source regs that die after this instruction.
 		reuseCandidates := make([]int, 0)
 
@@ -291,6 +351,7 @@ func applyLinearRenumbering(program *bytecode.Program, unsafeRegs map[int]bool) 
 			if unsafeRegs[reg] {
 				continue
 			}
+
 			if !liveAfterSet[reg] {
 				if newReg, ok := mapping[reg]; ok {
 					reuseCandidates = append(reuseCandidates, newReg)
@@ -306,6 +367,7 @@ func applyLinearRenumbering(program *bytecode.Program, unsafeRegs map[int]bool) 
 			if unsafeRegs[reg] {
 				continue
 			}
+
 			if useSet[reg] {
 				// In-place update: keep existing mapping.
 				continue
@@ -326,6 +388,7 @@ func applyLinearRenumbering(program *bytecode.Program, unsafeRegs map[int]bool) 
 		// Rewrite operands.
 		for j := 0; j < 3; j++ {
 			op := inst.Operands[j]
+
 			if !operandIsRegister(inst.Opcode, j) {
 				continue
 			}
@@ -374,6 +437,7 @@ func applyLinearRenumbering(program *bytecode.Program, unsafeRegs map[int]bool) 
 		for reg, newReg := range defRenames {
 			if !liveAfterSet[reg] {
 				inUse[newReg] = false
+
 				continue
 			}
 

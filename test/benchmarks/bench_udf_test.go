@@ -25,6 +25,16 @@ var udfArityCases = []udfArityCase{
 	{name: "A6", params: "a, b, c, d, e, f", args: "1, 2, 3, 4, 5, 6"},
 }
 
+const udfTransitiveCaptureQuery = `
+LET base = 1
+
+FUNC target(value) => base + value
+FUNC forward(value) => target(value)
+
+FOR i IN 1..500
+  RETURN forward(i)
+`
+
 func udfReturnExpr(params string) string {
 	if params == "" {
 		return "1"
@@ -131,4 +141,12 @@ func BenchmarkUdfCalls_HostBaseline(b *testing.B) {
 			RunBenchmarkO1(b, hostTopLevelQuery(c), hostOption(c))
 		})
 	}
+}
+
+func BenchmarkUdfCalls_TransitiveCapture_O0(b *testing.B) {
+	RunBenchmarkO0(b, udfTransitiveCaptureQuery)
+}
+
+func BenchmarkUdfCalls_TransitiveCapture_O1(b *testing.B) {
+	RunBenchmarkO1(b, udfTransitiveCaptureQuery)
 }

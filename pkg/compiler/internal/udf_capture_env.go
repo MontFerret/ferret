@@ -1,8 +1,18 @@
 package internal
 
+import "github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+
 type (
 	udfCaptureEnv struct {
 		scopes []map[string]captureBindingInfo
+	}
+
+	udfCaptureState struct {
+		captures map[core.BindingID]core.UDFCapture
+		order    []core.BindingID
+		outer    map[core.BindingID]captureBindingInfo
+		owned    map[core.BindingID]captureBindingInfo
+		callees  []*core.UDFInfo
 	}
 )
 
@@ -16,16 +26,28 @@ func (e *udfCaptureEnv) pop() {
 	}
 }
 
-func (e *udfCaptureEnv) add(name string) {
-	e.addBinding(captureBindingInfo{Name: name})
-}
-
 func (e *udfCaptureEnv) addBinding(binding captureBindingInfo) {
 	if len(e.scopes) == 0 {
 		return
 	}
 
 	e.scopes[len(e.scopes)-1][binding.Name] = binding
+}
+
+func (e *udfCaptureEnv) bindingsByID() map[core.BindingID]captureBindingInfo {
+	out := make(map[core.BindingID]captureBindingInfo)
+
+	for _, scope := range e.scopes {
+		for _, binding := range scope {
+			if binding.ID == core.InvalidBindingID {
+				continue
+			}
+
+			out[binding.ID] = binding
+		}
+	}
+
+	return out
 }
 
 func (e *udfCaptureEnv) currentHas(name string) bool {

@@ -79,6 +79,7 @@ func (c *BindingCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclaratio
 	}
 
 	opts := core.BindingOptions{
+		ID:      bindingIDFromRule(decl),
 		Mutable: mutable,
 		Storage: storage,
 	}
@@ -228,6 +229,7 @@ func (c *BindingCompiler) captureBindingForDeclaration(ctx fql.IVariableDeclarat
 		Name:    c.declarationName(ctx),
 		Mutable: c.isMutableDeclaration(ctx),
 		Decl:    ctx.(antlr.ParserRuleContext),
+		ID:      bindingIDFromRule(ctx.(antlr.ParserRuleContext)),
 	}
 }
 

@@ -44,6 +44,16 @@ RETURN read({
 })
 `
 
+const compilerUdfTransitiveCaptureQuery = `
+LET base = 1
+
+FUNC first(value) => second(value)
+FUNC second(value) => third(value)
+FUNC third(value) => base + value
+
+RETURN first(1)
+`
+
 func BenchmarkCompilerCompileUdfLifecycle_O0(b *testing.B) {
 	benchmarkCompileQuery(b, compilerUdfLifecycleQuery, compiler.O0)
 }
@@ -58,4 +68,12 @@ func BenchmarkCompilerCompileUdfMemberStatements_O0(b *testing.B) {
 
 func BenchmarkCompilerCompileUdfMemberStatements_O1(b *testing.B) {
 	benchmarkCompileQuery(b, compilerUdfMemberStatementsQuery, compiler.O1)
+}
+
+func BenchmarkCompilerCompileUdfTransitiveCapture_O0(b *testing.B) {
+	benchmarkCompileQuery(b, compilerUdfTransitiveCaptureQuery, compiler.O0)
+}
+
+func BenchmarkCompilerCompileUdfTransitiveCapture_O1(b *testing.B) {
+	benchmarkCompileQuery(b, compilerUdfTransitiveCaptureQuery, compiler.O1)
 }

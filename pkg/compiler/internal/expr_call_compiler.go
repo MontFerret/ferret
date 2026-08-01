@@ -268,7 +268,6 @@ func (c *exprCallCompiler) compileHostFunctionCallWith(name runtime.String, prot
 	}
 
 	c.ctx.Program.Emitter.EmitAsWithCallArgumentSpans(opcode, dest, seq, argSpans)
-
 	c.ctx.Function.Types.Set(dest, core.TypeAny)
 
 	return dest
@@ -276,7 +275,6 @@ func (c *exprCallCompiler) compileHostFunctionCallWith(name runtime.String, prot
 
 func (c *exprCallCompiler) compileUdfCallWith(fn *core.UDFInfo, protected bool, seq core.RegisterSequence, callCtx antlr.ParserRuleContext, argSpans []source.Span) bytecode.Operand {
 	args := c.prepareUdfCallArgs(fn, seq, callCtx)
-
 	dest := c.ctx.Function.Registers.Allocate()
 	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(runtime.NewInt(fn.ID)))
 
@@ -286,7 +284,6 @@ func (c *exprCallCompiler) compileUdfCallWith(fn *core.UDFInfo, protected bool, 
 	}
 
 	c.ctx.Program.Emitter.EmitAsWithCallArgumentSpans(opcode, dest, args, argSpans)
-
 	c.ctx.Function.Types.Set(dest, core.TypeAny)
 
 	return dest
@@ -298,7 +295,6 @@ func (c *exprCallCompiler) emitUdfTailCall(fn *core.UDFInfo, seq core.RegisterSe
 
 	dest := c.ctx.Function.Registers.Allocate()
 	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(runtime.NewInt(fn.ID)))
-
 	c.ctx.Program.Emitter.EmitAsWithCallArgumentSpans(bytecode.OpTailCall, dest, args, argSpans)
 }
 
@@ -338,11 +334,12 @@ func (c *exprCallCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.Registe
 	}
 
 	for i, capture := range fn.Captures {
-		binding, ok := c.ctx.Function.Symbols.ResolveBinding(capture.Name)
+		binding, ok := c.ctx.Function.Symbols.ResolveBindingByID(capture.ID)
 		if !ok {
 			if callCtx != nil {
 				c.ctx.Program.Errors.VariableNotFound(callCtx.GetStart(), capture.Name)
 			}
+
 			continue
 		}
 
@@ -351,6 +348,7 @@ func (c *exprCallCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.Registe
 		if capture.Storage == core.BindingStorageCell {
 			c.ctx.Program.Emitter.EmitPlainMove(dst, binding.Register)
 			c.ctx.Function.Types.Set(dst, core.TypeAny)
+
 			continue
 		}
 
@@ -379,6 +377,7 @@ func (c *exprCallCompiler) compileArgumentList(ctx fql.IArgumentListContext) cor
 			if val, ok := c.facts.LiteralValueFromExpression(exp); ok && (bool(runtime.IsScalar(val)) || val == runtime.None) {
 				c.ctx.Program.Emitter.EmitLoadConst(seq[i], c.ctx.Function.Symbols.AddConstant(val))
 				c.ctx.Function.Types.Set(seq[i], c.facts.ValueTypeFromRuntime(val))
+
 				continue
 			}
 
@@ -389,6 +388,7 @@ func (c *exprCallCompiler) compileArgumentList(ctx fql.IArgumentListContext) cor
 			} else {
 				c.ctx.Program.Emitter.EmitMove(seq[i], srcReg)
 			}
+
 			c.ctx.Function.Types.Set(seq[i], c.facts.OperandType(srcReg))
 		}
 	}
