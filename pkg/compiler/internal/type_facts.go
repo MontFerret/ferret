@@ -25,6 +25,8 @@ func (f *TypeFacts) ValueTypeFromRuntime(value runtime.Value) core.ValueType {
 		return core.TypeInt
 	case runtime.Float:
 		return core.TypeFloat
+	case runtime.Duration:
+		return core.TypeDuration
 	case runtime.String:
 		return core.TypeString
 	case runtime.Boolean:
@@ -52,6 +54,8 @@ func (f *TypeFacts) LiteralType(ctx fql.ILiteralContext) core.ValueType {
 		return core.TypeInt
 	case ctx.FloatLiteral() != nil:
 		return core.TypeFloat
+	case ctx.DurationLiteral() != nil:
+		return core.TypeDuration
 	case ctx.BooleanLiteral() != nil:
 		return core.TypeBool
 	case ctx.ArrayLiteral() != nil:
@@ -122,6 +126,8 @@ func (f *TypeFacts) InferBinaryResultType(op atomBinaryOperator, left, right byt
 	switch op.opcode {
 	case bytecode.OpAdd:
 		switch {
+		case leftType == core.TypeDuration && rightType == core.TypeDuration:
+			return core.TypeDuration
 		case leftType == core.TypeString || rightType == core.TypeString:
 			return core.TypeString
 		case leftType == core.TypeFloat || rightType == core.TypeFloat:
@@ -132,6 +138,22 @@ func (f *TypeFacts) InferBinaryResultType(op atomBinaryOperator, left, right byt
 			}
 		case leftType == core.TypeInt && rightType == core.TypeInt:
 			return core.TypeInt
+		}
+	case bytecode.OpSub:
+		if leftType == core.TypeDuration && rightType == core.TypeDuration {
+			return core.TypeDuration
+		}
+	case bytecode.OpMul:
+		if (leftType == core.TypeDuration && isNumericType(rightType)) ||
+			(rightType == core.TypeDuration && isNumericType(leftType)) {
+			return core.TypeDuration
+		}
+	case bytecode.OpDiv:
+		switch {
+		case leftType == core.TypeDuration && rightType == core.TypeDuration:
+			return core.TypeAny
+		case leftType == core.TypeDuration && isNumericType(rightType):
+			return core.TypeDuration
 		}
 	case bytecode.OpRegexp:
 		return core.TypeBool

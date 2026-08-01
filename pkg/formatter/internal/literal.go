@@ -20,6 +20,8 @@ func (f *literalFormatter) formatLiteral(ctx *fql.LiteralContext) {
 		f.formatBooleanLiteral(ctx.BooleanLiteral().(*fql.BooleanLiteralContext))
 	case ctx.StringLiteral() != nil:
 		f.formatStringLiteralNode(ctx.StringLiteral())
+	case ctx.DurationLiteral() != nil:
+		f.p.write(ctx.DurationLiteral().GetText())
 	case ctx.FloatLiteral() != nil:
 		f.p.write(ctx.FloatLiteral().GetText())
 	case ctx.IntegerLiteral() != nil:

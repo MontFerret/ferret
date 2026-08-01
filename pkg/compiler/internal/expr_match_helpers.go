@@ -291,6 +291,8 @@ func matchPureLiteralKey(val runtime.Value) (string, bool) {
 		return "lit:int:" + strconv.FormatInt(int64(v), 10), true
 	case runtime.Float:
 		return "lit:float:" + strconv.FormatFloat(float64(v), 'g', -1, 64), true
+	case runtime.Duration:
+		return "lit:duration:" + strconv.FormatInt(int64(v), 10), true
 	case runtime.String:
 		return "lit:str:" + strconv.Quote(string(v)), true
 	default:

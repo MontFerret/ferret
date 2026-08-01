@@ -19,6 +19,7 @@ func RegisterLib(ns runtime.Namespace) {
 		Add("IS_BOOL", IsBool).
 		Add("IS_INT", IsInt).
 		Add("IS_FLOAT", IsFloat).
+		Add("IS_DURATION", IsDuration).
 		Add("IS_STRING", IsString).
 		Add("IS_DATETIME", IsDateTime).
 		Add("IS_LIST", IsList).

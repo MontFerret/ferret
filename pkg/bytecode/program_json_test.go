@@ -20,7 +20,7 @@ func TestProgramJSONRoundTripPreservesInstructionMetadata(t *testing.T) {
 			AggregateSelectorSlots: []int{3, -1},
 			MatchFailTargets:       []int{-1, 7},
 		},
-		Constants: []runtime.Value{runtime.NewInt(1)},
+		Constants: []runtime.Value{runtime.NewInt(1), runtime.NewDuration(1500_000_000)},
 	}
 
 	encoded, err := json.Marshal(prog)
@@ -38,6 +38,9 @@ func TestProgramJSONRoundTripPreservesInstructionMetadata(t *testing.T) {
 
 	if !strings.Contains(string(encoded), "matchFailTargets") {
 		t.Fatalf("expected metadata JSON to include matchFailTargets, got %s", string(encoded))
+	}
+	if !strings.Contains(string(encoded), `"type":"duration","value":"1.5s"`) {
+		t.Fatalf("expected normalized duration constant, got %s", string(encoded))
 	}
 
 	var decoded Program
@@ -67,5 +70,18 @@ func TestProgramJSONRoundTripPreservesInstructionMetadata(t *testing.T) {
 
 	if got, want := decoded.Metadata.MatchFailTargets[1], 7; got != want {
 		t.Fatalf("unexpected second match fail target: got %d, want %d", got, want)
+	}
+	if got, ok := decoded.Constants[1].(runtime.Duration); !ok || got != runtime.NewDuration(1500_000_000) {
+		t.Fatalf("duration constant = %v (%T)", decoded.Constants[1], decoded.Constants[1])
+	}
+}
+
+func TestProgramJSONRejectsMalformedDurationConstant(t *testing.T) {
+	_, err := decodeConstant(constantJSON{
+		Type:  "duration",
+		Value: json.RawMessage(`"not-a-duration"`),
+	})
+	if err == nil {
+		t.Fatal("expected malformed duration constant error")
 	}
 }

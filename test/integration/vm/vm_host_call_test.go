@@ -37,7 +37,7 @@ func TestHostFunctionCall(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		S("RETURN TYPENAME(1)", "Int"),
 		S("RETURN TYPENAME(1.1)", "Float"),
-		S("WAIT(10) RETURN 1", 1),
+		S("WAIT(10ms) RETURN 1", 1),
 		S("RETURN LENGTH([1,2,3])", 3),
 		S("RETURN CONCAT('a', 'b', 'c')", "abc"),
 		S("RETURN CONCAT(CONCAT('a', 'b'), 'c', CONCAT('d', 'e'))", "abcde", "Nested calls"),
@@ -48,11 +48,11 @@ func TestHostFunctionCall(t *testing.T) {
 		RETURN res
 		`,
 			[]any{1}, "Append to array"),
-		S("LET duration = 10 WAIT(duration) RETURN 1", 1),
+		S("LET duration = 10ms WAIT(duration) RETURN 1", 1),
 		Nil("RETURN (FALSE OR T::FAIL())?"),
 		Nil("RETURN T::FAIL()?"),
 		Array(`FOR i IN [1, 2, 3, 4]
-				LET duration = 10
+				LET duration = 10ms
 		
 				WAIT(duration)
 		
@@ -70,7 +70,7 @@ func TestBuiltinFunctions(t *testing.T) {
 		S("RETURN length([1,2,3])", 3),
 		S("RETURN TYPENAME([1,2,3])", "Array"),
 		S("RETURN TYPENAME({ a: 1, b: 2 })", "Object"),
-		S("WAIT(10) RETURN 1", 1),
+		S("WAIT(10ms) RETURN 1", 1),
 	})
 }
 

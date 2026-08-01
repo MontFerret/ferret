@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 
@@ -54,6 +55,8 @@ func (c *LiteralCompiler) Compile(ctx fql.ILiteralContext) bytecode.Operand {
 		return c.CompileIntegerLiteral(il)
 	} else if fl := ctx.FloatLiteral(); fl != nil {
 		return c.CompileFloatLiteral(fl)
+	} else if dl := ctx.DurationLiteral(); dl != nil {
+		return c.CompileDurationLiteral(dl)
 	} else if bl := ctx.BooleanLiteral(); bl != nil {
 		return c.CompileBooleanLiteral(bl)
 	} else if al := ctx.ArrayLiteral(); al != nil {
@@ -65,6 +68,36 @@ func (c *LiteralCompiler) Compile(ctx fql.ILiteralContext) bytecode.Operand {
 	}
 
 	return bytecode.NoopOperand
+}
+
+// CompileDurationLiteral parses a duration without using a floating-point intermediate.
+func (c *LiteralCompiler) CompileDurationLiteral(ctx fql.IDurationLiteralContext) bytecode.Operand {
+	value, err := runtime.ParseDuration(ctx.GetText())
+	if err != nil {
+		c.reportInvalidDurationLiteral(ctx, err)
+
+		return bytecode.NoopOperand
+	}
+
+	return c.facts.LoadConstant(value)
+}
+
+func (c *LiteralCompiler) reportInvalidDurationLiteral(ctx antlr.ParserRuleContext, err error) {
+	if c == nil || c.ctx == nil || c.ctx.Program.Errors == nil || ctx == nil {
+		core.PanicInvariant("cannot report invalid duration literal")
+	}
+
+	message := "Invalid duration literal"
+	hint := "Use a valid duration, e.g. 100ms, 2s, or 1.5m."
+
+	if errors.Is(err, runtime.ErrRange) {
+		message = "Duration literal is out of range"
+		hint = "Use a duration value that fits within the signed nanosecond range."
+	}
+
+	diag := c.ctx.Program.Errors.Create(parserd.SyntaxError, ctx, message)
+	diag.Hint = hint
+	c.ctx.Program.Errors.Add(diag)
 }
 
 // CompileStringLiteral processes a string literal from the FQL AST and converts it into a runtime string.

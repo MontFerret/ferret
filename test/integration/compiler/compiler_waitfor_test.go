@@ -39,7 +39,7 @@ func TestWaitforCompilationErrors(t *testing.T) {
 		`, E{
 			Kind:    parserd.SyntaxError,
 			Message: "Duration literal is out of range",
-			Hint:    "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m.",
+			Hint:    "Use a duration value that fits within the signed nanosecond range.",
 		}, "Out-of-range WAITFOR TIMEOUT duration should fail compilation"),
 		Failure(`
 			LET ok = WAITFOR TRUE EVERY 1e999s
@@ -47,24 +47,8 @@ func TestWaitforCompilationErrors(t *testing.T) {
 		`, E{
 			Kind:    parserd.SyntaxError,
 			Message: "Duration literal is out of range",
-			Hint:    "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m.",
+			Hint:    "Use a duration value that fits within the signed nanosecond range.",
 		}, "Out-of-range WAITFOR EVERY duration should fail compilation"),
-		Failure(`
-			LET ok = WAITFOR TRUE TIMEOUT 1e20
-			RETURN ok
-		`, E{
-			Kind:    parserd.SyntaxError,
-			Message: "Duration literal is out of range",
-			Hint:    "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m.",
-		}, "Out-of-range WAITFOR TIMEOUT float constant should fail compilation"),
-		Failure(`
-			LET ok = WAITFOR TRUE EVERY 1e20
-			RETURN ok
-		`, E{
-			Kind:    parserd.SyntaxError,
-			Message: "Duration literal is out of range",
-			Hint:    "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m.",
-		}, "Out-of-range WAITFOR EVERY float constant should fail compilation"),
 	})
 }
 

@@ -11,23 +11,13 @@ type (
 	RetryBackoff int
 
 	RetryPlan struct {
-		Delay       DurationClause
+		Delay       fql.IRecoveryRetryDelayValueContext
 		CountNode   antlr.ParserRuleContext
 		DelayNode   antlr.ParserRuleContext
 		BackoffNode antlr.ParserRuleContext
 		Backoff     RetryBackoff
 		Count       int
 		HasDelay    bool
-	}
-
-	DurationClause interface {
-		DurationLiteral() fql.IDurationLiteralContext
-		IntegerLiteral() fql.IIntegerLiteralContext
-		FloatLiteral() fql.IFloatLiteralContext
-		Variable() fql.IVariableContext
-		Param() fql.IParamContext
-		MemberExpression() fql.IMemberExpressionContext
-		FunctionCall() fql.IFunctionCallContext
 	}
 
 	RetryDelayState struct {

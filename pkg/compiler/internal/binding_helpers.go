@@ -40,9 +40,9 @@ func augmentedAssignmentKnownTypeAllowed(operator string, typ core.ValueType) bo
 
 	switch operator {
 	case "+=":
-		return typ == core.TypeInt || typ == core.TypeFloat || typ == core.TypeString
+		return typ == core.TypeInt || typ == core.TypeFloat || typ == core.TypeDuration || typ == core.TypeString
 	case "-=", "*=", "/=":
-		return typ == core.TypeInt || typ == core.TypeFloat
+		return typ == core.TypeInt || typ == core.TypeFloat || typ == core.TypeDuration
 	default:
 		return true
 	}

@@ -124,18 +124,9 @@ func TestSyntaxErrorsRecoveryTail(t *testing.T) {
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Duration literal is out of range",
-				Hint:    "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m.",
+				Hint:    "Use a duration value that fits within the signed nanosecond range.",
 			},
 			"Out-of-range retry delay should be rejected",
-		),
-		Failure(
-			`RETURN FAIL() ON ERROR RETRY 3 DELAY 1e20`,
-			E{
-				Kind:    parserd.SyntaxError,
-				Message: "Duration literal is out of range",
-				Hint:    "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m.",
-			},
-			"Out-of-range retry delay float constant should be rejected",
 		),
 		Failure(
 			`RETURN FAIL() ON ERROR RETRY 3 BACKOFF EXPONENTIAL`,

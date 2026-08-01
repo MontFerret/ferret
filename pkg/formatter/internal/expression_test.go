@@ -332,7 +332,7 @@ func TestExpressionFormatter_FunctionCallErrorPolicyTail(t *testing.T) {
 }
 
 func TestExpressionFormatter_FunctionCallRetryPolicyTail(t *testing.T) {
-	input := "RETURN FAIL() ON ERROR RETRY 3 DELAY 100MS BACKOFF EXPONENTIAL OR RETURN NONE"
+	input := "RETURN FAIL() ON ERROR RETRY 3 DELAY -100MS BACKOFF EXPONENTIAL OR RETURN NONE"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -340,7 +340,7 @@ func TestExpressionFormatter_FunctionCallRetryPolicyTail(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "FAIL() ON ERROR RETRY 3 DELAY 100MS BACKOFF EXPONENTIAL OR RETURN NONE" {
+	if got := buf.String(); got != "FAIL() ON ERROR RETRY 3 DELAY -100MS BACKOFF EXPONENTIAL OR RETURN NONE" {
 		t.Fatalf("unexpected function call retry formatting: %q", got)
 	}
 }

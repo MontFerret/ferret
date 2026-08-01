@@ -432,6 +432,8 @@ func (f *expressionFormatter) formatMatchLiteralPatternWith(p *printer, ctx *fql
 		}
 	case ctx.StringLiteral() != nil:
 		f.literal.formatStringLiteralNodeWith(p, ctx.StringLiteral())
+	case ctx.DurationLiteral() != nil:
+		p.write(ctx.DurationLiteral().GetText())
 	case ctx.FloatLiteral() != nil:
 		p.write(ctx.FloatLiteral().GetText())
 	case ctx.IntegerLiteral() != nil:
@@ -721,6 +723,10 @@ func (f *expressionFormatter) formatParenthesizedExpression(ctx *fql.ExpressionA
 }
 
 func (f *expressionFormatter) formatUnaryOperator(ctx *fql.UnaryOperatorContext) {
+	f.formatUnaryOperatorWith(f.p, ctx)
+}
+
+func (f *expressionFormatter) formatUnaryOperatorWith(p *printer, ctx *fql.UnaryOperatorContext) {
 	if ctx == nil {
 		return
 	}
@@ -728,16 +734,16 @@ func (f *expressionFormatter) formatUnaryOperator(ctx *fql.UnaryOperatorContext)
 	op := ctx.GetText()
 	if op == keywordNot || op == "!" {
 		if op == "!" {
-			f.p.write(op)
+			p.write(op)
 		} else {
-			f.writeKeyword(keywordNot)
+			f.writeKeywordWith(p, keywordNot)
 		}
-		f.p.space()
+		p.space()
 
 		return
 	}
 
-	f.p.write(op)
+	p.write(op)
 }
 
 func (f *expressionFormatter) formatLogicalAndOperator(ctx *fql.LogicalAndOperatorContext) {
@@ -1047,17 +1053,27 @@ func (f *expressionFormatter) formatRecoveryRetryDelayClauseWith(p *printer, ctx
 	if ctx.DelayKeyword() != nil {
 		p.space()
 		f.writeKeywordWith(p, keywordDelay)
+
 		if value := ctx.RecoveryRetryDelayValue(); value != nil {
 			p.space()
-			p.write(value.GetText())
+
+			if unary := value.UnaryOperator(); unary != nil {
+				f.formatUnaryOperatorWith(p, unary.(*fql.UnaryOperatorContext))
+			}
+
+			if predicate := value.Predicate(); predicate != nil {
+				f.formatPredicateWith(p, predicate.(*fql.PredicateContext))
+			}
 		}
 	}
 
 	if backoff := ctx.RecoveryRetryBackoffClause(); backoff != nil {
 		p.space()
 		f.writeKeywordWith(p, keywordBackoff)
+
 		if kind := backoff.RecoveryRetryBackoffKind(); kind != nil {
 			p.space()
+
 			switch {
 			case kind.None() != nil || kind.Identifier() != nil:
 				p.write(applyCase(f.opts.caseMode, kind.GetText()))
@@ -1078,11 +1094,13 @@ func (f *expressionFormatter) formatRecoveryRetryOrClauseWith(p *printer, ctx fq
 
 	if action := ctx.RecoveryRetryFinalAction(); action != nil {
 		p.space()
+
 		switch {
 		case action.FailKeyword() != nil || strings.EqualFold(action.GetText(), keywordFail):
 			f.writeKeywordWith(p, keywordFail)
 		case action.ReturnKeyword() != nil || strings.EqualFold(action.GetText(), keywordReturn):
 			f.writeKeywordWith(p, keywordReturn)
+
 			if expr := action.RecoveryReturnExpr(); expr != nil && expr.Expression() != nil {
 				p.space()
 				f.formatExpressionWith(p, expr.Expression().(*fql.ExpressionContext))
@@ -1139,9 +1157,23 @@ func (f *expressionFormatter) formatExpressionWith(p *printer, ctx *fql.Expressi
 	f.p = orig
 }
 
+func (f *expressionFormatter) formatPredicateWith(p *printer, ctx *fql.PredicateContext) {
+	if p == f.p {
+		f.formatPredicate(ctx)
+
+		return
+	}
+
+	orig := f.p
+	f.p = p
+	f.formatPredicate(ctx)
+	f.p = orig
+}
+
 func (f *expressionFormatter) formatFunctionCallExpressionWith(p *printer, ctx *fql.FunctionCallExpressionContext) {
 	if p == f.p {
 		f.formatFunctionCallExpression(ctx)
+
 		return
 	}
 
@@ -1154,6 +1186,7 @@ func (f *expressionFormatter) formatFunctionCallExpressionWith(p *printer, ctx *
 func (f *expressionFormatter) formatMemberExpressionWith(p *printer, ctx *fql.MemberExpressionContext) {
 	if p == f.p {
 		f.member.formatMemberExpression(ctx)
+
 		return
 	}
 

@@ -16,6 +16,7 @@ const (
 	constantTypeBool     = "bool"
 	constantTypeInt      = "int"
 	constantTypeFloat    = "float"
+	constantTypeDuration = "duration"
 	constantTypeString   = "string"
 	constantTypeBinary   = "binary"
 	constantTypeDateTime = "datetime"
@@ -43,6 +44,7 @@ type (
 		Bool     *bool    `json:"bool,omitempty" msgpack:"bool,omitempty"`
 		Int      *int64   `json:"int,omitempty" msgpack:"int,omitempty"`
 		Float    *float64 `json:"float,omitempty" msgpack:"float,omitempty"`
+		Duration *string  `json:"duration,omitempty" msgpack:"duration,omitempty"`
 		String   *string  `json:"string,omitempty" msgpack:"string,omitempty"`
 		DateTime *string  `json:"datetime,omitempty" msgpack:"datetime,omitempty"`
 		Type     string   `json:"type" msgpack:"type"`
@@ -531,6 +533,9 @@ func encodeConstant(value runtime.Value) (ConstantFrame, error) {
 	case runtime.Float:
 		value := float64(v)
 		return ConstantFrame{Type: constantTypeFloat, Float: &value}, nil
+	case runtime.Duration:
+		value := v.String()
+		return ConstantFrame{Type: constantTypeDuration, Duration: &value}, nil
 	case runtime.String:
 		value := string(v)
 		return ConstantFrame{Type: constantTypeString, String: &value}, nil
@@ -567,6 +572,17 @@ func decodeConstant(value ConstantFrame) (runtime.Value, error) {
 		}
 
 		return runtime.NewFloat(*value.Float), nil
+	case constantTypeDuration:
+		if value.Duration == nil {
+			return nil, fmt.Errorf("%w: duration constant missing value", bytecode.ErrInvalidConstant)
+		}
+
+		parsed, err := runtime.ParseDuration(*value.Duration)
+		if err != nil {
+			return nil, fmt.Errorf("%w: invalid duration literal %q: %v", bytecode.ErrInvalidConstant, *value.Duration, err)
+		}
+
+		return parsed, nil
 	case constantTypeString:
 		if value.String == nil {
 			return nil, fmt.Errorf("%w: string constant missing value", bytecode.ErrInvalidConstant)

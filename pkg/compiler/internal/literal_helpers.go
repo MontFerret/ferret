@@ -104,9 +104,12 @@ func parseTemplateChunk(text string) string {
 				b.WriteByte('\\')
 				b.WriteByte(next)
 			}
+
 			i++
+
 			continue
 		}
+
 		b.WriteByte(ch)
 	}
 
@@ -124,13 +127,17 @@ func parseTemplateLiteralConst(ctx fql.ITemplateLiteralContext) (runtime.String,
 		if el == nil {
 			continue
 		}
+
 		if expr := el.Expression(); expr != nil {
 			if val, ok := constStringFromExpression(expr); ok {
 				b.WriteString(val)
+
 				continue
 			}
+
 			return runtime.EmptyString, false
 		}
+
 		if chunk := el.TemplateChars(); chunk != nil {
 			b.WriteString(parseTemplateChunk(chunk.GetText()))
 		}
@@ -193,6 +200,13 @@ func literalValueOf(ctx fql.ILiteralContext) (runtime.Value, bool) {
 		return runtime.None, true
 	case ctx.StringLiteral() != nil:
 		return parseStringLiteralConst(ctx.StringLiteral())
+	case ctx.DurationLiteral() != nil:
+		val, err := runtime.ParseDuration(ctx.DurationLiteral().GetText())
+		if err != nil {
+			return nil, false
+		}
+
+		return val, true
 	case ctx.IntegerLiteral() != nil:
 		val, err := strconv.Atoi(ctx.IntegerLiteral().GetText())
 		if err != nil {
@@ -204,6 +218,7 @@ func literalValueOf(ctx fql.ILiteralContext) (runtime.Value, bool) {
 		if err != nil {
 			return nil, false
 		}
+
 		return runtime.NewFloat(val), true
 	case ctx.BooleanLiteral() != nil:
 		switch strings.ToLower(ctx.BooleanLiteral().GetText()) {

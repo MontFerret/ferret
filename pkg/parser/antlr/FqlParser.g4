@@ -580,7 +580,7 @@ optionsClause
     ;
 
 timeoutClause
-    : Timeout (durationLiteral | integerLiteral | floatLiteral | variable | param | memberExpression | functionCall)
+    : Timeout expression
     ;
 
 everyClause
@@ -588,13 +588,7 @@ everyClause
     ;
 
 everyClauseValue
-    : durationLiteral
-    | integerLiteral
-    | floatLiteral
-    | variable
-    | param
-    | memberExpression
-    | functionCall
+    : expression
     ;
 
 backoffClause
@@ -662,13 +656,7 @@ recoveryRetryDelayClause
     ;
 
 recoveryRetryDelayValue
-    : durationLiteral
-    | integerLiteral
-    | floatLiteral
-    | variable
-    | param
-    | memberExpression
-    | functionCall
+    : unaryOperator? predicate
     ;
 
 recoveryRetryBackoffClause
@@ -739,6 +727,7 @@ literal
     | objectLiteral
     | booleanLiteral
     | stringLiteral
+    | durationLiteral
     | floatLiteral
     | integerLiteral
     | noneLiteral
@@ -1060,6 +1049,7 @@ matchLiteralPattern
     : noneLiteral
     | booleanLiteral
     | stringLiteral
+    | durationLiteral
     | floatLiteral
     | integerLiteral
     ;

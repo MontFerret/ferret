@@ -57,6 +57,16 @@ func CastFloat(input Value) (Float, error) {
 	return ZeroFloat, TypeErrorOf(input, TypeFloat)
 }
 
+// CastDuration returns input as a Duration without performing implicit conversion.
+func CastDuration(input Value) (Duration, error) {
+	duration, ok := input.(Duration)
+	if ok {
+		return duration, nil
+	}
+
+	return ZeroDuration, TypeErrorOf(input, TypeDuration)
+}
+
 func CastString(input Value) (String, error) {
 	str, ok := input.(String)
 

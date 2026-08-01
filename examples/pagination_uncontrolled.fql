@@ -6,7 +6,7 @@ CLICK(amazon, '#nav-search-submit-button')
 
 WAITFOR EVENT "navigation" IN amazon
     FILTER current.url =~ "www\.amazon\.com\/s\?k="
-    TIMEOUT 50000
+    TIMEOUT 50s
 
 LET resultListSelector = '[data-component-type="s-search-results"]'
 LET resultItemSelector = '[data-component-type="s-search-result"]'

@@ -14,6 +14,7 @@ type (
 		NoneLiteral() fql.INoneLiteralContext
 		BooleanLiteral() fql.IBooleanLiteralContext
 		StringLiteral() fql.IStringLiteralContext
+		DurationLiteral() fql.IDurationLiteralContext
 		FloatLiteral() fql.IFloatLiteralContext
 		IntegerLiteral() fql.IIntegerLiteralContext
 	}
@@ -47,6 +48,10 @@ func compileScalarLiteralOperand(ctx *CompilationSession, literals *LiteralCompi
 		}
 
 		return literals.CompileStringLiteral(sl)
+	}
+
+	if dl := lit.DurationLiteral(); dl != nil {
+		return literals.CompileDurationLiteral(dl)
 	}
 
 	if fl := lit.FloatLiteral(); fl != nil {
@@ -87,6 +92,11 @@ func scalarLiteralValue(lit scalarLiteralNode) (runtime.Value, bool) {
 		}
 
 		return nil, false
+	}
+
+	if dl := lit.DurationLiteral(); dl != nil {
+		val, err := runtime.ParseDuration(dl.GetText())
+		return val, err == nil
 	}
 
 	if fl := lit.FloatLiteral(); fl != nil {

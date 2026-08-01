@@ -219,6 +219,19 @@ func TestMsgpackCodecEncode(t *testing.T) {
 		assertBytes(t, runtime.NewFloat(42.5), mustMarshalNative(t, 42.5))
 	})
 
+	t.Run("duration", func(t *testing.T) {
+		encoded := mustMarshalNative(t, "1.5s")
+		assertBytes(t, runtime.NewDuration(1500*time.Millisecond), encoded)
+
+		decoded, err := codec.Decode(encoded)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if decoded != runtime.NewString("1.5s") {
+			t.Fatalf("decoded duration string = %v (%T)", decoded, decoded)
+		}
+	})
+
 	t.Run("binary", func(t *testing.T) {
 		data := []byte("hi")
 		assertBytes(t, runtime.NewBinary(data), mustMarshalNative(t, data))
@@ -230,8 +243,8 @@ func TestMsgpackCodecEncode(t *testing.T) {
 	})
 
 	t.Run("array", func(t *testing.T) {
-		value := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewString("a"), runtime.True)
-		expected := mustMarshalNative(t, []any{1, "a", true})
+		value := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewDuration(1500*time.Millisecond), runtime.True)
+		expected := mustMarshalNative(t, []any{1, "1.5s", true})
 		assertBytes(t, value, expected)
 	})
 

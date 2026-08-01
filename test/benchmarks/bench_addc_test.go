@@ -2,6 +2,7 @@ package benchmarks_test
 
 import (
 	"testing"
+	"time"
 )
 
 const (
@@ -29,6 +30,13 @@ FOR i IN 1..1000
 	templateLiteralSimpleQuery = "FOR i IN 1..1000 RETURN `Hello ${@name}!`"
 
 	templateLiteralNumericQuery = "FOR i IN 1..1000 RETURN `sum=${@a + @b}`"
+
+	durationAddQuery = `
+FOR i IN 1..1000
+  RETURN @base + 2ms
+`
+
+	durationLiteralQuery = `FOR i IN 1..1000 RETURN 1.5s`
 )
 
 func BenchmarkAddNumeric_O0(b *testing.B) {
@@ -77,4 +85,20 @@ func BenchmarkTemplateLiteralNumeric_O0(b *testing.B) {
 
 func BenchmarkTemplateLiteralNumeric_O1(b *testing.B) {
 	RunBenchmarkO1(b, templateLiteralNumericQuery, WithParam("a", 1), WithParam("b", 2))
+}
+
+func BenchmarkDurationAdd_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationAddQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationAdd_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationAddQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationLiteral_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationLiteralQuery)
+}
+
+func BenchmarkDurationLiteral_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationLiteralQuery)
 }

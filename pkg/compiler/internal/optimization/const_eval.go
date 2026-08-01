@@ -16,7 +16,7 @@ func isSimpleConst(val runtime.Value) bool {
 		return true
 	}
 	switch val.(type) {
-	case runtime.Int, runtime.Float, runtime.String, runtime.Boolean:
+	case runtime.Int, runtime.Float, runtime.Duration, runtime.String, runtime.Boolean:
 		return true
 	default:
 		return false
@@ -34,6 +34,10 @@ func constEqual(a, b runtime.Value) bool {
 		}
 	case runtime.Float:
 		if bv, ok := b.(runtime.Float); ok {
+			return av == bv
+		}
+	case runtime.Duration:
+		if bv, ok := b.(runtime.Duration); ok {
 			return av == bv
 		}
 	case runtime.String:
@@ -56,11 +60,14 @@ func foldUnary(op bytecode.Opcode, val runtime.Value, bg context.Context) (runti
 	case bytecode.OpNot:
 		return runtime.Boolean(!runtime.ToBoolean(val)), true
 	case bytecode.OpNegate:
-		return negate(val), true
+		result, err := runtime.NegateChecked(val)
+		return result, err == nil
 	case bytecode.OpFlipPositive:
-		return positive(val), true
+		result, err := runtime.PositiveChecked(val)
+		return result, err == nil
 	case bytecode.OpFlipNegative:
-		return negative(val), true
+		result, err := runtime.NegativeChecked(val)
+		return result, err == nil
 	default:
 		return nil, false
 	}
@@ -69,12 +76,22 @@ func foldUnary(op bytecode.Opcode, val runtime.Value, bg context.Context) (runti
 func foldBinary(op bytecode.Opcode, left, right runtime.Value, bg context.Context) (runtime.Value, bool) {
 	switch op {
 	case bytecode.OpAdd:
-		return runtime.Add(bg, left, right), true
+		result, err := runtime.AddChecked(bg, left, right)
+		return result, err == nil
 	case bytecode.OpSub:
-		return runtime.Subtract(bg, left, right), true
+		result, err := runtime.SubtractChecked(bg, left, right)
+		return result, err == nil
 	case bytecode.OpMul:
-		return runtime.Multiply(bg, left, right), true
+		result, err := runtime.MultiplyChecked(bg, left, right)
+		return result, err == nil
 	case bytecode.OpDiv:
+		if _, ok := left.(runtime.Duration); ok {
+			result, err := runtime.DivideChecked(bg, left, right)
+			return result, err == nil
+		}
+		if _, ok := right.(runtime.Duration); ok {
+			return nil, false
+		}
 		lv := runtime.ToNumberOnly(bg, left)
 
 		if _, ok := lv.(runtime.Int); ok {
@@ -84,8 +101,15 @@ func foldBinary(op bytecode.Opcode, left, right runtime.Value, bg context.Contex
 			}
 		}
 
-		return runtime.Divide(bg, left, right), true
+		result, err := runtime.DivideChecked(bg, left, right)
+		return result, err == nil
 	case bytecode.OpMod:
+		if _, ok := left.(runtime.Duration); ok {
+			return nil, false
+		}
+		if _, ok := right.(runtime.Duration); ok {
+			return nil, false
+		}
 		if r, _ := runtime.ToInt(bg, right); r == 0 {
 			return nil, false
 		}
@@ -131,6 +155,8 @@ func constKey(val runtime.Value) (string, bool) {
 		return fmt.Sprintf("i:%s", v.String()), true
 	case runtime.Float:
 		return fmt.Sprintf("f:%s", v.String()), true
+	case runtime.Duration:
+		return fmt.Sprintf("d:%d", int64(v)), true
 	case runtime.String:
 		return fmt.Sprintf("s:%s", v.String()), true
 	case runtime.Boolean:
@@ -222,63 +248,4 @@ func lessThan(_ context.Context, left, right runtime.Value) runtime.Boolean {
 
 func lessThanOrEqual(_ context.Context, left, right runtime.Value) runtime.Boolean {
 	return runtime.CompareValues(left, right) <= 0
-}
-
-func negate(input runtime.Value) runtime.Value {
-	switch val := input.(type) {
-	case runtime.Int:
-		return -val
-	case runtime.Float:
-		return -val
-	case runtime.Boolean:
-		return !val
-	default:
-		return runtime.None
-	}
-}
-
-func negative(input runtime.Value) runtime.Value {
-	switch value := input.(type) {
-	case runtime.Int:
-		return -value
-	case runtime.Float:
-		return -value
-	default:
-		return runtime.None
-	}
-}
-
-func positive(input runtime.Value) runtime.Value {
-	switch value := input.(type) {
-	case runtime.Int:
-		return +value
-	case runtime.Float:
-		return +value
-	default:
-		return runtime.None
-	}
-}
-
-func increment(ctx context.Context, input runtime.Value) runtime.Value {
-	left := runtime.ToNumberOnly(ctx, input)
-	switch value := left.(type) {
-	case runtime.Int:
-		return value + 1
-	case runtime.Float:
-		return value + 1
-	default:
-		return runtime.None
-	}
-}
-
-func decrement(ctx context.Context, input runtime.Value) runtime.Value {
-	left := runtime.ToNumberOnly(ctx, input)
-	switch value := left.(type) {
-	case runtime.Int:
-		return value - 1
-	case runtime.Float:
-		return value - 1
-	default:
-		return runtime.None
-	}
 }

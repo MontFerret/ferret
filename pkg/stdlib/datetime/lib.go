@@ -23,7 +23,8 @@ func RegisterLib(ns runtime.Namespace) {
 		Add("DATE_DAYS_IN_MONTH", DateDaysInMonth)
 
 	ns.Function().A2().
-		Add("DATE_FORMAT", DateFormat)
+		Add("DATE_FORMAT", DateFormat).
+		Add("$WAIT_DURATION_DIFF", waitDurationDiff)
 
 	ns.Function().A3().
 		Add("DATE_ADD", DateAdd).

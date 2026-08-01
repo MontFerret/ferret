@@ -60,6 +60,8 @@ func (enc encoder) encodeValue(ctx context.Context, buf *bytes.Buffer, value run
 		buf.WriteString(strconv.FormatInt(int64(v), 10))
 	case runtime.Float:
 		buf.WriteString(strconv.FormatFloat(float64(v), 'g', -1, 64))
+	case runtime.Duration:
+		enc.writeJSONString(buf, v.String())
 	case runtime.String:
 		enc.writeJSONString(buf, string(v))
 	case runtime.Binary:

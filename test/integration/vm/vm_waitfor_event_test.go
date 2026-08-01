@@ -113,6 +113,23 @@ RETURN status`, "timeout", "WAITFOR EVENT should choose ON TIMEOUT when the stre
 			"obs": blocking,
 		})),
 		S(`LET obs = @obs
+LET base = 0.5ms
+
+LET status = WAITFOR EVENT "test" IN obs TIMEOUT base * 2 ON TIMEOUT RETURN "timeout"
+
+RETURN status`, "timeout", "WAITFOR EVENT should accept a computed native duration timeout").Env(vm.WithParams(map[string]runtime.Value{
+			"obs": blocking,
+		})),
+		Error(`LET obs = @obs
+RETURN WAITFOR EVENT "test" IN obs TIMEOUT 1`, "WAITFOR EVENT should reject numeric timeouts").Env(vm.WithParams(map[string]runtime.Value{
+			"obs": blocking,
+		})),
+		Error(`LET obs = @obs
+LET timeout = -1ms
+RETURN WAITFOR EVENT "test" IN obs TIMEOUT timeout`, "WAITFOR EVENT should reject negative timeouts").Env(vm.WithParams(map[string]runtime.Value{
+			"obs": blocking,
+		})),
+		S(`LET obs = @obs
 
 LET status = (WAITFOR EVENT "test" IN obs TIMEOUT 1ms) ON TIMEOUT RETURN "timeout" ON ERROR RETURN "error"
 
@@ -201,7 +218,7 @@ LET evt = WAITFOR EVENT "test" IN target
 		target <- "test"
 	)
 	TIMEOUT 20ms
-	ON ERROR RETRY 2 DELAY 0 OR RETURN "error"
+	ON ERROR RETRY 2 DELAY 0s OR RETURN "error"
 RETURN evt.type`, expectTriggerObservable(retry, "test", 2, 2, 2), "WAITFOR EVENT trigger should be retried through protected cleanup").Env(vm.WithParams(map[string]runtime.Value{
 				"target": retry,
 			})),

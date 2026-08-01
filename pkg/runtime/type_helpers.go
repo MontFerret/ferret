@@ -27,16 +27,18 @@ func typeRank(value Value) int {
 		return 2
 	case Float:
 		return 3
-	case String:
+	case Duration:
 		return 4
-	case DateTime:
+	case String:
 		return 5
-	case Binary:
+	case DateTime:
 		return 6
-	case List:
+	case Binary:
 		return 7
-	case Map:
+	case List:
 		return 8
+	case Map:
+		return 9
 	default:
 		return math.MaxInt // unknown types last
 	}
@@ -78,6 +80,8 @@ func TypeOf(input Value) Type {
 		return TypeInt
 	case Float:
 		return TypeFloat
+	case Duration:
+		return TypeDuration
 	case String:
 		return TypeString
 	case DateTime:

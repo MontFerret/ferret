@@ -11,7 +11,7 @@ LET lastItem = 50
 
 LET preload = (
     FOR i DO WHILE !ELEMENT_EXISTS(doc, '.chartTracksEnd')
-        LET initial = i > 0 ? SCROLL_BOTTOM(doc) && WAIT(500) && SCROLL_TOP(doc) && false : true
+        LET initial = i > 0 ? SCROLL_BOTTOM(doc) && WAIT(500ms) && SCROLL_TOP(doc) && false : true
 
         RETURN NONE
 )
@@ -24,6 +24,5 @@ FOR track, i IN ELEMENTS(list, 'li')
         artist: TRIM(INNER_TEXT(track, '.chartTrack__details .chartTrack__username')),
         track: TRIM(INNER_TEXT(track, '.chartTrack__details .chartTrack__title'))
     }
-
 
 

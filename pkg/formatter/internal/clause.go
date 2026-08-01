@@ -301,15 +301,9 @@ func (f *clauseFormatter) formatTimeoutClause(ctx *fql.TimeoutClauseContext) {
 
 	f.writeKeyword(keywordTimeout)
 	f.p.space()
-	f.values.formatDurationNumberOrRef(
-		ctx.DurationLiteral(),
-		ctx.IntegerLiteral(),
-		ctx.FloatLiteral(),
-		ctx.Variable(),
-		ctx.Param(),
-		ctx.MemberExpression(),
-		ctx.FunctionCall(),
-	)
+	if expr := ctx.Expression(); expr != nil {
+		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+	}
 }
 
 func (f *clauseFormatter) formatEveryClause(ctx *fql.EveryClauseContext) {
@@ -335,15 +329,9 @@ func (f *clauseFormatter) formatEveryClauseValue(ctx *fql.EveryClauseValueContex
 		return
 	}
 
-	f.values.formatDurationNumberOrRef(
-		ctx.DurationLiteral(),
-		ctx.IntegerLiteral(),
-		ctx.FloatLiteral(),
-		ctx.Variable(),
-		ctx.Param(),
-		ctx.MemberExpression(),
-		ctx.FunctionCall(),
-	)
+	if expr := ctx.Expression(); expr != nil {
+		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+	}
 }
 
 func (f *clauseFormatter) formatBackoffClause(ctx *fql.BackoffClauseContext) {

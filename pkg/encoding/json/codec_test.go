@@ -194,6 +194,18 @@ func TestJSONCodecEncode(t *testing.T) {
 		assertJSON(t, runtime.NewFloat(42.5), "42.5")
 	})
 
+	t.Run("duration", func(t *testing.T) {
+		assertJSON(t, runtime.NewDuration(1500*time.Millisecond), `"1.5s"`)
+
+		decoded, err := codec.Decode([]byte(`"1.5s"`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if decoded != runtime.NewString("1.5s") {
+			t.Fatalf("decoded duration string = %v (%T)", decoded, decoded)
+		}
+	})
+
 	t.Run("binary", func(t *testing.T) {
 		data := []byte("hi")
 		expected, err := stdjson.Marshal(data)
@@ -229,8 +241,8 @@ func TestJSONCodecEncode(t *testing.T) {
 	})
 
 	t.Run("array", func(t *testing.T) {
-		arr := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewString("a"), runtime.True)
-		assertJSON(t, arr, "[1,\"a\",true]")
+		arr := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewDuration(1500*time.Millisecond), runtime.True)
+		assertJSON(t, arr, "[1,\"1.5s\",true]")
 	})
 
 	t.Run("deeply_nested_array", func(t *testing.T) {

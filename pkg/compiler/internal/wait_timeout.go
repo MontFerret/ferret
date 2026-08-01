@@ -7,7 +7,7 @@ import (
 )
 
 func (c *WaitCompiler) emitWaitPredicateTimeoutCheck(
-	timeoutReg, startReg, unitReg bytecode.Operand,
+	timeoutReg, startReg bytecode.Operand,
 	timeoutLabel core.Label,
 ) bytecode.Operand {
 	if timeoutReg == bytecode.NoopOperand {
@@ -15,7 +15,7 @@ func (c *WaitCompiler) emitWaitPredicateTimeoutCheck(
 	}
 
 	nowReg := c.emitNow()
-	elapsedReg := c.emitDateDiff(startReg, nowReg, unitReg)
+	elapsedReg := c.emitDurationDiff(startReg, nowReg)
 	reachedReg := c.ctx.Function.Registers.Allocate()
 	c.ctx.Program.Emitter.EmitGte(reachedReg, elapsedReg, timeoutReg)
 	c.ctx.Program.Emitter.EmitJumpIfTrue(reachedReg, timeoutLabel)
@@ -24,7 +24,7 @@ func (c *WaitCompiler) emitWaitPredicateTimeoutCheck(
 }
 
 func (c *WaitCompiler) prepareWaitSleepInterval(config waitPredicateCompileConfig, pollReg bytecode.Operand) bytecode.Operand {
-	if !config.hasJitter && config.capEveryReg == bytecode.NoopOperand {
+	if config.everyZero || (!config.hasJitter && config.capEveryReg == bytecode.NoopOperand) {
 		return pollReg
 	}
 
@@ -46,8 +46,13 @@ func (c *WaitCompiler) emitNow() bytecode.Operand {
 	return c.exprs.CompileFunctionCallByNameWith(nil, runtime.NewString("NOW"), false, nil)
 }
 
-func (c *WaitCompiler) emitDateDiff(start, end, unit bytecode.Operand) bytecode.Operand {
-	return c.emitFunctionCall(runtime.NewString("DATE_DIFF"), start, end, unit)
+func (c *WaitCompiler) emitDurationDiff(start, end bytecode.Operand) bytecode.Operand {
+	const functionName = "$WAIT_DURATION_DIFF"
+
+	duration := c.emitFunctionCall(runtime.NewString(functionName), start, end)
+	c.ctx.Function.Types.Set(duration, core.TypeDuration)
+
+	return duration
 }
 
 func (c *WaitCompiler) emitFunctionCall(name runtime.String, args ...bytecode.Operand) bytecode.Operand {
@@ -65,8 +70,8 @@ func (c *WaitCompiler) emitFunctionCall(name runtime.String, args ...bytecode.Op
 	return c.exprs.CompileFunctionCallByNameWith(nil, name, false, seq)
 }
 
-func (c *WaitCompiler) emitWaitSleep(intervalReg, timeoutReg, elapsedReg bytecode.Operand) {
-	if timeoutReg == bytecode.NoopOperand {
+func (c *WaitCompiler) emitWaitSleep(intervalReg, timeoutReg, elapsedReg bytecode.Operand, intervalIsZero bool) {
+	if timeoutReg == bytecode.NoopOperand || intervalIsZero {
 		c.ctx.Program.Emitter.EmitA(bytecode.OpSleep, intervalReg)
 		return
 	}

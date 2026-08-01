@@ -36,6 +36,14 @@ func CheckDivisionByZero(
 	left runtime.Value,
 	right runtime.Value,
 ) error {
+	if _, ok := left.(runtime.Duration); ok {
+		return nil
+	}
+
+	if _, ok := right.(runtime.Duration); ok {
+		return nil
+	}
+
 	l := runtime.ToNumberOnly(ctx, left)
 	if _, ok := l.(runtime.Int); !ok {
 		return nil
@@ -64,6 +72,10 @@ func CheckModuloByZero(
 	pc int,
 	right runtime.Value,
 ) error {
+	if _, ok := right.(runtime.Duration); ok {
+		return nil
+	}
+
 	rv, err := runtime.ToInt(ctx, right)
 	if err != nil {
 		// Keep modulo diagnostics type-safe for invalid string inputs like "x".

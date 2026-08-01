@@ -52,6 +52,7 @@ const (
 	TypeNone
 	TypeInt
 	TypeFloat
+	TypeDuration
 	TypeString
 	TypeBool
 	TypeArray
@@ -64,7 +65,7 @@ const (
 // IsScalar reports whether the type is a known scalar.
 func (t ValueType) IsScalar() bool {
 	switch t {
-	case TypeNone, TypeInt, TypeFloat, TypeString, TypeBool:
+	case TypeNone, TypeInt, TypeFloat, TypeDuration, TypeString, TypeBool:
 		return true
 	default:
 		return false
@@ -75,7 +76,7 @@ func (t ValueType) IsScalar() bool {
 // / closer ownership at runtime.
 func (t ValueType) IsUntracked() bool {
 	switch t {
-	case TypeNone, TypeInt, TypeFloat, TypeString, TypeBool, TypeArray, TypeObject:
+	case TypeNone, TypeInt, TypeFloat, TypeDuration, TypeString, TypeBool, TypeArray, TypeObject:
 		return true
 	default:
 		return false

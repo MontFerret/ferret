@@ -14,17 +14,17 @@ const suppressedHostCallQuery = `
 RETURN FAIL() ON ERROR RETURN NONE`
 
 const retriedHostCallQuery = `
-RETURN STEP() ON ERROR RETRY 2 DELAY 0 OR RETURN NONE`
+RETURN STEP() ON ERROR RETRY 2 DELAY 0s OR RETURN NONE`
 
 const waitForTimeoutReturnNoneQuery = `
-RETURN WAITFOR VALUE NONE TIMEOUT 1 EVERY 0 ON TIMEOUT RETURN NONE`
+RETURN WAITFOR VALUE NONE TIMEOUT 1ms EVERY 0ms ON TIMEOUT RETURN NONE`
 
 const groupedForRetryQuery = `
 LET xs = (FOR i IN [1, 2] LET y = STEP() RETURN y + i) ON ERROR RETRY 1 OR RETURN []
 RETURN xs`
 
 const waitForEventRetryQuery = `
-RETURN WAITFOR EVENT "test" IN SOURCE() TIMEOUT 20ms ON TIMEOUT RETURN "timeout" ON ERROR RETRY 2 DELAY 0 OR RETURN "error"`
+RETURN WAITFOR EVENT "test" IN SOURCE() TIMEOUT 20ms ON TIMEOUT RETURN "timeout" ON ERROR RETRY 2 DELAY 0s OR RETURN "error"`
 
 func BenchmarkSuppressedHostCall_O0(b *testing.B) {
 	boom := errors.New("boom")

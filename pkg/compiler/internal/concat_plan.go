@@ -176,6 +176,10 @@ func inferConcatAtomType(ctx *CompilationSession, facts *TypeFacts, atom fql.IEx
 
 		if op.GetText() == "+" {
 			switch {
+			case leftType == core.TypeDuration && rightType == core.TypeDuration:
+				return core.TypeDuration
+			case leftType == core.TypeDuration || rightType == core.TypeDuration:
+				return core.TypeUnknown
 			case leftType == core.TypeString || rightType == core.TypeString:
 				return core.TypeString
 			case concatAnchorFromAtom(left) || concatAnchorFromAtom(right):
@@ -190,6 +194,10 @@ func inferConcatAtomType(ctx *CompilationSession, facts *TypeFacts, atom fql.IEx
 		}
 
 		if op.GetText() == "-" {
+			if leftType == core.TypeDuration && rightType == core.TypeDuration {
+				return core.TypeDuration
+			}
+
 			if leftType == core.TypeFloat || rightType == core.TypeFloat {
 				if isNumericType(leftType) && isNumericType(rightType) {
 					return core.TypeFloat
@@ -207,6 +215,12 @@ func inferConcatAtomType(ctx *CompilationSession, facts *TypeFacts, atom fql.IEx
 	if op := atom.MultiplicativeOperator(); op != nil {
 		left := inferConcatAtomType(ctx, facts, atom.ExpressionAtom(0))
 		right := inferConcatAtomType(ctx, facts, atom.ExpressionAtom(1))
+		if op.GetText() == "*" && ((left == core.TypeDuration && isNumericType(right)) || (right == core.TypeDuration && isNumericType(left))) {
+			return core.TypeDuration
+		}
+		if op.GetText() == "/" && left == core.TypeDuration && isNumericType(right) {
+			return core.TypeDuration
+		}
 
 		if left == core.TypeFloat || right == core.TypeFloat {
 			if isNumericType(left) && isNumericType(right) {

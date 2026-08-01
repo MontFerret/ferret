@@ -58,6 +58,8 @@ func writeValue(b *strings.Builder, value runtime.Value, info runtime.DebugInfo,
 		b.WriteString(strconv.FormatInt(int64(value), 10))
 	case runtime.Float:
 		b.WriteString(strconv.FormatFloat(float64(value), 'g', -1, 64))
+	case runtime.Duration:
+		b.WriteString(value.String())
 	case runtime.String:
 		b.WriteString(strconv.Quote(boundedText(value.String(), options.MaxBytes)))
 	case runtime.DateTime:

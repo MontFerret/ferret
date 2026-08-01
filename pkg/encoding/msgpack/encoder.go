@@ -42,6 +42,8 @@ func (enc encoder) encodeValue(ctx context.Context, menc *vmmsgpack.Encoder, val
 			err = menc.EncodeInt(int64(v))
 		case runtime.Float:
 			err = menc.EncodeFloat64(float64(v))
+		case runtime.Duration:
+			err = menc.EncodeString(v.String())
 		case runtime.String:
 			err = menc.EncodeString(string(v))
 		case runtime.Binary:

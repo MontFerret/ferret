@@ -4,9 +4,9 @@ LET google = DOCUMENT("https://www.google.com/", {
 })
 
 HOVER(google, 'input[name="q"]')
-WAIT(RAND(100))
+WAIT(RAND(100) * 1ms)
 INPUT(google, 'input[name="q"]', @criteria, 30)
-WAIT(RAND(100))
+WAIT(RAND(100) * 1ms)
 CLICK(google, 'input[name="btnK"]')
 
 WAITFOR EVENT "navigation" IN google

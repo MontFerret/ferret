@@ -62,6 +62,8 @@ func writeValue(buf *strings.Builder, value Value) {
 		buf.WriteString(strconv.FormatInt(int64(v), 10))
 	case Float:
 		buf.WriteString(strconv.FormatFloat(float64(v), 'g', -1, 64))
+	case Duration:
+		writeString(buf, v.String())
 	case String:
 		writeString(buf, string(v))
 	case Binary:

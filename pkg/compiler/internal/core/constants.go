@@ -5,16 +5,23 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// ConstantPool stores and deduplicates constants
-type ConstantPool struct {
-	index  map[uint64]int
-	values []runtime.Value
-}
+type (
+	// ConstantPool stores and deduplicates constants
+	ConstantPool struct {
+		index  map[uint64]constantBucket
+		values []runtime.Value
+	}
+
+	constantBucket struct {
+		rest  []int
+		first int
+	}
+)
 
 func NewConstantPool() *ConstantPool {
 	return &ConstantPool{
 		values: make([]runtime.Value, 0),
-		index:  make(map[uint64]int),
+		index:  make(map[uint64]constantBucket),
 	}
 }
 
@@ -27,8 +34,16 @@ func (cp *ConstantPool) Add(val runtime.Value) bytecode.Operand {
 	}
 
 	if hash > 0 || isNone {
-		if idx, ok := cp.index[hash]; ok {
-			return bytecode.NewConstant(idx)
+		if bucket, ok := cp.index[hash]; ok {
+			if cp.valueEqualsAt(bucket.first, val) {
+				return bytecode.NewConstant(bucket.first)
+			}
+
+			for _, idx := range bucket.rest {
+				if cp.valueEqualsAt(idx, val) {
+					return bytecode.NewConstant(idx)
+				}
+			}
 		}
 	}
 
@@ -36,10 +51,30 @@ func (cp *ConstantPool) Add(val runtime.Value) bytecode.Operand {
 	idx := len(cp.values) - 1
 
 	if hash > 0 || isNone {
-		cp.index[hash] = idx
+		bucket, exists := cp.index[hash]
+		if !exists {
+			cp.index[hash] = constantBucket{first: idx}
+		} else {
+			bucket.rest = append(bucket.rest, idx)
+			cp.index[hash] = bucket
+		}
 	}
 
 	return bytecode.NewConstant(idx)
+}
+
+func (cp *ConstantPool) valueEqualsAt(index int, right runtime.Value) bool {
+	left := cp.values[index]
+	if left == runtime.None || right == runtime.None {
+		return left == runtime.None && right == runtime.None
+	}
+
+	if runtime.TypeOf(left) != runtime.TypeOf(right) {
+		return false
+	}
+
+	comparable, ok := left.(runtime.Comparable)
+	return ok && comparable.Compare(right) == 0
 }
 
 func (cp *ConstantPool) Get(addr bytecode.Operand) runtime.Value {
