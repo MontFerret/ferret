@@ -50,7 +50,7 @@ func NewCompilationFrontend(session *CompilationSession) *CompilationFrontend {
 
 	front.Bindings.bind(front.Expressions, front.TypeFacts)
 	front.Literals.bind(front.Expressions, front.TypeFacts)
-	front.CaptureAnalyzer.bind(front.Bindings)
+	front.CaptureAnalyzer.bind(front.Bindings, front.Calls)
 	front.UDFCatalog.bind(front.Calls)
 	front.Sorts.bind(front.Expressions, front.TypeFacts)
 	front.Recovery.bind(front.Expressions, front.Literals, front.TypeFacts)

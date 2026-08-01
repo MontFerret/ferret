@@ -73,40 +73,59 @@ func findFunctionCallRefs(node antlr.Tree, out *[]*fql.FunctionCallContext) {
 	}
 }
 
-func addUDFCapture(captures map[string]core.UDFCapture, order *[]string, name string, storage core.BindingStorage) {
-	if captures == nil || order == nil || name == "" {
-		return
+func bindingIDFromRule(ctx antlr.ParserRuleContext) core.BindingID {
+	if ctx == nil || ctx.GetStart() == nil || ctx.GetStart().GetStart() < 0 {
+		return core.InvalidBindingID
 	}
 
-	capture, exists := captures[name]
-	if !exists {
-		captures[name] = core.UDFCapture{
-			Name:    name,
-			Mutable: storage == core.BindingStorageCell,
-			Storage: storage,
-		}
-		*order = append(*order, name)
-		return
-	}
-
-	if storage == core.BindingStorageCell && capture.Storage != core.BindingStorageCell {
-		capture.Storage = core.BindingStorageCell
-		capture.Mutable = true
-		captures[name] = capture
-	}
+	return core.BindingID(ctx.GetStart().GetStart() + 1)
 }
 
-func orderedUDFCaptures(captures map[string]core.UDFCapture, order []string) []core.UDFCapture {
+func addUDFCapture(captures map[core.BindingID]core.UDFCapture, order *[]core.BindingID, incoming core.UDFCapture) bool {
+	if captures == nil || order == nil || incoming.ID == core.InvalidBindingID || incoming.Name == "" {
+		return false
+	}
+
+	incoming.Mutable = incoming.Storage == core.BindingStorageCell
+	capture, exists := captures[incoming.ID]
+	if !exists {
+		captures[incoming.ID] = incoming
+		*order = append(*order, incoming.ID)
+
+		return true
+	}
+
+	changed := false
+	if incoming.Storage == core.BindingStorageCell && capture.Storage != core.BindingStorageCell {
+		capture.Storage = core.BindingStorageCell
+		capture.Mutable = true
+		changed = true
+	}
+
+	if incoming.Visible && !capture.Visible {
+		capture.Visible = true
+		changed = true
+	}
+
+	if changed {
+		captures[incoming.ID] = capture
+	}
+
+	return changed
+}
+
+func orderedUDFCaptures(captures map[core.BindingID]core.UDFCapture, order []core.BindingID) []core.UDFCapture {
 	if len(order) == 0 {
 		return nil
 	}
 
 	out := make([]core.UDFCapture, 0, len(order))
-	for _, name := range order {
-		capture, ok := captures[name]
+	for _, id := range order {
+		capture, ok := captures[id]
 		if !ok {
 			continue
 		}
+
 		out = append(out, capture)
 	}
 

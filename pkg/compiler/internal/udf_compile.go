@@ -56,14 +56,18 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 		c.ctx.Function.Symbols.EnterScope()
 		c.ctx.Function.FunctionID = fn.ID
 
-		for _, name := range fn.Params {
-			c.ctx.Function.Symbols.DeclareLocal(name, core.TypeAny)
+		for _, param := range fn.Params {
+			c.ctx.Function.Symbols.DeclareLocalWithOptions(param.Name, core.TypeAny, core.BindingOptions{
+				ID: param.ID,
+			})
 		}
 
 		for _, capture := range fn.Captures {
 			c.ctx.Function.Symbols.DeclareLocalWithOptions(capture.Name, core.TypeAny, core.BindingOptions{
+				ID:      capture.ID,
 				Mutable: capture.Mutable,
 				Storage: capture.Storage,
+				Hidden:  !capture.Visible,
 			})
 		}
 

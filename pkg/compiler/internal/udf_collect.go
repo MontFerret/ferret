@@ -223,12 +223,12 @@ func (c *UDFCatalogBuilder) registerFunction(scope *core.UDFScope, decl *fql.Fun
 	return fn
 }
 
-func (c *UDFCatalogBuilder) collectFunctionParams(decl *fql.FunctionDeclarationContext) []string {
+func (c *UDFCatalogBuilder) collectFunctionParams(decl *fql.FunctionDeclarationContext) []core.UDFParam {
 	if c == nil || c.ctx == nil || decl == nil {
 		return nil
 	}
 
-	params := make([]string, 0)
+	params := make([]core.UDFParam, 0)
 	seen := make(map[string]struct{})
 
 	list := decl.FunctionParameterList()
@@ -248,7 +248,10 @@ func (c *UDFCatalogBuilder) collectFunctionParams(decl *fql.FunctionDeclarationC
 		}
 
 		seen[name] = struct{}{}
-		params = append(params, name)
+		params = append(params, core.UDFParam{
+			ID:   bindingIDFromRule(param.(antlr.ParserRuleContext)),
+			Name: name,
+		})
 	}
 
 	return params
@@ -266,7 +269,9 @@ func (c *UDFCatalogBuilder) pruneUnusedFunctions(body *fql.BodyContext) {
 				delete(fn.Scope.Functions, fn.Name)
 			}
 		}
+
 		c.ctx.Program.UDFs.Functions = nil
+
 		return
 	}
 
@@ -332,6 +337,7 @@ func (c *UDFCatalogBuilder) computeReachableFunctions(body *fql.BodyContext) map
 			if callee == nil {
 				continue
 			}
+
 			if _, ok := reachable[callee]; !ok {
 				stack = append(stack, callee)
 			}
@@ -382,6 +388,7 @@ func (c *UDFCatalogBuilder) collectCallsInFunction(fn *core.UDFInfo) []*core.UDF
 
 	if arrow := body.FunctionArrow(); arrow != nil {
 		c.collectCallsInExpression(arrow.Expression(), scope, out)
+
 		return udfSetToSlice(out)
 	}
 
@@ -431,14 +438,9 @@ func (c *UDFCatalogBuilder) collectCallsInExpression(
 }
 
 func (c *UDFCatalogBuilder) resolveCallInScope(ctx fql.IFunctionCallContext, scope *core.UDFScope) (*core.UDFInfo, bool) {
-	if c == nil || c.ctx == nil || c.ctx.Program.UDFs == nil || ctx == nil || scope == nil {
+	if c == nil || c.calls == nil || ctx == nil || scope == nil {
 		return nil, false
 	}
 
-	name, ok := c.calls.ResolveLocalFunctionName(ctx)
-	if !ok {
-		return nil, false
-	}
-
-	return c.ctx.Program.UDFs.Resolve(name, scope)
+	return c.calls.ResolveUDFInScope(ctx, scope)
 }

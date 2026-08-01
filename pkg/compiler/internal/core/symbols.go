@@ -21,11 +21,19 @@ type (
 
 	BindingStorage int
 
+	// BindingID identifies a source declaration within one compilation.
+	BindingID int
+
 	BindingOptions struct {
-		Mutable bool
+		ID      BindingID
 		Storage BindingStorage
+		Mutable bool
+		Hidden  bool
 	}
 )
+
+// InvalidBindingID represents a binding without source identity.
+const InvalidBindingID BindingID = 0
 
 const (
 	SymbolConst SymbolKind = iota
@@ -77,12 +85,14 @@ func (t ValueType) IsUntracked() bool {
 type (
 	Variable struct {
 		Name     string
+		ID       BindingID
 		Kind     SymbolKind
 		Register bytecode.Operand
 		Depth    int
 		Type     ValueType
-		Mutable  bool
 		Storage  BindingStorage
+		Mutable  bool
+		Hidden   bool
 	}
 
 	SymbolTable struct {
@@ -132,7 +142,7 @@ func (st *SymbolTable) LocalVariables() []Variable {
 	for i := len(st.locals) - 1; i >= 0; i-- {
 		v := st.locals[i]
 
-		if v.Depth == st.scope {
+		if v.Depth == st.scope && !v.Hidden {
 			locals = append(locals, *v)
 		}
 	}
@@ -146,7 +156,7 @@ func (st *SymbolTable) VisibleVariables() []Variable {
 	seen := make(map[string]struct{}, len(st.locals)+len(st.globals))
 
 	add := func(v *Variable) {
-		if v == nil || v.Name == IgnorePseudoVariable || v.Name == PseudoVariable {
+		if v == nil || v.Hidden || v.Name == IgnorePseudoVariable || v.Name == PseudoVariable {
 			return
 		}
 
@@ -178,18 +188,36 @@ func (st *SymbolTable) VisibleVariables() []Variable {
 
 func (st *SymbolTable) ProjectionVariables() []Variable {
 	vars := make([]Variable, 0)
-	seen := make(map[string]struct{})
+	seenNames := make(map[string]struct{})
+	seenBindings := make(map[BindingID]struct{})
 
 	add := func(v *Variable) {
-		if v == nil || v.Name == IgnorePseudoVariable || v.Name == PseudoVariable {
+		if v == nil {
 			return
 		}
 
-		if _, ok := seen[v.Name]; ok {
+		if v.Hidden {
+			if v.ID != InvalidBindingID {
+				if _, ok := seenBindings[v.ID]; ok {
+					return
+				}
+
+				seenBindings[v.ID] = struct{}{}
+			}
+
+			vars = append(vars, *v)
 			return
 		}
 
-		seen[v.Name] = struct{}{}
+		if v.Name == IgnorePseudoVariable || v.Name == PseudoVariable {
+			return
+		}
+
+		if _, ok := seenNames[v.Name]; ok {
+			return
+		}
+
+		seenNames[v.Name] = struct{}{}
 		vars = append(vars, *v)
 	}
 
@@ -219,7 +247,7 @@ func (st *SymbolTable) ProjectionVariables() []Variable {
 			continue
 		}
 
-		if _, ok := seen[name]; ok {
+		if _, ok := seenNames[name]; ok {
 			continue
 		}
 
@@ -259,13 +287,14 @@ func (st *SymbolTable) AssignLocalWithOptions(name string, typ ValueType, op byt
 		for i := len(st.locals) - 1; i >= 0; i-- {
 			v := st.locals[i]
 
-			if v.Name == name && v.Depth == st.scope {
+			if v.Name == name && v.Depth == st.scope && !v.Hidden && !opts.Hidden {
 				return false
 			}
 		}
 	}
 
 	st.locals = append(st.locals, &Variable{
+		ID:       opts.ID,
 		Name:     name,
 		Kind:     SymbolLocal,
 		Register: op,
@@ -273,6 +302,7 @@ func (st *SymbolTable) AssignLocalWithOptions(name string, typ ValueType, op byt
 		Type:     typ,
 		Mutable:  opts.Mutable,
 		Storage:  opts.Storage,
+		Hidden:   opts.Hidden,
 	})
 
 	return true
@@ -302,12 +332,14 @@ func (st *SymbolTable) AssignGlobalWithOptions(name string, typ ValueType, op by
 	}
 
 	st.globals[name] = &Variable{
+		ID:       opts.ID,
 		Name:     name,
 		Kind:     SymbolGlobal,
 		Register: op,
 		Type:     typ,
 		Mutable:  opts.Mutable,
 		Storage:  opts.Storage,
+		Hidden:   opts.Hidden,
 	}
 
 	return true
@@ -336,13 +368,35 @@ func (st *SymbolTable) Resolve(name string) (bytecode.Operand, SymbolKind, bool)
 func (st *SymbolTable) ResolveBinding(name string) (*Variable, bool) {
 	for i := len(st.locals) - 1; i >= 0; i-- {
 		v := st.locals[i]
-		if v.Name == name {
+		if !v.Hidden && v.Name == name {
 			return v, true
 		}
 	}
 
 	if binding, ok := st.globals[name]; ok {
 		return binding, true
+	}
+
+	return nil, false
+}
+
+// ResolveBindingByID resolves both source-visible and hidden bindings by declaration identity.
+func (st *SymbolTable) ResolveBindingByID(id BindingID) (*Variable, bool) {
+	if id == InvalidBindingID {
+		return nil, false
+	}
+
+	for i := len(st.locals) - 1; i >= 0; i-- {
+		v := st.locals[i]
+		if v.ID == id {
+			return v, true
+		}
+	}
+
+	for _, binding := range st.globals {
+		if binding.ID == id {
+			return binding, true
+		}
 	}
 
 	return nil, false

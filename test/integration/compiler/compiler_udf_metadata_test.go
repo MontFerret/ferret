@@ -354,6 +354,31 @@ RETURN outer(3)
 	}, compiler.O0, compiler.O1)
 }
 
+func TestUdfTransitiveCaptureMetadata(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck(`
+LET base = 1
+FUNC first(value) => second(value)
+FUNC second(value) => third(value)
+FUNC third(value) => base + value
+RETURN first(1)
+`, func(prog *bytecode.Program) error {
+			for _, name := range []string{"first", "second", "third"} {
+				fn, err := findUserDefined(prog, name)
+				if err != nil {
+					return err
+				}
+
+				if fn.Params != 2 {
+					return fmt.Errorf("expected %s to have one argument and one capture, got %d total parameters", name, fn.Params)
+				}
+			}
+
+			return nil
+		}, "transitive captures are included in udf metadata"),
+	}, compiler.O0, compiler.O1)
+}
+
 func TestUdfNestedCompileStatePropagatesMetadata(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(`

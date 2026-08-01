@@ -10,18 +10,21 @@ import (
 type CaptureAnalyzer struct {
 	ctx      *CompilationSession
 	bindings *BindingCompiler
+	calls    *CallResolver
+	states   map[*core.UDFInfo]*udfCaptureState
 }
 
 func NewCaptureAnalyzer(ctx *CompilationSession) *CaptureAnalyzer {
 	return &CaptureAnalyzer{ctx: ctx}
 }
 
-func (c *CaptureAnalyzer) bind(bindings *BindingCompiler) {
+func (c *CaptureAnalyzer) bind(bindings *BindingCompiler, calls *CallResolver) {
 	if c == nil {
 		return
 	}
 
 	c.bindings = bindings
+	c.calls = calls
 }
 
 func (c *CaptureAnalyzer) AnalyzeProgram(body *fql.BodyContext) {
@@ -31,6 +34,7 @@ func (c *CaptureAnalyzer) AnalyzeProgram(body *fql.BodyContext) {
 
 	env := &udfCaptureEnv{}
 	env.push()
+	c.states = make(map[*core.UDFInfo]*udfCaptureState, len(c.ctx.Program.UDFs.Functions))
 
 	for _, stmt := range body.AllBodyStatement() {
 		if stmt == nil {
@@ -51,6 +55,10 @@ func (c *CaptureAnalyzer) AnalyzeProgram(body *fql.BodyContext) {
 			}
 		}
 	}
+
+	c.collectCallGraph()
+	c.propagateCallCaptures()
+	c.publishCaptures()
 }
 
 func (c *CaptureAnalyzer) analyzeFunction(fn *core.UDFInfo, env *udfCaptureEnv) {
@@ -58,20 +66,27 @@ func (c *CaptureAnalyzer) analyzeFunction(fn *core.UDFInfo, env *udfCaptureEnv) 
 		return
 	}
 
-	env.push()
-	for _, p := range fn.Params {
-		env.add(p)
+	state := &udfCaptureState{
+		captures: make(map[core.BindingID]core.UDFCapture),
+		order:    make([]core.BindingID, 0),
+		outer:    env.bindingsByID(),
+		owned:    make(map[core.BindingID]captureBindingInfo),
 	}
+	c.states[fn] = state
 
-	captureSet := make(map[string]core.UDFCapture)
-	captureOrder := make([]string, 0)
+	env.push()
+	for _, param := range fn.Params {
+		binding := captureBindingInfo{ID: param.ID, Name: param.Name}
+		env.addBinding(binding)
+		state.owned[binding.ID] = binding
+	}
 
 	body := fn.Decl.FunctionBody()
 	if body != nil {
 		if arrow := body.FunctionArrow(); arrow != nil {
 			if expr := arrow.Expression(); expr != nil {
-				c.collectVars(expr, env, captureSet, &captureOrder)
-				c.collectAssignments(expr, env, captureSet, &captureOrder)
+				c.collectVars(expr, env, state)
+				c.collectAssignments(expr, env, state)
 			}
 		}
 
@@ -85,55 +100,60 @@ func (c *CaptureAnalyzer) analyzeFunction(fn *core.UDFInfo, env *udfCaptureEnv) 
 				case stmt.VariableDeclaration() != nil:
 					decl := stmt.VariableDeclaration()
 					if decl != nil && decl.Expression() != nil {
-						c.collectVars(decl.Expression(), env, captureSet, &captureOrder)
-						c.collectAssignments(decl.Expression(), env, captureSet, &captureOrder)
+						c.collectVars(decl.Expression(), env, state)
+						c.collectAssignments(decl.Expression(), env, state)
 					}
 
 					binding := c.bindings.captureBindingForDeclaration(decl)
 					if binding.Name != "" {
 						env.addBinding(binding)
+						state.owned[binding.ID] = binding
 					}
 				case stmt.AssignmentStatement() != nil:
-					c.collectVars(stmt.AssignmentStatement(), env, captureSet, &captureOrder)
-					c.collectAssignments(stmt.AssignmentStatement(), env, captureSet, &captureOrder)
+					c.collectVars(stmt.AssignmentStatement(), env, state)
+					c.collectAssignments(stmt.AssignmentStatement(), env, state)
 				case stmt.FunctionDeclaration() != nil:
 					decl := stmt.FunctionDeclaration().(*fql.FunctionDeclarationContext)
 					name := decl.FunctionName().GetText()
+
 					if nested, ok := fn.BodyScope.Functions[name]; ok {
 						c.analyzeFunction(nested, env)
 						for _, capture := range nested.Captures {
-							if env.currentHas(capture.Name) {
+							if _, ok := state.owned[capture.ID]; ok {
 								continue
 							}
-							if _, ok := env.resolveBinding(capture.Name); !ok {
+
+							if _, ok := state.outer[capture.ID]; !ok {
 								continue
 							}
-							addUDFCapture(captureSet, &captureOrder, capture.Name, capture.Storage)
+
+							capture.Visible = false
+							addUDFCapture(state.captures, &state.order, capture)
 						}
 					}
 				case stmt.FunctionCallExpression() != nil:
-					c.collectVars(stmt.FunctionCallExpression(), env, captureSet, &captureOrder)
-					c.collectAssignments(stmt.FunctionCallExpression(), env, captureSet, &captureOrder)
+					c.collectVars(stmt.FunctionCallExpression(), env, state)
+					c.collectAssignments(stmt.FunctionCallExpression(), env, state)
 				case stmt.WaitForExpression() != nil:
-					c.collectVars(stmt.WaitForExpression(), env, captureSet, &captureOrder)
-					c.collectAssignments(stmt.WaitForExpression(), env, captureSet, &captureOrder)
+					c.collectVars(stmt.WaitForExpression(), env, state)
+					c.collectAssignments(stmt.WaitForExpression(), env, state)
 				case stmt.DispatchExpression() != nil:
-					c.collectVars(stmt.DispatchExpression(), env, captureSet, &captureOrder)
-					c.collectAssignments(stmt.DispatchExpression(), env, captureSet, &captureOrder)
+					c.collectVars(stmt.DispatchExpression(), env, state)
+					c.collectAssignments(stmt.DispatchExpression(), env, state)
 				case stmt.ExpressionStatement() != nil:
-					c.collectVars(stmt.ExpressionStatement(), env, captureSet, &captureOrder)
-					c.collectAssignments(stmt.ExpressionStatement(), env, captureSet, &captureOrder)
+					c.collectVars(stmt.ExpressionStatement(), env, state)
+					c.collectAssignments(stmt.ExpressionStatement(), env, state)
 				}
 			}
 
 			if block.FunctionReturn() != nil {
-				c.collectVars(block.FunctionReturn(), env, captureSet, &captureOrder)
-				c.collectAssignments(block.FunctionReturn(), env, captureSet, &captureOrder)
+				c.collectVars(block.FunctionReturn(), env, state)
+				c.collectAssignments(block.FunctionReturn(), env, state)
 			}
 		}
 	}
 
-	fn.Captures = orderedUDFCaptures(captureSet, captureOrder)
+	fn.Captures = orderedUDFCaptures(state.captures, state.order)
 
 	env.pop()
 }
@@ -141,10 +161,9 @@ func (c *CaptureAnalyzer) analyzeFunction(fn *core.UDFInfo, env *udfCaptureEnv) 
 func (c *CaptureAnalyzer) collectVars(
 	node antlr.Tree,
 	env *udfCaptureEnv,
-	captureSet map[string]core.UDFCapture,
-	captureOrder *[]string,
+	state *udfCaptureState,
 ) {
-	if c == nil || node == nil || env == nil || captureSet == nil || captureOrder == nil {
+	if c == nil || node == nil || env == nil || state == nil {
 		return
 	}
 
@@ -157,8 +176,13 @@ func (c *CaptureAnalyzer) collectVars(
 			continue
 		}
 
-		if _, ok := env.resolveBinding(name); ok {
-			addUDFCapture(captureSet, captureOrder, name, core.BindingStorageValue)
+		if binding, ok := env.resolveBinding(name); ok {
+			addUDFCapture(state.captures, &state.order, core.UDFCapture{
+				ID:      binding.ID,
+				Name:    binding.Name,
+				Storage: core.BindingStorageValue,
+				Visible: true,
+			})
 		}
 	}
 }
@@ -166,10 +190,9 @@ func (c *CaptureAnalyzer) collectVars(
 func (c *CaptureAnalyzer) collectAssignments(
 	node antlr.Tree,
 	env *udfCaptureEnv,
-	captureSet map[string]core.UDFCapture,
-	captureOrder *[]string,
+	state *udfCaptureState,
 ) {
-	if c == nil || c.ctx == nil || node == nil || env == nil || captureSet == nil || captureOrder == nil {
+	if c == nil || c.ctx == nil || node == nil || env == nil || state == nil {
 		return
 	}
 
@@ -197,18 +220,127 @@ func (c *CaptureAnalyzer) collectAssignments(
 		}
 
 		if len(target.Segments) > 0 {
-			addUDFCapture(captureSet, captureOrder, name, core.BindingStorageValue)
+			addUDFCapture(state.captures, &state.order, core.UDFCapture{
+				ID:      binding.ID,
+				Name:    binding.Name,
+				Storage: core.BindingStorageValue,
+				Visible: true,
+			})
 			continue
 		}
 
 		storage := core.BindingStorageValue
+
 		if binding.Mutable {
 			storage = core.BindingStorageCell
+
 			if binding.Decl != nil {
 				c.bindings.PromoteDeclaration(binding.Decl)
 			}
 		}
 
-		addUDFCapture(captureSet, captureOrder, name, storage)
+		addUDFCapture(state.captures, &state.order, core.UDFCapture{
+			ID:      binding.ID,
+			Name:    binding.Name,
+			Storage: storage,
+			Visible: true,
+		})
+	}
+}
+
+func (c *CaptureAnalyzer) collectCallGraph() {
+	if c == nil || c.ctx == nil || c.ctx.Program.UDFs == nil || c.calls == nil {
+		return
+	}
+
+	for _, fn := range c.ctx.Program.UDFs.Functions {
+		state := c.states[fn]
+		if fn == nil || state == nil || fn.Decl == nil || fn.Decl.FunctionBody() == nil {
+			continue
+		}
+
+		var calls []*fql.FunctionCallContext
+		findFunctionCallRefs(fn.Decl.FunctionBody(), &calls)
+		seen := make(map[*core.UDFInfo]struct{})
+
+		for _, call := range calls {
+			callee, ok := c.calls.ResolveUDFInScope(call, fn.BodyScope)
+			if !ok || callee == nil {
+				continue
+			}
+
+			if _, ok := seen[callee]; ok {
+				continue
+			}
+
+			seen[callee] = struct{}{}
+			state.callees = append(state.callees, callee)
+		}
+	}
+}
+
+// propagateCallCaptures computes the transitive closure of captures required at
+// UDF call sites. Forwarded captures remain tied to their lexical binding ID.
+func (c *CaptureAnalyzer) propagateCallCaptures() {
+	if c == nil || c.ctx == nil || c.ctx.Program.UDFs == nil {
+		return
+	}
+
+	for {
+		changed := false
+
+		for _, fn := range c.ctx.Program.UDFs.Functions {
+			state := c.states[fn]
+			if state == nil {
+				continue
+			}
+
+			for _, callee := range state.callees {
+				calleeState := c.states[callee]
+				if calleeState == nil {
+					continue
+				}
+
+				for _, id := range calleeState.order {
+					capture, ok := calleeState.captures[id]
+					if !ok {
+						continue
+					}
+
+					if _, ok := state.owned[id]; ok {
+						continue
+					}
+
+					if _, ok := state.outer[id]; !ok {
+						continue
+					}
+
+					capture.Visible = false
+
+					if addUDFCapture(state.captures, &state.order, capture) {
+						changed = true
+					}
+				}
+			}
+		}
+
+		if !changed {
+			return
+		}
+	}
+}
+
+func (c *CaptureAnalyzer) publishCaptures() {
+	if c == nil || c.ctx == nil || c.ctx.Program.UDFs == nil {
+		return
+	}
+
+	for _, fn := range c.ctx.Program.UDFs.Functions {
+		state := c.states[fn]
+		if fn == nil || state == nil {
+			continue
+		}
+
+		fn.Captures = orderedUDFCaptures(state.captures, state.order)
 	}
 }

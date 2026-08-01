@@ -124,6 +124,36 @@ func TestRegisterCoalescing_PinsCellHandleRegisters(t *testing.T) {
 	assertBytecodeEqual(t, program.Bytecode, expected)
 }
 
+func TestUpdateRegisterCount_UpdatesUDFWindows(t *testing.T) {
+	program := &bytecode.Program{
+		Registers: 7,
+		Functions: bytecode.Functions{
+			UserDefined: []bytecode.UDF{
+				{Name: "first", Entry: 1, Registers: 4, Params: 2},
+				{Name: "second", Entry: 3, Registers: 3, Params: 2},
+			},
+		},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(6), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(6)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+		},
+	}
+
+	if !updateRegisterCount(program) {
+		t.Fatal("expected register metadata update")
+	}
+
+	if got, want := program.Functions.UserDefined[0].Registers, 7; got != want {
+		t.Fatalf("unexpected first UDF register count: got %d, want %d", got, want)
+	}
+
+	if got, want := program.Functions.UserDefined[1].Registers, 3; got != want {
+		t.Fatalf("unexpected second UDF register count: got %d, want %d", got, want)
+	}
+}
+
 func runCoalescing(t *testing.T, program *bytecode.Program) {
 	t.Helper()
 

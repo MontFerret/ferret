@@ -100,15 +100,16 @@ func (sp *ScopeProjection) RestoreFromArray(src bytecode.Operand) {
 
 		if v.Storage == BindingStorageCell {
 			tmp := sp.registers.Allocate()
-			variable, _ := sp.symbols.DeclareLocalWithOptions(v.Name, v.Type, BindingOptions{Mutable: v.Mutable, Storage: v.Storage})
+			variable, _ := sp.symbols.DeclareLocalWithOptions(v.Name, v.Type, BindingOptions{ID: v.ID, Mutable: v.Mutable, Storage: v.Storage, Hidden: v.Hidden})
 			sp.emitter.EmitABC(bytecode.OpLoadIndex, tmp, src, idx)
 			sp.emitter.EmitMakeCell(variable, tmp)
 			sp.types.Set(tmp, v.Type)
 			sp.types.Set(variable, TypeAny)
+
 			continue
 		}
 
-		variable, _ := sp.symbols.DeclareLocalWithOptions(v.Name, v.Type, BindingOptions{Mutable: v.Mutable, Storage: v.Storage})
+		variable, _ := sp.symbols.DeclareLocalWithOptions(v.Name, v.Type, BindingOptions{ID: v.ID, Mutable: v.Mutable, Storage: v.Storage, Hidden: v.Hidden})
 		sp.emitter.EmitABC(bytecode.OpLoadIndex, variable, src, idx)
 	}
 }
@@ -121,15 +122,16 @@ func (sp *ScopeProjection) RestoreFromObject(src bytecode.Operand) {
 
 		if v.Storage == BindingStorageCell {
 			tmp := sp.registers.Allocate()
-			variable, _ := sp.symbols.DeclareLocalWithOptions(v.Name, v.Type, BindingOptions{Mutable: v.Mutable, Storage: v.Storage})
+			variable, _ := sp.symbols.DeclareLocalWithOptions(v.Name, v.Type, BindingOptions{ID: v.ID, Mutable: v.Mutable, Storage: v.Storage, Hidden: v.Hidden})
 			sp.emitter.EmitABC(bytecode.OpLoadKey, tmp, src, key)
 			sp.emitter.EmitMakeCell(variable, tmp)
 			sp.types.Set(tmp, v.Type)
 			sp.types.Set(variable, TypeAny)
+
 			continue
 		}
 
-		variable, _ := sp.symbols.DeclareLocalWithOptions(v.Name, v.Type, BindingOptions{Mutable: v.Mutable, Storage: v.Storage})
+		variable, _ := sp.symbols.DeclareLocalWithOptions(v.Name, v.Type, BindingOptions{ID: v.ID, Mutable: v.Mutable, Storage: v.Storage, Hidden: v.Hidden})
 		sp.emitter.EmitABC(bytecode.OpLoadKey, variable, src, key)
 	}
 }

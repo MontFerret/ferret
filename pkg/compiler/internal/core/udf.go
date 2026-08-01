@@ -6,10 +6,17 @@ import (
 )
 
 type (
+	UDFParam struct {
+		Name string
+		ID   BindingID
+	}
+
 	UDFCapture struct {
 		Name    string
-		Mutable bool
+		ID      BindingID
 		Storage BindingStorage
+		Mutable bool
+		Visible bool
 	}
 
 	UDFTable struct {
@@ -29,7 +36,7 @@ type (
 		BodyScope   *UDFScope
 		Name        string
 		DisplayName string
-		Params      []string
+		Params      []UDFParam
 		Captures    []UDFCapture
 		ID          int
 		Entry       int
