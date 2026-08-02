@@ -40,7 +40,7 @@ func CanTrackValue(val runtime.Value) bool {
 	}
 
 	switch val.(type) {
-	case runtime.Boolean, runtime.Int, runtime.Float, runtime.String, *runtime.Array, *runtime.Object:
+	case runtime.Boolean, runtime.Int, runtime.Float, runtime.Duration, runtime.String, *runtime.Array, *runtime.Object:
 		return false
 	default:
 		_, ok := val.(Untracked)

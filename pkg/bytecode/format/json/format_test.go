@@ -42,6 +42,10 @@ func TestFormatRoundTrip(t *testing.T) {
 	if got := decoded.Metadata.AggregatePlans[0].Index["group"]; got != 0 {
 		t.Fatalf("expected aggregate plan index to be rebuilt, got %d", got)
 	}
+
+	if got := decoded.Constants[1]; got != runtime.NewDuration(1500*time.Millisecond) {
+		t.Fatalf("duration constant = %v (%T)", got, got)
+	}
 }
 
 func TestFormatRejectsMalformedPayload(t *testing.T) {
@@ -76,6 +80,16 @@ func TestFormatRejectsInvalidConstants(t *testing.T) {
 	_, err = Default.Unmarshal(data)
 	if !errors.Is(err, bytecode.ErrInvalidConstant) {
 		t.Fatalf("expected ErrInvalidConstant for missing bool value, got %v", err)
+	}
+
+	invalidDuration := "not-a-duration"
+	frame = validFrame()
+	frame.Constants = []persist.ConstantFrame{{Type: "duration", Duration: &invalidDuration}}
+
+	data = mustMarshalFrame(t, frame)
+	_, err = Default.Unmarshal(data)
+	if !errors.Is(err, bytecode.ErrInvalidConstant) {
+		t.Fatalf("expected ErrInvalidConstant for malformed duration, got %v", err)
 	}
 }
 
@@ -165,6 +179,7 @@ func newTestProgram() *bytecode.Program {
 		},
 		Constants: []runtime.Value{
 			runtime.NewFloat(1.5),
+			runtime.NewDuration(1500 * time.Millisecond),
 			runtime.NewString("hello"),
 			runtime.NewBinary([]byte("abc")),
 			runtime.NewDateTime(time.Unix(1700000000, 0).UTC()),

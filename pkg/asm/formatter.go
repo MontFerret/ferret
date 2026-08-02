@@ -26,6 +26,10 @@ func constantAsText(constant runtime.Value) string {
 		return fmt.Sprintf("%d", constant)
 	}
 
+	if _, ok := constant.(runtime.Duration); ok {
+		return constant.String()
+	}
+
 	return fmt.Sprintf("%q", constant.String())
 }
 

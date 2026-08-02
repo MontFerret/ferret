@@ -23,65 +23,94 @@ func readOperandValue(reg []runtime.Value, constants []runtime.Value, operand by
 	return reg[operand]
 }
 
-func concatStrings(reg []runtime.Value, src1, src2 bytecode.Operand) runtime.Value {
+func concatStrings(reg []runtime.Value, src1, src2 bytecode.Operand) (runtime.Value, error) {
 	start := int(src1)
 	count := int(src2)
 
 	if count <= 0 {
-		return runtime.EmptyString
+		return runtime.EmptyString, nil
 	}
 
 	if count == 1 {
-		return runtime.ToString(reg[start])
+		if _, ok := reg[start].(runtime.Duration); ok {
+			return runtime.None, durationConcatError()
+		}
+
+		return runtime.ToString(reg[start]), nil
 	}
 
 	if count == 2 {
+		if _, ok := reg[start].(runtime.Duration); ok {
+			return runtime.None, durationConcatError()
+		}
+
+		if _, ok := reg[start+1].(runtime.Duration); ok {
+			return runtime.None, durationConcatError()
+		}
+
 		s1 := runtime.ToString(reg[start])
 		s2 := runtime.ToString(reg[start+1])
 
 		if s1 == runtime.EmptyString {
-			return s2
+			return s2, nil
 		}
 
 		if s2 == runtime.EmptyString {
-			return s1
+			return s1, nil
 		}
 
-		return runtime.NewString(string(s1) + string(s2))
+		return runtime.NewString(string(s1) + string(s2)), nil
 	}
 
 	if count == 3 {
+		if _, ok := reg[start].(runtime.Duration); ok {
+			return runtime.None, durationConcatError()
+		}
+
+		if _, ok := reg[start+1].(runtime.Duration); ok {
+			return runtime.None, durationConcatError()
+		}
+
+		if _, ok := reg[start+2].(runtime.Duration); ok {
+			return runtime.None, durationConcatError()
+		}
+
 		s1 := runtime.ToString(reg[start])
 		s2 := runtime.ToString(reg[start+1])
 		s3 := runtime.ToString(reg[start+2])
 
 		if s1 == runtime.EmptyString {
 			if s2 == runtime.EmptyString {
-				return s3
+				return s3, nil
 			}
+
 			if s3 == runtime.EmptyString {
-				return s2
+				return s2, nil
 			}
 		} else if s2 == runtime.EmptyString {
 			if s3 == runtime.EmptyString {
-				return s1
+				return s1, nil
 			}
 		}
 
-		return runtime.NewString(string(s1) + string(s2) + string(s3))
+		return runtime.NewString(string(s1) + string(s2) + string(s3)), nil
 	}
 
 	parts := make([]runtime.String, count)
 	totalLen := 0
 
 	for i := 0; i < count; i++ {
+		if _, ok := reg[start+i].(runtime.Duration); ok {
+			return runtime.None, durationConcatError()
+		}
+
 		s := runtime.ToString(reg[start+i])
 		parts[i] = s
 		totalLen += len(s)
 	}
 
 	if totalLen == 0 {
-		return runtime.EmptyString
+		return runtime.EmptyString, nil
 	}
 
 	var b strings.Builder
@@ -95,7 +124,11 @@ func concatStrings(reg []runtime.Value, src1, src2 bytecode.Operand) runtime.Val
 		b.WriteString(string(parts[i]))
 	}
 
-	return runtime.NewString(b.String())
+	return runtime.NewString(b.String()), nil
+}
+
+func durationConcatError() error {
+	return runtime.Error(runtime.ErrInvalidOperation, "duration values require explicit TO_STRING conversion before concatenation")
 }
 
 func maxUDFRegisters(udfs []bytecode.UDF) int {

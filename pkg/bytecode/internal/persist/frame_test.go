@@ -4,9 +4,37 @@ import (
 	"errors"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
+
+func TestDurationConstantRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	expected := runtime.NewDuration(1500 * time.Millisecond)
+	frame, err := encodeConstant(expected)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if frame.Type != constantTypeDuration || frame.Duration == nil || *frame.Duration != "1.5s" {
+		t.Fatalf("unexpected duration frame: %#v", frame)
+	}
+
+	actual, err := decodeConstant(frame)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if actual != expected {
+		t.Fatalf("decoded duration = %v, want %v", actual, expected)
+	}
+
+	invalid := "not-a-duration"
+	if _, err := decodeConstant(ConstantFrame{Type: constantTypeDuration, Duration: &invalid}); !errors.Is(err, bytecode.ErrInvalidConstant) {
+		t.Fatalf("malformed duration error = %v", err)
+	}
+}
 
 func TestValidateInstructionOperandForBitSize(t *testing.T) {
 	tests := []struct {

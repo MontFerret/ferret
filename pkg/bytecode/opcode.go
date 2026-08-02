@@ -190,6 +190,9 @@ const (
 
 	// Source Observation Operations
 	OpSourcePoint
+
+	// Runtime Clock Operations
+	OpElapsed
 )
 
 func (op Opcode) String() string {
@@ -497,6 +500,8 @@ func (op Opcode) String() string {
 		return "DISTINCT"
 	case OpSourcePoint:
 		return "SOURCEPOINT"
+	case OpElapsed:
+		return "ELAPSED"
 
 	default:
 		return "UNKNOWN"

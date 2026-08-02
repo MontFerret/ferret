@@ -27,6 +27,60 @@ func TestFormatter_TemplateLiteralDoesNotIndentInterpolation(t *testing.T) {
 	}
 }
 
+func TestFormatter_DurationExpressionsRoundTrip(t *testing.T) {
+	input := `LET delay=1.5S
+RETURN WAITFOR FALSE TIMEOUT delay+500ms EVERY 1e2MS ON ERROR RETRY 1 DELAY (0ms OR 1ms) OR RETURN NONE`
+	src := source.NewAnonymous(input)
+	var first bytes.Buffer
+	fmt := New()
+
+	if err := fmt.Format(&first, src); err != nil {
+		t.Fatalf("format failed: %v", err)
+	}
+
+	formatted := first.String()
+	for _, expected := range []string{
+		"LET delay = 1.5S",
+		"TIMEOUT delay + 500ms",
+		"EVERY 1e2MS",
+		"DELAY (0ms OR 1ms) OR RETURN NONE",
+	} {
+		if !strings.Contains(formatted, expected) {
+			t.Fatalf("formatted duration expression missing %q:\n%s", expected, formatted)
+		}
+	}
+
+	var second bytes.Buffer
+	if err := fmt.Format(&second, source.NewAnonymous(formatted)); err != nil {
+		t.Fatalf("formatted output must remain parseable: %v", err)
+	}
+	if second.String() != formatted {
+		t.Fatalf("duration formatting must be stable:\nfirst:\n%s\nsecond:\n%s", formatted, second.String())
+	}
+}
+
+func TestFormatter_DurationMatchLiteralRoundTrip(t *testing.T) {
+	input := `RETURN MATCH 5s(5000MS=>true,_=>false)`
+	var first bytes.Buffer
+	fmt := New()
+
+	if err := fmt.Format(&first, source.NewAnonymous(input)); err != nil {
+		t.Fatalf("format failed: %v", err)
+	}
+	formatted := first.String()
+	if !strings.Contains(formatted, "MATCH 5s") || !strings.Contains(formatted, "5000MS => TRUE") {
+		t.Fatalf("duration match literals were not preserved:\n%s", formatted)
+	}
+
+	var second bytes.Buffer
+	if err := fmt.Format(&second, source.NewAnonymous(formatted)); err != nil {
+		t.Fatalf("formatted output must remain parseable: %v", err)
+	}
+	if second.String() != formatted {
+		t.Fatalf("duration match formatting must be stable:\nfirst:\n%s\nsecond:\n%s", formatted, second.String())
+	}
+}
+
 func TestFormatter_ArrayTemplateLiteralNewlineForcesMultiline(t *testing.T) {
 	input := "RETURN [`line1\n${1}`]"
 	src := source.NewAnonymous(input)
@@ -188,7 +242,7 @@ func TestFormatter_WaitForEventFilterUsesWhenAndRemainsParseable(t *testing.T) {
 }
 
 func TestFormatter_WaitForEventTriggerRemainsParseable(t *testing.T) {
-	input := "LET obs = []\nLET button = @button\nWAITFOR EVENT \"test\" IN obs WHEN .type == \"match\" TRIGGER (button <- \"click\") TIMEOUT 1\nRETURN 1"
+	input := "LET obs = []\nLET button = @button\nWAITFOR EVENT \"test\" IN obs WHEN .type == \"match\" TRIGGER (button <- \"click\") TIMEOUT 1ms\nRETURN 1"
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
 	fmt := New()
@@ -200,7 +254,7 @@ func TestFormatter_WaitForEventTriggerRemainsParseable(t *testing.T) {
 	out := buf.String()
 	whenIdx := strings.Index(out, "WHEN .type == \"match\"")
 	triggerIdx := strings.Index(out, "TRIGGER (")
-	timeoutIdx := strings.Index(out, "TIMEOUT 1")
+	timeoutIdx := strings.Index(out, "TIMEOUT 1ms")
 	if whenIdx < 0 || triggerIdx < 0 || timeoutIdx < 0 {
 		t.Fatalf("expected WAITFOR trigger clauses in formatted output; got:\n%s", out)
 	}
@@ -218,7 +272,7 @@ func TestFormatter_WaitForEventTriggerRemainsParseable(t *testing.T) {
 }
 
 func TestFormatter_WaitForEventInlineTriggerRemainsInline(t *testing.T) {
-	input := "LET obs = []\nLET button = @button\nWAITFOR EVENT \"test\" IN obs WHEN .type == \"match\" TRIGGER button <- \"click\" TIMEOUT 1\nRETURN 1"
+	input := "LET obs = []\nLET button = @button\nWAITFOR EVENT \"test\" IN obs WHEN .type == \"match\" TRIGGER button <- \"click\" TIMEOUT 1ms\nRETURN 1"
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
 	fmt := New()
@@ -230,7 +284,7 @@ func TestFormatter_WaitForEventInlineTriggerRemainsInline(t *testing.T) {
 	out := buf.String()
 	whenIdx := strings.Index(out, "WHEN .type == \"match\"")
 	triggerIdx := strings.Index(out, "TRIGGER button <- \"click\"")
-	timeoutIdx := strings.Index(out, "TIMEOUT 1")
+	timeoutIdx := strings.Index(out, "TIMEOUT 1ms")
 	if whenIdx < 0 || triggerIdx < 0 || timeoutIdx < 0 {
 		t.Fatalf("expected inline WAITFOR trigger clauses in formatted output; got:\n%s", out)
 	}
@@ -248,7 +302,7 @@ func TestFormatter_WaitForEventInlineTriggerRemainsInline(t *testing.T) {
 }
 
 func TestFormatter_WaitForPredicateRepeatedWhenRemainsParseable(t *testing.T) {
-	input := "LET value = WAITFOR VALUE { ok: true } WHEN .ok WHEN .ok == true TIMEOUT 1\nRETURN value"
+	input := "LET value = WAITFOR VALUE { ok: true } WHEN .ok WHEN .ok == true TIMEOUT 1ms\nRETURN value"
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
 	fmt := New()

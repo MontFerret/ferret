@@ -87,7 +87,7 @@ func (c *StatementCompiler) compileBodyStatement(ctx fql.IBodyStatementContext) 
 		// Function declarations are compiled separately.
 		return
 	} else if fce := ctx.FunctionCallExpression(); fce != nil {
-		// Handle function calls (e.g., WAIT(1000))
+		// Handle function calls (e.g., WAIT(1s))
 		c.CompileFunctionCall(fce)
 	} else if wfe := ctx.WaitForExpression(); wfe != nil {
 		// Handle wait expressions (e.g., WAIT FOR x RETURN y)

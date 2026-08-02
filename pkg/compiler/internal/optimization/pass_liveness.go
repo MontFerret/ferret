@@ -152,7 +152,7 @@ func applyMoveLoadUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operan
 		collector.addUse(src1)
 		collector.addDef(dst)
 		return true
-	case bytecode.OpLoadConst, bytecode.OpLoadParam, bytecode.OpLoadNone, bytecode.OpLoadBool, bytecode.OpLoadZero, bytecode.OpRand,
+	case bytecode.OpLoadConst, bytecode.OpLoadParam, bytecode.OpLoadNone, bytecode.OpLoadBool, bytecode.OpLoadZero, bytecode.OpRand, bytecode.OpElapsed,
 		bytecode.OpLoadArray, bytecode.OpLoadObject:
 		collector.addDef(dst)
 		return true

@@ -14,14 +14,16 @@ type StreamIterator struct {
 	closed      bool
 }
 
+// NewStreamIterator creates an iterator with DefaultStreamTimeout between stream messages.
 func NewStreamIterator(stream Stream) Iterator {
 	return NewStreamIteratorWithTimeout(stream, DefaultStreamTimeout)
 }
 
+// NewStreamIteratorWithTimeout creates an iterator using timeout as an exact Go duration.
 func NewStreamIteratorWithTimeout(stream Stream, timeout time.Duration) Iterator {
 	return &StreamIterator{
 		stream:  stream,
-		timeout: timeout * time.Millisecond,
+		timeout: timeout,
 	}
 }
 

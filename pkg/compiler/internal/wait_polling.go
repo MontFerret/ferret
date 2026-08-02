@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"time"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -12,10 +14,9 @@ type waitPredicatePollState struct {
 	intervalReg  bytecode.Operand
 	resultReg    bytecode.Operand
 	startReg     bytecode.Operand
-	unitReg      bytecode.Operand
 }
 
-const waitForDefaultEveryMs = 100
+const waitForDefaultEvery = runtime.Duration(100 * time.Millisecond)
 
 func (c *WaitCompiler) tryCompileWaitPredicateFastPath(config waitPredicateCompileConfig) (bytecode.Operand, bool) {
 	if len(config.whenExprs) > 0 {
@@ -101,7 +102,8 @@ func (c *WaitCompiler) initWaitPredicatePollState(config waitPredicateCompileCon
 	if config.everyReg != bytecode.NoopOperand {
 		c.ctx.Program.Emitter.EmitMove(state.baseEveryReg, config.everyReg)
 	} else {
-		c.ctx.Program.Emitter.EmitLoadConst(state.baseEveryReg, c.ctx.Function.Symbols.AddConstant(runtime.NewInt(waitForDefaultEveryMs)))
+		c.ctx.Program.Emitter.EmitLoadConst(state.baseEveryReg, c.ctx.Function.Symbols.AddConstant(waitForDefaultEvery))
+		c.ctx.Function.Types.Set(state.baseEveryReg, core.TypeDuration)
 	}
 
 	state.pollReg = state.baseEveryReg
@@ -119,8 +121,7 @@ func (c *WaitCompiler) initWaitPredicatePollState(config waitPredicateCompileCon
 	}
 
 	if config.timeoutReg != bytecode.NoopOperand {
-		state.startReg = c.emitNow()
-		state.unitReg = c.facts.LoadConstant(runtime.NewString("f"))
+		state.startReg = c.emitElapsed()
 	}
 
 	return state
@@ -188,11 +189,11 @@ func (c *WaitCompiler) emitWaitPredicatePollIteration(
 		}
 	}
 
-	elapsedReg := c.emitWaitPredicateTimeoutCheck(config.timeoutReg, state.startReg, state.unitReg, timeoutLabel)
+	elapsedReg := c.emitWaitPredicateTimeoutCheck(config.timeoutReg, state.startReg, timeoutLabel)
 	sleepIntervalReg := c.prepareWaitSleepInterval(config, state.pollReg)
-	c.emitWaitSleep(sleepIntervalReg, config.timeoutReg, elapsedReg)
+	c.emitWaitSleep(sleepIntervalReg, config.timeoutReg, elapsedReg, config.everyZero)
 
-	if config.backoff != core.RetryBackoffNone {
+	if config.backoff != core.RetryBackoffNone && !config.everyZero {
 		c.recovery.emitBackoffUpdate(config.backoff, state.intervalReg, state.baseEveryReg)
 		if config.capEveryReg != bytecode.NoopOperand {
 			c.emitClampMax(state.intervalReg, config.capEveryReg)

@@ -25,6 +25,11 @@ func TestValidateProgram(t *testing.T) {
 			target:  ErrInvalidInstruction,
 		},
 		{
+			name:    "elapsed_register_out_of_range",
+			program: withProgramMutation(func(program *Program) { program.Bytecode[0] = NewInstruction(OpElapsed, NewRegister(3)) }),
+			target:  ErrInvalidInstruction,
+		},
+		{
 			name: "constant_out_of_range",
 			program: withProgramMutation(func(program *Program) {
 				program.Bytecode[0] = NewInstruction(OpLoadConst, NewRegister(0), NewConstant(99))
@@ -183,6 +188,23 @@ func TestValidateProgramAllowsDistinctOpcode(t *testing.T) {
 
 	if err := ValidateProgram(program); err != nil {
 		t.Fatalf("expected distinct opcode to be valid, got %v", err)
+	}
+}
+
+func TestValidateProgramAllowsElapsedOpcode(t *testing.T) {
+	program := withProgramMutation(func(program *Program) {
+		program.Bytecode = []Instruction{
+			NewInstruction(OpElapsed, NewRegister(0)),
+			NewInstruction(OpReturn, NewRegister(0)),
+		}
+		program.Metadata.Labels = nil
+		program.Metadata.AggregateSelectorSlots = nil
+		program.Metadata.MatchFailTargets = nil
+		program.Metadata.DebugSpans = nil
+	})
+
+	if err := ValidateProgram(program); err != nil {
+		t.Fatalf("expected elapsed opcode to be valid, got %v", err)
 	}
 }
 

@@ -27,6 +27,7 @@ type (
 		backoff       core.RetryBackoff
 		jitterReg     bytecode.Operand
 		hasJitter     bool
+		everyZero     bool
 	}
 )
 
@@ -103,11 +104,12 @@ func (c *WaitCompiler) buildWaitPredicateConfig(
 		return waitPredicateCompileConfig{}, false
 	}
 
+	everyZero := c.isZeroEveryLiteral(ctx.EveryClause())
 	jitterReg, jitterLiteral, hasJitter := c.compileJitterClause(ctx.JitterClause())
 	timeoutReg := bytecode.NoopOperand
 
 	if timeout := ctx.TimeoutClause(); timeout != nil {
-		timeoutReg = c.recovery.CompileDurationOperand(timeout)
+		timeoutReg = c.recovery.CompileDurationExpression(timeout.Expression())
 		if timeoutReg == bytecode.NoopOperand {
 			return waitPredicateCompileConfig{}, false
 		}
@@ -124,7 +126,24 @@ func (c *WaitCompiler) buildWaitPredicateConfig(
 		jitterReg:     jitterReg,
 		jitterLiteral: jitterLiteral,
 		hasJitter:     hasJitter,
+		everyZero:     everyZero,
 	}, true
+}
+
+func (c *WaitCompiler) isZeroEveryLiteral(ctx fql.IEveryClauseContext) bool {
+	if ctx == nil {
+		return false
+	}
+
+	values := ctx.AllEveryClauseValue()
+	if len(values) == 0 || values[0].Expression() == nil {
+		return false
+	}
+
+	value, ok := c.facts.LiteralValueFromExpression(values[0].Expression())
+	duration, durationOK := value.(runtime.Duration)
+
+	return ok && durationOK && duration == 0
 }
 
 func (c *WaitCompiler) normalizeWaitPredicateConfig(config *waitPredicateCompileConfig) {
@@ -152,13 +171,13 @@ func (c *WaitCompiler) compileEveryClause(ctx fql.IEveryClauseContext) (bytecode
 		return bytecode.NoopOperand, bytecode.NoopOperand, true
 	}
 
-	base := c.recovery.CompileDurationOperand(values[0])
+	base := c.recovery.CompileDurationExpression(values[0].Expression())
 	if base == bytecode.NoopOperand {
 		return bytecode.NoopOperand, bytecode.NoopOperand, false
 	}
 
 	if len(values) > 1 {
-		cap := c.recovery.CompileDurationOperand(values[1])
+		cap := c.recovery.CompileDurationExpression(values[1].Expression())
 		if cap == bytecode.NoopOperand {
 			return bytecode.NoopOperand, bytecode.NoopOperand, false
 		}
@@ -249,6 +268,7 @@ func (c *WaitCompiler) compileBackoffClause(ctx fql.IBackoffClauseContext) core.
 				err.Hint = "Use one of: NONE, LINEAR, EXPONENTIAL."
 				c.ctx.Program.Errors.Add(err)
 			}
+
 			return core.RetryBackoffNone
 		}
 	default:

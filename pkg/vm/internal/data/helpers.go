@@ -8,8 +8,8 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func Sleep(ctx context.Context, duration runtime.Int) error {
-	timer := time.NewTimer(time.Millisecond * time.Duration(duration))
+func Sleep(ctx context.Context, duration runtime.Duration) error {
+	timer := time.NewTimer(time.Duration(duration))
 
 	select {
 	case <-ctx.Done():

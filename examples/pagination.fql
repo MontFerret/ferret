@@ -7,7 +7,7 @@ CLICK(amazon, '#nav-search-submit-button')
 
 WAITFOR EVENT "navigation" IN amazon
     FILTER current.url =~ "www\.amazon\.com\/s\?k="
-    TIMEOUT 50000
+    TIMEOUT 50s
 
 WAIT_ELEMENT(amazon, '[class*="template=PAGINATION"]')
 
@@ -83,5 +83,4 @@ LET result = (
 )
 
 RETURN FLATTEN(result)
-
 

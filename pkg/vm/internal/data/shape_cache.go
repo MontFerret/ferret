@@ -1,5 +1,10 @@
 package data
 
+import (
+	"maps"
+	"slices"
+)
+
 type (
 	ShapeCache struct {
 		transitions map[shapeKey]*fastShape
@@ -90,17 +95,12 @@ func (c *ShapeCache) newShape(fields map[string]int, names []string) *fastShape 
 }
 
 func (c *ShapeCache) newShapeFrom(prev *fastShape, key string) *fastShape {
-	fields := make(map[string]int, len(prev.fields)+1)
-	for k, v := range prev.fields {
-		fields[k] = v
-	}
+	fields := maps.Clone(prev.fields)
 
 	slot := len(prev.names)
 	fields[key] = slot
 
-	names := make([]string, slot+1)
-	copy(names, prev.names)
-	names[slot] = key
+	names := slices.Concat(prev.names, []string{key})
 
 	return c.newShape(fields, names)
 }

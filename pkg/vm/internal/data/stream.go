@@ -18,7 +18,7 @@ func NewStreamValue(stream runtime.Stream) runtime.Value {
 	}
 }
 
-func (v *StreamValue) Iterate(timeout runtime.Int) IteratorState {
+func (v *StreamValue) Iterate(timeout runtime.Duration) IteratorState {
 	if timeout == 0 {
 		return WrapIterator(runtime.NewStreamIterator(v.Value))
 	}

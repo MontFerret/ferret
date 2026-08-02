@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"net/url"
-	"strconv"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -29,13 +28,6 @@ func FromBase64(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 func DecodeURIComponent(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	str, err := url.QueryUnescape(arg.String())
 
-	if err != nil {
-		return runtime.None, err
-	}
-
-	// hack for decoding unicode symbols.
-	// eg. convert "\u0026" -> "&""
-	str, err = strconv.Unquote("\"" + str + "\"")
 	if err != nil {
 		return runtime.None, err
 	}

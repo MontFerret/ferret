@@ -3,8 +3,8 @@ package internal
 import (
 	"errors"
 	"reflect"
-	"strconv"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -142,36 +142,34 @@ func TestResolveWaitPredicateMode(t *testing.T) {
 
 func TestParseDurationLiteral_Valid(t *testing.T) {
 	tests := []struct {
-		expected    runtime.Value
-		name        string
-		input       string
-		expectFloat bool
+		expected runtime.Value
+		name     string
+		input    string
 	}{
 		{
 			name:     "milliseconds",
 			input:    "100ms",
-			expected: runtime.NewInt64(100),
+			expected: runtime.NewDuration(100 * time.Millisecond),
 		},
 		{
 			name:     "seconds",
 			input:    "2s",
-			expected: runtime.NewInt64(2000),
+			expected: runtime.NewDuration(2 * time.Second),
 		},
 		{
 			name:     "minutes",
 			input:    "1.5m",
-			expected: runtime.NewInt64(90000),
+			expected: runtime.NewDuration(90 * time.Second),
 		},
 		{
 			name:     "hours with spaces",
 			input:    " 1h ",
-			expected: runtime.NewInt64(3600000),
+			expected: runtime.NewDuration(time.Hour),
 		},
 		{
-			name:        "fractional milliseconds",
-			input:       "0.5ms",
-			expected:    runtime.NewFloat(0.5),
-			expectFloat: true,
+			name:     "fractional milliseconds",
+			input:    "0.5ms",
+			expected: runtime.NewDuration(500 * time.Microsecond),
 		},
 	}
 
@@ -186,9 +184,8 @@ func TestParseDurationLiteral_Valid(t *testing.T) {
 				t.Fatalf("unexpected value: got %v want %v", actual, tt.expected)
 			}
 
-			_, isFloat := actual.(runtime.Float)
-			if isFloat != tt.expectFloat {
-				t.Fatalf("unexpected value kind: float=%v expected=%v", isFloat, tt.expectFloat)
+			if _, ok := actual.(runtime.Duration); !ok {
+				t.Fatalf("unexpected value kind: %T", actual)
 			}
 		})
 	}
@@ -228,12 +225,8 @@ func TestParseDurationLiteral_Invalid(t *testing.T) {
 				t.Fatal("expected parsing error")
 			}
 
-			if !errors.Is(err, strconv.ErrSyntax) {
-				t.Fatalf("expected syntax error, got %v", err)
-			}
-
-			if actual != runtime.None {
-				t.Fatalf("expected runtime.None on error, got %v", actual)
+			if actual != runtime.ZeroDuration {
+				t.Fatalf("expected zero duration on error, got %v", actual)
 			}
 		})
 	}
@@ -241,11 +234,11 @@ func TestParseDurationLiteral_Invalid(t *testing.T) {
 
 func TestParseDurationLiteral_OutOfRange(t *testing.T) {
 	actual, err := parseDurationLiteral("1e20ms")
-	if !errors.Is(err, strconv.ErrRange) {
+	if !errors.Is(err, runtime.ErrRange) {
 		t.Fatalf("expected range error, got %v", err)
 	}
 
-	if actual != runtime.None {
-		t.Fatalf("expected runtime.None on error, got %v", actual)
+	if actual != runtime.ZeroDuration {
+		t.Fatalf("expected zero duration on error, got %v", actual)
 	}
 }

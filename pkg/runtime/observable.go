@@ -3,9 +3,11 @@ package runtime
 import (
 	"context"
 	"io"
+	"time"
 )
 
-const DefaultStreamTimeout = 5000
+// DefaultStreamTimeout is the exact timeout used by NewStreamIterator.
+const DefaultStreamTimeout = 5 * time.Second
 
 type (
 	// Subscription represents an event subscription object that contains target event name

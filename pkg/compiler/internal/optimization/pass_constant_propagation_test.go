@@ -417,6 +417,16 @@ func TestConstantPropagation_BuildConcatFoldConst(t *testing.T) {
 			count:  3,
 			wantOK: false,
 		},
+		{
+			name: "duration requires runtime error",
+			state: constState{
+				1: runtime.NewString("duration="),
+				2: runtime.NewDuration(1),
+			},
+			start:  1,
+			count:  2,
+			wantOK: false,
+		},
 	}
 
 	for _, tc := range tests {

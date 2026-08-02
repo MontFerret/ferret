@@ -95,6 +95,8 @@ func (debugValueAccess) defaultTypeName(value runtime.Value) string {
 		return runtime.TypeInt.Name()
 	case runtime.Float:
 		return runtime.TypeFloat.Name()
+	case runtime.Duration:
+		return runtime.TypeDuration.Name()
 	case runtime.String:
 		return runtime.TypeString.Name()
 	case runtime.DateTime:

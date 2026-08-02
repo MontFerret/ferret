@@ -44,6 +44,15 @@ func TestEqual(t *t.T) {
 				So(err, ShouldBeNil)
 			})
 		})
+
+		Convey("When values contain apostrophes and backslashes", func() {
+			Convey("It should escape them in the error", func() {
+				_, err := Equal(context.Background(), runtime.NewString(`can't\stop`), runtime.NewString("won't"))
+
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, `expected String 'can\'t\\stop' to be equal to String 'won\'t'`).Error())
+			})
+		})
 	})
 
 	Convey("When args are numbers", t, func() {

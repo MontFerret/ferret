@@ -54,6 +54,15 @@ func AssertFloat(input Value) error {
 	return nil
 }
 
+// AssertDuration checks that input is a native duration value.
+func AssertDuration(input Value) error {
+	if _, ok := input.(Duration); !ok {
+		return TypeErrorOf(input, TypeDuration)
+	}
+
+	return nil
+}
+
 func AssertNumber(input Value) error {
 	switch input.(type) {
 	case Int, Float:

@@ -17,6 +17,10 @@ var (
 		_, ok := v.(Float)
 		return ok
 	})
+	TypeDuration = newBuiltinType("Duration", func(v Value) bool {
+		_, ok := v.(Duration)
+		return ok
+	})
 	TypeString = newBuiltinType("String", func(v Value) bool {
 		_, ok := v.(String)
 		return ok

@@ -20,6 +20,8 @@ func coerceBool(input runtime.Value) runtime.Boolean {
 		return val != 0
 	case runtime.Float:
 		return val != 0
+	case runtime.Duration:
+		return val != 0
 	case runtime.DateTime:
 		return val.IsZero() != true
 	default:

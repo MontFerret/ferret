@@ -16,6 +16,7 @@ func TestCanTrackValueRejectsCommonScalars(t *testing.T) {
 		runtime.True,
 		runtime.NewInt(1),
 		runtime.NewFloat(1.5),
+		runtime.NewDuration(1),
 		runtime.NewString("x"),
 		runtime.NewArray(0),
 		runtime.NewObject(),

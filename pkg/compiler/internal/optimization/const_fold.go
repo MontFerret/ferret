@@ -97,11 +97,13 @@ func foldIncDecInstruction(inst *bytecode.Instruction, env constFoldEnv, result 
 
 func foldIncDecValue(op bytecode.Opcode, val runtime.Value, bg context.Context) (runtime.Value, bool) {
 	if op == bytecode.OpIncr {
-		return increment(bg, val), true
+		result, err := runtime.IncrementChecked(bg, val)
+		return result, err == nil
 	}
 
 	if op == bytecode.OpDecr {
-		return decrement(bg, val), true
+		result, err := runtime.DecrementChecked(bg, val)
+		return result, err == nil
 	}
 
 	return nil, false
@@ -258,6 +260,9 @@ func buildConcatFoldConst(state constState, start, count int) (runtime.Value, bo
 	for i := 0; i < count; i++ {
 		val, ok := state[start+i]
 		if !ok {
+			return nil, false
+		}
+		if _, ok := val.(runtime.Duration); ok {
 			return nil, false
 		}
 

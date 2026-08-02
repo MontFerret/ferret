@@ -181,6 +181,9 @@ func (c *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.IE
 	}
 
 	c.ctx.Program.Emitter.EmitAB(op, dst, src)
+	if ctx.Not() == nil && c.facts.OperandType(src) == core.TypeDuration {
+		c.ctx.Function.Types.Set(dst, core.TypeDuration)
+	}
 
 	return dst
 }

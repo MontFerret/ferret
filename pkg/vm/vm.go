@@ -827,13 +827,18 @@ loop:
 		case bytecode.OpStreamIter:
 			stream := reg[src1].(*data.StreamValue)
 
-			var timeout runtime.Int
+			var timeout runtime.Duration
 
 			if reg[src2] != runtime.None {
-				t, err := runtime.CastInt(reg[src2])
+				t, err := runtime.CastDuration(reg[src2])
 
 				if err != nil {
 					state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+					break
+				}
+
+				if t < 0 {
+					state.raiseRuntimeAt(pc, runtime.Error(runtime.ErrInvalidArgument, "stream timeout must not be negative"), recoverDefault, bytecode.NoopOperand, nil, false)
 					break
 				}
 
@@ -923,39 +928,51 @@ loop:
 
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpAdd:
-			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
+			res, err := runtime.AddChecked(ctx, reg[src1], reg[src2])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpAddConst:
-			reg[dst] = runtime.Add(ctx, reg[src1], constants[src2.Constant()])
+			res, err := runtime.AddChecked(ctx, reg[src1], constants[src2.Constant()])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpConcat:
-			reg[dst] = concatStrings(reg, src1, src2)
+			res, err := concatStrings(reg, src1, src2)
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpSub:
-			reg[dst] = runtime.Subtract(ctx, reg[src1], reg[src2])
+			res, err := runtime.SubtractChecked(ctx, reg[src1], reg[src2])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpMul:
-			reg[dst] = runtime.Multiply(ctx, reg[src1], reg[src2])
+			res, err := runtime.MultiplyChecked(ctx, reg[src1], reg[src2])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpDiv:
 			if err := state.checkDivisionByZeroAt(ctx, pc, reg[src1], reg[src2]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
-			reg[dst] = runtime.Divide(ctx, reg[src1], reg[src2])
+			res, err := runtime.DivideChecked(ctx, reg[src1], reg[src2])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpMod:
 			if err := state.checkModuloByZeroAt(ctx, pc, reg[src2]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
-			reg[dst] = runtime.Modulus(ctx, reg[src1], reg[src2])
+			res, err := runtime.ModulusChecked(ctx, reg[src1], reg[src2])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpIncr:
-			reg[dst] = runtime.Increment(ctx, reg[dst])
+			res, err := runtime.IncrementChecked(ctx, reg[dst])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpDecr:
-			reg[dst] = runtime.Decrement(ctx, reg[dst])
+			res, err := runtime.DecrementChecked(ctx, reg[dst])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpNegate:
-			reg[dst] = negate(reg[src1])
+			res, err := runtime.NegateChecked(reg[src1])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpFlipPositive:
-			reg[dst] = positive(reg[src1])
+			res, err := runtime.PositiveChecked(reg[src1])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpFlipNegative:
-			reg[dst] = negative(reg[src1])
+			res, err := runtime.NegativeChecked(reg[src1])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpCastBool:
 			reg[dst] = coerceBool(reg[src1])
 		case bytecode.OpCmp:
@@ -1075,10 +1092,14 @@ loop:
 				}
 			}
 		case bytecode.OpSleep:
-			dur, err := runtime.ToInt(ctx, reg[dst])
+			dur, err := runtime.CastDuration(reg[dst])
 
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+			if dur < 0 {
+				state.raiseRuntimeAt(pc, runtime.Error(runtime.ErrInvalidArgument, "wait duration must not be negative"), recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
 
@@ -1087,6 +1108,8 @@ loop:
 			}
 		case bytecode.OpRand:
 			state.writeBorrowedRegister(dst, runtime.NewFloat(runtime.RandomDefault()))
+		case bytecode.OpElapsed:
+			state.writeBorrowedRegister(dst, state.elapsed())
 		default:
 			return nil, sourcePointContinue, runtime.Errorf(runtime.ErrUnexpected, "unknown opcode %d at pc %d", op, pc)
 		}

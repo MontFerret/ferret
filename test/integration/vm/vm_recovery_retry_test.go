@@ -22,7 +22,7 @@ func TestHostFunctionRetryRecoverySuccess(t *testing.T) {
 			fmt.Sprintf("VM/O%d", level),
 			compiler.New(compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
-				S("RETURN STEP() ON ERROR RETRY 2 DELAY 0 BACKOFF EXPONENTIAL", 99, "Retry should return the first successful attempt"),
+				S("RETURN STEP() ON ERROR RETRY 2 DELAY 0s BACKOFF EXPONENTIAL", 99, "Retry should return the first successful attempt"),
 			},
 			vm.WithFunction("STEP", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 				callCount++
@@ -129,7 +129,7 @@ func TestWaitForPredicateRetryRecovery(t *testing.T) {
 			fmt.Sprintf("VM/O%d", level),
 			compiler.New(compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
-				S(`LET token = WAITFOR VALUE STEP() TIMEOUT 20ms EVERY 0 ON TIMEOUT RETURN "timeout" ON ERROR RETRY 2 DELAY 0 OR RETURN "error"
+				S(`LET token = WAITFOR VALUE STEP() TIMEOUT 20ms EVERY 0ms ON TIMEOUT RETURN "timeout" ON ERROR RETRY 2 DELAY 0s OR RETURN "error"
 RETURN token`, "ok", "WAITFOR predicate should retry runtime failures and keep timeout handling separate"),
 			},
 			vm.WithFunction("STEP", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
@@ -157,7 +157,7 @@ func TestWaitForEventRetryRecovery(t *testing.T) {
 			fmt.Sprintf("VM/O%d", level),
 			compiler.New(compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
-				NotNil(`RETURN WAITFOR EVENT "test" IN SOURCE() TIMEOUT 20ms ON TIMEOUT RETURN "timeout" ON ERROR RETRY 2 DELAY 0 OR RETURN "error"`, "WAITFOR EVENT should retry source evaluation failures"),
+				NotNil(`RETURN WAITFOR EVENT "test" IN SOURCE() TIMEOUT 20ms ON TIMEOUT RETURN "timeout" ON ERROR RETRY 2 DELAY 0s OR RETURN "error"`, "WAITFOR EVENT should retry source evaluation failures"),
 			},
 			vm.WithFunction("SOURCE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 				successCalls++
@@ -180,7 +180,7 @@ func TestWaitForEventRetryRecovery(t *testing.T) {
 			fmt.Sprintf("VM/O%d", level),
 			compiler.New(compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
-				S(`RETURN WAITFOR EVENT "test" IN SOURCE() TIMEOUT 1ms ON TIMEOUT RETURN "timeout" ON ERROR RETRY 2 DELAY 0 OR RETURN "error"`, "timeout", "WAITFOR EVENT timeout should not be retried by ON ERROR RETRY"),
+				S(`RETURN WAITFOR EVENT "test" IN SOURCE() TIMEOUT 1ms ON TIMEOUT RETURN "timeout" ON ERROR RETRY 2 DELAY 0s OR RETURN "error"`, "timeout", "WAITFOR EVENT timeout should not be retried by ON ERROR RETRY"),
 			},
 			vm.WithFunction("SOURCE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 				timeoutCalls++

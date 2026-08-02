@@ -50,6 +50,13 @@ func encodeConstant(value runtime.Value) (constantJSON, error) {
 		return constantJSON{Type: encodeConstantType(runtime.TypeInt), Value: stdjson.RawMessage(strconv.FormatInt(int64(v), 10))}, nil
 	case runtime.Float:
 		return constantJSON{Type: encodeConstantType(runtime.TypeFloat), Value: stdjson.RawMessage(strconv.FormatFloat(float64(v), 'g', -1, 64))}, nil
+	case runtime.Duration:
+		encoded, err := json.Marshal(v.String())
+		if err != nil {
+			return constantJSON{}, err
+		}
+
+		return constantJSON{Type: encodeConstantType(runtime.TypeDuration), Value: encoded}, nil
 	case runtime.String:
 		encoded, err := json.Marshal(string(v))
 
@@ -123,6 +130,13 @@ func decodeConstant(frame constantJSON) (runtime.Value, error) {
 		}
 
 		return runtime.NewFloat(value), nil
+	case encodeConstantType(runtime.TypeDuration):
+		var value string
+		if err := json.Unmarshal(frame.Value, &value); err != nil {
+			return runtime.ZeroDuration, err
+		}
+
+		return runtime.ParseDuration(value)
 	case encodeConstantType(runtime.TypeString):
 		var value string
 

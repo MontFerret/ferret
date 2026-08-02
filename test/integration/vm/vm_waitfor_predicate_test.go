@@ -155,7 +155,7 @@ func TestWaitforPredicateWhenRetriesUntilTrue(t *testing.T) {
 			compiler.New(compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				S(`
-					LET token = WAITFOR VALUE CANDIDATE() WHEN .state == "ready" TIMEOUT 100ms EVERY 0
+					LET token = WAITFOR VALUE CANDIDATE() WHEN .state == "ready" TIMEOUT 100ms EVERY 0ms
 					RETURN token.value
 				`, "ok", "WAITFOR VALUE WHEN should retry until the predicate passes"),
 			},
@@ -250,10 +250,10 @@ func TestWaitforPredicateMultipleWhenShortCircuits(t *testing.T) {
 func TestWaitforPredicateWhenUsesOperationErrorPolicy(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		S(`
-			RETURN WAITFOR VALUE "ok" WHEN FAIL_PREDICATE(.) TIMEOUT 20ms EVERY 0 ON ERROR RETURN "error"
+			RETURN WAITFOR VALUE "ok" WHEN FAIL_PREDICATE(.) TIMEOUT 20ms EVERY 0ms ON ERROR RETURN "error"
 		`, "error", "WAITFOR VALUE WHEN predicate errors should use the wait error policy"),
 		S(`
-			RETURN WAITFOR VALUE "ok" WHEN true WHEN FAIL_PREDICATE(.) TIMEOUT 20ms EVERY 0 ON ERROR RETURN "error"
+			RETURN WAITFOR VALUE "ok" WHEN true WHEN FAIL_PREDICATE(.) TIMEOUT 20ms EVERY 0ms ON ERROR RETURN "error"
 		`, "error", "WAITFOR VALUE repeated WHEN predicate errors should use the wait error policy"),
 	}, vm.WithFunction("FAIL_PREDICATE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, fmt.Errorf("predicate failed")

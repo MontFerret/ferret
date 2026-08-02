@@ -2,11 +2,25 @@ package debugger
 
 import (
 	"testing"
+	"time"
 	"unicode/utf8"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
+
+func TestFormatDurationValue(t *testing.T) {
+	t.Parallel()
+
+	value := runtime.NewDuration(1500 * time.Millisecond)
+	access := vm.NewDebugValueAccess()
+	if got := formatValue(value, access, DefaultFormatOptions()); got != "1.5s" {
+		t.Fatalf("formatted duration = %q", got)
+	}
+	if got := access.TypeName(value); got != runtime.TypeDuration.Name() {
+		t.Fatalf("duration type name = %q", got)
+	}
+}
 
 type hostileDebugValue struct {
 	infoCalls *int

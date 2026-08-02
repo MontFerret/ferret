@@ -144,6 +144,8 @@ func ValueOf(input any) (Value, error) {
 		return NewFloat(float64(value)), nil
 	case time.Time:
 		return NewDateTime(value), nil
+	case time.Duration:
+		return NewDuration(value), nil
 	case []any:
 		ctx := context.Background()
 		arr := NewArray(len(value))
@@ -278,10 +280,10 @@ func ValueOf(input any) (Value, error) {
 	}
 }
 
-// IsScalar checks if the input Value is of a scalar type (Int, Float, String, or Boolean).
+// IsScalar checks if the input Value is a scalar value.
 func IsScalar(input Value) Boolean {
 	switch input.(type) {
-	case Int, Float, String, Boolean:
+	case Int, Float, Duration, String, Boolean:
 		return true
 	default:
 		return false
@@ -308,6 +310,7 @@ func ToList(ctx context.Context, input Value) (List, error) {
 	case Boolean,
 		Int,
 		Float,
+		Duration,
 		String,
 		DateTime:
 
@@ -401,6 +404,8 @@ func ToBoolean(input Value) Boolean {
 	case Int:
 		return val != 0
 	case Float:
+		return val != 0
+	case Duration:
 		return val != 0
 	case DateTime:
 		return Boolean(!val.IsZero())

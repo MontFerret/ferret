@@ -301,7 +301,7 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 		return idx == 0 || idx == 1
 	case bytecode.OpAddConst:
 		return idx == 0 || idx == 1
-	case bytecode.OpLoadNone, bytecode.OpLoadZero, bytecode.OpLoadBool, bytecode.OpLoadConst, bytecode.OpLoadParam, bytecode.OpRand:
+	case bytecode.OpLoadNone, bytecode.OpLoadZero, bytecode.OpLoadBool, bytecode.OpLoadConst, bytecode.OpLoadParam, bytecode.OpRand, bytecode.OpElapsed:
 		return idx == 0
 	case bytecode.OpLoadArray, bytecode.OpLoadObject:
 		return idx == 0

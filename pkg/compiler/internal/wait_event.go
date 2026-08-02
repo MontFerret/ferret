@@ -189,7 +189,7 @@ func (c *WaitCompiler) buildWaitEventState(ctx fql.IWaitForEventExpressionContex
 	}
 
 	if timeout := waitForEventTimeoutClause(ctx); timeout != nil {
-		state.timeoutReg = c.recovery.CompileDurationOperand(timeout)
+		state.timeoutReg = c.recovery.CompileDurationExpression(timeout.Expression())
 		if state.timeoutReg == bytecode.NoopOperand {
 			return waitEventCompileState{}, false
 		}

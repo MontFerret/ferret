@@ -39,7 +39,7 @@ func TestWaitforCompilationErrors(t *testing.T) {
 		`, E{
 			Kind:    parserd.SyntaxError,
 			Message: "Duration literal is out of range",
-			Hint:    "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m.",
+			Hint:    "Use a duration value that fits within the signed nanosecond range.",
 		}, "Out-of-range WAITFOR TIMEOUT duration should fail compilation"),
 		Failure(`
 			LET ok = WAITFOR TRUE EVERY 1e999s
@@ -47,24 +47,8 @@ func TestWaitforCompilationErrors(t *testing.T) {
 		`, E{
 			Kind:    parserd.SyntaxError,
 			Message: "Duration literal is out of range",
-			Hint:    "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m.",
+			Hint:    "Use a duration value that fits within the signed nanosecond range.",
 		}, "Out-of-range WAITFOR EVERY duration should fail compilation"),
-		Failure(`
-			LET ok = WAITFOR TRUE TIMEOUT 1e20
-			RETURN ok
-		`, E{
-			Kind:    parserd.SyntaxError,
-			Message: "Duration literal is out of range",
-			Hint:    "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m.",
-		}, "Out-of-range WAITFOR TIMEOUT float constant should fail compilation"),
-		Failure(`
-			LET ok = WAITFOR TRUE EVERY 1e20
-			RETURN ok
-		`, E{
-			Kind:    parserd.SyntaxError,
-			Message: "Duration literal is out of range",
-			Hint:    "Use a duration value that stays within the supported range, e.g. 100ms, 2s, or 1.5m.",
-		}, "Out-of-range WAITFOR EVERY float constant should fail compilation"),
 	})
 }
 
@@ -163,6 +147,11 @@ func TestWaitforPredicateWhenCompiles(t *testing.T) {
 
 func TestWaitforValuePresenceLowering(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck(
+			`RETURN WAITFOR VALUE @candidate TIMEOUT 1ms EVERY 0ms`,
+			expectElapsedWaitWithoutHostFunctions,
+			"Timed WAITFOR should use the VM clock without synthetic host calls",
+		),
 		Opcode(`RETURN WAITFOR VALUE @candidate TIMEOUT 1ms`, OpcodeExistence{
 			Exists:    []bytecode.Opcode{bytecode.OpJumpIfNone},
 			NotExists: []bytecode.Opcode{bytecode.OpExists},
@@ -172,6 +161,25 @@ func TestWaitforValuePresenceLowering(t *testing.T) {
 			NotExists: []bytecode.Opcode{bytecode.OpJumpIfNone},
 		}, "WAITFOR EXISTS should preserve EXISTS semantics"),
 	}, compiler.O0, compiler.O1)
+}
+
+func expectElapsedWaitWithoutHostFunctions(program *bytecode.Program) error {
+	if len(program.Functions.Host) != 0 {
+		return fmt.Errorf("expected no host functions, got %v", program.Functions.Host)
+	}
+
+	elapsedCount := 0
+	for _, inst := range program.Bytecode {
+		if inst.Opcode == bytecode.OpElapsed {
+			elapsedCount++
+		}
+	}
+
+	if elapsedCount != 2 {
+		return fmt.Errorf("expected two elapsed clock reads, got %d", elapsedCount)
+	}
+
+	return nil
 }
 
 func noCompilerError(*bytecode.Program) error {

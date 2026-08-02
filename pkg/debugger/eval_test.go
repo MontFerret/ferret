@@ -5,11 +5,44 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/parser"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
+
+func TestEvaluateDebugDurationExpression(t *testing.T) {
+	t.Parallel()
+
+	value, err := evaluateExpression(context.Background(), `1s + 500ms`, evalScope{
+		params: runtime.NewParams(),
+		values: vm.NewDebugValueAccess(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if value != runtime.NewDuration(1500*time.Millisecond) {
+		t.Fatalf("duration expression = %v (%T)", value, value)
+	}
+
+	value, err = evaluateExpression(context.Background(), `-500ms`, evalScope{
+		params: runtime.NewParams(),
+		values: vm.NewDebugValueAccess(),
+	})
+	if err != nil || value != runtime.NewDuration(-500*time.Millisecond) {
+		t.Fatalf("negative duration expression = %v (%T), %v", value, value, err)
+	}
+
+	_, err = evaluateExpression(context.Background(), `1s + 1`, evalScope{
+		params: runtime.NewParams(),
+		values: vm.NewDebugValueAccess(),
+	})
+	if !errors.Is(err, runtime.ErrInvalidOperation) {
+		t.Fatalf("mixed duration debugger expression error = %v", err)
+	}
+}
 
 type hostileDebugEvalValue struct{}
 
