@@ -41,12 +41,13 @@ func TestRunNotifiesSourcePointObserver(t *testing.T) {
 func TestBuildExecPlanDoesNotTreatSourcePointIDAsRegister(t *testing.T) {
 	program := newTestProgram(
 		1,
-		[]runtime.Value{runtime.NewString("TEST")},
+		[]runtime.Value{runtime.NewInt(0)},
 		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
 		bytecode.NewInstruction(bytecode.OpSourcePoint, bytecode.Operand(0)),
 		bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(0)),
 		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
 	)
+	program.Functions.Host = []bytecode.HostFunction{{Name: "TEST", ArgCount: 0}}
 
 	if _, err := New(program); err != nil {
 		t.Fatalf("source point cleared host function tracking: %v", err)

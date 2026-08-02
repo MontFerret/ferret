@@ -259,8 +259,8 @@ func (c *exprCallCompiler) reportFunctionArityError(ctx antlr.ParserRuleContext,
 
 func (c *exprCallCompiler) compileHostFunctionCallWith(name runtime.String, protected bool, seq core.RegisterSequence, argSpans []source.Span) bytecode.Operand {
 	dest := c.ctx.Function.Registers.Allocate()
-	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(name))
-	c.ctx.Program.HostFunctions.Bind(name.String(), len(seq))
+	bindingID := c.ctx.Program.HostFunctions.Bind(name.String(), len(seq))
+	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(runtime.NewInt(bindingID)))
 
 	opcode := bytecode.OpHCall
 	if protected {

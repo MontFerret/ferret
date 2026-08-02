@@ -119,26 +119,51 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 			udfTailCallDesc = append(udfTailCallDesc, descriptor)
 			instructions[pc].InlineSlot = len(udfTailCallDesc) - 1
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
-			descriptor := callDescriptor{
-				PC:               pc,
-				CallSitePC:       pc - 1,
-				Dst:              dst,
-				ID:               len(hostCallDesc),
-				ArgCount:         callArgCount(src1, src2),
-				ArgStart:         int(src1),
-				RecoveryBoundary: bytecode.IsProtectedCall(op),
-			}
-
-			fnName, err := resolveHostFnName(reg, dst)
-
+			bindingID, err := getHostFunctionID(reg[dst])
 			if err != nil {
 				errs.Add(err, pc, dst)
 				continue
 			}
 
-			descriptor.DisplayName = fnName
+			if bindingID < 0 || bindingID >= len(program.Functions.Host) {
+				errs.Add(
+					diagnostics.NewInvariantError(
+						"invalid host binding id",
+						runtime.Errorf(runtime.ErrUnexpected, "host binding id %d at pc %d is outside signature table of size %d", bindingID, pc, len(program.Functions.Host)),
+					),
+					pc,
+					dst,
+				)
+				continue
+			}
+
+			hostFn := program.Functions.Host[bindingID]
+			argCount := callArgCount(src1, src2)
+			if argCount != hostFn.ArgCount {
+				errs.Add(
+					diagnostics.NewInvariantError(
+						"host call signature mismatch",
+						runtime.Errorf(runtime.ErrUnexpected, "host binding %d %q expects compiled argument count %d, but callsite at pc %d has %d", bindingID, hostFn.Name, hostFn.ArgCount, pc, argCount),
+					),
+					pc,
+					dst,
+				)
+				continue
+			}
+
+			descriptor := callDescriptor{
+				PC:               pc,
+				CallSitePC:       pc - 1,
+				DisplayName:      hostFn.Name,
+				Dst:              dst,
+				ID:               bindingID,
+				ArgCount:         hostFn.ArgCount,
+				ArgStart:         int(src1),
+				RecoveryBoundary: bytecode.IsProtectedCall(op),
+			}
+
 			hostCallDesc = append(hostCallDesc, descriptor)
-			instructions[pc].InlineSlot = descriptor.ID
+			instructions[pc].InlineSlot = len(hostCallDesc) - 1
 		case bytecode.OpLoadParam:
 			slot, err := paramSlotAt(len(program.Params), src1, pc)
 			if err != nil {
@@ -238,18 +263,13 @@ func paramSlotAt(paramCount int, slot bytecode.Operand, pc int) (int, error) {
 	return idx, nil
 }
 
-func resolveHostFnName(reg map[bytecode.Operand]runtime.Value, dst bytecode.Operand) (string, error) {
-	val, ok := reg[dst]
-
-	if ok {
-		fnName, ok := val.(runtime.String)
-
-		if ok {
-			return fnName.String(), nil
-		}
+func getHostFunctionID(value runtime.Value) (int, error) {
+	id, ok := value.(runtime.Int)
+	if !ok {
+		return -1, ErrInvalidFunctionName
 	}
 
-	return "", ErrInvalidFunctionName
+	return int(id), nil
 }
 
 func buildCatchByPC(bytecodeLen int, catches []bytecode.Catch) []int {

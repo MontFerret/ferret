@@ -248,6 +248,7 @@ func TestLifecycle_ExplicitCloseOneAliasLeavesOtherStale(t *testing.T) {
 			runtime.NewString("MAKE"),
 		},
 	}
+	bindZeroArgHostCalls(program, "MAKE")
 
 	instance := mustNewVM(t, program)
 	value := newTrackingCloser("explicit-close")
@@ -338,7 +339,6 @@ func TestLifecycle_MissingParamDoesNotCloseBorrowedParamResource(t *testing.T) {
 			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
 		},
 	}
-
 	instance := mustNewVM(t, program)
 	param := newTrackingCloser("borrowed-param")
 	env := NewDefaultEnvironment()
@@ -364,7 +364,6 @@ func TestLifecycle_ReturnedParamResourceIsNotClosedByResult(t *testing.T) {
 			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
 		},
 	}
-
 	instance := mustNewVM(t, program)
 	param := newTrackingCloser("borrowed-param")
 	env := NewDefaultEnvironment()
@@ -401,6 +400,7 @@ func TestLifecycle_LoadParamOverwritesOwnedRegisterWithoutOwningParam(t *testing
 			runtime.NewString("MAKE"),
 		},
 	}
+	bindZeroArgHostCalls(program, "MAKE")
 
 	instance := mustNewVM(t, program)
 	owned := newTrackingCloser("owned")
@@ -443,6 +443,7 @@ func TestLifecycle_ReturnedOwnedResourceNotClosedByFrameEnd(t *testing.T) {
 			runtime.NewString("MAKE"),
 		},
 	}
+	bindZeroArgHostCalls(program, "MAKE")
 
 	instance := mustNewVM(t, program)
 	resource := newTrackingCloser("returned")
@@ -475,6 +476,7 @@ func TestLifecycle_ReturnedOwnedResourceClosedByResultClose(t *testing.T) {
 			runtime.NewString("MAKE"),
 		},
 	}
+	bindZeroArgHostCalls(program, "MAKE")
 
 	instance := mustNewVM(t, program)
 	resource := newTrackingCloser("returned")
@@ -559,6 +561,7 @@ func TestLifecycle_ArrayPushDoesNotDeferTransferredResourceToResult(t *testing.T
 			runtime.NewString("MAKE"),
 		},
 	}
+	bindZeroArgHostCalls(program, "MAKE")
 
 	instance := mustNewVM(t, program)
 	value := newTrackingCloser("transferred")
@@ -600,6 +603,7 @@ func TestLifecycle_ArrayPushReloadedValueClosesExactlyOnce(t *testing.T) {
 			runtime.ZeroInt,
 		},
 	}
+	bindZeroArgHostCalls(program, "MAKE")
 
 	instance := mustNewVM(t, program)
 	value := newTrackingCloser("transferred")
@@ -638,6 +642,7 @@ func TestLifecycle_ObjectSetConstDoesNotDeferTransferredResourceToResult(t *test
 			runtime.NewString("value"),
 		},
 	}
+	bindZeroArgHostCalls(program, "MAKE")
 
 	instance := mustNewVM(t, program)
 	value := newTrackingCloser("transferred")
@@ -676,6 +681,7 @@ func TestLifecycle_RuntimeErrorAfterOwnedResourceCreation(t *testing.T) {
 			runtime.NewString("FAIL"),
 		},
 	}
+	bindZeroArgHostCalls(program, "MAKE", "FAIL")
 
 	instance := mustNewVM(t, program)
 	resource := newTrackingCloser("leaked")
@@ -714,6 +720,7 @@ func TestLifecycle_NoLeakedOwnershipAfterError(t *testing.T) {
 			runtime.NewString("FAIL"),
 		},
 	}
+	bindZeroArgHostCalls(program, "FAIL")
 
 	instance := mustNewVM(t, program)
 	leaked := newTrackingCloser("leaked")

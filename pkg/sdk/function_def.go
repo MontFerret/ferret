@@ -8,7 +8,8 @@ type FunctionDef struct {
 	name     string
 }
 
-// Func creates a function definition for RegisterFunctions.
+// Func creates an arity-specific function definition for RegisterFunctions.
+// Definitions may share a name when their fixed arities differ or one is variadic.
 func Func[T runtime.FunctionConstraint](name string, fn T) FunctionDef {
 	return FunctionDef{
 		name:     name,

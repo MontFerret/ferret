@@ -199,7 +199,7 @@ RETURN a + b
 	})
 }
 
-func TestStrictWarmupReportsRepeatedUnresolvedHostFunctionPerCallsite(t *testing.T) {
+func TestStrictWarmupReportsRepeatedUnresolvedHostFunctionOncePerBinding(t *testing.T) {
 	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
 			spec.NewSpec(`
@@ -213,7 +213,7 @@ RETURN a + b
 				}
 
 				formatted := diagnostics.Format(err)
-				if got, want := strings.Count(formatted, "UnresolvedSymbol: unresolved function"), 2; got != want {
+				if got, want := strings.Count(formatted, "UnresolvedSymbol: unresolved function"), 1; got != want {
 					return fmt.Errorf("unexpected unresolved function count: got %d, want %d\n%s", got, want, formatted)
 				}
 

@@ -1,8 +1,10 @@
 package runtime
 
 import (
+	"encoding/binary"
 	"fmt"
-	"slices"
+	"hash/fnv"
+	"sort"
 )
 
 type (
@@ -56,6 +58,11 @@ type (
 
 	listable interface {
 		List() []string
+	}
+
+	arityList struct {
+		list   listable
+		marker byte
 	}
 
 	// fnErrors aggregates build errors shared across nested function definitions.
@@ -160,10 +167,14 @@ func (fd *defaultFnDef[T]) List() []string {
 	return names
 }
 
+// NewFunctionsBuilder creates an empty host function registry builder.
+// A logical name may have one definition at each fixed arity and one variadic definition.
 func NewFunctionsBuilder() *FunctionsBuilder {
 	return newRootFunctionsBuilder()
 }
 
+// NewFunctionsBuilderFrom creates a builder containing every definition from funcs.
+// Merging rejects only definitions with the same qualified name and arity.
 func NewFunctionsBuilderFrom(funcs ...*Functions) *FunctionsBuilder {
 	builder := newRootFunctionsBuilder()
 
@@ -356,42 +367,50 @@ func (b *FunctionsBuilder) From(other FunctionDefs) FunctionDefs {
 }
 
 func (b *FunctionsBuilder) Build() (*Functions, error) {
-	errs := slices.Concat(
-		collectFnErrors(b.av),
-		collectFnErrors(b.a0),
-		collectFnErrors(b.a1),
-		collectFnErrors(b.a2),
-		collectFnErrors(b.a3),
-		collectFnErrors(b.a4),
-	)
+	errs := collectFnErrors(b.av)
+
+	if len(errs) > 0 {
+		return nil, fmt.Errorf(
+			"failed to build functions: %d error(s) occurred: %v",
+			len(errs),
+			errs,
+		)
+	}
+
+	collections := []arityList{
+		{marker: 0, list: b.a0},
+		{marker: 1, list: b.a1},
+		{marker: 2, list: b.a2},
+		{marker: 3, list: b.a3},
+		{marker: 4, list: b.a4},
+		{marker: 0xff, list: b.av},
+	}
 
 	flookup := make(map[string]struct{})
-	fnames := make([]string, 0, len(b.av.data)+len(b.a0.data)+len(b.a1.data)+len(b.a2.data)+len(b.a3.data)+len(b.a4.data))
-	listables := []listable{b.av, b.a0, b.a1, b.a2, b.a3, b.a4}
+	fnames := make([]string, 0, b.Size())
+	hasher := fnv.New64a()
+	var nameLen [8]byte
 
-	var exit bool
+	for _, collection := range collections {
+		names := collection.list.List()
+		sort.Strings(names)
 
-	for _, l := range listables {
-		names := l.List()
 		for _, name := range names {
+			binary.LittleEndian.PutUint64(nameLen[:], uint64(len(name)))
+			_, _ = hasher.Write([]byte{collection.marker})
+			_, _ = hasher.Write(nameLen[:])
+			_, _ = hasher.Write([]byte(name))
+
 			if _, exists := flookup[name]; exists {
-				errs = append(errs, fmt.Errorf("function with name '%s' already exists in '%s' namespace", name, b.namespace))
-				exit = true
-				break
+				continue
 			}
 
 			flookup[name] = struct{}{}
 			fnames = append(fnames, name)
 		}
-
-		if exit {
-			break
-		}
 	}
 
-	if len(errs) > 0 {
-		return nil, fmt.Errorf("failed to build functions: %d error(s) occurred: %v", len(errs), errs)
-	}
+	sort.Strings(fnames)
 
 	registry := new(Functions)
 
@@ -420,8 +439,8 @@ func (b *FunctionsBuilder) Build() (*Functions, error) {
 	}
 
 	registry.names = fnames
-	registry.size = len(fnames)
-	registry.hash = functionsHash(registry)
+	registry.size = b.Size()
+	registry.hash = hasher.Sum64()
 
 	return registry, nil
 }

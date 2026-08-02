@@ -29,23 +29,30 @@ func TestHostParamTable_StableSlots(t *testing.T) {
 	})
 }
 
-func TestHostFunctionTable_KeepsMaxArityAndReturnsCopy(t *testing.T) {
-	Convey("HostFunctionTable should keep maximum arity and return a defensive copy", t, func() {
+func TestHostFunctionTable_AssignsStableSignatureIDsAndReturnsCopy(t *testing.T) {
+	Convey("HostFunctionTable should assign first-seen IDs per signature", t, func() {
 		tab := core.NewHostFunctionTable()
 
-		tab.Bind("FN", 3)
-		tab.Bind("FN", 1)
-		tab.Bind("FN", 5)
+		fn3 := tab.Bind("FN", 3)
+		fn1 := tab.Bind("FN", 1)
+		fn3Again := tab.Bind("FN", 3)
 
 		fns := tab.All()
-		So(fns["FN"], ShouldEqual, 5)
+		So(fn3, ShouldEqual, 0)
+		So(fn1, ShouldEqual, 1)
+		So(fn3Again, ShouldEqual, fn3)
+		So(fns, ShouldResemble, []bytecode.HostFunction{
+			{Name: "FN", ArgCount: 3},
+			{Name: "FN", ArgCount: 1},
+		})
 
-		fns["FN"] = 0
-		fns["NEW"] = 1
+		fns[0].Name = "changed"
+		fns = append(fns, bytecode.HostFunction{Name: "NEW", ArgCount: 1})
 
 		updated := tab.All()
-		So(updated["FN"], ShouldEqual, 5)
-		_, exists := updated["NEW"]
-		So(exists, ShouldBeFalse)
+		So(updated, ShouldResemble, []bytecode.HostFunction{
+			{Name: "FN", ArgCount: 3},
+			{Name: "FN", ArgCount: 1},
+		})
 	})
 }

@@ -94,6 +94,15 @@ func TestHostFunctionCallArities(t *testing.T) {
 	builder.Var().Add("VAR", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.NewInt(len(args)), nil
 	})
+	builder.A1().Add("OVERLOAD", func(context.Context, runtime.Value) (runtime.Value, error) {
+		return runtime.NewString("fixed1"), nil
+	})
+	builder.A2().Add("OVERLOAD", func(context.Context, runtime.Value, runtime.Value) (runtime.Value, error) {
+		return runtime.NewString("fixed2"), nil
+	})
+	builder.Var().Add("OVERLOAD", func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+		return runtime.NewString(fmt.Sprintf("var%d", len(args))), nil
+	})
 
 	RunSpecs(t, []spec.Spec{
 		S("RETURN FIX0()", "fixed0"),
@@ -108,6 +117,7 @@ func TestHostFunctionCallArities(t *testing.T) {
 		S("RETURN VAR(1, 2, 3, 4)", 4),
 		S("RETURN VAR(1, 2, 3, 4, 5)", 5),
 		S("RETURN VAR(1, 2, 3, 4, 5, 6)", 6),
+		Array("RETURN [OVERLOAD(1), OVERLOAD(1, 2), OVERLOAD(3), OVERLOAD(1, 2, 3, 4, 5)]", []any{"fixed1", "fixed2", "fixed1", "var5"}),
 	}, vm.WithFunctionsBuilder(builder))
 }
 

@@ -2,6 +2,7 @@ package bytecode
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 
@@ -83,5 +84,53 @@ func TestProgramJSONRejectsMalformedDurationConstant(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected malformed duration constant error")
+	}
+}
+
+func TestProgramJSONPreservesOrderedHostSignatures(t *testing.T) {
+	program := &Program{
+		ISAVersion: Version,
+		Registers:  1,
+		Bytecode: []Instruction{
+			NewInstruction(OpReturn, NewRegister(0)),
+		},
+		Functions: Functions{Host: []HostFunction{
+			{Name: "PICK", ArgCount: 2},
+			{Name: "PICK", ArgCount: 1},
+		}},
+	}
+
+	encoded, err := json.Marshal(program)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	var decoded Program
+	if err := json.Unmarshal(encoded, &decoded); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if !slices.Equal(decoded.Functions.Host, program.Functions.Host) {
+		t.Fatalf("unexpected host signature order: got %v, want %v", decoded.Functions.Host, program.Functions.Host)
+	}
+}
+
+func TestProgramJSONRejectsLegacyHostMetadata(t *testing.T) {
+	for _, payload := range []string{
+		`{"isaVersion":1,"registers":1,"bytecode":[{"opcode":39,"operands":[0,0,0]}],"functions":{"host":[{"name":"PICK"}]}}`,
+		`{"isaVersion":1,"registers":1,"bytecode":[{"opcode":39,"operands":[0,0,0]}],"functions":{"host":[{"name":"PICK","arity":1}]}}`,
+	} {
+		var decoded Program
+		if err := json.Unmarshal([]byte(payload), &decoded); err == nil || !strings.Contains(err.Error(), "missing argCount") {
+			t.Fatalf("expected legacy host metadata rejection, got %v", err)
+		}
+	}
+}
+
+func TestProgramJSONRejectsDuplicateHostSignatures(t *testing.T) {
+	payload := `{"isaVersion":1,"registers":1,"bytecode":[{"opcode":39,"operands":[0,0,0]}],"functions":{"host":[{"name":"PICK","argCount":1},{"name":"PICK","argCount":1}]}}`
+
+	var decoded Program
+	if err := json.Unmarshal([]byte(payload), &decoded); err == nil || !strings.Contains(err.Error(), "duplicate host function signature") {
+		t.Fatalf("expected duplicate host signature rejection, got %v", err)
 	}
 }

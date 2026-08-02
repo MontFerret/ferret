@@ -123,26 +123,28 @@ func ensureHostFunctionsBound(vm *VM, env *Environment) error {
 		return nil
 	}
 
+	var warmupErrs diagnostics.WarmupErrorSet
+	if len(vm.cache.HostFunctions) != len(vm.program.Functions.Host) {
+		descriptor := hostCallDescriptors[0]
+		warmupErrs.Add(
+			diagnostics.NewInvariantError(
+				"invalid host cache size",
+				runtime.Errorf(runtime.ErrUnexpected, "host cache size %d does not match compiled signature count %d", len(vm.cache.HostFunctions), len(vm.program.Functions.Host)),
+			),
+			descriptor.PC,
+			descriptor.Dst,
+		)
+
+		return &warmupErrs
+	}
+
 	if vm.cache.FunctionsRef == env.Functions {
 		return nil
 	}
 
-	var warmupErrs diagnostics.WarmupErrorSet
+	attempted := make([]bool, len(vm.cache.HostFunctions))
 
-	for i, descriptor := range hostCallDescriptors {
-		if descriptor.ID != i {
-			warmupErrs.Add(
-				diagnostics.NewInvariantError(
-					"invalid host warmup binding id",
-					runtime.Errorf(runtime.ErrUnexpected, "invalid host warmup binding id %d at index %d", descriptor.ID, i),
-				),
-				descriptor.PC,
-				descriptor.Dst,
-			)
-
-			continue
-		}
-
+	for _, descriptor := range hostCallDescriptors {
 		if descriptor.ID < 0 || descriptor.ID >= len(vm.cache.HostFunctions) {
 			warmupErrs.Add(
 				diagnostics.NewInvariantError(
@@ -155,6 +157,11 @@ func ensureHostFunctionsBound(vm *VM, env *Environment) error {
 
 			continue
 		}
+
+		if attempted[descriptor.ID] {
+			continue
+		}
+		attempted[descriptor.ID] = true
 
 		vm.cache.HostFunctions[descriptor.ID] = mem.CachedHostFunction{}
 		cachedFn, err := warmupBindHostCall(descriptor, env.Functions)

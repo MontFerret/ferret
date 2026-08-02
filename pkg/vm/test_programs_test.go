@@ -25,6 +25,8 @@ func newTestProgram(registers int, constants []runtime.Value, instructions ...by
 func newHostCallProgram(specs ...hostCallSpec) *bytecode.Program {
 	constants := make([]runtime.Value, 0, len(specs)*2)
 	instructions := make([]bytecode.Instruction, 0, len(specs)*3+1)
+	bindings := make(map[bytecode.HostFunction]int)
+	hostFunctions := make([]bytecode.HostFunction, 0, len(specs))
 	nextRegister := 0
 	returnReg := 0
 
@@ -32,10 +34,18 @@ func newHostCallProgram(specs ...hostCallSpec) *bytecode.Program {
 		dst := nextRegister
 		nextRegister++
 
-		nameIdx := len(constants)
-		constants = append(constants, runtime.NewString(spec.name))
+		signature := bytecode.HostFunction{Name: spec.name, ArgCount: len(spec.args)}
+		bindingID, exists := bindings[signature]
+		if !exists {
+			bindingID = len(hostFunctions)
+			bindings[signature] = bindingID
+			hostFunctions = append(hostFunctions, signature)
+		}
+
+		bindingIdx := len(constants)
+		constants = append(constants, runtime.NewInt(bindingID))
 		instructions = append(instructions,
-			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(dst), bytecode.NewConstant(nameIdx)),
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(dst), bytecode.NewConstant(bindingIdx)),
 		)
 
 		if len(spec.args) == 0 {
@@ -77,7 +87,31 @@ func newHostCallProgram(specs ...hostCallSpec) *bytecode.Program {
 
 	instructions = append(instructions, bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(returnReg)))
 
-	return newTestProgram(nextRegister, constants, instructions...)
+	program := newTestProgram(nextRegister, constants, instructions...)
+	program.Functions.Host = hostFunctions
+
+	return program
+}
+
+func bindZeroArgHostCalls(program *bytecode.Program, names ...string) {
+	bindings := make(map[string]int, len(names))
+	program.Functions.Host = make([]bytecode.HostFunction, len(names))
+
+	for id, name := range names {
+		bindings[name] = id
+		program.Functions.Host[id] = bytecode.HostFunction{Name: name, ArgCount: 0}
+	}
+
+	for i, constant := range program.Constants {
+		name, ok := constant.(runtime.String)
+		if !ok {
+			continue
+		}
+
+		if id, exists := bindings[name.String()]; exists {
+			program.Constants[i] = runtime.NewInt(id)
+		}
+	}
 }
 
 func assertRuntimeValueEquals(t *testing.T, got, want runtime.Value) {

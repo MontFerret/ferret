@@ -11,7 +11,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-const Version = 1
+const Version = 2
 
 // Disassemble returns a human-readable disassembly of the given program.
 func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, error) {
@@ -71,17 +71,8 @@ func Disassemble(p *bytecode.Program, options ...DisassemblerOption) (string, er
 	}
 
 	funcRows := make([]string, 0, len(p.Functions.Host))
-	if len(p.Functions.Host) > 0 {
-		names := make([]string, 0, len(p.Functions.Host))
-		for name := range p.Functions.Host {
-			names = append(names, name)
-		}
-
-		sort.Strings(names)
-
-		for _, name := range names {
-			funcRows = append(funcRows, formatFunctionRow(name, p.Functions.Host[name]))
-		}
+	for id, fn := range p.Functions.Host {
+		funcRows = append(funcRows, formatFunctionRow(id, fn))
 	}
 
 	writeSection(".params", paramRows)
@@ -482,10 +473,14 @@ func hostCallComment(p *bytecode.Program, instr bytecode.Instruction, prev *byte
 		return ""
 	}
 
-	name, ok := p.Constants[idx].(runtime.String)
+	idValue, ok := p.Constants[idx].(runtime.Int)
 	if !ok {
 		return ""
 	}
+	id := int(idValue)
+	if id < 0 || id >= len(p.Functions.Host) {
+		return ""
+	}
 
-	return fmt.Sprintf("host %s", name)
+	return fmt.Sprintf("host %s", p.Functions.Host[id].Name)
 }
