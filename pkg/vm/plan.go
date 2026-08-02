@@ -125,7 +125,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 				continue
 			}
 
-			if bindingID < 0 || bindingID >= len(program.Functions.Host) {
+			if bindingID < 0 || bindingID >= int64(len(program.Functions.Host)) {
 				errs.Add(
 					diagnostics.NewInvariantError(
 						"invalid host binding id",
@@ -156,7 +156,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 				CallSitePC:       pc - 1,
 				DisplayName:      hostFn.Name,
 				Dst:              dst,
-				ID:               bindingID,
+				ID:               int(bindingID),
 				ArgCount:         hostFn.ArgCount,
 				ArgStart:         int(src1),
 				RecoveryBoundary: bytecode.IsProtectedCall(op),
@@ -263,13 +263,13 @@ func paramSlotAt(paramCount int, slot bytecode.Operand, pc int) (int, error) {
 	return idx, nil
 }
 
-func getHostFunctionID(value runtime.Value) (int, error) {
+func getHostFunctionID(value runtime.Value) (int64, error) {
 	id, ok := value.(runtime.Int)
 	if !ok {
 		return -1, ErrInvalidFunctionName
 	}
 
-	return int(id), nil
+	return int64(id), nil
 }
 
 func buildCatchByPC(bytecodeLen int, catches []bytecode.Catch) []int {
