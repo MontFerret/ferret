@@ -3,12 +3,23 @@ package bytecode
 import "testing"
 
 func TestOpcodeInfoCompleteness(t *testing.T) {
-	for op := Opcode(0); op <= OpSourcePoint; op++ {
+	for op := Opcode(0); op <= OpElapsed; op++ {
 		info := OpcodeInfoOf(op)
 
 		if info.Class == OpcodeClassUnknown {
 			t.Fatalf("opcode %d (%s) has unknown class", op, op)
 		}
+	}
+}
+
+func TestOpcodeInfoElapsedMetadata(t *testing.T) {
+	info := OpcodeInfoOf(OpElapsed)
+
+	if info.Class != OpcodeClassUtility {
+		t.Fatalf("expected elapsed utility class, got %d", info.Class)
+	}
+	if info.ControlFlow != ControlFlowNone {
+		t.Fatalf("expected elapsed to have no control-flow role, got %d", info.ControlFlow)
 	}
 }
 

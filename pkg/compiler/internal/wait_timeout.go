@@ -14,8 +14,10 @@ func (c *WaitCompiler) emitWaitPredicateTimeoutCheck(
 		return bytecode.NoopOperand
 	}
 
-	nowReg := c.emitNow()
-	elapsedReg := c.emitDurationDiff(startReg, nowReg)
+	currentReg := c.emitElapsed()
+	elapsedReg := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitABC(bytecode.OpSub, elapsedReg, currentReg, startReg)
+	c.ctx.Function.Types.Set(elapsedReg, core.TypeDuration)
 	reachedReg := c.ctx.Function.Registers.Allocate()
 	c.ctx.Program.Emitter.EmitGte(reachedReg, elapsedReg, timeoutReg)
 	c.ctx.Program.Emitter.EmitJumpIfTrue(reachedReg, timeoutLabel)
@@ -42,32 +44,12 @@ func (c *WaitCompiler) prepareWaitSleepInterval(config waitPredicateCompileConfi
 	return sleepIntervalReg
 }
 
-func (c *WaitCompiler) emitNow() bytecode.Operand {
-	return c.exprs.CompileFunctionCallByNameWith(nil, runtime.NewString("NOW"), false, nil)
-}
+func (c *WaitCompiler) emitElapsed() bytecode.Operand {
+	dst := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitA(bytecode.OpElapsed, dst)
+	c.ctx.Function.Types.Set(dst, core.TypeDuration)
 
-func (c *WaitCompiler) emitDurationDiff(start, end bytecode.Operand) bytecode.Operand {
-	const functionName = "$WAIT_DURATION_DIFF"
-
-	duration := c.emitFunctionCall(runtime.NewString(functionName), start, end)
-	c.ctx.Function.Types.Set(duration, core.TypeDuration)
-
-	return duration
-}
-
-func (c *WaitCompiler) emitFunctionCall(name runtime.String, args ...bytecode.Operand) bytecode.Operand {
-	if len(args) == 0 {
-		return c.exprs.CompileFunctionCallByNameWith(nil, name, false, nil)
-	}
-
-	seq := c.ctx.Function.Registers.AllocateSequence(len(args))
-
-	for i, arg := range args {
-		c.ctx.Program.Emitter.EmitMove(seq[i], arg)
-		c.ctx.Function.Types.Set(seq[i], c.facts.OperandType(arg))
-	}
-
-	return c.exprs.CompileFunctionCallByNameWith(nil, name, false, seq)
+	return dst
 }
 
 func (c *WaitCompiler) emitWaitSleep(intervalReg, timeoutReg, elapsedReg bytecode.Operand, intervalIsZero bool) {

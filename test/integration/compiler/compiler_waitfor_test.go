@@ -147,6 +147,11 @@ func TestWaitforPredicateWhenCompiles(t *testing.T) {
 
 func TestWaitforValuePresenceLowering(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck(
+			`RETURN WAITFOR VALUE @candidate TIMEOUT 1ms EVERY 0ms`,
+			expectElapsedWaitWithoutHostFunctions,
+			"Timed WAITFOR should use the VM clock without synthetic host calls",
+		),
 		Opcode(`RETURN WAITFOR VALUE @candidate TIMEOUT 1ms`, OpcodeExistence{
 			Exists:    []bytecode.Opcode{bytecode.OpJumpIfNone},
 			NotExists: []bytecode.Opcode{bytecode.OpExists},
@@ -156,6 +161,25 @@ func TestWaitforValuePresenceLowering(t *testing.T) {
 			NotExists: []bytecode.Opcode{bytecode.OpJumpIfNone},
 		}, "WAITFOR EXISTS should preserve EXISTS semantics"),
 	}, compiler.O0, compiler.O1)
+}
+
+func expectElapsedWaitWithoutHostFunctions(program *bytecode.Program) error {
+	if len(program.Functions.Host) != 0 {
+		return fmt.Errorf("expected no host functions, got %v", program.Functions.Host)
+	}
+
+	elapsedCount := 0
+	for _, inst := range program.Bytecode {
+		if inst.Opcode == bytecode.OpElapsed {
+			elapsedCount++
+		}
+	}
+
+	if elapsedCount != 2 {
+		return fmt.Errorf("expected two elapsed clock reads, got %d", elapsedCount)
+	}
+
+	return nil
 }
 
 func noCompilerError(*bytecode.Program) error {

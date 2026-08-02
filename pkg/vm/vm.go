@@ -1108,6 +1108,8 @@ loop:
 			}
 		case bytecode.OpRand:
 			state.writeBorrowedRegister(dst, runtime.NewFloat(runtime.RandomDefault()))
+		case bytecode.OpElapsed:
+			state.writeBorrowedRegister(dst, state.elapsed())
 		default:
 			return nil, sourcePointContinue, runtime.Errorf(runtime.ErrUnexpected, "unknown opcode %d at pc %d", op, pc)
 		}

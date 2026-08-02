@@ -586,3 +586,23 @@ func TestDisassemble_SourcePointUsesImmediateID(t *testing.T) {
 		t.Fatalf("expected source point immediate in output:\n%s", out)
 	}
 }
+
+func TestDisassemble_ElapsedUsesDestinationRegister(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpElapsed, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	if !strings.Contains(out, "0: ELAPSED R0") {
+		t.Fatalf("expected elapsed destination in output:\n%s", out)
+	}
+}

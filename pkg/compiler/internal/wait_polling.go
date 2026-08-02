@@ -121,7 +121,7 @@ func (c *WaitCompiler) initWaitPredicatePollState(config waitPredicateCompileCon
 	}
 
 	if config.timeoutReg != bytecode.NoopOperand {
-		state.startReg = c.emitNow()
+		state.startReg = c.emitElapsed()
 	}
 
 	return state

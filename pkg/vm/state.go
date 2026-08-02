@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -27,6 +28,7 @@ type (
 	execState struct {
 		program     *bytecode.Program
 		env         *Environment
+		startedAt   time.Time
 		scratch     mem.Scratch
 		frames      frame.CallStack
 		windows     mem.WindowPool
@@ -57,6 +59,7 @@ func (s *execState) init(program *bytecode.Program) {
 
 func (s *execState) startRun(env *Environment) error {
 	s.env = env
+	s.startedAt = time.Now()
 	s.cells.Reset()
 	s.cellHandles = s.cellHandles[:0]
 	s.owned.Reset()
@@ -143,10 +146,16 @@ func (s *execState) resetRunStorage() {
 	s.scratch.Reset()
 
 	s.env = nil
+	s.startedAt = time.Time{}
 	s.pc = 0
 	s.lastPC = -1
 	s.clearFailure()
 	s.clearCaughtFailure()
+}
+
+// elapsed returns time since the current run began using Go's monotonic clock.
+func (s *execState) elapsed() runtime.Duration {
+	return runtime.NewDuration(time.Since(s.startedAt))
 }
 
 func (s *execState) bindParams(env *Environment) error {

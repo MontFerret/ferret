@@ -329,7 +329,7 @@ func validateInstructions(program *Program) error {
 			if err := validateRegisterOperand(src1, registers, pc, "src1"); err != nil {
 				return err
 			}
-		case OpLoadNone, OpLoadZero, OpIncr, OpDecr, OpClose, OpSleep, OpRand:
+		case OpLoadNone, OpLoadZero, OpIncr, OpDecr, OpClose, OpSleep, OpRand, OpElapsed:
 			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
 				return err
 			}

@@ -106,6 +106,45 @@ func TestMarshalAllowsDistinctOpcode(t *testing.T) {
 	}
 }
 
+func TestMarshalPreservesElapsedOpcode(t *testing.T) {
+	tests := []struct {
+		name string
+		opts []Option
+	}{
+		{name: "message_pack"},
+		{name: "json", opts: []Option{WithFormat(FormatJSON)}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			program := newArtifactTestProgram()
+			program.Registers = 1
+			program.Bytecode = []bytecode.Instruction{
+				bytecode.NewInstruction(bytecode.OpElapsed, bytecode.NewRegister(0)),
+				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+			}
+			program.Metadata.Labels = nil
+			program.Metadata.AggregateSelectorSlots = nil
+			program.Metadata.MatchFailTargets = nil
+			program.Metadata.DebugSpans = nil
+
+			data, err := Marshal(program, tc.opts...)
+			if err != nil {
+				t.Fatalf("Marshal() error = %v", err)
+			}
+
+			decoded, err := Unmarshal(data)
+			if err != nil {
+				t.Fatalf("Unmarshal() error = %v", err)
+			}
+
+			if got := decoded.Bytecode[0].Opcode; got != bytecode.OpElapsed {
+				t.Fatalf("expected OpElapsed after round trip, got %s", got)
+			}
+		})
+	}
+}
+
 func TestMarshalPreservesSourcePoint(t *testing.T) {
 	program := newArtifactTestProgram()
 	program.Bytecode = []bytecode.Instruction{
