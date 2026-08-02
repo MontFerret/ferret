@@ -55,21 +55,21 @@ func ToDateTime(_ context.Context, input Value) (DateTime, error) {
 	case String:
 		parsed, err := time.Parse(DefaultTimeLayout, value.String())
 		if err != nil {
-			return ZeroDateTime, Errorf(
+			return ZeroDateTime, newConversionError(TypeDateTime, Errorf(
 				ErrInvalidArgument,
 				"cannot convert String %q to DateTime",
 				value.String(),
-			)
+			))
 		}
 
 		return NewDateTime(parsed), nil
 	default:
-		return ZeroDateTime, Errorf(
+		return ZeroDateTime, newConversionError(TypeDateTime, Errorf(
 			ErrInvalidType,
 			"cannot convert %s %q to DateTime",
 			TypeName(TypeOf(input)),
 			input.String(),
-		)
+		))
 	}
 }
 

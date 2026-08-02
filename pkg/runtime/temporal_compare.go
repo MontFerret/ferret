@@ -13,7 +13,7 @@ func EqualChecked(ctx context.Context, left, right Value) (Boolean, error) {
 		return result == 0, nil
 	}
 
-	if isDurationConversionError(err) {
+	if isConversionErrorTo(err, TypeDuration) {
 		return False, nil
 	}
 
@@ -57,7 +57,7 @@ func CompareChecked(ctx context.Context, left, right Value) (int, error) {
 	return leftDuration.Compare(rightDuration), nil
 }
 
-func isDurationConversionError(err error) bool {
-	var conversionErr *durationConversionError
-	return errors.As(err, &conversionErr)
+func isConversionErrorTo(err error, target Type) bool {
+	var conversionErr *conversionError
+	return errors.As(err, &conversionErr) && conversionErr.targets(target)
 }

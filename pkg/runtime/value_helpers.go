@@ -424,7 +424,7 @@ func ToFloat(ctx context.Context, input Value) (Float, error) {
 		i, err := strconv.ParseFloat(string(val), 64)
 
 		if err != nil {
-			return ZeroFloat, err
+			return ZeroFloat, newConversionError(TypeFloat, err)
 		}
 
 		return Float(i), nil
@@ -476,7 +476,7 @@ func ToFloat(ctx context.Context, input Value) (Float, error) {
 
 		return res, nil
 	default:
-		return ZeroFloat, TypeErrorOf(input, TypeFloat)
+		return ZeroFloat, newConversionError(TypeFloat, TypeErrorOf(input, TypeFloat))
 	}
 }
 
@@ -499,7 +499,7 @@ func ToInt(ctx context.Context, input Value) (Int, error) {
 		i, err := strconv.ParseInt(string(val), 10, 64)
 
 		if err != nil {
-			return ZeroInt, err
+			return ZeroInt, newConversionError(TypeInt, err)
 		}
 
 		return Int(i), nil
@@ -551,7 +551,7 @@ func ToInt(ctx context.Context, input Value) (Int, error) {
 
 		return res, nil
 	default:
-		return ZeroInt, TypeErrorOf(input, TypeInt)
+		return ZeroInt, newConversionError(TypeInt, TypeErrorOf(input, TypeInt))
 	}
 }
 
