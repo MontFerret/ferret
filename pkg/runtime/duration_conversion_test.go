@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -102,6 +103,63 @@ func TestDurationContextualCoercion(t *testing.T) {
 	assertDuration("reverse numeric addition", value, err, runtime.NewDuration(5002*time.Millisecond))
 	value, err = runtime.SubtractChecked(ctx, fiveSeconds, runtime.NewString("500ms"))
 	assertDuration("string subtraction", value, err, runtime.NewDuration(4500*time.Millisecond))
+
+	for _, test := range []struct {
+		left     runtime.Value
+		right    runtime.Value
+		name     string
+		expected runtime.Duration
+	}{
+		{
+			name:     "integer string multiplier",
+			left:     fiveSeconds,
+			right:    runtime.NewString("2"),
+			expected: runtime.NewDuration(10 * time.Second),
+		},
+		{
+			name:     "reverse integer string multiplier",
+			left:     runtime.NewString("2"),
+			right:    fiveSeconds,
+			expected: runtime.NewDuration(10 * time.Second),
+		},
+		{
+			name:     "fractional string multiplier",
+			left:     fiveSeconds,
+			right:    runtime.NewString("2.5"),
+			expected: runtime.NewDuration(12500 * time.Millisecond),
+		},
+		{
+			name:     "reverse fractional string multiplier",
+			left:     runtime.NewString("2.5"),
+			right:    fiveSeconds,
+			expected: runtime.NewDuration(12500 * time.Millisecond),
+		},
+	} {
+		value, err := runtime.MultiplyChecked(ctx, test.left, test.right)
+		assertDuration(test.name, value, err, test.expected)
+	}
+
+	for _, test := range []struct {
+		left, right runtime.Value
+		name        string
+	}{
+		{name: "invalid string multiplier", left: fiveSeconds, right: runtime.NewString("invalid")},
+		{name: "reverse invalid string multiplier", left: runtime.NewString("invalid"), right: fiveSeconds},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := runtime.MultiplyChecked(ctx, test.left, test.right)
+			if !errors.Is(err, runtime.ErrInvalidArgument) {
+				t.Fatalf("error = %v, want ErrInvalidArgument", err)
+			}
+
+			for _, part := range []string{"cannot use String", "invalid", "numeric Duration scale"} {
+				if !strings.Contains(err.Error(), part) {
+					t.Fatalf("error = %q, want %q", err, part)
+				}
+			}
+		})
+	}
+
 	value, err = runtime.DivideChecked(ctx, fiveSeconds, runtime.NewString("2"))
 	assertDuration("numeric string division", value, err, runtime.NewDuration(2500*time.Millisecond))
 

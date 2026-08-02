@@ -12,7 +12,8 @@ const durationNumericUnit = int64(time.Millisecond)
 
 // ToDuration converts a runtime value to a canonical Duration.
 // Numeric values are interpreted as milliseconds, and fractional nanoseconds
-// are truncated toward zero.
+// are truncated toward zero. Duration strings, NONE, Booleans, and supported
+// list shapes follow the language's broader Duration conversion contract.
 func ToDuration(ctx context.Context, input Value) (Duration, error) {
 	if input == nil || input == None {
 		return ZeroDuration, nil

@@ -7,6 +7,7 @@ import (
 )
 
 // TO_DATETIME returns a native DateTime or parses an RFC3339 string.
+// Numeric values are rejected rather than interpreted as Unix timestamps.
 // @param {DateTime|String} value - A native DateTime or RFC3339 string.
 // @return {DateTime} - Parsed DateTime.
 func ToDateTime(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

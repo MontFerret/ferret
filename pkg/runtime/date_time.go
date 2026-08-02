@@ -44,6 +44,8 @@ func ParseDateTimeWith(input interface{}, layout string) (DateTime, error) {
 }
 
 // ToDateTime converts a native DateTime or RFC3339 runtime String to DateTime.
+// Numeric values are not interpreted as Unix timestamps because no timestamp
+// unit is implied by the language contract.
 func ToDateTime(_ context.Context, input Value) (DateTime, error) {
 	if input == nil {
 		input = None

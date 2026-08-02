@@ -5,8 +5,9 @@ import (
 	"errors"
 )
 
-// EqualChecked applies language equality semantics, including temporal coercion.
-// Duration conversion failures compare unequal, while operational errors propagate.
+// EqualChecked applies language equality semantics, including contextual Duration
+// coercion. DateTime equality remains strict. Duration conversion failures compare
+// unequal, while operational errors propagate.
 func EqualChecked(ctx context.Context, left, right Value) (Boolean, error) {
 	result, err := CompareChecked(ctx, left, right)
 	if err == nil {
@@ -20,8 +21,8 @@ func EqualChecked(ctx context.Context, left, right Value) (Boolean, error) {
 	return False, err
 }
 
-// CompareChecked applies contextual temporal coercion for language comparison
-// operators while preserving CompareValues for strict structural ordering.
+// CompareChecked applies contextual Duration coercion for language comparison
+// operators. DateTime comparison and CompareValues structural ordering remain strict.
 func CompareChecked(ctx context.Context, left, right Value) (int, error) {
 	leftIsDuration := false
 	rightIsDuration := false

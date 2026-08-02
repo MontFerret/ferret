@@ -8,6 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
+	"github.com/MontFerret/ferret/v2/test/spec/compile"
 	. "github.com/MontFerret/ferret/v2/test/spec/optimize"
 )
 
@@ -77,5 +78,21 @@ func TestConstantFolding(t *testing.T) {
 		OpcodeCount(`RETURN 1s != "tomorrow"`, map[bytecode.Opcode]int{
 			bytecode.OpNe: 0,
 		}, true, "failed temporal coercion folds inequality to true"),
+
+		OpcodeCount(`RETURN 5s * "2"`, map[bytecode.Opcode]int{
+			bytecode.OpMul: 0,
+		}, "10s", "numeric-string Duration multiplication folds"),
+
+		OpcodeCount(`RETURN "2" * 5s`, map[bytecode.Opcode]int{
+			bytecode.OpMul: 0,
+		}, "10s", "reverse numeric-string Duration multiplication folds"),
+
+		OpcodeErr(`RETURN 5s * "invalid"`, compile.OpcodeExistence{
+			Exists: []bytecode.Opcode{bytecode.OpMul},
+		}, runtime.ErrInvalidArgument, "invalid numeric-string multiplier remains a runtime error"),
+
+		OpcodeErr(`RETURN "invalid" * 5s`, compile.OpcodeExistence{
+			Exists: []bytecode.Opcode{bytecode.OpMul},
+		}, runtime.ErrInvalidArgument, "reverse invalid numeric-string multiplier remains a runtime error"),
 	})
 }

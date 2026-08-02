@@ -25,7 +25,9 @@ func TestToDateTime(t *testing.T) {
 		}
 	}
 
-	if _, err := ToDateTime(t.Context(), runtime.NewInt(0)); !errors.Is(err, runtime.ErrInvalidType) {
-		t.Fatalf("ToDateTime(Int) error = %v", err)
+	for _, input := range []runtime.Value{runtime.NewInt(0), runtime.NewFloat(0)} {
+		if _, err := ToDateTime(t.Context(), input); !errors.Is(err, runtime.ErrInvalidType) {
+			t.Fatalf("ToDateTime(%s) error = %v", runtime.TypeOf(input), err)
+		}
 	}
 }

@@ -187,9 +187,6 @@ func TestDurationArithmetic(t *testing.T) {
 		name string
 	}{
 		{name: "duration multiplication", fn: func() (runtime.Value, error) { return runtime.MultiplyChecked(ctx, second, second) }},
-		{name: "string multiplication", fn: func() (runtime.Value, error) {
-			return runtime.MultiplyChecked(ctx, second, runtime.NewString("2"))
-		}},
 		{name: "reverse division", fn: func() (runtime.Value, error) { return runtime.DivideChecked(ctx, runtime.NewInt(1), second) }},
 		{name: "zero division", fn: func() (runtime.Value, error) { return runtime.DivideChecked(ctx, second, runtime.ZeroInt) }},
 		{name: "zero duration division", fn: func() (runtime.Value, error) {

@@ -88,9 +88,9 @@ func MultiplyChecked(ctx context.Context, left, right Value) (Value, error) {
 	case leftIsDuration && rightIsDuration:
 		return None, durationBinaryTypeError("*", left, right)
 	case leftIsDuration:
-		return scaleDuration(ctx, leftDuration, right, false, false)
+		return scaleDuration(ctx, leftDuration, right, false)
 	default:
-		return scaleDuration(ctx, rightDuration, left, false, false)
+		return scaleDuration(ctx, rightDuration, left, false)
 	}
 }
 
@@ -127,7 +127,7 @@ func DivideChecked(ctx context.Context, left, right Value) (Value, error) {
 		}
 	}
 
-	return scaleDuration(ctx, leftDuration, right, true, true)
+	return scaleDuration(ctx, leftDuration, right, true)
 }
 
 // ModulusChecked rejects temporal modulus and preserves numeric behavior.
@@ -243,9 +243,9 @@ func PositiveChecked(value Value) (Value, error) {
 	}
 }
 
-func scaleDuration(ctx context.Context, duration Duration, scalar Value, divide, allowNumericString bool) (Value, error) {
+func scaleDuration(ctx context.Context, duration Duration, scalar Value, divide bool) (Value, error) {
 	number := scalar
-	if _, ok := number.(String); ok && allowNumericString {
+	if _, ok := number.(String); ok {
 		converted, err := ToNumber(ctx, scalar)
 		if err != nil {
 			return None, Errorf(
