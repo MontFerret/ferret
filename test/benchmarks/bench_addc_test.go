@@ -72,6 +72,16 @@ FOR i IN 1..1000
 FOR i IN 1..1000
   RETURN @base + 2ms
 `
+
+	dateTimeConversionQuery = `
+FOR i IN 1..1000
+  RETURN TO_DATETIME(@value)
+`
+
+	dateTimeEpochConversionQuery = `
+FOR i IN 1..1000
+  RETURN TO_DATETIME(@value, "s")
+`
 )
 
 func BenchmarkAddNumeric_O0(b *testing.B) {
@@ -192,4 +202,20 @@ func BenchmarkDateTimeAdd_O0(b *testing.B) {
 
 func BenchmarkDateTimeAdd_O1(b *testing.B) {
 	RunBenchmarkO1(b, dateTimeAddQuery, WithParam("base", time.Date(2026, time.August, 1, 12, 0, 0, 0, time.UTC)))
+}
+
+func BenchmarkDateTimeConversion_O0(b *testing.B) {
+	RunBenchmarkO0(b, dateTimeConversionQuery, WithParam("value", "2026-08-02T12:00:00Z"))
+}
+
+func BenchmarkDateTimeConversion_O1(b *testing.B) {
+	RunBenchmarkO1(b, dateTimeConversionQuery, WithParam("value", "2026-08-02T12:00:00Z"))
+}
+
+func BenchmarkDateTimeEpochConversion_O0(b *testing.B) {
+	RunBenchmarkO0(b, dateTimeEpochConversionQuery, WithParam("value", 1_690_992_000))
+}
+
+func BenchmarkDateTimeEpochConversion_O1(b *testing.B) {
+	RunBenchmarkO1(b, dateTimeEpochConversionQuery, WithParam("value", 1_690_992_000))
 }

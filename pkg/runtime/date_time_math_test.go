@@ -3,6 +3,7 @@ package runtime_test
 import (
 	"errors"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,7 +26,8 @@ func TestToDateTime(t *testing.T) {
 	}
 
 	for _, input := range []runtime.Value{runtime.NewInt(0), runtime.NewFloat(0)} {
-		if _, err := runtime.ToDateTime(t.Context(), input); !errors.Is(err, runtime.ErrInvalidType) {
+		if _, err := runtime.ToDateTime(t.Context(), input); !errors.Is(err, runtime.ErrInvalidArgument) ||
+			!strings.Contains(err.Error(), "numeric DateTime conversion requires an explicit epoch unit") {
 			t.Fatalf("ToDateTime(%s) error = %v", runtime.TypeOf(input), err)
 		}
 	}

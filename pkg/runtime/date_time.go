@@ -65,6 +65,14 @@ func ToDateTime(_ context.Context, input Value) (DateTime, error) {
 		}
 
 		return NewDateTime(parsed), nil
+	case Int, Float:
+		return ZeroDateTime, newConversionError(TypeDateTime, Errorf(
+			ErrInvalidArgument,
+			"cannot convert %s %q to DateTime: numeric DateTime conversion requires an explicit epoch unit: %s",
+			TypeName(TypeOf(input)),
+			input.String(),
+			dateTimeEpochCanonicalUnits,
+		))
 	default:
 		return ZeroDateTime, newConversionError(TypeDateTime, Errorf(
 			ErrInvalidType,

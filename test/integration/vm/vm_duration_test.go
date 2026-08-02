@@ -2,6 +2,7 @@ package vm_test
 
 import (
 	"errors"
+	"math"
 	"testing"
 	"time"
 
@@ -95,6 +96,15 @@ func TestNativeDurationValues(t *testing.T) {
 func TestDateTimeOperators(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z")`, "2026-08-01T12:00:00Z"),
+		S(`RETURN TO_DATETIME(TO_DATETIME("2026-08-01T12:00:00Z"))`, "2026-08-01T12:00:00Z"),
+		S(`RETURN TO_DATETIME(1690992000, "s")`, "2023-08-02T16:00:00Z"),
+		S(`RETURN TO_DATETIME(1690992000000, "ms")`, "2023-08-02T16:00:00Z"),
+		S(`RETURN TO_DATETIME(1690992000000000, "us")`, "2023-08-02T16:00:00Z"),
+		S(`RETURN TO_DATETIME(1690992000000000000, "ns")`, "2023-08-02T16:00:00Z"),
+		S(`RETURN TO_DATETIME(1, "SECONDS")`, "1970-01-01T00:00:01Z"),
+		S(`RETURN TO_DATETIME(1.5, "s")`, "1970-01-01T00:00:01.5Z"),
+		S(`RETURN TO_DATETIME(1.5, "ms")`, "1970-01-01T00:00:00.0015Z"),
+		S(`RETURN TO_DATETIME(-1, "s")`, "1969-12-31T23:59:59Z"),
 		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") + 30m`, "2026-08-01T12:30:00Z"),
 		S(`RETURN "30m" + TO_DATETIME("2026-08-01T12:00:00Z")`, "2026-08-01T12:30:00Z"),
 		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") - "30m"`, "2026-08-01T11:30:00Z"),
@@ -109,8 +119,57 @@ func TestDateTimeOperators(t *testing.T) {
 		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") != "2026-08-01T13:00:00Z"`, true),
 		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") > "2026-08-01T12:00:00Z"`, true),
 		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") > "not-a-date"`, true),
-		Error(`RETURN TO_DATETIME(0)`),
-		Error(`RETURN TO_DATETIME(0.5)`),
+		spec.NewSpec(`RETURN TO_DATETIME(0)`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid argument",
+			Contains: []string{"numeric DateTime conversion requires an explicit epoch unit", `"s", "ms", "us", or "ns"`, ":1:8"},
+		}),
+		spec.NewSpec(`RETURN TO_DATETIME(0.5)`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid argument",
+			Contains: []string{"numeric DateTime conversion requires an explicit epoch unit", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN TO_DATETIME("1", "s")`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid argument",
+			Contains: []string{"String", "epoch units are only valid for Int or Float", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN TO_DATETIME("2026-08-01T12:00:00Z", "ms")`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid argument",
+			Contains: []string{"String", "epoch units are only valid for Int or Float", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN TO_DATETIME(TO_DATETIME("2026-08-01T12:00:00Z"), "s")`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid argument",
+			Contains: []string{"DateTime", "epoch units are only valid for Int or Float", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN TO_DATETIME(1, "minutes")`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid argument",
+			Contains: []string{"unsupported epoch unit", `"s", "ms", "us", or "ns"`, ":1:8"},
+		}),
+		spec.NewSpec(`RETURN TO_DATETIME(1, NONE)`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid type",
+			Contains: []string{"DateTime epoch unit", "expected String", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN TO_DATETIME(1, 1)`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid type",
+			Contains: []string{"DateTime epoch unit", "expected String", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN TO_DATETIME(@value, "s")`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid argument",
+			Contains: []string{"must be finite", ":1:8"},
+		}).Env(spec.WithParam("value", math.NaN())),
+		spec.NewSpec(`RETURN TO_DATETIME(@value, "s")`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid argument",
+			Contains: []string{"must be finite", ":1:8"},
+		}).Env(spec.WithParam("value", math.Inf(1))),
+		spec.NewSpec(`RETURN TO_DATETIME(9223372036854775807, "s")`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Contains: []string{"out of range", "supported DateTime range", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN TO_DATETIME()`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid number of arguments",
+			Contains: []string{"expected number of arguments 1-2", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN TO_DATETIME(1, "s", true)`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid number of arguments",
+			Contains: []string{"expected number of arguments 1-2", ":1:8"},
+		}),
 		Error(`RETURN TO_DATETIME("invalid")`),
 		spec.NewSpec(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") - "tomorrow"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Message:  "invalid argument",

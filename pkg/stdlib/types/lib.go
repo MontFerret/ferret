@@ -11,7 +11,6 @@ func RegisterLib(ns runtime.Namespace) {
 		Add("TO_FLOAT", ToFloat).
 		Add("TO_DURATION", ToDuration).
 		Add("TO_STRING", ToString).
-		Add("TO_DATETIME", ToDateTime).
 		Add("TO_ARRAY", ToArray).
 		Add("TO_BINARY", ToBinary).
 		Add("TO_NUMBER", ToNumber).
@@ -29,6 +28,8 @@ func RegisterLib(ns runtime.Namespace) {
 		Add("IS_OBJECT", IsObject).
 		Add("IS_BINARY", IsBinary).
 		Add("IS_NAN", IsNaN)
+
+	ns.Function().Var().Add("TO_DATETIME", toDateTime)
 }
 
 func isTypeof(value runtime.Value, ctype runtime.Type) runtime.Value {

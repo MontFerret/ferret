@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"errors"
+	"math"
 	"strconv"
 	"testing"
 	"time"
@@ -29,6 +30,14 @@ func TestToAPIsMarkConversionOwnedErrors(t *testing.T) {
 			target: TypeDateTime,
 			operation: func() error {
 				_, err := ToDateTime(t.Context(), NewString("invalid"))
+				return err
+			},
+		},
+		{
+			name:   "date time epoch",
+			target: TypeDateTime,
+			operation: func() error {
+				_, err := ToDateTimeEpoch(t.Context(), NewInt(1), NewString("invalid"))
 				return err
 			},
 		},
@@ -116,8 +125,96 @@ func TestConversionErrorsPreservePublicCauses(t *testing.T) {
 	if _, err := ToDateTime(t.Context(), NewString("invalid")); !errors.Is(err, ErrInvalidArgument) {
 		t.Fatalf("ToDateTime malformed value error = %v, want ErrInvalidArgument", err)
 	}
+	if _, err := ToDateTime(t.Context(), NewInt(1)); !errors.Is(err, ErrInvalidArgument) {
+		t.Fatalf("ToDateTime numeric value error = %v, want ErrInvalidArgument", err)
+	}
+	if _, err := ToDateTimeEpoch(t.Context(), NewInt64(math.MaxInt64), NewString("s")); !errors.Is(err, ErrRange) {
+		t.Fatalf("ToDateTimeEpoch overflow error = %v, want ErrRange", err)
+	}
 	if _, err := ToDuration(t.Context(), NewInt64(9_223_372_036_855)); !errors.Is(err, ErrRange) {
 		t.Fatalf("ToDuration overflow error = %v, want ErrRange", err)
+	}
+}
+
+func TestToDateTimeEpochMarksConversionFailures(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		category  error
+		operation func() error
+		name      string
+	}{
+		{
+			name: "missing unit",
+			operation: func() error {
+				_, err := ToDateTime(t.Context(), NewInt(1))
+				return err
+			},
+			category: ErrInvalidArgument,
+		},
+		{
+			name: "unit type",
+			operation: func() error {
+				_, err := ToDateTimeEpoch(t.Context(), NewInt(1), None)
+				return err
+			},
+			category: ErrInvalidType,
+		},
+		{
+			name: "input type",
+			operation: func() error {
+				_, err := ToDateTimeEpoch(t.Context(), NewObject(), NewString("s"))
+				return err
+			},
+			category: ErrInvalidType,
+		},
+		{
+			name: "unit misuse",
+			operation: func() error {
+				_, err := ToDateTimeEpoch(t.Context(), NewString("1"), NewString("s"))
+				return err
+			},
+			category: ErrInvalidArgument,
+		},
+		{
+			name: "unknown unit",
+			operation: func() error {
+				_, err := ToDateTimeEpoch(t.Context(), NewInt(1), NewString("minutes"))
+				return err
+			},
+			category: ErrInvalidArgument,
+		},
+		{
+			name: "non-finite",
+			operation: func() error {
+				_, err := ToDateTimeEpoch(t.Context(), NewFloat(math.NaN()), NewString("s"))
+				return err
+			},
+			category: ErrInvalidArgument,
+		},
+		{
+			name: "range",
+			operation: func() error {
+				_, err := ToDateTimeEpoch(t.Context(), NewInt64(math.MaxInt64), NewString("s"))
+				return err
+			},
+			category: ErrRange,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.operation()
+			if !errors.Is(err, test.category) {
+				t.Fatalf("error = %v, want %v", err, test.category)
+			}
+			if !isConversionErrorTo(err, TypeDateTime) {
+				t.Fatalf("error %v is not marked for DateTime", err)
+			}
+			if isConversionErrorTo(err, TypeDuration) {
+				t.Fatalf("error %v was also marked for Duration", err)
+			}
+		})
 	}
 }
 
