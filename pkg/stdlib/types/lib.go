@@ -9,6 +9,7 @@ func RegisterLib(ns runtime.Namespace) {
 		Add("TO_BOOL", ToBool).
 		Add("TO_INT", ToInt).
 		Add("TO_FLOAT", ToFloat).
+		Add("TO_DURATION", ToDuration).
 		Add("TO_STRING", ToString).
 		Add("TO_DATETIME", ToDateTime).
 		Add("TO_ARRAY", ToArray).
