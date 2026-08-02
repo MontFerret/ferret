@@ -12,9 +12,11 @@ func isSimpleConst(val runtime.Value) bool {
 	if val == nil {
 		return false
 	}
+
 	if val == runtime.None {
 		return true
 	}
+
 	switch val.(type) {
 	case runtime.Int, runtime.Float, runtime.Duration, runtime.String, runtime.Boolean:
 		return true
@@ -27,6 +29,7 @@ func constEqual(a, b runtime.Value) bool {
 	if a == b {
 		return true
 	}
+
 	switch av := a.(type) {
 	case runtime.Int:
 		if bv, ok := b.(runtime.Int); ok {
@@ -87,11 +90,14 @@ func foldBinary(op bytecode.Opcode, left, right runtime.Value, bg context.Contex
 	case bytecode.OpDiv:
 		if _, ok := left.(runtime.Duration); ok {
 			result, err := runtime.DivideChecked(bg, left, right)
+
 			return result, err == nil
 		}
+
 		if _, ok := right.(runtime.Duration); ok {
 			return nil, false
 		}
+
 		lv := runtime.ToNumberOnly(bg, left)
 
 		if _, ok := lv.(runtime.Int); ok {
@@ -102,33 +108,51 @@ func foldBinary(op bytecode.Opcode, left, right runtime.Value, bg context.Contex
 		}
 
 		result, err := runtime.DivideChecked(bg, left, right)
+
 		return result, err == nil
 	case bytecode.OpMod:
 		if _, ok := left.(runtime.Duration); ok {
 			return nil, false
 		}
+
 		if _, ok := right.(runtime.Duration); ok {
 			return nil, false
 		}
+
 		if r, _ := runtime.ToInt(bg, right); r == 0 {
 			return nil, false
 		}
 
 		return runtime.Modulus(bg, left, right), true
 	case bytecode.OpCmp:
-		return compare(bg, left, right), true
+		result, err := runtime.CompareChecked(bg, right, left)
+		return runtime.Int(result), err == nil
 	case bytecode.OpEq:
-		return equals(bg, left, right), true
+		result, err := runtime.CompareChecked(bg, left, right)
+		if err != nil {
+			return runtime.False, true
+		}
+
+		return runtime.Boolean(result == 0), true
 	case bytecode.OpNe:
-		return notEquals(bg, left, right), true
+		result, err := runtime.CompareChecked(bg, left, right)
+		if err != nil {
+			return runtime.True, true
+		}
+
+		return runtime.Boolean(result != 0), true
 	case bytecode.OpGt:
-		return greaterThan(bg, left, right), true
+		result, err := runtime.CompareChecked(bg, left, right)
+		return runtime.Boolean(result > 0), err == nil
 	case bytecode.OpLt:
-		return lessThan(bg, left, right), true
+		result, err := runtime.CompareChecked(bg, left, right)
+		return runtime.Boolean(result < 0), err == nil
 	case bytecode.OpGte:
-		return greaterThanOrEqual(bg, left, right), true
+		result, err := runtime.CompareChecked(bg, left, right)
+		return runtime.Boolean(result >= 0), err == nil
 	case bytecode.OpLte:
-		return lessThanOrEqual(bg, left, right), true
+		result, err := runtime.CompareChecked(bg, left, right)
+		return runtime.Boolean(result <= 0), err == nil
 	default:
 		return nil, false
 	}
@@ -150,6 +174,7 @@ func constKey(val runtime.Value) (string, bool) {
 	if val == runtime.None {
 		return "none", true
 	}
+
 	switch v := val.(type) {
 	case runtime.Int:
 		return fmt.Sprintf("i:%s", v.String()), true
@@ -220,32 +245,4 @@ func appendConst(program *bytecode.Program, constIndex map[string]int, val runti
 	}
 
 	return idx
-}
-
-func compare(_ context.Context, left, right runtime.Value) runtime.Int {
-	return runtime.Int(runtime.CompareValues(right, left))
-}
-
-func equals(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) == 0
-}
-
-func notEquals(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) != 0
-}
-
-func greaterThan(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) > 0
-}
-
-func greaterThanOrEqual(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) >= 0
-}
-
-func lessThan(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) < 0
-}
-
-func lessThanOrEqual(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) <= 0
 }

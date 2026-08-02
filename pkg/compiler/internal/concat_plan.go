@@ -48,7 +48,6 @@ func buildConcatOperandSegmentsFromAtom(c *ExprCompiler, atom fql.IExpressionAto
 
 	parts := make([]concatAtomPart, 0, 4)
 	collectConcatAtomParts(c.ctx, c.facts, atom, &parts)
-
 	segments := make([]concatOperandSegment, 0, len(parts))
 
 	for _, part := range parts {
@@ -160,6 +159,7 @@ func inferConcatAtomType(ctx *CompilationSession, facts *TypeFacts, atom fql.IEx
 		atom.MemberExpression() != nil || atom.ImplicitMemberExpression() != nil ||
 		atom.ImplicitCurrentExpression() != nil || atom.DispatchExpression() != nil ||
 		atom.WaitForExpression() != nil {
+
 		return core.TypeAny
 	}
 
@@ -181,9 +181,17 @@ func inferConcatAtomType(ctx *CompilationSession, facts *TypeFacts, atom fql.IEx
 			case leftType == core.TypeDuration || rightType == core.TypeDuration:
 				return core.TypeUnknown
 			case leftType == core.TypeString || rightType == core.TypeString:
-				return core.TypeString
+				if concatTypesAreKnownNonTemporal(leftType, rightType) {
+					return core.TypeString
+				}
+
+				return core.TypeUnknown
 			case concatAnchorFromAtom(left) || concatAnchorFromAtom(right):
-				return core.TypeString
+				if concatTypesAreKnownNonTemporal(leftType, rightType) {
+					return core.TypeString
+				}
+
+				return core.TypeUnknown
 			case leftType == core.TypeFloat || rightType == core.TypeFloat:
 				if isNumericType(leftType) && isNumericType(rightType) {
 					return core.TypeFloat
@@ -215,9 +223,11 @@ func inferConcatAtomType(ctx *CompilationSession, facts *TypeFacts, atom fql.IEx
 	if op := atom.MultiplicativeOperator(); op != nil {
 		left := inferConcatAtomType(ctx, facts, atom.ExpressionAtom(0))
 		right := inferConcatAtomType(ctx, facts, atom.ExpressionAtom(1))
+
 		if op.GetText() == "*" && ((left == core.TypeDuration && isNumericType(right)) || (right == core.TypeDuration && isNumericType(left))) {
 			return core.TypeDuration
 		}
+
 		if op.GetText() == "/" && left == core.TypeDuration && isNumericType(right) {
 			return core.TypeDuration
 		}
@@ -249,6 +259,14 @@ func concatAnchorFromAtom(atom fql.IExpressionAtomContext) bool {
 
 func isNumericType(typ core.ValueType) bool {
 	return typ == core.TypeInt || typ == core.TypeFloat
+}
+
+func concatTypesAreKnownNonTemporal(left, right core.ValueType) bool {
+	return concatTypeIsKnownNonTemporal(left) && concatTypeIsKnownNonTemporal(right)
+}
+
+func concatTypeIsKnownNonTemporal(typ core.ValueType) bool {
+	return typ != core.TypeUnknown && typ != core.TypeAny && typ != core.TypeDuration
 }
 
 func guaranteesConcatStringResult(val runtime.Value) bool {

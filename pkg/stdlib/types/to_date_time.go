@@ -6,9 +6,9 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// TO_DATETIME takes an input value of any type and converts it into the appropriate date time value.
-// @param {Any} value - Input value of arbitrary type.
-// @return {DateTime} - Parsed date time.
-func ToDateTime(_ context.Context, arg runtime.Value) (runtime.Value, error) {
-	return runtime.ParseDateTime(arg)
+// TO_DATETIME returns a native DateTime or parses an RFC3339 string.
+// @param {DateTime|String} value - A native DateTime or RFC3339 string.
+// @return {DateTime} - Parsed DateTime.
+func ToDateTime(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+	return runtime.ToDateTime(ctx, arg)
 }

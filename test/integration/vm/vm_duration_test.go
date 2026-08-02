@@ -2,6 +2,7 @@ package vm_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
@@ -31,26 +32,43 @@ func TestNativeDurationValues(t *testing.T) {
 		S(`RETURN TO_DURATION(5s)`, "5s"),
 		S(`RETURN TO_DURATION("250ms")`, "250ms"),
 		S(`RETURN TO_DURATION("1h30m")`, "1h30m0s"),
+		S(`RETURN TO_DURATION(5000)`, "5s"),
+		S(`RETURN TO_DURATION(1.5)`, "1.5ms"),
+		S(`RETURN [TO_DURATION(NONE), TO_DURATION(false), TO_DURATION(true)]`, []any{"0s", "0s", "1ms"}),
+		S(`RETURN TO_DURATION([[2]])`, "2ms"),
 		S(`RETURN TYPENAME(TO_DURATION("500ms"))`, "Duration"),
 		S(`RETURN TO_DURATION("500ms") + 500ms`, "1s"),
+		S(`RETURN 1s + 1`, "1.001s"),
+		S(`RETURN 1 + 1s`, "1.001s"),
+		S(`RETURN 1s - 1`, "999ms"),
+		S(`RETURN 1s + "1s"`, "2s"),
+		S(`RETURN "1s" + 1s`, "2s"),
+		S(`RETURN 1s / "2"`, "500ms"),
+		S(`RETURN 1s / "250ms"`, 4),
+		S(`RETURN 1s == "1s"`, true),
+		S(`RETURN 1s != "tomorrow"`, true),
+		S(`RETURN 1s == "tomorrow"`, false),
+		S(`RETURN 1s > 999`, true),
+		S(`RETURN [1s, 2s] ALL > 999`, true),
+		S(`RETURN [1s, 2s] ANY == "2s"`, true),
 		S(`RETURN MATCH 5s (5000ms => true, _ => false)`, true),
 		S(`RETURN DISTINCT [5s, 5000ms]`, []any{"5s"}),
-		spec.NewSpec(`RETURN 1s + 1`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Message:  "invalid operation",
-			Contains: []string{"operator + is not supported for Duration and Int", ":1:8"},
-		}),
-		S(`RETURN 0.000001ms * 0.5`, "1ns"),
-		S(`RETURN (-0.000001ms) * 0.5`, "-1ns"),
-		S(`RETURN 0.000001ms / 2`, "1ns"),
-		S(`RETURN (-0.000001ms) / 2`, "-1ns"),
-		Error(`RETURN 1s - 1`),
-		Error(`RETURN TO_DURATION(5000)`),
+		S(`RETURN 0.000001ms * 0.5`, "0s"),
+		S(`RETURN (-0.000001ms) * 0.5`, "0s"),
+		S(`RETURN 0.000001ms / 2`, "0s"),
+		S(`RETURN (-0.000001ms) / 2`, "0s"),
 		Error(`RETURN TO_DURATION("1fortnight")`),
-		Error(`RETURN 1s + "1s"`),
-		Error(`RETURN "1s" + 1s`),
+		Error(`RETURN TO_DURATION([1, 2])`),
+		Error(`RETURN TO_DURATION({ value: 1 })`),
+		spec.NewSpec(`RETURN 1s < "tomorrow"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid argument",
+			Contains: []string{"cannot convert String", "tomorrow", ":1:8"},
+		}),
+		Error(`RETURN [1s] ANY < "tomorrow"`),
 		Error("RETURN `${1s}`"),
 		S("RETURN `${TO_STRING(1s)}`", "1s"),
 		Error(`RETURN 1 / 1s`),
+		Error(`RETURN 1s * "2"`),
 		Error(`RETURN 1s * 1s`),
 		Error(`RETURN 1s % 1`),
 		Error(`RETURN 1s / 0`),
@@ -60,16 +78,45 @@ func TestNativeDurationValues(t *testing.T) {
 	})
 }
 
+func TestDateTimeOperators(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z")`, "2026-08-01T12:00:00Z"),
+		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") + 30m`, "2026-08-01T12:30:00Z"),
+		S(`RETURN "30m" + TO_DATETIME("2026-08-01T12:00:00Z")`, "2026-08-01T12:30:00Z"),
+		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") - "30m"`, "2026-08-01T11:30:00Z"),
+		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") - "2026-08-01T11:59:30Z"`, "30s"),
+		S(`RETURN TO_DATETIME("2026-08-01T12:00:00+02:00") - TO_DATETIME("2026-08-01T10:00:00Z")`, "0s"),
+		S(`RETURN TO_DATETIME("2026-08-01T12:00:00+02:00") == TO_DATETIME("2026-08-01T10:00:00Z")`, true),
+		S(`RETURN TYPENAME(NOW() + "5m")`, "DateTime"),
+		S(`RETURN @delay + "500ms"`, "5.5s").Env(spec.WithParam("delay", 5*time.Second)),
+		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") == "2026-08-01T12:00:00Z"`, false),
+		Error(`RETURN TO_DATETIME(0)`),
+		Error(`RETURN TO_DATETIME("invalid")`),
+		spec.NewSpec(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") - "tomorrow"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid argument",
+			Contains: []string{"cannot convert String", "DateTime or Duration", ":1:8"},
+		}),
+		Error(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") + TO_DATETIME("2026-08-01T12:00:00Z")`),
+		Error(`RETURN 1s - TO_DATETIME("2026-08-01T12:00:00Z")`),
+		Error(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") * 2`),
+	})
+}
+
 func TestSchedulingRequiresDuration(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		S(`WAIT(0s) RETURN true`, true),
+		S(`WAIT(0) RETURN true`, true),
+		S(`WAIT("0s") RETURN true`, true),
 		S(`WAIT(0.000001ms) RETURN true`, true),
 		S(`LET delay = 0s WAIT(delay + 0s) RETURN true`, true),
 		S(`RETURN WAITFOR FALSE TIMEOUT 0s EVERY 1ms`, false),
+		S(`RETURN WAITFOR FALSE TIMEOUT 0 EVERY 0`, false),
+		S(`RETURN WAITFOR FALSE TIMEOUT "0s" EVERY 0, "0ms"`, false),
 		S(`LET timeout = 0s RETURN WAITFOR FALSE TIMEOUT timeout + 0s EVERY 1ms`, false),
-		Error(`WAIT(0) RETURN true`),
+		S(`LET timeout = "0s" RETURN WAITFOR FALSE TIMEOUT timeout`, false),
 		Error(`WAIT(-1ms) RETURN true`),
-		Error(`RETURN WAITFOR TRUE TIMEOUT 0`),
+		Error(`WAIT(-1) RETURN true`),
+		S(`RETURN WAITFOR TRUE TIMEOUT 0`, true),
 		spec.NewSpec(
 			`RETURN WAITFOR TRUE TIMEOUT (-1ms)`,
 			"negative_timeout.fql",
@@ -80,10 +127,11 @@ func TestSchedulingRequiresDuration(t *testing.T) {
 				"wait duration must not be negative",
 			},
 		}),
-		Error(`RETURN WAITFOR FALSE TIMEOUT 0s EVERY 0`),
 		Error(`RETURN WAITFOR TRUE TIMEOUT 0s EVERY (-1ms)`),
 		Error(`LET timeout = -1ms RETURN WAITFOR TRUE TIMEOUT timeout`),
-		Error(`RETURN T::FAIL() ON ERROR RETRY 1 DELAY 0 OR RETURN NONE`),
+		Nil(`RETURN T::FAIL() ON ERROR RETRY 1 DELAY 0 OR RETURN NONE`),
+		Nil(`RETURN T::FAIL() ON ERROR RETRY 1 DELAY "0s" OR RETURN NONE`),
+		Nil(`LET delay = "0s" RETURN T::FAIL() ON ERROR RETRY 1 DELAY delay OR RETURN NONE`),
 		Error(`RETURN T::FAIL() ON ERROR RETRY 1 DELAY -1ms OR RETURN NONE`),
 		Nil(`LET delay = 0ms RETURN T::FAIL() ON ERROR RETRY 1 DELAY delay * 2 OR RETURN NONE`),
 		Nil(`RETURN T::FAIL() ON ERROR RETRY 1 DELAY (0ms OR 1ms) OR RETURN NONE`),

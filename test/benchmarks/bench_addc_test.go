@@ -37,6 +37,21 @@ FOR i IN 1..1000
 `
 
 	durationLiteralQuery = `FOR i IN 1..1000 RETURN 1.5s`
+
+	durationCoerciveAddQuery = `
+FOR i IN 1..1000
+  RETURN @base + "2ms"
+`
+
+	durationCoerciveCompareQuery = `
+FOR i IN 1..1000
+  RETURN @base > 500
+`
+
+	dateTimeAddQuery = `
+FOR i IN 1..1000
+  RETURN @base + 2ms
+`
 )
 
 func BenchmarkAddNumeric_O0(b *testing.B) {
@@ -101,4 +116,28 @@ func BenchmarkDurationLiteral_O0(b *testing.B) {
 
 func BenchmarkDurationLiteral_O1(b *testing.B) {
 	RunBenchmarkO1(b, durationLiteralQuery)
+}
+
+func BenchmarkDurationCoerciveAdd_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationCoerciveAddQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationCoerciveAdd_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationCoerciveAddQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationCoerciveCompare_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationCoerciveCompareQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationCoerciveCompare_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationCoerciveCompareQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDateTimeAdd_O0(b *testing.B) {
+	RunBenchmarkO0(b, dateTimeAddQuery, WithParam("base", time.Date(2026, time.August, 1, 12, 0, 0, 0, time.UTC)))
+}
+
+func BenchmarkDateTimeAdd_O1(b *testing.B) {
+	RunBenchmarkO1(b, dateTimeAddQuery, WithParam("base", time.Date(2026, time.August, 1, 12, 0, 0, 0, time.UTC)))
 }

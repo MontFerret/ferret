@@ -35,12 +35,12 @@ func TestEvaluateDebugDurationExpression(t *testing.T) {
 		t.Fatalf("negative duration expression = %v (%T), %v", value, value, err)
 	}
 
-	_, err = evaluateExpression(context.Background(), `1s + 1`, evalScope{
+	value, err = evaluateExpression(context.Background(), `1s + 1`, evalScope{
 		params: runtime.NewParams(),
 		values: vm.NewDebugValueAccess(),
 	})
-	if !errors.Is(err, runtime.ErrInvalidOperation) {
-		t.Fatalf("mixed duration debugger expression error = %v", err)
+	if err != nil || value != runtime.NewDuration(1001*time.Millisecond) {
+		t.Fatalf("coercive duration debugger expression = %v (%T), %v", value, value, err)
 	}
 }
 

@@ -6,17 +6,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// ToDuration returns a native duration or parses one from its string representation.
-// Numeric values are not interpreted as durations.
-// @param {Duration|String} value - A native duration or duration string.
+// ToDuration converts a value to a native duration.
+// Numeric values are interpreted as milliseconds.
+// @param {Any} value - A value coercible to Duration.
 // @return {Duration} - A native duration value.
-func ToDuration(_ context.Context, arg runtime.Value) (runtime.Value, error) {
-	switch value := arg.(type) {
-	case runtime.Duration:
-		return value, nil
-	case runtime.String:
-		return runtime.ParseDuration(value.String())
-	default:
-		return runtime.None, runtime.TypeErrorOf(arg, runtime.TypeDuration, runtime.TypeString)
-	}
+func ToDuration(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+	return runtime.ToDuration(ctx, arg)
 }

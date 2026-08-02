@@ -31,6 +31,11 @@ func TestToDuration(t *testing.T) {
 			input:    runtime.NewString("1h30m"),
 			expected: runtime.NewDuration(90 * time.Minute),
 		},
+		{
+			name:     "integer milliseconds",
+			input:    runtime.NewInt(500),
+			expected: runtime.NewDuration(500 * time.Millisecond),
+		},
 	}
 
 	for _, tt := range tests {
@@ -57,7 +62,7 @@ func TestToDuration(t *testing.T) {
 func TestToDurationRejectsUnsupportedType(t *testing.T) {
 	t.Parallel()
 
-	_, err := ToDuration(t.Context(), runtime.NewInt(1))
+	_, err := ToDuration(t.Context(), runtime.NewObject())
 	if !errors.Is(err, runtime.ErrInvalidType) {
 		t.Fatalf("ToDuration() error = %v, want invalid type", err)
 	}
