@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
@@ -17,36 +18,34 @@ func TestPredicateJumpLowering_ConstEqNeLiteralSides(t *testing.T) {
 		expected bytecode.Opcode
 	}{
 		{
-			name: "eq literal right",
-			expr: `
-LET a = 1
-RETURN a == 1 ? 10 : 20
-`,
+			name:     "eq literal right",
+			expr:     `RETURN @value == 1 ? 10 : 20`,
 			expected: bytecode.OpJumpIfNeConst,
 		},
 		{
-			name: "eq literal left",
-			expr: `
-LET a = 1
-RETURN 1 == a ? 10 : 20
-`,
+			name:     "eq literal left",
+			expr:     `RETURN 1 == @value ? 10 : 20`,
 			expected: bytecode.OpJumpIfNeConst,
 		},
 		{
-			name: "ne literal right",
-			expr: `
-LET a = 1
-RETURN a != 1 ? 10 : 20
-`,
+			name:     "ne literal right",
+			expr:     `RETURN @value != 1 ? 10 : 20`,
 			expected: bytecode.OpJumpIfEqConst,
 		},
 		{
-			name: "ne literal left",
-			expr: `
-LET a = 1
-RETURN 1 != a ? 10 : 20
-`,
+			name:     "ne literal left",
+			expr:     `RETURN 1 != @value ? 10 : 20`,
 			expected: bytecode.OpJumpIfEqConst,
+		},
+		{
+			name:     "eq dynamic operands",
+			expr:     `RETURN @left == @right ? 10 : 20`,
+			expected: bytecode.OpJumpIfNe,
+		},
+		{
+			name:     "ne dynamic operands",
+			expr:     `RETURN @left != @right ? 10 : 20`,
+			expected: bytecode.OpJumpIfEq,
 		},
 	}
 
@@ -61,5 +60,5 @@ RETURN 1 != a ? 10 : 20
 		}, tt.name))
 	}
 
-	RunSpecs(t, specs)
+	RunSpecsLevels(t, specs, compiler.O0, compiler.O1)
 }

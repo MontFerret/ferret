@@ -120,8 +120,8 @@ LET status = WAITFOR EVENT "test" IN obs TIMEOUT base * 2 ON TIMEOUT RETURN "tim
 RETURN status`, "timeout", "WAITFOR EVENT should accept a computed native duration timeout").Env(vm.WithParams(map[string]runtime.Value{
 			"obs": blocking,
 		})),
-		Error(`LET obs = @obs
-RETURN WAITFOR EVENT "test" IN obs TIMEOUT 1`, "WAITFOR EVENT should reject numeric timeouts").Env(vm.WithParams(map[string]runtime.Value{
+		S(`LET obs = @obs
+RETURN WAITFOR EVENT "test" IN obs TIMEOUT 1 ON TIMEOUT RETURN "timeout"`, "timeout", "WAITFOR EVENT should treat numeric timeouts as milliseconds").Env(vm.WithParams(map[string]runtime.Value{
 			"obs": blocking,
 		})),
 		Error(`LET obs = @obs

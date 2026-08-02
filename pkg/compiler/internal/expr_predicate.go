@@ -146,20 +146,21 @@ func (c *ExprCompiler) emitPredicateJump(ctx fql.IPredicateContext, label core.L
 	if !ok {
 		return false
 	}
+	span := diagnostics.SpanFromRuleContext(ctx)
 
 	rightLiteral := c.compilePredicateLiteralOperand(rightCtx)
 	if rightLiteral != bytecode.NoopOperand {
-		return c.emitPredicateJumpWithLiteralOperand(opText, jumpOnTrue, leftCtx, rightCtx, rightLiteral, true, label)
+		return c.emitPredicateJumpWithLiteralOperand(opText, jumpOnTrue, leftCtx, rightCtx, rightLiteral, true, label, span)
 	}
 
 	leftLiteral := c.compilePredicateLiteralOperand(leftCtx)
 	if leftLiteral != bytecode.NoopOperand {
-		return c.emitPredicateJumpWithLiteralOperand(opText, jumpOnTrue, leftCtx, rightCtx, leftLiteral, false, label)
+		return c.emitPredicateJumpWithLiteralOperand(opText, jumpOnTrue, leftCtx, rightCtx, leftLiteral, false, label, span)
 	}
 
 	leftOp := c.ensureRegister(c.compilePredicate(leftCtx))
 	rightOp := c.ensureRegister(c.compilePredicate(rightCtx))
-	c.emitPredicateJumpCompare(opText, jumpOnTrue, leftOp, rightOp, label, false)
+	c.emitPredicateJumpCompare(opText, jumpOnTrue, leftOp, rightOp, label, false, span)
 
 	return true
 }
@@ -182,7 +183,7 @@ func (c *ExprCompiler) compilePredicateLiteralOperand(ctx fql.IPredicateContext)
 	return c.compileLiteralOperand(literal)
 }
 
-func (c *ExprCompiler) emitPredicateJumpWithLiteralOperand(opText string, jumpOnTrue bool, leftCtx, rightCtx fql.IPredicateContext, literalOp bytecode.Operand, literalOnRight bool, label core.Label) bool {
+func (c *ExprCompiler) emitPredicateJumpWithLiteralOperand(opText string, jumpOnTrue bool, leftCtx, rightCtx fql.IPredicateContext, literalOp bytecode.Operand, literalOnRight bool, label core.Label, span source.Span) bool {
 	if literalOp.IsConstant() {
 		exprCtx := leftCtx
 		if !literalOnRight {
@@ -190,7 +191,7 @@ func (c *ExprCompiler) emitPredicateJumpWithLiteralOperand(opText string, jumpOn
 		}
 
 		exprOp := c.ensureRegister(c.compilePredicate(exprCtx))
-		c.emitPredicateJumpCompare(opText, jumpOnTrue, exprOp, literalOp, label, true)
+		c.emitPredicateJumpCompare(opText, jumpOnTrue, exprOp, literalOp, label, true, span)
 
 		return true
 	}
@@ -198,21 +199,23 @@ func (c *ExprCompiler) emitPredicateJumpWithLiteralOperand(opText string, jumpOn
 	if literalOnRight {
 		leftOp := c.ensureRegister(c.compilePredicate(leftCtx))
 		rightOp := c.ensureRegister(literalOp)
-		c.emitPredicateJumpCompare(opText, jumpOnTrue, leftOp, rightOp, label, false)
+		c.emitPredicateJumpCompare(opText, jumpOnTrue, leftOp, rightOp, label, false, span)
 
 		return true
 	}
 
 	leftOp := c.ensureRegister(literalOp)
 	rightOp := c.ensureRegister(c.compilePredicate(rightCtx))
-	c.emitPredicateJumpCompare(opText, jumpOnTrue, leftOp, rightOp, label, false)
+	c.emitPredicateJumpCompare(opText, jumpOnTrue, leftOp, rightOp, label, false, span)
 
 	return true
 }
 
-func (c *ExprCompiler) emitPredicateJumpCompare(opText string, jumpOnTrue bool, left, right bytecode.Operand, label core.Label, constOperand bool) {
+func (c *ExprCompiler) emitPredicateJumpCompare(opText string, jumpOnTrue bool, left, right bytecode.Operand, label core.Label, constOperand bool, span source.Span) {
 	opcode := resolveEqNeJumpOpcode(opText, jumpOnTrue, constOperand)
-	c.ctx.Program.Emitter.EmitJumpCompare(opcode, left, right, label)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitJumpCompare(opcode, left, right, label)
+	})
 }
 
 // EmitConditionJump is the supported cross-compiler entrypoint for branching on

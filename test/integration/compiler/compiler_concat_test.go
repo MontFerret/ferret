@@ -15,7 +15,8 @@ import (
 
 func TestCompilerConcatChainMergesDynamicLiteralRuns(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
-		ProgramCheck(`RETURN "a" + 1 + "b" + 2 + @x + "c" + 3`, func(program *bytecode.Program) error {
+		ProgramCheck(`LET x = "x"
+RETURN "a" + 1 + "b" + 2 + x + "c" + 3`, func(program *bytecode.Program) error {
 			if err := assertOpcodeCount(program.Bytecode, bytecode.OpAdd, 0); err != nil {
 				return err
 			}
@@ -24,9 +25,60 @@ func TestCompilerConcatChainMergesDynamicLiteralRuns(t *testing.T) {
 				return err
 			}
 
-			return assertProgramStringConstants(program, "a1b2", "c3")
+			return assertProgramStringConstants(program, "a1b2", "c3", "x")
 		}, "concat chain merges dynamic literal runs"),
 	}, compiler.O0)
+}
+
+func TestCompilerTemporalAdditionsRetainArithmeticOpcodes(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{"DateTime plus duration string", `RETURN NOW() + "5m"`},
+		{"dynamic value plus duration string", `RETURN @value + "500ms"`},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+				program := compileWithLevel(t, level, test.src)
+
+				if err := assertOpcodeCount(program.Bytecode, bytecode.OpConcat, 0); err != nil {
+					t.Fatal(err)
+				}
+
+				arithmeticAdds := countOpcodes(program.Bytecode, bytecode.OpAdd) + countOpcodes(program.Bytecode, bytecode.OpAddConst)
+				if arithmeticAdds != 1 {
+					t.Fatalf("O%d: unexpected arithmetic add count: got %d, want 1", level, arithmeticAdds)
+				}
+			}
+		})
+	}
+}
+
+func TestCompilerKnownStringAdditionRetainsConcatOptimization(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		program := compileWithLevel(t, level, `LET prefix = "a"
+RETURN prefix + "b"`)
+
+		if got := countOpcodes(program.Bytecode, bytecode.OpAdd); got != 0 {
+			t.Fatalf("O%d: unexpected %s count: got %d, want 0", level, bytecode.OpAdd, got)
+		}
+		if got := countOpcodes(program.Bytecode, bytecode.OpConcat); got != 0 {
+			t.Fatalf("O%d: unexpected %s count: got %d, want 0", level, bytecode.OpConcat, got)
+		}
+		if level == compiler.O0 && countOpcodes(program.Bytecode, bytecode.OpAddConst) != 1 {
+			t.Fatalf("O%d: known string addition did not use %s", level, bytecode.OpAddConst)
+		}
+	}
+}
+
+func TestCompilerInvalidTemporalOrderingIsNotConstantFolded(t *testing.T) {
+	program := compileWithLevel(t, compiler.O1, `RETURN 1s < "tomorrow"`)
+	if got := countOpcodes(program.Bytecode, bytecode.OpLt); got != 1 {
+		t.Fatalf("unexpected %s count: got %d, want 1", bytecode.OpLt, got)
+	}
 }
 
 func TestCompilerStringConcatAssignmentUsesMergedSegments(t *testing.T) {
@@ -54,18 +106,24 @@ RETURN str`, func(program *bytecode.Program) error {
 }
 
 func assertOpcodeCount(instructions []bytecode.Instruction, opcode bytecode.Opcode, want int) error {
-	got := 0
-	for _, inst := range instructions {
-		if inst.Opcode == opcode {
-			got++
-		}
-	}
+	got := countOpcodes(instructions, opcode)
 
 	if got != want {
 		return fmt.Errorf("unexpected %s count: got %d, want %d", opcode, got, want)
 	}
 
 	return nil
+}
+
+func countOpcodes(instructions []bytecode.Instruction, opcode bytecode.Opcode) int {
+	count := 0
+	for _, inst := range instructions {
+		if inst.Opcode == opcode {
+			count++
+		}
+	}
+
+	return count
 }
 
 func assertProgramStringConstants(program *bytecode.Program, want ...string) error {

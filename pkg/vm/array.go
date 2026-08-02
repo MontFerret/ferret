@@ -18,7 +18,12 @@ func arrayAll(ctx context.Context, cmp arrayComparator, left, right runtime.Valu
 	result := runtime.True
 
 	if err := arr.ForEach(ctx, func(ctx context.Context, v runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
-		if !pred(ctx, v, right) {
+		matches, err := pred(ctx, v, right)
+		if err != nil {
+			return runtime.False, err
+		}
+
+		if !matches {
 			result = runtime.False
 			return runtime.False, nil
 		}
@@ -42,10 +47,16 @@ func arrayAny(ctx context.Context, cmp arrayComparator, left, right runtime.Valu
 	result := runtime.False
 
 	if err := arr.ForEach(ctx, func(ctx context.Context, v runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
-		if pred(ctx, v, right) {
+		matches, err := pred(ctx, v, right)
+		if err != nil {
+			return runtime.False, err
+		}
+
+		if matches {
 			result = runtime.True
 			return runtime.False, nil
 		}
+
 		return runtime.True, nil
 	}); err != nil {
 		return runtime.False, err
@@ -65,10 +76,16 @@ func arrayNone(ctx context.Context, cmp arrayComparator, left, right runtime.Val
 	result := runtime.True
 
 	if err := arr.ForEach(ctx, func(ctx context.Context, v runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
-		if pred(ctx, v, right) {
+		matches, err := pred(ctx, v, right)
+		if err != nil {
+			return runtime.False, err
+		}
+
+		if matches {
 			result = runtime.False
 			return runtime.False, nil
 		}
+
 		return runtime.True, nil
 	}); err != nil {
 		return runtime.False, err

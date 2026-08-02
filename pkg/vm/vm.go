@@ -255,19 +255,43 @@ loop:
 				state.pc = int(dst)
 			}
 		case bytecode.OpJumpIfNe:
-			if ne(ctx, reg[src1], reg[src2]) {
+			matches, err := ne(ctx, reg[src1], reg[src2])
+			if err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
+			if matches {
 				state.pc = int(dst)
 			}
 		case bytecode.OpJumpIfNeConst:
-			if ne(ctx, reg[src1], constants[src2.Constant()]) {
+			matches, err := ne(ctx, reg[src1], constants[src2.Constant()])
+			if err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
+			if matches {
 				state.pc = int(dst)
 			}
 		case bytecode.OpJumpIfEq:
-			if eq(ctx, reg[src1], reg[src2]) {
+			matches, err := eq(ctx, reg[src1], reg[src2])
+			if err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
+			if matches {
 				state.pc = int(dst)
 			}
 		case bytecode.OpJumpIfEqConst:
-			if eq(ctx, reg[src1], constants[src2.Constant()]) {
+			matches, err := eq(ctx, reg[src1], constants[src2.Constant()])
+			if err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
+			if matches {
 				state.pc = int(dst)
 			}
 		case bytecode.OpJumpIfMissingProperty:
@@ -830,7 +854,7 @@ loop:
 			var timeout runtime.Duration
 
 			if reg[src2] != runtime.None {
-				t, err := runtime.CastDuration(reg[src2])
+				t, err := runtime.ToDuration(ctx, reg[src2])
 
 				if err != nil {
 					state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -976,21 +1000,28 @@ loop:
 		case bytecode.OpCastBool:
 			reg[dst] = coerceBool(reg[src1])
 		case bytecode.OpCmp:
-			reg[dst] = cmp(ctx, reg[src1], reg[src2])
+			res, err := cmp(ctx, reg[src1], reg[src2])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpNot:
 			reg[dst] = !coerceBool(reg[src1])
 		case bytecode.OpEq:
-			reg[dst] = eq(ctx, reg[src1], reg[src2])
+			res, err := eq(ctx, reg[src1], reg[src2])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpNe:
-			reg[dst] = ne(ctx, reg[src1], reg[src2])
+			res, err := ne(ctx, reg[src1], reg[src2])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpGt:
-			reg[dst] = gt(ctx, reg[src1], reg[src2])
+			res, err := gt(ctx, reg[src1], reg[src2])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpLt:
-			reg[dst] = lt(ctx, reg[src1], reg[src2])
+			res, err := lt(ctx, reg[src1], reg[src2])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpGte:
-			reg[dst] = gte(ctx, reg[src1], reg[src2])
+			res, err := gte(ctx, reg[src1], reg[src2])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpLte:
-			reg[dst] = lte(ctx, reg[src1], reg[src2])
+			res, err := lte(ctx, reg[src1], reg[src2])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpIn:
 			reg[dst] = contains(ctx, reg[src2], reg[src1])
 		case bytecode.OpLike:
@@ -1092,7 +1123,7 @@ loop:
 				}
 			}
 		case bytecode.OpSleep:
-			dur, err := runtime.CastDuration(reg[dst])
+			dur, err := runtime.ToDuration(ctx, reg[dst])
 
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)

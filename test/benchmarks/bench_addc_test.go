@@ -37,6 +37,51 @@ FOR i IN 1..1000
 `
 
 	durationLiteralQuery = `FOR i IN 1..1000 RETURN 1.5s`
+
+	durationCoerciveAddQuery = `
+FOR i IN 1..1000
+  RETURN @base + "2ms"
+`
+
+	durationCoerciveCompareQuery = `
+FOR i IN 1..1000
+  RETURN @base > 500
+`
+
+	numericEqualityQuery = `
+FOR i IN 1..1000
+  RETURN @base == 1
+`
+
+	durationCoerciveEqualityQuery = `
+FOR i IN 1..1000
+  RETURN @base == "1s"
+`
+
+	equalityJumpConstQuery = `
+FOR i IN 1..1000
+  RETURN @left == 1 ? i : 0
+`
+
+	equalityJumpRegisterQuery = `
+FOR i IN 1..1000
+  RETURN @left == @right ? i : 0
+`
+
+	dateTimeAddQuery = `
+FOR i IN 1..1000
+  RETURN @base + 2ms
+`
+
+	dateTimeConversionQuery = `
+FOR i IN 1..1000
+  RETURN TO_DATETIME(@value)
+`
+
+	dateTimeEpochConversionQuery = `
+FOR i IN 1..1000
+  RETURN TO_DATETIME(@value, "s")
+`
 )
 
 func BenchmarkAddNumeric_O0(b *testing.B) {
@@ -101,4 +146,76 @@ func BenchmarkDurationLiteral_O0(b *testing.B) {
 
 func BenchmarkDurationLiteral_O1(b *testing.B) {
 	RunBenchmarkO1(b, durationLiteralQuery)
+}
+
+func BenchmarkDurationCoerciveAdd_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationCoerciveAddQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationCoerciveAdd_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationCoerciveAddQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationCoerciveCompare_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationCoerciveCompareQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationCoerciveCompare_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationCoerciveCompareQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkNumericEquality_O0(b *testing.B) {
+	RunBenchmarkO0(b, numericEqualityQuery, WithParam("base", 1))
+}
+
+func BenchmarkNumericEquality_O1(b *testing.B) {
+	RunBenchmarkO1(b, numericEqualityQuery, WithParam("base", 1))
+}
+
+func BenchmarkDurationCoerciveEquality_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationCoerciveEqualityQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationCoerciveEquality_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationCoerciveEqualityQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkEqualityJumpConst_O0(b *testing.B) {
+	RunBenchmarkO0(b, equalityJumpConstQuery, WithParam("left", 1))
+}
+
+func BenchmarkEqualityJumpConst_O1(b *testing.B) {
+	RunBenchmarkO1(b, equalityJumpConstQuery, WithParam("left", 1))
+}
+
+func BenchmarkEqualityJumpRegister_O0(b *testing.B) {
+	RunBenchmarkO0(b, equalityJumpRegisterQuery, WithParam("left", 1), WithParam("right", 1))
+}
+
+func BenchmarkEqualityJumpRegister_O1(b *testing.B) {
+	RunBenchmarkO1(b, equalityJumpRegisterQuery, WithParam("left", 1), WithParam("right", 1))
+}
+
+func BenchmarkDateTimeAdd_O0(b *testing.B) {
+	RunBenchmarkO0(b, dateTimeAddQuery, WithParam("base", time.Date(2026, time.August, 1, 12, 0, 0, 0, time.UTC)))
+}
+
+func BenchmarkDateTimeAdd_O1(b *testing.B) {
+	RunBenchmarkO1(b, dateTimeAddQuery, WithParam("base", time.Date(2026, time.August, 1, 12, 0, 0, 0, time.UTC)))
+}
+
+func BenchmarkDateTimeConversion_O0(b *testing.B) {
+	RunBenchmarkO0(b, dateTimeConversionQuery, WithParam("value", "2026-08-02T12:00:00Z"))
+}
+
+func BenchmarkDateTimeConversion_O1(b *testing.B) {
+	RunBenchmarkO1(b, dateTimeConversionQuery, WithParam("value", "2026-08-02T12:00:00Z"))
+}
+
+func BenchmarkDateTimeEpochConversion_O0(b *testing.B) {
+	RunBenchmarkO0(b, dateTimeEpochConversionQuery, WithParam("value", 1_690_992_000))
+}
+
+func BenchmarkDateTimeEpochConversion_O1(b *testing.B) {
+	RunBenchmarkO1(b, dateTimeEpochConversionQuery, WithParam("value", 1_690_992_000))
 }

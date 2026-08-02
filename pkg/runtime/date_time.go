@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"hash/fnv"
 	"time"
 )
@@ -39,6 +40,46 @@ func ParseDateTimeWith(input interface{}, layout string) (DateTime, error) {
 		return DateTime{t}, nil
 	default:
 		return DateTime{time.Now()}, ErrInvalidType
+	}
+}
+
+// ToDateTime converts a native DateTime or RFC3339 runtime String to DateTime.
+// Numeric values are not interpreted as Unix timestamps because no timestamp
+// unit is implied by the language contract.
+func ToDateTime(_ context.Context, input Value) (DateTime, error) {
+	if input == nil {
+		input = None
+	}
+
+	switch value := input.(type) {
+	case DateTime:
+		return value, nil
+	case String:
+		parsed, err := time.Parse(DefaultTimeLayout, value.String())
+		if err != nil {
+			return ZeroDateTime, newConversionError(TypeDateTime, Errorf(
+				ErrInvalidArgument,
+				"cannot convert String %q to DateTime",
+				value.String(),
+			))
+		}
+
+		return NewDateTime(parsed), nil
+	case Int, Float:
+		return ZeroDateTime, newConversionError(TypeDateTime, Errorf(
+			ErrInvalidArgument,
+			"cannot convert %s %q to DateTime: numeric DateTime conversion requires an explicit epoch unit: %s",
+			TypeName(TypeOf(input)),
+			input.String(),
+			dateTimeEpochCanonicalUnits,
+		))
+	default:
+		return ZeroDateTime, newConversionError(TypeDateTime, Errorf(
+			ErrInvalidType,
+			"cannot convert %s %q to DateTime",
+			TypeName(TypeOf(input)),
+			input.String(),
+		))
 	}
 }
 

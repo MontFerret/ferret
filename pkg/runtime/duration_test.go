@@ -14,16 +14,19 @@ func TestParseDuration(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]runtime.Duration{
-		"250ms":                  runtime.NewDuration(250 * time.Millisecond),
-		"1.5s":                   runtime.NewDuration(1500 * time.Millisecond),
-		"1e3ms":                  runtime.NewDuration(time.Second),
-		"2M":                     runtime.NewDuration(2 * time.Minute),
-		"1d":                     runtime.NewDuration(24 * time.Hour),
-		"0.0000005ms":            runtime.NewDuration(time.Nanosecond),
-		"-0.0000005ms":           runtime.NewDuration(-time.Nanosecond),
-		"1h30m":                  runtime.NewDuration(90 * time.Minute),
-		"9223372036.854775807s":  runtime.Duration(math.MaxInt64),
-		"-9223372036.854775808s": runtime.Duration(math.MinInt64),
+		"250ms":                    runtime.NewDuration(250 * time.Millisecond),
+		"1.5s":                     runtime.NewDuration(1500 * time.Millisecond),
+		"1e3ms":                    runtime.NewDuration(time.Second),
+		"2M":                       runtime.NewDuration(2 * time.Minute),
+		"1d":                       runtime.NewDuration(24 * time.Hour),
+		"0.0000005ms":              runtime.ZeroDuration,
+		"-0.0000005ms":             runtime.ZeroDuration,
+		"1h30m":                    runtime.NewDuration(90 * time.Minute),
+		"1D2H30M":                  runtime.NewDuration(26*time.Hour + 30*time.Minute),
+		"0.5ns0.5ns":               runtime.NewDuration(time.Nanosecond),
+		"2562047h47m16.854775807s": runtime.Duration(math.MaxInt64),
+		"9223372036.854775807s":    runtime.Duration(math.MaxInt64),
+		"-9223372036.854775808s":   runtime.Duration(math.MinInt64),
 	}
 
 	for input, expected := range tests {
@@ -41,7 +44,11 @@ func TestParseDuration(t *testing.T) {
 		})
 	}
 
-	for _, input := range []string{"9223372036.854775808s", "-9223372036.854775809s"} {
+	for _, input := range []string{
+		"9223372036.854775808s",
+		"-9223372036.854775809s",
+		"2562047h47m16.854775808s",
+	} {
 		if _, err := runtime.ParseDuration(input); !errors.Is(err, runtime.ErrRange) {
 			t.Fatalf("ParseDuration(%q) error = %v, want range error", input, err)
 		}
@@ -159,13 +166,13 @@ func TestDurationArithmetic(t *testing.T) {
 	assertValue("fractional ratio", actual, err, runtime.NewFloat(1.0/3.0))
 
 	actual, err = runtime.MultiplyChecked(ctx, runtime.NewDuration(time.Nanosecond), runtime.NewFloat(0.5))
-	assertValue("positive tie", actual, err, runtime.NewDuration(time.Nanosecond))
+	assertValue("positive tie", actual, err, runtime.ZeroDuration)
 	actual, err = runtime.MultiplyChecked(ctx, runtime.NewDuration(-time.Nanosecond), runtime.NewFloat(0.5))
-	assertValue("negative tie", actual, err, runtime.NewDuration(-time.Nanosecond))
+	assertValue("negative tie", actual, err, runtime.ZeroDuration)
 	actual, err = runtime.DivideChecked(ctx, runtime.NewDuration(time.Nanosecond), runtime.NewInt(2))
-	assertValue("positive integer division tie", actual, err, runtime.NewDuration(time.Nanosecond))
+	assertValue("positive integer division tie", actual, err, runtime.ZeroDuration)
 	actual, err = runtime.DivideChecked(ctx, runtime.NewDuration(-time.Nanosecond), runtime.NewInt(2))
-	assertValue("negative integer division tie", actual, err, runtime.NewDuration(-time.Nanosecond))
+	assertValue("negative integer division tie", actual, err, runtime.ZeroDuration)
 	actual, err = runtime.PositiveChecked(second)
 	assertValue("unary positive", actual, err, second)
 	actual, err = runtime.NegativeChecked(second)
@@ -179,7 +186,6 @@ func TestDurationArithmetic(t *testing.T) {
 		fn   func() (runtime.Value, error)
 		name string
 	}{
-		{name: "mixed addition", fn: func() (runtime.Value, error) { return runtime.AddChecked(ctx, second, runtime.NewInt(1)) }},
 		{name: "duration multiplication", fn: func() (runtime.Value, error) { return runtime.MultiplyChecked(ctx, second, second) }},
 		{name: "reverse division", fn: func() (runtime.Value, error) { return runtime.DivideChecked(ctx, runtime.NewInt(1), second) }},
 		{name: "zero division", fn: func() (runtime.Value, error) { return runtime.DivideChecked(ctx, second, runtime.ZeroInt) }},

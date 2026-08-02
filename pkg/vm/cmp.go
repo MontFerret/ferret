@@ -9,7 +9,7 @@ import (
 
 type (
 	arrayComparator          int
-	arrayComparatorPredicate func(ctx context.Context, a, b runtime.Value) runtime.Boolean
+	arrayComparatorPredicate func(ctx context.Context, a, b runtime.Value) (runtime.Boolean, error)
 )
 
 const (
@@ -53,37 +53,47 @@ func (op arrayComparator) predicate() arrayComparatorPredicate {
 	}
 }
 
-func cmp(_ context.Context, left, right runtime.Value) runtime.Int {
-	return runtime.Int(runtime.CompareValues(right, left))
+func cmp(ctx context.Context, left, right runtime.Value) (runtime.Int, error) {
+	result, err := runtime.CompareChecked(ctx, right, left)
+	return runtime.Int(result), err
 }
 
-func eq(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) == 0
+func eq(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
+	return runtime.EqualChecked(ctx, left, right)
 }
 
-func ne(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) != 0
+func ne(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
+	result, err := runtime.EqualChecked(ctx, left, right)
+	if err != nil {
+		return runtime.False, err
+	}
+
+	return !result, nil
 }
 
-func gt(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) > 0
+func gt(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
+	result, err := runtime.CompareChecked(ctx, left, right)
+	return result > 0, err
 }
 
-func gte(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) >= 0
+func gte(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
+	result, err := runtime.CompareChecked(ctx, left, right)
+	return result >= 0, err
 }
 
-func lt(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) < 0
+func lt(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
+	result, err := runtime.CompareChecked(ctx, left, right)
+	return result < 0, err
 }
 
-func lte(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) <= 0
+func lte(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
+	result, err := runtime.CompareChecked(ctx, left, right)
+	return result <= 0, err
 }
 
-func checkInclusion(ctx context.Context, left, right runtime.Value) runtime.Boolean {
+func checkInclusion(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
 	// If "left in right" -> right.contains(left)
-	return contains(ctx, right, left)
+	return contains(ctx, right, left), nil
 }
 
 func contains(ctx context.Context, input runtime.Value, value runtime.Value) runtime.Boolean {

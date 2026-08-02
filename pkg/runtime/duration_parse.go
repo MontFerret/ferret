@@ -18,7 +18,7 @@ func ParseDuration(input string) (Duration, error) {
 		value, parsed := new(big.Rat).SetString(number)
 		if parsed {
 			value.Mul(value, new(big.Rat).SetInt64(multiplier))
-			nanos, err := roundDurationRat(value)
+			nanos, err := truncateDurationRat(value)
 			if err != nil {
 				return ZeroDuration, err
 			}
@@ -27,12 +27,120 @@ func ParseDuration(input string) (Duration, error) {
 		}
 	}
 
-	parsed, err := time.ParseDuration(raw)
+	parsed, ok, err := parseCompoundDuration(raw)
+	if !ok {
+		return ZeroDuration, Errorf(ErrInvalidArgument, "invalid duration %q", raw)
+	}
+
 	if err != nil {
 		return ZeroDuration, err
 	}
 
-	return Duration(parsed), nil
+	return parsed, nil
+}
+
+func parseCompoundDuration(input string) (Duration, bool, error) {
+	sign := int64(1)
+	if len(input) > 0 {
+		switch input[0] {
+		case '-':
+			sign = -1
+			input = input[1:]
+		case '+':
+			input = input[1:]
+		}
+	}
+
+	if input == "0" {
+		return ZeroDuration, true, nil
+	}
+	if input == "" {
+		return ZeroDuration, false, nil
+	}
+
+	total := new(big.Rat)
+	for input != "" {
+		numberEnd := durationNumberEnd(input)
+		if numberEnd == 0 {
+			return ZeroDuration, false, nil
+		}
+
+		number, ok := new(big.Rat).SetString(input[:numberEnd])
+		if !ok || number.Sign() < 0 {
+			return ZeroDuration, false, nil
+		}
+
+		multiplier, unitLength, ok := durationUnit(input[numberEnd:])
+		if !ok {
+			return ZeroDuration, false, nil
+		}
+
+		number.Mul(number, new(big.Rat).SetInt64(multiplier))
+		total.Add(total, number)
+		input = input[numberEnd+unitLength:]
+	}
+
+	if sign < 0 {
+		total.Neg(total)
+	}
+
+	nanos, err := truncateDurationRat(total)
+	if err != nil {
+		return ZeroDuration, true, err
+	}
+
+	return Duration(nanos), true, nil
+}
+
+func durationNumberEnd(input string) int {
+	digits := 0
+	dots := 0
+
+	for index := 0; index < len(input); index++ {
+		switch input[index] {
+		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+			digits++
+		case '.':
+			dots++
+			if dots > 1 {
+				return 0
+			}
+		default:
+			if digits == 0 {
+				return 0
+			}
+			return index
+		}
+	}
+
+	return 0
+}
+
+func durationUnit(input string) (int64, int, bool) {
+	lower := strings.ToLower(input)
+
+	switch {
+	case strings.HasPrefix(lower, "ms"):
+		return int64(time.Millisecond), len("ms"), true
+	case strings.HasPrefix(lower, "us"):
+		return int64(time.Microsecond), len("us"), true
+	case strings.HasPrefix(lower, "µs"):
+		return int64(time.Microsecond), len("µs"), true
+	case strings.HasPrefix(lower, "μs"):
+		return int64(time.Microsecond), len("μs"), true
+	case strings.HasPrefix(lower, "ns"):
+		return int64(time.Nanosecond), len("ns"), true
+	case strings.HasPrefix(lower, "d"):
+		return int64(24 * time.Hour), len("d"), true
+	case strings.HasPrefix(lower, "h"):
+		return int64(time.Hour), len("h"), true
+	case strings.HasPrefix(lower, "m"):
+		return int64(time.Minute), len("m"), true
+	case strings.HasPrefix(lower, "s"):
+		return int64(time.Second), len("s"), true
+	default:
+		return 0, 0, false
+	}
 }
 
 func splitDuration(input string) (string, int64, bool) {
@@ -54,21 +162,9 @@ func splitDuration(input string) (string, int64, bool) {
 	}
 }
 
-func roundDurationRat(value *big.Rat) (int64, error) {
+func truncateDurationRat(value *big.Rat) (int64, error) {
 	quotient := new(big.Int)
-	remainder := new(big.Int)
-	quotient.QuoRem(value.Num(), value.Denom(), remainder)
-
-	if remainder.Sign() != 0 {
-		doubled := new(big.Int).Lsh(new(big.Int).Abs(remainder), 1)
-		if doubled.Cmp(value.Denom()) >= 0 {
-			if value.Sign() < 0 {
-				quotient.Sub(quotient, big.NewInt(1))
-			} else {
-				quotient.Add(quotient, big.NewInt(1))
-			}
-		}
-	}
+	quotient.Quo(value.Num(), value.Denom())
 
 	if !quotient.IsInt64() {
 		return 0, Error(ErrRange, "duration exceeds the supported range")
