@@ -9,49 +9,28 @@ import (
 
 // AddChecked applies checked numeric, Duration, and DateTime addition.
 func AddChecked(ctx context.Context, left, right Value) (Value, error) {
-	var leftDuration, rightDuration Duration
-	leftIsDuration := false
-	rightIsDuration := false
-
-	switch value := left.(type) {
-	case DateTime:
+	if _, ok := left.(DateTime); ok {
 		return addDateTimeChecked(ctx, left, right)
-	case Duration:
-		leftDuration = value
-		leftIsDuration = true
 	}
 
-	switch value := right.(type) {
-	case DateTime:
+	if _, ok := right.(DateTime); ok {
 		return addDateTimeChecked(ctx, left, right)
-	case Duration:
-		rightDuration = value
-		rightIsDuration = true
 	}
 
-	if !leftIsDuration && !rightIsDuration {
+	leftDuration, rightDuration, temporal, err :=
+		durationOperands(ctx, left, right)
+	if err != nil {
+		return None, err
+	}
+
+	if !temporal {
 		return Add(ctx, left, right), nil
 	}
 
-	if !leftIsDuration {
-		var err error
-		leftDuration, err = ToDuration(ctx, left)
-
-		if err != nil {
-			return None, err
-		}
-	}
-
-	if !rightIsDuration {
-		var err error
-		rightDuration, err = ToDuration(ctx, right)
-
-		if err != nil {
-			return None, err
-		}
-	}
-
-	result, ok := addDurationInt64(int64(leftDuration), int64(rightDuration))
+	result, ok := addDurationInt64(
+		int64(leftDuration),
+		int64(rightDuration),
+	)
 	if !ok {
 		return None, durationRangeError("addition")
 	}
@@ -61,49 +40,28 @@ func AddChecked(ctx context.Context, left, right Value) (Value, error) {
 
 // SubtractChecked applies checked numeric, Duration, and DateTime subtraction.
 func SubtractChecked(ctx context.Context, left, right Value) (Value, error) {
-	var leftDuration, rightDuration Duration
-	leftIsDuration := false
-	rightIsDuration := false
-
-	switch value := left.(type) {
-	case DateTime:
+	if _, ok := left.(DateTime); ok {
 		return subtractDateTimeChecked(ctx, left, right)
-	case Duration:
-		leftDuration = value
-		leftIsDuration = true
 	}
 
-	switch value := right.(type) {
-	case DateTime:
+	if _, ok := right.(DateTime); ok {
 		return subtractDateTimeChecked(ctx, left, right)
-	case Duration:
-		rightDuration = value
-		rightIsDuration = true
 	}
 
-	if !leftIsDuration && !rightIsDuration {
+	leftDuration, rightDuration, temporal, err :=
+		durationOperands(ctx, left, right)
+	if err != nil {
+		return None, err
+	}
+
+	if !temporal {
 		return Subtract(ctx, left, right), nil
 	}
 
-	if !leftIsDuration {
-		var err error
-		leftDuration, err = ToDuration(ctx, left)
-
-		if err != nil {
-			return None, err
-		}
-	}
-
-	if !rightIsDuration {
-		var err error
-		rightDuration, err = ToDuration(ctx, right)
-
-		if err != nil {
-			return None, err
-		}
-	}
-
-	result, ok := subtractDurationInt64(int64(leftDuration), int64(rightDuration))
+	result, ok := subtractDurationInt64(
+		int64(leftDuration),
+		int64(rightDuration),
+	)
 	if !ok {
 		return None, durationRangeError("subtraction")
 	}
@@ -113,72 +71,48 @@ func SubtractChecked(ctx context.Context, left, right Value) (Value, error) {
 
 // MultiplyChecked applies checked numeric and Duration multiplication.
 func MultiplyChecked(ctx context.Context, left, right Value) (Value, error) {
-	var leftDuration, rightDuration Duration
-	leftIsDuration := false
-	rightIsDuration := false
-
-	switch value := left.(type) {
-	case DateTime:
+	if _, ok := left.(DateTime); ok {
 		return None, temporalBinaryTypeError("*", left, right)
-	case Duration:
-		leftDuration = value
-		leftIsDuration = true
 	}
 
-	switch value := right.(type) {
-	case DateTime:
+	if _, ok := right.(DateTime); ok {
 		return None, temporalBinaryTypeError("*", left, right)
-	case Duration:
-		rightDuration = value
-		rightIsDuration = true
 	}
 
-	if !leftIsDuration && !rightIsDuration {
+	leftDuration, leftIsDuration := left.(Duration)
+	rightDuration, rightIsDuration := right.(Duration)
+
+	switch {
+	case !leftIsDuration && !rightIsDuration:
 		return Multiply(ctx, left, right), nil
-	}
-
-	if leftIsDuration && rightIsDuration {
+	case leftIsDuration && rightIsDuration:
 		return None, durationBinaryTypeError("*", left, right)
-	}
-
-	if leftIsDuration {
+	case leftIsDuration:
 		return scaleDuration(ctx, leftDuration, right, false, false)
+	default:
+		return scaleDuration(ctx, rightDuration, left, false, false)
 	}
-
-	return scaleDuration(ctx, rightDuration, left, false, false)
 }
 
 // DivideChecked applies checked numeric and Duration division.
 func DivideChecked(ctx context.Context, left, right Value) (Value, error) {
-	var leftDuration, rightDuration Duration
-	leftIsDuration := false
-	rightIsDuration := false
-
-	switch value := left.(type) {
-	case DateTime:
+	if _, ok := left.(DateTime); ok {
 		return None, temporalBinaryTypeError("/", left, right)
-	case Duration:
-		leftDuration = value
-		leftIsDuration = true
 	}
 
-	switch value := right.(type) {
-	case DateTime:
+	if _, ok := right.(DateTime); ok {
 		return None, temporalBinaryTypeError("/", left, right)
-	case Duration:
-		rightDuration = value
-		rightIsDuration = true
 	}
 
-	if !leftIsDuration && !rightIsDuration {
+	leftDuration, leftIsDuration := left.(Duration)
+	rightDuration, rightIsDuration := right.(Duration)
+
+	switch {
+	case !leftIsDuration && !rightIsDuration:
 		return Divide(ctx, left, right), nil
-	}
-
-	if !leftIsDuration {
+	case !leftIsDuration:
 		return None, durationBinaryTypeError("/", left, right)
-	}
-
-	if rightIsDuration {
+	case rightIsDuration:
 		return divideDurationRatio(leftDuration, rightDuration)
 	}
 
@@ -432,6 +366,33 @@ func multiplyDurationInt64(left, right int64) (int64, bool) {
 	}
 
 	return result, true
+}
+
+func durationOperands(ctx context.Context, left, right Value) (Duration, Duration, bool, error) {
+	leftDuration, leftIsDuration := left.(Duration)
+	rightDuration, rightIsDuration := right.(Duration)
+	if !leftIsDuration && !rightIsDuration {
+		return 0, 0, false, nil
+	}
+
+	if !leftIsDuration {
+		var err error
+		leftDuration, err = ToDuration(ctx, left)
+		if err != nil {
+			return 0, 0, true, err
+		}
+	}
+
+	if !rightIsDuration {
+		var err error
+		rightDuration, err = ToDuration(ctx, right)
+		if err != nil {
+			return 0, 0, true, err
+		}
+	}
+
+	return leftDuration, rightDuration, true, nil
+
 }
 
 func durationBinaryTypeError(operator string, left, right Value) error {
