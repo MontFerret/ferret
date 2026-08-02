@@ -1,13 +1,7 @@
 # Ferret
 <p align="center">
-	<a href="https://goreportcard.com/report/github.com/MontFerret/ferret">
-		<img alt="Go Report Status" src="https://goreportcard.com/badge/github.com/MontFerret/ferret">
-	</a>
 	<a href="https://github.com/MontFerret/ferret/actions">
 		<img alt="Build Status" src="https://github.com/MontFerret/ferret/workflows/build/badge.svg">
-	</a>
-	<a href="https://codecov.io/gh/MontFerret/ferret">
-		<img src="https://codecov.io/gh/MontFerret/ferret/branch/main/graph/badge.svg" />
 	</a>
 	<a href="https://mastodon.social/@montferret">
 		<img alt="Mastodon Follow" src="https://img.shields.io/mastodon/follow/114576925880917699?domain=mastodon.social&style=flat&label=on%20Mastodon">
