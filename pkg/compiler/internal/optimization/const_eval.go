@@ -128,19 +128,15 @@ func foldBinary(op bytecode.Opcode, left, right runtime.Value, bg context.Contex
 		result, err := runtime.CompareChecked(bg, right, left)
 		return runtime.Int(result), err == nil
 	case bytecode.OpEq:
-		result, err := runtime.CompareChecked(bg, left, right)
-		if err != nil {
-			return runtime.False, true
-		}
-
-		return runtime.Boolean(result == 0), true
+		result, err := runtime.EqualChecked(bg, left, right)
+		return result, err == nil
 	case bytecode.OpNe:
-		result, err := runtime.CompareChecked(bg, left, right)
+		result, err := runtime.EqualChecked(bg, left, right)
 		if err != nil {
-			return runtime.True, true
+			return nil, false
 		}
 
-		return runtime.Boolean(result != 0), true
+		return !result, true
 	case bytecode.OpGt:
 		result, err := runtime.CompareChecked(bg, left, right)
 		return runtime.Boolean(result > 0), err == nil

@@ -1,6 +1,7 @@
 package runtime_test
 
 import (
+	"context"
 	"errors"
 	"math"
 	"testing"
@@ -140,5 +141,90 @@ func TestDurationCheckedComparison(t *testing.T) {
 	actual, err := runtime.CompareChecked(t.Context(), dateTime, runtime.NewDuration(time.Second))
 	if err != nil || actual != runtime.CompareValues(dateTime, runtime.NewDuration(time.Second)) {
 		t.Fatalf("mixed DateTime comparison = %d, %v", actual, err)
+	}
+}
+
+func TestEqualCheckedDurationConversionFallback(t *testing.T) {
+	t.Parallel()
+
+	duration := runtime.NewDuration(time.Second)
+	tests := []struct {
+		input runtime.Value
+		name  string
+	}{
+		{name: "invalid type", input: runtime.NewObject()},
+		{name: "malformed string", input: runtime.NewString("tomorrow")},
+		{name: "malformed list shape", input: runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2))},
+		{name: "overflow", input: runtime.NewInt64(9_223_372_036_855)},
+		{name: "recursive conversion", input: runtime.NewArrayWith(runtime.NewArrayWith(runtime.NewString("tomorrow")))},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			equal, err := runtime.EqualChecked(t.Context(), duration, test.input)
+			if err != nil {
+				t.Fatalf("EqualChecked(%s, %s): %v", duration, test.input, err)
+			}
+			if equal {
+				t.Fatalf("EqualChecked(%s, %s) = true, want false", duration, test.input)
+			}
+		})
+	}
+
+	equal, err := runtime.EqualChecked(t.Context(), duration, runtime.NewString("1s"))
+	if err != nil || !equal {
+		t.Fatalf("EqualChecked successful coercion = %v, %v; want true, nil", equal, err)
+	}
+}
+
+func TestEqualCheckedPropagatesDurationListErrors(t *testing.T) {
+	t.Parallel()
+
+	duration := runtime.NewDuration(time.Second)
+	customErr := errors.New("duration list access failed")
+	rangeErr := runtime.Error(runtime.ErrRange, "duration list backend failed")
+	tests := []struct {
+		input  runtime.Value
+		target error
+		name   string
+	}{
+		{
+			name:   "length cancellation",
+			input:  newFallibleDurationList(context.Canceled, nil),
+			target: context.Canceled,
+		},
+		{
+			name:   "length deadline",
+			input:  newFallibleDurationList(context.DeadlineExceeded, nil),
+			target: context.DeadlineExceeded,
+		},
+		{
+			name:   "length range error remains operational",
+			input:  newFallibleDurationList(rangeErr, nil),
+			target: rangeErr,
+		},
+		{
+			name:   "item access error",
+			input:  newFallibleDurationList(nil, customErr, runtime.NewInt(1)),
+			target: customErr,
+		},
+		{
+			name:   "item range error remains operational",
+			input:  newFallibleDurationList(nil, rangeErr, runtime.NewInt(1)),
+			target: rangeErr,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := runtime.EqualChecked(t.Context(), duration, test.input)
+			if !errors.Is(err, test.target) {
+				t.Fatalf("EqualChecked error = %v, want %v", err, test.target)
+			}
+		})
 	}
 }

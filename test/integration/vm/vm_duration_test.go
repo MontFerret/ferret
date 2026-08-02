@@ -1,9 +1,11 @@
 package vm_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
@@ -99,6 +101,29 @@ func TestDateTimeOperators(t *testing.T) {
 		Error(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") + TO_DATETIME("2026-08-01T12:00:00Z")`),
 		Error(`RETURN 1s - TO_DATETIME("2026-08-01T12:00:00Z")`),
 		Error(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") * 2`),
+	})
+}
+
+func TestTemporalEqualityPropagatesOperationalErrors(t *testing.T) {
+	lengthErr := errors.New("duration list length failed")
+	atErr := runtime.Error(runtime.ErrRange, "duration list item failed")
+
+	RunSpecs(t, []spec.Spec{
+		spec.NewSpec(`RETURN 1s == @value`).
+			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Contains: []string{"duration list length failed", ":1:8"},
+		}).
+			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
+		spec.NewSpec(`RETURN 1s != @value`).
+			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Contains: []string{"duration list item failed", ":1:8"},
+		}).
+			Env(spec.WithParam("value", newFallibleDurationList(nil, atErr, runtime.NewInt(1)))),
+		spec.NewSpec(`RETURN [1s] ANY == @value`).
+			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Contains: []string{"duration list length failed", ":1:8"},
+		}).
+			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
 	})
 }
 

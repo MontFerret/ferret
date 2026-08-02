@@ -69,5 +69,13 @@ func TestConstantFolding(t *testing.T) {
 			bytecode.OpConcat:    0,
 			bytecode.OpLoadConst: 1,
 		}, "cost=${1}", "escaped interpolation marker constant folds"),
+
+		OpcodeCount(`RETURN 1s == "tomorrow"`, map[bytecode.Opcode]int{
+			bytecode.OpEq: 0,
+		}, false, "failed temporal coercion folds equality to false"),
+
+		OpcodeCount(`RETURN 1s != "tomorrow"`, map[bytecode.Opcode]int{
+			bytecode.OpNe: 0,
+		}, true, "failed temporal coercion folds inequality to true"),
 	})
 }

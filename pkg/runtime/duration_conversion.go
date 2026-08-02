@@ -84,28 +84,28 @@ func ToDuration(ctx context.Context, input Value) (Duration, error) {
 }
 
 func durationConversionArgumentError(input Value) error {
-	return Errorf(
+	return newDurationConversionError(Errorf(
 		ErrInvalidArgument,
 		"cannot convert %s %q to Duration",
 		TypeName(TypeOf(input)),
 		input.String(),
-	)
+	))
 }
 
 func durationConversionTypeError(input Value) error {
-	return Errorf(
+	return newDurationConversionError(Errorf(
 		ErrInvalidType,
 		"cannot convert %s %q to Duration",
 		TypeName(TypeOf(input)),
 		input.String(),
-	)
+	))
 }
 
 func durationConversionRangeError(input Value) error {
-	return Errorf(
+	return newDurationConversionError(Errorf(
 		ErrRange,
 		"cannot convert %s %q to Duration: value exceeds the supported range",
 		TypeName(TypeOf(input)),
 		input.String(),
-	)
+	))
 }

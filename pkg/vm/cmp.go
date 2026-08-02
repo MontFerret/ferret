@@ -59,21 +59,16 @@ func cmp(ctx context.Context, left, right runtime.Value) (runtime.Int, error) {
 }
 
 func eq(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
-	result, err := runtime.CompareChecked(ctx, left, right)
-	if err != nil {
-		return runtime.False, nil
-	}
-
-	return result == 0, nil
+	return runtime.EqualChecked(ctx, left, right)
 }
 
 func ne(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
-	result, err := runtime.CompareChecked(ctx, left, right)
+	result, err := runtime.EqualChecked(ctx, left, right)
 	if err != nil {
-		return runtime.True, nil
+		return runtime.False, err
 	}
 
-	return result != 0, nil
+	return !result, nil
 }
 
 func gt(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {

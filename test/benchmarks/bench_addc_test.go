@@ -48,6 +48,16 @@ FOR i IN 1..1000
   RETURN @base > 500
 `
 
+	numericEqualityQuery = `
+FOR i IN 1..1000
+  RETURN @base == 1
+`
+
+	durationCoerciveEqualityQuery = `
+FOR i IN 1..1000
+  RETURN @base == "1s"
+`
+
 	dateTimeAddQuery = `
 FOR i IN 1..1000
   RETURN @base + 2ms
@@ -132,6 +142,22 @@ func BenchmarkDurationCoerciveCompare_O0(b *testing.B) {
 
 func BenchmarkDurationCoerciveCompare_O1(b *testing.B) {
 	RunBenchmarkO1(b, durationCoerciveCompareQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkNumericEquality_O0(b *testing.B) {
+	RunBenchmarkO0(b, numericEqualityQuery, WithParam("base", 1))
+}
+
+func BenchmarkNumericEquality_O1(b *testing.B) {
+	RunBenchmarkO1(b, numericEqualityQuery, WithParam("base", 1))
+}
+
+func BenchmarkDurationCoerciveEquality_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationCoerciveEqualityQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationCoerciveEquality_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationCoerciveEqualityQuery, WithParam("base", time.Second))
 }
 
 func BenchmarkDateTimeAdd_O0(b *testing.B) {
