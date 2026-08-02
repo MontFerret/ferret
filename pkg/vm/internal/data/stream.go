@@ -1,6 +1,10 @@
 package data
 
-import "github.com/MontFerret/ferret/v2/pkg/runtime"
+import (
+	"time"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+)
 
 type StreamValue struct {
 	*runtime.Box[runtime.Stream]
@@ -19,7 +23,7 @@ func (v *StreamValue) Iterate(timeout runtime.Duration) IteratorState {
 		return WrapIterator(runtime.NewStreamIterator(v.Value))
 	}
 
-	return WrapIterator(newStreamIterator(v.Value, timeout))
+	return WrapIterator(runtime.NewStreamIteratorWithTimeout(v.Value, time.Duration(timeout)))
 }
 
 func (v *StreamValue) Close() error {
