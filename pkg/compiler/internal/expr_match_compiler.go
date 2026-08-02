@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -248,11 +249,14 @@ func (c *exprMatchCompiler) compileMatchPatternValue(valueReg bytecode.Operand, 
 			return
 		}
 
-		if litOp.IsConstant() {
-			c.ctx.Program.Emitter.EmitJumpCompare(bytecode.OpJumpIfNeConst, valueReg, litOp, onFail)
-		} else {
-			c.ctx.Program.Emitter.EmitJumpCompare(bytecode.OpJumpIfNe, valueReg, litOp, onFail)
-		}
+		span := diagnostics.SpanFromRuleContext(ctx)
+		c.ctx.Program.Emitter.WithSpan(span, func() {
+			if litOp.IsConstant() {
+				c.ctx.Program.Emitter.EmitJumpCompare(bytecode.OpJumpIfNeConst, valueReg, litOp, onFail)
+			} else {
+				c.ctx.Program.Emitter.EmitJumpCompare(bytecode.OpJumpIfNe, valueReg, litOp, onFail)
+			}
+		})
 	case ctx.MatchBindingPattern() != nil:
 		binding := ctx.MatchBindingPattern()
 		if binding == nil {

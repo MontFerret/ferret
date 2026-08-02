@@ -124,6 +124,37 @@ func TestTemporalEqualityPropagatesOperationalErrors(t *testing.T) {
 			Contains: []string{"duration list length failed", ":1:8"},
 		}).
 			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
+		spec.NewSpec(`RETURN @left == @right ? 10 : 20`).
+			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Contains: []string{"duration list length failed", ":1:8"},
+		}).
+			Env(
+				spec.WithParam("left", time.Second),
+				spec.WithParam("right", newFallibleDurationList(lengthErr, nil)),
+			),
+		spec.NewSpec(`RETURN @left != @right ? 10 : 20`).
+			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Contains: []string{"duration list length failed", ":1:8"},
+		}).
+			Env(
+				spec.WithParam("left", time.Second),
+				spec.WithParam("right", newFallibleDurationList(lengthErr, nil)),
+			),
+		spec.NewSpec(`RETURN @value == 1s ? 10 : 20`).
+			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Contains: []string{"duration list length failed", ":1:8"},
+		}).
+			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
+		spec.NewSpec(`RETURN @value != 1s ? 10 : 20`).
+			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Contains: []string{"duration list length failed", ":1:8"},
+		}).
+			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
+		spec.NewSpec(`RETURN MATCH @value (1s => 10, _ => 20)`).
+			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Contains: []string{"duration list length failed", ":1:22"},
+		}).
+			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
 	})
 }
 

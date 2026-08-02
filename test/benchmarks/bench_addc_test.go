@@ -58,6 +58,16 @@ FOR i IN 1..1000
   RETURN @base == "1s"
 `
 
+	equalityJumpConstQuery = `
+FOR i IN 1..1000
+  RETURN @left == 1 ? i : 0
+`
+
+	equalityJumpRegisterQuery = `
+FOR i IN 1..1000
+  RETURN @left == @right ? i : 0
+`
+
 	dateTimeAddQuery = `
 FOR i IN 1..1000
   RETURN @base + 2ms
@@ -158,6 +168,22 @@ func BenchmarkDurationCoerciveEquality_O0(b *testing.B) {
 
 func BenchmarkDurationCoerciveEquality_O1(b *testing.B) {
 	RunBenchmarkO1(b, durationCoerciveEqualityQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkEqualityJumpConst_O0(b *testing.B) {
+	RunBenchmarkO0(b, equalityJumpConstQuery, WithParam("left", 1))
+}
+
+func BenchmarkEqualityJumpConst_O1(b *testing.B) {
+	RunBenchmarkO1(b, equalityJumpConstQuery, WithParam("left", 1))
+}
+
+func BenchmarkEqualityJumpRegister_O0(b *testing.B) {
+	RunBenchmarkO0(b, equalityJumpRegisterQuery, WithParam("left", 1), WithParam("right", 1))
+}
+
+func BenchmarkEqualityJumpRegister_O1(b *testing.B) {
+	RunBenchmarkO1(b, equalityJumpRegisterQuery, WithParam("left", 1), WithParam("right", 1))
 }
 
 func BenchmarkDateTimeAdd_O0(b *testing.B) {

@@ -255,22 +255,42 @@ loop:
 				state.pc = int(dst)
 			}
 		case bytecode.OpJumpIfNe:
-			matches, _ := ne(ctx, reg[src1], reg[src2])
+			matches, err := ne(ctx, reg[src1], reg[src2])
+			if err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
 			if matches {
 				state.pc = int(dst)
 			}
 		case bytecode.OpJumpIfNeConst:
-			matches, _ := ne(ctx, reg[src1], constants[src2.Constant()])
+			matches, err := ne(ctx, reg[src1], constants[src2.Constant()])
+			if err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
 			if matches {
 				state.pc = int(dst)
 			}
 		case bytecode.OpJumpIfEq:
-			matches, _ := eq(ctx, reg[src1], reg[src2])
+			matches, err := eq(ctx, reg[src1], reg[src2])
+			if err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
 			if matches {
 				state.pc = int(dst)
 			}
 		case bytecode.OpJumpIfEqConst:
-			matches, _ := eq(ctx, reg[src1], constants[src2.Constant()])
+			matches, err := eq(ctx, reg[src1], constants[src2.Constant()])
+			if err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
 			if matches {
 				state.pc = int(dst)
 			}
