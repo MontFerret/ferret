@@ -186,16 +186,14 @@ func noCompilerError(*bytecode.Program) error {
 	return nil
 }
 
-func expectHostFunction(name string, arity int) func(*bytecode.Program) error {
+func expectHostFunction(name string, argCount int) func(*bytecode.Program) error {
 	return func(program *bytecode.Program) error {
-		got, ok := program.Functions.Host[name]
-		if !ok {
-			return fmt.Errorf("expected host function %q in %v", name, program.Functions.Host)
-		}
-		if got != arity {
-			return fmt.Errorf("expected host function %q arity %d, got %d", name, arity, got)
+		for _, fn := range program.Functions.Host {
+			if fn.Name == name && fn.ArgCount == argCount {
+				return nil
+			}
 		}
 
-		return nil
+		return fmt.Errorf("expected host function %q with %d arguments in %v", name, argCount, program.Functions.Host)
 	}
 }

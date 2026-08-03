@@ -10,7 +10,7 @@ type (
 	Library interface {
 		Namespace
 
-		// Size returns the total number of elements or entities in the collection or namespace.
+		// Size returns the number of function definitions, including arity overloads.
 		Size() int
 
 		// Build constructs and returns a finalized Functions instance or an error if the build process fails.

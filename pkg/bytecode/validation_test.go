@@ -65,6 +65,30 @@ func TestValidateProgram(t *testing.T) {
 			target: ErrInvalidProgram,
 		},
 		{
+			name: "empty_host_function_name",
+			program: withProgramMutation(func(program *Program) {
+				program.Functions.Host = []HostFunction{{Name: "", ArgCount: 0}}
+			}),
+			target: ErrInvalidProgram,
+		},
+		{
+			name: "negative_host_function_argument_count",
+			program: withProgramMutation(func(program *Program) {
+				program.Functions.Host = []HostFunction{{Name: "FN", ArgCount: -1}}
+			}),
+			target: ErrInvalidProgram,
+		},
+		{
+			name: "duplicate_host_function_signature",
+			program: withProgramMutation(func(program *Program) {
+				program.Functions.Host = []HostFunction{
+					{Name: "FN", ArgCount: 1},
+					{Name: "FN", ArgCount: 1},
+				}
+			}),
+			target: ErrInvalidProgram,
+		},
+		{
 			name: "required_constant_type_check",
 			program: withProgramMutation(func(program *Program) {
 				program.Bytecode[0] = NewInstruction(OpFail, NewConstant(0))
@@ -274,8 +298,8 @@ func validValidationProgram() *Program {
 	return &Program{
 		Source: source.New("validation.fql", "RETURN 1"),
 		Functions: Functions{
-			Host: map[string]int{
-				"now": 0,
+			Host: []HostFunction{
+				{Name: "now", ArgCount: 0},
 			},
 			UserDefined: []UDF{
 				{

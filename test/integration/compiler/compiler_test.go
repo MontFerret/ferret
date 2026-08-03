@@ -2,8 +2,8 @@ package compiler_test
 
 import (
 	"fmt"
-	"maps"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -81,9 +81,9 @@ func TestCompilerCompileConcurrentSharedCompiler(t *testing.T) {
 	})
 
 	udfQueries := []struct {
-		expectedHost map[string]int
 		name         string
 		query        string
+		expectedHost []bytecode.HostFunction
 		expectedUDFs int
 	}{
 		{
@@ -93,7 +93,7 @@ USE FOO::TEST_FN AS FN
 FUNC WRAP(v) => FN(v)
 RETURN WRAP(1)
 `,
-			expectedHost: map[string]int{"FOO::TEST_FN": 1},
+			expectedHost: []bytecode.HostFunction{{Name: "FOO::TEST_FN", ArgCount: 1}},
 			expectedUDFs: 1,
 		},
 		{
@@ -103,7 +103,7 @@ USE BAR AS B
 FUNC RUN(v) => B::OTHER_FN(v, v + 1)
 RETURN RUN(2)
 `,
-			expectedHost: map[string]int{"BAR::OTHER_FN": 2},
+			expectedHost: []bytecode.HostFunction{{Name: "BAR::OTHER_FN", ArgCount: 2}},
 			expectedUDFs: 1,
 		},
 		{
@@ -112,7 +112,7 @@ RETURN RUN(2)
 FUNC wrap() => Foo(1) + foo(2)
 RETURN wrap()
 `,
-			expectedHost: map[string]int{"Foo": 1, "foo": 1},
+			expectedHost: []bytecode.HostFunction{{Name: "Foo", ArgCount: 1}, {Name: "foo", ArgCount: 1}},
 			expectedUDFs: 1,
 		},
 	}
@@ -121,7 +121,7 @@ RETURN wrap()
 		type sharedSourceCase struct {
 			source *source.Source
 			spec   struct {
-				expectedHost map[string]int
+				expectedHost []bytecode.HostFunction
 				expectedUDFs int
 			}
 		}
@@ -270,9 +270,9 @@ func assertCompiledProgram(program *bytecode.Program, source *source.Source) err
 	return nil
 }
 
-func assertUDFMetadata(program *bytecode.Program, expectedHost map[string]int, expectedUDFs int) error {
+func assertUDFMetadata(program *bytecode.Program, expectedHost []bytecode.HostFunction, expectedUDFs int) error {
 	host := program.Functions.Host
-	if !maps.Equal(host, expectedHost) {
+	if !slices.Equal(host, expectedHost) {
 		return fmt.Errorf("unexpected host metadata: got %v, expected %v", host, expectedHost)
 	}
 

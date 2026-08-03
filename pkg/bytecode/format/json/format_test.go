@@ -2,6 +2,7 @@ package json
 
 import (
 	"errors"
+	"slices"
 	"testing"
 	"time"
 
@@ -45,6 +46,9 @@ func TestFormatRoundTrip(t *testing.T) {
 
 	if got := decoded.Constants[1]; got != runtime.NewDuration(1500*time.Millisecond) {
 		t.Fatalf("duration constant = %v (%T)", got, got)
+	}
+	if !slices.Equal(decoded.Functions.Host, program.Functions.Host) {
+		t.Fatalf("host signature order mismatch: got %v, want %v", decoded.Functions.Host, program.Functions.Host)
 	}
 }
 
@@ -93,17 +97,48 @@ func TestFormatRejectsInvalidConstants(t *testing.T) {
 	}
 }
 
-func TestFormatRejectsDuplicateHostsAndLabels(t *testing.T) {
+func TestFormatAllowsOverloadedHostsAndRejectsDuplicateSignaturesAndLabels(t *testing.T) {
 	frame := validFrame()
+	one := 1
+	two := 2
 	frame.Functions.Host = []persist.HostFunctionFrame{
-		{Name: "dup", Arity: 1},
-		{Name: "dup", Arity: 2},
+		{Name: "dup", ArgCount: &one},
+		{Name: "dup", ArgCount: &two},
 	}
 
 	data := mustMarshalFrame(t, frame)
+	if _, err := Default.Unmarshal(data); err != nil {
+		t.Fatalf("expected overloaded host signatures to decode, got %v", err)
+	}
+
+	frame.Functions.Host[1].ArgCount = &one
+	data = mustMarshalFrame(t, frame)
 	_, err := Default.Unmarshal(data)
 	if !errors.Is(err, bytecode.ErrInvalidProgram) {
-		t.Fatalf("expected ErrInvalidProgram for duplicate host names, got %v", err)
+		t.Fatalf("expected ErrInvalidProgram for duplicate host signatures, got %v", err)
+	}
+
+	frame = validFrame()
+	frame.Functions.Host = []persist.HostFunctionFrame{{Name: "legacy"}}
+	data = mustMarshalFrame(t, frame)
+	_, err = Default.Unmarshal(data)
+	if !errors.Is(err, bytecode.ErrInvalidProgram) {
+		t.Fatalf("expected ErrInvalidProgram for missing argCount, got %v", err)
+	}
+
+	var legacy map[string]any
+	if err := gojson.Unmarshal(mustMarshalFrame(t, validFrame()), &legacy); err != nil {
+		t.Fatalf("decode legacy test payload: %v", err)
+	}
+	functions := legacy["functions"].(map[string]any)
+	functions["host"] = []any{map[string]any{"name": "legacy", "arity": 2}}
+	data, err = gojson.Marshal(legacy)
+	if err != nil {
+		t.Fatalf("encode legacy test payload: %v", err)
+	}
+	_, err = Default.Unmarshal(data)
+	if !errors.Is(err, bytecode.ErrInvalidProgram) {
+		t.Fatalf("expected ErrInvalidProgram for legacy arity metadata, got %v", err)
 	}
 
 	frame = validFrame()
@@ -159,9 +194,9 @@ func newTestProgram() *bytecode.Program {
 	return &bytecode.Program{
 		Source: source.New("roundtrip.fql", "RETURN 1\nRETURN 2"),
 		Functions: bytecode.Functions{
-			Host: map[string]int{
-				"now": 0,
-				"sum": 2,
+			Host: []bytecode.HostFunction{
+				{Name: "sum", ArgCount: 2},
+				{Name: "sum", ArgCount: 1},
 			},
 			UserDefined: []bytecode.UDF{
 				{

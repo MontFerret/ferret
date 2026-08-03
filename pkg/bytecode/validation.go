@@ -38,14 +38,8 @@ func ValidateProgram(program *Program) error {
 }
 
 func validateFunctions(program *Program) error {
-	for name, arity := range program.Functions.Host {
-		if name == "" {
-			return fmt.Errorf("%w: host function name must not be empty", ErrInvalidProgram)
-		}
-
-		if arity < 0 {
-			return fmt.Errorf("%w: host function %q has negative arity %d", ErrInvalidProgram, name, arity)
-		}
+	if err := validateHostFunctions(program.Functions.Host); err != nil {
+		return err
 	}
 
 	bytecodeLen := len(program.Bytecode)
@@ -66,6 +60,28 @@ func validateFunctions(program *Program) error {
 		if udf.Params < 0 {
 			return fmt.Errorf("%w: udf %q has negative param count %d", ErrInvalidProgram, udf.Name, udf.Params)
 		}
+	}
+
+	return nil
+}
+
+func validateHostFunctions(functions []HostFunction) error {
+	seen := make(map[HostFunction]struct{}, len(functions))
+
+	for id, fn := range functions {
+		if fn.Name == "" {
+			return fmt.Errorf("%w: host function %d has empty name", ErrInvalidProgram, id)
+		}
+
+		if fn.ArgCount < 0 {
+			return fmt.Errorf("%w: host function %q has negative argument count %d", ErrInvalidProgram, fn.Name, fn.ArgCount)
+		}
+
+		if _, exists := seen[fn]; exists {
+			return fmt.Errorf("%w: duplicate host function signature %q/%d", ErrInvalidProgram, fn.Name, fn.ArgCount)
+		}
+
+		seen[fn] = struct{}{}
 	}
 
 	return nil

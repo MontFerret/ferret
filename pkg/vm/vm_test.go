@@ -199,7 +199,7 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 	}
 
 	bytecodeLen := len(program.Bytecode)
-	if got, want := len(instance.cache.HostFunctions), len(instance.plan.hostCallDescriptors); got != want {
+	if got, want := len(instance.cache.HostFunctions), len(program.Functions.Host); got != want {
 		t.Fatalf("unexpected host function cache size: got %d, want %d", got, want)
 	}
 
@@ -435,6 +435,7 @@ func TestRunResultKeepsReturnedDirectCloserAliveUntilClose(t *testing.T) {
 			runtime.NewString("MAKE"),
 		},
 	}
+	bindZeroArgHostCalls(program, "MAKE")
 
 	instance := mustNewVM(t, program)
 	value := newTrackingCloser("result-root")
@@ -473,6 +474,7 @@ func TestRun_BenchmarkResultModeReusesHandleAfterClose(t *testing.T) {
 			runtime.NewString("MAKE"),
 		},
 	}
+	bindZeroArgHostCalls(program, "MAKE")
 
 	instance := mustNewVM(t, program, WithTesting(test.WithBenchmarkMode()))
 	closers := []*trackingCloser{
@@ -617,6 +619,7 @@ func TestFailedRunClosesDiscardedDeferredClosers(t *testing.T) {
 			runtime.NewString("boom"),
 		},
 	}
+	bindZeroArgHostCalls(program, "MAKE")
 
 	instance := mustNewVM(t, program)
 	value := newTrackingCloser("discarded-before-failure")
@@ -790,7 +793,6 @@ func TestWarmupMissingParamsSingleSiteReturnsRuntimeError(t *testing.T) {
 			},
 		},
 	}
-
 	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
 	if err == nil {
 		t.Fatal("expected missing parameter error")
@@ -919,6 +921,7 @@ func TestWarmupHostResolutionPrecedesMissingParamAggregation(t *testing.T) {
 			},
 		},
 	}
+	bindZeroArgHostCalls(program, "MISSING_FN")
 
 	_, err := mustNewVM(t, program).Run(context.Background(), NewDefaultEnvironment())
 	if err == nil {
@@ -1790,7 +1793,6 @@ func TestMatchLoadPropertyConst_FastObject(t *testing.T) {
 			MatchFailTargets: []int{-1, 3, -1, -1, -1},
 		},
 	}
-
 	instance := mustNewVM(t, program)
 	env := mustNewEnvironment(t)
 
@@ -2246,6 +2248,7 @@ func TestOpClose_DoesNotDoubleCloseTrackedValueAtRunEnd(t *testing.T) {
 			runtime.NewString("MAKE"),
 		},
 	}
+	bindZeroArgHostCalls(program, "MAKE")
 
 	instance := mustNewVM(t, program)
 	value := newTrackingCloser("close-me")
@@ -2291,6 +2294,7 @@ func TestOpClose_DuplicateAliasClosesExactlyOnce(t *testing.T) {
 			runtime.NewString("MAKE"),
 		},
 	}
+	bindZeroArgHostCalls(program, "MAKE")
 
 	instance := mustNewVM(t, program)
 	value := newTrackingCloser("close-me")
@@ -2947,7 +2951,7 @@ func TestStrictWarmupInvalidTargetReturnsInvalidFunctionName(t *testing.T) {
 	}
 }
 
-func TestInvalidFunctionNameHasNonEmptyKind(t *testing.T) {
+func TestOutOfRangeHostBindingIDIsInvariantError(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Registers:  2,
@@ -2973,8 +2977,12 @@ func TestInvalidFunctionNameHasNonEmptyKind(t *testing.T) {
 		t.Fatalf("unexpected initialization error count: got %d, want %d", got, want)
 	}
 
-	if got := initErrs.First().Cause; !errors.Is(got, ErrInvalidFunctionName) {
-		t.Fatalf("expected invalid function name cause, got %v", got)
+	var invariantErr *InvariantError
+	if got := initErrs.First().Cause; !errors.As(got, &invariantErr) {
+		t.Fatalf("expected invariant error, got %v", got)
+	}
+	if !strings.Contains(invariantErr.Error(), "host binding id 123") {
+		t.Fatalf("expected binding id context, got %v", invariantErr)
 	}
 }
 

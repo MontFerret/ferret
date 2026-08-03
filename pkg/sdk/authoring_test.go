@@ -105,6 +105,43 @@ func TestRegisterFunctions(t *testing.T) {
 	}
 }
 
+func TestRegisterFunctionsAllowsArityOverloads(t *testing.T) {
+	library := runtime.NewLibrary()
+	ns := library.Namespace("TEST")
+	fn1 := runtime.Function1(func(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+		return arg, nil
+	})
+	fn2 := runtime.Function2(func(_ context.Context, left, _ runtime.Value) (runtime.Value, error) {
+		return left, nil
+	})
+	variadic := runtime.Function(func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+		return runtime.NewInt(len(args)), nil
+	})
+
+	if err := sdk.RegisterFunctions(ns,
+		sdk.Func("OVERLOAD", fn1),
+		sdk.Func("OVERLOAD", fn2),
+		sdk.Func("OVERLOAD", variadic),
+	); err != nil {
+		t.Fatalf("register overloads: %v", err)
+	}
+
+	functions, err := library.Build()
+	if err != nil {
+		t.Fatalf("build library: %v", err)
+	}
+	if functions.Size() != 3 || len(functions.List()) != 1 {
+		t.Fatalf("expected three definitions for one logical name, got size=%d list=%v", functions.Size(), functions.List())
+	}
+	if !functions.A1().Has("TEST::OVERLOAD") || !functions.A2().Has("TEST::OVERLOAD") || !functions.Var().Has("TEST::OVERLOAD") {
+		t.Fatal("expected every arity overload to be registered")
+	}
+
+	if err := sdk.RegisterFunctions(ns, sdk.Func("OVERLOAD", fn1)); err == nil {
+		t.Fatal("expected a duplicate name and arity to fail")
+	}
+}
+
 func TestRegisterFunctionsIsAtomic(t *testing.T) {
 	library := runtime.NewLibrary()
 	ns := library.Namespace("TEST")

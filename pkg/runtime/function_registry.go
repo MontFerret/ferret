@@ -1,10 +1,5 @@
 package runtime
 
-import (
-	"hash/fnv"
-	"sort"
-)
-
 // Functions is a container for functions that organizes them by their argument count.
 // It provides separate storage for functions with fixed argument counts (0-4) and
 // functions with variable argument counts for optimal performance.
@@ -35,10 +30,13 @@ func NewFunctions() *Functions {
 	return &Functions{}
 }
 
+// NewFunctionsFrom merges every arity-specific definition from funcs.
+// It returns an error only when inputs define the same qualified name and arity.
 func NewFunctionsFrom(funcs ...*Functions) (*Functions, error) {
 	return NewFunctionsBuilderFrom(funcs...).Build()
 }
 
+// NewFunctionsFromMap creates a registry of variadic definitions.
 func NewFunctionsFromMap(funcs map[string]Function) (*Functions, error) {
 	builder := newRootFunctionsBuilder()
 
@@ -49,23 +47,7 @@ func NewFunctionsFromMap(funcs map[string]Function) (*Functions, error) {
 	return builder.Build()
 }
 
-func functionsHash(f *Functions) uint64 {
-	if f == nil {
-		return 0
-	}
-
-	names := f.List()
-	sort.Strings(names)
-
-	hasher := fnv.New64a()
-
-	for _, name := range names {
-		_, _ = hasher.Write([]byte(name))
-	}
-
-	return hasher.Sum64()
-}
-
+// Hash returns a deterministic hash of every registered qualified name and arity.
 func (f *Functions) Hash() uint64 {
 	return f.hash
 }
@@ -98,10 +80,12 @@ func (f *Functions) Has(name string) bool {
 	return false
 }
 
+// Size returns the number of registered definitions, including overloads.
 func (f *Functions) Size() int {
 	return f.size
 }
 
+// List returns a sorted defensive copy of the unique logical function names.
 func (f *Functions) List() []string {
 	if len(f.names) == 0 {
 		return []string{}

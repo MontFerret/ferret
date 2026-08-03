@@ -76,8 +76,8 @@ func formatParamRow(name string) string {
 	return name
 }
 
-func formatFunctionRow(name string, args int) string {
-	return fmt.Sprintf("%s %d ; name params", name, args)
+func formatFunctionRow(id int, fn bytecode.HostFunction) string {
+	return fmt.Sprintf("%d %s %d ; id name args", id, fn.Name, fn.ArgCount)
 }
 
 func formatUdfRow(id int, udf bytecode.UDF) string {
@@ -95,8 +95,8 @@ func formatParamHeader(name string) string {
 }
 
 // formatFunctionHeader is a legacy single-line header helper.
-func formatFunctionHeader(name string, args int) string {
-	return fmt.Sprintf(".func %s", formatFunctionRow(name, args))
+func formatFunctionHeader(id int, fn bytecode.HostFunction) string {
+	return fmt.Sprintf(".func %s", formatFunctionRow(id, fn))
 }
 
 // formatUdfHeader is a legacy single-line header helper.

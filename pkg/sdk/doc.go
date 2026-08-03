@@ -1,8 +1,9 @@
 // Package sdk is the supported authoring layer for Ferret modules and host values.
 //
 // Module authors can construct callback-backed modules with NewModule, register
-// declarative function definitions with RegisterFunctions, and adapt typed
-// runtime functions with Bind0 through Bind4. The binders intentionally operate
+// declarative, arity-overloaded function definitions with RegisterFunctions,
+// and adapt typed runtime functions with Bind0 through Bind4. Fixed arities take
+// precedence over variadic fallbacks. The binders intentionally operate
 // on runtime.Value types; the SDK does not invoke arbitrary native Go functions
 // through reflection.
 //

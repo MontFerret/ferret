@@ -129,6 +129,10 @@ func (p *Program) UnmarshalJSON(data []byte) error {
 		constants[i] = decodedValue
 	}
 
+	if err := validateHostFunctions(decoded.Functions.Host); err != nil {
+		return err
+	}
+
 	p.Source = decoded.Source
 	p.ISAVersion = decoded.ISAVersion
 	p.Registers = decoded.Registers

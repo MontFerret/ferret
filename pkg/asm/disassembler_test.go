@@ -23,8 +23,9 @@ func TestDisassemble_HeaderSectionsStackedLayout(t *testing.T) {
 			runtime.NewString("X::DO"),
 		},
 		Functions: bytecode.Functions{
-			Host: map[string]int{
-				"X::DO": 1,
+			Host: []bytecode.HostFunction{
+				{Name: "X::DO", ArgCount: 2},
+				{Name: "X::DO", ArgCount: 1},
 			},
 			UserDefined: []bytecode.UDF{
 				{Name: "FACT", Entry: 0, Registers: 10, Params: 1},
@@ -58,6 +59,8 @@ func TestDisassemble_HeaderSectionsStackedLayout(t *testing.T) {
 	}
 
 	expectedRows := []string{
+		".isa 1\n",
+		".asm 2\n",
 		"\n  compiler 2.0.0\n",
 		"\n  opt O1\n",
 		"\n  value\n",
@@ -66,13 +69,23 @@ func TestDisassemble_HeaderSectionsStackedLayout(t *testing.T) {
 		"\n  1\n",
 		"\n  \"X::DO\"\n",
 		"\n  0 FACT 0 10 1  ; id name entry registers params\n",
-		"\n  X::DO 1 ; name params\n",
+		"\n  0 X::DO 2 ; id name args\n",
+		"\n  1 X::DO 1 ; id name args\n",
 	}
 
 	for _, row := range expectedRows {
 		if !strings.Contains(out, row) {
 			t.Fatalf("missing expected row %q in output:\n%s", row, out)
 		}
+	}
+}
+
+func TestFormatFunctionHeaderIncludesBindingIDAndArgumentCount(t *testing.T) {
+	got := formatFunctionHeader(7, bytecode.HostFunction{Name: "X::DO", ArgCount: 3})
+	want := ".func 7 X::DO 3 ; id name args"
+
+	if got != want {
+		t.Fatalf("unexpected legacy function header: got %q, want %q", got, want)
 	}
 }
 
@@ -448,8 +461,9 @@ func TestDisassemble_HCallCommentWithHostFunctionName(t *testing.T) {
 			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(1), bytecode.NewRegister(2), bytecode.NewRegister(2)),
 		},
 		Constants: []runtime.Value{
-			runtime.NewString("X::DO"),
+			runtime.NewInt(0),
 		},
+		Functions: bytecode.Functions{Host: []bytecode.HostFunction{{Name: "X::DO", ArgCount: 1}}},
 	}
 
 	out, err := Disassemble(prog)
@@ -470,8 +484,9 @@ func TestDisassemble_ProtectedHCallCommentWithHostFunctionName(t *testing.T) {
 			bytecode.NewInstruction(bytecode.OpProtectedHCall, bytecode.NewRegister(1), bytecode.NewRegister(2), bytecode.NewRegister(2)),
 		},
 		Constants: []runtime.Value{
-			runtime.NewString("X::SAFE"),
+			runtime.NewInt(0),
 		},
+		Functions: bytecode.Functions{Host: []bytecode.HostFunction{{Name: "X::SAFE", ArgCount: 1}}},
 	}
 
 	out, err := Disassemble(prog)
@@ -492,8 +507,9 @@ func TestDisassemble_HCallCommentMissingWhenNoMatchingLoadConst(t *testing.T) {
 			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(1), bytecode.NewRegister(2), bytecode.NewRegister(2)),
 		},
 		Constants: []runtime.Value{
-			runtime.NewString("X::DO"),
+			runtime.NewInt(0),
 		},
+		Functions: bytecode.Functions{Host: []bytecode.HostFunction{{Name: "X::DO", ArgCount: 1}}},
 	}
 
 	out, err := Disassemble(prog)
@@ -506,7 +522,7 @@ func TestDisassemble_HCallCommentMissingWhenNoMatchingLoadConst(t *testing.T) {
 	}
 }
 
-func TestDisassemble_HCallCommentMissingWhenConstantIsNotString(t *testing.T) {
+func TestDisassemble_HCallCommentMissingWhenBindingIDIsOutOfRange(t *testing.T) {
 	prog := &bytecode.Program{
 		ISAVersion: bytecode.Version,
 		Bytecode: []bytecode.Instruction{
@@ -516,6 +532,7 @@ func TestDisassemble_HCallCommentMissingWhenConstantIsNotString(t *testing.T) {
 		Constants: []runtime.Value{
 			runtime.NewInt(42),
 		},
+		Functions: bytecode.Functions{Host: []bytecode.HostFunction{{Name: "X::DO", ArgCount: 1}}},
 	}
 
 	out, err := Disassemble(prog)
@@ -524,7 +541,7 @@ func TestDisassemble_HCallCommentMissingWhenConstantIsNotString(t *testing.T) {
 	}
 
 	if strings.Contains(out, "; host ") {
-		t.Fatalf("did not expect host comment when function-name constant is not a string:\n%s", out)
+		t.Fatalf("did not expect host comment when binding id is out of range:\n%s", out)
 	}
 }
 

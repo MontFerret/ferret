@@ -2,6 +2,7 @@ package compiler_test
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -44,17 +45,67 @@ func findUserDefined(prog *bytecode.Program, name string) (bytecode.UDF, error) 
 	return bytecode.UDF{}, fmt.Errorf("expected UDF %q in %v", name, prog.Functions.UserDefined)
 }
 
-func hostArity(host map[string]int, name string, want int) error {
-	got, ok := host[name]
-	if !ok {
-		return fmt.Errorf("expected host function %q in %v", name, host)
+func hostSignature(host []bytecode.HostFunction, name string, argCount int) error {
+	for _, fn := range host {
+		if fn.Name == name && fn.ArgCount == argCount {
+			return nil
+		}
 	}
 
-	if got != want {
-		return fmt.Errorf("expected %s arity %d, got %d", name, want, got)
+	return fmt.Errorf("expected host function %q with %d arguments in %v", name, argCount, host)
+}
+
+func hasHostName(host []bytecode.HostFunction, name string) bool {
+	for _, fn := range host {
+		if fn.Name == name {
+			return true
+		}
 	}
 
-	return nil
+	return false
+}
+
+func expectHostSignatures(expected ...bytecode.HostFunction) func(*bytecode.Program) error {
+	return func(prog *bytecode.Program) error {
+		if !slices.Equal(prog.Functions.Host, expected) {
+			return fmt.Errorf("unexpected host signatures: got %v, want %v", prog.Functions.Host, expected)
+		}
+
+		return nil
+	}
+}
+
+func TestHostFunctionSignatureBindings(t *testing.T) {
+	foo := []bytecode.HostFunction{
+		{Name: "FOO", ArgCount: 1},
+		{Name: "FOO", ArgCount: 2},
+	}
+	namespaced := []bytecode.HostFunction{
+		{Name: "NS::FOO", ArgCount: 1},
+		{Name: "NS::FOO", ArgCount: 2},
+	}
+
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck(
+			`RETURN [FOO(1), FOO(1, 2), FOO(3)]`,
+			expectHostSignatures(foo...),
+			"top-level host overload bindings preserve first-seen order and reuse matching signatures",
+		),
+		ProgramCheck(`
+FUNC call() => [FOO(1), FOO(1, 2), FOO(3)]
+RETURN call()
+`, expectHostSignatures(foo...), "udf host overload bindings preserve first-seen order and reuse matching signatures"),
+		ProgramCheck(
+			`RETURN [NS::FOO(1), NS::FOO(1, 2), NS::FOO(3)]`,
+			expectHostSignatures(namespaced...),
+			"namespaced host overload bindings preserve first-seen order and reuse matching signatures",
+		),
+		ProgramCheck(
+			`RETURN [FOO(1)?, FOO(1, 2)?, FOO(3)?]`,
+			expectHostSignatures(foo...),
+			"protected host overload bindings preserve first-seen order and reuse matching signatures",
+		),
+	}, compiler.O0, compiler.O1)
 }
 
 func TestUdfMetadataO0(t *testing.T) {
@@ -67,14 +118,22 @@ RETURN f()
 				return fmt.Errorf("expected exactly 1 host function, got %d", len(prog.Functions.Host))
 			}
 
-			return hostArity(prog.Functions.Host, "TEST_FN", 1)
+			return hostSignature(prog.Functions.Host, "TEST_FN", 1)
 		}, "udf host call included in metadata"),
 		ProgramCheck(`
 FUNC f() => TEST_FN(1, 2)
 RETURN TEST_FN(1)
 `, func(prog *bytecode.Program) error {
-			return hostArity(prog.Functions.Host, "TEST_FN", 2)
-		}, "max host arity merges across scopes"),
+			if len(prog.Functions.Host) != 2 {
+				return fmt.Errorf("expected exactly 2 host signatures, got %d (%v)", len(prog.Functions.Host), prog.Functions.Host)
+			}
+
+			if err := hostSignature(prog.Functions.Host, "TEST_FN", 1); err != nil {
+				return err
+			}
+
+			return hostSignature(prog.Functions.Host, "TEST_FN", 2)
+		}, "host overloads remain distinct across scopes"),
 		ProgramCheck(`
 FUNC outer() (
   FUNC inner(x) => TEST_FN(x)
@@ -86,7 +145,7 @@ RETURN outer()
 				return fmt.Errorf("expected exactly 1 host function, got %d (%v)", len(prog.Functions.Host), prog.Functions.Host)
 			}
 
-			return hostArity(prog.Functions.Host, "TEST_FN", 1)
+			return hostSignature(prog.Functions.Host, "TEST_FN", 1)
 		}, "nested host call included in metadata"),
 		ProgramCheck(`
 FUNC f() => @foo
@@ -109,18 +168,24 @@ FUNC b() => TEST_FN(1, 2, 3)
 LET top = TEST_FN(1, 2)
 RETURN [a(), b(), top]
 `, func(prog *bytecode.Program) error {
-			if len(prog.Functions.Host) != 1 {
-				return fmt.Errorf("expected exactly 1 host function, got %d (%v)", len(prog.Functions.Host), prog.Functions.Host)
+			if len(prog.Functions.Host) != 3 {
+				return fmt.Errorf("expected exactly 3 host signatures, got %d (%v)", len(prog.Functions.Host), prog.Functions.Host)
 			}
 
-			return hostArity(prog.Functions.Host, "TEST_FN", 3)
-		}, "host arity merges across multiple udfs and top level"),
+			for _, argCount := range []int{1, 2, 3} {
+				if err := hostSignature(prog.Functions.Host, "TEST_FN", argCount); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		}, "host overloads remain distinct across multiple udfs and top level"),
 		ProgramCheck(`
 FUNC used() => 1
 FUNC unused() => TEST_FN(@foo)
 RETURN used()
 `, func(prog *bytecode.Program) error {
-			if err := hostArity(prog.Functions.Host, "TEST_FN", 1); err != nil {
+			if err := hostSignature(prog.Functions.Host, "TEST_FN", 1); err != nil {
 				return err
 			}
 
@@ -131,28 +196,32 @@ USE FOO::TEST_FN AS FN
 FUNC f() => FN(1)
 RETURN FN()
 `, func(prog *bytecode.Program) error {
-			if len(prog.Functions.Host) != 1 {
-				return fmt.Errorf("expected exactly 1 host function, got %d (%v)", len(prog.Functions.Host), prog.Functions.Host)
+			if len(prog.Functions.Host) != 2 {
+				return fmt.Errorf("expected exactly 2 host signatures, got %d (%v)", len(prog.Functions.Host), prog.Functions.Host)
 			}
 
-			return hostArity(prog.Functions.Host, "FOO::TEST_FN", 1)
+			if err := hostSignature(prog.Functions.Host, "FOO::TEST_FN", 1); err != nil {
+				return err
+			}
+
+			return hostSignature(prog.Functions.Host, "FOO::TEST_FN", 0)
 		}, "function alias preserves host metadata"),
 		ProgramCheck(`
 LET upper = Foo()
 LET lower = foo()
 RETURN [upper, lower]
 `, func(prog *bytecode.Program) error {
-			expected := map[string]int{
-				"Foo": 0,
-				"foo": 0,
+			expected := []bytecode.HostFunction{
+				{Name: "Foo", ArgCount: 0},
+				{Name: "foo", ArgCount: 0},
 			}
 
 			if len(prog.Functions.Host) != len(expected) {
 				return fmt.Errorf("expected %d host functions, got %d (%v)", len(expected), len(prog.Functions.Host), prog.Functions.Host)
 			}
 
-			for name, arity := range expected {
-				if err := hostArity(prog.Functions.Host, name, arity); err != nil {
+			for _, fn := range expected {
+				if err := hostSignature(prog.Functions.Host, fn.Name, fn.ArgCount); err != nil {
 					return err
 				}
 			}
@@ -167,17 +236,17 @@ RETURN Fn()
 				return fmt.Errorf("expected exactly 1 host function, got %d (%v)", len(prog.Functions.Host), prog.Functions.Host)
 			}
 
-			return hostArity(prog.Functions.Host, "Foo::Test_FN", 0)
+			return hostSignature(prog.Functions.Host, "Foo::Test_FN", 0)
 		}, "function alias preserves exact case"),
 		ProgramCheck(`
 USE Foo AS F
 RETURN f::Test_FN()
 `, func(prog *bytecode.Program) error {
-			if err := hostArity(prog.Functions.Host, "f::Test_FN", 0); err != nil {
+			if err := hostSignature(prog.Functions.Host, "f::Test_FN", 0); err != nil {
 				return err
 			}
 
-			if _, ok := prog.Functions.Host["Foo::Test_FN"]; ok {
+			if hasHostName(prog.Functions.Host, "Foo::Test_FN") {
 				return fmt.Errorf("expected no exact-case alias rewrite on mismatch, got %v", prog.Functions.Host)
 			}
 
@@ -188,11 +257,11 @@ USE FOO AS F
 FUNC f() => F::TEST_FN()
 RETURN f()
 `, func(prog *bytecode.Program) error {
-			if err := hostArity(prog.Functions.Host, "FOO::TEST_FN", 0); err != nil {
+			if err := hostSignature(prog.Functions.Host, "FOO::TEST_FN", 0); err != nil {
 				return err
 			}
 
-			if _, ok := prog.Functions.Host["FOO"]; ok {
+			if hasHostName(prog.Functions.Host, "FOO") {
 				return fmt.Errorf("expected no bare FOO host metadata, got %v", prog.Functions.Host)
 			}
 
@@ -392,7 +461,7 @@ FUNC outer(a) (
 )
 RETURN outer(3)
 `, func(prog *bytecode.Program) error {
-			if err := hostArity(prog.Functions.Host, "TEST_FN", 2); err != nil {
+			if err := hostSignature(prog.Functions.Host, "TEST_FN", 2); err != nil {
 				return err
 			}
 
@@ -445,7 +514,7 @@ FUNC outer() (
 FUNC sibling() => onlyInside()
 RETURN sibling()
 `, func(prog *bytecode.Program) error {
-			return hostArity(prog.Functions.Host, "onlyInside", 0)
+			return hostSignature(prog.Functions.Host, "onlyInside", 0)
 		}, "sibling udf compilation does not reuse prior nested scope"),
 	}, compiler.O0, compiler.O1)
 }
@@ -457,7 +526,7 @@ FUNC used() => 1
 FUNC unused() => TEST_FN(@foo)
 RETURN used()
 `, func(prog *bytecode.Program) error {
-			if _, ok := prog.Functions.Host["TEST_FN"]; ok {
+			if hasHostName(prog.Functions.Host, "TEST_FN") {
 				return fmt.Errorf("expected TEST_FN metadata to be pruned at O1, got %v", prog.Functions.Host)
 			}
 
@@ -472,7 +541,7 @@ RETURN f()
 				return fmt.Errorf("expected UDF f to remain reachable at O1: %w", err)
 			}
 
-			if _, ok := prog.Functions.Host["FOO"]; ok {
+			if hasHostName(prog.Functions.Host, "FOO") {
 				return fmt.Errorf("expected no bare FOO host metadata at O1, got %v", prog.Functions.Host)
 			}
 

@@ -63,8 +63,8 @@ type (
 	}
 
 	HostFunctionFrame struct {
-		Name  string `json:"name" msgpack:"name"`
-		Arity int    `json:"arity" msgpack:"arity"`
+		ArgCount *int   `json:"argCount" msgpack:"argCount"`
+		Name     string `json:"name" msgpack:"name"`
 	}
 
 	UDFFrame struct {
@@ -161,20 +161,12 @@ func FromProgram(program *bytecode.Program) (ProgramFrame, error) {
 		}
 	}
 
-	host := make([]HostFunctionFrame, 0, len(program.Functions.Host))
-	if len(program.Functions.Host) > 0 {
-		names := make([]string, 0, len(program.Functions.Host))
-		for name := range program.Functions.Host {
-			names = append(names, name)
-		}
-
-		sort.Strings(names)
-
-		for _, name := range names {
-			host = append(host, HostFunctionFrame{
-				Name:  name,
-				Arity: program.Functions.Host[name],
-			})
+	host := make([]HostFunctionFrame, len(program.Functions.Host))
+	for i, fn := range program.Functions.Host {
+		argCount := fn.ArgCount
+		host[i] = HostFunctionFrame{
+			Name:     fn.Name,
+			ArgCount: &argCount,
 		}
 	}
 
@@ -355,17 +347,16 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 		catches[i] = bytecode.Catch{entry.StartPC, entry.EndPC, entry.HandlerPC}
 	}
 
-	var host map[string]int
-	if len(frame.Functions.Host) > 0 {
-		host = make(map[string]int, len(frame.Functions.Host))
-	}
-
-	for _, entry := range frame.Functions.Host {
-		if _, exists := host[entry.Name]; exists {
-			return nil, fmt.Errorf("%w: duplicate host function %q", bytecode.ErrInvalidProgram, entry.Name)
+	host := make([]bytecode.HostFunction, len(frame.Functions.Host))
+	for i, entry := range frame.Functions.Host {
+		if entry.ArgCount == nil {
+			return nil, fmt.Errorf("%w: host function %d is missing argCount", bytecode.ErrInvalidProgram, i)
 		}
 
-		host[entry.Name] = entry.Arity
+		host[i] = bytecode.HostFunction{
+			Name:     entry.Name,
+			ArgCount: *entry.ArgCount,
+		}
 	}
 
 	udfs := make([]bytecode.UDF, len(frame.Functions.UserDefined))

@@ -2,10 +2,14 @@ package vm
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	pkgdiagnostics "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	vmdiagnostics "github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
@@ -18,10 +22,6 @@ func TestNewWith_InlinesHostCallIDs(t *testing.T) {
 	}
 
 	for i, binding := range instance.plan.hostCallDescriptors {
-		if got, want := binding.ID, i; got != want {
-			t.Fatalf("unexpected host binding id at index %d: got %d, want %d", i, got, want)
-		}
-
 		if binding.ID < 0 || binding.ID >= len(instance.cache.HostFunctions) {
 			t.Fatalf("invalid binding id %d for pc %d", binding.ID, binding.PC)
 		}
@@ -35,7 +35,7 @@ func TestNewWith_InlinesHostCallIDs(t *testing.T) {
 			t.Fatalf("callsite pc %d does not point to host call opcode %d", binding.PC, inst.Opcode)
 		}
 
-		if got, want := inst.InlineSlot, binding.ID; got != want {
+		if got, want := inst.InlineSlot, i; got != want {
 			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", binding.PC, got, want)
 		}
 	}
@@ -59,15 +59,15 @@ func TestNewWith_HostCallIDsAreCompactAndOrdered(t *testing.T) {
 		}
 	}
 
-	used := make([]bool, len(instance.plan.hostCallDescriptors))
+	used := make([]bool, len(instance.cache.HostFunctions))
 	siteByPC := make(map[int]callDescriptor, len(instance.plan.hostCallDescriptors))
-	for _, binding := range instance.plan.hostCallDescriptors {
+	for i, binding := range instance.plan.hostCallDescriptors {
 		if binding.PC <= prevPC {
 			t.Fatalf("host warmup pcs are not increasing: prev=%d, curr=%d", prevPC, binding.PC)
 		}
 		prevPC = binding.PC
 
-		if binding.ID < 0 || binding.ID >= len(instance.plan.hostCallDescriptors) {
+		if binding.ID < 0 || binding.ID >= len(instance.cache.HostFunctions) {
 			t.Fatalf("invalid inlined host id at pc %d: %d", binding.PC, binding.ID)
 		}
 
@@ -75,7 +75,7 @@ func TestNewWith_HostCallIDsAreCompactAndOrdered(t *testing.T) {
 		siteByPC[binding.PC] = binding
 
 		inst := instance.plan.instructions[binding.PC]
-		if got, want := inst.InlineSlot, binding.ID; got != want {
+		if got, want := inst.InlineSlot, i; got != want {
 			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", binding.PC, got, want)
 		}
 	}
@@ -103,8 +103,8 @@ func TestNewWith_HostCallIDsAreCompactAndOrdered(t *testing.T) {
 			t.Fatalf("host callsite pc %d missing from warmup site metadata", pc)
 		}
 
-		if got, want := site.ID, inst.InlineSlot; got != want {
-			t.Fatalf("host id mismatch at pc %d: got %d, want %d", pc, got, want)
+		if got, want := site.PC, pc; got != want {
+			t.Fatalf("host descriptor mismatch at pc %d: got %d, want %d", pc, got, want)
 		}
 	}
 
@@ -113,7 +113,7 @@ func TestNewWith_HostCallIDsAreCompactAndOrdered(t *testing.T) {
 	}
 }
 
-func TestNewWith_AssignsOneHostBindingPerCallsite(t *testing.T) {
+func TestNewWith_SharesHostBindingForRepeatedSignature(t *testing.T) {
 	program := newHostCallProgram(
 		hostCallSpec{name: "F", args: []runtime.Value{runtime.NewInt(1)}},
 		hostCallSpec{name: "F", args: []runtime.Value{runtime.NewInt(2)}},
@@ -124,19 +124,19 @@ func TestNewWith_AssignsOneHostBindingPerCallsite(t *testing.T) {
 		t.Fatalf("unexpected host binding count: got %d, want %d", got, want)
 	}
 
+	if got, want := len(instance.cache.HostFunctions), 1; got != want {
+		t.Fatalf("unexpected host cache size: got %d, want %d", got, want)
+	}
+
 	firstID := instance.plan.hostCallDescriptors[0].ID
 	secondID := instance.plan.hostCallDescriptors[1].ID
-	if firstID == secondID {
-		t.Fatalf("expected distinct binding ids per callsite, got %d", firstID)
+	if firstID != secondID {
+		t.Fatalf("expected repeated signatures to share binding id, got %d and %d", firstID, secondID)
 	}
 
 	for i, binding := range instance.plan.hostCallDescriptors {
-		if got, want := binding.ID, i; got != want {
-			t.Fatalf("unexpected binding id for site %d: got %d, want %d", i, got, want)
-		}
-
 		inst := instance.plan.instructions[binding.PC]
-		if got, want := inst.InlineSlot, binding.ID; got != want {
+		if got, want := inst.InlineSlot, i; got != want {
 			t.Fatalf("unexpected inlined host id at pc %d: got %d, want %d", binding.PC, got, want)
 		}
 	}
@@ -157,6 +157,58 @@ func TestNewWith_AssignsDistinctBindingsAcrossBindClasses(t *testing.T) {
 	secondID := instance.plan.hostCallDescriptors[1].ID
 	if firstID == secondID {
 		t.Fatalf("expected distinct binding ids for different bind classes, got %d", firstID)
+	}
+}
+
+func TestNewWithRejectsOutOfRangeHostBindingID(t *testing.T) {
+	program := newHostCallProgram(hostCallSpec{name: "F", args: []runtime.Value{runtime.NewInt(1)}})
+	program.Constants[0] = runtime.NewInt(len(program.Functions.Host))
+
+	_, err := NewWith(program)
+	assertInitializationInvariant(t, err, "invalid host binding id")
+}
+
+func TestNewWithRejectsHostCallSignatureMismatch(t *testing.T) {
+	program := newHostCallProgram(hostCallSpec{name: "F", args: []runtime.Value{runtime.NewInt(1)}})
+	program.Functions.Host[0].ArgCount = 2
+
+	_, err := NewWith(program)
+	assertInitializationInvariant(t, err, "host call signature mismatch")
+}
+
+func assertInitializationInvariant(t *testing.T, err error, message string) {
+	t.Helper()
+
+	var initErrs *vmdiagnostics.InitializationErrorSet
+	if !errors.As(err, &initErrs) || initErrs.Size() != 1 {
+		t.Fatalf("expected one initialization error, got %v", err)
+	}
+
+	var invariantErr *vmdiagnostics.InvariantError
+	if !errors.As(initErrs.First(), &invariantErr) || invariantErr.Message != message {
+		t.Fatalf("expected invariant %q, got %v", message, initErrs.First())
+	}
+}
+
+func TestWarmupRejectsHostCacheSizeMismatch(t *testing.T) {
+	program := newHostCallProgram(hostCallSpec{name: "F"})
+	instance := mustNewVM(t, program)
+	env := mustNewEnvironment(t, WithFunctionsRegistrar(func(fns runtime.FunctionDefs) {
+		fns.A0().Add("F", func(context.Context) (runtime.Value, error) {
+			return runtime.None, nil
+		})
+	}))
+
+	result, err := instance.Run(context.Background(), env)
+	if err != nil {
+		t.Fatalf("initial run failed: %v", err)
+	}
+	_ = result.Close()
+
+	instance.cache.HostFunctions = nil
+	_, err = instance.Run(context.Background(), env)
+	if err == nil || !strings.Contains(pkgdiagnostics.Format(err), "invalid host cache size") {
+		t.Fatalf("expected invalid host cache size error, got %v", err)
 	}
 }
 

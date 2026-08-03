@@ -34,6 +34,9 @@ func TestMarshalAndUnmarshal_DefaultMessagePack(t *testing.T) {
 	if got, want := decoded.ISAVersion, program.ISAVersion; got != want {
 		t.Fatalf("unexpected isaVersion: got %d, want %d", got, want)
 	}
+	if !reflect.DeepEqual(decoded.Functions.Host, program.Functions.Host) {
+		t.Fatalf("host signature order mismatch: got %v, want %v", decoded.Functions.Host, program.Functions.Host)
+	}
 }
 
 func TestMarshalAndUnmarshal_JSON(t *testing.T) {
@@ -53,8 +56,12 @@ func TestMarshalAndUnmarshal_JSON(t *testing.T) {
 		t.Fatalf("unexpected format id: got %d, want %d", got, want)
 	}
 
-	if _, err := Unmarshal(data); err != nil {
+	decoded, err := Unmarshal(data)
+	if err != nil {
 		t.Fatalf("Unmarshal() error = %v", err)
+	}
+	if !reflect.DeepEqual(decoded.Functions.Host, program.Functions.Host) {
+		t.Fatalf("host signature order mismatch: got %v, want %v", decoded.Functions.Host, program.Functions.Host)
 	}
 }
 
@@ -222,9 +229,9 @@ func TestLoaderRejectsInvalidHeaders(t *testing.T) {
 		}
 	})
 
-	t.Run("unsupported_schema", func(t *testing.T) {
+	t.Run("schema_v1", func(t *testing.T) {
 		mutated := append([]byte(nil), data...)
-		mutated[5]++
+		mutated[5] = 1
 
 		_, err := Unmarshal(mutated)
 		if !errors.Is(err, ErrUnsupportedSchema) {
@@ -372,6 +379,10 @@ func TestNewLoaderPanicsOnInvalidRegistrations(t *testing.T) {
 func newArtifactTestProgram() *bytecode.Program {
 	return &bytecode.Program{
 		Source: source.New("artifact.fql", "RETURN 1"),
+		Functions: bytecode.Functions{Host: []bytecode.HostFunction{
+			{Name: "PICK", ArgCount: 2},
+			{Name: "PICK", ArgCount: 1},
+		}},
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
 			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),

@@ -237,6 +237,38 @@ func TestWarmupArityMismatchProducesDescriptiveError(t *testing.T) {
 	})
 }
 
+func TestWarmupOverloadArityMismatchListsAvailableAritiesDeterministically(t *testing.T) {
+	RunSequenceFactory(t, func() []spec.Sequence {
+		return []spec.Sequence{
+			{
+				Base: spec.NewBaseSpec("RETURN F(1, 2)"),
+				Steps: []spec.SequenceStep{
+					{
+						Name: "arity mismatch",
+						Env: []vm.EnvironmentOption{
+							vm.WithFunctionsRegistrar(func(fns runtime.FunctionDefs) {
+								fns.A3().Add("F", func(context.Context, runtime.Value, runtime.Value, runtime.Value) (runtime.Value, error) {
+									return runtime.None, nil
+								})
+								fns.A1().Add("F", func(context.Context, runtime.Value) (runtime.Value, error) {
+									return runtime.None, nil
+								})
+							}),
+						},
+						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{
+							Message: "invalid number of arguments",
+							Contains: []string{
+								"Note: F expects 1 or 3 arguments, but got 2",
+								"Hint: Pass 1 or 3 arguments to F",
+							},
+						}),
+					},
+				},
+			},
+		}
+	})
+}
+
 func TestWarmupArityMismatchRecovery(t *testing.T) {
 	RunSequenceFactory(t, func() []spec.Sequence {
 		return []spec.Sequence{

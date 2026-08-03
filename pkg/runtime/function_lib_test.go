@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -40,6 +41,8 @@ func TestNamespaceRegisterFunctionsDuplicate(t *testing.T) {
 
 	if _, err := root.Build(); err == nil {
 		t.Fatal("expected duplicate registration error")
+	} else if got := strings.Count(err.Error(), "already exists"); got != 1 {
+		t.Fatalf("expected shared builder error to be reported once, got %d: %v", got, err)
 	}
 }
 
@@ -87,5 +90,69 @@ func TestNamespaceAllowsCaseDistinctQualifiedNames(t *testing.T) {
 
 	if _, ok := funcs.A0().Get("FOO::BAR"); ok {
 		t.Fatalf("expected wrong-case qualified lookup to fail, got %v", names)
+	}
+}
+
+func TestNamespaceAllowsFunctionOverloading(t *testing.T) {
+	root := NewLibrary()
+
+	root.Namespace("foo").Function().A0().
+		Add("bar", func(ctx context.Context) (Value, error) {
+			return NewString("zero"), nil
+		})
+
+	root.Namespace("foo").Function().A1().
+		Add("bar", func(ctx context.Context, arg Value) (Value, error) {
+			return NewString("one"), nil
+		})
+
+	root.Namespace("foo").Function().Var().
+		Add("bar", func(ctx context.Context, args ...Value) (Value, error) {
+			return NewString("var"), nil
+		})
+
+	funcs, err := root.Build()
+	if err != nil {
+		t.Fatalf("build functions: %v", err)
+	}
+
+	names := funcs.List()
+	if !slices.Contains(names, "foo::bar") {
+		t.Fatalf("expected qualified name in namespace, got %v", names)
+	}
+
+	if _, ok := funcs.A0().Get("foo::bar"); !ok {
+		t.Fatalf("expected A0 lookup to succeed")
+	}
+
+	if _, ok := funcs.A1().Get("foo::bar"); !ok {
+		t.Fatalf("expected A1 lookup to succeed")
+	}
+
+	if _, ok := funcs.Var().Get("foo::bar"); !ok {
+		t.Fatalf("expected Var lookup to succeed")
+	}
+}
+
+func TestNamespaceDisallowsDuplicateFunctionOverloading(t *testing.T) {
+	root := NewLibrary()
+
+	root.Namespace("foo").Function().A0().
+		Add("bar", func(ctx context.Context) (Value, error) {
+			return NewString("zero"), nil
+		})
+
+	root.Namespace("foo").Function().A1().
+		Add("bar", func(ctx context.Context, arg Value) (Value, error) {
+			return NewString("one"), nil
+		})
+
+	root.Namespace("foo").Function().A1().
+		Add("bar", func(ctx context.Context, arg Value) (Value, error) {
+			return NewString("one"), nil
+		})
+
+	if _, err := root.Build(); err == nil {
+		t.Fatal("expected duplicate registration error")
 	}
 }

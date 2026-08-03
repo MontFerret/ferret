@@ -41,7 +41,7 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 
 	o, t := newOptions(opts)
 	vm := &VM{
-		cache:   mem.NewCache(len(program.Bytecode), len(plan.hostCallDescriptors), o.shapeCacheLimit),
+		cache:   mem.NewCache(len(program.Bytecode), len(program.Functions.Host), o.shapeCacheLimit),
 		program: program,
 		plan:    plan,
 		options: o,
@@ -377,17 +377,26 @@ loop:
 		case bytecode.OpRethrow:
 			state.rethrowRuntimeAt(pc)
 		case bytecode.OpHCall, bytecode.OpProtectedHCall:
-			hostID := inst.InlineSlot
-			if hostID < 0 || hostID >= len(hostFunctions) {
+			callSlot := inst.InlineSlot
+			if callSlot < 0 || callSlot >= len(hostCallDescriptors) {
 				invariantErr := diagnostics.NewInvariantError(
 					"invalid host call slot",
-					runtime.Errorf(runtime.ErrUnexpected, "invalid host call slot %d at pc %d", hostID, pc),
+					runtime.Errorf(runtime.ErrUnexpected, "invalid host call slot %d at pc %d", callSlot, pc),
 				)
 				state.raiseInvariantAt(pc, invariantErr)
 				break
 			}
 
-			call := &hostCallDescriptors[hostID]
+			call := &hostCallDescriptors[callSlot]
+			if call.ID < 0 || call.ID >= len(hostFunctions) {
+				invariantErr := diagnostics.NewInvariantError(
+					"invalid host binding id",
+					runtime.Errorf(runtime.ErrUnexpected, "invalid host binding id %d at pc %d", call.ID, pc),
+				)
+				state.raiseInvariantAt(pc, invariantErr)
+				break
+			}
+
 			hostFn := &hostFunctions[call.ID]
 			out, err := callCachedHostFunction(ctx, call, hostFn, reg, &state.scratch)
 			state.setCallResult(pc, op, dst, out, err)
