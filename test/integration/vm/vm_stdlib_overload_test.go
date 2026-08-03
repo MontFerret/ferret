@@ -1,0 +1,64 @@
+package vm_test
+
+import (
+	"testing"
+
+	"github.com/MontFerret/ferret/v2/test/spec"
+	. "github.com/MontFerret/ferret/v2/test/spec/exec"
+)
+
+func TestStdlibArityOverloads(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		S(`RETURN RAND() >= 0`, true, "zero-argument overload"),
+		S(`RETURN TRIM(" value ")`, "value", "one-argument overload"),
+		S(`RETURN TRIM("xxvaluexx", "x")`, "value", "two-argument overload"),
+		S(`RETURN SUBSTITUTE("aba", "a", "x")`, "xbx", "three-argument overload"),
+		S(`RETURN SUBSTITUTE("aaa", "a", "x", 2)`, "xxa", "four-argument overload"),
+		S(`RETURN TO_DATETIME("1970-01-01T00:00:00Z") == TO_DATETIME(0, "s")`, true, "conversion overloads"),
+		Nil(`RETURN T::EQ(1, 1)`, "positive assertion overload"),
+		Nil(`RETURN T::EQ(1, 1, "unused")`, "positive assertion message overload"),
+		Nil(`RETURN T::NOT::EQ(1, 2)`, "negative assertion overload"),
+		Array(`RETURN REGEX_SPLIT("a,b,c", ",", 2, TRUE)`, []any{"a", "b,c"}, "preserve four-argument regex split behavior"),
+		Array(`RETURN [FIND_FIRST("foobarbaz", "ba", 4, 9), FIND_LAST("foobarbaz", "ba", 4, 6)]`, []any{6, -1}, "four-argument string searches honor start and end"),
+		Array(`RETURN [FIND_FIRST("éaéa", "a"), FIND_FIRST("éaéa", "a", 2), FIND_LAST("éaéa", "a"), FIND_LAST("éaéa", "a", 2)]`, []any{1, 3, 3, 3}, "string searches return Unicode character positions"),
+		Array(`RETURN [FIND_FIRST("éaéa", "a", -10, 100), FIND_LAST("éaéa", "a", -10, 100), FIND_FIRST("éaéa", "a", 3, 1), FIND_LAST("éaéa", "a", 3, 1), FIND_FIRST("éa", "", 1, 100), FIND_LAST("éa", "", 1, 100)]`, []any{1, 3, -1, -1, 1, 2}, "string searches clamp character bounds"),
+		Array(`RETURN RANGE(-3, -1)`, []any{-3, -2, -1}, "two-argument range supports negative endpoints"),
+		Array(`RETURN RANGE(3, 1, -1)`, []any{3, 2, 1}, "three-argument range supports descending steps"),
+	})
+}
+
+func TestStdlibOverloadArityErrors(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		spec.NewSpec(`RETURN TRIM()`, "bounded overload rejects missing arguments").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{
+				Message: "invalid number of arguments",
+				Contains: []string{
+					"wrong number of arguments in call to TRIM",
+					"Note: TRIM expects 1 or 2 arguments, but got 0",
+					"Hint: Pass 1 or 2 arguments to TRIM",
+				},
+			},
+		),
+		spec.NewSpec(`RETURN SLICE([1, 2], 0, 1, TRUE)`, "slice rejects undocumented extra arguments").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{
+				Message: "invalid number of arguments",
+				Contains: []string{
+					"wrong number of arguments in call to SLICE",
+					"Note: SLICE expects 2 or 3 arguments, but got 4",
+					"Hint: Pass 2 or 3 arguments to SLICE",
+				},
+			},
+		),
+		spec.NewSpec(`RETURN RANGE(1, 3, 0)`, "range rejects a zero step").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{
+				Contains: []string{
+					"argument 3 is invalid",
+					"Note: argument 3: step must not be zero",
+				},
+			},
+		),
+	})
+}

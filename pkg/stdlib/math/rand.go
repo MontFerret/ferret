@@ -15,32 +15,42 @@ func Rand(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	if len(args) == 0 {
-		return runtime.NewFloat(runtime.RandomDefault()), nil
+	switch len(args) {
+	case 0:
+		return rand0(ctx)
+	case 1:
+		return rand1(ctx, args[0])
+	default:
+		return rand2(ctx, args[0], args[1])
+	}
+}
+
+func rand0(context.Context) (runtime.Value, error) {
+	return runtime.NewFloat(runtime.RandomDefault()), nil
+}
+
+func rand1(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
+	max, err := runtime.ToFloat(ctx, arg1)
+	if err != nil {
+		return runtime.None, err
 	}
 
-	arg1, err := runtime.ToFloat(ctx, args[0])
+	upper, lower := runtime.NumberBoundaries(float64(max))
+
+	return runtime.NewFloat(runtime.Random(upper, lower)), nil
+}
+
+func rand2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	max, err := runtime.ToFloat(ctx, arg1)
 
 	if err != nil {
 		return runtime.None, err
 	}
 
-	var max float64
-	var min float64
-
-	max = float64(arg1)
-
-	if len(args) > 1 {
-		arg2, err := runtime.ToFloat(ctx, args[1])
-
-		if err != nil {
-			return runtime.None, err
-		}
-
-		min = float64(arg2)
-	} else {
-		max, min = runtime.NumberBoundaries(max)
+	min, err := runtime.ToFloat(ctx, arg2)
+	if err != nil {
+		return runtime.None, err
 	}
 
-	return runtime.NewFloat(runtime.Random(max, min)), nil
+	return runtime.NewFloat(runtime.Random(float64(max), float64(min))), nil
 }

@@ -11,29 +11,41 @@ import (
 // @param {Int} offset - Start at offset, offsets start at position 0.
 // @param {Int} [length] - At most length characters, omit to get the substring from offset to the end of the string.
 // @return {String} - A substring of value.
-func Substring(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Substring(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.EmptyString, err
 	}
 
-	offsetArg, err := runtime.CastArg[runtime.Int](args[1], 1)
+	if len(args) == 2 {
+		return substring2(ctx, args[0], args[1])
+	}
+
+	return substring3(ctx, args[0], args[1], args[2])
+}
+
+func substring2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	return substring(ctx, arg1, arg2, runtime.None, false)
+}
+
+func substring3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	return substring(ctx, arg1, arg2, arg3, true)
+}
+
+func substring(_ context.Context, arg1, arg2, arg3 runtime.Value, hasLength bool) (runtime.Value, error) {
+	offsetArg, err := runtime.CastArg[runtime.Int](arg2, 1)
 
 	if err != nil {
 		return runtime.EmptyString, err
 	}
 
-	text := args[0].String()
+	text := arg1.String()
 	runes := []rune(text)
 	size := len(runes)
 	offset := int(offsetArg)
 	length := size
 
-	if len(args) > 2 {
-		arg2, ok := args[2].(runtime.Int)
-
-		if ok {
-			length = int(arg2)
-		}
+	if hasLength {
+		length = int(runtime.CastOr[runtime.Int](arg3, runtime.Int(size)))
 	}
 
 	// Handle edge cases for bounds checking

@@ -14,35 +14,43 @@ import (
 // @param {String} unitRangeStart - Unit to start from.
 // @param {String} [unitRangeEnd="millisecond"] - Unit to end with. Error will be returned if unitRangeStart unit less that unitRangeEnd.
 // @return {Boolean} - True if the dates match, else false.
-func DateCompare(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func DateCompare(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 3, 4); err != nil {
 		return runtime.None, err
 	}
 
-	if err := runtime.AssertDateTime(args[0]); err != nil {
+	if len(args) == 3 {
+		return dateCompare3(ctx, args[0], args[1], args[2])
+	}
+
+	return dateCompare4(ctx, args[0], args[1], args[2], args[3])
+}
+
+func dateCompare3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	return dateCompare4(ctx, arg1, arg2, arg3, runtime.NewString("millisecond"))
+}
+
+func dateCompare4(_ context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
+	if err := runtime.AssertDateTime(arg1); err != nil {
 		return runtime.None, err
 	}
 
-	if err := runtime.AssertDateTime(args[1]); err != nil {
+	if err := runtime.AssertDateTime(arg2); err != nil {
 		return runtime.None, err
 	}
 
-	if err := runtime.AssertString(args[2]); err != nil {
+	if err := runtime.AssertString(arg3); err != nil {
 		return runtime.None, err
 	}
 
-	date1 := args[0].(runtime.DateTime)
-	date2 := args[1].(runtime.DateTime)
-	rangeStart := args[2].(runtime.String)
-	rangeEnd := runtime.NewString("millisecond")
-
-	if len(args) == 4 {
-		if err := runtime.AssertString(args[3]); err != nil {
-			return runtime.None, err
-		}
-
-		rangeEnd = args[3].(runtime.String)
+	if err := runtime.AssertString(arg4); err != nil {
+		return runtime.None, err
 	}
+
+	date1 := arg1.(runtime.DateTime)
+	date2 := arg2.(runtime.DateTime)
+	rangeStart := arg3.(runtime.String)
+	rangeEnd := arg4.(runtime.String)
 
 	unitStart, err := UnitFromString(rangeStart.String())
 	if err != nil {

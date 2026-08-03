@@ -7,7 +7,7 @@ import (
 )
 
 // ToDateTime converts one native DateTime or RFC3339 value.
-// Numeric epoch conversion is exposed to FQL through the registered variadic adapter.
+// Numeric epoch conversion is exposed to FQL through the two-argument overload.
 func ToDateTime(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	return runtime.ToDateTime(ctx, arg)
 }
@@ -17,14 +17,6 @@ func ToDateTime(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 // @param {DateTime|String|Int|Float} value - A DateTime, RFC3339 string, or numeric Unix epoch value.
 // @param {String} [unit] - Epoch unit: s, ms, us, or ns. Aliases include sec, second, seconds, millisecond, milliseconds, µs, μs, microsecond, microseconds, nanosecond, and nanoseconds. Valid only for numeric values.
 // @return {DateTime} - Parsed DateTime.
-func toDateTime(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgs(args, 1, 2); err != nil {
-		return runtime.None, err
-	}
-
-	if len(args) == 1 {
-		return runtime.ToDateTime(ctx, args[0])
-	}
-
-	return runtime.ToDateTimeEpoch(ctx, args[0], args[1])
+func toDateTime2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	return runtime.ToDateTimeEpoch(ctx, arg1, arg2)
 }

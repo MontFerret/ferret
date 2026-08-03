@@ -12,18 +12,30 @@ import (
 // @param {String} unit - Time unit to return the difference in.
 // @param {Boolean} [asFloat=False] - If true amount of unit will be as float.
 // @return {Int | Float} - Difference between date1 and date2.
-func DateDiff(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func DateDiff(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 3, 4); err != nil {
 		return runtime.None, err
 	}
 
-	date1, date2, unit, err := runtime.CastVarArgs3[runtime.DateTime, runtime.DateTime, runtime.String](args)
+	if len(args) == 3 {
+		return dateDiff3(ctx, args[0], args[1], args[2])
+	}
+
+	return dateDiff4(ctx, args[0], args[1], args[2], args[3])
+}
+
+func dateDiff3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	return dateDiff4(ctx, arg1, arg2, arg3, runtime.False)
+}
+
+func dateDiff4(_ context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
+	date1, date2, unit, err := runtime.CastArgs3[runtime.DateTime, runtime.DateTime, runtime.String](arg1, arg2, arg3)
 
 	if err != nil {
 		return runtime.None, err
 	}
 
-	isFloat, err := runtime.CastArgAtOr[runtime.Boolean](args, 3, runtime.False)
+	isFloat, err := runtime.CastArg[runtime.Boolean](arg4, 3)
 
 	if err != nil {
 		return runtime.None, err

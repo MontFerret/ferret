@@ -16,21 +16,27 @@ func Unshift(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 		return runtime.None, err
 	}
 
-	list, err := runtime.CastArgAt[runtime.List](args, 0)
+	if len(args) == 2 {
+		return unshift2(ctx, args[0], args[1])
+	}
+
+	return unshift3(ctx, args[0], args[1], args[2])
+}
+
+func unshift2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	return unshift3(ctx, arg1, arg2, runtime.False)
+}
+
+func unshift3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	list, err := runtime.CastArg[runtime.List](arg1, 0)
 
 	if err != nil {
 		return runtime.None, err
 	}
 
-	value := args[1]
-	uniq := runtime.False
-
-	if len(args) > 2 {
-		uniq, err = runtime.CastArgAt[runtime.Boolean](args, 2)
-
-		if err != nil {
-			return runtime.None, err
-		}
+	uniq, err := runtime.CastArg[runtime.Boolean](arg3, 2)
+	if err != nil {
+		return runtime.None, err
 	}
 
 	size, err := list.Length(ctx)
@@ -42,7 +48,7 @@ func Unshift(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 	result := runtime.NewArray64(size + 1)
 
 	if !uniq {
-		_ = result.Append(ctx, value)
+		_ = result.Append(ctx, arg2)
 
 		err = list.ForEach(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 			_ = result.Append(ctx, value)
@@ -57,10 +63,10 @@ func Unshift(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 		return result, nil
 	}
 
-	_ = result.Append(ctx, value)
+	_ = result.Append(ctx, arg2)
 
 	err = list.ForEach(ctx, func(ctx context.Context, el runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		if runtime.CompareValues(el, value) != 0 {
+		if runtime.CompareValues(el, arg2) != 0 {
 			_ = result.Append(ctx, el)
 		}
 

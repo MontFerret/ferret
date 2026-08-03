@@ -15,20 +15,28 @@ func Keys(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	if err := runtime.ValidateArgTypeAt(args, 0, runtime.TypeMap); err != nil {
+	if len(args) == 1 {
+		return keys1(ctx, args[0])
+	}
+
+	return keys2(ctx, args[0], args[1])
+}
+
+func keys1(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
+	return keys2(ctx, arg1, runtime.False)
+}
+
+func keys2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgType(arg1, 0, runtime.TypeMap); err != nil {
 		return runtime.None, err
 	}
 
-	target := args[0].(runtime.Map)
-	needSort := runtime.False
-
-	if len(args) == 2 {
-		if err := runtime.ValidateArgTypeAt(args, 1, runtime.TypeBoolean); err != nil {
-			return runtime.None, err
-		}
-
-		needSort = args[1].(runtime.Boolean)
+	if err := runtime.ValidateArgType(arg2, 1, runtime.TypeBoolean); err != nil {
+		return runtime.None, err
 	}
+
+	target := arg1.(runtime.Map)
+	needSort := arg2.(runtime.Boolean)
 
 	keys, err := target.Keys(ctx)
 

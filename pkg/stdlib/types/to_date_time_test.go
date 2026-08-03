@@ -34,52 +34,39 @@ func TestToDateTime(t *testing.T) {
 	}
 }
 
-func TestToDateTimeVariadic(t *testing.T) {
+func TestToDateTimeEpoch(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		expected time.Time
+		value    runtime.Value
+		unit     runtime.Value
 		name     string
-		args     []runtime.Value
 	}{
 		{
-			name:     "RFC3339",
-			args:     []runtime.Value{runtime.NewString("2026-08-02T12:00:00Z")},
-			expected: time.Date(2026, time.August, 2, 12, 0, 0, 0, time.UTC),
-		},
-		{
 			name:     "integer epoch",
-			args:     []runtime.Value{runtime.NewInt(1), runtime.NewString("s")},
+			value:    runtime.NewInt(1),
+			unit:     runtime.NewString("s"),
 			expected: time.Unix(1, 0).UTC(),
 		},
 		{
 			name:     "float epoch",
-			args:     []runtime.Value{runtime.NewFloat(1.5), runtime.NewString("s")},
+			value:    runtime.NewFloat(1.5),
+			unit:     runtime.NewString("s"),
 			expected: time.Unix(1, 500_000_000).UTC(),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			value, err := toDateTime(t.Context(), test.args...)
+			value, err := toDateTime2(t.Context(), test.value, test.unit)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			actual, ok := value.(runtime.DateTime)
 			if !ok || !actual.Equal(test.expected) {
-				t.Fatalf("toDateTime(%v) = %v, want %v", test.args, value, test.expected)
-			}
-		})
-	}
-
-	for name, args := range map[string][]runtime.Value{
-		"missing": nil,
-		"extra":   {runtime.NewInt(1), runtime.NewString("s"), runtime.True},
-	} {
-		t.Run(name, func(t *testing.T) {
-			if _, err := toDateTime(t.Context(), args...); !errors.Is(err, runtime.ErrInvalidArgumentNumber) {
-				t.Fatalf("toDateTime(%v) error = %v, want ErrInvalidArgumentNumber", args, err)
+				t.Fatalf("toDateTime2(%v, %v) = %v, want %v", test.value, test.unit, value, test.expected)
 			}
 		})
 	}
@@ -95,10 +82,10 @@ func TestToDateTimeRegistration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !functions.Var().Has("TO_DATETIME") {
-		t.Fatal("TO_DATETIME is not registered as variadic")
+	if functions.Var().Has("TO_DATETIME") {
+		t.Fatal("TO_DATETIME unexpectedly remains registered as variadic")
 	}
-	if functions.A1().Has("TO_DATETIME") {
-		t.Fatal("TO_DATETIME unexpectedly remains registered as fixed arity")
+	if !functions.A1().Has("TO_DATETIME") || !functions.A2().Has("TO_DATETIME") {
+		t.Fatal("TO_DATETIME is not registered at arities 1 and 2")
 	}
 }

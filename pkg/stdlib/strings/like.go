@@ -19,15 +19,27 @@ var (
 // @param {String} search - A search pattern that can contain the wildcard characters.
 // @param {Boolean} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
 // @return {Boolean} - Returns true if the pattern is contained in text, and false otherwise.
-func Like(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Like(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 3)
 
 	if err != nil {
 		return runtime.False, err
 	}
 
-	str := args[0].String()
-	pattern := args[1].String()
+	if len(args) == 2 {
+		return like2(ctx, args[0], args[1])
+	}
+
+	return like3(ctx, args[0], args[1], args[2])
+}
+
+func like2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	return like3(ctx, arg1, arg2, runtime.False)
+}
+
+func like3(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	str := arg1.String()
+	pattern := arg2.String()
 
 	if len(pattern) == 0 {
 		return runtime.NewBoolean(len(str) == 0), nil
@@ -49,11 +61,9 @@ func Like(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 
 	pattern = string(replaced)
 
-	if len(args) > 2 {
-		if runtime.ToBoolean(args[2]) {
-			str = strings.ToLower(str)
-			pattern = strings.ToLower(pattern)
-		}
+	if runtime.ToBoolean(arg3) {
+		str = strings.ToLower(str)
+		pattern = strings.ToLower(pattern)
 	}
 
 	g, err := glob.Compile(pattern)

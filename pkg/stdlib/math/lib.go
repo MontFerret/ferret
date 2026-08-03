@@ -15,7 +15,8 @@ const (
 
 func RegisterLib(ns runtime.Namespace) {
 	ns.Function().A0().
-		Add("PI", Pi)
+		Add("PI", Pi).
+		Add("RAND", rand0)
 
 	ns.Function().A1().
 		Add("ABS", Abs).
@@ -36,6 +37,7 @@ func RegisterLib(ns runtime.Namespace) {
 		Add("MEDIAN", Median).
 		Add("MIN", Min).
 		Add("RADIANS", Radians).
+		Add("RAND", rand1).
 		Add("ROUND", Round).
 		Add("SIN", Sin).
 		Add("SQRT", Sqrt).
@@ -48,12 +50,14 @@ func RegisterLib(ns runtime.Namespace) {
 
 	ns.Function().A2().
 		Add("ATAN2", Atan2).
-		Add("POW", Pow)
+		Add("PERCENTILE", percentile2).
+		Add("POW", Pow).
+		Add("RAND", rand2).
+		Add("RANGE", range2)
 
-	ns.Function().Var().
-		Add("PERCENTILE", Percentile).
-		Add("RAND", Rand).
-		Add("RANGE", Range)
+	ns.Function().A3().
+		Add("PERCENTILE", percentile3).
+		Add("RANGE", range3)
 }
 
 func toFloat(arg runtime.Value) float64 {

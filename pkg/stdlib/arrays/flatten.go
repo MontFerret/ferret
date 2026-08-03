@@ -19,7 +19,19 @@ func Flatten(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 		return runtime.None, err
 	}
 
-	list, err := runtime.CastArg[runtime.List](args[0], 0)
+	if len(args) == 1 {
+		return flatten1(ctx, args[0])
+	}
+
+	return flatten2(ctx, args[0], args[1])
+}
+
+func flatten1(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
+	return flatten2(ctx, arg1, runtime.Int(1))
+}
+
+func flatten2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	list, err := runtime.CastArg[runtime.List](arg1, 0)
 
 	if err != nil {
 		return runtime.None, err
@@ -31,7 +43,7 @@ func Flatten(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 		return runtime.None, err
 	}
 
-	level, err := runtime.CastArgAtOr(args, 1, runtime.Int(1))
+	level, err := runtime.CastArg[runtime.Int](arg2, 1)
 
 	if err != nil {
 		return runtime.None, err

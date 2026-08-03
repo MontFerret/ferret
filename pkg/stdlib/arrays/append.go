@@ -17,23 +17,27 @@ func Append(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	list, err := runtime.CastArgAt[runtime.List](args, 0)
+	if len(args) == 2 {
+		return append2(ctx, args[0], args[1])
+	}
+
+	return append3(ctx, args[0], args[1], args[2])
+}
+
+func append2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	return append3(ctx, arg1, arg2, runtime.False)
+}
+
+func append3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	list, err := runtime.CastArg[runtime.List](arg1, 0)
 
 	if err != nil {
 		return runtime.None, err
 	}
 
-	arg := args[1]
-	unique := runtime.False
-
-	if len(args) > 2 {
-		arg3, err := runtime.CastArgAt[runtime.Boolean](args, 2)
-
-		if err != nil {
-			return runtime.None, err
-		}
-
-		unique = arg3
+	unique, err := runtime.CastArg[runtime.Boolean](arg3, 2)
+	if err != nil {
+		return runtime.None, err
 	}
 
 	var next runtime.List
@@ -48,7 +52,7 @@ func Append(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	}
 
 	if unique {
-		idx, err := list.IndexOf(ctx, arg)
+		idx, err := list.IndexOf(ctx, arg2)
 
 		if err != nil {
 			return runtime.None, err
@@ -59,7 +63,7 @@ func Append(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		}
 	}
 
-	if err := next.Append(ctx, arg); err != nil {
+	if err := next.Append(ctx, arg2); err != nil {
 		return runtime.None, err
 	}
 

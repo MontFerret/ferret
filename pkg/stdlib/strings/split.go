@@ -19,17 +19,25 @@ func Split(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	text := args[0].String()
-	separator := args[1].String()
-	limit := -1
-
-	if len(args) > 2 {
-		args2, ok := args[2].(runtime.Int)
-
-		if ok {
-			limit = int(args2)
-		}
+	if len(args) == 2 {
+		return split2(ctx, args[0], args[1])
 	}
+
+	return split3(ctx, args[0], args[1], args[2])
+}
+
+func split2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	return split(ctx, arg1, arg2, -1)
+}
+
+func split3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	limit := runtime.CastOr[runtime.Int](arg3, runtime.Int(-1))
+	return split(ctx, arg1, arg2, int(limit))
+}
+
+func split(ctx context.Context, arg1, arg2 runtime.Value, limit int) (runtime.Value, error) {
+	text := arg1.String()
+	separator := arg2.String()
 
 	var strs []string
 
