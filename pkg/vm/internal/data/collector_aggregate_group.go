@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"sort"
 	"strconv"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -39,7 +38,10 @@ func NewGroupedAggregateCollector(plan bytecode.AggregatePlan) Transformer {
 
 func (c *GroupedAggregateCollector) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	if !c.sorted {
-		c.sort()
+		if err := c.sort(ctx); err != nil {
+			return nil, err
+		}
+
 		c.sorted = true
 	}
 
@@ -53,7 +55,10 @@ func (c *GroupedAggregateCollector) Set(ctx context.Context, key, value runtime.
 		return c.UpdateAggregate(ctx, groupKey, value, idx)
 	}
 
-	entry := c.entryFor(key)
+	entry, err := c.entryFor(ctx, key)
+	if err != nil {
+		return err
+	}
 
 	if !c.plan.TrackGroupValues || entry.group == nil {
 		return nil
@@ -62,12 +67,16 @@ func (c *GroupedAggregateCollector) Set(ctx context.Context, key, value runtime.
 	return entry.group.Append(ctx, value)
 }
 
-func (c *GroupedAggregateCollector) UpdateAggregate(_ context.Context, groupKey, value runtime.Value, idx int) error {
+func (c *GroupedAggregateCollector) UpdateAggregate(ctx context.Context, groupKey, value runtime.Value, idx int) error {
 	if err := validateAggregateSelectorIndex(idx, len(c.plan.Keys)); err != nil {
 		return err
 	}
 
-	entry := c.entryFor(groupKey)
+	entry, err := c.entryFor(ctx, groupKey)
+	if err != nil {
+		return err
+	}
+
 	updateAggregateState(&entry.states[idx], c.plan.Kinds[idx], value)
 
 	return nil
@@ -77,7 +86,10 @@ func (c *GroupedAggregateCollector) Get(ctx context.Context, key runtime.Value) 
 	if groupKey, idx, ok, err := c.aggregateKey(ctx, key); err != nil {
 		return nil, err
 	} else if ok {
-		entry, ok := c.lookupEntry(groupKey)
+		entry, ok, err := c.lookupEntry(ctx, groupKey)
+		if err != nil {
+			return nil, err
+		}
 
 		if !ok {
 			return runtime.None, collectorKeyNotFoundValue(ctx, groupKey)
@@ -90,7 +102,11 @@ func (c *GroupedAggregateCollector) Get(ctx context.Context, key runtime.Value) 
 		return aggregateValueFor(entry.states[idx], c.plan.Kinds[idx]), nil
 	}
 
-	entry, ok := c.lookupEntry(key)
+	entry, ok, err := c.lookupEntry(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+
 	if !ok {
 		return runtime.None, collectorKeyNotFoundValue(ctx, key)
 	}
@@ -175,13 +191,34 @@ func (c *GroupedAggregateCollector) Close() error {
 	return errors.Join(errs...)
 }
 
-func (c *GroupedAggregateCollector) sort() {
-	sort.Slice(c.entries, func(i, j int) bool {
-		return runtime.CompareValues(c.entries[i].key, c.entries[j].key) < 0
+func (c *GroupedAggregateCollector) sort(ctx context.Context) error {
+	order := make([]runtime.Value, len(c.entries))
+	for idx := range c.entries {
+		order[idx] = runtime.Int(idx)
+	}
+
+	err := runtime.SortSliceWith(ctx, order, func(ctx context.Context, first, second runtime.Value) (runtime.Ordering, error) {
+		firstIdx := int(first.(runtime.Int))
+		secondIdx := int(second.(runtime.Int))
+
+		return runtime.CompareValues(ctx, c.entries[firstIdx].key, c.entries[secondIdx].key)
 	})
+	if err != nil {
+		return err
+	}
+
+	sorted := make([]*groupedAggregateEntry, len(c.entries))
+
+	for idx, value := range order {
+		sorted[idx] = c.entries[int(value.(runtime.Int))]
+	}
+
+	c.entries = sorted
+
+	return nil
 }
 
-func (c *GroupedAggregateCollector) entryFor(key runtime.Value) *groupedAggregateEntry {
+func (c *GroupedAggregateCollector) entryFor(ctx context.Context, key runtime.Value) (*groupedAggregateEntry, error) {
 	// Fast path: first key stays in singleKey/singleEntry to avoid map allocation.
 	if c.grouping.len() == 0 && !c.hasSingleGroup {
 		entry := c.newEntry(key)
@@ -191,45 +228,76 @@ func (c *GroupedAggregateCollector) entryFor(key runtime.Value) *groupedAggregat
 		c.entries = append(c.entries, entry)
 		c.sorted = false
 
-		return entry
+		return entry, nil
 	}
 
 	// Promote to map when a second distinct key appears.
 	if c.grouping.len() == 0 {
-		if c.hasSingleGroup && runtime.CompareValues(key, c.singleKey) == 0 {
-			return c.singleEntry
-		}
-
 		if c.hasSingleGroup {
-			c.grouping.set(c.singleKey, c.singleEntry)
+			if key.Hash() == c.singleKey.Hash() {
+				equal, err := runtime.EqualValues(ctx, key, c.singleKey)
+				if err != nil {
+					return nil, err
+				}
+
+				if equal {
+					return c.singleEntry, nil
+				}
+			}
+
+			if err := c.grouping.insertUnique(ctx, c.singleKey, c.singleEntry); err != nil {
+				return nil, err
+			}
 		}
 		c.hasSingleGroup = false
 		c.singleKey = nil
 		c.singleEntry = nil
+
+		entry := c.newEntry(key)
+		if err := c.grouping.insertUnique(ctx, key, entry); err != nil {
+			return nil, err
+		}
+
+		c.entries = append(c.entries, entry)
+		c.sorted = false
+
+		return entry, nil
 	}
 
-	if entry, ok := c.grouping.get(key); ok {
-		return entry
+	entry, loaded, err := c.grouping.loadOrCreate(ctx, key, func() *groupedAggregateEntry {
+		return c.newEntry(key)
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	entry := c.newEntry(key)
-	c.grouping.set(key, entry)
+	if loaded {
+		return entry, nil
+	}
+
 	c.entries = append(c.entries, entry)
 	c.sorted = false
 
-	return entry
+	return entry, nil
 }
 
-func (c *GroupedAggregateCollector) lookupEntry(key runtime.Value) (*groupedAggregateEntry, bool) {
+func (c *GroupedAggregateCollector) lookupEntry(ctx context.Context, key runtime.Value) (*groupedAggregateEntry, bool, error) {
 	if c.grouping.len() == 0 {
-		if c.hasSingleGroup && c.singleEntry != nil && runtime.CompareValues(c.singleKey, key) == 0 {
-			return c.singleEntry, true
+		if c.hasSingleGroup && c.singleEntry != nil && key.Hash() == c.singleKey.Hash() {
+			equal, err := runtime.EqualValues(ctx, c.singleKey, key)
+			if err != nil {
+				return nil, false, err
+			}
+
+			if equal {
+				return c.singleEntry, true, nil
+			}
 		}
 
-		return nil, false
+		return nil, false, nil
 	}
 
-	return c.grouping.get(key)
+	return c.grouping.get(ctx, key)
 }
 
 func (c *GroupedAggregateCollector) newEntry(key runtime.Value) *groupedAggregateEntry {

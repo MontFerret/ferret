@@ -15,7 +15,7 @@ func Minus(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	intersections := make(map[uint64]runtime.Value)
+	intersections := make(map[uint64][]runtime.Value)
 	var capacity runtime.Int
 
 	for idx := range args {
@@ -28,6 +28,7 @@ func Minus(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 
 		err = list.ForEach(ctx, func(c context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
 			h := value.Hash()
+			bucket := intersections[h]
 
 			// first array, fill out the map
 			if idx == 0 {
@@ -38,16 +39,28 @@ func Minus(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 				}
 
 				capacity = size
-				intersections[h] = value
+				equalIdx, err := findEqualValue(c, bucket, value)
+				if err != nil {
+					return false, err
+				}
+				if equalIdx < 0 {
+					intersections[h] = append(bucket, value)
+				}
 
 				return true, nil
 			}
 
-			_, exists := intersections[h]
-
-			// if it exists in the first array, remove it
-			if exists {
-				delete(intersections, h)
+			match, err := findEqualValue(c, bucket, value)
+			if err != nil {
+				return false, err
+			}
+			if match >= 0 {
+				bucket = append(bucket[:match], bucket[match+1:]...)
+				if len(bucket) == 0 {
+					delete(intersections, h)
+				} else {
+					intersections[h] = bucket
+				}
 			}
 
 			return true, nil
@@ -60,8 +73,10 @@ func Minus(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 
 	result := runtime.NewArray64(capacity)
 
-	for _, item := range intersections {
-		_ = result.Append(ctx, item)
+	for _, bucket := range intersections {
+		for _, item := range bucket {
+			_ = result.Append(ctx, item)
+		}
 	}
 
 	return result, nil

@@ -44,20 +44,22 @@ func typeRank(value Value) int {
 	}
 }
 
-// CompareTypes compares the types of two values and returns -1 if a < b, 0 if a == b, and 1 if a > b.
-func CompareTypes(a, b Value) int {
+// CompareTypes compares the native type ranks of two values.
+// Unknown host values share the final rank; strict host comparison must use
+// CompareValues so equal ranks are not mistaken for semantic equality.
+func CompareTypes(a, b Value) Ordering {
 	aRank := typeRank(a)
 	bRank := typeRank(b)
 
 	if aRank == bRank {
-		return 0
+		return Equal
 	}
 
 	if aRank < bRank {
-		return -1
+		return Less
 	}
 
-	return 1
+	return Greater
 }
 
 // TypeOf returns the Type of a given Value, respecting any Typed overrides.
@@ -145,6 +147,22 @@ func typeFromReflect(t reflect.Type) Type {
 	}
 
 	return newHostType(pkg, name, t)
+}
+
+func fullyQualifiedGoType(typ reflect.Type) string {
+	if typ == nil {
+		return ""
+	}
+
+	if typ.Kind() == reflect.Pointer {
+		return "*" + fullyQualifiedGoType(typ.Elem())
+	}
+
+	if typ.PkgPath() == "" {
+		return typ.String()
+	}
+
+	return typ.PkgPath() + "." + typ.Name()
 }
 
 // IsSameType checks if two Types are the same, considering nil as a valid type that can be compared.

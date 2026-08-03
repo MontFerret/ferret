@@ -142,7 +142,7 @@ func evalDebugPredicate(ctx context.Context, predicate fql.IPredicateContext, sc
 			return nil, err
 		}
 
-		return evalDebugComparison(node.EqualityOperator().GetText(), left, right)
+		return evalDebugComparison(ctx, node.EqualityOperator().GetText(), left, right)
 	}
 
 	return evalDebugAtom(ctx, node.ExpressionAtom(), scope)
@@ -388,26 +388,25 @@ func evalDebugArithmetic(ctx context.Context, op string, left, right runtime.Val
 	}
 }
 
-func evalDebugComparison(op string, left, right runtime.Value) (runtime.Value, error) {
-	if !debugScalar(left) || !debugScalar(right) {
-		return nil, runtime.Error(runtime.ErrInvalidArgument, "debugger comparisons support scalar values only")
-	}
-
-	cmp := runtime.CompareValues(left, right)
-
+func evalDebugComparison(ctx context.Context, op string, left, right runtime.Value) (runtime.Value, error) {
 	switch op {
 	case "==":
-		return runtime.NewBoolean(cmp == 0), nil
+		return runtime.EqualChecked(ctx, left, right)
 	case "!=":
-		return runtime.NewBoolean(cmp != 0), nil
+		equal, err := runtime.EqualChecked(ctx, left, right)
+		return !equal, err
 	case ">":
-		return runtime.NewBoolean(cmp > 0), nil
+		cmp, err := runtime.CompareChecked(ctx, left, right)
+		return runtime.NewBoolean(cmp > 0), err
 	case "<":
-		return runtime.NewBoolean(cmp < 0), nil
+		cmp, err := runtime.CompareChecked(ctx, left, right)
+		return runtime.NewBoolean(cmp < 0), err
 	case ">=":
-		return runtime.NewBoolean(cmp >= 0), nil
+		cmp, err := runtime.CompareChecked(ctx, left, right)
+		return runtime.NewBoolean(cmp >= 0), err
 	case "<=":
-		return runtime.NewBoolean(cmp <= 0), nil
+		cmp, err := runtime.CompareChecked(ctx, left, right)
+		return runtime.NewBoolean(cmp <= 0), err
 	default:
 		return nil, unsupportedDebugExpression(nil)
 	}

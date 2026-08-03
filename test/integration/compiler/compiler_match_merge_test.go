@@ -1,6 +1,7 @@
 package compiler_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -76,7 +77,8 @@ func countLoadConstValue(prog *bytecode.Program, val runtime.Value) int {
 		if idx < 0 || idx >= len(prog.Constants) {
 			continue
 		}
-		if runtime.CompareValues(prog.Constants[idx], val) == 0 {
+		equal, err := runtime.EqualValues(context.Background(), prog.Constants[idx], val)
+		if err == nil && equal {
 			count++
 		}
 	}

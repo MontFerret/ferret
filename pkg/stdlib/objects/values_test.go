@@ -46,10 +46,10 @@ func TestValues(t *testing.T) {
 		hasZero := false
 		hasOne := false
 		for _, val := range values {
-			if runtime.CompareValues(val, runtime.NewInt(0)) == 0 {
+			if compareValues(val, runtime.NewInt(0)) == 0 {
 				hasZero = true
 			}
-			if runtime.CompareValues(val, runtime.NewInt(1)) == 0 {
+			if compareValues(val, runtime.NewInt(1)) == 0 {
 				hasOne = true
 			}
 		}
@@ -82,10 +82,10 @@ func TestValues(t *testing.T) {
 		hasInt := false
 		hasString := false
 		for _, val := range values {
-			if runtime.CompareValues(val, runtime.NewInt(0)) == 0 {
+			if compareValues(val, runtime.NewInt(0)) == 0 {
 				hasInt = true
 			}
-			if runtime.CompareValues(val, runtime.NewString("v2")) == 0 {
+			if compareValues(val, runtime.NewString("v2")) == 0 {
 				hasString = true
 			}
 		}
@@ -129,10 +129,10 @@ func TestValues(t *testing.T) {
 				if length == 2 {
 					val0, _ := arr.At(context.Background(), runtime.NewInt(0))
 					val1, _ := arr.At(context.Background(), runtime.NewInt(1))
-					if runtime.CompareValues(val0, runtime.NewInt(0)) == 0 && runtime.CompareValues(val1, runtime.NewInt(1)) == 0 {
+					if compareValues(val0, runtime.NewInt(0)) == 0 && compareValues(val1, runtime.NewInt(1)) == 0 {
 						hasArr1 = true
 					}
-					if runtime.CompareValues(val0, runtime.NewInt(2)) == 0 && runtime.CompareValues(val1, runtime.NewInt(3)) == 0 {
+					if compareValues(val0, runtime.NewInt(2)) == 0 && compareValues(val1, runtime.NewInt(3)) == 0 {
 						hasArr2 = true
 					}
 				}
@@ -214,7 +214,7 @@ func TestValues(t *testing.T) {
 		So(returnedLength, ShouldEqual, 1)
 
 		val, _ := returnedArrayVal.At(context.Background(), runtime.NewInt(0))
-		So(runtime.CompareValues(val, runtime.NewInt(0)), ShouldEqual, 0)
+		So(compareValues(val, runtime.NewInt(0)), ShouldEqual, 0)
 	})
 
 	Convey("Result is independent on the source object (object)", t, func() {
@@ -282,13 +282,13 @@ func TestValues(t *testing.T) {
 		foundEmptyString := false
 
 		actualArray.ForEach(context.Background(), func(ctx context.Context, val runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-			if runtime.CompareValues(val, runtime.None) == 0 {
+			if compareValues(val, runtime.None) == 0 {
 				foundNone = true
 			}
-			if runtime.CompareValues(val, runtime.NewBoolean(false)) == 0 {
+			if compareValues(val, runtime.NewBoolean(false)) == 0 {
 				foundBool = true
 			}
-			if runtime.CompareValues(val, runtime.NewString("")) == 0 {
+			if compareValues(val, runtime.NewString("")) == 0 {
 				foundEmptyString = true
 			}
 			return true, nil

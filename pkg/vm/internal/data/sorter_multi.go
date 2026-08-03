@@ -40,11 +40,17 @@ func (s *MultiSorter) Iterate(ctx context.Context) (runtime.Iterator, error) {
 }
 
 func (s *MultiSorter) Set(ctx context.Context, key, value runtime.Value) error {
-	return s.Value.Append(ctx, NewKV(key, value))
+	if err := s.Value.Append(ctx, NewKV(key, value)); err != nil {
+		return err
+	}
+
+	s.sorted = false
+
+	return nil
 }
 
 func (s *MultiSorter) sort(ctx context.Context) error {
-	return runtime.SortListWith(ctx, s.Value, func(first, second runtime.Value) int {
+	return runtime.SortListWith(ctx, s.Value, func(ctx context.Context, first, second runtime.Value) (runtime.Ordering, error) {
 		firstKV := first.(*KV)
 		secondKV := second.(*KV)
 
@@ -52,20 +58,31 @@ func (s *MultiSorter) sort(ctx context.Context) error {
 		secondKVKey := secondKV.Key.(runtime.List)
 
 		for idx, direction := range s.directions {
-			firstKey, _ := firstKVKey.At(ctx, runtime.NewInt(idx))
-			secondKey, _ := secondKVKey.At(ctx, runtime.NewInt(idx))
-			comp := runtime.CompareValues(firstKey, secondKey)
+			firstKey, err := firstKVKey.At(ctx, runtime.NewInt(idx))
+			if err != nil {
+				return runtime.Equal, err
+			}
 
-			if comp != 0 {
+			secondKey, err := secondKVKey.At(ctx, runtime.NewInt(idx))
+			if err != nil {
+				return runtime.Equal, err
+			}
+
+			comp, err := runtime.CompareValues(ctx, firstKey, secondKey)
+			if err != nil {
+				return runtime.Equal, err
+			}
+
+			if comp != runtime.Equal {
 				if direction == runtime.SortDirectionAsc {
-					return comp
+					return comp, nil
 				}
 
-				return -comp
+				return -comp, nil
 			}
 		}
 
-		return 0
+		return runtime.Equal, nil
 	})
 }
 

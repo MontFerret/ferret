@@ -26,19 +26,28 @@ func (v collisionValue) Copy() runtime.Value {
 	return v
 }
 
-func (v collisionValue) Compare(other runtime.Value) int {
+func (v collisionValue) Equal(_ context.Context, other runtime.Value) (bool, error) {
 	o, ok := other.(collisionValue)
 	if !ok {
-		return runtime.CompareTypes(v, other)
+		return false, nil
+	}
+
+	return v.label == o.label, nil
+}
+
+func (v collisionValue) Compare(_ context.Context, other runtime.Value) (runtime.Ordering, error) {
+	o, ok := other.(collisionValue)
+	if !ok {
+		return runtime.Equal, runtime.Error(runtime.ErrInvalidOperation, "incompatible collision value")
 	}
 
 	switch {
 	case v.label < o.label:
-		return -1
+		return runtime.Less, nil
 	case v.label > o.label:
-		return 1
+		return runtime.Greater, nil
 	default:
-		return 0
+		return runtime.Equal, nil
 	}
 }
 
@@ -58,6 +67,45 @@ func TestKeyGroupCollectorSeparatesHashCollisions(t *testing.T) {
 
 	assertGroupedIntValue(t, ctx, collector, first, 1)
 	assertGroupedIntValue(t, ctx, collector, second, 2)
+}
+
+func TestSemanticIndexesDoNotCompareAcrossHashBuckets(t *testing.T) {
+	ctx := context.Background()
+	intKey := runtime.NewInt(1)
+	floatKey := runtime.NewFloat(1)
+	if intKey.Hash() == floatKey.Hash() {
+		t.Fatal("test requires preserved Int and Float hashes to differ")
+	}
+
+	collectors := map[string]data.Transformer{
+		"key":       data.NewKeyCollector(),
+		"counter":   data.NewKeyCounterCollector(),
+		"key-group": data.NewKeyGroupCollector(),
+		"aggregate-group": data.NewGroupedAggregateCollector(bytecode.NewAggregatePlan(
+			[]runtime.String{runtime.NewString("count")},
+			[]bytecode.AggregateKind{bytecode.AggregateCount},
+			false,
+		)),
+	}
+
+	// Strict numeric equality considers these values equal, but their preserved
+	// native hashes place them in different candidate buckets.
+	for name, collector := range collectors {
+		if err := collector.Set(ctx, intKey, runtime.None); err != nil {
+			t.Fatalf("%s: set int key: %v", name, err)
+		}
+		if err := collector.Set(ctx, floatKey, runtime.None); err != nil {
+			t.Fatalf("%s: set float key: %v", name, err)
+		}
+
+		length, err := collector.Length(ctx)
+		if err != nil {
+			t.Fatalf("%s: length: %v", name, err)
+		}
+		if length != 2 {
+			t.Fatalf("%s: expected two hash-bucket entries, got %d", name, length)
+		}
+	}
 }
 
 func TestGroupedAggregateCollectorSeparatesHashCollisions(t *testing.T) {
@@ -133,7 +181,12 @@ func TestGroupedAggregateCollectorTrackGroupValuesFalseSkipsStoredGroups(t *test
 		t.Fatalf("expected iterator value NONE when group values are disabled, got %v", value)
 	}
 
-	if runtime.CompareValues(iterKey, key) != 0 {
+	equal, err := runtime.EqualValues(ctx, iterKey, key)
+	if err != nil {
+		t.Fatalf("compare iterator key: %v", err)
+	}
+
+	if !equal {
 		t.Fatalf("expected iterator key %v, got %v", key, iterKey)
 	}
 

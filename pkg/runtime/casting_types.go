@@ -25,6 +25,7 @@ var (
 	typeIterable     = reflect.TypeOf((*Iterable)(nil)).Elem()
 	typeIterator     = reflect.TypeOf((*Iterator)(nil)).Elem()
 	typeMeasurable   = reflect.TypeOf((*Measurable)(nil)).Elem()
+	typeEquatable    = reflect.TypeOf((*Equatable)(nil)).Elem()
 	typeComparable   = reflect.TypeOf((*Comparable)(nil)).Elem()
 	typeCloneable    = reflect.TypeOf((*Cloneable)(nil)).Elem()
 	typeSortable     = reflect.TypeOf((*Sortable)(nil)).Elem()
@@ -94,6 +95,8 @@ func expectedTypeFromReflect(t reflect.Type) Type {
 			return TypeIterator
 		case t.AssignableTo(typeMeasurable):
 			return TypeMeasurable
+		case t.AssignableTo(typeEquatable):
+			return TypeEquatable
 		case t.AssignableTo(typeComparable):
 			return TypeComparable
 		case t.AssignableTo(typeCloneable):

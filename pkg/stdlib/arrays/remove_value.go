@@ -43,7 +43,10 @@ func removeValue3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.
 	var counter runtime.Int
 
 	return arr.Filter(ctx, func(ctx context.Context, item runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		remove := runtime.CompareValues(item, arg2) == 0
+		remove, err := runtime.EqualValues(ctx, item, arg2)
+		if err != nil {
+			return false, err
+		}
 
 		if remove {
 			counter++

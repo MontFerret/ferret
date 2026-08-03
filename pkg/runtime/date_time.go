@@ -125,21 +125,3 @@ func (dt DateTime) Hash() uint64 {
 func (dt DateTime) Copy() Value {
 	return NewDateTime(dt.Time)
 }
-
-func (dt DateTime) Compare(other Value) int {
-	otherDt, ok := other.(DateTime)
-
-	if !ok {
-		return CompareTypes(dt, other)
-	}
-
-	if dt.After(otherDt.Time) {
-		return 1
-	}
-
-	if dt.Before(otherDt.Time) {
-		return -1
-	}
-
-	return 0
-}

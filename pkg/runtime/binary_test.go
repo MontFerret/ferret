@@ -134,7 +134,7 @@ func TestBinary(t *testing.T) {
 				binary1 := runtime.NewBinary(data)
 				binary2 := runtime.NewBinary(data)
 
-				result := binary1.Compare(binary2)
+				result := compareValues(binary1, binary2)
 				So(result, ShouldEqual, 0)
 			})
 
@@ -142,14 +142,14 @@ func TestBinary(t *testing.T) {
 				binary1 := runtime.NewBinary([]byte("hello"))
 				binary2 := runtime.NewBinary([]byte("world"))
 
-				result := binary1.Compare(binary2)
+				result := compareValues(binary1, binary2)
 				So(result, ShouldNotEqual, 0)
 			})
 
 			Convey("Should handle comparison with non-binary types", func() {
 				binary := runtime.NewBinary([]byte("hello"))
 
-				result := binary.Compare(runtime.NewString("hello"))
+				result := compareValues(binary, runtime.NewString("hello"))
 				So(result, ShouldNotEqual, 0) // Different types
 			})
 		})

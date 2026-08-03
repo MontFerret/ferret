@@ -98,6 +98,7 @@ type (
 	Collection interface {
 		Value
 		Containable
+		Equatable
 		Comparable
 		Measurable
 		Cloneable

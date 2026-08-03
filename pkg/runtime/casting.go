@@ -147,6 +147,16 @@ func CastBinary(input Value) (Binary, error) {
 	return nil, TypeErrorOf(input, TypeBinary)
 }
 
+func CastEquatable(input Value) (Equatable, error) {
+	equatable, ok := input.(Equatable)
+
+	if ok {
+		return equatable, nil
+	}
+
+	return nil, TypeErrorOf(input, TypeEquatable)
+}
+
 func CastComparable(input Value) (Comparable, error) {
 	comp, ok := input.(Comparable)
 

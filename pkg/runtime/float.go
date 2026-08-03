@@ -97,35 +97,6 @@ func (f Float) Copy() Value {
 	return f
 }
 
-func (f Float) Compare(other Value) int {
-	switch otherVal := other.(type) {
-	case Float:
-		if f == otherVal {
-			return 0
-		}
-
-		if f < otherVal {
-			return -1
-		}
-
-		return +1
-	case Int:
-		otherFloat := Float(otherVal)
-
-		if f == otherFloat {
-			return 0
-		}
-
-		if f < otherFloat {
-			return -1
-		}
-
-		return +1
-	default:
-		return CompareTypes(f, other)
-	}
-}
-
 func (f Float) Unwrap() any {
 	return float64(f)
 }

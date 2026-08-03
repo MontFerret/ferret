@@ -84,24 +84,6 @@ func (t Boolean) Copy() Value {
 	return t
 }
 
-func (t Boolean) Compare(other Value) int {
-	otherBool, ok := other.(Boolean)
-
-	if !ok {
-		return CompareTypes(t, other)
-	}
-
-	if t == otherBool {
-		return 0
-	}
-
-	if !t && otherBool {
-		return -1
-	}
-
-	return +1
-}
-
 func (t Boolean) Unwrap() any {
 	return bool(t)
 }

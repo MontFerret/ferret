@@ -52,38 +52,38 @@ func TestArray(t *testing.T) {
 		Convey("It should return 1 for all non-array and non-object values", func() {
 			arr := runtime.NewArrayWith(runtime.ZeroInt, runtime.ZeroInt)
 
-			So(arr.Compare(runtime.None), ShouldEqual, 1)
-			So(arr.Compare(runtime.ZeroInt), ShouldEqual, 1)
-			So(arr.Compare(runtime.ZeroFloat), ShouldEqual, 1)
-			So(arr.Compare(runtime.EmptyString), ShouldEqual, 1)
+			So(compareValues(arr, runtime.None), ShouldEqual, 1)
+			So(compareValues(arr, runtime.ZeroInt), ShouldEqual, 1)
+			So(compareValues(arr, runtime.ZeroFloat), ShouldEqual, 1)
+			So(compareValues(arr, runtime.EmptyString), ShouldEqual, 1)
 		})
 
 		Convey("It should return -1 for all object values", func() {
 			arr := runtime.NewArrayWith(runtime.ZeroInt, runtime.ZeroInt)
 			obj := runtime.NewObject()
 
-			So(arr.Compare(obj), ShouldEqual, -1)
+			So(compareValues(arr, obj), ShouldEqual, -1)
 		})
 
 		Convey("It should return 0 when both arrays are empty", func() {
 			arr1 := runtime.NewArray(1)
 			arr2 := runtime.NewArray(1)
 
-			So(arr1.Compare(arr2), ShouldEqual, 0)
+			So(compareValues(arr1, arr2), ShouldEqual, 0)
 		})
 
 		Convey("It should return 1 when other array is empty", func() {
 			arr1 := runtime.NewArrayWith(runtime.ZeroFloat)
 			arr2 := runtime.NewArray(1)
 
-			So(arr1.Compare(arr2), ShouldEqual, 1)
+			So(compareValues(arr1, arr2), ShouldEqual, 1)
 		})
 
 		Convey("It should return 1 when values are bigger", func() {
 			arr1 := runtime.NewArrayWith(runtime.NewInt(1))
 			arr2 := runtime.NewArrayWith(runtime.ZeroInt)
 
-			So(arr1.Compare(arr2), ShouldEqual, 1)
+			So(compareValues(arr1, arr2), ShouldEqual, 1)
 		})
 
 		Convey("It should return 0 when arrays are equal", func() {
@@ -95,7 +95,7 @@ func TestArray(t *testing.T) {
 					runtime.NewInt(0), runtime.NewString("str"),
 				)
 
-				So(arr1.Compare(arr2), ShouldEqual, 0)
+				So(compareValues(arr1, arr2), ShouldEqual, 0)
 			})
 
 			Convey("When object and array are nested at the same time", func() {
@@ -120,7 +120,7 @@ func TestArray(t *testing.T) {
 					),
 				)
 
-				So(arr1.Compare(arr2), ShouldEqual, 0)
+				So(compareValues(arr1, arr2), ShouldEqual, 0)
 			})
 
 			Convey("When only objects are nested", func() {
@@ -139,7 +139,7 @@ func TestArray(t *testing.T) {
 					),
 				)
 
-				So(arr1.Compare(arr2), ShouldEqual, 0)
+				So(compareValues(arr1, arr2), ShouldEqual, 0)
 			})
 
 			Convey("When only arrays are nested", func() {
@@ -154,7 +154,7 @@ func TestArray(t *testing.T) {
 					),
 				)
 
-				So(arr1.Compare(arr2), ShouldEqual, 0)
+				So(compareValues(arr1, arr2), ShouldEqual, 0)
 			})
 
 			Convey("When simple and complex types at the same time", func() {
@@ -181,7 +181,7 @@ func TestArray(t *testing.T) {
 					),
 				)
 
-				So(arr1.Compare(arr2), ShouldEqual, 0)
+				So(compareValues(arr1, arr2), ShouldEqual, 0)
 			})
 
 			Convey("When custom complex type", func() {
@@ -200,7 +200,7 @@ func TestArray(t *testing.T) {
 					),
 				)
 
-				So(arr1.Compare(arr2), ShouldEqual, 0)
+				So(compareValues(arr1, arr2), ShouldEqual, 0)
 			})
 		})
 	})
@@ -527,7 +527,7 @@ func TestArray(t *testing.T) {
 			cloneSize, _ := clone.Length(ctx)
 
 			So(size, ShouldEqual, cloneSize)
-			So(arr.Compare(clone), ShouldEqual, 0)
+			So(compareValues(arr, clone), ShouldEqual, 0)
 		})
 
 		Convey("Cloned array should be independent of the source array", func() {
@@ -549,7 +549,7 @@ func TestArray(t *testing.T) {
 			cloneSize, _ := clone.Length(ctx)
 
 			So(size, ShouldNotEqual, cloneSize)
-			So(arr.Compare(clone), ShouldNotEqual, 0)
+			So(compareValues(arr, clone), ShouldNotEqual, 0)
 		})
 
 		//Convey("Cloned array must contain copies of the nested objects", func() {
@@ -751,7 +751,7 @@ func TestArray(t *testing.T) {
 				copyArr := copied.(*runtime.Array)
 
 				// Should be equal but different instances
-				So(arr.Compare(copyArr), ShouldEqual, 0)
+				So(compareValues(arr, copyArr), ShouldEqual, 0)
 
 				// Modifying copy should not affect original
 				copyArr.Append(ctx, runtime.NewInt(42))
@@ -769,7 +769,7 @@ func TestArray(t *testing.T) {
 				copied := arr.Copy()
 				copyArr := copied.(*runtime.Array)
 
-				So(arr.Compare(copyArr), ShouldEqual, 0)
+				So(compareValues(arr, copyArr), ShouldEqual, 0)
 
 				size, _ := copyArr.Length(ctx)
 				So(size, ShouldEqual, runtime.ZeroInt)

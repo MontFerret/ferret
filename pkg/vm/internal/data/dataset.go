@@ -64,15 +64,21 @@ func (ds *DataSet) String() string {
 }
 
 func (ds *DataSet) Hash() uint64 {
-	return 0
+	return ds.values.Hash()
 }
 
 func (ds *DataSet) Copy() runtime.Value {
 	return ds
 }
 
-func (ds *DataSet) Compare(other runtime.Value) int {
-	return ds.values.Compare(other)
+func (ds *DataSet) Equal(ctx context.Context, other runtime.Value) (bool, error) {
+	equal, err := runtime.EqualValues(ctx, ds.values, other)
+
+	return bool(equal), err
+}
+
+func (ds *DataSet) Compare(ctx context.Context, other runtime.Value) (runtime.Ordering, error) {
+	return runtime.CompareValues(ctx, ds.values, other)
 }
 
 func (ds *DataSet) Clone(ctx context.Context) (runtime.Cloneable, error) {
@@ -152,10 +158,10 @@ func (ds *DataSet) Concat(ctx context.Context, other runtime.List) error {
 	return ds.values.Concat(ctx, other)
 }
 
-func (ds *DataSet) canAdd(_ context.Context, value runtime.Value) (bool, error) {
+func (ds *DataSet) canAdd(ctx context.Context, value runtime.Value) (bool, error) {
 	if ds.uniqueness == nil {
 		return true, nil
 	}
 
-	return ds.uniqueness.Add(value), nil
+	return ds.uniqueness.Add(ctx, value)
 }

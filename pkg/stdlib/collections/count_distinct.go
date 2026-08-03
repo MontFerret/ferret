@@ -18,7 +18,9 @@ func CountDistinct(ctx context.Context, arg runtime.Value) (runtime.Value, error
 	seen := valueset.New(0)
 
 	err = runtime.ForEach(ctx, collection, func(c context.Context, value, idx runtime.Value) (runtime.Boolean, error) {
-		seen.Add(value)
+		if _, err := seen.Add(c, value); err != nil {
+			return false, err
+		}
 
 		return true, nil
 	})

@@ -47,44 +47,126 @@ func (t *Array) String() string {
 	return b.String()
 }
 
-func (t *Array) Compare(other Value) int {
-	otherArr, ok := other.(*Array)
+func (t *Array) Equal(ctx context.Context, other Value) (bool, error) {
+	if otherArray, ok := other.(*Array); ok {
+		return t.equalArray(ctx, otherArray)
+	}
 
+	otherList, ok := other.(List)
 	if !ok {
-		return CompareTypes(t, other)
+		return false, nil
 	}
 
-	size := len(t.data)
-	otherArrSize := len(otherArr.data)
-
-	if size == 0 && otherArrSize == 0 {
-		return 0
+	otherSize, err := otherList.Length(ctx)
+	if err != nil {
+		return false, err
 	}
 
-	if size < otherArrSize {
-		return -1
+	if Int(len(t.data)) != otherSize {
+		return false, nil
 	}
 
-	if size > otherArrSize {
-		return 1
-	}
-
-	var res int
-
-	for i := 0; i < size; i++ {
-		thisVal := t.data[i]
-		otherVal := otherArr.data[i]
-
-		comp := CompareValues(thisVal, otherVal)
-
-		if comp != 0 {
-			return comp
+	for idx, value := range t.data {
+		otherValue, err := otherList.At(ctx, Int(idx))
+		if err != nil {
+			return false, err
 		}
 
-		res = comp
+		equal, err := EqualValues(ctx, value, otherValue)
+		if err != nil {
+			return false, err
+		}
+
+		if !equal {
+			return false, nil
+		}
 	}
 
-	return res
+	return true, nil
+}
+
+func (t *Array) equalArray(ctx context.Context, other *Array) (bool, error) {
+	if len(t.data) != len(other.data) {
+		return false, nil
+	}
+
+	for idx, value := range t.data {
+		equal, err := EqualValues(ctx, value, other.data[idx])
+		if err != nil {
+			return false, err
+		}
+		if !equal {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func (t *Array) Compare(ctx context.Context, other Value) (Ordering, error) {
+	if otherArray, ok := other.(*Array); ok {
+		return t.compareArray(ctx, otherArray)
+	}
+
+	otherList, ok := other.(List)
+	if !ok {
+		return Equal, incompatibleComparisonError(t, other)
+	}
+
+	otherSize, err := otherList.Length(ctx)
+	if err != nil {
+		return Equal, err
+	}
+
+	size := Int(len(t.data))
+
+	if size < otherSize {
+		return Less, nil
+	}
+
+	if size > otherSize {
+		return Greater, nil
+	}
+
+	for idx, value := range t.data {
+		otherValue, err := otherList.At(ctx, Int(idx))
+		if err != nil {
+			return Equal, err
+		}
+
+		comparison, err := CompareValues(ctx, value, otherValue)
+		if err != nil {
+			return Equal, err
+		}
+
+		if comparison != Equal {
+			return comparison, nil
+		}
+	}
+
+	return Equal, nil
+}
+
+func (t *Array) compareArray(ctx context.Context, other *Array) (Ordering, error) {
+	if len(t.data) < len(other.data) {
+		return Less, nil
+	}
+
+	if len(t.data) > len(other.data) {
+		return Greater, nil
+	}
+
+	for idx, value := range t.data {
+		comparison, err := CompareValues(ctx, value, other.data[idx])
+		if err != nil {
+			return Equal, err
+		}
+		if comparison != Equal {
+			return comparison, nil
+		}
+	}
+
+	return Equal, nil
 }
 
 func (t *Array) Hash() uint64 {
@@ -164,11 +246,14 @@ func (t *Array) Contains(ctx context.Context, value Value) (Boolean, error) {
 	return idx >= 0, nil
 }
 
-func (t *Array) IndexOf(_ context.Context, item Value) (Int, error) {
+func (t *Array) IndexOf(ctx context.Context, item Value) (Int, error) {
 	for idx, el := range t.data {
-		comp := CompareValues(item, el)
+		equal, err := EqualValues(ctx, item, el)
+		if err != nil {
+			return -1, err
+		}
 
-		if comp == 0 {
+		if equal {
 			return Int(idx), nil
 		}
 	}
@@ -288,22 +373,12 @@ func (t *Array) SortDesc(ctx context.Context) error {
 	return t.sort(ctx, false)
 }
 
-func (t *Array) sort(_ context.Context, ascending Boolean) error {
-	SortSlice(t.data, ascending)
-
-	return nil
+func (t *Array) sort(ctx context.Context, ascending Boolean) error {
+	return SortSlice(ctx, t.data, ascending)
 }
 
-func (t *Array) SortWith(_ context.Context, comparator Comparator) error {
-	c := make([]Value, len(t.data))
-	copy(c, t.data)
-
-	SortSliceWith(t.data, comparator)
-
-	res := new(Array)
-	res.data = c
-
-	return nil
+func (t *Array) SortWith(ctx context.Context, comparator Comparator) error {
+	return SortSliceWith(ctx, t.data, comparator)
 }
 
 func (t *Array) ForEach(ctx context.Context, predicate IndexReadablePredicate) error {

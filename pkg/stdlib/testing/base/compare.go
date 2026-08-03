@@ -1,6 +1,8 @@
 package base
 
 import (
+	"context"
+
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -32,7 +34,7 @@ func (op CompareOperator) String() string {
 	}
 }
 
-func (op CompareOperator) Compare(args []runtime.Value) (bool, error) {
+func (op CompareOperator) Compare(ctx context.Context, args []runtime.Value) (bool, error) {
 	err := runtime.ValidateArgs(args, 2, 3)
 
 	if err != nil {
@@ -42,24 +44,24 @@ func (op CompareOperator) Compare(args []runtime.Value) (bool, error) {
 	actual := args[0]
 	expected := args[1]
 
-	var result bool
-
 	switch op {
 	case NotEqualOp:
-		result = runtime.CompareValues(actual, expected) != 0
+		equal, err := runtime.EqualValues(ctx, actual, expected)
+		return !bool(equal), err
 	case EqualOp:
-		result = runtime.CompareValues(actual, expected) == 0
+		equal, err := runtime.EqualValues(ctx, actual, expected)
+		return bool(equal), err
 	case LessOp:
-		result = runtime.CompareValues(actual, expected) == -1
+		result, err := runtime.CompareValues(ctx, actual, expected)
+		return result < 0, err
 	case LessOrEqualOp:
-		c := runtime.CompareValues(actual, expected)
-		result = c == -1 || c == 0
+		result, err := runtime.CompareValues(ctx, actual, expected)
+		return result <= 0, err
 	case GreaterOp:
-		result = runtime.CompareValues(actual, expected) == 1
+		result, err := runtime.CompareValues(ctx, actual, expected)
+		return result > 0, err
 	default:
-		c := runtime.CompareValues(actual, expected)
-		result = c == 1 || c == 0
+		result, err := runtime.CompareValues(ctx, actual, expected)
+		return result >= 0, err
 	}
-
-	return result, nil
 }

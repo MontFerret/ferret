@@ -118,8 +118,13 @@ func assertIntArrayValue(t *testing.T, got runtime.Value, want ...runtime.Int) {
 		expected[i] = value
 	}
 
-	if arr.Compare(runtime.NewArrayWith(expected...)) != 0 {
-		t.Fatalf("unexpected array value: got %v, want %v", got, runtime.NewArrayWith(expected...))
+	wantArray := runtime.NewArrayWith(expected...)
+	equal, err := runtime.EqualValues(context.Background(), arr, wantArray)
+	if err != nil {
+		t.Fatalf("compare array value: %v", err)
+	}
+	if !equal {
+		t.Fatalf("unexpected array value: got %v, want %v", got, wantArray)
 	}
 }
 

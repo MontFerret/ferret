@@ -1,6 +1,10 @@
 package data
 
-import "github.com/MontFerret/ferret/v2/pkg/runtime"
+import (
+	"context"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+)
 
 type (
 	groupIndex[T any] struct {
@@ -14,24 +18,63 @@ type (
 	}
 )
 
-func (idx *groupIndex[T]) get(key runtime.Value) (T, bool) {
+func (idx *groupIndex[T]) get(ctx context.Context, key runtime.Value) (T, bool, error) {
 	var zero T
 
+	if err := ctx.Err(); err != nil {
+		return zero, false, err
+	}
+
 	if idx == nil || len(idx.buckets) == 0 {
-		return zero, false
+		return zero, false, nil
 	}
 
 	bucket := idx.buckets[key.Hash()]
 	for _, entry := range bucket {
-		if runtime.CompareValues(entry.key, key) == 0 {
-			return entry.value, true
+		equal, err := runtime.EqualValues(ctx, entry.key, key)
+		if err != nil {
+			return zero, false, err
+		}
+
+		if equal {
+			return entry.value, true, nil
 		}
 	}
 
-	return zero, false
+	return zero, false, nil
 }
 
-func (idx *groupIndex[T]) set(key runtime.Value, value T) {
+// insertUnique adds a key the caller has already proved is not equal to any
+// key in its hash bucket.
+func (idx *groupIndex[T]) insertUnique(ctx context.Context, key runtime.Value, value T) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	if idx.buckets == nil {
+		idx.buckets = make(map[uint64][]groupIndexEntry[T], 8)
+	}
+
+	hash := key.Hash()
+	idx.buckets[hash] = append(idx.buckets[hash], groupIndexEntry[T]{
+		key:   key,
+		value: value,
+	})
+	idx.count++
+
+	return nil
+}
+
+func (idx *groupIndex[T]) loadOrStore(ctx context.Context, key runtime.Value, value T) (T, bool, error) {
+	return idx.loadOrCreate(ctx, key, func() T { return value })
+}
+
+func (idx *groupIndex[T]) loadOrCreate(ctx context.Context, key runtime.Value, create func() T) (T, bool, error) {
+	if err := ctx.Err(); err != nil {
+		var zero T
+		return zero, false, err
+	}
+
 	if idx.buckets == nil {
 		idx.buckets = make(map[uint64][]groupIndexEntry[T], 8)
 	}
@@ -40,18 +83,25 @@ func (idx *groupIndex[T]) set(key runtime.Value, value T) {
 	bucket := idx.buckets[hash]
 
 	for i := range bucket {
-		if runtime.CompareValues(bucket[i].key, key) == 0 {
-			bucket[i].value = value
-			idx.buckets[hash] = bucket
-			return
+		equal, err := runtime.EqualValues(ctx, bucket[i].key, key)
+		if err != nil {
+			var zero T
+			return zero, false, err
+		}
+
+		if equal {
+			return bucket[i].value, true, nil
 		}
 	}
 
+	value := create()
 	idx.buckets[hash] = append(bucket, groupIndexEntry[T]{
 		key:   key,
 		value: value,
 	})
 	idx.count++
+
+	return value, false, nil
 }
 
 func (idx *groupIndex[T]) len() int {

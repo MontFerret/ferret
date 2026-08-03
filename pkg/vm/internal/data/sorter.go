@@ -41,21 +41,30 @@ func (s *Sorter) Iterate(ctx context.Context) (runtime.Iterator, error) {
 }
 
 func (s *Sorter) Set(ctx context.Context, key, value runtime.Value) error {
-	return s.Value.Append(ctx, NewKV(key, value))
+	if err := s.Value.Append(ctx, NewKV(key, value)); err != nil {
+		return err
+	}
+
+	s.sorted = false
+
+	return nil
 }
 
 func (s *Sorter) sort(ctx context.Context) error {
-	return runtime.SortListWith(ctx, s.Value, func(first, second runtime.Value) int {
+	return runtime.SortListWith(ctx, s.Value, func(ctx context.Context, first, second runtime.Value) (runtime.Ordering, error) {
 		firstKV := first.(*KV)
 		secondKV := second.(*KV)
 
-		comp := runtime.CompareValues(firstKV.Key, secondKV.Key)
-
-		if s.direction == runtime.SortDirectionAsc {
-			return comp
+		comp, err := runtime.CompareValues(ctx, firstKV.Key, secondKV.Key)
+		if err != nil {
+			return runtime.Equal, err
 		}
 
-		return -comp
+		if s.direction == runtime.SortDirectionAsc {
+			return comp, nil
+		}
+
+		return -comp, nil
 	})
 }
 

@@ -100,22 +100,28 @@ func (r *Range) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(arr, jettison.NoHTMLEscaping())
 }
 
-func (r *Range) Compare(_ context.Context, other Value) (int, error) {
+func (r *Range) Equal(ctx context.Context, other Value) (bool, error) {
 	otherRange, ok := other.(*Range)
-
 	if !ok {
-		return CompareTypes(r, other), nil
+		return false, nil
 	}
 
-	if r.start == otherRange.start && r.end == otherRange.end {
-		return 0, nil
+	return r.start == otherRange.start && r.end == otherRange.end, nil
+}
+
+// Compare orders ranges lexicographically by their (start, end) endpoints.
+func (r *Range) Compare(ctx context.Context, other Value) (Ordering, error) {
+	otherRange, ok := other.(*Range)
+	if !ok {
+		return Equal, incompatibleComparisonError(r, other)
 	}
 
-	if r.start < otherRange.start || r.end < otherRange.end {
-		return -1, nil
+	startComparison := compareOrdered(r.start, otherRange.start)
+	if startComparison != Equal {
+		return startComparison, nil
 	}
 
-	return 1, nil
+	return compareOrdered(r.end, otherRange.end), nil
 }
 
 func (r *Range) populateArray(start, capacity Int, ascending bool) []Int {

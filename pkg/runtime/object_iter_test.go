@@ -61,7 +61,7 @@ func TestObjectIterator(t *testing.T) {
 		}
 
 		slices.SortStableFunc(actual, func(a, b [2]Value) int {
-			return int(CompareValues(a[1], b[1]))
+			return int(compareValues(a[1], b[1]))
 		})
 
 		So(actual, ShouldResemble, [][2]Value{

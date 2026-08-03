@@ -96,16 +96,6 @@ func (s String) Copy() Value {
 	return s
 }
 
-func (s String) Compare(other Value) int {
-	otherString, ok := other.(String)
-
-	if !ok {
-		return CompareTypes(s, other)
-	}
-
-	return strings.Compare(string(s), string(otherString))
-}
-
 func (s String) Length(_ context.Context) (Int, error) {
 	return Int(len([]rune(s))), nil
 }

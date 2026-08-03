@@ -52,33 +52,6 @@ func (b Binary) Length(_ context.Context) (Int, error) {
 	return Int(len(b)), nil
 }
 
-func (b Binary) Compare(other Value) int {
-	otherBin, ok := other.(Binary)
-
-	if !ok {
-		return CompareTypes(b, other)
-	}
-
-	size := len(b)
-	otherSize := len(otherBin)
-
-	if size > otherSize {
-		return 1
-	} else if size < otherSize {
-		return -1
-	}
-
-	for i := 0; i < size; i++ {
-		if b[i] > otherBin[i] {
-			return 1
-		} else if b[i] < otherBin[i] {
-			return -1
-		}
-	}
-
-	return 0
-}
-
 func (b Binary) Unwrap() any {
 	return []byte(b)
 }

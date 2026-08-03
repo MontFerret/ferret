@@ -66,14 +66,31 @@ func (r *Regexp) Copy() runtime.Value {
 	return copied
 }
 
-func (r *Regexp) Compare(_ context.Context, other runtime.Value) (int, error) {
+func (r *Regexp) Type() runtime.Type {
+	return TypeRegexp
+}
+
+func (r *Regexp) Equal(ctx context.Context, other runtime.Value) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+
+	otherRegexp, ok := other.(*Regexp)
+	if !ok {
+		return false, nil
+	}
+
+	return r.String() == otherRegexp.String(), nil
+}
+
+func (r *Regexp) Compare(ctx context.Context, other runtime.Value) (runtime.Ordering, error) {
 	otherRegexp, ok := other.(*Regexp)
 
 	if !ok {
-		return runtime.CompareTypes(r, other), nil
+		return runtime.Equal, runtime.Error(runtime.ErrInvalidOperation, "regexp values are only order-compatible with regexp values")
 	}
 
-	return strings.Compare(r.String(), otherRegexp.String()), nil
+	return runtime.Ordering(strings.Compare(r.String(), otherRegexp.String())), nil
 }
 
 func (r *Regexp) Match(value runtime.Value) runtime.Boolean {

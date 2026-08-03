@@ -124,7 +124,7 @@ func TestObject(t *testing.T) {
 			obj := NewObject()
 
 			for _, val := range arr {
-				So(obj.Compare(val), ShouldEqual, 1)
+				So(compareValues(obj, val), ShouldEqual, 1)
 			}
 		})
 
@@ -132,14 +132,14 @@ func TestObject(t *testing.T) {
 			arr := NewArrayWith(ZeroInt, ZeroInt)
 			obj := NewObject()
 
-			So(arr.Compare(obj), ShouldEqual, -1)
+			So(compareValues(arr, obj), ShouldEqual, -1)
 		})
 
 		Convey("It should return 0 when both objects are empty", func() {
 			obj1 := NewObject()
 			obj2 := NewObject()
 
-			So(obj1.Compare(obj2), ShouldEqual, 0)
+			So(compareValues(obj1, obj2), ShouldEqual, 0)
 		})
 
 		Convey("It should return 0 when both objects are equal (independent of key order)", func() {
@@ -156,10 +156,10 @@ func TestObject(t *testing.T) {
 				},
 			)
 
-			So(obj1.Compare(obj1), ShouldEqual, 0)
-			So(obj2.Compare(obj2), ShouldEqual, 0)
-			So(obj1.Compare(obj2), ShouldEqual, 0)
-			So(obj2.Compare(obj1), ShouldEqual, 0)
+			So(compareValues(obj1, obj1), ShouldEqual, 0)
+			So(compareValues(obj2, obj2), ShouldEqual, 0)
+			So(compareValues(obj1, obj2), ShouldEqual, 0)
+			So(compareValues(obj2, obj1), ShouldEqual, 0)
 		})
 
 		Convey("It should return 1 when other array is empty", func() {
@@ -170,7 +170,7 @@ func TestObject(t *testing.T) {
 			)
 			obj2 := NewObject()
 
-			So(obj1.Compare(obj2), ShouldEqual, 1)
+			So(compareValues(obj1, obj2), ShouldEqual, 1)
 		})
 
 		Convey("It should return 1 when values are bigger", func() {
@@ -185,7 +185,7 @@ func TestObject(t *testing.T) {
 				},
 			)
 
-			So(obj1.Compare(obj2), ShouldEqual, 1)
+			So(compareValues(obj1, obj2), ShouldEqual, 1)
 		})
 
 		Convey("It should return 1 when values are less", func() {
@@ -200,7 +200,7 @@ func TestObject(t *testing.T) {
 				},
 			)
 
-			So(obj1.Compare(obj2), ShouldEqual, -1)
+			So(compareValues(obj1, obj2), ShouldEqual, -1)
 		})
 
 		Convey("ArangoDB compatibility", func() {
@@ -216,7 +216,7 @@ func TestObject(t *testing.T) {
 					},
 				)
 
-				So(obj1.Compare(obj2), ShouldEqual, 1)
+				So(compareValues(obj1, obj2), ShouldEqual, 1)
 			})
 
 			Convey("It should return 0 when {a:1} and {a:1}", func() {
@@ -231,7 +231,7 @@ func TestObject(t *testing.T) {
 					},
 				)
 
-				So(obj1.Compare(obj2), ShouldEqual, 0)
+				So(compareValues(obj1, obj2), ShouldEqual, 0)
 			})
 
 			Convey("It should return 0 {a:1, c:2} and {c:2, a:1}", func() {
@@ -248,7 +248,7 @@ func TestObject(t *testing.T) {
 					},
 				)
 
-				So(obj1.Compare(obj2), ShouldEqual, 0)
+				So(compareValues(obj1, obj2), ShouldEqual, 0)
 			})
 
 			Convey("It should return -1 when {a:1} and {a:2}", func() {
@@ -263,7 +263,7 @@ func TestObject(t *testing.T) {
 					},
 				)
 
-				So(obj1.Compare(obj2), ShouldEqual, -1)
+				So(compareValues(obj1, obj2), ShouldEqual, -1)
 			})
 
 			Convey("It should return 1 when {a:1, c:2} and {c:2, b:2}", func() {
@@ -280,7 +280,7 @@ func TestObject(t *testing.T) {
 					},
 				)
 
-				So(obj1.Compare(obj2), ShouldEqual, 1)
+				So(compareValues(obj1, obj2), ShouldEqual, 1)
 			})
 
 			Convey("It should return 1 {a:1, c:3} and {c:2, a:1}", func() {
@@ -297,7 +297,7 @@ func TestObject(t *testing.T) {
 					},
 				)
 
-				So(obj1.Compare(obj2), ShouldEqual, 1)
+				So(compareValues(obj1, obj2), ShouldEqual, 1)
 			})
 		})
 	})
@@ -481,7 +481,7 @@ func TestObject(t *testing.T) {
 			cloned, _ := obj.Clone(ctx)
 			clone := cloned.(*Object)
 
-			So(obj.Compare(clone), ShouldEqual, 0)
+			So(compareValues(obj, clone), ShouldEqual, 0)
 		})
 
 		Convey("Cloned object should be independent of the source object", func() {
@@ -498,7 +498,7 @@ func TestObject(t *testing.T) {
 
 			obj.RemoveKey(ctx, NewString("one"))
 
-			So(obj.Compare(clone), ShouldNotEqual, 0)
+			So(compareValues(obj, clone), ShouldNotEqual, 0)
 		})
 
 		Convey("Cloned object must contain copies of the nested objects", func() {
@@ -519,7 +519,7 @@ func TestObject(t *testing.T) {
 			nestedInClone, _ := clone.Get(ctx, NewString("arr"))
 			nestedInCloneArr := nestedInClone.(*Array)
 
-			So(nestedInObjArr.Compare(nestedInCloneArr), ShouldNotEqual, 0)
+			So(compareValues(nestedInObjArr, nestedInCloneArr), ShouldNotEqual, 0)
 		})
 	})
 }

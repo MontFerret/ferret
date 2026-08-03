@@ -24,60 +24,30 @@ func (t *FastObject) String() string {
 	return string(marshaled)
 }
 
-func (t *FastObject) Compare(other runtime.Value) int {
-	otherObject, ok := other.(*FastObject)
+func (t *FastObject) Equal(ctx context.Context, other runtime.Value) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
 
+	otherObject, ok := other.(runtime.ObjectLike)
 	if !ok {
-		if otherLike, ok := other.(runtime.ObjectLike); ok {
-			return runtime.CompareTypes(t, otherLike)
-		}
-
-		return runtime.CompareTypes(t, other)
+		return false, nil
 	}
 
-	size := t.len()
-	otherSize := otherObject.len()
+	return equalObjectLike(ctx, t, otherObject)
+}
 
-	if size == 0 && otherSize == 0 {
-		return 0
+func (t *FastObject) Compare(ctx context.Context, other runtime.Value) (runtime.Ordering, error) {
+	if err := ctx.Err(); err != nil {
+		return runtime.Equal, err
 	}
 
-	if size < otherSize {
-		return -1
+	otherObject, ok := other.(runtime.ObjectLike)
+	if !ok {
+		return runtime.Equal, runtime.Error(runtime.ErrInvalidOperation, "object values are only order-compatible with object values")
 	}
 
-	if size > otherSize {
-		return 1
-	}
-
-	tKeys := t.keys()
-	sort.Strings(tKeys)
-
-	otherKeys := otherObject.keys()
-	sort.Strings(otherKeys)
-
-	var res int
-
-	for i := 0; i < len(tKeys) && res == 0; i++ {
-		tKey, otherKey := tKeys[i], otherKeys[i]
-
-		if tKey == otherKey {
-			tVal := t.getByKey(tKey)
-			otherVal := otherObject.getByKey(otherKey)
-			res = runtime.CompareValues(tVal, otherVal)
-			continue
-		}
-
-		if tKey < otherKey {
-			res = 1
-		} else {
-			res = -1
-		}
-
-		break
-	}
-
-	return res
+	return compareObjectLike(ctx, t, otherObject)
 }
 
 func (t *FastObject) Hash() uint64 {
@@ -111,8 +81,8 @@ func (t *FastObject) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (t *FastObject) Type() string {
-	return "object"
+func (t *FastObject) Type() runtime.Type {
+	return runtime.TypeObject
 }
 
 func (t *FastObject) ObjectLike() {}
@@ -326,16 +296,19 @@ func (t *FastObject) ContainsKey(_ context.Context, key runtime.Value) (runtime.
 	return runtime.Boolean(exists), nil
 }
 
-func (t *FastObject) ContainsValue(_ context.Context, target runtime.Value) (runtime.Boolean, error) {
-	found := false
-
-	t.forEachKV(func(_ string, val runtime.Value) {
-		if runtime.CompareValues(target, val) == 0 {
-			found = true
+func (t *FastObject) ContainsValue(ctx context.Context, target runtime.Value) (runtime.Boolean, error) {
+	for _, key := range t.keys() {
+		equal, err := runtime.EqualValues(ctx, target, t.getByKey(key))
+		if err != nil {
+			return runtime.False, err
 		}
-	})
 
-	return runtime.Boolean(found), nil
+		if equal {
+			return runtime.True, nil
+		}
+	}
+
+	return runtime.False, nil
 }
 
 func (t *FastObject) Contains(ctx context.Context, target runtime.Value) (runtime.Boolean, error) {
@@ -374,35 +347,16 @@ func (t *FastObject) RemoveKey(_ context.Context, key runtime.Value) error {
 	return nil
 }
 
-func (t *FastObject) Remove(_ context.Context, value runtime.Value) error {
-	if t.dict != nil {
-		for key, val := range t.dict {
-			if runtime.CompareValues(value, val) == 0 {
-				t.removeString(key)
-				break
-			}
+func (t *FastObject) Remove(ctx context.Context, value runtime.Value) error {
+	for _, key := range t.keys() {
+		equal, err := runtime.EqualValues(ctx, value, t.getByKey(key))
+		if err != nil {
+			return err
 		}
 
-		return nil
-	}
-
-	if t.shape == nil {
-		return nil
-	}
-
-	for idx, key := range t.shape.names {
-		if idx >= len(t.slots) {
-			break
-		}
-
-		val := t.slots[idx]
-		if val == nil {
-			continue
-		}
-
-		if runtime.CompareValues(value, val) == 0 {
+		if equal {
 			t.removeString(key)
-			break
+			return nil
 		}
 	}
 

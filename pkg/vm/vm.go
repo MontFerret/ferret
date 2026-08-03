@@ -1032,7 +1032,8 @@ loop:
 			res, err := lte(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpIn:
-			reg[dst] = contains(ctx, reg[src2], reg[src1])
+			res, err := contains(ctx, reg[src2], reg[src1])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpLike:
 			res, err := Like(reg[src1], reg[src2])
 

@@ -795,7 +795,8 @@ func TestJSONCodecDecodeHooks(t *testing.T) {
 			"a": runtime.NewInt(1),
 		})
 
-		if runtime.CompareValues(value, expectedValue) != 0 {
+		equal, err := runtime.EqualValues(t.Context(), value, expectedValue)
+		if err != nil || !equal {
 			t.Fatalf("expected decoded value %s, got %s", expectedValue, value)
 		}
 

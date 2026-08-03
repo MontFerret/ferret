@@ -11,8 +11,9 @@
 // conversion at host boundaries. Decode options can require a root runtime
 // type, restrict tagged root fields, reject unknown fields, and distinguish
 // explicit None from omitted configuration. HostValue represents opaque
-// identity, while IterableValue, IteratorValue, SliceView, and MapView opt in
-// to only the runtime capabilities they implement.
+// wrapper identity with identity-only equality, while IterableValue,
+// IteratorValue, SliceView, and MapView opt in to only the additional runtime
+// capabilities they implement.
 //
 // The sdktest subpackage provides an Engine-backed black-box test harness for
 // executing module functions through FQL.

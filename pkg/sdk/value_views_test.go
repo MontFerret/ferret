@@ -7,6 +7,7 @@ import (
 	"math"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/sdk"
@@ -18,7 +19,11 @@ type codecRecord struct {
 
 var (
 	_ runtime.Value          = (*sdk.HostValue[int])(nil)
+	_ runtime.Equatable      = (*sdk.HostValue[int])(nil)
 	_ runtime.Iterable       = (*sdk.IterableValue[*runtime.Array])(nil)
+	_ runtime.Equatable      = (*sdk.IterableValue[*runtime.Array])(nil)
+	_ runtime.Equatable      = (*sdk.IteratorValue[runtime.Iterator])(nil)
+	_ runtime.Equatable      = (*sdk.SliceView[int])(nil)
 	_ runtime.IndexReadable  = (*sdk.SliceView[int])(nil)
 	_ runtime.IndexLookup    = (*sdk.SliceView[int])(nil)
 	_ runtime.IndexWritable  = (*sdk.SliceView[int])(nil)
@@ -27,6 +32,7 @@ var (
 	_ runtime.Iterable       = (*sdk.SliceView[int])(nil)
 	_ runtime.Measurable     = (*sdk.SliceView[int])(nil)
 	_ runtime.Sortable       = (*sdk.SliceView[int])(nil)
+	_ runtime.Equatable      = (*sdk.MapView[string, int])(nil)
 	_ runtime.KeyReadable    = (*sdk.MapView[string, int])(nil)
 	_ runtime.KeyLookup      = (*sdk.MapView[string, int])(nil)
 	_ runtime.KeyWritable    = (*sdk.MapView[string, int])(nil)
@@ -53,10 +59,26 @@ func TestHostValueIdentityAndCapabilities(t *testing.T) {
 	if sdk.NewHostValue(42).Hash() == sdk.NewHostValue(42).Hash() {
 		t.Fatal("distinct host values unexpectedly share identity")
 	}
+	equal, err := runtime.EqualValues(t.Context(), value, copy)
+	if err != nil || !equal {
+		t.Fatalf("copy identity equality: equal=%v err=%v", equal, err)
+	}
+	distinct := sdk.NewHostValueWithType(typeName, 42)
+	equal, err = runtime.EqualValues(t.Context(), value, distinct)
+	if err != nil || equal {
+		t.Fatalf("distinct wrapper identity equality: equal=%v err=%v", equal, err)
+	}
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err = value.Equal(canceled, copy)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("canceled identity equality error = %v", err)
+	}
 
 	assertDoesNotImplement[runtime.Iterable](t, value, "runtime.Iterable")
 	assertDoesNotImplement[runtime.Queryable](t, value, "runtime.Queryable")
 	assertDoesNotImplement[runtime.KeyReadable](t, value, "runtime.KeyReadable")
+	assertDoesNotImplement[runtime.Comparable](t, value, "runtime.Comparable")
 }
 
 func TestCapabilityAccurateIterableValues(t *testing.T) {
@@ -129,6 +151,10 @@ func TestSliceViewBoundsMutationAndCopy(t *testing.T) {
 	if copy.Hash() != view.Hash() || runtime.TypeName(copy.Type()) != runtime.TypeName(view.Type()) {
 		t.Fatal("slice copy lost identity or type")
 	}
+	equal, err := runtime.EqualValues(t.Context(), view, copy)
+	if err != nil || !equal {
+		t.Fatalf("slice copy identity equality: equal=%v err=%v", equal, err)
+	}
 	if err := copy.SetAt(t.Context(), 0, runtime.NewInt(9)); err != nil || view.Target()[0] != 9 {
 		t.Fatalf("copy does not share live backing storage: %v, %v", view.Target(), err)
 	}
@@ -181,6 +207,10 @@ func TestMapViewMutationIterationAndCopy(t *testing.T) {
 	if copy.Hash() != view.Hash() || runtime.TypeName(copy.Type()) != runtime.TypeName(view.Type()) {
 		t.Fatal("map copy lost identity or type")
 	}
+	equal, err := runtime.EqualValues(t.Context(), view, copy)
+	if err != nil || !equal {
+		t.Fatalf("map copy identity equality: equal=%v err=%v", equal, err)
+	}
 	if err := copy.Set(t.Context(), runtime.NewString("three"), runtime.NewInt(3)); err != nil || data["three"] != 3 {
 		t.Fatalf("copy does not share backing map: %v, %v", data, err)
 	}
@@ -231,6 +261,64 @@ func TestCollectionViewsUseCodecs(t *testing.T) {
 	_, err = view.At(t.Context(), 0)
 	if !errors.Is(err, codecErr) {
 		t.Fatalf("expected codec error, got %v", err)
+	}
+}
+
+func TestCollectionViewRemovalUsesStrictEquality(t *testing.T) {
+	sliceData := []string{"1s"}
+	sliceView := sdk.NewSliceView(sliceData)
+	if err := sliceView.Remove(t.Context(), runtime.NewDuration(time.Second)); err != nil {
+		t.Fatalf("remove duration from string slice: %v", err)
+	}
+	if len(sliceView.Target()) != 1 {
+		t.Fatalf("language duration coercion leaked into strict slice removal: %v", sliceView.Target())
+	}
+
+	mapData := map[string]string{"duration": "1s"}
+	mapView := sdk.NewMapView(mapData)
+	if err := mapView.Remove(t.Context(), runtime.NewDuration(time.Second)); err != nil {
+		t.Fatalf("remove duration from string map: %v", err)
+	}
+	if _, exists := mapData["duration"]; !exists {
+		t.Fatalf("language duration coercion leaked into strict map removal: %v", mapData)
+	}
+}
+
+func TestSliceViewComparisonFailureDoesNotMutateBackingSlice(t *testing.T) {
+	data := []int{2, 1}
+	view := sdk.NewSliceViewWithEncoding(data, sdk.NewCodec[int](
+		func(_ context.Context, value int) (runtime.Value, error) {
+			return runtime.NewBox(value), nil
+		},
+		nil,
+	))
+
+	err := view.SortAsc(t.Context())
+	if !errors.Is(err, runtime.ErrInvalidOperation) {
+		t.Fatalf("sort error = %v, want invalid operation", err)
+	}
+	if data[0] != 2 || data[1] != 1 {
+		t.Fatalf("failed sort mutated backing slice: %v", data)
+	}
+}
+
+func TestSliceViewRemovalPropagatesComparisonCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	data := []int{1}
+	view := sdk.NewSliceViewWithEncoding(data, sdk.NewCodec[int](
+		func(_ context.Context, value int) (runtime.Value, error) {
+			cancel()
+			return runtime.NewInt(value), nil
+		},
+		nil,
+	))
+
+	err := view.Remove(ctx, runtime.NewInt(1))
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("remove error = %v, want cancellation", err)
+	}
+	if len(view.Target()) != 1 || view.Target()[0] != 1 {
+		t.Fatalf("failed removal mutated backing slice: %v", view.Target())
 	}
 }
 

@@ -44,7 +44,12 @@ func UnionDistinct(ctx context.Context, args ...runtime.Value) (runtime.Value, e
 		}
 
 		err = currList.ForEach(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-			if !seen.Add(value) {
+			added, err := seen.Add(ctx, value)
+			if err != nil {
+				return false, err
+			}
+
+			if !added {
 				return true, nil
 			}
 

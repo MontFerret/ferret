@@ -35,7 +35,12 @@ func TestDistinctDataSetSeparatesHashCollisions(t *testing.T) {
 			t.Fatalf("value at %d: %v", idx, err)
 		}
 
-		if runtime.CompareValues(got, want) != 0 {
+		equal, err := runtime.EqualValues(ctx, got, want)
+		if err != nil {
+			t.Fatalf("compare value at %d: %v", idx, err)
+		}
+
+		if !equal {
 			t.Fatalf("value at %d: expected %v, got %v", idx, want, got)
 		}
 	}

@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"testing"
@@ -180,7 +181,11 @@ func TestParseDurationLiteral_Valid(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if runtime.CompareValues(actual, tt.expected) != 0 {
+			equal, err := runtime.EqualValues(context.Background(), actual, tt.expected)
+			if err != nil {
+				t.Fatalf("compare duration: %v", err)
+			}
+			if !equal {
 				t.Fatalf("unexpected value: got %v want %v", actual, tt.expected)
 			}
 

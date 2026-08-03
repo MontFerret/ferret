@@ -85,16 +85,16 @@ func TestDurationRuntimeContract(t *testing.T) {
 	if err != nil || length != 1 {
 		t.Fatalf("duration list length = %d, %v", length, err)
 	}
-	if runtime.CompareValues(duration, runtime.NewDuration(time.Second)) <= 0 {
+	if compareValues(duration, runtime.NewDuration(time.Second)) <= 0 {
 		t.Fatalf("duration ordering is incorrect")
 	}
-	if runtime.CompareValues(runtime.NewDuration(time.Nanosecond), runtime.NewInt(1)) == 0 {
+	if compareValues(runtime.NewDuration(time.Nanosecond), runtime.NewInt(1)) == 0 {
 		t.Fatalf("durations must never compare equal to numeric values")
 	}
-	if runtime.CompareValues(runtime.ZeroFloat, runtime.ZeroDuration) >= 0 {
+	if compareValues(runtime.ZeroFloat, runtime.ZeroDuration) >= 0 {
 		t.Fatalf("duration must sort after Float")
 	}
-	if runtime.CompareValues(runtime.ZeroDuration, runtime.EmptyString) >= 0 {
+	if compareValues(runtime.ZeroDuration, runtime.EmptyString) >= 0 {
 		t.Fatalf("duration must sort before String")
 	}
 
@@ -145,7 +145,7 @@ func TestDurationArithmetic(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}
-		if runtime.CompareValues(actual, expected) != 0 || runtime.TypeOf(actual) != runtime.TypeOf(expected) {
+		if compareValues(actual, expected) != 0 || runtime.TypeOf(actual) != runtime.TypeOf(expected) {
 			t.Fatalf("%s = %v (%s), want %v (%s)", name, actual, runtime.TypeOf(actual), expected, runtime.TypeOf(expected))
 		}
 	}

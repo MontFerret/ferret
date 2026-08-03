@@ -93,30 +93,30 @@ func lte(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error
 
 func checkInclusion(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
 	// If "left in right" -> right.contains(left)
-	return contains(ctx, right, left), nil
+	return contains(ctx, right, left)
 }
 
-func contains(ctx context.Context, input runtime.Value, value runtime.Value) runtime.Boolean {
+func contains(ctx context.Context, input runtime.Value, value runtime.Value) (runtime.Boolean, error) {
 	switch val := input.(type) {
 	case runtime.List:
 		idx, err := val.IndexOf(ctx, value)
 
 		if err != nil {
-			return runtime.False
+			return runtime.False, err
 		}
 
-		return idx > -1
+		return idx > -1, nil
 	case runtime.Map:
 		containsValue, err := val.Contains(ctx, value)
 
 		if err != nil {
-			return runtime.False
+			return runtime.False, err
 		}
 
-		return containsValue
+		return containsValue, nil
 	case runtime.String:
-		return runtime.Boolean(strings.Contains(val.String(), value.String()))
+		return runtime.Boolean(strings.Contains(val.String(), value.String())), nil
 	default:
-		return false
+		return false, nil
 	}
 }

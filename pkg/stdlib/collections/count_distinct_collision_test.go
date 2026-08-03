@@ -24,20 +24,13 @@ func (v distinctCollisionValue) Copy() runtime.Value {
 	return v
 }
 
-func (v distinctCollisionValue) Compare(other runtime.Value) int {
+func (v distinctCollisionValue) Equal(_ context.Context, other runtime.Value) (bool, error) {
 	o, ok := other.(distinctCollisionValue)
 	if !ok {
-		return runtime.CompareTypes(v, other)
+		return false, nil
 	}
 
-	switch {
-	case v.label < o.label:
-		return -1
-	case v.label > o.label:
-		return 1
-	default:
-		return 0
-	}
+	return v.label == o.label, nil
 }
 
 func TestCountDistinctSeparatesHashCollisions(t *testing.T) {

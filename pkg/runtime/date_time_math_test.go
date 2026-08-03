@@ -57,13 +57,13 @@ func TestDateTimeCheckedComparisonRemainsStrict(t *testing.T) {
 			}
 
 			actual, err := runtime.CompareChecked(t.Context(), dateTime, value)
-			expected := runtime.CompareValues(dateTime, value)
+			expected := compareValues(dateTime, value)
 			if err != nil || actual != expected {
 				t.Fatalf("CompareChecked(DateTime, %q) = %d, %v; want %d, nil", value, actual, err, expected)
 			}
 
 			actual, err = runtime.CompareChecked(t.Context(), value, dateTime)
-			expected = runtime.CompareValues(value, dateTime)
+			expected = compareValues(value, dateTime)
 			if err != nil || actual != expected {
 				t.Fatalf("CompareChecked(%q, DateTime) = %d, %v; want %d, nil", value, actual, err, expected)
 			}
