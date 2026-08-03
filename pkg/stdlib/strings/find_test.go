@@ -72,6 +72,18 @@ func TestFindFirst(t *testing.T) {
 
 			So(out, ShouldEqual, -1)
 		})
+
+		Convey("FindFirst('foobarbaz', 'ba', 4, 9) should return 6", func() {
+			out, _ := strings.FindFirst(
+				context.Background(),
+				runtime.NewString("foobarbaz"),
+				runtime.NewString("ba"),
+				runtime.NewInt(4),
+				runtime.NewInt(9),
+			)
+
+			So(out, ShouldEqual, 6)
+		})
 	})
 }
 
@@ -124,6 +136,18 @@ func TestFindLast(t *testing.T) {
 			)
 
 			So(out, ShouldEqual, 3)
+		})
+
+		Convey("FindLast('foobarbaz', 'ba', 4, 6) should return -1", func() {
+			out, _ := strings.FindLast(
+				context.Background(),
+				runtime.NewString("foobarbaz"),
+				runtime.NewString("ba"),
+				runtime.NewInt(4),
+				runtime.NewInt(6),
+			)
+
+			So(out, ShouldEqual, -1)
 		})
 	})
 }

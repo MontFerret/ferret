@@ -39,9 +39,10 @@ func findFirst3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Va
 	return findFirst(ctx, arg1, arg2, start, runtime.Int(len(arg1.String())))
 }
 
-func findFirst4(ctx context.Context, arg1, arg2, _, arg4 runtime.Value) (runtime.Value, error) {
+func findFirst4(ctx context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
+	start := runtime.CastOr[runtime.Int](arg3, runtime.ZeroInt)
 	end := runtime.CastOr[runtime.Int](arg4, runtime.Int(len(arg1.String())))
-	return findFirst(ctx, arg1, arg2, runtime.ZeroInt, end)
+	return findFirst(ctx, arg1, arg2, start, end)
 }
 
 func findFirst(_ context.Context, arg1, arg2 runtime.Value, start, end runtime.Int) (runtime.Value, error) {
@@ -90,9 +91,10 @@ func findLast3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Val
 	return findLast(ctx, arg1, arg2, start, runtime.Int(len(arg1.String())))
 }
 
-func findLast4(ctx context.Context, arg1, arg2, _, arg4 runtime.Value) (runtime.Value, error) {
+func findLast4(ctx context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
+	start := runtime.CastOr[runtime.Int](arg3, runtime.ZeroInt)
 	end := runtime.CastOr[runtime.Int](arg4, runtime.Int(len(arg1.String())))
-	return findLast(ctx, arg1, arg2, runtime.ZeroInt, end)
+	return findLast(ctx, arg1, arg2, start, end)
 }
 
 func findLast(_ context.Context, arg1, arg2 runtime.Value, start, end runtime.Int) (runtime.Value, error) {

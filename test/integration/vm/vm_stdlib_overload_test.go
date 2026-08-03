@@ -19,6 +19,9 @@ func TestStdlibArityOverloads(t *testing.T) {
 		Nil(`RETURN T::EQ(1, 1, "unused")`, "positive assertion message overload"),
 		Nil(`RETURN T::NOT::EQ(1, 2)`, "negative assertion overload"),
 		Array(`RETURN REGEX_SPLIT("a,b,c", ",", 2, TRUE)`, []any{"a", "b,c"}, "preserve four-argument regex split behavior"),
+		Array(`RETURN [FIND_FIRST("foobarbaz", "ba", 4, 9), FIND_LAST("foobarbaz", "ba", 4, 6)]`, []any{6, -1}, "four-argument string searches honor start and end"),
+		Array(`RETURN RANGE(-3, -1)`, []any{-3, -2, -1}, "two-argument range supports negative endpoints"),
+		Array(`RETURN RANGE(3, 1, -1)`, []any{3, 2, 1}, "three-argument range supports descending steps"),
 	})
 }
 
@@ -43,6 +46,15 @@ func TestStdlibOverloadArityErrors(t *testing.T) {
 					"wrong number of arguments in call to SLICE",
 					"Note: SLICE expects 2 or 3 arguments, but got 4",
 					"Hint: Pass 2 or 3 arguments to SLICE",
+				},
+			},
+		),
+		spec.NewSpec(`RETURN RANGE(1, 3, 0)`, "range rejects a zero step").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{
+				Contains: []string{
+					"argument 3 is invalid",
+					"Note: argument 3: step must not be zero",
 				},
 			},
 		),
