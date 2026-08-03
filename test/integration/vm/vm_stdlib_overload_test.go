@@ -20,6 +20,8 @@ func TestStdlibArityOverloads(t *testing.T) {
 		Nil(`RETURN T::NOT::EQ(1, 2)`, "negative assertion overload"),
 		Array(`RETURN REGEX_SPLIT("a,b,c", ",", 2, TRUE)`, []any{"a", "b,c"}, "preserve four-argument regex split behavior"),
 		Array(`RETURN [FIND_FIRST("foobarbaz", "ba", 4, 9), FIND_LAST("foobarbaz", "ba", 4, 6)]`, []any{6, -1}, "four-argument string searches honor start and end"),
+		Array(`RETURN [FIND_FIRST("éaéa", "a"), FIND_FIRST("éaéa", "a", 2), FIND_LAST("éaéa", "a"), FIND_LAST("éaéa", "a", 2)]`, []any{1, 3, 3, 3}, "string searches return Unicode character positions"),
+		Array(`RETURN [FIND_FIRST("éaéa", "a", -10, 100), FIND_LAST("éaéa", "a", -10, 100), FIND_FIRST("éaéa", "a", 3, 1), FIND_LAST("éaéa", "a", 3, 1), FIND_FIRST("éa", "", 1, 100), FIND_LAST("éa", "", 1, 100)]`, []any{1, 3, -1, -1, 1, 2}, "string searches clamp character bounds"),
 		Array(`RETURN RANGE(-3, -1)`, []any{-3, -2, -1}, "two-argument range supports negative endpoints"),
 		Array(`RETURN RANGE(3, 1, -1)`, []any{3, 2, 1}, "three-argument range supports descending steps"),
 	})
