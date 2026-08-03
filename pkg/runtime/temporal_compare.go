@@ -9,8 +9,8 @@ import (
 // coercion. DateTime equality remains strict. Duration conversion failures compare
 // unequal, while operational errors propagate.
 func EqualChecked(ctx context.Context, left, right Value) (Boolean, error) {
-	leftKind := nativeComparisonKindOf(left)
-	rightKind := nativeComparisonKindOf(right)
+	leftKind := builtinComparisonKindOf(left)
+	rightKind := builtinComparisonKindOf(right)
 
 	if leftKind == builtinComparisonUnknown || rightKind == builtinComparisonUnknown {
 		if result, handled, err := dispatchCompatibleEquality(ctx, left, right); handled || err != nil {
@@ -67,8 +67,8 @@ func EqualChecked(ctx context.Context, left, right Value) (Boolean, error) {
 // CompareChecked applies contextual Duration coercion for language comparison
 // operators. DateTime comparison and CompareValues structural ordering remain strict.
 func CompareChecked(ctx context.Context, left, right Value) (Ordering, error) {
-	leftKind := nativeComparisonKindOf(left)
-	rightKind := nativeComparisonKindOf(right)
+	leftKind := builtinComparisonKindOf(left)
+	rightKind := builtinComparisonKindOf(right)
 
 	if leftKind == builtinComparisonUnknown || rightKind == builtinComparisonUnknown {
 		if result, handled, err := dispatchCompatibleOrdering(ctx, left, right); handled || err != nil {
@@ -120,7 +120,7 @@ func equalStrictValues(
 	leftKind, rightKind builtinComparison,
 ) (Boolean, error) {
 	if leftKind != builtinComparisonUnknown && rightKind != builtinComparisonUnknown {
-		return equalNativeValues(ctx, left, right, leftKind, rightKind)
+		return equalBuiltinValues(ctx, left, right, leftKind, rightKind)
 	}
 
 	return EqualValues(ctx, left, right)
@@ -132,7 +132,7 @@ func compareStrictValues(
 	leftKind, rightKind builtinComparison,
 ) (Ordering, error) {
 	if leftKind != builtinComparisonUnknown && rightKind != builtinComparisonUnknown {
-		return compareNativeValues(ctx, left, right, leftKind, rightKind)
+		return compareBuiltinValues(ctx, left, right, leftKind, rightKind)
 	}
 
 	return CompareValues(ctx, left, right)

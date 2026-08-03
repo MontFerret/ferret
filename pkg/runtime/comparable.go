@@ -65,11 +65,11 @@ const (
 // EqualValues applies strict runtime equality. It does not apply language-level
 // coercions. Incompatible values compare unequal.
 func EqualValues(ctx context.Context, left, right Value) (Boolean, error) {
-	leftKind := nativeComparisonKindOf(left)
-	rightKind := nativeComparisonKindOf(right)
+	leftKind := builtinComparisonKindOf(left)
+	rightKind := builtinComparisonKindOf(right)
 
 	if leftKind != builtinComparisonUnknown && rightKind != builtinComparisonUnknown {
-		return equalNativeValues(ctx, left, right, leftKind, rightKind)
+		return equalBuiltinValues(ctx, left, right, leftKind, rightKind)
 	}
 
 	return dispatchEquality(ctx, left, right)
@@ -78,17 +78,17 @@ func EqualValues(ctx context.Context, left, right Value) (Boolean, error) {
 // CompareValues applies strict runtime ordering. It does not apply
 // language-level coercions. Incompatible host values return ErrInvalidOperation.
 func CompareValues(ctx context.Context, left, right Value) (Ordering, error) {
-	leftKind := nativeComparisonKindOf(left)
-	rightKind := nativeComparisonKindOf(right)
+	leftKind := builtinComparisonKindOf(left)
+	rightKind := builtinComparisonKindOf(right)
 
 	if leftKind != builtinComparisonUnknown && rightKind != builtinComparisonUnknown {
-		return compareNativeValues(ctx, left, right, leftKind, rightKind)
+		return compareBuiltinValues(ctx, left, right, leftKind, rightKind)
 	}
 
 	return dispatchOrdering(ctx, left, right)
 }
 
-func equalNativeValues(
+func equalBuiltinValues(
 	ctx context.Context,
 	left, right Value,
 	leftKind, rightKind builtinComparison,
@@ -115,13 +115,13 @@ func equalNativeValues(
 	case builtinComparisonBinary:
 		return Boolean(bytes.Equal(left.(Binary), right.(Binary))), nil
 	case builtinComparisonList, builtinComparisonMap:
-		return dispatchNativeCollectionEquality(ctx, left, right)
+		return dispatchBuiltinCollectionEquality(ctx, left, right)
 	default:
 		return False, nil
 	}
 }
 
-func compareNativeValues(
+func compareBuiltinValues(
 	ctx context.Context,
 	left, right Value,
 	leftKind, rightKind builtinComparison,
@@ -156,13 +156,13 @@ func compareNativeValues(
 	case builtinComparisonBinary:
 		return compareBinaryValues(left.(Binary), right.(Binary)), nil
 	case builtinComparisonList, builtinComparisonMap:
-		return dispatchNativeCollectionOrdering(ctx, left, right)
+		return dispatchBuiltinCollectionOrdering(ctx, left, right)
 	default:
 		return Equal, nil
 	}
 }
 
-func dispatchNativeCollectionEquality(ctx context.Context, left, right Value) (Boolean, error) {
+func dispatchBuiltinCollectionEquality(ctx context.Context, left, right Value) (Boolean, error) {
 	receiver := left.(Equatable)
 	other := right
 	if canonicalReceiverIsRight(left, right) {
@@ -174,7 +174,7 @@ func dispatchNativeCollectionEquality(ctx context.Context, left, right Value) (B
 	return Boolean(result), err
 }
 
-func dispatchNativeCollectionOrdering(ctx context.Context, left, right Value) (Ordering, error) {
+func dispatchBuiltinCollectionOrdering(ctx context.Context, left, right Value) (Ordering, error) {
 	receiver := left.(Comparable)
 	other := right
 	reverse := false
@@ -328,7 +328,7 @@ func canonicalReceiverIsRight(left, right Value) bool {
 	return fullyQualifiedGoType(rightType) < fullyQualifiedGoType(leftType)
 }
 
-func nativeComparisonKindOf(value Value) builtinComparison {
+func builtinComparisonKindOf(value Value) builtinComparison {
 	if value == nil || value == None {
 		return builtinComparisonNone
 	}
