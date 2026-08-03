@@ -137,7 +137,8 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 				continue
 			}
 
-			hostFn := program.Functions.Host[int(bindingID)]
+			bindingIDIndex := int(bindingID)
+			hostFn := program.Functions.Host[bindingIDIndex]
 			argCount := callArgCount(src1, src2)
 			if argCount != hostFn.ArgCount {
 				errs.Add(
@@ -156,7 +157,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 				CallSitePC:       pc - 1,
 				DisplayName:      hostFn.Name,
 				Dst:              dst,
-				ID:               int(bindingID),
+				ID:               bindingIDIndex,
 				ArgCount:         hostFn.ArgCount,
 				ArgStart:         int(src1),
 				RecoveryBoundary: bytecode.IsProtectedCall(op),
