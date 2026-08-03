@@ -137,7 +137,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 				continue
 			}
 
-			hostFn := program.Functions.Host[bindingID]
+			hostFn := program.Functions.Host[int(bindingID)]
 			argCount := callArgCount(src1, src2)
 			if argCount != hostFn.ArgCount {
 				errs.Add(
