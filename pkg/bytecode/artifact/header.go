@@ -7,7 +7,7 @@ import (
 
 const (
 	headerSize    = 14
-	schemaVersion = uint8(2)
+	schemaVersion = uint8(1)
 )
 
 var magic = [4]byte{'F', 'B', 'C', '2'}
