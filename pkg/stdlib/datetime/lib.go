@@ -9,6 +9,7 @@ func RegisterLib(ns runtime.Namespace) {
 		Add("NOW", Now)
 
 	ns.Function().A1().
+		Add("DATE", date1).
 		Add("DATE_DAYOFWEEK", DateDayOfWeek).
 		Add("DATE_YEAR", DateYear).
 		Add("DATE_MONTH", DateMonth).
@@ -23,14 +24,16 @@ func RegisterLib(ns runtime.Namespace) {
 		Add("DATE_DAYS_IN_MONTH", DateDaysInMonth)
 
 	ns.Function().A2().
+		Add("DATE", date2).
 		Add("DATE_FORMAT", DateFormat)
 
 	ns.Function().A3().
 		Add("DATE_ADD", DateAdd).
+		Add("DATE_COMPARE", dateCompare3).
+		Add("DATE_DIFF", dateDiff3).
 		Add("DATE_SUBTRACT", DateSubtract)
 
-	ns.Function().Var().
-		Add("DATE", Date).
-		Add("DATE_COMPARE", DateCompare).
-		Add("DATE_DIFF", DateDiff)
+	ns.Function().A4().
+		Add("DATE_COMPARE", dateCompare4).
+		Add("DATE_DIFF", dateDiff4)
 }

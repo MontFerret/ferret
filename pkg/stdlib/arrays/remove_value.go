@@ -17,30 +17,33 @@ func RemoveValue(ctx context.Context, args ...runtime.Value) (runtime.Value, err
 		return runtime.None, err
 	}
 
-	arr, err := runtime.CastArgAt[runtime.List](args, 0)
+	if len(args) == 2 {
+		return removeValue2(ctx, args[0], args[1])
+	}
+
+	return removeValue3(ctx, args[0], args[1], args[2])
+}
+
+func removeValue2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	return removeValue3(ctx, arg1, arg2, runtime.Int(-1))
+}
+
+func removeValue3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	arr, err := runtime.CastArg[runtime.List](arg1, 0)
 
 	if err != nil {
 		return runtime.None, err
 	}
 
-	value := args[1]
-	var limit runtime.Int
-	limit = -1
-
-	if len(args) > 2 {
-		arg3, err := runtime.CastArgAt[runtime.Int](args, 2)
-
-		if err != nil {
-			return runtime.None, err
-		}
-
-		limit = arg3
+	limit, err := runtime.CastArg[runtime.Int](arg3, 2)
+	if err != nil {
+		return runtime.None, err
 	}
 
 	var counter runtime.Int
 
 	return arr.Filter(ctx, func(ctx context.Context, item runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		remove := runtime.CompareValues(item, value) == 0
+		remove := runtime.CompareValues(item, arg2) == 0
 
 		if remove {
 			counter++

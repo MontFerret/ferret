@@ -2,11 +2,10 @@ package math
 
 import (
 	"context"
+	"errors"
 	"math"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-
-	"errors"
 )
 
 // PERCENTILE returns the nth percentile of the values in a given array.
@@ -19,11 +18,32 @@ func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 		return runtime.None, err
 	}
 
-	if err := runtime.ValidateArgValueAt(args, 0, runtime.AssertList); err != nil {
+	if len(args) == 2 {
+		return percentile2(ctx, args[0], args[1])
+	}
+
+	return percentile3(ctx, args[0], args[1], args[2])
+}
+
+func percentile2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	return percentile(ctx, arg1, arg2, "rank")
+}
+
+func percentile3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	method, err := runtime.CastArg[runtime.String](arg3, 2)
+	if err != nil {
 		return runtime.None, err
 	}
 
-	arr := args[0].(runtime.List)
+	return percentile(ctx, arg1, arg2, method.String())
+}
+
+func percentile(ctx context.Context, arg1, arg2 runtime.Value, method string) (runtime.Value, error) {
+	if err := runtime.ValidateArgValue(arg1, 0, runtime.AssertList); err != nil {
+		return runtime.None, err
+	}
+
+	arr := arg1.(runtime.List)
 	size, err := arr.Length(ctx)
 
 	if err != nil {
@@ -34,25 +54,13 @@ func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 		return runtime.NewFloat(math.NaN()), nil
 	}
 
-	num, err := runtime.CastArg[runtime.Int](args[1], 1)
+	num, err := runtime.CastArg[runtime.Int](arg2, 1)
 
 	if err != nil {
 		return runtime.None, err
 	}
 
 	percent := runtime.Float(num)
-
-	method := "rank"
-
-	if len(args) > 2 {
-		if err := runtime.ValidateArgType(args[2], 2, runtime.TypeString); err != nil {
-			return runtime.None, err
-		}
-
-		if args[2].String() == "interpolation" {
-			method = "interpolation"
-		}
-	}
 
 	if percent <= 0 || percent > 100 {
 		return runtime.NaN(), errors.New("input is outside of range")

@@ -2,7 +2,6 @@ package testing
 
 import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
 // @namespace T
@@ -11,50 +10,48 @@ func RegisterLib(ns runtime.Namespace) {
 
 	registerNOT(t)
 
-	t.Function().Var().
-		Add("EMPTY", base.NewPositiveAssertion(Empty)).
-		Add("EQ", base.NewPositiveAssertion(Equal)).
-		Add("FAIL", base.NewPositiveAssertion(Fail)).
-		Add("FALSE", base.NewPositiveAssertion(False)).
-		Add("GT", base.NewPositiveAssertion(Gt)).
-		Add("GTE", base.NewPositiveAssertion(Gte)).
-		Add("INCLUDE", base.NewPositiveAssertion(Include)).
-		Add("LEN", base.NewPositiveAssertion(Len)).
-		Add("MATCH", base.NewPositiveAssertion(Match)).
-		Add("LT", base.NewPositiveAssertion(Lt)).
-		Add("LTE", base.NewPositiveAssertion(Lte)).
-		Add("NONE", base.NewPositiveAssertion(None)).
-		Add("TRUE", base.NewPositiveAssertion(True)).
-		Add("STRING", base.NewPositiveAssertion(String)).
-		Add("INT", base.NewPositiveAssertion(Int)).
-		Add("FLOAT", base.NewPositiveAssertion(Float)).
-		Add("DATETIME", base.NewPositiveAssertion(DateTime)).
-		Add("ARRAY", base.NewPositiveAssertion(Array)).
-		Add("OBJECT", base.NewPositiveAssertion(Object)).
-		Add("BINARY", base.NewPositiveAssertion(Binary))
+	registerPositive(t, "EMPTY", Empty)
+	registerPositive(t, "EQ", Equal)
+	registerPositive(t, "FAIL", Fail)
+	registerPositive(t, "FALSE", False)
+	registerPositive(t, "GT", Gt)
+	registerPositive(t, "GTE", Gte)
+	registerPositive(t, "INCLUDE", Include)
+	registerPositive(t, "LEN", Len)
+	registerPositive(t, "MATCH", Match)
+	registerPositive(t, "LT", Lt)
+	registerPositive(t, "LTE", Lte)
+	registerPositive(t, "NONE", None)
+	registerPositive(t, "TRUE", True)
+	registerPositive(t, "STRING", String)
+	registerPositive(t, "INT", Int)
+	registerPositive(t, "FLOAT", Float)
+	registerPositive(t, "DATETIME", DateTime)
+	registerPositive(t, "ARRAY", Array)
+	registerPositive(t, "OBJECT", Object)
+	registerPositive(t, "BINARY", Binary)
 }
 
 func registerNOT(ns runtime.Namespace) {
 	t := ns.Namespace("NOT")
 
-	t.Function().Var().
-		Add("EMPTY", base.NewNegativeAssertion(Empty)).
-		Add("EQ", base.NewNegativeAssertion(Equal)).
-		Add("FALSE", base.NewNegativeAssertion(False)).
-		Add("GT", base.NewNegativeAssertion(Gt)).
-		Add("GTE", base.NewNegativeAssertion(Gte)).
-		Add("INCLUDE", base.NewNegativeAssertion(Include)).
-		Add("LEN", base.NewNegativeAssertion(Len)).
-		Add("MATCH", base.NewNegativeAssertion(Match)).
-		Add("LT", base.NewNegativeAssertion(Lt)).
-		Add("LTE", base.NewNegativeAssertion(Lte)).
-		Add("NONE", base.NewNegativeAssertion(None)).
-		Add("TRUE", base.NewNegativeAssertion(True)).
-		Add("STRING", base.NewNegativeAssertion(String)).
-		Add("INT", base.NewNegativeAssertion(Int)).
-		Add("FLOAT", base.NewNegativeAssertion(Float)).
-		Add("DATETIME", base.NewNegativeAssertion(DateTime)).
-		Add("ARRAY", base.NewNegativeAssertion(Array)).
-		Add("OBJECT", base.NewNegativeAssertion(Object)).
-		Add("BINARY", base.NewNegativeAssertion(Binary))
+	registerNegative(t, "EMPTY", Empty)
+	registerNegative(t, "EQ", Equal)
+	registerNegative(t, "FALSE", False)
+	registerNegative(t, "GT", Gt)
+	registerNegative(t, "GTE", Gte)
+	registerNegative(t, "INCLUDE", Include)
+	registerNegative(t, "LEN", Len)
+	registerNegative(t, "MATCH", Match)
+	registerNegative(t, "LT", Lt)
+	registerNegative(t, "LTE", Lte)
+	registerNegative(t, "NONE", None)
+	registerNegative(t, "TRUE", True)
+	registerNegative(t, "STRING", String)
+	registerNegative(t, "INT", Int)
+	registerNegative(t, "FLOAT", Float)
+	registerNegative(t, "DATETIME", DateTime)
+	registerNegative(t, "ARRAY", Array)
+	registerNegative(t, "OBJECT", Object)
+	registerNegative(t, "BINARY", Binary)
 }

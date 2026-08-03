@@ -22,28 +22,38 @@ func Write(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	fpath, err := runtime.CastArg[runtime.String](args[0], 0)
+	if len(args) == 2 {
+		return write2(ctx, args[0], args[1])
+	}
+
+	return write3(ctx, args[0], args[1], args[2])
+}
+
+func write2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	return writeFile(ctx, arg1, arg2, defaultParams)
+}
+
+func write3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	params, err := parseParams(arg3, 2)
+	if err != nil {
+		return runtime.None, runtime.Error(
+			err,
+			"parse `params` argument",
+		)
+	}
+
+	return writeFile(ctx, arg1, arg2, params)
+}
+
+func writeFile(ctx context.Context, arg1, arg2 runtime.Value, params parsedParams) (runtime.Value, error) {
+	fpath, err := runtime.CastArg[runtime.String](arg1, 0)
 	if err != nil {
 		return runtime.None, err
 	}
 
-	data, err := runtime.CastArg[runtime.Binary](args[1], 1)
+	data, err := runtime.CastArg[runtime.Binary](arg2, 1)
 	if err != nil {
 		return runtime.None, err
-	}
-	params := defaultParams
-
-	if len(args) == 3 {
-		p, err := parseParams(args[2], 2)
-
-		if err != nil {
-			return runtime.None, runtime.Error(
-				err,
-				"parse `params` argument",
-			)
-		}
-
-		params = p
 	}
 
 	filesystem, err := fs.FileSystemFrom(ctx)

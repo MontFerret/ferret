@@ -73,6 +73,19 @@ func TestRegexSplit(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, `["This is a line"," This is yet another line",""," This again is a line"," Mac line "]`)
 	})
+
+	Convey("Should preserve limit and ignored fourth argument behavior", t, func() {
+		out, err := strings.RegexSplit(
+			context.Background(),
+			runtime.NewString("a,b,c"),
+			runtime.NewString(","),
+			runtime.NewInt(2),
+			runtime.True,
+		)
+
+		So(err, ShouldBeNil)
+		So(out.String(), ShouldEqual, `["a","b,c"]`)
+	})
 }
 
 func TestRegexTest(t *testing.T) {

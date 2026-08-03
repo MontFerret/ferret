@@ -163,12 +163,22 @@ func TestDateTimeOperators(t *testing.T) {
 			Contains: []string{"out of range", "supported DateTime range", ":1:8"},
 		}),
 		spec.NewSpec(`RETURN TO_DATETIME()`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Message:  "invalid number of arguments",
-			Contains: []string{"expected number of arguments 1-2", ":1:8"},
+			Message: "invalid number of arguments",
+			Contains: []string{
+				"wrong number of arguments in call to TO_DATETIME",
+				"Note: TO_DATETIME expects 1 or 2 arguments, but got 0",
+				"Hint: Pass 1 or 2 arguments to TO_DATETIME",
+				":1:8",
+			},
 		}),
 		spec.NewSpec(`RETURN TO_DATETIME(1, "s", true)`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Message:  "invalid number of arguments",
-			Contains: []string{"expected number of arguments 1-2", ":1:8"},
+			Message: "invalid number of arguments",
+			Contains: []string{
+				"wrong number of arguments in call to TO_DATETIME",
+				"Note: TO_DATETIME expects 1 or 2 arguments, but got 3",
+				"Hint: Pass 1 or 2 arguments to TO_DATETIME",
+				":1:8",
+			},
 		}),
 		Error(`RETURN TO_DATETIME("invalid")`),
 		spec.NewSpec(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") - "tomorrow"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{

@@ -13,36 +13,41 @@ import (
 // @param {Int} [start] - Limit the search to a subset of the text, beginning at start.
 // @param {Int} [end] - Limit the search to a subset of the text, ending at end
 // @return {Int} - The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned.
-func FindFirst(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func FindFirst(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 4)
 
 	if err != nil {
 		return runtime.NewInt(-1), err
 	}
 
-	argsCount := len(args)
+	switch len(args) {
+	case 2:
+		return findFirst2(ctx, args[0], args[1])
+	case 3:
+		return findFirst3(ctx, args[0], args[1], args[2])
+	default:
+		return findFirst4(ctx, args[0], args[1], args[2], args[3])
+	}
+}
 
-	text := args[0].String()
+func findFirst2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	return findFirst(ctx, arg1, arg2, runtime.ZeroInt, runtime.Int(len(arg1.String())))
+}
+
+func findFirst3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	start := runtime.CastOr[runtime.Int](arg3, runtime.ZeroInt)
+	return findFirst(ctx, arg1, arg2, start, runtime.Int(len(arg1.String())))
+}
+
+func findFirst4(ctx context.Context, arg1, arg2, _, arg4 runtime.Value) (runtime.Value, error) {
+	end := runtime.CastOr[runtime.Int](arg4, runtime.Int(len(arg1.String())))
+	return findFirst(ctx, arg1, arg2, runtime.ZeroInt, end)
+}
+
+func findFirst(_ context.Context, arg1, arg2 runtime.Value, start, end runtime.Int) (runtime.Value, error) {
+	text := arg1.String()
 	runes := []rune(text)
-	search := args[1].String()
-	start := runtime.NewInt(0)
-	end := runtime.NewInt(len(text))
-
-	if argsCount == 3 {
-		arg3, ok := args[2].(runtime.Int)
-
-		if ok {
-			start = arg3
-		}
-	}
-
-	if argsCount == 4 {
-		arg4, ok := args[3].(runtime.Int)
-
-		if ok {
-			end = arg4
-		}
-	}
+	search := arg2.String()
 
 	found := strings.Index(string(runes[start:end]), search)
 
@@ -59,36 +64,41 @@ func FindFirst(_ context.Context, args ...runtime.Value) (runtime.Value, error) 
 // @param {Int} [start] - Limit the search to a subset of the text, beginning at start.
 // @param {Int} [end] - Limit the search to a subset of the text, ending at end
 // @return {Int} - The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned.
-func FindLast(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func FindLast(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 4)
 
 	if err != nil {
 		return runtime.NewInt(-1), err
 	}
 
-	argsCount := len(args)
+	switch len(args) {
+	case 2:
+		return findLast2(ctx, args[0], args[1])
+	case 3:
+		return findLast3(ctx, args[0], args[1], args[2])
+	default:
+		return findLast4(ctx, args[0], args[1], args[2], args[3])
+	}
+}
 
-	text := args[0].String()
+func findLast2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	return findLast(ctx, arg1, arg2, runtime.ZeroInt, runtime.Int(len(arg1.String())))
+}
+
+func findLast3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	start := runtime.CastOr[runtime.Int](arg3, runtime.ZeroInt)
+	return findLast(ctx, arg1, arg2, start, runtime.Int(len(arg1.String())))
+}
+
+func findLast4(ctx context.Context, arg1, arg2, _, arg4 runtime.Value) (runtime.Value, error) {
+	end := runtime.CastOr[runtime.Int](arg4, runtime.Int(len(arg1.String())))
+	return findLast(ctx, arg1, arg2, runtime.ZeroInt, end)
+}
+
+func findLast(_ context.Context, arg1, arg2 runtime.Value, start, end runtime.Int) (runtime.Value, error) {
+	text := arg1.String()
 	runes := []rune(text)
-	search := args[1].String()
-	start := runtime.NewInt(0)
-	end := runtime.NewInt(len(text))
-
-	if argsCount == 3 {
-		arg3, ok := args[2].(runtime.Int)
-
-		if ok {
-			start = arg3
-		}
-	}
-
-	if argsCount == 4 {
-		arg4, ok := args[3].(runtime.Int)
-
-		if ok {
-			end = arg4
-		}
-	}
+	search := arg2.String()
 
 	found := strings.LastIndex(string(runes[start:end]), search)
 

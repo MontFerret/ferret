@@ -13,29 +13,40 @@ import (
 // @param {String} replace - The string representing a replace value
 // @param {Int} limit - The cap the number of replacements to this value.
 // @return {String} - Returns a string with replace substring.
-func Substitute(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Substitute(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 4)
 
 	if err != nil {
 		return runtime.EmptyString, err
 	}
 
-	text := args[0].String()
-	search := args[1].String()
-	replace := ""
-	limit := -1
-
-	if len(args) > 2 {
-		replace = args[2].String()
+	switch len(args) {
+	case 2:
+		return substitute2(ctx, args[0], args[1])
+	case 3:
+		return substitute3(ctx, args[0], args[1], args[2])
+	default:
+		return substitute4(ctx, args[0], args[1], args[2], args[3])
 	}
+}
 
-	if len(args) > 3 {
-		arg3, ok := args[3].(runtime.Int)
+func substitute2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	return substitute(ctx, arg1, arg2, runtime.EmptyString, -1)
+}
 
-		if ok {
-			limit = int(arg3)
-		}
-	}
+func substitute3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	return substitute(ctx, arg1, arg2, arg3, -1)
+}
+
+func substitute4(ctx context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
+	limit := runtime.CastOr[runtime.Int](arg4, runtime.Int(-1))
+	return substitute(ctx, arg1, arg2, arg3, int(limit))
+}
+
+func substitute(_ context.Context, arg1, arg2, arg3 runtime.Value, limit int) (runtime.Value, error) {
+	text := arg1.String()
+	search := arg2.String()
+	replace := arg3.String()
 
 	out := strings.Replace(text, search, replace, limit)
 

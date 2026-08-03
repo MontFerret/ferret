@@ -12,8 +12,34 @@ import (
 // @param {Int} [length] - Read indicating how many elements to extract.
 // @return {Any[]} - Sliced array.
 func Slice(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	list, start, err := runtime.CastVarArgs2[runtime.List, runtime.Int](args)
+	_, _, err := runtime.CastVarArgs2[runtime.List, runtime.Int](args)
 
+	if err != nil {
+		return runtime.None, err
+	}
+
+	if len(args) == 2 {
+		return slice2(ctx, args[0], args[1])
+	}
+
+	return slice3(ctx, args[0], args[1], args[2])
+}
+
+func slice2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	return sliceList(ctx, arg1, arg2, runtime.None, false)
+}
+
+func slice3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	return sliceList(ctx, arg1, arg2, arg3, true)
+}
+
+func sliceList(ctx context.Context, arg1, arg2, arg3 runtime.Value, hasLength bool) (runtime.Value, error) {
+	list, err := runtime.CastArg[runtime.List](arg1, 0)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	start, err := runtime.CastArg[runtime.Int](arg2, 1)
 	if err != nil {
 		return runtime.None, err
 	}
@@ -36,19 +62,19 @@ func Slice(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 
 	var end runtime.Int
 
-	if len(args) > 2 {
-		arg3, err := runtime.CastArgAt[runtime.Int](args, 2)
+	if hasLength {
+		length, err := runtime.CastArg[runtime.Int](arg3, 2)
 
 		if err != nil {
 			return runtime.None, err
 		}
 
 		// Handle negative length - return empty array
-		if arg3 < 0 {
+		if length < 0 {
 			return runtime.NewArray(0), nil
 		}
 
-		end = start + arg3
+		end = start + length
 	} else {
 		end = size
 	}

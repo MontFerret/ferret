@@ -10,6 +10,7 @@ import (
 func RegisterLib(ns runtime.Namespace) {
 	ns.Function().A1().
 		Add("FIRST", First).
+		Add("FLATTEN", flatten1).
 		Add("LAST", Last).
 		Add("POP", Pop).
 		Add("SHIFT", Shift).
@@ -18,23 +19,31 @@ func RegisterLib(ns runtime.Namespace) {
 		Add("UNIQUE", Unique)
 
 	ns.Function().A2().
+		Add("APPEND", append2).
+		Add("FLATTEN", flatten2).
 		Add("NTH", Nth).
+		Add("POSITION", position2).
+		Add("PUSH", push2).
+		Add("REMOVE_VALUE", removeValue2).
 		Add("REMOVE_NTH", RemoveNth).
-		Add("REMOVE_VALUES", RemoveValues)
+		Add("REMOVE_VALUES", RemoveValues).
+		Add("SLICE", slice2).
+		Add("UNSHIFT", unshift2)
+
+	ns.Function().A3().
+		Add("APPEND", append3).
+		Add("POSITION", position3).
+		Add("PUSH", push3).
+		Add("REMOVE_VALUE", removeValue3).
+		Add("SLICE", slice3).
+		Add("UNSHIFT", unshift3)
 
 	ns.Function().Var().
-		Add("APPEND", Append).
-		Add("FLATTEN", Flatten).
 		Add("INTERSECTION", Intersection).
 		Add("MINUS", Minus).
 		Add("OUTERSECTION", Outersection).
-		Add("POSITION", Position).
-		Add("PUSH", Push).
-		Add("REMOVE_VALUE", RemoveValue).
-		Add("SLICE", Slice).
 		Add("UNION", Union).
-		Add("UNION_DISTINCT", UnionDistinct).
-		Add("UNSHIFT", Unshift)
+		Add("UNION_DISTINCT", UnionDistinct)
 }
 
 func ToUniqueList(ctx context.Context, list runtime.List) (runtime.List, error) {

@@ -16,26 +16,33 @@ func Range(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	if err := runtime.ValidateArgValueAt(args, 0, runtime.AssertNumber); err != nil {
+	if len(args) == 2 {
+		return range2(ctx, args[0], args[1])
+	}
+
+	return range3(ctx, args[0], args[1], args[2])
+}
+
+func range2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	return range3(ctx, arg1, arg2, runtime.Float(1))
+}
+
+func range3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgValue(arg1, 0, runtime.AssertNumber); err != nil {
 		return runtime.None, err
 	}
 
-	if err := runtime.ValidateArgValueAt(args, 1, runtime.AssertNumber); err != nil {
+	if err := runtime.ValidateArgValue(arg2, 1, runtime.AssertNumber); err != nil {
 		return runtime.None, err
 	}
 
-	var step float64 = 1
-
-	if len(args) > 2 {
-		if err := runtime.ValidateArgValueAt(args, 2, runtime.AssertNumber); err != nil {
-			return runtime.None, err
-		}
-
-		step = toFloat(args[2])
+	if err := runtime.ValidateArgValue(arg3, 2, runtime.AssertNumber); err != nil {
+		return runtime.None, err
 	}
 
-	start := toFloat(args[0])
-	end := toFloat(args[1])
+	step := toFloat(arg3)
+	start := toFloat(arg1)
+	end := toFloat(arg2)
 
 	arr := runtime.NewArray(int(end))
 
