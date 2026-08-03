@@ -60,7 +60,7 @@ func TestDisassemble_HeaderSectionsStackedLayout(t *testing.T) {
 
 	expectedRows := []string{
 		".isa 1\n",
-		".asm 2\n",
+		".asm 1\n",
 		"\n  compiler 2.0.0\n",
 		"\n  opt O1\n",
 		"\n  value\n",

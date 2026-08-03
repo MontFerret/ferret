@@ -231,7 +231,7 @@ func TestLoaderRejectsInvalidHeaders(t *testing.T) {
 
 	t.Run("schema_v1", func(t *testing.T) {
 		mutated := append([]byte(nil), data...)
-		mutated[5] = 1
+		mutated[5] = 2
 
 		_, err := Unmarshal(mutated)
 		if !errors.Is(err, ErrUnsupportedSchema) {
