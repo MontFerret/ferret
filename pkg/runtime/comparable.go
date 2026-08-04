@@ -21,8 +21,7 @@ type (
 	//
 	// Equal must be reflexive, symmetric, and transitive within the value's
 	// comparison domain. It returns false without an error for an incompatible
-	// value. Operational failures, including context cancellation, are returned
-	// as errors. If the value also implements Comparable, Equal must return true
+	// value. If the value also implements Comparable, Equal must return true
 	// exactly when Compare returns Equal. Semantically equal values must have equal
 	// hashes; hashes are only candidate selectors and never prove equality.
 	Equatable interface {
