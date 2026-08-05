@@ -72,10 +72,52 @@ func TestEvaluateDebugComparisonUsesFallibleHostCapabilities(t *testing.T) {
 		t.Fatalf("expected false, got %v", value)
 	}
 
+	value, err = evaluateExpression(context.Background(), "left != right", scope)
+	if err != nil {
+		t.Fatalf("inequality comparison: %v", err)
+	}
+	if value != runtime.True {
+		t.Fatalf("expected true, got %v", value)
+	}
+
+	value, err = evaluateExpression(context.Background(), "left == left", scope)
+	if err != nil {
+		t.Fatalf("reflexive equality comparison: %v", err)
+	}
+	if value != runtime.True {
+		t.Fatalf("expected true, got %v", value)
+	}
+
 	sentinel := errors.New("comparison failed")
 	scope.locals["left"] = debugComparisonValue{label: "a", err: sentinel}
+	_, err = evaluateExpression(context.Background(), "left == right", scope)
+	if !errors.Is(err, sentinel) {
+		t.Fatalf("expected host equality error, got %v", err)
+	}
+
 	_, err = evaluateExpression(context.Background(), "left < right", scope)
 	if !errors.Is(err, sentinel) {
 		t.Fatalf("expected host comparison error, got %v", err)
+	}
+}
+
+func TestEvaluateDebugEqualityAcceptsIncompatibleTypes(t *testing.T) {
+	scope := evalScope{
+		locals: map[string]runtime.Value{
+			"duration": runtime.NewDuration(1),
+			"text":     runtime.NewString("1ns"),
+		},
+		params: runtime.NewParams(),
+		values: vm.NewDebugValueAccess(),
+	}
+
+	value, err := evaluateExpression(context.Background(), "duration == text", scope)
+	if err != nil || value != runtime.False {
+		t.Fatalf("incompatible equality = %v, %v; want false, nil", value, err)
+	}
+
+	value, err = evaluateExpression(context.Background(), "duration != text", scope)
+	if err != nil || value != runtime.True {
+		t.Fatalf("incompatible inequality = %v, %v; want true, nil", value, err)
 	}
 }

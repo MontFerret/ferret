@@ -14,21 +14,34 @@ func TestBinaryOperatorContract(t *testing.T) {
 	tests := []struct {
 		symbol     string
 		op         operator.Binary
+		value      uint8
 		relational bool
+		equality   bool
 	}{
-		{op: operator.Add, symbol: "+"},
-		{op: operator.Subtract, symbol: "-"},
-		{op: operator.Multiply, symbol: "*"},
-		{op: operator.Divide, symbol: "/"},
-		{op: operator.Modulus, symbol: "%"},
-		{op: operator.Less, symbol: "<", relational: true},
-		{op: operator.LessOrEqual, symbol: "<=", relational: true},
-		{op: operator.Greater, symbol: ">", relational: true},
-		{op: operator.GreaterOrEqual, symbol: ">=", relational: true},
+		{op: operator.Add, symbol: "+", value: 1},
+		{op: operator.Subtract, symbol: "-", value: 2},
+		{op: operator.Multiply, symbol: "*", value: 3},
+		{op: operator.Divide, symbol: "/", value: 4},
+		{op: operator.Modulus, symbol: "%", value: 5},
+		{op: operator.Less, symbol: "<", value: 6, relational: true},
+		{op: operator.LessOrEqual, symbol: "<=", value: 7, relational: true},
+		{op: operator.Greater, symbol: ">", value: 8, relational: true},
+		{op: operator.GreaterOrEqual, symbol: ">=", value: 9, relational: true},
+		{op: operator.Equal, symbol: "==", value: 10, equality: true},
+		{op: operator.NotEqual, symbol: "!=", value: 11, equality: true},
 	}
 
+	seen := map[operator.Binary]string{operator.Unknown: "?"}
 	for _, test := range tests {
 		t.Run(test.symbol, func(t *testing.T) {
+			if actual := uint8(test.op); actual != test.value {
+				t.Fatalf("numeric value = %d, want %d", actual, test.value)
+			}
+			if previous, exists := seen[test.op]; exists {
+				t.Fatalf("numeric value %d is shared by %q and %q", test.op, previous, test.symbol)
+			}
+			seen[test.op] = test.symbol
+
 			if actual := test.op.String(); actual != test.symbol {
 				t.Fatalf("String() = %q, want %q", actual, test.symbol)
 			}
@@ -41,12 +54,16 @@ func TestBinaryOperatorContract(t *testing.T) {
 			if actual := test.op.IsRelational(); actual != test.relational {
 				t.Fatalf("IsRelational() = %v, want %v", actual, test.relational)
 			}
+
+			if actual := test.op.IsEquality(); actual != test.equality {
+				t.Fatalf("IsEquality() = %v, want %v", actual, test.equality)
+			}
 		})
 	}
 }
 
 func TestParseBinaryRejectsNonDiagnosticOperators(t *testing.T) {
-	for _, input := range []string{"", " ", "==", "!=", "IN", "+=", "?"} {
+	for _, input := range []string{"", " ", "=", "IN", "+=", "?"} {
 		t.Run(input, func(t *testing.T) {
 			actual, ok := operator.ParseBinary(input)
 			if ok || actual != operator.Unknown {
@@ -60,6 +77,9 @@ func TestParseBinaryRejectsNonDiagnosticOperators(t *testing.T) {
 	}
 	if operator.Unknown.IsRelational() {
 		t.Fatal("Unknown must not be relational")
+	}
+	if operator.Unknown.IsEquality() {
+		t.Fatal("Unknown must not be equality")
 	}
 }
 

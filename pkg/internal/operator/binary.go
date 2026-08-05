@@ -14,6 +14,8 @@ const (
 	LessOrEqual
 	Greater
 	GreaterOrEqual
+	Equal
+	NotEqual
 )
 
 // ParseBinary converts an exact FQL operator symbol into its diagnostic form.
@@ -37,6 +39,10 @@ func ParseBinary(input string) (Binary, bool) {
 		return Greater, true
 	case ">=":
 		return GreaterOrEqual, true
+	case "==":
+		return Equal, true
+	case "!=":
+		return NotEqual, true
 	default:
 		return Unknown, false
 	}
@@ -63,6 +69,10 @@ func (op Binary) String() string {
 		return ">"
 	case GreaterOrEqual:
 		return ">="
+	case Equal:
+		return "=="
+	case NotEqual:
+		return "!="
 	default:
 		return "?"
 	}
@@ -76,6 +86,11 @@ func (op Binary) IsRelational() bool {
 	default:
 		return false
 	}
+}
+
+// IsEquality reports whether the operator performs equality comparison.
+func (op Binary) IsEquality() bool {
+	return op == Equal || op == NotEqual
 }
 
 // CannotApply formats the canonical diagnostic for incompatible operands.

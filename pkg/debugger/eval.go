@@ -390,16 +390,20 @@ func evalDebugArithmetic(ctx context.Context, op string, left, right runtime.Val
 }
 
 func evalDebugComparison(ctx context.Context, operatorText string, left, right runtime.Value) (runtime.Value, error) {
-	switch operatorText {
-	case "==":
+	op, ok := operator.ParseBinary(operatorText)
+	if !ok {
+		return nil, unsupportedDebugExpression(nil)
+	}
+
+	switch op {
+	case operator.Equal:
 		return runtime.EqualValues(ctx, left, right)
-	case "!=":
+	case operator.NotEqual:
 		equal, err := runtime.EqualValues(ctx, left, right)
 		return !equal, err
 	}
 
-	op, ok := operator.ParseBinary(operatorText)
-	if !ok || !op.IsRelational() {
+	if !op.IsRelational() {
 		return nil, unsupportedDebugExpression(nil)
 	}
 
