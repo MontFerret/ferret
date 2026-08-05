@@ -16,6 +16,22 @@ func BenchmarkArithmeticAddString(b *testing.B) {
 	benchmarkBinaryArithmetic(b, NewString("value="), NewInt(42), Add)
 }
 
+func BenchmarkArithmeticSubtractMixed(b *testing.B) {
+	benchmarkBinaryArithmetic(b, NewInt(40), NewFloat(2.5), Subtract)
+}
+
+func BenchmarkArithmeticMultiplyFloat(b *testing.B) {
+	benchmarkBinaryArithmetic(b, NewFloat(4.25), NewFloat(2.5), Multiply)
+}
+
+func BenchmarkArithmeticDivideMixed(b *testing.B) {
+	benchmarkBinaryArithmetic(b, NewInt(40), NewFloat(2.5), Divide)
+}
+
+func BenchmarkArithmeticModuloFloat(b *testing.B) {
+	benchmarkBinaryArithmetic(b, NewFloat(40.5), NewInt(3), Modulo)
+}
+
 func BenchmarkArithmeticAddDuration(b *testing.B) {
 	benchmarkBinaryArithmetic(b, NewDuration(time.Second), NewDuration(2*time.Millisecond), Add)
 }

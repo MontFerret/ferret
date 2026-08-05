@@ -11,7 +11,6 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -578,73 +577,6 @@ func ToIntSafe(ctx context.Context, input Value) Int {
 	return ZeroInt
 }
 
-func ToNumberOnly(ctx context.Context, input Value) Value {
-	switch value := input.(type) {
-	case Int, Float:
-		return value
-	case String:
-		if strings.Contains(value.String(), ".") {
-			if val, err := ToFloat(ctx, value); err == nil {
-				return val
-			}
-
-			return ZeroFloat
-		}
-
-		if val, err := ToInt(ctx, value); err == nil {
-			return val
-		}
-
-		return ZeroFloat
-	case Iterable:
-		iterator, err := value.Iterate(ctx)
-
-		if err != nil {
-			return ZeroInt
-		}
-
-		i := ZeroInt
-		f := ZeroFloat
-
-		for {
-			val, _, err := iterator.Next(ctx)
-
-			if errors.Is(err, io.EOF) {
-				break
-			}
-
-			if errors.Is(err, ErrTimeout) {
-				break
-			}
-
-			if err != nil {
-				continue
-			}
-
-			out := ToNumberOnly(ctx, val)
-
-			switch item := out.(type) {
-			case Int:
-				i += item
-			case Float:
-				f += item
-			}
-		}
-
-		if f == 0 {
-			return i
-		}
-
-		return Float(i) + f
-	default:
-		if val, err := ToFloat(ctx, value); err == nil {
-			return val
-		}
-
-		return ZeroInt
-	}
-}
-
 // ToIntDefault attempts to convert an arbitrary Value into an Int.
 // If the conversion fails or if the resulting Int is not greater than zero, it returns the provided defaultValue.
 // This function is useful for safely converting values to Int while providing a fallback option in case of errors or non-positive results.
@@ -660,19 +592,6 @@ func ToIntDefault(ctx context.Context, input Value, defaultValue Int) (Int, erro
 	}
 
 	return defaultValue, nil
-}
-
-// ToNumberOrString attempts to convert an arbitrary Value into either a Number (Int or Float) or a String.
-// If the input is already an Int, Float, or String, it returns it directly.
-// For other types, it converts the input to its string representation and returns it as a String.
-// This allows for flexible conversion of various Value types into a format that can be easily used as either a number or a string.
-func ToNumberOrString(input Value) Value {
-	switch value := input.(type) {
-	case Int, Float, String:
-		return value
-	default:
-		return ToString(value)
-	}
 }
 
 // ToBinary attempts to convert an arbitrary Value into a Binary type.

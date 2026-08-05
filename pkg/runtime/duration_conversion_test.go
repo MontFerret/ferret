@@ -82,17 +82,15 @@ func TestDurationArithmeticRequiresExplicitTypes(t *testing.T) {
 
 	ctx := t.Context()
 	fiveSeconds := runtime.NewDuration(5 * time.Second)
+	concatenated, err := runtime.Add(ctx, fiveSeconds, runtime.NewString("500ms"))
+	if err != nil || concatenated != runtime.NewString("5s500ms") {
+		t.Fatalf("Duration + String = %v, %v", concatenated, err)
+	}
 
 	for _, test := range []struct {
 		operation func() (runtime.Value, error)
 		name      string
 	}{
-		{
-			name: "string addition",
-			operation: func() (runtime.Value, error) {
-				return runtime.Add(ctx, fiveSeconds, runtime.NewString("500ms"))
-			},
-		},
 		{
 			name: "numeric addition",
 			operation: func() (runtime.Value, error) {

@@ -30,13 +30,13 @@ RETURN "a" + 1 + "b" + 2 + x + "c" + 3`, func(program *bytecode.Program) error {
 	}, compiler.O0)
 }
 
-func TestCompilerTemporalAdditionsRetainArithmeticOpcodes(t *testing.T) {
+func TestCompilerStringAnchorsAcceptTemporalAndDynamicValues(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
 	}{
-		{"DateTime plus duration string", `RETURN NOW() + "5m"`},
-		{"dynamic value plus duration string", `RETURN @value + "500ms"`},
+		{"DateTime plus String", `RETURN NOW() + "5m"`},
+		{"dynamic value plus String", `RETURN @value + "500ms"`},
 	}
 
 	for _, test := range tests {
@@ -48,9 +48,9 @@ func TestCompilerTemporalAdditionsRetainArithmeticOpcodes(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				arithmeticAdds := countOpcodes(program.Bytecode, bytecode.OpAdd) + countOpcodes(program.Bytecode, bytecode.OpAddConst)
-				if arithmeticAdds != 1 {
-					t.Fatalf("O%d: unexpected arithmetic add count: got %d, want 1", level, arithmeticAdds)
+				stringAdds := countOpcodes(program.Bytecode, bytecode.OpAdd) + countOpcodes(program.Bytecode, bytecode.OpAddConst)
+				if stringAdds != 1 {
+					t.Fatalf("O%d: unexpected String-add count: got %d, want 1", level, stringAdds)
 				}
 			}
 		})

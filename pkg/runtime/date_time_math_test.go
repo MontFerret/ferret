@@ -101,12 +101,13 @@ func TestDateTimeArithmetic(t *testing.T) {
 	if err != nil || difference != runtime.NewDuration(30*time.Second) {
 		t.Fatalf("DateTime - DateTime = %v, %v", difference, err)
 	}
+	concatenated, err := runtime.Add(ctx, runtime.NewString("at "), base)
+	if err != nil || concatenated != runtime.NewString("at "+base.String()) {
+		t.Fatalf("String + DateTime = %v, %v", concatenated, err)
+	}
 
 	for name, operation := range map[string]func() (runtime.Value, error){
 		"DateTime + DateTime": func() (runtime.Value, error) { return runtime.Add(ctx, base, base) },
-		"String + DateTime": func() (runtime.Value, error) {
-			return runtime.Add(ctx, runtime.NewString("30s"), base)
-		},
 		"DateTime + Number": func() (runtime.Value, error) {
 			return runtime.Add(ctx, base, runtime.NewInt(1500))
 		},

@@ -1,7 +1,6 @@
 package diagnostics
 
 import (
-	"context"
 	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -30,27 +29,12 @@ var (
 )
 
 func CheckDivisionByZero(
-	ctx context.Context,
 	program *bytecode.Program,
 	pc int,
 	left runtime.Value,
 	right runtime.Value,
 ) error {
-	if _, ok := left.(runtime.Duration); ok {
-		return nil
-	}
-
-	if _, ok := right.(runtime.Duration); ok {
-		return nil
-	}
-
-	l := runtime.ToNumberOnly(ctx, left)
-	if _, ok := l.(runtime.Int); !ok {
-		return nil
-	}
-
-	r := runtime.ToNumberOnly(ctx, right)
-	if rv, ok := r.(runtime.Int); ok && rv == 0 {
+	if validDivisionPair(left, right) && isZeroDivisor(right) {
 		return NewRuntimeError(
 			program,
 			pc,
@@ -67,26 +51,12 @@ func CheckDivisionByZero(
 }
 
 func CheckModuloByZero(
-	ctx context.Context,
 	program *bytecode.Program,
 	pc int,
+	left runtime.Value,
 	right runtime.Value,
 ) error {
-	if _, ok := right.(runtime.Duration); ok {
-		return nil
-	}
-
-	rv, err := runtime.ToInt(ctx, right)
-	if err != nil {
-		// Keep modulo diagnostics type-safe for invalid string inputs like "x".
-		if _, ok := right.(runtime.String); ok {
-			return runtime.TypeErrorOf(right, runtime.TypeInt)
-		}
-
-		return err
-	}
-
-	if rv == 0 {
+	if isNativeNumber(left) && isNativeNumber(right) && isZeroDivisor(right) {
 		return NewRuntimeError(
 			program,
 			pc,
@@ -100,4 +70,43 @@ func CheckModuloByZero(
 	}
 
 	return nil
+}
+
+func validDivisionPair(left, right runtime.Value) bool {
+	if isNativeNumber(left) && isNativeNumber(right) {
+		return true
+	}
+
+	if _, ok := left.(runtime.Duration); !ok {
+		return false
+	}
+
+	switch right.(type) {
+	case runtime.Int, runtime.Float, runtime.Duration:
+		return true
+	default:
+		return false
+	}
+}
+
+func isNativeNumber(value runtime.Value) bool {
+	switch value.(type) {
+	case runtime.Int, runtime.Float:
+		return true
+	default:
+		return false
+	}
+}
+
+func isZeroDivisor(value runtime.Value) bool {
+	switch value := value.(type) {
+	case runtime.Int:
+		return value == 0
+	case runtime.Float:
+		return value == 0
+	case runtime.Duration:
+		return value == 0
+	default:
+		return false
+	}
 }

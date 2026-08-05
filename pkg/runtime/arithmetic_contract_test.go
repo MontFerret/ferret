@@ -1,7 +1,9 @@
 package runtime_test
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -9,56 +11,43 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func TestArithmeticPreservesNonTemporalCoercion(t *testing.T) {
+func TestNativeNumericArithmetic(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
 	tests := []struct {
-		operation func() (runtime.Value, error)
+		operation func(context.Context, runtime.Value, runtime.Value) (runtime.Value, error)
+		left      runtime.Value
+		right     runtime.Value
 		expected  runtime.Value
 		name      string
 	}{
-		{name: "integer addition", operation: func() (runtime.Value, error) {
-			return runtime.Add(ctx, runtime.NewInt(2), runtime.NewInt(3))
-		}, expected: runtime.NewInt(5)},
-		{name: "mixed numeric addition", operation: func() (runtime.Value, error) {
-			return runtime.Add(ctx, runtime.NewInt(2), runtime.NewFloat(0.5))
-		}, expected: runtime.NewFloat(2.5)},
-		{name: "string concatenation", operation: func() (runtime.Value, error) {
-			return runtime.Add(ctx, runtime.NewString("value="), runtime.NewInt(2))
-		}, expected: runtime.NewString("value=2")},
-		{name: "boolean concatenation", operation: func() (runtime.Value, error) {
-			return runtime.Add(ctx, runtime.True, runtime.NewInt(2))
-		}, expected: runtime.NewString("true2")},
-		{name: "numeric string subtraction", operation: func() (runtime.Value, error) {
-			return runtime.Subtract(ctx, runtime.NewString("5"), runtime.NewInt(2))
-		}, expected: runtime.NewInt(3)},
-		{name: "collection subtraction", operation: func() (runtime.Value, error) {
-			return runtime.Subtract(ctx, runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)), runtime.NewInt(1))
-		}, expected: runtime.NewInt(2)},
-		{name: "numeric string multiplication", operation: func() (runtime.Value, error) {
-			return runtime.Multiply(ctx, runtime.NewString("2.5"), runtime.NewInt(2))
-		}, expected: runtime.NewFloat(5)},
-		{name: "fractional division", operation: func() (runtime.Value, error) {
-			return runtime.Divide(ctx, runtime.NewString("5"), runtime.NewString("2"))
-		}, expected: runtime.NewFloat(2.5)},
-		{name: "integer division", operation: func() (runtime.Value, error) {
-			return runtime.Divide(ctx, runtime.NewInt(6), runtime.NewInt(2))
-		}, expected: runtime.NewInt(3)},
-		{name: "numeric string modulo", operation: func() (runtime.Value, error) {
-			return runtime.Modulo(ctx, runtime.NewString("5"), runtime.NewString("2"))
-		}, expected: runtime.NewInt(1)},
-		{name: "boolean increment", operation: func() (runtime.Value, error) {
-			return runtime.Increment(ctx, runtime.True)
-		}, expected: runtime.NewFloat(2)},
-		{name: "numeric string decrement", operation: func() (runtime.Value, error) {
-			return runtime.Decrement(ctx, runtime.NewString("2"))
-		}, expected: runtime.NewInt(1)},
+		{name: "Int plus Int", operation: runtime.Add, left: runtime.NewInt(2), right: runtime.NewInt(3), expected: runtime.NewInt(5)},
+		{name: "Int plus Float", operation: runtime.Add, left: runtime.NewInt(2), right: runtime.NewFloat(0.5), expected: runtime.NewFloat(2.5)},
+		{name: "Float plus Int", operation: runtime.Add, left: runtime.NewFloat(2.5), right: runtime.NewInt(3), expected: runtime.NewFloat(5.5)},
+		{name: "Float plus Float", operation: runtime.Add, left: runtime.NewFloat(2.5), right: runtime.NewFloat(0.5), expected: runtime.NewFloat(3)},
+		{name: "Int minus Int", operation: runtime.Subtract, left: runtime.NewInt(5), right: runtime.NewInt(2), expected: runtime.NewInt(3)},
+		{name: "Int minus Float", operation: runtime.Subtract, left: runtime.NewInt(5), right: runtime.NewFloat(2.5), expected: runtime.NewFloat(2.5)},
+		{name: "Float minus Int", operation: runtime.Subtract, left: runtime.NewFloat(5.5), right: runtime.NewInt(2), expected: runtime.NewFloat(3.5)},
+		{name: "Float minus Float", operation: runtime.Subtract, left: runtime.NewFloat(5.5), right: runtime.NewFloat(2.5), expected: runtime.NewFloat(3)},
+		{name: "Int times Int", operation: runtime.Multiply, left: runtime.NewInt(3), right: runtime.NewInt(2), expected: runtime.NewInt(6)},
+		{name: "Int times Float", operation: runtime.Multiply, left: runtime.NewInt(3), right: runtime.NewFloat(2.5), expected: runtime.NewFloat(7.5)},
+		{name: "Float times Int", operation: runtime.Multiply, left: runtime.NewFloat(2.5), right: runtime.NewInt(3), expected: runtime.NewFloat(7.5)},
+		{name: "Float times Float", operation: runtime.Multiply, left: runtime.NewFloat(2.5), right: runtime.NewFloat(2), expected: runtime.NewFloat(5)},
+		{name: "exact Int division", operation: runtime.Divide, left: runtime.NewInt(6), right: runtime.NewInt(2), expected: runtime.NewInt(3)},
+		{name: "fractional Int division", operation: runtime.Divide, left: runtime.NewInt(5), right: runtime.NewInt(2), expected: runtime.NewFloat(2.5)},
+		{name: "Int divided by Float", operation: runtime.Divide, left: runtime.NewInt(5), right: runtime.NewFloat(2), expected: runtime.NewFloat(2.5)},
+		{name: "Float divided by Int", operation: runtime.Divide, left: runtime.NewFloat(5), right: runtime.NewInt(2), expected: runtime.NewFloat(2.5)},
+		{name: "Float divided by Float", operation: runtime.Divide, left: runtime.NewFloat(5), right: runtime.NewFloat(2), expected: runtime.NewFloat(2.5)},
+		{name: "Int modulo Int", operation: runtime.Modulo, left: runtime.NewInt(5), right: runtime.NewInt(2), expected: runtime.NewInt(1)},
+		{name: "Int modulo Float", operation: runtime.Modulo, left: runtime.NewInt(5), right: runtime.NewFloat(2), expected: runtime.NewFloat(1)},
+		{name: "Float modulo Int", operation: runtime.Modulo, left: runtime.NewFloat(5.5), right: runtime.NewInt(2), expected: runtime.NewFloat(1.5)},
+		{name: "Float modulo Float", operation: runtime.Modulo, left: runtime.NewFloat(5.5), right: runtime.NewFloat(2), expected: runtime.NewFloat(1.5)},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual, err := test.operation()
+			actual, err := test.operation(ctx, test.left, test.right)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -68,6 +57,139 @@ func TestArithmeticPreservesNonTemporalCoercion(t *testing.T) {
 				t.Fatalf("result = %v (%s), want %v (%s): %v", actual, runtime.TypeOf(actual), test.expected, runtime.TypeOf(test.expected), err)
 			}
 		})
+	}
+}
+
+func TestStringTriggeredConcatenation(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	prefix := runtime.NewString("value=")
+	values := []runtime.Value{
+		runtime.NewInt(2),
+		runtime.NewFloat(2.5),
+		runtime.True,
+		runtime.None,
+		runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)),
+		runtime.NewObject(),
+		runtime.NewBinary([]byte("bytes")),
+		runtime.NewDateTime(time.Unix(0, 0).UTC()),
+		runtime.NewDuration(time.Second),
+	}
+
+	for _, value := range values {
+		value := value
+		t.Run(runtime.TypeName(runtime.TypeOf(value)), func(t *testing.T) {
+			actual, err := runtime.Add(ctx, prefix, value)
+			expected := runtime.NewString(prefix.String() + value.String())
+			if err != nil || actual != expected {
+				t.Fatalf("String + %s = %v, %v; want %q", runtime.TypeOf(value), actual, err, expected)
+			}
+
+			actual, err = runtime.Add(ctx, value, prefix)
+			expected = runtime.NewString(value.String() + prefix.String())
+			if err != nil || actual != expected {
+				t.Fatalf("%s + String = %v, %v; want %q", runtime.TypeOf(value), actual, err, expected)
+			}
+		})
+	}
+}
+
+func TestArithmeticRejectsImplicitNumericCoercion(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	tests := []struct {
+		operation func() (runtime.Value, error)
+		expected  string
+		name      string
+	}{
+		{name: "Boolean plus Int", operation: func() (runtime.Value, error) { return runtime.Add(ctx, runtime.True, runtime.NewInt(1)) }, expected: "invalid operation: operator '+' cannot be applied to Boolean and Int"},
+		{name: "Int plus Boolean", operation: func() (runtime.Value, error) { return runtime.Add(ctx, runtime.NewInt(1), runtime.True) }, expected: "invalid operation: operator '+' cannot be applied to Int and Boolean"},
+		{name: "numeric String subtraction", operation: func() (runtime.Value, error) {
+			return runtime.Subtract(ctx, runtime.NewString("10"), runtime.NewInt(2))
+		}, expected: "invalid operation: operator '-' cannot be applied to String and Int"},
+		{name: "numeric String multiplication", operation: func() (runtime.Value, error) {
+			return runtime.Multiply(ctx, runtime.NewString("10"), runtime.NewInt(2))
+		}, expected: "invalid operation: operator '*' cannot be applied to String and Int"},
+		{name: "numeric String division", operation: func() (runtime.Value, error) { return runtime.Divide(ctx, runtime.NewString("10"), runtime.NewInt(2)) }, expected: "invalid operation: operator '/' cannot be applied to String and Int"},
+		{name: "numeric String modulo", operation: func() (runtime.Value, error) { return runtime.Modulo(ctx, runtime.NewString("10"), runtime.NewInt(2)) }, expected: "invalid operation: operator '%' cannot be applied to String and Int"},
+		{name: "Array subtraction", operation: func() (runtime.Value, error) {
+			return runtime.Subtract(ctx, runtime.NewArrayWith(runtime.NewInt(1)), runtime.NewInt(1))
+		}, expected: "invalid operation: operator '-' cannot be applied to Array and Int"},
+		{name: "None multiplication", operation: func() (runtime.Value, error) { return runtime.Multiply(ctx, runtime.None, runtime.NewInt(2)) }, expected: "invalid operation: operator '*' cannot be applied to None and Int"},
+		{name: "Binary division", operation: func() (runtime.Value, error) {
+			return runtime.Divide(ctx, runtime.NewBinary([]byte("10")), runtime.NewInt(2))
+		}, expected: "invalid operation: operator '/' cannot be applied to Binary and Int"},
+		{name: "Boolean modulo", operation: func() (runtime.Value, error) { return runtime.Modulo(ctx, runtime.True, runtime.NewInt(2)) }, expected: "invalid operation: operator '%' cannot be applied to Boolean and Int"},
+		{name: "String increment", operation: func() (runtime.Value, error) { return runtime.Increment(ctx, runtime.NewString("10")) }, expected: "invalid operation: operator '++' cannot be applied to String"},
+		{name: "Boolean decrement", operation: func() (runtime.Value, error) { return runtime.Decrement(ctx, runtime.True) }, expected: "invalid operation: operator '--' cannot be applied to Boolean"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := test.operation()
+			if !errors.Is(err, runtime.ErrInvalidOperation) || err.Error() != test.expected {
+				t.Fatalf("error = %v, want %q", err, test.expected)
+			}
+		})
+	}
+}
+
+func TestUnsupportedNativeValuesNeverParticipateInNumericArithmetic(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	values := []struct {
+		value    runtime.Value
+		typeName string
+		name     string
+	}{
+		{name: "numeric String", value: runtime.NewString("10"), typeName: "String"},
+		{name: "Boolean", value: runtime.True, typeName: "Boolean"},
+		{name: "Array", value: runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)), typeName: "Array"},
+		{name: "None", value: runtime.None, typeName: "None"},
+		{name: "Binary", value: runtime.NewBinary([]byte("10")), typeName: "Binary"},
+	}
+	binaryOperations := []struct {
+		operation func(context.Context, runtime.Value, runtime.Value) (runtime.Value, error)
+		symbol    string
+		name      string
+	}{
+		{name: "subtract", symbol: "-", operation: runtime.Subtract},
+		{name: "multiply", symbol: "*", operation: runtime.Multiply},
+		{name: "divide", symbol: "/", operation: runtime.Divide},
+		{name: "modulo", symbol: "%", operation: runtime.Modulo},
+	}
+	unaryOperations := []struct {
+		operation func(context.Context, runtime.Value) (runtime.Value, error)
+		symbol    string
+		name      string
+	}{
+		{name: "increment", symbol: "++", operation: runtime.Increment},
+		{name: "decrement", symbol: "--", operation: runtime.Decrement},
+	}
+
+	for _, value := range values {
+		for _, operation := range binaryOperations {
+			t.Run(value.name+"/"+operation.name, func(t *testing.T) {
+				_, err := operation.operation(ctx, value.value, runtime.NewInt(2))
+				expected := fmt.Sprintf("invalid operation: operator '%s' cannot be applied to %s and Int", operation.symbol, value.typeName)
+				if !errors.Is(err, runtime.ErrInvalidOperation) || err.Error() != expected {
+					t.Fatalf("error = %v, want %q", err, expected)
+				}
+			})
+		}
+
+		for _, operation := range unaryOperations {
+			t.Run(value.name+"/"+operation.name, func(t *testing.T) {
+				_, err := operation.operation(ctx, value.value)
+				expected := fmt.Sprintf("invalid operation: operator '%s' cannot be applied to %s", operation.symbol, value.typeName)
+				if !errors.Is(err, runtime.ErrInvalidOperation) || err.Error() != expected {
+					t.Fatalf("error = %v, want %q", err, expected)
+				}
+			})
+		}
 	}
 }
 
@@ -101,6 +223,9 @@ func TestArithmeticReportsNumericFailures(t *testing.T) {
 		{name: "modulo by zero", operation: func() (runtime.Value, error) {
 			return runtime.Modulo(ctx, runtime.NewInt(1), runtime.ZeroInt)
 		}, target: runtime.ErrInvalidOperation},
+		{name: "float modulo by zero", operation: func() (runtime.Value, error) {
+			return runtime.Modulo(ctx, runtime.NewFloat(1), runtime.ZeroFloat)
+		}, target: runtime.ErrInvalidOperation},
 		{name: "non-finite float operand", operation: func() (runtime.Value, error) {
 			return runtime.Subtract(ctx, runtime.NewFloat(math.Inf(1)), runtime.NewFloat(1))
 		}, target: runtime.ErrRange},
@@ -109,10 +234,10 @@ func TestArithmeticReportsNumericFailures(t *testing.T) {
 		}, target: runtime.ErrRange},
 		{name: "invalid numeric string", operation: func() (runtime.Value, error) {
 			return runtime.Subtract(ctx, runtime.NewString("not-a-number"), runtime.NewInt(1))
-		}},
+		}, target: runtime.ErrInvalidOperation},
 		{name: "invalid collection item", operation: func() (runtime.Value, error) {
 			return runtime.Multiply(ctx, runtime.NewArrayWith(runtime.NewInt(1), runtime.NewString("not-a-number")), runtime.NewInt(2))
-		}},
+		}, target: runtime.ErrInvalidOperation},
 		{name: "increment overflow", operation: func() (runtime.Value, error) {
 			return runtime.Increment(ctx, runtime.NewInt64(math.MaxInt64))
 		}, target: runtime.ErrRange},
@@ -239,8 +364,6 @@ func TestTemporalArithmeticRejectsIncompatiblePairs(t *testing.T) {
 		name      string
 	}{
 		{name: "DateTime plus DateTime", operation: func() (runtime.Value, error) { return runtime.Add(ctx, dateTime, dateTime) }, expected: "invalid operation: operator '+' cannot be applied to DateTime and DateTime"},
-		{name: "DateTime plus String", operation: func() (runtime.Value, error) { return runtime.Add(ctx, dateTime, stringValue) }, expected: "invalid operation: operator '+' cannot be applied to DateTime and String"},
-		{name: "String plus DateTime", operation: func() (runtime.Value, error) { return runtime.Add(ctx, stringValue, dateTime) }, expected: "invalid operation: operator '+' cannot be applied to String and DateTime"},
 		{name: "Duration plus Int", operation: func() (runtime.Value, error) { return runtime.Add(ctx, duration, integer) }, expected: "invalid operation: operator '+' cannot be applied to Duration and Int"},
 		{name: "Int plus Duration", operation: func() (runtime.Value, error) { return runtime.Add(ctx, integer, duration) }, expected: "invalid operation: operator '+' cannot be applied to Int and Duration"},
 		{name: "Duration minus DateTime", operation: func() (runtime.Value, error) { return runtime.Subtract(ctx, duration, dateTime) }, expected: "invalid operation: operator '-' cannot be applied to Duration and DateTime"},

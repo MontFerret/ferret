@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -353,10 +352,6 @@ func evalDebugLogical(op string, left, right runtime.Value) (runtime.Value, erro
 }
 
 func evalDebugArithmetic(ctx context.Context, op string, left, right runtime.Value) (runtime.Value, error) {
-	if !debugScalar(left) || !debugScalar(right) {
-		return nil, runtime.Error(runtime.ErrInvalidArgument, "debugger arithmetic supports scalar values only")
-	}
-
 	binary, ok := operator.ParseBinary(op)
 	if !ok {
 		return nil, unsupportedDebugExpression(nil)
@@ -433,19 +428,6 @@ func compareDebugValues(
 			runtime.TypeName(runtime.TypeOf(right)),
 		),
 	)
-}
-
-func debugScalar(value runtime.Value) bool {
-	if value == nil || reflect.TypeOf(value) == reflect.TypeOf(runtime.None) {
-		return true
-	}
-
-	switch value.(type) {
-	case runtime.Boolean, runtime.Int, runtime.Float, runtime.Duration, runtime.String:
-		return true
-	default:
-		return false
-	}
 }
 
 func unquoteDebugString(text string) (string, error) {

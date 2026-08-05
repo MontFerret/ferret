@@ -1,265 +1,98 @@
 package runtime
 
-import (
-	"context"
-	"errors"
-	"io"
-	"math"
-	"strings"
+import "math"
 
-	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
-)
+type nativeNumber struct {
+	integer  Int
+	floating Float
+	isFloat  bool
+}
 
-func addNonTemporal(_ context.Context, inputL, inputR Value) (Value, error) {
-	left := ToNumberOrString(inputL)
-
-	switch leftVal := left.(type) {
+func classifyNativeNumber(value Value) (nativeNumber, bool) {
+	switch value := value.(type) {
 	case Int:
-		return addLeftInt(leftVal, inputR)
+		return nativeNumber{integer: value}, true
 	case Float:
-		return addLeftFloat(leftVal, inputR)
-	case String:
-		return addLeftString(leftVal, inputR), nil
+		return nativeNumber{floating: value, isFloat: true}, true
 	default:
-		return String(leftVal.String() + inputR.String()), nil
+		return nativeNumber{}, false
 	}
 }
 
-func addLeftInt(integer Int, input Value) (Value, error) {
-	right := ToNumberOrString(input)
-
-	switch rightVal := right.(type) {
-	case Int:
-		return addInts(integer, rightVal)
-	case Float:
-		return addFloats(Float(integer), rightVal, "addition")
-	default:
-		return String(integer.String() + rightVal.String()), nil
+func nativeFloat(value nativeNumber) Float {
+	if value.isFloat {
+		return value.floating
 	}
+
+	return Float(value.integer)
 }
 
-func addLeftFloat(float Float, input Value) (Value, error) {
-	right := ToNumberOrString(input)
-
-	switch rightVal := right.(type) {
-	case Int:
-		return addFloats(float, Float(rightVal), "addition")
-	case Float:
-		return addFloats(float, rightVal, "addition")
-	default:
-		return String(float.String() + rightVal.String()), nil
-	}
+func concatValues(left, right Value) Value {
+	return String(left.String() + right.String())
 }
 
-func addLeftString(str String, input Value) Value {
-	return String(str.String() + input.String())
+func addNumbers(left, right nativeNumber) (Value, error) {
+	if !left.isFloat && !right.isFloat {
+		return addInts(left.integer, right.integer)
+	}
+
+	return addFloats(nativeFloat(left), nativeFloat(right), "addition")
 }
 
-func subtractNonTemporal(ctx context.Context, inputL, inputR Value) (Value, error) {
-	left, err := arithmeticNumber(ctx, inputL)
-	if err != nil {
-		return None, err
+func subtractNumbers(left, right nativeNumber) (Value, error) {
+	if !left.isFloat && !right.isFloat {
+		return subtractInts(left.integer, right.integer)
 	}
 
-	right, err := arithmeticNumber(ctx, inputR)
-	if err != nil {
-		return None, err
-	}
-
-	return subtractNumbers(left, right)
+	return checkedFloat(nativeFloat(left)-nativeFloat(right), "subtraction")
 }
 
-func multiplyNonTemporal(ctx context.Context, inputL, inputR Value) (Value, error) {
-	left, err := arithmeticNumber(ctx, inputL)
-	if err != nil {
-		return None, err
+func multiplyNumbers(left, right nativeNumber) (Value, error) {
+	if !left.isFloat && !right.isFloat {
+		return multiplyInts(left.integer, right.integer)
 	}
 
-	right, err := arithmeticNumber(ctx, inputR)
-	if err != nil {
-		return None, err
-	}
-
-	return multiplyNumbers(left, right)
+	return checkedFloat(nativeFloat(left)*nativeFloat(right), "multiplication")
 }
 
-func divideNonTemporal(ctx context.Context, inputL, inputR Value) (Value, error) {
-	left, err := arithmeticNumber(ctx, inputL)
-	if err != nil {
-		return None, err
+func divideNumbers(left, right nativeNumber) (Value, error) {
+	if !left.isFloat && !right.isFloat {
+		if right.integer == 0 {
+			return None, Error(ErrInvalidOperation, "division by zero")
+		}
+		if left.integer == Int(math.MinInt64) && right.integer == -1 {
+			return None, integerRangeError("division")
+		}
+		if left.integer%right.integer == 0 {
+			return left.integer / right.integer, nil
+		}
 	}
 
-	right, err := arithmeticNumber(ctx, inputR)
-	if err != nil {
-		return None, err
+	rightFloat := nativeFloat(right)
+	if rightFloat == 0 {
+		return None, Error(ErrInvalidOperation, "division by zero")
 	}
 
-	return divideNumbers(left, right)
+	return checkedFloat(nativeFloat(left)/rightFloat, "division")
 }
 
-func moduloNonTemporal(ctx context.Context, inputL, inputR Value) (Value, error) {
-	left, err := arithmeticInt(ctx, inputL)
-	if err != nil {
-		return None, err
+func moduloNumbers(left, right nativeNumber) (Value, error) {
+	if !left.isFloat && !right.isFloat {
+		if right.integer == 0 {
+			return None, Error(ErrInvalidOperation, "modulo by zero")
+		}
+
+		return left.integer % right.integer, nil
 	}
 
-	right, err := arithmeticInt(ctx, inputR)
-	if err != nil {
-		return None, err
-	}
-
-	if right == 0 {
+	rightFloat := nativeFloat(right)
+	if rightFloat == 0 {
 		return None, Error(ErrInvalidOperation, "modulo by zero")
 	}
 
-	return left % right, nil
-}
+	result := Float(math.Mod(float64(nativeFloat(left)), float64(rightFloat)))
 
-func incrementNonTemporal(ctx context.Context, input Value) (Value, error) {
-	number, err := arithmeticNumber(ctx, input)
-	if err != nil {
-		return None, err
-	}
-
-	switch value := number.(type) {
-	case Int:
-		return addInts(value, 1)
-	case Float:
-		return addFloats(value, 1, "increment")
-	default:
-		return None, unaryOperatorTypeError(operator.Increment, input)
-	}
-}
-
-func decrementNonTemporal(ctx context.Context, input Value) (Value, error) {
-	number, err := arithmeticNumber(ctx, input)
-	if err != nil {
-		return None, err
-	}
-
-	switch value := number.(type) {
-	case Int:
-		return subtractInts(value, 1)
-	case Float:
-		return addFloats(value, -1, "decrement")
-	default:
-		return None, unaryOperatorTypeError(operator.Decrement, input)
-	}
-}
-
-func arithmeticNumber(ctx context.Context, input Value) (Value, error) {
-	switch value := input.(type) {
-	case Int, Float:
-		return value, nil
-	case String:
-		if strings.Contains(value.String(), ".") {
-			converted, err := ToFloat(ctx, value)
-			if err != nil {
-				return None, err
-			}
-
-			return converted, nil
-		}
-
-		converted, err := ToInt(ctx, value)
-		if err != nil {
-			return None, err
-		}
-
-		return converted, nil
-	case Iterable:
-		return iterableArithmeticNumber(ctx, value)
-	default:
-		converted, err := ToFloat(ctx, input)
-		if err != nil {
-			return None, err
-		}
-
-		return converted, nil
-	}
-}
-
-func iterableArithmeticNumber(ctx context.Context, input Iterable) (Value, error) {
-	iterator, err := input.Iterate(ctx)
-	if err != nil {
-		return None, err
-	}
-
-	integerTotal := ZeroInt
-	floatTotal := ZeroFloat
-
-	for {
-		value, _, err := iterator.Next(ctx)
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return None, err
-		}
-
-		number, err := arithmeticNumber(ctx, value)
-		if err != nil {
-			return None, err
-		}
-
-		switch number := number.(type) {
-		case Int:
-			integerTotal, err = addInts(integerTotal, number)
-		case Float:
-			floatTotal, err = addFloats(floatTotal, number, "addition")
-		}
-		if err != nil {
-			return None, err
-		}
-	}
-
-	if floatTotal == 0 {
-		return integerTotal, nil
-	}
-
-	return addFloats(Float(integerTotal), floatTotal, "addition")
-}
-
-func arithmeticInt(ctx context.Context, input Value) (Int, error) {
-	switch value := input.(type) {
-	case Int:
-		return value, nil
-	case Float:
-		floating := float64(value)
-		if math.IsNaN(floating) || math.IsInf(floating, 0) || floating >= math.Exp2(63) || floating < -math.Exp2(63) {
-			return ZeroInt, integerRangeError("conversion")
-		}
-
-		return Int(value), nil
-	case List:
-		iterator, err := value.Iterate(ctx)
-		if err != nil {
-			return ZeroInt, err
-		}
-
-		result := ZeroInt
-		for {
-			item, _, err := iterator.Next(ctx)
-			if errors.Is(err, io.EOF) {
-				return result, nil
-			}
-			if err != nil {
-				return ZeroInt, err
-			}
-
-			integer, err := arithmeticInt(ctx, item)
-			if err != nil {
-				return ZeroInt, err
-			}
-
-			result, err = addInts(result, integer)
-			if err != nil {
-				return ZeroInt, err
-			}
-		}
-	default:
-		return ToInt(ctx, input)
-	}
+	return checkedFloat(result, "modulo")
 }
 
 func addInts(left, right Int) (Int, error) {
@@ -310,91 +143,6 @@ func negateFloat(value Float) (Value, error) {
 
 func addFloats(left, right Float, operation string) (Float, error) {
 	return checkedFloat(left+right, operation)
-}
-
-func subtractNumbers(left, right Value) (Value, error) {
-	switch left := left.(type) {
-	case Int:
-		switch right := right.(type) {
-		case Int:
-			return subtractInts(left, right)
-		case Float:
-			return checkedFloat(Float(left)-right, "subtraction")
-		}
-	case Float:
-		switch right := right.(type) {
-		case Int:
-			return checkedFloat(left-Float(right), "subtraction")
-		case Float:
-			return checkedFloat(left-right, "subtraction")
-		}
-	}
-
-	return None, Error(ErrInvalidOperation, "invalid numeric subtraction")
-}
-
-func multiplyNumbers(left, right Value) (Value, error) {
-	switch left := left.(type) {
-	case Int:
-		switch right := right.(type) {
-		case Int:
-			return multiplyInts(left, right)
-		case Float:
-			return checkedFloat(Float(left)*right, "multiplication")
-		}
-	case Float:
-		switch right := right.(type) {
-		case Int:
-			return checkedFloat(left*Float(right), "multiplication")
-		case Float:
-			return checkedFloat(left*right, "multiplication")
-		}
-	}
-
-	return None, Error(ErrInvalidOperation, "invalid numeric multiplication")
-}
-
-func divideNumbers(left, right Value) (Value, error) {
-	switch left := left.(type) {
-	case Int:
-		switch right := right.(type) {
-		case Int:
-			if right == 0 {
-				return None, Error(ErrInvalidOperation, "division by zero")
-			}
-			if left == Int(math.MinInt64) && right == -1 {
-				return None, integerRangeError("division")
-			}
-			if left%right != 0 {
-				return checkedFloat(Float(left)/Float(right), "division")
-			}
-
-			return left / right, nil
-		case Float:
-			if right == 0 {
-				return None, Error(ErrInvalidOperation, "division by zero")
-			}
-
-			return checkedFloat(Float(left)/right, "division")
-		}
-	case Float:
-		switch right := right.(type) {
-		case Int:
-			if right == 0 {
-				return None, Error(ErrInvalidOperation, "division by zero")
-			}
-
-			return checkedFloat(left/Float(right), "division")
-		case Float:
-			if right == 0 {
-				return None, Error(ErrInvalidOperation, "division by zero")
-			}
-
-			return checkedFloat(left/right, "division")
-		}
-	}
-
-	return None, Error(ErrInvalidOperation, "invalid numeric division")
 }
 
 func checkedFloat(value Float, operation string) (Float, error) {

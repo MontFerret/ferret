@@ -40,6 +40,11 @@ func TestConstantFolding(t *testing.T) {
 			bytecode.OpLoadConst: 1,
 		}, "foo-1-bar-true", "should fold fully constant template literal into a single string"),
 
+		OpcodeCount("RETURN `${1s}`", map[bytecode.Opcode]int{
+			bytecode.OpConcat:    0,
+			bytecode.OpLoadConst: 1,
+		}, "1s", "should fold Duration interpolation through String conversion"),
+
 		OpcodeCount("LET x = \"X\" RETURN `a-${1}-b-${x}-c-${true}-d`", map[bytecode.Opcode]int{
 			bytecode.OpConcat:    0,
 			bytecode.OpAdd:       0,
@@ -82,6 +87,18 @@ func TestConstantFolding(t *testing.T) {
 		OpcodeCount(`RETURN 1s == "1s"`, map[bytecode.Opcode]int{
 			bytecode.OpEq: 0,
 		}, false, "valid Duration string remains distinct without explicit conversion"),
+
+		OpcodeCount(`RETURN 5.5 % 2`, map[bytecode.Opcode]int{
+			bytecode.OpMod: 0,
+		}, 1.5, "Float modulo folds to a Float remainder"),
+
+		OpcodeErr(`RETURN "10" - 2`, compile.OpcodeExistence{
+			Exists: []bytecode.Opcode{bytecode.OpSub},
+		}, runtime.ErrInvalidOperation, "numeric strings require explicit conversion and remain runtime errors"),
+
+		OpcodeErr(`RETURN true + 1`, compile.OpcodeExistence{
+			Exists: []bytecode.Opcode{bytecode.OpAddConst},
+		}, runtime.ErrInvalidOperation, "Boolean arithmetic remains a runtime error"),
 
 		OpcodeErr(`RETURN 5s * "2"`, compile.OpcodeExistence{
 			Exists: []bytecode.Opcode{bytecode.OpMul},

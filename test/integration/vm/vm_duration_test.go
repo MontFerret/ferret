@@ -101,7 +101,7 @@ func TestNativeDurationValues(t *testing.T) {
 			Message:  "invalid operation",
 			Contains: []string{"operator '<' cannot be applied to Duration and String", ":1:8"},
 		}),
-		Error("RETURN `${1s}`"),
+		S("RETURN `${1s}`", "1s"),
 		S("RETURN `${TO_STRING(1s)}`", "1s"),
 		Error(`RETURN 1 / 1s`),
 		spec.NewSpec(`RETURN 5s * "invalid"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
@@ -124,14 +124,8 @@ func TestNativeDurationValues(t *testing.T) {
 			Message:  "invalid operation",
 			Contains: []string{"operator '-' cannot be applied to Duration and Int", ":1:8"},
 		}),
-		spec.NewSpec(`RETURN 1s + "1s"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Message:  "invalid operation",
-			Contains: []string{"operator '+' cannot be applied to Duration and String", ":1:8"},
-		}),
-		spec.NewSpec(`RETURN "1s" + 1s`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Message:  "invalid operation",
-			Contains: []string{"operator '+' cannot be applied to String and Duration", ":1:8"},
-		}),
+		S(`RETURN 1s + "1s"`, "1s1s"),
+		S(`RETURN "1s" + 1s`, "1s1s"),
 		spec.NewSpec(`RETURN 1s / "2"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Message:  "invalid operation",
 			Contains: []string{"operator '/' cannot be applied to Duration and String", ":1:8"},
@@ -242,10 +236,7 @@ func TestDateTimeOperators(t *testing.T) {
 			Message:  "invalid operation",
 			Contains: []string{"operator '-' cannot be applied to DateTime and String", ":1:8"},
 		}),
-		spec.NewSpec(`RETURN NOW() + "5m"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Message:  "invalid operation",
-			Contains: []string{"operator '+' cannot be applied to DateTime and String", ":1:8"},
-		}),
+		S(`RETURN TYPENAME(NOW() + "5m")`, "String"),
 		spec.NewSpec(`RETURN NOW() + 5000`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Message:  "invalid operation",
 			Contains: []string{"operator '+' cannot be applied to DateTime and Int", ":1:8"},

@@ -6,8 +6,21 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
 )
 
-// Add applies Ferret addition without implicitly converting temporal operands.
-func Add(ctx context.Context, left, right Value) (Value, error) {
+// Add adds native numeric or temporal values, or concatenates when either operand is a String.
+func Add(_ context.Context, left, right Value) (Value, error) {
+	leftNumber, leftIsNumber := classifyNativeNumber(left)
+	rightNumber, rightIsNumber := classifyNativeNumber(right)
+	if leftIsNumber && rightIsNumber {
+		return addNumbers(leftNumber, rightNumber)
+	}
+
+	if _, ok := left.(String); ok {
+		return concatValues(left, right), nil
+	}
+	if _, ok := right.(String); ok {
+		return concatValues(left, right), nil
+	}
+
 	leftDateTime, leftIsDateTime := left.(DateTime)
 	rightDateTime, rightIsDateTime := right.(DateTime)
 	leftDuration, leftIsDuration := left.(Duration)
@@ -25,29 +38,12 @@ func Add(ctx context.Context, left, right Value) (Value, error) {
 	case leftIsDuration || rightIsDuration:
 		return None, binaryOperatorTypeError(operator.Add, left, right)
 	default:
-		switch left := left.(type) {
-		case Int:
-			switch right := right.(type) {
-			case Int:
-				return addInts(left, right)
-			case Float:
-				return addFloats(Float(left), right, "addition")
-			}
-		case Float:
-			switch right := right.(type) {
-			case Int:
-				return addFloats(left, Float(right), "addition")
-			case Float:
-				return addFloats(left, right, "addition")
-			}
-		}
-
-		return addNonTemporal(ctx, left, right)
+		return None, binaryOperatorTypeError(operator.Add, left, right)
 	}
 }
 
-// Subtract applies Ferret subtraction without implicitly converting temporal operands.
-func Subtract(ctx context.Context, left, right Value) (Value, error) {
+// Subtract subtracts native numeric or compatible temporal values.
+func Subtract(_ context.Context, left, right Value) (Value, error) {
 	leftDateTime, leftIsDateTime := left.(DateTime)
 	rightDateTime, rightIsDateTime := right.(DateTime)
 	leftDuration, leftIsDuration := left.(Duration)
@@ -65,12 +61,18 @@ func Subtract(ctx context.Context, left, right Value) (Value, error) {
 	case leftIsDuration || rightIsDuration:
 		return None, binaryOperatorTypeError(operator.Subtract, left, right)
 	default:
-		return subtractNonTemporal(ctx, left, right)
+		leftNumber, leftIsNumber := classifyNativeNumber(left)
+		rightNumber, rightIsNumber := classifyNativeNumber(right)
+		if leftIsNumber && rightIsNumber {
+			return subtractNumbers(leftNumber, rightNumber)
+		}
+
+		return None, binaryOperatorTypeError(operator.Subtract, left, right)
 	}
 }
 
-// Multiply applies Ferret multiplication without implicitly converting temporal operands.
-func Multiply(ctx context.Context, left, right Value) (Value, error) {
+// Multiply multiplies native numeric values or scales a Duration by a native number.
+func Multiply(_ context.Context, left, right Value) (Value, error) {
 	_, leftIsDateTime := left.(DateTime)
 	_, rightIsDateTime := right.(DateTime)
 	leftDuration, leftIsDuration := left.(Duration)
@@ -94,12 +96,18 @@ func Multiply(ctx context.Context, left, right Value) (Value, error) {
 
 		return multiplyDuration(rightDuration, left)
 	default:
-		return multiplyNonTemporal(ctx, left, right)
+		leftNumber, leftIsNumber := classifyNativeNumber(left)
+		rightNumber, rightIsNumber := classifyNativeNumber(right)
+		if leftIsNumber && rightIsNumber {
+			return multiplyNumbers(leftNumber, rightNumber)
+		}
+
+		return None, binaryOperatorTypeError(operator.Multiply, left, right)
 	}
 }
 
-// Divide applies Ferret division without implicitly converting temporal operands.
-func Divide(ctx context.Context, left, right Value) (Value, error) {
+// Divide divides native numeric values or a Duration by a compatible operand.
+func Divide(_ context.Context, left, right Value) (Value, error) {
 	_, leftIsDateTime := left.(DateTime)
 	_, rightIsDateTime := right.(DateTime)
 	leftDuration, leftIsDuration := left.(Duration)
@@ -119,7 +127,13 @@ func Divide(ctx context.Context, left, right Value) (Value, error) {
 	case rightIsDuration:
 		return None, binaryOperatorTypeError(operator.Divide, left, right)
 	default:
-		return divideNonTemporal(ctx, left, right)
+		leftNumber, leftIsNumber := classifyNativeNumber(left)
+		rightNumber, rightIsNumber := classifyNativeNumber(right)
+		if leftIsNumber && rightIsNumber {
+			return divideNumbers(leftNumber, rightNumber)
+		}
+
+		return None, binaryOperatorTypeError(operator.Divide, left, right)
 	}
 }
 
@@ -132,8 +146,8 @@ func isDurationScalar(value Value) bool {
 	}
 }
 
-// Modulo applies Ferret modulo and rejects temporal operands.
-func Modulo(ctx context.Context, left, right Value) (Value, error) {
+// Modulo computes the remainder of native numeric values and rejects temporal operands.
+func Modulo(_ context.Context, left, right Value) (Value, error) {
 	switch left.(type) {
 	case DateTime, Duration:
 		return None, binaryOperatorTypeError(operator.Modulus, left, right)
@@ -144,27 +158,37 @@ func Modulo(ctx context.Context, left, right Value) (Value, error) {
 		return None, binaryOperatorTypeError(operator.Modulus, left, right)
 	}
 
-	return moduloNonTemporal(ctx, left, right)
+	leftNumber, leftIsNumber := classifyNativeNumber(left)
+	rightNumber, rightIsNumber := classifyNativeNumber(right)
+	if leftIsNumber && rightIsNumber {
+		return moduloNumbers(leftNumber, rightNumber)
+	}
+
+	return None, binaryOperatorTypeError(operator.Modulus, left, right)
 }
 
-// Increment applies Ferret numeric increment and rejects temporal operands.
-func Increment(ctx context.Context, value Value) (Value, error) {
-	switch value.(type) {
-	case DateTime, Duration:
+// Increment increments a native numeric value.
+func Increment(_ context.Context, value Value) (Value, error) {
+	switch value := value.(type) {
+	case Int:
+		return addInts(value, 1)
+	case Float:
+		return addFloats(value, 1, "increment")
+	default:
 		return None, unaryOperatorTypeError(operator.Increment, value)
 	}
-
-	return incrementNonTemporal(ctx, value)
 }
 
-// Decrement applies Ferret numeric decrement and rejects temporal operands.
-func Decrement(ctx context.Context, value Value) (Value, error) {
-	switch value.(type) {
-	case DateTime, Duration:
+// Decrement decrements a native numeric value.
+func Decrement(_ context.Context, value Value) (Value, error) {
+	switch value := value.(type) {
+	case Int:
+		return subtractInts(value, 1)
+	case Float:
+		return addFloats(value, -1, "decrement")
+	default:
 		return None, unaryOperatorTypeError(operator.Decrement, value)
 	}
-
-	return decrementNonTemporal(ctx, value)
 }
 
 // Not applies logical negation to a Boolean.

@@ -976,7 +976,7 @@ loop:
 			res, err := runtime.Multiply(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpDiv:
-			if err := state.checkDivisionByZeroAt(ctx, pc, reg[src1], reg[src2]); err != nil {
+			if err := state.checkDivisionByZeroAt(pc, reg[src1], reg[src2]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
@@ -984,7 +984,7 @@ loop:
 			res, err := runtime.Divide(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpMod:
-			if err := state.checkModuloByZeroAt(ctx, pc, reg[src2]); err != nil {
+			if err := state.checkModuloByZeroAt(pc, reg[src1], reg[src2]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}

@@ -176,21 +176,11 @@ func inferConcatAtomType(ctx *CompilationSession, facts *TypeFacts, atom fql.IEx
 
 		if op.GetText() == "+" {
 			switch {
+			case leftType == core.TypeString || rightType == core.TypeString:
+				return core.TypeString
 			case leftType == core.TypeDuration && rightType == core.TypeDuration:
 				return core.TypeDuration
 			case leftType == core.TypeDuration || rightType == core.TypeDuration:
-				return core.TypeUnknown
-			case leftType == core.TypeString || rightType == core.TypeString:
-				if concatTypesAreKnownNonTemporal(leftType, rightType) {
-					return core.TypeString
-				}
-
-				return core.TypeUnknown
-			case concatAnchorFromAtom(left) || concatAnchorFromAtom(right):
-				if concatTypesAreKnownNonTemporal(leftType, rightType) {
-					return core.TypeString
-				}
-
 				return core.TypeUnknown
 			case leftType == core.TypeFloat || rightType == core.TypeFloat:
 				if isNumericType(leftType) && isNumericType(rightType) {
@@ -248,38 +238,8 @@ func inferConcatAtomType(ctx *CompilationSession, facts *TypeFacts, atom fql.IEx
 	return core.TypeUnknown
 }
 
-func concatAnchorFromAtom(atom fql.IExpressionAtomContext) bool {
-	val, ok := tryConcatConstValueFromAtom(atom)
-	if !ok {
-		return false
-	}
-
-	return guaranteesConcatStringResult(val)
-}
-
 func isNumericType(typ core.ValueType) bool {
 	return typ == core.TypeInt || typ == core.TypeFloat
-}
-
-func concatTypesAreKnownNonTemporal(left, right core.ValueType) bool {
-	return concatTypeIsKnownNonTemporal(left) && concatTypeIsKnownNonTemporal(right)
-}
-
-func concatTypeIsKnownNonTemporal(typ core.ValueType) bool {
-	return typ != core.TypeUnknown && typ != core.TypeAny && typ != core.TypeDuration
-}
-
-func guaranteesConcatStringResult(val runtime.Value) bool {
-	if val == runtime.None {
-		return true
-	}
-
-	switch val.(type) {
-	case runtime.String, runtime.Boolean:
-		return true
-	default:
-		return false
-	}
 }
 
 func tryConcatConstValueFromExpression(expr fql.IExpressionContext) (runtime.Value, bool) {
@@ -350,7 +310,7 @@ func tryConstConcatStringFromValue(val runtime.Value) (runtime.String, bool) {
 	}
 
 	switch val.(type) {
-	case runtime.String, runtime.Int, runtime.Float, runtime.Boolean:
+	case runtime.String, runtime.Int, runtime.Float, runtime.Boolean, runtime.Duration:
 		return runtime.ToString(val), true
 	default:
 		return runtime.EmptyString, false
