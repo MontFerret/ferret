@@ -53,6 +53,7 @@ func TestNativeDurationValues(t *testing.T) {
 		S(`RETURN 1s / "2"`, "500ms"),
 		S(`RETURN 1s / "250ms"`, 4),
 		S(`RETURN 1s == "1s"`, false),
+		S(`RETURN 1s != "1s"`, true),
 		S(`RETURN 1s == TO_DURATION("1s")`, true),
 		S(`RETURN 1s != "tomorrow"`, true),
 		S(`RETURN 1s == "tomorrow"`, false),
@@ -80,11 +81,26 @@ func TestNativeDurationValues(t *testing.T) {
 		Error(`RETURN TO_DURATION("1fortnight")`),
 		Error(`RETURN TO_DURATION([1, 2])`),
 		Error(`RETURN TO_DURATION({ value: 1 })`),
-		spec.NewSpec(`RETURN 1s < "tomorrow"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+		spec.NewSpec(`RETURN "tomorrow" > 1s`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Message:  "invalid operation",
-			Contains: []string{"cannot order Duration and String", ":1:8"},
+			Contains: []string{"operator '>' cannot be applied to String and Duration", ":1:8"},
 		}),
-		Error(`RETURN [1s] ANY < "tomorrow"`),
+		spec.NewSpec(`RETURN 1s <= "tomorrow"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid operation",
+			Contains: []string{"operator '<=' cannot be applied to Duration and String", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN "tomorrow" < 1s`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid operation",
+			Contains: []string{"operator '<' cannot be applied to String and Duration", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN 1s >= "tomorrow"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid operation",
+			Contains: []string{"operator '>=' cannot be applied to Duration and String", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN [1s] ANY < "tomorrow"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid operation",
+			Contains: []string{"operator '<' cannot be applied to Duration and String", ":1:8"},
+		}),
 		Error("RETURN `${1s}`"),
 		S("RETURN `${TO_STRING(1s)}`", "1s"),
 		Error(`RETURN 1 / 1s`),

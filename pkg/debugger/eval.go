@@ -396,20 +396,39 @@ func evalDebugComparison(ctx context.Context, op string, left, right runtime.Val
 		equal, err := runtime.EqualValues(ctx, left, right)
 		return !equal, err
 	case ">":
-		cmp, err := runtime.CompareValues(ctx, left, right)
+		cmp, err := compareDebugValues(ctx, op, left, right)
 		return runtime.NewBoolean(cmp > 0), err
 	case "<":
-		cmp, err := runtime.CompareValues(ctx, left, right)
+		cmp, err := compareDebugValues(ctx, op, left, right)
 		return runtime.NewBoolean(cmp < 0), err
 	case ">=":
-		cmp, err := runtime.CompareValues(ctx, left, right)
+		cmp, err := compareDebugValues(ctx, op, left, right)
 		return runtime.NewBoolean(cmp >= 0), err
 	case "<=":
-		cmp, err := runtime.CompareValues(ctx, left, right)
+		cmp, err := compareDebugValues(ctx, op, left, right)
 		return runtime.NewBoolean(cmp <= 0), err
 	default:
 		return nil, unsupportedDebugExpression(nil)
 	}
+}
+
+func compareDebugValues(
+	ctx context.Context,
+	operator string,
+	left, right runtime.Value,
+) (runtime.Ordering, error) {
+	result, err := runtime.CompareValues(ctx, left, right)
+	if !errors.Is(err, runtime.ErrInvalidOperation) {
+		return result, err
+	}
+
+	return runtime.Equal, runtime.Errorf(
+		runtime.ErrInvalidOperation,
+		"operator '%s' cannot be applied to %s and %s",
+		operator,
+		runtime.TypeName(runtime.TypeOf(left)),
+		runtime.TypeName(runtime.TypeOf(right)),
+	)
 }
 
 func debugScalar(value runtime.Value) bool {

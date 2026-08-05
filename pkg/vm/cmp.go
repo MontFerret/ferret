@@ -73,22 +73,38 @@ func ne(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error)
 
 func gt(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
 	result, err := runtime.CompareValues(ctx, left, right)
-	return result > 0, err
+	if err != nil {
+		return runtime.False, relationalComparisonError(">", left, right, err)
+	}
+
+	return result > 0, nil
 }
 
 func gte(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
 	result, err := runtime.CompareValues(ctx, left, right)
-	return result >= 0, err
+	if err != nil {
+		return runtime.False, relationalComparisonError(">=", left, right, err)
+	}
+
+	return result >= 0, nil
 }
 
 func lt(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
 	result, err := runtime.CompareValues(ctx, left, right)
-	return result < 0, err
+	if err != nil {
+		return runtime.False, relationalComparisonError("<", left, right, err)
+	}
+
+	return result < 0, nil
 }
 
 func lte(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
 	result, err := runtime.CompareValues(ctx, left, right)
-	return result <= 0, err
+	if err != nil {
+		return runtime.False, relationalComparisonError("<=", left, right, err)
+	}
+
+	return result <= 0, nil
 }
 
 func checkInclusion(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {

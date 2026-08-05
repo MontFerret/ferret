@@ -36,10 +36,10 @@ func EqualValues(ctx context.Context, left, right Value) (Boolean, error) {
 	return dispatchEquality(ctx, left, right, compatibleComparisonDomain(left, right))
 }
 
-// CompareValues applies canonical runtime ordering. Apart from mixed numeric
-// comparison and compatible host domains, native Duration values are orderable
-// only with other native Duration values. Incompatible values return
-// ErrInvalidOperation.
+// CompareValues applies canonical runtime relational comparison. Apart from
+// mixed numeric comparison and compatible host domains, native Duration values
+// can be compared only with other native Duration values. Incompatible values
+// return ErrInvalidOperation.
 func CompareValues(ctx context.Context, left, right Value) (Ordering, error) {
 	leftKind := builtinComparisonKindOf(left)
 	rightKind := builtinComparisonKindOf(right)
@@ -366,13 +366,4 @@ func reverseOrdering(result Ordering) Ordering {
 	default:
 		return Equal
 	}
-}
-
-func incompatibleComparisonError(left, right Value) error {
-	return Errorf(
-		ErrInvalidOperation,
-		"cannot order %s and %s",
-		TypeName(TypeOf(left)),
-		TypeName(TypeOf(right)),
-	)
 }

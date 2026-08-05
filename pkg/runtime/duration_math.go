@@ -72,11 +72,11 @@ func SubtractChecked(ctx context.Context, left, right Value) (Value, error) {
 // MultiplyChecked applies checked numeric and Duration multiplication.
 func MultiplyChecked(ctx context.Context, left, right Value) (Value, error) {
 	if _, ok := left.(DateTime); ok {
-		return None, temporalBinaryTypeError("*", left, right)
+		return None, binaryOperatorTypeError("*", left, right)
 	}
 
 	if _, ok := right.(DateTime); ok {
-		return None, temporalBinaryTypeError("*", left, right)
+		return None, binaryOperatorTypeError("*", left, right)
 	}
 
 	leftDuration, leftIsDuration := left.(Duration)
@@ -86,7 +86,7 @@ func MultiplyChecked(ctx context.Context, left, right Value) (Value, error) {
 	case !leftIsDuration && !rightIsDuration:
 		return Multiply(ctx, left, right), nil
 	case leftIsDuration && rightIsDuration:
-		return None, durationBinaryTypeError("*", left, right)
+		return None, binaryOperatorTypeError("*", left, right)
 	case leftIsDuration:
 		return scaleDuration(ctx, leftDuration, right, false)
 	default:
@@ -97,11 +97,11 @@ func MultiplyChecked(ctx context.Context, left, right Value) (Value, error) {
 // DivideChecked applies checked numeric and Duration division.
 func DivideChecked(ctx context.Context, left, right Value) (Value, error) {
 	if _, ok := left.(DateTime); ok {
-		return None, temporalBinaryTypeError("/", left, right)
+		return None, binaryOperatorTypeError("/", left, right)
 	}
 
 	if _, ok := right.(DateTime); ok {
-		return None, temporalBinaryTypeError("/", left, right)
+		return None, binaryOperatorTypeError("/", left, right)
 	}
 
 	leftDuration, leftIsDuration := left.(Duration)
@@ -111,7 +111,7 @@ func DivideChecked(ctx context.Context, left, right Value) (Value, error) {
 	case !leftIsDuration && !rightIsDuration:
 		return Divide(ctx, left, right), nil
 	case !leftIsDuration:
-		return None, durationBinaryTypeError("/", left, right)
+		return None, binaryOperatorTypeError("/", left, right)
 	case rightIsDuration:
 		return divideDurationRatio(leftDuration, rightDuration)
 	}
@@ -134,16 +134,16 @@ func DivideChecked(ctx context.Context, left, right Value) (Value, error) {
 func ModulusChecked(ctx context.Context, left, right Value) (Value, error) {
 	switch left.(type) {
 	case DateTime:
-		return None, temporalBinaryTypeError("%", left, right)
+		return None, binaryOperatorTypeError("%", left, right)
 	case Duration:
-		return None, durationBinaryTypeError("%", left, right)
+		return None, binaryOperatorTypeError("%", left, right)
 	}
 
 	switch right.(type) {
 	case DateTime:
-		return None, temporalBinaryTypeError("%", left, right)
+		return None, binaryOperatorTypeError("%", left, right)
 	case Duration:
-		return None, durationBinaryTypeError("%", left, right)
+		return None, binaryOperatorTypeError("%", left, right)
 	}
 
 	return Modulus(ctx, left, right), nil
@@ -311,7 +311,7 @@ func scaleDuration(ctx context.Context, duration Duration, scalar Value, divide 
 			operator = "/"
 		}
 
-		return None, durationBinaryTypeError(operator, duration, scalar)
+		return None, binaryOperatorTypeError(operator, duration, scalar)
 	}
 }
 
@@ -393,16 +393,6 @@ func durationOperands(ctx context.Context, left, right Value) (Duration, Duratio
 
 	return leftDuration, rightDuration, true, nil
 
-}
-
-func durationBinaryTypeError(operator string, left, right Value) error {
-	return Errorf(
-		ErrInvalidOperation,
-		"operator %s is not supported for %s and %s",
-		operator,
-		TypeName(TypeOf(left)),
-		TypeName(TypeOf(right)),
-	)
 }
 
 func durationRangeError(operation string) error {

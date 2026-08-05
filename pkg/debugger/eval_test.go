@@ -56,7 +56,11 @@ func TestEvaluateDebugDurationExpression(t *testing.T) {
 		values: vm.NewDebugValueAccess(),
 	})
 	if !errors.Is(err, runtime.ErrInvalidOperation) {
-		t.Fatalf("strict duration ordering error = %v, want ErrInvalidOperation", err)
+		t.Fatalf("strict duration comparison error = %v, want ErrInvalidOperation", err)
+	}
+	const expected = "invalid operation: operator '<' cannot be applied to Duration and String"
+	if err.Error() != expected {
+		t.Fatalf("strict duration comparison error = %v, want %q", err, expected)
 	}
 }
 

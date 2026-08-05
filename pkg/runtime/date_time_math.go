@@ -16,7 +16,7 @@ func addDateTimeChecked(ctx context.Context, left, right Value) (Value, error) {
 	}
 
 	if leftIsDateTime && rightIsDateTime {
-		return None, temporalBinaryTypeError("+", left, right)
+		return None, binaryOperatorTypeError("+", left, right)
 	}
 
 	if leftIsDateTime {
@@ -45,7 +45,7 @@ func subtractDateTimeChecked(ctx context.Context, left, right Value) (Value, err
 	}
 
 	if !leftIsDateTime {
-		return None, temporalBinaryTypeError("-", left, right)
+		return None, binaryOperatorTypeError("-", left, right)
 	}
 
 	if rightDateTime, ok := right.(DateTime); ok {
@@ -131,16 +131,6 @@ func checkedDateTimeDifference(left, right DateTime) (Duration, error) {
 	}
 
 	return Duration(difference), nil
-}
-
-func temporalBinaryTypeError(operator string, left, right Value) error {
-	return Errorf(
-		ErrInvalidOperation,
-		"operator %s is not supported for %s and %s",
-		operator,
-		TypeName(TypeOf(left)),
-		TypeName(TypeOf(right)),
-	)
 }
 
 func dateTimeRangeError(operation string) error {

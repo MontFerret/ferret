@@ -44,7 +44,12 @@ func (t *FastObject) Compare(ctx context.Context, other runtime.Value) (runtime.
 
 	otherObject, ok := other.(runtime.ObjectLike)
 	if !ok {
-		return runtime.Equal, runtime.Error(runtime.ErrInvalidOperation, "object values are only order-compatible with object values")
+		return runtime.Equal, runtime.Errorf(
+			runtime.ErrInvalidOperation,
+			"comparison cannot be applied to %s and %s",
+			runtime.TypeName(t.Type()),
+			runtime.TypeName(runtime.TypeOf(other)),
+		)
 	}
 
 	return compareObjectLike(ctx, t, otherObject)

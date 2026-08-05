@@ -87,7 +87,12 @@ func (r *Regexp) Compare(ctx context.Context, other runtime.Value) (runtime.Orde
 	otherRegexp, ok := other.(*Regexp)
 
 	if !ok {
-		return runtime.Equal, runtime.Error(runtime.ErrInvalidOperation, "regexp values are only order-compatible with regexp values")
+		return runtime.Equal, runtime.Errorf(
+			runtime.ErrInvalidOperation,
+			"comparison cannot be applied to %s and %s",
+			runtime.TypeName(r.Type()),
+			runtime.TypeName(runtime.TypeOf(other)),
+		)
 	}
 
 	return runtime.Ordering(strings.Compare(r.String(), otherRegexp.String())), nil
