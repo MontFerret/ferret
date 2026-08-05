@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
 	"github.com/MontFerret/ferret/v2/pkg/parser"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -388,24 +389,29 @@ func evalDebugArithmetic(ctx context.Context, op string, left, right runtime.Val
 	}
 }
 
-func evalDebugComparison(ctx context.Context, op string, left, right runtime.Value) (runtime.Value, error) {
-	switch op {
+func evalDebugComparison(ctx context.Context, operatorText string, left, right runtime.Value) (runtime.Value, error) {
+	switch operatorText {
 	case "==":
 		return runtime.EqualValues(ctx, left, right)
 	case "!=":
 		equal, err := runtime.EqualValues(ctx, left, right)
 		return !equal, err
-	case ">":
-		cmp, err := compareDebugValues(ctx, op, left, right)
+	}
+
+	op, ok := operator.ParseBinary(operatorText)
+	if !ok || !op.IsRelational() {
+		return nil, unsupportedDebugExpression(nil)
+	}
+
+	cmp, err := compareDebugValues(ctx, op, left, right)
+	switch op {
+	case operator.Greater:
 		return runtime.NewBoolean(cmp > 0), err
-	case "<":
-		cmp, err := compareDebugValues(ctx, op, left, right)
+	case operator.Less:
 		return runtime.NewBoolean(cmp < 0), err
-	case ">=":
-		cmp, err := compareDebugValues(ctx, op, left, right)
+	case operator.GreaterOrEqual:
 		return runtime.NewBoolean(cmp >= 0), err
-	case "<=":
-		cmp, err := compareDebugValues(ctx, op, left, right)
+	case operator.LessOrEqual:
 		return runtime.NewBoolean(cmp <= 0), err
 	default:
 		return nil, unsupportedDebugExpression(nil)
@@ -414,20 +420,25 @@ func evalDebugComparison(ctx context.Context, op string, left, right runtime.Val
 
 func compareDebugValues(
 	ctx context.Context,
-	operator string,
+	op operator.Binary,
 	left, right runtime.Value,
 ) (runtime.Ordering, error) {
 	result, err := runtime.CompareValues(ctx, left, right)
+	if err == nil {
+		return result, nil
+	}
+
 	if !errors.Is(err, runtime.ErrInvalidOperation) {
 		return result, err
 	}
 
-	return runtime.Equal, runtime.Errorf(
+	return runtime.Equal, runtime.Error(
 		runtime.ErrInvalidOperation,
-		"operator '%s' cannot be applied to %s and %s",
-		operator,
-		runtime.TypeName(runtime.TypeOf(left)),
-		runtime.TypeName(runtime.TypeOf(right)),
+		operator.CannotApply(
+			op,
+			runtime.TypeName(runtime.TypeOf(left)),
+			runtime.TypeName(runtime.TypeOf(right)),
+		),
 	)
 }
 

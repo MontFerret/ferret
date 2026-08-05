@@ -3,23 +3,25 @@ package vm
 import (
 	"errors"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func relationalComparisonError(operator string, left, right runtime.Value, err error) error {
+func relationalComparisonError(op operator.Binary, left, right runtime.Value, err error) error {
 	if errors.Is(err, runtime.ErrInvalidOperation) {
-		return binaryOperatorError(operator, left, right)
+		return binaryOperatorError(op, left, right)
 	}
 
 	return err
 }
 
-func binaryOperatorError(operator string, left, right runtime.Value) error {
-	return runtime.Errorf(
+func binaryOperatorError(op operator.Binary, left, right runtime.Value) error {
+	return runtime.Error(
 		runtime.ErrInvalidOperation,
-		"operator '%s' cannot be applied to %s and %s",
-		operator,
-		runtime.TypeName(runtime.TypeOf(left)),
-		runtime.TypeName(runtime.TypeOf(right)),
+		operator.CannotApply(
+			op,
+			runtime.TypeName(runtime.TypeOf(left)),
+			runtime.TypeName(runtime.TypeOf(right)),
+		),
 	)
 }

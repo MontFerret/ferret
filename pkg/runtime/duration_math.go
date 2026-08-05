@@ -5,6 +5,8 @@ import (
 	"errors"
 	"math"
 	"math/big"
+
+	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
 )
 
 // AddChecked applies checked numeric, Duration, and DateTime addition.
@@ -72,11 +74,11 @@ func SubtractChecked(ctx context.Context, left, right Value) (Value, error) {
 // MultiplyChecked applies checked numeric and Duration multiplication.
 func MultiplyChecked(ctx context.Context, left, right Value) (Value, error) {
 	if _, ok := left.(DateTime); ok {
-		return None, binaryOperatorTypeError("*", left, right)
+		return None, binaryOperatorTypeError(operator.Multiply, left, right)
 	}
 
 	if _, ok := right.(DateTime); ok {
-		return None, binaryOperatorTypeError("*", left, right)
+		return None, binaryOperatorTypeError(operator.Multiply, left, right)
 	}
 
 	leftDuration, leftIsDuration := left.(Duration)
@@ -86,7 +88,7 @@ func MultiplyChecked(ctx context.Context, left, right Value) (Value, error) {
 	case !leftIsDuration && !rightIsDuration:
 		return Multiply(ctx, left, right), nil
 	case leftIsDuration && rightIsDuration:
-		return None, binaryOperatorTypeError("*", left, right)
+		return None, binaryOperatorTypeError(operator.Multiply, left, right)
 	case leftIsDuration:
 		return scaleDuration(ctx, leftDuration, right, false)
 	default:
@@ -97,11 +99,11 @@ func MultiplyChecked(ctx context.Context, left, right Value) (Value, error) {
 // DivideChecked applies checked numeric and Duration division.
 func DivideChecked(ctx context.Context, left, right Value) (Value, error) {
 	if _, ok := left.(DateTime); ok {
-		return None, binaryOperatorTypeError("/", left, right)
+		return None, binaryOperatorTypeError(operator.Divide, left, right)
 	}
 
 	if _, ok := right.(DateTime); ok {
-		return None, binaryOperatorTypeError("/", left, right)
+		return None, binaryOperatorTypeError(operator.Divide, left, right)
 	}
 
 	leftDuration, leftIsDuration := left.(Duration)
@@ -111,7 +113,7 @@ func DivideChecked(ctx context.Context, left, right Value) (Value, error) {
 	case !leftIsDuration && !rightIsDuration:
 		return Divide(ctx, left, right), nil
 	case !leftIsDuration:
-		return None, binaryOperatorTypeError("/", left, right)
+		return None, binaryOperatorTypeError(operator.Divide, left, right)
 	case rightIsDuration:
 		return divideDurationRatio(leftDuration, rightDuration)
 	}
@@ -134,16 +136,16 @@ func DivideChecked(ctx context.Context, left, right Value) (Value, error) {
 func ModulusChecked(ctx context.Context, left, right Value) (Value, error) {
 	switch left.(type) {
 	case DateTime:
-		return None, binaryOperatorTypeError("%", left, right)
+		return None, binaryOperatorTypeError(operator.Modulus, left, right)
 	case Duration:
-		return None, binaryOperatorTypeError("%", left, right)
+		return None, binaryOperatorTypeError(operator.Modulus, left, right)
 	}
 
 	switch right.(type) {
 	case DateTime:
-		return None, binaryOperatorTypeError("%", left, right)
+		return None, binaryOperatorTypeError(operator.Modulus, left, right)
 	case Duration:
-		return None, binaryOperatorTypeError("%", left, right)
+		return None, binaryOperatorTypeError(operator.Modulus, left, right)
 	}
 
 	return Modulus(ctx, left, right), nil
@@ -306,12 +308,12 @@ func scaleDuration(ctx context.Context, duration Duration, scalar Value, divide 
 
 		return Duration(nanos), nil
 	default:
-		operator := "*"
+		op := operator.Multiply
 		if divide {
-			operator = "/"
+			op = operator.Divide
 		}
 
-		return None, binaryOperatorTypeError(operator, duration, scalar)
+		return None, binaryOperatorTypeError(op, duration, scalar)
 	}
 }
 

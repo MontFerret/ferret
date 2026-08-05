@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -74,7 +75,7 @@ func ne(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error)
 func gt(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
 	result, err := runtime.CompareValues(ctx, left, right)
 	if err != nil {
-		return runtime.False, relationalComparisonError(">", left, right, err)
+		return runtime.False, relationalComparisonError(operator.Greater, left, right, err)
 	}
 
 	return result > 0, nil
@@ -83,7 +84,7 @@ func gt(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error)
 func gte(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
 	result, err := runtime.CompareValues(ctx, left, right)
 	if err != nil {
-		return runtime.False, relationalComparisonError(">=", left, right, err)
+		return runtime.False, relationalComparisonError(operator.GreaterOrEqual, left, right, err)
 	}
 
 	return result >= 0, nil
@@ -92,7 +93,7 @@ func gte(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error
 func lt(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
 	result, err := runtime.CompareValues(ctx, left, right)
 	if err != nil {
-		return runtime.False, relationalComparisonError("<", left, right, err)
+		return runtime.False, relationalComparisonError(operator.Less, left, right, err)
 	}
 
 	return result < 0, nil
@@ -101,7 +102,7 @@ func lt(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error)
 func lte(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
 	result, err := runtime.CompareValues(ctx, left, right)
 	if err != nil {
-		return runtime.False, relationalComparisonError("<=", left, right, err)
+		return runtime.False, relationalComparisonError(operator.LessOrEqual, left, right, err)
 	}
 
 	return result <= 0, nil

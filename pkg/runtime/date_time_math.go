@@ -5,6 +5,8 @@ import (
 	"errors"
 	"math"
 	"time"
+
+	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
 )
 
 func addDateTimeChecked(ctx context.Context, left, right Value) (Value, error) {
@@ -16,7 +18,7 @@ func addDateTimeChecked(ctx context.Context, left, right Value) (Value, error) {
 	}
 
 	if leftIsDateTime && rightIsDateTime {
-		return None, binaryOperatorTypeError("+", left, right)
+		return None, binaryOperatorTypeError(operator.Add, left, right)
 	}
 
 	if leftIsDateTime {
@@ -45,7 +47,7 @@ func subtractDateTimeChecked(ctx context.Context, left, right Value) (Value, err
 	}
 
 	if !leftIsDateTime {
-		return None, binaryOperatorTypeError("-", left, right)
+		return None, binaryOperatorTypeError(operator.Subtract, left, right)
 	}
 
 	if rightDateTime, ok := right.(DateTime); ok {

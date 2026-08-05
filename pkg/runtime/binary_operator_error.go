@@ -1,12 +1,11 @@
 package runtime
 
-func binaryOperatorTypeError(operator string, left, right Value) error {
-	return Errorf(
+import "github.com/MontFerret/ferret/v2/pkg/internal/operator"
+
+func binaryOperatorTypeError(op operator.Binary, left, right Value) error {
+	return Error(
 		ErrInvalidOperation,
-		"operator '%s' cannot be applied to %s and %s",
-		operator,
-		TypeName(TypeOf(left)),
-		TypeName(TypeOf(right)),
+		operator.CannotApply(op, TypeName(TypeOf(left)), TypeName(TypeOf(right))),
 	)
 }
 
