@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -26,6 +27,40 @@ func BenchmarkCompareValuesNative(b *testing.B) {
 			b.Fatal(err)
 		}
 		comparisonResult = result
+	}
+}
+
+func BenchmarkCompareValuesDuration(b *testing.B) {
+	left := runtime.NewDuration(time.Second)
+	right := runtime.NewDuration(2 * time.Second)
+	ctx := context.Background()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for b.Loop() {
+		result, err := runtime.CompareValues(ctx, left, right)
+		if err != nil {
+			b.Fatal(err)
+		}
+		comparisonResult = result
+	}
+}
+
+func BenchmarkEqualValuesDuration(b *testing.B) {
+	left := runtime.NewDuration(time.Second)
+	right := runtime.NewDuration(time.Second)
+	ctx := context.Background()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for b.Loop() {
+		result, err := runtime.EqualValues(ctx, left, right)
+		if err != nil {
+			b.Fatal(err)
+		}
+		equalityResult = result
 	}
 }
 

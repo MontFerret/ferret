@@ -73,11 +73,15 @@ func TestConstantFolding(t *testing.T) {
 
 		OpcodeCount(`RETURN 1s == "tomorrow"`, map[bytecode.Opcode]int{
 			bytecode.OpEq: 0,
-		}, false, "failed temporal coercion folds equality to false"),
+		}, false, "strict cross-type Duration equality folds to false"),
 
 		OpcodeCount(`RETURN 1s != "tomorrow"`, map[bytecode.Opcode]int{
 			bytecode.OpNe: 0,
-		}, true, "failed temporal coercion folds inequality to true"),
+		}, true, "strict cross-type Duration inequality folds to true"),
+
+		OpcodeCount(`RETURN 1s == "1s"`, map[bytecode.Opcode]int{
+			bytecode.OpEq: 0,
+		}, false, "valid Duration string remains distinct without explicit conversion"),
 
 		OpcodeCount(`RETURN 5s * "2"`, map[bytecode.Opcode]int{
 			bytecode.OpMul: 0,

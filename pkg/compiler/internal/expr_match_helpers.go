@@ -124,7 +124,7 @@ func selectMatchConstantFoldExpression(scrutinee runtime.Value, arms []fql.IMatc
 			return nil, false
 		}
 
-		equal, err := runtime.EqualChecked(context.Background(), scrutinee, patternValue)
+		equal, err := runtime.EqualValues(context.Background(), scrutinee, patternValue)
 		if err != nil {
 			return nil, false
 		}

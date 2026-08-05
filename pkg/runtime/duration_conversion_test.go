@@ -169,40 +169,31 @@ func TestDurationContextualCoercion(t *testing.T) {
 	}
 }
 
-func TestDurationCheckedComparison(t *testing.T) {
+func TestDurationComparisonRequiresExplicitConversion(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		left, right runtime.Value
-		expected    runtime.Ordering
-	}{
-		{runtime.NewDuration(5 * time.Second), runtime.NewString("5s"), 0},
-		{runtime.NewDuration(5 * time.Second), runtime.NewInt(5000), 0},
-		{runtime.NewInt(4999), runtime.NewDuration(5 * time.Second), -1},
+	duration := runtime.NewDuration(5 * time.Second)
+	converted, err := runtime.ToDuration(t.Context(), runtime.NewString("5s"))
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	for _, test := range tests {
-		actual, err := runtime.CompareChecked(t.Context(), test.left, test.right)
-		if err != nil || actual != test.expected {
-			t.Fatalf("CompareChecked(%s, %s) = %d, %v", test.left, test.right, actual, err)
-		}
+	equal, err := runtime.EqualValues(t.Context(), duration, converted)
+	if err != nil || !equal {
+		t.Fatalf("explicitly converted equality = %v, %v, want true, nil", equal, err)
+	}
+	actual, err := runtime.CompareValues(t.Context(), duration, converted)
+	if err != nil || actual != runtime.Equal {
+		t.Fatalf("explicitly converted ordering = %d, %v, want Equal, nil", actual, err)
 	}
 
-	if _, err := runtime.CompareChecked(t.Context(), runtime.NewDuration(time.Second), runtime.NewString("tomorrow")); !errors.Is(err, runtime.ErrInvalidArgument) {
-		t.Fatalf("invalid comparison error = %v", err)
-	}
-	if compareValues(runtime.NewDuration(time.Millisecond), runtime.NewInt(1)) == 0 {
-		t.Fatal("strict CompareValues unexpectedly applied temporal coercion")
-	}
-
-	dateTime := runtime.NewDateTime(time.Date(2026, time.August, 1, 0, 0, 0, 0, time.UTC))
-	actual, err := runtime.CompareChecked(t.Context(), dateTime, runtime.NewDuration(time.Second))
-	if err != nil || actual != compareValues(dateTime, runtime.NewDuration(time.Second)) {
-		t.Fatalf("mixed DateTime comparison = %d, %v", actual, err)
+	actual, err = runtime.CompareValues(t.Context(), runtime.NewDuration(4999*time.Millisecond), duration)
+	if err != nil || actual != runtime.Less {
+		t.Fatalf("native Duration ordering = %d, %v, want Less, nil", actual, err)
 	}
 }
 
-func TestEqualCheckedDurationConversionFallback(t *testing.T) {
+func TestDurationComparisonDoesNotConvertOtherTypes(t *testing.T) {
 	t.Parallel()
 
 	duration := runtime.NewDuration(time.Second)
@@ -210,6 +201,9 @@ func TestEqualCheckedDurationConversionFallback(t *testing.T) {
 		input runtime.Value
 		name  string
 	}{
+		{name: "valid string", input: runtime.NewString("1s")},
+		{name: "matching number", input: runtime.NewInt(1000)},
+		{name: "boolean", input: runtime.True},
 		{name: "invalid type", input: runtime.NewObject()},
 		{name: "malformed string", input: runtime.NewString("tomorrow")},
 		{name: "malformed list shape", input: runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2))},
@@ -221,23 +215,21 @@ func TestEqualCheckedDurationConversionFallback(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			equal, err := runtime.EqualChecked(t.Context(), duration, test.input)
+			equal, err := runtime.EqualValues(t.Context(), duration, test.input)
 			if err != nil {
-				t.Fatalf("EqualChecked(%s, %s): %v", duration, test.input, err)
+				t.Fatalf("EqualValues(%s, %s): %v", duration, test.input, err)
 			}
 			if equal {
-				t.Fatalf("EqualChecked(%s, %s) = true, want false", duration, test.input)
+				t.Fatalf("EqualValues(%s, %s) = true, want false", duration, test.input)
+			}
+			if _, err := runtime.CompareValues(t.Context(), duration, test.input); !errors.Is(err, runtime.ErrInvalidOperation) {
+				t.Fatalf("CompareValues(%s, %s) error = %v, want ErrInvalidOperation", duration, test.input, err)
 			}
 		})
 	}
-
-	equal, err := runtime.EqualChecked(t.Context(), duration, runtime.NewString("1s"))
-	if err != nil || !equal {
-		t.Fatalf("EqualChecked successful coercion = %v, %v; want true, nil", equal, err)
-	}
 }
 
-func TestCheckedComparisonDoesNotInspectOpaqueDurationLists(t *testing.T) {
+func TestDurationComparisonDoesNotInspectOpaqueLists(t *testing.T) {
 	t.Parallel()
 
 	duration := runtime.NewDuration(time.Second)
@@ -273,14 +265,14 @@ func TestCheckedComparisonDoesNotInspectOpaqueDurationLists(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			equal, err := runtime.EqualChecked(t.Context(), duration, test.input)
+			equal, err := runtime.EqualValues(t.Context(), duration, test.input)
 			if err != nil || equal {
-				t.Fatalf("EqualChecked = %v, %v; want false, nil", equal, err)
+				t.Fatalf("EqualValues = %v, %v; want false, nil", equal, err)
 			}
 
-			_, err = runtime.CompareChecked(t.Context(), duration, test.input)
+			_, err = runtime.CompareValues(t.Context(), duration, test.input)
 			if !errors.Is(err, runtime.ErrInvalidOperation) {
-				t.Fatalf("CompareChecked error = %v, want ErrInvalidOperation", err)
+				t.Fatalf("CompareValues error = %v, want ErrInvalidOperation", err)
 			}
 		})
 	}

@@ -33,11 +33,11 @@ RETURN MATCH 1s (
 )
 `, func(prog *bytecode.Program) error {
 			if inspect.HasOpcode(prog, bytecode.OpJumpIfNeConst) {
-				return fmt.Errorf("expected language Duration equality to fold MATCH")
+				return fmt.Errorf("expected strict Duration equality to fold MATCH fallback")
 			}
 
 			return nil
-		}, "Duration-coercive constant MATCH folds"),
+		}, "cross-type Duration constant MATCH folds to fallback"),
 		ProgramCheck(`
 RETURN MATCH 1s (
   "2s" => 10,
@@ -49,7 +49,7 @@ RETURN MATCH 1s (
 			}
 
 			return nil
-		}, "unequal Duration-coercive constant MATCH folds"),
+		}, "unequal cross-type Duration constant MATCH folds"),
 		ProgramCheck(`
 RETURN MATCH 1s (
   "tomorrow" => 10,
@@ -61,6 +61,6 @@ RETURN MATCH 1s (
 			}
 
 			return nil
-		}, "invalid Duration equality folds constant MATCH fallback"),
+		}, "cross-type Duration equality folds constant MATCH fallback"),
 	}, compiler.O0, compiler.O1)
 }

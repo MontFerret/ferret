@@ -125,29 +125,29 @@ func foldBinary(op bytecode.Opcode, left, right runtime.Value, bg context.Contex
 
 		return runtime.Modulus(bg, left, right), true
 	case bytecode.OpCmp:
-		result, err := runtime.CompareChecked(bg, right, left)
+		result, err := runtime.CompareValues(bg, right, left)
 		return runtime.Int(result), err == nil
 	case bytecode.OpEq:
-		result, err := runtime.EqualChecked(bg, left, right)
+		result, err := runtime.EqualValues(bg, left, right)
 		return result, err == nil
 	case bytecode.OpNe:
-		result, err := runtime.EqualChecked(bg, left, right)
+		result, err := runtime.EqualValues(bg, left, right)
 		if err != nil {
 			return nil, false
 		}
 
 		return !result, true
 	case bytecode.OpGt:
-		result, err := runtime.CompareChecked(bg, left, right)
+		result, err := runtime.CompareValues(bg, left, right)
 		return runtime.Boolean(result > 0), err == nil
 	case bytecode.OpLt:
-		result, err := runtime.CompareChecked(bg, left, right)
+		result, err := runtime.CompareValues(bg, left, right)
 		return runtime.Boolean(result < 0), err == nil
 	case bytecode.OpGte:
-		result, err := runtime.CompareChecked(bg, left, right)
+		result, err := runtime.CompareValues(bg, left, right)
 		return runtime.Boolean(result >= 0), err == nil
 	case bytecode.OpLte:
-		result, err := runtime.CompareChecked(bg, left, right)
+		result, err := runtime.CompareValues(bg, left, right)
 		return runtime.Boolean(result <= 0), err == nil
 	default:
 		return nil, false

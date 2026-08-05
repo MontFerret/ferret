@@ -3,6 +3,7 @@ package data_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -102,6 +103,43 @@ func TestSemanticIndexesUseNumericEqualityAcrossRepresentations(t *testing.T) {
 		}
 		if length != 1 {
 			t.Fatalf("%s: expected one semantic group, got %d", name, length)
+		}
+	}
+}
+
+func TestSemanticIndexesUseStrictDurationEquality(t *testing.T) {
+	ctx := context.Background()
+	values := []runtime.Value{
+		runtime.NewString("1s"),
+		runtime.NewInt(1000),
+		runtime.NewDuration(time.Second),
+		runtime.NewDuration(1000 * time.Millisecond),
+	}
+
+	collectors := map[string]data.Transformer{
+		"key":       data.NewKeyCollector(),
+		"counter":   data.NewKeyCounterCollector(),
+		"key-group": data.NewKeyGroupCollector(),
+		"aggregate-group": data.NewGroupedAggregateCollector(bytecode.NewAggregatePlan(
+			[]runtime.String{runtime.NewString("count")},
+			[]bytecode.AggregateKind{bytecode.AggregateCount},
+			false,
+		)),
+	}
+
+	for name, collector := range collectors {
+		for _, value := range values {
+			if err := collector.Set(ctx, value, runtime.None); err != nil {
+				t.Fatalf("%s: set %T: %v", name, value, err)
+			}
+		}
+
+		length, err := collector.Length(ctx)
+		if err != nil {
+			t.Fatalf("%s: length: %v", name, err)
+		}
+		if length != 3 {
+			t.Fatalf("%s: expected String, Int, and one Duration group, got %d", name, length)
 		}
 	}
 }

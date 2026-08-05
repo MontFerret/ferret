@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
@@ -109,6 +110,34 @@ func TestSetOperationsUseNumericEqualityAcrossRepresentations(t *testing.T) {
 		t.Fatalf("UnionDistinct: %v", err)
 	}
 	assertListContainsExactly(t, ctx, union.(runtime.List), runtime.NewInt(1))
+}
+
+func TestSetOperationsUseStrictDurationEquality(t *testing.T) {
+	ctx := t.Context()
+	duration := runtime.NewDuration(time.Second)
+	equivalentDuration := runtime.NewDuration(1000 * time.Millisecond)
+	durationString := runtime.NewString("1s")
+	durationNumber := runtime.NewInt(1000)
+
+	intersection, err := arrays.Intersection(
+		ctx,
+		runtime.NewArrayWith(duration, durationString),
+		runtime.NewArrayWith(equivalentDuration, durationNumber),
+	)
+	if err != nil {
+		t.Fatalf("Intersection: %v", err)
+	}
+	assertListContainsExactly(t, ctx, intersection.(runtime.List), duration)
+
+	union, err := arrays.UnionDistinct(
+		ctx,
+		runtime.NewArrayWith(durationString, durationNumber),
+		runtime.NewArrayWith(duration, equivalentDuration),
+	)
+	if err != nil {
+		t.Fatalf("UnionDistinct: %v", err)
+	}
+	assertListContainsExactly(t, ctx, union.(runtime.List), durationString, durationNumber, duration)
 }
 
 func TestHashSetOperationsPropagateEqualityErrors(t *testing.T) {

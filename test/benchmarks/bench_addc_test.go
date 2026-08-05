@@ -43,9 +43,14 @@ FOR i IN 1..1000
   RETURN @base + "2ms"
 `
 
-	durationCoerciveCompareQuery = `
+	durationExplicitCompareQuery = `
 FOR i IN 1..1000
-  RETURN @base > 500
+  RETURN @base > TO_DURATION(500)
+`
+
+	durationStrictCompareQuery = `
+FOR i IN 1..1000
+  RETURN @base > 500ms
 `
 
 	numericEqualityQuery = `
@@ -53,9 +58,14 @@ FOR i IN 1..1000
   RETURN @base == 1
 `
 
-	durationCoerciveEqualityQuery = `
+	durationExplicitEqualityQuery = `
 FOR i IN 1..1000
-  RETURN @base == "1s"
+  RETURN @base == TO_DURATION("1s")
+`
+
+	durationStrictEqualityQuery = `
+FOR i IN 1..1000
+  RETURN @base == 1s
 `
 
 	equalityJumpConstQuery = `
@@ -156,12 +166,20 @@ func BenchmarkDurationCoerciveAdd_O1(b *testing.B) {
 	RunBenchmarkO1(b, durationCoerciveAddQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationCoerciveCompare_O0(b *testing.B) {
-	RunBenchmarkO0(b, durationCoerciveCompareQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitCompare_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationExplicitCompareQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationCoerciveCompare_O1(b *testing.B) {
-	RunBenchmarkO1(b, durationCoerciveCompareQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitCompare_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationExplicitCompareQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationStrictCompare_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationStrictCompareQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationStrictCompare_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationStrictCompareQuery, WithParam("base", time.Second))
 }
 
 func BenchmarkNumericEquality_O0(b *testing.B) {
@@ -172,12 +190,20 @@ func BenchmarkNumericEquality_O1(b *testing.B) {
 	RunBenchmarkO1(b, numericEqualityQuery, WithParam("base", 1))
 }
 
-func BenchmarkDurationCoerciveEquality_O0(b *testing.B) {
-	RunBenchmarkO0(b, durationCoerciveEqualityQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitEquality_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationExplicitEqualityQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationCoerciveEquality_O1(b *testing.B) {
-	RunBenchmarkO1(b, durationCoerciveEqualityQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitEquality_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationExplicitEqualityQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationStrictEquality_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationStrictEqualityQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationStrictEquality_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationStrictEqualityQuery, WithParam("base", time.Second))
 }
 
 func BenchmarkEqualityJumpConst_O0(b *testing.B) {

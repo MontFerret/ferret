@@ -88,14 +88,10 @@ func TestDurationRuntimeContract(t *testing.T) {
 	if compareValues(duration, runtime.NewDuration(time.Second)) <= 0 {
 		t.Fatalf("duration ordering is incorrect")
 	}
-	if compareValues(runtime.NewDuration(time.Nanosecond), runtime.NewInt(1)) == 0 {
-		t.Fatalf("durations must never compare equal to numeric values")
-	}
-	if compareValues(runtime.ZeroFloat, runtime.ZeroDuration) >= 0 {
-		t.Fatalf("duration must sort after Float")
-	}
-	if compareValues(runtime.ZeroDuration, runtime.EmptyString) >= 0 {
-		t.Fatalf("duration must sort before String")
+	for _, other := range []runtime.Value{runtime.NewInt(1), runtime.ZeroFloat, runtime.EmptyString} {
+		if _, err := runtime.CompareValues(t.Context(), duration, other); !errors.Is(err, runtime.ErrInvalidOperation) {
+			t.Fatalf("Duration ordering with %T error = %v, want ErrInvalidOperation", other, err)
+		}
 	}
 
 	encoded, err := json.Marshal(duration)

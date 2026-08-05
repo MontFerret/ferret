@@ -31,7 +31,6 @@ func TestStrictNativeComparisonContract(t *testing.T) {
 		{name: "array structure", left: runtime.NewArrayWith(runtime.NewInt(1)), right: runtime.NewArrayWith(runtime.NewInt(1)), expected: runtime.True, comparison: runtime.Equal},
 		{name: "array length first", left: runtime.NewArrayWith(runtime.NewInt(9)), right: runtime.NewArrayWith(runtime.NewInt(0), runtime.NewInt(0)), expected: runtime.False, comparison: runtime.Less},
 		{name: "object structure", left: runtime.NewObjectWith(map[string]runtime.Value{"key": runtime.NewInt(1)}), right: runtime.NewObjectWith(map[string]runtime.Value{"key": runtime.NewInt(1)}), expected: runtime.True, comparison: runtime.Equal},
-		{name: "strict duration domain", left: runtime.NewDuration(time.Second), right: runtime.NewString("1s"), expected: runtime.False, comparison: runtime.Less},
 		{name: "strict datetime domain", left: runtime.NewDateTime(instant), right: runtime.NewString(instant.Format(time.RFC3339)), expected: runtime.False, comparison: runtime.Greater},
 	}
 
@@ -51,6 +50,78 @@ func TestStrictNativeComparisonContract(t *testing.T) {
 			}
 			if comparison != test.comparison {
 				t.Fatalf("CompareValues() = %v, want %v", comparison, test.comparison)
+			}
+		})
+	}
+}
+
+func TestDurationComparisonIsStrict(t *testing.T) {
+	duration := runtime.NewDuration(time.Second)
+	instant := runtime.NewDateTime(time.Date(2026, time.August, 3, 12, 0, 0, 0, time.UTC))
+
+	for _, other := range []runtime.Value{
+		runtime.NewString("1s"),
+		runtime.NewInt(1000),
+		runtime.NewFloat(1000),
+		runtime.True,
+		runtime.None,
+		runtime.NewArrayWith(runtime.NewString("1s")),
+		runtime.NewObjectWith(map[string]runtime.Value{"value": runtime.NewString("1s")}),
+		instant,
+		runtime.NewBinary([]byte("1s")),
+	} {
+		for _, operands := range [][2]runtime.Value{{duration, other}, {other, duration}} {
+			equal, err := runtime.EqualValues(t.Context(), operands[0], operands[1])
+			if err != nil || equal {
+				t.Fatalf("EqualValues(%T, %T) = %v, %v, want false, nil", operands[0], operands[1], equal, err)
+			}
+
+			if _, err := runtime.CompareValues(t.Context(), operands[0], operands[1]); !errors.Is(err, runtime.ErrInvalidOperation) {
+				t.Fatalf("CompareValues(%T, %T) error = %v, want ErrInvalidOperation", operands[0], operands[1], err)
+			}
+		}
+	}
+
+	converted, err := runtime.ToDuration(t.Context(), runtime.NewString("1s"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	equal, err := runtime.EqualValues(t.Context(), duration, converted)
+	if err != nil || !equal {
+		t.Fatalf("explicitly converted equality = %v, %v, want true, nil", equal, err)
+	}
+	comparison, err := runtime.CompareValues(t.Context(), duration, converted)
+	if err != nil || comparison != runtime.Equal {
+		t.Fatalf("explicitly converted ordering = %v, %v, want Equal, nil", comparison, err)
+	}
+}
+
+func TestNestedCollectionsUseStrictDurationComparison(t *testing.T) {
+	tests := []struct {
+		left  runtime.Value
+		right runtime.Value
+		name  string
+	}{
+		{
+			name:  "array",
+			left:  runtime.NewArrayWith(runtime.NewDuration(time.Second)),
+			right: runtime.NewArrayWith(runtime.NewString("1s")),
+		},
+		{
+			name:  "object",
+			left:  runtime.NewObjectWith(map[string]runtime.Value{"value": runtime.NewDuration(time.Second)}),
+			right: runtime.NewObjectWith(map[string]runtime.Value{"value": runtime.NewString("1s")}),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			equal, err := runtime.EqualValues(t.Context(), test.left, test.right)
+			if err != nil || equal {
+				t.Fatalf("EqualValues() = %v, %v, want false, nil", equal, err)
+			}
+			if _, err := runtime.CompareValues(t.Context(), test.left, test.right); !errors.Is(err, runtime.ErrInvalidOperation) {
+				t.Fatalf("CompareValues() error = %v, want ErrInvalidOperation", err)
 			}
 		})
 	}
@@ -371,34 +442,25 @@ func TestNestedCollectionsPropagateComparisonFailures(t *testing.T) {
 	}
 }
 
-func TestLanguageDurationComparisonDoesNotInspectOpaqueHosts(t *testing.T) {
+func TestDurationComparisonDoesNotInspectOpaqueHosts(t *testing.T) {
 	duration := runtime.NewDuration(time.Second)
 	opaque := &opaqueHostValue{}
 
 	for _, operands := range [][2]runtime.Value{{duration, opaque}, {opaque, duration}} {
-		equal, err := runtime.EqualChecked(t.Context(), operands[0], operands[1])
+		equal, err := runtime.EqualValues(t.Context(), operands[0], operands[1])
 		if err != nil {
-			t.Fatalf("EqualChecked() error = %v", err)
+			t.Fatalf("EqualValues() error = %v", err)
 		}
 		if equal {
-			t.Fatal("EqualChecked() = true for opaque host and Duration")
+			t.Fatal("EqualValues() = true for opaque host and Duration")
 		}
-		if _, err := runtime.CompareChecked(t.Context(), operands[0], operands[1]); !errors.Is(err, runtime.ErrInvalidOperation) {
-			t.Fatalf("CompareChecked() error = %v, want ErrInvalidOperation", err)
+		if _, err := runtime.CompareValues(t.Context(), operands[0], operands[1]); !errors.Is(err, runtime.ErrInvalidOperation) {
+			t.Fatalf("CompareValues() error = %v, want ErrInvalidOperation", err)
 		}
-	}
-
-	nativeEqual, err := runtime.EqualChecked(t.Context(), duration, runtime.NewString("1s"))
-	if err != nil || !nativeEqual {
-		t.Fatalf("native Duration EqualChecked() = %v, %v, want true", nativeEqual, err)
-	}
-	nativeComparison, err := runtime.CompareChecked(t.Context(), duration, runtime.NewString("1s"))
-	if err != nil || nativeComparison != runtime.Equal {
-		t.Fatalf("native Duration CompareChecked() = %v, %v, want Equal", nativeComparison, err)
 	}
 }
 
-func TestCompatibleHostDispatchPrecedesLanguageDurationCoercion(t *testing.T) {
+func TestCompatibleHostDispatchPrecedesDurationIncompatibility(t *testing.T) {
 	equalityCalls := 0
 	compareCalls := 0
 	host := &contractHostValue{
@@ -410,13 +472,13 @@ func TestCompatibleHostDispatchPrecedesLanguageDurationCoercion(t *testing.T) {
 	}
 	duration := runtime.NewDuration(time.Second)
 
-	equal, err := runtime.EqualChecked(t.Context(), duration, host)
+	equal, err := runtime.EqualValues(t.Context(), duration, host)
 	if err != nil || !equal {
-		t.Fatalf("EqualChecked(Duration, host) = %v, %v, want host true", equal, err)
+		t.Fatalf("EqualValues(Duration, host) = %v, %v, want host true", equal, err)
 	}
-	comparison, err := runtime.CompareChecked(t.Context(), duration, host)
+	comparison, err := runtime.CompareValues(t.Context(), duration, host)
 	if err != nil || comparison != runtime.Greater {
-		t.Fatalf("CompareChecked(Duration, host) = %v, %v, want reversed Greater", comparison, err)
+		t.Fatalf("CompareValues(Duration, host) = %v, %v, want reversed Greater", comparison, err)
 	}
 	if equalityCalls != 1 || compareCalls != 1 {
 		t.Fatalf("host calls = equality:%d compare:%d, want one each", equalityCalls, compareCalls)

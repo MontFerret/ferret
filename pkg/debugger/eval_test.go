@@ -42,6 +42,22 @@ func TestEvaluateDebugDurationExpression(t *testing.T) {
 	if err != nil || value != runtime.NewDuration(1001*time.Millisecond) {
 		t.Fatalf("coercive duration debugger expression = %v (%T), %v", value, value, err)
 	}
+
+	value, err = evaluateExpression(context.Background(), `1s == "1s"`, evalScope{
+		params: runtime.NewParams(),
+		values: vm.NewDebugValueAccess(),
+	})
+	if err != nil || value != runtime.False {
+		t.Fatalf("strict duration equality = %v (%T), %v", value, value, err)
+	}
+
+	_, err = evaluateExpression(context.Background(), `1s < "2s"`, evalScope{
+		params: runtime.NewParams(),
+		values: vm.NewDebugValueAccess(),
+	})
+	if !errors.Is(err, runtime.ErrInvalidOperation) {
+		t.Fatalf("strict duration ordering error = %v, want ErrInvalidOperation", err)
+	}
 }
 
 type hostileDebugEvalValue struct{}

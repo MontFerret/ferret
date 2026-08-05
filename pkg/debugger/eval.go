@@ -391,21 +391,21 @@ func evalDebugArithmetic(ctx context.Context, op string, left, right runtime.Val
 func evalDebugComparison(ctx context.Context, op string, left, right runtime.Value) (runtime.Value, error) {
 	switch op {
 	case "==":
-		return runtime.EqualChecked(ctx, left, right)
+		return runtime.EqualValues(ctx, left, right)
 	case "!=":
-		equal, err := runtime.EqualChecked(ctx, left, right)
+		equal, err := runtime.EqualValues(ctx, left, right)
 		return !equal, err
 	case ">":
-		cmp, err := runtime.CompareChecked(ctx, left, right)
+		cmp, err := runtime.CompareValues(ctx, left, right)
 		return runtime.NewBoolean(cmp > 0), err
 	case "<":
-		cmp, err := runtime.CompareChecked(ctx, left, right)
+		cmp, err := runtime.CompareValues(ctx, left, right)
 		return runtime.NewBoolean(cmp < 0), err
 	case ">=":
-		cmp, err := runtime.CompareChecked(ctx, left, right)
+		cmp, err := runtime.CompareValues(ctx, left, right)
 		return runtime.NewBoolean(cmp >= 0), err
 	case "<=":
-		cmp, err := runtime.CompareChecked(ctx, left, right)
+		cmp, err := runtime.CompareValues(ctx, left, right)
 		return runtime.NewBoolean(cmp <= 0), err
 	default:
 		return nil, unsupportedDebugExpression(nil)

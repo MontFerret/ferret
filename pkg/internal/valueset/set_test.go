@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/internal/valueset"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -139,6 +140,29 @@ func TestSetUsesNumericEqualityAcrossIntAndFloat(t *testing.T) {
 	}
 	if set.Len() != 1 {
 		t.Fatalf("expected one numeric value, got %d", set.Len())
+	}
+}
+
+func TestSetUsesStrictDurationEquality(t *testing.T) {
+	set := valueset.New(4)
+
+	for _, test := range []struct {
+		value runtime.Value
+		added bool
+	}{
+		{value: runtime.NewString("1s"), added: true},
+		{value: runtime.NewInt(1000), added: true},
+		{value: runtime.NewDuration(time.Second), added: true},
+		{value: runtime.NewDuration(1000 * time.Millisecond), added: false},
+	} {
+		added, err := set.Add(t.Context(), test.value)
+		if err != nil || added != test.added {
+			t.Fatalf("Add(%T) = %t, %v, want %t, nil", test.value, added, err, test.added)
+		}
+	}
+
+	if set.Len() != 3 {
+		t.Fatalf("expected String, Int, and one Duration value, got %d", set.Len())
 	}
 }
 

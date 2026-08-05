@@ -54,16 +54,16 @@ func (op arrayComparator) predicate() arrayComparatorPredicate {
 }
 
 func cmp(ctx context.Context, left, right runtime.Value) (runtime.Int, error) {
-	result, err := runtime.CompareChecked(ctx, right, left)
+	result, err := runtime.CompareValues(ctx, right, left)
 	return runtime.Int(result), err
 }
 
 func eq(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
-	return runtime.EqualChecked(ctx, left, right)
+	return runtime.EqualValues(ctx, left, right)
 }
 
 func ne(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
-	result, err := runtime.EqualChecked(ctx, left, right)
+	result, err := runtime.EqualValues(ctx, left, right)
 	if err != nil {
 		return runtime.False, err
 	}
@@ -72,22 +72,22 @@ func ne(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error)
 }
 
 func gt(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
-	result, err := runtime.CompareChecked(ctx, left, right)
+	result, err := runtime.CompareValues(ctx, left, right)
 	return result > 0, err
 }
 
 func gte(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
-	result, err := runtime.CompareChecked(ctx, left, right)
+	result, err := runtime.CompareValues(ctx, left, right)
 	return result >= 0, err
 }
 
 func lt(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
-	result, err := runtime.CompareChecked(ctx, left, right)
+	result, err := runtime.CompareValues(ctx, left, right)
 	return result < 0, err
 }
 
 func lte(ctx context.Context, left, right runtime.Value) (runtime.Boolean, error) {
-	result, err := runtime.CompareChecked(ctx, left, right)
+	result, err := runtime.CompareValues(ctx, left, right)
 	return result <= 0, err
 }
 

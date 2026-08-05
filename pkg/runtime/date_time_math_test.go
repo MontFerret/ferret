@@ -33,7 +33,7 @@ func TestToDateTime(t *testing.T) {
 	}
 }
 
-func TestDateTimeCheckedComparisonRemainsStrict(t *testing.T) {
+func TestDateTimeComparisonRemainsStrict(t *testing.T) {
 	t.Parallel()
 
 	dateTime := runtime.NewDateTime(time.Date(2026, time.August, 2, 12, 0, 0, 0, time.UTC))
@@ -46,26 +46,26 @@ func TestDateTimeCheckedComparisonRemainsStrict(t *testing.T) {
 	for _, value := range values {
 		value := value
 		t.Run(value.String(), func(t *testing.T) {
-			equal, err := runtime.EqualChecked(t.Context(), dateTime, value)
+			equal, err := runtime.EqualValues(t.Context(), dateTime, value)
 			if err != nil || equal {
-				t.Fatalf("EqualChecked(DateTime, %q) = %v, %v; want false, nil", value, equal, err)
+				t.Fatalf("EqualValues(DateTime, %q) = %v, %v; want false, nil", value, equal, err)
 			}
 
-			equal, err = runtime.EqualChecked(t.Context(), value, dateTime)
+			equal, err = runtime.EqualValues(t.Context(), value, dateTime)
 			if err != nil || equal {
-				t.Fatalf("EqualChecked(%q, DateTime) = %v, %v; want false, nil", value, equal, err)
+				t.Fatalf("EqualValues(%q, DateTime) = %v, %v; want false, nil", value, equal, err)
 			}
 
-			actual, err := runtime.CompareChecked(t.Context(), dateTime, value)
+			actual, err := runtime.CompareValues(t.Context(), dateTime, value)
 			expected := compareValues(dateTime, value)
 			if err != nil || actual != expected {
-				t.Fatalf("CompareChecked(DateTime, %q) = %d, %v; want %d, nil", value, actual, err, expected)
+				t.Fatalf("CompareValues(DateTime, %q) = %d, %v; want %d, nil", value, actual, err, expected)
 			}
 
-			actual, err = runtime.CompareChecked(t.Context(), value, dateTime)
+			actual, err = runtime.CompareValues(t.Context(), value, dateTime)
 			expected = compareValues(value, dateTime)
 			if err != nil || actual != expected {
-				t.Fatalf("CompareChecked(%q, DateTime) = %d, %v; want %d, nil", value, actual, err, expected)
+				t.Fatalf("CompareValues(%q, DateTime) = %d, %v; want %d, nil", value, actual, err, expected)
 			}
 		})
 	}

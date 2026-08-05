@@ -3,6 +3,7 @@ package collections_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/collections"
@@ -61,5 +62,24 @@ func TestCountDistinctUsesNumericEqualityAcrossRepresentations(t *testing.T) {
 
 	if result != runtime.NewInt(1) {
 		t.Fatalf("expected 1 distinct numeric value, got %v", result)
+	}
+}
+
+func TestCountDistinctUsesStrictDurationEquality(t *testing.T) {
+	result, err := collections.CountDistinct(
+		t.Context(),
+		runtime.NewArrayWith(
+			runtime.NewString("1s"),
+			runtime.NewInt(1000),
+			runtime.NewDuration(time.Second),
+			runtime.NewDuration(1000*time.Millisecond),
+		),
+	)
+	if err != nil {
+		t.Fatalf("CountDistinct: %v", err)
+	}
+
+	if result != runtime.NewInt(3) {
+		t.Fatalf("expected String, Int, and one Duration value, got %v", result)
 	}
 }
