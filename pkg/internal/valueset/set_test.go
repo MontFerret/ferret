@@ -122,6 +122,26 @@ func TestSetUsesFerretEquality(t *testing.T) {
 	}
 }
 
+func TestSetUsesNumericEqualityAcrossIntAndFloat(t *testing.T) {
+	set := valueset.New(2)
+
+	added, err := set.Add(t.Context(), runtime.NewInt(1))
+	if err != nil || !added {
+		t.Fatalf("add Int: added=%t err=%v", added, err)
+	}
+
+	added, err = set.Add(t.Context(), runtime.NewFloat(1))
+	if err != nil {
+		t.Fatalf("add Float: %v", err)
+	}
+	if added {
+		t.Fatal("equal Float must not be added")
+	}
+	if set.Len() != 1 {
+		t.Fatalf("expected one numeric value, got %d", set.Len())
+	}
+}
+
 func TestSetSeparatesHashCollisions(t *testing.T) {
 	ctx := context.Background()
 	set := valueset.New(3)

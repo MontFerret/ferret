@@ -38,8 +38,11 @@ func TestConstantPoolPreservesScalarTypeWithinHashBucket(t *testing.T) {
 	floating := runtime.NewFloat(1)
 	integerOperand := pool.Add(integer)
 
+	if integer.Hash() != floating.Hash() {
+		t.Fatal("equal numeric values must have equal hashes")
+	}
+
 	// Int and Float compare equal numerically, but constants retain their runtime type.
-	pool.index[floating.Hash()] = constantBucket{first: integerOperand.Constant()}
 	floatOperand := pool.Add(floating)
 	if floatOperand == integerOperand {
 		t.Fatal("equal numeric values with distinct runtime types were deduplicated")

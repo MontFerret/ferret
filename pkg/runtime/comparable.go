@@ -368,15 +368,15 @@ func compareNumericValues(left, right Value) Ordering {
 			return compareOrdered(leftInt, rightInt)
 		}
 
-		return compareOrdered(Float(leftInt), right.(Float))
+		return compareIntFloatValues(leftInt, right.(Float))
 	}
 
 	leftFloat := left.(Float)
 	if rightFloat, ok := right.(Float); ok {
-		return compareOrdered(leftFloat, rightFloat)
+		return compareFloatValues(leftFloat, rightFloat)
 	}
 
-	return compareOrdered(leftFloat, Float(right.(Int)))
+	return reverseOrdering(compareIntFloatValues(right.(Int), leftFloat))
 }
 
 func compareDateTimeValues(left, right DateTime) Ordering {

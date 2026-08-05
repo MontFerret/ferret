@@ -49,3 +49,17 @@ func TestCountDistinctSeparatesHashCollisions(t *testing.T) {
 		t.Fatalf("expected 2 distinct values, got %v", result)
 	}
 }
+
+func TestCountDistinctUsesNumericEqualityAcrossRepresentations(t *testing.T) {
+	result, err := collections.CountDistinct(
+		t.Context(),
+		runtime.NewArrayWith(runtime.NewInt(1), runtime.NewFloat(1)),
+	)
+	if err != nil {
+		t.Fatalf("CountDistinct: %v", err)
+	}
+
+	if result != runtime.NewInt(1) {
+		t.Fatalf("expected 1 distinct numeric value, got %v", result)
+	}
+}

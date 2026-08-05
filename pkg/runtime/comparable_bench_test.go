@@ -2,6 +2,7 @@ package runtime_test
 
 import (
 	"context"
+	"math"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -9,6 +10,7 @@ import (
 
 var comparisonResult runtime.Ordering
 var equalityResult runtime.Boolean
+var hashResult uint64
 
 func BenchmarkCompareValuesNative(b *testing.B) {
 	left := runtime.NewInt(41)
@@ -91,5 +93,66 @@ func BenchmarkEqualValuesHost(b *testing.B) {
 			b.Fatal(err)
 		}
 		equalityResult = result
+	}
+}
+
+func BenchmarkCompareValuesMixedNumeric(b *testing.B) {
+	ctx := context.Background()
+
+	for _, test := range []struct {
+		left  runtime.Value
+		right runtime.Value
+		name  string
+	}{
+		{name: "equal", left: runtime.NewInt(42), right: runtime.NewFloat(42)},
+		{name: "fractional", left: runtime.NewInt(42), right: runtime.NewFloat(42.5)},
+		{name: "large", left: runtime.NewInt64(1<<53 + 1), right: runtime.NewFloat(1 << 53)},
+	} {
+		b.Run(test.name, func(b *testing.B) {
+			b.ReportAllocs()
+
+			for b.Loop() {
+				result, err := runtime.CompareValues(ctx, test.left, test.right)
+				if err != nil {
+					b.Fatal(err)
+				}
+				comparisonResult = result
+			}
+		})
+	}
+}
+
+func BenchmarkCompareValuesNaN(b *testing.B) {
+	ctx := context.Background()
+	nan := runtime.Value(runtime.NaN())
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		result, err := runtime.CompareValues(ctx, nan, nan)
+		if err != nil {
+			b.Fatal(err)
+		}
+		comparisonResult = result
+	}
+}
+
+func BenchmarkNumericHash(b *testing.B) {
+	for _, test := range []struct {
+		value runtime.Value
+		name  string
+	}{
+		{name: "int", value: runtime.NewInt(42)},
+		{name: "integral-float", value: runtime.NewFloat(42)},
+		{name: "fractional-float", value: runtime.NewFloat(42.5)},
+		{name: "nan", value: runtime.NewFloat(math.NaN())},
+	} {
+		b.Run(test.name, func(b *testing.B) {
+			b.ReportAllocs()
+
+			for b.Loop() {
+				hashResult = test.value.Hash()
+			}
+		})
 	}
 }

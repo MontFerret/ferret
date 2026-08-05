@@ -82,12 +82,21 @@ func (f Float) String() string {
 }
 
 func (f Float) Hash() uint64 {
+	if integer, ok := exactIntFromFloat(f); ok {
+		return integer.Hash()
+	}
+
 	h := fnv.New64a()
 
 	h.Write([]byte(TypeFloat.Name()))
 
 	bytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(bytes, math.Float64bits(float64(f)))
+	bits := math.Float64bits(float64(f))
+	if math.IsNaN(float64(f)) {
+		bits = math.Float64bits(math.NaN())
+	}
+
+	binary.LittleEndian.PutUint64(bytes, bits)
 	h.Write(bytes)
 
 	return h.Sum64()

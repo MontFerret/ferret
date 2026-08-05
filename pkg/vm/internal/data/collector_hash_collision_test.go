@@ -69,12 +69,12 @@ func TestKeyGroupCollectorSeparatesHashCollisions(t *testing.T) {
 	assertGroupedIntValue(t, ctx, collector, second, 2)
 }
 
-func TestSemanticIndexesDoNotCompareAcrossHashBuckets(t *testing.T) {
+func TestSemanticIndexesUseNumericEqualityAcrossRepresentations(t *testing.T) {
 	ctx := context.Background()
 	intKey := runtime.NewInt(1)
 	floatKey := runtime.NewFloat(1)
-	if intKey.Hash() == floatKey.Hash() {
-		t.Fatal("test requires preserved Int and Float hashes to differ")
+	if intKey.Hash() != floatKey.Hash() {
+		t.Fatal("equal Int and Float keys must have equal hashes")
 	}
 
 	collectors := map[string]data.Transformer{
@@ -88,8 +88,6 @@ func TestSemanticIndexesDoNotCompareAcrossHashBuckets(t *testing.T) {
 		)),
 	}
 
-	// Strict numeric equality considers these values equal, but their preserved
-	// native hashes place them in different candidate buckets.
 	for name, collector := range collectors {
 		if err := collector.Set(ctx, intKey, runtime.None); err != nil {
 			t.Fatalf("%s: set int key: %v", name, err)
@@ -102,8 +100,8 @@ func TestSemanticIndexesDoNotCompareAcrossHashBuckets(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: length: %v", name, err)
 		}
-		if length != 2 {
-			t.Fatalf("%s: expected two hash-bucket entries, got %d", name, length)
+		if length != 1 {
+			t.Fatalf("%s: expected one semantic group, got %d", name, length)
 		}
 	}
 }

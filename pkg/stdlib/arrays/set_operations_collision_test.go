@@ -75,6 +75,42 @@ func TestSetOperationsVerifyHashCollisions(t *testing.T) {
 	assertListContainsExactly(t, ctx, remaining.(runtime.List), second)
 }
 
+func TestSetOperationsUseNumericEqualityAcrossRepresentations(t *testing.T) {
+	ctx := context.Background()
+	integers := runtime.NewArrayWith(runtime.NewInt(1))
+	floats := runtime.NewArrayWith(runtime.NewFloat(1))
+
+	intersection, err := arrays.Intersection(ctx, integers, floats)
+	if err != nil {
+		t.Fatalf("Intersection: %v", err)
+	}
+	assertListContainsExactly(t, ctx, intersection.(runtime.List), runtime.NewInt(1))
+
+	outersection, err := arrays.Outersection(ctx, integers, floats)
+	if err != nil {
+		t.Fatalf("Outersection: %v", err)
+	}
+	assertListContainsExactly(t, ctx, outersection.(runtime.List))
+
+	minus, err := arrays.Minus(ctx, integers, floats)
+	if err != nil {
+		t.Fatalf("Minus: %v", err)
+	}
+	assertListContainsExactly(t, ctx, minus.(runtime.List))
+
+	remaining, err := arrays.RemoveValues(ctx, integers, floats)
+	if err != nil {
+		t.Fatalf("RemoveValues: %v", err)
+	}
+	assertListContainsExactly(t, ctx, remaining.(runtime.List))
+
+	union, err := arrays.UnionDistinct(ctx, integers, floats)
+	if err != nil {
+		t.Fatalf("UnionDistinct: %v", err)
+	}
+	assertListContainsExactly(t, ctx, union.(runtime.List), runtime.NewInt(1))
+}
+
 func TestHashSetOperationsPropagateEqualityErrors(t *testing.T) {
 	sentinel := errors.New("equality failed")
 	value := failingEqualityValue{err: sentinel}

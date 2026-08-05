@@ -93,6 +93,24 @@ func TestArrayDistinctSeparatesHashCollisions(t *testing.T) {
 	}
 }
 
+func TestArrayDistinctUsesNumericEqualityAcrossRepresentations(t *testing.T) {
+	result, err := arrayDistinct(
+		t.Context(),
+		runtime.NewArrayWith(runtime.NewInt(1), runtime.NewFloat(1)),
+	)
+	if err != nil {
+		t.Fatalf("arrayDistinct: %v", err)
+	}
+
+	length, err := result.Length(t.Context())
+	if err != nil {
+		t.Fatalf("result length: %v", err)
+	}
+	if length != 1 {
+		t.Fatalf("expected one distinct numeric value, got %d", length)
+	}
+}
+
 func TestArrayDistinctPropagatesEqualityErrors(t *testing.T) {
 	sentinel := errors.New("distinct equality failed")
 	first := distinctCollisionValue{label: "first", err: sentinel}
