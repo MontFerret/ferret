@@ -97,12 +97,12 @@ func foldIncDecInstruction(inst *bytecode.Instruction, env constFoldEnv, result 
 
 func foldIncDecValue(op bytecode.Opcode, val runtime.Value, bg context.Context) (runtime.Value, bool) {
 	if op == bytecode.OpIncr {
-		result, err := runtime.IncrementChecked(bg, val)
+		result, err := runtime.Increment(bg, val)
 		return result, err == nil
 	}
 
 	if op == bytecode.OpDecr {
-		result, err := runtime.DecrementChecked(bg, val)
+		result, err := runtime.Decrement(bg, val)
 		return result, err == nil
 	}
 

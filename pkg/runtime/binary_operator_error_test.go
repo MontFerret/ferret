@@ -20,35 +20,35 @@ func TestInvalidBinaryOperationsUseOperatorDiagnostics(t *testing.T) {
 			name:     "addition",
 			expected: "invalid operation: operator '+' cannot be applied to DateTime and DateTime",
 			operation: func() (runtime.Value, error) {
-				return runtime.AddChecked(t.Context(), dateTime, dateTime)
+				return runtime.Add(t.Context(), dateTime, dateTime)
 			},
 		},
 		{
 			name:     "subtraction preserves operand order",
 			expected: "invalid operation: operator '-' cannot be applied to Duration and DateTime",
 			operation: func() (runtime.Value, error) {
-				return runtime.SubtractChecked(t.Context(), duration, dateTime)
+				return runtime.Subtract(t.Context(), duration, dateTime)
 			},
 		},
 		{
 			name:     "multiplication",
 			expected: "invalid operation: operator '*' cannot be applied to Duration and Duration",
 			operation: func() (runtime.Value, error) {
-				return runtime.MultiplyChecked(t.Context(), duration, duration)
+				return runtime.Multiply(t.Context(), duration, duration)
 			},
 		},
 		{
 			name:     "division preserves operand order",
 			expected: "invalid operation: operator '/' cannot be applied to Int and Duration",
 			operation: func() (runtime.Value, error) {
-				return runtime.DivideChecked(t.Context(), runtime.NewInt(1), duration)
+				return runtime.Divide(t.Context(), runtime.NewInt(1), duration)
 			},
 		},
 		{
 			name:     "modulus",
 			expected: "invalid operation: operator '%' cannot be applied to Duration and Int",
 			operation: func() (runtime.Value, error) {
-				return runtime.ModulusChecked(t.Context(), duration, runtime.NewInt(1))
+				return runtime.Modulo(t.Context(), duration, runtime.NewInt(1))
 			},
 		},
 	}

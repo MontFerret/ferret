@@ -2,202 +2,201 @@ package runtime
 
 import (
 	"context"
+
+	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
 )
 
-func Add(_ context.Context, inputL, inputR Value) Value {
-	left := ToNumberOrString(inputL)
+// Add applies Ferret addition without implicitly converting temporal operands.
+func Add(ctx context.Context, left, right Value) (Value, error) {
+	leftDateTime, leftIsDateTime := left.(DateTime)
+	rightDateTime, rightIsDateTime := right.(DateTime)
+	leftDuration, leftIsDuration := left.(Duration)
+	rightDuration, rightIsDuration := right.(Duration)
 
-	switch leftVal := left.(type) {
-	case Int:
-		return AddLeftInt(leftVal, inputR)
-	case Float:
-		return AddLeftFloat(leftVal, inputR)
-	case String:
-		return addLeftString(leftVal, inputR)
+	switch {
+	case leftIsDateTime && rightIsDuration:
+		return addDateTimeDuration(leftDateTime, rightDuration)
+	case leftIsDuration && rightIsDateTime:
+		return addDateTimeDuration(rightDateTime, leftDuration)
+	case leftIsDateTime || rightIsDateTime:
+		return None, binaryOperatorTypeError(operator.Add, left, right)
+	case leftIsDuration && rightIsDuration:
+		return addDurations(leftDuration, rightDuration)
+	case leftIsDuration || rightIsDuration:
+		return None, binaryOperatorTypeError(operator.Add, left, right)
 	default:
-		return String(leftVal.String() + inputR.String())
-	}
-}
-
-func AddLeftInt(integer Int, input Value) Value {
-	right := ToNumberOrString(input)
-
-	switch rightVal := right.(type) {
-	case Int:
-		return integer + rightVal
-	case Float:
-		return Float(integer) + rightVal
-	default:
-		return String(integer.String() + rightVal.String())
-	}
-}
-
-func AddLeftFloat(float Float, input Value) Value {
-	right := ToNumberOrString(input)
-
-	switch rightVal := right.(type) {
-	case Int:
-		return float + Float(rightVal)
-	case Float:
-		return float + rightVal
-	default:
-		return String(float.String() + rightVal.String())
-	}
-}
-
-func addLeftString(str String, input Value) Value {
-	return String(str.String() + input.String())
-}
-
-func Subtract(ctx context.Context, inputL, inputR Value) Value {
-	left := ToNumberOnly(ctx, inputL)
-
-	switch leftVal := left.(type) {
-	case Int:
-		return subtractLeftInt(ctx, leftVal, inputR)
-	case Float:
-		return subtractLeftFloat(ctx, leftVal, inputR)
-	default:
-		return ZeroInt
-	}
-}
-
-func subtractLeftInt(ctx context.Context, integer Int, input Value) Value {
-	right := ToNumberOnly(ctx, input)
-
-	switch rightVal := right.(type) {
-	case Int:
-		return integer - rightVal
-	case Float:
-		return Float(integer) - rightVal
-	default:
-		return ZeroInt
-	}
-}
-
-func subtractLeftFloat(ctx context.Context, float Float, input Value) Value {
-	right := ToNumberOnly(ctx, input)
-
-	switch rightVal := right.(type) {
-	case Int:
-		return float - Float(rightVal)
-	case Float:
-		return float - rightVal
-	default:
-		return ZeroInt
-	}
-}
-
-func Multiply(ctx context.Context, inputL, inputR Value) Value {
-	left := ToNumberOnly(ctx, inputL)
-
-	switch leftVal := left.(type) {
-	case Int:
-		return multiplyLeftInt(ctx, leftVal, inputR)
-	case Float:
-		return multiplyLeftFloat(ctx, leftVal, inputR)
-	default:
-		return ZeroInt
-	}
-}
-
-func multiplyLeftInt(ctx context.Context, integer Int, input Value) Value {
-	right := ToNumberOnly(ctx, input)
-
-	switch rightVal := right.(type) {
-	case Int:
-		return integer * rightVal
-	case Float:
-		return Float(integer) * rightVal
-	default:
-		return ZeroInt
-	}
-}
-
-func multiplyLeftFloat(ctx context.Context, float Float, input Value) Value {
-	right := ToNumberOnly(ctx, input)
-
-	switch rightVal := right.(type) {
-	case Int:
-		return float * Float(rightVal)
-	case Float:
-		return float * rightVal
-	default:
-		return ZeroInt
-	}
-}
-
-func Divide(ctx context.Context, inputL, inputR Value) Value {
-	left := ToNumberOnly(ctx, inputL)
-
-	switch leftVal := left.(type) {
-	case Int:
-		return divideLeftInt(ctx, leftVal, inputR)
-	case Float:
-		return divideLeftFloat(ctx, leftVal, inputR)
-	default:
-		return ZeroInt
-	}
-}
-
-func divideLeftInt(ctx context.Context, integer Int, input Value) Value {
-	right := ToNumberOnly(ctx, input)
-
-	switch rightVal := right.(type) {
-	case Int:
-		if rightVal != 0 && integer%rightVal != 0 {
-			return Float(integer) / Float(rightVal)
+		switch left := left.(type) {
+		case Int:
+			switch right := right.(type) {
+			case Int:
+				return addInts(left, right)
+			case Float:
+				return addFloats(Float(left), right, "addition")
+			}
+		case Float:
+			switch right := right.(type) {
+			case Int:
+				return addFloats(left, Float(right), "addition")
+			case Float:
+				return addFloats(left, right, "addition")
+			}
 		}
-		return integer / rightVal
-	case Float:
-		return Float(integer) / rightVal
-	default:
-		return ZeroInt
+
+		return addNonTemporal(ctx, left, right)
 	}
 }
 
-func divideLeftFloat(ctx context.Context, float Float, input Value) Value {
-	right := ToNumberOnly(ctx, input)
+// Subtract applies Ferret subtraction without implicitly converting temporal operands.
+func Subtract(ctx context.Context, left, right Value) (Value, error) {
+	leftDateTime, leftIsDateTime := left.(DateTime)
+	rightDateTime, rightIsDateTime := right.(DateTime)
+	leftDuration, leftIsDuration := left.(Duration)
+	rightDuration, rightIsDuration := right.(Duration)
 
-	switch rightVal := right.(type) {
-	case Int:
-		return float / Float(rightVal)
-	case Float:
-		return float / rightVal
+	switch {
+	case leftIsDateTime && rightIsDateTime:
+		return subtractDateTimes(leftDateTime, rightDateTime)
+	case leftIsDateTime && rightIsDuration:
+		return subtractDateTimeDuration(leftDateTime, rightDuration)
+	case leftIsDateTime || rightIsDateTime:
+		return None, binaryOperatorTypeError(operator.Subtract, left, right)
+	case leftIsDuration && rightIsDuration:
+		return subtractDurations(leftDuration, rightDuration)
+	case leftIsDuration || rightIsDuration:
+		return None, binaryOperatorTypeError(operator.Subtract, left, right)
 	default:
-		return ZeroInt
+		return subtractNonTemporal(ctx, left, right)
 	}
 }
 
-func Modulus(ctx context.Context, inputL, inputR Value) Value {
-	left, _ := ToInt(ctx, inputL)
-	right, _ := ToInt(ctx, inputR)
+// Multiply applies Ferret multiplication without implicitly converting temporal operands.
+func Multiply(ctx context.Context, left, right Value) (Value, error) {
+	_, leftIsDateTime := left.(DateTime)
+	_, rightIsDateTime := right.(DateTime)
+	leftDuration, leftIsDuration := left.(Duration)
+	rightDuration, rightIsDuration := right.(Duration)
 
-	return left % right
-}
+	switch {
+	case leftIsDateTime || rightIsDateTime:
+		return None, binaryOperatorTypeError(operator.Multiply, left, right)
+	case leftIsDuration && rightIsDuration:
+		return None, binaryOperatorTypeError(operator.Multiply, left, right)
+	case leftIsDuration:
+		if !isDurationScalar(right) {
+			return None, binaryOperatorTypeError(operator.Multiply, left, right)
+		}
 
-func Increment(ctx context.Context, input Value) Value {
-	left := ToNumberOnly(ctx, input)
+		return multiplyDuration(leftDuration, right)
+	case rightIsDuration:
+		if !isDurationScalar(left) {
+			return None, binaryOperatorTypeError(operator.Multiply, left, right)
+		}
 
-	switch value := left.(type) {
-	case Int:
-		return value + 1
-	case Float:
-		return value + 1
+		return multiplyDuration(rightDuration, left)
 	default:
-		return None
+		return multiplyNonTemporal(ctx, left, right)
 	}
 }
 
-func Decrement(ctx context.Context, input Value) Value {
-	left := ToNumberOnly(ctx, input)
+// Divide applies Ferret division without implicitly converting temporal operands.
+func Divide(ctx context.Context, left, right Value) (Value, error) {
+	_, leftIsDateTime := left.(DateTime)
+	_, rightIsDateTime := right.(DateTime)
+	leftDuration, leftIsDuration := left.(Duration)
+	rightDuration, rightIsDuration := right.(Duration)
 
-	switch value := left.(type) {
-	case Int:
-		return value - 1
-	case Float:
-		return value - 1
+	switch {
+	case leftIsDateTime || rightIsDateTime:
+		return None, binaryOperatorTypeError(operator.Divide, left, right)
+	case leftIsDuration && rightIsDuration:
+		return divideDurations(leftDuration, rightDuration)
+	case leftIsDuration:
+		if !isDurationScalar(right) {
+			return None, binaryOperatorTypeError(operator.Divide, left, right)
+		}
+
+		return divideDuration(leftDuration, right)
+	case rightIsDuration:
+		return None, binaryOperatorTypeError(operator.Divide, left, right)
 	default:
-		return None
+		return divideNonTemporal(ctx, left, right)
+	}
+}
+
+func isDurationScalar(value Value) bool {
+	switch value.(type) {
+	case Int, Float:
+		return true
+	default:
+		return false
+	}
+}
+
+// Modulo applies Ferret modulo and rejects temporal operands.
+func Modulo(ctx context.Context, left, right Value) (Value, error) {
+	switch left.(type) {
+	case DateTime, Duration:
+		return None, binaryOperatorTypeError(operator.Modulus, left, right)
+	}
+
+	switch right.(type) {
+	case DateTime, Duration:
+		return None, binaryOperatorTypeError(operator.Modulus, left, right)
+	}
+
+	return moduloNonTemporal(ctx, left, right)
+}
+
+// Increment applies Ferret numeric increment and rejects temporal operands.
+func Increment(ctx context.Context, value Value) (Value, error) {
+	switch value.(type) {
+	case DateTime, Duration:
+		return None, unaryOperatorTypeError(operator.Increment, value)
+	}
+
+	return incrementNonTemporal(ctx, value)
+}
+
+// Decrement applies Ferret numeric decrement and rejects temporal operands.
+func Decrement(ctx context.Context, value Value) (Value, error) {
+	switch value.(type) {
+	case DateTime, Duration:
+		return None, unaryOperatorTypeError(operator.Decrement, value)
+	}
+
+	return decrementNonTemporal(ctx, value)
+}
+
+// Not applies logical negation to a Boolean.
+func Not(value Value) (Value, error) {
+	boolean, ok := value.(Boolean)
+	if !ok {
+		return None, unaryOperatorTypeError(operator.Not, value)
+	}
+
+	return !boolean, nil
+}
+
+// Positive applies unary plus to numeric and Duration values.
+func Positive(value Value) (Value, error) {
+	switch value := value.(type) {
+	case Int, Float, Duration:
+		return value, nil
+	default:
+		return None, unaryOperatorTypeError(operator.Positive, value)
+	}
+}
+
+// Negative applies unary minus to numeric and Duration values.
+func Negative(value Value) (Value, error) {
+	switch value := value.(type) {
+	case Int:
+		return negateInt(value)
+	case Float:
+		return negateFloat(value)
+	case Duration:
+		return negateDuration(value)
+	default:
+		return None, unaryOperatorTypeError(operator.Negative, value)
 	}
 }

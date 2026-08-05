@@ -83,20 +83,16 @@ func TestConstantFolding(t *testing.T) {
 			bytecode.OpEq: 0,
 		}, false, "valid Duration string remains distinct without explicit conversion"),
 
-		OpcodeCount(`RETURN 5s * "2"`, map[bytecode.Opcode]int{
-			bytecode.OpMul: 0,
-		}, "10s", "numeric-string Duration multiplication folds"),
-
-		OpcodeCount(`RETURN "2" * 5s`, map[bytecode.Opcode]int{
-			bytecode.OpMul: 0,
-		}, "10s", "reverse numeric-string Duration multiplication folds"),
-
-		OpcodeErr(`RETURN 5s * "invalid"`, compile.OpcodeExistence{
+		OpcodeErr(`RETURN 5s * "2"`, compile.OpcodeExistence{
 			Exists: []bytecode.Opcode{bytecode.OpMul},
-		}, runtime.ErrInvalidArgument, "invalid numeric-string multiplier remains a runtime error"),
+		}, runtime.ErrInvalidOperation, "numeric-string Duration multiplication remains a runtime error"),
 
-		OpcodeErr(`RETURN "invalid" * 5s`, compile.OpcodeExistence{
+		OpcodeErr(`RETURN "2" * 5s`, compile.OpcodeExistence{
 			Exists: []bytecode.Opcode{bytecode.OpMul},
-		}, runtime.ErrInvalidArgument, "reverse invalid numeric-string multiplier remains a runtime error"),
+		}, runtime.ErrInvalidOperation, "reverse numeric-string Duration multiplication remains a runtime error"),
+
+		OpcodeCount(`RETURN 5s * TO_NUMBER("2")`, map[bytecode.Opcode]int{
+			bytecode.OpMul: 1,
+		}, "10s", "explicit numeric conversion preserves Duration multiplication"),
 	})
 }

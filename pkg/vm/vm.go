@@ -961,19 +961,19 @@ loop:
 
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpAdd:
-			res, err := runtime.AddChecked(ctx, reg[src1], reg[src2])
+			res, err := runtime.Add(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpAddConst:
-			res, err := runtime.AddChecked(ctx, reg[src1], constants[src2.Constant()])
+			res, err := runtime.Add(ctx, reg[src1], constants[src2.Constant()])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpConcat:
 			res, err := concatStrings(reg, src1, src2)
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpSub:
-			res, err := runtime.SubtractChecked(ctx, reg[src1], reg[src2])
+			res, err := runtime.Subtract(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpMul:
-			res, err := runtime.MultiplyChecked(ctx, reg[src1], reg[src2])
+			res, err := runtime.Multiply(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpDiv:
 			if err := state.checkDivisionByZeroAt(ctx, pc, reg[src1], reg[src2]); err != nil {
@@ -981,7 +981,7 @@ loop:
 				break
 			}
 
-			res, err := runtime.DivideChecked(ctx, reg[src1], reg[src2])
+			res, err := runtime.Divide(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpMod:
 			if err := state.checkModuloByZeroAt(ctx, pc, reg[src2]); err != nil {
@@ -989,22 +989,22 @@ loop:
 				break
 			}
 
-			res, err := runtime.ModulusChecked(ctx, reg[src1], reg[src2])
+			res, err := runtime.Modulo(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpIncr:
-			res, err := runtime.IncrementChecked(ctx, reg[dst])
+			res, err := runtime.Increment(ctx, reg[dst])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpDecr:
-			res, err := runtime.DecrementChecked(ctx, reg[dst])
+			res, err := runtime.Decrement(ctx, reg[dst])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpNegate:
-			res, err := runtime.NegateChecked(reg[src1])
+			res, err := runtime.Negative(reg[src1])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpFlipPositive:
-			res, err := runtime.PositiveChecked(reg[src1])
+			res, err := runtime.Positive(reg[src1])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpFlipNegative:
-			res, err := runtime.NegativeChecked(reg[src1])
+			res, err := runtime.Negative(reg[src1])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpCastBool:
 			reg[dst] = coerceBool(reg[src1])
@@ -1012,7 +1012,8 @@ loop:
 			res, err := cmp(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpNot:
-			reg[dst] = !coerceBool(reg[src1])
+			res, err := runtime.Not(reg[src1])
+			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpEq:
 			res, err := eq(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)

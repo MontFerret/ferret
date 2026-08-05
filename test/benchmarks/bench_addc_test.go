@@ -38,9 +38,9 @@ FOR i IN 1..1000
 
 	durationLiteralQuery = `FOR i IN 1..1000 RETURN 1.5s`
 
-	durationCoerciveAddQuery = `
+	durationExplicitAddQuery = `
 FOR i IN 1..1000
-  RETURN @base + "2ms"
+  RETURN @base + TO_DURATION("2ms")
 `
 
 	durationExplicitCompareQuery = `
@@ -158,12 +158,12 @@ func BenchmarkDurationLiteral_O1(b *testing.B) {
 	RunBenchmarkO1(b, durationLiteralQuery)
 }
 
-func BenchmarkDurationCoerciveAdd_O0(b *testing.B) {
-	RunBenchmarkO0(b, durationCoerciveAddQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitAdd_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationExplicitAddQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationCoerciveAdd_O1(b *testing.B) {
-	RunBenchmarkO1(b, durationCoerciveAddQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitAdd_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationExplicitAddQuery, WithParam("base", time.Second))
 }
 
 func BenchmarkDurationExplicitCompare_O0(b *testing.B) {

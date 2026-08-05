@@ -61,15 +61,16 @@ func foldUnary(op bytecode.Opcode, val runtime.Value, bg context.Context) (runti
 	case bytecode.OpCastBool:
 		return runtime.ToBoolean(val), true
 	case bytecode.OpNot:
-		return runtime.Boolean(!runtime.ToBoolean(val)), true
+		result, err := runtime.Not(val)
+		return result, err == nil
 	case bytecode.OpNegate:
-		result, err := runtime.NegateChecked(val)
+		result, err := runtime.Negative(val)
 		return result, err == nil
 	case bytecode.OpFlipPositive:
-		result, err := runtime.PositiveChecked(val)
+		result, err := runtime.Positive(val)
 		return result, err == nil
 	case bytecode.OpFlipNegative:
-		result, err := runtime.NegativeChecked(val)
+		result, err := runtime.Negative(val)
 		return result, err == nil
 	default:
 		return nil, false
@@ -79,51 +80,21 @@ func foldUnary(op bytecode.Opcode, val runtime.Value, bg context.Context) (runti
 func foldBinary(op bytecode.Opcode, left, right runtime.Value, bg context.Context) (runtime.Value, bool) {
 	switch op {
 	case bytecode.OpAdd:
-		result, err := runtime.AddChecked(bg, left, right)
+		result, err := runtime.Add(bg, left, right)
 		return result, err == nil
 	case bytecode.OpSub:
-		result, err := runtime.SubtractChecked(bg, left, right)
+		result, err := runtime.Subtract(bg, left, right)
 		return result, err == nil
 	case bytecode.OpMul:
-		result, err := runtime.MultiplyChecked(bg, left, right)
+		result, err := runtime.Multiply(bg, left, right)
 		return result, err == nil
 	case bytecode.OpDiv:
-		if _, ok := left.(runtime.Duration); ok {
-			result, err := runtime.DivideChecked(bg, left, right)
-
-			return result, err == nil
-		}
-
-		if _, ok := right.(runtime.Duration); ok {
-			return nil, false
-		}
-
-		lv := runtime.ToNumberOnly(bg, left)
-
-		if _, ok := lv.(runtime.Int); ok {
-			rv := runtime.ToNumberOnly(bg, right)
-			if ri, ok := rv.(runtime.Int); ok && ri == 0 {
-				return nil, false
-			}
-		}
-
-		result, err := runtime.DivideChecked(bg, left, right)
+		result, err := runtime.Divide(bg, left, right)
 
 		return result, err == nil
 	case bytecode.OpMod:
-		if _, ok := left.(runtime.Duration); ok {
-			return nil, false
-		}
-
-		if _, ok := right.(runtime.Duration); ok {
-			return nil, false
-		}
-
-		if r, _ := runtime.ToInt(bg, right); r == 0 {
-			return nil, false
-		}
-
-		return runtime.Modulus(bg, left, right), true
+		result, err := runtime.Modulo(bg, left, right)
+		return result, err == nil
 	case bytecode.OpCmp:
 		result, err := runtime.CompareValues(bg, right, left)
 		return runtime.Int(result), err == nil

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"math"
-	"strings"
 	"testing"
 	"time"
 
@@ -78,94 +77,80 @@ func TestToDurationErrors(t *testing.T) {
 	}
 }
 
-func TestDurationContextualCoercion(t *testing.T) {
+func TestDurationArithmeticRequiresExplicitTypes(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
 	fiveSeconds := runtime.NewDuration(5 * time.Second)
 
-	assertDuration := func(name string, value runtime.Value, err error, expected runtime.Duration) {
-		t.Helper()
-		if err != nil {
-			t.Fatalf("%s: %v", name, err)
-		}
-		actual, ok := value.(runtime.Duration)
-		if !ok || actual != expected {
-			t.Fatalf("%s = %v, want %s", name, value, expected)
-		}
-	}
-
-	value, err := runtime.AddChecked(ctx, fiveSeconds, runtime.NewString("500ms"))
-	assertDuration("string addition", value, err, runtime.NewDuration(5500*time.Millisecond))
-	value, err = runtime.AddChecked(ctx, fiveSeconds, runtime.NewInt(2))
-	assertDuration("numeric addition", value, err, runtime.NewDuration(5002*time.Millisecond))
-	value, err = runtime.AddChecked(ctx, runtime.NewInt(2), fiveSeconds)
-	assertDuration("reverse numeric addition", value, err, runtime.NewDuration(5002*time.Millisecond))
-	value, err = runtime.SubtractChecked(ctx, fiveSeconds, runtime.NewString("500ms"))
-	assertDuration("string subtraction", value, err, runtime.NewDuration(4500*time.Millisecond))
-
 	for _, test := range []struct {
-		left     runtime.Value
-		right    runtime.Value
-		name     string
-		expected runtime.Duration
+		operation func() (runtime.Value, error)
+		name      string
 	}{
 		{
-			name:     "integer string multiplier",
-			left:     fiveSeconds,
-			right:    runtime.NewString("2"),
-			expected: runtime.NewDuration(10 * time.Second),
+			name: "string addition",
+			operation: func() (runtime.Value, error) {
+				return runtime.Add(ctx, fiveSeconds, runtime.NewString("500ms"))
+			},
 		},
 		{
-			name:     "reverse integer string multiplier",
-			left:     runtime.NewString("2"),
-			right:    fiveSeconds,
-			expected: runtime.NewDuration(10 * time.Second),
+			name: "numeric addition",
+			operation: func() (runtime.Value, error) {
+				return runtime.Add(ctx, fiveSeconds, runtime.NewInt(2))
+			},
 		},
 		{
-			name:     "fractional string multiplier",
-			left:     fiveSeconds,
-			right:    runtime.NewString("2.5"),
-			expected: runtime.NewDuration(12500 * time.Millisecond),
+			name: "reverse numeric addition",
+			operation: func() (runtime.Value, error) {
+				return runtime.Add(ctx, runtime.NewInt(2), fiveSeconds)
+			},
 		},
 		{
-			name:     "reverse fractional string multiplier",
-			left:     runtime.NewString("2.5"),
-			right:    fiveSeconds,
-			expected: runtime.NewDuration(12500 * time.Millisecond),
+			name: "string subtraction",
+			operation: func() (runtime.Value, error) {
+				return runtime.Subtract(ctx, fiveSeconds, runtime.NewString("500ms"))
+			},
 		},
-	} {
-		value, err := runtime.MultiplyChecked(ctx, test.left, test.right)
-		assertDuration(test.name, value, err, test.expected)
-	}
-
-	for _, test := range []struct {
-		left, right runtime.Value
-		name        string
-	}{
-		{name: "invalid string multiplier", left: fiveSeconds, right: runtime.NewString("invalid")},
-		{name: "reverse invalid string multiplier", left: runtime.NewString("invalid"), right: fiveSeconds},
+		{
+			name: "string multiplier",
+			operation: func() (runtime.Value, error) {
+				return runtime.Multiply(ctx, fiveSeconds, runtime.NewString("2"))
+			},
+		},
+		{
+			name: "reverse string multiplier",
+			operation: func() (runtime.Value, error) {
+				return runtime.Multiply(ctx, runtime.NewString("2"), fiveSeconds)
+			},
+		},
+		{
+			name: "numeric string division",
+			operation: func() (runtime.Value, error) {
+				return runtime.Divide(ctx, fiveSeconds, runtime.NewString("2"))
+			},
+		},
+		{
+			name: "duration string division",
+			operation: func() (runtime.Value, error) {
+				return runtime.Divide(ctx, fiveSeconds, runtime.NewString("5s"))
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := runtime.MultiplyChecked(ctx, test.left, test.right)
-			if !errors.Is(err, runtime.ErrInvalidArgument) {
-				t.Fatalf("error = %v, want ErrInvalidArgument", err)
-			}
-
-			for _, part := range []string{"cannot use String", "invalid", "numeric Duration scale"} {
-				if !strings.Contains(err.Error(), part) {
-					t.Fatalf("error = %q, want %q", err, part)
-				}
+			_, err := test.operation()
+			if !errors.Is(err, runtime.ErrInvalidOperation) {
+				t.Fatalf("error = %v, want ErrInvalidOperation", err)
 			}
 		})
 	}
 
-	value, err = runtime.DivideChecked(ctx, fiveSeconds, runtime.NewString("2"))
-	assertDuration("numeric string division", value, err, runtime.NewDuration(2500*time.Millisecond))
-
-	ratio, err := runtime.DivideChecked(ctx, runtime.NewDuration(10*time.Second), runtime.NewString("5s"))
-	if err != nil || ratio != runtime.NewInt(2) {
-		t.Fatalf("duration string ratio = %v, %v", ratio, err)
+	converted, err := runtime.ToDuration(ctx, runtime.NewString("500ms"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	value, err := runtime.Add(ctx, fiveSeconds, converted)
+	if err != nil || value != runtime.NewDuration(5500*time.Millisecond) {
+		t.Fatalf("explicit Duration addition = %v, %v", value, err)
 	}
 }
 

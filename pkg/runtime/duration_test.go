@@ -146,69 +146,69 @@ func TestDurationArithmetic(t *testing.T) {
 		}
 	}
 
-	actual, err := runtime.AddChecked(ctx, second, halfSecond)
+	actual, err := runtime.Add(ctx, second, halfSecond)
 	assertValue("add", actual, err, runtime.NewDuration(1500*time.Millisecond))
-	actual, err = runtime.SubtractChecked(ctx, second, halfSecond)
+	actual, err = runtime.Subtract(ctx, second, halfSecond)
 	assertValue("subtract", actual, err, halfSecond)
-	actual, err = runtime.MultiplyChecked(ctx, second, runtime.NewFloat(1.5))
+	actual, err = runtime.Multiply(ctx, second, runtime.NewFloat(1.5))
 	assertValue("multiply", actual, err, runtime.NewDuration(1500*time.Millisecond))
-	actual, err = runtime.MultiplyChecked(ctx, runtime.NewInt(2), halfSecond)
+	actual, err = runtime.Multiply(ctx, runtime.NewInt(2), halfSecond)
 	assertValue("reverse multiply", actual, err, second)
-	actual, err = runtime.DivideChecked(ctx, second, runtime.NewInt(2))
+	actual, err = runtime.Divide(ctx, second, runtime.NewInt(2))
 	assertValue("divide number", actual, err, halfSecond)
-	actual, err = runtime.DivideChecked(ctx, second, halfSecond)
+	actual, err = runtime.Divide(ctx, second, halfSecond)
 	assertValue("exact ratio", actual, err, runtime.NewInt(2))
-	actual, err = runtime.DivideChecked(ctx, second, runtime.NewDuration(3*time.Second))
+	actual, err = runtime.Divide(ctx, second, runtime.NewDuration(3*time.Second))
 	assertValue("fractional ratio", actual, err, runtime.NewFloat(1.0/3.0))
 
-	actual, err = runtime.MultiplyChecked(ctx, runtime.NewDuration(time.Nanosecond), runtime.NewFloat(0.5))
+	actual, err = runtime.Multiply(ctx, runtime.NewDuration(time.Nanosecond), runtime.NewFloat(0.5))
 	assertValue("positive tie", actual, err, runtime.ZeroDuration)
-	actual, err = runtime.MultiplyChecked(ctx, runtime.NewDuration(-time.Nanosecond), runtime.NewFloat(0.5))
+	actual, err = runtime.Multiply(ctx, runtime.NewDuration(-time.Nanosecond), runtime.NewFloat(0.5))
 	assertValue("negative tie", actual, err, runtime.ZeroDuration)
-	actual, err = runtime.DivideChecked(ctx, runtime.NewDuration(time.Nanosecond), runtime.NewInt(2))
+	actual, err = runtime.Divide(ctx, runtime.NewDuration(time.Nanosecond), runtime.NewInt(2))
 	assertValue("positive integer division tie", actual, err, runtime.ZeroDuration)
-	actual, err = runtime.DivideChecked(ctx, runtime.NewDuration(-time.Nanosecond), runtime.NewInt(2))
+	actual, err = runtime.Divide(ctx, runtime.NewDuration(-time.Nanosecond), runtime.NewInt(2))
 	assertValue("negative integer division tie", actual, err, runtime.ZeroDuration)
-	actual, err = runtime.PositiveChecked(second)
+	actual, err = runtime.Positive(second)
 	assertValue("unary positive", actual, err, second)
-	actual, err = runtime.NegativeChecked(second)
+	actual, err = runtime.Negative(second)
 	assertValue("unary negative", actual, err, runtime.NewDuration(-time.Second))
-	actual, err = runtime.MultiplyChecked(ctx, runtime.Duration(math.MaxInt64), runtime.NewFloat(1))
+	actual, err = runtime.Multiply(ctx, runtime.Duration(math.MaxInt64), runtime.NewFloat(1))
 	assertValue("maximum float identity", actual, err, runtime.Duration(math.MaxInt64))
-	actual, err = runtime.DivideChecked(ctx, runtime.Duration(math.MinInt64), runtime.NewFloat(1))
+	actual, err = runtime.Divide(ctx, runtime.Duration(math.MinInt64), runtime.NewFloat(1))
 	assertValue("minimum float identity", actual, err, runtime.Duration(math.MinInt64))
 
 	invalid := []struct {
 		fn   func() (runtime.Value, error)
 		name string
 	}{
-		{name: "duration multiplication", fn: func() (runtime.Value, error) { return runtime.MultiplyChecked(ctx, second, second) }},
-		{name: "reverse division", fn: func() (runtime.Value, error) { return runtime.DivideChecked(ctx, runtime.NewInt(1), second) }},
-		{name: "zero division", fn: func() (runtime.Value, error) { return runtime.DivideChecked(ctx, second, runtime.ZeroInt) }},
+		{name: "duration multiplication", fn: func() (runtime.Value, error) { return runtime.Multiply(ctx, second, second) }},
+		{name: "reverse division", fn: func() (runtime.Value, error) { return runtime.Divide(ctx, runtime.NewInt(1), second) }},
+		{name: "zero division", fn: func() (runtime.Value, error) { return runtime.Divide(ctx, second, runtime.ZeroInt) }},
 		{name: "zero duration division", fn: func() (runtime.Value, error) {
-			return runtime.DivideChecked(ctx, second, runtime.ZeroDuration)
+			return runtime.Divide(ctx, second, runtime.ZeroDuration)
 		}},
 		{name: "nan scaling", fn: func() (runtime.Value, error) {
-			return runtime.MultiplyChecked(ctx, second, runtime.NewFloat(math.NaN()))
+			return runtime.Multiply(ctx, second, runtime.NewFloat(math.NaN()))
 		}},
 		{name: "infinite division", fn: func() (runtime.Value, error) {
-			return runtime.DivideChecked(ctx, second, runtime.NewFloat(math.Inf(1)))
+			return runtime.Divide(ctx, second, runtime.NewFloat(math.Inf(1)))
 		}},
 		{name: "overflow", fn: func() (runtime.Value, error) {
-			return runtime.AddChecked(ctx, runtime.Duration(math.MaxInt64), runtime.Duration(1))
+			return runtime.Add(ctx, runtime.Duration(math.MaxInt64), runtime.Duration(1))
 		}},
 		{name: "subtraction overflow", fn: func() (runtime.Value, error) {
-			return runtime.SubtractChecked(ctx, runtime.Duration(math.MinInt64), runtime.Duration(1))
+			return runtime.Subtract(ctx, runtime.Duration(math.MinInt64), runtime.Duration(1))
 		}},
 		{name: "multiplication overflow", fn: func() (runtime.Value, error) {
-			return runtime.MultiplyChecked(ctx, runtime.Duration(math.MaxInt64), runtime.NewInt(2))
+			return runtime.Multiply(ctx, runtime.Duration(math.MaxInt64), runtime.NewInt(2))
 		}},
 		{name: "negation overflow", fn: func() (runtime.Value, error) {
-			return runtime.NegativeChecked(runtime.Duration(math.MinInt64))
+			return runtime.Negative(runtime.Duration(math.MinInt64))
 		}},
-		{name: "increment", fn: func() (runtime.Value, error) { return runtime.IncrementChecked(ctx, second) }},
-		{name: "decrement", fn: func() (runtime.Value, error) { return runtime.DecrementChecked(ctx, second) }},
-		{name: "modulus", fn: func() (runtime.Value, error) { return runtime.ModulusChecked(ctx, second, runtime.NewInt(2)) }},
+		{name: "increment", fn: func() (runtime.Value, error) { return runtime.Increment(ctx, second) }},
+		{name: "decrement", fn: func() (runtime.Value, error) { return runtime.Decrement(ctx, second) }},
+		{name: "modulo", fn: func() (runtime.Value, error) { return runtime.Modulo(ctx, second, runtime.NewInt(2)) }},
 	}
 
 	for _, test := range invalid {

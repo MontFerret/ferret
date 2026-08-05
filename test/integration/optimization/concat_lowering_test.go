@@ -9,6 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
+	"github.com/MontFerret/ferret/v2/test/spec/compile"
 	. "github.com/MontFerret/ferret/v2/test/spec/optimize"
 )
 
@@ -39,15 +40,13 @@ RETURN str`, map[bytecode.Opcode]int{
 	})
 }
 
-func TestTemporalAdditionRetainsCheckedArithmetic(t *testing.T) {
+func TestTemporalAdditionRetainsRuntimeValidation(t *testing.T) {
 	RunUseCases(t, compiler.O1, []spec.Spec{
-		OpcodeCount(`RETURN TYPENAME(NOW() + "5m")`, map[bytecode.Opcode]int{
-			bytecode.OpAddConst: 1,
-			bytecode.OpConcat:   0,
-		}, "DateTime", "DateTime plus duration strings should retain checked arithmetic"),
-		OpcodeCount(`RETURN @value + "500ms"`, map[bytecode.Opcode]int{
-			bytecode.OpAddConst: 1,
-			bytecode.OpConcat:   0,
-		}, "5.5s", "dynamic values plus duration strings should retain checked arithmetic").Env(vm.WithParam("value", runtime.NewDuration(5*time.Second))),
+		OpcodeErr(`RETURN TYPENAME(NOW() + "5m")`, compile.OpcodeExistence{
+			Exists: []bytecode.Opcode{bytecode.OpAddConst},
+		}, runtime.ErrInvalidOperation, "DateTime plus String remains a runtime error"),
+		OpcodeErr(`RETURN @value + "500ms"`, compile.OpcodeExistence{
+			Exists: []bytecode.Opcode{bytecode.OpAddConst},
+		}, runtime.ErrInvalidOperation, "Duration plus String remains a runtime error").Env(vm.WithParam("value", runtime.NewDuration(5*time.Second))),
 	})
 }

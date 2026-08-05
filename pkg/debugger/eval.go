@@ -311,27 +311,23 @@ func evalDebugLiteral(literal fql.ILiteralContext) (runtime.Value, error) {
 	}
 }
 
-func evalDebugUnary(op string, value runtime.Value, access vm.DebugValueAccess) (runtime.Value, error) {
-	switch strings.ToUpper(op) {
-	case "NOT":
-		boolean, ok := value.(runtime.Boolean)
-		if !ok {
-			return nil, debugEvalTypeError(value, runtime.TypeBoolean.Name(), access)
-		}
+func evalDebugUnary(op string, value runtime.Value, _ vm.DebugValueAccess) (runtime.Value, error) {
+	if strings.EqualFold(op, "NOT") {
+		op = "!"
+	}
 
-		return runtime.NewBoolean(!bool(boolean)), nil
-	case "+":
-		if _, ok := value.(runtime.Int); ok {
-			return value, nil
-		}
-		if _, ok := value.(runtime.Float); ok {
-			return value, nil
-		}
-		if _, ok := value.(runtime.Duration); ok {
-			return value, nil
-		}
-	case "-":
-		return runtime.NegativeChecked(value)
+	unary, ok := operator.ParseUnary(op)
+	if !ok {
+		return nil, runtime.Errorf(runtime.ErrInvalidArgument, "unsupported debugger unary operation %s", op)
+	}
+
+	switch unary {
+	case operator.Not:
+		return runtime.Not(value)
+	case operator.Positive:
+		return runtime.Positive(value)
+	case operator.Negative:
+		return runtime.Negative(value)
 	}
 
 	return nil, runtime.Errorf(runtime.ErrInvalidArgument, "unsupported debugger unary operation %s", op)
@@ -361,29 +357,22 @@ func evalDebugArithmetic(ctx context.Context, op string, left, right runtime.Val
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debugger arithmetic supports scalar values only")
 	}
 
-	switch op {
-	case "+":
-		return runtime.AddChecked(ctx, left, right)
-	case "-":
-		return runtime.SubtractChecked(ctx, left, right)
-	case "*":
-		return runtime.MultiplyChecked(ctx, left, right)
-	case "/":
-		_, leftDuration := left.(runtime.Duration)
-		_, rightDuration := right.(runtime.Duration)
-		if !leftDuration && !rightDuration && debugZero(right) {
-			return nil, runtime.Error(runtime.ErrInvalidOperation, "division by zero")
-		}
+	binary, ok := operator.ParseBinary(op)
+	if !ok {
+		return nil, unsupportedDebugExpression(nil)
+	}
 
-		return runtime.DivideChecked(ctx, left, right)
-	case "%":
-		_, leftDuration := left.(runtime.Duration)
-		_, rightDuration := right.(runtime.Duration)
-		if !leftDuration && !rightDuration && debugZero(right) {
-			return nil, runtime.Error(runtime.ErrInvalidOperation, "modulo by zero")
-		}
-
-		return runtime.ModulusChecked(ctx, left, right)
+	switch binary {
+	case operator.Add:
+		return runtime.Add(ctx, left, right)
+	case operator.Subtract:
+		return runtime.Subtract(ctx, left, right)
+	case operator.Multiply:
+		return runtime.Multiply(ctx, left, right)
+	case operator.Divide:
+		return runtime.Divide(ctx, left, right)
+	case operator.Modulus:
+		return runtime.Modulo(ctx, left, right)
 	default:
 		return nil, unsupportedDebugExpression(nil)
 	}
@@ -454,19 +443,6 @@ func debugScalar(value runtime.Value) bool {
 	switch value.(type) {
 	case runtime.Boolean, runtime.Int, runtime.Float, runtime.Duration, runtime.String:
 		return true
-	default:
-		return false
-	}
-}
-
-func debugZero(value runtime.Value) bool {
-	switch value := value.(type) {
-	case runtime.Int:
-		return value == 0
-	case runtime.Float:
-		return value == 0
-	case runtime.Duration:
-		return value == 0
 	default:
 		return false
 	}

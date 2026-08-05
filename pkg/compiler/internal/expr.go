@@ -52,9 +52,10 @@ type (
 
 // Runtime functions
 const (
-	runtimeTypename = "TYPENAME"
-	runtimeLength   = "LENGTH"
-	runtimeWait     = "WAIT"
+	runtimeTypename   = "TYPENAME"
+	runtimeLength     = "LENGTH"
+	runtimeWait       = "WAIT"
+	runtimeToDuration = "TO_DURATION"
 )
 
 const (
