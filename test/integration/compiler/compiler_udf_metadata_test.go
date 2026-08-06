@@ -135,10 +135,10 @@ RETURN TEST_FN(1)
 			return hostSignature(prog.Functions.Host, "TEST_FN", 2)
 		}, "host overloads remain distinct across scopes"),
 		ProgramCheck(`
-FUNC outer() (
+FUNC outer() {
   FUNC inner(x) => TEST_FN(x)
   RETURN inner(1)
-)
+}
 RETURN outer()
 `, func(prog *bytecode.Program) error {
 			if len(prog.Functions.Host) != 1 {
@@ -154,10 +154,10 @@ RETURN f()
 			return paramSet(prog.Params, "foo")
 		}, "udf param included in program params"),
 		ProgramCheck(`
-FUNC outer() (
+FUNC outer() {
   FUNC inner() => @foo
   RETURN inner()
-)
+}
 RETURN outer()
 `, func(prog *bytecode.Program) error {
 			return paramSet(prog.Params, "foo")
@@ -385,14 +385,14 @@ func TestUdfNestedCaptureMetadataAcrossScopes(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(`
 LET global = 100
-FUNC outer(a) (
+FUNC outer(a) {
   LET outerLocal = 10
-  FUNC middle(b) (
+  FUNC middle(b) {
     FUNC inner(c) => global + a + outerLocal + b + c
     RETURN inner(1)
-  )
+  }
   RETURN middle(2)
-)
+}
 RETURN outer(3)
 `, func(prog *bytecode.Program) error {
 			outer, err := findUserDefined(prog, "outer")
@@ -452,13 +452,13 @@ func TestUdfNestedCompileStatePropagatesMetadata(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(`
 LET base = 10
-FUNC outer(a) (
-  FUNC middle(b) (
+FUNC outer(a) {
+  FUNC middle(b) {
     FUNC inner(c) => TEST_FN(@foo, base + a + b + c)
     RETURN inner(1)
-  )
+  }
   RETURN middle(2)
-)
+}
 RETURN outer(3)
 `, func(prog *bytecode.Program) error {
 			if err := hostSignature(prog.Functions.Host, "TEST_FN", 2); err != nil {
@@ -474,11 +474,11 @@ func TestUdfNestedDirectReturnStillLowersToTailCall(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(`
 LET base = 1
-FUNC outer(a) (
+FUNC outer(a) {
   FUNC target(x) => x + 1
   FUNC forward(x) => target(x + base + a)
   RETURN forward(2)
-)
+}
 RETURN outer(3)
 `, func(prog *bytecode.Program) error {
 			forward, err := findUserDefined(prog, "forward")
@@ -507,10 +507,10 @@ RETURN outer(3)
 func TestUdfNestedScopeDoesNotLeakToSiblingCompilation(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(`
-FUNC outer() (
+FUNC outer() {
   FUNC onlyInside() => 1
   RETURN onlyInside()
-)
+}
 FUNC sibling() => onlyInside()
 RETURN sibling()
 `, func(prog *bytecode.Program) error {

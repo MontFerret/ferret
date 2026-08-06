@@ -186,32 +186,32 @@ func (f *statementFormatter) formatFunctionDeclaration(ctx *fql.FunctionDeclarat
 
 	stmts := block.AllFunctionStatement()
 	ret := block.FunctionReturn()
+	terminalFor := block.ForExpression()
 
-	if len(stmts) == 0 && ret == nil {
+	if len(stmts) == 0 && ret == nil && terminalFor == nil {
 		return
 	}
 
 	f.p.space()
-	f.p.write("(")
+	f.p.write("{")
 
 	headerStop := f.functionHeaderStopIndex(ctx)
-	start := headerStop + 1
-	if openParen := block.OpenParen(); openParen != nil {
-		if sym := openParen.GetSymbol(); sym != nil {
-			start = sym.GetStop() + 1
-		}
-	}
 
 	var first antlr.ParserRuleContext
 	if len(stmts) > 0 {
 		first = stmts[0].(antlr.ParserRuleContext)
 	} else if ret != nil {
 		first = ret.(antlr.ParserRuleContext)
+	} else if terminalFor != nil {
+		first = terminalFor.(antlr.ParserRuleContext)
 	}
 
 	f.p.withIndent(func() {
 		if first != nil {
-			f.trivia.emitBetweenIndices(start, f.trivia.startIndex(first))
+			f.trivia.emitListTriviaWith(
+				f.p,
+				f.trivia.blockLeadingTrivia(headerStop, block.OpenBrace(), f.trivia.startIndex(first)),
+			)
 		} else {
 			f.p.newline()
 		}
@@ -230,6 +230,26 @@ func (f *statementFormatter) formatFunctionDeclaration(ctx *fql.FunctionDeclarat
 			}
 
 			f.formatFunctionReturn(ret.(*fql.FunctionReturnContext))
+		} else if terminalFor != nil {
+			if len(stmts) > 0 {
+				f.trivia.emitBetween(stmts[len(stmts)-1].(antlr.ParserRuleContext), terminalFor.(antlr.ParserRuleContext))
+			}
+
+			f.formatForExpression(terminalFor.(*fql.ForExpressionContext))
+		}
+
+		var last antlr.ParserRuleContext
+		switch {
+		case terminalFor != nil:
+			last = terminalFor.(antlr.ParserRuleContext)
+		case ret != nil:
+			last = ret.(antlr.ParserRuleContext)
+		case len(stmts) > 0:
+			last = stmts[len(stmts)-1].(antlr.ParserRuleContext)
+		}
+
+		if last != nil && block.CloseBrace() != nil {
+			f.trivia.emitBetweenIndices(f.trivia.stopIndex(last)+1, f.trivia.tokenStart(block.CloseBrace()))
 		}
 	})
 
@@ -237,7 +257,7 @@ func (f *statementFormatter) formatFunctionDeclaration(ctx *fql.FunctionDeclarat
 		f.p.newline()
 	}
 
-	f.p.write(")")
+	f.p.write("}")
 }
 
 func (f *statementFormatter) formatFunctionParameterList(ctx *fql.FunctionParameterListContext) {
@@ -384,12 +404,17 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 
 	bodies := ctx.AllForExpressionBody()
 	ret := ctx.ForExpressionReturn()
+	braced := ctx.OpenBrace() != nil
 
 	if len(bodies) == 0 && ret == nil {
 		return
 	}
 
 	headerStop := f.forHeaderStopIndex(ctx)
+	if braced {
+		f.p.space()
+		f.p.write("{")
+	}
 
 	var first antlr.ParserRuleContext
 
@@ -401,7 +426,10 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 
 	f.p.withIndent(func() {
 		if first != nil {
-			f.trivia.emitBetweenIndices(headerStop+1, f.trivia.startIndex(first))
+			f.trivia.emitListTriviaWith(
+				f.p,
+				f.trivia.blockLeadingTrivia(headerStop, ctx.OpenBrace(), f.trivia.startIndex(first)),
+			)
 		} else {
 			f.p.newline()
 		}
@@ -421,7 +449,21 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 
 			f.formatForExpressionReturn(ret.(*fql.ForExpressionReturnContext))
 		}
+
+		if braced && ret != nil && ctx.CloseBrace() != nil {
+			f.trivia.emitBetweenIndices(
+				f.trivia.stopIndex(ret.(antlr.ParserRuleContext))+1,
+				f.trivia.tokenStart(ctx.CloseBrace()),
+			)
+		}
 	})
+
+	if braced {
+		if !f.p.atLineStart {
+			f.p.newline()
+		}
+		f.p.write("}")
+	}
 }
 
 func (f *statementFormatter) forHeaderStopIndex(ctx *fql.ForExpressionContext) int {

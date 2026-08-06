@@ -61,8 +61,8 @@ func TestNativeDurationValues(t *testing.T) {
 		Error(`RETURN [1s, 2s] ALL > 999`),
 		S(`RETURN [1s, 2s] ANY == "2s"`, false),
 		S(`RETURN [1s, 2s] ANY == TO_DURATION("2s")`, true),
-		S(`RETURN MATCH 5s (5000ms => true, _ => false)`, true),
-		S(`RETURN MATCH 1s ("1s" => true, _ => false)`, false),
+		S(`RETURN MATCH 5s {5000ms => true, _ => false}`, true),
+		S(`RETURN MATCH 1s {"1s" => true, _ => false}`, false),
 		S(`RETURN [1s] == ["1s"]`, false),
 		S(`RETURN { value: 1s } == { value: "1s" }`, false),
 		S(`RETURN "1s" IN [1s]`, false),
@@ -272,7 +272,7 @@ func TestTemporalComparisonDoesNotInspectOpaqueHostValues(t *testing.T) {
 			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
 		S(`RETURN @value != 1s ? 10 : 20`, 10).
 			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
-		S(`RETURN MATCH @value (1s => 10, _ => 20)`, 20).
+		S(`RETURN MATCH @value {1s => 10, _ => 20}`, 20).
 			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
 		Error(`RETURN 1s < @value`).
 			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),

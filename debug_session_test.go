@@ -448,10 +448,10 @@ func TestDebugSessionStepIntoAndOut(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer engine.Close()
-	query := `FUNC add(a) (
+	query := `FUNC add(a) {
   LET b = a + 1
   RETURN b
-)
+}
 LET x = add(2)
 RETURN x`
 	plan, err := engine.CompileDebug(context.Background(), source.New("udf.fql", query))
@@ -501,9 +501,9 @@ func TestDebugSessionNextStepsOverCallAndOutFromMainCompletes(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer engine.Close()
-	query := `FUNC add(a) (
+	query := `FUNC add(a) {
   RETURN a + 1
-)
+}
 LET x = add(2)
 RETURN x`
 	plan, err := engine.CompileDebug(context.Background(), source.New("next.fql", query))

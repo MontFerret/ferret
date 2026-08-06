@@ -50,10 +50,10 @@ func TestUdfUnusedNestedCaptureNotLifted(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(`
 LET base = 5
-FUNC outer() (
-  FUNC inner() ( RETURN base )
+FUNC outer() {
+  FUNC inner() { RETURN base }
   RETURN 1
-)
+}
 RETURN outer()
 `, func(prog *bytecode.Program) error {
 			if len(prog.Functions.UserDefined) != 1 {
@@ -84,12 +84,12 @@ RETURN outer()
 func TestUdfRecursionReachable(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(`
-FUNC fact(n) (
-  RETURN MATCH n (
+FUNC fact(n) {
+  RETURN MATCH n {
     0 => 1,
     _ => n * fact(n - 1),
-  )
-)
+  }
+}
 RETURN fact(5)
 `, func(prog *bytecode.Program) error {
 			found := false

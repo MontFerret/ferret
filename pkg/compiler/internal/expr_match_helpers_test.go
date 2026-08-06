@@ -8,7 +8,7 @@ import (
 )
 
 func TestSelectMatchConstantFoldExpressionDeclinesOperationalEqualityError(t *testing.T) {
-	p := parser.New(`MATCH 1s (1s => 10, _ => 20)`)
+	p := parser.New(`MATCH 1s {1s => 10, _ => 20}`)
 	expression := p.Expression()
 	if !p.AtEOF() {
 		t.Fatal("expected parser to consume the MATCH expression")

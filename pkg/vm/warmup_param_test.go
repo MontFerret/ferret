@@ -29,9 +29,9 @@ func TestWarmupMissingParamsAggregateTopLevelAndUdfSites(t *testing.T) {
 	const query = `LET val = @foo
 LET val2 = @bar
 
-FUNC TEST() (
+FUNC TEST() {
   RETURN @baz
-)
+}
 
 RETURN [val, val2, TEST()]
 `
@@ -84,14 +84,14 @@ RETURN [val, val2, TEST()]
 
 func TestWarmupMissingParamNestedUdfUsesOnlyUdfBodySnippet(t *testing.T) {
 	const query = `FUNC inner() => @foo
-FUNC middle() (
+FUNC middle() {
   LET value = inner()
   RETURN value
-)
-FUNC outer() (
+}
+FUNC outer() {
   LET value = middle()
   RETURN value
-)
+}
 RETURN outer()
 `
 

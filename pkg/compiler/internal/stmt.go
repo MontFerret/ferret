@@ -120,11 +120,7 @@ func (c *StatementCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext
 func (c *StatementCompiler) compileBodyExpression(ctx fql.IBodyExpressionContext) {
 	// Handle FOR expressions (e.g., FOR x IN y RETURN z)
 	if fe := ctx.ForExpression(); fe != nil {
-		// Compile the FOR loop and get the destination register
-		out := c.loops.Compile(fe)
-
-		// Emit a return instruction with the loop result
-		c.ctx.Program.Emitter.EmitA(bytecode.OpReturn, out)
+		c.compileTerminalForResult(fe)
 	} else if re := ctx.ReturnExpression(); re != nil {
 		// Handle RETURN expressions (e.g., RETURN x)
 		valReg := c.CompileReturnValue(re.Expression(), re.Distinct() != nil)
@@ -132,6 +128,17 @@ func (c *StatementCompiler) compileBodyExpression(ctx fql.IBodyExpressionContext
 		// Emit a return instruction with the expression result
 		c.ctx.Program.Emitter.EmitA(bytecode.OpReturn, valReg)
 	}
+}
+
+// compileTerminalForResult preserves the top-level FOR result contract for
+// every body that can return a loop directly, including block-bodied UDFs.
+func (c *StatementCompiler) compileTerminalForResult(ctx fql.IForExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	out := c.loops.Compile(ctx)
+	c.ctx.Program.Emitter.EmitA(bytecode.OpReturn, out)
 }
 
 // CompileReturnValue compiles a non-loop return expression and applies its

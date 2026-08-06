@@ -24,10 +24,10 @@ func TestMatchObjectPatternContainsKeyError(t *testing.T) {
 		S(
 			`
 LET obj = @obj
-RETURN MATCH obj (
+RETURN MATCH obj {
   { a: 1 } => 1,
   _ => 0,
-)
+}
 `,
 			"Should surface ContainsKey errors",
 		).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{Contains: []string{"boom"}}),

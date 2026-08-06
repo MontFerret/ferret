@@ -43,9 +43,9 @@ RETURN f()
 		{
 			name: "UdfBlockReturn",
 			expr: `
-FUNC f() (
+FUNC f() {
   RETURN 1
-)
+}
 RETURN f()
 `,
 		},

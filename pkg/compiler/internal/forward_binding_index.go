@@ -147,6 +147,8 @@ func (i *ForwardBindingIndex) buildFunctionDeclaration(ctx fql.IFunctionDeclarat
 
 	if ret := block.FunctionReturn(); ret != nil {
 		i.collectNestedScopes(ret.Expression(), scope)
+	} else if terminalFor := block.ForExpression(); terminalFor != nil {
+		i.buildForExpression(terminalFor, scope)
 	}
 }
 

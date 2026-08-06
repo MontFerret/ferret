@@ -68,6 +68,32 @@ func (t *triviaEmitter) tokenStart(node antlr.TerminalNode) int {
 	return 0
 }
 
+func (t *triviaEmitter) tokenStop(node antlr.TerminalNode) int {
+	if node == nil {
+		return 0
+	}
+
+	if sym := node.GetSymbol(); sym != nil {
+		return sym.GetStop()
+	}
+
+	return 0
+}
+
+func (t *triviaEmitter) blockLeadingTrivia(headerStop int, open antlr.TerminalNode, bodyStart int) string {
+	if open == nil {
+		return t.sliceBetween(headerStop+1, bodyStart)
+	}
+
+	beforeOpen := t.sliceBetween(headerStop+1, t.tokenStart(open))
+	afterOpen := t.sliceBetween(t.tokenStop(open)+1, bodyStart)
+	if t.containsComment(beforeOpen) {
+		return beforeOpen + strings.TrimPrefix(afterOpen, "\n")
+	}
+
+	return afterOpen
+}
+
 func (t *triviaEmitter) isInlineComment(text string) bool {
 	if text == "" || strings.Contains(text, "\n") {
 		return false

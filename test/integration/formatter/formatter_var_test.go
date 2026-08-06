@@ -29,36 +29,36 @@ total *= 3
 total /= 3
 RETURN total`),
 		S(`
-	FUNC   run( )(
+	FUNC   run( ){
 	VAR total= 1
 	 total   =total+2
  RETURN total
-)
+}
 RETURN run()
-		`, `FUNC run() (
+		`, `FUNC run() {
     VAR total = 1
     total = total + 2
     RETURN total
-)
+}
 RETURN run()`),
 		S(`
-	FUNC run()(
+	FUNC run(){
 	VAR total=10
 	total+=1
 	total-=2
 	total*=3
 	total/=3
 	RETURN total
-	)
+	}
 	RETURN run()
-		`, `FUNC run() (
+		`, `FUNC run() {
     VAR total = 10
     total += 1
     total -= 2
     total *= 3
     total /= 3
     RETURN total
-)
+}
 RETURN run()`),
 		S(`
 LET    STEP =  10
@@ -82,15 +82,15 @@ RETURN item
 DELETE item.deprecated
 RETURN item`),
 		S(`
-FUNC clean(payload)(
+FUNC clean(payload){
 DELETE  payload["debug"]
 RETURN payload
-)
+}
 RETURN clean({})
-`, `FUNC clean(payload) (
+`, `FUNC clean(payload) {
     DELETE payload["debug"]
     RETURN payload
-)
+}
 RETURN clean({})`),
 		S(`
 FOR item IN [{ stale: true }]

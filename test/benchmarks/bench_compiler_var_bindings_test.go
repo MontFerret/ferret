@@ -12,10 +12,10 @@ total += 2
 
 VAR carried = 0
 
-FUNC bump(v) (
+FUNC bump(v) {
   carried = v
   RETURN carried
-)
+}
 
 LET ignored = (
   FOR item IN [1, 2, 3]

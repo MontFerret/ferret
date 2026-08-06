@@ -390,7 +390,7 @@ func TestExpressionFormatter_QueryExpressionOneModifierWithMultiline(t *testing.
 }
 
 func TestExpressionFormatter_MatchExpressionInline(t *testing.T) {
-	input := "RETURN MATCH x(1=>10,_=>0)"
+	input := "RETURN MATCH x{1=>10,_=>0}"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -398,13 +398,13 @@ func TestExpressionFormatter_MatchExpressionInline(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "MATCH x ( 1 => 10, _ => 0 )" {
+	if got := buf.String(); got != "MATCH x { 1 => 10, _ => 0 }" {
 		t.Fatalf("unexpected MATCH inline formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_MatchExpressionGuardMultiline(t *testing.T) {
-	input := "RETURN MATCH(WHEN a>0=>a,WHEN a<0=>-a,_=>0)"
+	input := "RETURN MATCH{WHEN a>0=>a,WHEN a<0=>-a,_=>0}"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -414,13 +414,13 @@ func TestExpressionFormatter_MatchExpressionGuardMultiline(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, opts)
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "MATCH (\n    WHEN a > 0 => a,\n    WHEN a < 0 => -a,\n    _ => 0,\n)" {
+	if got := buf.String(); got != "MATCH {\n    WHEN a > 0 => a,\n    WHEN a < 0 => -a,\n    _ => 0,\n}" {
 		t.Fatalf("unexpected MATCH guard multiline formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_MatchExpressionObjectPattern(t *testing.T) {
-	input := `RETURN MATCH obj({ "a": 1, b: v }=>v,_=>0)`
+	input := `RETURN MATCH obj{{ "a": 1, b: v }=>v,_=>0}`
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -428,13 +428,13 @@ func TestExpressionFormatter_MatchExpressionObjectPattern(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != `MATCH obj ( { "a": 1, b: v } => v, _ => 0 )` {
+	if got := buf.String(); got != `MATCH obj { { "a": 1, b: v } => v, _ => 0 }` {
 		t.Fatalf("unexpected MATCH object pattern formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_MatchExpressionTriggerObjectPattern(t *testing.T) {
-	input := `RETURN MATCH obj({ TRIGGER: v }=>v,_=>0)`
+	input := `RETURN MATCH obj{{ TRIGGER: v }=>v,_=>0}`
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -442,13 +442,13 @@ func TestExpressionFormatter_MatchExpressionTriggerObjectPattern(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != `MATCH obj ( { TRIGGER: v } => v, _ => 0 )` {
+	if got := buf.String(); got != `MATCH obj { { TRIGGER: v } => v, _ => 0 }` {
 		t.Fatalf("unexpected MATCH object pattern formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_MatchExpressionDispatchShorthand(t *testing.T) {
-	input := `RETURN MATCH kind("click"=>btn<-"click",_=>input<-"focus")`
+	input := `RETURN MATCH kind{"click"=>btn<-"click",_=>input<-"focus"}`
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -456,7 +456,7 @@ func TestExpressionFormatter_MatchExpressionDispatchShorthand(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != `MATCH kind ( "click" => btn <- "click", _ => input <- "focus" )` {
+	if got := buf.String(); got != `MATCH kind { "click" => btn <- "click", _ => input <- "focus" }` {
 		t.Fatalf("unexpected MATCH dispatch shorthand formatting: %q", got)
 	}
 }

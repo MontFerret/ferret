@@ -66,10 +66,10 @@ func TestDispatch(t *testing.T) {
 			RETURN result
 		`, nil, "Should assign NONE from shorthand dispatch"),
 		S(`
-			LET tag = MATCH @kind (
+			LET tag = MATCH @kind {
 				"click" => @d <- "press",
 				_ => @d <- "hover",
-			)
+			}
 			RETURN tag
 		`, nil, "Should allow shorthand dispatch in MATCH arms"),
 		S(`

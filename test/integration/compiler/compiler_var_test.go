@@ -141,10 +141,10 @@ func TestVarErrors(t *testing.T) {
 			}, "Assignment target must already exist"),
 		Failure(
 			`
-			FUNC bump(x) (
+			FUNC bump(x) {
 			  x = x + 1
 			  RETURN x
-			)
+			}
 			RETURN bump(1)
 		`, E{
 				Kind:    parserd.SemanticError,
@@ -164,11 +164,11 @@ func TestVarErrors(t *testing.T) {
 		Failure(
 			`
 				VAR x = 1
-				FUNC outer() (
+				FUNC outer() {
 			  LET x = 2
 			  x = 3
 			  RETURN x
-			)
+			}
 			RETURN outer()
 		`, E{
 				Kind:    parserd.SemanticError,
@@ -212,11 +212,11 @@ func TestVarErrorsFunctionAssignmentTargets(t *testing.T) {
 			}, "UDF compound assignment reports function-specific diagnostic"),
 		Failure(
 			`
-			FUNC outer() (
+			FUNC outer() {
 			  FUNC inner() => 1
 			  inner.foo = 42
 			  RETURN NONE
-			)
+			}
 			RETURN outer()
 		`, E{
 				Kind:    parserd.SemanticError,
@@ -269,11 +269,11 @@ RETURN NONE
 func TestVarFunctionNameShadowedByBindingUsesBinding(t *testing.T) {
 	expr := `
 FUNC target() => 1
-FUNC outer() (
+FUNC outer() {
   LET target = {}
   target.foo = 42
   RETURN target
-)
+}
 RETURN outer()
 `
 
@@ -422,10 +422,10 @@ func TestDirectDeletionCompile(t *testing.T) {
 			return nil
 		}, "Computed property deletion compiles to dynamic key delete"),
 		ProgramCheck(`
-			FUNC remove(value, key) (
+			FUNC remove(value, key) {
 				DELETE value[key]
 				RETURN value
-			)
+			}
 			RETURN remove({ x: 1 }, "x")
 		`, func(program *bytecode.Program) error {
 			if got := inspect.CountOpcode(program, bytecode.OpDeleteKey); got == 0 {
@@ -547,11 +547,11 @@ counter = counter + 1
 RETURN counter
 `,
 		`
-FUNC run() (
+FUNC run() {
   VAR total = 1
   total = total + 1
   RETURN total
-)
+}
 RETURN run()
 `,
 		`
@@ -576,14 +576,14 @@ FOR item IN [1, 2]
 	RETURN total
 	`,
 		`
-	FUNC run() (
+	FUNC run() {
 	  VAR total = 10
 	  total += 1
 	  total -= 2
 	  total *= 3
 	  total /= 3
 	  RETURN total
-	)
+	}
 	RETURN run()
 	`,
 		`
@@ -645,10 +645,10 @@ RETURN getBase()
 func TestVarWriteCaptureUsesCellOpsAcrossOptimizationLevels(t *testing.T) {
 	expr := `
 VAR base = 1
-FUNC setBase(v) (
+FUNC setBase(v) {
   base = v
   RETURN base
-)
+}
 RETURN setBase(2)
 `
 
@@ -672,10 +672,10 @@ RETURN setBase(2)
 func TestVarWriteCaptureCompoundAssignmentUsesCellOpsAcrossOptimizationLevels(t *testing.T) {
 	expr := `
 	VAR base = 1
-	FUNC addToBase(v) (
+	FUNC addToBase(v) {
 	  base += v
 	  RETURN base
-	)
+	}
 	RETURN addToBase(2)
 	`
 
@@ -742,10 +742,10 @@ RETURN x[0]
 func TestVarReassignmentInLoopWidenTypeForCellBindings(t *testing.T) {
 	expr := `
 VAR x = [1, 2]
-FUNC touch(v) (
+FUNC touch(v) {
   x = v
   RETURN x
-)
+}
 LET ignored = (
   FOR item IN @items
     FILTER item

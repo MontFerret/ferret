@@ -17,10 +17,10 @@ func TestDebugSessionBreakpointsDistinguishUDFBodyAndCallSite(t *testing.T) {
 	defer engine.Close()
 
 	query := `LET seed = 1
-FUNC add(a) (
+FUNC add(a) {
   LET b = a + 1
   RETURN b
-)
+}
 LET value = add(seed)
 RETURN value`
 	plan, err := engine.CompileDebug(context.Background(), source.New("udf-breakpoints.fql", query))
@@ -88,12 +88,12 @@ func TestDebugSessionBreakpointsDistinguishMultipleUDFs(t *testing.T) {
 	}
 	defer engine.Close()
 
-	query := `FUNC first() (
+	query := `FUNC first() {
   RETURN 1
-)
-FUNC second() (
+}
+FUNC second() {
   RETURN 2
-)
+}
 LET a = first()
 LET b = second()
 RETURN a + b`
@@ -152,11 +152,11 @@ func TestDebugSessionNextInFunctionBindingStaysWithinUDFBoundaries(t *testing.T)
 	defer engine.Close()
 
 	query := `LET seed = 1
-FUNC add(a) (
+FUNC add(a) {
   LET b = a + 1
 
   RETURN b
-)
+}
 
 RETURN add(seed)`
 	plan, err := engine.CompileDebug(context.Background(), source.New("udf-binding.fql", query))
@@ -213,13 +213,13 @@ func TestDebugSessionUDFFramesLocalsAndRuntimeErrorLocation(t *testing.T) {
 	defer engine.Close()
 
 	query := `LET x = 1
-FUNC add(a) (
+FUNC add(a) {
   LET b = a + 1
   RETURN b / 0
-)
-FUNC unrelated() (
+}
+FUNC unrelated() {
   RETURN 99
-)
+}
 LET y = add(x)
 RETURN y`
 	plan, err := engine.CompileDebug(context.Background(), source.New("udf-error.fql", query))

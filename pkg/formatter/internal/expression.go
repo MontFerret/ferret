@@ -145,7 +145,7 @@ func (f *expressionFormatter) formatMatchExpression(ctx *fql.MatchExpressionCont
 		return
 	}
 
-	hasComments := f.matchArmsHaveComments(ctx)
+	hasComments := f.matchHasComments(ctx)
 
 	if f.p.forceSingleLine {
 		if hasComments {
@@ -184,21 +184,33 @@ func (f *expressionFormatter) formatMatchExpressionWith(p *printer, ctx *fql.Mat
 	}
 
 	p.space()
-	p.write("(")
+	p.write("{")
 
 	if inline {
 		p.space()
 		f.formatMatchArmsInline(p, ctx)
 		p.space()
-		p.write(")")
+		p.write("}")
 		return
 	}
 
-	p.newline()
+	arms, openBrace, _ := f.matchArmContexts(ctx)
 	p.withIndent(func() {
+		if len(arms) > 0 {
+			headerStop := ctx.GetStart().GetStop()
+			if expr := ctx.Expression(); expr != nil {
+				headerStop = expr.GetStop().GetStop()
+			}
+			f.trivia.emitListTriviaWith(
+				p,
+				f.trivia.blockLeadingTrivia(headerStop, openBrace, f.trivia.startIndex(arms[0])),
+			)
+		} else {
+			p.newline()
+		}
 		f.formatMatchArmsMultiline(p, ctx)
 	})
-	p.write(")")
+	p.write("}")
 }
 
 func (f *expressionFormatter) formatMatchArmsInline(p *printer, ctx *fql.MatchExpressionContext) {
@@ -250,12 +262,12 @@ func (f *expressionFormatter) formatMatchArmsMultiline(p *printer, ctx *fql.Matc
 		return
 	}
 
-	arms, closeParen := f.matchArmContexts(ctx)
+	arms, _, closeBrace := f.matchArmContexts(ctx)
 	if len(arms) == 0 {
 		return
 	}
 
-	closeStart := f.trivia.tokenStart(closeParen)
+	closeStart := f.trivia.tokenStart(closeBrace)
 
 	for i, arm := range arms {
 		switch v := arm.(type) {
@@ -278,13 +290,21 @@ func (f *expressionFormatter) formatMatchArmsMultiline(p *printer, ctx *fql.Matc
 	}
 }
 
-func (f *expressionFormatter) matchArmsHaveComments(ctx *fql.MatchExpressionContext) bool {
-	arms, closeParen := f.matchArmContexts(ctx)
+func (f *expressionFormatter) matchHasComments(ctx *fql.MatchExpressionContext) bool {
+	arms, openBrace, closeBrace := f.matchArmContexts(ctx)
 	if len(arms) == 0 {
 		return false
 	}
 
-	closeStart := f.trivia.tokenStart(closeParen)
+	headerStop := ctx.GetStart().GetStop()
+	if expr := ctx.Expression(); expr != nil {
+		headerStop = expr.GetStop().GetStop()
+	}
+	if f.trivia.containsComment(f.trivia.blockLeadingTrivia(headerStop, openBrace, f.trivia.startIndex(arms[0]))) {
+		return true
+	}
+
+	closeStart := f.trivia.tokenStart(closeBrace)
 	for i, arm := range arms {
 		start := f.trivia.stopIndex(arm) + 1
 		end := closeStart
@@ -300,9 +320,9 @@ func (f *expressionFormatter) matchArmsHaveComments(ctx *fql.MatchExpressionCont
 	return false
 }
 
-func (f *expressionFormatter) matchArmContexts(ctx *fql.MatchExpressionContext) ([]antlr.ParserRuleContext, antlr.TerminalNode) {
+func (f *expressionFormatter) matchArmContexts(ctx *fql.MatchExpressionContext) ([]antlr.ParserRuleContext, antlr.TerminalNode, antlr.TerminalNode) {
 	if ctx == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	if arms := ctx.MatchPatternArms(); arms != nil {
@@ -315,7 +335,7 @@ func (f *expressionFormatter) matchArmContexts(ctx *fql.MatchExpressionContext) 
 		if def := arms.MatchDefaultArm(); def != nil {
 			out = append(out, def.(antlr.ParserRuleContext))
 		}
-		return out, arms.CloseParen()
+		return out, arms.OpenBrace(), arms.CloseBrace()
 	}
 
 	if arms := ctx.MatchGuardArms(); arms != nil {
@@ -328,10 +348,10 @@ func (f *expressionFormatter) matchArmContexts(ctx *fql.MatchExpressionContext) 
 		if def := arms.MatchDefaultArm(); def != nil {
 			out = append(out, def.(antlr.ParserRuleContext))
 		}
-		return out, arms.CloseParen()
+		return out, arms.OpenBrace(), arms.CloseBrace()
 	}
 
-	return nil, nil
+	return nil, nil, nil
 }
 
 func (f *expressionFormatter) formatMatchPatternArmWith(p *printer, ctx *fql.MatchPatternArmContext) {

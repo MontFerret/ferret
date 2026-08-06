@@ -44,9 +44,9 @@ RETURN COUNT_DISTINCT([
 `
 
 	compilerReturnDistinctQuery = `
-FUNC unique(values) (
+FUNC unique(values) {
 	RETURN DISTINCT values
-)
+}
 RETURN DISTINCT unique([1, 2, 1, 3])
 `
 )

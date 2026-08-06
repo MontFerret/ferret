@@ -207,10 +207,10 @@ RETURN (
 
 func TestDebugInfoClassifiesReturnAndFunctionEntryPoints(t *testing.T) {
 	program, err := New(WithDebugInfo()).Compile(source.New("kinds.fql", `LET seed = 1
-FUNC add(a) (
+FUNC add(a) {
   LET b = a + 1
   RETURN b
-)
+}
 RETURN add(seed)`))
 	if err != nil {
 		t.Fatal(err)

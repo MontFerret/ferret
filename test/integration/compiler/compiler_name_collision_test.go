@@ -23,11 +23,11 @@ LET foo = "ff"
 RETURN foo()
 `, expectedHostCallBindingCollision("foo"), "Host call after LET with the same name should fail during compilation"),
 		Failure(`
-FUNC f() (
+FUNC f() {
   LET x = foo()
   LET foo = 1
   RETURN foo
-)
+}
 RETURN f()
 `, expectedHostCallBindingCollision("foo"), "Host call and LET collision inside UDF body should fail during compilation"),
 		Failure(`
@@ -56,12 +56,12 @@ DELETE x[foo()]
 RETURN x
 `, expectedHostCallBindingCollision("foo"), "DELETE computed target call should collide with top-level binding"),
 		Failure(`
-FUNC f() (
+FUNC f() {
   LET x = { a: 1 }
   LET foo = "a"
   DELETE x[foo()]
   RETURN x
-)
+}
 RETURN f()
 `, expectedHostCallBindingCollision("foo"), "DELETE computed target call should collide with UDF body binding"),
 		Failure(`

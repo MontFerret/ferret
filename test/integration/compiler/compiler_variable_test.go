@@ -12,10 +12,10 @@ import (
 func TestVariables(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		Failure(`
-FUNC test() (
+FUNC test() {
   LET x = 1
   RETURN x
-)
+}
 
 LET test = 1
 
@@ -25,11 +25,11 @@ RETURN NONE
 			Message: "Variable 'test' is already defined",
 		}, "Should fail to compile because of variable name conflict between function and variable"),
 		Failure(`
-FUNC outer() (
+FUNC outer() {
   FUNC inner() => 1
   LET inner = 2
   RETURN inner
-)
+}
 
 RETURN outer()
 `, E{

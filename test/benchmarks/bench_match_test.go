@@ -7,55 +7,55 @@ import (
 const (
 	matchScrutineeQuery = `
 LET x = @x
-RETURN MATCH x (
+RETURN MATCH x {
 	0 => 0,
 	1 => 1,
 	_ => 2,
-)
+}
 `
 
 	matchGuardQuery = `
 LET x = @x
-RETURN MATCH (
+RETURN MATCH {
 	WHEN x > 10 => x,
 	WHEN x > 0 => x * 2,
 	_ => 0,
-)
+}
 `
 
 	matchObjectPatternQuery = `
 LET obj = @obj
-RETURN MATCH obj (
+RETURN MATCH obj {
 	{ a: 1, b: v } => v,
 	_ => 0,
-)
+}
 `
 
 	matchLoopMixQuery = `
 LET vals = @vals
 FOR v IN vals
-	RETURN MATCH v (
+	RETURN MATCH v {
 		0 => 0,
 		1 => 1,
 		2 => 2,
 		_ => 3,
-	)
+	}
 `
 
 	matchConstScrutineeQuery = `
-RETURN MATCH 1 (
+RETURN MATCH 1 {
 	1 => 10,
 	2 => 20,
 	_ => 30,
-)`
+}`
 
 	matchMergePureLiteralResults = `
 LET x = @x
-RETURN MATCH x (
+RETURN MATCH x {
 	0 => 0,
 	1 => 1,
 	_ => 2,
-)
+}
 `
 )
 

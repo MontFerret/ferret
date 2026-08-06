@@ -96,7 +96,7 @@ func findLexedTokenIndex(tokens []antlr.Token, token antlr.Token) int {
 }
 
 func isInsideMatchArms(tokens []antlr.Token, idx int) bool {
-	openIdx := findEnclosingOpenParen(tokens, idx)
+	openIdx := findEnclosingOpenBrace(tokens, idx)
 	if openIdx < 0 {
 		return false
 	}
@@ -126,16 +126,16 @@ func isInsideMatchArms(tokens []antlr.Token, idx int) bool {
 	return false
 }
 
-func findEnclosingOpenParen(tokens []antlr.Token, idx int) int {
+func findEnclosingOpenBrace(tokens []antlr.Token, idx int) int {
 	depth := 0
 
 	for i := idx - 1; i >= 0; i-- {
 		text := tokenText(tokens[i])
 
 		switch text {
-		case ")":
+		case "}":
 			depth++
-		case "(":
+		case "{":
 			if depth == 0 {
 				return i
 			}

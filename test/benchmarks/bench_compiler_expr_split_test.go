@@ -16,11 +16,11 @@ RETURN users[* RETURN {
 
 const compilerMatchQueryMixQuery = `
 LET doc = @doc
-RETURN MATCH QUERY COUNT ".items" IN doc USING css (
+RETURN MATCH QUERY COUNT ".items" IN doc USING css {
 	0 => "empty",
 	count WHEN count > 2 => UPPER(QUERY ONE ".featured" IN doc USING css),
 	_ => QUERY ONE ".items" IN doc USING css,
-)
+}
 `
 
 const compilerQueryShorthandQuery = "\n" +

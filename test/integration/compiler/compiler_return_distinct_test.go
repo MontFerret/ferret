@@ -20,12 +20,12 @@ func TestReturnDistinctLowering(t *testing.T) {
 			Exists: []bytecode.Opcode{bytecode.OpDistinct},
 		}, "unknown return type defers validation to runtime"),
 		ProgramCheck(`
-FUNC source() (
+FUNC source() {
 	RETURN [1, 1]
-)
-FUNC unique() (
+}
+FUNC unique() {
 	RETURN DISTINCT source()
-)
+}
 RETURN unique()
 `, func(prog *bytecode.Program) error {
 			if !inspect.HasOpcode(prog, bytecode.OpDistinct) {
@@ -67,9 +67,9 @@ func TestReturnDistinctRejectsKnownNonArrayTypes(t *testing.T) {
 		Failure("RETURN DISTINCT { value: 1 }", E{Kind: parserd.SemanticError, Message: message}),
 		Failure("RETURN DISTINCT(1)", E{Kind: parserd.SemanticError, Message: message}, "DISTINCT immediately after RETURN is the modifier"),
 		Failure(`
-FUNC invalid() (
+FUNC invalid() {
 	RETURN DISTINCT 1
-)
+}
 RETURN invalid()
 `, E{Kind: parserd.SemanticError, Message: message}, "UDF block return rejects known scalar"),
 	})

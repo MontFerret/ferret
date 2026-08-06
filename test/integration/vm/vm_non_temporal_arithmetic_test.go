@@ -46,7 +46,7 @@ func TestNormalizedNonTemporalArithmetic(t *testing.T) {
 		S(`RETURN "a" + @host`, "ahost").Env(hostEnv),
 		S(`RETURN @host + "a"`, "hosta").Env(hostEnv),
 		S(`RETURN TO_NUMBER("10") - 2`, 8),
-		S(`RETURN MATCH 5.5 (5.5 => 5.5 % 2, _ => 0)`, 1.5),
+		S(`RETURN MATCH 5.5 {5.5 => 5.5 % 2, _ => 0}`, 1.5),
 		spec.NewSpec(`RETURN "10" - 2`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Message:  "invalid operation",
 			Contains: []string{"operator '-' cannot be applied to String and Int", ":1:8"},
@@ -91,7 +91,7 @@ func TestNormalizedNonTemporalArithmetic(t *testing.T) {
 			Message:  "invalid operation",
 			Contains: []string{"operator '-' cannot be applied to vm_test.ArithmeticHost and Int", ":1:8"},
 		}),
-		spec.NewSpec(`RETURN MATCH true (true => "10" - 2, _ => 0)`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+		spec.NewSpec(`RETURN MATCH true {true => "10" - 2, _ => 0}`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Message:  "invalid operation",
 			Contains: []string{"operator '-' cannot be applied to String and Int", ":1:28"},
 		}),

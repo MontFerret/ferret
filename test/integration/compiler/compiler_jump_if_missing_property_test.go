@@ -14,10 +14,10 @@ func TestMatchLoadPropertyConstEmission(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck(`
 LET obj = { a: 1, b: 2 }
-RETURN MATCH obj (
+RETURN MATCH obj {
   { a: 1, b: v } => v,
   _ => 0,
-)
+}
 `, func(prog *bytecode.Program) error {
 			if !inspect.HasOpcode(prog, bytecode.OpMatchLoadPropertyConst) {
 				return fmt.Errorf("expected bytecode to contain %s", bytecode.OpMatchLoadPropertyConst)
