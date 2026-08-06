@@ -46,20 +46,17 @@ func SortListDesc(ctx context.Context, values List) error {
 // SortList sorts the given List using the stable Sort algorithm
 func SortList(ctx context.Context, values List, ascending Boolean) error {
 	size, err := values.Length(ctx)
-
 	if err != nil {
 		return err
 	}
 
 	return stableSort(ctx, func(ctx context.Context, a, b Int) (Boolean, error) {
 		aVal, err := values.At(ctx, a)
-
 		if err != nil {
 			return false, err
 		}
 
 		bVal, err := values.At(ctx, b)
-
 		if err != nil {
 			return false, err
 		}
@@ -80,20 +77,17 @@ func SortList(ctx context.Context, values List, ascending Boolean) error {
 // SortListWith sorts the given List using the stable Sort algorithm using a custom comparator
 func SortListWith(ctx context.Context, values List, comparator Comparator) error {
 	size, err := values.Length(ctx)
-
 	if err != nil {
 		return err
 	}
 
 	return stableSort(ctx, func(ctx context.Context, a, b Int) (Boolean, error) {
 		aVal, err := values.At(ctx, a)
-
 		if err != nil {
 			return false, err
 		}
 
 		bVal, err := values.At(ctx, b)
-
 		if err != nil {
 			return false, err
 		}
@@ -132,6 +126,7 @@ func SortSliceWith(ctx context.Context, values []Value, comparator Comparator) e
 		return comparison < Equal, nil
 	}, func(_ context.Context, first, second Int) error {
 		values[first], values[second] = values[second], values[first]
+
 		return nil
 	}, Int(len(values)))
 }

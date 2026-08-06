@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"errors"
+
+	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
 )
 
 var (
@@ -55,14 +57,6 @@ func TypeError(actual Type, expected ...Type) error {
 	return Error(ErrInvalidType, fmt.Sprintf(typeErrorTemplate, expectedStr, typeString(actual)))
 }
 
-func typeString(t Type) string {
-	if t == nil {
-		return "Unknown"
-	}
-
-	return t.String()
-}
-
 // Error creates a new error by wrapping the provided error with the given message.
 // The resulting error will include both the original error and the additional message, providing more context about the error.
 func Error(err error, msg string) error {
@@ -71,6 +65,45 @@ func Error(err error, msg string) error {
 
 // Errorf creates a new error by wrapping the provided error with a formatted message.
 // The resulting error will include both the original error and the formatted message, providing more context about the error.
-func Errorf(err error, format string, args ...interface{}) error {
+func Errorf(err error, format string, args ...any) error {
 	return fmt.Errorf("%w: %s", err, fmt.Sprintf(format, args...))
+}
+
+func binaryOperatorTypeError(op operator.Binary, left, right Value) error {
+	return Error(
+		ErrInvalidOperation,
+		operator.CannotApply(op, TypeName(TypeOf(left)), TypeName(TypeOf(right))),
+	)
+}
+
+func unaryOperatorTypeError(op operator.Unary, value Value) error {
+	return Error(
+		ErrInvalidOperation,
+		operator.CannotApplyUnary(op, TypeName(TypeOf(value))),
+	)
+}
+
+func incompatibleComparisonError(left, right Value) error {
+	return Errorf(
+		ErrInvalidOperation,
+		"comparison cannot be applied to %s and %s",
+		TypeName(TypeOf(left)),
+		TypeName(TypeOf(right)),
+	)
+}
+
+func divisionByZeroError() error {
+	return fmt.Errorf("%w: %w", ErrInvalidOperation, ErrDivisionByZero)
+}
+
+func moduloByZeroError() error {
+	return fmt.Errorf("%w: %w", ErrInvalidOperation, ErrModuloByZero)
+}
+
+func typeString(t Type) string {
+	if t == nil {
+		return "Unknown"
+	}
+
+	return t.String()
 }

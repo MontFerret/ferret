@@ -55,6 +55,7 @@ func (t *Object) Equal(ctx context.Context, other Value) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	if Int(len(t.data)) != otherSize {
 		return false, nil
 	}
@@ -64,6 +65,7 @@ func (t *Object) Equal(ctx context.Context, other Value) (bool, error) {
 		if err != nil {
 			return false, err
 		}
+
 		if !found {
 			return false, nil
 		}
@@ -72,6 +74,7 @@ func (t *Object) Equal(ctx context.Context, other Value) (bool, error) {
 		if err != nil {
 			return false, err
 		}
+
 		if !equal {
 			return false, nil
 		}

@@ -17,6 +17,7 @@ func Add(_ context.Context, left, right Value) (Value, error) {
 	if _, ok := left.(String); ok {
 		return concatValues(left, right), nil
 	}
+
 	if _, ok := right.(String); ok {
 		return concatValues(left, right), nil
 	}

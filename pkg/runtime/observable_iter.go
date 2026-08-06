@@ -61,5 +61,6 @@ func (s *StreamIterator) Close() error {
 	}
 
 	s.closed = true
+
 	return s.stream.Close()
 }

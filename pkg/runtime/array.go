@@ -95,6 +95,7 @@ func (t *Array) equalArray(ctx context.Context, other *Array) (bool, error) {
 		if err != nil {
 			return false, err
 		}
+
 		if !equal {
 			return false, nil
 		}
@@ -161,6 +162,7 @@ func (t *Array) compareArray(ctx context.Context, other *Array) (Ordering, error
 		if err != nil {
 			return Equal, err
 		}
+
 		if comparison != Equal {
 			return comparison, nil
 		}

@@ -95,7 +95,7 @@ func (t *CustomValue) String() string {
 	return ""
 }
 
-func (t *CustomValue) Unwrap() interface{} {
+func (t *CustomValue) Unwrap() any {
 	return t
 }
 
@@ -113,7 +113,7 @@ func TestHelpers(t *testing.T) {
 			Convey("It should parse values", func() {
 				inputs := []struct {
 					Parsed runtime.Value
-					Raw    interface{}
+					Raw    any
 				}{
 					{Parsed: runtime.NewInt(1), Raw: int(1)},
 					{Parsed: runtime.NewInt(1), Raw: int8(1)},
@@ -397,7 +397,7 @@ func TestHelpers(t *testing.T) {
 
 		Convey("Unmarshal", func() {
 			Convey("Should deserialize object", func() {
-				input := map[string]interface{}{
+				input := map[string]any{
 					"foo": []string{
 						"bar",
 						"qaz",

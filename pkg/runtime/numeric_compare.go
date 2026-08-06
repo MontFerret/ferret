@@ -55,5 +55,6 @@ func exactIntFromFloat(value Float) (Int, bool) {
 	}
 
 	integer := Int(value)
+
 	return integer, Float(integer) == value
 }

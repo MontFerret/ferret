@@ -36,8 +36,8 @@ func subtractDateTimeDuration(dateTime DateTime, duration Duration) (Value, erro
 	if err != nil {
 		return ZeroDateTime, dateTimeRangeError("subtraction")
 	}
-	partial := partialValue.(DateTime)
 
+	partial := partialValue.(DateTime)
 	result, err := addDateTimeDuration(partial, Duration(1))
 	if err != nil {
 		return ZeroDateTime, dateTimeRangeError("subtraction")

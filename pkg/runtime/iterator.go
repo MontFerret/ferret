@@ -43,7 +43,6 @@ func ForEach(ctx context.Context, input Iterable, predicate Predicate) error {
 func ForEachIter(ctx context.Context, iter Iterator, predicate Predicate) error {
 	for {
 		val, key, err := iter.Next(ctx)
-
 		if errors.Is(err, io.EOF) {
 			return nil
 		}
@@ -53,7 +52,6 @@ func ForEachIter(ctx context.Context, iter Iterator, predicate Predicate) error 
 		}
 
 		res, err := predicate(ctx, val, key)
-
 		if err != nil {
 			return err
 		}

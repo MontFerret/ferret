@@ -39,6 +39,7 @@ func (r *Range) Hash() uint64 {
 
 	var startMultiplier Int
 	startMultiplier = 1
+
 	if r.start < 0 {
 		h.Write([]byte("-"))
 		startMultiplier = -1
@@ -73,6 +74,7 @@ func (r *Range) Iterate(_ context.Context) (Iterator, error) {
 
 func (r *Range) Length(_ context.Context) (Int, error) {
 	var distance uint64
+
 	if r.start <= r.end {
 		distance = uint64(r.end) - uint64(r.start)
 	} else {

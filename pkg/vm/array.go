@@ -38,7 +38,6 @@ func arrayAll(ctx context.Context, cmp arrayComparator, left, right runtime.Valu
 
 func arrayAny(ctx context.Context, cmp arrayComparator, left, right runtime.Value) (runtime.Boolean, error) {
 	arr, err := runtime.CastList(left)
-
 	if err != nil {
 		return runtime.False, err
 	}
@@ -54,6 +53,7 @@ func arrayAny(ctx context.Context, cmp arrayComparator, left, right runtime.Valu
 
 		if matches {
 			result = runtime.True
+
 			return runtime.False, nil
 		}
 
@@ -67,7 +67,6 @@ func arrayAny(ctx context.Context, cmp arrayComparator, left, right runtime.Valu
 
 func arrayNone(ctx context.Context, cmp arrayComparator, left, right runtime.Value) (runtime.Boolean, error) {
 	arr, err := runtime.CastList(left)
-
 	if err != nil {
 		return runtime.False, err
 	}
@@ -83,6 +82,7 @@ func arrayNone(ctx context.Context, cmp arrayComparator, left, right runtime.Val
 
 		if matches {
 			result = runtime.False
+
 			return runtime.False, nil
 		}
 
@@ -110,8 +110,8 @@ func arrayFlatten(ctx context.Context, value runtime.Value, depth int) (runtime.
 	}
 
 	result := runtime.NewArray64(size * 2)
-
 	var flatten func(input runtime.List, level int) error
+
 	flatten = func(input runtime.List, level int) error {
 		return input.ForEach(ctx, func(c context.Context, v runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
 			if listValue, ok := v.(runtime.List); ok && level <= depth {
@@ -163,6 +163,7 @@ func arrayDistinct(ctx context.Context, value runtime.Value) (runtime.List, erro
 
 		return runtime.True, nil
 	})
+
 	if err != nil {
 		return nil, err
 	}

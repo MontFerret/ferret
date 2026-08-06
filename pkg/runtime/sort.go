@@ -45,6 +45,7 @@ func sortSwapRange(ctx context.Context, swap SortSwap, a, b, n Int) error {
 func stableSort(ctx context.Context, less SortLess, swap SortSwap, n Int) error {
 	blockSize := Int(20) // must be > 0
 	a, b := ZeroInt, blockSize
+
 	for b <= n {
 		if err := sortInsertionSort(ctx, less, swap, a, b); err != nil {
 			return err
@@ -107,6 +108,7 @@ func sortSymMerge(ctx context.Context, less SortLess, swap SortSwap, a, m, b Int
 				j = h
 			}
 		}
+
 		// Swap values until data[a] reaches the position before i.
 		for k := a; k < i-1; k++ {
 			if err := swap(ctx, k, k+1); err != nil {
@@ -141,6 +143,7 @@ func sortSymMerge(ctx context.Context, less SortLess, swap SortSwap, a, m, b Int
 				j = h
 			}
 		}
+
 		// Swap values until data[m] reaches the position i.
 		for k := m; k > i; k-- {
 			if err := swap(ctx, k, k-1); err != nil {
@@ -162,6 +165,7 @@ func sortSymMerge(ctx context.Context, less SortLess, swap SortSwap, a, m, b Int
 		start = a
 		r = m
 	}
+
 	p := n - 1
 
 	for start < r {
@@ -186,11 +190,13 @@ func sortSymMerge(ctx context.Context, less SortLess, swap SortSwap, a, m, b Int
 			return err
 		}
 	}
+
 	if a < start && start < mid {
 		if err := sortSymMerge(ctx, less, swap, a, start, mid); err != nil {
 			return err
 		}
 	}
+
 	if mid < end && end < b {
 		if err := sortSymMerge(ctx, less, swap, mid, end, b); err != nil {
 			return err
@@ -219,6 +225,7 @@ func sortRotate(ctx context.Context, swap SortSwap, a, m, b Int) error {
 			j -= i
 		}
 	}
+
 	// i == j
 	return sortSwapRange(ctx, swap, m-i, m, i)
 }

@@ -207,6 +207,7 @@ func ValidateType(value Value, required ...Type) error {
 	for _, t := range required {
 		if IsSameType(tid, t) || (t != nil && t.Is(value)) {
 			valid = true
+
 			break
 		}
 	}

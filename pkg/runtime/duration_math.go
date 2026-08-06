@@ -45,6 +45,7 @@ func divideDuration(duration Duration, scalar Value) (Value, error) {
 		if value == 0 {
 			return None, divisionByZeroError()
 		}
+
 		if duration == Duration(math.MinInt64) && value == -1 {
 			return None, durationRangeError("division")
 		}
@@ -62,6 +63,7 @@ func scaleDurationFloat(duration Duration, scalar Float, divide bool) (Value, er
 	if math.IsNaN(scalarFloat) || math.IsInf(scalarFloat, 0) {
 		return None, Error(ErrInvalidOperation, "duration scale must be finite")
 	}
+
 	if divide && scalarFloat == 0 {
 		return None, divisionByZeroError()
 	}
@@ -94,6 +96,7 @@ func divideDurations(left, right Duration) (Value, error) {
 	if leftNanos == math.MinInt64 && rightNanos == -1 {
 		return Float(float64(leftNanos) / float64(rightNanos)), nil
 	}
+
 	if leftNanos%rightNanos == 0 {
 		return Int(leftNanos / rightNanos), nil
 	}
@@ -131,6 +134,7 @@ func multiplyDurationInt64(left, right int64) (int64, bool) {
 	if left == 0 || right == 0 {
 		return 0, true
 	}
+
 	if (left == math.MinInt64 && right == -1) || (right == math.MinInt64 && left == -1) {
 		return 0, false
 	}
