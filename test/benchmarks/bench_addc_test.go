@@ -78,6 +78,11 @@ FOR i IN 1..1000
   RETURN @left == @right ? i : 0
 `
 
+	quantifiedComparisonQuery = `
+FOR i IN 1..1000
+  RETURN @values ANY > @threshold
+`
+
 	dateTimeAddQuery = `
 FOR i IN 1..1000
   RETURN @base + 2ms
@@ -220,6 +225,14 @@ func BenchmarkEqualityJumpRegister_O0(b *testing.B) {
 
 func BenchmarkEqualityJumpRegister_O1(b *testing.B) {
 	RunBenchmarkO1(b, equalityJumpRegisterQuery, WithParam("left", 1), WithParam("right", 1))
+}
+
+func BenchmarkQuantifiedComparison_O0(b *testing.B) {
+	RunBenchmarkO0(b, quantifiedComparisonQuery, WithParam("values", []any{1, 2, 3, 4, 5, 6, 7, 8}), WithParam("threshold", 7))
+}
+
+func BenchmarkQuantifiedComparison_O1(b *testing.B) {
+	RunBenchmarkO1(b, quantifiedComparisonQuery, WithParam("values", []any{1, 2, 3, 4, 5, 6, 7, 8}), WithParam("threshold", 7))
 }
 
 func BenchmarkDateTimeAdd_O0(b *testing.B) {

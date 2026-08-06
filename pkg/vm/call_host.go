@@ -85,6 +85,7 @@ func callCachedHostFunction(
 	default:
 		if fnv != nil {
 			args := stageHostCallArgs(scratch, reg, start, count)
+
 			return fnv(ctx, args...)
 		}
 	}

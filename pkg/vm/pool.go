@@ -51,6 +51,7 @@ func (p *Pool) Acquire() (*VM, error) {
 
 	if p.closed {
 		p.mu.Unlock()
+
 		return nil, ErrPoolClosed
 	}
 
@@ -65,6 +66,7 @@ func (p *Pool) Acquire() (*VM, error) {
 
 	if p.maxTotal > 0 && p.total >= p.maxTotal {
 		p.mu.Unlock()
+
 		return nil, ErrPoolExhausted
 	}
 
@@ -79,6 +81,7 @@ func (p *Pool) Acquire() (*VM, error) {
 		if p.total > 0 {
 			p.total--
 		}
+
 		p.mu.Unlock()
 
 		return nil, err
@@ -89,6 +92,7 @@ func (p *Pool) Acquire() (*VM, error) {
 		if p.total > 0 {
 			p.total--
 		}
+
 		p.mu.Unlock()
 
 		return nil, errors.Join(ErrPoolClosed, instance.Close())
@@ -110,6 +114,7 @@ func (p *Pool) Release(vm *VM) {
 	p.mu.Lock()
 	if _, ok := p.inUse[vm]; !ok {
 		p.mu.Unlock()
+
 		return
 	}
 
@@ -144,6 +149,7 @@ func (p *Pool) Close() error {
 	p.mu.Lock()
 	if p.closed {
 		p.mu.Unlock()
+
 		return nil
 	}
 

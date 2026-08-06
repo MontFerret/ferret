@@ -41,7 +41,6 @@ func NewEnvironment(opts []EnvironmentOption) (*Environment, error) {
 	}
 
 	funcs, err := envBuilder.functions.Build()
-
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +80,6 @@ func MergeEnvironments(envs ...*Environment) (*Environment, error) {
 
 	builder := runtime.NewFunctionsBuilderFrom(funcsToMerge...)
 	funcs, err := builder.Build()
-
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +95,6 @@ func ExtendEnvironment(env *Environment, opts []EnvironmentOption) (*Environment
 	}
 
 	newEnv, err := NewEnvironment(opts)
-
 	if err != nil {
 		return nil, err
 	}

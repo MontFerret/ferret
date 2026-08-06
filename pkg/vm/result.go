@@ -67,7 +67,6 @@ func Materialize[T any](r *Result, materializer Materializer[T]) (T, error) {
 	r.materialized = true
 
 	m, err := materializer(r.root)
-
 	if err != nil {
 		return zero, err
 	}

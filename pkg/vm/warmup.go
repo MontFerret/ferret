@@ -161,13 +161,14 @@ func ensureHostFunctionsBound(vm *VM, env *Environment) error {
 		if attempted[descriptor.ID] {
 			continue
 		}
-		attempted[descriptor.ID] = true
 
+		attempted[descriptor.ID] = true
 		vm.cache.HostFunctions[descriptor.ID] = mem.CachedHostFunction{}
 		cachedFn, err := warmupBindHostCall(descriptor, env.Functions)
 
 		if err != nil {
 			warmupErrs.Add(err, descriptor.PC, descriptor.Dst)
+
 			continue
 		}
 
@@ -193,6 +194,7 @@ func resolveHostFn[T runtime.FunctionConstraint](
 	if fn, ok := primary(fnName); ok {
 		var c mem.CachedHostFunction
 		setter(&c, fn)
+
 		return c, nil
 	}
 

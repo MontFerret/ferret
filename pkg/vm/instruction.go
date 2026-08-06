@@ -21,5 +21,6 @@ func (i *execInstruction) isBackedge(pc int) bool {
 	}
 
 	targetIndex := bytecode.JumpTargetOperandIndex(i.Opcode)
+
 	return targetIndex >= 0 && int(i.Operands[targetIndex]) <= pc
 }

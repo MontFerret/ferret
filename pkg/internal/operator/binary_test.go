@@ -17,6 +17,7 @@ func TestBinaryOperatorContract(t *testing.T) {
 		value      uint8
 		relational bool
 		equality   bool
+		membership bool
 	}{
 		{op: operator.Add, symbol: "+", value: 1},
 		{op: operator.Subtract, symbol: "-", value: 2},
@@ -29,6 +30,7 @@ func TestBinaryOperatorContract(t *testing.T) {
 		{op: operator.GreaterOrEqual, symbol: ">=", value: 9, relational: true},
 		{op: operator.Equal, symbol: "==", value: 10, equality: true},
 		{op: operator.NotEqual, symbol: "!=", value: 11, equality: true},
+		{op: operator.In, symbol: "IN", value: 12, membership: true},
 	}
 
 	seen := map[operator.Binary]string{operator.Unknown: "?"}
@@ -58,12 +60,21 @@ func TestBinaryOperatorContract(t *testing.T) {
 			if actual := test.op.IsEquality(); actual != test.equality {
 				t.Fatalf("IsEquality() = %v, want %v", actual, test.equality)
 			}
+
+			if actual := test.op.IsMembership(); actual != test.membership {
+				t.Fatalf("IsMembership() = %v, want %v", actual, test.membership)
+			}
+
+			wantComparison := test.relational || test.equality || test.membership
+			if actual := test.op.IsComparison(); actual != wantComparison {
+				t.Fatalf("IsComparison() = %v, want %v", actual, wantComparison)
+			}
 		})
 	}
 }
 
 func TestParseBinaryRejectsNonDiagnosticOperators(t *testing.T) {
-	for _, input := range []string{"", " ", "=", "IN", "+=", "?"} {
+	for _, input := range []string{"", " ", "=", "in", "+=", "?"} {
 		t.Run(input, func(t *testing.T) {
 			actual, ok := operator.ParseBinary(input)
 			if ok || actual != operator.Unknown {
@@ -80,6 +91,12 @@ func TestParseBinaryRejectsNonDiagnosticOperators(t *testing.T) {
 	}
 	if operator.Unknown.IsEquality() {
 		t.Fatal("Unknown must not be equality")
+	}
+	if operator.Unknown.IsMembership() {
+		t.Fatal("Unknown must not be membership")
+	}
+	if operator.Unknown.IsComparison() {
+		t.Fatal("Unknown must not be a comparison")
 	}
 }
 

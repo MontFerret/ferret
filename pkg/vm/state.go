@@ -118,6 +118,7 @@ func (s *execState) finishRunInto(root runtime.Value, result *Result) *Result {
 	if key, closer, ok := mem.ResourceKeyOf(root); ok && s.owned.ExtractByKey(key) {
 		resultOwned.TrackResolved(key, closer)
 	}
+
 	if !s.owned.Empty() {
 		s.owned.DrainTo(&s.deferred)
 	}
@@ -125,6 +126,7 @@ func (s *execState) finishRunInto(root runtime.Value, result *Result) *Result {
 	if !resultOwned.Empty() {
 		result.adoptOwned(&resultOwned)
 	}
+
 	if !s.deferred.Empty() {
 		result.adoptDeferred(&s.deferred)
 	}
@@ -137,10 +139,10 @@ func (s *execState) finishRunInto(root runtime.Value, result *Result) *Result {
 func (s *execState) resetRunStorage() {
 	s.cells.Reset()
 	s.cellHandles = s.cellHandles[:0]
+
 	s.owned.Reset()
 	s.aliases.Reset()
 	s.deferred.Reset()
-
 	s.registers.Reset()
 	s.scratch.Reset()
 
@@ -218,6 +220,7 @@ func (s *execState) rethrowRuntimeAt(pc int) {
 	if !s.hasCaught {
 		err := runtime.Error(runtime.ErrInvalidOperation, "RETHROW requires a caught runtime failure")
 		s.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 		return
 	}
 
@@ -228,6 +231,7 @@ func (s *execState) rethrowRuntimeAt(pc int) {
 	}
 
 	s.raise(pc, caught.err, caught.kind, recoverDefault, bytecode.NoopOperand, nil, false)
+
 	if s.hasFail {
 		s.failure.originPC = originPC
 	}
@@ -284,6 +288,7 @@ func (s *execState) resolveFailure() errAction {
 			if s.isOptionalMiss(failure.err) {
 				s.applyFailureFallback(failure)
 				s.clearFailure()
+
 				return errContinue
 			}
 
@@ -292,6 +297,7 @@ func (s *execState) resolveFailure() errAction {
 			if s.isMissingMember(failure.err) {
 				s.applyFailureFallback(failure)
 				s.clearFailure()
+
 				return errContinue
 			}
 
@@ -299,6 +305,7 @@ func (s *execState) resolveFailure() errAction {
 		case recoverProtected:
 			s.applyFailureFallback(failure)
 			s.clearFailure()
+
 			return errContinue
 		default:
 			return s.resolveRuntimeDefault(failure)
@@ -318,11 +325,13 @@ func (s *execState) resolveRuntimeDefault(failure pendingFailure) errAction {
 		}
 
 		s.clearFailure()
+
 		return errContinue
 	}
 
 	if s.unwindToProtected() {
 		s.clearFailure()
+
 		return errContinue
 	}
 
@@ -345,6 +354,7 @@ func (s *execState) isMissingMember(err error) bool {
 
 func (s *execState) isNullMemberDereference(err error) bool {
 	var memberErr *diagnostics.MemberAccessError
+
 	if !errors.As(err, &memberErr) {
 		return false
 	}
@@ -401,6 +411,7 @@ func (s *execState) tryCatch(pos int) (bytecode.Catch, bool) {
 func (s *execState) setOrRaiseDefault(pc int, dst bytecode.Operand, val runtime.Value, err error) {
 	if err == nil {
 		s.writeBorrowedRegister(dst, val)
+
 		return
 	}
 
@@ -410,6 +421,7 @@ func (s *execState) setOrRaiseDefault(pc int, dst bytecode.Operand, val runtime.
 func (s *execState) setProducedOrRaiseDefault(pc int, dst bytecode.Operand, val runtime.Value, err error) {
 	if err == nil {
 		s.writeProducedRegister(dst, val)
+
 		return
 	}
 
@@ -419,11 +431,13 @@ func (s *execState) setProducedOrRaiseDefault(pc int, dst bytecode.Operand, val 
 func (s *execState) setOrOptional(pc int, dst bytecode.Operand, val runtime.Value, err error, optional bool) {
 	if err == nil {
 		s.writeBorrowedRegister(dst, val)
+
 		return
 	}
 
 	if optional && s.isNullMemberDereference(err) {
 		s.writeBorrowedRegister(dst, runtime.None)
+
 		return
 	}
 
@@ -468,10 +482,13 @@ func (s *execState) unwindToProtected() bool {
 	s.cellHandles = frame.CellHandles
 	s.owned = frame.OwnedResources
 	s.aliases = frame.Aliases
+
 	if frame.ReturnDest.IsRegister() {
 		s.writeBorrowedRegister(frame.ReturnDest, runtime.None)
 	}
+
 	s.pc = frame.ReturnPC
+
 	return true
 }
 
@@ -512,18 +529,22 @@ func (s *execState) returnToCaller(retVal runtime.Value) bool {
 			s.aliases.Inc(retKey)
 		}
 	}
+
 	s.pc = frame.ReturnPC
+
 	return true
 }
 
 func (s *execState) setCallResult(pc int, op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) {
 	if err == nil {
 		s.writeProducedRegister(dst, out)
+
 		return
 	}
 
 	if bytecode.IsProtectedCall(op) {
 		s.raiseRuntimeAt(pc, err, recoverProtected, dst, runtime.None, true)
+
 		return
 	}
 
@@ -618,6 +639,7 @@ func (s *execState) aliasOwnedValue(dst bytecode.Operand, val runtime.Value, key
 	if !mem.CanTrackValue(prev) {
 		s.registers[dst] = val
 		s.aliases.Inc(key)
+
 		return val
 	}
 
@@ -625,6 +647,7 @@ func (s *execState) aliasOwnedValue(dst bytecode.Operand, val runtime.Value, key
 	if !ok || !s.owned.OwnsKey(prevKey) {
 		s.registers[dst] = val
 		s.aliases.Inc(key)
+
 		return val
 	}
 
@@ -673,7 +696,6 @@ func (s *execState) storeCell(handle mem.CellHandle, val runtime.Value) error {
 	}
 
 	val = normalizeValue(val)
-
 	oldKey, oldCloser, oldTrackable := mem.ResourceKeyOf(oldVal)
 	oldOwned := oldTrackable && s.owned.OwnsKey(oldKey)
 	newKey, _, newTrackable := mem.ResourceKeyOf(val)
@@ -742,6 +764,7 @@ func (s *execState) writeBorrowedRegister(dst bytecode.Operand, val runtime.Valu
 	prevKey, prevCloser, ok := mem.ResourceKeyOf(prev)
 	if !ok || !s.owned.OwnsKey(prevKey) {
 		s.registers[dst] = val
+
 		return val
 	}
 
@@ -752,6 +775,7 @@ func (s *execState) writeBorrowedRegister(dst bytecode.Operand, val runtime.Valu
 	}
 
 	s.registers[dst] = val
+
 	return val
 }
 
@@ -779,6 +803,7 @@ func (s *execState) writeProducedRegister(dst bytecode.Operand, val runtime.Valu
 
 	if !mem.CanTrackValue(prev) {
 		s.registers[dst] = val
+
 		if newOK {
 			s.owned.TrackResolved(newKey, newCloser)
 			s.aliases.Inc(newKey)
@@ -788,8 +813,10 @@ func (s *execState) writeProducedRegister(dst bytecode.Operand, val runtime.Valu
 	}
 
 	prevKey, prevCloser, ok := mem.ResourceKeyOf(prev)
+
 	if !ok || !s.owned.OwnsKey(prevKey) {
 		s.registers[dst] = val
+
 		if newOK {
 			s.owned.TrackResolved(newKey, newCloser)
 			s.aliases.Inc(newKey)
@@ -839,6 +866,7 @@ func (s *execState) copyRegister(dst, src bytecode.Operand) runtime.Value {
 
 	if !mem.CanTrackValue(prev) {
 		s.registers[dst] = val
+
 		if valOwned {
 			s.aliases.Inc(valKey)
 		}
@@ -847,6 +875,7 @@ func (s *execState) copyRegister(dst, src bytecode.Operand) runtime.Value {
 	}
 
 	prevKey, prevCloser, ok := mem.ResourceKeyOf(prev)
+
 	if !ok || !s.owned.OwnsKey(prevKey) {
 		s.registers[dst] = val
 		if valOwned {
@@ -861,6 +890,7 @@ func (s *execState) copyRegister(dst, src bytecode.Operand) runtime.Value {
 	}
 
 	s.registers[dst] = val
+
 	if valOwned {
 		s.aliases.Inc(valKey)
 	}

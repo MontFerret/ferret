@@ -20,7 +20,6 @@ func inspectDebugMap(value runtime.Map, maxItems int) DebugValueInspection {
 	for i := runtime.Int(0); i < length; i++ {
 		key, _ := keys.At(context.Background(), i)
 		name, ok := key.(runtime.String)
-
 		if !ok {
 			return out
 		}

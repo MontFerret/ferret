@@ -12,6 +12,7 @@ type (
 	// DebugValueKind identifies a built-in collection shape available for safe
 	// debugger inspection.
 	DebugValueKind uint8
+
 	// DebugValueItem is one safely inspected collection item. Key is populated
 	// for object values.
 	DebugValueItem struct {
@@ -36,14 +37,14 @@ type (
 		Lookup(runtime.Value, runtime.Value) (runtime.Value, error)
 		Inspect(runtime.Value, int) (DebugValueInspection, bool)
 	}
+
+	debugValueAccess struct{}
 )
 
 const (
 	DebugValueArray DebugValueKind = iota + 1
 	DebugValueObject
 )
-
-type debugValueAccess struct{}
 
 // NewDebugValueAccess creates a side-effect-free accessor for built-in and
 // VM-owned values.

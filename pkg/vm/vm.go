@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
@@ -162,6 +163,7 @@ func (vm *VM) runUnchecked(ctx context.Context, env *Environment) (runtime.Value
 
 	if err != nil {
 		var invariantErr *diagnostics.InvariantError
+
 		if errors.As(err, &invariantErr) {
 			panic(err)
 		}
@@ -202,6 +204,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 	// The VM owns query cancellation at explicit execution safepoints. Code
 	// between safepoints is atomic unless an invoked operation honors ctx.
 	cancellation := newExecutionCancellation(ctx)
+
 	for state.pc < len(instructions) {
 		pc := state.pc
 		inst := &instructions[pc]
@@ -286,7 +289,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				state.pc = int(dst)
 			}
 		case bytecode.OpJumpIfNe:
-			matches, err := ne(ctx, reg[src1], reg[src2])
+			matches, err := runtime.EvaluateComparison(ctx, operator.NotEqual, reg[src1], reg[src2])
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
@@ -303,7 +306,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 		case bytecode.OpJumpIfNeConst:
 			right := constants[src2.Constant()]
-			matches, err := ne(ctx, reg[src1], right)
+			matches, err := runtime.EvaluateComparison(ctx, operator.NotEqual, reg[src1], right)
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
@@ -319,7 +322,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				state.pc = int(dst)
 			}
 		case bytecode.OpJumpIfEq:
-			matches, err := eq(ctx, reg[src1], reg[src2])
+			matches, err := runtime.EvaluateComparison(ctx, operator.Equal, reg[src1], reg[src2])
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
@@ -336,7 +339,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 		case bytecode.OpJumpIfEqConst:
 			right := constants[src2.Constant()]
-			matches, err := eq(ctx, reg[src1], right)
+			matches, err := runtime.EvaluateComparison(ctx, operator.Equal, reg[src1], right)
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
@@ -361,6 +364,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				}
 
 				state.pc = int(dst)
+
 				continue
 			}
 
@@ -373,11 +377,13 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				}
 
 				state.pc = int(dst)
+
 				continue
 			}
 			has, err := obj.ContainsKey(ctx, key)
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -413,11 +419,13 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				}
 
 				state.pc = int(dst)
+
 				continue
 			}
 			has, err := obj.ContainsKey(ctx, key)
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -440,6 +448,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				}
 
 				state.pc = inst.InlineSlot
+
 				continue
 			}
 			if vm.matchLoadPropertyConst(ctx, pc, inst, dst, reg[src1], key) {
@@ -455,6 +464,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			if !dst.IsConstant() {
 				callErr := runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a constant string message")
 				state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -462,6 +472,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			if idx < 0 || idx >= len(constants) {
 				callErr := runtime.Error(runtime.ErrInvalidOperation, "FAIL expects a valid constant string message")
 				state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -469,6 +480,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			if !ok {
 				callErr := runtime.TypeErrorOf(constants[idx], runtime.TypeString)
 				state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -486,6 +498,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 					runtime.Errorf(runtime.ErrUnexpected, "invalid host call slot %d at pc %d", callSlot, pc),
 				)
 				state.raiseInvariantAt(pc, invariantErr)
+
 				break
 			}
 
@@ -496,6 +509,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 					runtime.Errorf(runtime.ErrUnexpected, "invalid host binding id %d at pc %d", call.ID, pc),
 				)
 				state.raiseInvariantAt(pc, invariantErr)
+
 				break
 			}
 
@@ -512,6 +526,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 					runtime.Errorf(runtime.ErrUnexpected, "invalid udf call slot %d at pc %d", callID, pc),
 				)
 				state.raiseInvariantAt(pc, invariantErr)
+
 				break
 			}
 
@@ -533,6 +548,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 					runtime.Errorf(runtime.ErrUnexpected, "invalid udf call slot %d at pc %d", callID, pc),
 				)
 				state.raiseInvariantAt(pc, invariantErr)
+
 				break
 			}
 
@@ -549,8 +565,10 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 			if err != nil {
 				state.setOrRaiseDefault(pc, dst, runtime.None, err)
+
 				break
 			}
+
 			err = dispatcher.Dispatch(ctx, runtime.DispatchEvent{
 				Name:    eventName,
 				Payload: payload,
@@ -577,6 +595,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			handle, ok := state.cellHandleOf(src1)
 			if !ok {
 				state.raiseInvariantAt(pc, runtime.Error(runtime.ErrInvalidOperation, "expected cell handle"))
+
 				break
 			}
 
@@ -587,6 +606,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			handle, ok := state.cellHandleOf(dst)
 			if !ok {
 				state.raiseInvariantAt(pc, runtime.Error(runtime.ErrInvalidOperation, "expected cell handle"))
+
 				break
 			}
 
@@ -599,16 +619,16 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			reg[dst] = data.NewFastObjectOf(shapeCache, vm.options.fastObjectDictThreshold, int(src1))
 		case bytecode.OpLoadRange:
 			start, err := runtime.ToInt(ctx, reg[src1])
-
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
 			end, err := runtime.ToInt(ctx, reg[src2])
-
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -621,6 +641,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 					runtime.Errorf(runtime.ErrUnexpected, "expected aggregate selector index constant at pc %d", pc),
 				)
 				state.raiseInvariantAt(pc, invariantErr)
+
 				break
 			}
 
@@ -670,6 +691,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 			if err := ds.Append(ctx, reg[src1]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -679,6 +701,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 			if err := tr.Set(ctx, reg[src1], reg[src2]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -692,13 +715,13 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 					runtime.Errorf(runtime.ErrUnexpected, "expected counter collector at pc %d", pc),
 				)
 				state.raiseInvariantAt(pc, invariantErr)
+
 				break
 			}
 
 			collector.Increment()
 		case bytecode.OpArrayPush:
 			ds := reg[dst].(*runtime.Array)
-
 			_ = ds.Append(ctx, reg[src1])
 			state.retireOwnership(reg[src1])
 		case bytecode.OpAggregateUpdate:
@@ -709,11 +732,13 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 					runtime.Errorf(runtime.ErrUnexpected, "expected aggregate collector at pc %d", pc),
 				)
 				state.raiseInvariantAt(pc, invariantErr)
+
 				break
 			}
 
 			if err := collector.UpdateAggregate(inst.InlineSlot, reg[src1]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -726,10 +751,12 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 					runtime.Errorf(runtime.ErrUnexpected, "expected grouped aggregate collector at pc %d", pc),
 				)
 				state.raiseInvariantAt(pc, invariantErr)
+
 				break
 			}
 			if err := collector.UpdateAggregate(ctx, reg[src1], reg[src2], inst.InlineSlot); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -743,11 +770,11 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			if ok {
 				_ = obj.Set(ctx, key, value)
 				state.retireOwnership(value)
+
 				continue
 			}
 
 			writable, ok := reg[dst].(runtime.KeyWritable)
-
 			if ok {
 				if err := writable.Set(ctx, key, value); err != nil {
 					state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -755,6 +782,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				}
 
 				state.retireOwnership(value)
+
 				continue
 			}
 
@@ -768,18 +796,20 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			if obj, ok := objVal.(*data.FastObject); ok {
 				vm.objectSetConstCached(inst, obj, key, value)
 				state.retireOwnership(value)
+
 				continue
 			}
 
 			writable, ok := reg[dst].(runtime.KeyWritable)
-
 			if ok {
 				if err := writable.Set(ctx, key, value); err != nil {
 					state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 					break
 				}
 
 				state.retireOwnership(value)
+
 				continue
 			}
 
@@ -792,6 +822,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 			if err := vm.setIndex(ctx, target, index, value); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -803,6 +834,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 			if err := vm.setIndex(ctx, target, index, value); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -814,6 +846,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 			if err := vm.setKey(ctx, target, key, value); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -826,10 +859,13 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			if obj, ok := target.(*data.FastObject); ok {
 				vm.objectSetConstCached(inst, obj, runtime.ToString(key), value)
 				state.retireOwnership(value)
+
 				continue
 			}
+
 			if err := vm.setKey(ctx, target, key, value); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -841,6 +877,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 			if err := vm.setProperty(ctx, target, prop, value); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -854,11 +891,14 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				if key, ok := prop.(runtime.String); ok {
 					vm.objectSetConstCached(inst, obj, key, value)
 					state.retireOwnership(value)
+
 					continue
 				}
 			}
+
 			if err := vm.setProperty(ctx, target, prop, value); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -900,10 +940,12 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 				if err == nil {
 					state.writeProducedRegister(dst, data.WrapIterator(iterator))
+
 					continue
 				}
 
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -921,6 +963,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 					}
 
 					state.pc = int(dst)
+
 					continue
 				}
 
@@ -939,6 +982,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 					state.writeBorrowedRegister(src2, runtime.False)
 					state.pc = int(dst)
+
 					continue
 				}
 
@@ -951,10 +995,12 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 					state.writeBorrowedRegister(src2, runtime.True)
 					state.pc = int(dst)
+
 					continue
 				}
 
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
 
@@ -1001,8 +1047,10 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 				break
 			}
+
 			stream, err := observable.Subscribe(ctx, runtime.Subscription{
 				EventName: eventName,
 				Options:   opts,
@@ -1024,44 +1072,43 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 				if err != nil {
 					state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 					break
 				}
 
 				if t < 0 {
 					state.raiseRuntimeAt(pc, runtime.Error(runtime.ErrInvalidArgument, "stream timeout must not be negative"), recoverDefault, bytecode.NoopOperand, nil, false)
+
 					break
 				}
 
 				timeout = t
 			}
+
 			state.writeProducedRegister(dst, stream.Iterate(timeout))
 		case bytecode.OpQuery:
 			src := readOperandValue(reg, constants, src1)
 			descriptor := readOperandValue(reg, constants, src2)
 
 			out, err := applyQuery(ctx, src, descriptor)
-
 			state.setProducedOrRaiseDefault(pc, dst, out, err)
 		case bytecode.OpQueryExists:
 			src := readOperandValue(reg, constants, src1)
 			descriptor := readOperandValue(reg, constants, src2)
 
 			out, err := applyQueryExists(ctx, src, descriptor)
-
 			state.setOrRaiseDefault(pc, dst, out, err)
 		case bytecode.OpQueryCount:
 			src := readOperandValue(reg, constants, src1)
 			descriptor := readOperandValue(reg, constants, src2)
 
 			out, err := applyQueryCount(ctx, src, descriptor)
-
 			state.setOrRaiseDefault(pc, dst, out, err)
 		case bytecode.OpQueryOne:
 			src := readOperandValue(reg, constants, src1)
 			descriptor := readOperandValue(reg, constants, src2)
 
 			out, err := applyQueryOne(ctx, src, descriptor)
-
 			state.setProducedOrRaiseDefault(pc, dst, out, err)
 		case bytecode.OpDataSet:
 			state.writeBorrowedRegister(dst, data.NewDataSet(src1 == 1))
@@ -1077,6 +1124,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 						runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan index %d", planIdx),
 					)
 					state.raiseInvariantAt(pc, invariantErr)
+
 					break
 				}
 
@@ -1095,6 +1143,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			if err != nil {
 				invariantErr := diagnostics.NewInvariantError("invalid collector configuration", err)
 				state.raiseInvariantAt(pc, invariantErr)
+
 				break
 			}
 
@@ -1112,12 +1161,11 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			if depth < 1 {
 				depth = 1
 			}
-			res, err := arrayFlatten(ctx, reg[src1], depth)
 
+			res, err := arrayFlatten(ctx, reg[src1], depth)
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpDistinct:
 			res, err := arrayDistinct(ctx, reg[src1])
-
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpAdd:
 			res, err := runtime.Add(ctx, reg[src1], reg[src2])
@@ -1158,31 +1206,31 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		case bytecode.OpCastBool:
 			reg[dst] = coerceBool(reg[src1])
 		case bytecode.OpCmp:
-			res, err := cmp(ctx, reg[src1], reg[src2])
-			state.setOrRaiseDefault(pc, dst, res, err)
+			res, err := runtime.CompareValues(ctx, reg[src2], reg[src1])
+			state.setOrRaiseDefault(pc, dst, runtime.Int(res), err)
 		case bytecode.OpNot:
 			res, err := runtime.Not(reg[src1])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpEq:
-			res, err := eq(ctx, reg[src1], reg[src2])
+			res, err := runtime.EvaluateComparison(ctx, operator.Equal, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpNe:
-			res, err := ne(ctx, reg[src1], reg[src2])
+			res, err := runtime.EvaluateComparison(ctx, operator.NotEqual, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpGt:
-			res, err := gt(ctx, reg[src1], reg[src2])
+			res, err := runtime.EvaluateComparison(ctx, operator.Greater, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpLt:
-			res, err := lt(ctx, reg[src1], reg[src2])
+			res, err := runtime.EvaluateComparison(ctx, operator.Less, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpGte:
-			res, err := gte(ctx, reg[src1], reg[src2])
+			res, err := runtime.EvaluateComparison(ctx, operator.GreaterOrEqual, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpLte:
-			res, err := lte(ctx, reg[src1], reg[src2])
+			res, err := runtime.EvaluateComparison(ctx, operator.LessOrEqual, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpIn:
-			res, err := contains(ctx, reg[src2], reg[src1])
+			res, err := runtime.EvaluateComparison(ctx, operator.In, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpLike:
 			res, err := Like(reg[src1], reg[src2])
@@ -1225,32 +1273,44 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 			reg[dst] = runtime.True
 		case bytecode.OpAllEq, bytecode.OpAllNe, bytecode.OpAllGt, bytecode.OpAllGte, bytecode.OpAllLt, bytecode.OpAllLte, bytecode.OpAllIn:
-			cmp := comparatorFromByte(int(op) - int(bytecode.OpAllEq))
-			res, err := arrayAll(ctx, cmp, reg[src1], reg[src2])
+			cmp, ok := operator.ArrayComparatorFromOffset(int(op) - int(bytecode.OpAllEq))
+			if !ok {
+				state.raiseInvariantAt(pc, runtime.Errorf(runtime.ErrInvalidOperation, "invalid ALL comparison opcode %s", op))
+				break
+			}
 
+			res, err := arrayAll(ctx, cmp, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpAnyEq, bytecode.OpAnyNe, bytecode.OpAnyGt, bytecode.OpAnyGte, bytecode.OpAnyLt, bytecode.OpAnyLte, bytecode.OpAnyIn:
-			cmp := comparatorFromByte(int(op) - int(bytecode.OpAnyEq))
-			res, err := arrayAny(ctx, cmp, reg[src1], reg[src2])
+			cmp, ok := operator.ArrayComparatorFromOffset(int(op) - int(bytecode.OpAnyEq))
+			if !ok {
+				state.raiseInvariantAt(pc, runtime.Errorf(runtime.ErrInvalidOperation, "invalid ANY comparison opcode %s", op))
+				break
+			}
 
+			res, err := arrayAny(ctx, cmp, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpNoneEq, bytecode.OpNoneNe, bytecode.OpNoneGt, bytecode.OpNoneGte, bytecode.OpNoneLt, bytecode.OpNoneLte, bytecode.OpNoneIn:
-			cmp := comparatorFromByte(int(op) - int(bytecode.OpNoneEq))
-			res, err := arrayNone(ctx, cmp, reg[src1], reg[src2])
+			cmp, ok := operator.ArrayComparatorFromOffset(int(op) - int(bytecode.OpNoneEq))
+			if !ok {
+				state.raiseInvariantAt(pc, runtime.Errorf(runtime.ErrInvalidOperation, "invalid NONE comparison opcode %s", op))
+				break
+			}
 
+			res, err := arrayNone(ctx, cmp, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpLength:
 			val, ok := reg[src1].(runtime.Measurable)
 
 			if ok {
 				length, err := val.Length(ctx)
-
 				if err != nil {
 					state.raiseRuntimeAt(pc, err, recoverDefault, dst, runtime.ZeroInt, true)
 					break
 				}
 
 				reg[dst] = length
+
 				continue
 			}
 
@@ -1273,10 +1333,12 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			if key, _, ok := mem.ResourceKeyOf(val); ok {
 				state.aliases.Delete(key)
 			}
+
 			closer, ok := state.owned.Release(val)
 			if !ok {
 				closer, ok = val.(io.Closer)
 			}
+
 			state.writeBorrowedRegister(dst, runtime.None)
 
 			if ok {
@@ -1293,10 +1355,12 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
+
 			if dur < 0 {
 				state.raiseRuntimeAt(pc, runtime.Error(runtime.ErrInvalidArgument, "wait duration must not be negative"), recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
+
 			if err := data.Sleep(ctx, dur); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 			}
@@ -1321,6 +1385,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			continue
 		}
 	}
+
 	if err := cancellation.Check(); err != nil {
 		return nil, sourcePointContinue, err
 	}
@@ -1380,6 +1445,7 @@ func (vm *VM) loadFastKeyCached(
 			if inst.InlineSlot < 0 {
 				return runtime.None, nil
 			}
+
 			if val, ok := obj.SlotValue(inst.InlineSlot); ok {
 				return val, nil
 			}
@@ -1402,6 +1468,7 @@ func (vm *VM) loadFastKeyCached(
 				if slot < 0 {
 					return runtime.None, nil
 				}
+
 				if val, ok := obj.SlotValue(slot); ok {
 					return val, nil
 				}
@@ -1457,6 +1524,7 @@ func (vm *VM) loadFastKeyCached(
 			if slot < 0 {
 				return runtime.None, nil
 			}
+
 			if val, ok := obj.SlotValue(slot); ok {
 				return val, nil
 			}
@@ -1494,7 +1562,6 @@ func (vm *VM) loadFastKeyCached(
 
 func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value) (runtime.Value, error) {
 	obj, ok := src.(*data.FastObject)
-
 	if !ok {
 		return vm.loadKey(ctx, src, arg)
 	}
@@ -1513,7 +1580,6 @@ func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value)
 
 func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *execInstruction, src, arg runtime.Value) (runtime.Value, error) {
 	obj, ok := src.(*data.FastObject)
-
 	if !ok {
 		return vm.loadKey(ctx, src, arg)
 	}
@@ -1546,7 +1612,6 @@ func (vm *VM) objectSetConstCached(inst *execInstruction, obj *data.FastObject, 
 	}
 
 	prev, next, slot, ok := obj.SetStringCached(string(key), value)
-
 	if ok && inst != nil {
 		inst.InlineSetShape = prev
 		inst.InlineSetNextShape = next
@@ -1556,7 +1621,6 @@ func (vm *VM) objectSetConstCached(inst *execInstruction, obj *data.FastObject, 
 
 func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
 	indexed, ok := src.(runtime.IndexReadable)
-
 	if !ok {
 		return nil, diagnostics.MemberAccessErrorOf(src, diagnostics.MemberAccessIndex, arg)
 	}
@@ -1583,13 +1647,11 @@ func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Va
 
 func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
 	keyed, ok := src.(runtime.KeyReadable)
-
 	if !ok {
 		return nil, diagnostics.MemberAccessErrorOf(src, diagnostics.MemberAccessProperty, arg)
 	}
 
 	out, err := keyed.Get(ctx, arg)
-
 	if err != nil {
 		return nil, err
 	}
@@ -1602,6 +1664,7 @@ func (vm *VM) loadIndexAndSet(ctx context.Context, dst bytecode.Operand, pc int,
 
 	if optional && src == runtime.None {
 		state.writeBorrowedRegister(dst, runtime.None)
+
 		return
 	}
 
@@ -1614,6 +1677,7 @@ func (vm *VM) loadKeyAndSet(ctx context.Context, dst bytecode.Operand, pc int, s
 
 	if optional && src == runtime.None {
 		state.writeBorrowedRegister(dst, runtime.None)
+
 		return
 	}
 
@@ -1626,6 +1690,7 @@ func (vm *VM) loadKeyConstAndSet(ctx context.Context, dst bytecode.Operand, pc i
 
 	if optional && src == runtime.None {
 		state.writeBorrowedRegister(dst, runtime.None)
+
 		return
 	}
 
@@ -1641,52 +1706,63 @@ func (vm *VM) matchLoadPropertyConst(ctx context.Context, pc int, inst *execInst
 		out, found, err := obj.Lookup(ctx, key)
 		if err != nil {
 			state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 			return false
 		}
 
 		if !found {
 			state.pc = inst.InlineSlot
+
 			return true
 		}
 
 		state.writeBorrowedRegister(dst, out)
+
 		return false
 	case *data.FastObject:
 		out, found, err := obj.Lookup(ctx, key)
 		if err != nil {
 			state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 			return false
 		}
 
 		if !found {
 			state.pc = inst.InlineSlot
+
 			return true
 		}
 
 		state.writeBorrowedRegister(dst, out)
+
 		return false
 	case runtime.Map:
 		has, err := obj.ContainsKey(ctx, key)
 		if err != nil {
 			state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 			return false
 		}
 
 		if !has {
 			state.pc = inst.InlineSlot
+
 			return true
 		}
 
 		out, err := obj.Get(ctx, key)
 		if err != nil {
 			state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+
 			return false
 		}
 
 		state.writeBorrowedRegister(dst, out)
+
 		return false
 	default:
 		state.pc = inst.InlineSlot
+
 		return true
 	}
 }
@@ -1696,6 +1772,7 @@ func (vm *VM) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc i
 
 	if optional && src == runtime.None {
 		state.writeBorrowedRegister(dst, runtime.None)
+
 		return
 	}
 
@@ -1719,6 +1796,7 @@ func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst bytecode.Operand,
 
 	if optional && src == runtime.None {
 		state.writeBorrowedRegister(dst, runtime.None)
+
 		return
 	}
 

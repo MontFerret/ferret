@@ -1,6 +1,6 @@
 package operator
 
-// Binary identifies a binary operator used by runtime diagnostics.
+// Binary identifies a binary operator used by runtime dispatch and diagnostics.
 type Binary uint8
 
 const (
@@ -16,6 +16,7 @@ const (
 	GreaterOrEqual
 	Equal
 	NotEqual
+	In
 )
 
 // ParseBinary converts an exact FQL operator symbol into its diagnostic form.
@@ -43,6 +44,8 @@ func ParseBinary(input string) (Binary, bool) {
 		return Equal, true
 	case "!=":
 		return NotEqual, true
+	case "IN":
+		return In, true
 	default:
 		return Unknown, false
 	}
@@ -73,6 +76,8 @@ func (op Binary) String() string {
 		return "=="
 	case NotEqual:
 		return "!="
+	case In:
+		return "IN"
 	default:
 		return "?"
 	}
@@ -91,6 +96,16 @@ func (op Binary) IsRelational() bool {
 // IsEquality reports whether the operator performs equality comparison.
 func (op Binary) IsEquality() bool {
 	return op == Equal || op == NotEqual
+}
+
+// IsMembership reports whether the operator performs membership comparison.
+func (op Binary) IsMembership() bool {
+	return op == In
+}
+
+// IsComparison reports whether the operator produces a comparison predicate.
+func (op Binary) IsComparison() bool {
+	return op.IsEquality() || op.IsRelational() || op.IsMembership()
 }
 
 // CannotApply formats the canonical diagnostic for incompatible operands.

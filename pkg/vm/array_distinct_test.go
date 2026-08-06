@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -122,12 +123,12 @@ func TestArrayDistinctPropagatesEqualityErrors(t *testing.T) {
 	}
 }
 
-func TestContainsPropagatesCollectionEqualityErrors(t *testing.T) {
+func TestRuntimeMembershipPropagatesCollectionEqualityErrors(t *testing.T) {
 	sentinel := errors.New("membership equality failed")
 	first := distinctCollisionValue{label: "first"}
 	second := distinctCollisionValue{label: "second", err: sentinel}
 
-	result, err := contains(context.Background(), runtime.NewArrayWith(first), second)
+	result, err := runtime.EvaluateComparison(context.Background(), operator.In, second, runtime.NewArrayWith(first))
 	if result {
 		t.Fatal("failed membership lookup must be false")
 	}
@@ -163,7 +164,7 @@ func TestArrayMembershipComparatorsPropagateEqualityErrors(t *testing.T) {
 	right := runtime.NewArrayWith(first)
 
 	for _, tc := range []struct {
-		run  func(context.Context, arrayComparator, runtime.Value, runtime.Value) (runtime.Boolean, error)
+		run  func(context.Context, operator.ArrayComparator, runtime.Value, runtime.Value) (runtime.Boolean, error)
 		name string
 	}{
 		{name: "all", run: arrayAll},
@@ -171,7 +172,7 @@ func TestArrayMembershipComparatorsPropagateEqualityErrors(t *testing.T) {
 		{name: "none", run: arrayNone},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := tc.run(context.Background(), IN, left, right)
+			_, err := tc.run(context.Background(), operator.ArrayIn, left, right)
 			if !errors.Is(err, sentinel) {
 				t.Fatalf("expected equality error, got %v", err)
 			}

@@ -91,7 +91,8 @@ const (
 	// Array Operations
 	OpFlatten // Flattens nested arrays
 
-	// Array Comparison Operations (do not swap order of EQ, GT, GTE, LT, LTE, IN. it must be equal to operators)
+	// Array Comparison Operations. Each group must retain operator.ArrayComparator order:
+	// EQ, NE, GT, GTE, LT, LTE, IN.
 	OpAnyEq
 	OpAnyNe
 	OpAnyGt

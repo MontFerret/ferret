@@ -3,22 +3,32 @@ package vm
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
 	"github.com/MontFerret/ferret/v2/pkg/internal/valueset"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func arrayAll(ctx context.Context, cmp arrayComparator, left, right runtime.Value) (runtime.Boolean, error) {
+func arrayAll(ctx context.Context, cmp operator.ArrayComparator, left, right runtime.Value) (runtime.Boolean, error) {
 	arr, err := runtime.CastList(left)
 
 	if err != nil {
 		return runtime.False, err
 	}
 
-	pred := cmp.predicate()
+	op, ok := cmp.Binary()
+	if !ok {
+		return runtime.False, runtime.Errorf(runtime.ErrInvalidOperation, "invalid array comparator %d", cmp)
+	}
+
+	predicate, err := runtime.ResolveComparison(op)
+	if err != nil {
+		return runtime.False, err
+	}
+
 	result := runtime.True
 
 	if err := arr.ForEach(ctx, func(ctx context.Context, v runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
-		matches, err := pred(ctx, v, right)
+		matches, err := predicate(ctx, v, right)
 		if err != nil {
 			return runtime.False, err
 		}
@@ -36,17 +46,26 @@ func arrayAll(ctx context.Context, cmp arrayComparator, left, right runtime.Valu
 	return result, nil
 }
 
-func arrayAny(ctx context.Context, cmp arrayComparator, left, right runtime.Value) (runtime.Boolean, error) {
+func arrayAny(ctx context.Context, cmp operator.ArrayComparator, left, right runtime.Value) (runtime.Boolean, error) {
 	arr, err := runtime.CastList(left)
 	if err != nil {
 		return runtime.False, err
 	}
 
-	pred := cmp.predicate()
+	op, ok := cmp.Binary()
+	if !ok {
+		return runtime.False, runtime.Errorf(runtime.ErrInvalidOperation, "invalid array comparator %d", cmp)
+	}
+
+	predicate, err := runtime.ResolveComparison(op)
+	if err != nil {
+		return runtime.False, err
+	}
+
 	result := runtime.False
 
 	if err := arr.ForEach(ctx, func(ctx context.Context, v runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
-		matches, err := pred(ctx, v, right)
+		matches, err := predicate(ctx, v, right)
 		if err != nil {
 			return runtime.False, err
 		}
@@ -65,17 +84,26 @@ func arrayAny(ctx context.Context, cmp arrayComparator, left, right runtime.Valu
 	return result, nil
 }
 
-func arrayNone(ctx context.Context, cmp arrayComparator, left, right runtime.Value) (runtime.Boolean, error) {
+func arrayNone(ctx context.Context, cmp operator.ArrayComparator, left, right runtime.Value) (runtime.Boolean, error) {
 	arr, err := runtime.CastList(left)
 	if err != nil {
 		return runtime.False, err
 	}
 
-	pred := cmp.predicate()
+	op, ok := cmp.Binary()
+	if !ok {
+		return runtime.False, runtime.Errorf(runtime.ErrInvalidOperation, "invalid array comparator %d", cmp)
+	}
+
+	predicate, err := runtime.ResolveComparison(op)
+	if err != nil {
+		return runtime.False, err
+	}
+
 	result := runtime.True
 
 	if err := arr.ForEach(ctx, func(ctx context.Context, v runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
-		matches, err := pred(ctx, v, right)
+		matches, err := predicate(ctx, v, right)
 		if err != nil {
 			return runtime.False, err
 		}

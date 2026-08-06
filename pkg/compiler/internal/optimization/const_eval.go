@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -98,30 +99,35 @@ func foldBinary(op bytecode.Opcode, left, right runtime.Value, bg context.Contex
 	case bytecode.OpCmp:
 		result, err := runtime.CompareValues(bg, right, left)
 		return runtime.Int(result), err == nil
-	case bytecode.OpEq:
-		result, err := runtime.EqualValues(bg, left, right)
-		return result, err == nil
-	case bytecode.OpNe:
-		result, err := runtime.EqualValues(bg, left, right)
-		if err != nil {
+	case bytecode.OpEq, bytecode.OpNe, bytecode.OpGt, bytecode.OpLt, bytecode.OpGte, bytecode.OpLte:
+		comparison, ok := comparisonOperatorForOpcode(op)
+		if !ok {
 			return nil, false
 		}
 
-		return !result, true
-	case bytecode.OpGt:
-		result, err := runtime.CompareValues(bg, left, right)
-		return runtime.Boolean(result > 0), err == nil
-	case bytecode.OpLt:
-		result, err := runtime.CompareValues(bg, left, right)
-		return runtime.Boolean(result < 0), err == nil
-	case bytecode.OpGte:
-		result, err := runtime.CompareValues(bg, left, right)
-		return runtime.Boolean(result >= 0), err == nil
-	case bytecode.OpLte:
-		result, err := runtime.CompareValues(bg, left, right)
-		return runtime.Boolean(result <= 0), err == nil
+		result, err := runtime.EvaluateComparison(bg, comparison, left, right)
+		return result, err == nil
 	default:
 		return nil, false
+	}
+}
+
+func comparisonOperatorForOpcode(op bytecode.Opcode) (operator.Binary, bool) {
+	switch op {
+	case bytecode.OpEq:
+		return operator.Equal, true
+	case bytecode.OpNe:
+		return operator.NotEqual, true
+	case bytecode.OpGt:
+		return operator.Greater, true
+	case bytecode.OpLt:
+		return operator.Less, true
+	case bytecode.OpGte:
+		return operator.GreaterOrEqual, true
+	case bytecode.OpLte:
+		return operator.LessOrEqual, true
+	default:
+		return operator.Unknown, false
 	}
 }
 

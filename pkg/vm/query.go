@@ -11,8 +11,7 @@ const (
 	queryDescriptorExpression = "expression"
 	queryDescriptorParams     = "params"
 	queryDescriptorOptions    = "options"
-
-	errQueryFormatUnexpected = "unexpected query format"
+	errQueryFormatUnexpected  = "unexpected query format"
 )
 
 var (
@@ -50,6 +49,7 @@ func applyQuery(ctx context.Context, src runtime.Value, descriptor runtime.Value
 			if err != nil {
 				return runtime.False, err
 			}
+
 			if res == nil {
 				return runtime.True, nil
 			}
@@ -66,6 +66,7 @@ func applyQuery(ctx context.Context, src runtime.Value, descriptor runtime.Value
 
 			return runtime.True, nil
 		})
+
 		if err != nil {
 			return runtime.None, err
 		}
@@ -102,11 +103,13 @@ func applyQueryExists(ctx context.Context, src runtime.Value, descriptor runtime
 
 			if res {
 				exists = runtime.True
+
 				return runtime.False, nil
 			}
 
 			return runtime.True, nil
 		})
+
 		if err != nil {
 			return runtime.False, err
 		}
@@ -145,6 +148,7 @@ func applyQueryCount(ctx context.Context, src runtime.Value, descriptor runtime.
 
 			return runtime.True, nil
 		})
+
 		if err != nil {
 			return runtime.ZeroInt, err
 		}
@@ -178,13 +182,16 @@ func applyQueryOne(ctx context.Context, src runtime.Value, descriptor runtime.Va
 			if err != nil {
 				return runtime.False, err
 			}
+
 			if runtime.TypeNone.Is(out) {
 				return runtime.True, nil
 			}
 
 			result = out
+
 			return runtime.False, nil
 		})
+
 		if err != nil {
 			return runtime.None, err
 		}
@@ -199,6 +206,7 @@ func normalizeQueryOneResult(value runtime.Value, err error) (runtime.Value, err
 	if err != nil {
 		return runtime.None, err
 	}
+
 	if value == nil {
 		return runtime.None, nil
 	}
