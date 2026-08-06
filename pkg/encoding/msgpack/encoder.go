@@ -76,15 +76,6 @@ func (enc encoder) encodeValue(ctx context.Context, menc *vmmsgpack.Encoder, val
 	return err
 }
 
-func supportsCustomEncoding(value runtime.Value) bool {
-	switch value.(type) {
-	case vmmsgpack.CustomEncoder, vmmsgpack.Marshaler:
-		return true
-	default:
-		return false
-	}
-}
-
 func (enc encoder) encodeAny(menc *vmmsgpack.Encoder, value any) error {
 	return menc.Encode(value)
 }

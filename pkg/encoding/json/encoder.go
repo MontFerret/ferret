@@ -76,6 +76,7 @@ func (enc encoder) encodeValue(ctx context.Context, buf *bytes.Buffer, value run
 		list, e := runtime.ToList(ctx, value)
 		if e != nil {
 			err = e
+
 			break
 		}
 
@@ -140,6 +141,7 @@ func (enc encoder) encodeMap(ctx context.Context, buf *bytes.Buffer, value runti
 		if err := enc.encodeValue(ctx, buf, val); err != nil {
 			return false, err
 		}
+
 		return true, nil
 	})
 
@@ -166,7 +168,6 @@ func (enc encoder) encodeList(ctx context.Context, buf *bytes.Buffer, value runt
 		}
 
 		item, err := value.At(ctx, i)
-
 		if err != nil {
 			return err
 		}
@@ -203,11 +204,14 @@ func (enc encoder) writeJSONString(buf *bytes.Buffer, s string) {
 				buf.WriteString(`\u00`)
 				buf.WriteByte(jsonHex[r>>4])
 				buf.WriteByte(jsonHex[r&0x0f])
+
 				continue
 			}
+
 			buf.WriteRune(r)
 		}
 	}
+
 	buf.WriteByte('"')
 }
 

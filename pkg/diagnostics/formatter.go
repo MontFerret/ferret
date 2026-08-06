@@ -26,8 +26,10 @@ func FormatDiagnostic(out io.Writer, e *Diagnostic, indent int) {
 	for _, s := range spans {
 		if s.Main {
 			mainSpan = s
+
 			continue
 		}
+
 		renderErrorSpan(out, prefix, e.Source, s)
 	}
 

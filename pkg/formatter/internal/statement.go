@@ -56,6 +56,7 @@ func (f *statementFormatter) formatVariableDeclaration(ctx *fql.VariableDeclarat
 	} else {
 		f.writeKeyword(keywordLet)
 	}
+
 	f.p.space()
 
 	if id := ctx.Identifier(); id != nil {
@@ -93,11 +94,13 @@ func (f *statementFormatter) formatAssignmentStatement(ctx *fql.AssignmentStatem
 	}
 
 	f.p.space()
+
 	if op := ctx.AssignmentOperator(); op != nil {
 		f.p.write(op.GetText())
 	} else {
 		f.p.write("=")
 	}
+
 	f.p.space()
 
 	if expr := ctx.Expression(); expr != nil {
@@ -173,9 +176,11 @@ func (f *statementFormatter) formatFunctionDeclaration(ctx *fql.FunctionDeclarat
 		f.p.space()
 		f.p.write("=>")
 		f.p.space()
+
 		if expr := arrow.Expression(); expr != nil {
 			f.expression.formatExpression(expr.(*fql.ExpressionContext))
 		}
+
 		return
 	}
 
@@ -367,6 +372,7 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 	f.writeKeyword(keywordFor)
 
 	writeValueVariable := true
+
 	if ctx.In() == nil {
 		if tok := ctx.GetValueVariable(); tok != nil && tok.GetText() == "_" {
 			writeValueVariable = false
@@ -462,6 +468,7 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 		if !f.p.atLineStart {
 			f.p.newline()
 		}
+
 		f.p.write("}")
 	}
 }
@@ -625,6 +632,7 @@ func (f *statementFormatter) formatWaitForTriggerClause(ctx *fql.WaitForTriggerC
 	stmts := ctx.AllWaitForTriggerStatement()
 	if len(stmts) == 0 {
 		f.p.write(")")
+
 		return
 	}
 
@@ -636,6 +644,7 @@ func (f *statementFormatter) formatWaitForTriggerClause(ctx *fql.WaitForTriggerC
 	}
 
 	first := stmts[0].(antlr.ParserRuleContext)
+
 	f.p.withIndent(func() {
 		f.trivia.emitBetweenIndices(start, f.trivia.startIndex(first))
 
@@ -880,6 +889,7 @@ func (f *statementFormatter) formatDispatchTarget(ctx *fql.DispatchTargetContext
 		f.p.write("(")
 		f.expression.formatExpression(expr.(*fql.ExpressionContext))
 		f.p.write(")")
+
 		return
 	}
 

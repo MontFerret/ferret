@@ -289,6 +289,7 @@ func (t *triviaEmitter) emitListCommentLinesWith(p *printer, text string) {
 
 		if !ok {
 			emptyCount++
+
 			continue
 		}
 
@@ -308,6 +309,7 @@ func (t *triviaEmitter) emitListCommentLinesWith(p *printer, text string) {
 
 	if emptyCount >= 2 {
 		p.newline()
+
 		return
 	}
 
@@ -353,7 +355,6 @@ func (t *triviaEmitter) formatTriviaLine(p *printer, line string) (string, bool)
 
 	rightTrimmed := strings.TrimRight(line, " \t")
 	leftTrimmed := strings.TrimLeft(rightTrimmed, " \t")
-
 	if t.isCommentLine(leftTrimmed) {
 		return t.trimIndentPrefix(p, rightTrimmed), true
 	}

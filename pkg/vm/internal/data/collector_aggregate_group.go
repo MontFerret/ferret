@@ -249,6 +249,7 @@ func (c *GroupedAggregateCollector) entryFor(ctx context.Context, key runtime.Va
 				return nil, err
 			}
 		}
+
 		c.hasSingleGroup = false
 		c.singleKey = nil
 		c.singleEntry = nil
@@ -315,5 +316,6 @@ func (c *GroupedAggregateCollector) newEntry(key runtime.Value) *groupedAggregat
 
 func (c *GroupedAggregateCollector) aggregateKey(_ context.Context, key runtime.Value) (runtime.Value, int, bool, error) {
 	groupKey, idx, ok := DecodeAggregateKey(key)
+
 	return groupKey, idx, ok, nil
 }

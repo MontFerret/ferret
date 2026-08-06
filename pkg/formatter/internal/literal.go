@@ -34,6 +34,7 @@ func (f *literalFormatter) formatLiteral(ctx *fql.LiteralContext) {
 func (f *literalFormatter) formatLiteralWith(p *printer, ctx *fql.LiteralContext) {
 	if p == f.p {
 		f.formatLiteral(ctx)
+
 		return
 	}
 
@@ -98,6 +99,7 @@ func (f *literalFormatter) formatTemplateLiteralWith(p *printer, ctx fql.ITempla
 	}
 
 	p.write("`")
+
 	for _, el := range ctx.AllTemplateElement() {
 
 		if el == nil {

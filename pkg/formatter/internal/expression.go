@@ -150,10 +150,12 @@ func (f *expressionFormatter) formatMatchExpression(ctx *fql.MatchExpressionCont
 	if f.p.forceSingleLine {
 		if hasComments {
 			f.formatMatchExpressionWith(f.p, ctx, false)
+
 			return
 		}
 
 		f.formatMatchExpressionWith(f.p, ctx, true)
+
 		return
 	}
 
@@ -164,6 +166,7 @@ func (f *expressionFormatter) formatMatchExpression(ctx *fql.MatchExpressionCont
 
 		if ok && f.inlineFits(inline) {
 			f.p.write(inline)
+
 			return
 		}
 	}
@@ -191,6 +194,7 @@ func (f *expressionFormatter) formatMatchExpressionWith(p *printer, ctx *fql.Mat
 		f.formatMatchArmsInline(p, ctx)
 		p.space()
 		p.write("}")
+
 		return
 	}
 
@@ -198,9 +202,11 @@ func (f *expressionFormatter) formatMatchExpressionWith(p *printer, ctx *fql.Mat
 	p.withIndent(func() {
 		if len(arms) > 0 {
 			headerStop := ctx.GetStart().GetStop()
+
 			if expr := ctx.Expression(); expr != nil {
 				headerStop = expr.GetStop().GetStop()
 			}
+
 			f.trivia.emitListTriviaWith(
 				p,
 				f.trivia.blockLeadingTrivia(headerStop, openBrace, f.trivia.startIndex(arms[0])),
@@ -208,8 +214,10 @@ func (f *expressionFormatter) formatMatchExpressionWith(p *printer, ctx *fql.Mat
 		} else {
 			p.newline()
 		}
+
 		f.formatMatchArmsMultiline(p, ctx)
 	})
+
 	p.write("}")
 }
 
@@ -222,8 +230,10 @@ func (f *expressionFormatter) formatMatchArmsInline(p *printer, ctx *fql.MatchEx
 		list := arms.MatchPatternArmList()
 		if list != nil {
 			armList := list.AllMatchPatternArm()
+
 			for i, arm := range armList {
 				f.formatMatchPatternArmWith(p, arm.(*fql.MatchPatternArmContext))
+
 				if i < len(armList)-1 || arms.MatchDefaultArm() != nil {
 					p.write(",")
 					p.space()
@@ -242,8 +252,10 @@ func (f *expressionFormatter) formatMatchArmsInline(p *printer, ctx *fql.MatchEx
 		list := arms.MatchGuardArmList()
 		if list != nil {
 			armList := list.AllMatchGuardArm()
+
 			for i, arm := range armList {
 				f.formatMatchGuardArmWith(p, arm.(*fql.MatchGuardArmContext))
+
 				if i < len(armList)-1 || arms.MatchDefaultArm() != nil {
 					p.write(",")
 					p.space()
@@ -300,14 +312,17 @@ func (f *expressionFormatter) matchHasComments(ctx *fql.MatchExpressionContext) 
 	if expr := ctx.Expression(); expr != nil {
 		headerStop = expr.GetStop().GetStop()
 	}
+
 	if f.trivia.containsComment(f.trivia.blockLeadingTrivia(headerStop, openBrace, f.trivia.startIndex(arms[0]))) {
 		return true
 	}
 
 	closeStart := f.trivia.tokenStart(closeBrace)
+
 	for i, arm := range arms {
 		start := f.trivia.stopIndex(arm) + 1
 		end := closeStart
+
 		if i < len(arms)-1 {
 			end = f.trivia.startIndex(arms[i+1])
 		}
@@ -327,27 +342,33 @@ func (f *expressionFormatter) matchArmContexts(ctx *fql.MatchExpressionContext) 
 
 	if arms := ctx.MatchPatternArms(); arms != nil {
 		out := make([]antlr.ParserRuleContext, 0, 4)
+
 		if list := arms.MatchPatternArmList(); list != nil {
 			for _, arm := range list.AllMatchPatternArm() {
 				out = append(out, arm.(antlr.ParserRuleContext))
 			}
 		}
+
 		if def := arms.MatchDefaultArm(); def != nil {
 			out = append(out, def.(antlr.ParserRuleContext))
 		}
+
 		return out, arms.OpenBrace(), arms.CloseBrace()
 	}
 
 	if arms := ctx.MatchGuardArms(); arms != nil {
 		out := make([]antlr.ParserRuleContext, 0, 4)
+
 		if list := arms.MatchGuardArmList(); list != nil {
 			for _, arm := range list.AllMatchGuardArm() {
 				out = append(out, arm.(antlr.ParserRuleContext))
 			}
 		}
+
 		if def := arms.MatchDefaultArm(); def != nil {
 			out = append(out, def.(antlr.ParserRuleContext))
 		}
+
 		return out, arms.OpenBrace(), arms.CloseBrace()
 	}
 
@@ -367,6 +388,7 @@ func (f *expressionFormatter) formatMatchPatternArmWith(p *printer, ctx *fql.Mat
 		p.space()
 		f.writeKeywordWith(p, keywordWhen)
 		p.space()
+
 		if expr := guard.Expression(); expr != nil {
 			f.formatExpressionWith(p, expr.(*fql.ExpressionContext))
 		}
@@ -412,6 +434,7 @@ func (f *expressionFormatter) formatMatchDefaultArmWith(p *printer, ctx *fql.Mat
 	p.space()
 	p.write("=>")
 	p.space()
+
 	if expr := ctx.Expression(); expr != nil {
 		f.formatExpressionWith(p, expr.(*fql.ExpressionContext))
 	}
@@ -468,6 +491,7 @@ func (f *expressionFormatter) formatMatchBindingPatternWith(p *printer, ctx *fql
 
 	if id := ctx.Identifier(); id != nil {
 		p.write(id.GetText())
+
 		return
 	}
 
@@ -484,19 +508,23 @@ func (f *expressionFormatter) formatMatchObjectPatternWith(p *printer, ctx *fql.
 	props := ctx.AllMatchObjectPatternProperty()
 	if len(props) == 0 {
 		p.write("{}")
+
 		return
 	}
 
 	if p.forceSingleLine {
 		f.formatMatchObjectPatternWithMode(p, ctx, true)
+
 		return
 	}
 
 	inline, ok := f.renderInline(func(out *printer) {
 		f.formatMatchObjectPatternWithMode(out, ctx, true)
 	})
+
 	if ok && f.inlineFitsWith(p, inline) {
 		p.write(inline)
+
 		return
 	}
 
@@ -514,6 +542,7 @@ func (f *expressionFormatter) formatMatchObjectPatternWithMode(p *printer, ctx *
 
 		for i, prop := range props {
 			f.formatMatchObjectPatternPropertyWith(p, prop.(*fql.MatchObjectPatternPropertyContext))
+
 			if i < len(props)-1 {
 				p.write(",")
 				p.space()
@@ -525,6 +554,7 @@ func (f *expressionFormatter) formatMatchObjectPatternWithMode(p *printer, ctx *
 		}
 
 		p.write("}")
+
 		return
 	}
 
@@ -541,6 +571,7 @@ func (f *expressionFormatter) formatMatchObjectPatternWithMode(p *printer, ctx *
 			}
 
 			nextStart := closeStart
+
 			if i < len(props)-1 {
 				nextStart = f.trivia.startIndex(props[i+1].(antlr.ParserRuleContext))
 			}
@@ -593,6 +624,7 @@ func (f *expressionFormatter) formatQueryExpression(ctx *fql.QueryExpressionCont
 
 	if (ctx.QueryWithOpt() == nil && ctx.QueryOptionsOpt() == nil) || f.p.forceSingleLine {
 		f.formatQueryExpressionWith(f.p, ctx, true)
+
 		return
 	}
 
@@ -602,6 +634,7 @@ func (f *expressionFormatter) formatQueryExpression(ctx *fql.QueryExpressionCont
 
 	if ok && f.inlineFits(inline) {
 		f.p.write(inline)
+
 		return
 	}
 
@@ -671,6 +704,7 @@ func (f *expressionFormatter) formatQueryClauseWith(p *printer, keyword string, 
 		f.writeKeywordWith(p, keyword)
 		p.space()
 		f.formatExpressionWith(p, expr.(*fql.ExpressionContext))
+
 		return
 	}
 
@@ -758,6 +792,7 @@ func (f *expressionFormatter) formatUnaryOperatorWith(p *printer, ctx *fql.Unary
 		} else {
 			f.writeKeywordWith(p, keywordNot)
 		}
+
 		p.space()
 
 		return
@@ -906,6 +941,7 @@ func (f *expressionFormatter) formatFunctionCallExpression(ctx *fql.FunctionCall
 
 	if ctx.ErrorOperator() != nil {
 		f.p.write("?")
+
 		return
 	}
 
@@ -953,6 +989,7 @@ func (f *expressionFormatter) formatExpressionAtomErrorTail(ctx *fql.ExpressionA
 
 	if ctx.ErrorOperator() != nil {
 		f.p.write("?")
+
 		return
 	}
 
@@ -976,6 +1013,7 @@ func (f *expressionFormatter) formatRecoveryTailsWith(p *printer, ctx fql.IRecov
 		cond := tail.RecoveryCondition()
 		if cond == nil {
 			otherTails = append(otherTails, tail)
+
 			continue
 		}
 
@@ -1012,6 +1050,7 @@ func (f *expressionFormatter) formatRecoveryTailWith(p *printer, ctx fql.IRecove
 
 	if cond := ctx.RecoveryCondition(); cond != nil {
 		p.space()
+
 		switch {
 		case cond.TimeoutKeyword() != nil || strings.EqualFold(cond.GetText(), keywordTimeout):
 			f.writeKeywordWith(p, keywordTimeout)
@@ -1033,6 +1072,7 @@ func (f *expressionFormatter) formatRecoveryTailWith(p *printer, ctx fql.IRecove
 		f.formatRecoveryRetryActionWith(p, action.RecoveryRetryAction())
 	case action.ReturnKeyword() != nil || strings.EqualFold(action.GetText(), keywordReturn):
 		f.writeKeywordWith(p, keywordReturn)
+
 		if expr := action.RecoveryReturnExpr(); expr != nil && expr.Expression() != nil {
 			p.space()
 			f.formatExpressionWith(p, expr.Expression().(*fql.ExpressionContext))
@@ -1168,6 +1208,7 @@ func (f *expressionFormatter) formatVariableWith(p *printer, ctx *fql.VariableCo
 func (f *expressionFormatter) formatExpressionWith(p *printer, ctx *fql.ExpressionContext) {
 	if p == f.p {
 		f.formatExpression(ctx)
+
 		return
 	}
 

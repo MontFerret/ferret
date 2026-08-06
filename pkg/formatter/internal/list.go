@@ -122,7 +122,6 @@ func (l *listFormatter) argumentListHasComments(ctx *fql.ArgumentListContext) bo
 	}
 
 	args := ctx.AllExpression()
-
 	if len(args) == 0 {
 		return false
 	}
@@ -325,6 +324,7 @@ func (l *listFormatter) formatArrayLiteralWith(p *printer, ctx *fql.ArrayLiteral
 		p.withIndent(func() {
 			firstArg := args[0].(antlr.ParserRuleContext)
 			leadingTrivia := l.trivia.sliceBetween(l.tokenStop(ctx.OpenBracket())+1, l.trivia.startIndex(firstArg))
+
 			if l.trivia.containsComment(leadingTrivia) {
 				l.trivia.emitListTriviaWith(p, leadingTrivia)
 			} else {
@@ -386,6 +386,7 @@ func (l *listFormatter) formatObjectLiteral(ctx *fql.ObjectLiteralContext) {
 	if l.p.forceSingleLine {
 		if hasComments || shouldMultiline {
 			l.formatObjectLiteralWith(l.p, ctx, false)
+
 			return
 		}
 
@@ -443,6 +444,7 @@ func (l *listFormatter) formatObjectLiteralWith(p *printer, ctx *fql.ObjectLiter
 	p.withIndent(func() {
 		firstProp := props[0].(antlr.ParserRuleContext)
 		leadingTrivia := l.trivia.sliceBetween(l.tokenStop(ctx.OpenBrace())+1, l.trivia.startIndex(firstProp))
+
 		if l.trivia.containsComment(leadingTrivia) {
 			l.trivia.emitListTriviaWith(p, leadingTrivia)
 		} else {

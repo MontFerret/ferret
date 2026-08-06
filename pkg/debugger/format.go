@@ -44,6 +44,7 @@ func writeValue(b *strings.Builder, value runtime.Value, info runtime.DebugInfo,
 
 	if value == nil || reflect.TypeOf(value) == reflect.TypeOf(runtime.None) {
 		b.WriteString("NONE")
+
 		return
 	}
 
@@ -77,11 +78,13 @@ func writeValue(b *strings.Builder, value runtime.Value, info runtime.DebugInfo,
 			}
 
 			fmt.Fprintf(b, "HostValue(%s)", boundedText(typeName, options.MaxBytes))
+
 			return
 		}
 
 		if depth >= options.MaxDepth || inspection.Length > options.MaxItems || !inspection.Complete {
 			writeCollectionSummary(b, inspection)
+
 			return
 		}
 
@@ -128,6 +131,7 @@ func writeInspection(b *strings.Builder, inspection vm.DebugValueInspection, acc
 func writeCollectionSummary(b *strings.Builder, inspection vm.DebugValueInspection) {
 	if inspection.Kind == vm.DebugValueArray {
 		fmt.Fprintf(b, "Array(%d)", inspection.Length)
+
 		return
 	}
 

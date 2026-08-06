@@ -27,7 +27,6 @@ func Unwrap(err error) (error, error) {
 	}
 
 	wrapped := errors.Unwrap(err)
-
 	if wrapped == nil {
 		return nil, err
 	}
@@ -40,7 +39,6 @@ func Unwrap(err error) (error, error) {
 		// Extract everything after the wrapped message
 		rest := originalMsg[idx+len(wrappedMsg):]
 		rest = strings.TrimPrefix(rest, ": ")
-
 		if rest != "" {
 			return wrapped, errors.New(rest)
 		}
