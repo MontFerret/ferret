@@ -7,13 +7,15 @@ import (
 )
 
 type (
-	// Iterable represents an interface of a value that can be iterated by using an iterator.
+	// Iterable represents an interface of a value that can be iterated by using an
+	// iterator. Implementations that may block must observe ctx while creating it.
 	Iterable interface {
 		Iterate(ctx context.Context) (Iterator, error)
 	}
 
 	// Iterator represents an interface of an iterator.
-	// Next must return io.EOF when the iterator is exhausted.
+	// Next must return io.EOF when the iterator is exhausted and observe ctx while
+	// waiting for the next value.
 	Iterator interface {
 		Next(ctx context.Context) (value Value, key Value, err error)
 	}

@@ -25,10 +25,6 @@ func (t *FastObject) String() string {
 }
 
 func (t *FastObject) Equal(ctx context.Context, other runtime.Value) (bool, error) {
-	if err := ctx.Err(); err != nil {
-		return false, err
-	}
-
 	otherObject, ok := other.(runtime.ObjectLike)
 	if !ok {
 		return false, nil
@@ -38,10 +34,6 @@ func (t *FastObject) Equal(ctx context.Context, other runtime.Value) (bool, erro
 }
 
 func (t *FastObject) Compare(ctx context.Context, other runtime.Value) (runtime.Ordering, error) {
-	if err := ctx.Err(); err != nil {
-		return runtime.Equal, err
-	}
-
 	otherObject, ok := other.(runtime.ObjectLike)
 	if !ok {
 		return runtime.Equal, runtime.Errorf(

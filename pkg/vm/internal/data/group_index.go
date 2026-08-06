@@ -21,10 +21,6 @@ type (
 func (idx *groupIndex[T]) get(ctx context.Context, key runtime.Value) (T, bool, error) {
 	var zero T
 
-	if err := ctx.Err(); err != nil {
-		return zero, false, err
-	}
-
 	if idx == nil || len(idx.buckets) == 0 {
 		return zero, false, nil
 	}
@@ -46,11 +42,7 @@ func (idx *groupIndex[T]) get(ctx context.Context, key runtime.Value) (T, bool, 
 
 // insertUnique adds a key the caller has already proved is not equal to any
 // key in its hash bucket.
-func (idx *groupIndex[T]) insertUnique(ctx context.Context, key runtime.Value, value T) error {
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-
+func (idx *groupIndex[T]) insertUnique(_ context.Context, key runtime.Value, value T) error {
 	if idx.buckets == nil {
 		idx.buckets = make(map[uint64][]groupIndexEntry[T], 8)
 	}
@@ -70,11 +62,6 @@ func (idx *groupIndex[T]) loadOrStore(ctx context.Context, key runtime.Value, va
 }
 
 func (idx *groupIndex[T]) loadOrCreate(ctx context.Context, key runtime.Value, create func() T) (T, bool, error) {
-	if err := ctx.Err(); err != nil {
-		var zero T
-		return zero, false, err
-	}
-
 	if idx.buckets == nil {
 		idx.buckets = make(map[uint64][]groupIndexEntry[T], 8)
 	}

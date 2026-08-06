@@ -227,7 +227,7 @@ func TestKeyCollectorsDoNotStringifyOpaqueKeys(t *testing.T) {
 	}
 }
 
-func TestGroupingPropagatesEqualityErrorsAndCancellation(t *testing.T) {
+func TestGroupingPropagatesEqualityErrors(t *testing.T) {
 	sentinel := errors.New("equality failed")
 	ctx := context.Background()
 	collector := data.NewKeyGroupCollector()
@@ -241,10 +241,68 @@ func TestGroupingPropagatesEqualityErrorsAndCancellation(t *testing.T) {
 		t.Fatalf("expected equality error, got %v", err)
 	}
 
-	cancelled, cancel := context.WithCancel(context.Background())
+	if err := collector.Set(ctx, second, runtime.NewInt(2)); !errors.Is(err, sentinel) {
+		t.Fatalf("expected repeated equality error, got %v", err)
+	}
+}
+
+func TestGroupingDoesNotPollCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if err := collector.Set(cancelled, second, runtime.NewInt(2)); !errors.Is(err, context.Canceled) {
-		t.Fatalf("expected cancellation, got %v", err)
+
+	collector := data.NewKeyGroupCollector()
+	for _, key := range []runtime.Value{runtime.NewInt(1), runtime.NewInt(2), runtime.NewInt(3)} {
+		if err := collector.Set(ctx, key, key); err != nil {
+			t.Fatalf("set key %v with canceled context: %v", key, err)
+		}
+	}
+
+	value, err := collector.Get(ctx, runtime.NewInt(2))
+	if err != nil {
+		t.Fatalf("get key with canceled context: %v", err)
+	}
+	group, ok := value.(runtime.List)
+	if !ok {
+		t.Fatalf("group type = %T, want runtime.List", value)
+	}
+	length, err := group.Length(ctx)
+	if err != nil || length != 1 {
+		t.Fatalf("group length = %d, %v, want 1, nil", length, err)
+	}
+}
+
+func TestCoreComparisonHelpersDoNotPollCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	left := data.NewFastObject(nil, 0)
+	right := data.NewFastObject(nil, 0)
+	for _, object := range []*data.FastObject{left, right} {
+		if err := object.Set(ctx, runtime.NewString("value"), runtime.NewInt(1)); err != nil {
+			t.Fatalf("set fast object value: %v", err)
+		}
+	}
+
+	equal, err := runtime.EqualValues(ctx, left, right)
+	if err != nil || !equal {
+		t.Fatalf("fast object equality = %v, %v, want true, nil", equal, err)
+	}
+	ordering, err := runtime.CompareValues(ctx, left, right)
+	if err != nil || ordering != runtime.Equal {
+		t.Fatalf("fast object ordering = %v, %v, want Equal, nil", ordering, err)
+	}
+
+	leftRegexp, err := data.NewRegexp(runtime.NewString("a+"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rightRegexp, err := data.NewRegexp(runtime.NewString("a+"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	equal, err = runtime.EqualValues(ctx, leftRegexp, rightRegexp)
+	if err != nil || !equal {
+		t.Fatalf("regexp equality = %v, %v, want true, nil", equal, err)
 	}
 }
 

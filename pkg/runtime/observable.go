@@ -33,11 +33,13 @@ type (
 	// Stream represents an event stream that produces target event objects.
 	Stream interface {
 		io.Closer
+		// Read must observe ctx while waiting for messages.
 		Read(ctx context.Context) <-chan Message
 	}
 
 	// Observable represents an interface of
-	// complex types that returns stream of events.
+	// complex types that returns stream of events. Subscribe implementations that
+	// may block must observe ctx while establishing the subscription.
 	Observable interface {
 		Subscribe(ctx context.Context, subscription Subscription) (Stream, error)
 	}

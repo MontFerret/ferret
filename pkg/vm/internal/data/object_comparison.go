@@ -14,10 +14,6 @@ type objectComparisonSnapshot struct {
 }
 
 func equalObjectLike(ctx context.Context, left, right runtime.ObjectLike) (bool, error) {
-	if err := ctx.Err(); err != nil {
-		return false, err
-	}
-
 	leftSize, err := left.Length(ctx)
 	if err != nil {
 		return false, err
@@ -43,10 +39,6 @@ func equalObjectLike(ctx context.Context, left, right runtime.ObjectLike) (bool,
 	}
 
 	for idx, leftKey := range leftSnapshot.keys {
-		if err := ctx.Err(); err != nil {
-			return false, err
-		}
-
 		rightKey := rightSnapshot.keys[idx]
 		if leftKey != rightKey {
 			return false, nil
@@ -70,10 +62,6 @@ func equalObjectLike(ctx context.Context, left, right runtime.ObjectLike) (bool,
 }
 
 func compareObjectLike(ctx context.Context, left, right runtime.ObjectLike) (runtime.Ordering, error) {
-	if err := ctx.Err(); err != nil {
-		return runtime.Equal, err
-	}
-
 	leftSize, err := left.Length(ctx)
 	if err != nil {
 		return runtime.Equal, err
@@ -102,10 +90,6 @@ func compareObjectLike(ctx context.Context, left, right runtime.ObjectLike) (run
 	}
 
 	for idx, leftKey := range leftSnapshot.keys {
-		if err := ctx.Err(); err != nil {
-			return runtime.Equal, err
-		}
-
 		rightKey := rightSnapshot.keys[idx]
 		if leftKey != rightKey {
 			// Object ordering historically reverses lexical key order.

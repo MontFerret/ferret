@@ -2,6 +2,7 @@ package vm
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -117,6 +118,36 @@ func TestNewDebugExecutionObservesSourcePointsWithoutMutatingPlan(t *testing.T) 
 	}
 	if event.Reason != DebugStopCompleted {
 		t.Fatalf("unexpected completion event: %#v", event)
+	}
+}
+
+func TestDebugExecutionChecksCancellationAtSourcePointSafepoint(t *testing.T) {
+	instance := mustNewVM(t, sourcePointTestProgram())
+	execution, err := NewDebugExecution(instance, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = execution.Close() })
+
+	event, err := execution.Start(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != DebugStopEntry {
+		t.Fatalf("start reason = %v, want DebugStopEntry", event.Reason)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	event, err = execution.Resume(ctx, DebugResumeContinue, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != DebugStopRuntimeError {
+		t.Fatalf("resume reason = %v, want DebugStopRuntimeError", event.Reason)
+	}
+	if !errors.Is(event.Error, context.Canceled) {
+		t.Fatalf("resume error = %v, want context.Canceled", event.Error)
 	}
 }
 

@@ -25,6 +25,7 @@ const (
 
 // EqualValues applies canonical runtime equality. Apart from mixed numeric
 // comparison and compatible host domains, values must share a comparison type.
+// It forwards ctx to host capabilities without polling cancellation.
 func EqualValues(ctx context.Context, left, right Value) (Boolean, error) {
 	leftKind := builtinComparisonKindOf(left)
 	rightKind := builtinComparisonKindOf(right)
@@ -39,7 +40,8 @@ func EqualValues(ctx context.Context, left, right Value) (Boolean, error) {
 // CompareValues applies canonical runtime relational comparison. Apart from
 // mixed numeric comparison and compatible host domains, native Duration values
 // can be compared only with other native Duration values. Incompatible values
-// return ErrInvalidOperation.
+// return ErrInvalidOperation. It forwards ctx to host capabilities without
+// polling cancellation.
 func CompareValues(ctx context.Context, left, right Value) (Ordering, error) {
 	leftKind := builtinComparisonKindOf(left)
 	rightKind := builtinComparisonKindOf(right)

@@ -136,10 +136,6 @@ func arrayFlatten(ctx context.Context, value runtime.Value, depth int) (runtime.
 }
 
 func arrayDistinct(ctx context.Context, value runtime.Value) (runtime.List, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-
 	list, err := runtime.CastList(value)
 	if err != nil {
 		return nil, err

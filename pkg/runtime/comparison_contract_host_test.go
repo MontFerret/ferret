@@ -62,11 +62,11 @@ func (v *contractHostValue) Iterate(context.Context) (runtime.Iterator, error) {
 }
 
 func (v *contractHostValue) Equal(ctx context.Context, _ runtime.Value) (bool, error) {
-	if err := ctx.Err(); err != nil {
-		return false, err
-	}
 	if v.equalityCalls != nil {
 		(*v.equalityCalls)++
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
 	}
 	if v.equalityErr != nil {
 		return false, v.equalityErr
@@ -76,11 +76,11 @@ func (v *contractHostValue) Equal(ctx context.Context, _ runtime.Value) (bool, e
 }
 
 func (v *contractHostValue) Compare(ctx context.Context, _ runtime.Value) (runtime.Ordering, error) {
-	if err := ctx.Err(); err != nil {
-		return runtime.Equal, err
-	}
 	if v.compareCalls != nil {
 		(*v.compareCalls)++
+	}
+	if err := ctx.Err(); err != nil {
+		return runtime.Equal, err
 	}
 	if v.comparisonErr != nil {
 		return runtime.Equal, v.comparisonErr

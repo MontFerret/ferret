@@ -11,7 +11,8 @@ type (
 	}
 
 	// Dispatchable represents an entity that can dispatch events.
-	// Dispatch is effectful and does not produce a runtime value.
+	// Dispatch is effectful and does not produce a runtime value. Implementations
+	// that may block must observe ctx while dispatching.
 	Dispatchable interface {
 		Dispatch(ctx context.Context, event DispatchEvent) error
 	}

@@ -70,11 +70,7 @@ func (r *Regexp) Type() runtime.Type {
 	return TypeRegexp
 }
 
-func (r *Regexp) Equal(ctx context.Context, other runtime.Value) (bool, error) {
-	if err := ctx.Err(); err != nil {
-		return false, err
-	}
-
+func (r *Regexp) Equal(_ context.Context, other runtime.Value) (bool, error) {
 	otherRegexp, ok := other.(*Regexp)
 	if !ok {
 		return false, nil

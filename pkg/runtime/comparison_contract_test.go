@@ -329,7 +329,7 @@ func TestHostComparisonDomainSelectionIsSymmetricWithOneUnstableType(t *testing.
 	}
 }
 
-func TestHostComparisonPropagatesErrorsAndChecksCancellationBeforeDispatch(t *testing.T) {
+func TestHostComparisonPropagatesErrorsAndCapabilityCancellation(t *testing.T) {
 	operationalErr := errors.New("remote comparison failed")
 	left := &contractHostValue{equalityErr: operationalErr, comparisonErr: operationalErr}
 	right := &contractHostValue{}
@@ -353,8 +353,8 @@ func TestHostComparisonPropagatesErrorsAndChecksCancellationBeforeDispatch(t *te
 	if _, err := runtime.CompareValues(ctx, cancelled, right); !errors.Is(err, context.Canceled) {
 		t.Fatalf("CompareValues() error = %v, want context.Canceled", err)
 	}
-	if equalityCalls != 0 || compareCalls != 0 {
-		t.Fatalf("cancelled capability calls = equality:%d compare:%d, want zero", equalityCalls, compareCalls)
+	if equalityCalls != 1 || compareCalls != 1 {
+		t.Fatalf("cancelled capability calls = equality:%d compare:%d, want one each", equalityCalls, compareCalls)
 	}
 }
 
