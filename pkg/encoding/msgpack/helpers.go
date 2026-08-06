@@ -3,9 +3,10 @@ package msgpack
 import (
 	"fmt"
 
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	vmmsgpack "github.com/vmihailenco/msgpack/v5"
 	"github.com/vmihailenco/msgpack/v5/msgpcode"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func supportsCustomEncoding(value runtime.Value) bool {
