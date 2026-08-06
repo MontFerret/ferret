@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -130,6 +131,25 @@ func TestRunDefersCancellationAcrossCheapInstructions(t *testing.T) {
 	}
 }
 
+func TestProgramFallthroughChecksCancellation(t *testing.T) {
+	probe := &cancellationProbeValue{}
+	program := newTestProgram(
+		3,
+		[]runtime.Value{runtime.NewString("prefix-"), probe},
+		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(1)),
+		bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(2), bytecode.NewRegister(0), bytecode.NewRegister(1)),
+	)
+
+	err := runPreCanceledProgram(t, program)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("run error = %v, want context.Canceled", err)
+	}
+	if probe.stringCalls != 1 {
+		t.Fatalf("host string calls = %d, want 1", probe.stringCalls)
+	}
+}
+
 func TestRunDoesNotCheckCancellationAtForwardJump(t *testing.T) {
 	probe := &cancellationProbeValue{}
 	program := newTestProgram(
@@ -237,43 +257,46 @@ func TestRunChecksEveryTakenBackwardEdge(t *testing.T) {
 	}
 }
 
-func TestRunChecksCancellationBeforeExternalCapability(t *testing.T) {
-	probe := &cancellationProbeValue{}
+func TestContextAwareCapabilitiesOwnCancellation(t *testing.T) {
 	tests := []struct {
-		calls func() int
+		calls func(*cancellationProbeValue) int
 		name  string
 		inst  bytecode.Instruction
 	}{
-		{name: "load index", inst: bytecode.NewInstruction(bytecode.OpLoadIndex, bytecode.NewRegister(4), bytecode.NewRegister(0), bytecode.NewRegister(2)), calls: func() int { return probe.getCalls }},
-		{name: "load key", inst: bytecode.NewInstruction(bytecode.OpLoadKey, bytecode.NewRegister(4), bytecode.NewRegister(0), bytecode.NewRegister(1)), calls: func() int { return probe.getCalls }},
-		{name: "load property", inst: bytecode.NewInstruction(bytecode.OpLoadProperty, bytecode.NewRegister(4), bytecode.NewRegister(0), bytecode.NewRegister(1)), calls: func() int { return probe.getCalls }},
-		{name: "set index", inst: bytecode.NewInstruction(bytecode.OpSetIndex, bytecode.NewRegister(0), bytecode.NewRegister(2), bytecode.NewRegister(3)), calls: func() int { return probe.setCalls }},
-		{name: "set key", inst: bytecode.NewInstruction(bytecode.OpSetKey, bytecode.NewRegister(0), bytecode.NewRegister(1), bytecode.NewRegister(3)), calls: func() int { return probe.setCalls }},
-		{name: "set property", inst: bytecode.NewInstruction(bytecode.OpSetProperty, bytecode.NewRegister(0), bytecode.NewRegister(1), bytecode.NewRegister(3)), calls: func() int { return probe.setCalls }},
-		{name: "object set", inst: bytecode.NewInstruction(bytecode.OpObjectSet, bytecode.NewRegister(0), bytecode.NewRegister(1), bytecode.NewRegister(3)), calls: func() int { return probe.setCalls }},
-		{name: "delete key", inst: bytecode.NewInstruction(bytecode.OpDeleteKey, bytecode.NewRegister(0), bytecode.NewRegister(1)), calls: func() int { return probe.removeCalls }},
-		{name: "delete property", inst: bytecode.NewInstruction(bytecode.OpDeleteProperty, bytecode.NewRegister(0), bytecode.NewRegister(2)), calls: func() int { return probe.removeCalls }},
-		{name: "append", inst: bytecode.NewInstruction(bytecode.OpPush, bytecode.NewRegister(0), bytecode.NewRegister(3)), calls: func() int { return probe.appendCalls }},
-		{name: "append key value", inst: bytecode.NewInstruction(bytecode.OpPushKV, bytecode.NewRegister(0), bytecode.NewRegister(1), bytecode.NewRegister(3)), calls: func() int { return probe.setCalls }},
-		{name: "length", inst: bytecode.NewInstruction(bytecode.OpLength, bytecode.NewRegister(4), bytecode.NewRegister(0)), calls: func() int { return probe.lengthCalls }},
-		{name: "exists", inst: bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(4), bytecode.NewRegister(0)), calls: func() int { return probe.lengthCalls }},
+		{name: "load index", inst: bytecode.NewInstruction(bytecode.OpLoadIndex, bytecode.NewRegister(4), bytecode.NewRegister(0), bytecode.NewRegister(2)), calls: func(v *cancellationProbeValue) int { return v.getCalls }},
+		{name: "load key", inst: bytecode.NewInstruction(bytecode.OpLoadKey, bytecode.NewRegister(4), bytecode.NewRegister(0), bytecode.NewRegister(1)), calls: func(v *cancellationProbeValue) int { return v.getCalls }},
+		{name: "load property", inst: bytecode.NewInstruction(bytecode.OpLoadProperty, bytecode.NewRegister(4), bytecode.NewRegister(0), bytecode.NewRegister(1)), calls: func(v *cancellationProbeValue) int { return v.getCalls }},
+		{name: "set index", inst: bytecode.NewInstruction(bytecode.OpSetIndex, bytecode.NewRegister(0), bytecode.NewRegister(2), bytecode.NewRegister(3)), calls: func(v *cancellationProbeValue) int { return v.setCalls }},
+		{name: "set key", inst: bytecode.NewInstruction(bytecode.OpSetKey, bytecode.NewRegister(0), bytecode.NewRegister(1), bytecode.NewRegister(3)), calls: func(v *cancellationProbeValue) int { return v.setCalls }},
+		{name: "set property", inst: bytecode.NewInstruction(bytecode.OpSetProperty, bytecode.NewRegister(0), bytecode.NewRegister(1), bytecode.NewRegister(3)), calls: func(v *cancellationProbeValue) int { return v.setCalls }},
+		{name: "object set", inst: bytecode.NewInstruction(bytecode.OpObjectSet, bytecode.NewRegister(0), bytecode.NewRegister(1), bytecode.NewRegister(3)), calls: func(v *cancellationProbeValue) int { return v.setCalls }},
+		{name: "delete key", inst: bytecode.NewInstruction(bytecode.OpDeleteKey, bytecode.NewRegister(0), bytecode.NewRegister(1)), calls: func(v *cancellationProbeValue) int { return v.removeCalls }},
+		{name: "delete property", inst: bytecode.NewInstruction(bytecode.OpDeleteProperty, bytecode.NewRegister(0), bytecode.NewRegister(2)), calls: func(v *cancellationProbeValue) int { return v.removeCalls }},
+		{name: "append", inst: bytecode.NewInstruction(bytecode.OpPush, bytecode.NewRegister(0), bytecode.NewRegister(3)), calls: func(v *cancellationProbeValue) int { return v.appendCalls }},
+		{name: "append key value", inst: bytecode.NewInstruction(bytecode.OpPushKV, bytecode.NewRegister(0), bytecode.NewRegister(1), bytecode.NewRegister(3)), calls: func(v *cancellationProbeValue) int { return v.setCalls }},
+		{name: "length", inst: bytecode.NewInstruction(bytecode.OpLength, bytecode.NewRegister(4), bytecode.NewRegister(0)), calls: func(v *cancellationProbeValue) int { return v.lengthCalls }},
+		{name: "exists", inst: bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(4), bytecode.NewRegister(0)), calls: func(v *cancellationProbeValue) int { return v.lengthCalls }},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			probe := &cancellationProbeValue{cooperative: true}
 			err := runPreCanceledProgram(t, externalCapabilityProgram(probe, test.inst))
 			if !errors.Is(err, context.Canceled) {
 				t.Fatalf("run error = %v, want context.Canceled", err)
 			}
-			if calls := test.calls(); calls != 0 {
-				t.Fatalf("external capability calls = %d, want 0", calls)
+			if calls := test.calls(probe); calls != 1 {
+				t.Fatalf("external capability calls = %d, want 1", calls)
+			}
+			if probe.lastContext == nil || probe.lastContext.Err() != context.Canceled {
+				t.Fatal("external capability did not receive the canceled execution context")
 			}
 		})
 	}
 }
 
-func TestRunChecksCancellationBeforeHostComparison(t *testing.T) {
-	probe := &cancellationProbeValue{}
+func TestHostComparisonOwnsCancellation(t *testing.T) {
+	probe := &cancellationProbeValue{cooperative: true}
 	program := newTestProgram(
 		2,
 		[]runtime.Value{probe},
@@ -286,13 +309,16 @@ func TestRunChecksCancellationBeforeHostComparison(t *testing.T) {
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("run error = %v, want context.Canceled", err)
 	}
-	if probe.equalCalls != 0 {
-		t.Fatalf("host equality calls = %d, want 0", probe.equalCalls)
+	if probe.equalCalls != 1 {
+		t.Fatalf("host equality calls = %d, want 1", probe.equalCalls)
+	}
+	if probe.lastContext == nil || probe.lastContext.Err() != context.Canceled {
+		t.Fatal("host comparison did not receive the canceled execution context")
 	}
 }
 
-func TestRunChecksCancellationBeforeIteratorCreation(t *testing.T) {
-	probe := &cancellationProbeValue{}
+func TestIteratorCreationOwnsCancellation(t *testing.T) {
+	probe := &cancellationProbeValue{cooperative: true}
 	program := newTestProgram(
 		2,
 		[]runtime.Value{probe},
@@ -305,15 +331,15 @@ func TestRunChecksCancellationBeforeIteratorCreation(t *testing.T) {
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("run error = %v, want context.Canceled", err)
 	}
-	if probe.iterateCalls != 0 {
-		t.Fatalf("host iterate calls = %d, want 0", probe.iterateCalls)
+	if probe.iterateCalls != 1 {
+		t.Fatalf("host iterate calls = %d, want 1", probe.iterateCalls)
 	}
 }
 
-func TestRunChecksCancellationBeforeIteratorAdvancement(t *testing.T) {
+func TestIteratorAdvancementOwnsCancellation(t *testing.T) {
 	for _, op := range []bytecode.Opcode{bytecode.OpIterNext, bytecode.OpIterNextTimeout} {
 		t.Run(op.String(), func(t *testing.T) {
-			probe := &cancellationProbeValue{}
+			probe := &cancellationProbeValue{cooperative: true}
 			iterator := data.NewIterator(probe)
 			program := newTestProgram(
 				2,
@@ -327,10 +353,53 @@ func TestRunChecksCancellationBeforeIteratorAdvancement(t *testing.T) {
 			if !errors.Is(err, context.Canceled) {
 				t.Fatalf("run error = %v, want context.Canceled", err)
 			}
-			if probe.nextCalls != 0 {
-				t.Fatalf("host next calls = %d, want 0", probe.nextCalls)
+			if probe.nextCalls != 1 {
+				t.Fatalf("host next calls = %d, want 1", probe.nextCalls)
 			}
 		})
+	}
+}
+
+func TestBlockedIteratorObservesCancellationInFlight(t *testing.T) {
+	started := make(chan struct{})
+	probe := &cancellationProbeValue{blockNext: true, nextStarted: started}
+	iterator := data.NewIterator(probe)
+	program := newTestProgram(
+		2,
+		[]runtime.Value{iterator},
+		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+		bytecode.NewInstruction(bytecode.OpIterNext, bytecode.Operand(2), bytecode.NewRegister(0)),
+		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+	)
+	instance := mustNewVM(t, program)
+	t.Cleanup(func() { _ = instance.Close() })
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() {
+		result, err := instance.Run(ctx, NewDefaultEnvironment())
+		if result != nil {
+			_ = result.Close()
+		}
+		done <- err
+	}()
+
+	select {
+	case <-started:
+		cancel()
+	case <-time.After(5 * time.Second):
+		cancel()
+		t.Fatal("iterator did not start")
+	}
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("run error = %v, want context.Canceled", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("iterator did not stop after cancellation")
+	}
+	if probe.nextCalls != 1 {
+		t.Fatalf("iterator next calls = %d, want 1", probe.nextCalls)
 	}
 }
 
@@ -393,55 +462,80 @@ func TestRunChecksCancellationBeforeSleep(t *testing.T) {
 	}
 }
 
-func TestRunChecksCancellationBeforeExternalOperations(t *testing.T) {
-	probe := &cancellationProbeValue{}
+func TestContextAwareExternalOperationsOwnCancellation(t *testing.T) {
 	tests := []struct {
-		program *bytecode.Program
-		calls   func() int
+		program func(*cancellationProbeValue) *bytecode.Program
+		calls   func(*cancellationProbeValue) int
 		name    string
 	}{
-		{name: "dispatch", program: eventOperationProgram(bytecode.OpDispatch, probe), calls: func() int { return probe.dispatchCalls }},
-		{name: "stream", program: eventOperationProgram(bytecode.OpStream, probe), calls: func() int { return probe.subscribeCalls }},
-		{name: "query", program: queryOperationProgram(bytecode.OpQuery, probe), calls: func() int { return probe.queryCalls }},
-		{name: "query exists", program: queryOperationProgram(bytecode.OpQueryExists, probe), calls: func() int { return probe.queryCalls }},
-		{name: "query count", program: queryOperationProgram(bytecode.OpQueryCount, probe), calls: func() int { return probe.queryCalls }},
-		{name: "query one", program: queryOperationProgram(bytecode.OpQueryOne, probe), calls: func() int { return probe.queryCalls }},
-		{name: "close", program: closeOperationProgram(probe), calls: func() int { return probe.closeCalls }},
+		{name: "dispatch", program: func(v *cancellationProbeValue) *bytecode.Program {
+			return eventOperationProgram(bytecode.OpDispatch, v)
+		}, calls: func(v *cancellationProbeValue) int { return v.dispatchCalls }},
+		{name: "stream", program: func(v *cancellationProbeValue) *bytecode.Program { return eventOperationProgram(bytecode.OpStream, v) }, calls: func(v *cancellationProbeValue) int { return v.subscribeCalls }},
+		{name: "query", program: func(v *cancellationProbeValue) *bytecode.Program { return queryOperationProgram(bytecode.OpQuery, v) }, calls: func(v *cancellationProbeValue) int { return v.queryCalls }},
+		{name: "query exists", program: func(v *cancellationProbeValue) *bytecode.Program {
+			return queryOperationProgram(bytecode.OpQueryExists, v)
+		}, calls: func(v *cancellationProbeValue) int { return v.queryCalls }},
+		{name: "query count", program: func(v *cancellationProbeValue) *bytecode.Program {
+			return queryOperationProgram(bytecode.OpQueryCount, v)
+		}, calls: func(v *cancellationProbeValue) int { return v.queryCalls }},
+		{name: "query one", program: func(v *cancellationProbeValue) *bytecode.Program {
+			return queryOperationProgram(bytecode.OpQueryOne, v)
+		}, calls: func(v *cancellationProbeValue) int { return v.queryCalls }},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := runPreCanceledProgram(t, test.program)
+			probe := &cancellationProbeValue{cooperative: true}
+			err := runPreCanceledProgram(t, test.program(probe))
 			if !errors.Is(err, context.Canceled) {
 				t.Fatalf("run error = %v, want context.Canceled", err)
 			}
-			if calls := test.calls(); calls != 0 {
-				t.Fatalf("external operation calls = %d, want 0", calls)
+			if calls := test.calls(probe); calls != 1 {
+				t.Fatalf("external operation calls = %d, want 1", calls)
+			}
+			if probe.lastContext == nil || probe.lastContext.Err() != context.Canceled {
+				t.Fatal("external operation did not receive the canceled execution context")
 			}
 		})
 	}
 }
 
-func TestRunChecksCancellationBeforeCollectionOpcode(t *testing.T) {
+func TestCloseKeepsContextlessPreDispatchSafepoint(t *testing.T) {
 	probe := &cancellationProbeValue{}
-	left := runtime.NewArrayWith(probe, probe)
-	tests := map[string]bytecode.Instruction{
-		"flatten":  bytecode.NewInstruction(bytecode.OpFlatten, bytecode.NewRegister(2), bytecode.NewRegister(0), bytecode.NewRegister(1)),
-		"distinct": bytecode.NewInstruction(bytecode.OpDistinct, bytecode.NewRegister(2), bytecode.NewRegister(0)),
-		"in":       bytecode.NewInstruction(bytecode.OpIn, bytecode.NewRegister(2), bytecode.NewRegister(1), bytecode.NewRegister(0)),
-		"all":      bytecode.NewInstruction(bytecode.OpAllEq, bytecode.NewRegister(2), bytecode.NewRegister(0), bytecode.NewRegister(1)),
-		"any":      bytecode.NewInstruction(bytecode.OpAnyEq, bytecode.NewRegister(2), bytecode.NewRegister(0), bytecode.NewRegister(1)),
-		"none":     bytecode.NewInstruction(bytecode.OpNoneEq, bytecode.NewRegister(2), bytecode.NewRegister(0), bytecode.NewRegister(1)),
+	err := runPreCanceledProgram(t, closeOperationProgram(probe))
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("run error = %v, want context.Canceled", err)
+	}
+	if probe.closeCalls != 0 {
+		t.Fatalf("close calls = %d, want 0", probe.closeCalls)
+	}
+}
+
+func TestCollectionOpcodesDoNotPollCancellation(t *testing.T) {
+	tests := []struct {
+		name      string
+		operation bytecode.Instruction
+		compares  bool
+	}{
+		{name: "flatten", operation: bytecode.NewInstruction(bytecode.OpFlatten, bytecode.NewRegister(2), bytecode.NewRegister(0), bytecode.NewRegister(1))},
+		{name: "distinct", operation: bytecode.NewInstruction(bytecode.OpDistinct, bytecode.NewRegister(2), bytecode.NewRegister(0)), compares: true},
+		{name: "in", operation: bytecode.NewInstruction(bytecode.OpIn, bytecode.NewRegister(2), bytecode.NewRegister(1), bytecode.NewRegister(0)), compares: true},
+		{name: "all", operation: bytecode.NewInstruction(bytecode.OpAllEq, bytecode.NewRegister(2), bytecode.NewRegister(0), bytecode.NewRegister(1)), compares: true},
+		{name: "any", operation: bytecode.NewInstruction(bytecode.OpAnyEq, bytecode.NewRegister(2), bytecode.NewRegister(0), bytecode.NewRegister(1)), compares: true},
+		{name: "none", operation: bytecode.NewInstruction(bytecode.OpNoneEq, bytecode.NewRegister(2), bytecode.NewRegister(0), bytecode.NewRegister(1)), compares: true},
 	}
 
-	for name, operation := range tests {
-		t.Run(name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			probe := &cancellationProbeValue{}
+			left := runtime.NewArrayWith(probe, probe)
 			program := newTestProgram(
 				3,
 				[]runtime.Value{left, probe},
 				bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
 				bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(1)),
-				operation,
+				test.operation,
 				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			)
 
@@ -449,8 +543,8 @@ func TestRunChecksCancellationBeforeCollectionOpcode(t *testing.T) {
 			if !errors.Is(err, context.Canceled) {
 				t.Fatalf("run error = %v, want context.Canceled", err)
 			}
-			if probe.equalCalls != 0 {
-				t.Fatalf("host equality calls = %d, want 0", probe.equalCalls)
+			if test.compares && probe.equalCalls == 0 {
+				t.Fatal("collection comparison did not run before top-level cancellation")
 			}
 		})
 	}
@@ -490,35 +584,6 @@ func TestExecutionCancellationRecognizesDeadline(t *testing.T) {
 	err = errors.Join(errors.New("host failure"), context.DeadlineExceeded)
 	if !isExecutionCancellation(err) {
 		t.Fatal("wrapped deadline was not recognized")
-	}
-}
-
-func TestCapabilitySafepointClassification(t *testing.T) {
-	probe := &cancellationProbeValue{}
-	for name, value := range map[string]runtime.Value{
-		"array":       runtime.NewArray(0),
-		"binary":      runtime.NewBinary(nil),
-		"dataset":     data.NewDataSet(false),
-		"fast object": data.NewFastObject(nil, 0),
-		"int":         runtime.NewInt(1),
-		"object":      runtime.NewObject(),
-		"range":       runtime.NewRange(0, 1),
-		"string":      runtime.NewString("value"),
-	} {
-		t.Run(name, func(t *testing.T) {
-			if isExternalCapabilityReceiver(value) {
-				t.Fatalf("%T classified as external", value)
-			}
-		})
-	}
-	if !isExternalCapabilityReceiver(probe) {
-		t.Fatal("host capability classified as VM-owned")
-	}
-	if comparisonNeedsSafepoint(runtime.NewInt(1), runtime.NewFloat(1)) {
-		t.Fatal("native scalar comparison classified as a safepoint")
-	}
-	if !comparisonNeedsSafepoint(runtime.NewArray(0), runtime.NewArray(0)) {
-		t.Fatal("collection comparison was not classified as a safepoint")
 	}
 }
 

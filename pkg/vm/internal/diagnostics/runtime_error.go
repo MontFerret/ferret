@@ -140,13 +140,13 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 	case errors.Is(err, ErrDivisionByZero):
 		spec.Kind = DivideByZero
 		spec.Message = "division by zero"
-		spec.Label = "denominator evaluates to zero"
+		spec.Label = "attempt to divide by zero"
 		spec.Hint = "Ensure the denominator is non-zero before division"
 		spec.Cause = ErrDivisionByZero
 	case errors.Is(err, ErrModuloByZero):
 		spec.Kind = ModuloByZero
 		spec.Message = "modulo by zero"
-		spec.Label = "divisor evaluates to zero"
+		spec.Label = "attempt to take modulo by zero"
 		spec.Hint = "Ensure the divisor is non-zero before modulo"
 		spec.Cause = ErrModuloByZero
 	case errors.Is(err, runtime.ErrTimeout):

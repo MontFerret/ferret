@@ -18,7 +18,13 @@ type debugControl struct {
 	entry       bool
 }
 
-func (c *debugControl) onSourcePoint(_ context.Context, state sourcePointState) (sourcePointAction, error) {
+func (c *debugControl) onSourcePoint(ctx context.Context, state sourcePointState) (sourcePointAction, error) {
+	if ctx != nil {
+		if err := ctx.Err(); err != nil {
+			return sourcePointTerminate, err
+		}
+	}
+
 	point := c.owner.points.PointByID(state.pointID)
 	if point == nil || point.PC != state.pc {
 		return sourcePointTerminate, runtime.Errorf(runtime.ErrUnexpected, "source point id %d does not match pc %d", state.pointID, state.pc)

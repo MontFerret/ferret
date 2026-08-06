@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/operationerror"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -251,6 +252,55 @@ func TestArithmeticReportsNumericFailures(t *testing.T) {
 			_, err := test.operation()
 			if err == nil || (test.target != nil && !errors.Is(err, test.target)) {
 				t.Fatalf("error = %v, want %v", err, test.target)
+			}
+		})
+	}
+}
+
+func TestZeroDivisorErrorsPreserveRuntimeAndOperationIdentity(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	tests := []struct {
+		operation func() (runtime.Value, error)
+		identity  error
+		message   string
+		name      string
+	}{
+		{name: "Int division", operation: func() (runtime.Value, error) {
+			return runtime.Divide(ctx, runtime.NewInt(1), runtime.ZeroInt)
+		}, identity: operationerror.ErrDivisionByZero, message: "invalid operation: division by zero"},
+		{name: "Float division", operation: func() (runtime.Value, error) {
+			return runtime.Divide(ctx, runtime.NewFloat(1), runtime.ZeroFloat)
+		}, identity: operationerror.ErrDivisionByZero, message: "invalid operation: division by zero"},
+		{name: "Duration scalar division", operation: func() (runtime.Value, error) {
+			return runtime.Divide(ctx, runtime.NewDuration(time.Second), runtime.ZeroInt)
+		}, identity: operationerror.ErrDivisionByZero, message: "invalid operation: division by zero"},
+		{name: "Duration ratio division", operation: func() (runtime.Value, error) {
+			return runtime.Divide(ctx, runtime.NewDuration(time.Second), runtime.ZeroDuration)
+		}, identity: operationerror.ErrDivisionByZero, message: "invalid operation: division by zero"},
+		{name: "Int modulo", operation: func() (runtime.Value, error) {
+			return runtime.Modulo(ctx, runtime.NewInt(1), runtime.ZeroInt)
+		}, identity: operationerror.ErrModuloByZero, message: "invalid operation: modulo by zero"},
+		{name: "Float modulo", operation: func() (runtime.Value, error) {
+			return runtime.Modulo(ctx, runtime.NewFloat(1), runtime.ZeroFloat)
+		}, identity: operationerror.ErrModuloByZero, message: "invalid operation: modulo by zero"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := test.operation()
+			if err == nil {
+				t.Fatal("operation returned nil error")
+			}
+			if got := err.Error(); got != test.message {
+				t.Fatalf("error = %q, want %q", got, test.message)
+			}
+			if !errors.Is(err, runtime.ErrInvalidOperation) {
+				t.Fatalf("error = %v, want runtime.ErrInvalidOperation", err)
+			}
+			if !errors.Is(err, test.identity) {
+				t.Fatalf("error = %v, want %v", err, test.identity)
 			}
 		})
 	}

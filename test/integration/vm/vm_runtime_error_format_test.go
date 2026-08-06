@@ -95,6 +95,60 @@ RETURN Outer()
 	})
 }
 
+func TestZeroDivisorDiagnosticsUseRuntimeOperationIdentity(t *testing.T) {
+	tests := []struct {
+		identity error
+		kind     pkgdiagnostics.Kind
+		query    string
+		message  string
+		label    string
+		hint     string
+		name     string
+	}{
+		{name: "Int division", query: "RETURN 1 / 0", identity: vm.ErrDivisionByZero, kind: vm.DivideByZero, message: "division by zero", label: "attempt to divide by zero", hint: "Ensure the denominator is non-zero before division"},
+		{name: "Float division", query: "RETURN 1.0 / 0.0", identity: vm.ErrDivisionByZero, kind: vm.DivideByZero, message: "division by zero", label: "attempt to divide by zero", hint: "Ensure the denominator is non-zero before division"},
+		{name: "Duration scalar division", query: "RETURN 1s / 0", identity: vm.ErrDivisionByZero, kind: vm.DivideByZero, message: "division by zero", label: "attempt to divide by zero", hint: "Ensure the denominator is non-zero before division"},
+		{name: "Duration ratio division", query: "RETURN 1s / 0s", identity: vm.ErrDivisionByZero, kind: vm.DivideByZero, message: "division by zero", label: "attempt to divide by zero", hint: "Ensure the denominator is non-zero before division"},
+		{name: "Int modulo", query: "RETURN 1 % 0", identity: vm.ErrModuloByZero, kind: vm.ModuloByZero, message: "modulo by zero", label: "attempt to take modulo by zero", hint: "Ensure the divisor is non-zero before modulo"},
+		{name: "Float modulo", query: "RETURN 1.0 % 0.0", identity: vm.ErrModuloByZero, kind: vm.ModuloByZero, message: "modulo by zero", label: "attempt to take modulo by zero", hint: "Ensure the divisor is non-zero before modulo"},
+	}
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		for _, test := range tests {
+			t.Run(fmt.Sprintf("O%d/%s", level, test.name), func(t *testing.T) {
+				program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("zero_divisor.fql", test.query))
+				if err != nil {
+					t.Fatal(err)
+				}
+				instance, err := vm.New(program)
+				if err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() { _ = instance.Close() })
+
+				result, err := instance.Run(context.Background(), vm.NewDefaultEnvironment())
+				if result != nil {
+					_ = result.Close()
+				}
+				if !errors.Is(err, test.identity) {
+					t.Fatalf("run error = %v, want %v", err, test.identity)
+				}
+				var runtimeErr *vm.RuntimeError
+				if !errors.As(err, &runtimeErr) {
+					t.Fatalf("run error type = %T, want *vm.RuntimeError", err)
+				}
+				if runtimeErr.Kind != test.kind || runtimeErr.Message != test.message {
+					t.Fatalf("diagnostic = %s: %s, want %s: %s", runtimeErr.Kind, runtimeErr.Message, test.kind, test.message)
+				}
+				formatted := runtimeErr.Format()
+				if !strings.Contains(formatted, test.label) || !strings.Contains(formatted, test.hint) {
+					t.Fatalf("diagnostic did not preserve label and hint:\n%s", formatted)
+				}
+			})
+		}
+	}
+}
+
 func TestWaitForTimeoutFailureFormatsSourceSnippet(t *testing.T) {
 	const query = `RETURN WAITFOR EXISTS []
     TIMEOUT 1ms

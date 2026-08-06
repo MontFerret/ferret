@@ -212,10 +212,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 		switch op {
 		case bytecode.OpSourcePoint:
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
-
 			if vm.sourcePointObserver == nil {
 				continue
 			}
@@ -240,20 +236,19 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				return nil, sourcePointTerminate, runtime.Errorf(runtime.ErrUnexpected, "unknown source point action %d at pc %d", action, pc)
 			}
 		case bytecode.OpReturn:
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
-
 			retVal := reg[dst]
 
 			if state.returnToCaller(retVal) {
 				continue
 			}
+			if err := cancellation.Check(); err != nil {
+				return nil, sourcePointContinue, err
+			}
 
 			state.writeBorrowedRegister(bytecode.NoopOperand, retVal)
 			return state.registers[bytecode.NoopOperand], sourcePointContinue, nil
 		case bytecode.OpJump:
-			if cancellation.done != nil && int(dst) <= pc {
+			if cancellation.done != nil && inst.isBackedge(pc) {
 				if err := cancellation.checkReady(); err != nil {
 					return nil, sourcePointContinue, err
 				}
@@ -262,7 +257,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			state.pc = int(dst)
 		case bytecode.OpJumpIfFalse:
 			if !coerceBool(reg[src1]) {
-				if cancellation.done != nil && int(dst) <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -272,7 +267,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 		case bytecode.OpJumpIfTrue:
 			if coerceBool(reg[src1]) {
-				if cancellation.done != nil && int(dst) <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -282,7 +277,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 		case bytecode.OpJumpIfNone:
 			if reg[src1] == runtime.None {
-				if cancellation.done != nil && int(dst) <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -291,12 +286,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				state.pc = int(dst)
 			}
 		case bytecode.OpJumpIfNe:
-			if cancellation.done != nil && comparisonNeedsSafepoint(reg[src1], reg[src2]) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			matches, err := ne(ctx, reg[src1], reg[src2])
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -304,7 +293,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 
 			if matches {
-				if cancellation.done != nil && int(dst) <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -314,12 +303,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 		case bytecode.OpJumpIfNeConst:
 			right := constants[src2.Constant()]
-			if cancellation.done != nil && comparisonNeedsSafepoint(reg[src1], right) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			matches, err := ne(ctx, reg[src1], right)
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -327,7 +310,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 
 			if matches {
-				if cancellation.done != nil && int(dst) <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -336,12 +319,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				state.pc = int(dst)
 			}
 		case bytecode.OpJumpIfEq:
-			if cancellation.done != nil && comparisonNeedsSafepoint(reg[src1], reg[src2]) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			matches, err := eq(ctx, reg[src1], reg[src2])
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -349,7 +326,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 
 			if matches {
-				if cancellation.done != nil && int(dst) <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -359,12 +336,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 		case bytecode.OpJumpIfEqConst:
 			right := constants[src2.Constant()]
-			if cancellation.done != nil && comparisonNeedsSafepoint(reg[src1], right) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			matches, err := eq(ctx, reg[src1], right)
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -372,7 +343,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 
 			if matches {
-				if cancellation.done != nil && int(dst) <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -383,7 +354,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		case bytecode.OpJumpIfMissingProperty:
 			obj, ok := reg[src1].(runtime.Map)
 			if !ok {
-				if cancellation.done != nil && int(dst) <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -395,7 +366,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 			key, ok := reg[src2].(runtime.String)
 			if !ok {
-				if cancellation.done != nil && int(dst) <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -404,12 +375,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				state.pc = int(dst)
 				continue
 			}
-			if cancellation.done != nil && isExternalCapabilityReceiver(obj) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			has, err := obj.ContainsKey(ctx, key)
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -417,7 +382,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 
 			if !has {
-				if cancellation.done != nil && int(dst) <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -428,7 +393,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		case bytecode.OpJumpIfMissingPropertyConst:
 			obj, ok := reg[src1].(runtime.Map)
 			if !ok {
-				if cancellation.done != nil && int(dst) <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -441,7 +406,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 			key, ok := constants[src2.Constant()].(runtime.String)
 			if !ok {
-				if cancellation.done != nil && int(dst) <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -450,12 +415,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				state.pc = int(dst)
 				continue
 			}
-			if cancellation.done != nil && isExternalCapabilityReceiver(obj) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			has, err := obj.ContainsKey(ctx, key)
 			if err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -463,7 +422,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 
 			if !has {
-				if cancellation.done != nil && int(dst) <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -474,7 +433,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		case bytecode.OpMatchLoadPropertyConst:
 			key, ok := constants[src2.Constant()].(runtime.String)
 			if !ok {
-				if cancellation.done != nil && inst.InlineSlot <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -483,14 +442,8 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				state.pc = inst.InlineSlot
 				continue
 			}
-			if obj, ok := reg[src1].(runtime.Map); cancellation.done != nil && ok && isExternalCapabilityReceiver(obj) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			if vm.matchLoadPropertyConst(ctx, pc, inst, dst, reg[src1], key) {
-				if cancellation.done != nil && state.pc <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -547,11 +500,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 
 			hostFn := &hostFunctions[call.ID]
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
-
-			out, err := callCachedHostFunction(ctx, call, hostFn, reg, &state.scratch)
+			out, err := callCachedHostFunction(ctx, cancellation, call, hostFn, reg, &state.scratch)
 			state.setCallResult(pc, op, dst, out, err)
 		case bytecode.OpCall, bytecode.OpProtectedCall:
 			callID := inst.InlineSlot
@@ -602,10 +551,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				state.setOrRaiseDefault(pc, dst, runtime.None, err)
 				break
 			}
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
-
 			err = dispatcher.Dispatch(ctx, runtime.DispatchEvent{
 				Name:    eventName,
 				Payload: payload,
@@ -684,13 +629,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			src := reg[src1]
 			optional := op == bytecode.OpLoadIndexOptional
 			arg := reg[src2]
-			if cancellation.done != nil && !(optional && src == runtime.None) {
-				if _, ok := src.(runtime.IndexReadable); ok && isExternalCapabilityReceiver(src) {
-					if err := cancellation.checkReady(); err != nil {
-						return nil, sourcePointContinue, err
-					}
-				}
-			}
 
 			// TODO: inline loadIndexAndSet for better performance
 			vm.loadIndexAndSet(ctx, dst, pc, src, arg, optional)
@@ -698,13 +636,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			src := reg[src1]
 			optional := op == bytecode.OpLoadKeyOptional
 			arg := reg[src2]
-			if cancellation.done != nil && !(optional && src == runtime.None) {
-				if _, ok := src.(runtime.KeyReadable); ok && isExternalCapabilityReceiver(src) {
-					if err := cancellation.checkReady(); err != nil {
-						return nil, sourcePointContinue, err
-					}
-				}
-			}
 
 			// TODO: inline loadIndexAndSet for better performance
 			vm.loadKeyAndSet(ctx, dst, pc, src, arg, optional)
@@ -712,11 +643,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			src := reg[src1]
 			optional := op == bytecode.OpLoadPropertyOptional
 			prop := reg[src2]
-			if cancellation.done != nil && !(optional && src == runtime.None) && propertyReadUsesExternalCapability(src, prop) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
 
 			// TODO: inline loadIndexAndSet for better performance
 			// I guess the reason it cannot inline is due to a different control flow
@@ -725,46 +651,22 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			src := reg[src1]
 			optional := op == bytecode.OpLoadIndexOptionalConst
 			arg := constants[src2.Constant()]
-			if cancellation.done != nil && !(optional && src == runtime.None) {
-				if _, ok := src.(runtime.IndexReadable); ok && isExternalCapabilityReceiver(src) {
-					if err := cancellation.checkReady(); err != nil {
-						return nil, sourcePointContinue, err
-					}
-				}
-			}
 
 			vm.loadIndexAndSet(ctx, dst, pc, src, arg, optional)
 		case bytecode.OpLoadKeyConst, bytecode.OpLoadKeyOptionalConst:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadKeyOptionalConst
 			arg := constants[src2.Constant()]
-			if cancellation.done != nil && !(optional && src == runtime.None) {
-				if _, ok := src.(runtime.KeyReadable); ok && isExternalCapabilityReceiver(src) {
-					if err := cancellation.checkReady(); err != nil {
-						return nil, sourcePointContinue, err
-					}
-				}
-			}
 
 			vm.loadKeyConstAndSet(ctx, dst, pc, inst, src, arg, optional)
 		case bytecode.OpLoadPropertyConst, bytecode.OpLoadPropertyOptionalConst:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadPropertyOptionalConst
 			prop := constants[src2.Constant()]
-			if cancellation.done != nil && !(optional && src == runtime.None) && propertyReadUsesExternalCapability(src, prop) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
 
 			vm.loadPropertyConstAndSet(ctx, dst, pc, inst, src, prop, optional)
 		case bytecode.OpPush:
 			ds := reg[dst].(runtime.Appendable)
-			if cancellation.done != nil && isExternalCapabilityReceiver(reg[dst]) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
 
 			if err := ds.Append(ctx, reg[src1]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -774,11 +676,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			state.retireOwnership(reg[src1])
 		case bytecode.OpPushKV:
 			tr := reg[dst].(runtime.KeyWritable)
-			if cancellation.done != nil && (isExternalCapabilityReceiver(reg[dst]) || comparisonNeedsSafepoint(reg[src1], reg[src1])) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
 
 			if err := tr.Set(ctx, reg[src1], reg[src2]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -831,12 +728,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				state.raiseInvariantAt(pc, invariantErr)
 				break
 			}
-			if cancellation.done != nil && comparisonNeedsSafepoint(reg[src1], reg[src1]) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			if err := collector.UpdateAggregate(ctx, reg[src1], reg[src2], inst.InlineSlot); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
@@ -858,12 +749,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			writable, ok := reg[dst].(runtime.KeyWritable)
 
 			if ok {
-				if cancellation.done != nil && isExternalCapabilityReceiver(reg[dst]) {
-					if err := cancellation.checkReady(); err != nil {
-						return nil, sourcePointContinue, err
-					}
-				}
-
 				if err := writable.Set(ctx, key, value); err != nil {
 					state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 					break
@@ -889,12 +774,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			writable, ok := reg[dst].(runtime.KeyWritable)
 
 			if ok {
-				if cancellation.done != nil && isExternalCapabilityReceiver(reg[dst]) {
-					if err := cancellation.checkReady(); err != nil {
-						return nil, sourcePointContinue, err
-					}
-				}
-
 				if err := writable.Set(ctx, key, value); err != nil {
 					state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 					break
@@ -910,11 +789,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			target := reg[dst]
 			index := reg[src1]
 			value := reg[src2]
-			if cancellation.done != nil && propertyWriteUsesExternalCapability(target, index) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
 
 			if err := vm.setIndex(ctx, target, index, value); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -926,11 +800,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			target := reg[dst]
 			index := constants[src1.Constant()]
 			value := reg[src2]
-			if cancellation.done != nil && propertyWriteUsesExternalCapability(target, index) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
 
 			if err := vm.setIndex(ctx, target, index, value); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -942,11 +811,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			target := reg[dst]
 			key := reg[src1]
 			value := reg[src2]
-			if _, ok := target.(runtime.KeyWritable); cancellation.done != nil && ok && isExternalCapabilityReceiver(target) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
 
 			if err := vm.setKey(ctx, target, key, value); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -964,12 +828,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				state.retireOwnership(value)
 				continue
 			}
-			if _, ok := target.(runtime.KeyWritable); cancellation.done != nil && ok && isExternalCapabilityReceiver(target) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			if err := vm.setKey(ctx, target, key, value); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
@@ -980,11 +838,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			target := reg[dst]
 			prop := reg[src1]
 			value := reg[src2]
-			if cancellation.done != nil && propertyWriteUsesExternalCapability(target, prop) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
 
 			if err := vm.setProperty(ctx, target, prop, value); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -1004,12 +857,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 					continue
 				}
 			}
-			if cancellation.done != nil && propertyWriteUsesExternalCapability(target, prop) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			if err := vm.setProperty(ctx, target, prop, value); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
@@ -1019,11 +866,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		case bytecode.OpDeleteKey:
 			target := reg[dst]
 			key := reg[src1]
-			if cancellation.done != nil && keyDeleteUsesExternalCapability(target, key) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
 
 			if err := vm.deleteKey(ctx, target, key); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -1031,11 +873,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		case bytecode.OpDeleteKeyConst:
 			target := reg[dst]
 			key := constants[src1.Constant()]
-			if cancellation.done != nil && keyDeleteUsesExternalCapability(target, key) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
 
 			if err := vm.deleteKey(ctx, target, key); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -1043,11 +880,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		case bytecode.OpDeleteProperty:
 			target := reg[dst]
 			prop := reg[src1]
-			if cancellation.done != nil && propertyDeleteUsesExternalCapability(target, prop) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
 
 			if err := vm.deleteProperty(ctx, target, prop); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -1055,11 +887,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		case bytecode.OpDeletePropertyConst:
 			target := reg[dst]
 			prop := constants[src1.Constant()]
-			if cancellation.done != nil && propertyDeleteUsesExternalCapability(target, prop) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
 
 			if err := vm.deleteProperty(ctx, target, prop); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
@@ -1069,10 +896,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			iterable, ok := input.(runtime.Iterable)
 
 			if ok {
-				if err := cancellation.Check(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-
 				iterator, err := iterable.Iterate(ctx)
 
 				if err == nil {
@@ -1088,13 +911,10 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			state.raiseRuntimeAt(pc, callErr, recoverDefault, dst, data.NoopIter, true)
 		case bytecode.OpIterNext:
 			iterator := reg[src1].(data.IteratorState)
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
 
 			if err := iterator.Next(ctx); err != nil {
 				if errors.Is(err, io.EOF) {
-					if cancellation.done != nil && int(dst) <= pc {
+					if cancellation.done != nil && inst.isBackedge(pc) {
 						if err := cancellation.checkReady(); err != nil {
 							return nil, sourcePointContinue, err
 						}
@@ -1108,13 +928,10 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 		case bytecode.OpIterNextTimeout:
 			iterator := reg[src1].(data.IteratorState)
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
 
 			if err := iterator.Next(ctx); err != nil {
 				if errors.Is(err, io.EOF) {
-					if cancellation.done != nil && int(dst) <= pc {
+					if cancellation.done != nil && inst.isBackedge(pc) {
 						if err := cancellation.checkReady(); err != nil {
 							return nil, sourcePointContinue, err
 						}
@@ -1126,7 +943,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				}
 
 				if errors.Is(err, runtime.ErrTimeout) {
-					if cancellation.done != nil && int(dst) <= pc {
+					if cancellation.done != nil && inst.isBackedge(pc) {
 						if err := cancellation.checkReady(); err != nil {
 							return nil, sourcePointContinue, err
 						}
@@ -1155,7 +972,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			if iterState < threshold {
 				iterState++
 				state.writeBorrowedRegister(src1, iterState)
-				if cancellation.done != nil && int(dst) <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -1171,7 +988,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				iterState++
 				state.writeBorrowedRegister(src1, iterState)
 			} else {
-				if cancellation.done != nil && int(dst) <= pc {
+				if cancellation.done != nil && inst.isBackedge(pc) {
 					if err := cancellation.checkReady(); err != nil {
 						return nil, sourcePointContinue, err
 					}
@@ -1186,10 +1003,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
-
 			stream, err := observable.Subscribe(ctx, runtime.Subscription{
 				EventName: eventName,
 				Options:   opts,
@@ -1221,17 +1034,10 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 				timeout = t
 			}
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
-
 			state.writeProducedRegister(dst, stream.Iterate(timeout))
 		case bytecode.OpQuery:
 			src := readOperandValue(reg, constants, src1)
 			descriptor := readOperandValue(reg, constants, src2)
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
 
 			out, err := applyQuery(ctx, src, descriptor)
 
@@ -1239,9 +1045,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		case bytecode.OpQueryExists:
 			src := readOperandValue(reg, constants, src1)
 			descriptor := readOperandValue(reg, constants, src2)
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
 
 			out, err := applyQueryExists(ctx, src, descriptor)
 
@@ -1249,9 +1052,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		case bytecode.OpQueryCount:
 			src := readOperandValue(reg, constants, src1)
 			descriptor := readOperandValue(reg, constants, src2)
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
 
 			out, err := applyQueryCount(ctx, src, descriptor)
 
@@ -1259,9 +1059,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		case bytecode.OpQueryOne:
 			src := readOperandValue(reg, constants, src1)
 			descriptor := readOperandValue(reg, constants, src2)
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
 
 			out, err := applyQueryOne(ctx, src, descriptor)
 
@@ -1315,18 +1112,10 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			if depth < 1 {
 				depth = 1
 			}
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
-
 			res, err := arrayFlatten(ctx, reg[src1], depth)
 
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpDistinct:
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
-
 			res, err := arrayDistinct(ctx, reg[src1])
 
 			state.setOrRaiseDefault(pc, dst, res, err)
@@ -1346,19 +1135,9 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			res, err := runtime.Multiply(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpDiv:
-			if err := state.checkDivisionByZeroAt(pc, reg[src1], reg[src2]); err != nil {
-				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
-				break
-			}
-
 			res, err := runtime.Divide(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpMod:
-			if err := state.checkModuloByZeroAt(pc, reg[src1], reg[src2]); err != nil {
-				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
-				break
-			}
-
 			res, err := runtime.Modulo(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpIncr:
@@ -1379,76 +1158,30 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		case bytecode.OpCastBool:
 			reg[dst] = coerceBool(reg[src1])
 		case bytecode.OpCmp:
-			if cancellation.done != nil && comparisonNeedsSafepoint(reg[src1], reg[src2]) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			res, err := cmp(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpNot:
 			res, err := runtime.Not(reg[src1])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpEq:
-			if cancellation.done != nil && comparisonNeedsSafepoint(reg[src1], reg[src2]) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			res, err := eq(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpNe:
-			if cancellation.done != nil && comparisonNeedsSafepoint(reg[src1], reg[src2]) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			res, err := ne(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpGt:
-			if cancellation.done != nil && comparisonNeedsSafepoint(reg[src1], reg[src2]) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			res, err := gt(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpLt:
-			if cancellation.done != nil && comparisonNeedsSafepoint(reg[src1], reg[src2]) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			res, err := lt(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpGte:
-			if cancellation.done != nil && comparisonNeedsSafepoint(reg[src1], reg[src2]) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			res, err := gte(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpLte:
-			if cancellation.done != nil && comparisonNeedsSafepoint(reg[src1], reg[src2]) {
-				if err := cancellation.checkReady(); err != nil {
-					return nil, sourcePointContinue, err
-				}
-			}
-
 			res, err := lte(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpIn:
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
-
 			res, err := contains(ctx, reg[src2], reg[src1])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpLike:
@@ -1478,12 +1211,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 
 			if measurable, ok := val.(runtime.Measurable); ok {
-				if cancellation.done != nil && isExternalCapabilityReceiver(val) {
-					if err := cancellation.checkReady(); err != nil {
-						return nil, sourcePointContinue, err
-					}
-				}
-
 				length, err := measurable.Length(ctx)
 
 				if err != nil {
@@ -1498,28 +1225,16 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 			reg[dst] = runtime.True
 		case bytecode.OpAllEq, bytecode.OpAllNe, bytecode.OpAllGt, bytecode.OpAllGte, bytecode.OpAllLt, bytecode.OpAllLte, bytecode.OpAllIn:
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
-
 			cmp := comparatorFromByte(int(op) - int(bytecode.OpAllEq))
 			res, err := arrayAll(ctx, cmp, reg[src1], reg[src2])
 
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpAnyEq, bytecode.OpAnyNe, bytecode.OpAnyGt, bytecode.OpAnyGte, bytecode.OpAnyLt, bytecode.OpAnyLte, bytecode.OpAnyIn:
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
-
 			cmp := comparatorFromByte(int(op) - int(bytecode.OpAnyEq))
 			res, err := arrayAny(ctx, cmp, reg[src1], reg[src2])
 
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpNoneEq, bytecode.OpNoneNe, bytecode.OpNoneGt, bytecode.OpNoneGte, bytecode.OpNoneLt, bytecode.OpNoneLte, bytecode.OpNoneIn:
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
-
 			cmp := comparatorFromByte(int(op) - int(bytecode.OpNoneEq))
 			res, err := arrayNone(ctx, cmp, reg[src1], reg[src2])
 
@@ -1528,12 +1243,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			val, ok := reg[src1].(runtime.Measurable)
 
 			if ok {
-				if cancellation.done != nil && isExternalCapabilityReceiver(reg[src1]) {
-					if err := cancellation.checkReady(); err != nil {
-						return nil, sourcePointContinue, err
-					}
-				}
-
 				length, err := val.Length(ctx)
 
 				if err != nil {
@@ -1588,10 +1297,6 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				state.raiseRuntimeAt(pc, runtime.Error(runtime.ErrInvalidArgument, "wait duration must not be negative"), recoverDefault, bytecode.NoopOperand, nil, false)
 				break
 			}
-			if err := cancellation.Check(); err != nil {
-				return nil, sourcePointContinue, err
-			}
-
 			if err := data.Sleep(ctx, dur); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 			}

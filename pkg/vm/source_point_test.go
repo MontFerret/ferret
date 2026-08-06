@@ -20,6 +20,34 @@ func TestRunTreatsSourcePointsAsNoopWithoutObserver(t *testing.T) {
 	}
 }
 
+func TestSourcePointsDoNotPollCancellationWithoutObserver(t *testing.T) {
+	probe := &cancellationProbeValue{}
+	program := newTestProgram(
+		3,
+		[]runtime.Value{runtime.NewString("prefix-"), probe},
+		bytecode.NewInstruction(bytecode.OpSourcePoint, bytecode.Operand(1)),
+		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(1)),
+		bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(2), bytecode.NewRegister(0), bytecode.NewRegister(1)),
+		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+	)
+	instance := mustNewVM(t, program)
+	t.Cleanup(func() { _ = instance.Close() })
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	result, err := instance.Run(ctx, NewDefaultEnvironment())
+	if result != nil {
+		_ = result.Close()
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("run error = %v, want context.Canceled", err)
+	}
+	if probe.stringCalls != 1 {
+		t.Fatalf("host string calls = %d, want 1", probe.stringCalls)
+	}
+}
+
 func TestRunNotifiesSourcePointObserver(t *testing.T) {
 	instance := mustNewVM(t, sourcePointTestProgram())
 	observer := &recordingSourcePointObserver{}

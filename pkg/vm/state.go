@@ -380,14 +380,6 @@ func (s *execState) runtimeErrorFromPanic(r any) error {
 	return diagnostics.RuntimeErrorFromPanic(s.program, s.toRuntimePC(s.errorPC()), s.frames.TraceEntries(), r)
 }
 
-func (s *execState) checkDivisionByZeroAt(pc int, left, right runtime.Value) error {
-	return diagnostics.CheckDivisionByZero(s.program, s.toRuntimePC(pc), left, right)
-}
-
-func (s *execState) checkModuloByZeroAt(pc int, left, right runtime.Value) error {
-	return diagnostics.CheckModuloByZero(s.program, s.toRuntimePC(pc), left, right)
-}
-
 func (s *execState) tryCatch(pos int) (bytecode.Catch, bool) {
 	if s.catchByPC != nil && pos >= 0 && pos < len(s.catchByPC) {
 		if idx := s.catchByPC[pos]; idx >= 0 {

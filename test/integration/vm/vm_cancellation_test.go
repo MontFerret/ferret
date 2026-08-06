@@ -15,6 +15,27 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
+type cancellationStringValue struct {
+	calls *int
+}
+
+func (v *cancellationStringValue) String() string {
+	(*v.calls)++
+	return "probe"
+}
+
+func (*cancellationStringValue) Hash() uint64 {
+	return 1
+}
+
+func (v *cancellationStringValue) Copy() runtime.Value {
+	return v
+}
+
+func (*cancellationStringValue) Type() runtime.Type {
+	return runtime.TypeObject
+}
+
 func TestPureExecutionCancellationAtBackwardJumpSafepoint(t *testing.T) {
 	const query = `
 LET signal = START()
@@ -86,6 +107,41 @@ func TestPreCanceledExecutionStopsAtCallAndReturnSafepoints(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestNestedReturnDoesNotPollCancellation(t *testing.T) {
+	const query = `
+FUNC inner() => CANCEL()
+LET value = inner()
+RETURN "after-" + @probe
+`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(optimizationName(level), func(t *testing.T) {
+			instance := compileCancellationVM(t, level, query)
+			ctx, cancel := context.WithCancel(context.Background())
+			stringCalls := 0
+			probe := &cancellationStringValue{calls: &stringCalls}
+			env := cancellationEnvironment(t,
+				vm.WithParam("probe", probe),
+				vm.WithFunction("CANCEL", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+					cancel()
+					return runtime.None, nil
+				}),
+			)
+
+			result, err := instance.Run(ctx, env)
+			if result != nil {
+				_ = result.Close()
+			}
+			if !errors.Is(err, context.Canceled) {
+				t.Fatalf("run error = %v, want context.Canceled", err)
+			}
+			if stringCalls != 1 {
+				t.Fatalf("post-return string calls = %d, want 1", stringCalls)
+			}
+		})
 	}
 }
 

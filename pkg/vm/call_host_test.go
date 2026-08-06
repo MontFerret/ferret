@@ -2,11 +2,52 @@ package vm
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
+
+func TestCallCachedHostFunctionChecksCancellationBeforeEveryArity(t *testing.T) {
+	for argCount := 0; argCount <= 6; argCount++ {
+		t.Run(runtime.NewInt(argCount).String(), func(t *testing.T) {
+			calls := 0
+			cacheFn := &mem.CachedHostFunction{
+				Bound: true,
+				FnV: func(context.Context, ...runtime.Value) (runtime.Value, error) {
+					calls++
+					return runtime.None, nil
+				},
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			reg := make([]runtime.Value, argCount+1)
+			for idx := 1; idx < len(reg); idx++ {
+				reg[idx] = runtime.NewInt(idx)
+			}
+			scratch := mem.NewScratch(0)
+
+			out, err := callCachedHostFunction(
+				ctx,
+				newExecutionCancellation(ctx),
+				&callDescriptor{ArgStart: 1, ArgCount: argCount},
+				cacheFn,
+				reg,
+				&scratch,
+			)
+			if !errors.Is(err, context.Canceled) {
+				t.Fatalf("call error = %v, want context.Canceled", err)
+			}
+			if out != runtime.None {
+				t.Fatalf("call result = %v, want None", out)
+			}
+			if calls != 0 {
+				t.Fatalf("host calls = %d, want 0", calls)
+			}
+		})
+	}
+}
 
 func TestCallCachedHostFunction_VarargPreservesOrderAndCount(t *testing.T) {
 	cases := []int{5, 6, 9}
@@ -38,6 +79,7 @@ func TestCallCachedHostFunction_VarargPreservesOrderAndCount(t *testing.T) {
 			scratch := mem.NewScratch(0)
 			out, err := callCachedHostFunction(
 				context.Background(),
+				newExecutionCancellation(context.Background()),
 				desc,
 				cacheFn,
 				reg,
@@ -93,6 +135,7 @@ func TestCallCachedHostFunction_VarargArgsSliceMutationDoesNotMutateRegisters(t 
 			scratch := mem.NewScratch(0)
 			_, err := callCachedHostFunction(
 				context.Background(),
+				newExecutionCancellation(context.Background()),
 				desc,
 				cacheFn,
 				reg,
