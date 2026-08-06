@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MontFerret/ferret/v2/pkg/internal/operationerror"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -269,22 +268,22 @@ func TestZeroDivisorErrorsPreserveRuntimeAndOperationIdentity(t *testing.T) {
 	}{
 		{name: "Int division", operation: func() (runtime.Value, error) {
 			return runtime.Divide(ctx, runtime.NewInt(1), runtime.ZeroInt)
-		}, identity: operationerror.ErrDivisionByZero, message: "invalid operation: division by zero"},
+		}, identity: runtime.ErrDivisionByZero, message: "invalid operation: division by zero"},
 		{name: "Float division", operation: func() (runtime.Value, error) {
 			return runtime.Divide(ctx, runtime.NewFloat(1), runtime.ZeroFloat)
-		}, identity: operationerror.ErrDivisionByZero, message: "invalid operation: division by zero"},
+		}, identity: runtime.ErrDivisionByZero, message: "invalid operation: division by zero"},
 		{name: "Duration scalar division", operation: func() (runtime.Value, error) {
 			return runtime.Divide(ctx, runtime.NewDuration(time.Second), runtime.ZeroInt)
-		}, identity: operationerror.ErrDivisionByZero, message: "invalid operation: division by zero"},
+		}, identity: runtime.ErrDivisionByZero, message: "invalid operation: division by zero"},
 		{name: "Duration ratio division", operation: func() (runtime.Value, error) {
 			return runtime.Divide(ctx, runtime.NewDuration(time.Second), runtime.ZeroDuration)
-		}, identity: operationerror.ErrDivisionByZero, message: "invalid operation: division by zero"},
+		}, identity: runtime.ErrDivisionByZero, message: "invalid operation: division by zero"},
 		{name: "Int modulo", operation: func() (runtime.Value, error) {
 			return runtime.Modulo(ctx, runtime.NewInt(1), runtime.ZeroInt)
-		}, identity: operationerror.ErrModuloByZero, message: "invalid operation: modulo by zero"},
+		}, identity: runtime.ErrModuloByZero, message: "invalid operation: modulo by zero"},
 		{name: "Float modulo", operation: func() (runtime.Value, error) {
 			return runtime.Modulo(ctx, runtime.NewFloat(1), runtime.ZeroFloat)
-		}, identity: operationerror.ErrModuloByZero, message: "invalid operation: modulo by zero"},
+		}, identity: runtime.ErrModuloByZero, message: "invalid operation: modulo by zero"},
 	}
 
 	for _, test := range tests {

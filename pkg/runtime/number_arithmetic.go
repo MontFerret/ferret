@@ -1,10 +1,6 @@
 package runtime
 
-import (
-	"math"
-
-	"github.com/MontFerret/ferret/v2/pkg/internal/operationerror"
-)
+import "math"
 
 type nativeNumber struct {
 	integer  Int
@@ -62,7 +58,7 @@ func multiplyNumbers(left, right nativeNumber) (Value, error) {
 func divideNumbers(left, right nativeNumber) (Value, error) {
 	if !left.isFloat && !right.isFloat {
 		if right.integer == 0 {
-			return None, operationerror.DivisionByZero(ErrInvalidOperation)
+			return None, divisionByZeroError()
 		}
 
 		if left.integer == Int(math.MinInt64) && right.integer == -1 {
@@ -76,7 +72,7 @@ func divideNumbers(left, right nativeNumber) (Value, error) {
 
 	rightFloat := nativeFloat(right)
 	if rightFloat == 0 {
-		return None, operationerror.DivisionByZero(ErrInvalidOperation)
+		return None, divisionByZeroError()
 	}
 
 	return checkedFloat(nativeFloat(left)/rightFloat, "division")
@@ -85,7 +81,7 @@ func divideNumbers(left, right nativeNumber) (Value, error) {
 func moduloNumbers(left, right nativeNumber) (Value, error) {
 	if !left.isFloat && !right.isFloat {
 		if right.integer == 0 {
-			return None, operationerror.ModuloByZero(ErrInvalidOperation)
+			return None, moduloByZeroError()
 		}
 
 		return left.integer % right.integer, nil
@@ -93,7 +89,7 @@ func moduloNumbers(left, right nativeNumber) (Value, error) {
 
 	rightFloat := nativeFloat(right)
 	if rightFloat == 0 {
-		return None, operationerror.ModuloByZero(ErrInvalidOperation)
+		return None, moduloByZeroError()
 	}
 
 	result := Float(math.Mod(float64(nativeFloat(left)), float64(rightFloat)))

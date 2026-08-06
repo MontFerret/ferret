@@ -96,6 +96,13 @@ RETURN Outer()
 }
 
 func TestZeroDivisorDiagnosticsUseRuntimeOperationIdentity(t *testing.T) {
+	if vm.ErrDivisionByZero != runtime.ErrDivisionByZero {
+		t.Fatal("vm.ErrDivisionByZero is not an alias of runtime.ErrDivisionByZero")
+	}
+	if vm.ErrModuloByZero != runtime.ErrModuloByZero {
+		t.Fatal("vm.ErrModuloByZero is not an alias of runtime.ErrModuloByZero")
+	}
+
 	tests := []struct {
 		identity error
 		kind     pkgdiagnostics.Kind

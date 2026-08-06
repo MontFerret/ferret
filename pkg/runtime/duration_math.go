@@ -3,8 +3,6 @@ package runtime
 import (
 	"math"
 	"math/big"
-
-	"github.com/MontFerret/ferret/v2/pkg/internal/operationerror"
 )
 
 func addDurations(left, right Duration) (Value, error) {
@@ -45,7 +43,7 @@ func divideDuration(duration Duration, scalar Value) (Value, error) {
 	switch value := scalar.(type) {
 	case Int:
 		if value == 0 {
-			return None, operationerror.DivisionByZero(ErrInvalidOperation)
+			return None, divisionByZeroError()
 		}
 		if duration == Duration(math.MinInt64) && value == -1 {
 			return None, durationRangeError("division")
@@ -65,7 +63,7 @@ func scaleDurationFloat(duration Duration, scalar Float, divide bool) (Value, er
 		return None, Error(ErrInvalidOperation, "duration scale must be finite")
 	}
 	if divide && scalarFloat == 0 {
-		return None, operationerror.DivisionByZero(ErrInvalidOperation)
+		return None, divisionByZeroError()
 	}
 
 	result := new(big.Rat).SetInt64(int64(duration))
@@ -87,7 +85,7 @@ func scaleDurationFloat(duration Duration, scalar Float, divide bool) (Value, er
 
 func divideDurations(left, right Duration) (Value, error) {
 	if right == 0 {
-		return None, operationerror.DivisionByZero(ErrInvalidOperation)
+		return None, divisionByZeroError()
 	}
 
 	leftNanos := int64(left)

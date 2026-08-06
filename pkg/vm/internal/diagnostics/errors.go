@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/internal/operationerror"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 const (
@@ -23,6 +23,6 @@ var (
 	ErrInsufficientRegisters = errors.New("insufficient registers")
 	ErrUnresolvedFunction    = errors.New("unresolved function")
 	ErrInvalidFunctionName   = errors.New("invalid function name")
-	ErrDivisionByZero        = operationerror.ErrDivisionByZero
-	ErrModuloByZero          = operationerror.ErrModuloByZero
+	ErrDivisionByZero        = runtime.ErrDivisionByZero
+	ErrModuloByZero          = runtime.ErrModuloByZero
 )

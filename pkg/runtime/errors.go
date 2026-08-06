@@ -14,13 +14,17 @@ var (
 	ErrInvalidArgumentType   = errors.New("invalid argument type")
 	ErrInvalidType           = errors.New("invalid type")
 	ErrInvalidOperation      = errors.New("invalid operation")
-	ErrNotFound              = errors.New("not found")
-	ErrNotUnique             = errors.New("not unique")
-	ErrUnexpected            = errors.New("unexpected error")
-	ErrTimeout               = errors.New("operation timed out")
-	ErrNotImplemented        = errors.New("not implemented")
-	ErrNotSupported          = errors.New("not supported")
-	ErrRange                 = errors.New("out of range")
+	// ErrDivisionByZero identifies an arithmetic division with a zero divisor.
+	ErrDivisionByZero = errors.New("division by zero")
+	// ErrModuloByZero identifies an arithmetic modulo operation with a zero divisor.
+	ErrModuloByZero   = errors.New("modulo by zero")
+	ErrNotFound       = errors.New("not found")
+	ErrNotUnique      = errors.New("not unique")
+	ErrUnexpected     = errors.New("unexpected error")
+	ErrTimeout        = errors.New("operation timed out")
+	ErrNotImplemented = errors.New("not implemented")
+	ErrNotSupported   = errors.New("not supported")
+	ErrRange          = errors.New("out of range")
 )
 
 const (
