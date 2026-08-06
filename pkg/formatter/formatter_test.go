@@ -60,7 +60,7 @@ RETURN WAITFOR FALSE TIMEOUT delay+500ms EVERY 1e2MS ON ERROR RETRY 1 DELAY (0ms
 }
 
 func TestFormatter_DurationMatchLiteralRoundTrip(t *testing.T) {
-	input := `RETURN MATCH 5s(5000MS=>true,_=>false)`
+	input := `RETURN MATCH 5s{5000MS=>true,_=>false}`
 	var first bytes.Buffer
 	fmt := New()
 
@@ -175,13 +175,13 @@ func TestFormatter_DispatchGroupedQueryTargetRemainsParseable(t *testing.T) {
 }
 
 func TestFormatter_UdfMemberStatementsRemainUnparenthesizedAndParseable(t *testing.T) {
-	input := `FUNC read( value )(
+	input := `FUNC read( value ){
 LET brand=value.product.brand
 VAR price=value["prices"]["current"]
 price=value.prices["sale"]
 value.metadata.lastSeen
 RETURN [ brand,price ]
-)
+}
 RETURN read(@product)`
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
@@ -192,13 +192,13 @@ RETURN read(@product)`
 	}
 
 	out := buf.String()
-	expected := `FUNC read(value) (
+	expected := `FUNC read(value) {
     LET brand = value.product.brand
     VAR price = value["prices"]["current"]
     price = value.prices["sale"]
     value.metadata.lastSeen
     RETURN [brand, price]
-)
+}
 RETURN read(@product)`
 	if out != expected {
 		t.Fatalf("unexpected UDF member statement formatting:\nexpected:\n%s\nactual:\n%s", expected, out)

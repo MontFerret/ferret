@@ -45,11 +45,11 @@ CURRENT = CURRENT + 1
 RETURN CURRENT
 `, 2, "Safe reserved words remain valid mutable binding names"),
 		S(`
-FUNC run() (
+FUNC run() {
   VAR total = 1
   total = total + 2
   RETURN total
-)
+}
 RETURN run()
 `, 3, "Function-block VAR can be reassigned"),
 		Array(`
@@ -60,36 +60,36 @@ FOR item IN [1, 2]
 `, []any{2, 3}, "FOR body VAR can be reassigned"),
 		Array(`
 VAR total = 1
-FUNC bump() (
+FUNC bump() {
   total = total + 1
   RETURN total
-)
+}
 LET after = bump()
 RETURN [after, total]
 `, []any{2, 2}, "Nested UDF assignment mutates the captured outer VAR"),
 		Array(`
-FUNC outer() (
+FUNC outer() {
   VAR total = 0
-  FUNC add(n) (
-    FUNC apply() (
+  FUNC add(n) {
+    FUNC apply() {
       total = total + n
       RETURN total
-    )
+    }
     RETURN apply()
-  )
+  }
   LET first = add(1)
   LET second = add(2)
   RETURN [first, second, total]
-)
+}
 RETURN outer()
 `, []any{1, 3, 3}, "Nested UDF call chain mutates the captured outer VAR"),
 		Array(`
-FUNC run() (
+FUNC run() {
   VAR carried = 0
-  FUNC setCarried(v) (
+  FUNC setCarried(v) {
     carried = v
     RETURN carried
-  )
+  }
 
   RETURN (
     FOR item IN [3, 1]
@@ -97,7 +97,7 @@ FUNC run() (
       SORT item
       RETURN { item, carried }
   )
-)
+}
 
 RETURN run()
 `, []any{
@@ -105,12 +105,12 @@ RETURN run()
 			map[string]any{"item": 3, "carried": 30},
 		}, "SORT snapshots the current value of a promoted VAR"),
 		Array(`
-FUNC run() (
+FUNC run() {
   VAR carried = 0
-  FUNC setCarried(v) (
+  FUNC setCarried(v) {
     carried = v
     RETURN carried
-  )
+  }
 
   RETURN (
     FOR item IN [1, 2, 3]
@@ -118,7 +118,7 @@ FUNC run() (
       COLLECT parity = item % 2 INTO groups KEEP carried
       RETURN { parity, groups }
   )
-)
+}
 
 RETURN run()
 `, []any{
@@ -137,12 +137,12 @@ RETURN run()
 			},
 		}, "COLLECT KEEP snapshots the current value of a promoted VAR"),
 		Array(`
-FUNC run() (
+FUNC run() {
   VAR carried = 0
-  FUNC setCarried(v) (
+  FUNC setCarried(v) {
     carried = v
     RETURN carried
-  )
+  }
 
 	RETURN (
 	    FOR item IN [1, 2, 3]
@@ -150,7 +150,7 @@ FUNC run() (
 	      COLLECT parity = item % 2 INTO groups = { carried: carried }
 	      RETURN { parity, groups }
   )
-)
+}
 
 RETURN run()
 `, []any{
@@ -169,41 +169,41 @@ RETURN run()
 			},
 		}, "COLLECT INTO projection snapshots the current value of a promoted VAR"),
 		S(`
-	FUNC run() (
+	FUNC run() {
 	  VAR total = 1
-	  FUNC setTotal(v) (
+	  FUNC setTotal(v) {
 	    total = v
 	    RETURN 10
-	  )
+	  }
 	  total += setTotal(5)
 	  RETURN total
-	)
+	}
 	RETURN run()
 	`, 11, "Compound assignment snapshots the old VAR value before RHS side effects"),
 		Array(`
-	FUNC outer() (
+	FUNC outer() {
 	  VAR total = 1
-  FUNC middle(v) (
+  FUNC middle(v) {
     FUNC inner() => total
     total = total + v
     RETURN inner()
-  )
+  }
   RETURN [middle(2), total]
-)
+}
 RETURN outer()
 `, []any{3, 3}, "Deeply nested UDF reads updated VAR from grandparent scope"),
 		Array(`
 VAR total = 0
-FUNC outer(multiplier) (
-  FUNC accumulate(values) (
+FUNC outer(multiplier) {
+  FUNC accumulate(values) {
     RETURN (
       FOR item IN values
         total = total + item * multiplier
         RETURN total
     )
-  )
+  }
   RETURN accumulate([1, 2])
-)
+}
 RETURN (
   FOR factor IN [1, 10]
     LET inside = outer(factor)

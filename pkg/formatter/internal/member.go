@@ -40,24 +40,28 @@ func (f *memberFormatter) formatImplicitMemberExpressionStart(ctx *fql.ImplicitM
 	if ctx.ArrayExpansion() != nil {
 		f.p.write(".")
 		f.formatArrayExpansion(ctx.ArrayExpansion().(*fql.ArrayExpansionContext))
+
 		return
 	}
 
 	if ctx.ArrayContraction() != nil {
 		f.p.write(".")
 		f.formatArrayContraction(ctx.ArrayContraction().(*fql.ArrayContractionContext))
+
 		return
 	}
 
 	if ctx.ArrayQuestionMark() != nil {
 		f.p.write(".")
 		f.formatArrayQuestionMark(ctx.ArrayQuestionMark().(*fql.ArrayQuestionMarkContext))
+
 		return
 	}
 
 	if ctx.ArrayApply() != nil {
 		f.p.write(".")
 		f.formatArrayApply(ctx.ArrayApply().(*fql.ArrayApplyContext))
+
 		return
 	}
 
@@ -69,6 +73,7 @@ func (f *memberFormatter) formatImplicitMemberExpressionStart(ctx *fql.ImplicitM
 
 	if ctx.PropertyName() != nil {
 		f.literal.formatPropertyNameWith(f.p, ctx.PropertyName().(*fql.PropertyNameContext))
+
 		return
 	}
 
@@ -106,12 +111,14 @@ func (f *memberFormatter) formatMemberExpressionSource(ctx *fql.MemberExpression
 
 			return
 		}
+
 		if we := ctx.WaitForExpression(); we != nil {
 			f.statement.formatWaitForExpression(we.(*fql.WaitForExpressionContext))
 			f.p.write(")")
 
 			return
 		}
+
 		if expr := ctx.Expression(); expr != nil {
 			f.expression.formatExpression(expr.(*fql.ExpressionContext))
 		}
@@ -163,6 +170,7 @@ func (f *memberFormatter) formatAssignmentTargetPath(ctx *fql.AssignmentTargetPa
 
 		f.p.write(".")
 		f.literal.formatPropertyNameWith(f.p, ctx.PropertyName().(*fql.PropertyNameContext))
+
 		return
 	}
 
@@ -288,11 +296,13 @@ func (f *memberFormatter) formatArrayApply(ctx *fql.ArrayApplyContext) {
 	}
 
 	f.p.write("[")
+
 	if ctx.TildeQuestion() != nil {
 		f.p.write("~?")
 	} else {
 		f.p.write("~")
 	}
+
 	f.p.space()
 
 	if q := ctx.QueryLiteral(); q != nil {

@@ -95,12 +95,12 @@ FOR value IN 1..128 RETURN inc(value)
 
 func benchmarkRecursiveUDFCancellationSafepoint(b *testing.B) {
 	program := benchmarkCompileCancellationProgram(b, compiler.New(compiler.WithOptimizationLevel(compiler.O0)), `
-FUNC fact(value) (
-  RETURN MATCH value (
+FUNC fact(value) {
+  RETURN MATCH value {
     0 => 1,
     _ => value * fact(value - 1),
-  )
-)
+  }
+}
 RETURN fact(16)
 `)
 	benchmarkCancellationContexts(b, program, NewDefaultEnvironment())
@@ -108,12 +108,12 @@ RETURN fact(16)
 
 func benchmarkTailRecursiveUDFCancellationSafepoint(b *testing.B) {
 	program := benchmarkCompileCancellationProgram(b, compiler.New(compiler.WithOptimizationLevel(compiler.O0)), `
-FUNC count(value, total) (
-  RETURN MATCH value (
+FUNC count(value, total) {
+  RETURN MATCH value {
     0 => total,
     _ => count(value - 1, total + 1),
-  )
-)
+  }
+}
 RETURN count(64, 0)
 `)
 	benchmarkCancellationContexts(b, program, NewDefaultEnvironment())

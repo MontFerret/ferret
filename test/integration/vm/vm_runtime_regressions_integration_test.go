@@ -265,13 +265,13 @@ func TestResetDrainsLeakedFramesBetweenFailedRuns(t *testing.T) {
 		return []spec.Sequence{
 			{
 				Base: spec.NewBaseSpec(`
-FUNC inner() (
+FUNC inner() {
 	RETURN 1 / 0
-)
+}
 
-FUNC outer() (
+FUNC outer() {
 	RETURN inner()
-)
+}
 
 RETURN outer()
 `),
@@ -385,17 +385,17 @@ func TestRuntimeErrorIncludesUDFCallStackContext(t *testing.T) {
 	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
 			spec.NewSpec(`
-FUNC inner() (
+FUNC inner() {
 	RETURN @x.foo
-)
-FUNC middle() (
+}
+FUNC middle() {
 	LET value = inner()
 	RETURN value
-)
-FUNC outer() (
+}
+FUNC outer() {
 	LET value = middle()
 	RETURN value
-)
+}
 RETURN outer()
 `).
 				Env(vm.WithParam("x", runtime.None)).
@@ -411,11 +411,11 @@ func TestRuntimeErrorSingleUdfStackFormattingUsesSourceSpelling(t *testing.T) {
 	RunSpecFactory(t, func() []spec.Spec {
 		return []spec.Spec{
 			spec.NewSpec(`
-FUNC boo() (
+FUNC boo() {
 	LET a = 1
 	LET b = 0
 	RETURN a / b
-)
+}
 RETURN boo()
 `).
 				Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{

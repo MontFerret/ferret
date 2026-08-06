@@ -85,6 +85,59 @@ RETURN signal
 	}
 }
 
+func TestTerminalUDFForCancellationAtBackwardJumpSafepoint(t *testing.T) {
+	const query = `
+FUNC spin() {
+  LET signal = START()
+  VAR i = 0
+  FOR WHILE i < 1000000000 {
+    i = i + 1
+    RETURN signal
+  }
+}
+RETURN spin()
+`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(optimizationName(level), func(t *testing.T) {
+			instance := compileCancellationVM(t, level, query)
+			started := make(chan struct{})
+			var startedOnce sync.Once
+			env := cancellationEnvironment(t, vm.WithFunction("START", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+				startedOnce.Do(func() { close(started) })
+				return runtime.True, nil
+			}))
+
+			ctx, cancel := context.WithCancel(context.Background())
+			done := make(chan error, 1)
+			go func() {
+				result, err := instance.Run(ctx, env)
+				if result != nil {
+					_ = result.Close()
+				}
+				done <- err
+			}()
+
+			select {
+			case <-started:
+				cancel()
+			case <-time.After(5 * time.Second):
+				cancel()
+				t.Fatal("execution did not enter the UDF loop")
+			}
+
+			select {
+			case err := <-done:
+				if !errors.Is(err, context.Canceled) {
+					t.Fatalf("run error = %v, want context.Canceled", err)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("execution did not stop after cancellation")
+			}
+		})
+	}
+}
+
 func TestPreCanceledExecutionStopsAtCallAndReturnSafepoints(t *testing.T) {
 	tests := map[string]string{
 		"return":   `RETURN 1 + 2`,

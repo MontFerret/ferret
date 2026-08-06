@@ -44,9 +44,9 @@ RETURN DISTINCT users[* FILTER .active RETURN .role]
 `, []any{"admin", "editor"}, "supports inline filtering and projection"),
 		Array("RETURN DISTINCT []", []any{}, "supports empty arrays"),
 		Array(`
-FUNC unique() (
+FUNC unique() {
 	RETURN DISTINCT [1, 2, 1]
-)
+}
 RETURN unique()
 `, []any{1, 2}, "supports UDF block returns"),
 		Array("RETURN DISTINCT @values", []any{1, 2, 3}, "supports runtime array values").
@@ -79,10 +79,10 @@ FOR DISTINCT IN [[1], [2]]
 	RETURN (DISTINCT)
 `, []any{[]any{1}, []any{2}}, "returns a parenthesized DISTINCT loop variable"),
 		Array(`
-FUNC read() (
+FUNC read() {
 	LET DISTINCT = { values: [1, 2] }
 	RETURN (DISTINCT.values)
-)
+}
 RETURN read()
 `, []any{1, 2}, "returns a parenthesized DISTINCT expression from a UDF block"),
 	})

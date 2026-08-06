@@ -10,12 +10,12 @@ import (
 const (
 	missingFunctionParamsCloseMessage = "Expected function parameters before function body"
 	missingFunctionParamsCloseLabel   = "missing parameter list before function body"
-	missingFunctionParamsCloseHint    = "Add a parameter list before the block body, e.g. FUNC fib(n) ( ... RETURN expr ). Use FUNC fib() ( ... ) for no parameters."
+	missingFunctionParamsCloseHint    = "Add a parameter list before the block body, e.g. FUNC fib(n) { ... RETURN expr }. Use FUNC fib() { ... } for no parameters."
 
 	mixedFunctionBodyMessage = "Cannot combine arrow and block function body syntax"
 	mixedFunctionBodyLabel   = "RETURN is only valid in a block function body"
 	mixedFunctionBodyNote    = "Remove '=>' to use a block body, or remove RETURN and keep a single expression after '=>'."
-	mixedFunctionBodyHint    = "Use either 'FUNC f(x) => expr' or 'FUNC f(x) ( ... RETURN expr )'."
+	mixedFunctionBodyHint    = "Use either 'FUNC f(x) => expr' or 'FUNC f(x) { ... RETURN expr }'."
 )
 
 func matchMissingFunctionParamsClose(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
@@ -60,12 +60,12 @@ func matchMixedFunctionBodySyntax(src *source.Source, err *diagnostics.Diagnosti
 		return false
 	}
 
-	openParen := offending.Prev()
-	if !is(openParen, "(") || !is(openParen.Prev(), "=>") {
+	openBrace := offending.Prev()
+	if !is(openBrace, "{") || !is(openBrace.Prev(), "=>") {
 		return false
 	}
 
-	if !isFunctionDeclarationArrow(openParen.Prev()) {
+	if !isFunctionDeclarationArrow(openBrace.Prev()) {
 		return false
 	}
 
@@ -134,7 +134,8 @@ func findDiagnosticSpanTokenIndex(tokens []antlr.Token, err *diagnostics.Diagnos
 }
 
 func isFunctionBlockBodyStartToken(token antlr.Token) bool {
-	return isTokenText(token, "RETURN") ||
+	return isTokenText(token, "{") ||
+		isTokenText(token, "RETURN") ||
 		isTokenText(token, "LET") ||
 		isTokenText(token, "VAR") ||
 		isTokenText(token, "FUNC") ||

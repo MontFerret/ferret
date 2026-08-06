@@ -4,41 +4,41 @@ import "testing"
 
 const (
 	varCaptureSingleCellQuery = `
-FUNC run() (
+FUNC run() {
   VAR total = 0
-  FUNC bump(v) (
+  FUNC bump(v) {
     total = total + v
     RETURN total
-  )
+  }
 
   RETURN (
     FOR i IN 1..500
       RETURN bump(i)
   )
-)
+}
 RETURN run()
 `
 
 	varCaptureMultiCellQuery = `
-FUNC run() (
+FUNC run() {
   VAR a = 0
   VAR b = 1
   VAR c = 2
   VAR d = 3
 
-  FUNC bump(v) (
+  FUNC bump(v) {
     a = a + v
     b = b + v
     c = c + v
     d = d + v
     RETURN a + b + c + d
-  )
+  }
 
   RETURN (
     FOR i IN 1..500
       RETURN bump(i)
   )
-)
+}
 RETURN run()
 `
 )

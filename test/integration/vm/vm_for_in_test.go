@@ -155,7 +155,7 @@ func TestForIn(t *testing.T) {
 				RETURN item
 		`, []any{1, 2}, "Should iterate over a WAITFOR VALUE source"),
 		Array(`
-			FOR item IN MATCH "a" ("a" => [1], _ => [2])
+			FOR item IN MATCH "a" {"a" => [1], _ => [2]}
 				RETURN item
 		`, []any{1}, "Should iterate over a MATCH source"),
 	}, vm.WithFunction("TEST_FN", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {

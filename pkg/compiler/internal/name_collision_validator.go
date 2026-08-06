@@ -130,6 +130,8 @@ func (v *NameCollisionValidator) validateFunctionDeclaration(ctx fql.IFunctionDe
 
 	if ret := block.FunctionReturn(); ret != nil {
 		v.collectCallsInNode(scope, ret.Expression())
+	} else if terminalFor := block.ForExpression(); terminalFor != nil {
+		v.validateForExpression(scope, terminalFor)
 	}
 }
 

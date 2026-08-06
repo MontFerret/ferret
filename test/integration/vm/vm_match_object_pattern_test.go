@@ -15,10 +15,10 @@ func TestMatchObjectPattern(t *testing.T) {
 		S(
 			`
 LET obj = @obj
-RETURN MATCH obj (
+RETURN MATCH obj {
   { a: 1, b: v } => v,
   _ => 0,
-)
+}
 `,
 			2,
 			"Should bind a matched object property",
@@ -34,10 +34,10 @@ RETURN MATCH obj (
 		S(
 			`
 LET obj = @obj
-RETURN MATCH obj (
+RETURN MATCH obj {
   { a: 1, b: v } => v,
   _ => 0,
-)
+}
 `,
 			0,
 			"Should fall through when a required property is missing",

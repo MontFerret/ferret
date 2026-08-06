@@ -35,6 +35,28 @@ FOR i IN 1..500
   RETURN forward(i)
 `
 
+const (
+	udfTerminalForQuery = `
+FUNC project(items) {
+  FOR item IN items {
+    RETURN item * 2
+  }
+}
+RETURN project(1..500)
+`
+	udfExplicitWrapperForQuery = `
+FUNC project(items) {
+  LET result = (
+    FOR item IN items {
+      RETURN item * 2
+    }
+  )
+  RETURN result
+}
+RETURN project(1..500)
+`
+)
+
 func udfReturnExpr(params string) string {
 	if params == "" {
 		return "1"
@@ -57,13 +79,13 @@ func udfNestedQuery(a udfArityCase) string {
 	expr := udfReturnExpr(a.params)
 
 	return fmt.Sprintf(`
-FUNC outer(%s) (
-  FUNC inner(%s) (
+FUNC outer(%s) {
+  FUNC inner(%s) {
     RETURN %s
-  )
+  }
   LET v = inner(%s)
   RETURN v
-)
+}
 RETURN outer(%s)
 `, a.params, a.params, expr, a.args, a.args)
 }
@@ -149,4 +171,20 @@ func BenchmarkUdfCalls_TransitiveCapture_O0(b *testing.B) {
 
 func BenchmarkUdfCalls_TransitiveCapture_O1(b *testing.B) {
 	RunBenchmarkO1(b, udfTransitiveCaptureQuery)
+}
+
+func BenchmarkUdfCalls_TerminalFor_O0(b *testing.B) {
+	RunBenchmarkO0(b, udfTerminalForQuery)
+}
+
+func BenchmarkUdfCalls_TerminalFor_O1(b *testing.B) {
+	RunBenchmarkO1(b, udfTerminalForQuery)
+}
+
+func BenchmarkUdfCalls_ExplicitWrapperFor_O0(b *testing.B) {
+	RunBenchmarkO0(b, udfExplicitWrapperForQuery)
+}
+
+func BenchmarkUdfCalls_ExplicitWrapperFor_O1(b *testing.B) {
+	RunBenchmarkO1(b, udfExplicitWrapperForQuery)
 }

@@ -81,10 +81,10 @@ RETURN user.profile.count
 
 	directMutationUDFCapturedRootQuery = `
 LET user = { count: 1 }
-FUNC inc() (
+FUNC inc() {
   user.count += 1
   RETURN user.count
-)
+}
 RETURN inc()
 `
 

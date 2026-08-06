@@ -25,14 +25,14 @@ func matchCommonErrors(src *source.Source, err *diagnostics.Diagnostic, offendin
 			return true
 		}
 
-		if has(err.Message, "=>") && has(err.Message, "'('") && hasPrevToken(offending, "FUNC", 12) {
+		if has(err.Message, "=>") && has(err.Message, "'{'") && hasPrevToken(offending, "FUNC", 12) {
 			if paren := findPrevToken(offending, ")", 8); paren != nil {
 				span := spanFromTokenSafe(paren.Token(), src)
 				span.Start++
 				span.End++
 
-				err.Message = "Expected '=>' or '(' after function declaration"
-				err.Hint = "Use 'FUNC f(x) => expr' or 'FUNC f(x) ( ... RETURN expr )'."
+				err.Message = "Expected '=>' or '{' after function declaration"
+				err.Hint = "Use 'FUNC f(x) => expr' or 'FUNC f(x) { ... RETURN expr }'."
 				err.Spans = []diagnostics.ErrorSpan{
 					diagnostics.NewMainErrorSpan(span, "missing function body"),
 				}

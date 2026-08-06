@@ -48,6 +48,7 @@ func (e *Diagnostics[E]) AddAll(errs []E) {
 func (e *Diagnostics[E]) Get(idx int) E {
 	if idx < 0 || idx >= len(e.errors) {
 		var zero E
+
 		return zero
 	}
 
@@ -59,6 +60,7 @@ func (e *Diagnostics[E]) Get(idx int) E {
 func (e *Diagnostics[E]) First() E {
 	if len(e.errors) == 0 {
 		var zero E
+
 		return zero
 	}
 
@@ -70,6 +72,7 @@ func (e *Diagnostics[E]) First() E {
 func (e *Diagnostics[E]) Last() E {
 	if len(e.errors) == 0 {
 		var zero E
+
 		return zero
 	}
 

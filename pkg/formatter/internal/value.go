@@ -15,8 +15,10 @@ func (v *valueFormatter) formatStringOrRef(
 ) {
 	if stringCtx != nil {
 		v.literal.formatStringLiteralNode(stringCtx)
+
 		return
 	}
+
 	v.formatRefValue(variable, param, member, call)
 }
 

@@ -149,6 +149,8 @@ func (c *CaptureAnalyzer) analyzeFunction(fn *core.UDFInfo, env *udfCaptureEnv) 
 			if block.FunctionReturn() != nil {
 				c.collectVars(block.FunctionReturn(), env, state)
 				c.collectAssignments(block.FunctionReturn(), env, state)
+			} else if terminalFor := block.ForExpression(); terminalFor != nil {
+				c.collectForExpression(terminalFor, env, state)
 			}
 		}
 	}
@@ -156,6 +158,132 @@ func (c *CaptureAnalyzer) analyzeFunction(fn *core.UDFInfo, env *udfCaptureEnv) 
 	fn.Captures = orderedUDFCaptures(state.captures, state.order)
 
 	env.pop()
+}
+
+func (c *CaptureAnalyzer) collectForExpression(
+	ctx fql.IForExpressionContext,
+	env *udfCaptureEnv,
+	state *udfCaptureState,
+) {
+	if c == nil || ctx == nil || env == nil || state == nil {
+		return
+	}
+
+	if src := ctx.ForExpressionSource(); src != nil {
+		c.collectVars(src, env, state)
+		c.collectAssignments(src, env, state)
+	}
+
+	env.push()
+	defer env.pop()
+
+	if value := ctx.GetValueVariable(); value != nil {
+		c.addLoopCaptureBinding(env, state, value, textOfLoopVariable(value))
+	}
+	if counter := ctx.GetCounterVariable(); counter != nil {
+		c.addLoopCaptureBinding(env, state, counter, textOfBindingIdentifier(counter))
+	}
+
+	if ctx.ForExpressionSource() == nil && ctx.Expression() != nil {
+		c.collectVars(ctx.Expression(), env, state)
+		c.collectAssignments(ctx.Expression(), env, state)
+	}
+
+	for _, body := range ctx.AllForExpressionBody() {
+		c.collectForExpressionBody(body, env, state)
+	}
+
+	if terminal := ctx.ForExpressionReturn(); terminal != nil {
+		if ret := terminal.ReturnExpression(); ret != nil {
+			c.collectVars(ret, env, state)
+			c.collectAssignments(ret, env, state)
+		} else if nested := terminal.ForExpression(); nested != nil {
+			c.collectForExpression(nested, env, state)
+		}
+	}
+}
+
+func (c *CaptureAnalyzer) collectForExpressionBody(
+	ctx fql.IForExpressionBodyContext,
+	env *udfCaptureEnv,
+	state *udfCaptureState,
+) {
+	if c == nil || ctx == nil || env == nil || state == nil {
+		return
+	}
+
+	if stmt := ctx.ForExpressionStatement(); stmt != nil {
+		if decl := stmt.VariableDeclaration(); decl != nil {
+			c.collectVars(decl.Expression(), env, state)
+			c.collectAssignments(decl.Expression(), env, state)
+			binding := c.bindings.captureBindingForDeclaration(decl)
+			env.addBinding(binding)
+			state.owned[binding.ID] = binding
+			return
+		}
+
+		c.collectVars(stmt, env, state)
+		c.collectAssignments(stmt, env, state)
+		return
+	}
+
+	if clause := ctx.ForExpressionClause(); clause != nil {
+		c.collectVars(clause, env, state)
+		c.collectAssignments(clause, env, state)
+		if collect := clause.CollectClause(); collect != nil {
+			c.addCollectCaptureBindings(env, state, collect)
+		}
+	}
+}
+
+func (c *CaptureAnalyzer) addLoopCaptureBinding(env *udfCaptureEnv, state *udfCaptureState, node any, name string) {
+	if env == nil || state == nil || name == "" || name == core.IgnorePseudoVariable {
+		return
+	}
+
+	rule, ok := node.(antlr.ParserRuleContext)
+	if !ok {
+		return
+	}
+
+	binding := captureBindingInfo{
+		ID:   bindingIDFromRule(rule),
+		Name: name,
+		Decl: rule,
+	}
+	env.addBinding(binding)
+	state.owned[binding.ID] = binding
+}
+
+func (c *CaptureAnalyzer) addCollectCaptureBindings(env *udfCaptureEnv, state *udfCaptureState, ctx fql.ICollectClauseContext) {
+	if c == nil || env == nil || state == nil || ctx == nil {
+		return
+	}
+
+	if grouping := ctx.CollectGrouping(); grouping != nil {
+		for _, selector := range grouping.AllCollectSelector() {
+			c.addLoopCaptureBinding(env, state, selector.BindingIdentifier(), textOfBindingIdentifier(selector.BindingIdentifier()))
+		}
+	}
+
+	if aggregator := ctx.CollectAggregator(); aggregator != nil {
+		for _, selector := range aggregator.AllCollectAggregateSelector() {
+			c.addLoopCaptureBinding(env, state, selector.BindingIdentifier(), textOfBindingIdentifier(selector.BindingIdentifier()))
+		}
+	}
+
+	if projection := ctx.CollectGroupProjection(); projection != nil {
+		if selector := projection.CollectSelector(); selector != nil {
+			c.addLoopCaptureBinding(env, state, selector.BindingIdentifier(), textOfBindingIdentifier(selector.BindingIdentifier()))
+		} else if id := projection.BindingIdentifier(); id != nil {
+			c.addLoopCaptureBinding(env, state, id, textOfBindingIdentifier(id))
+		}
+	}
+
+	if counter := ctx.CollectCounter(); counter != nil && counter.BindingIdentifier() != nil {
+		id := counter.BindingIdentifier()
+		c.addLoopCaptureBinding(env, state, id, textOfBindingIdentifier(id))
+	}
 }
 
 func (c *CaptureAnalyzer) collectVars(
@@ -177,6 +305,10 @@ func (c *CaptureAnalyzer) collectVars(
 		}
 
 		if binding, ok := env.resolveBinding(name); ok {
+			if _, owned := state.owned[binding.ID]; owned {
+				continue
+			}
+
 			addUDFCapture(state.captures, &state.order, core.UDFCapture{
 				ID:      binding.ID,
 				Name:    binding.Name,
@@ -216,6 +348,9 @@ func (c *CaptureAnalyzer) collectAssignments(
 
 		binding, ok := env.resolveBinding(name)
 		if !ok {
+			continue
+		}
+		if _, owned := state.owned[binding.ID]; owned {
 			continue
 		}
 

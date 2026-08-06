@@ -15,7 +15,7 @@ import (
 func TestMatchErrors(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		Failure(
-			`RETURN MATCH { a: 1, b: 2 } ( { a: v, b: v } => v, _ => 0, )`,
+			`RETURN MATCH { a: 1, b: 2 } { { a: v, b: v } => v, _ => 0, }`,
 			E{
 				Kind:    parserd.NameError,
 				Message: "duplicate binding 'v' in MATCH pattern",
@@ -23,13 +23,13 @@ func TestMatchErrors(t *testing.T) {
 		),
 		Failure(
 			`
-			FUNC fib(n) (
-				RETURN MATCH n (
+			FUNC fib(n) {
+				RETURN MATCH n {
 					0 => 0
 					1 => 1
 					_ => fib(n - 1) + fib(n - 2)
-				)
-			)
+				}
+			}
 
 			RETURN fib(10)
 		`,
@@ -42,11 +42,11 @@ func TestMatchErrors(t *testing.T) {
 		),
 		Failure(
 			`
-			RETURN MATCH (
+			RETURN MATCH {
 				WHEN TRUE => "yes"
 				WHEN FALSE => "no",
 				_ => "fallback",
-			)
+			}
 		`,
 			E{
 				Kind:    parserd.SyntaxError,
@@ -56,7 +56,7 @@ func TestMatchErrors(t *testing.T) {
 			"Missing comma between MATCH guard arms",
 		),
 		Failure(
-			`RETURN MATCH 0 ( 1 => 1 _ => 0 )`,
+			`RETURN MATCH 0 { 1 => 1 _ => 0 }`,
 			E{
 				Kind:    parserd.SyntaxError,
 				Message: "Expected ',' between MATCH arms",
@@ -69,13 +69,13 @@ func TestMatchErrors(t *testing.T) {
 
 func TestMatchMissingCommaDiagnosticSpan(t *testing.T) {
 	c := compiler.New()
-	query := `FUNC fib(n) (
-    RETURN MATCH n (
+	query := `FUNC fib(n) {
+    RETURN MATCH n {
         0 => 0
         1 => 1
         _ => fib(n - 1) + fib(n - 2)
-    )
-)
+    }
+}
 
 RETURN fib(10)`
 

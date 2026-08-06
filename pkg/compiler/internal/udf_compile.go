@@ -80,7 +80,14 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 					c.stmts.CompileFunctionStatement(stmt)
 				}
 
-				c.compileReturn(block.FunctionReturn())
+				if terminalFor := block.ForExpression(); terminalFor != nil {
+					rule, _ := terminalFor.(antlr.ParserRuleContext)
+					c.ctx.WithDebugPointKind(rule, bytecode.DebugPointStatement, func() {
+						c.stmts.compileTerminalForResult(terminalFor)
+					})
+				} else {
+					c.compileReturn(block.FunctionReturn())
+				}
 			}
 		}
 

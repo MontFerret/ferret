@@ -96,6 +96,7 @@ func evalDebugExpression(ctx context.Context, expr fql.IExpressionContext, scope
 
 		return evalDebugLogical(op, left, right)
 	}
+
 	if node.GetCondition() != nil {
 		condition, err := evalDebugExpression(ctx, node.GetCondition(), scope)
 		if err != nil {
@@ -131,8 +132,8 @@ func evalDebugPredicate(ctx context.Context, predicate fql.IPredicateContext, sc
 		if node.EqualityOperator() == nil {
 			return nil, unsupportedDebugExpression(predicate)
 		}
-		left, err := evalDebugPredicate(ctx, node.GetLeft(), scope)
 
+		left, err := evalDebugPredicate(ctx, node.GetLeft(), scope)
 		if err != nil {
 			return nil, err
 		}

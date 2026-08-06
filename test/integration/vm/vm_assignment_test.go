@@ -99,10 +99,10 @@ RETURN obj
 		}, "Safe computed assignment uses existing safe read syntax"),
 		Object(`
 LET user = { count: 1 }
-FUNC inc() (
+FUNC inc() {
   user.count += 1
   RETURN 0
-)
+}
 LET _ = inc()
 RETURN user
 `, map[string]any{

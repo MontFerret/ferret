@@ -1,12 +1,13 @@
 LET items = [1, 2, 3]
 
-FUNC double(value) (
+FUNC double(value) {
   RETURN value * 2
-)
+}
 
 LET mapped = (
-  FOR item IN items
-  RETURN double(item)
+  FOR item IN items {
+    RETURN double(item)
+  }
 )
 
 RETURN mapped

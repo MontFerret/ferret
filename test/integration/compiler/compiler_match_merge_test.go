@@ -16,11 +16,11 @@ func TestMatchMerge_PureLiteralResults(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck(`
 LET x = @x
-RETURN MATCH x (
+RETURN MATCH x {
   1 => "same",
   2 => "same",
   _ => "other",
-)
+}
 `, func(prog *bytecode.Program) error {
 			if got := countLoadConstValue(prog, runtime.NewString("same")); got != 1 {
 				return fmt.Errorf("expected 1 load of \"same\", got %d", got)
@@ -30,11 +30,11 @@ RETURN MATCH x (
 		}, "pure literal arms merge"),
 		ProgramCheck(`
 LET x = @x
-RETURN MATCH x (
+RETURN MATCH x {
   1 => LENGTH([1,2]),
   2 => LENGTH([1,2]),
   _ => 0,
-)
+}
 `, func(prog *bytecode.Program) error {
 			if got := inspect.CountOpcode(prog, bytecode.OpLength); got != 2 {
 				return fmt.Errorf("expected 2 LENGTH ops, got %d", got)
@@ -44,11 +44,11 @@ RETURN MATCH x (
 		}, "impure result does not merge"),
 		ProgramCheck(`
 LET x = @x
-RETURN MATCH x (
+RETURN MATCH x {
   1 => "same",
   2 WHEN 1 < 2 => "same",
   _ => "other",
-)
+}
 `, func(prog *bytecode.Program) error {
 			if got := countLoadConstValue(prog, runtime.NewString("same")); got != 2 {
 				return fmt.Errorf("expected 2 loads of \"same\", got %d", got)

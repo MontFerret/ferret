@@ -58,7 +58,7 @@ func TestForInSourceExpressionsCompile(t *testing.T) {
 				RETURN item
 		`, noCompilerError, "waitfor source"),
 		ProgramCheck(`
-			FOR item IN MATCH "a" ("a" => [1], _ => [2])
+			FOR item IN MATCH "a" {"a" => [1], _ => [2]}
 				RETURN item
 		`, noCompilerError, "match source"),
 	})

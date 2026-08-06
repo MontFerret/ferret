@@ -37,6 +37,7 @@ func (p *printer) writeIndent() {
 	if p.err != nil || !p.atLineStart {
 		return
 	}
+
 	if p.indent <= 0 || p.opts.tabWidth == 0 {
 		return
 	}
@@ -46,6 +47,7 @@ func (p *printer) writeIndent() {
 
 	if err != nil {
 		p.err = err
+
 		return
 	}
 
@@ -64,6 +66,7 @@ func (p *printer) write(s string) {
 	_, err := io.WriteString(p.out, s)
 	if err != nil {
 		p.err = err
+
 		return
 	}
 

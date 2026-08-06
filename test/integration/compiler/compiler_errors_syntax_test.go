@@ -72,9 +72,9 @@ func TestSyntaxErrors(t *testing.T) {
 		),
 		Failure(
 			`
-			FUNC unique() (
+			FUNC unique() {
 				RETURN DISTINCT
-			)
+			}
 			RETURN unique()
 			`,
 			E{
@@ -91,8 +91,8 @@ func TestSyntaxErrors(t *testing.T) {
 			RETURN f(1)
 		`, E{
 				Kind:    parserd.SyntaxError,
-				Message: "Expected '=>' or '(' after function declaration",
-				Hint:    "Use 'FUNC f(x) => expr' or 'FUNC f(x) ( ... RETURN expr )'.",
+				Message: "Expected '=>' or '{' after function declaration",
+				Hint:    "Use 'FUNC f(x) => expr' or 'FUNC f(x) { ... RETURN expr }'.",
 			}, "Undelimited function body"),
 		Failure(
 			`
@@ -111,12 +111,12 @@ func TestSyntaxErrors(t *testing.T) {
 			}, "Missing arrow expression at start of input"),
 		Failure(
 			`
-			FUNC run() (
+			FUNC run() {
 			  VAR i = 0
 			  WHILE i < 10
 			    i = i + 1
 			  RETURN i
-			)
+			}
 			RETURN run()
 		`, E{
 				Kind:    parserd.SyntaxError,
@@ -325,13 +325,13 @@ func TestSyntaxErrors(t *testing.T) {
 
 func TestMixedFunctionBodySyntaxDiagnosticDoesNotCascade(t *testing.T) {
 	query := `
-FUNC fib(n) => (
-    RETURN MATCH n (
+FUNC fib(n) => {
+    RETURN MATCH n {
         0 => 0,
         1 => 1,
         _ => fib(n - 1) + fib(n - 2)
-    )
-)
+    }
+}
 
 RETURN fib(10)`
 
@@ -353,7 +353,7 @@ RETURN fib(10)`
 		t.Fatalf("unexpected diagnostic message: %q", diag.Message)
 	}
 
-	if diag.Hint != "Use either 'FUNC f(x) => expr' or 'FUNC f(x) ( ... RETURN expr )'." {
+	if diag.Hint != "Use either 'FUNC f(x) => expr' or 'FUNC f(x) { ... RETURN expr }'." {
 		t.Fatalf("unexpected diagnostic hint: %q", diag.Hint)
 	}
 
@@ -382,13 +382,13 @@ RETURN fib(10)`
 }
 
 func TestMissingFunctionParamsCloseDiagnosticDoesNotCascade(t *testing.T) {
-	query := `FUNC fib (
-    RETURN MATCH n (
+	query := `FUNC fib(n {
+    RETURN MATCH n {
         0 => 0,
         1 => 1,
         _ => fib(n - 1) + fib(n - 2)
-    )
-)
+    }
+}
 
 RETURN fib(10)`
 
@@ -410,7 +410,7 @@ RETURN fib(10)`
 		t.Fatalf("unexpected diagnostic message: %q", diag.Message)
 	}
 
-	if diag.Hint != "Add a parameter list before the block body, e.g. FUNC fib(n) ( ... RETURN expr ). Use FUNC fib() ( ... ) for no parameters." {
+	if diag.Hint != "Add a parameter list before the block body, e.g. FUNC fib(n) { ... RETURN expr }. Use FUNC fib() { ... } for no parameters." {
 		t.Fatalf("unexpected diagnostic hint: %q", diag.Hint)
 	}
 
@@ -423,8 +423,8 @@ RETURN fib(10)`
 	}
 
 	line, col := diag.Source.LocationAt(diag.Spans[0].Span)
-	if line != 1 || col != 10 {
-		t.Fatalf("unexpected span location: got %d:%d, want 1:10", line, col)
+	if line != 1 || col != 9 {
+		t.Fatalf("unexpected span location: got %d:%d, want 1:9", line, col)
 	}
 
 	formatted := pkgdiagnostics.Format(err)
@@ -432,8 +432,8 @@ RETURN fib(10)`
 		t.Fatalf("expected one syntax diagnostic, got %d:\n%s", got, formatted)
 	}
 
-	if !strings.Contains(formatted, "1 | FUNC fib (\n  |          ^ missing parameter list before function body\n2 |     RETURN MATCH n (") {
-		t.Fatalf("diagnostic should point at the premature function body paren, got:\n%s", formatted)
+	if !strings.Contains(formatted, "1 | FUNC fib(n {\n  |         ^ missing parameter list before function body\n2 |     RETURN MATCH n {") {
+		t.Fatalf("diagnostic should point at the unclosed parameter list, got:\n%s", formatted)
 	}
 
 	for _, unexpected := range []string{

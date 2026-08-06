@@ -9,19 +9,19 @@ import (
 const compilerUdfLifecycleQuery = `
 LET base = 1
 
-FUNC outer(a) (
+FUNC outer(a) {
   VAR carried = base
 
-  FUNC setCarried(v) (
+  FUNC setCarried(v) {
     carried = v
     FUNC nested(c) => carried + a + c
     RETURN nested(1)
-  )
+  }
 
   FUNC unusedInner() => carried
 
   RETURN setCarried(2)
-)
+}
 
 FUNC unusedTop() => base
 
@@ -29,13 +29,13 @@ RETURN outer(3)
 `
 
 const compilerUdfMemberStatementsQuery = `
-FUNC read(value) (
+FUNC read(value) {
   LET brand = value.product.brand
   VAR price = value["prices"]["current"]
   price = value.prices["sale"]
   value.metadata.lastSeen
   RETURN [brand, price]
-)
+}
 
 RETURN read({
   product: { brand: "Ferret" },

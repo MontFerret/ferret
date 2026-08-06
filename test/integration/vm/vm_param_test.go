@@ -35,13 +35,13 @@ RETURN read()
 
 func TestParamInNestedUdf(t *testing.T) {
 	expr := `
-FUNC outer() (
-  FUNC middle() (
+FUNC outer() {
+  FUNC middle() {
     FUNC inner() => @foo
     RETURN inner()
-  )
+  }
   RETURN middle()
-)
+}
 RETURN outer()
 `
 

@@ -29,11 +29,11 @@ RETURN total
 
 func TestForwardDeclarationDiagnosticsNestedFunctionScope(t *testing.T) {
 	diagnostics := compileDiagnostics(t, `
-FUNC outer() (
+FUNC outer() {
   FUNC inner() => later
   LET later = 1
   RETURN inner()
-)
+}
 RETURN outer()
 `)
 

@@ -99,6 +99,7 @@ func (f *clauseFormatter) formatSortClause(ctx *fql.SortClauseContext) {
 
 	for i, expr := range exprs {
 		f.formatSortClauseExpression(expr.(*fql.SortClauseExpressionContext))
+
 		if i < len(exprs)-1 {
 			f.p.write(",")
 			f.p.space()
@@ -195,6 +196,7 @@ func (f *clauseFormatter) formatCollectAggregator(ctx *fql.CollectAggregatorCont
 
 	for i, sel := range selectors {
 		f.formatCollectAggregateSelector(sel.(*fql.CollectAggregateSelectorContext))
+
 		if i < len(selectors)-1 {
 			f.p.write(",")
 			f.p.space()
@@ -230,6 +232,7 @@ func (f *clauseFormatter) formatCollectGroupProjection(ctx *fql.CollectGroupProj
 
 	if sel := ctx.CollectSelector(); sel != nil {
 		f.formatCollectSelector(sel.(*fql.CollectSelectorContext))
+
 		return
 	}
 
@@ -301,6 +304,7 @@ func (f *clauseFormatter) formatTimeoutClause(ctx *fql.TimeoutClauseContext) {
 
 	f.writeKeyword(keywordTimeout)
 	f.p.space()
+
 	if expr := ctx.Expression(); expr != nil {
 		f.expression.formatExpression(expr.(*fql.ExpressionContext))
 	}
@@ -317,6 +321,7 @@ func (f *clauseFormatter) formatEveryClause(ctx *fql.EveryClauseContext) {
 
 	for i, val := range values {
 		f.formatEveryClauseValue(val.(*fql.EveryClauseValueContext))
+
 		if i < len(values)-1 {
 			f.p.write(",")
 			f.p.space()

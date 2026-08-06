@@ -136,10 +136,10 @@ func TestDispatchGroupedTargetsCompile(t *testing.T) {
 			bytecode.OpDispatch: 1,
 		}}, "Should compile a grouped query target without a payload"),
 		Opcode(`
-			DISPATCH "click" IN (MATCH @kind (
+			DISPATCH "click" IN (MATCH @kind {
 				"primary" => @primary,
 				_ => @fallback,
-			))
+			})
 			RETURN 1
 		`, OpcodeExistence{
 			Exists: []bytecode.Opcode{bytecode.OpDispatch},

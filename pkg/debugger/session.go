@@ -113,6 +113,7 @@ func (s *Session) Start(ctx context.Context) (*Event, error) {
 	if err != nil {
 		return nil, fmt.Errorf("before run hooks: %w", err)
 	}
+
 	executionCtx, runCancel := context.WithCancelCause(runCtx)
 
 	s.started.Store(true)
@@ -206,9 +207,11 @@ func (s *Session) SetBreakpointAt(location SourceLocation, opts BreakpointOption
 	if location.Line <= 0 {
 		return Breakpoint{}, runtime.Error(runtime.ErrInvalidArgument, "breakpoint line must be positive")
 	}
+
 	if location.Column < 0 {
 		return Breakpoint{}, runtime.Error(runtime.ErrInvalidArgument, "breakpoint column must not be negative")
 	}
+
 	if opts.BindingMode < BreakpointBindNextExecutableInFile || opts.BindingMode > BreakpointBindNextExecutableInFunction {
 		return Breakpoint{}, runtime.Errorf(runtime.ErrInvalidArgument, "unknown breakpoint binding mode %d", opts.BindingMode)
 	}
@@ -357,6 +360,7 @@ func (s *Session) Variables(reference ValueReference) ([]Variable, error) {
 	if err := s.ensureOpen(); err != nil {
 		return nil, err
 	}
+
 	if !reference.Valid() {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug value reference must be positive")
 	}
@@ -373,6 +377,7 @@ func (s *Session) Variables(reference ValueReference) ([]Variable, error) {
 
 	if inspection.Kind == vm.DebugValueArray {
 		out := make([]Variable, 0, len(inspection.Items))
+
 		for i, item := range inspection.Items {
 			out = append(out, Variable{
 				Name:  strconv.Itoa(i),
@@ -524,9 +529,11 @@ func (s *Session) nextBreakpointPoint(location SourceLocation) *bytecode.DebugPo
 	for i := range points {
 		point := &points[i]
 		line, column := s.source.LocationAt(point.Span)
+
 		if sourcePositionBefore(line, column, location.Line, location.Column) {
 			continue
 		}
+
 		if best == nil || s.debugPointLess(point, best) {
 			best = point
 		}
@@ -544,6 +551,7 @@ func (s *Session) nextBreakpointPointInFunction(location SourceLocation) *byteco
 	for i := range points {
 		point := &points[i]
 		line, column := s.source.LocationAt(point.Span)
+
 		if sourcePositionBefore(line, column, location.Line, location.Column) {
 			switch {
 			case previous == nil || sourcePointPositionBefore(s.source, previous, point):
@@ -552,6 +560,7 @@ func (s *Session) nextBreakpointPointInFunction(location SourceLocation) *byteco
 			case sameSourcePosition(s.source, previous, point) && previous.FunctionID != point.FunctionID:
 				previousAmbiguous = true
 			}
+
 			continue
 		}
 
@@ -578,9 +587,11 @@ func (s *Session) debugPointLess(left, right *bytecode.DebugPoint) bool {
 	if leftLine != rightLine {
 		return leftLine < rightLine
 	}
+
 	if leftColumn != rightColumn {
 		return leftColumn < rightColumn
 	}
+
 	if left.PC != right.PC {
 		return left.PC < right.PC
 	}
@@ -601,9 +612,11 @@ func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
 	if s.closed.Load() && event.Reason != vm.DebugStopCompleted && event.Reason != vm.DebugStopTerminated {
 		out.Reason = ReasonTerminated
 		out.Error = context.Cause(s.executionCtx)
+
 		if out.Error == nil {
 			out.Error = context.Canceled
 		}
+
 		if hookErr := s.runAfterHooks(out.Error); hookErr != nil {
 			out.Error = errors.Join(out.Error, hookErr)
 		}
@@ -622,6 +635,7 @@ func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
 					out.HitBreakpointIDs = append(out.HitBreakpointIDs, id)
 				}
 			}
+
 			sort.Slice(out.HitBreakpointIDs, func(i, j int) bool {
 				return out.HitBreakpointIDs[i] < out.HitBreakpointIDs[j]
 			})
@@ -641,13 +655,16 @@ func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
 		output, outputErr := s.services.Materialize(event.Result)
 		closeErr := event.Result.Close()
 		hookErr := s.runAfterHooks(nil)
+
 		if outputErr != nil || closeErr != nil || hookErr != nil {
 			return nil, errors.Join(outputErr, closeErr, hookErr)
 		}
+
 		out.Output = output
 	case vm.DebugStopTerminated:
 		s.resetValueReferences()
 		out.Reason = ReasonTerminated
+
 		if hookErr := s.runAfterHooks(event.Error); hookErr != nil {
 			out.Error = errors.Join(out.Error, hookErr)
 		}
@@ -667,6 +684,7 @@ func (s *Session) runAfterHooks(runErr error) error {
 	if s.executionCtx != nil {
 		ctx = s.executionCtx
 	}
+
 	if hookErr := s.services.AfterRun(ctx, runErr); hookErr != nil {
 		return fmt.Errorf("after run hooks: %w", hookErr)
 	}
@@ -770,12 +788,15 @@ func (s *Session) clearActiveCancel(id uint64) {
 
 func (s *Session) requestTermination() {
 	s.lifecycleMu.Lock()
+
 	if s.runCancel != nil {
 		s.runCancel(context.Canceled)
 	}
+
 	if s.activeCancel != nil {
 		s.activeCancel(context.Canceled)
 	}
+
 	s.lifecycleMu.Unlock()
 
 	if s.execution != nil {
@@ -808,6 +829,7 @@ func (s *Session) expandableInspection(value runtime.Value) (vm.DebugValueInspec
 	if !ok || !inspection.Complete || inspection.Length <= 0 || inspection.Length > s.format.MaxItems {
 		return vm.DebugValueInspection{}, false
 	}
+
 	if inspection.Kind != vm.DebugValueArray && inspection.Kind != vm.DebugValueObject {
 		return vm.DebugValueInspection{}, false
 	}

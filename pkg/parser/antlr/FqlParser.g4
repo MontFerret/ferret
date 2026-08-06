@@ -329,7 +329,7 @@ functionArrow
     ;
 
 functionBlock
-    : OpenParen functionStatement* functionReturn CloseParen
+    : OpenBrace functionStatement* (functionReturn | forExpression) CloseBrace
     ;
 
 functionStatement
@@ -357,11 +357,11 @@ returnExpression
 
 forExpression
     : For valueVariable=loopVariable (Comma counterVariable=bindingIdentifier)? In forExpressionSource
-        forExpressionBody*
-        forExpressionReturn
+        (OpenBrace forExpressionBody* forExpressionReturn CloseBrace
+        | forExpressionBody* forExpressionReturn)
     | For (valueVariable=loopVariable)? Do? While expression
-        forExpressionBody*
-        forExpressionReturn
+        (OpenBrace forExpressionBody* forExpressionReturn CloseBrace
+        | forExpressionBody* forExpressionReturn)
     ;
 
 forExpressionSource
@@ -1003,7 +1003,7 @@ matchExpression
     ;
 
 matchPatternArms
-    : OpenParen matchPatternArmList? matchDefaultArm Comma? CloseParen
+    : OpenBrace matchPatternArmList? matchDefaultArm Comma? CloseBrace
     ;
 
 matchPatternArmList
@@ -1011,7 +1011,7 @@ matchPatternArmList
     ;
 
 matchGuardArms
-    : OpenParen matchGuardArmList? matchDefaultArm Comma? CloseParen
+    : OpenBrace matchGuardArmList? matchDefaultArm Comma? CloseBrace
     ;
 
 matchGuardArmList

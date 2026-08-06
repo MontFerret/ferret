@@ -14,11 +14,11 @@ import (
 func TestMatchFold_ConstantScrutinee(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(`
-RETURN MATCH 1 (
+RETURN MATCH 1 {
   1 => 10,
   2 => 20,
   _ => 30,
-)
+}
 `, func(prog *bytecode.Program) error {
 			if inspect.HasOpcode(prog, bytecode.OpJumpIfNeConst) {
 				return fmt.Errorf("expected match folding to remove JumpIfNeConst in O0")
@@ -27,10 +27,10 @@ RETURN MATCH 1 (
 			return nil
 		}, "constant scrutinee folds match dispatch"),
 		ProgramCheck(`
-RETURN MATCH 1s (
+RETURN MATCH 1s {
   "1s" => 10,
   _ => 20,
-)
+}
 `, func(prog *bytecode.Program) error {
 			if inspect.HasOpcode(prog, bytecode.OpJumpIfNeConst) {
 				return fmt.Errorf("expected strict Duration equality to fold MATCH fallback")
@@ -39,10 +39,10 @@ RETURN MATCH 1s (
 			return nil
 		}, "cross-type Duration constant MATCH folds to fallback"),
 		ProgramCheck(`
-RETURN MATCH 1s (
+RETURN MATCH 1s {
   "2s" => 10,
   _ => 20,
-)
+}
 `, func(prog *bytecode.Program) error {
 			if inspect.HasOpcode(prog, bytecode.OpJumpIfNeConst) {
 				return fmt.Errorf("expected unequal Duration constant MATCH to fold to its fallback")
@@ -51,10 +51,10 @@ RETURN MATCH 1s (
 			return nil
 		}, "unequal cross-type Duration constant MATCH folds"),
 		ProgramCheck(`
-RETURN MATCH 1s (
+RETURN MATCH 1s {
   "tomorrow" => 10,
   _ => 20,
-)
+}
 `, func(prog *bytecode.Program) error {
 			if inspect.HasOpcode(prog, bytecode.OpJumpIfNeConst) {
 				return fmt.Errorf("expected invalid Duration equality to fold to the fallback")

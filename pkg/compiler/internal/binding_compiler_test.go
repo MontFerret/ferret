@@ -25,13 +25,13 @@ type bindingCompilerTestState struct {
 func TestBindingCompilerCapturedMutableDeclarationPromotesToCellStorage(t *testing.T) {
 	state := newBindingCompilerTestState(t, `
 VAR base = 1
-FUNC outer() (
-  FUNC inner() (
+FUNC outer() {
+  FUNC inner() {
     base = base + 1
     RETURN base
-  )
+  }
   RETURN inner()
-)
+}
 RETURN outer()
 `)
 
@@ -150,9 +150,9 @@ RETURN total
 func TestBindingCompilerCapturedReadOnlyMutableDoesNotPromote(t *testing.T) {
 	state := newBindingCompilerTestState(t, `
 VAR x = 1
-FUNC f() (
+FUNC f() {
   RETURN x
-)
+}
 RETURN f()
 `)
 
@@ -186,10 +186,10 @@ RETURN f()
 func TestBindingCompilerSingleLevelCapturedReassignmentPromotesToCell(t *testing.T) {
 	state := newBindingCompilerTestState(t, `
 VAR counter = 0
-FUNC inc() (
+FUNC inc() {
   counter = counter + 1
   RETURN counter
-)
+}
 RETURN inc()
 `)
 
@@ -397,13 +397,13 @@ RETURN y
 func TestBindingCompilerPromotedFailedInitializerSkipsCellBinding(t *testing.T) {
 	state := newBindingCompilerTestState(t, `
 VAR base = missing
-FUNC outer() (
-  FUNC inner() (
+FUNC outer() {
+  FUNC inner() {
     base = 1
     RETURN base
-  )
+  }
   RETURN inner()
-)
+}
 RETURN 1
 `)
 

@@ -162,10 +162,10 @@ func parseSingleUDFMemberStatement(t *testing.T, statement string) *fql.Function
 	t.Helper()
 
 	input := fmt.Sprintf(`
-FUNC EXTRACT(product) (
+FUNC EXTRACT(product) {
 	%s
 	RETURN NONE
-)
+}
 
 RETURN NONE
 `, statement)

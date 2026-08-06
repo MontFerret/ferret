@@ -74,10 +74,10 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 		spec.NewSpec(
 			`
 FUNC Inner() => FAIL()
-FUNC Outer() (
+FUNC Outer() {
   LET result = Inner()
   RETURN result
-)
+}
 RETURN Outer()
 `,
 			"nested_udf_stack.fql",
@@ -317,14 +317,14 @@ func TestRuntimeErrorFormatsMissingParamWithParamSpan(t *testing.T) {
 
 func TestRuntimeErrorFormatsNestedMissingParamAtInnerUsage(t *testing.T) {
 	const query = `FUNC inner() => @foo
-FUNC middle() (
+FUNC middle() {
   LET value = inner()
   RETURN value
-)
-FUNC outer() (
+}
+FUNC outer() {
   LET value = middle()
   RETURN value
-)
+}
 RETURN outer()
 `
 
@@ -556,9 +556,9 @@ func TestRuntimeErrorFormatsAggregatedTopLevelAndUdfMissingParams(t *testing.T) 
 	const query = `LET val = @foo
 LET val2 = @bar
 
-FUNC TEST() (
+FUNC TEST() {
   RETURN @baz
-)
+}
 
 RETURN [val, val2, TEST()]
 `
