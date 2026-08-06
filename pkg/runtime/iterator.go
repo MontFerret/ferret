@@ -7,13 +7,15 @@ import (
 )
 
 type (
-	// Iterable represents an interface of a value that can be iterated by using an iterator.
+	// Iterable represents an interface of a value that can be iterated by using an
+	// iterator. Implementations that may block must observe ctx while creating it.
 	Iterable interface {
 		Iterate(ctx context.Context) (Iterator, error)
 	}
 
 	// Iterator represents an interface of an iterator.
-	// Next must return io.EOF when the iterator is exhausted.
+	// Next must return io.EOF when the iterator is exhausted and observe ctx while
+	// waiting for the next value.
 	Iterator interface {
 		Next(ctx context.Context) (value Value, key Value, err error)
 	}
@@ -41,7 +43,6 @@ func ForEach(ctx context.Context, input Iterable, predicate Predicate) error {
 func ForEachIter(ctx context.Context, iter Iterator, predicate Predicate) error {
 	for {
 		val, key, err := iter.Next(ctx)
-
 		if errors.Is(err, io.EOF) {
 			return nil
 		}
@@ -51,7 +52,6 @@ func ForEachIter(ctx context.Context, iter Iterator, predicate Predicate) error 
 		}
 
 		res, err := predicate(ctx, val, key)
-
 		if err != nil {
 			return err
 		}

@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -13,13 +14,19 @@ import (
 
 var hostValueIdentity atomic.Uint64
 
-// HostValue exposes opaque host data as a Ferret value without claiming optional capabilities.
-// Its hash uses stable wrapper identity rather than host pointer reflection.
-type HostValue[T any] struct {
-	target   T
-	typeName runtime.Type
-	identity uint64
-}
+type (
+	// HostValue exposes opaque host data as a Ferret value with identity equality.
+	// Its equality and hash use stable wrapper identity and never inspect the target.
+	HostValue[T any] struct {
+		target   T
+		typeName runtime.Type
+		identity uint64
+	}
+
+	hostIdentityValue interface {
+		hostIdentity() uint64
+	}
+)
 
 // NewHostValue creates an opaque host value with a type derived from T.
 func NewHostValue[T any](target T) *HostValue[T] {
@@ -115,6 +122,17 @@ func (v *HostValue[T]) Hash() uint64 {
 	return v.identity
 }
 
+// Equal reports wrapper-identity equality. Copies preserve identity, while
+// separately constructed wrappers remain distinct even when targets match.
+func (v *HostValue[T]) Equal(ctx context.Context, other runtime.Value) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+
+	otherValue, ok := other.(hostIdentityValue)
+	return ok && v.hostIdentity() == otherValue.hostIdentity(), nil
+}
+
 // Copy creates a shallow wrapper copy that preserves target, type, and identity.
 func (v *HostValue[T]) Copy() runtime.Value {
 	if v == nil {
@@ -134,6 +152,14 @@ func (v *HostValue[T]) copyValue() *HostValue[T] {
 		typeName: v.typeName,
 		identity: v.identity,
 	}
+}
+
+func (v *HostValue[T]) hostIdentity() uint64 {
+	if v == nil {
+		return 0
+	}
+
+	return v.identity
 }
 
 func (v *HostValue[T]) setTarget(target T) {

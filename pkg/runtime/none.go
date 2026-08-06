@@ -29,11 +29,3 @@ func (n *none) Copy() Value {
 func (n *none) Clone(_ context.Context) (Cloneable, error) {
 	return None, nil
 }
-
-func (n *none) Compare(_ context.Context, other Value) (int64, error) {
-	if n == other {
-		return 0, nil
-	}
-
-	return -1, nil
-}

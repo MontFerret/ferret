@@ -18,13 +18,20 @@ type debugControl struct {
 	entry       bool
 }
 
-func (c *debugControl) onSourcePoint(_ context.Context, state sourcePointState) (sourcePointAction, error) {
+func (c *debugControl) onSourcePoint(ctx context.Context, state sourcePointState) (sourcePointAction, error) {
+	if ctx != nil {
+		if err := ctx.Err(); err != nil {
+			return sourcePointTerminate, err
+		}
+	}
+
 	point := c.owner.points.PointByID(state.pointID)
 	if point == nil || point.PC != state.pc {
 		return sourcePointTerminate, runtime.Errorf(runtime.ErrUnexpected, "source point id %d does not match pc %d", state.pointID, state.pc)
 	}
 
 	c.owner.current = point
+
 	if c.shouldStop(state.pc, state.depth) {
 		return sourcePointPause, nil
 	}
@@ -35,37 +42,44 @@ func (c *debugControl) onSourcePoint(_ context.Context, state sourcePointState) 
 func (c *debugControl) shouldStop(pc, depth int) bool {
 	if c.skip && c.skipPC == pc && c.skipDepth == depth {
 		c.skip = false
+
 		return false
 	}
 
 	if c.owner.pauseRequested.Swap(false) {
 		c.reason = DebugStopPause
+
 		return true
 	}
 
 	if c.entry {
 		c.entry = false
 		c.reason = DebugStopEntry
+
 		return true
 	}
 
 	if _, ok := c.breakpoints[pc]; ok {
 		c.reason = DebugStopBreakpoint
+
 		return true
 	}
 
 	switch c.mode {
 	case DebugResumeStep:
 		c.reason = DebugStopStep
+
 		return true
 	case DebugResumeNext:
 		if depth <= c.startDepth {
 			c.reason = DebugStopStep
+
 			return true
 		}
 	case DebugResumeOut:
 		if depth < c.startDepth {
 			c.reason = DebugStopStep
+
 			return true
 		}
 	default:

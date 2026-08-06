@@ -40,6 +40,11 @@ func TestConstantFolding(t *testing.T) {
 			bytecode.OpLoadConst: 1,
 		}, "foo-1-bar-true", "should fold fully constant template literal into a single string"),
 
+		OpcodeCount("RETURN `${1s}`", map[bytecode.Opcode]int{
+			bytecode.OpConcat:    0,
+			bytecode.OpLoadConst: 1,
+		}, "1s", "should fold Duration interpolation through String conversion"),
+
 		OpcodeCount("LET x = \"X\" RETURN `a-${1}-b-${x}-c-${true}-d`", map[bytecode.Opcode]int{
 			bytecode.OpConcat:    0,
 			bytecode.OpAdd:       0,
@@ -73,26 +78,38 @@ func TestConstantFolding(t *testing.T) {
 
 		OpcodeCount(`RETURN 1s == "tomorrow"`, map[bytecode.Opcode]int{
 			bytecode.OpEq: 0,
-		}, false, "failed temporal coercion folds equality to false"),
+		}, false, "strict cross-type Duration equality folds to false"),
 
 		OpcodeCount(`RETURN 1s != "tomorrow"`, map[bytecode.Opcode]int{
 			bytecode.OpNe: 0,
-		}, true, "failed temporal coercion folds inequality to true"),
+		}, true, "strict cross-type Duration inequality folds to true"),
 
-		OpcodeCount(`RETURN 5s * "2"`, map[bytecode.Opcode]int{
-			bytecode.OpMul: 0,
-		}, "10s", "numeric-string Duration multiplication folds"),
+		OpcodeCount(`RETURN 1s == "1s"`, map[bytecode.Opcode]int{
+			bytecode.OpEq: 0,
+		}, false, "valid Duration string remains distinct without explicit conversion"),
 
-		OpcodeCount(`RETURN "2" * 5s`, map[bytecode.Opcode]int{
-			bytecode.OpMul: 0,
-		}, "10s", "reverse numeric-string Duration multiplication folds"),
+		OpcodeCount(`RETURN 5.5 % 2`, map[bytecode.Opcode]int{
+			bytecode.OpMod: 0,
+		}, 1.5, "Float modulo folds to a Float remainder"),
 
-		OpcodeErr(`RETURN 5s * "invalid"`, compile.OpcodeExistence{
+		OpcodeErr(`RETURN "10" - 2`, compile.OpcodeExistence{
+			Exists: []bytecode.Opcode{bytecode.OpSub},
+		}, runtime.ErrInvalidOperation, "numeric strings require explicit conversion and remain runtime errors"),
+
+		OpcodeErr(`RETURN true + 1`, compile.OpcodeExistence{
+			Exists: []bytecode.Opcode{bytecode.OpAddConst},
+		}, runtime.ErrInvalidOperation, "Boolean arithmetic remains a runtime error"),
+
+		OpcodeErr(`RETURN 5s * "2"`, compile.OpcodeExistence{
 			Exists: []bytecode.Opcode{bytecode.OpMul},
-		}, runtime.ErrInvalidArgument, "invalid numeric-string multiplier remains a runtime error"),
+		}, runtime.ErrInvalidOperation, "numeric-string Duration multiplication remains a runtime error"),
 
-		OpcodeErr(`RETURN "invalid" * 5s`, compile.OpcodeExistence{
+		OpcodeErr(`RETURN "2" * 5s`, compile.OpcodeExistence{
 			Exists: []bytecode.Opcode{bytecode.OpMul},
-		}, runtime.ErrInvalidArgument, "reverse invalid numeric-string multiplier remains a runtime error"),
+		}, runtime.ErrInvalidOperation, "reverse numeric-string Duration multiplication remains a runtime error"),
+
+		OpcodeCount(`RETURN 5s * TO_NUMBER("2")`, map[bytecode.Opcode]int{
+			bytecode.OpMul: 1,
+		}, "10s", "explicit numeric conversion preserves Duration multiplication"),
 	})
 }

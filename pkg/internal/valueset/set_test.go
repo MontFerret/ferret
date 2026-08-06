@@ -1,13 +1,17 @@
 package valueset_test
 
 import (
+	"context"
+	"errors"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/internal/valueset"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type collisionValue struct {
+	err   error
 	label string
 }
 
@@ -23,23 +27,43 @@ func (v collisionValue) Copy() runtime.Value {
 	return v
 }
 
-func (v collisionValue) Compare(other runtime.Value) int {
-	o, ok := other.(collisionValue)
-	if !ok {
-		return runtime.CompareTypes(v, other)
+func (v collisionValue) Equal(_ context.Context, other runtime.Value) (bool, error) {
+	if v.err != nil {
+		return false, v.err
 	}
 
-	switch {
-	case v.label < o.label:
-		return -1
-	case v.label > o.label:
-		return 1
-	default:
-		return 0
+	o, ok := other.(collisionValue)
+	if !ok {
+		return false, nil
+	}
+
+	return v.label == o.label, nil
+}
+
+func TestSetPropagatesEqualityErrorsWithoutMutation(t *testing.T) {
+	ctx := context.Background()
+	sentinel := errors.New("equality failed")
+	set := valueset.New(2)
+
+	added, err := set.Add(ctx, collisionValue{label: "first", err: sentinel})
+	if err != nil || !added {
+		t.Fatalf("add first: added=%t err=%v", added, err)
+	}
+
+	added, err = set.Add(ctx, collisionValue{label: "second"})
+	if added {
+		t.Fatal("failed add must not mutate the set")
+	}
+	if !errors.Is(err, sentinel) {
+		t.Fatalf("expected equality error, got %v", err)
+	}
+	if set.Len() != 1 {
+		t.Fatalf("expected one entry, got %d", set.Len())
 	}
 }
 
 func TestSetTracksDistinctValues(t *testing.T) {
+	ctx := context.Background()
 	set := valueset.New(4)
 
 	for _, tc := range []struct {
@@ -52,7 +76,11 @@ func TestSetTracksDistinctValues(t *testing.T) {
 		{runtime.NewInt(1), false},
 		{runtime.NewString("1"), false},
 	} {
-		if got := set.Add(tc.value); got != tc.added {
+		got, err := set.Add(ctx, tc.value)
+		if err != nil {
+			t.Fatalf("Add(%v): %v", tc.value, err)
+		}
+		if got != tc.added {
 			t.Fatalf("Add(%v): expected %t, got %t", tc.value, tc.added, got)
 		}
 	}
@@ -63,6 +91,7 @@ func TestSetTracksDistinctValues(t *testing.T) {
 }
 
 func TestSetUsesFerretEquality(t *testing.T) {
+	ctx := context.Background()
 	set := valueset.New(2)
 	first := runtime.NewObjectWith(map[string]runtime.Value{
 		"name": runtime.NewString("Ada"),
@@ -73,11 +102,19 @@ func TestSetUsesFerretEquality(t *testing.T) {
 		"name": runtime.NewString("Ada"),
 	})
 
-	if !set.Add(first) {
+	added, err := set.Add(ctx, first)
+	if err != nil {
+		t.Fatalf("add first: %v", err)
+	}
+	if !added {
 		t.Fatal("expected first object to be added")
 	}
 
-	if set.Add(equal) {
+	added, err = set.Add(ctx, equal)
+	if err != nil {
+		t.Fatalf("add equal: %v", err)
+	}
+	if added {
 		t.Fatal("expected equal reordered object to be rejected")
 	}
 
@@ -86,7 +123,51 @@ func TestSetUsesFerretEquality(t *testing.T) {
 	}
 }
 
+func TestSetUsesNumericEqualityAcrossIntAndFloat(t *testing.T) {
+	set := valueset.New(2)
+
+	added, err := set.Add(t.Context(), runtime.NewInt(1))
+	if err != nil || !added {
+		t.Fatalf("add Int: added=%t err=%v", added, err)
+	}
+
+	added, err = set.Add(t.Context(), runtime.NewFloat(1))
+	if err != nil {
+		t.Fatalf("add Float: %v", err)
+	}
+	if added {
+		t.Fatal("equal Float must not be added")
+	}
+	if set.Len() != 1 {
+		t.Fatalf("expected one numeric value, got %d", set.Len())
+	}
+}
+
+func TestSetUsesStrictDurationEquality(t *testing.T) {
+	set := valueset.New(4)
+
+	for _, test := range []struct {
+		value runtime.Value
+		added bool
+	}{
+		{value: runtime.NewString("1s"), added: true},
+		{value: runtime.NewInt(1000), added: true},
+		{value: runtime.NewDuration(time.Second), added: true},
+		{value: runtime.NewDuration(1000 * time.Millisecond), added: false},
+	} {
+		added, err := set.Add(t.Context(), test.value)
+		if err != nil || added != test.added {
+			t.Fatalf("Add(%T) = %t, %v, want %t, nil", test.value, added, err, test.added)
+		}
+	}
+
+	if set.Len() != 3 {
+		t.Fatalf("expected String, Int, and one Duration value, got %d", set.Len())
+	}
+}
+
 func TestSetSeparatesHashCollisions(t *testing.T) {
+	ctx := context.Background()
 	set := valueset.New(3)
 	first := collisionValue{label: "first"}
 	second := collisionValue{label: "second"}
@@ -100,7 +181,11 @@ func TestSetSeparatesHashCollisions(t *testing.T) {
 		{first, false},
 		{second, false},
 	} {
-		if got := set.Add(tc.value); got != tc.added {
+		got, err := set.Add(ctx, tc.value)
+		if err != nil {
+			t.Fatalf("Add(%v): %v", tc.value, err)
+		}
+		if got != tc.added {
 			t.Fatalf("Add(%v): expected %t, got %t", tc.value, tc.added, got)
 		}
 	}

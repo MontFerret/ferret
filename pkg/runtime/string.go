@@ -41,7 +41,7 @@ func NewStringFromRunes(input []rune) String {
 	return String(input)
 }
 
-func ParseString(input interface{}) (String, error) {
+func ParseString(input any) (String, error) {
 	if IsNil(input) {
 		return EmptyString, nil
 	}
@@ -65,7 +65,7 @@ func ParseString(input interface{}) (String, error) {
 	return EmptyString, Error(ErrInvalidType, fmt.Sprintf("expected %q", TypeString))
 }
 
-func MustParseString(input interface{}) String {
+func MustParseString(input any) String {
 	res, err := ParseString(input)
 
 	if err != nil {
@@ -73,6 +73,15 @@ func MustParseString(input interface{}) String {
 	}
 
 	return res
+}
+
+func ToString(input Value) String {
+	switch val := input.(type) {
+	case String:
+		return val
+	default:
+		return NewString(val.String())
+	}
 }
 
 func (s String) Type() Type {
@@ -94,16 +103,6 @@ func (s String) Hash() uint64 {
 
 func (s String) Copy() Value {
 	return s
-}
-
-func (s String) Compare(other Value) int {
-	otherString, ok := other.(String)
-
-	if !ok {
-		return CompareTypes(s, other)
-	}
-
-	return strings.Compare(string(s), string(otherString))
 }
 
 func (s String) Length(_ context.Context) (Int, error) {

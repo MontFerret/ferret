@@ -30,7 +30,7 @@ func NewBoolean(input bool) Boolean {
 	return Boolean(input)
 }
 
-func ParseBoolean(input interface{}) (Boolean, error) {
+func ParseBoolean(input any) (Boolean, error) {
 	b, ok := input.(bool)
 
 	if ok {
@@ -50,7 +50,7 @@ func ParseBoolean(input interface{}) (Boolean, error) {
 	return False, Error(ErrInvalidType, "expected 'bool'")
 }
 
-func MustParseBoolean(input interface{}) Boolean {
+func MustParseBoolean(input any) Boolean {
 	res, err := ParseBoolean(input)
 
 	if err != nil {
@@ -58,6 +58,29 @@ func MustParseBoolean(input interface{}) Boolean {
 	}
 
 	return res
+}
+
+func ToBoolean(input Value) Boolean {
+	if input == None {
+		return False
+	}
+
+	switch val := input.(type) {
+	case Boolean:
+		return val
+	case String:
+		return val != ""
+	case Int:
+		return val != 0
+	case Float:
+		return val != 0
+	case Duration:
+		return val != 0
+	case DateTime:
+		return Boolean(!val.IsZero())
+	default:
+		return True
+	}
 }
 
 func (t Boolean) Type() Type {
@@ -82,24 +105,6 @@ func (t Boolean) Hash() uint64 {
 
 func (t Boolean) Copy() Value {
 	return t
-}
-
-func (t Boolean) Compare(other Value) int {
-	otherBool, ok := other.(Boolean)
-
-	if !ok {
-		return CompareTypes(t, other)
-	}
-
-	if t == otherBool {
-		return 0
-	}
-
-	if !t && otherBool {
-		return -1
-	}
-
-	return +1
 }
 
 func (t Boolean) Unwrap() any {

@@ -29,7 +29,12 @@ func Includes(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, err
 		}
 
 		err = runtime.ForEachIter(ctx, iter, func(c context.Context, value runtime.Value, key runtime.Value) (runtime.Boolean, error) {
-			if runtime.CompareValues(needle, value) == 0 {
+			equal, err := runtime.EqualValues(c, needle, value)
+			if err != nil {
+				return false, err
+			}
+
+			if equal {
 				result = runtime.True
 
 				return false, nil

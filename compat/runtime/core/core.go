@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"hash/fnv"
 	"io"
+	"strconv"
 
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -91,11 +92,14 @@ func (a *valueAdapter) String() string {
 
 func (a *valueAdapter) Compare(other Value) int64 {
 	otherRT := UnwrapValue(other)
-	if cmp, ok := a.inner.(runtime.Comparable); ok {
-		return int64(cmp.Compare(otherRT))
+	comparison, err := runtime.CompareValues(context.Background(), a.inner, otherRT)
+	if err == nil {
+		return int64(comparison)
 	}
 
-	return int64(runtime.CompareValues(a.inner, otherRT))
+	// The v1 API cannot report operational comparison failures. Falling back to
+	// the legacy type rank is intentionally limited to this compatibility seam.
+	return int64(runtime.CompareTypes(a.inner, otherRT))
 }
 
 func (a *valueAdapter) Unwrap() interface{} {
@@ -129,12 +133,96 @@ func (c *coreValueAsRuntimeValue) String() string {
 	return c.inner.String()
 }
 
+func (c *coreValueAsRuntimeValue) Type() runtime.Type {
+	if c == nil || c.inner == nil {
+		return runtime.TypeNone
+	}
+
+	legacyType := c.inner.Type()
+	if legacyType == nil {
+		return runtime.HostTypeOf(c.inner)
+	}
+
+	legacyID := legacyType.ID()
+	legacyName := legacyType.String()
+	name := strconv.FormatInt(legacyID, 10)
+	if legacyName != "" {
+		name += "." + legacyName
+	}
+
+	return runtime.NewType("compat.v1", name, func(value runtime.Value) bool {
+		other, ok := value.(*coreValueAsRuntimeValue)
+		if !ok || other == nil || other.inner == nil {
+			return false
+		}
+
+		otherType := other.inner.Type()
+		return otherType != nil && otherType.ID() == legacyID && otherType.String() == legacyName
+	})
+}
+
 func (c *coreValueAsRuntimeValue) Hash() uint64 {
 	return c.inner.Hash()
 }
 
 func (c *coreValueAsRuntimeValue) Copy() runtime.Value {
 	return UnwrapValue(c.inner.Copy())
+}
+
+func (c *coreValueAsRuntimeValue) Equal(ctx context.Context, other runtime.Value) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	if c == nil || c.inner == nil {
+		return false, nil
+	}
+
+	otherValue, compatible := c.comparisonValue(other)
+	if !compatible {
+		return false, nil
+	}
+
+	return c.inner.Compare(otherValue) == 0, nil
+}
+
+func (c *coreValueAsRuntimeValue) Compare(ctx context.Context, other runtime.Value) (runtime.Ordering, error) {
+	if err := ctx.Err(); err != nil {
+		return runtime.Equal, err
+	}
+	if c == nil || c.inner == nil {
+		return runtime.Equal, runtime.Error(runtime.ErrInvalidOperation, "nil v1 value")
+	}
+
+	otherValue, compatible := c.comparisonValue(other)
+	if !compatible {
+		return runtime.Equal, runtime.Error(runtime.ErrInvalidOperation, "incompatible v1 value domains")
+	}
+
+	comparison := c.inner.Compare(otherValue)
+	switch {
+	case comparison < 0:
+		return runtime.Less, nil
+	case comparison > 0:
+		return runtime.Greater, nil
+	default:
+		return runtime.Equal, nil
+	}
+}
+
+func (c *coreValueAsRuntimeValue) comparisonValue(other runtime.Value) (Value, bool) {
+	var comparisonValue Value
+	if adapted, ok := other.(*coreValueAsRuntimeValue); ok {
+		comparisonValue = adapted.inner
+	} else {
+		comparisonValue = WrapValue(other)
+	}
+
+	if comparisonValue == nil {
+		return nil, false
+	}
+
+	compatible := runtime.TypeName(c.Type()) == runtime.TypeName(runtime.TypeOf(other))
+	return comparisonValue, compatible
 }
 
 // --- Type adapter ---

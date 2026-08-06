@@ -23,10 +23,10 @@ func TestNativeDurationValues(t *testing.T) {
 		S(`RETURN 2s - 500ms`, "1.5s"),
 		S(`RETURN 500ms * 3`, "1.5s"),
 		S(`RETURN 3 * 500ms`, "1.5s"),
-		S(`RETURN 5s * "2"`, "10s"),
-		S(`RETURN "2" * 5s`, "10s"),
-		S(`RETURN 5s * "2.5"`, "12.5s"),
-		S(`RETURN "2.5" * 5s`, "12.5s"),
+		S(`RETURN 5s * TO_NUMBER("2")`, "10s"),
+		S(`RETURN TO_NUMBER("2") * 5s`, "10s"),
+		S(`RETURN 5s * TO_NUMBER("2.5")`, "12.5s"),
+		S(`RETURN TO_NUMBER("2.5") * 5s`, "12.5s"),
 		S(`RETURN 1s / 2`, "500ms"),
 		S(`RETURN 1s / 250ms`, 4),
 		S(`RETURN 1s / 3s`, 1.0/3.0),
@@ -45,21 +45,35 @@ func TestNativeDurationValues(t *testing.T) {
 		S(`RETURN TO_DURATION([[2]])`, "2ms"),
 		S(`RETURN TYPENAME(TO_DURATION("500ms"))`, "Duration"),
 		S(`RETURN TO_DURATION("500ms") + 500ms`, "1s"),
-		S(`RETURN 1s + 1`, "1.001s"),
-		S(`RETURN 1 + 1s`, "1.001s"),
-		S(`RETURN 1s - 1`, "999ms"),
-		S(`RETURN 1s + "1s"`, "2s"),
-		S(`RETURN "1s" + 1s`, "2s"),
-		S(`RETURN 1s / "2"`, "500ms"),
-		S(`RETURN 1s / "250ms"`, 4),
-		S(`RETURN 1s == "1s"`, true),
+		S(`RETURN 1s + TO_DURATION(1)`, "1.001s"),
+		S(`RETURN TO_DURATION(1) + 1s`, "1.001s"),
+		S(`RETURN 1s - TO_DURATION(1)`, "999ms"),
+		S(`RETURN 1s + TO_DURATION("1s")`, "2s"),
+		S(`RETURN TO_DURATION("1s") + 1s`, "2s"),
+		S(`RETURN 1s / TO_NUMBER("2")`, "500ms"),
+		S(`RETURN 1s / TO_DURATION("250ms")`, 4),
+		S(`RETURN 1s == "1s"`, false),
+		S(`RETURN 1s != "1s"`, true),
+		S(`RETURN 1s == TO_DURATION("1s")`, true),
 		S(`RETURN 1s != "tomorrow"`, true),
 		S(`RETURN 1s == "tomorrow"`, false),
-		S(`RETURN 1s > 999`, true),
-		S(`RETURN [1s, 2s] ALL > 999`, true),
-		S(`RETURN [1s, 2s] ANY == "2s"`, true),
+		Error(`RETURN 1s > 999`),
+		Error(`RETURN [1s, 2s] ALL > 999`),
+		S(`RETURN [1s, 2s] ANY == "2s"`, false),
+		S(`RETURN [1s, 2s] ANY == TO_DURATION("2s")`, true),
 		S(`RETURN MATCH 5s (5000ms => true, _ => false)`, true),
+		S(`RETURN MATCH 1s ("1s" => true, _ => false)`, false),
+		S(`RETURN [1s] == ["1s"]`, false),
+		S(`RETURN { value: 1s } == { value: "1s" }`, false),
+		S(`RETURN "1s" IN [1s]`, false),
 		S(`RETURN DISTINCT [5s, 5000ms]`, []any{"5s"}),
+		S(`RETURN DISTINCT ["1s", 1000, 1s]`, []any{"1s", float64(1000), "1s"}),
+		S(`RETURN UNION_DISTINCT(["1s", 1000], [1s, 1000ms])`, []any{"1s", float64(1000), "1s"}),
+		S(`FOR value IN [1s, 1000ms] COLLECT key = value WITH COUNT INTO count RETURN { key, count }`, []any{
+			map[string]any{"key": "1s", "count": float64(2)},
+		}),
+		Error(`RETURN SORTED([1s, "2s"])`),
+		Error(`RETURN [1s] < ["1s"]`),
 		S(`RETURN 0.000001ms * 0.5`, "0s"),
 		S(`RETURN (-0.000001ms) * 0.5`, "0s"),
 		S(`RETURN 0.000001ms / 2`, "0s"),
@@ -67,21 +81,58 @@ func TestNativeDurationValues(t *testing.T) {
 		Error(`RETURN TO_DURATION("1fortnight")`),
 		Error(`RETURN TO_DURATION([1, 2])`),
 		Error(`RETURN TO_DURATION({ value: 1 })`),
-		spec.NewSpec(`RETURN 1s < "tomorrow"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Message:  "invalid argument",
-			Contains: []string{"cannot convert String", "tomorrow", ":1:8"},
+		spec.NewSpec(`RETURN "tomorrow" > 1s`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid operation",
+			Contains: []string{"operator '>' cannot be applied to String and Duration", ":1:8"},
 		}),
-		Error(`RETURN [1s] ANY < "tomorrow"`),
-		Error("RETURN `${1s}`"),
+		spec.NewSpec(`RETURN 1s <= "tomorrow"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid operation",
+			Contains: []string{"operator '<=' cannot be applied to Duration and String", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN "tomorrow" < 1s`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid operation",
+			Contains: []string{"operator '<' cannot be applied to String and Duration", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN 1s >= "tomorrow"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid operation",
+			Contains: []string{"operator '>=' cannot be applied to Duration and String", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN [1s] ANY < "tomorrow"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid operation",
+			Contains: []string{"operator '<' cannot be applied to Duration and String", ":1:8"},
+		}),
+		S("RETURN `${1s}`", "1s"),
 		S("RETURN `${TO_STRING(1s)}`", "1s"),
 		Error(`RETURN 1 / 1s`),
 		spec.NewSpec(`RETURN 5s * "invalid"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Message:  "invalid argument",
-			Contains: []string{"cannot use String", "invalid", "numeric Duration scale", ":1:8"},
+			Message:  "invalid operation",
+			Contains: []string{"operator '*' cannot be applied to Duration and String", ":1:8"},
 		}),
 		spec.NewSpec(`RETURN "invalid" * 5s`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Message:  "invalid argument",
-			Contains: []string{"cannot use String", "invalid", "numeric Duration scale", ":1:8"},
+			Message:  "invalid operation",
+			Contains: []string{"operator '*' cannot be applied to String and Duration", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN 1s + 1`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid operation",
+			Contains: []string{"operator '+' cannot be applied to Duration and Int", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN 1 + 1s`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid operation",
+			Contains: []string{"operator '+' cannot be applied to Int and Duration", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN 1s - 1`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid operation",
+			Contains: []string{"operator '-' cannot be applied to Duration and Int", ":1:8"},
+		}),
+		S(`RETURN 1s + "1s"`, "1s1s"),
+		S(`RETURN "1s" + 1s`, "1s1s"),
+		spec.NewSpec(`RETURN 1s / "2"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid operation",
+			Contains: []string{"operator '/' cannot be applied to Duration and String", ":1:8"},
+		}),
+		spec.NewSpec(`RETURN 1s / "250ms"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid operation",
+			Contains: []string{"operator '/' cannot be applied to Duration and String", ":1:8"},
 		}),
 		Error(`RETURN 1s * "2s"`),
 		Error(`RETURN 1s * 1s`),
@@ -106,13 +157,13 @@ func TestDateTimeOperators(t *testing.T) {
 		S(`RETURN TO_DATETIME(1.5, "ms")`, "1970-01-01T00:00:00.0015Z"),
 		S(`RETURN TO_DATETIME(-1, "s")`, "1969-12-31T23:59:59Z"),
 		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") + 30m`, "2026-08-01T12:30:00Z"),
-		S(`RETURN "30m" + TO_DATETIME("2026-08-01T12:00:00Z")`, "2026-08-01T12:30:00Z"),
-		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") - "30m"`, "2026-08-01T11:30:00Z"),
-		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") - "2026-08-01T11:59:30Z"`, "30s"),
+		S(`RETURN 30m + TO_DATETIME("2026-08-01T12:00:00Z")`, "2026-08-01T12:30:00Z"),
+		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") - 30m`, "2026-08-01T11:30:00Z"),
+		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") - TO_DATETIME("2026-08-01T11:59:30Z")`, "30s"),
 		S(`RETURN TO_DATETIME("2026-08-01T12:00:00+02:00") - TO_DATETIME("2026-08-01T10:00:00Z")`, "0s"),
 		S(`RETURN TO_DATETIME("2026-08-01T12:00:00+02:00") == TO_DATETIME("2026-08-01T10:00:00Z")`, true),
-		S(`RETURN TYPENAME(NOW() + "5m")`, "DateTime"),
-		S(`RETURN @delay + "500ms"`, "5.5s").Env(spec.WithParam("delay", 5*time.Second)),
+		S(`RETURN TYPENAME(NOW() + TO_DURATION("5m"))`, "DateTime"),
+		S(`RETURN @delay + TO_DURATION("500ms")`, "5.5s").Env(spec.WithParam("delay", 5*time.Second)),
 		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") == "2026-08-01T12:00:00Z"`, false),
 		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") == "2026-08-01T13:00:00Z"`, false),
 		S(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") != "2026-08-01T12:00:00Z"`, true),
@@ -182,8 +233,13 @@ func TestDateTimeOperators(t *testing.T) {
 		}),
 		Error(`RETURN TO_DATETIME("invalid")`),
 		spec.NewSpec(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") - "tomorrow"`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Message:  "invalid argument",
-			Contains: []string{"cannot convert String", "DateTime or Duration", ":1:8"},
+			Message:  "invalid operation",
+			Contains: []string{"operator '-' cannot be applied to DateTime and String", ":1:8"},
+		}),
+		S(`RETURN TYPENAME(NOW() + "5m")`, "String"),
+		spec.NewSpec(`RETURN NOW() + 5000`).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+			Message:  "invalid operation",
+			Contains: []string{"operator '+' cannot be applied to DateTime and Int", ":1:8"},
 		}),
 		Error(`RETURN TO_DATETIME("2026-08-01T12:00:00Z") + TO_DATETIME("2026-08-01T12:00:00Z")`),
 		Error(`RETURN 1s - TO_DATETIME("2026-08-01T12:00:00Z")`),
@@ -191,57 +247,45 @@ func TestDateTimeOperators(t *testing.T) {
 	})
 }
 
-func TestTemporalEqualityPropagatesOperationalErrors(t *testing.T) {
+func TestTemporalComparisonDoesNotInspectOpaqueHostValues(t *testing.T) {
 	lengthErr := errors.New("duration list length failed")
 	atErr := runtime.Error(runtime.ErrRange, "duration list item failed")
 
 	RunSpecs(t, []spec.Spec{
-		spec.NewSpec(`RETURN 1s == @value`).
+		S(`RETURN 1s == @value`, false).
+			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
+		S(`RETURN 1s != @value`, true).
+			Env(spec.WithParam("value", newFallibleDurationList(nil, atErr, runtime.NewInt(1)))),
+		S(`RETURN [1s] ANY == @value`, false).
+			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
+		S(`RETURN @left == @right ? 10 : 20`, 20).
+			Env(
+				spec.WithParam("left", time.Second),
+				spec.WithParam("right", newFallibleDurationList(lengthErr, nil)),
+			),
+		S(`RETURN @left != @right ? 10 : 20`, 10).
+			Env(
+				spec.WithParam("left", time.Second),
+				spec.WithParam("right", newFallibleDurationList(lengthErr, nil)),
+			),
+		S(`RETURN @value == 1s ? 10 : 20`, 20).
+			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
+		S(`RETURN @value != 1s ? 10 : 20`, 10).
+			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
+		S(`RETURN MATCH @value (1s => 10, _ => 20)`, 20).
+			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
+		Error(`RETURN 1s < @value`).
+			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
+		spec.NewSpec(`RETURN TO_DURATION(@value)`).
 			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Contains: []string{"duration list length failed", ":1:8"},
 		}).
 			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
-		spec.NewSpec(`RETURN 1s != @value`).
+		spec.NewSpec(`RETURN TO_DURATION(@value)`).
 			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
 			Contains: []string{"duration list item failed", ":1:8"},
 		}).
 			Env(spec.WithParam("value", newFallibleDurationList(nil, atErr, runtime.NewInt(1)))),
-		spec.NewSpec(`RETURN [1s] ANY == @value`).
-			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Contains: []string{"duration list length failed", ":1:8"},
-		}).
-			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
-		spec.NewSpec(`RETURN @left == @right ? 10 : 20`).
-			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Contains: []string{"duration list length failed", ":1:8"},
-		}).
-			Env(
-				spec.WithParam("left", time.Second),
-				spec.WithParam("right", newFallibleDurationList(lengthErr, nil)),
-			),
-		spec.NewSpec(`RETURN @left != @right ? 10 : 20`).
-			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Contains: []string{"duration list length failed", ":1:8"},
-		}).
-			Env(
-				spec.WithParam("left", time.Second),
-				spec.WithParam("right", newFallibleDurationList(lengthErr, nil)),
-			),
-		spec.NewSpec(`RETURN @value == 1s ? 10 : 20`).
-			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Contains: []string{"duration list length failed", ":1:8"},
-		}).
-			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
-		spec.NewSpec(`RETURN @value != 1s ? 10 : 20`).
-			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Contains: []string{"duration list length failed", ":1:8"},
-		}).
-			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
-		spec.NewSpec(`RETURN MATCH @value (1s => 10, _ => 20)`).
-			Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Contains: []string{"duration list length failed", ":1:22"},
-		}).
-			Env(spec.WithParam("value", newFallibleDurationList(lengthErr, nil))),
 	})
 }
 

@@ -31,6 +31,7 @@ var Match = base.Assertion{
 			return false, err
 		}
 
-		return runtime.CompareValues(out, runtime.True) == 0, nil
+		equal, err := runtime.EqualValues(ctx, out, runtime.True)
+		return bool(equal), err
 	},
 }

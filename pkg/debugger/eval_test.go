@@ -35,12 +35,36 @@ func TestEvaluateDebugDurationExpression(t *testing.T) {
 		t.Fatalf("negative duration expression = %v (%T), %v", value, value, err)
 	}
 
-	value, err = evaluateExpression(context.Background(), `1s + 1`, evalScope{
+	_, err = evaluateExpression(context.Background(), `1s + 1`, evalScope{
 		params: runtime.NewParams(),
 		values: vm.NewDebugValueAccess(),
 	})
-	if err != nil || value != runtime.NewDuration(1001*time.Millisecond) {
-		t.Fatalf("coercive duration debugger expression = %v (%T), %v", value, value, err)
+	if !errors.Is(err, runtime.ErrInvalidOperation) {
+		t.Fatalf("strict duration arithmetic error = %v, want ErrInvalidOperation", err)
+	}
+	const arithmeticExpected = "invalid operation: operator '+' cannot be applied to Duration and Int"
+	if err.Error() != arithmeticExpected {
+		t.Fatalf("strict duration arithmetic error = %v, want %q", err, arithmeticExpected)
+	}
+
+	value, err = evaluateExpression(context.Background(), `1s == "1s"`, evalScope{
+		params: runtime.NewParams(),
+		values: vm.NewDebugValueAccess(),
+	})
+	if err != nil || value != runtime.False {
+		t.Fatalf("strict duration equality = %v (%T), %v", value, value, err)
+	}
+
+	_, err = evaluateExpression(context.Background(), `1s < "2s"`, evalScope{
+		params: runtime.NewParams(),
+		values: vm.NewDebugValueAccess(),
+	})
+	if !errors.Is(err, runtime.ErrInvalidOperation) {
+		t.Fatalf("strict duration comparison error = %v, want ErrInvalidOperation", err)
+	}
+	const expected = "invalid operation: operator '<' cannot be applied to Duration and String"
+	if err.Error() != expected {
+		t.Fatalf("strict duration comparison error = %v, want %q", err, expected)
 	}
 }
 

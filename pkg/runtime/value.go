@@ -10,6 +10,5 @@ type Value interface {
 	fmt.Stringer
 	Hashable
 	// Copy returns a shallow copy of the value.
-	// TODO: Add context and error
 	Copy() Value
 }

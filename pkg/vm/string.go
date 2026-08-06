@@ -20,7 +20,6 @@ func Like(left, right runtime.Value) (runtime.Boolean, error) {
 	}
 
 	r, err := glob.Compile(right.String())
-
 	if err != nil {
 		return runtime.False, fmt.Errorf("invalid glob pattern: %w", err)
 	}

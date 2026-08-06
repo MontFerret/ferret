@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-	"sort"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -19,25 +18,20 @@ func collectorKeyString(ctx context.Context, key runtime.Value) (string, error) 
 	return Stringify(ctx, key)
 }
 
-func collectorKeyNotFoundValue(ctx context.Context, key runtime.Value) error {
-	keyStr, err := collectorKeyString(ctx, key)
-	if err != nil {
-		return err
-	}
-
-	return collectorKeyNotFound(keyStr)
+func collectorKeyNotFoundValue(_ context.Context, key runtime.Value) error {
+	return runtime.Errorf(runtime.ErrNotFound, "collector key of type %T", key)
 }
 
 func sortCollectorList(ctx context.Context, list runtime.List) error {
-	return runtime.SortListWith(ctx, list, func(first, second runtime.Value) int {
+	return runtime.SortListWith(ctx, list, func(ctx context.Context, first, second runtime.Value) (runtime.Ordering, error) {
 		firstKV, firstOK := first.(*KV)
 		secondKV, secondOK := second.(*KV)
 
 		if firstOK && secondOK {
-			return runtime.CompareValues(firstKV.Key, secondKV.Key)
+			return runtime.CompareValues(ctx, firstKV.Key, secondKV.Key)
 		}
 
-		return runtime.CompareValues(first, second)
+		return runtime.CompareValues(ctx, first, second)
 	})
 }
 
@@ -51,10 +45,24 @@ func promoteSingleGroup[T any](groups map[string]T, singleKey string, singleValu
 	return groups
 }
 
-func sortKVEntries(entries []*KV) {
-	sort.Slice(entries, func(i, j int) bool {
-		return runtime.CompareValues(entries[i].Key, entries[j].Key) < 0
+func sortKVEntries(ctx context.Context, entries []*KV) error {
+	values := make([]runtime.Value, len(entries))
+	for idx, entry := range entries {
+		values[idx] = entry
+	}
+
+	err := runtime.SortSliceWith(ctx, values, func(ctx context.Context, first, second runtime.Value) (runtime.Ordering, error) {
+		return runtime.CompareValues(ctx, first.(*KV).Key, second.(*KV).Key)
 	})
+	if err != nil {
+		return err
+	}
+
+	for idx, value := range values {
+		entries[idx] = value.(*KV)
+	}
+
+	return nil
 }
 
 func collectorKeyNotFound(key string) error {

@@ -359,12 +359,16 @@ func TestModuloTypeErrorNotMisclassifiedAsModuloByZero(t *testing.T) {
 					return fmt.Errorf("expected runtime error, got %T", err)
 				}
 
-				if rtErr.Message != "invalid type" {
-					return fmt.Errorf("unexpected runtime error message: got %q, want %q", rtErr.Message, "invalid type")
+				if rtErr.Message != "invalid operation" {
+					return fmt.Errorf("unexpected runtime error message: got %q, want %q", rtErr.Message, "invalid operation")
 				}
 
-				if rtErr.Kind != diagnostics.TypeError {
-					return fmt.Errorf("unexpected error kind: got %s, want %s", rtErr.Kind, diagnostics.TypeError)
+				if rtErr.Kind == diagnostics.TypeError {
+					return fmt.Errorf("unexpected type-error classification: %s", rtErr.Kind)
+				}
+
+				if !strings.Contains(rtErr.Format(), "operator '%' cannot be applied to Int and String") {
+					return fmt.Errorf("expected canonical operator diagnostic, got:\n%s", rtErr.Format())
 				}
 
 				if strings.Contains(strings.ToLower(rtErr.Format()), "modulo by zero") {

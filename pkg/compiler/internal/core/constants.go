@@ -1,6 +1,8 @@
 package core
 
 import (
+	"context"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -73,8 +75,8 @@ func (cp *ConstantPool) valueEqualsAt(index int, right runtime.Value) bool {
 		return false
 	}
 
-	comparable, ok := left.(runtime.Comparable)
-	return ok && comparable.Compare(right) == 0
+	equal, err := runtime.EqualValues(context.Background(), left, right)
+	return err == nil && bool(equal)
 }
 
 func (cp *ConstantPool) Get(addr bytecode.Operand) runtime.Value {

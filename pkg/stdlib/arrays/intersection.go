@@ -20,7 +20,13 @@ func sections(ctx context.Context, args []runtime.Value, count int) (runtime.Val
 		return runtime.None, err
 	}
 
-	intersections := make(map[uint64][]runtime.Value)
+	type occurrence struct {
+		value      runtime.Value
+		lastSource int
+		count      int
+	}
+
+	intersections := make(map[uint64][]*occurrence)
 	capacity := len(args)
 
 	for i, arg := range args {
@@ -30,22 +36,30 @@ func sections(ctx context.Context, args []runtime.Value, count int) (runtime.Val
 			return runtime.None, err
 		}
 
-		err = list.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+		err = list.ForEach(ctx, func(c context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
 			h := value.Hash()
-
 			bucket, exists := intersections[h]
+			if exists {
+				for _, entry := range bucket {
+					equal, err := runtime.EqualValues(c, entry.value, value)
+					if err != nil {
+						return false, err
+					}
+					if !equal {
+						continue
+					}
 
-			if !exists {
-				bucket = make([]runtime.Value, 0, 5)
+					if entry.lastSource != i {
+						entry.lastSource = i
+						entry.count++
+					}
+
+					return true, nil
+				}
 			}
 
-			bucket = append(bucket, value)
+			bucket = append(bucket, &occurrence{value: value, lastSource: i, count: 1})
 			intersections[h] = bucket
-			bucketLen := len(bucket)
-
-			if bucketLen > capacity {
-				capacity = bucketLen
-			}
 
 			return true, nil
 		})
@@ -56,12 +70,13 @@ func sections(ctx context.Context, args []runtime.Value, count int) (runtime.Val
 	}
 
 	result := runtime.NewArray(capacity)
-	required := count
 
 	for _, bucket := range intersections {
-		if len(bucket) == required {
-			// It's safe to ignore the error here because we know that it's runtime.Array
-			_ = result.Append(ctx, bucket[0])
+		for _, entry := range bucket {
+			if entry.count == count {
+				// It's safe to ignore the error here because result is a runtime.Array.
+				_ = result.Append(ctx, entry.value)
+			}
 		}
 	}
 

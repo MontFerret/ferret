@@ -9,11 +9,16 @@ import (
 
 func callCachedHostFunction(
 	ctx context.Context,
+	cancellation executionCancellation,
 	desc *callDescriptor,
 	cacheFn *mem.CachedHostFunction,
 	reg []runtime.Value,
 	scratch *mem.Scratch,
 ) (runtime.Value, error) {
+	if err := cancellation.Check(); err != nil {
+		return runtime.None, err
+	}
+
 	if cacheFn == nil || !cacheFn.Bound {
 		return nil, ErrUnresolvedFunction
 	}
@@ -80,6 +85,7 @@ func callCachedHostFunction(
 	default:
 		if fnv != nil {
 			args := stageHostCallArgs(scratch, reg, start, count)
+
 			return fnv(ctx, args...)
 		}
 	}

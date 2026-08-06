@@ -98,6 +98,7 @@ type (
 	Collection interface {
 		Value
 		Containable
+		Equatable
 		Comparable
 		Measurable
 		Cloneable
@@ -126,7 +127,6 @@ type (
 		Swap(ctx context.Context, a, b Int) error
 		// Concat concatenates another list to the current list or returns an error if the operation fails.
 		Concat(ctx context.Context, other List) error
-
 		// Filter creates a new list containing elements that satisfy the given predicate or returns an error if filtering fails.
 		Filter(ctx context.Context, predicate IndexReadablePredicate) (List, error)
 		// Find searches for the first element in the list that satisfies the given predicate or returns an error if search fails.
@@ -139,7 +139,6 @@ type (
 		Last(ctx context.Context) (Value, error)
 		// Slice returns a new list containing elements from the specified range or returns an error if range is invalid or inaccessible.
 		Slice(ctx context.Context, start, end Int) (List, error)
-
 		// ForEach iterates over each element in the list and applies the given predicate function or returns an error if iteration fails.
 		ForEach(ctx context.Context, predicate IndexReadablePredicate) error
 	}
@@ -157,7 +156,6 @@ type (
 
 		// Merge merges another map into the current map, combining their key-value pairs or returns an error if merging fails.
 		Merge(ctx context.Context, other Map) error
-
 		// ContainsKey checks if the map contains the specified key or returns an error if key check fails.
 		ContainsKey(ctx context.Context, key Value) (Boolean, error)
 		// Keys returns a list of all keys in the map or an error if retrieval fails.
@@ -168,7 +166,6 @@ type (
 		Filter(ctx context.Context, predicate KeyReadablePredicate) (List, error)
 		// Find searches for the first value in the map that satisfies the given predicate or returns an error if search fails.
 		Find(ctx context.Context, predicate KeyReadablePredicate) (Value, Boolean, error)
-
 		// ForEach iterates over each key-value pair in the map and applies the given predicate function or returns an error if iteration fails.
 		ForEach(ctx context.Context, predicate KeyReadablePredicate) error
 	}

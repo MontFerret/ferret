@@ -30,7 +30,7 @@ func TestLogicalOperators(t *testing.T) {
 		S("RETURN NONE || 'foo'", "foo"),
 		S("RETURN '' || 'foo'", "foo"),
 		S(`RETURN ERROR()? || 'boo'`, "boo"),
-		S(`RETURN !ERROR()? && TRUE`, true),
+		Error(`RETURN !ERROR()? && TRUE`),
 		S(`LET u = { valid: false } RETURN u.valid || TRUE`, true),
 	}, vm.WithFunction("ERROR", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, fmt.Errorf("test")

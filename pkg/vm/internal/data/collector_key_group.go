@@ -39,9 +39,12 @@ func (c *KeyGroupCollector) Copy() runtime.Value {
 	return c
 }
 
-func (c *KeyGroupCollector) Iterate(_ context.Context) (runtime.Iterator, error) {
+func (c *KeyGroupCollector) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	if !c.sorted {
-		c.sort()
+		if err := c.sort(ctx); err != nil {
+			return nil, err
+		}
+
 		c.sorted = true
 	}
 
@@ -56,30 +59,53 @@ func (c *KeyGroupCollector) Set(ctx context.Context, key, value runtime.Value) e
 		c.singleGroup = group
 		c.hasSingleGroup = true
 		c.entries = append(c.entries, NewKV(key, group))
+		c.sorted = false
 
 		return group.Append(ctx, value)
 	}
 
 	// Promote to map when a second distinct key appears.
 	if c.grouping.len() == 0 {
-		if c.hasSingleGroup && runtime.CompareValues(key, c.singleKey) == 0 {
-			return c.singleGroup.Append(ctx, value)
-		}
-
 		if c.hasSingleGroup {
-			c.grouping.set(c.singleKey, c.singleGroup)
+			if key.Hash() == c.singleKey.Hash() {
+				equal, err := runtime.EqualValues(ctx, key, c.singleKey)
+				if err != nil {
+					return err
+				}
+
+				if equal {
+					return c.singleGroup.Append(ctx, value)
+				}
+			}
+
+			if err := c.grouping.insertUnique(ctx, c.singleKey, c.singleGroup); err != nil {
+				return err
+			}
 		}
 
 		c.hasSingleGroup = false
 		c.singleKey = nil
 		c.singleGroup = nil
+
+		group := runtime.NewArray(4)
+		if err := c.grouping.insertUnique(ctx, key, group); err != nil {
+			return err
+		}
+
+		c.entries = append(c.entries, NewKV(key, group))
+		c.sorted = false
+
+		return group.Append(ctx, value)
 	}
 
-	group, exists := c.grouping.get(key)
+	group, exists, err := c.grouping.loadOrCreate(ctx, key, func() runtime.List {
+		return runtime.NewArray(4)
+	})
+	if err != nil {
+		return err
+	}
 
 	if !exists {
-		group = runtime.NewArray(4)
-		c.grouping.set(key, group)
 		c.entries = append(c.entries, NewKV(key, group))
 	}
 
@@ -88,20 +114,30 @@ func (c *KeyGroupCollector) Set(ctx context.Context, key, value runtime.Value) e
 	return group.Append(ctx, value)
 }
 
-func (c *KeyGroupCollector) sort() {
-	sortKVEntries(c.entries)
+func (c *KeyGroupCollector) sort(ctx context.Context) error {
+	return sortKVEntries(ctx, c.entries)
 }
 
 func (c *KeyGroupCollector) Get(ctx context.Context, key runtime.Value) (runtime.Value, error) {
 	if c.grouping.len() == 0 {
-		if c.hasSingleGroup && runtime.CompareValues(key, c.singleKey) == 0 {
-			return c.singleGroup, nil
+		if c.hasSingleGroup && key.Hash() == c.singleKey.Hash() {
+			equal, err := runtime.EqualValues(ctx, key, c.singleKey)
+			if err != nil {
+				return nil, err
+			}
+
+			if equal {
+				return c.singleGroup, nil
+			}
 		}
 
 		return runtime.None, collectorKeyNotFoundValue(ctx, key)
 	}
 
-	v, ok := c.grouping.get(key)
+	v, ok, err := c.grouping.get(ctx, key)
+	if err != nil {
+		return nil, err
+	}
 
 	if !ok {
 		return runtime.None, collectorKeyNotFoundValue(ctx, key)

@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"errors"
+
+	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
 )
 
 var (
@@ -14,13 +16,17 @@ var (
 	ErrInvalidArgumentType   = errors.New("invalid argument type")
 	ErrInvalidType           = errors.New("invalid type")
 	ErrInvalidOperation      = errors.New("invalid operation")
-	ErrNotFound              = errors.New("not found")
-	ErrNotUnique             = errors.New("not unique")
-	ErrUnexpected            = errors.New("unexpected error")
-	ErrTimeout               = errors.New("operation timed out")
-	ErrNotImplemented        = errors.New("not implemented")
-	ErrNotSupported          = errors.New("not supported")
-	ErrRange                 = errors.New("out of range")
+	// ErrDivisionByZero identifies an arithmetic division with a zero divisor.
+	ErrDivisionByZero = errors.New("division by zero")
+	// ErrModuloByZero identifies an arithmetic modulo operation with a zero divisor.
+	ErrModuloByZero   = errors.New("modulo by zero")
+	ErrNotFound       = errors.New("not found")
+	ErrNotUnique      = errors.New("not unique")
+	ErrUnexpected     = errors.New("unexpected error")
+	ErrTimeout        = errors.New("operation timed out")
+	ErrNotImplemented = errors.New("not implemented")
+	ErrNotSupported   = errors.New("not supported")
+	ErrRange          = errors.New("out of range")
 )
 
 const (
@@ -51,14 +57,6 @@ func TypeError(actual Type, expected ...Type) error {
 	return Error(ErrInvalidType, fmt.Sprintf(typeErrorTemplate, expectedStr, typeString(actual)))
 }
 
-func typeString(t Type) string {
-	if t == nil {
-		return "Unknown"
-	}
-
-	return t.String()
-}
-
 // Error creates a new error by wrapping the provided error with the given message.
 // The resulting error will include both the original error and the additional message, providing more context about the error.
 func Error(err error, msg string) error {
@@ -67,6 +65,45 @@ func Error(err error, msg string) error {
 
 // Errorf creates a new error by wrapping the provided error with a formatted message.
 // The resulting error will include both the original error and the formatted message, providing more context about the error.
-func Errorf(err error, format string, args ...interface{}) error {
+func Errorf(err error, format string, args ...any) error {
 	return fmt.Errorf("%w: %s", err, fmt.Sprintf(format, args...))
+}
+
+func binaryOperatorTypeError(op operator.Binary, left, right Value) error {
+	return Error(
+		ErrInvalidOperation,
+		operator.CannotApply(op, TypeName(TypeOf(left)), TypeName(TypeOf(right))),
+	)
+}
+
+func unaryOperatorTypeError(op operator.Unary, value Value) error {
+	return Error(
+		ErrInvalidOperation,
+		operator.CannotApplyUnary(op, TypeName(TypeOf(value))),
+	)
+}
+
+func incompatibleComparisonError(left, right Value) error {
+	return Errorf(
+		ErrInvalidOperation,
+		"comparison cannot be applied to %s and %s",
+		TypeName(TypeOf(left)),
+		TypeName(TypeOf(right)),
+	)
+}
+
+func divisionByZeroError() error {
+	return fmt.Errorf("%w: %w", ErrInvalidOperation, ErrDivisionByZero)
+}
+
+func moduloByZeroError() error {
+	return fmt.Errorf("%w: %w", ErrInvalidOperation, ErrModuloByZero)
+}
+
+func typeString(t Type) string {
+	if t == nil {
+		return "Unknown"
+	}
+
+	return t.String()
 }

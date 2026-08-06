@@ -12,3 +12,15 @@ type execInstruction struct {
 	InlineShapeID uint64
 	InlineSlot    int
 }
+
+// isBackedge resolves jump metadata only for a branch that was taken, keeping
+// the instruction representation compact for native straight-line execution.
+func (i *execInstruction) isBackedge(pc int) bool {
+	if i.Opcode == bytecode.OpMatchLoadPropertyConst {
+		return i.InlineSlot <= pc
+	}
+
+	targetIndex := bytecode.JumpTargetOperandIndex(i.Opcode)
+
+	return targetIndex >= 0 && int(i.Operands[targetIndex]) <= pc
+}

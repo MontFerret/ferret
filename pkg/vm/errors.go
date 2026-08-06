@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	rtdiagnostics "github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
 )
 
@@ -62,8 +63,8 @@ var (
 	ErrInsufficientRegisters = rtdiagnostics.ErrInsufficientRegisters
 	ErrUnresolvedFunction    = rtdiagnostics.ErrUnresolvedFunction
 	ErrInvalidFunctionName   = rtdiagnostics.ErrInvalidFunctionName
-	ErrDivisionByZero        = rtdiagnostics.ErrDivisionByZero
-	ErrModuloByZero          = rtdiagnostics.ErrModuloByZero
+	ErrDivisionByZero        = runtime.ErrDivisionByZero
+	ErrModuloByZero          = runtime.ErrModuloByZero
 	ErrPoolExhausted         = errors.New("pool exhausted")
 	ErrPoolClosed            = errors.New("pool closed")
 )

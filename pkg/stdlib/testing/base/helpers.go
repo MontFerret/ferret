@@ -35,8 +35,8 @@ func EqualityAssertion(op CompareOperator) Assertion {
 			Min: 2,
 			Max: 3,
 		},
-		Fn: func(_ context.Context, args []runtime.Value) (bool, error) {
-			return op.Compare(args)
+		Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
+			return op.Compare(ctx, args)
 		},
 	}
 }

@@ -282,13 +282,13 @@ func TestToAPIsLeaveOperationalErrorsUnmarked(t *testing.T) {
 	}
 }
 
-func TestEqualCheckedFiltersConversionErrorsByTarget(t *testing.T) {
+func TestEqualValuesDoesNotInspectOpaqueDurationLists(t *testing.T) {
 	t.Parallel()
 
 	duration := NewDuration(time.Second)
 	durationCause := errors.New("duration conversion failed")
 	durationErr := newConversionError(TypeDuration, durationCause)
-	equal, err := EqualChecked(
+	equal, err := EqualValues(
 		t.Context(),
 		duration,
 		newConversionErrorList(durationErr, nil),
@@ -299,21 +299,26 @@ func TestEqualCheckedFiltersConversionErrorsByTarget(t *testing.T) {
 
 	intCause := errors.New("integer conversion failed")
 	intErr := newConversionError(TypeInt, intCause)
-	_, err = EqualChecked(
+	equal, err = EqualValues(
 		t.Context(),
 		duration,
 		newConversionErrorList(intErr, nil),
 	)
-	if !errors.Is(err, intCause) {
-		t.Fatalf("non-Duration conversion error = %v, want %v", err, intCause)
+	if err != nil || equal {
+		t.Fatalf("opaque non-Duration conversion equality = %v, %v; want false, nil", equal, err)
 	}
 
-	_, err = EqualChecked(
+	equal, err = EqualValues(
 		context.Background(),
 		duration,
 		newConversionErrorList(context.Canceled, nil),
 	)
-	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("cancellation error = %v, want context.Canceled", err)
+	if err != nil || equal {
+		t.Fatalf("opaque stored cancellation equality = %v, %v; want false, nil", equal, err)
 	}
+}
+
+func isConversionErrorTo(err error, target Type) bool {
+	var conversionErr *conversionError
+	return errors.As(err, &conversionErr) && conversionErr.targets(target)
 }

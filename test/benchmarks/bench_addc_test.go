@@ -38,14 +38,19 @@ FOR i IN 1..1000
 
 	durationLiteralQuery = `FOR i IN 1..1000 RETURN 1.5s`
 
-	durationCoerciveAddQuery = `
+	durationExplicitAddQuery = `
 FOR i IN 1..1000
-  RETURN @base + "2ms"
+  RETURN @base + TO_DURATION("2ms")
 `
 
-	durationCoerciveCompareQuery = `
+	durationExplicitCompareQuery = `
 FOR i IN 1..1000
-  RETURN @base > 500
+  RETURN @base > TO_DURATION(500)
+`
+
+	durationStrictCompareQuery = `
+FOR i IN 1..1000
+  RETURN @base > 500ms
 `
 
 	numericEqualityQuery = `
@@ -53,9 +58,14 @@ FOR i IN 1..1000
   RETURN @base == 1
 `
 
-	durationCoerciveEqualityQuery = `
+	durationExplicitEqualityQuery = `
 FOR i IN 1..1000
-  RETURN @base == "1s"
+  RETURN @base == TO_DURATION("1s")
+`
+
+	durationStrictEqualityQuery = `
+FOR i IN 1..1000
+  RETURN @base == 1s
 `
 
 	equalityJumpConstQuery = `
@@ -66,6 +76,11 @@ FOR i IN 1..1000
 	equalityJumpRegisterQuery = `
 FOR i IN 1..1000
   RETURN @left == @right ? i : 0
+`
+
+	quantifiedComparisonQuery = `
+FOR i IN 1..1000
+  RETURN @values ANY > @threshold
 `
 
 	dateTimeAddQuery = `
@@ -148,20 +163,28 @@ func BenchmarkDurationLiteral_O1(b *testing.B) {
 	RunBenchmarkO1(b, durationLiteralQuery)
 }
 
-func BenchmarkDurationCoerciveAdd_O0(b *testing.B) {
-	RunBenchmarkO0(b, durationCoerciveAddQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitAdd_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationExplicitAddQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationCoerciveAdd_O1(b *testing.B) {
-	RunBenchmarkO1(b, durationCoerciveAddQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitAdd_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationExplicitAddQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationCoerciveCompare_O0(b *testing.B) {
-	RunBenchmarkO0(b, durationCoerciveCompareQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitCompare_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationExplicitCompareQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationCoerciveCompare_O1(b *testing.B) {
-	RunBenchmarkO1(b, durationCoerciveCompareQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitCompare_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationExplicitCompareQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationStrictCompare_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationStrictCompareQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationStrictCompare_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationStrictCompareQuery, WithParam("base", time.Second))
 }
 
 func BenchmarkNumericEquality_O0(b *testing.B) {
@@ -172,12 +195,20 @@ func BenchmarkNumericEquality_O1(b *testing.B) {
 	RunBenchmarkO1(b, numericEqualityQuery, WithParam("base", 1))
 }
 
-func BenchmarkDurationCoerciveEquality_O0(b *testing.B) {
-	RunBenchmarkO0(b, durationCoerciveEqualityQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitEquality_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationExplicitEqualityQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationCoerciveEquality_O1(b *testing.B) {
-	RunBenchmarkO1(b, durationCoerciveEqualityQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitEquality_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationExplicitEqualityQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationStrictEquality_O0(b *testing.B) {
+	RunBenchmarkO0(b, durationStrictEqualityQuery, WithParam("base", time.Second))
+}
+
+func BenchmarkDurationStrictEquality_O1(b *testing.B) {
+	RunBenchmarkO1(b, durationStrictEqualityQuery, WithParam("base", time.Second))
 }
 
 func BenchmarkEqualityJumpConst_O0(b *testing.B) {
@@ -194,6 +225,14 @@ func BenchmarkEqualityJumpRegister_O0(b *testing.B) {
 
 func BenchmarkEqualityJumpRegister_O1(b *testing.B) {
 	RunBenchmarkO1(b, equalityJumpRegisterQuery, WithParam("left", 1), WithParam("right", 1))
+}
+
+func BenchmarkQuantifiedComparison_O0(b *testing.B) {
+	RunBenchmarkO0(b, quantifiedComparisonQuery, WithParam("values", []any{1, 2, 3, 4, 5, 6, 7, 8}), WithParam("threshold", 7))
+}
+
+func BenchmarkQuantifiedComparison_O1(b *testing.B) {
+	RunBenchmarkO1(b, quantifiedComparisonQuery, WithParam("values", []any{1, 2, 3, 4, 5, 6, 7, 8}), WithParam("threshold", 7))
 }
 
 func BenchmarkDateTimeAdd_O0(b *testing.B) {

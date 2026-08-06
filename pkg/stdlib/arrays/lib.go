@@ -50,6 +50,7 @@ func ToUniqueList(ctx context.Context, list runtime.List) (runtime.List, error) 
 	seen := valueset.New(0)
 
 	return list.Filter(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		return runtime.Boolean(seen.Add(value)), nil
+		added, err := seen.Add(ctx, value)
+		return runtime.Boolean(added), err
 	})
 }

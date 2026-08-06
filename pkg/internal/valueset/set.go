@@ -1,6 +1,10 @@
 package valueset
 
-import "github.com/MontFerret/ferret/v2/pkg/runtime"
+import (
+	"context"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+)
 
 // Set tracks distinct runtime values using Ferret equality semantics.
 // Hashes select candidate buckets; equality always confirms membership.
@@ -21,7 +25,7 @@ func New(capacity int) *Set {
 	}
 }
 
-func (s *Set) Add(value runtime.Value) bool {
+func (s *Set) Add(ctx context.Context, value runtime.Value) (bool, error) {
 	hash := value.Hash()
 	first, exists := s.firstByHash[hash]
 
@@ -29,16 +33,26 @@ func (s *Set) Add(value runtime.Value) bool {
 		s.firstByHash[hash] = value
 		s.count++
 
-		return true
+		return true, nil
 	}
 
-	if runtime.CompareValues(first, value) == 0 {
-		return false
+	equal, err := runtime.EqualValues(ctx, first, value)
+	if err != nil {
+		return false, err
+	}
+
+	if equal {
+		return false, nil
 	}
 
 	for _, existing := range s.collisions[hash] {
-		if runtime.CompareValues(existing, value) == 0 {
-			return false
+		equal, err = runtime.EqualValues(ctx, existing, value)
+		if err != nil {
+			return false, err
+		}
+
+		if equal {
+			return false, nil
 		}
 	}
 
@@ -49,7 +63,7 @@ func (s *Set) Add(value runtime.Value) bool {
 	s.collisions[hash] = append(s.collisions[hash], value)
 	s.count++
 
-	return true
+	return true, nil
 }
 
 func (s *Set) Len() int {

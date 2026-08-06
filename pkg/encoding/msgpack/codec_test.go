@@ -176,7 +176,8 @@ func mustEncodeRaw(t *testing.T, encode func(*vmmsgpack.Encoder) error) []byte {
 func assertValueEqual(t *testing.T, got, expected runtime.Value) {
 	t.Helper()
 
-	if runtime.CompareValues(got, expected) != 0 {
+	equal, err := runtime.EqualValues(t.Context(), got, expected)
+	if err != nil || !equal {
 		t.Fatalf("expected %s, got %s", expected, got)
 	}
 }

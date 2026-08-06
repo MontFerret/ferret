@@ -10,6 +10,7 @@ import (
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func (c *RecoveryCompiler) CompileDurationExpression(expr fql.IExpressionContext) bytecode.Operand {
@@ -74,13 +75,12 @@ func (c *RecoveryCompiler) validateDurationOperand(node antlr.ParserRuleContext,
 		return bytecode.NoopOperand
 	}
 
-	dst := c.ctx.Function.Registers.Allocate()
+	dst := c.convertDurationOperand(node, operand)
 	zero := c.facts.LoadConstant(runtime.ZeroDuration)
 	valid := c.ctx.Program.Emitter.NewLabel("scheduling", "duration", "valid")
 	isNegative := c.ctx.Function.Registers.Allocate()
 	failure := c.ctx.Function.Symbols.AddConstant(runtime.NewString("wait duration must not be negative"))
 	c.ctx.Program.Emitter.WithSpan(parserd.SpanFromRuleContext(node), func() {
-		c.ctx.Program.Emitter.EmitABC(bytecode.OpAdd, dst, operand, zero)
 		c.ctx.Program.Emitter.EmitLt(isNegative, dst, zero)
 		c.ctx.Program.Emitter.EmitJumpIfFalse(isNegative, valid)
 		c.ctx.Program.Emitter.EmitA(bytecode.OpFail, failure)
@@ -88,6 +88,28 @@ func (c *RecoveryCompiler) validateDurationOperand(node antlr.ParserRuleContext,
 	c.ctx.Program.Emitter.MarkLabel(valid)
 	c.ctx.Function.Types.Set(dst, core.TypeDuration)
 	c.ctx.Function.Types.Set(isNegative, core.TypeBool)
+
+	return dst
+}
+
+func (c *RecoveryCompiler) convertDurationOperand(node antlr.ParserRuleContext, operand bytecode.Operand) bytecode.Operand {
+	if c.facts.OperandType(operand) == core.TypeDuration {
+		return operand
+	}
+
+	span := parserd.SpanFromRuleContext(node)
+	dst := c.ctx.Function.Registers.Allocate()
+	bindingID := c.ctx.Program.HostFunctions.Bind(runtimeToDuration, 1)
+	c.ctx.Program.Emitter.WithSpan(span, func() {
+		c.ctx.Program.Emitter.EmitLoadConst(dst, c.ctx.Function.Symbols.AddConstant(runtime.NewInt(bindingID)))
+		c.ctx.Program.Emitter.EmitAsWithCallArgumentSpans(
+			bytecode.OpHCall,
+			dst,
+			core.RegisterSequence{operand},
+			[]source.Span{span},
+		)
+	})
+	c.ctx.Function.Types.Set(dst, core.TypeDuration)
 
 	return dst
 }

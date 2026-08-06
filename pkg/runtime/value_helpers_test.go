@@ -95,7 +95,7 @@ func (t *CustomValue) String() string {
 	return ""
 }
 
-func (t *CustomValue) Unwrap() interface{} {
+func (t *CustomValue) Unwrap() any {
 	return t
 }
 
@@ -113,7 +113,7 @@ func TestHelpers(t *testing.T) {
 			Convey("It should parse values", func() {
 				inputs := []struct {
 					Parsed runtime.Value
-					Raw    interface{}
+					Raw    any
 				}{
 					{Parsed: runtime.NewInt(1), Raw: int(1)},
 					{Parsed: runtime.NewInt(1), Raw: int8(1)},
@@ -390,14 +390,14 @@ func TestHelpers(t *testing.T) {
 					So(err, ShouldBeNil)
 					expected := pairs[1]
 
-					So(actual.Compare(expected), ShouldEqual, 0)
+					So(compareValues(actual, expected), ShouldEqual, 0)
 				}
 			})
 		})
 
 		Convey("Unmarshal", func() {
 			Convey("Should deserialize object", func() {
-				input := map[string]interface{}{
+				input := map[string]any{
 					"foo": []string{
 						"bar",
 						"qaz",
@@ -688,17 +688,17 @@ func assertRuntimeValueEqual(t *testing.T, actual, expected runtime.Value) {
 	switch expectedValue := expected.(type) {
 	case *runtime.Array:
 		actualValue := actual.(*runtime.Array)
-		if actualValue.Compare(expectedValue) != 0 {
+		if compareValues(actualValue, expectedValue) != 0 {
 			t.Fatalf("unexpected array value: got %s, want %s", actualValue, expectedValue)
 		}
 	case *runtime.Object:
 		actualValue := actual.(*runtime.Object)
-		if actualValue.Compare(expectedValue) != 0 {
+		if compareValues(actualValue, expectedValue) != 0 {
 			t.Fatalf("unexpected object value: got %s, want %s", actualValue, expectedValue)
 		}
 	case runtime.DateTime:
 		actualValue := actual.(runtime.DateTime)
-		if actualValue.Compare(expectedValue) != 0 {
+		if compareValues(actualValue, expectedValue) != 0 {
 			t.Fatalf("unexpected datetime value: got %s, want %s", actualValue, expectedValue)
 		}
 	case runtime.Binary:

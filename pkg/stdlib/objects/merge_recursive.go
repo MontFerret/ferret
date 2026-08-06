@@ -47,7 +47,12 @@ func MergeRecursive(ctx context.Context, args ...runtime.Value) (runtime.Value, 
 
 func merge(ctx context.Context, dst, src runtime.Map) error {
 	// If both values are equal, no need to merge
-	if runtime.CompareValues(src, dst) == 0 {
+	equal, err := runtime.EqualValues(ctx, src, dst)
+	if err != nil {
+		return err
+	}
+
+	if equal {
 		return nil
 	}
 

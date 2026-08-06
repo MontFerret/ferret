@@ -1,8 +1,11 @@
 package runtime
 
 import (
+	"context"
 	"encoding/binary"
+	"errors"
 	"hash/fnv"
+	"io"
 	"strconv"
 )
 
@@ -20,7 +23,7 @@ func NewInt64(input int64) Int {
 	return Int(input)
 }
 
-func ParseInt(input interface{}) (Int, error) {
+func ParseInt(input any) (Int, error) {
 	if IsNil(input) {
 		return ZeroInt, nil
 	}
@@ -53,6 +56,103 @@ func ParseInt(input interface{}) (Int, error) {
 	}
 }
 
+func ToInt(ctx context.Context, input Value) (Int, error) {
+	switch val := input.(type) {
+	case Int:
+		return val, nil
+	case Float:
+		return Int(val), nil
+	case String:
+		i, err := strconv.ParseInt(string(val), 10, 64)
+
+		if err != nil {
+			return ZeroInt, newConversionError(TypeInt, err)
+		}
+
+		return Int(i), nil
+	case Boolean:
+		if val {
+			return Int(1), nil
+		}
+
+		return Int(0), nil
+	case DateTime:
+		dt := input.(DateTime)
+
+		if dt.IsZero() {
+			return ZeroInt, nil
+		}
+
+		return NewInt(int(dt.Unix())), nil
+	case List:
+		iterator, err := val.Iterate(ctx)
+
+		if err != nil {
+			return ZeroInt, err
+		}
+
+		res := ZeroInt
+
+		for {
+			item, _, err := iterator.Next(ctx)
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			if errors.Is(err, ErrTimeout) {
+				break
+			}
+
+			if err != nil {
+				continue
+			}
+
+			i, err := ToInt(ctx, item)
+
+			if err != nil {
+				continue
+			}
+
+			res += i
+		}
+
+		return res, nil
+	default:
+		return ZeroInt, newConversionError(TypeInt, TypeErrorOf(input, TypeInt))
+	}
+}
+
+func ToIntSafe(ctx context.Context, input Value) Int {
+	result, err := ToInt(ctx, input)
+
+	if err != nil {
+		return ZeroInt
+	}
+
+	if result > 0 {
+		return result
+	}
+
+	return ZeroInt
+}
+
+// ToIntDefault attempts to convert an arbitrary Value into an Int.
+// If the conversion fails or if the resulting Int is not greater than zero, it returns the provided defaultValue.
+// This function is useful for safely converting values to Int while providing a fallback option in case of errors or non-positive results.
+func ToIntDefault(ctx context.Context, input Value, defaultValue Int) (Int, error) {
+	result, err := ToInt(ctx, input)
+
+	if err != nil {
+		return defaultValue, err
+	}
+
+	if result > 0 {
+		return result, nil
+	}
+
+	return defaultValue, nil
+}
+
 func (i Int) Type() Type {
 	return TypeInt
 }
@@ -75,37 +175,6 @@ func (i Int) Hash() uint64 {
 
 func (i Int) Copy() Value {
 	return i
-}
-
-func (i Int) Compare(other Value) int {
-	switch otherVal := other.(type) {
-	case Int:
-		if i == otherVal {
-			return 0
-		}
-
-		if i < otherVal {
-			return -1
-		}
-
-		return +1
-
-	case Float:
-		f := Float(i)
-
-		if f == otherVal {
-			return 0
-		}
-
-		if f < otherVal {
-			return -1
-		}
-
-		return +1
-
-	default:
-		return CompareTypes(i, other)
-	}
 }
 
 func (i Int) Unwrap() any {

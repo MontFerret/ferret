@@ -7,11 +7,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// KeyCollector is a structure used to collect and group unique runtime values by their string keys.
-// It collects only unique keys without values and sorts them in ascending order when iterated.
+// KeyCollector collects semantically unique keys and sorts them in ascending order when iterated.
 type KeyCollector struct {
 	*runtime.Box[runtime.List]
-	grouping map[string]runtime.Value
+	grouping groupIndex[runtime.Value]
 	sorted   bool
 }
 
@@ -20,7 +19,6 @@ func NewKeyCollector() Transformer {
 		Box: &runtime.Box[runtime.List]{
 			Value: runtime.NewArray(8),
 		},
-		grouping: make(map[string]runtime.Value),
 	}
 }
 
@@ -37,34 +35,28 @@ func (c *KeyCollector) Iterate(ctx context.Context) (runtime.Iterator, error) {
 }
 
 func (c *KeyCollector) Set(ctx context.Context, key, _ runtime.Value) error {
-	k, err := Stringify(ctx, key)
-
+	_, exists, err := c.grouping.loadOrStore(ctx, key, runtime.None)
 	if err != nil {
 		return err
 	}
 
-	_, exists := c.grouping[k]
-
-	if !exists {
-		c.grouping[k] = runtime.None
-
-		return c.Value.Append(ctx, key)
+	if exists {
+		return nil
 	}
 
-	return nil
+	c.sorted = false
+
+	return c.Value.Append(ctx, key)
 }
 
 func (c *KeyCollector) Get(ctx context.Context, key runtime.Value) (runtime.Value, error) {
-	k, err := Stringify(ctx, key)
-
+	v, ok, err := c.grouping.get(ctx, key)
 	if err != nil {
 		return nil, err
 	}
 
-	v, ok := c.grouping[k]
-
 	if !ok {
-		return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", k)
+		return runtime.None, collectorKeyNotFoundValue(ctx, key)
 	}
 
 	return v, nil
@@ -77,7 +69,7 @@ func (c *KeyCollector) Length(ctx context.Context) (runtime.Int, error) {
 func (c *KeyCollector) Close() error {
 	val := c.Value
 	c.Value = nil
-	c.grouping = nil
+	c.grouping = groupIndex[runtime.Value]{}
 
 	if closer, ok := val.(io.Closer); ok {
 		return closer.Close()

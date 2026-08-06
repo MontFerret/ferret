@@ -2,6 +2,7 @@ package vm
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -16,6 +17,34 @@ func TestRunTreatsSourcePointsAsNoopWithoutObserver(t *testing.T) {
 
 	if got := mustResultRootAndClose(t, result); got != runtime.NewInt(1) {
 		t.Fatalf("unexpected result: %v", got)
+	}
+}
+
+func TestSourcePointsDoNotPollCancellationWithoutObserver(t *testing.T) {
+	probe := &cancellationProbeValue{}
+	program := newTestProgram(
+		3,
+		[]runtime.Value{runtime.NewString("prefix-"), probe},
+		bytecode.NewInstruction(bytecode.OpSourcePoint, bytecode.Operand(1)),
+		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+		bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(1)),
+		bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(2), bytecode.NewRegister(0), bytecode.NewRegister(1)),
+		bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
+	)
+	instance := mustNewVM(t, program)
+	t.Cleanup(func() { _ = instance.Close() })
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	result, err := instance.Run(ctx, NewDefaultEnvironment())
+	if result != nil {
+		_ = result.Close()
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("run error = %v, want context.Canceled", err)
+	}
+	if probe.stringCalls != 1 {
+		t.Fatalf("host string calls = %d, want 1", probe.stringCalls)
 	}
 }
 
@@ -117,6 +146,36 @@ func TestNewDebugExecutionObservesSourcePointsWithoutMutatingPlan(t *testing.T) 
 	}
 	if event.Reason != DebugStopCompleted {
 		t.Fatalf("unexpected completion event: %#v", event)
+	}
+}
+
+func TestDebugExecutionChecksCancellationAtSourcePointSafepoint(t *testing.T) {
+	instance := mustNewVM(t, sourcePointTestProgram())
+	execution, err := NewDebugExecution(instance, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = execution.Close() })
+
+	event, err := execution.Start(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != DebugStopEntry {
+		t.Fatalf("start reason = %v, want DebugStopEntry", event.Reason)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	event, err = execution.Resume(ctx, DebugResumeContinue, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != DebugStopRuntimeError {
+		t.Fatalf("resume reason = %v, want DebugStopRuntimeError", event.Reason)
+	}
+	if !errors.Is(event.Error, context.Canceled) {
+		t.Fatalf("resume error = %v, want context.Canceled", event.Error)
 	}
 }
 

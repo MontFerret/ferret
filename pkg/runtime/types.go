@@ -105,6 +105,10 @@ var (
 		_, ok := v.(Measurable)
 		return ok
 	})
+	TypeEquatable = newBuiltinType("Equatable", func(v Value) bool {
+		_, ok := v.(Equatable)
+		return ok
+	})
 	TypeComparable = newBuiltinType("Comparable", func(v Value) bool {
 		_, ok := v.(Comparable)
 		return ok

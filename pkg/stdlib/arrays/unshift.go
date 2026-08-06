@@ -66,7 +66,12 @@ func unshift3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Valu
 	_ = result.Append(ctx, arg2)
 
 	err = list.ForEach(ctx, func(ctx context.Context, el runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		if runtime.CompareValues(el, arg2) != 0 {
+		equal, err := runtime.EqualValues(ctx, el, arg2)
+		if err != nil {
+			return false, err
+		}
+
+		if !equal {
 			_ = result.Append(ctx, el)
 		}
 

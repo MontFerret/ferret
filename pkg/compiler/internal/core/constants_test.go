@@ -38,10 +38,28 @@ func TestConstantPoolPreservesScalarTypeWithinHashBucket(t *testing.T) {
 	floating := runtime.NewFloat(1)
 	integerOperand := pool.Add(integer)
 
+	if integer.Hash() != floating.Hash() {
+		t.Fatal("equal numeric values must have equal hashes")
+	}
+
 	// Int and Float compare equal numerically, but constants retain their runtime type.
-	pool.index[floating.Hash()] = constantBucket{first: integerOperand.Constant()}
 	floatOperand := pool.Add(floating)
 	if floatOperand == integerOperand {
 		t.Fatal("equal numeric values with distinct runtime types were deduplicated")
+	}
+}
+
+func TestConstantPoolUsesStrictDurationEquality(t *testing.T) {
+	pool := NewConstantPool()
+	stringOperand := pool.Add(runtime.NewString("1s"))
+	intOperand := pool.Add(runtime.NewInt(1000))
+	durationOperand := pool.Add(runtime.NewDuration(time.Second))
+	equivalentDurationOperand := pool.Add(runtime.NewDuration(1000 * time.Millisecond))
+
+	if stringOperand == intOperand || stringOperand == durationOperand || intOperand == durationOperand {
+		t.Fatal("cross-type Duration representations were deduplicated")
+	}
+	if durationOperand != equivalentDurationOperand {
+		t.Fatal("equivalent native Duration constants were not deduplicated")
 	}
 }

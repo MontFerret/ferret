@@ -24,11 +24,11 @@ func NewDateTime(time time.Time) DateTime {
 	return DateTime{time}
 }
 
-func ParseDateTime(input interface{}) (DateTime, error) {
+func ParseDateTime(input any) (DateTime, error) {
 	return ParseDateTimeWith(input, DefaultTimeLayout)
 }
 
-func ParseDateTimeWith(input interface{}, layout string) (DateTime, error) {
+func ParseDateTimeWith(input any, layout string) (DateTime, error) {
 	switch value := input.(type) {
 	case string:
 		t, err := time.Parse(layout, value)
@@ -83,7 +83,7 @@ func ToDateTime(_ context.Context, input Value) (DateTime, error) {
 	}
 }
 
-func MustParseDateTime(input interface{}) DateTime {
+func MustParseDateTime(input any) DateTime {
 	dt, err := ParseDateTime(input)
 
 	if err != nil {
@@ -124,22 +124,4 @@ func (dt DateTime) Hash() uint64 {
 
 func (dt DateTime) Copy() Value {
 	return NewDateTime(dt.Time)
-}
-
-func (dt DateTime) Compare(other Value) int {
-	otherDt, ok := other.(DateTime)
-
-	if !ok {
-		return CompareTypes(dt, other)
-	}
-
-	if dt.After(otherDt.Time) {
-		return 1
-	}
-
-	if dt.Before(otherDt.Time) {
-		return -1
-	}
-
-	return 0
 }

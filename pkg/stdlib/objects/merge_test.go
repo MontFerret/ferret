@@ -15,19 +15,19 @@ func TestMerge(t *testing.T) {
 		obj, err := objects.Merge(context.Background())
 
 		So(err, ShouldBeError)
-		So(runtime.CompareValues(obj, runtime.None), ShouldEqual, 0)
+		So(compareValues(obj, runtime.None), ShouldEqual, 0)
 	})
 
 	Convey("When wrong type of arguments", t, func() {
 		obj, err := objects.Merge(context.Background(), runtime.NewInt(0))
 
 		So(err, ShouldBeError)
-		So(runtime.CompareValues(obj, runtime.None), ShouldEqual, 0)
+		So(compareValues(obj, runtime.None), ShouldEqual, 0)
 
 		obj, err = objects.Merge(context.Background(), runtime.NewObject(), runtime.NewInt(0))
 
 		So(err, ShouldBeError)
-		So(runtime.CompareValues(obj, runtime.None), ShouldEqual, 0)
+		So(compareValues(obj, runtime.None), ShouldEqual, 0)
 	})
 
 	Convey("When array contains non-objects", t, func() {
@@ -35,7 +35,7 @@ func TestMerge(t *testing.T) {
 		obj, err := objects.Merge(context.Background(), arr)
 
 		So(err, ShouldBeError)
-		So(runtime.CompareValues(obj, runtime.None), ShouldEqual, 0)
+		So(compareValues(obj, runtime.None), ShouldEqual, 0)
 	})
 
 	Convey("Merged object should be independent of source objects", t, func() {
@@ -62,14 +62,14 @@ func TestMerge(t *testing.T) {
 		merged, err := objects.Merge(context.Background(), obj1, obj2)
 
 		So(err, ShouldBeNil)
-		So(runtime.CompareValues(merged, result), ShouldEqual, 0)
+		So(compareValues(merged, result), ShouldEqual, 0)
 
 		// Modify original objects to ensure independence
 		obj1.Set(context.Background(), runtime.NewString("newProp"), runtime.NewString("newVal"))
 		obj2.Set(context.Background(), runtime.NewString("newProp2"), runtime.NewString("newVal2"))
 
 		// Merged object should remain unchanged
-		So(runtime.CompareValues(merged, result), ShouldEqual, 0)
+		So(compareValues(merged, result), ShouldEqual, 0)
 	})
 }
 
@@ -91,7 +91,7 @@ func TestMergeObjects(t *testing.T) {
 		merged, err := objects.Merge(context.Background(), obj1)
 
 		So(err, ShouldBeNil)
-		So(runtime.CompareValues(merged, result), ShouldEqual, 0)
+		So(compareValues(merged, result), ShouldEqual, 0)
 	})
 
 	Convey("Merge two objects", t, func() {
@@ -118,7 +118,7 @@ func TestMergeObjects(t *testing.T) {
 		merged, err := objects.Merge(context.Background(), obj1, obj2)
 
 		So(err, ShouldBeNil)
-		So(runtime.CompareValues(merged, result), ShouldEqual, 0)
+		So(compareValues(merged, result), ShouldEqual, 0)
 	})
 
 	Convey("When keys are repeated", t, func() {
@@ -145,7 +145,7 @@ func TestMergeObjects(t *testing.T) {
 		merged, err := objects.Merge(context.Background(), obj1, obj2)
 
 		So(err, ShouldBeNil)
-		So(runtime.CompareValues(merged, result), ShouldEqual, 0)
+		So(compareValues(merged, result), ShouldEqual, 0)
 	})
 
 	Convey("Merge empty objects", t, func() {
@@ -156,7 +156,7 @@ func TestMergeObjects(t *testing.T) {
 		merged, err := objects.Merge(context.Background(), obj1, obj2)
 
 		So(err, ShouldBeNil)
-		So(runtime.CompareValues(merged, result), ShouldEqual, 0)
+		So(compareValues(merged, result), ShouldEqual, 0)
 	})
 
 	Convey("Merge objects with complex values", t, func() {
@@ -193,7 +193,7 @@ func TestMergeObjects(t *testing.T) {
 		objVal, _ := mergedObj.Get(context.Background(), runtime.NewString("object"))
 		objResult := objVal.(*runtime.Object)
 		nestedVal, _ := objResult.Get(context.Background(), runtime.NewString("nested"))
-		So(runtime.CompareValues(nestedVal, runtime.NewString("value")), ShouldEqual, 0)
+		So(compareValues(nestedVal, runtime.NewString("value")), ShouldEqual, 0)
 
 		// Verify independence - modify original array
 		arr.Append(context.Background(), runtime.NewInt(3))
@@ -230,7 +230,7 @@ func TestMergeArray(t *testing.T) {
 		merged, err := objects.Merge(context.Background(), objArr)
 
 		So(err, ShouldBeNil)
-		So(runtime.CompareValues(merged, result), ShouldEqual, 0)
+		So(compareValues(merged, result), ShouldEqual, 0)
 	})
 
 	Convey("Merge empty array", t, func() {
@@ -240,7 +240,7 @@ func TestMergeArray(t *testing.T) {
 		merged, err := objects.Merge(context.Background(), objArr)
 
 		So(err, ShouldBeNil)
-		So(runtime.CompareValues(merged, result), ShouldEqual, 0)
+		So(compareValues(merged, result), ShouldEqual, 0)
 	})
 
 	Convey("When there is not object element inside the array", t, func() {
@@ -252,7 +252,7 @@ func TestMergeArray(t *testing.T) {
 		obj, err := objects.Merge(context.Background(), objArr)
 
 		So(err, ShouldBeError)
-		So(runtime.CompareValues(obj, runtime.None), ShouldEqual, 0)
+		So(compareValues(obj, runtime.None), ShouldEqual, 0)
 	})
 
 	Convey("Merge with empty objects", t, func() {
@@ -269,7 +269,7 @@ func TestMergeArray(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		val, _ := mergedObj.Get(context.Background(), runtime.NewString("key"))
-		So(runtime.CompareValues(val, runtime.NewString("value")), ShouldEqual, 0)
+		So(compareValues(val, runtime.NewString("value")), ShouldEqual, 0)
 	})
 
 	Convey("MergeRecursive with identical objects", t, func() {
@@ -282,6 +282,6 @@ func TestMergeArray(t *testing.T) {
 		merged, err := objects.MergeRecursive(context.Background(), obj, obj)
 
 		So(err, ShouldBeNil)
-		So(runtime.CompareValues(merged, obj), ShouldEqual, 0)
+		So(compareValues(merged, obj), ShouldEqual, 0)
 	})
 }

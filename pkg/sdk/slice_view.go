@@ -3,7 +3,6 @@ package sdk
 import (
 	"context"
 	"fmt"
-	"sort"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -124,7 +123,12 @@ func (view *SliceView[T]) Remove(ctx context.Context, value runtime.Value) error
 			return fmt.Errorf("slice index %d: %w", index, err)
 		}
 
-		if runtime.CompareValues(value, normalizeRuntimeValue(encoded)) == 0 {
+		equal, err := runtime.EqualValues(ctx, value, normalizeRuntimeValue(encoded))
+		if err != nil {
+			return fmt.Errorf("slice index %d: compare value: %w", index, err)
+		}
+
+		if equal {
 			_, err = view.RemoveAt(ctx, runtime.Int(index))
 			return err
 		}
@@ -180,7 +184,7 @@ func (view *SliceView[T]) sort(ctx context.Context, ascending bool) error {
 
 	data := view.Target()
 	encoded := make([]runtime.Value, len(data))
-	order := make([]int, len(data))
+	order := make([]runtime.Value, len(data))
 
 	for index, item := range data {
 		value, err := view.codec.Encode(ctx, item)
@@ -189,22 +193,41 @@ func (view *SliceView[T]) sort(ctx context.Context, ascending bool) error {
 		}
 
 		encoded[index] = normalizeRuntimeValue(value)
-		order[index] = index
+		order[index] = runtime.NewInt(index)
 	}
 
-	sort.SliceStable(order, func(i, j int) bool {
-		comparison := runtime.CompareValues(encoded[order[i]], encoded[order[j]])
-		if ascending {
-			return comparison < 0
+	err := runtime.SortSliceWith(ctx, order, func(
+		ctx context.Context,
+		first runtime.Value,
+		second runtime.Value,
+	) (runtime.Ordering, error) {
+		firstIndex := first.(runtime.Int)
+		secondIndex := second.(runtime.Int)
+		comparison, err := runtime.CompareValues(ctx, encoded[firstIndex], encoded[secondIndex])
+		if err != nil {
+			return runtime.Equal, fmt.Errorf(
+				"compare slice indices %d and %d: %w",
+				firstIndex,
+				secondIndex,
+				err,
+			)
 		}
 
-		return comparison > 0
+		if ascending {
+			return comparison, nil
+		}
+
+		return -comparison, nil
 	})
+	if err != nil {
+		return err
+	}
 
 	sorted := make([]T, len(data))
 	for index, original := range order {
-		sorted[index] = data[original]
+		sorted[index] = data[original.(runtime.Int)]
 	}
+
 	copy(data, sorted)
 	view.setTarget(data)
 

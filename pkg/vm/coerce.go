@@ -31,13 +31,11 @@ func coerceBool(input runtime.Value) runtime.Boolean {
 
 func coerceSubscribeArgs(dst, eventName, eventOpts runtime.Value) (runtime.Observable, runtime.String, runtime.Map, error) {
 	observable, ok := dst.(runtime.Observable)
-
 	if !ok {
 		return nil, "", nil, runtime.TypeErrorOf(dst, runtime.TypeObservable)
 	}
 
 	eventNameStr, ok := eventName.(runtime.String)
-
 	if !ok {
 		return nil, "", nil, runtime.TypeErrorOf(eventName, runtime.TypeString)
 	}
@@ -46,7 +44,6 @@ func coerceSubscribeArgs(dst, eventName, eventOpts runtime.Value) (runtime.Obser
 
 	if eventOpts != nil && eventOpts != runtime.None {
 		m, ok := eventOpts.(runtime.Map)
-
 		if !ok {
 			return nil, "", nil, runtime.TypeErrorOf(eventOpts, runtime.TypeMap)
 		}
@@ -62,13 +59,11 @@ func coerceDispatchArgs(
 	target, eventName, args runtime.Value,
 ) (runtime.Dispatchable, runtime.String, runtime.Value, runtime.Value, error) {
 	dispatcher, ok := target.(runtime.Dispatchable)
-
 	if !ok {
 		return nil, "", nil, nil, runtime.TypeErrorOf(target, runtime.TypeDispatchable)
 	}
 
 	eventNameStr, err := runtime.CastString(eventName)
-
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
@@ -81,7 +76,6 @@ func coerceDispatchArgs(
 	}
 
 	argMap, err := runtime.CastMap(args)
-
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
@@ -104,6 +98,7 @@ func coerceQueryDescriptor(ctx context.Context, descriptor runtime.Value) (runti
 		if err != nil {
 			return runtime.Query{}, err
 		}
+
 		if length != 4 {
 			return runtime.Query{}, runtime.Error(runtime.ErrInvalidOperation, errQueryFormatUnexpected)
 		}
@@ -118,6 +113,7 @@ func coerceQueryDescriptor(ctx context.Context, descriptor runtime.Value) (runti
 			if err != nil {
 				return runtime.Query{}, err
 			}
+
 			if !ok {
 				return runtime.Query{}, runtime.Error(runtime.ErrInvalidOperation, errQueryFormatUnexpected)
 			}

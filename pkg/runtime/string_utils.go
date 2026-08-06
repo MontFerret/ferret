@@ -86,6 +86,7 @@ func writeArray(buf *strings.Builder, arr *Array) {
 		if i > 0 {
 			buf.WriteByte(',')
 		}
+
 		writeValue(buf, el)
 	}
 
@@ -97,6 +98,7 @@ func writeObject(buf *strings.Builder, obj *Object) {
 
 	if len(obj.data) == 0 {
 		buf.WriteByte('}')
+
 		return
 	}
 
@@ -104,15 +106,18 @@ func writeObject(buf *strings.Builder, obj *Object) {
 	for k := range obj.data {
 		keys = append(keys, k)
 	}
+
 	sort.Strings(keys)
 
 	for i, k := range keys {
 		if i > 0 {
 			buf.WriteByte(',')
 		}
+
 		writeString(buf, k)
 		buf.WriteByte(':')
 		writeValue(buf, obj.data[k])
 	}
+
 	buf.WriteByte('}')
 }

@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
@@ -123,7 +124,12 @@ func selectMatchConstantFoldExpression(scrutinee runtime.Value, arms []fql.IMatc
 			return nil, false
 		}
 
-		if runtime.CompareValues(scrutinee, patternValue) == 0 {
+		equal, err := runtime.EqualValues(context.Background(), scrutinee, patternValue)
+		if err != nil {
+			return nil, false
+		}
+
+		if equal {
 			selected = expression
 			break
 		}

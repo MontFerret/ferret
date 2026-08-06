@@ -45,75 +45,126 @@ func (t *Object) String() string {
 	return b.String()
 }
 
-// Compare compares the source object with other core.Value
-// The behavior of the Compare is similar
-// to the comparison of objects in ArangoDB
-func (t *Object) Compare(other Value) int {
-	otherObject, ok := other.(*Object)
-
+func (t *Object) Equal(ctx context.Context, other Value) (bool, error) {
+	otherMap, ok := other.(Map)
 	if !ok {
-		return CompareTypes(t, other)
+		return false, nil
 	}
 
-	size := len(t.data)
-	otherSize := len(otherObject.data)
-
-	if size == 0 && otherSize == 0 {
-		return 0
+	otherSize, err := otherMap.Length(ctx)
+	if err != nil {
+		return false, err
 	}
 
+	if Int(len(t.data)) != otherSize {
+		return false, nil
+	}
+
+	for key, value := range t.data {
+		otherValue, found, err := otherMap.Lookup(ctx, String(key))
+		if err != nil {
+			return false, err
+		}
+
+		if !found {
+			return false, nil
+		}
+
+		equal, err := EqualValues(ctx, value, otherValue)
+		if err != nil {
+			return false, err
+		}
+
+		if !equal {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// Compare preserves Ferret's structural object ordering, including its
+// historical descending comparison for the first distinct sorted key.
+func (t *Object) Compare(ctx context.Context, other Value) (Ordering, error) {
+	otherMap, ok := other.(Map)
+	if !ok {
+		return Equal, incompatibleComparisonError(t, other)
+	}
+
+	otherSize, err := otherMap.Length(ctx)
+	if err != nil {
+		return Equal, err
+	}
+
+	size := Int(len(t.data))
 	if size < otherSize {
-		return -1
+		return Less, nil
 	}
 
 	if size > otherSize {
-		return 1
+		return Greater, nil
 	}
 
-	var res int
+	leftKeys := t.sortedKeys()
+	var rightKeys []string
+	otherObject, nativeObject := otherMap.(*Object)
 
-	tKeys := make([]string, 0, size)
-
-	for k := range t.data {
-		tKeys = append(tKeys, k)
+	if nativeObject {
+		rightKeys = otherObject.sortedKeys()
+	} else {
+		rightKeys, err = sortedMapKeys(ctx, otherMap)
+		if err != nil {
+			return Equal, err
+		}
 	}
 
-	sortedT := sort.StringSlice(tKeys)
-	sortedT.Sort()
+	for idx, leftKey := range leftKeys {
+		rightKey := rightKeys[idx]
+		if leftKey != rightKey {
+			if leftKey < rightKey {
+				return Greater, nil
+			}
 
-	otherKeys := make([]string, 0, otherSize)
-
-	for k := range otherObject.data {
-		otherKeys = append(otherKeys, k)
-	}
-
-	sortedOther := sort.StringSlice(otherKeys)
-	sortedOther.Sort()
-
-	var tVal, otherVal Value
-	var tKey, otherKey string
-
-	for i := 0; i < len(t.data) && res == 0; i++ {
-		tKey, otherKey = sortedT[i], sortedOther[i]
-
-		if tKey == otherKey {
-			tVal = t.data[tKey]
-			otherVal = otherObject.data[tKey]
-			res = CompareValues(tVal, otherVal)
-
-			continue
+			return Less, nil
 		}
 
-		if tKey < otherKey {
-			res = 1
+		var rightValue Value
+		if nativeObject {
+			rightValue = otherObject.data[rightKey]
 		} else {
-			res = -1
+			var found bool
+			rightValue, found, err = otherMap.Lookup(ctx, String(rightKey))
+
+			if err != nil {
+				return Equal, err
+			}
+
+			if !found {
+				return Equal, Errorf(ErrInvalidOperation, "object key %q disappeared during comparison", rightKey)
+			}
 		}
 
-		break
+		comparison, err := CompareValues(ctx, t.data[leftKey], rightValue)
+		if err != nil {
+			return Equal, err
+		}
+
+		if comparison != Equal {
+			return comparison, nil
+		}
 	}
 
-	return res
+	return Equal, nil
+}
+
+func (t *Object) sortedKeys() []string {
+	keys := make([]string, 0, len(t.data))
+	for key := range t.data {
+		keys = append(keys, key)
+	}
+
+	sort.Strings(keys)
+	return keys
 }
 
 func (t *Object) Hash() uint64 {
@@ -275,11 +326,14 @@ func (t *Object) ContainsKey(_ context.Context, key Value) (Boolean, error) {
 	return Boolean(exists), nil
 }
 
-func (t *Object) Contains(_ context.Context, target Value) (Boolean, error) {
+func (t *Object) Contains(ctx context.Context, target Value) (Boolean, error) {
 	for _, val := range t.data {
-		res := CompareValues(target, val)
+		equal, err := EqualValues(ctx, target, val)
+		if err != nil {
+			return false, err
+		}
 
-		if res == 0 {
+		if equal {
 			return true, nil
 		}
 	}
@@ -323,9 +377,14 @@ func (t *Object) RemoveKey(_ context.Context, key Value) error {
 	return nil
 }
 
-func (t *Object) Remove(_ context.Context, value Value) error {
+func (t *Object) Remove(ctx context.Context, value Value) error {
 	for key, val := range t.data {
-		if CompareValues(value, val) == 0 {
+		equal, err := EqualValues(ctx, value, val)
+		if err != nil {
+			return err
+		}
+
+		if equal {
 			delete(t.data, key)
 			break
 		}

@@ -22,6 +22,7 @@ type (
 	QueryFunc func(context.Context, Query) (List, error)
 
 	// Queryable allows values to handle operator index queries and query modifiers.
+	// Implementations must observe ctx while remote or blocking work is in progress.
 	Queryable interface {
 		// Query returns every matching value.
 		Query(ctx context.Context, q Query) (List, error)

@@ -3,6 +3,7 @@ package data_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -26,19 +27,28 @@ func (v collisionValue) Copy() runtime.Value {
 	return v
 }
 
-func (v collisionValue) Compare(other runtime.Value) int {
+func (v collisionValue) Equal(_ context.Context, other runtime.Value) (bool, error) {
 	o, ok := other.(collisionValue)
 	if !ok {
-		return runtime.CompareTypes(v, other)
+		return false, nil
+	}
+
+	return v.label == o.label, nil
+}
+
+func (v collisionValue) Compare(_ context.Context, other runtime.Value) (runtime.Ordering, error) {
+	o, ok := other.(collisionValue)
+	if !ok {
+		return runtime.Equal, runtime.Error(runtime.ErrInvalidOperation, "incompatible collision value")
 	}
 
 	switch {
 	case v.label < o.label:
-		return -1
+		return runtime.Less, nil
 	case v.label > o.label:
-		return 1
+		return runtime.Greater, nil
 	default:
-		return 0
+		return runtime.Equal, nil
 	}
 }
 
@@ -58,6 +68,80 @@ func TestKeyGroupCollectorSeparatesHashCollisions(t *testing.T) {
 
 	assertGroupedIntValue(t, ctx, collector, first, 1)
 	assertGroupedIntValue(t, ctx, collector, second, 2)
+}
+
+func TestSemanticIndexesUseNumericEqualityAcrossRepresentations(t *testing.T) {
+	ctx := context.Background()
+	intKey := runtime.NewInt(1)
+	floatKey := runtime.NewFloat(1)
+	if intKey.Hash() != floatKey.Hash() {
+		t.Fatal("equal Int and Float keys must have equal hashes")
+	}
+
+	collectors := map[string]data.Transformer{
+		"key":       data.NewKeyCollector(),
+		"counter":   data.NewKeyCounterCollector(),
+		"key-group": data.NewKeyGroupCollector(),
+		"aggregate-group": data.NewGroupedAggregateCollector(bytecode.NewAggregatePlan(
+			[]runtime.String{runtime.NewString("count")},
+			[]bytecode.AggregateKind{bytecode.AggregateCount},
+			false,
+		)),
+	}
+
+	for name, collector := range collectors {
+		if err := collector.Set(ctx, intKey, runtime.None); err != nil {
+			t.Fatalf("%s: set int key: %v", name, err)
+		}
+		if err := collector.Set(ctx, floatKey, runtime.None); err != nil {
+			t.Fatalf("%s: set float key: %v", name, err)
+		}
+
+		length, err := collector.Length(ctx)
+		if err != nil {
+			t.Fatalf("%s: length: %v", name, err)
+		}
+		if length != 1 {
+			t.Fatalf("%s: expected one semantic group, got %d", name, length)
+		}
+	}
+}
+
+func TestSemanticIndexesUseStrictDurationEquality(t *testing.T) {
+	ctx := context.Background()
+	values := []runtime.Value{
+		runtime.NewString("1s"),
+		runtime.NewInt(1000),
+		runtime.NewDuration(time.Second),
+		runtime.NewDuration(1000 * time.Millisecond),
+	}
+
+	collectors := map[string]data.Transformer{
+		"key":       data.NewKeyCollector(),
+		"counter":   data.NewKeyCounterCollector(),
+		"key-group": data.NewKeyGroupCollector(),
+		"aggregate-group": data.NewGroupedAggregateCollector(bytecode.NewAggregatePlan(
+			[]runtime.String{runtime.NewString("count")},
+			[]bytecode.AggregateKind{bytecode.AggregateCount},
+			false,
+		)),
+	}
+
+	for name, collector := range collectors {
+		for _, value := range values {
+			if err := collector.Set(ctx, value, runtime.None); err != nil {
+				t.Fatalf("%s: set %T: %v", name, value, err)
+			}
+		}
+
+		length, err := collector.Length(ctx)
+		if err != nil {
+			t.Fatalf("%s: length: %v", name, err)
+		}
+		if length != 3 {
+			t.Fatalf("%s: expected String, Int, and one Duration group, got %d", name, length)
+		}
+	}
 }
 
 func TestGroupedAggregateCollectorSeparatesHashCollisions(t *testing.T) {
@@ -133,7 +217,12 @@ func TestGroupedAggregateCollectorTrackGroupValuesFalseSkipsStoredGroups(t *test
 		t.Fatalf("expected iterator value NONE when group values are disabled, got %v", value)
 	}
 
-	if runtime.CompareValues(iterKey, key) != 0 {
+	equal, err := runtime.EqualValues(ctx, iterKey, key)
+	if err != nil {
+		t.Fatalf("compare iterator key: %v", err)
+	}
+
+	if !equal {
 		t.Fatalf("expected iterator key %v, got %v", key, iterKey)
 	}
 

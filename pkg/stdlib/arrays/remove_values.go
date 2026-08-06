@@ -17,10 +17,19 @@ func RemoveValues(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value,
 		return runtime.None, err
 	}
 
-	lookupTable := make(map[uint64]bool)
+	lookupTable := make(map[uint64][]runtime.Value)
 
 	err = vals.ForEach(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		lookupTable[value.Hash()] = true
+		hash := value.Hash()
+		bucket := lookupTable[hash]
+		match, err := findEqualValue(ctx, bucket, value)
+		if err != nil {
+			return false, err
+		}
+
+		if match < 0 {
+			lookupTable[hash] = append(bucket, value)
+		}
 
 		return true, nil
 	})
@@ -32,8 +41,11 @@ func RemoveValues(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value,
 	return arr.Filter(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		h := value.Hash()
 
-		_, exists := lookupTable[h]
+		match, err := findEqualValue(ctx, lookupTable[h], value)
+		if err != nil {
+			return false, err
+		}
 
-		return runtime.Boolean(!exists), nil
+		return match < 0, nil
 	})
 }

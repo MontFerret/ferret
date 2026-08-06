@@ -120,7 +120,12 @@ func (view *MapView[TKey, TValue]) Remove(ctx context.Context, value runtime.Val
 			return fmt.Errorf("map value for key %v: %w", key, err)
 		}
 
-		if runtime.CompareValues(value, normalizeRuntimeValue(encoded)) == 0 {
+		equal, err := runtime.EqualValues(ctx, value, normalizeRuntimeValue(encoded))
+		if err != nil {
+			return fmt.Errorf("map value for key %v: compare value: %w", key, err)
+		}
+
+		if equal {
 			delete(view.Target(), key)
 			return nil
 		}

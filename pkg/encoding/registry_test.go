@@ -42,7 +42,8 @@ func TestNewRegistryHasExplicitJSONCodec(t *testing.T) {
 		t.Fatalf("decode failed: %v", err)
 	}
 
-	if runtime.CompareValues(decoded, input) != 0 {
+	equal, err := runtime.EqualValues(t.Context(), decoded, input)
+	if err != nil || !equal {
 		t.Fatalf("decoded value mismatch: %s", decoded.String())
 	}
 }
@@ -69,7 +70,8 @@ func TestNewRegistryHasExplicitMsgpackCodec(t *testing.T) {
 		t.Fatalf("decode failed: %v", err)
 	}
 
-	if runtime.CompareValues(decoded, input) != 0 {
+	equal, err := runtime.EqualValues(t.Context(), decoded, input)
+	if err != nil || !equal {
 		t.Fatalf("decoded value mismatch: %s", decoded.String())
 	}
 }

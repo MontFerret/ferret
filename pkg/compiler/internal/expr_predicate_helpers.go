@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
 	"github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -26,31 +27,25 @@ func resolveArrayPredicateOpcode(op fql.IArrayOperatorContext) (bytecode.Opcode,
 		pos = int(bytecode.OpNoneEq)
 	}
 
-	if eo := op.EqualityOperator(); eo != nil {
-		switch eo.GetText() {
-		case "!=":
-			pos += int(bytecode.OpAllNe) - int(bytecode.OpAllEq)
-		case ">":
-			pos += int(bytecode.OpAllGt) - int(bytecode.OpAllEq)
-		case ">=":
-			pos += int(bytecode.OpAllGte) - int(bytecode.OpAllEq)
-		case "<":
-			pos += int(bytecode.OpAllLt) - int(bytecode.OpAllEq)
-		case "<=":
-			pos += int(bytecode.OpAllLte) - int(bytecode.OpAllEq)
-		default:
+	binary := operator.Unknown
+	if equality := op.EqualityOperator(); equality != nil {
+		var ok bool
+		binary, ok = operator.ParseBinary(equality.GetText())
+		if !ok {
+			return bytecode.Opcode(0), false
 		}
-
-		return bytecode.Opcode(pos), true
+	} else if op.InOperator() != nil {
+		binary = operator.In
+	} else {
+		return bytecode.Opcode(0), false
 	}
 
-	if op.InOperator() != nil {
-		pos += int(bytecode.OpAllIn) - int(bytecode.OpAllEq)
-
-		return bytecode.Opcode(pos), true
+	comparison, ok := operator.ArrayComparatorFor(binary)
+	if !ok {
+		return bytecode.Opcode(0), false
 	}
 
-	return bytecode.Opcode(0), false
+	return bytecode.Opcode(pos + int(comparison)), true
 }
 
 func resolvePredicateEqNeJump(ctx fql.IPredicateContext) (string, fql.IPredicateContext, fql.IPredicateContext, bool) {

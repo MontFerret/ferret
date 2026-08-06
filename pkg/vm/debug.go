@@ -154,6 +154,7 @@ func (d *debugExecution) Start(ctx context.Context) (*DebugExecutionEvent, error
 
 	if err := d.vm.state.startRun(d.env); err != nil {
 		d.status = DebugExecutionTerminated
+
 		return nil, err
 	}
 
@@ -165,6 +166,7 @@ func (d *debugExecution) Start(ctx context.Context) (*DebugExecutionEvent, error
 	}
 
 	d.control.entry = true
+
 	return d.runLocked(ctx)
 }
 
@@ -321,11 +323,13 @@ func (d *debugExecution) runLocked(ctx context.Context) (event *DebugExecutionEv
 	switch action {
 	case sourcePointPause:
 		d.status = DebugExecutionPaused
+
 		return &DebugExecutionEvent{Reason: d.control.reason, Point: d.current, Depth: d.vm.state.frames.Len()}, nil
 	case sourcePointTerminate:
 		depth := d.vm.state.frames.Len()
 		d.vm.state.endRun()
 		d.status = DebugExecutionTerminated
+
 		return &DebugExecutionEvent{Reason: DebugStopTerminated, Point: d.current, Depth: depth}, nil
 	}
 
