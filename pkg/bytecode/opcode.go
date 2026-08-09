@@ -194,6 +194,10 @@ const (
 
 	// Runtime Clock Operations
 	OpElapsed
+
+	// Stream Group Operations
+	OpStreamGroup        // Subscribes to a declaration-ordered group of streams
+	OpStreamGroupArmDone // Marks and closes one stream-group arm
 )
 
 func (op Opcode) String() string {
@@ -503,6 +507,10 @@ func (op Opcode) String() string {
 		return "SOURCEPOINT"
 	case OpElapsed:
 		return "ELAPSED"
+	case OpStreamGroup:
+		return "STRMG"
+	case OpStreamGroupArmDone:
+		return "STRMGDONE"
 
 	default:
 		return "UNKNOWN"

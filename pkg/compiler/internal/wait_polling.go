@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -94,7 +95,7 @@ func (c *WaitCompiler) emitImmediateWaitNone() bytecode.Operand {
 	return resultReg
 }
 
-func (c *WaitCompiler) initWaitPredicatePollState(config waitPredicateCompileConfig) waitPredicatePollState {
+func (c *WaitCompiler) initWaitPredicatePollState(mode waitForPredicateMode, config waitPredicateScheduleConfig) waitPredicatePollState {
 	state := waitPredicatePollState{
 		baseEveryReg: c.ctx.Function.Registers.Allocate(),
 	}
@@ -114,7 +115,7 @@ func (c *WaitCompiler) initWaitPredicatePollState(config waitPredicateCompileCon
 	}
 
 	state.resultReg = c.ctx.Function.Registers.Allocate()
-	if config.mode == waitForPredicateModeValue {
+	if mode == waitForPredicateModeValue {
 		c.ctx.Program.Emitter.EmitLoadNone(state.resultReg)
 	} else {
 		c.ctx.Program.Emitter.EmitBoolean(state.resultReg, false)
@@ -172,7 +173,7 @@ func (c *WaitCompiler) emitWaitPredicatePollIteration(
 	if config.mode == waitForPredicateModeValue {
 		retryLabel := c.ctx.Program.Emitter.NewLabel()
 		c.ctx.Program.Emitter.EmitJumpIfNone(valueReg, retryLabel)
-		c.emitWaitPredicateWhenConditions(config, valueReg, retryLabel)
+		c.emitWaitPredicateWhenConditions(config.whenExprs, valueReg, retryLabel)
 		c.ctx.Program.Emitter.EmitJump(successLabel)
 		c.ctx.Program.Emitter.MarkLabel(retryLabel)
 	} else {
@@ -183,12 +184,22 @@ func (c *WaitCompiler) emitWaitPredicatePollIteration(
 		} else {
 			retryLabel := c.ctx.Program.Emitter.NewLabel()
 			c.ctx.Program.Emitter.EmitJumpIfFalse(condReg, retryLabel)
-			c.emitWaitPredicateWhenConditions(config, valueReg, retryLabel)
+			c.emitWaitPredicateWhenConditions(config.whenExprs, valueReg, retryLabel)
 			c.ctx.Program.Emitter.EmitJump(successLabel)
 			c.ctx.Program.Emitter.MarkLabel(retryLabel)
 		}
 	}
 
+	c.emitWaitPredicatePollRetry(config.waitPredicateScheduleConfig, state, startLabel, timeoutLabel)
+
+	return valueReg
+}
+
+func (c *WaitCompiler) emitWaitPredicatePollRetry(
+	config waitPredicateScheduleConfig,
+	state waitPredicatePollState,
+	startLabel, timeoutLabel core.Label,
+) {
 	elapsedReg := c.emitWaitPredicateTimeoutCheck(config.timeoutReg, state.startReg, timeoutLabel)
 	sleepIntervalReg := c.prepareWaitSleepInterval(config, state.pollReg)
 	c.emitWaitSleep(sleepIntervalReg, config.timeoutReg, elapsedReg, config.everyZero)
@@ -201,16 +212,14 @@ func (c *WaitCompiler) emitWaitPredicatePollIteration(
 	}
 
 	c.ctx.Program.Emitter.EmitJump(startLabel)
-
-	return valueReg
 }
 
 func (c *WaitCompiler) emitWaitPredicateWhenConditions(
-	config waitPredicateCompileConfig,
+	whenExprs []fql.IExpressionContext,
 	valueReg bytecode.Operand,
 	retryLabel core.Label,
 ) {
-	if len(config.whenExprs) == 0 {
+	if len(whenExprs) == 0 {
 		return
 	}
 
@@ -219,7 +228,7 @@ func (c *WaitCompiler) emitWaitPredicateWhenConditions(
 
 	c.ctx.Function.Symbols.AssignLocal(core.PseudoVariable, core.TypeUnknown, valueReg)
 
-	for _, whenExpr := range config.whenExprs {
+	for _, whenExpr := range whenExprs {
 		condReg := c.exprs.CompileWithImplicitCurrent(whenExpr)
 		c.ctx.Program.Emitter.EmitJumpIfFalse(condReg, retryLabel)
 	}

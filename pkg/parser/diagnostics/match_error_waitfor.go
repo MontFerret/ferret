@@ -16,6 +16,27 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 		return false
 	}
 
+	mode, synchronization, openSpan, ok := waitForEmptyGroupInSource(src)
+	if !ok {
+		var open, close *TokenNode
+		mode, synchronization, open, close = waitForEmptyGroup(offending)
+		if open != nil {
+			first := spanFromTokenSafe(open.Token(), src)
+			last := spanFromTokenSafe(close.Token(), src)
+			openSpan = source.Span{Start: first.Start, End: last.End}
+			ok = true
+		}
+	}
+
+	if ok {
+		err.Message = fmt.Sprintf("WAITFOR %s%s group requires at least one arm", mode, synchronization)
+		err.Hint = "Add at least one expression or event subscription between the braces."
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(openSpan, "empty synchronization group"),
+		}
+		return true
+	}
+
 	if has(err.Message, "waitforpredicate failed predicate") {
 		if keyword, spanNode := waitForPredicateKeyword(offending); keyword != "" {
 			span := spanFromTokenSafe(spanNode.Token(), src)
@@ -87,6 +108,116 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 	}
 
 	return false
+}
+
+func waitForEmptyGroupInSource(src *source.Source) (string, string, source.Span, bool) {
+	if src == nil {
+		return "", "", source.Span{}, false
+	}
+
+	lexer := fql.NewFqlLexer(antlr.NewInputStream(asciiUpper(src.Content())))
+	var tokens []antlr.Token
+	for {
+		token := lexer.NextToken()
+		if token == nil || token.GetTokenType() == antlr.TokenEOF {
+			break
+		}
+		if token.GetChannel() == antlr.TokenDefaultChannel {
+			tokens = append(tokens, token)
+		}
+	}
+
+	for idx, token := range tokens {
+		if token.GetTokenType() != fql.FqlLexerWaitfor {
+			continue
+		}
+
+		cursor := idx + 1
+		var modeParts []string
+		for cursor < len(tokens) && len(modeParts) < 2 {
+			tokenType := tokens[cursor].GetTokenType()
+			if tokenType == fql.FqlLexerAny || tokenType == fql.FqlLexerAll {
+				break
+			}
+			modeParts = append(modeParts, strings.ToUpper(tokens[cursor].GetText()))
+			cursor++
+		}
+
+		if cursor+2 >= len(tokens) {
+			continue
+		}
+		modeText := strings.Join(modeParts, " ")
+		switch modeText {
+		case "", "EVENT", "EXISTS", "VALUE", "NOT EXISTS":
+		default:
+			continue
+		}
+		synchronizationToken := tokens[cursor]
+		if synchronizationToken.GetTokenType() != fql.FqlLexerAny && synchronizationToken.GetTokenType() != fql.FqlLexerAll {
+			continue
+		}
+		open := tokens[cursor+1]
+		close := tokens[cursor+2]
+		if open.GetTokenType() != fql.FqlLexerOpenBrace || close.GetTokenType() != fql.FqlLexerCloseBrace {
+			continue
+		}
+
+		mode := ""
+		if modeText != "" {
+			mode = modeText + " "
+		}
+
+		return mode, strings.ToUpper(synchronizationToken.GetText()), source.Span{
+			Start: open.GetStart(),
+			End:   close.GetStop() + 1,
+		}, true
+	}
+
+	return "", "", source.Span{}, false
+}
+
+func waitForEmptyGroup(offending *TokenNode) (string, string, *TokenNode, *TokenNode) {
+	if offending == nil {
+		return "", "", nil, nil
+	}
+
+	close := offending
+	if !is(close, "}") {
+		close = offending.Next()
+	}
+	if !is(close, "}") || !is(close.Prev(), "{") {
+		return "", "", nil, nil
+	}
+
+	open := close.Prev()
+	synchronizationNode := open.Prev()
+	if !is(synchronizationNode, "ANY") && !is(synchronizationNode, "ALL") {
+		return "", "", nil, nil
+	}
+
+	var modeParts []string
+	foundWaitFor := false
+	for curr := synchronizationNode.Prev(); curr != nil; curr = curr.Prev() {
+		if is(curr, "WAITFOR") {
+			foundWaitFor = true
+			break
+		}
+		if len(modeParts) == 2 {
+			return "", "", nil, nil
+		}
+		modeParts = append([]string{strings.ToUpper(curr.GetText())}, modeParts...)
+	}
+
+	if !foundWaitFor {
+		return "", "", nil, nil
+	}
+
+	mode := ""
+	if len(modeParts) > 0 {
+		mode = strings.Join(modeParts, " ") + " "
+	}
+
+	return mode, strings.ToUpper(synchronizationNode.GetText()), open, close
 }
 
 func waitForPredicateKeyword(offending *TokenNode) (string, *TokenNode) {

@@ -101,6 +101,14 @@ func resolveWaitPredicateMode(hasValue, hasExists, hasNot bool) waitForPredicate
 	return waitForPredicateModeBool
 }
 
+func resolveWaitForSynchronization(ctx fql.IWaitForSynchronizationContext) waitForSynchronization {
+	if ctx != nil && ctx.All() != nil {
+		return waitForSynchronizationAll
+	}
+
+	return waitForSynchronizationAny
+}
+
 func waitPredicateWhenExpressions(ctxs []fql.IWaitForPredicateWhenClauseContext) []fql.IExpressionContext {
 	if len(ctxs) == 0 {
 		return nil
@@ -216,7 +224,15 @@ func waitForTimeoutClause(ctx fql.IWaitForExpressionContext) fql.ITimeoutClauseC
 		return waitForEventTimeoutClause(ev)
 	}
 
+	if ev := ctx.WaitForEventGroupExpression(); ev != nil {
+		return waitForEventGroupTimeoutClause(ev)
+	}
+
 	if pred := ctx.WaitForPredicateExpression(); pred != nil {
+		return pred.TimeoutClause()
+	}
+
+	if pred := ctx.WaitForPredicateGroupExpression(); pred != nil {
 		return pred.TimeoutClause()
 	}
 

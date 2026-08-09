@@ -1001,8 +1001,21 @@ func (f *expressionFormatter) formatRecoveryTails(ctx fql.IRecoveryTailsContext)
 }
 
 func (f *expressionFormatter) formatRecoveryTailsWith(p *printer, ctx fql.IRecoveryTailsContext) {
+	for _, tail := range f.orderedRecoveryTails(ctx) {
+		f.formatRecoveryTailWith(p, tail)
+	}
+}
+
+func (f *expressionFormatter) formatRecoveryTailsMultiline(ctx fql.IRecoveryTailsContext) {
+	for _, tail := range f.orderedRecoveryTails(ctx) {
+		f.p.newline()
+		f.formatRecoveryTailWith(f.p, tail)
+	}
+}
+
+func (f *expressionFormatter) orderedRecoveryTails(ctx fql.IRecoveryTailsContext) []fql.IRecoveryTailContext {
 	if ctx == nil {
-		return
+		return nil
 	}
 
 	var timeoutTail fql.IRecoveryTailContext
@@ -1031,13 +1044,15 @@ func (f *expressionFormatter) formatRecoveryTailsWith(p *printer, ctx fql.IRecov
 		}
 	}
 
+	ordered := make([]fql.IRecoveryTailContext, 0, len(otherTails)+2)
 	for _, tail := range []fql.IRecoveryTailContext{timeoutTail, errorTail} {
-		f.formatRecoveryTailWith(p, tail)
+		if tail != nil {
+			ordered = append(ordered, tail)
+		}
 	}
+	ordered = append(ordered, otherTails...)
 
-	for _, tail := range otherTails {
-		f.formatRecoveryTailWith(p, tail)
-	}
+	return ordered
 }
 
 func (f *expressionFormatter) formatRecoveryTailWith(p *printer, ctx fql.IRecoveryTailContext) {

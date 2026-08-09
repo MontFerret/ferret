@@ -1,0 +1,97 @@
+package data
+
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+)
+
+func TestStreamGroupIteratorUsesOneFixedDeadline(t *testing.T) {
+	stream := newStreamGroupTestStream(1)
+	iterator := NewStreamGroupValue([]runtime.Stream{stream}).(*StreamGroupValue).Iterate(runtime.Duration(50 * time.Millisecond))
+
+	started := time.Now()
+	time.AfterFunc(30*time.Millisecond, func() {
+		stream.messages <- runtime.NewValueMessage(runtime.NewString("event"))
+	})
+	if err := iterator.Next(context.Background()); err != nil {
+		t.Fatalf("first event: %v", err)
+	}
+
+	secondStarted := time.Now()
+	err := iterator.Next(context.Background())
+	if !errors.Is(err, runtime.ErrTimeout) {
+		t.Fatalf("expected fixed deadline timeout, got %v", err)
+	}
+	if secondElapsed := time.Since(secondStarted); secondElapsed >= 40*time.Millisecond {
+		t.Fatalf("second wait restarted the deadline: %s", secondElapsed)
+	}
+	if total := time.Since(started); total >= 70*time.Millisecond {
+		t.Fatalf("group deadline exceeded expected bound: %s", total)
+	}
+
+	if err := iterator.(interface{ Close() error }).Close(); err != nil {
+		t.Fatalf("close iterator: %v", err)
+	}
+}
+
+func TestStreamGroupIteratorIgnoresCompletedArmErrors(t *testing.T) {
+	first := newStreamGroupTestStream(2)
+	second := newStreamGroupTestStream(1)
+	first.messages <- runtime.NewValueMessage(runtime.NewString("first"))
+	first.messages <- runtime.NewErrorMessage(errors.New("late error"))
+
+	iterator := NewStreamGroupValue([]runtime.Stream{first, second}).(*StreamGroupValue).
+		Iterate(runtime.Duration(time.Second)).(*StreamGroupIterator)
+	if err := iterator.Next(context.Background()); err != nil {
+		t.Fatalf("first event: %v", err)
+	}
+	if got := iterator.Key(); got != runtime.NewInt(0) {
+		t.Fatalf("expected first arm, got key %v", got)
+	}
+	if err := iterator.ArmDone(0); err != nil {
+		t.Fatalf("complete first arm: %v", err)
+	}
+
+	second.messages <- runtime.NewValueMessage(runtime.NewString("second"))
+	if err := iterator.Next(context.Background()); err != nil {
+		t.Fatalf("second event after completed-arm error: %v", err)
+	}
+	if got := iterator.Key(); got != runtime.NewInt(1) {
+		t.Fatalf("expected second arm, got key %v", got)
+	}
+
+	if err := iterator.Close(); err != nil {
+		t.Fatalf("close iterator: %v", err)
+	}
+	if got := first.closeCount.Load(); got != 1 {
+		t.Fatalf("expected completed arm to close once, got %d", got)
+	}
+	if got := second.closeCount.Load(); got != 1 {
+		t.Fatalf("expected remaining arm to close once, got %d", got)
+	}
+	if err := iterator.Close(); err != nil {
+		t.Fatalf("repeat close: %v", err)
+	}
+	if got := first.closeCount.Load(); got != 1 {
+		t.Fatalf("repeated close closed first arm %d times", got)
+	}
+}
+
+func TestStreamGroupIteratorPropagatesActiveArmError(t *testing.T) {
+	stream := newStreamGroupTestStream(1)
+	want := errors.New("stream failed")
+	stream.messages <- runtime.NewErrorMessage(want)
+	iterator := NewStreamGroupValue([]runtime.Stream{stream}).(*StreamGroupValue).
+		Iterate(runtime.Duration(time.Second)).(*StreamGroupIterator)
+
+	if err := iterator.Next(context.Background()); !errors.Is(err, want) {
+		t.Fatalf("expected active arm error, got %v", err)
+	}
+	if err := iterator.Close(); err != nil {
+		t.Fatalf("close iterator: %v", err)
+	}
+}

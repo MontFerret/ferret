@@ -1062,8 +1062,16 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 
 			state.writeProducedRegister(dst, data.NewStreamValue(stream))
+		case bytecode.OpStreamGroup:
+			streams, err := subscribeStreamGroup(ctx, reg[dst], reg[src1], reg[src2])
+			if err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
+			state.writeProducedRegister(dst, data.NewStreamGroupValue(streams))
 		case bytecode.OpStreamIter:
-			stream := reg[src1].(*data.StreamValue)
+			stream := reg[src1].(data.StreamIterable)
 
 			var timeout runtime.Duration
 
@@ -1086,6 +1094,21 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 
 			state.writeProducedRegister(dst, stream.Iterate(timeout))
+		case bytecode.OpStreamGroupArmDone:
+			if err := cancellation.Check(); err != nil {
+				return nil, sourcePointContinue, err
+			}
+
+			group := reg[dst].(data.StreamGroupController)
+			armIndex, err := runtime.ToInt(ctx, reg[src1])
+			if err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+				break
+			}
+
+			if err := group.ArmDone(int(armIndex)); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+			}
 		case bytecode.OpQuery:
 			src := readOperandValue(reg, constants, src1)
 			descriptor := readOperandValue(reg, constants, src2)

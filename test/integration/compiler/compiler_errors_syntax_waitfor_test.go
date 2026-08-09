@@ -10,6 +10,21 @@ import (
 
 func TestSyntaxErrorsWaitfor(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
+		Failure(`RETURN WAITFOR ANY {}`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "WAITFOR ANY group requires at least one arm",
+			Hint:    "Add at least one expression or event subscription between the braces.",
+		}, "WAITFOR ANY rejects an empty group"),
+		Failure(`RETURN WAITFOR VALUE ALL {}`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "WAITFOR VALUE ALL group requires at least one arm",
+			Hint:    "Add at least one expression or event subscription between the braces.",
+		}, "WAITFOR VALUE ALL rejects an empty group"),
+		Failure(`RETURN WAITFOR EVENT ANY {}`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "WAITFOR EVENT ANY group requires at least one arm",
+			Hint:    "Add at least one expression or event subscription between the braces.",
+		}, "WAITFOR EVENT ANY rejects an empty group"),
 		Failure(`
 			LET ok = WAITFOR EXISTS
 			RETURN ok

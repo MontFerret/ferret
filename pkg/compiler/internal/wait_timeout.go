@@ -25,7 +25,7 @@ func (c *WaitCompiler) emitWaitPredicateTimeoutCheck(
 	return elapsedReg
 }
 
-func (c *WaitCompiler) prepareWaitSleepInterval(config waitPredicateCompileConfig, pollReg bytecode.Operand) bytecode.Operand {
+func (c *WaitCompiler) prepareWaitSleepInterval(config waitPredicateScheduleConfig, pollReg bytecode.Operand) bytecode.Operand {
 	if config.everyZero || (!config.hasJitter && config.capEveryReg == bytecode.NoopOperand) {
 		return pollReg
 	}

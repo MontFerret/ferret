@@ -108,7 +108,7 @@ func catchJumpModeForForExpression(ctx fql.IForExpressionContext) core.CatchJump
 }
 
 func catchJumpModeForWaitForExpression(ctx fql.IWaitForExpressionContext) core.CatchJumpMode {
-	if ctx != nil && ctx.WaitForEventExpression() != nil {
+	if ctx != nil && (ctx.WaitForEventExpression() != nil || ctx.WaitForEventGroupExpression() != nil) {
 		return core.CatchJumpModeEnd
 	}
 

@@ -16,11 +16,8 @@ import (
 type (
 	waitForPredicateMode int
 
-	waitPredicateCompileConfig struct {
-		predExpr      fql.IExpressionContext
+	waitPredicateScheduleConfig struct {
 		jitterLiteral *float64
-		whenExprs     []fql.IExpressionContext
-		mode          waitForPredicateMode
 		timeoutReg    bytecode.Operand
 		everyReg      bytecode.Operand
 		capEveryReg   bytecode.Operand
@@ -28,6 +25,13 @@ type (
 		jitterReg     bytecode.Operand
 		hasJitter     bool
 		everyZero     bool
+	}
+
+	waitPredicateCompileConfig struct {
+		predExpr  fql.IExpressionContext
+		whenExprs []fql.IExpressionContext
+		waitPredicateScheduleConfig
+		mode waitForPredicateMode
 	}
 )
 
@@ -48,7 +52,7 @@ func (c *WaitCompiler) compilePredicate(ctx fql.IWaitForPredicateExpressionConte
 		return result
 	}
 
-	state := c.initWaitPredicatePollState(config)
+	state := c.initWaitPredicatePollState(config.mode, config.waitPredicateScheduleConfig)
 	c.emitWaitPredicatePollLoop(config, state)
 
 	return state.resultReg
@@ -63,7 +67,7 @@ func (c *WaitCompiler) compilePredicateWithTimeoutRecovery(
 		return bytecode.NoopOperand
 	}
 
-	state := c.initWaitPredicatePollState(config)
+	state := c.initWaitPredicatePollState(config.mode, config.waitPredicateScheduleConfig)
 
 	return c.emitWaitPredicatePollLoopWithRecovery(config, state, timeoutLabel, endLabel)
 }
@@ -89,7 +93,7 @@ func (c *WaitCompiler) prepareWaitPredicateConfig(ctx fql.IWaitForPredicateExpre
 		return waitPredicateCompileConfig{}, false
 	}
 
-	c.normalizeWaitPredicateConfig(&config)
+	c.normalizeWaitPredicateScheduleConfig(&config.waitPredicateScheduleConfig)
 
 	return config, true
 }
@@ -99,30 +103,51 @@ func (c *WaitCompiler) buildWaitPredicateConfig(
 	predicate fql.IWaitForPredicateContext,
 	predExpr fql.IExpressionContext,
 ) (waitPredicateCompileConfig, bool) {
-	everyReg, capEveryReg, ok := c.compileEveryClause(ctx.EveryClause())
+	schedule, ok := c.buildWaitPredicateScheduleConfig(
+		ctx.TimeoutClause(),
+		ctx.EveryClause(),
+		ctx.BackoffClause(),
+		ctx.JitterClause(),
+	)
 	if !ok {
 		return waitPredicateCompileConfig{}, false
 	}
 
-	everyZero := c.isZeroEveryLiteral(ctx.EveryClause())
-	jitterReg, jitterLiteral, hasJitter := c.compileJitterClause(ctx.JitterClause())
+	return waitPredicateCompileConfig{
+		waitPredicateScheduleConfig: schedule,
+		mode:                        resolveWaitPredicateMode(predicate.Value() != nil, predicate.Exists() != nil, predicate.Not() != nil),
+		predExpr:                    predExpr,
+		whenExprs:                   waitPredicateWhenExpressions(ctx.AllWaitForPredicateWhenClause()),
+	}, true
+}
+
+func (c *WaitCompiler) buildWaitPredicateScheduleConfig(
+	timeout fql.ITimeoutClauseContext,
+	every fql.IEveryClauseContext,
+	backoff fql.IBackoffClauseContext,
+	jitter fql.IJitterClauseContext,
+) (waitPredicateScheduleConfig, bool) {
+	everyReg, capEveryReg, ok := c.compileEveryClause(every)
+	if !ok {
+		return waitPredicateScheduleConfig{}, false
+	}
+
+	everyZero := c.isZeroEveryLiteral(every)
+	jitterReg, jitterLiteral, hasJitter := c.compileJitterClause(jitter)
 	timeoutReg := bytecode.NoopOperand
 
-	if timeout := ctx.TimeoutClause(); timeout != nil {
+	if timeout != nil {
 		timeoutReg = c.recovery.CompileDurationExpression(timeout.Expression())
 		if timeoutReg == bytecode.NoopOperand {
-			return waitPredicateCompileConfig{}, false
+			return waitPredicateScheduleConfig{}, false
 		}
 	}
 
-	return waitPredicateCompileConfig{
-		mode:          resolveWaitPredicateMode(predicate.Value() != nil, predicate.Exists() != nil, predicate.Not() != nil),
-		predExpr:      predExpr,
-		whenExprs:     waitPredicateWhenExpressions(ctx.AllWaitForPredicateWhenClause()),
+	return waitPredicateScheduleConfig{
 		timeoutReg:    timeoutReg,
 		everyReg:      everyReg,
 		capEveryReg:   capEveryReg,
-		backoff:       c.compileBackoffClause(ctx.BackoffClause()),
+		backoff:       c.compileBackoffClause(backoff),
 		jitterReg:     jitterReg,
 		jitterLiteral: jitterLiteral,
 		hasJitter:     hasJitter,
@@ -146,7 +171,7 @@ func (c *WaitCompiler) isZeroEveryLiteral(ctx fql.IEveryClauseContext) bool {
 	return ok && durationOK && duration == 0
 }
 
-func (c *WaitCompiler) normalizeWaitPredicateConfig(config *waitPredicateCompileConfig) {
+func (c *WaitCompiler) normalizeWaitPredicateScheduleConfig(config *waitPredicateScheduleConfig) {
 	if !config.hasJitter {
 		return
 	}

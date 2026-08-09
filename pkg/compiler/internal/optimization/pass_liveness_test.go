@@ -52,6 +52,18 @@ var instructionUseDefCases = []instructionUseDefCase{
 		wantDefs: []int{3},
 	},
 	{
+		name:     "stream group uses descriptor arrays and defines destination",
+		inst:     bytecode.NewInstruction(bytecode.OpStreamGroup, bytecode.NewRegister(3), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+		wantUses: []int{3, 1, 2},
+		wantDefs: []int{3},
+	},
+	{
+		name:     "stream group arm completion uses iterator and index",
+		inst:     bytecode.NewInstruction(bytecode.OpStreamGroupArmDone, bytecode.NewRegister(3), bytecode.NewRegister(1)),
+		wantUses: []int{3, 1},
+		wantDefs: nil,
+	},
+	{
 		name:     "close uses and defines same register",
 		inst:     bytecode.NewInstruction(bytecode.OpClose, bytecode.NewRegister(4)),
 		wantUses: []int{4},

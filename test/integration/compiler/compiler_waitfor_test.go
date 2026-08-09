@@ -145,6 +145,35 @@ func TestWaitforPredicateWhenCompiles(t *testing.T) {
 	})
 }
 
+func TestWaitforSynchronizationGroupsCompile(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		ProgramCheck(`RETURN WAITFOR ANY { false true }`, noCompilerError, "WAITFOR ANY should compile"),
+		ProgramCheck(`RETURN WAITFOR ALL { true true }`, noCompilerError, "WAITFOR ALL should compile"),
+		ProgramCheck(`RETURN WAITFOR EXISTS ANY { [] [1] WHEN LENGTH(.) == 1 }`, noCompilerError, "WAITFOR EXISTS ANY should compile per-arm filters"),
+		ProgramCheck(`RETURN WAITFOR NOT EXISTS ALL { [] WHEN LENGTH(.) == 0 {} }`, noCompilerError, "WAITFOR NOT EXISTS ALL should compile"),
+		ProgramCheck(`RETURN WAITFOR VALUE ANY { NONE "ready" WHEN . == "ready" }`, noCompilerError, "WAITFOR VALUE ANY should compile"),
+		ProgramCheck(`RETURN WAITFOR VALUE ALL { "a" WHEN . == "a" "b" WHEN . == "b" }`, noCompilerError, "WAITFOR VALUE ALL should compile repeated arms"),
+		ProgramCheck(`
+			LET first = @first
+			LET second = @second
+			RETURN WAITFOR EVENT ANY {
+				"first" IN first OPTIONS { capture: true } WHEN .type == "first"
+				"second" IN second WHEN .type == "second" WHEN .ok
+			} TRIGGER () TIMEOUT 5ms ON TIMEOUT RETURN NONE
+		`, expectOpcodes(bytecode.OpStreamGroup, bytecode.OpStreamIter), "WAITFOR EVENT ANY should compile grouped descriptors"),
+		ProgramCheck(`
+			LET first = @first
+			LET second = @second
+			RETURN WAITFOR EVENT ALL {
+				"first" IN first
+				"second" IN second
+			} TIMEOUT 5ms ON TIMEOUT RETURN NONE
+		`, expectOpcodes(bytecode.OpStreamGroup, bytecode.OpStreamGroupArmDone), "WAITFOR EVENT ALL should compile arm completion"),
+		ProgramCheck(`LET ANY = true RETURN WAITFOR ANY`, noCompilerError, "ANY should remain a singular WAITFOR identifier"),
+		ProgramCheck(`LET ALL = true RETURN WAITFOR ALL`, noCompilerError, "ALL should remain a singular WAITFOR identifier"),
+	})
+}
+
 func TestWaitforValuePresenceLowering(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(
@@ -195,5 +224,24 @@ func expectHostFunction(name string, argCount int) func(*bytecode.Program) error
 		}
 
 		return fmt.Errorf("expected host function %q with %d arguments in %v", name, argCount, program.Functions.Host)
+	}
+}
+
+func expectOpcodes(expected ...bytecode.Opcode) func(*bytecode.Program) error {
+	return func(program *bytecode.Program) error {
+		seen := make(map[bytecode.Opcode]bool, len(expected))
+		opcodes := make([]bytecode.Opcode, 0, len(program.Bytecode))
+		for _, instruction := range program.Bytecode {
+			seen[instruction.Opcode] = true
+			opcodes = append(opcodes, instruction.Opcode)
+		}
+
+		for _, opcode := range expected {
+			if !seen[opcode] {
+				return fmt.Errorf("expected opcode %s in %v", opcode, opcodes)
+			}
+		}
+
+		return nil
 	}
 }
