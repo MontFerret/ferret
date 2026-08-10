@@ -358,6 +358,150 @@ Avoid:
 // Close closes the result.
 func (r *Result) Close() error
 
+## Go control-flow spacing rules
+
+These rules are mandatory for handwritten Go code.
+
+Blank lines should separate logical units and make control-flow boundaries visually obvious.
+
+### Immediate producer + check
+
+A declaration, assignment, function call, type assertion, lookup, parse operation, or similar statement may remain directly adjacent to a following `if` when the `if` immediately checks or consumes the value produced by that statement.
+
+This includes error checks, boolean/result checks, type assertions, nil checks, bounds checks, and other immediate validation.
+
+Preferred:
+
+```go
+res, err := doSome()
+if err != nil {
+	return err
+}
+```
+
+Preferred:
+
+```go
+named, ok := typeOf.(*types.Named)
+if !ok || named.Obj().Pkg() == nil || !w.localPackage(named.Obj().Pkg().Path()) {
+	return w.source.errorAt(
+		ErrorUnsupportedRegistration,
+		expression.Pos(),
+		"New selects a module root dynamically",
+	)
+}
+```
+
+Preferred:
+
+```go
+value := lookup(name)
+if value == nil {
+	return ErrNotFound
+}
+```
+
+Preferred:
+
+```go
+count := len(items)
+if count == 0 {
+	return nil
+}
+```
+
+The producer and its immediate check form one logical unit and should not be separated by a blank line.
+
+### Separation from preceding logic
+
+If an immediate producer + check unit follows another statement or logical unit, separate it from the preceding code with a blank line.
+
+Preferred:
+
+```go
+prepareState()
+
+named, ok := typeOf.(*types.Named)
+if !ok {
+	return ErrUnsupported
+}
+```
+
+Avoid:
+
+```go
+prepareState()
+named, ok := typeOf.(*types.Named)
+if !ok {
+	return ErrUnsupported
+}
+```
+
+No leading blank line is required when the producer begins the enclosing block:
+
+```go
+func inspect(typeOf types.Type) error {
+	named, ok := typeOf.(*types.Named)
+	if !ok {
+		return ErrUnsupported
+	}
+
+	return inspectNamed(named)
+}
+```
+
+### Consecutive control-flow blocks
+
+Separate independent `if` statements with a blank line.
+
+Avoid:
+
+```go
+if foo != nil {
+	useFoo(foo)
+}
+if bar != nil {
+	useBar(bar)
+}
+```
+
+Prefer:
+
+```go
+if foo != nil {
+	useFoo(foo)
+}
+
+if bar != nil {
+	useBar(bar)
+}
+```
+
+This applies even when both conditions are short. Independent control-flow decisions should remain visually distinct.
+
+### Statements after control flow
+
+Add a blank line after a completed `if` block before continuing with a separate statement or logical unit.
+
+Avoid:
+
+```go
+if foo == bar {
+	doFoo()
+}
+doSomething()
+```
+
+Prefer:
+
+```go
+if foo == bar {
+	doFoo()
+}
+
+doSomething()
+```
+
 ## Response and code style
 
 When assisting with this repository, avoid large unstructured blocks of prose or code.
