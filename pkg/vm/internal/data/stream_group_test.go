@@ -81,6 +81,28 @@ func TestStreamGroupIteratorIgnoresCompletedArmErrors(t *testing.T) {
 	}
 }
 
+func TestStreamGroupIteratorRejectsLargeArmIndexWithoutClosingArm(t *testing.T) {
+	stream := newStreamGroupTestStream(1)
+	iterator := NewStreamGroupValue([]runtime.Stream{stream}).(*StreamGroupValue).
+		Iterate(runtime.Duration(time.Second)).(*StreamGroupIterator)
+	t.Cleanup(func() {
+		if err := iterator.Close(); err != nil {
+			t.Errorf("close iterator: %v", err)
+		}
+	})
+
+	err := iterator.ArmDone(runtime.NewInt64(1 << 32))
+	if !errors.Is(err, runtime.ErrInvalidArgument) {
+		t.Fatalf("expected invalid argument for large arm index, got %v", err)
+	}
+	if !iterator.active[0] || iterator.activeCount != 1 {
+		t.Fatalf("large arm index changed active state: active=%v count=%d", iterator.active, iterator.activeCount)
+	}
+	if got := stream.closeCount.Load(); got != 0 {
+		t.Fatalf("large arm index closed stream %d times", got)
+	}
+}
+
 func TestStreamGroupIteratorPropagatesActiveArmError(t *testing.T) {
 	stream := newStreamGroupTestStream(1)
 	want := errors.New("stream failed")

@@ -16,7 +16,7 @@ type (
 	// StreamGroupController exposes completion only to stream-group bytecode.
 	StreamGroupController interface {
 		runtime.Value
-		ArmDone(index int) error
+		ArmDone(index runtime.Int) error
 	}
 )
 

@@ -1106,7 +1106,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				break
 			}
 
-			if err := group.ArmDone(int(armIndex)); err != nil {
+			if err := group.ArmDone(armIndex); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 			}
 		case bytecode.OpQuery:

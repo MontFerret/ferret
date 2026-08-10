@@ -130,12 +130,12 @@ func (it *StreamGroupIterator) Key() runtime.Value {
 }
 
 // ArmDone prevents queued messages or errors from a satisfied arm from affecting the group.
-func (it *StreamGroupIterator) ArmDone(index int) error {
-	if index < 0 || index >= len(it.active) {
+func (it *StreamGroupIterator) ArmDone(index runtime.Int) error {
+	if index < 0 || index > runtime.MaxInt || index >= runtime.Int(len(it.active)) {
 		return runtime.Error(runtime.ErrInvalidArgument, "stream group arm index is out of range")
 	}
 
-	_, err := it.completeArm(index)
+	_, err := it.completeArm(int(index))
 
 	return err
 }
