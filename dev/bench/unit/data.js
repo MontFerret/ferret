@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1786029837515,
+  "lastUpdate": 1786372973499,
   "repoUrl": "https://github.com/MontFerret/ferret",
   "entries": {
     "Ferret Go Benchmarks - Unit": [
@@ -467778,6 +467778,13980 @@ window.BENCHMARK_DATA = {
             "value": 0,
             "unit": "allocs/op",
             "extra": "29888916 times\n4 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ziflex@users.noreply.github.com",
+            "name": "Tim Voronov",
+            "username": "ziflex"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6d53480af7a1b3a102ae8c7f2d833deb591015d0",
+          "message": "Update AGENTS.md",
+          "timestamp": "2026-08-10T10:29:41-04:00",
+          "tree_id": "1787cff9fc3126ba0fe79b3e940ba82d83363ed7",
+          "url": "https://github.com/MontFerret/ferret/commit/6d53480af7a1b3a102ae8c7f2d833deb591015d0"
+        },
+        "date": 1786372966697,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 38580,
+            "unit": "ns/op\t   19340 B/op\t      56 allocs/op",
+            "extra": "31040 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 38580,
+            "unit": "ns/op",
+            "extra": "31040 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 19340,
+            "unit": "B/op",
+            "extra": "31040 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 56,
+            "unit": "allocs/op",
+            "extra": "31040 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 38533,
+            "unit": "ns/op\t   19340 B/op\t      56 allocs/op",
+            "extra": "31024 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 38533,
+            "unit": "ns/op",
+            "extra": "31024 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 19340,
+            "unit": "B/op",
+            "extra": "31024 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 56,
+            "unit": "allocs/op",
+            "extra": "31024 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 38575,
+            "unit": "ns/op\t   19340 B/op\t      56 allocs/op",
+            "extra": "31027 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 38575,
+            "unit": "ns/op",
+            "extra": "31027 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 19340,
+            "unit": "B/op",
+            "extra": "31027 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 56,
+            "unit": "allocs/op",
+            "extra": "31027 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 39127,
+            "unit": "ns/op\t   19340 B/op\t      56 allocs/op",
+            "extra": "28378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 39127,
+            "unit": "ns/op",
+            "extra": "28378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 19340,
+            "unit": "B/op",
+            "extra": "28378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 56,
+            "unit": "allocs/op",
+            "extra": "28378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 38512,
+            "unit": "ns/op\t   19340 B/op\t      56 allocs/op",
+            "extra": "30951 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 38512,
+            "unit": "ns/op",
+            "extra": "30951 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 19340,
+            "unit": "B/op",
+            "extra": "30951 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 56,
+            "unit": "allocs/op",
+            "extra": "30951 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 49009,
+            "unit": "ns/op\t   17956 B/op\t      96 allocs/op",
+            "extra": "24877 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 49009,
+            "unit": "ns/op",
+            "extra": "24877 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 17956,
+            "unit": "B/op",
+            "extra": "24877 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 96,
+            "unit": "allocs/op",
+            "extra": "24877 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 49260,
+            "unit": "ns/op\t   17956 B/op\t      96 allocs/op",
+            "extra": "24600 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 49260,
+            "unit": "ns/op",
+            "extra": "24600 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 17956,
+            "unit": "B/op",
+            "extra": "24600 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 96,
+            "unit": "allocs/op",
+            "extra": "24600 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 48575,
+            "unit": "ns/op\t   17956 B/op\t      96 allocs/op",
+            "extra": "24596 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 48575,
+            "unit": "ns/op",
+            "extra": "24596 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 17956,
+            "unit": "B/op",
+            "extra": "24596 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 96,
+            "unit": "allocs/op",
+            "extra": "24596 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 48856,
+            "unit": "ns/op\t   17956 B/op\t      96 allocs/op",
+            "extra": "24416 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 48856,
+            "unit": "ns/op",
+            "extra": "24416 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 17956,
+            "unit": "B/op",
+            "extra": "24416 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 96,
+            "unit": "allocs/op",
+            "extra": "24416 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 48317,
+            "unit": "ns/op\t   17956 B/op\t      96 allocs/op",
+            "extra": "24440 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 48317,
+            "unit": "ns/op",
+            "extra": "24440 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 17956,
+            "unit": "B/op",
+            "extra": "24440 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalMessagePack (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 96,
+            "unit": "allocs/op",
+            "extra": "24440 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 17383,
+            "unit": "ns/op\t   15849 B/op\t      26 allocs/op",
+            "extra": "69420 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 17383,
+            "unit": "ns/op",
+            "extra": "69420 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 15849,
+            "unit": "B/op",
+            "extra": "69420 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 26,
+            "unit": "allocs/op",
+            "extra": "69420 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 17085,
+            "unit": "ns/op\t   15846 B/op\t      26 allocs/op",
+            "extra": "69007 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 17085,
+            "unit": "ns/op",
+            "extra": "69007 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 15846,
+            "unit": "B/op",
+            "extra": "69007 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 26,
+            "unit": "allocs/op",
+            "extra": "69007 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 17242,
+            "unit": "ns/op\t   15851 B/op\t      26 allocs/op",
+            "extra": "69098 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 17242,
+            "unit": "ns/op",
+            "extra": "69098 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 15851,
+            "unit": "B/op",
+            "extra": "69098 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 26,
+            "unit": "allocs/op",
+            "extra": "69098 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 17293,
+            "unit": "ns/op\t   15849 B/op\t      26 allocs/op",
+            "extra": "68691 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 17293,
+            "unit": "ns/op",
+            "extra": "68691 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 15849,
+            "unit": "B/op",
+            "extra": "68691 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 26,
+            "unit": "allocs/op",
+            "extra": "68691 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 17361,
+            "unit": "ns/op\t   15847 B/op\t      26 allocs/op",
+            "extra": "64726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 17361,
+            "unit": "ns/op",
+            "extra": "64726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 15847,
+            "unit": "B/op",
+            "extra": "64726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 26,
+            "unit": "allocs/op",
+            "extra": "64726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 29903,
+            "unit": "ns/op\t   21710 B/op\t     298 allocs/op",
+            "extra": "39854 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 29903,
+            "unit": "ns/op",
+            "extra": "39854 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 21710,
+            "unit": "B/op",
+            "extra": "39854 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 298,
+            "unit": "allocs/op",
+            "extra": "39854 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 29632,
+            "unit": "ns/op\t   21715 B/op\t     298 allocs/op",
+            "extra": "39729 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 29632,
+            "unit": "ns/op",
+            "extra": "39729 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 21715,
+            "unit": "B/op",
+            "extra": "39729 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 298,
+            "unit": "allocs/op",
+            "extra": "39729 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 29688,
+            "unit": "ns/op\t   21707 B/op\t     298 allocs/op",
+            "extra": "40015 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 29688,
+            "unit": "ns/op",
+            "extra": "40015 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 21707,
+            "unit": "B/op",
+            "extra": "40015 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 298,
+            "unit": "allocs/op",
+            "extra": "40015 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 29307,
+            "unit": "ns/op\t   21707 B/op\t     298 allocs/op",
+            "extra": "39976 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 29307,
+            "unit": "ns/op",
+            "extra": "39976 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 21707,
+            "unit": "B/op",
+            "extra": "39976 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 298,
+            "unit": "allocs/op",
+            "extra": "39976 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact)",
+            "value": 29452,
+            "unit": "ns/op\t   21716 B/op\t     298 allocs/op",
+            "extra": "40558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - ns/op",
+            "value": 29452,
+            "unit": "ns/op",
+            "extra": "40558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - B/op",
+            "value": 21716,
+            "unit": "B/op",
+            "extra": "40558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnmarshalJSON (github.com/MontFerret/ferret/v2/pkg/bytecode/artifact) - allocs/op",
+            "value": 298,
+            "unit": "allocs/op",
+            "extra": "40558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger)",
+            "value": 291.8,
+            "unit": "ns/op\t     184 B/op\t       5 allocs/op",
+            "extra": "3916503 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger) - ns/op",
+            "value": 291.8,
+            "unit": "ns/op",
+            "extra": "3916503 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger) - B/op",
+            "value": 184,
+            "unit": "B/op",
+            "extra": "3916503 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger) - allocs/op",
+            "value": 5,
+            "unit": "allocs/op",
+            "extra": "3916503 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger)",
+            "value": 282.4,
+            "unit": "ns/op\t     184 B/op\t       5 allocs/op",
+            "extra": "4275367 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger) - ns/op",
+            "value": 282.4,
+            "unit": "ns/op",
+            "extra": "4275367 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger) - B/op",
+            "value": 184,
+            "unit": "B/op",
+            "extra": "4275367 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger) - allocs/op",
+            "value": 5,
+            "unit": "allocs/op",
+            "extra": "4275367 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger)",
+            "value": 280.3,
+            "unit": "ns/op\t     184 B/op\t       5 allocs/op",
+            "extra": "4369489 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger) - ns/op",
+            "value": 280.3,
+            "unit": "ns/op",
+            "extra": "4369489 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger) - B/op",
+            "value": 184,
+            "unit": "B/op",
+            "extra": "4369489 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger) - allocs/op",
+            "value": 5,
+            "unit": "allocs/op",
+            "extra": "4369489 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger)",
+            "value": 284.5,
+            "unit": "ns/op\t     184 B/op\t       5 allocs/op",
+            "extra": "4435674 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger) - ns/op",
+            "value": 284.5,
+            "unit": "ns/op",
+            "extra": "4435674 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger) - B/op",
+            "value": 184,
+            "unit": "B/op",
+            "extra": "4435674 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger) - allocs/op",
+            "value": 5,
+            "unit": "allocs/op",
+            "extra": "4435674 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger)",
+            "value": 272.6,
+            "unit": "ns/op\t     184 B/op\t       5 allocs/op",
+            "extra": "4297288 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger) - ns/op",
+            "value": 272.6,
+            "unit": "ns/op",
+            "extra": "4297288 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger) - B/op",
+            "value": 184,
+            "unit": "B/op",
+            "extra": "4297288 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueBuiltin (github.com/MontFerret/ferret/v2/pkg/debugger) - allocs/op",
+            "value": 5,
+            "unit": "allocs/op",
+            "extra": "4297288 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger)",
+            "value": 25.89,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "45606480 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger) - ns/op",
+            "value": 25.89,
+            "unit": "ns/op",
+            "extra": "45606480 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "45606480 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "45606480 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger)",
+            "value": 26.1,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "47104965 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger) - ns/op",
+            "value": 26.1,
+            "unit": "ns/op",
+            "extra": "47104965 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "47104965 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "47104965 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger)",
+            "value": 25.34,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "46963084 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger) - ns/op",
+            "value": 25.34,
+            "unit": "ns/op",
+            "extra": "46963084 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "46963084 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "46963084 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger)",
+            "value": 25.33,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "47534690 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger) - ns/op",
+            "value": 25.33,
+            "unit": "ns/op",
+            "extra": "47534690 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "47534690 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "47534690 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger)",
+            "value": 25.47,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "44732588 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger) - ns/op",
+            "value": 25.47,
+            "unit": "ns/op",
+            "extra": "44732588 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "44732588 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatValueCustomDisplay (github.com/MontFerret/ferret/v2/pkg/debugger) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "44732588 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger)",
+            "value": 128.9,
+            "unit": "ns/op\t     176 B/op\t       2 allocs/op",
+            "extra": "9901383 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger) - ns/op",
+            "value": 128.9,
+            "unit": "ns/op",
+            "extra": "9901383 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger) - B/op",
+            "value": 176,
+            "unit": "B/op",
+            "extra": "9901383 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "9901383 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger)",
+            "value": 122,
+            "unit": "ns/op\t     176 B/op\t       2 allocs/op",
+            "extra": "8605026 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger) - ns/op",
+            "value": 122,
+            "unit": "ns/op",
+            "extra": "8605026 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger) - B/op",
+            "value": 176,
+            "unit": "B/op",
+            "extra": "8605026 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "8605026 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger)",
+            "value": 122.5,
+            "unit": "ns/op\t     176 B/op\t       2 allocs/op",
+            "extra": "10111916 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger) - ns/op",
+            "value": 122.5,
+            "unit": "ns/op",
+            "extra": "10111916 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger) - B/op",
+            "value": 176,
+            "unit": "B/op",
+            "extra": "10111916 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "10111916 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger)",
+            "value": 128,
+            "unit": "ns/op\t     176 B/op\t       2 allocs/op",
+            "extra": "9585117 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger) - ns/op",
+            "value": 128,
+            "unit": "ns/op",
+            "extra": "9585117 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger) - B/op",
+            "value": 176,
+            "unit": "B/op",
+            "extra": "9585117 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "9585117 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger)",
+            "value": 128.1,
+            "unit": "ns/op\t     176 B/op\t       2 allocs/op",
+            "extra": "10290909 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger) - ns/op",
+            "value": 128.1,
+            "unit": "ns/op",
+            "extra": "10290909 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger) - B/op",
+            "value": 176,
+            "unit": "B/op",
+            "extra": "10290909 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSessionContinueThroughExecutionInterface (github.com/MontFerret/ferret/v2/pkg/debugger) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "10290909 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 41638,
+            "unit": "ns/op\t  96.33 MB/s\t   11152 B/op\t     932 allocs/op",
+            "extra": "28094 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 41638,
+            "unit": "ns/op",
+            "extra": "28094 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 96.33,
+            "unit": "MB/s",
+            "extra": "28094 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 11152,
+            "unit": "B/op",
+            "extra": "28094 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 932,
+            "unit": "allocs/op",
+            "extra": "28094 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 42221,
+            "unit": "ns/op\t  95.00 MB/s\t   11152 B/op\t     932 allocs/op",
+            "extra": "28842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 42221,
+            "unit": "ns/op",
+            "extra": "28842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 95,
+            "unit": "MB/s",
+            "extra": "28842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 11152,
+            "unit": "B/op",
+            "extra": "28842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 932,
+            "unit": "allocs/op",
+            "extra": "28842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 42477,
+            "unit": "ns/op\t  94.43 MB/s\t   11152 B/op\t     932 allocs/op",
+            "extra": "28747 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 42477,
+            "unit": "ns/op",
+            "extra": "28747 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 94.43,
+            "unit": "MB/s",
+            "extra": "28747 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 11152,
+            "unit": "B/op",
+            "extra": "28747 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 932,
+            "unit": "allocs/op",
+            "extra": "28747 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 42541,
+            "unit": "ns/op\t  94.29 MB/s\t   11152 B/op\t     932 allocs/op",
+            "extra": "28052 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 42541,
+            "unit": "ns/op",
+            "extra": "28052 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 94.29,
+            "unit": "MB/s",
+            "extra": "28052 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 11152,
+            "unit": "B/op",
+            "extra": "28052 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 932,
+            "unit": "allocs/op",
+            "extra": "28052 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 42515,
+            "unit": "ns/op\t  94.34 MB/s\t   11152 B/op\t     932 allocs/op",
+            "extra": "27970 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 42515,
+            "unit": "ns/op",
+            "extra": "27970 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 94.34,
+            "unit": "MB/s",
+            "extra": "27970 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 11152,
+            "unit": "B/op",
+            "extra": "27970 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 932,
+            "unit": "allocs/op",
+            "extra": "27970 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 30665,
+            "unit": "ns/op\t  76.34 MB/s\t   12867 B/op\t     422 allocs/op",
+            "extra": "39264 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 30665,
+            "unit": "ns/op",
+            "extra": "39264 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 76.34,
+            "unit": "MB/s",
+            "extra": "39264 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 12867,
+            "unit": "B/op",
+            "extra": "39264 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 422,
+            "unit": "allocs/op",
+            "extra": "39264 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 30427,
+            "unit": "ns/op\t  76.94 MB/s\t   12867 B/op\t     422 allocs/op",
+            "extra": "39897 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 30427,
+            "unit": "ns/op",
+            "extra": "39897 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 76.94,
+            "unit": "MB/s",
+            "extra": "39897 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 12867,
+            "unit": "B/op",
+            "extra": "39897 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 422,
+            "unit": "allocs/op",
+            "extra": "39897 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 30293,
+            "unit": "ns/op\t  77.28 MB/s\t   12867 B/op\t     422 allocs/op",
+            "extra": "39554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 30293,
+            "unit": "ns/op",
+            "extra": "39554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 77.28,
+            "unit": "MB/s",
+            "extra": "39554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 12867,
+            "unit": "B/op",
+            "extra": "39554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 422,
+            "unit": "allocs/op",
+            "extra": "39554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 30278,
+            "unit": "ns/op\t  77.32 MB/s\t   12867 B/op\t     422 allocs/op",
+            "extra": "39658 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 30278,
+            "unit": "ns/op",
+            "extra": "39658 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 77.32,
+            "unit": "MB/s",
+            "extra": "39658 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 12867,
+            "unit": "B/op",
+            "extra": "39658 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 422,
+            "unit": "allocs/op",
+            "extra": "39658 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 30602,
+            "unit": "ns/op\t  76.50 MB/s\t   12867 B/op\t     422 allocs/op",
+            "extra": "39751 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 30602,
+            "unit": "ns/op",
+            "extra": "39751 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 76.5,
+            "unit": "MB/s",
+            "extra": "39751 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 12867,
+            "unit": "B/op",
+            "extra": "39751 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 422,
+            "unit": "allocs/op",
+            "extra": "39751 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 561168,
+            "unit": "ns/op\t  35.64 MB/s\t   65520 B/op\t      11 allocs/op",
+            "extra": "2167 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 561168,
+            "unit": "ns/op",
+            "extra": "2167 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 35.64,
+            "unit": "MB/s",
+            "extra": "2167 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 65520,
+            "unit": "B/op",
+            "extra": "2167 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 11,
+            "unit": "allocs/op",
+            "extra": "2167 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 523395,
+            "unit": "ns/op\t  38.21 MB/s\t   65520 B/op\t      11 allocs/op",
+            "extra": "2241 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 523395,
+            "unit": "ns/op",
+            "extra": "2241 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 38.21,
+            "unit": "MB/s",
+            "extra": "2241 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 65520,
+            "unit": "B/op",
+            "extra": "2241 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 11,
+            "unit": "allocs/op",
+            "extra": "2241 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 559437,
+            "unit": "ns/op\t  35.75 MB/s\t   65520 B/op\t      11 allocs/op",
+            "extra": "2197 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 559437,
+            "unit": "ns/op",
+            "extra": "2197 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 35.75,
+            "unit": "MB/s",
+            "extra": "2197 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 65520,
+            "unit": "B/op",
+            "extra": "2197 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 11,
+            "unit": "allocs/op",
+            "extra": "2197 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 536668,
+            "unit": "ns/op\t  37.27 MB/s\t   65520 B/op\t      11 allocs/op",
+            "extra": "2324 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 536668,
+            "unit": "ns/op",
+            "extra": "2324 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 37.27,
+            "unit": "MB/s",
+            "extra": "2324 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 65520,
+            "unit": "B/op",
+            "extra": "2324 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 11,
+            "unit": "allocs/op",
+            "extra": "2324 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 589236,
+            "unit": "ns/op\t  33.94 MB/s\t   65520 B/op\t      11 allocs/op",
+            "extra": "2126 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 589236,
+            "unit": "ns/op",
+            "extra": "2126 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 33.94,
+            "unit": "MB/s",
+            "extra": "2126 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 65520,
+            "unit": "B/op",
+            "extra": "2126 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 11,
+            "unit": "allocs/op",
+            "extra": "2126 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 1597823,
+            "unit": "ns/op\t  18.78 MB/s\t  630522 B/op\t   15011 allocs/op",
+            "extra": "814 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 1597823,
+            "unit": "ns/op",
+            "extra": "814 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 18.78,
+            "unit": "MB/s",
+            "extra": "814 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 630522,
+            "unit": "B/op",
+            "extra": "814 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 15011,
+            "unit": "allocs/op",
+            "extra": "814 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 1565122,
+            "unit": "ns/op\t  19.17 MB/s\t  630523 B/op\t   15011 allocs/op",
+            "extra": "726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 1565122,
+            "unit": "ns/op",
+            "extra": "726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 19.17,
+            "unit": "MB/s",
+            "extra": "726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 630523,
+            "unit": "B/op",
+            "extra": "726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 15011,
+            "unit": "allocs/op",
+            "extra": "726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 1614053,
+            "unit": "ns/op\t  18.59 MB/s\t  630523 B/op\t   15011 allocs/op",
+            "extra": "789 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 1614053,
+            "unit": "ns/op",
+            "extra": "789 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 18.59,
+            "unit": "MB/s",
+            "extra": "789 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 630523,
+            "unit": "B/op",
+            "extra": "789 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 15011,
+            "unit": "allocs/op",
+            "extra": "789 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 1582431,
+            "unit": "ns/op\t  18.96 MB/s\t  630523 B/op\t   15011 allocs/op",
+            "extra": "786 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 1582431,
+            "unit": "ns/op",
+            "extra": "786 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 18.96,
+            "unit": "MB/s",
+            "extra": "786 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 630523,
+            "unit": "B/op",
+            "extra": "786 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 15011,
+            "unit": "allocs/op",
+            "extra": "786 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 1481751,
+            "unit": "ns/op\t  20.25 MB/s\t  630522 B/op\t   15011 allocs/op",
+            "extra": "844 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 1481751,
+            "unit": "ns/op",
+            "extra": "844 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 20.25,
+            "unit": "MB/s",
+            "extra": "844 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 630522,
+            "unit": "B/op",
+            "extra": "844 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 15011,
+            "unit": "allocs/op",
+            "extra": "844 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 107565,
+            "unit": "ns/op\t  37.29 MB/s\t   90120 B/op\t    1812 allocs/op",
+            "extra": "11072 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 107565,
+            "unit": "ns/op",
+            "extra": "11072 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 37.29,
+            "unit": "MB/s",
+            "extra": "11072 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 90120,
+            "unit": "B/op",
+            "extra": "11072 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 1812,
+            "unit": "allocs/op",
+            "extra": "11072 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 108074,
+            "unit": "ns/op\t  37.11 MB/s\t   90121 B/op\t    1812 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 108074,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 37.11,
+            "unit": "MB/s",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 90121,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 1812,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 110287,
+            "unit": "ns/op\t  36.37 MB/s\t   90120 B/op\t    1812 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 110287,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 36.37,
+            "unit": "MB/s",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 90120,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 1812,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 109224,
+            "unit": "ns/op\t  36.72 MB/s\t   90120 B/op\t    1812 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 109224,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 36.72,
+            "unit": "MB/s",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 90120,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 1812,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 108816,
+            "unit": "ns/op\t  36.86 MB/s\t   90121 B/op\t    1812 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 108816,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 36.86,
+            "unit": "MB/s",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 90121,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 1812,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 68881,
+            "unit": "ns/op\t  33.99 MB/s\t   54064 B/op\t     781 allocs/op",
+            "extra": "17638 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 68881,
+            "unit": "ns/op",
+            "extra": "17638 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 33.99,
+            "unit": "MB/s",
+            "extra": "17638 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 54064,
+            "unit": "B/op",
+            "extra": "17638 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 781,
+            "unit": "allocs/op",
+            "extra": "17638 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 67704,
+            "unit": "ns/op\t  34.58 MB/s\t   54064 B/op\t     781 allocs/op",
+            "extra": "17036 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 67704,
+            "unit": "ns/op",
+            "extra": "17036 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 34.58,
+            "unit": "MB/s",
+            "extra": "17036 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 54064,
+            "unit": "B/op",
+            "extra": "17036 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 781,
+            "unit": "allocs/op",
+            "extra": "17036 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 68799,
+            "unit": "ns/op\t  34.03 MB/s\t   54064 B/op\t     781 allocs/op",
+            "extra": "17385 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 68799,
+            "unit": "ns/op",
+            "extra": "17385 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 34.03,
+            "unit": "MB/s",
+            "extra": "17385 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 54064,
+            "unit": "B/op",
+            "extra": "17385 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 781,
+            "unit": "allocs/op",
+            "extra": "17385 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 68016,
+            "unit": "ns/op\t  34.42 MB/s\t   54065 B/op\t     781 allocs/op",
+            "extra": "17790 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 68016,
+            "unit": "ns/op",
+            "extra": "17790 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 34.42,
+            "unit": "MB/s",
+            "extra": "17790 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 54065,
+            "unit": "B/op",
+            "extra": "17790 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 781,
+            "unit": "allocs/op",
+            "extra": "17790 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 68238,
+            "unit": "ns/op\t  34.31 MB/s\t   54065 B/op\t     781 allocs/op",
+            "extra": "17630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 68238,
+            "unit": "ns/op",
+            "extra": "17630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 34.31,
+            "unit": "MB/s",
+            "extra": "17630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 54065,
+            "unit": "B/op",
+            "extra": "17630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 781,
+            "unit": "allocs/op",
+            "extra": "17630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 1970277,
+            "unit": "ns/op\t  10.15 MB/s\t 2307974 B/op\t   20029 allocs/op",
+            "extra": "622 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 1970277,
+            "unit": "ns/op",
+            "extra": "622 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 10.15,
+            "unit": "MB/s",
+            "extra": "622 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 2307974,
+            "unit": "B/op",
+            "extra": "622 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 20029,
+            "unit": "allocs/op",
+            "extra": "622 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 2055704,
+            "unit": "ns/op\t   9.73 MB/s\t 2307975 B/op\t   20029 allocs/op",
+            "extra": "616 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 2055704,
+            "unit": "ns/op",
+            "extra": "616 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 9.73,
+            "unit": "MB/s",
+            "extra": "616 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 2307975,
+            "unit": "B/op",
+            "extra": "616 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 20029,
+            "unit": "allocs/op",
+            "extra": "616 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 1870673,
+            "unit": "ns/op\t  10.69 MB/s\t 2307973 B/op\t   20029 allocs/op",
+            "extra": "574 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 1870673,
+            "unit": "ns/op",
+            "extra": "574 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 10.69,
+            "unit": "MB/s",
+            "extra": "574 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 2307973,
+            "unit": "B/op",
+            "extra": "574 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 20029,
+            "unit": "allocs/op",
+            "extra": "574 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 1845525,
+            "unit": "ns/op\t  10.84 MB/s\t 2307973 B/op\t   20029 allocs/op",
+            "extra": "648 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 1845525,
+            "unit": "ns/op",
+            "extra": "648 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 10.84,
+            "unit": "MB/s",
+            "extra": "648 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 2307973,
+            "unit": "B/op",
+            "extra": "648 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 20029,
+            "unit": "allocs/op",
+            "extra": "648 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 1877818,
+            "unit": "ns/op\t  10.65 MB/s\t 2307975 B/op\t   20029 allocs/op",
+            "extra": "662 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 1877818,
+            "unit": "ns/op",
+            "extra": "662 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 10.65,
+            "unit": "MB/s",
+            "extra": "662 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 2307975,
+            "unit": "B/op",
+            "extra": "662 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 20029,
+            "unit": "allocs/op",
+            "extra": "662 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 1606060,
+            "unit": "ns/op\t  18.68 MB/s\t 2610245 B/op\t   20026 allocs/op",
+            "extra": "742 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 1606060,
+            "unit": "ns/op",
+            "extra": "742 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 18.68,
+            "unit": "MB/s",
+            "extra": "742 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 2610245,
+            "unit": "B/op",
+            "extra": "742 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 20026,
+            "unit": "allocs/op",
+            "extra": "742 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 1583693,
+            "unit": "ns/op\t  18.94 MB/s\t 2610245 B/op\t   20026 allocs/op",
+            "extra": "738 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 1583693,
+            "unit": "ns/op",
+            "extra": "738 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 18.94,
+            "unit": "MB/s",
+            "extra": "738 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 2610245,
+            "unit": "B/op",
+            "extra": "738 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 20026,
+            "unit": "allocs/op",
+            "extra": "738 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 1620676,
+            "unit": "ns/op\t  18.51 MB/s\t 2610244 B/op\t   20026 allocs/op",
+            "extra": "736 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 1620676,
+            "unit": "ns/op",
+            "extra": "736 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 18.51,
+            "unit": "MB/s",
+            "extra": "736 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 2610244,
+            "unit": "B/op",
+            "extra": "736 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 20026,
+            "unit": "allocs/op",
+            "extra": "736 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 1599590,
+            "unit": "ns/op\t  18.76 MB/s\t 2610244 B/op\t   20026 allocs/op",
+            "extra": "748 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 1599590,
+            "unit": "ns/op",
+            "extra": "748 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 18.76,
+            "unit": "MB/s",
+            "extra": "748 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 2610244,
+            "unit": "B/op",
+            "extra": "748 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 20026,
+            "unit": "allocs/op",
+            "extra": "748 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json)",
+            "value": 1672723,
+            "unit": "ns/op\t  17.94 MB/s\t 2610246 B/op\t   20026 allocs/op",
+            "extra": "736 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - ns/op",
+            "value": 1672723,
+            "unit": "ns/op",
+            "extra": "736 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - MB/s",
+            "value": 17.94,
+            "unit": "MB/s",
+            "extra": "736 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - B/op",
+            "value": 2610246,
+            "unit": "B/op",
+            "extra": "736 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJSONCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/json) - allocs/op",
+            "value": 20026,
+            "unit": "allocs/op",
+            "extra": "736 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 25040,
+            "unit": "ns/op\t 107.47 MB/s\t    8177 B/op\t       8 allocs/op",
+            "extra": "47025 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 25040,
+            "unit": "ns/op",
+            "extra": "47025 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 107.47,
+            "unit": "MB/s",
+            "extra": "47025 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 8177,
+            "unit": "B/op",
+            "extra": "47025 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 8,
+            "unit": "allocs/op",
+            "extra": "47025 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 25190,
+            "unit": "ns/op\t 106.83 MB/s\t    8177 B/op\t       8 allocs/op",
+            "extra": "47611 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 25190,
+            "unit": "ns/op",
+            "extra": "47611 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 106.83,
+            "unit": "MB/s",
+            "extra": "47611 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 8177,
+            "unit": "B/op",
+            "extra": "47611 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 8,
+            "unit": "allocs/op",
+            "extra": "47611 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 25544,
+            "unit": "ns/op\t 105.35 MB/s\t    8177 B/op\t       8 allocs/op",
+            "extra": "47122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 25544,
+            "unit": "ns/op",
+            "extra": "47122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 105.35,
+            "unit": "MB/s",
+            "extra": "47122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 8177,
+            "unit": "B/op",
+            "extra": "47122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 8,
+            "unit": "allocs/op",
+            "extra": "47122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 25450,
+            "unit": "ns/op\t 105.74 MB/s\t    8177 B/op\t       8 allocs/op",
+            "extra": "46345 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 25450,
+            "unit": "ns/op",
+            "extra": "46345 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 105.74,
+            "unit": "MB/s",
+            "extra": "46345 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 8177,
+            "unit": "B/op",
+            "extra": "46345 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 8,
+            "unit": "allocs/op",
+            "extra": "46345 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 25557,
+            "unit": "ns/op\t 105.29 MB/s\t    8177 B/op\t       8 allocs/op",
+            "extra": "47587 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 25557,
+            "unit": "ns/op",
+            "extra": "47587 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 105.29,
+            "unit": "MB/s",
+            "extra": "47587 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 8177,
+            "unit": "B/op",
+            "extra": "47587 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 8,
+            "unit": "allocs/op",
+            "extra": "47587 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 20891,
+            "unit": "ns/op\t  62.28 MB/s\t    8257 B/op\t     264 allocs/op",
+            "extra": "57830 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 20891,
+            "unit": "ns/op",
+            "extra": "57830 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 62.28,
+            "unit": "MB/s",
+            "extra": "57830 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 8257,
+            "unit": "B/op",
+            "extra": "57830 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 264,
+            "unit": "allocs/op",
+            "extra": "57830 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 20930,
+            "unit": "ns/op\t  62.16 MB/s\t    8257 B/op\t     264 allocs/op",
+            "extra": "55249 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 20930,
+            "unit": "ns/op",
+            "extra": "55249 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 62.16,
+            "unit": "MB/s",
+            "extra": "55249 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 8257,
+            "unit": "B/op",
+            "extra": "55249 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 264,
+            "unit": "allocs/op",
+            "extra": "55249 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 20979,
+            "unit": "ns/op\t  62.01 MB/s\t    8257 B/op\t     264 allocs/op",
+            "extra": "57069 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 20979,
+            "unit": "ns/op",
+            "extra": "57069 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 62.01,
+            "unit": "MB/s",
+            "extra": "57069 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 8257,
+            "unit": "B/op",
+            "extra": "57069 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 264,
+            "unit": "allocs/op",
+            "extra": "57069 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 21209,
+            "unit": "ns/op\t  61.34 MB/s\t    8257 B/op\t     264 allocs/op",
+            "extra": "57310 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 21209,
+            "unit": "ns/op",
+            "extra": "57310 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 61.34,
+            "unit": "MB/s",
+            "extra": "57310 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 8257,
+            "unit": "B/op",
+            "extra": "57310 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 264,
+            "unit": "allocs/op",
+            "extra": "57310 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 21014,
+            "unit": "ns/op\t  61.91 MB/s\t    8257 B/op\t     264 allocs/op",
+            "extra": "57469 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 21014,
+            "unit": "ns/op",
+            "extra": "57469 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 61.91,
+            "unit": "MB/s",
+            "extra": "57469 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 8257,
+            "unit": "B/op",
+            "extra": "57469 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 264,
+            "unit": "allocs/op",
+            "extra": "57469 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 442138,
+            "unit": "ns/op\t  22.62 MB/s\t   32755 B/op\t      10 allocs/op",
+            "extra": "2619 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 442138,
+            "unit": "ns/op",
+            "extra": "2619 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 22.62,
+            "unit": "MB/s",
+            "extra": "2619 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 32755,
+            "unit": "B/op",
+            "extra": "2619 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "2619 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 437675,
+            "unit": "ns/op\t  22.85 MB/s\t   32755 B/op\t      10 allocs/op",
+            "extra": "2551 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 437675,
+            "unit": "ns/op",
+            "extra": "2551 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 22.85,
+            "unit": "MB/s",
+            "extra": "2551 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 32755,
+            "unit": "B/op",
+            "extra": "2551 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "2551 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 422215,
+            "unit": "ns/op\t  23.69 MB/s\t   32755 B/op\t      10 allocs/op",
+            "extra": "2907 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 422215,
+            "unit": "ns/op",
+            "extra": "2907 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 23.69,
+            "unit": "MB/s",
+            "extra": "2907 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 32755,
+            "unit": "B/op",
+            "extra": "2907 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "2907 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 461672,
+            "unit": "ns/op\t  21.66 MB/s\t   32755 B/op\t      10 allocs/op",
+            "extra": "2892 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 461672,
+            "unit": "ns/op",
+            "extra": "2892 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 21.66,
+            "unit": "MB/s",
+            "extra": "2892 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 32755,
+            "unit": "B/op",
+            "extra": "2892 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "2892 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 438364,
+            "unit": "ns/op\t  22.81 MB/s\t   32755 B/op\t      10 allocs/op",
+            "extra": "2668 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 438364,
+            "unit": "ns/op",
+            "extra": "2668 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 22.81,
+            "unit": "MB/s",
+            "extra": "2668 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 32755,
+            "unit": "B/op",
+            "extra": "2668 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "2668 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 1239168,
+            "unit": "ns/op\t  12.11 MB/s\t  512817 B/op\t   10010 allocs/op",
+            "extra": "967 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 1239168,
+            "unit": "ns/op",
+            "extra": "967 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 12.11,
+            "unit": "MB/s",
+            "extra": "967 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 512817,
+            "unit": "B/op",
+            "extra": "967 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 10010,
+            "unit": "allocs/op",
+            "extra": "967 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 1290906,
+            "unit": "ns/op\t  11.62 MB/s\t  512820 B/op\t   10010 allocs/op",
+            "extra": "979 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 1290906,
+            "unit": "ns/op",
+            "extra": "979 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 11.62,
+            "unit": "MB/s",
+            "extra": "979 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 512820,
+            "unit": "B/op",
+            "extra": "979 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 10010,
+            "unit": "allocs/op",
+            "extra": "979 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 1304185,
+            "unit": "ns/op\t  11.50 MB/s\t  512821 B/op\t   10010 allocs/op",
+            "extra": "880 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 1304185,
+            "unit": "ns/op",
+            "extra": "880 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 11.5,
+            "unit": "MB/s",
+            "extra": "880 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 512821,
+            "unit": "B/op",
+            "extra": "880 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 10010,
+            "unit": "allocs/op",
+            "extra": "880 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 1312790,
+            "unit": "ns/op\t  11.43 MB/s\t  512817 B/op\t   10010 allocs/op",
+            "extra": "925 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 1312790,
+            "unit": "ns/op",
+            "extra": "925 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 11.43,
+            "unit": "MB/s",
+            "extra": "925 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 512817,
+            "unit": "B/op",
+            "extra": "925 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 10010,
+            "unit": "allocs/op",
+            "extra": "925 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 1249522,
+            "unit": "ns/op\t  12.01 MB/s\t  512817 B/op\t   10010 allocs/op",
+            "extra": "950 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 1249522,
+            "unit": "ns/op",
+            "extra": "950 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 12.01,
+            "unit": "MB/s",
+            "extra": "950 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 512817,
+            "unit": "B/op",
+            "extra": "950 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecEncode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 10010,
+            "unit": "allocs/op",
+            "extra": "950 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 53577,
+            "unit": "ns/op\t  50.23 MB/s\t   24653 B/op\t     771 allocs/op",
+            "extra": "21980 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 53577,
+            "unit": "ns/op",
+            "extra": "21980 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 50.23,
+            "unit": "MB/s",
+            "extra": "21980 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 24653,
+            "unit": "B/op",
+            "extra": "21980 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 771,
+            "unit": "allocs/op",
+            "extra": "21980 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 53535,
+            "unit": "ns/op\t  50.27 MB/s\t   24653 B/op\t     771 allocs/op",
+            "extra": "22058 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 53535,
+            "unit": "ns/op",
+            "extra": "22058 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 50.27,
+            "unit": "MB/s",
+            "extra": "22058 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 24653,
+            "unit": "B/op",
+            "extra": "22058 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 771,
+            "unit": "allocs/op",
+            "extra": "22058 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 54027,
+            "unit": "ns/op\t  49.81 MB/s\t   24653 B/op\t     771 allocs/op",
+            "extra": "22186 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 54027,
+            "unit": "ns/op",
+            "extra": "22186 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 49.81,
+            "unit": "MB/s",
+            "extra": "22186 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 24653,
+            "unit": "B/op",
+            "extra": "22186 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 771,
+            "unit": "allocs/op",
+            "extra": "22186 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 52643,
+            "unit": "ns/op\t  51.12 MB/s\t   24653 B/op\t     771 allocs/op",
+            "extra": "22906 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 52643,
+            "unit": "ns/op",
+            "extra": "22906 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 51.12,
+            "unit": "MB/s",
+            "extra": "22906 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 24653,
+            "unit": "B/op",
+            "extra": "22906 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 771,
+            "unit": "allocs/op",
+            "extra": "22906 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 52690,
+            "unit": "ns/op\t  51.07 MB/s\t   24653 B/op\t     771 allocs/op",
+            "extra": "22752 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 52690,
+            "unit": "ns/op",
+            "extra": "22752 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 51.07,
+            "unit": "MB/s",
+            "extra": "22752 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 24653,
+            "unit": "B/op",
+            "extra": "22752 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_array_1024 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 771,
+            "unit": "allocs/op",
+            "extra": "22752 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 28702,
+            "unit": "ns/op\t  45.33 MB/s\t   19315 B/op\t     252 allocs/op",
+            "extra": "42620 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 28702,
+            "unit": "ns/op",
+            "extra": "42620 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 45.33,
+            "unit": "MB/s",
+            "extra": "42620 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 19315,
+            "unit": "B/op",
+            "extra": "42620 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 252,
+            "unit": "allocs/op",
+            "extra": "42620 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 28531,
+            "unit": "ns/op\t  45.60 MB/s\t   19315 B/op\t     252 allocs/op",
+            "extra": "42315 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 28531,
+            "unit": "ns/op",
+            "extra": "42315 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 45.6,
+            "unit": "MB/s",
+            "extra": "42315 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 19315,
+            "unit": "B/op",
+            "extra": "42315 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 252,
+            "unit": "allocs/op",
+            "extra": "42315 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 28589,
+            "unit": "ns/op\t  45.51 MB/s\t   19315 B/op\t     252 allocs/op",
+            "extra": "41666 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 28589,
+            "unit": "ns/op",
+            "extra": "41666 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 45.51,
+            "unit": "MB/s",
+            "extra": "41666 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 19315,
+            "unit": "B/op",
+            "extra": "41666 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 252,
+            "unit": "allocs/op",
+            "extra": "41666 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 28590,
+            "unit": "ns/op\t  45.51 MB/s\t   19315 B/op\t     252 allocs/op",
+            "extra": "41630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 28590,
+            "unit": "ns/op",
+            "extra": "41630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 45.51,
+            "unit": "MB/s",
+            "extra": "41630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 19315,
+            "unit": "B/op",
+            "extra": "41630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 252,
+            "unit": "allocs/op",
+            "extra": "41630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 28538,
+            "unit": "ns/op\t  45.59 MB/s\t   19315 B/op\t     252 allocs/op",
+            "extra": "42628 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 28538,
+            "unit": "ns/op",
+            "extra": "42628 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 45.59,
+            "unit": "MB/s",
+            "extra": "42628 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 19315,
+            "unit": "B/op",
+            "extra": "42628 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/flat_object_256 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 252,
+            "unit": "allocs/op",
+            "extra": "42628 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 1189697,
+            "unit": "ns/op\t   8.41 MB/s\t  400102 B/op\t   20001 allocs/op",
+            "extra": "1011 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 1189697,
+            "unit": "ns/op",
+            "extra": "1011 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 8.41,
+            "unit": "MB/s",
+            "extra": "1011 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 400102,
+            "unit": "B/op",
+            "extra": "1011 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 20001,
+            "unit": "allocs/op",
+            "extra": "1011 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 1180923,
+            "unit": "ns/op\t   8.47 MB/s\t  400104 B/op\t   20001 allocs/op",
+            "extra": "1003 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 1180923,
+            "unit": "ns/op",
+            "extra": "1003 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 8.47,
+            "unit": "MB/s",
+            "extra": "1003 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 400104,
+            "unit": "B/op",
+            "extra": "1003 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 20001,
+            "unit": "allocs/op",
+            "extra": "1003 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 1174818,
+            "unit": "ns/op\t   8.51 MB/s\t  400102 B/op\t   20001 allocs/op",
+            "extra": "998 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 1174818,
+            "unit": "ns/op",
+            "extra": "998 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 8.51,
+            "unit": "MB/s",
+            "extra": "998 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 400102,
+            "unit": "B/op",
+            "extra": "998 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 20001,
+            "unit": "allocs/op",
+            "extra": "998 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 1237780,
+            "unit": "ns/op\t   8.08 MB/s\t  400101 B/op\t   20001 allocs/op",
+            "extra": "1059 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 1237780,
+            "unit": "ns/op",
+            "extra": "1059 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 8.08,
+            "unit": "MB/s",
+            "extra": "1059 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 400101,
+            "unit": "B/op",
+            "extra": "1059 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 20001,
+            "unit": "allocs/op",
+            "extra": "1059 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 1259358,
+            "unit": "ns/op\t   7.94 MB/s\t  400102 B/op\t   20001 allocs/op",
+            "extra": "1042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 1259358,
+            "unit": "ns/op",
+            "extra": "1042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 7.94,
+            "unit": "MB/s",
+            "extra": "1042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 400102,
+            "unit": "B/op",
+            "extra": "1042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_array_10000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 20001,
+            "unit": "allocs/op",
+            "extra": "1042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 1631307,
+            "unit": "ns/op\t   9.20 MB/s\t 1720211 B/op\t   15001 allocs/op",
+            "extra": "712 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 1631307,
+            "unit": "ns/op",
+            "extra": "712 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 9.2,
+            "unit": "MB/s",
+            "extra": "712 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 1720211,
+            "unit": "B/op",
+            "extra": "712 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 15001,
+            "unit": "allocs/op",
+            "extra": "712 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 1616185,
+            "unit": "ns/op\t   9.28 MB/s\t 1720216 B/op\t   15001 allocs/op",
+            "extra": "730 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 1616185,
+            "unit": "ns/op",
+            "extra": "730 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 9.28,
+            "unit": "MB/s",
+            "extra": "730 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 1720216,
+            "unit": "B/op",
+            "extra": "730 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 15001,
+            "unit": "allocs/op",
+            "extra": "730 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 1634475,
+            "unit": "ns/op\t   9.18 MB/s\t 1720209 B/op\t   15001 allocs/op",
+            "extra": "727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 1634475,
+            "unit": "ns/op",
+            "extra": "727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 9.18,
+            "unit": "MB/s",
+            "extra": "727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 1720209,
+            "unit": "B/op",
+            "extra": "727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 15001,
+            "unit": "allocs/op",
+            "extra": "727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 1653247,
+            "unit": "ns/op\t   9.07 MB/s\t 1720207 B/op\t   15001 allocs/op",
+            "extra": "729 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 1653247,
+            "unit": "ns/op",
+            "extra": "729 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 9.07,
+            "unit": "MB/s",
+            "extra": "729 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 1720207,
+            "unit": "B/op",
+            "extra": "729 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 15001,
+            "unit": "allocs/op",
+            "extra": "729 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack)",
+            "value": 1605914,
+            "unit": "ns/op\t   9.34 MB/s\t 1720206 B/op\t   15001 allocs/op",
+            "extra": "739 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - ns/op",
+            "value": 1605914,
+            "unit": "ns/op",
+            "extra": "739 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - MB/s",
+            "value": 9.34,
+            "unit": "MB/s",
+            "extra": "739 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - B/op",
+            "value": 1720206,
+            "unit": "B/op",
+            "extra": "739 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMsgpackCodecDecode/nested_object_5000 (github.com/MontFerret/ferret/v2/pkg/encoding/msgpack) - allocs/op",
+            "value": 15001,
+            "unit": "allocs/op",
+            "extra": "739 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 4003,
+            "unit": "ns/op\t    2996 B/op\t      37 allocs/op",
+            "extra": "294108 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 4003,
+            "unit": "ns/op",
+            "extra": "294108 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 2996,
+            "unit": "B/op",
+            "extra": "294108 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 37,
+            "unit": "allocs/op",
+            "extra": "294108 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 4076,
+            "unit": "ns/op\t    2996 B/op\t      37 allocs/op",
+            "extra": "304800 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 4076,
+            "unit": "ns/op",
+            "extra": "304800 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 2996,
+            "unit": "B/op",
+            "extra": "304800 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 37,
+            "unit": "allocs/op",
+            "extra": "304800 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 4076,
+            "unit": "ns/op\t    2996 B/op\t      37 allocs/op",
+            "extra": "302091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 4076,
+            "unit": "ns/op",
+            "extra": "302091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 2996,
+            "unit": "B/op",
+            "extra": "302091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 37,
+            "unit": "allocs/op",
+            "extra": "302091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 4036,
+            "unit": "ns/op\t    2996 B/op\t      37 allocs/op",
+            "extra": "294372 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 4036,
+            "unit": "ns/op",
+            "extra": "294372 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 2996,
+            "unit": "B/op",
+            "extra": "294372 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 37,
+            "unit": "allocs/op",
+            "extra": "294372 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 4055,
+            "unit": "ns/op\t    2996 B/op\t      37 allocs/op",
+            "extra": "292250 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 4055,
+            "unit": "ns/op",
+            "extra": "292250 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 2996,
+            "unit": "B/op",
+            "extra": "292250 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicy (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 37,
+            "unit": "allocs/op",
+            "extra": "292250 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 1583,
+            "unit": "ns/op\t    1696 B/op\t      19 allocs/op",
+            "extra": "743038 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 1583,
+            "unit": "ns/op",
+            "extra": "743038 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 1696,
+            "unit": "B/op",
+            "extra": "743038 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 19,
+            "unit": "allocs/op",
+            "extra": "743038 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 1574,
+            "unit": "ns/op\t    1696 B/op\t      19 allocs/op",
+            "extra": "775393 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 1574,
+            "unit": "ns/op",
+            "extra": "775393 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 1696,
+            "unit": "B/op",
+            "extra": "775393 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 19,
+            "unit": "allocs/op",
+            "extra": "775393 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 1661,
+            "unit": "ns/op\t    1696 B/op\t      19 allocs/op",
+            "extra": "774194 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 1661,
+            "unit": "ns/op",
+            "extra": "774194 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 1696,
+            "unit": "B/op",
+            "extra": "774194 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 19,
+            "unit": "allocs/op",
+            "extra": "774194 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 1670,
+            "unit": "ns/op\t    1696 B/op\t      19 allocs/op",
+            "extra": "710274 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 1670,
+            "unit": "ns/op",
+            "extra": "710274 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 1696,
+            "unit": "B/op",
+            "extra": "710274 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 19,
+            "unit": "allocs/op",
+            "extra": "710274 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 1600,
+            "unit": "ns/op\t    1696 B/op\t      19 allocs/op",
+            "extra": "756706 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 1600,
+            "unit": "ns/op",
+            "extra": "756706 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 1696,
+            "unit": "B/op",
+            "extra": "756706 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithoutTimeout (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 19,
+            "unit": "allocs/op",
+            "extra": "756706 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 5607,
+            "unit": "ns/op\t    3828 B/op\t      43 allocs/op",
+            "extra": "206392 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 5607,
+            "unit": "ns/op",
+            "extra": "206392 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 3828,
+            "unit": "B/op",
+            "extra": "206392 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 43,
+            "unit": "allocs/op",
+            "extra": "206392 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 5575,
+            "unit": "ns/op\t    3828 B/op\t      43 allocs/op",
+            "extra": "213932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 5575,
+            "unit": "ns/op",
+            "extra": "213932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 3828,
+            "unit": "B/op",
+            "extra": "213932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 43,
+            "unit": "allocs/op",
+            "extra": "213932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 5516,
+            "unit": "ns/op\t    3828 B/op\t      43 allocs/op",
+            "extra": "217197 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 5516,
+            "unit": "ns/op",
+            "extra": "217197 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 3828,
+            "unit": "B/op",
+            "extra": "217197 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 43,
+            "unit": "allocs/op",
+            "extra": "217197 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 5649,
+            "unit": "ns/op\t    3828 B/op\t      43 allocs/op",
+            "extra": "209085 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 5649,
+            "unit": "ns/op",
+            "extra": "209085 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 3828,
+            "unit": "B/op",
+            "extra": "209085 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 43,
+            "unit": "allocs/op",
+            "extra": "209085 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 5571,
+            "unit": "ns/op\t    3828 B/op\t      43 allocs/op",
+            "extra": "217982 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 5571,
+            "unit": "ns/op",
+            "extra": "217982 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 3828,
+            "unit": "B/op",
+            "extra": "217982 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientDoPolicyWithHeaders (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 43,
+            "unit": "allocs/op",
+            "extra": "217982 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 943.8,
+            "unit": "ns/op\t    1072 B/op\t      10 allocs/op",
+            "extra": "1270770 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 943.8,
+            "unit": "ns/op",
+            "extra": "1270770 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 1072,
+            "unit": "B/op",
+            "extra": "1270770 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "1270770 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 957,
+            "unit": "ns/op\t    1072 B/op\t      10 allocs/op",
+            "extra": "1247480 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 957,
+            "unit": "ns/op",
+            "extra": "1247480 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 1072,
+            "unit": "B/op",
+            "extra": "1247480 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "1247480 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 945.7,
+            "unit": "ns/op\t    1072 B/op\t      10 allocs/op",
+            "extra": "1269004 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 945.7,
+            "unit": "ns/op",
+            "extra": "1269004 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 1072,
+            "unit": "B/op",
+            "extra": "1269004 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "1269004 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 950.3,
+            "unit": "ns/op\t    1072 B/op\t      10 allocs/op",
+            "extra": "1266621 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 950.3,
+            "unit": "ns/op",
+            "extra": "1266621 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 1072,
+            "unit": "B/op",
+            "extra": "1266621 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "1266621 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 948.2,
+            "unit": "ns/op\t    1072 B/op\t      10 allocs/op",
+            "extra": "1265161 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 948.2,
+            "unit": "ns/op",
+            "extra": "1265161 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 1072,
+            "unit": "B/op",
+            "extra": "1265161 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToStdRequest (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "1265161 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 415.6,
+            "unit": "ns/op\t      96 B/op\t       2 allocs/op",
+            "extra": "2876380 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 415.6,
+            "unit": "ns/op",
+            "extra": "2876380 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 96,
+            "unit": "B/op",
+            "extra": "2876380 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "2876380 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 415.8,
+            "unit": "ns/op\t      96 B/op\t       2 allocs/op",
+            "extra": "2889174 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 415.8,
+            "unit": "ns/op",
+            "extra": "2889174 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 96,
+            "unit": "B/op",
+            "extra": "2889174 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "2889174 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 416.5,
+            "unit": "ns/op\t      96 B/op\t       2 allocs/op",
+            "extra": "2887941 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 416.5,
+            "unit": "ns/op",
+            "extra": "2887941 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 96,
+            "unit": "B/op",
+            "extra": "2887941 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "2887941 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 416.2,
+            "unit": "ns/op\t      96 B/op\t       2 allocs/op",
+            "extra": "2881726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 416.2,
+            "unit": "ns/op",
+            "extra": "2881726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 96,
+            "unit": "B/op",
+            "extra": "2881726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "2881726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 416.3,
+            "unit": "ns/op\t      96 B/op\t       2 allocs/op",
+            "extra": "2877949 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 416.3,
+            "unit": "ns/op",
+            "extra": "2877949 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 96,
+            "unit": "B/op",
+            "extra": "2877949 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyEval (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "2877949 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 793.1,
+            "unit": "ns/op\t     528 B/op\t       6 allocs/op",
+            "extra": "1511456 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 793.1,
+            "unit": "ns/op",
+            "extra": "1511456 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 528,
+            "unit": "B/op",
+            "extra": "1511456 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 6,
+            "unit": "allocs/op",
+            "extra": "1511456 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 793.2,
+            "unit": "ns/op\t     528 B/op\t       6 allocs/op",
+            "extra": "1512096 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 793.2,
+            "unit": "ns/op",
+            "extra": "1512096 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 528,
+            "unit": "B/op",
+            "extra": "1512096 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 6,
+            "unit": "allocs/op",
+            "extra": "1512096 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 797.7,
+            "unit": "ns/op\t     528 B/op\t       6 allocs/op",
+            "extra": "1503932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 797.7,
+            "unit": "ns/op",
+            "extra": "1503932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 528,
+            "unit": "B/op",
+            "extra": "1503932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 6,
+            "unit": "allocs/op",
+            "extra": "1503932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 797.7,
+            "unit": "ns/op\t     528 B/op\t       6 allocs/op",
+            "extra": "1501047 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 797.7,
+            "unit": "ns/op",
+            "extra": "1501047 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 528,
+            "unit": "B/op",
+            "extra": "1501047 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 6,
+            "unit": "allocs/op",
+            "extra": "1501047 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 798.8,
+            "unit": "ns/op\t     528 B/op\t       6 allocs/op",
+            "extra": "1501743 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 798.8,
+            "unit": "ns/op",
+            "extra": "1501743 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 528,
+            "unit": "B/op",
+            "extra": "1501743 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyPrepareDefaults (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 6,
+            "unit": "allocs/op",
+            "extra": "1501743 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 3061,
+            "unit": "ns/op\t1338.14 MB/s\t   17464 B/op\t       9 allocs/op",
+            "extra": "362396 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 3061,
+            "unit": "ns/op",
+            "extra": "362396 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - MB/s",
+            "value": 1338.14,
+            "unit": "MB/s",
+            "extra": "362396 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 17464,
+            "unit": "B/op",
+            "extra": "362396 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "362396 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 3065,
+            "unit": "ns/op\t1336.50 MB/s\t   17464 B/op\t       9 allocs/op",
+            "extra": "378746 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 3065,
+            "unit": "ns/op",
+            "extra": "378746 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - MB/s",
+            "value": 1336.5,
+            "unit": "MB/s",
+            "extra": "378746 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 17464,
+            "unit": "B/op",
+            "extra": "378746 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "378746 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 3094,
+            "unit": "ns/op\t1323.86 MB/s\t   17464 B/op\t       9 allocs/op",
+            "extra": "368413 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 3094,
+            "unit": "ns/op",
+            "extra": "368413 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - MB/s",
+            "value": 1323.86,
+            "unit": "MB/s",
+            "extra": "368413 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 17464,
+            "unit": "B/op",
+            "extra": "368413 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "368413 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 3069,
+            "unit": "ns/op\t1334.55 MB/s\t   17464 B/op\t       9 allocs/op",
+            "extra": "396093 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 3069,
+            "unit": "ns/op",
+            "extra": "396093 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - MB/s",
+            "value": 1334.55,
+            "unit": "MB/s",
+            "extra": "396093 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 17464,
+            "unit": "B/op",
+            "extra": "396093 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "396093 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 3070,
+            "unit": "ns/op\t1334.39 MB/s\t   17464 B/op\t       9 allocs/op",
+            "extra": "383095 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 3070,
+            "unit": "ns/op",
+            "extra": "383095 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - MB/s",
+            "value": 1334.39,
+            "unit": "MB/s",
+            "extra": "383095 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 17464,
+            "unit": "B/op",
+            "extra": "383095 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkReadResponseBodyBounded (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "383095 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 358.9,
+            "unit": "ns/op\t      56 B/op\t       3 allocs/op",
+            "extra": "3331684 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 358.9,
+            "unit": "ns/op",
+            "extra": "3331684 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 56,
+            "unit": "B/op",
+            "extra": "3331684 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 3,
+            "unit": "allocs/op",
+            "extra": "3331684 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 358.5,
+            "unit": "ns/op\t      56 B/op\t       3 allocs/op",
+            "extra": "3331891 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 358.5,
+            "unit": "ns/op",
+            "extra": "3331891 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 56,
+            "unit": "B/op",
+            "extra": "3331891 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 3,
+            "unit": "allocs/op",
+            "extra": "3331891 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 358.2,
+            "unit": "ns/op\t      56 B/op\t       3 allocs/op",
+            "extra": "3325611 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 358.2,
+            "unit": "ns/op",
+            "extra": "3325611 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 56,
+            "unit": "B/op",
+            "extra": "3325611 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 3,
+            "unit": "allocs/op",
+            "extra": "3325611 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 359.4,
+            "unit": "ns/op\t      56 B/op\t       3 allocs/op",
+            "extra": "3340232 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 359.4,
+            "unit": "ns/op",
+            "extra": "3340232 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 56,
+            "unit": "B/op",
+            "extra": "3340232 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 3,
+            "unit": "allocs/op",
+            "extra": "3340232 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http)",
+            "value": 357.9,
+            "unit": "ns/op\t      56 B/op\t       3 allocs/op",
+            "extra": "3370982 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http) - ns/op",
+            "value": 357.9,
+            "unit": "ns/op",
+            "extra": "3370982 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http) - B/op",
+            "value": 56,
+            "unit": "B/op",
+            "extra": "3370982 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkPolicyDialerControl (github.com/MontFerret/ferret/v2/pkg/net/http) - allocs/op",
+            "value": 3,
+            "unit": "allocs/op",
+            "extra": "3370982 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 9.363,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "127102749 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 9.363,
+            "unit": "ns/op",
+            "extra": "127102749 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "127102749 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "127102749 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 9.507,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "126101133 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 9.507,
+            "unit": "ns/op",
+            "extra": "126101133 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "126101133 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "126101133 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 9.468,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "126874404 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 9.468,
+            "unit": "ns/op",
+            "extra": "126874404 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "126874404 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "126874404 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 9.43,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "127541216 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 9.43,
+            "unit": "ns/op",
+            "extra": "127541216 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "127541216 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "127541216 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 9.263,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "130562046 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 9.263,
+            "unit": "ns/op",
+            "extra": "130562046 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "130562046 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddInt (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "130562046 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 57.37,
+            "unit": "ns/op\t      24 B/op\t       2 allocs/op",
+            "extra": "20849130 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 57.37,
+            "unit": "ns/op",
+            "extra": "20849130 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "20849130 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "20849130 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 57.53,
+            "unit": "ns/op\t      24 B/op\t       2 allocs/op",
+            "extra": "20534962 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 57.53,
+            "unit": "ns/op",
+            "extra": "20534962 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "20534962 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "20534962 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 57.34,
+            "unit": "ns/op\t      24 B/op\t       2 allocs/op",
+            "extra": "20691540 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 57.34,
+            "unit": "ns/op",
+            "extra": "20691540 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "20691540 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "20691540 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 56.96,
+            "unit": "ns/op\t      24 B/op\t       2 allocs/op",
+            "extra": "20955517 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 56.96,
+            "unit": "ns/op",
+            "extra": "20955517 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "20955517 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "20955517 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 58.02,
+            "unit": "ns/op\t      24 B/op\t       2 allocs/op",
+            "extra": "20790031 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 58.02,
+            "unit": "ns/op",
+            "extra": "20790031 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "20790031 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "20790031 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 21.1,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "52615071 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 21.1,
+            "unit": "ns/op",
+            "extra": "52615071 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "52615071 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "52615071 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 21,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "56591731 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 21,
+            "unit": "ns/op",
+            "extra": "56591731 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "56591731 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "56591731 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 21,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "54599942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 21,
+            "unit": "ns/op",
+            "extra": "54599942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "54599942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "54599942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 20.93,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "55504657 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 20.93,
+            "unit": "ns/op",
+            "extra": "55504657 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "55504657 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "55504657 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 21.05,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "57087052 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 21.05,
+            "unit": "ns/op",
+            "extra": "57087052 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "57087052 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticSubtractMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "57087052 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 20,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "59229646 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 20,
+            "unit": "ns/op",
+            "extra": "59229646 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "59229646 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "59229646 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 20.28,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "58952073 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 20.28,
+            "unit": "ns/op",
+            "extra": "58952073 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "58952073 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "58952073 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 19.95,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "58160826 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 19.95,
+            "unit": "ns/op",
+            "extra": "58160826 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "58160826 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "58160826 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 19.82,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "57016286 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 19.82,
+            "unit": "ns/op",
+            "extra": "57016286 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "57016286 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "57016286 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 20.2,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "58269346 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 20.2,
+            "unit": "ns/op",
+            "extra": "58269346 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "58269346 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "58269346 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 20.19,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "58491873 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 20.19,
+            "unit": "ns/op",
+            "extra": "58491873 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "58491873 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "58491873 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 20.21,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "57671071 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 20.21,
+            "unit": "ns/op",
+            "extra": "57671071 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "57671071 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "57671071 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 20.15,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "55368902 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 20.15,
+            "unit": "ns/op",
+            "extra": "55368902 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "55368902 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "55368902 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 20.1,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "55276676 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 20.1,
+            "unit": "ns/op",
+            "extra": "55276676 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "55276676 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "55276676 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 20.11,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "57872070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 20.11,
+            "unit": "ns/op",
+            "extra": "57872070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "57872070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideMixed (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "57872070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 55.11,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "21520480 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 55.11,
+            "unit": "ns/op",
+            "extra": "21520480 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "21520480 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "21520480 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 55.29,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "21416450 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 55.29,
+            "unit": "ns/op",
+            "extra": "21416450 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "21416450 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "21416450 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 55.17,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "21464424 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 55.17,
+            "unit": "ns/op",
+            "extra": "21464424 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "21464424 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "21464424 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 55.09,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "21784677 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 55.09,
+            "unit": "ns/op",
+            "extra": "21784677 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "21784677 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "21784677 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 55.17,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "21395143 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 55.17,
+            "unit": "ns/op",
+            "extra": "21395143 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "21395143 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticModuloFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "21395143 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 20.04,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "57246541 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 20.04,
+            "unit": "ns/op",
+            "extra": "57246541 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "57246541 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "57246541 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 20.01,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "57257538 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 20.01,
+            "unit": "ns/op",
+            "extra": "57257538 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "57257538 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "57257538 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 19.92,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "60476901 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 19.92,
+            "unit": "ns/op",
+            "extra": "60476901 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "60476901 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "60476901 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 19.9,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "55076422 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 19.9,
+            "unit": "ns/op",
+            "extra": "55076422 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "55076422 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "55076422 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 19.93,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "58185482 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 19.93,
+            "unit": "ns/op",
+            "extra": "58185482 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "58185482 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "58185482 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 481.1,
+            "unit": "ns/op\t     240 B/op\t      15 allocs/op",
+            "extra": "2535327 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 481.1,
+            "unit": "ns/op",
+            "extra": "2535327 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 240,
+            "unit": "B/op",
+            "extra": "2535327 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 15,
+            "unit": "allocs/op",
+            "extra": "2535327 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 472.8,
+            "unit": "ns/op\t     240 B/op\t      15 allocs/op",
+            "extra": "2518357 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 472.8,
+            "unit": "ns/op",
+            "extra": "2518357 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 240,
+            "unit": "B/op",
+            "extra": "2518357 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 15,
+            "unit": "allocs/op",
+            "extra": "2518357 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 472.2,
+            "unit": "ns/op\t     240 B/op\t      15 allocs/op",
+            "extra": "2529258 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 472.2,
+            "unit": "ns/op",
+            "extra": "2529258 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 240,
+            "unit": "B/op",
+            "extra": "2529258 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 15,
+            "unit": "allocs/op",
+            "extra": "2529258 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 468.9,
+            "unit": "ns/op\t     240 B/op\t      15 allocs/op",
+            "extra": "2551267 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 468.9,
+            "unit": "ns/op",
+            "extra": "2551267 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 240,
+            "unit": "B/op",
+            "extra": "2551267 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 15,
+            "unit": "allocs/op",
+            "extra": "2551267 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 465.9,
+            "unit": "ns/op\t     240 B/op\t      15 allocs/op",
+            "extra": "2575477 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 465.9,
+            "unit": "ns/op",
+            "extra": "2575477 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 240,
+            "unit": "B/op",
+            "extra": "2575477 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticMultiplyDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 15,
+            "unit": "allocs/op",
+            "extra": "2575477 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 17.96,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "65198199 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 17.96,
+            "unit": "ns/op",
+            "extra": "65198199 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "65198199 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "65198199 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 17.89,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "65584550 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 17.89,
+            "unit": "ns/op",
+            "extra": "65584550 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "65584550 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "65584550 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 18.04,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "65233944 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 18.04,
+            "unit": "ns/op",
+            "extra": "65233944 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "65233944 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "65233944 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 17.85,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "61910042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 17.85,
+            "unit": "ns/op",
+            "extra": "61910042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "61910042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "61910042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 17.93,
+            "unit": "ns/op\t       8 B/op\t       1 allocs/op",
+            "extra": "65418938 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 17.93,
+            "unit": "ns/op",
+            "extra": "65418938 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 8,
+            "unit": "B/op",
+            "extra": "65418938 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticDivideDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "65418938 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 50.9,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "23347395 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 50.9,
+            "unit": "ns/op",
+            "extra": "23347395 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "23347395 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "23347395 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 50.86,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "23091559 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 50.86,
+            "unit": "ns/op",
+            "extra": "23091559 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "23091559 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "23091559 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 51.25,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "22998852 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 51.25,
+            "unit": "ns/op",
+            "extra": "22998852 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "22998852 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "22998852 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 51.12,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "23249438 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 51.12,
+            "unit": "ns/op",
+            "extra": "23249438 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "23249438 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "23249438 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 51.29,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "23419204 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 51.29,
+            "unit": "ns/op",
+            "extra": "23419204 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "23419204 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArithmeticAddDateTime (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "23419204 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 3269,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "364285 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 3269,
+            "unit": "ns/op",
+            "extra": "364285 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "364285 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "364285 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 3262,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "367323 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 3262,
+            "unit": "ns/op",
+            "extra": "367323 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "367323 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "367323 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 3263,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "365666 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 3263,
+            "unit": "ns/op",
+            "extra": "365666 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "365666 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "365666 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 3264,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "349778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 3264,
+            "unit": "ns/op",
+            "extra": "349778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "349778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "349778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 3267,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "367144 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 3267,
+            "unit": "ns/op",
+            "extra": "367144 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "367144 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIteratorEOF (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "367144 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 290.3,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "3999568 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 290.3,
+            "unit": "ns/op",
+            "extra": "3999568 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "3999568 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "3999568 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 296.3,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "4126890 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 296.3,
+            "unit": "ns/op",
+            "extra": "4126890 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "4126890 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "4126890 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 299.1,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "4011897 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 299.1,
+            "unit": "ns/op",
+            "extra": "4011897 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "4011897 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "4011897 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 297.7,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "4125752 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 297.7,
+            "unit": "ns/op",
+            "extra": "4125752 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "4125752 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "4125752 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 290.5,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "4133214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 290.5,
+            "unit": "ns/op",
+            "extra": "4133214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "4133214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkArrayIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "4133214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 10.57,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 10.57,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 10.57,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 10.57,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 10.56,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 10.56,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 10.59,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 10.59,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 10.58,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 10.58,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNative (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 9.869,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "121557660 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 9.869,
+            "unit": "ns/op",
+            "extra": "121557660 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "121557660 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "121557660 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 9.895,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "121201086 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 9.895,
+            "unit": "ns/op",
+            "extra": "121201086 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "121201086 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "121201086 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 9.864,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "121630054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 9.864,
+            "unit": "ns/op",
+            "extra": "121630054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "121630054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "121630054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 9.861,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "121677171 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 9.861,
+            "unit": "ns/op",
+            "extra": "121677171 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "121677171 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "121677171 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 9.879,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "121466138 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 9.879,
+            "unit": "ns/op",
+            "extra": "121466138 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "121466138 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "121466138 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 9.611,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "125989060 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 9.611,
+            "unit": "ns/op",
+            "extra": "125989060 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "125989060 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "125989060 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 9.523,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "125987754 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 9.523,
+            "unit": "ns/op",
+            "extra": "125987754 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "125987754 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "125987754 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 9.514,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "126140637 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 9.514,
+            "unit": "ns/op",
+            "extra": "126140637 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "126140637 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "126140637 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 9.526,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "125969184 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 9.526,
+            "unit": "ns/op",
+            "extra": "125969184 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "125969184 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "125969184 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 9.51,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "126219937 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 9.51,
+            "unit": "ns/op",
+            "extra": "126219937 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "126219937 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesDuration (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "126219937 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 280,
+            "unit": "ns/op\t      32 B/op\t       2 allocs/op",
+            "extra": "4284602 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 280,
+            "unit": "ns/op",
+            "extra": "4284602 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 32,
+            "unit": "B/op",
+            "extra": "4284602 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "4284602 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 283.6,
+            "unit": "ns/op\t      32 B/op\t       2 allocs/op",
+            "extra": "4206843 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 283.6,
+            "unit": "ns/op",
+            "extra": "4206843 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 32,
+            "unit": "B/op",
+            "extra": "4206843 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "4206843 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 283.1,
+            "unit": "ns/op\t      32 B/op\t       2 allocs/op",
+            "extra": "4216762 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 283.1,
+            "unit": "ns/op",
+            "extra": "4216762 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 32,
+            "unit": "B/op",
+            "extra": "4216762 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "4216762 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 282.6,
+            "unit": "ns/op\t      32 B/op\t       2 allocs/op",
+            "extra": "4238996 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 282.6,
+            "unit": "ns/op",
+            "extra": "4238996 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 32,
+            "unit": "B/op",
+            "extra": "4238996 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "4238996 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 282.6,
+            "unit": "ns/op\t      32 B/op\t       2 allocs/op",
+            "extra": "4238362 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 282.6,
+            "unit": "ns/op",
+            "extra": "4238362 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 32,
+            "unit": "B/op",
+            "extra": "4238362 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNested (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "4238362 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 45.71,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "26280308 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 45.71,
+            "unit": "ns/op",
+            "extra": "26280308 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "26280308 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "26280308 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 45.91,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "26415664 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 45.91,
+            "unit": "ns/op",
+            "extra": "26415664 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "26415664 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "26415664 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 45.57,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "26611148 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 45.57,
+            "unit": "ns/op",
+            "extra": "26611148 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "26611148 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "26611148 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 45.88,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "26220453 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 45.88,
+            "unit": "ns/op",
+            "extra": "26220453 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "26220453 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "26220453 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 46.15,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "26514640 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 46.15,
+            "unit": "ns/op",
+            "extra": "26514640 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "26514640 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "26514640 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 44.78,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "26955727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 44.78,
+            "unit": "ns/op",
+            "extra": "26955727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "26955727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "26955727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 45.1,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "26757758 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 45.1,
+            "unit": "ns/op",
+            "extra": "26757758 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "26757758 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "26757758 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 45.13,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "25985634 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 45.13,
+            "unit": "ns/op",
+            "extra": "25985634 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "25985634 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "25985634 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 44.72,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "26933733 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 44.72,
+            "unit": "ns/op",
+            "extra": "26933733 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "26933733 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "26933733 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 44.81,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "26997642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 44.81,
+            "unit": "ns/op",
+            "extra": "26997642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "26997642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEqualValuesHost (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "26997642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.35,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "97099963 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.35,
+            "unit": "ns/op",
+            "extra": "97099963 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "97099963 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "97099963 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.34,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "95920676 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.34,
+            "unit": "ns/op",
+            "extra": "95920676 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "95920676 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "95920676 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.54,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "95344714 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.54,
+            "unit": "ns/op",
+            "extra": "95344714 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "95344714 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "95344714 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.33,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "97401007 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.33,
+            "unit": "ns/op",
+            "extra": "97401007 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "97401007 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "97401007 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.36,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "95838400 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.36,
+            "unit": "ns/op",
+            "extra": "95838400 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "95838400 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/equal (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "95838400 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.38,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "97155874 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.38,
+            "unit": "ns/op",
+            "extra": "97155874 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "97155874 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "97155874 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.5,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "97265178 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.5,
+            "unit": "ns/op",
+            "extra": "97265178 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "97265178 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "97265178 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.34,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "97142008 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.34,
+            "unit": "ns/op",
+            "extra": "97142008 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "97142008 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "97142008 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.32,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "97211054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.32,
+            "unit": "ns/op",
+            "extra": "97211054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "97211054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "97211054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.35,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "97261867 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.35,
+            "unit": "ns/op",
+            "extra": "97261867 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "97261867 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/fractional (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "97261867 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.73,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "94430400 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.73,
+            "unit": "ns/op",
+            "extra": "94430400 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "94430400 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "94430400 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.67,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "94473638 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.67,
+            "unit": "ns/op",
+            "extra": "94473638 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "94473638 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "94473638 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.69,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "94267009 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.69,
+            "unit": "ns/op",
+            "extra": "94267009 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "94267009 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "94267009 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.68,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "91924042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.68,
+            "unit": "ns/op",
+            "extra": "91924042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "91924042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "91924042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.69,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "93919759 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.69,
+            "unit": "ns/op",
+            "extra": "93919759 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "93919759 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesMixedNumeric/large (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "93919759 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 11.28,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 11.28,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 11.29,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 11.29,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 11.4,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 11.4,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 11,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 11,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 11.27,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 11.27,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompareValuesNaN (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 10.25,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 10.25,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 10.21,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 10.21,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 10.22,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 10.22,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 10.21,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 10.21,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 10.21,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 10.21,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/int (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.35,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "96968959 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.35,
+            "unit": "ns/op",
+            "extra": "96968959 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "96968959 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "96968959 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.35,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "97273141 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.35,
+            "unit": "ns/op",
+            "extra": "97273141 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "97273141 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "97273141 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.35,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "96522766 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.35,
+            "unit": "ns/op",
+            "extra": "96522766 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "96522766 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "96522766 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.35,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "96953650 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.35,
+            "unit": "ns/op",
+            "extra": "96953650 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "96953650 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "96953650 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.37,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "95367544 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.37,
+            "unit": "ns/op",
+            "extra": "95367544 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "95367544 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/integral-float (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "95367544 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.35,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "97272266 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.35,
+            "unit": "ns/op",
+            "extra": "97272266 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "97272266 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "97272266 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.34,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "97055748 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.34,
+            "unit": "ns/op",
+            "extra": "97055748 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "97055748 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "97055748 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.34,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "97073523 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.34,
+            "unit": "ns/op",
+            "extra": "97073523 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "97073523 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "97073523 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.45,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "97283251 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.45,
+            "unit": "ns/op",
+            "extra": "97283251 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "97283251 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "97283251 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 12.34,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "96837918 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 12.34,
+            "unit": "ns/op",
+            "extra": "96837918 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "96837918 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/fractional-float (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "96837918 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 11.72,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 11.72,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 11.98,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 11.98,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 11.64,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 11.64,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 11.72,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 11.72,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 11.76,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 11.76,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNumericHash/nan (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 50.12,
+            "unit": "ns/op\t      24 B/op\t       2 allocs/op",
+            "extra": "22730588 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 50.12,
+            "unit": "ns/op",
+            "extra": "22730588 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "22730588 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "22730588 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 50.02,
+            "unit": "ns/op\t      24 B/op\t       2 allocs/op",
+            "extra": "24020337 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 50.02,
+            "unit": "ns/op",
+            "extra": "24020337 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "24020337 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "24020337 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 50.15,
+            "unit": "ns/op\t      24 B/op\t       2 allocs/op",
+            "extra": "23739906 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 50.15,
+            "unit": "ns/op",
+            "extra": "23739906 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "23739906 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "23739906 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 50.72,
+            "unit": "ns/op\t      24 B/op\t       2 allocs/op",
+            "extra": "23335268 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 50.72,
+            "unit": "ns/op",
+            "extra": "23335268 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "23335268 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "23335268 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 51.68,
+            "unit": "ns/op\t      24 B/op\t       2 allocs/op",
+            "extra": "21471974 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 51.68,
+            "unit": "ns/op",
+            "extra": "21471974 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "21471974 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "21471974 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 115.2,
+            "unit": "ns/op\t     112 B/op\t       5 allocs/op",
+            "extra": "10253436 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 115.2,
+            "unit": "ns/op",
+            "extra": "10253436 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 112,
+            "unit": "B/op",
+            "extra": "10253436 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 5,
+            "unit": "allocs/op",
+            "extra": "10253436 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 113.7,
+            "unit": "ns/op\t     112 B/op\t       5 allocs/op",
+            "extra": "10475244 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 113.7,
+            "unit": "ns/op",
+            "extra": "10475244 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 112,
+            "unit": "B/op",
+            "extra": "10475244 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 5,
+            "unit": "allocs/op",
+            "extra": "10475244 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 115.7,
+            "unit": "ns/op\t     112 B/op\t       5 allocs/op",
+            "extra": "10559311 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 115.7,
+            "unit": "ns/op",
+            "extra": "10559311 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 112,
+            "unit": "B/op",
+            "extra": "10559311 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 5,
+            "unit": "allocs/op",
+            "extra": "10559311 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 117,
+            "unit": "ns/op\t     112 B/op\t       5 allocs/op",
+            "extra": "9872959 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 117,
+            "unit": "ns/op",
+            "extra": "9872959 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 112,
+            "unit": "B/op",
+            "extra": "9872959 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 5,
+            "unit": "allocs/op",
+            "extra": "9872959 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 114.1,
+            "unit": "ns/op\t     112 B/op\t       5 allocs/op",
+            "extra": "10608676 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 114.1,
+            "unit": "ns/op",
+            "extra": "10608676 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 112,
+            "unit": "B/op",
+            "extra": "10608676 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToIntInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 5,
+            "unit": "allocs/op",
+            "extra": "10608676 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 67.21,
+            "unit": "ns/op\t      24 B/op\t       2 allocs/op",
+            "extra": "17446162 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 67.21,
+            "unit": "ns/op",
+            "extra": "17446162 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "17446162 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "17446162 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 67.08,
+            "unit": "ns/op\t      24 B/op\t       2 allocs/op",
+            "extra": "17558298 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 67.08,
+            "unit": "ns/op",
+            "extra": "17558298 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "17558298 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "17558298 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 66.93,
+            "unit": "ns/op\t      24 B/op\t       2 allocs/op",
+            "extra": "17609564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 66.93,
+            "unit": "ns/op",
+            "extra": "17609564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "17609564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "17609564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 66.83,
+            "unit": "ns/op\t      24 B/op\t       2 allocs/op",
+            "extra": "17725528 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 66.83,
+            "unit": "ns/op",
+            "extra": "17725528 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "17725528 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "17725528 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 66.87,
+            "unit": "ns/op\t      24 B/op\t       2 allocs/op",
+            "extra": "17977519 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 66.87,
+            "unit": "ns/op",
+            "extra": "17977519 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "17977519 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "17977519 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 110,
+            "unit": "ns/op\t     104 B/op\t       4 allocs/op",
+            "extra": "11395845 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 110,
+            "unit": "ns/op",
+            "extra": "11395845 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 104,
+            "unit": "B/op",
+            "extra": "11395845 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 4,
+            "unit": "allocs/op",
+            "extra": "11395845 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 105.8,
+            "unit": "ns/op\t     104 B/op\t       4 allocs/op",
+            "extra": "11280428 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 105.8,
+            "unit": "ns/op",
+            "extra": "11280428 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 104,
+            "unit": "B/op",
+            "extra": "11280428 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 4,
+            "unit": "allocs/op",
+            "extra": "11280428 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 108.9,
+            "unit": "ns/op\t     104 B/op\t       4 allocs/op",
+            "extra": "11275670 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 108.9,
+            "unit": "ns/op",
+            "extra": "11275670 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 104,
+            "unit": "B/op",
+            "extra": "11275670 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 4,
+            "unit": "allocs/op",
+            "extra": "11275670 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 106.9,
+            "unit": "ns/op\t     104 B/op\t       4 allocs/op",
+            "extra": "11191999 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 106.9,
+            "unit": "ns/op",
+            "extra": "11191999 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 104,
+            "unit": "B/op",
+            "extra": "11191999 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 4,
+            "unit": "allocs/op",
+            "extra": "11191999 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 105.9,
+            "unit": "ns/op\t     104 B/op\t       4 allocs/op",
+            "extra": "11199871 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 105.9,
+            "unit": "ns/op",
+            "extra": "11199871 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 104,
+            "unit": "B/op",
+            "extra": "11199871 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToFloatInvalidString (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 4,
+            "unit": "allocs/op",
+            "extra": "11199871 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 88.97,
+            "unit": "ns/op\t      40 B/op\t       2 allocs/op",
+            "extra": "13768232 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 88.97,
+            "unit": "ns/op",
+            "extra": "13768232 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 40,
+            "unit": "B/op",
+            "extra": "13768232 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "13768232 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 86.22,
+            "unit": "ns/op\t      40 B/op\t       2 allocs/op",
+            "extra": "13969794 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 86.22,
+            "unit": "ns/op",
+            "extra": "13969794 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 40,
+            "unit": "B/op",
+            "extra": "13969794 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "13969794 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 85.56,
+            "unit": "ns/op\t      40 B/op\t       2 allocs/op",
+            "extra": "13838408 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 85.56,
+            "unit": "ns/op",
+            "extra": "13838408 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 40,
+            "unit": "B/op",
+            "extra": "13838408 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "13838408 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 85.71,
+            "unit": "ns/op\t      40 B/op\t       2 allocs/op",
+            "extra": "13890091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 85.71,
+            "unit": "ns/op",
+            "extra": "13890091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 40,
+            "unit": "B/op",
+            "extra": "13890091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "13890091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 85.39,
+            "unit": "ns/op\t      40 B/op\t       2 allocs/op",
+            "extra": "13870273 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 85.39,
+            "unit": "ns/op",
+            "extra": "13870273 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 40,
+            "unit": "B/op",
+            "extra": "13870273 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeRFC3339 (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "13870273 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 389.8,
+            "unit": "ns/op\t     208 B/op\t      13 allocs/op",
+            "extra": "3041766 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 389.8,
+            "unit": "ns/op",
+            "extra": "3041766 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 208,
+            "unit": "B/op",
+            "extra": "3041766 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 13,
+            "unit": "allocs/op",
+            "extra": "3041766 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 395.5,
+            "unit": "ns/op\t     208 B/op\t      13 allocs/op",
+            "extra": "2970967 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 395.5,
+            "unit": "ns/op",
+            "extra": "2970967 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 208,
+            "unit": "B/op",
+            "extra": "2970967 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 13,
+            "unit": "allocs/op",
+            "extra": "2970967 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 385.8,
+            "unit": "ns/op\t     208 B/op\t      13 allocs/op",
+            "extra": "3091455 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 385.8,
+            "unit": "ns/op",
+            "extra": "3091455 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 208,
+            "unit": "B/op",
+            "extra": "3091455 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 13,
+            "unit": "allocs/op",
+            "extra": "3091455 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 389,
+            "unit": "ns/op\t     208 B/op\t      13 allocs/op",
+            "extra": "3087042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 389,
+            "unit": "ns/op",
+            "extra": "3087042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 208,
+            "unit": "B/op",
+            "extra": "3087042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 13,
+            "unit": "allocs/op",
+            "extra": "3087042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 386,
+            "unit": "ns/op\t     208 B/op\t      13 allocs/op",
+            "extra": "3109845 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 386,
+            "unit": "ns/op",
+            "extra": "3109845 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 208,
+            "unit": "B/op",
+            "extra": "3109845 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochInt (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 13,
+            "unit": "allocs/op",
+            "extra": "3109845 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 569.6,
+            "unit": "ns/op\t     296 B/op\t      19 allocs/op",
+            "extra": "2098695 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 569.6,
+            "unit": "ns/op",
+            "extra": "2098695 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 296,
+            "unit": "B/op",
+            "extra": "2098695 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 19,
+            "unit": "allocs/op",
+            "extra": "2098695 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 569.4,
+            "unit": "ns/op\t     296 B/op\t      19 allocs/op",
+            "extra": "2099932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 569.4,
+            "unit": "ns/op",
+            "extra": "2099932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 296,
+            "unit": "B/op",
+            "extra": "2099932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 19,
+            "unit": "allocs/op",
+            "extra": "2099932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 568.1,
+            "unit": "ns/op\t     296 B/op\t      19 allocs/op",
+            "extra": "2115786 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 568.1,
+            "unit": "ns/op",
+            "extra": "2115786 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 296,
+            "unit": "B/op",
+            "extra": "2115786 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 19,
+            "unit": "allocs/op",
+            "extra": "2115786 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 570.1,
+            "unit": "ns/op\t     296 B/op\t      19 allocs/op",
+            "extra": "2087642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 570.1,
+            "unit": "ns/op",
+            "extra": "2087642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 296,
+            "unit": "B/op",
+            "extra": "2087642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 19,
+            "unit": "allocs/op",
+            "extra": "2087642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 570.6,
+            "unit": "ns/op\t     296 B/op\t      19 allocs/op",
+            "extra": "2098908 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 570.6,
+            "unit": "ns/op",
+            "extra": "2098908 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 296,
+            "unit": "B/op",
+            "extra": "2098908 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkToDateTimeEpochFloat (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 19,
+            "unit": "allocs/op",
+            "extra": "2098908 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 2314,
+            "unit": "ns/op\t    1792 B/op\t       1 allocs/op",
+            "extra": "476402 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 2314,
+            "unit": "ns/op",
+            "extra": "476402 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 1792,
+            "unit": "B/op",
+            "extra": "476402 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "476402 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 2475,
+            "unit": "ns/op\t    1792 B/op\t       1 allocs/op",
+            "extra": "468007 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 2475,
+            "unit": "ns/op",
+            "extra": "468007 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 1792,
+            "unit": "B/op",
+            "extra": "468007 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "468007 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 2324,
+            "unit": "ns/op\t    1792 B/op\t       1 allocs/op",
+            "extra": "472014 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 2324,
+            "unit": "ns/op",
+            "extra": "472014 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 1792,
+            "unit": "B/op",
+            "extra": "472014 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "472014 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 2340,
+            "unit": "ns/op\t    1792 B/op\t       1 allocs/op",
+            "extra": "473562 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 2340,
+            "unit": "ns/op",
+            "extra": "473562 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 1792,
+            "unit": "B/op",
+            "extra": "473562 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "473562 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 2354,
+            "unit": "ns/op\t    1792 B/op\t       1 allocs/op",
+            "extra": "479019 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 2354,
+            "unit": "ns/op",
+            "extra": "479019 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 1792,
+            "unit": "B/op",
+            "extra": "479019 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkObjectIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "479019 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 972,
+            "unit": "ns/op\t      32 B/op\t       1 allocs/op",
+            "extra": "1219987 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 972,
+            "unit": "ns/op",
+            "extra": "1219987 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 32,
+            "unit": "B/op",
+            "extra": "1219987 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "1219987 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 966.2,
+            "unit": "ns/op\t      32 B/op\t       1 allocs/op",
+            "extra": "1219934 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 966.2,
+            "unit": "ns/op",
+            "extra": "1219934 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 32,
+            "unit": "B/op",
+            "extra": "1219934 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "1219934 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 968.5,
+            "unit": "ns/op\t      32 B/op\t       1 allocs/op",
+            "extra": "1256964 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 968.5,
+            "unit": "ns/op",
+            "extra": "1256964 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 32,
+            "unit": "B/op",
+            "extra": "1256964 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "1256964 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 971.6,
+            "unit": "ns/op\t      32 B/op\t       1 allocs/op",
+            "extra": "1235302 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 971.6,
+            "unit": "ns/op",
+            "extra": "1235302 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 32,
+            "unit": "B/op",
+            "extra": "1235302 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "1235302 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 972.5,
+            "unit": "ns/op\t      32 B/op\t       1 allocs/op",
+            "extra": "1242537 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 972.5,
+            "unit": "ns/op",
+            "extra": "1242537 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 32,
+            "unit": "B/op",
+            "extra": "1242537 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeIterator (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "1242537 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 2.82,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "426320444 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 2.82,
+            "unit": "ns/op",
+            "extra": "426320444 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "426320444 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "426320444 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 2.818,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "426247768 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 2.818,
+            "unit": "ns/op",
+            "extra": "426247768 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "426247768 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "426247768 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 2.816,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "486965649 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 2.816,
+            "unit": "ns/op",
+            "extra": "486965649 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "486965649 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "486965649 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 2.466,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "424506939 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 2.466,
+            "unit": "ns/op",
+            "extra": "424506939 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "424506939 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "424506939 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime)",
+            "value": 2.469,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "425515567 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime) - ns/op",
+            "value": 2.469,
+            "unit": "ns/op",
+            "extra": "425515567 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "425515567 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRangeLength (github.com/MontFerret/ferret/v2/pkg/runtime) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "425515567 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 3089,
+            "unit": "ns/op\t    2160 B/op\t      31 allocs/op",
+            "extra": "391917 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 3089,
+            "unit": "ns/op",
+            "extra": "391917 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 2160,
+            "unit": "B/op",
+            "extra": "391917 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 31,
+            "unit": "allocs/op",
+            "extra": "391917 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 3148,
+            "unit": "ns/op\t    2160 B/op\t      31 allocs/op",
+            "extra": "443630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 3148,
+            "unit": "ns/op",
+            "extra": "443630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 2160,
+            "unit": "B/op",
+            "extra": "443630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 31,
+            "unit": "allocs/op",
+            "extra": "443630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 3150,
+            "unit": "ns/op\t    2160 B/op\t      31 allocs/op",
+            "extra": "375716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 3150,
+            "unit": "ns/op",
+            "extra": "375716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 2160,
+            "unit": "B/op",
+            "extra": "375716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 31,
+            "unit": "allocs/op",
+            "extra": "375716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 3044,
+            "unit": "ns/op\t    2160 B/op\t      31 allocs/op",
+            "extra": "459158 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 3044,
+            "unit": "ns/op",
+            "extra": "459158 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 2160,
+            "unit": "B/op",
+            "extra": "459158 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 31,
+            "unit": "allocs/op",
+            "extra": "459158 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 2706,
+            "unit": "ns/op\t    2160 B/op\t      31 allocs/op",
+            "extra": "426636 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 2706,
+            "unit": "ns/op",
+            "extra": "426636 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 2160,
+            "unit": "B/op",
+            "extra": "426636 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEncodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 31,
+            "unit": "allocs/op",
+            "extra": "426636 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 4306,
+            "unit": "ns/op\t    2160 B/op\t      40 allocs/op",
+            "extra": "291818 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 4306,
+            "unit": "ns/op",
+            "extra": "291818 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 2160,
+            "unit": "B/op",
+            "extra": "291818 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 40,
+            "unit": "allocs/op",
+            "extra": "291818 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 4267,
+            "unit": "ns/op\t    2160 B/op\t      40 allocs/op",
+            "extra": "273865 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 4267,
+            "unit": "ns/op",
+            "extra": "273865 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 2160,
+            "unit": "B/op",
+            "extra": "273865 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 40,
+            "unit": "allocs/op",
+            "extra": "273865 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 4312,
+            "unit": "ns/op\t    2160 B/op\t      40 allocs/op",
+            "extra": "262462 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 4312,
+            "unit": "ns/op",
+            "extra": "262462 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 2160,
+            "unit": "B/op",
+            "extra": "262462 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 40,
+            "unit": "allocs/op",
+            "extra": "262462 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 4196,
+            "unit": "ns/op\t    2160 B/op\t      40 allocs/op",
+            "extra": "295863 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 4196,
+            "unit": "ns/op",
+            "extra": "295863 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 2160,
+            "unit": "B/op",
+            "extra": "295863 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 40,
+            "unit": "allocs/op",
+            "extra": "295863 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 4131,
+            "unit": "ns/op\t    2160 B/op\t      40 allocs/op",
+            "extra": "251491 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 4131,
+            "unit": "ns/op",
+            "extra": "251491 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 2160,
+            "unit": "B/op",
+            "extra": "251491 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNested (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 40,
+            "unit": "allocs/op",
+            "extra": "251491 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 4994,
+            "unit": "ns/op\t    2224 B/op\t      41 allocs/op",
+            "extra": "253444 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 4994,
+            "unit": "ns/op",
+            "extra": "253444 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 2224,
+            "unit": "B/op",
+            "extra": "253444 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 41,
+            "unit": "allocs/op",
+            "extra": "253444 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 4805,
+            "unit": "ns/op\t    2224 B/op\t      41 allocs/op",
+            "extra": "243381 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 4805,
+            "unit": "ns/op",
+            "extra": "243381 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 2224,
+            "unit": "B/op",
+            "extra": "243381 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 41,
+            "unit": "allocs/op",
+            "extra": "243381 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 4720,
+            "unit": "ns/op\t    2224 B/op\t      41 allocs/op",
+            "extra": "232334 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 4720,
+            "unit": "ns/op",
+            "extra": "232334 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 2224,
+            "unit": "B/op",
+            "extra": "232334 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 41,
+            "unit": "allocs/op",
+            "extra": "232334 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 4873,
+            "unit": "ns/op\t    2224 B/op\t      41 allocs/op",
+            "extra": "270423 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 4873,
+            "unit": "ns/op",
+            "extra": "270423 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 2224,
+            "unit": "B/op",
+            "extra": "270423 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 41,
+            "unit": "allocs/op",
+            "extra": "270423 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 4676,
+            "unit": "ns/op\t    2224 B/op\t      41 allocs/op",
+            "extra": "273417 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 4676,
+            "unit": "ns/op",
+            "extra": "273417 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 2224,
+            "unit": "B/op",
+            "extra": "273417 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDecodeNestedStrict (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 41,
+            "unit": "allocs/op",
+            "extra": "273417 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 92.33,
+            "unit": "ns/op\t      40 B/op\t       3 allocs/op",
+            "extra": "13707870 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 92.33,
+            "unit": "ns/op",
+            "extra": "13707870 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 40,
+            "unit": "B/op",
+            "extra": "13707870 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 3,
+            "unit": "allocs/op",
+            "extra": "13707870 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 93.97,
+            "unit": "ns/op\t      40 B/op\t       3 allocs/op",
+            "extra": "13235390 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 93.97,
+            "unit": "ns/op",
+            "extra": "13235390 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 40,
+            "unit": "B/op",
+            "extra": "13235390 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 3,
+            "unit": "allocs/op",
+            "extra": "13235390 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 93.75,
+            "unit": "ns/op\t      40 B/op\t       3 allocs/op",
+            "extra": "13263830 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 93.75,
+            "unit": "ns/op",
+            "extra": "13263830 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 40,
+            "unit": "B/op",
+            "extra": "13263830 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 3,
+            "unit": "allocs/op",
+            "extra": "13263830 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 93.78,
+            "unit": "ns/op\t      40 B/op\t       3 allocs/op",
+            "extra": "13491891 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 93.78,
+            "unit": "ns/op",
+            "extra": "13491891 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 40,
+            "unit": "B/op",
+            "extra": "13491891 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 3,
+            "unit": "allocs/op",
+            "extra": "13491891 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 96.85,
+            "unit": "ns/op\t      40 B/op\t       3 allocs/op",
+            "extra": "13792904 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 96.85,
+            "unit": "ns/op",
+            "extra": "13792904 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 40,
+            "unit": "B/op",
+            "extra": "13792904 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTypedBinder (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 3,
+            "unit": "allocs/op",
+            "extra": "13792904 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 85.06,
+            "unit": "ns/op\t      40 B/op\t       3 allocs/op",
+            "extra": "14494452 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 85.06,
+            "unit": "ns/op",
+            "extra": "14494452 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 40,
+            "unit": "B/op",
+            "extra": "14494452 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 3,
+            "unit": "allocs/op",
+            "extra": "14494452 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 83.04,
+            "unit": "ns/op\t      40 B/op\t       3 allocs/op",
+            "extra": "13506945 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 83.04,
+            "unit": "ns/op",
+            "extra": "13506945 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 40,
+            "unit": "B/op",
+            "extra": "13506945 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 3,
+            "unit": "allocs/op",
+            "extra": "13506945 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 84.96,
+            "unit": "ns/op\t      40 B/op\t       3 allocs/op",
+            "extra": "14751054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 84.96,
+            "unit": "ns/op",
+            "extra": "14751054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 40,
+            "unit": "B/op",
+            "extra": "14751054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 3,
+            "unit": "allocs/op",
+            "extra": "14751054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 88.69,
+            "unit": "ns/op\t      40 B/op\t       3 allocs/op",
+            "extra": "14452161 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 88.69,
+            "unit": "ns/op",
+            "extra": "14452161 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 40,
+            "unit": "B/op",
+            "extra": "14452161 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 3,
+            "unit": "allocs/op",
+            "extra": "14452161 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 83.64,
+            "unit": "ns/op\t      40 B/op\t       3 allocs/op",
+            "extra": "14574378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 83.64,
+            "unit": "ns/op",
+            "extra": "14574378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 40,
+            "unit": "B/op",
+            "extra": "14574378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkManualCasts (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 3,
+            "unit": "allocs/op",
+            "extra": "14574378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 338,
+            "unit": "ns/op\t      64 B/op\t       1 allocs/op",
+            "extra": "3545095 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 338,
+            "unit": "ns/op",
+            "extra": "3545095 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 64,
+            "unit": "B/op",
+            "extra": "3545095 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "3545095 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 331.6,
+            "unit": "ns/op\t      64 B/op\t       1 allocs/op",
+            "extra": "3583461 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 331.6,
+            "unit": "ns/op",
+            "extra": "3583461 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 64,
+            "unit": "B/op",
+            "extra": "3583461 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "3583461 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 335.8,
+            "unit": "ns/op\t      64 B/op\t       1 allocs/op",
+            "extra": "3510912 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 335.8,
+            "unit": "ns/op",
+            "extra": "3510912 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 64,
+            "unit": "B/op",
+            "extra": "3510912 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "3510912 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 334.5,
+            "unit": "ns/op\t      64 B/op\t       1 allocs/op",
+            "extra": "3452586 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 334.5,
+            "unit": "ns/op",
+            "extra": "3452586 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 64,
+            "unit": "B/op",
+            "extra": "3452586 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "3452586 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk)",
+            "value": 339.7,
+            "unit": "ns/op\t      64 B/op\t       1 allocs/op",
+            "extra": "3466632 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk) - ns/op",
+            "value": 339.7,
+            "unit": "ns/op",
+            "extra": "3466632 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk) - B/op",
+            "value": 64,
+            "unit": "B/op",
+            "extra": "3466632 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSliceViewIteration (github.com/MontFerret/ferret/v2/pkg/sdk) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "3466632 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math)",
+            "value": 1666,
+            "unit": "ns/op\t    2616 B/op\t     102 allocs/op",
+            "extra": "713916 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - ns/op",
+            "value": 1666,
+            "unit": "ns/op",
+            "extra": "713916 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - B/op",
+            "value": 2616,
+            "unit": "B/op",
+            "extra": "713916 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - allocs/op",
+            "value": 102,
+            "unit": "allocs/op",
+            "extra": "713916 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math)",
+            "value": 1696,
+            "unit": "ns/op\t    2616 B/op\t     102 allocs/op",
+            "extra": "607420 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - ns/op",
+            "value": 1696,
+            "unit": "ns/op",
+            "extra": "607420 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - B/op",
+            "value": 2616,
+            "unit": "B/op",
+            "extra": "607420 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - allocs/op",
+            "value": 102,
+            "unit": "allocs/op",
+            "extra": "607420 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math)",
+            "value": 1700,
+            "unit": "ns/op\t    2616 B/op\t     102 allocs/op",
+            "extra": "648673 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - ns/op",
+            "value": 1700,
+            "unit": "ns/op",
+            "extra": "648673 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - B/op",
+            "value": 2616,
+            "unit": "B/op",
+            "extra": "648673 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - allocs/op",
+            "value": 102,
+            "unit": "allocs/op",
+            "extra": "648673 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math)",
+            "value": 1693,
+            "unit": "ns/op\t    2616 B/op\t     102 allocs/op",
+            "extra": "598231 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - ns/op",
+            "value": 1693,
+            "unit": "ns/op",
+            "extra": "598231 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - B/op",
+            "value": 2616,
+            "unit": "B/op",
+            "extra": "598231 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - allocs/op",
+            "value": 102,
+            "unit": "allocs/op",
+            "extra": "598231 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math)",
+            "value": 1655,
+            "unit": "ns/op\t    2616 B/op\t     102 allocs/op",
+            "extra": "651180 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - ns/op",
+            "value": 1655,
+            "unit": "ns/op",
+            "extra": "651180 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - B/op",
+            "value": 2616,
+            "unit": "B/op",
+            "extra": "651180 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/default_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - allocs/op",
+            "value": 102,
+            "unit": "allocs/op",
+            "extra": "651180 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math)",
+            "value": 831.3,
+            "unit": "ns/op\t    1160 B/op\t      48 allocs/op",
+            "extra": "1414410 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - ns/op",
+            "value": 831.3,
+            "unit": "ns/op",
+            "extra": "1414410 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - B/op",
+            "value": 1160,
+            "unit": "B/op",
+            "extra": "1414410 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - allocs/op",
+            "value": 48,
+            "unit": "allocs/op",
+            "extra": "1414410 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math)",
+            "value": 815.7,
+            "unit": "ns/op\t    1160 B/op\t      48 allocs/op",
+            "extra": "1463972 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - ns/op",
+            "value": 815.7,
+            "unit": "ns/op",
+            "extra": "1463972 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - B/op",
+            "value": 1160,
+            "unit": "B/op",
+            "extra": "1463972 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - allocs/op",
+            "value": 48,
+            "unit": "allocs/op",
+            "extra": "1463972 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math)",
+            "value": 809.9,
+            "unit": "ns/op\t    1160 B/op\t      48 allocs/op",
+            "extra": "1473370 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - ns/op",
+            "value": 809.9,
+            "unit": "ns/op",
+            "extra": "1473370 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - B/op",
+            "value": 1160,
+            "unit": "B/op",
+            "extra": "1473370 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - allocs/op",
+            "value": 48,
+            "unit": "allocs/op",
+            "extra": "1473370 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math)",
+            "value": 817.4,
+            "unit": "ns/op\t    1160 B/op\t      48 allocs/op",
+            "extra": "1475995 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - ns/op",
+            "value": 817.4,
+            "unit": "ns/op",
+            "extra": "1475995 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - B/op",
+            "value": 1160,
+            "unit": "B/op",
+            "extra": "1475995 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - allocs/op",
+            "value": 48,
+            "unit": "allocs/op",
+            "extra": "1475995 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math)",
+            "value": 815.3,
+            "unit": "ns/op\t    1160 B/op\t      48 allocs/op",
+            "extra": "1421128 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - ns/op",
+            "value": 815.3,
+            "unit": "ns/op",
+            "extra": "1421128 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - B/op",
+            "value": 1160,
+            "unit": "B/op",
+            "extra": "1421128 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRange/custom_step (github.com/MontFerret/ferret/v2/pkg/stdlib/math) - allocs/op",
+            "value": 48,
+            "unit": "allocs/op",
+            "extra": "1421128 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 86.64,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13819066 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 86.64,
+            "unit": "ns/op",
+            "extra": "13819066 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13819066 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13819066 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 87.43,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13900143 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 87.43,
+            "unit": "ns/op",
+            "extra": "13900143 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13900143 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13900143 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 85.25,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13870411 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 85.25,
+            "unit": "ns/op",
+            "extra": "13870411 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13870411 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13870411 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 85.38,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13944848 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 85.38,
+            "unit": "ns/op",
+            "extra": "13944848 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13944848 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13944848 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 85.91,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13850821 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 85.91,
+            "unit": "ns/op",
+            "extra": "13850821 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13850821 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13850821 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 92.3,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13043564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 92.3,
+            "unit": "ns/op",
+            "extra": "13043564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13043564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13043564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 92.88,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "12797479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 92.88,
+            "unit": "ns/op",
+            "extra": "12797479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "12797479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "12797479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 91.84,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13135780 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 91.84,
+            "unit": "ns/op",
+            "extra": "13135780 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13135780 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13135780 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 91.72,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13005916 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 91.72,
+            "unit": "ns/op",
+            "extra": "13005916 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13005916 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13005916 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 93.84,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "11243701 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 93.84,
+            "unit": "ns/op",
+            "extra": "11243701 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "11243701 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_ascii (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "11243701 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 68.58,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17481103 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 68.58,
+            "unit": "ns/op",
+            "extra": "17481103 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17481103 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17481103 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 68.58,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17480228 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 68.58,
+            "unit": "ns/op",
+            "extra": "17480228 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17480228 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17480228 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 68.64,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17347998 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 68.64,
+            "unit": "ns/op",
+            "extra": "17347998 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17347998 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17347998 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 69.4,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17362821 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 69.4,
+            "unit": "ns/op",
+            "extra": "17362821 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17362821 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17362821 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 68.59,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17472716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 68.59,
+            "unit": "ns/op",
+            "extra": "17472716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17472716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/first_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17472716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 70.15,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17091424 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 70.15,
+            "unit": "ns/op",
+            "extra": "17091424 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17091424 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17091424 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 70.34,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17101326 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 70.34,
+            "unit": "ns/op",
+            "extra": "17101326 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17101326 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17101326 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 70.15,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17094550 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 70.15,
+            "unit": "ns/op",
+            "extra": "17094550 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17094550 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17094550 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 70.16,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17054566 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 70.16,
+            "unit": "ns/op",
+            "extra": "17054566 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17054566 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17054566 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings)",
+            "value": 70.07,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17118522 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - ns/op",
+            "value": 70.07,
+            "unit": "ns/op",
+            "extra": "17118522 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17118522 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFind/last_unicode_bounded (github.com/MontFerret/ferret/v2/pkg/stdlib/strings) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17118522 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5024,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "238122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5024,
+            "unit": "ns/op",
+            "extra": "238122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "238122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "238122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5050,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "238964 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5050,
+            "unit": "ns/op",
+            "extra": "238964 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "238964 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "238964 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5022,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "239055 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5022,
+            "unit": "ns/op",
+            "extra": "239055 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "239055 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "239055 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5021,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "238615 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5021,
+            "unit": "ns/op",
+            "extra": "238615 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "238615 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "238615 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5017,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "238545 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5017,
+            "unit": "ns/op",
+            "extra": "238545 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "238545 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "238545 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5067,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "238479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5067,
+            "unit": "ns/op",
+            "extra": "238479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "238479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "238479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5021,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "237356 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5021,
+            "unit": "ns/op",
+            "extra": "237356 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "237356 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "237356 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5030,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "238311 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5030,
+            "unit": "ns/op",
+            "extra": "238311 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "238311 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "238311 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5021,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "237662 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5021,
+            "unit": "ns/op",
+            "extra": "237662 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "237662 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "237662 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5088,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "238219 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5088,
+            "unit": "ns/op",
+            "extra": "238219 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "238219 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/StraightLine/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "238219 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 62691,
+            "unit": "ns/op\t    6152 B/op\t     769 allocs/op",
+            "extra": "19230 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 62691,
+            "unit": "ns/op",
+            "extra": "19230 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 6152,
+            "unit": "B/op",
+            "extra": "19230 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 769,
+            "unit": "allocs/op",
+            "extra": "19230 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 62961,
+            "unit": "ns/op\t    6152 B/op\t     769 allocs/op",
+            "extra": "19239 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 62961,
+            "unit": "ns/op",
+            "extra": "19239 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 6152,
+            "unit": "B/op",
+            "extra": "19239 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 769,
+            "unit": "allocs/op",
+            "extra": "19239 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 62854,
+            "unit": "ns/op\t    6152 B/op\t     769 allocs/op",
+            "extra": "19467 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 62854,
+            "unit": "ns/op",
+            "extra": "19467 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 6152,
+            "unit": "B/op",
+            "extra": "19467 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 769,
+            "unit": "allocs/op",
+            "extra": "19467 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 62006,
+            "unit": "ns/op\t    6152 B/op\t     769 allocs/op",
+            "extra": "19146 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 62006,
+            "unit": "ns/op",
+            "extra": "19146 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 6152,
+            "unit": "B/op",
+            "extra": "19146 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 769,
+            "unit": "allocs/op",
+            "extra": "19146 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 62881,
+            "unit": "ns/op\t    6152 B/op\t     769 allocs/op",
+            "extra": "19359 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 62881,
+            "unit": "ns/op",
+            "extra": "19359 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 6152,
+            "unit": "B/op",
+            "extra": "19359 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 769,
+            "unit": "allocs/op",
+            "extra": "19359 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 72566,
+            "unit": "ns/op\t    6152 B/op\t     769 allocs/op",
+            "extra": "16504 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 72566,
+            "unit": "ns/op",
+            "extra": "16504 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 6152,
+            "unit": "B/op",
+            "extra": "16504 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 769,
+            "unit": "allocs/op",
+            "extra": "16504 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 73820,
+            "unit": "ns/op\t    6152 B/op\t     769 allocs/op",
+            "extra": "16358 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 73820,
+            "unit": "ns/op",
+            "extra": "16358 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 6152,
+            "unit": "B/op",
+            "extra": "16358 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 769,
+            "unit": "allocs/op",
+            "extra": "16358 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 73770,
+            "unit": "ns/op\t    6152 B/op\t     769 allocs/op",
+            "extra": "16436 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 73770,
+            "unit": "ns/op",
+            "extra": "16436 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 6152,
+            "unit": "B/op",
+            "extra": "16436 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 769,
+            "unit": "allocs/op",
+            "extra": "16436 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 73076,
+            "unit": "ns/op\t    6152 B/op\t     769 allocs/op",
+            "extra": "16346 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 73076,
+            "unit": "ns/op",
+            "extra": "16346 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 6152,
+            "unit": "B/op",
+            "extra": "16346 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 769,
+            "unit": "allocs/op",
+            "extra": "16346 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 72987,
+            "unit": "ns/op\t    6152 B/op\t     769 allocs/op",
+            "extra": "16498 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 72987,
+            "unit": "ns/op",
+            "extra": "16498 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 6152,
+            "unit": "B/op",
+            "extra": "16498 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/Backedge/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 769,
+            "unit": "allocs/op",
+            "extra": "16498 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 9067,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "131172 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 9067,
+            "unit": "ns/op",
+            "extra": "131172 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "131172 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "131172 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 9066,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "132247 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 9066,
+            "unit": "ns/op",
+            "extra": "132247 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "132247 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "132247 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 9136,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "132363 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 9136,
+            "unit": "ns/op",
+            "extra": "132363 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "132363 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "132363 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 9131,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "132456 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 9131,
+            "unit": "ns/op",
+            "extra": "132456 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "132456 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "132456 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 9071,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "132379 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 9071,
+            "unit": "ns/op",
+            "extra": "132379 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "132379 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "132379 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 9086,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "131866 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 9086,
+            "unit": "ns/op",
+            "extra": "131866 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "131866 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "131866 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 9073,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "132306 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 9073,
+            "unit": "ns/op",
+            "extra": "132306 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "132306 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "132306 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 9061,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "132142 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 9061,
+            "unit": "ns/op",
+            "extra": "132142 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "132142 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "132142 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 9072,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "132034 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 9072,
+            "unit": "ns/op",
+            "extra": "132034 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "132034 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "132034 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 9066,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "131880 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 9066,
+            "unit": "ns/op",
+            "extra": "131880 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "131880 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointEveryInstruction/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "131880 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5348,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "223536 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5348,
+            "unit": "ns/op",
+            "extra": "223536 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "223536 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "223536 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5366,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "222884 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5366,
+            "unit": "ns/op",
+            "extra": "222884 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "222884 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "222884 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5369,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "223660 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5369,
+            "unit": "ns/op",
+            "extra": "223660 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "223660 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "223660 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5357,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "224070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5357,
+            "unit": "ns/op",
+            "extra": "224070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "224070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "224070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5362,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "221312 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5362,
+            "unit": "ns/op",
+            "extra": "221312 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "221312 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "221312 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5365,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "223642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5365,
+            "unit": "ns/op",
+            "extra": "223642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "223642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "223642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5390,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "222606 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5390,
+            "unit": "ns/op",
+            "extra": "222606 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "222606 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "222606 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5392,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "224529 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5392,
+            "unit": "ns/op",
+            "extra": "224529 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "224529 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "224529 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5367,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "221828 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5367,
+            "unit": "ns/op",
+            "extra": "221828 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "221828 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "221828 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 5387,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "222808 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 5387,
+            "unit": "ns/op",
+            "extra": "222808 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "222808 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/SourcePointStatementInterval/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "222808 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 25055,
+            "unit": "ns/op\t    4368 B/op\t       9 allocs/op",
+            "extra": "52936 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 25055,
+            "unit": "ns/op",
+            "extra": "52936 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4368,
+            "unit": "B/op",
+            "extra": "52936 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "52936 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 24856,
+            "unit": "ns/op\t    4368 B/op\t       9 allocs/op",
+            "extra": "52111 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 24856,
+            "unit": "ns/op",
+            "extra": "52111 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4368,
+            "unit": "B/op",
+            "extra": "52111 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "52111 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 25077,
+            "unit": "ns/op\t    4368 B/op\t       9 allocs/op",
+            "extra": "52551 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 25077,
+            "unit": "ns/op",
+            "extra": "52551 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4368,
+            "unit": "B/op",
+            "extra": "52551 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "52551 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 25095,
+            "unit": "ns/op\t    4368 B/op\t       9 allocs/op",
+            "extra": "52351 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 25095,
+            "unit": "ns/op",
+            "extra": "52351 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4368,
+            "unit": "B/op",
+            "extra": "52351 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "52351 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 25034,
+            "unit": "ns/op\t    4368 B/op\t       9 allocs/op",
+            "extra": "52281 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 25034,
+            "unit": "ns/op",
+            "extra": "52281 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4368,
+            "unit": "B/op",
+            "extra": "52281 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "52281 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 25145,
+            "unit": "ns/op\t    4368 B/op\t       9 allocs/op",
+            "extra": "45122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 25145,
+            "unit": "ns/op",
+            "extra": "45122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4368,
+            "unit": "B/op",
+            "extra": "45122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "45122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 24952,
+            "unit": "ns/op\t    4368 B/op\t       9 allocs/op",
+            "extra": "47984 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 24952,
+            "unit": "ns/op",
+            "extra": "47984 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4368,
+            "unit": "B/op",
+            "extra": "47984 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "47984 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 24956,
+            "unit": "ns/op\t    4368 B/op\t       9 allocs/op",
+            "extra": "48459 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 24956,
+            "unit": "ns/op",
+            "extra": "48459 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4368,
+            "unit": "B/op",
+            "extra": "48459 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "48459 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 25044,
+            "unit": "ns/op\t    4368 B/op\t       9 allocs/op",
+            "extra": "48709 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 25044,
+            "unit": "ns/op",
+            "extra": "48709 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4368,
+            "unit": "B/op",
+            "extra": "48709 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "48709 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 24884,
+            "unit": "ns/op\t    4368 B/op\t       9 allocs/op",
+            "extra": "48277 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 24884,
+            "unit": "ns/op",
+            "extra": "48277 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4368,
+            "unit": "B/op",
+            "extra": "48277 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/UDFCallLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "48277 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 3027,
+            "unit": "ns/op\t      88 B/op\t      11 allocs/op",
+            "extra": "408466 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 3027,
+            "unit": "ns/op",
+            "extra": "408466 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 88,
+            "unit": "B/op",
+            "extra": "408466 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 11,
+            "unit": "allocs/op",
+            "extra": "408466 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 3034,
+            "unit": "ns/op\t      88 B/op\t      11 allocs/op",
+            "extra": "409106 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 3034,
+            "unit": "ns/op",
+            "extra": "409106 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 88,
+            "unit": "B/op",
+            "extra": "409106 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 11,
+            "unit": "allocs/op",
+            "extra": "409106 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 3078,
+            "unit": "ns/op\t      88 B/op\t      11 allocs/op",
+            "extra": "405386 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 3078,
+            "unit": "ns/op",
+            "extra": "405386 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 88,
+            "unit": "B/op",
+            "extra": "405386 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 11,
+            "unit": "allocs/op",
+            "extra": "405386 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 3026,
+            "unit": "ns/op\t      88 B/op\t      11 allocs/op",
+            "extra": "400078 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 3026,
+            "unit": "ns/op",
+            "extra": "400078 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 88,
+            "unit": "B/op",
+            "extra": "400078 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 11,
+            "unit": "allocs/op",
+            "extra": "400078 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 3026,
+            "unit": "ns/op\t      88 B/op\t      11 allocs/op",
+            "extra": "393366 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 3026,
+            "unit": "ns/op",
+            "extra": "393366 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 88,
+            "unit": "B/op",
+            "extra": "393366 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 11,
+            "unit": "allocs/op",
+            "extra": "393366 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 3135,
+            "unit": "ns/op\t      88 B/op\t      11 allocs/op",
+            "extra": "393684 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 3135,
+            "unit": "ns/op",
+            "extra": "393684 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 88,
+            "unit": "B/op",
+            "extra": "393684 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 11,
+            "unit": "allocs/op",
+            "extra": "393684 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 3085,
+            "unit": "ns/op\t      88 B/op\t      11 allocs/op",
+            "extra": "392558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 3085,
+            "unit": "ns/op",
+            "extra": "392558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 88,
+            "unit": "B/op",
+            "extra": "392558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 11,
+            "unit": "allocs/op",
+            "extra": "392558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 3094,
+            "unit": "ns/op\t      88 B/op\t      11 allocs/op",
+            "extra": "391939 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 3094,
+            "unit": "ns/op",
+            "extra": "391939 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 88,
+            "unit": "B/op",
+            "extra": "391939 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 11,
+            "unit": "allocs/op",
+            "extra": "391939 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 3118,
+            "unit": "ns/op\t      88 B/op\t      11 allocs/op",
+            "extra": "393868 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 3118,
+            "unit": "ns/op",
+            "extra": "393868 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 88,
+            "unit": "B/op",
+            "extra": "393868 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 11,
+            "unit": "allocs/op",
+            "extra": "393868 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 3090,
+            "unit": "ns/op\t      88 B/op\t      11 allocs/op",
+            "extra": "393212 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 3090,
+            "unit": "ns/op",
+            "extra": "393212 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 88,
+            "unit": "B/op",
+            "extra": "393212 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/RecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 11,
+            "unit": "allocs/op",
+            "extra": "393212 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 11271,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "106078 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 11271,
+            "unit": "ns/op",
+            "extra": "106078 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "106078 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "106078 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 11544,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "106479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 11544,
+            "unit": "ns/op",
+            "extra": "106479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "106479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "106479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 11299,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "105961 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 11299,
+            "unit": "ns/op",
+            "extra": "105961 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "105961 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "105961 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 11237,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "106628 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 11237,
+            "unit": "ns/op",
+            "extra": "106628 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "106628 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "106628 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 11256,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "103920 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 11256,
+            "unit": "ns/op",
+            "extra": "103920 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "103920 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "103920 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 11720,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "104558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 11720,
+            "unit": "ns/op",
+            "extra": "104558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "104558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "104558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 11650,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "101768 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 11650,
+            "unit": "ns/op",
+            "extra": "101768 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "101768 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "101768 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 12149,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100874 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 12149,
+            "unit": "ns/op",
+            "extra": "100874 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100874 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100874 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 11664,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "102687 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 11664,
+            "unit": "ns/op",
+            "extra": "102687 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "102687 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "102687 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 11936,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "101302 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 11936,
+            "unit": "ns/op",
+            "extra": "101302 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "101302 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/TailRecursiveUDF/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "101302 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 104794,
+            "unit": "ns/op\t   71960 B/op\t    1550 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 104794,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 71960,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1550,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 103870,
+            "unit": "ns/op\t   71960 B/op\t    1550 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 103870,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 71960,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1550,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 102993,
+            "unit": "ns/op\t   71960 B/op\t    1550 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 102993,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 71960,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1550,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 108393,
+            "unit": "ns/op\t   71960 B/op\t    1550 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 108393,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 71960,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1550,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 102945,
+            "unit": "ns/op\t   71960 B/op\t    1550 allocs/op",
+            "extra": "11554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 102945,
+            "unit": "ns/op",
+            "extra": "11554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 71960,
+            "unit": "B/op",
+            "extra": "11554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1550,
+            "unit": "allocs/op",
+            "extra": "11554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 113869,
+            "unit": "ns/op\t   71960 B/op\t    1550 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 113869,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 71960,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1550,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 115025,
+            "unit": "ns/op\t   71960 B/op\t    1550 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 115025,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 71960,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1550,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 111926,
+            "unit": "ns/op\t   71960 B/op\t    1550 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 111926,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 71960,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1550,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 112559,
+            "unit": "ns/op\t   71960 B/op\t    1550 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 112559,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 71960,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1550,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 112258,
+            "unit": "ns/op\t   71960 B/op\t    1550 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 112258,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 71960,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/IteratorLoop/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1550,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 1820,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "663756 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 1820,
+            "unit": "ns/op",
+            "extra": "663756 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "663756 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "663756 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 1823,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "664408 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 1823,
+            "unit": "ns/op",
+            "extra": "664408 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "664408 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "664408 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 2050,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "654680 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 2050,
+            "unit": "ns/op",
+            "extra": "654680 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "654680 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "654680 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 1819,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "663018 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 1819,
+            "unit": "ns/op",
+            "extra": "663018 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "663018 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "663018 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 1821,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "664519 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 1821,
+            "unit": "ns/op",
+            "extra": "664519 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "664519 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "664519 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 2181,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "561303 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 2181,
+            "unit": "ns/op",
+            "extra": "561303 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "561303 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "561303 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 2191,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "564255 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 2191,
+            "unit": "ns/op",
+            "extra": "564255 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "564255 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "564255 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 2187,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "534175 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 2187,
+            "unit": "ns/op",
+            "extra": "534175 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "534175 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "534175 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 2163,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "561162 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 2163,
+            "unit": "ns/op",
+            "extra": "561162 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "561162 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "561162 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 2163,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "525169 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 2163,
+            "unit": "ns/op",
+            "extra": "525169 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "525169 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/HostCallSequence/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "525169 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 12859,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "93531 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 12859,
+            "unit": "ns/op",
+            "extra": "93531 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "93531 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "93531 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 12983,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "93963 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 12983,
+            "unit": "ns/op",
+            "extra": "93963 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "93963 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "93963 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 13062,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "90214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 13062,
+            "unit": "ns/op",
+            "extra": "90214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "90214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "90214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 12953,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "93160 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 12953,
+            "unit": "ns/op",
+            "extra": "93160 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "93160 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "93160 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 12876,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "93154 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 12876,
+            "unit": "ns/op",
+            "extra": "93154 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "93154 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "93154 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 14172,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "85308 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 14172,
+            "unit": "ns/op",
+            "extra": "85308 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "85308 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "85308 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 14076,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "85464 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 14076,
+            "unit": "ns/op",
+            "extra": "85464 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "85464 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "85464 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 14046,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "85692 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 14046,
+            "unit": "ns/op",
+            "extra": "85692 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "85692 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "85692 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 14170,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "85288 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 14170,
+            "unit": "ns/op",
+            "extra": "85288 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "85288 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "85288 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 13948,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "84814 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 13948,
+            "unit": "ns/op",
+            "extra": "84814 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "84814 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/ReleaseCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "84814 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 13421,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "88845 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 13421,
+            "unit": "ns/op",
+            "extra": "88845 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "88845 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "88845 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 13419,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "88630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 13419,
+            "unit": "ns/op",
+            "extra": "88630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "88630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "88630 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 13376,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "88794 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 13376,
+            "unit": "ns/op",
+            "extra": "88794 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "88794 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "88794 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 13430,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "89122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 13430,
+            "unit": "ns/op",
+            "extra": "89122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "89122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "89122 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 13448,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "88887 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 13448,
+            "unit": "ns/op",
+            "extra": "88887 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "88887 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Background (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "88887 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 14710,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "80785 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 14710,
+            "unit": "ns/op",
+            "extra": "80785 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "80785 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "80785 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 14813,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "81588 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 14813,
+            "unit": "ns/op",
+            "extra": "81588 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "81588 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "81588 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 14592,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "80558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 14592,
+            "unit": "ns/op",
+            "extra": "80558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "80558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "80558 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 14614,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "82088 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 14614,
+            "unit": "ns/op",
+            "extra": "82088 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "82088 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "82088 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 14887,
+            "unit": "ns/op\t    4376 B/op\t      10 allocs/op",
+            "extra": "79267 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 14887,
+            "unit": "ns/op",
+            "extra": "79267 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 4376,
+            "unit": "B/op",
+            "extra": "79267 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCancellationSafepoint/DebugCompiled/Cancelable (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 10,
+            "unit": "allocs/op",
+            "extra": "79267 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 9.134,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "136494450 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 9.134,
+            "unit": "ns/op",
+            "extra": "136494450 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "136494450 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "136494450 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 8.812,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "134654228 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 8.812,
+            "unit": "ns/op",
+            "extra": "134654228 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "134654228 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "134654228 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 9.153,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "132048708 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 9.153,
+            "unit": "ns/op",
+            "extra": "132048708 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "132048708 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "132048708 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 9.16,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "133839810 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 9.16,
+            "unit": "ns/op",
+            "extra": "133839810 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "133839810 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "133839810 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 9.128,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "135962642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 9.128,
+            "unit": "ns/op",
+            "extra": "135962642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "135962642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugSourcePointDispatch (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "135962642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 38.63,
+            "unit": "ns/op\t      16 B/op\t       1 allocs/op",
+            "extra": "30564414 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 38.63,
+            "unit": "ns/op",
+            "extra": "30564414 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 16,
+            "unit": "B/op",
+            "extra": "30564414 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "30564414 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 38.8,
+            "unit": "ns/op\t      16 B/op\t       1 allocs/op",
+            "extra": "30479460 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 38.8,
+            "unit": "ns/op",
+            "extra": "30479460 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 16,
+            "unit": "B/op",
+            "extra": "30479460 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "30479460 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 38.59,
+            "unit": "ns/op\t      16 B/op\t       1 allocs/op",
+            "extra": "31174940 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 38.59,
+            "unit": "ns/op",
+            "extra": "31174940 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 16,
+            "unit": "B/op",
+            "extra": "31174940 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "31174940 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 38.56,
+            "unit": "ns/op\t      16 B/op\t       1 allocs/op",
+            "extra": "31209154 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 38.56,
+            "unit": "ns/op",
+            "extra": "31209154 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 16,
+            "unit": "B/op",
+            "extra": "31209154 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "31209154 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 38.49,
+            "unit": "ns/op\t      16 B/op\t       1 allocs/op",
+            "extra": "32472082 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 38.49,
+            "unit": "ns/op",
+            "extra": "32472082 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 16,
+            "unit": "B/op",
+            "extra": "32472082 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessTypeNameBuiltin (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "32472082 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 13.7,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "84323898 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 13.7,
+            "unit": "ns/op",
+            "extra": "84323898 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "84323898 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "84323898 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 13.18,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "90300831 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 13.18,
+            "unit": "ns/op",
+            "extra": "90300831 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "90300831 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "90300831 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 13.9,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "85669467 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 13.9,
+            "unit": "ns/op",
+            "extra": "85669467 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "85669467 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "85669467 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 13.88,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "87178530 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 13.88,
+            "unit": "ns/op",
+            "extra": "87178530 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "87178530 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "87178530 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 13.9,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "85937809 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 13.9,
+            "unit": "ns/op",
+            "extra": "85937809 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "85937809 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDebugValueAccessDebugInfoCustom (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "85937809 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 152.2,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "7871198 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 152.2,
+            "unit": "ns/op",
+            "extra": "7871198 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "7871198 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "7871198 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 152.4,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "7878835 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 152.4,
+            "unit": "ns/op",
+            "extra": "7878835 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "7878835 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "7878835 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 152.5,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "7827662 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 152.5,
+            "unit": "ns/op",
+            "extra": "7827662 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "7827662 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "7827662 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 152.3,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "7883421 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 152.3,
+            "unit": "ns/op",
+            "extra": "7883421 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "7883421 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "7883421 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 152.4,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "7887566 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 152.4,
+            "unit": "ns/op",
+            "extra": "7887566 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "7887566 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkElapsedOpcode (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "7887566 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 2539,
+            "unit": "ns/op\t    1392 B/op\t      27 allocs/op",
+            "extra": "467607 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 2539,
+            "unit": "ns/op",
+            "extra": "467607 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 1392,
+            "unit": "B/op",
+            "extra": "467607 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 27,
+            "unit": "allocs/op",
+            "extra": "467607 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 2523,
+            "unit": "ns/op\t    1392 B/op\t      27 allocs/op",
+            "extra": "473242 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 2523,
+            "unit": "ns/op",
+            "extra": "473242 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 1392,
+            "unit": "B/op",
+            "extra": "473242 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 27,
+            "unit": "allocs/op",
+            "extra": "473242 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 2548,
+            "unit": "ns/op\t    1392 B/op\t      27 allocs/op",
+            "extra": "465318 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 2548,
+            "unit": "ns/op",
+            "extra": "465318 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 1392,
+            "unit": "B/op",
+            "extra": "465318 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 27,
+            "unit": "allocs/op",
+            "extra": "465318 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 2496,
+            "unit": "ns/op\t    1392 B/op\t      27 allocs/op",
+            "extra": "476712 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 2496,
+            "unit": "ns/op",
+            "extra": "476712 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 1392,
+            "unit": "B/op",
+            "extra": "476712 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 27,
+            "unit": "allocs/op",
+            "extra": "476712 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm)",
+            "value": 2496,
+            "unit": "ns/op\t    1392 B/op\t      27 allocs/op",
+            "extra": "461631 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm) - ns/op",
+            "value": 2496,
+            "unit": "ns/op",
+            "extra": "461631 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm) - B/op",
+            "value": 1392,
+            "unit": "B/op",
+            "extra": "461631 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWarmupBindHostCall_ArityMismatchSparseRegistry (github.com/MontFerret/ferret/v2/pkg/vm) - allocs/op",
+            "value": 27,
+            "unit": "allocs/op",
+            "extra": "461631 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data)",
+            "value": 1126,
+            "unit": "ns/op\t    1808 B/op\t      20 allocs/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data) - ns/op",
+            "value": 1126,
+            "unit": "ns/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data) - B/op",
+            "value": 1808,
+            "unit": "B/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data) - allocs/op",
+            "value": 20,
+            "unit": "allocs/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data)",
+            "value": 1149,
+            "unit": "ns/op\t    1808 B/op\t      20 allocs/op",
+            "extra": "991791 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data) - ns/op",
+            "value": 1149,
+            "unit": "ns/op",
+            "extra": "991791 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data) - B/op",
+            "value": 1808,
+            "unit": "B/op",
+            "extra": "991791 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data) - allocs/op",
+            "value": 20,
+            "unit": "allocs/op",
+            "extra": "991791 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data)",
+            "value": 1089,
+            "unit": "ns/op\t    1808 B/op\t      20 allocs/op",
+            "extra": "1049090 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data) - ns/op",
+            "value": 1089,
+            "unit": "ns/op",
+            "extra": "1049090 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data) - B/op",
+            "value": 1808,
+            "unit": "B/op",
+            "extra": "1049090 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data) - allocs/op",
+            "value": 20,
+            "unit": "allocs/op",
+            "extra": "1049090 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data)",
+            "value": 1060,
+            "unit": "ns/op\t    1808 B/op\t      20 allocs/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data) - ns/op",
+            "value": 1060,
+            "unit": "ns/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data) - B/op",
+            "value": 1808,
+            "unit": "B/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data) - allocs/op",
+            "value": 20,
+            "unit": "allocs/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data)",
+            "value": 1097,
+            "unit": "ns/op\t    1808 B/op\t      20 allocs/op",
+            "extra": "962762 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data) - ns/op",
+            "value": 1097,
+            "unit": "ns/op",
+            "extra": "962762 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data) - B/op",
+            "value": 1808,
+            "unit": "B/op",
+            "extra": "962762 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShapeCacheTransitionChain (github.com/MontFerret/ferret/v2/pkg/vm/internal/data) - allocs/op",
+            "value": 20,
+            "unit": "allocs/op",
+            "extra": "962762 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 267.4,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "5092430 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 267.4,
+            "unit": "ns/op",
+            "extra": "5092430 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "5092430 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "5092430 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 269.2,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "5166942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 269.2,
+            "unit": "ns/op",
+            "extra": "5166942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "5166942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "5166942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 264.2,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "5181678 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 264.2,
+            "unit": "ns/op",
+            "extra": "5181678 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "5181678 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "5181678 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 269.8,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "5301631 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 269.8,
+            "unit": "ns/op",
+            "extra": "5301631 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "5301631 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "5301631 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 263.3,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "5202091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 263.3,
+            "unit": "ns/op",
+            "extra": "5202091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "5202091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_New (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "5202091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 25.84,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "45911522 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 25.84,
+            "unit": "ns/op",
+            "extra": "45911522 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "45911522 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "45911522 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 25.92,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "46298671 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 25.92,
+            "unit": "ns/op",
+            "extra": "46298671 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "46298671 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "46298671 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 25.84,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "46420842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 25.84,
+            "unit": "ns/op",
+            "extra": "46420842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "46420842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "46420842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 25.86,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "46347313 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 25.86,
+            "unit": "ns/op",
+            "extra": "46347313 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "46347313 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "46347313 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 25.85,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "46390486 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 25.85,
+            "unit": "ns/op",
+            "extra": "46390486 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "46390486 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Get (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "46390486 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 51.07,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "23445892 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 51.07,
+            "unit": "ns/op",
+            "extra": "23445892 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "23445892 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "23445892 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 51.04,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "23504086 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 51.04,
+            "unit": "ns/op",
+            "extra": "23504086 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "23504086 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "23504086 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 51.26,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "23507005 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 51.26,
+            "unit": "ns/op",
+            "extra": "23507005 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "23507005 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "23507005 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 51.19,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "23357494 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 51.19,
+            "unit": "ns/op",
+            "extra": "23357494 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "23357494 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "23357494 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 51.05,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "23404771 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 51.05,
+            "unit": "ns/op",
+            "extra": "23404771 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "23404771 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_Set (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "23404771 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 83.04,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "14441684 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 83.04,
+            "unit": "ns/op",
+            "extra": "14441684 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "14441684 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "14441684 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 83.2,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "14438446 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 83.2,
+            "unit": "ns/op",
+            "extra": "14438446 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "14438446 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "14438446 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 83.11,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "14449245 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 83.11,
+            "unit": "ns/op",
+            "extra": "14449245 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "14449245 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "14449245 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 83.18,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "14399263 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 83.18,
+            "unit": "ns/op",
+            "extra": "14399263 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "14399263 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "14399263 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 83.11,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "14368831 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 83.11,
+            "unit": "ns/op",
+            "extra": "14368831 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "14368831 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_DeleteThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "14368831 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 41.94,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "28618012 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 41.94,
+            "unit": "ns/op",
+            "extra": "28618012 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "28618012 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "28618012 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 41.99,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "28561059 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 41.99,
+            "unit": "ns/op",
+            "extra": "28561059 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "28561059 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "28561059 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 41.93,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "28424325 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 41.93,
+            "unit": "ns/op",
+            "extra": "28424325 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "28424325 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "28424325 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 41.93,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "28610244 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 41.93,
+            "unit": "ns/op",
+            "extra": "28610244 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "28610244 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "28610244 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem)",
+            "value": 41.91,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "28540113 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - ns/op",
+            "value": 41.91,
+            "unit": "ns/op",
+            "extra": "28540113 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "28540113 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCellStore_ResetThenNew (github.com/MontFerret/ferret/v2/pkg/vm/internal/mem) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "28540113 times\n4 procs"
           }
         ]
       }
