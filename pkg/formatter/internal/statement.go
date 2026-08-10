@@ -562,21 +562,23 @@ func (f *statementFormatter) formatWaitForExpression(ctx *fql.WaitForExpressionC
 	f.writeKeyword(keywordWaitFor)
 	f.p.space()
 
-	grouped := false
+	groupedStop := -1
 	if event := ctx.WaitForEventGroupExpression(); event != nil {
-		grouped = true
-		f.formatWaitForEventGroupExpression(event.(*fql.WaitForEventGroupExpressionContext))
+		eventCtx := event.(*fql.WaitForEventGroupExpressionContext)
+		f.formatWaitForEventGroupExpression(eventCtx)
+		groupedStop = f.trivia.stopIndex(eventCtx)
 	} else if pred := ctx.WaitForPredicateGroupExpression(); pred != nil {
-		grouped = true
-		f.formatWaitForPredicateGroupExpression(pred.(*fql.WaitForPredicateGroupExpressionContext))
+		predCtx := pred.(*fql.WaitForPredicateGroupExpressionContext)
+		f.formatWaitForPredicateGroupExpression(predCtx)
+		groupedStop = f.trivia.stopIndex(predCtx)
 	} else if event := ctx.WaitForEventExpression(); event != nil {
 		f.formatWaitForEventExpression(event.(*fql.WaitForEventExpressionContext))
 	} else if pred := ctx.WaitForPredicateExpression(); pred != nil {
 		f.formatWaitForPredicateExpression(pred.(*fql.WaitForPredicateExpressionContext))
 	}
 
-	if grouped {
-		f.expression.formatRecoveryTailsMultiline(ctx.RecoveryTails())
+	if groupedStop >= 0 {
+		f.expression.formatRecoveryTailsMultiline(ctx.RecoveryTails(), groupedStop)
 	} else {
 		f.expression.formatRecoveryTails(ctx.RecoveryTails())
 	}
@@ -624,15 +626,20 @@ func (f *statementFormatter) formatWaitForEventGroupExpression(ctx *fql.WaitForE
 		f.p.newline()
 	}
 	f.p.write("}")
+	previousStop := f.trivia.tokenStop(ctx.CloseBrace())
 
 	if tail := ctx.WaitForEventTail(); tail != nil {
 		if trigger := tail.WaitForTriggerClause(); trigger != nil {
-			f.p.newline()
-			f.formatWaitForTriggerClause(trigger.(*fql.WaitForTriggerClauseContext))
+			triggerCtx := trigger.(*fql.WaitForTriggerClauseContext)
+			f.trivia.emitClauseBoundary(previousStop+1, f.trivia.startIndex(triggerCtx))
+			f.formatWaitForTriggerClause(triggerCtx)
+			previousStop = f.trivia.stopIndex(triggerCtx)
 		}
+
 		if timeout := tail.TimeoutClause(); timeout != nil {
-			f.p.newline()
-			f.clause.formatTimeoutClause(timeout.(*fql.TimeoutClauseContext))
+			timeoutCtx := timeout.(*fql.TimeoutClauseContext)
+			f.trivia.emitClauseBoundary(previousStop+1, f.trivia.startIndex(timeoutCtx))
+			f.clause.formatTimeoutClause(timeoutCtx)
 		}
 	}
 }
@@ -710,22 +717,33 @@ func (f *statementFormatter) formatWaitForPredicateGroupExpression(ctx *fql.Wait
 		f.p.newline()
 	}
 	f.p.write("}")
+	previousStop := f.trivia.tokenStop(ctx.CloseBrace())
 
 	if timeout := ctx.TimeoutClause(); timeout != nil {
-		f.p.newline()
-		f.clause.formatTimeoutClause(timeout.(*fql.TimeoutClauseContext))
+		timeoutCtx := timeout.(*fql.TimeoutClauseContext)
+		f.trivia.emitClauseBoundary(previousStop+1, f.trivia.startIndex(timeoutCtx))
+		f.clause.formatTimeoutClause(timeoutCtx)
+		previousStop = f.trivia.stopIndex(timeoutCtx)
 	}
+
 	if every := ctx.EveryClause(); every != nil {
-		f.p.newline()
-		f.clause.formatEveryClause(every.(*fql.EveryClauseContext))
+		everyCtx := every.(*fql.EveryClauseContext)
+		f.trivia.emitClauseBoundary(previousStop+1, f.trivia.startIndex(everyCtx))
+		f.clause.formatEveryClause(everyCtx)
+		previousStop = f.trivia.stopIndex(everyCtx)
 	}
+
 	if backoff := ctx.BackoffClause(); backoff != nil {
-		f.p.newline()
-		f.clause.formatBackoffClause(backoff.(*fql.BackoffClauseContext))
+		backoffCtx := backoff.(*fql.BackoffClauseContext)
+		f.trivia.emitClauseBoundary(previousStop+1, f.trivia.startIndex(backoffCtx))
+		f.clause.formatBackoffClause(backoffCtx)
+		previousStop = f.trivia.stopIndex(backoffCtx)
 	}
+
 	if jitter := ctx.JitterClause(); jitter != nil {
-		f.p.newline()
-		f.clause.formatJitterClause(jitter.(*fql.JitterClauseContext))
+		jitterCtx := jitter.(*fql.JitterClauseContext)
+		f.trivia.emitClauseBoundary(previousStop+1, f.trivia.startIndex(jitterCtx))
+		f.clause.formatJitterClause(jitterCtx)
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 
 type streamGroupTestStream struct {
 	messages   chan runtime.Message
+	readPanic  any
 	closeCount atomic.Int32
 }
 
@@ -17,6 +18,10 @@ func newStreamGroupTestStream(capacity int) *streamGroupTestStream {
 }
 
 func (s *streamGroupTestStream) Read(context.Context) <-chan runtime.Message {
+	if s.readPanic != nil {
+		panic(s.readPanic)
+	}
+
 	return s.messages
 }
 

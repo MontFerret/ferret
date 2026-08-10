@@ -16,16 +16,15 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 		return false
 	}
 
-	mode, synchronization, openSpan, ok := waitForEmptyGroupInSource(src)
-	if !ok {
-		var open, close *TokenNode
-		mode, synchronization, open, close = waitForEmptyGroup(offending)
-		if open != nil {
-			first := spanFromTokenSafe(open.Token(), src)
-			last := spanFromTokenSafe(close.Token(), src)
-			openSpan = source.Span{Start: first.Start, End: last.End}
-			ok = true
-		}
+	mode, synchronization, open, close := waitForEmptyGroup(offending)
+	var openSpan source.Span
+	ok := open != nil
+	if ok {
+		first := spanFromTokenSafe(open.Token(), src)
+		last := spanFromTokenSafe(close.Token(), src)
+		openSpan = source.Span{Start: first.Start, End: last.End}
+	} else {
+		mode, synchronization, openSpan, ok = waitForEmptyGroupInSource(src, offending.Token())
 	}
 
 	if ok {
@@ -34,6 +33,7 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(openSpan, "empty synchronization group"),
 		}
+
 		return true
 	}
 
@@ -45,6 +45,7 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 			err.Spans = []diagnostics.ErrorSpan{
 				diagnostics.NewMainErrorSpan(span, "missing expression"),
 			}
+
 			return true
 		}
 	}
@@ -57,6 +58,7 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 			err.Spans = []diagnostics.ErrorSpan{
 				diagnostics.NewMainErrorSpan(span, "missing expression"),
 			}
+
 			return true
 		}
 	}
@@ -68,6 +70,7 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "parenthesize nested wait"),
 		}
+
 		return true
 	}
 
@@ -78,6 +81,7 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing trigger statement"),
 		}
+
 		return true
 	}
 
@@ -87,12 +91,14 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "unsupported clause"),
 		}
+
 		return true
 	}
 
 	if clause, spanNode := waitForMissingClauseValue(offending); clause != "" {
 		span := spanFromTokenSafe(spanNode.Token(), src)
 		err.Message = fmt.Sprintf("Expected value after '%s' in WAITFOR clause", clause)
+
 		switch clause {
 		case "BACKOFF":
 			err.Hint = "Provide a backoff strategy, e.g. BACKOFF LINEAR."
@@ -101,32 +107,44 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 		default:
 			err.Hint = fmt.Sprintf("Provide a duration, e.g. %s 100ms.", clause)
 		}
+
 		err.Spans = []diagnostics.ErrorSpan{
 			diagnostics.NewMainErrorSpan(span, "missing value"),
 		}
+
 		return true
 	}
 
 	return false
 }
 
-func waitForEmptyGroupInSource(src *source.Source) (string, string, source.Span, bool) {
-	if src == nil {
+func waitForEmptyGroupInSource(src *source.Source, offending antlr.Token) (string, string, source.Span, bool) {
+	if src == nil || offending == nil {
 		return "", "", source.Span{}, false
 	}
 
 	lexer := fql.NewFqlLexer(antlr.NewInputStream(asciiUpper(src.Content())))
 	var tokens []antlr.Token
+
 	for {
 		token := lexer.NextToken()
 		if token == nil || token.GetTokenType() == antlr.TokenEOF {
 			break
 		}
+
 		if token.GetChannel() == antlr.TokenDefaultChannel {
 			tokens = append(tokens, token)
 		}
 	}
 
+	type candidate struct {
+		mode            string
+		synchronization string
+		span            source.Span
+		distance        int
+	}
+
+	var selected *candidate
 	for idx, token := range tokens {
 		if token.GetTokenType() != fql.FqlLexerWaitfor {
 			continue
@@ -146,19 +164,27 @@ func waitForEmptyGroupInSource(src *source.Source) (string, string, source.Span,
 		if cursor+2 >= len(tokens) {
 			continue
 		}
+
 		modeText := strings.Join(modeParts, " ")
 		switch modeText {
 		case "", "EVENT", "EXISTS", "VALUE", "NOT EXISTS":
 		default:
 			continue
 		}
+
 		synchronizationToken := tokens[cursor]
 		if synchronizationToken.GetTokenType() != fql.FqlLexerAny && synchronizationToken.GetTokenType() != fql.FqlLexerAll {
 			continue
 		}
+
 		open := tokens[cursor+1]
 		close := tokens[cursor+2]
 		if open.GetTokenType() != fql.FqlLexerOpenBrace || close.GetTokenType() != fql.FqlLexerCloseBrace {
+			continue
+		}
+
+		distance, related := waitForEmptyGroupDistance(tokens, idx, cursor+2, offending)
+		if !related {
 			continue
 		}
 
@@ -167,13 +193,51 @@ func waitForEmptyGroupInSource(src *source.Source) (string, string, source.Span,
 			mode = modeText + " "
 		}
 
-		return mode, strings.ToUpper(synchronizationToken.GetText()), source.Span{
-			Start: open.GetStart(),
-			End:   close.GetStop() + 1,
-		}, true
+		found := candidate{
+			mode:            mode,
+			synchronization: strings.ToUpper(synchronizationToken.GetText()),
+			span: source.Span{
+				Start: open.GetStart(),
+				End:   close.GetStop() + 1,
+			},
+			distance: distance,
+		}
+
+		if selected == nil || found.distance < selected.distance {
+			selected = &found
+		}
 	}
 
-	return "", "", source.Span{}, false
+	if selected == nil {
+		return "", "", source.Span{}, false
+	}
+
+	return selected.mode, selected.synchronization, selected.span, true
+}
+
+func waitForEmptyGroupDistance(tokens []antlr.Token, waitForIndex, closeIndex int, offending antlr.Token) (int, bool) {
+	waitFor := tokens[waitForIndex]
+	close := tokens[closeIndex]
+	offendingStart := offending.GetStart()
+	if offendingStart >= waitFor.GetStart() && offendingStart <= close.GetStop() {
+		return 0, true
+	}
+
+	nextIndex := closeIndex + 1
+	if nextIndex < len(tokens) {
+		next := tokens[nextIndex]
+		if next.GetTokenType() == offending.GetTokenType() && next.GetStart() == offendingStart {
+			return next.GetStart() - close.GetStop(), true
+		}
+
+		return 0, false
+	}
+
+	if offending.GetTokenType() == antlr.TokenEOF {
+		return offendingStart - close.GetStop(), true
+	}
+
+	return 0, false
 }
 
 func waitForEmptyGroup(offending *TokenNode) (string, string, *TokenNode, *TokenNode) {
@@ -185,6 +249,7 @@ func waitForEmptyGroup(offending *TokenNode) (string, string, *TokenNode, *Token
 	if !is(close, "}") {
 		close = offending.Next()
 	}
+
 	if !is(close, "}") || !is(close.Prev(), "{") {
 		return "", "", nil, nil
 	}
@@ -197,14 +262,18 @@ func waitForEmptyGroup(offending *TokenNode) (string, string, *TokenNode, *Token
 
 	var modeParts []string
 	foundWaitFor := false
+
 	for curr := synchronizationNode.Prev(); curr != nil; curr = curr.Prev() {
 		if is(curr, "WAITFOR") {
 			foundWaitFor = true
+
 			break
 		}
+
 		if len(modeParts) == 2 {
 			return "", "", nil, nil
 		}
+
 		modeParts = append([]string{strings.ToUpper(curr.GetText())}, modeParts...)
 	}
 
@@ -213,6 +282,7 @@ func waitForEmptyGroup(offending *TokenNode) (string, string, *TokenNode, *Token
 	}
 
 	mode := ""
+
 	if len(modeParts) > 0 {
 		mode = strings.Join(modeParts, " ") + " "
 	}
@@ -229,6 +299,7 @@ func waitForPredicateKeyword(offending *TokenNode) (string, *TokenNode) {
 		if is(offending.Prev(), "NOT") {
 			return "NOT EXISTS", offending
 		}
+
 		return "EXISTS", offending
 	}
 
@@ -240,6 +311,7 @@ func waitForPredicateKeyword(offending *TokenNode) (string, *TokenNode) {
 		if is(offending.Prev().Prev(), "NOT") {
 			return "NOT EXISTS", offending.Prev()
 		}
+
 		return "EXISTS", offending.Prev()
 	}
 
@@ -326,9 +398,11 @@ func waitForEventEverySpanAfter(src *source.Source, offending *TokenNode) (sourc
 	if start < 0 {
 		start = tok.GetStart()
 	}
+
 	if start < 0 {
 		start = 0
 	}
+
 	if start >= len(content) {
 		return source.Span{}, false
 	}
@@ -339,6 +413,7 @@ func waitForEventEverySpanAfter(src *source.Source, offending *TokenNode) (sourc
 		if next == nil || next.GetTokenType() == antlr.TokenEOF {
 			return source.Span{}, false
 		}
+
 		if next.GetChannel() != antlr.TokenDefaultChannel {
 			continue
 		}
@@ -347,6 +422,7 @@ func waitForEventEverySpanAfter(src *source.Source, offending *TokenNode) (sourc
 		if next.GetTokenType() == fql.FqlLexerEvery {
 			return source.Span{Start: start + next.GetStart(), End: start + next.GetStop() + 1}, true
 		}
+
 		if stopsWaitForEventEveryScan(next) {
 			return source.Span{}, false
 		}
@@ -376,6 +452,7 @@ func stopsWaitForEventEveryScan(tok antlr.Token) bool {
 
 func asciiUpper(input string) string {
 	out := []byte(input)
+
 	for i, ch := range out {
 		if ch >= 'a' && ch <= 'z' {
 			out[i] = ch - ('a' - 'A')

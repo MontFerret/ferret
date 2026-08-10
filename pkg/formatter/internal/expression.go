@@ -1006,11 +1006,38 @@ func (f *expressionFormatter) formatRecoveryTailsWith(p *printer, ctx fql.IRecov
 	}
 }
 
-func (f *expressionFormatter) formatRecoveryTailsMultiline(ctx fql.IRecoveryTailsContext) {
+func (f *expressionFormatter) formatRecoveryTailsMultiline(ctx fql.IRecoveryTailsContext, previousStop int) {
+	if ctx == nil {
+		return
+	}
+
+	tails := ctx.AllRecoveryTail()
+	if f.recoveryTailsContainComments(previousStop, tails) {
+		for _, tail := range tails {
+			f.trivia.emitClauseBoundary(previousStop+1, f.trivia.startIndex(tail))
+			f.formatRecoveryTailWith(f.p, tail)
+			previousStop = f.trivia.stopIndex(tail)
+		}
+
+		return
+	}
+
 	for _, tail := range f.orderedRecoveryTails(ctx) {
 		f.p.newline()
 		f.formatRecoveryTailWith(f.p, tail)
 	}
+}
+
+func (f *expressionFormatter) recoveryTailsContainComments(previousStop int, tails []fql.IRecoveryTailContext) bool {
+	for _, tail := range tails {
+		if f.trivia.containsComment(f.trivia.sliceBetween(previousStop+1, f.trivia.startIndex(tail))) {
+			return true
+		}
+
+		previousStop = f.trivia.stopIndex(tail)
+	}
+
+	return false
 }
 
 func (f *expressionFormatter) orderedRecoveryTails(ctx fql.IRecoveryTailsContext) []fql.IRecoveryTailContext {

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"hash/fnv"
 	"io"
-	"math"
 	"strconv"
 )
 
@@ -14,7 +13,6 @@ type Int int64
 
 const (
 	ZeroInt = Int(0)
-	MaxInt  = Int(math.MaxInt64)
 )
 
 func NewInt(input int) Int {

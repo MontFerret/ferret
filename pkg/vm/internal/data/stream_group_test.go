@@ -81,7 +81,7 @@ func TestStreamGroupIteratorIgnoresCompletedArmErrors(t *testing.T) {
 	}
 }
 
-func TestStreamGroupIteratorRejectsLargeArmIndexWithoutClosingArm(t *testing.T) {
+func TestStreamGroupIteratorRejectsInvalidArmIndexesWithoutClosingArm(t *testing.T) {
 	stream := newStreamGroupTestStream(1)
 	iterator := NewStreamGroupValue([]runtime.Stream{stream}).(*StreamGroupValue).
 		Iterate(runtime.Duration(time.Second)).(*StreamGroupIterator)
@@ -91,15 +91,63 @@ func TestStreamGroupIteratorRejectsLargeArmIndexWithoutClosingArm(t *testing.T) 
 		}
 	})
 
-	err := iterator.ArmDone(runtime.NewInt64(1 << 32))
-	if !errors.Is(err, runtime.ErrInvalidArgument) {
-		t.Fatalf("expected invalid argument for large arm index, got %v", err)
+	for _, index := range []runtime.Int{-1, 1, runtime.NewInt64(1 << 32)} {
+		err := iterator.ArmDone(index)
+		if !errors.Is(err, runtime.ErrInvalidArgument) {
+			t.Fatalf("expected invalid argument for arm index %d, got %v", index, err)
+		}
+
+		if !iterator.active[0] || iterator.activeCount != 1 {
+			t.Fatalf("arm index %d changed active state: active=%v count=%d", index, iterator.active, iterator.activeCount)
+		}
+
+		if got := stream.closeCount.Load(); got != 0 {
+			t.Fatalf("arm index %d closed stream %d times", index, got)
+		}
 	}
-	if !iterator.active[0] || iterator.activeCount != 1 {
-		t.Fatalf("large arm index changed active state: active=%v count=%d", iterator.active, iterator.activeCount)
+}
+
+func TestStreamGroupIteratorPropagatesReadPanicByDeclarationOrder(t *testing.T) {
+	first := newStreamGroupTestStream(0)
+	first.readPanic = "first read panic"
+	second := newStreamGroupTestStream(0)
+	second.readPanic = "second read panic"
+	iterator := NewStreamGroupValue([]runtime.Stream{first, second}).(*StreamGroupValue).
+		Iterate(runtime.Duration(time.Second)).(*StreamGroupIterator)
+
+	got := captureStreamGroupPanic(func() {
+		_ = iterator.Next(context.Background())
+	})
+	if got != "first read panic" {
+		t.Fatalf("expected first read panic, got %v", got)
 	}
-	if got := stream.closeCount.Load(); got != 0 {
-		t.Fatalf("large arm index closed stream %d times", got)
+
+	if err := iterator.Close(); err != nil {
+		t.Fatalf("close iterator: %v", err)
+	}
+
+	if first.closeCount.Load() != 1 || second.closeCount.Load() != 1 {
+		t.Fatalf("expected both streams closed once, got first=%d second=%d", first.closeCount.Load(), second.closeCount.Load())
+	}
+}
+
+func TestStreamGroupIteratorClosePropagatesPendingReadPanic(t *testing.T) {
+	stream := newStreamGroupTestStream(0)
+	stream.readPanic = "read panic"
+	iterator := NewStreamGroupValue([]runtime.Stream{stream}).(*StreamGroupValue).
+		Iterate(runtime.Duration(time.Second)).(*StreamGroupIterator)
+	iterator.start(context.Background())
+	<-iterator.done
+
+	got := captureStreamGroupPanic(func() {
+		_ = iterator.Close()
+	})
+	if got != "read panic" {
+		t.Fatalf("expected pending read panic, got %v", got)
+	}
+
+	if got := stream.closeCount.Load(); got != 1 {
+		t.Fatalf("expected stream close once, got %d", got)
 	}
 }
 
@@ -116,4 +164,13 @@ func TestStreamGroupIteratorPropagatesActiveArmError(t *testing.T) {
 	if err := iterator.Close(); err != nil {
 		t.Fatalf("close iterator: %v", err)
 	}
+}
+
+func captureStreamGroupPanic(fn func()) (recovered any) {
+	defer func() {
+		recovered = recover()
+	}()
+	fn()
+
+	return nil
 }

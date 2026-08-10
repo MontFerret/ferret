@@ -4,6 +4,7 @@ import (
 	"context"
 	"hash/fnv"
 	"io"
+	"math"
 	"sync"
 	"time"
 
@@ -24,6 +25,7 @@ type (
 		group       *StreamGroupValue
 		done        chan struct{}
 		events      chan streamGroupEvent
+		panics      chan int
 		cancel      context.CancelFunc
 		timer       *time.Timer
 		active      []bool
@@ -54,6 +56,7 @@ func newStreamGroupIterator(group *StreamGroupValue, timeout runtime.Duration) *
 		timeout:     resolvedTimeout,
 		done:        make(chan struct{}),
 		events:      make(chan streamGroupEvent, len(group.arms)),
+		panics:      make(chan int, len(group.arms)),
 		armCancels:  make([]context.CancelFunc, len(group.arms)),
 		active:      active,
 		activeCount: len(active),
@@ -79,8 +82,14 @@ func (it *StreamGroupIterator) Next(ctx context.Context) error {
 			return ctx.Err()
 		case <-it.timer.C:
 			return runtime.ErrTimeout
+		case panicIndex := <-it.panics:
+			it.propagateWorkerPanic(panicIndex)
 		case event, open := <-it.events:
 			if !open {
+				if panicIndex, ok := it.takeWorkerPanic(); ok {
+					it.propagateWorkerPanic(panicIndex)
+				}
+
 				return io.EOF
 			}
 
@@ -131,7 +140,7 @@ func (it *StreamGroupIterator) Key() runtime.Value {
 
 // ArmDone prevents queued messages or errors from a satisfied arm from affecting the group.
 func (it *StreamGroupIterator) ArmDone(index runtime.Int) error {
-	if index < 0 || index > runtime.MaxInt || index >= runtime.Int(len(it.active)) {
+	if index < 0 || index > runtime.Int(math.MaxInt) || index >= runtime.Int(len(it.active)) {
 		return runtime.Error(runtime.ErrInvalidArgument, "stream group arm index is out of range")
 	}
 
@@ -171,6 +180,10 @@ func (it *StreamGroupIterator) Close() error {
 	err := it.group.Close()
 	if cancel != nil {
 		<-it.done
+	}
+
+	if panicIndex, ok := it.takeWorkerPanic(); ok {
+		panic(it.group.arms[it.lowestWorkerPanic(panicIndex)].panicValue)
 	}
 
 	return err
@@ -218,7 +231,14 @@ func (it *StreamGroupIterator) start(ctx context.Context) {
 }
 
 func (it *StreamGroupIterator) consumeArm(ctx context.Context, index int, stream runtime.Stream) {
-	defer it.workers.Done()
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			it.group.arms[index].panicValue = recovered
+			it.panics <- index
+		}
+
+		it.workers.Done()
+	}()
 
 	messages := stream.Read(ctx)
 	for {
@@ -236,6 +256,44 @@ func (it *StreamGroupIterator) consumeArm(ctx context.Context, index int, stream
 				return
 			}
 		}
+	}
+}
+
+// propagateWorkerPanic drains every arm worker before re-panicking on the iterator caller.
+func (it *StreamGroupIterator) propagateWorkerPanic(first int) {
+	it.mu.Lock()
+	cancel := it.cancel
+	it.mu.Unlock()
+
+	if cancel != nil {
+		cancel()
+		<-it.done
+	}
+
+	panic(it.group.arms[it.lowestWorkerPanic(first)].panicValue)
+}
+
+func (it *StreamGroupIterator) lowestWorkerPanic(first int) int {
+	selected := first
+
+	for {
+		panicIndex, ok := it.takeWorkerPanic()
+		if !ok {
+			return selected
+		}
+
+		if panicIndex < selected {
+			selected = panicIndex
+		}
+	}
+}
+
+func (it *StreamGroupIterator) takeWorkerPanic() (int, bool) {
+	select {
+	case panicIndex := <-it.panics:
+		return panicIndex, true
+	default:
+		return 0, false
 	}
 }
 

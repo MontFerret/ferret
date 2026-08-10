@@ -3,22 +3,37 @@ package vm
 import (
 	"context"
 	"errors"
-	"sync"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
+
+var errStreamGroupSetupAborted = errors.New("stream group setup aborted")
 
 type (
 	streamGroupDescriptor struct {
 		observable runtime.Observable
 		options    runtime.Map
+		outcome    *streamGroupSetupOutcome
 		eventName  runtime.String
 	}
 
 	streamGroupSetupResult struct {
-		stream runtime.Stream
-		err    error
-		index  int
+		stream     runtime.Stream
+		err        error
+		panicValue any
+		panicked   bool
+	}
+
+	streamGroupSetupOutcome struct {
+		err        error
+		panicValue any
+		panicked   bool
+	}
+
+	streamGroupCloseResult struct {
+		err        error
+		panicValue any
+		panicked   bool
 	}
 )
 
@@ -31,41 +46,98 @@ func subscribeStreamGroup(
 		return nil, err
 	}
 
-	setupCtx, cancel := context.WithCancel(ctx)
-	results := make(chan streamGroupSetupResult, len(descriptors))
+	setupCtx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+	streams := make([]runtime.Stream, len(descriptors))
+	completed := make(chan int, len(descriptors))
 
 	for idx, descriptor := range descriptors {
-		go func() {
-			stream, subscribeErr := descriptor.observable.Subscribe(setupCtx, runtime.Subscription{
-				EventName: descriptor.eventName,
-				Options:   descriptor.options,
-			})
-			results <- streamGroupSetupResult{stream: stream, err: subscribeErr, index: idx}
-		}()
+		go func(idx int, descriptor streamGroupDescriptor) {
+			result := subscribeStreamGroupDescriptor(setupCtx, descriptor)
+			streams[idx] = result.stream
+
+			if result.panicked || result.err != nil {
+				descriptors[idx].outcome = &streamGroupSetupOutcome{
+					err:        result.err,
+					panicValue: result.panicValue,
+					panicked:   result.panicked,
+				}
+			}
+
+			completed <- idx
+		}(idx, descriptor)
 	}
 
-	streams := make([]runtime.Stream, len(descriptors))
-	var setupErr error
+	setupFailed := false
 
 	for range descriptors {
-		result := <-results
-		if result.err != nil {
-			setupErr = errors.Join(setupErr, result.err)
-			cancel()
-		}
+		idx := <-completed
+		outcome := descriptors[idx].outcome
 
-		if result.stream != nil {
-			streams[result.index] = result.stream
+		if !setupFailed && outcome != nil {
+			setupFailed = true
+			cancel(errStreamGroupSetupAborted)
 		}
 	}
 
-	cancel()
-
-	if setupErr == nil {
+	if !setupFailed {
 		return streams, nil
 	}
 
-	return nil, errors.Join(setupErr, closeStreamGroupSetup(streams))
+	var setupErr error
+	var setupPanic *streamGroupSetupOutcome
+	for idx := range descriptors {
+		outcome := descriptors[idx].outcome
+		if outcome == nil {
+			continue
+		}
+
+		if outcome.panicked && setupPanic == nil {
+			setupPanic = outcome
+		}
+
+		if outcome.err != nil {
+			setupErr = errors.Join(setupErr, outcome.err)
+		}
+	}
+
+	if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(setupErr, ctxErr) {
+		setupErr = errors.Join(setupErr, ctxErr)
+	}
+
+	closeResult := closeStreamGroupSetupSafely(streams)
+	if setupPanic != nil {
+		panic(setupPanic.panicValue)
+	}
+
+	if closeResult.panicked {
+		panic(closeResult.panicValue)
+	}
+
+	return nil, errors.Join(setupErr, closeResult.err)
+}
+
+func subscribeStreamGroupDescriptor(
+	ctx context.Context,
+	descriptor streamGroupDescriptor,
+) (result streamGroupSetupResult) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			result.panicValue = recovered
+			result.panicked = true
+		}
+
+		if result.err != nil && errors.Is(context.Cause(ctx), errStreamGroupSetupAborted) {
+			result.err = stripStreamGroupInternalCancellation(result.err)
+		}
+	}()
+
+	result.stream, result.err = descriptor.observable.Subscribe(ctx, runtime.Subscription{
+		EventName: descriptor.eventName,
+		Options:   descriptor.options,
+	})
+
+	return result
 }
 
 func coerceStreamGroupDescriptors(
@@ -143,26 +215,74 @@ func coerceStreamGroupDescriptors(
 }
 
 func closeStreamGroupSetup(streams []runtime.Stream) error {
-	var wg sync.WaitGroup
-	errs := make(chan error, len(streams))
+	result := closeStreamGroupSetupSafely(streams)
+	if result.panicked {
+		panic(result.panicValue)
+	}
+
+	return result.err
+}
+
+// closeStreamGroupSetupSafely closes every established stream while retaining the first panic.
+func closeStreamGroupSetupSafely(streams []runtime.Stream) streamGroupCloseResult {
+	var result streamGroupCloseResult
 	for _, stream := range streams {
 		if stream == nil {
 			continue
 		}
 
-		wg.Go(func() {
-			if err := stream.Close(); err != nil {
-				errs <- err
-			}
-		})
+		closeResult := closeStreamGroupStream(stream)
+		if closeResult.err != nil {
+			result.err = errors.Join(result.err, closeResult.err)
+		}
+
+		if closeResult.panicked && !result.panicked {
+			result.panicValue = closeResult.panicValue
+			result.panicked = true
+		}
 	}
 
-	wg.Wait()
-	close(errs)
+	return result
+}
 
-	var err error
-	for closeErr := range errs {
-		err = errors.Join(err, closeErr)
+func closeStreamGroupStream(stream runtime.Stream) (result streamGroupCloseResult) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			result.panicValue = recovered
+			result.panicked = true
+		}
+	}()
+
+	result.err = stream.Close()
+
+	return result
+}
+
+// stripStreamGroupInternalCancellation removes only cancellation leaves caused by setup fail-fast.
+func stripStreamGroupInternalCancellation(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	if joined, ok := err.(interface{ Unwrap() []error }); ok {
+		var remaining error
+		for _, nested := range joined.Unwrap() {
+			if cleaned := stripStreamGroupInternalCancellation(nested); cleaned != nil {
+				remaining = errors.Join(remaining, cleaned)
+			}
+		}
+
+		return remaining
+	}
+
+	if wrapped, ok := err.(interface{ Unwrap() error }); ok {
+		if errors.Is(err, context.Canceled) || errors.Is(err, errStreamGroupSetupAborted) {
+			return stripStreamGroupInternalCancellation(wrapped.Unwrap())
+		}
+	}
+
+	if errors.Is(err, context.Canceled) || errors.Is(err, errStreamGroupSetupAborted) {
+		return nil
 	}
 
 	return err

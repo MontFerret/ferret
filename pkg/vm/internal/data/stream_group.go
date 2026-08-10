@@ -10,9 +10,10 @@ import (
 
 type (
 	streamGroupArm struct {
-		stream    runtime.Stream
-		closeErr  error
-		closeOnce sync.Once
+		stream     runtime.Stream
+		closeErr   error
+		panicValue any
+		closeOnce  sync.Once
 	}
 
 	// StreamGroupValue owns the subscriptions established for one grouped wait.

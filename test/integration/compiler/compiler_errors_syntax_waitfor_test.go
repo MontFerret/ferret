@@ -1,9 +1,13 @@
 package compiler_test
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	pkgdiagnostics "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
@@ -158,4 +162,67 @@ func TestSyntaxErrorsWaitfor(t *testing.T) {
 			Hint:    "Use a side-effect statement or TRIGGER (...), e.g. TRIGGER target <- \"click\".",
 		}, "WAITFOR EVENT TRIGGER shorthand rejects arbitrary expressions"),
 	})
+}
+
+func TestSyntaxErrorsWaitforEmptyGroupDoesNotHijackEarlierError(t *testing.T) {
+	query := "RETURN [1,,2]\nRETURN WAITFOR ANY {}"
+	_, err := compiler.New().Compile(source.NewAnonymous(query))
+	if err == nil {
+		t.Fatal("expected compilation error")
+	}
+
+	diag := firstCompilationError(err)
+	if diag == nil {
+		t.Fatalf("expected diagnostic, got %v", err)
+	}
+
+	if strings.Contains(diag.Message, "WAITFOR ANY group") {
+		t.Fatalf("earlier syntax error was replaced by later empty-group diagnostic: %s", diag.Message)
+	}
+}
+
+func TestSyntaxErrorsWaitforEmptyGroupsUseTheirOwnSpans(t *testing.T) {
+	query := "LET first = WAITFOR ANY {}\nRETURN WAITFOR VALUE ALL {}"
+	_, err := compiler.New().Compile(source.NewAnonymous(query))
+	if err == nil {
+		t.Fatal("expected compilation error")
+	}
+
+	wantLines := map[string]int{
+		"WAITFOR ANY group requires at least one arm":       1,
+		"WAITFOR VALUE ALL group requires at least one arm": 2,
+	}
+	found := make(map[string]bool, len(wantLines))
+	set, ok := err.(*pkgdiagnostics.DiagnosticSet)
+	if !ok {
+		t.Fatalf("expected diagnostic set, got %T", err)
+	}
+
+	for _, diag := range set.Errors() {
+		wantLine, relevant := wantLines[diag.Message]
+		if !relevant {
+			continue
+		}
+
+		if len(diag.Spans) == 0 {
+			t.Fatalf("diagnostic %q has no span", diag.Message)
+		}
+
+		span := diag.Spans[0].Span
+		if got := query[span.Start:span.End]; got != "{}" {
+			t.Fatalf("diagnostic %q points at %q", diag.Message, got)
+		}
+
+		line, _ := diag.Source.LocationAt(span)
+		if line != wantLine {
+			t.Fatalf("diagnostic %q points at line %d, want %d", diag.Message, line, wantLine)
+		}
+
+		found[diag.Message] = true
+	}
+	for message := range wantLines {
+		if !found[message] {
+			t.Fatalf("missing diagnostic %q in %v", message, err)
+		}
+	}
 }

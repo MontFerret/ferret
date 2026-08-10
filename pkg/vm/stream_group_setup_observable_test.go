@@ -10,11 +10,12 @@ import (
 )
 
 type streamGroupSetupObservable struct {
-	fail     error
-	started  *atomic.Int32
-	gate     chan struct{}
-	gateOnce *sync.Once
-	expected int32
+	fail        error
+	started     *atomic.Int32
+	gate        chan struct{}
+	gateOnce    *sync.Once
+	subscribeFn func(context.Context) (runtime.Stream, error)
+	expected    int32
 }
 
 func newStreamGroupSetupObservable(
@@ -34,6 +35,10 @@ func newStreamGroupSetupObservable(
 }
 
 func (o *streamGroupSetupObservable) Subscribe(ctx context.Context, _ runtime.Subscription) (runtime.Stream, error) {
+	if o.subscribeFn != nil {
+		return o.subscribeFn(ctx)
+	}
+
 	if o.started.Add(1) == o.expected {
 		o.gateOnce.Do(func() { close(o.gate) })
 	}

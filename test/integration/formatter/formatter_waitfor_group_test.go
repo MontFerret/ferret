@@ -45,3 +45,77 @@ WHEN .status == 200
 }`),
 	})
 }
+
+func TestFormatterWaitForGroupComments(t *testing.T) {
+	tests := map[string]struct {
+		input string
+		want  string
+	}{
+		"event tail comments": {
+			input: `RETURN WAITFOR EVENT ANY {
+"ready" IN source
+} // after group
+TRIGGER source <- "go" // after trigger
+TIMEOUT 1s`,
+			want: `RETURN WAITFOR EVENT ANY {
+    "ready" IN source
+} // after group
+TRIGGER source <- "go" // after trigger
+TIMEOUT 1s`,
+		},
+		"predicate schedule comments": {
+			input: `RETURN WAITFOR VALUE ALL {
+ready
+} // before timeout
+TIMEOUT 1s // before every
+EVERY 10ms // before backoff
+BACKOFF LINEAR // before jitter
+JITTER 0.1`,
+			want: `RETURN WAITFOR VALUE ALL {
+    ready
+} // before timeout
+TIMEOUT 1s // before every
+EVERY 10ms // before backoff
+BACKOFF LINEAR // before jitter
+JITTER 0.1`,
+		},
+		"blank line after inline comment": {
+			input: `RETURN WAITFOR ANY {
+ready
+} // before timeout
+
+ON TIMEOUT RETURN "timeout"`,
+			want: `RETURN WAITFOR ANY {
+    ready
+} // before timeout
+
+ON TIMEOUT RETURN "timeout"`,
+		},
+		"recovery comments retain source order": {
+			input: `RETURN WAITFOR ANY {
+ready
+} // before error
+ON ERROR RETURN "error" // before timeout recovery
+ON TIMEOUT RETURN "timeout"`,
+			want: `RETURN WAITFOR ANY {
+    ready
+} // before error
+ON ERROR RETURN "error" // before timeout recovery
+ON TIMEOUT RETURN "timeout"`,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			first := formatSource(t, test.input)
+			if first != test.want {
+				t.Fatalf("formatted output mismatch\nwant:\n%q\ngot:\n%q", test.want, first)
+			}
+
+			second := formatSource(t, first)
+			if second != first {
+				t.Fatalf("formatter is not idempotent\nfirst:\n%q\nsecond:\n%q", first, second)
+			}
+		})
+	}
+}
