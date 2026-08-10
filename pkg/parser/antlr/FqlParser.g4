@@ -13,6 +13,42 @@ options { tokenVocab=FqlLexer; }
 		return la1 == FqlParserNot && p.GetTokenStream().LA(2) == FqlParserExists
 	}
 
+	func (p *FqlParser) isWaitForEventGroupStart() bool {
+		offset := p.waitForLookaheadOffset()
+		return p.GetTokenStream().LA(offset) == FqlParserEvent &&
+			p.isWaitForSynchronizationToken(p.GetTokenStream().LA(offset + 1)) &&
+			p.GetTokenStream().LA(offset + 2) == FqlParserOpenBrace
+	}
+
+	func (p *FqlParser) isWaitForPredicateGroupStart() bool {
+		offset := p.waitForLookaheadOffset()
+		switch p.GetTokenStream().LA(offset) {
+		case FqlParserAny, FqlParserAll:
+			return p.GetTokenStream().LA(offset + 1) == FqlParserOpenBrace
+		case FqlParserExists, FqlParserValue:
+			return p.isWaitForSynchronizationToken(p.GetTokenStream().LA(offset + 1)) &&
+				p.GetTokenStream().LA(offset + 2) == FqlParserOpenBrace
+		case FqlParserNot:
+			return p.GetTokenStream().LA(offset + 1) == FqlParserExists &&
+				p.isWaitForSynchronizationToken(p.GetTokenStream().LA(offset + 2)) &&
+				p.GetTokenStream().LA(offset + 3) == FqlParserOpenBrace
+		default:
+			return false
+		}
+	}
+
+	func (p *FqlParser) waitForLookaheadOffset() int {
+		if p.GetTokenStream().LA(1) == FqlParserWaitfor {
+			return 2
+		}
+
+		return 1
+	}
+
+	func (p *FqlParser) isWaitForSynchronizationToken(token int) bool {
+		return token == FqlParserAny || token == FqlParserAll
+	}
+
 	func (p *FqlParser) pushImplicitCurrent() {
 		p.implicitCurrentDepth++
 	}
@@ -479,8 +515,12 @@ collectCounter
     ;
 
 waitForExpression
-    : Waitfor waitForEventExpression (recoveryTails)?
-    | Waitfor waitForPredicateExpression (recoveryTails)?
+    : Waitfor (
+        {p.isWaitForEventGroupStart()}? waitForEventGroupExpression (recoveryTails)?
+        | {p.isWaitForPredicateGroupStart()}? waitForPredicateGroupExpression (recoveryTails)?
+        | {!p.isWaitForEventGroupStart()}? waitForEventExpression (recoveryTails)?
+        | {!p.isWaitForPredicateGroupStart()}? waitForPredicateExpression (recoveryTails)?
+      )
     ;
 
 dispatchExpression
@@ -514,6 +554,14 @@ dispatchOptionsClause
 
 waitForEventExpression
     : Event waitForEventName In waitForEventSource (optionsClause)? (eventFilterClause)* waitForEventTail
+    ;
+
+waitForEventGroupExpression
+    : Event waitForSynchronization OpenBrace waitForEventGroupEntry+ CloseBrace waitForEventTail
+    ;
+
+waitForEventGroupEntry
+    : waitForEventName In waitForEventSource (optionsClause)? (eventFilterClause)*
     ;
 
 waitForEventTail
@@ -551,6 +599,26 @@ waitForTriggerInlineDispatchStatement
 
 waitForPredicateExpression
     : waitForPredicate (waitForPredicateWhenClause)* (timeoutClause)? (everyClause)? (backoffClause)? (jitterClause)?
+    ;
+
+waitForPredicateGroupExpression
+    : waitForPredicateGroupMode? waitForSynchronization OpenBrace waitForPredicateGroupEntry+ CloseBrace
+      (timeoutClause)? (everyClause)? (backoffClause)? (jitterClause)?
+    ;
+
+waitForPredicateGroupMode
+    : Exists
+    | Not Exists
+    | Value
+    ;
+
+waitForPredicateGroupEntry
+    : expression (waitForPredicateWhenClause)*
+    ;
+
+waitForSynchronization
+    : Any
+    | All
     ;
 
 waitForPredicate

@@ -623,3 +623,26 @@ func TestDisassemble_ElapsedUsesDestinationRegister(t *testing.T) {
 		t.Fatalf("expected elapsed destination in output:\n%s", out)
 	}
 }
+
+func TestDisassemble_StreamGroupOperands(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  3,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpStreamGroup, bytecode.NewRegister(0), bytecode.NewRegister(1), bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpStreamGroupArmDone, bytecode.NewRegister(0), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+	if !strings.Contains(out, "0: STRMG R0 R1 R2") {
+		t.Fatalf("expected stream group operands in output:\n%s", out)
+	}
+	if !strings.Contains(out, "1: STRMGDONE R0 R1") {
+		t.Fatalf("expected stream group arm operands in output:\n%s", out)
+	}
+}

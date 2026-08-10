@@ -3,11 +3,23 @@ package bytecode
 import "testing"
 
 func TestOpcodeInfoCompleteness(t *testing.T) {
-	for op := Opcode(0); op <= OpElapsed; op++ {
+	for op := Opcode(0); op <= OpStreamGroupArmDone; op++ {
 		info := OpcodeInfoOf(op)
 
 		if info.Class == OpcodeClassUnknown {
 			t.Fatalf("opcode %d (%s) has unknown class", op, op)
+		}
+	}
+}
+
+func TestOpcodeInfoStreamGroupMetadata(t *testing.T) {
+	for _, op := range []Opcode{OpStreamGroup, OpStreamGroupArmDone} {
+		info := OpcodeInfoOf(op)
+		if info.Class != OpcodeClassStream {
+			t.Fatalf("expected %s stream class, got %d", op, info.Class)
+		}
+		if info.ControlFlow != ControlFlowNone {
+			t.Fatalf("expected %s to have no control-flow role, got %d", op, info.ControlFlow)
 		}
 	}
 }

@@ -412,7 +412,7 @@ func validateInstructions(program *Program) error {
 			}
 		case OpLoadRange, OpLoadIndex, OpLoadIndexOptional, OpLoadKey, OpLoadKeyOptional,
 			OpLoadProperty, OpLoadPropertyOptional, OpPushKV, OpObjectSet,
-			OpDispatch, OpStream, OpStreamIter, OpAdd, OpSub,
+			OpDispatch, OpStream, OpStreamIter, OpStreamGroup, OpAdd, OpSub,
 			OpMul, OpDiv, OpMod, OpCmp, OpEq, OpNe, OpGt, OpLt, OpGte,
 			OpLte, OpIn, OpLike, OpRegexp, OpAllEq, OpAllNe, OpAllGt,
 			OpAllGte, OpAllLt, OpAllLte, OpAllIn, OpAnyEq, OpAnyNe,
@@ -428,6 +428,14 @@ func validateInstructions(program *Program) error {
 			}
 
 			if err := validateRegisterOperand(src2, registers, pc, "src2"); err != nil {
+				return err
+			}
+		case OpStreamGroupArmDone:
+			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
+				return err
+			}
+
+			if err := validateRegisterOperand(src1, registers, pc, "src1"); err != nil {
 				return err
 			}
 		case OpDeleteKey, OpDeleteProperty:

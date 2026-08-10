@@ -166,6 +166,12 @@ type FqlParserListener interface {
 	// EnterWaitForEventExpression is called when entering the waitForEventExpression production.
 	EnterWaitForEventExpression(c *WaitForEventExpressionContext)
 
+	// EnterWaitForEventGroupExpression is called when entering the waitForEventGroupExpression production.
+	EnterWaitForEventGroupExpression(c *WaitForEventGroupExpressionContext)
+
+	// EnterWaitForEventGroupEntry is called when entering the waitForEventGroupEntry production.
+	EnterWaitForEventGroupEntry(c *WaitForEventGroupEntryContext)
+
 	// EnterWaitForEventTail is called when entering the waitForEventTail production.
 	EnterWaitForEventTail(c *WaitForEventTailContext)
 
@@ -183,6 +189,18 @@ type FqlParserListener interface {
 
 	// EnterWaitForPredicateExpression is called when entering the waitForPredicateExpression production.
 	EnterWaitForPredicateExpression(c *WaitForPredicateExpressionContext)
+
+	// EnterWaitForPredicateGroupExpression is called when entering the waitForPredicateGroupExpression production.
+	EnterWaitForPredicateGroupExpression(c *WaitForPredicateGroupExpressionContext)
+
+	// EnterWaitForPredicateGroupMode is called when entering the waitForPredicateGroupMode production.
+	EnterWaitForPredicateGroupMode(c *WaitForPredicateGroupModeContext)
+
+	// EnterWaitForPredicateGroupEntry is called when entering the waitForPredicateGroupEntry production.
+	EnterWaitForPredicateGroupEntry(c *WaitForPredicateGroupEntryContext)
+
+	// EnterWaitForSynchronization is called when entering the waitForSynchronization production.
+	EnterWaitForSynchronization(c *WaitForSynchronizationContext)
 
 	// EnterWaitForPredicate is called when entering the waitForPredicate production.
 	EnterWaitForPredicate(c *WaitForPredicateContext)
@@ -673,6 +691,12 @@ type FqlParserListener interface {
 	// ExitWaitForEventExpression is called when exiting the waitForEventExpression production.
 	ExitWaitForEventExpression(c *WaitForEventExpressionContext)
 
+	// ExitWaitForEventGroupExpression is called when exiting the waitForEventGroupExpression production.
+	ExitWaitForEventGroupExpression(c *WaitForEventGroupExpressionContext)
+
+	// ExitWaitForEventGroupEntry is called when exiting the waitForEventGroupEntry production.
+	ExitWaitForEventGroupEntry(c *WaitForEventGroupEntryContext)
+
 	// ExitWaitForEventTail is called when exiting the waitForEventTail production.
 	ExitWaitForEventTail(c *WaitForEventTailContext)
 
@@ -690,6 +714,18 @@ type FqlParserListener interface {
 
 	// ExitWaitForPredicateExpression is called when exiting the waitForPredicateExpression production.
 	ExitWaitForPredicateExpression(c *WaitForPredicateExpressionContext)
+
+	// ExitWaitForPredicateGroupExpression is called when exiting the waitForPredicateGroupExpression production.
+	ExitWaitForPredicateGroupExpression(c *WaitForPredicateGroupExpressionContext)
+
+	// ExitWaitForPredicateGroupMode is called when exiting the waitForPredicateGroupMode production.
+	ExitWaitForPredicateGroupMode(c *WaitForPredicateGroupModeContext)
+
+	// ExitWaitForPredicateGroupEntry is called when exiting the waitForPredicateGroupEntry production.
+	ExitWaitForPredicateGroupEntry(c *WaitForPredicateGroupEntryContext)
+
+	// ExitWaitForSynchronization is called when exiting the waitForSynchronization production.
+	ExitWaitForSynchronization(c *WaitForSynchronizationContext)
 
 	// ExitWaitForPredicate is called when exiting the waitForPredicate production.
 	ExitWaitForPredicate(c *WaitForPredicateContext)

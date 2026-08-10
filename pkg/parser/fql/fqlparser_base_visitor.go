@@ -219,6 +219,14 @@ func (v *BaseFqlParserVisitor) VisitWaitForEventExpression(ctx *WaitForEventExpr
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitWaitForEventGroupExpression(ctx *WaitForEventGroupExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForEventGroupEntry(ctx *WaitForEventGroupEntryContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitWaitForEventTail(ctx *WaitForEventTailContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -240,6 +248,22 @@ func (v *BaseFqlParserVisitor) VisitWaitForTriggerInlineDispatchStatement(ctx *W
 }
 
 func (v *BaseFqlParserVisitor) VisitWaitForPredicateExpression(ctx *WaitForPredicateExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForPredicateGroupExpression(ctx *WaitForPredicateGroupExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForPredicateGroupMode(ctx *WaitForPredicateGroupModeContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForPredicateGroupEntry(ctx *WaitForPredicateGroupEntryContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForSynchronization(ctx *WaitForSynchronizationContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

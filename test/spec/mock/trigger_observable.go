@@ -2,6 +2,7 @@ package mock
 
 import (
 	"context"
+	"sync"
 	"sync/atomic"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -16,6 +17,7 @@ type TriggerObservable struct {
 	dispatchCount         atomic.Int32
 	failDispatchRemaining atomic.Int32
 	subscribeCount        atomic.Int32
+	completeOnce          sync.Once
 }
 
 func NewTriggerObservable() *TriggerObservable {
@@ -68,6 +70,13 @@ func (o *TriggerObservable) FailNextDispatches(n int32, err error) {
 
 func (o *TriggerObservable) FailReadsWith(err error) {
 	o.readErr = err
+}
+
+// Complete ends the event stream for current and future readers.
+func (o *TriggerObservable) Complete() {
+	o.completeOnce.Do(func() {
+		close(o.ch)
+	})
 }
 
 func (o *TriggerObservable) SubscribeCount() int32 {

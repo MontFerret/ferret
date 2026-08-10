@@ -30,6 +30,20 @@ func TestValidateProgram(t *testing.T) {
 			target:  ErrInvalidInstruction,
 		},
 		{
+			name: "stream_group_register_out_of_range",
+			program: withProgramMutation(func(program *Program) {
+				program.Bytecode[0] = NewInstruction(OpStreamGroup, NewRegister(0), NewRegister(1), NewRegister(3))
+			}),
+			target: ErrInvalidInstruction,
+		},
+		{
+			name: "stream_group_arm_done_register_out_of_range",
+			program: withProgramMutation(func(program *Program) {
+				program.Bytecode[0] = NewInstruction(OpStreamGroupArmDone, NewRegister(0), NewRegister(3))
+			}),
+			target: ErrInvalidInstruction,
+		},
+		{
 			name: "constant_out_of_range",
 			program: withProgramMutation(func(program *Program) {
 				program.Bytecode[0] = NewInstruction(OpLoadConst, NewRegister(0), NewConstant(99))
@@ -229,6 +243,24 @@ func TestValidateProgramAllowsElapsedOpcode(t *testing.T) {
 
 	if err := ValidateProgram(program); err != nil {
 		t.Fatalf("expected elapsed opcode to be valid, got %v", err)
+	}
+}
+
+func TestValidateProgramAllowsStreamGroupOpcodes(t *testing.T) {
+	program := withProgramMutation(func(program *Program) {
+		program.Bytecode = []Instruction{
+			NewInstruction(OpStreamGroup, NewRegister(0), NewRegister(1), NewRegister(2)),
+			NewInstruction(OpStreamGroupArmDone, NewRegister(0), NewRegister(1)),
+			NewInstruction(OpReturn, NewRegister(0)),
+		}
+		program.Metadata.Labels = nil
+		program.Metadata.AggregateSelectorSlots = nil
+		program.Metadata.MatchFailTargets = nil
+		program.Metadata.DebugSpans = nil
+	})
+
+	if err := ValidateProgram(program); err != nil {
+		t.Fatalf("expected stream group opcodes to be valid, got %v", err)
 	}
 }
 

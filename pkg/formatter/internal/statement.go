@@ -562,13 +562,237 @@ func (f *statementFormatter) formatWaitForExpression(ctx *fql.WaitForExpressionC
 	f.writeKeyword(keywordWaitFor)
 	f.p.space()
 
-	if event := ctx.WaitForEventExpression(); event != nil {
+	groupedStop := -1
+	if event := ctx.WaitForEventGroupExpression(); event != nil {
+		eventCtx := event.(*fql.WaitForEventGroupExpressionContext)
+		f.formatWaitForEventGroupExpression(eventCtx)
+		groupedStop = f.trivia.stopIndex(eventCtx)
+	} else if pred := ctx.WaitForPredicateGroupExpression(); pred != nil {
+		predCtx := pred.(*fql.WaitForPredicateGroupExpressionContext)
+		f.formatWaitForPredicateGroupExpression(predCtx)
+		groupedStop = f.trivia.stopIndex(predCtx)
+	} else if event := ctx.WaitForEventExpression(); event != nil {
 		f.formatWaitForEventExpression(event.(*fql.WaitForEventExpressionContext))
 	} else if pred := ctx.WaitForPredicateExpression(); pred != nil {
 		f.formatWaitForPredicateExpression(pred.(*fql.WaitForPredicateExpressionContext))
 	}
 
-	f.expression.formatRecoveryTails(ctx.RecoveryTails())
+	if groupedStop >= 0 {
+		f.expression.formatRecoveryTailsMultiline(ctx.RecoveryTails(), groupedStop)
+	} else {
+		f.expression.formatRecoveryTails(ctx.RecoveryTails())
+	}
+}
+
+func (f *statementFormatter) formatWaitForEventGroupExpression(ctx *fql.WaitForEventGroupExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.writeKeyword(keywordEvent)
+	f.p.space()
+	f.formatWaitForSynchronization(ctx.WaitForSynchronization().(*fql.WaitForSynchronizationContext))
+	f.p.space()
+	f.p.write("{")
+
+	entries := ctx.AllWaitForEventGroupEntry()
+	f.p.withIndent(func() {
+		if len(entries) == 0 {
+			f.p.newline()
+			return
+		}
+
+		headerStop := ctx.WaitForSynchronization().GetStop().GetStop()
+		first := entries[0].(antlr.ParserRuleContext)
+		f.trivia.emitListTriviaWith(
+			f.p,
+			f.trivia.blockLeadingTrivia(headerStop, ctx.OpenBrace(), f.trivia.startIndex(first)),
+		)
+
+		for idx, entry := range entries {
+			f.formatWaitForEventGroupEntry(entry.(*fql.WaitForEventGroupEntryContext))
+			if idx < len(entries)-1 {
+				f.trivia.emitBetween(entry.(antlr.ParserRuleContext), entries[idx+1].(antlr.ParserRuleContext))
+			}
+		}
+
+		f.trivia.emitBetweenIndices(
+			f.trivia.stopIndex(entries[len(entries)-1].(antlr.ParserRuleContext))+1,
+			f.trivia.tokenStart(ctx.CloseBrace()),
+		)
+	})
+
+	if !f.p.atLineStart {
+		f.p.newline()
+	}
+	f.p.write("}")
+	previousStop := f.trivia.tokenStop(ctx.CloseBrace())
+
+	if tail := ctx.WaitForEventTail(); tail != nil {
+		if trigger := tail.WaitForTriggerClause(); trigger != nil {
+			triggerCtx := trigger.(*fql.WaitForTriggerClauseContext)
+			f.trivia.emitClauseBoundary(previousStop+1, f.trivia.startIndex(triggerCtx))
+			f.formatWaitForTriggerClause(triggerCtx)
+			previousStop = f.trivia.stopIndex(triggerCtx)
+		}
+
+		if timeout := tail.TimeoutClause(); timeout != nil {
+			timeoutCtx := timeout.(*fql.TimeoutClauseContext)
+			f.trivia.emitClauseBoundary(previousStop+1, f.trivia.startIndex(timeoutCtx))
+			f.clause.formatTimeoutClause(timeoutCtx)
+		}
+	}
+}
+
+func (f *statementFormatter) formatWaitForEventGroupEntry(ctx *fql.WaitForEventGroupEntryContext) {
+	if ctx == nil {
+		return
+	}
+
+	f.formatWaitForEventName(ctx.WaitForEventName().(*fql.WaitForEventNameContext))
+	f.p.space()
+	f.writeKeyword(keywordIn)
+	f.p.space()
+	f.formatWaitForEventSource(ctx.WaitForEventSource().(*fql.WaitForEventSourceContext))
+	if options := ctx.OptionsClause(); options != nil {
+		f.p.space()
+		f.clause.formatOptionsClause(options.(*fql.OptionsClauseContext))
+	}
+
+	previous := antlr.ParserRuleContext(ctx.WaitForEventSource().(antlr.ParserRuleContext))
+	if options := ctx.OptionsClause(); options != nil {
+		previous = options.(antlr.ParserRuleContext)
+	}
+	for _, filter := range ctx.AllEventFilterClause() {
+		filterCtx := filter.(*fql.EventFilterClauseContext)
+		f.p.withIndent(func() {
+			f.trivia.emitBetween(previous, filterCtx)
+			f.clause.formatEventFilterClause(filterCtx)
+		})
+		previous = filterCtx
+	}
+}
+
+func (f *statementFormatter) formatWaitForPredicateGroupExpression(ctx *fql.WaitForPredicateGroupExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	if mode := ctx.WaitForPredicateGroupMode(); mode != nil {
+		f.formatWaitForPredicateGroupMode(mode.(*fql.WaitForPredicateGroupModeContext))
+		f.p.space()
+	}
+	f.formatWaitForSynchronization(ctx.WaitForSynchronization().(*fql.WaitForSynchronizationContext))
+	f.p.space()
+	f.p.write("{")
+
+	entries := ctx.AllWaitForPredicateGroupEntry()
+	f.p.withIndent(func() {
+		if len(entries) == 0 {
+			f.p.newline()
+			return
+		}
+
+		headerStop := ctx.WaitForSynchronization().GetStop().GetStop()
+		first := entries[0].(antlr.ParserRuleContext)
+		f.trivia.emitListTriviaWith(
+			f.p,
+			f.trivia.blockLeadingTrivia(headerStop, ctx.OpenBrace(), f.trivia.startIndex(first)),
+		)
+
+		for idx, entry := range entries {
+			f.formatWaitForPredicateGroupEntry(entry.(*fql.WaitForPredicateGroupEntryContext))
+			if idx < len(entries)-1 {
+				f.trivia.emitBetween(entry.(antlr.ParserRuleContext), entries[idx+1].(antlr.ParserRuleContext))
+			}
+		}
+
+		f.trivia.emitBetweenIndices(
+			f.trivia.stopIndex(entries[len(entries)-1].(antlr.ParserRuleContext))+1,
+			f.trivia.tokenStart(ctx.CloseBrace()),
+		)
+	})
+
+	if !f.p.atLineStart {
+		f.p.newline()
+	}
+	f.p.write("}")
+	previousStop := f.trivia.tokenStop(ctx.CloseBrace())
+
+	if timeout := ctx.TimeoutClause(); timeout != nil {
+		timeoutCtx := timeout.(*fql.TimeoutClauseContext)
+		f.trivia.emitClauseBoundary(previousStop+1, f.trivia.startIndex(timeoutCtx))
+		f.clause.formatTimeoutClause(timeoutCtx)
+		previousStop = f.trivia.stopIndex(timeoutCtx)
+	}
+
+	if every := ctx.EveryClause(); every != nil {
+		everyCtx := every.(*fql.EveryClauseContext)
+		f.trivia.emitClauseBoundary(previousStop+1, f.trivia.startIndex(everyCtx))
+		f.clause.formatEveryClause(everyCtx)
+		previousStop = f.trivia.stopIndex(everyCtx)
+	}
+
+	if backoff := ctx.BackoffClause(); backoff != nil {
+		backoffCtx := backoff.(*fql.BackoffClauseContext)
+		f.trivia.emitClauseBoundary(previousStop+1, f.trivia.startIndex(backoffCtx))
+		f.clause.formatBackoffClause(backoffCtx)
+		previousStop = f.trivia.stopIndex(backoffCtx)
+	}
+
+	if jitter := ctx.JitterClause(); jitter != nil {
+		jitterCtx := jitter.(*fql.JitterClauseContext)
+		f.trivia.emitClauseBoundary(previousStop+1, f.trivia.startIndex(jitterCtx))
+		f.clause.formatJitterClause(jitterCtx)
+	}
+}
+
+func (f *statementFormatter) formatWaitForPredicateGroupEntry(ctx *fql.WaitForPredicateGroupEntryContext) {
+	if ctx == nil || ctx.Expression() == nil {
+		return
+	}
+
+	expression := ctx.Expression().(*fql.ExpressionContext)
+	f.expression.formatExpression(expression)
+	previous := antlr.ParserRuleContext(expression)
+	for _, when := range ctx.AllWaitForPredicateWhenClause() {
+		whenCtx := when.(*fql.WaitForPredicateWhenClauseContext)
+		f.p.withIndent(func() {
+			f.trivia.emitBetween(previous, whenCtx)
+			f.clause.formatWaitForPredicateWhenClause(whenCtx)
+		})
+		previous = whenCtx
+	}
+}
+
+func (f *statementFormatter) formatWaitForPredicateGroupMode(ctx *fql.WaitForPredicateGroupModeContext) {
+	if ctx == nil {
+		return
+	}
+
+	switch {
+	case ctx.Not() != nil:
+		f.writeKeyword(keywordNot)
+		f.p.space()
+		f.writeKeyword(keywordExists)
+	case ctx.Exists() != nil:
+		f.writeKeyword(keywordExists)
+	case ctx.Value() != nil:
+		f.writeKeyword(keywordValue)
+	}
+}
+
+func (f *statementFormatter) formatWaitForSynchronization(ctx *fql.WaitForSynchronizationContext) {
+	if ctx == nil {
+		return
+	}
+
+	if ctx.All() != nil {
+		f.writeKeyword(keywordAll)
+		return
+	}
+
+	f.writeKeyword(keywordAny)
 }
 
 func (f *statementFormatter) formatWaitForEventExpression(ctx *fql.WaitForEventExpressionContext) {

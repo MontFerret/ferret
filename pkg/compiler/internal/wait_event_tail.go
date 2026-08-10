@@ -27,3 +27,19 @@ func waitForEventTimeoutClause(ctx fql.IWaitForEventExpressionContext) fql.ITime
 
 	return tail.TimeoutClause()
 }
+
+func waitForEventGroupTriggerClause(ctx fql.IWaitForEventGroupExpressionContext) fql.IWaitForTriggerClauseContext {
+	if ctx == nil || ctx.WaitForEventTail() == nil {
+		return nil
+	}
+
+	return ctx.WaitForEventTail().WaitForTriggerClause()
+}
+
+func waitForEventGroupTimeoutClause(ctx fql.IWaitForEventGroupExpressionContext) fql.ITimeoutClauseContext {
+	if ctx == nil || ctx.WaitForEventTail() == nil {
+		return nil
+	}
+
+	return ctx.WaitForEventTail().TimeoutClause()
+}

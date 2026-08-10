@@ -342,6 +342,20 @@ func (s *BaseFqlParserListener) EnterWaitForEventExpression(ctx *WaitForEventExp
 // ExitWaitForEventExpression is called when production waitForEventExpression is exited.
 func (s *BaseFqlParserListener) ExitWaitForEventExpression(ctx *WaitForEventExpressionContext) {}
 
+// EnterWaitForEventGroupExpression is called when production waitForEventGroupExpression is entered.
+func (s *BaseFqlParserListener) EnterWaitForEventGroupExpression(ctx *WaitForEventGroupExpressionContext) {
+}
+
+// ExitWaitForEventGroupExpression is called when production waitForEventGroupExpression is exited.
+func (s *BaseFqlParserListener) ExitWaitForEventGroupExpression(ctx *WaitForEventGroupExpressionContext) {
+}
+
+// EnterWaitForEventGroupEntry is called when production waitForEventGroupEntry is entered.
+func (s *BaseFqlParserListener) EnterWaitForEventGroupEntry(ctx *WaitForEventGroupEntryContext) {}
+
+// ExitWaitForEventGroupEntry is called when production waitForEventGroupEntry is exited.
+func (s *BaseFqlParserListener) ExitWaitForEventGroupEntry(ctx *WaitForEventGroupEntryContext) {}
+
 // EnterWaitForEventTail is called when production waitForEventTail is entered.
 func (s *BaseFqlParserListener) EnterWaitForEventTail(ctx *WaitForEventTailContext) {}
 
@@ -383,6 +397,36 @@ func (s *BaseFqlParserListener) EnterWaitForPredicateExpression(ctx *WaitForPred
 // ExitWaitForPredicateExpression is called when production waitForPredicateExpression is exited.
 func (s *BaseFqlParserListener) ExitWaitForPredicateExpression(ctx *WaitForPredicateExpressionContext) {
 }
+
+// EnterWaitForPredicateGroupExpression is called when production waitForPredicateGroupExpression is entered.
+func (s *BaseFqlParserListener) EnterWaitForPredicateGroupExpression(ctx *WaitForPredicateGroupExpressionContext) {
+}
+
+// ExitWaitForPredicateGroupExpression is called when production waitForPredicateGroupExpression is exited.
+func (s *BaseFqlParserListener) ExitWaitForPredicateGroupExpression(ctx *WaitForPredicateGroupExpressionContext) {
+}
+
+// EnterWaitForPredicateGroupMode is called when production waitForPredicateGroupMode is entered.
+func (s *BaseFqlParserListener) EnterWaitForPredicateGroupMode(ctx *WaitForPredicateGroupModeContext) {
+}
+
+// ExitWaitForPredicateGroupMode is called when production waitForPredicateGroupMode is exited.
+func (s *BaseFqlParserListener) ExitWaitForPredicateGroupMode(ctx *WaitForPredicateGroupModeContext) {
+}
+
+// EnterWaitForPredicateGroupEntry is called when production waitForPredicateGroupEntry is entered.
+func (s *BaseFqlParserListener) EnterWaitForPredicateGroupEntry(ctx *WaitForPredicateGroupEntryContext) {
+}
+
+// ExitWaitForPredicateGroupEntry is called when production waitForPredicateGroupEntry is exited.
+func (s *BaseFqlParserListener) ExitWaitForPredicateGroupEntry(ctx *WaitForPredicateGroupEntryContext) {
+}
+
+// EnterWaitForSynchronization is called when production waitForSynchronization is entered.
+func (s *BaseFqlParserListener) EnterWaitForSynchronization(ctx *WaitForSynchronizationContext) {}
+
+// ExitWaitForSynchronization is called when production waitForSynchronization is exited.
+func (s *BaseFqlParserListener) ExitWaitForSynchronization(ctx *WaitForSynchronizationContext) {}
 
 // EnterWaitForPredicate is called when production waitForPredicate is entered.
 func (s *BaseFqlParserListener) EnterWaitForPredicate(ctx *WaitForPredicateContext) {}

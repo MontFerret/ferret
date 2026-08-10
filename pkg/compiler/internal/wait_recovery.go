@@ -74,10 +74,29 @@ func (c *WaitCompiler) newWaitOperationRecoverySpec(ctx fql.IWaitForExpressionCo
 		spec.TimeoutSpan = waitForSpan(timeout, nil)
 	}
 
+	if ev := ctx.WaitForEventGroupExpression(); ev != nil {
+		spec.CompilePlain = func() bytecode.Operand {
+			return c.compileEventGroup(ev)
+		}
+
+		spec.BuildProtected = func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion {
+			return c.buildProtectedEventGroupRecovery(ev, recoveryLabel, timeoutLabel, endLabel)
+		}
+
+		if waitForEventGroupTimeoutClause(ev) != nil {
+			spec.CompileTimeoutAware = func(timeoutLabel, endLabel core.Label) bytecode.Operand {
+				return c.compileEventGroupWithTimeoutRecovery(ev, timeoutLabel, endLabel)
+			}
+		}
+
+		return spec
+	}
+
 	if ev := ctx.WaitForEventExpression(); ev != nil {
 		spec.CompilePlain = func() bytecode.Operand {
 			return c.compileEvent(ev)
 		}
+
 		spec.BuildProtected = func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion {
 			return c.buildProtectedEventRecovery(ev, recoveryLabel, timeoutLabel, endLabel)
 		}
@@ -85,6 +104,28 @@ func (c *WaitCompiler) newWaitOperationRecoverySpec(ctx fql.IWaitForExpressionCo
 		if waitForEventTimeoutClause(ev) != nil {
 			spec.CompileTimeoutAware = func(timeoutLabel, endLabel core.Label) bytecode.Operand {
 				return c.compileEventWithTimeoutRecovery(ev, timeoutLabel, endLabel)
+			}
+		}
+
+		return spec
+	}
+
+	if pred := ctx.WaitForPredicateGroupExpression(); pred != nil {
+		spec.CompilePlain = func() bytecode.Operand {
+			return c.compilePredicateGroup(pred)
+		}
+
+		if pred.TimeoutClause() != nil {
+			spec.CompileTimeoutAware = func(timeoutLabel, endLabel core.Label) bytecode.Operand {
+				return c.compilePredicateGroupWithTimeoutRecovery(pred, timeoutLabel, endLabel)
+			}
+
+			spec.BuildProtected = func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion {
+				return c.buildProtectedPredicateGroupRecovery(pred, recoveryLabel, timeoutLabel, endLabel)
+			}
+
+			spec.ShouldBuildProtected = func(plan core.RecoveryPlan) bool {
+				return plan.OnTimeout != nil
 			}
 		}
 
@@ -100,9 +141,11 @@ func (c *WaitCompiler) newWaitOperationRecoverySpec(ctx fql.IWaitForExpressionCo
 			spec.CompileTimeoutAware = func(timeoutLabel, endLabel core.Label) bytecode.Operand {
 				return c.compilePredicateWithTimeoutRecovery(pred, timeoutLabel, endLabel)
 			}
+
 			spec.BuildProtected = func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion {
 				return c.buildProtectedPredicateRecovery(pred, recoveryLabel, timeoutLabel, endLabel)
 			}
+
 			spec.ShouldBuildProtected = func(plan core.RecoveryPlan) bool {
 				return plan.OnTimeout != nil
 			}
@@ -110,6 +153,43 @@ func (c *WaitCompiler) newWaitOperationRecoverySpec(ctx fql.IWaitForExpressionCo
 	}
 
 	return spec
+}
+
+func (c *WaitCompiler) buildProtectedPredicateGroupRecovery(
+	ctx fql.IWaitForPredicateGroupExpressionContext,
+	_ core.Label,
+	timeoutLabel core.Label,
+	endLabel core.Label,
+) ProtectedRecoveryRegion {
+	config, ok := c.prepareWaitPredicateGroupConfig(ctx)
+	if !ok {
+		return ProtectedRecoveryRegion{Result: bytecode.NoopOperand}
+	}
+
+	state := c.initWaitPredicatePollState(config.mode, config.waitPredicateScheduleConfig)
+	hasTimeout := config.timeoutReg != bytecode.NoopOperand
+	protectedTimeout := core.Label{}
+
+	if hasTimeout {
+		protectedTimeout = c.ctx.Program.Emitter.NewLabel()
+	}
+
+	startCatch := c.ctx.Program.Emitter.Size()
+	c.emitWaitPredicateGroupPollLoopWithRecovery(config, state, protectedTimeout, endLabel)
+	endCatchExclusive := c.ctx.Program.Emitter.Size()
+
+	if hasTimeout {
+		c.ctx.Program.Emitter.MarkLabel(protectedTimeout)
+		c.ctx.Program.Emitter.EmitJump(timeoutLabel)
+	}
+
+	return ProtectedRecoveryRegion{
+		Result:            state.resultReg,
+		StartCatch:        startCatch,
+		EndCatchExclusive: endCatchExclusive,
+		CatchHandlerPC:    -1,
+		HasTimeout:        hasTimeout,
+	}
 }
 
 func (c *WaitCompiler) buildProtectedEventRecovery(
@@ -198,7 +278,7 @@ func (c *WaitCompiler) buildProtectedPredicateRecovery(
 		return ProtectedRecoveryRegion{Result: bytecode.NoopOperand}
 	}
 
-	state := c.initWaitPredicatePollState(config)
+	state := c.initWaitPredicatePollState(config.mode, config.waitPredicateScheduleConfig)
 	hasTimeout := config.timeoutReg != bytecode.NoopOperand
 
 	start := c.ctx.Program.Emitter.NewLabel()

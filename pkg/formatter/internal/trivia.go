@@ -171,6 +171,44 @@ func (t *triviaEmitter) emitBetweenIndices(start, end int) {
 	t.emitTrivia(text, false, true)
 }
 
+func (t *triviaEmitter) emitClauseBoundary(start, end int) {
+	text := t.sliceBetween(start, end)
+	lineEnd := strings.IndexByte(text, '\n')
+	if lineEnd < 0 {
+		t.emitBetweenIndices(start, end)
+
+		return
+	}
+
+	firstLine := strings.TrimSpace(text[:lineEnd])
+	inlineComment := strings.HasPrefix(firstLine, "//") ||
+		(strings.HasPrefix(firstLine, "/*") && strings.Contains(firstLine, "*/"))
+
+	if !inlineComment {
+		t.emitBetweenIndices(start, end)
+
+		return
+	}
+
+	if !t.p.atLineStart {
+		t.p.space()
+	}
+
+	t.p.write(firstLine)
+	t.p.newline()
+
+	rest := text[lineEnd+1:]
+	if strings.TrimSpace(rest) == "" {
+		if strings.Contains(rest, "\n") {
+			t.p.newline()
+		}
+
+		return
+	}
+
+	t.emitTrivia(rest, true, true)
+}
+
 func (t *triviaEmitter) emitTrivia(text string, trimLeading bool, hasPrevLine bool) {
 	if text == "" {
 		return

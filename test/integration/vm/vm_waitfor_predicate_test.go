@@ -145,6 +145,89 @@ func TestWaitforPredicate(t *testing.T) {
 	})
 }
 
+func TestWaitforPredicateSynchronizationGroups(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		S(`RETURN WAITFOR ANY { false true }`, true, "WAITFOR ANY should accept the first qualifying arm"),
+		S(`RETURN WAITFOR ALL { true true }`, true, "WAITFOR ALL should require every arm"),
+		S(`LET first = [] LET second = [1] RETURN WAITFOR EXISTS ANY { first second }`, true, "WAITFOR EXISTS ANY should share existence semantics"),
+		S(`LET first = [1] LET second = { ready: true } RETURN WAITFOR EXISTS ALL { first second }`, true, "WAITFOR EXISTS ALL should require every arm to exist"),
+		S(`LET first = [1] LET second = [] RETURN WAITFOR NOT EXISTS ANY { first second }`, true, "WAITFOR NOT EXISTS ANY should share non-existence semantics"),
+		S(`LET first = [] LET second = {} RETURN WAITFOR NOT EXISTS ALL { first second }`, true, "WAITFOR NOT EXISTS ALL should require every arm to be empty"),
+		S(`LET first = NONE LET second = "second" RETURN WAITFOR VALUE ANY { first second }`, "second", "WAITFOR VALUE ANY should return the winning value"),
+		S(`LET first = "first" LET second = "second" RETURN WAITFOR VALUE ANY { first second }`, "first", "WAITFOR VALUE ANY should use declaration order"),
+		Array(`LET first = "first" LET second = "second" RETURN WAITFOR VALUE ALL { first second }`, []any{"first", "second"}, "WAITFOR VALUE ALL should return declaration order"),
+		Array(`RETURN WAITFOR VALUE ALL { { ready: true, value: 1 } WHEN .ready { ready: true, value: 2 } WHEN .value == 2 }`, []any{
+			map[string]any{"ready": true, "value": 1},
+			map[string]any{"ready": true, "value": 2},
+		}, "WAITFOR VALUE ALL should apply filters per arm"),
+		S(`RETURN WAITFOR ANY { true }`, true, "one-arm WAITFOR ANY should remain grouped and behave consistently"),
+		S(`RETURN WAITFOR ALL { true false } TIMEOUT 2ms EVERY 0ms ON TIMEOUT RETURN false`, false, "WAITFOR ALL should use one shared timeout"),
+	})
+}
+
+func TestWaitforPredicateSynchronizationShortCircuit(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		anySecondCalls := 0
+		allSecondCalls := 0
+
+		RunSpecsWith(
+			t,
+			fmt.Sprintf("VM/O%d", level),
+			compiler.New(compiler.WithOptimizationLevel(level)),
+			[]spec.Spec{
+				S(`RETURN WAITFOR ANY { true ANY_SECOND() }`, true, "WAITFOR ANY should short-circuit in declaration order"),
+				S(`RETURN WAITFOR ALL { false ALL_SECOND() } TIMEOUT 2ms EVERY 0ms ON TIMEOUT RETURN false`, false, "WAITFOR ALL should short-circuit in declaration order"),
+			},
+			vm.WithFunction("ANY_SECOND", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+				anySecondCalls++
+				return runtime.True, nil
+			}),
+			vm.WithFunction("ALL_SECOND", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+				allSecondCalls++
+				return runtime.True, nil
+			}),
+		)
+
+		if anySecondCalls != 0 {
+			t.Fatalf("WAITFOR ANY evaluated a later arm for O%d: got %d calls", level, anySecondCalls)
+		}
+		if allSecondCalls != 0 {
+			t.Fatalf("WAITFOR ALL evaluated a later arm after failure for O%d: got %d calls", level, allSecondCalls)
+		}
+	}
+}
+
+func TestWaitforPredicateSynchronizationDoesNotAccumulateAcrossCycles(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		leftCalls := 0
+		rightCalls := 0
+
+		RunSpecsWith(
+			t,
+			fmt.Sprintf("VM/O%d", level),
+			compiler.New(compiler.WithOptimizationLevel(level)),
+			[]spec.Spec{
+				S(`RETURN WAITFOR ALL { LEFT() RIGHT() } TIMEOUT 5ms EVERY 0ms ON TIMEOUT RETURN false`, false, "WAITFOR ALL should require every arm to pass in the same polling cycle"),
+			},
+			vm.WithFunction("LEFT", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+				leftCalls++
+				return runtime.NewBoolean(leftCalls == 1), nil
+			}),
+			vm.WithFunction("RIGHT", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+				rightCalls++
+				return runtime.NewBoolean(rightCalls > 1), nil
+			}),
+		)
+
+		if leftCalls < 2 {
+			t.Fatalf("WAITFOR ALL did not begin another full cycle for O%d: got %d left-arm calls", level, leftCalls)
+		}
+		if rightCalls != 1 {
+			t.Fatalf("WAITFOR ALL retained arm state across cycles for O%d: got %d right-arm calls", level, rightCalls)
+		}
+	}
+}
+
 func TestWaitforPredicateWhenRetriesUntilTrue(t *testing.T) {
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		callCount := 0
@@ -255,6 +338,9 @@ func TestWaitforPredicateWhenUsesOperationErrorPolicy(t *testing.T) {
 		S(`
 			RETURN WAITFOR VALUE "ok" WHEN true WHEN FAIL_PREDICATE(.) TIMEOUT 20ms EVERY 0ms ON ERROR RETURN "error"
 		`, "error", "WAITFOR VALUE repeated WHEN predicate errors should use the wait error policy"),
+		S(`
+			RETURN WAITFOR ANY { FAIL_PREDICATE(NONE) true } TIMEOUT 20ms EVERY 0ms ON ERROR RETURN "error"
+		`, "error", "WAITFOR predicate group arm errors should use the shared wait error policy"),
 	}, vm.WithFunction("FAIL_PREDICATE", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, fmt.Errorf("predicate failed")
 	}))

@@ -166,6 +166,12 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#waitForEventExpression.
 	VisitWaitForEventExpression(ctx *WaitForEventExpressionContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#waitForEventGroupExpression.
+	VisitWaitForEventGroupExpression(ctx *WaitForEventGroupExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForEventGroupEntry.
+	VisitWaitForEventGroupEntry(ctx *WaitForEventGroupEntryContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#waitForEventTail.
 	VisitWaitForEventTail(ctx *WaitForEventTailContext) interface{}
 
@@ -183,6 +189,18 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#waitForPredicateExpression.
 	VisitWaitForPredicateExpression(ctx *WaitForPredicateExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForPredicateGroupExpression.
+	VisitWaitForPredicateGroupExpression(ctx *WaitForPredicateGroupExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForPredicateGroupMode.
+	VisitWaitForPredicateGroupMode(ctx *WaitForPredicateGroupModeContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForPredicateGroupEntry.
+	VisitWaitForPredicateGroupEntry(ctx *WaitForPredicateGroupEntryContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForSynchronization.
+	VisitWaitForSynchronization(ctx *WaitForSynchronizationContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#waitForPredicate.
 	VisitWaitForPredicate(ctx *WaitForPredicateContext) interface{}

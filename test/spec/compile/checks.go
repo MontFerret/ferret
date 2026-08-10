@@ -333,7 +333,7 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 		return
 
 	// Stream.
-	case bytecode.OpStream:
+	case bytecode.OpStream, bytecode.OpStreamGroup:
 		addUse(dst)
 		addUse(src1)
 		addUse(src2)
@@ -343,6 +343,10 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 		addUse(src1)
 		addUse(src2)
 		addDef(dst)
+		return
+	case bytecode.OpStreamGroupArmDone:
+		addUse(dst)
+		addUse(src1)
 		return
 	case bytecode.OpDispatch:
 		addUse(dst)

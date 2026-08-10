@@ -343,7 +343,7 @@ func applyCallUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand, c
 
 func applyStreamUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand, collector *useDefCollector) bool {
 	switch opcode {
-	case bytecode.OpStream, bytecode.OpDispatch:
+	case bytecode.OpStream, bytecode.OpStreamGroup, bytecode.OpDispatch:
 		collector.addUse(dst)
 		collector.addUse(src1)
 		collector.addUse(src2)
@@ -353,6 +353,10 @@ func applyStreamUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand,
 		collector.addUse(src1)
 		collector.addUse(src2)
 		collector.addDef(dst)
+		return true
+	case bytecode.OpStreamGroupArmDone:
+		collector.addUse(dst)
+		collector.addUse(src1)
 		return true
 	default:
 		return false
