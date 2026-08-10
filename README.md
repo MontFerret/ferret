@@ -130,18 +130,21 @@ func main() {
 
 ### Migration from v1
 
-Ferret v2 introduces a new architecture and public API, so embedding it directly is different from v1.
+Ferret v2 introduces a new architecture and public API, so existing Go applications should migrate in two stages: first to the v2 compatibility API, then incrementally to the native v2 API.
 
-To make migration easier, v2 includes a compat module that provides a v1-style API. Its goal is to make upgrades incremental instead of forcing a full rewrite up front.
+Run the [`ferret migrate`](https://github.com/MontFerret/cli#migrating-embedded-ferret-applications) command from anywhere inside the application's Go module:
 
-For many projects, the easiest migration path will be:
-- switch imports from v1 to the compat package
-- get the project compiling again
-- migrate incrementally to the native v2 API over time
+```bash
+ferret migrate --dry-run # List the files that would change
+ferret migrate --print   # Print a unified diff without changing files
+ferret migrate           # Apply the migration
+```
 
-A small helper script for rewriting import paths is planned to simplify this process further.
+The command rewrites the documented v1 imports to their v2 compatibility packages, updates `go.mod` and `go.sum` as required by those rewrites, and formats changed Go files. Generated, vendored, and nested-module files are left untouched. Unsupported v1 imports are reported as manual follow-up; if the project vendors dependencies, run `go mod vendor` after applying the migration.
 
-The compatibility layer is intended as a migration aid, not the long-term preferred API. New projects should use the native v2 packages directly.
+This is only the mechanical compatibility stage. The command does not convert application logic to the native v2 API or migrate drivers and other unsupported v1 packages. Running it again on an already-migrated compatibility project is a no-op and does not upgrade the Ferret v2 dependency merely because the CLI is newer.
+
+After applying the migration, address any reported manual follow-up, build and test the application, and then migrate to the native v2 API over time. The compatibility layer is a migration aid, not the long-term preferred API; new projects should use the native v2 packages directly.
 
 ### Alpha status
 
