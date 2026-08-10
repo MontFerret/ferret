@@ -168,7 +168,7 @@ func TestWaitforSynchronizationGroupsCompile(t *testing.T) {
 				"first" IN first
 				"second" IN second
 			} TIMEOUT 5ms ON TIMEOUT RETURN NONE
-		`, expectOpcodes(bytecode.OpStreamGroup, bytecode.OpStreamGroupArmDone), "WAITFOR EVENT ALL should compile arm completion"),
+		`, expectOpcodes(bytecode.OpStreamGroup, bytecode.OpStreamGroupArmDone, bytecode.OpFail), "WAITFOR EVENT ALL should compile arm completion and exhaustion failure"),
 		ProgramCheck(`LET ANY = true RETURN WAITFOR ANY`, noCompilerError, "ANY should remain a singular WAITFOR identifier"),
 		ProgramCheck(`LET ALL = true RETURN WAITFOR ALL`, noCompilerError, "ALL should remain a singular WAITFOR identifier"),
 	})

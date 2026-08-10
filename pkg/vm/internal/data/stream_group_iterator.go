@@ -19,6 +19,7 @@ type (
 	}
 
 	// StreamGroupIterator fans in active arms under one deadline and reports declaration indexes as keys.
+	// An exhausted arm is reported once with a None key and its declaration index as the value.
 	StreamGroupIterator struct {
 		key         runtime.Value
 		value       runtime.Value
@@ -68,9 +69,10 @@ func newStreamGroupIterator(group *StreamGroupValue, timeout runtime.Duration) *
 func (it *StreamGroupIterator) Next(ctx context.Context) error {
 	it.mu.Lock()
 	closed := it.closed
+	exhausted := it.activeCount == 0
 	it.mu.Unlock()
 
-	if closed {
+	if closed || exhausted {
 		return io.EOF
 	}
 
@@ -98,16 +100,17 @@ func (it *StreamGroupIterator) Next(ctx context.Context) error {
 			}
 
 			if event.closed {
-				remaining, err := it.completeArm(event.index)
+				_, err := it.completeArm(event.index)
 				if err != nil {
 					return err
 				}
 
-				if remaining == 0 {
-					return io.EOF
-				}
+				it.mu.Lock()
+				it.value = runtime.NewInt(event.index)
+				it.key = runtime.None
+				it.mu.Unlock()
 
-				continue
+				return nil
 			}
 
 			if err := event.message.Err(); err != nil {

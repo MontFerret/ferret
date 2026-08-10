@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"errors"
+	"io"
 	"testing"
 	"time"
 
@@ -35,6 +36,128 @@ func TestStreamGroupIteratorUsesOneFixedDeadline(t *testing.T) {
 
 	if err := iterator.(interface{ Close() error }).Close(); err != nil {
 		t.Fatalf("close iterator: %v", err)
+	}
+}
+
+func TestStreamGroupIteratorReportsClosedArmAndContinues(t *testing.T) {
+	first := newStreamGroupTestStream(0)
+	second := newStreamGroupTestStream(1)
+	close(first.messages)
+
+	iterator := NewStreamGroupValue([]runtime.Stream{first, second}).(*StreamGroupValue).
+		Iterate(runtime.Duration(time.Second)).(*StreamGroupIterator)
+
+	if err := iterator.Next(context.Background()); err != nil {
+		t.Fatalf("closed arm notification: %v", err)
+	}
+	if iterator.Key() != runtime.None {
+		t.Fatalf("expected None closure key, got %v", iterator.Key())
+	}
+	if got := iterator.Value(); got != runtime.NewInt(0) {
+		t.Fatalf("expected closed arm index 0, got %v", got)
+	}
+	if got := first.closeCount.Load(); got != 1 {
+		t.Fatalf("expected exhausted arm to close once, got %d", got)
+	}
+	if got := second.closeCount.Load(); got != 0 {
+		t.Fatalf("remaining arm closed before group completion: %d", got)
+	}
+
+	second.messages <- runtime.NewValueMessage(runtime.NewString("second"))
+	if err := iterator.Next(context.Background()); err != nil {
+		t.Fatalf("remaining arm event: %v", err)
+	}
+	if got := iterator.Key(); got != runtime.NewInt(1) {
+		t.Fatalf("expected remaining arm index 1, got %v", got)
+	}
+	if got := iterator.Value(); got != runtime.NewString("second") {
+		t.Fatalf("expected remaining arm event, got %v", got)
+	}
+
+	if err := iterator.Close(); err != nil {
+		t.Fatalf("close iterator: %v", err)
+	}
+	if got := first.closeCount.Load(); got != 1 {
+		t.Fatalf("group cleanup closed exhausted arm %d times", got)
+	}
+	if got := second.closeCount.Load(); got != 1 {
+		t.Fatalf("expected remaining arm cleanup, got %d closes", got)
+	}
+	select {
+	case <-iterator.done:
+	default:
+		t.Fatal("iterator workers remained active after close")
+	}
+}
+
+func TestStreamGroupIteratorReportsEveryClosureBeforeEOF(t *testing.T) {
+	first := newStreamGroupTestStream(0)
+	second := newStreamGroupTestStream(0)
+	close(first.messages)
+
+	iterator := NewStreamGroupValue([]runtime.Stream{first, second}).(*StreamGroupValue).
+		Iterate(runtime.Duration(time.Second)).(*StreamGroupIterator)
+
+	if err := iterator.Next(context.Background()); err != nil {
+		t.Fatalf("first closure: %v", err)
+	}
+	if iterator.Key() != runtime.None || iterator.Value() != runtime.NewInt(0) {
+		t.Fatalf("unexpected first closure notification: key=%v value=%v", iterator.Key(), iterator.Value())
+	}
+
+	close(second.messages)
+	if err := iterator.Next(context.Background()); err != nil {
+		t.Fatalf("second closure: %v", err)
+	}
+	if iterator.Key() != runtime.None || iterator.Value() != runtime.NewInt(1) {
+		t.Fatalf("unexpected second closure notification: key=%v value=%v", iterator.Key(), iterator.Value())
+	}
+
+	if err := iterator.Next(context.Background()); !errors.Is(err, io.EOF) {
+		t.Fatalf("expected EOF after every closure notification, got %v", err)
+	}
+	if err := iterator.Close(); err != nil {
+		t.Fatalf("close iterator: %v", err)
+	}
+	if got := first.closeCount.Load(); got != 1 {
+		t.Fatalf("expected first arm to close once, got %d", got)
+	}
+	if got := second.closeCount.Load(); got != 1 {
+		t.Fatalf("expected second arm to close once, got %d", got)
+	}
+}
+
+func TestStreamGroupIteratorSuppressesClosureFromCompletedArm(t *testing.T) {
+	first := newStreamGroupTestStream(1)
+	second := newStreamGroupTestStream(1)
+	first.messages <- runtime.NewValueMessage(runtime.NewString("first"))
+	close(first.messages)
+
+	iterator := NewStreamGroupValue([]runtime.Stream{first, second}).(*StreamGroupValue).
+		Iterate(runtime.Duration(time.Second)).(*StreamGroupIterator)
+	if err := iterator.Next(context.Background()); err != nil {
+		t.Fatalf("first event: %v", err)
+	}
+	if err := iterator.ArmDone(0); err != nil {
+		t.Fatalf("complete first arm: %v", err)
+	}
+
+	second.messages <- runtime.NewValueMessage(runtime.NewString("second"))
+	if err := iterator.Next(context.Background()); err != nil {
+		t.Fatalf("second event after completed-arm closure: %v", err)
+	}
+	if got := iterator.Key(); got != runtime.NewInt(1) {
+		t.Fatalf("expected second arm, got key %v", got)
+	}
+
+	if err := iterator.Close(); err != nil {
+		t.Fatalf("close iterator: %v", err)
+	}
+	if got := first.closeCount.Load(); got != 1 {
+		t.Fatalf("expected completed arm to close once, got %d", got)
+	}
+	if got := second.closeCount.Load(); got != 1 {
+		t.Fatalf("expected remaining arm to close once, got %d", got)
 	}
 }
 

@@ -24,6 +24,7 @@ func TestWaitforEvent(t *testing.T) {
 		NewTestEventType("other"),
 		NewTestEventType("match"),
 	})
+	exhausted := NewObservable(nil)
 	blocking := NewBlockingObservable()
 
 	RunSpecs(t, []spec.Spec{
@@ -53,6 +54,10 @@ LET evt = WAITFOR EVENT "test" IN obs
 
 RETURN evt.type`, "match", "WAITFOR EVENT should return the received event value").Env(vm.WithParams(map[string]runtime.Value{
 			"obs": matchFirst,
+		})),
+		Nil(`LET obs = @obs
+RETURN WAITFOR EVENT "test" IN obs`, "WAITFOR EVENT should return NONE when its source is exhausted").Env(vm.WithParams(map[string]runtime.Value{
+			"obs": exhausted,
 		})),
 		Fn(`LET obs = @obs
 WAITFOR EVENT "test" IN obs WHEN .type == "match"
@@ -159,6 +164,10 @@ RETURN (WAITFOR EVENT "test" IN obs TIMEOUT 1ms) ON ERROR RETURN "error"`, "Grou
 func TestWaitforEventSynchronizationGroups(t *testing.T) {
 	anyFirst := NewObservable([]runtime.Value{NewTestEventType("first")})
 	anySecond := NewObservable([]runtime.Value{NewTestEventType("second")})
+	anyClosed := NewObservable(nil)
+	anyWinner := NewObservable([]runtime.Value{NewTestEventType("winner")})
+	anyExhaustedFirst := NewObservable(nil)
+	anyExhaustedSecond := NewObservable(nil)
 	filtered := NewObservable([]runtime.Value{
 		NewTestEventType("ignored"),
 		NewTestEventType("accepted"),
@@ -181,6 +190,23 @@ RETURN evt.type`, func(actual any) error {
 			return nil
 		}, "WAITFOR EVENT ANY should return the naturally selected winner").Env(vm.WithParams(map[string]runtime.Value{
 			"first": anyFirst, "second": anySecond,
+		})),
+		S(`LET closed = @closed
+LET winner = @winner
+LET evt = WAITFOR EVENT ANY {
+	"closed" IN closed
+	"winner" IN winner
+}
+RETURN evt.type`, "winner", "WAITFOR EVENT ANY should ignore an exhausted arm while another can match").Env(vm.WithParams(map[string]runtime.Value{
+			"closed": anyClosed, "winner": anyWinner,
+		})),
+		Nil(`LET first = @first
+LET second = @second
+RETURN WAITFOR EVENT ANY {
+	"first" IN first
+	"second" IN second
+}`, "WAITFOR EVENT ANY should return NONE when every arm is exhausted").Env(vm.WithParams(map[string]runtime.Value{
+			"first": anyExhaustedFirst, "second": anyExhaustedSecond,
 		})),
 		S(`LET filtered = @filtered
 LET blocking = @blocking
@@ -211,6 +237,142 @@ RETURN WAITFOR EVENT ALL {
 			"first": allFirst, "blocking": blocking,
 		})),
 	})
+}
+
+func TestWaitforEventAllExhaustionRecoveryClosesRemainingSubscriptions(t *testing.T) {
+	RunSpecFactory(t, func() []spec.Spec {
+		closed := NewObservable(nil)
+		filtered := NewObservable([]runtime.Value{NewTestEventType("ignored")})
+		immediateRemaining := NewTriggerObservable()
+		filteredRemaining := NewTriggerObservable()
+
+		return []spec.Spec{
+			Fn(`LET closed = @closed
+LET remaining = @remaining
+RETURN WAITFOR EVENT ALL {
+	"closed" IN closed
+	"remaining" IN remaining
+} TIMEOUT 100ms ON TIMEOUT RETURN "timeout" ON ERROR RETURN "error"`, expectTriggerObservable(immediateRemaining, "error", 1, 0, 1), "WAITFOR EVENT ALL should fail immediately and clean up when an arm is already exhausted").Env(vm.WithParams(map[string]runtime.Value{
+				"closed": closed, "remaining": immediateRemaining,
+			})),
+			Fn(`LET filtered = @filtered
+LET remaining = @remaining
+RETURN WAITFOR EVENT ALL {
+	"response" IN filtered WHEN .type == "accepted"
+	"remaining" IN remaining
+} TIMEOUT 100ms ON TIMEOUT RETURN "timeout" ON ERROR RETURN "error"`, expectTriggerObservable(filteredRemaining, "error", 1, 0, 1), "WAITFOR EVENT ALL should leave filtered events unmatched and clean up when their source closes").Env(vm.WithParams(map[string]runtime.Value{
+				"filtered": filtered, "remaining": filteredRemaining,
+			})),
+		}
+	})
+}
+
+func TestWaitforEventAllFailsWhenUnmatchedArmCompletesAfterMatch(t *testing.T) {
+	const query = `LET first = @first
+LET second = @second
+RETURN WAITFOR EVENT ALL {
+	"first" IN first
+	"second" IN second
+}`
+
+	first := NewTriggerObservable()
+	second := NewTriggerObservable()
+	program, err := spec.Compile(query)
+	if err != nil {
+		t.Fatalf("compile event group: %v", err)
+	}
+
+	instance, err := vm.NewWith(program)
+	if err != nil {
+		t.Fatalf("create VM: %v", err)
+	}
+	t.Cleanup(func() { _ = instance.Close() })
+
+	environment, err := vm.NewEnvironment([]vm.EnvironmentOption{
+		vm.WithNamespace(spec.Stdlib()),
+		vm.WithParams(map[string]runtime.Value{"first": first, "second": second}),
+	})
+	if err != nil {
+		t.Fatalf("create environment: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	type runResult struct {
+		result *vm.Result
+		err    error
+	}
+
+	done := make(chan runResult, 1)
+	go func() {
+		result, runErr := instance.Run(ctx, environment)
+		done <- runResult{result: result, err: runErr}
+	}()
+
+	deadline := time.After(time.Second)
+	for first.SubscribeCount() != 1 || second.SubscribeCount() != 1 {
+		select {
+		case <-deadline:
+			t.Fatal("subscriptions were not established")
+		case <-time.After(time.Millisecond):
+		}
+	}
+
+	if err := first.Dispatch(ctx, runtime.DispatchEvent{Name: runtime.NewString("first")}); err != nil {
+		t.Fatalf("dispatch first event: %v", err)
+	}
+
+	deadline = time.After(time.Second)
+	for first.CloseCount() != 1 {
+		select {
+		case <-deadline:
+			t.Fatal("first arm did not match and close")
+		case <-time.After(time.Millisecond):
+		}
+	}
+
+	second.Complete()
+
+	select {
+	case run := <-done:
+		if run.result != nil {
+			_ = run.result.Close()
+			t.Fatal("unexpected successful result")
+		}
+
+		assertTriggerRuntimeError(t, run.err, "event source completed before matching the required event")
+		if !errors.Is(run.err, runtime.ErrInvalidOperation) {
+			t.Fatalf("expected invalid operation cause, got %v", run.err)
+		}
+
+		var runtimeErr *vm.RuntimeError
+		if !errors.As(run.err, &runtimeErr) {
+			t.Fatalf("expected runtime error, got %T", run.err)
+		}
+
+		mainSpanFound := false
+		for _, span := range runtimeErr.Spans {
+			if !span.Main {
+				continue
+			}
+
+			mainSpanFound = true
+			fragment := query[span.Span.Start:span.Span.End]
+			if !strings.Contains(fragment, `"second" IN second`) {
+				t.Fatalf("expected unmatched arm span, got %q", fragment)
+			}
+		}
+
+		if !mainSpanFound {
+			t.Fatal("expected a main runtime error span")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("EVENT ALL did not fail after the unmatched arm completed")
+	}
+
+	assertTriggerObservableCounts(t, first, 1, 1, 1)
+	assertTriggerObservableCounts(t, second, 1, 0, 1)
 }
 
 func TestWaitforEventSynchronizationSameSource(t *testing.T) {
@@ -245,6 +407,10 @@ func TestWaitforEventSynchronizationTrigger(t *testing.T) {
 		retryFirst := NewTriggerObservable()
 		retrySecond := NewTriggerObservable()
 		retryFirst.FailNextDispatches(1, errors.New("group trigger failed once"))
+		timeoutAnyFirst := NewTriggerObservable()
+		timeoutAnySecond := NewTriggerObservable()
+		timeoutAllFirst := NewTriggerObservable()
+		timeoutAllSecond := NewTriggerObservable()
 
 		return []spec.Spec{
 			Fn(`LET first = @first
@@ -306,67 +472,90 @@ LET evt = WAITFOR EVENT ANY {
 RETURN evt.type`, expectTriggerGroup(retryFirst, retrySecond, []any{"first", "second"}, 2, 2), "WAITFOR EVENT groups should retry after full cleanup").Env(vm.WithParams(map[string]runtime.Value{
 				"first": retryFirst, "second": retrySecond,
 			})),
-		}
-	})
-}
-
-func TestWaitforEventSynchronizationCancellationClosesAll(t *testing.T) {
-	first := NewTriggerObservable()
-	second := NewTriggerObservable()
-	program, err := spec.Compile(`LET first = @first
+			Fn(`LET first = @first
+LET second = @second
+RETURN WAITFOR EVENT ANY {
+	"first" IN first
+	"second" IN second
+} TRIGGER () TIMEOUT 2ms ON TIMEOUT RETURN "timeout"`, expectTriggerGroup(timeoutAnyFirst, timeoutAnySecond, "timeout", 1, 1), "WAITFOR EVENT ANY timeout should close every subscription").Env(vm.WithParams(map[string]runtime.Value{
+				"first": timeoutAnyFirst, "second": timeoutAnySecond,
+			})),
+			Fn(`LET first = @first
 LET second = @second
 RETURN WAITFOR EVENT ALL {
 	"first" IN first
 	"second" IN second
-}`)
-	if err != nil {
-		t.Fatalf("compile event group: %v", err)
-	}
-
-	instance, err := vm.NewWith(program)
-	if err != nil {
-		t.Fatalf("create VM: %v", err)
-	}
-	t.Cleanup(func() { _ = instance.Close() })
-	environment, err := vm.NewEnvironment([]vm.EnvironmentOption{
-		vm.WithNamespace(spec.Stdlib()),
-		vm.WithParams(map[string]runtime.Value{"first": first, "second": second}),
+} TRIGGER () TIMEOUT 2ms ON TIMEOUT RETURN "timeout"`, expectTriggerGroup(timeoutAllFirst, timeoutAllSecond, "timeout", 1, 1), "WAITFOR EVENT ALL timeout should close every subscription").Env(vm.WithParams(map[string]runtime.Value{
+				"first": timeoutAllFirst, "second": timeoutAllSecond,
+			})),
+		}
 	})
-	if err != nil {
-		t.Fatalf("create environment: %v", err)
+}
+
+func TestWaitforEventSynchronizationCancellationClosesSubscriptions(t *testing.T) {
+	for _, synchronization := range []string{"ANY", "ALL"} {
+		t.Run(synchronization, func(t *testing.T) {
+			first := NewTriggerObservable()
+			second := NewTriggerObservable()
+			query := fmt.Sprintf(`LET first = @first
+LET second = @second
+RETURN WAITFOR EVENT %s {
+	"first" IN first
+	"second" IN second
+}`, synchronization)
+			program, err := spec.Compile(query)
+			if err != nil {
+				t.Fatalf("compile event group: %v", err)
+			}
+
+			instance, err := vm.NewWith(program)
+			if err != nil {
+				t.Fatalf("create VM: %v", err)
+			}
+			t.Cleanup(func() { _ = instance.Close() })
+
+			environment, err := vm.NewEnvironment([]vm.EnvironmentOption{
+				vm.WithNamespace(spec.Stdlib()),
+				vm.WithParams(map[string]runtime.Value{"first": first, "second": second}),
+			})
+			if err != nil {
+				t.Fatalf("create environment: %v", err)
+			}
+
+			ctx, cancel := context.WithCancel(context.Background())
+			t.Cleanup(cancel)
+			done := make(chan error, 1)
+			go func() {
+				result, runErr := instance.Run(ctx, environment)
+				if result != nil {
+					_ = result.Close()
+				}
+				done <- runErr
+			}()
+
+			deadline := time.After(time.Second)
+			for first.SubscribeCount() != 1 || second.SubscribeCount() != 1 {
+				select {
+				case <-deadline:
+					t.Fatal("subscriptions were not established")
+				case <-time.After(time.Millisecond):
+				}
+			}
+			cancel()
+
+			select {
+			case runErr := <-done:
+				if !errors.Is(runErr, context.Canceled) {
+					t.Fatalf("expected cancellation, got %v", runErr)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("event group did not stop after cancellation")
+			}
+
+			assertTriggerObservableCounts(t, first, 1, 0, 1)
+			assertTriggerObservableCounts(t, second, 1, 0, 1)
+		})
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan error, 1)
-	go func() {
-		result, runErr := instance.Run(ctx, environment)
-		if result != nil {
-			_ = result.Close()
-		}
-		done <- runErr
-	}()
-
-	deadline := time.After(time.Second)
-	for first.SubscribeCount() != 1 || second.SubscribeCount() != 1 {
-		select {
-		case <-deadline:
-			t.Fatal("subscriptions were not established")
-		case <-time.After(time.Millisecond):
-		}
-	}
-	cancel()
-
-	select {
-	case runErr := <-done:
-		if !errors.Is(runErr, context.Canceled) {
-			t.Fatalf("expected cancellation, got %v", runErr)
-		}
-	case <-time.After(time.Second):
-		t.Fatal("event group did not stop after cancellation")
-	}
-
-	assertTriggerObservableCounts(t, first, 1, 0, 1)
-	assertTriggerObservableCounts(t, second, 1, 0, 1)
 }
 
 func TestWaitforEventTrigger(t *testing.T) {

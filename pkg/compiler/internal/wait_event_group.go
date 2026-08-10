@@ -320,6 +320,9 @@ func (c *WaitCompiler) emitWaitEventAllDispatch(
 	streamReg, eventReg, armIndexReg, resultReg bytecode.Operand,
 	restartLabel, doneLabel core.Label,
 ) {
+	closedArm := c.ctx.Program.Emitter.NewLabel()
+	c.ctx.Program.Emitter.EmitJumpIfNone(armIndexReg, closedArm)
+
 	for idx, arm := range state.arms {
 		nextArm := c.ctx.Program.Emitter.NewLabel()
 		indexConst := c.ctx.Function.Symbols.AddConstant(runtime.NewInt(idx))
@@ -346,6 +349,31 @@ func (c *WaitCompiler) emitWaitEventAllDispatch(
 	}
 
 	c.ctx.Program.Emitter.EmitJump(restartLabel)
+	c.ctx.Program.Emitter.MarkLabel(closedArm)
+	c.emitWaitEventAllClosedArmFailure(state, eventReg)
+}
+
+func (c *WaitCompiler) emitWaitEventAllClosedArmFailure(
+	state waitEventGroupCompileState,
+	closedArmReg bytecode.Operand,
+) {
+	failure := c.ctx.Function.Symbols.AddConstant(
+		runtime.NewString("event source completed before matching the required event"),
+	)
+
+	for idx, arm := range state.arms {
+		nextArm := c.ctx.Program.Emitter.NewLabel()
+		indexConst := c.ctx.Function.Symbols.AddConstant(runtime.NewInt(idx))
+		c.ctx.Program.Emitter.EmitJumpCompare(bytecode.OpJumpIfNeConst, closedArmReg, indexConst, nextArm)
+		c.ctx.Program.Emitter.WithSpan(arm.span, func() {
+			c.ctx.Program.Emitter.EmitA(bytecode.OpFail, failure)
+		})
+		c.ctx.Program.Emitter.MarkLabel(nextArm)
+	}
+
+	c.ctx.Program.Emitter.WithSpan(state.span, func() {
+		c.ctx.Program.Emitter.EmitA(bytecode.OpFail, failure)
+	})
 }
 
 func (c *WaitCompiler) emitWaitEventGroupFilters(
