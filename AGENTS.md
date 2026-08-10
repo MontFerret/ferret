@@ -362,7 +362,7 @@ func (r *Result) Close() error
 
 These rules are mandatory for handwritten Go code.
 
-Blank lines should separate logical units and make control-flow boundaries visually obvious.
+Blank lines should separate logical units and make control-flow and termination boundaries visually obvious.
 
 ### Immediate producer + check
 
@@ -502,7 +502,106 @@ if foo == bar {
 doSomething()
 ```
 
-### Local type declarations
+### Return and break separation
+
+`return` and `break` are termination or control-transfer statements and should be visually separated from preceding statements.
+
+A `return` or `break` must begin a new logical group: when another statement precedes it in the same block, place a blank line immediately before it.
+
+This rule applies inside nested control-flow blocks as well as at the function-body level.
+
+Avoid:
+
+```go
+if is(offending.Prev().Prev(), "NOT") {
+	return "NOT EXISTS", offending.Prev()
+}
+return "EXISTS", offending.Prev()
+```
+
+Prefer:
+
+```go
+if is(offending.Prev().Prev(), "NOT") {
+	return "NOT EXISTS", offending.Prev()
+}
+
+return "EXISTS", offending.Prev()
+```
+
+Avoid:
+
+```go
+if is(curr, "WAITFOR") {
+	foundWaitFor = true
+	break
+}
+```
+
+Prefer:
+
+```go
+if is(curr, "WAITFOR") {
+	foundWaitFor = true
+
+	break
+}
+```
+
+The same rule applies when ordinary computation precedes a return:
+
+Avoid:
+
+```go
+result := buildResult()
+return result
+```
+
+Prefer:
+
+```go
+result := buildResult()
+
+return result
+```
+
+Likewise for `break`:
+
+Avoid:
+
+```go
+found = true
+break
+```
+
+Prefer:
+
+```go
+found = true
+
+break
+```
+
+No blank line is required before a `return` when it is already the first statement in its block:
+
+```go
+if err != nil {
+	return err
+}
+```
+
+No artificial leading blank line should be introduced:
+
+```go
+func value() int {
+	return 42
+}
+```
+
+The intent is not to surround every `return` or `break` with whitespace. The rule specifically requires separation from a preceding statement in the same block.
+
+
+## Local type declarations
 
 Local types declared inside functions are allowed, but should be used deliberately.
 
