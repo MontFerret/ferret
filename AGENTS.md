@@ -502,6 +502,59 @@ if foo == bar {
 doSomething()
 ```
 
+### Local type declarations
+
+Local types declared inside functions are allowed, but should be used deliberately.
+
+Prefer a local type when all of the following are true:
+
+- it is small;
+- it is passive and method-free;
+- it is used only within that function;
+- it exists purely to support the local algorithm;
+- keeping it local makes the function easier to understand rather than harder to scan.
+
+Prefer a package-level unexported type when one or more of the following are true:
+
+- the type represents a meaningful domain or algorithmic concept;
+- the type is used across a substantial portion of a long or complex function;
+- moving the type declaration out of the control flow improves readability;
+- the type may reasonably gain methods or behavior;
+- the type is likely to be reused by nearby helpers;
+- the type name helps explain the algorithm or responsibility at package scope.
+
+Do not promote a tiny throwaway struct to package scope merely for consistency.
+
+Do not keep a meaningful concept local merely to avoid adding a package-level type.
+
+Example of an appropriate local type:
+
+```go
+func collect(...) {
+	type entry struct {
+		name  string
+		index int
+	}
+
+	// Small, passive, function-local algorithm state.
+}
+```
+
+Example where a package-level type is preferable:
+
+```go
+type waitForEmptyGroupCandidate struct {
+	mode            string
+	synchronization string
+	span            source.Span
+	distance        int
+}
+```
+
+when that value represents a meaningful candidate selected and ranked throughout a substantial parsing or diagnostic algorithm.
+
+The decision should be based on readability, conceptual ownership, and expected evolution, not on a blanket preference for either local or package-level types.
+
 ## Response and code style
 
 When assisting with this repository, avoid large unstructured blocks of prose or code.
