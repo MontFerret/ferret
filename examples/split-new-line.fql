@@ -1,4 +1,0 @@
-LET doc = DOCUMENT('https://github.com/events', {driver: 'cdp'})
-LET list = ELEMENT(doc, '.footer')[0]
-LET str = INNER_TEXT(list)
-RETURN SPLIT(str, "\\n")

@@ -1,7 +1,0 @@
-LET doc = DOCUMENT(@url, { driver: 'cdp' })
-
-CLICK(doc, '.click')
-
-WAITFOR EVENT "navigation" IN doc { target: @targetURL }
-
-RETURN ELEMENT(doc, '.title')

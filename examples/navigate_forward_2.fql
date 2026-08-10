@@ -1,9 +1,0 @@
-LET doc = DOCUMENT("https://github.com/", { driver: "cdp" })
-
-NAVIGATE(doc, "https://github.com/features")
-NAVIGATE(doc, "https://github.com/enterprise")
-NAVIGATE(doc, "https://github.com/marketplace")
-NAVIGATE_BACK(doc, 3)
-NAVIGATE_FORWARD(doc, 2)
-
-RETURN doc.url == "https://github.com/enterprise"

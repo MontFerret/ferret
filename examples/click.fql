@@ -1,8 +1,0 @@
-LET doc = DOCUMENT("https://www.montferret.dev/", { driver: "cdp" })
-
-CLICK(doc, "#repl")
-
-WAITFOR EVENT "navigation" IN doc
-WAIT_ELEMENT(doc, '.code-editor-text')
-
-RETURN doc.url

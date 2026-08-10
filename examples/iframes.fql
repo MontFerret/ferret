@@ -1,9 +1,0 @@
-LET page = DOCUMENT("https://www.w3schools.com/html/html_iframe.asp", { driver: "cdp" })
-
-LET content = (
-    FOR f IN page.frames
-        FILTER f.URL == "https://www.w3schools.com/html/default.asp"
-            RETURN f.head.innerHTML
-)
-
-RETURN FIRST(content)

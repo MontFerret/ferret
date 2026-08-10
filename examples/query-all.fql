@@ -1,3 +1,0 @@
-let doc = document("https://github.com/MontFerret/ferret", { driver: "cdp" })
-
-return elements(doc, '[role="row"]')
