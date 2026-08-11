@@ -44,7 +44,7 @@ func bareThrowExpressionNode(expr fql.IExpressionContext) antlr.ParserRuleContex
 		return nil
 	}
 
-	if expr.UnaryOperator() != nil || expr.LogicalAndOperator() != nil || expr.LogicalOrOperator() != nil || expr.GetTernaryOperator() != nil {
+	if expr.UnaryOperator() != nil || expr.LogicalAndOperator() != nil || expr.LogicalOrOperator() != nil || expr.GetCoalesceOperator() != nil || expr.GetTernaryOperator() != nil {
 		return nil
 	}
 

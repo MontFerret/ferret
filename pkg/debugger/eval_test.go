@@ -89,6 +89,36 @@ func TestEvaluateDebugExpressionParsesFerretStringEscapes(t *testing.T) {
 	}
 }
 
+func TestEvaluateDebugCoalesceExpression(t *testing.T) {
+	scope := evalScope{
+		locals: map[string]runtime.Value{
+			"none":     runtime.None,
+			"present":  runtime.ZeroInt,
+			"fallback": runtime.NewInt(42),
+		},
+		params: runtime.NewParams(),
+		values: vm.NewDebugValueAccess(),
+	}
+
+	value, err := evaluateExpression(context.Background(), "present ?? missing", scope)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if value != runtime.ZeroInt {
+		t.Fatalf("present expression = %v (%T), want zero", value, value)
+	}
+
+	value, err = evaluateExpression(context.Background(), "none ?? none ?? fallback", scope)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if value != runtime.NewInt(42) {
+		t.Fatalf("fallback expression = %v (%T), want 42", value, value)
+	}
+}
+
 func TestEvaluateDebugExpressionRejectsOpaqueValuesWithoutCallingHostMethods(t *testing.T) {
 	_, err := evaluateExpression(
 		context.Background(),

@@ -318,6 +318,7 @@ func isTopLevelArrayExpressionContinuation(tokens []antlr.Token, idx int) bool {
 		return tokenCanEndExpression(prev)
 	case fql.FqlLexerDot,
 		fql.FqlLexerQuestionMark,
+		fql.FqlLexerCoalesce,
 		fql.FqlLexerPlus,
 		fql.FqlLexerMinus,
 		fql.FqlLexerMulti,

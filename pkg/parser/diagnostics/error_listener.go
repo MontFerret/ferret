@@ -3,6 +3,7 @@ package diagnostics
 import (
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
@@ -41,10 +42,48 @@ func (d *ErrorListener) ReportAmbiguity(recognizer antlr.Parser, dfa *antlr.DFA,
 			if rule == "expressionAtom" || rule == "functionStatement" {
 				return
 			}
+
+			if rule == "expression" && !exact && d.isCoalesceAmbiguity(recognizer, startIndex, stopIndex) {
+				return
+			}
 		}
 	}
 
 	d.DiagnosticErrorListener.ReportAmbiguity(recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs)
+}
+
+// isCoalesceAmbiguity identifies the non-exact SLL conflict produced by the
+// right-associative expression alternative. Exact ambiguities remain errors.
+func (d *ErrorListener) isCoalesceAmbiguity(recognizer antlr.Parser, startIndex, stopIndex int) bool {
+	stream := recognizer.GetTokenStream()
+	if stream == nil || stream.Size() == 0 {
+		return false
+	}
+
+	start := startIndex
+	if ctx := recognizer.GetParserRuleContext(); ctx != nil && ctx.GetStart() != nil {
+		start = min(start, ctx.GetStart().GetTokenIndex())
+	}
+
+	start = max(0, start)
+	stop := min(stopIndex, stream.Size()-1)
+
+	for i := start; i <= stop; i++ {
+		if stream.Get(i).GetTokenType() == fql.FqlLexerCoalesce {
+			return true
+		}
+	}
+
+	for i := start - 1; i >= 0; i-- {
+		token := stream.Get(i)
+		if token.GetChannel() != antlr.TokenDefaultChannel {
+			continue
+		}
+
+		return token.GetTokenType() == fql.FqlLexerCoalesce
+	}
+
+	return false
 }
 
 func (d *ErrorListener) SyntaxError(_ antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {

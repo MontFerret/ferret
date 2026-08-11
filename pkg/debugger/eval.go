@@ -56,6 +56,19 @@ func evalDebugExpression(ctx context.Context, expr fql.IExpressionContext, scope
 		return evalDebugUnary(node.UnaryOperator().GetText(), value, scope.values)
 	}
 
+	if node.GetCoalesceOperator() != nil {
+		left, err := evalDebugExpression(ctx, node.GetLeft(), scope)
+		if err != nil {
+			return nil, err
+		}
+
+		if left != runtime.None {
+			return left, nil
+		}
+
+		return evalDebugExpression(ctx, node.GetRight(), scope)
+	}
+
 	if node.GetLeft() != nil && node.GetRight() != nil {
 		left, err := evalDebugExpression(ctx, node.GetLeft(), scope)
 		if err != nil {
