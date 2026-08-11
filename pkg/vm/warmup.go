@@ -8,7 +8,6 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
@@ -89,16 +88,11 @@ func ensureRegexpsWarmed(vm *VM) error {
 			}
 		case bytecode.OpRegexp:
 			if val, ok := reg[src2]; ok {
-				r, err := data.DecodeRegexp(val)
-
+				_, err := vm.regexpCached(pc, val)
 				if err != nil {
 					warmupErrs.Add(err, pc, dst)
-					continue
-				}
 
-				pattern := r.String()
-				if cached := vm.cache.Regexps[pc]; cached == nil || cached.Pattern != pattern {
-					vm.cache.Regexps[pc] = &mem.CachedRegexp{Pattern: pattern, Regexp: r}
+					continue
 				}
 			}
 		}

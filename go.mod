@@ -11,7 +11,6 @@ require (
 	github.com/rs/zerolog v1.35.1
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/vmihailenco/msgpack/v5 v5.4.1
-	github.com/wI2L/jettison v0.7.4
 )
 
 require (

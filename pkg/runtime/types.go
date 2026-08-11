@@ -25,6 +25,11 @@ var (
 		_, ok := v.(String)
 		return ok
 	})
+	// TypeRegexp identifies compiled regular expression values.
+	TypeRegexp = newBuiltinType("Regexp", func(v Value) bool {
+		_, ok := v.(*Regexp)
+		return ok
+	})
 	TypeDateTime = newBuiltinType("DateTime", func(v Value) bool {
 		_, ok := v.(DateTime)
 		return ok

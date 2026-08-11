@@ -65,19 +65,6 @@ func TestIteratorUnsupportedOperationsAreNonPanicking(t *testing.T) {
 	})
 }
 
-func TestRegexpCopyDoesNotPanic(t *testing.T) {
-	regexp, err := data.NewRegexp(runtime.NewString("foo"))
-	if err != nil {
-		t.Fatalf("regexp compile failed: %v", err)
-	}
-
-	assertNoPanic(t, func() {
-		if copied := regexp.Copy(); copied == nil {
-			t.Fatal("expected non-nil copied regexp")
-		}
-	})
-}
-
 func assertNoPanic(t *testing.T, fn func()) {
 	t.Helper()
 

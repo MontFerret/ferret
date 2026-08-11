@@ -1416,12 +1416,12 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 	return state.registers[bytecode.NoopOperand], sourcePointContinue, nil
 }
 
-func (vm *VM) regexpCached(pc int, value runtime.Value) (*data.Regexp, error) {
+func (vm *VM) regexpCached(pc int, value runtime.Value) (*runtime.Regexp, error) {
 	// We compare patterns to ensure that the cached regexp is the same as the one we're trying to use.
 	// This is necessary because the same compiled function can be used in different places with different regexps,
 	// and we want to avoid caching a regexp that doesn't match the current pattern.
 	switch v := value.(type) {
-	case *data.Regexp:
+	case *runtime.Regexp:
 		pattern := v.String()
 
 		if cached := vm.cache.Regexps[pc]; cached == nil || cached.Pattern != pattern {
@@ -1436,7 +1436,7 @@ func (vm *VM) regexpCached(pc int, value runtime.Value) (*data.Regexp, error) {
 			return cached.Regexp, nil
 		}
 
-		r, err := data.NewRegexp(v)
+		r, err := runtime.NewRegexp(v.String())
 		if err != nil {
 			return nil, err
 		}
@@ -1445,7 +1445,7 @@ func (vm *VM) regexpCached(pc int, value runtime.Value) (*data.Regexp, error) {
 
 		return r, nil
 	default:
-		return nil, runtime.TypeErrorOf(value, runtime.TypeString, data.TypeRegexp)
+		return nil, runtime.TypeErrorOf(value, runtime.TypeString, runtime.TypeRegexp)
 	}
 }
 

@@ -55,6 +55,11 @@ func TestValidateType(t *testing.T) {
 		Failure  bool
 	}
 
+	regexpValue, err := runtime.NewRegexp(".*")
+	if err != nil {
+		t.Fatalf("compile regexp: %v", err)
+	}
+
 	tests := []testCase{
 		{
 			Name:     "None",
@@ -98,12 +103,12 @@ func TestValidateType(t *testing.T) {
 			Expected: runtime.TypeBinary,
 			Failure:  false,
 		},
-		// TODO: Where is Regexp?
-		//{
-		//	Input:    runtime.NewRegexp(".*"),
-		//	Expected: runtime.TypeRegexp,
-		//	Failure:  false,
-		//},
+		{
+			Name:     "Regexp",
+			Input:    regexpValue,
+			Expected: runtime.TypeRegexp,
+			Failure:  false,
+		},
 		{
 			Name:     "Array",
 			Input:    runtime.NewArrayWith(runtime.NewInt(1)),

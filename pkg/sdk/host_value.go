@@ -2,12 +2,11 @@ package sdk
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"sync/atomic"
 
-	"github.com/wI2L/jettison"
+	"github.com/goccy/go-json"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -97,7 +96,7 @@ func (v *HostValue[T]) MarshalJSON() ([]byte, error) {
 		return marshaler.MarshalJSON()
 	}
 
-	return jettison.MarshalOpts(v.target, jettison.NoHTMLEscaping())
+	return json.MarshalWithOption(v.target, json.DisableHTMLEscape())
 }
 
 // String returns the target's string representation without exposing capabilities.

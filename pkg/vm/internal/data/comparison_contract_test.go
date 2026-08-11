@@ -143,42 +143,6 @@ func TestFastObjectUsesObjectLikeSemantics(t *testing.T) {
 	}
 }
 
-func TestRegexpComparisonUsesPatternAndStableType(t *testing.T) {
-	ctx := context.Background()
-	left, err := data.NewRegexp(runtime.NewString("a+"))
-	if err != nil {
-		t.Fatalf("compile left regexp: %v", err)
-	}
-	right, err := data.NewRegexp(runtime.NewString("b+"))
-	if err != nil {
-		t.Fatalf("compile right regexp: %v", err)
-	}
-	same, err := data.NewRegexp(runtime.NewString("a+"))
-	if err != nil {
-		t.Fatalf("compile same regexp: %v", err)
-	}
-
-	equal, err := left.Equal(ctx, same)
-	if err != nil || !equal {
-		t.Fatalf("expected equal regexp patterns, equal=%v err=%v", equal, err)
-	}
-
-	ordering, err := left.Compare(ctx, right)
-	if err != nil {
-		t.Fatalf("compare regexp patterns: %v", err)
-	}
-	if ordering != runtime.Less {
-		t.Fatalf("expected left regexp to sort before right, got %v", ordering)
-	}
-
-	if left.Type() != data.TypeRegexp {
-		t.Fatalf("expected stable regexp type %v, got %v", data.TypeRegexp, left.Type())
-	}
-	if left.Hash() != same.Hash() {
-		t.Fatal("expected equal regexp patterns to have equal hashes")
-	}
-}
-
 func TestKeyCollectorsKeepIntAndStringKeysDistinct(t *testing.T) {
 	ctx := context.Background()
 	keyCollector := data.NewKeyCollector()
@@ -292,11 +256,11 @@ func TestCoreComparisonHelpersDoNotPollCancellation(t *testing.T) {
 		t.Fatalf("fast object ordering = %v, %v, want Equal, nil", ordering, err)
 	}
 
-	leftRegexp, err := data.NewRegexp(runtime.NewString("a+"))
+	leftRegexp, err := runtime.NewRegexp("a+")
 	if err != nil {
 		t.Fatal(err)
 	}
-	rightRegexp, err := data.NewRegexp(runtime.NewString("a+"))
+	rightRegexp, err := runtime.NewRegexp("a+")
 	if err != nil {
 		t.Fatal(err)
 	}

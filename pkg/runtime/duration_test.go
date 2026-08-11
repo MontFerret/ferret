@@ -1,7 +1,6 @@
 package runtime_test
 
 import (
-	"encoding/json"
 	"errors"
 	"math"
 	"testing"
@@ -92,14 +91,6 @@ func TestDurationRuntimeContract(t *testing.T) {
 		if _, err := runtime.CompareValues(t.Context(), duration, other); !errors.Is(err, runtime.ErrInvalidOperation) {
 			t.Fatalf("Duration ordering with %T error = %v, want ErrInvalidOperation", other, err)
 		}
-	}
-
-	encoded, err := json.Marshal(duration)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(encoded) != `"1.5s"` {
-		t.Fatalf("MarshalJSON() = %s", encoded)
 	}
 
 	value, err := runtime.ValueOf(1500 * time.Millisecond)

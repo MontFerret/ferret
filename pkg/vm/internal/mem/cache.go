@@ -27,7 +27,7 @@ type (
 	}
 
 	CachedRegexp struct {
-		Regexp  *data.Regexp
+		Regexp  *runtime.Regexp
 		Pattern string
 	}
 
