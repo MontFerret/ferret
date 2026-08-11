@@ -1,0 +1,110 @@
+# Ferret Core API Reference
+
+Ferret publishes a versioned API Reference with the canonical identity
+`montferret/core`. This identity describes optional built-in functionality
+provided by Ferret itself. It is not an installable Registry module and must not
+be added to a module manifest as a dependency.
+
+## Authority and scope
+
+The function definitions produced by `stdlib.Full()` are the authority for the
+published API. Generation enumerates that in-process registry, including every
+fixed arity, variadic definition, overload, root function, and nested namespace.
+Unregistered Go declarations are not published.
+
+The generator then loads `pkg/stdlib` source with `go/packages` and resolves each
+registered function to its declaration. The assertion descriptors used by `T`
+and `T::NOT` are resolved statically, including their `Args.Min` and `Args.Max`
+bounds. Any unresolved declaration, unsupported registration shape, documentation
+error, arity contradiction, or runtime/source mismatch fails generation without
+writing a partial artifact.
+
+The API Reference and discovery-index wire contracts belong to
+[`github.com/MontFerret/specs`](https://github.com/MontFerret/specs). Ferret pins
+the released Specs version in the independent generator and publisher modules,
+which validate every completed reference and index. Ferret's root module does
+not carry those tooling dependencies. Ferret does not depend on Barn for
+generation or publication.
+
+## Documentation authoring
+
+Registered declarations use the strict structured format parsed by
+`api.ParseDocumentation`:
+
+```go
+// SPLIT divides a string at each separator.
+// @param value {String} Source string.
+// @param separator {String} Separator string.
+// @return {String[]} Split values.
+// @throws {TypeError} The supplied values cannot be converted.
+```
+
+The rules are intentionally strict:
+
+- Every generated signature has non-empty prose and exactly one `@return`.
+- `@param` uses `@param name {Type} Description`; JSDoc optional-name brackets
+  and dash separators are invalid.
+- Fixed declarations document exactly their registered parameter count.
+- Variadic declarations document at least one logical parameter and are emitted
+  only as variadic signatures.
+- Overload helpers carry their own complete documentation. Fixed overloads are
+  ordered by arity before any variadic signature.
+- Parameter and `@throws` order is retained as authored.
+- Parameters are flat. Describe nested map fields in the parent parameter's
+  description instead of using names such as `params.mode`.
+- Assertion descriptor prose is namespace-neutral because the same descriptor
+  documents both positive and `T::NOT` overloads. The descriptor documents its
+  maximum argument list; each fixed overload receives the corresponding prefix.
+
+Run the focused authoring and parity checks after changing stdlib registration
+or documentation:
+
+```sh
+GOWORK=off go -C tools/apiref test ./internal/analyzer
+```
+
+## Local generation
+
+Run the generator from the repository root with an unprefixed canonical SemVer:
+
+```sh
+GOWORK=off go -C tools/apiref run . \
+  -version 2.0.0-alpha.45 \
+  -o /tmp/montferret-core-api.json
+```
+
+The command emits diagnostics only on stderr and atomically writes deterministic,
+two-space-indented JSON with one trailing newline. The generator contains no
+deployment domain.
+
+## Release publication
+
+The `Publish Ferret Core API Reference` workflow runs independently from
+dependent-release notifications. It accepts `release.published` events and
+manual dispatches, verifies that the selected canonical v2 tag belongs to a
+published GitHub release, checks out that exact tag, strips the leading `v`, and
+generates the artifact.
+
+The existing `gh-pages` branch is updated through the repository-local
+`scripts/publish-core-api.sh` wrapper. Publication validates the existing index
+and every referenced artifact before mutation, preserves unrelated Pages files,
+creates one version artifact, recomputes the index, commits once, and performs a
+normal non-force push. Version directories, index entries, and hrefs are
+immutable and cannot be republished even when bytes match. A stale push fails;
+published history is never rewritten.
+
+All `gh-pages` writers use the repository-wide `gh-pages-writer` concurrency key
+with cancellation disabled. Unit and integration benchmarks still execute in
+parallel, but their two results are persisted downstream by one serialized job.
+
+Publication starts with the first release that contains this generator. Older
+v2 alpha tags are not backfilled. A prerelease-only index omits `latest`; once a
+stable release exists, `latest` identifies the greatest stable SemVer.
+
+The public documents are:
+
+- `https://ferretlang.org/ferret/index.json`
+- `https://ferretlang.org/ferret/versions/<version>/api.json`
+
+These URLs share the existing Ferret Pages root, so benchmark history and other
+site files remain alongside the API Reference without being regenerated.

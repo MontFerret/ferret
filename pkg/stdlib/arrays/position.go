@@ -7,10 +7,10 @@ import (
 )
 
 // POSITION returns a value indicating whether an element is contained in array. Optionally returns its position.
-// @param {Any[]} array - The source array.
-// @param {Any} value - The target value.
-// @param {Boolean} [position=False] - Boolean value which indicates whether to return item's position.
-// @return {Boolean | Int} - A value indicating whether an element is contained in array.
+// @param array {Any[]} The source array.
+// @param value {Any} The target value.
+// @param position {Boolean} Boolean value which indicates whether to return item's position.
+// @return {Boolean | Int} A value indicating whether an element is contained in array.
 func Position(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
@@ -23,10 +23,19 @@ func Position(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 	return position3(ctx, args[0], args[1], args[2])
 }
 
+// POSITION returns a value indicating whether an element is contained in array. Optionally returns its position.
+// @param array {Any[]} The source array.
+// @param value {Any} The target value.
+// @return {Boolean | Int} A value indicating whether an element is contained in array.
 func position2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return position3(ctx, arg1, arg2, runtime.False)
 }
 
+// POSITION returns a value indicating whether an element is contained in array. Optionally returns its position.
+// @param array {Any[]} The source array.
+// @param value {Any} The target value.
+// @param position {Boolean} Boolean value which indicates whether to return item's position.
+// @return {Boolean | Int} A value indicating whether an element is contained in array.
 func position3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	arr, err := runtime.CastArg[runtime.List](arg1, 0)
 

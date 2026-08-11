@@ -8,8 +8,8 @@ import (
 )
 
 // VARIANCE_POPULATION returns the population variance of the values in a given array.
-// @param {Int[] | Float[]} numbers - arrayList of numbers.
-// @return {Float} - The population variance.
+// @param numbers {Int[] | Float[]} arrayList of numbers.
+// @return {Float} The population variance.
 func PopulationVariance(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgType(arg, 0, runtime.TypeList); err != nil {
 		return runtime.None, err

@@ -7,8 +7,8 @@ import (
 )
 
 // VALUES return the attribute values of the map as a list.
-// @param {Map} map - Target map.
-// @return {Any[]} - Values of document returned in any order.
+// @param map {Map} Target map.
+// @return {Any[]} Values of document returned in any order.
 func Values(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgType(arg, 0, runtime.TypeMap); err != nil {
 		return runtime.None, err

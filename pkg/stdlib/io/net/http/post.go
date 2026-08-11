@@ -8,11 +8,8 @@ import (
 )
 
 // POST makes a POST request.
-// @param {Map} params - Request parameters.
-// @param {String} params.url - Target url
-// @param {Any} params.body - Request data
-// @param {Map} [params.headers] - HTTP headers
-// @return {Binary} - Response in binary format
+// @param params {Map} Request parameters containing url, body, and optional headers fields.
+// @return {Binary} Response in binary format
 func POST(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	return execMethod(ctx, h.MethodPost, arg)
 }

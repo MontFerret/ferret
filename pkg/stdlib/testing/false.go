@@ -9,9 +9,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
-// FALSE asserts that value is false.
-// @param {Any}actual  - Second to test.
-// @param {String} [message] - Message to display on error.
+// Tests whether the value is false.
+// @param actual {Any} Value to test.
+// @param message {String} Message to display on error.
+// @return {Boolean} True when the configured assertion succeeds; otherwise an assertion error is returned.
 var False = base.Assertion{
 	DefaultMessage: func(args []runtime.Value) string {
 		return fmt.Sprintf("be %s", base.FormatValue(runtime.False))

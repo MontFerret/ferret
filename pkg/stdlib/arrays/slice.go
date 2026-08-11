@@ -7,10 +7,10 @@ import (
 )
 
 // SLICE returns a new sliced array.
-// @param {Any[]} array - Source array.
-// @param {Int} start - Start position of extraction.
-// @param {Int} [length] - Read indicating how many elements to extract.
-// @return {Any[]} - Sliced array.
+// @param array {Any[]} Source array.
+// @param start {Int} Start position of extraction.
+// @param length {Int} Read indicating how many elements to extract.
+// @return {Any[]} Sliced array.
 func Slice(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	_, _, err := runtime.CastVarArgs2[runtime.List, runtime.Int](args)
 
@@ -25,10 +25,19 @@ func Slice(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return slice3(ctx, args[0], args[1], args[2])
 }
 
+// SLICE returns a new sliced array.
+// @param array {Any[]} Source array.
+// @param start {Int} Start position of extraction.
+// @return {Any[]} Sliced array.
 func slice2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return sliceList(ctx, arg1, arg2, runtime.None, false)
 }
 
+// SLICE returns a new sliced array.
+// @param array {Any[]} Source array.
+// @param start {Int} Start position of extraction.
+// @param length {Int} Read indicating how many elements to extract.
+// @return {Any[]} Sliced array.
 func slice3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	return sliceList(ctx, arg1, arg2, arg3, true)
 }

@@ -8,8 +8,8 @@ import (
 )
 
 // TAN returns the tangent of a given number.
-// @param {Int | Float} number - A number.
-// @return {Float} - The tangent.
+// @param number {Int | Float} A number.
+// @return {Float} The tangent.
 func Tan(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertNumber); err != nil {
 		return runtime.None, err

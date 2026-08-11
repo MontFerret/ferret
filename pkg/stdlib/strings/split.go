@@ -8,10 +8,10 @@ import (
 )
 
 // SPLIT splits the given string value into a list of strings, using the separator.
-// @param {String} str - The string to split.
-// @param {String} separator - The separator.
-// @param {Int} limit - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
-// @return {String[]} - arrayList of strings.
+// @param str {String} The string to split.
+// @param separator {String} The separator.
+// @param limit {Int} Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
+// @return {String[]} arrayList of strings.
 func Split(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 3)
 
@@ -26,10 +26,19 @@ func Split(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return split3(ctx, args[0], args[1], args[2])
 }
 
+// SPLIT splits the given string value into a list of strings, using the separator.
+// @param str {String} The string to split.
+// @param separator {String} The separator.
+// @return {String[]} arrayList of strings.
 func split2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return split(ctx, arg1, arg2, -1)
 }
 
+// SPLIT splits the given string value into a list of strings, using the separator.
+// @param str {String} The string to split.
+// @param separator {String} The separator.
+// @param limit {Int} Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
+// @return {String[]} arrayList of strings.
 func split3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	limit := runtime.CastOr[runtime.Int](arg3, runtime.Int(-1))
 	return split(ctx, arg1, arg2, int(limit))

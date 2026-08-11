@@ -8,8 +8,8 @@ import (
 )
 
 // SEPARATE separates the path into a directory and filename component.
-// @param {String} path - The path
-// @return {Any[]} - First item is a directory component, and second is a filename component.
+// @param path {String} The path
+// @return {Any[]} First item is a directory component, and second is a filename component.
 func Separate(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgType(arg, 0, runtime.TypeString); err != nil {
 		return runtime.None, err

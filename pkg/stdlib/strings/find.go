@@ -9,11 +9,11 @@ import (
 )
 
 // FIND_FIRST returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
-// @param {String} str - The source string.
-// @param {String} search - The string to seek.
-// @param {Int} [start] - Limit the search to a subset of the text, beginning at start.
-// @param {Int} [end] - Limit the search to a subset of the text, ending before end.
-// @return {Int} - The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned.
+// @param str {String} The source string.
+// @param search {String} The string to seek.
+// @param start {Int} Limit the search to a subset of the text, beginning at start.
+// @param end {Int} Limit the search to a subset of the text, ending before end.
+// @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned.
 func FindFirst(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 4)
 
@@ -31,15 +31,30 @@ func FindFirst(ctx context.Context, args ...runtime.Value) (runtime.Value, error
 	}
 }
 
+// FIND_FIRST returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
+// @param str {String} The source string.
+// @param search {String} The string to seek.
+// @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned.
 func findFirst2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return findFirst(ctx, arg1, arg2, runtime.ZeroInt, runtime.ZeroInt, false)
 }
 
+// FIND_FIRST returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
+// @param str {String} The source string.
+// @param search {String} The string to seek.
+// @param start {Int} Limit the search to a subset of the text, beginning at start.
+// @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned.
 func findFirst3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	start := runtime.CastOr[runtime.Int](arg3, runtime.ZeroInt)
 	return findFirst(ctx, arg1, arg2, start, runtime.ZeroInt, false)
 }
 
+// FIND_FIRST returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
+// @param str {String} The source string.
+// @param search {String} The string to seek.
+// @param start {Int} Limit the search to a subset of the text, beginning at start.
+// @param end {Int} Limit the search to a subset of the text, ending before end.
+// @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned.
 func findFirst4(ctx context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
 	start := runtime.CastOr[runtime.Int](arg3, runtime.ZeroInt)
 	end, hasEnd := arg4.(runtime.Int)
@@ -70,11 +85,11 @@ func findFirst(_ context.Context, arg1, arg2 runtime.Value, start, end runtime.I
 }
 
 // FIND_LAST returns the position of the last occurrence of the string search inside the string text. Positions start at 0.
-// @param {String} src - The source string.
-// @param {String} search - The string to seek.
-// @param {Int} [start] - Limit the search to a subset of the text, beginning at start.
-// @param {Int} [end] - Limit the search to a subset of the text, ending before end.
-// @return {Int} - The character position of the match. If search is not contained in text, -1 is returned. If search is empty, end is returned.
+// @param src {String} The source string.
+// @param search {String} The string to seek.
+// @param start {Int} Limit the search to a subset of the text, beginning at start.
+// @param end {Int} Limit the search to a subset of the text, ending before end.
+// @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, end is returned.
 func FindLast(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 4)
 
@@ -92,15 +107,30 @@ func FindLast(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 	}
 }
 
+// FIND_LAST returns the position of the last occurrence of the string search inside the string text. Positions start at 0.
+// @param src {String} The source string.
+// @param search {String} The string to seek.
+// @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, end is returned.
 func findLast2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return findLast(ctx, arg1, arg2, runtime.ZeroInt, runtime.ZeroInt, false)
 }
 
+// FIND_LAST returns the position of the last occurrence of the string search inside the string text. Positions start at 0.
+// @param src {String} The source string.
+// @param search {String} The string to seek.
+// @param start {Int} Limit the search to a subset of the text, beginning at start.
+// @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, end is returned.
 func findLast3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	start := runtime.CastOr[runtime.Int](arg3, runtime.ZeroInt)
 	return findLast(ctx, arg1, arg2, start, runtime.ZeroInt, false)
 }
 
+// FIND_LAST returns the position of the last occurrence of the string search inside the string text. Positions start at 0.
+// @param src {String} The source string.
+// @param search {String} The string to seek.
+// @param start {Int} Limit the search to a subset of the text, beginning at start.
+// @param end {Int} Limit the search to a subset of the text, ending before end.
+// @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, end is returned.
 func findLast4(ctx context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
 	start := runtime.CastOr[runtime.Int](arg3, runtime.ZeroInt)
 	end, hasEnd := arg4.(runtime.Int)

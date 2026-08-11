@@ -13,9 +13,9 @@ import (
 )
 
 // FMT formats the template using these arguments.
-// @param {String} template - template.
-// @param {Any, repeated} args - template arguments.
-// @return {String} - string formed by template using arguments.
+// @param template {String} template.
+// @param args {Any, repeated} template arguments.
+// @return {String} string formed by template using arguments.
 func Fmt(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
 		return runtime.None, err

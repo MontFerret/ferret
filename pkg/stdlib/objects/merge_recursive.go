@@ -8,8 +8,8 @@ import (
 )
 
 // MERGE_RECURSIVE recursively merge the given objects into a single object.
-// @param {Map, repeated} objects - Maps to merge.
-// @return {Map} - Map created by merging.
+// @param objects {Map, repeated} Maps to merge.
+// @return {Map} Map created by merging.
 func MergeRecursive(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
 		return runtime.None, err

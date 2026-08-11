@@ -9,8 +9,8 @@ import (
 // SORTED_UNIQUE sorts all elements in a array.
 // The function will use the default comparison order for FQL value types.
 // Additionally, the values in the result array will be made unique
-// @param {Any[]} array - Target array.
-// @return {Any[]} - Sorted array.
+// @param array {Any[]} Target array.
+// @return {Any[]} Sorted array.
 func SortedUnique(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	list, err := runtime.CastArg[runtime.List](arg, 0)
 

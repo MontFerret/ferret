@@ -13,8 +13,8 @@ import (
 // Dates are converted to true if they are not zero, and to false otherwise
 // Arrays are always converted to true (even if empty)
 // Objects / HtmlNodes / Binary are always converted to true
-// @param {Any} value - Input value of arbitrary type.
-// @return {Boolean} - The appropriate boolean value.
+// @param value {Any} Input value of arbitrary type.
+// @return {Boolean} The appropriate boolean value.
 func ToBool(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	return runtime.ToBoolean(arg), nil
 }

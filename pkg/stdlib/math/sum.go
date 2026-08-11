@@ -7,8 +7,8 @@ import (
 )
 
 // SUM returns the sum of the values in a given array.
-// @param {Int[] | Float[]} numbers - arrayList of numbers.
-// @return {Float} - The sum of the values.
+// @param numbers {Int[] | Float[]} arrayList of numbers.
+// @return {Float} The sum of the values.
 func Sum(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgType(arg, 0, runtime.TypeList); err != nil {
 		return runtime.None, err

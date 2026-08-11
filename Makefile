@@ -3,7 +3,11 @@ export CGO_ENABLED=0
 
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
+DIR_TOOLS = ./tools
+DIR_TOOL_APIREF = ${DIR_TOOLS}/apiref
+DIR_TOOL_APIPUBLISH = ${DIR_TOOLS}/apipublish
 DIR_COMPAT = ./compat
+DIR_SCRIPTS = ./scripts
 DIR_TEST = ./test
 DIR_INTEG = ${DIR_TEST}/integration
 DIR_BENCH = ${DIR_TEST}/benchmarks
@@ -12,6 +16,7 @@ BENCH_RUN ?= '^$$'
 BENCH_FILTER ?= .
 BENCH_COUNT ?= 1
 BENCH_TIMEOUT ?= 30m
+STATICCHECK_FLAGS = -tests=false -checks=all,-U1000,-ST1000,-ST1001,-ST1020,-ST1022,-S1002
 
 default: build
 
@@ -34,7 +39,10 @@ compile:
 test: test-unit test-integration test-security
 
 test-unit:
-	CGO_ENABLED=1 go test -race ${DIR_PKG}/... && CGO_ENABLED=1 go test -race ${DIR_COMPAT}/... .
+	CGO_ENABLED=1 go test -race ${DIR_PKG}/... ${DIR_SCRIPTS}/... && \
+	CGO_ENABLED=1 go -C ${DIR_TOOL_APIREF} test -race ./... && \
+	CGO_ENABLED=1 go -C ${DIR_TOOL_APIPUBLISH} test -race ./... && \
+	CGO_ENABLED=1 go test -race ${DIR_COMPAT}/... .
 
 test-integration:
 	CGO_ENABLED=1 go test -race ${DIR_INTEG}/...
@@ -69,11 +77,17 @@ doc:
 # http://golang.org/cmd/go/#hdr-Run_gofmt_on_package_sources
 fmt:
 	fieldalignment --fix  ./... && \
+	(cd ${DIR_TOOL_APIREF} && fieldalignment --fix ./...) && \
+	(cd ${DIR_TOOL_APIPUBLISH} && fieldalignment --fix ./...) && \
 	go fmt ./... && \
-	goimports -w -local github.com/MontFerret ${DIR_PKG} ${DIR_INTEG} ${DIR_E2E}
+	go -C ${DIR_TOOL_APIREF} fmt ./... && \
+	go -C ${DIR_TOOL_APIPUBLISH} fmt ./... && \
+	goimports -w -local github.com/MontFerret ${DIR_PKG} ${DIR_TOOLS} ${DIR_INTEG} ${DIR_E2E}
 
 # https://github.com/mgechev/revive
 # go get github.com/mgechev/revive
 lint:
-	staticcheck -tests=false -checks=all,-U1000,-ST1000,-ST1001,-ST1020,-ST1022,-S1002 $$(go list ./pkg/... | grep -v /fql) && \
+	staticcheck ${STATICCHECK_FLAGS} $$(go list ${DIR_PKG}/... | grep -v /fql) && \
+	(cd ${DIR_TOOL_APIREF} && staticcheck ${STATICCHECK_FLAGS} $$(go list ./...)) && \
+	(cd ${DIR_TOOL_APIPUBLISH} && staticcheck ${STATICCHECK_FLAGS} $$(go list ./...)) && \
 	revive -config revive.toml -formatter stylish -exclude ./pkg/parser/fql/... -exclude ./vendor/... -exclude ./*_test.go ./...

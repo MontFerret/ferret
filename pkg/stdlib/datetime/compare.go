@@ -9,11 +9,11 @@ import (
 )
 
 // DATE_COMPARE checks if two partial dates match.
-// @param {DateTime} date1 - First date.
-// @param {DateTime} date2 - Second date.
-// @param {String} unitRangeStart - Unit to start from.
-// @param {String} [unitRangeEnd="millisecond"] - Unit to end with. Error will be returned if unitRangeStart unit less that unitRangeEnd.
-// @return {Boolean} - True if the dates match, else false.
+// @param date1 {DateTime} First date.
+// @param date2 {DateTime} Second date.
+// @param unitRangeStart {String} Unit to start from.
+// @param unitRangeEnd {String} Unit to end with. Error will be returned if unitRangeStart unit less that unitRangeEnd.
+// @return {Boolean} True if the dates match, else false.
 func DateCompare(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 3, 4); err != nil {
 		return runtime.None, err
@@ -26,10 +26,21 @@ func DateCompare(ctx context.Context, args ...runtime.Value) (runtime.Value, err
 	return dateCompare4(ctx, args[0], args[1], args[2], args[3])
 }
 
+// DATE_COMPARE checks if two partial dates match.
+// @param date1 {DateTime} First date.
+// @param date2 {DateTime} Second date.
+// @param unitRangeStart {String} Unit to start from.
+// @return {Boolean} True if the dates match, else false.
 func dateCompare3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	return dateCompare4(ctx, arg1, arg2, arg3, runtime.NewString("millisecond"))
 }
 
+// DATE_COMPARE checks if two partial dates match.
+// @param date1 {DateTime} First date.
+// @param date2 {DateTime} Second date.
+// @param unitRangeStart {String} Unit to start from.
+// @param unitRangeEnd {String} Unit to end with. Error will be returned if unitRangeStart unit less that unitRangeEnd.
+// @return {Boolean} True if the dates match, else false.
 func dateCompare4(_ context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
 	if err := runtime.AssertDateTime(arg1); err != nil {
 		return runtime.None, err

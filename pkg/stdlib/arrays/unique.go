@@ -7,8 +7,8 @@ import (
 )
 
 // UNIQUE returns all unique elements from a given array.
-// @param {Any[]} array - Target array.
-// @return {Any[]} - New array without duplicates.
+// @param array {Any[]} Target array.
+// @return {Any[]} New array without duplicates.
 func Unique(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	list, err := runtime.CastArg[runtime.List](arg, 0)
 

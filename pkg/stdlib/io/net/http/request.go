@@ -18,12 +18,8 @@ type Params struct {
 }
 
 // REQUEST makes a HTTP request.
-// @param {Map} params - Request parameters.
-// @param {String} params.method - HTTP method
-// @param {String} params.url - Target url
-// @param {Binary} params.body - Request data
-// @param {Map} [params.headers] - HTTP headers
-// @return {Binary} - Response in binary format
+// @param params {Map} Request parameters containing method, url, body, and optional headers fields.
+// @return {Binary} Response in binary format
 func REQUEST(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	return execMethod(ctx, "", arg)
 }

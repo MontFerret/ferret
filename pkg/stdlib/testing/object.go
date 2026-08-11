@@ -6,7 +6,8 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
-// OBJECT asserts that value is a object type.
-// @param {Any} actual - Second to test.
-// @param {String} [message] - Message to display on error.
+// Tests whether the value has the Object type.
+// @param actual {Any} Value to test.
+// @param message {String} Message to display on error.
+// @return {Boolean} True when the configured assertion succeeds; otherwise an assertion error is returned.
 var Object = base.TypeAssertion(runtime.TypeObject)

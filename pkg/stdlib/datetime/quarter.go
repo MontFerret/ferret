@@ -8,8 +8,8 @@ import (
 )
 
 // DATE_QUARTER returns which quarter date belongs to.
-// @param {DateTime} date - Source DateTime.
-// @return {Int} - A quarter number.
+// @param date {DateTime} Source DateTime.
+// @return {Int} A quarter number.
 func DateQuarter(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	dt, err := runtime.CastArg[runtime.DateTime](arg, 0)
 

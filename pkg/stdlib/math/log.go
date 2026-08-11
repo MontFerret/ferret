@@ -8,8 +8,8 @@ import (
 )
 
 // LOG returns the natural logarithm of a given value.
-// @param {Int | Float} number - Input number.
-// @return {Float} - The natural logarithm of a given value.
+// @param number {Int | Float} Input number.
+// @return {Float} The natural logarithm of a given value.
 func Log(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertNumber); err != nil {
 		return runtime.None, err

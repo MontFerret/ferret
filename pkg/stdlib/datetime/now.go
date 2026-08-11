@@ -7,7 +7,7 @@ import (
 )
 
 // NOW returns new DateTime object with Time equal to time.Now().
-// @return {DateTime} - New DateTime object.
+// @return {DateTime} New DateTime object.
 func Now(_ context.Context) (runtime.Value, error) {
 	return runtime.NewCurrentDateTime(), nil
 }

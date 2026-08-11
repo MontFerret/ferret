@@ -7,11 +7,11 @@ import (
 )
 
 // DATE_DIFF returns the difference between two dates in given time unit.
-// @param {DateTime} date1 - First date.
-// @param {DateTime} date2 - Second date.
-// @param {String} unit - Time unit to return the difference in.
-// @param {Boolean} [asFloat=False] - If true amount of unit will be as float.
-// @return {Int | Float} - Difference between date1 and date2.
+// @param date1 {DateTime} First date.
+// @param date2 {DateTime} Second date.
+// @param unit {String} Time unit to return the difference in.
+// @param asFloat {Boolean} If true amount of unit will be as float.
+// @return {Int | Float} Difference between date1 and date2.
 func DateDiff(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 3, 4); err != nil {
 		return runtime.None, err
@@ -24,10 +24,21 @@ func DateDiff(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 	return dateDiff4(ctx, args[0], args[1], args[2], args[3])
 }
 
+// DATE_DIFF returns the difference between two dates in given time unit.
+// @param date1 {DateTime} First date.
+// @param date2 {DateTime} Second date.
+// @param unit {String} Time unit to return the difference in.
+// @return {Int | Float} Difference between date1 and date2.
 func dateDiff3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	return dateDiff4(ctx, arg1, arg2, arg3, runtime.False)
 }
 
+// DATE_DIFF returns the difference between two dates in given time unit.
+// @param date1 {DateTime} First date.
+// @param date2 {DateTime} Second date.
+// @param unit {String} Time unit to return the difference in.
+// @param asFloat {Boolean} If true amount of unit will be as float.
+// @return {Int | Float} Difference between date1 and date2.
 func dateDiff4(_ context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
 	date1, date2, unit, err := runtime.CastArgs3[runtime.DateTime, runtime.DateTime, runtime.String](arg1, arg2, arg3)
 

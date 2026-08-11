@@ -8,10 +8,8 @@ import (
 )
 
 // GET makes a GET request.
-// @param {hashMap | String} urlOrParam - Target url or parameters.
-// @param {String} [param.url] - Target url or parameters.
-// @param {Map} [param.headers] - HTTP headers
-// @return {Binary} - Response in binary format
+// @param urlOrParam {Map | String} Target URL string or a parameter map containing url and optional headers fields.
+// @return {Binary} Response in binary format
 func GET(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	switch v := arg.(type) {
 	case runtime.String:

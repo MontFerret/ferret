@@ -44,6 +44,10 @@ jobs:
           go-version-file: 'go.mod'
           check-latest: true
           cache: true
+          cache-dependency-path: |
+            go.sum
+            tools/apiref/go.sum
+            tools/apipublish/go.sum
 
       - name: Install Go dependencies
         run: make install-tools && make install

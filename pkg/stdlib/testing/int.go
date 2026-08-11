@@ -6,7 +6,8 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
-// INT asserts that value is a int type.
-// @param {Any} actual - Actual value.
-// @param {String} [message] - Message to display on error.
+// Tests whether the value has the Int type.
+// @param actual {Any} Actual value.
+// @param message {String} Message to display on error.
+// @return {Boolean} True when the configured assertion succeeds; otherwise an assertion error is returned.
 var Int = base.TypeAssertion(runtime.TypeInt)

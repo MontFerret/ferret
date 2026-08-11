@@ -7,10 +7,10 @@ import (
 )
 
 // SUBSTRING returns a substring of value.
-// @param {String} str - The source string.
-// @param {Int} offset - Start at offset, offsets start at position 0.
-// @param {Int} [length] - At most length characters, omit to get the substring from offset to the end of the string.
-// @return {String} - A substring of value.
+// @param str {String} The source string.
+// @param offset {Int} Start at offset, offsets start at position 0.
+// @param length {Int} At most length characters, omit to get the substring from offset to the end of the string.
+// @return {String} A substring of value.
 func Substring(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.EmptyString, err
@@ -23,10 +23,19 @@ func Substring(ctx context.Context, args ...runtime.Value) (runtime.Value, error
 	return substring3(ctx, args[0], args[1], args[2])
 }
 
+// SUBSTRING returns a substring of value.
+// @param str {String} The source string.
+// @param offset {Int} Start at offset, offsets start at position 0.
+// @return {String} A substring of value.
 func substring2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return substring(ctx, arg1, arg2, runtime.None, false)
 }
 
+// SUBSTRING returns a substring of value.
+// @param str {String} The source string.
+// @param offset {Int} Start at offset, offsets start at position 0.
+// @param length {Int} At most length characters, omit to get the substring from offset to the end of the string.
+// @return {String} A substring of value.
 func substring3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	return substring(ctx, arg1, arg2, arg3, true)
 }
@@ -71,9 +80,9 @@ func substring(_ context.Context, arg1, arg2, arg3 runtime.Value, hasLength bool
 }
 
 // LEFT returns the leftmost characters of the string value by index.
-// @param {String} str - The source string.
-// @param {Int} length - The amount of characters to return.
-// @return {String} - The leftmost characters of the string value by index.
+// @param str {String} The source string.
+// @param length {Int} The amount of characters to return.
+// @return {String} The leftmost characters of the string value by index.
 func Left(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	text := arg1.String()
 	runes := []rune(text)
@@ -93,9 +102,9 @@ func Left(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 }
 
 // RIGHT returns the rightmost characters of the string value.
-// @param {String} str - The source string.
-// @param {Int} length - The amount of characters to return.
-// @return {String} - The rightmost characters of the string value.
+// @param str {String} The source string.
+// @param length {Int} The amount of characters to return.
+// @return {String} The rightmost characters of the string value.
 func Right(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	text := arg1.String()
 	runes := []rune(text)

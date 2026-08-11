@@ -7,8 +7,8 @@ import (
 )
 
 // FIRST returns a first element from a given array.
-// @param {Any[]} arr - Target array.
-// @return {Any} - First element in a given array.
+// @param arr {Any[]} Target array.
+// @return {Any} First element in a given array.
 func First(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	arr, err := runtime.CastArg[runtime.List](arg, 0)
 

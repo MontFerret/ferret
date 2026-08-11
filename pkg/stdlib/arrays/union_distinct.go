@@ -8,8 +8,8 @@ import (
 )
 
 // UNION_DISTINCT returns the union of all passed arrays with unique values.
-// @param {Any[], repeated} arrays - List of arrays to combine.
-// @return {Any[]} - All unique array elements combined in a single array, in any order.
+// @param arrays {Any[], repeated} List of arrays to combine.
+// @return {Any[]} All unique array elements combined in a single array, in any order.
 func UnionDistinct(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, runtime.MaxArgs); err != nil {
 		return runtime.None, err

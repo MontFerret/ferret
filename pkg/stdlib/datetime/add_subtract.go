@@ -22,10 +22,10 @@ var (
 // * i, minute, minutes
 // * s, second, seconds
 // * f, millisecond, milliseconds
-// @param {DateTime} date - Source date.
-// @param {Int} amount - Amount of units
-// @param {String} unit - Unit.
-// @return {DateTime} - Calculated date.
+// @param date {DateTime} Source date.
+// @param amount {Int} Amount of units
+// @param unit {String} Unit.
+// @return {DateTime} Calculated date.
 func DateAdd(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	date, amount, unit, err := castArgs(arg1, arg2, arg3)
 	if err != nil {
@@ -52,10 +52,10 @@ func DateAdd(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, 
 // * i, minute, minutes
 // * s, second, seconds
 // * f, millisecond, milliseconds
-// @param {DateTime} date - source date.
-// @param {Int} amount - amount of units
-// @param {String} unit - unit.
-// @return {DateTime} - calculated date.
+// @param date {DateTime} source date.
+// @param amount {Int} amount of units
+// @param unit {String} unit.
+// @return {DateTime} calculated date.
 func DateSubtract(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	date, amount, unit, err := castArgs(arg1, arg2, arg3)
 	if err != nil {
