@@ -21,8 +21,10 @@ writing a partial artifact.
 
 The API Reference and discovery-index wire contracts belong to
 [`github.com/MontFerret/specs`](https://github.com/MontFerret/specs). Ferret pins
-the released Specs version and validates every completed reference and index
-with that package. Ferret does not depend on Barn for generation or publication.
+the released Specs version in the independent generator and publisher modules,
+which validate every completed reference and index. Ferret's root module does
+not carry those tooling dependencies. Ferret does not depend on Barn for
+generation or publication.
 
 ## Documentation authoring
 
@@ -58,7 +60,7 @@ Run the focused authoring and parity checks after changing stdlib registration
 or documentation:
 
 ```sh
-go test ./tools/apiref/internal/analyzer
+GOWORK=off go -C tools/apiref test ./internal/analyzer
 ```
 
 ## Local generation
@@ -66,7 +68,7 @@ go test ./tools/apiref/internal/analyzer
 Run the generator from the repository root with an unprefixed canonical SemVer:
 
 ```sh
-go run ./tools/apiref \
+GOWORK=off go -C tools/apiref run . \
   -version 2.0.0-alpha.45 \
   -o /tmp/montferret-core-api.json
 ```

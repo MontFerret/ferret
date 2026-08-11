@@ -61,12 +61,16 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+          cache-dependency-path: |
+            go.sum
+            tools/apiref/go.sum
+            tools/apipublish/go.sum
 
       - name: Generate Ferret Core API Reference
         env:
           API_VERSION: ${{ steps.release.outputs.version }}
         run: >-
-          go run ./tools/apiref
+          go -C tools/apiref run .
           -version "$API_VERSION"
           -o "$RUNNER_TEMP/montferret-core-api.json"
 

@@ -15,6 +15,10 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: 1.25
+          cache-dependency-path: |
+            go.sum
+            tools/apiref/go.sum
+            tools/apipublish/go.sum
 
       - name: Set up linters
         run: make install-tools
@@ -34,14 +38,18 @@ jobs:
       matrix:
         goVer: [1.25, 1.26]
     steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
       - name: Set up Go ${{ matrix.goVer }}
         uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.goVer }}
+          cache-dependency-path: |
+            go.sum
+            tools/apiref/go.sum
+            tools/apipublish/go.sum
         id: go
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
 
       - name: Set up ANTLR
         env:
@@ -98,6 +106,10 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: 1.25
+          cache-dependency-path: |
+            go.sum
+            tools/apiref/go.sum
+            tools/apipublish/go.sum
 
       - name: Run race tests
         run: make test-unit && make test-integration

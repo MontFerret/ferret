@@ -32,12 +32,9 @@ fi
 
 version=$(jq -er '.version | strings | select(length > 0)' "$reference")
 
-(
-	cd "$source_root"
-	go run ./tools/apipublish \
-		-reference "$reference" \
-		-pages "$pages_root"
-)
+go -C "$source_root/tools/apipublish" run . \
+	-reference "$reference" \
+	-pages "$pages_root"
 
 artifact="versions/$version/api.json"
 git -C "$pages_root" add -- index.json "$artifact"

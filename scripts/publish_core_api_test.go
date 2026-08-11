@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/MontFerret/specs/pkg/api"
 )
 
 func TestPublishCoreAPIRejectsStaleNonFastForwardPush(t *testing.T) {
@@ -79,18 +77,21 @@ func runPublish(t *testing.T, root, script, reference, pages, remote string, wan
 func writeReference(t *testing.T, path, version string) {
 	t.Helper()
 
-	reference := &api.Reference{
-		SchemaVersion: api.SchemaVersion,
-		ID:            "montferret/core",
-		Version:       version,
-		Namespaces: []api.Namespace{{
-			Name: "",
-			Functions: []api.Function{{
-				Name: "PING",
-				Signatures: []api.Signature{{
-					Parameters:  []api.Parameter{},
-					Description: "Returns a value.",
-					Return:      &api.Return{Type: "String", Description: "Value."},
+	reference := map[string]any{
+		"schemaVersion": 1,
+		"id":            "montferret/core",
+		"version":       version,
+		"namespaces": []any{map[string]any{
+			"name": "",
+			"functions": []any{map[string]any{
+				"name": "PING",
+				"signatures": []any{map[string]any{
+					"parameters":  []any{},
+					"description": "Returns a value.",
+					"return": map[string]any{
+						"type":        "String",
+						"description": "Value.",
+					},
 				}},
 			}},
 		}},

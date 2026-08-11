@@ -55,7 +55,7 @@ func run(ctx context.Context, arguments []string) error {
 	}
 
 	reference, err := analyzer.Generate(ctx, analyzer.Options{
-		Root:      ".",
+		Root:      filepath.Join("..", ".."),
 		Version:   *version,
 		Functions: functions,
 	})

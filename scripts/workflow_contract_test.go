@@ -43,7 +43,7 @@ func TestReleasePublicationChecksPublishedExactTagAndUsesNormalPushWrapper(t *te
 		"published_at != null",
 		"ref: refs/tags/${{ steps.release.outputs.tag }}",
 		"contents: write",
-		"go run ./tools/apiref",
+		"go -C tools/apiref run .",
 		"./scripts/publish-core-api.sh",
 	} {
 		if !strings.Contains(workflow, required) {
