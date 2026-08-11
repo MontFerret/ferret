@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/goccy/go-json"
 
-	"github.com/wI2L/jettison"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type Regexp regexp.Regexp
@@ -40,7 +40,7 @@ func DecodeRegexp(input runtime.Value) (*Regexp, error) {
 }
 
 func (r *Regexp) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(r.String(), jettison.NoHTMLEscaping())
+	return json.MarshalWithOption(r.String(), json.DisableHTMLEscape())
 }
 
 func (r *Regexp) String() string {

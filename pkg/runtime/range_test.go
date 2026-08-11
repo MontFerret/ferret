@@ -92,7 +92,32 @@ func TestRangeMarshalJSONNegativeRanges(t *testing.T) {
 	}
 }
 
-var benchmarkRangeLength runtime.Int
+var (
+	benchmarkRangeJSON   []byte
+	benchmarkRangeLength runtime.Int
+)
+
+func BenchmarkRangeMarshalJSON(b *testing.B) {
+	r := runtime.NewRange(0, 1023)
+
+	encoded, err := r.MarshalJSON()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	b.SetBytes(int64(len(encoded)))
+	b.ResetTimer()
+
+	for b.Loop() {
+		encoded, err := r.MarshalJSON()
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		benchmarkRangeJSON = encoded
+	}
+}
 
 func BenchmarkRangeLength(b *testing.B) {
 	ctx := context.Background()

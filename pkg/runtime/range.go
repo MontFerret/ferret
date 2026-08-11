@@ -7,7 +7,7 @@ import (
 	"hash/fnv"
 	"math"
 
-	"github.com/wI2L/jettison"
+	"github.com/goccy/go-json"
 )
 
 type Range struct {
@@ -99,7 +99,7 @@ func (r *Range) MarshalJSON() ([]byte, error) {
 
 	arr := r.populateArray(start, capacity, start <= end)
 
-	return jettison.MarshalOpts(arr, jettison.NoHTMLEscaping())
+	return json.MarshalWithOption(arr, json.DisableHTMLEscape())
 }
 
 func (r *Range) Equal(ctx context.Context, other Value) (bool, error) {
