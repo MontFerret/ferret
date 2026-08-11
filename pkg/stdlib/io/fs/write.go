@@ -10,13 +10,13 @@ import (
 )
 
 // WRITE writes the given data into the file.
-// @param {String} path - File path to write into.
-// @param {Binary} data - Data to write.
-// @param {Map} [params] - additional parameters:
-// @param {String} [params.mode] - Write mode.
+// @param path {String} File path to write into.
+// @param data {Binary} Data to write.
+// @param params {Map} Additional parameters. The mode field selects the write mode:
 // * x - Exclusive: returns an error if the file exist. It can be combined with other modes
 // * a - Append: will create a file if the specified file does not exist
 // * w - Write (Default): will create a file if the specified file does not exist
+// @return {None} None.
 func Write(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
@@ -29,10 +29,22 @@ func Write(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return write3(ctx, args[0], args[1], args[2])
 }
 
+// WRITE writes the given data into the file.
+// @param path {String} File path to write into.
+// @param data {Binary} Data to write.
+// @return {None} None.
 func write2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return writeFile(ctx, arg1, arg2, defaultParams)
 }
 
+// WRITE writes the given data into the file.
+// @param path {String} File path to write into.
+// @param data {Binary} Data to write.
+// @param params {Map} Additional parameters. The mode field selects the write mode:
+// * x - Exclusive: returns an error if the file exist. It can be combined with other modes
+// * a - Append: will create a file if the specified file does not exist
+// * w - Write (Default): will create a file if the specified file does not exist
+// @return {None} None.
 func write3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	params, err := parseParams(arg3, 2)
 	if err != nil {

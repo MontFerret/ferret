@@ -8,9 +8,9 @@ import (
 )
 
 // MATCH reports whether name matches the pattern.
-// @param {String} pattern - The pattern.
-// @param {String} name - The name.
-// @return {Boolean} - True if the name matches the pattern.
+// @param pattern {String} The pattern.
+// @param name {String} The name.
+// @return {Boolean} True if the name matches the pattern.
 func Match(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgType(arg1, 0, runtime.TypeString); err != nil {
 		return runtime.False, err

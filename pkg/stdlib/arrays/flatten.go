@@ -11,9 +11,9 @@ import (
 // Non-array elements are added as they are.
 // The function will recurse into sub-arrays up to the specified depth.
 // Duplicates will not be removed.
-// @param {Any[]} arr - Target array.
-// @param {Int} [depth] - Depth level.
-// @return {Any[]} - Flat array.
+// @param arr {Any[]} Target array.
+// @param depth {Int} Depth level.
+// @return {Any[]} Flat array.
 func Flatten(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, 2); err != nil {
 		return runtime.None, err
@@ -26,10 +26,25 @@ func Flatten(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 	return flatten2(ctx, args[0], args[1])
 }
 
+// FLATTEN turns an array of arrays into a flat array.
+// All array elements in array will be expanded in the result array.
+// Non-array elements are added as they are.
+// The function will recurse into sub-arrays up to the specified depth.
+// Duplicates will not be removed.
+// @param arr {Any[]} Target array.
+// @return {Any[]} Flat array.
 func flatten1(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
 	return flatten2(ctx, arg1, runtime.Int(1))
 }
 
+// FLATTEN turns an array of arrays into a flat array.
+// All array elements in array will be expanded in the result array.
+// Non-array elements are added as they are.
+// The function will recurse into sub-arrays up to the specified depth.
+// Duplicates will not be removed.
+// @param arr {Any[]} Target array.
+// @param depth {Int} Depth level.
+// @return {Any[]} Flat array.
 func flatten2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	list, err := runtime.CastArg[runtime.List](arg1, 0)
 

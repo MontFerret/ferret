@@ -7,9 +7,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
-// EMPTY asserts that the target does not contain any values.
-// @param {Measurable | Binary | Object | Any[] | String} actual - Second to test.
-// @param {String} [message] - Message to display on error.
+// Tests whether the target is empty.
+// @param actual {Measurable | Binary | Object | Any[] | String} Value to test.
+// @param message {String} Message to display on error.
+// @return {Boolean} True when the configured assertion succeeds; otherwise an assertion error is returned.
 var Empty = base.Assertion{
 	DefaultMessage: func(_ []runtime.Value) string {
 		return "be empty"

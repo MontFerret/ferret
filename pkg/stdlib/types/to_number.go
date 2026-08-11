@@ -15,8 +15,8 @@ import (
 // An empty array is converted to 0, an array with one member is converted into the result of TO_NUMBER() for its sole member.
 // An array with two or more members is converted to the number 0.
 // An object / HTML node is converted to the number 0.
-// @param {Any} value - Input value of arbitrary type.
-// @return {Int|Float} - An integer or float value.
+// @param value {Any} Input value of arbitrary type.
+// @return {Int|Float} An integer or float value.
 func ToNumber(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	return runtime.ToNumber(ctx, arg)
 }

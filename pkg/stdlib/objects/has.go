@@ -7,8 +7,9 @@ import (
 )
 
 // HAS returns the value stored by the given key.
-// @param {String} key - The key name string.
-// @return {Boolean} - True if the key exists else false.
+// @param object {Map} Object or map to inspect.
+// @param key {String} The key name string.
+// @return {Boolean} True if the key exists else false.
 func Has(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgType(arg1, 0, runtime.TypeMap); err != nil {
 		return runtime.None, err

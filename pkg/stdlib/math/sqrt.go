@@ -8,8 +8,8 @@ import (
 )
 
 // SQRT returns the square root of a given number.
-// @param {Int | Float} value - A number.
-// @return {Float} - The square root.
+// @param value {Int | Float} A number.
+// @return {Float} The square root.
 func Sqrt(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertNumber); err != nil {
 		return runtime.None, err

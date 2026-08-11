@@ -8,8 +8,8 @@ import (
 )
 
 // EXP returns Euler's constant (2.71828...) raised to the power of value.
-// @param {Int | Float} number - Input number.
-// @return {Float} - Euler's constant raised to the power of value.
+// @param number {Int | Float} Input number.
+// @return {Float} Euler's constant raised to the power of value.
 func Exp(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertNumber); err != nil {
 		return runtime.None, err

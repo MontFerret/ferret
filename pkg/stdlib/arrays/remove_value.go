@@ -8,10 +8,10 @@ import (
 
 // REMOVE_VALUE returns a new array with removed all occurrences of value in a given array.
 // Optionally with a limit to the number of removals.
-// @param {Any[]} array - Source array.
-// @param {Any} value - Target value.
-// @param {Int} [limit] - A limit to the number of removals.
-// @return {Any[]} - A new array with removed all occurrences of value in a given array.
+// @param array {Any[]} Source array.
+// @param value {Any} Target value.
+// @param limit {Int} A limit to the number of removals.
+// @return {Any[]} A new array with removed all occurrences of value in a given array.
 func RemoveValue(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
@@ -24,10 +24,21 @@ func RemoveValue(ctx context.Context, args ...runtime.Value) (runtime.Value, err
 	return removeValue3(ctx, args[0], args[1], args[2])
 }
 
+// REMOVE_VALUE returns a new array with removed all occurrences of value in a given array.
+// Optionally with a limit to the number of removals.
+// @param array {Any[]} Source array.
+// @param value {Any} Target value.
+// @return {Any[]} A new array with removed all occurrences of value in a given array.
 func removeValue2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return removeValue3(ctx, arg1, arg2, runtime.Int(-1))
 }
 
+// REMOVE_VALUE returns a new array with removed all occurrences of value in a given array.
+// Optionally with a limit to the number of removals.
+// @param array {Any[]} Source array.
+// @param value {Any} Target value.
+// @param limit {Int} A limit to the number of removals.
+// @return {Any[]} A new array with removed all occurrences of value in a given array.
 func removeValue3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	arr, err := runtime.CastArg[runtime.List](arg1, 0)
 

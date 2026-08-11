@@ -7,8 +7,8 @@ import (
 )
 
 // CONCAT concatenates one or more instances of String, or an arrayList.
-// @param {String, repeated | String[]} src - The source string / array.
-// @return {String} - A string value.
+// @param src {String, repeated | String[]} The source string / array.
+// @return {String} A string value.
 func Concat(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
 		return runtime.EmptyString, err
@@ -44,9 +44,9 @@ func Concat(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 }
 
 // CONCAT_SEPARATOR concatenates one or more instances of String, or an arrayList with a given separator.
-// @param {String} separator - The separator string.
-// @param {String, repeated | String[]} src - The source string / array.
-// @return {String} - Concatenated string.
+// @param separator {String} The separator string.
+// @param src {String, repeated | String[]} The source string / array.
+// @return {String} Concatenated string.
 func ConcatWithSeparator(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, runtime.MaxArgs)
 

@@ -9,10 +9,10 @@ import (
 )
 
 // PERCENTILE returns the nth percentile of the values in a given array.
-// @param {Int[] | Float[]} array - arrayList of numbers.
-// @param {Int} number - A number which must be between 0 (excluded) and 100 (included).
-// @param {String} [method="rank"] - "rank" or "interpolation".
-// @return {Float} - The nth percentile, or null if the array is empty or only null values are contained in it or the percentile cannot be calculated.
+// @param array {Int[] | Float[]} arrayList of numbers.
+// @param number {Int} A number which must be between 0 (excluded) and 100 (included).
+// @param method {String} "rank" or "interpolation".
+// @return {Float} The nth percentile, or null if the array is empty or only null values are contained in it or the percentile cannot be calculated.
 func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
@@ -25,10 +25,19 @@ func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 	return percentile3(ctx, args[0], args[1], args[2])
 }
 
+// PERCENTILE returns the nth percentile of the values in a given array.
+// @param array {Int[] | Float[]} arrayList of numbers.
+// @param number {Int} A number which must be between 0 (excluded) and 100 (included).
+// @return {Float} The nth percentile, or null if the array is empty or only null values are contained in it or the percentile cannot be calculated.
 func percentile2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return percentile(ctx, arg1, arg2, "rank")
 }
 
+// PERCENTILE returns the nth percentile of the values in a given array.
+// @param array {Int[] | Float[]} arrayList of numbers.
+// @param number {Int} A number which must be between 0 (excluded) and 100 (included).
+// @param method {String} "rank" or "interpolation".
+// @return {Float} The nth percentile, or null if the array is empty or only null values are contained in it or the percentile cannot be calculated.
 func percentile3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	method, err := runtime.CastArg[runtime.String](arg3, 2)
 	if err != nil {

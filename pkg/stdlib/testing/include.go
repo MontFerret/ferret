@@ -10,10 +10,11 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
-// INCLUDE asserts that haystack includes needle.
-// @param {String | Array | Object | Iterable} actual - Haystack value.
-// @param {Any} expected - Expected value.
-// @param {String} [message] - Message to display on error.
+// Tests whether the actual container includes the expected value.
+// @param actual {String | Array | Object | Iterable} Haystack value.
+// @param expected {Any} Expected value.
+// @param message {String} Message to display on error.
+// @return {Boolean} True when the configured assertion succeeds; otherwise an assertion error is returned.
 var Include = base.Assertion{
 	DefaultMessage: func(args []runtime.Value) string {
 		return fmt.Sprintf("include %s", base.FormatValue(args[1]))

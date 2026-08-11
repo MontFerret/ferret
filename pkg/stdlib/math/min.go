@@ -7,8 +7,8 @@ import (
 )
 
 // MIN returns the smallest (arithmetic mean) of the values in array.
-// @param {Int[] | Float[]} array - arrayList of numbers.
-// @return {Float} - The smallest of the values in array.
+// @param array {Int[] | Float[]} arrayList of numbers.
+// @return {Float} The smallest of the values in array.
 func Min(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgType(arg, 0, runtime.TypeList); err != nil {
 		return runtime.None, err

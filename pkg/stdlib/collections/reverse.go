@@ -7,8 +7,8 @@ import (
 )
 
 // REVERSE returns the reverse of a given string or array value.
-// @param {String | Any[]} value - The string or array to reverse.
-// @return {String | Any[]} - A reversed version of a given value.
+// @param value {String | Any[]} The string or array to reverse.
+// @return {String | Any[]} A reversed version of a given value.
 func Reverse(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	switch col := arg.(type) {
 	case runtime.String:

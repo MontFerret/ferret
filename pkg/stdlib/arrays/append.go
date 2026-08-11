@@ -8,10 +8,10 @@ import (
 
 // APPEND appends a new item to an array and returns a new array with a given element.
 // If “uniqueOnly“ is set to true, then will add the item only if it's unique.
-// @param {Any[]} arr - Target array.
-// @param {Any} item - Target value to add.
-// @param {Boolean} [unique=false] - If set to true, will add the item only if it's unique.
-// @return {Any[]} - New array.
+// @param arr {Any[]} Target array.
+// @param item {Any} Target value to add.
+// @param unique {Boolean} If set to true, will add the item only if it's unique.
+// @return {Any[]} New array.
 func Append(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
@@ -24,10 +24,21 @@ func Append(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return append3(ctx, args[0], args[1], args[2])
 }
 
+// APPEND appends a new item to an array and returns a new array with a given element.
+// If “uniqueOnly“ is set to true, then will add the item only if it's unique.
+// @param arr {Any[]} Target array.
+// @param item {Any} Target value to add.
+// @return {Any[]} New array.
 func append2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return append3(ctx, arg1, arg2, runtime.False)
 }
 
+// APPEND appends a new item to an array and returns a new array with a given element.
+// If “uniqueOnly“ is set to true, then will add the item only if it's unique.
+// @param arr {Any[]} Target array.
+// @param item {Any} Target value to add.
+// @param unique {Boolean} If set to true, will add the item only if it's unique.
+// @return {Any[]} New array.
 func append3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	list, err := runtime.CastArg[runtime.List](arg1, 0)
 

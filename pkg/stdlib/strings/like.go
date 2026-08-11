@@ -15,10 +15,10 @@ var (
 )
 
 // LIKE checks whether the pattern search is contained in the string text, using wildcard matching.
-// @param {String} str - The string to search in.
-// @param {String} search - A search pattern that can contain the wildcard characters.
-// @param {Boolean} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
-// @return {Boolean} - Returns true if the pattern is contained in text, and false otherwise.
+// @param str {String} The string to search in.
+// @param search {String} A search pattern that can contain the wildcard characters.
+// @param caseInsensitive {Boolean} If set to true, the matching will be case-insensitive. The default is false.
+// @return {Boolean} Returns true if the pattern is contained in text, and false otherwise.
 func Like(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 3)
 
@@ -33,10 +33,19 @@ func Like(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return like3(ctx, args[0], args[1], args[2])
 }
 
+// LIKE checks whether the pattern search is contained in the string text, using wildcard matching.
+// @param str {String} The string to search in.
+// @param search {String} A search pattern that can contain the wildcard characters.
+// @return {Boolean} Returns true if the pattern is contained in text, and false otherwise.
 func like2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return like3(ctx, arg1, arg2, runtime.False)
 }
 
+// LIKE checks whether the pattern search is contained in the string text, using wildcard matching.
+// @param str {String} The string to search in.
+// @param search {String} A search pattern that can contain the wildcard characters.
+// @param caseInsensitive {Boolean} If set to true, the matching will be case-insensitive. The default is false.
+// @return {Boolean} Returns true if the pattern is contained in text, and false otherwise.
 func like3(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	str := arg1.String()
 	pattern := arg2.String()

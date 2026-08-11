@@ -7,8 +7,8 @@ import (
 )
 
 // SHIFT returns a new array without the first element.
-// @param {Any[]} array - Target array.
-// @return {Any[]} - Copy of an array without the first element.
+// @param array {Any[]} Target array.
+// @return {Any[]} Copy of an array without the first element.
 func Shift(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	list, err := runtime.CastArg[runtime.List](arg, 0)
 

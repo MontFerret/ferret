@@ -9,7 +9,8 @@ import (
 )
 
 // FAIL returns an error.
-// @param {String} [message] - Message to display on error.
+// @param message {String} Message to display on error.
+// @return {Boolean} No success value is produced because this assertion always fails.
 var Fail = base.Assertion{
 	DefaultMessage: func(_ []runtime.Value) string {
 		return "not fail"

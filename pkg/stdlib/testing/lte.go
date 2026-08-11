@@ -4,8 +4,9 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
-// LTE asserts that an actual value is lesser than or equal to an expected one.
-// @param {Any} actual - Actual value.
-// @param {Any} expected - Expected value.
-// @param {String} [message] - Message to display on error.
+// Tests whether the actual value is less than or equal to the expected value.
+// @param actual {Any} Actual value.
+// @param expected {Any} Expected value.
+// @param message {String} Message to display on error.
+// @return {Boolean} True when the configured assertion succeeds; otherwise an assertion error is returned.
 var Lte = base.EqualityAssertion(base.LessOrEqualOp)

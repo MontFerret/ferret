@@ -8,7 +8,8 @@ import (
 )
 
 // PRINT writes messages into the system log.
-// @param {Second, repeated} message - Print message.
+// @param message {Any, repeated} Message to print.
+// @return {None} None.
 func Print(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, runtime.MaxArgs)
 

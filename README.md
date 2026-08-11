@@ -152,6 +152,10 @@ Ferret v2 is currently in active development.
 
 Alpha releases are intended for early adopters, experimentation, and feedback. Some APIs and language features may still change before the stable v2 release.
 
+## Maintainers
+
+- [Versioned Ferret Core API Reference](docs/maintainers/core-api-reference.md)
+
 ## Support Ferret
 
 Ferret is supported by organizations and community members who help fund its continued development. [View all supporters](https://ferretlang.org/sponsor/).

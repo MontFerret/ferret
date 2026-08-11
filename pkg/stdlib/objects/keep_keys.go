@@ -7,9 +7,9 @@ import (
 )
 
 // KEEP_KEYS returns a new object with only given keys.
-// @param {Object|Map} obj - Source object.
-// @param {String, repeated} keys - Keys that need to be kept.
-// @return {Map} - New Object with only given keys.
+// @param obj {Object|Map} Source object.
+// @param keys {String, repeated} Keys that need to be kept.
+// @return {Map} New Object with only given keys.
 func KeepKeys(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, runtime.MaxArgs); err != nil {
 		return runtime.None, err

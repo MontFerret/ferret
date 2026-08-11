@@ -1,0 +1,88 @@
+name: Publish Ferret Core API Reference
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published Ferret v2 release tag to publish.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish versioned API Reference
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'v2.')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    concurrency:
+      group: gh-pages-writer
+      cancel-in-progress: false
+
+    steps:
+      - name: Validate published v2 release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          semver_pattern='^v2\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*)|([0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))(\.((0|[1-9][0-9]*)|([0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)))*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
+          if [[ ! "$RELEASE_TAG" =~ $semver_pattern ]]; then
+            echo "::error title=Invalid Ferret release tag::Expected a canonical v2 SemVer tag, got '$RELEASE_TAG'."
+            exit 1
+          fi
+
+          published_tag=$(gh api "/repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" --jq 'select(.draft == false and .published_at != null) | .tag_name')
+          if [[ "$published_tag" != "$RELEASE_TAG" ]]; then
+            echo "::error title=Unpublished Ferret release::Tag '$RELEASE_TAG' does not identify a published release."
+            exit 1
+          fi
+
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Check out exact release tag
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ steps.release.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Generate Ferret Core API Reference
+        env:
+          API_VERSION: ${{ steps.release.outputs.version }}
+        run: >-
+          go run ./tools/apiref
+          -version "$API_VERSION"
+          -o "$RUNNER_TEMP/montferret-core-api.json"
+
+      - name: Check out existing Pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: pages
+          fetch-depth: 0
+
+      - name: Publish and push immutable API Reference
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C pages config user.name "github-actions[bot]"
+          git -C pages config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          ./scripts/publish-core-api.sh "$RUNNER_TEMP/montferret-core-api.json" pages origin gh-pages

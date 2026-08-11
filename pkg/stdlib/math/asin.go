@@ -8,8 +8,8 @@ import (
 )
 
 // ASIN returns the arcsine, in radians, of a given number.
-// @param {Int | Float} number - Input number.
-// @return {Float} - The arcsine, in radians, of a given number.
+// @param number {Int | Float} Input number.
+// @return {Float} The arcsine, in radians, of a given number.
 func Asin(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertNumber); err != nil {
 		return runtime.None, err

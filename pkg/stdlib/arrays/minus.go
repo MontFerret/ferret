@@ -8,8 +8,8 @@ import (
 
 // MINUS return the difference of all arrays specified.
 // The order of the result array is undefined and should not be relied on. Duplicates will be removed.
-// @param {Any[], repeated} arrays - An arbitrary number of arrays as multiple arguments (at least 2).
-// @return {Any[]} - An array of values that occur in the first array, but not in any of the subsequent arrays.
+// @param arrays {Any[], repeated} An arbitrary number of arrays as multiple arguments (at least 2).
+// @return {Any[]} An array of values that occur in the first array, but not in any of the subsequent arrays.
 func Minus(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, runtime.MaxArgs); err != nil {
 		return runtime.None, err

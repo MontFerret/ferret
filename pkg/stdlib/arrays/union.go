@@ -7,8 +7,8 @@ import (
 )
 
 // UNION returns the union of all passed arrays.
-// @param {Any[], repeated} arrays - List of arrays to combine.
-// @return {Any[]} - All array elements combined in a single array, in any order.
+// @param arrays {Any[], repeated} List of arrays to combine.
+// @return {Any[]} All array elements combined in a single array, in any order.
 func Union(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, runtime.MaxArgs); err != nil {
 		return runtime.None, err

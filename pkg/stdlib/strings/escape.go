@@ -11,8 +11,8 @@ import (
 // escapes only five such characters: <, >, &, ' and ".
 // UnescapeString(EscapeString(s)) == s always holds, but the converse isn't
 // always true.
-// @param {String} uri - Uri to escape.
-// @return {String} - Escaped string.
+// @param uri {String} Uri to escape.
+// @return {String} Escaped string.
 func EscapeHTML(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	return runtime.NewString(html.EscapeString(arg.String())), nil
 }

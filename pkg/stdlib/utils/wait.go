@@ -8,7 +8,8 @@ import (
 )
 
 // WAIT pauses the execution for a given period.
-// @param {Any} timeout - A non-negative value coercible to Duration.
+// @param timeout {Any} A non-negative value coercible to Duration.
+// @return {None} None.
 func Wait(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
 	arg, err := runtime.ToDuration(ctx, arg1)
 	if err != nil {

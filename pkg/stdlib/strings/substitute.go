@@ -8,11 +8,11 @@ import (
 )
 
 // SUBSTITUTE replaces search values in the string value.
-// @param {String} str - The string to modify
-// @param {String} search - The string representing a search pattern
-// @param {String} replace - The string representing a replace value
-// @param {Int} limit - The cap the number of replacements to this value.
-// @return {String} - Returns a string with replace substring.
+// @param str {String} The string to modify
+// @param search {String} The string representing a search pattern
+// @param replace {String} The string representing a replace value
+// @param limit {Int} The cap the number of replacements to this value.
+// @return {String} Returns a string with replace substring.
 func Substitute(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 4)
 
@@ -30,14 +30,29 @@ func Substitute(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 	}
 }
 
+// SUBSTITUTE replaces search values in the string value.
+// @param str {String} The string to modify
+// @param search {String} The string representing a search pattern
+// @return {String} Returns a string with replace substring.
 func substitute2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return substitute(ctx, arg1, arg2, runtime.EmptyString, -1)
 }
 
+// SUBSTITUTE replaces search values in the string value.
+// @param str {String} The string to modify
+// @param search {String} The string representing a search pattern
+// @param replace {String} The string representing a replace value
+// @return {String} Returns a string with replace substring.
 func substitute3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	return substitute(ctx, arg1, arg2, arg3, -1)
 }
 
+// SUBSTITUTE replaces search values in the string value.
+// @param str {String} The string to modify
+// @param search {String} The string representing a search pattern
+// @param replace {String} The string representing a replace value
+// @param limit {Int} The cap the number of replacements to this value.
+// @return {String} Returns a string with replace substring.
 func substitute4(ctx context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
 	limit := runtime.CastOr[runtime.Int](arg4, runtime.Int(-1))
 	return substitute(ctx, arg1, arg2, arg3, int(limit))

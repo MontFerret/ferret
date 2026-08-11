@@ -6,7 +6,8 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
-// NONE asserts that value is none.
-// @param {Any} actual - Second to test.
-// @param {String} [message] - Message to display on error.
+// Tests whether the value is None.
+// @param actual {Any} Value to test.
+// @param message {String} Message to display on error.
+// @return {Boolean} True when the configured assertion succeeds; otherwise an assertion error is returned.
 var None = base.TypeAssertion(runtime.TypeNone)

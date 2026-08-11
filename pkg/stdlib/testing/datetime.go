@@ -6,7 +6,8 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
-// DATETIME asserts that value is a datetime type.
-// @param {Any} actual - Second to test.
-// @param {String} [message] - Message to display on error.
+// Tests whether the value has the DateTime type.
+// @param actual {Any} Value to test.
+// @param message {String} Message to display on error.
+// @return {Boolean} True when the configured assertion succeeds; otherwise an assertion error is returned.
 var DateTime = base.TypeAssertion(runtime.TypeDateTime)

@@ -3,6 +3,7 @@ export CGO_ENABLED=0
 
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
+DIR_TOOLS = ./tools
 DIR_COMPAT = ./compat
 DIR_TEST = ./test
 DIR_INTEG = ${DIR_TEST}/integration
@@ -34,7 +35,7 @@ compile:
 test: test-unit test-integration test-security
 
 test-unit:
-	CGO_ENABLED=1 go test -race ${DIR_PKG}/... && CGO_ENABLED=1 go test -race ${DIR_COMPAT}/... .
+	CGO_ENABLED=1 go test -race ${DIR_PKG}/... ${DIR_TOOLS}/... && CGO_ENABLED=1 go test -race ${DIR_COMPAT}/... .
 
 test-integration:
 	CGO_ENABLED=1 go test -race ${DIR_INTEG}/...
@@ -70,10 +71,10 @@ doc:
 fmt:
 	fieldalignment --fix  ./... && \
 	go fmt ./... && \
-	goimports -w -local github.com/MontFerret ${DIR_PKG} ${DIR_INTEG} ${DIR_E2E}
+	goimports -w -local github.com/MontFerret ${DIR_PKG} ${DIR_TOOLS} ${DIR_INTEG} ${DIR_E2E}
 
 # https://github.com/mgechev/revive
 # go get github.com/mgechev/revive
 lint:
-	staticcheck -tests=false -checks=all,-U1000,-ST1000,-ST1001,-ST1020,-ST1022,-S1002 $$(go list ./pkg/... | grep -v /fql) && \
+	staticcheck -tests=false -checks=all,-U1000,-ST1000,-ST1001,-ST1020,-ST1022,-S1002 $$(go list ${DIR_PKG}/... ${DIR_TOOLS}/... | grep -v /fql) && \
 	revive -config revive.toml -formatter stylish -exclude ./pkg/parser/fql/... -exclude ./vendor/... -exclude ./*_test.go ./...

@@ -9,9 +9,9 @@ import (
 
 // ZIP returns an object assembled from the separate parameters keys and values.
 // Keys and values must be arrays and have the same length.
-// @param {String[]} keys - An array of strings, to be used as key names in the result.
-// @param {hashMap[]} values - An array of runtime.Value, to be used as key values.
-// @return {Map} - An object with the keys and values assembled.
+// @param keys {String[]} An array of strings, to be used as key names in the result.
+// @param values {hashMap[]} An array of runtime.Value, to be used as key values.
+// @return {Map} An object with the keys and values assembled.
 func Zip(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	keys, err := runtime.CastArg[runtime.List](arg1, 0)
 

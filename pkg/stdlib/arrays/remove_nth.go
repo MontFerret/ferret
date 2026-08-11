@@ -7,9 +7,9 @@ import (
 )
 
 // REMOVE_NTH returns a new array without an element by a given position.
-// @param {Any[]} array - Source array.
-// @param {Int} position - Target element position.
-// @return {Any[]} - A new array without an element by a given position.
+// @param array {Any[]} Source array.
+// @param position {Int} Target element position.
+// @return {Any[]} A new array without an element by a given position.
 func RemoveNth(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	list, err := runtime.CastArg[runtime.List](arg1, 0)
 

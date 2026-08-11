@@ -53,17 +53,14 @@ env:
 
 concurrency:
   group: benchmark-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || inputs.target_ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 jobs:
   main-baseline-unit:
-    name: Persist main unit benchmark baseline
+    name: Run main unit benchmark baseline
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions:
-      contents: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -88,27 +85,11 @@ jobs:
           path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
           if-no-files-found: warn
 
-      - name: Store unit benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          name: ${{ env.UNIT_BENCHMARK_NAME }}
-          tool: go
-          output-file-path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
-          benchmark-data-dir-path: dev/bench/unit
-          gh-pages-branch: gh-pages
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          ref: refs/heads/main
-          auto-push: true
-          summary-always: true
-
   main-baseline-integration:
-    name: Persist main integration benchmark baseline
+    name: Run main integration benchmark baseline
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    permissions:
-      contents: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -133,6 +114,51 @@ jobs:
           path: ${{ env.INTEGRATION_BENCHMARK_OUTPUT }}
           if-no-files-found: warn
 
+  persist-main-baselines:
+    name: Persist main benchmark baselines
+    needs:
+      - main-baseline-unit
+      - main-baseline-integration
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    concurrency:
+      group: gh-pages-writer
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download unit benchmark output
+        uses: actions/download-artifact@v5
+        with:
+          name: benchmark-output-main-unit
+          path: .
+
+      - name: Download integration benchmark output
+        uses: actions/download-artifact@v5
+        with:
+          name: benchmark-output-main-integration
+          path: .
+
+      - name: Store unit benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ${{ env.UNIT_BENCHMARK_NAME }}
+          tool: go
+          output-file-path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
+          benchmark-data-dir-path: dev/bench/unit
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: refs/heads/main
+          auto-push: false
+          summary-always: true
+
       - name: Store integration benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         with:
@@ -143,8 +169,12 @@ jobs:
           gh-pages-branch: gh-pages
           github-token: ${{ secrets.GITHUB_TOKEN }}
           ref: refs/heads/main
-          auto-push: true
+          auto-push: false
+          skip-fetch-gh-pages: true
           summary-always: true
+
+      - name: Push both benchmark baseline commits
+        run: git push origin gh-pages:gh-pages
 
   pr-compare-unit:
     name: Compare PR unit benchmarks

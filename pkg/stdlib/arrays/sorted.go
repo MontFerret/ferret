@@ -8,8 +8,8 @@ import (
 
 // SORTED sorts all elements in the given list.
 // The function will use the default comparison order for FQL value types.
-// @param {Any[]} array - Target array.
-// @return {Any[]} - Sorted array.
+// @param array {Any[]} Target array.
+// @return {Any[]} Sorted array.
 func Sorted(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	list, err := runtime.CastArg[runtime.List](arg, 0)
 

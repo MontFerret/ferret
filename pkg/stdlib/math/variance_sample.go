@@ -8,8 +8,8 @@ import (
 )
 
 // VARIANCE_SAMPLE returns the sample variance of the values in a given array.
-// @param {Int[] | Float[]} numbers - arrayList of numbers.
-// @return {Float} - The sample variance.
+// @param numbers {Int[] | Float[]} arrayList of numbers.
+// @return {Float} The sample variance.
 func SampleVariance(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgType(arg, 0, runtime.TypeList); err != nil {
 		return runtime.None, err

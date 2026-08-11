@@ -7,9 +7,9 @@ import (
 )
 
 // REMOVE_VALUES returns a new array with removed all occurrences of values in a given array.
-// @param {Any[]} array - Source array.
-// @param {Any[]} values - Target values.
-// @return {Any[]} - A new array with removed all occurrences of values in a given array.
+// @param array {Any[]} Source array.
+// @param values {Any[]} Target values.
+// @return {Any[]} A new array with removed all occurrences of values in a given array.
 func RemoveValues(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	arr, vals, err := runtime.CastArgs2[runtime.List, runtime.List](arg1, arg2)
 

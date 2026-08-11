@@ -7,8 +7,8 @@ import (
 )
 
 // DATE_SECOND returns the second of date as a number.
-// @param {DateTime} date - Source DateTime.
-// @return {Int} - A second number.
+// @param date {DateTime} Source DateTime.
+// @return {Int} A second number.
 func DateSecond(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	dt, err := runtime.CastArg[runtime.DateTime](arg, 0)
 

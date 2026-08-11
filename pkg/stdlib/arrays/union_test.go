@@ -12,8 +12,8 @@ import (
 )
 
 // TestUnion_Basic returns the union of distinct values of all passed arrays.
-// @param arrays {Any[], repeated} - List of arrays to combine.
-// @return {Any[]} - All array elements combined in a single array, without duplicates, in any order.
+// @param arrays {Any[], repeated} List of arrays to combine.
+// @return {Any[]} All array elements combined in a single array, without duplicates, in any order.
 func TestUnion_Basic(t *testing.T) {
 	ctx := context.Background()
 

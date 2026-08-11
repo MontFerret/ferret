@@ -9,10 +9,11 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
-// MATCH asserts that value matches the regular expression.
-// @param {Any} actual - Actual value.
-// @param {String} expression - Regular expression.
-// @param {String} [message] - Message to display on error.
+// Tests whether the value matches the regular expression.
+// @param actual {Any} Actual value.
+// @param expression {String} Regular expression.
+// @param message {String} Message to display on error.
+// @return {Boolean} True when the configured assertion succeeds; otherwise an assertion error is returned.
 var Match = base.Assertion{
 	DefaultMessage: func(args []runtime.Value) string {
 		return "match regular expression"

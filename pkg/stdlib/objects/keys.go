@@ -7,9 +7,9 @@ import (
 )
 
 // KEYS returns string array of object's keys
-// @param {Map} obj - The object whose keys you want to extract
-// @param {Boolean} [sort=False] - If sort is true, then the returned keys will be sorted.
-// @return {String[]} - arrayList that contains object keys.
+// @param obj {Map} The object whose keys you want to extract
+// @param sort {Boolean} If sort is true, then the returned keys will be sorted.
+// @return {String[]} arrayList that contains object keys.
 func Keys(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, 2); err != nil {
 		return runtime.None, err
@@ -22,10 +22,17 @@ func Keys(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return keys2(ctx, args[0], args[1])
 }
 
+// KEYS returns string array of object's keys
+// @param obj {Map} The object whose keys you want to extract
+// @return {String[]} arrayList that contains object keys.
 func keys1(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
 	return keys2(ctx, arg1, runtime.False)
 }
 
+// KEYS returns string array of object's keys
+// @param obj {Map} The object whose keys you want to extract
+// @param sort {Boolean} If sort is true, then the returned keys will be sorted.
+// @return {String[]} arrayList that contains object keys.
 func keys2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgType(arg1, 0, runtime.TypeMap); err != nil {
 		return runtime.None, err

@@ -7,9 +7,9 @@ import (
 )
 
 // DATE_FORMAT format date according to the given format string.
-// @param {DateTime} date - Source DateTime object.
-// @param {String} format - String format.
-// @return {String} - Formatted date.
+// @param date {DateTime} Source DateTime object.
+// @param format {String} String format.
+// @return {String} Formatted date.
 func DateFormat(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	dt, format, err := runtime.CastArgs2[runtime.DateTime, runtime.String](arg1, arg2)
 
