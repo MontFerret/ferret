@@ -33,6 +33,8 @@ func (f *expressionFormatter) formatExpression(ctx *fql.ExpressionContext) {
 		f.formatLogicalOrOperator(ctx.LogicalOrOperator().(*fql.LogicalOrOperatorContext))
 		f.p.space()
 		f.formatExpression(ctx.GetRight().(*fql.ExpressionContext))
+	case ctx.GetCoalesceOperator() != nil:
+		f.formatCoalesce(ctx)
 	case ctx.GetTernaryOperator() != nil:
 		f.formatExpression(ctx.GetCondition().(*fql.ExpressionContext))
 		f.p.space()
@@ -50,6 +52,83 @@ func (f *expressionFormatter) formatExpression(ctx *fql.ExpressionContext) {
 	case ctx.Predicate() != nil:
 		f.formatPredicate(ctx.Predicate().(*fql.PredicateContext))
 	}
+}
+
+func (f *expressionFormatter) formatCoalesce(ctx *fql.ExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
+	if f.p.forceSingleLine {
+		f.formatCoalesceInlineWith(f.p, ctx)
+
+		return
+	}
+
+	inline, ok := f.renderInline(func(p *printer) {
+		f.formatCoalesceInlineWith(p, ctx)
+	})
+	if ok && f.inlineFits(inline) {
+		f.p.write(inline)
+
+		return
+	}
+
+	operands := f.coalesceOperands(ctx)
+	if len(operands) == 0 {
+		return
+	}
+
+	f.formatExpression(operands[0])
+	f.p.withIndent(func() {
+		for _, operand := range operands[1:] {
+			f.p.newline()
+			f.p.write("??")
+			f.p.space()
+			f.formatExpression(operand)
+		}
+	})
+}
+
+func (f *expressionFormatter) formatCoalesceInlineWith(p *printer, ctx *fql.ExpressionContext) {
+	if p == nil || ctx == nil {
+		return
+	}
+
+	f.formatExpressionWith(p, ctx.GetLeft().(*fql.ExpressionContext))
+	p.space()
+	p.write("??")
+	p.space()
+	f.formatExpressionWith(p, ctx.GetRight().(*fql.ExpressionContext))
+}
+
+func (f *expressionFormatter) coalesceOperands(ctx *fql.ExpressionContext) []*fql.ExpressionContext {
+	operands := make([]*fql.ExpressionContext, 0, 3)
+	current := ctx
+
+	for current != nil && current.GetCoalesceOperator() != nil {
+		left, ok := current.GetLeft().(*fql.ExpressionContext)
+		if !ok {
+			return nil
+		}
+
+		operands = append(operands, left)
+
+		right, ok := current.GetRight().(*fql.ExpressionContext)
+		if !ok {
+			return nil
+		}
+
+		if right.GetCoalesceOperator() == nil {
+			operands = append(operands, right)
+
+			return operands
+		}
+
+		current = right
+	}
+
+	return operands
 }
 
 func (f *expressionFormatter) formatPredicate(ctx *fql.PredicateContext) {

@@ -133,6 +133,10 @@ func (c *ExprCompiler) Compile(ctx fql.IExpressionContext) bytecode.Operand {
 		return c.compileLogicalOr(ctx)
 	}
 
+	if coalesce := ctx.GetCoalesceOperator(); coalesce != nil {
+		return c.compileCoalesce(ctx)
+	}
+
 	if t := ctx.GetTernaryOperator(); t != nil {
 		return c.compileTernary(ctx)
 	}
@@ -225,6 +229,26 @@ func (c *ExprCompiler) compileLogicalOr(ctx fql.IExpressionContext) bytecode.Ope
 
 	c.ctx.Program.Emitter.MarkLabel(next)
 	c.ctx.Program.Emitter.EmitMove(dst, left)
+
+	c.ctx.Program.Emitter.MarkLabel(done)
+
+	return dst
+}
+
+func (c *ExprCompiler) compileCoalesce(ctx fql.IExpressionContext) bytecode.Operand {
+	left := c.Compile(ctx.GetLeft())
+
+	fallback := c.ctx.Program.Emitter.NewLabel("coalesce.fallback")
+	done := c.ctx.Program.Emitter.NewLabel("coalesce.done")
+	dst := c.ctx.Function.Registers.Allocate()
+
+	c.ctx.Program.Emitter.EmitJumpIfNone(left, fallback)
+	c.ctx.Program.Emitter.EmitMove(dst, left)
+	c.ctx.Program.Emitter.EmitJump(done)
+
+	c.ctx.Program.Emitter.MarkLabel(fallback)
+	right := c.Compile(ctx.GetRight())
+	c.ctx.Program.Emitter.EmitMove(dst, right)
 
 	c.ctx.Program.Emitter.MarkLabel(done)
 

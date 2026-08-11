@@ -201,7 +201,7 @@ func matchPureResultAtom(expr fql.IExpressionContext) (fql.IExpressionAtomContex
 		return nil, false
 	}
 
-	if expr.UnaryOperator() != nil || expr.LogicalAndOperator() != nil || expr.LogicalOrOperator() != nil || expr.GetTernaryOperator() != nil {
+	if expr.UnaryOperator() != nil || expr.LogicalAndOperator() != nil || expr.LogicalOrOperator() != nil || expr.GetCoalesceOperator() != nil || expr.GetTernaryOperator() != nil {
 		return nil, false
 	}
 

@@ -1019,3 +1019,27 @@ When proposing or implementing non-trivial changes:
 * README.md for product context and links to the broader Ferret ecosystem.
 * CONTRIBUTING.md for human contributor process.
 * .github/workflows/build.yml for the current CI validation path.
+
+## Website documentation synchronization
+
+Ferret's public documentation is maintained in the website repository.
+
+Changes to public behavior must include corresponding website documentation updates when applicable. In particular, always evaluate documentation impact when changing:
+
+* FQL syntax, grammar, operators, expressions, statements, or language semantics;
+* embedding APIs or embedding behavior;
+* public SDK APIs, contracts, helpers, or extension points;
+* other public behavior already documented on the website.
+
+When such a change affects existing documentation:
+
+* locate the corresponding documentation in the website repository;
+* update it as part of the same task when the repository is available;
+* keep examples, syntax descriptions, API descriptions, and behavioral notes consistent with the implementation;
+* remove or revise documentation that describes behavior made obsolete by the change.
+
+For new public syntax, embedding features, or SDK capabilities, add documentation to the appropriate existing section rather than leaving the implementation as the only specification.
+
+Documentation synchronization is part of completing the change, not optional follow-up work.
+
+If the website repository is not available in the working environment, explicitly report the required documentation update in the final summary rather than silently skipping it.

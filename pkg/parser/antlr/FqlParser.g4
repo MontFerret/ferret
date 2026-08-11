@@ -1034,6 +1034,7 @@ expression
     : unaryOperator right=expression
     | left=expression logicalAndOperator right=expression
     | left=expression logicalOrOperator right=expression
+    | <assoc=right> left=expression coalesceOperator=Coalesce right=expression
     | condition=expression ternaryOperator=QuestionMark onTrue=expression? Colon onFalse=expression
     | predicate
     ;

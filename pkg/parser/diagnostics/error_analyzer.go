@@ -9,6 +9,7 @@ type SyntaxErrorMatcher func(src *source.Source, err *diagnostics.Diagnostic, of
 
 func AnalyzeSyntaxError(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	matchers := []SyntaxErrorMatcher{
+		matchCoalesceErrors,
 		matchArrayOperatorErrors,
 		matchErrorPolicyErrors,
 		matchQueryErrors,

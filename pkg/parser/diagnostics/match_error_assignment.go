@@ -350,7 +350,7 @@ func isFilterAssignmentSearchBoundary(tokens []antlr.Token, idx int) bool {
 	}
 
 	switch text {
-	case ",", ":", "AND", "OR", "&&", "||":
+	case ",", ":", "??", "AND", "OR", "&&", "||":
 		return true
 	case "?":
 		return idx+1 >= len(tokens) || !isTokenText(tokens[idx+1], ".")
@@ -408,7 +408,7 @@ func isFilterAssignmentTargetBoundary(tokens []antlr.Token, idx int) bool {
 	}
 
 	switch text {
-	case ",", ":", "AND", "OR", "&&", "||":
+	case ",", ":", "??", "AND", "OR", "&&", "||":
 		return true
 	case "?":
 		return idx+1 >= len(tokens) || !isTokenText(tokens[idx+1], ".")
@@ -605,7 +605,7 @@ func isFilterAssignmentPathToken(token antlr.Token) bool {
 	}
 
 	switch tokenText(token) {
-	case "", "(", ")", "[", "]", "{", "}", ".", "?", ",", ":", "+", "-", "*", "/", "%", "=", "==", "!=", ">", "<", ">=", "<=", "=~", "!~", "=>", "<-", "&&", "||", "AND", "OR":
+	case "", "(", ")", "[", "]", "{", "}", ".", "?", "??", ",", ":", "+", "-", "*", "/", "%", "=", "==", "!=", ">", "<", ">=", "<=", "=~", "!~", "=>", "<-", "&&", "||", "AND", "OR":
 		return false
 	default:
 		return true

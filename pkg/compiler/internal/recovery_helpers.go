@@ -81,7 +81,7 @@ func timeoutFailureSpan(plan core.RecoveryPlan, fallback source.Span) source.Spa
 }
 
 func isNoneLiteralExpression(expr fql.IExpressionContext) bool {
-	if expr == nil || expr.UnaryOperator() != nil || expr.LogicalAndOperator() != nil || expr.LogicalOrOperator() != nil || expr.GetTernaryOperator() != nil {
+	if expr == nil || expr.UnaryOperator() != nil || expr.LogicalAndOperator() != nil || expr.LogicalOrOperator() != nil || expr.GetCoalesceOperator() != nil || expr.GetTernaryOperator() != nil {
 		return false
 	}
 
