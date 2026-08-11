@@ -3,6 +3,7 @@ package json_test
 import (
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -33,11 +34,18 @@ func benchmarkFlatObject(size int) runtime.Value {
 
 func BenchmarkJSONCodecEncode(b *testing.B) {
 	codec := json.Default
+	regexpValue, err := runtime.NewRegexp(`^<item>&[a-z]+>$`)
+	if err != nil {
+		b.Fatalf("compile regexp: %v", err)
+	}
 
 	cases := []struct {
 		value runtime.Value
 		name  string
 	}{
+		{name: "duration", value: runtime.NewDuration(1500 * time.Millisecond)},
+		{name: "regexp", value: regexpValue},
+		{name: "range_1024", value: runtime.NewRange(0, 1023)},
 		{name: "flat_array_1024", value: benchmarkFlatArray(1024)},
 		{name: "flat_object_256", value: benchmarkFlatObject(256)},
 		{name: "nested_array_10000", value: nestedArray(10_000)},

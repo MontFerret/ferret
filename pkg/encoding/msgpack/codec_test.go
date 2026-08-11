@@ -233,6 +233,25 @@ func TestMsgpackCodecEncode(t *testing.T) {
 		}
 	})
 
+	t.Run("regexp", func(t *testing.T) {
+		value, err := runtime.NewRegexp(`^<item>&[a-z]+>$`)
+		if err != nil {
+			t.Fatalf("compile regexp: %v", err)
+		}
+
+		encoded := mustMarshalNative(t, `^<item>&[a-z]+>$`)
+		assertBytes(t, value, encoded)
+
+		decoded, err := codec.Decode(encoded)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if decoded != runtime.NewString(`^<item>&[a-z]+>$`) {
+			t.Fatalf("decoded regexp string = %v (%T)", decoded, decoded)
+		}
+	})
+
 	t.Run("binary", func(t *testing.T) {
 		data := []byte("hi")
 		assertBytes(t, runtime.NewBinary(data), mustMarshalNative(t, data))

@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"hash/fnv"
 	"time"
 )
@@ -43,8 +42,4 @@ func (d Duration) Hash() uint64 {
 
 func (d Duration) Copy() Value {
 	return d
-}
-
-func (d Duration) MarshalJSON() ([]byte, error) {
-	return json.Marshal(d.String())
 }

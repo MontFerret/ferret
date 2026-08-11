@@ -3,7 +3,9 @@ package json_test
 import (
 	"context"
 	stdjson "encoding/json"
+	"errors"
 	"io"
+	"math"
 	"math/big"
 	"reflect"
 	"testing"
@@ -203,6 +205,52 @@ func TestJSONCodecEncode(t *testing.T) {
 		}
 		if decoded != runtime.NewString("1.5s") {
 			t.Fatalf("decoded duration string = %v (%T)", decoded, decoded)
+		}
+	})
+
+	t.Run("regexp", func(t *testing.T) {
+		value, err := runtime.NewRegexp(`^<item>&[a-z]+>$`)
+		if err != nil {
+			t.Fatalf("compile regexp: %v", err)
+		}
+
+		assertJSON(t, value, `"^<item>&[a-z]+>$"`)
+
+		decoded, err := codec.Decode([]byte(`"^<item>&[a-z]+>$"`))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if decoded != runtime.NewString(`^<item>&[a-z]+>$`) {
+			t.Fatalf("decoded regexp string = %v (%T)", decoded, decoded)
+		}
+	})
+
+	t.Run("range", func(t *testing.T) {
+		tests := []struct {
+			name  string
+			want  string
+			start runtime.Int
+			end   runtime.Int
+		}{
+			{name: "ascending", start: 1, end: 3, want: "[1,2,3]"},
+			{name: "descending", start: 3, end: 1, want: "[3,2,1]"},
+			{name: "negative ascending", start: -3, end: -1, want: "[-3,-2,-1]"},
+			{name: "negative descending", start: -1, end: -3, want: "[-1,-2,-3]"},
+			{name: "cross zero", start: -1, end: 1, want: "[-1,0,1]"},
+		}
+
+		for _, test := range tests {
+			t.Run(test.name, func(t *testing.T) {
+				assertJSON(t, runtime.NewRange(test.start, test.end), test.want)
+			})
+		}
+	})
+
+	t.Run("range rejects overflow", func(t *testing.T) {
+		_, err := codec.Encode(runtime.NewRange(math.MinInt64, -1))
+		if !errors.Is(err, runtime.ErrRange) {
+			t.Fatalf("encode error = %v, want ErrRange", err)
 		}
 	})
 
@@ -471,6 +519,48 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			"post:string:leaf",
 			"post:list",
 			"post:map",
+		}
+
+		if !reflect.DeepEqual(order, expectedOrder) {
+			t.Fatalf("expected hook order %#v, got %#v", expectedOrder, order)
+		}
+	})
+
+	t.Run("range hooks run for items", func(t *testing.T) {
+		var order []string
+
+		config := json.Default.EncodeWith()
+		config.PreHook(func(value runtime.Value) error {
+			order = append(order, "pre:"+hookValueLabel(value))
+
+			return nil
+		})
+		config.PostHook(func(value runtime.Value, err error) error {
+			if err != nil {
+				t.Fatalf("expected successful encode, got %v", err)
+			}
+
+			order = append(order, "post:"+hookValueLabel(value))
+
+			return nil
+		})
+
+		out, err := config.Encoder().Encode(runtime.NewRange(1, 2))
+		if err != nil {
+			t.Fatalf("encode failed: %v", err)
+		}
+
+		if string(out) != "[1,2]" {
+			t.Fatalf("expected [1,2], got %s", out)
+		}
+
+		expectedOrder := []string{
+			"pre:1..2",
+			"pre:1",
+			"post:1",
+			"pre:2",
+			"post:2",
+			"post:1..2",
 		}
 
 		if !reflect.DeepEqual(order, expectedOrder) {

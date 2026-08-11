@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"math"
-
-	"github.com/goccy/go-json"
 )
 
 type Range struct {
@@ -88,20 +86,6 @@ func (r *Range) Length(_ context.Context) (Int, error) {
 	return Int(distance + 1), nil
 }
 
-func (r *Range) MarshalJSON() ([]byte, error) {
-	start := r.start
-	end := r.end
-
-	capacity, err := r.Length(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
-	arr := r.populateArray(start, capacity, start <= end)
-
-	return json.MarshalWithOption(arr, json.DisableHTMLEscape())
-}
-
 func (r *Range) Equal(ctx context.Context, other Value) (bool, error) {
 	otherRange, ok := other.(*Range)
 	if !ok {
@@ -124,18 +108,4 @@ func (r *Range) Compare(ctx context.Context, other Value) (Ordering, error) {
 	}
 
 	return compareOrdered(r.end, otherRange.end), nil
-}
-
-func (r *Range) populateArray(start, capacity Int, ascending bool) []Int {
-	arr := make([]Int, 0, capacity)
-
-	for offset := Int(0); offset < capacity; offset++ {
-		if ascending {
-			arr = append(arr, start+offset)
-		} else {
-			arr = append(arr, start-offset)
-		}
-	}
-
-	return arr
 }

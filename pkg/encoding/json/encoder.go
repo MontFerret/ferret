@@ -64,10 +64,14 @@ func (enc encoder) encodeValue(ctx context.Context, buf *bytes.Buffer, value run
 		enc.writeJSONString(buf, v.String())
 	case runtime.String:
 		enc.writeJSONString(buf, string(v))
+	case *runtime.Regexp:
+		enc.writeJSONString(buf, v.String())
 	case runtime.Binary:
 		enc.writeJSONString(buf, base64.StdEncoding.EncodeToString(v))
 	case runtime.DateTime:
 		enc.writeJSONString(buf, v.Time.Format(time.RFC3339Nano))
+	case *runtime.Range:
+		err = enc.encodeRange(ctx, buf, v)
 	case runtime.Map:
 		err = enc.encodeMap(ctx, buf, v)
 	case runtime.List:
@@ -178,6 +182,42 @@ func (enc encoder) encodeList(ctx context.Context, buf *bytes.Buffer, value runt
 	}
 
 	buf.WriteString("]")
+
+	return nil
+}
+
+func (enc encoder) encodeRange(ctx context.Context, buf *bytes.Buffer, value *runtime.Range) error {
+	length, err := value.Length(ctx)
+	if err != nil {
+		return err
+	}
+
+	start := value.Start()
+	ascending := start <= value.End()
+	buf.WriteByte('[')
+
+	for offset := runtime.Int(0); offset < length; offset++ {
+		if offset > 0 {
+			buf.WriteByte(',')
+		}
+
+		item := start + offset
+		if !ascending {
+			item = start - offset
+		}
+
+		if len(enc.pre) == 0 && len(enc.post) == 0 {
+			buf.Write(strconv.AppendInt(buf.AvailableBuffer(), int64(item), 10))
+
+			continue
+		}
+
+		if err := enc.encodeValue(ctx, buf, item); err != nil {
+			return err
+		}
+	}
+
+	buf.WriteByte(']')
 
 	return nil
 }

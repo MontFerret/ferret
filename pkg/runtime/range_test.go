@@ -66,58 +66,7 @@ func TestRangeLengthRejectsOverflow(t *testing.T) {
 	}
 }
 
-func TestRangeMarshalJSONNegativeRanges(t *testing.T) {
-	tests := []struct {
-		name  string
-		want  string
-		start runtime.Int
-		end   runtime.Int
-	}{
-		{name: "ascending", start: -3, end: -1, want: "[-3,-2,-1]"},
-		{name: "descending", start: -1, end: -3, want: "[-1,-2,-3]"},
-		{name: "cross zero", start: -1, end: 1, want: "[-1,0,1]"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := runtime.NewRange(tt.start, tt.end).MarshalJSON()
-			if err != nil {
-				t.Fatalf("MarshalJSON() error: %v", err)
-			}
-
-			if string(got) != tt.want {
-				t.Fatalf("MarshalJSON() = %s, want %s", got, tt.want)
-			}
-		})
-	}
-}
-
-var (
-	benchmarkRangeJSON   []byte
-	benchmarkRangeLength runtime.Int
-)
-
-func BenchmarkRangeMarshalJSON(b *testing.B) {
-	r := runtime.NewRange(0, 1023)
-
-	encoded, err := r.MarshalJSON()
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	b.ReportAllocs()
-	b.SetBytes(int64(len(encoded)))
-	b.ResetTimer()
-
-	for b.Loop() {
-		encoded, err := r.MarshalJSON()
-		if err != nil {
-			b.Fatal(err)
-		}
-
-		benchmarkRangeJSON = encoded
-	}
-}
+var benchmarkRangeLength runtime.Int
 
 func BenchmarkRangeLength(b *testing.B) {
 	ctx := context.Background()
