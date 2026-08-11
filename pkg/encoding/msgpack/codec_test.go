@@ -311,8 +311,8 @@ func TestMsgpackCodecEncode(t *testing.T) {
 		}
 
 		tests := []struct {
-			name  string
 			value *runtime.Range
+			name  string
 		}{
 			{name: "runtime capacity", value: runtime.NewRange(math.MinInt64, -1)},
 			{name: "MessagePack capacity", value: runtime.NewRange(0, runtime.Int(maxArrayLength))},
