@@ -252,6 +252,86 @@ func TestMsgpackCodecEncode(t *testing.T) {
 		}
 	})
 
+	t.Run("range", func(t *testing.T) {
+		tests := []struct {
+			name  string
+			want  []int64
+			start runtime.Int
+			end   runtime.Int
+		}{
+			{name: "ascending", start: 1, end: 3, want: []int64{1, 2, 3}},
+			{name: "descending", start: 3, end: 1, want: []int64{3, 2, 1}},
+			{name: "negative ascending", start: -3, end: -1, want: []int64{-3, -2, -1}},
+			{name: "negative descending", start: -1, end: -3, want: []int64{-1, -2, -3}},
+			{name: "cross zero", start: -1, end: 1, want: []int64{-1, 0, 1}},
+			{name: "minimum singleton", start: math.MinInt64, end: math.MinInt64, want: []int64{math.MinInt64}},
+			{name: "maximum singleton", start: math.MaxInt64, end: math.MaxInt64, want: []int64{math.MaxInt64}},
+		}
+
+		for _, test := range tests {
+			t.Run(test.name, func(t *testing.T) {
+				encoded := mustEncodeRaw(t, func(enc *vmmsgpack.Encoder) error {
+					if err := enc.EncodeArrayLen(len(test.want)); err != nil {
+						return err
+					}
+
+					for _, value := range test.want {
+						if err := enc.EncodeInt(value); err != nil {
+							return err
+						}
+					}
+
+					return nil
+				})
+				assertBytes(t, runtime.NewRange(test.start, test.end), encoded)
+
+				decoded, err := codec.Decode(encoded)
+				if err != nil {
+					t.Fatalf("decode failed: %v", err)
+				}
+
+				if _, ok := decoded.(*runtime.Array); !ok {
+					t.Fatalf("decoded range = %T, want *runtime.Array", decoded)
+				}
+
+				values := make([]runtime.Value, len(test.want))
+				for idx, value := range test.want {
+					values[idx] = runtime.NewInt64(value)
+				}
+
+				assertValueEqual(t, decoded, runtime.NewArrayOf(values))
+			})
+		}
+	})
+
+	t.Run("range rejects unrepresentable lengths", func(t *testing.T) {
+		maxArrayLength := uint64(math.MaxUint32)
+		if strconv.IntSize == 32 {
+			maxArrayLength = math.MaxInt32
+		}
+
+		tests := []struct {
+			name  string
+			value *runtime.Range
+		}{
+			{name: "runtime capacity", value: runtime.NewRange(math.MinInt64, -1)},
+			{name: "MessagePack capacity", value: runtime.NewRange(0, runtime.Int(maxArrayLength))},
+		}
+
+		for _, test := range tests {
+			t.Run(test.name, func(t *testing.T) {
+				out, err := codec.Encode(test.value)
+				if !errors.Is(err, runtime.ErrRange) {
+					t.Fatalf("encode error = %v, want ErrRange", err)
+				}
+
+				if out != nil {
+					t.Fatalf("encode output = %x, want nil", out)
+				}
+			})
+		}
+	})
+
 	t.Run("binary", func(t *testing.T) {
 		data := []byte("hi")
 		assertBytes(t, runtime.NewBinary(data), mustMarshalNative(t, data))
@@ -562,6 +642,51 @@ func TestMsgpackCodecEncodeHooks(t *testing.T) {
 			"post:string:leaf",
 			"post:list",
 			"post:map",
+		}
+
+		if !reflect.DeepEqual(order, expectedOrder) {
+			t.Fatalf("expected hook order %#v, got %#v", expectedOrder, order)
+		}
+	})
+
+	t.Run("range_hooks_run_for_items", func(t *testing.T) {
+		var order []string
+
+		config := ferretmsgpack.Default.EncodeWith()
+		config.PreHook(func(value runtime.Value) error {
+			order = append(order, "pre:"+hookValueLabel(value))
+
+			return nil
+		})
+		config.PostHook(func(value runtime.Value, err error) error {
+			if err != nil {
+				t.Fatalf("expected successful encode, got %v", err)
+			}
+
+			order = append(order, "post:"+hookValueLabel(value))
+
+			return nil
+		})
+
+		out, err := config.Encoder().Encode(runtime.NewRange(1, 2))
+		if err != nil {
+			t.Fatalf("encode failed: %v", err)
+		}
+
+		decoded, err := ferretmsgpack.Default.Decode(out)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+
+		assertValueEqual(t, decoded, runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)))
+
+		expectedOrder := []string{
+			"pre:1..2",
+			"pre:1",
+			"post:1",
+			"pre:2",
+			"post:2",
+			"post:1..2",
 		}
 
 		if !reflect.DeepEqual(order, expectedOrder) {

@@ -52,6 +52,8 @@ func (enc encoder) encodeValue(ctx context.Context, menc *vmmsgpack.Encoder, val
 			err = menc.EncodeBytes(v)
 		case runtime.DateTime:
 			err = menc.EncodeTime(v.Time)
+		case *runtime.Range:
+			err = enc.encodeRange(ctx, menc, v)
 		case runtime.Map:
 			err = enc.encodeMap(ctx, menc, v)
 		case runtime.List:
@@ -119,6 +121,44 @@ func (enc encoder) encodeList(ctx context.Context, menc *vmmsgpack.Encoder, valu
 		item, err := value.At(ctx, i)
 		if err != nil {
 			return err
+		}
+
+		if err := enc.encodeValue(ctx, menc, item); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (enc encoder) encodeRange(ctx context.Context, menc *vmmsgpack.Encoder, value *runtime.Range) error {
+	length, err := value.Length(ctx)
+	if err != nil {
+		return err
+	}
+
+	// MessagePack array headers are uint32, while EncodeArrayLen accepts a native int.
+	maxArrayLength := uint64(^uint32(0))
+	maxNativeInt := uint64(^uint(0) >> 1)
+	if maxNativeInt < maxArrayLength {
+		maxArrayLength = maxNativeInt
+	}
+
+	if uint64(length) > maxArrayLength {
+		return runtime.Error(runtime.ErrRange, "range length exceeds MessagePack array capacity")
+	}
+
+	if err := menc.EncodeArrayLen(int(length)); err != nil {
+		return err
+	}
+
+	start := value.Start()
+	ascending := start <= value.End()
+
+	for offset := runtime.Int(0); offset < length; offset++ {
+		item := start + offset
+		if !ascending {
+			item = start - offset
 		}
 
 		if err := enc.encodeValue(ctx, menc, item); err != nil {
