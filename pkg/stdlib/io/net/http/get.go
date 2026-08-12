@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// GET makes a GET request.
+// get makes a GET request.
 // @param urlOrParam {Map | String} Target URL string or a parameter map containing url and optional headers fields.
 // @return {Binary} Response in binary format
 func GET(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

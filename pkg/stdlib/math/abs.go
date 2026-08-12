@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// ABS returns the absolute value of a given number.
+// abs returns the absolute value of a given number.
 // @param number {Int | Float} Input number.
 // @return {Float} The absolute value of a given number.
 func Abs(_ context.Context, arg runtime.Value) (runtime.Value, error) {

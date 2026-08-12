@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// SIN returns the sine of the radian argument.
+// sin returns the sine of the radian argument.
 // @param number {Int | Float} Input number.
 // @return {Float} The sin, in radians, of a given number.
 func Sin(_ context.Context, arg runtime.Value) (runtime.Value, error) {

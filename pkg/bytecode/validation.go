@@ -3,6 +3,7 @@ package bytecode
 import (
 	"fmt"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/hostfunction"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -69,7 +70,7 @@ func validateHostFunctions(functions []HostFunction) error {
 	seen := make(map[HostFunction]struct{}, len(functions))
 
 	for id, fn := range functions {
-		if fn.Name == "" {
+		if !hostfunction.HasTerminalName(fn.Name) {
 			return fmt.Errorf("%w: host function %d has empty name", ErrInvalidProgram, id)
 		}
 
@@ -77,11 +78,16 @@ func validateHostFunctions(functions []HostFunction) error {
 			return fmt.Errorf("%w: host function %q has negative argument count %d", ErrInvalidProgram, fn.Name, fn.ArgCount)
 		}
 
-		if _, exists := seen[fn]; exists {
-			return fmt.Errorf("%w: duplicate host function signature %q/%d", ErrInvalidProgram, fn.Name, fn.ArgCount)
+		canonical := HostFunction{
+			Name:     hostfunction.CanonicalName(fn.Name),
+			ArgCount: fn.ArgCount,
 		}
 
-		seen[fn] = struct{}{}
+		if _, exists := seen[canonical]; exists {
+			return fmt.Errorf("%w: duplicate host function signature %q/%d", ErrInvalidProgram, canonical.Name, canonical.ArgCount)
+		}
+
+		seen[canonical] = struct{}{}
 	}
 
 	return nil

@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// REMOVE_NTH returns a new array without an element by a given position.
+// remove_nth returns a new array without an element by a given position.
 // @param array {Any[]} Source array.
 // @param position {Int} Target element position.
 // @return {Any[]} A new array without an element by a given position.

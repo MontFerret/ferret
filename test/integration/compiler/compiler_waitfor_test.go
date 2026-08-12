@@ -86,7 +86,7 @@ func TestWaitforPredicateWhenCompiles(t *testing.T) {
 				)
 				TIMEOUT 5ms
 				ON TIMEOUT RETURN NONE
-		`, expectHostFunction("BOOM", 1), "WAITFOR EVENT should compile repeated WHEN, trigger, and timeout tail"),
+		`, expectHostFunction("boom", 1), "WAITFOR EVENT should compile repeated WHEN, trigger, and timeout tail"),
 		ProgramCheck(`
 			LET obs = []
 			RETURN WAITFOR EVENT "test" IN obs
@@ -135,7 +135,7 @@ func TestWaitforPredicateWhenCompiles(t *testing.T) {
 		`, noCompilerError, "TRIGGER should compile as a safe reserved param name"),
 		ProgramCheck(`
 			RETURN TRIGGER()
-		`, expectHostFunction("TRIGGER", 0), "TRIGGER should compile as a safe reserved function name"),
+		`, expectHostFunction("trigger", 0), "TRIGGER should compile as a safe reserved function name"),
 		ProgramCheck(`
 			LET obs = []
 			FOR i IN [1, 2]

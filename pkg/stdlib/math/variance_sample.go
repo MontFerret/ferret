@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// VARIANCE_SAMPLE returns the sample variance of the values in a given array.
+// variance_sample returns the sample variance of the values in a given array.
 // @param numbers {Int[] | Float[]} arrayList of numbers.
 // @return {Float} The sample variance.
 func SampleVariance(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

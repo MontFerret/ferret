@@ -12,7 +12,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// ENCODE_URI_COMPONENT returns the encoded String of uri.
+// encode_uri_component returns the encoded String of uri.
 // @param uri {String} Uri to encode.
 // @return {String} Encoded string.
 func EncodeURIComponent(_ context.Context, arg runtime.Value) (runtime.Value, error) {
@@ -21,7 +21,7 @@ func EncodeURIComponent(_ context.Context, arg runtime.Value) (runtime.Value, er
 	return runtime.NewString(str), nil
 }
 
-// MD5 calculates the MD5 checksum for text and return it in a hexadecimal string representation.
+// md5 calculates the MD5 checksum for text and return it in a hexadecimal string representation.
 // @param str {String} The string to do calculations against to.
 // @return {String} MD5 checksum as hex string.
 func Md5(_ context.Context, arg runtime.Value) (runtime.Value, error) {
@@ -31,7 +31,7 @@ func Md5(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	return runtime.NewString(hex.EncodeToString(res[:])), nil
 }
 
-// SHA1 calculates the SHA1 checksum for text and returns it in a hexadecimal string representation.
+// sha1 calculates the SHA1 checksum for text and returns it in a hexadecimal string representation.
 // @param str {String} The string to do calculations against to.
 // @return {String} Sha1 checksum as hex string.
 func Sha1(_ context.Context, arg runtime.Value) (runtime.Value, error) {
@@ -41,7 +41,7 @@ func Sha1(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	return runtime.NewString(hex.EncodeToString(res[:])), nil
 }
 
-// SHA512 calculates the SHA512 checksum for text and returns it in a hexadecimal string representation.
+// sha512 calculates the SHA512 checksum for text and returns it in a hexadecimal string representation.
 // @param str {String} The string to do calculations against to.
 // @return {String} SHA512 checksum as hex string.
 func Sha512(_ context.Context, arg runtime.Value) (runtime.Value, error) {
@@ -51,7 +51,7 @@ func Sha512(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	return runtime.NewString(hex.EncodeToString(res[:])), nil
 }
 
-// TO_BASE64 returns the base64 representation of value.
+// to_base64 returns the base64 representation of value.
 // @param str {String} The string to encode.
 // @return {String} A base64 representation of the string.
 func ToBase64(_ context.Context, arg runtime.Value) (runtime.Value, error) {

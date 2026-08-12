@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// RANGE returns an array of numbers in the specified range, optionally with increments other than 1.
+// range returns an array of numbers in the specified range, optionally with increments other than 1.
 // @param start {Int | Float} The value to start the range at (inclusive).
 // @param end {Int | Float} The value to end the range with (inclusive).
 // @param step {Int | Float} How much to change the value in every step. Positive steps ascend, negative steps descend, and zero is invalid.
@@ -24,7 +24,7 @@ func Range(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return range3(ctx, args[0], args[1], args[2])
 }
 
-// RANGE returns an array of numbers in the specified range, optionally with increments other than 1.
+// range returns an array of numbers in the specified range, optionally with increments other than 1.
 // @param start {Int | Float} The value to start the range at (inclusive).
 // @param end {Int | Float} The value to end the range with (inclusive).
 // @return {Int[] | Float[]} arrayList of numbers in the specified range, optionally with increments other than 1.
@@ -32,7 +32,7 @@ func range2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error
 	return range3(ctx, arg1, arg2, runtime.Float(1))
 }
 
-// RANGE returns an array of numbers in the specified range, optionally with increments other than 1.
+// range returns an array of numbers in the specified range, optionally with increments other than 1.
 // @param start {Int | Float} The value to start the range at (inclusive).
 // @param end {Int | Float} The value to end the range with (inclusive).
 // @param step {Int | Float} How much to change the value in every step. Positive steps ascend, negative steps descend, and zero is invalid.

@@ -10,11 +10,11 @@ func RegisterLib(ns runtime.Namespace) {
 	ns = ns.Namespace("FS")
 
 	ns.Function().A1().
-		Add("READ", Read)
+		Add("read", Read)
 
 	ns.Function().A2().
-		Add("WRITE", write2)
+		Add("write", write2)
 
 	ns.Function().A3().
-		Add("WRITE", write3)
+		Add("write", write3)
 }

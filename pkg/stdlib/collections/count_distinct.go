@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// COUNT_DISTINCT computes the number of distinct elements in the given collection and returns the count as an integer.
+// count_distinct computes the number of distinct elements in the given collection and returns the count as an integer.
 // @param collection {Collection} Collection whose distinct elements are counted.
 // @return {Int} Number of distinct elements in the collection.
 func CountDistinct(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

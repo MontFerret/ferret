@@ -139,8 +139,15 @@ func TestValidateProgram(t *testing.T) {
 			program: withProgramMutation(func(program *Program) {
 				program.Functions.Host = []HostFunction{
 					{Name: "FN", ArgCount: 1},
-					{Name: "FN", ArgCount: 1},
+					{Name: "fn", ArgCount: 1},
 				}
+			}),
+			target: ErrInvalidProgram,
+		},
+		{
+			name: "empty_namespaced_host_function_name",
+			program: withProgramMutation(func(program *Program) {
+				program.Functions.Host = []HostFunction{{Name: "TEST::", ArgCount: 0}}
 			}),
 			target: ErrInvalidProgram,
 		},

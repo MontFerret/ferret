@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// TO_BOOL takes an input value of any type and converts it into the appropriate boolean value.
+// to_bool takes an input value of any type and converts it into the appropriate boolean value.
 // None is converted to false
 // Numbers are converted to true, except for 0, which is converted to false
 // Strings are converted to true if they are non-empty, and to false otherwise

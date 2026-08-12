@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// POW returns the base to the exponent value.
+// pow returns the base to the exponent value.
 // @param base {Int | Float} The base value.
 // @param exp {Int | Float} The exponent value.
 // @return {Float} The exponentiated value.

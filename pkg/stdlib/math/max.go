@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// MAX returns the greatest (arithmetic mean) of the values in array.
+// max returns the greatest (arithmetic mean) of the values in array.
 // @param array {Int[] | Float[]} arrayList of numbers.
 // @return {Float} The greatest of the values in array.
 func Max(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
-// FAIL returns an error.
+// fail returns an error.
 // @param message {String} Message to display on error.
 // @return {Boolean} No success value is produced because this assertion always fails.
 var Fail = base.Assertion{

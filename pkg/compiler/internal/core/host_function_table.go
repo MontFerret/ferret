@@ -1,6 +1,9 @@
 package core
 
-import "github.com/MontFerret/ferret/v2/pkg/bytecode"
+import (
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/internal/hostfunction"
+)
 
 type (
 	hostFunctionKey struct {
@@ -25,7 +28,9 @@ func NewHostFunctionTable() *HostFunctionTable {
 
 // Bind returns the stable binding ID for a qualified name and call argument count.
 func (t *HostFunctionTable) Bind(name string, argCount int) int {
+	name = hostfunction.CanonicalName(name)
 	key := hostFunctionKey{Name: name, ArgCount: argCount}
+
 	if id, exists := t.bindings[key]; exists {
 		return id
 	}

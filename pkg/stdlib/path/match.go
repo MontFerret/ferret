@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// MATCH reports whether name matches the pattern.
+// match reports whether name matches the pattern.
 // @param pattern {String} The pattern.
 // @param name {String} The name.
 // @return {Boolean} True if the name matches the pattern.

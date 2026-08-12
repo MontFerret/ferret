@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// REVERSE returns the reverse of a given string or array value.
+// reverse returns the reverse of a given string or array value.
 // @param value {String | Any[]} The string or array to reverse.
 // @return {String | Any[]} A reversed version of a given value.
 func Reverse(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

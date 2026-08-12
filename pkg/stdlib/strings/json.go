@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// JSON_PARSE returns a value described by the JSON-encoded input string.
+// json_parse returns a value described by the JSON-encoded input string.
 // @param str {String} The string to parse as JSON.
 // @return {Any} Parsed value.
 func JSONParse(_ context.Context, arg runtime.Value) (runtime.Value, error) {
@@ -19,7 +19,7 @@ func JSONParse(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	return out, nil
 }
 
-// JSON_STRINGIFY returns a JSON string representation of the input value.
+// json_stringify returns a JSON string representation of the input value.
 // @param str {Any} The input value to serialize.
 // @return {String} JSON string.
 func JSONStringify(_ context.Context, arg runtime.Value) (runtime.Value, error) {

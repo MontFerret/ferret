@@ -34,8 +34,9 @@ func TestMarshalAndUnmarshal_DefaultMessagePack(t *testing.T) {
 	if got, want := decoded.ISAVersion, program.ISAVersion; got != want {
 		t.Fatalf("unexpected isaVersion: got %d, want %d", got, want)
 	}
-	if !reflect.DeepEqual(decoded.Functions.Host, program.Functions.Host) {
-		t.Fatalf("host signature order mismatch: got %v, want %v", decoded.Functions.Host, program.Functions.Host)
+	expected := canonicalArtifactHostFunctions()
+	if !reflect.DeepEqual(decoded.Functions.Host, expected) {
+		t.Fatalf("canonical host signature order mismatch: got %v, want %v", decoded.Functions.Host, expected)
 	}
 }
 
@@ -60,8 +61,9 @@ func TestMarshalAndUnmarshal_JSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unmarshal() error = %v", err)
 	}
-	if !reflect.DeepEqual(decoded.Functions.Host, program.Functions.Host) {
-		t.Fatalf("host signature order mismatch: got %v, want %v", decoded.Functions.Host, program.Functions.Host)
+	expected := canonicalArtifactHostFunctions()
+	if !reflect.DeepEqual(decoded.Functions.Host, expected) {
+		t.Fatalf("canonical host signature order mismatch: got %v, want %v", decoded.Functions.Host, expected)
 	}
 }
 
@@ -482,6 +484,13 @@ func newArtifactTestProgram() *bytecode.Program {
 		},
 		ISAVersion: bytecode.Version,
 		Registers:  1,
+	}
+}
+
+func canonicalArtifactHostFunctions() []bytecode.HostFunction {
+	return []bytecode.HostFunction{
+		{Name: "pick", ArgCount: 2},
+		{Name: "pick", ArgCount: 1},
 	}
 }
 

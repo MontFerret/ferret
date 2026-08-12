@@ -65,7 +65,7 @@ func TestNamespaceNewNamespaceQualifiedNames(t *testing.T) {
 	}
 }
 
-func TestNamespaceAllowsCaseDistinctQualifiedNames(t *testing.T) {
+func TestNamespacePreservesNamespaceCaseAndCanonicalizesFunctionNames(t *testing.T) {
 	root := NewLibrary()
 
 	root.Namespace("Foo").Function().A0().
@@ -84,12 +84,16 @@ func TestNamespaceAllowsCaseDistinctQualifiedNames(t *testing.T) {
 	}
 
 	names := funcs.List()
-	if !slices.Contains(names, "Foo::Bar") || !slices.Contains(names, "foo::Bar") {
-		t.Fatalf("expected exact-case qualified names, got %v", names)
+	if !slices.Contains(names, "Foo::bar") || !slices.Contains(names, "foo::bar") {
+		t.Fatalf("expected exact-case namespaces and canonical function names, got %v", names)
 	}
 
-	if _, ok := funcs.A0().Get("FOO::BAR"); ok {
-		t.Fatalf("expected wrong-case qualified lookup to fail, got %v", names)
+	if _, ok := funcs.A0().Get("Foo::BAR"); !ok {
+		t.Fatalf("expected mixed-case terminal lookup to succeed, got %v", names)
+	}
+
+	if _, ok := funcs.A0().Get("FOO::bar"); ok {
+		t.Fatalf("expected wrong-case namespace lookup to fail, got %v", names)
 	}
 }
 

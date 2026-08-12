@@ -64,13 +64,15 @@ func TestProgramArtifactRoundTrip(t *testing.T) {
 			Check: func(t *testing.T, original *bytecode.Program, decoded *bytecode.Program) {
 				t.Helper()
 				want := []bytecode.HostFunction{
-					{Name: "PICK", ArgCount: 1},
-					{Name: "PICK", ArgCount: 2},
-					{Name: "PICK", ArgCount: 5},
+					{Name: "pick", ArgCount: 1},
+					{Name: "pick", ArgCount: 2},
+					{Name: "pick", ArgCount: 5},
 				}
+
 				if !slices.Equal(original.Functions.Host, want) {
 					t.Fatalf("unexpected compiled host bindings: got %v, want %v", original.Functions.Host, want)
 				}
+
 				if !slices.Equal(decoded.Functions.Host, want) {
 					t.Fatalf("unexpected decoded host bindings: got %v, want %v", decoded.Functions.Host, want)
 				}

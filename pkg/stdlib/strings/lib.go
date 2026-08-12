@@ -6,63 +6,63 @@ import (
 
 func RegisterLib(ns runtime.Namespace) {
 	ns.Function().A1().
-		Add("ESCAPE_HTML", EscapeHTML).
-		Add("DECODE_URI_COMPONENT", DecodeURIComponent).
-		Add("ENCODE_URI_COMPONENT", EncodeURIComponent).
-		Add("MD5", Md5).
-		Add("SHA1", Sha1).
-		Add("SHA512", Sha512).
-		Add("TO_BASE64", ToBase64).
-		Add("FROM_BASE64", FromBase64).
-		Add("JSON_PARSE", JSONParse).
-		Add("JSON_STRINGIFY", JSONStringify).
-		Add("LOWER", Lower).
-		Add("LTRIM", lTrim1).
-		Add("UPPER", Upper).
-		Add("RANDOM_TOKEN", RandomToken).
-		Add("RTRIM", rTrim1).
-		Add("TRIM", trim1).
-		Add("UNESCAPE_HTML", UnescapeHTML)
+		Add("escape_html", EscapeHTML).
+		Add("decode_uri_component", DecodeURIComponent).
+		Add("encode_uri_component", EncodeURIComponent).
+		Add("md5", Md5).
+		Add("sha1", Sha1).
+		Add("sha512", Sha512).
+		Add("to_base64", ToBase64).
+		Add("from_base64", FromBase64).
+		Add("json_parse", JSONParse).
+		Add("json_stringify", JSONStringify).
+		Add("lower", Lower).
+		Add("ltrim", lTrim1).
+		Add("upper", Upper).
+		Add("random_token", RandomToken).
+		Add("rtrim", rTrim1).
+		Add("trim", trim1).
+		Add("unescape_html", UnescapeHTML)
 
 	ns.Function().A2().
-		Add("CONTAINS", contains2).
-		Add("FIND_FIRST", findFirst2).
-		Add("FIND_LAST", findLast2).
-		Add("LEFT", Left).
-		Add("LIKE", like2).
-		Add("LTRIM", lTrim2).
-		Add("REGEX_MATCH", regexMatch2).
-		Add("REGEX_SPLIT", regexSplit2).
-		Add("REGEX_TEST", regexTest2).
-		Add("RIGHT", Right).
-		Add("RTRIM", rTrim2).
-		Add("SPLIT", split2).
-		Add("SUBSTITUTE", substitute2).
-		Add("SUBSTRING", substring2).
-		Add("TRIM", trim2)
+		Add("contains", contains2).
+		Add("find_first", findFirst2).
+		Add("find_last", findLast2).
+		Add("left", Left).
+		Add("like", like2).
+		Add("ltrim", lTrim2).
+		Add("regex_match", regexMatch2).
+		Add("regex_split", regexSplit2).
+		Add("regex_test", regexTest2).
+		Add("right", Right).
+		Add("rtrim", rTrim2).
+		Add("split", split2).
+		Add("substitute", substitute2).
+		Add("substring", substring2).
+		Add("trim", trim2)
 
 	ns.Function().A3().
-		Add("CONTAINS", contains3).
-		Add("FIND_FIRST", findFirst3).
-		Add("FIND_LAST", findLast3).
-		Add("LIKE", like3).
-		Add("REGEX_MATCH", regexMatch3).
-		Add("REGEX_REPLACE", regexReplace3).
-		Add("REGEX_SPLIT", regexSplit3).
-		Add("REGEX_TEST", regexTest3).
-		Add("SPLIT", split3).
-		Add("SUBSTITUTE", substitute3).
-		Add("SUBSTRING", substring3)
+		Add("contains", contains3).
+		Add("find_first", findFirst3).
+		Add("find_last", findLast3).
+		Add("like", like3).
+		Add("regex_match", regexMatch3).
+		Add("regex_replace", regexReplace3).
+		Add("regex_split", regexSplit3).
+		Add("regex_test", regexTest3).
+		Add("split", split3).
+		Add("substitute", substitute3).
+		Add("substring", substring3)
 
 	ns.Function().A4().
-		Add("FIND_FIRST", findFirst4).
-		Add("FIND_LAST", findLast4).
-		Add("REGEX_REPLACE", regexReplace4).
-		Add("REGEX_SPLIT", regexSplit4).
-		Add("SUBSTITUTE", substitute4)
+		Add("find_first", findFirst4).
+		Add("find_last", findLast4).
+		Add("regex_replace", regexReplace4).
+		Add("regex_split", regexSplit4).
+		Add("substitute", substitute4)
 
 	ns.Function().Var().
-		Add("CONCAT", Concat).
-		Add("CONCAT_SEPARATOR", ConcatWithSeparator).
-		Add("FMT", Fmt)
+		Add("concat", Concat).
+		Add("concat_separator", ConcatWithSeparator).
+		Add("fmt", Fmt)
 }

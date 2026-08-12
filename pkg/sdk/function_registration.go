@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/hostfunction"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -13,6 +14,7 @@ type functionRegistrationKey struct {
 }
 
 // RegisterFunctions validates and registers definitions in a namespace.
+// Terminal function names are canonicalized to lowercase; namespace casing is preserved.
 // Functions may share a name when their fixed arities differ or one is variadic.
 // Validation is atomic: no definition is registered when any definition is invalid.
 func RegisterFunctions(ns runtime.Namespace, definitions ...FunctionDef) error {
@@ -24,10 +26,12 @@ func RegisterFunctions(ns runtime.Namespace, definitions ...FunctionDef) error {
 	seen := make(map[functionRegistrationKey]struct{}, len(definitions))
 
 	for i := range definitions {
-		definitions[i].name = strings.TrimSpace(definitions[i].name)
-		if definitions[i].name == "" {
+		name := strings.TrimSpace(definitions[i].name)
+		if !hostfunction.HasTerminalName(name) {
 			return fmt.Errorf("function name cannot be empty")
 		}
+
+		definitions[i].name = hostfunction.CanonicalName(name)
 	}
 
 	for _, definition := range definitions {

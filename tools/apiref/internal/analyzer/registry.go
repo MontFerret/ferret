@@ -15,12 +15,34 @@ func registeredSignatures(functions *ferretruntime.Functions) ([]registeredSigna
 		return nil, fmt.Errorf("stdlib function registry is nil")
 	}
 
+	type registrationKey struct {
+		name     string
+		arity    int
+		variadic bool
+	}
+
 	signatures := make([]registeredSignature, 0, functions.Size())
+	seen := make(map[registrationKey]struct{}, functions.Size())
 	var registrationErr error
 	appendSignature := func(name string, arity int, variadic bool, fn any) bool {
 		if registrationErr != nil {
 			return false
 		}
+
+		if err := validateRegisteredName(name); err != nil {
+			registrationErr = err
+
+			return false
+		}
+
+		key := registrationKey{name: name, arity: arity, variadic: variadic}
+		if _, exists := seen[key]; exists {
+			registrationErr = fmt.Errorf("duplicate runtime function registration %s/%d", name, arity)
+
+			return false
+		}
+
+		seen[key] = struct{}{}
 
 		signature, err := registeredSignatureFor(name, arity, variadic, fn)
 		if err != nil {
@@ -79,6 +101,21 @@ func registeredSignatures(functions *ferretruntime.Functions) ([]registeredSigna
 	})
 
 	return signatures, nil
+}
+
+func validateRegisteredName(name string) error {
+	_, terminal := splitQualifiedName(name)
+	if terminal == "" {
+		return fmt.Errorf("runtime function %q has an empty terminal name", name)
+	}
+
+	for i := 0; i < len(terminal); i++ {
+		if terminal[i] >= 'A' && terminal[i] <= 'Z' {
+			return fmt.Errorf("runtime function %q terminal name must be canonical lowercase", name)
+		}
+	}
+
+	return nil
 }
 
 func registeredSignatureFor(name string, arity int, variadic bool, fn any) (registeredSignature, error) {

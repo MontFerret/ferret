@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// OUTERSECTION return the values that occur only once across all arrays specified.
+// outersection return the values that occur only once across all arrays specified.
 // The element order is random.
 // @param arrays {Any[], repeated} An arbitrary number of arrays as multiple arguments (at least 2).
 // @return {Any[]} A single array with only the elements that exist only once across all provided arrays.

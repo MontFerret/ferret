@@ -163,17 +163,19 @@ func TestHostFunctionRecoveryFallbackFailurePropagates(t *testing.T) {
 	}
 }
 
-func TestHostFunctionLookupIsCaseSensitive(t *testing.T) {
+func TestHostFunctionLookupIsCaseInsensitive(t *testing.T) {
 	builder := runtime.NewFunctionsBuilder()
 	builder.A0().Add("Foo", func(context.Context) (runtime.Value, error) {
-		return runtime.NewString("upper"), nil
-	})
-	builder.A0().Add("foo", func(context.Context) (runtime.Value, error) {
-		return runtime.NewString("lower"), nil
+		return runtime.NewString("resolved"), nil
 	})
 
 	RunSpecs(t, []spec.Spec{
-		Array("RETURN [Foo(), foo()]", []any{"upper", "lower"}),
-		ErrorStr("RETURN FOO()", "unresolved function"),
+		Array("RETURN [foo(), FOO(), FoO()]", []any{"resolved", "resolved", "resolved"}),
+		Array(`
+LET foo = 1
+LET FOO = 2
+LET value = { foo: 3, FOO: 4 }
+RETURN [foo, FOO, value.foo, value.FOO]
+`, []any{1, 2, 3, 4}, "host casing does not affect variables or object properties"),
 	}, vm.WithFunctionsBuilder(builder))
 }

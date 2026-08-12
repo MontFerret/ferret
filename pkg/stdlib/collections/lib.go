@@ -6,10 +6,10 @@ import (
 
 func RegisterLib(ns runtime.Namespace) {
 	ns.Function().A1().
-		Add("COUNT_DISTINCT", CountDistinct).
-		Add("COUNT", Count).
-		Add("REVERSE", Reverse)
+		Add("count_distinct", CountDistinct).
+		Add("count", Count).
+		Add("reverse", Reverse)
 
 	ns.Function().A2().
-		Add("INCLUDES", Includes)
+		Add("includes", Includes)
 }

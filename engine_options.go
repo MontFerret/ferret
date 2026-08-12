@@ -193,6 +193,7 @@ func WithNamespace(ns runtime.Namespace) Option {
 }
 
 // WithFunctionsRegistrar creates an Option that invokes the provided registrar with the engine's runtime.Namespace if the registrar is not nil.
+// Registered host-function terminal names are canonicalized to lowercase and resolve case-insensitively in FQL.
 func WithFunctionsRegistrar(setter func(ns runtime.Namespace)) Option {
 	return func(env *options) error {
 		if setter == nil {

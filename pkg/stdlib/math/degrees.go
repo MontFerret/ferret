@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// DEGREES returns the angle converted from radians to degrees.
+// degrees returns the angle converted from radians to degrees.
 // @param number {Int | Float} The input number.
 // @return {Float} The angle in degrees
 func Degrees(_ context.Context, arg runtime.Value) (runtime.Value, error) {

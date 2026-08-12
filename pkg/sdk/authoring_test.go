@@ -3,6 +3,7 @@ package sdk_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/module"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/sdk"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestNewModule(t *testing.T) {
@@ -65,6 +67,36 @@ func TestNewModule(t *testing.T) {
 	})
 }
 
+func TestSDKModuleHostFunctionsCanonicalizeTerminalNames(t *testing.T) {
+	t.Parallel()
+
+	mod := sdk.NewModule("postgres", func(bootstrap module.Bootstrap) error {
+		ns := bootstrap.Host().Library().Namespace("DB").Namespace("POSTGRES")
+
+		return sdk.RegisterFunctions(ns, sdk.Func("QUERY", runtime.Function1(func(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+			return arg, nil
+		})))
+	})
+
+	engine, err := ferret.New(ferret.WithoutStdlib(), ferret.WithModules(mod))
+	if err != nil {
+		t.Fatalf("new engine: %v", err)
+	}
+	defer func() { _ = engine.Close() }()
+
+	for _, name := range []string{"query", "QUERY", "QuErY"} {
+		query := `return DB::POSTGRES::` + name + `("ok")`
+		output, runErr := engine.Run(t.Context(), source.NewAnonymous(query))
+		if runErr != nil {
+			t.Fatalf("run %q: %v", query, runErr)
+		}
+
+		if got := string(output.Content); got != `"ok"` {
+			t.Fatalf("run %q = %s, want %q", query, got, `"ok"`)
+		}
+	}
+}
+
 func TestRegisterFunctions(t *testing.T) {
 	library := runtime.NewLibrary()
 	ns := library.Namespace("TEST")
@@ -103,6 +135,11 @@ func TestRegisterFunctions(t *testing.T) {
 			t.Errorf("expected %s to be registered", name)
 		}
 	}
+
+	expected := []string{"TEST::four", "TEST::one", "TEST::three", "TEST::two", "TEST::variable", "TEST::zero"}
+	if actual := functions.List(); !slices.Equal(actual, expected) {
+		t.Fatalf("expected canonical function metadata %v, got %v", expected, actual)
+	}
 }
 
 func TestRegisterFunctionsAllowsArityOverloads(t *testing.T) {
@@ -120,8 +157,8 @@ func TestRegisterFunctionsAllowsArityOverloads(t *testing.T) {
 
 	if err := sdk.RegisterFunctions(ns,
 		sdk.Func("OVERLOAD", fn1),
-		sdk.Func("OVERLOAD", fn2),
-		sdk.Func("OVERLOAD", variadic),
+		sdk.Func("Overload", fn2),
+		sdk.Func("overload", variadic),
 	); err != nil {
 		t.Fatalf("register overloads: %v", err)
 	}
@@ -137,7 +174,7 @@ func TestRegisterFunctionsAllowsArityOverloads(t *testing.T) {
 		t.Fatal("expected every arity overload to be registered")
 	}
 
-	if err := sdk.RegisterFunctions(ns, sdk.Func("OVERLOAD", fn1)); err == nil {
+	if err := sdk.RegisterFunctions(ns, sdk.Func("overLOAD", fn1)); err == nil {
 		t.Fatal("expected a duplicate name and arity to fail")
 	}
 }
@@ -163,7 +200,7 @@ func TestRegisterFunctionsIsAtomic(t *testing.T) {
 
 	err = sdk.RegisterFunctions(ns,
 		sdk.Func("DUPLICATE", valid),
-		sdk.Func("DUPLICATE", valid),
+		sdk.Func("Duplicate", valid),
 	)
 	if err == nil {
 		t.Fatal("expected duplicate error")
@@ -176,9 +213,10 @@ func TestRegisterFunctionsIsAtomic(t *testing.T) {
 	if err := sdk.RegisterFunctions(ns, sdk.Func("EXISTING", valid)); err != nil {
 		t.Fatalf("register existing function: %v", err)
 	}
+
 	err = sdk.RegisterFunctions(ns,
 		sdk.Func("NEW", valid),
-		sdk.Func("EXISTING", valid),
+		sdk.Func("Existing", valid),
 	)
 	if err == nil {
 		t.Fatal("expected existing definition error")

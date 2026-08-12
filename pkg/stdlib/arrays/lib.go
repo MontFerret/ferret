@@ -9,41 +9,41 @@ import (
 
 func RegisterLib(ns runtime.Namespace) {
 	ns.Function().A1().
-		Add("FIRST", First).
-		Add("FLATTEN", flatten1).
-		Add("LAST", Last).
-		Add("POP", Pop).
-		Add("SHIFT", Shift).
-		Add("SORTED", Sorted).
-		Add("SORTED_UNIQUE", SortedUnique).
-		Add("UNIQUE", Unique)
+		Add("first", First).
+		Add("flatten", flatten1).
+		Add("last", Last).
+		Add("pop", Pop).
+		Add("shift", Shift).
+		Add("sorted", Sorted).
+		Add("sorted_unique", SortedUnique).
+		Add("unique", Unique)
 
 	ns.Function().A2().
-		Add("APPEND", append2).
-		Add("FLATTEN", flatten2).
-		Add("NTH", Nth).
-		Add("POSITION", position2).
-		Add("PUSH", push2).
-		Add("REMOVE_VALUE", removeValue2).
-		Add("REMOVE_NTH", RemoveNth).
-		Add("REMOVE_VALUES", RemoveValues).
-		Add("SLICE", slice2).
-		Add("UNSHIFT", unshift2)
+		Add("append", append2).
+		Add("flatten", flatten2).
+		Add("nth", Nth).
+		Add("position", position2).
+		Add("push", push2).
+		Add("remove_value", removeValue2).
+		Add("remove_nth", RemoveNth).
+		Add("remove_values", RemoveValues).
+		Add("slice", slice2).
+		Add("unshift", unshift2)
 
 	ns.Function().A3().
-		Add("APPEND", append3).
-		Add("POSITION", position3).
-		Add("PUSH", push3).
-		Add("REMOVE_VALUE", removeValue3).
-		Add("SLICE", slice3).
-		Add("UNSHIFT", unshift3)
+		Add("append", append3).
+		Add("position", position3).
+		Add("push", push3).
+		Add("remove_value", removeValue3).
+		Add("slice", slice3).
+		Add("unshift", unshift3)
 
 	ns.Function().Var().
-		Add("INTERSECTION", Intersection).
-		Add("MINUS", Minus).
-		Add("OUTERSECTION", Outersection).
-		Add("UNION", Union).
-		Add("UNION_DISTINCT", UnionDistinct)
+		Add("intersection", Intersection).
+		Add("minus", Minus).
+		Add("outersection", Outersection).
+		Add("union", Union).
+		Add("union_distinct", UnionDistinct)
 }
 
 func ToUniqueList(ctx context.Context, list runtime.List) (runtime.List, error) {

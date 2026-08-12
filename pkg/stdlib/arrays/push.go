@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// PUSH create a new array with appended value.
+// push create a new array with appended value.
 // @param array {Any[]} Source array.
 // @param value {Any} Target value.
 // @param unique {Boolean} Read indicating whether to do uniqueness check.
@@ -15,7 +15,7 @@ func Push(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return Append(ctx, args...)
 }
 
-// PUSH create a new array with appended value.
+// push create a new array with appended value.
 // @param array {Any[]} Source array.
 // @param value {Any} Target value.
 // @return {Any[]} A new array with appended value.
@@ -23,7 +23,7 @@ func push2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error)
 	return append2(ctx, arg1, arg2)
 }
 
-// PUSH create a new array with appended value.
+// push create a new array with appended value.
 // @param array {Any[]} Source array.
 // @param value {Any} Target value.
 // @param unique {Boolean} Read indicating whether to do uniqueness check.

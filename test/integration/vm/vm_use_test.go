@@ -41,9 +41,9 @@ RETURN f::Test_FN()`, "unresolved function", "Namespace alias resolution is case
 USE Foo::Test_FN AS Fn
 
 RETURN FN()`, "unresolved function", "Function alias resolution is case-sensitive"),
-		ErrorStr(`
+		S(`
 USE Foo AS F
 
-RETURN F::test_fn()`, "unresolved function", "Host lookup remains case-sensitive after alias expansion"),
+RETURN F::tEsT_fN()`, true, "Host terminal lookup is case-insensitive after exact namespace alias expansion"),
 	}, vm.WithNamespace(ns))
 }

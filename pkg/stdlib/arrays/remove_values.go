@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// REMOVE_VALUES returns a new array with removed all occurrences of values in a given array.
+// remove_values returns a new array with removed all occurrences of values in a given array.
 // @param array {Any[]} Source array.
 // @param values {Any[]} Target values.
 // @return {Any[]} A new array with removed all occurrences of values in a given array.

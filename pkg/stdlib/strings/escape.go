@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// ESCAPE_HTML escapes special characters like "<" to become "&lt;". It
+// escape_html escapes special characters like "<" to become "&lt;". It
 // escapes only five such characters: <, >, &, ' and ".
 // UnescapeString(EscapeString(s)) == s always holds, but the converse isn't
 // always true.

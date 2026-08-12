@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// MINUS return the difference of all arrays specified.
+// minus return the difference of all arrays specified.
 // The order of the result array is undefined and should not be relied on. Duplicates will be removed.
 // @param arrays {Any[], repeated} An arbitrary number of arrays as multiple arguments (at least 2).
 // @return {Any[]} An array of values that occur in the first array, but not in any of the subsequent arrays.

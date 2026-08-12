@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// READ reads from a given file.
+// read reads from a given file.
 // @param path {String} Path to file to read from.
 // @return {Binary} File content in binary format.
 func Read(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

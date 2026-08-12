@@ -1,5 +1,7 @@
 package runtime
 
+import "github.com/MontFerret/ferret/v2/pkg/internal/hostfunction"
+
 type (
 	// FunctionConstraint is a type constraint that includes all function types
 	FunctionConstraint interface {
@@ -17,7 +19,8 @@ type (
 	}
 
 	defaultFunctionCollection[T FunctionConstraint] struct {
-		values map[string]T
+		values    map[string]T
+		canonical bool
 	}
 )
 
@@ -29,8 +32,17 @@ func NewFunctionCollection[T FunctionConstraint]() FunctionCollection[T] {
 // NewFunctionCollectionFromMap creates a new function collection from an existing map
 // It makes a copy of the provided map to ensure that the original map remains unmodified
 func NewFunctionCollectionFromMap[T FunctionConstraint](values map[string]T) FunctionCollection[T] {
+	return newFunctionCollectionFromMap(values, false)
+}
+
+func newCanonicalFunctionCollectionFromMap[T FunctionConstraint](values map[string]T) FunctionCollection[T] {
+	return newFunctionCollectionFromMap(values, true)
+}
+
+func newFunctionCollectionFromMap[T FunctionConstraint](values map[string]T, canonical bool) FunctionCollection[T] {
 	fc := &defaultFunctionCollection[T]{
-		values: make(map[string]T, len(values)),
+		values:    make(map[string]T, len(values)),
+		canonical: canonical,
 	}
 
 	for name, fn := range values {
@@ -41,6 +53,10 @@ func NewFunctionCollectionFromMap[T FunctionConstraint](values map[string]T) Fun
 }
 
 func (f *defaultFunctionCollection[T]) Has(name string) bool {
+	if f.canonical {
+		name = hostfunction.CanonicalName(name)
+	}
+
 	_, exists := f.values[name]
 
 	return exists
@@ -48,6 +64,10 @@ func (f *defaultFunctionCollection[T]) Has(name string) bool {
 }
 
 func (f *defaultFunctionCollection[T]) Get(name string) (T, bool) {
+	if f.canonical {
+		name = hostfunction.CanonicalName(name)
+	}
+
 	fn, exists := f.values[name]
 
 	return fn, exists

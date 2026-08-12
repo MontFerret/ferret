@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"hash/fnv"
 	"sort"
+
+	"github.com/MontFerret/ferret/v2/pkg/internal/hostfunction"
 )
 
 type (
 	FnDef[T FunctionConstraint] interface {
-		// Add adds a function to the builder.
+		// Add adds a function using a canonical lowercase terminal name.
 		// If a function with the same name already exists, it will be ignored and an error will be recorded.
 		Add(name string, fn T) FnDef[T]
 		// Remove removes a function from the builder.
@@ -116,7 +118,12 @@ func (fd *defaultFnDef[T]) addError(err error) {
 }
 
 func (fd *defaultFnDef[T]) Add(name string, fn T) FnDef[T] {
-	fname := makeFunctionName(fd.namespace, name)
+	fname := hostfunction.CanonicalName(makeFunctionName(fd.namespace, name))
+	if !hostfunction.HasTerminalName(fname) {
+		fd.addError(fmt.Errorf("function name cannot be empty in '%s' namespace", fd.namespace))
+
+		return fd
+	}
 
 	if _, exists := fd.data[fname]; exists {
 		fd.addError(fmt.Errorf("function with name '%s' already exists in '%s' namespace", name, fd.namespace))
@@ -130,7 +137,7 @@ func (fd *defaultFnDef[T]) Add(name string, fn T) FnDef[T] {
 }
 
 func (fd *defaultFnDef[T]) Remove(name string) FnDef[T] {
-	fname := makeFunctionName(fd.namespace, name)
+	fname := hostfunction.CanonicalName(makeFunctionName(fd.namespace, name))
 
 	if _, exists := fd.data[fname]; !exists {
 		fd.addError(fmt.Errorf("function with name '%s' does not exist in '%s' namespace", name, fd.namespace))
@@ -144,8 +151,9 @@ func (fd *defaultFnDef[T]) Remove(name string) FnDef[T] {
 }
 
 func (fd *defaultFnDef[T]) Has(name string) bool {
-	fname := makeFunctionName(fd.namespace, name)
+	fname := hostfunction.CanonicalName(makeFunctionName(fd.namespace, name))
 	_, exists := fd.data[fname]
+
 	return exists
 }
 
@@ -168,6 +176,7 @@ func (fd *defaultFnDef[T]) List() []string {
 }
 
 // NewFunctionsBuilder creates an empty host function registry builder.
+// Host-function terminal names are canonicalized to lowercase and resolved case-insensitively.
 // A logical name may have one definition at each fixed arity and one variadic definition.
 func NewFunctionsBuilder() *FunctionsBuilder {
 	return newRootFunctionsBuilder()
@@ -269,7 +278,7 @@ func (b *FunctionsBuilder) Size() int {
 }
 
 func (b *FunctionsBuilder) Has(name string) bool {
-	fname := makeFunctionName(b.namespace, name)
+	fname := hostfunction.CanonicalName(makeFunctionName(b.namespace, name))
 
 	if _, ok := b.av.data[fname]; ok {
 		return true
@@ -415,27 +424,27 @@ func (b *FunctionsBuilder) Build() (*Functions, error) {
 	registry := new(Functions)
 
 	if len(b.av.data) > 0 {
-		registry.av = NewFunctionCollectionFromMap(b.av.data)
+		registry.av = newCanonicalFunctionCollectionFromMap(b.av.data)
 	}
 
 	if len(b.a0.data) > 0 {
-		registry.a0 = NewFunctionCollectionFromMap(b.a0.data)
+		registry.a0 = newCanonicalFunctionCollectionFromMap(b.a0.data)
 	}
 
 	if len(b.a1.data) > 0 {
-		registry.a1 = NewFunctionCollectionFromMap(b.a1.data)
+		registry.a1 = newCanonicalFunctionCollectionFromMap(b.a1.data)
 	}
 
 	if len(b.a2.data) > 0 {
-		registry.a2 = NewFunctionCollectionFromMap(b.a2.data)
+		registry.a2 = newCanonicalFunctionCollectionFromMap(b.a2.data)
 	}
 
 	if len(b.a3.data) > 0 {
-		registry.a3 = NewFunctionCollectionFromMap(b.a3.data)
+		registry.a3 = newCanonicalFunctionCollectionFromMap(b.a3.data)
 	}
 
 	if len(b.a4.data) > 0 {
-		registry.a4 = NewFunctionCollectionFromMap(b.a4.data)
+		registry.a4 = newCanonicalFunctionCollectionFromMap(b.a4.data)
 	}
 
 	registry.names = fnames

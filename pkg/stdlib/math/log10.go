@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// LOG10 returns the decimal logarithm of a given value.
+// log10 returns the decimal logarithm of a given value.
 // @param number {Int | Float} Input number.
 // @return {Float} The decimal logarithm of a given value.
 func Log10(_ context.Context, arg runtime.Value) (runtime.Value, error) {

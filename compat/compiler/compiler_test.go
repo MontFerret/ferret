@@ -81,8 +81,8 @@ func TestCompiler_RegisteredFunctions(t *testing.T) {
 		found[n] = true
 	}
 
-	if !found["FUNC_A"] || !found["FUNC_B"] {
-		t.Fatalf("expected FUNC_A and FUNC_B, got %v", names)
+	if !found["func_a"] || !found["func_b"] {
+		t.Fatalf("expected canonical func_a and func_b, got %v", names)
 	}
 }
 
@@ -100,9 +100,9 @@ func TestCompiler_RegisterFunctions_duplicate(t *testing.T) {
 		t.Fatalf("first RegisterFunctions error: %v", err)
 	}
 
-	// Second registration of the same set should be silently skipped (no error).
-	if err := c.RegisterFunctions(fns); err != nil {
-		t.Fatalf("second RegisterFunctions should silently skip duplicates, got: %v", err)
+	// Second registration of the same set must be rejected without poisoning the builder.
+	if err := c.RegisterFunctions(fns); err == nil {
+		t.Fatal("second RegisterFunctions should reject duplicates")
 	}
 
 	// Most importantly: Compile must succeed — no latent builder error must have

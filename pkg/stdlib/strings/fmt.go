@@ -12,7 +12,7 @@ import (
 	"errors"
 )
 
-// FMT formats the template using these arguments.
+// fmt formats the template using these arguments.
 // @param template {String} template.
 // @param args {Any, repeated} template arguments.
 // @return {String} string formed by template using arguments.

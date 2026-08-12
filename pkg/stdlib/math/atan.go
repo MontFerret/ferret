@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// ATAN returns the arctangent, in radians, of a given number.
+// atan returns the arctangent, in radians, of a given number.
 // @param number {Int | Float} Input number.
 // @return {Float} The arctangent, in radians, of a given number.
 func Atan(_ context.Context, arg runtime.Value) (runtime.Value, error) {

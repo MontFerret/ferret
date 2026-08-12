@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// DATE_QUARTER returns which quarter date belongs to.
+// date_quarter returns which quarter date belongs to.
 // @param date {DateTime} Source DateTime.
 // @return {Int} A quarter number.
 func DateQuarter(_ context.Context, arg runtime.Value) (runtime.Value, error) {

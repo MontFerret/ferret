@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// PERCENTILE returns the nth percentile of the values in a given array.
+// percentile returns the nth percentile of the values in a given array.
 // @param array {Int[] | Float[]} arrayList of numbers.
 // @param number {Int} A number which must be between 0 (excluded) and 100 (included).
 // @param method {String} "rank" or "interpolation".
@@ -25,7 +25,7 @@ func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 	return percentile3(ctx, args[0], args[1], args[2])
 }
 
-// PERCENTILE returns the nth percentile of the values in a given array.
+// percentile returns the nth percentile of the values in a given array.
 // @param array {Int[] | Float[]} arrayList of numbers.
 // @param number {Int} A number which must be between 0 (excluded) and 100 (included).
 // @return {Float} The nth percentile, or null if the array is empty or only null values are contained in it or the percentile cannot be calculated.
@@ -33,7 +33,7 @@ func percentile2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, 
 	return percentile(ctx, arg1, arg2, "rank")
 }
 
-// PERCENTILE returns the nth percentile of the values in a given array.
+// percentile returns the nth percentile of the values in a given array.
 // @param array {Int[] | Float[]} arrayList of numbers.
 // @param number {Int} A number which must be between 0 (excluded) and 100 (included).
 // @param method {String} "rank" or "interpolation".

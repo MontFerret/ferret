@@ -182,8 +182,8 @@ func TestFunctions_RegisteredFunctions(t *testing.T) {
 		found[n] = true
 	}
 
-	if !found["CUSTOM_A"] || !found["CUSTOM_B"] {
-		t.Fatalf("expected CUSTOM_A and CUSTOM_B in registered functions, got %v", names)
+	if !found["custom_a"] || !found["custom_b"] {
+		t.Fatalf("expected canonical custom_a and custom_b in registered functions, got %v", names)
 	}
 }
 

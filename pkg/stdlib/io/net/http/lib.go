@@ -9,9 +9,9 @@ import (
 func RegisterLib(ns runtime.Namespace) {
 	ns = ns.Namespace("HTTP")
 	ns.Function().A1().
-		Add("GET", GET).
-		Add("POST", POST).
-		Add("PUT", PUT).
-		Add("DELETE", DELETE).
-		Add("DO", REQUEST)
+		Add("get", GET).
+		Add("post", POST).
+		Add("put", PUT).
+		Add("delete", DELETE).
+		Add("do", REQUEST)
 }

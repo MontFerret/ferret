@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// SORTED_UNIQUE sorts all elements in a array.
+// sorted_unique sorts all elements in a array.
 // The function will use the default comparison order for FQL value types.
 // Additionally, the values in the result array will be made unique
 // @param array {Any[]} Target array.

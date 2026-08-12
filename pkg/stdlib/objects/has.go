@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// HAS returns the value stored by the given key.
+// has returns the value stored by the given key.
 // @param object {Map} Object or map to inspect.
 // @param key {String} The key name string.
 // @return {Boolean} True if the key exists else false.

@@ -26,10 +26,10 @@ func TestRegisterLib(t *testing.T) {
 		hasWrite := false
 
 		for _, fn := range names {
-			if fn == "FS::READ" {
+			if fn == "FS::read" {
 				hasRead = true
 			}
-			if fn == "FS::WRITE" {
+			if fn == "FS::write" {
 				hasWrite = true
 			}
 		}

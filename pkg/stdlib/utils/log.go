@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// PRINT writes messages into the system log.
+// print writes messages into the system log.
 // @param message {Any, repeated} Message to print.
 // @return {None} None.
 func Print(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {

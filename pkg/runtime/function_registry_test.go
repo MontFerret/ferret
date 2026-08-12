@@ -154,7 +154,7 @@ func TestNewFunctionsFromAndFromMap(t *testing.T) {
 	}
 
 	f2Builder := NewFunctionsBuilder()
-	f2Builder.A0().Add("a", fn0)
+	f2Builder.A0().Add("B", fn0)
 	f2Builder.A1().Add("overloaded", fn1)
 
 	f2, err := f2Builder.Build()
@@ -167,7 +167,7 @@ func TestNewFunctionsFromAndFromMap(t *testing.T) {
 		t.Fatalf("merge functions: %v", err)
 	}
 
-	// A/0, a/0, overloaded/0, overloaded/1.
+	// a/0, b/0, overloaded/0, overloaded/1.
 	if merged.Size() != 4 {
 		t.Fatalf("expected 4 merged definitions, got %d", merged.Size())
 	}
@@ -176,7 +176,7 @@ func TestNewFunctionsFromAndFromMap(t *testing.T) {
 		t.Fatalf("expected cached size %d, got %d", merged.Size(), merged.size)
 	}
 
-	// A, a, overloaded.
+	// a, b, overloaded.
 	if len(merged.names) != 3 {
 		t.Fatalf(
 			"expected 3 unique cached names, got %d: %v",
@@ -185,7 +185,7 @@ func TestNewFunctionsFromAndFromMap(t *testing.T) {
 		)
 	}
 
-	for _, name := range []string{"A", "a", "overloaded"} {
+	for _, name := range []string{"a", "B", "overloaded"} {
 		if !merged.Has(name) {
 			t.Fatalf("expected merged function %q to exist", name)
 		}
@@ -208,8 +208,12 @@ func TestNewFunctionsFromAndFromMap(t *testing.T) {
 		t.Fatalf("functions from map: %v", err)
 	}
 
-	if !fromMap.Has("Foo") {
-		t.Fatal("expected functions from map to include Foo")
+	if !fromMap.Has("FOO") {
+		t.Fatal("expected functions from map to include canonical foo identity")
+	}
+
+	if got := fromMap.List(); !slices.Equal(got, []string{"foo"}) {
+		t.Fatalf("expected canonical functions from map, got %v", got)
 	}
 
 	if fromMap.size != fromMap.Size() {
@@ -233,7 +237,7 @@ func TestNewFunctionsFromAndFromMap(t *testing.T) {
 	}
 
 	equivalent, err := NewFunctionsFromMap(map[string]Function{
-		"Foo": func(ctx context.Context, args ...Value) (Value, error) {
+		"fOO": func(ctx context.Context, args ...Value) (Value, error) {
 			return None, nil
 		},
 	})
@@ -276,7 +280,7 @@ func TestNewFunctionsBuilderFromPreservesOverloadsAndRejectsSameSignature(t *tes
 	}
 
 	duplicateBuilder := NewFunctionsBuilder()
-	duplicateBuilder.A0().Add("OVERLOAD", fn0)
+	duplicateBuilder.A0().Add("overLOAD", fn0)
 	duplicate, err := duplicateBuilder.Build()
 	if err != nil {
 		t.Fatalf("build duplicate functions: %v", err)
@@ -287,55 +291,117 @@ func TestNewFunctionsBuilderFromPreservesOverloadsAndRejectsSameSignature(t *tes
 	}
 }
 
-func TestFunctionLookupIsCaseSensitive(t *testing.T) {
-	fooUpper := func(context.Context) (Value, error) {
-		return NewString("upper"), nil
-	}
-	fooLower := func(context.Context) (Value, error) {
-		return NewString("lower"), nil
+func TestFunctionLookupUsesCanonicalTerminalName(t *testing.T) {
+	foo := func(context.Context) (Value, error) {
+		return NewString("foo"), nil
 	}
 
 	builder := NewFunctionsBuilder()
-	builder.A0().Add("Foo", fooUpper)
-	builder.A0().Add("foo", fooLower)
+	builder.A0().Add("Foo", foo)
 
 	funcs, err := builder.Build()
 	if err != nil {
 		t.Fatalf("build functions: %v", err)
 	}
 
-	if funcs.Size() != 2 {
-		t.Fatalf("expected 2 functions, got %d", funcs.Size())
+	if funcs.Size() != 1 {
+		t.Fatalf("expected 1 function, got %d", funcs.Size())
 	}
 
-	if !funcs.Has("Foo") || !funcs.Has("foo") {
-		t.Fatalf("expected exact-case host functions to exist, got %v", funcs.List())
+	if got := funcs.List(); !slices.Equal(got, []string{"foo"}) {
+		t.Fatalf("expected canonical function metadata, got %v", got)
 	}
 
-	if funcs.Has("FOO") {
-		t.Fatalf("expected wrong-case host name to be absent, got %v", funcs.List())
+	if got := funcs.A0().Names(); !slices.Equal(got, []string{"foo"}) {
+		t.Fatalf("expected canonical collection names, got %v", got)
 	}
 
-	upper, ok := funcs.A0().Get("Foo")
-	if !ok {
-		t.Fatal("expected Foo lookup to succeed")
+	var enumerated []string
+	funcs.A0().ForEach(func(_ Function0, name string) bool {
+		enumerated = append(enumerated, name)
+
+		return true
+	})
+	if !slices.Equal(enumerated, []string{"foo"}) {
+		t.Fatalf("expected canonical ForEach name, got %v", enumerated)
 	}
 
-	lower, ok := funcs.A0().Get("foo")
-	if !ok {
-		t.Fatal("expected foo lookup to succeed")
+	for _, name := range []string{"foo", "FOO", "FoO"} {
+		if !funcs.Has(name) {
+			t.Fatalf("expected %q to resolve canonical function, got %v", name, funcs.List())
+		}
+
+		resolved, ok := funcs.A0().Get(name)
+		if !ok {
+			t.Fatalf("expected %q lookup to succeed", name)
+		}
+
+		if got, _ := resolved(context.Background()); got != NewString("foo") {
+			t.Fatalf("unexpected %q result: %v", name, got)
+		}
 	}
 
-	if _, ok := funcs.A0().Get("FOO"); ok {
-		t.Fatal("expected wrong-case lookup to fail")
+	duplicate := NewFunctionsBuilder()
+	duplicate.A0().Add("foo", foo)
+	duplicate.A0().Add("FOO", foo)
+
+	if _, err := duplicate.Build(); err == nil {
+		t.Fatal("expected case-only duplicate registration to fail")
 	}
 
-	if got, _ := upper(context.Background()); got != NewString("upper") {
-		t.Fatalf("unexpected Foo result: %v", got)
+	removable := NewFunctionsBuilder()
+	removable.A0().Add("Foo", foo)
+	removable.A0().Remove("fOO")
+
+	removed, err := removable.Build()
+	if err != nil {
+		t.Fatalf("build functions after mixed-case removal: %v", err)
 	}
 
-	if got, _ := lower(context.Background()); got != NewString("lower") {
-		t.Fatalf("unexpected foo result: %v", got)
+	if removed.Size() != 0 {
+		t.Fatalf("expected mixed-case removal to remove canonical function, got %v", removed.List())
+	}
+}
+
+func TestStandaloneFunctionCollectionPreservesExactMapKeys(t *testing.T) {
+	fn := func(context.Context) (Value, error) { return None, nil }
+	functions := NewFunctionCollectionFromMap(map[string]Function0{"Foo": fn})
+
+	if !functions.Has("Foo") {
+		t.Fatal("expected exact map key to resolve")
+	}
+
+	if functions.Has("foo") || functions.Has("FOO") {
+		t.Fatal("standalone map-backed collection must preserve exact lookup behavior")
+	}
+
+	if got := functions.Names(); !slices.Equal(got, []string{"Foo"}) {
+		t.Fatalf("standalone collection names = %v, want exact map key", got)
+	}
+}
+
+func TestFunctionRegistrationRejectsEmptyTerminalName(t *testing.T) {
+	fn := func(context.Context) (Value, error) { return None, nil }
+	builder := NewFunctionsBuilder()
+	builder.A0().Add("", fn)
+
+	if _, err := builder.Build(); err == nil {
+		t.Fatal("expected empty root function name to fail")
+	}
+
+	library := NewLibrary()
+	library.Namespace("TEST").Function().A0().Add("", fn)
+
+	if _, err := library.Build(); err == nil {
+		t.Fatal("expected empty namespaced function name to fail")
+	}
+}
+
+func TestNewFunctionsFromMapRejectsCaseOnlyDuplicate(t *testing.T) {
+	fn := func(context.Context, ...Value) (Value, error) { return None, nil }
+
+	if _, err := NewFunctionsFromMap(map[string]Function{"Foo": fn, "foo": fn}); err == nil {
+		t.Fatal("expected case-only duplicate map registrations to fail")
 	}
 }
 

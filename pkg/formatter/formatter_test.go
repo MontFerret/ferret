@@ -64,6 +64,19 @@ func TestFormatter_DefaultKeywordCase(t *testing.T) {
 	}
 }
 
+func TestFormatterPreservesFunctionIdentifierCase(t *testing.T) {
+	t.Parallel()
+
+	var output bytes.Buffer
+	if err := New().Format(&output, source.NewAnonymous(`RETURN TO_STRING(value)`)); err != nil {
+		t.Fatalf("format failed: %v", err)
+	}
+
+	if got, want := output.String(), "return TO_STRING(value)"; got != want {
+		t.Fatalf("formatter changed semantic function identifier: got %q, want %q", got, want)
+	}
+}
+
 func TestFormatter_LiteralSpread(t *testing.T) {
 	tests := []struct {
 		name                   string

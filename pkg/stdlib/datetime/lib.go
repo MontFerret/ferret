@@ -6,34 +6,34 @@ import (
 
 func RegisterLib(ns runtime.Namespace) {
 	ns.Function().A0().
-		Add("NOW", Now)
+		Add("now", Now)
 
 	ns.Function().A1().
-		Add("DATE", date1).
-		Add("DATE_DAYOFWEEK", DateDayOfWeek).
-		Add("DATE_YEAR", DateYear).
-		Add("DATE_MONTH", DateMonth).
-		Add("DATE_DAY", DateDay).
-		Add("DATE_HOUR", DateHour).
-		Add("DATE_MINUTE", DateMinute).
-		Add("DATE_SECOND", DateSecond).
-		Add("DATE_MILLISECOND", DateMillisecond).
-		Add("DATE_DAYOFYEAR", DateDayOfYear).
-		Add("DATE_LEAPYEAR", DateLeapYear).
-		Add("DATE_QUARTER", DateQuarter).
-		Add("DATE_DAYS_IN_MONTH", DateDaysInMonth)
+		Add("date", date1).
+		Add("date_dayofweek", DateDayOfWeek).
+		Add("date_year", DateYear).
+		Add("date_month", DateMonth).
+		Add("date_day", DateDay).
+		Add("date_hour", DateHour).
+		Add("date_minute", DateMinute).
+		Add("date_second", DateSecond).
+		Add("date_millisecond", DateMillisecond).
+		Add("date_dayofyear", DateDayOfYear).
+		Add("date_leapyear", DateLeapYear).
+		Add("date_quarter", DateQuarter).
+		Add("date_days_in_month", DateDaysInMonth)
 
 	ns.Function().A2().
-		Add("DATE", date2).
-		Add("DATE_FORMAT", DateFormat)
+		Add("date", date2).
+		Add("date_format", DateFormat)
 
 	ns.Function().A3().
-		Add("DATE_ADD", DateAdd).
-		Add("DATE_COMPARE", dateCompare3).
-		Add("DATE_DIFF", dateDiff3).
-		Add("DATE_SUBTRACT", DateSubtract)
+		Add("date_add", DateAdd).
+		Add("date_compare", dateCompare3).
+		Add("date_diff", dateDiff3).
+		Add("date_subtract", DateSubtract)
 
 	ns.Function().A4().
-		Add("DATE_COMPARE", dateCompare4).
-		Add("DATE_DIFF", dateDiff4)
+		Add("date_compare", dateCompare4).
+		Add("date_diff", dateDiff4)
 }

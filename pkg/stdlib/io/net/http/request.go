@@ -17,7 +17,7 @@ type Params struct {
 	Body    runtime.Binary
 }
 
-// REQUEST makes a HTTP request.
+// do makes an HTTP request.
 // @param params {Map} Request parameters containing method, url, body, and optional headers fields.
 // @return {Binary} Response in binary format
 func REQUEST(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

@@ -19,6 +19,11 @@ bounds. Any unresolved declaration, unsupported registration shape, documentatio
 error, arity contradiction, or runtime/source mismatch fails generation without
 writing a partial artifact.
 
+Host-function terminal names are case-insensitive in FQL and have one canonical
+lowercase presentation in the registry and generated API Reference. Namespace
+casing is preserved, and casing compatibility is represented by lookup rather
+than duplicate aliases.
+
 The API Reference and discovery-index wire contracts belong to
 [`github.com/MontFerret/specs`](https://github.com/MontFerret/specs). Ferret pins
 the released Specs version in the independent generator and publisher modules,
@@ -32,7 +37,7 @@ Registered declarations use the strict structured format parsed by
 `api.ParseDocumentation`:
 
 ```go
-// SPLIT divides a string at each separator.
+// split divides a string at each separator.
 // @param value {String} Source string.
 // @param separator {String} Separator string.
 // @return {String[]} Split values.

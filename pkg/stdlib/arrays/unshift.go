@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// UNSHIFT prepends value to a given array.
+// unshift prepends value to a given array.
 // @param array {Any[]} Target array.
 // @param value {Any} Target value to prepend.
 // @param unique {Boolean} Optional value indicating whether a value must be unique to be prepended. Default is false.
@@ -23,7 +23,7 @@ func Unshift(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 	return unshift3(ctx, args[0], args[1], args[2])
 }
 
-// UNSHIFT prepends value to a given array.
+// unshift prepends value to a given array.
 // @param array {Any[]} Target array.
 // @param value {Any} Target value to prepend.
 // @return {Any[]} New array with prepended value.
@@ -31,7 +31,7 @@ func unshift2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, err
 	return unshift3(ctx, arg1, arg2, runtime.False)
 }
 
-// UNSHIFT prepends value to a given array.
+// unshift prepends value to a given array.
 // @param array {Any[]} Target array.
 // @param value {Any} Target value to prepend.
 // @param unique {Boolean} Optional value indicating whether a value must be unique to be prepended. Default is false.

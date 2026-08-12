@@ -1,7 +1,9 @@
 package ferret
 
 import (
+	"context"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -9,7 +11,9 @@ import (
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func mustNewOptionsForTest(t *testing.T, setters ...Option) *options {
@@ -223,6 +227,81 @@ func TestWithStdlibSafeRegistersSelectedGroups(t *testing.T) {
 		if eng.host.functions.Has(name) {
 			t.Fatalf("expected safe stdlib to exclude %s", name)
 		}
+	}
+}
+
+func TestWithFunctionsRegistrarCanonicalizesHostFunctionNames(t *testing.T) {
+	t.Parallel()
+
+	eng := mustNewEngine(t,
+		WithoutStdlib(),
+		WithFunctionsRegistrar(func(ns runtime.Namespace) {
+			ns.Function().A0().Add("Calculate_Risk", func(context.Context) (runtime.Value, error) {
+				return runtime.NewString("ok"), nil
+			})
+		}),
+	)
+	defer func() { _ = eng.Close() }()
+
+	if got := eng.host.functions.List(); !slices.Equal(got, []string{"calculate_risk"}) {
+		t.Fatalf("expected canonical host metadata, got %v", got)
+	}
+
+	for _, query := range []string{
+		"return calculate_risk()",
+		"return CALCULATE_RISK()",
+		"return Calculate_Risk()",
+	} {
+		output, err := eng.Run(t.Context(), source.NewAnonymous(query))
+		if err != nil {
+			t.Fatalf("run %q: %v", query, err)
+		}
+
+		if got := string(output.Content); got != `"ok"` {
+			t.Fatalf("run %q = %s, want %q", query, got, `"ok"`)
+		}
+	}
+}
+
+func TestWithFunctionsRegistrarRejectsCaseOnlyDuplicate(t *testing.T) {
+	t.Parallel()
+
+	eng, err := New(
+		WithoutStdlib(),
+		WithFunctionsRegistrar(func(ns runtime.Namespace) {
+			fn := func(context.Context) (runtime.Value, error) { return runtime.None, nil }
+			ns.Function().A0().Add("foo", fn).Add("FOO", fn)
+		}),
+	)
+	if eng != nil {
+		_ = eng.Close()
+	}
+
+	if err == nil {
+		t.Fatal("expected case-only duplicate registration to fail")
+	}
+}
+
+func TestUnknownHostFunctionDiagnosticPreservesSourceSpelling(t *testing.T) {
+	t.Parallel()
+
+	eng := mustNewEngine(t, WithoutStdlib())
+	defer func() { _ = eng.Close() }()
+
+	const name = "TOOLS::MiSsInG"
+	_, err := eng.Run(t.Context(), source.NewAnonymous("return "+name+"()"))
+	if err == nil {
+		t.Fatal("expected unknown host function to fail")
+	}
+
+	var runtimeErr *vm.RuntimeError
+	if !errors.As(err, &runtimeErr) {
+		t.Fatalf("expected RuntimeError, got %T: %v", err, err)
+	}
+
+	want := "function '" + name + "' is not registered"
+	if got := runtimeErr.Spans[0].Label; got != want {
+		t.Fatalf("diagnostic label = %q, want %q", got, want)
 	}
 }
 

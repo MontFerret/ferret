@@ -109,8 +109,14 @@ func TestProgramJSONPreservesOrderedHostSignatures(t *testing.T) {
 	if err := json.Unmarshal(encoded, &decoded); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if !slices.Equal(decoded.Functions.Host, program.Functions.Host) {
-		t.Fatalf("unexpected host signature order: got %v, want %v", decoded.Functions.Host, program.Functions.Host)
+
+	expected := []HostFunction{
+		{Name: "pick", ArgCount: 2},
+		{Name: "pick", ArgCount: 1},
+	}
+
+	if !slices.Equal(decoded.Functions.Host, expected) {
+		t.Fatalf("unexpected canonical host signature order: got %v, want %v", decoded.Functions.Host, expected)
 	}
 }
 
@@ -127,7 +133,7 @@ func TestProgramJSONRejectsLegacyHostMetadata(t *testing.T) {
 }
 
 func TestProgramJSONRejectsDuplicateHostSignatures(t *testing.T) {
-	payload := `{"isaVersion":1,"registers":1,"bytecode":[{"opcode":39,"operands":[0,0,0]}],"functions":{"host":[{"name":"PICK","argCount":1},{"name":"PICK","argCount":1}]}}`
+	payload := `{"isaVersion":1,"registers":1,"bytecode":[{"opcode":39,"operands":[0,0,0]}],"functions":{"host":[{"name":"PICK","argCount":1},{"name":"pick","argCount":1}]}}`
 
 	var decoded Program
 	if err := json.Unmarshal([]byte(payload), &decoded); err == nil || !strings.Contains(err.Error(), "duplicate host function signature") {

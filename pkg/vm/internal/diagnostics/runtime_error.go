@@ -247,12 +247,19 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		spec.Note = fmt.Sprintf("this query requires parameter '%s'", name)
 		spec.Hint = fmt.Sprintf("Provide a value for %s before executing this query", name)
 	case errors.Is(err, ErrUnresolvedFunction):
+		name := sourceTextAt(program, spec.Span)
+
 		spec.Kind = UnresolvedSymbol
 		spec.Message = "unresolved function"
 		spec.Label = "function is not registered"
 		spec.Note = "function could not be resolved in the current registry"
 		spec.Hint = "Register the function before executing this query"
 		spec.Cause = ErrUnresolvedFunction
+
+		if name != "" {
+			spec.Label = fmt.Sprintf("function '%s' is not registered", name)
+			spec.Note = fmt.Sprintf("function '%s' could not be resolved in the current registry", name)
+		}
 	case errors.Is(err, ErrInvalidFunctionName):
 		spec.Kind = UnresolvedSymbol
 		spec.Message = "invalid function name"

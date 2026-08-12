@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// TO_ARRAY takes an input value of any type and convert it into an array value.
+// to_array takes an input value of any type and convert it into an array value.
 // None is converted to an empty array
 // Boolean values, numbers and strings are converted to an array containing the original value as its single element
 // Arrays keep their original value

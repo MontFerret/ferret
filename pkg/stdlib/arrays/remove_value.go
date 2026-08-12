@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// REMOVE_VALUE returns a new array with removed all occurrences of value in a given array.
+// remove_value returns a new array with removed all occurrences of value in a given array.
 // Optionally with a limit to the number of removals.
 // @param array {Any[]} Source array.
 // @param value {Any} Target value.
@@ -24,7 +24,7 @@ func RemoveValue(ctx context.Context, args ...runtime.Value) (runtime.Value, err
 	return removeValue3(ctx, args[0], args[1], args[2])
 }
 
-// REMOVE_VALUE returns a new array with removed all occurrences of value in a given array.
+// remove_value returns a new array with removed all occurrences of value in a given array.
 // Optionally with a limit to the number of removals.
 // @param array {Any[]} Source array.
 // @param value {Any} Target value.
@@ -33,7 +33,7 @@ func removeValue2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value,
 	return removeValue3(ctx, arg1, arg2, runtime.Int(-1))
 }
 
-// REMOVE_VALUE returns a new array with removed all occurrences of value in a given array.
+// remove_value returns a new array with removed all occurrences of value in a given array.
 // Optionally with a limit to the number of removals.
 // @param array {Any[]} Source array.
 // @param value {Any} Target value.

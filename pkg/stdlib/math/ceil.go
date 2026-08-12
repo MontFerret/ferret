@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// CEIL returns the least integer value greater than or equal to a given value.
+// ceil returns the least integer value greater than or equal to a given value.
 // @param number {Int | Float} Input number.
 // @return {Int} The least integer value greater than or equal to a given value.
 func Ceil(_ context.Context, arg runtime.Value) (runtime.Value, error) {

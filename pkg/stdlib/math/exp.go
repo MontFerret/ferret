@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// EXP returns Euler's constant (2.71828...) raised to the power of value.
+// exp returns Euler's constant (2.71828...) raised to the power of value.
 // @param number {Int | Float} Input number.
 // @return {Float} Euler's constant raised to the power of value.
 func Exp(_ context.Context, arg runtime.Value) (runtime.Value, error) {

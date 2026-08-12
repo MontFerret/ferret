@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// FROM_BASE64 returns the value of a base64 representation.
+// from_base64 returns the value of a base64 representation.
 // @param str {String} The string to decode.
 // @return {String} The decoded string.
 func FromBase64(_ context.Context, arg runtime.Value) (runtime.Value, error) {
@@ -22,7 +22,7 @@ func FromBase64(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	return runtime.NewString(string(out)), nil
 }
 
-// DECODE_URI_COMPONENT returns the decoded String of uri.
+// decode_uri_component returns the decoded String of uri.
 // @param uri {String} Uri to decode.
 // @return {String} Decoded string.
 func DecodeURIComponent(_ context.Context, arg runtime.Value) (runtime.Value, error) {

@@ -6,13 +6,13 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// TO_INT takes an input value of any type and convert it into an integer value.
+// to_int takes an input value of any type and convert it into an integer value.
 // None and false are converted to the value 0
 // true is converted to 1
 // Numbers keep their original value
 // Strings are converted to their numeric equivalent if the string contains a valid representation of a number.
 // String values that do not contain any valid representation of a number will be converted to the number 0.
-// An empty array is converted to 0, an array with one member is converted into the result of TO_NUMBER() for its sole member.
+// An empty array is converted to 0, an array with one member is converted into the result of to_number() for its sole member.
 // An array with two or more members is converted to the number 0.
 // An object / HTML node is converted to the number 0.
 // @param value {Any} Input value of arbitrary type.

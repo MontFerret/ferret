@@ -23,10 +23,10 @@ func TestRegisterLib(t *testing.T) {
 		registeredFunctions := registry.List()
 
 		expectedFunctions := []string{
-			"NOW", "DATE", "DATE_COMPARE", "DATE_DAYOFWEEK", "DATE_YEAR",
-			"DATE_MONTH", "DATE_DAY", "DATE_HOUR", "DATE_MINUTE", "DATE_SECOND",
-			"DATE_MILLISECOND", "DATE_DAYOFYEAR", "DATE_LEAPYEAR", "DATE_QUARTER",
-			"DATE_DAYS_IN_MONTH", "DATE_FORMAT", "DATE_ADD", "DATE_SUBTRACT", "DATE_DIFF",
+			"now", "date", "date_compare", "date_dayofweek", "date_year",
+			"date_month", "date_day", "date_hour", "date_minute", "date_second",
+			"date_millisecond", "date_dayofyear", "date_leapyear", "date_quarter",
+			"date_days_in_month", "date_format", "date_add", "date_subtract", "date_diff",
 		}
 
 		foundFunctions := 0

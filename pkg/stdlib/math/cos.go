@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// COS returns the cosine of a given number.
+// cos returns the cosine of a given number.
 // @param number {Int | Float} Input number.
 // @return {Float} The cosine of a given number.
 func Cos(_ context.Context, arg runtime.Value) (runtime.Value, error) {

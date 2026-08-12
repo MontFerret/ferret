@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// SQRT returns the square root of a given number.
+// sqrt returns the square root of a given number.
 // @param value {Int | Float} A number.
 // @return {Float} The square root.
 func Sqrt(_ context.Context, arg runtime.Value) (runtime.Value, error) {
