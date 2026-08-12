@@ -6,10 +6,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/io/net"
 )
 
-// RegisterLib register `IO` namespace functions.
-// @namespace IO
+// RegisterLib register `io` namespace functions.
+// @namespace io
 func RegisterLib(ns runtime.Namespace) {
-	io := ns.Namespace("IO")
+	io := ns.Namespace("io")
 
 	fs.RegisterLib(io)
 	net.RegisterLib(io)

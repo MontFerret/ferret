@@ -4,8 +4,8 @@
 // declarative, arity-overloaded function definitions with RegisterFunctions,
 // and adapt typed runtime functions with Bind0 through Bind4. Fixed arities take
 // precedence over variadic fallbacks. Host-function names are case-insensitive
-// in FQL and have one canonical lowercase terminal name; namespace casing is
-// preserved. The binders intentionally operate
+// in FQL and have one canonical lowercase qualified name, including namespace
+// segments. The binders intentionally operate
 // on runtime.Value types; the SDK does not invoke arbitrary native Go functions
 // through reflection.
 //

@@ -285,10 +285,10 @@ func calledFunctionKey(pkg *packages.Package, expression ast.Expr) string {
 
 func assertionQualifiedName(registration, name string) string {
 	if registration == "registerNegative" {
-		return "T::NOT::" + name
+		return "t::not::" + name
 	}
 
-	return "T::" + name
+	return "t::" + name
 }
 
 func packageErrors(errors []packages.Error) string {

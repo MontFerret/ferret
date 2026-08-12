@@ -463,8 +463,8 @@ func newArtifactTestProgram() *bytecode.Program {
 	return &bytecode.Program{
 		Source: source.New("artifact.fql", "RETURN 1"),
 		Functions: bytecode.Functions{Host: []bytecode.HostFunction{
-			{Name: "PICK", ArgCount: 2},
-			{Name: "PICK", ArgCount: 1},
+			{Name: "DB::POSTGRES::PICK", ArgCount: 2},
+			{Name: "Db::Postgres::Pick", ArgCount: 1},
 		}},
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
@@ -489,8 +489,8 @@ func newArtifactTestProgram() *bytecode.Program {
 
 func canonicalArtifactHostFunctions() []bytecode.HostFunction {
 	return []bytecode.HostFunction{
-		{Name: "pick", ArgCount: 2},
-		{Name: "pick", ArgCount: 1},
+		{Name: "db::postgres::pick", ArgCount: 2},
+		{Name: "db::postgres::pick", ArgCount: 1},
 	}
 }
 

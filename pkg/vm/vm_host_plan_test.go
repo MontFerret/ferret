@@ -67,6 +67,19 @@ func TestBuildExecPlanPreservesRegisterFactsAcrossDestructureAssertion(t *testin
 	}
 }
 
+func TestBuildExecPlanCanonicalizesLegacyQualifiedHostName(t *testing.T) {
+	program := newHostCallProgram(hostCallSpec{name: "DB::POSTGRES::QUERY"})
+
+	plan, err := buildExecPlan(program)
+	if err != nil {
+		t.Fatalf("buildExecPlan() error: %v", err)
+	}
+
+	if got, want := plan.hostCallDescriptors[0].DisplayName, "db::postgres::query"; got != want {
+		t.Fatalf("host display name = %q, want %q", got, want)
+	}
+}
+
 func TestStaticRegisterInvalidationSkipsLiteralSpread(t *testing.T) {
 	for _, op := range []bytecode.Opcode{bytecode.OpArraySpread, bytecode.OpObjectSpread} {
 		if !skipStaticRegisterInvalidation(op) {

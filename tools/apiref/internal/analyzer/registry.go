@@ -109,9 +109,9 @@ func validateRegisteredName(name string) error {
 		return fmt.Errorf("runtime function %q has an empty terminal name", name)
 	}
 
-	for i := 0; i < len(terminal); i++ {
-		if terminal[i] >= 'A' && terminal[i] <= 'Z' {
-			return fmt.Errorf("runtime function %q terminal name must be canonical lowercase", name)
+	for i := 0; i < len(name); i++ {
+		if name[i] >= 'A' && name[i] <= 'Z' {
+			return fmt.Errorf("runtime function %q qualified name must be canonical lowercase", name)
 		}
 	}
 

@@ -11,7 +11,7 @@ import (
 
 type (
 	FnDef[T FunctionConstraint] interface {
-		// Add adds a function using a canonical lowercase terminal name.
+		// Add adds a function using a canonical lowercase qualified name.
 		// If a function with the same name already exists, it will be ignored and an error will be recorded.
 		Add(name string, fn T) FnDef[T]
 		// Remove removes a function from the builder.
@@ -176,7 +176,7 @@ func (fd *defaultFnDef[T]) List() []string {
 }
 
 // NewFunctionsBuilder creates an empty host function registry builder.
-// Host-function terminal names are canonicalized to lowercase and resolved case-insensitively.
+// Host-function qualified names are canonicalized to lowercase and resolved case-insensitively.
 // A logical name may have one definition at each fixed arity and one variadic definition.
 func NewFunctionsBuilder() *FunctionsBuilder {
 	return newRootFunctionsBuilder()

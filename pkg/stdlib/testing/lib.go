@@ -4,9 +4,9 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// @namespace T
+// @namespace t
 func RegisterLib(ns runtime.Namespace) {
-	t := ns.Namespace("T")
+	t := ns.Namespace("t")
 
 	registerNOT(t)
 
@@ -33,7 +33,7 @@ func RegisterLib(ns runtime.Namespace) {
 }
 
 func registerNOT(ns runtime.Namespace) {
-	t := ns.Namespace("NOT")
+	t := ns.Namespace("not")
 
 	registerNegative(t, "empty", Empty)
 	registerNegative(t, "eq", Equal)

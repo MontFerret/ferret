@@ -230,27 +230,27 @@ func TestWithStdlibSafeRegistersSelectedGroups(t *testing.T) {
 	}
 }
 
-func TestWithFunctionsRegistrarCanonicalizesHostFunctionNames(t *testing.T) {
+func TestWithFunctionsRegistrarCanonicalizesQualifiedHostFunctionNames(t *testing.T) {
 	t.Parallel()
 
 	eng := mustNewEngine(t,
 		WithoutStdlib(),
 		WithFunctionsRegistrar(func(ns runtime.Namespace) {
-			ns.Function().A0().Add("Calculate_Risk", func(context.Context) (runtime.Value, error) {
+			ns.Namespace("Tools").Namespace("Risk").Function().A0().Add("Calculate_Risk", func(context.Context) (runtime.Value, error) {
 				return runtime.NewString("ok"), nil
 			})
 		}),
 	)
 	defer func() { _ = eng.Close() }()
 
-	if got := eng.host.functions.List(); !slices.Equal(got, []string{"calculate_risk"}) {
+	if got := eng.host.functions.List(); !slices.Equal(got, []string{"tools::risk::calculate_risk"}) {
 		t.Fatalf("expected canonical host metadata, got %v", got)
 	}
 
 	for _, query := range []string{
-		"return calculate_risk()",
-		"return CALCULATE_RISK()",
-		"return Calculate_Risk()",
+		"return tools::risk::calculate_risk()",
+		"return TOOLS::RISK::CALCULATE_RISK()",
+		"return Tools::Risk::Calculate_Risk()",
 	} {
 		output, err := eng.Run(t.Context(), source.NewAnonymous(query))
 		if err != nil {
@@ -302,6 +302,34 @@ func TestUnknownHostFunctionDiagnosticPreservesSourceSpelling(t *testing.T) {
 	want := "function '" + name + "' is not registered"
 	if got := runtimeErr.Spans[0].Label; got != want {
 		t.Fatalf("diagnostic label = %q, want %q", got, want)
+	}
+}
+
+func TestResolvedHostFunctionDiagnosticUsesCanonicalQualifiedName(t *testing.T) {
+	t.Parallel()
+
+	eng := mustNewEngine(t,
+		WithoutStdlib(),
+		WithFunctionsRegistrar(func(ns runtime.Namespace) {
+			ns.Namespace("DB").Namespace("POSTGRES").Function().A1().Add("QUERY", func(context.Context, runtime.Value) (runtime.Value, error) {
+				return runtime.None, nil
+			})
+		}),
+	)
+	defer func() { _ = eng.Close() }()
+
+	_, err := eng.Run(t.Context(), source.NewAnonymous("return Db::Postgres::Query()"))
+	if err == nil {
+		t.Fatal("expected invalid host function arity to fail")
+	}
+
+	var runtimeErr *vm.RuntimeError
+	if !errors.As(err, &runtimeErr) {
+		t.Fatalf("expected RuntimeError, got %T: %v", err, err)
+	}
+
+	if got, want := runtimeErr.Note, "db::postgres::query expects 1 argument, but got 0"; got != want {
+		t.Fatalf("diagnostic note = %q, want %q", got, want)
 	}
 }
 

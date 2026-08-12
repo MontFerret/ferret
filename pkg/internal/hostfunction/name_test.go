@@ -10,8 +10,9 @@ func TestCanonicalName(t *testing.T) {
 		"trim":                "trim",
 		"TRIM":                "trim",
 		"TrIm":                "trim",
-		"DB::POSTGRES::QUERY": "DB::POSTGRES::query",
-		"Db::Postgres::Query": "Db::Postgres::query",
+		"DB::POSTGRES::QUERY": "db::postgres::query",
+		"Db::Postgres::Query": "db::postgres::query",
+		"db::POSTGRES::query": "db::postgres::query",
 	}
 
 	for input, expected := range tests {
@@ -52,12 +53,12 @@ func TestHasTerminalName(t *testing.T) {
 
 func BenchmarkCanonicalNameLowercase(b *testing.B) {
 	for b.Loop() {
-		_ = CanonicalName("DB::POSTGRES::query")
+		_ = CanonicalName("db::postgres::query")
 	}
 }
 
 func BenchmarkCanonicalNameMixedCase(b *testing.B) {
 	for b.Loop() {
-		_ = CanonicalName("DB::POSTGRES::QuErY")
+		_ = CanonicalName("Db::Postgres::QuErY")
 	}
 }

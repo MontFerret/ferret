@@ -2,8 +2,8 @@ package path
 
 import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
-// RegisterLib register `PATH` namespace functions.
-// @namespace PATH
+// RegisterLib register `path` namespace functions.
+// @namespace path
 func RegisterLib(ns runtime.Namespace) {
 	ns.Function().A1().
 		Add("base", Base).

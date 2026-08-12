@@ -95,8 +95,8 @@ func TestProgramJSONPreservesOrderedHostSignatures(t *testing.T) {
 			NewInstruction(OpReturn, NewRegister(0)),
 		},
 		Functions: Functions{Host: []HostFunction{
-			{Name: "PICK", ArgCount: 2},
-			{Name: "PICK", ArgCount: 1},
+			{Name: "DB::POSTGRES::PICK", ArgCount: 2},
+			{Name: "Db::Postgres::Pick", ArgCount: 1},
 		}},
 	}
 
@@ -111,8 +111,8 @@ func TestProgramJSONPreservesOrderedHostSignatures(t *testing.T) {
 	}
 
 	expected := []HostFunction{
-		{Name: "pick", ArgCount: 2},
-		{Name: "pick", ArgCount: 1},
+		{Name: "db::postgres::pick", ArgCount: 2},
+		{Name: "db::postgres::pick", ArgCount: 1},
 	}
 
 	if !slices.Equal(decoded.Functions.Host, expected) {
@@ -133,7 +133,7 @@ func TestProgramJSONRejectsLegacyHostMetadata(t *testing.T) {
 }
 
 func TestProgramJSONRejectsDuplicateHostSignatures(t *testing.T) {
-	payload := `{"isaVersion":1,"registers":1,"bytecode":[{"opcode":39,"operands":[0,0,0]}],"functions":{"host":[{"name":"PICK","argCount":1},{"name":"pick","argCount":1}]}}`
+	payload := `{"isaVersion":1,"registers":1,"bytecode":[{"opcode":39,"operands":[0,0,0]}],"functions":{"host":[{"name":"DB::POSTGRES::PICK","argCount":1},{"name":"db::postgres::pick","argCount":1}]}}`
 
 	var decoded Program
 	if err := json.Unmarshal([]byte(payload), &decoded); err == nil || !strings.Contains(err.Error(), "duplicate host function signature") {

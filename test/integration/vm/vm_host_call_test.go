@@ -174,8 +174,11 @@ func TestHostFunctionLookupIsCaseInsensitive(t *testing.T) {
 		Array(`
 LET foo = 1
 LET FOO = 2
-LET value = { foo: 3, FOO: 4 }
-RETURN [foo, FOO, value.foo, value.FOO]
-`, []any{1, 2, 3, 4}, "host casing does not affect variables or object properties"),
-	}, vm.WithFunctionsBuilder(builder))
+LET value = { Name: 3, name: 4 }
+RETURN [foo, FOO, value.Name, value.name, @User, @user]
+`, []any{1, 2, 3, 4, 5, 6}, "host casing does not affect variables, parameters, or object properties"),
+	},
+		vm.WithFunctionsBuilder(builder),
+		vm.WithParams(runtime.Params{"User": runtime.NewInt(5), "user": runtime.NewInt(6)}),
+	)
 }

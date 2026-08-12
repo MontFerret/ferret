@@ -23,16 +23,16 @@ func TestRegisteredSignaturesRejectsNilFunction(t *testing.T) {
 	}
 }
 
-func TestValidateRegisteredNameRequiresCanonicalTerminal(t *testing.T) {
+func TestValidateRegisteredNameRequiresCanonicalQualifiedName(t *testing.T) {
 	t.Parallel()
 
-	for _, name := range []string{"lower", "DB::POSTGRES::query", "Db::Postgres::query"} {
+	for _, name := range []string{"lower", "db::postgres::query"} {
 		if err := validateRegisteredName(name); err != nil {
 			t.Errorf("validateRegisteredName(%q): %v", name, err)
 		}
 	}
 
-	for _, name := range []string{"", "DB::", "UPPER", "DB::POSTGRES::QuErY"} {
+	for _, name := range []string{"", "db::", "UPPER", "DB::postgres::query", "db::POSTGRES::query", "db::postgres::QuErY"} {
 		if err := validateRegisteredName(name); err == nil {
 			t.Errorf("validateRegisteredName(%q) unexpectedly succeeded", name)
 		}

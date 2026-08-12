@@ -69,8 +69,8 @@ func TestDisassemble_HeaderSectionsStackedLayout(t *testing.T) {
 		"\n  1\n",
 		"\n  \"X::DO\"\n",
 		"\n  0 FACT 0 10 1  ; id name entry registers params\n",
-		"\n  0 X::do 2 ; id name args\n",
-		"\n  1 X::do 1 ; id name args\n",
+		"\n  0 x::do 2 ; id name args\n",
+		"\n  1 x::do 1 ; id name args\n",
 	}
 
 	for _, row := range expectedRows {
@@ -82,7 +82,7 @@ func TestDisassemble_HeaderSectionsStackedLayout(t *testing.T) {
 
 func TestFormatFunctionHeaderIncludesBindingIDAndArgumentCount(t *testing.T) {
 	got := formatFunctionHeader(7, bytecode.HostFunction{Name: "X::DO", ArgCount: 3})
-	want := ".func 7 X::do 3 ; id name args"
+	want := ".func 7 x::do 3 ; id name args"
 
 	if got != want {
 		t.Fatalf("unexpected legacy function header: got %q, want %q", got, want)
@@ -471,7 +471,7 @@ func TestDisassemble_HCallCommentWithHostFunctionName(t *testing.T) {
 		t.Fatalf("Disassemble() error: %v", err)
 	}
 
-	if !strings.Contains(out, "1: HCALL R1 R2 R2 ; host X::do") {
+	if !strings.Contains(out, "1: HCALL R1 R2 R2 ; host x::do") {
 		t.Fatalf("expected HCALL host comment in output:\n%s", out)
 	}
 }
@@ -494,7 +494,7 @@ func TestDisassemble_ProtectedHCallCommentWithHostFunctionName(t *testing.T) {
 		t.Fatalf("Disassemble() error: %v", err)
 	}
 
-	if !strings.Contains(out, "1: PHCALL R1 R2 R2 ; host X::safe") {
+	if !strings.Contains(out, "1: PHCALL R1 R2 R2 ; host x::safe") {
 		t.Fatalf("expected protected HCALL host comment in output:\n%s", out)
 	}
 }
@@ -517,7 +517,7 @@ func TestDisassemble_HCallCommentMissingWhenNoMatchingLoadConst(t *testing.T) {
 		t.Fatalf("Disassemble() error: %v", err)
 	}
 
-	if strings.Contains(out, "; host X::DO") {
+	if strings.Contains(out, "; host x::do") {
 		t.Fatalf("did not expect host comment when LOADC register does not match HCALL register:\n%s", out)
 	}
 }

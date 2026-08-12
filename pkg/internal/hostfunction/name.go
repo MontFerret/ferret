@@ -4,15 +4,10 @@ import "strings"
 
 const namespaceSeparator = "::"
 
-// CanonicalName returns the canonical host-function identity while preserving
-// every namespace segment exactly as supplied.
+// CanonicalName returns the canonical host-function identity by lowercasing
+// ASCII letters in every namespace and function segment.
 func CanonicalName(name string) string {
-	terminalStart := 0
-	if separator := strings.LastIndex(name, namespaceSeparator); separator >= 0 {
-		terminalStart = separator + len(namespaceSeparator)
-	}
-
-	for i := terminalStart; i < len(name); i++ {
+	for i := 0; i < len(name); i++ {
 		if name[i] < 'A' || name[i] > 'Z' {
 			continue
 		}

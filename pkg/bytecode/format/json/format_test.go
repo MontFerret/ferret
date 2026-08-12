@@ -102,8 +102,8 @@ func TestFormatAllowsOverloadedHostsAndRejectsDuplicateSignaturesAndLabels(t *te
 	one := 1
 	two := 2
 	frame.Functions.Host = []persist.HostFunctionFrame{
-		{Name: "DUP", ArgCount: &one},
-		{Name: "dup", ArgCount: &two},
+		{Name: "DB::POSTGRES::DUP", ArgCount: &one},
+		{Name: "db::postgres::dup", ArgCount: &two},
 	}
 
 	data := mustMarshalFrame(t, frame)
@@ -111,7 +111,7 @@ func TestFormatAllowsOverloadedHostsAndRejectsDuplicateSignaturesAndLabels(t *te
 	if err != nil {
 		t.Fatalf("expected overloaded host signatures to decode, got %v", err)
 	}
-	if got := decoded.Functions.Host[0].Name; got != "dup" {
+	if got := decoded.Functions.Host[0].Name; got != "db::postgres::dup" {
 		t.Fatalf("expected legacy uppercase host metadata to canonicalize, got %q", got)
 	}
 

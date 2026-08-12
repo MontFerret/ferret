@@ -4,10 +4,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// RegisterLib register `FS` namespace functions.
-// @namespace FS
+// RegisterLib register `fs` namespace functions.
+// @namespace fs
 func RegisterLib(ns runtime.Namespace) {
-	ns = ns.Namespace("FS")
+	ns = ns.Namespace("fs")
 
 	ns.Function().A1().
 		Add("read", Read)

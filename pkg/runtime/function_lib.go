@@ -1,5 +1,7 @@
 package runtime
 
+import "github.com/MontFerret/ferret/v2/pkg/internal/hostfunction"
+
 const NamespaceSeparator = "::"
 const emptyNS = ""
 
@@ -20,7 +22,7 @@ type (
 	// Namespace represents a namespace that can contain functions and nested namespaces.
 	// It provides methods to create nested namespaces and register functions within those namespaces.
 	Namespace interface {
-		// Namespace creates a new nested namespace with the given name and returns it.
+		// Namespace creates or reuses a nested namespace with the given case-insensitive name.
 		Namespace(name string) Namespace
 		// Function returns a FunctionDefs interface that allows registering functions within this namespace.
 		Function() FunctionDefs
@@ -41,7 +43,7 @@ func NewLibrary() Library {
 
 func NewNamespace(name string) Namespace {
 	lib := new(library)
-	lib.name = name
+	lib.name = hostfunction.CanonicalName(name)
 	lib.builder = newNamespacedFunctionsBuilder(lib.name)
 
 	return lib
@@ -61,7 +63,7 @@ func (lib *library) Size() int {
 
 func (lib *library) Namespace(name string) Namespace {
 	newLib := new(library)
-	newLib.name = makeFunctionName(lib.name, name)
+	newLib.name = hostfunction.CanonicalName(makeFunctionName(lib.name, name))
 	newLib.builder = newFunctionsBuilderInternalFrom(newLib.name, lib.builder)
 
 	return newLib

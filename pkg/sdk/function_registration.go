@@ -14,7 +14,7 @@ type functionRegistrationKey struct {
 }
 
 // RegisterFunctions validates and registers definitions in a namespace.
-// Terminal function names are canonicalized to lowercase; namespace casing is preserved.
+// Qualified function names, including namespace segments, are canonicalized to lowercase.
 // Functions may share a name when their fixed arities differ or one is variadic.
 // Validation is atomic: no definition is registered when any definition is invalid.
 func RegisterFunctions(ns runtime.Namespace, definitions ...FunctionDef) error {

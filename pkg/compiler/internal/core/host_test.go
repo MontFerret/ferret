@@ -33,17 +33,17 @@ func TestHostFunctionTable_AssignsStableSignatureIDsAndReturnsCopy(t *testing.T)
 	Convey("HostFunctionTable should assign first-seen IDs per signature", t, func() {
 		tab := core.NewHostFunctionTable()
 
-		fn3 := tab.Bind("FN", 3)
-		fn1 := tab.Bind("fn", 1)
-		fn3Again := tab.Bind("Fn", 3)
+		fn3 := tab.Bind("DB::POSTGRES::FN", 3)
+		fn1 := tab.Bind("db::postgres::fn", 1)
+		fn3Again := tab.Bind("Db::Postgres::Fn", 3)
 
 		fns := tab.All()
 		So(fn3, ShouldEqual, 0)
 		So(fn1, ShouldEqual, 1)
 		So(fn3Again, ShouldEqual, fn3)
 		So(fns, ShouldResemble, []bytecode.HostFunction{
-			{Name: "fn", ArgCount: 3},
-			{Name: "fn", ArgCount: 1},
+			{Name: "db::postgres::fn", ArgCount: 3},
+			{Name: "db::postgres::fn", ArgCount: 1},
 		})
 
 		fns[0].Name = "changed"
@@ -51,8 +51,8 @@ func TestHostFunctionTable_AssignsStableSignatureIDsAndReturnsCopy(t *testing.T)
 
 		updated := tab.All()
 		So(updated, ShouldResemble, []bytecode.HostFunction{
-			{Name: "fn", ArgCount: 3},
-			{Name: "fn", ArgCount: 1},
+			{Name: "db::postgres::fn", ArgCount: 3},
+			{Name: "db::postgres::fn", ArgCount: 1},
 		})
 	})
 }

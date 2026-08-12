@@ -22,7 +22,7 @@ func ExampleRegisterFunctions() {
 		if err != nil {
 			return err
 		}
-		ns := library.Namespace("EXAMPLE")
+		ns := library.Namespace("example")
 		one := runtime.Function1(func(context.Context, runtime.Value) (runtime.Value, error) {
 			return runtime.NewString("fixed-one"), nil
 		})
@@ -57,9 +57,9 @@ func ExampleRegisterFunctions() {
 	defer func() { _ = engine.Close() }()
 
 	for _, query := range []string{
-		`return EXAMPLE::pick(1)`,
-		`return EXAMPLE::pick(1, 2)`,
-		`return EXAMPLE::pick(1, 2, 3, 4, 5)`,
+		`return example::pick(1)`,
+		`return example::pick(1, 2)`,
+		`return example::pick(1, 2, 3, 4, 5)`,
 	} {
 		output, runErr := engine.Run(context.Background(), source.NewAnonymous(query))
 		if runErr != nil {

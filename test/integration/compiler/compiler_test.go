@@ -93,7 +93,7 @@ USE FOO::TEST_FN AS FN
 FUNC WRAP(v) => FN(v)
 RETURN WRAP(1)
 `,
-			expectedHost: []bytecode.HostFunction{{Name: "FOO::test_fn", ArgCount: 1}},
+			expectedHost: []bytecode.HostFunction{{Name: "foo::test_fn", ArgCount: 1}},
 			expectedUDFs: 1,
 		},
 		{
@@ -103,7 +103,7 @@ USE BAR AS B
 FUNC RUN(v) => B::OTHER_FN(v, v + 1)
 RETURN RUN(2)
 `,
-			expectedHost: []bytecode.HostFunction{{Name: "BAR::other_fn", ArgCount: 2}},
+			expectedHost: []bytecode.HostFunction{{Name: "bar::other_fn", ArgCount: 2}},
 			expectedUDFs: 1,
 		},
 		{

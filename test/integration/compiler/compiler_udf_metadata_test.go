@@ -81,8 +81,8 @@ func TestHostFunctionSignatureBindings(t *testing.T) {
 		{Name: "foo", ArgCount: 2},
 	}
 	namespaced := []bytecode.HostFunction{
-		{Name: "NS::foo", ArgCount: 1},
-		{Name: "NS::foo", ArgCount: 2},
+		{Name: "ns::foo", ArgCount: 1},
+		{Name: "ns::foo", ArgCount: 2},
 	}
 
 	RunSpecsLevels(t, []spec.Spec{
@@ -96,7 +96,7 @@ FUNC call() => [FOO(1), FOO(1, 2), FOO(3)]
 RETURN call()
 `, expectHostSignatures(foo...), "udf host overload bindings preserve first-seen order and reuse matching signatures"),
 		ProgramCheck(
-			`RETURN [NS::FOO(1), NS::FOO(1, 2), NS::FOO(3)]`,
+			`RETURN [NS::FOO(1), ns::foo(1, 2), Ns::FoO(3)]`,
 			expectHostSignatures(namespaced...),
 			"namespaced host overload bindings preserve first-seen order and reuse matching signatures",
 		),
@@ -200,11 +200,11 @@ RETURN FN()
 				return fmt.Errorf("expected exactly 2 host signatures, got %d (%v)", len(prog.Functions.Host), prog.Functions.Host)
 			}
 
-			if err := hostSignature(prog.Functions.Host, "FOO::test_fn", 1); err != nil {
+			if err := hostSignature(prog.Functions.Host, "foo::test_fn", 1); err != nil {
 				return err
 			}
 
-			return hostSignature(prog.Functions.Host, "FOO::test_fn", 0)
+			return hostSignature(prog.Functions.Host, "foo::test_fn", 0)
 		}, "function alias preserves host metadata"),
 		ProgramCheck(`
 LET upper = Foo()
@@ -225,8 +225,8 @@ RETURN Fn()
 				return fmt.Errorf("expected exactly 1 host function, got %d (%v)", len(prog.Functions.Host), prog.Functions.Host)
 			}
 
-			return hostSignature(prog.Functions.Host, "Foo::test_fn", 0)
-		}, "function alias preserves namespace case and canonicalizes the host function"),
+			return hostSignature(prog.Functions.Host, "foo::test_fn", 0)
+		}, "function alias canonicalizes its qualified host target"),
 		ProgramCheck(`
 USE Foo AS F
 RETURN f::Test_FN()
@@ -235,7 +235,7 @@ RETURN f::Test_FN()
 				return err
 			}
 
-			if hasHostName(prog.Functions.Host, "Foo::test_fn") {
+			if hasHostName(prog.Functions.Host, "foo::test_fn") {
 				return fmt.Errorf("expected no exact-case alias rewrite on mismatch, got %v", prog.Functions.Host)
 			}
 
@@ -246,7 +246,7 @@ USE FOO AS F
 FUNC f() => F::TEST_FN()
 RETURN f()
 `, func(prog *bytecode.Program) error {
-			if err := hostSignature(prog.Functions.Host, "FOO::test_fn", 0); err != nil {
+			if err := hostSignature(prog.Functions.Host, "foo::test_fn", 0); err != nil {
 				return err
 			}
 
@@ -255,7 +255,7 @@ RETURN f()
 			}
 
 			return nil
-		}, "namespace alias preserves fully qualified host name"),
+		}, "namespace alias canonicalizes its fully qualified host target"),
 		ProgramCheck(`RETURN [@beta, @alpha, @beta, @gamma]`, func(prog *bytecode.Program) error {
 			want := []string{"beta", "alpha", "gamma"}
 

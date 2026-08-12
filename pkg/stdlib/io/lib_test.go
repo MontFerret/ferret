@@ -31,25 +31,25 @@ func TestRegisterLib(t *testing.T) {
 		hasDo := false
 
 		for _, fn := range functions {
-			if fn == "IO::FS::read" {
+			if fn == "io::fs::read" {
 				hasRead = true
 			}
-			if fn == "IO::FS::write" {
+			if fn == "io::fs::write" {
 				hasWrite = true
 			}
-			if fn == "IO::NET::HTTP::get" {
+			if fn == "io::net::http::get" {
 				hasGet = true
 			}
-			if fn == "IO::NET::HTTP::post" {
+			if fn == "io::net::http::post" {
 				hasPost = true
 			}
-			if fn == "IO::NET::HTTP::put" {
+			if fn == "io::net::http::put" {
 				hasPut = true
 			}
-			if fn == "IO::NET::HTTP::delete" {
+			if fn == "io::net::http::delete" {
 				hasDelete = true
 			}
-			if fn == "IO::NET::HTTP::do" {
+			if fn == "io::net::http::do" {
 				hasDo = true
 			}
 		}

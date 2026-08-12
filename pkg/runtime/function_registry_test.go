@@ -291,13 +291,13 @@ func TestNewFunctionsBuilderFromPreservesOverloadsAndRejectsSameSignature(t *tes
 	}
 }
 
-func TestFunctionLookupUsesCanonicalTerminalName(t *testing.T) {
+func TestFunctionLookupUsesCanonicalQualifiedName(t *testing.T) {
 	foo := func(context.Context) (Value, error) {
 		return NewString("foo"), nil
 	}
 
 	builder := NewFunctionsBuilder()
-	builder.A0().Add("Foo", foo)
+	builder.A0().Add("DB::Postgres::Foo", foo)
 
 	funcs, err := builder.Build()
 	if err != nil {
@@ -308,11 +308,11 @@ func TestFunctionLookupUsesCanonicalTerminalName(t *testing.T) {
 		t.Fatalf("expected 1 function, got %d", funcs.Size())
 	}
 
-	if got := funcs.List(); !slices.Equal(got, []string{"foo"}) {
+	if got := funcs.List(); !slices.Equal(got, []string{"db::postgres::foo"}) {
 		t.Fatalf("expected canonical function metadata, got %v", got)
 	}
 
-	if got := funcs.A0().Names(); !slices.Equal(got, []string{"foo"}) {
+	if got := funcs.A0().Names(); !slices.Equal(got, []string{"db::postgres::foo"}) {
 		t.Fatalf("expected canonical collection names, got %v", got)
 	}
 
@@ -322,11 +322,11 @@ func TestFunctionLookupUsesCanonicalTerminalName(t *testing.T) {
 
 		return true
 	})
-	if !slices.Equal(enumerated, []string{"foo"}) {
+	if !slices.Equal(enumerated, []string{"db::postgres::foo"}) {
 		t.Fatalf("expected canonical ForEach name, got %v", enumerated)
 	}
 
-	for _, name := range []string{"foo", "FOO", "FoO"} {
+	for _, name := range []string{"db::postgres::foo", "DB::POSTGRES::FOO", "Db::Postgres::FoO"} {
 		if !funcs.Has(name) {
 			t.Fatalf("expected %q to resolve canonical function, got %v", name, funcs.List())
 		}
@@ -342,16 +342,16 @@ func TestFunctionLookupUsesCanonicalTerminalName(t *testing.T) {
 	}
 
 	duplicate := NewFunctionsBuilder()
-	duplicate.A0().Add("foo", foo)
-	duplicate.A0().Add("FOO", foo)
+	duplicate.A0().Add("db::postgres::foo", foo)
+	duplicate.A0().Add("DB::POSTGRES::FOO", foo)
 
 	if _, err := duplicate.Build(); err == nil {
 		t.Fatal("expected case-only duplicate registration to fail")
 	}
 
 	removable := NewFunctionsBuilder()
-	removable.A0().Add("Foo", foo)
-	removable.A0().Remove("fOO")
+	removable.A0().Add("DB::Postgres::Foo", foo)
+	removable.A0().Remove("db::POSTGRES::fOO")
 
 	removed, err := removable.Build()
 	if err != nil {

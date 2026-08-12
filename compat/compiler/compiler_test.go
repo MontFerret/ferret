@@ -65,6 +65,53 @@ func TestCompiler_RegisterFunction(t *testing.T) {
 	}
 }
 
+func TestCompiler_NamespaceRegistrationIsCaseInsensitive(t *testing.T) {
+	c := compiler.New()
+	ns := c.Namespace("DB").Namespace("POSTGRES")
+
+	err := ns.RegisterFunction("QUERY", func(context.Context, ...core.Value) (core.Value, error) {
+		return core.WrapValue(runtime.NewString("ok")), nil
+	})
+	if err != nil {
+		t.Fatalf("register namespaced function: %v", err)
+	}
+
+	if err := c.Namespace("db").Namespace("postgres").RegisterFunction("query", func(context.Context, ...core.Value) (core.Value, error) {
+		return core.WrapValue(runtime.None), nil
+	}); err == nil {
+		t.Fatal("expected duplicate canonical namespace member to fail")
+	}
+
+	for _, query := range []string{
+		"RETURN db::postgres::query()",
+		"RETURN DB::POSTGRES::QUERY()",
+		"RETURN Db::Postgres::Query()",
+	} {
+		prog, compileErr := c.Compile(query)
+		if compileErr != nil {
+			t.Fatalf("compile %q: %v", query, compileErr)
+		}
+
+		out, runErr := prog.Run(t.Context())
+		if runErr != nil {
+			t.Fatalf("run %q: %v", query, runErr)
+		}
+
+		var result string
+		if err := json.Unmarshal(out, &result); err != nil {
+			t.Fatalf("unmarshal %q output: %v", query, err)
+		}
+
+		if result != "ok" {
+			t.Fatalf("run %q = %q, want ok", query, result)
+		}
+	}
+
+	if got := ns.RegisteredFunctions(); len(got) != 1 || got[0] != "db::postgres::query" {
+		t.Fatalf("registered functions = %v, want canonical qualified name", got)
+	}
+}
+
 func TestCompiler_RegisteredFunctions(t *testing.T) {
 	c := compiler.New()
 

@@ -67,7 +67,7 @@ func TestNewModule(t *testing.T) {
 	})
 }
 
-func TestSDKModuleHostFunctionsCanonicalizeTerminalNames(t *testing.T) {
+func TestSDKModuleHostFunctionsCanonicalizeQualifiedNames(t *testing.T) {
 	t.Parallel()
 
 	mod := sdk.NewModule("postgres", func(bootstrap module.Bootstrap) error {
@@ -84,8 +84,12 @@ func TestSDKModuleHostFunctionsCanonicalizeTerminalNames(t *testing.T) {
 	}
 	defer func() { _ = engine.Close() }()
 
-	for _, name := range []string{"query", "QUERY", "QuErY"} {
-		query := `return DB::POSTGRES::` + name + `("ok")`
+	for _, name := range []string{
+		"db::postgres::query",
+		"DB::POSTGRES::QUERY",
+		"Db::Postgres::QuErY",
+	} {
+		query := `return ` + name + `("ok")`
 		output, runErr := engine.Run(t.Context(), source.NewAnonymous(query))
 		if runErr != nil {
 			t.Fatalf("run %q: %v", query, runErr)
@@ -136,7 +140,7 @@ func TestRegisterFunctions(t *testing.T) {
 		}
 	}
 
-	expected := []string{"TEST::four", "TEST::one", "TEST::three", "TEST::two", "TEST::variable", "TEST::zero"}
+	expected := []string{"test::four", "test::one", "test::three", "test::two", "test::variable", "test::zero"}
 	if actual := functions.List(); !slices.Equal(actual, expected) {
 		t.Fatalf("expected canonical function metadata %v, got %v", expected, actual)
 	}
@@ -214,14 +218,15 @@ func TestRegisterFunctionsIsAtomic(t *testing.T) {
 		t.Fatalf("register existing function: %v", err)
 	}
 
-	err = sdk.RegisterFunctions(ns,
+	sameNamespace := library.Namespace("test")
+	err = sdk.RegisterFunctions(sameNamespace,
 		sdk.Func("NEW", valid),
 		sdk.Func("Existing", valid),
 	)
 	if err == nil {
 		t.Fatal("expected existing definition error")
 	}
-	if ns.Function().Has("NEW") {
+	if sameNamespace.Function().Has("NEW") {
 		t.Fatal("new definition was registered before existing-name validation failed")
 	}
 
