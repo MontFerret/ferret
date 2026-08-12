@@ -65,6 +65,27 @@ func TestValidateProgram(t *testing.T) {
 			target: ErrInvalidInstruction,
 		},
 		{
+			name: "array_spread_destination_out_of_range",
+			program: withProgramMutation(func(program *Program) {
+				program.Bytecode[0] = NewInstruction(OpArraySpread, NewRegister(3), NewRegister(0))
+			}),
+			target: ErrInvalidInstruction,
+		},
+		{
+			name: "object_spread_source_out_of_range",
+			program: withProgramMutation(func(program *Program) {
+				program.Bytecode[0] = NewInstruction(OpObjectSpread, NewRegister(0), NewRegister(3))
+			}),
+			target: ErrInvalidInstruction,
+		},
+		{
+			name: "array_spread_unexpected_third_operand",
+			program: withProgramMutation(func(program *Program) {
+				program.Bytecode[0] = NewInstruction(OpArraySpread, NewRegister(0), NewRegister(1), Operand(1))
+			}),
+			target: ErrInvalidInstruction,
+		},
+		{
 			name: "constant_out_of_range",
 			program: withProgramMutation(func(program *Program) {
 				program.Bytecode[0] = NewInstruction(OpLoadConst, NewRegister(0), NewConstant(99))

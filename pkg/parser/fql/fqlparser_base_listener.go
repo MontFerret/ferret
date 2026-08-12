@@ -658,6 +658,24 @@ func (s *BaseFqlParserListener) EnterObjectLiteral(ctx *ObjectLiteralContext) {}
 // ExitObjectLiteral is called when production objectLiteral is exited.
 func (s *BaseFqlParserListener) ExitObjectLiteral(ctx *ObjectLiteralContext) {}
 
+// EnterArrayEntry is called when production arrayEntry is entered.
+func (s *BaseFqlParserListener) EnterArrayEntry(ctx *ArrayEntryContext) {}
+
+// ExitArrayEntry is called when production arrayEntry is exited.
+func (s *BaseFqlParserListener) ExitArrayEntry(ctx *ArrayEntryContext) {}
+
+// EnterObjectEntry is called when production objectEntry is entered.
+func (s *BaseFqlParserListener) EnterObjectEntry(ctx *ObjectEntryContext) {}
+
+// ExitObjectEntry is called when production objectEntry is exited.
+func (s *BaseFqlParserListener) ExitObjectEntry(ctx *ObjectEntryContext) {}
+
+// EnterSpreadEntry is called when production spreadEntry is entered.
+func (s *BaseFqlParserListener) EnterSpreadEntry(ctx *SpreadEntryContext) {}
+
+// ExitSpreadEntry is called when production spreadEntry is exited.
+func (s *BaseFqlParserListener) ExitSpreadEntry(ctx *SpreadEntryContext) {}
+
 // EnterBooleanLiteral is called when production booleanLiteral is entered.
 func (s *BaseFqlParserListener) EnterBooleanLiteral(ctx *BooleanLiteralContext) {}
 

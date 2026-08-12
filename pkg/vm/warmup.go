@@ -97,7 +97,7 @@ func ensureRegexpsWarmed(vm *VM) error {
 			}
 		}
 
-		if op != bytecode.OpLoadConst && op != bytecode.OpMove && op != bytecode.OpMoveTracked && op != bytecode.OpSourcePoint && op != bytecode.OpAssertDestructure && dst.IsRegister() {
+		if !skipStaticRegisterInvalidation(op) && dst.IsRegister() {
 			delete(reg, dst)
 		}
 	}
@@ -109,6 +109,21 @@ func ensureRegexpsWarmed(vm *VM) error {
 	vm.cache.RegexpsWarmed = true
 
 	return nil
+}
+
+func skipStaticRegisterInvalidation(op bytecode.Opcode) bool {
+	switch op {
+	case bytecode.OpLoadConst,
+		bytecode.OpMove,
+		bytecode.OpMoveTracked,
+		bytecode.OpSourcePoint,
+		bytecode.OpAssertDestructure,
+		bytecode.OpArraySpread,
+		bytecode.OpObjectSpread:
+		return true
+	default:
+		return false
+	}
 }
 
 func ensureHostFunctionsBound(vm *VM, env *Environment) error {

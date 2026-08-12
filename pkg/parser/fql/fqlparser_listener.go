@@ -316,6 +316,15 @@ type FqlParserListener interface {
 	// EnterObjectLiteral is called when entering the objectLiteral production.
 	EnterObjectLiteral(c *ObjectLiteralContext)
 
+	// EnterArrayEntry is called when entering the arrayEntry production.
+	EnterArrayEntry(c *ArrayEntryContext)
+
+	// EnterObjectEntry is called when entering the objectEntry production.
+	EnterObjectEntry(c *ObjectEntryContext)
+
+	// EnterSpreadEntry is called when entering the spreadEntry production.
+	EnterSpreadEntry(c *SpreadEntryContext)
+
 	// EnterBooleanLiteral is called when entering the booleanLiteral production.
 	EnterBooleanLiteral(c *BooleanLiteralContext)
 
@@ -858,6 +867,15 @@ type FqlParserListener interface {
 
 	// ExitObjectLiteral is called when exiting the objectLiteral production.
 	ExitObjectLiteral(c *ObjectLiteralContext)
+
+	// ExitArrayEntry is called when exiting the arrayEntry production.
+	ExitArrayEntry(c *ArrayEntryContext)
+
+	// ExitObjectEntry is called when exiting the objectEntry production.
+	ExitObjectEntry(c *ObjectEntryContext)
+
+	// ExitSpreadEntry is called when exiting the spreadEntry production.
+	ExitSpreadEntry(c *SpreadEntryContext)
 
 	// ExitBooleanLiteral is called when exiting the booleanLiteral production.
 	ExitBooleanLiteral(c *BooleanLiteralContext)

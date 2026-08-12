@@ -3,11 +3,24 @@ package bytecode
 import "testing"
 
 func TestOpcodeInfoCompleteness(t *testing.T) {
-	for op := Opcode(0); op <= OpAssertDestructure; op++ {
+	for op := Opcode(0); op <= OpObjectSpread; op++ {
 		info := OpcodeInfoOf(op)
 
 		if info.Class == OpcodeClassUnknown {
 			t.Fatalf("opcode %d (%s) has unknown class", op, op)
+		}
+	}
+}
+
+func TestOpcodeInfoSpreadMetadata(t *testing.T) {
+	for _, op := range []Opcode{OpArraySpread, OpObjectSpread} {
+		info := OpcodeInfoOf(op)
+		if info.Class != OpcodeClassDataset {
+			t.Fatalf("expected %s dataset class, got %d", op, info.Class)
+		}
+
+		if info.ControlFlow != ControlFlowNone {
+			t.Fatalf("expected %s to have no control-flow role, got %d", op, info.ControlFlow)
 		}
 	}
 }

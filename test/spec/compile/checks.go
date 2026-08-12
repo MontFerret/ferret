@@ -348,6 +348,10 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 		addUse(dst)
 		addUse(src1)
 		return
+	case bytecode.OpArraySpread, bytecode.OpObjectSpread:
+		addUse(dst)
+		addUse(src1)
+		return
 	case bytecode.OpDispatch:
 		addUse(dst)
 		addUse(src1)

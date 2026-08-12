@@ -272,7 +272,7 @@ func applyDatasetUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand
 	case bytecode.OpCounterInc:
 		collector.addUse(dst)
 		return true
-	case bytecode.OpPush, bytecode.OpArrayPush:
+	case bytecode.OpPush, bytecode.OpArrayPush, bytecode.OpArraySpread, bytecode.OpObjectSpread:
 		collector.addUse(dst)
 		collector.addUse(src1)
 		return true

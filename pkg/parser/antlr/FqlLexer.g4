@@ -140,6 +140,7 @@ FloatLiteral
 NamespaceSegment: Identifier NamespaceSeparator;
 
 UnknownIdentifier: .;
+Ellipsis: Dot Dot Dot;
 
 // Fragments
 fragment HexDigit

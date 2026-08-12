@@ -254,30 +254,27 @@ func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) bytecode
 // Returns:
 //   - An operand representing the compiled array
 func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) bytecode.Operand {
-	// Allocate destination register for the array
 	destReg := c.ctx.Function.Registers.Allocate()
+	entries := ctx.AllArrayEntry()
+	c.ctx.Program.Emitter.EmitArray(destReg, len(entries))
 
-	args := ctx.ArgumentList()
+	for _, entry := range entries {
+		if spread := entry.SpreadEntry(); spread != nil {
+			src := c.exprs.Compile(spread.Expression())
 
-	if args != nil {
-		exps := args.AllExpression()
+			c.ctx.Program.Emitter.WithSpan(parserd.SpanFromRuleContext(spread), func() {
+				c.ctx.Program.Emitter.EmitArraySpread(destReg, src)
+			})
 
-		// Emit instruction to create an array with the specified size
-		c.ctx.Program.Emitter.EmitArray(destReg, len(exps))
-
-		// Compile each expression in the array and push it to the array register
-		for _, exp := range exps {
-			// Compile expression
-			itemReg := c.exprs.Compile(exp)
-
-			c.ctx.Program.Emitter.EmitArrayPush(destReg, itemReg)
+			continue
 		}
-	} else {
-		// Emit instruction to create an empty array
-		c.ctx.Program.Emitter.EmitArray(destReg, 0)
+
+		item := c.exprs.Compile(entry.Expression())
+		c.ctx.Program.Emitter.EmitArrayPush(destReg, item)
 	}
 
 	c.ctx.Function.Types.Set(destReg, core.TypeArray)
+
 	return destReg
 }
 
@@ -289,64 +286,71 @@ func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) byte
 // Returns:
 //   - An operand representing the compiled object
 func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) bytecode.Operand {
-	// Allocate destination register for the object
 	dst := c.ctx.Function.Registers.Allocate()
-	// Get all property assignments from the object literal
-	assignments := ctx.AllPropertyAssignment()
-	size := len(assignments)
+	entries := ctx.AllObjectEntry()
+	c.ctx.Program.Emitter.EmitObject(dst, len(entries))
 
-	if size > 0 {
-		// Emit instruction to create an object with the specified number of properties
-		c.ctx.Program.Emitter.EmitObject(dst, size)
+	for _, entry := range entries {
+		if spread := entry.SpreadEntry(); spread != nil {
+			src := c.exprs.Compile(spread.Expression())
 
-		// Process each property assignment
-		for i := 0; i < size; i++ {
-			pac := assignments[i]
+			c.ctx.Program.Emitter.WithSpan(parserd.SpanFromRuleContext(spread), func() {
+				c.ctx.Program.Emitter.EmitObjectSpread(dst, src)
+			})
 
-			// Handle different types of property names
-			if prop := pac.PropertyName(); prop != nil {
-				// Regular property name (e.g., { name: value }).
-				// Evaluate value first to shorten the live range of the key register.
-				valOp := c.exprs.Compile(pac.Expression())
-				if constOp, ok := c.CompilePropertyNameConst(prop); ok {
-					c.ctx.Program.Emitter.EmitObjectSetConst(dst, constOp, valOp)
-				} else {
-					propOp := c.CompilePropertyName(prop)
-					c.ctx.Program.Emitter.EmitObjectSet(dst, propOp, valOp)
-				}
-			} else if comProp := pac.ComputedPropertyName(); comProp != nil {
-				// Computed property name (e.g., { [expr]: value })
-				if val, ok := c.facts.LiteralValueFromExpression(comProp.Expression()); ok {
-					switch val.(type) {
-					case *runtime.Array, *runtime.Object:
-						// Fall back to the generic computed path to preserve side effects.
-					default:
-						valOp := c.exprs.Compile(pac.Expression())
-						keyConst := c.ctx.Function.Symbols.AddConstant(runtime.ToString(val))
-						c.ctx.Program.Emitter.EmitObjectSetConst(dst, keyConst, valOp)
-						continue
-					}
-				}
-
-				propOp := c.CompileComputedPropertyName(comProp)
-				valOp := c.exprs.Compile(pac.Expression())
-				c.ctx.Program.Emitter.EmitObjectSet(dst, propOp, valOp)
-			} else if variable := pac.Variable(); variable != nil {
-				// Shorthand property (e.g., { variable })
-				// Evaluate value first to shorten the live range of the key register.
-				valOp := c.exprs.CompileVariable(variable)
-				propOp := c.ctx.Function.Symbols.AddConstant(runtime.NewString(variable.GetText()))
-				c.ctx.Program.Emitter.EmitObjectSetConst(dst, propOp, valOp)
-			}
+			continue
 		}
-	} else {
-		// Emit instruction to create an empty object
-		c.ctx.Program.Emitter.EmitObject(dst, 0)
+
+		c.compileObjectProperty(dst, entry.PropertyAssignment())
 	}
 
 	c.ctx.Function.Types.Set(dst, core.TypeObject)
 
 	return dst
+}
+
+func (c *LiteralCompiler) compileObjectProperty(dst bytecode.Operand, ctx fql.IPropertyAssignmentContext) {
+	if prop := ctx.PropertyName(); prop != nil {
+		// Evaluate the value first to shorten the live range of the key register.
+		value := c.exprs.Compile(ctx.Expression())
+		if key, ok := c.CompilePropertyNameConst(prop); ok {
+			c.ctx.Program.Emitter.EmitObjectSetConst(dst, key, value)
+
+			return
+		}
+
+		key := c.CompilePropertyName(prop)
+		c.ctx.Program.Emitter.EmitObjectSet(dst, key, value)
+
+		return
+	}
+
+	if computed := ctx.ComputedPropertyName(); computed != nil {
+		if value, ok := c.facts.LiteralValueFromExpression(computed.Expression()); ok {
+			switch value.(type) {
+			case *runtime.Array, *runtime.Object:
+				// Fall back to the generic path to preserve side effects.
+			default:
+				valueOp := c.exprs.Compile(ctx.Expression())
+				key := c.ctx.Function.Symbols.AddConstant(runtime.ToString(value))
+				c.ctx.Program.Emitter.EmitObjectSetConst(dst, key, valueOp)
+
+				return
+			}
+		}
+
+		key := c.CompileComputedPropertyName(computed)
+		value := c.exprs.Compile(ctx.Expression())
+		c.ctx.Program.Emitter.EmitObjectSet(dst, key, value)
+
+		return
+	}
+
+	if variable := ctx.Variable(); variable != nil {
+		value := c.exprs.CompileVariable(variable)
+		key := c.ctx.Function.Symbols.AddConstant(runtime.NewString(variable.GetText()))
+		c.ctx.Program.Emitter.EmitObjectSetConst(dst, key, value)
+	}
 }
 
 // CompilePropertyName processes a property name from an object literal in the FQL AST.

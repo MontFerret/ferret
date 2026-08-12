@@ -138,7 +138,7 @@ func matchCommonErrors(src *source.Source, err *diagnostics.Diagnostic, offendin
 	}
 
 	if isMissing(err.Message) {
-		if is(offending.Prev(), "..") || is(offending, "..") || has(err.Message, "..") {
+		if is(offending.Prev(), "..") || is(offending, "..") || hasRangeToken(err.Message) {
 			span := spanFromTokenSafe(offending.Token(), src)
 			span.Start += 2
 			span.End += 2
@@ -220,7 +220,7 @@ func matchCommonErrors(src *source.Source, err *diagnostics.Diagnostic, offendin
 			return true
 		}
 
-		if is(offending, "..") || has(err.Message, "..") {
+		if is(offending, "..") || hasRangeToken(err.Message) {
 			span := spanFromTokenSafe(offending.Token(), src)
 			span.Start += 2
 			span.End += 2

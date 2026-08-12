@@ -124,6 +124,8 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 	structuredErr, hasStructuredErr := runtimeDiagnosticDetails(err)
 	var destructureErr *DestructureError
 	hasDestructureErr := errors.As(err, &destructureErr)
+	var spreadErr *SpreadError
+	hasSpreadErr := errors.As(err, &spreadErr)
 	var invariantErr *InvariantError
 	argPos, hasArg, argCause := runtime.InvalidArgumentDetails(err)
 
@@ -161,6 +163,13 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		spec.Label = destructureErr.Label()
 		spec.Note = destructureErr.Note()
 		spec.Hint = destructureErr.Hint()
+		spec.Cause = runtime.ErrInvalidType
+	case hasSpreadErr:
+		spec.Kind = diagnostics.TypeError
+		spec.Message = spreadErr.Error()
+		spec.Label = spreadErr.Label()
+		spec.Note = spreadErr.Note()
+		spec.Hint = spreadErr.Hint()
 		spec.Cause = runtime.ErrInvalidType
 	case hasStructuredErr:
 		spec.Kind = diagnostics.TypeError

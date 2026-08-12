@@ -201,6 +201,10 @@ const (
 
 	// Destructuring Operations
 	OpAssertDestructure // Validates object or array destructuring capability
+
+	// Literal Construction Operations
+	OpArraySpread  // Appends a built-in Array to an array under construction
+	OpObjectSpread // Copies an ObjectLike value into an object under construction
 )
 
 func (op Opcode) String() string {
@@ -516,6 +520,10 @@ func (op Opcode) String() string {
 		return "STRMGDONE"
 	case OpAssertDestructure:
 		return "ASSERTDESTR"
+	case OpArraySpread:
+		return "ARRSPREAD"
+	case OpObjectSpread:
+		return "OBJSPREAD"
 
 	default:
 		return "UNKNOWN"

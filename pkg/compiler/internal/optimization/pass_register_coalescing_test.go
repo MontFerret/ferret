@@ -176,6 +176,18 @@ func TestDestructureAssertionRegisterOperandClassification(t *testing.T) {
 	}
 }
 
+func TestLiteralSpreadRegisterOperandClassification(t *testing.T) {
+	for _, op := range []bytecode.Opcode{bytecode.OpArraySpread, bytecode.OpObjectSpread} {
+		if !operandIsRegister(op, 0) || !operandIsRegister(op, 1) {
+			t.Fatalf("expected both %s operands to be registers", op)
+		}
+
+		if operandIsRegister(op, 2) {
+			t.Fatalf("expected trailing %s operand to remain immediate", op)
+		}
+	}
+}
+
 func assertBytecodeEqual(t *testing.T, got, want []bytecode.Instruction) {
 	t.Helper()
 

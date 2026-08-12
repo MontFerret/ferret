@@ -70,6 +70,18 @@ var instructionUseDefCases = []instructionUseDefCase{
 		wantDefs: nil,
 	},
 	{
+		name:     "array spread uses destination and source without defining either",
+		inst:     bytecode.NewInstruction(bytecode.OpArraySpread, bytecode.NewRegister(5), bytecode.NewRegister(2)),
+		wantUses: []int{5, 2},
+		wantDefs: nil,
+	},
+	{
+		name:     "object spread uses destination and source without defining either",
+		inst:     bytecode.NewInstruction(bytecode.OpObjectSpread, bytecode.NewRegister(4), bytecode.NewRegister(1)),
+		wantUses: []int{4, 1},
+		wantDefs: nil,
+	},
+	{
 		name:     "close uses and defines same register",
 		inst:     bytecode.NewInstruction(bytecode.OpClose, bytecode.NewRegister(4)),
 		wantUses: []int{4},

@@ -419,6 +419,18 @@ func (v *BaseFqlParserVisitor) VisitObjectLiteral(ctx *ObjectLiteralContext) int
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitArrayEntry(ctx *ArrayEntryContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitObjectEntry(ctx *ObjectEntryContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitSpreadEntry(ctx *SpreadEntryContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitBooleanLiteral(ctx *BooleanLiteralContext) interface{} {
 	return v.VisitChildren(ctx)
 }

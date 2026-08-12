@@ -323,6 +323,8 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 		return idx == 0
 	case bytecode.OpCounterInc:
 		return idx == 0
+	case bytecode.OpArraySpread, bytecode.OpObjectSpread:
+		return idx == 0 || idx == 1
 	case bytecode.OpFail:
 		return false
 	case bytecode.OpFailTimeout, bytecode.OpRethrow:

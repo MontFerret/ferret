@@ -744,6 +744,21 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			ds := reg[dst].(*runtime.Array)
 			_ = ds.Append(ctx, reg[src1])
 			state.retireOwnership(reg[src1])
+		case bytecode.OpArraySpread:
+			destination, ok := reg[dst].(*runtime.Array)
+			if !ok {
+				invariantErr := diagnostics.NewInvariantError(
+					"invalid array spread destination",
+					runtime.Errorf(runtime.ErrUnexpected, "expected array at pc %d", pc),
+				)
+				state.raiseInvariantAt(pc, invariantErr)
+
+				break
+			}
+
+			if err := spreadArray(ctx, destination, reg[src1]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+			}
 		case bytecode.OpAggregateUpdate:
 			collector, ok := reg[dst].(*data.AggregateCollector)
 			if !ok {
@@ -835,6 +850,21 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 
 			callErr := runtime.TypeErrorOf(reg[dst], runtime.TypeObject)
 			state.raiseRuntimeAt(pc, callErr, recoverDefault, bytecode.NoopOperand, nil, false)
+		case bytecode.OpObjectSpread:
+			destination, ok := reg[dst].(*data.FastObject)
+			if !ok {
+				invariantErr := diagnostics.NewInvariantError(
+					"invalid object spread destination",
+					runtime.Errorf(runtime.ErrUnexpected, "expected object at pc %d", pc),
+				)
+				state.raiseInvariantAt(pc, invariantErr)
+
+				break
+			}
+
+			if err := spreadObject(ctx, destination, reg[src1]); err != nil {
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+			}
 		case bytecode.OpSetIndex:
 			target := reg[dst]
 			index := reg[src1]

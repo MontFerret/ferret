@@ -345,7 +345,7 @@ func disasmLine(ip int, instr bytecode.Instruction, p *bytecode.Program, labels 
 	case bytecode.OpMove, bytecode.OpMoveTracked, bytecode.OpMakeCell, bytecode.OpLoadCell, bytecode.OpStoreCell,
 		bytecode.OpLength, bytecode.OpType, bytecode.OpExists,
 		bytecode.OpIter, bytecode.OpIterValue, bytecode.OpIterKey, bytecode.OpPush, bytecode.OpArrayPush, bytecode.OpDistinct,
-		bytecode.OpStreamGroupArmDone:
+		bytecode.OpStreamGroupArmDone, bytecode.OpArraySpread, bytecode.OpObjectSpread:
 		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]))
 
 	case bytecode.OpHCall, bytecode.OpProtectedHCall, bytecode.OpCall, bytecode.OpProtectedCall, bytecode.OpTailCall:

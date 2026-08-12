@@ -67,6 +67,14 @@ func TestBuildExecPlanPreservesRegisterFactsAcrossDestructureAssertion(t *testin
 	}
 }
 
+func TestStaticRegisterInvalidationSkipsLiteralSpread(t *testing.T) {
+	for _, op := range []bytecode.Opcode{bytecode.OpArraySpread, bytecode.OpObjectSpread} {
+		if !skipStaticRegisterInvalidation(op) {
+			t.Fatalf("expected %s to preserve destination register facts", op)
+		}
+	}
+}
+
 func TestNewWith_HostCallIDsAreCompactAndOrdered(t *testing.T) {
 	program := newHostCallProgram(
 		hostCallSpec{name: "F", args: []runtime.Value{runtime.NewInt(1)}},

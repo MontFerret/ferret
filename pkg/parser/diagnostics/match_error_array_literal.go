@@ -252,6 +252,7 @@ func isArrayItemStartToken(token antlr.Token) bool {
 	case fql.FqlLexerOpenBrace,
 		fql.FqlLexerOpenBracket,
 		fql.FqlLexerOpenParen,
+		fql.FqlLexerEllipsis,
 		fql.FqlLexerIdentifier,
 		fql.FqlLexerIgnoreIdentifier,
 		fql.FqlLexerStringLiteral,
