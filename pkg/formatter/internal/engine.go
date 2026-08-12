@@ -25,6 +25,7 @@ type (
 		member     *memberFormatter
 		clause     *clauseFormatter
 		values     *valueFormatter
+		bindings   *bindingPatternFormatter
 	}
 )
 
@@ -45,6 +46,7 @@ func newEngine(src *source.Source, out io.Writer, opts *Options) *engine {
 	e.member = &memberFormatter{engine: e}
 	e.clause = &clauseFormatter{engine: e}
 	e.values = &valueFormatter{engine: e}
+	e.bindings = &bindingPatternFormatter{engine: e}
 
 	return e
 }

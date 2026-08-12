@@ -132,7 +132,7 @@ func opcodeClass(op Opcode) OpcodeClass {
 		return OpcodeClassAccess
 	case OpAdd, OpAddConst, OpConcat, OpSub, OpMul, OpDiv, OpMod, OpIncr, OpDecr:
 		return OpcodeClassArithmetic
-	case OpCastBool, OpNegate, OpFlipPositive, OpFlipNegative, OpType:
+	case OpCastBool, OpNegate, OpFlipPositive, OpFlipNegative, OpType, OpAssertDestructure:
 		return OpcodeClassType
 	case OpCmp, OpNot, OpEq, OpNe, OpGt, OpLt, OpGte, OpLte, OpIn, OpLike, OpRegexp:
 		return OpcodeClassComparison

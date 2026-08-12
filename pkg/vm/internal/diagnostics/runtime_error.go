@@ -121,7 +121,9 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		Message: "runtime error",
 	}
 
-	memberErr, hasMemberErr := memberRuntimeDiagnostic(err)
+	structuredErr, hasStructuredErr := runtimeDiagnosticDetails(err)
+	var destructureErr *DestructureError
+	hasDestructureErr := errors.As(err, &destructureErr)
 	var invariantErr *InvariantError
 	argPos, hasArg, argCause := runtime.InvalidArgumentDetails(err)
 
@@ -153,12 +155,19 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		spec.Message = runtime.ErrTimeout.Error()
 		spec.Label = "operation timed out here"
 		spec.Cause = runtime.ErrTimeout
-	case hasMemberErr:
+	case hasDestructureErr:
+		spec.Kind = diagnostics.TypeError
+		spec.Message = destructureErr.Error()
+		spec.Label = destructureErr.Label()
+		spec.Note = destructureErr.Note()
+		spec.Hint = destructureErr.Hint()
+		spec.Cause = runtime.ErrInvalidType
+	case hasStructuredErr:
 		spec.Kind = diagnostics.TypeError
 		spec.Message = "invalid type"
-		spec.Label = memberErr.Label()
-		spec.Note = memberErr.Note()
-		spec.Hint = memberErr.Hint()
+		spec.Label = structuredErr.Label()
+		spec.Note = structuredErr.Note()
+		spec.Hint = structuredErr.Hint()
 		spec.Cause = runtime.ErrInvalidType
 	case hasArg && (errors.Is(argCause, runtime.ErrInvalidType) || errors.Is(argCause, runtime.ErrInvalidArgumentType)):
 		index := argPos + 1

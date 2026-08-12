@@ -646,6 +646,26 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 
 			reg[dst] = data.NewAggregateKey(reg[src1], int(selectorVal))
+		case bytecode.OpAssertDestructure:
+			value := reg[dst]
+			if value == runtime.None {
+				break
+			}
+
+			mode := bytecode.DestructureMode(src1)
+			compatible := false
+
+			switch mode {
+			case bytecode.DestructureModeObject:
+				_, compatible = value.(runtime.KeyReadable)
+			case bytecode.DestructureModeArray:
+				_, compatible = value.(runtime.IndexReadable)
+			}
+
+			if !compatible {
+				err := diagnostics.DestructureErrorOf(value, mode.String())
+				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
+			}
 		case bytecode.OpLoadIndex, bytecode.OpLoadIndexOptional:
 			src := reg[src1]
 			optional := op == bytecode.OpLoadIndexOptional

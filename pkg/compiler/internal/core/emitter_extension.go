@@ -176,6 +176,10 @@ func (e *Emitter) EmitLoadPropertyOptional(dst, obj, prop bytecode.Operand) {
 	e.EmitABC(bytecode.OpLoadPropertyOptional, dst, obj, prop)
 }
 
+func (e *Emitter) EmitAssertDestructure(src bytecode.Operand, mode bytecode.DestructureMode) {
+	e.EmitAB(bytecode.OpAssertDestructure, src, bytecode.Operand(mode))
+}
+
 func (e *Emitter) EmitSetIndex(target, index, value bytecode.Operand) {
 	e.EmitABC(bytecode.OpSetIndex, target, index, value)
 }

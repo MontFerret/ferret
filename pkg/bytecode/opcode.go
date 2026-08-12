@@ -198,6 +198,9 @@ const (
 	// Stream Group Operations
 	OpStreamGroup        // Subscribes to a declaration-ordered group of streams
 	OpStreamGroupArmDone // Marks and closes one stream-group arm
+
+	// Destructuring Operations
+	OpAssertDestructure // Validates object or array destructuring capability
 )
 
 func (op Opcode) String() string {
@@ -511,6 +514,8 @@ func (op Opcode) String() string {
 		return "STRMG"
 	case OpStreamGroupArmDone:
 		return "STRMGDONE"
+	case OpAssertDestructure:
+		return "ASSERTDESTR"
 
 	default:
 		return "UNKNOWN"

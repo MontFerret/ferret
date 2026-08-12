@@ -144,6 +144,27 @@ func (h *ErrorHandler) DuplicateMatchBinding(ctx antlr.ParserRuleContext, name s
 	})
 }
 
+func (h *ErrorHandler) DuplicateDestructuringBinding(
+	ctx antlr.ParserRuleContext,
+	first antlr.ParserRuleContext,
+	name string,
+) {
+	spans := []diagnostics.ErrorSpan{
+		diagnostics.NewMainErrorSpan(SpanFromRuleContext(ctx), "duplicate binding"),
+	}
+
+	if first != nil {
+		spans = append(spans, diagnostics.NewSecondaryErrorSpan(SpanFromRuleContext(first), "first bound here"))
+	}
+
+	h.Add(&diagnostics.Diagnostic{
+		Message: fmt.Sprintf("duplicate binding \"%s\" in destructuring pattern", name),
+		Source:  h.src,
+		Spans:   spans,
+		Kind:    NameError,
+	})
+}
+
 func (h *ErrorHandler) MissingReturnValue(ctx antlr.ParserRuleContext) {
 	h.Add(&diagnostics.Diagnostic{
 		Message: fmt.Sprintf("Expected expression after '%s'", ctx.GetText()),

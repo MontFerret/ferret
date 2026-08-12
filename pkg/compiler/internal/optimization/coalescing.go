@@ -329,6 +329,8 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 		return false
 	case bytecode.OpSourcePoint:
 		return false
+	case bytecode.OpAssertDestructure:
+		return idx == 0
 	case bytecode.OpIncr, bytecode.OpDecr, bytecode.OpClose, bytecode.OpSleep, bytecode.OpReturn:
 		return idx == 0
 	default:

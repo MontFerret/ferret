@@ -171,7 +171,11 @@ func (v *NameCollisionValidator) validateForExpression(parent *nameCollisionScop
 
 	scope := v.newScope()
 
-	if value := ctx.GetValueVariable(); value != nil {
+	if pattern := ctx.GetValuePattern(); pattern != nil {
+		for _, leaf := range structuredBindingPatternLeaves(pattern) {
+			v.recordBinding(scope, leaf.Name, leaf.Context)
+		}
+	} else if value := ctx.GetValueVariable(); value != nil {
 		v.recordBinding(scope, textOfLoopVariable(value), v.ruleContext(value))
 	}
 
@@ -260,7 +264,14 @@ func (v *NameCollisionValidator) collectVariableDeclaration(scope *nameCollision
 		return
 	}
 
-	v.recordBinding(scope, bindingDeclarationName(ctx), v.ruleContext(ctx))
+	if ctx.StructuredBindingPattern() != nil {
+		for _, leaf := range declarationBindingPatternLeaves(ctx) {
+			v.recordBinding(scope, leaf.Name, leaf.Context)
+		}
+	} else {
+		v.recordBinding(scope, bindingDeclarationName(ctx), v.ruleContext(ctx))
+	}
+
 	v.collectCallsInNode(scope, ctx.Expression())
 }
 

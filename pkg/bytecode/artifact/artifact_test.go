@@ -194,6 +194,45 @@ func TestMarshalPreservesStreamGroupOpcodes(t *testing.T) {
 	}
 }
 
+func TestMarshalPreservesDestructureAssertion(t *testing.T) {
+	tests := []struct {
+		name string
+		opts []Option
+	}{
+		{name: "message_pack"},
+		{name: "json", opts: []Option{WithFormat(FormatJSON)}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			program := newArtifactTestProgram()
+			program.Registers = 1
+			program.Bytecode = []bytecode.Instruction{
+				bytecode.NewInstruction(bytecode.OpAssertDestructure, bytecode.NewRegister(0), bytecode.Operand(bytecode.DestructureModeArray)),
+				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+			}
+			program.Metadata.Labels = nil
+			program.Metadata.AggregateSelectorSlots = nil
+			program.Metadata.MatchFailTargets = nil
+			program.Metadata.DebugSpans = nil
+
+			data, err := Marshal(program, tc.opts...)
+			if err != nil {
+				t.Fatalf("Marshal() error = %v", err)
+			}
+
+			decoded, err := Unmarshal(data)
+			if err != nil {
+				t.Fatalf("Unmarshal() error = %v", err)
+			}
+
+			if got := decoded.Bytecode[0]; got.Opcode != bytecode.OpAssertDestructure || got.Operands[1] != bytecode.Operand(bytecode.DestructureModeArray) {
+				t.Fatalf("unexpected assertion after round trip: %#v", got)
+			}
+		})
+	}
+}
+
 func TestMarshalPreservesSourcePoint(t *testing.T) {
 	program := newArtifactTestProgram()
 	program.Bytecode = []bytecode.Instruction{

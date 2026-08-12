@@ -64,6 +64,12 @@ var instructionUseDefCases = []instructionUseDefCase{
 		wantDefs: nil,
 	},
 	{
+		name:     "destructure assertion only uses source register",
+		inst:     bytecode.NewInstruction(bytecode.OpAssertDestructure, bytecode.NewRegister(5), bytecode.Operand(bytecode.DestructureModeObject)),
+		wantUses: []int{5},
+		wantDefs: nil,
+	},
+	{
 		name:     "close uses and defines same register",
 		inst:     bytecode.NewInstruction(bytecode.OpClose, bytecode.NewRegister(4)),
 		wantUses: []int{4},

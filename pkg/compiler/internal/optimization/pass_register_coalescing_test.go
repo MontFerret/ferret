@@ -166,6 +166,16 @@ func runCoalescing(t *testing.T, program *bytecode.Program) {
 	}
 }
 
+func TestDestructureAssertionRegisterOperandClassification(t *testing.T) {
+	if !operandIsRegister(bytecode.OpAssertDestructure, 0) {
+		t.Fatal("expected destructure source to be a register operand")
+	}
+
+	if operandIsRegister(bytecode.OpAssertDestructure, 1) || operandIsRegister(bytecode.OpAssertDestructure, 2) {
+		t.Fatal("expected destructure mode and trailing operand to remain immediates")
+	}
+}
+
 func assertBytecodeEqual(t *testing.T, got, want []bytecode.Instruction) {
 	t.Helper()
 

@@ -95,7 +95,7 @@ func (c *LoopSortCompiler) compileSingleSortKey(clause fql.ISortClauseExpression
 func (c *LoopSortCompiler) resolveValueRegister(loop *core.Loop) bytecode.Operand {
 	if loop.Kind == core.ForInLoop {
 		// If value is already used in the loop body, reuse the existing register
-		if loop.ValueName != "" {
+		if loop.Value.IsRegister() {
 			return loop.Value
 		}
 
@@ -212,5 +212,7 @@ func (c *LoopSortCompiler) restoreScope(loop *core.Loop, scope *core.ScopeProjec
 	if loop.ValueName != "" {
 		found, _ := c.ctx.Function.Symbols.Lookup(loop.ValueName)
 		loop.Value = found.Register
+	} else if loop.Destructured {
+		loop.Value = value
 	}
 }

@@ -646,3 +646,28 @@ func TestDisassemble_StreamGroupOperands(t *testing.T) {
 		t.Fatalf("expected stream group arm operands in output:\n%s", out)
 	}
 }
+
+func TestDisassemble_DestructureAssertion(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpAssertDestructure, bytecode.NewRegister(0), bytecode.Operand(bytecode.DestructureModeObject)),
+			bytecode.NewInstruction(bytecode.OpAssertDestructure, bytecode.NewRegister(0), bytecode.Operand(bytecode.DestructureModeArray)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	if !strings.Contains(out, "0: ASSERTDESTR R0 Object") {
+		t.Fatalf("expected object destructure assertion in output:\n%s", out)
+	}
+
+	if !strings.Contains(out, "1: ASSERTDESTR R0 Array") {
+		t.Fatalf("expected array destructure assertion in output:\n%s", out)
+	}
+}
