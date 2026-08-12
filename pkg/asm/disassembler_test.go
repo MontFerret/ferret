@@ -671,3 +671,28 @@ func TestDisassemble_DestructureAssertion(t *testing.T) {
 		t.Fatalf("expected array destructure assertion in output:\n%s", out)
 	}
 }
+
+func TestDisassemble_LiteralSpread(t *testing.T) {
+	prog := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpArraySpread, bytecode.NewRegister(0), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpObjectSpread, bytecode.NewRegister(0), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+	}
+
+	out, err := Disassemble(prog)
+	if err != nil {
+		t.Fatalf("Disassemble() error: %v", err)
+	}
+
+	if !strings.Contains(out, "0: ARRSPREAD R0 R1") {
+		t.Fatalf("expected array spread operands in output:\n%s", out)
+	}
+
+	if !strings.Contains(out, "1: OBJSPREAD R0 R1") {
+		t.Fatalf("expected object spread operands in output:\n%s", out)
+	}
+}

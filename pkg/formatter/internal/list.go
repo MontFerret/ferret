@@ -25,29 +25,33 @@ func (l *listFormatter) tokenStop(node antlr.TerminalNode) int {
 }
 
 func (l *listFormatter) arrayHasComments(ctx *fql.ArrayLiteralContext) bool {
-	if ctx == nil || ctx.ArgumentList() == nil {
+	if ctx == nil {
 		return false
 	}
 
-	args := ctx.ArgumentList().AllExpression()
-	if len(args) == 0 {
+	entries := ctx.AllArrayEntry()
+	if len(entries) == 0 {
 		return false
 	}
 
 	closeStart := l.trivia.tokenStart(ctx.CloseBracket())
-	firstArgStart := l.trivia.startIndex(args[0].(antlr.ParserRuleContext))
+	firstEntryStart := l.trivia.startIndex(entries[0].(antlr.ParserRuleContext))
 	openStop := l.tokenStop(ctx.OpenBracket())
 
-	if l.trivia.containsComment(l.trivia.sliceBetween(openStop+1, firstArgStart)) {
+	if l.trivia.containsComment(l.trivia.sliceBetween(openStop+1, firstEntryStart)) {
 		return true
 	}
 
-	for i, arg := range args {
-		start := l.trivia.stopIndex(arg.(antlr.ParserRuleContext)) + 1
+	for i, entry := range entries {
+		if spread := entry.SpreadEntry(); spread != nil && l.spreadHasComments(spread) {
+			return true
+		}
+
+		start := l.trivia.stopIndex(entry.(antlr.ParserRuleContext)) + 1
 		end := closeStart
 
-		if i < len(args)-1 {
-			end = l.trivia.startIndex(args[i+1].(antlr.ParserRuleContext))
+		if i < len(entries)-1 {
+			end = l.trivia.startIndex(entries[i+1].(antlr.ParserRuleContext))
 		}
 
 		if l.trivia.containsComment(l.trivia.sliceBetween(start, end)) {
@@ -63,25 +67,29 @@ func (l *listFormatter) objectHasComments(ctx *fql.ObjectLiteralContext) bool {
 		return false
 	}
 
-	props := ctx.AllPropertyAssignment()
-	if len(props) == 0 {
+	entries := ctx.AllObjectEntry()
+	if len(entries) == 0 {
 		return false
 	}
 
 	closeStart := l.trivia.tokenStart(ctx.CloseBrace())
-	firstPropStart := l.trivia.startIndex(props[0].(antlr.ParserRuleContext))
+	firstEntryStart := l.trivia.startIndex(entries[0].(antlr.ParserRuleContext))
 	openStop := l.tokenStop(ctx.OpenBrace())
 
-	if l.trivia.containsComment(l.trivia.sliceBetween(openStop+1, firstPropStart)) {
+	if l.trivia.containsComment(l.trivia.sliceBetween(openStop+1, firstEntryStart)) {
 		return true
 	}
 
-	for i, prop := range props {
-		start := l.trivia.stopIndex(prop.(antlr.ParserRuleContext)) + 1
+	for i, entry := range entries {
+		if spread := entry.SpreadEntry(); spread != nil && l.spreadHasComments(spread) {
+			return true
+		}
+
+		start := l.trivia.stopIndex(entry.(antlr.ParserRuleContext)) + 1
 		end := closeStart
 
-		if i < len(props)-1 {
-			end = l.trivia.startIndex(props[i+1].(antlr.ParserRuleContext))
+		if i < len(entries)-1 {
+			end = l.trivia.startIndex(entries[i+1].(antlr.ParserRuleContext))
 		}
 
 		if l.trivia.containsComment(l.trivia.sliceBetween(start, end)) {
@@ -151,12 +159,17 @@ func (l *listFormatter) argumentListHasComments(ctx *fql.ArgumentListContext) bo
 }
 
 func (l *listFormatter) arrayHasStructuredElements(ctx *fql.ArrayLiteralContext) bool {
-	if ctx == nil || ctx.ArgumentList() == nil {
+	if ctx == nil {
 		return false
 	}
 
-	for _, arg := range ctx.ArgumentList().AllExpression() {
-		if l.expressionIsStructuredLiteral(arg.(*fql.ExpressionContext)) {
+	for _, entry := range ctx.AllArrayEntry() {
+		expr := entry.Expression()
+		if spread := entry.SpreadEntry(); spread != nil {
+			expr = spread.Expression()
+		}
+
+		if l.expressionIsStructuredLiteral(expr.(*fql.ExpressionContext)) {
 			return true
 		}
 	}
@@ -192,7 +205,7 @@ func (l *listFormatter) objectShouldMultiline(ctx *fql.ObjectLiteralContext) boo
 		return false
 	}
 
-	return len(ctx.AllPropertyAssignment()) > 4
+	return len(ctx.AllObjectEntry()) > 4
 }
 
 func (l *listFormatter) objectWithLineBreaks(ctx *fql.ExpressionContext) *fql.ObjectLiteralContext {
@@ -265,12 +278,87 @@ func (l *listFormatter) formatMultilinePropertyAssignmentWith(p *printer, ctx *f
 	}
 }
 
+func (l *listFormatter) formatSpreadEntryWith(p *printer, ctx *fql.SpreadEntryContext) {
+	if ctx == nil {
+		return
+	}
+
+	p.write("...")
+
+	if expr := ctx.Expression(); expr != nil {
+		exprCtx := expr.(*fql.ExpressionContext)
+		trivia := l.spreadTrivia(ctx)
+		if l.trivia.containsComment(trivia) {
+			l.trivia.emitListTriviaWith(p, trivia)
+		}
+
+		l.expression.formatExpressionWith(p, exprCtx)
+	}
+}
+
+func (l *listFormatter) spreadHasComments(ctx fql.ISpreadEntryContext) bool {
+	return l.trivia.containsComment(l.spreadTrivia(ctx))
+}
+
+func (l *listFormatter) spreadTrivia(ctx fql.ISpreadEntryContext) string {
+	if ctx == nil || ctx.Ellipsis() == nil || ctx.Expression() == nil {
+		return ""
+	}
+
+	start := l.tokenStop(ctx.Ellipsis()) + 1
+	end := l.trivia.startIndex(ctx.Expression().(antlr.ParserRuleContext))
+
+	return l.trivia.sliceBetween(start, end)
+}
+
+func (l *listFormatter) formatArrayEntryWith(p *printer, ctx *fql.ArrayEntryContext) {
+	if ctx == nil {
+		return
+	}
+
+	if spread := ctx.SpreadEntry(); spread != nil {
+		l.formatSpreadEntryWith(p, spread.(*fql.SpreadEntryContext))
+
+		return
+	}
+
+	if expr := ctx.Expression(); expr != nil {
+		l.expression.formatExpressionWith(p, expr.(*fql.ExpressionContext))
+	}
+}
+
+func (l *listFormatter) formatObjectEntryWith(p *printer, ctx *fql.ObjectEntryContext, multiline bool) {
+	if ctx == nil {
+		return
+	}
+
+	if spread := ctx.SpreadEntry(); spread != nil {
+		l.formatSpreadEntryWith(p, spread.(*fql.SpreadEntryContext))
+
+		return
+	}
+
+	property := ctx.PropertyAssignment()
+	if property == nil {
+		return
+	}
+
+	propertyCtx := property.(*fql.PropertyAssignmentContext)
+	if multiline {
+		l.formatMultilinePropertyAssignmentWith(p, propertyCtx)
+
+		return
+	}
+
+	l.literal.formatPropertyAssignmentWith(p, propertyCtx)
+}
+
 func (l *listFormatter) formatArrayLiteral(ctx *fql.ArrayLiteralContext) {
 	if ctx == nil {
 		return
 	}
 
-	if ctx.ArgumentList() == nil {
+	if len(ctx.AllArrayEntry()) == 0 {
 		l.p.write("[]")
 
 		return
@@ -311,10 +399,10 @@ func (l *listFormatter) formatArrayLiteralInline(ctx *fql.ArrayLiteralContext) {
 }
 
 func (l *listFormatter) formatArrayLiteralWith(p *printer, ctx *fql.ArrayLiteralContext, inline bool) {
-	args := ctx.ArgumentList().AllExpression()
+	entries := ctx.AllArrayEntry()
 	p.write("[")
 
-	if len(args) == 0 {
+	if len(entries) == 0 {
 		p.write("]")
 
 		return
@@ -322,8 +410,8 @@ func (l *listFormatter) formatArrayLiteralWith(p *printer, ctx *fql.ArrayLiteral
 
 	if !inline {
 		p.withIndent(func() {
-			firstArg := args[0].(antlr.ParserRuleContext)
-			leadingTrivia := l.trivia.sliceBetween(l.tokenStop(ctx.OpenBracket())+1, l.trivia.startIndex(firstArg))
+			firstEntry := entries[0].(antlr.ParserRuleContext)
+			leadingTrivia := l.trivia.sliceBetween(l.tokenStop(ctx.OpenBracket())+1, l.trivia.startIndex(firstEntry))
 
 			if l.trivia.containsComment(leadingTrivia) {
 				l.trivia.emitListTriviaWith(p, leadingTrivia)
@@ -333,21 +421,21 @@ func (l *listFormatter) formatArrayLiteralWith(p *printer, ctx *fql.ArrayLiteral
 
 			closeStart := l.trivia.tokenStart(ctx.CloseBracket())
 
-			for i, expr := range args {
-				exprCtx := expr.(*fql.ExpressionContext)
-				l.expression.formatExpressionWith(p, exprCtx)
+			for i, entry := range entries {
+				entryCtx := entry.(*fql.ArrayEntryContext)
+				l.formatArrayEntryWith(p, entryCtx)
 
-				if i < len(args)-1 {
+				if i < len(entries)-1 {
 					p.write(",")
 				}
 
 				nextStart := closeStart
 
-				if i < len(args)-1 {
-					nextStart = l.trivia.startIndex(args[i+1].(antlr.ParserRuleContext))
+				if i < len(entries)-1 {
+					nextStart = l.trivia.startIndex(entries[i+1].(antlr.ParserRuleContext))
 				}
 
-				l.trivia.emitListTriviaWith(p, l.trivia.sliceBetween(l.trivia.stopIndex(exprCtx)+1, nextStart))
+				l.trivia.emitListTriviaWith(p, l.trivia.sliceBetween(l.trivia.stopIndex(entryCtx)+1, nextStart))
 			}
 		})
 
@@ -356,10 +444,10 @@ func (l *listFormatter) formatArrayLiteralWith(p *printer, ctx *fql.ArrayLiteral
 		return
 	}
 
-	for i, expr := range args {
-		l.expression.formatExpressionWith(p, expr.(*fql.ExpressionContext))
+	for i, entry := range entries {
+		l.formatArrayEntryWith(p, entry.(*fql.ArrayEntryContext))
 
-		if i < len(args)-1 {
+		if i < len(entries)-1 {
 			p.write(",")
 			p.space()
 		}
@@ -373,8 +461,8 @@ func (l *listFormatter) formatObjectLiteral(ctx *fql.ObjectLiteralContext) {
 		return
 	}
 
-	props := ctx.AllPropertyAssignment()
-	if len(props) == 0 {
+	entries := ctx.AllObjectEntry()
+	if len(entries) == 0 {
 		l.p.write("{}")
 
 		return
@@ -415,7 +503,7 @@ func (l *listFormatter) formatObjectLiteralInline(ctx *fql.ObjectLiteralContext)
 }
 
 func (l *listFormatter) formatObjectLiteralWith(p *printer, ctx *fql.ObjectLiteralContext, inline bool) {
-	props := ctx.AllPropertyAssignment()
+	entries := ctx.AllObjectEntry()
 	p.write("{")
 
 	if inline {
@@ -423,10 +511,10 @@ func (l *listFormatter) formatObjectLiteralWith(p *printer, ctx *fql.ObjectLiter
 			p.space()
 		}
 
-		for i, prop := range props {
-			l.literal.formatPropertyAssignmentWith(p, prop.(*fql.PropertyAssignmentContext))
+		for i, entry := range entries {
+			l.formatObjectEntryWith(p, entry.(*fql.ObjectEntryContext), false)
 
-			if i < len(props)-1 {
+			if i < len(entries)-1 {
 				p.write(",")
 				p.space()
 			}
@@ -442,8 +530,8 @@ func (l *listFormatter) formatObjectLiteralWith(p *printer, ctx *fql.ObjectLiter
 	}
 
 	p.withIndent(func() {
-		firstProp := props[0].(antlr.ParserRuleContext)
-		leadingTrivia := l.trivia.sliceBetween(l.tokenStop(ctx.OpenBrace())+1, l.trivia.startIndex(firstProp))
+		firstEntry := entries[0].(antlr.ParserRuleContext)
+		leadingTrivia := l.trivia.sliceBetween(l.tokenStop(ctx.OpenBrace())+1, l.trivia.startIndex(firstEntry))
 
 		if l.trivia.containsComment(leadingTrivia) {
 			l.trivia.emitListTriviaWith(p, leadingTrivia)
@@ -453,21 +541,21 @@ func (l *listFormatter) formatObjectLiteralWith(p *printer, ctx *fql.ObjectLiter
 
 		closeStart := l.trivia.tokenStart(ctx.CloseBrace())
 
-		for i, prop := range props {
-			propCtx := prop.(*fql.PropertyAssignmentContext)
-			l.formatMultilinePropertyAssignmentWith(p, propCtx)
+		for i, entry := range entries {
+			entryCtx := entry.(*fql.ObjectEntryContext)
+			l.formatObjectEntryWith(p, entryCtx, true)
 
-			if i < len(props)-1 {
+			if i < len(entries)-1 {
 				p.write(",")
 			}
 
 			nextStart := closeStart
 
-			if i < len(props)-1 {
-				nextStart = l.trivia.startIndex(props[i+1].(antlr.ParserRuleContext))
+			if i < len(entries)-1 {
+				nextStart = l.trivia.startIndex(entries[i+1].(antlr.ParserRuleContext))
 			}
 
-			l.trivia.emitListTriviaWith(p, l.trivia.sliceBetween(l.trivia.stopIndex(propCtx)+1, nextStart))
+			l.trivia.emitListTriviaWith(p, l.trivia.sliceBetween(l.trivia.stopIndex(entryCtx)+1, nextStart))
 		}
 	})
 

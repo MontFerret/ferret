@@ -168,14 +168,42 @@ func literalExistsFromExpression(ctx fql.IExpressionContext) (bool, bool) {
 		}
 		return false, false
 	case lit.ArrayLiteral() != nil:
-		arr := lit.ArrayLiteral()
-		return arr.ArgumentList() != nil, true
+		return arrayLiteralExists(lit.ArrayLiteral())
 	case lit.ObjectLiteral() != nil:
-		obj := lit.ObjectLiteral()
-		return len(obj.AllPropertyAssignment()) > 0, true
+		return objectLiteralExists(lit.ObjectLiteral())
 	default:
 		return true, true
 	}
+}
+
+func arrayLiteralExists(ctx fql.IArrayLiteralContext) (bool, bool) {
+	entries := ctx.AllArrayEntry()
+	if len(entries) == 0 {
+		return false, true
+	}
+
+	for _, entry := range entries {
+		if entry.SpreadEntry() == nil {
+			return true, true
+		}
+	}
+
+	return false, false
+}
+
+func objectLiteralExists(ctx fql.IObjectLiteralContext) (bool, bool) {
+	entries := ctx.AllObjectEntry()
+	if len(entries) == 0 {
+		return false, true
+	}
+
+	for _, entry := range entries {
+		if entry.PropertyAssignment() != nil {
+			return true, true
+		}
+	}
+
+	return false, false
 }
 
 func literalTruthinessFromExpression(ctx fql.IExpressionContext) (bool, bool) {

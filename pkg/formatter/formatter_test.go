@@ -64,6 +64,91 @@ func TestFormatter_DefaultKeywordCase(t *testing.T) {
 	}
 }
 
+func TestFormatter_LiteralSpread(t *testing.T) {
+	tests := []struct {
+		name                   string
+		input                  string
+		contains               []string
+		printWidth             int
+		allowTriviaAfterSpread bool
+		noBracketSpacing       bool
+	}{
+		{
+			name:     "inline array and object",
+			input:    `RETURN [... [1,2], {... {a:1}, b:2},]`,
+			contains: []string{`return [`, `...[1, 2]`, `{ ...{ a: 1 }, b: 2 }`},
+		},
+		{
+			name:                   "comments around spread entries",
+			allowTriviaAfterSpread: true,
+			input: `RETURN [
+// array source
+... /* spread source */ values, // copied values
+1
+]`,
+			contains: []string{"// array source", "/* spread source */", "// copied values"},
+		},
+		{
+			name:       "spread entries wrap at print width",
+			input:      `RETURN { ...firstObject, explicitProperty: 1, ...secondObject }`,
+			contains:   []string{"\n", "...firstObject", "...secondObject"},
+			printWidth: 20,
+		},
+		{
+			name:             "object spread without bracket spacing",
+			input:            `RETURN { ...source }`,
+			contains:         []string{`return {...source}`},
+			noBracketSpacing: true,
+		},
+		{
+			name:                   "comment between object spread and operand",
+			input:                  `RETURN { ... /* defaults */ defaults, value: 1 }`,
+			contains:               []string{"/* defaults */", "defaults"},
+			allowTriviaAfterSpread: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			options := make([]Option, 0, 2)
+			if test.printWidth > 0 {
+				options = append(options, WithPrintWidth(uint64(test.printWidth)))
+			}
+
+			if test.noBracketSpacing {
+				options = append(options, WithBracketSpacing(false))
+			}
+
+			format := New(options...)
+			var first bytes.Buffer
+
+			if err := format.Format(&first, source.NewAnonymous(test.input)); err != nil {
+				t.Fatalf("format failed: %v", err)
+			}
+
+			formatted := first.String()
+			if !test.allowTriviaAfterSpread && strings.Contains(formatted, "... ") {
+				t.Fatalf("spread operator must stay adjacent to its operand:\n%s", formatted)
+			}
+
+			for _, fragment := range test.contains {
+				if !strings.Contains(formatted, fragment) {
+					t.Fatalf("formatted spread literal missing %q:\n%s", fragment, formatted)
+				}
+			}
+
+			var second bytes.Buffer
+			if err := format.Format(&second, source.NewAnonymous(formatted)); err != nil {
+				t.Fatalf("second format failed: %v", err)
+			}
+
+			if second.String() != formatted {
+				t.Fatalf("spread formatting must be stable:\nfirst:\n%s\nsecond:\n%s", formatted, second.String())
+			}
+		})
+	}
+}
+
 func TestFormatter_ExplicitUppercaseKeywordCase(t *testing.T) {
 	var out bytes.Buffer
 	format := New(WithCaseMode(CaseModeUpper))

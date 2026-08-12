@@ -438,6 +438,18 @@ func validateInstructions(program *Program) error {
 			if err := validateRegisterOperand(src1, registers, pc, "src1"); err != nil {
 				return err
 			}
+		case OpArraySpread, OpObjectSpread:
+			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
+				return err
+			}
+
+			if err := validateRegisterOperand(src1, registers, pc, "src1"); err != nil {
+				return err
+			}
+
+			if src2 != NoopOperand {
+				return fmt.Errorf("%w: pc %d src2 must be zero", ErrInvalidInstruction, pc)
+			}
 		case OpAssertDestructure:
 			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
 				return err

@@ -30,6 +30,10 @@ func SpanFromToken(tok antlr.Token) source.Span {
 	return source.Span{Start: tok.GetStart(), End: tok.GetStop() + 1}
 }
 
+func hasRangeToken(message string) bool {
+	return has(strings.ReplaceAll(message, "'...'", ""), "..")
+}
+
 func spanFromTokenSafe(tok antlr.Token, src *source.Source) source.Span {
 	if tok == nil {
 		return source.Span{Start: 0, End: 1}

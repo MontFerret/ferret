@@ -34,7 +34,7 @@ func matchMissingReturnDistinctValue(src *source.Source, err *diagnostics.Diagno
 
 func matchMissingReturnValue(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	// Prefer range-specific error when the parser trips on an incomplete range like "0.. RETURN".
-	if is(offending, "..") || is(offending.Prev(), "..") || has(err.Message, "..") {
+	if is(offending, "..") || is(offending.Prev(), "..") || hasRangeToken(err.Message) {
 		span := spanFromTokenSafe(offending.Token(), src)
 		span.Start += 2
 		span.End += 2

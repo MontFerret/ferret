@@ -76,6 +76,14 @@ func (e *Emitter) EmitArrayPush(dst, src bytecode.Operand) {
 	e.EmitAB(bytecode.OpArrayPush, dst, src)
 }
 
+func (e *Emitter) EmitArraySpread(dst, src bytecode.Operand) {
+	e.EmitAB(bytecode.OpArraySpread, dst, src)
+}
+
+func (e *Emitter) EmitObjectSpread(dst, src bytecode.Operand) {
+	e.EmitAB(bytecode.OpObjectSpread, dst, src)
+}
+
 func (e *Emitter) EmitPushKV(dst, key, val bytecode.Operand) {
 	e.EmitABC(bytecode.OpPushKV, dst, key, val)
 }

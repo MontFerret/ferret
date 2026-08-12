@@ -29,6 +29,24 @@ func TestProgramArtifactRoundTrip(t *testing.T) {
 	levels := []compiler.OptimizationLevel{compiler.O0, compiler.O1}
 	cases := []artifactRoundTripCase{
 		{
+			Input:       spec.NewExpressionInput(`RETURN [0, ...[1, 2], { ...{ value: 3 } }]`),
+			Expected:    []any{0, 1, 2, map[string]any{"value": 3}},
+			Description: "Literal spread opcodes round-trip",
+			Check: func(t *testing.T, original *bytecode.Program, decoded *bytecode.Program) {
+				t.Helper()
+
+				for _, op := range []bytecode.Opcode{bytecode.OpArraySpread, bytecode.OpObjectSpread} {
+					if !programHasOpcode(original, op) {
+						t.Fatalf("original program is missing %s", op)
+					}
+
+					if !programHasOpcode(decoded, op) {
+						t.Fatalf("decoded program is missing %s", op)
+					}
+				}
+			},
+		},
+		{
 			Input:       spec.NewExpressionInput("RETURN [PICK(1), PICK(1, 2), PICK(3), PICK(1, 2, 3, 4, 5)]"),
 			Expected:    []any{"fixed1", "fixed2", "fixed1", "var5"},
 			Description: "Host overload binding order round-trip",
@@ -210,6 +228,16 @@ RETURN add(2, 3)
 			})
 		}
 	}
+}
+
+func programHasOpcode(program *bytecode.Program, target bytecode.Opcode) bool {
+	for _, instruction := range program.Bytecode {
+		if instruction.Opcode == target {
+			return true
+		}
+	}
+
+	return false
 }
 
 func jsonRaw(value []byte) json.RawMessage {

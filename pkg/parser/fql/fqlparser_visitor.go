@@ -316,6 +316,15 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#objectLiteral.
 	VisitObjectLiteral(ctx *ObjectLiteralContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#arrayEntry.
+	VisitArrayEntry(ctx *ArrayEntryContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#objectEntry.
+	VisitObjectEntry(ctx *ObjectEntryContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#spreadEntry.
+	VisitSpreadEntry(ctx *SpreadEntryContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#booleanLiteral.
 	VisitBooleanLiteral(ctx *BooleanLiteralContext) interface{}
 

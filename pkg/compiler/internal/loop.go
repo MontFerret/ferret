@@ -764,27 +764,29 @@ func (c *LoopCompiler) inferArrayLiteralElementType(ctx fql.IArrayLiteralContext
 		return core.TypeUnknown
 	}
 
-	args := ctx.ArgumentList()
-	if args == nil {
-		return core.TypeUnknown
-	}
-
-	exps := args.AllExpression()
-	if len(exps) == 0 {
+	entries := ctx.AllArrayEntry()
+	if len(entries) == 0 {
 		return core.TypeUnknown
 	}
 
 	elemType := core.TypeUnknown
 
-	for _, exp := range exps {
-		typ := c.inferExpressionType(exp)
+	for _, entry := range entries {
+		if entry.SpreadEntry() != nil {
+			return core.TypeAny
+		}
+
+		typ := c.inferExpressionType(entry.Expression())
 		if typ == core.TypeUnknown {
 			return core.TypeAny
 		}
+
 		if elemType == core.TypeUnknown {
 			elemType = typ
+
 			continue
 		}
+
 		if elemType != typ {
 			return core.TypeAny
 		}

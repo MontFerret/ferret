@@ -836,11 +836,25 @@ literal
     ;
 
 arrayLiteral
-    : OpenBracket argumentList? CloseBracket
+    : OpenBracket (arrayEntry (Comma arrayEntry)* Comma?)? CloseBracket
     ;
 
 objectLiteral
-    : OpenBrace (propertyAssignment (Comma propertyAssignment)* Comma?)? CloseBrace
+    : OpenBrace (objectEntry (Comma objectEntry)* Comma?)? CloseBrace
+    ;
+
+arrayEntry
+    : expression
+    | spreadEntry
+    ;
+
+objectEntry
+    : propertyAssignment
+    | spreadEntry
+    ;
+
+spreadEntry
+    : Ellipsis expression
     ;
 
 booleanLiteral
