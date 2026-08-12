@@ -121,6 +121,19 @@ func (c *ExprCompiler) bind(
 // Compile processes an expression from the FQL AST and delegates to the appropriate
 // compilation method based on the expression type (unary, logical, ternary, or predicate).
 func (c *ExprCompiler) Compile(ctx fql.IExpressionContext) bytecode.Operand {
+	return c.compileWithResultUse(ctx, resultRequired)
+}
+
+// CompileDiscarded evaluates an expression whose final value is not consumed.
+func (c *ExprCompiler) CompileDiscarded(ctx fql.IExpressionContext) bytecode.Operand {
+	return c.compileWithResultUse(ctx, resultDiscarded)
+}
+
+func (c *ExprCompiler) compileWithResultUse(ctx fql.IExpressionContext, use resultUse) bytecode.Operand {
+	if ctx == nil {
+		return bytecode.NoopOperand
+	}
+
 	if uo := ctx.UnaryOperator(); uo != nil {
 		return c.compileUnary(uo, ctx)
 	}
@@ -142,7 +155,7 @@ func (c *ExprCompiler) Compile(ctx fql.IExpressionContext) bytecode.Operand {
 	}
 
 	if p := ctx.Predicate(); p != nil {
-		return c.compilePredicate(p)
+		return c.compilePredicateWithResultUse(p, use)
 	}
 
 	return bytecode.NoopOperand

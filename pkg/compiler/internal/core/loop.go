@@ -29,6 +29,9 @@ type (
 		State         bytecode.Operand
 		Distinct      bool
 		Allocate      bool
+		// CollectResult controls whether return values are appended to Dst;
+		// Allocate separately records whether this loop owns that destination.
+		CollectResult bool
 		Destructured  bool
 	}
 )

@@ -91,32 +91,49 @@ func (c *LoopCompiler) bind(
 // or a FOR WHILE/DO WHILE loop.
 // Returns an operand representing the destination of the loop results.
 func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) bytecode.Operand {
-	return c.CompileWithOuterRecoveryPlan(ctx, core.RecoveryPlan{})
+	return c.compileWithResultUse(ctx, resultRequired)
+}
+
+// CompileDiscarded evaluates a FOR expression without retaining its result.
+func (c *LoopCompiler) CompileDiscarded(ctx fql.IForExpressionContext) bytecode.Operand {
+	return c.compileWithResultUse(ctx, resultDiscarded)
 }
 
 // CompileWithOuterRecoveryPlan is the supported cross-compiler entrypoint for
 // FOR expressions that need their recovery tails merged with an outer plan.
 func (c *LoopCompiler) CompileWithOuterRecoveryPlan(ctx fql.IForExpressionContext, outerPlan core.RecoveryPlan) bytecode.Operand {
+	return c.compileWithResultUseAndOuterRecoveryPlan(ctx, resultRequired, outerPlan)
+}
+
+func (c *LoopCompiler) compileWithResultUse(ctx fql.IForExpressionContext, use resultUse) bytecode.Operand {
+	return c.compileWithResultUseAndOuterRecoveryPlan(ctx, use, core.RecoveryPlan{})
+}
+
+func (c *LoopCompiler) compileWithResultUseAndOuterRecoveryPlan(
+	ctx fql.IForExpressionContext,
+	use resultUse,
+	outerPlan core.RecoveryPlan,
+) bytecode.Operand {
 	if ctx == nil {
 		return bytecode.NoopOperand
 	}
 
 	if outerPlan.OnError == nil && outerPlan.OnTimeout == nil {
-		return c.compilePlain(ctx)
+		return c.compilePlain(ctx, use)
 	}
 
-	return c.recovery.CompileOperation(c.newLoopOperationRecoverySpec(ctx, outerPlan))
+	return c.recovery.CompileOperation(c.newLoopOperationRecoverySpec(ctx, use, outerPlan))
 }
 
-func (c *LoopCompiler) compilePlain(ctx fql.IForExpressionContext) bytecode.Operand {
+func (c *LoopCompiler) compilePlain(ctx fql.IForExpressionContext, use resultUse) bytecode.Operand {
 	var returnRuleCtx antlr.RuleContext
 
 	if ctx.In() != nil {
-		returnRuleCtx = c.compileInitialization(ctx, core.ForInLoop)
+		returnRuleCtx = c.compileInitialization(ctx, core.ForInLoop, use)
 	} else if ctx.Do() == nil {
-		returnRuleCtx = c.compileInitialization(ctx, core.WhileLoop)
+		returnRuleCtx = c.compileInitialization(ctx, core.WhileLoop, use)
 	} else {
-		returnRuleCtx = c.compileInitialization(ctx, core.DoWhileLoop)
+		returnRuleCtx = c.compileInitialization(ctx, core.DoWhileLoop, use)
 	}
 
 	// Probably, a syntax error happened and no return rule context was created.
@@ -130,32 +147,62 @@ func (c *LoopCompiler) compilePlain(ctx fql.IForExpressionContext) bytecode.Oper
 	return c.compileFinalization(returnRuleCtx)
 }
 
-func (c *LoopCompiler) newLoopOperationRecoverySpec(ctx fql.IForExpressionContext, outerPlan core.RecoveryPlan) OperationRecoverySpec {
+func (c *LoopCompiler) newLoopOperationRecoverySpec(ctx fql.IForExpressionContext, use resultUse, outerPlan core.RecoveryPlan) OperationRecoverySpec {
 	spec := OperationRecoverySpec{
 		OuterPlan: outerPlan,
 		CompilePlain: func() bytecode.Operand {
-			return c.compilePlain(ctx)
+			return c.compileRecoveryAttempt(ctx, use)
+		},
+		CompileSuppressed: func() bytecode.Operand {
+			return c.compilePlain(ctx, use)
+		},
+		CompileFinalAttempt: func(plan core.RecoveryPlan) bytecode.Operand {
+			out := c.compilePlain(ctx, use)
+			if recoveryPlanHasReturnHandler(plan) {
+				return c.ensureRecoveryResult(out, use)
+			}
+
+			return out
 		},
 	}
 
 	if ctx != nil && ctx.In() != nil {
 		spec.BuildProtected = func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion {
-			return c.buildProtectedForInRecovery(ctx, recoveryLabel, timeoutLabel, endLabel)
+			return c.buildProtectedForInRecovery(ctx, use, recoveryLabel, timeoutLabel, endLabel)
 		}
 	}
 
 	return spec
 }
 
+func (c *LoopCompiler) compileRecoveryAttempt(ctx fql.IForExpressionContext, use resultUse) bytecode.Operand {
+	out := c.compilePlain(ctx, use)
+
+	return c.ensureRecoveryResult(out, use)
+}
+
+func (c *LoopCompiler) ensureRecoveryResult(out bytecode.Operand, use resultUse) bytecode.Operand {
+	if use == resultRequired || out != bytecode.NoopOperand {
+		return out
+	}
+
+	result := c.ctx.Function.Registers.Allocate()
+	c.ctx.Program.Emitter.EmitA(bytecode.OpLoadNone, result)
+	c.ctx.Function.Types.Set(result, core.TypeNone)
+
+	return result
+}
+
 func (c *LoopCompiler) buildProtectedForInRecovery(
 	ctx fql.IForExpressionContext,
+	use resultUse,
 	recoveryLabel, _ core.Label, endLabel core.Label,
 ) ProtectedRecoveryRegion {
 	errorStateReg := c.ctx.Function.Registers.Allocate()
 	c.ctx.Program.Emitter.EmitBoolean(errorStateReg, false)
 
 	startCatch := c.ctx.Program.Emitter.Size()
-	returnRuleCtx := c.compileInitialization(ctx, core.ForInLoop)
+	returnRuleCtx := c.compileInitialization(ctx, core.ForInLoop, use)
 	if returnRuleCtx == nil {
 		return ProtectedRecoveryRegion{Result: bytecode.NoopOperand}
 	}
@@ -165,7 +212,7 @@ func (c *LoopCompiler) buildProtectedForInRecovery(
 
 	c.compileLoopBody(ctx)
 
-	out := c.compileFinalization(returnRuleCtx)
+	out := c.ensureRecoveryResult(c.compileFinalization(returnRuleCtx), use)
 	endCatchExclusive := c.ctx.Program.Emitter.Size()
 
 	routeRecovery := c.ctx.Program.Emitter.NewLabel("recovery", "for", "route")
@@ -196,7 +243,7 @@ func (c *LoopCompiler) buildProtectedForInRecovery(
 //   - kind: The kind of loop (ForInLoop, WhileLoop, or DoWhileLoop)
 //
 // Returns the rule context for the return expression or nested FOR expression.
-func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind core.LoopKind) antlr.RuleContext {
+func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind core.LoopKind, use resultUse) antlr.RuleContext {
 	if !c.validateLoopBindingPattern(ctx) {
 		return nil
 	}
@@ -207,7 +254,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	}
 
 	// Create a new loop with the determined properties
-	loop := c.ctx.Function.Loops.NewLoop(kind, loopType, distinct)
+	loop := c.ctx.Function.Loops.NewLoop(kind, loopType, distinct, use == resultRequired)
 	c.setLoopDestinationType(loop)
 
 	c.configureLoopRuntime(loop, ctx, kind)
@@ -344,7 +391,7 @@ func (c *LoopCompiler) validateLoopBindingPattern(ctx fql.IForExpressionContext)
 }
 
 func (c *LoopCompiler) patchDistinctLoopDestination(loop *core.Loop) {
-	if loop.Allocate || !loop.Distinct {
+	if !loop.CollectResult || loop.Allocate || !loop.Distinct {
 		return
 	}
 
@@ -357,15 +404,17 @@ func (c *LoopCompiler) patchDistinctLoopDestination(loop *core.Loop) {
 // Parameters:
 //   - ctx: The rule context for the return expression or nested FOR expression
 //
-// Returns the destination operand containing the loop results.
+// Returns the destination operand containing the loop results, or NoopOperand
+// when the caller discards them.
 func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Operand {
 	loop := c.ctx.Function.Loops.Current()
 
 	// Process the return expression based on the loop type
 	if loop.Type != core.PassThroughLoop {
-		// For normal loops, compile the return expression and push the result to the destination
+		// Normal loops always evaluate the return expression, but only retained
+		// results are appended to the loop destination.
 		re := ctx.(*fql.ReturnExpressionContext)
-		c.ctx.WithDebugPointKind(re, bytecode.DebugPointReturn, func() {
+		compileReturn := func() {
 			value := re.ReturnValue()
 			if value == nil {
 				return
@@ -389,14 +438,27 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 				span = parser.SpanFromRuleContext(resultCtx)
 			}
 
-			c.ctx.Program.Emitter.WithSpan(span, func() {
-				c.ctx.Program.Emitter.EmitAB(bytecode.OpPush, loop.Dst, result)
-			})
-		})
+			if loop.CollectResult {
+				c.ctx.Program.Emitter.WithSpan(span, func() {
+					c.ctx.Program.Emitter.EmitAB(bytecode.OpPush, loop.Dst, result)
+				})
+			}
+		}
+
+		if loop.CollectResult {
+			c.ctx.WithDebugPointKind(re, bytecode.DebugPointReturn, compileReturn)
+		} else {
+			c.ctx.WithRetainedDebugPointKind(re, bytecode.DebugPointReturn, compileReturn)
+		}
 	} else if ctx != nil {
 		// For pass-through loops, recursively compile the nested FOR expression
 		if fe, ok := ctx.(*fql.ForExpressionContext); ok {
-			c.Compile(fe)
+			use := resultDiscarded
+			if loop.CollectResult {
+				use = resultRequired
+			}
+
+			c.compileWithResultUse(fe, use)
 		}
 	}
 

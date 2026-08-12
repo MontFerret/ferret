@@ -48,12 +48,12 @@ FOR value IN [1, 1]
 
 			for _, instruction := range prog.Bytecode {
 				if instruction.Opcode == bytecode.OpDataSet && instruction.Operands[1] == bytecode.Operand(1) {
-					return nil
+					return fmt.Errorf("did not expect distinct OpDataSet for discarded loop RETURN DISTINCT")
 				}
 			}
 
-			return fmt.Errorf("expected distinct OpDataSet for loop RETURN DISTINCT")
-		}, "loop RETURN DISTINCT keeps existing lowering"),
+			return nil
+		}, "discarded loop RETURN DISTINCT omits uniqueness accumulation"),
 	})
 }
 
