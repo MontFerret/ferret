@@ -8,14 +8,16 @@ import (
 )
 
 type SpreadError struct {
-	Actual runtime.Type
-	Target string
+	Actual   runtime.Type
+	Target   runtime.Type
+	Expected runtime.Type
 }
 
-func SpreadErrorOf(actual runtime.Value, target string) error {
+func SpreadErrorOf(actual runtime.Value, target, expected runtime.Type) error {
 	return &SpreadError{
-		Actual: runtime.TypeOf(actual),
-		Target: target,
+		Actual:   runtime.TypeOf(actual),
+		Target:   target,
+		Expected: expected,
 	}
 }
 
@@ -36,7 +38,7 @@ func (e *SpreadError) Label() string {
 		return ""
 	}
 
-	return fmt.Sprintf("expected %s or none in %s literal", e.Target, strings.ToLower(e.Target))
+	return fmt.Sprintf("expected %s or none in %s literal", e.Expected, strings.ToLower(e.Target.String()))
 }
 
 func (e *SpreadError) Note() string {
@@ -48,5 +50,15 @@ func (e *SpreadError) Hint() string {
 		return ""
 	}
 
-	return fmt.Sprintf("Spread an %s value or none inside an %s literal", e.Target, strings.ToLower(e.Target))
+	article := "a"
+	if e.Expected == runtime.TypeObject {
+		article = "an"
+	}
+
+	return fmt.Sprintf(
+		"Spread %s %s value or none inside an %s literal",
+		article,
+		e.Expected,
+		strings.ToLower(e.Target.String()),
+	)
 }

@@ -756,26 +756,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				break
 			}
 
-			source := reg[src1]
-			if source == runtime.None {
-				break
-			}
-
-			array, ok := source.(*runtime.Array)
-			if !ok {
-				state.raiseRuntimeAt(
-					pc,
-					diagnostics.SpreadErrorOf(source, "Array"),
-					recoverDefault,
-					bytecode.NoopOperand,
-					nil,
-					false,
-				)
-
-				break
-			}
-
-			if err := destination.Concat(ctx, array); err != nil {
+			if err := spreadArray(ctx, destination, reg[src1]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 			}
 		case bytecode.OpAggregateUpdate:
@@ -881,26 +862,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				break
 			}
 
-			source := reg[src1]
-			if source == runtime.None {
-				break
-			}
-
-			object, ok := source.(runtime.ObjectLike)
-			if !ok {
-				state.raiseRuntimeAt(
-					pc,
-					diagnostics.SpreadErrorOf(source, "Object"),
-					recoverDefault,
-					bytecode.NoopOperand,
-					nil,
-					false,
-				)
-
-				break
-			}
-
-			if err := destination.Merge(ctx, object); err != nil {
+			if err := spreadObject(ctx, destination, reg[src1]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 			}
 		case bytecode.OpSetIndex:
