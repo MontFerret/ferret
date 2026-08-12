@@ -1,8 +1,5 @@
 package runtime
 
-import "github.com/MontFerret/ferret/v2/pkg/internal/hostfunction"
-
-const NamespaceSeparator = "::"
 const emptyNS = ""
 
 type (
@@ -43,7 +40,7 @@ func NewLibrary() Library {
 
 func NewNamespace(name string) Namespace {
 	lib := new(library)
-	lib.name = hostfunction.CanonicalName(name)
+	lib.name = CanonicalRegisteredName(name)
 	lib.builder = newNamespacedFunctionsBuilder(lib.name)
 
 	return lib
@@ -63,7 +60,7 @@ func (lib *library) Size() int {
 
 func (lib *library) Namespace(name string) Namespace {
 	newLib := new(library)
-	newLib.name = hostfunction.CanonicalName(makeFunctionName(lib.name, name))
+	newLib.name = CanonicalRegisteredName(makeFunctionName(lib.name, name))
 	newLib.builder = newFunctionsBuilderInternalFrom(newLib.name, lib.builder)
 
 	return newLib

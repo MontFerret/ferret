@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"sort"
-
-	"github.com/MontFerret/ferret/v2/pkg/internal/hostfunction"
 )
 
 type (
@@ -118,8 +116,8 @@ func (fd *defaultFnDef[T]) addError(err error) {
 }
 
 func (fd *defaultFnDef[T]) Add(name string, fn T) FnDef[T] {
-	fname := hostfunction.CanonicalName(makeFunctionName(fd.namespace, name))
-	if !hostfunction.HasTerminalName(fname) {
+	fname := CanonicalRegisteredName(makeFunctionName(fd.namespace, name))
+	if !HasTerminalFunctionName(fname) {
 		fd.addError(fmt.Errorf("function name cannot be empty in '%s' namespace", fd.namespace))
 
 		return fd
@@ -137,7 +135,7 @@ func (fd *defaultFnDef[T]) Add(name string, fn T) FnDef[T] {
 }
 
 func (fd *defaultFnDef[T]) Remove(name string) FnDef[T] {
-	fname := hostfunction.CanonicalName(makeFunctionName(fd.namespace, name))
+	fname := CanonicalRegisteredName(makeFunctionName(fd.namespace, name))
 
 	if _, exists := fd.data[fname]; !exists {
 		fd.addError(fmt.Errorf("function with name '%s' does not exist in '%s' namespace", name, fd.namespace))
@@ -151,7 +149,7 @@ func (fd *defaultFnDef[T]) Remove(name string) FnDef[T] {
 }
 
 func (fd *defaultFnDef[T]) Has(name string) bool {
-	fname := hostfunction.CanonicalName(makeFunctionName(fd.namespace, name))
+	fname := CanonicalRegisteredName(makeFunctionName(fd.namespace, name))
 	_, exists := fd.data[fname]
 
 	return exists
@@ -278,7 +276,7 @@ func (b *FunctionsBuilder) Size() int {
 }
 
 func (b *FunctionsBuilder) Has(name string) bool {
-	fname := hostfunction.CanonicalName(makeFunctionName(b.namespace, name))
+	fname := CanonicalRegisteredName(makeFunctionName(b.namespace, name))
 
 	if _, ok := b.av.data[fname]; ok {
 		return true

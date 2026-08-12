@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/internal/hostfunction"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
 )
@@ -140,7 +139,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 
 			bindingIDIndex := int(bindingID)
 			hostFn := program.Functions.Host[bindingIDIndex]
-			hostName := hostfunction.CanonicalName(hostFn.Name)
+			hostName := runtime.CanonicalRegisteredName(hostFn.Name)
 			argCount := callArgCount(src1, src2)
 			if argCount != hostFn.ArgCount {
 				errs.Add(

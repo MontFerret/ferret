@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/internal/hostfunction"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
@@ -166,7 +165,7 @@ func FromProgram(program *bytecode.Program) (ProgramFrame, error) {
 	for i, fn := range program.Functions.Host {
 		argCount := fn.ArgCount
 		host[i] = HostFunctionFrame{
-			Name:     hostfunction.CanonicalName(fn.Name),
+			Name:     runtime.CanonicalRegisteredName(fn.Name),
 			ArgCount: &argCount,
 		}
 	}
@@ -355,7 +354,7 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 		}
 
 		host[i] = bytecode.HostFunction{
-			Name:     hostfunction.CanonicalName(entry.Name),
+			Name:     runtime.CanonicalRegisteredName(entry.Name),
 			ArgCount: *entry.ArgCount,
 		}
 	}

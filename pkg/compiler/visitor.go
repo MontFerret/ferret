@@ -6,7 +6,6 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
-	"github.com/MontFerret/ferret/v2/pkg/internal/hostfunction"
 	parser "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -74,7 +73,7 @@ func (v *Visitor) VisitHead(ctx *fql.HeadContext) interface{} {
 
 	namespace := nsCtx.GetText()
 	namespace = strings.TrimSuffix(namespace, runtime.NamespaceSeparator)
-	namespace = hostfunction.CanonicalName(namespace)
+	namespace = runtime.CanonicalRegisteredName(namespace)
 
 	alias := aliasTok.GetText()
 	if alias == "" || namespace == "" {

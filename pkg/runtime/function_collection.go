@@ -1,7 +1,5 @@
 package runtime
 
-import "github.com/MontFerret/ferret/v2/pkg/internal/hostfunction"
-
 type (
 	// FunctionConstraint is a type constraint that includes all function types
 	FunctionConstraint interface {
@@ -54,7 +52,7 @@ func newFunctionCollectionFromMap[T FunctionConstraint](values map[string]T, can
 
 func (f *defaultFunctionCollection[T]) Has(name string) bool {
 	if f.canonical {
-		name = hostfunction.CanonicalName(name)
+		name = CanonicalRegisteredName(name)
 	}
 
 	_, exists := f.values[name]
@@ -65,7 +63,7 @@ func (f *defaultFunctionCollection[T]) Has(name string) bool {
 
 func (f *defaultFunctionCollection[T]) Get(name string) (T, bool) {
 	if f.canonical {
-		name = hostfunction.CanonicalName(name)
+		name = CanonicalRegisteredName(name)
 	}
 
 	fn, exists := f.values[name]

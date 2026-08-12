@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MontFerret/ferret/v2/pkg/internal/hostfunction"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -27,11 +26,11 @@ func RegisterFunctions(ns runtime.Namespace, definitions ...FunctionDef) error {
 
 	for i := range definitions {
 		name := strings.TrimSpace(definitions[i].name)
-		if !hostfunction.HasTerminalName(name) {
+		if !runtime.HasTerminalFunctionName(name) {
 			return fmt.Errorf("function name cannot be empty")
 		}
 
-		definitions[i].name = hostfunction.CanonicalName(name)
+		definitions[i].name = runtime.CanonicalRegisteredName(name)
 	}
 
 	for _, definition := range definitions {

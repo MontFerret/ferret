@@ -8,7 +8,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/internal/hostfunction"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -486,5 +485,5 @@ func hostCallComment(p *bytecode.Program, instr bytecode.Instruction, prev *byte
 		return ""
 	}
 
-	return fmt.Sprintf("host %s", hostfunction.CanonicalName(p.Functions.Host[id].Name))
+	return fmt.Sprintf("host %s", runtime.CanonicalRegisteredName(p.Functions.Host[id].Name))
 }

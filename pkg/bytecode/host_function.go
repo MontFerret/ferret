@@ -5,7 +5,7 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/MontFerret/ferret/v2/pkg/internal/hostfunction"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // HostFunction identifies one compiled host call signature.
@@ -23,7 +23,7 @@ func (f HostFunction) MarshalJSON() ([]byte, error) {
 		Name     string `json:"name"`
 		ArgCount int    `json:"argCount"`
 	}{
-		Name:     hostfunction.CanonicalName(f.Name),
+		Name:     runtime.CanonicalRegisteredName(f.Name),
 		ArgCount: f.ArgCount,
 	})
 }
@@ -44,7 +44,7 @@ func (f *HostFunction) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("bytecode.HostFunction: missing argCount")
 	}
 
-	f.Name = hostfunction.CanonicalName(decoded.Name)
+	f.Name = runtime.CanonicalRegisteredName(decoded.Name)
 	f.ArgCount = *decoded.ArgCount
 
 	return nil
