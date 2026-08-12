@@ -136,14 +136,30 @@ RETURN values`,
 			wantPushes:   1,
 		},
 		{
-			name: "explicit returned loop is value boundary",
+			name: "discarded explicit returned loop",
 			query: `FOR outer IN [1, 2] {
   RETURN FOR inner IN [outer, outer + 1] {
     RETURN inner
   }
 }`,
-			wantDataSets: 1,
-			wantPushes:   1,
+		},
+		{
+			name: "discarded parenthesized explicit returned loop",
+			query: `FOR outer IN [1, 2] {
+  RETURN (FOR inner IN [outer, outer + 1] {
+    RETURN inner
+  })
+}`,
+		},
+		{
+			name: "consumed explicit returned loop",
+			query: `RETURN FOR outer IN [1, 2] {
+  RETURN FOR inner IN [outer, outer + 1] {
+    RETURN inner
+  }
+}`,
+			wantDataSets: 2,
+			wantPushes:   2,
 		},
 		{
 			name: "discarded sorted loop",
@@ -238,6 +254,40 @@ RETURN NONE`
 	}
 
 	t.Fatal("standalone FOR has no top-level statement debug point")
+}
+
+func TestDiscardedExplicitReturnedForRetainsReturnDebugMetadata(t *testing.T) {
+	const query = `FOR outer IN [1] {
+  RETURN FOR inner IN [outer] {
+    RETURN inner
+  }
+}
+RETURN NONE`
+
+	program, err := compiler.New(compiler.WithDebugInfo()).Compile(source.NewAnonymous(query))
+	if err != nil {
+		t.Fatalf("compile query: %v", err)
+	}
+
+	if err := bytecode.ValidateProgram(program); err != nil {
+		t.Fatalf("validate bytecode: %v", err)
+	}
+
+	returnLines := make(map[int]bool)
+	for _, point := range program.Metadata.DebugPoints {
+		if point.Kind != bytecode.DebugPointReturn || point.FunctionID != -1 {
+			continue
+		}
+
+		line, _ := program.Source.LocationAt(point.Span)
+		returnLines[line] = true
+	}
+
+	for _, line := range []int{2, 3} {
+		if !returnLines[line] {
+			t.Fatalf("discarded explicit returned loop has no return debug point on line %d: %#v", line, program.Metadata.DebugPoints)
+		}
+	}
 }
 
 func TestEmptySourceRemainsInvalid(t *testing.T) {

@@ -414,6 +414,11 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 		// Normal loops always evaluate the return expression, but only retained
 		// results are appended to the loop destination.
 		re := ctx.(*fql.ReturnExpressionContext)
+		returnUse := resultDiscarded
+		if loop.CollectResult {
+			returnUse = resultRequired
+		}
+
 		compileReturn := func() {
 			value := re.ReturnValue()
 			if value == nil {
@@ -426,10 +431,10 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 			)
 
 			if expr := value.Expression(); expr != nil {
-				result = c.exprs.Compile(expr)
+				result = c.exprs.compileWithResultUse(expr, returnUse)
 				resultCtx = expr.(antlr.ParserRuleContext)
 			} else if nested := value.ForExpression(); nested != nil {
-				result = c.Compile(nested)
+				result = c.compileWithResultUse(nested, returnUse)
 				resultCtx = nested.(antlr.ParserRuleContext)
 			}
 

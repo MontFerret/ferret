@@ -2,6 +2,7 @@ package vm_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"sync/atomic"
@@ -142,6 +143,24 @@ func TestDiscardedForPreservesLoopSemantics(t *testing.T) {
 }`,
 			want: []int{1, 2, 2, 3},
 		},
+		{
+			name: "explicit returned nesting",
+			query: `FOR outer IN [1, 2] {
+  RETURN FOR inner IN [outer, outer + 1] {
+    RETURN RECORD(inner)
+  }
+}`,
+			want: []int{1, 2, 2, 3},
+		},
+		{
+			name: "parenthesized explicit returned nesting",
+			query: `FOR outer IN [1, 2] {
+  RETURN (FOR inner IN [outer, outer + 1] {
+    RETURN RECORD(inner)
+  })
+}`,
+			want: []int{1, 2, 2, 3},
+		},
 	}
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
@@ -172,6 +191,34 @@ func TestDiscardedForPreservesLoopSemantics(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestDiscardedExplicitReturnedForPropagatesErrors(t *testing.T) {
+	wantErr := errors.New("nested loop failure")
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(optimizationName(level), func(t *testing.T) {
+			program, err := spec.Compile(`FOR outer IN [1, 2] {
+  RETURN FOR inner IN [outer, outer + 1] {
+    RETURN FAIL(inner)
+  }
+}`, level)
+			if err != nil {
+				t.Fatalf("compile query: %v", err)
+			}
+
+			out, err := spec.Run(program, vm.WithFunction("FAIL", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+				return runtime.None, wantErr
+			}))
+			if out != nil {
+				t.Fatalf("run output = %s, want nil", out)
+			}
+
+			if !errors.Is(err, wantErr) {
+				t.Fatalf("run error = %v, want %v", err, wantErr)
+			}
+		})
 	}
 }
 
