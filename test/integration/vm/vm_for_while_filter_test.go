@@ -12,7 +12,7 @@ func TestForWhileFilter(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		Array(
 			`
-			FOR i WHILE UNTIL(5)
+			RETURN FOR i WHILE UNTIL(5)
 				FILTER i > 2
 				RETURN i
 		`,
@@ -20,7 +20,7 @@ func TestForWhileFilter(t *testing.T) {
 		),
 		Array(
 			`
-			FOR i WHILE UNTIL(5)
+			RETURN FOR i WHILE UNTIL(5)
 				FILTER i > 1 AND i < 4
 				RETURN i
 		`,
@@ -45,7 +45,7 @@ func TestForWhileFilter(t *testing.T) {
 					name: "Peter"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				FILTER users[i].name =~ "r"
 				RETURN users[i]
 		`,
@@ -70,7 +70,7 @@ func TestForWhileFilter(t *testing.T) {
 							gender: "m"
 						}
 					]
-					FOR i WHILE UNTIL(LENGTH(users))
+					RETURN FOR i WHILE UNTIL(LENGTH(users))
 						LET u = users[i]
 						FILTER u.active == true
 						FILTER u.age < 35
@@ -102,7 +102,7 @@ func TestForWhileFilter(t *testing.T) {
 					gender: "m"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				FILTER u.active
 				RETURN u
@@ -134,7 +134,7 @@ func TestForWhileFilter(t *testing.T) {
 					gender: "m"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				FILTER u.active == true
 				LIMIT 2
@@ -177,7 +177,7 @@ func TestForWhileFilter(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				FILTER u.active AND u.married
 				RETURN u
@@ -216,7 +216,7 @@ LET users = [
 					gender: "f"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				FILTER !u.active AND u.married
 				RETURN u
@@ -255,7 +255,7 @@ LET users = [
 					gender: "f"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				FILTER !u.active AND !u.married
 				RETURN u

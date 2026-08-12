@@ -424,8 +424,6 @@ func (c *UDFCatalogBuilder) collectCallsInFunction(fn *core.UDFInfo) []*core.UDF
 
 		if ret := block.FunctionReturn(); ret != nil {
 			c.collectCallsInExpression(ret, scope, out)
-		} else if terminalFor := block.ForExpression(); terminalFor != nil {
-			c.collectCallsInExpression(terminalFor, scope, out)
 		}
 	}
 

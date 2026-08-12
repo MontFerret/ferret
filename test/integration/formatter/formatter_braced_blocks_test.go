@@ -17,6 +17,34 @@ func TestFormatterBracedBlocksAndForStyle(t *testing.T) {
 			input: `FUNC classify(x){RETURN MATCH x{1=>{value:1},_=>{value:0}}} RETURN classify(1)`,
 			want:  "FUNC classify(x) {\n    RETURN MATCH x { 1 => { value: 1 }, _ => { value: 0 } }\n}\nRETURN classify(1)",
 		},
+		"empty UDF block": {
+			input: `FUNC noop(){}`,
+			want:  "FUNC noop() {\n}",
+		},
+		"comment-only UDF block": {
+			input: "FUNC noop() {\n// intentional no-op\n}",
+			want:  "FUNC noop() {\n    // intentional no-op\n}",
+		},
+		"comment-only script": {
+			input: "// intentional no-op",
+			want:  "// intentional no-op",
+		},
+		"USE-only script": {
+			input: "USE FOO AS F",
+			want:  "USE FOO AS F",
+		},
+		"direct FOR return": {
+			input: `RETURN FOR value IN [1]{RETURN value}`,
+			want:  "RETURN FOR value IN [1] {\n    RETURN value\n}",
+		},
+		"direct unbraced FOR return": {
+			input: "RETURN FOR value IN [1]\nRETURN value",
+			want:  "RETURN FOR value IN [1]\n    RETURN value",
+		},
+		"direct DISTINCT FOR return in UDF": {
+			input: `FUNC values(){RETURN DISTINCT FOR value IN [1,1]{RETURN value}} RETURN values()`,
+			want:  "FUNC values() {\n    RETURN DISTINCT FOR value IN [1, 1] {\n        RETURN value\n    }\n}\nRETURN values()",
+		},
 		"unbraced FOR retained": {
 			input: "FOR value IN [1]\nRETURN value",
 			want:  "FOR value IN [1]\n    RETURN value",

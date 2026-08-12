@@ -51,7 +51,7 @@ func TestHostFunctionCall(t *testing.T) {
 		S("LET duration = 10ms WAIT(duration) RETURN 1", 1),
 		Nil("RETURN (FALSE OR T::FAIL())?"),
 		Nil("RETURN T::FAIL()?"),
-		Array(`FOR i IN [1, 2, 3, 4]
+		Array(`RETURN FOR i IN [1, 2, 3, 4]
 				LET duration = 10ms
 		
 				WAIT(duration)

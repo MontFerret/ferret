@@ -5,7 +5,7 @@ import (
 )
 
 const constPropExpr = `
-FOR i IN [1,2,3,4,5,6,7,8,9,10]
+RETURN FOR i IN [1,2,3,4,5,6,7,8,9,10]
   LET v = (1 + 2) * (3 + 4) - (5 - 6)
   RETURN v
 `

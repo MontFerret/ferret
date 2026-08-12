@@ -99,6 +99,10 @@ func (v *BaseFqlParserVisitor) VisitReturnExpression(ctx *ReturnExpressionContex
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitReturnValue(ctx *ReturnValueContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitForExpression(ctx *ForExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }

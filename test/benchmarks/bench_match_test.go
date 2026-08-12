@@ -33,7 +33,7 @@ RETURN MATCH obj {
 
 	matchLoopMixQuery = `
 LET vals = @vals
-FOR v IN vals
+RETURN FOR v IN vals
 	RETURN MATCH v {
 		0 => 0,
 		1 => 1,

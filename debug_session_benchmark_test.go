@@ -15,7 +15,7 @@ func BenchmarkDebugSessionRepeatedSourcePoints(b *testing.B) {
 	defer engine.Close()
 
 	plan, err := engine.CompileDebug(context.Background(), source.NewAnonymous(`
-FOR i IN 1..100
+RETURN FOR i IN 1..100
   RETURN i
 `))
 	if err != nil {

@@ -44,7 +44,7 @@ func TestForWhileCollect(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				COLLECT gender = users[i].gender
 				RETURN {
 					user: users[i],
@@ -84,14 +84,14 @@ func TestForWhileCollect(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET x = "foo"
 				COLLECT gender = users[i].gender
 				RETURN {x, gender}
 		`, "Should not have access to variables defined before COLLECT").Skip().Expect().CompileError(assert.ShouldNotBeNil),
 		Array(`
 			LET users = []
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				COLLECT gender = users[i].gender
 				RETURN gender
 		`,
@@ -130,7 +130,7 @@ LET users = [
 					gender: "f"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				COLLECT gender = users[i].gender
 				RETURN gender
 `, []any{"f", "m"}, "Should group result by a single key"),
@@ -167,7 +167,7 @@ LET users = [
 					gender: "f"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				COLLECT ageGroup = FLOOR(users[i].age / 5)
 				RETURN { ageGroup }
 `, []any{
@@ -248,7 +248,7 @@ LET users = [
 					gender: "f"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				COLLECT gender = users[i].gender, age = users[i].age
 				RETURN {age, gender}
 		`, []any{
@@ -291,7 +291,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				COLLECT gender = users[i].gender INTO genders
 				RETURN {
 					gender,
@@ -326,7 +326,7 @@ LET users = [
 		}, "Should create default projection"),
 		Array(`
 			LET users = []
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				COLLECT gender = users[i].gender INTO genders
 				RETURN {
 					gender,
@@ -366,7 +366,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				COLLECT gender = users[i].gender INTO genders = { active: users[i].active }
 				RETURN {
 					gender,
@@ -422,7 +422,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				COLLECT gender = users[i].gender, age = users[i].age INTO genders = { active: users[i].active }
 				RETURN {
 					age,
@@ -499,7 +499,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET married = users[i].married
 				COLLECT gender = users[i].gender INTO genders KEEP married
 				RETURN {
@@ -525,7 +525,7 @@ LET users = [
 		}, "Should create default projection with default KEEP"),
 		Array(`
 			LET users = []
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET married = users[i].married
 				COLLECT gender = users[i].gender INTO genders KEEP married
 				RETURN {
@@ -566,7 +566,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET married = users[i].married
 				LET age = users[i].age
 				COLLECT gender = users[i].gender INTO values KEEP married, age
@@ -639,7 +639,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET married = "foo"
 				COLLECT gender = users[i].gender INTO values KEEP married
 				RETURN {
@@ -696,7 +696,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET married = "foo"
 				LET age = "bar"
 				COLLECT gender = users[i].gender INTO values KEEP married, age
@@ -769,7 +769,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET bar = "foo"
 				COLLECT gender = users[i].gender INTO values KEEP bar
 				RETURN {
@@ -826,7 +826,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET bar = "foo"
 				LET baz = "bar"
 				COLLECT gender = users[i].gender INTO values KEEP bar, baz
@@ -884,7 +884,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				COLLECT gender = users[i].gender WITH COUNT INTO numberOfUsers
 				RETURN {
 					gender,
@@ -904,7 +904,7 @@ LET users = [
 		Array(
 			`
 			LET users = []
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				COLLECT gender = users[i].gender WITH COUNT INTO numberOfUsers
 				RETURN {
 					gender,
@@ -944,7 +944,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				COLLECT WITH COUNT INTO numberOfUsers
 				RETURN numberOfUsers
 		`, []any{
@@ -953,7 +953,7 @@ LET users = [
 		Array(
 			`
 			LET users = []
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				COLLECT WITH COUNT INTO numberOfUsers
 				RETURN numberOfUsers
 		`, []any{

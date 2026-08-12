@@ -31,6 +31,24 @@ FUNC f() {
 RETURN f()
 `, expectedHostCallBindingCollision("foo"), "Host call and LET collision inside UDF body should fail during compilation"),
 		Failure(`
+FUNC f(items) {
+  FOR item IN items {
+    LET foo = item
+    RETURN foo()
+  }
+}
+f([1])
+`, expectedHostCallBindingCollision("foo"), "Host call and LET collision inside standalone UDF FOR should fail during compilation"),
+		Failure(`
+FUNC f(items) {
+  RETURN FOR item IN items {
+    LET foo = item
+    RETURN foo()
+  }
+}
+RETURN f([1])
+`, expectedHostCallBindingCollision("foo"), "Host call and LET collision inside returned UDF FOR should fail during compilation"),
+		Failure(`
 USE X::bar AS foo
 foo()
 LET foo = 1

@@ -13,21 +13,21 @@ import (
 func TestForWhileSort(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		Array(`
-			FOR i WHILE UNTIL(5)
+			RETURN FOR i WHILE UNTIL(5)
 				SORT i DESC
 				RETURN i
 `, []any{4, 3, 2, 1, 0}),
 		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 
-			FOR i WHILE UNTIL(4)
+			RETURN FOR i WHILE UNTIL(4)
 				SORT strs[i]
 				RETURN i
 `, []any{3, 1, 0, 2}),
 		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 
-			FOR i WHILE UNTIL(4)
+			RETURN FOR i WHILE UNTIL(4)
 				SORT i DESC
 				RETURN strs[i]
 `, []any{"abc", "qaz", "bar", "foo"}),
@@ -49,7 +49,7 @@ func TestForWhileSort(t *testing.T) {
 					gender: "m"
 				}
 			]
-			FOR i WHILE UNTIL(3)
+			RETURN FOR i WHILE UNTIL(3)
 				LET u = users[i]
 				SORT u.name
 				RETURN users[i]
@@ -76,7 +76,7 @@ func TestForWhileSort(t *testing.T) {
 					gender: "m"
 				}
 			]
-			FOR i WHILE UNTIL(3)
+			RETURN FOR i WHILE UNTIL(3)
 				LET u = users[i]
 				SORT u.age DESC
 				RETURN users[i]
@@ -108,7 +108,7 @@ func TestForWhileSort(t *testing.T) {
 					gender: "m"
 				}
 			]
-			FOR i WHILE UNTIL(4)
+			RETURN FOR i WHILE UNTIL(4)
 				LET u = users[i]
 				SORT u.age, u.gender
 				RETURN users[i]`,
@@ -141,7 +141,7 @@ func TestForWhileSort(t *testing.T) {
 					gender: "m"
 				}
 			]
-			FOR i WHILE UNTIL(4)
+			RETURN FOR i WHILE UNTIL(4)
 				LET u = users[i]
 				LET x = "foo"
 				TEST(x)
@@ -171,7 +171,7 @@ func TestForWhileSort(t *testing.T) {
 					gender: "m"
 				}
 			]
-			FOR i WHILE UNTIL(3)
+			RETURN FOR i WHILE UNTIL(3)
 				LET u = users[i]
 				FILTER u.gender == "m"
 				SORT u.age
@@ -198,7 +198,7 @@ func TestForWhileSort(t *testing.T) {
 					gender: "m"
 				}
 			]
-			FOR i WHILE UNTIL(3)
+			RETURN FOR i WHILE UNTIL(3)
 				SORT users[i].age
 				FILTER users[i].gender == "m"
 				RETURN users[i]

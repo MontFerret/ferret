@@ -53,7 +53,7 @@ FUNC run() {
 RETURN run()
 `, 3, "Function-block VAR can be reassigned"),
 		Array(`
-FOR item IN [1, 2]
+RETURN FOR item IN [1, 2]
   VAR current = item
   current = current + 1
   RETURN current

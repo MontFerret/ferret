@@ -16,13 +16,13 @@ func TestForSort(t *testing.T) {
 		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 			
-			FOR s IN strs
+			RETURN FOR s IN strs
 				SORT s
 				RETURN s
 `, []any{"abc", "bar", "foo", "qaz"}, "Should sort strings"),
 		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
-			FOR i IN 0..3
+			RETURN FOR i IN 0..3
 				LET s = strs[i]
 				LEt s2 = CONCAT(s, "x")
 				SORT s
@@ -46,7 +46,7 @@ LET users = [
 					gender: "m"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				SORT u.name
 				RETURN u
 `, []any{
@@ -72,7 +72,7 @@ LET users = [
 					gender: "m"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				SORT u.age
 				RETURN u
 `, []any{
@@ -98,7 +98,7 @@ LET users = [
 					gender: "m"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				SORT u.age DESC
 				RETURN u
 		`, []any{
@@ -124,7 +124,7 @@ LET users = [
 					gender: "m"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				SORT u.age ASC
 				RETURN u
 		`, []any{
@@ -154,7 +154,7 @@ LET users = [
 					gender: "m"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				SORT u.age, u.gender
 				RETURN u`,
 			[]any{
@@ -186,7 +186,7 @@ LET users = [
 					gender: "m"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				LET x = "foo"
 				TEST(x)
 				SORT u.age, u.gender
@@ -215,7 +215,7 @@ LET users = [
 					gender: "m"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				FILTER u.gender == "m"
 				SORT u.age
 				RETURN u
@@ -241,7 +241,7 @@ LET users = [
 					gender: "m"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				SORT u.age
 				FILTER u.gender == "m"
 				RETURN u

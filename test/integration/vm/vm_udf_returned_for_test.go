@@ -7,11 +7,11 @@ import (
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
-func TestUDFTerminalForResult(t *testing.T) {
+func TestUDFReturnedForResult(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		Array(`
 FUNC project(items) {
-  FOR item IN items {
+  RETURN FOR item IN items {
     RETURN item * 2
   }
 }
@@ -19,7 +19,7 @@ RETURN project([])
 `, []any{}, "empty input"),
 		Array(`
 FUNC project(items) {
-  FOR item IN items {
+  RETURN FOR item IN items {
     RETURN item * 2
   }
 }
@@ -27,7 +27,7 @@ RETURN project([3])
 `, []any{6}, "single input"),
 		Array(`
 FUNC project(items) {
-  FOR item IN items {
+  RETURN FOR item IN items {
     FILTER item > 1
     SORT item DESC
     LIMIT 2
@@ -38,7 +38,7 @@ RETURN project([1, 4, 2, 3])
 `, []any{8, 6}, "filter sort and limit"),
 		Array(`
 FUNC countByParity(items) {
-  FOR item IN items {
+  RETURN FOR item IN items {
     COLLECT parity = item % 2 WITH COUNT INTO count
     SORT parity
     RETURN [parity, count]
@@ -48,7 +48,7 @@ RETURN countByParity([1, 2, 3, 4])
 `, []any{[]any{0, 2}, []any{1, 2}}, "collect"),
 		Array(`
 FUNC expand(items) {
-  FOR item IN items {
+  RETURN FOR item IN items {
     LET expanded = (
       FOR value IN [item, item + 10]
         RETURN value
@@ -61,7 +61,7 @@ RETURN expand([1, 2])
 		Array(`
 LET item = 100
 FUNC project(items) {
-  FOR item IN items {
+  RETURN FOR item IN items {
     RETURN item + 1
   }
 }
@@ -70,7 +70,7 @@ RETURN [project([1, 2]), item]
 		Array(`
 VAR total = 0
 FUNC runningTotals(items) {
-  FOR item IN items {
+  RETURN FOR item IN items {
     total += item
     RETURN total
   }
@@ -80,25 +80,25 @@ RETURN [runningTotals([1, 2]), total]
 		Array(`
 FUNC generate() {
   VAR value = 0
-  FOR WHILE value < 3 {
+  RETURN FOR WHILE value < 3 {
     value += 1
     RETURN value
   }
 }
 RETURN generate()
-`, []any{1, 2, 3}, "WHILE terminal loop"),
+`, []any{1, 2, 3}, "returned WHILE loop"),
 		Array(`
 FUNC once() {
-  FOR value DO WHILE false {
+  RETURN FOR value DO WHILE false {
     RETURN value
   }
 }
 RETURN once()
-`, []any{0}, "DO WHILE terminal loop"),
+`, []any{0}, "returned DO WHILE loop"),
 		Array(`
 LET items = [1, 2, 3]
 FUNC project(values) {
-  FOR value IN values {
+  RETURN FOR value IN values {
     RETURN value * 2
   }
 }
@@ -106,7 +106,7 @@ RETURN [project(items), (FOR value IN items RETURN value * 2)]
 `, []any{[]any{2, 4, 6}, []any{2, 4, 6}}, "matches equivalent top-level loop result"),
 		Error(`
 FUNC divide(items) {
-  FOR item IN items {
+  RETURN FOR item IN items {
     RETURN 10 / item
   }
 }

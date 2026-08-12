@@ -3,7 +3,7 @@ package benchmarks_test
 import "testing"
 
 const concatChainMixedQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN "a" + 1 + "b" + 2 + @name + "c" + 3 + @count + "d" + true + "e"
 `
 

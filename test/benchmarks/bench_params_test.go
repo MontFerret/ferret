@@ -4,13 +4,13 @@ import "testing"
 
 const (
 	paramLoopShortQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN @test
 `
 
 	paramLoopUDFQuery = `
 FUNC read() => @test
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN read()
 `
 )

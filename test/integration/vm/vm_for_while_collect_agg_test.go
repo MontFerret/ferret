@@ -31,7 +31,7 @@ func TestForWhileCollectAggregate(t *testing.T) {
 					married: false
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				COLLECT gender = u.gender
 				AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
@@ -77,7 +77,7 @@ LET users = [
 					married: true
 				}
 			]
-FOR i WHILE UNTIL(LENGTH(users))
+RETURN FOR i WHILE UNTIL(LENGTH(users))
   LET u = users[i]
   COLLECT genderGroup = u.gender
    AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
@@ -124,7 +124,7 @@ LET users = [
 					married: true
 				}
 			]
-FOR i WHILE UNTIL(LENGTH(users))
+RETURN FOR i WHILE UNTIL(LENGTH(users))
   COLLECT genderGroup = users[i].gender
    AGGREGATE minAge = MIN(users[i].age), maxAge = MAX(users[i].age)
 
@@ -175,7 +175,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 					department: "Marketing"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				COLLECT
 					department = u.department,
@@ -232,7 +232,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 					salary: 70000
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				COLLECT gender = u.gender
 				AGGREGATE
@@ -292,7 +292,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 					gender: "f"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
   				COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
   				RETURN {
@@ -304,7 +304,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 			"Should collect and aggregate values without grouping"),
 		Array(`
 			LET users = []
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
 				RETURN {
@@ -347,7 +347,7 @@ LET users = [
 					gender: "f"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
   				COLLECT AGGREGATE ages = UNION(u.age, u.age)
   				RETURN { ages }
@@ -387,7 +387,7 @@ LET users = [
 					married: true
 				}
 			]
-FOR i WHILE UNTIL(LENGTH(users))
+RETURN FOR i WHILE UNTIL(LENGTH(users))
   LET u = users[i]
   COLLECT genderGroup = u.gender
    AGGREGATE ages = UNION(u.age, u.age)
@@ -433,7 +433,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 					gender: "f"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
   				COLLECT ageGroup = FLOOR(u.age / 5) * 5
   				AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
@@ -492,7 +492,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 					department: "Marketing"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				COLLECT department = u.department
 				AGGREGATE
@@ -554,7 +554,7 @@ FOR i WHILE UNTIL(LENGTH(users))
 					skills: ["JavaScript", "TypeScript"]
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				COLLECT AGGREGATE
 					allSkills = UNION_DISTINCT(u.skills, u.skills),

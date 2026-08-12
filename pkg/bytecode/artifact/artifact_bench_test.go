@@ -78,7 +78,7 @@ LET users = [
   { gender: "m", age: 45 }
 ]
 
-FOR u IN users
+RETURN FOR u IN users
   COLLECT gender = u.gender
   AGGREGATE minAge = MIN(u.age)
   RETURN { gender, minAge }

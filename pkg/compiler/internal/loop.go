@@ -366,20 +366,31 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 		// For normal loops, compile the return expression and push the result to the destination
 		re := ctx.(*fql.ReturnExpressionContext)
 		c.ctx.WithDebugPointKind(re, bytecode.DebugPointReturn, func() {
-			expReg := c.exprs.Compile(re.Expression())
+			value := re.ReturnValue()
+			if value == nil {
+				return
+			}
 
-			span := source.Span{Start: -1, End: -1}
+			var (
+				result    bytecode.Operand
+				resultCtx antlr.ParserRuleContext
+			)
 
-			if exprCtx := re.Expression(); exprCtx != nil {
-				if prc, ok := exprCtx.(antlr.ParserRuleContext); ok {
-					span = parser.SpanFromRuleContext(prc)
-				}
-			} else {
-				span = parser.SpanFromRuleContext(re)
+			if expr := value.Expression(); expr != nil {
+				result = c.exprs.Compile(expr)
+				resultCtx = expr.(antlr.ParserRuleContext)
+			} else if nested := value.ForExpression(); nested != nil {
+				result = c.Compile(nested)
+				resultCtx = nested.(antlr.ParserRuleContext)
+			}
+
+			span := parser.SpanFromRuleContext(re)
+			if resultCtx != nil {
+				span = parser.SpanFromRuleContext(resultCtx)
 			}
 
 			c.ctx.Program.Emitter.WithSpan(span, func() {
-				c.ctx.Program.Emitter.EmitAB(bytecode.OpPush, loop.Dst, expReg)
+				c.ctx.Program.Emitter.EmitAB(bytecode.OpPush, loop.Dst, result)
 			})
 		})
 	} else if ctx != nil {

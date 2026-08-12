@@ -215,13 +215,13 @@ func TestDispatchInForBodies(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		Array(`
 			VAR i = 0
-			FOR WHILE i < 1
+			RETURN FOR WHILE i < 1
 				i += 1
 				DISPATCH "loop-click" IN @d
 				RETURN i
 		`, []any{1}, "Should dispatch long form in FOR WHILE body"),
 		Array(`
-			FOR item IN [1]
+			RETURN FOR item IN [1]
 				@d <- "loop-shorthand"
 				RETURN item
 		`, []any{1}, "Should dispatch shorthand in FOR IN body"),

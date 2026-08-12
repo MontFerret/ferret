@@ -62,7 +62,7 @@ func TestVariables(t *testing.T) {
 			"a", "Variable reference"),
 		Array("LET i = (FOR i IN [1,2,3] RETURN i) RETURN i",
 			[]any{1, 2, 3}, "arrayList comprehension"),
-		Array(" LET i = { items: [1,2,3]}  FOR el IN i.items RETURN el",
+		Array(" LET i = { items: [1,2,3]} RETURN FOR el IN i.items RETURN el",
 			[]any{1, 2, 3}, "hashMap property access for a loop source"),
 		S(`LET _ = (FOR i IN 1..100 RETURN NONE) RETURN TRUE`, true),
 		Array(`

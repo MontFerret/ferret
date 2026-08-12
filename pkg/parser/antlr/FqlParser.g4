@@ -112,15 +112,42 @@ options { tokenVocab=FqlLexer; }
 		return equalsFoldAscii(tok.GetText(), expected)
 	}
 
-	func (p *FqlParser) isRecoveryActionStart() bool {
-		switch p.GetTokenStream().LA(1) {
-		case FqlParserReturn:
+	func (p *FqlParser) isRecoveryConditionAhead() bool {
+		switch p.GetTokenStream().LA(2) {
+		case FqlParserTimeout, FqlParserIdentifier:
 			return true
-		case FqlParserIdentifier:
-			return !p.isCurrentIdentifierText("ON")
 		default:
 			return false
 		}
+	}
+
+	func (p *FqlParser) isRecoveryActionAhead() bool {
+		switch p.GetTokenStream().LA(3) {
+		case FqlParserReturn:
+			return true
+		case FqlParserIdentifier:
+			tok := p.GetTokenStream().LT(3)
+			return tok != nil && !equalsFoldAscii(tok.GetText(), "ON")
+		default:
+			return false
+		}
+	}
+
+	func (p *FqlParser) hasNonWhitespaceSource() bool {
+		if p.GetTokenStream().LA(1) != FqlParserEOF {
+			return true
+		}
+
+		for i := 0; i < p.GetTokenStream().Index(); i++ {
+			switch p.GetTokenStream().Get(i).GetTokenType() {
+			case FqlParserWhiteSpaces, FqlParserLineTerminator:
+				continue
+			default:
+				return true
+			}
+		}
+
+		return false
 	}
 
 	func equalsFoldAscii(actual, expected string) bool {
@@ -294,7 +321,7 @@ use
     ;
 
 body
-    : bodyStatement* bodyExpression
+    : {p.hasNonWhitespaceSource()}? bodyStatement* bodyExpression?
     ;
 
 bodyStatement
@@ -305,11 +332,11 @@ bodyStatement
     | {p.GetTokenStream().LA(1) != FqlParserReturn}? functionCallExpression
     | waitForExpression
     | dispatchExpression
+    | forExpression
     ;
 
 bodyExpression
     : returnExpression
-    | forExpression
     ;
 
 variableDeclaration
@@ -366,7 +393,7 @@ functionArrow
     ;
 
 functionBlock
-    : OpenBrace functionStatement* (functionReturn | forExpression) CloseBrace
+    : OpenBrace functionStatement* functionReturn? CloseBrace
     ;
 
 functionStatement
@@ -374,10 +401,11 @@ functionStatement
     | assignmentStatement
     | deleteStatement
     | functionDeclaration
-    | functionCallExpression
+    | {p.GetTokenStream().LA(1) != FqlParserReturn}? functionCallExpression
     | waitForExpression
     | dispatchExpression
-    | {!p.isAssignmentStatementStart()}? expressionStatement
+    | forExpression
+    | {p.GetTokenStream().LA(1) != FqlParserReturn && !p.isAssignmentStatementStart()}? expressionStatement
     ;
 
 expressionStatement
@@ -385,11 +413,16 @@ expressionStatement
     ;
 
 functionReturn
-    : Return (Distinct expression | {!p.isReturnDistinctAhead()}? expression)
+    : Return (Distinct returnValue | {!p.isReturnDistinctAhead()}? returnValue)
     ;
 
 returnExpression
-    : Return (Distinct expression | {!p.isReturnDistinctAhead()}? expression)
+    : Return (Distinct returnValue | {!p.isReturnDistinctAhead()}? returnValue)
+    ;
+
+returnValue
+    : forExpression
+    | expression
     ;
 
 forExpression
@@ -688,9 +721,9 @@ recoveryTails
     ;
 
 recoveryTail
-    : onKeyword recoveryCondition {p.isRecoveryActionStart()}? recoveryAction
-    | onKeyword recoveryCondition {!p.isRecoveryActionStart()}?
-    | onKeyword
+    : {p.isRecoveryActionAhead()}? onKeyword recoveryCondition recoveryAction
+    | {p.isRecoveryConditionAhead() && !p.isRecoveryActionAhead()}? onKeyword recoveryCondition
+    | {!p.isRecoveryConditionAhead()}? onKeyword
     ;
 
 recoveryCondition

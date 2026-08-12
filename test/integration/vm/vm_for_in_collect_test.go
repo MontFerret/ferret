@@ -43,7 +43,7 @@ func TestForCollect(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT gender = i.gender
 				RETURN CONCAT(gender, "0")
 `, []any{"f0", "m0"}),
@@ -80,7 +80,7 @@ func TestForCollect(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT gender = i.gender
 				RETURN {
 					user: i,
@@ -120,14 +120,14 @@ func TestForCollect(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				LET x = "foo"
 				COLLECT gender = i.gender
 				RETURN {x, gender}
 		`, "Should not have access to variables defined before COLLECT").Skip("TODO: Needs a fix").Expect().CompileError(assert.ShouldNotBeNil),
 		Array(`
 			LET users = []
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT gender = i.gender
 				RETURN gender
 		`,
@@ -166,7 +166,7 @@ LET users = [
 					gender: "f"
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT gender = i.gender
 				RETURN gender
 `, []any{"f", "m"}, "Should group result by a single key"),
@@ -203,7 +203,7 @@ LET users = [
 					gender: "f"
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT ageGroup = FLOOR(i.age / 5)
 				RETURN { ageGroup }
 `, []any{
@@ -284,7 +284,7 @@ LET users = [
 					gender: "f"
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT gender = i.gender, age = i.age
 				RETURN {age, gender}
 		`, []any{
@@ -327,7 +327,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT gender = i.gender INTO values
 				RETURN {
 					gender,
@@ -390,7 +390,7 @@ LET users = [
 				{ name: "a", age: 10 },
 				{ name: "b", age: 20 }
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				COLLECT group = "only" INTO values
 				RETURN {
 					group,
@@ -417,7 +417,7 @@ LET users = [
 		}, "Should collect into a single group when key is constant"),
 		Array(`
 			LET users = []
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT gender = i.gender INTO genders
 				RETURN {
 					gender,
@@ -457,7 +457,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT gender = i.gender INTO genders = { active: i.active }
 				RETURN {
 					gender,
@@ -513,7 +513,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT gender = i.gender, age = i.age INTO genders = { active: i.active }
 				RETURN {
 					age,
@@ -590,7 +590,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				LET married = i.married
 				COLLECT gender = i.gender INTO genders KEEP married
 				RETURN {
@@ -616,7 +616,7 @@ LET users = [
 		}, "Should create default projection with default KEEP"),
 		Array(`
 			LET users = []
-			FOR i IN users
+			RETURN FOR i IN users
 				LET married = i.married
 				COLLECT gender = i.gender INTO genders KEEP married
 				RETURN {
@@ -657,7 +657,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				LET married = i.married
 				LET age = i.age
 				COLLECT gender = i.gender INTO values KEEP married, age
@@ -730,7 +730,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				LET married = "foo"
 				COLLECT gender = i.gender INTO values KEEP married
 				RETURN {
@@ -787,7 +787,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				LET married = "foo"
 				LET age = "bar"
 				COLLECT gender = i.gender INTO values KEEP married, age
@@ -860,7 +860,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				LET bar = "foo"
 				COLLECT gender = i.gender INTO values KEEP bar
 				RETURN {
@@ -917,7 +917,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				LET bar = "foo"
 				LET baz = "bar"
 				COLLECT gender = i.gender INTO values KEEP bar, baz
@@ -975,7 +975,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT gender = i.gender WITH COUNT INTO numberOfUsers
 				RETURN {
 					gender,
@@ -995,7 +995,7 @@ LET users = [
 		Array(
 			`
 			LET users = []
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT gender = i.gender WITH COUNT INTO numberOfUsers
 				RETURN {
 					gender,
@@ -1035,7 +1035,7 @@ LET users = [
 					married: true
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT WITH COUNT INTO numberOfUsers
 				RETURN numberOfUsers
 		`, []any{
@@ -1043,7 +1043,7 @@ LET users = [
 			}, "Should just count the number of items in the source"),
 		Array(
 			`LET users = []
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT WITH COUNT INTO numberOfUsers
 				RETURN numberOfUsers
 		`, []any{

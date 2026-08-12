@@ -46,15 +46,6 @@ func TestSyntaxErrors(t *testing.T) {
 		Failure(
 			`
 			LET i = NONE
-		`, E{
-				Kind:    parserd.SyntaxError,
-				Message: "Expected a RETURN or FOR clause at end of query",
-				Hint:    "All queries must return a value. Add a RETURN statement to complete the query.",
-			}, "Missing return statement"),
-
-		Failure(
-			`
-			LET i = NONE
 			RETURN
 		`, E{
 				Kind:    parserd.SyntaxError,

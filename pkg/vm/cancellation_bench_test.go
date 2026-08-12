@@ -88,7 +88,7 @@ func benchmarkSourcePointCancellationSafepoint(b *testing.B, interval int) {
 func benchmarkUDFCallCancellationSafepoint(b *testing.B) {
 	program := benchmarkCompileCancellationProgram(b, compiler.New(compiler.WithOptimizationLevel(compiler.O0)), `
 FUNC inc(value) => value + 1
-FOR value IN 1..128 RETURN inc(value)
+RETURN FOR value IN 1..128 RETURN inc(value)
 `)
 	benchmarkCancellationContexts(b, program, NewDefaultEnvironment())
 }

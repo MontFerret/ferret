@@ -158,6 +158,12 @@ func (s *BaseFqlParserListener) EnterReturnExpression(ctx *ReturnExpressionConte
 // ExitReturnExpression is called when production returnExpression is exited.
 func (s *BaseFqlParserListener) ExitReturnExpression(ctx *ReturnExpressionContext) {}
 
+// EnterReturnValue is called when production returnValue is entered.
+func (s *BaseFqlParserListener) EnterReturnValue(ctx *ReturnValueContext) {}
+
+// ExitReturnValue is called when production returnValue is exited.
+func (s *BaseFqlParserListener) ExitReturnValue(ctx *ReturnValueContext) {}
+
 // EnterForExpression is called when production forExpression is entered.
 func (s *BaseFqlParserListener) EnterForExpression(ctx *ForExpressionContext) {}
 

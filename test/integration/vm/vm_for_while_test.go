@@ -10,10 +10,10 @@ import (
 
 func TestForWhile(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
-		Array("FOR i WHILE false RETURN i", []any{}),
-		Array("FOR i WHILE UNTIL(5) RETURN i", []any{0, 1, 2, 3, 4}),
+		Array("RETURN FOR i WHILE false RETURN i", []any{}),
+		Array("RETURN FOR i WHILE UNTIL(5) RETURN i", []any{0, 1, 2, 3, 4}),
 		Array(`
-			FOR i WHILE COUNTER() < 5
+			RETURN FOR i WHILE COUNTER() < 5
 				LET y = i + 1
 				FOR x IN 1..y
 					RETURN i * x

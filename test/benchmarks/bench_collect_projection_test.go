@@ -4,20 +4,20 @@ import "testing"
 
 const (
 	collectProjectionAllVars = `
-FOR i IN 1..200
+RETURN FOR i IN 1..200
   LET a = i + 1
   LET b = i + 2
   COLLECT g = i % 5 INTO groups
   RETURN groups
 `
 	collectProjectionSingleGroup = `
-FOR i IN 1..10000
+RETURN FOR i IN 1..10000
   COLLECT g = "only" INTO groups
   RETURN groups
 `
 
 	collectProjectionKeep = `
-FOR i IN 1..200
+RETURN FOR i IN 1..200
   LET a = i + 1
   LET b = i + 2
   COLLECT g = i % 5 INTO groups KEEP a, b
@@ -25,7 +25,7 @@ FOR i IN 1..200
 `
 
 	collectProjectionCustom = `
-FOR i IN 1..200
+RETURN FOR i IN 1..200
   LET a = i + 1
   LET b = i + 2
   COLLECT g = i % 5 INTO groups = { a: a, b: b }
@@ -33,7 +33,7 @@ FOR i IN 1..200
 `
 
 	collectProjectionCount = `
-FOR i IN 1..200
+RETURN FOR i IN 1..200
   COLLECT WITH COUNT INTO total
   RETURN total
 `

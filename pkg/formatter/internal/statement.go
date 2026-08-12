@@ -30,6 +30,8 @@ func (f *statementFormatter) formatBodyStatement(ctx *fql.BodyStatementContext) 
 		f.formatWaitForExpression(ctx.WaitForExpression().(*fql.WaitForExpressionContext))
 	case ctx.DispatchExpression() != nil:
 		f.formatDispatchExpression(ctx.DispatchExpression().(*fql.DispatchExpressionContext))
+	case ctx.ForExpression() != nil:
+		f.formatForExpression(ctx.ForExpression().(*fql.ForExpressionContext))
 	}
 }
 
@@ -41,8 +43,6 @@ func (f *statementFormatter) formatBodyExpression(ctx *fql.BodyExpressionContext
 	switch {
 	case ctx.ReturnExpression() != nil:
 		f.formatReturnExpression(ctx.ReturnExpression().(*fql.ReturnExpressionContext))
-	case ctx.ForExpression() != nil:
-		f.formatForExpression(ctx.ForExpression().(*fql.ForExpressionContext))
 	}
 }
 
@@ -143,8 +143,8 @@ func (f *statementFormatter) formatReturnExpression(ctx *fql.ReturnExpressionCon
 
 	f.p.space()
 
-	if expr := ctx.Expression(); expr != nil {
-		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+	if value := ctx.ReturnValue(); value != nil {
+		f.formatReturnValue(value.(*fql.ReturnValueContext))
 	}
 }
 
@@ -193,11 +193,6 @@ func (f *statementFormatter) formatFunctionDeclaration(ctx *fql.FunctionDeclarat
 
 	stmts := block.AllFunctionStatement()
 	ret := block.FunctionReturn()
-	terminalFor := block.ForExpression()
-
-	if len(stmts) == 0 && ret == nil && terminalFor == nil {
-		return
-	}
 
 	f.p.space()
 	f.p.write("{")
@@ -209,8 +204,6 @@ func (f *statementFormatter) formatFunctionDeclaration(ctx *fql.FunctionDeclarat
 		first = stmts[0].(antlr.ParserRuleContext)
 	} else if ret != nil {
 		first = ret.(antlr.ParserRuleContext)
-	} else if terminalFor != nil {
-		first = terminalFor.(antlr.ParserRuleContext)
 	}
 
 	f.p.withIndent(func() {
@@ -218,6 +211,11 @@ func (f *statementFormatter) formatFunctionDeclaration(ctx *fql.FunctionDeclarat
 			f.trivia.emitListTriviaWith(
 				f.p,
 				f.trivia.blockLeadingTrivia(headerStop, block.OpenBrace(), f.trivia.startIndex(first)),
+			)
+		} else if block.CloseBrace() != nil {
+			f.trivia.emitListTriviaWith(
+				f.p,
+				f.trivia.blockLeadingTrivia(headerStop, block.OpenBrace(), f.trivia.tokenStart(block.CloseBrace())),
 			)
 		} else {
 			f.p.newline()
@@ -237,18 +235,10 @@ func (f *statementFormatter) formatFunctionDeclaration(ctx *fql.FunctionDeclarat
 			}
 
 			f.formatFunctionReturn(ret.(*fql.FunctionReturnContext))
-		} else if terminalFor != nil {
-			if len(stmts) > 0 {
-				f.trivia.emitBetween(stmts[len(stmts)-1].(antlr.ParserRuleContext), terminalFor.(antlr.ParserRuleContext))
-			}
-
-			f.formatForExpression(terminalFor.(*fql.ForExpressionContext))
 		}
 
 		var last antlr.ParserRuleContext
 		switch {
-		case terminalFor != nil:
-			last = terminalFor.(antlr.ParserRuleContext)
 		case ret != nil:
 			last = ret.(antlr.ParserRuleContext)
 		case len(stmts) > 0:
@@ -310,6 +300,8 @@ func (f *statementFormatter) formatFunctionStatement(ctx *fql.FunctionStatementC
 		f.formatWaitForExpression(ctx.WaitForExpression().(*fql.WaitForExpressionContext))
 	case ctx.DispatchExpression() != nil:
 		f.formatDispatchExpression(ctx.DispatchExpression().(*fql.DispatchExpressionContext))
+	case ctx.ForExpression() != nil:
+		f.formatForExpression(ctx.ForExpression().(*fql.ForExpressionContext))
 	case ctx.ExpressionStatement() != nil:
 		f.formatExpressionStatement(ctx.ExpressionStatement().(*fql.ExpressionStatementContext))
 	}
@@ -328,6 +320,22 @@ func (f *statementFormatter) formatFunctionReturn(ctx *fql.FunctionReturnContext
 	}
 
 	f.p.space()
+
+	if value := ctx.ReturnValue(); value != nil {
+		f.formatReturnValue(value.(*fql.ReturnValueContext))
+	}
+}
+
+func (f *statementFormatter) formatReturnValue(ctx *fql.ReturnValueContext) {
+	if ctx == nil {
+		return
+	}
+
+	if loop := ctx.ForExpression(); loop != nil {
+		f.formatForExpression(loop.(*fql.ForExpressionContext))
+
+		return
+	}
 
 	if expr := ctx.Expression(); expr != nil {
 		f.expression.formatExpression(expr.(*fql.ExpressionContext))

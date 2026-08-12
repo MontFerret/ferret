@@ -60,6 +60,12 @@ func (f *programFormatter) formatProgram(ctx *fql.ProgramContext) {
 		first = f.bodyFirstElement(body.(*fql.BodyContext))
 	}
 
+	if first == nil {
+		f.p.writeRaw(f.src.Content())
+
+		return
+	}
+
 	f.trivia.emitLeading(first)
 
 	for i, head := range heads {

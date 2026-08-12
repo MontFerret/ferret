@@ -80,13 +80,10 @@ func (c *UDFCompiler) compile(fn *core.UDFInfo) {
 					c.stmts.CompileFunctionStatement(stmt)
 				}
 
-				if terminalFor := block.ForExpression(); terminalFor != nil {
-					rule, _ := terminalFor.(antlr.ParserRuleContext)
-					c.ctx.WithDebugPointKind(rule, bytecode.DebugPointStatement, func() {
-						c.stmts.compileTerminalForResult(terminalFor)
-					})
+				if ret := block.FunctionReturn(); ret != nil {
+					c.compileReturn(ret)
 				} else {
-					c.compileReturn(block.FunctionReturn())
+					c.stmts.emitImplicitNoneReturn()
 				}
 			}
 		}
@@ -135,8 +132,23 @@ func (c *UDFCompiler) compileReturn(ctx fql.IFunctionReturnContext) {
 		return
 	}
 
-	expr := ctx.Expression()
-	c.compileExpressionReturn(expr, ctx.Distinct() != nil)
+	value := ctx.ReturnValue()
+	if value == nil {
+		return
+	}
+
+	if expr := value.Expression(); expr != nil {
+		c.compileExpressionReturn(expr, ctx.Distinct() != nil)
+
+		return
+	}
+
+	rule, _ := value.(antlr.ParserRuleContext)
+	c.ctx.WithDebugPointKind(rule, bytecode.DebugPointReturn, func() {
+		val := c.stmts.compileReturnOperand(value, ctx.Distinct() != nil)
+
+		c.ctx.Program.Emitter.EmitA(bytecode.OpReturn, val)
+	})
 }
 
 func (c *UDFCompiler) compileExpressionReturn(expr fql.IExpressionContext, distinct bool) {

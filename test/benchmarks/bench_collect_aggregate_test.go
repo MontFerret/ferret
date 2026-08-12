@@ -13,7 +13,7 @@ LET users = [
 	{ age: 45, salary: 70000 }
 ]
 
-FOR u IN users
+RETURN FOR u IN users
 	COLLECT AGGREGATE
 		minAge = MIN(u.age),
 		maxAge = MAX(u.age),
@@ -24,7 +24,7 @@ FOR u IN users
 const globalCollectAggregateLargeQuery = `
 LET values = 1..10000
 
-FOR v IN values
+RETURN FOR v IN values
 	COLLECT AGGREGATE
 		cnt = COUNT(v),
 		sum = SUM(v),
@@ -37,7 +37,7 @@ FOR v IN values
 const globalCollectAggregateLargeIntoQuery = `
 LET values = 1..10000
 
-FOR v IN values
+RETURN FOR v IN values
 	COLLECT AGGREGATE
 		sum = SUM(v),
 		min = MIN(v),
@@ -49,7 +49,7 @@ FOR v IN values
 const groupedCollectAggregateLargeQuery = `
 LET values = 1..10000
 
-FOR v IN values
+RETURN FOR v IN values
 	COLLECT g = v % 100
 	AGGREGATE
 		cnt = COUNT(v),

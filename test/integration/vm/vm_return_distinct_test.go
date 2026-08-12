@@ -75,7 +75,7 @@ FUNC DISTINCT() => [1, 2]
 RETURN (DISTINCT())
 `, []any{1, 2}, "returns a parenthesized DISTINCT call expression"),
 		Array(`
-FOR DISTINCT IN [[1], [2]]
+RETURN FOR DISTINCT IN [[1], [2]]
 	RETURN (DISTINCT)
 `, []any{[]any{1}, []any{2}}, "returns a parenthesized DISTINCT loop variable"),
 		Array(`

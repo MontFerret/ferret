@@ -31,7 +31,7 @@ func TestForFilter(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		Array(
 			`
-			FOR i IN [ 1, 2, 3, 4, 1, 3 ]
+			RETURN FOR i IN [ 1, 2, 3, 4, 1, 3 ]
 				FILTER i > 2
 				RETURN i
 		`,
@@ -39,7 +39,7 @@ func TestForFilter(t *testing.T) {
 		),
 		Array(
 			`
-			FOR i IN [ 1, 2, 3, 4, 1, 3 ]
+			RETURN FOR i IN [ 1, 2, 3, 4, 1, 3 ]
 				FILTER i > 1 AND i < 4
 				RETURN i
 		`,
@@ -64,7 +64,7 @@ func TestForFilter(t *testing.T) {
 					name: "Peter"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				FILTER u.name =~ "r"
 				RETURN u
 		`,
@@ -89,7 +89,7 @@ func TestForFilter(t *testing.T) {
 							gender: "m"
 						}
 					]
-					FOR u IN users
+					RETURN FOR u IN users
 						FILTER u.active == true
 						FILTER u.age < 35
 						RETURN u
@@ -120,7 +120,7 @@ func TestForFilter(t *testing.T) {
 					gender: "m"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				FILTER u.active
 				RETURN u
 				`,
@@ -151,7 +151,7 @@ func TestForFilter(t *testing.T) {
 					gender: "m"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				FILTER u.active == true
 				LIMIT 2
 				FILTER u.gender == "m"
@@ -193,7 +193,7 @@ func TestForFilter(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				FILTER u.active AND u.married
 				RETURN u
 `, []any{map[string]any{"active": true, "age": 31, "gender": "m", "married": true}, map[string]any{"active": true, "age": 45, "gender": "f", "married": true}},
@@ -231,7 +231,7 @@ LET users = [
 					gender: "f"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				FILTER !u.active AND u.married
 				RETURN u
 `, []any{map[string]any{"active": false, "age": 69, "gender": "m", "married": true}},
@@ -269,19 +269,19 @@ LET users = [
 					gender: "f"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				FILTER !u.active AND !u.married
 				RETURN u
 `, []any{},
 			"Should compile query with multiple left side expression and with binary operator 2"),
 		Array(`
-			FOR i IN [ 1, 2, 3, 4, 1, 3 ]
+			RETURN FOR i IN [ 1, 2, 3, 4, 1, 3 ]
 				LET x = 2
 				FILTER i > x
 				RETURN i + x
 `, []any{5, 6, 5}),
 		Array(`
-			FOR i IN [ 1, 2, 3, 4, 1, 3 ]
+			RETURN FOR i IN [ 1, 2, 3, 4, 1, 3 ]
 				LET x = 2
 				COUNT_A()
 				FILTER i > x

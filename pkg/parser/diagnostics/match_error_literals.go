@@ -107,22 +107,6 @@ func matchLiteralErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 	}
 
 	if isNoAlternative(err.Message) || isMissing(err.Message) || isMismatched(err.Message) {
-		if is(offending, "RETURN") {
-			if bracket := findPrevToken(offending, "[", 6); bracket != nil && isComputedPropertyPrefix(bracket.Prev()) {
-				span := spanFromTokenSafe(offending.Token(), src)
-				span.Start = span.End
-				span.End = span.Start + 1
-
-				err.Message = "Expected a RETURN or FOR clause at end of query"
-				err.Hint = "All queries must return a value. Add a RETURN statement to complete the query."
-				err.Spans = []diagnostics.ErrorSpan{
-					diagnostics.NewMainErrorSpan(span, "incomplete expression"),
-				}
-
-				return true
-			}
-		}
-
 		if is(offending.Prev(), "[") {
 			var span source.Span
 

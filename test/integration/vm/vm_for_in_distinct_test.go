@@ -10,19 +10,19 @@ import (
 func TestForDistinct(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		Array(
-			`FOR i IN [ 1, 2, 3, 4, 1, 3 ]
+			`RETURN FOR i IN [ 1, 2, 3, 4, 1, 3 ]
 							RETURN DISTINCT i
 		`,
 			[]any{1, 2, 3, 4},
 		),
 		Array(
-			`FOR i IN ["foo", "bar", "qaz", "foo", "abc", "bar"]
+			`RETURN FOR i IN ["foo", "bar", "qaz", "foo", "abc", "bar"]
 							RETURN DISTINCT i
 		`,
 			[]any{"foo", "bar", "qaz", "abc"},
 		),
 		Array(
-			`FOR i IN [["foo"], ["bar"], ["qaz"], ["foo"], ["abc"], ["bar"]]
+			`RETURN FOR i IN [["foo"], ["bar"], ["qaz"], ["foo"], ["abc"], ["bar"]]
 							RETURN DISTINCT i
 		`,
 			[]any{[]any{"foo"}, []any{"bar"}, []any{"qaz"}, []any{"abc"}},
@@ -30,27 +30,27 @@ func TestForDistinct(t *testing.T) {
 		Array(`
 			LET strs = ["foo", "bar", "qaz", "foo", "abc", "bar"]
 
-			FOR s IN strs
+			RETURN FOR s IN strs
 				SORT s
 				RETURN DISTINCT s
 `, []any{"abc", "bar", "foo", "qaz"}, "Should sort and respect DISTINCT keyword"),
 		Array(
 			`
-			FOR i IN [ 1, 1, 2, 3, 4, 1, 3 ]
+			RETURN FOR i IN [ 1, 1, 2, 3, 4, 1, 3 ]
 				LIMIT 2
 				RETURN DISTINCT i
 		`,
 			[]any{1}),
 		Array(
 			`
-			FOR i IN [ 1, 1, 1, 3, 4, 1, 3 ]
+			RETURN FOR i IN [ 1, 1, 1, 3, 4, 1, 3 ]
 				LIMIT 1, 2
 				RETURN DISTINCT i
 		`,
 			[]any{1}),
 		Array(
 			`
-			FOR i IN [ 1, 2, 3, 4, 1, 3, 3, 4 ]
+			RETURN FOR i IN [ 1, 2, 3, 4, 1, 3, 3, 4 ]
 				FILTER i > 2
 				RETURN DISTINCT i
 		`,
@@ -89,7 +89,7 @@ func TestForDistinct(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT gender = i.gender, age = i.age
 				RETURN DISTINCT {gender}
 		`, []any{
@@ -129,7 +129,7 @@ func TestForDistinct(t *testing.T) {
 					married: true
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT gender = i.gender INTO genders = { active: i.active }
 				RETURN DISTINCT genders[0]
 		`, []any{
@@ -162,7 +162,7 @@ func TestForDistinct(t *testing.T) {
 					married: true
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 			  COLLECT genderGroup = u.gender
 			   AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
 			
@@ -197,7 +197,7 @@ func TestForDistinct(t *testing.T) {
 					gender: "m"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				RETURN DISTINCT u.age
 		`, []any{nil, 25, 45}, "Should handle null values with DISTINCT"),
 
@@ -205,7 +205,7 @@ func TestForDistinct(t *testing.T) {
 		Array(`
 			LET departments = ["IT", "Marketing", "HR"]
 
-			FOR dept IN departments
+			RETURN FOR dept IN departments
 				FOR gender IN ["m", "f"]
 					RETURN DISTINCT { department: dept, gender }
 		`, []any{
@@ -249,7 +249,7 @@ func TestForDistinct(t *testing.T) {
 					}
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				RETURN DISTINCT u.department
 		`, []any{
 			map[string]any{"name": "IT", "location": "Building A"},
@@ -266,14 +266,14 @@ func TestForDistinct(t *testing.T) {
 				{ age: 26 },
 				{ age: 31 }
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				RETURN DISTINCT FLOOR(u.age / 10) * 10
 		`, []any{20, 30, 40}, "Should handle DISTINCT with calculated values"),
 
 		// Test DISTINCT with empty arrays
 		Array(`
 			LET emptyArray = []
-			FOR i IN emptyArray
+			RETURN FOR i IN emptyArray
 				RETURN DISTINCT i
 		`, []any{}, "Should handle DISTINCT with empty arrays"),
 
@@ -286,7 +286,7 @@ func TestForDistinct(t *testing.T) {
 				{ name: "Alice", age: 35, gender: "f" },
 				{ name: "Mike", age: 25, gender: "m" }
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				SORT u.age DESC, u.gender
 				RETURN DISTINCT u.age
 		`, []any{35, 30, 25}, "Should handle DISTINCT with SORT BY multiple fields"),
@@ -297,7 +297,7 @@ func TestForDistinct(t *testing.T) {
 			LET genders = ["m", "f"]
 			LET statuses = ["active", "inactive"]
 
-			FOR dept IN departments
+			RETURN FOR dept IN departments
 				FOR gender IN genders
 					FOR status IN statuses
 						RETURN DISTINCT { 
@@ -319,7 +319,7 @@ func TestForDistinct(t *testing.T) {
 			LET genders = ["m", "f"]
 			LET statuses = ["active", "inactive"]
 
-			FOR dept IN departments
+			RETURN FOR dept IN departments
 				SORT dept
 				FOR gender IN genders
 					SORT gender
@@ -348,7 +348,7 @@ func TestForDistinct(t *testing.T) {
 				{ name: "Mike", department: "Marketing", age: 45 }
 			]
 
-			FOR u IN users
+			RETURN FOR u IN users
 				COLLECT dept = u.department
 				AGGREGATE avgAge = AVERAGE(u.age)
 				RETURN DISTINCT {
@@ -370,7 +370,7 @@ func TestForDistinct(t *testing.T) {
 				{ name: "Alice", skills: ["Python", "JavaScript"] }
 			]
 
-			FOR u IN users
+			RETURN FOR u IN users
 				SORT u.name
 				RETURN DISTINCT SORTED(u.skills)
 		`, []any{

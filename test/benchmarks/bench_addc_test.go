@@ -8,93 +8,93 @@ import (
 const (
 	addConstNumericQuery = `
 LET base = 1
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN base + 2
 `
 
 	addConstNumericWithParamQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN @base + 2
 `
 
 	addConstStringQuery = `
 LET foo = "bar"
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN foo + " baz"`
 
 	addConstStringWithParamQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN @foo + " baz"
 `
 
-	templateLiteralSimpleQuery = "FOR i IN 1..1000 RETURN `Hello ${@name}!`"
+	templateLiteralSimpleQuery = "RETURN FOR i IN 1..1000 RETURN `Hello ${@name}!`"
 
-	templateLiteralNumericQuery = "FOR i IN 1..1000 RETURN `sum=${@a + @b}`"
+	templateLiteralNumericQuery = "RETURN FOR i IN 1..1000 RETURN `sum=${@a + @b}`"
 
 	durationAddQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN @base + 2ms
 `
 
-	durationLiteralQuery = `FOR i IN 1..1000 RETURN 1.5s`
+	durationLiteralQuery = `RETURN FOR i IN 1..1000 RETURN 1.5s`
 
 	durationExplicitAddQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN @base + TO_DURATION("2ms")
 `
 
 	durationExplicitCompareQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN @base > TO_DURATION(500)
 `
 
 	durationStrictCompareQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN @base > 500ms
 `
 
 	numericEqualityQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN @base == 1
 `
 
 	durationExplicitEqualityQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN @base == TO_DURATION("1s")
 `
 
 	durationStrictEqualityQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN @base == 1s
 `
 
 	equalityJumpConstQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN @left == 1 ? i : 0
 `
 
 	equalityJumpRegisterQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN @left == @right ? i : 0
 `
 
 	quantifiedComparisonQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN @values ANY > @threshold
 `
 
 	dateTimeAddQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN @base + 2ms
 `
 
 	dateTimeConversionQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN TO_DATETIME(@value)
 `
 
 	dateTimeEpochConversionQuery = `
-FOR i IN 1..1000
+RETURN FOR i IN 1..1000
   RETURN TO_DATETIME(@value, "s")
 `
 )

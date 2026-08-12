@@ -31,12 +31,20 @@ LET base = 1
 FUNC target(value) => base + value
 FUNC forward(value) => target(value)
 
-FOR i IN 1..500
+RETURN FOR i IN 1..500
   RETURN forward(i)
 `
 
 const (
-	udfTerminalForQuery = `
+	udfDirectForQuery = `
+FUNC project(items) {
+  RETURN FOR item IN items {
+    RETURN item * 2
+  }
+}
+RETURN project(1..500)
+`
+	udfFallthroughForQuery = `
 FUNC project(items) {
   FOR item IN items {
     RETURN item * 2
@@ -173,12 +181,20 @@ func BenchmarkUdfCalls_TransitiveCapture_O1(b *testing.B) {
 	RunBenchmarkO1(b, udfTransitiveCaptureQuery)
 }
 
-func BenchmarkUdfCalls_TerminalFor_O0(b *testing.B) {
-	RunBenchmarkO0(b, udfTerminalForQuery)
+func BenchmarkUdfCalls_DirectFor_O0(b *testing.B) {
+	RunBenchmarkO0(b, udfDirectForQuery)
 }
 
-func BenchmarkUdfCalls_TerminalFor_O1(b *testing.B) {
-	RunBenchmarkO1(b, udfTerminalForQuery)
+func BenchmarkUdfCalls_DirectFor_O1(b *testing.B) {
+	RunBenchmarkO1(b, udfDirectForQuery)
+}
+
+func BenchmarkUdfCalls_FallthroughFor_O0(b *testing.B) {
+	RunBenchmarkO0(b, udfFallthroughForQuery)
+}
+
+func BenchmarkUdfCalls_FallthroughFor_O1(b *testing.B) {
+	RunBenchmarkO1(b, udfFallthroughForQuery)
 }
 
 func BenchmarkUdfCalls_ExplicitWrapperFor_O0(b *testing.B) {
