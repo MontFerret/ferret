@@ -36,6 +36,75 @@ RETURN [name, first]
 	}
 }
 
+func TestDestructuringLoweringSkipsIgnoredStructuredChildren(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		ignored := compileWithLevel(t, level, `
+LET {
+    kept,
+    ignored: { nested: [_, _] },
+    emptyObject: {},
+    emptyArray: []
+} = @payload
+RETURN kept
+`)
+		direct := compileWithLevel(t, level, `
+LET { kept, ignored: _, emptyObject: _, emptyArray: _ } = @payload
+RETURN kept
+`)
+
+		counts := map[bytecode.Opcode]int{}
+		for _, inst := range ignored.Bytecode {
+			counts[inst.Opcode]++
+		}
+
+		if got, want := counts[bytecode.OpAssertDestructure], 1; got != want {
+			t.Fatalf("O%d assertion count = %d, want %d", level, got, want)
+		}
+
+		if got, want := counts[bytecode.OpLoadKeyOptionalConst], 1; got != want {
+			t.Fatalf("O%d object load count = %d, want %d", level, got, want)
+		}
+
+		if got := counts[bytecode.OpLoadIndexOptionalConst]; got != 0 {
+			t.Fatalf("O%d array load count = %d, want 0", level, got)
+		}
+
+		if got, want := ignored.Registers, direct.Registers; got != want {
+			t.Fatalf("O%d register count = %d, direct ignore uses %d", level, got, want)
+		}
+
+		if got, want := len(ignored.Constants), len(direct.Constants); got != want {
+			t.Fatalf("O%d constant count = %d, direct ignore uses %d", level, got, want)
+		}
+	}
+}
+
+func TestDestructuringLoweringRetainsMixedStructuredChildren(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		prog := compileWithLevel(t, level, `
+LET { nested: [_, kept, _], ignored: { child: [_] } } = @payload
+RETURN kept
+`)
+
+		counts := map[bytecode.Opcode]int{}
+		for _, inst := range prog.Bytecode {
+			counts[inst.Opcode]++
+		}
+
+		if got, want := counts[bytecode.OpAssertDestructure], 2; got != want {
+			t.Fatalf("O%d assertion count = %d, want %d", level, got, want)
+		}
+
+		if got, want := counts[bytecode.OpLoadKeyOptionalConst], 1; got != want {
+			t.Fatalf("O%d object load count = %d, want %d", level, got, want)
+		}
+
+		if got, want := counts[bytecode.OpLoadIndexOptionalConst], 1; got != want {
+			t.Fatalf("O%d array load count = %d, want %d", level, got, want)
+		}
+	}
+}
+
 func TestDestructuringDuplicateBindingDiagnostic(t *testing.T) {
 	src := `LET { name, nested: [name] } = @payload
 RETURN name`

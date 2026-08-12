@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -16,23 +17,32 @@ import (
 
 type observableKeyReadable struct {
 	err    error
+	errors map[string]error
 	values map[string]runtime.Value
+	keys   []string
 	runtime.Int
 	reads int
 }
 
 func (v *observableKeyReadable) Get(_ context.Context, key runtime.Value) (runtime.Value, error) {
 	v.reads++
-	if v.err != nil {
-		return runtime.None, v.err
-	}
-
 	name, ok := key.(runtime.String)
 	if !ok {
 		return runtime.None, runtime.ErrNotFound
 	}
 
-	value, ok := v.values[string(name)]
+	keyName := string(name)
+	v.keys = append(v.keys, keyName)
+
+	if err := v.errors[keyName]; err != nil {
+		return runtime.None, err
+	}
+
+	if v.err != nil {
+		return runtime.None, v.err
+	}
+
+	value, ok := v.values[keyName]
 	if !ok {
 		return runtime.None, nil
 	}
@@ -41,14 +51,22 @@ func (v *observableKeyReadable) Get(_ context.Context, key runtime.Value) (runti
 }
 
 type observableIndexReadable struct {
-	err    error
-	values []runtime.Value
+	err     error
+	errors  map[runtime.Int]error
+	values  []runtime.Value
+	indexes []runtime.Int
 	runtime.Int
 	reads int
 }
 
 func (v *observableIndexReadable) At(_ context.Context, index runtime.Int) (runtime.Value, error) {
 	v.reads++
+	v.indexes = append(v.indexes, index)
+
+	if err := v.errors[index]; err != nil {
+		return runtime.None, err
+	}
+
 	if v.err != nil {
 		return runtime.None, v.err
 	}
@@ -257,6 +275,193 @@ func TestDestructuringAcceptsCapabilityBasedValuesAndSkipsIgnoredLookups(t *test
 	}
 }
 
+func TestDestructuringSkipsIgnoredStructuredSubtrees(t *testing.T) {
+	getterErr := errors.New("ignored getter ran")
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(fmt.Sprintf("O%d/object", level), func(t *testing.T) {
+			ignoredIndexes := &observableIndexReadable{Int: 0, err: getterErr}
+			ignoredKeys := &observableKeyReadable{
+				Int: 0,
+				values: map[string]runtime.Value{
+					"nested": ignoredIndexes,
+				},
+			}
+			value := &observableKeyReadable{
+				Int:    0,
+				errors: map[string]error{"ignored": getterErr},
+				values: map[string]runtime.Value{
+					"kept":    runtime.Int(42),
+					"ignored": ignoredKeys,
+				},
+			}
+
+			program, err := spec.Compile(`
+LET { kept, ignored: { nested: [_, _] } } = @value
+RETURN kept
+`, level)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			out, err := spec.Run(program, vm.WithParam("value", value))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if got, want := string(out), "42"; got != want {
+				t.Fatalf("result = %s, want %s", got, want)
+			}
+
+			if got, want := value.keys, []string{"kept"}; !slices.Equal(got, want) {
+				t.Fatalf("object keys = %v, want %v", got, want)
+			}
+
+			if ignoredKeys.reads != 0 || ignoredIndexes.reads != 0 {
+				t.Fatalf("ignored subtree reads = object:%d array:%d, want 0", ignoredKeys.reads, ignoredIndexes.reads)
+			}
+		})
+
+		t.Run(fmt.Sprintf("O%d/array", level), func(t *testing.T) {
+			ignored := &observableIndexReadable{Int: 0, err: getterErr}
+			value := &observableIndexReadable{
+				Int:    0,
+				errors: map[runtime.Int]error{1: getterErr},
+				values: []runtime.Value{runtime.Int(1), ignored, runtime.Int(3)},
+			}
+
+			program, err := spec.Compile(`
+LET [first, [_, _], third] = @value
+RETURN [first, third]
+`, level)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			out, err := spec.Run(program, vm.WithParam("value", value))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if got, want := string(out), "[1,3]"; got != want {
+				t.Fatalf("result = %s, want %s", got, want)
+			}
+
+			if got, want := value.indexes, []runtime.Int{0, 2}; !slices.Equal(got, want) {
+				t.Fatalf("array indexes = %v, want %v", got, want)
+			}
+
+			if ignored.reads != 0 {
+				t.Fatalf("ignored nested array reads = %d, want 0", ignored.reads)
+			}
+		})
+
+		t.Run(fmt.Sprintf("O%d/mixed", level), func(t *testing.T) {
+			nested := &observableIndexReadable{
+				Int:    0,
+				values: []runtime.Value{runtime.Int(1), runtime.Int(42), runtime.Int(3)},
+			}
+			value := &observableKeyReadable{
+				Int: 0,
+				values: map[string]runtime.Value{
+					"nested": nested,
+				},
+			}
+
+			program, err := spec.Compile(`
+LET { nested: [_, kept, _], ignored: { child: [_] } } = @value
+RETURN kept
+`, level)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			out, err := spec.Run(program, vm.WithParam("value", value))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if got, want := string(out), "42"; got != want {
+				t.Fatalf("result = %s, want %s", got, want)
+			}
+
+			if got, want := value.keys, []string{"nested"}; !slices.Equal(got, want) {
+				t.Fatalf("object keys = %v, want %v", got, want)
+			}
+
+			if got, want := nested.indexes, []runtime.Int{1}; !slices.Equal(got, want) {
+				t.Fatalf("nested indexes = %v, want %v", got, want)
+			}
+		})
+	}
+}
+
+func TestMutableAndLoopDestructuringSkipIgnoredStructuredSubtrees(t *testing.T) {
+	getterErr := errors.New("ignored getter ran")
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(fmt.Sprintf("O%d/var", level), func(t *testing.T) {
+			value := &observableKeyReadable{
+				Int:    0,
+				errors: map[string]error{"ignored": getterErr},
+				values: map[string]runtime.Value{"kept": runtime.Int(41)},
+			}
+
+			program, err := spec.Compile(`
+VAR { kept, ignored: [_] } = @value
+kept += 1
+RETURN kept
+`, level)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			out, err := spec.Run(program, vm.WithParam("value", value))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if got, want := string(out), "42"; got != want {
+				t.Fatalf("result = %s, want %s", got, want)
+			}
+
+			if got, want := value.keys, []string{"kept"}; !slices.Equal(got, want) {
+				t.Fatalf("object keys = %v, want %v", got, want)
+			}
+		})
+
+		t.Run(fmt.Sprintf("O%d/for", level), func(t *testing.T) {
+			item := &observableKeyReadable{
+				Int:    0,
+				errors: map[string]error{"ignored": getterErr},
+				values: map[string]runtime.Value{"kept": runtime.Int(42)},
+			}
+
+			program, err := spec.Compile(`
+FOR { kept, ignored: [_] } IN @items
+    RETURN kept
+`, level)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			items := runtime.NewArrayWith(item)
+			out, err := spec.Run(program, vm.WithParam("items", items))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if got, want := string(out), "[42]"; got != want {
+				t.Fatalf("result = %s, want %s", got, want)
+			}
+
+			if got, want := item.keys, []string{"kept"}; !slices.Equal(got, want) {
+				t.Fatalf("object keys = %v, want %v", got, want)
+			}
+		})
+	}
+}
+
 func TestDestructuringPropagatesGetterFailures(t *testing.T) {
 	getterErr := errors.New("getter failed")
 	value := &observableKeyReadable{Int: 0, err: getterErr}
@@ -303,10 +508,12 @@ RETURN value`
 	}
 }
 
-func TestEmptyDestructuringPatternsStillValidateShape(t *testing.T) {
+func TestDestructuringShapeValidationAtRootAndIgnoredChildren(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ErrorStr(`LET {} = 1 RETURN 1`, "cannot destructure Int as Object"),
 		ErrorStr(`LET [] = true RETURN 1`, "cannot destructure Boolean as Array"),
-		ErrorStr(`LET { nested: [_] } = { nested: 1 } RETURN 1`, "cannot destructure Int as Array"),
+		ErrorStr(`LET { nested: [_] } = 1 RETURN 1`, "cannot destructure Int as Object"),
+		S(`LET { nested: [_] } = { nested: 1 } RETURN 1`, 1),
+		S(`LET { object: {}, array: [] } = { object: 1, array: false } RETURN 1`, 1),
 	})
 }

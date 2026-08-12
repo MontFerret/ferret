@@ -59,7 +59,24 @@ FOR item IN [
     LET right = item.right
     RETURN left + right
 `
+
+	letIgnoredSubtreeQuery = `
+LET { kept, ignored: { nested: [_, _] } } = @value
+RETURN kept
+`
+
+	letDirectIgnoreQuery = `
+LET { kept, ignored: _ } = @value
+RETURN kept
+`
 )
+
+var ignoredSubtreeBenchmarkValue = map[string]any{
+	"kept": 42,
+	"ignored": map[string]any{
+		"nested": []any{1, 2},
+	},
+}
 
 func BenchmarkLetDestructuring_O0(b *testing.B) {
 	RunBenchmarkO0(b, letDestructuringQuery)
@@ -107,4 +124,20 @@ func BenchmarkForManualExtraction_O0(b *testing.B) {
 
 func BenchmarkForManualExtraction_O1(b *testing.B) {
 	RunBenchmarkO1(b, forManualExtractionQuery)
+}
+
+func BenchmarkLetIgnoredSubtree_O0(b *testing.B) {
+	RunBenchmarkO0(b, letIgnoredSubtreeQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
+}
+
+func BenchmarkLetIgnoredSubtree_O1(b *testing.B) {
+	RunBenchmarkO1(b, letIgnoredSubtreeQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
+}
+
+func BenchmarkLetDirectIgnore_O0(b *testing.B) {
+	RunBenchmarkO0(b, letDirectIgnoreQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
+}
+
+func BenchmarkLetDirectIgnore_O1(b *testing.B) {
+	RunBenchmarkO1(b, letDirectIgnoreQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
 }

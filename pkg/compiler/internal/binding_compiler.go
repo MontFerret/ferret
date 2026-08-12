@@ -186,12 +186,12 @@ func (c *BindingCompiler) compileObjectDestructuringEntry(
 		return
 	}
 
-	key := textOfBindingIdentifier(entry.BindingIdentifier())
 	nested := entry.BindingPattern()
-	if nested != nil && nested.IgnoreIdentifier() != nil {
+	if nested != nil && !bindingPatternHasBindings(nested) {
 		return
 	}
 
+	key := textOfBindingIdentifier(entry.BindingIdentifier())
 	keyConst := c.ctx.Function.Symbols.AddConstant(runtime.String(key))
 	entryCtx := entry.(antlr.ParserRuleContext)
 
@@ -229,7 +229,7 @@ func (c *BindingCompiler) compileArrayDestructuringEntry(
 	index int,
 	mutable bool,
 ) {
-	if pattern == nil || pattern.IgnoreIdentifier() != nil {
+	if !bindingPatternHasBindings(pattern) {
 		return
 	}
 

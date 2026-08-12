@@ -49,6 +49,49 @@ func declarationBindingPatternLeaves(ctx fql.IVariableDeclarationContext) []bind
 	return structuredBindingPatternLeaves(ctx.StructuredBindingPattern())
 }
 
+func bindingPatternHasBindings(pattern fql.IBindingPatternContext) bool {
+	if pattern == nil {
+		return false
+	}
+
+	if pattern.BindingIdentifier() != nil {
+		return true
+	}
+
+	return structuredBindingPatternHasBindings(pattern.StructuredBindingPattern())
+}
+
+func structuredBindingPatternHasBindings(pattern fql.IStructuredBindingPatternContext) bool {
+	if pattern == nil {
+		return false
+	}
+
+	if object := pattern.ObjectBindingPattern(); object != nil {
+		for _, entry := range object.AllObjectBindingEntry() {
+			if entry == nil || entry.BindingIdentifier() == nil {
+				continue
+			}
+
+			nested := entry.BindingPattern()
+			if nested == nil || bindingPatternHasBindings(nested) {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	if array := pattern.ArrayBindingPattern(); array != nil {
+		for _, child := range array.AllBindingPattern() {
+			if bindingPatternHasBindings(child) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 func appendBindingPatternLeaves(
 	leaves []bindingPatternLeaf,
 	pattern fql.IBindingPatternContext,
