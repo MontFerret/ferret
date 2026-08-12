@@ -8,6 +8,76 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
+func TestFormatter_DefaultKeywordCase(t *testing.T) {
+	tests := map[string]struct {
+		input string
+		want  string
+	}{
+		"uppercase": {
+			input: `RETURN FOR x IN items { RETURN x }`,
+			want:  "return for x in items {\n    return x\n}",
+		},
+		"lowercase": {
+			input: "return for x in items {\n    return x\n}",
+			want:  "return for x in items {\n    return x\n}",
+		},
+		"mixed case preserves symbols and contents": {
+			input: `ReTuRn FoR Item In Items {
+    FiLtEr Item.Status == "RETURN"
+    LeT DISTINCT = Item.Status
+    LeT Rows = QuErY "SELECT RETURN" In Item UsInG PgSQL
+    // FOR remains uppercase in comments
+    ReTuRn { TRIGGER: DISTINCT, Value: DB::POSTGRES::Map(Item), Rows: Rows }
+}`,
+			want: `return for Item in Items {
+    filter Item.Status == "RETURN"
+    let DISTINCT = Item.Status
+    let Rows = query "SELECT RETURN" in Item using PgSQL
+    // FOR remains uppercase in comments
+    return { TRIGGER: DISTINCT, Value: DB::POSTGRES::Map(Item), Rows: Rows }
+}`,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var first bytes.Buffer
+			format := New()
+
+			if err := format.Format(&first, source.NewAnonymous(test.input)); err != nil {
+				t.Fatalf("format failed: %v", err)
+			}
+
+			if first.String() != test.want {
+				t.Fatalf("unexpected default formatting:\nwant:\n%s\ngot:\n%s", test.want, first.String())
+			}
+
+			var second bytes.Buffer
+			if err := format.Format(&second, source.NewAnonymous(first.String())); err != nil {
+				t.Fatalf("second format failed: %v", err)
+			}
+
+			if second.String() != first.String() {
+				t.Fatalf("default formatting must be stable:\nfirst:\n%s\nsecond:\n%s", first.String(), second.String())
+			}
+		})
+	}
+}
+
+func TestFormatter_ExplicitUppercaseKeywordCase(t *testing.T) {
+	var out bytes.Buffer
+	format := New(WithCaseMode(CaseModeUpper))
+
+	if err := format.Format(&out, source.NewAnonymous(`return for x in items { return x }`)); err != nil {
+		t.Fatalf("format failed: %v", err)
+	}
+
+	want := "RETURN FOR x IN items {\n    RETURN x\n}"
+	if out.String() != want {
+		t.Fatalf("unexpected uppercase formatting:\nwant:\n%s\ngot:\n%s", want, out.String())
+	}
+}
+
 func TestFormatter_TemplateLiteralDoesNotIndentInterpolation(t *testing.T) {
 	input := "RETURN { foo: `line1\n${1}`, veryLongPropertyNameThatForcesMultilineFormatting: 1 }"
 	src := source.NewAnonymous(input)
@@ -40,10 +110,10 @@ RETURN WAITFOR FALSE TIMEOUT delay+500ms EVERY 1e2MS ON ERROR RETRY 1 DELAY (0ms
 
 	formatted := first.String()
 	for _, expected := range []string{
-		"LET delay = 1.5S",
-		"TIMEOUT delay + 500ms",
-		"EVERY 1e2MS",
-		"DELAY (0ms OR 1ms) OR RETURN NONE",
+		"let delay = 1.5S",
+		"timeout delay + 500ms",
+		"every 1e2MS",
+		"delay (0ms or 1ms) or return none",
 	} {
 		if !strings.Contains(formatted, expected) {
 			t.Fatalf("formatted duration expression missing %q:\n%s", expected, formatted)
@@ -68,7 +138,7 @@ func TestFormatter_DurationMatchLiteralRoundTrip(t *testing.T) {
 		t.Fatalf("format failed: %v", err)
 	}
 	formatted := first.String()
-	if !strings.Contains(formatted, "MATCH 5s") || !strings.Contains(formatted, "5000MS => TRUE") {
+	if !strings.Contains(formatted, "match 5s") || !strings.Contains(formatted, "5000MS => true") {
 		t.Fatalf("duration match literals were not preserved:\n%s", formatted)
 	}
 
@@ -111,7 +181,7 @@ func TestFormatter_NestedObjectRespectsPrintWidthAtLineStart(t *testing.T) {
 	}
 
 	out := strings.TrimSpace(buf.String())
-	expected := strings.TrimSpace(`RETURN [
+	expected := strings.TrimSpace(`return [
     {
         a: 1,
         bb: 2
@@ -159,8 +229,8 @@ func TestFormatter_DispatchGroupedQueryTargetRemainsParseable(t *testing.T) {
 	}
 
 	out := buf.String()
-	target := `DISPATCH "input" IN (QUERY ONE "#query" IN page USING css)`
-	if targetIdx, withIdx := strings.Index(out, target), strings.Index(out, "WITH {"); targetIdx < 0 || withIdx < targetIdx+len(target) {
+	target := `dispatch "input" in (query one "#query" in page using css)`
+	if targetIdx, withIdx := strings.Index(out, target), strings.Index(out, "with {"); targetIdx < 0 || withIdx < targetIdx+len(target) {
 		t.Fatalf("expected grouped query target and dispatch payload to remain distinct; got:\n%s", out)
 	}
 
@@ -192,14 +262,14 @@ RETURN read(@product)`
 	}
 
 	out := buf.String()
-	expected := `FUNC read(value) {
-    LET brand = value.product.brand
-    VAR price = value["prices"]["current"]
+	expected := `func read(value) {
+    let brand = value.product.brand
+    var price = value["prices"]["current"]
     price = value.prices["sale"]
     value.metadata.lastSeen
-    RETURN [brand, price]
+    return [brand, price]
 }
-RETURN read(@product)`
+return read(@product)`
 	if out != expected {
 		t.Fatalf("unexpected UDF member statement formatting:\nexpected:\n%s\nactual:\n%s", expected, out)
 	}
@@ -225,13 +295,13 @@ func TestFormatter_WaitForEventFilterUsesWhenAndRemainsParseable(t *testing.T) {
 	}
 
 	out := buf.String()
-	if !strings.Contains(out, "WHEN .type == \"match\"") {
+	if !strings.Contains(out, "when .type == \"match\"") {
 		t.Fatalf("expected WAITFOR event filter to use WHEN; got:\n%s", out)
 	}
-	if !strings.Contains(out, "WHEN .visible") {
+	if !strings.Contains(out, "when .visible") {
 		t.Fatalf("expected WAITFOR event filter to preserve repeated WHEN; got:\n%s", out)
 	}
-	if strings.Contains(out, "FILTER .type == \"match\"") {
+	if strings.Contains(out, "filter .type == \"match\"") {
 		t.Fatalf("unexpected legacy FILTER in WAITFOR event filter; got:\n%s", out)
 	}
 
@@ -252,9 +322,9 @@ func TestFormatter_WaitForEventTriggerRemainsParseable(t *testing.T) {
 	}
 
 	out := buf.String()
-	whenIdx := strings.Index(out, "WHEN .type == \"match\"")
-	triggerIdx := strings.Index(out, "TRIGGER (")
-	timeoutIdx := strings.Index(out, "TIMEOUT 1ms")
+	whenIdx := strings.Index(out, "when .type == \"match\"")
+	triggerIdx := strings.Index(out, "trigger (")
+	timeoutIdx := strings.Index(out, "timeout 1ms")
 	if whenIdx < 0 || triggerIdx < 0 || timeoutIdx < 0 {
 		t.Fatalf("expected WAITFOR trigger clauses in formatted output; got:\n%s", out)
 	}
@@ -282,16 +352,16 @@ func TestFormatter_WaitForEventInlineTriggerRemainsInline(t *testing.T) {
 	}
 
 	out := buf.String()
-	whenIdx := strings.Index(out, "WHEN .type == \"match\"")
-	triggerIdx := strings.Index(out, "TRIGGER button <- \"click\"")
-	timeoutIdx := strings.Index(out, "TIMEOUT 1ms")
+	whenIdx := strings.Index(out, "when .type == \"match\"")
+	triggerIdx := strings.Index(out, "trigger button <- \"click\"")
+	timeoutIdx := strings.Index(out, "timeout 1ms")
 	if whenIdx < 0 || triggerIdx < 0 || timeoutIdx < 0 {
 		t.Fatalf("expected inline WAITFOR trigger clauses in formatted output; got:\n%s", out)
 	}
 	if !(whenIdx < triggerIdx && triggerIdx < timeoutIdx) {
 		t.Fatalf("expected WHEN -> TRIGGER -> TIMEOUT order; got:\n%s", out)
 	}
-	if strings.Contains(out, "TRIGGER (") {
+	if strings.Contains(out, "trigger (") {
 		t.Fatalf("expected trigger shorthand to remain inline; got:\n%s", out)
 	}
 
@@ -312,7 +382,7 @@ func TestFormatter_WaitForPredicateRepeatedWhenRemainsParseable(t *testing.T) {
 	}
 
 	out := buf.String()
-	if !strings.Contains(out, "WHEN .ok WHEN .ok == TRUE") {
+	if !strings.Contains(out, "when .ok when .ok == true") {
 		t.Fatalf("expected WAITFOR predicate repeated WHEN clauses; got:\n%s", out)
 	}
 

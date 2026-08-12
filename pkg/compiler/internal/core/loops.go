@@ -21,19 +21,19 @@ func NewLoopTable(registers *RegisterAllocator) *LoopTable {
 }
 
 func (lt *LoopTable) NewForInLoop(loopType LoopType, distinct bool) *Loop {
-	return lt.NewLoop(ForInLoop, loopType, distinct)
+	return lt.NewLoop(ForInLoop, loopType, distinct, true)
 }
 
 func (lt *LoopTable) NewForWhileLoop(loopType LoopType, distinct bool) *Loop {
-	return lt.NewLoop(WhileLoop, loopType, distinct)
+	return lt.NewLoop(WhileLoop, loopType, distinct, true)
 }
 
-func (lt *LoopTable) NewLoop(kind LoopKind, loopType LoopType, distinct bool) *Loop {
+func (lt *LoopTable) NewLoop(kind LoopKind, loopType LoopType, distinct, collectResult bool) *Loop {
 	parent := lt.Current()
-	allocate := parent == nil || parent.Type != PassThroughLoop
+	allocate := collectResult && (parent == nil || parent.Type != PassThroughLoop)
 	result := bytecode.NoopOperand
 
-	if loopType != TemporalLoop {
+	if collectResult && loopType != TemporalLoop {
 		if allocate {
 			result = lt.registers.Allocate()
 		} else {
@@ -42,11 +42,12 @@ func (lt *LoopTable) NewLoop(kind LoopKind, loopType LoopType, distinct bool) *L
 	}
 
 	return &Loop{
-		Type:     loopType,
-		Kind:     kind,
-		Distinct: distinct,
-		Dst:      result,
-		Allocate: allocate,
+		Type:          loopType,
+		Kind:          kind,
+		Distinct:      distinct,
+		Dst:           result,
+		Allocate:      allocate,
+		CollectResult: collectResult,
 	}
 }
 

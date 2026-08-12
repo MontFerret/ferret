@@ -18,7 +18,7 @@ func DefaultOptions() *Options {
 		tabWidth:       4,  // Spaces
 		singleQuote:    false,
 		bracketSpacing: true,
-		caseMode:       CaseModeUpper,
+		caseMode:       CaseModeLower,
 	}
 }
 

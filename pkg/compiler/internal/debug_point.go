@@ -17,6 +17,21 @@ func (c *CompilationSession) WithDebugPoint(ctx antlr.ParserRuleContext, compile
 // WithDebugPointKind records a logical source stop with an explicit semantic
 // role only when compiling the location emits executable bytecode.
 func (c *CompilationSession) WithDebugPointKind(ctx antlr.ParserRuleContext, kind bytecode.DebugPointKind, compile func()) {
+	c.withDebugPointKind(ctx, kind, false, compile)
+}
+
+// WithRetainedDebugPointKind records a logical source stop even when the
+// location's value is intentionally discarded and emits no other bytecode.
+func (c *CompilationSession) WithRetainedDebugPointKind(ctx antlr.ParserRuleContext, kind bytecode.DebugPointKind, compile func()) {
+	c.withDebugPointKind(ctx, kind, true, compile)
+}
+
+func (c *CompilationSession) withDebugPointKind(
+	ctx antlr.ParserRuleContext,
+	kind bytecode.DebugPointKind,
+	retainEmpty bool,
+	compile func(),
+) {
 	if compile == nil {
 		return
 	}
@@ -56,7 +71,7 @@ func (c *CompilationSession) WithDebugPointKind(ctx antlr.ParserRuleContext, kin
 
 	compile()
 
-	if c.Program.Emitter.Size() == pc+1 {
+	if !retainEmpty && c.Program.Emitter.Size() == pc+1 {
 		c.Program.Emitter.Truncate(pc)
 		c.Program.DebugPoints = c.Program.DebugPoints[:len(c.Program.DebugPoints)-1]
 	}

@@ -90,7 +90,7 @@ func (c *StatementCompiler) compileBodyStatement(ctx fql.IBodyStatementContext) 
 	} else if de := ctx.DispatchExpression(); de != nil {
 		c.dispatch.Compile(de)
 	} else if fe := ctx.ForExpression(); fe != nil {
-		c.loops.Compile(fe)
+		c.loops.CompileDiscarded(fe)
 	}
 }
 
@@ -207,7 +207,7 @@ func (c *StatementCompiler) compileFunctionStatement(stmt *fql.FunctionStatement
 	case stmt.DispatchExpression() != nil:
 		c.dispatch.Compile(stmt.DispatchExpression())
 	case stmt.ForExpression() != nil:
-		c.loops.Compile(stmt.ForExpression())
+		c.loops.CompileDiscarded(stmt.ForExpression())
 	case stmt.ExpressionStatement() != nil:
 		c.CompileExpressionStatement(stmt.ExpressionStatement())
 	}
@@ -225,7 +225,7 @@ func (c *StatementCompiler) CompileExpressionStatement(ctx fql.IExpressionStatem
 	}
 
 	if expr := stmt.Expression(); expr != nil {
-		c.exprs.Compile(expr)
+		c.exprs.CompileDiscarded(expr)
 	}
 }
 

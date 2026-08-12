@@ -10,64 +10,64 @@ func TestFormatterLiterals(t *testing.T) {
 	RunSpecs(t, []Spec{
 		S(`
 LET    foo =      10
- RETURN foo
-`, `LET foo = 10
-RETURN foo`),
+ return foo
+`, `let foo = 10
+return foo`),
 
 		S(`
 LET    foo =      
 10
- RETURN foo
-`, `LET foo = 10
-RETURN foo`),
+ return foo
+`, `let foo = 10
+return foo`),
 
 		S(`
 LET    foo        =      "bar"
- RETURN foo
-`, `LET foo = "bar"
-RETURN foo`),
+ return foo
+`, `let foo = "bar"
+return foo`),
 
 		S(`
 LET    foo        =    
      "bar"
- RETURN foo
-`, `LET foo = "bar"
-RETURN foo`),
+ return foo
+`, `let foo = "bar"
+return foo`),
 
 		S(`
 LET    foo        =      [     ]
- RETURN foo
-`, `LET foo = []
-RETURN foo`),
+ return foo
+`, `let foo = []
+return foo`),
 
 		S(`
 LET    foo        =      [     
 ]
- RETURN foo
-`, `LET foo = []
-RETURN foo`),
+ return foo
+`, `let foo = []
+return foo`),
 
 		S(`
 LET    foo        =     
        [     
 ]
- RETURN foo
-`, `LET foo = []
-RETURN foo`),
+ return foo
+`, `let foo = []
+return foo`),
 
 		S(`
 LET    foo        =   {        }
- RETURN foo
-`, `LET foo = {}
-RETURN foo`),
+ return foo
+`, `let foo = {}
+return foo`),
 
 		S(`
 LET    foo        =   {        
 
 }
- RETURN foo
-`, `LET foo = {}
-RETURN foo`),
+ return foo
+`, `let foo = {}
+return foo`),
 
 		S(`
 LET    foo        =   
@@ -75,8 +75,8 @@ LET    foo        =
       {        
 
 }
- RETURN foo
-`, `LET foo = {}
-RETURN foo`),
+ return foo
+`, `let foo = {}
+return foo`),
 	})
 }

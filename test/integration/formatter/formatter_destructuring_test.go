@@ -9,24 +9,24 @@ import (
 
 func TestFormatterDestructuringBindings(t *testing.T) {
 	RunSpecs(t, []Spec{
-		S(`LET{name,age:years,nested:[first,_],}=user
-RETURN[name,years,first]`, `LET { name, age: years, nested: [first, _] } = user
-RETURN [name, years, first]`),
-		S(`VAR[first,{value:alias},_]=values
-RETURN alias`, `VAR [first, { value: alias }, _] = values
-RETURN alias`),
-		S(`FOR{name,score:points}IN users RETURN[name,points]`, `FOR { name, score: points } IN users
-    RETURN [name, points]`),
-		S(`FOR[name,_]IN rows{RETURN name}`, `FOR [name, _] IN rows {
-    RETURN name
+		S(`let{name,age:years,nested:[first,_],}=user
+return[name,years,first]`, `let { name, age: years, nested: [first, _] } = user
+return [name, years, first]`),
+		S(`var[first,{value:alias},_]=values
+return alias`, `var [first, { value: alias }, _] = values
+return alias`),
+		S(`for{name,score:points}in users return[name,points]`, `for { name, score: points } in users
+    return [name, points]`),
+		S(`for[name,_]in rows{return name}`, `for [name, _] in rows {
+    return name
 }`),
 	})
 }
 
 func TestFormatterMultilineDestructuringBindings(t *testing.T) {
 	RunSpecsWith(t, formatter.New(formatter.WithPrintWidth(36)), []Spec{
-		S(`LET {firstName, lastName, metadata: {createdAt, updatedAt}} = user
-RETURN firstName`, `LET {
+		S(`let {firstName, lastName, metadata: {createdAt, updatedAt}} = user
+return firstName`, `let {
     firstName,
     lastName,
     metadata: {
@@ -34,19 +34,19 @@ RETURN firstName`, `LET {
         updatedAt
     }
 } = user
-RETURN firstName`),
-		S(`FOR [firstValue, secondValue, thirdValue] IN rows RETURN firstValue`, `FOR [
+return firstName`),
+		S(`for [firstValue, secondValue, thirdValue] in rows return firstValue`, `for [
     firstValue,
     secondValue,
     thirdValue
-] IN rows
-    RETURN firstValue`),
+] in rows
+    return firstValue`),
 	})
 }
 
 func TestFormatterDestructuringComments(t *testing.T) {
 	RunSpecs(t, []Spec{
-		S(`LET {
+		S(`let {
 // primary name
 name,
 metadata: [
@@ -55,7 +55,7 @@ created,
 _
 ]
 } = user
-RETURN [name, created]`, `LET {
+return [name, created]`, `let {
     // primary name
     name,
     metadata: [
@@ -64,26 +64,26 @@ RETURN [name, created]`, `LET {
         _
     ]
 } = user
-RETURN [name, created]`),
-		S(`LET {
+return [name, created]`),
+		S(`let {
 // validate keyed access
 } = user
-LET [
+let [
 // validate indexed access
 ] = values
-RETURN 1`, `LET {
+return 1`, `let {
     // validate keyed access
 } = user
-LET [
+let [
     // validate indexed access
 ] = values
-RETURN 1`),
+return 1`),
 	})
 }
 
 func TestFormatterDestructuringBracketSpacing(t *testing.T) {
 	RunSpecsWith(t, formatter.New(formatter.WithBracketSpacing(false)), []Spec{
-		S(`LET { name, nested: { value } } = input RETURN [name, value]`, `LET {name, nested: {value}} = input
-RETURN [name, value]`),
+		S(`let { name, nested: { value } } = input return [name, value]`, `let {name, nested: {value}} = input
+return [name, value]`),
 	})
 }

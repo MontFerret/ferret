@@ -54,16 +54,17 @@ Ferret v2 is currently in alpha. You can try the new syntax in the playground an
 
 ## What is it?
 
-Ferret is a declarative runtime for structured data extraction and automation.
+Ferret is a declarative-first, expression-oriented embedded language and runtime for data automation.
 
-It lets you query web pages, browser state, documents, APIs, and host-provided data sources with a dedicated query language, then return the result as structured data.
+FQL combines querying, transformation, synchronization, and structured results with host-defined values and capabilities. Applications can embed the runtime and decide exactly which functions, modules, data, and external operations a program can use.
 
-Instead of writing page-specific glue code for browser control, DOM traversal, waiting, extraction, and transformation, Ferret lets you describe the data you want and run that workflow from the CLI, a worker, or an embedded Go application.
+The language keeps a declarative core and adds domain-oriented orchestration plus constrained mutable state for automation that cannot be expressed as a pure data transformation. It is deliberately focused rather than a general-purpose scripting language.
 
 ### Features
 
-- Declarative query language for structured data workflows
+- Declarative-first, data-oriented language with expression-oriented composition
 - Support for static pages, dynamic pages, and browser-driven extraction
+- Domain constructs for querying, transformation, synchronization, and automation
 - CLI tooling, including formatting and debugging support
 - Embeddable Go runtime for integrating Ferret into applications
 - Extensible module, function, and runtime capability system
@@ -108,7 +109,7 @@ func main() {
 	}
 	defer eng.Close()
 
-	plan, err := eng.Compile(`RETURN 1 + 1`)
+	plan, err := eng.Compile(`return 1 + 1`)
 	if err != nil {
 		log.Fatal(err)
 	}

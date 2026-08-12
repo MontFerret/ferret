@@ -321,7 +321,7 @@ func (c *CollectCompiler) finalizeGlobalAggregation(spec *core.Collector) {
 	prevLoop := c.ctx.Function.Loops.Pop()
 
 	// Create a new loop with 1 iteration only to process the aggregation
-	loop := c.ctx.Function.Loops.NewLoop(core.ForInLoop, core.NormalLoop, prevLoop.Distinct)
+	loop := c.ctx.Function.Loops.NewLoop(core.ForInLoop, core.NormalLoop, prevLoop.Distinct, prevLoop.CollectResult)
 	c.ctx.Function.Loops.Push(loop)
 
 	// Set up the loop source to be a range from 0 to 0 (one iteration)
@@ -334,7 +334,7 @@ func (c *CollectCompiler) finalizeGlobalAggregation(spec *core.Collector) {
 	loop.Allocate = prevLoop.Allocate
 
 	// If not allocating, use the parent loop's destination
-	if !loop.Allocate {
+	if loop.CollectResult && !loop.Allocate {
 		loop.Dst = c.ctx.Function.Loops.RequiredParent(c.ctx.Function.Loops.Depth()).Dst
 	}
 

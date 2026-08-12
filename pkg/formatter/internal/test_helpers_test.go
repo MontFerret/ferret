@@ -5,19 +5,14 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/parser"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
 func parseProgram(t *testing.T, input string) *fql.ProgramContext {
 	t.Helper()
 
-	stream := antlr.NewInputStream(input)
-	lexer := fql.NewFqlLexer(stream)
-	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := fql.NewFqlParser(tokens)
-	parser.BuildParseTrees = true
-
-	return parser.Program().(*fql.ProgramContext)
+	return parser.New(input).Program()
 }
 
 func mustFirst[T any](t *testing.T, tree antlr.Tree) T {

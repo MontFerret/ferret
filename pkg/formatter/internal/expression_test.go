@@ -9,7 +9,7 @@ import (
 )
 
 func TestExpressionFormatter_UnaryNot(t *testing.T) {
-	input := "RETURN NOT a"
+	input := "return not a"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -17,13 +17,13 @@ func TestExpressionFormatter_UnaryNot(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "NOT a" {
+	if got := buf.String(); got != "not a" {
 		t.Fatalf("unexpected unary operator formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_ImplicitMemberExpression(t *testing.T) {
-	input := "RETURN [1][* RETURN .name]"
+	input := "return [1][* return .name]"
 	program := parseProgram(t, input)
 	inlineRet := mustFirst[*fql.InlineReturnContext](t, program)
 	expr := inlineRet.Expression().(*fql.ExpressionContext)
@@ -38,7 +38,7 @@ func TestExpressionFormatter_ImplicitMemberExpression(t *testing.T) {
 }
 
 func TestExpressionFormatter_ImplicitMemberExpressionOptional(t *testing.T) {
-	input := "RETURN [1][* RETURN ?.name]"
+	input := "return [1][* return ?.name]"
 	program := parseProgram(t, input)
 	inlineRet := mustFirst[*fql.InlineReturnContext](t, program)
 	expr := inlineRet.Expression().(*fql.ExpressionContext)
@@ -53,7 +53,7 @@ func TestExpressionFormatter_ImplicitMemberExpressionOptional(t *testing.T) {
 }
 
 func TestExpressionFormatter_ImplicitCurrentExpression(t *testing.T) {
-	input := "RETURN [1][* RETURN .]"
+	input := "return [1][* return .]"
 	program := parseProgram(t, input)
 	inlineRet := mustFirst[*fql.InlineReturnContext](t, program)
 	expr := inlineRet.Expression().(*fql.ExpressionContext)
@@ -73,11 +73,11 @@ func TestExpressionFormatter_RangeOperandImplicitCurrentExpression(t *testing.T)
 		want  string
 	}{
 		{
-			input: "RETURN [1][* RETURN . .. 10]",
+			input: "return [1][* return . .. 10]",
 			want:  "...10",
 		},
 		{
-			input: "RETURN [1][* RETURN 1 .. .]",
+			input: "return [1][* return 1 .. .]",
 			want:  "1...",
 		},
 	}
@@ -100,7 +100,7 @@ func TestExpressionFormatter_RangeOperandImplicitCurrentExpression(t *testing.T)
 }
 
 func TestExpressionFormatter_QueryExpressionInline(t *testing.T) {
-	input := "RETURN QUERY `.items` IN doc USING css WITH { limit: 10 }"
+	input := "return query `.items` in doc using css with { limit: 10 }"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -108,13 +108,13 @@ func TestExpressionFormatter_QueryExpressionInline(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "QUERY `.items` IN doc USING css WITH { limit: 10 }" {
+	if got := buf.String(); got != "query `.items` in doc using css with { limit: 10 }" {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_QueryExpressionWithoutUsingInline(t *testing.T) {
-	input := "RETURN QUERY `.items` IN doc WITH { limit: 10 }"
+	input := "return query `.items` in doc with { limit: 10 }"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -122,13 +122,13 @@ func TestExpressionFormatter_QueryExpressionWithoutUsingInline(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "QUERY `.items` IN doc WITH { limit: 10 }" {
+	if got := buf.String(); got != "query `.items` in doc with { limit: 10 }" {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_QueryExpressionOptionsInline(t *testing.T) {
-	input := "RETURN QUERY `.items` IN doc USING css OPTIONS { timeout: 5000 }"
+	input := "return query `.items` in doc using css options { timeout: 5000 }"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -136,13 +136,13 @@ func TestExpressionFormatter_QueryExpressionOptionsInline(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "QUERY `.items` IN doc USING css OPTIONS { timeout: 5000 }" {
+	if got := buf.String(); got != "query `.items` in doc using css options { timeout: 5000 }" {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_QueryExpressionWithoutUsingMultiline(t *testing.T) {
-	input := "RETURN QUERY ONE `.items` IN doc WITH { limit: 10, timeout: 5, extra: 1 } OPTIONS { retry: 2, delay: 50 }"
+	input := "return query one `.items` in doc with { limit: 10, timeout: 5, extra: 1 } options { retry: 2, delay: 50 }"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -152,13 +152,13 @@ func TestExpressionFormatter_QueryExpressionWithoutUsingMultiline(t *testing.T) 
 	e := newEngine(source.NewAnonymous(input), &buf, opts)
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "QUERY ONE `.items` IN doc\n    WITH {\n        limit: 10,\n        timeout: 5,\n        extra: 1\n    }\n    OPTIONS {\n        retry: 2,\n        delay: 50\n    }" {
+	if got := buf.String(); got != "query one `.items` in doc\n    with {\n        limit: 10,\n        timeout: 5,\n        extra: 1\n    }\n    options {\n        retry: 2,\n        delay: 50\n    }" {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_QueryExpressionParamPayload(t *testing.T) {
-	input := "RETURN QUERY @q IN doc USING css"
+	input := "return query @q in doc using css"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -166,13 +166,13 @@ func TestExpressionFormatter_QueryExpressionParamPayload(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "QUERY @q IN doc USING css" {
+	if got := buf.String(); got != "query @q in doc using css" {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_QueryExpressionMemberPayload(t *testing.T) {
-	input := "RETURN QUERY ONE email.body IN model USING summarize"
+	input := "return query one email.body in model using summarize"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -180,7 +180,7 @@ func TestExpressionFormatter_QueryExpressionMemberPayload(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "QUERY ONE email.body IN model USING summarize" {
+	if got := buf.String(); got != "query one email.body in model using summarize" {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }
@@ -191,16 +191,16 @@ func TestExpressionFormatter_QueryExpressionAtomicPayloads(t *testing.T) {
 		want  string
 	}{
 		{
-			input: "RETURN QUERY selectors[index] IN page USING css",
-			want:  "QUERY selectors[index] IN page USING css",
+			input: "return query selectors[index] in page using css",
+			want:  "query selectors[index] in page using css",
 		},
 		{
-			input: "RETURN QUERY GET_SELECTOR() IN page USING css",
-			want:  "QUERY GET_SELECTOR() IN page USING css",
+			input: "return query GET_SELECTOR() in page using css",
+			want:  "query GET_SELECTOR() in page using css",
 		},
 		{
-			input: "RETURN QUERY factory().selector IN page USING css",
-			want:  "QUERY factory().selector IN page USING css",
+			input: "return query factory().selector in page using css",
+			want:  "query factory().selector in page using css",
 		},
 	}
 
@@ -221,7 +221,7 @@ func TestExpressionFormatter_QueryExpressionAtomicPayloads(t *testing.T) {
 }
 
 func TestExpressionFormatter_QueryExpressionComputedPayload(t *testing.T) {
-	input := `RETURN QUERY (prefix+selector) IN page USING css WITH { visible: true } OPTIONS { timeout: 1000 }`
+	input := `return query (prefix+selector) in page using css with { visible: true } options { timeout: 1000 }`
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -229,13 +229,13 @@ func TestExpressionFormatter_QueryExpressionComputedPayload(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "QUERY (prefix + selector) IN page USING css\n    WITH { visible: TRUE }\n    OPTIONS { timeout: 1000 }" {
+	if got := buf.String(); got != "query (prefix + selector) in page using css\n    with { visible: true }\n    options { timeout: 1000 }" {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_QueryExpressionComputedPayloadMultilineClauses(t *testing.T) {
-	input := `RETURN QUERY (prefix+selector) IN page WITH { visible: true, enabled: true } OPTIONS { timeout: 1000, retries: 2 }`
+	input := `return query (prefix+selector) in page with { visible: true, enabled: true } options { timeout: 1000, retries: 2 }`
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -245,13 +245,13 @@ func TestExpressionFormatter_QueryExpressionComputedPayloadMultilineClauses(t *t
 	e := newEngine(source.NewAnonymous(input), &buf, opts)
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "QUERY (prefix + selector) IN page\n    WITH {\n        visible: TRUE,\n        enabled: TRUE\n    }\n    OPTIONS {\n        timeout: 1000,\n        retries: 2\n    }" {
+	if got := buf.String(); got != "query (prefix + selector) in page\n    with {\n        visible: true,\n        enabled: true\n    }\n    options {\n        timeout: 1000,\n        retries: 2\n    }" {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_QueryExpressionImplicitCurrentSource(t *testing.T) {
-	input := `RETURN [1][* RETURN (QUERY "a" IN . USING css)]`
+	input := `return [1][* return (query "a" in . using css)]`
 	program := parseProgram(t, input)
 	query := mustFirst[*fql.QueryExpressionContext](t, program)
 
@@ -259,13 +259,13 @@ func TestExpressionFormatter_QueryExpressionImplicitCurrentSource(t *testing.T) 
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatQueryExpression(query)
-	if got := buf.String(); got != `QUERY "a" IN . USING css` {
+	if got := buf.String(); got != `query "a" in . using css` {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_QueryExpressionCountModifier(t *testing.T) {
-	input := "RETURN QUERY COUNT `.items` IN doc USING css"
+	input := "return query count `.items` in doc using css"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -273,7 +273,7 @@ func TestExpressionFormatter_QueryExpressionCountModifier(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "QUERY COUNT `.items` IN doc USING css" {
+	if got := buf.String(); got != "query count `.items` in doc using css" {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }
@@ -284,19 +284,19 @@ func TestExpressionFormatter_QueryShorthand(t *testing.T) {
 		want  string
 	}{
 		{
-			input: `RETURN doc[~"h1"]`,
+			input: `return doc[~"h1"]`,
 			want:  `doc[~ "h1"]`,
 		},
 		{
-			input: `RETURN doc[~?"h1"]`,
+			input: `return doc[~?"h1"]`,
 			want:  `doc[~? "h1"]`,
 		},
 		{
-			input: "RETURN doc[~css`h1`]",
+			input: "return doc[~css`h1`]",
 			want:  "doc[~ css`h1`]",
 		},
 		{
-			input: "RETURN doc[~?css`h1`]",
+			input: "return doc[~?css`h1`]",
 			want:  "doc[~? css`h1`]",
 		},
 	}
@@ -318,7 +318,7 @@ func TestExpressionFormatter_QueryShorthand(t *testing.T) {
 }
 
 func TestExpressionFormatter_FunctionCallErrorPolicyTail(t *testing.T) {
-	input := "RETURN FAIL() ON ERROR RETURN NONE"
+	input := "return FAIL() on error return none"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -326,13 +326,13 @@ func TestExpressionFormatter_FunctionCallErrorPolicyTail(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "FAIL() ON ERROR RETURN NONE" {
+	if got := buf.String(); got != "FAIL() on error return none" {
 		t.Fatalf("unexpected function call error policy formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_FunctionCallRetryPolicyTail(t *testing.T) {
-	input := "RETURN FAIL() ON ERROR RETRY 3 DELAY -100MS BACKOFF EXPONENTIAL OR RETURN NONE"
+	input := "return FAIL() on error retry 3 delay -100MS backoff EXPONENTIAL or return none"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -340,13 +340,13 @@ func TestExpressionFormatter_FunctionCallRetryPolicyTail(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "FAIL() ON ERROR RETRY 3 DELAY -100MS BACKOFF EXPONENTIAL OR RETURN NONE" {
+	if got := buf.String(); got != "FAIL() on error retry 3 delay -100MS backoff EXPONENTIAL or return none" {
 		t.Fatalf("unexpected function call retry formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_ParenthesizedErrorPolicyTail(t *testing.T) {
-	input := "RETURN (FAIL() + 1) ON ERROR RETURN NONE"
+	input := "return (FAIL() + 1) on error return none"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -354,13 +354,13 @@ func TestExpressionFormatter_ParenthesizedErrorPolicyTail(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "(FAIL() + 1) ON ERROR RETURN NONE" {
+	if got := buf.String(); got != "(FAIL() + 1) on error return none" {
 		t.Fatalf("unexpected grouped error policy formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_QueryExpressionErrorPolicyTail(t *testing.T) {
-	input := "RETURN QUERY `.items` IN doc USING css OPTIONS { timeout: 5000 } ON ERROR RETURN NONE"
+	input := "return query `.items` in doc using css options { timeout: 5000 } on error return none"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -368,13 +368,13 @@ func TestExpressionFormatter_QueryExpressionErrorPolicyTail(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "QUERY `.items` IN doc USING css OPTIONS { timeout: 5000 } ON ERROR RETURN NONE" {
+	if got := buf.String(); got != "query `.items` in doc using css options { timeout: 5000 } on error return none" {
 		t.Fatalf("unexpected query error policy formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_QueryExpressionOneModifierWithMultiline(t *testing.T) {
-	input := "RETURN QUERY ONE `.items` IN doc USING css WITH { limit: 10, timeout: 5 } OPTIONS { retry: 2, delay: 50 }"
+	input := "return query one `.items` in doc using css with { limit: 10, timeout: 5 } options { retry: 2, delay: 50 }"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -384,13 +384,13 @@ func TestExpressionFormatter_QueryExpressionOneModifierWithMultiline(t *testing.
 	e := newEngine(source.NewAnonymous(input), &buf, opts)
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "QUERY ONE `.items` IN doc USING css\n    WITH {\n        limit: 10,\n        timeout: 5\n    }\n    OPTIONS {\n        retry: 2,\n        delay: 50\n    }" {
+	if got := buf.String(); got != "query one `.items` in doc using css\n    with {\n        limit: 10,\n        timeout: 5\n    }\n    options {\n        retry: 2,\n        delay: 50\n    }" {
 		t.Fatalf("unexpected query expression formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_MatchExpressionInline(t *testing.T) {
-	input := "RETURN MATCH x{1=>10,_=>0}"
+	input := "return match x{1=>10,_=>0}"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -398,13 +398,13 @@ func TestExpressionFormatter_MatchExpressionInline(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "MATCH x { 1 => 10, _ => 0 }" {
-		t.Fatalf("unexpected MATCH inline formatting: %q", got)
+	if got := buf.String(); got != "match x { 1 => 10, _ => 0 }" {
+		t.Fatalf("unexpected match inline formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_MatchExpressionGuardMultiline(t *testing.T) {
-	input := "RETURN MATCH{WHEN a>0=>a,WHEN a<0=>-a,_=>0}"
+	input := "return match{when a>0=>a,when a<0=>-a,_=>0}"
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -414,13 +414,13 @@ func TestExpressionFormatter_MatchExpressionGuardMultiline(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, opts)
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != "MATCH {\n    WHEN a > 0 => a,\n    WHEN a < 0 => -a,\n    _ => 0,\n}" {
-		t.Fatalf("unexpected MATCH guard multiline formatting: %q", got)
+	if got := buf.String(); got != "match {\n    when a > 0 => a,\n    when a < 0 => -a,\n    _ => 0,\n}" {
+		t.Fatalf("unexpected match guard multiline formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_MatchExpressionObjectPattern(t *testing.T) {
-	input := `RETURN MATCH obj{{ "a": 1, b: v }=>v,_=>0}`
+	input := `return match obj{{ "a": 1, b: v }=>v,_=>0}`
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -428,13 +428,13 @@ func TestExpressionFormatter_MatchExpressionObjectPattern(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != `MATCH obj { { "a": 1, b: v } => v, _ => 0 }` {
-		t.Fatalf("unexpected MATCH object pattern formatting: %q", got)
+	if got := buf.String(); got != `match obj { { "a": 1, b: v } => v, _ => 0 }` {
+		t.Fatalf("unexpected match object pattern formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_MatchExpressionTriggerObjectPattern(t *testing.T) {
-	input := `RETURN MATCH obj{{ TRIGGER: v }=>v,_=>0}`
+	input := `return match obj{{ TRIGGER: v }=>v,_=>0}`
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -442,13 +442,13 @@ func TestExpressionFormatter_MatchExpressionTriggerObjectPattern(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != `MATCH obj { { TRIGGER: v } => v, _ => 0 }` {
-		t.Fatalf("unexpected MATCH object pattern formatting: %q", got)
+	if got := buf.String(); got != `match obj { { TRIGGER: v } => v, _ => 0 }` {
+		t.Fatalf("unexpected match object pattern formatting: %q", got)
 	}
 }
 
 func TestExpressionFormatter_MatchExpressionDispatchShorthand(t *testing.T) {
-	input := `RETURN MATCH kind{"click"=>btn<-"click",_=>input<-"focus"}`
+	input := `return match kind{"click"=>btn<-"click",_=>input<-"focus"}`
 	program := parseProgram(t, input)
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
@@ -456,7 +456,7 @@ func TestExpressionFormatter_MatchExpressionDispatchShorthand(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.expression.formatExpression(expr)
-	if got := buf.String(); got != `MATCH kind { "click" => btn <- "click", _ => input <- "focus" }` {
-		t.Fatalf("unexpected MATCH dispatch shorthand formatting: %q", got)
+	if got := buf.String(); got != `match kind { "click" => btn <- "click", _ => input <- "focus" }` {
+		t.Fatalf("unexpected match dispatch shorthand formatting: %q", got)
 	}
 }

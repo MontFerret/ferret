@@ -744,12 +744,13 @@ func (c *ExprCompiler) compileArrayIteration(src bytecode.Operand, span source.S
 	tail, postLoopContraction := splitTerminalArrayContractionTail(tail)
 
 	loop := &core.Loop{
-		Kind:     core.ForInLoop,
-		Type:     core.NormalLoop,
-		Distinct: false,
-		Allocate: true,
-		Dst:      c.ctx.Function.Registers.Allocate(),
-		Src:      src,
+		Kind:          core.ForInLoop,
+		Type:          core.NormalLoop,
+		Distinct:      false,
+		Allocate:      true,
+		CollectResult: true,
+		Dst:           c.ctx.Function.Registers.Allocate(),
+		Src:           src,
 	}
 
 	c.ctx.Function.Loops.Push(loop)

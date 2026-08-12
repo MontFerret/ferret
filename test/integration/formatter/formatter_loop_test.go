@@ -9,36 +9,36 @@ import (
 func TestFormatterLoopBindings(t *testing.T) {
 	RunSpecs(t, []Spec{
 		S(`
-FOR _ WHILE i < 2
-RETURN i
-`, `FOR WHILE i < 2
-    RETURN i`),
+for _ while i < 2
+return i
+`, `for while i < 2
+    return i`),
 		S(`
-FOR _ DO WHILE false
-RETURN 1
-`, `FOR DO WHILE FALSE
-    RETURN 1`),
+for _ do while false
+return 1
+`, `for do while false
+    return 1`),
 		S(`
-FOR n WHILE i < 2
-RETURN n
-`, "FOR n WHILE i < 2\n    RETURN n"),
+for n while i < 2
+return n
+`, "for n while i < 2\n    return n"),
 		S(`
-FOR WHILE i < 1
-	DISPATCH "click" IN @d
-	RETURN i
-	`, "FOR WHILE i < 1\n    DISPATCH \"click\" IN @d\n    RETURN i"),
+for while i < 1
+	dispatch "click" in @d
+	return i
+	`, "for while i < 1\n    dispatch \"click\" in @d\n    return i"),
 		S(`
-FOR WHILE ready
-WAITFOR EVENT "navigation" IN doc WHEN .type == "match" TIMEOUT 10s
-RETURN ready
-`, "FOR WHILE ready\n    WAITFOR EVENT \"navigation\" IN doc WHEN .type == \"match\" TIMEOUT 10s\n    RETURN ready"),
+for while ready
+waitfor event "navigation" in doc when .type == "match" timeout 10s
+return ready
+`, "for while ready\n    waitfor event \"navigation\" in doc when .type == \"match\" timeout 10s\n    return ready"),
 		S(`
-FOR order IN QUERY "/orders" IN api WITH { query: { status: "open" } }
-RETURN order
-`, "FOR order IN QUERY \"/orders\" IN api WITH { query: { status: \"open\" } }\n    RETURN order"),
+for order in query "/orders" in api with { query: { status: "open" } }
+return order
+`, "for order in query \"/orders\" in api with { query: { status: \"open\" } }\n    return order"),
 		S(`
-FOR order IN (QUERY "/orders" IN api WITH { query: { status: "open" } })
-RETURN order
-`, "FOR order IN (QUERY \"/orders\" IN api WITH { query: { status: \"open\" } })\n    RETURN order"),
+for order in (query "/orders" in api with { query: { status: "open" } })
+return order
+`, "for order in (query \"/orders\" in api with { query: { status: \"open\" } })\n    return order"),
 	})
 }

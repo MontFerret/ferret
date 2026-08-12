@@ -30,7 +30,7 @@ func TestForSortO0UsesPlainMovesForKeyAndScopeProjection(t *testing.T) {
 	prog := compileWithLevel(t, compiler.O0, `
 LET strs = ["foo", "bar", "qaz", "abc"]
 
-FOR s IN strs
+RETURN FOR s IN strs
 	SORT s + "1"
 	RETURN s
 `)
@@ -63,7 +63,7 @@ func TestForSortO1UsesPlainMoveForScopeProjectionAndTrackedSorterTransfer(t *tes
 	prog := compileWithLevel(t, compiler.O1, `
 LET strs = ["foo", "bar", "qaz", "abc"]
 
-FOR s IN strs
+RETURN FOR s IN strs
 	SORT s + "1"
 	RETURN s
 `)
