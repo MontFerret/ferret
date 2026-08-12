@@ -15,7 +15,7 @@ RETURN DISTINCT [
 `
 
 	loopDistinctQuery = `
-FOR value IN [
+RETURN FOR value IN [
 	1, 2, 3, 4, 5, 6, 7, 8,
 	1, 2, 3, 4, 5, 6, 7, 8
 ]

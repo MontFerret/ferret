@@ -90,6 +90,8 @@ func (v *NameCollisionValidator) collectBodyStatement(scope *nameCollisionScope,
 		v.collectCallsInNode(scope, ctx.WaitForExpression())
 	case ctx.DispatchExpression() != nil:
 		v.collectCallsInNode(scope, ctx.DispatchExpression())
+	case ctx.ForExpression() != nil:
+		v.validateForExpression(scope, ctx.ForExpression())
 	}
 }
 
@@ -98,11 +100,8 @@ func (v *NameCollisionValidator) collectBodyExpression(scope *nameCollisionScope
 		return
 	}
 
-	switch {
-	case ctx.ReturnExpression() != nil:
-		v.collectCallsInNode(scope, ctx.ReturnExpression().Expression())
-	case ctx.ForExpression() != nil:
-		v.validateForExpression(scope, ctx.ForExpression())
+	if ret := ctx.ReturnExpression(); ret != nil {
+		v.collectReturnValue(scope, ret.ReturnValue())
 	}
 }
 
@@ -129,9 +128,7 @@ func (v *NameCollisionValidator) validateFunctionDeclaration(ctx fql.IFunctionDe
 	}
 
 	if ret := block.FunctionReturn(); ret != nil {
-		v.collectCallsInNode(scope, ret.Expression())
-	} else if terminalFor := block.ForExpression(); terminalFor != nil {
-		v.validateForExpression(scope, terminalFor)
+		v.collectReturnValue(scope, ret.ReturnValue())
 	}
 }
 
@@ -155,6 +152,8 @@ func (v *NameCollisionValidator) collectFunctionStatement(scope *nameCollisionSc
 		v.collectCallsInNode(scope, ctx.WaitForExpression())
 	case ctx.DispatchExpression() != nil:
 		v.collectCallsInNode(scope, ctx.DispatchExpression())
+	case ctx.ForExpression() != nil:
+		v.validateForExpression(scope, ctx.ForExpression())
 	case ctx.ExpressionStatement() != nil:
 		v.collectCallsInNode(scope, ctx.ExpressionStatement())
 	}
@@ -250,12 +249,29 @@ func (v *NameCollisionValidator) collectForExpressionReturn(scope *nameCollision
 	}
 
 	if ret := ctx.ReturnExpression(); ret != nil {
-		v.collectCallsInNode(scope, ret.Expression())
+		v.collectReturnValue(scope, ret.ReturnValue())
+
 		return
 	}
 
 	if nested := ctx.ForExpression(); nested != nil {
 		v.validateForExpression(scope, nested)
+	}
+}
+
+func (v *NameCollisionValidator) collectReturnValue(scope *nameCollisionScope, ctx fql.IReturnValueContext) {
+	if ctx == nil {
+		return
+	}
+
+	if expr := ctx.Expression(); expr != nil {
+		v.collectCallsInNode(scope, expr)
+
+		return
+	}
+
+	if loop := ctx.ForExpression(); loop != nil {
+		v.validateForExpression(scope, loop)
 	}
 }
 

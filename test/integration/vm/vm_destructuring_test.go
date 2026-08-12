@@ -161,7 +161,7 @@ RETURN [value, inner()]
 func TestForDestructuringBindings(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		Array(`
-FOR { name, score }, counter IN [
+RETURN FOR { name, score }, counter IN [
     { name: "a", score: 1 },
     { name: "b", score: 3 },
     { name: "c", score: 2 }
@@ -170,12 +170,12 @@ FOR { name, score }, counter IN [
     RETURN [name, score, counter]
 `, []any{[]any{"b", 3, 1}, []any{"c", 2, 2}}),
 		Array(`
-FOR [name, { score }] IN [["a", { score: 2 }], ["b", { score: 1 }]] {
+RETURN FOR [name, { score }] IN [["a", { score: 2 }], ["b", { score: 1 }]] {
     RETURN [name, score]
 }
 `, []any{[]any{"a", 2}, []any{"b", 1}}),
 		Array(`
-FOR { name, score } IN [
+RETURN FOR { name, score } IN [
     { name: "a", score: 2 },
     { name: "b", score: 1 },
     { name: "c", score: 3 }
@@ -184,13 +184,13 @@ FOR { name, score } IN [
     RETURN name
 `, []any{"b", "a", "c"}),
 		Array(`
-FOR { gender } IN [{ gender: "m" }, { gender: "f" }, { gender: "m" }]
+RETURN FOR { gender } IN [{ gender: "m" }, { gender: "f" }, { gender: "m" }]
     COLLECT group = gender
     SORT group
     RETURN group
 `, []any{"f", "m"}),
 		Array(`
-FOR { value, nested: [child] } IN [NONE]
+RETURN FOR { value, nested: [child] } IN [NONE]
     RETURN [value, child]
 `, []any{[]any{nil, nil}}),
 		Array(`
@@ -216,8 +216,8 @@ RETURN (
 
 func TestForDestructuringValidatesEveryItem(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
-		ErrorStr(`FOR { value } IN [{ value: 1 }, 2] RETURN value`, "cannot destructure Int as Object"),
-		ErrorStr(`FOR [value] IN [[1], false] RETURN value`, "cannot destructure Boolean as Array"),
+		ErrorStr(`RETURN FOR { value } IN [{ value: 1 }, 2] RETURN value`, "cannot destructure Int as Object"),
+		ErrorStr(`RETURN FOR [value] IN [[1], false] RETURN value`, "cannot destructure Boolean as Array"),
 	})
 }
 
@@ -438,7 +438,7 @@ RETURN kept
 			}
 
 			program, err := spec.Compile(`
-FOR { kept, ignored: [_] } IN @items
+RETURN FOR { kept, ignored: [_] } IN @items
     RETURN kept
 `, level)
 			if err != nil {

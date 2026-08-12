@@ -39,7 +39,7 @@ RETURN count + step
 `
 
 	forDestructuringQuery = `
-FOR { left, right } IN [
+RETURN FOR { left, right } IN [
     { left: 1, right: 2 },
     { left: 3, right: 4 },
     { left: 5, right: 6 },
@@ -49,7 +49,7 @@ FOR { left, right } IN [
 `
 
 	forManualExtractionQuery = `
-FOR item IN [
+RETURN FOR item IN [
     { left: 1, right: 2 },
     { left: 3, right: 4 },
     { left: 5, right: 6 },

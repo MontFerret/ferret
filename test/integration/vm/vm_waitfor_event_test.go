@@ -91,7 +91,7 @@ RETURN evt.type`, "match", "WAITFOR EVENT repeated filters should return the mat
 		Array(`LET obs = @obs
 VAR current = 0
 
-FOR WHILE current < 2
+RETURN FOR WHILE current < 2
 	current += 1
 	WAITFOR EVENT "test" IN obs WHEN .type == "match"
 	RETURN current`, []any{1, 2}, "WAITFOR EVENT should execute as a FOR loop body statement").Env(vm.WithParams(map[string]runtime.Value{

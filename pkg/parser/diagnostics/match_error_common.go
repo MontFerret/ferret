@@ -9,7 +9,7 @@ import (
 )
 
 func matchCommonErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
-	if isNoAlternative(err.Message) || isMissing(err.Message) || isMismatched(err.Message) {
+	if isNoAlternative(err.Message) || isMissing(err.Message) || isMismatched(err.Message) || isExtraneous(err.Message) {
 		prev := offending.Prev()
 		if node := anyIs(prev, offending, "=>"); node != nil && !isArrowBodyStart(node, offending) {
 			span := spanFromTokenSafe(node.Token(), src)

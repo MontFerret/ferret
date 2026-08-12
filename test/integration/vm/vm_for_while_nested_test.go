@@ -13,7 +13,7 @@ func TestForWhileNested(t *testing.T) {
 		Array(`
 			LET props = ["a"]
 			LET counter1 = [1]
-			FOR i WHILE W_POP(counter1)
+			RETURN FOR i WHILE W_POP(counter1)
 				LET prop = props[i]
 				LET vals = [1, 2, 3]
 				LET counter2 = [1, 2, 3]
@@ -23,7 +23,7 @@ func TestForWhileNested(t *testing.T) {
 `, []any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
 		),
 		Array(`
-			FOR val IN 1..3
+			RETURN FOR val IN 1..3
 				LET props = ["a"]
 				LET counter1 = [1]
 				FOR j WHILE W_POP(counter1)
@@ -34,7 +34,7 @@ func TestForWhileNested(t *testing.T) {
 		Array(`
 			LET props = ["a"]
 			LET counter1 = [1]
-			FOR i WHILE W_POP(counter1)
+			RETURN FOR i WHILE W_POP(counter1)
 				LET prop = props[i]
 				FOR val IN 1..3
 					RETURN {[prop]: val}
@@ -43,7 +43,7 @@ func TestForWhileNested(t *testing.T) {
 		Array(`
 			LET props = ["a"]
 			LET counter1 = [0]
-			FOR i WHILE W_POP(counter1)
+			RETURN FOR i WHILE W_POP(counter1)
 				LET prop = props[i]
 				LET vals = [1, 2, 3]
 				LET counter2 = [0,0,0]
@@ -59,7 +59,7 @@ func TestForWhileNested(t *testing.T) {
 		Array(`
 			LET vals = [1, 2, 3]
 			LET counter1 = [0,0,0]
-			FOR i WHILE W_POP(counter1)
+			RETURN FOR i WHILE W_POP(counter1)
 				LET val = vals[i]
 				LET props = ["a", "b", "c"]
 				LET counter2 = [0,0,0]
@@ -73,7 +73,7 @@ func TestForWhileNested(t *testing.T) {
 		Array(`
 			LET vals = [1, 2, 3]
 			LET counter1 = [0,0,0]
-			FOR i WHILE W_POP(counter1)
+			RETURN FOR i WHILE W_POP(counter1)
 				LET val = vals[i]
 				LET props = ["a", "b", "c"]
 				LET counter2 = [0,0,0]
@@ -103,7 +103,7 @@ func TestForWhileNested(t *testing.T) {
 
 			LET targetSkills = ["JavaScript", "Python", "Go", "Java"]
 			LET counter1 = [0,0,0]
-			FOR i WHILE W_POP(counter1)
+			RETURN FOR i WHILE W_POP(counter1)
 				LET u = users[i]
 				LET counter2 = [0,0,0,0]
 				LET matchingSkills = (
@@ -149,7 +149,7 @@ func TestForWhileNested(t *testing.T) {
 			LET headcounts = [20, 10, 5]
 			LET counter1 = [0, 0, 0]
 
-			FOR i WHILE W_POP(counter1)
+			RETURN FOR i WHILE W_POP(counter1)
 				LET dept = departments[i]
 				LET budget = budgets[i]
 				LET headcount = headcounts[i]
@@ -272,7 +272,7 @@ func TestForWhileNested(t *testing.T) {
 			LET end = LENGTH(users) - 1
 			LET counter1 = (FOR i IN 0..end RETURN i)
 
-			FOR i IN 0..end
+			RETURN FOR i IN 0..end
 				LET u = users[i]
 				LET end2 = LENGTH(u.projects) - 1
 				LET counter2 = (FOR i IN 0..end2 RETURN i)
@@ -311,7 +311,7 @@ func TestForWhileNested(t *testing.T) {
 		}, "Should handle nested FOR loops with complex data transformation"),
 		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
-			FOR i IN 0..3
+			RETURN FOR i IN 0..3
 				LET s = strs[i]
 				SORT s
 				FOR n IN 0..1
@@ -320,7 +320,7 @@ func TestForWhileNested(t *testing.T) {
 		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 
-			FOR n IN 0..1
+			RETURN FOR n IN 0..1
 				LET counter1 = [0,0,0,0]
 				FOR i WHILE W_POP(counter1)
 					LET s = strs[i]
@@ -346,7 +346,7 @@ func TestForWhileNested(t *testing.T) {
 				}
 			]
 
-			FOR n IN 0..1
+			RETURN FOR n IN 0..1
 				LET counter1 = [0,0,0]
 				FOR i WHILE W_POP(counter1)
 					LET u = users[i]
@@ -357,7 +357,7 @@ func TestForWhileNested(t *testing.T) {
 			LET strs = ["foo", "bar", "qaz", "abc"]
 			LET counter1 = [0,0]
 
-			FOR n WHILE W_POP(counter1)
+			RETURN FOR n WHILE W_POP(counter1)
 				FOR m IN 0..1
 					LET counter2 = [0,0,0,0]
 					FOR i WHILE W_POP(counter2)
@@ -369,7 +369,7 @@ func TestForWhileNested(t *testing.T) {
 			LET strs = ["foo", "bar", "qaz", "abc"]
 			LET counter1 = [0,0]
 
-			FOR n WHILE W_POP(counter1)
+			RETURN FOR n WHILE W_POP(counter1)
 				LET counter2 = [0,0,0,0]
 				FOR i WHILE W_POP(counter2)
 					LET s = strs[i]
@@ -410,7 +410,7 @@ func TestForWhileNested(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR n IN 0..1
+			RETURN FOR n IN 0..1
 				LET counter1 = [0,0,0,0,0]
 				FOR i WHILE W_POP(counter1)
 					LET u = users[i]
@@ -451,7 +451,7 @@ func TestForWhileNested(t *testing.T) {
 				}
 			]
 			LET counter1 = [0,0,0,0,0]
-			FOR i WHILE W_POP(counter1)
+			RETURN FOR i WHILE W_POP(counter1)
 				LET u = users[i]
 				COLLECT gender = u.gender
 				LET counter2 = [0,0]
@@ -491,7 +491,7 @@ func TestForWhileNested(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR n IN 0..1
+			RETURN FOR n IN 0..1
 				LET counter1 = [0,0,0,0,0]
 				FOR i WHILE W_POP(counter1)
 					LET u = users[i]
@@ -646,7 +646,7 @@ func TestForWhileNested(t *testing.T) {
 				}
 			]
 			LET counter1 = [0,0,0,0,0]
-			FOR i WHILE W_POP(counter1)
+			RETURN FOR i WHILE W_POP(counter1)
 				LET u = users[i]
 				COLLECT gender = u.gender INTO genders
 				FOR n IN 0..1
@@ -799,7 +799,7 @@ func TestForWhileNested(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR n IN 0..1
+			RETURN FOR n IN 0..1
 				LET counter1 = [0,0,0,0,0]
 				FOR i WHILE W_POP(counter1)
 				  LET u = users[i]
@@ -867,7 +867,7 @@ func TestForWhileNested(t *testing.T) {
 				}
 			]
 
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 			  LET u = users[i]
 			  COLLECT gender = u.gender
 				AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
@@ -932,7 +932,7 @@ func TestForWhileNested(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR n IN 0..1
+			RETURN FOR n IN 0..1
 				FOR i WHILE UNTIL(LENGTH(users))
   				  LET u = users[i]
   				  COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
@@ -1002,7 +1002,7 @@ func TestForWhileNested(t *testing.T) {
 					department: "Marketing"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(departments))
+			RETURN FOR i WHILE UNTIL(LENGTH(departments))
 				LET d = departments[i]
 				LET deptUsers = (
 					FOR j WHILE UNTIL(LENGTH(users))

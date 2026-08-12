@@ -20,7 +20,7 @@ LET x = MATCH 2 { 1 => 10, 2 => 20, _ => 0, }
 RETURN x
 `, 20),
 		Array(`
-FOR v IN [1, 2, 3]
+RETURN FOR v IN [1, 2, 3]
 	RETURN MATCH v { 1 => "one", 2 => "two", _ => "other", }
 `, []any{"one", "two", "other"}),
 		S(`RETURN (MATCH 1 { 1 => 1, _ => 0, }) ? "yes" : "no"`, "yes"),

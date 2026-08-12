@@ -12,21 +12,21 @@ func TestForWhileDistinct(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		Array(
 			`LET arr = [ 1, 2, 3, 4, 1, 3 ]
-			 FOR i WHILE UNTIL(LENGTH(arr))
+			 RETURN FOR i WHILE UNTIL(LENGTH(arr))
 				RETURN DISTINCT arr[i]
 		`,
 			[]any{1, 2, 3, 4},
 		),
 		Array(
 			`LET arr = ["foo", "bar", "qaz", "foo", "abc", "bar"]
-			 FOR i WHILE UNTIL(LENGTH(arr))
+			 RETURN FOR i WHILE UNTIL(LENGTH(arr))
 				RETURN DISTINCT arr[i]
 		`,
 			[]any{"foo", "bar", "qaz", "abc"},
 		),
 		Array(
 			`LET arr = [["foo"], ["bar"], ["qaz"], ["foo"], ["abc"], ["bar"]]
-			 FOR i WHILE UNTIL(LENGTH(arr))
+			 RETURN FOR i WHILE UNTIL(LENGTH(arr))
 				RETURN DISTINCT arr[i]
 		`,
 			[]any{[]any{"foo"}, []any{"bar"}, []any{"qaz"}, []any{"abc"}},
@@ -34,14 +34,14 @@ func TestForWhileDistinct(t *testing.T) {
 		Array(`
 			LET strs = ["foo", "bar", "qaz", "foo", "abc", "bar"]
 
-			FOR i WHILE UNTIL(LENGTH(strs))
+			RETURN FOR i WHILE UNTIL(LENGTH(strs))
 				SORT strs[i]
 				RETURN DISTINCT strs[i]
 `, []any{"abc", "bar", "foo", "qaz"}, "Should sort and respect DISTINCT keyword"),
 		Array(
 			`
 			LET arr = [ 1, 1, 2, 3, 4, 1, 3 ]
-			FOR i WHILE UNTIL(LENGTH(arr))
+			RETURN FOR i WHILE UNTIL(LENGTH(arr))
 				LIMIT 2
 				RETURN DISTINCT arr[i]
 		`,
@@ -49,7 +49,7 @@ func TestForWhileDistinct(t *testing.T) {
 		Array(
 			`
 			LET arr = [ 1, 1, 1, 3, 4, 1, 3 ]
-			FOR i WHILE UNTIL(LENGTH(arr))
+			RETURN FOR i WHILE UNTIL(LENGTH(arr))
 				LIMIT 1, 2
 				RETURN DISTINCT arr[i]
 		`,
@@ -57,7 +57,7 @@ func TestForWhileDistinct(t *testing.T) {
 		Array(
 			`
 			LET arr = [ 1, 2, 3, 4, 1, 3, 3, 4 ]
-			FOR i WHILE UNTIL(LENGTH(arr))
+			RETURN FOR i WHILE UNTIL(LENGTH(arr))
 				FILTER arr[i] > 2
 				RETURN DISTINCT arr[i]
 		`,
@@ -96,7 +96,7 @@ func TestForWhileDistinct(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				COLLECT gender = users[i].gender, age = users[i].age
 				RETURN DISTINCT {gender}
 		`, []any{
@@ -136,7 +136,7 @@ func TestForWhileDistinct(t *testing.T) {
 					married: true
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				COLLECT gender = users[i].gender INTO genders = { active: users[i].active }
 				RETURN DISTINCT genders[0]
 		`, []any{
@@ -169,7 +169,7 @@ func TestForWhileDistinct(t *testing.T) {
 					married: true
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 			  LET u = users[i]
 			  COLLECT genderGroup = u.gender
 			   AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
@@ -205,7 +205,7 @@ func TestForWhileDistinct(t *testing.T) {
 					gender: "m"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				RETURN DISTINCT users[i].age
 		`, []any{nil, 25, 45}, "Should handle null values with DISTINCT"),
 
@@ -214,7 +214,7 @@ func TestForWhileDistinct(t *testing.T) {
 			LET departments = ["IT", "Marketing", "HR"]
 			LET genders = ["m", "f"]
 
-			FOR i WHILE UNTIL(LENGTH(departments))
+			RETURN FOR i WHILE UNTIL(LENGTH(departments))
 				FOR j WHILE UNTIL(LENGTH(genders))
 					LET dept = departments[i]
 					LET gender = genders[j]
@@ -260,7 +260,7 @@ func TestForWhileDistinct(t *testing.T) {
 					}
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				RETURN DISTINCT users[i].department
 		`, []any{
 			map[string]any{"name": "IT", "location": "Building A"},
@@ -277,14 +277,14 @@ func TestForWhileDistinct(t *testing.T) {
 				{ age: 26 },
 				{ age: 31 }
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				RETURN DISTINCT FLOOR(users[i].age / 10) * 10
 		`, []any{20, 30, 40}, "Should handle DISTINCT with calculated values"),
 
 		// Test DISTINCT with empty arrays
 		Array(`
 			LET emptyArray = []
-			FOR i WHILE UNTIL(LENGTH(emptyArray))
+			RETURN FOR i WHILE UNTIL(LENGTH(emptyArray))
 				RETURN DISTINCT emptyArray[i]
 		`, []any{}, "Should handle DISTINCT with empty arrays"),
 
@@ -297,7 +297,7 @@ func TestForWhileDistinct(t *testing.T) {
 				{ name: "Alice", age: 35, gender: "f" },
 				{ name: "Mike", age: 25, gender: "m" }
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				SORT u.age DESC, u.gender
 				RETURN DISTINCT users[i].age
@@ -309,7 +309,7 @@ func TestForWhileDistinct(t *testing.T) {
 			LET genders = ["m", "f"]
 			LET statuses = ["active", "inactive"]
 
-			FOR i WHILE UNTIL(LENGTH(departments))
+			RETURN FOR i WHILE UNTIL(LENGTH(departments))
 				LET dept = departments[i]
 				FOR j WHILE UNTIL(LENGTH(genders))
 					LET gender = genders[j]
@@ -333,7 +333,7 @@ func TestForWhileDistinct(t *testing.T) {
 			LET genders = ["m", "f"]
 			LET statuses = ["active", "inactive"]
 
-			FOR i WHILE UNTIL(LENGTH(departments))
+			RETURN FOR i WHILE UNTIL(LENGTH(departments))
 				LET dept = departments[i]
 				SORT dept
 				FOR j WHILE UNTIL(LENGTH(genders))
@@ -365,7 +365,7 @@ func TestForWhileDistinct(t *testing.T) {
 				{ name: "Mike", department: "Marketing", age: 45 }
 			]
 
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				COLLECT dept = users[i].department
 				AGGREGATE avgAge = AVERAGE(u.age)
@@ -388,7 +388,7 @@ func TestForWhileDistinct(t *testing.T) {
 				{ name: "Alice", skills: ["Python", "JavaScript"] }
 			]
 
-			FOR i WHILE UNTIL(LENGTH(users))
+			RETURN FOR i WHILE UNTIL(LENGTH(users))
 				SORT users[i].name
 				RETURN DISTINCT SORTED(users[i].skills)
 		`, []any{

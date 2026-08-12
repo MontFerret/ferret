@@ -21,7 +21,7 @@ LET users = [
 	name: "Eve",
 }
 ]
-FOR i IN users
+RETURN FOR i IN users
 	FILTER i.name =~ "^[A-D].*"
   	RETURN i.name
 `)
@@ -46,7 +46,7 @@ LET users = [
 	name: "Eve",
 }
 ]
-FOR i IN users
+RETURN FOR i IN users
 	FILTER i.name =~ "^[A-D].*"
   	RETURN i.name
 `)

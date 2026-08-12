@@ -41,7 +41,7 @@ func TestArrayOperators(t *testing.T) {
 						}
 					]
 
-					FOR user IN users
+					RETURN FOR user IN users
 						RETURN user.friends[*].name
 				`,
 			[]any{[]any{"Alice"}, []any{"Tom", "Jane"}, []any{}}),
@@ -453,7 +453,7 @@ LET docs = [
 	{ name: "C", dimensions: [{ type: "width", value: 50 }] }
 ]
 
-FOR doc IN docs
+RETURN FOR doc IN docs
 	FILTER doc.dimensions[? FILTER .type == "height" AND .value > 40]
 	RETURN doc.name`, []any{"A"}),
 		Array(`
@@ -463,7 +463,7 @@ LET docs = [
 	{ name: "C", dimensions: [{ part: "wheel", measurements: [{ type: "width", value: 70 }] }] }
 ]
 
-FOR doc IN docs
+RETURN FOR doc IN docs
 	FILTER doc.dimensions[? FILTER .part == "frame" AND
 		.measurements[? FILTER .type == "width" AND .value <= 80]]
 	RETURN doc.name`, []any{"A"}),
@@ -566,7 +566,7 @@ LET users = [
 						}
 					]
 
-			FOR u IN users
+			RETURN FOR u IN users
 				RETURN {
 					name: u.name,
 					friends: u.friends[* FILTER CONTAINS(.name, "a") AND .age > 40

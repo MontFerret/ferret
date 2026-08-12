@@ -103,6 +103,8 @@ func (i *ForwardBindingIndex) buildBodyStatement(ctx fql.IBodyStatementContext, 
 		i.buildVariableDeclaration(ctx.VariableDeclaration(), scope)
 	case ctx.FunctionDeclaration() != nil:
 		i.buildFunctionDeclaration(ctx.FunctionDeclaration(), scope)
+	case ctx.ForExpression() != nil:
+		i.buildForExpression(ctx.ForExpression(), scope)
 	default:
 		i.collectNestedScopes(ctx, scope)
 	}
@@ -113,13 +115,8 @@ func (i *ForwardBindingIndex) buildBodyExpression(ctx fql.IBodyExpressionContext
 		return
 	}
 
-	if fe := ctx.ForExpression(); fe != nil {
-		i.buildForExpression(fe, scope)
-		return
-	}
-
 	if ret := ctx.ReturnExpression(); ret != nil {
-		i.collectNestedScopes(ret.Expression(), scope)
+		i.buildReturnValue(ret.ReturnValue(), scope)
 	}
 }
 
@@ -146,9 +143,7 @@ func (i *ForwardBindingIndex) buildFunctionDeclaration(ctx fql.IFunctionDeclarat
 	}
 
 	if ret := block.FunctionReturn(); ret != nil {
-		i.collectNestedScopes(ret.Expression(), scope)
-	} else if terminalFor := block.ForExpression(); terminalFor != nil {
-		i.buildForExpression(terminalFor, scope)
+		i.buildReturnValue(ret.ReturnValue(), scope)
 	}
 }
 
@@ -162,6 +157,8 @@ func (i *ForwardBindingIndex) buildFunctionStatement(ctx fql.IFunctionStatementC
 		i.buildVariableDeclaration(ctx.VariableDeclaration(), scope)
 	case ctx.FunctionDeclaration() != nil:
 		i.buildFunctionDeclaration(ctx.FunctionDeclaration(), scope)
+	case ctx.ForExpression() != nil:
+		i.buildForExpression(ctx.ForExpression(), scope)
 	default:
 		i.collectNestedScopes(ctx, scope)
 	}
@@ -246,12 +243,29 @@ func (i *ForwardBindingIndex) buildForExpressionReturn(ctx fql.IForExpressionRet
 	}
 
 	if ret := ctx.ReturnExpression(); ret != nil {
-		i.collectNestedScopes(ret.Expression(), scope)
+		i.buildReturnValue(ret.ReturnValue(), scope)
+
 		return
 	}
 
 	if nested := ctx.ForExpression(); nested != nil {
 		i.buildForExpression(nested, scope)
+	}
+}
+
+func (i *ForwardBindingIndex) buildReturnValue(ctx fql.IReturnValueContext, scope forwardBindingScope) {
+	if i == nil || ctx == nil {
+		return
+	}
+
+	if expr := ctx.Expression(); expr != nil {
+		i.collectNestedScopes(expr, scope)
+
+		return
+	}
+
+	if loop := ctx.ForExpression(); loop != nil {
+		i.buildForExpression(loop, scope)
 	}
 }
 

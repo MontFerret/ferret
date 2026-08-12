@@ -18,8 +18,8 @@ func TestRegexpOperator(t *testing.T) {
 		S(`RETURN "foo" =~ "^f[o].$" `, true),
 		S(`RETURN "foo" !~ "[a-z]+bar$"`, true),
 		S(`RETURN "foo" !~ T::REGEXP()`, true),
-		Array(`FOR p IN ["^f..$", "^b..$"] RETURN "foo" =~ p`, []any{true, false}),
-		Array(`FOR p IN [1, 2] RETURN "foo" =~ T::REGEXP_DYNAMIC(p)`, []any{true, false}),
+		Array(`RETURN FOR p IN ["^f..$", "^b..$"] RETURN "foo" =~ p`, []any{true, false}),
+		Array(`RETURN FOR p IN [1, 2] RETURN "foo" =~ T::REGEXP_DYNAMIC(p)`, []any{true, false}),
 	}, vm.WithFunction("T::REGEXP", func(_ context.Context, _ ...runtime.Value) (value runtime.Value, e error) {
 		return runtime.NewString("[a-z]+bar$"), nil
 	}), vm.WithFunction("T::REGEXP_DYNAMIC", func(_ context.Context, args ...runtime.Value) (value runtime.Value, e error) {

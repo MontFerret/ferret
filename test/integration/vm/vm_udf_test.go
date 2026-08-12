@@ -209,7 +209,7 @@ FUNC FA(i) {
     RETURN FB(i)
 }
 
-FOR i IN 1..100
+RETURN FOR i IN 1..100
     RETURN FA(i)
 `, expected, "Transitive capture through a forwarding UDF"),
 		S(`

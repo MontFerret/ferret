@@ -69,7 +69,7 @@ func TestNativeDurationValues(t *testing.T) {
 		S(`RETURN DISTINCT [5s, 5000ms]`, []any{"5s"}),
 		S(`RETURN DISTINCT ["1s", 1000, 1s]`, []any{"1s", float64(1000), "1s"}),
 		S(`RETURN UNION_DISTINCT(["1s", 1000], [1s, 1000ms])`, []any{"1s", float64(1000), "1s"}),
-		S(`FOR value IN [1s, 1000ms] COLLECT key = value WITH COUNT INTO count RETURN { key, count }`, []any{
+		S(`RETURN FOR value IN [1s, 1000ms] COLLECT key = value WITH COUNT INTO count RETURN { key, count }`, []any{
 			map[string]any{"key": "1s", "count": float64(2)},
 		}),
 		Error(`RETURN SORTED([1s, "2s"])`),

@@ -57,22 +57,8 @@ func matchMissingReturnValue(src *source.Source, err *diagnostics.Diagnostic, of
 		return true
 	}
 
-	extraneous := isExtraneous(err.Message)
-
-	if !is(offending, "RETURN") && !extraneous {
+	if !is(offending, "RETURN") {
 		return false
-	}
-
-	if extraneous {
-		span := spanFromTokenSafe(offending.Token(), src)
-		err.Spans = []diagnostics.ErrorSpan{
-			diagnostics.NewMainErrorSpan(span, "query must end with a value"),
-		}
-
-		err.Message = "Expected a RETURN or FOR clause at end of query"
-		err.Hint = "All queries must return a value. Add a RETURN statement to complete the query."
-
-		return true
 	}
 
 	span := spanFromTokenSafe(offending.Token(), src)

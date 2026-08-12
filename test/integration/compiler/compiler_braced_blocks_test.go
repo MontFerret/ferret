@@ -13,7 +13,7 @@ func TestBracedBlockSyntax(t *testing.T) {
 	valid := map[string]string{
 		"arrow UDF":                       `FUNC value() => 1 RETURN value()`,
 		"block UDF":                       `FUNC value() { RETURN 1 } RETURN value()`,
-		"terminal UDF FOR":                `FUNC values() { FOR value IN [{ n: 1 }] { RETURN value.n } } RETURN values()`,
+		"returned UDF FOR":                `FUNC values() { RETURN FOR value IN [{ n: 1 }] { RETURN value.n } } RETURN values()`,
 		"object MATCH pattern and result": `RETURN MATCH { kind: "ok" } { { kind: "ok" } => { value: 1 }, _ => {} }`,
 		"guard MATCH":                     `LET value = 1 RETURN MATCH { WHEN value > 0 => { positive: true }, _ => {} }`,
 		"braced IN":                       `FOR value IN { one: 1 } { RETURN value }`,
@@ -36,7 +36,6 @@ func TestRemovedBlockSyntaxIsRejected(t *testing.T) {
 		"parenthesized UDF":   `FUNC value() ( RETURN 1 ) RETURN value()`,
 		"parenthesized MATCH": `RETURN MATCH 1 (1 => 1, _ => 0)`,
 		"unbraced MATCH":      `RETURN MATCH 1 1 => 1, _ => 0`,
-		"implicit UDF result": `FUNC value() { 42 } RETURN value()`,
 	}
 
 	for name, query := range invalid {
@@ -50,12 +49,12 @@ func TestRemovedBlockSyntaxIsRejected(t *testing.T) {
 
 func TestForBodyBracesDoNotChangeBytecode(t *testing.T) {
 	const unbraced = `
-FOR value IN [1, 2, 3]
+RETURN FOR value IN [1, 2, 3]
   FILTER value > 1
   RETURN value * 2
 `
 	const braced = `
-FOR value IN [1, 2, 3] {
+RETURN FOR value IN [1, 2, 3] {
   FILTER value > 1
   RETURN value * 2
 }

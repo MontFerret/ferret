@@ -76,6 +76,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#returnExpression.
 	VisitReturnExpression(ctx *ReturnExpressionContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#returnValue.
+	VisitReturnValue(ctx *ReturnValueContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#forExpression.
 	VisitForExpression(ctx *ForExpressionContext) interface{}
 

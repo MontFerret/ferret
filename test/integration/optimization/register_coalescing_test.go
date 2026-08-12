@@ -110,7 +110,7 @@ RETURN arr`, 2, []any{
 RETURN FIRST([])?.foo
 `, 2, nil, "Optional chaining with FIRST on empty array"),
 		RegistersArray(`
-FOR x IN [1,2,3,4,5]
+RETURN FOR x IN [1,2,3,4,5]
   LET row = { x:x, y:x*2, z:x*3 }
   RETURN row
 `, 5, []any{
@@ -191,7 +191,7 @@ RETURN ((x + 1) * (x + 2) == (x + 3) * (x + 4))
 				}
 			]
 			VAR i = 0
-			FOR WHILE i < LENGTH(departments)
+			RETURN FOR WHILE i < LENGTH(departments)
 				LET d = departments[i]
 				i = i + 1
 				VAR j = 0
@@ -259,7 +259,7 @@ RETURN ((x + 1) * (x + 2) == (x + 3) * (x + 4))
 				{ gender: "f", age: 20 },
 				{ gender: "f", age: null }
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				COLLECT gender = u.gender
 				AGGREGATE 
 					count = COUNT(u.age), 
@@ -273,7 +273,7 @@ RETURN ((x + 1) * (x + 2) == (x + 3) * (x + 4))
 			map[string]any{"gender": "m", "count": 2, "sum": 40, "avg": 40},
 		}, "Should skip nulls in COUNT, SUM, AVG"),
 		RegistersArray(
-			`FOR i IN [ 1, 2, 3, 4, 1, 3 ]
+			`RETURN FOR i IN [ 1, 2, 3, 4, 1, 3 ]
 							RETURN DISTINCT i
 		`,
 			3, []any{1, 2, 3, 4},

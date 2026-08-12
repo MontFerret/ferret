@@ -7,7 +7,7 @@ import (
 const sortQuery = `
 LET strs = ["foo", "bar", "qaz", "abc"]
 
-FOR s IN strs
+RETURN FOR s IN strs
 	SORT s + "1"
 	RETURN s
 `

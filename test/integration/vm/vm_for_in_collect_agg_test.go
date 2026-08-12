@@ -15,7 +15,7 @@ func TestCollectAggregate(t *testing.T) {
 				{ gender: "f", age: 25 },
 				{ gender: "m", age: 45 }
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				COLLECT gender = u.gender
 				AGGREGATE minAge = MIN(u.age)  INTO grouped
 				RETURN {
@@ -34,7 +34,7 @@ func TestCollectAggregate(t *testing.T) {
 				{ group: "b", age: 2 },
 				{ group: "b", age: null }
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				COLLECT g = u.group
 				AGGREGATE
 					cnt = COUNT(u.age),
@@ -49,7 +49,7 @@ func TestCollectAggregate(t *testing.T) {
 		}, "Should aggregate per group and skip non-numbers in numeric aggregates"),
 		Array(`
 			LET users = []
-			FOR u IN users
+			RETURN FOR u IN users
 				COLLECT gender = u.gender
 				AGGREGATE minAge = MIN(u.age)
 				RETURN {
@@ -65,7 +65,7 @@ func TestCollectAggregate(t *testing.T) {
 				{ gender: "f", age: 20 },
 				{ gender: "f", age: null }
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				COLLECT gender = u.gender
 				AGGREGATE 
 					count = COUNT(u.age), 
@@ -109,7 +109,7 @@ func TestCollectAggregate(t *testing.T) {
 					married: false
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				COLLECT gender = u.gender
 				AGGREGATE userCount = COUNT(u)
 				RETURN {
@@ -141,7 +141,7 @@ func TestCollectAggregate(t *testing.T) {
 					married: false
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				COLLECT gender = u.gender
 				AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
 				RETURN {
@@ -186,7 +186,7 @@ LET users = [
 					married: true
 				}
 			]
-FOR u IN users
+RETURN FOR u IN users
   COLLECT genderGroup = u.gender
    AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
 
@@ -237,7 +237,7 @@ FOR u IN users
 					department: "Marketing"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				COLLECT 
 					department = u.department,
 					gender = u.gender
@@ -293,7 +293,7 @@ FOR u IN users
 					salary: 70000
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				COLLECT gender = u.gender
 				AGGREGATE 
 					activeCount = SUM(u.active ? 1 : 0),
@@ -352,7 +352,7 @@ FOR u IN users
 					gender: "f"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
   				COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
   				RETURN {
     				minAge, 
@@ -363,7 +363,7 @@ FOR u IN users
 			"Should collect and aggregate values without grouping"),
 		Array(`
 			LET users = []
-			FOR u IN users
+			RETURN FOR u IN users
 				COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
 				RETURN {
 					minAge,
@@ -374,7 +374,7 @@ FOR u IN users
 			"Should handle empty arrays gracefully"),
 		Array(`
 			LET values = [1, "x", 3, null, 5]
-			FOR v IN values
+			RETURN FOR v IN values
 				COLLECT AGGREGATE
 					cnt = COUNT(v),
 					sum = SUM(v),
@@ -393,7 +393,7 @@ FOR u IN users
 			"Should handle mixed types in global aggregation"),
 		Array(`
 			LET values = ["a", null, "b"]
-			FOR v IN values
+			RETURN FOR v IN values
 				COLLECT AGGREGATE
 					cnt = COUNT(v),
 					sum = SUM(v),
@@ -443,7 +443,7 @@ LET users = [
 					gender: "f"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
   				COLLECT AGGREGATE ages = UNION(u.age, u.age)
   				RETURN { ages } 
 `, []any{
@@ -482,7 +482,7 @@ LET users = [
 					gender: "f"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
   				COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age) INTO groupsVariable
   				RETURN {
   				groupsVariable,
@@ -570,7 +570,7 @@ LET users = [
 					married: true
 				}
 			]
-FOR u IN users
+RETURN FOR u IN users
   COLLECT genderGroup = u.gender
    AGGREGATE ages = UNION(u.age, u.age)
 
@@ -615,7 +615,7 @@ FOR u IN users
 					gender: "f"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
   				COLLECT ageGroup = FLOOR(u.age / 5) * 5 
   				AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
   				RETURN {
@@ -673,7 +673,7 @@ FOR u IN users
 					department: "Marketing"
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				COLLECT department = u.department
 				AGGREGATE 
 					minAge = MIN(u.age), 
@@ -734,7 +734,7 @@ FOR u IN users
 					skills: ["JavaScript", "TypeScript"]
 				}
 			]
-			FOR u IN users
+			RETURN FOR u IN users
 				COLLECT AGGREGATE 
 					allSkills = UNION_DISTINCT(u.skills, u.skills),
 					uniqueSkillCount = COUNT_DISTINCT(u.skills)
@@ -786,7 +786,7 @@ FOR u IN users
 					gender: "f"
 				}
 			]
-			FOR i IN 0..4
+			RETURN FOR i IN 0..4
 			  LET u = users[i]
 			  COLLECT gender = u.gender
 				AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)

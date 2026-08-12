@@ -17,8 +17,8 @@ func TestTernaryOperator(t *testing.T) {
 		S("RETURN 2 ? : 4", 2),
 		S("LET foo = TRUE RETURN foo ? TRUE : FALSE", true),
 		S("LET foo = FALSE RETURN foo ? TRUE : FALSE", false),
-		Array("FOR i IN [1, 2, 3, 4, 5, 6] RETURN i < 3 ? i * 3 : i * 2", []any{3, 6, 6, 8, 10, 12}),
-		Array(`FOR i IN [NONE, 2, 3, 4, 5, 6] RETURN i ? : i`, []any{nil, 2, 3, 4, 5, 6}),
+		Array("RETURN FOR i IN [1, 2, 3, 4, 5, 6] RETURN i < 3 ? i * 3 : i * 2", []any{3, 6, 6, 8, 10, 12}),
+		Array(`RETURN FOR i IN [NONE, 2, 3, 4, 5, 6] RETURN i ? : i`, []any{nil, 2, 3, 4, 5, 6}),
 		S(`RETURN 0 && true ? "1" : "some"`, "some", "Should return 'some' when first operand is 0"),
 		S(`RETURN length([]) > 0 && true ? "1" : "some"`, "some", "Should return 'some' when first operand is an empty array"),
 	})
@@ -39,7 +39,7 @@ func TestTernaryOperator(t *testing.T) {
 
 			t.Run(val, func(t *testing.T) {
 				p, err := c.Compile(source.NewAnonymous(fmt.Sprintf(`
-			FOR i IN [%s, 1, 2, 3]
+			RETURN FOR i IN [%s, 1, 2, 3]
 				RETURN i ? i * 2 : 'no value'
 		`, val)))
 

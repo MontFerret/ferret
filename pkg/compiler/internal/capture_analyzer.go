@@ -133,17 +133,16 @@ func (c *CaptureAnalyzer) analyzeFunction(fn *core.UDFInfo, env *udfCaptureEnv) 
 				case stmt.DispatchExpression() != nil:
 					c.collectVars(stmt.DispatchExpression(), env, state)
 					c.collectAssignments(stmt.DispatchExpression(), env, state)
+				case stmt.ForExpression() != nil:
+					c.collectForExpression(stmt.ForExpression(), env, state)
 				case stmt.ExpressionStatement() != nil:
 					c.collectVars(stmt.ExpressionStatement(), env, state)
 					c.collectAssignments(stmt.ExpressionStatement(), env, state)
 				}
 			}
 
-			if block.FunctionReturn() != nil {
-				c.collectVars(block.FunctionReturn(), env, state)
-				c.collectAssignments(block.FunctionReturn(), env, state)
-			} else if terminalFor := block.ForExpression(); terminalFor != nil {
-				c.collectForExpression(terminalFor, env, state)
+			if ret := block.FunctionReturn(); ret != nil {
+				c.collectReturnValue(ret.ReturnValue(), env, state)
 			}
 		}
 	}
@@ -193,11 +192,31 @@ func (c *CaptureAnalyzer) collectForExpression(
 
 	if terminal := ctx.ForExpressionReturn(); terminal != nil {
 		if ret := terminal.ReturnExpression(); ret != nil {
-			c.collectVars(ret, env, state)
-			c.collectAssignments(ret, env, state)
+			c.collectReturnValue(ret.ReturnValue(), env, state)
 		} else if nested := terminal.ForExpression(); nested != nil {
 			c.collectForExpression(nested, env, state)
 		}
+	}
+}
+
+func (c *CaptureAnalyzer) collectReturnValue(
+	ctx fql.IReturnValueContext,
+	env *udfCaptureEnv,
+	state *udfCaptureState,
+) {
+	if c == nil || ctx == nil || env == nil || state == nil {
+		return
+	}
+
+	if expr := ctx.Expression(); expr != nil {
+		c.collectVars(expr, env, state)
+		c.collectAssignments(expr, env, state)
+
+		return
+	}
+
+	if loop := ctx.ForExpression(); loop != nil {
+		c.collectForExpression(loop, env, state)
 	}
 }
 

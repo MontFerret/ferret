@@ -85,12 +85,12 @@ RETURN signal
 	}
 }
 
-func TestTerminalUDFForCancellationAtBackwardJumpSafepoint(t *testing.T) {
+func TestReturnedUDFForCancellationAtBackwardJumpSafepoint(t *testing.T) {
 	const query = `
 FUNC spin() {
   LET signal = START()
   VAR i = 0
-  FOR WHILE i < 1000000000 {
+  RETURN FOR WHILE i < 1000000000 {
     i = i + 1
     RETURN signal
   }

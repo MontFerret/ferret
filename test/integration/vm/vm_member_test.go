@@ -125,7 +125,7 @@ func TestMember(t *testing.T) {
 				"second": "third",
 			}),
 		Array(`
-					FOR v, k IN {f: {foo: "bar"}}.f
+					RETURN FOR v, k IN {f: {foo: "bar"}}.f
 						RETURN [k, v]
 				`,
 			[]any{
@@ -136,7 +136,7 @@ func TestMember(t *testing.T) {
 		Array(`RETURN [[1, 2]][0]`,
 			[]any{1, 2}),
 		Array(`
-					FOR i IN [[1, 2]][0]
+					RETURN FOR i IN [[1, 2]][0]
 						RETURN i
 				`,
 			[]any{1, 2}),
@@ -301,7 +301,7 @@ func TestOptionalChaining(t *testing.T) {
 		Array(`LET res = (FOR i IN [1, 2, 3, 4] LET y = ERROR() RETURN y+i)? RETURN res`, []any{}, "Error in array comprehension"),
 		Array(`LET res = (FOR i IN [1, 2, 3, 4] LET y = ERROR() RETURN y+i) ON ERROR RETURN []
 RETURN [LENGTH(res), 1]`, []any{0, 1}, "Grouped FOR recovery should return the fallback and continue execution"),
-		Array(`FOR i IN [1, 2, 3, 4] ERROR()? RETURN i`, []any{1, 2, 3, 4}, "Error in FOR loop"),
+		Array(`RETURN FOR i IN [1, 2, 3, 4] ERROR()? RETURN i`, []any{1, 2, 3, 4}, "Error in FOR loop"),
 	}, vm.WithFunction("ERROR", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return nil, runtime.ErrNotImplemented
 	}))

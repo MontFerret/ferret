@@ -41,11 +41,7 @@ func (c *StatementCompiler) bind(bindings *BindingCompiler, dispatch *DispatchCo
 	c.wait = wait
 }
 
-// Compile processes the main body of an FQL query.
-// It first compiles all body statements (variable declarations, function calls, etc.),
-// and then compiles the body expression (FOR loops or RETURN statements).
-// Parameters:
-//   - ctx: The body context from the AST
+// Compile emits an implicit NONE return when the script has no explicit RETURN.
 func (c *StatementCompiler) Compile(ctx fql.IBodyContext) {
 	if ctx == nil {
 		return
@@ -56,15 +52,14 @@ func (c *StatementCompiler) Compile(ctx fql.IBodyContext) {
 		c.CompileBodyStatement(statement)
 	}
 
-	// Process the final expression in the body
-	c.CompileBodyExpression(ctx.BodyExpression())
+	if expr := ctx.BodyExpression(); expr != nil {
+		c.CompileBodyExpression(expr)
+	} else {
+		c.emitImplicitNoneReturn()
+	}
 }
 
-// CompileBodyStatement processes a single statement in the body of an FQL query.
-// It determines the type of statement (variable declaration, function call, or wait expression)
-// and delegates to the appropriate compilation method.
-// Parameters:
-//   - ctx: The body statement context from the AST
+// CompileBodyStatement compiles a value-discarding top-level statement.
 func (c *StatementCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) {
 	if ctx == nil {
 		return
@@ -94,51 +89,54 @@ func (c *StatementCompiler) compileBodyStatement(ctx fql.IBodyStatementContext) 
 		c.wait.Compile(wfe)
 	} else if de := ctx.DispatchExpression(); de != nil {
 		c.dispatch.Compile(de)
+	} else if fe := ctx.ForExpression(); fe != nil {
+		c.loops.Compile(fe)
 	}
 }
 
-// CompileBodyExpression processes the main expression in the body of an FQL query.
-// This is typically either a FOR loop or a RETURN statement, which forms the primary
-// operation of the query and determines what data is returned.
-// Parameters:
-//   - ctx: The body expression context from the AST
+// CompileBodyExpression compiles the script's explicit RETURN.
 func (c *StatementCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
 	if ctx == nil {
 		return
 	}
 
 	rule, _ := ctx.(antlr.ParserRuleContext)
-	kind := bytecode.DebugPointStatement
-	if ctx.ReturnExpression() != nil {
-		kind = bytecode.DebugPointReturn
-	}
-	c.ctx.WithDebugPointKind(rule, kind, func() {
+	c.ctx.WithDebugPointKind(rule, bytecode.DebugPointReturn, func() {
 		c.compileBodyExpression(ctx)
 	})
 }
 
 func (c *StatementCompiler) compileBodyExpression(ctx fql.IBodyExpressionContext) {
-	// Handle FOR expressions (e.g., FOR x IN y RETURN z)
-	if fe := ctx.ForExpression(); fe != nil {
-		c.compileTerminalForResult(fe)
-	} else if re := ctx.ReturnExpression(); re != nil {
-		// Handle RETURN expressions (e.g., RETURN x)
-		valReg := c.CompileReturnValue(re.Expression(), re.Distinct() != nil)
+	if re := ctx.ReturnExpression(); re != nil {
+		valReg := c.compileReturnOperand(re.ReturnValue(), re.Distinct() != nil)
 
-		// Emit a return instruction with the expression result
 		c.ctx.Program.Emitter.EmitA(bytecode.OpReturn, valReg)
 	}
 }
 
-// compileTerminalForResult preserves the top-level FOR result contract for
-// every body that can return a loop directly, including block-bodied UDFs.
-func (c *StatementCompiler) compileTerminalForResult(ctx fql.IForExpressionContext) {
+func (c *StatementCompiler) emitImplicitNoneReturn() {
+	c.ctx.Program.Emitter.EmitA(bytecode.OpReturn, bytecode.NoopOperand)
+}
+
+// compileReturnOperand compiles an explicit RETURN operand, including a
+// directly returned FOR expression.
+func (c *StatementCompiler) compileReturnOperand(ctx fql.IReturnValueContext, distinct bool) bytecode.Operand {
 	if ctx == nil {
-		return
+		return bytecode.NoopOperand
 	}
 
-	out := c.loops.Compile(ctx)
-	c.ctx.Program.Emitter.EmitA(bytecode.OpReturn, out)
+	if expr := ctx.Expression(); expr != nil {
+		return c.CompileReturnValue(expr, distinct)
+	}
+
+	loop := ctx.ForExpression()
+	if loop == nil {
+		return bytecode.NoopOperand
+	}
+
+	valReg := ensureOperandRegister(c.ctx, c.facts, c.loops.Compile(loop))
+
+	return c.compileReturnDistinct(valReg, loop.(antlr.ParserRuleContext), distinct)
 }
 
 // CompileReturnValue compiles a non-loop return expression and applies its
@@ -149,6 +147,11 @@ func (c *StatementCompiler) CompileReturnValue(expr fql.IExpressionContext, dist
 	}
 
 	valReg := ensureOperandRegister(c.ctx, c.facts, c.exprs.Compile(expr))
+
+	return c.compileReturnDistinct(valReg, expr.(antlr.ParserRuleContext), distinct)
+}
+
+func (c *StatementCompiler) compileReturnDistinct(valReg bytecode.Operand, ctx antlr.ParserRuleContext, distinct bool) bytecode.Operand {
 	if !distinct {
 		return valReg
 	}
@@ -156,13 +159,13 @@ func (c *StatementCompiler) CompileReturnValue(expr fql.IExpressionContext, dist
 	switch c.facts.OperandType(valReg) {
 	case core.TypeArray, core.TypeList, core.TypeUnknown, core.TypeAny:
 	default:
-		err := c.ctx.Program.Errors.Create(parserd.SemanticError, expr, "RETURN DISTINCT requires an array expression")
+		err := c.ctx.Program.Errors.Create(parserd.SemanticError, ctx, "RETURN DISTINCT requires an array expression")
 		c.ctx.Program.Errors.Add(err)
 		return valReg
 	}
 
 	dst := c.ctx.Function.Registers.Allocate()
-	c.ctx.Program.Emitter.WithSpan(parserd.SpanFromRuleContext(expr), func() {
+	c.ctx.Program.Emitter.WithSpan(parserd.SpanFromRuleContext(ctx), func() {
 		c.ctx.Program.Emitter.EmitAB(bytecode.OpDistinct, dst, valReg)
 	})
 	c.ctx.Function.Types.Set(dst, core.TypeArray)
@@ -170,9 +173,7 @@ func (c *StatementCompiler) CompileReturnValue(expr fql.IExpressionContext, dist
 	return dst
 }
 
-// CompileFunctionStatement processes a statement inside a UDF body.
-// It supports variable declarations, nested function declarations, expression statements,
-// function calls, and other statements allowed in the main body.
+// CompileFunctionStatement compiles a value-discarding UDF block statement.
 func (c *StatementCompiler) CompileFunctionStatement(ctx fql.IFunctionStatementContext) {
 	if ctx == nil {
 		return
@@ -205,6 +206,8 @@ func (c *StatementCompiler) compileFunctionStatement(stmt *fql.FunctionStatement
 		c.wait.Compile(stmt.WaitForExpression())
 	case stmt.DispatchExpression() != nil:
 		c.dispatch.Compile(stmt.DispatchExpression())
+	case stmt.ForExpression() != nil:
+		c.loops.Compile(stmt.ForExpression())
 	case stmt.ExpressionStatement() != nil:
 		c.CompileExpressionStatement(stmt.ExpressionStatement())
 	}

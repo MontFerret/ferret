@@ -10,32 +10,32 @@ import (
 func TestForNested(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		Array(`
-			FOR prop IN ["a"]
+			RETURN FOR prop IN ["a"]
 				FOR val IN [1, 2, 3]
 					RETURN {[prop]: val}
 `, []any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
 		),
 		Array(`
-			FOR val IN 1..3
+			RETURN FOR val IN 1..3
 				FOR prop IN ["a"]
 					RETURN {[prop]: val}
 `, []any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
 		),
 		Array(`
-			FOR prop IN ["a"]
+			RETURN FOR prop IN ["a"]
 				FOR val IN 1..3
 					RETURN {[prop]: val}
 `, []any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
 		),
 		Array(`
-			FOR prop IN ["a"]
+			RETURN FOR prop IN ["a"]
 				FOR val IN [1, 2, 3]
 					FOR val2 IN [1, 2, 3]
 						RETURN { [prop]: [val, val2] }
 `, []any{map[string]any{"a": []int{1, 1}}, map[string]any{"a": []int{1, 2}}, map[string]any{"a": []int{1, 3}}, map[string]any{"a": []int{2, 1}}, map[string]any{"a": []int{2, 2}}, map[string]any{"a": []int{2, 3}}, map[string]any{"a": []int{3, 1}}, map[string]any{"a": []int{3, 2}}, map[string]any{"a": []int{3, 3}}},
 		),
 		Array(`
-			FOR val IN [1, 2, 3]
+			RETURN FOR val IN [1, 2, 3]
 				RETURN (
 					FOR prop IN ["a", "b", "c"]
 						RETURN { [prop]: val }
@@ -43,7 +43,7 @@ func TestForNested(t *testing.T) {
 `, []any{[]any{map[string]any{"a": 1}, map[string]any{"b": 1}, map[string]any{"c": 1}}, []any{map[string]any{"a": 2}, map[string]any{"b": 2}, map[string]any{"c": 2}}, []any{map[string]any{"a": 3}, map[string]any{"b": 3}, map[string]any{"c": 3}}},
 		),
 		Array(`
-			FOR val IN [1, 2, 3]
+			RETURN FOR val IN [1, 2, 3]
 			LET sub = (
 				FOR prop IN ["a", "b", "c"]
 					RETURN { [prop]: val }
@@ -69,7 +69,7 @@ func TestForNested(t *testing.T) {
 			
 			LET targetSkills = ["JavaScript", "Python", "Go", "Java"]
 			
-			FOR u IN users
+			RETURN FOR u IN users
 				LET matchingSkills = (
 					FOR skill IN targetSkills
 						FILTER skill IN u.skills
@@ -111,7 +111,7 @@ func TestForNested(t *testing.T) {
 			LET budgets = [1000000, 500000, 300000]
 			LET headcounts = [20, 10, 5]
 			
-			FOR i IN 0..2
+			RETURN FOR i IN 0..2
 				LET dept = departments[i]
 				LET budget = budgets[i]
 				LET headcount = headcounts[i]
@@ -231,7 +231,7 @@ func TestForNested(t *testing.T) {
 				}
 			]
 			
-			FOR u IN users
+			RETURN FOR u IN users
 				LET activeProjects = (
 					FOR p IN u.projects
 						FILTER p.status == "active"
@@ -263,7 +263,7 @@ func TestForNested(t *testing.T) {
 		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 			
-			FOR s IN strs
+			RETURN FOR s IN strs
 				SORT s
 				FOR n IN 0..1
 					RETURN CONCAT(s, n)
@@ -271,7 +271,7 @@ func TestForNested(t *testing.T) {
 		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 			
-			FOR n IN 0..1
+			RETURN FOR n IN 0..1
 				FOR s IN strs
 					SORT s
 					RETURN CONCAT(s, n)
@@ -295,7 +295,7 @@ func TestForNested(t *testing.T) {
 				}
 			]
 			
-			FOR n IN 0..1
+			RETURN FOR n IN 0..1
 				FOR u IN users
 					SORT u.gender, u.age
 					RETURN CONCAT(u.name, n)
@@ -303,7 +303,7 @@ func TestForNested(t *testing.T) {
 		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 			
-			FOR n IN 0..1
+			RETURN FOR n IN 0..1
 				FOR m IN 0..1
 					FOR s IN strs
 						SORT s
@@ -312,7 +312,7 @@ func TestForNested(t *testing.T) {
 		Array(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 			
-			FOR n IN 0..1
+			RETURN FOR n IN 0..1
 				FOR s IN strs
 					SORT s
 					FOR m IN 0..1
@@ -351,7 +351,7 @@ func TestForNested(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR n IN 0..1
+			RETURN FOR n IN 0..1
 				FOR i IN users
 					COLLECT gender = i.gender
 					RETURN CONCAT(gender, n)
@@ -389,7 +389,7 @@ func TestForNested(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT gender = i.gender
 				FOR n IN 0..1
 					RETURN CONCAT(gender, n)
@@ -427,7 +427,7 @@ func TestForNested(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR n IN 0..1
+			RETURN FOR n IN 0..1
 				FOR i IN users
 					COLLECT gender = i.gender INTO genders
 					RETURN {
@@ -568,7 +568,7 @@ func TestForNested(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR i IN users
+			RETURN FOR i IN users
 				COLLECT gender = i.gender INTO genders
 				FOR n IN 0..1
 					RETURN {
@@ -709,7 +709,7 @@ func TestForNested(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR n IN 0..1
+			RETURN FOR n IN 0..1
 				FOR u IN users
 				  COLLECT gender = u.gender
 					AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
@@ -775,7 +775,7 @@ func TestForNested(t *testing.T) {
 				}
 			]
 			
-			FOR u IN users
+			RETURN FOR u IN users
 			  COLLECT gender = u.gender
 				AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
 				FOR n IN 0..1
@@ -839,7 +839,7 @@ func TestForNested(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR n IN 0..1
+			RETURN FOR n IN 0..1
 				FOR u IN users
   				COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
 				
@@ -908,7 +908,7 @@ func TestForNested(t *testing.T) {
 					department: "Marketing"
 				}
 			]
-			FOR d IN departments
+			RETURN FOR d IN departments
 				LET deptUsers = (
 					FOR u IN users
 						FILTER u.department == d.name
