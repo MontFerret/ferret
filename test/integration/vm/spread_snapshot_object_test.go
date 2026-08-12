@@ -15,8 +15,6 @@ type spreadSnapshotObject struct {
 	fallbackCalls int
 }
 
-func (*spreadSnapshotObject) ObjectLike() {}
-
 func (s *spreadSnapshotObject) Snapshot(context.Context) (*runtime.Object, error) {
 	s.snapshotCalls++
 

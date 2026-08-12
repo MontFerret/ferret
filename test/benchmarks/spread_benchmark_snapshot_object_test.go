@@ -11,8 +11,6 @@ type benchmarkSnapshotObject struct {
 	snapshot *runtime.Object
 }
 
-func (*benchmarkSnapshotObject) ObjectLike() {}
-
 func (b *benchmarkSnapshotObject) Snapshot(context.Context) (*runtime.Object, error) {
 	return b.snapshot, nil
 }

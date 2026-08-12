@@ -100,14 +100,14 @@ func BenchmarkObjectSpread_O1(b *testing.B) {
 	RunBenchmarkO1(b, objectSpreadQuery)
 }
 
-func BenchmarkObjectSpreadHostObjectLike_O0(b *testing.B) {
-	RunBenchmarkO0(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkObjectLike{
+func BenchmarkObjectSpreadHostMap_O0(b *testing.B) {
+	RunBenchmarkO0(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkMap{
 		Map: benchmarkSpreadObject(),
 	}))
 }
 
-func BenchmarkObjectSpreadHostObjectLike_O1(b *testing.B) {
-	RunBenchmarkO1(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkObjectLike{
+func BenchmarkObjectSpreadHostMap_O1(b *testing.B) {
+	RunBenchmarkO1(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkMap{
 		Map: benchmarkSpreadObject(),
 	}))
 }

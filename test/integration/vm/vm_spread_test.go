@@ -53,7 +53,7 @@ RETURN [source.nested.value, copied.nested.value]
 		Array(`RETURN [...HOST_ARRAY()]`, []any{1, 2}, "host-returned Array can be spread"),
 		Object(`RETURN { ...HOST_OBJECT() }`, map[string]any{"value": 1}, "host-returned Object can be spread"),
 		Error(`RETURN [...(1..2)]`, "generic iterable values cannot be spread into arrays"),
-		Error(`RETURN { ...HOST_MAP() }`, "Map values without ObjectLike cannot be spread into objects"),
+		Object(`RETURN { ...HOST_MAP() }`, map[string]any{"value": 1}, "host-returned Map can be spread"),
 		Array(`RETURN ([...FAIL()]) ON ERROR RETURN ["recovered"]`, []any{"recovered"}, "spread-source failures use normal recovery"),
 	},
 		vm.WithFunction("HOST_ARRAY", func(context.Context, ...runtime.Value) (runtime.Value, error) {
@@ -75,12 +75,12 @@ func TestLiteralSpreadRuntimeCollections(t *testing.T) {
 	query := `
 LET genericList = HOST_LIST()
 LET snapshotList = HOST_SNAPSHOT_LIST()
-LET genericObject = HOST_OBJECT_LIKE()
+LET genericMap = HOST_MAP()
 LET snapshotObject = HOST_SNAPSHOT_OBJECT()
 
 RETURN {
   lists: [[...genericList], [...snapshotList]],
-  objects: [{...genericObject}, {...snapshotObject}]
+  objects: [{...genericMap}, {...snapshotObject}]
 }
 `
 
@@ -121,8 +121,8 @@ RETURN {
 				vm.WithFunction("HOST_SNAPSHOT_LIST", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 					return snapshotList, nil
 				}),
-				vm.WithFunction("HOST_OBJECT_LIKE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-					return &spreadObjectLike{
+				vm.WithFunction("HOST_MAP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+					return genericMap{
 						Map: runtime.NewObjectWith(map[string]runtime.Value{
 							"active": runtime.True,
 							"value":  runtime.NewInt(1),
@@ -230,7 +230,7 @@ func TestLiteralSpreadSnapshotCapabilityDoesNotDefineCompatibility(t *testing.T)
 
 	RunSpecs(t, []spec.Spec{
 		Error(`RETURN [...HOST_LIST_SNAPSHOT_ONLY()]`, "ListSnapshotter without List remains invalid"),
-		Error(`RETURN {...HOST_MAP_SNAPSHOT_ONLY()}`, "MapSnapshotter without ObjectLike remains invalid"),
+		Error(`RETURN {...HOST_MAP_SNAPSHOT_ONLY()}`, "MapSnapshotter without Map remains invalid"),
 	},
 		vm.WithFunction("HOST_LIST_SNAPSHOT_ONLY", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 			return struct {
