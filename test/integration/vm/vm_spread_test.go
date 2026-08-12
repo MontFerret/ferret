@@ -434,7 +434,7 @@ func TestLiteralSpreadTypeErrors(t *testing.T) {
 			query:   `RETURN {...1}`,
 			message: "cannot spread Int into Object",
 			span:    `...1`,
-			hint:    "Spread an Object value or none inside an object literal",
+			hint:    "Spread a Map value or none inside an object literal",
 		},
 	}
 
@@ -507,7 +507,7 @@ func assertSpreadErrorSpan(t *testing.T, runtimeErr *vm.RuntimeError, query, wan
 
 		if !slices.Contains([]string{
 			"expected List or none in array literal",
-			"expected Object or none in object literal",
+			"expected Map or none in object literal",
 		}, span.Label) {
 			t.Fatalf("unexpected spread error label: %q", span.Label)
 		}
