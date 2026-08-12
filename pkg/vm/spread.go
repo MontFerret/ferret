@@ -50,14 +50,14 @@ func spreadObject(ctx context.Context, destination *data.FastObject, source runt
 		return destination.Merge(ctx, object)
 	}
 
-	objectLike, ok := source.(runtime.ObjectLike)
+	mapValue, ok := source.(runtime.Map)
 	if !ok {
-		return diagnostics.SpreadErrorOf(source, runtime.TypeObject, runtime.TypeObject)
+		return diagnostics.SpreadErrorOf(source, runtime.TypeObject, runtime.TypeMap)
 	}
 
 	snapshotter, ok := source.(runtime.MapSnapshotter)
 	if !ok {
-		return destination.Merge(ctx, objectLike)
+		return destination.Merge(ctx, mapValue)
 	}
 
 	snapshot, err := snapshotter.Snapshot(ctx)
