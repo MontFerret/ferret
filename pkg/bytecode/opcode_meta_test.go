@@ -3,7 +3,7 @@ package bytecode
 import "testing"
 
 func TestOpcodeInfoCompleteness(t *testing.T) {
-	for op := Opcode(0); op <= OpStreamGroupArmDone; op++ {
+	for op := Opcode(0); op <= OpAssertDestructure; op++ {
 		info := OpcodeInfoOf(op)
 
 		if info.Class == OpcodeClassUnknown {

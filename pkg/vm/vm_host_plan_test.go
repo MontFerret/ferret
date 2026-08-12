@@ -41,6 +41,32 @@ func TestNewWith_InlinesHostCallIDs(t *testing.T) {
 	}
 }
 
+func TestBuildExecPlanPreservesRegisterFactsAcrossDestructureAssertion(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  1,
+		Constants:  []runtime.Value{runtime.Int(0)},
+		Functions: bytecode.Functions{
+			Host: []bytecode.HostFunction{{Name: "F", ArgCount: 0}},
+		},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+			bytecode.NewInstruction(bytecode.OpAssertDestructure, bytecode.NewRegister(0), bytecode.Operand(bytecode.DestructureModeObject)),
+			bytecode.NewInstruction(bytecode.OpHCall, bytecode.NewRegister(0)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+	}
+
+	plan, err := buildExecPlan(program)
+	if err != nil {
+		t.Fatalf("buildExecPlan() error: %v", err)
+	}
+
+	if got, want := len(plan.hostCallDescriptors), 1; got != want {
+		t.Fatalf("host call descriptors = %d, want %d", got, want)
+	}
+}
+
 func TestNewWith_HostCallIDsAreCompactAndOrdered(t *testing.T) {
 	program := newHostCallProgram(
 		hostCallSpec{name: "F", args: []runtime.Value{runtime.NewInt(1)}},

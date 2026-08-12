@@ -9,6 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type BindingCompiler struct {
@@ -56,6 +57,18 @@ func (c *BindingCompiler) IsPromotedDeclaration(decl antlr.ParserRuleContext) bo
 func (c *BindingCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationContext) bytecode.Operand {
 	if ctx == nil {
 		return bytecode.NoopOperand
+	}
+
+	pattern := ctx.StructuredBindingPattern()
+	if pattern != nil {
+		leaves := declarationBindingPatternLeaves(ctx)
+		if duplicate, first, ok := duplicateBindingPatternLeaf(leaves); ok {
+			c.ctx.Program.Errors.DuplicateDestructuringBinding(duplicate.Context, first.Context, duplicate.Name)
+
+			return bytecode.NoopOperand
+		}
+
+		return c.compileDestructuringDeclaration(ctx, pattern)
 	}
 
 	name := c.declarationName(ctx)
@@ -119,6 +132,213 @@ func (c *BindingCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclaratio
 
 	c.ctx.Function.Types.Set(src, srcType)
 	return src
+}
+
+func (c *BindingCompiler) compileDestructuringDeclaration(
+	ctx fql.IVariableDeclarationContext,
+	pattern fql.IStructuredBindingPatternContext,
+) bytecode.Operand {
+	src := c.exprs.Compile(ctx.Expression())
+	if src == bytecode.NoopOperand {
+		return bytecode.NoopOperand
+	}
+
+	src = ensureOperandRegister(c.ctx, c.facts, src)
+	c.compileDestructuringPattern(pattern, src, c.isMutableDeclaration(ctx))
+
+	return src
+}
+
+func (c *BindingCompiler) compileDestructuringPattern(
+	pattern fql.IStructuredBindingPatternContext,
+	src bytecode.Operand,
+	mutable bool,
+) {
+	if pattern == nil {
+		return
+	}
+
+	if object := pattern.ObjectBindingPattern(); object != nil {
+		c.emitDestructuringAssertion(object.(antlr.ParserRuleContext), src, bytecode.DestructureModeObject)
+
+		for _, entry := range object.AllObjectBindingEntry() {
+			c.compileObjectDestructuringEntry(entry, src, mutable)
+		}
+
+		return
+	}
+
+	if array := pattern.ArrayBindingPattern(); array != nil {
+		c.emitDestructuringAssertion(array.(antlr.ParserRuleContext), src, bytecode.DestructureModeArray)
+
+		for index, child := range array.AllBindingPattern() {
+			c.compileArrayDestructuringEntry(child, src, index, mutable)
+		}
+	}
+}
+
+func (c *BindingCompiler) compileObjectDestructuringEntry(
+	entry fql.IObjectBindingEntryContext,
+	src bytecode.Operand,
+	mutable bool,
+) {
+	if entry == nil || entry.BindingIdentifier() == nil {
+		return
+	}
+
+	key := textOfBindingIdentifier(entry.BindingIdentifier())
+	nested := entry.BindingPattern()
+	if nested != nil && nested.IgnoreIdentifier() != nil {
+		return
+	}
+
+	keyConst := c.ctx.Function.Symbols.AddConstant(runtime.String(key))
+	entryCtx := entry.(antlr.ParserRuleContext)
+
+	if nested == nil {
+		leafCtx := entry.BindingIdentifier().(antlr.ParserRuleContext)
+		c.compileDestructuringLeaf(key, leafCtx, mutable, func(dst bytecode.Operand) {
+			c.emitObjectDestructuringLoad(entryCtx, dst, src, keyConst)
+		})
+
+		return
+	}
+
+	if id := nested.BindingIdentifier(); id != nil {
+		leafCtx := id.(antlr.ParserRuleContext)
+		c.compileDestructuringLeaf(textOfBindingIdentifier(id), leafCtx, mutable, func(dst bytecode.Operand) {
+			c.emitObjectDestructuringLoad(entryCtx, dst, src, keyConst)
+		})
+
+		return
+	}
+
+	structured := nested.StructuredBindingPattern()
+	if structured == nil {
+		return
+	}
+
+	child := c.ctx.Function.Registers.Allocate()
+	c.emitObjectDestructuringLoad(entryCtx, child, src, keyConst)
+	c.compileDestructuringPattern(structured, child, mutable)
+}
+
+func (c *BindingCompiler) compileArrayDestructuringEntry(
+	pattern fql.IBindingPatternContext,
+	src bytecode.Operand,
+	index int,
+	mutable bool,
+) {
+	if pattern == nil || pattern.IgnoreIdentifier() != nil {
+		return
+	}
+
+	indexConst := c.ctx.Function.Symbols.AddConstant(runtime.Int(index))
+	patternCtx := pattern.(antlr.ParserRuleContext)
+
+	if id := pattern.BindingIdentifier(); id != nil {
+		leafCtx := id.(antlr.ParserRuleContext)
+		c.compileDestructuringLeaf(textOfBindingIdentifier(id), leafCtx, mutable, func(dst bytecode.Operand) {
+			c.emitArrayDestructuringLoad(patternCtx, dst, src, indexConst)
+		})
+
+		return
+	}
+
+	structured := pattern.StructuredBindingPattern()
+	if structured == nil {
+		return
+	}
+
+	child := c.ctx.Function.Registers.Allocate()
+	c.emitArrayDestructuringLoad(patternCtx, child, src, indexConst)
+	c.compileDestructuringPattern(structured, child, mutable)
+}
+
+func (c *BindingCompiler) compileDestructuringLeaf(
+	name string,
+	ctx antlr.ParserRuleContext,
+	mutable bool,
+	load func(dst bytecode.Operand),
+) bytecode.Operand {
+	target, ok := c.declareDestructuringLeaf(name, ctx, mutable)
+	if !ok {
+		return bytecode.NoopOperand
+	}
+
+	load(target.Load)
+	c.ctx.Function.Types.Set(target.Load, core.TypeAny)
+
+	if target.Storage == core.BindingStorageCell {
+		c.ctx.Program.Emitter.EmitMakeCell(target.Destination, target.Load)
+		c.ctx.Function.Types.Set(target.Destination, core.TypeAny)
+	}
+
+	return target.Destination
+}
+
+func (c *BindingCompiler) declareDestructuringLeaf(
+	name string,
+	ctx antlr.ParserRuleContext,
+	mutable bool,
+) (destructuringBindingTarget, bool) {
+	storage := c.declarationStorage(ctx, mutable)
+	opts := core.BindingOptions{
+		ID:      bindingIDFromRule(ctx),
+		Mutable: mutable,
+		Storage: storage,
+	}
+
+	dest, ok := c.declareBinding(name, core.TypeAny, opts)
+	if !ok {
+		c.ctx.Program.Errors.VariableNotUnique(ctx, name)
+
+		return destructuringBindingTarget{}, false
+	}
+
+	target := destructuringBindingTarget{
+		Destination: dest,
+		Load:        dest,
+		Storage:     storage,
+	}
+
+	if storage == core.BindingStorageCell {
+		target.Load = c.ctx.Function.Registers.Allocate()
+	}
+
+	return target, true
+}
+
+func (c *BindingCompiler) emitDestructuringAssertion(
+	ctx antlr.ParserRuleContext,
+	src bytecode.Operand,
+	mode bytecode.DestructureMode,
+) {
+	c.ctx.Program.Emitter.WithSpan(parserd.SpanFromRuleContext(ctx), func() {
+		c.ctx.Program.Emitter.EmitAssertDestructure(src, mode)
+	})
+}
+
+func (c *BindingCompiler) emitObjectDestructuringLoad(
+	ctx antlr.ParserRuleContext,
+	dst bytecode.Operand,
+	src bytecode.Operand,
+	key bytecode.Operand,
+) {
+	c.ctx.Program.Emitter.WithSpan(parserd.SpanFromRuleContext(ctx), func() {
+		c.ctx.Program.Emitter.EmitABC(bytecode.OpLoadKeyOptionalConst, dst, src, key)
+	})
+}
+
+func (c *BindingCompiler) emitArrayDestructuringLoad(
+	ctx antlr.ParserRuleContext,
+	dst bytecode.Operand,
+	src bytecode.Operand,
+	index bytecode.Operand,
+) {
+	c.ctx.Program.Emitter.WithSpan(parserd.SpanFromRuleContext(ctx), func() {
+		c.ctx.Program.Emitter.EmitABC(bytecode.OpLoadIndexOptionalConst, dst, src, index)
+	})
 }
 
 func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatementContext) bytecode.Operand {
@@ -225,12 +445,35 @@ func (c *BindingCompiler) captureBindingForDeclaration(ctx fql.IVariableDeclarat
 		return captureBindingInfo{}
 	}
 
+	decl := ctx.(antlr.ParserRuleContext)
+
 	return captureBindingInfo{
 		Name:    c.declarationName(ctx),
 		Mutable: c.isMutableDeclaration(ctx),
-		Decl:    ctx.(antlr.ParserRuleContext),
-		ID:      bindingIDFromRule(ctx.(antlr.ParserRuleContext)),
+		Decl:    decl,
+		ID:      bindingIDFromRule(decl),
 	}
+}
+
+func (c *BindingCompiler) captureBindingsForDestructuringDeclaration(ctx fql.IVariableDeclarationContext) []captureBindingInfo {
+	if ctx == nil || ctx.StructuredBindingPattern() == nil {
+		return nil
+	}
+
+	mutable := c.isMutableDeclaration(ctx)
+	leaves := declarationBindingPatternLeaves(ctx)
+	bindings := make([]captureBindingInfo, 0, len(leaves))
+
+	for _, leaf := range leaves {
+		bindings = append(bindings, captureBindingInfo{
+			Name:    leaf.Name,
+			Mutable: mutable,
+			Decl:    leaf.Declaration,
+			ID:      leaf.ID,
+		})
+	}
+
+	return bindings
 }
 
 func (c *BindingCompiler) declarationName(ctx fql.IVariableDeclarationContext) string {

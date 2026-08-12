@@ -1099,3 +1099,33 @@ func (s *BaseFqlParserListener) EnterErrorOperator(ctx *ErrorOperatorContext) {}
 
 // ExitErrorOperator is called when production errorOperator is exited.
 func (s *BaseFqlParserListener) ExitErrorOperator(ctx *ErrorOperatorContext) {}
+
+// EnterBindingPattern is called when production bindingPattern is entered.
+func (s *BaseFqlParserListener) EnterBindingPattern(ctx *BindingPatternContext) {}
+
+// ExitBindingPattern is called when production bindingPattern is exited.
+func (s *BaseFqlParserListener) ExitBindingPattern(ctx *BindingPatternContext) {}
+
+// EnterStructuredBindingPattern is called when production structuredBindingPattern is entered.
+func (s *BaseFqlParserListener) EnterStructuredBindingPattern(ctx *StructuredBindingPatternContext) {}
+
+// ExitStructuredBindingPattern is called when production structuredBindingPattern is exited.
+func (s *BaseFqlParserListener) ExitStructuredBindingPattern(ctx *StructuredBindingPatternContext) {}
+
+// EnterObjectBindingPattern is called when production objectBindingPattern is entered.
+func (s *BaseFqlParserListener) EnterObjectBindingPattern(ctx *ObjectBindingPatternContext) {}
+
+// ExitObjectBindingPattern is called when production objectBindingPattern is exited.
+func (s *BaseFqlParserListener) ExitObjectBindingPattern(ctx *ObjectBindingPatternContext) {}
+
+// EnterObjectBindingEntry is called when production objectBindingEntry is entered.
+func (s *BaseFqlParserListener) EnterObjectBindingEntry(ctx *ObjectBindingEntryContext) {}
+
+// ExitObjectBindingEntry is called when production objectBindingEntry is exited.
+func (s *BaseFqlParserListener) ExitObjectBindingEntry(ctx *ObjectBindingEntryContext) {}
+
+// EnterArrayBindingPattern is called when production arrayBindingPattern is entered.
+func (s *BaseFqlParserListener) EnterArrayBindingPattern(ctx *ArrayBindingPatternContext) {}
+
+// ExitArrayBindingPattern is called when production arrayBindingPattern is exited.
+func (s *BaseFqlParserListener) ExitArrayBindingPattern(ctx *ArrayBindingPatternContext) {}

@@ -531,4 +531,19 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#errorOperator.
 	VisitErrorOperator(ctx *ErrorOperatorContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#bindingPattern.
+	VisitBindingPattern(ctx *BindingPatternContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#structuredBindingPattern.
+	VisitStructuredBindingPattern(ctx *StructuredBindingPatternContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#objectBindingPattern.
+	VisitObjectBindingPattern(ctx *ObjectBindingPatternContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#objectBindingEntry.
+	VisitObjectBindingEntry(ctx *ObjectBindingEntryContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#arrayBindingPattern.
+	VisitArrayBindingPattern(ctx *ArrayBindingPatternContext) interface{}
 }

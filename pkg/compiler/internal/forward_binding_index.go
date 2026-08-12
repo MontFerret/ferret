@@ -180,7 +180,11 @@ func (i *ForwardBindingIndex) buildForExpression(ctx fql.IForExpressionContext, 
 		i.collectNestedScopes(ctx.Expression(), scope)
 	}
 
-	if val := ctx.GetValueVariable(); val != nil {
+	if pattern := ctx.GetValuePattern(); pattern != nil {
+		for _, leaf := range structuredBindingPatternLeaves(pattern) {
+			i.recordDeclaration(leaf.Name, leaf.Context, scope)
+		}
+	} else if val := ctx.GetValueVariable(); val != nil {
 		i.recordDeclaration(textOfLoopVariable(val), i.ruleContext(val), scope)
 	}
 
@@ -289,6 +293,14 @@ func (i *ForwardBindingIndex) buildVariableDeclaration(ctx fql.IVariableDeclarat
 	}
 
 	i.collectNestedScopes(ctx.Expression(), scope)
+	if ctx.StructuredBindingPattern() != nil {
+		for _, leaf := range declarationBindingPatternLeaves(ctx) {
+			i.recordDeclaration(leaf.Name, leaf.Context, scope)
+		}
+
+		return
+	}
+
 	i.recordDeclaration(bindingDeclarationName(ctx), i.declarationContext(ctx), scope)
 }
 

@@ -365,6 +365,9 @@ func applyStreamUseDef(opcode bytecode.Opcode, dst, src1, src2 bytecode.Operand,
 
 func applyUtilityUseDef(opcode bytecode.Opcode, dst bytecode.Operand, collector *useDefCollector) bool {
 	switch opcode {
+	case bytecode.OpAssertDestructure:
+		collector.addUse(dst)
+		return true
 	case bytecode.OpClose:
 		collector.addUse(dst)
 		collector.addDef(dst)

@@ -363,6 +363,9 @@ func instructionUseDef(inst bytecode.Instruction) (uses []int, defs []int) {
 	case bytecode.OpSleep:
 		addUse(dst)
 		return
+	case bytecode.OpAssertDestructure:
+		addUse(dst)
+		return
 	}
 
 	return

@@ -59,7 +59,9 @@ func (f *statementFormatter) formatVariableDeclaration(ctx *fql.VariableDeclarat
 
 	f.p.space()
 
-	if id := ctx.Identifier(); id != nil {
+	if pattern := ctx.StructuredBindingPattern(); pattern != nil {
+		f.bindings.formatStructured(pattern.(*fql.StructuredBindingPatternContext))
+	} else if id := ctx.Identifier(); id != nil {
 		f.p.write(id.GetText())
 	} else if id := ctx.IgnoreIdentifier(); id != nil {
 		f.p.write(id.GetText())
@@ -371,17 +373,19 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 
 	f.writeKeyword(keywordFor)
 
-	writeValueVariable := true
-
-	if ctx.In() == nil {
-		if tok := ctx.GetValueVariable(); tok != nil && tok.GetText() == "_" {
+	if pattern := ctx.GetValuePattern(); pattern != nil {
+		f.p.space()
+		f.bindings.formatStructured(pattern.(*fql.StructuredBindingPatternContext))
+	} else {
+		writeValueVariable := true
+		if tok := ctx.GetValueVariable(); ctx.In() == nil && tok != nil && tok.GetText() == "_" {
 			writeValueVariable = false
 		}
-	}
 
-	if tok := ctx.GetValueVariable(); tok != nil && writeValueVariable {
-		f.p.space()
-		f.p.write(tok.GetText())
+		if tok := ctx.GetValueVariable(); tok != nil && writeValueVariable {
+			f.p.space()
+			f.p.write(tok.GetText())
+		}
 	}
 
 	if tok := ctx.GetCounterVariable(); tok != nil {

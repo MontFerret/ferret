@@ -2,13 +2,13 @@ package diagnostics
 
 import "errors"
 
-type memberDiagnostic interface {
+type structuredRuntimeDiagnostic interface {
 	Label() string
 	Note() string
 	Hint() string
 }
 
-func memberRuntimeDiagnostic(err error) (memberDiagnostic, bool) {
+func runtimeDiagnosticDetails(err error) (structuredRuntimeDiagnostic, bool) {
 	var accessErr *MemberAccessError
 	if errors.As(err, &accessErr) {
 		return accessErr, true

@@ -43,10 +43,7 @@ func (c *CaptureAnalyzer) AnalyzeProgram(body *fql.BodyContext) {
 
 		switch {
 		case stmt.VariableDeclaration() != nil:
-			binding := c.bindings.captureBindingForDeclaration(stmt.VariableDeclaration())
-			if binding.Name != "" {
-				env.addBinding(binding)
-			}
+			c.addDeclarationCaptureBindings(env, stmt.VariableDeclaration())
 		case stmt.FunctionDeclaration() != nil:
 			decl := stmt.FunctionDeclaration().(*fql.FunctionDeclarationContext)
 			name := decl.FunctionName().GetText()
@@ -104,11 +101,7 @@ func (c *CaptureAnalyzer) analyzeFunction(fn *core.UDFInfo, env *udfCaptureEnv) 
 						c.collectAssignments(decl.Expression(), env, state)
 					}
 
-					binding := c.bindings.captureBindingForDeclaration(decl)
-					if binding.Name != "" {
-						env.addBinding(binding)
-						state.owned[binding.ID] = binding
-					}
+					c.addOwnedDeclarationCaptureBindings(env, state, decl)
 				case stmt.AssignmentStatement() != nil:
 					c.collectVars(stmt.AssignmentStatement(), env, state)
 					c.collectAssignments(stmt.AssignmentStatement(), env, state)
@@ -177,9 +170,14 @@ func (c *CaptureAnalyzer) collectForExpression(
 	env.push()
 	defer env.pop()
 
-	if value := ctx.GetValueVariable(); value != nil {
+	if pattern := ctx.GetValuePattern(); pattern != nil {
+		for _, leaf := range structuredBindingPatternLeaves(pattern) {
+			c.addLoopCaptureBinding(env, state, leaf.Context, leaf.Name)
+		}
+	} else if value := ctx.GetValueVariable(); value != nil {
 		c.addLoopCaptureBinding(env, state, value, textOfLoopVariable(value))
 	}
+
 	if counter := ctx.GetCounterVariable(); counter != nil {
 		c.addLoopCaptureBinding(env, state, counter, textOfBindingIdentifier(counter))
 	}
@@ -216,9 +214,8 @@ func (c *CaptureAnalyzer) collectForExpressionBody(
 		if decl := stmt.VariableDeclaration(); decl != nil {
 			c.collectVars(decl.Expression(), env, state)
 			c.collectAssignments(decl.Expression(), env, state)
-			binding := c.bindings.captureBindingForDeclaration(decl)
-			env.addBinding(binding)
-			state.owned[binding.ID] = binding
+			c.addOwnedDeclarationCaptureBindings(env, state, decl)
+
 			return
 		}
 
@@ -233,6 +230,50 @@ func (c *CaptureAnalyzer) collectForExpressionBody(
 		if collect := clause.CollectClause(); collect != nil {
 			c.addCollectCaptureBindings(env, state, collect)
 		}
+	}
+}
+
+func (c *CaptureAnalyzer) addDeclarationCaptureBindings(env *udfCaptureEnv, decl fql.IVariableDeclarationContext) {
+	if decl == nil {
+		return
+	}
+
+	if decl.StructuredBindingPattern() != nil {
+		for _, binding := range c.bindings.captureBindingsForDestructuringDeclaration(decl) {
+			env.addBinding(binding)
+		}
+
+		return
+	}
+
+	binding := c.bindings.captureBindingForDeclaration(decl)
+	if binding.Name != "" {
+		env.addBinding(binding)
+	}
+}
+
+func (c *CaptureAnalyzer) addOwnedDeclarationCaptureBindings(
+	env *udfCaptureEnv,
+	state *udfCaptureState,
+	decl fql.IVariableDeclarationContext,
+) {
+	if decl == nil {
+		return
+	}
+
+	if decl.StructuredBindingPattern() != nil {
+		for _, binding := range c.bindings.captureBindingsForDestructuringDeclaration(decl) {
+			env.addBinding(binding)
+			state.owned[binding.ID] = binding
+		}
+
+		return
+	}
+
+	binding := c.bindings.captureBindingForDeclaration(decl)
+	if binding.Name != "" {
+		env.addBinding(binding)
+		state.owned[binding.ID] = binding
 	}
 }
 

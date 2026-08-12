@@ -438,6 +438,19 @@ func validateInstructions(program *Program) error {
 			if err := validateRegisterOperand(src1, registers, pc, "src1"); err != nil {
 				return err
 			}
+		case OpAssertDestructure:
+			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
+				return err
+			}
+
+			mode := DestructureMode(src1)
+			if !mode.Valid() {
+				return fmt.Errorf("%w: pc %d has invalid destructure mode %d", ErrInvalidInstruction, pc, src1)
+			}
+
+			if src2 != NoopOperand {
+				return fmt.Errorf("%w: pc %d src2 must be zero", ErrInvalidInstruction, pc)
+			}
 		case OpDeleteKey, OpDeleteProperty:
 			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
 				return err

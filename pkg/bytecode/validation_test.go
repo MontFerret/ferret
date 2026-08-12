@@ -44,6 +44,27 @@ func TestValidateProgram(t *testing.T) {
 			target: ErrInvalidInstruction,
 		},
 		{
+			name: "destructure_register_out_of_range",
+			program: withProgramMutation(func(program *Program) {
+				program.Bytecode[0] = NewInstruction(OpAssertDestructure, NewRegister(3), Operand(DestructureModeObject))
+			}),
+			target: ErrInvalidInstruction,
+		},
+		{
+			name: "destructure_invalid_mode",
+			program: withProgramMutation(func(program *Program) {
+				program.Bytecode[0] = NewInstruction(OpAssertDestructure, NewRegister(0), Operand(99))
+			}),
+			target: ErrInvalidInstruction,
+		},
+		{
+			name: "destructure_unexpected_third_operand",
+			program: withProgramMutation(func(program *Program) {
+				program.Bytecode[0] = NewInstruction(OpAssertDestructure, NewRegister(0), Operand(DestructureModeObject), Operand(1))
+			}),
+			target: ErrInvalidInstruction,
+		},
+		{
 			name: "constant_out_of_range",
 			program: withProgramMutation(func(program *Program) {
 				program.Bytecode[0] = NewInstruction(OpLoadConst, NewRegister(0), NewConstant(99))
@@ -261,6 +282,24 @@ func TestValidateProgramAllowsStreamGroupOpcodes(t *testing.T) {
 
 	if err := ValidateProgram(program); err != nil {
 		t.Fatalf("expected stream group opcodes to be valid, got %v", err)
+	}
+}
+
+func TestValidateProgramAllowsDestructureAssertions(t *testing.T) {
+	program := withProgramMutation(func(program *Program) {
+		program.Bytecode = []Instruction{
+			NewInstruction(OpAssertDestructure, NewRegister(0), Operand(DestructureModeObject)),
+			NewInstruction(OpAssertDestructure, NewRegister(0), Operand(DestructureModeArray)),
+			NewInstruction(OpReturn, NewRegister(0)),
+		}
+		program.Metadata.Labels = nil
+		program.Metadata.AggregateSelectorSlots = nil
+		program.Metadata.MatchFailTargets = nil
+		program.Metadata.DebugSpans = nil
+	})
+
+	if err := ValidateProgram(program); err != nil {
+		t.Fatalf("expected destructure assertions to be valid, got %v", err)
 	}
 }
 

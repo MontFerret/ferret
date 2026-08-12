@@ -45,13 +45,6 @@ func TestVarSyntaxErrors(t *testing.T) {
 			}, "VAR missing assignment value"),
 		Failure(
 			`
-			VAR _ = 1
-			RETURN 0
-		`, E{
-				Kind: parserd.SyntaxError,
-			}, "VAR cannot use discard binding"),
-		Failure(
-			`
 				VAR x = 0
 				RETURN (x = 1)
 			`, E{

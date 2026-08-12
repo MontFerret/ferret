@@ -177,6 +177,22 @@ func (c *UDFCatalogBuilder) validateVariableDeclarationConflict(decl fql.IVariab
 		return
 	}
 
+	if decl.StructuredBindingPattern() != nil {
+		for _, leaf := range declarationBindingPatternLeaves(decl) {
+			if _, exists := scope.Functions[leaf.Name]; !exists {
+				continue
+			}
+
+			c.ctx.Program.Errors.Add(c.ctx.Program.Errors.Create(
+				parserd.NameError,
+				leaf.Context,
+				fmt.Sprintf("Variable '%s' is already defined", leaf.Name),
+			))
+		}
+
+		return
+	}
+
 	name := bindingDeclarationName(decl)
 	if name == "" {
 		return

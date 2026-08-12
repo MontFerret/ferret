@@ -29,6 +29,7 @@ type (
 		State         bytecode.Operand
 		Distinct      bool
 		Allocate      bool
+		Destructured  bool
 	}
 )
 

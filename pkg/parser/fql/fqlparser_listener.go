@@ -532,6 +532,21 @@ type FqlParserListener interface {
 	// EnterErrorOperator is called when entering the errorOperator production.
 	EnterErrorOperator(c *ErrorOperatorContext)
 
+	// EnterBindingPattern is called when entering the bindingPattern production.
+	EnterBindingPattern(c *BindingPatternContext)
+
+	// EnterStructuredBindingPattern is called when entering the structuredBindingPattern production.
+	EnterStructuredBindingPattern(c *StructuredBindingPatternContext)
+
+	// EnterObjectBindingPattern is called when entering the objectBindingPattern production.
+	EnterObjectBindingPattern(c *ObjectBindingPatternContext)
+
+	// EnterObjectBindingEntry is called when entering the objectBindingEntry production.
+	EnterObjectBindingEntry(c *ObjectBindingEntryContext)
+
+	// EnterArrayBindingPattern is called when entering the arrayBindingPattern production.
+	EnterArrayBindingPattern(c *ArrayBindingPatternContext)
+
 	// ExitProgram is called when exiting the program production.
 	ExitProgram(c *ProgramContext)
 
@@ -1056,4 +1071,19 @@ type FqlParserListener interface {
 
 	// ExitErrorOperator is called when exiting the errorOperator production.
 	ExitErrorOperator(c *ErrorOperatorContext)
+
+	// ExitBindingPattern is called when exiting the bindingPattern production.
+	ExitBindingPattern(c *BindingPatternContext)
+
+	// ExitStructuredBindingPattern is called when exiting the structuredBindingPattern production.
+	ExitStructuredBindingPattern(c *StructuredBindingPatternContext)
+
+	// ExitObjectBindingPattern is called when exiting the objectBindingPattern production.
+	ExitObjectBindingPattern(c *ObjectBindingPatternContext)
+
+	// ExitObjectBindingEntry is called when exiting the objectBindingEntry production.
+	ExitObjectBindingEntry(c *ObjectBindingEntryContext)
+
+	// ExitArrayBindingPattern is called when exiting the arrayBindingPattern production.
+	ExitArrayBindingPattern(c *ArrayBindingPatternContext)
 }

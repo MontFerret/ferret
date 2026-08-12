@@ -197,6 +197,10 @@ func (c *LoopCompiler) buildProtectedForInRecovery(
 //
 // Returns the rule context for the return expression or nested FOR expression.
 func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind core.LoopKind) antlr.RuleContext {
+	if !c.validateLoopBindingPattern(ctx) {
+		return nil
+	}
+
 	returnRuleCtx, distinct, loopType, ok := c.resolveLoopReturnSpec(ctx.ForExpressionReturn())
 	if !ok {
 		return nil
@@ -270,6 +274,14 @@ func (c *LoopCompiler) declareLoopVariables(ctx fql.IForExpressionContext, loop 
 }
 
 func (c *LoopCompiler) declareLoopValueVariable(ctx fql.IForExpressionContext, loop *core.Loop, valueType core.ValueType) {
+	if pattern := ctx.GetValuePattern(); pattern != nil {
+		loop.Value = c.ctx.Function.Registers.Allocate()
+		loop.Destructured = true
+		c.ctx.Function.Types.Set(loop.Value, valueType)
+
+		return
+	}
+
 	val := ctx.GetValueVariable()
 	if val == nil {
 		return
@@ -309,6 +321,26 @@ func (c *LoopCompiler) emitLoopInitialization(ctx fql.IForExpressionContext, loo
 	c.ctx.Program.Emitter.WithSpan(span, func() {
 		loop.EmitInitialization(c.ctx.Function.Registers, c.ctx.Program.Emitter)
 	})
+
+	if loop.Destructured {
+		c.bindings.compileDestructuringPattern(ctx.GetValuePattern(), loop.Value, false)
+	}
+}
+
+func (c *LoopCompiler) validateLoopBindingPattern(ctx fql.IForExpressionContext) bool {
+	if ctx == nil || ctx.GetValuePattern() == nil {
+		return true
+	}
+
+	leaves := structuredBindingPatternLeaves(ctx.GetValuePattern())
+	duplicate, first, ok := duplicateBindingPatternLeaf(leaves)
+	if !ok {
+		return true
+	}
+
+	c.ctx.Program.Errors.DuplicateDestructuringBinding(duplicate.Context, first.Context, duplicate.Name)
+
+	return false
 }
 
 func (c *LoopCompiler) patchDistinctLoopDestination(loop *core.Loop) {

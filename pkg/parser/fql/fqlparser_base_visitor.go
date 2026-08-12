@@ -706,3 +706,23 @@ func (v *BaseFqlParserVisitor) VisitAdditiveOperator(ctx *AdditiveOperatorContex
 func (v *BaseFqlParserVisitor) VisitErrorOperator(ctx *ErrorOperatorContext) interface{} {
 	return v.VisitChildren(ctx)
 }
+
+func (v *BaseFqlParserVisitor) VisitBindingPattern(ctx *BindingPatternContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitStructuredBindingPattern(ctx *StructuredBindingPatternContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitObjectBindingPattern(ctx *ObjectBindingPatternContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitObjectBindingEntry(ctx *ObjectBindingEntryContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitArrayBindingPattern(ctx *ArrayBindingPatternContext) interface{} {
+	return v.VisitChildren(ctx)
+}

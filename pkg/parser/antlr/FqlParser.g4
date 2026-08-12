@@ -315,7 +315,8 @@ bodyExpression
 variableDeclaration
     : Let id=(Identifier | IgnoreIdentifier) Assign expression
     | Let safeReservedWord Assign expression
-    | Var bindingIdentifier Assign expression
+    | Var (bindingIdentifier | IgnoreIdentifier) Assign expression
+    | (Let | Var) structuredBindingPattern Assign expression
     ;
 
 assignmentStatement
@@ -392,7 +393,7 @@ returnExpression
     ;
 
 forExpression
-    : For valueVariable=loopVariable (Comma counterVariable=bindingIdentifier)? In forExpressionSource
+    : For (valueVariable=loopVariable | valuePattern=structuredBindingPattern) (Comma counterVariable=bindingIdentifier)? In forExpressionSource
         (OpenBrace forExpressionBody* forExpressionReturn CloseBrace
         | forExpressionBody* forExpressionReturn)
     | For (valueVariable=loopVariable)? Do? While expression
@@ -1241,4 +1242,27 @@ additiveOperator
 
 errorOperator
     : QuestionMark
+    ;
+
+bindingPattern
+    : bindingIdentifier
+    | IgnoreIdentifier
+    | structuredBindingPattern
+    ;
+
+structuredBindingPattern
+    : objectBindingPattern
+    | arrayBindingPattern
+    ;
+
+objectBindingPattern
+    : OpenBrace (objectBindingEntry (Comma objectBindingEntry)* Comma?)? CloseBrace
+    ;
+
+objectBindingEntry
+    : bindingIdentifier (Colon bindingPattern)?
+    ;
+
+arrayBindingPattern
+    : OpenBracket (bindingPattern (Comma bindingPattern)* Comma?)? CloseBracket
     ;
