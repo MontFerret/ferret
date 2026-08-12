@@ -62,14 +62,14 @@ The language keeps a declarative core and adds domain-oriented orchestration plu
 
 ### Features
 
-- Declarative-first, data-oriented language with expression-oriented composition
-- Support for static pages, dynamic pages, and browser-driven extraction
-- Domain constructs for querying, transformation, synchronization, and automation
-- CLI tooling, including formatting and debugging support
-- Embeddable Go runtime for integrating Ferret into applications
-- Extensible module, function, and runtime capability system
-- Structured results for testing, analytics, AI/ML, and automation pipelines
-- Portable execution model with a focused VM
+- Purpose-built declarative language for querying, transforming, synchronizing, and automating structured data
+- Embeddable Go runtime with reusable compiled plans and isolated execution sessions
+- Capability-based host values for exposing application objects, resources, and external systems directly to FQL
+- Unified query model for browsers, APIs, databases, documents, and custom data sources
+- Extensible runtime through namespaced functions, modules, hooks, and custom value types
+- Event-driven synchronization and dispatch for interacting with asynchronous and stateful resources
+- Managed resource lifecycle for files, connections, cursors, streams, and other host resources
+- Bytecode VM and portable programs for efficient repeated execution and precompiled artifacts
 
 ## Getting started
 
