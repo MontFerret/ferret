@@ -9,7 +9,7 @@ import (
 )
 
 func TestStatementFormatter_DispatchEventNameString(t *testing.T) {
-	input := "DISPATCH \"evt\" IN target"
+	input := "dispatch \"evt\" in target"
 	program := parseProgram(t, input)
 	eventName := mustFirst[*fql.DispatchEventNameContext](t, program)
 
@@ -37,7 +37,7 @@ func TestStatementFormatter_DispatchExpressionShorthand(t *testing.T) {
 }
 
 func TestStatementFormatter_DispatchExpressionErrorPolicyTail(t *testing.T) {
-	input := `DISPATCH "evt" IN target ON ERROR RETURN NONE`
+	input := `dispatch "evt" in target on error return none`
 	program := parseProgram(t, input+"\nRETURN 1")
 	dispatchExpr := mustFirst[*fql.DispatchExpressionContext](t, program)
 
@@ -45,13 +45,13 @@ func TestStatementFormatter_DispatchExpressionErrorPolicyTail(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.statement.formatDispatchExpression(dispatchExpr)
-	if got := buf.String(); got != `DISPATCH "evt" IN target ON ERROR RETURN NONE` {
+	if got := buf.String(); got != `dispatch "evt" in target on error return none` {
 		t.Fatalf("unexpected dispatch error policy formatting: %q", got)
 	}
 }
 
 func TestStatementFormatter_WaitForExpressionErrorPolicyTail(t *testing.T) {
-	input := `WAITFOR VALUE ready ON ERROR FAIL`
+	input := `waitfor value ready on error fail`
 	program := parseProgram(t, input+"\nRETURN 1")
 	waitExpr := mustFirst[*fql.WaitForExpressionContext](t, program)
 
@@ -59,13 +59,13 @@ func TestStatementFormatter_WaitForExpressionErrorPolicyTail(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.statement.formatWaitForExpression(waitExpr)
-	if got := buf.String(); got != `WAITFOR VALUE ready ON ERROR FAIL` {
+	if got := buf.String(); got != `waitfor value ready on error fail` {
 		t.Fatalf("unexpected waitfor error policy formatting: %q", got)
 	}
 }
 
 func TestStatementFormatter_WaitForExpressionRecoveryTailCanonicalOrder(t *testing.T) {
-	input := `WAITFOR VALUE ready TIMEOUT 1MS ON ERROR FAIL ON TIMEOUT RETURN NONE`
+	input := `waitfor value ready timeout 1MS on error fail on timeout return none`
 	program := parseProgram(t, input+"\nRETURN 1")
 	waitExpr := mustFirst[*fql.WaitForExpressionContext](t, program)
 
@@ -73,13 +73,13 @@ func TestStatementFormatter_WaitForExpressionRecoveryTailCanonicalOrder(t *testi
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.statement.formatWaitForExpression(waitExpr)
-	if got := buf.String(); got != `WAITFOR VALUE ready TIMEOUT 1MS ON TIMEOUT RETURN NONE ON ERROR FAIL` {
+	if got := buf.String(); got != `waitfor value ready timeout 1MS on timeout return none on error fail` {
 		t.Fatalf("unexpected waitfor recovery formatting: %q", got)
 	}
 }
 
 func TestStatementFormatter_WaitForExpressionPredicateWhenClause(t *testing.T) {
-	input := `WAITFOR EXISTS rows WHEN LENGTH(.) >= 10 WHEN LENGTH(.) > 0 TIMEOUT 1MS EVERY 10MS`
+	input := `waitfor exists rows when LENGTH(.) >= 10 when LENGTH(.) > 0 timeout 1MS every 10MS`
 	program := parseProgram(t, input+"\nRETURN 1")
 	waitExpr := mustFirst[*fql.WaitForExpressionContext](t, program)
 
@@ -87,13 +87,13 @@ func TestStatementFormatter_WaitForExpressionPredicateWhenClause(t *testing.T) {
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.statement.formatWaitForExpression(waitExpr)
-	if got := buf.String(); got != `WAITFOR EXISTS rows WHEN LENGTH(.) >= 10 WHEN LENGTH(.) > 0 TIMEOUT 1MS EVERY 10MS` {
-		t.Fatalf("unexpected waitfor predicate WHEN formatting: %q", got)
+	if got := buf.String(); got != `waitfor exists rows when LENGTH(.) >= 10 when LENGTH(.) > 0 timeout 1MS every 10MS` {
+		t.Fatalf("unexpected waitfor predicate when formatting: %q", got)
 	}
 }
 
 func TestStatementFormatter_WaitForExpressionRetryTailCanonicalOrder(t *testing.T) {
-	input := `WAITFOR VALUE ready TIMEOUT 1MS ON ERROR RETRY 3 DELAY 10MS OR RETURN NONE ON TIMEOUT RETURN FALSE`
+	input := `waitfor value ready timeout 1MS on error retry 3 delay 10MS or return none on timeout return false`
 	program := parseProgram(t, input+"\nRETURN 1")
 	waitExpr := mustFirst[*fql.WaitForExpressionContext](t, program)
 
@@ -101,7 +101,7 @@ func TestStatementFormatter_WaitForExpressionRetryTailCanonicalOrder(t *testing.
 	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
 
 	e.statement.formatWaitForExpression(waitExpr)
-	if got := buf.String(); got != `WAITFOR VALUE ready TIMEOUT 1MS ON TIMEOUT RETURN FALSE ON ERROR RETRY 3 DELAY 10MS OR RETURN NONE` {
+	if got := buf.String(); got != `waitfor value ready timeout 1MS on timeout return false on error retry 3 delay 10MS or return none` {
 		t.Fatalf("unexpected waitfor retry recovery formatting: %q", got)
 	}
 }

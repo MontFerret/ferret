@@ -865,7 +865,7 @@ func (f *expressionFormatter) formatUnaryOperatorWith(p *printer, ctx *fql.Unary
 	}
 
 	op := ctx.GetText()
-	if op == keywordNot || op == "!" {
+	if ctx.Not() != nil || op == "!" {
 		if op == "!" {
 			p.write(op)
 		} else {
@@ -1255,10 +1255,9 @@ func (f *expressionFormatter) formatRecoveryRetryDelayClauseWith(p *printer, ctx
 		if kind := backoff.RecoveryRetryBackoffKind(); kind != nil {
 			p.space()
 
-			switch {
-			case kind.None() != nil || kind.Identifier() != nil:
+			if kind.None() != nil {
 				p.write(applyCase(f.opts.caseMode, kind.GetText()))
-			default:
+			} else {
 				p.write(kind.GetText())
 			}
 		}

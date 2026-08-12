@@ -9,31 +9,31 @@ import (
 func TestFormatterUDFs(t *testing.T) {
 	RunSpecs(t, []Spec{
 		S(`
-FUNC normalizePrice( value ){
-RETURN value
+func normalizePrice( value ){
+return value
 }
-RETURN normalizePrice(1)
-`, `FUNC normalizePrice(value) {
-    RETURN value
+return normalizePrice(1)
+`, `func normalizePrice(value) {
+    return value
 }
-RETURN normalizePrice(1)`),
+return normalizePrice(1)`),
 		S(`
-FUNC unique( values ){
-RETURN DISTINCT values
+func unique( values ){
+return distinct values
 }
-RETURN unique([1, 1])
-`, `FUNC unique(values) {
-    RETURN DISTINCT values
+return unique([1, 1])
+`, `func unique(values) {
+    return distinct values
 }
-RETURN unique([1, 1])`),
+return unique([1, 1])`),
 		S(`
-FUNC read( DISTINCT ){
-RETURN ( DISTINCT.values )
+func read( DISTINCT ){
+return ( DISTINCT.values )
 }
-RETURN ( DISTINCT.values )
-`, `FUNC read(DISTINCT) {
-    RETURN (DISTINCT.values)
+return ( DISTINCT.values )
+`, `func read(DISTINCT) {
+    return (DISTINCT.values)
 }
-RETURN (DISTINCT.values)`),
+return (DISTINCT.values)`),
 	})
 }

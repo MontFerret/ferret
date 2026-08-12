@@ -8,39 +8,39 @@ import (
 
 func TestFormatterWaitForGroups(t *testing.T) {
 	RunSpecs(t, []Spec{
-		S(`RETURN WAITFOR VALUE ALL { foo WHEN .ready WHEN .valid bar } TIMEOUT 10s EVERY 100ms BACKOFF LINEAR JITTER 0.2 ON ERROR RETURN NONE ON TIMEOUT RETURN []`, `RETURN WAITFOR VALUE ALL {
+		S(`return waitfor value all { foo when .ready when .valid bar } timeout 10s every 100ms backoff LINEAR jitter 0.2 on error return none on timeout return []`, `return waitfor value all {
     foo
-        WHEN .ready
-        WHEN .valid
+        when .ready
+        when .valid
     bar
 }
-TIMEOUT 10s
-EVERY 100ms
-BACKOFF LINEAR
-JITTER 0.2
-ON TIMEOUT RETURN []
-ON ERROR RETURN NONE`),
-		S(`RETURN WAITFOR EVENT ANY { "navigation" IN page "dialog" IN page WHEN .type == "confirm" } TRIGGER (page <- "click") TIMEOUT 10s`, `RETURN WAITFOR EVENT ANY {
-    "navigation" IN page
-    "dialog" IN page
-        WHEN .type == "confirm"
+timeout 10s
+every 100ms
+backoff LINEAR
+jitter 0.2
+on timeout return []
+on error return none`),
+		S(`return waitfor event any { "navigation" in page "dialog" in page when .type == "confirm" } trigger (page <- "click") timeout 10s`, `return waitfor event any {
+    "navigation" in page
+    "dialog" in page
+        when .type == "confirm"
 }
-TRIGGER (
+trigger (
     page <- "click"
 )
-TIMEOUT 10s`),
-		S(`RETURN WAITFOR EVENT ALL { // subscriptions
-"response" IN page // server response
-WHEN .status == 200
+timeout 10s`),
+		S(`return waitfor event all { // subscriptions
+"response" in page // server response
+when .status == 200
 // browser download
-"download" IN browser
-}`, `RETURN WAITFOR EVENT ALL { // subscriptions
-    "response" IN page // server response
-        WHEN .status == 200
+"download" in browser
+}`, `return waitfor event all { // subscriptions
+    "response" in page // server response
+        when .status == 200
     // browser download
-    "download" IN browser
+    "download" in browser
 }`),
-		S(`RETURN WAITFOR ANY { ready }`, `RETURN WAITFOR ANY {
+		S(`return waitfor any { ready }`, `return waitfor any {
     ready
 }`),
 	})
@@ -52,56 +52,56 @@ func TestFormatterWaitForGroupComments(t *testing.T) {
 		want  string
 	}{
 		"event tail comments": {
-			input: `RETURN WAITFOR EVENT ANY {
-"ready" IN source
+			input: `return waitfor event any {
+"ready" in source
 } // after group
-TRIGGER source <- "go" // after trigger
-TIMEOUT 1s`,
-			want: `RETURN WAITFOR EVENT ANY {
-    "ready" IN source
+trigger source <- "go" // after trigger
+timeout 1s`,
+			want: `return waitfor event any {
+    "ready" in source
 } // after group
-TRIGGER source <- "go" // after trigger
-TIMEOUT 1s`,
+trigger source <- "go" // after trigger
+timeout 1s`,
 		},
 		"predicate schedule comments": {
-			input: `RETURN WAITFOR VALUE ALL {
+			input: `return waitfor value all {
 ready
 } // before timeout
-TIMEOUT 1s // before every
-EVERY 10ms // before backoff
-BACKOFF LINEAR // before jitter
-JITTER 0.1`,
-			want: `RETURN WAITFOR VALUE ALL {
+timeout 1s // before every
+every 10ms // before backoff
+backoff LINEAR // before jitter
+jitter 0.1`,
+			want: `return waitfor value all {
     ready
 } // before timeout
-TIMEOUT 1s // before every
-EVERY 10ms // before backoff
-BACKOFF LINEAR // before jitter
-JITTER 0.1`,
+timeout 1s // before every
+every 10ms // before backoff
+backoff LINEAR // before jitter
+jitter 0.1`,
 		},
 		"blank line after inline comment": {
-			input: `RETURN WAITFOR ANY {
+			input: `return waitfor any {
 ready
 } // before timeout
 
-ON TIMEOUT RETURN "timeout"`,
-			want: `RETURN WAITFOR ANY {
+on timeout return "timeout"`,
+			want: `return waitfor any {
     ready
 } // before timeout
 
-ON TIMEOUT RETURN "timeout"`,
+on timeout return "timeout"`,
 		},
 		"recovery comments retain source order": {
-			input: `RETURN WAITFOR ANY {
+			input: `return waitfor any {
 ready
 } // before error
-ON ERROR RETURN "error" // before timeout recovery
-ON TIMEOUT RETURN "timeout"`,
-			want: `RETURN WAITFOR ANY {
+on error return "error" // before timeout recovery
+on timeout return "timeout"`,
+			want: `return waitfor any {
     ready
 } // before error
-ON ERROR RETURN "error" // before timeout recovery
-ON TIMEOUT RETURN "timeout"`,
+on error return "error" // before timeout recovery
+on timeout return "timeout"`,
 		},
 	}
 

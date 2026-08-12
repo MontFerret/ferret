@@ -11,20 +11,20 @@ import (
 
 func TestFormatterCoalesceInline(t *testing.T) {
 	RunSpecs(t, []Spec{
-		S(`LET name=user.name??"Unknown" RETURN name`, `LET name = user.name ?? "Unknown"
-RETURN name`),
-		S(`RETURN (NONE??1)??2`, `RETURN (NONE ?? 1) ?? 2`),
+		S(`let name=user.name??"Unknown" return name`, `let name = user.name ?? "Unknown"
+return name`),
+		S(`return (none??1)??2`, `return (none ?? 1) ?? 2`),
 	})
 }
 
 func TestFormatterCoalesceChainContinuation(t *testing.T) {
 	RunSpecsWith(t, formatter.New(formatter.WithPrintWidth(50)), []Spec{
-		S(`LET name=user?.profile?.displayName??user?.nickname??user?.name??"Anonymous" RETURN name`, `LET name = user?.profile?.displayName
+		S(`let name=user?.profile?.displayName??user?.nickname??user?.name??"Anonymous" return name`, `let name = user?.profile?.displayName
     ?? user?.nickname
     ?? user?.name
     ?? "Anonymous"
-RETURN name`),
-		S(`RETURN primaryValue??(secondaryValue??tertiaryValue)`, `RETURN primaryValue
+return name`),
+		S(`return primaryValue??(secondaryValue??tertiaryValue)`, `return primaryValue
     ?? (secondaryValue
         ?? tertiaryValue)`),
 	})
@@ -33,8 +33,8 @@ RETURN name`),
 func TestFormatterCoalesceRoundTrip(t *testing.T) {
 	format := formatter.New(formatter.WithPrintWidth(50))
 	inputs := []string{
-		`LET name=user?.profile?.displayName??user?.nickname??user?.name??"Anonymous" RETURN name`,
-		`RETURN primaryValue??(secondaryValue??tertiaryValue)`,
+		`let name=user?.profile?.displayName??user?.nickname??user?.name??"Anonymous" return name`,
+		`return primaryValue??(secondaryValue??tertiaryValue)`,
 	}
 
 	for _, input := range inputs {

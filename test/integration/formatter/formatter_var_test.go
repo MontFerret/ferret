@@ -9,95 +9,95 @@ import (
 func TestFormatterVarBindings(t *testing.T) {
 	RunSpecs(t, []Spec{
 		S(`
-	VAR    foo =      10
+	var    foo =      10
 	 foo    =   foo +   1
-	 RETURN foo
-		`, `VAR foo = 10
+	 return foo
+		`, `var foo = 10
 foo = foo + 1
-RETURN foo`),
+return foo`),
 		S(`
-	VAR total=10
+	var total=10
 	total+=1
 	total-=2
 	total*=3
 	total/=3
-	RETURN total
-		`, `VAR total = 10
+	return total
+		`, `var total = 10
 total += 1
 total -= 2
 total *= 3
 total /= 3
-RETURN total`),
+return total`),
 		S(`
-	FUNC   run( ){
-	VAR total= 1
+	func   run( ){
+	var total= 1
 	 total   =total+2
- RETURN total
+ return total
 }
-RETURN run()
-		`, `FUNC run() {
-    VAR total = 1
+return run()
+		`, `func run() {
+    var total = 1
     total = total + 2
-    RETURN total
+    return total
 }
-RETURN run()`),
+return run()`),
 		S(`
-	FUNC run(){
-	VAR total=10
+	func run(){
+	var total=10
 	total+=1
 	total-=2
 	total*=3
 	total/=3
-	RETURN total
+	return total
 	}
-	RETURN run()
-		`, `FUNC run() {
-    VAR total = 10
+	return run()
+		`, `func run() {
+    var total = 10
     total += 1
     total -= 2
     total *= 3
     total /= 3
-    RETURN total
+    return total
 }
-RETURN run()`),
+return run()`),
 		S(`
-LET    STEP =  10
-RETURN STEP
-`, `LET STEP = 10
-RETURN STEP`),
+let    STEP =  10
+return STEP
+`, `let STEP = 10
+return STEP`),
 		S(`
-FOR item IN [ 1, 2 ]
-VAR current = item
+for item in [ 1, 2 ]
+var current = item
 current=current+1
-RETURN current
-`, `FOR item IN [1, 2]
-    VAR current = item
+return current
+`, `for item in [1, 2]
+    var current = item
     current = current + 1
-    RETURN current`),
+    return current`),
 		S(`
-LET item={ deprecated: true, keep: true}
-DELETE    item.deprecated
-RETURN item
-`, `LET item = { deprecated: true, keep: true }
-DELETE item.deprecated
-RETURN item`),
+let item={ deprecated: true, keep: true}
+delete    item.deprecated
+return item
+`, `let item = { deprecated: true, keep: true }
+delete item.deprecated
+return item`),
 		S(`
-FUNC clean(payload){
-DELETE  payload["debug"]
-RETURN payload
+func clean(payload){
+delete  payload["debug"]
+return payload
 }
-RETURN clean({})
-`, `FUNC clean(payload) {
-    DELETE payload["debug"]
-    RETURN payload
+return clean({})
+`, `func clean(payload) {
+    delete payload["debug"]
+    return payload
 }
-RETURN clean({})`),
+return clean({})`),
 		S(`
-FOR item IN [{ stale: true }]
-DELETE item.stale
-RETURN item
-`, `FOR item IN [{ stale: true }]
-    DELETE item.stale
-    RETURN item`),
+for item in [{ stale: true }]
+delete item.stale
+return item
+`, `for item in [{ stale: true }]
+    delete item.stale
+    return item`),
 	})
 }

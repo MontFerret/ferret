@@ -57,9 +57,9 @@ func ExampleRegisterFunctions() {
 	defer func() { _ = engine.Close() }()
 
 	for _, query := range []string{
-		`RETURN EXAMPLE::PICK(1)`,
-		`RETURN EXAMPLE::PICK(1, 2)`,
-		`RETURN EXAMPLE::PICK(1, 2, 3, 4, 5)`,
+		`return EXAMPLE::PICK(1)`,
+		`return EXAMPLE::PICK(1, 2)`,
+		`return EXAMPLE::PICK(1, 2, 3, 4, 5)`,
 	} {
 		output, runErr := engine.Run(context.Background(), source.NewAnonymous(query))
 		if runErr != nil {
