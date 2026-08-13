@@ -10,7 +10,7 @@ import (
 func TestRegisteredSignaturesRejectsNilFunction(t *testing.T) {
 	builder := runtime.NewFunctionsBuilder()
 	var fn runtime.Function0
-	builder.A0().Add("NIL", fn)
+	builder.A0().Add("nil", fn)
 
 	functions, err := builder.Build()
 	if err != nil {
