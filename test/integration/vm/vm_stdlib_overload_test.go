@@ -34,9 +34,9 @@ func TestStdlibOverloadArityErrors(t *testing.T) {
 			&ExpectedRuntimeError{
 				Message: "invalid number of arguments",
 				Contains: []string{
-					"wrong number of arguments in call to TRIM",
-					"Note: TRIM expects 1 or 2 arguments, but got 0",
-					"Hint: Pass 1 or 2 arguments to TRIM",
+					"wrong number of arguments in call to trim",
+					"Note: trim expects 1 or 2 arguments, but got 0",
+					"Hint: Pass 1 or 2 arguments to trim",
 				},
 			},
 		),
@@ -45,9 +45,9 @@ func TestStdlibOverloadArityErrors(t *testing.T) {
 			&ExpectedRuntimeError{
 				Message: "invalid number of arguments",
 				Contains: []string{
-					"wrong number of arguments in call to SLICE",
-					"Note: SLICE expects 2 or 3 arguments, but got 4",
-					"Hint: Pass 2 or 3 arguments to SLICE",
+					"wrong number of arguments in call to slice",
+					"Note: slice expects 2 or 3 arguments, but got 4",
+					"Hint: Pass 2 or 3 arguments to slice",
 				},
 			},
 		),

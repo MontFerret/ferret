@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// APPEND appends a new item to an array and returns a new array with a given element.
+// append appends a new item to an array and returns a new array with a given element.
 // If “uniqueOnly“ is set to true, then will add the item only if it's unique.
 // @param arr {Any[]} Target array.
 // @param item {Any} Target value to add.
@@ -24,7 +24,7 @@ func Append(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return append3(ctx, args[0], args[1], args[2])
 }
 
-// APPEND appends a new item to an array and returns a new array with a given element.
+// append appends a new item to an array and returns a new array with a given element.
 // If “uniqueOnly“ is set to true, then will add the item only if it's unique.
 // @param arr {Any[]} Target array.
 // @param item {Any} Target value to add.
@@ -33,7 +33,7 @@ func append2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, erro
 	return append3(ctx, arg1, arg2, runtime.False)
 }
 
-// APPEND appends a new item to an array and returns a new array with a given element.
+// append appends a new item to an array and returns a new array with a given element.
 // If “uniqueOnly“ is set to true, then will add the item only if it's unique.
 // @param arr {Any[]} Target array.
 // @param item {Any} Target value to add.

@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// SORTED sorts all elements in the given list.
+// sorted sorts all elements in the given list.
 // The function will use the default comparison order for FQL value types.
 // @param array {Any[]} Target array.
 // @return {Any[]} Sorted array.

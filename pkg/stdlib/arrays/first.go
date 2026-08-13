@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// FIRST returns a first element from a given array.
+// first returns a first element from a given array.
 // @param arr {Any[]} Target array.
 // @return {Any} First element in a given array.
 func First(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

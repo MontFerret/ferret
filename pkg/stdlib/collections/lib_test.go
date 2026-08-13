@@ -17,10 +17,10 @@ func TestLib(t *testing.T) {
 
 		// Check that all expected functions are registered
 		expectedFunctions := []string{
-			"COUNT_DISTINCT",
-			"COUNT",
-			"INCLUDES",
-			"REVERSE",
+			"count_distinct",
+			"count",
+			"includes",
+			"reverse",
 		}
 
 		funcs, err := ns.Build()

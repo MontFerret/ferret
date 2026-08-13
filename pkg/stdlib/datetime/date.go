@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// DATE parses a formatted string and returns DateTime object it represents.
+// date parses a formatted string and returns DateTime object it represents.
 // @param time {String} String representation of DateTime.
 // @param layout {String} String layout.
 // @return {DateTime} New DateTime object derived from timeString.
@@ -23,14 +23,14 @@ func Date(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return date2(ctx, args[0], args[1])
 }
 
-// DATE parses a formatted string and returns DateTime object it represents.
+// date parses a formatted string and returns DateTime object it represents.
 // @param time {String} String representation of DateTime.
 // @return {DateTime} New DateTime object derived from timeString.
 func date1(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
 	return date2(ctx, arg1, runtime.NewString(runtime.DefaultTimeLayout))
 }
 
-// DATE parses a formatted string and returns DateTime object it represents.
+// date parses a formatted string and returns DateTime object it represents.
 // @param time {String} String representation of DateTime.
 // @param layout {String} String layout.
 // @return {DateTime} New DateTime object derived from timeString.

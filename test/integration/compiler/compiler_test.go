@@ -107,12 +107,12 @@ RETURN RUN(2)
 			expectedUDFs: 1,
 		},
 		{
-			name: "udf_case_distinct_hosts",
+			name: "udf_host_case_insensitive_identity",
 			query: `
 FUNC wrap() => Foo(1) + foo(2)
 RETURN wrap()
 `,
-			expectedHost: []bytecode.HostFunction{{Name: "Foo", ArgCount: 1}, {Name: "foo", ArgCount: 1}},
+			expectedHost: []bytecode.HostFunction{{Name: "Foo", ArgCount: 1}},
 			expectedUDFs: 1,
 		},
 	}

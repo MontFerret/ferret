@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// ZIP returns an object assembled from the separate parameters keys and values.
+// zip returns an object assembled from the separate parameters keys and values.
 // Keys and values must be arrays and have the same length.
 // @param keys {String[]} An array of strings, to be used as key names in the result.
 // @param values {hashMap[]} An array of runtime.Value, to be used as key values.

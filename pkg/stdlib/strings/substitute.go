@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// SUBSTITUTE replaces search values in the string value.
+// substitute replaces search values in the string value.
 // @param str {String} The string to modify
 // @param search {String} The string representing a search pattern
 // @param replace {String} The string representing a replace value
@@ -30,7 +30,7 @@ func Substitute(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 	}
 }
 
-// SUBSTITUTE replaces search values in the string value.
+// substitute replaces search values in the string value.
 // @param str {String} The string to modify
 // @param search {String} The string representing a search pattern
 // @return {String} Returns a string with replace substring.
@@ -38,7 +38,7 @@ func substitute2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, 
 	return substitute(ctx, arg1, arg2, runtime.EmptyString, -1)
 }
 
-// SUBSTITUTE replaces search values in the string value.
+// substitute replaces search values in the string value.
 // @param str {String} The string to modify
 // @param search {String} The string representing a search pattern
 // @param replace {String} The string representing a replace value
@@ -47,7 +47,7 @@ func substitute3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.V
 	return substitute(ctx, arg1, arg2, arg3, -1)
 }
 
-// SUBSTITUTE replaces search values in the string value.
+// substitute replaces search values in the string value.
 // @param str {String} The string to modify
 // @param search {String} The string representing a search pattern
 // @param replace {String} The string representing a replace value

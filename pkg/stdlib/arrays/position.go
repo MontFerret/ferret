@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// POSITION returns a value indicating whether an element is contained in array. Optionally returns its position.
+// position returns a value indicating whether an element is contained in array. Optionally returns its position.
 // @param array {Any[]} The source array.
 // @param value {Any} The target value.
 // @param position {Boolean} Boolean value which indicates whether to return item's position.
@@ -23,7 +23,7 @@ func Position(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 	return position3(ctx, args[0], args[1], args[2])
 }
 
-// POSITION returns a value indicating whether an element is contained in array. Optionally returns its position.
+// position returns a value indicating whether an element is contained in array. Optionally returns its position.
 // @param array {Any[]} The source array.
 // @param value {Any} The target value.
 // @return {Boolean | Int} A value indicating whether an element is contained in array.
@@ -31,7 +31,7 @@ func position2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, er
 	return position3(ctx, arg1, arg2, runtime.False)
 }
 
-// POSITION returns a value indicating whether an element is contained in array. Optionally returns its position.
+// position returns a value indicating whether an element is contained in array. Optionally returns its position.
 // @param array {Any[]} The source array.
 // @param value {Any} The target value.
 // @param position {Boolean} Boolean value which indicates whether to return item's position.

@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// DIR returns the directory component of path.
+// dir returns the directory component of path.
 // @param path {String} The path.
 // @return {String} The directory component of path.
 func Dir(_ context.Context, arg runtime.Value) (runtime.Value, error) {

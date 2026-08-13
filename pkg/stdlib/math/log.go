@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// LOG returns the natural logarithm of a given value.
+// log returns the natural logarithm of a given value.
 // @param number {Int | Float} Input number.
 // @return {Float} The natural logarithm of a given value.
 func Log(_ context.Context, arg runtime.Value) (runtime.Value, error) {

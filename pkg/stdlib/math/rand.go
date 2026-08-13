@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// RAND return a pseudo-random number between 0 and 1.
+// rand return a pseudo-random number between 0 and 1.
 // @param max {Int | Float} Upper limit.
 // @param min {Int | Float} Lower limit.
 // @return {Float} A number greater than 0 and less than 1.
@@ -25,13 +25,13 @@ func Rand(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	}
 }
 
-// RAND return a pseudo-random number between 0 and 1.
+// rand return a pseudo-random number between 0 and 1.
 // @return {Float} A number greater than 0 and less than 1.
 func rand0(context.Context) (runtime.Value, error) {
 	return runtime.NewFloat(runtime.RandomDefault()), nil
 }
 
-// RAND return a pseudo-random number between 0 and 1.
+// rand return a pseudo-random number between 0 and 1.
 // @param max {Int | Float} Upper limit.
 // @return {Float} A number greater than 0 and less than 1.
 func rand1(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
@@ -45,7 +45,7 @@ func rand1(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
 	return runtime.NewFloat(runtime.Random(upper, lower)), nil
 }
 
-// RAND return a pseudo-random number between 0 and 1.
+// rand return a pseudo-random number between 0 and 1.
 // @param max {Int | Float} Upper limit.
 // @param min {Int | Float} Lower limit.
 // @return {Float} A number greater than 0 and less than 1.

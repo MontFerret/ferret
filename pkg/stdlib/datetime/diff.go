@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// DATE_DIFF returns the difference between two dates in given time unit.
+// date_diff returns the difference between two dates in given time unit.
 // @param date1 {DateTime} First date.
 // @param date2 {DateTime} Second date.
 // @param unit {String} Time unit to return the difference in.
@@ -24,7 +24,7 @@ func DateDiff(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 	return dateDiff4(ctx, args[0], args[1], args[2], args[3])
 }
 
-// DATE_DIFF returns the difference between two dates in given time unit.
+// date_diff returns the difference between two dates in given time unit.
 // @param date1 {DateTime} First date.
 // @param date2 {DateTime} Second date.
 // @param unit {String} Time unit to return the difference in.
@@ -33,7 +33,7 @@ func dateDiff3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Val
 	return dateDiff4(ctx, arg1, arg2, arg3, runtime.False)
 }
 
-// DATE_DIFF returns the difference between two dates in given time unit.
+// date_diff returns the difference between two dates in given time unit.
 // @param date1 {DateTime} First date.
 // @param date2 {DateTime} Second date.
 // @param unit {String} Time unit to return the difference in.

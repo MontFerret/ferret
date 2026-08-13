@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// NTH returns the element of an array at a given position.
+// nth returns the element of an array at a given position.
 // It is the same as anyArray[position] for positive positions, but does not support negative positions.
 // If position is negative or beyond the upper bound of the array, then NONE will be returned.
 // @param array {Any[]} An array with elements of arbitrary type.

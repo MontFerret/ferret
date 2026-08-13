@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// TAN returns the tangent of a given number.
+// tan returns the tangent of a given number.
 // @param number {Int | Float} A number.
 // @return {Float} The tangent.
 func Tan(_ context.Context, arg runtime.Value) (runtime.Value, error) {

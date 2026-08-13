@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// SHIFT returns a new array without the first element.
+// shift returns a new array without the first element.
 // @param array {Any[]} Target array.
 // @return {Any[]} Copy of an array without the first element.
 func Shift(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

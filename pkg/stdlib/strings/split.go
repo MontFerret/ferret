@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// SPLIT splits the given string value into a list of strings, using the separator.
+// split splits the given string value into a list of strings, using the separator.
 // @param str {String} The string to split.
 // @param separator {String} The separator.
 // @param limit {Int} Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
@@ -26,7 +26,7 @@ func Split(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return split3(ctx, args[0], args[1], args[2])
 }
 
-// SPLIT splits the given string value into a list of strings, using the separator.
+// split splits the given string value into a list of strings, using the separator.
 // @param str {String} The string to split.
 // @param separator {String} The separator.
 // @return {String[]} arrayList of strings.
@@ -34,7 +34,7 @@ func split2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error
 	return split(ctx, arg1, arg2, -1)
 }
 
-// SPLIT splits the given string value into a list of strings, using the separator.
+// split splits the given string value into a list of strings, using the separator.
 // @param str {String} The string to split.
 // @param separator {String} The separator.
 // @param limit {Int} Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.

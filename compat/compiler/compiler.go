@@ -104,7 +104,7 @@ func (c *Compiler) Namespace(name string) core.Namespace {
 func (c *Compiler) RegisterFunction(name string, fun core.Function) error {
 	fns := c.library.Function()
 	if fns.Has(name) {
-		return nil // already registered — match v1 silent-overwrite semantics
+		return nil
 	}
 
 	fns.Var().Add(name, core.UnwrapFunction(fun))

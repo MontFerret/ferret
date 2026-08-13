@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// LAST returns the last element of an array.
+// last returns the last element of an array.
 // @param array {Any[]} The target array.
 // @return {Any} Last element of an array.
 func Last(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

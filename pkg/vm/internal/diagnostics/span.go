@@ -34,6 +34,19 @@ func CallArgumentSpanAt(program *bytecode.Program, pc int, pos int) source.Span 
 	return spans[pos]
 }
 
+func sourceTextAt(program *bytecode.Program, span source.Span) string {
+	if program == nil || program.Source == nil {
+		return ""
+	}
+
+	text := program.Source.Content()
+	if span.Start < 0 || span.End <= span.Start || span.End > len(text) {
+		return ""
+	}
+
+	return text[span.Start:span.End]
+}
+
 func invalidSpan() source.Span {
 	return source.Span{Start: -1, End: -1}
 }

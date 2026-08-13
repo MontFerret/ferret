@@ -98,18 +98,22 @@ func TestFormatAllowsOverloadedHostsAndRejectsDuplicateSignaturesAndLabels(t *te
 	one := 1
 	two := 2
 	frame.Functions.Host = []persist.HostFunctionFrame{
-		{Name: "dup", ArgCount: &one},
-		{Name: "dup", ArgCount: &two},
+		{Name: "DB::POSTGRES::DUP", ArgCount: &one},
+		{Name: "db::postgres::dup", ArgCount: &two},
 	}
 
 	data := mustMarshalFrame(t, frame)
-	if _, err := Default.Unmarshal(data); err != nil {
+	decoded, err := Default.Unmarshal(data)
+	if err != nil {
 		t.Fatalf("expected overloaded host signatures to decode, got %v", err)
+	}
+	if got := decoded.Functions.Host[0].Name; got != "DB::POSTGRES::DUP" {
+		t.Fatalf("expected stored host metadata spelling to survive, got %q", got)
 	}
 
 	frame.Functions.Host[1].ArgCount = &one
 	data = mustMarshalFrame(t, frame)
-	_, err := Default.Unmarshal(data)
+	_, err = Default.Unmarshal(data)
 	if !errors.Is(err, bytecode.ErrInvalidProgram) {
 		t.Fatalf("expected ErrInvalidProgram for duplicate host signatures, got %v", err)
 	}

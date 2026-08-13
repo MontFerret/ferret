@@ -8,7 +8,7 @@ import (
 	"errors"
 )
 
-// DATE_COMPARE checks if two partial dates match.
+// date_compare checks if two partial dates match.
 // @param date1 {DateTime} First date.
 // @param date2 {DateTime} Second date.
 // @param unitRangeStart {String} Unit to start from.
@@ -26,7 +26,7 @@ func DateCompare(ctx context.Context, args ...runtime.Value) (runtime.Value, err
 	return dateCompare4(ctx, args[0], args[1], args[2], args[3])
 }
 
-// DATE_COMPARE checks if two partial dates match.
+// date_compare checks if two partial dates match.
 // @param date1 {DateTime} First date.
 // @param date2 {DateTime} Second date.
 // @param unitRangeStart {String} Unit to start from.
@@ -35,7 +35,7 @@ func dateCompare3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.
 	return dateCompare4(ctx, arg1, arg2, arg3, runtime.NewString("millisecond"))
 }
 
-// DATE_COMPARE checks if two partial dates match.
+// date_compare checks if two partial dates match.
 // @param date1 {DateTime} First date.
 // @param date2 {DateTime} Second date.
 // @param unitRangeStart {String} Unit to start from.

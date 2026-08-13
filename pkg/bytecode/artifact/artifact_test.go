@@ -34,8 +34,9 @@ func TestMarshalAndUnmarshal_DefaultMessagePack(t *testing.T) {
 	if got, want := decoded.ISAVersion, program.ISAVersion; got != want {
 		t.Fatalf("unexpected isaVersion: got %d, want %d", got, want)
 	}
-	if !reflect.DeepEqual(decoded.Functions.Host, program.Functions.Host) {
-		t.Fatalf("host signature order mismatch: got %v, want %v", decoded.Functions.Host, program.Functions.Host)
+	expected := artifactHostFunctions()
+	if !reflect.DeepEqual(decoded.Functions.Host, expected) {
+		t.Fatalf("host signature order or spelling mismatch: got %v, want %v", decoded.Functions.Host, expected)
 	}
 }
 
@@ -60,8 +61,9 @@ func TestMarshalAndUnmarshal_JSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unmarshal() error = %v", err)
 	}
-	if !reflect.DeepEqual(decoded.Functions.Host, program.Functions.Host) {
-		t.Fatalf("host signature order mismatch: got %v, want %v", decoded.Functions.Host, program.Functions.Host)
+	expected := artifactHostFunctions()
+	if !reflect.DeepEqual(decoded.Functions.Host, expected) {
+		t.Fatalf("host signature order or spelling mismatch: got %v, want %v", decoded.Functions.Host, expected)
 	}
 }
 
@@ -461,8 +463,8 @@ func newArtifactTestProgram() *bytecode.Program {
 	return &bytecode.Program{
 		Source: source.New("artifact.fql", "RETURN 1"),
 		Functions: bytecode.Functions{Host: []bytecode.HostFunction{
-			{Name: "PICK", ArgCount: 2},
-			{Name: "PICK", ArgCount: 1},
+			{Name: "DB::POSTGRES::PICK", ArgCount: 2},
+			{Name: "Db::Postgres::Pick", ArgCount: 1},
 		}},
 		Bytecode: []bytecode.Instruction{
 			bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
@@ -482,6 +484,13 @@ func newArtifactTestProgram() *bytecode.Program {
 		},
 		ISAVersion: bytecode.Version,
 		Registers:  1,
+	}
+}
+
+func artifactHostFunctions() []bytecode.HostFunction {
+	return []bytecode.HostFunction{
+		{Name: "DB::POSTGRES::PICK", ArgCount: 2},
+		{Name: "Db::Postgres::Pick", ArgCount: 1},
 	}
 }
 

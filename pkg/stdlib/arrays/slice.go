@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// SLICE returns a new sliced array.
+// slice returns a new sliced array.
 // @param array {Any[]} Source array.
 // @param start {Int} Start position of extraction.
 // @param length {Int} Read indicating how many elements to extract.
@@ -25,7 +25,7 @@ func Slice(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return slice3(ctx, args[0], args[1], args[2])
 }
 
-// SLICE returns a new sliced array.
+// slice returns a new sliced array.
 // @param array {Any[]} Source array.
 // @param start {Int} Start position of extraction.
 // @return {Any[]} Sliced array.
@@ -33,7 +33,7 @@ func slice2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error
 	return sliceList(ctx, arg1, arg2, runtime.None, false)
 }
 
-// SLICE returns a new sliced array.
+// slice returns a new sliced array.
 // @param array {Any[]} Source array.
 // @param start {Int} Start position of extraction.
 // @param length {Int} Read indicating how many elements to extract.

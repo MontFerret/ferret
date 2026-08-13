@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// VARIANCE_POPULATION returns the population variance of the values in a given array.
+// variance_population returns the population variance of the values in a given array.
 // @param numbers {Int[] | Float[]} arrayList of numbers.
 // @return {Float} The population variance.
 func PopulationVariance(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

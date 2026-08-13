@@ -138,9 +138,16 @@ func TestValidateProgram(t *testing.T) {
 			name: "duplicate_host_function_signature",
 			program: withProgramMutation(func(program *Program) {
 				program.Functions.Host = []HostFunction{
-					{Name: "FN", ArgCount: 1},
-					{Name: "FN", ArgCount: 1},
+					{Name: "DB::POSTGRES::FN", ArgCount: 1},
+					{Name: "db::postgres::fn", ArgCount: 1},
 				}
+			}),
+			target: ErrInvalidProgram,
+		},
+		{
+			name: "empty_namespaced_host_function_name",
+			program: withProgramMutation(func(program *Program) {
+				program.Functions.Host = []HostFunction{{Name: "TEST::", ArgCount: 0}}
 			}),
 			target: ErrInvalidProgram,
 		},

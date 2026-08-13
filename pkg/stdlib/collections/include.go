@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// INCLUDES checks whether a container includes a given value.
+// includes checks whether a container includes a given value.
 // @param haystack {String | Any[] | hashMap | Iterable} The value container.
 // @param needle {Any} The target value to assert.
 // @return {Boolean} A boolean value that indicates whether a container contains a given value.

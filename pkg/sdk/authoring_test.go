@@ -3,6 +3,7 @@ package sdk_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/module"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/sdk"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestNewModule(t *testing.T) {
@@ -65,6 +67,40 @@ func TestNewModule(t *testing.T) {
 	})
 }
 
+func TestSDKModuleHostFunctionsResolveQualifiedNamesCaseInsensitively(t *testing.T) {
+	t.Parallel()
+
+	mod := sdk.NewModule("postgres", func(bootstrap module.Bootstrap) error {
+		ns := bootstrap.Host().Library().Namespace("DB").Namespace("POSTGRES")
+
+		return sdk.RegisterFunctions(ns, sdk.Func("QUERY", runtime.Function1(func(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+			return arg, nil
+		})))
+	})
+
+	engine, err := ferret.New(ferret.WithoutStdlib(), ferret.WithModules(mod))
+	if err != nil {
+		t.Fatalf("new engine: %v", err)
+	}
+	defer func() { _ = engine.Close() }()
+
+	for _, name := range []string{
+		"db::postgres::query",
+		"DB::POSTGRES::QUERY",
+		"Db::Postgres::QuErY",
+	} {
+		query := `return ` + name + `("ok")`
+		output, runErr := engine.Run(t.Context(), source.NewAnonymous(query))
+		if runErr != nil {
+			t.Fatalf("run %q: %v", query, runErr)
+		}
+
+		if got := string(output.Content); got != `"ok"` {
+			t.Fatalf("run %q = %s, want %q", query, got, `"ok"`)
+		}
+	}
+}
+
 func TestRegisterFunctions(t *testing.T) {
 	library := runtime.NewLibrary()
 	ns := library.Namespace("TEST")
@@ -103,6 +139,11 @@ func TestRegisterFunctions(t *testing.T) {
 			t.Errorf("expected %s to be registered", name)
 		}
 	}
+
+	expected := []string{"TEST::FOUR", "TEST::ONE", "TEST::THREE", "TEST::TWO", "TEST::VARIABLE", "TEST::ZERO"}
+	if actual := functions.List(); !slices.Equal(actual, expected) {
+		t.Fatalf("expected declared function metadata %v, got %v", expected, actual)
+	}
 }
 
 func TestRegisterFunctionsAllowsArityOverloads(t *testing.T) {
@@ -120,8 +161,8 @@ func TestRegisterFunctionsAllowsArityOverloads(t *testing.T) {
 
 	if err := sdk.RegisterFunctions(ns,
 		sdk.Func("OVERLOAD", fn1),
-		sdk.Func("OVERLOAD", fn2),
-		sdk.Func("OVERLOAD", variadic),
+		sdk.Func("Overload", fn2),
+		sdk.Func("overload", variadic),
 	); err != nil {
 		t.Fatalf("register overloads: %v", err)
 	}
@@ -133,11 +174,14 @@ func TestRegisterFunctionsAllowsArityOverloads(t *testing.T) {
 	if functions.Size() != 3 || len(functions.List()) != 1 {
 		t.Fatalf("expected three definitions for one logical name, got size=%d list=%v", functions.Size(), functions.List())
 	}
+	if got := functions.List(); !slices.Equal(got, []string{"TEST::OVERLOAD"}) {
+		t.Fatalf("expected first declared overload spelling, got %v", got)
+	}
 	if !functions.A1().Has("TEST::OVERLOAD") || !functions.A2().Has("TEST::OVERLOAD") || !functions.Var().Has("TEST::OVERLOAD") {
 		t.Fatal("expected every arity overload to be registered")
 	}
 
-	if err := sdk.RegisterFunctions(ns, sdk.Func("OVERLOAD", fn1)); err == nil {
+	if err := sdk.RegisterFunctions(ns, sdk.Func("overLOAD", fn1)); err == nil {
 		t.Fatal("expected a duplicate name and arity to fail")
 	}
 }
@@ -163,7 +207,7 @@ func TestRegisterFunctionsIsAtomic(t *testing.T) {
 
 	err = sdk.RegisterFunctions(ns,
 		sdk.Func("DUPLICATE", valid),
-		sdk.Func("DUPLICATE", valid),
+		sdk.Func("Duplicate", valid),
 	)
 	if err == nil {
 		t.Fatal("expected duplicate error")
@@ -176,14 +220,16 @@ func TestRegisterFunctionsIsAtomic(t *testing.T) {
 	if err := sdk.RegisterFunctions(ns, sdk.Func("EXISTING", valid)); err != nil {
 		t.Fatalf("register existing function: %v", err)
 	}
-	err = sdk.RegisterFunctions(ns,
+
+	sameNamespace := library.Namespace("test")
+	err = sdk.RegisterFunctions(sameNamespace,
 		sdk.Func("NEW", valid),
-		sdk.Func("EXISTING", valid),
+		sdk.Func("Existing", valid),
 	)
 	if err == nil {
 		t.Fatal("expected existing definition error")
 	}
-	if ns.Function().Has("NEW") {
+	if sameNamespace.Function().Has("NEW") {
 		t.Fatal("new definition was registered before existing-name validation failed")
 	}
 

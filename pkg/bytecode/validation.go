@@ -69,7 +69,7 @@ func validateHostFunctions(functions []HostFunction) error {
 	seen := make(map[HostFunction]struct{}, len(functions))
 
 	for id, fn := range functions {
-		if fn.Name == "" {
+		if !runtime.HasTerminalFunctionName(fn.Name) {
 			return fmt.Errorf("%w: host function %d has empty name", ErrInvalidProgram, id)
 		}
 
@@ -77,11 +77,16 @@ func validateHostFunctions(functions []HostFunction) error {
 			return fmt.Errorf("%w: host function %q has negative argument count %d", ErrInvalidProgram, fn.Name, fn.ArgCount)
 		}
 
-		if _, exists := seen[fn]; exists {
+		identity := HostFunction{
+			Name:     runtime.NormalizeRegisteredName(fn.Name),
+			ArgCount: fn.ArgCount,
+		}
+
+		if _, exists := seen[identity]; exists {
 			return fmt.Errorf("%w: duplicate host function signature %q/%d", ErrInvalidProgram, fn.Name, fn.ArgCount)
 		}
 
-		seen[fn] = struct{}{}
+		seen[identity] = struct{}{}
 	}
 
 	return nil

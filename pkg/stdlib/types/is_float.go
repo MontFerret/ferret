@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// IS_FLOAT checks whether value is a float value.
+// is_float checks whether value is a float value.
 // @param value {Any} Input value of arbitrary type.
 // @return {Boolean} Returns true if value is float, otherwise false.
 func IsFloat(_ context.Context, arg runtime.Value) (runtime.Value, error) {

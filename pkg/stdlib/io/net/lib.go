@@ -5,10 +5,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/io/net/http"
 )
 
-// RegisterLib register `NET` namespace functions.
-// @namespace NET
+// RegisterLib register `net` namespace functions.
+// @namespace net
 func RegisterLib(ns runtime.Namespace) {
-	net := ns.Namespace("NET")
+	net := ns.Namespace("net")
 
 	http.RegisterLib(net)
 }

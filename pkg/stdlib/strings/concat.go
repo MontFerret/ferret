@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// CONCAT concatenates one or more instances of String, or an arrayList.
+// concat concatenates one or more instances of String, or an arrayList.
 // @param src {String, repeated | String[]} The source string / array.
 // @return {String} A string value.
 func Concat(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
@@ -43,7 +43,7 @@ func Concat(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return res, nil
 }
 
-// CONCAT_SEPARATOR concatenates one or more instances of String, or an arrayList with a given separator.
+// concat_separator concatenates one or more instances of String, or an arrayList with a given separator.
 // @param separator {String} The separator string.
 // @param src {String, repeated | String[]} The source string / array.
 // @return {String} Concatenated string.

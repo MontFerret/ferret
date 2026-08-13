@@ -85,7 +85,7 @@ func (f *Functions) Size() int {
 	return f.size
 }
 
-// List returns a sorted defensive copy of the unique logical function names.
+// List returns a sorted defensive copy of the unique registered function names.
 func (f *Functions) List() []string {
 	if len(f.names) == 0 {
 		return []string{}

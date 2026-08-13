@@ -12,7 +12,7 @@ var (
 	emptyString   runtime.String
 )
 
-// DATE_ADD adds amount given in unit to date.
+// date_add adds amount given in unit to date.
 // The following units are available:
 // * y, year, year
 // * m, month, months
@@ -42,7 +42,7 @@ func DateAdd(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, 
 	return runtime.NewDateTime(tm), nil
 }
 
-// DATE_SUBTRACT subtract amount given in unit to date.
+// date_subtract subtract amount given in unit to date.
 // The following units are available:
 // * y, year, year
 // * m, month, months

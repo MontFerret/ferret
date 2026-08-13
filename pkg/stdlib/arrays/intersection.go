@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// INTERSECTION return the intersection of all arrays specified.
+// intersection return the intersection of all arrays specified.
 // The result is an array of values that occur in all arguments.
 // The element order is random. Duplicates are removed.
 // @param arrays {Any[], repeated} An arbitrary number of arrays as multiple arguments (at least 2).

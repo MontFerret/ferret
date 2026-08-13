@@ -26,6 +26,7 @@ func (f *HostFunction) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		return err
 	}
+
 	if decoded.ArgCount == nil {
 		return fmt.Errorf("bytecode.HostFunction: missing argCount")
 	}

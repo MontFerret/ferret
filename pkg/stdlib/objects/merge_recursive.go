@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// MERGE_RECURSIVE recursively merge the given objects into a single object.
+// merge_recursive recursively merge the given objects into a single object.
 // @param objects {Map, repeated} Maps to merge.
 // @return {Map} Map created by merging.
 func MergeRecursive(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {

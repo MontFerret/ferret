@@ -83,9 +83,9 @@ func invalidGroupsError(groups []Group) error {
 }
 
 func registerFS(ns runtime.Namespace) {
-	fs.RegisterLib(ns.Namespace("IO"))
+	fs.RegisterLib(ns.Namespace("io"))
 }
 
 func registerNET(ns runtime.Namespace) {
-	net.RegisterLib(ns.Namespace("IO"))
+	net.RegisterLib(ns.Namespace("io"))
 }

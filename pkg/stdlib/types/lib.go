@@ -6,31 +6,31 @@ import (
 
 func RegisterLib(ns runtime.Namespace) {
 	ns.Function().A1().
-		Add("TO_BOOL", ToBool).
-		Add("TO_INT", ToInt).
-		Add("TO_FLOAT", ToFloat).
-		Add("TO_DURATION", ToDuration).
-		Add("TO_STRING", ToString).
-		Add("TO_ARRAY", ToArray).
-		Add("TO_BINARY", ToBinary).
-		Add("TO_NUMBER", ToNumber).
-		Add("TO_OBJECT", ToObject).
-		Add("IS_NONE", IsNone).
-		Add("IS_BOOL", IsBool).
-		Add("IS_INT", IsInt).
-		Add("IS_FLOAT", IsFloat).
-		Add("IS_DURATION", IsDuration).
-		Add("IS_STRING", IsString).
-		Add("IS_DATETIME", IsDateTime).
-		Add("IS_LIST", IsList).
-		Add("IS_ARRAY", IsArray).
-		Add("IS_MAP", IsMap).
-		Add("IS_OBJECT", IsObject).
-		Add("IS_BINARY", IsBinary).
-		Add("IS_NAN", IsNaN).
-		Add("TO_DATETIME", ToDateTime)
+		Add("to_bool", ToBool).
+		Add("to_int", ToInt).
+		Add("to_float", ToFloat).
+		Add("to_duration", ToDuration).
+		Add("to_string", ToString).
+		Add("to_array", ToArray).
+		Add("to_binary", ToBinary).
+		Add("to_number", ToNumber).
+		Add("to_object", ToObject).
+		Add("is_none", IsNone).
+		Add("is_bool", IsBool).
+		Add("is_int", IsInt).
+		Add("is_float", IsFloat).
+		Add("is_duration", IsDuration).
+		Add("is_string", IsString).
+		Add("is_datetime", IsDateTime).
+		Add("is_list", IsList).
+		Add("is_array", IsArray).
+		Add("is_map", IsMap).
+		Add("is_object", IsObject).
+		Add("is_binary", IsBinary).
+		Add("is_nan", IsNaN).
+		Add("to_datetime", ToDateTime)
 
-	ns.Function().A2().Add("TO_DATETIME", toDateTime2)
+	ns.Function().A2().Add("to_datetime", toDateTime2)
 }
 
 func isTypeof(value runtime.Value, ctype runtime.Type) runtime.Value {

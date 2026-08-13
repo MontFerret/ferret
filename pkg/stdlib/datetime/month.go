@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// DATE_MONTH returns the month of date as a number.
+// date_month returns the month of date as a number.
 // @param date {DateTime} Source DateTime.
 // @return {Int} A month number.
 func DateMonth(_ context.Context, arg runtime.Value) (runtime.Value, error) {

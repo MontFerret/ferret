@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// CONTAINS returns a value indicating whether a specified substring occurs within a string.
+// contains returns a value indicating whether a specified substring occurs within a string.
 // @param str {String} The source string.
 // @param search {String} The string to seek.
 // @param returnIndex {Boolean} Values which indicates whether to return the character position of the match is returned instead of a boolean.
@@ -23,7 +23,7 @@ func Contains(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 	return contains3(ctx, args[0], args[1], args[2])
 }
 
-// CONTAINS returns a value indicating whether a specified substring occurs within a string.
+// contains returns a value indicating whether a specified substring occurs within a string.
 // @param str {String} The source string.
 // @param search {String} The string to seek.
 // @return {Boolean | Int} A value indicating whether a specified substring occurs within a string.
@@ -31,7 +31,7 @@ func contains2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, er
 	return contains3(ctx, arg1, arg2, runtime.False)
 }
 
-// CONTAINS returns a value indicating whether a specified substring occurs within a string.
+// contains returns a value indicating whether a specified substring occurs within a string.
 // @param str {String} The source string.
 // @param search {String} The string to seek.
 // @param returnIndex {Boolean} Values which indicates whether to return the character position of the match is returned instead of a boolean.

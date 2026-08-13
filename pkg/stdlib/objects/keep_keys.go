@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// KEEP_KEYS returns a new object with only given keys.
+// keep_keys returns a new object with only given keys.
 // @param obj {Object|Map} Source object.
 // @param keys {String, repeated} Keys that need to be kept.
 // @return {Map} New Object with only given keys.

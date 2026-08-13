@@ -22,7 +22,7 @@ func TestHarnessRunsExternalModuleAndCleansUp(t *testing.T) {
 			})
 
 			return sdk.RegisterFunctions(
-				bootstrap.Host().Library().Namespace("SYNTHETIC"),
+				bootstrap.Host().Library().Namespace("synthetic"),
 				sdk.Func("ADD", sdk.Bind2(func(
 					_ context.Context,
 					left runtime.Int,
@@ -38,7 +38,7 @@ func TestHarnessRunsExternalModuleAndCleansUp(t *testing.T) {
 			t.Fatal("expected harness engine")
 		}
 
-		output, err := harness.Run(t.Context(), "RETURN SYNTHETIC::ADD(2, 3)")
+		output, err := harness.Run(t.Context(), "RETURN synthetic::add(2, 3)")
 		if err != nil {
 			t.Fatalf("run: %v", err)
 		}

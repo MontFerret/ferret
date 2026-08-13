@@ -13,6 +13,7 @@ type functionRegistrationKey struct {
 }
 
 // RegisterFunctions validates and registers definitions in a namespace.
+// Qualified function names, including namespace segments, are canonicalized to lowercase.
 // Functions may share a name when their fixed arities differ or one is variadic.
 // Validation is atomic: no definition is registered when any definition is invalid.
 func RegisterFunctions(ns runtime.Namespace, definitions ...FunctionDef) error {
@@ -24,10 +25,12 @@ func RegisterFunctions(ns runtime.Namespace, definitions ...FunctionDef) error {
 	seen := make(map[functionRegistrationKey]struct{}, len(definitions))
 
 	for i := range definitions {
-		definitions[i].name = strings.TrimSpace(definitions[i].name)
-		if definitions[i].name == "" {
+		name := strings.TrimSpace(definitions[i].name)
+		if !runtime.HasTerminalFunctionName(name) {
 			return fmt.Errorf("function name cannot be empty")
 		}
+
+		definitions[i].name = name
 	}
 
 	for _, definition := range definitions {
@@ -36,7 +39,7 @@ func RegisterFunctions(ns runtime.Namespace, definitions ...FunctionDef) error {
 			return err
 		}
 
-		key := functionRegistrationKey{name: definition.name, arity: arity}
+		key := functionRegistrationKey{name: runtime.NormalizeRegisteredName(definition.name), arity: arity}
 		if _, exists := seen[key]; exists {
 			return fmt.Errorf("function %q with the same arity is defined more than once", definition.name)
 		}

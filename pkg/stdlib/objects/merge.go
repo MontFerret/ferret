@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// MERGE merge the given objects into a single object.
+// merge merge the given objects into a single object.
 // @param objects {Map, repeated} Maps to merge.
 // @return {Map} Map created by merging.
 func Merge(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {

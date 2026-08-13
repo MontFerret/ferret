@@ -47,10 +47,10 @@ func TestNamespaceRegisterFunctionsDuplicate(t *testing.T) {
 }
 
 func TestNamespaceNewNamespaceQualifiedNames(t *testing.T) {
-	ns := NewNamespace("foo")
+	ns := NewNamespace("Foo::BAR")
 
 	ns.Function().A0().
-		Add("bar", func(ctx context.Context) (Value, error) {
+		Add("BAZ", func(ctx context.Context) (Value, error) {
 			return None, nil
 		})
 
@@ -60,21 +60,21 @@ func TestNamespaceNewNamespaceQualifiedNames(t *testing.T) {
 	}
 
 	names := funcs.List()
-	if !slices.Contains(names, "foo::bar") {
+	if !slices.Contains(names, "Foo::BAR::BAZ") {
 		t.Fatalf("expected qualified name in namespace, got %v", names)
 	}
 }
 
-func TestNamespaceAllowsCaseDistinctQualifiedNames(t *testing.T) {
+func TestNamespaceCasingVariantsMergeAndPreserveFirstDeclaredSpelling(t *testing.T) {
 	root := NewLibrary()
 
-	root.Namespace("Foo").Function().A0().
-		Add("Bar", func(ctx context.Context) (Value, error) {
+	root.Namespace("DB").Namespace("Postgres").Function().A0().
+		Add("Query", func(ctx context.Context) (Value, error) {
 			return NewString("upper"), nil
 		})
 
-	root.Namespace("foo").Function().A0().
-		Add("Bar", func(ctx context.Context) (Value, error) {
+	root.Namespace("db").Namespace("POSTGRES").Function().A0().
+		Add("Health", func(ctx context.Context) (Value, error) {
 			return NewString("lower"), nil
 		})
 
@@ -84,12 +84,87 @@ func TestNamespaceAllowsCaseDistinctQualifiedNames(t *testing.T) {
 	}
 
 	names := funcs.List()
-	if !slices.Contains(names, "Foo::Bar") || !slices.Contains(names, "foo::Bar") {
-		t.Fatalf("expected exact-case qualified names, got %v", names)
+	if !slices.Equal(names, []string{"DB::Postgres::Health", "DB::Postgres::Query"}) {
+		t.Fatalf("expected first-declared namespace casing, got %v", names)
 	}
 
-	if _, ok := funcs.A0().Get("FOO::BAR"); ok {
-		t.Fatalf("expected wrong-case qualified lookup to fail, got %v", names)
+	for _, name := range []string{
+		"db::postgres::query",
+		"DB::POSTGRES::QUERY",
+		"Db::Postgres::Query",
+	} {
+		fn, ok := funcs.A0().Get(name)
+		if !ok {
+			t.Fatalf("expected %q lookup to succeed, got %v", name, names)
+		}
+
+		value, callErr := fn(t.Context())
+		if callErr != nil || value != NewString("upper") {
+			t.Fatalf("call %q = %v, %v", name, value, callErr)
+		}
+	}
+
+	if !funcs.Has("dB::pOsTgReS::hEaLtH") {
+		t.Fatalf("expected mixed-case nested namespace lookup to succeed, got %v", names)
+	}
+}
+
+func TestNamespaceCasingVariantsRejectDuplicateNormalizedIdentity(t *testing.T) {
+	root := NewLibrary()
+	fn := func(context.Context) (Value, error) { return None, nil }
+
+	root.Namespace("Foo").Namespace("Bar").Function().A0().Add("Baz", fn)
+	root.Namespace("fOO").Namespace("bAR").Function().A0().Add("bAZ", fn)
+
+	if _, err := root.Build(); err == nil {
+		t.Fatal("expected duplicate normalized namespace member to fail")
+	}
+}
+
+func TestNamespaceRemovalUsesCaseInsensitiveQualifiedName(t *testing.T) {
+	root := NewLibrary()
+	root.Namespace("DB").Namespace("Postgres").Function().A0().Add("Query", func(context.Context) (Value, error) {
+		return None, nil
+	})
+
+	root.Namespace("db").Namespace("POSTGRES").Function().A0().Remove("qUeRy")
+
+	functions, err := root.Build()
+	if err != nil {
+		t.Fatalf("build functions: %v", err)
+	}
+
+	if functions.Size() != 0 {
+		t.Fatalf("expected mixed-case namespace removal to remove member, got %v", functions.List())
+	}
+}
+
+func TestNamespaceCasingDoesNotAffectRegistryHash(t *testing.T) {
+	fn := func(context.Context) (Value, error) { return None, nil }
+	build := func(namespace, nested, name string) *Functions {
+		root := NewLibrary()
+		root.Namespace(namespace).Namespace(nested).Function().A0().Add(name, fn)
+
+		functions, err := root.Build()
+		if err != nil {
+			t.Fatalf("build functions: %v", err)
+		}
+
+		return functions
+	}
+
+	upper := build("DB", "POSTGRES", "QUERY")
+	mixed := build("Db", "Postgres", "Query")
+	if upper.Hash() != mixed.Hash() {
+		t.Fatalf("equivalent namespace casing produced different hashes: %d != %d", upper.Hash(), mixed.Hash())
+	}
+
+	if !slices.Equal(upper.List(), []string{"DB::POSTGRES::QUERY"}) {
+		t.Fatalf("uppercase declaration was not preserved: %v", upper.List())
+	}
+
+	if !slices.Equal(mixed.List(), []string{"Db::Postgres::Query"}) {
+		t.Fatalf("mixed-case declaration was not preserved: %v", mixed.List())
 	}
 }
 

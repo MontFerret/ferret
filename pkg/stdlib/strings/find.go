@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// FIND_FIRST returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
+// find_first returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
 // @param str {String} The source string.
 // @param search {String} The string to seek.
 // @param start {Int} Limit the search to a subset of the text, beginning at start.
@@ -31,7 +31,7 @@ func FindFirst(ctx context.Context, args ...runtime.Value) (runtime.Value, error
 	}
 }
 
-// FIND_FIRST returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
+// find_first returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
 // @param str {String} The source string.
 // @param search {String} The string to seek.
 // @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned.
@@ -39,7 +39,7 @@ func findFirst2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, e
 	return findFirst(ctx, arg1, arg2, runtime.ZeroInt, runtime.ZeroInt, false)
 }
 
-// FIND_FIRST returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
+// find_first returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
 // @param str {String} The source string.
 // @param search {String} The string to seek.
 // @param start {Int} Limit the search to a subset of the text, beginning at start.
@@ -49,7 +49,7 @@ func findFirst3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Va
 	return findFirst(ctx, arg1, arg2, start, runtime.ZeroInt, false)
 }
 
-// FIND_FIRST returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
+// find_first returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
 // @param str {String} The source string.
 // @param search {String} The string to seek.
 // @param start {Int} Limit the search to a subset of the text, beginning at start.
@@ -84,7 +84,7 @@ func findFirst(_ context.Context, arg1, arg2 runtime.Value, start, end runtime.I
 	return runtime.NewInt(found), nil
 }
 
-// FIND_LAST returns the position of the last occurrence of the string search inside the string text. Positions start at 0.
+// find_last returns the position of the last occurrence of the string search inside the string text. Positions start at 0.
 // @param src {String} The source string.
 // @param search {String} The string to seek.
 // @param start {Int} Limit the search to a subset of the text, beginning at start.
@@ -107,7 +107,7 @@ func FindLast(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 	}
 }
 
-// FIND_LAST returns the position of the last occurrence of the string search inside the string text. Positions start at 0.
+// find_last returns the position of the last occurrence of the string search inside the string text. Positions start at 0.
 // @param src {String} The source string.
 // @param search {String} The string to seek.
 // @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, end is returned.
@@ -115,7 +115,7 @@ func findLast2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, er
 	return findLast(ctx, arg1, arg2, runtime.ZeroInt, runtime.ZeroInt, false)
 }
 
-// FIND_LAST returns the position of the last occurrence of the string search inside the string text. Positions start at 0.
+// find_last returns the position of the last occurrence of the string search inside the string text. Positions start at 0.
 // @param src {String} The source string.
 // @param search {String} The string to seek.
 // @param start {Int} Limit the search to a subset of the text, beginning at start.
@@ -125,7 +125,7 @@ func findLast3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Val
 	return findLast(ctx, arg1, arg2, start, runtime.ZeroInt, false)
 }
 
-// FIND_LAST returns the position of the last occurrence of the string search inside the string text. Positions start at 0.
+// find_last returns the position of the last occurrence of the string search inside the string text. Positions start at 0.
 // @param src {String} The source string.
 // @param search {String} The string to seek.
 // @param start {Int} Limit the search to a subset of the text, beginning at start.

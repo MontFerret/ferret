@@ -18,9 +18,9 @@ func TestBuildReferenceGroupsAndSortsRuntimeSignatures(t *testing.T) {
 		Assertions: map[string]assertionDescriptor{},
 	}
 	registered := []registeredSignature{
-		{QualifiedName: "NESTED::ITEM", Namespace: "NESTED", Name: "ITEM", Symbol: "example.Many", Variadic: true},
-		{QualifiedName: "ROOT", Name: "ROOT", Symbol: "example.One", Arity: 1},
-		{QualifiedName: "NESTED::ITEM", Namespace: "NESTED", Name: "ITEM", Symbol: "example.Zero", Arity: 0},
+		{QualifiedName: "nested::item", Namespace: "nested", Name: "item", Symbol: "example.Many", Variadic: true},
+		{QualifiedName: "root", Name: "root", Symbol: "example.One", Arity: 1},
+		{QualifiedName: "nested::item", Namespace: "nested", Name: "item", Symbol: "example.Zero", Arity: 0},
 	}
 
 	reference, err := buildReference("1.2.3", registered, catalog)
@@ -32,7 +32,7 @@ func TestBuildReferenceGroupsAndSortsRuntimeSignatures(t *testing.T) {
 		t.Fatalf("identity = %#v", reference)
 	}
 
-	if got, want := namespaceNames(reference.Namespaces), []string{"", "NESTED"}; !reflect.DeepEqual(got, want) {
+	if got, want := namespaceNames(reference.Namespaces), []string{"", "nested"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("namespaces = %v, want %v", got, want)
 	}
 
@@ -49,11 +49,11 @@ func TestValidateAssertionAritiesRequiresContiguousRange(t *testing.T) {
 		Max:         3,
 	}
 
-	if err := validateAssertionArities("T::EQ", descriptor, []int{3, 2}); err != nil {
+	if err := validateAssertionArities("t::eq", descriptor, []int{3, 2}); err != nil {
 		t.Fatalf("validate contiguous overloads: %v", err)
 	}
 
-	if err := validateAssertionArities("T::EQ", descriptor, []int{2}); err == nil {
+	if err := validateAssertionArities("t::eq", descriptor, []int{2}); err == nil {
 		t.Fatal("expected missing overload to fail")
 	}
 }

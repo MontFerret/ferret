@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// BASE returns the last component of the path or the path itself if it does not contain any directory separators.
+// base returns the last component of the path or the path itself if it does not contain any directory separators.
 // @param path {String} The path.
 // @return {String} The last component of the path.
 func Base(_ context.Context, arg runtime.Value) (runtime.Value, error) {

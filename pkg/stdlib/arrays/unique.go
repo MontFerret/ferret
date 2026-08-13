@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// UNIQUE returns all unique elements from a given array.
+// unique returns all unique elements from a given array.
 // @param array {Any[]} Target array.
 // @return {Any[]} New array without duplicates.
 func Unique(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

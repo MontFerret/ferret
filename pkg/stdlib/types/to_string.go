@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// TO_STRING takes an input value of any type and convert it into a string value.
+// to_string takes an input value of any type and convert it into a string value.
 // @param value {Any} Input value of arbitrary type.
 // @return {String} String representation of a given value.
 func ToString(_ context.Context, arg runtime.Value) (runtime.Value, error) {

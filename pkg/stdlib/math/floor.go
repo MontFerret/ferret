@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// FLOOR returns the greatest integer value less than or equal to a given value.
+// floor returns the greatest integer value less than or equal to a given value.
 // @param number {Int | Float} Input number.
 // @return {Int} The greatest integer value less than or equal to a given value.
 func Floor(_ context.Context, arg runtime.Value) (runtime.Value, error) {

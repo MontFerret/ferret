@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// REGEX_MATCH returns the matches in the given string text, using the regex.
+// regex_match returns the matches in the given string text, using the regex.
 // @param str {String} The string to search in.
 // @param expression {String} A regular expression to use for matching the text.
 // @param caseInsensitive {Boolean} If set to true, the matching will be case-insensitive. The default is false.
@@ -24,7 +24,7 @@ func RegexMatch(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 	return regexMatch3(ctx, args[0], args[1], args[2])
 }
 
-// REGEX_MATCH returns the matches in the given string text, using the regex.
+// regex_match returns the matches in the given string text, using the regex.
 // @param str {String} The string to search in.
 // @param expression {String} A regular expression to use for matching the text.
 // @return {Any[]} An array of strings containing the matches.
@@ -32,7 +32,7 @@ func regexMatch2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, 
 	return regexMatch3(ctx, arg1, arg2, runtime.False)
 }
 
-// REGEX_MATCH returns the matches in the given string text, using the regex.
+// regex_match returns the matches in the given string text, using the regex.
 // @param str {String} The string to search in.
 // @param expression {String} A regular expression to use for matching the text.
 // @param caseInsensitive {Boolean} If set to true, the matching will be case-insensitive. The default is false.
@@ -65,7 +65,7 @@ func regexMatch3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.V
 	return res, nil
 }
 
-// REGEX_SPLIT splits the given string text into a list of strings, using the separator.
+// regex_split splits the given string text into a list of strings, using the separator.
 // @param str {String} The string to split.
 // @param expression {String} A regular expression to use for splitting the text.
 // @param limit {Int} Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
@@ -88,7 +88,7 @@ func RegexSplit(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 	}
 }
 
-// REGEX_SPLIT splits the given string text into a list of strings, using the separator.
+// regex_split splits the given string text into a list of strings, using the separator.
 // @param str {String} The string to split.
 // @param expression {String} A regular expression to use for splitting the text.
 // @return {Any[]} An array of strings splitted by the expression.
@@ -96,7 +96,7 @@ func regexSplit2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, 
 	return regexSplit(ctx, arg1, arg2, -1)
 }
 
-// REGEX_SPLIT splits the given string text into a list of strings, using the separator.
+// regex_split splits the given string text into a list of strings, using the separator.
 // @param str {String} The string to split.
 // @param expression {String} A regular expression to use for splitting the text.
 // @param limit {Int} Limit the number of split values in the result.
@@ -106,7 +106,7 @@ func regexSplit3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.V
 	return regexSplit(ctx, arg1, arg2, int(limit))
 }
 
-// REGEX_SPLIT splits the given string text into a list of strings, using the separator.
+// regex_split splits the given string text into a list of strings, using the separator.
 // @param str {String} The string to split.
 // @param expression {String} A regular expression to use for splitting the text.
 // @param limit {Int} Limit the number of split values in the result.
@@ -140,7 +140,7 @@ func regexSplit(ctx context.Context, arg1, arg2 runtime.Value, limit int) (runti
 	return res, nil
 }
 
-// REGEX_TEST test whether the regexp has at least one match in the given text.
+// regex_test test whether the regexp has at least one match in the given text.
 // @param str {String} The string to test.
 // @param expression {String} A regular expression to use for splitting the text.
 // @param caseInsensitive {Boolean} If set to true, the matching will be case-insensitive.
@@ -159,7 +159,7 @@ func RegexTest(ctx context.Context, args ...runtime.Value) (runtime.Value, error
 	return regexTest3(ctx, args[0], args[1], args[2])
 }
 
-// REGEX_TEST test whether the regexp has at least one match in the given text.
+// regex_test test whether the regexp has at least one match in the given text.
 // @param str {String} The string to test.
 // @param expression {String} A regular expression to use for splitting the text.
 // @return {Boolean} Returns true if the pattern is contained in text, and false otherwise.
@@ -167,7 +167,7 @@ func regexTest2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, e
 	return regexTest3(ctx, arg1, arg2, runtime.False)
 }
 
-// REGEX_TEST test whether the regexp has at least one match in the given text.
+// regex_test test whether the regexp has at least one match in the given text.
 // @param str {String} The string to test.
 // @param expression {String} A regular expression to use for splitting the text.
 // @param caseInsensitive {Boolean} If set to true, the matching will be case-insensitive.
@@ -191,7 +191,7 @@ func regexTest3(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Valu
 	return runtime.NewBoolean(matches), nil
 }
 
-// REGEX_REPLACE replace every substring matched with the regexp with a given string.
+// regex_replace replace every substring matched with the regexp with a given string.
 // @param str {String} The string to split.
 // @param expression {String} A regular expression search pattern.
 // @param replacement {String} The string to replace the search pattern with
@@ -211,7 +211,7 @@ func RegexReplace(ctx context.Context, args ...runtime.Value) (runtime.Value, er
 	return regexReplace4(ctx, args[0], args[1], args[2], args[3])
 }
 
-// REGEX_REPLACE replace every substring matched with the regexp with a given string.
+// regex_replace replace every substring matched with the regexp with a given string.
 // @param str {String} The string to split.
 // @param expression {String} A regular expression search pattern.
 // @param replacement {String} The string to replace the search pattern with
@@ -220,7 +220,7 @@ func regexReplace3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime
 	return regexReplace4(ctx, arg1, arg2, arg3, runtime.False)
 }
 
-// REGEX_REPLACE replace every substring matched with the regexp with a given string.
+// regex_replace replace every substring matched with the regexp with a given string.
 // @param str {String} The string to split.
 // @param expression {String} A regular expression search pattern.
 // @param replacement {String} The string to replace the search pattern with

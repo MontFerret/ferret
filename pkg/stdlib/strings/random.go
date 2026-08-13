@@ -19,7 +19,7 @@ const (
 // https://github.com/golang/go/issues/8926
 var randSrc = rand.NewSource(time.Now().UnixNano())
 
-// RANDOM_TOKEN generates a pseudo-random token string with the specified length. The algorithm for token generation should be treated as opaque.
+// random_token generates a pseudo-random token string with the specified length. The algorithm for token generation should be treated as opaque.
 // @param len {Int} The desired string length for the token. It must be greater than 0 and at most 65536.
 // @return {String} A generated token consisting of lowercase letters, uppercase letters and numbers.
 func RandomToken(_ context.Context, arg runtime.Value) (runtime.Value, error) {

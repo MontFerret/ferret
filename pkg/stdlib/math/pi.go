@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// PI returns Pi value.
+// pi returns Pi value.
 // @return {Float} Pi value.
 func Pi(_ context.Context) (runtime.Value, error) {
 	return runtime.NewFloat(math.Pi), nil

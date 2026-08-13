@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// MEDIAN returns the median of the values in array.
+// median returns the median of the values in array.
 // @param array {Int[] | Float[]} arrayList of numbers.
 // @return {Float} The median of the values in array.
 func Median(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

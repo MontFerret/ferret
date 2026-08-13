@@ -4,14 +4,14 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// RegisterLib register `HTTP` namespace functions.
-// @namespace HTTP
+// RegisterLib register `http` namespace functions.
+// @namespace http
 func RegisterLib(ns runtime.Namespace) {
-	ns = ns.Namespace("HTTP")
+	ns = ns.Namespace("http")
 	ns.Function().A1().
-		Add("GET", GET).
-		Add("POST", POST).
-		Add("PUT", PUT).
-		Add("DELETE", DELETE).
-		Add("DO", REQUEST)
+		Add("get", GET).
+		Add("post", POST).
+		Add("put", PUT).
+		Add("delete", DELETE).
+		Add("do", REQUEST)
 }

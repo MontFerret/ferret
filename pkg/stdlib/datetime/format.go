@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// DATE_FORMAT format date according to the given format string.
+// date_format format date according to the given format string.
 // @param date {DateTime} Source DateTime object.
 // @param format {String} String format.
 // @return {String} Formatted date.

@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// FLATTEN turns an array of arrays into a flat array.
+// flatten turns an array of arrays into a flat array.
 // All array elements in array will be expanded in the result array.
 // Non-array elements are added as they are.
 // The function will recurse into sub-arrays up to the specified depth.
@@ -26,7 +26,7 @@ func Flatten(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 	return flatten2(ctx, args[0], args[1])
 }
 
-// FLATTEN turns an array of arrays into a flat array.
+// flatten turns an array of arrays into a flat array.
 // All array elements in array will be expanded in the result array.
 // Non-array elements are added as they are.
 // The function will recurse into sub-arrays up to the specified depth.
@@ -37,7 +37,7 @@ func flatten1(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
 	return flatten2(ctx, arg1, runtime.Int(1))
 }
 
-// FLATTEN turns an array of arrays into a flat array.
+// flatten turns an array of arrays into a flat array.
 // All array elements in array will be expanded in the result array.
 // Non-array elements are added as they are.
 // The function will recurse into sub-arrays up to the specified depth.

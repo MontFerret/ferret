@@ -1,6 +1,5 @@
 package runtime
 
-const NamespaceSeparator = "::"
 const emptyNS = ""
 
 type (
@@ -20,20 +19,22 @@ type (
 	// Namespace represents a namespace that can contain functions and nested namespaces.
 	// It provides methods to create nested namespaces and register functions within those namespaces.
 	Namespace interface {
-		// Namespace creates a new nested namespace with the given name and returns it.
+		// Namespace creates or reuses a nested namespace with the given case-insensitive name.
 		Namespace(name string) Namespace
 		// Function returns a FunctionDefs interface that allows registering functions within this namespace.
 		Function() FunctionDefs
 	}
 
 	library struct {
-		builder *FunctionsBuilder
-		name    string
+		builder    *FunctionsBuilder
+		namespaces *registeredDisplayNames
+		name       string
 	}
 )
 
 func NewLibrary() Library {
 	lib := new(library)
+	lib.namespaces = newRegisteredDisplayNames()
 	lib.builder = newRootFunctionsBuilder()
 
 	return lib
@@ -41,7 +42,8 @@ func NewLibrary() Library {
 
 func NewNamespace(name string) Namespace {
 	lib := new(library)
-	lib.name = name
+	lib.namespaces = newRegisteredDisplayNames()
+	lib.name = lib.namespaces.Declare(NormalizeRegisteredName(name), name)
 	lib.builder = newNamespacedFunctionsBuilder(lib.name)
 
 	return lib
@@ -61,7 +63,9 @@ func (lib *library) Size() int {
 
 func (lib *library) Namespace(name string) Namespace {
 	newLib := new(library)
-	newLib.name = makeFunctionName(lib.name, name)
+	newLib.namespaces = lib.namespaces
+	qualifiedName := makeFunctionName(lib.name, name)
+	newLib.name = lib.namespaces.Declare(NormalizeRegisteredName(qualifiedName), qualifiedName)
 	newLib.builder = newFunctionsBuilderInternalFrom(newLib.name, lib.builder)
 
 	return newLib

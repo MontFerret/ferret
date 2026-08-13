@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// ROUND returns the nearest integer, rounding half away from zero.
+// round returns the nearest integer, rounding half away from zero.
 // @param number {Int | Float} Input number.
 // @return {Int} The nearest integer, rounding half away from zero.
 func Round(_ context.Context, arg runtime.Value) (runtime.Value, error) {

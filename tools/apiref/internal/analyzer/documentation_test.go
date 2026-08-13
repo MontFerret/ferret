@@ -57,7 +57,7 @@ func TestParseAssertionDocumentationExpandsPrefixes(t *testing.T) {
 	}
 
 	for arity := 2; arity <= 3; arity++ {
-		registered := registeredSignature{QualifiedName: "T::EQ", Arity: arity}
+		registered := registeredSignature{QualifiedName: "t::eq", Arity: arity}
 		signature, err := parseAssertionDocumentation(registered, descriptor)
 		if err != nil {
 			t.Fatalf("arity %d: %v", arity, err)

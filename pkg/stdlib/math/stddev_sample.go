@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// STDDEV_SAMPLE returns the sample standard deviation of the values in a given array.
+// stddev_sample returns the sample standard deviation of the values in a given array.
 // @param numbers {Int[] | Float[]} arrayList of numbers.
 // @return {Float} The sample standard deviation.
 func StandardDeviationSample(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

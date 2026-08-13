@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// DATE_LEAPYEAR returns true if date is in a leap year else false.
+// date_leapyear returns true if date is in a leap year else false.
 // @param date {DateTime} Source DateTime.
 // @return {Boolean} Date is in a leap year.
 func DateLeapYear(_ context.Context, arg runtime.Value) (runtime.Value, error) {

@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// SUBSTRING returns a substring of value.
+// substring returns a substring of value.
 // @param str {String} The source string.
 // @param offset {Int} Start at offset, offsets start at position 0.
 // @param length {Int} At most length characters, omit to get the substring from offset to the end of the string.
@@ -23,7 +23,7 @@ func Substring(ctx context.Context, args ...runtime.Value) (runtime.Value, error
 	return substring3(ctx, args[0], args[1], args[2])
 }
 
-// SUBSTRING returns a substring of value.
+// substring returns a substring of value.
 // @param str {String} The source string.
 // @param offset {Int} Start at offset, offsets start at position 0.
 // @return {String} A substring of value.
@@ -31,7 +31,7 @@ func substring2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, e
 	return substring(ctx, arg1, arg2, runtime.None, false)
 }
 
-// SUBSTRING returns a substring of value.
+// substring returns a substring of value.
 // @param str {String} The source string.
 // @param offset {Int} Start at offset, offsets start at position 0.
 // @param length {Int} At most length characters, omit to get the substring from offset to the end of the string.
@@ -79,7 +79,7 @@ func substring(_ context.Context, arg1, arg2, arg3 runtime.Value, hasLength bool
 	return runtime.NewStringFromRunes(substr), nil
 }
 
-// LEFT returns the leftmost characters of the string value by index.
+// left returns the leftmost characters of the string value by index.
 // @param str {String} The source string.
 // @param length {Int} The amount of characters to return.
 // @return {String} The leftmost characters of the string value by index.
@@ -101,7 +101,7 @@ func Left(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return runtime.NewStringFromRunes(runes[0:pos]), nil
 }
 
-// RIGHT returns the rightmost characters of the string value.
+// right returns the rightmost characters of the string value.
 // @param str {String} The source string.
 // @param length {Int} The amount of characters to return.
 // @return {String} The rightmost characters of the string value.

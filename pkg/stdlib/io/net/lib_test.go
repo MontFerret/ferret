@@ -30,19 +30,19 @@ func TestRegisterLib(t *testing.T) {
 		hasDo := false
 
 		for _, fn := range functions {
-			if fn == "NET::HTTP::GET" {
+			if fn == "net::http::get" {
 				hasGet = true
 			}
-			if fn == "NET::HTTP::POST" {
+			if fn == "net::http::post" {
 				hasPost = true
 			}
-			if fn == "NET::HTTP::PUT" {
+			if fn == "net::http::put" {
 				hasPut = true
 			}
-			if fn == "NET::HTTP::DELETE" {
+			if fn == "net::http::delete" {
 				hasDelete = true
 			}
-			if fn == "NET::HTTP::DO" {
+			if fn == "net::http::do" {
 				hasDo = true
 			}
 		}

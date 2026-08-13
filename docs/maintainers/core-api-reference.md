@@ -13,11 +13,16 @@ fixed arity, variadic definition, overload, root function, and nested namespace.
 Unregistered Go declarations are not published.
 
 The generator then loads `pkg/stdlib` source with `go/packages` and resolves each
-registered function to its declaration. The assertion descriptors used by `T`
-and `T::NOT` are resolved statically, including their `Args.Min` and `Args.Max`
+registered function to its declaration. The assertion descriptors used by `t`
+and `t::not` are resolved statically, including their `Args.Min` and `Args.Max`
 bounds. Any unresolved declaration, unsupported registration shape, documentation
 error, arity contradiction, or runtime/source mismatch fails generation without
 writing a partial artifact.
+
+Host-function qualified names are case-insensitive in FQL and have one canonical
+lowercase presentation in the registry and generated API Reference. This includes
+every namespace segment; casing compatibility is represented by lookup rather
+than duplicate aliases.
 
 The API Reference and discovery-index wire contracts belong to
 [`github.com/MontFerret/specs`](https://github.com/MontFerret/specs). Ferret pins
@@ -32,7 +37,7 @@ Registered declarations use the strict structured format parsed by
 `api.ParseDocumentation`:
 
 ```go
-// SPLIT divides a string at each separator.
+// split divides a string at each separator.
 // @param value {String} Source string.
 // @param separator {String} Separator string.
 // @return {String[]} Split values.
@@ -53,7 +58,7 @@ The rules are intentionally strict:
 - Parameters are flat. Describe nested map fields in the parent parameter's
   description instead of using names such as `params.mode`.
 - Assertion descriptor prose is namespace-neutral because the same descriptor
-  documents both positive and `T::NOT` overloads. The descriptor documents its
+  documents both positive and `t::not` overloads. The descriptor documents its
   maximum argument list; each fixed overload receives the corresponding prefix.
 
 Run the focused authoring and parity checks after changing stdlib registration

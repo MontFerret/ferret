@@ -5,6 +5,6 @@ import (
 )
 
 func RegisterLib(ns runtime.Namespace) {
-	ns.Function().A1().Add("WAIT", Wait)
-	ns.Function().Var().Add("PRINT", Print)
+	ns.Function().A1().Add("wait", Wait)
+	ns.Function().Var().Add("print", Print)
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// ATAN2 returns the arc tangent of y/x, using the signs of the two to determine the quadrant of the return value.
+// atan2 returns the arc tangent of y/x, using the signs of the two to determine the quadrant of the return value.
 // @param number1 {Int | Float} Input number.
 // @param number2 {Int | Float} Input number.
 // @return {Float} The arc tangent of y/x, using the signs of the two to determine the quadrant of the return value.

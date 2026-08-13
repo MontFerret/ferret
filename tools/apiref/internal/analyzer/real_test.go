@@ -82,7 +82,15 @@ func assertExactTopology(t *testing.T, functions *runtime.Functions, reference *
 	topology := make(map[string][]api.Signature)
 	count := 0
 	for _, namespace := range reference.Namespaces {
+		if namespace.Name != strings.ToLower(namespace.Name) {
+			t.Fatalf("reference namespace %q is not canonical lowercase", namespace.Name)
+		}
+
 		for _, function := range namespace.Functions {
+			if function.Name != strings.ToLower(function.Name) {
+				t.Fatalf("reference function %q in namespace %q is not canonical lowercase", function.Name, namespace.Name)
+			}
+
 			name := function.Name
 			if namespace.Name != "" {
 				name = namespace.Name + runtime.NamespaceSeparator + function.Name

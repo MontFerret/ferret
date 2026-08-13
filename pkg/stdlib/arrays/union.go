@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// UNION returns the union of all passed arrays.
+// union returns the union of all passed arrays.
 // @param arrays {Any[], repeated} List of arrays to combine.
 // @return {Any[]} All array elements combined in a single array, in any order.
 func Union(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {

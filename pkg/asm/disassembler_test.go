@@ -517,7 +517,7 @@ func TestDisassemble_HCallCommentMissingWhenNoMatchingLoadConst(t *testing.T) {
 		t.Fatalf("Disassemble() error: %v", err)
 	}
 
-	if strings.Contains(out, "; host X::DO") {
+	if strings.Contains(out, "; host x::do") {
 		t.Fatalf("did not expect host comment when LOADC register does not match HCALL register:\n%s", out)
 	}
 }

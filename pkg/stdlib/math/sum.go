@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// SUM returns the sum of the values in a given array.
+// sum returns the sum of the values in a given array.
 // @param numbers {Int[] | Float[]} arrayList of numbers.
 // @return {Float} The sum of the values.
 func Sum(ctx context.Context, arg runtime.Value) (runtime.Value, error) {

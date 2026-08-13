@@ -45,6 +45,12 @@ func TestCompiler_RegisterFunction(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
+	if err := c.RegisterFunction("hello", func(context.Context, ...core.Value) (core.Value, error) {
+		return core.WrapValue(runtime.NewString("replacement")), nil
+	}); err != nil {
+		t.Fatalf("case-only duplicate should be silently skipped: %v", err)
+	}
+
 	prog, err := c.Compile(`RETURN HELLO()`)
 	if err != nil {
 		t.Fatalf("compile error: %v", err)
@@ -62,6 +68,57 @@ func TestCompiler_RegisterFunction(t *testing.T) {
 
 	if result != "hello" {
 		t.Fatalf("expected \"hello\", got %q", result)
+	}
+
+	if got := c.RegisteredFunctions(); len(got) != 1 || got[0] != "HELLO" {
+		t.Fatalf("registered functions = %v, want original HELLO spelling", got)
+	}
+}
+
+func TestCompiler_NamespaceRegistrationIsCaseInsensitive(t *testing.T) {
+	c := compiler.New()
+	ns := c.Namespace("DB").Namespace("POSTGRES")
+
+	err := ns.RegisterFunction("QUERY", func(context.Context, ...core.Value) (core.Value, error) {
+		return core.WrapValue(runtime.NewString("ok")), nil
+	})
+	if err != nil {
+		t.Fatalf("register namespaced function: %v", err)
+	}
+
+	if err := c.Namespace("db").Namespace("postgres").RegisterFunction("query", func(context.Context, ...core.Value) (core.Value, error) {
+		return core.WrapValue(runtime.None), nil
+	}); err == nil {
+		t.Fatal("expected duplicate normalized namespace member to fail")
+	}
+
+	for _, query := range []string{
+		"RETURN db::postgres::query()",
+		"RETURN DB::POSTGRES::QUERY()",
+		"RETURN Db::Postgres::Query()",
+	} {
+		prog, compileErr := c.Compile(query)
+		if compileErr != nil {
+			t.Fatalf("compile %q: %v", query, compileErr)
+		}
+
+		out, runErr := prog.Run(t.Context())
+		if runErr != nil {
+			t.Fatalf("run %q: %v", query, runErr)
+		}
+
+		var result string
+		if err := json.Unmarshal(out, &result); err != nil {
+			t.Fatalf("unmarshal %q output: %v", query, err)
+		}
+
+		if result != "ok" {
+			t.Fatalf("run %q = %q, want ok", query, result)
+		}
+	}
+
+	if got := ns.RegisteredFunctions(); len(got) != 1 || got[0] != "DB::POSTGRES::QUERY" {
+		t.Fatalf("registered functions = %v, want declared qualified name", got)
 	}
 }
 
@@ -82,7 +139,7 @@ func TestCompiler_RegisteredFunctions(t *testing.T) {
 	}
 
 	if !found["FUNC_A"] || !found["FUNC_B"] {
-		t.Fatalf("expected FUNC_A and FUNC_B, got %v", names)
+		t.Fatalf("expected declared FUNC_A and FUNC_B, got %v", names)
 	}
 }
 
@@ -100,9 +157,9 @@ func TestCompiler_RegisterFunctions_duplicate(t *testing.T) {
 		t.Fatalf("first RegisterFunctions error: %v", err)
 	}
 
-	// Second registration of the same set should be silently skipped (no error).
+	// Second registration of the same set is silently skipped for v1 compatibility.
 	if err := c.RegisterFunctions(fns); err != nil {
-		t.Fatalf("second RegisterFunctions should silently skip duplicates, got: %v", err)
+		t.Fatalf("second RegisterFunctions should skip duplicates: %v", err)
 	}
 
 	// Most importantly: Compile must succeed — no latent builder error must have

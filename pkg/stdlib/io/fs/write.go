@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// WRITE writes the given data into the file.
+// write writes the given data into the file.
 // @param path {String} File path to write into.
 // @param data {Binary} Data to write.
 // @param params {Map} Additional parameters. The mode field selects the write mode:
@@ -29,7 +29,7 @@ func Write(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return write3(ctx, args[0], args[1], args[2])
 }
 
-// WRITE writes the given data into the file.
+// write writes the given data into the file.
 // @param path {String} File path to write into.
 // @param data {Binary} Data to write.
 // @return {None} None.
@@ -37,7 +37,7 @@ func write2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error
 	return writeFile(ctx, arg1, arg2, defaultParams)
 }
 
-// WRITE writes the given data into the file.
+// write writes the given data into the file.
 // @param path {String} File path to write into.
 // @param data {Binary} Data to write.
 // @param params {Map} Additional parameters. The mode field selects the write mode:

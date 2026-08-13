@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// LOG2 returns the binary logarithm of a given value.
+// log2 returns the binary logarithm of a given value.
 // @param number {Int | Float} Input number.
 // @return {Float} The binary logarithm of a given value.
 func Log2(_ context.Context, arg runtime.Value) (runtime.Value, error) {

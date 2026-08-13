@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// JOIN joins any number of path elements into a single path, separating them with slashes.
+// join joins any number of path elements into a single path, separating them with slashes.
 // @param elements {String, repeated | String[]} The path elements
 // @return {String} Single path from the given elements.
 func Join(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {

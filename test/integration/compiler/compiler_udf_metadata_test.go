@@ -82,7 +82,7 @@ func TestHostFunctionSignatureBindings(t *testing.T) {
 	}
 	namespaced := []bytecode.HostFunction{
 		{Name: "NS::FOO", ArgCount: 1},
-		{Name: "NS::FOO", ArgCount: 2},
+		{Name: "ns::foo", ArgCount: 2},
 	}
 
 	RunSpecsLevels(t, []spec.Spec{
@@ -96,7 +96,7 @@ FUNC call() => [FOO(1), FOO(1, 2), FOO(3)]
 RETURN call()
 `, expectHostSignatures(foo...), "udf host overload bindings preserve first-seen order and reuse matching signatures"),
 		ProgramCheck(
-			`RETURN [NS::FOO(1), NS::FOO(1, 2), NS::FOO(3)]`,
+			`RETURN [NS::FOO(1), ns::foo(1, 2), Ns::FoO(3)]`,
 			expectHostSignatures(namespaced...),
 			"namespaced host overload bindings preserve first-seen order and reuse matching signatures",
 		),
@@ -211,23 +211,12 @@ LET upper = Foo()
 LET lower = foo()
 RETURN [upper, lower]
 `, func(prog *bytecode.Program) error {
-			expected := []bytecode.HostFunction{
-				{Name: "Foo", ArgCount: 0},
-				{Name: "foo", ArgCount: 0},
+			if len(prog.Functions.Host) != 1 {
+				return fmt.Errorf("expected one case-insensitive host function, got %d (%v)", len(prog.Functions.Host), prog.Functions.Host)
 			}
 
-			if len(prog.Functions.Host) != len(expected) {
-				return fmt.Errorf("expected %d host functions, got %d (%v)", len(expected), len(prog.Functions.Host), prog.Functions.Host)
-			}
-
-			for _, fn := range expected {
-				if err := hostSignature(prog.Functions.Host, fn.Name, fn.ArgCount); err != nil {
-					return err
-				}
-			}
-
-			return nil
-		}, "case-distinct host names preserved"),
+			return hostSignature(prog.Functions.Host, "Foo", 0)
+		}, "host call casing shares one binding and preserves first source spelling"),
 		ProgramCheck(`
 USE Foo::Test_FN AS Fn
 RETURN Fn()
@@ -237,7 +226,7 @@ RETURN Fn()
 			}
 
 			return hostSignature(prog.Functions.Host, "Foo::Test_FN", 0)
-		}, "function alias preserves exact case"),
+		}, "function alias preserves its qualified host target"),
 		ProgramCheck(`
 USE Foo AS F
 RETURN f::Test_FN()
@@ -266,7 +255,7 @@ RETURN f()
 			}
 
 			return nil
-		}, "namespace alias preserves fully qualified host name"),
+		}, "namespace alias preserves its fully qualified host target"),
 		ProgramCheck(`RETURN [@beta, @alpha, @beta, @gamma]`, func(prog *bytecode.Program) error {
 			want := []string{"beta", "alpha", "gamma"}
 

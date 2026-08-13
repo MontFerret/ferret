@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// SEPARATE separates the path into a directory and filename component.
+// separate separates the path into a directory and filename component.
 // @param path {String} The path
 // @return {Any[]} First item is a directory component, and second is a filename component.
 func Separate(_ context.Context, arg runtime.Value) (runtime.Value, error) {

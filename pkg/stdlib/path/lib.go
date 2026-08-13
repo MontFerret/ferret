@@ -2,20 +2,20 @@ package path
 
 import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
-// RegisterLib register `PATH` namespace functions.
-// @namespace PATH
+// RegisterLib register `path` namespace functions.
+// @namespace path
 func RegisterLib(ns runtime.Namespace) {
 	ns.Function().A1().
-		Add("BASE", Base).
-		Add("CLEAN", Clean).
-		Add("DIR", Dir).
-		Add("EXT", Ext).
-		Add("IS_ABS", IsAbs).
-		Add("SEPARATE", Separate)
+		Add("base", Base).
+		Add("clean", Clean).
+		Add("dir", Dir).
+		Add("ext", Ext).
+		Add("is_abs", IsAbs).
+		Add("separate", Separate)
 
 	ns.Function().A2().
-		Add("MATCH", Match)
+		Add("match", Match)
 
 	ns.Function().Var().
-		Add("JOIN", Join)
+		Add("join", Join)
 }

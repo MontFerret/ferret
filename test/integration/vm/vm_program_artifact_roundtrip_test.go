@@ -26,6 +26,17 @@ type artifactRoundTripCase struct {
 
 func TestProgramArtifactRoundTrip(t *testing.T) {
 	queryable := &roundTripQueryable{}
+	postgres := runtime.NewNamespace("DB").Namespace("POSTGRES")
+	postgres.Function().A1().Add("PICK", func(context.Context, runtime.Value) (runtime.Value, error) {
+		return runtime.NewString("fixed1"), nil
+	})
+	postgres.Function().A2().Add("PICK", func(context.Context, runtime.Value, runtime.Value) (runtime.Value, error) {
+		return runtime.NewString("fixed2"), nil
+	})
+	postgres.Function().Var().Add("PICK", func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+		return runtime.NewString("var" + runtime.NewInt(len(args)).String()), nil
+	})
+
 	levels := []compiler.OptimizationLevel{compiler.O0, compiler.O1}
 	cases := []artifactRoundTripCase{
 		{
@@ -47,30 +58,22 @@ func TestProgramArtifactRoundTrip(t *testing.T) {
 			},
 		},
 		{
-			Input:       spec.NewExpressionInput("RETURN [PICK(1), PICK(1, 2), PICK(3), PICK(1, 2, 3, 4, 5)]"),
+			Input:       spec.NewExpressionInput("RETURN [db::postgres::pick(1), DB::POSTGRES::PICK(1, 2), Db::Postgres::Pick(3), dB::pOsTgReS::pIcK(1, 2, 3, 4, 5)]"),
 			Expected:    []any{"fixed1", "fixed2", "fixed1", "var5"},
 			Description: "Host overload binding order round-trip",
-			Env: []vm.EnvironmentOption{vm.WithFunctionsRegistrar(func(fns runtime.FunctionDefs) {
-				fns.A1().Add("PICK", func(context.Context, runtime.Value) (runtime.Value, error) {
-					return runtime.NewString("fixed1"), nil
-				})
-				fns.A2().Add("PICK", func(context.Context, runtime.Value, runtime.Value) (runtime.Value, error) {
-					return runtime.NewString("fixed2"), nil
-				})
-				fns.Var().Add("PICK", func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-					return runtime.NewString("var" + runtime.NewInt(len(args)).String()), nil
-				})
-			})},
+			Env:         []vm.EnvironmentOption{vm.WithNamespace(postgres)},
 			Check: func(t *testing.T, original *bytecode.Program, decoded *bytecode.Program) {
 				t.Helper()
 				want := []bytecode.HostFunction{
-					{Name: "PICK", ArgCount: 1},
-					{Name: "PICK", ArgCount: 2},
-					{Name: "PICK", ArgCount: 5},
+					{Name: "db::postgres::pick", ArgCount: 1},
+					{Name: "DB::POSTGRES::PICK", ArgCount: 2},
+					{Name: "dB::pOsTgReS::pIcK", ArgCount: 5},
 				}
+
 				if !slices.Equal(original.Functions.Host, want) {
 					t.Fatalf("unexpected compiled host bindings: got %v, want %v", original.Functions.Host, want)
 				}
+
 				if !slices.Equal(decoded.Functions.Host, want) {
 					t.Fatalf("unexpected decoded host bindings: got %v, want %v", decoded.Functions.Host, want)
 				}

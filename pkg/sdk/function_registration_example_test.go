@@ -22,17 +22,17 @@ func ExampleRegisterFunctions() {
 		if err != nil {
 			return err
 		}
-		ns := library.Namespace("EXAMPLE")
+		ns := library.Namespace("example")
 		one := runtime.Function1(func(context.Context, runtime.Value) (runtime.Value, error) {
 			return runtime.NewString("fixed-one"), nil
 		})
 
 		if err := sdk.RegisterFunctions(ns,
-			sdk.Func("PICK", one),
-			sdk.Func("PICK", runtime.Function2(func(context.Context, runtime.Value, runtime.Value) (runtime.Value, error) {
+			sdk.Func("pick", one),
+			sdk.Func("pick", runtime.Function2(func(context.Context, runtime.Value, runtime.Value) (runtime.Value, error) {
 				return runtime.NewString("fixed-two"), nil
 			})),
-			sdk.Func("PICK", runtime.Function(func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+			sdk.Func("pick", runtime.Function(func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 				return runtime.NewString(fmt.Sprintf("variadic-%d", len(args))), nil
 			})),
 		); err != nil {
@@ -57,9 +57,9 @@ func ExampleRegisterFunctions() {
 	defer func() { _ = engine.Close() }()
 
 	for _, query := range []string{
-		`return EXAMPLE::PICK(1)`,
-		`return EXAMPLE::PICK(1, 2)`,
-		`return EXAMPLE::PICK(1, 2, 3, 4, 5)`,
+		`return example::pick(1)`,
+		`return example::pick(1, 2)`,
+		`return example::pick(1, 2, 3, 4, 5)`,
 	} {
 		output, runErr := engine.Run(context.Background(), source.NewAnonymous(query))
 		if runErr != nil {

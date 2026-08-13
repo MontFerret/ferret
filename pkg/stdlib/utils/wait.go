@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// WAIT pauses the execution for a given period.
+// wait pauses the execution for a given period.
 // @param timeout {Any} A non-negative value coercible to Duration.
 // @return {None} None.
 func Wait(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {

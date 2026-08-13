@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// MIN returns the smallest (arithmetic mean) of the values in array.
+// min returns the smallest (arithmetic mean) of the values in array.
 // @param array {Int[] | Float[]} arrayList of numbers.
 // @return {Float} The smallest of the values in array.
 func Min(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
