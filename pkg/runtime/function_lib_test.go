@@ -65,7 +65,7 @@ func TestNamespaceNewNamespaceQualifiedNames(t *testing.T) {
 	}
 }
 
-func TestNamespaceCasingVariantsMergeIntoCanonicalNamespace(t *testing.T) {
+func TestNamespaceCasingVariantsMergeAndPreserveFirstDeclaredSpelling(t *testing.T) {
 	root := NewLibrary()
 
 	root.Namespace("DB").Namespace("Postgres").Function().A0().
@@ -109,7 +109,7 @@ func TestNamespaceCasingVariantsMergeIntoCanonicalNamespace(t *testing.T) {
 	}
 }
 
-func TestNamespaceCasingVariantsRejectDuplicateCanonicalMember(t *testing.T) {
+func TestNamespaceCasingVariantsRejectDuplicateNormalizedIdentity(t *testing.T) {
 	root := NewLibrary()
 	fn := func(context.Context) (Value, error) { return None, nil }
 
@@ -121,7 +121,7 @@ func TestNamespaceCasingVariantsRejectDuplicateCanonicalMember(t *testing.T) {
 	}
 }
 
-func TestNamespaceRemovalUsesCanonicalQualifiedName(t *testing.T) {
+func TestNamespaceRemovalUsesCaseInsensitiveQualifiedName(t *testing.T) {
 	root := NewLibrary()
 	root.Namespace("DB").Namespace("Postgres").Function().A0().Add("Query", func(context.Context) (Value, error) {
 		return None, nil
