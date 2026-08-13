@@ -1,8 +1,11 @@
 package internal
 
 import (
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
@@ -52,6 +55,11 @@ func (c *WaitCompiler) CompileWithOuterRecoveryPlan(ctx fql.IWaitForExpressionCo
 
 	c.ctx.Function.Symbols.EnterScope()
 	defer c.ctx.Function.Symbols.ExitScope()
+
+	if c.ctx.Program.Semantics != nil {
+		c.ctx.Program.Semantics.EnterScope(parserd.SpanFromRuleContext(ctx.(antlr.ParserRuleContext)))
+		defer c.ctx.Program.Semantics.ExitScope()
+	}
 
 	return c.recovery.CompileOperation(c.newWaitOperationRecoverySpec(ctx, outerPlan))
 }
@@ -256,6 +264,7 @@ func (c *WaitCompiler) buildProtectedEventRecovery(
 	if hasTimeout {
 		c.ctx.Program.Emitter.EmitBoolean(timeoutStateReg, false)
 	}
+
 	c.ctx.Program.Emitter.EmitJump(recoveryLabel)
 
 	return ProtectedRecoveryRegion{
@@ -284,6 +293,7 @@ func (c *WaitCompiler) buildProtectedPredicateRecovery(
 	start := c.ctx.Program.Emitter.NewLabel()
 	success := c.ctx.Program.Emitter.NewLabel()
 	protectedTimeout := core.Label{}
+
 	if hasTimeout {
 		protectedTimeout = c.ctx.Program.Emitter.NewLabel()
 	}

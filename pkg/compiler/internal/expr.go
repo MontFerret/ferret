@@ -129,9 +129,15 @@ func (c *ExprCompiler) CompileDiscarded(ctx fql.IExpressionContext) bytecode.Ope
 	return c.compileWithResultUse(ctx, resultDiscarded)
 }
 
-func (c *ExprCompiler) compileWithResultUse(ctx fql.IExpressionContext, use resultUse) bytecode.Operand {
+func (c *ExprCompiler) compileWithResultUse(ctx fql.IExpressionContext, use resultUse) (out bytecode.Operand) {
 	if ctx == nil {
 		return bytecode.NoopOperand
+	}
+
+	if c.ctx.Program.Semantics != nil {
+		defer func() {
+			c.ctx.Program.Semantics.RecordExpressionType(ctx.(antlr.ParserRuleContext), c.facts.OperandType(out))
+		}()
 	}
 
 	if uo := ctx.UnaryOperator(); uo != nil {

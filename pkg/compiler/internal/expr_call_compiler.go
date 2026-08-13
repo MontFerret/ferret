@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -82,6 +81,10 @@ func (c *exprCallCompiler) compileVariable(ctx fql.IVariableContext) bytecode.Op
 		return bytecode.NoopOperand
 	}
 
+	if c.ctx.Program.Semantics != nil {
+		c.ctx.Program.Semantics.RecordBindingReference(binding.ID, diagnostics.SpanFromRuleContext(ctx.(antlr.ParserRuleContext)))
+	}
+
 	op := c.bindings.LoadBindingValue(binding)
 
 	if op.IsRegister() {
@@ -108,6 +111,10 @@ func (c *exprCallCompiler) compileParam(ctx fql.IParamContext) bytecode.Operand 
 		c.ctx.Program.Emitter.EmitLoadParam(reg, c.ctx.Program.HostParams.Bind(name))
 	})
 	c.ctx.Function.Types.Set(reg, core.TypeAny)
+
+	if c.ctx.Program.Semantics != nil {
+		c.ctx.Program.Semantics.RecordBindParameter(name, span)
+	}
 
 	return reg
 }
@@ -181,16 +188,8 @@ func (c *exprCallCompiler) compileFunctionCallWith(ctx fql.IFunctionCallContext,
 }
 
 func (c *exprCallCompiler) compileFunctionCallByNameWith(ctx fql.IFunctionCallContext, name runtime.String, protected bool, seq core.RegisterSequence) bytecode.Operand {
-	nameStr := name.String()
-	builtinName := strings.ToUpper(nameStr)
 	argSpans := c.argumentSpansFromList(nil)
-
-	namespaced := strings.Contains(nameStr, runtime.NamespaceSeparator)
 	if ctx != nil {
-		if ns := ctx.Namespace(); ns != nil && ns.GetText() != "" {
-			namespaced = true
-		}
-
 		argSpans = c.argumentSpansFromList(ctx.ArgumentList())
 	}
 
@@ -201,46 +200,55 @@ func (c *exprCallCompiler) compileFunctionCallByNameWith(ctx fql.IFunctionCallCo
 		}
 	}
 
-	if !namespaced && c.ctx.Program.UDFs != nil && c.ctx.Function.UDFScope != nil {
-		if fn, ok := c.calls.ResolveUDF(ctx); ok {
-			return c.compileUdfCallWith(fn, protected, seq, callCtx, argSpans)
-		}
-	}
+	resolved := c.calls.resolveCall(ctx, name)
+	var out bytecode.Operand
 
-	if !namespaced {
-		switch builtinName {
+	switch resolved.Kind {
+	case resolvedCallUDF:
+		out = c.compileUdfCallWith(resolved.Function, protected, seq, callCtx, argSpans)
+	case resolvedCallBuiltin:
+		switch resolved.Name {
 		case runtimeLength:
 			dst := c.ctx.Function.Registers.Allocate()
 
 			if len(seq) != 1 {
-				return c.reportFunctionArityError(callCtx, builtinName, 1, len(seq))
+				out = c.reportFunctionArityError(callCtx, resolved.Name, 1, len(seq))
+
+				break
 			}
 
 			c.ctx.Program.Emitter.EmitAB(bytecode.OpLength, dst, seq[0])
-
-			return dst
+			out = dst
 		case runtimeTypename:
 			dst := c.ctx.Function.Registers.Allocate()
 
 			if len(seq) != 1 {
-				return c.reportFunctionArityError(callCtx, builtinName, 1, len(seq))
+				out = c.reportFunctionArityError(callCtx, resolved.Name, 1, len(seq))
+
+				break
 			}
 
 			c.ctx.Program.Emitter.EmitAB(bytecode.OpType, dst, seq[0])
-
-			return dst
+			out = dst
 		case runtimeWait:
 			if len(seq) != 1 {
-				return c.reportFunctionArityError(callCtx, builtinName, 1, len(seq))
+				out = c.reportFunctionArityError(callCtx, resolved.Name, 1, len(seq))
+
+				break
 			}
 
 			c.ctx.Program.Emitter.EmitA(bytecode.OpSleep, seq[0])
-
-			return seq[0]
+			out = seq[0]
 		}
+	case resolvedCallHost:
+		out = c.compileHostFunctionCallWith(runtime.NewString(resolved.Name), protected, seq, argSpans)
 	}
 
-	return c.compileHostFunctionCallWith(name, protected, seq, argSpans)
+	if c.ctx.Program.Semantics != nil {
+		c.recordCall(ctx, resolved, out, argSpans)
+	}
+
+	return out
 }
 
 func (c *exprCallCompiler) reportFunctionArityError(ctx antlr.ParserRuleContext, name string, expected, got int) bytecode.Operand {
@@ -296,6 +304,56 @@ func (c *exprCallCompiler) emitUdfTailCall(fn *core.UDFInfo, seq core.RegisterSe
 	dest := c.ctx.Function.Registers.Allocate()
 	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(runtime.NewInt(fn.ID)))
 	c.ctx.Program.Emitter.EmitAsWithCallArgumentSpans(bytecode.OpTailCall, dest, args, argSpans)
+
+	if c.ctx.Program.Semantics != nil {
+		if call, ok := callCtx.(fql.IFunctionCallContext); ok {
+			c.recordCall(call, resolvedCall{Function: fn, Name: fn.DisplayName, Kind: resolvedCallUDF}, bytecode.NoopOperand, argSpans)
+		}
+	}
+}
+
+func (c *exprCallCompiler) recordCall(
+	ctx fql.IFunctionCallContext,
+	resolved resolvedCall,
+	out bytecode.Operand,
+	argumentSpans []source.Span,
+) {
+	if c == nil || c.ctx == nil || c.ctx.Program.Semantics == nil || ctx == nil {
+		return
+	}
+
+	callCtx := ctx.(antlr.ParserRuleContext)
+	calleeSpan := diagnostics.SpanFromRuleContext(callCtx)
+
+	if fn := ctx.FunctionName(); fn != nil {
+		calleeSpan = diagnostics.SpanFromRuleContext(fn.(antlr.ParserRuleContext))
+		if ns := ctx.Namespace(); ns != nil && ns.GetStart() != nil {
+			calleeSpan.Start = ns.GetStart().GetStart()
+		}
+	}
+
+	call := SemanticCall{
+		Name:          resolved.Name,
+		Identity:      resolved.Identity,
+		Span:          diagnostics.SpanFromRuleContext(callCtx),
+		CalleeSpan:    calleeSpan,
+		ArgumentSpans: argumentSpans,
+		Type:          c.facts.OperandType(out),
+	}
+
+	switch resolved.Kind {
+	case resolvedCallUDF:
+		call.Kind = SemanticCallUserFunction
+		call.Target = c.ctx.Program.Semantics.UserFunctionSymbol(resolved.Function)
+		call.Type = core.TypeAny
+		c.ctx.Program.Semantics.RecordUserFunctionReference(resolved.Function, calleeSpan)
+	case resolvedCallBuiltin:
+		call.Kind = SemanticCallBuiltin
+	case resolvedCallHost:
+		call.Kind = SemanticCallHost
+	}
+
+	c.ctx.Program.Semantics.RecordCall(call)
 }
 
 func (c *exprCallCompiler) prepareUdfCallArgs(fn *core.UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) core.RegisterSequence {

@@ -1,8 +1,11 @@
 package internal
 
 import (
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
@@ -234,6 +237,11 @@ func (c *WaitCompiler) compileWaitForTriggerClause(ctx fql.IWaitForTriggerClause
 	c.ctx.Function.Symbols.EnterScope()
 	defer c.ctx.Function.Symbols.ExitScope()
 
+	if c.ctx.Program.Semantics != nil {
+		c.ctx.Program.Semantics.EnterScope(parserd.SpanFromRuleContext(ctx.(antlr.ParserRuleContext)))
+		defer c.ctx.Program.Semantics.ExitScope()
+	}
+
 	if inline := ctx.WaitForTriggerInlineStatement(); inline != nil {
 		c.compileWaitForTriggerInlineStatement(inline)
 		return
@@ -344,6 +352,7 @@ func (c *WaitCompiler) emitWaitEventCleanup(state waitEventCompileState, streamR
 func (c *WaitCompiler) emitWaitEventCleanupIfReady(state waitEventCompileState, streamReg, streamReadyReg bytecode.Operand) {
 	if streamReadyReg == bytecode.NoopOperand {
 		c.emitWaitEventCleanup(state, streamReg)
+
 		return
 	}
 

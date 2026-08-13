@@ -1,17 +1,11 @@
 package compiler
 
 import (
-	goruntime "runtime"
-
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
-	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
-
-	"github.com/antlr4-go/antlr/v4"
-
-	"github.com/MontFerret/ferret/v2/pkg/parser"
 )
 
 const Version = "2.0.0"
@@ -52,100 +46,62 @@ func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err e
 	errorHandler := parserd.NewErrorHandler(src, 10)
 
 	defer func() {
-		if r := recover(); r != nil {
-			var e *diagnostics.Diagnostic
-
-			buf := make([]byte, 1024)
-			n := goruntime.Stack(buf, false)
-			stackTrace := string(buf[:n])
-
-			// Find out exactly what the error was and add the e
-			switch x := r.(type) {
-			case string:
-				e = diagnostics.NewUnexpectedError(src, x+"\n"+stackTrace)
-			case error:
-				e = diagnostics.NewUnexpectedErrorWith(src, "unhandled panic\n"+stackTrace, x)
-			default:
-				e = diagnostics.NewUnexpectedError(src, "unhandled panic\n"+stackTrace)
-			}
-
-			errorHandler.Add(e)
+		if recovered := recover(); recovered != nil {
+			addRecoveredAnalysisDiagnostic(src, errorHandler, recovered)
 
 			program = nil
 			err = errorHandler.Unwrap()
 		}
 	}()
 
-	tokenHistory := parserd.NewTokenHistory(64)
-	p := parser.New(src.Content(), func(stream antlr.TokenStream) antlr.TokenStream {
-		return parserd.NewTrackingTokenStream(stream, tokenHistory)
-	})
-
-	// Remove all default error listeners
-	p.RemoveErrorListeners()
-	// Add custom error listener
-	p.AddErrorListener(parserd.NewErrorListener(src, errorHandler, tokenHistory))
-	p.Program()
-
-	if errorHandler.HasErrors() {
-		return nil, errorHandler.Unwrap()
-	}
-
 	level := c.opts.Level
 	if c.opts.DebugInfo {
 		level = optimization.LevelNone
 	}
 
-	l := NewVisitor(src, errorHandler, level)
-	l.Session.Program.DebugInfo = c.opts.DebugInfo
-	p.Visit(l)
+	visitor := runFrontend(src, errorHandler, level, c.opts.DebugInfo, nil)
 
 	if errorHandler.HasErrors() {
 		return nil, errorHandler.Unwrap()
 	}
 
-	var udfs []bytecode.UDF
+	return buildProgram(visitor, src, level)
+}
 
-	if l.Session.Program.UDFs != nil {
-		udfs = l.Session.Program.UDFs.Metadata()
-	}
+// Analyze parses and semantically analyzes source without constructing a bytecode program.
+// It is safe for concurrent use by multiple goroutines. When source diagnostics
+// exist, Analyze returns both a non-nil partial snapshot and a non-nil error.
+func (c *Compiler) Analyze(src *source.Source) (analysis *Analysis, err error) {
+	errorHandler := parserd.NewErrorHandler(src, 10)
+	recorder := internal.NewSemanticRecorder(src)
 
-	registers := l.Session.Function.Registers.Size()
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			addRecoveredAnalysisDiagnostic(src, errorHandler, recovered)
 
-	for _, udf := range udfs {
-		if udf.Registers > registers {
-			registers = udf.Registers
+			recorder.Sort()
+			analysis = buildAnalysis(src, recorder.Snapshot(), errorHandler)
+			err = analysisError(analysis)
 		}
+	}()
+
+	if src.Empty() {
+		errorHandler.Add(parserd.NewEmptyQueryError(src))
+
+		analysis = buildAnalysis(src, recorder.Snapshot(), errorHandler)
+
+		return analysis, analysisError(analysis)
 	}
 
-	program = &bytecode.Program{
-		ISAVersion: bytecode.Version,
-		Functions: bytecode.Functions{
-			Host:        l.Session.Program.HostFunctions.All(),
-			UserDefined: udfs,
-		},
-		Metadata: bytecode.Metadata{
-			CompilerVersion:        Version,
-			OptimizationLevel:      int(level),
-			AggregatePlans:         l.Session.Program.AggregatePlans(),
-			AggregateSelectorSlots: l.Session.Program.Emitter.AggregateSelectorSlots(),
-			CallArgumentSpans:      l.Session.Program.Emitter.CallArgumentSpans(),
-			MatchFailTargets:       l.Session.Program.Emitter.MatchFailTargets(),
-			DebugSpans:             l.Session.Program.Emitter.Spans(),
-			DebugPoints:            l.Session.Program.DebugPoints,
-			Labels:                 l.Session.Program.Emitter.Labels(),
-		},
-		Source:     src,
-		Bytecode:   l.Session.Program.Emitter.Bytecode(),
-		Constants:  l.Session.Function.Symbols.Constants(),
-		CatchTable: l.Session.Program.CatchTable.All(),
-		Registers:  registers,
-		Params:     l.Session.Program.HostParams.Names(),
+	visitor := runFrontend(src, errorHandler, optimization.LevelNone, false, recorder)
+	if visitor != nil {
+		recorder.Sort()
 	}
 
-	if err := optimization.Run(program, level); err != nil {
-		return nil, err
+	analysis = buildAnalysis(src, recorder.Snapshot(), errorHandler)
+	if errorHandler.HasErrors() {
+		return analysis, analysisError(analysis)
 	}
 
-	return program, err
+	return analysis, nil
 }

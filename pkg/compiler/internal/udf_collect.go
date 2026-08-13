@@ -39,6 +39,10 @@ func (c *UDFCatalogBuilder) BuildCatalog(program *fql.ProgramContext) {
 	c.ctx.Program.UDFs = table
 	c.ctx.Function.UDFScope = table.GlobalScope
 
+	if c.ctx.Program.Semantics != nil {
+		c.ctx.Program.Semantics.RegisterGlobalUDFScope(table.GlobalScope)
+	}
+
 	if program == nil || program.Body() == nil {
 		return
 	}
@@ -126,6 +130,7 @@ func (c *UDFCatalogBuilder) validateBindingConflicts(body *fql.BodyContext, scop
 
 		if decl := stmt.VariableDeclaration(); decl != nil {
 			c.validateVariableDeclarationConflict(decl, scope)
+
 			continue
 		}
 
@@ -160,6 +165,7 @@ func (c *UDFCatalogBuilder) validateFunctionBindingConflicts(fn *core.UDFInfo) {
 
 		if decl := stmt.VariableDeclaration(); decl != nil {
 			c.validateVariableDeclarationConflict(decl, fn.BodyScope)
+
 			continue
 		}
 
@@ -219,6 +225,7 @@ func (c *UDFCatalogBuilder) registerFunction(scope *core.UDFScope, decl *fql.Fun
 
 	if _, exists := scope.Declared[name]; exists {
 		c.ctx.Program.Errors.Add(c.ctx.Program.Errors.Create(parserd.NameError, decl, fmt.Sprintf("Function '%s' is already defined", displayName)))
+
 		return nil
 	}
 
@@ -235,6 +242,10 @@ func (c *UDFCatalogBuilder) registerFunction(scope *core.UDFScope, decl *fql.Fun
 	scope.Functions[name] = fn
 	scope.Declared[name] = fn
 	c.ctx.Program.UDFs.Functions = append(c.ctx.Program.UDFs.Functions, fn)
+
+	if c.ctx.Program.Semantics != nil {
+		c.ctx.Program.Semantics.RecordUserFunction(fn)
+	}
 
 	return fn
 }
@@ -299,6 +310,7 @@ func (c *UDFCatalogBuilder) pruneUnusedFunctions(body *fql.BodyContext) {
 
 		if _, ok := reachable[fn]; ok {
 			filtered = append(filtered, fn)
+
 			continue
 		}
 

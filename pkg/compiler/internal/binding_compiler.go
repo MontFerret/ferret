@@ -10,6 +10,7 @@ import (
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 type BindingCompiler struct {
@@ -103,11 +104,16 @@ func (c *BindingCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclaratio
 		dest, ok := c.declareBinding(name, srcType, opts)
 		if !ok {
 			c.ctx.Program.Errors.VariableNotUnique(decl, name)
+
 			return bytecode.NoopOperand
 		}
 
 		c.ctx.Program.Emitter.EmitMakeCell(dest, src)
 		c.ctx.Function.Types.Set(dest, core.TypeAny)
+
+		if c.ctx.Program.Semantics != nil {
+			c.recordVariableDeclaration(ctx, opts.ID, name, mutable, srcType)
+		}
 
 		return dest
 	}
@@ -116,11 +122,16 @@ func (c *BindingCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclaratio
 		dest, ok := c.declareBinding(name, srcType, opts)
 		if !ok {
 			c.ctx.Program.Errors.VariableNotUnique(decl, name)
+
 			return bytecode.NoopOperand
 		}
 
 		c.ctx.Program.Emitter.EmitLoadConst(dest, src)
 		c.ctx.Function.Types.Set(dest, srcType)
+
+		if c.ctx.Program.Semantics != nil {
+			c.recordVariableDeclaration(ctx, opts.ID, name, mutable, srcType)
+		}
 
 		return dest
 	}
@@ -131,6 +142,11 @@ func (c *BindingCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclaratio
 	}
 
 	c.ctx.Function.Types.Set(src, srcType)
+
+	if c.ctx.Program.Semantics != nil {
+		c.recordVariableDeclaration(ctx, opts.ID, name, mutable, srcType)
+	}
+
 	return src
 }
 
@@ -144,7 +160,20 @@ func (c *BindingCompiler) compileDestructuringDeclaration(
 	}
 
 	src = ensureOperandRegister(c.ctx, c.facts, src)
-	c.compileDestructuringPattern(pattern, src, c.isMutableDeclaration(ctx))
+	declaration := source.Span{}
+
+	if c.ctx.Program.Semantics != nil {
+		declaration = parserd.SpanFromRuleContext(ctx.(antlr.ParserRuleContext))
+	}
+
+	c.compileDestructuringPattern(
+		pattern,
+		src,
+		c.isMutableDeclaration(ctx),
+		SemanticSymbolBinding,
+		declaration,
+		declaration.End,
+	)
 
 	return src
 }
@@ -153,6 +182,9 @@ func (c *BindingCompiler) compileDestructuringPattern(
 	pattern fql.IStructuredBindingPatternContext,
 	src bytecode.Operand,
 	mutable bool,
+	kind SemanticSymbolKind,
+	declaration source.Span,
+	activation int,
 ) {
 	if pattern == nil {
 		return
@@ -162,7 +194,7 @@ func (c *BindingCompiler) compileDestructuringPattern(
 		c.emitDestructuringAssertion(object.(antlr.ParserRuleContext), src, bytecode.DestructureModeObject)
 
 		for _, entry := range object.AllObjectBindingEntry() {
-			c.compileObjectDestructuringEntry(entry, src, mutable)
+			c.compileObjectDestructuringEntry(entry, src, mutable, kind, declaration, activation)
 		}
 
 		return
@@ -172,7 +204,7 @@ func (c *BindingCompiler) compileDestructuringPattern(
 		c.emitDestructuringAssertion(array.(antlr.ParserRuleContext), src, bytecode.DestructureModeArray)
 
 		for index, child := range array.AllBindingPattern() {
-			c.compileArrayDestructuringEntry(child, src, index, mutable)
+			c.compileArrayDestructuringEntry(child, src, index, mutable, kind, declaration, activation)
 		}
 	}
 }
@@ -181,6 +213,9 @@ func (c *BindingCompiler) compileObjectDestructuringEntry(
 	entry fql.IObjectBindingEntryContext,
 	src bytecode.Operand,
 	mutable bool,
+	kind SemanticSymbolKind,
+	declaration source.Span,
+	activation int,
 ) {
 	if entry == nil || entry.BindingIdentifier() == nil {
 		return
@@ -197,7 +232,7 @@ func (c *BindingCompiler) compileObjectDestructuringEntry(
 
 	if nested == nil {
 		leafCtx := entry.BindingIdentifier().(antlr.ParserRuleContext)
-		c.compileDestructuringLeaf(key, leafCtx, mutable, func(dst bytecode.Operand) {
+		c.compileDestructuringLeaf(key, leafCtx, mutable, kind, declaration, activation, func(dst bytecode.Operand) {
 			c.emitObjectDestructuringLoad(entryCtx, dst, src, keyConst)
 		})
 
@@ -206,7 +241,7 @@ func (c *BindingCompiler) compileObjectDestructuringEntry(
 
 	if id := nested.BindingIdentifier(); id != nil {
 		leafCtx := id.(antlr.ParserRuleContext)
-		c.compileDestructuringLeaf(textOfBindingIdentifier(id), leafCtx, mutable, func(dst bytecode.Operand) {
+		c.compileDestructuringLeaf(textOfBindingIdentifier(id), leafCtx, mutable, kind, declaration, activation, func(dst bytecode.Operand) {
 			c.emitObjectDestructuringLoad(entryCtx, dst, src, keyConst)
 		})
 
@@ -220,7 +255,7 @@ func (c *BindingCompiler) compileObjectDestructuringEntry(
 
 	child := c.ctx.Function.Registers.Allocate()
 	c.emitObjectDestructuringLoad(entryCtx, child, src, keyConst)
-	c.compileDestructuringPattern(structured, child, mutable)
+	c.compileDestructuringPattern(structured, child, mutable, kind, declaration, activation)
 }
 
 func (c *BindingCompiler) compileArrayDestructuringEntry(
@@ -228,6 +263,9 @@ func (c *BindingCompiler) compileArrayDestructuringEntry(
 	src bytecode.Operand,
 	index int,
 	mutable bool,
+	kind SemanticSymbolKind,
+	declaration source.Span,
+	activation int,
 ) {
 	if !bindingPatternHasBindings(pattern) {
 		return
@@ -238,7 +276,7 @@ func (c *BindingCompiler) compileArrayDestructuringEntry(
 
 	if id := pattern.BindingIdentifier(); id != nil {
 		leafCtx := id.(antlr.ParserRuleContext)
-		c.compileDestructuringLeaf(textOfBindingIdentifier(id), leafCtx, mutable, func(dst bytecode.Operand) {
+		c.compileDestructuringLeaf(textOfBindingIdentifier(id), leafCtx, mutable, kind, declaration, activation, func(dst bytecode.Operand) {
 			c.emitArrayDestructuringLoad(patternCtx, dst, src, indexConst)
 		})
 
@@ -252,13 +290,16 @@ func (c *BindingCompiler) compileArrayDestructuringEntry(
 
 	child := c.ctx.Function.Registers.Allocate()
 	c.emitArrayDestructuringLoad(patternCtx, child, src, indexConst)
-	c.compileDestructuringPattern(structured, child, mutable)
+	c.compileDestructuringPattern(structured, child, mutable, kind, declaration, activation)
 }
 
 func (c *BindingCompiler) compileDestructuringLeaf(
 	name string,
 	ctx antlr.ParserRuleContext,
 	mutable bool,
+	kind SemanticSymbolKind,
+	declaration source.Span,
+	activation int,
 	load func(dst bytecode.Operand),
 ) bytecode.Operand {
 	target, ok := c.declareDestructuringLeaf(name, ctx, mutable)
@@ -272,6 +313,22 @@ func (c *BindingCompiler) compileDestructuringLeaf(
 	if target.Storage == core.BindingStorageCell {
 		c.ctx.Program.Emitter.EmitMakeCell(target.Destination, target.Load)
 		c.ctx.Function.Types.Set(target.Destination, core.TypeAny)
+	}
+
+	if c.ctx.Program.Semantics != nil {
+		selection := parserd.SpanFromRuleContext(ctx)
+		c.ctx.Program.Semantics.RecordBinding(
+			bindingIDFromRule(ctx),
+			name,
+			kind,
+			declaration,
+			selection,
+			mutable,
+			core.TypeAny,
+			activation,
+			c.ctx.Program.Semantics.CurrentFunctionSymbol(),
+			0,
+		)
 	}
 
 	return target.Destination
@@ -359,11 +416,13 @@ func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatemen
 	assignment, ok := newAssignmentTarget(target)
 	if !ok {
 		c.reportInvalidAssignmentTarget(stmt)
+
 		return bytecode.NoopOperand
 	}
 
 	if assignment.Root == "" || assignment.Root == core.IgnorePseudoVariable {
 		c.reportInvalidAssignmentTarget(stmt)
+
 		return bytecode.NoopOperand
 	}
 
@@ -374,7 +433,12 @@ func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatemen
 		}
 
 		reportVariableNotFound(c.ctx, assignment.RootTok, assignment.Root)
+
 		return bytecode.NoopOperand
+	}
+
+	if c.ctx.Program.Semantics != nil {
+		c.ctx.Program.Semantics.RecordBindingReference(binding.ID, parserd.SpanFromRuleContext(assignment.RootCtx))
 	}
 
 	if len(assignment.Segments) > 0 {
@@ -386,6 +450,7 @@ func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatemen
 		err := c.ctx.Program.Errors.Create(parserd.SemanticError, stmt, fmt.Sprintf("Variable '%s' cannot be reassigned", name))
 		err.Hint = "Declare it with VAR if you need to update it."
 		c.ctx.Program.Errors.Add(err)
+
 		return bytecode.NoopOperand
 	}
 
@@ -396,6 +461,7 @@ func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatemen
 		src = c.exprs.Compile(stmt.Expression())
 	} else if !augmentedAssignmentKnownTypeAllowed(operator, binding.Type) {
 		c.reportInvalidAugmentedAssignment(stmt, operator)
+
 		return bytecode.NoopOperand
 	} else if operator == "+=" && binding.Type == core.TypeString {
 		left := c.snapshotBindingValue(binding)
@@ -420,6 +486,9 @@ func (c *BindingCompiler) CompileAssignmentStatement(ctx fql.IAssignmentStatemen
 	}
 
 	binding.Type = publishedType
+	if c.ctx.Program.Semantics != nil {
+		c.ctx.Program.Semantics.UpdateBindingType(binding.ID, publishedType)
+	}
 
 	return c.storeBindingValue(binding, src, publishedType)
 }
@@ -487,6 +556,44 @@ func (c *BindingCompiler) isMutableDeclaration(ctx fql.IVariableDeclarationConte
 
 	decl, ok := ctx.(*fql.VariableDeclarationContext)
 	return ok && decl.Var() != nil
+}
+
+func (c *BindingCompiler) recordVariableDeclaration(
+	ctx fql.IVariableDeclarationContext,
+	id core.BindingID,
+	name string,
+	mutable bool,
+	typ core.ValueType,
+) {
+	if c == nil || c.ctx == nil || c.ctx.Program.Semantics == nil || ctx == nil {
+		return
+	}
+
+	declaration := parserd.SpanFromRuleContext(ctx.(antlr.ParserRuleContext))
+	selection := declaration
+
+	if binding := ctx.BindingIdentifier(); binding != nil {
+		selection = parserd.SpanFromRuleContext(binding.(antlr.ParserRuleContext))
+	} else if identifier := ctx.Identifier(); identifier != nil {
+		selection = parserd.SpanFromToken(identifier.GetSymbol())
+	} else if reserved := ctx.SafeReservedWord(); reserved != nil {
+		selection = parserd.SpanFromRuleContext(reserved.(antlr.ParserRuleContext))
+	} else if token := ctx.GetId(); token != nil {
+		selection = parserd.SpanFromToken(token)
+	}
+
+	c.ctx.Program.Semantics.RecordBinding(
+		id,
+		name,
+		SemanticSymbolBinding,
+		declaration,
+		selection,
+		mutable,
+		typ,
+		declaration.End,
+		c.ctx.Program.Semantics.CurrentFunctionSymbol(),
+		0,
+	)
 }
 
 func (c *BindingCompiler) declarationStorage(decl antlr.ParserRuleContext, mutable bool) core.BindingStorage {

@@ -21,21 +21,23 @@ type (
 	// persist for the whole compilation. The final bytecode.Program reads its
 	// metadata almost entirely from here.
 	ProgramContext struct {
-		Errors              *diagnostics.ErrorHandler
-		aggregatePlanByHash map[uint64][]int
+		Emitter             *core.Emitter
+		UseAliases          map[string]string
 		CatchTable          *core.CatchStack
 		UDFs                *core.UDFTable
 		HostParams          *core.HostParamTable
 		HostFunctions       *core.HostFunctionTable
 		Constants           *core.ConstantPool
 		ForwardBindings     *ForwardBindingIndex
-		Emitter             *core.Emitter
-		UseAliases          map[string]string
+		aggregatePlanByHash map[uint64][]int
 		Source              *source.Source
-		aggregatePlans      []*bytecode.AggregatePlan
+		Errors              *diagnostics.ErrorHandler
+		Semantics           *SemanticRecorder
 		DebugPoints         []bytecode.DebugPoint
+		aggregatePlans      []*bytecode.AggregatePlan
 		OptimizationLevel   optimization.Level
 		DebugInfo           bool
+		DisableMatchFolding bool
 	}
 
 	// FunctionContext holds state that is local to a single function body
@@ -87,10 +89,32 @@ func NewFunctionContext(constants *core.ConstantPool) *FunctionContext {
 
 // NewCompilationSession initializes a new CompilationSession with default values.
 func NewCompilationSession(src *source.Source, errors *diagnostics.ErrorHandler, level optimization.Level) *CompilationSession {
+	return newCompilationSession(src, errors, level, nil)
+}
+
+// NewSemanticCompilationSession initializes a compilation session that records
+// source semantics while lowering.
+func NewSemanticCompilationSession(
+	src *source.Source,
+	errors *diagnostics.ErrorHandler,
+	level optimization.Level,
+	recorder *SemanticRecorder,
+) *CompilationSession {
+	return newCompilationSession(src, errors, level, recorder)
+}
+
+func newCompilationSession(
+	src *source.Source,
+	errors *diagnostics.ErrorHandler,
+	level optimization.Level,
+	recorder *SemanticRecorder,
+) *CompilationSession {
 	program := &ProgramContext{
-		Source:            src,
-		Errors:            errors,
-		OptimizationLevel: level,
+		Source:              src,
+		Errors:              errors,
+		OptimizationLevel:   level,
+		Semantics:           recorder,
+		DisableMatchFolding: recorder != nil,
 
 		Emitter:       core.NewEmitter(),
 		Constants:     core.NewConstantPool(),

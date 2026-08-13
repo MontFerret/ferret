@@ -65,8 +65,12 @@ func (l *Loop) BreakLabel() Label {
 }
 
 func (l *Loop) DeclareKeyVar(name string, st *SymbolTable, typ ValueType) bool {
+	return l.DeclareKeyVarWithOptions(name, st, typ, BindingOptions{})
+}
+
+func (l *Loop) DeclareKeyVarWithOptions(name string, st *SymbolTable, typ ValueType, opts BindingOptions) bool {
 	if l.canDeclareVar(name) {
-		reg, ok := st.DeclareLocal(name, typ)
+		reg, ok := st.DeclareLocalWithOptions(name, typ, opts)
 
 		if !ok {
 			return false
@@ -80,8 +84,12 @@ func (l *Loop) DeclareKeyVar(name string, st *SymbolTable, typ ValueType) bool {
 }
 
 func (l *Loop) DeclareValueVar(name string, st *SymbolTable, typ ValueType) bool {
+	return l.DeclareValueVarWithOptions(name, st, typ, BindingOptions{})
+}
+
+func (l *Loop) DeclareValueVarWithOptions(name string, st *SymbolTable, typ ValueType, opts BindingOptions) bool {
 	if l.canDeclareVar(name) {
-		reg, ok := st.DeclareLocal(name, typ)
+		reg, ok := st.DeclareLocalWithOptions(name, typ, opts)
 
 		if !ok {
 			return false

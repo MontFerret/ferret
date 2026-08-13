@@ -2,15 +2,34 @@ package internal
 
 import (
 	"strings"
+	"unicode/utf8"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-type CallResolver struct {
-	session *CompilationSession
-}
+type (
+	CallResolver struct {
+		session *CompilationSession
+	}
+
+	resolvedCallKind uint8
+
+	resolvedCall struct {
+		Function *core.UDFInfo
+		Name     string
+		Identity string
+		Kind     resolvedCallKind
+	}
+)
+
+const (
+	resolvedCallUDF resolvedCallKind = iota + 1
+	resolvedCallBuiltin
+	resolvedCallHost
+)
 
 func NewCallResolver(session *CompilationSession) *CallResolver {
 	return &CallResolver{session: session}
@@ -29,6 +48,10 @@ func (r *CallResolver) ResolveFunctionName(ctx fql.IFunctionCallContext) runtime
 		ns := nsText
 
 		if len(r.session.Program.UseAliases) > 0 {
+			if r.session.Program.Semantics != nil {
+				r.recordNamespaceAliasReference(funcNS, nsText)
+			}
+
 			ns = r.applyNamespaceAlias(ns)
 		}
 
@@ -43,6 +66,11 @@ func (r *CallResolver) ResolveFunctionName(ctx fql.IFunctionCallContext) runtime
 	if len(r.session.Program.UseAliases) > 0 {
 		if target, ok := r.session.Program.UseAliases[fn]; ok && target != "" {
 			if strings.Contains(target, runtime.NamespaceSeparator) {
+				if r.session.Program.Semantics != nil && ctx.FunctionName().GetStart() != nil {
+					start := ctx.FunctionName().GetStart().GetStart()
+					r.session.Program.Semantics.RecordNamespaceAliasReference(fn, source.Span{Start: start, End: start + utf8.RuneCountInString(fn)})
+				}
+
 				return runtime.NewString(target)
 			}
 		}
@@ -51,6 +79,26 @@ func (r *CallResolver) ResolveFunctionName(ctx fql.IFunctionCallContext) runtime
 	name += fn
 
 	return runtime.NewString(name)
+}
+
+func (r *CallResolver) recordNamespaceAliasReference(ctx fql.INamespaceContext, namespace string) {
+	if r == nil || r.session == nil || r.session.Program.Semantics == nil || ctx == nil || ctx.GetStart() == nil {
+		return
+	}
+
+	trimmed := strings.TrimSuffix(namespace, runtime.NamespaceSeparator)
+	parts := strings.Split(trimmed, runtime.NamespaceSeparator)
+	if len(parts) == 0 || parts[0] == "" {
+		return
+	}
+
+	alias := parts[0]
+	if _, ok := r.session.Program.UseAliases[alias]; !ok {
+		return
+	}
+
+	start := ctx.GetStart().GetStart()
+	r.session.Program.Semantics.RecordNamespaceAliasReference(alias, source.Span{Start: start, End: start + utf8.RuneCountInString(alias)})
 }
 
 func (r *CallResolver) ResolveLocalFunctionName(ctx fql.IFunctionCallContext) (string, bool) {
@@ -89,6 +137,53 @@ func (r *CallResolver) ResolveUDF(ctx fql.IFunctionCallContext) (*core.UDFInfo, 
 	}
 
 	return r.ResolveUDFInScope(ctx, r.session.Function.UDFScope)
+}
+
+func (r *CallResolver) resolveCall(ctx fql.IFunctionCallContext, name runtime.String) resolvedCall {
+	nameStr := name.String()
+	namespaced := strings.Contains(nameStr, runtime.NamespaceSeparator)
+
+	if ctx != nil {
+		if ns := ctx.Namespace(); ns != nil && ns.GetText() != "" {
+			namespaced = true
+		}
+	}
+
+	if !namespaced {
+		if fn, ok := r.ResolveUDF(ctx); ok {
+			return resolvedCall{
+				Function: fn,
+				Name:     fn.DisplayName,
+				Kind:     resolvedCallUDF,
+			}
+		}
+
+		builtin := strings.ToUpper(nameStr)
+		switch builtin {
+		case runtimeLength, runtimeTypename, runtimeWait:
+			identity := ""
+			if r.session.Program.Semantics != nil {
+				identity = runtime.NormalizeRegisteredName(builtin)
+			}
+
+			return resolvedCall{
+				Name:     builtin,
+				Identity: identity,
+				Kind:     resolvedCallBuiltin,
+			}
+		}
+	}
+
+	identity := ""
+	if r.session.Program.Semantics != nil {
+		identity = runtime.NormalizeRegisteredName(nameStr)
+	}
+
+	return resolvedCall{
+		Name:     nameStr,
+		Identity: identity,
+		Kind:     resolvedCallHost,
+	}
 }
 
 // ResolveUDFInScope resolves an unqualified source call against an explicit lexical UDF scope.

@@ -55,7 +55,7 @@ func (c *exprMatchCompiler) compileMatchExpression(ctx fql.IMatchExpressionConte
 			return bytecode.NoopOperand
 		}
 
-		if c.tryCompileMatchConstantFold(scrutinee, arms, dst) {
+		if !c.ctx.Program.DisableMatchFolding && c.tryCompileMatchConstantFold(scrutinee, arms, dst) {
 			c.ctx.Function.Types.Set(dst, core.TypeAny)
 
 			return dst
@@ -82,7 +82,13 @@ func (c *exprMatchCompiler) compileMatchPatternArms(scrReg bytecode.Operand, ctx
 	}
 
 	arms := collectMatchPatternArms(ctx)
-	mergeLabels, mergeGroups := collectMatchResultMerges(c.ctx, arms)
+	var mergeLabels map[int]core.Label
+	var mergeGroups []matchResultGroup
+
+	if !c.ctx.Program.DisableMatchFolding {
+		mergeLabels, mergeGroups = collectMatchResultMerges(c.ctx, arms)
+	}
+
 	defaultLabel, hasDefaultLabel := c.matchMergeDefaultLabel(mergeGroups)
 
 	for idx, arm := range arms {
@@ -111,9 +117,19 @@ func (c *exprMatchCompiler) compileMatchPatternArm(scrReg bytecode.Operand, arm 
 
 	next := c.ctx.Program.Emitter.NewLabel("match.next")
 	c.ctx.Function.Symbols.EnterScope()
+
+	if c.ctx.Program.Semantics != nil {
+		c.ctx.Program.Semantics.EnterScope(diagnostics.SpanFromRuleContext(arm.(antlr.ParserRuleContext)))
+	}
+
 	c.compileMatchPatternArmConditions(scrReg, arm, next)
 	c.compileMatchPatternArmResult(arm, idx, mergeLabels, dst, end)
 	c.ctx.Function.Symbols.ExitScope()
+
+	if c.ctx.Program.Semantics != nil {
+		c.ctx.Program.Semantics.ExitScope()
+	}
+
 	c.ctx.Program.Emitter.MarkLabel(next)
 }
 
@@ -163,10 +179,12 @@ func (c *exprMatchCompiler) compileMatchMergedResults(groups []matchResultGroup,
 	for _, group := range groups {
 		c.ctx.Program.Emitter.MarkLabel(group.label)
 		c.ctx.Function.Symbols.EnterScope()
+
 		out := ensureOperandRegister(c.ctx, c.facts, c.callbacks.compileExpr(group.result))
 		if out != bytecode.NoopOperand && out != dst {
 			c.ctx.Program.Emitter.EmitMove(dst, out)
 		}
+
 		c.ctx.Function.Symbols.ExitScope()
 		c.ctx.Program.Emitter.EmitJump(end)
 	}
@@ -187,6 +205,7 @@ func (c *exprMatchCompiler) compileMatchPatternDefaultArm(def fql.IMatchDefaultA
 			c.ctx.Program.Emitter.EmitMove(dst, out)
 		}
 	}
+
 	c.ctx.Function.Symbols.ExitScope()
 }
 
@@ -227,12 +246,14 @@ func (c *exprMatchCompiler) compileMatchGuardArms(ctx fql.IMatchGuardArmsContext
 
 	if def := ctx.MatchDefaultArm(); def != nil {
 		c.ctx.Function.Symbols.EnterScope()
+
 		if result := def.Expression(); result != nil {
 			out := ensureOperandRegister(c.ctx, c.facts, c.callbacks.compileExpr(result))
 			if out != bytecode.NoopOperand && out != dst {
 				c.ctx.Program.Emitter.EmitMove(dst, out)
 			}
 		}
+
 		c.ctx.Function.Symbols.ExitScope()
 	}
 }
@@ -302,10 +323,12 @@ func (c *exprMatchCompiler) emitMatchConstantFoldExpression(expr fql.IExpression
 	}
 
 	c.ctx.Function.Symbols.EnterScope()
+
 	out := ensureOperandRegister(c.ctx, c.facts, c.callbacks.compileExpr(expr))
 	if out != bytecode.NoopOperand && out != dst {
 		c.ctx.Program.Emitter.EmitMove(dst, out)
 	}
+
 	c.ctx.Function.Symbols.ExitScope()
 
 	return true
@@ -386,10 +409,29 @@ func (c *exprMatchCompiler) emitObjectsKeys(scrReg bytecode.Operand) bytecode.Op
 
 func (c *exprMatchCompiler) declareMatchBinding(ctx antlr.ParserRuleContext, name string, valueReg bytecode.Operand) bytecode.Operand {
 	valueReg = ensureOperandRegister(c.ctx, c.facts, valueReg)
-	reg, ok := c.ctx.Function.Symbols.DeclareLocal(name, core.TypeAny)
+	bindingID := bindingIDFromRule(ctx)
+	reg, ok := c.ctx.Function.Symbols.DeclareLocalWithOptions(name, core.TypeAny, core.BindingOptions{ID: bindingID})
+
 	if ok {
 		c.ctx.Program.Emitter.EmitMove(reg, valueReg)
-		c.ctx.Function.Types.Set(reg, c.facts.OperandType(valueReg))
+		typ := c.facts.OperandType(valueReg)
+		c.ctx.Function.Types.Set(reg, typ)
+
+		if c.ctx.Program.Semantics != nil {
+			span := diagnostics.SpanFromRuleContext(ctx)
+			c.ctx.Program.Semantics.RecordBinding(
+				bindingID,
+				name,
+				SemanticSymbolMatchBinding,
+				span,
+				span,
+				false,
+				typ,
+				span.End,
+				c.ctx.Program.Semantics.CurrentFunctionSymbol(),
+				0,
+			)
+		}
 
 		return reg
 	}

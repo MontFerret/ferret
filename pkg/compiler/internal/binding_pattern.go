@@ -103,6 +103,7 @@ func appendBindingPatternLeaves(
 
 	if id := pattern.BindingIdentifier(); id != nil {
 		ctx := id.(antlr.ParserRuleContext)
+
 		return append(leaves, bindingPatternLeaf{
 			Context:     ctx,
 			Declaration: ctx,
@@ -139,6 +140,7 @@ func appendStructuredBindingPatternLeaves(
 			entryPath := appendPatternAccess(path, bindingPatternAccess{Kind: bindingPatternObjectAccess, Key: key})
 			if nested := entry.BindingPattern(); nested != nil {
 				leaves = appendBindingPatternLeaves(leaves, nested, entryPath)
+
 				continue
 			}
 

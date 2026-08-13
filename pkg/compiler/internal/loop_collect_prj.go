@@ -18,6 +18,7 @@ func (c *CollectCompiler) initializeProjection(kv *core.KV, projection fql.IColl
 	if projection != nil {
 		// Compile the group variable projection and get the variable name
 		varName := c.compileGroupVariableProjection(kv, projection)
+
 		// Create a group projection with the variable name
 		return core.NewCollectorGroupProjection(varName, projection)
 	}
@@ -30,6 +31,7 @@ func (c *CollectCompiler) initializeProjection(kv *core.KV, projection fql.IColl
 			err := c.ctx.Program.Errors.Create(parser.SemanticError, counter, "Missing counter projection variable")
 			err.Hint = "Use WITH COUNT INTO <variable>."
 			c.ctx.Program.Errors.Add(err)
+
 			return nil
 		}
 
@@ -52,6 +54,7 @@ func (c *CollectCompiler) finalizeProjection(spec *core.Collector, aggregator by
 		// For cases with grouping or without aggregation:
 		// Now we need to expand group variables from the dataset
 		loop.ValueName = varName
+
 		// Assign the aggregator value to the local variable with the projection name
 		if !c.assignLocalOrReport(spec.Projection().Context(), loop.ValueName, core.TypeUnknown, aggregator) {
 			if existing, found := c.ctx.Function.Symbols.ResolveBinding(loop.ValueName); found {
@@ -124,7 +127,12 @@ func (c *CollectCompiler) compileDefaultGroupProjection(kv *core.KV, identifier 
 				c.ctx.Program.Emitter.EmitA(bytecode.OpLoadNone, noneReg)
 				c.ctx.Function.Types.Set(noneReg, core.TypeNone)
 				resolved[i] = noneReg
+
 				continue
+			}
+
+			if c.ctx.Program.Semantics != nil {
+				c.ctx.Program.Semantics.RecordBindingReference(binding.ID, parser.SpanFromToken(variable.GetSymbol()))
 			}
 
 			resolved[i] = c.bindings.LoadBindingValue(binding)
