@@ -137,17 +137,16 @@ func matchLiteralErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 			return true
 		}
 
-		if is(offending, "[") {
+		if is(offending, "[") || extractNoAlternativeInput(err.Message) == "[" {
 			span := spanFromTokenSafe(offending.Token(), src)
 			span.Start++
 			span.End++
 
 			if isComputedPropertyPrefix(offending.Prev()) {
-				val := offending.Prev().String()
-				err.Message = "Expected expression inside computed property brackets"
-				err.Hint = fmt.Sprintf("Provide a property key or index inside '[ ]', e.g. %s[0] or %s[\"key\"].", val, val)
+				err.Message = "Unclosed computed property expression"
+				err.Hint = "Add a closing ']' to complete the computed property expression."
 				err.Spans = []diagnostics.ErrorSpan{
-					diagnostics.NewMainErrorSpan(span, "missing expression"),
+					diagnostics.NewMainErrorSpan(span, "missing ']'"),
 				}
 
 				return true

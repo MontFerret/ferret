@@ -93,7 +93,8 @@ func matchInvalidVarDiscard(src *source.Source, err *diagnostics.Diagnostic, off
 }
 
 func matchAssignmentExpression(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
-	if offending == nil || (!isNoAlternative(err.Message) && !isMismatched(err.Message) && !isExtraneous(err.Message) && !isMissing(err.Message)) {
+	if offending == nil || (!isNoAlternative(err.Message) && !isMismatched(err.Message) && !isExtraneous(err.Message) && !isMissing(err.Message) &&
+		!has(err.Message, "forexpressionbody failed predicate")) {
 		return false
 	}
 

@@ -12,8 +12,10 @@ func buildAnalysis(
 	src *source.Source,
 	snapshot internal.SemanticSnapshot,
 	errors *parserd.ErrorHandler,
+	syntaxTokens []SyntaxToken,
 ) *Analysis {
 	data := analysisData{sourceLength: sourceLength(src)}
+	data.syntaxTokens = append([]SyntaxToken(nil), syntaxTokens...)
 	data.symbols = make([]Symbol, len(snapshot.Symbols))
 	data.symbolMetadata = make([]analysisSymbolMetadata, len(snapshot.Symbols))
 

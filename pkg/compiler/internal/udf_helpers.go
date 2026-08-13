@@ -27,34 +27,6 @@ func variableName(ctx *fql.VariableContext) (string, antlr.Token) {
 	return "", nil
 }
 
-func findVariableRefs(node antlr.Tree, out *[]*fql.VariableContext) {
-	if node == nil || out == nil {
-		return
-	}
-
-	if v, ok := node.(*fql.VariableContext); ok {
-		*out = append(*out, v)
-	}
-
-	for i := 0; i < node.GetChildCount(); i++ {
-		findVariableRefs(node.GetChild(i), out)
-	}
-}
-
-func findAssignmentRefs(node antlr.Tree, out *[]*fql.AssignmentStatementContext) {
-	if node == nil || out == nil {
-		return
-	}
-
-	if stmt, ok := node.(*fql.AssignmentStatementContext); ok {
-		*out = append(*out, stmt)
-	}
-
-	for i := 0; i < node.GetChildCount(); i++ {
-		findAssignmentRefs(node.GetChild(i), out)
-	}
-}
-
 func findFunctionCallRefs(node antlr.Tree, out *[]*fql.FunctionCallContext) {
 	if node == nil || out == nil {
 		return

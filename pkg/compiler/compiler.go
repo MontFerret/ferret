@@ -59,7 +59,7 @@ func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err e
 		level = optimization.LevelNone
 	}
 
-	visitor := runFrontend(src, errorHandler, level, c.opts.DebugInfo, nil)
+	visitor := runFrontend(src, errorHandler, level, c.opts.DebugInfo, nil, nil)
 
 	if errorHandler.HasErrors() {
 		return nil, errorHandler.Unwrap()
@@ -74,13 +74,14 @@ func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err e
 func (c *Compiler) Analyze(src *source.Source) (analysis *Analysis, err error) {
 	errorHandler := parserd.NewErrorHandler(src, 10)
 	recorder := internal.NewSemanticRecorder(src)
+	var syntaxTokens []SyntaxToken
 
 	defer func() {
 		if recovered := recover(); recovered != nil {
 			addRecoveredAnalysisDiagnostic(src, errorHandler, recovered)
 
 			recorder.Sort()
-			analysis = buildAnalysis(src, recorder.Snapshot(), errorHandler)
+			analysis = buildAnalysis(src, recorder.Snapshot(), errorHandler, syntaxTokens)
 			err = analysisError(analysis)
 		}
 	}()
@@ -88,17 +89,17 @@ func (c *Compiler) Analyze(src *source.Source) (analysis *Analysis, err error) {
 	if src.Empty() {
 		errorHandler.Add(parserd.NewEmptyQueryError(src))
 
-		analysis = buildAnalysis(src, recorder.Snapshot(), errorHandler)
+		analysis = buildAnalysis(src, recorder.Snapshot(), errorHandler, syntaxTokens)
 
 		return analysis, analysisError(analysis)
 	}
 
-	visitor := runFrontend(src, errorHandler, optimization.LevelNone, false, recorder)
+	visitor := runFrontend(src, errorHandler, optimization.LevelNone, false, recorder, &syntaxTokens)
 	if visitor != nil {
 		recorder.Sort()
 	}
 
-	analysis = buildAnalysis(src, recorder.Snapshot(), errorHandler)
+	analysis = buildAnalysis(src, recorder.Snapshot(), errorHandler, syntaxTokens)
 	if errorHandler.HasErrors() {
 		return analysis, analysisError(analysis)
 	}

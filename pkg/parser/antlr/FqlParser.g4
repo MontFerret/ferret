@@ -219,6 +219,132 @@ options { tokenVocab=FqlLexer; }
 		}
 	}
 
+	func (p *FqlParser) isForExpressionClauseStart() bool {
+		switch p.GetTokenStream().LA(1) {
+		case FqlParserFilter, FqlParserSort, FqlParserLimit, FqlParserCollect:
+		default:
+			return false
+		}
+
+		switch p.GetTokenStream().LA(2) {
+		case FqlParserDot, FqlParserOpenBracket, FqlParserOpenParen, FqlParserQuestionMark:
+			keyword := p.GetTokenStream().LT(1)
+			continuation := p.GetTokenStream().LT(2)
+			return keyword == nil || continuation == nil || keyword.GetStop() + 1 != continuation.GetStart()
+		case FqlParserGt, FqlParserLt, FqlParserEq, FqlParserGte, FqlParserLte, FqlParserNeq,
+			FqlParserMulti, FqlParserDiv, FqlParserMod, FqlParserPlus, FqlParserMinus,
+			FqlParserAnd, FqlParserOr, FqlParserCoalesce, FqlParserRegexNotMatch,
+			FqlParserRegexMatch, FqlParserRange, FqlParserIn, FqlParserLike,
+			FqlParserDispatchReceive:
+			return false
+		default:
+			return true
+		}
+	}
+
+	// FQL has no statement terminator, so accepting every expression start here
+	// could split a continuation from the expression before it. Historically
+	// unambiguous function-call, WAITFOR, and DISPATCH statements may start on the
+	// same line. Assignments and FOR clauses are classified first so their targets
+	// and contextual keywords are not stolen. The invariant is that a general
+	// expression starts only where the surrounding expression cannot continue.
+	func (p *FqlParser) isGeneralExpressionStatementStart() bool {
+		if p.GetTokenStream().LA(1) == FqlParserReturn || p.isAssignmentStatementStart() {
+			return false
+		}
+
+		if p.isFunctionCallStart() || p.GetTokenStream().LA(1) == FqlParserWaitfor || p.GetTokenStream().LA(1) == FqlParserDispatch {
+			return true
+		}
+
+		if p.isTrailingQuoteAfterCurrent() {
+			return true
+		}
+
+		switch p.GetTokenStream().LA(1) {
+		case FqlParserAnd, FqlParserOr, FqlParserSortDirection, FqlParserAggregate, FqlParserInto,
+			FqlParserKeep, FqlParserWith, FqlParserOptions, FqlParserTimeout, FqlParserEvery,
+			FqlParserBackoff, FqlParserJitter, FqlParserTrigger:
+			return false
+		}
+
+		current := p.GetTokenStream().LT(1)
+		previous := p.GetTokenStream().LT(-1)
+		if current == nil || previous == nil {
+			return true
+		}
+
+		if current.GetLine() > previous.GetLine() {
+			return true
+		}
+
+		switch previous.GetTokenType() {
+		case FqlParserOpenBrace, FqlParserCloseBrace:
+			return true
+		default:
+			return false
+		}
+	}
+
+	func (p *FqlParser) isForExpressionStatementStart() bool {
+		if p.isForExpressionClauseStart() {
+			switch p.GetTokenStream().LA(1) {
+			case FqlParserLimit:
+				return p.GetTokenStream().LA(2) == FqlParserComma
+			case FqlParserCollect:
+				return p.GetTokenStream().LA(2) == FqlParserAssign
+			default:
+				return false
+			}
+		}
+
+		return p.isGeneralExpressionStatementStart()
+	}
+
+	func (p *FqlParser) isForExpressionBodyStatementStart() bool {
+		switch p.GetTokenStream().LA(1) {
+		case FqlParserLet, FqlParserVar, FqlParserDelete, FqlParserFor:
+			return true
+		}
+
+		if p.isAssignmentStatementStart() {
+			return true
+		}
+
+		return p.isForExpressionStatementStart()
+	}
+
+	func (p *FqlParser) isTrailingQuoteAfterCurrent() bool {
+		next := p.GetTokenStream().LT(2)
+		if next == nil {
+			return false
+		}
+
+		if next.GetTokenType() == FqlParserBacktickOpen {
+			return true
+		}
+
+		if next.GetTokenType() != FqlParserUnknownIdentifier {
+			return false
+		}
+
+		return next.GetText() == "\"" || next.GetText() == "'"
+	}
+
+	func (p *FqlParser) isFunctionCallStart() bool {
+		offset := 1
+		for p.GetTokenStream().LA(offset) == FqlParserNamespaceSegment {
+			offset++
+		}
+
+		if p.GetTokenStream().LA(offset + 1) != FqlParserOpenParen {
+			return false
+		}
+
+		token := p.GetTokenStream().LA(offset)
+		return token == FqlParserIdentifier || p.isSafeReservedWordToken(token) || p.isUnsafeReservedWordToken(token)
+	}
+
 	func (p *FqlParser) scanAssignmentTarget(offset int) (int, bool) {
 		if !p.isBindingIdentifierStart(p.GetTokenStream().LA(offset)) {
 			return offset, false
@@ -329,10 +455,8 @@ bodyStatement
     | assignmentStatement
     | deleteStatement
     | functionDeclaration
-    | {p.GetTokenStream().LA(1) != FqlParserReturn}? functionCallExpression
-    | waitForExpression
-    | dispatchExpression
     | forExpression
+    | {p.isGeneralExpressionStatementStart()}? expressionStatement
     ;
 
 bodyExpression
@@ -401,11 +525,8 @@ functionStatement
     | assignmentStatement
     | deleteStatement
     | functionDeclaration
-    | {p.GetTokenStream().LA(1) != FqlParserReturn}? functionCallExpression
-    | waitForExpression
-    | dispatchExpression
     | forExpression
-    | {p.GetTokenStream().LA(1) != FqlParserReturn && !p.isAssignmentStatementStart()}? expressionStatement
+    | {p.isGeneralExpressionStatementStart()}? expressionStatement
     ;
 
 expressionStatement
@@ -449,15 +570,13 @@ forExpressionStatement
     : variableDeclaration
     | assignmentStatement
     | deleteStatement
-    | {p.GetTokenStream().LA(1) != FqlParserReturn}? functionCallExpression
-    | waitForExpression
-    | dispatchExpression
     | forExpression
+    | {p.isForExpressionStatementStart()}? expressionStatement
     ;
 
 forExpressionBody
-    : forExpressionStatement
-    | forExpressionClause
+    : {p.isForExpressionClauseStart()}? forExpressionClause
+    | {p.isForExpressionBodyStatementStart()}? forExpressionStatement
     ;
 
 forExpressionReturn
@@ -484,11 +603,11 @@ limitClause
 limitClauseValue
     : integerLiteral
     | param
-    | variable
+    | memberExpression
     | functionCallExpression
     | implicitCurrentExpression
     | {p.allowImplicitCurrent()}? implicitMemberExpression
-    | memberExpression
+    | variable
     ;
 
 sortClause
@@ -592,7 +711,10 @@ waitForEventExpression
     ;
 
 waitForEventGroupExpression
-    : Event waitForSynchronization OpenBrace waitForEventGroupEntry+ CloseBrace waitForEventTail
+    : Event waitForSynchronization OpenBrace
+      (CloseBrace {p.NotifyErrorListeners("empty WAITFOR group", p.GetTokenStream().LT(-1), nil)}
+      | waitForEventGroupEntry+ CloseBrace)
+      waitForEventTail
     ;
 
 waitForEventGroupEntry
@@ -637,7 +759,9 @@ waitForPredicateExpression
     ;
 
 waitForPredicateGroupExpression
-    : waitForPredicateGroupMode? waitForSynchronization OpenBrace waitForPredicateGroupEntry+ CloseBrace
+    : waitForPredicateGroupMode? waitForSynchronization OpenBrace
+      (CloseBrace {p.NotifyErrorListeners("empty WAITFOR group", p.GetTokenStream().LT(-1), nil)}
+      | waitForPredicateGroupEntry+ CloseBrace)
       (timeoutClause)? (everyClause)? (backoffClause)? (jitterClause)?
     ;
 
@@ -1103,7 +1227,7 @@ expressionAtom
     | matchExpression
     | queryExpression
     | memberExpression
-    | functionCallExpression
+    | {p.GetTokenStream().LA(1) != FqlParserWaitfor && p.GetTokenStream().LA(1) != FqlParserDispatch}? functionCallExpression
     | rangeOperator
     | literal
     | variable

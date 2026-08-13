@@ -21,6 +21,9 @@ type (
 	// dynamic value.
 	ValueType uint8
 
+	// SyntaxTokenKind classifies a parser-independent source token.
+	SyntaxTokenKind uint8
+
 	// Symbol describes a source-visible declaration or analysis-local bind parameter.
 	Symbol struct {
 		Name            string
@@ -57,6 +60,13 @@ type (
 		Type ValueType
 	}
 
+	// SyntaxToken describes one non-whitespace token from the analyzed source.
+	// Span uses zero-based, half-open UTF-8 byte offsets.
+	SyntaxToken struct {
+		Kind SyntaxTokenKind
+		Span source.Span
+	}
+
 	analysisScopeID uint32
 
 	analysisScope struct {
@@ -78,10 +88,24 @@ type (
 		calls          []Call
 		diagnostics    []*diagnostics.Diagnostic
 		typeFacts      []TypeFact
+		syntaxTokens   []SyntaxToken
 		scopes         []analysisScope
 		symbolMetadata []analysisSymbolMetadata
 		sourceLength   int
 	}
+)
+
+const (
+	SyntaxTokenKindUnknown SyntaxTokenKind = iota
+	SyntaxTokenKindIdentifier
+	SyntaxTokenKindNamespace
+	SyntaxTokenKindKeyword
+	SyntaxTokenKindString
+	SyntaxTokenKindNumber
+	SyntaxTokenKindDuration
+	SyntaxTokenKindComment
+	SyntaxTokenKindOperator
+	SyntaxTokenKindPunctuation
 )
 
 // InvalidSymbolID represents the absence of a semantic symbol target.

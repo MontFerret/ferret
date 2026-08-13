@@ -24,14 +24,10 @@ func (f *statementFormatter) formatBodyStatement(ctx *fql.BodyStatementContext) 
 		f.formatDeleteStatement(ctx.DeleteStatement().(*fql.DeleteStatementContext))
 	case ctx.FunctionDeclaration() != nil:
 		f.formatFunctionDeclaration(ctx.FunctionDeclaration().(*fql.FunctionDeclarationContext))
-	case ctx.FunctionCallExpression() != nil:
-		f.expression.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
-	case ctx.WaitForExpression() != nil:
-		f.formatWaitForExpression(ctx.WaitForExpression().(*fql.WaitForExpressionContext))
-	case ctx.DispatchExpression() != nil:
-		f.formatDispatchExpression(ctx.DispatchExpression().(*fql.DispatchExpressionContext))
 	case ctx.ForExpression() != nil:
 		f.formatForExpression(ctx.ForExpression().(*fql.ForExpressionContext))
+	case ctx.ExpressionStatement() != nil:
+		f.formatExpressionStatement(ctx.ExpressionStatement().(*fql.ExpressionStatementContext))
 	}
 }
 
@@ -294,12 +290,6 @@ func (f *statementFormatter) formatFunctionStatement(ctx *fql.FunctionStatementC
 		f.formatDeleteStatement(ctx.DeleteStatement().(*fql.DeleteStatementContext))
 	case ctx.FunctionDeclaration() != nil:
 		f.formatFunctionDeclaration(ctx.FunctionDeclaration().(*fql.FunctionDeclarationContext))
-	case ctx.FunctionCallExpression() != nil:
-		f.expression.formatFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
-	case ctx.WaitForExpression() != nil:
-		f.formatWaitForExpression(ctx.WaitForExpression().(*fql.WaitForExpressionContext))
-	case ctx.DispatchExpression() != nil:
-		f.formatDispatchExpression(ctx.DispatchExpression().(*fql.DispatchExpressionContext))
 	case ctx.ForExpression() != nil:
 		f.formatForExpression(ctx.ForExpression().(*fql.ForExpressionContext))
 	case ctx.ExpressionStatement() != nil:
@@ -338,7 +328,14 @@ func (f *statementFormatter) formatReturnValue(ctx *fql.ReturnValueContext) {
 	}
 
 	if expr := ctx.Expression(); expr != nil {
-		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+		exprCtx := expr.(*fql.ExpressionContext)
+		if loop := f.expression.groupedForExpression(exprCtx); loop != nil {
+			f.formatForExpression(loop)
+
+			return
+		}
+
+		f.expression.formatExpression(exprCtx)
 	}
 }
 
@@ -348,7 +345,14 @@ func (f *statementFormatter) formatExpressionStatement(ctx *fql.ExpressionStatem
 	}
 
 	if expr := ctx.Expression(); expr != nil {
-		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+		exprCtx := expr.(*fql.ExpressionContext)
+		if loop := f.expression.groupedForExpression(exprCtx); loop != nil {
+			f.formatForExpression(loop)
+
+			return
+		}
+
+		f.expression.formatExpression(exprCtx)
 	}
 }
 
@@ -554,14 +558,10 @@ func (f *statementFormatter) formatForExpressionBody(ctx *fql.ForExpressionBodyC
 			f.formatAssignmentStatement(stmt.AssignmentStatement().(*fql.AssignmentStatementContext))
 		case stmt.DeleteStatement() != nil:
 			f.formatDeleteStatement(stmt.DeleteStatement().(*fql.DeleteStatementContext))
-		case stmt.FunctionCallExpression() != nil:
-			f.expression.formatFunctionCallExpression(stmt.FunctionCallExpression().(*fql.FunctionCallExpressionContext))
-		case stmt.WaitForExpression() != nil:
-			f.formatWaitForExpression(stmt.WaitForExpression().(*fql.WaitForExpressionContext))
-		case stmt.DispatchExpression() != nil:
-			f.formatDispatchExpression(stmt.DispatchExpression().(*fql.DispatchExpressionContext))
 		case stmt.ForExpression() != nil:
 			f.formatForExpression(stmt.ForExpression().(*fql.ForExpressionContext))
+		case stmt.ExpressionStatement() != nil:
+			f.formatExpressionStatement(stmt.ExpressionStatement().(*fql.ExpressionStatementContext))
 		}
 	case ctx.ForExpressionClause() != nil:
 		clause := ctx.ForExpressionClause().(*fql.ForExpressionClauseContext)
@@ -1148,9 +1148,17 @@ func (f *statementFormatter) formatDispatchTarget(ctx *fql.DispatchTargetContext
 	}
 
 	if expr := ctx.Expression(); expr != nil {
-		f.p.write("(")
-		f.expression.formatExpression(expr.(*fql.ExpressionContext))
-		f.p.write(")")
+		exprCtx := expr.(*fql.ExpressionContext)
+		if f.expression.canFormatAsDispatchTarget(exprCtx) {
+			f.expression.formatAsRestrictedValueWith(f.p, exprCtx, false)
+		} else {
+			f.expression.formatRequiredParenthesizedExpressionWith(
+				f.p,
+				ctx.OpenParen(),
+				exprCtx,
+				ctx.CloseParen(),
+			)
+		}
 
 		return
 	}

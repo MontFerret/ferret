@@ -38,11 +38,11 @@ func (*cancellationStringValue) Type() runtime.Type {
 
 func TestPureExecutionCancellationAtBackwardJumpSafepoint(t *testing.T) {
 	queries := map[string]string{
-		"discarded collecting": `LET signal = START()
+		"parenthesized discarded collecting": `LET signal = START()
 VAR i = 0
-FOR WHILE i < 1000000000
+(FOR WHILE i < 1000000000
   i = i + 1
-RETURN signal`,
+RETURN signal)`,
 		"returnless": `LET signal = START()
 VAR i = 0
 FOR WHILE i < 1000000000 {

@@ -82,8 +82,7 @@ func (c *CaptureAnalyzer) analyzeFunction(fn *core.UDFInfo, env *udfCaptureEnv) 
 	if body != nil {
 		if arrow := body.FunctionArrow(); arrow != nil {
 			if expr := arrow.Expression(); expr != nil {
-				c.collectVars(expr, env, state)
-				c.collectAssignments(expr, env, state)
+				c.collectNodeUsage(expr, env, state)
 			}
 		}
 
@@ -97,14 +96,12 @@ func (c *CaptureAnalyzer) analyzeFunction(fn *core.UDFInfo, env *udfCaptureEnv) 
 				case stmt.VariableDeclaration() != nil:
 					decl := stmt.VariableDeclaration()
 					if decl != nil && decl.Expression() != nil {
-						c.collectVars(decl.Expression(), env, state)
-						c.collectAssignments(decl.Expression(), env, state)
+						c.collectNodeUsage(decl.Expression(), env, state)
 					}
 
 					c.addOwnedDeclarationCaptureBindings(env, state, decl)
 				case stmt.AssignmentStatement() != nil:
-					c.collectVars(stmt.AssignmentStatement(), env, state)
-					c.collectAssignments(stmt.AssignmentStatement(), env, state)
+					c.collectNodeUsage(stmt.AssignmentStatement(), env, state)
 				case stmt.FunctionDeclaration() != nil:
 					decl := stmt.FunctionDeclaration().(*fql.FunctionDeclarationContext)
 					name := decl.FunctionName().GetText()
@@ -124,20 +121,10 @@ func (c *CaptureAnalyzer) analyzeFunction(fn *core.UDFInfo, env *udfCaptureEnv) 
 							addUDFCapture(state.captures, &state.order, capture)
 						}
 					}
-				case stmt.FunctionCallExpression() != nil:
-					c.collectVars(stmt.FunctionCallExpression(), env, state)
-					c.collectAssignments(stmt.FunctionCallExpression(), env, state)
-				case stmt.WaitForExpression() != nil:
-					c.collectVars(stmt.WaitForExpression(), env, state)
-					c.collectAssignments(stmt.WaitForExpression(), env, state)
-				case stmt.DispatchExpression() != nil:
-					c.collectVars(stmt.DispatchExpression(), env, state)
-					c.collectAssignments(stmt.DispatchExpression(), env, state)
 				case stmt.ForExpression() != nil:
 					c.collectForExpression(stmt.ForExpression(), env, state)
 				case stmt.ExpressionStatement() != nil:
-					c.collectVars(stmt.ExpressionStatement(), env, state)
-					c.collectAssignments(stmt.ExpressionStatement(), env, state)
+					c.collectNodeUsage(stmt.ExpressionStatement(), env, state)
 				}
 			}
 
@@ -162,8 +149,7 @@ func (c *CaptureAnalyzer) collectForExpression(
 	}
 
 	if src := ctx.ForExpressionSource(); src != nil {
-		c.collectVars(src, env, state)
-		c.collectAssignments(src, env, state)
+		c.collectNodeUsage(src, env, state)
 	}
 
 	env.push()
@@ -182,8 +168,7 @@ func (c *CaptureAnalyzer) collectForExpression(
 	}
 
 	if ctx.ForExpressionSource() == nil && ctx.Expression() != nil {
-		c.collectVars(ctx.Expression(), env, state)
-		c.collectAssignments(ctx.Expression(), env, state)
+		c.collectNodeUsage(ctx.Expression(), env, state)
 	}
 
 	for _, body := range ctx.AllForExpressionBody() {
@@ -215,8 +200,7 @@ func (c *CaptureAnalyzer) collectReturnValue(
 	}
 
 	if expr := ctx.Expression(); expr != nil {
-		c.collectVars(expr, env, state)
-		c.collectAssignments(expr, env, state)
+		c.collectNodeUsage(expr, env, state)
 
 		return
 	}
@@ -237,8 +221,7 @@ func (c *CaptureAnalyzer) collectForExpressionBody(
 
 	if stmt := ctx.ForExpressionStatement(); stmt != nil {
 		if decl := stmt.VariableDeclaration(); decl != nil {
-			c.collectVars(decl.Expression(), env, state)
-			c.collectAssignments(decl.Expression(), env, state)
+			c.collectNodeUsage(decl.Expression(), env, state)
 			c.addOwnedDeclarationCaptureBindings(env, state, decl)
 
 			return
@@ -250,14 +233,14 @@ func (c *CaptureAnalyzer) collectForExpressionBody(
 			return
 		}
 
-		c.collectVars(stmt, env, state)
-		c.collectAssignments(stmt, env, state)
+		c.collectNodeUsage(stmt, env, state)
+
 		return
 	}
 
 	if clause := ctx.ForExpressionClause(); clause != nil {
-		c.collectVars(clause, env, state)
-		c.collectAssignments(clause, env, state)
+		c.collectNodeUsage(clause, env, state)
+
 		if collect := clause.CollectClause(); collect != nil {
 			c.addCollectCaptureBindings(env, state, collect)
 		}
@@ -358,7 +341,7 @@ func (c *CaptureAnalyzer) addCollectCaptureBindings(env *udfCaptureEnv, state *u
 	}
 }
 
-func (c *CaptureAnalyzer) collectVars(
+func (c *CaptureAnalyzer) collectNodeUsage(
 	node antlr.Tree,
 	env *udfCaptureEnv,
 	state *udfCaptureState,
@@ -367,92 +350,108 @@ func (c *CaptureAnalyzer) collectVars(
 		return
 	}
 
-	var vars []*fql.VariableContext
-	findVariableRefs(node, &vars)
+	switch typed := node.(type) {
+	case *fql.ForExpressionContext:
+		c.collectForExpression(typed, env, state)
 
-	for _, v := range vars {
-		name, _ := variableName(v)
-		if name == "" || env.currentHas(name) {
-			continue
-		}
+		return
+	case *fql.VariableContext:
+		c.collectVariable(typed, env, state)
+	case *fql.AssignmentStatementContext:
+		c.collectAssignment(typed, env, state)
+	}
 
-		if binding, ok := env.resolveBinding(name); ok {
-			if _, owned := state.owned[binding.ID]; owned {
-				continue
-			}
-
-			addUDFCapture(state.captures, &state.order, core.UDFCapture{
-				ID:      binding.ID,
-				Name:    binding.Name,
-				Storage: core.BindingStorageValue,
-				Visible: true,
-			})
-		}
+	for childIdx := 0; childIdx < node.GetChildCount(); childIdx++ {
+		c.collectNodeUsage(node.GetChild(childIdx), env, state)
 	}
 }
 
-func (c *CaptureAnalyzer) collectAssignments(
-	node antlr.Tree,
+func (c *CaptureAnalyzer) collectVariable(
+	ctx *fql.VariableContext,
 	env *udfCaptureEnv,
 	state *udfCaptureState,
 ) {
-	if c == nil || c.ctx == nil || node == nil || env == nil || state == nil {
+	if c == nil || ctx == nil || env == nil || state == nil {
 		return
 	}
 
-	var assignments []*fql.AssignmentStatementContext
-	findAssignmentRefs(node, &assignments)
+	name, _ := variableName(ctx)
+	if name == "" || env.currentHas(name) {
+		return
+	}
 
-	for _, stmt := range assignments {
-		if stmt == nil || stmt.AssignmentTarget() == nil {
-			continue
-		}
+	binding, ok := env.resolveBinding(name)
+	if !ok {
+		return
+	}
 
-		target, ok := newAssignmentTarget(stmt.AssignmentTarget())
-		if !ok {
-			continue
-		}
+	if _, owned := state.owned[binding.ID]; owned {
+		return
+	}
 
-		name := target.Root
-		if name == "" || env.currentHas(name) {
-			continue
-		}
+	addUDFCapture(state.captures, &state.order, core.UDFCapture{
+		ID:      binding.ID,
+		Name:    binding.Name,
+		Storage: core.BindingStorageValue,
+		Visible: true,
+	})
+}
 
-		binding, ok := env.resolveBinding(name)
-		if !ok {
-			continue
-		}
-		if _, owned := state.owned[binding.ID]; owned {
-			continue
-		}
+func (c *CaptureAnalyzer) collectAssignment(
+	stmt *fql.AssignmentStatementContext,
+	env *udfCaptureEnv,
+	state *udfCaptureState,
+) {
+	if c == nil || c.ctx == nil || stmt == nil || env == nil || state == nil || stmt.AssignmentTarget() == nil {
+		return
+	}
 
-		if len(target.Segments) > 0 {
-			addUDFCapture(state.captures, &state.order, core.UDFCapture{
-				ID:      binding.ID,
-				Name:    binding.Name,
-				Storage: core.BindingStorageValue,
-				Visible: true,
-			})
-			continue
-		}
+	target, ok := newAssignmentTarget(stmt.AssignmentTarget())
+	if !ok {
+		return
+	}
 
-		storage := core.BindingStorageValue
+	name := target.Root
+	if name == "" || env.currentHas(name) {
+		return
+	}
 
-		if binding.Mutable {
-			storage = core.BindingStorageCell
+	binding, ok := env.resolveBinding(name)
+	if !ok {
+		return
+	}
 
-			if binding.Decl != nil {
-				c.bindings.PromoteDeclaration(binding.Decl)
-			}
-		}
+	if _, owned := state.owned[binding.ID]; owned {
+		return
+	}
 
+	if len(target.Segments) > 0 {
 		addUDFCapture(state.captures, &state.order, core.UDFCapture{
 			ID:      binding.ID,
 			Name:    binding.Name,
-			Storage: storage,
+			Storage: core.BindingStorageValue,
 			Visible: true,
 		})
+
+		return
 	}
+
+	storage := core.BindingStorageValue
+
+	if binding.Mutable {
+		storage = core.BindingStorageCell
+
+		if binding.Decl != nil {
+			c.bindings.PromoteDeclaration(binding.Decl)
+		}
+	}
+
+	addUDFCapture(state.captures, &state.order, core.UDFCapture{
+		ID:      binding.ID,
+		Name:    binding.Name,
+		Storage: storage,
+		Visible: true,
+	})
 }
 
 func (c *CaptureAnalyzer) collectCallGraph() {

@@ -99,6 +99,23 @@ func (f *memberFormatter) formatMemberExpressionSource(ctx *fql.MemberExpression
 	case ctx.FunctionCall() != nil:
 		f.expression.formatFunctionCall(ctx.FunctionCall().(*fql.FunctionCallContext))
 	case ctx.OpenParen() != nil:
+		if expr, ok := ctx.Expression().(*fql.ExpressionContext); ok {
+			if f.expression.canFormatAsMemberSource(expr) {
+				f.expression.formatAsMemberSource(expr)
+
+				return
+			}
+
+			f.expression.formatRequiredParenthesizedExpressionWith(
+				f.p,
+				ctx.OpenParen(),
+				expr,
+				ctx.CloseParen(),
+			)
+
+			return
+		}
+
 		f.p.write("(")
 
 		if fe := ctx.ForExpression(); fe != nil {
@@ -117,10 +134,6 @@ func (f *memberFormatter) formatMemberExpressionSource(ctx *fql.MemberExpression
 			f.p.write(")")
 
 			return
-		}
-
-		if expr := ctx.Expression(); expr != nil {
-			f.expression.formatExpression(expr.(*fql.ExpressionContext))
 		}
 
 		f.p.write(")")

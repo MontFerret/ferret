@@ -74,6 +74,12 @@ func TestDiscardedForLowering(t *testing.T) {
 }`,
 		},
 		{
+			name: "parenthesized script expression statement",
+			query: `(FOR value IN [1, 2] {
+  RETURN value
+})`,
+		},
+		{
 			name: "standalone UDF",
 			query: `FUNC effect() {
   FOR value IN [1, 2] {
@@ -99,6 +105,15 @@ RETURN effect()`,
   }) ON ERROR RETRY 1 OR RETURN NONE
 }
 RETURN effect()`,
+		},
+		{
+			name: "parenthesized loop body expression statement",
+			query: `FOR outer IN [1] {
+  (FOR value IN [1, 2] {
+    RETURN value
+  })
+  RETURN outer
+}`,
 		},
 		{
 			name: "discarded pass-through chain",
@@ -350,6 +365,117 @@ RETURN NONE`
 	for line, found := range wantLines {
 		if !found {
 			t.Fatalf("returnless FOR has no statement debug point on line %d: %#v", line, program.Metadata.DebugPoints)
+		}
+	}
+}
+
+func TestGeneralExpressionStatementsRetainDebugMetadata(t *testing.T) {
+	const query = `1 + 2
+FUNC effect(value) {
+  VAR copy = 0
+  copy += 1
+  RECORD(value.member) + 1
+  RETURN NONE
+}
+FOR value IN [{ member: 1 }] {
+  value.member + 1
+}
+RETURN NONE`
+
+	program, err := compiler.New(compiler.WithDebugInfo()).Compile(source.NewAnonymous(query))
+	if err != nil {
+		t.Fatalf("compile query: %v", err)
+	}
+
+	wantLines := map[int]bool{1: false, 5: false, 9: false}
+	for _, point := range program.Metadata.DebugPoints {
+		if point.Kind != bytecode.DebugPointStatement {
+			continue
+		}
+
+		line, _ := program.Source.LocationAt(point.Span)
+		if _, ok := wantLines[line]; ok {
+			wantLines[line] = true
+		}
+	}
+
+	for line, found := range wantLines {
+		if !found {
+			t.Fatalf("expression statement has no statement debug point on line %d: %#v", line, program.Metadata.DebugPoints)
+		}
+	}
+}
+
+func TestExpressionStatementCallsPreserveReachabilityAndCaptures(t *testing.T) {
+	const query = `LET base = 10
+FUNC outer() {
+  (FOR item IN [base] {
+    inner(item) + 1
+  })
+  FUNC inner(value) => base + value
+}
+outer() + 1
+RETURN NONE`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+			program := compileWithLevel(t, level, query)
+
+			outer, err := findUserDefined(program, "outer")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			inner, err := findUserDefined(program, "inner")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if got, want := outer.Params, 1; got != want {
+				t.Fatalf("outer params/captures = %d, want %d", got, want)
+			}
+
+			if got, want := inner.Params, 2; got != want {
+				t.Fatalf("inner params/captures = %d, want %d", got, want)
+			}
+		})
+	}
+}
+
+func TestParenthesizedLoopExpressionStatementRetainsDebugMetadata(t *testing.T) {
+	const query = `(FOR value IN [1] {
+  value + 1
+  RETURN value
+})
+RETURN NONE`
+
+	program, err := compiler.New(compiler.WithDebugInfo()).Compile(source.NewAnonymous(query))
+	if err != nil {
+		t.Fatalf("compile query: %v", err)
+	}
+
+	want := map[bytecode.DebugPointKind]map[int]bool{
+		bytecode.DebugPointStatement: {1: false, 2: false},
+		bytecode.DebugPointReturn:    {3: false, 5: false},
+	}
+
+	for _, point := range program.Metadata.DebugPoints {
+		lines, ok := want[point.Kind]
+		if !ok {
+			continue
+		}
+
+		line, _ := program.Source.LocationAt(point.Span)
+		if _, ok := lines[line]; ok {
+			lines[line] = true
+		}
+	}
+
+	for kind, lines := range want {
+		for line, found := range lines {
+			if !found {
+				t.Fatalf("parenthesized loop has no kind %d debug point on line %d: %#v", kind, line, program.Metadata.DebugPoints)
+			}
 		}
 	}
 }

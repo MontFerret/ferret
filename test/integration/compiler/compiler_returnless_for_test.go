@@ -30,6 +30,7 @@ func TestReturnlessForValueDiagnostics(t *testing.T) {
 			marker: "FOR value",
 		},
 		{name: "return", query: `RETURN FOR value IN [1] {}`, marker: "FOR value"},
+		{name: "grouped return", query: `RETURN (FOR value IN [1] {})`, marker: "FOR value"},
 		{name: "return distinct", query: `RETURN DISTINCT FOR value IN [1] {}`, marker: "FOR value"},
 		{name: "argument", query: `RETURN LENGTH((FOR value IN [1] {}))`, marker: "FOR value"},
 		{name: "array member", query: `RETURN [(FOR value IN [1] {})]`, marker: "FOR value"},
