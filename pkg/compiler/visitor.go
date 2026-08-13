@@ -19,9 +19,24 @@ type Visitor struct {
 }
 
 func NewVisitor(src *source.Source, errors *parser.ErrorHandler, level optimization.Level) *Visitor {
+	return newVisitor(src, errors, level, nil)
+}
+
+func newVisitor(
+	src *source.Source,
+	errors *parser.ErrorHandler,
+	level optimization.Level,
+	recorder *internal.SemanticRecorder,
+) *Visitor {
 	v := new(Visitor)
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
-	v.Session = internal.NewCompilationSession(src, errors, level)
+
+	if recorder == nil {
+		v.Session = internal.NewCompilationSession(src, errors, level)
+	} else {
+		v.Session = internal.NewSemanticCompilationSession(src, errors, level, recorder)
+	}
+
 	v.Frontend = internal.NewCompilationFrontend(v.Session)
 
 	return v
@@ -35,11 +50,13 @@ func (v *Visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
 	v.Frontend.UDFCatalog.BuildCatalog(ctx)
 	v.Frontend.ForwardBindings.BuildProgram(ctx)
 	v.Frontend.NameCollisions.ValidateProgram(ctx)
+
 	if ctx != nil {
 		if body, ok := ctx.Body().(*fql.BodyContext); ok {
 			v.Frontend.CaptureAnalyzer.AnalyzeProgram(body)
 		}
 	}
+
 	v.Frontend.Statements.Compile(ctx.Body())
 	v.Frontend.UDFs.CompileAll()
 
@@ -88,6 +105,9 @@ func (v *Visitor) VisitHead(ctx *fql.HeadContext) interface{} {
 	}
 
 	v.Session.Program.UseAliases[alias] = namespace
+	if recorder := v.Session.Program.Semantics; recorder != nil {
+		recorder.RecordNamespaceAlias(alias, parser.SpanFromRuleContext(ctx), parser.SpanFromToken(aliasTok))
+	}
 
 	return nil
 }

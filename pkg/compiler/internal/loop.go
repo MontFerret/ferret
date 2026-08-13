@@ -263,6 +263,10 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	c.ctx.Function.Loops.Push(loop)
 	c.ctx.Function.Symbols.EnterScope()
 
+	if c.ctx.Program.Semantics != nil {
+		c.ctx.Program.Semantics.EnterScope(parser.SpanFromRuleContext(ctx.(antlr.ParserRuleContext)))
+	}
+
 	valueType, keyType := c.inferLoopVariableTypes(ctx, loop, kind)
 	c.declareLoopVariables(ctx, loop, valueType, keyType)
 	c.emitLoopInitialization(ctx, loop)
@@ -335,7 +339,30 @@ func (c *LoopCompiler) declareLoopValueVariable(ctx fql.IForExpressionContext, l
 	}
 
 	varName := textOfLoopVariable(val)
-	loop.DeclareValueVar(varName, c.ctx.Function.Symbols, valueType)
+	valueCtx := val.(antlr.ParserRuleContext)
+	bindingID := bindingIDFromRule(valueCtx)
+	declared := loop.DeclareValueVarWithOptions(varName, c.ctx.Function.Symbols, valueType, core.BindingOptions{ID: bindingID})
+
+	if declared && c.ctx.Program.Semantics != nil {
+		span := parser.SpanFromRuleContext(valueCtx)
+		activation := span.End
+		if src := ctx.ForExpressionSource(); src != nil {
+			activation = parser.SpanFromRuleContext(src.(antlr.ParserRuleContext)).End
+		}
+
+		c.ctx.Program.Semantics.RecordBinding(
+			bindingID,
+			varName,
+			SemanticSymbolLoopBinding,
+			span,
+			span,
+			false,
+			valueType,
+			activation,
+			c.ctx.Program.Semantics.CurrentFunctionSymbol(),
+			0,
+		)
+	}
 
 	if loop.Value.IsRegister() {
 		c.ctx.Function.Types.Set(loop.Value, valueType)
@@ -348,7 +375,32 @@ func (c *LoopCompiler) declareLoopCounterVariable(ctx fql.IForExpressionContext,
 		return
 	}
 
-	loop.DeclareKeyVar(textOfBindingIdentifier(ctr), c.ctx.Function.Symbols, keyType)
+	counterCtx := ctr.(antlr.ParserRuleContext)
+	bindingID := bindingIDFromRule(counterCtx)
+	name := textOfBindingIdentifier(ctr)
+	declared := loop.DeclareKeyVarWithOptions(name, c.ctx.Function.Symbols, keyType, core.BindingOptions{ID: bindingID})
+
+	if declared && c.ctx.Program.Semantics != nil {
+		span := parser.SpanFromRuleContext(counterCtx)
+		activation := span.End
+
+		if src := ctx.ForExpressionSource(); src != nil {
+			activation = parser.SpanFromRuleContext(src.(antlr.ParserRuleContext)).End
+		}
+
+		c.ctx.Program.Semantics.RecordBinding(
+			bindingID,
+			name,
+			SemanticSymbolLoopBinding,
+			span,
+			span,
+			false,
+			keyType,
+			activation,
+			c.ctx.Program.Semantics.CurrentFunctionSymbol(),
+			0,
+		)
+	}
 	if loop.Key.IsRegister() {
 		c.ctx.Function.Types.Set(loop.Key, keyType)
 	}
@@ -370,7 +422,27 @@ func (c *LoopCompiler) emitLoopInitialization(ctx fql.IForExpressionContext, loo
 	})
 
 	if loop.Destructured {
-		c.bindings.compileDestructuringPattern(ctx.GetValuePattern(), loop.Value, false)
+		pattern := ctx.GetValuePattern()
+		declaration := source.Span{}
+		activation := 0
+
+		if c.ctx.Program.Semantics != nil {
+			declaration = parser.SpanFromRuleContext(pattern.(antlr.ParserRuleContext))
+			activation = declaration.End
+
+			if src := ctx.ForExpressionSource(); src != nil {
+				activation = parser.SpanFromRuleContext(src.(antlr.ParserRuleContext)).End
+			}
+		}
+
+		c.bindings.compileDestructuringPattern(
+			pattern,
+			loop.Value,
+			false,
+			SemanticSymbolLoopBinding,
+			declaration,
+			activation,
+		)
 	}
 }
 
@@ -415,6 +487,7 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 		// results are appended to the loop destination.
 		re := ctx.(*fql.ReturnExpressionContext)
 		returnUse := resultDiscarded
+
 		if loop.CollectResult {
 			returnUse = resultRequired
 		}
@@ -472,6 +545,11 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 
 	// Clean up the symbol scope and pop the loop from the stack
 	c.ctx.Function.Symbols.ExitScope()
+
+	if c.ctx.Program.Semantics != nil {
+		c.ctx.Program.Semantics.ExitScope()
+	}
+
 	c.ctx.Function.Loops.Pop()
 
 	return loop.Dst

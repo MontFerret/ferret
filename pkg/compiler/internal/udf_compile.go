@@ -119,8 +119,17 @@ func (c *UDFCompiler) withFunctionCompileState(fn *core.UDFInfo, compile func())
 	localFunction := NewFunctionContext(c.ctx.Program.Constants)
 	localFunction.UDFScope = fn.BodyScope
 	c.ctx.Function = localFunction
+	semanticScope := false
+
+	if c.ctx.Program.Semantics != nil {
+		semanticScope = c.ctx.Program.Semantics.PushUDFScope(fn)
+	}
 
 	defer func() {
+		if semanticScope {
+			c.ctx.Program.Semantics.ExitScope()
+		}
+
 		c.ctx.Function = outerFunction
 	}()
 

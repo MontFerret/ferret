@@ -20,17 +20,20 @@ func (c *BindingCompiler) CompileDeleteStatement(ctx fql.IDeleteStatementContext
 	target := stmt.AssignmentTarget()
 	if target == nil {
 		c.reportInvalidDeleteTarget(stmt)
+
 		return bytecode.NoopOperand
 	}
 
 	deletion, ok := newAssignmentTarget(target)
 	if !ok {
 		c.reportInvalidDeleteTarget(stmt)
+
 		return bytecode.NoopOperand
 	}
 
 	if deletion.Root == "" || deletion.Root == core.IgnorePseudoVariable || len(deletion.Segments) == 0 {
 		c.reportInvalidDeleteTarget(stmt)
+
 		return bytecode.NoopOperand
 	}
 
@@ -41,7 +44,12 @@ func (c *BindingCompiler) CompileDeleteStatement(ctx fql.IDeleteStatementContext
 		}
 
 		reportVariableNotFound(c.ctx, deletion.RootTok, deletion.Root)
+
 		return bytecode.NoopOperand
+	}
+
+	if c.ctx.Program.Semantics != nil {
+		c.ctx.Program.Semantics.RecordBindingReference(binding.ID, parserd.SpanFromRuleContext(deletion.RootCtx))
 	}
 
 	return c.compilePathDeleteStatement(stmt, deletion, binding)
