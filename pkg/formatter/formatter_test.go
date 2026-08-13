@@ -64,6 +64,82 @@ func TestFormatter_DefaultKeywordCase(t *testing.T) {
 	}
 }
 
+func TestFormatter_ReturnlessForBlocks(t *testing.T) {
+	tests := map[string]struct {
+		input string
+		want  string
+	}{
+		"empty": {
+			input: `FOR value IN items {}`,
+			want:  "for value in items {\n}",
+		},
+		"comment only": {
+			input: `FOR value IN items {
+// keep this comment
+}`,
+			want: "for value in items {\n    // keep this comment\n}",
+		},
+		"comment before close": {
+			input: `FOR value IN items {
+STEP()
+// keep this trailing comment
+}`,
+			want: "for value in items {\n    STEP()\n    // keep this trailing comment\n}",
+		},
+		"for in": {
+			input: `FOR value IN items {LET copy=value}`,
+			want:  "for value in items {\n    let copy = value\n}",
+		},
+		"while": {
+			input: `FOR WHILE ready {STEP()}`,
+			want:  "for while ready {\n    STEP()\n}",
+		},
+		"do while": {
+			input: `FOR DO WHILE ready {STEP()}`,
+			want:  "for do while ready {\n    STEP()\n}",
+		},
+		"nested before statement": {
+			input: `FOR outer IN items {FOR inner IN outer.items {} LET after=outer}`,
+			want: `for outer in items {
+    for inner in outer.items {
+    }
+    let after = outer
+}`,
+		},
+		"terminal pass-through compatibility": {
+			input: `RETURN FOR outer IN items {FOR inner IN outer.items {RETURN inner}}`,
+			want: `return for outer in items {
+    for inner in outer.items {
+        return inner
+    }
+}`,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var first bytes.Buffer
+			format := New()
+			if err := format.Format(&first, source.NewAnonymous(test.input)); err != nil {
+				t.Fatalf("format failed: %v", err)
+			}
+
+			if got := first.String(); got != test.want {
+				t.Fatalf("unexpected formatting:\nwant:\n%s\ngot:\n%s", test.want, got)
+			}
+
+			var second bytes.Buffer
+			if err := format.Format(&second, source.NewAnonymous(first.String())); err != nil {
+				t.Fatalf("second format failed: %v", err)
+			}
+
+			if second.String() != first.String() {
+				t.Fatalf("returnless FOR formatting must be stable:\nfirst:\n%s\nsecond:\n%s", first.String(), second.String())
+			}
+		})
+	}
+}
+
 func TestFormatterPreservesFunctionIdentifierCase(t *testing.T) {
 	t.Parallel()
 

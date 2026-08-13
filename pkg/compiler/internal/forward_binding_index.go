@@ -193,6 +193,12 @@ func (i *ForwardBindingIndex) buildForExpression(ctx fql.IForExpressionContext, 
 		i.buildForExpressionBody(body, scope)
 	}
 
+	if ret := ctx.ReturnExpression(); ret != nil {
+		i.buildReturnValue(ret.ReturnValue(), scope)
+
+		return
+	}
+
 	i.buildForExpressionReturn(ctx.ForExpressionReturn(), scope)
 }
 
@@ -218,6 +224,13 @@ func (i *ForwardBindingIndex) buildForExpressionStatement(ctx fql.IForExpression
 
 	if decl := ctx.VariableDeclaration(); decl != nil {
 		i.buildVariableDeclaration(decl, scope)
+
+		return
+	}
+
+	if nested := ctx.ForExpression(); nested != nil {
+		i.buildForExpression(nested, scope)
+
 		return
 	}
 

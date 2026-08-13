@@ -107,6 +107,39 @@ RETURN [LENGTH([value]), html::PARSE("<p/>")]`
 	}
 }
 
+func TestAnalyzeRecordsNestedReturnlessLoopSemantics(t *testing.T) {
+	query := `LET items = [1]
+FOR outer IN items {
+  FOR inner IN [outer] {
+    LET copy = inner
+  }
+  LET after = outer
+}`
+
+	analysis, err := New().Analyze(source.NewAnonymous(query))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	outer := requireAnalysisSymbol(t, analysis, "outer", SymbolKindLoopBinding)
+	inner := requireAnalysisSymbol(t, analysis, "inner", SymbolKindLoopBinding)
+	copy := requireAnalysisSymbol(t, analysis, "copy", SymbolKindBinding)
+	after := requireAnalysisSymbol(t, analysis, "after", SymbolKindBinding)
+
+	assertAnalysisSpanText(t, query, outer.SelectionSpan, "outer")
+	assertAnalysisSpanText(t, query, inner.SelectionSpan, "inner")
+	assertAnalysisSpanText(t, query, copy.SelectionSpan, "copy")
+	assertAnalysisSpanText(t, query, after.SelectionSpan, "after")
+
+	if got, want := len(analysis.ReferencesTo(outer.ID)), 2; got != want {
+		t.Fatalf("outer references = %d, want %d", got, want)
+	}
+
+	if got, want := len(analysis.ReferencesTo(inner.ID)), 1; got != want {
+		t.Fatalf("inner references = %d, want %d", got, want)
+	}
+}
+
 func TestAnalysisCallAtUsesNarrowestEnclosingCall(t *testing.T) {
 	query := `LET value = 1
 RETURN OUTER(INNER(value))`

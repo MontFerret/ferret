@@ -144,6 +144,18 @@ RETURN values`,
 }`,
 		},
 		{
+			name: "consumed outer with nonterminal collecting loop",
+			query: `RETURN FOR outer IN [1, 2] {
+  FOR inner IN [outer] {
+    RETURN inner
+  }
+  LET after = outer
+  RETURN after
+}`,
+			wantDataSets: 1,
+			wantPushes:   1,
+		},
+		{
 			name: "discarded parenthesized explicit returned loop",
 			query: `FOR outer IN [1, 2] {
   RETURN (FOR inner IN [outer, outer + 1] {
@@ -207,6 +219,59 @@ RETURN values`,
 	}
 }
 
+func TestReturnlessForLowering(t *testing.T) {
+	queries := map[string]string{
+		"empty": `FOR value IN [] {}`,
+		"for in": `FOR value IN [1, 2] {
+  LET copy = value
+}`,
+		"while": `VAR count = 0
+FOR WHILE count < 2 {
+  count += 1
+}
+RETURN count`,
+		"do while": `VAR count = 0
+FOR DO WHILE false {
+  count += 1
+}
+RETURN count`,
+		"nested before statement": `FOR outer IN [1, 2] {
+  FOR inner IN [outer] {
+    LET copy = inner
+  }
+  LET after = outer
+}`,
+		"discarded grouped UDF statement": `FUNC effect() {
+  (FOR value IN [1, 2] {
+    LET copy = value
+  })
+}
+RETURN effect()`,
+		"discarded terminal nested loop": `FOR outer IN [1, 2] {
+  FOR inner IN [outer] {
+    RETURN inner
+  }
+}`,
+	}
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		for name, query := range queries {
+			t.Run(fmt.Sprintf("O%d/%s", level, name), func(t *testing.T) {
+				program := compileWithLevel(t, level, query)
+				if err := bytecode.ValidateProgram(program); err != nil {
+					t.Fatalf("validate bytecode: %v", err)
+				}
+
+				for _, opcode := range []bytecode.Opcode{bytecode.OpDataSet, bytecode.OpPush} {
+					if inspect.HasOpcode(program, opcode) {
+						t.Fatalf("returnless FOR unexpectedly contains %s", opcode)
+					}
+				}
+			})
+		}
+	}
+}
+
 func TestImplicitNoneReturnsAreSourceInvisible(t *testing.T) {
 	const query = `
 FUNC effect() {
@@ -254,6 +319,39 @@ RETURN NONE`
 	}
 
 	t.Fatal("standalone FOR has no top-level statement debug point")
+}
+
+func TestReturnlessForRetainsNestedStatementDebugMetadata(t *testing.T) {
+	const query = `FOR outer IN [1] {
+  FOR inner IN [outer] {}
+  RECORD(outer)
+}
+RETURN NONE`
+
+	program, err := compiler.New(compiler.WithDebugInfo()).Compile(source.NewAnonymous(query))
+	if err != nil {
+		t.Fatalf("compile query: %v", err)
+	}
+
+	wantLines := map[int]bool{1: false, 2: false, 3: false}
+	for _, point := range program.Metadata.DebugPoints {
+		line, _ := program.Source.LocationAt(point.Span)
+		if point.Kind == bytecode.DebugPointReturn && line < 5 {
+			t.Fatalf("returnless FOR unexpectedly has a return debug point on line %d", line)
+		}
+
+		if point.Kind == bytecode.DebugPointStatement {
+			if _, ok := wantLines[line]; ok {
+				wantLines[line] = true
+			}
+		}
+	}
+
+	for line, found := range wantLines {
+		if !found {
+			t.Fatalf("returnless FOR has no statement debug point on line %d: %#v", line, program.Metadata.DebugPoints)
+		}
+	}
 }
 
 func TestDiscardedExplicitReturnedForRetainsReturnDebugMetadata(t *testing.T) {

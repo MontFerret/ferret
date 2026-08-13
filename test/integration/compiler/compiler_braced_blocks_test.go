@@ -19,6 +19,10 @@ func TestBracedBlockSyntax(t *testing.T) {
 		"braced IN":                       `FOR value IN { one: 1 } { RETURN value }`,
 		"braced WHILE":                    `FOR value WHILE value < 1 { RETURN value }`,
 		"braced DO WHILE":                 `FOR value DO WHILE false { RETURN value }`,
+		"returnless braced IN":            `FOR value IN [1] { LET copy = value }`,
+		"returnless braced WHILE":         `FOR WHILE false {}`,
+		"returnless braced DO WHILE":      `FOR DO WHILE false {}`,
+		"nested returnless statement":     `FOR outer IN [1] { FOR inner IN [outer] {} LET copy = outer }`,
 		"nested mixed FOR":                `FOR outer IN [1] { LET inner = (FOR value IN [outer] RETURN value) RETURN inner }`,
 	}
 
@@ -36,6 +40,7 @@ func TestRemovedBlockSyntaxIsRejected(t *testing.T) {
 		"parenthesized UDF":   `FUNC value() ( RETURN 1 ) RETURN value()`,
 		"parenthesized MATCH": `RETURN MATCH 1 (1 => 1, _ => 0)`,
 		"unbraced MATCH":      `RETURN MATCH 1 1 => 1, _ => 0`,
+		"unbraced returnless": `FOR value IN [1] LET copy = value`,
 	}
 
 	for name, query := range invalid {

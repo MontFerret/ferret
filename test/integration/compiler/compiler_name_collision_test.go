@@ -49,6 +49,17 @@ FUNC f(items) {
 RETURN f([1])
 `, expectedHostCallBindingCollision("foo"), "Host call and LET collision inside returned UDF FOR should fail during compilation"),
 		Failure(`
+FUNC f(items) {
+  FOR item IN items {
+    FOR nested IN [item] {
+      LET foo = nested
+      foo()
+    }
+  }
+}
+RETURN f([1])
+`, expectedHostCallBindingCollision("foo"), "Host call and LET collision inside nested returnless FOR should fail during compilation"),
+		Failure(`
 USE X::bar AS foo
 foo()
 LET foo = 1

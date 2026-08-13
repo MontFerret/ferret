@@ -421,10 +421,11 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 	}
 
 	bodies := ctx.AllForExpressionBody()
-	ret := ctx.ForExpressionReturn()
+	directReturn := ctx.ReturnExpression()
+	legacyReturn := ctx.ForExpressionReturn()
 	braced := ctx.OpenBrace() != nil
 
-	if len(bodies) == 0 && ret == nil {
+	if len(bodies) == 0 && directReturn == nil && legacyReturn == nil && !braced {
 		return
 	}
 
@@ -438,8 +439,10 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 
 	if len(bodies) > 0 {
 		first = bodies[0].(antlr.ParserRuleContext)
-	} else if ret != nil {
-		first = ret.(antlr.ParserRuleContext)
+	} else if directReturn != nil {
+		first = directReturn.(antlr.ParserRuleContext)
+	} else if legacyReturn != nil {
+		first = legacyReturn.(antlr.ParserRuleContext)
 	}
 
 	f.p.withIndent(func() {
@@ -447,6 +450,11 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 			f.trivia.emitListTriviaWith(
 				f.p,
 				f.trivia.blockLeadingTrivia(headerStop, ctx.OpenBrace(), f.trivia.startIndex(first)),
+			)
+		} else if braced && ctx.CloseBrace() != nil {
+			f.trivia.emitListTriviaWith(
+				f.p,
+				f.trivia.blockLeadingTrivia(headerStop, ctx.OpenBrace(), f.trivia.tokenStart(ctx.CloseBrace())),
 			)
 		} else {
 			f.p.newline()
@@ -460,17 +468,33 @@ func (f *statementFormatter) formatForExpression(ctx *fql.ForExpressionContext) 
 			}
 		}
 
-		if ret != nil {
+		if directReturn != nil {
 			if len(bodies) > 0 {
-				f.trivia.emitBetween(bodies[len(bodies)-1].(antlr.ParserRuleContext), ret.(antlr.ParserRuleContext))
+				f.trivia.emitBetween(bodies[len(bodies)-1].(antlr.ParserRuleContext), directReturn.(antlr.ParserRuleContext))
 			}
 
-			f.formatForExpressionReturn(ret.(*fql.ForExpressionReturnContext))
+			f.formatReturnExpression(directReturn.(*fql.ReturnExpressionContext))
+		} else if legacyReturn != nil {
+			if len(bodies) > 0 {
+				f.trivia.emitBetween(bodies[len(bodies)-1].(antlr.ParserRuleContext), legacyReturn.(antlr.ParserRuleContext))
+			}
+
+			f.formatForExpressionReturn(legacyReturn.(*fql.ForExpressionReturnContext))
 		}
 
-		if braced && ret != nil && ctx.CloseBrace() != nil {
+		var last antlr.ParserRuleContext
+		switch {
+		case directReturn != nil:
+			last = directReturn.(antlr.ParserRuleContext)
+		case legacyReturn != nil:
+			last = legacyReturn.(antlr.ParserRuleContext)
+		case len(bodies) > 0:
+			last = bodies[len(bodies)-1].(antlr.ParserRuleContext)
+		}
+
+		if braced && last != nil && ctx.CloseBrace() != nil {
 			f.trivia.emitBetweenIndices(
-				f.trivia.stopIndex(ret.(antlr.ParserRuleContext))+1,
+				f.trivia.stopIndex(last)+1,
 				f.trivia.tokenStart(ctx.CloseBrace()),
 			)
 		}
@@ -536,6 +560,8 @@ func (f *statementFormatter) formatForExpressionBody(ctx *fql.ForExpressionBodyC
 			f.formatWaitForExpression(stmt.WaitForExpression().(*fql.WaitForExpressionContext))
 		case stmt.DispatchExpression() != nil:
 			f.formatDispatchExpression(stmt.DispatchExpression().(*fql.DispatchExpressionContext))
+		case stmt.ForExpression() != nil:
+			f.formatForExpression(stmt.ForExpression().(*fql.ForExpressionContext))
 		}
 	case ctx.ForExpressionClause() != nil:
 		clause := ctx.ForExpressionClause().(*fql.ForExpressionClauseContext)
