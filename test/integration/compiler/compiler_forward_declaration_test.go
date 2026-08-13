@@ -82,6 +82,20 @@ FOR outer IN [1] {
 	requireForwardDeclarationDiagnostic(t, diagnostics[0], "later", 5)
 }
 
+func TestForwardDeclarationDiagnosticsParenthesizedLoopStatement(t *testing.T) {
+	diagnostics := compileDiagnostics(t, `
+FUNC inspect(items) {
+  (FOR item IN items {
+    LET value = later
+    LET later = item
+  })
+}
+inspect([1])
+`)
+
+	requireForwardDeclarationDiagnostic(t, diagnostics[0], "later", 5)
+}
+
 func TestForwardDeclarationDiagnosticsReturnedFunctionLoop(t *testing.T) {
 	diagnostics := compileDiagnostics(t, `
 FUNC inspect(items) {

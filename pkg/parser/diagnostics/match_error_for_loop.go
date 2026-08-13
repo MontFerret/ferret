@@ -107,6 +107,24 @@ func matchForLoopErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 		return true
 	}
 
+	if isNoAlternative(err.Message) && extractNoAlternativeInput(err.Message) == "INTO" {
+		if len(err.Spans) == 0 {
+			return false
+		}
+
+		span := err.Spans[0].Span
+		span.Start = span.End + 1
+		span.End = span.Start + 1
+
+		err.Message = "Expected variable name after INTO"
+		err.Hint = "Provide a variable name to store grouped values, e.g. INTO groups."
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing variable name"),
+		}
+
+		return true
+	}
+
 	if is(offending, "AGGREGATE") {
 		if isNoAlternative(err.Message) {
 			span := spanFromTokenSafe(offending.Token(), src)
@@ -156,6 +174,20 @@ func matchForLoopErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 
 		if input != "," {
 			return false
+		}
+
+		if is(prev, "LIMIT") || diagnosticImmediatelyFollowsToken(src, err, "LIMIT") {
+			span := spanFromTokenSafe(offending.Token(), src)
+			span.Start++
+			span.End++
+
+			err.Message = "Dangling comma in LIMIT clause"
+			err.Hint = "LIMIT accepts one or two arguments. Did you forget to add a value?"
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing value"),
+			}
+
+			return true
 		}
 
 		var steps int
@@ -227,4 +259,18 @@ func matchForLoopErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 	}
 
 	return false
+}
+
+func diagnosticImmediatelyFollowsToken(src *source.Source, err *diagnostics.Diagnostic, expected string) bool {
+	if src == nil || err == nil {
+		return false
+	}
+
+	tokens := lexDefaultTokens(src.Content())
+	idx := findDiagnosticSpanTokenIndex(tokens, err)
+	if idx <= 0 {
+		return false
+	}
+
+	return tokenText(tokens[idx-1]) == expected
 }

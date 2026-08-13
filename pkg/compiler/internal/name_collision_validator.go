@@ -84,14 +84,10 @@ func (v *NameCollisionValidator) collectBodyStatement(scope *nameCollisionScope,
 		v.collectCallsInNode(scope, ctx.DeleteStatement())
 	case ctx.FunctionDeclaration() != nil:
 		v.validateFunctionDeclaration(ctx.FunctionDeclaration())
-	case ctx.FunctionCallExpression() != nil:
-		v.collectCallsInNode(scope, ctx.FunctionCallExpression())
-	case ctx.WaitForExpression() != nil:
-		v.collectCallsInNode(scope, ctx.WaitForExpression())
-	case ctx.DispatchExpression() != nil:
-		v.collectCallsInNode(scope, ctx.DispatchExpression())
 	case ctx.ForExpression() != nil:
 		v.validateForExpression(scope, ctx.ForExpression())
+	case ctx.ExpressionStatement() != nil:
+		v.collectCallsInNode(scope, ctx.ExpressionStatement())
 	}
 }
 
@@ -146,12 +142,6 @@ func (v *NameCollisionValidator) collectFunctionStatement(scope *nameCollisionSc
 		v.collectCallsInNode(scope, ctx.DeleteStatement())
 	case ctx.FunctionDeclaration() != nil:
 		v.validateFunctionDeclaration(ctx.FunctionDeclaration())
-	case ctx.FunctionCallExpression() != nil:
-		v.collectCallsInNode(scope, ctx.FunctionCallExpression())
-	case ctx.WaitForExpression() != nil:
-		v.collectCallsInNode(scope, ctx.WaitForExpression())
-	case ctx.DispatchExpression() != nil:
-		v.collectCallsInNode(scope, ctx.DispatchExpression())
 	case ctx.ForExpression() != nil:
 		v.validateForExpression(scope, ctx.ForExpression())
 	case ctx.ExpressionStatement() != nil:
@@ -226,14 +216,10 @@ func (v *NameCollisionValidator) collectForExpressionStatement(scope *nameCollis
 		v.collectCallsInNode(scope, ctx.AssignmentStatement())
 	case ctx.DeleteStatement() != nil:
 		v.collectCallsInNode(scope, ctx.DeleteStatement())
-	case ctx.FunctionCallExpression() != nil:
-		v.collectCallsInNode(scope, ctx.FunctionCallExpression())
-	case ctx.WaitForExpression() != nil:
-		v.collectCallsInNode(scope, ctx.WaitForExpression())
-	case ctx.DispatchExpression() != nil:
-		v.collectCallsInNode(scope, ctx.DispatchExpression())
 	case ctx.ForExpression() != nil:
 		v.validateForExpression(scope, ctx.ForExpression())
+	case ctx.ExpressionStatement() != nil:
+		v.collectCallsInNode(scope, ctx.ExpressionStatement())
 	}
 }
 

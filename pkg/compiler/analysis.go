@@ -83,6 +83,15 @@ func (a *Analysis) Diagnostics() []*diagnostics.Diagnostic {
 	return cloneDiagnostics(a.data.diagnostics)
 }
 
+// SyntaxTokens returns parser-independent tokens in source order.
+func (a *Analysis) SyntaxTokens() []SyntaxToken {
+	if a == nil {
+		return nil
+	}
+
+	return append([]SyntaxToken(nil), a.data.syntaxTokens...)
+}
+
 // TypeFacts returns all compiler-established expression facts in source order.
 func (a *Analysis) TypeFacts() []TypeFact {
 	if a == nil {

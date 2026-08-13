@@ -13,6 +13,10 @@ type expressionFormatter struct {
 }
 
 func (f *expressionFormatter) formatExpression(ctx *fql.ExpressionContext) {
+	f.formatExpressionOperand(ctx, expressionOperation{})
+}
+
+func (f *expressionFormatter) formatExpressionOperand(ctx *fql.ExpressionContext, outer expressionOperation) {
 	if ctx == nil {
 		return
 	}
@@ -20,37 +24,52 @@ func (f *expressionFormatter) formatExpression(ctx *fql.ExpressionContext) {
 	switch {
 	case ctx.UnaryOperator() != nil:
 		f.formatUnaryOperator(ctx.UnaryOperator().(*fql.UnaryOperatorContext))
-		f.formatExpression(ctx.GetRight().(*fql.ExpressionContext))
+		f.formatExpressionOperand(
+			ctx.GetRight().(*fql.ExpressionContext),
+			unaryExpressionOperation(),
+		)
 	case ctx.LogicalAndOperator() != nil:
-		f.formatExpression(ctx.GetLeft().(*fql.ExpressionContext))
+		f.formatExpressionOperand(
+			ctx.GetLeft().(*fql.ExpressionContext),
+			binaryExpressionOperation(precedenceLogicalAnd, operandSideLeft),
+		)
 		f.p.space()
 		f.formatLogicalAndOperator(ctx.LogicalAndOperator().(*fql.LogicalAndOperatorContext))
 		f.p.space()
-		f.formatExpression(ctx.GetRight().(*fql.ExpressionContext))
+		f.formatExpressionOperand(
+			ctx.GetRight().(*fql.ExpressionContext),
+			binaryExpressionOperation(precedenceLogicalAnd, operandSideRight),
+		)
 	case ctx.LogicalOrOperator() != nil:
-		f.formatExpression(ctx.GetLeft().(*fql.ExpressionContext))
+		f.formatExpressionOperand(
+			ctx.GetLeft().(*fql.ExpressionContext),
+			binaryExpressionOperation(precedenceLogicalOr, operandSideLeft),
+		)
 		f.p.space()
 		f.formatLogicalOrOperator(ctx.LogicalOrOperator().(*fql.LogicalOrOperatorContext))
 		f.p.space()
-		f.formatExpression(ctx.GetRight().(*fql.ExpressionContext))
+		f.formatExpressionOperand(
+			ctx.GetRight().(*fql.ExpressionContext),
+			binaryExpressionOperation(precedenceLogicalOr, operandSideRight),
+		)
 	case ctx.GetCoalesceOperator() != nil:
 		f.formatCoalesce(ctx)
 	case ctx.GetTernaryOperator() != nil:
-		f.formatExpression(ctx.GetCondition().(*fql.ExpressionContext))
+		f.formatExpressionOperand(ctx.GetCondition().(*fql.ExpressionContext), ternaryExpressionOperation(operandSideLeft))
 		f.p.space()
 		f.p.write("?")
 		f.p.space()
 
 		if ctx.GetOnTrue() != nil {
-			f.formatExpression(ctx.GetOnTrue().(*fql.ExpressionContext))
+			f.formatExpressionOperand(ctx.GetOnTrue().(*fql.ExpressionContext), ternaryExpressionOperation(operandSideMiddle))
 		}
 
 		f.p.space()
 		f.p.write(":")
 		f.p.space()
-		f.formatExpression(ctx.GetOnFalse().(*fql.ExpressionContext))
+		f.formatExpressionOperand(ctx.GetOnFalse().(*fql.ExpressionContext), ternaryExpressionOperation(operandSideRight))
 	case ctx.Predicate() != nil:
-		f.formatPredicate(ctx.Predicate().(*fql.PredicateContext))
+		f.formatPredicateOperand(ctx.Predicate().(*fql.PredicateContext), outer)
 	}
 }
 
@@ -79,13 +98,13 @@ func (f *expressionFormatter) formatCoalesce(ctx *fql.ExpressionContext) {
 		return
 	}
 
-	f.formatExpression(operands[0])
+	f.formatExpressionOperand(operands[0], coalesceExpressionOperation(operandSideLeft))
 	f.p.withIndent(func() {
 		for _, operand := range operands[1:] {
 			f.p.newline()
 			f.p.write("??")
 			f.p.space()
-			f.formatExpression(operand)
+			f.formatExpressionOperand(operand, coalesceExpressionOperation(operandSideRight))
 		}
 	})
 }
@@ -95,11 +114,11 @@ func (f *expressionFormatter) formatCoalesceInlineWith(p *printer, ctx *fql.Expr
 		return
 	}
 
-	f.formatExpressionWith(p, ctx.GetLeft().(*fql.ExpressionContext))
+	f.formatExpressionOperandWith(p, ctx.GetLeft().(*fql.ExpressionContext), coalesceExpressionOperation(operandSideLeft))
 	p.space()
 	p.write("??")
 	p.space()
-	f.formatExpressionWith(p, ctx.GetRight().(*fql.ExpressionContext))
+	f.formatExpressionOperandWith(p, ctx.GetRight().(*fql.ExpressionContext), coalesceExpressionOperation(operandSideRight))
 }
 
 func (f *expressionFormatter) coalesceOperands(ctx *fql.ExpressionContext) []*fql.ExpressionContext {
@@ -119,6 +138,12 @@ func (f *expressionFormatter) coalesceOperands(ctx *fql.ExpressionContext) []*fq
 			return nil
 		}
 
+		if atom := expressionPrimaryAtom(right); atom != nil && f.canRemoveParenthesizedExpression(atom, coalesceExpressionOperation(operandSideRight)) {
+			if inner, ok := atom.Expression().(*fql.ExpressionContext); ok {
+				right = inner
+			}
+		}
+
 		if right.GetCoalesceOperator() == nil {
 			operands = append(operands, right)
 
@@ -132,64 +157,72 @@ func (f *expressionFormatter) coalesceOperands(ctx *fql.ExpressionContext) []*fq
 }
 
 func (f *expressionFormatter) formatPredicate(ctx *fql.PredicateContext) {
+	f.formatPredicateOperand(ctx, expressionOperation{})
+}
+
+func (f *expressionFormatter) formatPredicateOperand(ctx *fql.PredicateContext, outer expressionOperation) {
 	if ctx == nil {
 		return
 	}
 
 	switch {
 	case ctx.EqualityOperator() != nil:
-		f.formatPredicate(ctx.GetLeft().(*fql.PredicateContext))
+		f.formatPredicateOperand(ctx.GetLeft().(*fql.PredicateContext), binaryExpressionOperation(precedenceEquality, operandSideLeft))
 		f.p.space()
 		f.formatEqualityOperator(ctx.EqualityOperator().(*fql.EqualityOperatorContext))
 		f.p.space()
-		f.formatPredicate(ctx.GetRight().(*fql.PredicateContext))
+		f.formatPredicateOperand(ctx.GetRight().(*fql.PredicateContext), binaryExpressionOperation(precedenceEquality, operandSideRight))
 	case ctx.ArrayOperator() != nil:
-		f.formatPredicate(ctx.GetLeft().(*fql.PredicateContext))
+		f.formatPredicateOperand(ctx.GetLeft().(*fql.PredicateContext), binaryExpressionOperation(precedenceArray, operandSideLeft))
 		f.p.space()
 		f.formatArrayOperator(ctx.ArrayOperator().(*fql.ArrayOperatorContext))
 		f.p.space()
-		f.formatPredicate(ctx.GetRight().(*fql.PredicateContext))
+		f.formatPredicateOperand(ctx.GetRight().(*fql.PredicateContext), binaryExpressionOperation(precedenceArray, operandSideRight))
 	case ctx.InOperator() != nil:
-		f.formatPredicate(ctx.GetLeft().(*fql.PredicateContext))
+		f.formatPredicateOperand(ctx.GetLeft().(*fql.PredicateContext), binaryExpressionOperation(precedenceIn, operandSideLeft))
 		f.p.space()
 		f.formatInOperator(ctx.InOperator().(*fql.InOperatorContext))
 		f.p.space()
-		f.formatPredicate(ctx.GetRight().(*fql.PredicateContext))
+		f.formatPredicateOperand(ctx.GetRight().(*fql.PredicateContext), binaryExpressionOperation(precedenceIn, operandSideRight))
 	case ctx.LikeOperator() != nil:
-		f.formatPredicate(ctx.GetLeft().(*fql.PredicateContext))
+		f.formatPredicateOperand(ctx.GetLeft().(*fql.PredicateContext), binaryExpressionOperation(precedenceLike, operandSideLeft))
 		f.p.space()
 		f.formatLikeOperator(ctx.LikeOperator().(*fql.LikeOperatorContext))
 		f.p.space()
-		f.formatPredicate(ctx.GetRight().(*fql.PredicateContext))
+		f.formatPredicateOperand(ctx.GetRight().(*fql.PredicateContext), binaryExpressionOperation(precedenceLike, operandSideRight))
 	case ctx.ExpressionAtom() != nil:
-		f.formatExpressionAtom(ctx.ExpressionAtom().(*fql.ExpressionAtomContext))
+		f.formatExpressionAtomOperand(ctx.ExpressionAtom().(*fql.ExpressionAtomContext), outer)
 	}
 }
 
 func (f *expressionFormatter) formatExpressionAtom(ctx *fql.ExpressionAtomContext) {
+	f.formatExpressionAtomOperand(ctx, expressionOperation{})
+}
+
+func (f *expressionFormatter) formatExpressionAtomOperand(ctx *fql.ExpressionAtomContext, outer expressionOperation) {
 	if ctx == nil {
 		return
 	}
 
 	switch {
 	case ctx.MultiplicativeOperator() != nil:
-		f.formatExpressionAtom(ctx.GetLeft().(*fql.ExpressionAtomContext))
+		f.formatExpressionAtomOperand(ctx.GetLeft().(*fql.ExpressionAtomContext), binaryExpressionOperation(precedenceMultiplicative, operandSideLeft))
 		f.p.space()
 		f.formatMultiplicativeOperator(ctx.MultiplicativeOperator().(*fql.MultiplicativeOperatorContext))
 		f.p.space()
-		f.formatExpressionAtom(ctx.GetRight().(*fql.ExpressionAtomContext))
+		f.formatExpressionAtomOperand(ctx.GetRight().(*fql.ExpressionAtomContext), binaryExpressionOperation(precedenceMultiplicative, operandSideRight))
 	case ctx.AdditiveOperator() != nil:
-		f.formatExpressionAtom(ctx.GetLeft().(*fql.ExpressionAtomContext))
+		f.formatExpressionAtomOperand(ctx.GetLeft().(*fql.ExpressionAtomContext), binaryExpressionOperation(precedenceAdditive, operandSideLeft))
 		f.p.space()
 		f.formatAdditiveOperator(ctx.AdditiveOperator().(*fql.AdditiveOperatorContext))
 		f.p.space()
-		f.formatExpressionAtom(ctx.GetRight().(*fql.ExpressionAtomContext))
+		f.formatExpressionAtomOperand(ctx.GetRight().(*fql.ExpressionAtomContext), binaryExpressionOperation(precedenceAdditive, operandSideRight))
 	case ctx.RegexpOperator() != nil:
-		f.formatExpressionAtom(ctx.GetLeft().(*fql.ExpressionAtomContext))
+		f.formatExpressionAtomOperand(ctx.GetLeft().(*fql.ExpressionAtomContext), binaryExpressionOperation(precedenceRegexp, operandSideLeft))
 		f.p.space()
 		f.formatRegexpOperator(ctx.RegexpOperator().(*fql.RegexpOperatorContext))
 		f.p.space()
-		f.formatExpressionAtom(ctx.GetRight().(*fql.ExpressionAtomContext))
+		f.formatExpressionAtomOperand(ctx.GetRight().(*fql.ExpressionAtomContext), binaryExpressionOperation(precedenceRegexp, operandSideRight))
 	case ctx.MatchExpression() != nil:
 		f.formatMatchExpression(ctx.MatchExpression().(*fql.MatchExpressionContext))
 	case ctx.QueryExpression() != nil:
@@ -215,7 +248,7 @@ func (f *expressionFormatter) formatExpressionAtom(ctx *fql.ExpressionAtomContex
 	case ctx.WaitForExpression() != nil:
 		f.statement.formatWaitForExpression(ctx.WaitForExpression().(*fql.WaitForExpressionContext))
 	case ctx.OpenParen() != nil:
-		f.formatParenthesizedExpression(ctx)
+		f.formatParenthesizedExpression(ctx, outer)
 	}
 }
 
@@ -731,9 +764,18 @@ func (f *expressionFormatter) formatQueryExpressionWith(p *printer, ctx *fql.Que
 
 	if payload := ctx.QueryPayload(); payload != nil {
 		if expr := payload.Expression(); expr != nil {
-			p.write("(")
-			f.formatExpressionWith(p, expr.(*fql.ExpressionContext))
-			p.write(")")
+			payloadCtx := payload.(*fql.QueryPayloadContext)
+			exprCtx := expr.(*fql.ExpressionContext)
+			if f.canFormatAsQueryPayload(exprCtx) {
+				f.formatAsRestrictedValueWith(p, exprCtx, true)
+			} else {
+				f.formatRequiredParenthesizedExpressionWith(
+					p,
+					payloadCtx.OpenParen(),
+					exprCtx,
+					payloadCtx.CloseParen(),
+				)
+			}
 		} else if member := payload.MemberExpression(); member != nil {
 			f.formatMemberExpressionWith(p, member.(*fql.MemberExpressionContext))
 		} else if lit := payload.Literal(); lit != nil {
@@ -818,8 +860,29 @@ func (f *expressionFormatter) writeQueryModifierWith(p *printer, modifier fql.IQ
 	p.space()
 }
 
-func (f *expressionFormatter) formatParenthesizedExpression(ctx *fql.ExpressionAtomContext) {
+func (f *expressionFormatter) formatParenthesizedExpression(ctx *fql.ExpressionAtomContext, outer expressionOperation) {
 	if ctx == nil {
+		return
+	}
+
+	if f.canRemoveParenthesizedExpression(ctx, outer) {
+		if we := ctx.WaitForExpression(); we != nil {
+			f.statement.formatWaitForExpression(we.(*fql.WaitForExpressionContext))
+
+			return
+		}
+
+		if expr := ctx.Expression(); expr != nil {
+			f.formatExpressionOperand(expr.(*fql.ExpressionContext), outer)
+		}
+
+		return
+	}
+
+	if f.parenthesizedExpressionHasComments(ctx) {
+		f.formatCommentedParenthesizedExpression(ctx)
+		f.formatExpressionAtomErrorTail(ctx)
+
 		return
 	}
 
@@ -853,6 +916,313 @@ func (f *expressionFormatter) formatParenthesizedExpression(ctx *fql.ExpressionA
 
 	f.p.write(")")
 	f.formatExpressionAtomErrorTail(ctx)
+}
+
+func (f *expressionFormatter) formatCommentedParenthesizedExpression(ctx *fql.ExpressionAtomContext) {
+	inner := parenthesizedExpressionInner(ctx)
+	if inner == nil {
+		return
+	}
+
+	before := f.trivia.sliceBetween(f.trivia.tokenStop(ctx.OpenParen())+1, f.trivia.startIndex(inner))
+	after := f.trivia.sliceBetween(f.trivia.stopIndex(inner)+1, f.trivia.tokenStart(ctx.CloseParen()))
+	multiline := ctx.ForExpression() != nil || strings.Contains(before, "\n") || strings.Contains(after, "\n") ||
+		strings.Contains(before, "//") || strings.Contains(after, "//")
+
+	f.p.write("(")
+
+	if !multiline {
+		if comment := strings.TrimSpace(before); comment != "" {
+			f.p.write(comment)
+			f.p.space()
+		}
+
+		f.formatParenthesizedExpressionInner(ctx)
+
+		if comment := strings.TrimSpace(after); comment != "" {
+			f.p.space()
+			f.p.write(comment)
+		}
+
+		f.p.write(")")
+
+		return
+	}
+
+	f.p.withIndent(func() {
+		f.p.newline()
+
+		if f.trivia.containsComment(before) {
+			f.trivia.emitTrivia(before, true, false)
+		}
+
+		f.formatParenthesizedExpressionInner(ctx)
+
+		if f.trivia.containsComment(after) {
+			f.trivia.emitTrivia(after, true, true)
+		}
+
+		if !f.p.atLineStart {
+			f.p.newline()
+		}
+	})
+
+	f.p.write(")")
+}
+
+func (f *expressionFormatter) formatParenthesizedExpressionInner(ctx *fql.ExpressionAtomContext) {
+	if loop, ok := ctx.ForExpression().(*fql.ForExpressionContext); ok {
+		f.statement.formatForExpression(loop)
+
+		return
+	}
+
+	if wait, ok := ctx.WaitForExpression().(*fql.WaitForExpressionContext); ok {
+		f.statement.formatWaitForExpression(wait)
+
+		return
+	}
+
+	if expr, ok := ctx.Expression().(*fql.ExpressionContext); ok {
+		f.formatExpression(expr)
+	}
+}
+
+func (f *expressionFormatter) parenthesizedExpressionHasComments(ctx *fql.ExpressionAtomContext) bool {
+	if ctx == nil || ctx.OpenParen() == nil || ctx.CloseParen() == nil {
+		return false
+	}
+
+	innerStart := f.trivia.tokenStop(ctx.OpenParen()) + 1
+	innerEnd := f.trivia.tokenStart(ctx.CloseParen())
+
+	return f.trivia.containsComment(f.trivia.sliceBetween(innerStart, innerEnd))
+}
+
+func (f *expressionFormatter) formatRequiredParenthesizedExpressionWith(
+	p *printer,
+	open antlr.TerminalNode,
+	expr *fql.ExpressionContext,
+	close antlr.TerminalNode,
+) {
+	if p == nil || open == nil || expr == nil || close == nil {
+		return
+	}
+
+	before := f.trivia.sliceBetween(f.trivia.tokenStop(open)+1, f.trivia.startIndex(expr))
+	after := f.trivia.sliceBetween(f.trivia.stopIndex(expr)+1, f.trivia.tokenStart(close))
+	hasComments := f.trivia.containsComment(before) || f.trivia.containsComment(after)
+	multiline := hasComments && (strings.Contains(before, "\n") || strings.Contains(after, "\n") ||
+		strings.Contains(before, "//") || strings.Contains(after, "//"))
+
+	p.write("(")
+
+	if !multiline {
+		if comment := strings.TrimSpace(before); comment != "" {
+			p.write(comment)
+			p.space()
+		}
+
+		f.formatExpressionWith(p, expr)
+
+		if comment := strings.TrimSpace(after); comment != "" {
+			p.space()
+			p.write(comment)
+		}
+
+		p.write(")")
+
+		return
+	}
+
+	p.withIndent(func() {
+		p.newline()
+
+		if f.trivia.containsComment(before) {
+			original := f.p
+			f.p = p
+			f.trivia.emitTrivia(before, true, false)
+			f.p = original
+		}
+
+		f.formatExpressionWith(p, expr)
+
+		if f.trivia.containsComment(after) {
+			original := f.p
+			f.p = p
+			f.trivia.emitTrivia(after, true, true)
+			f.p = original
+		}
+
+		if !p.atLineStart {
+			p.newline()
+		}
+	})
+
+	p.write(")")
+}
+
+func (f *expressionFormatter) canFormatAsMemberSource(ctx *fql.ExpressionContext) bool {
+	atom := expressionPrimaryAtom(ctx)
+	if atom == nil {
+		return false
+	}
+
+	switch {
+	case atom.Variable() != nil, atom.Param() != nil:
+		return true
+	case atom.Literal() != nil:
+		literal := atom.Literal()
+
+		return literal.ArrayLiteral() != nil || literal.ObjectLiteral() != nil
+	case atom.FunctionCallExpression() != nil:
+		call := atom.FunctionCallExpression()
+
+		return call.ErrorOperator() == nil && call.RecoveryTails() == nil
+	case atom.MemberExpression() != nil:
+		return atom.MemberExpression().RecoveryTails() == nil
+	case atom.OpenParen() != nil && atom.ErrorOperator() == nil && atom.RecoveryTails() == nil &&
+		!f.parenthesizedExpressionHasComments(atom):
+		inner, ok := atom.Expression().(*fql.ExpressionContext)
+
+		return ok && canRemoveExpressionParentheses(inner, expressionOperation{}) && f.canFormatAsMemberSource(inner)
+	default:
+		return false
+	}
+}
+
+func (f *expressionFormatter) canFormatAsQueryPayload(ctx *fql.ExpressionContext) bool {
+	return f.canFormatAsRestrictedValue(ctx, true)
+}
+
+func (f *expressionFormatter) canFormatAsDispatchTarget(ctx *fql.ExpressionContext) bool {
+	return f.canFormatAsRestrictedValue(ctx, false)
+}
+
+func (f *expressionFormatter) canFormatAsRestrictedValue(ctx *fql.ExpressionContext, allowLiteral bool) bool {
+	atom := expressionPrimaryAtom(ctx)
+	if atom == nil {
+		return false
+	}
+
+	switch {
+	case atom.Variable() != nil, atom.Param() != nil, atom.FunctionCallExpression() != nil, atom.MemberExpression() != nil:
+		return true
+	case atom.Literal() != nil:
+		return allowLiteral
+	case atom.OpenParen() != nil && atom.ErrorOperator() == nil && atom.RecoveryTails() == nil &&
+		!f.parenthesizedExpressionHasComments(atom):
+		inner, ok := atom.Expression().(*fql.ExpressionContext)
+
+		return ok && canRemoveExpressionParentheses(inner, expressionOperation{}) &&
+			f.canFormatAsRestrictedValue(inner, allowLiteral)
+	default:
+		return false
+	}
+}
+
+func (f *expressionFormatter) formatAsRestrictedValueWith(p *printer, ctx *fql.ExpressionContext, allowLiteral bool) {
+	atom := expressionPrimaryAtom(ctx)
+	if atom != nil && atom.OpenParen() != nil && atom.ErrorOperator() == nil && atom.RecoveryTails() == nil &&
+		!f.parenthesizedExpressionHasComments(atom) {
+		if inner, ok := atom.Expression().(*fql.ExpressionContext); ok && f.canFormatAsRestrictedValue(inner, allowLiteral) {
+			f.formatAsRestrictedValueWith(p, inner, allowLiteral)
+
+			return
+		}
+	}
+
+	f.formatExpressionWith(p, ctx)
+}
+
+func (f *expressionFormatter) formatAsMemberSource(ctx *fql.ExpressionContext) {
+	atom := expressionPrimaryAtom(ctx)
+	if atom != nil && atom.OpenParen() != nil && atom.ErrorOperator() == nil && atom.RecoveryTails() == nil &&
+		!f.parenthesizedExpressionHasComments(atom) {
+		if inner, ok := atom.Expression().(*fql.ExpressionContext); ok && f.canFormatAsMemberSource(inner) {
+			f.formatAsMemberSource(inner)
+
+			return
+		}
+	}
+
+	f.formatExpression(ctx)
+}
+
+func (f *expressionFormatter) canRemoveParenthesizedExpression(ctx *fql.ExpressionAtomContext, outer expressionOperation) bool {
+	if ctx == nil || ctx.OpenParen() == nil || ctx.CloseParen() == nil || ctx.ErrorOperator() != nil || ctx.RecoveryTails() != nil {
+		return false
+	}
+
+	if f.parenthesizedExpressionHasComments(ctx) {
+		return false
+	}
+
+	if ctx.ForExpression() != nil {
+		return false
+	}
+
+	if ctx.WaitForExpression() != nil {
+		return outer.precedence == precedenceNone || precedencePrimary > outer.precedence
+	}
+
+	expr, ok := ctx.Expression().(*fql.ExpressionContext)
+	if !ok || expr == nil {
+		return false
+	}
+
+	if f.requiresGrammarBoundaryParentheses(ctx, expr) {
+		return false
+	}
+
+	return canRemoveExpressionParentheses(expr, outer)
+}
+
+func (f *expressionFormatter) groupedForExpression(ctx *fql.ExpressionContext) *fql.ForExpressionContext {
+	atom := expressionPrimaryAtom(ctx)
+	if atom == nil || atom.OpenParen() == nil || atom.CloseParen() == nil || atom.ErrorOperator() != nil || atom.RecoveryTails() != nil {
+		return nil
+	}
+
+	innerStart := f.trivia.tokenStop(atom.OpenParen()) + 1
+	innerEnd := f.trivia.tokenStart(atom.CloseParen())
+	if f.trivia.containsComment(f.trivia.sliceBetween(innerStart, innerEnd)) {
+		return nil
+	}
+
+	if loop, ok := atom.ForExpression().(*fql.ForExpressionContext); ok {
+		return loop
+	}
+
+	if inner, ok := atom.Expression().(*fql.ExpressionContext); ok {
+		return f.groupedForExpression(inner)
+	}
+
+	return nil
+}
+
+func (f *expressionFormatter) requiresGrammarBoundaryParentheses(
+	ctx *fql.ExpressionAtomContext,
+	inner *fql.ExpressionContext,
+) bool {
+	var node antlr.Tree = ctx
+
+	for node != nil {
+		parent := node.GetParent()
+		switch parent.(type) {
+		case *fql.ExpressionAtomContext, *fql.PredicateContext, *fql.ExpressionContext:
+			node = parent
+			continue
+		case *fql.RecoveryRetryDelayValueContext:
+			return expressionRootPrecedence(inner) <= precedenceUnary
+		case *fql.QueryPayloadContext, *fql.MemberExpressionSourceContext, *fql.DispatchTargetContext:
+			return true
+		default:
+			return false
+		}
+	}
+
+	return false
 }
 
 func (f *expressionFormatter) formatUnaryOperator(ctx *fql.UnaryOperatorContext) {
@@ -1326,15 +1696,19 @@ func (f *expressionFormatter) formatVariableWith(p *printer, ctx *fql.VariableCo
 }
 
 func (f *expressionFormatter) formatExpressionWith(p *printer, ctx *fql.ExpressionContext) {
+	f.formatExpressionOperandWith(p, ctx, expressionOperation{})
+}
+
+func (f *expressionFormatter) formatExpressionOperandWith(p *printer, ctx *fql.ExpressionContext, outer expressionOperation) {
 	if p == f.p {
-		f.formatExpression(ctx)
+		f.formatExpressionOperand(ctx, outer)
 
 		return
 	}
 
 	orig := f.p
 	f.p = p
-	f.formatExpression(ctx)
+	f.formatExpressionOperand(ctx, outer)
 	f.p = orig
 }
 

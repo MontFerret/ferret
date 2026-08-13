@@ -17,13 +17,11 @@ type (
 		ctx      *CompilationSession
 		bindings *BindingCompiler
 		collects *CollectCompiler
-		dispatch *DispatchCompiler
 		exprs    *ExprCompiler
 		literals *LiteralCompiler
 		recovery *RecoveryCompiler
 		sorts    *LoopSortCompiler
 		facts    *TypeFacts
-		wait     *WaitCompiler
 	}
 
 	loopOperandKind int
@@ -80,13 +78,11 @@ func NewLoopCompiler(ctx *CompilationSession) *LoopCompiler {
 func (c *LoopCompiler) bind(
 	bindings *BindingCompiler,
 	collects *CollectCompiler,
-	dispatch *DispatchCompiler,
 	exprs *ExprCompiler,
 	literals *LiteralCompiler,
 	recovery *RecoveryCompiler,
 	sorts *LoopSortCompiler,
 	facts *TypeFacts,
-	wait *WaitCompiler,
 ) {
 	if c == nil {
 		return
@@ -94,13 +90,11 @@ func (c *LoopCompiler) bind(
 
 	c.bindings = bindings
 	c.collects = collects
-	c.dispatch = dispatch
 	c.exprs = exprs
 	c.literals = literals
 	c.recovery = recovery
 	c.sorts = sorts
 	c.facts = facts
-	c.wait = wait
 }
 
 // Compile processes a FOR expression from the FQL AST and generates the appropriate VM instructions.
@@ -652,7 +646,7 @@ func (c *LoopCompiler) compileLoopBody(ctx fql.IForExpressionContext, resultSpec
 }
 
 // compileForExpressionStatement processes statements within a FOR loop body.
-// These can be declarations, assignments, deletes, function calls, or dispatches.
+// These can be declarations, assignments, deletes, expressions, or nested loops.
 // The results of these statements are not used directly in the loop result.
 func (c *LoopCompiler) compileForExpressionStatement(ctx fql.IForExpressionStatementContext) {
 	rule, _ := ctx.(antlr.ParserRuleContext)
@@ -669,15 +663,10 @@ func (c *LoopCompiler) compileForExpressionStatementInner(ctx fql.IForExpression
 		_ = c.bindings.CompileAssignmentStatement(as)
 	} else if ds := ctx.DeleteStatement(); ds != nil {
 		_ = c.bindings.CompileDeleteStatement(ds)
-	} else if fce := ctx.FunctionCallExpression(); fce != nil {
-		// Handle function calls (e.g., doSomething())
-		_ = c.exprs.CompileFunctionCallExpression(fce)
-	} else if wfe := ctx.WaitForExpression(); wfe != nil {
-		_ = c.wait.Compile(wfe)
-	} else if de := ctx.DispatchExpression(); de != nil {
-		_ = c.dispatch.Compile(de)
 	} else if fe := ctx.ForExpression(); fe != nil {
 		_ = c.CompileDiscarded(fe)
+	} else if es := ctx.ExpressionStatement(); es != nil {
+		_ = c.exprs.CompileDiscarded(es.Expression())
 	}
 }
 

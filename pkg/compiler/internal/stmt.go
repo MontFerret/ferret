@@ -14,11 +14,9 @@ import (
 type StatementCompiler struct {
 	ctx      *CompilationSession
 	bindings *BindingCompiler
-	dispatch *DispatchCompiler
 	exprs    *ExprCompiler
 	loops    *LoopCompiler
 	facts    *TypeFacts
-	wait     *WaitCompiler
 }
 
 // NewStatementCompiler creates a new instance of StatementCompiler with the given compiler context.
@@ -28,17 +26,15 @@ func NewStatementCompiler(ctx *CompilationSession) *StatementCompiler {
 	}
 }
 
-func (c *StatementCompiler) bind(bindings *BindingCompiler, dispatch *DispatchCompiler, exprs *ExprCompiler, loops *LoopCompiler, facts *TypeFacts, wait *WaitCompiler) {
+func (c *StatementCompiler) bind(bindings *BindingCompiler, exprs *ExprCompiler, loops *LoopCompiler, facts *TypeFacts) {
 	if c == nil {
 		return
 	}
 
 	c.bindings = bindings
-	c.dispatch = dispatch
 	c.exprs = exprs
 	c.loops = loops
 	c.facts = facts
-	c.wait = wait
 }
 
 // Compile emits an implicit NONE return when the script has no explicit RETURN.
@@ -81,16 +77,10 @@ func (c *StatementCompiler) compileBodyStatement(ctx fql.IBodyStatementContext) 
 	} else if fd := ctx.FunctionDeclaration(); fd != nil {
 		// Function declarations are compiled separately.
 		return
-	} else if fce := ctx.FunctionCallExpression(); fce != nil {
-		// Handle function calls (e.g., WAIT(1s))
-		c.CompileFunctionCall(fce)
-	} else if wfe := ctx.WaitForExpression(); wfe != nil {
-		// Handle wait expressions (e.g., WAIT FOR x RETURN y)
-		c.wait.Compile(wfe)
-	} else if de := ctx.DispatchExpression(); de != nil {
-		c.dispatch.Compile(de)
 	} else if fe := ctx.ForExpression(); fe != nil {
 		c.loops.CompileDiscarded(fe)
+	} else if es := ctx.ExpressionStatement(); es != nil {
+		c.CompileExpressionStatement(es)
 	}
 }
 
@@ -200,12 +190,6 @@ func (c *StatementCompiler) compileFunctionStatement(stmt *fql.FunctionStatement
 	case stmt.FunctionDeclaration() != nil:
 		// Nested function declarations are compiled separately.
 		return
-	case stmt.FunctionCallExpression() != nil:
-		c.CompileFunctionCall(stmt.FunctionCallExpression())
-	case stmt.WaitForExpression() != nil:
-		c.wait.Compile(stmt.WaitForExpression())
-	case stmt.DispatchExpression() != nil:
-		c.dispatch.Compile(stmt.DispatchExpression())
 	case stmt.ForExpression() != nil:
 		c.loops.CompileDiscarded(stmt.ForExpression())
 	case stmt.ExpressionStatement() != nil:
@@ -227,21 +211,4 @@ func (c *StatementCompiler) CompileExpressionStatement(ctx fql.IExpressionStatem
 	if expr := stmt.Expression(); expr != nil {
 		c.exprs.CompileDiscarded(expr)
 	}
-}
-
-// CompileFunctionCall processes a function call expression in an FQL query.
-// It delegates the compilation to the ExprCompiler, which handles the details
-// of compiling function calls with their arguments and return values.
-// Parameters:
-//   - ctx: The function call expression context from the AST
-//
-// Returns:
-//   - An operand representing the register where the function call result is stored
-func (c *StatementCompiler) CompileFunctionCall(ctx fql.IFunctionCallExpressionContext) bytecode.Operand {
-	if ctx == nil {
-		return bytecode.NoopOperand
-	}
-
-	// Delegate to the expression compiler for function call compilation
-	return c.exprs.CompileFunctionCallExpression(ctx)
 }

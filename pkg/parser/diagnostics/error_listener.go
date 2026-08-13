@@ -39,7 +39,9 @@ func (d *ErrorListener) ReportAmbiguity(recognizer antlr.Parser, dfa *antlr.DFA,
 
 	if ctx := recognizer.GetParserRuleContext(); ctx != nil {
 		for _, rule := range recognizer.GetRuleInvocationStack(ctx) {
-			if rule == "expressionAtom" || rule == "functionStatement" {
+			switch rule {
+			case "expressionAtom", "functionStatement", "assignmentTarget", "limitClauseValue",
+				"collectClause", "collectGroupProjection":
 				return
 			}
 

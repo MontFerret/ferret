@@ -61,6 +61,67 @@ FOR value IN [1, 0] {
 	})
 }
 
+func TestGeneralExpressionStatementsExecuteInEveryScope(t *testing.T) {
+	const query = `PROBE(1) + 1
+FUNC effect() {
+  PROBE(2) + 1
+}
+effect()
+FOR value IN [3, 4] {
+  PROBE(value) + 1
+}
+RETURN NONE`
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(optimizationName(level), func(t *testing.T) {
+			program, err := spec.Compile(query, level)
+			if err != nil {
+				t.Fatalf("compile query: %v", err)
+			}
+
+			var calls []int
+			out, err := spec.Run(program, vm.WithFunction("PROBE", func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+				value := int(args[0].(runtime.Int))
+				calls = append(calls, value)
+
+				return runtime.NewInt(value), nil
+			}))
+			if err != nil {
+				t.Fatalf("run query: %v", err)
+			}
+
+			if got, want := string(out), "null"; got != want {
+				t.Fatalf("result = %s, want %s", got, want)
+			}
+
+			if got, want := calls, []int{1, 2, 3, 4}; !reflect.DeepEqual(got, want) {
+				t.Fatalf("PROBE calls = %v, want %v", got, want)
+			}
+		})
+	}
+}
+
+func TestParenthesizedDiscardedLoopsExecuteNestedSideEffects(t *testing.T) {
+	tests := []spec.Spec{
+		S(`VAR total = 0
+(FOR outer IN [1, 2] {
+  (FOR inner IN [outer, outer + 10] {
+    total += inner
+    RETURN inner
+  })
+  RETURN outer
+})
+RETURN total`, 26, "parenthesized discarded loops preserve nested execution"),
+		Error(`(FOR value IN [1, 0] {
+  RETURN 10 / value
+})`, "parenthesized discarded loop propagates runtime errors"),
+	}
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		RunSpecsWith(t, optimizationName(level), compiler.New(compiler.WithOptimizationLevel(level)), tests)
+	}
+}
+
 func TestReturnlessForCompletionAndSideEffects(t *testing.T) {
 	tests := []spec.Spec{
 		Nil(`FOR value IN [1, 2, 3] {}`, "final empty returnless FOR falls through"),
@@ -157,7 +218,9 @@ func TestStandaloneForClosesDiscardedIterator(t *testing.T) {
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		for _, query := range []string{
 			`FOR value IN SOURCE() { RETURN value }`,
+			`(FOR value IN SOURCE() { RETURN value })`,
 			`FOR value IN SOURCE() { LET copy = value }`,
+			`(FOR value IN SOURCE() { LET copy = value })`,
 		} {
 			t.Run(fmt.Sprintf("%s/%s", optimizationName(level), query), func(t *testing.T) {
 				iterable := newBodyCompletionIterable()
@@ -479,7 +542,9 @@ func TestDiscardedAndReturnlessForCloseReturnedResources(t *testing.T) {
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		for _, query := range []string{
 			`FOR value IN 1..3 { RETURN RESOURCE(value) }`,
+			`(FOR value IN 1..3 { RETURN RESOURCE(value) })`,
 			`FOR value IN 1..3 { RESOURCE(value) }`,
+			`(FOR value IN 1..3 { RESOURCE(value) })`,
 		} {
 			t.Run(fmt.Sprintf("%s/%s", optimizationName(level), query), func(t *testing.T) {
 				var closeCount atomic.Int32

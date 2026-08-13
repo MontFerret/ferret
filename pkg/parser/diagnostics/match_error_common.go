@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
@@ -43,6 +44,27 @@ func matchCommonErrors(src *source.Source, err *diagnostics.Diagnostic, offendin
 	}
 
 	if isNoAlternative(err.Message) {
+		if span, missingArgument, ok := malformedFunctionCallOpen(src, err); ok {
+			span.Start++
+			span.End++
+
+			if missingArgument {
+				err.Message = "Expected a valid list of arguments"
+				err.Hint = "Did you forget to provide a value?"
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, "missing value"),
+				}
+			} else {
+				err.Message = "Unclosed function call"
+				err.Hint = "Add a closing ')' to complete the function call."
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, "missing ')'"),
+				}
+			}
+
+			return true
+		}
+
 		if has(err.Message, "(,") {
 			spanNode := offending
 			if is(offending.Prev(), ",") {
@@ -274,6 +296,28 @@ func matchCommonErrors(src *source.Source, err *diagnostics.Diagnostic, offendin
 	}
 
 	return false
+}
+
+func malformedFunctionCallOpen(src *source.Source, err *diagnostics.Diagnostic) (source.Span, bool, bool) {
+	if src == nil || err == nil || extractNoAlternativeInput(err.Message) != "(" {
+		return source.Span{}, false, false
+	}
+
+	tokens := lexDefaultTokens(src.Content())
+	idx := findDiagnosticSpanTokenIndex(tokens, err)
+	if idx <= 0 || idx >= len(tokens) || !isTokenText(tokens[idx], "(") {
+		return source.Span{}, false, false
+	}
+
+	functionNameType := tokens[idx-1].GetTokenType()
+	if functionNameType != fql.FqlLexerIdentifier &&
+		(functionNameType < fql.FqlLexerMatch || functionNameType > fql.FqlLexerWhile) {
+		return source.Span{}, false, false
+	}
+
+	missingArgument := idx+1 < len(tokens) && isTokenText(tokens[idx+1], ",")
+
+	return spanFromTokenSafe(tokens[idx], src), missingArgument, true
 }
 
 func isArrowBodyStart(arrow, offending *TokenNode) bool {

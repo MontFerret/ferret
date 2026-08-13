@@ -450,6 +450,46 @@ RETURN FOR outer IN [[1]]
 	}
 }
 
+func TestAnalyzeRecordsGeneralExpressionStatementsAndGroupedLoopScopes(t *testing.T) {
+	const query = `LET outer = 1
+outer + 1
+FUNC effect() {
+  outer + 2
+  (FOR item IN [outer] {
+    item + outer
+  })
+}
+RETURN effect()`
+
+	analysis, err := New().Analyze(source.NewAnonymous(query))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, marker := range []string{"outer + 1", "outer + 2", "item + outer"} {
+		position := strings.Index(query, marker)
+		if position < 0 {
+			t.Fatalf("marker %q not found", marker)
+		}
+
+		if _, ok := analysis.TypeAt(position); !ok {
+			t.Fatalf("analysis has no type fact at %q", marker)
+		}
+	}
+
+	itemPosition := strings.Index(query, "item + outer")
+	item, ok := analysis.SymbolAt(itemPosition)
+	if !ok || item.Kind != SymbolKindLoopBinding {
+		t.Fatalf("grouped loop item resolved to %+v, %t", item, ok)
+	}
+
+	outerPosition := itemPosition + len("item + ")
+	outer, ok := analysis.SymbolAt(outerPosition)
+	if !ok || outer.Kind != SymbolKindBinding {
+		t.Fatalf("grouped loop capture resolved to %+v, %t", outer, ok)
+	}
+}
+
 func TestAnalyzeVisitsEveryMatchArm(t *testing.T) {
 	query := `RETURN MATCH 1 {
   1 => FIRST(),
