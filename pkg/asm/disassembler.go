@@ -485,5 +485,5 @@ func hostCallComment(p *bytecode.Program, instr bytecode.Instruction, prev *byte
 		return ""
 	}
 
-	return fmt.Sprintf("host %s", runtime.CanonicalRegisteredName(p.Functions.Host[id].Name))
+	return fmt.Sprintf("host %s", p.Functions.Host[id].Name)
 }

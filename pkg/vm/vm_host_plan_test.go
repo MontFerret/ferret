@@ -67,7 +67,7 @@ func TestBuildExecPlanPreservesRegisterFactsAcrossDestructureAssertion(t *testin
 	}
 }
 
-func TestBuildExecPlanCanonicalizesLegacyQualifiedHostName(t *testing.T) {
+func TestBuildExecPlanPreservesQualifiedHostName(t *testing.T) {
 	program := newHostCallProgram(hostCallSpec{name: "DB::POSTGRES::QUERY"})
 
 	plan, err := buildExecPlan(program)
@@ -75,7 +75,7 @@ func TestBuildExecPlanCanonicalizesLegacyQualifiedHostName(t *testing.T) {
 		t.Fatalf("buildExecPlan() error: %v", err)
 	}
 
-	if got, want := plan.hostCallDescriptors[0].DisplayName, "db::postgres::query"; got != want {
+	if got, want := plan.hostCallDescriptors[0].DisplayName, "DB::POSTGRES::QUERY"; got != want {
 		t.Fatalf("host display name = %q, want %q", got, want)
 	}
 }

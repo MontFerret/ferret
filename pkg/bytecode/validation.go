@@ -77,16 +77,16 @@ func validateHostFunctions(functions []HostFunction) error {
 			return fmt.Errorf("%w: host function %q has negative argument count %d", ErrInvalidProgram, fn.Name, fn.ArgCount)
 		}
 
-		canonical := HostFunction{
-			Name:     runtime.CanonicalRegisteredName(fn.Name),
+		identity := HostFunction{
+			Name:     runtime.NormalizeRegisteredName(fn.Name),
 			ArgCount: fn.ArgCount,
 		}
 
-		if _, exists := seen[canonical]; exists {
-			return fmt.Errorf("%w: duplicate host function signature %q/%d", ErrInvalidProgram, canonical.Name, canonical.ArgCount)
+		if _, exists := seen[identity]; exists {
+			return fmt.Errorf("%w: duplicate host function signature %q/%d", ErrInvalidProgram, fn.Name, fn.ArgCount)
 		}
 
-		seen[canonical] = struct{}{}
+		seen[identity] = struct{}{}
 	}
 
 	return nil

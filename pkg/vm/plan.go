@@ -139,13 +139,12 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 
 			bindingIDIndex := int(bindingID)
 			hostFn := program.Functions.Host[bindingIDIndex]
-			hostName := runtime.CanonicalRegisteredName(hostFn.Name)
 			argCount := callArgCount(src1, src2)
 			if argCount != hostFn.ArgCount {
 				errs.Add(
 					diagnostics.NewInvariantError(
 						"host call signature mismatch",
-						runtime.Errorf(runtime.ErrUnexpected, "host binding %d %q expects compiled argument count %d, but callsite at pc %d has %d", bindingID, hostName, hostFn.ArgCount, pc, argCount),
+						runtime.Errorf(runtime.ErrUnexpected, "host binding %d %q expects compiled argument count %d, but callsite at pc %d has %d", bindingID, hostFn.Name, hostFn.ArgCount, pc, argCount),
 					),
 					pc,
 					dst,
@@ -156,7 +155,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 			descriptor := callDescriptor{
 				PC:               pc,
 				CallSitePC:       pc - 1,
-				DisplayName:      hostName,
+				DisplayName:      hostFn.Name,
 				Dst:              dst,
 				ID:               bindingIDIndex,
 				ArgCount:         hostFn.ArgCount,

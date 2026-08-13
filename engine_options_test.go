@@ -230,7 +230,7 @@ func TestWithStdlibSafeRegistersSelectedGroups(t *testing.T) {
 	}
 }
 
-func TestWithFunctionsRegistrarCanonicalizesQualifiedHostFunctionNames(t *testing.T) {
+func TestWithFunctionsRegistrarPreservesQualifiedHostFunctionNames(t *testing.T) {
 	t.Parallel()
 
 	eng := mustNewEngine(t,
@@ -243,8 +243,8 @@ func TestWithFunctionsRegistrarCanonicalizesQualifiedHostFunctionNames(t *testin
 	)
 	defer func() { _ = eng.Close() }()
 
-	if got := eng.host.functions.List(); !slices.Equal(got, []string{"tools::risk::calculate_risk"}) {
-		t.Fatalf("expected canonical host metadata, got %v", got)
+	if got := eng.host.functions.List(); !slices.Equal(got, []string{"Tools::Risk::Calculate_Risk"}) {
+		t.Fatalf("expected declared host metadata, got %v", got)
 	}
 
 	for _, query := range []string{
@@ -305,7 +305,7 @@ func TestUnknownHostFunctionDiagnosticPreservesSourceSpelling(t *testing.T) {
 	}
 }
 
-func TestResolvedHostFunctionDiagnosticUsesCanonicalQualifiedName(t *testing.T) {
+func TestResolvedHostFunctionDiagnosticUsesRegisteredQualifiedName(t *testing.T) {
 	t.Parallel()
 
 	eng := mustNewEngine(t,
@@ -328,7 +328,7 @@ func TestResolvedHostFunctionDiagnosticUsesCanonicalQualifiedName(t *testing.T) 
 		t.Fatalf("expected RuntimeError, got %T: %v", err, err)
 	}
 
-	if got, want := runtimeErr.Note, "db::postgres::query expects 1 argument, but got 0"; got != want {
+	if got, want := runtimeErr.Note, "DB::POSTGRES::QUERY expects 1 argument, but got 0"; got != want {
 		t.Fatalf("diagnostic note = %q, want %q", got, want)
 	}
 }

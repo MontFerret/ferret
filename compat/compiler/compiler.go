@@ -4,7 +4,6 @@ package compiler
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	ferret "github.com/MontFerret/ferret/v2"
@@ -105,7 +104,7 @@ func (c *Compiler) Namespace(name string) core.Namespace {
 func (c *Compiler) RegisterFunction(name string, fun core.Function) error {
 	fns := c.library.Function()
 	if fns.Has(name) {
-		return fmt.Errorf("function %q is already registered", name)
+		return nil
 	}
 
 	fns.Var().Add(name, core.UnwrapFunction(fun))
@@ -122,7 +121,7 @@ func (c *Compiler) MustRegisterFunction(name string, fun core.Function) {
 }
 
 // RegisterFunctions registers all functions from a Functions registry.
-// Duplicate names are rejected, consistent with RegisterFunction's semantics.
+// Duplicate names are silently skipped, consistent with RegisterFunction's semantics.
 func (c *Compiler) RegisterFunctions(funcs *core.Functions) error {
 	if funcs == nil {
 		return nil

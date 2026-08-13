@@ -73,7 +73,6 @@ func (v *Visitor) VisitHead(ctx *fql.HeadContext) interface{} {
 
 	namespace := nsCtx.GetText()
 	namespace = strings.TrimSuffix(namespace, runtime.NamespaceSeparator)
-	namespace = runtime.CanonicalRegisteredName(namespace)
 
 	alias := aliasTok.GetText()
 	if alias == "" || namespace == "" {

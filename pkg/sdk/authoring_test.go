@@ -67,7 +67,7 @@ func TestNewModule(t *testing.T) {
 	})
 }
 
-func TestSDKModuleHostFunctionsCanonicalizeQualifiedNames(t *testing.T) {
+func TestSDKModuleHostFunctionsResolveQualifiedNamesCaseInsensitively(t *testing.T) {
 	t.Parallel()
 
 	mod := sdk.NewModule("postgres", func(bootstrap module.Bootstrap) error {
@@ -140,9 +140,9 @@ func TestRegisterFunctions(t *testing.T) {
 		}
 	}
 
-	expected := []string{"test::four", "test::one", "test::three", "test::two", "test::variable", "test::zero"}
+	expected := []string{"TEST::FOUR", "TEST::ONE", "TEST::THREE", "TEST::TWO", "TEST::VARIABLE", "TEST::ZERO"}
 	if actual := functions.List(); !slices.Equal(actual, expected) {
-		t.Fatalf("expected canonical function metadata %v, got %v", expected, actual)
+		t.Fatalf("expected declared function metadata %v, got %v", expected, actual)
 	}
 }
 
@@ -173,6 +173,9 @@ func TestRegisterFunctionsAllowsArityOverloads(t *testing.T) {
 	}
 	if functions.Size() != 3 || len(functions.List()) != 1 {
 		t.Fatalf("expected three definitions for one logical name, got size=%d list=%v", functions.Size(), functions.List())
+	}
+	if got := functions.List(); !slices.Equal(got, []string{"TEST::OVERLOAD"}) {
+		t.Fatalf("expected first declared overload spelling, got %v", got)
 	}
 	if !functions.A1().Has("TEST::OVERLOAD") || !functions.A2().Has("TEST::OVERLOAD") || !functions.Var().Has("TEST::OVERLOAD") {
 		t.Fatal("expected every arity overload to be registered")

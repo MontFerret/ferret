@@ -30,7 +30,7 @@ func RegisterFunctions(ns runtime.Namespace, definitions ...FunctionDef) error {
 			return fmt.Errorf("function name cannot be empty")
 		}
 
-		definitions[i].name = runtime.CanonicalRegisteredName(name)
+		definitions[i].name = name
 	}
 
 	for _, definition := range definitions {
@@ -39,7 +39,7 @@ func RegisterFunctions(ns runtime.Namespace, definitions ...FunctionDef) error {
 			return err
 		}
 
-		key := functionRegistrationKey{name: definition.name, arity: arity}
+		key := functionRegistrationKey{name: runtime.NormalizeRegisteredName(definition.name), arity: arity}
 		if _, exists := seen[key]; exists {
 			return fmt.Errorf("function %q with the same arity is defined more than once", definition.name)
 		}

@@ -48,6 +48,6 @@ RETURN Alias::tEsT_fN()`, true, "Qualified host lookup is case-insensitive after
 		S(`
 USE fOO AS Alias
 
-RETURN Alias::TEST_FN()`, true, "Namespace alias target casing is canonicalized"),
+RETURN Alias::TEST_FN()`, true, "Namespace alias target casing resolves case-insensitively"),
 	}, vm.WithNamespace(ns))
 }

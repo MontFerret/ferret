@@ -110,13 +110,8 @@ func TestProgramJSONPreservesOrderedHostSignatures(t *testing.T) {
 		t.Fatalf("unmarshal: %v", err)
 	}
 
-	expected := []HostFunction{
-		{Name: "db::postgres::pick", ArgCount: 2},
-		{Name: "db::postgres::pick", ArgCount: 1},
-	}
-
-	if !slices.Equal(decoded.Functions.Host, expected) {
-		t.Fatalf("unexpected canonical host signature order: got %v, want %v", decoded.Functions.Host, expected)
+	if !slices.Equal(decoded.Functions.Host, program.Functions.Host) {
+		t.Fatalf("unexpected host signature order or spelling: got %v, want %v", decoded.Functions.Host, program.Functions.Host)
 	}
 }
 

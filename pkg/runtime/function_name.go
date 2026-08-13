@@ -5,24 +5,25 @@ import "strings"
 // NamespaceSeparator separates namespace and function segments in registered names.
 const NamespaceSeparator = "::"
 
-// CanonicalRegisteredName returns the canonical identity of a registered name.
+// NormalizeRegisteredName returns the case-insensitive lookup key for a registered name.
 // It lowercases ASCII A-Z bytes in every qualified segment and leaves all other
-// bytes unchanged. When name is already canonical, it returns name without allocating.
-// This is the stable identity contract for runtime registries, extensions, and tooling.
-func CanonicalRegisteredName(name string) string {
+// bytes unchanged. The result is the stable identity key for runtime registries,
+// extensions, and tooling; it is not a presentation format. When name is already
+// normalized, it returns name without allocating.
+func NormalizeRegisteredName(name string) string {
 	for i := 0; i < len(name); i++ {
 		if name[i] < 'A' || name[i] > 'Z' {
 			continue
 		}
 
-		canonical := []byte(name)
-		for j := i; j < len(canonical); j++ {
-			if canonical[j] >= 'A' && canonical[j] <= 'Z' {
-				canonical[j] += 'a' - 'A'
+		normalized := []byte(name)
+		for j := i; j < len(normalized); j++ {
+			if normalized[j] >= 'A' && normalized[j] <= 'Z' {
+				normalized[j] += 'a' - 'A'
 			}
 		}
 
-		return string(canonical)
+		return string(normalized)
 	}
 
 	return name

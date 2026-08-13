@@ -111,8 +111,8 @@ func TestFormatAllowsOverloadedHostsAndRejectsDuplicateSignaturesAndLabels(t *te
 	if err != nil {
 		t.Fatalf("expected overloaded host signatures to decode, got %v", err)
 	}
-	if got := decoded.Functions.Host[0].Name; got != "db::postgres::dup" {
-		t.Fatalf("expected legacy uppercase host metadata to canonicalize, got %q", got)
+	if got := decoded.Functions.Host[0].Name; got != "DB::POSTGRES::DUP" {
+		t.Fatalf("expected stored host metadata spelling to survive, got %q", got)
 	}
 
 	frame.Functions.Host[1].ArgCount = &one

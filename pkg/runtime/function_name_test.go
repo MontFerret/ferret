@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func TestCanonicalRegisteredName(t *testing.T) {
+func TestNormalizeRegisteredName(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]string{
@@ -25,8 +25,8 @@ func TestCanonicalRegisteredName(t *testing.T) {
 		t.Run(input, func(t *testing.T) {
 			t.Parallel()
 
-			if actual := runtime.CanonicalRegisteredName(input); actual != expected {
-				t.Fatalf("CanonicalRegisteredName(%q) = %q, want %q", input, actual, expected)
+			if actual := runtime.NormalizeRegisteredName(input); actual != expected {
+				t.Fatalf("NormalizeRegisteredName(%q) = %q, want %q", input, actual, expected)
 			}
 		})
 	}
@@ -59,14 +59,14 @@ func TestHasTerminalFunctionName(t *testing.T) {
 	}
 }
 
-func BenchmarkCanonicalRegisteredNameLowercase(b *testing.B) {
+func BenchmarkNormalizeRegisteredNameLowercase(b *testing.B) {
 	for b.Loop() {
-		_ = runtime.CanonicalRegisteredName("db::postgres::query")
+		_ = runtime.NormalizeRegisteredName("db::postgres::query")
 	}
 }
 
-func BenchmarkCanonicalRegisteredNameMixedCase(b *testing.B) {
+func BenchmarkNormalizeRegisteredNameMixedCase(b *testing.B) {
 	for b.Loop() {
-		_ = runtime.CanonicalRegisteredName("Db::Postgres::QuErY")
+		_ = runtime.NormalizeRegisteredName("Db::Postgres::QuErY")
 	}
 }

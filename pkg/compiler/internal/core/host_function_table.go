@@ -28,8 +28,7 @@ func NewHostFunctionTable() *HostFunctionTable {
 
 // Bind returns the stable binding ID for a qualified name and call argument count.
 func (t *HostFunctionTable) Bind(name string, argCount int) int {
-	name = runtime.CanonicalRegisteredName(name)
-	key := hostFunctionKey{Name: name, ArgCount: argCount}
+	key := hostFunctionKey{Name: runtime.NormalizeRegisteredName(name), ArgCount: argCount}
 
 	if id, exists := t.bindings[key]; exists {
 		return id

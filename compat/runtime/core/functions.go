@@ -141,8 +141,9 @@ func (a *namespaceAdapter) RegisteredFunctions() []string {
 		fns.A4(),
 	} {
 		for _, n := range defs.List() {
-			if _, ok := seen[n]; !ok {
-				seen[n] = struct{}{}
+			key := runtime.NormalizeRegisteredName(n)
+			if _, ok := seen[key]; !ok {
+				seen[key] = struct{}{}
 				names = append(names, n)
 			}
 		}

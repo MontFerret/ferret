@@ -45,6 +45,12 @@ func TestCompiler_RegisterFunction(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
+	if err := c.RegisterFunction("hello", func(context.Context, ...core.Value) (core.Value, error) {
+		return core.WrapValue(runtime.NewString("replacement")), nil
+	}); err != nil {
+		t.Fatalf("case-only duplicate should be silently skipped: %v", err)
+	}
+
 	prog, err := c.Compile(`RETURN HELLO()`)
 	if err != nil {
 		t.Fatalf("compile error: %v", err)
@@ -63,6 +69,10 @@ func TestCompiler_RegisterFunction(t *testing.T) {
 	if result != "hello" {
 		t.Fatalf("expected \"hello\", got %q", result)
 	}
+
+	if got := c.RegisteredFunctions(); len(got) != 1 || got[0] != "HELLO" {
+		t.Fatalf("registered functions = %v, want original HELLO spelling", got)
+	}
 }
 
 func TestCompiler_NamespaceRegistrationIsCaseInsensitive(t *testing.T) {
@@ -79,7 +89,7 @@ func TestCompiler_NamespaceRegistrationIsCaseInsensitive(t *testing.T) {
 	if err := c.Namespace("db").Namespace("postgres").RegisterFunction("query", func(context.Context, ...core.Value) (core.Value, error) {
 		return core.WrapValue(runtime.None), nil
 	}); err == nil {
-		t.Fatal("expected duplicate canonical namespace member to fail")
+		t.Fatal("expected duplicate normalized namespace member to fail")
 	}
 
 	for _, query := range []string{
@@ -107,8 +117,8 @@ func TestCompiler_NamespaceRegistrationIsCaseInsensitive(t *testing.T) {
 		}
 	}
 
-	if got := ns.RegisteredFunctions(); len(got) != 1 || got[0] != "db::postgres::query" {
-		t.Fatalf("registered functions = %v, want canonical qualified name", got)
+	if got := ns.RegisteredFunctions(); len(got) != 1 || got[0] != "DB::POSTGRES::QUERY" {
+		t.Fatalf("registered functions = %v, want declared qualified name", got)
 	}
 }
 
@@ -128,8 +138,8 @@ func TestCompiler_RegisteredFunctions(t *testing.T) {
 		found[n] = true
 	}
 
-	if !found["func_a"] || !found["func_b"] {
-		t.Fatalf("expected canonical func_a and func_b, got %v", names)
+	if !found["FUNC_A"] || !found["FUNC_B"] {
+		t.Fatalf("expected declared FUNC_A and FUNC_B, got %v", names)
 	}
 }
 
@@ -147,9 +157,9 @@ func TestCompiler_RegisterFunctions_duplicate(t *testing.T) {
 		t.Fatalf("first RegisterFunctions error: %v", err)
 	}
 
-	// Second registration of the same set must be rejected without poisoning the builder.
-	if err := c.RegisterFunctions(fns); err == nil {
-		t.Fatal("second RegisterFunctions should reject duplicates")
+	// Second registration of the same set is silently skipped for v1 compatibility.
+	if err := c.RegisterFunctions(fns); err != nil {
+		t.Fatalf("second RegisterFunctions should skip duplicates: %v", err)
 	}
 
 	// Most importantly: Compile must succeed — no latent builder error must have

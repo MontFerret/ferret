@@ -165,7 +165,7 @@ func FromProgram(program *bytecode.Program) (ProgramFrame, error) {
 	for i, fn := range program.Functions.Host {
 		argCount := fn.ArgCount
 		host[i] = HostFunctionFrame{
-			Name:     runtime.CanonicalRegisteredName(fn.Name),
+			Name:     fn.Name,
 			ArgCount: &argCount,
 		}
 	}
@@ -354,7 +354,7 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 		}
 
 		host[i] = bytecode.HostFunction{
-			Name:     runtime.CanonicalRegisteredName(entry.Name),
+			Name:     entry.Name,
 			ArgCount: *entry.ArgCount,
 		}
 	}

@@ -26,13 +26,15 @@ type (
 	}
 
 	library struct {
-		builder *FunctionsBuilder
-		name    string
+		builder    *FunctionsBuilder
+		namespaces *registeredDisplayNames
+		name       string
 	}
 )
 
 func NewLibrary() Library {
 	lib := new(library)
+	lib.namespaces = newRegisteredDisplayNames()
 	lib.builder = newRootFunctionsBuilder()
 
 	return lib
@@ -40,7 +42,8 @@ func NewLibrary() Library {
 
 func NewNamespace(name string) Namespace {
 	lib := new(library)
-	lib.name = CanonicalRegisteredName(name)
+	lib.namespaces = newRegisteredDisplayNames()
+	lib.name = lib.namespaces.Declare(NormalizeRegisteredName(name), name)
 	lib.builder = newNamespacedFunctionsBuilder(lib.name)
 
 	return lib
@@ -60,7 +63,9 @@ func (lib *library) Size() int {
 
 func (lib *library) Namespace(name string) Namespace {
 	newLib := new(library)
-	newLib.name = CanonicalRegisteredName(makeFunctionName(lib.name, name))
+	newLib.namespaces = lib.namespaces
+	qualifiedName := makeFunctionName(lib.name, name)
+	newLib.name = lib.namespaces.Declare(NormalizeRegisteredName(qualifiedName), qualifiedName)
 	newLib.builder = newFunctionsBuilderInternalFrom(newLib.name, lib.builder)
 
 	return newLib

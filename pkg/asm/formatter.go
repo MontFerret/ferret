@@ -77,7 +77,7 @@ func formatParamRow(name string) string {
 }
 
 func formatFunctionRow(id int, fn bytecode.HostFunction) string {
-	return fmt.Sprintf("%d %s %d ; id name args", id, runtime.CanonicalRegisteredName(fn.Name), fn.ArgCount)
+	return fmt.Sprintf("%d %s %d ; id name args", id, fn.Name, fn.ArgCount)
 }
 
 func formatUdfRow(id int, udf bytecode.UDF) string {

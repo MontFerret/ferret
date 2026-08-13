@@ -9,7 +9,7 @@ import (
 
 type (
 	FnDef[T FunctionConstraint] interface {
-		// Add adds a function using a canonical lowercase qualified name.
+		// Add adds a function using a case-insensitive qualified identity.
 		// If a function with the same name already exists, it will be ignored and an error will be recorded.
 		Add(name string, fn T) FnDef[T]
 		// Remove removes a function from the builder.
@@ -53,6 +53,7 @@ type (
 		a2        *defaultFnDef[Function2]
 		a3        *defaultFnDef[Function3]
 		a4        *defaultFnDef[Function4]
+		names     *registeredDisplayNames
 		namespace string
 	}
 
@@ -73,7 +74,8 @@ type (
 	// defaultFnDef stores functions for a namespace and shares data/errors with nested builders.
 	defaultFnDef[T FunctionConstraint] struct {
 		errors    *fnErrors
-		data      map[string]T
+		data      map[string]registeredFunction[T]
+		names     *registeredDisplayNames
 		namespace string
 	}
 )
@@ -89,11 +91,12 @@ func (e *fnErrors) All() []error {
 }
 
 // newFnDef creates a function definition with a shared error container.
-func newFnDef[T FunctionConstraint](namespace string, errs *fnErrors) *defaultFnDef[T] {
+func newFnDef[T FunctionConstraint](namespace string, errs *fnErrors, names *registeredDisplayNames) *defaultFnDef[T] {
 	return &defaultFnDef[T]{
 		namespace: namespace,
 		errors:    errs,
-		data:      make(map[string]T),
+		names:     names,
+		data:      make(map[string]registeredFunction[T]),
 	}
 }
 
@@ -102,6 +105,7 @@ func newFnDefFrom[T FunctionConstraint](namespace string, other *defaultFnDef[T]
 	return &defaultFnDef[T]{
 		namespace: namespace,
 		errors:    other.errors,
+		names:     other.names,
 		// We share the same map across all builders to ensure that changes in one builder are reflected in all builders that share the same namespace.
 		data: other.data,
 	}
@@ -116,48 +120,51 @@ func (fd *defaultFnDef[T]) addError(err error) {
 }
 
 func (fd *defaultFnDef[T]) Add(name string, fn T) FnDef[T] {
-	fname := CanonicalRegisteredName(makeFunctionName(fd.namespace, name))
-	if !HasTerminalFunctionName(fname) {
+	registeredName := makeFunctionName(fd.namespace, name)
+	if !HasTerminalFunctionName(registeredName) {
 		fd.addError(fmt.Errorf("function name cannot be empty in '%s' namespace", fd.namespace))
 
 		return fd
 	}
 
-	if _, exists := fd.data[fname]; exists {
+	key := NormalizeRegisteredName(registeredName)
+	if _, exists := fd.data[key]; exists {
 		fd.addError(fmt.Errorf("function with name '%s' already exists in '%s' namespace", name, fd.namespace))
 
 		return fd
 	}
 
-	fd.data[fname] = fn
+	fd.data[key] = registeredFunction[T]{name: registeredName, function: fn}
+	fd.names.Add(key, registeredName)
 
 	return fd
 }
 
 func (fd *defaultFnDef[T]) Remove(name string) FnDef[T] {
-	fname := CanonicalRegisteredName(makeFunctionName(fd.namespace, name))
+	key := NormalizeRegisteredName(makeFunctionName(fd.namespace, name))
 
-	if _, exists := fd.data[fname]; !exists {
+	if _, exists := fd.data[key]; !exists {
 		fd.addError(fmt.Errorf("function with name '%s' does not exist in '%s' namespace", name, fd.namespace))
 
 		return fd
 	}
 
-	delete(fd.data, fname)
+	delete(fd.data, key)
+	fd.names.Remove(key)
 
 	return fd
 }
 
 func (fd *defaultFnDef[T]) Has(name string) bool {
-	fname := CanonicalRegisteredName(makeFunctionName(fd.namespace, name))
-	_, exists := fd.data[fname]
+	key := NormalizeRegisteredName(makeFunctionName(fd.namespace, name))
+	_, exists := fd.data[key]
 
 	return exists
 }
 
 func (fd *defaultFnDef[T]) ForEach(fn func(fn T, name string) bool) {
-	for name, fun := range fd.data {
-		if !fn(fun, name) {
+	for _, entry := range fd.data {
+		if !fn(entry.function, entry.name) {
 			break
 		}
 	}
@@ -166,15 +173,15 @@ func (fd *defaultFnDef[T]) ForEach(fn func(fn T, name string) bool) {
 func (fd *defaultFnDef[T]) List() []string {
 	names := make([]string, 0, len(fd.data))
 
-	for name := range fd.data {
-		names = append(names, name)
+	for _, entry := range fd.data {
+		names = append(names, entry.name)
 	}
 
 	return names
 }
 
 // NewFunctionsBuilder creates an empty host function registry builder.
-// Host-function qualified names are canonicalized to lowercase and resolved case-insensitively.
+// Host-function qualified names preserve their declared spelling and resolve case-insensitively.
 // A logical name may have one definition at each fixed arity and one variadic definition.
 func NewFunctionsBuilder() *FunctionsBuilder {
 	return newRootFunctionsBuilder()
@@ -188,6 +195,10 @@ func NewFunctionsBuilderFrom(funcs ...*Functions) *FunctionsBuilder {
 	for _, f := range funcs {
 		if f == nil {
 			continue
+		}
+
+		for _, name := range f.List() {
+			builder.names.Declare(NormalizeRegisteredName(name), name)
 		}
 
 		f.A0().ForEach(func(fun Function0, name string) bool {
@@ -237,15 +248,17 @@ func newRootFunctionsBuilder() *FunctionsBuilder {
 // newNamespacedFunctionsBuilder creates a builder with shared errors across its FnDefs.
 func newNamespacedFunctionsBuilder(namespace string) *FunctionsBuilder {
 	errs := &fnErrors{}
+	names := newRegisteredDisplayNames()
 
 	return &FunctionsBuilder{
 		namespace: namespace,
-		av:        newFnDef[Function](namespace, errs),
-		a0:        newFnDef[Function0](namespace, errs),
-		a1:        newFnDef[Function1](namespace, errs),
-		a2:        newFnDef[Function2](namespace, errs),
-		a3:        newFnDef[Function3](namespace, errs),
-		a4:        newFnDef[Function4](namespace, errs),
+		names:     names,
+		av:        newFnDef[Function](namespace, errs, names),
+		a0:        newFnDef[Function0](namespace, errs, names),
+		a1:        newFnDef[Function1](namespace, errs, names),
+		a2:        newFnDef[Function2](namespace, errs, names),
+		a3:        newFnDef[Function3](namespace, errs, names),
+		a4:        newFnDef[Function4](namespace, errs, names),
 	}
 }
 
@@ -253,6 +266,7 @@ func newNamespacedFunctionsBuilder(namespace string) *FunctionsBuilder {
 func newFunctionsBuilderInternalFrom(namespace string, other *FunctionsBuilder) *FunctionsBuilder {
 	return &FunctionsBuilder{
 		namespace: namespace,
+		names:     other.names,
 		av:        newFnDefFrom[Function](namespace, other.av),
 		a0:        newFnDefFrom[Function0](namespace, other.a0),
 		a1:        newFnDefFrom[Function1](namespace, other.a1),
@@ -276,7 +290,7 @@ func (b *FunctionsBuilder) Size() int {
 }
 
 func (b *FunctionsBuilder) Has(name string) bool {
-	fname := CanonicalRegisteredName(makeFunctionName(b.namespace, name))
+	fname := NormalizeRegisteredName(makeFunctionName(b.namespace, name))
 
 	if _, ok := b.av.data[fname]; ok {
 		return true
@@ -332,6 +346,10 @@ func (b *FunctionsBuilder) A4() FnDef[Function4] {
 func (b *FunctionsBuilder) From(other FunctionDefs) FunctionDefs {
 	if other == nil {
 		return b
+	}
+
+	if source, ok := other.(*FunctionsBuilder); ok {
+		b.names.Seed(source.names)
 	}
 
 	other.A0().ForEach(func(fun Function0, name string) bool {
@@ -400,49 +418,59 @@ func (b *FunctionsBuilder) Build() (*Functions, error) {
 
 	for _, collection := range collections {
 		names := collection.list.List()
-		sort.Strings(names)
+		sort.Slice(names, func(i, j int) bool {
+			return NormalizeRegisteredName(names[i]) < NormalizeRegisteredName(names[j])
+		})
 
 		for _, name := range names {
-			binary.LittleEndian.PutUint64(nameLen[:], uint64(len(name)))
+			key := NormalizeRegisteredName(name)
+			binary.LittleEndian.PutUint64(nameLen[:], uint64(len(key)))
 			_, _ = hasher.Write([]byte{collection.marker})
 			_, _ = hasher.Write(nameLen[:])
-			_, _ = hasher.Write([]byte(name))
+			_, _ = hasher.Write([]byte(key))
 
-			if _, exists := flookup[name]; exists {
+			if _, exists := flookup[key]; exists {
 				continue
 			}
 
-			flookup[name] = struct{}{}
-			fnames = append(fnames, name)
+			flookup[key] = struct{}{}
+			displayName, exists := b.names.Name(key)
+			if !exists {
+				displayName = name
+			}
+
+			fnames = append(fnames, displayName)
 		}
 	}
 
-	sort.Strings(fnames)
+	sort.Slice(fnames, func(i, j int) bool {
+		return NormalizeRegisteredName(fnames[i]) < NormalizeRegisteredName(fnames[j])
+	})
 
 	registry := new(Functions)
 
 	if len(b.av.data) > 0 {
-		registry.av = newCanonicalFunctionCollectionFromMap(b.av.data)
+		registry.av = newNormalizedFunctionCollectionFromMap(b.av.data)
 	}
 
 	if len(b.a0.data) > 0 {
-		registry.a0 = newCanonicalFunctionCollectionFromMap(b.a0.data)
+		registry.a0 = newNormalizedFunctionCollectionFromMap(b.a0.data)
 	}
 
 	if len(b.a1.data) > 0 {
-		registry.a1 = newCanonicalFunctionCollectionFromMap(b.a1.data)
+		registry.a1 = newNormalizedFunctionCollectionFromMap(b.a1.data)
 	}
 
 	if len(b.a2.data) > 0 {
-		registry.a2 = newCanonicalFunctionCollectionFromMap(b.a2.data)
+		registry.a2 = newNormalizedFunctionCollectionFromMap(b.a2.data)
 	}
 
 	if len(b.a3.data) > 0 {
-		registry.a3 = newCanonicalFunctionCollectionFromMap(b.a3.data)
+		registry.a3 = newNormalizedFunctionCollectionFromMap(b.a3.data)
 	}
 
 	if len(b.a4.data) > 0 {
-		registry.a4 = newCanonicalFunctionCollectionFromMap(b.a4.data)
+		registry.a4 = newNormalizedFunctionCollectionFromMap(b.a4.data)
 	}
 
 	registry.names = fnames

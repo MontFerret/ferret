@@ -42,7 +42,7 @@ func TestHostFunctionTable_AssignsStableSignatureIDsAndReturnsCopy(t *testing.T)
 		So(fn1, ShouldEqual, 1)
 		So(fn3Again, ShouldEqual, fn3)
 		So(fns, ShouldResemble, []bytecode.HostFunction{
-			{Name: "db::postgres::fn", ArgCount: 3},
+			{Name: "DB::POSTGRES::FN", ArgCount: 3},
 			{Name: "db::postgres::fn", ArgCount: 1},
 		})
 
@@ -51,7 +51,7 @@ func TestHostFunctionTable_AssignsStableSignatureIDsAndReturnsCopy(t *testing.T)
 
 		updated := tab.All()
 		So(updated, ShouldResemble, []bytecode.HostFunction{
-			{Name: "db::postgres::fn", ArgCount: 3},
+			{Name: "DB::POSTGRES::FN", ArgCount: 3},
 			{Name: "db::postgres::fn", ArgCount: 1},
 		})
 	})

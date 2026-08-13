@@ -225,9 +225,9 @@ func TestWarmupArityMismatchProducesDescriptiveError(t *testing.T) {
 						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{
 							Message: "invalid number of arguments",
 							Contains: []string{
-								"wrong number of arguments in call to f",
-								"Note: f expects 1 argument, but got 2",
-								"Hint: Pass 1 argument to f",
+								"wrong number of arguments in call to F",
+								"Note: F expects 1 argument, but got 2",
+								"Hint: Pass 1 argument to F",
 							},
 						}),
 					},
@@ -258,8 +258,8 @@ func TestWarmupOverloadArityMismatchListsAvailableAritiesDeterministically(t *te
 						Error: spec.NewExpectation(ShouldBeRuntimeError, &ExpectedRuntimeError{
 							Message: "invalid number of arguments",
 							Contains: []string{
-								"Note: f expects 1 or 3 arguments, but got 2",
-								"Hint: Pass 1 or 3 arguments to f",
+								"Note: F expects 1 or 3 arguments, but got 2",
+								"Hint: Pass 1 or 3 arguments to F",
 							},
 						}),
 					},

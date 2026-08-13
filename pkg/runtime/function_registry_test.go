@@ -155,7 +155,7 @@ func TestNewFunctionsFromAndFromMap(t *testing.T) {
 
 	f2Builder := NewFunctionsBuilder()
 	f2Builder.A0().Add("B", fn0)
-	f2Builder.A1().Add("overloaded", fn1)
+	f2Builder.A1().Add("OverLoaded", fn1)
 
 	f2, err := f2Builder.Build()
 	if err != nil {
@@ -176,7 +176,14 @@ func TestNewFunctionsFromAndFromMap(t *testing.T) {
 		t.Fatalf("expected cached size %d, got %d", merged.Size(), merged.size)
 	}
 
-	// a, b, overloaded.
+	if got := merged.List(); !slices.Equal(got, []string{"A", "B", "overloaded"}) {
+		t.Fatalf("expected first merged declaration for each identity, got %v", got)
+	}
+
+	if got := merged.A1().Names(); !slices.Equal(got, []string{"OverLoaded"}) {
+		t.Fatalf("expected arity-specific merged declaration, got %v", got)
+	}
+
 	if len(merged.names) != 3 {
 		t.Fatalf(
 			"expected 3 unique cached names, got %d: %v",
@@ -209,11 +216,11 @@ func TestNewFunctionsFromAndFromMap(t *testing.T) {
 	}
 
 	if !fromMap.Has("FOO") {
-		t.Fatal("expected functions from map to include canonical foo identity")
+		t.Fatal("expected functions from map to include normalized foo identity")
 	}
 
-	if got := fromMap.List(); !slices.Equal(got, []string{"foo"}) {
-		t.Fatalf("expected canonical functions from map, got %v", got)
+	if got := fromMap.List(); !slices.Equal(got, []string{"Foo"}) {
+		t.Fatalf("expected declared functions from map, got %v", got)
 	}
 
 	if fromMap.size != fromMap.Size() {
@@ -261,8 +268,8 @@ func TestNewFunctionsBuilderFromPreservesOverloadsAndRejectsSameSignature(t *tes
 
 	sourceBuilder := NewFunctionsBuilder()
 	sourceBuilder.A0().Add("OVERLOAD", fn0)
-	sourceBuilder.A1().Add("OVERLOAD", fn1)
-	sourceBuilder.Var().Add("OVERLOAD", varFn)
+	sourceBuilder.A1().Add("Overload", fn1)
+	sourceBuilder.Var().Add("overload", varFn)
 	source, err := sourceBuilder.Build()
 	if err != nil {
 		t.Fatalf("build source functions: %v", err)
@@ -274,6 +281,14 @@ func TestNewFunctionsBuilderFromPreservesOverloadsAndRejectsSameSignature(t *tes
 	}
 	if cloned.Size() != 3 || len(cloned.List()) != 1 {
 		t.Fatalf("expected three definitions for one logical name, got size=%d list=%v", cloned.Size(), cloned.List())
+	}
+	if !slices.Equal(cloned.List(), []string{"OVERLOAD"}) {
+		t.Fatalf("expected first declared overload spelling to survive cloning, got %v", cloned.List())
+	}
+	if !slices.Equal(cloned.A0().Names(), []string{"OVERLOAD"}) ||
+		!slices.Equal(cloned.A1().Names(), []string{"Overload"}) ||
+		!slices.Equal(cloned.Var().Names(), []string{"overload"}) {
+		t.Fatalf("expected arity-specific declarations to survive cloning: A0=%v A1=%v Var=%v", cloned.A0().Names(), cloned.A1().Names(), cloned.Var().Names())
 	}
 	if !cloned.A0().Has("OVERLOAD") || !cloned.A1().Has("OVERLOAD") || !cloned.Var().Has("OVERLOAD") {
 		t.Fatal("expected all overloads to survive cloning")
@@ -291,7 +306,7 @@ func TestNewFunctionsBuilderFromPreservesOverloadsAndRejectsSameSignature(t *tes
 	}
 }
 
-func TestFunctionLookupUsesCanonicalQualifiedName(t *testing.T) {
+func TestFunctionLookupUsesNormalizedQualifiedNameAndPreservesDeclaration(t *testing.T) {
 	foo := func(context.Context) (Value, error) {
 		return NewString("foo"), nil
 	}
@@ -308,12 +323,16 @@ func TestFunctionLookupUsesCanonicalQualifiedName(t *testing.T) {
 		t.Fatalf("expected 1 function, got %d", funcs.Size())
 	}
 
-	if got := funcs.List(); !slices.Equal(got, []string{"db::postgres::foo"}) {
-		t.Fatalf("expected canonical function metadata, got %v", got)
+	if got := funcs.List(); !slices.Equal(got, []string{"DB::Postgres::Foo"}) {
+		t.Fatalf("expected declared function metadata, got %v", got)
 	}
 
-	if got := funcs.A0().Names(); !slices.Equal(got, []string{"db::postgres::foo"}) {
-		t.Fatalf("expected canonical collection names, got %v", got)
+	if got := funcs.A0().Names(); !slices.Equal(got, []string{"DB::Postgres::Foo"}) {
+		t.Fatalf("expected declared collection names, got %v", got)
+	}
+
+	if got := funcs.A0().GetAll(); len(got) != 1 || got["DB::Postgres::Foo"] == nil {
+		t.Fatalf("expected GetAll to use the declared name, got %v", got)
 	}
 
 	var enumerated []string
@@ -322,13 +341,13 @@ func TestFunctionLookupUsesCanonicalQualifiedName(t *testing.T) {
 
 		return true
 	})
-	if !slices.Equal(enumerated, []string{"db::postgres::foo"}) {
-		t.Fatalf("expected canonical ForEach name, got %v", enumerated)
+	if !slices.Equal(enumerated, []string{"DB::Postgres::Foo"}) {
+		t.Fatalf("expected declared ForEach name, got %v", enumerated)
 	}
 
 	for _, name := range []string{"db::postgres::foo", "DB::POSTGRES::FOO", "Db::Postgres::FoO"} {
 		if !funcs.Has(name) {
-			t.Fatalf("expected %q to resolve canonical function, got %v", name, funcs.List())
+			t.Fatalf("expected %q to resolve registered function, got %v", name, funcs.List())
 		}
 
 		resolved, ok := funcs.A0().Get(name)
@@ -359,7 +378,38 @@ func TestFunctionLookupUsesCanonicalQualifiedName(t *testing.T) {
 	}
 
 	if removed.Size() != 0 {
-		t.Fatalf("expected mixed-case removal to remove canonical function, got %v", removed.List())
+		t.Fatalf("expected mixed-case removal to remove normalized function identity, got %v", removed.List())
+	}
+}
+
+func TestFunctionsListReleasesDisplayNameAfterFinalOverloadRemoval(t *testing.T) {
+	fn0 := func(context.Context) (Value, error) { return None, nil }
+	fn1 := func(_ context.Context, value Value) (Value, error) { return value, nil }
+
+	builder := NewFunctionsBuilder()
+	builder.A0().Add("FIRST", fn0)
+	builder.A1().Add("First", fn1)
+	builder.A0().Remove("first")
+
+	remaining, err := builder.Build()
+	if err != nil {
+		t.Fatalf("build remaining overload: %v", err)
+	}
+
+	if got := remaining.List(); !slices.Equal(got, []string{"FIRST"}) {
+		t.Fatalf("logical identity should retain its first spelling while an overload remains, got %v", got)
+	}
+
+	builder.A1().Remove("FIRST")
+	builder.A0().Add("fIrSt", fn0)
+
+	redeclared, err := builder.Build()
+	if err != nil {
+		t.Fatalf("build redeclared function: %v", err)
+	}
+
+	if got := redeclared.List(); !slices.Equal(got, []string{"fIrSt"}) {
+		t.Fatalf("expected a new display spelling after the final overload was removed, got %v", got)
 	}
 }
 

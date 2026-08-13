@@ -93,7 +93,7 @@ USE FOO::TEST_FN AS FN
 FUNC WRAP(v) => FN(v)
 RETURN WRAP(1)
 `,
-			expectedHost: []bytecode.HostFunction{{Name: "foo::test_fn", ArgCount: 1}},
+			expectedHost: []bytecode.HostFunction{{Name: "FOO::TEST_FN", ArgCount: 1}},
 			expectedUDFs: 1,
 		},
 		{
@@ -103,16 +103,16 @@ USE BAR AS B
 FUNC RUN(v) => B::OTHER_FN(v, v + 1)
 RETURN RUN(2)
 `,
-			expectedHost: []bytecode.HostFunction{{Name: "bar::other_fn", ArgCount: 2}},
+			expectedHost: []bytecode.HostFunction{{Name: "BAR::OTHER_FN", ArgCount: 2}},
 			expectedUDFs: 1,
 		},
 		{
-			name: "udf_host_case_canonicalization",
+			name: "udf_host_case_insensitive_identity",
 			query: `
 FUNC wrap() => Foo(1) + foo(2)
 RETURN wrap()
 `,
-			expectedHost: []bytecode.HostFunction{{Name: "foo", ArgCount: 1}},
+			expectedHost: []bytecode.HostFunction{{Name: "Foo", ArgCount: 1}},
 			expectedUDFs: 1,
 		},
 	}

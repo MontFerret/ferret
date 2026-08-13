@@ -66,8 +66,8 @@ func TestProgramArtifactRoundTrip(t *testing.T) {
 				t.Helper()
 				want := []bytecode.HostFunction{
 					{Name: "db::postgres::pick", ArgCount: 1},
-					{Name: "db::postgres::pick", ArgCount: 2},
-					{Name: "db::postgres::pick", ArgCount: 5},
+					{Name: "DB::POSTGRES::PICK", ArgCount: 2},
+					{Name: "dB::pOsTgReS::pIcK", ArgCount: 5},
 				}
 
 				if !slices.Equal(original.Functions.Host, want) {

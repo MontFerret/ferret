@@ -60,7 +60,7 @@ func TestNamespaceNewNamespaceQualifiedNames(t *testing.T) {
 	}
 
 	names := funcs.List()
-	if !slices.Contains(names, "foo::bar::baz") {
+	if !slices.Contains(names, "Foo::BAR::BAZ") {
 		t.Fatalf("expected qualified name in namespace, got %v", names)
 	}
 }
@@ -84,8 +84,8 @@ func TestNamespaceCasingVariantsMergeIntoCanonicalNamespace(t *testing.T) {
 	}
 
 	names := funcs.List()
-	if !slices.Equal(names, []string{"db::postgres::health", "db::postgres::query"}) {
-		t.Fatalf("expected one canonical namespace, got %v", names)
+	if !slices.Equal(names, []string{"DB::Postgres::Health", "DB::Postgres::Query"}) {
+		t.Fatalf("expected first-declared namespace casing, got %v", names)
 	}
 
 	for _, name := range []string{
@@ -117,7 +117,7 @@ func TestNamespaceCasingVariantsRejectDuplicateCanonicalMember(t *testing.T) {
 	root.Namespace("fOO").Namespace("bAR").Function().A0().Add("bAZ", fn)
 
 	if _, err := root.Build(); err == nil {
-		t.Fatal("expected duplicate canonical namespace member to fail")
+		t.Fatal("expected duplicate normalized namespace member to fail")
 	}
 }
 
@@ -159,8 +159,12 @@ func TestNamespaceCasingDoesNotAffectRegistryHash(t *testing.T) {
 		t.Fatalf("equivalent namespace casing produced different hashes: %d != %d", upper.Hash(), mixed.Hash())
 	}
 
-	if !slices.Equal(upper.List(), []string{"db::postgres::query"}) || !slices.Equal(upper.List(), mixed.List()) {
-		t.Fatalf("equivalent namespace casing produced different metadata: %v != %v", upper.List(), mixed.List())
+	if !slices.Equal(upper.List(), []string{"DB::POSTGRES::QUERY"}) {
+		t.Fatalf("uppercase declaration was not preserved: %v", upper.List())
+	}
+
+	if !slices.Equal(mixed.List(), []string{"Db::Postgres::Query"}) {
+		t.Fatalf("mixed-case declaration was not preserved: %v", mixed.List())
 	}
 }
 
