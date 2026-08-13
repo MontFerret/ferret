@@ -35,7 +35,8 @@ type (
 		passThroughCtx fql.IForExpressionContext
 		kind           loopResultKind
 		distinct       bool
-		bodyCount      int
+		// bodyEnd is the exclusive end of ordinary body entries compiled before finalization.
+		bodyEnd int
 	}
 
 	loopOperandContext struct {
@@ -308,8 +309,8 @@ func (c *LoopCompiler) compileInitialization(
 func (c *LoopCompiler) resolveLoopResultSpec(ctx fql.IForExpressionContext) loopResultSpec {
 	bodies := ctx.AllForExpressionBody()
 	result := loopResultSpec{
-		kind:      loopResultEffectOnly,
-		bodyCount: len(bodies),
+		kind:    loopResultEffectOnly,
+		bodyEnd: len(bodies),
 	}
 
 	if re := ctx.ReturnExpression(); re != nil {
@@ -343,7 +344,7 @@ func (c *LoopCompiler) resolveLoopResultSpec(ctx fql.IForExpressionContext) loop
 			if nested := stmt.ForExpression(); nested != nil {
 				result.passThroughCtx = nested
 				result.kind = loopResultPassThrough
-				result.bodyCount--
+				result.bodyEnd = len(bodies) - 1
 			}
 		}
 	}
@@ -641,10 +642,10 @@ func (c *LoopCompiler) compileLoopBody(ctx fql.IForExpressionContext, resultSpec
 
 	body := ctx.AllForExpressionBody()
 
-	for i := 0; i < resultSpec.bodyCount; i++ {
-		if statement := body[i].ForExpressionStatement(); statement != nil {
+	for _, entry := range body[:resultSpec.bodyEnd] {
+		if statement := entry.ForExpressionStatement(); statement != nil {
 			c.compileForExpressionStatement(statement)
-		} else if clause := body[i].ForExpressionClause(); clause != nil {
+		} else if clause := entry.ForExpressionClause(); clause != nil {
 			c.compileForExpressionClause(clause)
 		}
 	}

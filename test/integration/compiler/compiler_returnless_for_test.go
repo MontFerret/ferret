@@ -41,6 +41,17 @@ func TestReturnlessForValueDiagnostics(t *testing.T) {
 			query:  `RETURN FOR outer IN [1] { FOR inner IN [outer] {} }`,
 			marker: "FOR inner",
 		},
+		{
+			name: "nested pass-through operand after outer statements",
+			query: `VAR n = 0
+RETURN FOR outer IN [1] {
+  n += 1
+  FOR inner IN [outer] {
+    n += inner
+  }
+}`,
+			marker: "FOR inner",
+		},
 		{name: "while return", query: `RETURN FOR WHILE false {}`, marker: "FOR WHILE"},
 		{name: "do while return", query: `RETURN FOR DO WHILE false {}`, marker: "FOR DO"},
 	}
