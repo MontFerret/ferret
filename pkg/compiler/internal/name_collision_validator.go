@@ -190,6 +190,12 @@ func (v *NameCollisionValidator) validateForExpression(parent *nameCollisionScop
 		v.collectForExpressionBody(scope, body)
 	}
 
+	if ret := ctx.ReturnExpression(); ret != nil {
+		v.collectReturnValue(scope, ret.ReturnValue())
+
+		return
+	}
+
 	v.collectForExpressionReturn(scope, ctx.ForExpressionReturn())
 }
 
@@ -226,6 +232,8 @@ func (v *NameCollisionValidator) collectForExpressionStatement(scope *nameCollis
 		v.collectCallsInNode(scope, ctx.WaitForExpression())
 	case ctx.DispatchExpression() != nil:
 		v.collectCallsInNode(scope, ctx.DispatchExpression())
+	case ctx.ForExpression() != nil:
+		v.validateForExpression(scope, ctx.ForExpression())
 	}
 }
 

@@ -28,6 +28,17 @@ type (
 
 	loopOperandKind int
 
+	loopResultKind uint8
+
+	loopResultSpec struct {
+		returnCtx      fql.IReturnExpressionContext
+		passThroughCtx fql.IForExpressionContext
+		kind           loopResultKind
+		distinct       bool
+		// bodyEnd is the exclusive end of ordinary body entries compiled before finalization.
+		bodyEnd int
+	}
+
 	loopOperandContext struct {
 		param                  fql.IParamContext
 		integerLiteral         fql.IIntegerLiteralContext
@@ -53,6 +64,12 @@ const (
 	loopOperandRangeOperator
 	loopOperandArrayLiteral
 	loopOperandObjectLiteral
+)
+
+const (
+	loopResultEffectOnly loopResultKind = iota
+	loopResultCollecting
+	loopResultPassThrough
 )
 
 // NewLoopCompiler creates a new instance of LoopCompiler with the given compiler context.
@@ -118,46 +135,55 @@ func (c *LoopCompiler) compileWithResultUseAndOuterRecoveryPlan(
 		return bytecode.NoopOperand
 	}
 
-	if outerPlan.OnError == nil && outerPlan.OnTimeout == nil {
-		return c.compilePlain(ctx, use)
+	resultSpec := c.resolveLoopResultSpec(ctx)
+	if resultSpec.kind == loopResultEffectOnly && use == resultRequired {
+		c.reportReturnlessForExpression(ctx)
+		use = resultDiscarded
 	}
 
-	return c.recovery.CompileOperation(c.newLoopOperationRecoverySpec(ctx, use, outerPlan))
+	if outerPlan.OnError == nil && outerPlan.OnTimeout == nil {
+		return c.compilePlain(ctx, use, resultSpec)
+	}
+
+	return c.recovery.CompileOperation(c.newLoopOperationRecoverySpec(ctx, use, resultSpec, outerPlan))
 }
 
-func (c *LoopCompiler) compilePlain(ctx fql.IForExpressionContext, use resultUse) bytecode.Operand {
-	var returnRuleCtx antlr.RuleContext
+func (c *LoopCompiler) compilePlain(ctx fql.IForExpressionContext, use resultUse, resultSpec loopResultSpec) bytecode.Operand {
+	var initialized bool
 
 	if ctx.In() != nil {
-		returnRuleCtx = c.compileInitialization(ctx, core.ForInLoop, use)
+		initialized = c.compileInitialization(ctx, core.ForInLoop, use, resultSpec)
 	} else if ctx.Do() == nil {
-		returnRuleCtx = c.compileInitialization(ctx, core.WhileLoop, use)
+		initialized = c.compileInitialization(ctx, core.WhileLoop, use, resultSpec)
 	} else {
-		returnRuleCtx = c.compileInitialization(ctx, core.DoWhileLoop, use)
+		initialized = c.compileInitialization(ctx, core.DoWhileLoop, use, resultSpec)
 	}
 
-	// Probably, a syntax error happened and no return rule context was created.
-	if returnRuleCtx == nil {
+	if !initialized {
 		return bytecode.NoopOperand
 	}
 
-	c.compileLoopBody(ctx)
+	c.compileLoopBody(ctx, resultSpec)
 
-	// Finalize the loop and return the destination operand
-	return c.compileFinalization(returnRuleCtx)
+	return c.compileFinalization(resultSpec)
 }
 
-func (c *LoopCompiler) newLoopOperationRecoverySpec(ctx fql.IForExpressionContext, use resultUse, outerPlan core.RecoveryPlan) OperationRecoverySpec {
-	spec := OperationRecoverySpec{
+func (c *LoopCompiler) newLoopOperationRecoverySpec(
+	ctx fql.IForExpressionContext,
+	use resultUse,
+	resultSpec loopResultSpec,
+	outerPlan core.RecoveryPlan,
+) OperationRecoverySpec {
+	recoverySpec := OperationRecoverySpec{
 		OuterPlan: outerPlan,
 		CompilePlain: func() bytecode.Operand {
-			return c.compileRecoveryAttempt(ctx, use)
+			return c.compileRecoveryAttempt(ctx, use, resultSpec)
 		},
 		CompileSuppressed: func() bytecode.Operand {
-			return c.compilePlain(ctx, use)
+			return c.compilePlain(ctx, use, resultSpec)
 		},
 		CompileFinalAttempt: func(plan core.RecoveryPlan) bytecode.Operand {
-			out := c.compilePlain(ctx, use)
+			out := c.compilePlain(ctx, use, resultSpec)
 			if recoveryPlanHasReturnHandler(plan) {
 				return c.ensureRecoveryResult(out, use)
 			}
@@ -167,16 +193,20 @@ func (c *LoopCompiler) newLoopOperationRecoverySpec(ctx fql.IForExpressionContex
 	}
 
 	if ctx != nil && ctx.In() != nil {
-		spec.BuildProtected = func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion {
-			return c.buildProtectedForInRecovery(ctx, use, recoveryLabel, timeoutLabel, endLabel)
+		recoverySpec.BuildProtected = func(recoveryLabel, timeoutLabel, endLabel core.Label) ProtectedRecoveryRegion {
+			return c.buildProtectedForInRecovery(ctx, use, resultSpec, recoveryLabel, timeoutLabel, endLabel)
 		}
 	}
 
-	return spec
+	return recoverySpec
 }
 
-func (c *LoopCompiler) compileRecoveryAttempt(ctx fql.IForExpressionContext, use resultUse) bytecode.Operand {
-	out := c.compilePlain(ctx, use)
+func (c *LoopCompiler) compileRecoveryAttempt(
+	ctx fql.IForExpressionContext,
+	use resultUse,
+	resultSpec loopResultSpec,
+) bytecode.Operand {
+	out := c.compilePlain(ctx, use, resultSpec)
 
 	return c.ensureRecoveryResult(out, use)
 }
@@ -196,23 +226,23 @@ func (c *LoopCompiler) ensureRecoveryResult(out bytecode.Operand, use resultUse)
 func (c *LoopCompiler) buildProtectedForInRecovery(
 	ctx fql.IForExpressionContext,
 	use resultUse,
+	resultSpec loopResultSpec,
 	recoveryLabel, _ core.Label, endLabel core.Label,
 ) ProtectedRecoveryRegion {
 	errorStateReg := c.ctx.Function.Registers.Allocate()
 	c.ctx.Program.Emitter.EmitBoolean(errorStateReg, false)
 
 	startCatch := c.ctx.Program.Emitter.Size()
-	returnRuleCtx := c.compileInitialization(ctx, core.ForInLoop, use)
-	if returnRuleCtx == nil {
+	if !c.compileInitialization(ctx, core.ForInLoop, use, resultSpec) {
 		return ProtectedRecoveryRegion{Result: bytecode.NoopOperand}
 	}
 
 	loop := c.ctx.Function.Loops.Current()
 	breakLabel := loop.BreakLabel()
 
-	c.compileLoopBody(ctx)
+	c.compileLoopBody(ctx, resultSpec)
 
-	out := c.ensureRecoveryResult(c.compileFinalization(returnRuleCtx), use)
+	out := c.ensureRecoveryResult(c.compileFinalization(resultSpec), use)
 	endCatchExclusive := c.ctx.Program.Emitter.Size()
 
 	routeRecovery := c.ctx.Program.Emitter.NewLabel("recovery", "for", "route")
@@ -236,25 +266,23 @@ func (c *LoopCompiler) buildProtectedForInRecovery(
 	}
 }
 
-// compileInitialization handles the setup of a loop, including determining its type,
-// compiling its source, declaring variables, and emitting initialization instructions.
-// Parameters:
-//   - ctx: The FOR expression context from the AST
-//   - kind: The kind of loop (ForInLoop, WhileLoop, or DoWhileLoop)
-//
-// Returns the rule context for the return expression or nested FOR expression.
-func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind core.LoopKind, use resultUse) antlr.RuleContext {
+// compileInitialization handles loop setup and enters the loop's symbol scope.
+func (c *LoopCompiler) compileInitialization(
+	ctx fql.IForExpressionContext,
+	kind core.LoopKind,
+	use resultUse,
+	resultSpec loopResultSpec,
+) bool {
 	if !c.validateLoopBindingPattern(ctx) {
-		return nil
+		return false
 	}
 
-	returnRuleCtx, distinct, loopType, ok := c.resolveLoopReturnSpec(ctx.ForExpressionReturn())
-	if !ok {
-		return nil
+	loopType := core.NormalLoop
+	if resultSpec.kind == loopResultPassThrough {
+		loopType = core.PassThroughLoop
 	}
 
-	// Create a new loop with the determined properties
-	loop := c.ctx.Function.Loops.NewLoop(kind, loopType, distinct, use == resultRequired)
+	loop := c.ctx.Function.Loops.NewLoop(kind, loopType, resultSpec.distinct, use == resultRequired)
 	c.setLoopDestinationType(loop)
 
 	c.configureLoopRuntime(loop, ctx, kind)
@@ -272,23 +300,75 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	c.emitLoopInitialization(ctx, loop)
 	c.patchDistinctLoopDestination(loop)
 
-	return returnRuleCtx
+	return true
 }
 
-func (c *LoopCompiler) resolveLoopReturnSpec(returnCtx fql.IForExpressionReturnContext) (antlr.RuleContext, bool, core.LoopType, bool) {
-	if returnCtx == nil {
-		return nil, false, core.NormalLoop, false
+// resolveLoopResultSpec classifies syntax independently of whether the caller
+// retains the result. Braced terminal loops parse as body statements, so the
+// final one is peeled off to preserve legacy pass-through semantics.
+func (c *LoopCompiler) resolveLoopResultSpec(ctx fql.IForExpressionContext) loopResultSpec {
+	bodies := ctx.AllForExpressionBody()
+	result := loopResultSpec{
+		kind:    loopResultEffectOnly,
+		bodyEnd: len(bodies),
 	}
 
-	if re := returnCtx.ReturnExpression(); re != nil {
-		return re, re.Distinct() != nil, core.NormalLoop, true
+	if re := ctx.ReturnExpression(); re != nil {
+		result.returnCtx = re
+		result.kind = loopResultCollecting
+		result.distinct = re.Distinct() != nil
+
+		return result
 	}
 
-	if fe := returnCtx.ForExpression(); fe != nil {
-		return fe, false, core.PassThroughLoop, true
+	if terminal := ctx.ForExpressionReturn(); terminal != nil {
+		if re := terminal.ReturnExpression(); re != nil {
+			result.returnCtx = re
+			result.kind = loopResultCollecting
+			result.distinct = re.Distinct() != nil
+
+			return result
+		}
+
+		if nested := terminal.ForExpression(); nested != nil {
+			result.passThroughCtx = nested
+			result.kind = loopResultPassThrough
+
+			return result
+		}
 	}
 
-	return nil, false, core.NormalLoop, false
+	if ctx.OpenBrace() != nil && len(bodies) > 0 {
+		last := bodies[len(bodies)-1]
+		if stmt := last.ForExpressionStatement(); stmt != nil {
+			if nested := stmt.ForExpression(); nested != nil {
+				result.passThroughCtx = nested
+				result.kind = loopResultPassThrough
+				result.bodyEnd = len(bodies) - 1
+			}
+		}
+	}
+
+	return result
+}
+
+func (c *LoopCompiler) reportReturnlessForExpression(ctx fql.IForExpressionContext) {
+	rule, ok := ctx.(antlr.ParserRuleContext)
+	if !ok {
+		return
+	}
+
+	err := c.ctx.Program.Errors.Create(
+		parser.SemanticError,
+		rule,
+		"A FOR loop used as an expression must return a value.",
+	)
+	err.Hint = "Add RETURN to the loop body, or use the loop as a statement."
+	if len(err.Spans) > 0 {
+		err.Spans[0].Label = "returnless FOR expression"
+	}
+
+	c.ctx.Program.Errors.Add(err)
 }
 
 func (c *LoopCompiler) setLoopDestinationType(loop *core.Loop) {
@@ -471,21 +551,15 @@ func (c *LoopCompiler) patchDistinctLoopDestination(loop *core.Loop) {
 	c.ctx.Program.Emitter.Patchx(parent.StartLabel(), 1)
 }
 
-// compileFinalization handles the teardown of a loop, including processing the return expression,
-// emitting finalization instructions, and cleaning up the symbol scope.
-// Parameters:
-//   - ctx: The rule context for the return expression or nested FOR expression
-//
-// Returns the destination operand containing the loop results, or NoopOperand
-// when the caller discards them.
-func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Operand {
+// compileFinalization evaluates any result-producing terminal and exits the loop scope.
+func (c *LoopCompiler) compileFinalization(resultSpec loopResultSpec) bytecode.Operand {
 	loop := c.ctx.Function.Loops.Current()
 
-	// Process the return expression based on the loop type
-	if loop.Type != core.PassThroughLoop {
+	switch resultSpec.kind {
+	case loopResultCollecting:
 		// Normal loops always evaluate the return expression, but only retained
 		// results are appended to the loop destination.
-		re := ctx.(*fql.ReturnExpressionContext)
+		re := resultSpec.returnCtx
 		returnUse := resultDiscarded
 
 		if loop.CollectResult {
@@ -528,16 +602,13 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 		} else {
 			c.ctx.WithRetainedDebugPointKind(re, bytecode.DebugPointReturn, compileReturn)
 		}
-	} else if ctx != nil {
-		// For pass-through loops, recursively compile the nested FOR expression
-		if fe, ok := ctx.(*fql.ForExpressionContext); ok {
-			use := resultDiscarded
-			if loop.CollectResult {
-				use = resultRequired
-			}
-
-			c.compileWithResultUse(fe, use)
+	case loopResultPassThrough:
+		use := resultDiscarded
+		if loop.CollectResult {
+			use = resultRequired
 		}
+
+		c.compileWithResultUse(resultSpec.passThroughCtx, use)
 	}
 
 	// Emit VM instructions for loop finalization
@@ -564,18 +635,18 @@ func (c *LoopCompiler) compileForExpressionSource(ctx fql.IForExpressionSourceCo
 	return c.exprs.Compile(ctx.Expression())
 }
 
-func (c *LoopCompiler) compileLoopBody(ctx fql.IForExpressionContext) {
+func (c *LoopCompiler) compileLoopBody(ctx fql.IForExpressionContext, resultSpec loopResultSpec) {
 	if ctx == nil {
 		return
 	}
 
-	if body := ctx.AllForExpressionBody(); len(body) > 0 {
-		for _, b := range body {
-			if ec := b.ForExpressionStatement(); ec != nil {
-				c.compileForExpressionStatement(ec)
-			} else if ec := b.ForExpressionClause(); ec != nil {
-				c.compileForExpressionClause(ec)
-			}
+	body := ctx.AllForExpressionBody()
+
+	for _, entry := range body[:resultSpec.bodyEnd] {
+		if statement := entry.ForExpressionStatement(); statement != nil {
+			c.compileForExpressionStatement(statement)
+		} else if clause := entry.ForExpressionClause(); clause != nil {
+			c.compileForExpressionClause(clause)
 		}
 	}
 }
@@ -605,6 +676,8 @@ func (c *LoopCompiler) compileForExpressionStatementInner(ctx fql.IForExpression
 		_ = c.wait.Compile(wfe)
 	} else if de := ctx.DispatchExpression(); de != nil {
 		_ = c.dispatch.Compile(de)
+	} else if fe := ctx.ForExpression(); fe != nil {
+		_ = c.CompileDiscarded(fe)
 	}
 }
 

@@ -190,6 +190,12 @@ func (c *CaptureAnalyzer) collectForExpression(
 		c.collectForExpressionBody(body, env, state)
 	}
 
+	if ret := ctx.ReturnExpression(); ret != nil {
+		c.collectReturnValue(ret.ReturnValue(), env, state)
+
+		return
+	}
+
 	if terminal := ctx.ForExpressionReturn(); terminal != nil {
 		if ret := terminal.ReturnExpression(); ret != nil {
 			c.collectReturnValue(ret.ReturnValue(), env, state)
@@ -234,6 +240,12 @@ func (c *CaptureAnalyzer) collectForExpressionBody(
 			c.collectVars(decl.Expression(), env, state)
 			c.collectAssignments(decl.Expression(), env, state)
 			c.addOwnedDeclarationCaptureBindings(env, state, decl)
+
+			return
+		}
+
+		if loop := stmt.ForExpression(); loop != nil {
+			c.collectForExpression(loop, env, state)
 
 			return
 		}

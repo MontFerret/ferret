@@ -37,51 +37,59 @@ func (*cancellationStringValue) Type() runtime.Type {
 }
 
 func TestPureExecutionCancellationAtBackwardJumpSafepoint(t *testing.T) {
-	const query = `
-LET signal = START()
+	queries := map[string]string{
+		"discarded collecting": `LET signal = START()
 VAR i = 0
 FOR WHILE i < 1000000000
   i = i + 1
-RETURN signal
-`
+RETURN signal`,
+		"returnless": `LET signal = START()
+VAR i = 0
+FOR WHILE i < 1000000000 {
+  i = i + 1
+}
+RETURN signal`,
+	}
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		t.Run(optimizationName(level), func(t *testing.T) {
-			instance := compileCancellationVM(t, level, query)
-			started := make(chan struct{})
-			var startedOnce sync.Once
-			env := cancellationEnvironment(t, vm.WithFunction("START", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-				startedOnce.Do(func() { close(started) })
-				return runtime.True, nil
-			}))
+		for name, query := range queries {
+			t.Run(fmt.Sprintf("%s/%s", optimizationName(level), name), func(t *testing.T) {
+				instance := compileCancellationVM(t, level, query)
+				started := make(chan struct{})
+				var startedOnce sync.Once
+				env := cancellationEnvironment(t, vm.WithFunction("START", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+					startedOnce.Do(func() { close(started) })
+					return runtime.True, nil
+				}))
 
-			ctx, cancel := context.WithCancel(context.Background())
-			done := make(chan error, 1)
-			go func() {
-				result, err := instance.Run(ctx, env)
-				if result != nil {
-					_ = result.Close()
+				ctx, cancel := context.WithCancel(context.Background())
+				done := make(chan error, 1)
+				go func() {
+					result, err := instance.Run(ctx, env)
+					if result != nil {
+						_ = result.Close()
+					}
+					done <- err
+				}()
+
+				select {
+				case <-started:
+					cancel()
+				case <-time.After(5 * time.Second):
+					cancel()
+					t.Fatal("execution did not enter the loop")
 				}
-				done <- err
-			}()
 
-			select {
-			case <-started:
-				cancel()
-			case <-time.After(5 * time.Second):
-				cancel()
-				t.Fatal("execution did not enter the loop")
-			}
-
-			select {
-			case err := <-done:
-				if !errors.Is(err, context.Canceled) {
-					t.Fatalf("run error = %v, want context.Canceled", err)
+				select {
+				case err := <-done:
+					if !errors.Is(err, context.Canceled) {
+						t.Fatalf("run error = %v, want context.Canceled", err)
+					}
+				case <-time.After(5 * time.Second):
+					t.Fatal("execution did not stop after cancellation")
 				}
-			case <-time.After(5 * time.Second):
-				t.Fatal("execution did not stop after cancellation")
-			}
-		})
+			})
+		}
 	}
 }
 

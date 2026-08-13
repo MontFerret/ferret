@@ -61,30 +61,127 @@ FOR value IN [1, 0] {
 	})
 }
 
+func TestReturnlessForCompletionAndSideEffects(t *testing.T) {
+	tests := []spec.Spec{
+		Nil(`FOR value IN [1, 2, 3] {}`, "final empty returnless FOR falls through"),
+		Nil(`FOR value IN [1] {
+  // no work for this value
+}`, "final comment-only returnless FOR falls through"),
+		Nil(`FUNC effect() {
+  FOR value IN [1, 2] {
+    LET copy = value
+  }
+}
+RETURN effect()`, "block UDF with final returnless FOR falls through"),
+		S(`VAR total = 0
+FOR value IN [] {
+  total += value
+}
+RETURN total`, 0, "returnless FOR skips an empty input"),
+		S(`VAR total = 0
+FOR value IN [1, 2] {
+  total = total * 10 + value
+}
+total += 100
+FOR value IN [3, 4] {
+  total = total * 10 + value
+}
+RETURN total`, 11234, "returnless FOR statements execute in source order"),
+		S(`VAR trace = 0
+FOR outer IN [1, 2] {
+  FOR inner IN [outer, outer + 1] {
+    trace = trace * 10 + inner
+  }
+  trace = trace * 10 + outer
+}
+RETURN trace`, 121232, "nested returnless FOR runs before later body statements"),
+		S(`VAR total = 0
+FUNC accumulate() {
+  FOR outer IN [1, 2] {
+    FOR inner IN [outer] {
+      total += outer + inner
+    }
+  }
+}
+accumulate()
+RETURN total`, 6, "nested returnless FOR preserves captures"),
+		S(`VAR count = 0
+FOR WHILE count < 3 {
+  count += 1
+}
+RETURN count`, 3, "returnless FOR WHILE executes side effects"),
+		S(`VAR count = 0
+FOR DO WHILE false {
+  count += 1
+}
+RETURN count`, 1, "returnless FOR DO WHILE executes once"),
+		Error(`FOR value IN [1, 0] {
+  LET quotient = 10 / value
+}`, "returnless FOR propagates runtime errors"),
+	}
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		RunSpecsWith(t, optimizationName(level), compiler.New(compiler.WithOptimizationLevel(level)), tests)
+	}
+}
+
+func TestTerminalNestedForCompatibility(t *testing.T) {
+	tests := []spec.Spec{
+		Array(`RETURN FOR outer IN [1, 2] {
+  FOR inner IN [outer, outer + 10] {
+    RETURN inner
+  }
+}`, []any{1, 11, 2, 12}, "terminal bare nested FOR remains flattened"),
+		Array(`RETURN FOR outer IN [1, 2] {
+  RETURN FOR inner IN [outer, outer + 10] {
+    RETURN inner
+  }
+}`, []any{[]any{1, 11}, []any{2, 12}}, "explicit RETURN FOR preserves nested arrays"),
+		Array(`VAR total = 0
+LET values = (FOR outer IN [1, 2] {
+  FOR inner IN [outer] {
+    total += inner
+    RETURN inner
+  }
+  RETURN outer
+})
+RETURN [values, total]`, []any{[]any{1, 2}, 3}, "nonterminal nested collecting FOR is discarded"),
+	}
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		RunSpecsWith(t, optimizationName(level), compiler.New(compiler.WithOptimizationLevel(level)), tests)
+	}
+}
+
 func TestStandaloneForClosesDiscardedIterator(t *testing.T) {
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		t.Run(optimizationName(level), func(t *testing.T) {
-			iterable := newBodyCompletionIterable()
-			program, err := spec.Compile(`FOR value IN SOURCE() { RETURN value }`, level)
-			if err != nil {
-				t.Fatalf("compile query: %v", err)
-			}
+		for _, query := range []string{
+			`FOR value IN SOURCE() { RETURN value }`,
+			`FOR value IN SOURCE() { LET copy = value }`,
+		} {
+			t.Run(fmt.Sprintf("%s/%s", optimizationName(level), query), func(t *testing.T) {
+				iterable := newBodyCompletionIterable()
+				program, err := spec.Compile(query, level)
+				if err != nil {
+					t.Fatalf("compile query: %v", err)
+				}
 
-			out, err := spec.Run(program, vm.WithFunction("SOURCE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-				return iterable, nil
-			}))
-			if err != nil {
-				t.Fatalf("run query: %v", err)
-			}
+				out, err := spec.Run(program, vm.WithFunction("SOURCE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+					return iterable, nil
+				}))
+				if err != nil {
+					t.Fatalf("run query: %v", err)
+				}
 
-			if got, want := string(out), "null"; got != want {
-				t.Fatalf("result = %s, want %s", got, want)
-			}
+				if got, want := string(out), "null"; got != want {
+					t.Fatalf("result = %s, want %s", got, want)
+				}
 
-			if got, want := iterable.closed(), int32(1); got != want {
-				t.Fatalf("iterator close count = %d, want %d", got, want)
-			}
-		})
+				if got, want := iterable.closed(), int32(1); got != want {
+					t.Fatalf("iterator close count = %d, want %d", got, want)
+				}
+			})
+		}
 	}
 }
 
@@ -131,6 +228,46 @@ func TestDiscardedForPreservesLoopSemantics(t *testing.T) {
 			query: `FOR value IN [1, 2, 3] {
   COLLECT AGGREGATE total = COUNT(value)
   RETURN RECORD(total)
+}`,
+			want: []int{3},
+		},
+		{
+			name: "returnless filter",
+			query: `FOR value IN [1, 2, 3] {
+  FILTER value > 1
+  RECORD(value)
+}`,
+			want: []int{2, 3},
+		},
+		{
+			name: "returnless sort",
+			query: `FOR value IN [3, 1, 2] {
+  SORT value
+  RECORD(value)
+}`,
+			want: []int{1, 2, 3},
+		},
+		{
+			name: "returnless limit",
+			query: `FOR value IN [1, 2, 3] {
+  LIMIT 2
+  RECORD(value)
+}`,
+			want: []int{1, 2},
+		},
+		{
+			name: "returnless collect",
+			query: `FOR value IN [1, 1, 2] {
+  COLLECT key = value
+  RECORD(key)
+}`,
+			want: []int{1, 2},
+		},
+		{
+			name: "returnless global aggregate",
+			query: `FOR value IN [1, 2, 3] {
+  COLLECT AGGREGATE total = COUNT(value)
+  RECORD(total)
 }`,
 			want: []int{3},
 		},
@@ -241,6 +378,22 @@ RETURN effect()`, func() (runtime.Value, error) {
 				}
 			})
 
+			t.Run("returnless suppress", func(t *testing.T) {
+				calls := 0
+				runDiscardedRecoveryQuery(t, level, `FUNC effect() {
+  (FOR value IN [1] { STEP() })?
+}
+RETURN effect()`, func() (runtime.Value, error) {
+					calls++
+
+					return runtime.None, fmt.Errorf("boom")
+				}, nil)
+
+				if got, want := calls, 1; got != want {
+					t.Fatalf("STEP calls = %d, want %d", got, want)
+				}
+			})
+
 			t.Run("fallback", func(t *testing.T) {
 				stepCalls := 0
 				fallbackCalls := 0
@@ -322,30 +475,35 @@ RETURN effect()`, func() (runtime.Value, error) {
 	}
 }
 
-func TestDiscardedForClosesReturnedResources(t *testing.T) {
+func TestDiscardedAndReturnlessForCloseReturnedResources(t *testing.T) {
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		t.Run(optimizationName(level), func(t *testing.T) {
-			var closeCount atomic.Int32
-			program, err := spec.Compile(`FOR value IN 1..3 { RETURN RESOURCE(value) }`, level)
-			if err != nil {
-				t.Fatalf("compile query: %v", err)
-			}
+		for _, query := range []string{
+			`FOR value IN 1..3 { RETURN RESOURCE(value) }`,
+			`FOR value IN 1..3 { RESOURCE(value) }`,
+		} {
+			t.Run(fmt.Sprintf("%s/%s", optimizationName(level), query), func(t *testing.T) {
+				var closeCount atomic.Int32
+				program, err := spec.Compile(query, level)
+				if err != nil {
+					t.Fatalf("compile query: %v", err)
+				}
 
-			out, err := spec.Run(program, vm.WithFunction("RESOURCE", func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-				return newBodyCompletionResource(uint64(args[0].(runtime.Int)), &closeCount), nil
-			}))
-			if err != nil {
-				t.Fatalf("run query: %v", err)
-			}
+				out, err := spec.Run(program, vm.WithFunction("RESOURCE", func(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+					return newBodyCompletionResource(uint64(args[0].(runtime.Int)), &closeCount), nil
+				}))
+				if err != nil {
+					t.Fatalf("run query: %v", err)
+				}
 
-			if got, want := string(out), "null"; got != want {
-				t.Fatalf("result = %s, want %s", got, want)
-			}
+				if got, want := string(out), "null"; got != want {
+					t.Fatalf("result = %s, want %s", got, want)
+				}
 
-			if got, want := closeCount.Load(), int32(3); got != want {
-				t.Fatalf("resource close count = %d, want %d", got, want)
-			}
-		})
+				if got, want := closeCount.Load(), int32(3); got != want {
+					t.Fatalf("resource close count = %d, want %d", got, want)
+				}
+			})
+		}
 	}
 }
 

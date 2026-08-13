@@ -427,10 +427,10 @@ returnValue
 
 forExpression
     : For (valueVariable=loopVariable | valuePattern=structuredBindingPattern) (Comma counterVariable=bindingIdentifier)? In forExpressionSource
-        (OpenBrace forExpressionBody* forExpressionReturn CloseBrace
+        (OpenBrace forExpressionBody* returnExpression? CloseBrace
         | forExpressionBody* forExpressionReturn)
     | For (valueVariable=loopVariable)? Do? While expression
-        (OpenBrace forExpressionBody* forExpressionReturn CloseBrace
+        (OpenBrace forExpressionBody* returnExpression? CloseBrace
         | forExpressionBody* forExpressionReturn)
     ;
 
@@ -449,9 +449,10 @@ forExpressionStatement
     : variableDeclaration
     | assignmentStatement
     | deleteStatement
-    | functionCallExpression
+    | {p.GetTokenStream().LA(1) != FqlParserReturn}? functionCallExpression
     | waitForExpression
     | dispatchExpression
+    | forExpression
     ;
 
 forExpressionBody
