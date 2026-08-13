@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"unicode/utf8"
 
 	diagnosticspkg "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -103,6 +104,144 @@ RETURN [LENGTH([value]), html::PARSE("<p/>")]`
 	fact, ok := analysis.TypeAt(strings.LastIndex(query, "[value]"))
 	if !ok || fact.Type != ValueTypeArray {
 		t.Fatalf("TypeAt([value]) = %+v, %t", fact, ok)
+	}
+}
+
+func TestAnalysisCallAtUsesNarrowestEnclosingCall(t *testing.T) {
+	query := `LET value = 1
+RETURN OUTER(INNER(value))`
+
+	analysis, err := New().Analyze(source.NewAnonymous(query))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	outer := requireAnalysisCall(t, analysis.Calls(), "OUTER")
+	inner := requireAnalysisCall(t, analysis.Calls(), "INNER")
+
+	call, ok := analysis.CallAt(outer.CalleeSpan.Start)
+	if !ok || call.Name != "OUTER" {
+		t.Fatalf("CallAt(OUTER) = %+v, %t", call, ok)
+	}
+
+	call, ok = analysis.CallAt(inner.CalleeSpan.Start)
+	if !ok || call.Name != "INNER" {
+		t.Fatalf("CallAt(INNER) = %+v, %t", call, ok)
+	}
+
+	argumentOffset := strings.LastIndex(query, "value")
+	call, ok = analysis.CallAt(argumentOffset)
+	if !ok || call.Name != "INNER" {
+		t.Fatalf("CallAt(inner argument) = %+v, %t", call, ok)
+	}
+	if spanContains(inner.CalleeSpan, argumentOffset) {
+		t.Fatal("inner argument unexpectedly falls within Call.CalleeSpan")
+	}
+
+	call, ok = analysis.CallAt(inner.Span.End)
+	if !ok || call.Name != "OUTER" {
+		t.Fatalf("CallAt(inner end) = %+v, %t, want enclosing OUTER call", call, ok)
+	}
+
+	if _, ok := analysis.CallAt(outer.Span.End); ok {
+		t.Fatal("CallAt matched the half-open end of the outer call")
+	}
+}
+
+func TestAnalysisReferenceAtBasicAndUTF8ByteOffsets(t *testing.T) {
+	query := `LET prefix = "é"
+LET value = 42
+RETURN value`
+
+	analysis, err := New().Analyze(source.NewAnonymous(query))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	value := requireAnalysisSymbol(t, analysis, "value", SymbolKindBinding)
+	declarationOffset := strings.Index(query, "value")
+	if _, ok := analysis.ReferenceAt(declarationOffset); ok {
+		t.Fatal("ReferenceAt matched a declaration selection")
+	}
+
+	useOffset := strings.LastIndex(query, "value")
+	if useOffset == utf8.RuneCountInString(query[:useOffset]) {
+		t.Fatal("test source does not distinguish byte and rune offsets")
+	}
+
+	reference, ok := analysis.ReferenceAt(useOffset)
+	if !ok || reference.Symbol != value.ID || reference.Span.Start != useOffset {
+		t.Fatalf("ReferenceAt(value) = %+v, %t", reference, ok)
+	}
+
+	if _, ok := analysis.ReferenceAt(reference.Span.End); ok {
+		t.Fatal("ReferenceAt matched the half-open end of a reference")
+	}
+}
+
+func TestAnalysisReferenceAtPreservesLexicalIdentity(t *testing.T) {
+	query := `LET shared = 1
+FUNC outer(param) {
+  LET shared = param
+  FUNC inner() => shared
+  RETURN inner()
+}
+RETURN [outer(shared), shared]`
+
+	analysis, err := New().Analyze(source.NewAnonymous(query))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	shared := analysisSymbolsNamed(analysis.Symbols(), "shared", SymbolKindBinding)
+	if len(shared) != 2 {
+		t.Fatalf("shared symbols = %+v, want outer and shadowing declarations", shared)
+	}
+
+	outerShared := shared[0]
+	innerShared := shared[1]
+	param := requireAnalysisSymbol(t, analysis, "param", SymbolKindFunctionParameter)
+	inner := requireAnalysisSymbol(t, analysis, "inner", SymbolKindUDF)
+
+	paramUse := strings.Index(query, "shared = param") + len("shared = ")
+	assertAnalysisReferenceSymbol(t, analysis, paramUse, param.ID)
+
+	capturedUse := strings.Index(query, "=> shared") + len("=> ")
+	assertAnalysisReferenceSymbol(t, analysis, capturedUse, innerShared.ID)
+
+	udfCall := strings.LastIndex(query, "inner()")
+	assertAnalysisReferenceSymbol(t, analysis, udfCall, inner.ID)
+
+	outerUse := strings.Index(query, "outer(shared)") + len("outer(")
+	assertAnalysisReferenceSymbol(t, analysis, outerUse, outerShared.ID)
+}
+
+func TestAnalysisReferenceAtUsesNarrowestValidSpan(t *testing.T) {
+	analysis := newAnalysis(analysisData{
+		references: []Reference{
+			{Symbol: 1, Span: source.Span{Start: 1, End: 8}},
+			{Symbol: 2, Span: source.Span{Start: 3, End: 6}},
+			{Symbol: 3, Span: source.Span{}},
+		},
+		sourceLength: 8,
+	})
+
+	reference, ok := analysis.ReferenceAt(1)
+	if !ok || reference.Symbol != 1 {
+		t.Fatalf("ReferenceAt(first byte) = %+v, %t", reference, ok)
+	}
+
+	reference, ok = analysis.ReferenceAt(3)
+	if !ok || reference.Symbol != 2 {
+		t.Fatalf("ReferenceAt(overlap) = %+v, %t", reference, ok)
+	}
+
+	if _, ok := analysis.ReferenceAt(0); ok {
+		t.Fatal("ReferenceAt matched a zero-length synthetic span")
+	}
+
+	if _, ok := analysis.ReferenceAt(8); ok {
+		t.Fatal("ReferenceAt matched the half-open end of the widest reference")
 	}
 }
 
@@ -448,6 +587,15 @@ func requireAnalysisCall(t *testing.T, calls []Call, name string) Call {
 	t.Fatalf("call %q not found in %+v", name, calls)
 
 	return Call{}
+}
+
+func assertAnalysisReferenceSymbol(t *testing.T, analysis *Analysis, offset int, want SymbolID) {
+	t.Helper()
+
+	reference, ok := analysis.ReferenceAt(offset)
+	if !ok || reference.Symbol != want {
+		t.Fatalf("ReferenceAt(%d) = %+v, %t, want symbol %d", offset, reference, ok, want)
+	}
 }
 
 func assertAnalysisSpanText(t *testing.T, query string, span source.Span, want string) {

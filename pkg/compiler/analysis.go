@@ -108,7 +108,8 @@ func (a *Analysis) FunctionParameters(function SymbolID) []Symbol {
 	return out
 }
 
-// SymbolAt returns the symbol selected or referenced at offset.
+// SymbolAt returns the symbol whose declaration selection or reference contains offset.
+// The offset is a zero-based UTF-8 byte offset into the analyzed source.
 func (a *Analysis) SymbolAt(offset int) (Symbol, bool) {
 	if !a.validOffset(offset) {
 		return Symbol{}, false
@@ -134,7 +135,33 @@ func (a *Analysis) SymbolAt(offset int) (Symbol, bool) {
 	return a.Symbol(found)
 }
 
-// CallAt returns the narrowest call containing offset.
+// ReferenceAt returns the narrowest semantic reference containing offset.
+// Declaration selection spans are not references. The offset is a zero-based
+// UTF-8 byte offset into the analyzed source.
+func (a *Analysis) ReferenceAt(offset int) (Reference, bool) {
+	if !a.validOffset(offset) {
+		return Reference{}, false
+	}
+
+	best := source.Span{}
+	var found Reference
+	ok := false
+
+	for _, reference := range a.data.references {
+		if spanContains(reference.Span, offset) && narrowerSpan(reference.Span, best) {
+			found = reference
+			best = reference.Span
+			ok = true
+		}
+	}
+
+	return found, ok
+}
+
+// CallAt returns the narrowest call whose complete Call.Span contains offset.
+// The offset may be inside the callee or any argument. Consumers that need to
+// detect the callee specifically should test the offset against Call.CalleeSpan.
+// The offset is a zero-based UTF-8 byte offset into the analyzed source.
 func (a *Analysis) CallAt(offset int) (Call, bool) {
 	if !a.validOffset(offset) {
 		return Call{}, false
@@ -159,6 +186,7 @@ func (a *Analysis) CallAt(offset int) (Call, bool) {
 }
 
 // TypeAt returns the narrowest expression type fact containing offset.
+// The offset is a zero-based UTF-8 byte offset into the analyzed source.
 func (a *Analysis) TypeAt(offset int) (TypeFact, bool) {
 	if !a.validOffset(offset) {
 		return TypeFact{}, false
@@ -180,6 +208,7 @@ func (a *Analysis) TypeAt(offset int) (TypeFact, bool) {
 }
 
 // VisibleSymbols returns source-visible symbols active at offset after lexical shadowing.
+// The offset is a zero-based UTF-8 byte offset into the analyzed source.
 func (a *Analysis) VisibleSymbols(offset int) []Symbol {
 	if !a.validOffset(offset) {
 		return nil
