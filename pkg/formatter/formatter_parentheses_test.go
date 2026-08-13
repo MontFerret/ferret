@@ -143,20 +143,137 @@ func TestFormatterPreservesCommentsInsideRequiredParentheses(t *testing.T) {
 }
 
 func TestFormatterParenthesisSimplificationPreservesExecution(t *testing.T) {
-	inputs := []string{
-		"RETURN ((1 + 2)) * 3",
-		"RETURN 1 - (2 - 3)",
-		"RETURN -(1 + 2)",
-		"RETURN (NONE ?? 2) ?? 3",
-		"RETURN 1 ?? (2 ?? 3)",
-		"RETURN (FOR value IN [1, 2] { RETURN value * 2 })",
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "nested arithmetic grouping",
+			input: "RETURN ((1 + 2)) * 3",
+			want:  "return (1 + 2) * 3",
+		},
+		{
+			name:  "right subtraction operand",
+			input: "RETURN 1 - (2 - 3)",
+			want:  "return 1 - (2 - 3)",
+		},
+		{
+			name:  "nested conditional condition",
+			input: "RETURN (TRUE ? FALSE : TRUE) ? 1 : 2",
+			want:  "return true ? false : true ? 1 : 2",
+		},
+		{
+			name:  "nested conditional true branch",
+			input: "RETURN TRUE ? (FALSE ? 1 : 2) : 3",
+			want:  "return true ? false ? 1 : 2 : 3",
+		},
+		{
+			name:  "nested conditional false branch",
+			input: "RETURN FALSE ? 1 : (TRUE ? 2 : 3)",
+			want:  "return false ? 1 : (true ? 2 : 3)",
+		},
+		{
+			name:  "left comparison grouping",
+			input: "RETURN (1 < 2) == TRUE",
+			want:  "return 1 < 2 == true",
+		},
+		{
+			name:  "right comparison grouping",
+			input: "RETURN TRUE == (1 < 2)",
+			want:  "return true == (1 < 2)",
+		},
+		{
+			name:  "in conditional",
+			input: `RETURN (1 IN [1]) ? "yes" : "no"`,
+			want:  `return 1 in [1] ? "yes" : "no"`,
+		},
+		{
+			name:  "in equality operand",
+			input: "RETURN TRUE == (1 IN [1])",
+			want:  "return true == (1 in [1])",
+		},
+		{
+			name:  "like conditional",
+			input: `RETURN ("foo" LIKE "f*") ? "yes" : "no"`,
+			want:  `return "foo" like "f*" ? "yes" : "no"`,
+		},
+		{
+			name:  "like equality operand",
+			input: `RETURN TRUE == ("foo" LIKE "f*")`,
+			want:  `return true == ("foo" like "f*")`,
+		},
+		{
+			name:  "regex match equality",
+			input: `RETURN ("abc" =~ "^a") == TRUE`,
+			want:  `return "abc" =~ "^a" == true`,
+		},
+		{
+			name:  "regex non-match conditional",
+			input: `RETURN ("abc" !~ "^z") ? "yes" : "no"`,
+			want:  `return "abc" !~ "^z" ? "yes" : "no"`,
+		},
+		{
+			name:  "left coalesce grouping",
+			input: "RETURN (NONE ?? 2) ?? 3",
+			want:  "return (none ?? 2) ?? 3",
+		},
+		{
+			name:  "right coalesce grouping",
+			input: "RETURN 1 ?? (2 ?? 3)",
+			want:  "return 1 ?? 2 ?? 3",
+		},
+		{
+			name:  "coalesce conditional condition",
+			input: "RETURN (NONE ?? FALSE) ? 1 : 2",
+			want:  "return none ?? false ? 1 : 2",
+		},
+		{
+			name:  "conditional coalesce operand",
+			input: "RETURN TRUE ?? (FALSE ? 1 : 2)",
+			want:  "return true ?? (false ? 1 : 2)",
+		},
+		{
+			name:  "unary not",
+			input: "RETURN NOT TRUE",
+			want:  "return not true",
+		},
+		{
+			name:  "unary additive grouping",
+			input: "RETURN -(1 + 2)",
+			want:  "return -1 + 2",
+		},
+		{
+			name:  "unary additive operand",
+			input: "RETURN (-1) + 2",
+			want:  "return (-1) + 2",
+		},
+		{
+			name:  "adjacent unary token boundary",
+			input: "RETURN -(-1)",
+			want:  "return -(-1)",
+		},
+		{
+			name:  "mixed grammar precedence",
+			input: `RETURN (NONE ?? "foo") LIKE "f*" ? (1 IN [1]) : ("abc" !~ "^z")`,
+			want:  `return (none ?? "foo") like "f*" ? 1 in [1] : "abc" !~ "^z"`,
+		},
+		{
+			name:  "grouped collecting loop",
+			input: "RETURN (FOR value IN [1, 2] { RETURN value * 2 })",
+			want:  "return for value in [1, 2] {\n    return value * 2\n}",
+		},
 	}
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		for _, input := range inputs {
-			t.Run(optimizationNameForFormatter(level)+"/"+input, func(t *testing.T) {
-				formatted := formatParenthesesStable(t, input)
-				originalProgram, err := spec.Compile(input, level)
+		for _, test := range tests {
+			t.Run(optimizationNameForFormatter(level)+"/"+test.name, func(t *testing.T) {
+				formatted := formatParenthesesStable(t, test.input)
+				if formatted != test.want {
+					t.Fatalf("formatted output:\n%s\nwant:\n%s", formatted, test.want)
+				}
+
+				originalProgram, err := spec.Compile(test.input, level)
 				if err != nil {
 					t.Fatalf("compile original: %v", err)
 				}

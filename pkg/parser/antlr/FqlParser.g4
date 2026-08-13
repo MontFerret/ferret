@@ -242,6 +242,12 @@ options { tokenVocab=FqlLexer; }
 		}
 	}
 
+	// FQL has no statement terminator, so accepting every expression start here
+	// could split a continuation from the expression before it. Historically
+	// unambiguous function-call, WAITFOR, and DISPATCH statements may start on the
+	// same line. Assignments and FOR clauses are classified first so their targets
+	// and contextual keywords are not stolen. The invariant is that a general
+	// expression starts only where the surrounding expression cannot continue.
 	func (p *FqlParser) isGeneralExpressionStatementStart() bool {
 		if p.GetTokenStream().LA(1) == FqlParserReturn || p.isAssignmentStatementStart() {
 			return false
