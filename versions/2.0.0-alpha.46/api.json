@@ -1,0 +1,5705 @@
+{
+  "schemaVersion": 1,
+  "id": "montferret/core",
+  "version": "2.0.0-alpha.46",
+  "namespaces": [
+    {
+      "name": "",
+      "functions": [
+        {
+          "name": "abs",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                }
+              ],
+              "description": "abs returns the absolute value of a given number.",
+              "return": {
+                "type": "Float",
+                "description": "The absolute value of a given number."
+              }
+            }
+          ]
+        },
+        {
+          "name": "acos",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                }
+              ],
+              "description": "acos returns the arccosine, in radians, of a given number.",
+              "return": {
+                "type": "Float",
+                "description": "The arccosine, in radians, of a given number."
+              }
+            }
+          ]
+        },
+        {
+          "name": "append",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "arr",
+                  "type": "Any[]",
+                  "description": "Target array."
+                },
+                {
+                  "name": "item",
+                  "type": "Any",
+                  "description": "Target value to add."
+                }
+              ],
+              "description": "append appends a new item to an array and returns a new array with a given element.\nIf “uniqueOnly“ is set to true, then will add the item only if it's unique.",
+              "return": {
+                "type": "Any[]",
+                "description": "New array."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "arr",
+                  "type": "Any[]",
+                  "description": "Target array."
+                },
+                {
+                  "name": "item",
+                  "type": "Any",
+                  "description": "Target value to add."
+                },
+                {
+                  "name": "unique",
+                  "type": "Boolean",
+                  "description": "If set to true, will add the item only if it's unique."
+                }
+              ],
+              "description": "append appends a new item to an array and returns a new array with a given element.\nIf “uniqueOnly“ is set to true, then will add the item only if it's unique.",
+              "return": {
+                "type": "Any[]",
+                "description": "New array."
+              }
+            }
+          ]
+        },
+        {
+          "name": "asin",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                }
+              ],
+              "description": "asin returns the arcsine, in radians, of a given number.",
+              "return": {
+                "type": "Float",
+                "description": "The arcsine, in radians, of a given number."
+              }
+            }
+          ]
+        },
+        {
+          "name": "atan",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                }
+              ],
+              "description": "atan returns the arctangent, in radians, of a given number.",
+              "return": {
+                "type": "Float",
+                "description": "The arctangent, in radians, of a given number."
+              }
+            }
+          ]
+        },
+        {
+          "name": "atan2",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number1",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                },
+                {
+                  "name": "number2",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                }
+              ],
+              "description": "atan2 returns the arc tangent of y/x, using the signs of the two to determine the quadrant of the return value.",
+              "return": {
+                "type": "Float",
+                "description": "The arc tangent of y/x, using the signs of the two to determine the quadrant of the return value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "average",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Int[] | Float[]",
+                  "description": "arrayList of numbers."
+                }
+              ],
+              "description": "average Returns the average (arithmetic mean) of the values in array.",
+              "return": {
+                "type": "Float",
+                "description": "The average of the values in array."
+              }
+            }
+          ]
+        },
+        {
+          "name": "base",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "path",
+                  "type": "String",
+                  "description": "The path."
+                }
+              ],
+              "description": "base returns the last component of the path or the path itself if it does not contain any directory separators.",
+              "return": {
+                "type": "String",
+                "description": "The last component of the path."
+              }
+            }
+          ]
+        },
+        {
+          "name": "ceil",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                }
+              ],
+              "description": "ceil returns the least integer value greater than or equal to a given value.",
+              "return": {
+                "type": "Int",
+                "description": "The least integer value greater than or equal to a given value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "clean",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "path",
+                  "type": "String",
+                  "description": "The path."
+                }
+              ],
+              "description": "clean returns the shortest path name equivalent to path.",
+              "return": {
+                "type": "String",
+                "description": "The shortest path name equivalent to path"
+              }
+            }
+          ]
+        },
+        {
+          "name": "concat",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "src",
+                  "type": "String, repeated | String[]",
+                  "description": "The source string / array."
+                }
+              ],
+              "variadic": true,
+              "description": "concat concatenates one or more instances of String, or an arrayList.",
+              "return": {
+                "type": "String",
+                "description": "A string value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "concat_separator",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "separator",
+                  "type": "String",
+                  "description": "The separator string."
+                },
+                {
+                  "name": "src",
+                  "type": "String, repeated | String[]",
+                  "description": "The source string / array."
+                }
+              ],
+              "variadic": true,
+              "description": "concat_separator concatenates one or more instances of String, or an arrayList with a given separator.",
+              "return": {
+                "type": "String",
+                "description": "Concatenated string."
+              }
+            }
+          ]
+        },
+        {
+          "name": "contains",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The source string."
+                },
+                {
+                  "name": "search",
+                  "type": "String",
+                  "description": "The string to seek."
+                }
+              ],
+              "description": "contains returns a value indicating whether a specified substring occurs within a string.",
+              "return": {
+                "type": "Boolean | Int",
+                "description": "A value indicating whether a specified substring occurs within a string."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The source string."
+                },
+                {
+                  "name": "search",
+                  "type": "String",
+                  "description": "The string to seek."
+                },
+                {
+                  "name": "returnIndex",
+                  "type": "Boolean",
+                  "description": "Values which indicates whether to return the character position of the match is returned instead of a boolean."
+                }
+              ],
+              "description": "contains returns a value indicating whether a specified substring occurs within a string.",
+              "return": {
+                "type": "Boolean | Int",
+                "description": "A value indicating whether a specified substring occurs within a string."
+              }
+            }
+          ]
+        },
+        {
+          "name": "cos",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                }
+              ],
+              "description": "cos returns the cosine of a given number.",
+              "return": {
+                "type": "Float",
+                "description": "The cosine of a given number."
+              }
+            }
+          ]
+        },
+        {
+          "name": "count",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "collection",
+                  "type": "Collection",
+                  "description": "Collection whose elements are counted."
+                }
+              ],
+              "description": "count computes the number of distinct elements in the given collection and returns the count as an integer.",
+              "return": {
+                "type": "Int",
+                "description": "Number of elements in the collection."
+              }
+            }
+          ]
+        },
+        {
+          "name": "count_distinct",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "collection",
+                  "type": "Collection",
+                  "description": "Collection whose distinct elements are counted."
+                }
+              ],
+              "description": "count_distinct computes the number of distinct elements in the given collection and returns the count as an integer.",
+              "return": {
+                "type": "Int",
+                "description": "Number of distinct elements in the collection."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "time",
+                  "type": "String",
+                  "description": "String representation of DateTime."
+                }
+              ],
+              "description": "date parses a formatted string and returns DateTime object it represents.",
+              "return": {
+                "type": "DateTime",
+                "description": "New DateTime object derived from timeString."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "time",
+                  "type": "String",
+                  "description": "String representation of DateTime."
+                },
+                {
+                  "name": "layout",
+                  "type": "String",
+                  "description": "String layout."
+                }
+              ],
+              "description": "date parses a formatted string and returns DateTime object it represents.",
+              "return": {
+                "type": "DateTime",
+                "description": "New DateTime object derived from timeString."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_add",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date",
+                  "type": "DateTime",
+                  "description": "Source date."
+                },
+                {
+                  "name": "amount",
+                  "type": "Int",
+                  "description": "Amount of units"
+                },
+                {
+                  "name": "unit",
+                  "type": "String",
+                  "description": "Unit."
+                }
+              ],
+              "description": "date_add adds amount given in unit to date.\nThe following units are available:\n* y, year, year\n* m, month, months\n* w, week, weeks\n* d, day, days\n* h, hour, hours\n* i, minute, minutes\n* s, second, seconds\n* f, millisecond, milliseconds",
+              "return": {
+                "type": "DateTime",
+                "description": "Calculated date."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_compare",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date1",
+                  "type": "DateTime",
+                  "description": "First date."
+                },
+                {
+                  "name": "date2",
+                  "type": "DateTime",
+                  "description": "Second date."
+                },
+                {
+                  "name": "unitRangeStart",
+                  "type": "String",
+                  "description": "Unit to start from."
+                }
+              ],
+              "description": "date_compare checks if two partial dates match.",
+              "return": {
+                "type": "Boolean",
+                "description": "True if the dates match, else false."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "date1",
+                  "type": "DateTime",
+                  "description": "First date."
+                },
+                {
+                  "name": "date2",
+                  "type": "DateTime",
+                  "description": "Second date."
+                },
+                {
+                  "name": "unitRangeStart",
+                  "type": "String",
+                  "description": "Unit to start from."
+                },
+                {
+                  "name": "unitRangeEnd",
+                  "type": "String",
+                  "description": "Unit to end with. Error will be returned if unitRangeStart unit less that unitRangeEnd."
+                }
+              ],
+              "description": "date_compare checks if two partial dates match.",
+              "return": {
+                "type": "Boolean",
+                "description": "True if the dates match, else false."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_day",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date",
+                  "type": "DateTime",
+                  "description": "Source DateTime."
+                }
+              ],
+              "description": "date_day returns the day of date as a number.",
+              "return": {
+                "type": "Int",
+                "description": "A day number."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_dayofweek",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date",
+                  "type": "DateTime",
+                  "description": "Source DateTime."
+                }
+              ],
+              "description": "date_dayofweek returns number of the weekday from the date. Sunday is the 0th day of week.",
+              "return": {
+                "type": "Int",
+                "description": "Number of the weekday."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_dayofyear",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date",
+                  "type": "DateTime",
+                  "description": "Source DateTime."
+                }
+              ],
+              "description": "date_dayofyear returns the day of year number of date.\nThe return value range from 1 to 365 (366 in a leap year).",
+              "return": {
+                "type": "Int",
+                "description": "A day of year number."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_days_in_month",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date",
+                  "type": "DateTime",
+                  "description": "Source DateTime."
+                }
+              ],
+              "description": "date_days_in_month returns the number of days in the month of date.",
+              "return": {
+                "type": "Int",
+                "description": "Number of the days."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_diff",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date1",
+                  "type": "DateTime",
+                  "description": "First date."
+                },
+                {
+                  "name": "date2",
+                  "type": "DateTime",
+                  "description": "Second date."
+                },
+                {
+                  "name": "unit",
+                  "type": "String",
+                  "description": "Time unit to return the difference in."
+                }
+              ],
+              "description": "date_diff returns the difference between two dates in given time unit.",
+              "return": {
+                "type": "Int | Float",
+                "description": "Difference between date1 and date2."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "date1",
+                  "type": "DateTime",
+                  "description": "First date."
+                },
+                {
+                  "name": "date2",
+                  "type": "DateTime",
+                  "description": "Second date."
+                },
+                {
+                  "name": "unit",
+                  "type": "String",
+                  "description": "Time unit to return the difference in."
+                },
+                {
+                  "name": "asFloat",
+                  "type": "Boolean",
+                  "description": "If true amount of unit will be as float."
+                }
+              ],
+              "description": "date_diff returns the difference between two dates in given time unit.",
+              "return": {
+                "type": "Int | Float",
+                "description": "Difference between date1 and date2."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_format",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date",
+                  "type": "DateTime",
+                  "description": "Source DateTime object."
+                },
+                {
+                  "name": "format",
+                  "type": "String",
+                  "description": "String format."
+                }
+              ],
+              "description": "date_format format date according to the given format string.",
+              "return": {
+                "type": "String",
+                "description": "Formatted date."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_hour",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date",
+                  "type": "DateTime",
+                  "description": "Source DateTime."
+                }
+              ],
+              "description": "date_hour returns the hour of date as a number.",
+              "return": {
+                "type": "Int",
+                "description": "An hour number."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_leapyear",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date",
+                  "type": "DateTime",
+                  "description": "Source DateTime."
+                }
+              ],
+              "description": "date_leapyear returns true if date is in a leap year else false.",
+              "return": {
+                "type": "Boolean",
+                "description": "Date is in a leap year."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_millisecond",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date",
+                  "type": "DateTime",
+                  "description": "Source DateTime."
+                }
+              ],
+              "description": "date_millisecond returns the millisecond of date as a number.",
+              "return": {
+                "type": "Int",
+                "description": "A millisecond number."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_minute",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date",
+                  "type": "DateTime",
+                  "description": "Source DateTime."
+                }
+              ],
+              "description": "date_minute returns the minute of date as a number.",
+              "return": {
+                "type": "Int",
+                "description": "A minute number."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_month",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date",
+                  "type": "DateTime",
+                  "description": "Source DateTime."
+                }
+              ],
+              "description": "date_month returns the month of date as a number.",
+              "return": {
+                "type": "Int",
+                "description": "A month number."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_quarter",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date",
+                  "type": "DateTime",
+                  "description": "Source DateTime."
+                }
+              ],
+              "description": "date_quarter returns which quarter date belongs to.",
+              "return": {
+                "type": "Int",
+                "description": "A quarter number."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_second",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date",
+                  "type": "DateTime",
+                  "description": "Source DateTime."
+                }
+              ],
+              "description": "date_second returns the second of date as a number.",
+              "return": {
+                "type": "Int",
+                "description": "A second number."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_subtract",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date",
+                  "type": "DateTime",
+                  "description": "source date."
+                },
+                {
+                  "name": "amount",
+                  "type": "Int",
+                  "description": "amount of units"
+                },
+                {
+                  "name": "unit",
+                  "type": "String",
+                  "description": "unit."
+                }
+              ],
+              "description": "date_subtract subtract amount given in unit to date.\nThe following units are available:\n* y, year, year\n* m, month, months\n* w, week, weeks\n* d, day, days\n* h, hour, hours\n* i, minute, minutes\n* s, second, seconds\n* f, millisecond, milliseconds",
+              "return": {
+                "type": "DateTime",
+                "description": "calculated date."
+              }
+            }
+          ]
+        },
+        {
+          "name": "date_year",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "date",
+                  "type": "DateTime",
+                  "description": "Source DateTime."
+                }
+              ],
+              "description": "date_year returns the year extracted from the given date.",
+              "return": {
+                "type": "Int",
+                "description": "A year number."
+              }
+            }
+          ]
+        },
+        {
+          "name": "decode_uri_component",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "uri",
+                  "type": "String",
+                  "description": "Uri to decode."
+                }
+              ],
+              "description": "decode_uri_component returns the decoded String of uri.",
+              "return": {
+                "type": "String",
+                "description": "Decoded string."
+              }
+            }
+          ]
+        },
+        {
+          "name": "degrees",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "The input number."
+                }
+              ],
+              "description": "degrees returns the angle converted from radians to degrees.",
+              "return": {
+                "type": "Float",
+                "description": "The angle in degrees"
+              }
+            }
+          ]
+        },
+        {
+          "name": "dir",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "path",
+                  "type": "String",
+                  "description": "The path."
+                }
+              ],
+              "description": "dir returns the directory component of path.",
+              "return": {
+                "type": "String",
+                "description": "The directory component of path."
+              }
+            }
+          ]
+        },
+        {
+          "name": "encode_uri_component",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "uri",
+                  "type": "String",
+                  "description": "Uri to encode."
+                }
+              ],
+              "description": "encode_uri_component returns the encoded String of uri.",
+              "return": {
+                "type": "String",
+                "description": "Encoded string."
+              }
+            }
+          ]
+        },
+        {
+          "name": "escape_html",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "uri",
+                  "type": "String",
+                  "description": "Uri to escape."
+                }
+              ],
+              "description": "escape_html escapes special characters like \"<\" to become \"&lt;\". It\nescapes only five such characters: <, >, &, ' and \".\nUnescapeString(EscapeString(s)) == s always holds, but the converse isn't\nalways true.",
+              "return": {
+                "type": "String",
+                "description": "Escaped string."
+              }
+            }
+          ]
+        },
+        {
+          "name": "exp",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                }
+              ],
+              "description": "exp returns Euler's constant (2.71828...) raised to the power of value.",
+              "return": {
+                "type": "Float",
+                "description": "Euler's constant raised to the power of value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "exp2",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                }
+              ],
+              "description": "exp2 returns 2 raised to the power of value.",
+              "return": {
+                "type": "Float",
+                "description": "2 raised to the power of value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "ext",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "path",
+                  "type": "String",
+                  "description": "The path."
+                }
+              ],
+              "description": "ext returns the extension of the last component of path.",
+              "return": {
+                "type": "String",
+                "description": "The extension of the last component of path."
+              }
+            }
+          ]
+        },
+        {
+          "name": "find_first",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The source string."
+                },
+                {
+                  "name": "search",
+                  "type": "String",
+                  "description": "The string to seek."
+                }
+              ],
+              "description": "find_first returns the position of the first occurrence of the string search inside the string text. Positions start at 0.",
+              "return": {
+                "type": "Int",
+                "description": "The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The source string."
+                },
+                {
+                  "name": "search",
+                  "type": "String",
+                  "description": "The string to seek."
+                },
+                {
+                  "name": "start",
+                  "type": "Int",
+                  "description": "Limit the search to a subset of the text, beginning at start."
+                }
+              ],
+              "description": "find_first returns the position of the first occurrence of the string search inside the string text. Positions start at 0.",
+              "return": {
+                "type": "Int",
+                "description": "The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The source string."
+                },
+                {
+                  "name": "search",
+                  "type": "String",
+                  "description": "The string to seek."
+                },
+                {
+                  "name": "start",
+                  "type": "Int",
+                  "description": "Limit the search to a subset of the text, beginning at start."
+                },
+                {
+                  "name": "end",
+                  "type": "Int",
+                  "description": "Limit the search to a subset of the text, ending before end."
+                }
+              ],
+              "description": "find_first returns the position of the first occurrence of the string search inside the string text. Positions start at 0.",
+              "return": {
+                "type": "Int",
+                "description": "The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "find_last",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "src",
+                  "type": "String",
+                  "description": "The source string."
+                },
+                {
+                  "name": "search",
+                  "type": "String",
+                  "description": "The string to seek."
+                }
+              ],
+              "description": "find_last returns the position of the last occurrence of the string search inside the string text. Positions start at 0.",
+              "return": {
+                "type": "Int",
+                "description": "The character position of the match. If search is not contained in text, -1 is returned. If search is empty, end is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "src",
+                  "type": "String",
+                  "description": "The source string."
+                },
+                {
+                  "name": "search",
+                  "type": "String",
+                  "description": "The string to seek."
+                },
+                {
+                  "name": "start",
+                  "type": "Int",
+                  "description": "Limit the search to a subset of the text, beginning at start."
+                }
+              ],
+              "description": "find_last returns the position of the last occurrence of the string search inside the string text. Positions start at 0.",
+              "return": {
+                "type": "Int",
+                "description": "The character position of the match. If search is not contained in text, -1 is returned. If search is empty, end is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "src",
+                  "type": "String",
+                  "description": "The source string."
+                },
+                {
+                  "name": "search",
+                  "type": "String",
+                  "description": "The string to seek."
+                },
+                {
+                  "name": "start",
+                  "type": "Int",
+                  "description": "Limit the search to a subset of the text, beginning at start."
+                },
+                {
+                  "name": "end",
+                  "type": "Int",
+                  "description": "Limit the search to a subset of the text, ending before end."
+                }
+              ],
+              "description": "find_last returns the position of the last occurrence of the string search inside the string text. Positions start at 0.",
+              "return": {
+                "type": "Int",
+                "description": "The character position of the match. If search is not contained in text, -1 is returned. If search is empty, end is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "first",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "arr",
+                  "type": "Any[]",
+                  "description": "Target array."
+                }
+              ],
+              "description": "first returns a first element from a given array.",
+              "return": {
+                "type": "Any",
+                "description": "First element in a given array."
+              }
+            }
+          ]
+        },
+        {
+          "name": "flatten",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "arr",
+                  "type": "Any[]",
+                  "description": "Target array."
+                }
+              ],
+              "description": "flatten turns an array of arrays into a flat array.\nAll array elements in array will be expanded in the result array.\nNon-array elements are added as they are.\nThe function will recurse into sub-arrays up to the specified depth.\nDuplicates will not be removed.",
+              "return": {
+                "type": "Any[]",
+                "description": "Flat array."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "arr",
+                  "type": "Any[]",
+                  "description": "Target array."
+                },
+                {
+                  "name": "depth",
+                  "type": "Int",
+                  "description": "Depth level."
+                }
+              ],
+              "description": "flatten turns an array of arrays into a flat array.\nAll array elements in array will be expanded in the result array.\nNon-array elements are added as they are.\nThe function will recurse into sub-arrays up to the specified depth.\nDuplicates will not be removed.",
+              "return": {
+                "type": "Any[]",
+                "description": "Flat array."
+              }
+            }
+          ]
+        },
+        {
+          "name": "floor",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                }
+              ],
+              "description": "floor returns the greatest integer value less than or equal to a given value.",
+              "return": {
+                "type": "Int",
+                "description": "The greatest integer value less than or equal to a given value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "fmt",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "template",
+                  "type": "String",
+                  "description": "template."
+                },
+                {
+                  "name": "args",
+                  "type": "Any, repeated",
+                  "description": "template arguments."
+                }
+              ],
+              "variadic": true,
+              "description": "fmt formats the template using these arguments.",
+              "return": {
+                "type": "String",
+                "description": "string formed by template using arguments."
+              }
+            }
+          ]
+        },
+        {
+          "name": "from_base64",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to decode."
+                }
+              ],
+              "description": "from_base64 returns the value of a base64 representation.",
+              "return": {
+                "type": "String",
+                "description": "The decoded string."
+              }
+            }
+          ]
+        },
+        {
+          "name": "has",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "object",
+                  "type": "Map",
+                  "description": "Object or map to inspect."
+                },
+                {
+                  "name": "key",
+                  "type": "String",
+                  "description": "The key name string."
+                }
+              ],
+              "description": "has returns the value stored by the given key.",
+              "return": {
+                "type": "Boolean",
+                "description": "True if the key exists else false."
+              }
+            }
+          ]
+        },
+        {
+          "name": "includes",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "haystack",
+                  "type": "String | Any[] | hashMap | Iterable",
+                  "description": "The value container."
+                },
+                {
+                  "name": "needle",
+                  "type": "Any",
+                  "description": "The target value to assert."
+                }
+              ],
+              "description": "includes checks whether a container includes a given value.",
+              "return": {
+                "type": "Boolean",
+                "description": "A boolean value that indicates whether a container contains a given value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "intersection",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "arrays",
+                  "type": "Any[], repeated",
+                  "description": "An arbitrary number of arrays as multiple arguments (at least 2)."
+                }
+              ],
+              "variadic": true,
+              "description": "intersection return the intersection of all arrays specified.\nThe result is an array of values that occur in all arguments.\nThe element order is random. Duplicates are removed.",
+              "return": {
+                "type": "Any[]",
+                "description": "A single array with only the elements, which exist in all provided arrays."
+              }
+            }
+          ]
+        },
+        {
+          "name": "is_abs",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "path",
+                  "type": "String",
+                  "description": "The path."
+                }
+              ],
+              "description": "is_abs reports whether the path is absolute.",
+              "return": {
+                "type": "Boolean",
+                "description": "True if the path is absolute."
+              }
+            }
+          ]
+        },
+        {
+          "name": "is_array",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "is_array checks whether value is an array value.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if value is array, otherwise false."
+              }
+            }
+          ]
+        },
+        {
+          "name": "is_binary",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "is_binary checks whether value is a binary value.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if value is binary, otherwise false."
+              }
+            }
+          ]
+        },
+        {
+          "name": "is_bool",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "is_bool checks whether value is a boolean value.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if value is boolean, otherwise false."
+              }
+            }
+          ]
+        },
+        {
+          "name": "is_datetime",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "is_datetime checks whether value is a date time value.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if value is date time, otherwise false."
+              }
+            }
+          ]
+        },
+        {
+          "name": "is_duration",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "is_duration tests whether a value has the Duration type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the value is a Duration; otherwise false."
+              }
+            }
+          ]
+        },
+        {
+          "name": "is_float",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "is_float checks whether value is a float value.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if value is float, otherwise false."
+              }
+            }
+          ]
+        },
+        {
+          "name": "is_int",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "is_int checks whether value is a int value.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if value is int, otherwise false."
+              }
+            }
+          ]
+        },
+        {
+          "name": "is_list",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "is_list checks whether value is a list value.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if value is list, otherwise false."
+              }
+            }
+          ]
+        },
+        {
+          "name": "is_map",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "is_map checks whether value is a map value.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if value is map, otherwise false."
+              }
+            }
+          ]
+        },
+        {
+          "name": "is_nan",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "is_nan checks whether value is NaN.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if value is NaN, otherwise false."
+              }
+            }
+          ]
+        },
+        {
+          "name": "is_none",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "is_none checks whether value is a none value.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if value is none, otherwise false."
+              }
+            }
+          ]
+        },
+        {
+          "name": "is_object",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "is_object checks whether value is an object value.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if value is object, otherwise false."
+              }
+            }
+          ]
+        },
+        {
+          "name": "is_string",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "is_string checks whether value is a string value.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if value is string, otherwise false."
+              }
+            }
+          ]
+        },
+        {
+          "name": "join",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "elements",
+                  "type": "String, repeated | String[]",
+                  "description": "The path elements"
+                }
+              ],
+              "variadic": true,
+              "description": "join joins any number of path elements into a single path, separating them with slashes.",
+              "return": {
+                "type": "String",
+                "description": "Single path from the given elements."
+              }
+            }
+          ]
+        },
+        {
+          "name": "json_parse",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to parse as JSON."
+                }
+              ],
+              "description": "json_parse returns a value described by the JSON-encoded input string.",
+              "return": {
+                "type": "Any",
+                "description": "Parsed value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "json_stringify",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "Any",
+                  "description": "The input value to serialize."
+                }
+              ],
+              "description": "json_stringify returns a JSON string representation of the input value.",
+              "return": {
+                "type": "String",
+                "description": "JSON string."
+              }
+            }
+          ]
+        },
+        {
+          "name": "keep_keys",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "obj",
+                  "type": "Object|Map",
+                  "description": "Source object."
+                },
+                {
+                  "name": "keys",
+                  "type": "String, repeated",
+                  "description": "Keys that need to be kept."
+                }
+              ],
+              "variadic": true,
+              "description": "keep_keys returns a new object with only given keys.",
+              "return": {
+                "type": "Map",
+                "description": "New Object with only given keys."
+              }
+            }
+          ]
+        },
+        {
+          "name": "keys",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "obj",
+                  "type": "Map",
+                  "description": "The object whose keys you want to extract"
+                }
+              ],
+              "description": "keys returns string array of object's keys",
+              "return": {
+                "type": "String[]",
+                "description": "arrayList that contains object keys."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "obj",
+                  "type": "Map",
+                  "description": "The object whose keys you want to extract"
+                },
+                {
+                  "name": "sort",
+                  "type": "Boolean",
+                  "description": "If sort is true, then the returned keys will be sorted."
+                }
+              ],
+              "description": "keys returns string array of object's keys",
+              "return": {
+                "type": "String[]",
+                "description": "arrayList that contains object keys."
+              }
+            }
+          ]
+        },
+        {
+          "name": "last",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "The target array."
+                }
+              ],
+              "description": "last returns the last element of an array.",
+              "return": {
+                "type": "Any",
+                "description": "Last element of an array."
+              }
+            }
+          ]
+        },
+        {
+          "name": "left",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The source string."
+                },
+                {
+                  "name": "length",
+                  "type": "Int",
+                  "description": "The amount of characters to return."
+                }
+              ],
+              "description": "left returns the leftmost characters of the string value by index.",
+              "return": {
+                "type": "String",
+                "description": "The leftmost characters of the string value by index."
+              }
+            }
+          ]
+        },
+        {
+          "name": "like",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to search in."
+                },
+                {
+                  "name": "search",
+                  "type": "String",
+                  "description": "A search pattern that can contain the wildcard characters."
+                }
+              ],
+              "description": "like checks whether the pattern search is contained in the string text, using wildcard matching.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if the pattern is contained in text, and false otherwise."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to search in."
+                },
+                {
+                  "name": "search",
+                  "type": "String",
+                  "description": "A search pattern that can contain the wildcard characters."
+                },
+                {
+                  "name": "caseInsensitive",
+                  "type": "Boolean",
+                  "description": "If set to true, the matching will be case-insensitive. The default is false."
+                }
+              ],
+              "description": "like checks whether the pattern search is contained in the string text, using wildcard matching.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if the pattern is contained in text, and false otherwise."
+              }
+            }
+          ]
+        },
+        {
+          "name": "log",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                }
+              ],
+              "description": "log returns the natural logarithm of a given value.",
+              "return": {
+                "type": "Float",
+                "description": "The natural logarithm of a given value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "log10",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                }
+              ],
+              "description": "log10 returns the decimal logarithm of a given value.",
+              "return": {
+                "type": "Float",
+                "description": "The decimal logarithm of a given value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "log2",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                }
+              ],
+              "description": "log2 returns the binary logarithm of a given value.",
+              "return": {
+                "type": "Float",
+                "description": "The binary logarithm of a given value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "lower",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The source string."
+                }
+              ],
+              "description": "lower converts strings to their lower-case counterparts. All other characters are returned unchanged.",
+              "return": {
+                "type": "String",
+                "description": "THis string in lower case."
+              }
+            }
+          ]
+        },
+        {
+          "name": "ltrim",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string."
+                }
+              ],
+              "description": "ltrim returns the string value with whitespace stripped from the start only.",
+              "return": {
+                "type": "String",
+                "description": "The string without chars at the left-hand side."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string."
+                },
+                {
+                  "name": "chars",
+                  "type": "String",
+                  "description": "Overrides the characters that should be removed from the string. It defaults to \\r\\n \\t."
+                }
+              ],
+              "description": "ltrim returns the string value with whitespace stripped from the start only.",
+              "return": {
+                "type": "String",
+                "description": "The string without chars at the left-hand side."
+              }
+            }
+          ]
+        },
+        {
+          "name": "match",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "pattern",
+                  "type": "String",
+                  "description": "The pattern."
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "description": "The name."
+                }
+              ],
+              "description": "match reports whether name matches the pattern.",
+              "return": {
+                "type": "Boolean",
+                "description": "True if the name matches the pattern."
+              }
+            }
+          ]
+        },
+        {
+          "name": "max",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Int[] | Float[]",
+                  "description": "arrayList of numbers."
+                }
+              ],
+              "description": "max returns the greatest (arithmetic mean) of the values in array.",
+              "return": {
+                "type": "Float",
+                "description": "The greatest of the values in array."
+              }
+            }
+          ]
+        },
+        {
+          "name": "md5",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to do calculations against to."
+                }
+              ],
+              "description": "md5 calculates the MD5 checksum for text and return it in a hexadecimal string representation.",
+              "return": {
+                "type": "String",
+                "description": "MD5 checksum as hex string."
+              }
+            }
+          ]
+        },
+        {
+          "name": "median",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Int[] | Float[]",
+                  "description": "arrayList of numbers."
+                }
+              ],
+              "description": "median returns the median of the values in array.",
+              "return": {
+                "type": "Float",
+                "description": "The median of the values in array."
+              }
+            }
+          ]
+        },
+        {
+          "name": "merge",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "objects",
+                  "type": "Map, repeated",
+                  "description": "Maps to merge."
+                }
+              ],
+              "variadic": true,
+              "description": "merge merge the given objects into a single object.",
+              "return": {
+                "type": "Map",
+                "description": "Map created by merging."
+              }
+            }
+          ]
+        },
+        {
+          "name": "merge_recursive",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "objects",
+                  "type": "Map, repeated",
+                  "description": "Maps to merge."
+                }
+              ],
+              "variadic": true,
+              "description": "merge_recursive recursively merge the given objects into a single object.",
+              "return": {
+                "type": "Map",
+                "description": "Map created by merging."
+              }
+            }
+          ]
+        },
+        {
+          "name": "min",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Int[] | Float[]",
+                  "description": "arrayList of numbers."
+                }
+              ],
+              "description": "min returns the smallest (arithmetic mean) of the values in array.",
+              "return": {
+                "type": "Float",
+                "description": "The smallest of the values in array."
+              }
+            }
+          ]
+        },
+        {
+          "name": "minus",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "arrays",
+                  "type": "Any[], repeated",
+                  "description": "An arbitrary number of arrays as multiple arguments (at least 2)."
+                }
+              ],
+              "variadic": true,
+              "description": "minus return the difference of all arrays specified.\nThe order of the result array is undefined and should not be relied on. Duplicates will be removed.",
+              "return": {
+                "type": "Any[]",
+                "description": "An array of values that occur in the first array, but not in any of the subsequent arrays."
+              }
+            }
+          ]
+        },
+        {
+          "name": "now",
+          "signatures": [
+            {
+              "parameters": [],
+              "description": "now returns new DateTime object with Time equal to time.Now().",
+              "return": {
+                "type": "DateTime",
+                "description": "New DateTime object."
+              }
+            }
+          ]
+        },
+        {
+          "name": "nth",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "An array with elements of arbitrary type."
+                },
+                {
+                  "name": "index",
+                  "type": "Int",
+                  "description": "Position of desired element in array, positions start at 0."
+                }
+              ],
+              "description": "nth returns the element of an array at a given position.\nIt is the same as anyArray[position] for positive positions, but does not support negative positions.\nIf position is negative or beyond the upper bound of the array, then NONE will be returned.",
+              "return": {
+                "type": "Any",
+                "description": "The array element at the given position."
+              }
+            }
+          ]
+        },
+        {
+          "name": "outersection",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "arrays",
+                  "type": "Any[], repeated",
+                  "description": "An arbitrary number of arrays as multiple arguments (at least 2)."
+                }
+              ],
+              "variadic": true,
+              "description": "outersection return the values that occur only once across all arrays specified.\nThe element order is random.",
+              "return": {
+                "type": "Any[]",
+                "description": "A single array with only the elements that exist only once across all provided arrays."
+              }
+            }
+          ]
+        },
+        {
+          "name": "percentile",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Int[] | Float[]",
+                  "description": "arrayList of numbers."
+                },
+                {
+                  "name": "number",
+                  "type": "Int",
+                  "description": "A number which must be between 0 (excluded) and 100 (included)."
+                }
+              ],
+              "description": "percentile returns the nth percentile of the values in a given array.",
+              "return": {
+                "type": "Float",
+                "description": "The nth percentile, or null if the array is empty or only null values are contained in it or the percentile cannot be calculated."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Int[] | Float[]",
+                  "description": "arrayList of numbers."
+                },
+                {
+                  "name": "number",
+                  "type": "Int",
+                  "description": "A number which must be between 0 (excluded) and 100 (included)."
+                },
+                {
+                  "name": "method",
+                  "type": "String",
+                  "description": "\"rank\" or \"interpolation\"."
+                }
+              ],
+              "description": "percentile returns the nth percentile of the values in a given array.",
+              "return": {
+                "type": "Float",
+                "description": "The nth percentile, or null if the array is empty or only null values are contained in it or the percentile cannot be calculated."
+              }
+            }
+          ]
+        },
+        {
+          "name": "pi",
+          "signatures": [
+            {
+              "parameters": [],
+              "description": "pi returns Pi value.",
+              "return": {
+                "type": "Float",
+                "description": "Pi value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "pop",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "Target array."
+                }
+              ],
+              "description": "pop returns a new array without last element.",
+              "return": {
+                "type": "Any[]",
+                "description": "Copy of an array without last element."
+              }
+            }
+          ]
+        },
+        {
+          "name": "position",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "The source array."
+                },
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "The target value."
+                }
+              ],
+              "description": "position returns a value indicating whether an element is contained in array. Optionally returns its position.",
+              "return": {
+                "type": "Boolean | Int",
+                "description": "A value indicating whether an element is contained in array."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "The source array."
+                },
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "The target value."
+                },
+                {
+                  "name": "position",
+                  "type": "Boolean",
+                  "description": "Boolean value which indicates whether to return item's position."
+                }
+              ],
+              "description": "position returns a value indicating whether an element is contained in array. Optionally returns its position.",
+              "return": {
+                "type": "Boolean | Int",
+                "description": "A value indicating whether an element is contained in array."
+              }
+            }
+          ]
+        },
+        {
+          "name": "pow",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "base",
+                  "type": "Int | Float",
+                  "description": "The base value."
+                },
+                {
+                  "name": "exp",
+                  "type": "Int | Float",
+                  "description": "The exponent value."
+                }
+              ],
+              "description": "pow returns the base to the exponent value.",
+              "return": {
+                "type": "Float",
+                "description": "The exponentiated value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "print",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "message",
+                  "type": "Any, repeated",
+                  "description": "Message to print."
+                }
+              ],
+              "variadic": true,
+              "description": "print writes messages into the system log.",
+              "return": {
+                "type": "None",
+                "description": "None."
+              }
+            }
+          ]
+        },
+        {
+          "name": "push",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "Source array."
+                },
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Target value."
+                }
+              ],
+              "description": "push create a new array with appended value.",
+              "return": {
+                "type": "Any[]",
+                "description": "A new array with appended value."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "Source array."
+                },
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Target value."
+                },
+                {
+                  "name": "unique",
+                  "type": "Boolean",
+                  "description": "Read indicating whether to do uniqueness check."
+                }
+              ],
+              "description": "push create a new array with appended value.",
+              "return": {
+                "type": "Any[]",
+                "description": "A new array with appended value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "radians",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "The input number."
+                }
+              ],
+              "description": "radians returns the angle converted from degrees to radians.",
+              "return": {
+                "type": "Float",
+                "description": "The angle in radians."
+              }
+            }
+          ]
+        },
+        {
+          "name": "rand",
+          "signatures": [
+            {
+              "parameters": [],
+              "description": "rand return a pseudo-random number between 0 and 1.",
+              "return": {
+                "type": "Float",
+                "description": "A number greater than 0 and less than 1."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "max",
+                  "type": "Int | Float",
+                  "description": "Upper limit."
+                }
+              ],
+              "description": "rand return a pseudo-random number between 0 and 1.",
+              "return": {
+                "type": "Float",
+                "description": "A number greater than 0 and less than 1."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "max",
+                  "type": "Int | Float",
+                  "description": "Upper limit."
+                },
+                {
+                  "name": "min",
+                  "type": "Int | Float",
+                  "description": "Lower limit."
+                }
+              ],
+              "description": "rand return a pseudo-random number between 0 and 1.",
+              "return": {
+                "type": "Float",
+                "description": "A number greater than 0 and less than 1."
+              }
+            }
+          ]
+        },
+        {
+          "name": "random_token",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "len",
+                  "type": "Int",
+                  "description": "The desired string length for the token. It must be greater than 0 and at most 65536."
+                }
+              ],
+              "description": "random_token generates a pseudo-random token string with the specified length. The algorithm for token generation should be treated as opaque.",
+              "return": {
+                "type": "String",
+                "description": "A generated token consisting of lowercase letters, uppercase letters and numbers."
+              }
+            }
+          ]
+        },
+        {
+          "name": "range",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "start",
+                  "type": "Int | Float",
+                  "description": "The value to start the range at (inclusive)."
+                },
+                {
+                  "name": "end",
+                  "type": "Int | Float",
+                  "description": "The value to end the range with (inclusive)."
+                }
+              ],
+              "description": "range returns an array of numbers in the specified range, optionally with increments other than 1.",
+              "return": {
+                "type": "Int[] | Float[]",
+                "description": "arrayList of numbers in the specified range, optionally with increments other than 1."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "start",
+                  "type": "Int | Float",
+                  "description": "The value to start the range at (inclusive)."
+                },
+                {
+                  "name": "end",
+                  "type": "Int | Float",
+                  "description": "The value to end the range with (inclusive)."
+                },
+                {
+                  "name": "step",
+                  "type": "Int | Float",
+                  "description": "How much to change the value in every step. Positive steps ascend, negative steps descend, and zero is invalid."
+                }
+              ],
+              "description": "range returns an array of numbers in the specified range, optionally with increments other than 1.",
+              "return": {
+                "type": "Int[] | Float[]",
+                "description": "arrayList of numbers in the specified range, optionally with increments other than 1."
+              }
+            }
+          ]
+        },
+        {
+          "name": "regex_match",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to search in."
+                },
+                {
+                  "name": "expression",
+                  "type": "String",
+                  "description": "A regular expression to use for matching the text."
+                }
+              ],
+              "description": "regex_match returns the matches in the given string text, using the regex.",
+              "return": {
+                "type": "Any[]",
+                "description": "An array of strings containing the matches."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to search in."
+                },
+                {
+                  "name": "expression",
+                  "type": "String",
+                  "description": "A regular expression to use for matching the text."
+                },
+                {
+                  "name": "caseInsensitive",
+                  "type": "Boolean",
+                  "description": "If set to true, the matching will be case-insensitive. The default is false."
+                }
+              ],
+              "description": "regex_match returns the matches in the given string text, using the regex.",
+              "return": {
+                "type": "Any[]",
+                "description": "An array of strings containing the matches."
+              }
+            }
+          ]
+        },
+        {
+          "name": "regex_replace",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to split."
+                },
+                {
+                  "name": "expression",
+                  "type": "String",
+                  "description": "A regular expression search pattern."
+                },
+                {
+                  "name": "replacement",
+                  "type": "String",
+                  "description": "The string to replace the search pattern with"
+                }
+              ],
+              "description": "regex_replace replace every substring matched with the regexp with a given string.",
+              "return": {
+                "type": "String",
+                "description": "Returns the string text with the search regex pattern replaced with the replacement string wherever the pattern exists in text"
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to split."
+                },
+                {
+                  "name": "expression",
+                  "type": "String",
+                  "description": "A regular expression search pattern."
+                },
+                {
+                  "name": "replacement",
+                  "type": "String",
+                  "description": "The string to replace the search pattern with"
+                },
+                {
+                  "name": "caseInsensitive",
+                  "type": "Boolean",
+                  "description": "If set to true, the matching will be case-insensitive."
+                }
+              ],
+              "description": "regex_replace replace every substring matched with the regexp with a given string.",
+              "return": {
+                "type": "String",
+                "description": "Returns the string text with the search regex pattern replaced with the replacement string wherever the pattern exists in text"
+              }
+            }
+          ]
+        },
+        {
+          "name": "regex_split",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to split."
+                },
+                {
+                  "name": "expression",
+                  "type": "String",
+                  "description": "A regular expression to use for splitting the text."
+                }
+              ],
+              "description": "regex_split splits the given string text into a list of strings, using the separator.",
+              "return": {
+                "type": "Any[]",
+                "description": "An array of strings splitted by the expression."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to split."
+                },
+                {
+                  "name": "expression",
+                  "type": "String",
+                  "description": "A regular expression to use for splitting the text."
+                },
+                {
+                  "name": "limit",
+                  "type": "Int",
+                  "description": "Limit the number of split values in the result."
+                }
+              ],
+              "description": "regex_split splits the given string text into a list of strings, using the separator.",
+              "return": {
+                "type": "Any[]",
+                "description": "An array of strings splitted by the expression."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to split."
+                },
+                {
+                  "name": "expression",
+                  "type": "String",
+                  "description": "A regular expression to use for splitting the text."
+                },
+                {
+                  "name": "limit",
+                  "type": "Int",
+                  "description": "Limit the number of split values in the result."
+                },
+                {
+                  "name": "reserved",
+                  "type": "Any",
+                  "description": "Reserved compatibility argument; currently ignored."
+                }
+              ],
+              "description": "regex_split splits the given string text into a list of strings, using the separator.",
+              "return": {
+                "type": "Any[]",
+                "description": "An array of strings splitted by the expression."
+              }
+            }
+          ]
+        },
+        {
+          "name": "regex_test",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to test."
+                },
+                {
+                  "name": "expression",
+                  "type": "String",
+                  "description": "A regular expression to use for splitting the text."
+                }
+              ],
+              "description": "regex_test test whether the regexp has at least one match in the given text.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if the pattern is contained in text, and false otherwise."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to test."
+                },
+                {
+                  "name": "expression",
+                  "type": "String",
+                  "description": "A regular expression to use for splitting the text."
+                },
+                {
+                  "name": "caseInsensitive",
+                  "type": "Boolean",
+                  "description": "If set to true, the matching will be case-insensitive."
+                }
+              ],
+              "description": "regex_test test whether the regexp has at least one match in the given text.",
+              "return": {
+                "type": "Boolean",
+                "description": "Returns true if the pattern is contained in text, and false otherwise."
+              }
+            }
+          ]
+        },
+        {
+          "name": "remove_nth",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "Source array."
+                },
+                {
+                  "name": "position",
+                  "type": "Int",
+                  "description": "Target element position."
+                }
+              ],
+              "description": "remove_nth returns a new array without an element by a given position.",
+              "return": {
+                "type": "Any[]",
+                "description": "A new array without an element by a given position."
+              }
+            }
+          ]
+        },
+        {
+          "name": "remove_value",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "Source array."
+                },
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Target value."
+                }
+              ],
+              "description": "remove_value returns a new array with removed all occurrences of value in a given array.\nOptionally with a limit to the number of removals.",
+              "return": {
+                "type": "Any[]",
+                "description": "A new array with removed all occurrences of value in a given array."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "Source array."
+                },
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Target value."
+                },
+                {
+                  "name": "limit",
+                  "type": "Int",
+                  "description": "A limit to the number of removals."
+                }
+              ],
+              "description": "remove_value returns a new array with removed all occurrences of value in a given array.\nOptionally with a limit to the number of removals.",
+              "return": {
+                "type": "Any[]",
+                "description": "A new array with removed all occurrences of value in a given array."
+              }
+            }
+          ]
+        },
+        {
+          "name": "remove_values",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "Source array."
+                },
+                {
+                  "name": "values",
+                  "type": "Any[]",
+                  "description": "Target values."
+                }
+              ],
+              "description": "remove_values returns a new array with removed all occurrences of values in a given array.",
+              "return": {
+                "type": "Any[]",
+                "description": "A new array with removed all occurrences of values in a given array."
+              }
+            }
+          ]
+        },
+        {
+          "name": "reverse",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "String | Any[]",
+                  "description": "The string or array to reverse."
+                }
+              ],
+              "description": "reverse returns the reverse of a given string or array value.",
+              "return": {
+                "type": "String | Any[]",
+                "description": "A reversed version of a given value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "right",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The source string."
+                },
+                {
+                  "name": "length",
+                  "type": "Int",
+                  "description": "The amount of characters to return."
+                }
+              ],
+              "description": "right returns the rightmost characters of the string value.",
+              "return": {
+                "type": "String",
+                "description": "The rightmost characters of the string value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "round",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                }
+              ],
+              "description": "round returns the nearest integer, rounding half away from zero.",
+              "return": {
+                "type": "Int",
+                "description": "The nearest integer, rounding half away from zero."
+              }
+            }
+          ]
+        },
+        {
+          "name": "rtrim",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string."
+                }
+              ],
+              "description": "rtrim returns the string value with whitespace stripped from the end only.",
+              "return": {
+                "type": "String",
+                "description": "The string without chars at the right-hand side."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string."
+                },
+                {
+                  "name": "chars",
+                  "type": "String",
+                  "description": "Overrides the characters that should be removed from the string. It defaults to \\r\\n \\t."
+                }
+              ],
+              "description": "rtrim returns the string value with whitespace stripped from the end only.",
+              "return": {
+                "type": "String",
+                "description": "The string without chars at the right-hand side."
+              }
+            }
+          ]
+        },
+        {
+          "name": "separate",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "path",
+                  "type": "String",
+                  "description": "The path"
+                }
+              ],
+              "description": "separate separates the path into a directory and filename component.",
+              "return": {
+                "type": "Any[]",
+                "description": "First item is a directory component, and second is a filename component."
+              }
+            }
+          ]
+        },
+        {
+          "name": "sha1",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to do calculations against to."
+                }
+              ],
+              "description": "sha1 calculates the SHA1 checksum for text and returns it in a hexadecimal string representation.",
+              "return": {
+                "type": "String",
+                "description": "Sha1 checksum as hex string."
+              }
+            }
+          ]
+        },
+        {
+          "name": "sha512",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to do calculations against to."
+                }
+              ],
+              "description": "sha512 calculates the SHA512 checksum for text and returns it in a hexadecimal string representation.",
+              "return": {
+                "type": "String",
+                "description": "SHA512 checksum as hex string."
+              }
+            }
+          ]
+        },
+        {
+          "name": "shift",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "Target array."
+                }
+              ],
+              "description": "shift returns a new array without the first element.",
+              "return": {
+                "type": "Any[]",
+                "description": "Copy of an array without the first element."
+              }
+            }
+          ]
+        },
+        {
+          "name": "sin",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "Input number."
+                }
+              ],
+              "description": "sin returns the sine of the radian argument.",
+              "return": {
+                "type": "Float",
+                "description": "The sin, in radians, of a given number."
+              }
+            }
+          ]
+        },
+        {
+          "name": "slice",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "Source array."
+                },
+                {
+                  "name": "start",
+                  "type": "Int",
+                  "description": "Start position of extraction."
+                }
+              ],
+              "description": "slice returns a new sliced array.",
+              "return": {
+                "type": "Any[]",
+                "description": "Sliced array."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "Source array."
+                },
+                {
+                  "name": "start",
+                  "type": "Int",
+                  "description": "Start position of extraction."
+                },
+                {
+                  "name": "length",
+                  "type": "Int",
+                  "description": "Read indicating how many elements to extract."
+                }
+              ],
+              "description": "slice returns a new sliced array.",
+              "return": {
+                "type": "Any[]",
+                "description": "Sliced array."
+              }
+            }
+          ]
+        },
+        {
+          "name": "sorted",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "Target array."
+                }
+              ],
+              "description": "sorted sorts all elements in the given list.\nThe function will use the default comparison order for FQL value types.",
+              "return": {
+                "type": "Any[]",
+                "description": "Sorted array."
+              }
+            }
+          ]
+        },
+        {
+          "name": "sorted_unique",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "Target array."
+                }
+              ],
+              "description": "sorted_unique sorts all elements in a array.\nThe function will use the default comparison order for FQL value types.\nAdditionally, the values in the result array will be made unique",
+              "return": {
+                "type": "Any[]",
+                "description": "Sorted array."
+              }
+            }
+          ]
+        },
+        {
+          "name": "split",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to split."
+                },
+                {
+                  "name": "separator",
+                  "type": "String",
+                  "description": "The separator."
+                }
+              ],
+              "description": "split splits the given string value into a list of strings, using the separator.",
+              "return": {
+                "type": "String[]",
+                "description": "arrayList of strings."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to split."
+                },
+                {
+                  "name": "separator",
+                  "type": "String",
+                  "description": "The separator."
+                },
+                {
+                  "name": "limit",
+                  "type": "Int",
+                  "description": "Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded."
+                }
+              ],
+              "description": "split splits the given string value into a list of strings, using the separator.",
+              "return": {
+                "type": "String[]",
+                "description": "arrayList of strings."
+              }
+            }
+          ]
+        },
+        {
+          "name": "sqrt",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Int | Float",
+                  "description": "A number."
+                }
+              ],
+              "description": "sqrt returns the square root of a given number.",
+              "return": {
+                "type": "Float",
+                "description": "The square root."
+              }
+            }
+          ]
+        },
+        {
+          "name": "stddev_population",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "numbers",
+                  "type": "Int[] | Float[]",
+                  "description": "arrayList of numbers."
+                }
+              ],
+              "description": "stddev_population returns the population standard deviation of the values in a given array.",
+              "return": {
+                "type": "Float",
+                "description": "The population standard deviation."
+              }
+            }
+          ]
+        },
+        {
+          "name": "stddev_sample",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "numbers",
+                  "type": "Int[] | Float[]",
+                  "description": "arrayList of numbers."
+                }
+              ],
+              "description": "stddev_sample returns the sample standard deviation of the values in a given array.",
+              "return": {
+                "type": "Float",
+                "description": "The sample standard deviation."
+              }
+            }
+          ]
+        },
+        {
+          "name": "substitute",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to modify"
+                },
+                {
+                  "name": "search",
+                  "type": "String",
+                  "description": "The string representing a search pattern"
+                }
+              ],
+              "description": "substitute replaces search values in the string value.",
+              "return": {
+                "type": "String",
+                "description": "Returns a string with replace substring."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to modify"
+                },
+                {
+                  "name": "search",
+                  "type": "String",
+                  "description": "The string representing a search pattern"
+                },
+                {
+                  "name": "replace",
+                  "type": "String",
+                  "description": "The string representing a replace value"
+                }
+              ],
+              "description": "substitute replaces search values in the string value.",
+              "return": {
+                "type": "String",
+                "description": "Returns a string with replace substring."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to modify"
+                },
+                {
+                  "name": "search",
+                  "type": "String",
+                  "description": "The string representing a search pattern"
+                },
+                {
+                  "name": "replace",
+                  "type": "String",
+                  "description": "The string representing a replace value"
+                },
+                {
+                  "name": "limit",
+                  "type": "Int",
+                  "description": "The cap the number of replacements to this value."
+                }
+              ],
+              "description": "substitute replaces search values in the string value.",
+              "return": {
+                "type": "String",
+                "description": "Returns a string with replace substring."
+              }
+            }
+          ]
+        },
+        {
+          "name": "substring",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The source string."
+                },
+                {
+                  "name": "offset",
+                  "type": "Int",
+                  "description": "Start at offset, offsets start at position 0."
+                }
+              ],
+              "description": "substring returns a substring of value.",
+              "return": {
+                "type": "String",
+                "description": "A substring of value."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The source string."
+                },
+                {
+                  "name": "offset",
+                  "type": "Int",
+                  "description": "Start at offset, offsets start at position 0."
+                },
+                {
+                  "name": "length",
+                  "type": "Int",
+                  "description": "At most length characters, omit to get the substring from offset to the end of the string."
+                }
+              ],
+              "description": "substring returns a substring of value.",
+              "return": {
+                "type": "String",
+                "description": "A substring of value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "sum",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "numbers",
+                  "type": "Int[] | Float[]",
+                  "description": "arrayList of numbers."
+                }
+              ],
+              "description": "sum returns the sum of the values in a given array.",
+              "return": {
+                "type": "Float",
+                "description": "The sum of the values."
+              }
+            }
+          ]
+        },
+        {
+          "name": "tan",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "number",
+                  "type": "Int | Float",
+                  "description": "A number."
+                }
+              ],
+              "description": "tan returns the tangent of a given number.",
+              "return": {
+                "type": "Float",
+                "description": "The tangent."
+              }
+            }
+          ]
+        },
+        {
+          "name": "to_array",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "input",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "to_array takes an input value of any type and convert it into an array value.\nNone is converted to an empty array\nBoolean values, numbers and strings are converted to an array containing the original value as its single element\nArrays keep their original value\nObjects / HTML nodes are converted to an array containing their attribute values as array elements.",
+              "return": {
+                "type": "Any[]",
+                "description": "An array value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "to_base64",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string to encode."
+                }
+              ],
+              "description": "to_base64 returns the base64 representation of value.",
+              "return": {
+                "type": "String",
+                "description": "A base64 representation of the string."
+              }
+            }
+          ]
+        },
+        {
+          "name": "to_binary",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "ToBinary takes an input value of any type and converts it into a binary value.",
+              "return": {
+                "type": "Binary",
+                "description": "A binary value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "to_bool",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "to_bool takes an input value of any type and converts it into the appropriate boolean value.\nNone is converted to false\nNumbers are converted to true, except for 0, which is converted to false\nStrings are converted to true if they are non-empty, and to false otherwise\nDates are converted to true if they are not zero, and to false otherwise\nArrays are always converted to true (even if empty)\nObjects / HtmlNodes / Binary are always converted to true",
+              "return": {
+                "type": "Boolean",
+                "description": "The appropriate boolean value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "to_datetime",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "DateTime|String",
+                  "description": "A DateTime or RFC3339 string."
+                }
+              ],
+              "description": "to_datetime converts one native DateTime or RFC3339 value.",
+              "return": {
+                "type": "DateTime",
+                "description": "Parsed DateTime."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "DateTime|String|Int|Float",
+                  "description": "A DateTime, RFC3339 string, or numeric Unix epoch value."
+                },
+                {
+                  "name": "unit",
+                  "type": "String",
+                  "description": "Epoch unit: s, ms, us, or ns. Aliases include sec, second, seconds, millisecond, milliseconds, µs, μs, microsecond, microseconds, nanosecond, and nanoseconds. Valid only for numeric values."
+                }
+              ],
+              "description": "to_datetime returns a native DateTime, parses an RFC3339 string, or converts\na numeric Unix epoch value when an explicit unit is provided.",
+              "return": {
+                "type": "DateTime",
+                "description": "Parsed DateTime."
+              }
+            }
+          ]
+        },
+        {
+          "name": "to_duration",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "A value coercible to Duration."
+                }
+              ],
+              "description": "ToDuration converts a value using the language's broad Duration coercion rules.\nNumeric values are interpreted as milliseconds; Duration strings, NONE,\nBooleans, and supported list shapes are also accepted.",
+              "return": {
+                "type": "Duration",
+                "description": "A native duration value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "to_float",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "to_float takes an input value of any type and convert it into a float value.\nNone and false are converted to the value 0\ntrue is converted to 1\nNumbers keep their original value\nStrings are converted to their numeric equivalent if the string contains a valid representation of a number.\nString values that do not contain any valid representation of a number will be converted to the number 0.\nAn empty array is converted to 0, an array with one member is converted into the result of to_number() for its sole member.\nAn array with two or more members is converted to the number 0.\nAn object / HTML node is converted to the number 0.",
+              "return": {
+                "type": "Float",
+                "description": "A float value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "to_int",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "to_int takes an input value of any type and convert it into an integer value.\nNone and false are converted to the value 0\ntrue is converted to 1\nNumbers keep their original value\nStrings are converted to their numeric equivalent if the string contains a valid representation of a number.\nString values that do not contain any valid representation of a number will be converted to the number 0.\nAn empty array is converted to 0, an array with one member is converted into the result of to_number() for its sole member.\nAn array with two or more members is converted to the number 0.\nAn object / HTML node is converted to the number 0.",
+              "return": {
+                "type": "Int",
+                "description": "An integer value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "to_number",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "to_number takes an input value of any type and convert it into a number value.\nNone and false are converted to the zero float\ntrue is converted to 1 float\nNumbers keep their original value\nStrings are converted to their numeric equivalent if the string contains a valid representation of a number.\nString values that do not contain any valid representation of a number will be converted to the number 0.\nAn empty array is converted to 0, an array with one member is converted into the result of to_number() for its sole member.\nAn array with two or more members is converted to the number 0.\nAn object / HTML node is converted to the number 0.",
+              "return": {
+                "type": "Int|Float",
+                "description": "An integer or float value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "to_object",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "to_object converts the given value to an object.",
+              "return": {
+                "type": "Map",
+                "description": "Returns the object representation of the given value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "to_string",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Input value of arbitrary type."
+                }
+              ],
+              "description": "to_string takes an input value of any type and convert it into a string value.",
+              "return": {
+                "type": "String",
+                "description": "String representation of a given value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "trim",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string."
+                }
+              ],
+              "description": "trim returns the string value with whitespace stripped from the start and/or end.",
+              "return": {
+                "type": "String",
+                "description": "The string without chars on both sides."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The string."
+                },
+                {
+                  "name": "chars",
+                  "type": "String",
+                  "description": "Overrides the characters that should be removed from the string. It defaults to \\r\\n \\t."
+                }
+              ],
+              "description": "trim returns the string value with whitespace stripped from the start and/or end.",
+              "return": {
+                "type": "String",
+                "description": "The string without chars on both sides."
+              }
+            }
+          ]
+        },
+        {
+          "name": "unescape_html",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "uri",
+                  "type": "String",
+                  "description": "Uri to escape."
+                }
+              ],
+              "description": "unescape_html unescapes entities like \"&lt;\" to become \"<\". It unescapes a\nlarger range of entities than EscapeString escapes. For example, \"&aacute;\"\nunescapes to \"á\", as does \"&#225;\" and \"&#xE1;\".\nUnescapeString(EscapeString(s)) == s always holds, but the converse isn't\nalways true.",
+              "return": {
+                "type": "String",
+                "description": "Escaped string."
+              }
+            }
+          ]
+        },
+        {
+          "name": "union",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "arrays",
+                  "type": "Any[], repeated",
+                  "description": "List of arrays to combine."
+                }
+              ],
+              "variadic": true,
+              "description": "union returns the union of all passed arrays.",
+              "return": {
+                "type": "Any[]",
+                "description": "All array elements combined in a single array, in any order."
+              }
+            }
+          ]
+        },
+        {
+          "name": "union_distinct",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "arrays",
+                  "type": "Any[], repeated",
+                  "description": "List of arrays to combine."
+                }
+              ],
+              "variadic": true,
+              "description": "union_distinct returns the union of all passed arrays with unique values.",
+              "return": {
+                "type": "Any[]",
+                "description": "All unique array elements combined in a single array, in any order."
+              }
+            }
+          ]
+        },
+        {
+          "name": "unique",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "Target array."
+                }
+              ],
+              "description": "unique returns all unique elements from a given array.",
+              "return": {
+                "type": "Any[]",
+                "description": "New array without duplicates."
+              }
+            }
+          ]
+        },
+        {
+          "name": "unshift",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "Target array."
+                },
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Target value to prepend."
+                }
+              ],
+              "description": "unshift prepends value to a given array.",
+              "return": {
+                "type": "Any[]",
+                "description": "New array with prepended value."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "array",
+                  "type": "Any[]",
+                  "description": "Target array."
+                },
+                {
+                  "name": "value",
+                  "type": "Any",
+                  "description": "Target value to prepend."
+                },
+                {
+                  "name": "unique",
+                  "type": "Boolean",
+                  "description": "Optional value indicating whether a value must be unique to be prepended. Default is false."
+                }
+              ],
+              "description": "unshift prepends value to a given array.",
+              "return": {
+                "type": "Any[]",
+                "description": "New array with prepended value."
+              }
+            }
+          ]
+        },
+        {
+          "name": "upper",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "str",
+                  "type": "String",
+                  "description": "The source string."
+                }
+              ],
+              "description": "upper converts strings to their upper-case counterparts. All other characters are returned unchanged.",
+              "return": {
+                "type": "String",
+                "description": "THis string in upper case."
+              }
+            }
+          ]
+        },
+        {
+          "name": "values",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "map",
+                  "type": "Map",
+                  "description": "Target map."
+                }
+              ],
+              "description": "values return the attribute values of the map as a list.",
+              "return": {
+                "type": "Any[]",
+                "description": "Values of document returned in any order."
+              }
+            }
+          ]
+        },
+        {
+          "name": "variance_population",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "numbers",
+                  "type": "Int[] | Float[]",
+                  "description": "arrayList of numbers."
+                }
+              ],
+              "description": "variance_population returns the population variance of the values in a given array.",
+              "return": {
+                "type": "Float",
+                "description": "The population variance."
+              }
+            }
+          ]
+        },
+        {
+          "name": "variance_sample",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "numbers",
+                  "type": "Int[] | Float[]",
+                  "description": "arrayList of numbers."
+                }
+              ],
+              "description": "variance_sample returns the sample variance of the values in a given array.",
+              "return": {
+                "type": "Float",
+                "description": "The sample variance."
+              }
+            }
+          ]
+        },
+        {
+          "name": "wait",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "timeout",
+                  "type": "Any",
+                  "description": "A non-negative value coercible to Duration."
+                }
+              ],
+              "description": "wait pauses the execution for a given period.",
+              "return": {
+                "type": "None",
+                "description": "None."
+              }
+            }
+          ]
+        },
+        {
+          "name": "zip",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "keys",
+                  "type": "String[]",
+                  "description": "An array of strings, to be used as key names in the result."
+                },
+                {
+                  "name": "values",
+                  "type": "hashMap[]",
+                  "description": "An array of runtime.Value, to be used as key values."
+                }
+              ],
+              "description": "zip returns an object assembled from the separate parameters keys and values.\nKeys and values must be arrays and have the same length.",
+              "return": {
+                "type": "Map",
+                "description": "An object with the keys and values assembled."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "io::fs",
+      "functions": [
+        {
+          "name": "read",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "path",
+                  "type": "String",
+                  "description": "Path to file to read from."
+                }
+              ],
+              "description": "read reads from a given file.",
+              "return": {
+                "type": "Binary",
+                "description": "File content in binary format."
+              }
+            }
+          ]
+        },
+        {
+          "name": "write",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "path",
+                  "type": "String",
+                  "description": "File path to write into."
+                },
+                {
+                  "name": "data",
+                  "type": "Binary",
+                  "description": "Data to write."
+                }
+              ],
+              "description": "write writes the given data into the file.",
+              "return": {
+                "type": "None",
+                "description": "None."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "path",
+                  "type": "String",
+                  "description": "File path to write into."
+                },
+                {
+                  "name": "data",
+                  "type": "Binary",
+                  "description": "Data to write."
+                },
+                {
+                  "name": "params",
+                  "type": "Map",
+                  "description": "Additional parameters. The mode field selects the write mode:"
+                }
+              ],
+              "description": "write writes the given data into the file.\n* x - Exclusive: returns an error if the file exist. It can be combined with other modes\n* a - Append: will create a file if the specified file does not exist\n* w - Write (Default): will create a file if the specified file does not exist",
+              "return": {
+                "type": "None",
+                "description": "None."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "io::net::http",
+      "functions": [
+        {
+          "name": "delete",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "params",
+                  "type": "Map",
+                  "description": "Request parameters containing url, body, and optional headers fields."
+                }
+              ],
+              "description": "delete makes a DELETE request.",
+              "return": {
+                "type": "Binary",
+                "description": "Response in binary format"
+              }
+            }
+          ]
+        },
+        {
+          "name": "do",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "params",
+                  "type": "Map",
+                  "description": "Request parameters containing method, url, body, and optional headers fields."
+                }
+              ],
+              "description": "do makes an HTTP request.",
+              "return": {
+                "type": "Binary",
+                "description": "Response in binary format"
+              }
+            }
+          ]
+        },
+        {
+          "name": "get",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "urlOrParam",
+                  "type": "Map | String",
+                  "description": "Target URL string or a parameter map containing url and optional headers fields."
+                }
+              ],
+              "description": "get makes a GET request.",
+              "return": {
+                "type": "Binary",
+                "description": "Response in binary format"
+              }
+            }
+          ]
+        },
+        {
+          "name": "post",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "params",
+                  "type": "Map",
+                  "description": "Request parameters containing url, body, and optional headers fields."
+                }
+              ],
+              "description": "post makes a POST request.",
+              "return": {
+                "type": "Binary",
+                "description": "Response in binary format"
+              }
+            }
+          ]
+        },
+        {
+          "name": "put",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "params",
+                  "type": "Map",
+                  "description": "Request parameters containing url, body, and optional headers fields."
+                }
+              ],
+              "description": "put makes a PUT HTTP request.",
+              "return": {
+                "type": "Binary",
+                "description": "Response in binary format"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "t",
+      "functions": [
+        {
+          "name": "array",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value has the array type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value has the array type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "binary",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value has the binary type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value has the binary type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "datetime",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value has the DateTime type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value has the DateTime type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "empty",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Measurable | Binary | Object | Any[] | String",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the target is empty.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Measurable | Binary | Object | Any[] | String",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the target is empty.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "eq",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                }
+              ],
+              "description": "Tests equality of the actual and expected values.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests equality of the actual and expected values.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "fail",
+          "signatures": [
+            {
+              "parameters": [],
+              "description": "fail returns an error.",
+              "return": {
+                "type": "Boolean",
+                "description": "No success value is produced because this assertion always fails."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "fail returns an error.",
+              "return": {
+                "type": "Boolean",
+                "description": "No success value is produced because this assertion always fails."
+              }
+            }
+          ]
+        },
+        {
+          "name": "false",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value is false.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value is false.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "float",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value has the Float type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value has the Float type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "gt",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                }
+              ],
+              "description": "Tests whether the actual value is greater than the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the actual value is greater than the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "gte",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                }
+              ],
+              "description": "Tests whether the actual value is greater than or equal to the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the actual value is greater than or equal to the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "include",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "String | Array | Object | Iterable",
+                  "description": "Haystack value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                }
+              ],
+              "description": "Tests whether the actual container includes the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "String | Array | Object | Iterable",
+                  "description": "Haystack value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the actual container includes the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "int",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                }
+              ],
+              "description": "Tests whether the value has the Int type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value has the Int type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "len",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Measurable",
+                  "description": "Measurable value."
+                },
+                {
+                  "name": "length",
+                  "type": "Int",
+                  "description": "Target length."
+                }
+              ],
+              "description": "Tests whether a measurable value has the expected length or size.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Measurable",
+                  "description": "Measurable value."
+                },
+                {
+                  "name": "length",
+                  "type": "Int",
+                  "description": "Target length."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether a measurable value has the expected length or size.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "lt",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                }
+              ],
+              "description": "Tests whether the actual value is less than the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the actual value is less than the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "lte",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                }
+              ],
+              "description": "Tests whether the actual value is less than or equal to the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the actual value is less than or equal to the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "match",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expression",
+                  "type": "String",
+                  "description": "Regular expression."
+                }
+              ],
+              "description": "Tests whether the value matches the regular expression.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expression",
+                  "type": "String",
+                  "description": "Regular expression."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value matches the regular expression.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "none",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value is None.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value is None.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "object",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value has the Object type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value has the Object type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "string",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value has the String type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value has the String type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "true",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value is true.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value is true.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "t::not",
+      "functions": [
+        {
+          "name": "array",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value has the array type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value has the array type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "binary",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value has the binary type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value has the binary type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "datetime",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value has the DateTime type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value has the DateTime type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "empty",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Measurable | Binary | Object | Any[] | String",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the target is empty.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Measurable | Binary | Object | Any[] | String",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the target is empty.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "eq",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                }
+              ],
+              "description": "Tests equality of the actual and expected values.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests equality of the actual and expected values.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "false",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value is false.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value is false.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "float",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value has the Float type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value has the Float type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "gt",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                }
+              ],
+              "description": "Tests whether the actual value is greater than the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the actual value is greater than the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "gte",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                }
+              ],
+              "description": "Tests whether the actual value is greater than or equal to the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the actual value is greater than or equal to the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "include",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "String | Array | Object | Iterable",
+                  "description": "Haystack value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                }
+              ],
+              "description": "Tests whether the actual container includes the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "String | Array | Object | Iterable",
+                  "description": "Haystack value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the actual container includes the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "int",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                }
+              ],
+              "description": "Tests whether the value has the Int type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value has the Int type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "len",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Measurable",
+                  "description": "Measurable value."
+                },
+                {
+                  "name": "length",
+                  "type": "Int",
+                  "description": "Target length."
+                }
+              ],
+              "description": "Tests whether a measurable value has the expected length or size.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Measurable",
+                  "description": "Measurable value."
+                },
+                {
+                  "name": "length",
+                  "type": "Int",
+                  "description": "Target length."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether a measurable value has the expected length or size.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "lt",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                }
+              ],
+              "description": "Tests whether the actual value is less than the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the actual value is less than the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "lte",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                }
+              ],
+              "description": "Tests whether the actual value is less than or equal to the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expected",
+                  "type": "Any",
+                  "description": "Expected value."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the actual value is less than or equal to the expected value.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "match",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expression",
+                  "type": "String",
+                  "description": "Regular expression."
+                }
+              ],
+              "description": "Tests whether the value matches the regular expression.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Actual value."
+                },
+                {
+                  "name": "expression",
+                  "type": "String",
+                  "description": "Regular expression."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value matches the regular expression.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "none",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value is None.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value is None.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "object",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value has the Object type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value has the Object type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "string",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value has the String type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value has the String type.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        },
+        {
+          "name": "true",
+          "signatures": [
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                }
+              ],
+              "description": "Tests whether the value is true.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            },
+            {
+              "parameters": [
+                {
+                  "name": "actual",
+                  "type": "Any",
+                  "description": "Value to test."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "description": "Message to display on error."
+                }
+              ],
+              "description": "Tests whether the value is true.",
+              "return": {
+                "type": "Boolean",
+                "description": "True when the configured assertion succeeds; otherwise an assertion error is returned."
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

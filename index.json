@@ -2,6 +2,10 @@
   "schemaVersion": 1,
   "versions": [
     {
+      "version": "2.0.0-alpha.46",
+      "href": "./versions/2.0.0-alpha.46/api.json"
+    },
+    {
       "version": "2.0.0-alpha.45",
       "href": "./versions/2.0.0-alpha.45/api.json"
     }
