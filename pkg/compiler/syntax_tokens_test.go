@@ -130,6 +130,99 @@ func TestAnalysisSyntaxTokensReturnsDefensiveCopy(t *testing.T) {
 	}
 }
 
+func TestSyntaxWordsReturnCanonicalCategorizedDefensiveMetadata(t *testing.T) {
+	words := SyntaxWords()
+	if got, want := len(words), int(SyntaxWordWith); got != want {
+		t.Fatalf("SyntaxWords length = %d, want %d", got, want)
+	}
+
+	seen := make(map[SyntaxWord]SyntaxWordInfo, len(words))
+	previous := ""
+
+	for _, word := range words {
+		if word.Word == SyntaxWordUnknown {
+			t.Fatalf("SyntaxWords contains unknown word: %+v", word)
+		}
+
+		if _, ok := seen[word.Word]; ok {
+			t.Fatalf("SyntaxWords contains duplicate identity %d", word.Word)
+		}
+
+		if word.Spelling != strings.ToUpper(word.Spelling) {
+			t.Fatalf("SyntaxWords spelling %q is not canonical uppercase", word.Spelling)
+		}
+
+		if previous != "" && previous >= word.Spelling {
+			t.Fatalf("SyntaxWords are not in spelling order: %q before %q", previous, word.Spelling)
+		}
+
+		seen[word.Word] = word
+		previous = word.Spelling
+	}
+
+	for word := SyntaxWord(1); word <= SyntaxWordWith; word++ {
+		if _, ok := seen[word]; !ok {
+			t.Errorf("SyntaxWords omits identity %d", word)
+		}
+	}
+
+	wantCategories := map[SyntaxWord]SyntaxWordCategory{
+		SyntaxWordLet:   SyntaxWordCategoryKeyword,
+		SyntaxWordAnd:   SyntaxWordCategoryOperator,
+		SyntaxWordTrue:  SyntaxWordCategoryLiteral,
+		SyntaxWordRetry: SyntaxWordCategoryContextual,
+	}
+
+	for word, want := range wantCategories {
+		if got := seen[word].Category; got != want {
+			t.Errorf("SyntaxWords category for %q = %d, want %d", seen[word].Spelling, got, want)
+		}
+	}
+
+	words[0] = SyntaxWordInfo{}
+	if next := SyntaxWords(); len(next) == 0 || next[0] == (SyntaxWordInfo{}) {
+		t.Fatal("SyntaxWords exposed mutable metadata storage")
+	}
+}
+
+func TestAnalyzeSyntaxTokensExposeCanonicalWordIdentity(t *testing.T) {
+	query := "let value = true\nRETURN value AND false ASC DESC && ! ON ERROR FAIL RETRY DELAY"
+	analysis, _ := New().Analyze(source.NewAnonymous(query))
+	if analysis == nil {
+		t.Fatal("Analyze returned no partial snapshot")
+	}
+
+	wantWords := map[string]SyntaxWord{
+		"let":    SyntaxWordLet,
+		"true":   SyntaxWordTrue,
+		"RETURN": SyntaxWordReturn,
+		"AND":    SyntaxWordAnd,
+		"false":  SyntaxWordFalse,
+		"ASC":    SyntaxWordAsc,
+		"DESC":   SyntaxWordDesc,
+		"ON":     SyntaxWordOn,
+		"ERROR":  SyntaxWordError,
+		"FAIL":   SyntaxWordFail,
+		"RETRY":  SyntaxWordRetry,
+		"DELAY":  SyntaxWordDelay,
+	}
+
+	tokens := analysis.SyntaxTokens()
+	for text, want := range wantWords {
+		token, ok := syntaxTokenWithText(tokens, query, text)
+		if !ok || token.Word != want {
+			t.Errorf("syntax word %q = %+v, %t, want identity %d", text, token, ok, want)
+		}
+	}
+
+	for _, text := range []string{"&&", "!"} {
+		token, ok := syntaxTokenWithText(tokens, query, text)
+		if !ok || token.Word != SyntaxWordUnknown {
+			t.Errorf("symbolic operator %q word = %+v, %t", text, token, ok)
+		}
+	}
+}
+
 func hasSyntaxTokenKind(tokens []SyntaxToken, kind SyntaxTokenKind) bool {
 	for _, token := range tokens {
 		if token.Kind == kind {

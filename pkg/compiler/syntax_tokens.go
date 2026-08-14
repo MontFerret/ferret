@@ -1,6 +1,8 @@
 package compiler
 
 import (
+	"strings"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
@@ -28,10 +30,148 @@ func buildSyntaxTokens(src *source.Source, tokens []antlr.Token) []SyntaxToken {
 			continue
 		}
 
-		out = append(out, SyntaxToken{Kind: kind, Span: span})
+		out = append(out, SyntaxToken{
+			Kind: kind,
+			Word: syntaxWord(token.GetTokenType(), token.GetText()),
+			Span: span,
+		})
 	}
 
 	return out
+}
+
+func syntaxWord(tokenType int, text string) SyntaxWord {
+	switch tokenType {
+	case fql.FqlLexerAggregate:
+		return SyntaxWordAggregate
+	case fql.FqlLexerAll:
+		return SyntaxWordAll
+	case fql.FqlLexerAnd:
+		if strings.EqualFold(text, "AND") {
+			return SyntaxWordAnd
+		}
+	case fql.FqlLexerAny:
+		return SyntaxWordAny
+	case fql.FqlLexerAs:
+		return SyntaxWordAs
+	case fql.FqlLexerAt:
+		return SyntaxWordAt
+	case fql.FqlLexerBackoff:
+		return SyntaxWordBackoff
+	case fql.FqlLexerCollect:
+		return SyntaxWordCollect
+	case fql.FqlLexerCount:
+		return SyntaxWordCount
+	case fql.FqlLexerDelete:
+		return SyntaxWordDelete
+	case fql.FqlLexerDispatch:
+		return SyntaxWordDispatch
+	case fql.FqlLexerDistinct:
+		return SyntaxWordDistinct
+	case fql.FqlLexerDo:
+		return SyntaxWordDo
+	case fql.FqlLexerEvent:
+		return SyntaxWordEvent
+	case fql.FqlLexerEvery:
+		return SyntaxWordEvery
+	case fql.FqlLexerExists:
+		return SyntaxWordExists
+	case fql.FqlLexerFilter:
+		return SyntaxWordFilter
+	case fql.FqlLexerFor:
+		return SyntaxWordFor
+	case fql.FqlLexerFunc:
+		return SyntaxWordFunc
+	case fql.FqlLexerIn:
+		return SyntaxWordIn
+	case fql.FqlLexerInto:
+		return SyntaxWordInto
+	case fql.FqlLexerJitter:
+		return SyntaxWordJitter
+	case fql.FqlLexerKeep:
+		return SyntaxWordKeep
+	case fql.FqlLexerLeast:
+		return SyntaxWordLeast
+	case fql.FqlLexerLet:
+		return SyntaxWordLet
+	case fql.FqlLexerLike:
+		return SyntaxWordLike
+	case fql.FqlLexerLimit:
+		return SyntaxWordLimit
+	case fql.FqlLexerMatch:
+		return SyntaxWordMatch
+	case fql.FqlLexerNone:
+		return SyntaxWordNone
+	case fql.FqlLexerNot:
+		if strings.EqualFold(text, "NOT") {
+			return SyntaxWordNot
+		}
+	case fql.FqlLexerNull:
+		return SyntaxWordNull
+	case fql.FqlLexerOne:
+		return SyntaxWordOne
+	case fql.FqlLexerOptions:
+		return SyntaxWordOptions
+	case fql.FqlLexerOr:
+		if strings.EqualFold(text, "OR") {
+			return SyntaxWordOr
+		}
+	case fql.FqlLexerQuery:
+		return SyntaxWordQuery
+	case fql.FqlLexerReturn:
+		return SyntaxWordReturn
+	case fql.FqlLexerSort:
+		return SyntaxWordSort
+	case fql.FqlLexerSortDirection:
+		switch {
+		case strings.EqualFold(text, "ASC"):
+			return SyntaxWordAsc
+		case strings.EqualFold(text, "DESC"):
+			return SyntaxWordDesc
+		}
+	case fql.FqlLexerTimeout:
+		return SyntaxWordTimeout
+	case fql.FqlLexerTrigger:
+		return SyntaxWordTrigger
+	case fql.FqlLexerBooleanLiteral:
+		switch {
+		case strings.EqualFold(text, "TRUE"):
+			return SyntaxWordTrue
+		case strings.EqualFold(text, "FALSE"):
+			return SyntaxWordFalse
+		}
+	case fql.FqlLexerUse:
+		return SyntaxWordUse
+	case fql.FqlLexerUsing:
+		return SyntaxWordUsing
+	case fql.FqlLexerValue:
+		return SyntaxWordValue
+	case fql.FqlLexerVar:
+		return SyntaxWordVar
+	case fql.FqlLexerWaitfor:
+		return SyntaxWordWaitfor
+	case fql.FqlLexerWhen:
+		return SyntaxWordWhen
+	case fql.FqlLexerWhile:
+		return SyntaxWordWhile
+	case fql.FqlLexerWith:
+		return SyntaxWordWith
+	case fql.FqlLexerIdentifier:
+		switch {
+		case strings.EqualFold(text, "ON"):
+			return SyntaxWordOn
+		case strings.EqualFold(text, "ERROR"):
+			return SyntaxWordError
+		case strings.EqualFold(text, "FAIL"):
+			return SyntaxWordFail
+		case strings.EqualFold(text, "RETRY"):
+			return SyntaxWordRetry
+		case strings.EqualFold(text, "DELAY"):
+			return SyntaxWordDelay
+		}
+	}
+
+	return SyntaxWordUnknown
 }
 
 func syntaxTokenKind(tokenType int) SyntaxTokenKind {

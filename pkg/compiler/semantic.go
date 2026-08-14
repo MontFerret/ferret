@@ -64,6 +64,8 @@ type (
 	// Span uses zero-based, half-open UTF-8 byte offsets.
 	SyntaxToken struct {
 		Kind SyntaxTokenKind
+		// Word is the canonical language-word identity, or SyntaxWordUnknown.
+		Word SyntaxWord
 		Span source.Span
 	}
 
