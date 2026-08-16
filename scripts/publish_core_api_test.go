@@ -37,14 +37,18 @@ func TestPublishCoreAPIRejectsStaleNonFastForwardPush(t *testing.T) {
 
 	firstReference := filepath.Join(temporary, "first-api.json")
 	secondReference := filepath.Join(temporary, "second-api.json")
+	firstCatalog := filepath.Join(temporary, "first-catalog.json")
+	secondCatalog := filepath.Join(temporary, "second-catalog.json")
 	writeReference(t, firstReference, "2.0.0-alpha.1")
 	writeReference(t, secondReference, "2.0.0-alpha.2")
+	writeCatalog(t, firstCatalog, "2.0.0-alpha.1")
+	writeCatalog(t, secondCatalog, "2.0.0-alpha.2")
 
 	publish := filepath.Join(root, "scripts", "publish-core-api.sh")
-	runPublish(t, root, publish, firstReference, first, remote, true)
+	runPublish(t, root, publish, firstReference, firstCatalog, first, remote, true)
 	remoteAfterFirst := strings.TrimSpace(git(t, temporary, "--git-dir", remote, "rev-parse", "refs/heads/gh-pages"))
 
-	runPublish(t, root, publish, secondReference, second, remote, false)
+	runPublish(t, root, publish, secondReference, secondCatalog, second, remote, false)
 	remoteAfterStale := strings.TrimSpace(git(t, temporary, "--git-dir", remote, "rev-parse", "refs/heads/gh-pages"))
 	if remoteAfterStale != remoteAfterFirst {
 		t.Fatalf("stale push changed published history: before=%s after=%s", remoteAfterFirst, remoteAfterStale)
@@ -52,12 +56,13 @@ func TestPublishCoreAPIRejectsStaleNonFastForwardPush(t *testing.T) {
 
 	assertContent(t, filepath.Join(first, ".gitignore"), "public\n")
 	assertContent(t, filepath.Join(first, "versions", "2.0.0-alpha.1", "api.json"), string(read(t, firstReference)))
+	assertContent(t, filepath.Join(first, "versions", "2.0.0-alpha.1", "catalog.json"), string(read(t, firstCatalog)))
 }
 
-func runPublish(t *testing.T, root, script, reference, pages, remote string, wantSuccess bool) {
+func runPublish(t *testing.T, root, script, reference, catalog, pages, remote string, wantSuccess bool) {
 	t.Helper()
 
-	command := exec.Command(script, reference, pages, remote, "gh-pages")
+	command := exec.Command(script, reference, catalog, pages, remote, "gh-pages")
 	command.Dir = root
 	command.Env = append(os.Environ(), "GOWORK=off")
 	output, err := command.CombinedOutput()
@@ -71,6 +76,32 @@ func runPublish(t *testing.T, root, script, reference, pages, remote string, wan
 
 	if !wantSuccess && !strings.Contains(string(output), "non-fast-forward") && !strings.Contains(string(output), "fetch first") {
 		t.Fatalf("stale publication did not report non-fast-forward rejection:\n%s", output)
+	}
+}
+
+func writeCatalog(t *testing.T, path, version string) {
+	t.Helper()
+
+	catalog := map[string]any{
+		"schemaVersion": 1,
+		"id":            "montferret/core",
+		"version":       version,
+		"categories": []any{map[string]any{
+			"id":          "utils",
+			"title":       "Utilities",
+			"description": "General utility functions.",
+			"functions":   []string{"PING"},
+		}},
+		"namespaceRoots": []string{},
+	}
+
+	data, err := json.MarshalIndent(catalog, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(path, append(data, '\n'), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }
 

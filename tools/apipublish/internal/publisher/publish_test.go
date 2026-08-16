@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/specs/pkg/api"
+	apicatalog "github.com/MontFerret/specs/pkg/api/catalog"
 
 	"github.com/MontFerret/ferret/v2/tools/apipublish/internal/publisher"
 )
@@ -18,8 +19,9 @@ func TestPublishCreatesPrereleaseIndexAndPreservesUnrelatedPagesFiles(t *testing
 	writeFile(t, filepath.Join(root, ".gitignore"), []byte("public\n"))
 	writeFile(t, filepath.Join(root, "dev", "benchmarks.json"), []byte("{\"score\":1}\n"))
 	reference := referenceData(t, "2.0.0-alpha.45", "montferret/core")
+	catalog := catalogData(t, "2.0.0-alpha.45", "montferret/core")
 
-	if err := publisher.Publish(root, reference); err != nil {
+	if err := publisher.Publish(root, reference, catalog); err != nil {
 		t.Fatal(err)
 	}
 
@@ -41,6 +43,15 @@ func TestPublishCreatesPrereleaseIndexAndPreservesUnrelatedPagesFiles(t *testing
 		t.Fatal("published artifact bytes differ from generated reference")
 	}
 
+	publishedCatalog, err := os.ReadFile(filepath.Join(root, "versions", "2.0.0-alpha.45", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(publishedCatalog, catalog) {
+		t.Fatal("published catalog bytes differ from generated catalog")
+	}
+
 	assertFile(t, filepath.Join(root, ".gitignore"), "public\n")
 	assertFile(t, filepath.Join(root, "dev", "benchmarks.json"), "{\"score\":1}\n")
 }
@@ -48,7 +59,7 @@ func TestPublishCreatesPrereleaseIndexAndPreservesUnrelatedPagesFiles(t *testing
 func TestPublishAddsVersionsInDeterministicOrderAndSetsStableLatest(t *testing.T) {
 	root := t.TempDir()
 	for _, version := range []string{"2.0.0-alpha.1", "1.9.0", "2.0.0-alpha.2", "2.0.0"} {
-		if err := publisher.Publish(root, referenceData(t, version, "montferret/core")); err != nil {
+		if err := publisher.Publish(root, referenceData(t, version, "montferret/core"), catalogData(t, version, "montferret/core")); err != nil {
 			t.Fatalf("publish %s: %v", version, err)
 		}
 	}
@@ -75,12 +86,13 @@ func TestPublishAddsVersionsInDeterministicOrderAndSetsStableLatest(t *testing.T
 func TestPublishRejectsImmutableVersionWithoutMutation(t *testing.T) {
 	root := t.TempDir()
 	reference := referenceData(t, "2.0.0-alpha.1", "montferret/core")
-	if err := publisher.Publish(root, reference); err != nil {
+	catalog := catalogData(t, "2.0.0-alpha.1", "montferret/core")
+	if err := publisher.Publish(root, reference, catalog); err != nil {
 		t.Fatal(err)
 	}
 
 	before := treeSnapshot(t, root)
-	err := publisher.Publish(root, reference)
+	err := publisher.Publish(root, reference, catalog)
 	if err == nil || !strings.Contains(err.Error(), "already exists") {
 		t.Fatalf("error = %v, want immutable-version rejection", err)
 	}
@@ -96,7 +108,7 @@ func TestPublishRejectsExistingVersionDirectoryEvenWithoutIndexEntry(t *testing.
 		t.Fatal(err)
 	}
 
-	err := publisher.Publish(root, referenceData(t, "2.0.0-alpha.1", "montferret/core"))
+	err := publisher.Publish(root, referenceData(t, "2.0.0-alpha.1", "montferret/core"), catalogData(t, "2.0.0-alpha.1", "montferret/core"))
 	if err == nil || !strings.Contains(err.Error(), "unindexed API Reference version") {
 		t.Fatalf("error = %v, want unindexed immutable directory rejection", err)
 	}
@@ -104,7 +116,7 @@ func TestPublishRejectsExistingVersionDirectoryEvenWithoutIndexEntry(t *testing.
 
 func TestPublishRejectsInvalidIncomingIdentity(t *testing.T) {
 	root := t.TempDir()
-	err := publisher.Publish(root, referenceData(t, "2.0.0-alpha.1", "other/module"))
+	err := publisher.Publish(root, referenceData(t, "2.0.0-alpha.1", "other/module"), catalogData(t, "2.0.0-alpha.1", "other/module"))
 	if err == nil || !strings.Contains(err.Error(), `want "montferret/core"`) {
 		t.Fatalf("error = %v, want identity rejection", err)
 	}
@@ -141,27 +153,72 @@ func TestPublishRejectsInvalidExistingStateBeforeMutation(t *testing.T) {
 				t.Fatal(err)
 			}
 		}},
-		{name: "extra version file", reason: "must contain only api.json", mutate: func(t *testing.T, root string) {
+		{name: "extra version file", reason: "optional catalog.json only", mutate: func(t *testing.T, root string) {
 			writeFile(t, filepath.Join(root, "versions", "2.0.0-alpha.1", "notes.txt"), []byte("unexpected\n"))
 		}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
 			if test.name != "malformed index" {
-				if err := publisher.Publish(root, referenceData(t, "2.0.0-alpha.1", "montferret/core")); err != nil {
+				if err := publisher.Publish(root, referenceData(t, "2.0.0-alpha.1", "montferret/core"), catalogData(t, "2.0.0-alpha.1", "montferret/core")); err != nil {
 					t.Fatal(err)
 				}
 			}
 
 			test.mutate(t, root)
 			before := treeSnapshot(t, root)
-			err := publisher.Publish(root, referenceData(t, "2.0.0-alpha.2", "montferret/core"))
+			err := publisher.Publish(root, referenceData(t, "2.0.0-alpha.2", "montferret/core"), catalogData(t, "2.0.0-alpha.2", "montferret/core"))
 			if err == nil || !strings.Contains(err.Error(), test.reason) {
 				t.Fatalf("error = %v, want reason containing %q", err, test.reason)
 			}
 
 			if after := treeSnapshot(t, root); !reflect.DeepEqual(after, before) {
 				t.Fatalf("invalid existing state mutated tree\nbefore: %#v\nafter: %#v", before, after)
+			}
+		})
+	}
+}
+
+func TestPublishAcceptsExistingLegacyAPIOnlyVersion(t *testing.T) {
+	root := t.TempDir()
+	legacyVersion := "2.0.0-alpha.45"
+	writeFile(t, filepath.Join(root, "versions", legacyVersion, "api.json"), referenceData(t, legacyVersion, "montferret/core"))
+	writeJSON(t, filepath.Join(root, "index.json"), &api.Index{
+		SchemaVersion: api.IndexSchemaVersion,
+		Versions:      []api.IndexVersion{{Version: legacyVersion, Href: "./versions/" + legacyVersion + "/api.json"}},
+	})
+
+	newVersion := "2.0.0-alpha.47"
+	if err := publisher.Publish(root, referenceData(t, newVersion, "montferret/core"), catalogData(t, newVersion, "montferret/core")); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Stat(filepath.Join(root, "versions", legacyVersion, "catalog.json")); !os.IsNotExist(err) {
+		t.Fatalf("legacy version was backfilled: %v", err)
+	}
+}
+
+func TestPublishRejectsInvalidIncomingCatalogWithoutMutation(t *testing.T) {
+	tests := []struct {
+		name    string
+		want    string
+		catalog []byte
+	}{
+		{name: "malformed", catalog: []byte("{\n"), want: "parse generated API Catalog"},
+		{name: "identity mismatch", catalog: catalogData(t, "2.0.0-alpha.47", "other/module"), want: "does not match API id"},
+		{name: "version mismatch", catalog: catalogData(t, "2.0.0-alpha.46", "montferret/core"), want: "does not match API version"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			err := publisher.Publish(root, referenceData(t, "2.0.0-alpha.47", "montferret/core"), test.catalog)
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("Publish error = %v, want %q", err, test.want)
+			}
+
+			if entries, readErr := os.ReadDir(root); readErr != nil || len(entries) != 0 {
+				t.Fatalf("invalid catalog mutated root: entries=%v err=%v", entries, readErr)
 			}
 		})
 	}
@@ -188,6 +245,30 @@ func referenceData(t *testing.T, version, id string) []byte {
 	}
 
 	data, err := json.MarshalIndent(reference, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return append(data, '\n')
+}
+
+func catalogData(t *testing.T, version, id string) []byte {
+	t.Helper()
+
+	catalog := &apicatalog.Catalog{
+		SchemaVersion: apicatalog.SchemaVersion,
+		ID:            id,
+		Version:       version,
+		Categories: []apicatalog.Category{{
+			ID:          "utils",
+			Title:       "Utilities",
+			Description: "General utility functions.",
+			Functions:   []string{"PING"},
+		}},
+		NamespaceRoots: []string{},
+	}
+
+	data, err := json.MarshalIndent(catalog, "", "  ")
 	if err != nil {
 		t.Fatal(err)
 	}

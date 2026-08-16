@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,9 +22,9 @@ func TestValidateVersionRequiresCanonicalUnprefixedSemVer(t *testing.T) {
 	}
 }
 
-func TestWriteReferenceIsIndentedNewlineTerminatedAndReplaceable(t *testing.T) {
+func TestWriteArtifactIsIndentedNewlineTerminatedAndReplaceable(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nested", "api.json")
-	if err := writeReference(path, map[string]any{"version": "1.0.0", "schemaVersion": 1}); err != nil {
+	if err := writeArtifact(path, "test artifact", map[string]any{"version": "1.0.0", "schemaVersion": 1}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -36,7 +37,7 @@ func TestWriteReferenceIsIndentedNewlineTerminatedAndReplaceable(t *testing.T) {
 		t.Fatalf("output is not indented with one trailing newline:\n%s", first)
 	}
 
-	if err := writeReference(path, map[string]any{"schemaVersion": 2}); err != nil {
+	if err := writeArtifact(path, "test artifact", map[string]any{"schemaVersion": 2}); err != nil {
 		t.Fatalf("replace output: %v", err)
 	}
 
@@ -47,5 +48,12 @@ func TestWriteReferenceIsIndentedNewlineTerminatedAndReplaceable(t *testing.T) {
 
 	if strings.Contains(string(second), "1.0.0") || strings.Count(string(second), "\n") != 3 {
 		t.Fatalf("replacement retained old or trailing content:\n%s", second)
+	}
+}
+
+func TestRunRequiresDistinctArtifactPaths(t *testing.T) {
+	err := run(context.Background(), []string{"-version", "2.0.0-alpha.47", "-o", "same.json", "-catalog", "same.json"})
+	if err == nil || !strings.Contains(err.Error(), "different files") {
+		t.Fatalf("run error = %v, want distinct path rejection", err)
 	}
 }

@@ -1,6 +1,6 @@
-# Ferret Core API Reference
+# Ferret Core API Artifacts
 
-Ferret publishes a versioned API Reference with the canonical identity
+Ferret publishes a versioned API Reference and sibling API Catalog with the canonical identity
 `montferret/core`. This identity describes optional built-in functionality
 provided by Ferret itself. It is not an installable Registry module and must not
 be added to a module manifest as a dependency.
@@ -24,7 +24,7 @@ lowercase presentation in the registry and generated API Reference. This include
 every namespace segment; casing compatibility is represented by lookup rather
 than duplicate aliases.
 
-The API Reference and discovery-index wire contracts belong to
+The API Reference, API Catalog, and discovery-index wire contracts belong to
 [`github.com/MontFerret/specs`](https://github.com/MontFerret/specs). Ferret pins
 the released Specs version in the independent generator and publisher modules,
 which validate every completed reference and index. Ferret's root module does
@@ -75,28 +75,34 @@ Run the generator from the repository root with an unprefixed canonical SemVer:
 ```sh
 GOWORK=off go -C tools/apiref run . \
   -version 2.0.0-alpha.45 \
-  -o /tmp/montferret-core-api.json
+  -o /tmp/montferret-core-api.json \
+  -catalog /tmp/montferret-core-catalog.json
 ```
 
-The command emits diagnostics only on stderr and atomically writes deterministic,
-two-space-indented JSON with one trailing newline. The generator contains no
+The command emits diagnostics only on stderr and writes deterministic,
+two-space-indented JSON with one trailing newline. `api.json` remains the
+canonical callable API. `catalog.json` contains presentation categories for
+global functions and real namespace roots. Categories such as `math` and
+`strings` are not callable Ferret namespaces. The generator contains no
 deployment domain.
 
 ## Release publication
 
-The `Publish Ferret Core API Reference` workflow runs independently from
+The `Publish Ferret Core API Artifacts` workflow runs independently from
 dependent-release notifications. It accepts `release.published` events and
 manual dispatches, verifies that the selected canonical v2 tag belongs to a
 published GitHub release, checks out that exact tag, strips the leading `v`, and
-generates the artifact.
+generates both artifacts.
 
 The existing `gh-pages` branch is updated through the repository-local
 `scripts/publish-core-api.sh` wrapper. Publication validates the existing index
 and every referenced artifact before mutation, preserves unrelated Pages files,
-creates one version artifact, recomputes the index, commits once, and performs a
+atomically installs one version directory containing `api.json` and
+`catalog.json`, recomputes the unchanged API index, commits once, and performs a
 normal non-force push. Version directories, index entries, and hrefs are
-immutable and cannot be republished even when bytes match. A stale push fails;
-published history is never rewritten.
+immutable and cannot be republished even when bytes match. Existing API-only
+version directories remain valid legacy state and are never backfilled. A stale
+push fails; published history is never rewritten.
 
 All `gh-pages` writers use the repository-wide `gh-pages-writer` concurrency key
 with cancellation disabled. Unit and integration benchmarks still execute in
@@ -110,6 +116,7 @@ The public documents are:
 
 - `https://ferretlang.org/ferret/index.json`
 - `https://ferretlang.org/ferret/versions/<version>/api.json`
+- `https://ferretlang.org/ferret/versions/<version>/catalog.json`
 
 These URLs share the existing Ferret Pages root, so benchmark history and other
 site files remain alongside the API Reference without being regenerated.

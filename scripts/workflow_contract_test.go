@@ -44,6 +44,7 @@ func TestReleasePublicationChecksPublishedExactTagAndUsesNormalPushWrapper(t *te
 		"ref: refs/tags/${{ steps.release.outputs.tag }}",
 		"contents: write",
 		"go -C tools/apiref run .",
+		`-catalog "$RUNNER_TEMP/montferret-core-catalog.json"`,
 		"./scripts/publish-core-api.sh",
 	} {
 		if !strings.Contains(workflow, required) {

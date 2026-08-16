@@ -20,6 +20,7 @@ func run(arguments []string) error {
 	flags := flag.NewFlagSet("apipublish", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 	referencePath := flags.String("reference", "", "generated API Reference path")
+	catalogPath := flags.String("catalog", "", "generated API Catalog path")
 	pagesRoot := flags.String("pages", "", "checked-out gh-pages root")
 	if err := flags.Parse(arguments); err != nil {
 		return err
@@ -29,8 +30,8 @@ func run(arguments []string) error {
 		return fmt.Errorf("unexpected positional arguments: %v", flags.Args())
 	}
 
-	if *referencePath == "" || *pagesRoot == "" {
-		return fmt.Errorf("-reference and -pages are required")
+	if *referencePath == "" || *catalogPath == "" || *pagesRoot == "" {
+		return fmt.Errorf("-reference, -catalog, and -pages are required")
 	}
 
 	referenceData, err := os.ReadFile(*referencePath)
@@ -38,5 +39,10 @@ func run(arguments []string) error {
 		return fmt.Errorf("read generated API Reference: %w", err)
 	}
 
-	return publisher.Publish(*pagesRoot, referenceData)
+	catalogData, err := os.ReadFile(*catalogPath)
+	if err != nil {
+		return fmt.Errorf("read generated API Catalog: %w", err)
+	}
+
+	return publisher.Publish(*pagesRoot, referenceData, catalogData)
 }

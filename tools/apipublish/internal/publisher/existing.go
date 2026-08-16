@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/MontFerret/specs/pkg/api"
+	apicatalog "github.com/MontFerret/specs/pkg/api/catalog"
 )
 
 func loadExistingState(pagesRoot string) (*api.Index, error) {
@@ -74,6 +75,34 @@ func loadExistingState(pagesRoot string) (*api.Index, error) {
 				entry.Version,
 			)
 		}
+
+		catalogPath := filepath.Join(filepath.Dir(artifactPath), "catalog.json")
+		catalogInfo, err := os.Lstat(catalogPath)
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf("inspect existing API Catalog %s: %w", entry.Version, err)
+		}
+
+		if !catalogInfo.Mode().IsRegular() {
+			return nil, fmt.Errorf("existing API Catalog is not a regular file: %s", catalogPath)
+		}
+
+		catalogData, err := os.ReadFile(catalogPath)
+		if err != nil {
+			return nil, fmt.Errorf("read existing API Catalog %s: %w", entry.Version, err)
+		}
+
+		catalog, err := apicatalog.Parse(catalogData)
+		if err != nil {
+			return nil, fmt.Errorf("parse existing API Catalog %s: %w", entry.Version, err)
+		}
+
+		if err := validatePair(reference, catalog); err != nil {
+			return nil, fmt.Errorf("validate existing API Reference and Catalog %s: %w", entry.Version, err)
+		}
 	}
 
 	if err := validateVersionTree(pagesRoot, index); err != nil {
@@ -133,8 +162,8 @@ func validateVersionTree(pagesRoot string, index *api.Index) error {
 			return fmt.Errorf("read API Reference version %s: %w", entry.Name(), err)
 		}
 
-		if len(versionEntries) != 1 || versionEntries[0].Name() != "api.json" {
-			return fmt.Errorf("API Reference version %s must contain only api.json", entry.Name())
+		if !validVersionEntries(versionEntries) {
+			return fmt.Errorf("API Reference version %s must contain api.json and optional catalog.json only", entry.Name())
 		}
 	}
 
@@ -143,6 +172,31 @@ func validateVersionTree(pagesRoot string, index *api.Index) error {
 	}
 
 	return nil
+}
+
+func validVersionEntries(entries []os.DirEntry) bool {
+	if len(entries) == 1 {
+		return entries[0].Name() == "api.json"
+	}
+
+	if len(entries) != 2 {
+		return false
+	}
+
+	seenAPI := false
+	seenCatalog := false
+	for _, entry := range entries {
+		switch entry.Name() {
+		case "api.json":
+			seenAPI = true
+		case "catalog.json":
+			seenCatalog = true
+		default:
+			return false
+		}
+	}
+
+	return seenAPI && seenCatalog
 }
 
 func ensureUnpublished(pagesRoot string, existing *api.Index, version, href string) error {

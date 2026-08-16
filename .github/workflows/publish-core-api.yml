@@ -1,4 +1,4 @@
-name: Publish Ferret Core API Reference
+name: Publish Ferret Core API Artifacts
 
 on:
   release:
@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   publish:
-    name: Publish versioned API Reference
+    name: Publish versioned API artifacts
     if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'v2.')
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -66,13 +66,14 @@ jobs:
             tools/apiref/go.sum
             tools/apipublish/go.sum
 
-      - name: Generate Ferret Core API Reference
+      - name: Generate Ferret Core API artifacts
         env:
           API_VERSION: ${{ steps.release.outputs.version }}
         run: >-
           go -C tools/apiref run .
           -version "$API_VERSION"
           -o "$RUNNER_TEMP/montferret-core-api.json"
+          -catalog "$RUNNER_TEMP/montferret-core-catalog.json"
 
       - name: Check out existing Pages branch
         uses: actions/checkout@v4
@@ -81,7 +82,7 @@ jobs:
           path: pages
           fetch-depth: 0
 
-      - name: Publish and push immutable API Reference
+      - name: Publish and push immutable API artifacts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
@@ -89,4 +90,4 @@ jobs:
           set -euo pipefail
           git -C pages config user.name "github-actions[bot]"
           git -C pages config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          ./scripts/publish-core-api.sh "$RUNNER_TEMP/montferret-core-api.json" pages origin gh-pages
+          ./scripts/publish-core-api.sh "$RUNNER_TEMP/montferret-core-api.json" "$RUNNER_TEMP/montferret-core-catalog.json" pages origin gh-pages

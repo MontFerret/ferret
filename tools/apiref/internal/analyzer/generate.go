@@ -8,11 +8,12 @@ import (
 	"strings"
 
 	"github.com/MontFerret/specs/pkg/api"
+	apicatalog "github.com/MontFerret/specs/pkg/api/catalog"
 	"github.com/MontFerret/specs/pkg/validation"
 )
 
-// Generate builds and validates the montferret/core API Reference from the runtime registry and stdlib source.
-func Generate(ctx context.Context, options Options) (*api.Reference, error) {
+// Generate builds and validates the montferret/core API Reference and catalog from one registry and source analysis.
+func Generate(ctx context.Context, options Options) (*Artifacts, error) {
 	if strings.TrimSpace(options.Root) == "" {
 		return nil, fmt.Errorf("repository root is required")
 	}
@@ -46,7 +47,20 @@ func Generate(ctx context.Context, options Options) (*api.Reference, error) {
 		return nil, fmt.Errorf("validate generated %s API Reference %s: %w", moduleID, options.Version, err)
 	}
 
-	return reference, nil
+	stdlibCatalog, err := buildStandardLibraryCatalog(options.Version, registered, reference, standardLibraryCategories, categoryOverrides)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := apicatalog.Validate(stdlibCatalog); err != nil {
+		return nil, fmt.Errorf("validate generated %s Standard Library catalog %s: %w", moduleID, options.Version, err)
+	}
+
+	if err := validateCatalogAgainstReference(reference, stdlibCatalog); err != nil {
+		return nil, fmt.Errorf("validate generated %s API/catalog pair %s: %w", moduleID, options.Version, err)
+	}
+
+	return &Artifacts{Reference: reference, Catalog: stdlibCatalog}, nil
 }
 
 func buildReference(version string, registered []registeredSignature, catalog *sourceCatalog) (*api.Reference, error) {

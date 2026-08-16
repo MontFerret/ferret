@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/MontFerret/ferret/v2 v2.0.0
-	github.com/MontFerret/specs v1.9.0
+	github.com/MontFerret/specs v1.10.0
 	golang.org/x/tools v0.48.0
 )
 

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/specs/pkg/api"
+	apicatalog "github.com/MontFerret/specs/pkg/api/catalog"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
@@ -48,16 +49,72 @@ func TestGenerateMatchesFullRuntimeRegistryAndIsDeterministic(t *testing.T) {
 		t.Fatal("repeated generation produced different bytes")
 	}
 
-	if first.ID != "montferret/core" || first.Version != options.Version {
-		t.Fatalf("identity = %s@%s", first.ID, first.Version)
+	if first.Reference.ID != "montferret/core" || first.Reference.Version != options.Version {
+		t.Fatalf("identity = %s@%s", first.Reference.ID, first.Reference.Version)
 	}
 
-	if err := api.Validate(first); err != nil {
+	if err := api.Validate(first.Reference); err != nil {
 		t.Fatalf("Specs validation: %v", err)
 	}
+	if err := apicatalog.Validate(first.Catalog); err != nil {
+		t.Fatalf("catalog Specs validation: %v", err)
+	}
 
-	assertExactTopology(t, functions, first)
-	assertSorted(t, first)
+	assertExactTopology(t, functions, first.Reference)
+	assertSorted(t, first.Reference)
+	assertCatalog(t, first.Reference, first.Catalog)
+}
+
+func assertCatalog(t *testing.T, reference *api.Reference, catalog *apicatalog.Catalog) {
+	t.Helper()
+
+	if catalog.ID != reference.ID || catalog.Version != reference.Version {
+		t.Fatalf("catalog identity = %s@%s, API identity = %s@%s", catalog.ID, catalog.Version, reference.ID, reference.Version)
+	}
+
+	if got, want := catalog.NamespaceRoots, []string{"io", "t"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("namespace roots = %v, want %v", got, want)
+	}
+
+	categoryIDs := make([]string, 0, len(catalog.Categories))
+	categorized := make(map[string]string)
+	for _, category := range catalog.Categories {
+		categoryIDs = append(categoryIDs, category.ID)
+		if !sort.StringsAreSorted(category.Functions) {
+			t.Fatalf("category %q functions are not sorted: %v", category.ID, category.Functions)
+		}
+
+		for _, function := range category.Functions {
+			if previous, exists := categorized[function]; exists {
+				t.Fatalf("function %q appears in categories %q and %q", function, previous, category.ID)
+			}
+
+			categorized[function] = category.ID
+		}
+	}
+
+	wantCategories := []string{"arrays", "collections", "datetime", "math", "objects", "path", "strings", "types", "utils"}
+	if !reflect.DeepEqual(categoryIDs, wantCategories) {
+		t.Fatalf("categories = %v, want %v", categoryIDs, wantCategories)
+	}
+
+	globalCount := 0
+	for _, namespace := range reference.Namespaces {
+		if namespace.Name != "" {
+			continue
+		}
+
+		globalCount = len(namespace.Functions)
+		for _, function := range namespace.Functions {
+			if _, exists := categorized[function.Name]; !exists {
+				t.Fatalf("global function %q is not categorized", function.Name)
+			}
+		}
+	}
+
+	if len(categorized) != globalCount {
+		t.Fatalf("categorized functions = %d, global functions = %d", len(categorized), globalCount)
+	}
 }
 
 func fullFunctions(t *testing.T) *runtime.Functions {

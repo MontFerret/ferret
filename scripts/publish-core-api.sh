@@ -2,8 +2,8 @@
 
 set -eu
 
-if [ "$#" -lt 2 ] || [ "$#" -gt 4 ]; then
-	printf 'Usage: %s <api-reference> <gh-pages-checkout> [remote] [branch]\n' "$0" >&2
+if [ "$#" -lt 3 ] || [ "$#" -gt 5 ]; then
+	printf 'Usage: %s <api-reference> <api-catalog> <gh-pages-checkout> [remote] [branch]\n' "$0" >&2
 	exit 2
 fi
 
@@ -11,12 +11,19 @@ script_dir=$(CDPATH='' cd -- "$(dirname "$0")" && pwd)
 source_root=$(CDPATH='' cd -- "$script_dir/.." && pwd)
 reference_dir=$(CDPATH='' cd -- "$(dirname "$1")" && pwd)
 reference="$reference_dir/$(basename "$1")"
-pages_root=$(CDPATH='' cd -- "$2" && pwd)
-remote=${3:-origin}
-branch=${4:-gh-pages}
+catalog_dir=$(CDPATH='' cd -- "$(dirname "$2")" && pwd)
+catalog="$catalog_dir/$(basename "$2")"
+pages_root=$(CDPATH='' cd -- "$3" && pwd)
+remote=${4:-origin}
+branch=${5:-gh-pages}
 
 if [ ! -f "$reference" ]; then
 	printf 'API Reference not found: %s\n' "$reference" >&2
+	exit 1
+fi
+
+if [ ! -f "$catalog" ]; then
+	printf 'API Catalog not found: %s\n' "$catalog" >&2
 	exit 1
 fi
 
@@ -34,15 +41,17 @@ version=$(jq -er '.version | strings | select(length > 0)' "$reference")
 
 go -C "$source_root/tools/apipublish" run . \
 	-reference "$reference" \
+	-catalog "$catalog" \
 	-pages "$pages_root"
 
-artifact="versions/$version/api.json"
-git -C "$pages_root" add -- index.json "$artifact"
+reference_artifact="versions/$version/api.json"
+catalog_artifact="versions/$version/catalog.json"
+git -C "$pages_root" add -- index.json "$reference_artifact" "$catalog_artifact"
 
 if git -C "$pages_root" diff --cached --quiet; then
 	printf 'Publication produced no staged changes for %s\n' "$version" >&2
 	exit 1
 fi
 
-git -C "$pages_root" commit -m "Publish montferret/core API $version" -- index.json "$artifact"
+git -C "$pages_root" commit -m "Publish montferret/core API artifacts $version" -- index.json "$reference_artifact" "$catalog_artifact"
 git -C "$pages_root" push "$remote" "HEAD:refs/heads/$branch"
