@@ -47,7 +47,7 @@ func Generate(ctx context.Context, options Options) (*Artifacts, error) {
 		return nil, fmt.Errorf("validate generated %s API Reference %s: %w", moduleID, options.Version, err)
 	}
 
-	stdlibCatalog, err := buildStandardLibraryCatalog(options.Version, registered, reference, standardLibraryCategories, categoryOverrides)
+	stdlibCatalog, err := buildStandardLibraryCatalog(options.Version, registered, standardLibraryCategories, categoryOverrides)
 	if err != nil {
 		return nil, err
 	}

@@ -72,48 +72,46 @@ func assertCatalog(t *testing.T, reference *api.Reference, catalog *apicatalog.C
 		t.Fatalf("catalog identity = %s@%s, API identity = %s@%s", catalog.ID, catalog.Version, reference.ID, reference.Version)
 	}
 
-	if got, want := catalog.NamespaceRoots, []string{"io", "t"}; !reflect.DeepEqual(got, want) {
-		t.Fatalf("namespace roots = %v, want %v", got, want)
-	}
-
 	categoryIDs := make([]string, 0, len(catalog.Categories))
 	categorized := make(map[string]string)
 	for _, category := range catalog.Categories {
 		categoryIDs = append(categoryIDs, category.ID)
-		if !sort.StringsAreSorted(category.Functions) {
-			t.Fatalf("category %q functions are not sorted: %v", category.ID, category.Functions)
+		for index := 1; index < len(category.Functions); index++ {
+			previous := category.Functions[index-1]
+			current := category.Functions[index]
+			if previous.Namespace > current.Namespace || previous.Namespace == current.Namespace && previous.Name >= current.Name {
+				t.Fatalf("category %q functions are not sorted: %v", category.ID, category.Functions)
+			}
 		}
 
 		for _, function := range category.Functions {
-			if previous, exists := categorized[function]; exists {
-				t.Fatalf("function %q appears in categories %q and %q", function, previous, category.ID)
+			identity := function.Namespace + "\x00" + function.Name
+			if previous, exists := categorized[identity]; exists {
+				t.Fatalf("function %s::%s appears in categories %q and %q", function.Namespace, function.Name, previous, category.ID)
 			}
 
-			categorized[function] = category.ID
+			categorized[identity] = category.ID
 		}
 	}
 
-	wantCategories := []string{"arrays", "collections", "datetime", "math", "objects", "path", "strings", "types", "utils"}
+	wantCategories := []string{"arrays", "collections", "datetime", "io", "math", "objects", "path", "strings", "testing", "types", "utils"}
 	if !reflect.DeepEqual(categoryIDs, wantCategories) {
 		t.Fatalf("categories = %v, want %v", categoryIDs, wantCategories)
 	}
 
-	globalCount := 0
+	functionCount := 0
 	for _, namespace := range reference.Namespaces {
-		if namespace.Name != "" {
-			continue
-		}
-
-		globalCount = len(namespace.Functions)
 		for _, function := range namespace.Functions {
-			if _, exists := categorized[function.Name]; !exists {
-				t.Fatalf("global function %q is not categorized", function.Name)
+			functionCount++
+			identity := namespace.Name + "\x00" + function.Name
+			if _, exists := categorized[identity]; !exists {
+				t.Fatalf("function %s::%s is not categorized", namespace.Name, function.Name)
 			}
 		}
 	}
 
-	if len(categorized) != globalCount {
-		t.Fatalf("categorized functions = %d, global functions = %d", len(categorized), globalCount)
+	if len(categorized) != functionCount {
+		t.Fatalf("categorized functions = %d, API functions = %d", len(categorized), functionCount)
 	}
 }
 

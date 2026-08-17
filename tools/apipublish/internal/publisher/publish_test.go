@@ -207,6 +207,15 @@ func TestPublishRejectsInvalidIncomingCatalogWithoutMutation(t *testing.T) {
 		{name: "malformed", catalog: []byte("{\n"), want: "parse generated API Catalog"},
 		{name: "identity mismatch", catalog: catalogData(t, "2.0.0-alpha.47", "other/module"), want: "does not match API id"},
 		{name: "version mismatch", catalog: catalogData(t, "2.0.0-alpha.46", "montferret/core"), want: "does not match API version"},
+		{name: "unknown namespace", catalog: mutateCatalogData(t, "2.0.0-alpha.47", func(value *apicatalog.Catalog) {
+			value.Categories[0].Functions[0].Namespace = "io::missing"
+		}), want: "unknown API namespace"},
+		{name: "unknown function", catalog: mutateCatalogData(t, "2.0.0-alpha.47", func(value *apicatalog.Catalog) {
+			value.Categories[0].Functions[0].Name = "MISSING"
+		}), want: "unknown function"},
+		{name: "uncategorized namespaced function", catalog: mutateCatalogData(t, "2.0.0-alpha.47", func(value *apicatalog.Catalog) {
+			value.Categories = value.Categories[1:]
+		}), want: `function "io::fs::READ" is not assigned`},
 	}
 
 	for _, test := range tests {
@@ -231,17 +240,30 @@ func referenceData(t *testing.T, version, id string) []byte {
 		SchemaVersion: api.SchemaVersion,
 		ID:            id,
 		Version:       version,
-		Namespaces: []api.Namespace{{
-			Name: "",
-			Functions: []api.Function{{
-				Name: "PING",
-				Signatures: []api.Signature{{
-					Parameters:  []api.Parameter{},
-					Description: "Returns a value.",
-					Return:      &api.Return{Type: "String", Description: "Value."},
+		Namespaces: []api.Namespace{
+			{
+				Name: "",
+				Functions: []api.Function{{
+					Name: "PING",
+					Signatures: []api.Signature{{
+						Parameters:  []api.Parameter{},
+						Description: "Returns a value.",
+						Return:      &api.Return{Type: "String", Description: "Value."},
+					}},
 				}},
-			}},
-		}},
+			},
+			{
+				Name: "io::fs",
+				Functions: []api.Function{{
+					Name: "READ",
+					Signatures: []api.Signature{{
+						Parameters:  []api.Parameter{},
+						Description: "Reads a file.",
+						Return:      &api.Return{Type: "String", Description: "Contents."},
+					}},
+				}},
+			},
+		},
 	}
 
 	data, err := json.MarshalIndent(reference, "", "  ")
@@ -259,14 +281,38 @@ func catalogData(t *testing.T, version, id string) []byte {
 		SchemaVersion: apicatalog.SchemaVersion,
 		ID:            id,
 		Version:       version,
-		Categories: []apicatalog.Category{{
-			ID:          "utils",
-			Title:       "Utilities",
-			Description: "General utility functions.",
-			Functions:   []string{"PING"},
-		}},
-		NamespaceRoots: []string{},
+		Categories: []apicatalog.Category{
+			{
+				ID:          "io",
+				Title:       "I/O",
+				Description: "Input and output functions.",
+				Functions:   []apicatalog.FunctionRef{{Namespace: "io::fs", Name: "READ"}},
+			},
+			{
+				ID:          "utils",
+				Title:       "Utilities",
+				Description: "General utility functions.",
+				Functions:   []apicatalog.FunctionRef{{Namespace: "", Name: "PING"}},
+			},
+		},
 	}
+
+	data, err := json.MarshalIndent(catalog, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return append(data, '\n')
+}
+
+func mutateCatalogData(t *testing.T, version string, mutate func(*apicatalog.Catalog)) []byte {
+	t.Helper()
+
+	catalog, err := apicatalog.Parse(catalogData(t, version, "montferret/core"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	mutate(catalog)
 
 	data, err := json.MarshalIndent(catalog, "", "  ")
 	if err != nil {

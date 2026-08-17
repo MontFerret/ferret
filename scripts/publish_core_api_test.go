@@ -90,9 +90,11 @@ func writeCatalog(t *testing.T, path, version string) {
 			"id":          "utils",
 			"title":       "Utilities",
 			"description": "General utility functions.",
-			"functions":   []string{"PING"},
+			"functions": []any{map[string]any{
+				"namespace": "",
+				"name":      "PING",
+			}},
 		}},
-		"namespaceRoots": []string{},
 	}
 
 	data, err := json.MarshalIndent(catalog, "", "  ")

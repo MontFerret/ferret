@@ -3,7 +3,6 @@ package analyzer
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/MontFerret/specs/pkg/api"
 	apicatalog "github.com/MontFerret/specs/pkg/api/catalog"
@@ -19,53 +18,40 @@ func validateCatalogAgainstReference(reference *api.Reference, catalog *apicatal
 		problems = append(problems, fmt.Errorf("catalog version %q does not match API version %q", catalog.Version, reference.Version))
 	}
 
-	globalFunctions := make(map[string]struct{})
-	namespaceRoots := make(map[string]struct{})
+	apiFunctions := make(map[functionIdentity]struct{})
+	apiNamespaces := make(map[string]map[string]struct{}, len(reference.Namespaces))
 	for _, namespace := range reference.Namespaces {
-		if namespace.Name == "" {
-			for _, function := range namespace.Functions {
-				globalFunctions[function.Name] = struct{}{}
-			}
-
-			continue
+		functions := make(map[string]struct{}, len(namespace.Functions))
+		apiNamespaces[namespace.Name] = functions
+		for _, function := range namespace.Functions {
+			functions[function.Name] = struct{}{}
+			apiFunctions[functionIdentity{Namespace: namespace.Name, Name: function.Name}] = struct{}{}
 		}
-
-		root, _, _ := strings.Cut(namespace.Name, "::")
-		namespaceRoots[root] = struct{}{}
 	}
 
-	categorized := make(map[string]string)
+	categorized := make(map[functionIdentity]string)
 	for _, category := range catalog.Categories {
 		for _, function := range category.Functions {
-			if _, exists := globalFunctions[function]; !exists {
-				problems = append(problems, fmt.Errorf("catalog category %q references unknown global function %q", category.ID, function))
+			identity := functionIdentity{Namespace: function.Namespace, Name: function.Name}
+			namespace, exists := apiNamespaces[function.Namespace]
+
+			if !exists {
+				problems = append(problems, fmt.Errorf("catalog category %q references unknown API namespace %q", category.ID, function.Namespace))
+			} else if _, exists := namespace[function.Name]; !exists {
+				problems = append(problems, fmt.Errorf("catalog category %q references unknown function %q in API namespace %q", category.ID, function.Name, function.Namespace))
 			}
 
-			if previous, exists := categorized[function]; exists {
-				problems = append(problems, fmt.Errorf("global function %q is assigned to categories %q and %q", function, previous, category.ID))
+			if previous, exists := categorized[identity]; exists {
+				problems = append(problems, fmt.Errorf("function %q is assigned to categories %q and %q", identity, previous, category.ID))
 			}
 
-			categorized[function] = category.ID
+			categorized[identity] = category.ID
 		}
 	}
 
-	for function := range globalFunctions {
+	for function := range apiFunctions {
 		if _, exists := categorized[function]; !exists {
-			problems = append(problems, fmt.Errorf("global function %q is not assigned to a catalog category", function))
-		}
-	}
-
-	declaredRoots := make(map[string]struct{}, len(catalog.NamespaceRoots))
-	for _, root := range catalog.NamespaceRoots {
-		declaredRoots[root] = struct{}{}
-		if _, exists := namespaceRoots[root]; !exists {
-			problems = append(problems, fmt.Errorf("catalog namespace root %q does not cover an API namespace", root))
-		}
-	}
-
-	for root := range namespaceRoots {
-		if _, exists := declaredRoots[root]; !exists {
-			problems = append(problems, fmt.Errorf("API namespace root %q is not declared by the catalog", root))
+			problems = append(problems, fmt.Errorf("function %q is not assigned to a catalog category", function))
 		}
 	}
 
