@@ -42,13 +42,25 @@ func New(setters ...Option) (*Engine, error) {
 
 	for _, m := range opts.modules {
 		if err := m.Register(boot); err != nil {
-			return nil, closeEngineOnError(err, boot.hooks.engine, boot.host.Network(), ownsNetwork)
+			return nil, closeEngineOnError(
+				err,
+				boot.hooks.engine,
+				boot.host.FileSystem(),
+				boot.host.Network(),
+				ownsNetwork,
+			)
 		}
 	}
 
 	h, err := boot.host.Build()
 	if err != nil {
-		return nil, closeEngineOnError(err, boot.hooks.engine, boot.host.Network(), ownsNetwork)
+		return nil, closeEngineOnError(
+			err,
+			boot.hooks.engine,
+			boot.host.FileSystem(),
+			boot.host.Network(),
+			ownsNetwork,
+		)
 	}
 
 	hooks := boot.hooks.clone()
@@ -56,7 +68,7 @@ func New(setters ...Option) (*Engine, error) {
 	if err := hooks.engine.runInitHooks(); err != nil {
 		initErr := fmt.Errorf("init hooks: %w", err)
 
-		return nil, closeEngineOnError(initErr, hooks.engine, h.network, ownsNetwork)
+		return nil, closeEngineOnError(initErr, hooks.engine, h.fs, h.network, ownsNetwork)
 	}
 
 	return &Engine{
@@ -162,9 +174,10 @@ func (e *Engine) Run(ctx context.Context, src *source.Source, opts ...SessionOpt
 	return session.Run(ctx)
 }
 
-// Close runs the engine close hooks and releases engine-scoped resources.
+// Close runs the engine close hooks and releases engine-scoped resources,
+// including the configured rooted filesystem and owned network idle connections.
 func (e *Engine) Close() error {
-	return closeEngine(e.hooks.engine, e.host.network, e.ownsNetwork)
+	return closeEngine(e.hooks.engine, e.host.fs, e.host.network, e.ownsNetwork)
 }
 
 func (e *Engine) newPlan(prog *bytecode.Program) (*Plan, error) {

@@ -1,6 +1,7 @@
 package ferret
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
@@ -41,7 +42,9 @@ func newHostContext(opts *options) (*hostContext, error) {
 	if network == nil {
 		network, err = ferretnet.New()
 		if err != nil {
-			return nil, fmt.Errorf("network: %w", err)
+			networkErr := fmt.Errorf("network: %w", err)
+
+			return nil, errors.Join(networkErr, closeFileSystem(rootFs))
 		}
 	}
 

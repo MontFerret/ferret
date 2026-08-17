@@ -4,15 +4,22 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"sync"
 )
 
 type rootFS struct {
-	root     *os.Root
-	readOnly bool
+	closeErr  error
+	root      *os.Root
+	closeOnce sync.Once
+	readOnly  bool
 }
 
 func (r *rootFS) Close() error {
-	return r.root.Close()
+	r.closeOnce.Do(func() {
+		r.closeErr = r.root.Close()
+	})
+
+	return r.closeErr
 }
 
 func (r *rootFS) ReadFile(path string) ([]byte, error) {

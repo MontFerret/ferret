@@ -3,32 +3,59 @@ package ferret
 import (
 	"errors"
 	"fmt"
+	"io"
 
+	ferretfs "github.com/MontFerret/ferret/v2/pkg/fs"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 )
 
-func closeEngine(hooks *engineHookRegistry, network ferretnet.Network, ownsNetwork bool) error {
-	closeErr := hooks.runCloseHooks()
+func closeEngine(
+	hooks *engineHookRegistry,
+	filesystem ferretfs.FileSystem,
+	network ferretnet.Network,
+	ownsNetwork bool,
+) error {
+	hookErr := hooks.runCloseHooks()
+	filesystemErr := closeFileSystem(filesystem)
 
 	if ownsNetwork {
 		ferretnet.CloseIdleNetworkConnections(network)
 	}
 
-	if closeErr != nil {
-		return errors.Join(closeErr, fmt.Errorf("close hooks: %w", closeErr))
+	if hookErr != nil {
+		hookErr = errors.Join(hookErr, fmt.Errorf("close hooks: %w", hookErr))
 	}
 
-	return nil
+	return errors.Join(hookErr, filesystemErr)
 }
 
-func closeEngineOnError(err error, hooks *engineHookRegistry, network ferretnet.Network, ownsNetwork bool) error {
+func closeEngineOnError(
+	err error,
+	hooks *engineHookRegistry,
+	filesystem ferretfs.FileSystem,
+	network ferretnet.Network,
+	ownsNetwork bool,
+) error {
 	if err != nil {
-		closeErr := closeEngine(hooks, network, ownsNetwork)
+		closeErr := closeEngine(hooks, filesystem, network, ownsNetwork)
 
 		if closeErr != nil {
-			return errors.Join(err, fmt.Errorf("close hooks: %w", closeErr))
+			return errors.Join(err, fmt.Errorf("close engine: %w", closeErr))
 		}
 	}
 
 	return err
+}
+
+func closeFileSystem(filesystem ferretfs.FileSystem) error {
+	closer, ok := filesystem.(io.Closer)
+	if !ok || closer == nil {
+		return nil
+	}
+
+	if err := closer.Close(); err != nil {
+		return fmt.Errorf("close filesystem: %w", err)
+	}
+
+	return nil
 }
