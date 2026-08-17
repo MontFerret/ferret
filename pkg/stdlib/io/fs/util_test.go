@@ -9,10 +9,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-type closeable interface {
-	Close() error
-}
-
 func tempFileSystemContext() (context.Context, string, string, func()) {
 	root, err := os.MkdirTemp("", "fstest")
 	So(err, ShouldBeNil)
@@ -24,10 +20,7 @@ func tempFileSystemContext() (context.Context, string, string, func()) {
 	path := "test.txt"
 
 	cleanup := func() {
-		if c, ok := filesystem.(closeable); ok {
-			_ = c.Close()
-		}
-
+		_ = filesystem.Close()
 		_ = os.RemoveAll(root)
 	}
 

@@ -8,6 +8,10 @@ type disabledFS struct{}
 
 var disabledFileSystem = disabledFS{}
 
+func (disabledFS) Close() error {
+	return nil
+}
+
 func (n disabledFS) ReadFile(_ string) ([]byte, error) {
 	return nil, ErrRootNotConfigured
 }

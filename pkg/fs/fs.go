@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"io"
 	"io/fs"
 	"os"
 )
@@ -30,16 +31,20 @@ type (
 		RemoveAll(path string) error
 	}
 
-	// FileSystem is an interface that combines file reading, directory operations, file writing, and file removal capabilities.
-	// It provides a unified interface for accessing files and directories in a filesystem-based environment.
+	// FileSystem combines file reading, directory operations, writing, removal,
+	// and lifecycle management. The caller owns every FileSystem returned by New
+	// and must close it when it is no longer needed.
 	FileSystem interface {
 		Reader
 		Directories
 		Writer
 		Remover
+		io.Closer
 	}
 )
 
+// New creates a filesystem from the provided options. The caller owns the
+// returned filesystem and must close it when it is no longer needed.
 func New(setters ...Option) (FileSystem, error) {
 	opts := &options{
 		Root:     "",
