@@ -2,10 +2,13 @@ package ferret
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
@@ -302,5 +305,141 @@ RETURN y`
 	formatted := diagnostics.Format(event.Error)
 	if !strings.Contains(formatted, "udf-error.fql:4") || !strings.Contains(formatted, "RETURN b / 0") {
 		t.Fatalf("expected UDF error location, got:\n%s", formatted)
+	}
+	assertFrameValues(t, session, 1, map[string]string{"x": "1"})
+	value, err := session.EvaluateFrame(context.Background(), 1, "x + 1")
+	if err != nil || value.Display != "2" {
+		t.Fatalf("unexpected runtime-error caller evaluation: %#v, %v", value, err)
+	}
+}
+
+func TestDebugSessionCallerFramesExposeBindingsCellsAndParameters(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	query := `VAR shared = 1
+FUNC outer(p) {
+  VAR x = p + shared - shared
+  FUNC inner(q) {
+    shared = shared + q
+    LET x = shared + q
+    RETURN x
+  }
+  LET result = inner(3)
+  RETURN result
+}
+LET box = {value: 10}
+LET x = 10
+RETURN outer(2) + x + @input + box.value - 10`
+	plan, err := engine.CompileDebug(context.Background(), source.New("caller-frames.fql", query))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+
+	session, err := plan.NewDebugSession(context.Background(), WithSessionParam("input", 5))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	breakpoint, err := session.SetBreakpoint("caller-frames.fql", 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !breakpoint.Bound || breakpoint.Line != 5 {
+		t.Fatalf("unexpected inner breakpoint: %#v", breakpoint)
+	}
+
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	event, err := session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != DebugReasonBreakpoint || event.Location.Line != 5 || event.Depth != 2 {
+		t.Fatalf("unexpected nested stop: %#v", event)
+	}
+
+	frames, err := session.Frames()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(frames) != 3 || frames[0].Name != "inner" || frames[1].Name != "outer" || frames[2].Name != "<main>" {
+		t.Fatalf("unexpected nested frames: %#v", frames)
+	}
+
+	assertFrameValues(t, session, 0, map[string]string{"q": "3", "shared": "1", "@input": "5"})
+	assertFrameValues(t, session, 1, map[string]string{"p": "2", "x": "2", "shared": "1", "@input": "5"})
+	assertFrameValues(t, session, 2, map[string]string{"x": "10", "shared": "1", "@input": "5"})
+
+	callerLocals, err := session.FrameLocals(2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var callerReference debugger.ValueReference
+	for _, local := range callerLocals {
+		if local.Name == "box" {
+			callerReference = local.Value.Reference
+		}
+	}
+	if !callerReference.Valid() {
+		t.Fatalf("expected expandable caller value: %#v", callerLocals)
+	}
+
+	value, err := session.EvaluateFrame(context.Background(), 2, "x + shared + @input")
+	if err != nil || value.Display != "16" {
+		t.Fatalf("unexpected caller evaluation: %#v, %v", value, err)
+	}
+	if _, err := session.FrameLocals(-1); !errors.Is(err, runtime.ErrInvalidArgument) {
+		t.Fatalf("expected negative frame rejection, got %v", err)
+	}
+	if _, err := session.FrameLocals(len(frames)); !errors.Is(err, runtime.ErrNotFound) {
+		t.Fatalf("expected missing frame rejection, got %v", err)
+	}
+
+	event, err = session.Step(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Location.Line != 6 {
+		t.Fatalf("unexpected mutable-cell step: %#v", event)
+	}
+	if _, err := session.Variables(callerReference); !errors.Is(err, runtime.ErrNotFound) {
+		t.Fatalf("expected caller reference to become stale on resume, got %v", err)
+	}
+	assertFrameValues(t, session, 0, map[string]string{"shared": "4", "@input": "5"})
+	assertFrameValues(t, session, 1, map[string]string{"x": "2", "shared": "4", "@input": "5"})
+	assertFrameValues(t, session, 2, map[string]string{"x": "10", "shared": "4", "@input": "5"})
+
+	value, err = session.EvaluateFrame(context.Background(), 1, "x + shared + @input")
+	if err != nil || value.Display != "11" {
+		t.Fatalf("unexpected mutable caller evaluation: %#v, %v", value, err)
+	}
+}
+
+func assertFrameValues(t *testing.T, session interface {
+	FrameLocals(int) ([]debugger.Variable, error)
+}, frame int, expected map[string]string) {
+	t.Helper()
+
+	locals, err := session.FrameLocals(frame)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actual := make(map[string]string, len(locals))
+	for _, local := range locals {
+		actual[local.Name] = local.Value.Display
+	}
+
+	for name, value := range expected {
+		if actual[name] != value {
+			t.Fatalf("frame %d binding %q: expected %q, got %q in %#v", frame, name, value, actual[name], locals)
+		}
 	}
 }

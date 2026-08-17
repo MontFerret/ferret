@@ -316,6 +316,12 @@ func (s *Session) Frames() ([]Frame, error) {
 
 // Locals returns the visible top-frame locals followed by bound parameters.
 func (s *Session) Locals() ([]Variable, error) {
+	return s.FrameLocals(0)
+}
+
+// FrameLocals returns the visible locals and bound parameters for one paused
+// frame. Frame indexes follow Frames: zero is the current frame.
+func (s *Session) FrameLocals(frame int) ([]Variable, error) {
 	if err := s.lockCommand(); err != nil {
 		return nil, err
 	}
@@ -324,7 +330,7 @@ func (s *Session) Locals() ([]Variable, error) {
 	if err := s.ensureOpen(); err != nil {
 		return nil, err
 	}
-	locals, err := s.execution.Locals()
+	locals, err := s.frameLocals(frame)
 
 	if err != nil {
 		return nil, err
@@ -347,6 +353,18 @@ func (s *Session) Locals() ([]Variable, error) {
 	}
 
 	return out, nil
+}
+
+func (s *Session) frameLocals(frame int) ([]vm.DebugLocal, error) {
+	if inspector, ok := s.execution.(vm.DebugFrameInspector); ok {
+		return inspector.FrameLocals(frame)
+	}
+
+	if frame != 0 {
+		return nil, runtime.Error(runtime.ErrInvalidOperation, "debug execution does not support caller frame inspection")
+	}
+
+	return s.execution.Locals()
 }
 
 // Variables returns the child variables for one expandable debugger value from
@@ -408,6 +426,11 @@ func (s *Session) Variables(reference ValueReference) ([]Variable, error) {
 // rejects calls, queries, mutation, async/event behavior, and full collection
 // execution.
 func (s *Session) Evaluate(ctx context.Context, expression string) (Value, error) {
+	return s.EvaluateFrame(ctx, 0, expression)
+}
+
+// EvaluateFrame evaluates an expression against one paused frame.
+func (s *Session) EvaluateFrame(ctx context.Context, frame int, expression string) (Value, error) {
 	if err := s.lockCommand(); err != nil {
 		return Value{}, err
 	}
@@ -416,7 +439,7 @@ func (s *Session) Evaluate(ctx context.Context, expression string) (Value, error
 	if err := s.ensureOpen(); err != nil {
 		return Value{}, err
 	}
-	locals, err := s.execution.Locals()
+	locals, err := s.frameLocals(frame)
 
 	if err != nil {
 		return Value{}, err
