@@ -49,3 +49,55 @@ RETURN FOR i IN 1..100
 		}
 	}
 }
+
+func BenchmarkDebugSessionPausedCallerFrameInspection(b *testing.B) {
+	engine, err := New()
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer engine.Close()
+
+	plan, err := engine.CompileDebug(context.Background(), source.New("caller.fql", `LET base = 1
+FUNC outer(p) {
+  LET carried = base + p
+  FUNC inner(q) {
+    RETURN carried + q
+  }
+  LET result = inner(3)
+  RETURN result
+}
+RETURN outer(2)`))
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer plan.Close()
+
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.SetBreakpoint("caller.fql", 5); err != nil {
+		b.Fatal(err)
+	}
+	if _, err := session.Start(context.Background()); err != nil {
+		b.Fatal(err)
+	}
+	if _, err := session.Continue(context.Background()); err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for b.Loop() {
+		locals, localsErr := session.FrameLocals(2)
+		if localsErr != nil {
+			b.Fatal(localsErr)
+		}
+		if len(locals) == 0 {
+			b.Fatal("caller frame has no locals")
+		}
+	}
+}

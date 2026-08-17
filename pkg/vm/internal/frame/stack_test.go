@@ -178,6 +178,9 @@ func TestCallStackSetTopMetadata(t *testing.T) {
 	if len(traces) != 1 || traces[0].FunctionID != -1 || traces[0].PC != 10 {
 		t.Fatalf("unexpected structural debug trace: %#v", traces)
 	}
+	if len(traces[0].Registers) != 1 || &traces[0].Registers[0] != &top.CallerRegisters[0] {
+		t.Fatalf("debug trace did not retain caller registers: %#v", traces)
+	}
 }
 
 func TestCallStackTraceEntriesOrderAndMetadata(t *testing.T) {

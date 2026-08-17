@@ -1,5 +1,7 @@
 package frame
 
+import "github.com/MontFerret/ferret/v2/pkg/runtime"
+
 // CallStack manages structural call frames for UDF execution.
 type (
 	CallStack struct {
@@ -13,6 +15,7 @@ type (
 	}
 
 	DebugTraceEntry struct {
+		Registers  []runtime.Value
 		FunctionID int
 		PC         int
 	}
@@ -150,6 +153,7 @@ func (s *CallStack) DebugTraceEntries() []DebugTraceEntry {
 		traces = append(traces, DebugTraceEntry{
 			FunctionID: functionID,
 			PC:         frame.structuralCallSitePC(),
+			Registers:  frame.CallerRegisters,
 		})
 	}
 

@@ -9,6 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/internal/debugpoint"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
 type (
@@ -54,6 +55,13 @@ type (
 		Params() runtime.Params
 		Frames() ([]DebugFrame, error)
 		Close() error
+	}
+
+	// DebugFrameInspector optionally exposes bindings for retained caller frames.
+	// Frame indexes follow DebugExecution.Frames: zero is the current frame and
+	// larger indexes walk callers from nearest to farthest.
+	DebugFrameInspector interface {
+		FrameLocals(frame int) ([]DebugLocal, error)
 	}
 
 	debugExecution struct {
@@ -225,19 +233,50 @@ func (d *debugExecution) Status() DebugExecutionStatus {
 
 // Locals returns values for bindings visible at the current stop.
 func (d *debugExecution) Locals() ([]DebugLocal, error) {
+	return d.FrameLocals(0)
+}
+
+// FrameLocals returns values for bindings visible in one paused frame.
+func (d *debugExecution) FrameLocals(frame int) ([]DebugLocal, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if d.status != DebugExecutionPaused || d.current == nil {
+	if d.status != DebugExecutionPaused {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "debug execution is not paused at a source location")
 	}
 
-	out := make([]DebugLocal, 0, len(d.current.Bindings))
-	for _, binding := range d.current.Bindings {
-		value := d.vm.state.valueOf(d.vm.program.Constants, binding.Register)
+	if frame < 0 {
+		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug frame index must not be negative")
+	}
+
+	point := d.current
+	registers := []runtime.Value(d.vm.state.registers)
+
+	if frame > 0 {
+		callers := d.vm.state.frames.DebugTraceEntries()
+		index := frame - 1
+		if index >= len(callers) {
+			return nil, runtime.Errorf(runtime.ErrNotFound, "debug frame %d", frame)
+		}
+
+		caller := callers[index]
+		point = d.points.NearestBeforeOrAtInFunction(caller.FunctionID, caller.PC)
+		registers = caller.Registers
+	}
+
+	if point == nil {
+		return nil, runtime.Errorf(runtime.ErrNotFound, "debug frame %d has no source location", frame)
+	}
+
+	out := make([]DebugLocal, 0, len(point.Bindings))
+	for _, binding := range point.Bindings {
+		value, err := d.debugBindingValue(registers, binding.Register)
+		if err != nil {
+			return nil, err
+		}
 
 		if binding.Cell {
-			if handle, ok := d.vm.state.cellHandleOf(binding.Register); ok {
+			if handle, ok := value.(mem.CellHandle); ok {
 				if cellValue, exists := d.vm.state.cells.Get(handle); exists {
 					value = cellValue
 				}
@@ -248,6 +287,30 @@ func (d *debugExecution) Locals() ([]DebugLocal, error) {
 	}
 
 	return out, nil
+}
+
+func (d *debugExecution) debugBindingValue(
+	registers []runtime.Value,
+	operand bytecode.Operand,
+) (runtime.Value, error) {
+	switch {
+	case operand.IsRegister():
+		index := int(operand)
+		if index < 0 || index >= len(registers) {
+			return nil, runtime.Errorf(runtime.ErrUnexpected, "debug binding register %d is unavailable", index)
+		}
+
+		return normalizeValue(registers[index]), nil
+	case operand.IsConstant():
+		index := operand.Constant()
+		if index < 0 || index >= len(d.vm.program.Constants) {
+			return nil, runtime.Errorf(runtime.ErrUnexpected, "debug binding constant %d is unavailable", index)
+		}
+
+		return normalizeValue(d.vm.program.Constants[index]), nil
+	default:
+		return runtime.None, nil
+	}
 }
 
 // Params returns the bound host parameters for the current execution.

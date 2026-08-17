@@ -161,7 +161,7 @@ func TestSessionCloseClearsReferencesCreatedByActiveInspection(t *testing.T) {
 
 	localsDone := make(chan error, 1)
 	go func() {
-		_, err := session.Locals()
+		_, err := session.FrameLocals(0)
 		localsDone <- err
 	}()
 	waitForSignal(t, inspectStarted, "value inspection")

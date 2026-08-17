@@ -66,6 +66,13 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 	if value.Display != "2" || values.typeCalls == 0 || values.debugInfoCalls == 0 {
 		t.Fatalf("unexpected evaluated value: %#v", value)
 	}
+	if _, err := session.FrameLocals(1); !errors.Is(err, runtime.ErrInvalidOperation) {
+		t.Fatalf("expected legacy execution to reject caller inspection, got %v", err)
+	}
+	value, err = session.EvaluateFrame(context.Background(), 0, "x + 2")
+	if err != nil || value.Display != "3" {
+		t.Fatalf("unexpected legacy top-frame evaluation: %#v, %v", value, err)
+	}
 	if err := session.Close(); err != nil {
 		t.Fatal(err)
 	}
