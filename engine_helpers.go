@@ -3,7 +3,6 @@ package ferret
 import (
 	"errors"
 	"fmt"
-	"io"
 
 	ferretfs "github.com/MontFerret/ferret/v2/pkg/fs"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
@@ -48,12 +47,7 @@ func closeEngineOnError(
 }
 
 func closeFileSystem(filesystem ferretfs.FileSystem) error {
-	closer, ok := filesystem.(io.Closer)
-	if !ok || closer == nil {
-		return nil
-	}
-
-	if err := closer.Close(); err != nil {
+	if err := filesystem.Close(); err != nil {
 		return fmt.Errorf("close filesystem: %w", err)
 	}
 

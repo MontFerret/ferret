@@ -2,7 +2,6 @@ package ferret
 
 import (
 	"errors"
-	"io"
 	"strings"
 	"testing"
 
@@ -17,12 +16,7 @@ type failingCloseFileSystem struct {
 }
 
 func (f *failingCloseFileSystem) Close() error {
-	closer, ok := f.FileSystem.(io.Closer)
-	if !ok {
-		return f.closeErr
-	}
-
-	return errors.Join(f.closeErr, closer.Close())
+	return errors.Join(f.closeErr, f.FileSystem.Close())
 }
 
 func TestEngineCloseClosesRootFileSystem(t *testing.T) {

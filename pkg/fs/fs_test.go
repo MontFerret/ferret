@@ -9,6 +9,19 @@ import (
 	"testing"
 )
 
+func TestDisabledFSCloseIsIdempotent(t *testing.T) {
+	filesystem, err := New()
+	if err != nil {
+		t.Fatalf("create disabled filesystem: %v", err)
+	}
+
+	for range 2 {
+		if err := filesystem.Close(); err != nil {
+			t.Fatalf("close disabled filesystem: %v", err)
+		}
+	}
+}
+
 func TestRootFSLstatDoesNotFollowFinalSymlink(t *testing.T) {
 	root := t.TempDir()
 	if err := os.WriteFile(filepath.Join(root, "target.txt"), []byte("target"), 0o600); err != nil {

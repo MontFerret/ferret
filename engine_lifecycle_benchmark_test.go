@@ -1,9 +1,6 @@
 package ferret
 
-import (
-	"io"
-	"testing"
-)
+import "testing"
 
 func BenchmarkEngineFSRootLifecycle(b *testing.B) {
 	root := b.TempDir()
@@ -20,15 +17,5 @@ func BenchmarkEngineFSRootLifecycle(b *testing.B) {
 		if err := engine.Close(); err != nil {
 			b.Fatalf("close engine: %v", err)
 		}
-
-		// Keep a direct close outside the measured interval so a lifecycle
-		// regression cannot make the benchmark accumulate descriptors.
-		b.StopTimer()
-		if closer, ok := engine.host.fs.(io.Closer); ok {
-			if err := closer.Close(); err != nil {
-				b.Fatalf("close filesystem: %v", err)
-			}
-		}
-		b.StartTimer()
 	}
 }
