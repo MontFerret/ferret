@@ -1,0 +1,872 @@
+{
+  "schemaVersion": 1,
+  "id": "montferret/core",
+  "version": "2.0.0-alpha.49",
+  "categories": [
+    {
+      "id": "arrays",
+      "title": "Arrays",
+      "description": "Global functions for working with arrays.",
+      "functions": [
+        {
+          "namespace": "",
+          "name": "append"
+        },
+        {
+          "namespace": "",
+          "name": "first"
+        },
+        {
+          "namespace": "",
+          "name": "flatten"
+        },
+        {
+          "namespace": "",
+          "name": "intersection"
+        },
+        {
+          "namespace": "",
+          "name": "last"
+        },
+        {
+          "namespace": "",
+          "name": "minus"
+        },
+        {
+          "namespace": "",
+          "name": "nth"
+        },
+        {
+          "namespace": "",
+          "name": "outersection"
+        },
+        {
+          "namespace": "",
+          "name": "pop"
+        },
+        {
+          "namespace": "",
+          "name": "position"
+        },
+        {
+          "namespace": "",
+          "name": "push"
+        },
+        {
+          "namespace": "",
+          "name": "remove_nth"
+        },
+        {
+          "namespace": "",
+          "name": "remove_value"
+        },
+        {
+          "namespace": "",
+          "name": "remove_values"
+        },
+        {
+          "namespace": "",
+          "name": "shift"
+        },
+        {
+          "namespace": "",
+          "name": "slice"
+        },
+        {
+          "namespace": "",
+          "name": "sorted"
+        },
+        {
+          "namespace": "",
+          "name": "sorted_unique"
+        },
+        {
+          "namespace": "",
+          "name": "union"
+        },
+        {
+          "namespace": "",
+          "name": "union_distinct"
+        },
+        {
+          "namespace": "",
+          "name": "unique"
+        },
+        {
+          "namespace": "",
+          "name": "unshift"
+        }
+      ]
+    },
+    {
+      "id": "collections",
+      "title": "Collections",
+      "description": "Global functions for working with collections.",
+      "functions": [
+        {
+          "namespace": "",
+          "name": "count"
+        },
+        {
+          "namespace": "",
+          "name": "count_distinct"
+        },
+        {
+          "namespace": "",
+          "name": "includes"
+        },
+        {
+          "namespace": "",
+          "name": "reverse"
+        }
+      ]
+    },
+    {
+      "id": "datetime",
+      "title": "Date & Time",
+      "description": "Global functions for working with dates and times.",
+      "functions": [
+        {
+          "namespace": "",
+          "name": "date"
+        },
+        {
+          "namespace": "",
+          "name": "date_add"
+        },
+        {
+          "namespace": "",
+          "name": "date_compare"
+        },
+        {
+          "namespace": "",
+          "name": "date_day"
+        },
+        {
+          "namespace": "",
+          "name": "date_dayofweek"
+        },
+        {
+          "namespace": "",
+          "name": "date_dayofyear"
+        },
+        {
+          "namespace": "",
+          "name": "date_days_in_month"
+        },
+        {
+          "namespace": "",
+          "name": "date_diff"
+        },
+        {
+          "namespace": "",
+          "name": "date_format"
+        },
+        {
+          "namespace": "",
+          "name": "date_hour"
+        },
+        {
+          "namespace": "",
+          "name": "date_leapyear"
+        },
+        {
+          "namespace": "",
+          "name": "date_millisecond"
+        },
+        {
+          "namespace": "",
+          "name": "date_minute"
+        },
+        {
+          "namespace": "",
+          "name": "date_month"
+        },
+        {
+          "namespace": "",
+          "name": "date_quarter"
+        },
+        {
+          "namespace": "",
+          "name": "date_second"
+        },
+        {
+          "namespace": "",
+          "name": "date_subtract"
+        },
+        {
+          "namespace": "",
+          "name": "date_year"
+        },
+        {
+          "namespace": "",
+          "name": "now"
+        }
+      ]
+    },
+    {
+      "id": "io",
+      "title": "I/O",
+      "description": "Functions for working with files, networks, and other input/output operations.",
+      "functions": [
+        {
+          "namespace": "io::fs",
+          "name": "read"
+        },
+        {
+          "namespace": "io::fs",
+          "name": "write"
+        },
+        {
+          "namespace": "io::net::http",
+          "name": "delete"
+        },
+        {
+          "namespace": "io::net::http",
+          "name": "do"
+        },
+        {
+          "namespace": "io::net::http",
+          "name": "get"
+        },
+        {
+          "namespace": "io::net::http",
+          "name": "post"
+        },
+        {
+          "namespace": "io::net::http",
+          "name": "put"
+        }
+      ]
+    },
+    {
+      "id": "math",
+      "title": "Math",
+      "description": "Mathematical and numeric global functions.",
+      "functions": [
+        {
+          "namespace": "",
+          "name": "abs"
+        },
+        {
+          "namespace": "",
+          "name": "acos"
+        },
+        {
+          "namespace": "",
+          "name": "asin"
+        },
+        {
+          "namespace": "",
+          "name": "atan"
+        },
+        {
+          "namespace": "",
+          "name": "atan2"
+        },
+        {
+          "namespace": "",
+          "name": "average"
+        },
+        {
+          "namespace": "",
+          "name": "ceil"
+        },
+        {
+          "namespace": "",
+          "name": "cos"
+        },
+        {
+          "namespace": "",
+          "name": "degrees"
+        },
+        {
+          "namespace": "",
+          "name": "exp"
+        },
+        {
+          "namespace": "",
+          "name": "exp2"
+        },
+        {
+          "namespace": "",
+          "name": "floor"
+        },
+        {
+          "namespace": "",
+          "name": "log"
+        },
+        {
+          "namespace": "",
+          "name": "log10"
+        },
+        {
+          "namespace": "",
+          "name": "log2"
+        },
+        {
+          "namespace": "",
+          "name": "max"
+        },
+        {
+          "namespace": "",
+          "name": "median"
+        },
+        {
+          "namespace": "",
+          "name": "min"
+        },
+        {
+          "namespace": "",
+          "name": "percentile"
+        },
+        {
+          "namespace": "",
+          "name": "pi"
+        },
+        {
+          "namespace": "",
+          "name": "pow"
+        },
+        {
+          "namespace": "",
+          "name": "radians"
+        },
+        {
+          "namespace": "",
+          "name": "rand"
+        },
+        {
+          "namespace": "",
+          "name": "range"
+        },
+        {
+          "namespace": "",
+          "name": "round"
+        },
+        {
+          "namespace": "",
+          "name": "sin"
+        },
+        {
+          "namespace": "",
+          "name": "sqrt"
+        },
+        {
+          "namespace": "",
+          "name": "stddev_population"
+        },
+        {
+          "namespace": "",
+          "name": "stddev_sample"
+        },
+        {
+          "namespace": "",
+          "name": "sum"
+        },
+        {
+          "namespace": "",
+          "name": "tan"
+        },
+        {
+          "namespace": "",
+          "name": "variance_population"
+        },
+        {
+          "namespace": "",
+          "name": "variance_sample"
+        }
+      ]
+    },
+    {
+      "id": "objects",
+      "title": "Objects",
+      "description": "Global functions for working with objects.",
+      "functions": [
+        {
+          "namespace": "",
+          "name": "has"
+        },
+        {
+          "namespace": "",
+          "name": "keep_keys"
+        },
+        {
+          "namespace": "",
+          "name": "keys"
+        },
+        {
+          "namespace": "",
+          "name": "merge"
+        },
+        {
+          "namespace": "",
+          "name": "merge_recursive"
+        },
+        {
+          "namespace": "",
+          "name": "values"
+        },
+        {
+          "namespace": "",
+          "name": "zip"
+        }
+      ]
+    },
+    {
+      "id": "path",
+      "title": "Path",
+      "description": "Global functions for working with paths.",
+      "functions": [
+        {
+          "namespace": "",
+          "name": "base"
+        },
+        {
+          "namespace": "",
+          "name": "clean"
+        },
+        {
+          "namespace": "",
+          "name": "dir"
+        },
+        {
+          "namespace": "",
+          "name": "ext"
+        },
+        {
+          "namespace": "",
+          "name": "is_abs"
+        },
+        {
+          "namespace": "",
+          "name": "join"
+        },
+        {
+          "namespace": "",
+          "name": "match"
+        },
+        {
+          "namespace": "",
+          "name": "separate"
+        }
+      ]
+    },
+    {
+      "id": "strings",
+      "title": "Strings",
+      "description": "Global functions for working with strings.",
+      "functions": [
+        {
+          "namespace": "",
+          "name": "concat"
+        },
+        {
+          "namespace": "",
+          "name": "concat_separator"
+        },
+        {
+          "namespace": "",
+          "name": "contains"
+        },
+        {
+          "namespace": "",
+          "name": "decode_uri_component"
+        },
+        {
+          "namespace": "",
+          "name": "encode_uri_component"
+        },
+        {
+          "namespace": "",
+          "name": "escape_html"
+        },
+        {
+          "namespace": "",
+          "name": "find_first"
+        },
+        {
+          "namespace": "",
+          "name": "find_last"
+        },
+        {
+          "namespace": "",
+          "name": "fmt"
+        },
+        {
+          "namespace": "",
+          "name": "from_base64"
+        },
+        {
+          "namespace": "",
+          "name": "json_parse"
+        },
+        {
+          "namespace": "",
+          "name": "json_stringify"
+        },
+        {
+          "namespace": "",
+          "name": "left"
+        },
+        {
+          "namespace": "",
+          "name": "like"
+        },
+        {
+          "namespace": "",
+          "name": "lower"
+        },
+        {
+          "namespace": "",
+          "name": "ltrim"
+        },
+        {
+          "namespace": "",
+          "name": "md5"
+        },
+        {
+          "namespace": "",
+          "name": "random_token"
+        },
+        {
+          "namespace": "",
+          "name": "regex_match"
+        },
+        {
+          "namespace": "",
+          "name": "regex_replace"
+        },
+        {
+          "namespace": "",
+          "name": "regex_split"
+        },
+        {
+          "namespace": "",
+          "name": "regex_test"
+        },
+        {
+          "namespace": "",
+          "name": "right"
+        },
+        {
+          "namespace": "",
+          "name": "rtrim"
+        },
+        {
+          "namespace": "",
+          "name": "sha1"
+        },
+        {
+          "namespace": "",
+          "name": "sha512"
+        },
+        {
+          "namespace": "",
+          "name": "split"
+        },
+        {
+          "namespace": "",
+          "name": "substitute"
+        },
+        {
+          "namespace": "",
+          "name": "substring"
+        },
+        {
+          "namespace": "",
+          "name": "to_base64"
+        },
+        {
+          "namespace": "",
+          "name": "trim"
+        },
+        {
+          "namespace": "",
+          "name": "unescape_html"
+        },
+        {
+          "namespace": "",
+          "name": "upper"
+        }
+      ]
+    },
+    {
+      "id": "testing",
+      "title": "Testing",
+      "description": "Assertion functions for testing Ferret queries.",
+      "functions": [
+        {
+          "namespace": "t",
+          "name": "array"
+        },
+        {
+          "namespace": "t",
+          "name": "binary"
+        },
+        {
+          "namespace": "t",
+          "name": "datetime"
+        },
+        {
+          "namespace": "t",
+          "name": "empty"
+        },
+        {
+          "namespace": "t",
+          "name": "eq"
+        },
+        {
+          "namespace": "t",
+          "name": "fail"
+        },
+        {
+          "namespace": "t",
+          "name": "false"
+        },
+        {
+          "namespace": "t",
+          "name": "float"
+        },
+        {
+          "namespace": "t",
+          "name": "gt"
+        },
+        {
+          "namespace": "t",
+          "name": "gte"
+        },
+        {
+          "namespace": "t",
+          "name": "include"
+        },
+        {
+          "namespace": "t",
+          "name": "int"
+        },
+        {
+          "namespace": "t",
+          "name": "len"
+        },
+        {
+          "namespace": "t",
+          "name": "lt"
+        },
+        {
+          "namespace": "t",
+          "name": "lte"
+        },
+        {
+          "namespace": "t",
+          "name": "match"
+        },
+        {
+          "namespace": "t",
+          "name": "none"
+        },
+        {
+          "namespace": "t",
+          "name": "object"
+        },
+        {
+          "namespace": "t",
+          "name": "string"
+        },
+        {
+          "namespace": "t",
+          "name": "true"
+        },
+        {
+          "namespace": "t::not",
+          "name": "array"
+        },
+        {
+          "namespace": "t::not",
+          "name": "binary"
+        },
+        {
+          "namespace": "t::not",
+          "name": "datetime"
+        },
+        {
+          "namespace": "t::not",
+          "name": "empty"
+        },
+        {
+          "namespace": "t::not",
+          "name": "eq"
+        },
+        {
+          "namespace": "t::not",
+          "name": "false"
+        },
+        {
+          "namespace": "t::not",
+          "name": "float"
+        },
+        {
+          "namespace": "t::not",
+          "name": "gt"
+        },
+        {
+          "namespace": "t::not",
+          "name": "gte"
+        },
+        {
+          "namespace": "t::not",
+          "name": "include"
+        },
+        {
+          "namespace": "t::not",
+          "name": "int"
+        },
+        {
+          "namespace": "t::not",
+          "name": "len"
+        },
+        {
+          "namespace": "t::not",
+          "name": "lt"
+        },
+        {
+          "namespace": "t::not",
+          "name": "lte"
+        },
+        {
+          "namespace": "t::not",
+          "name": "match"
+        },
+        {
+          "namespace": "t::not",
+          "name": "none"
+        },
+        {
+          "namespace": "t::not",
+          "name": "object"
+        },
+        {
+          "namespace": "t::not",
+          "name": "string"
+        },
+        {
+          "namespace": "t::not",
+          "name": "true"
+        }
+      ]
+    },
+    {
+      "id": "types",
+      "title": "Types",
+      "description": "Global functions for type checks and conversions.",
+      "functions": [
+        {
+          "namespace": "",
+          "name": "is_array"
+        },
+        {
+          "namespace": "",
+          "name": "is_binary"
+        },
+        {
+          "namespace": "",
+          "name": "is_bool"
+        },
+        {
+          "namespace": "",
+          "name": "is_datetime"
+        },
+        {
+          "namespace": "",
+          "name": "is_duration"
+        },
+        {
+          "namespace": "",
+          "name": "is_float"
+        },
+        {
+          "namespace": "",
+          "name": "is_int"
+        },
+        {
+          "namespace": "",
+          "name": "is_list"
+        },
+        {
+          "namespace": "",
+          "name": "is_map"
+        },
+        {
+          "namespace": "",
+          "name": "is_nan"
+        },
+        {
+          "namespace": "",
+          "name": "is_none"
+        },
+        {
+          "namespace": "",
+          "name": "is_object"
+        },
+        {
+          "namespace": "",
+          "name": "is_string"
+        },
+        {
+          "namespace": "",
+          "name": "to_array"
+        },
+        {
+          "namespace": "",
+          "name": "to_binary"
+        },
+        {
+          "namespace": "",
+          "name": "to_bool"
+        },
+        {
+          "namespace": "",
+          "name": "to_datetime"
+        },
+        {
+          "namespace": "",
+          "name": "to_duration"
+        },
+        {
+          "namespace": "",
+          "name": "to_float"
+        },
+        {
+          "namespace": "",
+          "name": "to_int"
+        },
+        {
+          "namespace": "",
+          "name": "to_number"
+        },
+        {
+          "namespace": "",
+          "name": "to_object"
+        },
+        {
+          "namespace": "",
+          "name": "to_string"
+        }
+      ]
+    },
+    {
+      "id": "utils",
+      "title": "Utilities",
+      "description": "General-purpose global utility functions.",
+      "functions": [
+        {
+          "namespace": "",
+          "name": "print"
+        },
+        {
+          "namespace": "",
+          "name": "wait"
+        }
+      ]
+    }
+  ]
+}
