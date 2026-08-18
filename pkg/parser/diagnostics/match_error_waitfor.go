@@ -37,6 +37,16 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 		return true
 	}
 
+	if issue, ok := waitForEventOperandError(src, offending.Token()); ok {
+		err.Message = issue.message
+		err.Hint = issue.hint
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(issue.span, issue.label),
+		}
+
+		return true
+	}
+
 	if has(err.Message, "waitforpredicate failed predicate") {
 		if keyword, spanNode := waitForPredicateKeyword(offending); keyword != "" {
 			span := spanFromTokenSafe(spanNode.Token(), src)
@@ -116,6 +126,170 @@ func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 	}
 
 	return false
+}
+
+type waitForEventOperandIssue struct {
+	message string
+	hint    string
+	label   string
+	span    source.Span
+}
+
+func waitForEventOperandError(src *source.Source, offending antlr.Token) (waitForEventOperandIssue, bool) {
+	if src == nil || offending == nil {
+		return waitForEventOperandIssue{}, false
+	}
+
+	lexer := fql.NewFqlLexer(antlr.NewInputStream(asciiUpper(src.Content())))
+	var tokens []antlr.Token
+
+	for {
+		token := lexer.NextToken()
+		if token == nil || token.GetTokenType() == antlr.TokenEOF {
+			break
+		}
+
+		if token.GetChannel() == antlr.TokenDefaultChannel {
+			tokens = append(tokens, token)
+		}
+	}
+
+	eventIndex := waitForEventOperandEventIndex(tokens, offending)
+	if eventIndex < 0 {
+		return waitForEventOperandIssue{}, false
+	}
+
+	event := tokens[eventIndex]
+	if eventIndex+1 >= len(tokens) {
+		return waitForEventOperandIssue{
+			message: "Expected event expression after 'EVENT' in WAITFOR",
+			hint:    `Provide an event name expression, e.g. WAITFOR EVENT "message" IN source.`,
+			label:   "missing event expression",
+			span:    spanFromTokenSafe(event, src),
+		}, true
+	}
+
+	first := tokens[eventIndex+1]
+	if first.GetTokenType() == fql.FqlLexerAny || first.GetTokenType() == fql.FqlLexerAll {
+		return waitForEventOperandIssue{}, false
+	}
+
+	if first.GetTokenType() == fql.FqlLexerIn || waitForEventOperandStatementBoundary(first) {
+		return waitForEventOperandIssue{
+			message: "Expected event expression after 'EVENT' in WAITFOR",
+			hint:    `Provide an event name expression, e.g. WAITFOR EVENT "message" IN source.`,
+			label:   "missing event expression",
+			span:    spanFromTokenSafe(event, src),
+		}, true
+	}
+
+	inIndex := waitForEventOperandInIndex(tokens, eventIndex+1)
+	if inIndex < 0 {
+		return waitForEventOperandIssue{
+			message: "Expected 'IN' after event expression in WAITFOR EVENT",
+			hint:    `Add IN <expression> after the event expression, e.g. WAITFOR EVENT "message" IN source.`,
+			label:   "missing IN",
+			span:    waitForEventMissingInSpan(src, event, first),
+		}, true
+	}
+
+	delimiter := tokens[inIndex]
+	if inIndex+1 >= len(tokens) || waitForEventOperandStatementBoundary(tokens[inIndex+1]) {
+		return waitForEventOperandIssue{
+			message: "Expected source expression after 'IN' in WAITFOR EVENT",
+			hint:    `Provide an observable source expression, e.g. WAITFOR EVENT "message" IN source.`,
+			label:   "missing source expression",
+			span:    spanFromTokenSafe(delimiter, src),
+		}, true
+	}
+
+	return waitForEventOperandIssue{}, false
+}
+
+func waitForEventOperandEventIndex(tokens []antlr.Token, offending antlr.Token) int {
+	selected := -1
+	offendingStart := offending.GetStart()
+
+	for idx := 0; idx+1 < len(tokens); idx++ {
+		if tokens[idx].GetTokenType() != fql.FqlLexerWaitfor || tokens[idx+1].GetTokenType() != fql.FqlLexerEvent {
+			continue
+		}
+
+		eventIndex := idx + 1
+		if tokens[eventIndex].GetStart() > offendingStart {
+			continue
+		}
+
+		selected = eventIndex
+	}
+
+	return selected
+}
+
+func waitForEventOperandInIndex(tokens []antlr.Token, start int) int {
+	depth := 0
+	selected := -1
+
+	for idx := start; idx < len(tokens); idx++ {
+		token := tokens[idx]
+		if depth == 0 && waitForEventOperandStatementBoundary(token) {
+			break
+		}
+
+		switch token.GetTokenType() {
+		case fql.FqlLexerOpenParen, fql.FqlLexerOpenBracket, fql.FqlLexerOpenBrace:
+			depth++
+		case fql.FqlLexerCloseParen, fql.FqlLexerCloseBracket, fql.FqlLexerCloseBrace:
+			if depth > 0 {
+				depth--
+			}
+		case fql.FqlLexerIn:
+			if depth == 0 {
+				selected = idx
+			}
+		}
+	}
+
+	return selected
+}
+
+func waitForEventOperandStatementBoundary(token antlr.Token) bool {
+	switch token.GetTokenType() {
+	case fql.FqlLexerWhen,
+		fql.FqlLexerSemiColon,
+		fql.FqlLexerReturn,
+		fql.FqlLexerLet,
+		fql.FqlLexerVar,
+		fql.FqlLexerFor,
+		fql.FqlLexerDelete:
+		return true
+	default:
+		return false
+	}
+}
+
+func waitForEventMissingInSpan(src *source.Source, event, first antlr.Token) source.Span {
+	content := src.Content()
+	start := first.GetStart()
+	if start < 0 || start >= len(content) {
+		return spanFromTokenSafe(event, src)
+	}
+
+	lexer := fql.NewFqlLexer(antlr.NewInputStream(asciiUpper(content[start:])))
+	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := fql.NewFqlParser(tokens)
+	parser.RemoveErrorListeners()
+	parser.Expression()
+
+	next := tokens.LT(1)
+	if next == nil || next.GetTokenType() == antlr.TokenEOF {
+		return spanFromTokenSafe(event, src)
+	}
+
+	return source.Span{
+		Start: start + next.GetStart(),
+		End:   start + next.GetStop() + 1,
+	}
 }
 
 func waitForEmptyGroupInSource(src *source.Source, offending antlr.Token) (string, string, source.Span, bool) {

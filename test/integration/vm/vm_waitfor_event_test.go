@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
@@ -159,6 +160,60 @@ RETURN (WAITFOR EVENT "test" IN obs TIMEOUT 1ms) ON ERROR RETURN "error"`, "Grou
 			"obs": blocking,
 		})),
 	})
+}
+
+func TestWaitforEventSourceExpressionEvaluatesOnce(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		sourceCalls := 0
+		source := NewObservable([]runtime.Value{
+			NewTestEventType("ignored"),
+			NewTestEventType("match"),
+		})
+
+		RunSpecsWith(
+			t,
+			fmt.Sprintf("VM/O%d", level),
+			compiler.New(compiler.WithOptimizationLevel(level)),
+			[]spec.Spec{
+				S(`LET event = WAITFOR EVENT "test" IN SOURCE() WHEN .type == "match"
+RETURN event.type`, "match", "WAITFOR EVENT should evaluate its source once while inspecting multiple messages"),
+			},
+			vm.WithFunction("SOURCE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+				sourceCalls++
+
+				return source, nil
+			}),
+		)
+
+		if got, want := sourceCalls, 1; got != want {
+			t.Fatalf("WAITFOR EVENT source calls for O%d = %d, want %d", level, got, want)
+		}
+
+		if got, want := source.ReadCount(), int32(2); got != want {
+			t.Fatalf("WAITFOR EVENT stream reads for O%d = %d, want %d", level, got, want)
+		}
+	}
+}
+
+func TestWaitforEventComputedOperandTypeChecks(t *testing.T) {
+	source := NewObservable([]runtime.Value{NewTestEventType("test")})
+
+	RunSpecs(t, []spec.Spec{
+		spec.NewSpec(
+			`RETURN WAITFOR EVENT "test" IN (1 + 2)`,
+			"WAITFOR EVENT should validate a computed source as Observable",
+		).Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Contains: []string{"expected Observable, but got Int"}},
+		),
+		spec.NewSpec(
+			`RETURN WAITFOR EVENT (1 + 2) IN @source`,
+			"WAITFOR EVENT should validate a computed event name as String",
+		).Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Contains: []string{"expected String, but got Int"}},
+		),
+	}, vm.WithParam("source", source))
 }
 
 func TestWaitforEventSynchronizationGroups(t *testing.T) {

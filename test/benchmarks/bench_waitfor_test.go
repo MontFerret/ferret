@@ -3,6 +3,7 @@ package benchmarks_test
 import (
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec/mock"
@@ -14,6 +15,13 @@ RETURN WAITFOR VALUE @candidate`
 const waitForEventPresentQuery = `
 LET source = @source
 RETURN WAITFOR EVENT "test" IN source`
+
+const waitForEventCompilerQuery = `
+LET eventName = @eventName
+LET source = @source
+RETURN WAITFOR EVENT eventName IN source
+	WHEN .type == eventName
+	TIMEOUT 10ms`
 
 const waitForValueAnyPresentQuery = `
 RETURN WAITFOR VALUE ANY {
@@ -57,6 +65,14 @@ func BenchmarkWaitForEventPresent_O0(b *testing.B) {
 
 func BenchmarkWaitForEventPresent_O1(b *testing.B) {
 	RunBenchmarkO1(b, waitForEventPresentQuery, vm.WithParam("source", newBenchmarkWaitForObservable()))
+}
+
+func BenchmarkCompilerCompileWaitForEvent_O0(b *testing.B) {
+	benchmarkCompileQuery(b, waitForEventCompilerQuery, compiler.O0)
+}
+
+func BenchmarkCompilerCompileWaitForEvent_O1(b *testing.B) {
+	benchmarkCompileQuery(b, waitForEventCompilerQuery, compiler.O1)
 }
 
 func BenchmarkWaitForValueAnyPresent_O0(b *testing.B) {

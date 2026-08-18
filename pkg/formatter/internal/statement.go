@@ -1202,13 +1202,9 @@ func (f *statementFormatter) formatWaitForEventName(ctx *fql.WaitForEventNameCon
 		return
 	}
 
-	f.values.formatStringOrRef(
-		ctx.StringLiteral(),
-		ctx.Variable(),
-		ctx.Param(),
-		ctx.MemberExpression(),
-		ctx.FunctionCall(),
-	)
+	if expr := ctx.Expression(); expr != nil {
+		f.expression.formatExpression(expr.(*fql.ExpressionContext))
+	}
 }
 
 func (f *statementFormatter) formatWaitForEventSource(ctx *fql.WaitForEventSourceContext) {
@@ -1216,10 +1212,7 @@ func (f *statementFormatter) formatWaitForEventSource(ctx *fql.WaitForEventSourc
 		return
 	}
 
-	f.values.formatRefValueWithCallExpr(
-		ctx.FunctionCallExpression(),
-		ctx.Variable(),
-		nil,
-		ctx.MemberExpression(),
-	)
+	if expr := ctx.Expression(); expr != nil {
+		f.expression.formatWaitForEventSource(expr.(*fql.ExpressionContext))
+	}
 }

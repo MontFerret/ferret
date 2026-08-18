@@ -174,6 +174,55 @@ func TestWaitforSynchronizationGroupsCompile(t *testing.T) {
 	})
 }
 
+func TestWaitforEventOperandsUseExpressionLowering(t *testing.T) {
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck(
+			`RETURN WAITFOR EVENT "message" IN @source`,
+			expectOpcodes(bytecode.OpLoadParam, bytecode.OpStream),
+			"WAITFOR EVENT should lower a parameter source",
+		),
+		ProgramCheck(
+			`RETURN WAITFOR EVENT ("network." + @phase) IN (@source ?? SOURCE())`,
+			expectProgramChecks(
+				expectOpcodes(bytecode.OpLoadParam, bytecode.OpConcat, bytecode.OpStream),
+				expectHostFunction("SOURCE", 0),
+			),
+			"WAITFOR EVENT should lower composed name and source expressions",
+		),
+		ProgramCheck(
+			`RETURN WAITFOR EVENT @names[@index] IN QUERY ONE ".source" IN @registry`,
+			expectOpcodes(bytecode.OpLoadParam, bytecode.OpQueryOne, bytecode.OpStream),
+			"WAITFOR EVENT should lower index and query expressions",
+		),
+		ProgramCheck(
+			`RETURN WAITFOR EVENT ANY {
+				(FIRST_NAME() ?? "first") IN (FIRST_SOURCE() ?? @fallback)
+				SECOND_NAME() IN QUERY ONE ".source" IN SECOND_SOURCE()
+			}`,
+			expectProgramChecks(
+				expectOpcodes(bytecode.OpQueryOne, bytecode.OpStreamGroup),
+				expectHostFunction("FIRST_NAME", 0),
+				expectHostFunction("FIRST_SOURCE", 0),
+				expectHostFunction("SECOND_NAME", 0),
+				expectHostFunction("SECOND_SOURCE", 0),
+			),
+			"WAITFOR EVENT groups should lower every name and source expression",
+		),
+		ProgramCheck(
+			`RETURN WAITFOR EVENT ALL {
+				@names[0] IN (@first ?? FIRST_SOURCE())
+				(@name ?? "second") IN SECOND_SOURCE()
+			}`,
+			expectProgramChecks(
+				expectOpcodes(bytecode.OpLoadParam, bytecode.OpStreamGroup, bytecode.OpStreamGroupArmDone),
+				expectHostFunction("FIRST_SOURCE", 0),
+				expectHostFunction("SECOND_SOURCE", 0),
+			),
+			"WAITFOR EVENT ALL should lower every name and source expression",
+		),
+	}, compiler.O0, compiler.O1)
+}
+
 func TestWaitforValuePresenceLowering(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(
@@ -239,6 +288,18 @@ func expectOpcodes(expected ...bytecode.Opcode) func(*bytecode.Program) error {
 		for _, opcode := range expected {
 			if !seen[opcode] {
 				return fmt.Errorf("expected opcode %s in %v", opcode, opcodes)
+			}
+		}
+
+		return nil
+	}
+}
+
+func expectProgramChecks(checks ...func(*bytecode.Program) error) func(*bytecode.Program) error {
+	return func(program *bytecode.Program) error {
+		for _, check := range checks {
+			if err := check(program); err != nil {
+				return err
 			}
 		}
 

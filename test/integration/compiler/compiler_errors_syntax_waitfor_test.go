@@ -29,6 +29,21 @@ func TestSyntaxErrorsWaitfor(t *testing.T) {
 			Message: "WAITFOR EVENT ANY group requires at least one arm",
 			Hint:    "Add at least one expression or event subscription between the braces.",
 		}, "WAITFOR EVENT ANY rejects an empty group"),
+		Failure(`RETURN WAITFOR EVENT IN @source`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Expected event expression after 'EVENT' in WAITFOR",
+			Hint:    `Provide an event name expression, e.g. WAITFOR EVENT "message" IN source.`,
+		}, "WAITFOR EVENT requires an event expression"),
+		Failure(`RETURN WAITFOR EVENT "message" @source`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Expected 'IN' after event expression in WAITFOR EVENT",
+			Hint:    `Add IN <expression> after the event expression, e.g. WAITFOR EVENT "message" IN source.`,
+		}, "WAITFOR EVENT requires IN between its operands"),
+		Failure(`RETURN WAITFOR EVENT "message" IN`, E{
+			Kind:    parserd.SyntaxError,
+			Message: "Expected source expression after 'IN' in WAITFOR EVENT",
+			Hint:    `Provide an observable source expression, e.g. WAITFOR EVENT "message" IN source.`,
+		}, "WAITFOR EVENT requires a source expression"),
 		Failure(`
 			LET ok = WAITFOR EXISTS
 			RETURN ok

@@ -788,18 +788,11 @@ waitForPredicate
     ;
 
 waitForEventName
-    : stringLiteral
-    | variable
-    | param
-    | memberExpression
-    | functionCall
+    : expression
     ;
 
 waitForEventSource
-    : functionCallExpression
-    | variable
-    | param
-    | memberExpression
+    : expression
     ;
 
 optionsClause
