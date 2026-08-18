@@ -40,6 +40,10 @@ when .status == 200
     // browser download
     "download" in browser
 }`),
+		S(`return waitfor event any { (@firstName ?? "first") in (@first ?? fallback) SECOND_NAME() in (@candidate in @sources) }`, `return waitfor event any {
+    @firstName ?? "first" in @first ?? fallback
+    SECOND_NAME() in (@candidate in @sources)
+}`),
 		S(`return waitfor any { ready }`, `return waitfor any {
     ready
 }`),

@@ -66,6 +66,61 @@ func TestWaitForEmptyGroupInSourceSelectsOffendingGroup(t *testing.T) {
 	}
 }
 
+func TestWaitForEventOperandError(t *testing.T) {
+	tests := []struct {
+		name    string
+		query   string
+		message string
+		span    string
+	}{
+		{
+			name:    "event expression",
+			query:   "RETURN WAITFOR EVENT IN @source",
+			message: "Expected event expression after 'EVENT' in WAITFOR",
+			span:    "EVENT",
+		},
+		{
+			name:    "IN delimiter",
+			query:   `RETURN WAITFOR EVENT "message" @source`,
+			message: "Expected 'IN' after event expression in WAITFOR EVENT",
+			span:    "@",
+		},
+		{
+			name:    "source expression",
+			query:   `RETURN WAITFOR EVENT "message" IN`,
+			message: "Expected source expression after 'IN' in WAITFOR EVENT",
+			span:    "IN",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			eventOffset := strings.Index(test.query, "EVENT")
+			offending := waitForTestTokenAt(t, test.query, eventOffset)
+			issue, ok := waitForEventOperandError(source.NewAnonymous(test.query), offending)
+			if !ok {
+				t.Fatal("expected WAITFOR EVENT operand error")
+			}
+
+			if issue.message != test.message {
+				t.Fatalf("message = %q, want %q", issue.message, test.message)
+			}
+
+			if got := test.query[issue.span.Start:issue.span.End]; got != test.span {
+				t.Fatalf("span = %q, want %q", got, test.span)
+			}
+		})
+	}
+}
+
+func TestWaitForEventOperandErrorAllowsSafeReservedOperands(t *testing.T) {
+	query := "RETURN WAITFOR EVENT TIMEOUT IN OPTIONS WHEN"
+	offending := waitForTestTokenAt(t, query, strings.Index(query, "WHEN"))
+	if _, ok := waitForEventOperandError(source.NewAnonymous(query), offending); ok {
+		t.Fatal("safe reserved event operands were reported as missing")
+	}
+}
+
 func waitForTestTokenAt(t *testing.T, query string, offset int) antlr.Token {
 	t.Helper()
 	lexer := fql.NewFqlLexer(antlr.NewInputStream(asciiUpper(query)))

@@ -213,3 +213,86 @@ func parenthesizedExpressionInner(ctx *fql.ExpressionAtomContext) antlr.ParserRu
 
 	return nil
 }
+
+func waitForEventOperandNeedsParentheses(ctx *fql.ExpressionContext) bool {
+	atom := expressionPrimaryAtom(ctx)
+	if atom == nil || atom.OpenParen() == nil {
+		return false
+	}
+
+	inner, ok := atom.Expression().(*fql.ExpressionContext)
+	if !ok {
+		return false
+	}
+
+	return expressionContainsInOperator(inner)
+}
+
+func expressionContainsInOperator(ctx *fql.ExpressionContext) bool {
+	if ctx == nil {
+		return false
+	}
+
+	if predicate, ok := ctx.Predicate().(*fql.PredicateContext); ok {
+		return predicateContainsInOperator(predicate)
+	}
+
+	for _, child := range []fql.IExpressionContext{
+		ctx.GetLeft(),
+		ctx.GetRight(),
+		ctx.GetCondition(),
+		ctx.GetOnTrue(),
+		ctx.GetOnFalse(),
+	} {
+		if expression, ok := child.(*fql.ExpressionContext); ok && expressionContainsInOperator(expression) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func predicateContainsInOperator(ctx *fql.PredicateContext) bool {
+	if ctx == nil {
+		return false
+	}
+
+	if ctx.InOperator() != nil {
+		return true
+	}
+
+	if operator := ctx.ArrayOperator(); operator != nil && operator.InOperator() != nil {
+		return true
+	}
+
+	for _, child := range []fql.IPredicateContext{ctx.GetLeft(), ctx.GetRight()} {
+		if predicate, ok := child.(*fql.PredicateContext); ok && predicateContainsInOperator(predicate) {
+			return true
+		}
+	}
+
+	atom, ok := ctx.ExpressionAtom().(*fql.ExpressionAtomContext)
+	if !ok {
+		return false
+	}
+
+	return expressionAtomContainsInOperator(atom)
+}
+
+func expressionAtomContainsInOperator(ctx *fql.ExpressionAtomContext) bool {
+	if ctx == nil {
+		return false
+	}
+
+	if expression, ok := ctx.Expression().(*fql.ExpressionContext); ok {
+		return expressionContainsInOperator(expression)
+	}
+
+	for _, child := range []fql.IExpressionAtomContext{ctx.GetLeft(), ctx.GetRight()} {
+		if atom, ok := child.(*fql.ExpressionAtomContext); ok && expressionAtomContainsInOperator(atom) {
+			return true
+		}
+	}
+
+	return false
+}

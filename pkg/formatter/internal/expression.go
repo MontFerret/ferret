@@ -16,6 +16,18 @@ func (f *expressionFormatter) formatExpression(ctx *fql.ExpressionContext) {
 	f.formatExpressionOperand(ctx, expressionOperation{})
 }
 
+// formatWaitForEventOperand retains grouping around membership expressions so
+// their IN operator cannot become the WAITFOR EVENT operand delimiter.
+func (f *expressionFormatter) formatWaitForEventOperand(ctx *fql.ExpressionContext) {
+	if waitForEventOperandNeedsParentheses(ctx) {
+		f.formatExpressionOperand(ctx, expressionOperation{precedence: precedencePrimary})
+
+		return
+	}
+
+	f.formatExpression(ctx)
+}
+
 func (f *expressionFormatter) formatExpressionOperand(ctx *fql.ExpressionContext, outer expressionOperation) {
 	if ctx == nil {
 		return

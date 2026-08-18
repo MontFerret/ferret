@@ -7,8 +7,11 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
+	"github.com/MontFerret/ferret/v2/test/spec/mock"
 )
 
 func TestFormatterSimplifiesOnlyRedundantParentheses(t *testing.T) {
@@ -66,6 +69,92 @@ func TestFormatterSimplifiesOnlyRedundantParentheses(t *testing.T) {
 			got := formatParenthesesStable(t, test.input)
 			if got != test.want {
 				t.Fatalf("formatted output:\n%s\nwant:\n%s", got, test.want)
+			}
+		})
+	}
+}
+
+func TestFormatterWaitForEventOperands(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "composed operands",
+			input: `RETURN WAITFOR EVENT (@kind ?? "message") IN (@source ?? fallback)`,
+			want:  `return waitfor event @kind ?? "message" in @source ?? fallback`,
+		},
+		{
+			name:  "membership operands retain delimiter boundaries",
+			input: `RETURN WAITFOR EVENT (@kind IN @names) IN (@candidate IN @sources)`,
+			want:  `return waitfor event (@kind in @names) in (@candidate in @sources)`,
+		},
+		{
+			name:  "array membership source retains delimiter boundary",
+			input: `RETURN WAITFOR EVENT "message" IN (@candidate ANY IN @sources)`,
+			want:  `return waitfor event "message" in (@candidate any in @sources)`,
+		},
+		{
+			name:  "query source",
+			input: `RETURN WAITFOR EVENT GET_NAME(@id) IN QUERY ONE ".source" IN @registry`,
+			want:  `return waitfor event GET_NAME(@id) in query one ".source" in @registry`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := formatParenthesesStable(t, test.input)
+			if got != test.want {
+				t.Fatalf("formatted output:\n%s\nwant:\n%s", got, test.want)
+			}
+		})
+	}
+}
+
+func TestFormatterWaitForEventOperandsPreserveExecution(t *testing.T) {
+	const input = `RETURN WAITFOR EVENT (@eventName ?? "message") IN (@source ?? @fallback)
+WHEN .type == "match"`
+
+	formatted := formatParenthesesStable(t, input)
+
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		t.Run(optimizationNameForFormatter(level), func(t *testing.T) {
+			originalProgram, err := spec.Compile(input, level)
+			if err != nil {
+				t.Fatalf("compile original: %v", err)
+			}
+
+			formattedProgram, err := spec.Compile(formatted, level)
+			if err != nil {
+				t.Fatalf("compile formatted: %v\n%s", err, formatted)
+			}
+
+			newEnvironment := func() vm.EnvironmentOption {
+				source := mock.NewObservable([]runtime.Value{
+					mock.NewTestEventType("ignored"),
+					mock.NewTestEventType("match"),
+				})
+
+				return vm.WithParams(map[string]runtime.Value{
+					"eventName": runtime.None,
+					"fallback":  runtime.None,
+					"source":    source,
+				})
+			}
+
+			originalResult, err := spec.Run(originalProgram, newEnvironment())
+			if err != nil {
+				t.Fatalf("run original: %v", err)
+			}
+
+			formattedResult, err := spec.Run(formattedProgram, newEnvironment())
+			if err != nil {
+				t.Fatalf("run formatted: %v", err)
+			}
+
+			if !bytes.Equal(originalResult, formattedResult) {
+				t.Fatalf("execution changed: original %s, formatted %s\n%s", originalResult, formattedResult, formatted)
 			}
 		})
 	}

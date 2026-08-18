@@ -263,6 +263,33 @@ func TestWaitforPredicateWhenRetriesUntilTrue(t *testing.T) {
 	}
 }
 
+func TestWaitforValueExpressionReevaluatesUntilPresent(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		callCount := 0
+
+		RunSpecsWith(
+			t,
+			fmt.Sprintf("VM/O%d", level),
+			compiler.New(compiler.WithOptimizationLevel(level)),
+			[]spec.Spec{
+				S(`RETURN WAITFOR VALUE CANDIDATE() TIMEOUT 100ms EVERY 0ms`, "ready", "WAITFOR VALUE should reevaluate its expression on every polling cycle"),
+			},
+			vm.WithFunction("CANDIDATE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+				callCount++
+				if callCount < 3 {
+					return runtime.None, nil
+				}
+
+				return runtime.NewString("ready"), nil
+			}),
+		)
+
+		if got, want := callCount, 3; got != want {
+			t.Fatalf("WAITFOR VALUE candidate calls for O%d = %d, want %d", level, got, want)
+		}
+	}
+}
+
 func TestWaitforPredicateWhenSkipsPredicateUntilBasePasses(t *testing.T) {
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		predicateCalls := 0
