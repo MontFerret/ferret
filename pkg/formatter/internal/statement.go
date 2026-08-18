@@ -1203,7 +1203,7 @@ func (f *statementFormatter) formatWaitForEventName(ctx *fql.WaitForEventNameCon
 	}
 
 	if expr := ctx.Expression(); expr != nil {
-		f.expression.formatWaitForEventOperand(expr.(*fql.ExpressionContext))
+		f.expression.formatExpression(expr.(*fql.ExpressionContext))
 	}
 }
 
@@ -1213,6 +1213,6 @@ func (f *statementFormatter) formatWaitForEventSource(ctx *fql.WaitForEventSourc
 	}
 
 	if expr := ctx.Expression(); expr != nil {
-		f.expression.formatWaitForEventOperand(expr.(*fql.ExpressionContext))
+		f.expression.formatWaitForEventSource(expr.(*fql.ExpressionContext))
 	}
 }

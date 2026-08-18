@@ -6,7 +6,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/parser"
+	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -76,29 +80,53 @@ func TestFormatterSimplifiesOnlyRedundantParentheses(t *testing.T) {
 
 func TestFormatterWaitForEventOperands(t *testing.T) {
 	tests := []struct {
-		name  string
-		input string
-		want  string
+		name       string
+		input      string
+		want       string
+		wantName   string
+		wantSource string
 	}{
 		{
-			name:  "composed operands",
-			input: `RETURN WAITFOR EVENT (@kind ?? "message") IN (@source ?? fallback)`,
-			want:  `return waitfor event @kind ?? "message" in @source ?? fallback`,
+			name:       "composed operands",
+			input:      `RETURN WAITFOR EVENT (@kind ?? "message") IN (@source ?? fallback)`,
+			want:       `return waitfor event @kind ?? "message" in @source ?? fallback`,
+			wantName:   `@kind??"message"`,
+			wantSource: `@source??fallback`,
 		},
 		{
-			name:  "membership operands retain delimiter boundaries",
-			input: `RETURN WAITFOR EVENT (@kind IN @names) IN (@candidate IN @sources)`,
-			want:  `return waitfor event (@kind in @names) in (@candidate in @sources)`,
+			name:       "membership name removes redundant grouping",
+			input:      `RETURN WAITFOR EVENT (@kind IN @names) IN @source`,
+			want:       `return waitfor event @kind in @names in @source`,
+			wantName:   `@kindin@names`,
+			wantSource: `@source`,
 		},
 		{
-			name:  "array membership source retains delimiter boundary",
-			input: `RETURN WAITFOR EVENT "message" IN (@candidate ANY IN @sources)`,
-			want:  `return waitfor event "message" in (@candidate any in @sources)`,
+			name:       "membership source retains delimiter boundary",
+			input:      `RETURN WAITFOR EVENT "message" IN (@candidate IN @sources)`,
+			want:       `return waitfor event "message" in (@candidate in @sources)`,
+			wantName:   `"message"`,
+			wantSource: `(@candidatein@sources)`,
 		},
 		{
-			name:  "query source",
-			input: `RETURN WAITFOR EVENT GET_NAME(@id) IN QUERY ONE ".source" IN @registry`,
-			want:  `return waitfor event GET_NAME(@id) in query one ".source" in @registry`,
+			name:       "membership operands use distinct grouping",
+			input:      `RETURN WAITFOR EVENT (@kind IN @names) IN (@candidate IN @sources)`,
+			want:       `return waitfor event @kind in @names in (@candidate in @sources)`,
+			wantName:   `@kindin@names`,
+			wantSource: `(@candidatein@sources)`,
+		},
+		{
+			name:       "array membership source retains delimiter boundary",
+			input:      `RETURN WAITFOR EVENT "message" IN (@candidate ANY IN @sources)`,
+			want:       `return waitfor event "message" in (@candidate any in @sources)`,
+			wantName:   `"message"`,
+			wantSource: `(@candidateanyin@sources)`,
+		},
+		{
+			name:       "query source",
+			input:      `RETURN WAITFOR EVENT GET_NAME(@id) IN QUERY ONE ".source" IN @registry`,
+			want:       `return waitfor event GET_NAME(@id) in query one ".source" in @registry`,
+			wantName:   `GET_NAME(@id)`,
+			wantSource: `queryone".source"in@registry`,
 		},
 	}
 
@@ -108,8 +136,53 @@ func TestFormatterWaitForEventOperands(t *testing.T) {
 			if got != test.want {
 				t.Fatalf("formatted output:\n%s\nwant:\n%s", got, test.want)
 			}
+
+			assertWaitForEventOperandBoundaries(t, got, test.wantName, test.wantSource)
 		})
 	}
+}
+
+func assertWaitForEventOperandBoundaries(t *testing.T, input, wantName, wantSource string) {
+	t.Helper()
+
+	p := parser.New(input)
+	program := p.Program()
+	if !p.AtEOF() {
+		t.Fatalf("formatted output did not parse completely:\n%s", input)
+	}
+
+	event := findFirstWaitForEvent(program)
+	if event == nil {
+		t.Fatalf("formatted output has no WAITFOR EVENT expression:\n%s", input)
+	}
+
+	name := event.WaitForEventName().(*fql.WaitForEventNameContext).Expression()
+	if got := name.GetText(); got != wantName {
+		t.Fatalf("reparsed event-name expression = %q, want %q", got, wantName)
+	}
+
+	source := event.WaitForEventSource().(*fql.WaitForEventSourceContext).Expression()
+	if got := source.GetText(); got != wantSource {
+		t.Fatalf("reparsed source expression = %q, want %q", got, wantSource)
+	}
+}
+
+func findFirstWaitForEvent(tree antlr.Tree) *fql.WaitForEventExpressionContext {
+	if tree == nil {
+		return nil
+	}
+
+	if event, ok := tree.(*fql.WaitForEventExpressionContext); ok {
+		return event
+	}
+
+	for i := 0; i < tree.GetChildCount(); i++ {
+		if event := findFirstWaitForEvent(tree.GetChild(i)); event != nil {
+			return event
+		}
+	}
+
+	return nil
 }
 
 func TestFormatterWaitForEventOperandsPreserveExecution(t *testing.T) {

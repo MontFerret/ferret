@@ -214,7 +214,7 @@ func parenthesizedExpressionInner(ctx *fql.ExpressionAtomContext) antlr.ParserRu
 	return nil
 }
 
-func waitForEventOperandNeedsParentheses(ctx *fql.ExpressionContext) bool {
+func waitForEventSourceNeedsParentheses(ctx *fql.ExpressionContext) bool {
 	atom := expressionPrimaryAtom(ctx)
 	if atom == nil || atom.OpenParen() == nil {
 		return false
