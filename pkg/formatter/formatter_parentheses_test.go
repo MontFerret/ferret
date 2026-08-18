@@ -251,9 +251,9 @@ func findFirstWaitForEvent(tree antlr.Tree) *fql.WaitForEventExpressionContext {
 
 func TestFormatterWaitForEventOperandsPreserveExecution(t *testing.T) {
 	tests := []struct {
+		newEnvironment func() []vm.EnvironmentOption
 		name           string
 		input          string
-		newEnvironment func() []vm.EnvironmentOption
 	}{
 		{
 			name: "composed operands",
