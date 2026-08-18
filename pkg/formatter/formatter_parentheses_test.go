@@ -2,6 +2,7 @@ package formatter
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -108,6 +109,69 @@ func TestFormatterWaitForEventOperands(t *testing.T) {
 			wantSource: `(@candidatein@sources)`,
 		},
 		{
+			name:       "negated membership source retains delimiter boundary",
+			input:      `RETURN WAITFOR EVENT "message" IN (@candidate NOT IN @sources)`,
+			want:       `return waitfor event "message" in (@candidate not in @sources)`,
+			wantName:   `"message"`,
+			wantSource: `(@candidatenotin@sources)`,
+		},
+		{
+			name:       "function argument membership is bounded",
+			input:      `RETURN WAITFOR EVENT "message" IN (SOURCE(@candidate IN @sources))`,
+			want:       `return waitfor event "message" in SOURCE(@candidate in @sources)`,
+			wantName:   `"message"`,
+			wantSource: `SOURCE(@candidatein@sources)`,
+		},
+		{
+			name:       "array entry membership is bounded",
+			input:      `RETURN WAITFOR EVENT "message" IN ([@candidate IN @sources])`,
+			want:       `return waitfor event "message" in [@candidate in @sources]`,
+			wantName:   `"message"`,
+			wantSource: `[@candidatein@sources]`,
+		},
+		{
+			name:       "object property membership is bounded",
+			input:      `RETURN WAITFOR EVENT "message" IN ({ candidate: @candidate IN @sources })`,
+			want:       `return waitfor event "message" in { candidate: @candidate in @sources }`,
+			wantName:   `"message"`,
+			wantSource: `{candidate:@candidatein@sources}`,
+		},
+		{
+			name:       "ternary true branch membership is bounded",
+			input:      `RETURN WAITFOR EVENT "message" IN (TRUE ? @candidate IN @sources : FALSE)`,
+			want:       `return waitfor event "message" in true ? @candidate in @sources : false`,
+			wantName:   `"message"`,
+			wantSource: `true?@candidatein@sources:false`,
+		},
+		{
+			name:       "precedence grouping bounds nested membership",
+			input:      `RETURN WAITFOR EVENT "message" IN ((@candidate IN @sources) + 1)`,
+			want:       `return waitfor event "message" in (@candidate in @sources) + 1`,
+			wantName:   `"message"`,
+			wantSource: `(@candidatein@sources)+1`,
+		},
+		{
+			name:       "removable inner grouping leaves membership exposed",
+			input:      `RETURN WAITFOR EVENT "message" IN (NOT (@candidate IN @sources))`,
+			want:       `return waitfor event "message" in (not @candidate in @sources)`,
+			wantName:   `"message"`,
+			wantSource: `(not@candidatein@sources)`,
+		},
+		{
+			name:       "ternary condition membership remains exposed",
+			input:      `RETURN WAITFOR EVENT "message" IN (@candidate IN @sources ? TRUE : FALSE)`,
+			want:       `return waitfor event "message" in (@candidate in @sources ? true : false)`,
+			wantName:   `"message"`,
+			wantSource: `(@candidatein@sources?true:false)`,
+		},
+		{
+			name:       "ternary false branch membership remains exposed",
+			input:      `RETURN WAITFOR EVENT "message" IN (TRUE ? FALSE : @candidate IN @sources)`,
+			want:       `return waitfor event "message" in (true ? false : @candidate in @sources)`,
+			wantName:   `"message"`,
+			wantSource: `(true?false:@candidatein@sources)`,
+		},
+		{
 			name:       "membership operands use distinct grouping",
 			input:      `RETURN WAITFOR EVENT (@kind IN @names) IN (@candidate IN @sources)`,
 			want:       `return waitfor event @kind in @names in (@candidate in @sources)`,
@@ -186,50 +250,83 @@ func findFirstWaitForEvent(tree antlr.Tree) *fql.WaitForEventExpressionContext {
 }
 
 func TestFormatterWaitForEventOperandsPreserveExecution(t *testing.T) {
-	const input = `RETURN WAITFOR EVENT (@eventName ?? "message") IN (@source ?? @fallback)
-WHEN .type == "match"`
-
-	formatted := formatParenthesesStable(t, input)
-
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		t.Run(optimizationNameForFormatter(level), func(t *testing.T) {
-			originalProgram, err := spec.Compile(input, level)
-			if err != nil {
-				t.Fatalf("compile original: %v", err)
-			}
-
-			formattedProgram, err := spec.Compile(formatted, level)
-			if err != nil {
-				t.Fatalf("compile formatted: %v\n%s", err, formatted)
-			}
-
-			newEnvironment := func() vm.EnvironmentOption {
+	tests := []struct {
+		name           string
+		input          string
+		newEnvironment func() []vm.EnvironmentOption
+	}{
+		{
+			name: "composed operands",
+			input: `RETURN WAITFOR EVENT (@eventName ?? "message") IN (@source ?? @fallback)
+WHEN .type == "match"`,
+			newEnvironment: func() []vm.EnvironmentOption {
 				source := mock.NewObservable([]runtime.Value{
 					mock.NewTestEventType("ignored"),
 					mock.NewTestEventType("match"),
 				})
 
-				return vm.WithParams(map[string]runtime.Value{
-					"eventName": runtime.None,
-					"fallback":  runtime.None,
-					"source":    source,
+				return []vm.EnvironmentOption{
+					vm.WithParams(map[string]runtime.Value{
+						"eventName": runtime.None,
+						"fallback":  runtime.None,
+						"source":    source,
+					}),
+				}
+			},
+		},
+		{
+			name: "bounded membership source",
+			input: `RETURN WAITFOR EVENT "message" IN (SOURCE(@candidate IN @sources))
+WHEN .type == "match"`,
+			newEnvironment: func() []vm.EnvironmentOption {
+				source := mock.NewObservable([]runtime.Value{
+					mock.NewTestEventType("ignored"),
+					mock.NewTestEventType("match"),
 				})
-			}
 
-			originalResult, err := spec.Run(originalProgram, newEnvironment())
-			if err != nil {
-				t.Fatalf("run original: %v", err)
-			}
+				return []vm.EnvironmentOption{
+					vm.WithParams(map[string]runtime.Value{
+						"candidate": runtime.NewString("candidate"),
+						"sources":   runtime.NewArrayWith(runtime.NewString("candidate")),
+					}),
+					vm.WithFunction("SOURCE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+						return source, nil
+					}),
+				}
+			},
+		},
+	}
 
-			formattedResult, err := spec.Run(formattedProgram, newEnvironment())
-			if err != nil {
-				t.Fatalf("run formatted: %v", err)
-			}
+	for _, test := range tests {
+		formatted := formatParenthesesStable(t, test.input)
 
-			if !bytes.Equal(originalResult, formattedResult) {
-				t.Fatalf("execution changed: original %s, formatted %s\n%s", originalResult, formattedResult, formatted)
-			}
-		})
+		for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+			t.Run(test.name+"/"+optimizationNameForFormatter(level), func(t *testing.T) {
+				originalProgram, err := spec.Compile(test.input, level)
+				if err != nil {
+					t.Fatalf("compile original: %v", err)
+				}
+
+				formattedProgram, err := spec.Compile(formatted, level)
+				if err != nil {
+					t.Fatalf("compile formatted: %v\n%s", err, formatted)
+				}
+
+				originalResult, err := spec.Run(originalProgram, test.newEnvironment()...)
+				if err != nil {
+					t.Fatalf("run original: %v", err)
+				}
+
+				formattedResult, err := spec.Run(formattedProgram, test.newEnvironment()...)
+				if err != nil {
+					t.Fatalf("run formatted: %v", err)
+				}
+
+				if !bytes.Equal(originalResult, formattedResult) {
+					t.Fatalf("execution changed: original %s, formatted %s\n%s", originalResult, formattedResult, formatted)
+				}
+			})
+		}
 	}
 }
 

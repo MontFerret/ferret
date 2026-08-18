@@ -225,34 +225,69 @@ func waitForEventSourceNeedsParentheses(ctx *fql.ExpressionContext) bool {
 		return false
 	}
 
-	return expressionContainsInOperator(inner)
+	return expressionExposesInOperator(inner, expressionOperation{})
 }
 
-func expressionContainsInOperator(ctx *fql.ExpressionContext) bool {
+// expressionExposesInOperator follows only expression paths whose formatted
+// tokens can reach the outer WAITFOR delimiter. A ternary true branch is
+// bounded by its closing colon; condition and false branches are not.
+func expressionExposesInOperator(ctx *fql.ExpressionContext, outer expressionOperation) bool {
 	if ctx == nil {
 		return false
 	}
 
-	if predicate, ok := ctx.Predicate().(*fql.PredicateContext); ok {
-		return predicateContainsInOperator(predicate)
-	}
-
-	for _, child := range []fql.IExpressionContext{
-		ctx.GetLeft(),
-		ctx.GetRight(),
-		ctx.GetCondition(),
-		ctx.GetOnTrue(),
-		ctx.GetOnFalse(),
-	} {
-		if expression, ok := child.(*fql.ExpressionContext); ok && expressionContainsInOperator(expression) {
-			return true
+	switch {
+	case ctx.UnaryOperator() != nil:
+		return expressionChildExposesInOperator(ctx.GetRight(), unaryExpressionOperation())
+	case ctx.GetCoalesceOperator() != nil:
+		return expressionChildExposesInOperator(
+			ctx.GetLeft(),
+			coalesceExpressionOperation(operandSideLeft),
+		) || expressionChildExposesInOperator(
+			ctx.GetRight(),
+			coalesceExpressionOperation(operandSideRight),
+		)
+	case ctx.GetTernaryOperator() != nil:
+		return expressionChildExposesInOperator(
+			ctx.GetCondition(),
+			ternaryExpressionOperation(operandSideLeft),
+		) || expressionChildExposesInOperator(
+			ctx.GetOnFalse(),
+			ternaryExpressionOperation(operandSideRight),
+		)
+	case ctx.Predicate() != nil:
+		predicate, ok := ctx.Predicate().(*fql.PredicateContext)
+		if !ok {
+			return false
 		}
-	}
 
-	return false
+		return predicateExposesInOperator(predicate, outer)
+	default:
+		precedence := expressionRootPrecedence(ctx)
+		if precedence == precedenceNone {
+			return false
+		}
+
+		return expressionChildExposesInOperator(
+			ctx.GetLeft(),
+			binaryExpressionOperation(precedence, operandSideLeft),
+		) || expressionChildExposesInOperator(
+			ctx.GetRight(),
+			binaryExpressionOperation(precedence, operandSideRight),
+		)
+	}
 }
 
-func predicateContainsInOperator(ctx *fql.PredicateContext) bool {
+func expressionChildExposesInOperator(ctx fql.IExpressionContext, outer expressionOperation) bool {
+	expression, ok := ctx.(*fql.ExpressionContext)
+	if !ok {
+		return false
+	}
+
+	return expressionExposesInOperator(expression, outer)
+}
+
+func predicateExposesInOperator(ctx *fql.PredicateContext, outer expressionOperation) bool {
 	if ctx == nil {
 		return false
 	}
@@ -265,34 +300,71 @@ func predicateContainsInOperator(ctx *fql.PredicateContext) bool {
 		return true
 	}
 
-	for _, child := range []fql.IPredicateContext{ctx.GetLeft(), ctx.GetRight()} {
-		if predicate, ok := child.(*fql.PredicateContext); ok && predicateContainsInOperator(predicate) {
-			return true
+	if ctx.ExpressionAtom() != nil {
+		atom, ok := ctx.ExpressionAtom().(*fql.ExpressionAtomContext)
+		if !ok {
+			return false
 		}
+
+		return expressionAtomExposesInOperator(atom, outer)
 	}
 
-	atom, ok := ctx.ExpressionAtom().(*fql.ExpressionAtomContext)
+	precedence := predicateRootPrecedence(ctx)
+	if precedence == precedenceNone {
+		return false
+	}
+
+	return predicateChildExposesInOperator(
+		ctx.GetLeft(),
+		binaryExpressionOperation(precedence, operandSideLeft),
+	) || predicateChildExposesInOperator(
+		ctx.GetRight(),
+		binaryExpressionOperation(precedence, operandSideRight),
+	)
+}
+
+func predicateChildExposesInOperator(ctx fql.IPredicateContext, outer expressionOperation) bool {
+	predicate, ok := ctx.(*fql.PredicateContext)
 	if !ok {
 		return false
 	}
 
-	return expressionAtomContainsInOperator(atom)
+	return predicateExposesInOperator(predicate, outer)
 }
 
-func expressionAtomContainsInOperator(ctx *fql.ExpressionAtomContext) bool {
+func expressionAtomExposesInOperator(ctx *fql.ExpressionAtomContext, outer expressionOperation) bool {
 	if ctx == nil {
 		return false
 	}
 
-	if expression, ok := ctx.Expression().(*fql.ExpressionContext); ok {
-		return expressionContainsInOperator(expression)
-	}
-
-	for _, child := range []fql.IExpressionAtomContext{ctx.GetLeft(), ctx.GetRight()} {
-		if atom, ok := child.(*fql.ExpressionAtomContext); ok && expressionAtomContainsInOperator(atom) {
-			return true
+	if ctx.OpenParen() != nil && ctx.ErrorOperator() == nil && ctx.RecoveryTails() == nil {
+		inner, ok := ctx.Expression().(*fql.ExpressionContext)
+		if !ok || !canRemoveExpressionParentheses(inner, outer) {
+			return false
 		}
+
+		return expressionExposesInOperator(inner, outer)
 	}
 
-	return false
+	precedence := expressionAtomRootPrecedence(ctx)
+	if precedence == precedencePrimary {
+		return false
+	}
+
+	return expressionAtomChildExposesInOperator(
+		ctx.GetLeft(),
+		binaryExpressionOperation(precedence, operandSideLeft),
+	) || expressionAtomChildExposesInOperator(
+		ctx.GetRight(),
+		binaryExpressionOperation(precedence, operandSideRight),
+	)
+}
+
+func expressionAtomChildExposesInOperator(ctx fql.IExpressionAtomContext, outer expressionOperation) bool {
+	atom, ok := ctx.(*fql.ExpressionAtomContext)
+	if !ok {
+		return false
+	}
+
+	return expressionAtomExposesInOperator(atom, outer)
 }
