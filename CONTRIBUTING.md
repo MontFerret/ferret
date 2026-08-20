@@ -90,6 +90,8 @@ make test
 
 ### Coding Guidelines
 
+- For repository architecture and subsystem-specific workflows, start with the
+  [development documentation](docs/development/architecture.md).
 - Follow standard Go conventions and formatting (`gofmt`)
 - Write clear, self-documenting code
 - Add comments for complex logic
