@@ -157,6 +157,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           ref: refs/heads/main
           auto-push: false
+          max-items-in-chart: 20
           summary-always: true
 
       - name: Store integration benchmark result
@@ -170,6 +171,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           ref: refs/heads/main
           auto-push: false
+          max-items-in-chart: 20
           skip-fetch-gh-pages: true
           summary-always: true
 
