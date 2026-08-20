@@ -114,27 +114,29 @@ coverage. Review all generated changes and commit them with their source change.
 
 These rules are mandatory unless the task explicitly requires otherwise.
 
-* Do not define multiple method-bearing structs in the same `.go` file.
-* Declare a method-bearing struct as a standalone `type Name struct` whenever
-  practical.
-* A method-bearing struct should usually live in a file named after its primary
-  type or responsibility, such as `result.go`, `register_file.go`, or
-  `call_stack.go`.
-* Grouped `type (...)` declarations are allowed for interfaces, passive data
-  structs, and other small related value types.
-* A grouped declaration may contain exactly one method-bearing struct when it is
-  the file's only behavioral type and the other declarations are passive values
-  from the same narrow concern.
-* Do not use a grouped declaration to hide multiple substantial behavioral
-  types.
-* If a helper gains methods and would create a second method-bearing struct in
-  the file, extract it immediately.
-* Keep a type's methods in the same file as the type unless a strong,
-  responsibility-based reason requires a split.
-* Do not add a method-bearing struct to an existing file merely because it
-  compiles there.
+* Prefer grouped `type ( ... )` declarations for package-level types.
+* Types declared in the same file should normally be placed in a single grouped
+  `type` declaration rather than written as independent `type` declarations.
+* This applies equally to structs, interfaces, aliases, named primitive types,
+  and method-bearing types.
+* Do not split types into independent declarations merely because one or more of
+  them have methods.
+* Keep related types together when they belong to the same narrow responsibility
+  and their proximity makes the implementation easier to understand.
+* A file may contain multiple related behavioral types when they form one
+  cohesive concern.
+* Split types into separate files based on responsibility and ownership, not
+  simply because multiple types have methods.
+* When a file contains only one package-level type, a standalone declaration is
+  acceptable; do not create an artificial group containing a single type.
+* When adding a package-level type to a file that already contains type
+  declarations, incorporate it into the existing type group when it belongs to
+  the same concern.
+* Avoid scattering a cohesive family of small types across multiple files.
+* Do not create `helpers.go`, `utils.go`, or similarly generic files as dumping
+  grounds. Organize files around predictable responsibilities.
 
-Allowed:
+Preferred:
 
 ```go
 type (
@@ -142,28 +144,109 @@ type (
 		Metadata map[string]any
 		Modified bool
 	}
+
 	PassContext struct {
 		Program *bytecode.Program
 	}
+
 	Pass interface {
 		Run(*PassContext) (*PassResult, error)
 	}
 )
 ```
 
-Avoid grouping two structs that both own methods or substantial behavior.
+Avoid independent declarations when the types belong to the same concern:
+
+```go
+type PassResult struct {
+	Metadata map[string]any
+	Modified bool
+}
+
+type PassContext struct {
+	Program *bytecode.Program
+}
+
+type Pass interface {
+	Run(*PassContext) (*PassResult, error)
+}
+```
+
+The grouped declaration expresses that these types form one related family.
 
 ## Function and method ownership
 
-* A file centered on a method-bearing type should contain that type, its methods,
-  and its constructors only.
-* Do not mix unrelated package-level helpers into a type-centered file.
-* Constructor functions are the normally allowed package-level functions in a
-  type-centered file.
-* Implement logic as a method when it conceptually belongs to the primary type.
-* Put genuinely package-level behavior in a separate helper-focused file.
-* A file containing methods plus non-constructor package functions is normally a
-  structure violation and should be reorganized.
+These rules are mandatory unless the task explicitly requires otherwise.
+
+* Organize files around cohesive responsibilities rather than individual types.
+* A file may contain multiple related types and their methods when they
+  participate in the same narrow concern.
+* Keep methods close to the types they belong to.
+* A file containing methods must not also contain unrelated package-level
+  functions.
+* Package-level functions may coexist with methods in a type-centered file only
+  when they are constructors for types owned by that file.
+* Constructors include conventional `New...` functions and other explicit
+  construction functions whose primary responsibility is creating or
+  initializing one of the file's types.
+* If package-level behavior is not a constructor and has no natural receiver,
+  place it in a separate responsibility-focused file.
+* If behavior conceptually belongs to a type's state, invariants, lifecycle, or
+  resources, implement it as a method rather than a package-level function.
+* Do not keep a regular function beside methods merely because that function is
+  used only by those methods.
+* Split a file when it contains distinct responsibilities, not merely because it
+  contains multiple behavioral or method-bearing types.
+* Do not split cohesive behavior across files merely to enforce one type or one
+  method-bearing type per file.
+
+Preferred:
+
+```go
+type (
+	Registry struct {
+		entries map[string]*Entry
+	}
+
+	Entry struct {
+		value Value
+	}
+)
+
+func NewRegistry() *Registry {
+	return &Registry{
+		entries: make(map[string]*Entry),
+	}
+}
+
+func (r *Registry) Add(name string, value Value) {
+	// ...
+}
+
+func (r *Registry) Get(name string) (*Entry, bool) {
+	// ...
+}
+```
+
+Avoid mixing regular package functions with methods:
+
+```go
+func (r *Registry) Add(name string, value Value) {
+	// ...
+}
+
+func normalizeName(name string) string {
+	// ...
+}
+
+func (r *Registry) Get(name string) (*Entry, bool) {
+	// ...
+}
+```
+
+If `normalizeName` is intrinsic to `Registry`, make it a method. If it is
+genuinely package-level behavior, move it to an appropriately named
+responsibility-focused file.
 
 ## Comment conventions
 
@@ -295,10 +378,13 @@ For every non-trivial change:
 5. Decide whether the change is significant for performance and benchmark it
    when required.
 6. Run the narrowest relevant validation, then broaden in proportion to risk.
-7. Review the complete resulting implementation and diff using the mandatory
+7. Evaluate documentation impact and update affected repository and public
+   documentation.
+8. Review the complete resulting implementation and diff using the mandatory
    self-review below.
-8. Fix actual findings and rerun every affected test, check, and benchmark.
-9. Report changed behavior, evidence, review results, and limitations accurately.
+9. Fix actual findings and rerun every affected test, check, and benchmark.
+10. Report changed behavior, documentation impact, evidence, review results,
+    and limitations accurately.
 
 A task is not complete merely because the first implementation compiles or its
 tests pass. Do not perform opportunistic refactors unrelated to the requested
@@ -410,11 +496,14 @@ Inspect the complete final diff, not only individual files. Verify that:
 * comments describe current contracts and invariants;
 * file, type, function, and package boundaries remain coherent;
 * resource ownership and lifecycle behavior remain correct;
+* affected repository and public documentation has been updated, or any
+  unavailable external documentation dependency is explicitly reported;
 * the final implementation is the smallest coherent solution.
 
 When review finds a correctness, architecture, ownership, lifecycle, API,
-organization, performance, or meaningful coverage problem, fix it and repeat
-affected validation. Minor optional style preferences do not justify churn.
+organization, performance, documentation, or meaningful coverage problem, fix
+it and repeat affected validation. Minor optional style preferences do not
+justify churn.
 
 Do not use self-review to expand scope through speculative refactoring,
 unrelated cleanup, unrelated API redesign, broad package moves, or FQL semantic
@@ -432,20 +521,41 @@ The final report for a non-trivial change must state:
 * behavior and invariants preserved or intentionally changed;
 * tests and benchmarks added or updated;
 * validation and benchmark commands actually run;
+* documentation updated, or documentation impact explicitly evaluated as none;
 * completion of the mandatory final self-review;
 * material findings corrected during review;
 * remaining limitations or skipped validation.
 
-## Public documentation synchronization
+## Documentation synchronization
 
-Public documentation is maintained in the website repository. Evaluate website
-documentation impact whenever changing FQL syntax or semantics, the embedding
-API, SDK contracts, extension points, or other documented public behavior.
+Documentation is part of the change, not a follow-up activity. Before completing
+every non-trivial task, evaluate whether the implementation changes any
+documented architecture, ownership boundary, invariant, workflow, API, behavior,
+example, or contributor guidance.
 
-Update the corresponding website documentation in the same task when that
-repository is available. If it is unavailable, identify the required follow-up
-explicitly in the final report. Do not leave obsolete examples or descriptions
-silently in place.
+Update the relevant documentation in the same task:
+
+* Update `docs/development/*` when repository architecture, subsystem
+  responsibilities, internal contracts, lifecycle behavior, development
+  workflows, tooling, testing, benchmarking, or release behavior changes.
+* Update repository-facing documentation such as `README.md`,
+  `CONTRIBUTING.md`, or other local documentation when their documented behavior,
+  setup instructions, workflows, or examples are affected.
+* Update the corresponding website documentation when changing FQL syntax or
+  semantics, the embedding API, SDK contracts, extension points, standard
+  library behavior, or other documented public behavior.
+* Update both repository and website documentation when a change affects both
+  internal development guidance and public behavior.
+
+Do not update documentation mechanically when the implementation does not affect
+its contract, behavior, examples, or guidance. Documentation-only churn is not a
+substitute for evaluating documentation impact.
+
+Public documentation is maintained in the website repository. When that
+repository or another required documentation source is available, make the
+necessary documentation changes as part of the same task. If it is unavailable,
+identify the exact required follow-up explicitly in the final report rather than
+silently leaving known documentation stale.
 
 ## Response style
 
