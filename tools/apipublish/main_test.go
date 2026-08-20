@@ -8,8 +8,8 @@ import (
 func TestRunValidatesMigrationModeFlags(t *testing.T) {
 	for _, test := range []struct {
 		name      string
-		arguments []string
 		want      string
+		arguments []string
 	}{
 		{name: "missing pages", arguments: []string{"-migrate-types"}, want: "-pages is required"},
 		{name: "publish inputs", arguments: []string{"-migrate-types", "-pages", "pages", "-reference", "api.json"}, want: "cannot be used"},

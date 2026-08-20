@@ -24,10 +24,10 @@ type typeMigration struct {
 }
 
 type migrationReference struct {
-	SchemaVersion int                  `json:"schemaVersion"`
 	ID            string               `json:"id"`
 	Version       string               `json:"version"`
 	Namespaces    []migrationNamespace `json:"namespaces"`
+	SchemaVersion int                  `json:"schemaVersion"`
 }
 
 type migrationNamespace struct {
@@ -41,23 +41,23 @@ type migrationFunction struct {
 }
 
 type migrationSignature struct {
-	Parameters  []migrationParameter `json:"parameters"`
 	Variadic    *bool                `json:"variadic,omitempty"`
 	Description *string              `json:"description,omitempty"`
-	Return      json.RawMessage      `json:"return,omitempty"`
 	Throws      *[]api.Throw         `json:"throws,omitempty"`
 	Deprecated  *string              `json:"deprecated,omitempty"`
+	Parameters  []migrationParameter `json:"parameters"`
+	Return      json.RawMessage      `json:"return,omitempty"`
 }
 
 type migrationParameter struct {
+	Description *string         `json:"description,omitempty"`
 	Name        string          `json:"name"`
 	Type        json.RawMessage `json:"type,omitempty"`
-	Description *string         `json:"description,omitempty"`
 }
 
 type migrationReturn struct {
-	Type        json.RawMessage `json:"type"`
 	Description *string         `json:"description"`
+	Type        json.RawMessage `json:"type"`
 }
 
 // MigrateTypes converts every indexed Core API Reference string type in a
