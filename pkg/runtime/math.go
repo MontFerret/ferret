@@ -151,9 +151,9 @@ func isDurationScalar(value Value) bool {
 	}
 }
 
-// Modulo computes the remainder of native numeric values, or negotiates an
+// Mod computes the remainder of native numeric values, or negotiates an
 // unsupported pair through Modulable host values.
-func Modulo(ctx context.Context, left, right Value) (Value, error) {
+func Mod(ctx context.Context, left, right Value) (Value, error) {
 	switch left.(type) {
 	case DateTime, Duration:
 		return dispatchMod(ctx, left, right)

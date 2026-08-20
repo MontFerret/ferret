@@ -63,12 +63,11 @@ type (
 		Subtractable
 	}
 
-	// Multiplicative is a convenience contract for values supporting multiplication,
-	// division, and modulus. Runtime operator dispatch checks the primitive capability.
+	// Multiplicative is a convenience contract for values supporting multiplication
+	// and division. Runtime operator dispatch checks the primitive capability.
 	Multiplicative interface {
 		Multipliable
 		Dividable
-		Modulable
 	}
 
 	// Arithmetic is a convenience contract containing every binary arithmetic capability.
@@ -76,5 +75,6 @@ type (
 	Arithmetic interface {
 		Additive
 		Multiplicative
+		Modulable
 	}
 )

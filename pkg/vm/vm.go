@@ -1259,7 +1259,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			res, err := runtime.Divide(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpMod:
-			res, err := runtime.Modulo(ctx, reg[src1], reg[src2])
+			res, err := runtime.Mod(ctx, reg[src1], reg[src2])
 			state.setOrRaiseDefault(pc, dst, res, err)
 		case bytecode.OpIncr:
 			res, err := runtime.Increment(ctx, reg[dst])

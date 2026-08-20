@@ -32,7 +32,7 @@ func BenchmarkArithmeticDivideMixed(b *testing.B) {
 }
 
 func BenchmarkArithmeticModuloFloat(b *testing.B) {
-	benchmarkBinaryArithmetic(b, NewFloat(40.5), NewInt(3), Modulo)
+	benchmarkBinaryArithmetic(b, NewFloat(40.5), NewInt(3), Mod)
 }
 
 func BenchmarkArithmeticAddDuration(b *testing.B) {

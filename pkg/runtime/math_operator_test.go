@@ -24,7 +24,7 @@ func TestArithmeticCapabilityDispatchDirections(t *testing.T) {
 		{name: "subtraction", operation: runtime.Subtract, leftMethod: "Subtract", rightMethod: "RightSubtract"},
 		{name: "multiplication", operation: runtime.Multiply, leftMethod: "Multiply", rightMethod: "RightMultiply"},
 		{name: "division", operation: runtime.Divide, leftMethod: "Divide", rightMethod: "RightDivide"},
-		{name: "modulus", operation: runtime.Modulo, leftMethod: "Mod", rightMethod: "RightMod"},
+		{name: "modulus", operation: runtime.Mod, leftMethod: "Mod", rightMethod: "RightMod"},
 	}
 
 	for _, operation := range operations {
@@ -202,7 +202,7 @@ func TestArithmeticPrimitiveCapabilitiesRemainIndependent(t *testing.T) {
 		t.Fatalf("Divide() error = %v, want ErrInvalidOperation", err)
 	}
 
-	if _, err := runtime.Modulo(t.Context(), multiplyOnly, runtime.NewInt(2)); !errors.Is(err, runtime.ErrInvalidOperation) {
+	if _, err := runtime.Mod(t.Context(), multiplyOnly, runtime.NewInt(2)); !errors.Is(err, runtime.ErrInvalidOperation) {
 		t.Fatalf("Modulo() error = %v, want ErrInvalidOperation", err)
 	}
 }
