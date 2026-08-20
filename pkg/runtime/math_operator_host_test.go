@@ -64,7 +64,7 @@ func TestArithmeticDoesNotInspectUnsupportedHostValues(t *testing.T) {
 		{name: "subtraction", operation: func() (runtime.Value, error) { return runtime.Subtract(ctx, opaque, runtime.NewInt(1)) }, expected: fmt.Sprintf("invalid operation: operator '-' cannot be applied to %s and Int", typeName)},
 		{name: "multiplication", operation: func() (runtime.Value, error) { return runtime.Multiply(ctx, opaque, runtime.NewInt(1)) }, expected: fmt.Sprintf("invalid operation: operator '*' cannot be applied to %s and Int", typeName)},
 		{name: "division", operation: func() (runtime.Value, error) { return runtime.Divide(ctx, opaque, runtime.NewInt(1)) }, expected: fmt.Sprintf("invalid operation: operator '/' cannot be applied to %s and Int", typeName)},
-		{name: "modulo", operation: func() (runtime.Value, error) { return runtime.Modulo(ctx, opaque, runtime.NewInt(1)) }, expected: fmt.Sprintf("invalid operation: operator '%%' cannot be applied to %s and Int", typeName)},
+		{name: "modulo", operation: func() (runtime.Value, error) { return runtime.Mod(ctx, opaque, runtime.NewInt(1)) }, expected: fmt.Sprintf("invalid operation: operator '%%' cannot be applied to %s and Int", typeName)},
 		{name: "increment", operation: func() (runtime.Value, error) { return runtime.Increment(ctx, opaque) }, expected: fmt.Sprintf("invalid operation: operator '++' cannot be applied to %s", typeName)},
 		{name: "decrement", operation: func() (runtime.Value, error) { return runtime.Decrement(ctx, opaque) }, expected: fmt.Sprintf("invalid operation: operator '--' cannot be applied to %s", typeName)},
 	}

@@ -79,7 +79,7 @@ func TestInvalidBinaryOperationsUseOperatorDiagnostics(t *testing.T) {
 			name:     "modulus",
 			expected: "invalid operation: operator '%' cannot be applied to Duration and Int",
 			operation: func() (runtime.Value, error) {
-				return runtime.Modulo(t.Context(), duration, runtime.NewInt(1))
+				return runtime.Mod(t.Context(), duration, runtime.NewInt(1))
 			},
 		},
 	}

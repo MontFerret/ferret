@@ -381,7 +381,7 @@ func evalDebugArithmetic(ctx context.Context, op string, left, right runtime.Val
 	case operator.Divide:
 		return runtime.Divide(ctx, left, right)
 	case operator.Modulus:
-		return runtime.Modulo(ctx, left, right)
+		return runtime.Mod(ctx, left, right)
 	default:
 		return nil, unsupportedDebugExpression(nil)
 	}

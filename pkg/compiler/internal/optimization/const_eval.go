@@ -94,7 +94,7 @@ func foldBinary(op bytecode.Opcode, left, right runtime.Value, bg context.Contex
 
 		return result, err == nil
 	case bytecode.OpMod:
-		result, err := runtime.Modulo(bg, left, right)
+		result, err := runtime.Mod(bg, left, right)
 		return result, err == nil
 	case bytecode.OpCmp:
 		result, err := runtime.CompareValues(bg, right, left)

@@ -6,7 +6,10 @@ import (
 	"time"
 )
 
-var arithmeticBenchmarkSink Value
+var (
+	arithmeticBenchmarkSink      Value
+	arithmeticBenchmarkErrorSink error
+)
 
 func BenchmarkArithmeticAddInt(b *testing.B) {
 	benchmarkBinaryArithmetic(b, NewInt(40), NewInt(2), Add)
@@ -29,7 +32,7 @@ func BenchmarkArithmeticDivideMixed(b *testing.B) {
 }
 
 func BenchmarkArithmeticModuloFloat(b *testing.B) {
-	benchmarkBinaryArithmetic(b, NewFloat(40.5), NewInt(3), Modulo)
+	benchmarkBinaryArithmetic(b, NewFloat(40.5), NewInt(3), Mod)
 }
 
 func BenchmarkArithmeticAddDuration(b *testing.B) {
@@ -51,6 +54,42 @@ func BenchmarkArithmeticAddDateTime(b *testing.B) {
 		NewDuration(time.Second),
 		Add,
 	)
+}
+
+func BenchmarkArithmeticAddHostBuiltin(b *testing.B) {
+	host := &arithmeticBenchmarkHost{result: NewInt(42)}
+	benchmarkBinaryArithmetic(b, host, NewInt(2), Add)
+}
+
+func BenchmarkArithmeticAddBuiltinHost(b *testing.B) {
+	host := &arithmeticBenchmarkHost{result: NewInt(42)}
+	benchmarkBinaryArithmetic(b, NewInt(40), host, Add)
+}
+
+func BenchmarkArithmeticAddHostHost(b *testing.B) {
+	left := &arithmeticBenchmarkHost{result: NewInt(42)}
+	right := &arithmeticBenchmarkHost{result: NewInt(42)}
+	benchmarkBinaryArithmetic(b, left, right, Add)
+}
+
+func BenchmarkArithmeticAddUnsupportedHost(b *testing.B) {
+	left := &arithmeticBenchmarkHost{unsupported: true}
+	right := &arithmeticBenchmarkHost{unsupported: true}
+	ctx := context.Background()
+
+	if _, err := Add(ctx, left, right); err == nil {
+		b.Fatal("expected unsupported host addition to fail")
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	var err error
+	for b.Loop() {
+		_, err = Add(ctx, left, right)
+	}
+
+	arithmeticBenchmarkErrorSink = err
 }
 
 func benchmarkBinaryArithmetic(

@@ -39,10 +39,10 @@ func TestNativeNumericArithmetic(t *testing.T) {
 		{name: "Int divided by Float", operation: runtime.Divide, left: runtime.NewInt(5), right: runtime.NewFloat(2), expected: runtime.NewFloat(2.5)},
 		{name: "Float divided by Int", operation: runtime.Divide, left: runtime.NewFloat(5), right: runtime.NewInt(2), expected: runtime.NewFloat(2.5)},
 		{name: "Float divided by Float", operation: runtime.Divide, left: runtime.NewFloat(5), right: runtime.NewFloat(2), expected: runtime.NewFloat(2.5)},
-		{name: "Int modulo Int", operation: runtime.Modulo, left: runtime.NewInt(5), right: runtime.NewInt(2), expected: runtime.NewInt(1)},
-		{name: "Int modulo Float", operation: runtime.Modulo, left: runtime.NewInt(5), right: runtime.NewFloat(2), expected: runtime.NewFloat(1)},
-		{name: "Float modulo Int", operation: runtime.Modulo, left: runtime.NewFloat(5.5), right: runtime.NewInt(2), expected: runtime.NewFloat(1.5)},
-		{name: "Float modulo Float", operation: runtime.Modulo, left: runtime.NewFloat(5.5), right: runtime.NewFloat(2), expected: runtime.NewFloat(1.5)},
+		{name: "Int modulo Int", operation: runtime.Mod, left: runtime.NewInt(5), right: runtime.NewInt(2), expected: runtime.NewInt(1)},
+		{name: "Int modulo Float", operation: runtime.Mod, left: runtime.NewInt(5), right: runtime.NewFloat(2), expected: runtime.NewFloat(1)},
+		{name: "Float modulo Int", operation: runtime.Mod, left: runtime.NewFloat(5.5), right: runtime.NewInt(2), expected: runtime.NewFloat(1.5)},
+		{name: "Float modulo Float", operation: runtime.Mod, left: runtime.NewFloat(5.5), right: runtime.NewFloat(2), expected: runtime.NewFloat(1.5)},
 	}
 
 	for _, test := range tests {
@@ -113,7 +113,7 @@ func TestArithmeticRejectsImplicitNumericCoercion(t *testing.T) {
 			return runtime.Multiply(ctx, runtime.NewString("10"), runtime.NewInt(2))
 		}, expected: "invalid operation: operator '*' cannot be applied to String and Int"},
 		{name: "numeric String division", operation: func() (runtime.Value, error) { return runtime.Divide(ctx, runtime.NewString("10"), runtime.NewInt(2)) }, expected: "invalid operation: operator '/' cannot be applied to String and Int"},
-		{name: "numeric String modulo", operation: func() (runtime.Value, error) { return runtime.Modulo(ctx, runtime.NewString("10"), runtime.NewInt(2)) }, expected: "invalid operation: operator '%' cannot be applied to String and Int"},
+		{name: "numeric String modulo", operation: func() (runtime.Value, error) { return runtime.Mod(ctx, runtime.NewString("10"), runtime.NewInt(2)) }, expected: "invalid operation: operator '%' cannot be applied to String and Int"},
 		{name: "Array subtraction", operation: func() (runtime.Value, error) {
 			return runtime.Subtract(ctx, runtime.NewArrayWith(runtime.NewInt(1)), runtime.NewInt(1))
 		}, expected: "invalid operation: operator '-' cannot be applied to Array and Int"},
@@ -121,7 +121,7 @@ func TestArithmeticRejectsImplicitNumericCoercion(t *testing.T) {
 		{name: "Binary division", operation: func() (runtime.Value, error) {
 			return runtime.Divide(ctx, runtime.NewBinary([]byte("10")), runtime.NewInt(2))
 		}, expected: "invalid operation: operator '/' cannot be applied to Binary and Int"},
-		{name: "Boolean modulo", operation: func() (runtime.Value, error) { return runtime.Modulo(ctx, runtime.True, runtime.NewInt(2)) }, expected: "invalid operation: operator '%' cannot be applied to Boolean and Int"},
+		{name: "Boolean modulo", operation: func() (runtime.Value, error) { return runtime.Mod(ctx, runtime.True, runtime.NewInt(2)) }, expected: "invalid operation: operator '%' cannot be applied to Boolean and Int"},
 		{name: "String increment", operation: func() (runtime.Value, error) { return runtime.Increment(ctx, runtime.NewString("10")) }, expected: "invalid operation: operator '++' cannot be applied to String"},
 		{name: "Boolean decrement", operation: func() (runtime.Value, error) { return runtime.Decrement(ctx, runtime.True) }, expected: "invalid operation: operator '--' cannot be applied to Boolean"},
 	}
@@ -159,7 +159,7 @@ func TestUnsupportedNativeValuesNeverParticipateInNumericArithmetic(t *testing.T
 		{name: "subtract", symbol: "-", operation: runtime.Subtract},
 		{name: "multiply", symbol: "*", operation: runtime.Multiply},
 		{name: "divide", symbol: "/", operation: runtime.Divide},
-		{name: "modulo", symbol: "%", operation: runtime.Modulo},
+		{name: "modulo", symbol: "%", operation: runtime.Mod},
 	}
 	unaryOperations := []struct {
 		operation func(context.Context, runtime.Value) (runtime.Value, error)
@@ -221,10 +221,10 @@ func TestArithmeticReportsNumericFailures(t *testing.T) {
 			return runtime.Divide(ctx, runtime.NewFloat(1), runtime.ZeroFloat)
 		}, target: runtime.ErrInvalidOperation},
 		{name: "modulo by zero", operation: func() (runtime.Value, error) {
-			return runtime.Modulo(ctx, runtime.NewInt(1), runtime.ZeroInt)
+			return runtime.Mod(ctx, runtime.NewInt(1), runtime.ZeroInt)
 		}, target: runtime.ErrInvalidOperation},
 		{name: "float modulo by zero", operation: func() (runtime.Value, error) {
-			return runtime.Modulo(ctx, runtime.NewFloat(1), runtime.ZeroFloat)
+			return runtime.Mod(ctx, runtime.NewFloat(1), runtime.ZeroFloat)
 		}, target: runtime.ErrInvalidOperation},
 		{name: "non-finite float operand", operation: func() (runtime.Value, error) {
 			return runtime.Subtract(ctx, runtime.NewFloat(math.Inf(1)), runtime.NewFloat(1))
@@ -279,10 +279,10 @@ func TestZeroDivisorErrorsPreserveRuntimeAndOperationIdentity(t *testing.T) {
 			return runtime.Divide(ctx, runtime.NewDuration(time.Second), runtime.ZeroDuration)
 		}, identity: runtime.ErrDivisionByZero, message: "invalid operation: division by zero"},
 		{name: "Int modulo", operation: func() (runtime.Value, error) {
-			return runtime.Modulo(ctx, runtime.NewInt(1), runtime.ZeroInt)
+			return runtime.Mod(ctx, runtime.NewInt(1), runtime.ZeroInt)
 		}, identity: runtime.ErrModuloByZero, message: "invalid operation: modulo by zero"},
 		{name: "Float modulo", operation: func() (runtime.Value, error) {
-			return runtime.Modulo(ctx, runtime.NewFloat(1), runtime.ZeroFloat)
+			return runtime.Mod(ctx, runtime.NewFloat(1), runtime.ZeroFloat)
 		}, identity: runtime.ErrModuloByZero, message: "invalid operation: modulo by zero"},
 	}
 
@@ -427,8 +427,8 @@ func TestTemporalArithmeticRejectsIncompatiblePairs(t *testing.T) {
 		{name: "Int divided by Duration", operation: func() (runtime.Value, error) { return runtime.Divide(ctx, integer, duration) }, expected: "invalid operation: operator '/' cannot be applied to Int and Duration"},
 		{name: "Duration divided by String", operation: func() (runtime.Value, error) { return runtime.Divide(ctx, duration, stringValue) }, expected: "invalid operation: operator '/' cannot be applied to Duration and String"},
 		{name: "Duration divided by Array", operation: func() (runtime.Value, error) { return runtime.Divide(ctx, duration, array) }, expected: "invalid operation: operator '/' cannot be applied to Duration and Array"},
-		{name: "DateTime modulo Int", operation: func() (runtime.Value, error) { return runtime.Modulo(ctx, dateTime, integer) }, expected: "invalid operation: operator '%' cannot be applied to DateTime and Int"},
-		{name: "Int modulo Duration", operation: func() (runtime.Value, error) { return runtime.Modulo(ctx, integer, duration) }, expected: "invalid operation: operator '%' cannot be applied to Int and Duration"},
+		{name: "DateTime modulo Int", operation: func() (runtime.Value, error) { return runtime.Mod(ctx, dateTime, integer) }, expected: "invalid operation: operator '%' cannot be applied to DateTime and Int"},
+		{name: "Int modulo Duration", operation: func() (runtime.Value, error) { return runtime.Mod(ctx, integer, duration) }, expected: "invalid operation: operator '%' cannot be applied to Int and Duration"},
 	}
 
 	for _, test := range tests {

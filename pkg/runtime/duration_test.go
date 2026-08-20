@@ -199,7 +199,7 @@ func TestDurationArithmetic(t *testing.T) {
 		}},
 		{name: "increment", fn: func() (runtime.Value, error) { return runtime.Increment(ctx, second) }},
 		{name: "decrement", fn: func() (runtime.Value, error) { return runtime.Decrement(ctx, second) }},
-		{name: "modulo", fn: func() (runtime.Value, error) { return runtime.Modulo(ctx, second, runtime.NewInt(2)) }},
+		{name: "modulo", fn: func() (runtime.Value, error) { return runtime.Mod(ctx, second, runtime.NewInt(2)) }},
 	}
 
 	for _, test := range invalid {

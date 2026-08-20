@@ -16,6 +16,10 @@ BENCH_RUN ?= '^$$'
 BENCH_FILTER ?= .
 BENCH_COUNT ?= 1
 BENCH_TIMEOUT ?= 30m
+STATICCHECK_VERSION = v0.7.0
+GO_TOOLS_VERSION = v0.49.0
+GO_PERF_VERSION = v0.0.0-20260813145340-fd4a688df892
+REVIVE_VERSION = v1.15.0
 STATICCHECK_FLAGS = -tests=false -checks=all,-U1000,-ST1000,-ST1001,-ST1020,-ST1022,-S1002
 
 default: build
@@ -23,11 +27,11 @@ default: build
 build: lint generate test compile
 
 install-tools:
-	go install honnef.co/go/tools/cmd/staticcheck@latest && \
-	go install golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignment@latest && \
-	go install golang.org/x/tools/cmd/goimports@latest && \
-	go install golang.org/x/perf/cmd/benchstat@latest && \
-	go install github.com/mgechev/revive@latest
+	go install honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION} && \
+	go install golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignment@${GO_TOOLS_VERSION} && \
+	go install golang.org/x/tools/cmd/goimports@${GO_TOOLS_VERSION} && \
+	go install golang.org/x/perf/cmd/benchstat@${GO_PERF_VERSION} && \
+	go install github.com/mgechev/revive@${REVIVE_VERSION}
 
 install:
 	go get
