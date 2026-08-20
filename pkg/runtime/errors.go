@@ -16,6 +16,12 @@ var (
 	ErrInvalidArgumentType   = errors.New("invalid argument type")
 	ErrInvalidType           = errors.New("invalid type")
 	ErrInvalidOperation      = errors.New("invalid operation")
+	// ErrUnsupportedOperands lets a host arithmetic capability decline an operand pair.
+	// Runtime operator dispatch continues with the reflected right-hand method and
+	// converts a fully declined operation into the normal ErrInvalidOperation error.
+	// Implementations may return it directly or wrap it for errors.Is compatibility.
+	// All other errors are treated as execution failures and propagate immediately.
+	ErrUnsupportedOperands = errors.New("unsupported operands")
 	// ErrDivisionByZero identifies an arithmetic division with a zero divisor.
 	ErrDivisionByZero = errors.New("division by zero")
 	// ErrModuloByZero identifies an arithmetic modulo operation with a zero divisor.
