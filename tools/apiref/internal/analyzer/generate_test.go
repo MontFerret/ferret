@@ -11,9 +11,9 @@ import (
 func TestBuildReferenceGroupsAndSortsRuntimeSignatures(t *testing.T) {
 	catalog := &sourceCatalog{
 		Declarations: map[string]*sourceDeclaration{
-			"example.Zero": declarationWithDocs("Zero", "Returns zero.\n@return {Int} Zero."),
-			"example.One":  declarationWithDocs("One", "Returns one.\n@param value {Any} Value.\n@return {Any} Value."),
-			"example.Many": declarationWithDocs("Many", "Returns values.\n@param value {Any, repeated} Values.\n@return {Any[]} Values."),
+			"example.Zero": declarationWithDocs("Zero", "Returns zero.\n@return {Object?} Zero."),
+			"example.One":  declarationWithDocs("One", "Returns one.\n@param value {String | Array | Object} Value.\n@return {[Object]} Value."),
+			"example.Many": declarationWithDocs("Many", "Returns values.\n@param value {[Int | Float]} Values.\n@return {Any[]} Values."),
 		},
 		Assertions: map[string]assertionDescriptor{},
 	}
@@ -39,6 +39,19 @@ func TestBuildReferenceGroupsAndSortsRuntimeSignatures(t *testing.T) {
 	signatures := reference.Namespaces[1].Functions[0].Signatures
 	if len(signatures) != 2 || signatures[0].Variadic || !signatures[1].Variadic {
 		t.Fatalf("signature ordering = %#v, want fixed before variadic", signatures)
+	}
+
+	rootSignature := reference.Namespaces[0].Functions[0].Signatures[0]
+	if rootSignature.Parameters[0].Type.Kind != api.TypeKindUnion || len(rootSignature.Parameters[0].Type.Types) != 3 {
+		t.Fatalf("root parameter type = %#v, want three-member union", rootSignature.Parameters[0].Type)
+	}
+
+	if rootSignature.Return.Type.Kind != api.TypeKindList || rootSignature.Return.Type.Element.Name != "Object" {
+		t.Fatalf("root return type = %#v, want list of Object", rootSignature.Return.Type)
+	}
+
+	if signatures[1].Parameters[0].Type.Kind != api.TypeKindList || signatures[1].Parameters[0].Type.Element.Kind != api.TypeKindUnion {
+		t.Fatalf("variadic parameter type = %#v, want list of numeric union", signatures[1].Parameters[0].Type)
 	}
 }
 

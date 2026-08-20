@@ -246,9 +246,19 @@ func referenceData(t *testing.T, version, id string) []byte {
 				Functions: []api.Function{{
 					Name: "PING",
 					Signatures: []api.Signature{{
-						Parameters:  []api.Parameter{},
+						Parameters: []api.Parameter{{
+							Name: "value",
+							Type: &api.Type{
+								Kind:  api.TypeKindUnion,
+								Types: []api.Type{{Kind: api.TypeKindNamed, Name: "String"}, {Kind: api.TypeKindNamed, Name: "Object"}},
+							},
+							Description: "Input value.",
+						}},
 						Description: "Returns a value.",
-						Return:      &api.Return{Type: "String", Description: "Value."},
+						Return: &api.Return{
+							Type:        &api.Type{Kind: api.TypeKindList, Element: namedType("String")},
+							Description: "Value.",
+						},
 					}},
 				}},
 			},
@@ -259,7 +269,7 @@ func referenceData(t *testing.T, version, id string) []byte {
 					Signatures: []api.Signature{{
 						Parameters:  []api.Parameter{},
 						Description: "Reads a file.",
-						Return:      &api.Return{Type: "String", Description: "Contents."},
+						Return:      &api.Return{Type: namedType("String"), Description: "Contents."},
 					}},
 				}},
 			},
@@ -272,6 +282,10 @@ func referenceData(t *testing.T, version, id string) []byte {
 	}
 
 	return append(data, '\n')
+}
+
+func namedType(name string) *api.Type {
+	return &api.Type{Kind: api.TypeKindNamed, Name: name}
 }
 
 func catalogData(t *testing.T, version, id string) []byte {

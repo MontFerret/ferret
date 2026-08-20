@@ -15,6 +15,7 @@ func TestParseSignatureDocumentationRequiresCompleteMetadata(t *testing.T) {
 	}{
 		{name: "missing", reason: "has no Ferret API documentation"},
 		{name: "malformed", documentation: "Test.\n@param {Any} value - Value.\n@return {Any} Value.", reason: "malformed Ferret API documentation"},
+		{name: "malformed type", documentation: "Test.\n@param value {Any |} Value.\n@return {Any} Value.", reason: "invalid type expression"},
 		{name: "missing prose", documentation: "@param value {Any} Value.\n@return {Any} Value.", reason: "non-empty Ferret-facing prose"},
 		{name: "missing return", documentation: "Test.\n@param value {Any} Value.", reason: "exactly one @return"},
 		{name: "arity mismatch", documentation: "Test.\n@return {Any} Value.", reason: "fixed arity 1"},

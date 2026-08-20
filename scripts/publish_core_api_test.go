@@ -122,7 +122,10 @@ func writeReference(t *testing.T, path, version string) {
 					"parameters":  []any{},
 					"description": "Returns a value.",
 					"return": map[string]any{
-						"type":        "String",
+						"type": map[string]any{
+							"kind": "named",
+							"name": "String",
+						},
 						"description": "Value.",
 					},
 				}},
