@@ -15,7 +15,7 @@ import (
 )
 
 // ErrTypeMigrationRequired reports that check mode found legacy string types.
-var ErrTypeMigrationRequired = errors.New("Core API type migration is required")
+var ErrTypeMigrationRequired = errors.New("core API type migration is required")
 
 type typeMigration struct {
 	path        string
