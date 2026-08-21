@@ -1,57 +1,82 @@
 package testing
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// @namespace t
-func RegisterLib(ns runtime.Namespace) {
-	t := ns.Namespace("t")
-
-	registerNOT(t)
-
-	registerPositive(t, "empty", Empty)
-	registerPositive(t, "eq", Equal)
-	registerPositive(t, "fail", Fail)
-	registerPositive(t, "false", False)
-	registerPositive(t, "gt", Gt)
-	registerPositive(t, "gte", Gte)
-	registerPositive(t, "include", Include)
-	registerPositive(t, "len", Len)
-	registerPositive(t, "match", Match)
-	registerPositive(t, "lt", Lt)
-	registerPositive(t, "lte", Lte)
-	registerPositive(t, "none", None)
-	registerPositive(t, "true", True)
-	registerPositive(t, "string", String)
-	registerPositive(t, "int", Int)
-	registerPositive(t, "float", Float)
-	registerPositive(t, "datetime", DateTime)
-	registerPositive(t, "array", Array)
-	registerPositive(t, "object", Object)
-	registerPositive(t, "binary", Binary)
+type assertionRegistration struct {
+	name       string
+	descriptor assertion
+	negatable  bool
 }
 
-func registerNOT(ns runtime.Namespace) {
-	t := ns.Namespace("not")
+var assertionCatalog = []assertionRegistration{
+	{name: "empty", descriptor: emptyAssertion, negatable: true},
+	{name: "eq", descriptor: equalAssertion, negatable: true},
+	{name: "fail", descriptor: failAssertion, negatable: false},
+	{name: "false", descriptor: falseAssertion, negatable: true},
+	{name: "gt", descriptor: gtAssertion, negatable: true},
+	{name: "gte", descriptor: gteAssertion, negatable: true},
+	{name: "include", descriptor: includeAssertion, negatable: true},
+	{name: "len", descriptor: lenAssertion, negatable: true},
+	{name: "match", descriptor: matchAssertion, negatable: true},
+	{name: "lt", descriptor: ltAssertion, negatable: true},
+	{name: "lte", descriptor: lteAssertion, negatable: true},
+	{name: "none", descriptor: noneAssertion, negatable: true},
+	{name: "true", descriptor: trueAssertion, negatable: true},
+	{name: "string", descriptor: stringAssertion, negatable: true},
+	{name: "int", descriptor: intAssertion, negatable: true},
+	{name: "float", descriptor: floatAssertion, negatable: true},
+	{name: "datetime", descriptor: dateTimeAssertion, negatable: true},
+	{name: "array", descriptor: arrayAssertion, negatable: true},
+	{name: "object", descriptor: objectAssertion, negatable: true},
+	{name: "binary", descriptor: binaryAssertion, negatable: true},
+}
 
-	registerNegative(t, "empty", Empty)
-	registerNegative(t, "eq", Equal)
-	registerNegative(t, "false", False)
-	registerNegative(t, "gt", Gt)
-	registerNegative(t, "gte", Gte)
-	registerNegative(t, "include", Include)
-	registerNegative(t, "len", Len)
-	registerNegative(t, "match", Match)
-	registerNegative(t, "lt", Lt)
-	registerNegative(t, "lte", Lte)
-	registerNegative(t, "none", None)
-	registerNegative(t, "true", True)
-	registerNegative(t, "string", String)
-	registerNegative(t, "int", Int)
-	registerNegative(t, "float", Float)
-	registerNegative(t, "datetime", DateTime)
-	registerNegative(t, "array", Array)
-	registerNegative(t, "object", Object)
-	registerNegative(t, "binary", Binary)
+// @namespace t
+func RegisterLib(ns runtime.Namespace) {
+	testingNamespace := ns.Namespace("t")
+	negativeNamespace := testingNamespace.Namespace("not")
+
+	for _, registration := range assertionCatalog {
+		if registration.negatable {
+			registerAssertion(negativeNamespace, registration.name, registration.descriptor, registration.descriptor.negative())
+		}
+	}
+
+	for _, registration := range assertionCatalog {
+		registerAssertion(testingNamespace, registration.name, registration.descriptor, registration.descriptor.positive())
+	}
+}
+
+func registerAssertion(ns runtime.Namespace, name string, descriptor assertion, fn runtime.Function) {
+	for arity := descriptor.args.min; arity <= descriptor.args.max; arity++ {
+		switch arity {
+		case 0:
+			ns.Function().A0().Add(name, func(ctx context.Context) (runtime.Value, error) {
+				return fn(ctx)
+			})
+		case 1:
+			ns.Function().A1().Add(name, func(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
+				return fn(ctx, arg1)
+			})
+		case 2:
+			ns.Function().A2().Add(name, func(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+				return fn(ctx, arg1, arg2)
+			})
+		case 3:
+			ns.Function().A3().Add(name, func(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+				return fn(ctx, arg1, arg2, arg3)
+			})
+		case 4:
+			ns.Function().A4().Add(name, func(ctx context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
+				return fn(ctx, arg1, arg2, arg3, arg4)
+			})
+		default:
+			panic(fmt.Sprintf("unsupported assertion arity %d for %s", arity, name))
+		}
+	}
 }

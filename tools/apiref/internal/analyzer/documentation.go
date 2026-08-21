@@ -72,7 +72,7 @@ func parseAssertionDocumentation(registered registeredSignature, descriptor asse
 			declaration,
 			registered.QualifiedName,
 			"assertion descriptor",
-			fmt.Sprintf("documents %d parameters but Args.Max is %d", len(documentation.Parameters), descriptor.Max),
+			fmt.Sprintf("documents %d parameters but assertion args.max is %d", len(documentation.Parameters), descriptor.Max),
 		)
 	}
 
@@ -81,7 +81,7 @@ func parseAssertionDocumentation(registered registeredSignature, descriptor asse
 			declaration,
 			registered.QualifiedName,
 			"assertion descriptor",
-			fmt.Sprintf("runtime signature does not match literal Args range %d..%d", descriptor.Min, descriptor.Max),
+			fmt.Sprintf("runtime signature does not match literal assertion args range %d..%d", descriptor.Min, descriptor.Max),
 		)
 	}
 
