@@ -203,6 +203,30 @@ func TestHasAssertionRejectsInvalidUsage(t *testing.T) {
 	}
 }
 
+func TestHasAssertionStopsAfterFirstMissingKey(t *testing.T) {
+	t.Parallel()
+
+	target := &countingMap{
+		Object: runtime.NewObjectWith(map[string]runtime.Value{
+			"present": runtime.NewInt(1),
+		}),
+	}
+	keys := runtime.NewArrayWith(runtime.NewString("missing"), runtime.NewString("present"))
+
+	matched, err := hasAssertion.fn(context.Background(), []runtime.Value{target, keys})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if matched {
+		t.Fatal("has assertion matched after a required key was missing")
+	}
+
+	if len(target.lookups) != 1 || target.lookups[0] != "missing" {
+		t.Fatalf("key lookups = %v, want [missing]", target.lookups)
+	}
+}
+
 func TestLenAssertion(t *testing.T) {
 	t.Parallel()
 

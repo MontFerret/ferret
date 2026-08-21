@@ -43,7 +43,7 @@ func TestTestingAssertionVocabulary(t *testing.T) {
 		Nil(`RETURN T::NOT::APPROX(10, 11, 0.01)`, "negated approximate assertion"),
 		Nil(`RETURN T::BETWEEN(200, 200, 299, "unused")`, "between includes its minimum and supports message overload"),
 		Nil(`RETURN T::NOT::BETWEEN(500, 200, 299)`, "negated range assertion"),
-		Nil(`RETURN T::CONTAINS(["ferret", "fql"], "ferret")`, "contains replaces include"),
+		Nil(`RETURN T::CONTAINS(["ferret", "fql"], "ferret")`, "containment assertion"),
 		Nil(`RETURN T::NOT::CONTAINS("ferret", "goose")`, "negated containment assertion"),
 		Nil(`RETURN T::HAS({ id: 1, name: "Ferret", empty: NONE }, ["id", "name", "empty"])`, "has checks all properties including present None"),
 		Nil(`RETURN T::HAS({}, [])`, "has accepts an empty key list"),
@@ -58,14 +58,6 @@ func TestTestingAssertionVocabulary(t *testing.T) {
 		spec.NewSpec(`RETURN T::BETWEEN(15, 20, 10)`, "between rejects reversed bounds").Expect().ExecError(
 			ShouldBeRuntimeError,
 			&ExpectedRuntimeError{Message: "invalid argument", Contains: []string{"minimum boundary must not exceed maximum boundary"}},
-		),
-		spec.NewSpec(`RETURN T::INCLUDE([1], 1)`, "include is no longer registered").Expect().ExecError(
-			ShouldBeRuntimeError,
-			&ExpectedRuntimeError{Message: "unresolved function"},
-		),
-		spec.NewSpec(`RETURN T::NOT::INCLUDE([1], 1)`, "negated include is no longer registered").Expect().ExecError(
-			ShouldBeRuntimeError,
-			&ExpectedRuntimeError{Message: "unresolved function"},
 		),
 	})
 }

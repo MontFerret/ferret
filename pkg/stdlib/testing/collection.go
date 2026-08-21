@@ -153,13 +153,20 @@ var (
 				return bool(contains), err
 			}
 
-			allPresent := true
 			keys := args[1].(runtime.List)
 			err := keys.ForEach(ctx, func(ctx context.Context, key runtime.Value, index runtime.Int) (runtime.Boolean, error) {
 				if err := runtime.ValidateType(key, runtime.TypeString); err != nil {
 					return false, runtime.ArgError(runtime.Errorf(err, "key at index %d", index), 1)
 				}
 
+				return true, nil
+			})
+			if err != nil {
+				return false, err
+			}
+
+			allPresent := true
+			err = keys.ForEach(ctx, func(ctx context.Context, key runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
 				contains, err := target.ContainsKey(ctx, key)
 				if err != nil {
 					return false, err
@@ -167,6 +174,8 @@ var (
 
 				if !contains {
 					allPresent = false
+
+					return false, nil
 				}
 
 				return true, nil
