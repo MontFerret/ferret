@@ -29,7 +29,7 @@ var errAssertion = errors.New("assertion error")
 
 // fail returns an error.
 // @param message {String} Message to display on error.
-// @return {Boolean} No success value is produced because this assertion always fails.
+// @return {None} No success value is produced because this assertion always fails.
 var failAssertion = assertion{
 	defaultMessage: func(_ []runtime.Value) string {
 		return "not fail"
@@ -43,14 +43,23 @@ var failAssertion = assertion{
 	},
 }
 
-func newTypeAssertion(expected runtime.Type) assertion {
+func newTypeAssertion(expected runtime.Type, customExpectation ...string) assertion {
 	if expected == nil {
 		panic("unsupported type assertion for <nil>")
 	}
 
+	expectation := expected.String()
+	if len(customExpectation) > 0 {
+		expectation = customExpectation[0]
+	}
+
+	if expectation == "" {
+		panic("type assertion expectation cannot be empty")
+	}
+
 	return assertion{
 		defaultMessage: func(_ []runtime.Value) string {
-			return fmt.Sprintf("be %s", expected)
+			return fmt.Sprintf("be %s", expectation)
 		},
 		args: assertionArgs{
 			min: 1,

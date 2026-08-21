@@ -63,6 +63,88 @@ func TestGenerateMatchesFullRuntimeRegistryAndIsDeterministic(t *testing.T) {
 	assertExactTopology(t, functions, first.Reference)
 	assertSorted(t, first.Reference)
 	assertCatalog(t, first.Reference, first.Catalog)
+	assertTestingAssertionMetadata(t, first.Reference)
+}
+
+func assertTestingAssertionMetadata(t *testing.T, reference *api.Reference) {
+	t.Helper()
+
+	expectedArities := map[string][]int{
+		"approx":   {3, 4},
+		"between":  {3, 4},
+		"bool":     {1, 2},
+		"contains": {2, 3},
+		"duration": {1, 2},
+		"has":      {2, 3},
+		"number":   {1, 2},
+	}
+	seen := make(map[string]map[string]bool, 2)
+
+	for _, namespace := range reference.Namespaces {
+		if namespace.Name != "t" && namespace.Name != "t::not" {
+			continue
+		}
+
+		seen[namespace.Name] = make(map[string]bool, len(expectedArities))
+		for _, function := range namespace.Functions {
+			if function.Name == "include" {
+				t.Fatalf("removed assertion %s::include remains in generated metadata", namespace.Name)
+			}
+
+			for _, signature := range function.Signatures {
+				if signature.Return == nil ||
+					signature.Return.Type.Kind != api.TypeKindNamed ||
+					signature.Return.Type.Name != "None" {
+					t.Errorf("%s::%s/%d return = %#v, want None", namespace.Name, function.Name, len(signature.Parameters), signature.Return)
+				}
+			}
+
+			arities, expected := expectedArities[function.Name]
+			if !expected {
+				continue
+			}
+
+			seen[namespace.Name][function.Name] = true
+			if len(function.Signatures) != len(arities) {
+				t.Errorf("%s::%s signatures = %d, want %d", namespace.Name, function.Name, len(function.Signatures), len(arities))
+
+				continue
+			}
+
+			for index, arity := range arities {
+				if actual := len(function.Signatures[index].Parameters); actual != arity {
+					t.Errorf("%s::%s signature %d arity = %d, want %d", namespace.Name, function.Name, index, actual, arity)
+				}
+			}
+
+			if function.Name == "has" {
+				keyType := function.Signatures[0].Parameters[1].Type
+				if keyType.Kind != api.TypeKindUnion ||
+					len(keyType.Types) != 2 ||
+					keyType.Types[0].Kind != api.TypeKindNamed ||
+					keyType.Types[0].Name != "String" ||
+					keyType.Types[1].Kind != api.TypeKindList ||
+					keyType.Types[1].Element == nil ||
+					keyType.Types[1].Element.Name != "String" {
+					t.Errorf("%s::has keys type = %#v, want String or list of String", namespace.Name, keyType)
+				}
+			}
+		}
+	}
+
+	for _, namespace := range []string{"t", "t::not"} {
+		if seen[namespace] == nil {
+			t.Errorf("generated metadata is missing namespace %s", namespace)
+
+			continue
+		}
+
+		for name := range expectedArities {
+			if !seen[namespace][name] {
+				t.Errorf("generated metadata is missing %s::%s", namespace, name)
+			}
+		}
+	}
 }
 
 func assertCatalog(t *testing.T, reference *api.Reference, catalog *apicatalog.Catalog) {

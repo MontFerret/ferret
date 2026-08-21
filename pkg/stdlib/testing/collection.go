@@ -13,7 +13,7 @@ var (
 	// Tests whether the target is empty.
 	// @param actual {Measurable | Binary | Object | Any[] | String} Value to test.
 	// @param message {String} Message to display on error.
-	// @return {Boolean} True when the configured assertion succeeds; otherwise an assertion error is returned.
+	// @return {None} No value is produced when the configured assertion succeeds.
 	emptyAssertion = assertion{
 		defaultMessage: func(_ []runtime.Value) string {
 			return "be empty"
@@ -32,14 +32,14 @@ var (
 		},
 	}
 
-	// Tests whether the actual container includes the expected value.
+	// Tests whether the actual container contains the expected value.
 	// @param actual {String | Array | Object | Iterable} Haystack value.
 	// @param expected {Any} Expected value.
 	// @param message {String} Message to display on error.
-	// @return {Boolean} True when the configured assertion succeeds; otherwise an assertion error is returned.
-	includeAssertion = assertion{
+	// @return {None} No value is produced when the configured assertion succeeds.
+	containsAssertion = assertion{
 		defaultMessage: func(args []runtime.Value) string {
-			return fmt.Sprintf("include %s", formatValue(args[1]))
+			return fmt.Sprintf("contain %s", formatValue(args[1]))
 		},
 		args: assertionArgs{
 			min: 2,
@@ -64,7 +64,7 @@ var (
 	// @param actual {Measurable} Measurable value.
 	// @param length {Int} Target length.
 	// @param message {String} Message to display on error.
-	// @return {Boolean} True when the configured assertion succeeds; otherwise an assertion error is returned.
+	// @return {None} No value is produced when the configured assertion succeeds.
 	lenAssertion = assertion{
 		defaultMessage: func(args []runtime.Value) string {
 			return fmt.Sprintf("has size %s", args[1])
@@ -96,7 +96,7 @@ var (
 	// @param actual {Any} Actual value.
 	// @param expression {String} Regular expression.
 	// @param message {String} Message to display on error.
-	// @return {Boolean} True when the configured assertion succeeds; otherwise an assertion error is returned.
+	// @return {None} No value is produced when the configured assertion succeeds.
 	matchAssertion = assertion{
 		defaultMessage: func(_ []runtime.Value) string {
 			return "match regular expression"
@@ -117,6 +117,65 @@ var (
 			equal, err := runtime.EqualValues(ctx, out, runtime.True)
 
 			return bool(equal), err
+		},
+	}
+
+	// Tests whether a map has one property or all properties in a list.
+	// @param object {Map} Object or map to inspect.
+	// @param keys {String | [String]} Property name or property names to require.
+	// @param message {String} Message to display on error.
+	// @return {None} No value is produced when the configured assertion succeeds.
+	hasAssertion = assertion{
+		defaultMessage: func(args []runtime.Value) string {
+			if runtime.TypeString.Is(args[1]) {
+				return fmt.Sprintf("have property %s", formatValue(args[1]))
+			}
+
+			return fmt.Sprintf("have all properties %s", formatValue(args[1]))
+		},
+		args: assertionArgs{
+			min: 2,
+			max: 3,
+		},
+		fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
+			if err := runtime.ValidateArgType(args[0], 0, runtime.TypeMap); err != nil {
+				return false, err
+			}
+
+			if err := runtime.ValidateArgType(args[1], 1, runtime.TypeString, runtime.TypeList); err != nil {
+				return false, err
+			}
+
+			target := args[0].(runtime.Map)
+			if key, ok := args[1].(runtime.String); ok {
+				contains, err := target.ContainsKey(ctx, key)
+
+				return bool(contains), err
+			}
+
+			allPresent := true
+			keys := args[1].(runtime.List)
+			err := keys.ForEach(ctx, func(ctx context.Context, key runtime.Value, index runtime.Int) (runtime.Boolean, error) {
+				if err := runtime.ValidateType(key, runtime.TypeString); err != nil {
+					return false, runtime.ArgError(runtime.Errorf(err, "key at index %d", index), 1)
+				}
+
+				contains, err := target.ContainsKey(ctx, key)
+				if err != nil {
+					return false, err
+				}
+
+				if !contains {
+					allPresent = false
+				}
+
+				return true, nil
+			})
+			if err != nil {
+				return false, err
+			}
+
+			return allPresent, nil
 		},
 	}
 )
