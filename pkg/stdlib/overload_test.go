@@ -14,8 +14,8 @@ func TestBoundedFunctionsUseFixedArityRegistrations(t *testing.T) {
 	functions := buildFunctions(t, stdlib.Full())
 	expected := boundedFunctionArities()
 
-	if len(expected) != 69 {
-		t.Fatalf("bounded function matrix has %d names, want 69", len(expected))
+	if len(expected) != 81 {
+		t.Fatalf("bounded function matrix has %d names, want 81", len(expected))
 	}
 
 	for name, arities := range expected {
@@ -109,9 +109,12 @@ func boundedFunctionArities() map[string][]int {
 		"FALSE",
 		"NONE",
 		"TRUE",
+		"BOOL",
 		"STRING",
 		"INT",
 		"FLOAT",
+		"NUMBER",
+		"DURATION",
 		"DATETIME",
 		"ARRAY",
 		"OBJECT",
@@ -121,11 +124,16 @@ func boundedFunctionArities() map[string][]int {
 		"EQ",
 		"GT",
 		"GTE",
-		"INCLUDE",
+		"CONTAINS",
+		"HAS",
 		"LEN",
 		"MATCH",
 		"LT",
 		"LTE",
+	}
+	ternaryAssertions := []string{
+		"APPROX",
+		"BETWEEN",
 	}
 
 	for _, name := range unaryAssertions {
@@ -136,6 +144,11 @@ func boundedFunctionArities() map[string][]int {
 	for _, name := range binaryAssertions {
 		functions["T::"+name] = []int{2, 3}
 		functions["T::NOT::"+name] = []int{2, 3}
+	}
+
+	for _, name := range ternaryAssertions {
+		functions["T::"+name] = []int{3, 4}
+		functions["T::NOT::"+name] = []int{3, 4}
 	}
 
 	return functions

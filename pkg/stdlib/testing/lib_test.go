@@ -19,18 +19,24 @@ func TestAssertionCatalogDefinesExactRuntimeTopology(t *testing.T) {
 	t.Parallel()
 
 	expected := []expectedAssertionRegistration{
+		{name: "approx", minimum: 3, maximum: 4, negatable: true},
+		{name: "between", minimum: 3, maximum: 4, negatable: true},
+		{name: "bool", minimum: 1, maximum: 2, negatable: true},
+		{name: "contains", minimum: 2, maximum: 3, negatable: true},
+		{name: "duration", minimum: 1, maximum: 2, negatable: true},
 		{name: "empty", minimum: 1, maximum: 2, negatable: true},
 		{name: "eq", minimum: 2, maximum: 3, negatable: true},
 		{name: "fail", minimum: 0, maximum: 1, negatable: false},
 		{name: "false", minimum: 1, maximum: 2, negatable: true},
 		{name: "gt", minimum: 2, maximum: 3, negatable: true},
 		{name: "gte", minimum: 2, maximum: 3, negatable: true},
-		{name: "include", minimum: 2, maximum: 3, negatable: true},
+		{name: "has", minimum: 2, maximum: 3, negatable: true},
 		{name: "len", minimum: 2, maximum: 3, negatable: true},
 		{name: "match", minimum: 2, maximum: 3, negatable: true},
 		{name: "lt", minimum: 2, maximum: 3, negatable: true},
 		{name: "lte", minimum: 2, maximum: 3, negatable: true},
 		{name: "none", minimum: 1, maximum: 2, negatable: true},
+		{name: "number", minimum: 1, maximum: 2, negatable: true},
 		{name: "true", minimum: 1, maximum: 2, negatable: true},
 		{name: "string", minimum: 1, maximum: 2, negatable: true},
 		{name: "int", minimum: 1, maximum: 2, negatable: true},
@@ -53,7 +59,7 @@ func TestAssertionCatalogDefinesExactRuntimeTopology(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedNames := make([]string, 0, 39)
+	expectedNames := make([]string, 0, 51)
 	expectedDefinitions := 0
 	for index, want := range expected {
 		registration := assertionCatalog[index]
@@ -85,6 +91,12 @@ func TestAssertionCatalogDefinesExactRuntimeTopology(t *testing.T) {
 	}
 	if functions.Size() != expectedDefinitions {
 		t.Fatalf("registered definitions = %d, want %d", functions.Size(), expectedDefinitions)
+	}
+
+	for _, removed := range []string{"t::include", "t::not::include"} {
+		if functions.Has(removed) {
+			t.Errorf("removed assertion %s remains registered", removed)
+		}
 	}
 }
 

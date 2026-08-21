@@ -57,13 +57,13 @@ func TestEmptyAssertion(t *testing.T) {
 	}
 }
 
-func TestIncludeAssertion(t *testing.T) {
+func TestContainsAssertion(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name        string
 		haystack    runtime.Value
-		included    runtime.Value
+		contained   runtime.Value
 		missing     runtime.Value
 		positiveErr string
 		negativeErr string
@@ -71,18 +71,18 @@ func TestIncludeAssertion(t *testing.T) {
 		{
 			name:        "string",
 			haystack:    runtime.NewString("FooBar"),
-			included:    runtime.NewString("Bar"),
+			contained:   runtime.NewString("Bar"),
 			missing:     runtime.NewString("Baz"),
-			positiveErr: "assertion error: expected String 'FooBar' to include String 'Baz'",
-			negativeErr: "assertion error: expected String 'FooBar' not to include String 'Bar'",
+			positiveErr: "assertion error: expected String 'FooBar' to contain String 'Baz'",
+			negativeErr: "assertion error: expected String 'FooBar' not to contain String 'Bar'",
 		},
 		{
 			name:        "array",
 			haystack:    runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2), runtime.NewInt(3)),
-			included:    runtime.NewInt(2),
+			contained:   runtime.NewInt(2),
 			missing:     runtime.NewInt(4),
-			positiveErr: "assertion error: expected Array '[1,2,3]' to include Int '4'",
-			negativeErr: "assertion error: expected Array '[1,2,3]' not to include Int '2'",
+			positiveErr: "assertion error: expected Array '[1,2,3]' to contain Int '4'",
+			negativeErr: "assertion error: expected Array '[1,2,3]' not to contain Int '2'",
 		},
 		{
 			name: "object",
@@ -91,10 +91,10 @@ func TestIncludeAssertion(t *testing.T) {
 				"b": runtime.NewInt(2),
 				"c": runtime.NewInt(3),
 			}),
-			included:    runtime.NewInt(2),
+			contained:   runtime.NewInt(2),
 			missing:     runtime.NewInt(4),
-			positiveErr: `assertion error: expected Object '{"a":1,"b":2,"c":3}' to include Int '4'`,
-			negativeErr: `assertion error: expected Object '{"a":1,"b":2,"c":3}' not to include Int '2'`,
+			positiveErr: `assertion error: expected Object '{"a":1,"b":2,"c":3}' to contain Int '4'`,
+			negativeErr: `assertion error: expected Object '{"a":1,"b":2,"c":3}' not to contain Int '2'`,
 		},
 	}
 
@@ -102,11 +102,128 @@ func TestIncludeAssertion(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			requireAssertionSuccess(t, includeAssertion, true, test.haystack, test.included)
-			requireAssertionFailure(t, includeAssertion, false, test.negativeErr, test.haystack, test.included)
-			requireAssertionFailure(t, includeAssertion, true, test.positiveErr, test.haystack, test.missing)
-			requireAssertionSuccess(t, includeAssertion, false, test.haystack, test.missing)
+			requireAssertionSuccess(t, containsAssertion, true, test.haystack, test.contained)
+			requireAssertionFailure(t, containsAssertion, false, test.negativeErr, test.haystack, test.contained)
+			requireAssertionFailure(t, containsAssertion, true, test.positiveErr, test.haystack, test.missing)
+			requireAssertionSuccess(t, containsAssertion, false, test.haystack, test.missing)
 		})
+	}
+
+	requireAssertionSuccess(t, containsAssertion, true, runtime.NewRange(1, 3), runtime.NewInt(2))
+	requireAssertionSuccess(t, containsAssertion, false, runtime.NewRange(1, 3), runtime.NewInt(4))
+}
+
+func TestHasAssertion(t *testing.T) {
+	t.Parallel()
+
+	object := runtime.NewObjectWith(map[string]runtime.Value{
+		"id":   runtime.NewInt(1),
+		"name": runtime.NewString("Ferret"),
+		"none": runtime.None,
+		"url":  runtime.NewString("https://ferretlang.org"),
+	})
+
+	requireAssertionSuccess(t, hasAssertion, true, object, runtime.NewString("id"))
+	requireAssertionSuccess(t, hasAssertion, true, object, runtime.NewString("none"))
+	requireAssertionSuccess(
+		t,
+		hasAssertion,
+		true,
+		object,
+		runtime.NewArrayWith(runtime.NewString("id"), runtime.NewString("name"), runtime.NewString("url")),
+	)
+	requireAssertionSuccess(t, hasAssertion, true, object, runtime.NewArrayWith())
+	requireAssertionSuccess(t, hasAssertion, false, object, runtime.NewString("missing"))
+	requireAssertionSuccess(
+		t,
+		hasAssertion,
+		false,
+		object,
+		runtime.NewArrayWith(runtime.NewString("id"), runtime.NewString("missing")),
+	)
+	requireAssertionFailure(
+		t,
+		hasAssertion,
+		true,
+		`assertion error: expected Object '{"id":1,"name":"Ferret","none":null,"url":"https://ferretlang.org"}' to have property String 'missing'`,
+		object,
+		runtime.NewString("missing"),
+	)
+	requireAssertionFailure(
+		t,
+		hasAssertion,
+		false,
+		`assertion error: expected Object '{"id":1,"name":"Ferret","none":null,"url":"https://ferretlang.org"}' not to have all properties Array '["id","name"]'`,
+		object,
+		runtime.NewArrayWith(runtime.NewString("id"), runtime.NewString("name")),
+	)
+	requireAssertionFailure(
+		t,
+		hasAssertion,
+		false,
+		`assertion error: expected Object '{"id":1,"name":"Ferret","none":null,"url":"https://ferretlang.org"}' not to have all properties Array '[]'`,
+		object,
+		runtime.NewArrayWith(),
+	)
+	requireAssertionFailure(
+		t,
+		hasAssertion,
+		true,
+		"assertion error: required property is missing",
+		object,
+		runtime.NewString("missing"),
+		runtime.NewString("required property is missing"),
+	)
+}
+
+func TestHasAssertionRejectsInvalidUsage(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		args []runtime.Value
+	}{
+		{name: "invalid target", args: []runtime.Value{runtime.NewInt(1), runtime.NewString("id")}},
+		{name: "invalid key", args: []runtime.Value{runtime.NewObject(), runtime.NewInt(1)}},
+		{name: "invalid key list element", args: []runtime.Value{runtime.NewObject(), runtime.NewArrayWith(runtime.NewString("id"), runtime.NewInt(1))}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			out, err := hasAssertion.positive()(context.Background(), test.args...)
+			if out != runtime.None {
+				t.Fatalf("output = %v, want None", out)
+			}
+			if err == nil || errors.Is(err, errAssertion) {
+				t.Fatalf("error = %v, want propagated invalid usage", err)
+			}
+		})
+	}
+}
+
+func TestHasAssertionStopsAfterFirstMissingKey(t *testing.T) {
+	t.Parallel()
+
+	target := &countingMap{
+		Object: runtime.NewObjectWith(map[string]runtime.Value{
+			"present": runtime.NewInt(1),
+		}),
+	}
+	keys := runtime.NewArrayWith(runtime.NewString("missing"), runtime.NewString("present"))
+
+	matched, err := hasAssertion.fn(context.Background(), []runtime.Value{target, keys})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if matched {
+		t.Fatal("has assertion matched after a required key was missing")
+	}
+
+	if len(target.lookups) != 1 || target.lookups[0] != "missing" {
+		t.Fatalf("key lookups = %v, want [missing]", target.lookups)
 	}
 }
 
@@ -214,7 +331,7 @@ func TestCollectionErrorsPropagate(t *testing.T) {
 	}{
 		{name: "empty non-measurable", descriptor: emptyAssertion, args: []runtime.Value{runtime.NewInt(1)}},
 		{name: "len non-measurable", descriptor: lenAssertion, args: []runtime.Value{runtime.NewInt(1), runtime.NewInt(1)}},
-		{name: "include unsupported", descriptor: includeAssertion, args: []runtime.Value{runtime.NewInt(1), runtime.NewInt(1)}},
+		{name: "contains unsupported", descriptor: containsAssertion, args: []runtime.Value{runtime.NewInt(1), runtime.NewInt(1)}},
 		{name: "invalid regular expression", descriptor: matchAssertion, args: []runtime.Value{runtime.NewString("value"), runtime.NewString("[")}},
 	}
 

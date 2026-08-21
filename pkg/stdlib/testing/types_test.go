@@ -2,6 +2,7 @@ package testing
 
 import (
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -70,6 +71,22 @@ func TestRuntimeTypeAssertions(t *testing.T) {
 			negative:   "assertion error: expected None 'none' not to be None",
 		},
 		{
+			name:       "bool true",
+			descriptor: boolAssertion,
+			matching:   runtime.True,
+			mismatch:   runtime.NewString("true"),
+			positive:   "assertion error: expected String 'true' to be a boolean",
+			negative:   "assertion error: expected Boolean 'true' not to be a boolean",
+		},
+		{
+			name:       "bool false",
+			descriptor: boolAssertion,
+			matching:   runtime.False,
+			mismatch:   runtime.NewInt(0),
+			positive:   "assertion error: expected Int '0' to be a boolean",
+			negative:   "assertion error: expected Boolean 'false' not to be a boolean",
+		},
+		{
 			name:       "string",
 			descriptor: stringAssertion,
 			matching:   runtime.NewString("hello"),
@@ -92,6 +109,30 @@ func TestRuntimeTypeAssertions(t *testing.T) {
 			mismatch:   runtime.NewInt(1),
 			positive:   "assertion error: expected Int '1' to be Float",
 			negative:   "assertion error: expected Float '3.14' not to be Float",
+		},
+		{
+			name:       "number int",
+			descriptor: numberAssertion,
+			matching:   runtime.NewInt(42),
+			mismatch:   runtime.NewString("42"),
+			positive:   "assertion error: expected String '42' to be a number",
+			negative:   "assertion error: expected Int '42' not to be a number",
+		},
+		{
+			name:       "number float",
+			descriptor: numberAssertion,
+			matching:   runtime.NewFloat(42.5),
+			mismatch:   runtime.True,
+			positive:   "assertion error: expected Boolean 'true' to be a number",
+			negative:   "assertion error: expected Float '42.5' not to be a number",
+		},
+		{
+			name:       "duration",
+			descriptor: durationAssertion,
+			matching:   runtime.NewDuration(time.Second),
+			mismatch:   runtime.NewString("1s"),
+			positive:   "assertion error: expected String '1s' to be a duration",
+			negative:   "assertion error: expected Duration '1s' not to be a duration",
 		},
 		{
 			name:       "datetime",
@@ -139,6 +180,15 @@ func TestRuntimeTypeAssertions(t *testing.T) {
 			requireAssertionSuccess(t, test.descriptor, false, test.mismatch)
 		})
 	}
+
+	requireAssertionFailure(
+		t,
+		durationAssertion,
+		true,
+		"assertion error: expected Int '1000000000' to be a duration",
+		runtime.NewInt(int(time.Second)),
+	)
+	requireAssertionSuccess(t, durationAssertion, false, runtime.NewInt(int(time.Second)))
 }
 
 func TestNewTypeAssertionRejectsNilType(t *testing.T) {

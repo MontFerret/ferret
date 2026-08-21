@@ -31,6 +31,37 @@ func TestStdlibArityOverloads(t *testing.T) {
 	})
 }
 
+func TestTestingAssertionVocabulary(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		Nil(`RETURN T::BOOL(FALSE)`, "boolean type assertion accepts false"),
+		Nil(`RETURN T::NOT::BOOL("false")`, "negated boolean type assertion"),
+		Nil(`RETURN T::NUMBER(42)`, "number assertion accepts integers"),
+		Nil(`RETURN T::NUMBER(42.5)`, "number assertion accepts floats"),
+		Nil(`RETURN T::DURATION(1s)`, "duration assertion accepts Duration values"),
+		Nil(`RETURN T::NOT::DURATION("1s")`, "duration assertion rejects duration-like strings"),
+		Nil(`RETURN T::APPROX(10, 10.5, 0.5, "unused")`, "approx supports inclusive mixed numeric boundary and message overload"),
+		Nil(`RETURN T::NOT::APPROX(10, 11, 0.01)`, "negated approximate assertion"),
+		Nil(`RETURN T::BETWEEN(200, 200, 299, "unused")`, "between includes its minimum and supports message overload"),
+		Nil(`RETURN T::NOT::BETWEEN(500, 200, 299)`, "negated range assertion"),
+		Nil(`RETURN T::CONTAINS(["ferret", "fql"], "ferret")`, "containment assertion"),
+		Nil(`RETURN T::NOT::CONTAINS("ferret", "goose")`, "negated containment assertion"),
+		Nil(`RETURN T::HAS({ id: 1, name: "Ferret", empty: NONE }, ["id", "name", "empty"])`, "has checks all properties including present None"),
+		Nil(`RETURN T::HAS({}, [])`, "has accepts an empty key list"),
+		spec.NewSpec(`RETURN T::APPROX(10, 11, 0.01, "not close")`, "approx custom message").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Message: "assertion error", Contains: []string{"not close"}},
+		),
+		spec.NewSpec(`RETURN T::APPROX(10, 10, -1)`, "approx rejects negative tolerance").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Message: "invalid argument", Contains: []string{"tolerance must be non-negative"}},
+		),
+		spec.NewSpec(`RETURN T::BETWEEN(15, 20, 10)`, "between rejects reversed bounds").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Message: "invalid argument", Contains: []string{"minimum boundary must not exceed maximum boundary"}},
+		),
+	})
+}
+
 func TestStdlibOverloadArityErrors(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		spec.NewSpec(`RETURN TRIM()`, "bounded overload rejects missing arguments").Expect().ExecError(
