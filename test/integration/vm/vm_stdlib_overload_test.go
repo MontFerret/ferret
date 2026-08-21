@@ -18,6 +18,10 @@ func TestStdlibArityOverloads(t *testing.T) {
 		Nil(`RETURN T::EQ(1, 1)`, "positive assertion overload"),
 		Nil(`RETURN T::EQ(1, 1, "unused")`, "positive assertion message overload"),
 		Nil(`RETURN T::NOT::EQ(1, 2)`, "negative assertion overload"),
+		spec.NewSpec(`RETURN T::EQ(1, 2, "custom assertion message")`, "assertion custom message").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{Message: "assertion error", Contains: []string{"custom assertion message"}},
+		),
 		Array(`RETURN REGEX_SPLIT("a,b,c", ",", 2, TRUE)`, []any{"a", "b,c"}, "preserve four-argument regex split behavior"),
 		Array(`RETURN [FIND_FIRST("foobarbaz", "ba", 4, 9), FIND_LAST("foobarbaz", "ba", 4, 6)]`, []any{6, -1}, "four-argument string searches honor start and end"),
 		Array(`RETURN [FIND_FIRST("éaéa", "a"), FIND_FIRST("éaéa", "a", 2), FIND_LAST("éaéa", "a"), FIND_LAST("éaéa", "a", 2)]`, []any{1, 3, 3, 3}, "string searches return Unicode character positions"),

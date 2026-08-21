@@ -7,7 +7,6 @@ import (
 	"go/token"
 	"go/types"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
@@ -49,10 +48,22 @@ func loadSourceCatalog(ctx context.Context, root string) (*sourceCatalog, error)
 			continue
 		}
 
+		catalogFound := false
 		for _, file := range pkg.Syntax {
-			if err := collectAssertionRegistrations(catalog, pkg, file); err != nil {
+			found, err := collectAssertionCatalog(catalog, pkg, file)
+			if err != nil {
 				return nil, err
 			}
+
+			if found && catalogFound {
+				return nil, fmt.Errorf("package %s declares assertionCatalog more than once", pkg.PkgPath)
+			}
+
+			catalogFound = catalogFound || found
+		}
+
+		if !catalogFound {
+			return nil, fmt.Errorf("package %s does not declare assertionCatalog", pkg.PkgPath)
 		}
 	}
 
@@ -156,92 +167,6 @@ func addSourceDeclaration(catalog *sourceCatalog, declaration *sourceDeclaration
 	return nil
 }
 
-func collectAssertionRegistrations(catalog *sourceCatalog, pkg *packages.Package, file *ast.File) error {
-	var collectionErr error
-
-	ast.Inspect(file, func(node ast.Node) bool {
-		if collectionErr != nil {
-			return false
-		}
-
-		call, ok := node.(*ast.CallExpr)
-		if !ok {
-			return true
-		}
-
-		function, ok := call.Fun.(*ast.Ident)
-		if !ok || function.Name != "registerPositive" && function.Name != "registerNegative" {
-			return true
-		}
-
-		if len(call.Args) != 3 {
-			collectionErr = fmt.Errorf("%s: assertion registration %s must have exactly three arguments", pkg.Fset.Position(call.Pos()), function.Name)
-
-			return false
-		}
-
-		nameLiteral, ok := call.Args[1].(*ast.BasicLit)
-		if !ok || nameLiteral.Kind != token.STRING {
-			collectionErr = fmt.Errorf("%s: assertion registration %s must use a string literal public name", pkg.Fset.Position(call.Pos()), function.Name)
-
-			return false
-		}
-
-		name, err := strconv.Unquote(nameLiteral.Value)
-		if err != nil {
-			collectionErr = fmt.Errorf("%s: decode assertion public name: %w", pkg.Fset.Position(nameLiteral.Pos()), err)
-
-			return false
-		}
-
-		descriptorName, ok := call.Args[2].(*ast.Ident)
-		if !ok {
-			collectionErr = fmt.Errorf("%s: assertion %s must use a statically named descriptor", pkg.Fset.Position(call.Args[2].Pos()), name)
-
-			return false
-		}
-
-		object, ok := pkg.TypesInfo.Uses[descriptorName].(*types.Var)
-		if !ok || object.Pkg() == nil {
-			collectionErr = fmt.Errorf("%s: resolve assertion descriptor %s", pkg.Fset.Position(descriptorName.Pos()), descriptorName.Name)
-
-			return false
-		}
-
-		declarationKey := object.Pkg().Path() + "." + object.Name()
-		declaration, exists := catalog.Declarations[declarationKey]
-		if !exists {
-			collectionErr = fmt.Errorf("%s: declaration for assertion descriptor %s was not loaded", pkg.Fset.Position(descriptorName.Pos()), declarationKey)
-
-			return false
-		}
-
-		minimum, maximum, err := assertionBounds(catalog, declaration)
-		if err != nil {
-			collectionErr = diagnostic(declaration, assertionQualifiedName(function.Name, name), "assertion descriptor", err.Error())
-
-			return false
-		}
-
-		qualifiedName := assertionQualifiedName(function.Name, name)
-		if _, exists := catalog.Assertions[qualifiedName]; exists {
-			collectionErr = diagnostic(declaration, qualifiedName, "assertion descriptor", "is registered more than once")
-
-			return false
-		}
-
-		catalog.Assertions[qualifiedName] = assertionDescriptor{
-			Declaration: declaration,
-			Min:         minimum,
-			Max:         maximum,
-		}
-
-		return true
-	})
-
-	return collectionErr
-}
-
 func returnedExpression(body *ast.BlockStmt) ast.Expr {
 	if body == nil {
 		return nil
@@ -281,14 +206,6 @@ func calledFunctionKey(pkg *packages.Package, expression ast.Expr) string {
 	}
 
 	return object.Pkg().Path() + "." + object.Name()
-}
-
-func assertionQualifiedName(registration, name string) string {
-	if registration == "registerNegative" {
-		return "t::not::" + name
-	}
-
-	return "t::" + name
 }
 
 func packageErrors(errors []packages.Error) string {

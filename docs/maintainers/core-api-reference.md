@@ -13,11 +13,13 @@ fixed arity, variadic definition, overload, root function, and nested namespace.
 Unregistered Go declarations are not published.
 
 The generator then loads `pkg/stdlib` source with `go/packages` and resolves each
-registered function to its declaration. The assertion descriptors used by `t`
-and `t::not` are resolved statically, including their `Args.Min` and `Args.Max`
-bounds. Any unresolved declaration, unsupported registration shape, documentation
-error, arity contradiction, or runtime/source mismatch fails generation without
-writing a partial artifact.
+registered function to its declaration. The literal testing assertion catalog is
+resolved statically: each entry supplies its public name, statically named
+descriptor, and explicit negation support. Descriptor `args.min` and `args.max`
+bounds define the fixed overloads for both `t` and, when enabled, `t::not`. Any
+unresolved declaration, dynamic or malformed catalog entry, documentation error,
+arity contradiction, or runtime/source mismatch fails generation without writing
+a partial artifact.
 
 Host-function qualified names are case-insensitive in FQL and have one canonical
 lowercase presentation in the registry and generated API Reference. This includes

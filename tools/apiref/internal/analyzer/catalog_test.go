@@ -21,7 +21,7 @@ func TestBuildStandardLibraryCatalogDerivesCategoriesAndQualifiedOverrides(t *te
 		{QualifiedName: "abs", Name: "abs", PackagePath: "github.com/MontFerret/ferret/v2/pkg/stdlib/utils"},
 		{QualifiedName: "abs", Name: "abs", PackagePath: "github.com/MontFerret/ferret/v2/pkg/stdlib/math"},
 		{QualifiedName: "io::fs::read", Namespace: "io::fs", Name: "read", PackagePath: "github.com/MontFerret/ferret/v2/pkg/stdlib/io/fs"},
-		{QualifiedName: "t::read", Namespace: "t", Name: "read", PackagePath: "github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"},
+		{QualifiedName: "t::read", Namespace: "t", Name: "read", PackagePath: "github.com/MontFerret/ferret/v2/pkg/stdlib/testing"},
 	}
 	overrides := map[functionIdentity]string{{Name: "abs"}: "math"}
 

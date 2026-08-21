@@ -168,7 +168,7 @@ func validateAssertionArities(qualifiedName string, descriptor assertionDescript
 			descriptor.Declaration,
 			qualifiedName,
 			"assertion descriptor",
-			fmt.Sprintf("runtime overload count %d does not match Args range %d..%d", len(arities), descriptor.Min, descriptor.Max),
+			fmt.Sprintf("runtime overload count %d does not match assertion args range %d..%d", len(arities), descriptor.Min, descriptor.Max),
 		)
 	}
 
@@ -179,7 +179,7 @@ func validateAssertionArities(qualifiedName string, descriptor assertionDescript
 				descriptor.Declaration,
 				qualifiedName,
 				"assertion descriptor",
-				fmt.Sprintf("runtime overload arity %d is not contiguous with Args range %d..%d", arity, descriptor.Min, descriptor.Max),
+				fmt.Sprintf("runtime overload arity %d is not contiguous with assertion args range %d..%d", arity, descriptor.Min, descriptor.Max),
 			)
 		}
 	}
