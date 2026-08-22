@@ -13,8 +13,8 @@ var (
 	// @param message {String} Message to display on error.
 	// @return {None} No value is produced when the configured assertion succeeds.
 	trueAssertion = assertion{
-		defaultMessage: func(_ []runtime.Value) string {
-			return fmt.Sprintf("be %s", formatValue(runtime.True))
+		defaultMessage: func(ctx context.Context, _ []runtime.Value) string {
+			return fmt.Sprintf("be %s", formatValue(ctx, runtime.True))
 		},
 		args: assertionArgs{
 			min: 1,
@@ -30,8 +30,8 @@ var (
 	// @param message {String} Message to display on error.
 	// @return {None} No value is produced when the configured assertion succeeds.
 	falseAssertion = assertion{
-		defaultMessage: func(_ []runtime.Value) string {
-			return fmt.Sprintf("be %s", formatValue(runtime.False))
+		defaultMessage: func(ctx context.Context, _ []runtime.Value) string {
+			return fmt.Sprintf("be %s", formatValue(ctx, runtime.False))
 		},
 		args: assertionArgs{
 			min: 1,
@@ -77,7 +77,7 @@ var (
 	// @param message {String} Message to display on error.
 	// @return {None} No value is produced when the configured assertion succeeds.
 	numberAssertion = assertion{
-		defaultMessage: func(_ []runtime.Value) string {
+		defaultMessage: func(_ context.Context, _ []runtime.Value) string {
 			return "be a number"
 		},
 		args: assertionArgs{

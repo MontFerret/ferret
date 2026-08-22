@@ -1,0 +1,4 @@
+RETURN T::HAS(
+    { id: 42, name: "Ferret" },
+    ["id", "email", "role"]
+)

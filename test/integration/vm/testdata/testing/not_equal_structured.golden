@@ -1,0 +1,9 @@
+UncaughtError: assertion error
+ --> testdata/testing/not_equal_structured.fql:1:8
+  |
+1 | RETURN T::NOT::EQ(
+  |        ^^^^^^^^^^
+2 |     { status: "ok", values: [1, NONE] },
+Note: expected values to differ
+both: Object '{"status":"ok","values":[1,null]}'
+Caused by: assertion error

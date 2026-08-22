@@ -15,7 +15,7 @@ var (
 	// @param message {String} Message to display on error.
 	// @return {None} No value is produced when the configured assertion succeeds.
 	emptyAssertion = assertion{
-		defaultMessage: func(_ []runtime.Value) string {
+		defaultMessage: func(_ context.Context, _ []runtime.Value) string {
 			return "be empty"
 		},
 		args: assertionArgs{
@@ -38,8 +38,8 @@ var (
 	// @param message {String} Message to display on error.
 	// @return {None} No value is produced when the configured assertion succeeds.
 	containsAssertion = assertion{
-		defaultMessage: func(args []runtime.Value) string {
-			return fmt.Sprintf("contain %s", formatValue(args[1]))
+		defaultMessage: func(ctx context.Context, args []runtime.Value) string {
+			return fmt.Sprintf("contain %s", formatValue(ctx, args[1]))
 		},
 		args: assertionArgs{
 			min: 2,
@@ -66,7 +66,7 @@ var (
 	// @param message {String} Message to display on error.
 	// @return {None} No value is produced when the configured assertion succeeds.
 	lenAssertion = assertion{
-		defaultMessage: func(args []runtime.Value) string {
+		defaultMessage: func(_ context.Context, args []runtime.Value) string {
 			return fmt.Sprintf("has size %s", args[1])
 		},
 		args: assertionArgs{
@@ -98,8 +98,8 @@ var (
 	// @param message {String} Message to display on error.
 	// @return {None} No value is produced when the configured assertion succeeds.
 	matchAssertion = assertion{
-		defaultMessage: func(_ []runtime.Value) string {
-			return "match regular expression"
+		defaultMessage: func(ctx context.Context, args []runtime.Value) string {
+			return fmt.Sprintf("match regular expression %s", formatValue(ctx, args[1]))
 		},
 		args: assertionArgs{
 			min: 2,
@@ -126,13 +126,14 @@ var (
 	// @param message {String} Message to display on error.
 	// @return {None} No value is produced when the configured assertion succeeds.
 	hasAssertion = assertion{
-		defaultMessage: func(args []runtime.Value) string {
+		defaultMessage: func(ctx context.Context, args []runtime.Value) string {
 			if runtime.TypeString.Is(args[1]) {
-				return fmt.Sprintf("have property %s", formatValue(args[1]))
+				return fmt.Sprintf("have property %s", formatValue(ctx, args[1]))
 			}
 
-			return fmt.Sprintf("have all properties %s", formatValue(args[1]))
+			return fmt.Sprintf("have all properties %s", formatValue(ctx, args[1]))
 		},
+		failureMessage: hasFailureMessage,
 		args: assertionArgs{
 			min: 2,
 			max: 3,

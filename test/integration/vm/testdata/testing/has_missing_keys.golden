@@ -1,0 +1,9 @@
+UncaughtError: assertion error
+ --> testdata/testing/has_missing_keys.fql:1:8
+  |
+1 | RETURN T::HAS(
+  |        ^^^^^^
+2 |     { id: 42, name: "Ferret" },
+Note: expected Object '{"id":42,"name":"Ferret"}' to have all properties Array '["id","email","role"]'
+missing: Array '["email","role"]'
+Caused by: assertion error

@@ -3,7 +3,10 @@ package testing
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -12,7 +15,7 @@ func TestAssertionWrapperPreservesSharedBehavior(t *testing.T) {
 	t.Parallel()
 
 	descriptor := assertion{
-		defaultMessage: func(_ []runtime.Value) string {
+		defaultMessage: func(_ context.Context, _ []runtime.Value) string {
 			return "be ready"
 		},
 		args: assertionArgs{min: 1, max: 2},
@@ -34,7 +37,7 @@ func TestAssertionWrapperPreservesArityAndPredicateErrors(t *testing.T) {
 
 	predicateErr := errors.New("predicate failed")
 	descriptor := assertion{
-		defaultMessage: func(_ []runtime.Value) string {
+		defaultMessage: func(_ context.Context, _ []runtime.Value) string {
 			return "succeed"
 		},
 		args: assertionArgs{min: 1, max: 2},
@@ -113,8 +116,52 @@ func TestFormatValue(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			if actual := formatValue(test.value); actual != test.expected {
+			if actual := formatValue(t.Context(), test.value); actual != test.expected {
 				t.Fatalf("formatValue() = %q, want %q", actual, test.expected)
+			}
+		})
+	}
+}
+
+func TestFormatValueLimitsLargeValues(t *testing.T) {
+	t.Parallel()
+
+	largeArray := runtime.NewArray(1_000)
+	for index := 0; index < 1_000; index++ {
+		if err := largeArray.Append(t.Context(), runtime.NewInt(index)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	largeObjectValues := make(map[string]runtime.Value, maxRenderedObjectProperties+1)
+	for index := 0; index <= maxRenderedObjectProperties; index++ {
+		largeObjectValues[fmt.Sprintf("key%02d", index)] = runtime.NewInt(index)
+	}
+
+	tests := []struct {
+		value runtime.Value
+		name  string
+	}{
+		{name: "long Unicode string", value: runtime.NewString(strings.Repeat("界", 1_000))},
+		{name: "large array", value: largeArray},
+		{name: "large object", value: runtime.NewObjectWith(largeObjectValues)},
+		{name: "large binary", value: runtime.NewBinary(make([]byte, 1_000))},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			first := formatValue(t.Context(), test.value)
+			second := formatValue(t.Context(), test.value)
+			if first != second {
+				t.Fatalf("formatValue() is not deterministic:\nfirst:  %q\nsecond: %q", first, second)
+			}
+			if size := utf8.RuneCountInString(first); size > maxFormattedValueRunes {
+				t.Fatalf("formatted value has %d runes, want at most %d: %q", size, maxFormattedValueRunes, first)
+			}
+			if !strings.Contains(first, truncatedValueMarker) {
+				t.Fatalf("formatted value does not identify truncation: %q", first)
 			}
 		})
 	}

@@ -1,0 +1,16 @@
+LET actual = {
+    metadata: { version: 3 },
+    users: [
+        { active: NONE, "display name": "Ferrit" },
+        { id: 2 }
+    ]
+}
+
+LET expected = {
+    metadata: { debug: TRUE, version: 2 },
+    users: [
+        { "display name": "Ferret" }
+    ]
+}
+RETURN T::EQ(actual, expected)
+// Keep the complete source window stable in the golden diagnostic.

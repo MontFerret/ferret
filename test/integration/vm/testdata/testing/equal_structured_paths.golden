@@ -1,0 +1,24 @@
+UncaughtError: assertion error
+ --> testdata/testing/equal_structured_paths.fql:15:8
+   |
+14 | }
+15 | RETURN T::EQ(actual, expected)
+   |        ^^^^^
+16 | // Keep the complete source window stable in the golden diagnostic.
+Note: values are not equal
+$.metadata.debug
+  expected: Boolean 'true'
+  actual:   <missing>
+$.metadata.version
+  expected: Int '2'
+  actual:   Int '3'
+$.users[0].active
+  expected: <missing>
+  actual:   None 'none'
+$.users[0]["display name"]
+  expected: String 'Ferret'
+  actual:   String 'Ferrit'
+$.users[1]
+  expected: <missing>
+  actual:   Object '{"id":2}'
+Caused by: assertion error

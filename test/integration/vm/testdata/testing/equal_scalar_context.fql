@@ -1,0 +1,5 @@
+RETURN T::EQ(
+    "Ferrit",
+    "Ferret",
+    "animal name mismatch"
+)

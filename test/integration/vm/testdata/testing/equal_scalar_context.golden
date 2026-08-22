@@ -1,0 +1,11 @@
+UncaughtError: assertion error
+ --> testdata/testing/equal_scalar_context.fql:1:8
+  |
+1 | RETURN T::EQ(
+  |        ^^^^^
+2 |     "Ferrit",
+Note: animal name mismatch
+values are not equal
+expected: String 'Ferret'
+actual:   String 'Ferrit'
+Caused by: assertion error
