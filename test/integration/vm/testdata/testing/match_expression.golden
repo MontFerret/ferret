@@ -1,0 +1,8 @@
+UncaughtError: assertion error
+ --> testdata/testing/match_expression.fql:1:8
+  |
+1 | RETURN T::MATCH(
+  |        ^^^^^^^^
+2 |     "Ferret",
+Note: expected String 'Ferret' to match regular expression String '^ferret$'
+Caused by: assertion error

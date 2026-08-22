@@ -1,0 +1,4 @@
+RETURN T::MATCH(
+    "Ferret",
+    "^ferret$"
+)

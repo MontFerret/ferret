@@ -1,0 +1,4 @@
+RETURN T::NOT::EQ(
+    { status: "ok", values: [1, NONE] },
+    { status: "ok", values: [1, NONE] }
+)
