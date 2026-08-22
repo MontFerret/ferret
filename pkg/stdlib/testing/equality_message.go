@@ -56,9 +56,8 @@ func unequalValuesMessage(ctx context.Context, actual, expected runtime.Value) s
 		}
 	}
 
-	omitted := differences.total - len(differences.items)
-	if omitted > 0 {
-		fmt.Fprintf(&builder, "\n... %d additional differences omitted", omitted)
+	if differences.limitReached {
+		builder.WriteString("\n... additional differences may be omitted")
 	}
 
 	return builder.String()

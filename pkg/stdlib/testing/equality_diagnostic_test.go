@@ -211,12 +211,143 @@ func TestEqualityDifferenceLimit(t *testing.T) {
 	if strings.Count(message, "\n$.key") != maxReportedDifferences {
 		t.Fatalf("reported difference count = %d, want %d\n%s", strings.Count(message, "\n$.key"), maxReportedDifferences, message)
 	}
-	if !strings.HasSuffix(message, "... 2 additional differences omitted") {
-		t.Fatalf("diagnostic does not report exact omitted count:\n%s", message)
+	if !strings.HasSuffix(message, "... additional differences may be omitted") {
+		t.Fatalf("diagnostic does not report the traversal limit:\n%s", message)
 	}
 	if strings.Contains(message, "$.key10") || strings.Contains(message, "$.key11") {
 		t.Fatalf("diagnostic contains differences past the report limit:\n%s", message)
 	}
+}
+
+func TestEqualityDifferenceTraversalLimit(t *testing.T) {
+	t.Parallel()
+
+	assertLimited := func(t *testing.T, result differenceResult, ok bool) {
+		t.Helper()
+
+		if !ok || !result.limitReached || len(result.items) != maxReportedDifferences {
+			t.Fatalf("limited difference result = %#v, %t", result, ok)
+		}
+	}
+
+	t.Run("array", func(t *testing.T) {
+		t.Parallel()
+
+		visited := 0
+		visitedAfterLimit := 0
+		size := maxReportedDifferences + 50
+		expectedValues := make([]runtime.Value, size)
+		actualValues := make([]runtime.Value, size)
+		for index := 0; index < size; index++ {
+			calls := &visited
+			if index >= maxReportedDifferences {
+				calls = &visitedAfterLimit
+			}
+
+			expectedValues[index] = &diagnosticEqualityProbe{calls: calls}
+			actualValues[index] = &diagnosticEqualityProbe{}
+		}
+		expectedValues[maxReportedDifferences] = &diagnosticEqualityProbe{
+			calls: &visitedAfterLimit,
+			err:   errors.New("difference past traversal limit was visited"),
+		}
+
+		result, ok := discoverStructuralDifferences(
+			t.Context(),
+			runtime.NewArrayWith(actualValues...),
+			runtime.NewArrayWith(expectedValues...),
+		)
+		assertLimited(t, result, ok)
+		if visited != maxReportedDifferences {
+			t.Fatalf("visited equality probes = %d, want %d", visited, maxReportedDifferences)
+		}
+		if visitedAfterLimit != 0 {
+			t.Fatalf("visited %d equality probes after the reporting limit", visitedAfterLimit)
+		}
+	})
+
+	t.Run("object", func(t *testing.T) {
+		t.Parallel()
+
+		visited := 0
+		visitedAfterLimit := 0
+		size := maxReportedDifferences + 50
+		expectedValues := make(map[string]runtime.Value, size)
+		actualValues := make(map[string]runtime.Value, size)
+		for index := 0; index < size; index++ {
+			calls := &visited
+			if index >= maxReportedDifferences {
+				calls = &visitedAfterLimit
+			}
+
+			key := fmt.Sprintf("key%02d", index)
+			expectedValues[key] = &diagnosticEqualityProbe{calls: calls}
+			actualValues[key] = &diagnosticEqualityProbe{}
+		}
+		expectedValues[fmt.Sprintf("key%02d", maxReportedDifferences)] = &diagnosticEqualityProbe{
+			calls: &visitedAfterLimit,
+			err:   errors.New("difference past traversal limit was visited"),
+		}
+
+		result, ok := discoverStructuralDifferences(
+			t.Context(),
+			runtime.NewObjectWith(actualValues),
+			runtime.NewObjectWith(expectedValues),
+		)
+		assertLimited(t, result, ok)
+		if visited != maxReportedDifferences {
+			t.Fatalf("visited equality probes = %d, want %d", visited, maxReportedDifferences)
+		}
+		if visitedAfterLimit != 0 {
+			t.Fatalf("visited %d equality probes after the reporting limit", visitedAfterLimit)
+		}
+	})
+
+	t.Run("nested", func(t *testing.T) {
+		t.Parallel()
+
+		visited := 0
+		visitedAfterLimit := 0
+		laterSiblingVisits := 0
+		size := maxReportedDifferences + 10
+		expectedValues := make([]runtime.Value, size)
+		actualValues := make([]runtime.Value, size-1)
+		for index := 0; index < size; index++ {
+			calls := &visited
+			if index >= maxReportedDifferences {
+				calls = &visitedAfterLimit
+			}
+
+			expectedValues[index] = &diagnosticEqualityProbe{calls: calls}
+			if index < len(actualValues) {
+				actualValues[index] = &diagnosticEqualityProbe{}
+			}
+		}
+
+		expected := runtime.NewObjectWith(map[string]runtime.Value{
+			"first": runtime.NewArrayWith(expectedValues...),
+			"later": &diagnosticEqualityProbe{
+				calls: &laterSiblingVisits,
+				err:   errors.New("later sibling was visited"),
+			},
+		})
+		actual := runtime.NewObjectWith(map[string]runtime.Value{
+			"first": runtime.NewArrayWith(actualValues...),
+			"later": &diagnosticEqualityProbe{},
+		})
+
+		result, ok := discoverStructuralDifferences(t.Context(), actual, expected)
+		assertLimited(t, result, ok)
+		if visited != maxReportedDifferences {
+			t.Fatalf("nested equality probes = %d, want %d", visited, maxReportedDifferences)
+		}
+		if visitedAfterLimit != 0 {
+			t.Fatalf("visited %d nested probes after the reporting limit", visitedAfterLimit)
+		}
+		if laterSiblingVisits != 0 {
+			t.Fatalf("visited later sibling %d times after the reporting limit", laterSiblingVisits)
+		}
+	})
 }
 
 func TestEqualityDifferenceDepthLimit(t *testing.T) {
@@ -230,7 +361,7 @@ func TestEqualityDifferenceDepthLimit(t *testing.T) {
 	}
 
 	result, ok := discoverStructuralDifferences(t.Context(), actual, expected)
-	if !ok || result.total != 1 || len(result.items) != 1 {
+	if !ok || result.limitReached || len(result.items) != 1 {
 		t.Fatalf("depth-limited result = %#v, %t", result, ok)
 	}
 	if got := strings.Count(result.items[0].path, "[0]"); got != maxDifferenceDepth {

@@ -18,8 +18,8 @@ type (
 	}
 
 	differenceResult struct {
-		items []difference
-		total int
+		items        []difference
+		limitReached bool
 	}
 
 	diagnosticObject struct {
@@ -32,11 +32,9 @@ const (
 	differenceValues differenceKind = iota
 	differenceExpectedMissing
 	differenceActualMissing
-)
 
-const (
-	// maxReportedDifferences keeps one assertion failure readable while the
-	// complete traversal still provides an exact omitted count.
+	// maxReportedDifferences bounds both rendered output and the recursive
+	// diagnostic walk performed after authoritative equality has failed.
 	maxReportedDifferences = 10
 	// maxDifferenceDepth prevents pathological nesting from exhausting the Go
 	// stack; the unequal subtree at the boundary is still reported generically.
@@ -52,7 +50,7 @@ func discoverStructuralDifferences(
 	actualObject, actualObjectOK := diagnosticObjectOf(ctx, actual)
 	if expectedObjectOK && actualObjectOK {
 		result := differenceResult{items: make([]difference, 0, maxReportedDifferences)}
-		if !diffObjects(ctx, &result, "$", expectedObject, actualObject, 0) || result.total == 0 {
+		if !diffObjects(ctx, &result, "$", expectedObject, actualObject, 0) || len(result.items) == 0 {
 			return differenceResult{}, false
 		}
 
@@ -63,7 +61,7 @@ func discoverStructuralDifferences(
 	actualList, actualListOK := diagnosticListOf(ctx, actual)
 	if expectedListOK && actualListOK {
 		result := differenceResult{items: make([]difference, 0, maxReportedDifferences)}
-		if !diffLists(ctx, &result, "$", expectedList, actualList, 0) || result.total == 0 {
+		if !diffLists(ctx, &result, "$", expectedList, actualList, 0) || len(result.items) == 0 {
 			return differenceResult{}, false
 		}
 
@@ -81,6 +79,10 @@ func walkDifference(
 	actual runtime.Value,
 	depth int,
 ) bool {
+	if result.limitReached {
+		return true
+	}
+
 	equal, err := runtime.EqualValues(ctx, expected, actual)
 	if err != nil {
 		return false
@@ -125,6 +127,10 @@ func diffObjects(
 	actualIndex := 0
 
 	for expectedIndex < len(expected.keys) || actualIndex < len(actual.keys) {
+		if result.limitReached {
+			return true
+		}
+
 		switch {
 		case expectedIndex >= len(expected.keys):
 			key := actual.keys[actualIndex]
@@ -206,6 +212,10 @@ func diffLists(
 	}
 
 	for index := runtime.ZeroInt; index < commonLength; index++ {
+		if result.limitReached {
+			return true
+		}
+
 		expectedValue, expectedFound, err := expected.LookupAt(ctx, index)
 		if err != nil || !expectedFound {
 			return false
@@ -229,6 +239,10 @@ func diffLists(
 	}
 
 	for index := commonLength; index < expectedLength; index++ {
+		if result.limitReached {
+			return true
+		}
+
 		value, found, err := expected.LookupAt(ctx, index)
 		if err != nil || !found {
 			return false
@@ -242,6 +256,10 @@ func diffLists(
 	}
 
 	for index := commonLength; index < actualLength; index++ {
+		if result.limitReached {
+			return true
+		}
+
 		value, found, err := actual.LookupAt(ctx, index)
 		if err != nil || !found {
 			return false
@@ -340,8 +358,10 @@ func diagnosticListOf(ctx context.Context, value runtime.Value) (*runtime.Array,
 }
 
 func addDifference(result *differenceResult, item difference) {
-	result.total++
-	if len(result.items) < maxReportedDifferences {
-		result.items = append(result.items, item)
+	if result.limitReached {
+		return
 	}
+
+	result.items = append(result.items, item)
+	result.limitReached = len(result.items) == maxReportedDifferences
 }

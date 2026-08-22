@@ -34,6 +34,11 @@ type (
 	equalityErrorValue struct {
 		err error
 	}
+
+	diagnosticEqualityProbe struct {
+		calls *int
+		err   error
+	}
 )
 
 func (s *snapshotList) Snapshot(context.Context) (*runtime.Array, error) {
@@ -73,5 +78,25 @@ func (v *equalityErrorValue) Copy() runtime.Value {
 }
 
 func (v *equalityErrorValue) Equal(context.Context, runtime.Value) (bool, error) {
+	return false, v.err
+}
+
+func (v *diagnosticEqualityProbe) String() string {
+	return "diagnostic-equality-probe"
+}
+
+func (v *diagnosticEqualityProbe) Hash() uint64 {
+	return 1
+}
+
+func (v *diagnosticEqualityProbe) Copy() runtime.Value {
+	return v
+}
+
+func (v *diagnosticEqualityProbe) Equal(context.Context, runtime.Value) (bool, error) {
+	if v.calls != nil {
+		(*v.calls)++
+	}
+
 	return false, v.err
 }
