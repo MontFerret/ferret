@@ -23,35 +23,35 @@ var (
 	// @param expected {Any} Expected value.
 	// @param message {String} Message to display on error.
 	// @return {None} No value is produced when the configured assertion succeeds.
-	equalAssertion = newComparisonAssertion(comparisonEqual)
+	equalAssertion = newComparisonAssertion(comparisonEqual, equalityFailureMessage)
 
 	// Tests whether the actual value is greater than the expected value.
 	// @param actual {Any} Actual value.
 	// @param expected {Any} Expected value.
 	// @param message {String} Message to display on error.
 	// @return {None} No value is produced when the configured assertion succeeds.
-	gtAssertion = newComparisonAssertion(comparisonGreater)
+	gtAssertion = newComparisonAssertion(comparisonGreater, nil)
 
 	// Tests whether the actual value is greater than or equal to the expected value.
 	// @param actual {Any} Actual value.
 	// @param expected {Any} Expected value.
 	// @param message {String} Message to display on error.
 	// @return {None} No value is produced when the configured assertion succeeds.
-	gteAssertion = newComparisonAssertion(comparisonGreaterOrEqual)
+	gteAssertion = newComparisonAssertion(comparisonGreaterOrEqual, nil)
 
 	// Tests whether the actual value is less than the expected value.
 	// @param actual {Any} Actual value.
 	// @param expected {Any} Expected value.
 	// @param message {String} Message to display on error.
 	// @return {None} No value is produced when the configured assertion succeeds.
-	ltAssertion = newComparisonAssertion(comparisonLess)
+	ltAssertion = newComparisonAssertion(comparisonLess, nil)
 
 	// Tests whether the actual value is less than or equal to the expected value.
 	// @param actual {Any} Actual value.
 	// @param expected {Any} Expected value.
 	// @param message {String} Message to display on error.
 	// @return {None} No value is produced when the configured assertion succeeds.
-	lteAssertion = newComparisonAssertion(comparisonLessOrEqual)
+	lteAssertion = newComparisonAssertion(comparisonLessOrEqual, nil)
 
 	// Tests whether two numeric values are within an inclusive tolerance.
 	// @param actual {Int | Float} Actual numeric value.
@@ -60,11 +60,11 @@ var (
 	// @param message {String} Message to display on error.
 	// @return {None} No value is produced when the configured assertion succeeds.
 	approxAssertion = assertion{
-		defaultMessage: func(args []runtime.Value) string {
+		defaultMessage: func(ctx context.Context, args []runtime.Value) string {
 			return fmt.Sprintf(
 				"approximately equal %s within %s",
-				formatValue(args[1]),
-				formatValue(args[2]),
+				formatValue(ctx, args[1]),
+				formatValue(ctx, args[2]),
 			)
 		},
 		args: assertionArgs{
@@ -123,11 +123,11 @@ var (
 	// @param message {String} Message to display on error.
 	// @return {None} No value is produced when the configured assertion succeeds.
 	betweenAssertion = assertion{
-		defaultMessage: func(args []runtime.Value) string {
+		defaultMessage: func(ctx context.Context, args []runtime.Value) string {
 			return fmt.Sprintf(
 				"be between %s and %s",
-				formatValue(args[1]),
-				formatValue(args[2]),
+				formatValue(ctx, args[1]),
+				formatValue(ctx, args[2]),
 			)
 		},
 		args: assertionArgs{

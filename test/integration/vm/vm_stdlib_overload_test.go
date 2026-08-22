@@ -62,6 +62,54 @@ func TestTestingAssertionVocabulary(t *testing.T) {
 	})
 }
 
+func TestTestingAssertionDiagnostics(t *testing.T) {
+	RunSpecs(t, []spec.Spec{
+		spec.NewSpec(`
+RETURN T::EQ(
+  {
+    metadata: { debug: TRUE, version: 3 },
+    users: [{ name: "Bob" }],
+    version: 3
+  },
+  {
+    metadata: { version: 2 },
+    users: [{ name: "Alice" }],
+    version: 2
+  },
+  "unexpected API response"
+)
+`, "structured equality diagnostics use VM object paths").Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{
+				Message: "assertion error",
+				Contains: []string{
+					"unexpected API response",
+					"values are not equal",
+					"$.metadata.debug",
+					"expected: <missing>",
+					"actual:   Boolean 'true'",
+					"$.metadata.version",
+					"$.users[0].name",
+					"$.version",
+				},
+			},
+		),
+		spec.NewSpec(
+			`RETURN T::NOT::EQ({ value: 1 }, { value: 1 })`,
+			"negated equality reports the equal structured value",
+		).Expect().ExecError(
+			ShouldBeRuntimeError,
+			&ExpectedRuntimeError{
+				Message: "assertion error",
+				Contains: []string{
+					"expected values to differ",
+					`both: Object '{"value":1}'`,
+				},
+			},
+		),
+	})
+}
+
 func TestStdlibOverloadArityErrors(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		spec.NewSpec(`RETURN TRIM()`, "bounded overload rejects missing arguments").Expect().ExecError(

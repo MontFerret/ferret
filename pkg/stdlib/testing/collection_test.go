@@ -152,6 +152,15 @@ func TestHasAssertion(t *testing.T) {
 	requireAssertionFailure(
 		t,
 		hasAssertion,
+		true,
+		`assertion error: expected Object '{"id":1,"name":"Ferret","none":null,"url":"https://ferretlang.org"}' to have all properties Array '["id","missing","other"]'`+
+			"\nmissing: Array '[\"missing\",\"other\"]'",
+		object,
+		runtime.NewArrayWith(runtime.NewString("id"), runtime.NewString("missing"), runtime.NewString("other")),
+	)
+	requireAssertionFailure(
+		t,
+		hasAssertion,
 		false,
 		`assertion error: expected Object '{"id":1,"name":"Ferret","none":null,"url":"https://ferretlang.org"}' not to have all properties Array '["id","name"]'`,
 		object,
@@ -288,24 +297,24 @@ func TestMatchAssertion(t *testing.T) {
 			value:       runtime.NewString("hello world"),
 			match:       runtime.NewString(`hello\s+world`),
 			miss:        runtime.NewString(`^goodbye`),
-			positiveErr: "assertion error: expected String 'hello world' to match regular expression",
-			negativeErr: "assertion error: expected String 'hello world' not to match regular expression",
+			positiveErr: "assertion error: expected String 'hello world' to match regular expression String '^goodbye'",
+			negativeErr: "assertion error: expected String 'hello world' not to match regular expression String 'hello\\\\s+world'",
 		},
 		{
 			name:        "complex pattern",
 			value:       runtime.NewString("abc123def"),
 			match:       runtime.NewString(`\d+`),
 			miss:        runtime.NewString(`^xyz`),
-			positiveErr: "assertion error: expected String 'abc123def' to match regular expression",
-			negativeErr: "assertion error: expected String 'abc123def' not to match regular expression",
+			positiveErr: "assertion error: expected String 'abc123def' to match regular expression String '^xyz'",
+			negativeErr: "assertion error: expected String 'abc123def' not to match regular expression String '\\\\d+'",
 		},
 		{
 			name:        "non-string value",
 			value:       runtime.NewInt(123),
 			match:       runtime.NewString(`\d+`),
 			miss:        runtime.NewString(`^[a-z]+$`),
-			positiveErr: "assertion error: expected Int '123' to match regular expression",
-			negativeErr: "assertion error: expected Int '123' not to match regular expression",
+			positiveErr: "assertion error: expected Int '123' to match regular expression String '^[a-z]+$'",
+			negativeErr: "assertion error: expected Int '123' not to match regular expression String '\\\\d+'",
 		},
 	}
 

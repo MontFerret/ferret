@@ -11,7 +11,9 @@ import (
 type (
 	assertionFn func(context.Context, []runtime.Value) (bool, error)
 
-	messageFn func([]runtime.Value) string
+	messageFn func(context.Context, []runtime.Value) string
+
+	failureMessageFn func(context.Context, assertion, []runtime.Value, bool) string
 
 	assertionArgs struct {
 		min int
@@ -20,6 +22,7 @@ type (
 
 	assertion struct {
 		defaultMessage messageFn
+		failureMessage failureMessageFn
 		fn             assertionFn
 		args           assertionArgs
 	}
@@ -31,7 +34,7 @@ var errAssertion = errors.New("assertion error")
 // @param message {String} Message to display on error.
 // @return {None} No success value is produced because this assertion always fails.
 var failAssertion = assertion{
-	defaultMessage: func(_ []runtime.Value) string {
+	defaultMessage: func(_ context.Context, _ []runtime.Value) string {
 		return "not fail"
 	},
 	args: assertionArgs{
@@ -58,7 +61,7 @@ func newTypeAssertion(expected runtime.Type, customExpectation ...string) assert
 	}
 
 	return assertion{
-		defaultMessage: func(_ []runtime.Value) string {
+		defaultMessage: func(_ context.Context, _ []runtime.Value) string {
 			return fmt.Sprintf("be %s", expectation)
 		},
 		args: assertionArgs{
@@ -71,11 +74,12 @@ func newTypeAssertion(expected runtime.Type, customExpectation ...string) assert
 	}
 }
 
-func newComparisonAssertion(op comparisonOperator) assertion {
+func newComparisonAssertion(op comparisonOperator, failureMessage failureMessageFn) assertion {
 	return assertion{
-		defaultMessage: func(args []runtime.Value) string {
-			return fmt.Sprintf("be %s %s", op, formatValue(args[1]))
+		defaultMessage: func(ctx context.Context, args []runtime.Value) string {
+			return fmt.Sprintf("be %s %s", op, formatValue(ctx, args[1]))
 		},
+		failureMessage: failureMessage,
 		args: assertionArgs{
 			min: 2,
 			max: 3,
@@ -110,11 +114,19 @@ func (a assertion) function(positive bool) runtime.Function {
 			return runtime.None, nil
 		}
 
-		return runtime.None, a.failure(args, positive)
+		return runtime.None, a.failure(ctx, args, positive)
 	}
 }
 
-func (a assertion) failure(args []runtime.Value, positive bool) error {
+func (a assertion) failure(ctx context.Context, args []runtime.Value, positive bool) error {
+	if a.failureMessage != nil {
+		return runtime.Error(errAssertion, a.failureMessage(ctx, a, args, positive))
+	}
+
+	return runtime.Error(errAssertion, a.defaultFailureMessage(ctx, args, positive))
+}
+
+func (a assertion) defaultFailureMessage(ctx context.Context, args []runtime.Value, positive bool) string {
 	maxArgs := a.args.max
 	if len(args) != maxArgs {
 		connotation := ""
@@ -127,21 +139,21 @@ func (a assertion) failure(args []runtime.Value, positive bool) error {
 
 			var message string
 			if a.defaultMessage != nil {
-				message = a.defaultMessage(args)
+				message = a.defaultMessage(ctx, args)
 			} else if len(args) > 1 {
 				message = fmt.Sprintf("be %s", args[1].String())
 			} else {
 				message = "exist"
 			}
 
-			return runtime.Error(errAssertion, fmt.Sprintf("expected %s %sto %s", formatValue(actual), connotation, message))
+			return fmt.Sprintf("expected %s %sto %s", formatValue(ctx, actual), connotation, message)
 		}
 
-		return runtime.Error(errAssertion, fmt.Sprintf("expected to %s%s", connotation, a.defaultMessage(args)))
+		return fmt.Sprintf("expected to %s%s", connotation, a.defaultMessage(ctx, args))
 	}
 
 	// The last accepted argument is always a caller-provided message.
 	message := args[maxArgs-1]
 
-	return runtime.Error(errAssertion, message.String())
+	return message.String()
 }
