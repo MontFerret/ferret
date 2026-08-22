@@ -18,7 +18,7 @@ type Runner struct {
 func NewRunner(suite string, opts ...compiler.Option) *Runner {
 	return &Runner{
 		Name:     suite,
-		Compiler: compiler.New(opts...),
+		Compiler: mustNewCompiler(opts...),
 	}
 }
 

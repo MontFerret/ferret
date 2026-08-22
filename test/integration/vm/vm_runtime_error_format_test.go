@@ -123,7 +123,7 @@ func TestZeroDivisorDiagnosticsUseRuntimeOperationIdentity(t *testing.T) {
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		for _, test := range tests {
 			t.Run(fmt.Sprintf("O%d/%s", level, test.name), func(t *testing.T) {
-				program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("zero_divisor.fql", test.query))
+				program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.New("zero_divisor.fql", test.query))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -164,7 +164,7 @@ func TestWaitForTimeoutFailureFormatsSourceSnippet(t *testing.T) {
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
-			program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("wait_timeout_fail.fql", query))
+			program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.New("wait_timeout_fail.fql", query))
 			if err != nil {
 				t.Fatalf("compile failed: %v", err)
 			}
@@ -247,7 +247,7 @@ func TestRuntimeErrorFormatsMissingParamWithParamSpan(t *testing.T) {
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
-			program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("missing_param.fql", query))
+			program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.New("missing_param.fql", query))
 			if err != nil {
 				t.Fatalf("compile failed: %v", err)
 			}
@@ -330,7 +330,7 @@ RETURN outer()
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
-			program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("missing_param_udf.fql", query))
+			program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.New("missing_param_udf.fql", query))
 			if err != nil {
 				t.Fatalf("compile failed: %v", err)
 			}
@@ -404,7 +404,7 @@ func TestRuntimeErrorFormatsAggregatedMissingParams(t *testing.T) {
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
-			program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("missing_params.fql", query))
+			program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.New("missing_params.fql", query))
 			if err != nil {
 				t.Fatalf("compile failed: %v", err)
 			}
@@ -453,7 +453,7 @@ func TestRuntimeErrorFormatsAggregatedRepeatedMissingParamCallsites(t *testing.T
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
-			program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("missing_param_repeated.fql", query))
+			program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.New("missing_param_repeated.fql", query))
 			if err != nil {
 				t.Fatalf("compile failed: %v", err)
 			}
@@ -503,7 +503,7 @@ RETURN left + right
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
-			program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("missing_param_udf_callsites.fql", query))
+			program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.New("missing_param_udf_callsites.fql", query))
 			if err != nil {
 				t.Fatalf("compile failed: %v", err)
 			}
@@ -565,7 +565,7 @@ RETURN [val, val2, TEST()]
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
-			program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("missing_param_mixed_sites.fql", query))
+			program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.New("missing_param_mixed_sites.fql", query))
 			if err != nil {
 				t.Fatalf("compile failed: %v", err)
 			}
@@ -620,7 +620,7 @@ func TestRuntimeErrorFormatsArgumentTypeFailuresWithArgumentSpan(t *testing.T) {
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
-			program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("arg_type.fql", query))
+			program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.New("arg_type.fql", query))
 			if err != nil {
 				t.Fatalf("compile failed: %v", err)
 			}

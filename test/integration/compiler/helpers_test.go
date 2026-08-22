@@ -9,10 +9,21 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
+func mustNewCompiler(t testing.TB, options ...compiler.Option) *compiler.Compiler {
+	t.Helper()
+
+	compilerInstance, err := compiler.New(options...)
+	if err != nil {
+		t.Fatalf("create compiler: %v", err)
+	}
+
+	return compilerInstance
+}
+
 func compileWithLevel(t *testing.T, level compiler.OptimizationLevel, expr string) *bytecode.Program {
 	t.Helper()
 
-	c := compiler.New(compiler.WithOptimizationLevel(level))
+	c := mustNewCompiler(t, compiler.WithOptimizationLevel(level))
 	prog, err := c.Compile(source.NewAnonymous(expr))
 	if err != nil {
 		t.Fatalf("compile failed: %v", err)

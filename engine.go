@@ -8,6 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -35,6 +36,25 @@ func New(setters ...Option) (*Engine, error) {
 	}
 
 	ownsNetwork := opts.hostNetwork == false
+	compilerInstance, err := compiler.New(opts.compiler...)
+	if err != nil {
+		if ownsNetwork {
+			ferretnet.CloseIdleNetworkConnections(opts.network)
+		}
+
+		return nil, fmt.Errorf("compiler: %w", err)
+	}
+
+	debugOptions := append(append([]compiler.Option(nil), opts.compiler...), compiler.WithDebugInfo())
+	debugCompiler, err := compiler.New(debugOptions...)
+	if err != nil {
+		if ownsNetwork {
+			ferretnet.CloseIdleNetworkConnections(opts.network)
+		}
+
+		return nil, fmt.Errorf("debug compiler: %w", err)
+	}
+
 	boot, err := newBootstrap(opts)
 	if err != nil {
 		return nil, fmt.Errorf("bootstrap: %w", err)
@@ -72,8 +92,8 @@ func New(setters ...Option) (*Engine, error) {
 	}
 
 	return &Engine{
-		compiler:      compiler.New(opts.compiler...),
-		debugCompiler: compiler.New(append(append([]compiler.Option(nil), opts.compiler...), compiler.WithDebugInfo())...),
+		compiler:      compilerInstance,
+		debugCompiler: debugCompiler,
 		loader:        opts.programLoader,
 		host:          h,
 		hooks:         hooks,

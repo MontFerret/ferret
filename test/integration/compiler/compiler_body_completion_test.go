@@ -297,7 +297,8 @@ effect()
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
-			program, err := compiler.New(
+			program, err := mustNewCompiler(
+				t,
 				compiler.WithOptimizationLevel(level),
 				compiler.WithDebugInfo(),
 			).Compile(source.NewAnonymous(query))
@@ -321,7 +322,7 @@ func TestStandaloneForRetainsStatementDebugMetadata(t *testing.T) {
 }
 RETURN NONE`
 
-	program, err := compiler.New(compiler.WithDebugInfo()).Compile(source.NewAnonymous(query))
+	program, err := mustNewCompiler(t, compiler.WithDebugInfo()).Compile(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatalf("compile query: %v", err)
 	}
@@ -343,7 +344,7 @@ func TestReturnlessForRetainsNestedStatementDebugMetadata(t *testing.T) {
 }
 RETURN NONE`
 
-	program, err := compiler.New(compiler.WithDebugInfo()).Compile(source.NewAnonymous(query))
+	program, err := mustNewCompiler(t, compiler.WithDebugInfo()).Compile(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatalf("compile query: %v", err)
 	}
@@ -382,7 +383,7 @@ FOR value IN [{ member: 1 }] {
 }
 RETURN NONE`
 
-	program, err := compiler.New(compiler.WithDebugInfo()).Compile(source.NewAnonymous(query))
+	program, err := mustNewCompiler(t, compiler.WithDebugInfo()).Compile(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatalf("compile query: %v", err)
 	}
@@ -449,7 +450,7 @@ func TestParenthesizedLoopExpressionStatementRetainsDebugMetadata(t *testing.T) 
 })
 RETURN NONE`
 
-	program, err := compiler.New(compiler.WithDebugInfo()).Compile(source.NewAnonymous(query))
+	program, err := mustNewCompiler(t, compiler.WithDebugInfo()).Compile(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatalf("compile query: %v", err)
 	}
@@ -488,7 +489,7 @@ func TestDiscardedExplicitReturnedForRetainsReturnDebugMetadata(t *testing.T) {
 }
 RETURN NONE`
 
-	program, err := compiler.New(compiler.WithDebugInfo()).Compile(source.NewAnonymous(query))
+	program, err := mustNewCompiler(t, compiler.WithDebugInfo()).Compile(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatalf("compile query: %v", err)
 	}
@@ -516,7 +517,7 @@ RETURN NONE`
 
 func TestEmptySourceRemainsInvalid(t *testing.T) {
 	for _, input := range []string{"", " \n\t"} {
-		if _, err := compiler.New().Compile(source.NewAnonymous(input)); err == nil {
+		if _, err := mustNewCompiler(t).Compile(source.NewAnonymous(input)); err == nil {
 			t.Fatalf("expected empty source %q to remain invalid", input)
 		}
 	}

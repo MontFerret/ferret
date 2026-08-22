@@ -13,7 +13,7 @@ USE WEB::HTML AS html
 LET value = "text"
 RETURN [value + 42, 2s, @input]`
 
-	analysis, err := New().Analyze(source.NewAnonymous(query))
+	analysis, err := mustNewCompiler(t).Analyze(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,7 +65,7 @@ RETURN [value + 42, 2s, @input]`
 func TestAnalyzeSyntaxTokensIncludeMalformedAndUnknownInput(t *testing.T) {
 	query := "RETURN [1, §"
 
-	analysis, err := New().Analyze(source.NewAnonymous(query))
+	analysis, err := mustNewCompiler(t).Analyze(source.NewAnonymous(query))
 	if err == nil {
 		t.Fatal("Analyze succeeded for malformed input")
 	}
@@ -88,7 +88,7 @@ func TestAnalyzeSyntaxTokensIncludeMalformedAndUnknownInput(t *testing.T) {
 func TestAnalyzeSyntaxTokensClassifyTemplateTextAndDelimitersAsStrings(t *testing.T) {
 	query := "LET name = 'Ferret'\nRETURN `hello ${name}`"
 
-	analysis, err := New().Analyze(source.NewAnonymous(query))
+	analysis, err := mustNewCompiler(t).Analyze(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +113,7 @@ func TestAnalyzeSyntaxTokensClassifyTemplateTextAndDelimitersAsStrings(t *testin
 }
 
 func TestAnalysisSyntaxTokensReturnsDefensiveCopy(t *testing.T) {
-	analysis, err := New().Analyze(source.NewAnonymous("RETURN 1"))
+	analysis, err := mustNewCompiler(t).Analyze(source.NewAnonymous("RETURN 1"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +187,7 @@ func TestSyntaxWordsReturnCanonicalCategorizedDefensiveMetadata(t *testing.T) {
 
 func TestAnalyzeSyntaxTokensExposeCanonicalWordIdentity(t *testing.T) {
 	query := "let value = true\nRETURN value AND false ASC DESC && ! ON ERROR FAIL RETRY DELAY"
-	analysis, _ := New().Analyze(source.NewAnonymous(query))
+	analysis, _ := mustNewCompiler(t).Analyze(source.NewAnonymous(query))
 	if analysis == nil {
 		t.Fatal("Analyze returned no partial snapshot")
 	}

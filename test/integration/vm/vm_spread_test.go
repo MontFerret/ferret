@@ -101,7 +101,7 @@ RETURN {
 				fallbackErr: fallbackErr,
 			}
 
-			RunSpecsWith(t, "runtime collections", compiler.New(compiler.WithOptimizationLevel(level)), []spec.Spec{
+			RunSpecsWith(t, "runtime collections", mustNewCompiler(t, compiler.WithOptimizationLevel(level)), []spec.Spec{
 				Object(query, map[string]any{
 					"lists": []any{
 						[]any{1, 2},
@@ -188,7 +188,7 @@ RETURN [listSource[0].value, listCopy[0].value, objectSource.nested.value, objec
 				fallbackErr: fallbackErr,
 			}
 
-			RunSpecsWith(t, "snapshot shallow copy", compiler.New(compiler.WithOptimizationLevel(level)), []spec.Spec{
+			RunSpecsWith(t, "snapshot shallow copy", mustNewCompiler(t, compiler.WithOptimizationLevel(level)), []spec.Spec{
 				Array(query, []any{2, 2, 3, 3}),
 			},
 				vm.WithFunction("HOST_SNAPSHOT_LIST", func(context.Context, ...runtime.Value) (runtime.Value, error) {
@@ -324,7 +324,7 @@ func TestLiteralSpreadSnapshotFailures(t *testing.T) {
 				recoveryValue, recoveryCalls := test.newValue(snapshotErr, fallbackErr)
 				recoveryQuery := fmt.Sprintf(`RETURN (%s) ON ERROR RETURN ["recovered"]`, test.query[len("RETURN "):])
 
-				RunSpecsWith(t, "snapshot recovery", compiler.New(compiler.WithOptimizationLevel(level)), []spec.Spec{
+				RunSpecsWith(t, "snapshot recovery", mustNewCompiler(t, compiler.WithOptimizationLevel(level)), []spec.Spec{
 					Array(recoveryQuery, []any{"recovered"}),
 				}, vm.WithFunction("SOURCE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 					return recoveryValue, nil
@@ -398,7 +398,7 @@ func TestLiteralSpreadEvaluationOrder(t *testing.T) {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
 			var trace []int
 
-			RunSpecsWith(t, "trace", compiler.New(compiler.WithOptimizationLevel(level)), []spec.Spec{
+			RunSpecsWith(t, "trace", mustNewCompiler(t, compiler.WithOptimizationLevel(level)), []spec.Spec{
 				Array(query, []any{10, 20, 30, 40, map[string]any{
 					"first":  1,
 					"second": 2,
@@ -441,7 +441,7 @@ func TestLiteralSpreadTypeErrors(t *testing.T) {
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		for _, test := range tests {
 			t.Run(fmt.Sprintf("O%d/%s", level, test.message), func(t *testing.T) {
-				program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("spread.fql", test.query))
+				program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.New("spread.fql", test.query))
 				if err != nil {
 					t.Fatalf("compile failed: %v", err)
 				}
@@ -526,7 +526,7 @@ func runLiteralSpreadError(
 ) *vm.RuntimeError {
 	t.Helper()
 
-	program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.New("spread.fql", query))
+	program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.New("spread.fql", query))
 	if err != nil {
 		t.Fatalf("compile failed: %v", err)
 	}

@@ -184,7 +184,7 @@ RETURN add(2, 3)
 	std := spec.Stdlib()
 
 	for _, level := range levels {
-		compilerInstance := compiler.New(compiler.WithOptimizationLevel(level))
+		compilerInstance := mustNewCompiler(t, compiler.WithOptimizationLevel(level))
 
 		for _, tc := range cases {
 			caseName := tc.Description

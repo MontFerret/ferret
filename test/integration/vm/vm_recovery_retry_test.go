@@ -20,7 +20,7 @@ func TestHostFunctionRetryRecoverySuccess(t *testing.T) {
 		RunSpecsWith(
 			t,
 			fmt.Sprintf("VM/O%d", level),
-			compiler.New(compiler.WithOptimizationLevel(level)),
+			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				S("RETURN STEP() ON ERROR RETRY 2 DELAY 0s BACKOFF EXPONENTIAL", 99, "Retry should return the first successful attempt"),
 			},
@@ -47,7 +47,7 @@ func TestHostFunctionRetryExhaustionPropagatesFinalError(t *testing.T) {
 		RunSpecsWith(
 			t,
 			fmt.Sprintf("VM/O%d", level),
-			compiler.New(compiler.WithOptimizationLevel(level)),
+			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				spec.NewSpec("RETURN STEP() ON ERROR RETRY 1", "Retry without fallback should propagate the final unhandled failure").Expect().ExecError(
 					ShouldBeRuntimeError,
@@ -73,7 +73,7 @@ func TestHostFunctionRetryFallbackFailurePropagates(t *testing.T) {
 		RunSpecsWith(
 			t,
 			fmt.Sprintf("VM/O%d", level),
-			compiler.New(compiler.WithOptimizationLevel(level)),
+			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				spec.NewSpec("RETURN STEP() ON ERROR RETRY 1 OR RETURN STEP()", "Retry fallback failure should escape instead of re-entering retry").Expect().ExecError(
 					ShouldBeRuntimeError,
@@ -99,7 +99,7 @@ func TestGroupedForRetryRecovery(t *testing.T) {
 		RunSpecsWith(
 			t,
 			fmt.Sprintf("VM/O%d", level),
-			compiler.New(compiler.WithOptimizationLevel(level)),
+			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				Array(`LET xs = (FOR i IN [1, 2] LET y = STEP() RETURN y + i) ON ERROR RETRY 1 OR RETURN []
 RETURN xs`, []any{11, 12}, "Grouped FOR retry should restart after cleanup without leaking partial results"),
@@ -127,7 +127,7 @@ func TestWaitForPredicateRetryRecovery(t *testing.T) {
 		RunSpecsWith(
 			t,
 			fmt.Sprintf("VM/O%d", level),
-			compiler.New(compiler.WithOptimizationLevel(level)),
+			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				S(`LET token = WAITFOR VALUE STEP() TIMEOUT 20ms EVERY 0ms ON TIMEOUT RETURN "timeout" ON ERROR RETRY 2 DELAY 0s OR RETURN "error"
 RETURN token`, "ok", "WAITFOR predicate should retry runtime failures and keep timeout handling separate"),
@@ -155,7 +155,7 @@ func TestWaitForEventRetryRecovery(t *testing.T) {
 		RunSpecsWith(
 			t,
 			fmt.Sprintf("VM/O%d", level),
-			compiler.New(compiler.WithOptimizationLevel(level)),
+			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				NotNil(`RETURN WAITFOR EVENT "test" IN SOURCE() TIMEOUT 20ms ON TIMEOUT RETURN "timeout" ON ERROR RETRY 2 DELAY 0s OR RETURN "error"`, "WAITFOR EVENT should retry source evaluation failures"),
 			},
@@ -178,7 +178,7 @@ func TestWaitForEventRetryRecovery(t *testing.T) {
 		RunSpecsWith(
 			t,
 			fmt.Sprintf("VM/O%d", level),
-			compiler.New(compiler.WithOptimizationLevel(level)),
+			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				S(`RETURN WAITFOR EVENT "test" IN SOURCE() TIMEOUT 1ms ON TIMEOUT RETURN "timeout" ON ERROR RETRY 2 DELAY 0s OR RETURN "error"`, "timeout", "WAITFOR EVENT timeout should not be retried by ON ERROR RETRY"),
 			},

@@ -600,7 +600,10 @@ func analyzeQuery(query *source.Source) error {
 		os.Exit(1)
 	}
 
-	c := compiler.New(compiler.WithOptimizationLevel(optLevel))
+	c, err := compiler.New(compiler.WithOptimizationLevel(optLevel))
+	if err != nil {
+		return fmt.Errorf("create compiler: %w", err)
+	}
 
 	fullProf := *profiler
 

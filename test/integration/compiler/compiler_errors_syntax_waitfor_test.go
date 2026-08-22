@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	pkgdiagnostics "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -181,7 +180,7 @@ func TestSyntaxErrorsWaitfor(t *testing.T) {
 
 func TestSyntaxErrorsWaitforEmptyGroupDoesNotHijackEarlierError(t *testing.T) {
 	query := "RETURN [1,,2]\nRETURN WAITFOR ANY {}"
-	_, err := compiler.New().Compile(source.NewAnonymous(query))
+	_, err := mustNewCompiler(t).Compile(source.NewAnonymous(query))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}
@@ -198,7 +197,7 @@ func TestSyntaxErrorsWaitforEmptyGroupDoesNotHijackEarlierError(t *testing.T) {
 
 func TestSyntaxErrorsWaitforEmptyGroupsUseTheirOwnSpans(t *testing.T) {
 	query := "LET first = WAITFOR ANY {}\nRETURN WAITFOR VALUE ALL {}"
-	_, err := compiler.New().Compile(source.NewAnonymous(query))
+	_, err := mustNewCompiler(t).Compile(source.NewAnonymous(query))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}

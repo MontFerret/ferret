@@ -118,7 +118,7 @@ RETURN total`, 26, "parenthesized discarded loops preserve nested execution"),
 	}
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		RunSpecsWith(t, optimizationName(level), compiler.New(compiler.WithOptimizationLevel(level)), tests)
+		RunSpecsWith(t, optimizationName(level), mustNewCompiler(t, compiler.WithOptimizationLevel(level)), tests)
 	}
 }
 
@@ -182,7 +182,7 @@ RETURN count`, 1, "returnless FOR DO WHILE executes once"),
 	}
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		RunSpecsWith(t, optimizationName(level), compiler.New(compiler.WithOptimizationLevel(level)), tests)
+		RunSpecsWith(t, optimizationName(level), mustNewCompiler(t, compiler.WithOptimizationLevel(level)), tests)
 	}
 }
 
@@ -210,7 +210,7 @@ RETURN [values, total]`, []any{[]any{1, 2}, 3}, "nonterminal nested collecting F
 	}
 
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		RunSpecsWith(t, optimizationName(level), compiler.New(compiler.WithOptimizationLevel(level)), tests)
+		RunSpecsWith(t, optimizationName(level), mustNewCompiler(t, compiler.WithOptimizationLevel(level)), tests)
 	}
 }
 

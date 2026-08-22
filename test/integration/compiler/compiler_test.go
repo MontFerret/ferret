@@ -14,7 +14,7 @@ import (
 )
 
 func TestCompiler_Consts(t *testing.T) {
-	c := compiler.New()
+	c := mustNewCompiler(t)
 
 	p, err := c.Compile(source.NewAnonymous(`VAR str = ""
 
@@ -37,7 +37,7 @@ RETURN str`))
 func TestCompilerCompileConcurrentSharedCompiler(t *testing.T) {
 	t.Parallel()
 
-	compilerInstance := compiler.New(compiler.WithOptimizationLevel(compiler.O1))
+	compilerInstance := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.O1))
 	workers := maxInt(8, runtime.GOMAXPROCS(0)*2)
 	iterations := 80
 
@@ -176,7 +176,7 @@ RETURN wrap()
 func TestCompilerCompileConcurrentInvalidQueries(t *testing.T) {
 	t.Parallel()
 
-	compilerInstance := compiler.New(compiler.WithOptimizationLevel(compiler.O1))
+	compilerInstance := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.O1))
 	workers := maxInt(8, runtime.GOMAXPROCS(0)*2)
 	iterations := 80
 
