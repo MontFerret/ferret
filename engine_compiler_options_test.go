@@ -18,13 +18,15 @@ func reportCompilerOptionOnApplication[T any](
 ) sharedoptions.Option[T] {
 	applied := 0
 
-	return func(config *T, report sharedoptions.Report) {
+	return func(config *T) error {
 		applied++
-		base(config, report)
+		baseErr := base(config)
 
 		if applied == application {
-			report(validationErr)
+			return errors.Join(baseErr, validationErr)
 		}
+
+		return baseErr
 	}
 }
 
@@ -48,10 +50,11 @@ func TestNewReturnsCompilerOptionErrorsBeforeBootstrap(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			reason := errors.New("test validation failure")
 			validationErr := sharedoptions.ValidationError{
 				Field:  "compiler",
 				Value:  tt.name,
-				Reason: "test validation failure",
+				Reason: reason,
 			}
 			invalid := reportCompilerOptionOnApplication(
 				compiler.WithOptimizationLevel(compiler.O1),
@@ -96,8 +99,11 @@ func TestNewReturnsCompilerOptionErrorsBeforeBootstrap(t *testing.T) {
 			if !errors.As(err, &got) {
 				t.Fatalf("New() error = %T, want sharedoptions.ValidationError", err)
 			}
-			if got != validationErr {
+			if got.Field != validationErr.Field || got.Value != validationErr.Value || got.Reason != reason {
 				t.Fatalf("New() validation error = %+v, want %+v", got, validationErr)
+			}
+			if !errors.Is(err, reason) {
+				t.Fatalf("New() error = %v, want reason %v", err, reason)
 			}
 			if moduleRegistered {
 				t.Fatal("module registered before compiler validation")
@@ -116,7 +122,7 @@ func TestNewReturnsCompilerOptionErrorsBeforeBootstrap(t *testing.T) {
 }
 
 func TestNewDoesNotCloseInjectedNetworkAfterCompilerOptionError(t *testing.T) {
-	validationErr := sharedoptions.ValidationError{Reason: "test validation failure"}
+	validationErr := sharedoptions.ValidationError{Reason: errors.New("test validation failure")}
 	invalid := reportCompilerOptionOnApplication(
 		compiler.WithOptimizationLevel(compiler.O1),
 		1,

@@ -125,10 +125,21 @@ func TestWithOptimizationLevelRejectsUnsupportedLevels(t *testing.T) {
 	tests := []struct {
 		name      string
 		wantValue string
+		wantError string
 		level     OptimizationLevel
 	}{
-		{name: "below minimum", level: optimization.LevelNone - 1, wantValue: "-1"},
-		{name: "above maximum", level: optimization.LevelAggressive + 1, wantValue: "4"},
+		{
+			name:      "below minimum",
+			level:     optimization.LevelNone - 1,
+			wantValue: "-1",
+			wantError: "optimization level: must be one of [0 1 2 3]: value=-1: value=-1",
+		},
+		{
+			name:      "above maximum",
+			level:     optimization.LevelAggressive + 1,
+			wantValue: "4",
+			wantError: "optimization level: must be one of [0 1 2 3]: value=4: value=4",
+		},
 	}
 
 	for _, tt := range tests {
@@ -140,31 +151,41 @@ func TestWithOptimizationLevelRejectsUnsupportedLevels(t *testing.T) {
 			if compilerInstance != nil {
 				t.Fatal("compiler != nil, want nil")
 			}
-
-			want := options.ValidationError{
-				Field:  "optimization level",
-				Value:  tt.wantValue,
-				Reason: "must be one of [0 1 2 3]",
+			if err.Error() != tt.wantError {
+				t.Fatalf("New() error = %q, want %q", err, tt.wantError)
 			}
+
 			var got options.ValidationError
 			if !errors.As(err, &got) {
 				t.Fatalf("New() error = %T, want options.ValidationError", err)
 			}
-			if got != want {
-				t.Fatalf("New() validation error = %+v, want %+v", got, want)
+			if got.Field != "optimization level" || got.Value != tt.wantValue {
+				t.Fatalf("New() validation error = %+v, want named value %q", got, tt.wantValue)
+			}
+
+			var reason options.ValidationError
+			if !errors.As(got.Reason, &reason) {
+				t.Fatalf("New() validation reason = %T, want options.ValidationError", got.Reason)
+			}
+			if reason.Field != "" || reason.Value != tt.wantValue {
+				t.Fatalf("New() nested validation error = %+v, want unnamed value %q", reason, tt.wantValue)
+			}
+			if reason.Reason == nil || reason.Reason.Error() != "must be one of [0 1 2 3]" {
+				t.Fatalf("New() nested validation reason = %v, want supported-level error", reason.Reason)
 			}
 		})
 	}
 }
 
 func TestNewReturnsOptionValidationError(t *testing.T) {
+	reason := errors.New("test validation failure")
 	want := options.ValidationError{
 		Field:  "compiler",
 		Value:  "invalid",
-		Reason: "test validation failure",
+		Reason: reason,
 	}
-	invalid := func(_ *config, report options.Report) {
-		report(want)
+	invalid := func(_ *config) error {
+		return want
 	}
 
 	compilerInstance, err := New(invalid)
@@ -179,7 +200,10 @@ func TestNewReturnsOptionValidationError(t *testing.T) {
 	if !errors.As(err, &got) {
 		t.Fatalf("New() error = %T, want options.ValidationError", err)
 	}
-	if got != want {
+	if got.Field != want.Field || got.Value != want.Value || got.Reason != reason {
 		t.Fatalf("New() validation error = %+v, want %+v", got, want)
+	}
+	if !errors.Is(err, reason) {
+		t.Fatalf("New() error = %v, want reason %v", err, reason)
 	}
 }

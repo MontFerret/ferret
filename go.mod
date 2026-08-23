@@ -11,7 +11,7 @@ require (
 	github.com/rs/zerolog v1.35.1
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/vmihailenco/msgpack/v5 v5.4.1
-	github.com/ziflex/go-options v1.1.1
+	github.com/ziflex/go-options v1.2.0
 )
 
 require (

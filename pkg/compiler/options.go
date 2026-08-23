@@ -34,26 +34,32 @@ func defaultConfig() config {
 
 // WithOptimizationLevel configures the compiler optimization level. It accepts
 // levels from 0 through 3.
-var WithOptimizationLevel = options.New(
-	func(config *config, level optimization.Level) {
-		config.Level = level
-	},
-	options.Named(
-		"optimization level",
-		options.OneOf(
-			optimization.LevelNone,
-			optimization.LevelBasic,
-			optimization.LevelFull,
-			optimization.LevelAggressive,
-		),
-	),
-)
+func WithOptimizationLevel(level OptimizationLevel) Option {
+	return options.New(
+		func(config *config, level optimization.Level) {
+			config.Level = level
+		},
+	).
+		Named("optimization level").
+		Validators(
+			options.OneOf(
+				optimization.LevelNone,
+				optimization.LevelBasic,
+				optimization.LevelFull,
+				optimization.LevelAggressive,
+			),
+		).
+		Value(level).
+		Build()
+}
 
 // WithDebugInfo emits source-level debugger metadata and disables optimization
 // so debugger-visible register bindings remain stable.
 func WithDebugInfo() Option {
-	return func(config *config, _ options.Report) {
+	return func(config *config) error {
 		config.DebugInfo = true
 		config.Level = optimization.LevelNone
+
+		return nil
 	}
 }
