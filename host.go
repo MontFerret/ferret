@@ -32,8 +32,12 @@ type (
 )
 
 func newHostContext(opts *options) (*hostContext, error) {
-	rootFs, err := fs.New(fs.WithRoot(opts.fsRoot), fs.WithReadOnly(opts.fsReadOnly))
+	logger, err := logging.New(opts.logger...)
+	if err != nil {
+		return nil, fmt.Errorf("logger: %w", err)
+	}
 
+	rootFs, err := fs.New(fs.WithRoot(opts.fsRoot), fs.WithReadOnly(opts.fsReadOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +56,7 @@ func newHostContext(opts *options) (*hostContext, error) {
 		library:  opts.library,
 		params:   opts.params,
 		encoding: opts.encoding,
-		logger:   logging.New(opts.logger...),
+		logger:   logger,
 		fs:       rootFs,
 		network:  network,
 	}, nil

@@ -3,6 +3,7 @@ package ferret
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
@@ -65,6 +66,11 @@ func newPlanSession[T any](
 		return session, err
 	}
 
+	logger, err := logging.NewFrom(h.logger, options.logger...)
+	if err != nil {
+		return session, fmt.Errorf("logger: %w", err)
+	}
+
 	if err = limiter.Acquire(ctx); err != nil {
 		return session, err
 	}
@@ -85,7 +91,7 @@ func newPlanSession[T any](
 		limiter: limiter,
 		pool:    pool,
 		options: options,
-		logger:  logging.NewFrom(h.logger, options.logger...),
+		logger:  logger,
 	})
 
 	if err == nil {
