@@ -184,14 +184,6 @@ func validateConfiguredScheme(value string) error {
 	return nil
 }
 
-func validateConfiguredHosts(p *Policy, option string, hosts []string) {
-	for _, host := range hosts {
-		if _, err := normalizeConfiguredHost(host); err != nil {
-			p.setConfigurationError(option, host, err.Error())
-		}
-	}
-}
-
 func normalizeConfiguredHost(value string) (string, error) {
 	raw := strings.TrimSpace(value)
 

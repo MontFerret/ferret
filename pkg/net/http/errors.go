@@ -16,7 +16,7 @@ var (
 	// ErrPolicyDenied identifies requests rejected by the HTTP access policy.
 	ErrPolicyDenied = errors.New("http: blocked by access policy")
 
-	// ErrInvalidPolicyConfiguration identifies malformed or contradictory
-	// options supplied while constructing a Policy.
+	// ErrInvalidPolicyConfiguration identifies go-options validation failures
+	// encountered while constructing a Policy.
 	ErrInvalidPolicyConfiguration = errors.New("http: invalid policy configuration")
 )

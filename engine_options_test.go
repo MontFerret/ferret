@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	gooptions "github.com/ziflex/go-options"
+
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
@@ -206,6 +208,14 @@ func TestWithNetworkOptionsReturnsNetworkConstructionError(t *testing.T) {
 
 	if !errors.Is(err, ferrethttp.ErrInvalidPolicyConfiguration) {
 		t.Fatalf("expected invalid policy configuration error, got: %v", err)
+	}
+
+	var validationErr gooptions.ValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("expected options.ValidationError, got %T: %v", err, err)
+	}
+	if validationErr.Field != "max response size" || validationErr.Value != "-1" {
+		t.Fatalf("unexpected validation error: %+v", validationErr)
 	}
 
 	if !strings.Contains(err.Error(), "create network: http client:") {

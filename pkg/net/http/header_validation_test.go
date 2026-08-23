@@ -17,9 +17,9 @@ func TestNewPolicyRejectsTransportControlledDefaultHeaders(t *testing.T) {
 				t.Fatalf("expected reserved default %q to return no policy", header)
 			}
 
-			configErr := requirePolicyConfigurationError(t, err)
-			if strings.Contains(err.Error(), "configured-secret") || strings.Contains(configErr.Value, "configured-secret") {
-				t.Fatalf("configuration error leaked default value: %v", err)
+			validationErr := requireOptionValidationError(t, err)
+			if strings.Contains(err.Error(), "configured-secret") || strings.Contains(validationErr.Value, "configured-secret") {
+				t.Fatalf("validation error leaked default value: %v", err)
 			}
 		})
 	}

@@ -26,11 +26,9 @@ type (
 	}
 )
 
-// New constructs an HTTP client with the provided policy options. Invalid
-// configuration returns a PolicyConfigurationError for one failure or a
-// MultiPolicyConfigurationError for multiple failures. Both match
-// ErrInvalidPolicyConfiguration with errors.Is and expose details through
-// errors.As.
+// New constructs an HTTP client with the provided policy options. Validation
+// failures match [ErrInvalidPolicyConfiguration] and expose details as
+// github.com/ziflex/go-options.ValidationError values.
 func New(options ...PolicyOption) (Client, error) {
 	policy, err := NewPolicy(options...)
 	if err != nil {

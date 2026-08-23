@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ziflex/go-options"
+
 	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
 )
 
@@ -164,7 +166,7 @@ func TestWithHTTPClientTakesPrecedenceOverTransport(t *testing.T) {
 	}
 }
 
-func TestWithHTTPTransportPropagatesPolicyConfigurationError(t *testing.T) {
+func TestWithHTTPTransportPropagatesPolicyValidationError(t *testing.T) {
 	network, err := New(
 		WithHTTPTransport(
 			&trackingHTTPTransport{},
@@ -176,6 +178,14 @@ func TestWithHTTPTransportPropagatesPolicyConfigurationError(t *testing.T) {
 	}
 	if !errors.Is(err, ferrethttp.ErrInvalidPolicyConfiguration) {
 		t.Fatalf("expected ErrInvalidPolicyConfiguration, got %v", err)
+	}
+
+	var validationErr options.ValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("expected options.ValidationError, got %T: %v", err, err)
+	}
+	if validationErr.Field != "max response size" || validationErr.Value != "-1" {
+		t.Fatalf("unexpected validation error: %+v", validationErr)
 	}
 	if err == nil || !strings.HasPrefix(err.Error(), "http client: ") {
 		t.Fatalf("expected wrapped HTTP client error, got %v", err)
