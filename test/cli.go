@@ -310,7 +310,11 @@ func main() {
 	}()
 
 	if *format {
-		f := formatter.New()
+		f, e := formatter.New()
+		if e != nil {
+			fmt.Println(e)
+			os.Exit(1)
+		}
 
 		if query != "" {
 			err = formatQuery(f, source.New("stdin", query))

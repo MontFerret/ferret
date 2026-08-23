@@ -42,7 +42,7 @@ func TestFormatter_DefaultKeywordCase(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var first bytes.Buffer
-			format := New()
+			format := mustNewFormatter(t)
 
 			if err := format.Format(&first, source.NewAnonymous(test.input)); err != nil {
 				t.Fatalf("format failed: %v", err)
@@ -119,7 +119,7 @@ STEP()
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var first bytes.Buffer
-			format := New()
+			format := mustNewFormatter(t)
 			if err := format.Format(&first, source.NewAnonymous(test.input)); err != nil {
 				t.Fatalf("format failed: %v", err)
 			}
@@ -144,7 +144,7 @@ func TestFormatterPreservesFunctionIdentifierCase(t *testing.T) {
 	t.Parallel()
 
 	var output bytes.Buffer
-	if err := New().Format(&output, source.NewAnonymous(`RETURN TO_STRING(value)`)); err != nil {
+	if err := mustNewFormatter(t).Format(&output, source.NewAnonymous(`RETURN TO_STRING(value)`)); err != nil {
 		t.Fatalf("format failed: %v", err)
 	}
 
@@ -208,7 +208,7 @@ func TestFormatter_LiteralSpread(t *testing.T) {
 				options = append(options, WithBracketSpacing(false))
 			}
 
-			format := New(options...)
+			format := mustNewFormatter(t, options...)
 			var first bytes.Buffer
 
 			if err := format.Format(&first, source.NewAnonymous(test.input)); err != nil {
@@ -240,7 +240,7 @@ func TestFormatter_LiteralSpread(t *testing.T) {
 
 func TestFormatter_ExplicitUppercaseKeywordCase(t *testing.T) {
 	var out bytes.Buffer
-	format := New(WithCaseMode(CaseModeUpper))
+	format := mustNewFormatter(t, WithCaseMode(CaseModeUpper))
 
 	if err := format.Format(&out, source.NewAnonymous(`return for x in items { return x }`)); err != nil {
 		t.Fatalf("format failed: %v", err)
@@ -256,7 +256,7 @@ func TestFormatter_TemplateLiteralDoesNotIndentInterpolation(t *testing.T) {
 	input := "RETURN { foo: `line1\n${1}`, veryLongPropertyNameThatForcesMultilineFormatting: 1 }"
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
-	fmt := New(WithPrintWidth(10))
+	fmt := mustNewFormatter(t, WithPrintWidth(10))
 
 	if err := fmt.Format(&buf, src); err != nil {
 		t.Fatalf("format failed: %v", err)
@@ -276,7 +276,7 @@ func TestFormatter_DurationExpressionsRoundTrip(t *testing.T) {
 RETURN WAITFOR FALSE TIMEOUT delay+500ms EVERY 1e2MS ON ERROR RETRY 1 DELAY (0ms OR 1ms) OR RETURN NONE`
 	src := source.NewAnonymous(input)
 	var first bytes.Buffer
-	fmt := New()
+	fmt := mustNewFormatter(t)
 
 	if err := fmt.Format(&first, src); err != nil {
 		t.Fatalf("format failed: %v", err)
@@ -306,7 +306,7 @@ RETURN WAITFOR FALSE TIMEOUT delay+500ms EVERY 1e2MS ON ERROR RETRY 1 DELAY (0ms
 func TestFormatter_DurationMatchLiteralRoundTrip(t *testing.T) {
 	input := `RETURN MATCH 5s{5000MS=>true,_=>false}`
 	var first bytes.Buffer
-	fmt := New()
+	fmt := mustNewFormatter(t)
 
 	if err := fmt.Format(&first, source.NewAnonymous(input)); err != nil {
 		t.Fatalf("format failed: %v", err)
@@ -329,7 +329,7 @@ func TestFormatter_ArrayTemplateLiteralNewlineForcesMultiline(t *testing.T) {
 	input := "RETURN [`line1\n${1}`]"
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
-	fmt := New(WithPrintWidth(200))
+	fmt := mustNewFormatter(t, WithPrintWidth(200))
 
 	if err := fmt.Format(&buf, src); err != nil {
 		t.Fatalf("format failed: %v", err)
@@ -348,7 +348,7 @@ func TestFormatter_NestedObjectRespectsPrintWidthAtLineStart(t *testing.T) {
 	input := "RETURN [{ a: 1, bb: 2 }]"
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
-	fmt := New(WithPrintWidth(18))
+	fmt := mustNewFormatter(t, WithPrintWidth(18))
 
 	if err := fmt.Format(&buf, src); err != nil {
 		t.Fatalf("format failed: %v", err)
@@ -377,7 +377,7 @@ func TestFormatter_BlockCommentPreservesLeadingSpace(t *testing.T) {
 	input := "LET x = 1\n/*\n * a\n * b\n */\nRETURN 2"
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
-	fmt := New()
+	fmt := mustNewFormatter(t)
 
 	if err := fmt.Format(&buf, src); err != nil {
 		t.Fatalf("format failed: %v", err)
@@ -396,7 +396,7 @@ func TestFormatter_DispatchGroupedQueryTargetRemainsParseable(t *testing.T) {
 	input := "DISPATCH \"input\" IN (QUERY ONE \"#query\" IN page USING css) WITH { value: \"ferret\" }\nRETURN 1"
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
-	fmt := New()
+	fmt := mustNewFormatter(t)
 
 	if err := fmt.Format(&buf, src); err != nil {
 		t.Fatalf("format failed: %v", err)
@@ -429,7 +429,7 @@ RETURN [ brand,price ]
 RETURN read(@product)`
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
-	fmt := New()
+	fmt := mustNewFormatter(t)
 
 	if err := fmt.Format(&buf, src); err != nil {
 		t.Fatalf("format failed: %v", err)
@@ -462,7 +462,7 @@ func TestFormatter_WaitForEventFilterUsesWhenAndRemainsParseable(t *testing.T) {
 	input := "LET obs = []\nWAITFOR EVENT \"test\" IN obs WHEN .type == \"match\" WHEN .visible\nRETURN 1"
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
-	fmt := New()
+	fmt := mustNewFormatter(t)
 
 	if err := fmt.Format(&buf, src); err != nil {
 		t.Fatalf("format failed: %v", err)
@@ -489,7 +489,7 @@ func TestFormatter_WaitForEventTriggerRemainsParseable(t *testing.T) {
 	input := "LET obs = []\nLET button = @button\nWAITFOR EVENT \"test\" IN obs WHEN .type == \"match\" TRIGGER (button <- \"click\") TIMEOUT 1ms\nRETURN 1"
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
-	fmt := New()
+	fmt := mustNewFormatter(t)
 
 	if err := fmt.Format(&buf, src); err != nil {
 		t.Fatalf("format failed: %v", err)
@@ -519,7 +519,7 @@ func TestFormatter_WaitForEventInlineTriggerRemainsInline(t *testing.T) {
 	input := "LET obs = []\nLET button = @button\nWAITFOR EVENT \"test\" IN obs WHEN .type == \"match\" TRIGGER button <- \"click\" TIMEOUT 1ms\nRETURN 1"
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
-	fmt := New()
+	fmt := mustNewFormatter(t)
 
 	if err := fmt.Format(&buf, src); err != nil {
 		t.Fatalf("format failed: %v", err)
@@ -549,7 +549,7 @@ func TestFormatter_WaitForPredicateRepeatedWhenRemainsParseable(t *testing.T) {
 	input := "LET value = WAITFOR VALUE { ok: true } WHEN .ok WHEN .ok == true TIMEOUT 1ms\nRETURN value"
 	src := source.NewAnonymous(input)
 	var buf bytes.Buffer
-	fmt := New()
+	fmt := mustNewFormatter(t)
 
 	if err := fmt.Format(&buf, src); err != nil {
 		t.Fatalf("format failed: %v", err)

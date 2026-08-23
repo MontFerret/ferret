@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/formatter"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
@@ -90,7 +89,7 @@ func formatSource(t *testing.T, input string) string {
 	t.Helper()
 
 	var output strings.Builder
-	if err := formatter.New().Format(&output, source.NewAnonymous(input)); err != nil {
+	if err := mustNewFormatter(t).Format(&output, source.NewAnonymous(input)); err != nil {
 		t.Fatalf("format source: %v", err)
 	}
 

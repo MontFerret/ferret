@@ -588,14 +588,14 @@ func (f *expressionFormatter) formatMatchLiteralPatternWith(p *printer, ctx *fql
 	case ctx.NoneLiteral() != nil:
 		if nl := ctx.NoneLiteral().(*fql.NoneLiteralContext); nl != nil {
 			if nl.Null() != nil {
-				p.write(applyCase(f.opts.caseMode, nl.Null().GetText()))
+				p.write(f.config.FormatKeyword(nl.Null().GetText()))
 			} else if nl.None() != nil {
-				p.write(applyCase(f.opts.caseMode, nl.None().GetText()))
+				p.write(f.config.FormatKeyword(nl.None().GetText()))
 			}
 		}
 	case ctx.BooleanLiteral() != nil:
 		if bl := ctx.BooleanLiteral().(*fql.BooleanLiteralContext); bl != nil && bl.BooleanLiteral() != nil {
-			p.write(applyCase(f.opts.caseMode, bl.BooleanLiteral().GetText()))
+			p.write(f.config.FormatKeyword(bl.BooleanLiteral().GetText()))
 		}
 	case ctx.StringLiteral() != nil:
 		f.literal.formatStringLiteralNodeWith(p, ctx.StringLiteral())
@@ -660,7 +660,7 @@ func (f *expressionFormatter) formatMatchObjectPatternWithMode(p *printer, ctx *
 	p.write("{")
 
 	if inline {
-		if f.opts.bracketSpacing {
+		if f.config.BracketSpacing() {
 			p.space()
 		}
 
@@ -673,7 +673,7 @@ func (f *expressionFormatter) formatMatchObjectPatternWithMode(p *printer, ctx *
 			}
 		}
 
-		if f.opts.bracketSpacing {
+		if f.config.BracketSpacing() {
 			p.space()
 		}
 
@@ -1267,7 +1267,7 @@ func (f *expressionFormatter) formatLogicalAndOperator(ctx *fql.LogicalAndOperat
 		return
 	}
 
-	f.p.write(applyCase(f.opts.caseMode, ctx.GetText()))
+	f.p.write(f.config.FormatKeyword(ctx.GetText()))
 }
 
 func (f *expressionFormatter) formatLogicalOrOperator(ctx *fql.LogicalOrOperatorContext) {
@@ -1275,7 +1275,7 @@ func (f *expressionFormatter) formatLogicalOrOperator(ctx *fql.LogicalOrOperator
 		return
 	}
 
-	f.p.write(applyCase(f.opts.caseMode, ctx.GetText()))
+	f.p.write(f.config.FormatKeyword(ctx.GetText()))
 }
 
 func (f *expressionFormatter) formatEqualityOperator(ctx *fql.EqualityOperatorContext) {
@@ -1292,7 +1292,7 @@ func (f *expressionFormatter) formatArrayOperator(ctx *fql.ArrayOperatorContext)
 	}
 
 	if op := ctx.GetOperator(); op != nil {
-		f.p.write(applyCase(f.opts.caseMode, op.GetText()))
+		f.p.write(f.config.FormatKeyword(op.GetText()))
 	}
 
 	f.p.space()
@@ -1310,11 +1310,11 @@ func (f *expressionFormatter) formatInOperator(ctx *fql.InOperatorContext) {
 	}
 
 	if ctx.Not() != nil {
-		f.p.write(applyCase(f.opts.caseMode, ctx.Not().GetText()))
+		f.p.write(f.config.FormatKeyword(ctx.Not().GetText()))
 		f.p.space()
 	}
 
-	f.p.write(applyCase(f.opts.caseMode, ctx.In().GetText()))
+	f.p.write(f.config.FormatKeyword(ctx.In().GetText()))
 }
 
 func (f *expressionFormatter) formatLikeOperator(ctx *fql.LikeOperatorContext) {
@@ -1323,11 +1323,11 @@ func (f *expressionFormatter) formatLikeOperator(ctx *fql.LikeOperatorContext) {
 	}
 
 	if ctx.Not() != nil {
-		f.p.write(applyCase(f.opts.caseMode, ctx.Not().GetText()))
+		f.p.write(f.config.FormatKeyword(ctx.Not().GetText()))
 		f.p.space()
 	}
 
-	f.p.write(applyCase(f.opts.caseMode, ctx.Like().GetText()))
+	f.p.write(f.config.FormatKeyword(ctx.Like().GetText()))
 }
 
 func (f *expressionFormatter) formatMultiplicativeOperator(ctx *fql.MultiplicativeOperatorContext) {
@@ -1560,7 +1560,7 @@ func (f *expressionFormatter) formatRecoveryTailWith(p *printer, ctx fql.IRecove
 		case cond.ErrorKeyword() != nil || strings.EqualFold(cond.GetText(), keywordError):
 			f.writeKeywordWith(p, keywordError)
 		default:
-			p.write(applyCase(f.opts.caseMode, cond.GetText()))
+			p.write(f.config.FormatKeyword(cond.GetText()))
 		}
 	}
 
@@ -1583,7 +1583,7 @@ func (f *expressionFormatter) formatRecoveryTailWith(p *printer, ctx fql.IRecove
 	case action.FailKeyword() != nil || strings.EqualFold(action.GetText(), keywordFail):
 		f.writeKeywordWith(p, keywordFail)
 	default:
-		p.write(applyCase(f.opts.caseMode, action.GetText()))
+		p.write(f.config.FormatKeyword(action.GetText()))
 	}
 }
 
@@ -1638,7 +1638,7 @@ func (f *expressionFormatter) formatRecoveryRetryDelayClauseWith(p *printer, ctx
 			p.space()
 
 			if kind.None() != nil {
-				p.write(applyCase(f.opts.caseMode, kind.GetText()))
+				p.write(f.config.FormatKeyword(kind.GetText()))
 			} else {
 				p.write(kind.GetText())
 			}
@@ -1668,7 +1668,7 @@ func (f *expressionFormatter) formatRecoveryRetryOrClauseWith(p *printer, ctx fq
 				f.formatExpressionWith(p, expr.Expression().(*fql.ExpressionContext))
 			}
 		default:
-			p.write(applyCase(f.opts.caseMode, action.GetText()))
+			p.write(f.config.FormatKeyword(action.GetText()))
 		}
 	}
 }
@@ -1768,5 +1768,5 @@ func (f *expressionFormatter) writeKeywordWith(p *printer, val string) {
 		return
 	}
 
-	p.write(applyCase(f.opts.caseMode, val))
+	p.write(f.config.FormatKeyword(val))
 }

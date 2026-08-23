@@ -5,6 +5,7 @@ import (
 	goruntime "runtime"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/ziflex/go-options"
 
 	"github.com/MontFerret/ferret/v2/pkg/source"
 
@@ -14,20 +15,69 @@ import (
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
-type Formatter struct {
-	opts *internal.Options
+type (
+	config struct {
+		printWidth     uint64
+		tabWidth       uint64
+		singleQuote    bool
+		bracketSpacing bool
+		caseMode       CaseMode
+	}
+
+	// Option configures a Formatter during construction.
+	Option = options.Option[config]
+
+	// Formatter produces canonical FQL source formatting.
+	//
+	// A Formatter is immutable after construction and safe for concurrent use.
+	Formatter struct {
+		config config
+	}
+)
+
+func defaultConfig() config {
+	return config{
+		printWidth:     80,
+		tabWidth:       4,
+		singleQuote:    false,
+		bracketSpacing: true,
+		caseMode:       CaseModeLower,
+	}
 }
 
-func New(setters ...Option) *Formatter {
-	opts := internal.DefaultOptions()
-
-	for _, setter := range setters {
-		setter(opts)
+// New creates a formatter with optional configuration. It returns any
+// validation failures reported while applying the options.
+//
+// The returned formatter is immutable and can be shared safely across goroutines.
+func New(setters ...Option) (*Formatter, error) {
+	cfg, err := options.ApplyTo(defaultConfig(), setters...)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Formatter{
-		opts: opts,
-	}
+		config: cfg,
+	}, nil
+}
+
+func (c *config) PrintWidth() uint64 {
+	return c.printWidth
+}
+
+func (c *config) TabWidth() uint64 {
+	return c.tabWidth
+}
+
+func (c *config) SingleQuote() bool {
+	return c.singleQuote
+}
+
+func (c *config) BracketSpacing() bool {
+	return c.bracketSpacing
+}
+
+func (c *config) FormatKeyword(value string) string {
+	return applyCase(c.caseMode, value)
 }
 
 func (fmt *Formatter) Format(out io.Writer, src *source.Source) error {
@@ -73,7 +123,7 @@ func (fmt *Formatter) Format(out io.Writer, src *source.Source) error {
 		return errorHandler.Unwrap()
 	}
 
-	l := internal.NewVisitor(src, out, fmt.opts)
+	l := internal.NewVisitor(src, out, &fmt.config)
 	p.Visit(l)
 
 	if errorHandler.HasErrors() {

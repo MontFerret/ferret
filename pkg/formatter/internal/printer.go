@@ -8,7 +8,7 @@ import (
 type printer struct {
 	out             io.Writer
 	err             error
-	opts            *Options
+	tabWidth        uint64
 	indent          int
 	lineColumn      int
 	atLineStart     bool
@@ -17,10 +17,10 @@ type printer struct {
 	sawHardNewline  bool
 }
 
-func newPrinter(out io.Writer, opts *Options) *printer {
+func newPrinter(out io.Writer, tabWidth uint64) *printer {
 	return &printer{
 		out:         out,
-		opts:        opts,
+		tabWidth:    tabWidth,
 		atLineStart: true,
 	}
 }
@@ -38,11 +38,11 @@ func (p *printer) writeIndent() {
 		return
 	}
 
-	if p.indent <= 0 || p.opts.tabWidth == 0 {
+	if p.indent <= 0 || p.tabWidth == 0 {
 		return
 	}
 
-	indent := strings.Repeat(" ", int(p.opts.tabWidth)*p.indent)
+	indent := strings.Repeat(" ", int(p.tabWidth)*p.indent)
 	_, err := io.WriteString(p.out, indent)
 
 	if err != nil {

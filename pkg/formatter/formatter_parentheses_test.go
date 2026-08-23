@@ -563,7 +563,7 @@ func TestFormatterParenthesisSimplificationPreservesExecution(t *testing.T) {
 func formatParenthesesStable(t *testing.T, input string) string {
 	t.Helper()
 
-	format := New()
+	format := mustNewFormatter(t)
 	var first bytes.Buffer
 	if err := format.Format(&first, source.NewAnonymous(input)); err != nil {
 		t.Fatalf("format input: %v", err)

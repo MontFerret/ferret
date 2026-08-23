@@ -8,10 +8,18 @@ import (
 )
 
 type (
+	configuration interface {
+		PrintWidth() uint64
+		TabWidth() uint64
+		SingleQuote() bool
+		BracketSpacing() bool
+		FormatKeyword(string) string
+	}
+
 	context struct {
-		opts *Options
-		p    *printer
-		src  *source.Source
+		config configuration
+		p      *printer
+		src    *source.Source
 	}
 
 	engine struct {
@@ -29,11 +37,11 @@ type (
 	}
 )
 
-func newEngine(src *source.Source, out io.Writer, opts *Options) *engine {
+func newEngine(src *source.Source, out io.Writer, config configuration) *engine {
 	ctx := &context{
-		opts: opts,
-		p:    newPrinter(out, opts),
-		src:  src,
+		config: config,
+		p:      newPrinter(out, config.TabWidth()),
+		src:    src,
 	}
 
 	e := &engine{context: ctx}
@@ -56,7 +64,7 @@ func (e *engine) Err() error {
 }
 
 func (e *engine) writeKeyword(val string) {
-	e.p.write(applyCase(e.opts.caseMode, val))
+	e.p.write(e.config.FormatKeyword(val))
 }
 
 func (e *engine) inlineFits(inline string) bool {
@@ -65,22 +73,22 @@ func (e *engine) inlineFits(inline string) bool {
 
 func (e *engine) inlineFitsWith(p *printer, inline string) bool {
 	if p == nil {
-		return len(inline) <= int(e.opts.printWidth)
+		return len(inline) <= int(e.config.PrintWidth())
 	}
 
 	column := p.currentColumn()
 
 	if p.atLineStart {
-		column += int(p.opts.tabWidth) * p.indent
+		column += int(p.tabWidth) * p.indent
 	}
 
-	return column+len(inline) <= int(e.opts.printWidth)
+	return column+len(inline) <= int(e.config.PrintWidth())
 }
 
 func (e *engine) renderInline(fn func(p *printer)) (string, bool) {
 	var b strings.Builder
 
-	p := newPrinter(&b, e.opts)
+	p := newPrinter(&b, e.config.TabWidth())
 	p.forceSingleLine = true
 	fn(p)
 

@@ -12,10 +12,10 @@ type Visitor struct {
 	engine *engine
 }
 
-func NewVisitor(src *source.Source, out io.Writer, opts *Options) *Visitor {
+func NewVisitor(src *source.Source, out io.Writer, config configuration) *Visitor {
 	return &Visitor{
 		BaseFqlParserVisitor: new(fql.BaseFqlParserVisitor),
-		engine:               newEngine(src, out, opts),
+		engine:               newEngine(src, out, config),
 	}
 }
 
