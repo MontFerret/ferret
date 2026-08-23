@@ -14,7 +14,7 @@ func TestStatementFormatter_DispatchEventNameString(t *testing.T) {
 	eventName := mustFirst[*fql.DispatchEventNameContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.statement.formatDispatchEventName(eventName)
 	if got := buf.String(); got != "\"evt\"" {
@@ -28,7 +28,7 @@ func TestStatementFormatter_DispatchExpressionShorthand(t *testing.T) {
 	dispatchExpr := mustFirst[*fql.DispatchExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.statement.formatDispatchExpression(dispatchExpr)
 	if got := buf.String(); got != `target <- "click"` {
@@ -42,7 +42,7 @@ func TestStatementFormatter_DispatchExpressionErrorPolicyTail(t *testing.T) {
 	dispatchExpr := mustFirst[*fql.DispatchExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.statement.formatDispatchExpression(dispatchExpr)
 	if got := buf.String(); got != `dispatch "evt" in target on error return none` {
@@ -56,7 +56,7 @@ func TestStatementFormatter_WaitForExpressionErrorPolicyTail(t *testing.T) {
 	waitExpr := mustFirst[*fql.WaitForExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.statement.formatWaitForExpression(waitExpr)
 	if got := buf.String(); got != `waitfor value ready on error fail` {
@@ -70,7 +70,7 @@ func TestStatementFormatter_WaitForExpressionRecoveryTailCanonicalOrder(t *testi
 	waitExpr := mustFirst[*fql.WaitForExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.statement.formatWaitForExpression(waitExpr)
 	if got := buf.String(); got != `waitfor value ready timeout 1MS on timeout return none on error fail` {
@@ -84,7 +84,7 @@ func TestStatementFormatter_WaitForExpressionPredicateWhenClause(t *testing.T) {
 	waitExpr := mustFirst[*fql.WaitForExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.statement.formatWaitForExpression(waitExpr)
 	if got := buf.String(); got != `waitfor exists rows when LENGTH(.) >= 10 when LENGTH(.) > 0 timeout 1MS every 10MS` {
@@ -98,7 +98,7 @@ func TestStatementFormatter_WaitForExpressionRetryTailCanonicalOrder(t *testing.
 	waitExpr := mustFirst[*fql.WaitForExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.statement.formatWaitForExpression(waitExpr)
 	if got := buf.String(); got != `waitfor value ready timeout 1MS on timeout return false on error retry 3 delay 10MS or return none` {

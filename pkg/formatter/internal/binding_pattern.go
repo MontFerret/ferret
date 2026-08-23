@@ -90,7 +90,7 @@ func (f *bindingPatternFormatter) formatObjectMode(p *printer, ctx *fql.ObjectBi
 	p.write("{")
 
 	if inline {
-		if f.config.BracketSpacing() {
+		if f.config.BracketSpacing {
 			p.space()
 		}
 
@@ -102,7 +102,7 @@ func (f *bindingPatternFormatter) formatObjectMode(p *printer, ctx *fql.ObjectBi
 			}
 		}
 
-		if f.config.BracketSpacing() {
+		if f.config.BracketSpacing {
 			p.space()
 		}
 

@@ -118,7 +118,7 @@ func (f *clauseFormatter) formatSortClauseExpression(ctx *fql.SortClauseExpressi
 
 	if ctx.SortDirection() != nil {
 		f.p.space()
-		f.p.write(f.config.FormatKeyword(ctx.SortDirection().GetText()))
+		f.p.write(applyCase(f.config.CaseMode, ctx.SortDirection().GetText()))
 	}
 }
 

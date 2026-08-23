@@ -9,6 +9,12 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
+func defaultTestConfig() *Config {
+	config := DefaultConfig()
+
+	return &config
+}
+
 func parseProgram(t *testing.T, input string) *fql.ProgramContext {
 	t.Helper()
 

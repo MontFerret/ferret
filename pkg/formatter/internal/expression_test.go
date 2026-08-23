@@ -14,7 +14,7 @@ func TestExpressionFormatter_UnaryNot(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "not a" {
@@ -29,7 +29,7 @@ func TestExpressionFormatter_ImplicitMemberExpression(t *testing.T) {
 	expr := inlineRet.Expression().(*fql.ExpressionContext)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != ".name" {
@@ -44,7 +44,7 @@ func TestExpressionFormatter_ImplicitMemberExpressionOptional(t *testing.T) {
 	expr := inlineRet.Expression().(*fql.ExpressionContext)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "?.name" {
@@ -59,7 +59,7 @@ func TestExpressionFormatter_ImplicitCurrentExpression(t *testing.T) {
 	expr := inlineRet.Expression().(*fql.ExpressionContext)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "." {
@@ -89,7 +89,7 @@ func TestExpressionFormatter_RangeOperandImplicitCurrentExpression(t *testing.T)
 			expr := inlineRet.Expression().(*fql.ExpressionContext)
 
 			var buf bytes.Buffer
-			e := newEngine(source.NewAnonymous(tt.input), &buf, defaultTestConfiguration())
+			e := newEngine(source.NewAnonymous(tt.input), &buf, defaultTestConfig())
 
 			e.expression.formatExpression(expr)
 			if got := buf.String(); got != tt.want {
@@ -105,7 +105,7 @@ func TestExpressionFormatter_QueryExpressionInline(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "query `.items` in doc using css with { limit: 10 }" {
@@ -119,7 +119,7 @@ func TestExpressionFormatter_QueryExpressionWithoutUsingInline(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "query `.items` in doc with { limit: 10 }" {
@@ -133,7 +133,7 @@ func TestExpressionFormatter_QueryExpressionOptionsInline(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "query `.items` in doc using css options { timeout: 5000 }" {
@@ -147,8 +147,8 @@ func TestExpressionFormatter_QueryExpressionWithoutUsingMultiline(t *testing.T) 
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	opts := defaultTestConfiguration()
-	opts.printWidth = 20
+	opts := defaultTestConfig()
+	opts.PrintWidth = 20
 	e := newEngine(source.NewAnonymous(input), &buf, opts)
 
 	e.expression.formatExpression(expr)
@@ -163,7 +163,7 @@ func TestExpressionFormatter_QueryExpressionParamPayload(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "query @q in doc using css" {
@@ -177,7 +177,7 @@ func TestExpressionFormatter_QueryExpressionMemberPayload(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "query one email.body in model using summarize" {
@@ -210,7 +210,7 @@ func TestExpressionFormatter_QueryExpressionAtomicPayloads(t *testing.T) {
 			expr := mustFirst[*fql.ExpressionContext](t, program)
 
 			var buf bytes.Buffer
-			e := newEngine(source.NewAnonymous(tt.input), &buf, defaultTestConfiguration())
+			e := newEngine(source.NewAnonymous(tt.input), &buf, defaultTestConfig())
 
 			e.expression.formatExpression(expr)
 			if got := buf.String(); got != tt.want {
@@ -226,7 +226,7 @@ func TestExpressionFormatter_QueryExpressionComputedPayload(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "query (prefix + selector) in page using css\n    with { visible: true }\n    options { timeout: 1000 }" {
@@ -240,8 +240,8 @@ func TestExpressionFormatter_QueryExpressionComputedPayloadMultilineClauses(t *t
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	opts := defaultTestConfiguration()
-	opts.printWidth = 20
+	opts := defaultTestConfig()
+	opts.PrintWidth = 20
 	e := newEngine(source.NewAnonymous(input), &buf, opts)
 
 	e.expression.formatExpression(expr)
@@ -256,7 +256,7 @@ func TestExpressionFormatter_QueryExpressionImplicitCurrentSource(t *testing.T) 
 	query := mustFirst[*fql.QueryExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatQueryExpression(query)
 	if got := buf.String(); got != `query "a" in . using css` {
@@ -270,7 +270,7 @@ func TestExpressionFormatter_QueryExpressionCountModifier(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "query count `.items` in doc using css" {
@@ -307,7 +307,7 @@ func TestExpressionFormatter_QueryShorthand(t *testing.T) {
 			expr := mustFirst[*fql.ExpressionContext](t, program)
 
 			var buf bytes.Buffer
-			e := newEngine(source.NewAnonymous(tt.input), &buf, defaultTestConfiguration())
+			e := newEngine(source.NewAnonymous(tt.input), &buf, defaultTestConfig())
 
 			e.expression.formatExpression(expr)
 			if got := buf.String(); got != tt.want {
@@ -323,7 +323,7 @@ func TestExpressionFormatter_FunctionCallErrorPolicyTail(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "FAIL() on error return none" {
@@ -337,7 +337,7 @@ func TestExpressionFormatter_FunctionCallRetryPolicyTail(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "FAIL() on error retry 3 delay -100MS backoff EXPONENTIAL or return none" {
@@ -351,7 +351,7 @@ func TestExpressionFormatter_ParenthesizedErrorPolicyTail(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "(FAIL() + 1) on error return none" {
@@ -365,7 +365,7 @@ func TestExpressionFormatter_QueryExpressionErrorPolicyTail(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "query `.items` in doc using css options { timeout: 5000 } on error return none" {
@@ -379,8 +379,8 @@ func TestExpressionFormatter_QueryExpressionOneModifierWithMultiline(t *testing.
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	opts := defaultTestConfiguration()
-	opts.printWidth = 20
+	opts := defaultTestConfig()
+	opts.PrintWidth = 20
 	e := newEngine(source.NewAnonymous(input), &buf, opts)
 
 	e.expression.formatExpression(expr)
@@ -395,7 +395,7 @@ func TestExpressionFormatter_MatchExpressionInline(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != "match x { 1 => 10, _ => 0 }" {
@@ -409,8 +409,8 @@ func TestExpressionFormatter_MatchExpressionGuardMultiline(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	opts := defaultTestConfiguration()
-	opts.printWidth = 10
+	opts := defaultTestConfig()
+	opts.PrintWidth = 10
 	e := newEngine(source.NewAnonymous(input), &buf, opts)
 
 	e.expression.formatExpression(expr)
@@ -425,7 +425,7 @@ func TestExpressionFormatter_MatchExpressionObjectPattern(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != `match obj { { "a": 1, b: v } => v, _ => 0 }` {
@@ -439,7 +439,7 @@ func TestExpressionFormatter_MatchExpressionTriggerObjectPattern(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != `match obj { { TRIGGER: v } => v, _ => 0 }` {
@@ -453,7 +453,7 @@ func TestExpressionFormatter_MatchExpressionDispatchShorthand(t *testing.T) {
 	expr := mustFirst[*fql.ExpressionContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfiguration())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.expression.formatExpression(expr)
 	if got := buf.String(); got != `match kind { "click" => btn <- "click", _ => input <- "focus" }` {

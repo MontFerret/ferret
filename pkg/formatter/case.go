@@ -1,26 +1,15 @@
 package formatter
 
-import "strings"
+import "github.com/MontFerret/ferret/v2/pkg/formatter/internal"
 
 // CaseMode controls how the formatter emits FQL keywords.
-type CaseMode uint64
+type CaseMode = internal.CaseMode
 
 const (
 	// CaseModeIgnore emits keyword text without applying case conversion.
-	CaseModeIgnore CaseMode = iota
+	CaseModeIgnore = internal.CaseModeIgnore
 	// CaseModeUpper emits uppercase keywords.
-	CaseModeUpper
+	CaseModeUpper = internal.CaseModeUpper
 	// CaseModeLower emits lowercase keywords.
-	CaseModeLower
+	CaseModeLower = internal.CaseModeLower
 )
-
-func applyCase(mode CaseMode, value string) string {
-	switch mode {
-	case CaseModeUpper:
-		return strings.ToUpper(value)
-	case CaseModeLower:
-		return strings.ToLower(value)
-	default:
-		return value
-	}
-}

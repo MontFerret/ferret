@@ -409,7 +409,7 @@ func (t *triviaEmitter) trimIndentPrefix(p *printer, line string) string {
 		return strings.TrimLeft(line, " \t")
 	}
 
-	max := int(p.tabWidth) * p.indent
+	max := int(p.config.TabWidth) * p.indent
 	if max <= 0 {
 		return line
 	}

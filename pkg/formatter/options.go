@@ -1,13 +1,17 @@
 package formatter
 
-import "github.com/ziflex/go-options"
+import (
+	"github.com/ziflex/go-options"
+
+	"github.com/MontFerret/ferret/v2/pkg/formatter/internal"
+)
 
 // WithPrintWidth configures the maximum preferred line width. The width must
 // be greater than zero.
 func WithPrintWidth(size uint64) Option {
 	return options.New(
-		func(config *config, size uint64) {
-			config.printWidth = size
+		func(config *internal.Config, size uint64) {
+			config.PrintWidth = size
 		},
 	).
 		Named("print width").
@@ -22,8 +26,8 @@ func WithPrintWidth(size uint64) Option {
 // width must be greater than zero.
 func WithTabWidth(size uint64) Option {
 	return options.New(
-		func(config *config, size uint64) {
-			config.tabWidth = size
+		func(config *internal.Config, size uint64) {
+			config.TabWidth = size
 		},
 	).
 		Named("tab width").
@@ -36,8 +40,8 @@ func WithTabWidth(size uint64) Option {
 
 // WithSingleQuote configures whether string literals use single quotes.
 func WithSingleQuote(val bool) Option {
-	return func(config *config) error {
-		config.singleQuote = val
+	return func(config *internal.Config) error {
+		config.SingleQuote = val
 
 		return nil
 	}
@@ -45,8 +49,8 @@ func WithSingleQuote(val bool) Option {
 
 // WithBracketSpacing configures spacing inside object and destructuring braces.
 func WithBracketSpacing(val bool) Option {
-	return func(config *config) error {
-		config.bracketSpacing = val
+	return func(config *internal.Config) error {
+		config.BracketSpacing = val
 
 		return nil
 	}
@@ -56,8 +60,8 @@ func WithBracketSpacing(val bool) Option {
 // supported CaseMode values.
 func WithCaseMode(mode CaseMode) Option {
 	return options.New(
-		func(config *config, mode CaseMode) {
-			config.caseMode = mode
+		func(config *internal.Config, mode CaseMode) {
+			config.CaseMode = mode
 		},
 	).
 		Named("case mode").

@@ -7,7 +7,7 @@ import (
 
 func TestPrinter_WriteRawTracksByteWidth(t *testing.T) {
 	var buf bytes.Buffer
-	p := newPrinter(&buf, defaultTestConfiguration().TabWidth())
+	p := newPrinter(&buf, defaultTestConfig())
 
 	p.writeRaw("πa")
 
@@ -27,7 +27,7 @@ func TestPrinter_WriteRawTracksByteWidth(t *testing.T) {
 
 func TestPrinter_WriteRawPreservesNewlineState(t *testing.T) {
 	var buf bytes.Buffer
-	p := newPrinter(&buf, defaultTestConfiguration().TabWidth())
+	p := newPrinter(&buf, defaultTestConfig())
 
 	p.writeRaw("π\nβ")
 
@@ -50,7 +50,7 @@ func TestPrinter_WriteRawPreservesNewlineState(t *testing.T) {
 
 func TestPrinter_WriteRawForceSingleLineCollapsesNewline(t *testing.T) {
 	var buf bytes.Buffer
-	p := newPrinter(&buf, defaultTestConfiguration().TabWidth())
+	p := newPrinter(&buf, defaultTestConfig())
 	p.forceSingleLine = true
 
 	p.writeRaw("π\nβ")

@@ -9,6 +9,7 @@ import (
 
 	"github.com/ziflex/go-options"
 
+	"github.com/MontFerret/ferret/v2/pkg/formatter/internal"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
@@ -26,25 +27,25 @@ func mustNewFormatter(t testing.TB, setters ...Option) *Formatter {
 func TestFormatterOptions(t *testing.T) {
 	t.Run("defaults", func(t *testing.T) {
 		formatterInstance := mustNewFormatter(t)
-		want := defaultConfig()
+		want := internal.DefaultConfig()
 
 		if formatterInstance.config != want {
 			t.Fatalf("config = %+v, want %+v", formatterInstance.config, want)
 		}
-		if formatterInstance.config.printWidth != 80 {
-			t.Fatalf("print width = %d, want 80", formatterInstance.config.printWidth)
+		if formatterInstance.config.PrintWidth != 80 {
+			t.Fatalf("print width = %d, want 80", formatterInstance.config.PrintWidth)
 		}
-		if formatterInstance.config.tabWidth != 4 {
-			t.Fatalf("tab width = %d, want 4", formatterInstance.config.tabWidth)
+		if formatterInstance.config.TabWidth != 4 {
+			t.Fatalf("tab width = %d, want 4", formatterInstance.config.TabWidth)
 		}
-		if formatterInstance.config.singleQuote {
+		if formatterInstance.config.SingleQuote {
 			t.Fatal("single quote = true, want false")
 		}
-		if !formatterInstance.config.bracketSpacing {
+		if !formatterInstance.config.BracketSpacing {
 			t.Fatal("bracket spacing = false, want true")
 		}
-		if formatterInstance.config.caseMode != CaseModeLower {
-			t.Fatalf("case mode = %d, want %d", formatterInstance.config.caseMode, CaseModeLower)
+		if formatterInstance.config.CaseMode != CaseModeLower {
+			t.Fatalf("case mode = %d, want %d", formatterInstance.config.CaseMode, CaseModeLower)
 		}
 	})
 
@@ -55,11 +56,11 @@ func TestFormatterOptions(t *testing.T) {
 			WithTabWidth(2),
 		)
 
-		if formatterInstance.config.printWidth != 120 {
-			t.Fatalf("print width = %d, want 120", formatterInstance.config.printWidth)
+		if formatterInstance.config.PrintWidth != 120 {
+			t.Fatalf("print width = %d, want 120", formatterInstance.config.PrintWidth)
 		}
-		if formatterInstance.config.tabWidth != 2 {
-			t.Fatalf("tab width = %d, want 2", formatterInstance.config.tabWidth)
+		if formatterInstance.config.TabWidth != 2 {
+			t.Fatalf("tab width = %d, want 2", formatterInstance.config.TabWidth)
 		}
 
 		got := formatForOptionTest(t, formatterInstance, "RETURN FOR value IN [1] { RETURN value }")
@@ -127,8 +128,8 @@ func TestFormatterOptions(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				formatterInstance := mustNewFormatter(t, WithCaseMode(tt.mode))
-				if formatterInstance.config.caseMode != tt.mode {
-					t.Fatalf("case mode = %d, want %d", formatterInstance.config.caseMode, tt.mode)
+				if formatterInstance.config.CaseMode != tt.mode {
+					t.Fatalf("case mode = %d, want %d", formatterInstance.config.CaseMode, tt.mode)
 				}
 
 				got := formatForOptionTest(t, formatterInstance, "ReTuRn TrUe")
@@ -147,8 +148,8 @@ func TestFormatterOptions(t *testing.T) {
 			WithPrintWidth(60),
 		)
 
-		if formatterInstance.config.printWidth != 60 {
-			t.Fatalf("print width = %d, want 60", formatterInstance.config.printWidth)
+		if formatterInstance.config.PrintWidth != 60 {
+			t.Fatalf("print width = %d, want 60", formatterInstance.config.PrintWidth)
 		}
 	})
 }
@@ -228,7 +229,7 @@ func TestNewReturnsOptionError(t *testing.T) {
 		Value:  "invalid",
 		Reason: reason,
 	}
-	invalid := func(_ *config) error {
+	invalid := func(_ *internal.Config) error {
 		return want
 	}
 
