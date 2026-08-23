@@ -4,6 +4,8 @@ import (
 	"io"
 	"io/fs"
 	"os"
+
+	"github.com/ziflex/go-options"
 )
 
 type (
@@ -46,23 +48,19 @@ type (
 // New creates a filesystem from the provided options. The caller owns the
 // returned filesystem and must close it when it is no longer needed.
 func New(setters ...Option) (FileSystem, error) {
-	opts := &options{
-		Root:     "",
-		ReadOnly: false,
-	}
-
-	for _, opt := range setters {
-		opt(opts)
-	}
-
-	if opts.Root == "" {
-		return disabledFileSystem, nil
-	}
-
-	r, err := os.OpenRoot(opts.Root)
+	cfg, err := options.ApplyTo(defaultConfig(), setters...)
 	if err != nil {
 		return nil, err
 	}
 
-	return &rootFS{root: r, readOnly: opts.ReadOnly}, nil
+	if cfg.Root == "" {
+		return disabledFileSystem, nil
+	}
+
+	r, err := os.OpenRoot(cfg.Root)
+	if err != nil {
+		return nil, err
+	}
+
+	return &rootFS{root: r, readOnly: cfg.ReadOnly}, nil
 }
