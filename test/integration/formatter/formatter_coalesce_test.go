@@ -18,7 +18,7 @@ return name`),
 }
 
 func TestFormatterCoalesceChainContinuation(t *testing.T) {
-	RunSpecsWith(t, formatter.New(formatter.WithPrintWidth(50)), []Spec{
+	RunSpecsWith(t, mustNewFormatter(t, formatter.WithPrintWidth(50)), []Spec{
 		S(`let name=user?.profile?.displayName??user?.nickname??user?.name??"Anonymous" return name`, `let name = user?.profile?.displayName
     ?? user?.nickname
     ?? user?.name
@@ -31,7 +31,7 @@ return name`),
 }
 
 func TestFormatterCoalesceRoundTrip(t *testing.T) {
-	format := formatter.New(formatter.WithPrintWidth(50))
+	format := mustNewFormatter(t, formatter.WithPrintWidth(50))
 	inputs := []string{
 		`let name=user?.profile?.displayName??user?.nickname??user?.name??"Anonymous" return name`,
 		`return primaryValue??(secondaryValue??tertiaryValue)`,

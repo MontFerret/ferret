@@ -24,7 +24,7 @@ return alias`),
 }
 
 func TestFormatterMultilineDestructuringBindings(t *testing.T) {
-	RunSpecsWith(t, formatter.New(formatter.WithPrintWidth(36)), []Spec{
+	RunSpecsWith(t, mustNewFormatter(t, formatter.WithPrintWidth(36)), []Spec{
 		S(`let {firstName, lastName, metadata: {createdAt, updatedAt}} = user
 return firstName`, `let {
     firstName,
@@ -82,7 +82,7 @@ return 1`),
 }
 
 func TestFormatterDestructuringBracketSpacing(t *testing.T) {
-	RunSpecsWith(t, formatter.New(formatter.WithBracketSpacing(false)), []Spec{
+	RunSpecsWith(t, mustNewFormatter(t, formatter.WithBracketSpacing(false)), []Spec{
 		S(`let { name, nested: { value } } = input return [name, value]`, `let {name, nested: {value}} = input
 return [name, value]`),
 	})

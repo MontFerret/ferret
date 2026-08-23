@@ -14,7 +14,7 @@ func TestClauseFormatter_TimeoutValueFormatsParam(t *testing.T) {
 	timeout := mustFirst[*fql.TimeoutClauseContext](t, program)
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.clause.formatTimeoutClause(timeout)
 	if got := buf.String(); got != "timeout @t" {
@@ -32,7 +32,7 @@ func TestClauseFormatter_EventFilterClauseUsesWhen(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.clause.formatEventFilterClause(filters[1].(*fql.EventFilterClauseContext))
 	if got := buf.String(); got != "when .visible" {
@@ -50,7 +50,7 @@ func TestClauseFormatter_WaitForPredicateWhenClause(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	e := newEngine(source.NewAnonymous(input), &buf, DefaultOptions())
+	e := newEngine(source.NewAnonymous(input), &buf, defaultTestConfig())
 
 	e.clause.formatWaitForPredicateWhenClause(clauses[1].(*fql.WaitForPredicateWhenClauseContext))
 	if got := buf.String(); got != "when .visible" {

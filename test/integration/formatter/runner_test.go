@@ -8,7 +8,7 @@ import (
 )
 
 func RunSpecs(t *testing.T, specs []format.Spec) {
-	RunSpecsWith(t, formatter.New(), specs)
+	RunSpecsWith(t, mustNewFormatter(t), specs)
 }
 
 func RunSpecsWith(t *testing.T, f *formatter.Formatter, specs []format.Spec) {
@@ -18,4 +18,15 @@ func RunSpecsWith(t *testing.T, f *formatter.Formatter, specs []format.Spec) {
 	}
 
 	runner.Run(t, specs)
+}
+
+func mustNewFormatter(t testing.TB, setters ...formatter.Option) *formatter.Formatter {
+	t.Helper()
+
+	formatterInstance, err := formatter.New(setters...)
+	if err != nil {
+		t.Fatalf("formatter.New() error = %v", err)
+	}
+
+	return formatterInstance
 }

@@ -5,6 +5,7 @@ import (
 	goruntime "runtime"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/ziflex/go-options"
 
 	"github.com/MontFerret/ferret/v2/pkg/source"
 
@@ -14,20 +15,31 @@ import (
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
-type Formatter struct {
-	opts *internal.Options
-}
+type (
+	// Option configures a Formatter during construction.
+	Option = options.Option[internal.Config]
 
-func New(setters ...Option) *Formatter {
-	opts := internal.DefaultOptions()
+	// Formatter produces canonical FQL source formatting.
+	//
+	// A Formatter is immutable after construction and safe for concurrent use.
+	Formatter struct {
+		config internal.Config
+	}
+)
 
-	for _, setter := range setters {
-		setter(opts)
+// New creates a formatter with optional configuration. It returns any
+// validation failures reported while applying the options.
+//
+// The returned formatter is immutable and can be shared safely across goroutines.
+func New(setters ...Option) (*Formatter, error) {
+	cfg, err := options.ApplyTo(internal.DefaultConfig(), setters...)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Formatter{
-		opts: opts,
-	}
+		config: cfg,
+	}, nil
 }
 
 func (fmt *Formatter) Format(out io.Writer, src *source.Source) error {
@@ -73,7 +85,7 @@ func (fmt *Formatter) Format(out io.Writer, src *source.Source) error {
 		return errorHandler.Unwrap()
 	}
 
-	l := internal.NewVisitor(src, out, fmt.opts)
+	l := internal.NewVisitor(src, out, &fmt.config)
 	p.Visit(l)
 
 	if errorHandler.HasErrors() {

@@ -507,7 +507,7 @@ func (l *listFormatter) formatObjectLiteralWith(p *printer, ctx *fql.ObjectLiter
 	p.write("{")
 
 	if inline {
-		if l.opts.bracketSpacing {
+		if l.config.BracketSpacing {
 			p.space()
 		}
 
@@ -520,7 +520,7 @@ func (l *listFormatter) formatObjectLiteralWith(p *printer, ctx *fql.ObjectLiter
 			}
 		}
 
-		if l.opts.bracketSpacing {
+		if l.config.BracketSpacing {
 			p.space()
 		}
 

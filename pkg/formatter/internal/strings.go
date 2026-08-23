@@ -2,17 +2,6 @@ package internal
 
 import "strings"
 
-func applyCase(mode CaseMode, val string) string {
-	switch mode {
-	case CaseModeUpper:
-		return strings.ToUpper(val)
-	case CaseModeLower:
-		return strings.ToLower(val)
-	default:
-		return val
-	}
-}
-
 func unquoteStringLiteral(raw string) string {
 	if len(raw) < 2 {
 		return raw

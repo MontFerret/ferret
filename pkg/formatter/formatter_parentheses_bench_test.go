@@ -20,7 +20,11 @@ RETURN ((1 + 2)) * (3 + 4)
 `
 
 func BenchmarkFormatterParentheses(b *testing.B) {
-	format := formatter.New()
+	format, err := formatter.New()
+	if err != nil {
+		b.Fatalf("formatter.New() error = %v", err)
+	}
+
 	src := source.New("parentheses_benchmark", formatterParenthesesQuery)
 	var output bytes.Buffer
 

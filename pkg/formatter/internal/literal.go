@@ -49,7 +49,7 @@ func (f *literalFormatter) formatBooleanLiteral(ctx *fql.BooleanLiteralContext) 
 		return
 	}
 
-	f.p.write(applyCase(f.opts.caseMode, ctx.BooleanLiteral().GetText()))
+	f.p.write(applyCase(f.config.CaseMode, ctx.BooleanLiteral().GetText()))
 }
 
 func (f *literalFormatter) formatNoneLiteral(ctx *fql.NoneLiteralContext) {
@@ -58,13 +58,13 @@ func (f *literalFormatter) formatNoneLiteral(ctx *fql.NoneLiteralContext) {
 	}
 
 	if ctx.Null() != nil {
-		f.p.write(applyCase(f.opts.caseMode, ctx.Null().GetText()))
+		f.p.write(applyCase(f.config.CaseMode, ctx.Null().GetText()))
 
 		return
 	}
 
 	if ctx.None() != nil {
-		f.p.write(applyCase(f.opts.caseMode, ctx.None().GetText()))
+		f.p.write(applyCase(f.config.CaseMode, ctx.None().GetText()))
 	}
 }
 
@@ -84,7 +84,7 @@ func (f *literalFormatter) formatStringLiteralNodeWith(p *printer, ctx fql.IStri
 	}
 
 	if tok := ctx.StringLiteral(); tok != nil {
-		p.write(formatStringLiteral(tok.GetText(), f.opts.singleQuote))
+		p.write(formatStringLiteral(tok.GetText(), f.config.SingleQuote))
 	}
 }
 
