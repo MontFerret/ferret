@@ -2,75 +2,80 @@ package logging
 
 import (
 	"io"
+
+	"github.com/ziflex/go-options"
 )
 
 type (
-	loggerOptions struct {
+	config struct {
 		writer   io.Writer
 		fields   map[string]any
 		level    LogLevel
 		hasLevel bool
 	}
 
-	Option func(*loggerOptions)
+	Option = options.Option[config]
 )
 
-func newOptions(opts ...Option) *loggerOptions {
-	o := &loggerOptions{
+func defaultConfig() config {
+	return config{
 		writer: io.Discard,
 		level:  ErrorLevel,
 	}
+}
 
-	for _, opt := range opts {
-		opt(o)
-	}
-
-	return o
+func applyOptions(setters ...Option) (config, error) {
+	return options.ApplyTo(defaultConfig(), setters...)
 }
 
 func WithWriter(writer io.Writer) Option {
-	return func(s *loggerOptions) {
+	return func(config *config) error {
 		if writer == nil {
-			return
+			return nil
 		}
 
-		s.writer = writer
+		config.writer = writer
+
+		return nil
 	}
 }
 
 func WithField(key string, value any) Option {
-	return func(s *loggerOptions) {
-		if s.fields == nil {
-			s.fields = make(map[string]any)
+	return func(config *config) error {
+		if config.fields == nil {
+			config.fields = make(map[string]any)
 		}
 
-		s.fields[key] = value
+		config.fields[key] = value
+
+		return nil
 	}
 }
 
 func WithFields(fields map[string]any) Option {
-	return func(s *loggerOptions) {
+	return func(config *config) error {
 		if len(fields) == 0 {
-			return
+			return nil
 		}
 
-		if s.fields == nil {
-			s.fields = make(map[string]any, len(fields))
+		if config.fields == nil {
+			config.fields = make(map[string]any, len(fields))
 		}
 
 		for k, v := range fields {
-			s.fields[k] = v
+			config.fields[k] = v
 		}
+
+		return nil
 	}
 }
 
 func WithLevel(level LogLevel) Option {
-	return func(s *loggerOptions) {
-		if level < TraceLevel || level > Disabled {
-			return
-		}
-
-		s.level = level
-		s.hasLevel = true
-	}
+	return options.New[config, LogLevel](func(config *config, level LogLevel) {
+		config.level = level
+		config.hasLevel = true
+	}).
+		Value(level).
+		Validators(options.OneOf(TraceLevel, DebugLevel, InfoLevel, WarnLevel, ErrorLevel, FatalLevel, PanicLevel, Disabled)).
+		Build()
 }
