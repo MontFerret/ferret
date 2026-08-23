@@ -34,6 +34,7 @@ github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAh
 github.com/vmihailenco/tagparser/v2 v2.0.0/go.mod h1:Wri+At7QHww0WTrCBeu4J6bNtoV6mEfg5OIWRZA9qds=
 github.com/ziflex/go-options v1.2.0 h1:b6HgZHF8yaKnq1YIirgoSbbMAA96JSyesOOS6oXifa8=
 github.com/ziflex/go-options v1.2.0/go.mod h1:91KFoEzT1mtEHOoUImFOnoOEAwSn+LvbSECTVoZTlas=
+github.com/ziflex/go-options v1.3.0/go.mod h1:91KFoEzT1mtEHOoUImFOnoOEAwSn+LvbSECTVoZTlas=
 golang.org/x/mod v0.38.0 h1:MECBjubtXD7yj4HrhIUcywNaGeNVUdfVnxmPajOk4yk=
 golang.org/x/mod v0.38.0/go.mod h1:V6Xz0pq8TQ3dGqVQ1FVHuelZpAL0uNhSkk9ogYP3c40=
 golang.org/x/sync v0.22.0 h1:SZjpbeLmrCk4xhRSZFNZW5gFUeCeFgjekvI/+gfScek=
