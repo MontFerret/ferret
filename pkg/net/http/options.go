@@ -35,7 +35,7 @@ func WithTimeout(timeout time.Duration) PolicyOption {
 		p.timeout = timeout
 	}).
 		Named(fieldTimeout).
-		Validators(nonNegative[time.Duration]()).
+		Validators(options.NonNegative[time.Duration]()).
 		Value(timeout).
 		Build()
 }
@@ -61,7 +61,7 @@ func WithMaxRequestSize(size int64) PolicyOption {
 		p.maxRequestSize = size
 	}).
 		Named(fieldMaxRequestSize).
-		Validators(nonNegative[int64]()).
+		Validators(options.NonNegative[int64]()).
 		Value(size).
 		Build()
 }
@@ -86,7 +86,7 @@ func WithMaxResponseSize(size int64) PolicyOption {
 		p.maxResponseSize = size
 	}).
 		Named(fieldMaxResponseSize).
-		Validators(nonNegative[int64]()).
+		Validators(options.NonNegative[int64]()).
 		Value(size).
 		Build()
 }
@@ -112,7 +112,7 @@ func WithMaxResponseHeaderSize(size int64) PolicyOption {
 		p.maxResponseHeaderSize = size
 	}).
 		Named(fieldMaxResponseHeaderSize).
-		Validators(nonNegative[int64]()).
+		Validators(options.NonNegative[int64]()).
 		Value(size).
 		Build()
 }
@@ -138,7 +138,7 @@ func WithMaxRedirects(count int) PolicyOption {
 		p.maxRedirects = count
 	}).
 		Named(fieldMaxRedirects).
-		Validators(nonNegative[int]()).
+		Validators(options.NonNegative[int]()).
 		Value(count).
 		Build()
 }
@@ -327,16 +327,6 @@ func configuredHostsOption(
 		}
 
 		setter(p, normalizeHosts(hosts))
-
-		return nil
-	}
-}
-
-func nonNegative[V ~int | ~int64]() options.Validator[V] {
-	return func(value V) error {
-		if value < 0 {
-			return errors.New("must not be negative")
-		}
 
 		return nil
 	}
