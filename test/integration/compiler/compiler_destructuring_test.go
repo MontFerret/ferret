@@ -108,7 +108,7 @@ RETURN kept
 func TestDestructuringDuplicateBindingDiagnostic(t *testing.T) {
 	src := `LET { name, nested: [name] } = @payload
 RETURN name`
-	_, err := compiler.New().Compile(source.New("duplicate_destructure.fql", src))
+	_, err := mustNewCompiler(t).Compile(source.New("duplicate_destructure.fql", src))
 	if err == nil {
 		t.Fatal("expected duplicate binding error")
 	}
@@ -140,7 +140,7 @@ RETURN name`
 }
 
 func TestForDestructuringDuplicateBindingDiagnostic(t *testing.T) {
-	_, err := compiler.New().Compile(source.NewAnonymous(`
+	_, err := mustNewCompiler(t).Compile(source.NewAnonymous(`
 FOR { value, nested: [value] } IN @values
     RETURN value
 `))
@@ -155,7 +155,7 @@ FOR { value, nested: [value] } IN @values
 }
 
 func TestDestructuredLeavesParticipateInForwardDiagnostics(t *testing.T) {
-	_, err := compiler.New().Compile(source.NewAnonymous(`
+	_, err := mustNewCompiler(t).Compile(source.NewAnonymous(`
 LET before = value
 LET { value } = @payload
 RETURN before
@@ -171,7 +171,7 @@ RETURN before
 }
 
 func TestDestructuredBindingsConflictWithFunctionNames(t *testing.T) {
-	_, err := compiler.New().Compile(source.NewAnonymous(`
+	_, err := mustNewCompiler(t).Compile(source.NewAnonymous(`
 FUNC value() => 1
 LET { value } = { value: 2 }
 RETURN value
@@ -187,7 +187,7 @@ RETURN value
 }
 
 func TestDestructuredBindingsAppearInDebugMetadata(t *testing.T) {
-	prog, err := compiler.New(compiler.WithDebugInfo()).Compile(source.NewAnonymous(`
+	prog, err := mustNewCompiler(t, compiler.WithDebugInfo()).Compile(source.NewAnonymous(`
 LET { first, second: alias } = { first: 1, second: 2 }
 RETURN [first, alias]
 `))
@@ -212,7 +212,7 @@ RETURN [first, alias]
 }
 
 func TestForDestructuredBindingsAppearInDebugMetadata(t *testing.T) {
-	prog, err := compiler.New(compiler.WithDebugInfo()).Compile(source.NewAnonymous(`
+	prog, err := mustNewCompiler(t, compiler.WithDebugInfo()).Compile(source.NewAnonymous(`
 RETURN (
     FOR { first, second: alias } IN [{ first: 1, second: 2 }]
         RETURN [first, alias]
@@ -239,7 +239,7 @@ RETURN (
 }
 
 func TestMutableDestructuredBindingsRetainDebugStorageMetadata(t *testing.T) {
-	prog, err := compiler.New(compiler.WithDebugInfo()).Compile(source.NewAnonymous(`
+	prog, err := mustNewCompiler(t, compiler.WithDebugInfo()).Compile(source.NewAnonymous(`
 VAR { captured, local } = { captured: 1, local: 2 }
 FUNC increment() {
     captured += 1
@@ -275,7 +275,7 @@ RETURN [increment(), local]
 }
 
 func TestForDestructuredBindingsRemainLexicallyScoped(t *testing.T) {
-	_, err := compiler.New().Compile(source.NewAnonymous(`
+	_, err := mustNewCompiler(t).Compile(source.NewAnonymous(`
 LET values = (
     FOR { value } IN [{ value: 1 }]
         RETURN value

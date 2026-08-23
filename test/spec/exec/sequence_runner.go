@@ -14,7 +14,7 @@ func RunSequencesWith(t *testing.T, level compiler.OptimizationLevel, sequences 
 
 	runner := spec.SequenceRunner{
 		Name:     fmt.Sprintf("VM/O%d", level),
-		Compiler: compiler.New(compiler.WithOptimizationLevel(level)),
+		Compiler: mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 		Env:      opts,
 	}
 

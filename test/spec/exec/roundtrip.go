@@ -83,7 +83,7 @@ func RunRoundTrips(t *testing.T, cases []RoundTrip, opts ...vm.EnvironmentOption
 		RunRoundTripsWith(
 			t,
 			fmt.Sprintf("VM/O%d", level),
-			compiler.New(compiler.WithOptimizationLevel(level)),
+			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			cases,
 			opts...,
 		)

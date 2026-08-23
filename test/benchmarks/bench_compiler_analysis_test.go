@@ -27,7 +27,11 @@ RETURN outer(1)
 `
 
 func BenchmarkCompilerAnalyzeSemanticSnapshot(b *testing.B) {
-	compilerInstance := compiler.New(compiler.WithOptimizationLevel(compiler.O1), compiler.WithDebugInfo())
+	compilerInstance := mustNewCompiler(
+		b,
+		compiler.WithOptimizationLevel(compiler.O1),
+		compiler.WithDebugInfo(),
+	)
 	src := source.New("analysis_benchmark", compilerAnalysisQuery)
 
 	b.ReportAllocs()

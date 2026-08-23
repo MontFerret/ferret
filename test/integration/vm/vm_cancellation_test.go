@@ -257,7 +257,7 @@ func TestCancellationBypassesProtectedRecovery(t *testing.T) {
 func compileCancellationVM(t *testing.T, level compiler.OptimizationLevel, query string) *vm.VM {
 	t.Helper()
 
-	program, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.NewAnonymous(query))
+	program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatalf("compile query: %v", err)
 	}

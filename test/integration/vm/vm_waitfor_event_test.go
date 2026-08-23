@@ -173,7 +173,7 @@ func TestWaitforEventSourceExpressionEvaluatesOnce(t *testing.T) {
 		RunSpecsWith(
 			t,
 			fmt.Sprintf("VM/O%d", level),
-			compiler.New(compiler.WithOptimizationLevel(level)),
+			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				S(`LET event = WAITFOR EVENT "test" IN SOURCE() WHEN .type == "match"
 RETURN event.type`, "match", "WAITFOR EVENT should evaluate its source once while inspecting multiple messages"),

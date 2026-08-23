@@ -1,6 +1,8 @@
 package compiler
 
 import (
+	"github.com/ziflex/go-options"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
@@ -15,24 +17,22 @@ const Version = "2.0.0"
 // A Compiler is immutable after construction and safe for concurrent use.
 // Multiple goroutines can call Compile on the same Compiler instance.
 type Compiler struct {
-	opts *options
+	config config
 }
 
-// New creates a compiler with optional configuration.
+// New creates a compiler with optional configuration. It returns any validation
+// failures reported while applying the options.
 //
 // The returned compiler is immutable and can be shared safely across goroutines.
-func New(setters ...Option) *Compiler {
-	c := &Compiler{
-		opts: &options{
-			Level: optimization.LevelBasic,
-		},
+func New(setters ...Option) (*Compiler, error) {
+	cfg, err := options.ApplyTo(defaultConfig(), setters...)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, setter := range setters {
-		setter(c.opts)
-	}
-
-	return c
+	return &Compiler{
+		config: cfg,
+	}, nil
 }
 
 // Compile parses and compiles a source into a bytecode program.
@@ -54,12 +54,12 @@ func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err e
 		}
 	}()
 
-	level := c.opts.Level
-	if c.opts.DebugInfo {
+	level := c.config.Level
+	if c.config.DebugInfo {
 		level = optimization.LevelNone
 	}
 
-	visitor := runFrontend(src, errorHandler, level, c.opts.DebugInfo, nil, nil)
+	visitor := runFrontend(src, errorHandler, level, c.config.DebugInfo, nil, nil)
 
 	if errorHandler.HasErrors() {
 		return nil, errorHandler.Unwrap()

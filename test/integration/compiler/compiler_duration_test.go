@@ -3,7 +3,6 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/test/spec"
@@ -26,7 +25,7 @@ func TestDurationLiteralCompilationErrors(t *testing.T) {
 func TestDurationLiteralOverflowDiagnosticSpan(t *testing.T) {
 	query := "RETURN 1e999s"
 
-	_, err := compiler.New().Compile(source.NewAnonymous(query))
+	_, err := mustNewCompiler(t).Compile(source.NewAnonymous(query))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}

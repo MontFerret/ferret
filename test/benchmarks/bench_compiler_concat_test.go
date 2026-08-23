@@ -20,7 +20,7 @@ func BenchmarkCompilerCompileStringAppend_O1(b *testing.B) {
 func benchmarkCompileQuery(b *testing.B, query string, level compiler.OptimizationLevel) {
 	b.Helper()
 
-	compilerInstance := compiler.New(compiler.WithOptimizationLevel(level))
+	compilerInstance := mustNewCompiler(b, compiler.WithOptimizationLevel(level))
 	src := source.New("concat_benchmark", query)
 
 	b.ReportAllocs()

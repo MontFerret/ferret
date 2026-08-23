@@ -87,7 +87,7 @@ func RunBenchmark(b *testing.B, expression string, opts ...vm.EnvironmentOption)
 }
 
 func RunBenchmarkWithOptimization(b *testing.B, expression string, level compiler.OptimizationLevel, opts ...vm.EnvironmentOption) {
-	RunBenchmarkWith(b, compiler.New(compiler.WithOptimizationLevel(level)), expression, opts...)
+	RunBenchmarkWith(b, mustNewCompiler(compiler.WithOptimizationLevel(level)), expression, opts...)
 }
 
 func RunResultBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opts ...vm.EnvironmentOption) {
@@ -122,7 +122,7 @@ func RunResultBenchmark(b *testing.B, expression string, opts ...vm.EnvironmentO
 }
 
 func RunResultBenchmarkWithOptimization(b *testing.B, expression string, level compiler.OptimizationLevel, opts ...vm.EnvironmentOption) {
-	RunResultBenchmarkWith(b, compiler.New(compiler.WithOptimizationLevel(level)), expression, opts...)
+	RunResultBenchmarkWith(b, mustNewCompiler(compiler.WithOptimizationLevel(level)), expression, opts...)
 }
 
 func RunOutputBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opts ...vm.EnvironmentOption) {
@@ -157,5 +157,5 @@ func RunOutputBenchmark(b *testing.B, expression string, opts ...vm.EnvironmentO
 }
 
 func RunOutputBenchmarkWithOptimization(b *testing.B, expression string, level compiler.OptimizationLevel, opts ...vm.EnvironmentOption) {
-	RunOutputBenchmarkWith(b, compiler.New(compiler.WithOptimizationLevel(level)), expression, opts...)
+	RunOutputBenchmarkWith(b, mustNewCompiler(compiler.WithOptimizationLevel(level)), expression, opts...)
 }

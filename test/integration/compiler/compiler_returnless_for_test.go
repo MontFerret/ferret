@@ -60,7 +60,7 @@ RETURN FOR outer IN [1] {
 	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
 		for _, test := range tests {
 			t.Run(fmt.Sprintf("O%d/%s", level, test.name), func(t *testing.T) {
-				_, err := compiler.New(compiler.WithOptimizationLevel(level)).Compile(source.NewAnonymous(test.query))
+				_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.NewAnonymous(test.query))
 				if err == nil {
 					t.Fatal("expected returnless FOR diagnostic")
 				}

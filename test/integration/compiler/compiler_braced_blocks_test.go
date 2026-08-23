@@ -28,7 +28,7 @@ func TestBracedBlockSyntax(t *testing.T) {
 
 	for name, query := range valid {
 		t.Run(name, func(t *testing.T) {
-			if _, err := compiler.New().Compile(source.NewAnonymous(query)); err != nil {
+			if _, err := mustNewCompiler(t).Compile(source.NewAnonymous(query)); err != nil {
 				t.Fatalf("compile valid syntax: %v", err)
 			}
 		})
@@ -45,7 +45,7 @@ func TestRemovedBlockSyntaxIsRejected(t *testing.T) {
 
 	for name, query := range invalid {
 		t.Run(name, func(t *testing.T) {
-			if _, err := compiler.New().Compile(source.NewAnonymous(query)); err == nil {
+			if _, err := mustNewCompiler(t).Compile(source.NewAnonymous(query)); err == nil {
 				t.Fatal("expected syntax error")
 			}
 		})

@@ -3,7 +3,6 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/test/spec"
@@ -169,7 +168,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 func TestSyntaxErrorsQueryExpressionWithAfterOptionsSpan(t *testing.T) {
 	query := "RETURN QUERY `.x` IN @doc USING css OPTIONS { timeout: 5000 } WITH { params: [1] }"
 
-	_, err := compiler.New().Compile(source.NewAnonymous(query))
+	_, err := mustNewCompiler(t).Compile(source.NewAnonymous(query))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}

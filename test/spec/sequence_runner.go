@@ -20,7 +20,7 @@ type SequenceRunner struct {
 func NewSequenceRunner(suite string, opts ...compiler.Option) *SequenceRunner {
 	return &SequenceRunner{
 		Name:     suite,
-		Compiler: compiler.New(opts...),
+		Compiler: mustNewCompiler(opts...),
 	}
 }
 

@@ -19,7 +19,7 @@ FUNC add(p) => outer + p
 LET value = add(@input)
 RETURN [LENGTH([value]), html::PARSE("<p/>")]`
 
-	analysis, err := New().Analyze(source.New("analysis.fql", query))
+	analysis, err := mustNewCompiler(t).Analyze(source.New("analysis.fql", query))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +116,7 @@ FOR outer IN items {
   LET after = outer
 }`
 
-	analysis, err := New().Analyze(source.NewAnonymous(query))
+	analysis, err := mustNewCompiler(t).Analyze(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +144,7 @@ func TestAnalysisCallAtUsesNarrowestEnclosingCall(t *testing.T) {
 	query := `LET value = 1
 RETURN OUTER(INNER(value))`
 
-	analysis, err := New().Analyze(source.NewAnonymous(query))
+	analysis, err := mustNewCompiler(t).Analyze(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -186,7 +186,7 @@ func TestAnalysisReferenceAtBasicAndUTF8ByteOffsets(t *testing.T) {
 LET value = 42
 RETURN value`
 
-	analysis, err := New().Analyze(source.NewAnonymous(query))
+	analysis, err := mustNewCompiler(t).Analyze(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,7 +221,7 @@ FUNC outer(param) {
 }
 RETURN [outer(shared), shared]`
 
-	analysis, err := New().Analyze(source.NewAnonymous(query))
+	analysis, err := mustNewCompiler(t).Analyze(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -288,7 +288,7 @@ FUNC inspect(x) {
 }
 RETURN inspect(x)`
 
-	analysis, err := New().Analyze(source.NewAnonymous(query))
+	analysis, err := mustNewCompiler(t).Analyze(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -361,7 +361,7 @@ FUNC outer(p) {
 	}
 RETURN outer(base)`
 
-	analysis, err := New().Analyze(source.NewAnonymous(query))
+	analysis, err := mustNewCompiler(t).Analyze(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -389,7 +389,7 @@ RETURN outer(base)`
 	invalid := `FUNC f() => later
 LET later = 1
 RETURN [f(), missing]`
-	partial, err := New().Analyze(source.NewAnonymous(invalid))
+	partial, err := mustNewCompiler(t).Analyze(source.NewAnonymous(invalid))
 	if err == nil || partial == nil || len(partial.Diagnostics()) == 0 {
 		t.Fatalf("Analyze invalid = analysis %v, err %v", partial, err)
 	}
@@ -415,7 +415,7 @@ RETURN FOR outer IN [[1]]
   RETURN FOR inner IN outer
     RETURN [label, first(inner)]`
 
-	analysis, err := New().Analyze(source.NewAnonymous(query))
+	analysis, err := mustNewCompiler(t).Analyze(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -461,7 +461,7 @@ FUNC effect() {
 }
 RETURN effect()`
 
-	analysis, err := New().Analyze(source.NewAnonymous(query))
+	analysis, err := mustNewCompiler(t).Analyze(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -497,7 +497,7 @@ func TestAnalyzeVisitsEveryMatchArm(t *testing.T) {
   _ => THIRD(),
 }`
 
-	analysis, err := New(WithOptimizationLevel(O1), WithDebugInfo()).Analyze(source.NewAnonymous(query))
+	analysis, err := mustNewCompiler(t, WithOptimizationLevel(O1), WithDebugInfo()).Analyze(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -512,7 +512,7 @@ func TestAnalyzeVisitsEveryMatchArm(t *testing.T) {
 }
 
 func TestAnalyzePartialResultsEmptySyntaxAndDefensiveCopies(t *testing.T) {
-	compiler := New()
+	compiler := mustNewCompiler(t)
 
 	empty, err := compiler.Analyze(source.NewAnonymous(""))
 	if err == nil || empty == nil || len(empty.Diagnostics()) != 1 || len(empty.Symbols()) != 0 {
@@ -579,7 +579,7 @@ func TestAnalyzeIsConcurrentSafeAndOptionIndependent(t *testing.T) {
 FUNC add(value) => base + value
 RETURN add(@value)`
 	src := source.NewAnonymous(query)
-	shared := New(WithOptimizationLevel(O1), WithDebugInfo())
+	shared := mustNewCompiler(t, WithOptimizationLevel(O1), WithDebugInfo())
 
 	want, err := shared.Analyze(src)
 	if err != nil {
@@ -616,7 +616,7 @@ RETURN add(@value)`
 		t.Fatal(concurrentErr)
 	}
 
-	o0, err := New(WithOptimizationLevel(O0)).Analyze(src)
+	o0, err := mustNewCompiler(t, WithOptimizationLevel(O0)).Analyze(src)
 	if err != nil {
 		t.Fatal(err)
 	}

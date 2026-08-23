@@ -84,7 +84,12 @@ RETURN FOR u IN users
   RETURN { gender, minAge }
 `)
 
-	program, err := compiler.New().Compile(src)
+	compilerInstance, err := compiler.New()
+	if err != nil {
+		b.Fatalf("create compiler: %v", err)
+	}
+
+	program, err := compilerInstance.Compile(src)
 	if err != nil {
 		b.Fatalf("compile failed: %v", err)
 	}
