@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/ziflex/go-options"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
@@ -117,7 +119,6 @@ func TestPoolAcquireRespectsTotalCapacity(t *testing.T) {
 func TestPoolAcquireReleasesCapacityAfterOptionFailure(t *testing.T) {
 	t.Parallel()
 
-	wantErr := errors.New("option failure")
 	applications := 0
 	pool := NewPoolWithLimits(
 		newPoolTestProgram(),
@@ -126,8 +127,9 @@ func TestPoolAcquireReleasesCapacityAfterOptionFailure(t *testing.T) {
 		func(*config) error {
 			applications++
 
-			return wantErr
+			return nil
 		},
+		WithShapeCacheLimit(0),
 	)
 
 	for i := 0; i < 2; i++ {
@@ -136,8 +138,13 @@ func TestPoolAcquireReleasesCapacityAfterOptionFailure(t *testing.T) {
 			t.Fatal("expected option failure to return no VM")
 		}
 
-		if !errors.Is(err, wantErr) {
-			t.Fatalf("expected option failure, got: %v", err)
+		var validationErr options.ValidationError
+		if !errors.As(err, &validationErr) {
+			t.Fatalf("expected options.ValidationError, got: %v", err)
+		}
+
+		if validationErr.Field != "shape cache limit" || validationErr.Value != "0" {
+			t.Fatalf("unexpected validation error: %+v", validationErr)
 		}
 	}
 
@@ -147,6 +154,10 @@ func TestPoolAcquireReleasesCapacityAfterOptionFailure(t *testing.T) {
 
 	if got := pool.total; got != 0 {
 		t.Fatalf("expected failed construction to release pool capacity, got total %d", got)
+	}
+
+	if len(pool.idle) != 0 || len(pool.inUse) != 0 {
+		t.Fatalf("expected failed construction to retain no VMs: idle=%d in-use=%d", len(pool.idle), len(pool.inUse))
 	}
 }
 

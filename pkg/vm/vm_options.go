@@ -38,39 +38,42 @@ func defaultConfig() config {
 	}
 }
 
-// WithShapeCacheLimit overrides the per-VM shape transition cache size.
+// WithShapeCacheLimit overrides the per-VM shape transition cache size. The
+// limit must be positive; invalid values make VM construction fail.
 func WithShapeCacheLimit(limit int) Option {
-	return func(cfg *config) error {
-		if limit > 0 {
-			cfg.shapeCacheLimit = limit
-		}
-
-		return nil
-	}
+	return options.New(func(cfg *config, limit int) {
+		cfg.shapeCacheLimit = limit
+	}).
+		Value(limit).
+		Named("shape cache limit").
+		Validators(options.Positive[int]()).
+		Build()
 }
 
-// WithFastObjectDictThreshold overrides the key count after which FastObject switches to dict mode.
+// WithFastObjectDictThreshold overrides the key count after which FastObject
+// switches to dict mode. The threshold must be positive; invalid values make VM
+// construction fail.
 func WithFastObjectDictThreshold(limit int) Option {
-	return func(cfg *config) error {
-		if limit > 0 {
-			cfg.fastObjectDictThreshold = limit
-		}
-
-		return nil
-	}
+	return options.New(func(cfg *config, limit int) {
+		cfg.fastObjectDictThreshold = limit
+	}).
+		Value(limit).
+		Named("fast object dict threshold").
+		Validators(options.Positive[int]()).
+		Build()
 }
 
 // WithPanicPolicy controls panic handling policy during Run.
-// PanicRecover wraps panics into runtime errors, while PanicPropagate lets panics propagate.
+// PanicRecover wraps panics into runtime errors, while PanicPropagate lets
+// panics propagate. Unsupported values make VM construction fail.
 func WithPanicPolicy(mode PanicPolicy) Option {
-	return func(cfg *config) error {
-		switch mode {
-		case PanicRecover, PanicPropagate:
-			cfg.panicPolicy = mode
-		}
-
-		return nil
-	}
+	return options.New(func(cfg *config, mode PanicPolicy) {
+		cfg.panicPolicy = mode
+	}).
+		Value(mode).
+		Named("panic policy").
+		Validators(options.OneOf(PanicRecover, PanicPropagate)).
+		Build()
 }
 
 // WithTesting configures a testing instance for the VM, which is used to support test/benchmark-only features like the benchmark result mode.

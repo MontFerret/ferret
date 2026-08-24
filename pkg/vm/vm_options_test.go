@@ -4,10 +4,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/ziflex/go-options"
+
 	vmtest "github.com/MontFerret/ferret/v2/pkg/vm/test"
 )
 
-func TestNewWithAppliesOrderedOptionsAndPreservesNoOps(t *testing.T) {
+func TestNewWithAppliesOptionsInOrder(t *testing.T) {
 	t.Parallel()
 
 	instance, err := NewWith(
@@ -15,13 +17,10 @@ func TestNewWithAppliesOrderedOptionsAndPreservesNoOps(t *testing.T) {
 		nil,
 		WithShapeCacheLimit(11),
 		WithShapeCacheLimit(17),
-		WithShapeCacheLimit(0),
 		WithFastObjectDictThreshold(19),
 		WithFastObjectDictThreshold(23),
-		WithFastObjectDictThreshold(-1),
 		WithPanicPolicy(PanicRecover),
 		WithPanicPolicy(PanicPropagate),
-		WithPanicPolicy(PanicPolicy(255)),
 	)
 	if err != nil {
 		t.Fatalf("expected VM construction to succeed, got: %v", err)
@@ -40,6 +39,153 @@ func TestNewWithAppliesOrderedOptionsAndPreservesNoOps(t *testing.T) {
 
 	if got, want := instance.config.panicPolicy, PanicPropagate; got != want {
 		t.Fatalf("unexpected panic policy: got %d, want %d", got, want)
+	}
+}
+
+func TestNewWithRejectsInvalidPositiveOptions(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		option Option
+		name   string
+		field  string
+		value  string
+	}{
+		{
+			name:   "zero shape cache limit",
+			field:  "shape cache limit",
+			value:  "0",
+			option: WithShapeCacheLimit(0),
+		},
+		{
+			name:   "negative shape cache limit",
+			field:  "shape cache limit",
+			value:  "-1",
+			option: WithShapeCacheLimit(-1),
+		},
+		{
+			name:   "zero fast object dict threshold",
+			field:  "fast object dict threshold",
+			value:  "0",
+			option: WithFastObjectDictThreshold(0),
+		},
+		{
+			name:   "negative fast object dict threshold",
+			field:  "fast object dict threshold",
+			value:  "-1",
+			option: WithFastObjectDictThreshold(-1),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			instance, err := NewWith(newPoolTestProgram(), tt.option)
+			if instance != nil {
+				t.Fatal("expected invalid option to return no VM")
+			}
+
+			var validationErr options.ValidationError
+			if !errors.As(err, &validationErr) {
+				t.Fatalf("expected options.ValidationError, got: %v", err)
+			}
+
+			if validationErr.Field != tt.field || validationErr.Value != tt.value {
+				t.Fatalf("unexpected validation error: %+v", validationErr)
+			}
+
+			var nested options.ValidationError
+			if errors.As(validationErr.Reason, &nested) {
+				t.Fatalf("expected flat validation error, got nested error: %+v", nested)
+			}
+
+			if validationErr.Reason == nil || validationErr.Reason.Error() != "must be positive" {
+				t.Fatalf("unexpected validation reason: %v", validationErr.Reason)
+			}
+		})
+	}
+}
+
+func TestNewWithRejectsInvalidPanicPolicy(t *testing.T) {
+	t.Parallel()
+
+	instance, err := NewWith(newPoolTestProgram(), WithPanicPolicy(PanicPolicy(123)))
+	if instance != nil {
+		t.Fatal("expected invalid panic policy to return no VM")
+	}
+
+	var validationErr options.ValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("expected options.ValidationError, got: %v", err)
+	}
+
+	if validationErr.Field != "panic policy" || validationErr.Value != "123" {
+		t.Fatalf("unexpected validation error: %+v", validationErr)
+	}
+
+	var nested options.ValidationError
+	if errors.As(validationErr.Reason, &nested) {
+		t.Fatalf("expected flat validation error, got nested error: %+v", nested)
+	}
+
+	if validationErr.Reason == nil || validationErr.Reason.Error() != "must be one of [0 1]" {
+		t.Fatalf("unexpected validation reason: %v", validationErr.Reason)
+	}
+}
+
+func TestNewWithJoinsValidationErrorsInOptionOrder(t *testing.T) {
+	t.Parallel()
+
+	instance, err := NewWith(
+		newPoolTestProgram(),
+		WithShapeCacheLimit(0),
+		WithFastObjectDictThreshold(-1),
+		WithPanicPolicy(PanicPolicy(123)),
+	)
+	if instance != nil {
+		t.Fatal("expected invalid options to return no VM")
+	}
+
+	const wantMessage = "shape cache limit: must be positive: value=0\n" +
+		"fast object dict threshold: must be positive: value=-1\n" +
+		"panic policy: must be one of [0 1]: value=123"
+	if err == nil || err.Error() != wantMessage {
+		t.Fatalf("unexpected joined error: got %q, want %q", err, wantMessage)
+	}
+
+	joined, ok := err.(interface{ Unwrap() []error })
+	if !ok {
+		t.Fatalf("expected joined error, got: %T", err)
+	}
+
+	want := []struct {
+		field  string
+		value  string
+		reason string
+	}{
+		{field: "shape cache limit", value: "0", reason: "must be positive"},
+		{field: "fast object dict threshold", value: "-1", reason: "must be positive"},
+		{field: "panic policy", value: "123", reason: "must be one of [0 1]"},
+	}
+	got := joined.Unwrap()
+	if len(got) != len(want) {
+		t.Fatalf("unexpected joined error count: got %d, want %d", len(got), len(want))
+	}
+
+	for i, wantErr := range want {
+		var validationErr options.ValidationError
+		if !errors.As(got[i], &validationErr) {
+			t.Fatalf("joined error %d = %T, want options.ValidationError", i, got[i])
+		}
+
+		if validationErr.Field != wantErr.field || validationErr.Value != wantErr.value {
+			t.Fatalf("unexpected joined validation error %d: %+v", i, validationErr)
+		}
+
+		if validationErr.Reason == nil || validationErr.Reason.Error() != wantErr.reason {
+			t.Fatalf("unexpected joined validation reason %d: %v", i, validationErr.Reason)
+		}
 	}
 }
 

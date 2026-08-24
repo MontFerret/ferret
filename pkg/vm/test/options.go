@@ -28,9 +28,10 @@ func NewOptions(opts []Option) (Options, error) {
 
 // WithBenchmarkMode enables reusable benchmark results.
 func WithBenchmarkMode() Option {
-	return func(opts *Options) error {
-		opts.BenchmarkMode = true
-
-		return nil
-	}
+	return options.New(func(opts *Options, enabled bool) {
+		opts.BenchmarkMode = enabled
+	}).
+		Value(true).
+		Named("benchmark mode").
+		Build()
 }
