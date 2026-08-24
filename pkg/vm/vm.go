@@ -5,13 +5,14 @@ import (
 	"errors"
 	"io"
 
+	"github.com/ziflex/go-options"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
-	"github.com/MontFerret/ferret/v2/pkg/vm/test"
 )
 
 type VM struct {
@@ -19,17 +20,20 @@ type VM struct {
 	sourcePointObserver sourcePointObserver
 	cache               *mem.Cache
 	program             *bytecode.Program
-	testing             test.Testing[*Result]
 	plan                execPlan
+	config              config
 	state               execState
-	options             options
 	closed              bool
 }
 
+// New creates a VM for program using the default configuration.
 func New(program *bytecode.Program) (*VM, error) {
 	return NewWith(program)
 }
 
+// NewWith creates a VM for program using opts. Program validation and execution
+// planning happen before options are applied, and option errors are returned
+// without creating a VM.
 func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 	if err := validate(program); err != nil {
 		return nil, err
@@ -40,18 +44,21 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 		return nil, err
 	}
 
-	o, t := newOptions(opts)
+	cfg, err := options.ApplyTo(defaultConfig(), opts...)
+	if err != nil {
+		return nil, err
+	}
+
 	vm := &VM{
-		cache:   mem.NewCache(len(program.Bytecode), len(program.Functions.Host), o.shapeCacheLimit),
+		cache:   mem.NewCache(len(program.Bytecode), len(program.Functions.Host), cfg.shapeCacheLimit),
 		program: program,
 		plan:    plan,
-		options: o,
-		testing: t,
+		config:  cfg,
 	}
 	vm.state.init(program)
 
-	if vm.testing.Options.BenchmarkMode {
-		vm.testing.SetBenchmark(&Result{closed: true, root: runtime.None})
+	if vm.config.testing.Options.BenchmarkMode {
+		vm.config.testing.SetBenchmark(&Result{closed: true, root: runtime.None})
 	}
 
 	return vm, nil
@@ -65,13 +72,13 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (*Result, error) {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "vm is closed")
 	}
 
-	bench := vm.testing.Benchmark
+	bench := vm.config.testing.Benchmark
 
 	if bench != nil && !bench.closed {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "benchmark result must be closed before next run")
 	}
 
-	switch vm.options.panicPolicy {
+	switch vm.config.panicPolicy {
 	case PanicPropagate:
 		defer func() {
 			if r := recover(); r != nil {
@@ -117,14 +124,13 @@ func (vm *VM) Close() error {
 	}
 
 	vm.closed = true
-	vm.testing.Close()
+	vm.config.testing.Close()
 	vm.closeErr = errors.Join(vm.closeErr, vm.state.endRunWithError())
 	vm.cache = nil
 	vm.program = nil
 	vm.plan = execPlan{}
 	vm.state = execState{}
-	vm.testing = test.Testing[*Result]{}
-	vm.options = options{}
+	vm.config = config{}
 	vm.sourcePointObserver = nil
 
 	return vm.closeErr
@@ -616,7 +622,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		case bytecode.OpLoadArray:
 			reg[dst] = runtime.NewArray(int(src1))
 		case bytecode.OpLoadObject:
-			reg[dst] = data.NewFastObjectOf(shapeCache, vm.options.fastObjectDictThreshold, int(src1))
+			reg[dst] = data.NewFastObjectOf(shapeCache, vm.config.fastObjectDictThreshold, int(src1))
 		case bytecode.OpLoadRange:
 			start, err := runtime.ToInt(ctx, reg[src1])
 			if err != nil {

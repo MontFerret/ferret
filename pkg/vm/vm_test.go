@@ -191,11 +191,11 @@ func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 		t.Fatalf("unexpected register file size: got %d, want %d", got, want)
 	}
 
-	if got, want := instance.options.panicPolicy, PanicPropagate; got != want {
+	if got, want := instance.config.panicPolicy, PanicPropagate; got != want {
 		t.Fatalf("unexpected panic policy: got %d, want %d", got, want)
 	}
 
-	if got, want := instance.options.fastObjectDictThreshold, 23; got != want {
+	if got, want := instance.config.fastObjectDictThreshold, 23; got != want {
 		t.Fatalf("unexpected fast object dict threshold: got %d, want %d", got, want)
 	}
 

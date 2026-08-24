@@ -10,10 +10,14 @@ type Testing[B io.Closer] struct {
 	Options   Options
 }
 
-func NewTesting[B io.Closer](opts []Option) Testing[B] {
-	return Testing[B]{
-		Options: NewOptions(opts),
+// NewTesting creates VM testing state from the supplied options.
+func NewTesting[B io.Closer](opts []Option) (Testing[B], error) {
+	cfg, err := NewOptions(opts)
+	if err != nil {
+		return Testing[B]{}, err
 	}
+
+	return Testing[B]{Options: cfg}, nil
 }
 
 func (t *Testing[B]) SetBenchmark(benchmark B) {
