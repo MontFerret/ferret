@@ -276,7 +276,7 @@ func TestNewPolicyReturnsValidationErrorForSingleFailure(t *testing.T) {
 		{
 			Field:  "max request size",
 			Value:  "-1",
-			Reason: errors.New("must not be negative"),
+			Reason: errors.New("must be non-negative"),
 		},
 	})
 	if validationErr.Field != "max request size" {
@@ -395,7 +395,7 @@ func TestNewPolicyAggregatesMixedOptionFailures(t *testing.T) {
 		{
 			Field:  "max response size",
 			Value:  "-1",
-			Reason: errors.New("must not be negative"),
+			Reason: errors.New("must be non-negative"),
 		},
 	})
 
@@ -424,12 +424,12 @@ func TestNewPolicyOrdersMixedImmediateAndFinalizationErrors(t *testing.T) {
 		{
 			Field:  "max response size",
 			Value:  "-2",
-			Reason: errors.New("must not be negative"),
+			Reason: errors.New("must be non-negative"),
 		},
 		{
 			Field:  "max request size",
 			Value:  "-1",
-			Reason: errors.New("must not be negative"),
+			Reason: errors.New("must be non-negative"),
 		},
 		{
 			Field:  "default header",
@@ -498,7 +498,7 @@ func TestNewPolicyAggregatesDefaultBlockedConflictsInBothOptionOrders(t *testing
 		{
 			Field:  "timeout",
 			Value:  "-1ns",
-			Reason: errors.New("must not be negative"),
+			Reason: errors.New("must be non-negative"),
 		},
 		{
 			Field:  "default header",
@@ -560,7 +560,7 @@ func TestNewPolicyRetainsErrorsFromOverriddenOptions(t *testing.T) {
 		{
 			Field:  "max request size",
 			Value:  "-1",
-			Reason: errors.New("must not be negative"),
+			Reason: errors.New("must be non-negative"),
 		},
 	})
 }
@@ -577,12 +577,12 @@ func TestNewReturnsNilClientForJoinedPolicyValidationErrors(t *testing.T) {
 		{
 			Field:  "max request size",
 			Value:  "-1",
-			Reason: errors.New("must not be negative"),
+			Reason: errors.New("must be non-negative"),
 		},
 		{
 			Field:  "max response size",
 			Value:  "-2",
-			Reason: errors.New("must not be negative"),
+			Reason: errors.New("must be non-negative"),
 		},
 	})
 }

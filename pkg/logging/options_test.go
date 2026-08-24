@@ -195,18 +195,14 @@ func TestWithLevelValidation(t *testing.T) {
 				t.Fatalf("validation error = %+v, want unnamed value %q", got, tt.wantValue)
 			}
 
-			var reason options.ValidationError
-			if !errors.As(got.Reason, &reason) {
-				t.Fatalf("validation reason = %T, want options.ValidationError", got.Reason)
-			}
-
-			if reason.Field != "" || reason.Value != tt.wantValue {
-				t.Fatalf("nested validation error = %+v, want unnamed value %q", reason, tt.wantValue)
+			var nested options.ValidationError
+			if errors.As(got.Reason, &nested) {
+				t.Fatalf("validation reason = %+v, want flat validation error", nested)
 			}
 
 			const wantReason = "must be one of [trace debug info warn error fatal panic disabled]"
-			if reason.Reason == nil || reason.Reason.Error() != wantReason {
-				t.Fatalf("nested validation reason = %v, want %q", reason.Reason, wantReason)
+			if got.Reason == nil || got.Reason.Error() != wantReason {
+				t.Fatalf("validation reason = %v, want %q", got.Reason, wantReason)
 			}
 		})
 	}
