@@ -75,6 +75,7 @@ func TestEngineSimpleOptionsApplyValidValues(t *testing.T) {
 		WithMaxIdleVMsPerPlan(4),
 		WithMaxVMsPerPlan(5),
 		WithFSRoot(" \t"+root+"\n"),
+		WithFSReadOnly(),
 	)
 
 	if opts.encoding != registry {
@@ -96,6 +97,10 @@ func TestEngineSimpleOptionsApplyValidValues(t *testing.T) {
 
 	if opts.fsRoot != root {
 		t.Fatalf("fs root = %q, want %q", opts.fsRoot, root)
+	}
+
+	if !opts.fsReadOnly {
+		t.Fatal("expected file system to be read-only")
 	}
 }
 

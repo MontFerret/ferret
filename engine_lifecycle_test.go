@@ -221,11 +221,27 @@ func TestEngineNetworkOwnershipFollowsLastOption(t *testing.T) {
 				t.Fatalf("expected injected network, got %T", eng.host.network)
 			}
 
+			if eng.ownsNetwork != tt.managedLast {
+				t.Fatalf("expected ownsNetwork to be %t", tt.managedLast)
+			}
+
+			wantManagedCloses := 1
+			if tt.managedLast {
+				wantManagedCloses = 0
+			}
+
+			if got := managedClient.idleCloseCount(); got != wantManagedCloses {
+				t.Fatalf("expected %d managed network cleanup calls after construction, got %d", wantManagedCloses, got)
+			}
+
+			if got := injectedClient.idleCloseCount(); got != 0 {
+				t.Fatalf("expected injected network to remain caller-owned after construction, got %d cleanup calls", got)
+			}
+
 			if err := eng.Close(); err != nil {
 				t.Fatalf("close engine: %v", err)
 			}
 
-			wantManagedCloses := 0
 			if tt.managedLast {
 				wantManagedCloses = 1
 			}
@@ -238,6 +254,46 @@ func TestEngineNetworkOwnershipFollowsLastOption(t *testing.T) {
 				t.Fatalf("expected injected network to remain caller-owned, got %d cleanup calls", got)
 			}
 		})
+	}
+}
+
+func TestEngineClosesSupersededManagedNetworks(t *testing.T) {
+	t.Parallel()
+
+	firstClient := &recordingHTTPClient{}
+	secondClient := &recordingHTTPClient{}
+	eng := mustNewEngine(
+		t,
+		WithNetworkOptions(ferretnet.WithHTTPClient(firstClient)),
+		WithNetworkOptions(ferretnet.WithHTTPClient(secondClient)),
+	)
+
+	if !eng.ownsNetwork {
+		t.Fatal("expected final managed network to be engine-owned")
+	}
+
+	if got := eng.host.network.HTTP(); got != secondClient {
+		t.Fatalf("expected second managed network to be selected, got %T", got)
+	}
+
+	if got := firstClient.idleCloseCount(); got != 1 {
+		t.Fatalf("expected superseded managed network to close once after construction, got %d", got)
+	}
+
+	if got := secondClient.idleCloseCount(); got != 0 {
+		t.Fatalf("expected selected managed network to remain active after construction, got %d closes", got)
+	}
+
+	if err := eng.Close(); err != nil {
+		t.Fatalf("close engine: %v", err)
+	}
+
+	if got := firstClient.idleCloseCount(); got != 1 {
+		t.Fatalf("expected superseded managed network to remain closed exactly once, got %d", got)
+	}
+
+	if got := secondClient.idleCloseCount(); got != 1 {
+		t.Fatalf("expected engine shutdown to close selected managed network once, got %d", got)
 	}
 }
 
@@ -272,8 +328,8 @@ func TestNewRollsBackAllConstructedNetworksOnOptionFailure(t *testing.T) {
 
 	engine, err := New(
 		WithNetworkOptions(ferretnet.WithHTTPClient(firstManagedClient)),
-		WithParams(map[string]any{"unsupported": make(chan int)}),
 		WithNetworkOptions(ferretnet.WithHTTPClient(secondManagedClient)),
+		WithParams(map[string]any{"unsupported": make(chan int)}),
 		WithNetwork(injectedNetwork),
 	)
 	if engine != nil {

@@ -23,7 +23,7 @@ type (
 	options struct {
 		library           runtime.Library
 		network           ferretnet.Network
-		rollbackNetworks  []ferretnet.Network
+		managedNetworks   []ferretnet.Network
 		hooks             *hookRegistry
 		encoding          *encoding.Registry
 		params            runtime.Params
@@ -81,19 +81,24 @@ func newOptions(setters []Option) (options, error) {
 		}
 	}
 
-	if err != nil {
-		// Options continue after failures, so roll back every managed network
-		// created during the pass rather than only the final selected network.
-		for _, network := range opts.rollbackNetworks {
-			ferretnet.CloseIdleNetworkConnections(network)
-		}
-
-		return options{}, err
+	managedNetworks := opts.managedNetworks
+	if err == nil && !opts.hostNetwork && len(managedNetworks) > 0 {
+		// Managed networks are recorded in option order, so the last entry is
+		// the selected network when the final network option is managed.
+		managedNetworks = managedNetworks[:len(managedNetworks)-1]
 	}
 
-	// Successful construction transfers ownership according to the final network
-	// option; rollback-only references must not outlive option application.
-	opts.rollbackNetworks = nil
+	for _, network := range managedNetworks {
+		ferretnet.CloseIdleNetworkConnections(network)
+	}
+
+	// Tracking references must not outlive option finalization. On success,
+	// only the selected network is transferred to Engine ownership.
+	opts.managedNetworks = nil
+
+	if err != nil {
+		return options{}, err
+	}
 
 	return opts, nil
 }
@@ -297,11 +302,7 @@ func WithProgramLoader(loader *artifact.Loader) Option {
 
 // WithoutStdlib disables the standard library, so no built-in functions are registered by default.
 func WithoutStdlib() Option {
-	return func(opts *options) error {
-		opts.stdlib = stdlib.Empty()
-
-		return nil
-	}
+	return WithStdlib(stdlib.Empty())
 }
 
 // WithStdlib configures which standard library groups are registered by default.
@@ -310,6 +311,7 @@ func WithStdlib(set stdlib.Set) Option {
 		opts.stdlib = set
 	}).
 		Value(set).
+		Named("stdlib").
 		Build()
 }
 
@@ -589,11 +591,11 @@ func WithFSRoot(root string) Option {
 
 // WithFSReadOnly sets the engine's file system to read-only mode.
 func WithFSReadOnly() Option {
-	return func(opts *options) error {
-		opts.fsReadOnly = true
-
-		return nil
-	}
+	return gooptions.New(func(opts *options, readOnly bool) {
+		opts.fsReadOnly = readOnly
+	}).
+		Value(true).
+		Build()
 }
 
 // WithNetwork sets the engine network service used by derived executions.
@@ -627,7 +629,7 @@ func WithNetworkOptions(setters ...ferretnet.Option) Option {
 		}
 
 		opts.network = net
-		opts.rollbackNetworks = append(opts.rollbackNetworks, net)
+		opts.managedNetworks = append(opts.managedNetworks, net)
 		opts.hostNetwork = false
 
 		return nil
