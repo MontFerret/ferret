@@ -3,6 +3,8 @@ package net
 import (
 	"fmt"
 
+	"github.com/ziflex/go-options"
+
 	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
 )
 
@@ -18,30 +20,23 @@ type (
 )
 
 // New constructs a Network with a default HTTP client unless one is supplied.
-// It returns an error when the default client cannot be initialized.
+// It returns option-application errors unchanged and an error when the default
+// client cannot be initialized.
 func New(setters ...Option) (Network, error) {
-	opts := options{}
-
-	for _, option := range setters {
-		if option == nil {
-			continue
-		}
-
-		option(&opts)
+	cfg, err := options.ApplyTo(defaultConfig(), setters...)
+	if err != nil {
+		return nil, err
 	}
 
-	if opts.httpClient == nil {
-		var (
-			client ferrethttp.Client
-			err    error
-		)
+	if cfg.httpClient == nil {
+		var client ferrethttp.Client
 
-		if opts.httpTransport == nil {
-			client, err = ferrethttp.New(opts.httpPolicies...)
+		if cfg.httpTransport == nil {
+			client, err = ferrethttp.New(cfg.httpPolicies...)
 		} else {
 			client, err = ferrethttp.NewWithTransport(
-				opts.httpTransport,
-				opts.httpPolicies...,
+				cfg.httpTransport,
+				cfg.httpPolicies...,
 			)
 		}
 
@@ -49,11 +44,11 @@ func New(setters ...Option) (Network, error) {
 			return nil, fmt.Errorf("http client: %w", err)
 		}
 
-		opts.httpClient = client
+		cfg.httpClient = client
 	}
 
 	return &defaultNetwork{
-		http: opts.httpClient,
+		http: cfg.httpClient,
 	}, nil
 }
 

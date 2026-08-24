@@ -132,13 +132,13 @@ func TestWithOptimizationLevelRejectsUnsupportedLevels(t *testing.T) {
 			name:      "below minimum",
 			level:     optimization.LevelNone - 1,
 			wantValue: "-1",
-			wantError: "optimization level: must be one of [0 1 2 3]: value=-1: value=-1",
+			wantError: "optimization level: must be one of [0 1 2 3]: value=-1",
 		},
 		{
 			name:      "above maximum",
 			level:     optimization.LevelAggressive + 1,
 			wantValue: "4",
-			wantError: "optimization level: must be one of [0 1 2 3]: value=4: value=4",
+			wantError: "optimization level: must be one of [0 1 2 3]: value=4",
 		},
 	}
 
@@ -163,15 +163,12 @@ func TestWithOptimizationLevelRejectsUnsupportedLevels(t *testing.T) {
 				t.Fatalf("New() validation error = %+v, want named value %q", got, tt.wantValue)
 			}
 
-			var reason options.ValidationError
-			if !errors.As(got.Reason, &reason) {
-				t.Fatalf("New() validation reason = %T, want options.ValidationError", got.Reason)
+			var nested options.ValidationError
+			if errors.As(got.Reason, &nested) {
+				t.Fatalf("New() validation reason = %+v, want flat validation error", nested)
 			}
-			if reason.Field != "" || reason.Value != tt.wantValue {
-				t.Fatalf("New() nested validation error = %+v, want unnamed value %q", reason, tt.wantValue)
-			}
-			if reason.Reason == nil || reason.Reason.Error() != "must be one of [0 1 2 3]" {
-				t.Fatalf("New() nested validation reason = %v, want supported-level error", reason.Reason)
+			if got.Reason == nil || got.Reason.Error() != "must be one of [0 1 2 3]" {
+				t.Fatalf("New() validation reason = %v, want supported-level error", got.Reason)
 			}
 		})
 	}

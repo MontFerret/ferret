@@ -3,38 +3,48 @@ package net
 import (
 	stdhttp "net/http"
 
+	"github.com/ziflex/go-options"
+
 	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
 )
 
 type (
-	Option func(*options)
-
-	options struct {
+	config struct {
 		httpClient    ferrethttp.Client
 		httpTransport stdhttp.RoundTripper
 		httpPolicies  []ferrethttp.PolicyOption
 	}
+
+	Option = options.Option[config]
 )
+
+func defaultConfig() config {
+	return config{}
+}
 
 // WithHTTPClient sets the HTTP client used by a Network.
 func WithHTTPClient(client ferrethttp.Client) Option {
-	return func(opts *options) {
+	return func(config *config) error {
 		if client == nil {
-			return
+			return nil
 		}
 
-		opts.httpClient = client
+		config.httpClient = client
+
+		return nil
 	}
 }
 
 // WithHTTPPolicies sets the HTTP policies used by a Network.
 func WithHTTPPolicies(policies ...ferrethttp.PolicyOption) Option {
-	return func(opts *options) {
+	return func(config *config) error {
 		if len(policies) == 0 {
-			return
+			return nil
 		}
 
-		opts.httpPolicies = append(opts.httpPolicies, policies...)
+		config.httpPolicies = append(config.httpPolicies, policies...)
+
+		return nil
 	}
 }
 
@@ -45,15 +55,17 @@ func WithHTTPPolicies(policies ...ferrethttp.PolicyOption) Option {
 // Custom transports remain responsible for proxy behavior, DNS and
 // concrete-address enforcement, and response-header limits.
 func WithHTTPTransport(transport stdhttp.RoundTripper, policies ...ferrethttp.PolicyOption) Option {
-	return func(opts *options) {
+	return func(config *config) error {
 		if transport == nil {
-			return
+			return nil
 		}
 
-		opts.httpTransport = transport
+		config.httpTransport = transport
 
 		if len(policies) > 0 {
-			opts.httpPolicies = append(opts.httpPolicies, policies...)
+			config.httpPolicies = append(config.httpPolicies, policies...)
 		}
+
+		return nil
 	}
 }

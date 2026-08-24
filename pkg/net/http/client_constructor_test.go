@@ -11,7 +11,14 @@ import (
 )
 
 func TestNewWithClientRejectsNilClientBeforePolicyValidation(t *testing.T) {
-	client, err := NewWithClient(nil, WithMaxRequestSize(-1))
+	want := errors.New("option failed")
+	client, err := NewWithClient(
+		nil,
+		WithMaxRequestSize(-1),
+		func(_ *Policy) error {
+			return want
+		},
+	)
 	if client != nil {
 		t.Fatalf("expected no client, got %T", client)
 	}
@@ -20,6 +27,9 @@ func TestNewWithClientRejectsNilClientBeforePolicyValidation(t *testing.T) {
 	}
 	if errors.Is(err, ErrInvalidPolicyConfiguration) {
 		t.Fatalf("expected nil client validation to take precedence, got %v", err)
+	}
+	if errors.Is(err, want) {
+		t.Fatalf("expected nil client validation to precede option application, got %v", err)
 	}
 }
 

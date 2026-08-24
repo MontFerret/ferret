@@ -63,9 +63,9 @@
 //	)
 //	if err != nil {
 //		if errors.Is(err, http.ErrInvalidPolicyConfiguration) {
-//			var issue *http.PolicyConfigurationError
+//			var issue options.ValidationError
 //			if errors.As(err, &issue) {
-//				log.Printf("invalid %s: %s", issue.Option, issue.Reason)
+//				log.Printf("invalid %s: %s", issue.Field, issue.Reason)
 //			}
 //		}
 //		return err
@@ -86,11 +86,11 @@
 // When policy defaults are not needed, call policy.Eval(stdReq) instead to
 // validate the request without modifying it.
 //
-// A single configuration failure is returned as PolicyConfigurationError;
-// multiple failures are returned as MultiPolicyConfigurationError. The
-// aggregate unwraps its individual failures, so errors.As can inspect either
-// the aggregate or its first PolicyConfigurationError. Its Errors field
-// provides all failures in deterministic validation order.
+// Policy option validation failures are reported as
+// github.com/ziflex/go-options.ValidationError values. Multiple failures are
+// combined with errors.Join in deterministic validation order. They match
+// ErrInvalidPolicyConfiguration through errors.Is, and errors.As can inspect
+// the first ValidationError.
 //
 // Structural, configuration, limit, and policy failures are typed. Callers
 // should inspect them with errors.Is and errors.As; error strings are intended
