@@ -28,7 +28,9 @@ type Engine struct {
 
 // New constructs an Engine from the provided options, registers all modules,
 // builds the host, and runs engine init hooks. It returns an error if any
-// option, module registration, or init hook fails.
+// option, module registration, or init hook fails. All non-nil options are
+// applied in order, and failures from multiple options are joined before
+// construction stops.
 func New(setters ...Option) (*Engine, error) {
 	opts, err := newOptions(setters)
 	if err != nil {
@@ -55,7 +57,7 @@ func New(setters ...Option) (*Engine, error) {
 		return nil, fmt.Errorf("debug compiler: %w", err)
 	}
 
-	boot, err := newBootstrap(opts)
+	boot, err := newBootstrap(&opts)
 	if err != nil {
 		return nil, fmt.Errorf("bootstrap: %w", err)
 	}

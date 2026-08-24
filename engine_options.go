@@ -5,6 +5,8 @@ import (
 	"io"
 	"strings"
 
+	gooptions "github.com/ziflex/go-options"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
@@ -21,6 +23,7 @@ type (
 	options struct {
 		library           runtime.Library
 		network           ferretnet.Network
+		managedNetworks   []ferretnet.Network
 		hooks             *hookRegistry
 		encoding          *encoding.Registry
 		params            runtime.Params
@@ -38,7 +41,7 @@ type (
 	}
 
 	// Option configures an Engine during construction.
-	Option func(env *options) error
+	Option = gooptions.Option[options]
 )
 
 type encodingCodecAlias struct {
@@ -56,8 +59,8 @@ func (c encodingCodecAlias) ContentType() string {
 	return c.contentType
 }
 
-func newOptions(setters []Option) (*options, error) {
-	opts := &options{
+func defaultOptions() options {
+	return options{
 		library:           runtime.NewLibrary(),
 		params:            make(map[string]runtime.Value),
 		encoding:          encoding.NewRegistry(encodingjson.Default, encodingmsgpack.Default),
@@ -68,19 +71,33 @@ func newOptions(setters []Option) (*options, error) {
 		maxVMsPerPlan:     defaultMaxVMsPerPlan,
 		stdlib:            stdlib.Full(),
 	}
+}
 
-	for _, setter := range setters {
-		if setter == nil {
-			continue
-		}
-
-		if err := setter(opts); err != nil {
-			return nil, err
+func newOptions(setters []Option) (options, error) {
+	opts, err := gooptions.ApplyTo(defaultOptions(), setters...)
+	if err == nil {
+		if registerErr := opts.stdlib.Register(opts.library); registerErr != nil {
+			err = fmt.Errorf("stdlib: %w", registerErr)
 		}
 	}
 
-	if err := opts.stdlib.Register(opts.library); err != nil {
-		return nil, fmt.Errorf("stdlib: %w", err)
+	managedNetworks := opts.managedNetworks
+	if err == nil && !opts.hostNetwork && len(managedNetworks) > 0 {
+		// Managed networks are recorded in option order, so the last entry is
+		// the selected network when the final network option is managed.
+		managedNetworks = managedNetworks[:len(managedNetworks)-1]
+	}
+
+	for _, network := range managedNetworks {
+		ferretnet.CloseIdleNetworkConnections(network)
+	}
+
+	// Tracking references must not outlive option finalization. On success,
+	// only the selected network is transferred to Engine ownership.
+	opts.managedNetworks = nil
+
+	if err != nil {
+		return options{}, err
 	}
 
 	return opts, nil
@@ -263,46 +280,39 @@ func WithLogFields(fields map[string]any) Option {
 
 // WithEncodingRegistry sets a custom encoding registry for query execution.
 func WithEncodingRegistry(registry *encoding.Registry) Option {
-	return func(opts *options) error {
-		if registry == nil {
-			return fmt.Errorf("encoding registry cannot be nil")
-		}
-
+	return gooptions.New(func(opts *options, registry *encoding.Registry) {
 		opts.encoding = registry
-
-		return nil
-	}
+	}).
+		Value(registry).
+		Named("encoding registry").
+		Validators(gooptions.NotNilPtr[encoding.Registry]()).
+		Build()
 }
 
 // WithProgramLoader sets a custom artifact loader for Engine.Load.
 func WithProgramLoader(loader *artifact.Loader) Option {
-	return func(opts *options) error {
-		if loader == nil {
-			return fmt.Errorf("program loader cannot be nil")
-		}
-
+	return gooptions.New(func(opts *options, loader *artifact.Loader) {
 		opts.programLoader = loader
-
-		return nil
-	}
+	}).
+		Value(loader).
+		Named("program loader").
+		Validators(gooptions.NotNilPtr[artifact.Loader]()).
+		Build()
 }
 
 // WithoutStdlib disables the standard library, so no built-in functions are registered by default.
 func WithoutStdlib() Option {
-	return func(opts *options) error {
-		opts.stdlib = stdlib.Empty()
-
-		return nil
-	}
+	return WithStdlib(stdlib.Empty())
 }
 
 // WithStdlib configures which standard library groups are registered by default.
 func WithStdlib(set stdlib.Set) Option {
-	return func(opts *options) error {
+	return gooptions.New(func(opts *options, set stdlib.Set) {
 		opts.stdlib = set
-
-		return nil
-	}
+	}).
+		Value(set).
+		Named("stdlib").
+		Build()
 }
 
 // WithModules creates an Option that appends the provided modules to the options if not empty.
@@ -499,15 +509,13 @@ func WithSessionCloseHook(hook module.SessionCloseHook) Option {
 //
 // A value of 0 disables the limit.
 func WithMaxActiveSessions(n int) Option {
-	return func(opts *options) error {
-		if n < 0 {
-			return fmt.Errorf("max active sessions cannot be negative")
-		}
-
+	return gooptions.New(func(opts *options, n int) {
 		opts.maxActiveSessions = n
-
-		return nil
-	}
+	}).
+		Value(n).
+		Named("max active sessions").
+		Validators(gooptions.NonNegative[int]()).
+		Build()
 }
 
 // WithMaxIdleVMsPerPlan sets how many closed-session VMs each plan keeps warm
@@ -529,15 +537,13 @@ func WithMaxActiveSessions(n int) Option {
 //
 // A value of 0 disables idle retention for the plan.
 func WithMaxIdleVMsPerPlan(n int) Option {
-	return func(opts *options) error {
-		if n < 0 {
-			return fmt.Errorf("max idle VMs per plan cannot be negative")
-		}
-
+	return gooptions.New(func(opts *options, n int) {
 		opts.maxIdleVMsPerPlan = n
-
-		return nil
-	}
+	}).
+		Value(n).
+		Named("max idle VMs per plan").
+		Validators(gooptions.NonNegative[int]()).
+		Build()
 }
 
 // WithMaxVMsPerPlan sets a hard per-plan limit on the total number of VMs the
@@ -563,39 +569,33 @@ func WithMaxIdleVMsPerPlan(n int) Option {
 // A value of 0 means the plan may create as many VMs as needed, subject only to
 // other limits such as WithMaxActiveSessions.
 func WithMaxVMsPerPlan(n int) Option {
-	return func(opts *options) error {
-		if n < 0 {
-			return fmt.Errorf("max VMs per plan cannot be negative")
-		}
-
+	return gooptions.New(func(opts *options, n int) {
 		opts.maxVMsPerPlan = n
-
-		return nil
-	}
+	}).
+		Value(n).
+		Named("max VMs per plan").
+		Validators(gooptions.NonNegative[int]()).
+		Build()
 }
 
 // WithFSRoot sets the root directory for the engine's file system.
 func WithFSRoot(root string) Option {
-	return func(opts *options) error {
-		root = strings.TrimSpace(root)
-
-		if root == "" {
-			return fmt.Errorf("fs root cannot be empty")
-		}
-
-		opts.fsRoot = root
-
-		return nil
-	}
+	return gooptions.New(func(opts *options, root string) {
+		opts.fsRoot = strings.TrimSpace(root)
+	}).
+		Value(root).
+		Named("fs root").
+		Validators(gooptions.NotBlank[string]()).
+		Build()
 }
 
 // WithFSReadOnly sets the engine's file system to read-only mode.
 func WithFSReadOnly() Option {
-	return func(opts *options) error {
-		opts.fsReadOnly = true
-
-		return nil
-	}
+	return gooptions.New(func(opts *options, readOnly bool) {
+		opts.fsReadOnly = readOnly
+	}).
+		Value(true).
+		Build()
 }
 
 // WithNetwork sets the engine network service used by derived executions.
@@ -629,6 +629,7 @@ func WithNetworkOptions(setters ...ferretnet.Option) Option {
 		}
 
 		opts.network = net
+		opts.managedNetworks = append(opts.managedNetworks, net)
 		opts.hostNetwork = false
 
 		return nil

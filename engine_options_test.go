@@ -9,7 +9,9 @@ import (
 
 	gooptions "github.com/ziflex/go-options"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -26,7 +28,287 @@ func mustNewOptionsForTest(t *testing.T, setters ...Option) *options {
 		t.Fatalf("failed to create options: %v", err)
 	}
 
-	return opts
+	return &opts
+}
+
+func TestNewOptionsPreservesDefaults(t *testing.T) {
+	t.Parallel()
+
+	opts := mustNewOptionsForTest(t)
+
+	if opts.library == nil {
+		t.Fatal("expected default runtime library")
+	}
+
+	if opts.encoding == nil {
+		t.Fatal("expected default encoding registry")
+	}
+
+	if opts.programLoader == nil {
+		t.Fatal("expected default program loader")
+	}
+
+	if opts.maxActiveSessions != defaultMaxActiveSessions {
+		t.Fatalf("max active sessions = %d, want %d", opts.maxActiveSessions, defaultMaxActiveSessions)
+	}
+
+	if opts.maxIdleVMsPerPlan != defaultVMPoolSize {
+		t.Fatalf("max idle VMs per plan = %d, want %d", opts.maxIdleVMsPerPlan, defaultVMPoolSize)
+	}
+
+	if opts.maxVMsPerPlan != defaultMaxVMsPerPlan {
+		t.Fatalf("max VMs per plan = %d, want %d", opts.maxVMsPerPlan, defaultMaxVMsPerPlan)
+	}
+}
+
+func TestEngineSimpleOptionsApplyValidValues(t *testing.T) {
+	t.Parallel()
+
+	registry := encoding.NewRegistry()
+	loader := artifact.NewDefaultLoader()
+	root := t.TempDir()
+	opts := mustNewOptionsForTest(
+		t,
+		WithEncodingRegistry(registry),
+		WithProgramLoader(loader),
+		WithMaxActiveSessions(3),
+		WithMaxIdleVMsPerPlan(4),
+		WithMaxVMsPerPlan(5),
+		WithFSRoot(" \t"+root+"\n"),
+		WithFSReadOnly(),
+	)
+
+	if opts.encoding != registry {
+		t.Fatal("expected custom encoding registry")
+	}
+
+	if opts.programLoader != loader {
+		t.Fatal("expected custom program loader")
+	}
+
+	if opts.maxActiveSessions != 3 || opts.maxIdleVMsPerPlan != 4 || opts.maxVMsPerPlan != 5 {
+		t.Fatalf(
+			"unexpected limits: active=%d idle=%d total=%d",
+			opts.maxActiveSessions,
+			opts.maxIdleVMsPerPlan,
+			opts.maxVMsPerPlan,
+		)
+	}
+
+	if opts.fsRoot != root {
+		t.Fatalf("fs root = %q, want %q", opts.fsRoot, root)
+	}
+
+	if !opts.fsReadOnly {
+		t.Fatal("expected file system to be read-only")
+	}
+}
+
+func TestEngineLimitsAcceptZero(t *testing.T) {
+	t.Parallel()
+
+	opts := mustNewOptionsForTest(
+		t,
+		WithMaxActiveSessions(0),
+		WithMaxIdleVMsPerPlan(0),
+		WithMaxVMsPerPlan(0),
+	)
+
+	if opts.maxActiveSessions != 0 || opts.maxIdleVMsPerPlan != 0 || opts.maxVMsPerPlan != 0 {
+		t.Fatalf(
+			"expected zero limits, got active=%d idle=%d total=%d",
+			opts.maxActiveSessions,
+			opts.maxIdleVMsPerPlan,
+			opts.maxVMsPerPlan,
+		)
+	}
+}
+
+func TestEngineSimpleOptionsReturnStructuredValidationErrors(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		option Option
+		name   string
+		field  string
+		value  string
+		reason string
+	}{
+		{
+			name:   "encoding registry",
+			field:  "encoding registry",
+			value:  "<nil>",
+			reason: "cannot be nil",
+			option: WithEncodingRegistry(nil),
+		},
+		{
+			name:   "program loader",
+			field:  "program loader",
+			value:  "<nil>",
+			reason: "cannot be nil",
+			option: WithProgramLoader(nil),
+		},
+		{
+			name:   "max active sessions",
+			field:  "max active sessions",
+			value:  "-1",
+			reason: "must be non-negative",
+			option: WithMaxActiveSessions(-1),
+		},
+		{
+			name:   "max idle VMs per plan",
+			field:  "max idle VMs per plan",
+			value:  "-1",
+			reason: "must be non-negative",
+			option: WithMaxIdleVMsPerPlan(-1),
+		},
+		{
+			name:   "max VMs per plan",
+			field:  "max VMs per plan",
+			value:  "-1",
+			reason: "must be non-negative",
+			option: WithMaxVMsPerPlan(-1),
+		},
+		{
+			name:   "fs root",
+			field:  "fs root",
+			value:  `" \t\n "`,
+			reason: "must not be blank",
+			option: WithFSRoot(" \t\n "),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := newOptions([]Option{tt.option})
+			if err == nil {
+				t.Fatal("expected validation error")
+			}
+
+			var validationErr gooptions.ValidationError
+			if !errors.As(err, &validationErr) {
+				t.Fatalf("expected options.ValidationError, got %T: %v", err, err)
+			}
+
+			if validationErr.Field != tt.field {
+				t.Fatalf("validation field = %q, want %q", validationErr.Field, tt.field)
+			}
+
+			if validationErr.Value != tt.value {
+				t.Fatalf("validation value = %q, want %q", validationErr.Value, tt.value)
+			}
+
+			if validationErr.Reason == nil || validationErr.Reason.Error() != tt.reason {
+				t.Fatalf("validation reason = %v, want %q", validationErr.Reason, tt.reason)
+			}
+		})
+	}
+}
+
+func TestInvalidEngineBuilderOptionDoesNotMutateConfig(t *testing.T) {
+	t.Parallel()
+
+	config := defaultOptions()
+	registry := config.encoding
+	config.maxActiveSessions = 7
+	config.fsRoot = "existing"
+
+	for _, option := range []Option{
+		WithEncodingRegistry(nil),
+		WithMaxActiveSessions(-1),
+		WithFSRoot(" \t "),
+	} {
+		if err := option(&config); err == nil {
+			t.Fatal("expected invalid option to fail")
+		}
+	}
+
+	if config.encoding != registry {
+		t.Fatal("invalid registry option mutated the config")
+	}
+
+	if config.maxActiveSessions != 7 {
+		t.Fatalf("invalid limit mutated the config to %d", config.maxActiveSessions)
+	}
+
+	if config.fsRoot != "existing" {
+		t.Fatalf("invalid fs root mutated the config to %q", config.fsRoot)
+	}
+}
+
+func TestNewOptionsAppliesAllOptionsAndJoinsFailuresInOrder(t *testing.T) {
+	t.Parallel()
+
+	firstErr := errors.New("first option failed")
+	secondErr := errors.New("second option failed")
+	var calls []string
+
+	_, err := newOptions([]Option{
+		func(*options) error {
+			calls = append(calls, "first")
+
+			return firstErr
+		},
+		nil,
+		func(*options) error {
+			calls = append(calls, "middle")
+
+			return nil
+		},
+		func(*options) error {
+			calls = append(calls, "second")
+
+			return secondErr
+		},
+	})
+	if err == nil {
+		t.Fatal("expected joined option failures")
+	}
+
+	if !slices.Equal(calls, []string{"first", "middle", "second"}) {
+		t.Fatalf("option calls = %v", calls)
+	}
+
+	if !errors.Is(err, firstErr) || !errors.Is(err, secondErr) {
+		t.Fatalf("expected both option failures, got %v", err)
+	}
+
+	joined, ok := err.(interface{ Unwrap() []error })
+	if !ok {
+		t.Fatalf("expected joined error, got %T", err)
+	}
+
+	failures := joined.Unwrap()
+	if len(failures) != 2 || failures[0] != firstErr || failures[1] != secondErr {
+		t.Fatalf("joined failures = %v, want [%v %v]", failures, firstErr, secondErr)
+	}
+}
+
+func TestJoinedEngineOptionFailuresRemainInspectable(t *testing.T) {
+	t.Parallel()
+
+	_, err := newOptions([]Option{
+		WithMaxActiveSessions(-1),
+		WithParams(map[string]any{"unsupported": make(chan int)}),
+	})
+	if err == nil {
+		t.Fatal("expected joined option failures")
+	}
+
+	if !errors.Is(err, runtime.ErrInvalidType) {
+		t.Fatalf("expected runtime.ErrInvalidType, got %v", err)
+	}
+
+	var validationErr gooptions.ValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("expected options.ValidationError, got %T: %v", err, err)
+	}
+
+	if validationErr.Field != "max active sessions" {
+		t.Fatalf("validation field = %q", validationErr.Field)
+	}
 }
 
 func TestNewOptionsIgnoresNilTopLevelOption(t *testing.T) {
@@ -176,8 +458,13 @@ func TestNewOptionsRejectsBlankFSRoot(t *testing.T) {
 		t.Fatal("expected blank fs root to fail")
 	}
 
-	if !strings.Contains(err.Error(), "fs root cannot be empty") {
-		t.Fatalf("expected blank fs root validation error, got: %v", err)
+	var validationErr gooptions.ValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("expected blank fs root validation error, got %T: %v", err, err)
+	}
+
+	if validationErr.Field != "fs root" {
+		t.Fatalf("validation field = %q, want %q", validationErr.Field, "fs root")
 	}
 }
 

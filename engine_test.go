@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	gooptions "github.com/ziflex/go-options"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	formatjson "github.com/MontFerret/ferret/v2/pkg/bytecode/format/json"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
@@ -565,8 +567,13 @@ func TestEngineNewReturnsProgramLoaderOptionError(t *testing.T) {
 		t.Fatal("expected engine to be nil on program loader option error")
 	}
 
-	if !strings.Contains(err.Error(), "program loader cannot be nil") {
-		t.Fatalf("expected program loader validation error, got: %v", err)
+	var validationErr gooptions.ValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("expected program loader validation error, got %T: %v", err, err)
+	}
+
+	if validationErr.Field != "program loader" {
+		t.Fatalf("validation field = %q, want %q", validationErr.Field, "program loader")
 	}
 }
 

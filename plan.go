@@ -38,12 +38,18 @@ func (p *Plan) Params() []string {
 	return params
 }
 
-// NewSession creates a session for executing the plan with optional per-run settings.
+// NewSession creates a session for executing the plan with optional per-run
+// settings. For a valid plan, all non-nil options are applied in order, and
+// failures from multiple options are joined before session resources are
+// acquired.
 func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Session, error) {
 	return newPlanSession(p, ctx, setters, planSessionSetup{}, buildSession)
 }
 
-// NewDebugSession creates a retained-state source-level debugging session.
+// NewDebugSession creates a retained-state source-level debugging session. All
+// non-nil options are applied in order after the plan's debug metadata is
+// validated, and failures from multiple options are joined before session
+// resources are acquired.
 func (p *Plan) NewDebugSession(ctx context.Context, setters ...SessionOption) (*DebugSession, error) {
 	return newPlanSession(p, ctx, setters, planSessionSetup{requiresDebugInfo: true}, buildDebugSession)
 }
