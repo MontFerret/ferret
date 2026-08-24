@@ -1,16 +1,19 @@
 package vm
 
 import (
+	"github.com/ziflex/go-options"
+
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type (
-	environmentBuilder struct {
+	environmentConfig struct {
 		functions *runtime.FunctionsBuilder
 		params    runtime.Params
 	}
 
-	EnvironmentOption func(env *environmentBuilder)
+	// EnvironmentOption configures an Environment during construction.
+	EnvironmentOption = options.Option[environmentConfig]
 
 	Environment struct {
 		Functions *runtime.Functions
@@ -30,24 +33,29 @@ func NewDefaultEnvironment() *Environment {
 	}
 }
 
-func NewEnvironment(opts []EnvironmentOption) (*Environment, error) {
-	envBuilder := &environmentBuilder{
+func defaultEnvironmentConfig() environmentConfig {
+	return environmentConfig{
 		functions: runtime.NewFunctionsBuilder(),
 		params:    runtime.NewParams(),
 	}
+}
 
-	for _, opt := range opts {
-		opt(envBuilder)
+// NewEnvironment creates an environment from opts. Option errors are returned
+// before the configured function registry is built.
+func NewEnvironment(opts []EnvironmentOption) (*Environment, error) {
+	cfg, err := options.ApplyTo(defaultEnvironmentConfig(), opts...)
+	if err != nil {
+		return nil, err
 	}
 
-	funcs, err := envBuilder.functions.Build()
+	funcs, err := cfg.functions.Build()
 	if err != nil {
 		return nil, err
 	}
 
 	return &Environment{
 		Functions: funcs,
-		Params:    envBuilder.params,
+		Params:    cfg.params,
 	}, nil
 }
 
@@ -89,6 +97,7 @@ func MergeEnvironments(envs ...*Environment) (*Environment, error) {
 	return merged, nil
 }
 
+// ExtendEnvironment applies opts to a new environment and merges it into env.
 func ExtendEnvironment(env *Environment, opts []EnvironmentOption) (*Environment, error) {
 	if len(opts) == 0 {
 		return env, nil

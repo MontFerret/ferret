@@ -1,25 +1,36 @@
 package test
 
+import "github.com/ziflex/go-options"
+
 type (
+	// Options contains testing-only VM construction settings.
 	Options struct {
 		BenchmarkMode bool
 	}
 
-	Option func(*Options)
+	// Option configures testing-only VM state.
+	Option = options.Option[Options]
 )
 
-func NewOptions(opts []Option) Options {
-	cfg := &Options{}
-
-	for _, opt := range opts {
-		opt(cfg)
-	}
-
-	return *cfg
+func defaultOptions() Options {
+	return Options{}
 }
 
+// NewOptions resolves VM testing options.
+func NewOptions(opts []Option) (Options, error) {
+	cfg, err := options.ApplyTo(defaultOptions(), opts...)
+	if err != nil {
+		return Options{}, err
+	}
+
+	return cfg, nil
+}
+
+// WithBenchmarkMode enables reusable benchmark results.
 func WithBenchmarkMode() Option {
-	return func(opts *Options) {
+	return func(opts *Options) error {
 		opts.BenchmarkMode = true
+
+		return nil
 	}
 }

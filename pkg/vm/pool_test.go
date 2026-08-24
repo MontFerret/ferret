@@ -114,6 +114,42 @@ func TestPoolAcquireRespectsTotalCapacity(t *testing.T) {
 	}
 }
 
+func TestPoolAcquireReleasesCapacityAfterOptionFailure(t *testing.T) {
+	t.Parallel()
+
+	wantErr := errors.New("option failure")
+	applications := 0
+	pool := NewPoolWithLimits(
+		newPoolTestProgram(),
+		0,
+		1,
+		func(*config) error {
+			applications++
+
+			return wantErr
+		},
+	)
+
+	for i := 0; i < 2; i++ {
+		instance, err := pool.Acquire()
+		if instance != nil {
+			t.Fatal("expected option failure to return no VM")
+		}
+
+		if !errors.Is(err, wantErr) {
+			t.Fatalf("expected option failure, got: %v", err)
+		}
+	}
+
+	if got, want := applications, 2; got != want {
+		t.Fatalf("expected both acquires to apply options: got %d applications, want %d", got, want)
+	}
+
+	if got := pool.total; got != 0 {
+		t.Fatalf("expected failed construction to release pool capacity, got total %d", got)
+	}
+}
+
 func TestPoolReleaseIgnoresDuplicateReleaseOfIdleVM(t *testing.T) {
 	t.Parallel()
 
