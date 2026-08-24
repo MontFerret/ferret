@@ -18,13 +18,13 @@ type (
 	}
 
 	planSessionDependencies struct {
+		logger  logging.Logger
+		hooks   sessionHooks
 		program *bytecode.Program
 		host    *host
-		hooks   sessionHooks
 		limiter *sessionLimiter
 		pool    *vm.Pool
-		options *sessionOptions
-		logger  logging.Logger
+		options sessionOptions
 	}
 )
 
@@ -172,7 +172,7 @@ func buildDebugSession(dependencies planSessionDependencies) (*DebugSession, err
 	return session, nil
 }
 
-func newPlanSessionEnvironment(h *host, options *sessionOptions) (*vm.Environment, error) {
+func newPlanSessionEnvironment(h *host, options sessionOptions) (*vm.Environment, error) {
 	return vm.ExtendEnvironment(&vm.Environment{
 		Functions: h.functions,
 		Params:    h.params,

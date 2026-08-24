@@ -5,6 +5,8 @@ import (
 	"io"
 	"strings"
 
+	gooptions "github.com/ziflex/go-options"
+
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
@@ -21,37 +23,44 @@ type (
 	}
 
 	// SessionOption configures a Session created from a Plan.
-	SessionOption func(*sessionOptions) error
+	SessionOption = gooptions.Option[sessionOptions]
 )
 
-func newSessionOptions(setters []SessionOption) (*sessionOptions, error) {
-	opts := &sessionOptions{
+func defaultSessionOptions() sessionOptions {
+	return sessionOptions{
 		outputContentType: encodingjson.ContentType,
 		debugFormat:       debugger.DefaultFormatOptions(),
 	}
+}
 
-	for _, setter := range setters {
-		if setter == nil {
-			continue
-		}
+func newSessionOptions(setters []SessionOption) (sessionOptions, error) {
+	if len(setters) == 0 {
+		return defaultSessionOptions(), nil
+	}
 
-		if err := setter(opts); err != nil {
-			return nil, err
-		}
+	opts, err := gooptions.ApplyTo(defaultSessionOptions(), setters...)
+	if err != nil {
+		return sessionOptions{}, err
 	}
 
 	return opts, nil
 }
 
 // WithDebugFormat configures bounded debugger value formatting.
-func WithDebugFormat(options DebugFormatOptions) SessionOption {
-	return func(session *sessionOptions) error {
-		if options.MaxDepth <= 0 || options.MaxItems <= 0 || options.MaxBytes <= 0 {
-			return fmt.Errorf("debug format limits must be positive")
-		}
-		session.debugFormat = options
-		return nil
-	}
+func WithDebugFormat(format DebugFormatOptions) SessionOption {
+	return gooptions.New(func(session *sessionOptions, format DebugFormatOptions) {
+		session.debugFormat = format
+	}).
+		Value(format).
+		Named("debug format").
+		Validators(gooptions.Check(func(format DebugFormatOptions) error {
+			if format.MaxDepth <= 0 || format.MaxItems <= 0 || format.MaxBytes <= 0 {
+				return fmt.Errorf("debug format limits must be positive")
+			}
+
+			return nil
+		})).
+		Build()
 }
 
 // WithEnvironmentOptions appends VM environment options to the created session.
@@ -79,19 +88,13 @@ func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
 
 // WithOutputContentType selects the output codec content type for session results.
 func WithOutputContentType(contentType string) SessionOption {
-	return func(session *sessionOptions) error {
-		if session == nil {
-			return nil
-		}
-
-		trimmed := strings.TrimSpace(contentType)
-		if trimmed == "" {
-			return fmt.Errorf("output content type cannot be empty")
-		}
-
-		session.outputContentType = trimmed
-		return nil
-	}
+	return gooptions.New(func(session *sessionOptions, contentType string) {
+		session.outputContentType = strings.TrimSpace(contentType)
+	}).
+		Value(contentType).
+		Named("output content type").
+		Validators(gooptions.NotBlank[string]()).
+		Build()
 }
 
 // WithSessionParams merges the provided parameter map into the session environment,

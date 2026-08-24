@@ -12,6 +12,7 @@ import (
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -258,6 +259,66 @@ func TestNewCleansNetworkCreatedFromOptionsOnInitFailure(t *testing.T) {
 
 	if got := client.idleCloseCount(); got != 1 {
 		t.Fatalf("expected construction-failure cleanup, got %d calls", got)
+	}
+}
+
+func TestNewRollsBackAllConstructedNetworksOnOptionFailure(t *testing.T) {
+	t.Parallel()
+
+	firstManagedClient := &recordingHTTPClient{}
+	secondManagedClient := &recordingHTTPClient{}
+	injectedClient := &recordingHTTPClient{}
+	injectedNetwork := mustNewTestNetwork(t, ferretnet.WithHTTPClient(injectedClient))
+
+	engine, err := New(
+		WithNetworkOptions(ferretnet.WithHTTPClient(firstManagedClient)),
+		WithParams(map[string]any{"unsupported": make(chan int)}),
+		WithNetworkOptions(ferretnet.WithHTTPClient(secondManagedClient)),
+		WithNetwork(injectedNetwork),
+	)
+	if engine != nil {
+		_ = engine.Close()
+
+		t.Fatal("expected option failure not to return an engine")
+	}
+
+	if !errors.Is(err, runtime.ErrInvalidType) {
+		t.Fatalf("expected runtime.ErrInvalidType, got %v", err)
+	}
+
+	if got := firstManagedClient.idleCloseCount(); got != 1 {
+		t.Fatalf("expected first constructed network to close once, got %d", got)
+	}
+
+	if got := secondManagedClient.idleCloseCount(); got != 1 {
+		t.Fatalf("expected later constructed network to close once, got %d", got)
+	}
+
+	if got := injectedClient.idleCloseCount(); got != 0 {
+		t.Fatalf("expected injected network to remain caller-owned, got %d closes", got)
+	}
+}
+
+func TestNewRollsBackConstructedNetworkOnStdlibRegistrationFailure(t *testing.T) {
+	t.Parallel()
+
+	client := &recordingHTTPClient{}
+	engine, err := New(
+		WithNetworkOptions(ferretnet.WithHTTPClient(client)),
+		WithStdlib(stdlib.Only(stdlib.Group("unknown"))),
+	)
+	if engine != nil {
+		_ = engine.Close()
+
+		t.Fatal("expected stdlib registration failure not to return an engine")
+	}
+
+	if err == nil || !strings.Contains(err.Error(), "stdlib: invalid stdlib group(s): unknown") {
+		t.Fatalf("expected stdlib registration failure, got %v", err)
+	}
+
+	if got := client.idleCloseCount(); got != 1 {
+		t.Fatalf("expected constructed network to close once, got %d", got)
 	}
 }
 
