@@ -6,8 +6,6 @@ import (
 	"fmt"
 
 	"github.com/MontFerret/api"
-	"github.com/MontFerret/api/result"
-	apisource "github.com/MontFerret/api/source"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
@@ -114,8 +112,8 @@ func New(setters ...Option) (*Engine, error) {
 // Compile compiles source into a reusable execution plan.
 func (e *Engine) Compile(
 	ctx context.Context,
-	file apisource.File,
-	setters ...api.PlanOption,
+	file Source,
+	setters ...PlanOption,
 ) (api.Plan, error) {
 	opts, err := newCompileOptions(setters)
 	if err != nil {
@@ -165,8 +163,8 @@ func (e *Engine) compile(
 // metadata. Debug compilation uses effective O0 optimization.
 func (e *Engine) CompileDebug(
 	ctx context.Context,
-	file apisource.File,
-	setters ...api.PlanOption,
+	file Source,
+	setters ...PlanOption,
 ) (api.Plan, error) {
 	opts, err := newCompileOptions(setters)
 	if err != nil {
@@ -194,11 +192,11 @@ func (e *Engine) Load(data []byte) (*Plan, error) {
 // Run compiles source, executes it in a fresh session, and returns encoded output and an error.
 // Similar to Session.Run, it may return a non-zero Output together with a non-nil
 // error when output was materialized before result finalization failed.
-func (e *Engine) Run(ctx context.Context, src apisource.File, opts ...SessionOption) (result.Output, error) {
+func (e *Engine) Run(ctx context.Context, src Source, opts ...SessionOption) (Output, error) {
 	plan, err := e.Compile(ctx, src)
 
 	if err != nil {
-		return result.Output{}, err
+		return Output{}, err
 	}
 
 	var session api.Session
@@ -227,7 +225,7 @@ func (e *Engine) Run(ctx context.Context, src apisource.File, opts ...SessionOpt
 
 	session, err = plan.NewSession(ctx, opts...)
 	if err != nil {
-		return result.Output{}, err
+		return Output{}, err
 	}
 
 	return session.Run(ctx)

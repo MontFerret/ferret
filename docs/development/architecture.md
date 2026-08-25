@@ -8,7 +8,7 @@ boundaries.
 ## Execution pipeline
 
 ```text
-api/source.File (embedding boundary)
+ferret.Source alias of api/source.File (embedding boundary)
     -> source.Source
     -> ANTLR lexer and parser
     -> compiler frontend and diagnostics
@@ -62,10 +62,11 @@ Engine -> Plan -> Session -> Output
 ```
 
 An `Engine` owns host-scoped services and immutable compilers. Its public
-compile and run boundary accepts `api/source.File`, then converts it to Core
-`pkg/source.Source`; parser, compiler, diagnostics, bytecode, VM, and encoding
-packages do not depend on the universal API. Per-compilation optimization
-options are passed explicitly without mutating the shared compiler.
+compile and run boundary accepts `ferret.Source`, an exact alias of
+`api/source.File`, then converts it to Core `pkg/source.Source`; parser,
+compiler, diagnostics, bytecode, VM, and encoding packages do not depend on the
+universal API. Per-compilation optimization options are passed explicitly
+without mutating the shared compiler.
 
 Compilation or artifact loading creates a reusable concrete `Plan`, which owns
 a VM pool for one program, while the universal compile methods return it as
@@ -77,7 +78,9 @@ responsibilities described in
 
 The root package owns composition and lifecycle policy, not the underlying
 semantics of runtime values, modules, codecs, filesystems, networks, or debugger
-inspection.
+inspection. It aliases the Universal source, option, optimization, and output
+types used by this boundary and forwards their common constructors, while
+portable implementation-independent consumers may import `api` directly.
 
 ## Package ownership
 

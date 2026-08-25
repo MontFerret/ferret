@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 
-	apisource "github.com/MontFerret/api/source"
 	ferret "github.com/MontFerret/ferret/v2"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -186,10 +185,7 @@ func (p *Program) MustRun(ctx context.Context, setters ...Option) []byte {
 // compileFromSource is a helper used by compat packages to compile a raw query string
 // using the provided engine and return a wrapped Program.
 func CompileFromSource(ctx context.Context, eng *ferret.Engine, query string) (*Program, error) {
-	compiled, err := eng.Compile(ctx, apisource.File{
-		Name:    "anonymous",
-		Content: query,
-	})
+	compiled, err := eng.Compile(ctx, ferret.NewAnonymousSource(query))
 	if err != nil {
 		return nil, err
 	}

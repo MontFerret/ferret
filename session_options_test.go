@@ -7,7 +7,6 @@ import (
 
 	gooptions "github.com/ziflex/go-options"
 
-	"github.com/MontFerret/api"
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -152,19 +151,19 @@ func TestNewSessionOptionsAppliesAllOptionsAndJoinsFailures(t *testing.T) {
 	var calls []string
 
 	_, err := newSessionOptions([]SessionOption{
-		func(api.SessionOptions) error {
+		func(SessionOptions) error {
 			calls = append(calls, "first")
 
 			return firstErr
 		},
 		nil,
-		func(api.SessionOptions) error {
+		func(SessionOptions) error {
 			calls = append(calls, "middle")
 
 			return nil
 		},
 		WithOutputContentType(" \t "),
-		func(api.SessionOptions) error {
+		func(SessionOptions) error {
 			calls = append(calls, "second")
 
 			return secondErr
@@ -206,7 +205,7 @@ func TestSessionParamsPreserveConversionErrorIdentity(t *testing.T) {
 	t.Parallel()
 
 	_, err := newSessionOptions([]SessionOption{
-		WithSessionParams(map[string]any{"unsupported": make(chan int)}),
+		WithParams(map[string]any{"unsupported": make(chan int)}),
 	})
 	if err == nil {
 		t.Fatal("expected unsupported session param to fail")
@@ -252,9 +251,9 @@ func TestNewSessionOptionsIgnoresEmptySessionParams(t *testing.T) {
 
 	opts := mustNewSessionOptionsForTest(
 		t,
-		WithSessionParam("param1", 1),
-		WithSessionParams(nil),
-		WithSessionParams(map[string]any{}),
+		WithParam("param1", 1),
+		WithParams(nil),
+		WithParams(map[string]any{}),
 	)
 
 	if len(opts.env) != 1 {
@@ -318,8 +317,8 @@ func TestNewSessionOptionsKeepDefaultOutputContentTypeWithNoopOptions(t *testing
 	opts := mustNewSessionOptionsForTest(
 		t,
 		nil,
-		WithSessionParams(nil),
-		WithSessionParams(map[string]any{}),
+		WithParams(nil),
+		WithParams(map[string]any{}),
 		WithSessionRuntimeParams(nil),
 		WithSessionRuntimeParams(runtime.Params{}),
 		WithSessionLogFields(nil),

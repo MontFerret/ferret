@@ -29,7 +29,7 @@ func TestSessionRunInjectsConfiguredNetwork(t *testing.T) {
 	engine := mustNewEngine(t, WithNetwork(network))
 	defer func() { _ = engine.Close() }()
 
-	out, err := engine.Run(context.Background(), newAnonymousAPIFile(`
+	out, err := engine.Run(context.Background(), NewAnonymousSource(`
 RETURN TO_STRING(IO::NET::HTTP::GET({ url: "https://example.test/session" }))
 `))
 	if err != nil {
@@ -59,7 +59,7 @@ func TestDebugSessionRunInjectsConfiguredNetwork(t *testing.T) {
 	engine := mustNewEngine(t, WithNetwork(network))
 	defer func() { _ = engine.Close() }()
 
-	compiled, err := engine.CompileDebug(context.Background(), newAPIFile("debug-network.fql", `
+	compiled, err := engine.CompileDebug(context.Background(), NewSource("debug-network.fql", `
 LET marker = 1
 RETURN TO_STRING(IO::NET::HTTP::GET({ url: "https://example.test/debug" }))
 `))

@@ -240,7 +240,7 @@ func TestPlanNewDebugSessionReleasesLimiterOnEnvironmentError(t *testing.T) {
 	t.Parallel()
 
 	eng := mustNewEngine(t, WithMaxActiveSessions(1))
-	plan, err := eng.CompileDebug(context.Background(), newAnonymousAPIFile(coverageValidQuery))
+	plan, err := eng.CompileDebug(context.Background(), NewAnonymousSource(coverageValidQuery))
 	if err != nil {
 		t.Fatalf("failed to compile debug plan: %v", err)
 	}
@@ -331,7 +331,7 @@ func TestDebugSessionCloseReleasesLimiterOnce(t *testing.T) {
 	t.Parallel()
 
 	eng := mustNewEngine(t, WithMaxActiveSessions(2))
-	plan, err := eng.CompileDebug(context.Background(), newAnonymousAPIFile(coverageValidQuery))
+	plan, err := eng.CompileDebug(context.Background(), NewAnonymousSource(coverageValidQuery))
 	if err != nil {
 		t.Fatalf("failed to compile debug plan: %v", err)
 	}

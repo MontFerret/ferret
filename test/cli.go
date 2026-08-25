@@ -16,7 +16,6 @@ import (
 	"strings"
 	"time"
 
-	apisource "github.com/MontFerret/api/source"
 	"github.com/MontFerret/ferret/v2/pkg/asm"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
@@ -381,10 +380,7 @@ func runQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionO
 }
 
 func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, query *source.Source) error {
-	plan, err := engine.Compile(ctx, apisource.File{
-		Name:    query.Name(),
-		Content: query.Content(),
-	})
+	plan, err := engine.Compile(ctx, ferret.NewSource(query.Name(), query.Content()))
 
 	if err != nil {
 		return err

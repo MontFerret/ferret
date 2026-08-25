@@ -8,7 +8,6 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestDebugSessionBreakpointsLocalsEvaluateAndComplete(t *testing.T) {
@@ -18,7 +17,7 @@ func TestDebugSessionBreakpointsLocalsEvaluateAndComplete(t *testing.T) {
 	}
 	defer engine.Close()
 
-	src := source.New("debug.fql", "LET x = 1\n\nVAR y = 2\ny = y + x\nRETURN y")
+	src := NewSource("debug.fql", "LET x = 1\n\nVAR y = 2\ny = y + x\nRETURN y")
 	plan := mustCompileDebugPlan(t, engine, src)
 	defer plan.Close()
 
@@ -104,7 +103,7 @@ func TestDebugSessionBreakpointBindsOnePointPerLine(t *testing.T) {
 	}
 	defer engine.Close()
 
-	plan := mustCompileDebugPlan(t, engine, source.New("same-line.fql", "LET x = 1 RETURN x"))
+	plan := mustCompileDebugPlan(t, engine, NewSource("same-line.fql", "LET x = 1 RETURN x"))
 	defer plan.Close()
 	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
@@ -141,7 +140,7 @@ func TestDebugSessionBreakpointLifecyclePreservesIDs(t *testing.T) {
 	}
 	defer engine.Close()
 
-	plan := mustCompileDebugPlan(t, engine, source.New("breakpoints.fql", "RETURN 1"))
+	plan := mustCompileDebugPlan(t, engine, NewSource("breakpoints.fql", "RETURN 1"))
 	defer plan.Close()
 	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
@@ -178,12 +177,12 @@ func TestDebugSessionLocalsIncludeDeclaredBindParameters(t *testing.T) {
 	}
 	defer engine.Close()
 
-	plan := mustCompileDebugPlan(t, engine, source.New("params.fql", "RETURN @input"))
+	plan := mustCompileDebugPlan(t, engine, NewSource("params.fql", "RETURN @input"))
 	defer plan.Close()
 	session, err := plan.newDebugSession(
 		context.Background(),
-		WithSessionParam("input", 4),
-		WithSessionParam("unrelated", 9),
+		WithParam("input", 4),
+		WithParam("unrelated", 9),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -213,7 +212,7 @@ func TestDebugPlanRunsNormally(t *testing.T) {
 	}
 	defer engine.Close()
 
-	plan := mustCompileDebugPlan(t, engine, source.New("normal.fql", "LET x = 2\nRETURN x + 1"))
+	plan := mustCompileDebugPlan(t, engine, NewSource("normal.fql", "LET x = 2\nRETURN x + 1"))
 	defer plan.Close()
 	session, err := plan.NewSession(context.Background())
 	if err != nil {
@@ -236,7 +235,7 @@ func TestDebugSessionPauseAndSafeObjectInspection(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer engine.Close()
-	plan := mustCompileDebugPlan(t, engine, source.New("object.fql", "LET obj = {b: 2, a: 1}\nRETURN obj"))
+	plan := mustCompileDebugPlan(t, engine, NewSource("object.fql", "LET obj = {b: 2, a: 1}\nRETURN obj"))
 	defer plan.Close()
 	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
@@ -277,7 +276,7 @@ func TestDebugSessionRuntimeErrorPreservesLocals(t *testing.T) {
 	}
 	defer engine.Close()
 
-	plan := mustCompileDebugPlan(t, engine, source.New("error.fql", "LET x = 7\nRETURN x / 0"))
+	plan := mustCompileDebugPlan(t, engine, NewSource("error.fql", "LET x = 7\nRETURN x / 0"))
 	defer plan.Close()
 	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
@@ -331,7 +330,7 @@ func TestDebugSessionRuntimeErrorJoinsAfterRunHookFailure(t *testing.T) {
 	}
 	defer engine.Close()
 
-	plan := mustCompileDebugPlan(t, engine, source.New("error.fql", "RETURN 1 / 0"))
+	plan := mustCompileDebugPlan(t, engine, NewSource("error.fql", "RETURN 1 / 0"))
 	defer plan.Close()
 	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
@@ -378,7 +377,7 @@ func TestDebugSessionResumePreservesBeforeRunContextValues(t *testing.T) {
 	plan := mustCompileDebugPlan(
 		t,
 		engine,
-		source.New("context.fql", "LET x = 1\nRETURN DEBUG_CONTEXT_VALUE()"),
+		NewSource("context.fql", "LET x = 1\nRETURN DEBUG_CONTEXT_VALUE()"),
 	)
 	defer plan.Close()
 
@@ -406,7 +405,7 @@ func TestPlanNewDebugSessionRequiresDebugCompilation(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer engine.Close()
-	plan, err := engine.Compile(context.Background(), newAnonymousAPIFile("RETURN 1"))
+	plan, err := engine.Compile(context.Background(), NewAnonymousSource("RETURN 1"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -428,7 +427,7 @@ func TestDebugSessionStepIntoAndOut(t *testing.T) {
 }
 LET x = add(2)
 RETURN x`
-	plan := mustCompileDebugPlan(t, engine, source.New("udf.fql", query))
+	plan := mustCompileDebugPlan(t, engine, NewSource("udf.fql", query))
 	defer plan.Close()
 	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
@@ -477,7 +476,7 @@ func TestDebugSessionNextStepsOverCallAndOutFromMainCompletes(t *testing.T) {
 }
 LET x = add(2)
 RETURN x`
-	plan := mustCompileDebugPlan(t, engine, source.New("next.fql", query))
+	plan := mustCompileDebugPlan(t, engine, NewSource("next.fql", query))
 	defer plan.Close()
 	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
@@ -514,7 +513,7 @@ func TestDebugSessionStopsOnRepeatedLoopLocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer engine.Close()
-	plan := mustCompileDebugPlan(t, engine, source.New("loop.fql", "FOR i IN 1..2\n  RETURN i"))
+	plan := mustCompileDebugPlan(t, engine, NewSource("loop.fql", "FOR i IN 1..2\n  RETURN i"))
 	defer plan.Close()
 	session, err := plan.newDebugSession(context.Background())
 	if err != nil {

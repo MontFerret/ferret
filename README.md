@@ -78,13 +78,13 @@ go get github.com/MontFerret/ferret/v2@latest
 ```
 
 There are currently two ways to start with Ferret v2:
-- Universal execution API - recommended for new projects
+- Native v2 API - recommended for new projects
 - `compat` module - recommended as a first migration step for existing v1 integrations
 
 ### New projects
 
-Ferret's concrete engine, plan, and session types implement the universal
-execution interfaces from `github.com/MontFerret/api` directly:
+The root package provides Ferret's concrete engine together with native aliases
+and constructors for the Universal API concepts used by normal embedding code:
 
 ```
 Engine -> compile query -> create session -> run
@@ -98,8 +98,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/MontFerret/api"
-	apisource "github.com/MontFerret/api/source"
 	ferret "github.com/MontFerret/ferret/v2"
 )
 
@@ -112,17 +110,17 @@ func main() {
 	}
 	defer eng.Close()
 
-	var runtime api.Runtime = eng
-	plan, err := runtime.Compile(ctx, apisource.File{
-		Name:    "main.fql",
-		Content: "RETURN 1 + 1",
-	})
+	plan, err := eng.Compile(
+		ctx,
+		ferret.NewSource("main.fql", "RETURN @value + 1"),
+		ferret.WithOptimizationLevel(ferret.OptimizationFull),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer plan.Close()
 
-	session, err := plan.NewSession(ctx)
+	session, err := plan.NewSession(ctx, ferret.WithParam("value", 1))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -137,10 +135,12 @@ func main() {
 }
 ```
 
-`Run` returns the encoded output by value. Ferret-specific session options such
-as `ferret.WithSessionParam` remain valid alongside portable `api.SessionOption`
-constructors. Compilation returns `api.Plan`; assert it to `*ferret.Plan` only
-when using Ferret-specific artifact methods such as `Marshal`.
+`Run` returns the encoded output by value. Ferret's source, option, output, and
+optimization types are exact aliases of their Universal API counterparts, so
+native callers do not need a second import. Portable implementation-independent
+code should import `github.com/MontFerret/api` directly. Compilation returns the
+Universal plan interface; assert it to `*ferret.Plan` only when using
+Ferret-specific artifact methods such as `Marshal`.
 
 ### Migration from v1
 

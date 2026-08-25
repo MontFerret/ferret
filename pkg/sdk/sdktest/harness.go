@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	apisource "github.com/MontFerret/api/source"
 	ferret "github.com/MontFerret/ferret/v2"
 )
 
@@ -47,8 +46,5 @@ func (h *Harness) Run(
 	query string,
 	options ...ferret.SessionOption,
 ) (ferret.Output, error) {
-	return h.engine.Run(ctx, apisource.File{
-		Name:    "anonymous",
-		Content: query,
-	}, options...)
+	return h.engine.Run(ctx, ferret.NewAnonymousSource(query), options...)
 }

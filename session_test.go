@@ -373,7 +373,7 @@ func TestSessionCloseAfterPlanCloseReleasesLimiter(t *testing.T) {
 func TestSessionParams(t *testing.T) {
 	t.Parallel()
 
-	eng, err := New(WithParams(map[string]any{
+	eng, err := New(WithEngineParams(map[string]any{
 		"param1": 1,
 	}))
 
@@ -387,8 +387,8 @@ func TestSessionParams(t *testing.T) {
 
 	out, err := eng.Run(
 		context.Background(),
-		newAnonymousAPIFile("RETURN @param1 + @param2"),
-		WithSessionParams(map[string]any{
+		NewAnonymousSource("RETURN @param1 + @param2"),
+		WithParams(map[string]any{
 			"param2": 2,
 		}),
 	)
@@ -411,7 +411,7 @@ func TestSessionParams(t *testing.T) {
 func TestSessionParam(t *testing.T) {
 	t.Parallel()
 
-	eng, err := New(WithParam("param1", 1))
+	eng, err := New(WithEngineParam("param1", 1))
 
 	if err != nil {
 		t.Fatalf("expected New to succeed with valid params, got: %v", err)
@@ -421,7 +421,7 @@ func TestSessionParam(t *testing.T) {
 		t.Fatal("expected engine to be non-nil on successful construction")
 	}
 
-	out, err := eng.Run(context.Background(), newAnonymousAPIFile("RETURN @param1 + @param2"), WithSessionParam("param2", 2))
+	out, err := eng.Run(context.Background(), NewAnonymousSource("RETURN @param1 + @param2"), WithParam("param2", 2))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)
@@ -449,7 +449,7 @@ func TestSessionRuntimeParams(t *testing.T) {
 		t.Fatalf("expected runtime.NewParamsFrom to succeed, got: %v", err)
 	}
 
-	eng, err := New(WithRuntimeParams(rtp))
+	eng, err := New(WithEngineRuntimeParams(rtp))
 
 	if err != nil {
 		t.Fatalf("expected New to succeed with valid params, got: %v", err)
@@ -467,7 +467,7 @@ func TestSessionRuntimeParams(t *testing.T) {
 		t.Fatalf("expected runtime.NewParamsFrom to succeed, got: %v", err)
 	}
 
-	out, err := eng.Run(context.Background(), newAnonymousAPIFile("RETURN @param1 + @param2"), WithSessionRuntimeParams(sessionParams))
+	out, err := eng.Run(context.Background(), NewAnonymousSource("RETURN @param1 + @param2"), WithSessionRuntimeParams(sessionParams))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)
@@ -487,7 +487,7 @@ func TestSessionRuntimeParams(t *testing.T) {
 func TestSessionRuntimeParam(t *testing.T) {
 	t.Parallel()
 
-	eng, err := New(WithRuntimeParam("param1", runtime.NewInt(1)))
+	eng, err := New(WithEngineRuntimeParam("param1", runtime.NewInt(1)))
 
 	if err != nil {
 		t.Fatalf("expected New to succeed with valid params, got: %v", err)
@@ -497,7 +497,7 @@ func TestSessionRuntimeParam(t *testing.T) {
 		t.Fatal("expected engine to be non-nil on successful construction")
 	}
 
-	out, err := eng.Run(context.Background(), newAnonymousAPIFile("RETURN @param1 + @param2"), WithSessionRuntimeParam("param2", runtime.NewInt(2)))
+	out, err := eng.Run(context.Background(), NewAnonymousSource("RETURN @param1 + @param2"), WithSessionRuntimeParam("param2", runtime.NewInt(2)))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)

@@ -13,7 +13,12 @@ type compileOptions struct {
 	hasOptimization   bool
 }
 
-func newCompileOptions(setters []api.PlanOption) (compileOptions, error) {
+// WithOptimizationLevel sets the optimization level for the execution plan.
+func WithOptimizationLevel(level OptimizationLevel) PlanOption {
+	return api.WithOptimizationLevel(level)
+}
+
+func newCompileOptions(setters []PlanOption) (compileOptions, error) {
 	var opts compileOptions
 	var failures []error
 
@@ -30,12 +35,12 @@ func newCompileOptions(setters []api.PlanOption) (compileOptions, error) {
 	return opts, errors.Join(failures...)
 }
 
-func (o *compileOptions) SetOptimizationLevel(level api.OptimizationLevel) error {
+func (o *compileOptions) SetOptimizationLevel(level OptimizationLevel) error {
 	switch level {
-	case api.OptimizationNone,
-		api.OptimizationBasic,
-		api.OptimizationFull,
-		api.OptimizationAggressive:
+	case OptimizationNone,
+		OptimizationBasic,
+		OptimizationFull,
+		OptimizationAggressive:
 		o.optimizationLevel = compiler.OptimizationLevel(level)
 		o.hasOptimization = true
 

@@ -290,7 +290,7 @@ func TestJoinedEngineOptionFailuresRemainInspectable(t *testing.T) {
 
 	_, err := newOptions([]Option{
 		WithMaxActiveSessions(-1),
-		WithParams(map[string]any{"unsupported": make(chan int)}),
+		WithEngineParams(map[string]any{"unsupported": make(chan int)}),
 	})
 	if err == nil {
 		t.Fatal("expected joined option failures")
@@ -313,7 +313,7 @@ func TestJoinedEngineOptionFailuresRemainInspectable(t *testing.T) {
 func TestNewOptionsIgnoresNilTopLevelOption(t *testing.T) {
 	t.Parallel()
 
-	opts := mustNewOptionsForTest(t, nil, WithParam("param1", "value1"))
+	opts := mustNewOptionsForTest(t, nil, WithEngineParam("param1", "value1"))
 
 	value, ok := opts.params.Get("param1")
 	if !ok {
@@ -330,9 +330,9 @@ func TestNewOptionsIgnoresEmptyParamsOptions(t *testing.T) {
 
 	opts := mustNewOptionsForTest(
 		t,
-		WithParam("param1", "value1"),
-		WithParams(nil),
-		WithParams(map[string]any{}),
+		WithEngineParam("param1", "value1"),
+		WithEngineParams(nil),
+		WithEngineParams(map[string]any{}),
 	)
 
 	if len(opts.params) != 1 {
@@ -354,9 +354,9 @@ func TestNewOptionsIgnoresEmptyRuntimeParamsOptions(t *testing.T) {
 
 	opts := mustNewOptionsForTest(
 		t,
-		WithRuntimeParam("param1", runtime.NewString("value1")),
-		WithRuntimeParams(nil),
-		WithRuntimeParams(runtime.Params{}),
+		WithEngineRuntimeParam("param1", runtime.NewString("value1")),
+		WithEngineRuntimeParams(nil),
+		WithEngineRuntimeParams(runtime.Params{}),
 	)
 
 	if len(opts.params) != 1 {
@@ -548,7 +548,7 @@ func TestWithFunctionsRegistrarPreservesQualifiedHostFunctionNames(t *testing.T)
 		"return TOOLS::RISK::CALCULATE_RISK()",
 		"return Tools::Risk::Calculate_Risk()",
 	} {
-		output, err := eng.Run(t.Context(), newAnonymousAPIFile(query))
+		output, err := eng.Run(t.Context(), NewAnonymousSource(query))
 		if err != nil {
 			t.Fatalf("run %q: %v", query, err)
 		}
@@ -585,7 +585,7 @@ func TestUnknownHostFunctionDiagnosticPreservesSourceSpelling(t *testing.T) {
 	defer func() { _ = eng.Close() }()
 
 	const name = "TOOLS::MiSsInG"
-	_, err := eng.Run(t.Context(), newAnonymousAPIFile("return "+name+"()"))
+	_, err := eng.Run(t.Context(), NewAnonymousSource("return "+name+"()"))
 	if err == nil {
 		t.Fatal("expected unknown host function to fail")
 	}
@@ -614,7 +614,7 @@ func TestResolvedHostFunctionDiagnosticUsesRegisteredQualifiedName(t *testing.T)
 	)
 	defer func() { _ = eng.Close() }()
 
-	_, err := eng.Run(t.Context(), newAnonymousAPIFile("return Db::Postgres::Query()"))
+	_, err := eng.Run(t.Context(), NewAnonymousSource("return Db::Postgres::Query()"))
 	if err == nil {
 		t.Fatal("expected invalid host function arity to fail")
 	}

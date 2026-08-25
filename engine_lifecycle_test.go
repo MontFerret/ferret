@@ -328,7 +328,7 @@ func TestNewRollsBackAllConstructedNetworksOnOptionFailure(t *testing.T) {
 	engine, err := New(
 		WithNetworkOptions(ferretnet.WithHTTPClient(firstManagedClient)),
 		WithNetworkOptions(ferretnet.WithHTTPClient(secondManagedClient)),
-		WithParams(map[string]any{"unsupported": make(chan int)}),
+		WithEngineParams(map[string]any{"unsupported": make(chan int)}),
 		WithNetwork(injectedNetwork),
 	)
 	if engine != nil {
@@ -455,7 +455,7 @@ func TestRunClosesPlanWhenSessionCreationFails(t *testing.T) {
 
 	_, err = eng.Run(
 		context.Background(),
-		newAnonymousAPIFile("RETURN 1"),
+		NewAnonymousSource("RETURN 1"),
 		WithEnvironmentOptions(
 			vm.WithFunction("SESSION_DUP", testVarFn),
 			vm.WithFunction("SESSION_DUP", testVarFn),
@@ -491,7 +491,7 @@ func TestRunLogsDeferredCleanupErrorsWithoutChangingRunResult(t *testing.T) {
 		t.Fatalf("failed to create engine: %v", err)
 	}
 
-	result, err := eng.Run(context.Background(), newAnonymousAPIFile("RETURN 1"))
+	result, err := eng.Run(context.Background(), NewAnonymousSource("RETURN 1"))
 	if err != nil {
 		t.Fatalf("expected run result error to be unchanged by cleanup failures, got: %v", err)
 	}

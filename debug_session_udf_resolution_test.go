@@ -9,7 +9,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestDebugSessionBreakpointsDistinguishUDFBodyAndCallSite(t *testing.T) {
@@ -26,7 +25,7 @@ FUNC add(a) {
 }
 LET value = add(seed)
 RETURN value`
-	plan := mustCompileDebugPlan(t, engine, source.New("udf-breakpoints.fql", query))
+	plan := mustCompileDebugPlan(t, engine, NewSource("udf-breakpoints.fql", query))
 	defer plan.Close()
 
 	session, err := plan.newDebugSession(context.Background())
@@ -97,7 +96,7 @@ FUNC second() {
 LET a = first()
 LET b = second()
 RETURN a + b`
-	plan := mustCompileDebugPlan(t, engine, source.New("multiple-udfs.fql", query))
+	plan := mustCompileDebugPlan(t, engine, NewSource("multiple-udfs.fql", query))
 	defer plan.Close()
 
 	session, err := plan.newDebugSession(context.Background())
@@ -156,7 +155,7 @@ FUNC add(a) {
 }
 
 RETURN add(seed)`
-	plan := mustCompileDebugPlan(t, engine, source.New("udf-binding.fql", query))
+	plan := mustCompileDebugPlan(t, engine, NewSource("udf-binding.fql", query))
 	defer plan.Close()
 
 	session, err := plan.newDebugSession(context.Background())
@@ -216,7 +215,7 @@ FUNC unrelated() {
 }
 LET y = add(x)
 RETURN y`
-	plan := mustCompileDebugPlan(t, engine, source.New("udf-error.fql", query))
+	plan := mustCompileDebugPlan(t, engine, NewSource("udf-error.fql", query))
 	defer plan.Close()
 
 	session, err := plan.newDebugSession(context.Background())
@@ -322,10 +321,10 @@ FUNC outer(p) {
 LET box = {value: 10}
 LET x = 10
 RETURN outer(2) + x + @input + box.value - 10`
-	plan := mustCompileDebugPlan(t, engine, source.New("caller-frames.fql", query))
+	plan := mustCompileDebugPlan(t, engine, NewSource("caller-frames.fql", query))
 	defer plan.Close()
 
-	session, err := plan.newDebugSession(context.Background(), WithSessionParam("input", 5))
+	session, err := plan.newDebugSession(context.Background(), WithParam("input", 5))
 	if err != nil {
 		t.Fatal(err)
 	}

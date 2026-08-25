@@ -76,12 +76,12 @@ discovered during traversal. The result remains responsible for those resources
 until `Close`.
 
 The root embedding layer uses this mechanism internally to produce an
-`encoding.Output`, then exposes it as the value type `api/result.Output` without
-copying the encoded payload. Encoders can discover nested resources during
-traversal, so encoding failures and missing-codec failures must still close all
-resources already owned or adopted. Failures before materialization return a
-zero output; failures during result finalization preserve already-materialized
-output alongside the error.
+`encoding.Output`, then exposes it as `ferret.Output`, an exact alias of
+`api/result.Output`, without copying the encoded payload. Encoders can discover
+nested resources during traversal, so encoding failures and missing-codec
+failures must still close all resources already owned or adopted. Failures
+before materialization return a zero output; failures during result finalization
+preserve already-materialized output alongside the error.
 
 ## Engine, plan, and session lifecycle
 
@@ -96,9 +96,11 @@ The root embedding lifecycle is hierarchical:
   output.
 
 These concrete types implement the universal `api.Runtime`, `api.Plan`, and
-`api.Session` contracts directly. Universal source files are converted to Core
-sources only by `Engine`. Portable session options and Ferret-specific session
-options share the same ordered application path; Ferret-specific options reject
+`api.Session` contracts directly. `ferret.Source` and the common plan/session
+options are exact Universal aliases, and their root constructors forward to the
+Universal implementation. Universal source files are converted to Core sources
+only by `Engine`. Portable session options and Ferret-specific session options
+share the same ordered application path; Ferret-specific options reject
 non-Ferret option targets explicitly.
 
 `Engine.Run` is a convenience path that owns and closes its temporary plan and

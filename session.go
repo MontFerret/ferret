@@ -51,13 +51,13 @@ var _ api.Session = (*Session)(nil)
 // Run executes the session with the provided context and returns encoded output.
 // It may return a non-zero Output together with a non-nil error when output was
 // materialized before result cleanup failed.
-func (s *Session) Run(c context.Context) (api.Output, error) {
+func (s *Session) Run(c context.Context) (Output, error) {
 	output, err := s.run(c)
 	if output == nil {
-		return api.Output{}, err
+		return Output{}, err
 	}
 
-	return api.Output{
+	return Output{
 		ContentType: output.ContentType,
 		Content:     output.Content,
 	}, err

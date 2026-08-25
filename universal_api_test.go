@@ -286,24 +286,72 @@ func TestUniversalSessionPreservesOutputWithCleanupError(t *testing.T) {
 	}
 }
 
-type foreignSessionOptions struct{}
+type foreignSessionOptions struct {
+	params      map[string]any
+	contentType string
+}
 
-func (foreignSessionOptions) SetParam(string, any) error {
+func (o *foreignSessionOptions) SetParam(name string, value any) error {
+	if o.params == nil {
+		o.params = make(map[string]any)
+	}
+
+	o.params[name] = value
+
 	return nil
 }
 
-func (foreignSessionOptions) SetParams(map[string]any) error {
+func (o *foreignSessionOptions) SetParams(params map[string]any) error {
+	if o.params == nil {
+		o.params = make(map[string]any)
+	}
+
+	for name, value := range params {
+		o.params[name] = value
+	}
+
 	return nil
 }
 
-func (foreignSessionOptions) SetOutputContentType(string) error {
+func (o *foreignSessionOptions) SetOutputContentType(contentType string) error {
+	o.contentType = contentType
+
 	return nil
 }
 
-func TestFerretSessionOptionsRejectForeignRuntimeTargets(t *testing.T) {
+func TestFerretUniversalSessionOptionsForwardToForeignTargets(t *testing.T) {
 	t.Parallel()
 
-	err := ferret.WithSessionParam("value", 1)(foreignSessionOptions{})
+	target := &foreignSessionOptions{}
+	options := []ferret.SessionOption{
+		ferret.WithParams(map[string]any{"first": 1}),
+		ferret.WithParam("second", 2),
+		ferret.WithOutputContentType("application/example"),
+	}
+
+	for _, option := range options {
+		if err := option(target); err != nil {
+			t.Fatalf("apply Universal session option: %v", err)
+		}
+	}
+
+	if target.params["first"] != 1 || target.params["second"] != 2 {
+		t.Fatalf("forwarded params = %#v", target.params)
+	}
+
+	if target.contentType != "application/example" {
+		t.Fatalf("forwarded content type = %q", target.contentType)
+	}
+}
+
+func TestFerretSpecificSessionOptionsRejectForeignRuntimeTargets(t *testing.T) {
+	t.Parallel()
+
+	err := ferret.WithDebugFormat(ferret.DebugFormatOptions{
+		MaxDepth: 1,
+		MaxItems: 1,
+		MaxBytes: 1,
+	})(&foreignSessionOptions{})
 	if err == nil || !strings.Contains(err.Error(), "Ferret session option cannot be applied") {
 		t.Fatalf("foreign target error = %v", err)
 	}

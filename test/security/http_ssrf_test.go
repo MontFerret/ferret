@@ -10,7 +10,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	apisource "github.com/MontFerret/api/source"
 	"github.com/MontFerret/ferret/v2"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
@@ -37,16 +36,16 @@ func TestDefaultEngineHTTPPolicyBlocksLoopback(t *testing.T) {
 		}
 	})
 
-	query := apisource.File{Name: "anonymous", Content: `
+	query := ferret.NewAnonymousSource(`
 RETURN TO_STRING(IO::NET::HTTP::GET(@url))
-`}
+`)
 
 	for _, endpoint := range endpoints {
 		t.Run(endpoint.name, func(t *testing.T) {
 			_, err := engine.Run(
 				context.Background(),
 				query,
-				ferret.WithSessionParam("url", baseURL+endpoint.path),
+				ferret.WithParam("url", baseURL+endpoint.path),
 			)
 
 			if err == nil {
@@ -102,16 +101,16 @@ func TestExplicitLocalhostOptInAllowsLoopbackHTTP(t *testing.T) {
 		}
 	})
 
-	query := apisource.File{Name: "anonymous", Content: `
+	query := ferret.NewAnonymousSource(`
 RETURN TO_STRING(IO::NET::HTTP::GET(@url))
-`}
+`)
 
 	for _, endpoint := range endpoints {
 		t.Run(endpoint.name, func(t *testing.T) {
 			result, err := engine.Run(
 				context.Background(),
 				query,
-				ferret.WithSessionParam("url", baseURL+endpoint.path),
+				ferret.WithParam("url", baseURL+endpoint.path),
 			)
 
 			if err != nil {

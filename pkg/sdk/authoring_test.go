@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	apisource "github.com/MontFerret/api/source"
 	ferret "github.com/MontFerret/ferret/v2"
 	"github.com/MontFerret/ferret/v2/pkg/module"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -90,10 +89,7 @@ func TestSDKModuleHostFunctionsResolveQualifiedNamesCaseInsensitively(t *testing
 		"Db::Postgres::QuErY",
 	} {
 		query := `return ` + name + `("ok")`
-		output, runErr := engine.Run(t.Context(), apisource.File{
-			Name:    "anonymous",
-			Content: query,
-		})
+		output, runErr := engine.Run(t.Context(), ferret.NewAnonymousSource(query))
 		if runErr != nil {
 			t.Fatalf("run %q: %v", query, runErr)
 		}

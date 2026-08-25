@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	apisource "github.com/MontFerret/api/source"
 	ferret "github.com/MontFerret/ferret/v2"
 	"github.com/MontFerret/ferret/v2/pkg/module"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -61,10 +60,7 @@ func ExampleRegisterFunctions() {
 		`return example::pick(1, 2)`,
 		`return example::pick(1, 2, 3, 4, 5)`,
 	} {
-		output, runErr := engine.Run(context.Background(), apisource.File{
-			Name:    "anonymous",
-			Content: query,
-		})
+		output, runErr := engine.Run(context.Background(), ferret.NewAnonymousSource(query))
 		if runErr != nil {
 			panic(runErr)
 		}

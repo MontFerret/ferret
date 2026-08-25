@@ -3,8 +3,6 @@ package ferret
 import (
 	"context"
 	"testing"
-
-	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func BenchmarkDebugSessionRepeatedSourcePoints(b *testing.B) {
@@ -14,7 +12,7 @@ func BenchmarkDebugSessionRepeatedSourcePoints(b *testing.B) {
 	}
 	defer engine.Close()
 
-	compiled, err := engine.CompileDebug(context.Background(), newAnonymousAPIFile(`
+	compiled, err := engine.CompileDebug(context.Background(), NewAnonymousSource(`
 RETURN FOR i IN 1..100
   RETURN i
 `))
@@ -61,7 +59,7 @@ func BenchmarkDebugSessionPausedCallerFrameInspection(b *testing.B) {
 	}
 	defer engine.Close()
 
-	compiled, err := engine.CompileDebug(context.Background(), apiFile(source.New("caller.fql", `LET base = 1
+	compiled, err := engine.CompileDebug(context.Background(), NewSource("caller.fql", `LET base = 1
 FUNC outer(p) {
   LET carried = base + p
   FUNC inner(q) {
@@ -70,7 +68,7 @@ FUNC outer(p) {
   LET result = inner(3)
   RETURN result
 }
-RETURN outer(2)`)))
+RETURN outer(2)`))
 	if err != nil {
 		b.Fatal(err)
 	}

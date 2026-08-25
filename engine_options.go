@@ -103,10 +103,10 @@ func newOptions(setters []Option) (options, error) {
 	return opts, nil
 }
 
-// WithParams applies custom parameters to the options by merging them with existing ones, initializing if necessary.
+// WithEngineParams applies custom parameters to the engine defaults by merging them with existing ones.
 // If a parameter already exists, it will be overwritten.
 // All host values will be converted to a runtime.Value.
-func WithParams(params map[string]any) Option {
+func WithEngineParams(params map[string]any) Option {
 	return func(opts *options) error {
 		if len(params) == 0 {
 			return nil
@@ -128,9 +128,9 @@ func WithParams(params map[string]any) Option {
 	}
 }
 
-// WithRuntimeParams configures runtime parameters by merging the provided params with existing ones in options.
+// WithEngineRuntimeParams configures engine-default runtime parameters by merging the provided params.
 // If a parameter already exists, it will be overwritten.
-func WithRuntimeParams(params runtime.Params) Option {
+func WithEngineRuntimeParams(params runtime.Params) Option {
 	return func(opts *options) error {
 		if len(params) == 0 {
 			return nil
@@ -146,9 +146,9 @@ func WithRuntimeParams(params runtime.Params) Option {
 	}
 }
 
-// WithParam returns an Option that sets a parameter with the specified name and value in the options configuration.
+// WithEngineParam sets an engine-default parameter with the specified name and value.
 // The name cannot be empty, and the value cannot be nil. It ensures the parameter value is correctly parsed and stored.
-func WithParam(name string, value any) Option {
+func WithEngineParam(name string, value any) Option {
 	return func(opts *options) error {
 		if name == "" {
 			return fmt.Errorf("param name cannot be empty")
@@ -174,9 +174,9 @@ func WithParam(name string, value any) Option {
 	}
 }
 
-// WithRuntimeParam returns an Option that sets a runtime parameter with the specified name and value in the options configuration.
+// WithEngineRuntimeParam sets an engine-default runtime parameter with the specified name and value.
 // The name cannot be empty, and the value cannot be nil.
-func WithRuntimeParam(name string, value runtime.Value) Option {
+func WithEngineRuntimeParam(name string, value runtime.Value) Option {
 	return func(opts *options) error {
 		if name == "" {
 			return fmt.Errorf("param name cannot be empty")

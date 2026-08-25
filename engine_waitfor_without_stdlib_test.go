@@ -35,7 +35,7 @@ func TestTimedWaitForRunsWithoutStdlib(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := engine.Run(context.Background(), newAnonymousAPIFile(tc.query))
+			output, err := engine.Run(context.Background(), NewAnonymousSource(tc.query))
 			if err != nil {
 				t.Fatalf("run failed: %v", err)
 			}
@@ -55,7 +55,7 @@ func TestTimedWaitForWithoutStdlibHonorsCancellation(t *testing.T) {
 
 	_, err := engine.Run(
 		ctx,
-		newAnonymousAPIFile(`LET ready = false RETURN WAITFOR ready TIMEOUT 10s EVERY 10s`),
+		NewAnonymousSource(`LET ready = false RETURN WAITFOR ready TIMEOUT 10s EVERY 10s`),
 	)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("expected cancellation, got %v", err)
@@ -87,7 +87,7 @@ func TestExplicitNowStillRequiresStdlib(t *testing.T) {
 	engine := mustNewEngine(t, WithoutStdlib())
 	t.Cleanup(func() { _ = engine.Close() })
 
-	_, err := engine.Run(context.Background(), newAnonymousAPIFile(`RETURN NOW()`))
+	_, err := engine.Run(context.Background(), NewAnonymousSource(`RETURN NOW()`))
 	if err == nil || !strings.Contains(err.Error(), "unresolved function") {
 		t.Fatalf("expected unresolved NOW function, got %v", err)
 	}

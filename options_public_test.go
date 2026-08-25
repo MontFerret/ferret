@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	apisource "github.com/MontFerret/api/source"
 	ferret "github.com/MontFerret/ferret/v2"
 )
 
@@ -23,10 +22,7 @@ func TestPublicOptionTypesRemainUsable(t *testing.T) {
 	}
 	defer func() { _ = engine.Close() }()
 
-	plan, err := engine.Compile(context.Background(), apisource.File{
-		Name:    "anonymous",
-		Content: "RETURN 1",
-	})
+	plan, err := engine.Compile(context.Background(), ferret.NewAnonymousSource("RETURN 1"))
 	if err != nil {
 		t.Fatalf("compile: %v", err)
 	}
@@ -34,7 +30,7 @@ func TestPublicOptionTypesRemainUsable(t *testing.T) {
 
 	sessionOptions := []ferret.SessionOption{
 		ferret.WithOutputContentType("application/json"),
-		ferret.WithSessionParam("request", "external"),
+		ferret.WithParam("request", "external"),
 	}
 
 	session, err := plan.NewSession(context.Background(), sessionOptions...)

@@ -7,7 +7,6 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/MontFerret/api"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 )
 
@@ -17,11 +16,11 @@ func TestCompileAppliesUniversalOptimizationLevelsPerCompilation(t *testing.T) {
 	engine := mustNewEngine(t, WithCompilerOptions(compiler.WithOptimizationLevel(compiler.O1)))
 	t.Cleanup(func() { _ = engine.Close() })
 
-	levels := []api.OptimizationLevel{
-		api.OptimizationNone,
-		api.OptimizationBasic,
-		api.OptimizationFull,
-		api.OptimizationAggressive,
+	levels := []OptimizationLevel{
+		OptimizationNone,
+		OptimizationBasic,
+		OptimizationFull,
+		OptimizationAggressive,
 	}
 
 	for _, level := range levels {
@@ -31,8 +30,8 @@ func TestCompileAppliesUniversalOptimizationLevelsPerCompilation(t *testing.T) {
 
 			compiled, err := engine.Compile(
 				context.Background(),
-				newAnonymousAPIFile("LET value = 1 + 2 RETURN value"),
-				api.WithOptimizationLevel(level),
+				NewAnonymousSource("LET value = 1 + 2 RETURN value"),
+				WithOptimizationLevel(level),
 			)
 			if err != nil {
 				t.Fatalf("compile O%d: %v", level, err)
@@ -50,7 +49,7 @@ func TestCompileAppliesUniversalOptimizationLevelsPerCompilation(t *testing.T) {
 		})
 	}
 
-	compiled, err := engine.Compile(context.Background(), newAnonymousAPIFile("RETURN 1"))
+	compiled, err := engine.Compile(context.Background(), NewAnonymousSource("RETURN 1"))
 	if err != nil {
 		t.Fatalf("compile with engine default: %v", err)
 	}
@@ -74,8 +73,8 @@ func TestCompileDebugUsesEffectiveO0WithUniversalOverride(t *testing.T) {
 
 	compiled, err := engine.CompileDebug(
 		context.Background(),
-		newAnonymousAPIFile("LET value = 1 RETURN value"),
-		api.WithOptimizationLevel(api.OptimizationAggressive),
+		NewAnonymousSource("LET value = 1 RETURN value"),
+		WithOptimizationLevel(OptimizationAggressive),
 	)
 	if err != nil {
 		t.Fatalf("compile debug: %v", err)
@@ -108,19 +107,19 @@ func TestCompileAppliesPlanOptionsInOrderAndJoinsFailures(t *testing.T) {
 
 	plan, err := engine.Compile(
 		context.Background(),
-		newAnonymousAPIFile("RETURN 1"),
-		func(api.PlanOptions) error {
+		NewAnonymousSource("RETURN 1"),
+		func(PlanOptions) error {
 			calls = append(calls, "first")
 
 			return firstErr
 		},
 		nil,
-		func(api.PlanOptions) error {
+		func(PlanOptions) error {
 			calls = append(calls, "middle")
 
 			return nil
 		},
-		func(api.PlanOptions) error {
+		func(PlanOptions) error {
 			calls = append(calls, "second")
 
 			return secondErr

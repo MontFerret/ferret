@@ -9,7 +9,6 @@ import (
 	"github.com/MontFerret/api"
 	apidebugger "github.com/MontFerret/api/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -76,7 +75,7 @@ func (p *Plan) newDebugSession(ctx context.Context, setters ...SessionOption) (*
 }
 
 // Marshal serializes the plan's compiled program into a byte slice using the provided artifact options.
-func (p *Plan) Marshal(opts ...artifact.Option) ([]byte, error) {
+func (p *Plan) Marshal(opts ...ArtifactOption) ([]byte, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 

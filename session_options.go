@@ -25,9 +25,6 @@ type (
 	}
 
 	nativeSessionOption = gooptions.Option[sessionOptions]
-
-	// SessionOption configures a Session created from a Plan.
-	SessionOption = api.SessionOption
 )
 
 func defaultSessionOptions() sessionOptions {
@@ -68,7 +65,7 @@ func newSessionOptions(setters []SessionOption) (sessionOptions, error) {
 }
 
 func wrapSessionOption(setter nativeSessionOption) SessionOption {
-	return func(options api.SessionOptions) error {
+	return func(options SessionOptions) error {
 		target, ok := options.(*sessionOptionTarget)
 		if !ok {
 			return fmt.Errorf("Ferret session option cannot be applied to %T", options)
@@ -78,6 +75,17 @@ func wrapSessionOption(setter nativeSessionOption) SessionOption {
 
 		return nil
 	}
+}
+
+// WithParam sets a session parameter for the execution.
+func WithParam(name string, value any) SessionOption {
+	return api.WithParam(name, value)
+}
+
+// WithParams merges the provided parameter map into the session environment,
+// overriding existing keys while preserving any other previously defined parameters.
+func WithParams(params map[string]any) SessionOption {
+	return api.WithParams(params)
 }
 
 // WithDebugFormat configures bounded debugger value formatting.
@@ -104,7 +112,7 @@ func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
 
 // WithOutputContentType selects the output codec content type for session results.
 func WithOutputContentType(contentType string) SessionOption {
-	return wrapSessionOption(outputContentTypeOption(contentType))
+	return api.WithOutputContentType(contentType)
 }
 
 func outputContentTypeOption(contentType string) nativeSessionOption {
@@ -115,12 +123,6 @@ func outputContentTypeOption(contentType string) nativeSessionOption {
 		Named("output content type").
 		Validators(gooptions.NotBlank[string]()).
 		Build()
-}
-
-// WithSessionParams merges the provided parameter map into the session environment,
-// overriding existing keys while preserving any other previously defined parameters.
-func WithSessionParams(params map[string]any) SessionOption {
-	return wrapSessionOption(sessionParamsOption(params))
 }
 
 func sessionParamsOption(params map[string]any) nativeSessionOption {
@@ -149,11 +151,6 @@ func WithSessionRuntimeParams(params runtime.Params) SessionOption {
 
 		return environmentOptionsOption(vm.WithParams(params))(s)
 	})
-}
-
-// WithSessionParam adds or overrides a single session parameter.
-func WithSessionParam(name string, value any) SessionOption {
-	return wrapSessionOption(sessionParamOption(name, value))
 }
 
 func sessionParamOption(name string, value any) nativeSessionOption {
