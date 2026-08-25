@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
+	apisource "github.com/MontFerret/api/source"
 	"github.com/MontFerret/ferret/v2"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
-	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/goccy/go-json"
 )
 
@@ -122,7 +122,7 @@ func TestPathTraversalVulnerability(t *testing.T) {
 
 	baseURL := "http://" + ln.Addr().String()
 
-	_, err = engine.Run(context.Background(), source.NewAnonymous(fmt.Sprintf(`
+	_, err = engine.Run(context.Background(), apisource.File{Name: "anonymous", Content: fmt.Sprintf(`
 LET response = IO::NET::HTTP::GET({url: "%s/api/articles"})
 LET articles = JSON_PARSE(TO_STRING(response))
 
@@ -131,7 +131,7 @@ FOR article IN articles
     LET data = TO_BINARY(article.content)
     IO::FS::WRITE(path, data)
     RETURN { written: path, name: article.name }
-`, baseURL, safeDir)))
+`, baseURL, safeDir)})
 
 	if err != nil && !strings.Contains(err.Error(), "path escapes from parent") {
 		t.Fatal(err)

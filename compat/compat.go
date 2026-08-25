@@ -17,11 +17,11 @@ package compat
 import (
 	"context"
 
+	apisource "github.com/MontFerret/api/source"
 	ferret "github.com/MontFerret/ferret/v2"
 	compatruntime "github.com/MontFerret/ferret/v2/compat/runtime"
 	"github.com/MontFerret/ferret/v2/compat/runtime/core"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 // Instance is the v1-compatible entry point for compiling and executing FQL queries.
@@ -98,9 +98,10 @@ func (inst *Instance) MustCompile(query string) *compatruntime.Program {
 
 // Exec compiles and immediately executes the FQL query, returning the JSON result.
 func (inst *Instance) Exec(ctx context.Context, query string, opts ...compatruntime.Option) ([]byte, error) {
-	src := source.NewAnonymous(query)
-
-	out, err := inst.engine.Run(ctx, src, compatruntime.ToSessionOptions(opts)...)
+	out, err := inst.engine.Run(ctx, apisource.File{
+		Name:    "anonymous",
+		Content: query,
+	}, compatruntime.ToSessionOptions(opts)...)
 	if err != nil {
 		return nil, err
 	}

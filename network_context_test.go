@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
-	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestWithNetworkRejectsNil(t *testing.T) {
@@ -30,7 +29,7 @@ func TestSessionRunInjectsConfiguredNetwork(t *testing.T) {
 	engine := mustNewEngine(t, WithNetwork(network))
 	defer func() { _ = engine.Close() }()
 
-	out, err := engine.Run(context.Background(), source.NewAnonymous(`
+	out, err := engine.Run(context.Background(), newAnonymousAPIFile(`
 RETURN TO_STRING(IO::NET::HTTP::GET({ url: "https://example.test/session" }))
 `))
 	if err != nil {
@@ -60,16 +59,20 @@ func TestDebugSessionRunInjectsConfiguredNetwork(t *testing.T) {
 	engine := mustNewEngine(t, WithNetwork(network))
 	defer func() { _ = engine.Close() }()
 
-	plan, err := engine.CompileDebug(context.Background(), source.New("debug-network.fql", `
+	compiled, err := engine.CompileDebug(context.Background(), newAPIFile("debug-network.fql", `
 LET marker = 1
 RETURN TO_STRING(IO::NET::HTTP::GET({ url: "https://example.test/debug" }))
 `))
 	if err != nil {
 		t.Fatal(err)
 	}
+	plan, ok := compiled.(*Plan)
+	if !ok {
+		t.Fatalf("unexpected plan type %T", compiled)
+	}
 	defer plan.Close()
 
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

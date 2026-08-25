@@ -11,7 +11,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/module"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -456,7 +455,7 @@ func TestRunClosesPlanWhenSessionCreationFails(t *testing.T) {
 
 	_, err = eng.Run(
 		context.Background(),
-		source.NewAnonymous("RETURN 1"),
+		newAnonymousAPIFile("RETURN 1"),
 		WithEnvironmentOptions(
 			vm.WithFunction("SESSION_DUP", testVarFn),
 			vm.WithFunction("SESSION_DUP", testVarFn),
@@ -492,7 +491,7 @@ func TestRunLogsDeferredCleanupErrorsWithoutChangingRunResult(t *testing.T) {
 		t.Fatalf("failed to create engine: %v", err)
 	}
 
-	result, err := eng.Run(context.Background(), source.NewAnonymous("RETURN 1"))
+	result, err := eng.Run(context.Background(), newAnonymousAPIFile("RETURN 1"))
 	if err != nil {
 		t.Fatalf("expected run result error to be unchanged by cleanup failures, got: %v", err)
 	}

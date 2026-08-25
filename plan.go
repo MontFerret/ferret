@@ -47,7 +47,12 @@ func (p *Plan) Params() []string {
 // failures from multiple options are joined before session resources are
 // acquired.
 func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (api.Session, error) {
-	return newPlanSession(p, ctx, setters, planSessionSetup{}, buildSession)
+	session, err := newPlanSession(p, ctx, setters, planSessionSetup{}, buildSession)
+	if err != nil {
+		return nil, err
+	}
+
+	return session, nil
 }
 
 // NewDebugSession creates a retained-state source-level debugging session. All

@@ -19,13 +19,10 @@ func TestDebugSessionBreakpointsLocalsEvaluateAndComplete(t *testing.T) {
 	defer engine.Close()
 
 	src := source.New("debug.fql", "LET x = 1\n\nVAR y = 2\ny = y + x\nRETURN y")
-	plan, err := engine.CompileDebug(context.Background(), src)
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, src)
 	defer plan.Close()
 
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,12 +104,9 @@ func TestDebugSessionBreakpointBindsOnePointPerLine(t *testing.T) {
 	}
 	defer engine.Close()
 
-	plan, err := engine.CompileDebug(context.Background(), source.New("same-line.fql", "LET x = 1 RETURN x"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, source.New("same-line.fql", "LET x = 1 RETURN x"))
 	defer plan.Close()
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,12 +141,9 @@ func TestDebugSessionBreakpointLifecyclePreservesIDs(t *testing.T) {
 	}
 	defer engine.Close()
 
-	plan, err := engine.CompileDebug(context.Background(), source.New("breakpoints.fql", "RETURN 1"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, source.New("breakpoints.fql", "RETURN 1"))
 	defer plan.Close()
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,12 +178,9 @@ func TestDebugSessionLocalsIncludeDeclaredBindParameters(t *testing.T) {
 	}
 	defer engine.Close()
 
-	plan, err := engine.CompileDebug(context.Background(), source.New("params.fql", "RETURN @input"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, source.New("params.fql", "RETURN @input"))
 	defer plan.Close()
-	session, err := plan.NewDebugSession(
+	session, err := plan.newDebugSession(
 		context.Background(),
 		WithSessionParam("input", 4),
 		WithSessionParam("unrelated", 9),
@@ -225,10 +213,7 @@ func TestDebugPlanRunsNormally(t *testing.T) {
 	}
 	defer engine.Close()
 
-	plan, err := engine.CompileDebug(context.Background(), source.New("normal.fql", "LET x = 2\nRETURN x + 1"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, source.New("normal.fql", "LET x = 2\nRETURN x + 1"))
 	defer plan.Close()
 	session, err := plan.NewSession(context.Background())
 	if err != nil {
@@ -251,12 +236,9 @@ func TestDebugSessionPauseAndSafeObjectInspection(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer engine.Close()
-	plan, err := engine.CompileDebug(context.Background(), source.New("object.fql", "LET obj = {b: 2, a: 1}\nRETURN obj"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, source.New("object.fql", "LET obj = {b: 2, a: 1}\nRETURN obj"))
 	defer plan.Close()
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -295,12 +277,9 @@ func TestDebugSessionRuntimeErrorPreservesLocals(t *testing.T) {
 	}
 	defer engine.Close()
 
-	plan, err := engine.CompileDebug(context.Background(), source.New("error.fql", "LET x = 7\nRETURN x / 0"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, source.New("error.fql", "LET x = 7\nRETURN x / 0"))
 	defer plan.Close()
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -352,12 +331,9 @@ func TestDebugSessionRuntimeErrorJoinsAfterRunHookFailure(t *testing.T) {
 	}
 	defer engine.Close()
 
-	plan, err := engine.CompileDebug(context.Background(), source.New("error.fql", "RETURN 1 / 0"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, source.New("error.fql", "RETURN 1 / 0"))
 	defer plan.Close()
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -399,16 +375,14 @@ func TestDebugSessionResumePreservesBeforeRunContextValues(t *testing.T) {
 	}
 	defer engine.Close()
 
-	plan, err := engine.CompileDebug(
-		context.Background(),
+	plan := mustCompileDebugPlan(
+		t,
+		engine,
 		source.New("context.fql", "LET x = 1\nRETURN DEBUG_CONTEXT_VALUE()"),
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
 	defer plan.Close()
 
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -432,7 +406,7 @@ func TestPlanNewDebugSessionRequiresDebugCompilation(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer engine.Close()
-	plan, err := engine.Compile(context.Background(), source.NewAnonymous("RETURN 1"))
+	plan, err := engine.Compile(context.Background(), newAnonymousAPIFile("RETURN 1"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -454,12 +428,9 @@ func TestDebugSessionStepIntoAndOut(t *testing.T) {
 }
 LET x = add(2)
 RETURN x`
-	plan, err := engine.CompileDebug(context.Background(), source.New("udf.fql", query))
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, source.New("udf.fql", query))
 	defer plan.Close()
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -506,12 +477,9 @@ func TestDebugSessionNextStepsOverCallAndOutFromMainCompletes(t *testing.T) {
 }
 LET x = add(2)
 RETURN x`
-	plan, err := engine.CompileDebug(context.Background(), source.New("next.fql", query))
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, source.New("next.fql", query))
 	defer plan.Close()
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -546,12 +514,9 @@ func TestDebugSessionStopsOnRepeatedLoopLocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer engine.Close()
-	plan, err := engine.CompileDebug(context.Background(), source.New("loop.fql", "FOR i IN 1..2\n  RETURN i"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, source.New("loop.fql", "FOR i IN 1..2\n  RETURN i"))
 	defer plan.Close()
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

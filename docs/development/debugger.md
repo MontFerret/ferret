@@ -17,6 +17,8 @@ them rather than reconstructing compiler semantics.
 
 `Plan.NewDebugSession` requires a program containing debug points. Programs
 loaded or compiled without debug information cannot create a debug session.
+Plan optimization options may still be supplied to `CompileDebug`, but the
+compiler forces their effective level to O0 while producing debug metadata.
 
 ## Layer boundaries
 
@@ -34,9 +36,12 @@ values without moving source-level policy into the dispatch loop.
 * running embedding lifecycle services and materializing final output.
 
 The root package wires a plan's VM, host services, hooks, source, and output
-configuration into `pkg/debugger.Session`. It aliases the supported debugger
-types through the embedding API without moving debugger policy into the root
-package.
+configuration into `pkg/debugger.Session`. The public plan contract returns
+`api/debugger.Session`; a private compatibility bridge translates universal
+debugger calls and DTOs to the existing Core debugger while preserving Core
+errors and execution behavior. This bridge is temporary until the debugger
+types themselves migrate to the universal API, and debugger policy remains in
+`pkg/debugger`.
 
 ## Session state and concurrency
 

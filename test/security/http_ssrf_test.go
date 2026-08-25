@@ -10,10 +10,10 @@ import (
 	"sync/atomic"
 	"testing"
 
+	apisource "github.com/MontFerret/api/source"
 	"github.com/MontFerret/ferret/v2"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
-	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 type localHTTPServiceEndpoint struct {
@@ -37,9 +37,9 @@ func TestDefaultEngineHTTPPolicyBlocksLoopback(t *testing.T) {
 		}
 	})
 
-	query := source.NewAnonymous(`
+	query := apisource.File{Name: "anonymous", Content: `
 RETURN TO_STRING(IO::NET::HTTP::GET(@url))
-`)
+`}
 
 	for _, endpoint := range endpoints {
 		t.Run(endpoint.name, func(t *testing.T) {
@@ -102,9 +102,9 @@ func TestExplicitLocalhostOptInAllowsLoopbackHTTP(t *testing.T) {
 		}
 	})
 
-	query := source.NewAnonymous(`
+	query := apisource.File{Name: "anonymous", Content: `
 RETURN TO_STRING(IO::NET::HTTP::GET(@url))
-`)
+`}
 
 	for _, endpoint := range endpoints {
 		t.Run(endpoint.name, func(t *testing.T) {
@@ -118,7 +118,7 @@ RETURN TO_STRING(IO::NET::HTTP::GET(@url))
 				t.Fatal(err)
 			}
 
-			if result == nil {
+			if result.Content == nil {
 				t.Fatal("expected an HTTP response")
 			}
 

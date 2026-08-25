@@ -26,13 +26,10 @@ FUNC add(a) {
 }
 LET value = add(seed)
 RETURN value`
-	plan, err := engine.CompileDebug(context.Background(), source.New("udf-breakpoints.fql", query))
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, source.New("udf-breakpoints.fql", query))
 	defer plan.Close()
 
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,13 +97,10 @@ FUNC second() {
 LET a = first()
 LET b = second()
 RETURN a + b`
-	plan, err := engine.CompileDebug(context.Background(), source.New("multiple-udfs.fql", query))
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, source.New("multiple-udfs.fql", query))
 	defer plan.Close()
 
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,13 +156,10 @@ FUNC add(a) {
 }
 
 RETURN add(seed)`
-	plan, err := engine.CompileDebug(context.Background(), source.New("udf-binding.fql", query))
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, source.New("udf-binding.fql", query))
 	defer plan.Close()
 
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -225,13 +216,10 @@ FUNC unrelated() {
 }
 LET y = add(x)
 RETURN y`
-	plan, err := engine.CompileDebug(context.Background(), source.New("udf-error.fql", query))
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, source.New("udf-error.fql", query))
 	defer plan.Close()
 
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -334,13 +322,10 @@ FUNC outer(p) {
 LET box = {value: 10}
 LET x = 10
 RETURN outer(2) + x + @input + box.value - 10`
-	plan, err := engine.CompileDebug(context.Background(), source.New("caller-frames.fql", query))
-	if err != nil {
-		t.Fatal(err)
-	}
+	plan := mustCompileDebugPlan(t, engine, source.New("caller-frames.fql", query))
 	defer plan.Close()
 
-	session, err := plan.NewDebugSession(context.Background(), WithSessionParam("input", 5))
+	session, err := plan.newDebugSession(context.Background(), WithSessionParam("input", 5))
 	if err != nil {
 		t.Fatal(err)
 	}

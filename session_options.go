@@ -38,26 +38,33 @@ func defaultSessionOptions() sessionOptions {
 }
 
 func newSessionOptions(setters []SessionOption) (sessionOptions, error) {
+	opts := defaultSessionOptions()
 	if len(setters) == 0 {
-		return defaultSessionOptions(), nil
+		return opts, nil
 	}
 
-	target := newSessionOptionTarget(len(setters))
-	var optionErr error
+	var failures []error
 
 	for _, setter := range setters {
 		if setter == nil {
 			continue
 		}
 
+		target := newSessionOptionTarget(1)
 		if err := setter(target); err != nil {
-			optionErr = errors.Join(optionErr, err)
+			failures = append(failures, err)
 		}
+
+		updated, err := gooptions.ApplyTo(opts, target.setters...)
+		if err != nil {
+			failures = append(failures, err)
+			continue
+		}
+
+		opts = updated
 	}
 
-	opts, err := gooptions.ApplyTo(defaultSessionOptions(), target.setters...)
-
-	return opts, errors.Join(optionErr, err)
+	return opts, errors.Join(failures...)
 }
 
 func wrapSessionOption(setter nativeSessionOption) SessionOption {

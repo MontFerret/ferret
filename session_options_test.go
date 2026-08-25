@@ -7,6 +7,7 @@ import (
 
 	gooptions "github.com/ziflex/go-options"
 
+	"github.com/MontFerret/api"
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -124,7 +125,12 @@ func TestInvalidSessionBuilderOptionDoesNotMutateConfig(t *testing.T) {
 		WithDebugFormat(DebugFormatOptions{MaxDepth: 0, MaxItems: 8, MaxBytes: 1024}),
 		WithOutputContentType(" \t "),
 	} {
-		if err := option(&config); err == nil {
+		target := newSessionOptionTarget(1)
+		if err := option(target); err != nil {
+			t.Fatalf("failed to unwrap Ferret session option: %v", err)
+		}
+
+		if _, err := gooptions.ApplyTo(config, target.setters...); err == nil {
 			t.Fatal("expected invalid option to fail")
 		}
 	}
@@ -146,19 +152,19 @@ func TestNewSessionOptionsAppliesAllOptionsAndJoinsFailures(t *testing.T) {
 	var calls []string
 
 	_, err := newSessionOptions([]SessionOption{
-		func(*sessionOptions) error {
+		func(api.SessionOptions) error {
 			calls = append(calls, "first")
 
 			return firstErr
 		},
 		nil,
-		func(*sessionOptions) error {
+		func(api.SessionOptions) error {
 			calls = append(calls, "middle")
 
 			return nil
 		},
 		WithOutputContentType(" \t "),
-		func(*sessionOptions) error {
+		func(api.SessionOptions) error {
 			calls = append(calls, "second")
 
 			return secondErr

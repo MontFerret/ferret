@@ -54,7 +54,14 @@ func WithOptimizationLevel(level OptimizationLevel) Option {
 		},
 	).
 		Named("optimization level").
-		Validators(validateOptimizationLevel).
+		Validators(
+			options.OneOf(
+				optimization.LevelNone,
+				optimization.LevelBasic,
+				optimization.LevelFull,
+				optimization.LevelAggressive,
+			),
+		).
 		Value(level).
 		Build()
 }

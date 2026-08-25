@@ -14,12 +14,16 @@ func BenchmarkDebugSessionRepeatedSourcePoints(b *testing.B) {
 	}
 	defer engine.Close()
 
-	plan, err := engine.CompileDebug(context.Background(), source.NewAnonymous(`
+	compiled, err := engine.CompileDebug(context.Background(), newAnonymousAPIFile(`
 RETURN FOR i IN 1..100
   RETURN i
 `))
 	if err != nil {
 		b.Fatal(err)
+	}
+	plan, ok := compiled.(*Plan)
+	if !ok {
+		b.Fatalf("unexpected plan type %T", compiled)
 	}
 	defer plan.Close()
 
@@ -27,7 +31,7 @@ RETURN FOR i IN 1..100
 	b.ResetTimer()
 
 	for b.Loop() {
-		session, sessionErr := plan.NewDebugSession(context.Background())
+		session, sessionErr := plan.newDebugSession(context.Background())
 		if sessionErr != nil {
 			b.Fatal(sessionErr)
 		}
@@ -57,7 +61,7 @@ func BenchmarkDebugSessionPausedCallerFrameInspection(b *testing.B) {
 	}
 	defer engine.Close()
 
-	plan, err := engine.CompileDebug(context.Background(), source.New("caller.fql", `LET base = 1
+	compiled, err := engine.CompileDebug(context.Background(), apiFile(source.New("caller.fql", `LET base = 1
 FUNC outer(p) {
   LET carried = base + p
   FUNC inner(q) {
@@ -66,13 +70,17 @@ FUNC outer(p) {
   LET result = inner(3)
   RETURN result
 }
-RETURN outer(2)`))
+RETURN outer(2)`)))
 	if err != nil {
 		b.Fatal(err)
 	}
+	plan, ok := compiled.(*Plan)
+	if !ok {
+		b.Fatalf("unexpected plan type %T", compiled)
+	}
 	defer plan.Close()
 
-	session, err := plan.NewDebugSession(context.Background())
+	session, err := plan.newDebugSession(context.Background())
 	if err != nil {
 		b.Fatal(err)
 	}

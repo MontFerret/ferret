@@ -78,12 +78,13 @@ go get github.com/MontFerret/ferret/v2@latest
 ```
 
 There are currently two ways to start with Ferret v2:
-- Native v2 API - recommended for new projects
+- Universal execution API - recommended for new projects
 - `compat` module - recommended as a first migration step for existing v1 integrations
 
 ### New projects
 
-Use the native v2 API built around the following flow:
+Ferret's concrete engine, plan, and session types implement the universal
+execution interfaces from `github.com/MontFerret/api` directly:
 
 ```
 Engine -> compile query -> create session -> run
@@ -97,24 +98,31 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/MontFerret/ferret/v2/pkg/engine"
+	"github.com/MontFerret/api"
+	apisource "github.com/MontFerret/api/source"
+	ferret "github.com/MontFerret/ferret/v2"
 )
 
 func main() {
 	ctx := context.Background()
 
-	eng, err := engine.New()
+	eng, err := ferret.New()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer eng.Close()
 
-	plan, err := eng.Compile(`return 1 + 1`)
+	var runtime api.Runtime = eng
+	plan, err := runtime.Compile(ctx, apisource.File{
+		Name:    "main.fql",
+		Content: "RETURN 1 + 1",
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer plan.Close()
 
-	session, err := plan.NewSession()
+	session, err := plan.NewSession(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -125,9 +133,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(result.Content)
+	fmt.Println(string(result.Content))
 }
 ```
+
+`Run` returns the encoded output by value. Ferret-specific session options such
+as `ferret.WithSessionParam` remain valid alongside portable `api.SessionOption`
+constructors. Compilation returns `api.Plan`; assert it to `*ferret.Plan` only
+when using Ferret-specific artifact methods such as `Marshal`.
 
 ### Migration from v1
 

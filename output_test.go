@@ -124,8 +124,8 @@ func TestSessionRunClosesResultWhenRequestedCodecIsMissing(t *testing.T) {
 	session := mustNewSession(t, plan, WithOutputContentType("application/x-missing"))
 
 	out, err := session.Run(context.Background())
-	if out != nil {
-		t.Fatal("expected output to be nil when codec resolution fails")
+	if out.ContentType != "" || out.Content != nil {
+		t.Fatalf("expected zero output when codec resolution fails, got %#v", out)
 	}
 
 	if err == nil {
@@ -155,7 +155,7 @@ func TestSessionRunReturnsOutputWhenResultCleanupFails(t *testing.T) {
 	session := mustNewSession(t, plan)
 
 	out, err := session.Run(context.Background())
-	if out == nil {
+	if out.Content == nil {
 		t.Fatal("expected output to be returned when cleanup fails after materialization")
 	}
 

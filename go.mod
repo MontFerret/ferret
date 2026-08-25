@@ -3,7 +3,7 @@ module github.com/MontFerret/ferret/v2
 go 1.25.0
 
 require (
-	github.com/MontFerret/api v1.0.0-alpha.3
+	github.com/MontFerret/api v1.0.0-alpha.6
 	github.com/antlr4-go/antlr/v4 v4.13.1
 	github.com/gobwas/glob v0.2.3
 	github.com/goccy/go-json v0.10.6

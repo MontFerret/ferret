@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/goccy/go-json"
 )
 
@@ -37,8 +36,8 @@ func TestSessionRunReturnsBeforeHookError(t *testing.T) {
 		t.Fatal("expected session run to fail on before run hook error")
 	}
 
-	if result != nil {
-		t.Fatal("expected nil result when before run hook fails")
+	if result.ContentType != "" || result.Content != nil {
+		t.Fatalf("expected zero result when before run hook fails, got %#v", result)
 	}
 
 	if !errors.Is(err, beforeErr) {
@@ -72,8 +71,8 @@ func TestSessionRunReturnsAfterHookErrorOnSuccess(t *testing.T) {
 		t.Fatal("expected session run to fail when after run hook fails")
 	}
 
-	if result != nil {
-		t.Fatal("expected nil result when after run hook fails")
+	if result.ContentType != "" || result.Content != nil {
+		t.Fatalf("expected zero result when after run hook fails, got %#v", result)
 	}
 
 	if seenRunErr != nil {
@@ -106,8 +105,8 @@ func TestSessionRunReturnsVMError(t *testing.T) {
 		t.Fatal("expected session run to fail when VM returns error")
 	}
 
-	if result != nil {
-		t.Fatal("expected nil result when VM returns error")
+	if result.ContentType != "" || result.Content != nil {
+		t.Fatalf("expected zero result when VM returns error, got %#v", result)
 	}
 
 	if !errors.Is(err, vmErr) {
@@ -145,8 +144,8 @@ func TestSessionRunJoinsVMAndAfterHookErrors(t *testing.T) {
 		t.Fatal("expected session run to fail when VM and after hook fail")
 	}
 
-	if result != nil {
-		t.Fatal("expected nil result when VM and after hook fail")
+	if result.ContentType != "" || result.Content != nil {
+		t.Fatalf("expected zero result when VM and after hook fail, got %#v", result)
 	}
 
 	if seenRunErr == nil {
@@ -331,7 +330,12 @@ func TestSessionCloseIsConcurrentSafe(t *testing.T) {
 		_ = nextSession.Close()
 	}()
 
-	if nextSession.vm != firstVM {
+	nativeNextSession, ok := nextSession.(*Session)
+	if !ok {
+		t.Fatalf("unexpected session type %T", nextSession)
+	}
+
+	if nativeNextSession.vm != firstVM {
 		t.Fatal("expected concurrent close to return the borrowed VM to the pool once")
 	}
 }
@@ -383,7 +387,7 @@ func TestSessionParams(t *testing.T) {
 
 	out, err := eng.Run(
 		context.Background(),
-		source.NewAnonymous("RETURN @param1 + @param2"),
+		newAnonymousAPIFile("RETURN @param1 + @param2"),
 		WithSessionParams(map[string]any{
 			"param2": 2,
 		}),
@@ -417,7 +421,7 @@ func TestSessionParam(t *testing.T) {
 		t.Fatal("expected engine to be non-nil on successful construction")
 	}
 
-	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1 + @param2"), WithSessionParam("param2", 2))
+	out, err := eng.Run(context.Background(), newAnonymousAPIFile("RETURN @param1 + @param2"), WithSessionParam("param2", 2))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)
@@ -463,7 +467,7 @@ func TestSessionRuntimeParams(t *testing.T) {
 		t.Fatalf("expected runtime.NewParamsFrom to succeed, got: %v", err)
 	}
 
-	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1 + @param2"), WithSessionRuntimeParams(sessionParams))
+	out, err := eng.Run(context.Background(), newAnonymousAPIFile("RETURN @param1 + @param2"), WithSessionRuntimeParams(sessionParams))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)
@@ -493,7 +497,7 @@ func TestSessionRuntimeParam(t *testing.T) {
 		t.Fatal("expected engine to be non-nil on successful construction")
 	}
 
-	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1 + @param2"), WithSessionRuntimeParam("param2", runtime.NewInt(2)))
+	out, err := eng.Run(context.Background(), newAnonymousAPIFile("RETURN @param1 + @param2"), WithSessionRuntimeParam("param2", runtime.NewInt(2)))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)

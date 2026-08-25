@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	apisource "github.com/MontFerret/api/source"
 	"github.com/MontFerret/ferret/v2/pkg/asm"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
@@ -380,7 +381,10 @@ func runQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionO
 }
 
 func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, query *source.Source) error {
-	plan, err := engine.Compile(ctx, query)
+	plan, err := engine.Compile(ctx, apisource.File{
+		Name:    query.Name(),
+		Content: query.Content(),
+	})
 
 	if err != nil {
 		return err
@@ -579,7 +583,7 @@ func (r *ResultPrinter) Write(p []byte) (n int, err error) {
 	return r.out.Write(p)
 }
 
-func printResult(_ context.Context, res *ferret.Output) (uint64, error) {
+func printResult(_ context.Context, res ferret.Output) (uint64, error) {
 	printer := &ResultPrinter{
 		out: os.Stdout,
 	}

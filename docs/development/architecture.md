@@ -8,7 +8,8 @@ boundaries.
 ## Execution pipeline
 
 ```text
-source.Source
+api/source.File (embedding boundary)
+    -> source.Source
     -> ANTLR lexer and parser
     -> compiler frontend and diagnostics
     -> compiler lowering and optimization
@@ -52,18 +53,26 @@ value behavior.
 
 The root `ferret` package composes the compiler, bytecode loader, runtime host,
 VM pool, modules, filesystem, network, encoders, hooks, and logging into the
-embedding API:
+embedding API. Its concrete `Engine`, `Plan`, and `Session` types directly
+implement `api.Runtime`, `api.Plan`, and `api.Session`:
 
 ```text
 Engine -> Plan -> Session -> Output
               \-> DebugSession
 ```
 
-An `Engine` owns host-scoped services and compilers. Compilation or artifact
-loading creates a reusable `Plan`, which owns a VM pool for one program. A
-`Session` borrows a VM and supplies per-execution environment and output
-settings. A `DebugSession` uses retained VM state and debugger metadata. These
-objects have explicit cleanup responsibilities described in
+An `Engine` owns host-scoped services and immutable compilers. Its public
+compile and run boundary accepts `api/source.File`, then converts it to Core
+`pkg/source.Source`; parser, compiler, diagnostics, bytecode, VM, and encoding
+packages do not depend on the universal API. Per-compilation optimization
+options are passed explicitly without mutating the shared compiler.
+
+Compilation or artifact loading creates a reusable concrete `Plan`, which owns
+a VM pool for one program, while the universal compile methods return it as
+`api.Plan`. A `Session` borrows a VM and supplies per-execution environment and
+output settings. A debug plan exposes `api/debugger.Session` through a private
+translation bridge to the Core debugger. These objects have explicit cleanup
+responsibilities described in
 [Runtime and lifecycle](runtime.md) and [Debugger architecture](debugger.md).
 
 The root package owns composition and lifecycle policy, not the underlying

@@ -15,7 +15,7 @@ type compileOptions struct {
 
 func newCompileOptions(setters []api.PlanOption) (compileOptions, error) {
 	var opts compileOptions
-	var err error
+	var failures []error
 
 	for _, setter := range setters {
 		if setter == nil {
@@ -23,11 +23,11 @@ func newCompileOptions(setters []api.PlanOption) (compileOptions, error) {
 		}
 
 		if optionErr := setter(&opts); optionErr != nil {
-			err = errors.Join(err, optionErr)
+			failures = append(failures, optionErr)
 		}
 	}
 
-	return opts, err
+	return opts, errors.Join(failures...)
 }
 
 func (o *compileOptions) SetOptimizationLevel(level api.OptimizationLevel) error {

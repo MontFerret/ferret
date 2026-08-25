@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -241,7 +240,7 @@ func TestPlanNewDebugSessionReleasesLimiterOnEnvironmentError(t *testing.T) {
 	t.Parallel()
 
 	eng := mustNewEngine(t, WithMaxActiveSessions(1))
-	plan, err := eng.CompileDebug(context.Background(), source.NewAnonymous(coverageValidQuery))
+	plan, err := eng.CompileDebug(context.Background(), newAnonymousAPIFile(coverageValidQuery))
 	if err != nil {
 		t.Fatalf("failed to compile debug plan: %v", err)
 	}
@@ -332,7 +331,7 @@ func TestDebugSessionCloseReleasesLimiterOnce(t *testing.T) {
 	t.Parallel()
 
 	eng := mustNewEngine(t, WithMaxActiveSessions(2))
-	plan, err := eng.CompileDebug(context.Background(), source.NewAnonymous(coverageValidQuery))
+	plan, err := eng.CompileDebug(context.Background(), newAnonymousAPIFile(coverageValidQuery))
 	if err != nil {
 		t.Fatalf("failed to compile debug plan: %v", err)
 	}

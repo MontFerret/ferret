@@ -122,7 +122,12 @@ func (e *Engine) Compile(
 		return nil, err
 	}
 
-	return e.compile(ctx, coresource.New(file.Name, file.Content), e.compiler, opts)
+	plan, err := e.compile(ctx, coresource.New(file.Name, file.Content), e.compiler, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return plan, nil
 }
 
 func (e *Engine) compile(
@@ -168,7 +173,12 @@ func (e *Engine) CompileDebug(
 		return nil, err
 	}
 
-	return e.compile(ctx, coresource.New(file.Name, file.Content), e.debugCompiler, opts)
+	plan, err := e.compile(ctx, coresource.New(file.Name, file.Content), e.debugCompiler, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return plan, nil
 }
 
 // Load decodes a serialized program artifact and wraps it in a reusable plan.
@@ -182,8 +192,8 @@ func (e *Engine) Load(data []byte) (*Plan, error) {
 }
 
 // Run compiles source, executes it in a fresh session, and returns encoded output and an error.
-// Similar to Session.Run, it may return a non-zero Output together with a non-nil error
-// (for example, if execution produced output but a deferred cleanup step failed).
+// Similar to Session.Run, it may return a non-zero Output together with a non-nil
+// error when output was materialized before result finalization failed.
 func (e *Engine) Run(ctx context.Context, src apisource.File, opts ...SessionOption) (result.Output, error) {
 	plan, err := e.Compile(ctx, src)
 

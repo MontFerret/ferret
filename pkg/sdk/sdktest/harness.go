@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	apisource "github.com/MontFerret/api/source"
 	ferret "github.com/MontFerret/ferret/v2"
-	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 // Harness owns an Engine configured for a module test.
@@ -46,6 +46,9 @@ func (h *Harness) Run(
 	ctx context.Context,
 	query string,
 	options ...ferret.SessionOption,
-) (*ferret.Output, error) {
-	return h.engine.Run(ctx, source.NewAnonymous(query), options...)
+) (ferret.Output, error) {
+	return h.engine.Run(ctx, apisource.File{
+		Name:    "anonymous",
+		Content: query,
+	}, options...)
 }

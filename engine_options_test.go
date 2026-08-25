@@ -15,7 +15,6 @@ import (
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -549,7 +548,7 @@ func TestWithFunctionsRegistrarPreservesQualifiedHostFunctionNames(t *testing.T)
 		"return TOOLS::RISK::CALCULATE_RISK()",
 		"return Tools::Risk::Calculate_Risk()",
 	} {
-		output, err := eng.Run(t.Context(), source.NewAnonymous(query))
+		output, err := eng.Run(t.Context(), newAnonymousAPIFile(query))
 		if err != nil {
 			t.Fatalf("run %q: %v", query, err)
 		}
@@ -586,7 +585,7 @@ func TestUnknownHostFunctionDiagnosticPreservesSourceSpelling(t *testing.T) {
 	defer func() { _ = eng.Close() }()
 
 	const name = "TOOLS::MiSsInG"
-	_, err := eng.Run(t.Context(), source.NewAnonymous("return "+name+"()"))
+	_, err := eng.Run(t.Context(), newAnonymousAPIFile("return "+name+"()"))
 	if err == nil {
 		t.Fatal("expected unknown host function to fail")
 	}
@@ -615,7 +614,7 @@ func TestResolvedHostFunctionDiagnosticUsesRegisteredQualifiedName(t *testing.T)
 	)
 	defer func() { _ = eng.Close() }()
 
-	_, err := eng.Run(t.Context(), source.NewAnonymous("return Db::Postgres::Query()"))
+	_, err := eng.Run(t.Context(), newAnonymousAPIFile("return Db::Postgres::Query()"))
 	if err == nil {
 		t.Fatal("expected invalid host function arity to fail")
 	}

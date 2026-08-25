@@ -4,12 +4,13 @@ package runtime
 
 import (
 	"context"
+	"fmt"
 	"io"
 
+	apisource "github.com/MontFerret/api/source"
 	ferret "github.com/MontFerret/ferret/v2"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 // Options holds the runtime execution options translated from v1-style Option functions.
@@ -185,11 +186,19 @@ func (p *Program) MustRun(ctx context.Context, setters ...Option) []byte {
 // compileFromSource is a helper used by compat packages to compile a raw query string
 // using the provided engine and return a wrapped Program.
 func CompileFromSource(ctx context.Context, eng *ferret.Engine, query string) (*Program, error) {
-	src := source.NewAnonymous(query)
-
-	plan, err := eng.Compile(ctx, src)
+	compiled, err := eng.Compile(ctx, apisource.File{
+		Name:    "anonymous",
+		Content: query,
+	})
 	if err != nil {
 		return nil, err
+	}
+
+	plan, ok := compiled.(*ferret.Plan)
+	if !ok {
+		_ = compiled.Close()
+
+		return nil, fmt.Errorf("unexpected Ferret plan type %T", compiled)
 	}
 
 	return NewProgram(plan, query), nil

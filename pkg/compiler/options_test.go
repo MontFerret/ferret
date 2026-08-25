@@ -7,6 +7,7 @@ import (
 	"github.com/ziflex/go-options"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func mustNewCompiler(t testing.TB, setters ...Option) *Compiler {
@@ -171,6 +172,49 @@ func TestWithOptimizationLevelRejectsUnsupportedLevels(t *testing.T) {
 				t.Fatalf("New() validation reason = %v, want supported-level error", got.Reason)
 			}
 		})
+	}
+}
+
+func TestCompileWithOptimizationLevelOverridesOneCompilation(t *testing.T) {
+	t.Parallel()
+
+	compilerInstance := mustNewCompiler(t, WithOptimizationLevel(O1))
+	overridden, err := compilerInstance.CompileWithOptimizationLevel(
+		source.NewAnonymous("LET value = 1 RETURN value"),
+		O0,
+	)
+	if err != nil {
+		t.Fatalf("CompileWithOptimizationLevel() error = %v", err)
+	}
+
+	if got := overridden.Metadata.OptimizationLevel; got != int(O0) {
+		t.Fatalf("override optimization level = O%d, want O%d", got, O0)
+	}
+
+	configured, err := compilerInstance.Compile(source.NewAnonymous("RETURN 1"))
+	if err != nil {
+		t.Fatalf("Compile() error = %v", err)
+	}
+
+	if got := configured.Metadata.OptimizationLevel; got != int(O1) {
+		t.Fatalf("configured optimization level = O%d, want O%d", got, O1)
+	}
+}
+
+func TestCompileWithOptimizationLevelRejectsUnsupportedLevel(t *testing.T) {
+	t.Parallel()
+
+	compilerInstance := mustNewCompiler(t)
+	program, err := compilerInstance.CompileWithOptimizationLevel(
+		source.NewAnonymous("RETURN 1"),
+		optimization.LevelAggressive+1,
+	)
+	if err == nil {
+		t.Fatal("CompileWithOptimizationLevel() error = nil, want validation error")
+	}
+
+	if program != nil {
+		t.Fatal("CompileWithOptimizationLevel() program != nil, want nil")
 	}
 }
 

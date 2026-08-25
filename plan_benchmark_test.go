@@ -3,8 +3,6 @@ package ferret
 import (
 	"context"
 	"testing"
-
-	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func BenchmarkPlanNewSession(b *testing.B) {
@@ -16,7 +14,7 @@ func BenchmarkPlanNewSession(b *testing.B) {
 		_ = engine.Close()
 	}()
 
-	plan, err := engine.Compile(context.Background(), source.NewAnonymous("RETURN 1"))
+	plan, err := engine.Compile(context.Background(), newAnonymousAPIFile("RETURN 1"))
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -47,7 +45,7 @@ func BenchmarkPlanNewDebugSession(b *testing.B) {
 		_ = engine.Close()
 	}()
 
-	plan, err := engine.CompileDebug(context.Background(), source.NewAnonymous("RETURN 1"))
+	plan, err := engine.CompileDebug(context.Background(), newAnonymousAPIFile("RETURN 1"))
 	if err != nil {
 		b.Fatal(err)
 	}

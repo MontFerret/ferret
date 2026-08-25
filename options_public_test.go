@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	apisource "github.com/MontFerret/api/source"
 	ferret "github.com/MontFerret/ferret/v2"
-	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestPublicOptionTypesRemainUsable(t *testing.T) {
@@ -23,7 +23,10 @@ func TestPublicOptionTypesRemainUsable(t *testing.T) {
 	}
 	defer func() { _ = engine.Close() }()
 
-	plan, err := engine.Compile(context.Background(), source.NewAnonymous("RETURN 1"))
+	plan, err := engine.Compile(context.Background(), apisource.File{
+		Name:    "anonymous",
+		Content: "RETURN 1",
+	})
 	if err != nil {
 		t.Fatalf("compile: %v", err)
 	}

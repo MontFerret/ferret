@@ -8,6 +8,7 @@ import (
 
 	gooptions "github.com/ziflex/go-options"
 
+	apisource "github.com/MontFerret/api/source"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	formatjson "github.com/MontFerret/ferret/v2/pkg/bytecode/format/json"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
@@ -56,20 +57,64 @@ func mustNewEngine(t *testing.T, setters ...Option) *Engine {
 func mustCompilePlan(t *testing.T, eng *Engine, query string) *Plan {
 	t.Helper()
 
-	plan, err := eng.Compile(context.Background(), source.NewAnonymous(query))
+	compiled, err := eng.Compile(context.Background(), newAnonymousAPIFile(query))
 	if err != nil {
 		t.Fatalf("failed to compile query %q: %v", query, err)
+	}
+
+	plan, ok := compiled.(*Plan)
+	if !ok {
+		t.Fatalf("unexpected plan type %T", compiled)
 	}
 
 	return plan
 }
 
+func mustCompileDebugPlan(t *testing.T, eng *Engine, src *source.Source) *Plan {
+	t.Helper()
+
+	compiled, err := eng.CompileDebug(context.Background(), apiFile(src))
+	if err != nil {
+		t.Fatalf("failed to compile debug query %q: %v", src.Name(), err)
+	}
+
+	plan, ok := compiled.(*Plan)
+	if !ok {
+		t.Fatalf("unexpected plan type %T", compiled)
+	}
+
+	return plan
+}
+
+func apiFile(src *source.Source) apisource.File {
+	return apisource.File{
+		Name:    src.Name(),
+		Content: src.Content(),
+	}
+}
+
+func newAPIFile(name, content string) apisource.File {
+	return apisource.File{
+		Name:    name,
+		Content: content,
+	}
+}
+
+func newAnonymousAPIFile(content string) apisource.File {
+	return newAPIFile("anonymous", content)
+}
+
 func mustNewSession(t *testing.T, plan *Plan, setters ...SessionOption) *Session {
 	t.Helper()
 
-	session, err := plan.NewSession(context.Background(), setters...)
+	created, err := plan.NewSession(context.Background(), setters...)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
+	}
+
+	session, ok := created.(*Session)
+	if !ok {
+		t.Fatalf("unexpected session type %T", created)
 	}
 
 	return session
@@ -273,7 +318,7 @@ func TestEngineCompileReturnsBeforeHookError(t *testing.T) {
 		}),
 	)
 
-	plan, err := eng.Compile(context.Background(), source.NewAnonymous(coverageValidQuery))
+	plan, err := eng.Compile(context.Background(), newAnonymousAPIFile(coverageValidQuery))
 	if err == nil {
 		t.Fatal("expected compile to fail on before hook error")
 	}
@@ -307,7 +352,7 @@ func TestEngineCompileReturnsCompilerErrorWhenAfterHooksSucceed(t *testing.T) {
 		return nil
 	}))
 
-	plan, err := eng.Compile(context.Background(), source.NewAnonymous(coverageInvalidQuery))
+	plan, err := eng.Compile(context.Background(), newAnonymousAPIFile(coverageInvalidQuery))
 	if err == nil {
 		t.Fatal("expected compile to fail for invalid query")
 	}
@@ -343,7 +388,7 @@ func TestEngineCompileReturnsAfterHookErrorOnSuccess(t *testing.T) {
 		return afterErr
 	}))
 
-	plan, err := eng.Compile(context.Background(), source.NewAnonymous(coverageValidQuery))
+	plan, err := eng.Compile(context.Background(), newAnonymousAPIFile(coverageValidQuery))
 	if err == nil {
 		t.Fatal("expected compile to fail when after hook fails")
 	}
@@ -376,7 +421,7 @@ func TestEngineCompileJoinsCompileAndAfterHookErrors(t *testing.T) {
 		return afterErr
 	}))
 
-	plan, err := eng.Compile(context.Background(), source.NewAnonymous(coverageInvalidQuery))
+	plan, err := eng.Compile(context.Background(), newAnonymousAPIFile(coverageInvalidQuery))
 	if err == nil {
 		t.Fatal("expected compile to fail for invalid query and after hook error")
 	}
@@ -411,13 +456,13 @@ func TestEngineRunReturnsCompileErrorWithoutPlanClose(t *testing.T) {
 		return nil
 	}))
 
-	result, err := eng.Run(context.Background(), source.NewAnonymous(coverageInvalidQuery))
+	result, err := eng.Run(context.Background(), newAnonymousAPIFile(coverageInvalidQuery))
 	if err == nil {
 		t.Fatal("expected run to fail when compile fails")
 	}
 
-	if result != nil {
-		t.Fatal("expected nil result when compile fails")
+	if result.ContentType != "" || result.Content != nil {
+		t.Fatalf("expected zero result when compile fails, got %#v", result)
 	}
 
 	if planCloseCalled {
@@ -619,7 +664,7 @@ func TestEngineParams(t *testing.T) {
 		t.Fatal("expected engine to be non-nil on successful construction")
 	}
 
-	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1"))
+	out, err := eng.Run(context.Background(), newAnonymousAPIFile("RETURN @param1"))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)
@@ -654,7 +699,7 @@ func TestEngineParam(t *testing.T) {
 		t.Fatal("expected engine to be non-nil on successful construction")
 	}
 
-	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1"))
+	out, err := eng.Run(context.Background(), newAnonymousAPIFile("RETURN @param1"))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)
@@ -697,7 +742,7 @@ func TestEngineRuntimeParams(t *testing.T) {
 		t.Fatal("expected engine to be non-nil on successful construction")
 	}
 
-	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1"))
+	out, err := eng.Run(context.Background(), newAnonymousAPIFile("RETURN @param1"))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)
@@ -732,7 +777,7 @@ func TestEngineRuntimeParam(t *testing.T) {
 		t.Fatal("expected engine to be non-nil on successful construction")
 	}
 
-	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1"))
+	out, err := eng.Run(context.Background(), newAnonymousAPIFile("RETURN @param1"))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)
