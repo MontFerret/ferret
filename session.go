@@ -7,6 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/MontFerret/api"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
@@ -45,8 +46,24 @@ type (
 	}
 )
 
+var _ api.Session = (*Session)(nil)
+
 // Run executes the session with the provided context and returns encoded output.
-func (s *Session) Run(c context.Context) (*Output, error) {
+// It may return a non-zero Output together with a non-nil error when output was
+// materialized before result cleanup failed.
+func (s *Session) Run(c context.Context) (api.Output, error) {
+	output, err := s.run(c)
+	if output == nil {
+		return api.Output{}, err
+	}
+
+	return api.Output{
+		ContentType: output.ContentType,
+		Content:     output.Content,
+	}, err
+}
+
+func (s *Session) run(c context.Context) (*encoding.Output, error) {
 	if s.closed.Load() {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "session is closed")
 	}

@@ -1,12 +1,14 @@
 package ferret
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 
 	gooptions "github.com/ziflex/go-options"
 
+	"github.com/MontFerret/api"
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
@@ -22,8 +24,10 @@ type (
 		debugFormat       debugger.FormatOptions
 	}
 
+	nativeSessionOption = gooptions.Option[sessionOptions]
+
 	// SessionOption configures a Session created from a Plan.
-	SessionOption = gooptions.Option[sessionOptions]
+	SessionOption = api.SessionOption
 )
 
 func defaultSessionOptions() sessionOptions {
@@ -38,17 +42,40 @@ func newSessionOptions(setters []SessionOption) (sessionOptions, error) {
 		return defaultSessionOptions(), nil
 	}
 
-	opts, err := gooptions.ApplyTo(defaultSessionOptions(), setters...)
-	if err != nil {
-		return sessionOptions{}, err
+	target := newSessionOptionTarget(len(setters))
+	var optionErr error
+
+	for _, setter := range setters {
+		if setter == nil {
+			continue
+		}
+
+		if err := setter(target); err != nil {
+			optionErr = errors.Join(optionErr, err)
+		}
 	}
 
-	return opts, nil
+	opts, err := gooptions.ApplyTo(defaultSessionOptions(), target.setters...)
+
+	return opts, errors.Join(optionErr, err)
+}
+
+func wrapSessionOption(setter nativeSessionOption) SessionOption {
+	return func(options api.SessionOptions) error {
+		target, ok := options.(*sessionOptionTarget)
+		if !ok {
+			return fmt.Errorf("Ferret session option cannot be applied to %T", options)
+		}
+
+		target.setters = append(target.setters, setter)
+
+		return nil
+	}
 }
 
 // WithDebugFormat configures bounded debugger value formatting.
 func WithDebugFormat(format DebugFormatOptions) SessionOption {
-	return gooptions.New(func(session *sessionOptions, format DebugFormatOptions) {
+	return wrapSessionOption(gooptions.New(func(session *sessionOptions, format DebugFormatOptions) {
 		session.debugFormat = format
 	}).
 		Value(format).
@@ -60,34 +87,20 @@ func WithDebugFormat(format DebugFormatOptions) SessionOption {
 
 			return nil
 		})).
-		Build()
+		Build())
 }
 
 // WithEnvironmentOptions appends VM environment options to the created session.
 func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
-	return func(session *sessionOptions) error {
-		if session == nil {
-			return nil
-		}
-
-		if len(opts) == 0 {
-			return nil
-		}
-
-		for _, opt := range opts {
-			if opt == nil {
-				continue
-			}
-
-			session.env = append(session.env, opt)
-		}
-
-		return nil
-	}
+	return wrapSessionOption(environmentOptionsOption(opts...))
 }
 
 // WithOutputContentType selects the output codec content type for session results.
 func WithOutputContentType(contentType string) SessionOption {
+	return wrapSessionOption(outputContentTypeOption(contentType))
+}
+
+func outputContentTypeOption(contentType string) nativeSessionOption {
 	return gooptions.New(func(session *sessionOptions, contentType string) {
 		session.outputContentType = strings.TrimSpace(contentType)
 	}).
@@ -100,6 +113,10 @@ func WithOutputContentType(contentType string) SessionOption {
 // WithSessionParams merges the provided parameter map into the session environment,
 // overriding existing keys while preserving any other previously defined parameters.
 func WithSessionParams(params map[string]any) SessionOption {
+	return wrapSessionOption(sessionParamsOption(params))
+}
+
+func sessionParamsOption(params map[string]any) nativeSessionOption {
 	return func(s *sessionOptions) error {
 		if len(params) == 0 {
 			return nil
@@ -111,24 +128,28 @@ func WithSessionParams(params map[string]any) SessionOption {
 			return fmt.Errorf("failed to convert params to runtime.Params: %w", err)
 		}
 
-		return WithEnvironmentOptions(vm.WithParams(rtp))(s)
+		return environmentOptionsOption(vm.WithParams(rtp))(s)
 	}
 }
 
 // WithSessionRuntimeParams merges the provided runtime.Params into the session environment,
 // overriding existing keys while preserving any other previously defined parameters.
 func WithSessionRuntimeParams(params runtime.Params) SessionOption {
-	return func(s *sessionOptions) error {
+	return wrapSessionOption(func(s *sessionOptions) error {
 		if len(params) == 0 {
 			return nil
 		}
 
-		return WithEnvironmentOptions(vm.WithParams(params))(s)
-	}
+		return environmentOptionsOption(vm.WithParams(params))(s)
+	})
 }
 
 // WithSessionParam adds or overrides a single session parameter.
 func WithSessionParam(name string, value any) SessionOption {
+	return wrapSessionOption(sessionParamOption(name, value))
+}
+
+func sessionParamOption(name string, value any) nativeSessionOption {
 	return func(s *sessionOptions) error {
 		if name == "" {
 			return fmt.Errorf("param name cannot be empty")
@@ -143,13 +164,13 @@ func WithSessionParam(name string, value any) SessionOption {
 			return fmt.Errorf("failed to convert param to runtime.Params: %w", err)
 		}
 
-		return WithEnvironmentOptions(vm.WithParams(rtp))(s)
+		return environmentOptionsOption(vm.WithParams(rtp))(s)
 	}
 }
 
 // WithSessionRuntimeParam adds or overrides a single session parameter using a pre-converted runtime.Value.
 func WithSessionRuntimeParam(name string, value runtime.Value) SessionOption {
-	return func(s *sessionOptions) error {
+	return wrapSessionOption(func(s *sessionOptions) error {
 		if name == "" {
 			return fmt.Errorf("param name cannot be empty")
 		}
@@ -158,14 +179,14 @@ func WithSessionRuntimeParam(name string, value runtime.Value) SessionOption {
 			return fmt.Errorf("param value cannot be nil")
 		}
 
-		return WithEnvironmentOptions(vm.WithParam(name, value))(s)
-	}
+		return environmentOptionsOption(vm.WithParam(name, value))(s)
+	})
 }
 
 // WithSessionLog sets the writer for logging output.
 // The writer can be any io.Writer, such as os.Stdout or a file.
 func WithSessionLog(writer io.Writer) SessionOption {
-	return func(opts *sessionOptions) error {
+	return wrapSessionOption(func(opts *sessionOptions) error {
 		if writer == nil {
 			return fmt.Errorf("log writer cannot be nil")
 		}
@@ -173,13 +194,13 @@ func WithSessionLog(writer io.Writer) SessionOption {
 		opts.logger = append(opts.logger, logging.WithWriter(writer))
 
 		return nil
-	}
+	})
 }
 
 // WithSessionLogLevel sets the logging level for the session.
 // The logging level determines the severity of log messages that will be recorded.
 func WithSessionLogLevel(lvl logging.LogLevel) SessionOption {
-	return func(opts *sessionOptions) error {
+	return wrapSessionOption(func(opts *sessionOptions) error {
 		if lvl < logging.TraceLevel || lvl > logging.Disabled {
 			return fmt.Errorf("invalid log level: %v", lvl)
 		}
@@ -187,18 +208,34 @@ func WithSessionLogLevel(lvl logging.LogLevel) SessionOption {
 		opts.logger = append(opts.logger, logging.WithLevel(lvl))
 
 		return nil
-	}
+	})
 }
 
 // WithSessionLogFields sets the fields to be included in log entries for the session.
 // These fields can provide additional context for debugging and monitoring purposes.
 func WithSessionLogFields(fields map[string]any) SessionOption {
-	return func(opts *sessionOptions) error {
+	return wrapSessionOption(func(opts *sessionOptions) error {
 		if len(fields) == 0 {
 			return nil
 		}
 
 		opts.logger = append(opts.logger, logging.WithFields(fields))
+
+		return nil
+	})
+}
+
+func environmentOptionsOption(opts ...vm.EnvironmentOption) nativeSessionOption {
+	return func(session *sessionOptions) error {
+		if session == nil || len(opts) == 0 {
+			return nil
+		}
+
+		for _, opt := range opts {
+			if opt != nil {
+				session.env = append(session.env, opt)
+			}
+		}
 
 		return nil
 	}

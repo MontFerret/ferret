@@ -114,21 +114,26 @@ coverage. Review all generated changes and commit them with their source change.
 
 These rules are mandatory unless the task explicitly requires otherwise.
 
-* Prefer grouped `type ( ... )` declarations for package-level types.
-* Types declared in the same file should normally be placed in a single grouped
-  `type` declaration rather than written as independent `type` declarations.
 * This applies equally to structs, interfaces, aliases, named primitive types,
   and method-bearing types.
-* Do not split types into independent declarations merely because one or more of
-  them have methods.
 * Keep related types together when they belong to the same narrow responsibility
   and their proximity makes the implementation easier to understand.
 * A file may contain multiple related behavioral types when they form one
   cohesive concern.
-* Split types into separate files based on responsibility and ownership, not
-  simply because multiple types have methods.
-* When a file contains only one package-level type, a standalone declaration is
-  acceptable; do not create an artificial group containing a single type.
+* A struct that owns methods gets its own file. Keep that struct and all of its
+  methods together in that file.
+* Do not place methods for multiple struct receivers in the same file.
+* Prefer one grouped `type ( ... )` declaration for related package-level types
+  that do not own methods, such as interfaces, aliases, named primitive types,
+  enums, and closely related data-only types.
+* Types declared in the same file should normally be placed in a single grouped
+    `type` declaration rather than written as independent `type` declarations.
+* Small supporting data-only types may live with the struct that owns or
+  consumes them when that improves locality and they do not have their own
+  methods.
+* Split package-level functions into predictably named,
+  responsibility-focused files rather than attaching them to an unrelated
+  struct file.
 * When adding a package-level type to a file that already contains type
   declarations, incorporate it into the existing type group when it belongs to
   the same concern.

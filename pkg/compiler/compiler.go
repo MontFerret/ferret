@@ -39,6 +39,26 @@ func New(setters ...Option) (*Compiler, error) {
 //
 // Compile is safe for concurrent use by multiple goroutines.
 func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err error) {
+	return c.compile(src, c.config.Level)
+}
+
+// CompileWithOptimizationLevel compiles source using level for this invocation
+// without mutating the Compiler's immutable configuration.
+func (c *Compiler) CompileWithOptimizationLevel(
+	src *source.Source,
+	level OptimizationLevel,
+) (program *bytecode.Program, err error) {
+	if err := validateOptimizationLevel(level); err != nil {
+		return nil, err
+	}
+
+	return c.compile(src, level)
+}
+
+func (c *Compiler) compile(
+	src *source.Source,
+	level OptimizationLevel,
+) (program *bytecode.Program, err error) {
 	if src.Empty() {
 		return nil, parserd.NewEmptyQueryError(src)
 	}
@@ -54,7 +74,6 @@ func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err e
 		}
 	}()
 
-	level := c.config.Level
 	if c.config.DebugInfo {
 		level = optimization.LevelNone
 	}

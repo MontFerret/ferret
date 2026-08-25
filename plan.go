@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/MontFerret/api"
+	apidebugger "github.com/MontFerret/api/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -23,6 +25,8 @@ type Plan struct {
 	mu           sync.RWMutex
 	closed       bool
 }
+
+var _ api.Plan = (*Plan)(nil)
 
 // Params returns the list of parameter names declared in the query.
 func (p *Plan) Params() []string {
@@ -42,7 +46,7 @@ func (p *Plan) Params() []string {
 // settings. For a valid plan, all non-nil options are applied in order, and
 // failures from multiple options are joined before session resources are
 // acquired.
-func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Session, error) {
+func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (api.Session, error) {
 	return newPlanSession(p, ctx, setters, planSessionSetup{}, buildSession)
 }
 
@@ -50,7 +54,19 @@ func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Sessi
 // non-nil options are applied in order after the plan's debug metadata is
 // validated, and failures from multiple options are joined before session
 // resources are acquired.
-func (p *Plan) NewDebugSession(ctx context.Context, setters ...SessionOption) (*DebugSession, error) {
+func (p *Plan) NewDebugSession(
+	ctx context.Context,
+	setters ...SessionOption,
+) (apidebugger.Session, error) {
+	session, err := p.newDebugSession(ctx, setters...)
+	if err != nil {
+		return nil, err
+	}
+
+	return newAPIDebugSession(session), nil
+}
+
+func (p *Plan) newDebugSession(ctx context.Context, setters ...SessionOption) (*DebugSession, error) {
 	return newPlanSession(p, ctx, setters, planSessionSetup{requiresDebugInfo: true}, buildDebugSession)
 }
 

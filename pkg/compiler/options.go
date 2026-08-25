@@ -1,6 +1,8 @@
 package compiler
 
 import (
+	"fmt"
+
 	"github.com/ziflex/go-options"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
@@ -32,6 +34,17 @@ func defaultConfig() config {
 	}
 }
 
+// WithDebugInfo emits source-level debugger metadata and disables optimization
+// so debugger-visible register bindings remain stable.
+func WithDebugInfo() Option {
+	return func(config *config) error {
+		config.DebugInfo = true
+		config.Level = optimization.LevelNone
+
+		return nil
+	}
+}
+
 // WithOptimizationLevel configures the compiler optimization level. It accepts
 // levels from 0 through 3.
 func WithOptimizationLevel(level OptimizationLevel) Option {
@@ -41,25 +54,19 @@ func WithOptimizationLevel(level OptimizationLevel) Option {
 		},
 	).
 		Named("optimization level").
-		Validators(
-			options.OneOf(
-				optimization.LevelNone,
-				optimization.LevelBasic,
-				optimization.LevelFull,
-				optimization.LevelAggressive,
-			),
-		).
+		Validators(validateOptimizationLevel).
 		Value(level).
 		Build()
 }
 
-// WithDebugInfo emits source-level debugger metadata and disables optimization
-// so debugger-visible register bindings remain stable.
-func WithDebugInfo() Option {
-	return func(config *config) error {
-		config.DebugInfo = true
-		config.Level = optimization.LevelNone
-
+func validateOptimizationLevel(level OptimizationLevel) error {
+	switch level {
+	case optimization.LevelNone,
+		optimization.LevelBasic,
+		optimization.LevelFull,
+		optimization.LevelAggressive:
 		return nil
+	default:
+		return fmt.Errorf("invalid optimization level: %d", level)
 	}
 }

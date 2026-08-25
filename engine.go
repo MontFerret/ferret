@@ -5,11 +5,14 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/MontFerret/api"
+	"github.com/MontFerret/api/result"
+	apisource "github.com/MontFerret/api/source"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
-	"github.com/MontFerret/ferret/v2/pkg/source"
+	coresource "github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -25,6 +28,8 @@ type Engine struct {
 	totalCap      int
 	ownsNetwork   bool
 }
+
+var _ api.Runtime = (*Engine)(nil)
 
 // New constructs an Engine from the provided options, registers all modules,
 // builds the host, and runs engine init hooks. It returns an error if any
@@ -107,12 +112,38 @@ func New(setters ...Option) (*Engine, error) {
 }
 
 // Compile compiles source into a reusable execution plan.
-func (e *Engine) Compile(ctx context.Context, src *source.Source) (*Plan, error) {
+func (e *Engine) Compile(
+	ctx context.Context,
+	file apisource.File,
+	setters ...api.PlanOption,
+) (api.Plan, error) {
+	opts, err := newCompileOptions(setters)
+	if err != nil {
+		return nil, err
+	}
+
+	return e.compile(ctx, coresource.New(file.Name, file.Content), e.compiler, opts)
+}
+
+func (e *Engine) compile(
+	ctx context.Context,
+	src *coresource.Source,
+	compilerInstance *compiler.Compiler,
+	opts compileOptions,
+) (*Plan, error) {
 	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
 		return nil, fmt.Errorf("before compile hooks: %w", err)
 	}
 
-	prog, err := e.compiler.Compile(src)
+	var prog *bytecode.Program
+	var err error
+
+	if opts.hasOptimization {
+		prog, err = compilerInstance.CompileWithOptimizationLevel(src, opts.optimizationLevel)
+	} else {
+		prog, err = compilerInstance.Compile(src)
+	}
+
 	// After-compile hooks always run and receive the compilation error (if any).
 	if hookErr := e.hooks.plan.runAfterCompileHooks(ctx, err); hookErr != nil {
 		return nil, errors.Join(err, fmt.Errorf("after compile hooks: %w", hookErr))
@@ -127,21 +158,17 @@ func (e *Engine) Compile(ctx context.Context, src *source.Source) (*Plan, error)
 
 // CompileDebug compiles source into a reusable plan with source-level debugger
 // metadata. Debug compilation uses effective O0 optimization.
-func (e *Engine) CompileDebug(ctx context.Context, src *source.Source) (*Plan, error) {
-	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
-		return nil, fmt.Errorf("before compile hooks: %w", err)
-	}
-
-	prog, err := e.debugCompiler.Compile(src)
-	if hookErr := e.hooks.plan.runAfterCompileHooks(ctx, err); hookErr != nil {
-		return nil, errors.Join(err, fmt.Errorf("after compile hooks: %w", hookErr))
-	}
-
+func (e *Engine) CompileDebug(
+	ctx context.Context,
+	file apisource.File,
+	setters ...api.PlanOption,
+) (api.Plan, error) {
+	opts, err := newCompileOptions(setters)
 	if err != nil {
 		return nil, err
 	}
 
-	return e.newPlan(prog)
+	return e.compile(ctx, coresource.New(file.Name, file.Content), e.debugCompiler, opts)
 }
 
 // Load decodes a serialized program artifact and wraps it in a reusable plan.
@@ -155,16 +182,16 @@ func (e *Engine) Load(data []byte) (*Plan, error) {
 }
 
 // Run compiles source, executes it in a fresh session, and returns encoded output and an error.
-// Similar to Session.Run, it may return a non-nil *Output together with a non-nil error
+// Similar to Session.Run, it may return a non-zero Output together with a non-nil error
 // (for example, if execution produced output but a deferred cleanup step failed).
-func (e *Engine) Run(ctx context.Context, src *source.Source, opts ...SessionOption) (*Output, error) {
+func (e *Engine) Run(ctx context.Context, src apisource.File, opts ...SessionOption) (result.Output, error) {
 	plan, err := e.Compile(ctx, src)
 
 	if err != nil {
-		return nil, err
+		return result.Output{}, err
 	}
 
-	var session *Session
+	var session api.Session
 
 	defer func() {
 		logger := e.host.logger
@@ -190,7 +217,7 @@ func (e *Engine) Run(ctx context.Context, src *source.Source, opts ...SessionOpt
 
 	session, err = plan.NewSession(ctx, opts...)
 	if err != nil {
-		return nil, err
+		return result.Output{}, err
 	}
 
 	return session.Run(ctx)
