@@ -6,9 +6,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-// Output is the encoded result returned from session or engine execution.
-type Output = encoding.Output
-
 func newOutput(registry *encoding.Registry, contentType string, res *vm.Result) (*encoding.Output, error) {
 	codec, err := registry.Codec(contentType)
 	if err != nil {
