@@ -16,8 +16,8 @@ type SpanRenderer struct {
 }
 
 // Render prints a span diagnostic block. It returns false when no location can be rendered.
-func (r SpanRenderer) Render(out io.Writer, src *source.Source, span source.Span, label string) bool {
-	if out == nil || src == nil || src.Empty() {
+func (r SpanRenderer) Render(out io.Writer, src source.Source, span source.Span, label string) bool {
+	if out == nil || src.Empty() {
 		return false
 	}
 

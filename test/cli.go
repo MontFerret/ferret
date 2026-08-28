@@ -349,7 +349,7 @@ func main() {
 	}
 }
 
-func formatQuery(f *formatter.Formatter, query *source.Source) error {
+func formatQuery(f *formatter.Formatter, query source.Source) error {
 	err := f.Format(os.Stdout, query)
 
 	if err != nil {
@@ -360,18 +360,18 @@ func formatQuery(f *formatter.Formatter, query *source.Source) error {
 }
 
 func formatFiles(ctx context.Context, f *formatter.Formatter, files []string) error {
-	return processFiles(ctx, files, "format", func(ctx context.Context, src *source.Source) error {
+	return processFiles(ctx, files, "format", func(ctx context.Context, src source.Source) error {
 		return formatQuery(f, src)
 	})
 }
 
 func execFiles(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, files []string) error {
-	return processFiles(ctx, files, "execute", func(ctx context.Context, src *source.Source) error {
+	return processFiles(ctx, files, "execute", func(ctx context.Context, src source.Source) error {
 		return runQuery(ctx, engine, opts, src)
 	})
 }
 
-func runQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, query *source.Source) error {
+func runQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, query source.Source) error {
 	if !(*dryRun) {
 		return execQuery(ctx, engine, opts, query)
 	}
@@ -379,7 +379,7 @@ func runQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionO
 	return analyzeQuery(query)
 }
 
-func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, query *source.Source) error {
+func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, query source.Source) error {
 	plan, err := engine.Compile(ctx, query)
 
 	if err != nil {
@@ -441,7 +441,7 @@ func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 	return nil
 }
 
-func processFiles(ctx context.Context, files []string, op string, predicate func(ctx context.Context, src *source.Source) error) error {
+func processFiles(ctx context.Context, files []string, op string, predicate func(ctx context.Context, src source.Source) error) error {
 	errList := make([]diagnostics.FormattableError, 0, len(files))
 
 	for _, path := range files {
@@ -591,7 +591,7 @@ func printResult(_ context.Context, res *ferret.Output) (uint64, error) {
 	return printer.size, err
 }
 
-func analyzeQuery(query *source.Source) error {
+func analyzeQuery(query source.Source) error {
 	beforeCompilation := "Before Compilation"
 	compilation := "Compilation"
 	afterCompilation := "After Compilation"

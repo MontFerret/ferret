@@ -19,7 +19,7 @@ type bindingCompilerTestState struct {
 	front   *CompilationFrontend
 	program *fql.ProgramContext
 	session *CompilationSession
-	source  *source.Source
+	source  source.Source
 }
 
 func TestBindingCompilerCapturedMutableDeclarationPromotesToCellStorage(t *testing.T) {
@@ -454,7 +454,7 @@ func newBindingCompilerTestState(t *testing.T, query string) *bindingCompilerTes
 	}
 }
 
-func parseBindingCompilerTestProgram(t *testing.T, src *source.Source, errors *parserd.ErrorHandler) *fql.ProgramContext {
+func parseBindingCompilerTestProgram(t *testing.T, src source.Source, errors *parserd.ErrorHandler) *fql.ProgramContext {
 	t.Helper()
 
 	input := antlr.NewInputStream(src.Content())

@@ -8,16 +8,16 @@ import (
 
 // Diagnostic represents a structured diagnostic error with optional source context and spans.
 type Diagnostic struct {
-	Cause   error          `json:"cause"`
-	Source  *source.Source `json:"source"`
-	Kind    Kind           `json:"kind"`
-	Message string         `json:"message"`
-	Hint    string         `json:"hint"`
-	Note    string         `json:"note"`
-	Spans   []ErrorSpan    `json:"spans"`
+	Cause   error         `json:"cause"`
+	Source  source.Source `json:"source"`
+	Kind    Kind          `json:"kind"`
+	Message string        `json:"message"`
+	Hint    string        `json:"hint"`
+	Note    string        `json:"note"`
+	Spans   []ErrorSpan   `json:"spans"`
 }
 
-func NewUnexpectedError(src *source.Source, msg string) *Diagnostic {
+func NewUnexpectedError(src source.Source, msg string) *Diagnostic {
 	return &Diagnostic{
 		Kind:    UnexpectedError,
 		Message: msg,
@@ -25,7 +25,7 @@ func NewUnexpectedError(src *source.Source, msg string) *Diagnostic {
 	}
 }
 
-func NewUnexpectedErrorWith(src *source.Source, msg string, cause error) *Diagnostic {
+func NewUnexpectedErrorWith(src source.Source, msg string, cause error) *Diagnostic {
 	return &Diagnostic{
 		Kind:    UnexpectedError,
 		Message: msg,

@@ -42,7 +42,7 @@ func New(setters ...Option) (*Formatter, error) {
 	}, nil
 }
 
-func (fmt *Formatter) Format(out io.Writer, src *source.Source) error {
+func (fmt *Formatter) Format(out io.Writer, src source.Source) error {
 	if src.Empty() {
 		return parserd.NewEmptyQueryError(src)
 	}

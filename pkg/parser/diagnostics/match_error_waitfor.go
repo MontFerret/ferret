@@ -11,7 +11,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func matchWaitForErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchWaitForErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if err == nil || offending == nil {
 		return false
 	}
@@ -135,8 +135,8 @@ type waitForEventOperandIssue struct {
 	span    source.Span
 }
 
-func waitForEventOperandError(src *source.Source, offending antlr.Token) (waitForEventOperandIssue, bool) {
-	if src == nil || offending == nil {
+func waitForEventOperandError(src source.Source, offending antlr.Token) (waitForEventOperandIssue, bool) {
+	if src.Empty() || offending == nil {
 		return waitForEventOperandIssue{}, false
 	}
 
@@ -268,7 +268,7 @@ func waitForEventOperandStatementBoundary(token antlr.Token) bool {
 	}
 }
 
-func waitForEventMissingInSpan(src *source.Source, event, first antlr.Token) source.Span {
+func waitForEventMissingInSpan(src source.Source, event, first antlr.Token) source.Span {
 	content := src.Content()
 	start := first.GetStart()
 	if start < 0 || start >= len(content) {
@@ -292,8 +292,8 @@ func waitForEventMissingInSpan(src *source.Source, event, first antlr.Token) sou
 	}
 }
 
-func waitForEmptyGroupInSource(src *source.Source, offending antlr.Token) (string, string, source.Span, bool) {
-	if src == nil || offending == nil {
+func waitForEmptyGroupInSource(src source.Source, offending antlr.Token) (string, string, source.Span, bool) {
+	if src.Empty() || offending == nil {
 		return "", "", source.Span{}, false
 	}
 
@@ -535,8 +535,8 @@ func waitForTriggerInvalidBody(offending *TokenNode) *TokenNode {
 	return nil
 }
 
-func waitForEventEveryClause(src *source.Source, offending *TokenNode) (source.Span, bool) {
-	if src == nil || offending == nil || !hasWaitForEventBefore(offending) {
+func waitForEventEveryClause(src source.Source, offending *TokenNode) (source.Span, bool) {
+	if src.Empty() || offending == nil || !hasWaitForEventBefore(offending) {
 		return source.Span{}, false
 	}
 
@@ -561,7 +561,7 @@ func waitForEventEveryNode(offending *TokenNode) *TokenNode {
 	return nil
 }
 
-func waitForEventEverySpanAfter(src *source.Source, offending *TokenNode) (source.Span, bool) {
+func waitForEventEverySpanAfter(src source.Source, offending *TokenNode) (source.Span, bool) {
 	tok := offending.Token()
 	if tok == nil {
 		return source.Span{}, false

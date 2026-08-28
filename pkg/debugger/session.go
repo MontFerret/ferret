@@ -29,7 +29,7 @@ type Session struct {
 	runCancel        context.CancelCauseFunc
 	breakpoints      map[BreakpointID]Breakpoint
 	boundPointIDs    map[BreakpointID]bytecode.DebugPointID
-	source           *source.Source
+	source           source.Source
 	activeCancel     context.CancelCauseFunc
 	valueRefs        map[ValueReference]runtime.Value
 	params           []string
@@ -60,7 +60,7 @@ func NewSession(config Config) (*Session, error) {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug session services are required")
 	}
 
-	if config.Source == nil {
+	if config.Source.Empty() {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug source is required")
 	}
 

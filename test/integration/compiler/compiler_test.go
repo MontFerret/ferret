@@ -49,7 +49,7 @@ func TestCompilerCompileConcurrentSharedCompiler(t *testing.T) {
 	}
 
 	t.Run("shared_sources", func(t *testing.T) {
-		sources := make([]*source.Source, 0, len(validQueries))
+		sources := make([]source.Source, 0, len(validQueries))
 		for i, query := range validQueries {
 			sources = append(sources, source.New(fmt.Sprintf("shared_%d", i), query))
 		}
@@ -119,7 +119,7 @@ RETURN wrap()
 
 	t.Run("udf_isolation_shared_sources", func(t *testing.T) {
 		type sharedSourceCase struct {
-			source *source.Source
+			source source.Source
 			spec   struct {
 				expectedHost []bytecode.HostFunction
 				expectedUDFs int
@@ -254,13 +254,13 @@ func maxInt(a, b int) int {
 	return b
 }
 
-func assertCompiledProgram(program *bytecode.Program, source *source.Source) error {
+func assertCompiledProgram(program *bytecode.Program, src source.Source) error {
 	if program == nil {
 		return fmt.Errorf("program is nil")
 	}
 
-	if program.Source != source {
-		return fmt.Errorf("unexpected source pointer in output program")
+	if program.Source.ID() != src.ID() {
+		return fmt.Errorf("unexpected source identity in output program")
 	}
 
 	if len(program.Bytecode) == 0 {

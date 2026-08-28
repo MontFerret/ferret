@@ -27,7 +27,7 @@ func isComputedPropertyPrefix(node *TokenNode) bool {
 	return false
 }
 
-func matchLiteralErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchLiteralErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if isUnclosedTemplateLiteral(offending) {
 		span := spanFromTokenSafe(offending.Token(), src)
 		span.Start = span.End

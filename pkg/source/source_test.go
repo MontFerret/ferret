@@ -14,9 +14,10 @@ func TestNew(t *testing.T) {
 
 			source := New(name, text)
 
-			So(source, ShouldNotBeNil)
 			So(source.Name(), ShouldEqual, name)
 			So(source.Content(), ShouldEqual, text)
+			So(source.Length(), ShouldEqual, len(text))
+			So(source.ID(), ShouldNotResemble, ID{})
 			So(source.Empty(), ShouldBeFalse)
 		})
 
@@ -26,9 +27,10 @@ func TestNew(t *testing.T) {
 
 			source := New(name, text)
 
-			So(source, ShouldNotBeNil)
 			So(source.Name(), ShouldEqual, name)
 			So(source.Content(), ShouldEqual, text)
+			So(source.Length(), ShouldEqual, 0)
+			So(source.ID(), ShouldNotResemble, ID{})
 			So(source.Empty(), ShouldBeTrue)
 		})
 	})
@@ -41,10 +43,42 @@ func TestNewAnonymous(t *testing.T) {
 
 			source := NewAnonymous(text)
 
-			So(source, ShouldNotBeNil)
 			So(source.Name(), ShouldEqual, "anonymous")
 			So(source.Content(), ShouldEqual, text)
+			So(source.Length(), ShouldEqual, len(text))
+			So(source.ID(), ShouldResemble, New("anonymous", text).ID())
 		})
+	})
+}
+
+func TestSourceID(t *testing.T) {
+	Convey("Source.ID", t, func() {
+		first := New("test.fql", "RETURN 1")
+		same := New("test.fql", "RETURN 1")
+		differentName := New("other.fql", "RETURN 1")
+		differentContent := New("test.fql", "RETURN 2")
+
+		So(first.ID(), ShouldNotResemble, ID{})
+		So(first.ID(), ShouldResemble, same.ID())
+		So(first.ID(), ShouldNotResemble, differentName.ID())
+		So(first.ID(), ShouldNotResemble, differentContent.ID())
+	})
+}
+
+func TestSourceZeroValue(t *testing.T) {
+	Convey("The zero Source value represents no source", t, func() {
+		var source Source
+
+		So(source.Name(), ShouldEqual, "")
+		So(source.Content(), ShouldEqual, "")
+		So(source.Length(), ShouldEqual, 0)
+		So(source.ID(), ShouldResemble, ID{})
+		So(source.Empty(), ShouldBeTrue)
+
+		line, column := source.LocationAt(Span{Start: 0, End: 1})
+		So(line, ShouldEqual, 0)
+		So(column, ShouldEqual, 0)
+		So(source.Snippet(Span{Start: 0, End: 1}), ShouldBeNil)
 	})
 }
 
@@ -54,12 +88,6 @@ func TestSourceName(t *testing.T) {
 			source := New("test.fql", "content")
 
 			So(source.Name(), ShouldEqual, "test.fql")
-		})
-
-		Convey("Should return empty string for nil source", func() {
-			var source *Source
-
-			So(source.Name(), ShouldEqual, "")
 		})
 	})
 }
@@ -74,12 +102,6 @@ func TestSourceEmpty(t *testing.T) {
 
 		Convey("Should return true for empty text", func() {
 			source := New("test.fql", "")
-
-			So(source.Empty(), ShouldBeTrue)
-		})
-
-		Convey("Should return true for nil source", func() {
-			var source *Source
 
 			So(source.Empty(), ShouldBeTrue)
 		})
@@ -165,13 +187,6 @@ func TestSourceLocationAt(t *testing.T) {
 				So(line, ShouldEqual, 0)
 				So(col, ShouldEqual, 0)
 			})
-
-			Convey("Should handle nil source", func() {
-				var nilSource *Source
-				line, col := nilSource.LocationAt(Span{Start: 0, End: 1})
-				So(line, ShouldEqual, 0)
-				So(col, ShouldEqual, 0)
-			})
 		})
 	})
 }
@@ -239,15 +254,37 @@ func TestSourceSnippet(t *testing.T) {
 
 			So(snippets, ShouldBeNil)
 		})
+	})
+}
 
-		Convey("Nil source", func() {
-			var source *Source
-			span := Span{Start: 0, End: 1}
+func TestSourceJSONRoundTrip(t *testing.T) {
+	Convey("Source JSON round-trip", t, func() {
+		original := New("roundtrip.fql", "first\nsecond")
 
-			snippets := source.Snippet(span)
+		encoded, err := original.MarshalJSON()
+		So(err, ShouldBeNil)
+		So(string(encoded), ShouldEqual, `{"name":"roundtrip.fql","text":"first\nsecond"}`)
 
-			So(snippets, ShouldBeNil)
-		})
+		var decoded Source
+
+		err = decoded.UnmarshalJSON(encoded)
+		So(err, ShouldBeNil)
+		So(decoded.Name(), ShouldEqual, original.Name())
+		So(decoded.Content(), ShouldEqual, original.Content())
+		So(decoded.Length(), ShouldEqual, original.Length())
+		So(decoded.ID(), ShouldResemble, original.ID())
+
+		line, column := decoded.LocationAt(Span{Start: 6, End: 7})
+		So(line, ShouldEqual, 2)
+		So(column, ShouldEqual, 1)
+		So(decoded.Snippet(Span{Start: 6, End: 7}), ShouldHaveLength, 2)
+	})
+
+	Convey("UnmarshalJSON rejects a nil receiver", t, func() {
+		var source *Source
+
+		err := source.UnmarshalJSON([]byte(`{"name":"test.fql","text":"RETURN 1"}`))
+		So(err, ShouldNotBeNil)
 	})
 }
 

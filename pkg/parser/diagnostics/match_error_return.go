@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func matchMissingReturnDistinctValue(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchMissingReturnDistinctValue(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if offending == nil {
 		return false
 	}
@@ -32,7 +32,7 @@ func matchMissingReturnDistinctValue(src *source.Source, err *diagnostics.Diagno
 	return true
 }
 
-func matchMissingReturnValue(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchMissingReturnValue(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	// Prefer range-specific error when the parser trips on an incomplete range like "0.. RETURN".
 	if is(offending, "..") || is(offending.Prev(), "..") || hasRangeToken(err.Message) {
 		span := spanFromTokenSafe(offending.Token(), src)

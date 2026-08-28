@@ -35,7 +35,7 @@ func (t *triviaEmitter) stopIndex(ctx antlr.ParserRuleContext) int {
 }
 
 func (t *triviaEmitter) sliceBetween(start, end int) string {
-	if t.src == nil {
+	if t.src.Empty() {
 		return ""
 	}
 

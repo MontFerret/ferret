@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func matchForLoopErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	prev := offending.Prev()
 
 	if eq := findPrevToken(offending, "=", 4); eq != nil && is(eq.Prev(), "COLLECT") {
@@ -261,8 +261,8 @@ func matchForLoopErrors(src *source.Source, err *diagnostics.Diagnostic, offendi
 	return false
 }
 
-func diagnosticImmediatelyFollowsToken(src *source.Source, err *diagnostics.Diagnostic, expected string) bool {
-	if src == nil || err == nil {
+func diagnosticImmediatelyFollowsToken(src source.Source, err *diagnostics.Diagnostic, expected string) bool {
+	if src.Empty() || err == nil {
 		return false
 	}
 

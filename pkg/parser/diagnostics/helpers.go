@@ -34,7 +34,7 @@ func hasRangeToken(message string) bool {
 	return has(strings.ReplaceAll(message, "'...'", ""), "..")
 }
 
-func spanFromTokenSafe(tok antlr.Token, src *source.Source) source.Span {
+func spanFromTokenSafe(tok antlr.Token, src source.Source) source.Span {
 	if tok == nil {
 		return source.Span{Start: 0, End: 1}
 	}
@@ -56,6 +56,7 @@ func spanFromTokenSafe(tok antlr.Token, src *source.Source) source.Span {
 	if end > maxLen {
 		end = maxLen
 	}
+
 	if start > maxLen {
 		start = maxLen - 1
 	}

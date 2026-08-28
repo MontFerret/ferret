@@ -30,7 +30,7 @@ type (
 		Constants           *core.ConstantPool
 		ForwardBindings     *ForwardBindingIndex
 		aggregatePlanByHash map[uint64][]int
-		Source              *source.Source
+		Source              source.Source
 		Errors              *diagnostics.ErrorHandler
 		Semantics           *SemanticRecorder
 		DebugPoints         []bytecode.DebugPoint
@@ -88,14 +88,14 @@ func NewFunctionContext(constants *core.ConstantPool) *FunctionContext {
 }
 
 // NewCompilationSession initializes a new CompilationSession with default values.
-func NewCompilationSession(src *source.Source, errors *diagnostics.ErrorHandler, level optimization.Level) *CompilationSession {
+func NewCompilationSession(src source.Source, errors *diagnostics.ErrorHandler, level optimization.Level) *CompilationSession {
 	return newCompilationSession(src, errors, level, nil)
 }
 
 // NewSemanticCompilationSession initializes a compilation session that records
 // source semantics while lowering.
 func NewSemanticCompilationSession(
-	src *source.Source,
+	src source.Source,
 	errors *diagnostics.ErrorHandler,
 	level optimization.Level,
 	recorder *SemanticRecorder,
@@ -104,7 +104,7 @@ func NewSemanticCompilationSession(
 }
 
 func newCompilationSession(
-	src *source.Source,
+	src source.Source,
 	errors *diagnostics.ErrorHandler,
 	level optimization.Level,
 	recorder *SemanticRecorder,

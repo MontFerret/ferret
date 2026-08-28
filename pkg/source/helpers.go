@@ -28,3 +28,19 @@ func SkipHorizontalWhitespaceForward(content string, offset int) int {
 
 	return offset
 }
+
+func computeVisualOffset(line string, column int) int {
+	runes := []rune(line)
+	offset := 0
+	tabWidth := 4
+
+	for i := 0; i < column-1 && i < len(runes); i++ {
+		if runes[i] == '\t' {
+			offset += tabWidth - (offset % tabWidth)
+		} else {
+			offset += 1
+		}
+	}
+
+	return offset
+}

@@ -15,7 +15,7 @@ const (
 	filterStatementAssignmentHint  = "Move the assignment to a standalone statement before FILTER. FILTER predicates must be expressions."
 )
 
-func matchMissingAssignmentValue(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchMissingAssignmentValue(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if matchInvalidVarDiscard(src, err, offending) {
 		return true
 	}
@@ -69,7 +69,7 @@ func matchMissingAssignmentValue(src *source.Source, err *diagnostics.Diagnostic
 	return false
 }
 
-func matchInvalidVarDiscard(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchInvalidVarDiscard(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if offending == nil {
 		return false
 	}
@@ -92,7 +92,7 @@ func matchInvalidVarDiscard(src *source.Source, err *diagnostics.Diagnostic, off
 	return true
 }
 
-func matchAssignmentExpression(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchAssignmentExpression(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if offending == nil || (!isNoAlternative(err.Message) && !isMismatched(err.Message) && !isExtraneous(err.Message) && !isMissing(err.Message) &&
 		!has(err.Message, "forexpressionbody failed predicate")) {
 		return false
@@ -133,8 +133,8 @@ func matchAssignmentExpression(src *source.Source, err *diagnostics.Diagnostic, 
 	return true
 }
 
-func matchFilterAssignmentExpression(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
-	if src == nil || err == nil || offending == nil || offending.Token() == nil {
+func matchFilterAssignmentExpression(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+	if src.Empty() || err == nil || offending == nil || offending.Token() == nil {
 		return false
 	}
 

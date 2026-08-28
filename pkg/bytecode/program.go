@@ -54,7 +54,7 @@ type (
 	}
 
 	Program struct {
-		Source     *source.Source
+		Source     source.Source
 		Functions  Functions
 		Bytecode   []Instruction
 		Constants  []runtime.Value

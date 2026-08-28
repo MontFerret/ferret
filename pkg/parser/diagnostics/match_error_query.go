@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchQueryErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if err == nil || offending == nil {
 		return false
 	}
@@ -202,8 +202,8 @@ func matchQueryErrors(src *source.Source, err *diagnostics.Diagnostic, offending
 	return false
 }
 
-func queryInvalidDialectLiteralSpan(src *source.Source, offending *TokenNode) (source.Span, bool) {
-	if src == nil || offending == nil || !hasPrevToken(offending, "USING", 64) {
+func queryInvalidDialectLiteralSpan(src source.Source, offending *TokenNode) (source.Span, bool) {
+	if src.Empty() || offending == nil || !hasPrevToken(offending, "USING", 64) {
 		return source.Span{}, false
 	}
 
@@ -283,7 +283,7 @@ func queryClauseValueName(clause string) string {
 	}
 }
 
-func sourceHasQueryBefore(src *source.Source, offending *TokenNode) bool {
+func sourceHasQueryBefore(src source.Source, offending *TokenNode) bool {
 	prefix := sourcePrefixBefore(src, offending)
 	query := strings.LastIndex(prefix, "QUERY")
 	using := strings.LastIndex(prefix, "USING")
@@ -292,7 +292,7 @@ func sourceHasQueryBefore(src *source.Source, offending *TokenNode) bool {
 	return query >= 0 && using > query && dispatch < query
 }
 
-func sourceHasQueryOptionsBefore(src *source.Source, offending *TokenNode) bool {
+func sourceHasQueryOptionsBefore(src source.Source, offending *TokenNode) bool {
 	prefix := sourcePrefixBefore(src, offending)
 	query := strings.LastIndex(prefix, "QUERY")
 	options := strings.LastIndex(prefix, "OPTIONS")
@@ -300,8 +300,8 @@ func sourceHasQueryOptionsBefore(src *source.Source, offending *TokenNode) bool 
 	return query >= 0 && options > query
 }
 
-func sourceHasOutOfOrderQueryWith(src *source.Source) bool {
-	if src == nil {
+func sourceHasOutOfOrderQueryWith(src source.Source) bool {
+	if src.Empty() {
 		return false
 	}
 
@@ -314,7 +314,7 @@ func sourceHasOutOfOrderQueryWith(src *source.Source) bool {
 	return query >= 0 && options > query && with > options && dispatch < query
 }
 
-func outOfOrderQueryWithNode(src *source.Source, offending *TokenNode) *TokenNode {
+func outOfOrderQueryWithNode(src source.Source, offending *TokenNode) *TokenNode {
 	if !sourceHasOutOfOrderQueryWith(src) {
 		return nil
 	}
@@ -328,8 +328,8 @@ func outOfOrderQueryWithNode(src *source.Source, offending *TokenNode) *TokenNod
 	return nil
 }
 
-func sourcePrefixBefore(src *source.Source, offending *TokenNode) string {
-	if src == nil || offending == nil || offending.Token() == nil {
+func sourcePrefixBefore(src source.Source, offending *TokenNode) string {
+	if src.Empty() || offending == nil || offending.Token() == nil {
 		return ""
 	}
 

@@ -35,7 +35,7 @@ func CallArgumentSpanAt(program *bytecode.Program, pc int, pos int) source.Span 
 }
 
 func sourceTextAt(program *bytecode.Program, span source.Span) string {
-	if program == nil || program.Source == nil {
+	if program == nil || program.Source.Empty() {
 		return ""
 	}
 

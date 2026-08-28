@@ -113,7 +113,7 @@ type (
 		Execution   vm.DebugExecution
 		Values      vm.DebugValueAccess
 		Services    SessionServices
-		Source      *source.Source
+		Source      source.Source
 		DebugPoints []bytecode.DebugPoint
 		Params      []string
 		Format      FormatOptions

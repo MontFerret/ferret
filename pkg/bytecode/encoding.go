@@ -17,7 +17,7 @@ import (
 
 type (
 	programJSON struct {
-		Source     *source.Source `json:"source,omitempty"`
+		Source     source.Source  `json:"source,omitempty"`
 		Functions  Functions      `json:"functions,omitempty"`
 		Bytecode   []Instruction  `json:"bytecode"`
 		Constants  []constantJSON `json:"constants,omitempty"`

@@ -38,8 +38,8 @@ func validSpan(span source.Span) bool {
 	return span.Start >= 0 && span.End > span.Start
 }
 
-func semanticByteOffsets(src *source.Source) []int {
-	if src == nil {
+func semanticByteOffsets(src source.Source) []int {
+	if src.Empty() {
 		return []int{0}
 	}
 

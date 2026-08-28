@@ -167,7 +167,7 @@ func TestSessionBreakpointEventIncludesAllMatchingBreakpointIDs(t *testing.T) {
 	}
 }
 
-func newBreakpointSession(t *testing.T, src *source.Source, points []bytecode.DebugPoint, execution vm.DebugExecution) *Session {
+func newBreakpointSession(t *testing.T, src source.Source, points []bytecode.DebugPoint, execution vm.DebugExecution) *Session {
 	t.Helper()
 
 	session, err := NewSession(Config{

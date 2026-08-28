@@ -158,8 +158,12 @@ RETURN add(2, 3)
 			Check: func(t *testing.T, original *bytecode.Program, decoded *bytecode.Program) {
 				t.Helper()
 
-				if original.Source == nil || decoded.Source == nil {
+				if original.Source.Empty() || decoded.Source.Empty() {
 					t.Fatalf("expected source to be preserved")
+				}
+
+				if got, want := decoded.Source.ID(), original.Source.ID(); got != want {
+					t.Fatalf("source identity mismatch: got %x, want %x", got, want)
 				}
 
 				if got, want := decoded.Source.Name(), original.Source.Name(); got != want {

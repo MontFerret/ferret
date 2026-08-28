@@ -11,7 +11,7 @@ type (
 	context struct {
 		config *Config
 		p      *printer
-		src    *source.Source
+		src    source.Source
 	}
 
 	engine struct {
@@ -29,7 +29,7 @@ type (
 	}
 )
 
-func newEngine(src *source.Source, out io.Writer, config *Config) *engine {
+func newEngine(src source.Source, out io.Writer, config *Config) *engine {
 	ctx := &context{
 		config: config,
 		p:      newPrinter(out, config),

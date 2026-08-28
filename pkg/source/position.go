@@ -12,8 +12,8 @@ type (
 	}
 
 	Location struct {
-		Position
 		File string `json:"file"`
+		Position
 	}
 
 	Range struct {

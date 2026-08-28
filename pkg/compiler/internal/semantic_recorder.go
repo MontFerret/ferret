@@ -107,10 +107,10 @@ const (
 	SemanticCallHost
 )
 
-func NewSemanticRecorder(src *source.Source) *SemanticRecorder {
+func NewSemanticRecorder(src source.Source) *SemanticRecorder {
 	end := 0
-	if src != nil {
-		end = len(src.Content())
+	if !src.Empty() {
+		end = src.Length()
 	}
 
 	r := &SemanticRecorder{

@@ -13,8 +13,8 @@ const (
 	missingArrayItemCommaHint    = "Separate array items with commas, e.g. [1, 2, 3]."
 )
 
-func matchArrayLiteralSeparatorErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
-	if src == nil || err == nil || offending == nil || offending.Token() == nil {
+func matchArrayLiteralSeparatorErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+	if src.Empty() || err == nil || offending == nil || offending.Token() == nil {
 		return false
 	}
 
@@ -151,7 +151,7 @@ func isComputedPropertyNameOpen(tokens []antlr.Token, openIdx, closeIdx int) boo
 	return (prev == "{" || prev == ",") && isTokenText(tokens[closeIdx+1], ":")
 }
 
-func arrayItemSeparatorInsertionSpan(tokens []antlr.Token, openIdx, closeIdx int, src *source.Source) (source.Span, bool) {
+func arrayItemSeparatorInsertionSpan(tokens []antlr.Token, openIdx, closeIdx int, src source.Source) (source.Span, bool) {
 	previousIdx := missingArrayItemSeparatorPreviousToken(tokens, openIdx, closeIdx)
 	if previousIdx < 0 || isTokenText(tokens[previousIdx], ",") {
 		return source.Span{}, false

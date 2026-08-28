@@ -263,7 +263,7 @@ func FromProgram(program *bytecode.Program) (ProgramFrame, error) {
 	}
 
 	var source *SourceFrame
-	if program.Source != nil {
+	if !program.Source.Empty() {
 		source = &SourceFrame{
 			Name: program.Source.Name(),
 			Text: program.Source.Content(),
@@ -449,7 +449,7 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 		labels[label.PC] = label.Name
 	}
 
-	var src *source.Source
+	var src source.Source
 	if frame.Source != nil {
 		src = source.New(frame.Source.Name, frame.Source.Text)
 	}

@@ -32,7 +32,7 @@ func NewProgramInput(program *bytecode.Program, name ...string) Input {
 	if len(name) > 0 {
 		srcName = name[0]
 	} else {
-		if program.Source != nil {
+		if !program.Source.Empty() {
 			srcName = joinExpression(program.Source.Content())
 		} else {
 			srcName = joinBytecode(program.Bytecode)

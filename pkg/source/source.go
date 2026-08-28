@@ -12,76 +12,55 @@ type (
 		name  string
 		text  string
 		lines []string
+		id    ID
 	}
 
 	sourceJSON struct {
-		Name  string   `json:"name"`
-		Text  string   `json:"text"`
-		Lines []string `json:"lines"`
+		Name string `json:"name"`
+		Text string `json:"text"`
 	}
 )
 
-func New(name, text string) *Source {
+func New(name, text string) Source {
 	lines := strings.Split(text, "\n")
 
-	return &Source{
+	return Source{
+		id:    generateID(name, text),
 		name:  name,
 		text:  text,
 		lines: lines,
 	}
 }
 
-func NewAnonymous(text string) *Source {
+func NewAnonymous(text string) Source {
 	return New("anonymous", text)
 }
 
-func (s *Source) MarshalJSON() ([]byte, error) {
-	return json.Marshal(sourceJSON{
-		Name:  s.Name(),
-		Text:  s.Content(),
-		Lines: s.lines,
-	})
+func (f Source) ID() ID {
+	return f.id
 }
 
-func (s *Source) UnmarshalJSON(bytes []byte) error {
-	if s == nil {
-		return errors.New("source: UnmarshalJSON on nil source")
-	}
-
-	var data sourceJSON
-
-	if err := json.Unmarshal(bytes, &data); err != nil {
-		return err
-	}
-
-	s.name = data.Name
-	s.text = data.Text
-	s.lines = data.Lines
-
-	return nil
-}
-
-func (s *Source) Name() string {
-	if s == nil {
-		return ""
-	}
-
+func (s Source) Name() string {
 	return s.name
 }
 
-func (s *Source) Empty() bool {
-	if s == nil || s.text == "" || len(s.lines) == 0 {
+func (s Source) Empty() bool {
+	if s.text == "" || len(s.lines) == 0 {
 		return true
 	}
 
 	return false
 }
 
-func (s *Source) Content() string {
+func (s Source) Content() string {
 	return s.text
 }
 
-func (s *Source) LocationAt(span Span) (line, column int) {
+func (s Source) Length() int {
+	return len(s.text)
+}
+
+func (s Source) LocationAt(span Span) (line, column int) {
 	if s.Empty() || span.Start < 0 || span.End > len(s.text) {
 		return 0, 0
 	}
@@ -120,7 +99,7 @@ func (s *Source) LocationAt(span Span) (line, column int) {
 	return 0, 0
 }
 
-func (s *Source) Snippet(span Span) []Snippet {
+func (s Source) Snippet(span Span) []Snippet {
 	if s.Empty() {
 		return nil
 	}
@@ -144,18 +123,28 @@ func (s *Source) Snippet(span Span) []Snippet {
 	return result
 }
 
-func computeVisualOffset(line string, column int) int {
-	runes := []rune(line)
-	offset := 0
-	tabWidth := 4
+func (s Source) MarshalJSON() ([]byte, error) {
+	return json.Marshal(sourceJSON{
+		Name: s.Name(),
+		Text: s.Content(),
+	})
+}
 
-	for i := 0; i < column-1 && i < len(runes); i++ {
-		if runes[i] == '\t' {
-			offset += tabWidth - (offset % tabWidth)
-		} else {
-			offset += 1
-		}
+func (s *Source) UnmarshalJSON(bytes []byte) error {
+	if s == nil {
+		return errors.New("source: UnmarshalJSON on nil source")
 	}
 
-	return offset
+	var data sourceJSON
+
+	if err := json.Unmarshal(bytes, &data); err != nil {
+		return err
+	}
+
+	s.id = generateID(data.Name, data.Text)
+	s.name = data.Name
+	s.text = data.Text
+	s.lines = strings.Split(data.Text, "\n")
+
+	return nil
 }
