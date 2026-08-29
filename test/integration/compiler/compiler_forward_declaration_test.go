@@ -198,8 +198,8 @@ func requireForwardDeclarationDiagnostic(t *testing.T, actual *diagpkg.Diagnosti
 		t.Fatalf("unexpected secondary span label: got %q, want %q", got, want)
 	}
 
-	line, _ := actual.Source.LocationAt(actual.Spans[1].Span)
-	if line != declarationLine {
-		t.Fatalf("unexpected declaration span line: got %d, want %d", line, declarationLine)
+	position := actual.Source.PositionAt(actual.Spans[1].Span)
+	if position.Line != declarationLine {
+		t.Fatalf("unexpected declaration span line: got %d, want %d", position.Line, declarationLine)
 	}
 }

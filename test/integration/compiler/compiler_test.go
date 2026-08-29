@@ -119,11 +119,11 @@ RETURN wrap()
 
 	t.Run("udf_isolation_shared_sources", func(t *testing.T) {
 		type sharedSourceCase struct {
-			source source.Source
-			spec   struct {
+			spec struct {
 				expectedHost []bytecode.HostFunction
 				expectedUDFs int
 			}
+			source source.Source
 		}
 
 		sources := make([]sharedSourceCase, 0, len(udfQueries))

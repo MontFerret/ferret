@@ -389,9 +389,9 @@ RETURN products[*
 		t.Fatalf("unexpected span label: %q", diag.Spans[0].Label)
 	}
 
-	line, col := diag.Source.LocationAt(diag.Spans[0].Span)
-	if line != 7 || col != 47 {
-		t.Fatalf("unexpected span location: got %d:%d, want 7:47", line, col)
+	position := diag.Source.PositionAt(diag.Spans[0].Span)
+	if position.Line != 7 || position.Column != 47 {
+		t.Fatalf("unexpected span location: got %d:%d, want 7:47", position.Line, position.Column)
 	}
 
 	formatted := pkgdiagnostics.Format(err)

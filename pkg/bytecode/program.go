@@ -49,18 +49,18 @@ type (
 		Span       source.Span    `json:"span"`
 		ID         DebugPointID   `json:"id"`
 		PC         int            `json:"pc"`
-		FunctionID int            `json:"functionId"`
+		FunctionID FunctionID     `json:"functionId"`
 		Kind       DebugPointKind `json:"kind,omitempty"`
 	}
 
 	Program struct {
-		Source     source.Source
 		Functions  Functions
 		Bytecode   []Instruction
 		Constants  []runtime.Value
 		CatchTable []Catch
 		Params     []string
 		Metadata   Metadata
+		Source     source.Source
 		ISAVersion int
 		Registers  int
 	}

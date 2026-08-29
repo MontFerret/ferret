@@ -193,8 +193,8 @@ func sourcePointTestProgram() *bytecode.Program {
 		Constants: []runtime.Value{runtime.NewInt(1)},
 		Metadata: bytecode.Metadata{
 			DebugPoints: []bytecode.DebugPoint{
-				{ID: 11, PC: 0, Span: source.Span{Start: 0, End: 9}, FunctionID: -1},
-				{ID: 7, PC: 2, Span: source.Span{Start: 10, End: 18}, FunctionID: -1},
+				{ID: 11, PC: 0, Span: source.Span{Start: 0, End: 9}, FunctionID: bytecode.NoFunction},
+				{ID: 7, PC: 2, Span: source.Span{Start: 10, End: 18}, FunctionID: bytecode.NoFunction},
 			},
 		},
 	}

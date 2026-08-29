@@ -13,7 +13,7 @@ import (
 // It must not be copied after its first lookup.
 type Index struct {
 	byID       map[bytecode.DebugPointID]*bytecode.DebugPoint
-	byFunction map[int][]*bytecode.DebugPoint
+	byFunction map[bytecode.FunctionID][]*bytecode.DebugPoint
 	points     []bytecode.DebugPoint
 	functions  sync.Once
 }
@@ -54,7 +54,7 @@ func New(points []bytecode.DebugPoint) (Index, error) {
 		if pos > 0 && ordered[pos-1].PC == point.PC {
 			return Index{}, fmt.Errorf("debug point %d duplicates pc %d", point.ID, point.PC)
 		}
-		if point.FunctionID < -1 {
+		if point.FunctionID < bytecode.NoFunction {
 			return Index{}, fmt.Errorf("debug point %d has invalid function id %d", point.ID, point.FunctionID)
 		}
 		if point.Kind < bytecode.DebugPointStatement || point.Kind > bytecode.DebugPointSynthetic {
@@ -113,7 +113,7 @@ func (i *Index) NearestBeforeOrAt(pc int) *bytecode.DebugPoint {
 
 // NearestBeforeOrAtInFunction returns the nearest point in functionID at or
 // before pc.
-func (i *Index) NearestBeforeOrAtInFunction(functionID, pc int) *bytecode.DebugPoint {
+func (i *Index) NearestBeforeOrAtInFunction(functionID bytecode.FunctionID, pc int) *bytecode.DebugPoint {
 	i.functions.Do(i.indexFunctions)
 
 	points := i.byFunction[functionID]
@@ -129,14 +129,14 @@ func (i *Index) NearestBeforeOrAtInFunction(functionID, pc int) *bytecode.DebugP
 }
 
 // PointsInFunction returns the debug points in functionID ordered by PC.
-func (i *Index) PointsInFunction(functionID int) []*bytecode.DebugPoint {
+func (i *Index) PointsInFunction(functionID bytecode.FunctionID) []*bytecode.DebugPoint {
 	i.functions.Do(i.indexFunctions)
 
 	return i.byFunction[functionID]
 }
 
 func (i *Index) indexFunctions() {
-	i.byFunction = make(map[int][]*bytecode.DebugPoint)
+	i.byFunction = make(map[bytecode.FunctionID][]*bytecode.DebugPoint)
 
 	for pos := range i.points {
 		point := &i.points[pos]

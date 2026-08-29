@@ -284,7 +284,7 @@ func (c *exprCallCompiler) compileHostFunctionCallWith(name runtime.String, prot
 func (c *exprCallCompiler) compileUdfCallWith(fn *core.UDFInfo, protected bool, seq core.RegisterSequence, callCtx antlr.ParserRuleContext, argSpans []source.Span) bytecode.Operand {
 	args := c.prepareUdfCallArgs(fn, seq, callCtx)
 	dest := c.ctx.Function.Registers.Allocate()
-	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(runtime.NewInt(fn.ID)))
+	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(runtime.NewInt(int(fn.ID))))
 
 	opcode := bytecode.OpCall
 	if protected {
@@ -302,7 +302,7 @@ func (c *exprCallCompiler) emitUdfTailCall(fn *core.UDFInfo, seq core.RegisterSe
 	argSpans := c.argumentSpansFromCall(callCtx)
 
 	dest := c.ctx.Function.Registers.Allocate()
-	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(runtime.NewInt(fn.ID)))
+	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(runtime.NewInt(int(fn.ID))))
 	c.ctx.Program.Emitter.EmitAsWithCallArgumentSpans(bytecode.OpTailCall, dest, args, argSpans)
 
 	if c.ctx.Program.Semantics != nil {

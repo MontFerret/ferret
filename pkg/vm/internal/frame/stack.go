@@ -1,6 +1,9 @@
 package frame
 
-import "github.com/MontFerret/ferret/v2/pkg/runtime"
+import (
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+)
 
 // CallStack manages structural call frames for UDF execution.
 type (
@@ -11,12 +14,12 @@ type (
 	TraceEntry struct {
 		FnName     string
 		CallSitePC int
-		FnID       int
+		FnID       bytecode.FunctionID
 	}
 
 	DebugTraceEntry struct {
 		Registers  []runtime.Value
-		FunctionID int
+		FunctionID bytecode.FunctionID
 		PC         int
 	}
 )
@@ -57,11 +60,12 @@ func (s *CallStack) Top() *CallFrame {
 	return &s.frames[len(s.frames)-1]
 }
 
-// CurrentFunctionID returns the active UDF ID or -1 for the top-level body.
-func (s *CallStack) CurrentFunctionID() int {
+// CurrentFunctionID returns the active UDF ID or bytecode.NoFunction for the
+// top-level body.
+func (s *CallStack) CurrentFunctionID() bytecode.FunctionID {
 	top := s.Top()
 	if top == nil {
-		return -1
+		return bytecode.NoFunction
 	}
 
 	return top.FnID
@@ -79,7 +83,7 @@ func (s *CallStack) NearestRecoveryBoundary() int {
 }
 
 // SetTopFnID updates the top frame's function id when present.
-func (s *CallStack) SetTopFnID(fnID int) bool {
+func (s *CallStack) SetTopFnID(fnID bytecode.FunctionID) bool {
 	if len(s.frames) == 0 {
 		return false
 	}
@@ -89,7 +93,7 @@ func (s *CallStack) SetTopFnID(fnID int) bool {
 }
 
 // SetTopCall updates call metadata of the top frame when present.
-func (s *CallStack) SetTopCall(fnID int, fnName string, callSitePC int) bool {
+func (s *CallStack) SetTopCall(fnID bytecode.FunctionID, fnName string, callSitePC int) bool {
 	if len(s.frames) == 0 {
 		return false
 	}
@@ -145,7 +149,7 @@ func (s *CallStack) DebugTraceEntries() []DebugTraceEntry {
 			continue
 		}
 
-		functionID := -1
+		functionID := bytecode.NoFunction
 		if i > 0 {
 			functionID = s.frames[i-1].FnID
 		}

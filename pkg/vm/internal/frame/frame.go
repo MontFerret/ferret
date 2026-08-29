@@ -13,7 +13,7 @@ type CallFrame struct {
 	CellHandles      []mem.CellHandle
 	FnName           string
 	CallerRegisters  []runtime.Value
-	FnID             int
+	FnID             bytecode.FunctionID
 	CallSitePC       int
 	ReturnPC         int
 	ReturnDest       bytecode.Operand

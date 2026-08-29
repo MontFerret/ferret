@@ -5,6 +5,8 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
@@ -230,7 +232,7 @@ func (c *UDFCatalogBuilder) registerFunction(scope *core.UDFScope, decl *fql.Fun
 	}
 
 	fn := &core.UDFInfo{
-		ID:          len(c.ctx.Program.UDFs.Functions),
+		ID:          bytecode.FunctionID(len(c.ctx.Program.UDFs.Functions)),
 		Name:        name,
 		DisplayName: displayName,
 		Params:      c.collectFunctionParams(decl),
@@ -320,7 +322,7 @@ func (c *UDFCatalogBuilder) pruneUnusedFunctions(body *fql.BodyContext) {
 	}
 
 	for i, fn := range filtered {
-		fn.ID = i
+		fn.ID = bytecode.FunctionID(i)
 	}
 
 	c.ctx.Program.UDFs.Functions = filtered

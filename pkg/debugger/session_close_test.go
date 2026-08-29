@@ -45,7 +45,7 @@ func TestSessionCloseLifecycleStates(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			src := source.New("close.fql", "RETURN 1")
-			point := bytecode.DebugPoint{ID: 1, PC: 1, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+			point := bytecode.DebugPoint{ID: 1, PC: 1, Span: source.Span{Start: 0, End: 8}, FunctionID: bytecode.NoFunction}
 			if tc.startEvent != nil {
 				tc.startEvent.Point = &point
 			}

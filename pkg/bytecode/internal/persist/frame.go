@@ -223,7 +223,7 @@ func FromProgram(program *bytecode.Program) (ProgramFrame, error) {
 		debugPoints[i] = DebugPointFrame{
 			ID:         int(point.ID),
 			PC:         point.PC,
-			FunctionID: point.FunctionID,
+			FunctionID: int(point.FunctionID),
 			Kind:       int(point.Kind),
 			Span:       SpanFrame{Start: point.Span.Start, End: point.Span.End},
 			Bindings:   bindings,
@@ -414,7 +414,7 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 		debugPoints[i] = bytecode.DebugPoint{
 			ID:         bytecode.DebugPointID(point.ID),
 			PC:         point.PC,
-			FunctionID: point.FunctionID,
+			FunctionID: bytecode.FunctionID(point.FunctionID),
 			Kind:       bytecode.DebugPointKind(point.Kind),
 			Span:       source.Span{Start: point.Span.Start, End: point.Span.End},
 			Bindings:   bindings,

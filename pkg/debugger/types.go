@@ -24,22 +24,6 @@ type (
 	// an executable debug point.
 	BreakpointBindingMode int
 
-	// SourceLocation identifies a requested location in debugger source.
-	// Line and Column are 1-based; Column 0 means no column was requested.
-	SourceLocation struct {
-		File   string
-		Line   int
-		Column int
-	}
-
-	// Location identifies a source location in the debugged file.
-	Location struct {
-		File   string
-		Line   int
-		Column int
-		Span   source.Span
-	}
-
 	// Value is a safely formatted debugger value.
 	Value struct {
 		Type      string
@@ -58,23 +42,20 @@ type (
 	// Frame describes the paused top frame or one of its callers.
 	Frame struct {
 		Name       string
-		Location   Location
-		FunctionID int
+		Location   source.Location
+		FunctionID bytecode.FunctionID
 	}
 
 	// Breakpoint describes a requested source-location breakpoint and its resolved
 	// executable location, when one exists.
 	Breakpoint struct {
-		File            string
-		RequestedLine   int
-		RequestedColumn int
-		ID              BreakpointID
-		PointID         bytecode.DebugPointID
-		FunctionID      int
-		Line            int
-		Column          int
-		BindingMode     BreakpointBindingMode
-		Bound           bool
+		RequestedLocation source.Location `json:"requestedLocation"`
+		Location          source.Range    `json:"location"`
+		ID                BreakpointID
+		PointID           bytecode.DebugPointID
+		FunctionID        bytecode.FunctionID
+		BindingMode       BreakpointBindingMode
+		Bound             bool
 	}
 
 	// BreakpointOptions configures how a requested source location binds.
@@ -88,7 +69,7 @@ type (
 		Output           *encoding.Output
 		Reason           Reason
 		HitBreakpointIDs []BreakpointID
-		Location         Location
+		Location         source.Range
 		Depth            int
 	}
 
@@ -113,9 +94,9 @@ type (
 		Execution   vm.DebugExecution
 		Values      vm.DebugValueAccess
 		Services    SessionServices
-		Source      source.Source
 		DebugPoints []bytecode.DebugPoint
 		Params      []string
+		Source      source.Source
 		Format      FormatOptions
 	}
 )

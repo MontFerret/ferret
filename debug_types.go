@@ -1,11 +1,14 @@
 package ferret
 
-import "github.com/MontFerret/ferret/v2/pkg/debugger"
+import (
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
+	"github.com/MontFerret/ferret/v2/pkg/source"
+)
 
 type (
 	DebugSession               = debugger.Session
 	DebugReason                = debugger.Reason
-	DebugLocation              = debugger.Location
+	DebugLocation              = source.Range
 	DebugValue                 = debugger.Value
 	DebugVariable              = debugger.Variable
 	DebugFrame                 = debugger.Frame
@@ -13,7 +16,7 @@ type (
 	DebugBreakpointID          = debugger.BreakpointID
 	DebugBreakpointOptions     = debugger.BreakpointOptions
 	DebugBreakpointBindingMode = debugger.BreakpointBindingMode
-	DebugSourceLocation        = debugger.SourceLocation
+	DebugSourceLocation        = source.Location
 	DebugValueReference        = debugger.ValueReference
 	DebugEvent                 = debugger.Event
 	DebugStateError            = debugger.StateError

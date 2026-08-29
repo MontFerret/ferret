@@ -66,8 +66,8 @@ func (h *ErrorHandler) Add(err *diagnostics.Diagnostic) {
 
 	for _, span := range err.Spans {
 		if !err.Source.Empty() {
-			line, _ := err.Source.LocationAt(span.Span)
-			h.linesWithErrors[line] = true
+			pos := err.Source.PositionAt(span.Span)
+			h.linesWithErrors[pos.Line] = true
 		}
 	}
 

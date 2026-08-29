@@ -36,8 +36,8 @@ func NewAnonymous(text string) Source {
 	return New("anonymous", text)
 }
 
-func (f Source) ID() ID {
-	return f.id
+func (s Source) ID() ID {
+	return s.id
 }
 
 func (s Source) Name() string {
@@ -60,9 +60,9 @@ func (s Source) Length() int {
 	return len(s.text)
 }
 
-func (s Source) LocationAt(span Span) (line, column int) {
+func (s Source) PositionAt(span Span) Position {
 	if s.Empty() || span.Start < 0 || span.End > len(s.text) {
-		return 0, 0
+		return Position{}
 	}
 
 	offset := span.Start
@@ -78,12 +78,12 @@ func (s Source) LocationAt(span Span) (line, column int) {
 		if offset == lineStart && i > 0 && span.End <= offset {
 			prev := s.lines[i-1]
 
-			return i, len(prev) + 1
+			return Position{Line: i, Column: len(prev) + 1}
 		}
 
 		if lineEndWithNL > offset {
 			// Normal case: offset lives on this line
-			return i + 1, offset - total + 1
+			return Position{Line: i + 1, Column: offset - total + 1}
 		}
 
 		total = lineEndWithNL
@@ -93,10 +93,24 @@ func (s Source) LocationAt(span Span) (line, column int) {
 	if len(s.lines) > 0 {
 		last := s.lines[len(s.lines)-1]
 
-		return len(s.lines), len(last) + 1
+		return Position{Line: len(s.lines), Column: len(last) + 1}
 	}
 
-	return 0, 0
+	return Position{}
+}
+
+func (s Source) LocationAt(span Span) Location {
+	return Location{
+		File:     s.name,
+		Position: s.PositionAt(span),
+	}
+}
+
+func (s Source) RangeAt(span Span) Range {
+	return Range{
+		Location: s.LocationAt(span),
+		Span:     span,
+	}
 }
 
 func (s Source) Snippet(span Span) []Snippet {
@@ -104,20 +118,20 @@ func (s Source) Snippet(span Span) []Snippet {
 		return nil
 	}
 
-	lineNum, _ := s.LocationAt(span)
+	pos := s.PositionAt(span)
 	lines := s.lines
 	var result []Snippet
 
 	// Show previous Line if it exists
-	if lineNum > 1 {
-		result = append(result, NewSnippet(lines, lineNum-1))
+	if pos.Line > 1 {
+		result = append(result, NewSnippet(lines, pos.Line-1))
 	}
 
-	result = append(result, NewSnippetWithCaret(lines, span, lineNum))
+	result = append(result, NewSnippetWithCaret(lines, span, pos.Line))
 
 	// Show next Line if it exists
-	if lineNum < len(lines) {
-		result = append(result, NewSnippet(lines, lineNum+1))
+	if pos.Line < len(lines) {
+		result = append(result, NewSnippet(lines, pos.Line+1))
 	}
 
 	return result

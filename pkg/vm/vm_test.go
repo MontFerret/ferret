@@ -2991,6 +2991,51 @@ func TestOutOfRangeHostBindingIDIsInvariantError(t *testing.T) {
 	}
 }
 
+func TestBuildExecPlanRejectsInvalidUDFID(t *testing.T) {
+	tests := []struct {
+		name string
+		op   bytecode.Opcode
+		id   bytecode.FunctionID
+	}{
+		{name: "call_top_level_sentinel", op: bytecode.OpCall, id: bytecode.NoFunction},
+		{name: "call_upper_bound", op: bytecode.OpCall, id: 1},
+		{name: "tail_call_top_level_sentinel", op: bytecode.OpTailCall, id: bytecode.NoFunction},
+		{name: "tail_call_upper_bound", op: bytecode.OpTailCall, id: 1},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			program := &bytecode.Program{
+				ISAVersion: bytecode.Version,
+				Registers:  1,
+				Bytecode: []bytecode.Instruction{
+					bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(0), bytecode.NewConstant(0)),
+					bytecode.NewInstruction(tc.op, bytecode.NewRegister(0)),
+					bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+				},
+				Constants: []runtime.Value{runtime.NewInt(int(tc.id))},
+				Functions: bytecode.Functions{
+					UserDefined: []bytecode.UDF{{Name: "F", DisplayName: "f"}},
+				},
+			}
+
+			_, err := NewWith(program)
+			if err == nil {
+				t.Fatal("expected initialization error")
+			}
+
+			var initErrs *rtdiagnostics.InitializationErrorSet
+			if !errors.As(err, &initErrs) {
+				t.Fatalf("expected initialization error set, got %T", err)
+			}
+
+			if got := initErrs.First().Cause; got == nil || !strings.Contains(got.Error(), "invalid udf function id") {
+				t.Fatalf("expected invalid UDF function ID cause, got %v", got)
+			}
+		})
+	}
+}
+
 func TestBuildExecPlanRejectsMissingAggregateSelectorSlot(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,

@@ -71,7 +71,7 @@ func TestCallStackPushPopTopAndLen(t *testing.T) {
 
 func TestCallStackCurrentFunctionAndDebugTraceEntries(t *testing.T) {
 	stack := NewCallStack()
-	if got := stack.CurrentFunctionID(); got != -1 {
+	if got := stack.CurrentFunctionID(); got != bytecode.NoFunction {
 		t.Fatalf("unexpected top-level function id: %d", got)
 	}
 
@@ -99,7 +99,7 @@ func TestCallStackCurrentFunctionAndDebugTraceEntries(t *testing.T) {
 	if traces[0].FunctionID != 1 || traces[0].PC != 20 {
 		t.Fatalf("unexpected nearest caller: %#v", traces[0])
 	}
-	if traces[1].FunctionID != -1 || traces[1].PC != 10 {
+	if traces[1].FunctionID != bytecode.NoFunction || traces[1].PC != 10 {
 		t.Fatalf("unexpected farthest caller: %#v", traces[1])
 	}
 }
@@ -158,7 +158,7 @@ func TestCallStackSetTopMetadata(t *testing.T) {
 	if top == nil {
 		t.Fatal("expected top frame")
 	}
-	if got, want := top.FnID, 42; got != want {
+	if got, want := top.FnID, bytecode.FunctionID(42); got != want {
 		t.Fatalf("unexpected fn id: got %d, want %d", got, want)
 	}
 	if got, want := top.FnName, "renamed"; got != want {
@@ -175,7 +175,7 @@ func TestCallStackSetTopMetadata(t *testing.T) {
 	}
 
 	traces := stack.DebugTraceEntries()
-	if len(traces) != 1 || traces[0].FunctionID != -1 || traces[0].PC != 10 {
+	if len(traces) != 1 || traces[0].FunctionID != bytecode.NoFunction || traces[0].PC != 10 {
 		t.Fatalf("unexpected structural debug trace: %#v", traces)
 	}
 	if len(traces[0].Registers) != 1 || &traces[0].Registers[0] != &top.CallerRegisters[0] {

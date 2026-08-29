@@ -9,7 +9,7 @@ import (
 )
 
 func BenchmarkDebugSourcePointDispatch(b *testing.B) {
-	point := bytecode.DebugPoint{ID: 0, PC: 7, FunctionID: -1}
+	point := bytecode.DebugPoint{ID: 0, PC: 7, FunctionID: bytecode.NoFunction}
 	points, err := debugpoint.New([]bytecode.DebugPoint{point})
 	if err != nil {
 		b.Fatal(err)

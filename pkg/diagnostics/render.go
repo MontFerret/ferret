@@ -25,8 +25,8 @@ func (r SpanRenderer) Render(out io.Writer, src source.Source, span source.Span,
 		return false
 	}
 
-	line, col := src.LocationAt(span)
-	if line == 0 || col == 0 {
+	pos := src.PositionAt(span)
+	if pos.Line == 0 || pos.Column == 0 {
 		return false
 	}
 
@@ -35,7 +35,7 @@ func (r SpanRenderer) Render(out io.Writer, src source.Source, span source.Span,
 		caretChar = '^'
 	}
 
-	fmt.Fprintf(out, "%s --> %s:%d:%d\n", r.Prefix, src.Name(), line, col)
+	fmt.Fprintf(out, "%s --> %s:%d:%d\n", r.Prefix, src.Name(), pos.Line, pos.Column)
 
 	lines := src.Snippet(span)
 	if len(lines) == 0 {

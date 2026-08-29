@@ -126,7 +126,7 @@ func TestSessionCloseInterruptsActiveCommandAndPreservesBreakpointSnapshot(t *te
 
 func TestSessionCloseClearsReferencesCreatedByActiveInspection(t *testing.T) {
 	src := source.New("concurrent.fql", "RETURN 1")
-	point := bytecode.DebugPoint{ID: 5, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	point := bytecode.DebugPoint{ID: 5, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: bytecode.NoFunction}
 	execution := &fakeExecution{
 		startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
 		locals: []vm.DebugLocal{{
@@ -186,7 +186,7 @@ func newBlockingSession(t *testing.T) (*Session, *blockingExecution) {
 	t.Helper()
 
 	src := source.New("concurrent.fql", "RETURN 1")
-	point := bytecode.DebugPoint{ID: 5, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	point := bytecode.DebugPoint{ID: 5, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: bytecode.NoFunction}
 	execution := newBlockingExecution(point)
 	session, err := NewSession(Config{
 		Execution:   execution,

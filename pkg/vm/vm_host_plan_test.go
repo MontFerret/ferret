@@ -22,7 +22,7 @@ func TestNewWith_InlinesHostCallIDs(t *testing.T) {
 	}
 
 	for i, binding := range instance.plan.hostCallDescriptors {
-		if binding.ID < 0 || binding.ID >= len(instance.cache.HostFunctions) {
+		if !binding.ID.Valid(len(instance.cache.HostFunctions)) {
 			t.Fatalf("invalid binding id %d for pc %d", binding.ID, binding.PC)
 		}
 
@@ -101,7 +101,7 @@ func TestNewWith_HostCallIDsAreCompactAndOrdered(t *testing.T) {
 
 	prevPC := -1
 	for i, binding := range instance.plan.hostCallDescriptors {
-		if got, want := binding.ID, i; got != want {
+		if got, want := binding.ID, bytecode.FunctionID(i); got != want {
 			t.Fatalf("unexpected host binding id at index %d: got %d, want %d", i, got, want)
 		}
 	}
@@ -114,7 +114,7 @@ func TestNewWith_HostCallIDsAreCompactAndOrdered(t *testing.T) {
 		}
 		prevPC = binding.PC
 
-		if binding.ID < 0 || binding.ID >= len(instance.cache.HostFunctions) {
+		if !binding.ID.Valid(len(instance.cache.HostFunctions)) {
 			t.Fatalf("invalid inlined host id at pc %d: %d", binding.PC, binding.ID)
 		}
 
@@ -259,6 +259,23 @@ func TestWarmupRejectsHostCacheSizeMismatch(t *testing.T) {
 	}
 }
 
+func TestWarmupRejectsTopLevelSentinelAsHostBindingID(t *testing.T) {
+	program := newHostCallProgram(hostCallSpec{name: "F"})
+	instance := mustNewVM(t, program)
+	instance.plan.hostCallDescriptors[0].ID = bytecode.NoFunction
+
+	env := mustNewEnvironment(t, WithFunctionsRegistrar(func(fns runtime.FunctionDefs) {
+		fns.A0().Add("F", func(context.Context) (runtime.Value, error) {
+			return runtime.None, nil
+		})
+	}))
+
+	_, err := instance.Run(context.Background(), env)
+	if err == nil || !strings.Contains(pkgdiagnostics.Format(err), "invalid host warmup slot") {
+		t.Fatalf("expected invalid host warmup slot error, got %v", err)
+	}
+}
+
 func TestRun_IgnoresInlineSlotForNonHostOpcodes(t *testing.T) {
 	program := newHostCallProgram(hostCallSpec{name: "F", args: []runtime.Value{runtime.NewInt(1)}})
 	instance := mustNewVM(t, program)
@@ -329,7 +346,7 @@ func TestWarmupRebindTouchesOnlyHostCallSlots(t *testing.T) {
 	}
 
 	hostID := instance.plan.hostCallDescriptors[0].ID
-	if hostID < 0 || hostID >= len(instance.cache.HostFunctions) {
+	if !hostID.Valid(len(instance.cache.HostFunctions)) {
 		t.Fatalf("invalid host id %d", hostID)
 	}
 

@@ -128,12 +128,12 @@ RETURN (
 			names[binding.Name] = true
 		}
 
-		if point.FunctionID >= 0 {
+		if point.FunctionID != bytecode.NoFunction {
 			udfBindings = names
 		}
 
-		line, _ := program.Source.LocationAt(point.Span)
-		if line == 6 {
+		position := program.Source.PositionAt(point.Span)
+		if position.Line == 6 {
 			loopBindings = names
 		}
 	}
@@ -158,10 +158,10 @@ RETURN forward(1)
 		t.Fatal(err)
 	}
 
-	forwardID := -1
+	forwardID := bytecode.NoFunction
 	for id, fn := range program.Functions.UserDefined {
 		if fn.Name == "forward" {
-			forwardID = id
+			forwardID = bytecode.FunctionID(id)
 			break
 		}
 	}
@@ -200,9 +200,9 @@ RETURN (
 	}
 
 	for _, point := range program.Metadata.DebugPoints {
-		line, _ := program.Source.LocationAt(point.Span)
+		position := program.Source.PositionAt(point.Span)
 
-		if line != 4 {
+		if position.Line != 4 {
 			continue
 		}
 
@@ -234,22 +234,27 @@ RETURN add(seed)`))
 		t.Fatal(err)
 	}
 
-	kinds := make(map[[2]int]bytecode.DebugPointKind)
-	for _, point := range program.Metadata.DebugPoints {
-		line, _ := program.Source.LocationAt(point.Span)
-		kinds[[2]int{line, point.FunctionID}] = point.Kind
+	type pointKey struct {
+		line       int
+		functionID bytecode.FunctionID
 	}
 
-	if got := kinds[[2]int{1, -1}]; got != bytecode.DebugPointStatement {
+	kinds := make(map[pointKey]bytecode.DebugPointKind)
+	for _, point := range program.Metadata.DebugPoints {
+		position := program.Source.PositionAt(point.Span)
+		kinds[pointKey{line: position.Line, functionID: point.FunctionID}] = point.Kind
+	}
+
+	if got := kinds[pointKey{line: 1, functionID: bytecode.NoFunction}]; got != bytecode.DebugPointStatement {
 		t.Fatalf("unexpected top-level statement kind: %d", got)
 	}
-	if got := kinds[[2]int{6, -1}]; got != bytecode.DebugPointReturn {
+	if got := kinds[pointKey{line: 6, functionID: bytecode.NoFunction}]; got != bytecode.DebugPointReturn {
 		t.Fatalf("unexpected top-level return kind: %d", got)
 	}
-	if got := kinds[[2]int{3, 0}]; got != bytecode.DebugPointFunctionEntry {
+	if got := kinds[pointKey{line: 3, functionID: 0}]; got != bytecode.DebugPointFunctionEntry {
 		t.Fatalf("unexpected function entry kind: %d", got)
 	}
-	if got := kinds[[2]int{4, 0}]; got != bytecode.DebugPointReturn {
+	if got := kinds[pointKey{line: 4, functionID: 0}]; got != bytecode.DebugPointReturn {
 		t.Fatalf("unexpected function return kind: %d", got)
 	}
 }

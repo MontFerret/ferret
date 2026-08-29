@@ -83,6 +83,18 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 				continue
 			}
 
+			if !fnID.Valid(len(udfs)) {
+				errs.Add(
+					diagnostics.NewInvariantError(
+						"invalid udf function id",
+						runtime.Errorf(runtime.ErrUnexpected, "udf function id %d at pc %d is outside function table of size %d", fnID, pc, len(udfs)),
+					),
+					pc,
+					dst,
+				)
+				continue
+			}
+
 			udf := udfs[fnID]
 			descriptor := callDescriptor{
 				PC:               pc,
@@ -102,6 +114,18 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 
 			if err != nil {
 				errs.Add(err, pc, dst)
+				continue
+			}
+
+			if !fnID.Valid(len(udfs)) {
+				errs.Add(
+					diagnostics.NewInvariantError(
+						"invalid udf function id",
+						runtime.Errorf(runtime.ErrUnexpected, "udf function id %d at pc %d is outside function table of size %d", fnID, pc, len(udfs)),
+					),
+					pc,
+					dst,
+				)
 				continue
 			}
 
@@ -137,7 +161,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 				continue
 			}
 
-			bindingIDIndex := int(bindingID)
+			bindingIDIndex := bytecode.FunctionID(bindingID)
 			hostFn := program.Functions.Host[bindingIDIndex]
 			argCount := callArgCount(src1, src2)
 			if argCount != hostFn.ArgCount {
