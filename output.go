@@ -6,13 +6,13 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-func newOutput(registry *encoding.Registry, contentType string, res *vm.Result) (*encoding.Output, error) {
+func newOutput(registry *encoding.Registry, contentType string, res *vm.Result) (*Output, error) {
 	codec, err := registry.Codec(contentType)
 	if err != nil {
 		return nil, err
 	}
 
-	return vm.Materialize[*encoding.Output](res, func(value runtime.Value) (vm.Materialized[*encoding.Output], error) {
+	return vm.Materialize[*Output](res, func(value runtime.Value) (vm.Materialized[*Output], error) {
 		enc := codec.EncodeWith().PreHook(func(value runtime.Value) error {
 			res.AdoptValue(value)
 			return nil
@@ -20,11 +20,11 @@ func newOutput(registry *encoding.Registry, contentType string, res *vm.Result) 
 
 		data, err := enc.Encode(value)
 		if err != nil {
-			return vm.Materialized[*encoding.Output]{}, err
+			return vm.Materialized[*Output]{}, err
 		}
 
-		return vm.Materialized[*encoding.Output]{
-			Value: &encoding.Output{
+		return vm.Materialized[*Output]{
+			Value: &Output{
 				ContentType: codec.ContentType(),
 				Content:     data,
 			},
