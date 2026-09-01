@@ -1,6 +1,7 @@
 package ferret
 
 import (
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
@@ -23,6 +24,9 @@ type (
 
 	// Output is the encoded result returned from session or engine execution.
 	Output = encoding.Output
+
+	// OptimizationLevel represents the level of optimization applied during query compilation.
+	OptimizationLevel = compiler.OptimizationLevel
 )
 
 // NewSource creates a new Source instance with the given name and content.
@@ -33,4 +37,9 @@ func NewSource(name, content string) Source {
 // NewAnonymousSource creates a new anonymous Source instance with the given content.
 func NewAnonymousSource(content string) Source {
 	return source.NewAnonymous(content)
+}
+
+// WithOptimizationLevel returns a compiler option that sets the optimization level for query compilation.
+func WithOptimizationLevel(level OptimizationLevel) compiler.Option {
+	return compiler.WithOptimizationLevel(level)
 }
