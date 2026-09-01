@@ -154,7 +154,7 @@ func ensureHostFunctionsBound(vm *VM, env *Environment) error {
 	attempted := make([]bool, len(vm.cache.HostFunctions))
 
 	for _, descriptor := range hostCallDescriptors {
-		if !descriptor.ID.Valid(len(vm.cache.HostFunctions)) {
+		if !descriptor.ID.InRange(len(vm.cache.HostFunctions)) {
 			warmupErrs.Add(
 				diagnostics.NewInvariantError(
 					"invalid host warmup slot",

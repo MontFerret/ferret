@@ -179,7 +179,7 @@ func validateMetadata(program *Program) error {
 			return fmt.Errorf("%w: debug points are not strictly ordered by pc at index %d", ErrInvalidProgram, i)
 		}
 
-		if point.FunctionID != NoFunction && !point.FunctionID.Valid(len(program.Functions.UserDefined)) {
+		if point.FunctionID != NoFunction && !point.FunctionID.InRange(len(program.Functions.UserDefined)) {
 			return fmt.Errorf("%w: debug point %d has invalid function id %d", ErrInvalidProgram, i, point.FunctionID)
 		}
 

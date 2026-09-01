@@ -22,7 +22,7 @@ func TestNewWith_InlinesHostCallIDs(t *testing.T) {
 	}
 
 	for i, binding := range instance.plan.hostCallDescriptors {
-		if !binding.ID.Valid(len(instance.cache.HostFunctions)) {
+		if !binding.ID.InRange(len(instance.cache.HostFunctions)) {
 			t.Fatalf("invalid binding id %d for pc %d", binding.ID, binding.PC)
 		}
 
@@ -114,7 +114,7 @@ func TestNewWith_HostCallIDsAreCompactAndOrdered(t *testing.T) {
 		}
 		prevPC = binding.PC
 
-		if !binding.ID.Valid(len(instance.cache.HostFunctions)) {
+		if !binding.ID.InRange(len(instance.cache.HostFunctions)) {
 			t.Fatalf("invalid inlined host id at pc %d: %d", binding.PC, binding.ID)
 		}
 
@@ -346,7 +346,7 @@ func TestWarmupRebindTouchesOnlyHostCallSlots(t *testing.T) {
 	}
 
 	hostID := instance.plan.hostCallDescriptors[0].ID
-	if !hostID.Valid(len(instance.cache.HostFunctions)) {
+	if !hostID.InRange(len(instance.cache.HostFunctions)) {
 		t.Fatalf("invalid host id %d", hostID)
 	}
 

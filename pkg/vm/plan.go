@@ -83,7 +83,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 				continue
 			}
 
-			if !fnID.Valid(len(udfs)) {
+			if !fnID.InRange(len(udfs)) {
 				errs.Add(
 					diagnostics.NewInvariantError(
 						"invalid udf function id",
@@ -117,7 +117,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 				continue
 			}
 
-			if !fnID.Valid(len(udfs)) {
+			if !fnID.InRange(len(udfs)) {
 				errs.Add(
 					diagnostics.NewInvariantError(
 						"invalid udf function id",
@@ -149,7 +149,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 				continue
 			}
 
-			if bindingID < 0 || bindingID >= int64(len(program.Functions.Host)) {
+			if !bindingID.InRange(len(program.Functions.Host)) {
 				errs.Add(
 					diagnostics.NewInvariantError(
 						"invalid host binding id",
@@ -161,8 +161,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 				continue
 			}
 
-			bindingIDIndex := bytecode.FunctionID(bindingID)
-			hostFn := program.Functions.Host[bindingIDIndex]
+			hostFn := program.Functions.Host[bindingID]
 			argCount := callArgCount(src1, src2)
 			if argCount != hostFn.ArgCount {
 				errs.Add(
@@ -181,7 +180,7 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 				CallSitePC:       pc - 1,
 				DisplayName:      hostFn.Name,
 				Dst:              dst,
-				ID:               bindingIDIndex,
+				ID:               bindingID,
 				ArgCount:         hostFn.ArgCount,
 				ArgStart:         int(src1),
 				RecoveryBoundary: bytecode.IsProtectedCall(op),
@@ -288,13 +287,13 @@ func paramSlotAt(paramCount int, slot bytecode.Operand, pc int) (int, error) {
 	return idx, nil
 }
 
-func getHostFunctionID(value runtime.Value) (int64, error) {
+func getHostFunctionID(value runtime.Value) (bytecode.FunctionID, error) {
 	id, ok := value.(runtime.Int)
 	if !ok {
-		return -1, ErrInvalidFunctionName
+		return bytecode.NoFunction, ErrInvalidFunctionName
 	}
 
-	return int64(id), nil
+	return bytecode.FunctionID(id), nil
 }
 
 func buildCatchByPC(bytecodeLen int, catches []bytecode.Catch) []int {

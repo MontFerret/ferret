@@ -54,7 +54,7 @@ func New(points []bytecode.DebugPoint) (Index, error) {
 		if pos > 0 && ordered[pos-1].PC == point.PC {
 			return Index{}, fmt.Errorf("debug point %d duplicates pc %d", point.ID, point.PC)
 		}
-		if point.FunctionID < bytecode.NoFunction {
+		if point.FunctionID != bytecode.NoFunction && !point.FunctionID.Valid() {
 			return Index{}, fmt.Errorf("debug point %d has invalid function id %d", point.ID, point.FunctionID)
 		}
 		if point.Kind < bytecode.DebugPointStatement || point.Kind > bytecode.DebugPointSynthetic {

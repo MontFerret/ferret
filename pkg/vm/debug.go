@@ -411,7 +411,7 @@ func (d *debugExecution) errorPoint() *bytecode.DebugPoint {
 }
 
 func (d *debugExecution) functionName(functionID bytecode.FunctionID) string {
-	if !functionID.Valid(len(d.vm.program.Functions.UserDefined)) {
+	if !functionID.InRange(len(d.vm.program.Functions.UserDefined)) {
 		return "<main>"
 	}
 

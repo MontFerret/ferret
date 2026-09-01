@@ -728,7 +728,7 @@ func (s *Session) debugValue(value runtime.Value) Value {
 func (s *Session) locationForPC(pc int, functionID bytecode.FunctionID) source.Location {
 	var point *bytecode.DebugPoint
 
-	if functionID >= bytecode.NoFunction {
+	if functionID == bytecode.NoFunction || functionID.Valid() {
 		point = s.pointIndex.NearestBeforeOrAtInFunction(functionID, pc)
 	} else {
 		point = s.pointIndex.NearestBeforeOrAt(pc)

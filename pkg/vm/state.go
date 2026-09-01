@@ -919,8 +919,8 @@ func (s *execState) clearRegister(dst bytecode.Operand) {
 	s.registers[dst] = runtime.None
 }
 
-func (s *execState) udfByID(id int) (*bytecode.UDF, error) {
-	if id < 0 || s.program == nil || id >= len(s.program.Functions.UserDefined) {
+func (s *execState) udfByID(id bytecode.FunctionID) (*bytecode.UDF, error) {
+	if s.program == nil || !id.InRange(len(s.program.Functions.UserDefined)) {
 		return nil, ErrUnresolvedFunction
 	}
 

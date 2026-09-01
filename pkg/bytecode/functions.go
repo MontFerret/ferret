@@ -15,7 +15,12 @@ type (
 // function table entry.
 const NoFunction FunctionID = -1
 
-// Valid reports whether id can index a function table with count entries.
-func (id FunctionID) Valid(count int) bool {
-	return id >= 0 && int(id) < count
+// Valid reports whether id represents a valid function ID.
+func (id FunctionID) Valid() bool {
+	return id >= 0
+}
+
+// InRange reports whether id can reference a function table with count entries.
+func (id FunctionID) InRange(count int) bool {
+	return id.Valid() && int(id) < count
 }
