@@ -97,35 +97,36 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/MontFerret/ferret/v2/pkg/engine"
+	"github.com/MontFerret/ferret/v2"
 )
 
 func main() {
 	ctx := context.Background()
 
-	eng, err := engine.New()
+	eng, err := ferret.New()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer eng.Close()
 
-	plan, err := eng.Compile(`return 1 + 1`)
+	plan, err := eng.Compile(ctx, ferret.NewAnonymousSource(`return 1 + 1`))
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer plan.Close()
 
-	session, err := plan.NewSession()
+	session, err := plan.NewSession(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer session.Close()
 
-	result, err := session.Run(ctx)
+	output, err := session.Run(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(result.Content)
+	fmt.Println(string(output.Content))
 }
 ```
 
