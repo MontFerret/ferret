@@ -55,7 +55,7 @@ RETURN value`
 	if !beforeBody.Bound || beforeBody.Location.Line != 3 || beforeBody.PointID != body.PointID || beforeBody.FunctionID != body.FunctionID {
 		t.Fatalf("non-executable UDF declaration did not bind to its body: before=%#v body=%#v", beforeBody, body)
 	}
-	if !body.Bound || body.FunctionID == bytecode.NoFunction {
+	if !body.Bound || body.FunctionID < 0 {
 		t.Fatalf("expected UDF body breakpoint identity: %#v", body)
 	}
 	if !callSite.Bound || callSite.FunctionID != bytecode.NoFunction || callSite.PointID == body.PointID {
@@ -182,7 +182,7 @@ RETURN add(seed)`
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !inside.Bound || inside.Location.Line != 5 || inside.FunctionID == bytecode.NoFunction {
+	if !inside.Bound || inside.Location.Line != 5 || inside.FunctionID < 0 {
 		t.Fatalf("expected blank line inside UDF to bind within the UDF: %#v", inside)
 	}
 

@@ -92,9 +92,14 @@ func (p *Program) MarshalJSON() ([]byte, error) {
 		constants[i] = encoded
 	}
 
+	var src *source.Source
+	if !p.Source.Empty() {
+		src = &p.Source
+	}
+
 	payload := programJSON{
 		ISAVersion: p.ISAVersion,
-		Source:     p.Source,
+		Source:     src,
 		Registers:  p.Registers,
 		Bytecode:   p.Bytecode,
 		Constants:  constants,
@@ -133,7 +138,12 @@ func (p *Program) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	p.Source = decoded.Source
+	var src source.Source
+	if decoded.Source != nil {
+		src = *decoded.Source
+	}
+
+	p.Source = src
 	p.ISAVersion = decoded.ISAVersion
 	p.Registers = decoded.Registers
 	p.Bytecode = decoded.Bytecode
