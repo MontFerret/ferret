@@ -11,13 +11,13 @@ import (
 )
 
 type ErrorHandler struct {
-	src             *source.Source
 	errors          *diagnostics.Diagnostics[*diagnostics.Diagnostic]
 	linesWithErrors map[int]bool
+	src             source.Source
 	threshold       int
 }
 
-func NewErrorHandler(src *source.Source, threshold int) *ErrorHandler {
+func NewErrorHandler(src source.Source, threshold int) *ErrorHandler {
 	if threshold <= 0 {
 		threshold = 10
 	}
@@ -60,14 +60,14 @@ func (h *ErrorHandler) Add(err *diagnostics.Diagnostic) {
 		return
 	}
 
-	if err.Source == nil {
+	if err.Source.Empty() || err.Source.ID() != h.src.ID() {
 		err.Source = h.src
 	}
 
 	for _, span := range err.Spans {
-		if err.Source != nil {
-			line, _ := err.Source.LocationAt(span.Span)
-			h.linesWithErrors[line] = true
+		if !err.Source.Empty() {
+			pos := err.Source.PositionAt(span.Span)
+			h.linesWithErrors[pos.Line] = true
 		}
 	}
 

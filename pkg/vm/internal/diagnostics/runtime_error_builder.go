@@ -42,9 +42,9 @@ func newRuntimeErrorWithSpec(
 	}
 }
 
-func runtimeErrorSource(program *bytecode.Program) *source.Source {
+func runtimeErrorSource(program *bytecode.Program) source.Source {
 	if program == nil {
-		return nil
+		return source.Source{}
 	}
 
 	return program.Source

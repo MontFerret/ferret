@@ -11,13 +11,13 @@ import (
 
 type ErrorListener struct {
 	*antlr.DiagnosticErrorListener
-	src                  *source.Source
 	handler              *ErrorHandler
 	history              *TokenHistory
+	src                  source.Source
 	stopAfterSyntaxError bool
 }
 
-func NewErrorListener(src *source.Source, handler *ErrorHandler, history *TokenHistory) antlr.ErrorListener {
+func NewErrorListener(src source.Source, handler *ErrorHandler, history *TokenHistory) antlr.ErrorListener {
 	return &ErrorListener{
 		DiagnosticErrorListener: antlr.NewDiagnosticErrorListener(false),
 		src:                     src,

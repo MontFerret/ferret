@@ -5,20 +5,20 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func sourcePositionBefore(line, column, requestedLine, requestedColumn int) bool {
-	return line < requestedLine || (line == requestedLine && requestedColumn > 0 && column < requestedColumn)
+func sourcePositionBefore(pos, requestedPos source.Position) bool {
+	return pos.Line < requestedPos.Line || (pos.Line == requestedPos.Line && requestedPos.Column > 0 && pos.Column < requestedPos.Column)
 }
 
-func sourcePointPositionBefore(src *source.Source, left, right *bytecode.DebugPoint) bool {
-	leftLine, leftColumn := src.LocationAt(left.Span)
-	rightLine, rightColumn := src.LocationAt(right.Span)
+func sourcePointPositionBefore(src source.Source, left, right *bytecode.DebugPoint) bool {
+	leftPos := src.PositionAt(left.Span)
+	rightPos := src.PositionAt(right.Span)
 
-	return leftLine < rightLine || (leftLine == rightLine && leftColumn < rightColumn)
+	return sourcePositionBefore(leftPos, rightPos)
 }
 
-func sameSourcePosition(src *source.Source, left, right *bytecode.DebugPoint) bool {
-	leftLine, leftColumn := src.LocationAt(left.Span)
-	rightLine, rightColumn := src.LocationAt(right.Span)
+func sameSourcePosition(src source.Source, left, right *bytecode.DebugPoint) bool {
+	leftPos := src.PositionAt(left.Span)
+	rightPos := src.PositionAt(right.Span)
 
-	return leftLine == rightLine && leftColumn == rightColumn
+	return leftPos == rightPos
 }

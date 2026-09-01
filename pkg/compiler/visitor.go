@@ -18,12 +18,12 @@ type Visitor struct {
 	Frontend *internal.CompilationFrontend
 }
 
-func NewVisitor(src *source.Source, errors *parser.ErrorHandler, level optimization.Level) *Visitor {
+func NewVisitor(src source.Source, errors *parser.ErrorHandler, level optimization.Level) *Visitor {
 	return newVisitor(src, errors, level, nil)
 }
 
 func newVisitor(
-	src *source.Source,
+	src source.Source,
 	errors *parser.ErrorHandler,
 	level optimization.Level,
 	recorder *internal.SemanticRecorder,

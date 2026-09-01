@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -35,7 +36,7 @@ func TestDebugSessionBreakpointsLocalsEvaluateAndComplete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !breakpoint.Bound || breakpoint.Line != 3 {
+	if !breakpoint.Bound || breakpoint.Location.Line != 3 {
 		t.Fatalf("unexpected breakpoint: %#v", breakpoint)
 	}
 
@@ -125,7 +126,7 @@ func TestDebugSessionBreakpointBindsOnePointPerLine(t *testing.T) {
 	if !breakpoint.Bound {
 		t.Fatalf("expected bound breakpoint: %#v", breakpoint)
 	}
-	if breakpoint.RequestedColumn != 0 || breakpoint.FunctionID != -1 {
+	if breakpoint.RequestedLocation.Column != 0 || breakpoint.FunctionID != bytecode.NoFunction {
 		t.Fatalf("unexpected same-line breakpoint identity: %#v", breakpoint)
 	}
 	if _, err := session.Start(context.Background()); err != nil {

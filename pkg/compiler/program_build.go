@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func buildProgram(visitor *Visitor, src *source.Source, level optimization.Level) (*bytecode.Program, error) {
+func buildProgram(visitor *Visitor, src source.Source, level optimization.Level) (*bytecode.Program, error) {
 	var udfs []bytecode.UDF
 
 	if visitor.Session.Program.UDFs != nil {

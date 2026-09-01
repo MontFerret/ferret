@@ -379,6 +379,18 @@ func TestValidateProgramRejectsInvalidSourcePointMapping(t *testing.T) {
 				program.Metadata.DebugPoints[0].Kind = DebugPointSynthetic + 1
 			},
 		},
+		{
+			name: "debug_point_function_id_below_sentinel",
+			mutate: func(program *Program) {
+				program.Metadata.DebugPoints[0].FunctionID = NoFunction - 1
+			},
+		},
+		{
+			name: "debug_point_function_id_upper_bound",
+			mutate: func(program *Program) {
+				program.Metadata.DebugPoints[0].FunctionID = FunctionID(len(program.Functions.UserDefined))
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -448,8 +460,8 @@ func validSourcePointProgram() *Program {
 	program.Metadata.MatchFailTargets = nil
 	program.Metadata.DebugSpans = nil
 	program.Metadata.DebugPoints = []DebugPoint{
-		{ID: 9, PC: 0, Span: source.Span{Start: 0, End: 6}, FunctionID: -1},
-		{ID: 3, PC: 2, Span: source.Span{Start: 7, End: 8}, FunctionID: -1},
+		{ID: 9, PC: 0, Span: source.Span{Start: 0, End: 6}, FunctionID: NoFunction},
+		{ID: 3, PC: 2, Span: source.Span{Start: 7, End: 8}, FunctionID: NoFunction},
 	}
 
 	return program

@@ -36,8 +36,8 @@ func TestFormatRoundTrip(t *testing.T) {
 		t.Fatalf("unexpected source content: got %q, want %q", got, want)
 	}
 
-	if line, col := decoded.Source.LocationAt(source.Span{Start: 7, End: 7}); line == 0 || col == 0 {
-		t.Fatalf("expected source lines to be rebuilt, got line=%d col=%d", line, col)
+	if position := decoded.Source.PositionAt(source.Span{Start: 7, End: 7}); position.Line == 0 || position.Column == 0 {
+		t.Fatalf("expected source lines to be rebuilt, got position=%+v", position)
 	}
 
 	if got := decoded.Metadata.AggregatePlans[0].Index["group"]; got != 0 {

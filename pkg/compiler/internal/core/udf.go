@@ -38,7 +38,7 @@ type (
 		DisplayName string
 		Params      []UDFParam
 		Captures    []UDFCapture
-		ID          int
+		ID          bytecode.FunctionID
 		Entry       int
 		Registers   int
 	}

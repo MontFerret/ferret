@@ -38,7 +38,7 @@ func New(setters ...Option) (*Compiler, error) {
 // Compile parses and compiles a source into a bytecode program.
 //
 // Compile is safe for concurrent use by multiple goroutines.
-func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err error) {
+func (c *Compiler) Compile(src source.Source) (program *bytecode.Program, err error) {
 	if src.Empty() {
 		return nil, parserd.NewEmptyQueryError(src)
 	}
@@ -71,7 +71,7 @@ func (c *Compiler) Compile(src *source.Source) (program *bytecode.Program, err e
 // Analyze parses and semantically analyzes source without constructing a bytecode program.
 // It is safe for concurrent use by multiple goroutines. When source diagnostics
 // exist, Analyze returns both a non-nil partial snapshot and a non-nil error.
-func (c *Compiler) Analyze(src *source.Source) (analysis *Analysis, err error) {
+func (c *Compiler) Analyze(src source.Source) (analysis *Analysis, err error) {
 	errorHandler := parserd.NewErrorHandler(src, 10)
 	recorder := internal.NewSemanticRecorder(src)
 	var syntaxTokens []SyntaxToken

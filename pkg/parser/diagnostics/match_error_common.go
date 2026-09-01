@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func matchCommonErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if isNoAlternative(err.Message) || isMissing(err.Message) || isMismatched(err.Message) || isExtraneous(err.Message) {
 		prev := offending.Prev()
 		if node := anyIs(prev, offending, "=>"); node != nil && !isArrowBodyStart(node, offending) {
@@ -298,8 +298,8 @@ func matchCommonErrors(src *source.Source, err *diagnostics.Diagnostic, offendin
 	return false
 }
 
-func malformedFunctionCallOpen(src *source.Source, err *diagnostics.Diagnostic) (source.Span, bool, bool) {
-	if src == nil || err == nil || extractNoAlternativeInput(err.Message) != "(" {
+func malformedFunctionCallOpen(src source.Source, err *diagnostics.Diagnostic) (source.Span, bool, bool) {
+	if src.Empty() || err == nil || extractNoAlternativeInput(err.Message) != "(" {
 		return source.Span{}, false, false
 	}
 

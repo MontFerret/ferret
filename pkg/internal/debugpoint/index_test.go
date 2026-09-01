@@ -9,9 +9,9 @@ import (
 
 func TestIndexResolvesExactGlobalAndFunctionPoints(t *testing.T) {
 	points := []bytecode.DebugPoint{
-		{ID: 13, PC: 2, FunctionID: -1},
+		{ID: 13, PC: 2, FunctionID: bytecode.NoFunction},
 		{ID: 3, PC: 5, FunctionID: 0},
-		{ID: 21, PC: 8, FunctionID: -1},
+		{ID: 21, PC: 8, FunctionID: bytecode.NoFunction},
 		{ID: 8, PC: 11, FunctionID: 1},
 		{ID: 5, PC: 14, FunctionID: 0},
 	}
@@ -64,8 +64,8 @@ func TestIndexDoesNotCrossFunctionBoundaries(t *testing.T) {
 
 func TestIndexSortsAndDefensivelyCopiesPoints(t *testing.T) {
 	points := []bytecode.DebugPoint{
-		{ID: 2, PC: 8, FunctionID: -1},
-		{ID: 1, PC: 3, FunctionID: -1},
+		{ID: 2, PC: 8, FunctionID: bytecode.NoFunction},
+		{ID: 1, PC: 3, FunctionID: bytecode.NoFunction},
 	}
 	index := mustNewIndex(t, points)
 	points[0].PC = 1
@@ -83,24 +83,24 @@ func TestIndexRejectsMalformedPoints(t *testing.T) {
 		{
 			name: "duplicate_id",
 			points: []bytecode.DebugPoint{
-				{ID: 1, PC: 1, FunctionID: -1},
-				{ID: 1, PC: 2, FunctionID: -1},
+				{ID: 1, PC: 1, FunctionID: bytecode.NoFunction},
+				{ID: 1, PC: 2, FunctionID: bytecode.NoFunction},
 			},
 		},
 		{
 			name: "duplicate_pc",
 			points: []bytecode.DebugPoint{
-				{ID: 1, PC: 1, FunctionID: -1},
-				{ID: 2, PC: 1, FunctionID: -1},
+				{ID: 1, PC: 1, FunctionID: bytecode.NoFunction},
+				{ID: 2, PC: 1, FunctionID: bytecode.NoFunction},
 			},
 		},
 		{
 			name:   "negative_id",
-			points: []bytecode.DebugPoint{{ID: -1, PC: 1, FunctionID: -1}},
+			points: []bytecode.DebugPoint{{ID: -1, PC: 1, FunctionID: bytecode.NoFunction}},
 		},
 		{
 			name:   "negative_pc",
-			points: []bytecode.DebugPoint{{ID: 1, PC: -1, FunctionID: -1}},
+			points: []bytecode.DebugPoint{{ID: 1, PC: -1, FunctionID: bytecode.NoFunction}},
 		},
 		{
 			name:   "invalid_function",
@@ -108,11 +108,11 @@ func TestIndexRejectsMalformedPoints(t *testing.T) {
 		},
 		{
 			name:   "invalid_kind",
-			points: []bytecode.DebugPoint{{ID: 1, PC: 1, FunctionID: -1, Kind: bytecode.DebugPointSynthetic + 1}},
+			points: []bytecode.DebugPoint{{ID: 1, PC: 1, FunctionID: bytecode.NoFunction, Kind: bytecode.DebugPointSynthetic + 1}},
 		},
 		{
 			name:   "invalid_span",
-			points: []bytecode.DebugPoint{{ID: 1, PC: 1, FunctionID: -1, Span: source.Span{Start: -1, End: -1}}},
+			points: []bytecode.DebugPoint{{ID: 1, PC: 1, FunctionID: bytecode.NoFunction, Span: source.Span{Start: -1, End: -1}}},
 		},
 	}
 

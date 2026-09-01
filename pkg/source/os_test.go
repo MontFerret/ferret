@@ -23,9 +23,10 @@ func TestRead(t *testing.T) {
 			source, err := Read(testFile)
 
 			So(err, ShouldBeNil)
-			So(source, ShouldNotBeNil)
 			So(source.Name(), ShouldEqual, testFile)
 			So(source.Content(), ShouldEqual, testContent)
+			So(source.Length(), ShouldEqual, len(testContent))
+			So(source.ID(), ShouldResemble, New(testFile, testContent).ID())
 			So(source.Empty(), ShouldBeFalse)
 		})
 
@@ -35,7 +36,11 @@ func TestRead(t *testing.T) {
 			source, err := Read(nonExistentFile)
 
 			So(err, ShouldNotBeNil)
-			So(source, ShouldBeNil)
+			So(source.Name(), ShouldEqual, "")
+			So(source.Content(), ShouldEqual, "")
+			So(source.Length(), ShouldEqual, 0)
+			So(source.ID(), ShouldResemble, ID{})
+			So(source.Empty(), ShouldBeTrue)
 		})
 
 		Convey("Should handle empty file", func() {
@@ -48,9 +53,10 @@ func TestRead(t *testing.T) {
 			source, err := Read(testFile)
 
 			So(err, ShouldBeNil)
-			So(source, ShouldNotBeNil)
 			So(source.Name(), ShouldEqual, testFile)
 			So(source.Content(), ShouldEqual, "")
+			So(source.Length(), ShouldEqual, 0)
+			So(source.ID(), ShouldResemble, New(testFile, "").ID())
 			So(source.Empty(), ShouldBeTrue)
 		})
 
@@ -65,8 +71,9 @@ func TestRead(t *testing.T) {
 			source, err := Read(testFile)
 
 			So(err, ShouldBeNil)
-			So(source, ShouldNotBeNil)
 			So(source.Content(), ShouldEqual, testContent)
+			So(source.Length(), ShouldEqual, len(testContent))
+			So(source.ID(), ShouldResemble, New(testFile, testContent).ID())
 		})
 
 		Convey("Should handle directory instead of file", func() {
@@ -75,7 +82,11 @@ func TestRead(t *testing.T) {
 			source, err := Read(tmpDir)
 
 			So(err, ShouldNotBeNil)
-			So(source, ShouldBeNil)
+			So(source.Name(), ShouldEqual, "")
+			So(source.Content(), ShouldEqual, "")
+			So(source.Length(), ShouldEqual, 0)
+			So(source.ID(), ShouldResemble, ID{})
+			So(source.Empty(), ShouldBeTrue)
 		})
 	})
 }

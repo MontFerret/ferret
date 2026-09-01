@@ -412,9 +412,9 @@ RETURN fib(10)`
 		t.Fatalf("unexpected span label: %q", diag.Spans[0].Label)
 	}
 
-	line, col := diag.Source.LocationAt(diag.Spans[0].Span)
-	if line != 1 || col != 9 {
-		t.Fatalf("unexpected span location: got %d:%d, want 1:9", line, col)
+	position := diag.Source.PositionAt(diag.Spans[0].Span)
+	if position.Line != 1 || position.Column != 9 {
+		t.Fatalf("unexpected span location: got %d:%d, want 1:9", position.Line, position.Column)
 	}
 
 	formatted := pkgdiagnostics.Format(err)

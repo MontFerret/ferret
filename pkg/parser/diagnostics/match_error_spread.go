@@ -11,8 +11,8 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func matchSpreadEntryErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
-	if src == nil || err == nil || offending == nil {
+func matchSpreadEntryErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+	if src.Empty() || err == nil || offending == nil {
 		return false
 	}
 

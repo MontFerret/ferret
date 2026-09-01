@@ -14,72 +14,77 @@ import (
 func TestSessionSetBreakpointAtSupportsExplicitBindingPolicies(t *testing.T) {
 	src := source.New("binding.fql", "first second\n\ninside one\n\ninside two\n\nlast")
 	points := []bytecode.DebugPoint{
-		{ID: 1, PC: 1, Span: source.Span{Start: 0, End: 5}, FunctionID: -1},
-		{ID: 2, PC: 2, Span: source.Span{Start: 6, End: 12}, FunctionID: -1},
+		{ID: 1, PC: 1, Span: source.Span{Start: 0, End: 5}, FunctionID: bytecode.NoFunction},
+		{ID: 2, PC: 2, Span: source.Span{Start: 6, End: 12}, FunctionID: bytecode.NoFunction},
 		{ID: 3, PC: 3, Span: source.Span{Start: 14, End: 24}, FunctionID: 0},
 		{ID: 4, PC: 4, Span: source.Span{Start: 26, End: 36}, FunctionID: 0},
-		{ID: 5, PC: 5, Span: source.Span{Start: 38, End: 42}, FunctionID: -1},
+		{ID: 5, PC: 5, Span: source.Span{Start: 38, End: 42}, FunctionID: bytecode.NoFunction},
 	}
 	session := newBreakpointSession(t, src, points, &fakeExecution{status: vm.DebugExecutionNew})
 	defer session.Close()
 
 	tests := []struct {
 		name       string
-		location   SourceLocation
+		location   source.Location
 		options    BreakpointOptions
 		wantPoint  bytecode.DebugPointID
 		wantBound  bool
 		wantLine   int
 		wantColumn int
+		wantSpan   source.Span
 	}{
 		{
 			name:       "default_next_in_file",
-			location:   SourceLocation{Line: 2},
+			location:   source.Location{Position: source.Position{Line: 2}},
 			wantPoint:  3,
 			wantBound:  true,
 			wantLine:   3,
 			wantColumn: 1,
+			wantSpan:   source.Span{Start: 14, End: 24},
 		},
 		{
 			name:       "exact_line_selects_first_point",
-			location:   SourceLocation{Line: 1},
+			location:   source.Location{Position: source.Position{Line: 1}},
 			options:    BreakpointOptions{BindingMode: BreakpointBindExact},
 			wantPoint:  1,
 			wantBound:  true,
 			wantLine:   1,
 			wantColumn: 1,
+			wantSpan:   source.Span{Start: 0, End: 5},
 		},
 		{
 			name:       "exact_column",
-			location:   SourceLocation{Line: 1, Column: 7},
+			location:   source.Location{Position: source.Position{Line: 1, Column: 7}},
 			options:    BreakpointOptions{BindingMode: BreakpointBindExact},
 			wantPoint:  2,
 			wantBound:  true,
 			wantLine:   1,
 			wantColumn: 7,
+			wantSpan:   source.Span{Start: 6, End: 12},
 		},
 		{
 			name:     "exact_miss_is_unbound",
-			location: SourceLocation{Line: 2},
+			location: source.Location{Position: source.Position{Line: 2}},
 			options:  BreakpointOptions{BindingMode: BreakpointBindExact},
 		},
 		{
 			name:       "next_in_function",
-			location:   SourceLocation{Line: 4},
+			location:   source.Location{Position: source.Position{Line: 4}},
 			options:    BreakpointOptions{BindingMode: BreakpointBindNextExecutableInFunction},
 			wantPoint:  4,
 			wantBound:  true,
 			wantLine:   5,
 			wantColumn: 1,
+			wantSpan:   source.Span{Start: 26, End: 36},
 		},
 		{
 			name:     "next_in_function_does_not_enter_udf",
-			location: SourceLocation{Line: 2},
+			location: source.Location{Position: source.Position{Line: 2}},
 			options:  BreakpointOptions{BindingMode: BreakpointBindNextExecutableInFunction},
 		},
 		{
 			name:     "next_in_function_does_not_leave_udf",
-			location: SourceLocation{Line: 6},
+			location: source.Location{Position: source.Position{Line: 6}},
 			options:  BreakpointOptions{BindingMode: BreakpointBindNextExecutableInFunction},
 		},
 	}
@@ -91,14 +96,28 @@ func TestSessionSetBreakpointAtSupportsExplicitBindingPolicies(t *testing.T) {
 				t.Fatal(err)
 			}
 			if breakpoint.Bound != tc.wantBound || breakpoint.PointID != tc.wantPoint ||
-				breakpoint.Line != tc.wantLine || breakpoint.Column != tc.wantColumn {
+				breakpoint.Location.Line != tc.wantLine || breakpoint.Location.Column != tc.wantColumn {
 				t.Fatalf("unexpected breakpoint: %#v", breakpoint)
 			}
 			if breakpoint.BindingMode != tc.options.BindingMode {
 				t.Fatalf("unexpected binding mode: %#v", breakpoint)
 			}
-			if breakpoint.File != src.Name() {
-				t.Fatalf("expected default source file, got %#v", breakpoint)
+			requested := tc.location
+			requested.File = src.Name()
+			if breakpoint.RequestedLocation != requested {
+				t.Fatalf("unexpected requested location: %#v", breakpoint)
+			}
+			if breakpoint.Bound {
+				resolved := source.Range{
+					Location: source.Location{
+						File:     src.Name(),
+						Position: source.Position{Line: tc.wantLine, Column: tc.wantColumn},
+					},
+					Span: tc.wantSpan,
+				}
+				if breakpoint.Location != resolved {
+					t.Fatalf("unexpected resolved location: %#v", breakpoint)
+				}
 			}
 		})
 	}
@@ -114,18 +133,18 @@ func TestSessionSetBreakpointAtSupportsExplicitBindingPolicies(t *testing.T) {
 
 func TestSessionSetBreakpointAtValidatesLocationAndMode(t *testing.T) {
 	src := source.New("binding.fql", "RETURN 1")
-	point := bytecode.DebugPoint{ID: 1, PC: 1, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	point := bytecode.DebugPoint{ID: 1, PC: 1, Span: source.Span{Start: 0, End: 8}, FunctionID: bytecode.NoFunction}
 	session := newBreakpointSession(t, src, []bytecode.DebugPoint{point}, &fakeExecution{status: vm.DebugExecutionNew})
 	defer session.Close()
 
 	for _, tc := range []struct {
 		name     string
-		location SourceLocation
+		location source.Location
 		options  BreakpointOptions
 	}{
-		{name: "line", location: SourceLocation{Line: 0}},
-		{name: "column", location: SourceLocation{Line: 1, Column: -1}},
-		{name: "mode", location: SourceLocation{Line: 1}, options: BreakpointOptions{BindingMode: BreakpointBindingMode(99)}},
+		{name: "line", location: source.Location{Position: source.Position{Line: 0}}},
+		{name: "column", location: source.Location{Position: source.Position{Line: 1, Column: -1}}},
+		{name: "mode", location: source.Location{Position: source.Position{Line: 1}}, options: BreakpointOptions{BindingMode: BreakpointBindingMode(99)}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if _, err := session.SetBreakpointAt(tc.location, tc.options); !errors.Is(err, runtime.ErrInvalidArgument) {
@@ -137,7 +156,7 @@ func TestSessionSetBreakpointAtValidatesLocationAndMode(t *testing.T) {
 
 func TestSessionBreakpointEventIncludesAllMatchingBreakpointIDs(t *testing.T) {
 	src := source.New("binding.fql", "RETURN 1")
-	point := bytecode.DebugPoint{ID: 7, PC: 3, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	point := bytecode.DebugPoint{ID: 7, PC: 3, Span: source.Span{Start: 0, End: 8}, FunctionID: bytecode.NoFunction}
 	execution := &fakeExecution{
 		startEvent:  &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
 		resumeEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopBreakpoint, Point: &point},
@@ -146,11 +165,11 @@ func TestSessionBreakpointEventIncludesAllMatchingBreakpointIDs(t *testing.T) {
 	session := newBreakpointSession(t, src, []bytecode.DebugPoint{point}, execution)
 	defer session.Close()
 
-	first, err := session.SetBreakpointAt(SourceLocation{Line: 1}, BreakpointOptions{BindingMode: BreakpointBindExact})
+	first, err := session.SetBreakpointAt(source.Location{Position: source.Position{Line: 1}}, BreakpointOptions{BindingMode: BreakpointBindExact})
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := session.SetBreakpointAt(SourceLocation{Line: 1}, BreakpointOptions{BindingMode: BreakpointBindExact})
+	second, err := session.SetBreakpointAt(source.Location{Position: source.Position{Line: 1}}, BreakpointOptions{BindingMode: BreakpointBindExact})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +186,7 @@ func TestSessionBreakpointEventIncludesAllMatchingBreakpointIDs(t *testing.T) {
 	}
 }
 
-func newBreakpointSession(t *testing.T, src *source.Source, points []bytecode.DebugPoint, execution vm.DebugExecution) *Session {
+func newBreakpointSession(t *testing.T, src source.Source, points []bytecode.DebugPoint, execution vm.DebugExecution) *Session {
 	t.Helper()
 
 	session, err := NewSession(Config{

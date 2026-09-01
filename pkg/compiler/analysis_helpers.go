@@ -39,9 +39,7 @@ func cloneDiagnostic(value *diagnostics.Diagnostic) *diagnostics.Diagnostic {
 		}
 	}
 
-	if value.Source != nil {
-		out.Source = source.New(value.Source.Name(), value.Source.Content())
-	}
+	out.Source = value.Source
 
 	return &out
 }
@@ -79,8 +77,8 @@ func analysisByteSpan(offsets []int, span source.Span) source.Span {
 	return source.Span{Start: offsets[span.Start], End: offsets[span.End]}
 }
 
-func analysisByteOffsets(src *source.Source) []int {
-	if src == nil {
+func analysisByteOffsets(src source.Source) []int {
+	if src.Empty() {
 		return []int{0}
 	}
 

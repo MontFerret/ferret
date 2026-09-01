@@ -14,7 +14,7 @@ func TestDebugExecutionFrameLocalsUseCallerRegistersAndCells(t *testing.T) {
 	callerPoint := bytecode.DebugPoint{
 		ID:         1,
 		PC:         10,
-		FunctionID: -1,
+		FunctionID: bytecode.NoFunction,
 		Bindings: []bytecode.DebugBinding{
 			{Name: "caller", Register: bytecode.NewRegister(0)},
 			{Name: "captured", Register: bytecode.NewRegister(1), Mutable: true, Cell: true},

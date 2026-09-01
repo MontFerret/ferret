@@ -77,7 +77,7 @@ func stackNote(callStack []frame.TraceEntry) string {
 		entry := callStack[i]
 		name := strings.TrimSpace(entry.FnName)
 		if name == "" {
-			if entry.FnID < 0 {
+			if entry.FnID == bytecode.NoFunction {
 				continue
 			}
 

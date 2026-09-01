@@ -8,8 +8,8 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func matchCoalesceErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
-	if src == nil || err == nil || offending == nil {
+func matchCoalesceErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+	if src.Empty() || err == nil || offending == nil {
 		return false
 	}
 
@@ -38,7 +38,7 @@ func matchCoalesceErrors(src *source.Source, err *diagnostics.Diagnostic, offend
 	return true
 }
 
-func trailingCoalesceSpan(src *source.Source) (source.Span, bool) {
+func trailingCoalesceSpan(src source.Source) (source.Span, bool) {
 	lexer := fql.NewFqlLexer(antlr.NewInputStream(src.Content()))
 	lexer.RemoveErrorListeners()
 	tokens := lexer.GetAllTokens()

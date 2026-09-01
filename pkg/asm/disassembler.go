@@ -446,8 +446,8 @@ func udfCallComment(p *bytecode.Program, instr bytecode.Instruction, prev *bytec
 		return ""
 	}
 
-	id := int(idVal)
-	if id < 0 || id >= len(p.Functions.UserDefined) {
+	id := bytecode.FunctionID(idVal)
+	if !id.InRange(len(p.Functions.UserDefined)) {
 		return ""
 	}
 
@@ -480,8 +480,9 @@ func hostCallComment(p *bytecode.Program, instr bytecode.Instruction, prev *byte
 	if !ok {
 		return ""
 	}
-	id := int(idValue)
-	if id < 0 || id >= len(p.Functions.Host) {
+
+	id := bytecode.FunctionID(idValue)
+	if !id.InRange(len(p.Functions.Host)) {
 		return ""
 	}
 

@@ -11,7 +11,7 @@ import (
 )
 
 func runFrontend(
-	src *source.Source,
+	src source.Source,
 	errors *parserd.ErrorHandler,
 	level optimization.Level,
 	debugInfo bool,

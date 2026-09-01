@@ -15,12 +15,12 @@ const (
 	missingMatchArmCommaHint    = "Separate MATCH arms with commas, e.g. 0 => 0, 1 => 1, _ => 0."
 )
 
-func matchMatchArmSeparatorErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchMatchArmSeparatorErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if !(isNoAlternative(err.Message) || isMissing(err.Message) || isMismatched(err.Message)) {
 		return false
 	}
 
-	if src == nil || offending == nil || offending.Token() == nil {
+	if src.Empty() || offending == nil || offending.Token() == nil {
 		return false
 	}
 
@@ -176,7 +176,7 @@ func findNextTopLevelArrowBeforeSeparator(tokens []antlr.Token, startIdx int) (i
 	return -1, false
 }
 
-func matchArmSeparatorInsertionSpan(tokens []antlr.Token, currentArrowIdx, nextArrowIdx int, src *source.Source) (source.Span, bool) {
+func matchArmSeparatorInsertionSpan(tokens []antlr.Token, currentArrowIdx, nextArrowIdx int, src source.Source) (source.Span, bool) {
 	nextArmStartIdx := matchArmStartTokenIndex(tokens, currentArrowIdx, nextArrowIdx)
 	if nextArmStartIdx <= currentArrowIdx+1 {
 		return source.Span{}, false

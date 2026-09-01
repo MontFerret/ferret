@@ -20,20 +20,20 @@ import (
 // Command calls are serialized. Pause is safe to call concurrently with a
 // running command.
 type Session struct {
-	execution        vm.DebugExecution
 	values           vm.DebugValueAccess
 	services         SessionServices
 	closeErr         error
 	runCtx           context.Context
 	executionCtx     context.Context
+	execution        vm.DebugExecution
+	valueRefs        map[ValueReference]runtime.Value
 	runCancel        context.CancelCauseFunc
 	breakpoints      map[BreakpointID]Breakpoint
 	boundPointIDs    map[BreakpointID]bytecode.DebugPointID
-	source           *source.Source
 	activeCancel     context.CancelCauseFunc
-	valueRefs        map[ValueReference]runtime.Value
 	params           []string
 	pointIndex       debugpoint.Index
+	source           source.Source
 	format           FormatOptions
 	nextBreakpointID BreakpointID
 	nextValueRef     ValueReference
@@ -60,7 +60,7 @@ func NewSession(config Config) (*Session, error) {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug session services are required")
 	}
 
-	if config.Source == nil {
+	if config.Source.Empty() {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug source is required")
 	}
 
@@ -188,13 +188,13 @@ func (s *Session) Pause() error {
 // next-executable-in-file binding policy.
 func (s *Session) SetBreakpoint(file string, line int) (Breakpoint, error) {
 	return s.SetBreakpointAt(
-		SourceLocation{File: file, Line: line},
+		source.Location{File: file, Position: source.Position{Line: line}},
 		BreakpointOptions{BindingMode: BreakpointBindNextExecutableInFile},
 	)
 }
 
 // SetBreakpointAt adds a breakpoint at an explicit source location.
-func (s *Session) SetBreakpointAt(location SourceLocation, opts BreakpointOptions) (Breakpoint, error) {
+func (s *Session) SetBreakpointAt(location source.Location, opts BreakpointOptions) (Breakpoint, error) {
 	if err := s.lockCommand(); err != nil {
 		return Breakpoint{}, err
 	}
@@ -221,22 +221,18 @@ func (s *Session) SetBreakpointAt(location SourceLocation, opts BreakpointOption
 	}
 
 	breakpoint := Breakpoint{
-		ID:              s.nextBreakpointID,
-		File:            location.File,
-		RequestedLine:   location.Line,
-		RequestedColumn: location.Column,
-		BindingMode:     opts.BindingMode,
+		ID:                s.nextBreakpointID,
+		RequestedLocation: location,
+		BindingMode:       opts.BindingMode,
 	}
 	s.nextBreakpointID++
 
 	if location.File == s.source.Name() {
 		if point := s.breakpointPoint(location, opts.BindingMode); point != nil {
-			bestLine, bestColumn := s.source.LocationAt(point.Span)
 			breakpoint.Bound = true
 			breakpoint.PointID = point.ID
 			breakpoint.FunctionID = point.FunctionID
-			breakpoint.Line = bestLine
-			breakpoint.Column = bestColumn
+			breakpoint.Location = s.source.RangeAt(point.Span)
 			s.boundPointIDs[breakpoint.ID] = point.ID
 		}
 	}
@@ -512,7 +508,7 @@ func (s *Session) breakpointPCs() map[int]struct{} {
 	return out
 }
 
-func (s *Session) breakpointPoint(location SourceLocation, mode BreakpointBindingMode) *bytecode.DebugPoint {
+func (s *Session) breakpointPoint(location source.Location, mode BreakpointBindingMode) *bytecode.DebugPoint {
 	exact := s.exactBreakpointPoint(location)
 	if exact != nil || mode == BreakpointBindExact {
 		return exact
@@ -525,15 +521,15 @@ func (s *Session) breakpointPoint(location SourceLocation, mode BreakpointBindin
 	return s.nextBreakpointPoint(location)
 }
 
-func (s *Session) exactBreakpointPoint(location SourceLocation) *bytecode.DebugPoint {
+func (s *Session) exactBreakpointPoint(location source.Location) *bytecode.DebugPoint {
 	var best *bytecode.DebugPoint
 	points := s.pointIndex.Points()
 
 	for i := range points {
 		point := &points[i]
-		pointLine, pointColumn := s.source.LocationAt(point.Span)
+		pos := s.source.PositionAt(point.Span)
 
-		if pointLine != location.Line || (location.Column > 0 && pointColumn != location.Column) {
+		if pos.Line != location.Line || (location.Column > 0 && pos.Column != location.Column) {
 			continue
 		}
 
@@ -545,15 +541,15 @@ func (s *Session) exactBreakpointPoint(location SourceLocation) *bytecode.DebugP
 	return best
 }
 
-func (s *Session) nextBreakpointPoint(location SourceLocation) *bytecode.DebugPoint {
+func (s *Session) nextBreakpointPoint(location source.Location) *bytecode.DebugPoint {
 	var best *bytecode.DebugPoint
 	points := s.pointIndex.Points()
 
 	for i := range points {
 		point := &points[i]
-		line, column := s.source.LocationAt(point.Span)
+		pos := s.source.PositionAt(point.Span)
 
-		if sourcePositionBefore(line, column, location.Line, location.Column) {
+		if sourcePositionBefore(pos, location.Position) {
 			continue
 		}
 
@@ -565,7 +561,7 @@ func (s *Session) nextBreakpointPoint(location SourceLocation) *bytecode.DebugPo
 	return best
 }
 
-func (s *Session) nextBreakpointPointInFunction(location SourceLocation) *bytecode.DebugPoint {
+func (s *Session) nextBreakpointPointInFunction(location source.Location) *bytecode.DebugPoint {
 	var previous, next *bytecode.DebugPoint
 	previousAmbiguous := false
 	nextAmbiguous := false
@@ -573,9 +569,9 @@ func (s *Session) nextBreakpointPointInFunction(location SourceLocation) *byteco
 
 	for i := range points {
 		point := &points[i]
-		line, column := s.source.LocationAt(point.Span)
+		pos := s.source.PositionAt(point.Span)
 
-		if sourcePositionBefore(line, column, location.Line, location.Column) {
+		if sourcePositionBefore(pos, location.Position) {
 			switch {
 			case previous == nil || sourcePointPositionBefore(s.source, previous, point):
 				previous = point
@@ -604,15 +600,11 @@ func (s *Session) nextBreakpointPointInFunction(location SourceLocation) *byteco
 }
 
 func (s *Session) debugPointLess(left, right *bytecode.DebugPoint) bool {
-	leftLine, leftColumn := s.source.LocationAt(left.Span)
-	rightLine, rightColumn := s.source.LocationAt(right.Span)
+	leftPos := s.source.PositionAt(left.Span)
+	rightPos := s.source.PositionAt(right.Span)
 
-	if leftLine != rightLine {
-		return leftLine < rightLine
-	}
-
-	if leftColumn != rightColumn {
-		return leftColumn < rightColumn
+	if leftPos.Line != rightPos.Line || leftPos.Column != rightPos.Column {
+		return sourcePositionBefore(leftPos, rightPos)
 	}
 
 	if left.PC != right.PC {
@@ -629,7 +621,7 @@ func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
 	out := &Event{Depth: event.Depth, Error: event.Error}
 
 	if event.Point != nil {
-		out.Location = s.location(event.Point.Span)
+		out.Location = s.source.RangeAt(event.Point.Span)
 	}
 
 	if s.closed.Load() && event.Reason != vm.DebugStopCompleted && event.Reason != vm.DebugStopTerminated {
@@ -733,26 +725,20 @@ func (s *Session) debugValue(value runtime.Value) Value {
 	}
 }
 
-func (s *Session) location(span source.Span) Location {
-	line, column := s.source.LocationAt(span)
-
-	return Location{File: s.source.Name(), Line: line, Column: column, Span: span}
-}
-
-func (s *Session) locationForPC(pc, functionID int) Location {
+func (s *Session) locationForPC(pc int, functionID bytecode.FunctionID) source.Location {
 	var point *bytecode.DebugPoint
 
-	if functionID >= -1 {
+	if functionID == bytecode.NoFunction || functionID.Valid() {
 		point = s.pointIndex.NearestBeforeOrAtInFunction(functionID, pc)
 	} else {
 		point = s.pointIndex.NearestBeforeOrAt(pc)
 	}
 
 	if point == nil {
-		return Location{File: s.source.Name()}
+		return source.Location{File: s.source.Name()}
 	}
 
-	return s.location(point.Span)
+	return s.source.LocationAt(point.Span)
 }
 
 func (s *Session) ensureOpen() error {

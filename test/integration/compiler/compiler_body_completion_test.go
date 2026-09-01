@@ -328,8 +328,8 @@ RETURN NONE`
 	}
 
 	for _, point := range program.Metadata.DebugPoints {
-		line, _ := program.Source.LocationAt(point.Span)
-		if line == 1 && point.FunctionID == -1 && point.Kind == bytecode.DebugPointStatement {
+		position := program.Source.PositionAt(point.Span)
+		if position.Line == 1 && point.FunctionID == bytecode.NoFunction && point.Kind == bytecode.DebugPointStatement {
 			return
 		}
 	}
@@ -351,14 +351,14 @@ RETURN NONE`
 
 	wantLines := map[int]bool{1: false, 2: false, 3: false}
 	for _, point := range program.Metadata.DebugPoints {
-		line, _ := program.Source.LocationAt(point.Span)
-		if point.Kind == bytecode.DebugPointReturn && line < 5 {
-			t.Fatalf("returnless FOR unexpectedly has a return debug point on line %d", line)
+		position := program.Source.PositionAt(point.Span)
+		if point.Kind == bytecode.DebugPointReturn && position.Line < 5 {
+			t.Fatalf("returnless FOR unexpectedly has a return debug point on line %d", position.Line)
 		}
 
 		if point.Kind == bytecode.DebugPointStatement {
-			if _, ok := wantLines[line]; ok {
-				wantLines[line] = true
+			if _, ok := wantLines[position.Line]; ok {
+				wantLines[position.Line] = true
 			}
 		}
 	}
@@ -394,9 +394,9 @@ RETURN NONE`
 			continue
 		}
 
-		line, _ := program.Source.LocationAt(point.Span)
-		if _, ok := wantLines[line]; ok {
-			wantLines[line] = true
+		position := program.Source.PositionAt(point.Span)
+		if _, ok := wantLines[position.Line]; ok {
+			wantLines[position.Line] = true
 		}
 	}
 
@@ -466,9 +466,9 @@ RETURN NONE`
 			continue
 		}
 
-		line, _ := program.Source.LocationAt(point.Span)
-		if _, ok := lines[line]; ok {
-			lines[line] = true
+		position := program.Source.PositionAt(point.Span)
+		if _, ok := lines[position.Line]; ok {
+			lines[position.Line] = true
 		}
 	}
 
@@ -500,12 +500,12 @@ RETURN NONE`
 
 	returnLines := make(map[int]bool)
 	for _, point := range program.Metadata.DebugPoints {
-		if point.Kind != bytecode.DebugPointReturn || point.FunctionID != -1 {
+		if point.Kind != bytecode.DebugPointReturn || point.FunctionID != bytecode.NoFunction {
 			continue
 		}
 
-		line, _ := program.Source.LocationAt(point.Span)
-		returnLines[line] = true
+		position := program.Source.PositionAt(point.Span)
+		returnLines[position.Line] = true
 	}
 
 	for _, line := range []int{2, 3} {

@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func matchDispatchErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchDispatchErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if err == nil || offending == nil {
 		return false
 	}

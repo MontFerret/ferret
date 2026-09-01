@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func addRecoveredAnalysisDiagnostic(src *source.Source, errors *parserd.ErrorHandler, recovered any) {
+func addRecoveredAnalysisDiagnostic(src source.Source, errors *parserd.ErrorHandler, recovered any) {
 	var diagnostic *diagnostics.Diagnostic
 
 	buf := make([]byte, 1024)

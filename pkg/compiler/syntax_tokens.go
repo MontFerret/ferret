@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func buildSyntaxTokens(src *source.Source, tokens []antlr.Token) []SyntaxToken {
+func buildSyntaxTokens(src source.Source, tokens []antlr.Token) []SyntaxToken {
 	byteOffsets := analysisByteOffsets(src)
 	out := make([]SyntaxToken, 0, len(tokens))
 

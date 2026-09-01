@@ -21,7 +21,7 @@ type whileLoopBindingMatch struct {
 	skipDo      bool
 }
 
-func matchWhileLoopErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchWhileLoopErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if matchInvalidWhileLoopBinding(src, err, offending) {
 		return true
 	}
@@ -37,7 +37,7 @@ func matchWhileLoopErrors(src *source.Source, err *diagnostics.Diagnostic, offen
 	return false
 }
 
-func matchInvalidWhileLoopBinding(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchInvalidWhileLoopBinding(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	span, ok := findInvalidWhileLoopBindingSpan(src)
 	if !ok {
 		return false
@@ -52,8 +52,8 @@ func matchInvalidWhileLoopBinding(src *source.Source, err *diagnostics.Diagnosti
 	return true
 }
 
-func findInvalidWhileLoopBindingSpan(src *source.Source) (source.Span, bool) {
-	if src == nil {
+func findInvalidWhileLoopBindingSpan(src source.Source) (source.Span, bool) {
+	if src.Empty() {
 		return source.Span{}, false
 	}
 
@@ -132,7 +132,7 @@ func isValidWhileLoopBindingText(text string) bool {
 	}
 }
 
-func matchMissingWhileLoopCondition(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchMissingWhileLoopCondition(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	whileToken := findWhileLoopHeaderToken(offending)
 	if whileToken == nil {
 		return false
@@ -148,7 +148,7 @@ func matchMissingWhileLoopCondition(src *source.Source, err *diagnostics.Diagnos
 	return true
 }
 
-func matchStandaloneWhileLoop(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchStandaloneWhileLoop(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	loopKind, span, ok := findStandaloneWhileLoopSpan(src, err, offending)
 	if !ok {
 		return false
@@ -170,7 +170,7 @@ func matchStandaloneWhileLoop(src *source.Source, err *diagnostics.Diagnostic, o
 	return true
 }
 
-func findStandaloneWhileLoopSpan(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) (string, source.Span, bool) {
+func findStandaloneWhileLoopSpan(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) (string, source.Span, bool) {
 	whileToken := findStandaloneWhileLoopToken(offending)
 	if whileToken == nil {
 		if is(offending, "DO") && err != nil && isNoAlternative(err.Message) && has(err.Message, "do while") && !hasPrevToken(offending, "FOR", 4) {

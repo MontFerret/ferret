@@ -223,7 +223,7 @@ func FromProgram(program *bytecode.Program) (ProgramFrame, error) {
 		debugPoints[i] = DebugPointFrame{
 			ID:         int(point.ID),
 			PC:         point.PC,
-			FunctionID: point.FunctionID,
+			FunctionID: int(point.FunctionID),
 			Kind:       int(point.Kind),
 			Span:       SpanFrame{Start: point.Span.Start, End: point.Span.End},
 			Bindings:   bindings,
@@ -263,7 +263,7 @@ func FromProgram(program *bytecode.Program) (ProgramFrame, error) {
 	}
 
 	var source *SourceFrame
-	if program.Source != nil {
+	if !program.Source.Empty() {
 		source = &SourceFrame{
 			Name: program.Source.Name(),
 			Text: program.Source.Content(),
@@ -414,7 +414,7 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 		debugPoints[i] = bytecode.DebugPoint{
 			ID:         bytecode.DebugPointID(point.ID),
 			PC:         point.PC,
-			FunctionID: point.FunctionID,
+			FunctionID: bytecode.FunctionID(point.FunctionID),
 			Kind:       bytecode.DebugPointKind(point.Kind),
 			Span:       source.Span{Start: point.Span.Start, End: point.Span.End},
 			Bindings:   bindings,
@@ -449,7 +449,7 @@ func ToProgram(frame ProgramFrame) (*bytecode.Program, error) {
 		labels[label.PC] = label.Name
 	}
 
-	var src *source.Source
+	var src source.Source
 	if frame.Source != nil {
 		src = source.New(frame.Source.Name, frame.Source.Text)
 	}

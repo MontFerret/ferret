@@ -9,7 +9,7 @@ type callDescriptor struct {
 	DisplayName      string
 	PC               int
 	Dst              bytecode.Operand
-	ID               int
+	ID               bytecode.FunctionID
 	ArgCount         int
 	ArgStart         int
 	RecoveryBoundary bool
@@ -31,11 +31,11 @@ func callArgCount(src1, src2 bytecode.Operand) int {
 	return argCount
 }
 
-func getUDFID(val runtime.Value) (int, error) {
+func getUDFID(val runtime.Value) (bytecode.FunctionID, error) {
 	idVal, ok := val.(runtime.Int)
 	if !ok {
-		return -1, ErrInvalidFunctionName
+		return bytecode.NoFunction, ErrInvalidFunctionName
 	}
 
-	return int(idVal), nil
+	return bytecode.FunctionID(idVal), nil
 }

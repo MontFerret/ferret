@@ -5,9 +5,9 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-type SyntaxErrorMatcher func(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool
+type SyntaxErrorMatcher func(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool
 
-func AnalyzeSyntaxError(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func AnalyzeSyntaxError(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	matchers := []SyntaxErrorMatcher{
 		matchCoalesceErrors,
 		matchArrayOperatorErrors,

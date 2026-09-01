@@ -7,7 +7,7 @@ import (
 
 const deleteTargetMessage = "DELETE requires a property or computed-key target"
 
-func matchDeleteStatementErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchDeleteStatementErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if offending == nil || isEOF(offending) {
 		return false
 	}

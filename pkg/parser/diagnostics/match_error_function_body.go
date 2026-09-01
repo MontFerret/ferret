@@ -18,8 +18,8 @@ const (
 	mixedFunctionBodyHint    = "Use either 'FUNC f(x) => expr' or 'FUNC f(x) { ... RETURN expr }'."
 )
 
-func matchMissingFunctionParamsClose(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
-	if src == nil || err == nil || offending == nil {
+func matchMissingFunctionParamsClose(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+	if src.Empty() || err == nil || offending == nil {
 		return false
 	}
 
@@ -47,8 +47,8 @@ func matchMissingFunctionParamsClose(src *source.Source, err *diagnostics.Diagno
 	return true
 }
 
-func matchMixedFunctionBodySyntax(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
-	if src == nil || err == nil || offending == nil {
+func matchMixedFunctionBodySyntax(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+	if src.Empty() || err == nil || offending == nil {
 		return false
 	}
 

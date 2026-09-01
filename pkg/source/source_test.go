@@ -14,9 +14,10 @@ func TestNew(t *testing.T) {
 
 			source := New(name, text)
 
-			So(source, ShouldNotBeNil)
 			So(source.Name(), ShouldEqual, name)
 			So(source.Content(), ShouldEqual, text)
+			So(source.Length(), ShouldEqual, len(text))
+			So(source.ID(), ShouldNotResemble, ID{})
 			So(source.Empty(), ShouldBeFalse)
 		})
 
@@ -26,9 +27,10 @@ func TestNew(t *testing.T) {
 
 			source := New(name, text)
 
-			So(source, ShouldNotBeNil)
 			So(source.Name(), ShouldEqual, name)
 			So(source.Content(), ShouldEqual, text)
+			So(source.Length(), ShouldEqual, 0)
+			So(source.ID(), ShouldNotResemble, ID{})
 			So(source.Empty(), ShouldBeTrue)
 		})
 	})
@@ -41,10 +43,43 @@ func TestNewAnonymous(t *testing.T) {
 
 			source := NewAnonymous(text)
 
-			So(source, ShouldNotBeNil)
 			So(source.Name(), ShouldEqual, "anonymous")
 			So(source.Content(), ShouldEqual, text)
+			So(source.Length(), ShouldEqual, len(text))
+			So(source.ID(), ShouldResemble, New("anonymous", text).ID())
 		})
+	})
+}
+
+func TestSourceID(t *testing.T) {
+	Convey("Source.ID", t, func() {
+		first := New("test.fql", "RETURN 1")
+		same := New("test.fql", "RETURN 1")
+		differentName := New("other.fql", "RETURN 1")
+		differentContent := New("test.fql", "RETURN 2")
+
+		So(first.ID(), ShouldNotResemble, ID{})
+		So(first.ID(), ShouldResemble, same.ID())
+		So(first.ID(), ShouldNotResemble, differentName.ID())
+		So(first.ID(), ShouldNotResemble, differentContent.ID())
+	})
+}
+
+func TestSourceZeroValue(t *testing.T) {
+	Convey("The zero Source value represents no source", t, func() {
+		var source Source
+
+		So(source.Name(), ShouldEqual, "")
+		So(source.Content(), ShouldEqual, "")
+		So(source.Length(), ShouldEqual, 0)
+		So(source.ID(), ShouldResemble, ID{})
+		So(source.Empty(), ShouldBeTrue)
+
+		position := source.PositionAt(Span{Start: 0, End: 1})
+		So(position, ShouldResemble, Position{})
+		So(source.LocationAt(Span{Start: 0, End: 1}), ShouldResemble, Location{})
+		So(source.RangeAt(Span{Start: 0, End: 1}), ShouldResemble, Range{Span: Span{Start: 0, End: 1}})
+		So(source.Snippet(Span{Start: 0, End: 1}), ShouldBeNil)
 	})
 }
 
@@ -54,12 +89,6 @@ func TestSourceName(t *testing.T) {
 			source := New("test.fql", "content")
 
 			So(source.Name(), ShouldEqual, "test.fql")
-		})
-
-		Convey("Should return empty string for nil source", func() {
-			var source *Source
-
-			So(source.Name(), ShouldEqual, "")
 		})
 	})
 }
@@ -77,36 +106,27 @@ func TestSourceEmpty(t *testing.T) {
 
 			So(source.Empty(), ShouldBeTrue)
 		})
-
-		Convey("Should return true for nil source", func() {
-			var source *Source
-
-			So(source.Empty(), ShouldBeTrue)
-		})
 	})
 }
 
-func TestSourceLocationAt(t *testing.T) {
-	Convey("Source.LocationAt", t, func() {
+func TestSourcePositionAt(t *testing.T) {
+	Convey("Source.PositionAt", t, func() {
 		Convey("Simple single line text", func() {
 			source := New("test.fql", "hello world")
 
 			Convey("Should return correct location at start", func() {
-				line, col := source.LocationAt(Span{Start: 0, End: 1})
-				So(line, ShouldEqual, 1)
-				So(col, ShouldEqual, 1)
+				position := source.PositionAt(Span{Start: 0, End: 1})
+				So(position, ShouldResemble, Position{Line: 1, Column: 1})
 			})
 
 			Convey("Should return correct location in middle", func() {
-				line, col := source.LocationAt(Span{Start: 6, End: 7})
-				So(line, ShouldEqual, 1)
-				So(col, ShouldEqual, 7)
+				position := source.PositionAt(Span{Start: 6, End: 7})
+				So(position, ShouldResemble, Position{Line: 1, Column: 7})
 			})
 
 			Convey("Should return correct location at end", func() {
-				line, col := source.LocationAt(Span{Start: 10, End: 11})
-				So(line, ShouldEqual, 1)
-				So(col, ShouldEqual, 11)
+				position := source.PositionAt(Span{Start: 10, End: 11})
+				So(position, ShouldResemble, Position{Line: 1, Column: 11})
 			})
 		})
 
@@ -114,33 +134,28 @@ func TestSourceLocationAt(t *testing.T) {
 			source := New("test.fql", "line1\nline2\nline3")
 
 			Convey("Should return correct location on first line", func() {
-				line, col := source.LocationAt(Span{Start: 2, End: 3})
-				So(line, ShouldEqual, 1)
-				So(col, ShouldEqual, 3)
+				position := source.PositionAt(Span{Start: 2, End: 3})
+				So(position, ShouldResemble, Position{Line: 1, Column: 3})
 			})
 
 			Convey("Should return correct location on second line", func() {
-				line, col := source.LocationAt(Span{Start: 8, End: 9}) // 'n' in "line2"
-				So(line, ShouldEqual, 2)
-				So(col, ShouldEqual, 3)
+				position := source.PositionAt(Span{Start: 8, End: 9}) // 'n' in "line2"
+				So(position, ShouldResemble, Position{Line: 2, Column: 3})
 			})
 
 			Convey("Should return correct location on third line", func() {
-				line, col := source.LocationAt(Span{Start: 14, End: 15}) // 'n' in "line3"
-				So(line, ShouldEqual, 3)
-				So(col, ShouldEqual, 3)
+				position := source.PositionAt(Span{Start: 14, End: 15}) // 'n' in "line3"
+				So(position, ShouldResemble, Position{Line: 3, Column: 3})
 			})
 
 			Convey("Should handle location at newline", func() {
-				line, col := source.LocationAt(Span{Start: 5, End: 6}) // First \n
-				So(line, ShouldEqual, 1)
-				So(col, ShouldEqual, 6)
+				position := source.PositionAt(Span{Start: 5, End: 6}) // First \n
+				So(position, ShouldResemble, Position{Line: 1, Column: 6})
 			})
 
 			Convey("Should handle location at start of line after newline", func() {
-				line, col := source.LocationAt(Span{Start: 6, End: 7}) // Start of "line2"
-				So(line, ShouldEqual, 2)
-				So(col, ShouldEqual, 1)
+				position := source.PositionAt(Span{Start: 6, End: 7}) // Start of "line2"
+				So(position, ShouldResemble, Position{Line: 2, Column: 1})
 			})
 		})
 
@@ -148,30 +163,46 @@ func TestSourceLocationAt(t *testing.T) {
 			source := New("test.fql", "hello\nworld")
 
 			Convey("Should handle negative start", func() {
-				line, col := source.LocationAt(Span{Start: -1, End: 0})
-				So(line, ShouldEqual, 0)
-				So(col, ShouldEqual, 0)
+				position := source.PositionAt(Span{Start: -1, End: 0})
+				So(position, ShouldResemble, Position{})
 			})
 
 			Convey("Should handle end beyond content", func() {
-				line, col := source.LocationAt(Span{Start: 0, End: 100})
-				So(line, ShouldEqual, 0)
-				So(col, ShouldEqual, 0)
+				position := source.PositionAt(Span{Start: 0, End: 100})
+				So(position, ShouldResemble, Position{})
 			})
 
 			Convey("Should handle empty source", func() {
 				emptySource := New("empty.fql", "")
-				line, col := emptySource.LocationAt(Span{Start: 0, End: 1})
-				So(line, ShouldEqual, 0)
-				So(col, ShouldEqual, 0)
+				position := emptySource.PositionAt(Span{Start: 0, End: 1})
+				So(position, ShouldResemble, Position{})
 			})
+		})
+	})
+}
 
-			Convey("Should handle nil source", func() {
-				var nilSource *Source
-				line, col := nilSource.LocationAt(Span{Start: 0, End: 1})
-				So(line, ShouldEqual, 0)
-				So(col, ShouldEqual, 0)
-			})
+func TestSourceLocationAndRangeAt(t *testing.T) {
+	Convey("Source structured locations", t, func() {
+		source := New("test.fql", "hello\nworld")
+		span := Span{Start: 6, End: 11}
+
+		So(source.LocationAt(span), ShouldResemble, Location{
+			File:     "test.fql",
+			Position: Position{Line: 2, Column: 1},
+		})
+		So(source.RangeAt(span), ShouldResemble, Range{
+			Location: Location{
+				File:     "test.fql",
+				Position: Position{Line: 2, Column: 1},
+			},
+			Span: span,
+		})
+
+		invalid := Span{Start: -1, End: 0}
+		So(source.LocationAt(invalid), ShouldResemble, Location{File: "test.fql"})
+		So(source.RangeAt(invalid), ShouldResemble, Range{
+			Location: Location{File: "test.fql"},
+			Span:     invalid,
 		})
 	})
 }
@@ -239,15 +270,36 @@ func TestSourceSnippet(t *testing.T) {
 
 			So(snippets, ShouldBeNil)
 		})
+	})
+}
 
-		Convey("Nil source", func() {
-			var source *Source
-			span := Span{Start: 0, End: 1}
+func TestSourceJSONRoundTrip(t *testing.T) {
+	Convey("Source JSON round-trip", t, func() {
+		original := New("roundtrip.fql", "first\nsecond")
 
-			snippets := source.Snippet(span)
+		encoded, err := original.MarshalJSON()
+		So(err, ShouldBeNil)
+		So(string(encoded), ShouldEqual, `{"name":"roundtrip.fql","text":"first\nsecond"}`)
 
-			So(snippets, ShouldBeNil)
-		})
+		var decoded Source
+
+		err = decoded.UnmarshalJSON(encoded)
+		So(err, ShouldBeNil)
+		So(decoded.Name(), ShouldEqual, original.Name())
+		So(decoded.Content(), ShouldEqual, original.Content())
+		So(decoded.Length(), ShouldEqual, original.Length())
+		So(decoded.ID(), ShouldResemble, original.ID())
+
+		position := decoded.PositionAt(Span{Start: 6, End: 7})
+		So(position, ShouldResemble, Position{Line: 2, Column: 1})
+		So(decoded.Snippet(Span{Start: 6, End: 7}), ShouldHaveLength, 2)
+	})
+
+	Convey("UnmarshalJSON rejects a nil receiver", t, func() {
+		var source *Source
+
+		err := source.UnmarshalJSON([]byte(`{"name":"test.fql","text":"RETURN 1"}`))
+		So(err, ShouldNotBeNil)
 	})
 }
 

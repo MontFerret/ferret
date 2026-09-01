@@ -21,20 +21,20 @@ type (
 	// persist for the whole compilation. The final bytecode.Program reads its
 	// metadata almost entirely from here.
 	ProgramContext struct {
-		Emitter             *core.Emitter
-		UseAliases          map[string]string
+		aggregatePlanByHash map[uint64][]int
+		Semantics           *SemanticRecorder
 		CatchTable          *core.CatchStack
 		UDFs                *core.UDFTable
 		HostParams          *core.HostParamTable
 		HostFunctions       *core.HostFunctionTable
 		Constants           *core.ConstantPool
 		ForwardBindings     *ForwardBindingIndex
-		aggregatePlanByHash map[uint64][]int
-		Source              *source.Source
+		UseAliases          map[string]string
 		Errors              *diagnostics.ErrorHandler
-		Semantics           *SemanticRecorder
-		DebugPoints         []bytecode.DebugPoint
+		Emitter             *core.Emitter
 		aggregatePlans      []*bytecode.AggregatePlan
+		DebugPoints         []bytecode.DebugPoint
+		Source              source.Source
 		OptimizationLevel   optimization.Level
 		DebugInfo           bool
 		DisableMatchFolding bool
@@ -60,7 +60,7 @@ type (
 		Types      *core.TypeTracker
 		Loops      *core.LoopTable
 		UDFScope   *core.UDFScope
-		FunctionID int
+		FunctionID bytecode.FunctionID
 	}
 
 	// CompilationSession is the thin coordinator passed to all compilers.
@@ -79,7 +79,7 @@ func NewFunctionContext(constants *core.ConstantPool) *FunctionContext {
 	fc := &FunctionContext{
 		Registers:  core.NewRegisterAllocator(),
 		Types:      core.NewTypeTracker(),
-		FunctionID: -1,
+		FunctionID: bytecode.NoFunction,
 	}
 	fc.Symbols = core.NewSymbolTable(fc.Registers, constants)
 	fc.Loops = core.NewLoopTable(fc.Registers)
@@ -88,14 +88,14 @@ func NewFunctionContext(constants *core.ConstantPool) *FunctionContext {
 }
 
 // NewCompilationSession initializes a new CompilationSession with default values.
-func NewCompilationSession(src *source.Source, errors *diagnostics.ErrorHandler, level optimization.Level) *CompilationSession {
+func NewCompilationSession(src source.Source, errors *diagnostics.ErrorHandler, level optimization.Level) *CompilationSession {
 	return newCompilationSession(src, errors, level, nil)
 }
 
 // NewSemanticCompilationSession initializes a compilation session that records
 // source semantics while lowering.
 func NewSemanticCompilationSession(
-	src *source.Source,
+	src source.Source,
 	errors *diagnostics.ErrorHandler,
 	level optimization.Level,
 	recorder *SemanticRecorder,
@@ -104,7 +104,7 @@ func NewSemanticCompilationSession(
 }
 
 func newCompilationSession(
-	src *source.Source,
+	src source.Source,
 	errors *diagnostics.ErrorHandler,
 	level optimization.Level,
 	recorder *SemanticRecorder,

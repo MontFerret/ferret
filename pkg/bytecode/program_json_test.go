@@ -7,7 +7,67 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
+
+func TestProgramJSONPreservesSourcePresence(t *testing.T) {
+	tests := []struct {
+		name        string
+		src         source.Source
+		wantPresent bool
+	}{
+		{name: "zero source"},
+		{name: "populated source", src: source.New("query.fql", "RETURN 1"), wantPresent: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			program := &Program{Source: tc.src}
+
+			encoded, err := json.Marshal(program)
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
+
+			var payload map[string]json.RawMessage
+			if err := json.Unmarshal(encoded, &payload); err != nil {
+				t.Fatalf("decode payload: %v", err)
+			}
+
+			if _, present := payload["source"]; present != tc.wantPresent {
+				t.Fatalf("source presence = %t, want %t; payload: %s", present, tc.wantPresent, encoded)
+			}
+
+			decoded := Program{Source: source.New("stale.fql", "RETURN 0")}
+			if err := json.Unmarshal(encoded, &decoded); err != nil {
+				t.Fatalf("unmarshal: %v", err)
+			}
+
+			if got, want := decoded.Source.ID(), tc.src.ID(); got != want {
+				t.Fatalf("source ID = %v, want %v", got, want)
+			}
+
+			if got, want := decoded.Source.Name(), tc.src.Name(); got != want {
+				t.Fatalf("source name = %q, want %q", got, want)
+			}
+
+			if got, want := decoded.Source.Content(), tc.src.Content(); got != want {
+				t.Fatalf("source content = %q, want %q", got, want)
+			}
+		})
+	}
+
+	t.Run("null source", func(t *testing.T) {
+		decoded := Program{Source: source.New("stale.fql", "RETURN 0")}
+		if err := json.Unmarshal([]byte(`{"source":null}`), &decoded); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+
+		if got, want := decoded.Source.ID(), (source.ID{}); got != want {
+			t.Fatalf("source ID = %v, want %v", got, want)
+		}
+	})
+}
 
 func TestProgramJSONRoundTripPreservesInstructionMetadata(t *testing.T) {
 	prog := &Program{

@@ -227,9 +227,9 @@ func TestSyntaxErrorsWaitforEmptyGroupsUseTheirOwnSpans(t *testing.T) {
 			t.Fatalf("diagnostic %q points at %q", diag.Message, got)
 		}
 
-		line, _ := diag.Source.LocationAt(span)
-		if line != wantLine {
-			t.Fatalf("diagnostic %q points at line %d, want %d", diag.Message, line, wantLine)
+		position := diag.Source.PositionAt(span)
+		if position.Line != wantLine {
+			t.Fatalf("diagnostic %q points at line %d, want %d", diag.Message, position.Line, wantLine)
 		}
 
 		found[diag.Message] = true

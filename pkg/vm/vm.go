@@ -509,7 +509,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			}
 
 			call := &hostCallDescriptors[callSlot]
-			if call.ID < 0 || call.ID >= len(hostFunctions) {
+			if !call.ID.InRange(len(hostFunctions)) {
 				invariantErr := diagnostics.NewInvariantError(
 					"invalid host binding id",
 					runtime.Errorf(runtime.ErrUnexpected, "invalid host binding id %d at pc %d", call.ID, pc),
@@ -526,7 +526,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			callID := inst.InlineSlot
 			call := &udfCallDescriptors[callID]
 
-			if call.ID < 0 || call.ID >= len(udfs) {
+			if !call.ID.InRange(len(udfs)) {
 				invariantErr := diagnostics.NewInvariantError(
 					"invalid udf call slot",
 					runtime.Errorf(runtime.ErrUnexpected, "invalid udf call slot %d at pc %d", callID, pc),
@@ -548,7 +548,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			callID := inst.InlineSlot
 			call := &udfTailCallDescriptors[callID]
 
-			if call.ID < 0 || call.ID >= len(udfs) {
+			if !call.ID.InRange(len(udfs)) {
 				invariantErr := diagnostics.NewInvariantError(
 					"invalid udf call slot",
 					runtime.Errorf(runtime.ErrUnexpected, "invalid udf call slot %d at pc %d", callID, pc),

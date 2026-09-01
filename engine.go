@@ -9,7 +9,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
-	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -107,7 +106,7 @@ func New(setters ...Option) (*Engine, error) {
 }
 
 // Compile compiles source into a reusable execution plan.
-func (e *Engine) Compile(ctx context.Context, src *source.Source) (*Plan, error) {
+func (e *Engine) Compile(ctx context.Context, src Source) (*Plan, error) {
 	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
 		return nil, fmt.Errorf("before compile hooks: %w", err)
 	}
@@ -127,7 +126,7 @@ func (e *Engine) Compile(ctx context.Context, src *source.Source) (*Plan, error)
 
 // CompileDebug compiles source into a reusable plan with source-level debugger
 // metadata. Debug compilation uses effective O0 optimization.
-func (e *Engine) CompileDebug(ctx context.Context, src *source.Source) (*Plan, error) {
+func (e *Engine) CompileDebug(ctx context.Context, src Source) (*Plan, error) {
 	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
 		return nil, fmt.Errorf("before compile hooks: %w", err)
 	}
@@ -157,7 +156,7 @@ func (e *Engine) Load(data []byte) (*Plan, error) {
 // Run compiles source, executes it in a fresh session, and returns encoded output and an error.
 // Similar to Session.Run, it may return a non-nil *Output together with a non-nil error
 // (for example, if execution produced output but a deferred cleanup step failed).
-func (e *Engine) Run(ctx context.Context, src *source.Source, opts ...SessionOption) (*Output, error) {
+func (e *Engine) Run(ctx context.Context, src Source, opts ...SessionOption) (*Output, error) {
 	plan, err := e.Compile(ctx, src)
 
 	if err != nil {

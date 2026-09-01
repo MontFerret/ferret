@@ -5,7 +5,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func matchErrorPolicyErrors(src *source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchErrorPolicyErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if err == nil || offending == nil {
 		return false
 	}

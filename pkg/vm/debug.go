@@ -39,7 +39,7 @@ type (
 	// DebugFrame describes one retained VM frame.
 	DebugFrame struct {
 		Name       string
-		FunctionID int
+		FunctionID bytecode.FunctionID
 		PC         int
 	}
 
@@ -410,8 +410,8 @@ func (d *debugExecution) errorPoint() *bytecode.DebugPoint {
 	)
 }
 
-func (d *debugExecution) functionName(functionID int) string {
-	if functionID < 0 || functionID >= len(d.vm.program.Functions.UserDefined) {
+func (d *debugExecution) functionName(functionID bytecode.FunctionID) string {
+	if !functionID.InRange(len(d.vm.program.Functions.UserDefined)) {
 		return "<main>"
 	}
 

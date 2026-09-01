@@ -13,7 +13,7 @@ import (
 
 func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T) {
 	src := source.New("debug.fql", "LET x = 1 RETURN x")
-	point := bytecode.DebugPoint{ID: 9, PC: 3, Span: source.Span{Start: 0, End: 3}, FunctionID: -1}
+	point := bytecode.DebugPoint{ID: 9, PC: 3, Span: source.Span{Start: 0, End: 3}, FunctionID: bytecode.NoFunction}
 	execution := &fakeExecution{
 		startEvent:  &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
 		resumeEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopStep, Point: &point},
@@ -38,7 +38,7 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !breakpoint.Bound || breakpoint.PointID != point.ID || breakpoint.FunctionID != point.FunctionID || breakpoint.RequestedColumn != 0 {
+	if !breakpoint.Bound || breakpoint.PointID != point.ID || breakpoint.FunctionID != point.FunctionID || breakpoint.RequestedLocation.Column != 0 {
 		t.Fatalf("expected bound breakpoint: %#v", breakpoint)
 	}
 	if got := session.Breakpoints(); len(got) != 1 || got[0].PointID != point.ID || got[0].FunctionID != point.FunctionID {
@@ -84,7 +84,7 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 func TestSessionCloseReturnsAndCachesExecutionCloseError(t *testing.T) {
 	closeErr := errors.New("execution close failed")
 	src := source.New("close.fql", "RETURN 1")
-	point := bytecode.DebugPoint{PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	point := bytecode.DebugPoint{PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: bytecode.NoFunction}
 	execution := &fakeExecution{
 		closeErr: closeErr,
 		status:   vm.DebugExecutionNew,
@@ -112,7 +112,7 @@ func TestSessionBreakpointBindingUsesSourceOrderAndStableTieBreaks(t *testing.T)
 	src := source.New("binding.fql", "RETURN 1\nRETURN 2")
 	points := []bytecode.DebugPoint{
 		{ID: 8, PC: 2, Span: source.Span{Start: 9, End: 17}, FunctionID: 1},
-		{ID: 4, PC: 5, Span: source.Span{Start: 0, End: 8}, FunctionID: -1},
+		{ID: 4, PC: 5, Span: source.Span{Start: 0, End: 8}, FunctionID: bytecode.NoFunction},
 		{ID: 3, PC: 7, Span: source.Span{Start: 0, End: 8}, FunctionID: 0},
 	}
 	session, err := NewSession(Config{
@@ -131,7 +131,7 @@ func TestSessionBreakpointBindingUsesSourceOrderAndStableTieBreaks(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !breakpoint.Bound || breakpoint.PointID != 4 || breakpoint.FunctionID != -1 || breakpoint.Line != 1 {
+	if !breakpoint.Bound || breakpoint.PointID != 4 || breakpoint.FunctionID != bytecode.NoFunction || breakpoint.Location.Line != 1 {
 		t.Fatalf("unexpected source-ordered breakpoint: %#v", breakpoint)
 	}
 
@@ -146,7 +146,7 @@ func TestSessionBreakpointBindingUsesSourceOrderAndStableTieBreaks(t *testing.T)
 
 func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 	src := source.New("debug.fql", "RETURN 1")
-	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: bytecode.NoFunction}
 	execution := &fakeExecution{
 		startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
 		locals: []vm.DebugLocal{{
@@ -213,7 +213,7 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 
 func TestSessionVariablesStaySummarizedWhenCollectionExceedsBounds(t *testing.T) {
 	src := source.New("debug.fql", "RETURN 1")
-	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: bytecode.NoFunction}
 	execution := &fakeExecution{
 		startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
 		locals: []vm.DebugLocal{{
@@ -254,7 +254,7 @@ func TestSessionVariablesStaySummarizedWhenCollectionExceedsBounds(t *testing.T)
 
 func TestSessionVariablesInvalidateReferencesAfterResume(t *testing.T) {
 	src := source.New("debug.fql", "RETURN 1")
-	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: bytecode.NoFunction}
 	execution := &fakeExecution{
 		startEvent:  &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
 		resumeEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopStep, Point: &point},
@@ -300,7 +300,7 @@ func TestSessionVariablesInvalidateReferencesAfterResume(t *testing.T) {
 
 func TestSessionVariablesInvalidateReferencesAtStart(t *testing.T) {
 	src := source.New("debug.fql", "RETURN 1")
-	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: bytecode.NoFunction}
 	execution := &fakeExecution{
 		startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
 		locals: []vm.DebugLocal{{
@@ -340,7 +340,7 @@ func TestSessionVariablesInvalidateReferencesAtStart(t *testing.T) {
 
 func TestSessionVariablesRejectUnknownCollectionKind(t *testing.T) {
 	src := source.New("debug.fql", "RETURN 1")
-	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: -1}
+	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: bytecode.NoFunction}
 	value := runtime.NewArrayWith(runtime.NewInt(1))
 	execution := &fakeExecution{
 		startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
@@ -384,7 +384,7 @@ func TestSessionVariablesRejectUnknownCollectionKind(t *testing.T) {
 
 func BenchmarkSessionContinueThroughExecutionInterface(b *testing.B) {
 	src := source.New("debug.fql", "RETURN 1")
-	point := bytecode.DebugPoint{ID: 7, PC: 0, Span: source.Span{Start: 0, End: 6}, FunctionID: -1}
+	point := bytecode.DebugPoint{ID: 7, PC: 0, Span: source.Span{Start: 0, End: 6}, FunctionID: bytecode.NoFunction}
 	execution := &fakeExecution{
 		startEvent:  &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
 		resumeEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopStep, Point: &point},

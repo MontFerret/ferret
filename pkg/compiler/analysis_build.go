@@ -9,12 +9,12 @@ import (
 )
 
 func buildAnalysis(
-	src *source.Source,
+	src source.Source,
 	snapshot internal.SemanticSnapshot,
 	errors *parserd.ErrorHandler,
 	syntaxTokens []SyntaxToken,
 ) *Analysis {
-	data := analysisData{sourceLength: sourceLength(src)}
+	data := analysisData{sourceLength: src.Length()}
 	data.syntaxTokens = append([]SyntaxToken(nil), syntaxTokens...)
 	data.symbols = make([]Symbol, len(snapshot.Symbols))
 	data.symbolMetadata = make([]analysisSymbolMetadata, len(snapshot.Symbols))
@@ -76,7 +76,7 @@ func buildAnalysis(
 	return newAnalysis(data)
 }
 
-func diagnosticsFromHandler(src *source.Source, handler *parserd.ErrorHandler) []*diagnostics.Diagnostic {
+func diagnosticsFromHandler(src source.Source, handler *parserd.ErrorHandler) []*diagnostics.Diagnostic {
 	if handler == nil || handler.Errors() == nil {
 		return nil
 	}
@@ -96,14 +96,6 @@ func diagnosticsFromHandler(src *source.Source, handler *parserd.ErrorHandler) [
 	}
 
 	return out
-}
-
-func sourceLength(src *source.Source) int {
-	if src == nil {
-		return 0
-	}
-
-	return len(src.Content())
 }
 
 func publicSymbolKind(kind internal.SemanticSymbolKind) SymbolKind {
