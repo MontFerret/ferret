@@ -29,172 +29,172 @@ func withBuilder(add func(b *runtime.FunctionsBuilder)) vm.EnvironmentOption {
 	return vm.WithFunctionsBuilder(builder)
 }
 
-func BenchmarkFunctionCall_O0(b *testing.B) {
-	RunBenchmarkO0(b, funcCallQuery, vm.WithFunction("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func BenchmarkFunctionCall_None(b *testing.B) {
+	RunBenchmarkNone(b, funcCallQuery, vm.WithFunction("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.True, nil
 	}))
 }
 
-func BenchmarkFunctionCall_O1(b *testing.B) {
-	RunBenchmarkO1(b, funcCallQuery, vm.WithFunction("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func BenchmarkFunctionCall_Full(b *testing.B) {
+	RunBenchmarkFull(b, funcCallQuery, vm.WithFunction("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.True, nil
 	}))
 }
 
-func BenchmarkFunctionCall0_O0(b *testing.B) {
-	RunBenchmarkO0(b, func0CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall0_None(b *testing.B) {
+	RunBenchmarkNone(b, func0CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.A0().Add("TEST", func(ctx context.Context) (runtime.Value, error) {
 			return runtime.String("test0"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall0_O1(b *testing.B) {
-	RunBenchmarkO1(b, func0CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall0_Full(b *testing.B) {
+	RunBenchmarkFull(b, func0CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.A0().Add("TEST", func(ctx context.Context) (runtime.Value, error) {
 			return runtime.String("test0"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall0Fallback_O0(b *testing.B) {
-	RunBenchmarkO0(b, func0CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall0Fallback_None(b *testing.B) {
+	RunBenchmarkNone(b, func0CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.Var().Add("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall0Fallback_O1(b *testing.B) {
-	RunBenchmarkO1(b, func0CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall0Fallback_Full(b *testing.B) {
+	RunBenchmarkFull(b, func0CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.Var().Add("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall1_O0(b *testing.B) {
-	RunBenchmarkO0(b, func1CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall1_None(b *testing.B) {
+	RunBenchmarkNone(b, func1CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.A1().Add("TEST", func(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall1_O1(b *testing.B) {
-	RunBenchmarkO1(b, func1CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall1_Full(b *testing.B) {
+	RunBenchmarkFull(b, func1CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.A1().Add("TEST", func(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall1Fallback_O0(b *testing.B) {
-	RunBenchmarkO0(b, func1CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall1Fallback_None(b *testing.B) {
+	RunBenchmarkNone(b, func1CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.Var().Add("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall1Fallback_O1(b *testing.B) {
-	RunBenchmarkO1(b, func1CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall1Fallback_Full(b *testing.B) {
+	RunBenchmarkFull(b, func1CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.Var().Add("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall2_O0(b *testing.B) {
-	RunBenchmarkO0(b, func2CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall2_None(b *testing.B) {
+	RunBenchmarkNone(b, func2CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.A2().Add("TEST", func(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall2_O1(b *testing.B) {
-	RunBenchmarkO1(b, func2CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall2_Full(b *testing.B) {
+	RunBenchmarkFull(b, func2CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.A2().Add("TEST", func(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall2Fallback_O0(b *testing.B) {
-	RunBenchmarkO0(b, func2CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall2Fallback_None(b *testing.B) {
+	RunBenchmarkNone(b, func2CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.Var().Add("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall2Fallback_O1(b *testing.B) {
-	RunBenchmarkO1(b, func2CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall2Fallback_Full(b *testing.B) {
+	RunBenchmarkFull(b, func2CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.Var().Add("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall3_O0(b *testing.B) {
-	RunBenchmarkO0(b, func3CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall3_None(b *testing.B) {
+	RunBenchmarkNone(b, func3CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.A3().Add("TEST", func(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall3_O1(b *testing.B) {
-	RunBenchmarkO1(b, func3CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall3_Full(b *testing.B) {
+	RunBenchmarkFull(b, func3CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.A3().Add("TEST", func(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall3Fallback_O0(b *testing.B) {
-	RunBenchmarkO0(b, func3CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall3Fallback_None(b *testing.B) {
+	RunBenchmarkNone(b, func3CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.Var().Add("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall3Fallback_O1(b *testing.B) {
-	RunBenchmarkO1(b, func3CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall3Fallback_Full(b *testing.B) {
+	RunBenchmarkFull(b, func3CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.Var().Add("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall4_O0(b *testing.B) {
-	RunBenchmarkO0(b, func4CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall4_None(b *testing.B) {
+	RunBenchmarkNone(b, func4CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.A4().Add("TEST", func(ctx context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall4_O1(b *testing.B) {
-	RunBenchmarkO1(b, func4CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall4_Full(b *testing.B) {
+	RunBenchmarkFull(b, func4CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.A4().Add("TEST", func(ctx context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall4Fallback_O0(b *testing.B) {
-	RunBenchmarkO0(b, func4CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall4Fallback_None(b *testing.B) {
+	RunBenchmarkNone(b, func4CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.Var().Add("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})
 	}))
 }
 
-func BenchmarkFunctionCall4Fallback_O1(b *testing.B) {
-	RunBenchmarkO1(b, func4CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
+func BenchmarkFunctionCall4Fallback_Full(b *testing.B) {
+	RunBenchmarkFull(b, func4CallQuery, withBuilder(func(b *runtime.FunctionsBuilder) {
 		b.Var().Add("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		})

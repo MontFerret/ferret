@@ -18,18 +18,18 @@ RETURN QUERY ".items" IN @doc USING css
 	WITH { value: 1 }
 	OPTIONS { timeout: 5000 }`
 
-func BenchmarkQueryableModifiers_O0(b *testing.B) {
-	RunBenchmarkO0(b, queryableModifiersQuery, vm.WithParam("doc", newBenchmarkQueryable()))
+func BenchmarkQueryableModifiers_None(b *testing.B) {
+	RunBenchmarkNone(b, queryableModifiersQuery, vm.WithParam("doc", newBenchmarkQueryable()))
 }
 
-func BenchmarkQueryableModifiers_O1(b *testing.B) {
-	RunBenchmarkO1(b, queryableModifiersQuery, vm.WithParam("doc", newBenchmarkQueryable()))
+func BenchmarkQueryableModifiers_Full(b *testing.B) {
+	RunBenchmarkFull(b, queryableModifiersQuery, vm.WithParam("doc", newBenchmarkQueryable()))
 }
 
-func BenchmarkQueryableConfigured_O0(b *testing.B) {
-	RunBenchmarkO0(b, queryableConfiguredQuery, vm.WithParam("doc", newBenchmarkQueryable()))
+func BenchmarkQueryableConfigured_None(b *testing.B) {
+	RunBenchmarkNone(b, queryableConfiguredQuery, vm.WithParam("doc", newBenchmarkQueryable()))
 }
 
-func BenchmarkQueryableConfigured_O1(b *testing.B) {
-	RunBenchmarkO1(b, queryableConfiguredQuery, vm.WithParam("doc", newBenchmarkQueryable()))
+func BenchmarkQueryableConfigured_Full(b *testing.B) {
+	RunBenchmarkFull(b, queryableConfiguredQuery, vm.WithParam("doc", newBenchmarkQueryable()))
 }

@@ -51,69 +51,69 @@ RETURN WAITFOR EVENT ALL {
 	"second" IN second
 }`
 
-func BenchmarkWaitForValuePresent_O0(b *testing.B) {
-	RunBenchmarkO0(b, waitForValuePresentQuery, WithParam("candidate", []any{1}))
+func BenchmarkWaitForValuePresent_None(b *testing.B) {
+	RunBenchmarkNone(b, waitForValuePresentQuery, WithParam("candidate", []any{1}))
 }
 
-func BenchmarkWaitForValuePresent_O1(b *testing.B) {
-	RunBenchmarkO1(b, waitForValuePresentQuery, WithParam("candidate", []any{1}))
+func BenchmarkWaitForValuePresent_Full(b *testing.B) {
+	RunBenchmarkFull(b, waitForValuePresentQuery, WithParam("candidate", []any{1}))
 }
 
-func BenchmarkWaitForEventPresent_O0(b *testing.B) {
-	RunBenchmarkO0(b, waitForEventPresentQuery, vm.WithParam("source", newBenchmarkWaitForObservable()))
+func BenchmarkWaitForEventPresent_None(b *testing.B) {
+	RunBenchmarkNone(b, waitForEventPresentQuery, vm.WithParam("source", newBenchmarkWaitForObservable()))
 }
 
-func BenchmarkWaitForEventPresent_O1(b *testing.B) {
-	RunBenchmarkO1(b, waitForEventPresentQuery, vm.WithParam("source", newBenchmarkWaitForObservable()))
+func BenchmarkWaitForEventPresent_Full(b *testing.B) {
+	RunBenchmarkFull(b, waitForEventPresentQuery, vm.WithParam("source", newBenchmarkWaitForObservable()))
 }
 
-func BenchmarkCompilerCompileWaitForEvent_O0(b *testing.B) {
+func BenchmarkCompilerCompileWaitForEvent_None(b *testing.B) {
 	benchmarkCompileQuery(b, waitForEventCompilerQuery, compiler.OptimizationNone)
 }
 
-func BenchmarkCompilerCompileWaitForEvent_O1(b *testing.B) {
+func BenchmarkCompilerCompileWaitForEvent_Full(b *testing.B) {
 	benchmarkCompileQuery(b, waitForEventCompilerQuery, compiler.OptimizationFull)
 }
 
-func BenchmarkWaitForValueAnyPresent_O0(b *testing.B) {
-	RunBenchmarkO0(b, waitForValueAnyPresentQuery, WithParam("first", []any{1}), WithParam("second", []any{2}))
+func BenchmarkWaitForValueAnyPresent_None(b *testing.B) {
+	RunBenchmarkNone(b, waitForValueAnyPresentQuery, WithParam("first", []any{1}), WithParam("second", []any{2}))
 }
 
-func BenchmarkWaitForValueAnyPresent_O1(b *testing.B) {
-	RunBenchmarkO1(b, waitForValueAnyPresentQuery, WithParam("first", []any{1}), WithParam("second", []any{2}))
+func BenchmarkWaitForValueAnyPresent_Full(b *testing.B) {
+	RunBenchmarkFull(b, waitForValueAnyPresentQuery, WithParam("first", []any{1}), WithParam("second", []any{2}))
 }
 
-func BenchmarkWaitForValueAllPresent_O0(b *testing.B) {
-	RunBenchmarkO0(b, waitForValueAllPresentQuery, WithParam("first", []any{1}), WithParam("second", []any{2}))
+func BenchmarkWaitForValueAllPresent_None(b *testing.B) {
+	RunBenchmarkNone(b, waitForValueAllPresentQuery, WithParam("first", []any{1}), WithParam("second", []any{2}))
 }
 
-func BenchmarkWaitForValueAllPresent_O1(b *testing.B) {
-	RunBenchmarkO1(b, waitForValueAllPresentQuery, WithParam("first", []any{1}), WithParam("second", []any{2}))
+func BenchmarkWaitForValueAllPresent_Full(b *testing.B) {
+	RunBenchmarkFull(b, waitForValueAllPresentQuery, WithParam("first", []any{1}), WithParam("second", []any{2}))
 }
 
-func BenchmarkWaitForEventAnyPresent_O0(b *testing.B) {
-	RunBenchmarkO0(b, waitForEventAnyPresentQuery,
+func BenchmarkWaitForEventAnyPresent_None(b *testing.B) {
+	RunBenchmarkNone(b, waitForEventAnyPresentQuery,
 		vm.WithParam("first", newBenchmarkWaitForObservable()),
 		vm.WithParam("second", newBenchmarkWaitForObservable()),
 	)
 }
 
-func BenchmarkWaitForEventAnyPresent_O1(b *testing.B) {
-	RunBenchmarkO1(b, waitForEventAnyPresentQuery,
+func BenchmarkWaitForEventAnyPresent_Full(b *testing.B) {
+	RunBenchmarkFull(b, waitForEventAnyPresentQuery,
 		vm.WithParam("first", newBenchmarkWaitForObservable()),
 		vm.WithParam("second", newBenchmarkWaitForObservable()),
 	)
 }
 
-func BenchmarkWaitForEventAllPresent_O0(b *testing.B) {
-	RunBenchmarkO0(b, waitForEventAllPresentQuery,
+func BenchmarkWaitForEventAllPresent_None(b *testing.B) {
+	RunBenchmarkNone(b, waitForEventAllPresentQuery,
 		vm.WithParam("first", newBenchmarkWaitForObservable()),
 		vm.WithParam("second", newBenchmarkWaitForObservable()),
 	)
 }
 
-func BenchmarkWaitForEventAllPresent_O1(b *testing.B) {
-	RunBenchmarkO1(b, waitForEventAllPresentQuery,
+func BenchmarkWaitForEventAllPresent_Full(b *testing.B) {
+	RunBenchmarkFull(b, waitForEventAllPresentQuery,
 		vm.WithParam("first", newBenchmarkWaitForObservable()),
 		vm.WithParam("second", newBenchmarkWaitForObservable()),
 	)

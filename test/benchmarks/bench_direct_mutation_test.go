@@ -114,106 +114,106 @@ RETURN 1
 `
 )
 
-func BenchmarkCompilerCompileDirectMutation_O0(b *testing.B) {
+func BenchmarkCompilerCompileDirectMutation_None(b *testing.B) {
 	benchmarkCompileQuery(b, compilerDirectMutationQuery, compiler.OptimizationNone)
 }
 
-func BenchmarkCompilerCompileDirectMutation_O1(b *testing.B) {
+func BenchmarkCompilerCompileDirectMutation_Full(b *testing.B) {
 	benchmarkCompileQuery(b, compilerDirectMutationQuery, compiler.OptimizationFull)
 }
 
-func BenchmarkDirectMutation_BindingNumeric_O0(b *testing.B) {
-	RunBenchmarkO0(b, directMutationBindingNumericQuery)
+func BenchmarkDirectMutation_BindingNumeric_None(b *testing.B) {
+	RunBenchmarkNone(b, directMutationBindingNumericQuery)
 }
 
-func BenchmarkDirectMutation_BindingNumeric_O1(b *testing.B) {
-	RunBenchmarkO1(b, directMutationBindingNumericQuery)
+func BenchmarkDirectMutation_BindingNumeric_Full(b *testing.B) {
+	RunBenchmarkFull(b, directMutationBindingNumericQuery)
 }
 
-func BenchmarkDirectMutation_ObjectProperty_O0(b *testing.B) {
-	RunBenchmarkO0(b, directMutationObjectPropertyQuery)
+func BenchmarkDirectMutation_ObjectProperty_None(b *testing.B) {
+	RunBenchmarkNone(b, directMutationObjectPropertyQuery)
 }
 
-func BenchmarkDirectMutation_ObjectProperty_O1(b *testing.B) {
-	RunBenchmarkO1(b, directMutationObjectPropertyQuery)
+func BenchmarkDirectMutation_ObjectProperty_Full(b *testing.B) {
+	RunBenchmarkFull(b, directMutationObjectPropertyQuery)
 }
 
-func BenchmarkDirectMutation_DynamicKey_O0(b *testing.B) {
-	RunBenchmarkO0(b, directMutationDynamicKeyQuery)
+func BenchmarkDirectMutation_DynamicKey_None(b *testing.B) {
+	RunBenchmarkNone(b, directMutationDynamicKeyQuery)
 }
 
-func BenchmarkDirectMutation_DynamicKey_O1(b *testing.B) {
-	RunBenchmarkO1(b, directMutationDynamicKeyQuery)
+func BenchmarkDirectMutation_DynamicKey_Full(b *testing.B) {
+	RunBenchmarkFull(b, directMutationDynamicKeyQuery)
 }
 
-func BenchmarkDirectMutation_ArrayIndex_O0(b *testing.B) {
-	RunBenchmarkO0(b, directMutationArrayIndexQuery)
+func BenchmarkDirectMutation_ArrayIndex_None(b *testing.B) {
+	RunBenchmarkNone(b, directMutationArrayIndexQuery)
 }
 
-func BenchmarkDirectMutation_ArrayIndex_O1(b *testing.B) {
-	RunBenchmarkO1(b, directMutationArrayIndexQuery)
+func BenchmarkDirectMutation_ArrayIndex_Full(b *testing.B) {
+	RunBenchmarkFull(b, directMutationArrayIndexQuery)
 }
 
-func BenchmarkDirectMutation_NestedAugmented_O0(b *testing.B) {
-	RunBenchmarkO0(b, directMutationNestedAugmentedQuery)
+func BenchmarkDirectMutation_NestedAugmented_None(b *testing.B) {
+	RunBenchmarkNone(b, directMutationNestedAugmentedQuery)
 }
 
-func BenchmarkDirectMutation_NestedAugmented_O1(b *testing.B) {
-	RunBenchmarkO1(b, directMutationNestedAugmentedQuery)
+func BenchmarkDirectMutation_NestedAugmented_Full(b *testing.B) {
+	RunBenchmarkFull(b, directMutationNestedAugmentedQuery)
 }
 
-func BenchmarkDirectMutation_SafeNoop_O0(b *testing.B) {
-	RunBenchmarkO0(b, directMutationSafeNoopQuery)
+func BenchmarkDirectMutation_SafeNoop_None(b *testing.B) {
+	RunBenchmarkNone(b, directMutationSafeNoopQuery)
 }
 
-func BenchmarkDirectMutation_SafeNoop_O1(b *testing.B) {
-	RunBenchmarkO1(b, directMutationSafeNoopQuery)
+func BenchmarkDirectMutation_SafeNoop_Full(b *testing.B) {
+	RunBenchmarkFull(b, directMutationSafeNoopQuery)
 }
 
-func BenchmarkDirectMutation_SafePresent_O0(b *testing.B) {
-	RunBenchmarkO0(b, directMutationSafePresentQuery)
+func BenchmarkDirectMutation_SafePresent_None(b *testing.B) {
+	RunBenchmarkNone(b, directMutationSafePresentQuery)
 }
 
-func BenchmarkDirectMutation_SafePresent_O1(b *testing.B) {
-	RunBenchmarkO1(b, directMutationSafePresentQuery)
+func BenchmarkDirectMutation_SafePresent_Full(b *testing.B) {
+	RunBenchmarkFull(b, directMutationSafePresentQuery)
 }
 
-func BenchmarkDirectMutation_UDFCapturedRoot_O0(b *testing.B) {
-	RunBenchmarkO0(b, directMutationUDFCapturedRootQuery)
+func BenchmarkDirectMutation_UDFCapturedRoot_None(b *testing.B) {
+	RunBenchmarkNone(b, directMutationUDFCapturedRootQuery)
 }
 
-func BenchmarkDirectMutation_UDFCapturedRoot_O1(b *testing.B) {
-	RunBenchmarkO1(b, directMutationUDFCapturedRootQuery)
+func BenchmarkDirectMutation_UDFCapturedRoot_Full(b *testing.B) {
+	RunBenchmarkFull(b, directMutationUDFCapturedRootQuery)
 }
 
-func BenchmarkDirectMutation_DeleteProperty_O0(b *testing.B) {
-	RunBenchmarkO0(b, directMutationDeletePropertyQuery)
+func BenchmarkDirectMutation_DeleteProperty_None(b *testing.B) {
+	RunBenchmarkNone(b, directMutationDeletePropertyQuery)
 }
 
-func BenchmarkDirectMutation_DeleteProperty_O1(b *testing.B) {
-	RunBenchmarkO1(b, directMutationDeletePropertyQuery)
+func BenchmarkDirectMutation_DeleteProperty_Full(b *testing.B) {
+	RunBenchmarkFull(b, directMutationDeletePropertyQuery)
 }
 
-func BenchmarkDirectMutation_DeleteDynamicKey_O0(b *testing.B) {
-	RunBenchmarkO0(b, directMutationDeleteDynamicKeyQuery)
+func BenchmarkDirectMutation_DeleteDynamicKey_None(b *testing.B) {
+	RunBenchmarkNone(b, directMutationDeleteDynamicKeyQuery)
 }
 
-func BenchmarkDirectMutation_DeleteDynamicKey_O1(b *testing.B) {
-	RunBenchmarkO1(b, directMutationDeleteDynamicKeyQuery)
+func BenchmarkDirectMutation_DeleteDynamicKey_Full(b *testing.B) {
+	RunBenchmarkFull(b, directMutationDeleteDynamicKeyQuery)
 }
 
-func BenchmarkDirectMutation_DeleteArrayIndex_O0(b *testing.B) {
-	RunBenchmarkO0(b, directMutationDeleteArrayIndexQuery)
+func BenchmarkDirectMutation_DeleteArrayIndex_None(b *testing.B) {
+	RunBenchmarkNone(b, directMutationDeleteArrayIndexQuery)
 }
 
-func BenchmarkDirectMutation_DeleteArrayIndex_O1(b *testing.B) {
-	RunBenchmarkO1(b, directMutationDeleteArrayIndexQuery)
+func BenchmarkDirectMutation_DeleteArrayIndex_Full(b *testing.B) {
+	RunBenchmarkFull(b, directMutationDeleteArrayIndexQuery)
 }
 
-func BenchmarkDirectMutation_DeleteSafeNoop_O0(b *testing.B) {
-	RunBenchmarkO0(b, directMutationDeleteSafeNoopQuery)
+func BenchmarkDirectMutation_DeleteSafeNoop_None(b *testing.B) {
+	RunBenchmarkNone(b, directMutationDeleteSafeNoopQuery)
 }
 
-func BenchmarkDirectMutation_DeleteSafeNoop_O1(b *testing.B) {
-	RunBenchmarkO1(b, directMutationDeleteSafeNoopQuery)
+func BenchmarkDirectMutation_DeleteSafeNoop_Full(b *testing.B) {
+	RunBenchmarkFull(b, directMutationDeleteSafeNoopQuery)
 }

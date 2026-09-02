@@ -54,27 +54,27 @@ FUNC third(value) => base + value
 RETURN first(1)
 `
 
-func BenchmarkCompilerCompileUdfLifecycle_O0(b *testing.B) {
+func BenchmarkCompilerCompileUdfLifecycle_None(b *testing.B) {
 	benchmarkCompileQuery(b, compilerUdfLifecycleQuery, compiler.OptimizationNone)
 }
 
-func BenchmarkCompilerCompileUdfLifecycle_O1(b *testing.B) {
+func BenchmarkCompilerCompileUdfLifecycle_Full(b *testing.B) {
 	benchmarkCompileQuery(b, compilerUdfLifecycleQuery, compiler.OptimizationFull)
 }
 
-func BenchmarkCompilerCompileUdfMemberStatements_O0(b *testing.B) {
+func BenchmarkCompilerCompileUdfMemberStatements_None(b *testing.B) {
 	benchmarkCompileQuery(b, compilerUdfMemberStatementsQuery, compiler.OptimizationNone)
 }
 
-func BenchmarkCompilerCompileUdfMemberStatements_O1(b *testing.B) {
+func BenchmarkCompilerCompileUdfMemberStatements_Full(b *testing.B) {
 	benchmarkCompileQuery(b, compilerUdfMemberStatementsQuery, compiler.OptimizationFull)
 }
 
-func BenchmarkCompilerCompileUdfTransitiveCapture_O0(b *testing.B) {
+func BenchmarkCompilerCompileUdfTransitiveCapture_None(b *testing.B) {
 	benchmarkCompileQuery(b, compilerUdfTransitiveCaptureQuery, compiler.OptimizationNone)
 }
 
-func BenchmarkCompilerCompileUdfTransitiveCapture_O1(b *testing.B) {
+func BenchmarkCompilerCompileUdfTransitiveCapture_Full(b *testing.B) {
 	benchmarkCompileQuery(b, compilerUdfTransitiveCaptureQuery, compiler.OptimizationFull)
 }
 

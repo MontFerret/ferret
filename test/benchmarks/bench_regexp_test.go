@@ -2,8 +2,8 @@ package benchmarks_test
 
 import "testing"
 
-func BenchmarkRegexp_Loop_O0(b *testing.B) {
-	RunBenchmarkO0(b, `
+func BenchmarkRegexp_Loop_None(b *testing.B) {
+	RunBenchmarkNone(b, `
 LET users = [
   {
   	name: "Alice",
@@ -27,8 +27,8 @@ RETURN FOR i IN users
 `)
 }
 
-func BenchmarkRegexp_Loop_O1(b *testing.B) {
-	RunBenchmarkO1(b, `
+func BenchmarkRegexp_Loop_Full(b *testing.B) {
+	RunBenchmarkFull(b, `
 LET users = [
   {
   	name: "Alice",

@@ -39,42 +39,42 @@ RETURN FOR i IN 1..200
 `
 )
 
-func BenchmarkCollectProjection_AllVars_O0(b *testing.B) {
-	RunBenchmarkO0(b, collectProjectionAllVars)
+func BenchmarkCollectProjection_AllVars_None(b *testing.B) {
+	RunBenchmarkNone(b, collectProjectionAllVars)
 }
 
-func BenchmarkCollectProjection_AllVars_O1(b *testing.B) {
-	RunBenchmarkO1(b, collectProjectionAllVars)
+func BenchmarkCollectProjection_AllVars_Full(b *testing.B) {
+	RunBenchmarkFull(b, collectProjectionAllVars)
 }
 
-func BenchmarkCollectProjection_SingleGroup_O0(b *testing.B) {
-	RunBenchmarkO0(b, collectProjectionSingleGroup)
+func BenchmarkCollectProjection_SingleGroup_None(b *testing.B) {
+	RunBenchmarkNone(b, collectProjectionSingleGroup)
 }
 
-func BenchmarkCollectProjection_SingleGroup_O1(b *testing.B) {
-	RunBenchmarkO1(b, collectProjectionSingleGroup)
+func BenchmarkCollectProjection_SingleGroup_Full(b *testing.B) {
+	RunBenchmarkFull(b, collectProjectionSingleGroup)
 }
 
-func BenchmarkCollectProjection_Keep_O0(b *testing.B) {
-	RunBenchmarkO0(b, collectProjectionKeep)
+func BenchmarkCollectProjection_Keep_None(b *testing.B) {
+	RunBenchmarkNone(b, collectProjectionKeep)
 }
 
-func BenchmarkCollectProjection_Keep_O1(b *testing.B) {
-	RunBenchmarkO1(b, collectProjectionKeep)
+func BenchmarkCollectProjection_Keep_Full(b *testing.B) {
+	RunBenchmarkFull(b, collectProjectionKeep)
 }
 
-func BenchmarkCollectProjection_Custom_O0(b *testing.B) {
-	RunBenchmarkO0(b, collectProjectionCustom)
+func BenchmarkCollectProjection_Custom_None(b *testing.B) {
+	RunBenchmarkNone(b, collectProjectionCustom)
 }
 
-func BenchmarkCollectProjection_Custom_O1(b *testing.B) {
-	RunBenchmarkO1(b, collectProjectionCustom)
+func BenchmarkCollectProjection_Custom_Full(b *testing.B) {
+	RunBenchmarkFull(b, collectProjectionCustom)
 }
 
-func BenchmarkCollectProjection_Count_O0(b *testing.B) {
-	RunBenchmarkO0(b, collectProjectionCount)
+func BenchmarkCollectProjection_Count_None(b *testing.B) {
+	RunBenchmarkNone(b, collectProjectionCount)
 }
 
-func BenchmarkCollectProjection_Count_O1(b *testing.B) {
-	RunBenchmarkO1(b, collectProjectionCount)
+func BenchmarkCollectProjection_Count_Full(b *testing.B) {
+	RunBenchmarkFull(b, collectProjectionCount)
 }

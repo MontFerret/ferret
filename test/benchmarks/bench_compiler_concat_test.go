@@ -9,11 +9,11 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func BenchmarkCompilerCompileConcatChain_O1(b *testing.B) {
+func BenchmarkCompilerCompileConcatChain_Full(b *testing.B) {
 	benchmarkCompileQuery(b, buildConcatCompileQuery(false), compiler.OptimizationFull)
 }
 
-func BenchmarkCompilerCompileStringAppend_O1(b *testing.B) {
+func BenchmarkCompilerCompileStringAppend_Full(b *testing.B) {
 	benchmarkCompileQuery(b, buildConcatCompileQuery(true), compiler.OptimizationFull)
 }
 

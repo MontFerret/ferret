@@ -15,18 +15,18 @@ RETURN FOR i IN 1..1000
 `
 )
 
-func BenchmarkParamLoop_Short_O0(b *testing.B) {
-	RunBenchmarkO0(b, paramLoopShortQuery, WithParam("test", "value"))
+func BenchmarkParamLoop_Short_None(b *testing.B) {
+	RunBenchmarkNone(b, paramLoopShortQuery, WithParam("test", "value"))
 }
 
-func BenchmarkParamLoop_Short_O1(b *testing.B) {
-	RunBenchmarkO1(b, paramLoopShortQuery, WithParam("test", "value"))
+func BenchmarkParamLoop_Short_Full(b *testing.B) {
+	RunBenchmarkFull(b, paramLoopShortQuery, WithParam("test", "value"))
 }
 
-func BenchmarkParamLoop_UDF_O0(b *testing.B) {
-	RunBenchmarkO0(b, paramLoopUDFQuery, WithParam("test", "value"))
+func BenchmarkParamLoop_UDF_None(b *testing.B) {
+	RunBenchmarkNone(b, paramLoopUDFQuery, WithParam("test", "value"))
 }
 
-func BenchmarkParamLoop_UDF_O1(b *testing.B) {
-	RunBenchmarkO1(b, paramLoopUDFQuery, WithParam("test", "value"))
+func BenchmarkParamLoop_UDF_Full(b *testing.B) {
+	RunBenchmarkFull(b, paramLoopUDFQuery, WithParam("test", "value"))
 }

@@ -43,18 +43,18 @@ RETURN run()
 `
 )
 
-func BenchmarkVarCapture_SingleCell_O0(b *testing.B) {
-	RunBenchmarkO0(b, varCaptureSingleCellQuery)
+func BenchmarkVarCapture_SingleCell_None(b *testing.B) {
+	RunBenchmarkNone(b, varCaptureSingleCellQuery)
 }
 
-func BenchmarkVarCapture_SingleCell_O1(b *testing.B) {
-	RunBenchmarkO1(b, varCaptureSingleCellQuery)
+func BenchmarkVarCapture_SingleCell_Full(b *testing.B) {
+	RunBenchmarkFull(b, varCaptureSingleCellQuery)
 }
 
-func BenchmarkVarCapture_MultiCell_O0(b *testing.B) {
-	RunBenchmarkO0(b, varCaptureMultiCellQuery)
+func BenchmarkVarCapture_MultiCell_None(b *testing.B) {
+	RunBenchmarkNone(b, varCaptureMultiCellQuery)
 }
 
-func BenchmarkVarCapture_MultiCell_O1(b *testing.B) {
-	RunBenchmarkO1(b, varCaptureMultiCellQuery)
+func BenchmarkVarCapture_MultiCell_Full(b *testing.B) {
+	RunBenchmarkFull(b, varCaptureMultiCellQuery)
 }

@@ -39,42 +39,42 @@ RETURN obj?.bar?.qaz?.abc
 	`
 )
 
-func BenchmarkOptionalMemberAccess_Short_O0(b *testing.B) {
-	RunBenchmarkO0(b, optionalMemberAccessShort)
+func BenchmarkOptionalMemberAccess_Short_None(b *testing.B) {
+	RunBenchmarkNone(b, optionalMemberAccessShort)
 }
 
-func BenchmarkOptionalMemberAccess_Short_O1(b *testing.B) {
-	RunBenchmarkO1(b, optionalMemberAccessShort)
+func BenchmarkOptionalMemberAccess_Short_Full(b *testing.B) {
+	RunBenchmarkFull(b, optionalMemberAccessShort)
 }
 
-func BenchmarkOptionalMemberAccess_Short2_O0(b *testing.B) {
-	RunBenchmarkO0(b, optionalMemberAccessShort2)
+func BenchmarkOptionalMemberAccess_Short2_None(b *testing.B) {
+	RunBenchmarkNone(b, optionalMemberAccessShort2)
 }
 
-func BenchmarkOptionalMemberAccess_Short2_O1(b *testing.B) {
-	RunBenchmarkO1(b, optionalMemberAccessShort2)
+func BenchmarkOptionalMemberAccess_Short2_Full(b *testing.B) {
+	RunBenchmarkFull(b, optionalMemberAccessShort2)
 }
 
-func BenchmarkOptionalMemberAccess_Long_O0(b *testing.B) {
-	RunBenchmarkO0(b, optionalMemberAccessLong)
+func BenchmarkOptionalMemberAccess_Long_None(b *testing.B) {
+	RunBenchmarkNone(b, optionalMemberAccessLong)
 }
 
-func BenchmarkOptionalMemberAccess_Long_O1(b *testing.B) {
-	RunBenchmarkO1(b, optionalMemberAccessLong)
+func BenchmarkOptionalMemberAccess_Long_Full(b *testing.B) {
+	RunBenchmarkFull(b, optionalMemberAccessLong)
 }
 
-func BenchmarkOptionalUnknownMemberAccess_Short_O0(b *testing.B) {
-	RunBenchmarkO0(b, optionalUnknownMemberAccessShort, vm.WithParam("obj", runtime.None))
+func BenchmarkOptionalUnknownMemberAccess_Short_None(b *testing.B) {
+	RunBenchmarkNone(b, optionalUnknownMemberAccessShort, vm.WithParam("obj", runtime.None))
 }
 
-func BenchmarkOptionalUnknownMemberAccess_Short_O1(b *testing.B) {
-	RunBenchmarkO1(b, optionalUnknownMemberAccessShort, vm.WithParam("obj", runtime.None))
+func BenchmarkOptionalUnknownMemberAccess_Short_Full(b *testing.B) {
+	RunBenchmarkFull(b, optionalUnknownMemberAccessShort, vm.WithParam("obj", runtime.None))
 }
 
-func BenchmarkOptionalUnknownMemberAccess_Long_O0(b *testing.B) {
-	RunBenchmarkO0(b, optionalUnknownMemberAccessLong, vm.WithParam("obj", runtime.None))
+func BenchmarkOptionalUnknownMemberAccess_Long_None(b *testing.B) {
+	RunBenchmarkNone(b, optionalUnknownMemberAccessLong, vm.WithParam("obj", runtime.None))
 }
 
-func BenchmarkOptionalUnknownMemberAccess_Long_O1(b *testing.B) {
-	RunBenchmarkO1(b, optionalUnknownMemberAccessLong, vm.WithParam("obj", runtime.None))
+func BenchmarkOptionalUnknownMemberAccess_Long_Full(b *testing.B) {
+	RunBenchmarkFull(b, optionalUnknownMemberAccessLong, vm.WithParam("obj", runtime.None))
 }

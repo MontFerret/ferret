@@ -78,66 +78,66 @@ var ignoredSubtreeBenchmarkValue = map[string]any{
 	},
 }
 
-func BenchmarkLetDestructuring_O0(b *testing.B) {
-	RunBenchmarkO0(b, letDestructuringQuery)
+func BenchmarkLetDestructuring_None(b *testing.B) {
+	RunBenchmarkNone(b, letDestructuringQuery)
 }
 
-func BenchmarkLetDestructuring_O1(b *testing.B) {
-	RunBenchmarkO1(b, letDestructuringQuery)
+func BenchmarkLetDestructuring_Full(b *testing.B) {
+	RunBenchmarkFull(b, letDestructuringQuery)
 }
 
-func BenchmarkLetManualExtraction_O0(b *testing.B) {
-	RunBenchmarkO0(b, letManualExtractionQuery)
+func BenchmarkLetManualExtraction_None(b *testing.B) {
+	RunBenchmarkNone(b, letManualExtractionQuery)
 }
 
-func BenchmarkLetManualExtraction_O1(b *testing.B) {
-	RunBenchmarkO1(b, letManualExtractionQuery)
+func BenchmarkLetManualExtraction_Full(b *testing.B) {
+	RunBenchmarkFull(b, letManualExtractionQuery)
 }
 
-func BenchmarkVarDestructuring_O0(b *testing.B) {
-	RunBenchmarkO0(b, varDestructuringQuery)
+func BenchmarkVarDestructuring_None(b *testing.B) {
+	RunBenchmarkNone(b, varDestructuringQuery)
 }
 
-func BenchmarkVarDestructuring_O1(b *testing.B) {
-	RunBenchmarkO1(b, varDestructuringQuery)
+func BenchmarkVarDestructuring_Full(b *testing.B) {
+	RunBenchmarkFull(b, varDestructuringQuery)
 }
 
-func BenchmarkVarManualExtraction_O0(b *testing.B) {
-	RunBenchmarkO0(b, varManualExtractionQuery)
+func BenchmarkVarManualExtraction_None(b *testing.B) {
+	RunBenchmarkNone(b, varManualExtractionQuery)
 }
 
-func BenchmarkVarManualExtraction_O1(b *testing.B) {
-	RunBenchmarkO1(b, varManualExtractionQuery)
+func BenchmarkVarManualExtraction_Full(b *testing.B) {
+	RunBenchmarkFull(b, varManualExtractionQuery)
 }
 
-func BenchmarkForDestructuring_O0(b *testing.B) {
-	RunBenchmarkO0(b, forDestructuringQuery)
+func BenchmarkForDestructuring_None(b *testing.B) {
+	RunBenchmarkNone(b, forDestructuringQuery)
 }
 
-func BenchmarkForDestructuring_O1(b *testing.B) {
-	RunBenchmarkO1(b, forDestructuringQuery)
+func BenchmarkForDestructuring_Full(b *testing.B) {
+	RunBenchmarkFull(b, forDestructuringQuery)
 }
 
-func BenchmarkForManualExtraction_O0(b *testing.B) {
-	RunBenchmarkO0(b, forManualExtractionQuery)
+func BenchmarkForManualExtraction_None(b *testing.B) {
+	RunBenchmarkNone(b, forManualExtractionQuery)
 }
 
-func BenchmarkForManualExtraction_O1(b *testing.B) {
-	RunBenchmarkO1(b, forManualExtractionQuery)
+func BenchmarkForManualExtraction_Full(b *testing.B) {
+	RunBenchmarkFull(b, forManualExtractionQuery)
 }
 
-func BenchmarkLetIgnoredSubtree_O0(b *testing.B) {
-	RunBenchmarkO0(b, letIgnoredSubtreeQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
+func BenchmarkLetIgnoredSubtree_None(b *testing.B) {
+	RunBenchmarkNone(b, letIgnoredSubtreeQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
 }
 
-func BenchmarkLetIgnoredSubtree_O1(b *testing.B) {
-	RunBenchmarkO1(b, letIgnoredSubtreeQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
+func BenchmarkLetIgnoredSubtree_Full(b *testing.B) {
+	RunBenchmarkFull(b, letIgnoredSubtreeQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
 }
 
-func BenchmarkLetDirectIgnore_O0(b *testing.B) {
-	RunBenchmarkO0(b, letDirectIgnoreQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
+func BenchmarkLetDirectIgnore_None(b *testing.B) {
+	RunBenchmarkNone(b, letDirectIgnoreQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
 }
 
-func BenchmarkLetDirectIgnore_O1(b *testing.B) {
-	RunBenchmarkO1(b, letDirectIgnoreQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
+func BenchmarkLetDirectIgnore_Full(b *testing.B) {
+	RunBenchmarkFull(b, letDirectIgnoreQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
 }

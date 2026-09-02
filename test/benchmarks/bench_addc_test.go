@@ -99,162 +99,162 @@ RETURN FOR i IN 1..1000
 `
 )
 
-func BenchmarkAddNumeric_O0(b *testing.B) {
-	RunBenchmarkO0(b, addConstNumericQuery)
+func BenchmarkAddNumeric_None(b *testing.B) {
+	RunBenchmarkNone(b, addConstNumericQuery)
 }
 
-func BenchmarkAddNumeric_O1(b *testing.B) {
-	RunBenchmarkO1(b, addConstNumericQuery)
+func BenchmarkAddNumeric_Full(b *testing.B) {
+	RunBenchmarkFull(b, addConstNumericQuery)
 }
 
-func BenchmarkAddConstNumericWithParam_O0(b *testing.B) {
-	RunBenchmarkO0(b, addConstNumericWithParamQuery, WithParam("base", 1))
+func BenchmarkAddConstNumericWithParam_None(b *testing.B) {
+	RunBenchmarkNone(b, addConstNumericWithParamQuery, WithParam("base", 1))
 }
 
-func BenchmarkAddConstNumericWithParam_O1(b *testing.B) {
-	RunBenchmarkO1(b, addConstNumericWithParamQuery, WithParam("base", 1))
+func BenchmarkAddConstNumericWithParam_Full(b *testing.B) {
+	RunBenchmarkFull(b, addConstNumericWithParamQuery, WithParam("base", 1))
 }
 
-func BenchmarkAddConstString_O0(b *testing.B) {
-	RunBenchmarkO0(b, addConstStringQuery)
+func BenchmarkAddConstString_None(b *testing.B) {
+	RunBenchmarkNone(b, addConstStringQuery)
 }
 
-func BenchmarkAddConstString_O1(b *testing.B) {
-	RunBenchmarkO1(b, addConstStringQuery)
+func BenchmarkAddConstString_Full(b *testing.B) {
+	RunBenchmarkFull(b, addConstStringQuery)
 }
 
-func BenchmarkAddConstStringWithParam_O0(b *testing.B) {
-	RunBenchmarkO0(b, addConstStringWithParamQuery, WithParam("foo", "bar"))
+func BenchmarkAddConstStringWithParam_None(b *testing.B) {
+	RunBenchmarkNone(b, addConstStringWithParamQuery, WithParam("foo", "bar"))
 }
 
-func BenchmarkAddConstStringWithParam_O1(b *testing.B) {
-	RunBenchmarkO1(b, addConstStringWithParamQuery, WithParam("foo", "bar"))
+func BenchmarkAddConstStringWithParam_Full(b *testing.B) {
+	RunBenchmarkFull(b, addConstStringWithParamQuery, WithParam("foo", "bar"))
 }
 
-func BenchmarkTemplateLiteralSimple_O0(b *testing.B) {
-	RunBenchmarkO0(b, templateLiteralSimpleQuery, WithParam("name", "World"))
+func BenchmarkTemplateLiteralSimple_None(b *testing.B) {
+	RunBenchmarkNone(b, templateLiteralSimpleQuery, WithParam("name", "World"))
 }
 
-func BenchmarkTemplateLiteralSimple_O1(b *testing.B) {
-	RunBenchmarkO1(b, templateLiteralSimpleQuery, WithParam("name", "World"))
+func BenchmarkTemplateLiteralSimple_Full(b *testing.B) {
+	RunBenchmarkFull(b, templateLiteralSimpleQuery, WithParam("name", "World"))
 }
 
-func BenchmarkTemplateLiteralNumeric_O0(b *testing.B) {
-	RunBenchmarkO0(b, templateLiteralNumericQuery, WithParam("a", 1), WithParam("b", 2))
+func BenchmarkTemplateLiteralNumeric_None(b *testing.B) {
+	RunBenchmarkNone(b, templateLiteralNumericQuery, WithParam("a", 1), WithParam("b", 2))
 }
 
-func BenchmarkTemplateLiteralNumeric_O1(b *testing.B) {
-	RunBenchmarkO1(b, templateLiteralNumericQuery, WithParam("a", 1), WithParam("b", 2))
+func BenchmarkTemplateLiteralNumeric_Full(b *testing.B) {
+	RunBenchmarkFull(b, templateLiteralNumericQuery, WithParam("a", 1), WithParam("b", 2))
 }
 
-func BenchmarkDurationAdd_O0(b *testing.B) {
-	RunBenchmarkO0(b, durationAddQuery, WithParam("base", time.Second))
+func BenchmarkDurationAdd_None(b *testing.B) {
+	RunBenchmarkNone(b, durationAddQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationAdd_O1(b *testing.B) {
-	RunBenchmarkO1(b, durationAddQuery, WithParam("base", time.Second))
+func BenchmarkDurationAdd_Full(b *testing.B) {
+	RunBenchmarkFull(b, durationAddQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationLiteral_O0(b *testing.B) {
-	RunBenchmarkO0(b, durationLiteralQuery)
+func BenchmarkDurationLiteral_None(b *testing.B) {
+	RunBenchmarkNone(b, durationLiteralQuery)
 }
 
-func BenchmarkDurationLiteral_O1(b *testing.B) {
-	RunBenchmarkO1(b, durationLiteralQuery)
+func BenchmarkDurationLiteral_Full(b *testing.B) {
+	RunBenchmarkFull(b, durationLiteralQuery)
 }
 
-func BenchmarkDurationExplicitAdd_O0(b *testing.B) {
-	RunBenchmarkO0(b, durationExplicitAddQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitAdd_None(b *testing.B) {
+	RunBenchmarkNone(b, durationExplicitAddQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationExplicitAdd_O1(b *testing.B) {
-	RunBenchmarkO1(b, durationExplicitAddQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitAdd_Full(b *testing.B) {
+	RunBenchmarkFull(b, durationExplicitAddQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationExplicitCompare_O0(b *testing.B) {
-	RunBenchmarkO0(b, durationExplicitCompareQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitCompare_None(b *testing.B) {
+	RunBenchmarkNone(b, durationExplicitCompareQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationExplicitCompare_O1(b *testing.B) {
-	RunBenchmarkO1(b, durationExplicitCompareQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitCompare_Full(b *testing.B) {
+	RunBenchmarkFull(b, durationExplicitCompareQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationStrictCompare_O0(b *testing.B) {
-	RunBenchmarkO0(b, durationStrictCompareQuery, WithParam("base", time.Second))
+func BenchmarkDurationStrictCompare_None(b *testing.B) {
+	RunBenchmarkNone(b, durationStrictCompareQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationStrictCompare_O1(b *testing.B) {
-	RunBenchmarkO1(b, durationStrictCompareQuery, WithParam("base", time.Second))
+func BenchmarkDurationStrictCompare_Full(b *testing.B) {
+	RunBenchmarkFull(b, durationStrictCompareQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkNumericEquality_O0(b *testing.B) {
-	RunBenchmarkO0(b, numericEqualityQuery, WithParam("base", 1))
+func BenchmarkNumericEquality_None(b *testing.B) {
+	RunBenchmarkNone(b, numericEqualityQuery, WithParam("base", 1))
 }
 
-func BenchmarkNumericEquality_O1(b *testing.B) {
-	RunBenchmarkO1(b, numericEqualityQuery, WithParam("base", 1))
+func BenchmarkNumericEquality_Full(b *testing.B) {
+	RunBenchmarkFull(b, numericEqualityQuery, WithParam("base", 1))
 }
 
-func BenchmarkDurationExplicitEquality_O0(b *testing.B) {
-	RunBenchmarkO0(b, durationExplicitEqualityQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitEquality_None(b *testing.B) {
+	RunBenchmarkNone(b, durationExplicitEqualityQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationExplicitEquality_O1(b *testing.B) {
-	RunBenchmarkO1(b, durationExplicitEqualityQuery, WithParam("base", time.Second))
+func BenchmarkDurationExplicitEquality_Full(b *testing.B) {
+	RunBenchmarkFull(b, durationExplicitEqualityQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationStrictEquality_O0(b *testing.B) {
-	RunBenchmarkO0(b, durationStrictEqualityQuery, WithParam("base", time.Second))
+func BenchmarkDurationStrictEquality_None(b *testing.B) {
+	RunBenchmarkNone(b, durationStrictEqualityQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkDurationStrictEquality_O1(b *testing.B) {
-	RunBenchmarkO1(b, durationStrictEqualityQuery, WithParam("base", time.Second))
+func BenchmarkDurationStrictEquality_Full(b *testing.B) {
+	RunBenchmarkFull(b, durationStrictEqualityQuery, WithParam("base", time.Second))
 }
 
-func BenchmarkEqualityJumpConst_O0(b *testing.B) {
-	RunBenchmarkO0(b, equalityJumpConstQuery, WithParam("left", 1))
+func BenchmarkEqualityJumpConst_None(b *testing.B) {
+	RunBenchmarkNone(b, equalityJumpConstQuery, WithParam("left", 1))
 }
 
-func BenchmarkEqualityJumpConst_O1(b *testing.B) {
-	RunBenchmarkO1(b, equalityJumpConstQuery, WithParam("left", 1))
+func BenchmarkEqualityJumpConst_Full(b *testing.B) {
+	RunBenchmarkFull(b, equalityJumpConstQuery, WithParam("left", 1))
 }
 
-func BenchmarkEqualityJumpRegister_O0(b *testing.B) {
-	RunBenchmarkO0(b, equalityJumpRegisterQuery, WithParam("left", 1), WithParam("right", 1))
+func BenchmarkEqualityJumpRegister_None(b *testing.B) {
+	RunBenchmarkNone(b, equalityJumpRegisterQuery, WithParam("left", 1), WithParam("right", 1))
 }
 
-func BenchmarkEqualityJumpRegister_O1(b *testing.B) {
-	RunBenchmarkO1(b, equalityJumpRegisterQuery, WithParam("left", 1), WithParam("right", 1))
+func BenchmarkEqualityJumpRegister_Full(b *testing.B) {
+	RunBenchmarkFull(b, equalityJumpRegisterQuery, WithParam("left", 1), WithParam("right", 1))
 }
 
-func BenchmarkQuantifiedComparison_O0(b *testing.B) {
-	RunBenchmarkO0(b, quantifiedComparisonQuery, WithParam("values", []any{1, 2, 3, 4, 5, 6, 7, 8}), WithParam("threshold", 7))
+func BenchmarkQuantifiedComparison_None(b *testing.B) {
+	RunBenchmarkNone(b, quantifiedComparisonQuery, WithParam("values", []any{1, 2, 3, 4, 5, 6, 7, 8}), WithParam("threshold", 7))
 }
 
-func BenchmarkQuantifiedComparison_O1(b *testing.B) {
-	RunBenchmarkO1(b, quantifiedComparisonQuery, WithParam("values", []any{1, 2, 3, 4, 5, 6, 7, 8}), WithParam("threshold", 7))
+func BenchmarkQuantifiedComparison_Full(b *testing.B) {
+	RunBenchmarkFull(b, quantifiedComparisonQuery, WithParam("values", []any{1, 2, 3, 4, 5, 6, 7, 8}), WithParam("threshold", 7))
 }
 
-func BenchmarkDateTimeAdd_O0(b *testing.B) {
-	RunBenchmarkO0(b, dateTimeAddQuery, WithParam("base", time.Date(2026, time.August, 1, 12, 0, 0, 0, time.UTC)))
+func BenchmarkDateTimeAdd_None(b *testing.B) {
+	RunBenchmarkNone(b, dateTimeAddQuery, WithParam("base", time.Date(2026, time.August, 1, 12, 0, 0, 0, time.UTC)))
 }
 
-func BenchmarkDateTimeAdd_O1(b *testing.B) {
-	RunBenchmarkO1(b, dateTimeAddQuery, WithParam("base", time.Date(2026, time.August, 1, 12, 0, 0, 0, time.UTC)))
+func BenchmarkDateTimeAdd_Full(b *testing.B) {
+	RunBenchmarkFull(b, dateTimeAddQuery, WithParam("base", time.Date(2026, time.August, 1, 12, 0, 0, 0, time.UTC)))
 }
 
-func BenchmarkDateTimeConversion_O0(b *testing.B) {
-	RunBenchmarkO0(b, dateTimeConversionQuery, WithParam("value", "2026-08-02T12:00:00Z"))
+func BenchmarkDateTimeConversion_None(b *testing.B) {
+	RunBenchmarkNone(b, dateTimeConversionQuery, WithParam("value", "2026-08-02T12:00:00Z"))
 }
 
-func BenchmarkDateTimeConversion_O1(b *testing.B) {
-	RunBenchmarkO1(b, dateTimeConversionQuery, WithParam("value", "2026-08-02T12:00:00Z"))
+func BenchmarkDateTimeConversion_Full(b *testing.B) {
+	RunBenchmarkFull(b, dateTimeConversionQuery, WithParam("value", "2026-08-02T12:00:00Z"))
 }
 
-func BenchmarkDateTimeEpochConversion_O0(b *testing.B) {
-	RunBenchmarkO0(b, dateTimeEpochConversionQuery, WithParam("value", 1_690_992_000))
+func BenchmarkDateTimeEpochConversion_None(b *testing.B) {
+	RunBenchmarkNone(b, dateTimeEpochConversionQuery, WithParam("value", 1_690_992_000))
 }
 
-func BenchmarkDateTimeEpochConversion_O1(b *testing.B) {
-	RunBenchmarkO1(b, dateTimeEpochConversionQuery, WithParam("value", 1_690_992_000))
+func BenchmarkDateTimeEpochConversion_Full(b *testing.B) {
+	RunBenchmarkFull(b, dateTimeEpochConversionQuery, WithParam("value", 1_690_992_000))
 }

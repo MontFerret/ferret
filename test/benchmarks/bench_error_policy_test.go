@@ -26,26 +26,26 @@ RETURN xs`
 const waitForEventRetryQuery = `
 RETURN WAITFOR EVENT "test" IN SOURCE() TIMEOUT 20ms ON TIMEOUT RETURN "timeout" ON ERROR RETRY 2 DELAY 0s OR RETURN "error"`
 
-func BenchmarkSuppressedHostCall_O0(b *testing.B) {
+func BenchmarkSuppressedHostCall_None(b *testing.B) {
 	boom := errors.New("boom")
 
-	RunBenchmarkO0(b, suppressedHostCallQuery, vm.WithFunction("FAIL", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+	RunBenchmarkNone(b, suppressedHostCallQuery, vm.WithFunction("FAIL", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, boom
 	}))
 }
 
-func BenchmarkSuppressedHostCall_O1(b *testing.B) {
+func BenchmarkSuppressedHostCall_Full(b *testing.B) {
 	boom := errors.New("boom")
 
-	RunBenchmarkO1(b, suppressedHostCallQuery, vm.WithFunction("FAIL", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+	RunBenchmarkFull(b, suppressedHostCallQuery, vm.WithFunction("FAIL", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, boom
 	}))
 }
 
-func BenchmarkRetriedHostCall_O0(b *testing.B) {
+func BenchmarkRetriedHostCall_None(b *testing.B) {
 	callCount := 0
 
-	RunBenchmarkO0(b, retriedHostCallQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+	RunBenchmarkNone(b, retriedHostCallQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		callCount++
 		if callCount%3 != 0 {
 			return runtime.None, errors.New("boom")
@@ -55,10 +55,10 @@ func BenchmarkRetriedHostCall_O0(b *testing.B) {
 	}))
 }
 
-func BenchmarkRetriedHostCall_O1(b *testing.B) {
+func BenchmarkRetriedHostCall_Full(b *testing.B) {
 	callCount := 0
 
-	RunBenchmarkO1(b, retriedHostCallQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+	RunBenchmarkFull(b, retriedHostCallQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		callCount++
 		if callCount%3 != 0 {
 			return runtime.None, errors.New("boom")
@@ -68,30 +68,30 @@ func BenchmarkRetriedHostCall_O1(b *testing.B) {
 	}))
 }
 
-func BenchmarkRetriedHostCallFallback_O0(b *testing.B) {
-	RunBenchmarkO0(b, retriedHostCallQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+func BenchmarkRetriedHostCallFallback_None(b *testing.B) {
+	RunBenchmarkNone(b, retriedHostCallQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, errors.New("boom")
 	}))
 }
 
-func BenchmarkRetriedHostCallFallback_O1(b *testing.B) {
-	RunBenchmarkO1(b, retriedHostCallQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+func BenchmarkRetriedHostCallFallback_Full(b *testing.B) {
+	RunBenchmarkFull(b, retriedHostCallQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, errors.New("boom")
 	}))
 }
 
-func BenchmarkWaitForTimeoutReturnNone_O0(b *testing.B) {
-	RunBenchmarkO0(b, waitForTimeoutReturnNoneQuery)
+func BenchmarkWaitForTimeoutReturnNone_None(b *testing.B) {
+	RunBenchmarkNone(b, waitForTimeoutReturnNoneQuery)
 }
 
-func BenchmarkWaitForTimeoutReturnNone_O1(b *testing.B) {
-	RunBenchmarkO1(b, waitForTimeoutReturnNoneQuery)
+func BenchmarkWaitForTimeoutReturnNone_Full(b *testing.B) {
+	RunBenchmarkFull(b, waitForTimeoutReturnNoneQuery)
 }
 
-func BenchmarkGroupedForRetry_O0(b *testing.B) {
+func BenchmarkGroupedForRetry_None(b *testing.B) {
 	callCount := 0
 
-	RunBenchmarkO0(b, groupedForRetryQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+	RunBenchmarkNone(b, groupedForRetryQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		callCount++
 		if callCount%3 == 1 {
 			return runtime.None, errors.New("boom")
@@ -101,10 +101,10 @@ func BenchmarkGroupedForRetry_O0(b *testing.B) {
 	}))
 }
 
-func BenchmarkGroupedForRetry_O1(b *testing.B) {
+func BenchmarkGroupedForRetry_Full(b *testing.B) {
 	callCount := 0
 
-	RunBenchmarkO1(b, groupedForRetryQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+	RunBenchmarkFull(b, groupedForRetryQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		callCount++
 		if callCount%3 == 1 {
 			return runtime.None, errors.New("boom")
@@ -114,10 +114,10 @@ func BenchmarkGroupedForRetry_O1(b *testing.B) {
 	}))
 }
 
-func BenchmarkWaitForEventRetry_O0(b *testing.B) {
+func BenchmarkWaitForEventRetry_None(b *testing.B) {
 	sourceCalls := 0
 
-	RunBenchmarkO0(b, waitForEventRetryQuery, vm.WithFunction("SOURCE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+	RunBenchmarkNone(b, waitForEventRetryQuery, vm.WithFunction("SOURCE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		sourceCalls++
 		if sourceCalls%3 != 0 {
 			return runtime.None, errors.New("boom")
@@ -127,10 +127,10 @@ func BenchmarkWaitForEventRetry_O0(b *testing.B) {
 	}))
 }
 
-func BenchmarkWaitForEventRetry_O1(b *testing.B) {
+func BenchmarkWaitForEventRetry_Full(b *testing.B) {
 	sourceCalls := 0
 
-	RunBenchmarkO1(b, waitForEventRetryQuery, vm.WithFunction("SOURCE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+	RunBenchmarkFull(b, waitForEventRetryQuery, vm.WithFunction("SOURCE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		sourceCalls++
 		if sourceCalls%3 != 0 {
 			return runtime.None, errors.New("boom")

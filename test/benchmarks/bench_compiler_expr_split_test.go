@@ -32,26 +32,26 @@ const compilerQueryShorthandQuery = "\n" +
 	"  labels: doc[~ css`.product-card`][* RETURN .[~? css`.title`]]\n" +
 	"}\n"
 
-func BenchmarkCompilerCompileMemberPipeline_O0(b *testing.B) {
+func BenchmarkCompilerCompileMemberPipeline_None(b *testing.B) {
 	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.OptimizationNone)
 }
 
-func BenchmarkCompilerCompileMemberPipeline_O1(b *testing.B) {
+func BenchmarkCompilerCompileMemberPipeline_Full(b *testing.B) {
 	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.OptimizationFull)
 }
 
-func BenchmarkCompilerCompileMatchQueryMix_O0(b *testing.B) {
+func BenchmarkCompilerCompileMatchQueryMix_None(b *testing.B) {
 	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.OptimizationNone)
 }
 
-func BenchmarkCompilerCompileMatchQueryMix_O1(b *testing.B) {
+func BenchmarkCompilerCompileMatchQueryMix_Full(b *testing.B) {
 	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.OptimizationFull)
 }
 
-func BenchmarkCompilerCompileQueryShorthand_O0(b *testing.B) {
+func BenchmarkCompilerCompileQueryShorthand_None(b *testing.B) {
 	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.OptimizationNone)
 }
 
-func BenchmarkCompilerCompileQueryShorthand_O1(b *testing.B) {
+func BenchmarkCompilerCompileQueryShorthand_Full(b *testing.B) {
 	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.OptimizationFull)
 }

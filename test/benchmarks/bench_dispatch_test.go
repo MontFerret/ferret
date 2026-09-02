@@ -47,26 +47,26 @@ func (d *benchmarkDispatcher) Copy() runtime.Value {
 	return d
 }
 
-func BenchmarkDispatchLongStatement_O0(b *testing.B) {
-	RunBenchmarkO0(b, dispatchLongStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
+func BenchmarkDispatchLongStatement_None(b *testing.B) {
+	RunBenchmarkNone(b, dispatchLongStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
 }
 
-func BenchmarkDispatchLongStatement_O1(b *testing.B) {
-	RunBenchmarkO1(b, dispatchLongStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
+func BenchmarkDispatchLongStatement_Full(b *testing.B) {
+	RunBenchmarkFull(b, dispatchLongStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
 }
 
-func BenchmarkDispatchShorthandStatement_O0(b *testing.B) {
-	RunBenchmarkO0(b, dispatchShorthandStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
+func BenchmarkDispatchShorthandStatement_None(b *testing.B) {
+	RunBenchmarkNone(b, dispatchShorthandStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
 }
 
-func BenchmarkDispatchShorthandStatement_O1(b *testing.B) {
-	RunBenchmarkO1(b, dispatchShorthandStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
+func BenchmarkDispatchShorthandStatement_Full(b *testing.B) {
+	RunBenchmarkFull(b, dispatchShorthandStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
 }
 
-func BenchmarkCompilerCompileDispatchGroupedTarget_O0(b *testing.B) {
+func BenchmarkCompilerCompileDispatchGroupedTarget_None(b *testing.B) {
 	benchmarkCompileQuery(b, dispatchGroupedTargetQuery, compiler.OptimizationNone)
 }
 
-func BenchmarkCompilerCompileDispatchGroupedTarget_O1(b *testing.B) {
+func BenchmarkCompilerCompileDispatchGroupedTarget_Full(b *testing.B) {
 	benchmarkCompileQuery(b, dispatchGroupedTargetQuery, compiler.OptimizationFull)
 }
