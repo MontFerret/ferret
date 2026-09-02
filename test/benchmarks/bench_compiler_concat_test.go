@@ -9,20 +9,28 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
+func BenchmarkCompilerCompileConcatChain_None(b *testing.B) {
+	benchmarkCompileQuery(b, buildConcatCompileQuery(false), compiler.None)
+}
+
 func BenchmarkCompilerCompileConcatChain_Basic(b *testing.B) {
-	benchmarkCompileQuery(b, buildConcatCompileQuery(false), compiler.OptimizationBasic)
+	benchmarkCompileQuery(b, buildConcatCompileQuery(false), compiler.Basic)
 }
 
 func BenchmarkCompilerCompileConcatChain_Full(b *testing.B) {
-	benchmarkCompileQuery(b, buildConcatCompileQuery(false), compiler.OptimizationFull)
+	benchmarkCompileQuery(b, buildConcatCompileQuery(false), compiler.Full)
+}
+
+func BenchmarkCompilerCompileStringAppend_None(b *testing.B) {
+	benchmarkCompileQuery(b, buildConcatCompileQuery(true), compiler.None)
 }
 
 func BenchmarkCompilerCompileStringAppend_Basic(b *testing.B) {
-	benchmarkCompileQuery(b, buildConcatCompileQuery(true), compiler.OptimizationBasic)
+	benchmarkCompileQuery(b, buildConcatCompileQuery(true), compiler.Basic)
 }
 
 func BenchmarkCompilerCompileStringAppend_Full(b *testing.B) {
-	benchmarkCompileQuery(b, buildConcatCompileQuery(true), compiler.OptimizationFull)
+	benchmarkCompileQuery(b, buildConcatCompileQuery(true), compiler.Full)
 }
 
 func benchmarkCompileQuery(b *testing.B, query string, level compiler.OptimizationLevel) {

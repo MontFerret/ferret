@@ -252,3 +252,53 @@ func TestRunBasicIncludesPeepholeWithoutRegisterCoalescing(t *testing.T) {
 		t.Fatalf("Basic optimization coalesced registers: got %d, want 2", program.Registers)
 	}
 }
+
+func TestRunNoneSkipsOptimizerPasses(t *testing.T) {
+	program := &bytecode.Program{
+		Registers: 2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(1), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+	}
+	want := append([]bytecode.Instruction(nil), program.Bytecode...)
+
+	if err := Run(program, None); err != nil {
+		t.Fatalf("None optimization failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(program.Bytecode, want) {
+		t.Fatalf("None optimization changed bytecode: got %#v, want %#v", program.Bytecode, want)
+	}
+	if program.Registers != 2 {
+		t.Fatalf("None optimization changed registers: got %d, want 2", program.Registers)
+	}
+}
+
+func TestRunFullIncludesRegisterCoalescing(t *testing.T) {
+	program := &bytecode.Program{
+		Registers: 4,
+		Params:    []string{"value"},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadParam, bytecode.NewRegister(1), bytecode.Operand(0)),
+			bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(2), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpAdd, bytecode.NewRegister(3), bytecode.NewRegister(2), bytecode.NewRegister(2)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(3)),
+		},
+	}
+
+	if err := Run(program, Full); err != nil {
+		t.Fatalf("Full optimization failed: %v", err)
+	}
+
+	if program.Registers >= 4 {
+		t.Fatalf("Full optimization did not coalesce registers: got %d, want fewer than 4", program.Registers)
+	}
+}
+
+func TestRunRejectsUnsupportedLevel(t *testing.T) {
+	err := Run(&bytecode.Program{}, Level(-1))
+	if err == nil {
+		t.Fatal("Run() error = nil, want unsupported-level error")
+	}
+}

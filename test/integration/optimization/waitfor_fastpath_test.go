@@ -11,7 +11,7 @@ import (
 )
 
 func TestWaitforFastPath(t *testing.T) {
-	RunUseCases(t, compiler.OptimizationFull, []spec.Spec{
+	RunUseCases(t, compiler.Full, []spec.Spec{
 		Opcode(`RETURN WAITFOR TRUE TIMEOUT 1s`, compile.OpcodeExistence{
 			NotExists: []bytecode.Opcode{bytecode.OpSleep},
 		}, true, "should skip sleep for true condition"),

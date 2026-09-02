@@ -7,12 +7,12 @@ import (
 )
 
 const (
-	// OptimizationNone disables optimizer passes.
-	OptimizationNone = optimization.None
-	// OptimizationBasic enables constant propagation, liveness analysis, and peephole optimization.
-	OptimizationBasic = optimization.Basic
-	// OptimizationFull is the default and adds register coalescing to the Basic pipeline.
-	OptimizationFull = optimization.Full
+	// None disables optimizer passes.
+	None = optimization.None
+	// Basic enables constant propagation, liveness analysis, and peephole optimization.
+	Basic = optimization.Basic
+	// Full is the default and adds register coalescing to the Basic pipeline.
+	Full = optimization.Full
 )
 
 type (
@@ -30,12 +30,13 @@ type (
 
 func defaultConfig() config {
 	return config{
-		Level: OptimizationFull,
+		Level: Full,
 	}
 }
 
-// WithOptimizationLevel configures the compiler optimization level. It accepts
-// levels from 0 through 2.
+// WithOptimizationLevel configures the compiler optimizer pipeline. None disables
+// optimizer passes, Basic enables the reduced pipeline, and Full enables the
+// complete supported pipeline.
 func WithOptimizationLevel(level OptimizationLevel) Option {
 	return options.New(
 		func(config *config, level OptimizationLevel) {
@@ -45,9 +46,9 @@ func WithOptimizationLevel(level OptimizationLevel) Option {
 		Named("optimization level").
 		Validators(
 			options.OneOf(
-				OptimizationNone,
-				OptimizationBasic,
-				OptimizationFull,
+				None,
+				Basic,
+				Full,
 			),
 		).
 		Value(level).
@@ -59,7 +60,7 @@ func WithOptimizationLevel(level OptimizationLevel) Option {
 func WithDebugInfo() Option {
 	return func(config *config) error {
 		config.DebugInfo = true
-		config.Level = OptimizationNone
+		config.Level = None
 
 		return nil
 	}

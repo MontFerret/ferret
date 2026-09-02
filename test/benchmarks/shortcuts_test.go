@@ -13,13 +13,13 @@ var (
 )
 
 func RunBenchmarkNone(b *testing.B, expression string, opts ...vm.EnvironmentOption) {
-	spec.RunBenchmarkWithOptimization(b, expression, compiler.OptimizationNone, opts...)
+	spec.RunBenchmarkWithOptimization(b, expression, compiler.None, opts...)
 }
 
 func RunBenchmarkBasic(b *testing.B, expression string, opts ...vm.EnvironmentOption) {
-	spec.RunBenchmarkWithOptimization(b, expression, compiler.OptimizationBasic, opts...)
+	spec.RunBenchmarkWithOptimization(b, expression, compiler.Basic, opts...)
 }
 
 func RunBenchmarkFull(b *testing.B, expression string, opts ...vm.EnvironmentOption) {
-	spec.RunBenchmarkWithOptimization(b, expression, compiler.OptimizationFull, opts...)
+	spec.RunBenchmarkWithOptimization(b, expression, compiler.Full, opts...)
 }

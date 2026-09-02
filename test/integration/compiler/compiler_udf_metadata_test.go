@@ -105,10 +105,10 @@ RETURN call()
 			expectHostSignatures(foo...),
 			"protected host overload bindings preserve first-seen order and reuse matching signatures",
 		),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
-func TestUdfMetadataO0(t *testing.T) {
+func TestUdfMetadataNone(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck(`
 FUNC f() => TEST_FN(1)
@@ -190,7 +190,7 @@ RETURN used()
 			}
 
 			return paramSet(prog.Params, "foo")
-		}, "unused udf metadata kept at o0"),
+		}, "unused udf metadata kept at none"),
 		ProgramCheck(`
 USE FOO::TEST_FN AS FN
 FUNC f() => FN(1)
@@ -409,7 +409,7 @@ RETURN outer(3)
 
 			return nil
 		}, "nested captures tracked across scopes"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestUdfTransitiveCaptureMetadata(t *testing.T) {
@@ -434,7 +434,7 @@ RETURN first(1)
 
 			return nil
 		}, "transitive captures are included in udf metadata"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestUdfNestedCompileStatePropagatesMetadata(t *testing.T) {
@@ -456,7 +456,7 @@ RETURN outer(3)
 
 			return paramSet(prog.Params, "foo")
 		}, "nested udf compile restores metadata after inner state swap"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestUdfNestedDirectReturnStillLowersToTailCall(t *testing.T) {
@@ -490,7 +490,7 @@ RETURN outer(3)
 
 			return fmt.Errorf("expected tail call in forward body between %d and %d", forward.Entry, nextEntry)
 		}, "nested udf direct return preserves tail-call lowering"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestUdfNestedScopeDoesNotLeakToSiblingCompilation(t *testing.T) {
@@ -505,7 +505,7 @@ RETURN sibling()
 `, func(prog *bytecode.Program) error {
 			return hostSignature(prog.Functions.Host, "onlyInside", 0)
 		}, "sibling udf compilation does not reuse prior nested scope"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestUdfMetadataOptimized(t *testing.T) {
@@ -536,5 +536,5 @@ RETURN f()
 
 			return nil
 		}, "namespace alias does not shadow udf call"),
-	}, compiler.OptimizationBasic, compiler.OptimizationFull)
+	}, compiler.Basic, compiler.Full)
 }

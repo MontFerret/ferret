@@ -76,15 +76,15 @@ func BenchmarkWaitForEventPresent_Full(b *testing.B) {
 }
 
 func BenchmarkCompilerCompileWaitForEvent_None(b *testing.B) {
-	benchmarkCompileQuery(b, waitForEventCompilerQuery, compiler.OptimizationNone)
+	benchmarkCompileQuery(b, waitForEventCompilerQuery, compiler.None)
 }
 
 func BenchmarkCompilerCompileWaitForEvent_Basic(b *testing.B) {
-	benchmarkCompileQuery(b, waitForEventCompilerQuery, compiler.OptimizationBasic)
+	benchmarkCompileQuery(b, waitForEventCompilerQuery, compiler.Basic)
 }
 
 func BenchmarkCompilerCompileWaitForEvent_Full(b *testing.B) {
-	benchmarkCompileQuery(b, waitForEventCompilerQuery, compiler.OptimizationFull)
+	benchmarkCompileQuery(b, waitForEventCompilerQuery, compiler.Full)
 }
 
 func BenchmarkWaitForValueAnyPresent_None(b *testing.B) {

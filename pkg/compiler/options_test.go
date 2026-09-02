@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/ziflex/go-options"
-
-	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
 )
 
 func mustNewCompiler(t testing.TB, setters ...Option) *Compiler {
@@ -24,8 +22,8 @@ func TestCompilerOptions(t *testing.T) {
 	t.Run("defaults", func(t *testing.T) {
 		compilerInstance := mustNewCompiler(t)
 
-		if compilerInstance.config.Level != OptimizationFull {
-			t.Fatalf("optimization level = %v, want %v", compilerInstance.config.Level, OptimizationFull)
+		if compilerInstance.config.Level != Full {
+			t.Fatalf("optimization level = %v, want %v", compilerInstance.config.Level, Full)
 		}
 		if compilerInstance.config.DebugInfo {
 			t.Fatal("debug info = true, want false")
@@ -37,9 +35,9 @@ func TestCompilerOptions(t *testing.T) {
 			name  string
 			level OptimizationLevel
 		}{
-			{name: "none", level: optimization.None},
-			{name: "basic", level: optimization.Basic},
-			{name: "full", level: optimization.Full},
+			{name: "none", level: None},
+			{name: "basic", level: Basic},
+			{name: "full", level: Full},
 		}
 
 		for _, tt := range tests {
@@ -59,23 +57,23 @@ func TestCompilerOptions(t *testing.T) {
 		if !compilerInstance.config.DebugInfo {
 			t.Fatal("debug info = false, want true")
 		}
-		if compilerInstance.config.Level != OptimizationNone {
-			t.Fatalf("optimization level = %v, want %v", compilerInstance.config.Level, OptimizationNone)
+		if compilerInstance.config.Level != None {
+			t.Fatalf("optimization level = %v, want %v", compilerInstance.config.Level, None)
 		}
 	})
 
 	t.Run("debug info after optimization", func(t *testing.T) {
 		compilerInstance := mustNewCompiler(
 			t,
-			WithOptimizationLevel(OptimizationFull),
+			WithOptimizationLevel(Full),
 			WithDebugInfo(),
 		)
 
 		if !compilerInstance.config.DebugInfo {
 			t.Fatal("debug info = false, want true")
 		}
-		if compilerInstance.config.Level != OptimizationNone {
-			t.Fatalf("optimization level = %v, want %v", compilerInstance.config.Level, OptimizationNone)
+		if compilerInstance.config.Level != None {
+			t.Fatalf("optimization level = %v, want %v", compilerInstance.config.Level, None)
 		}
 	})
 
@@ -83,26 +81,26 @@ func TestCompilerOptions(t *testing.T) {
 		compilerInstance := mustNewCompiler(
 			t,
 			WithDebugInfo(),
-			WithOptimizationLevel(OptimizationFull),
+			WithOptimizationLevel(Full),
 		)
 
 		if !compilerInstance.config.DebugInfo {
 			t.Fatal("debug info = false, want true")
 		}
-		if compilerInstance.config.Level != OptimizationFull {
-			t.Fatalf("optimization level = %v, want %v", compilerInstance.config.Level, OptimizationFull)
+		if compilerInstance.config.Level != Full {
+			t.Fatalf("optimization level = %v, want %v", compilerInstance.config.Level, Full)
 		}
 	})
 
 	t.Run("repeated option", func(t *testing.T) {
 		compilerInstance := mustNewCompiler(
 			t,
-			WithOptimizationLevel(OptimizationNone),
-			WithOptimizationLevel(OptimizationFull),
+			WithOptimizationLevel(None),
+			WithOptimizationLevel(Full),
 		)
 
-		if compilerInstance.config.Level != OptimizationFull {
-			t.Fatalf("optimization level = %v, want %v", compilerInstance.config.Level, OptimizationFull)
+		if compilerInstance.config.Level != Full {
+			t.Fatalf("optimization level = %v, want %v", compilerInstance.config.Level, Full)
 		}
 	})
 
@@ -114,8 +112,8 @@ func TestCompilerOptions(t *testing.T) {
 		if compilerInstance == nil {
 			t.Fatal("compiler = nil, want non-nil")
 		}
-		if compilerInstance.config.Level != OptimizationFull {
-			t.Fatalf("optimization level = %v, want %v", compilerInstance.config.Level, OptimizationFull)
+		if compilerInstance.config.Level != Full {
+			t.Fatalf("optimization level = %v, want %v", compilerInstance.config.Level, Full)
 		}
 	})
 }
@@ -129,13 +127,13 @@ func TestWithOptimizationLevelRejectsUnsupportedLevels(t *testing.T) {
 	}{
 		{
 			name:      "below minimum",
-			level:     optimization.None - 1,
+			level:     None - 1,
 			wantValue: "unknown",
 			wantError: "optimization level: must be one of [none basic full]: value=unknown",
 		},
 		{
 			name:      "above maximum",
-			level:     optimization.Full + 1,
+			level:     Full + 1,
 			wantValue: "unknown",
 			wantError: "optimization level: must be one of [none basic full]: value=unknown",
 		},

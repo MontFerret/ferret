@@ -37,7 +37,7 @@ func New(setters ...Option) (*Engine, error) {
 	}
 
 	ownsNetwork := opts.hostNetwork == false
-	compilerInstance, err := compiler.New(opts.compiler...)
+	compilerLevel, err := opts.optimizationLevel.compilerLevel()
 	if err != nil {
 		if ownsNetwork {
 			ferretnet.CloseIdleNetworkConnections(opts.network)
@@ -46,8 +46,16 @@ func New(setters ...Option) (*Engine, error) {
 		return nil, fmt.Errorf("compiler: %w", err)
 	}
 
-	debugOptions := append(append([]compiler.Option(nil), opts.compiler...), compiler.WithDebugInfo())
-	debugCompiler, err := compiler.New(debugOptions...)
+	compilerInstance, err := compiler.New(compiler.WithOptimizationLevel(compilerLevel))
+	if err != nil {
+		if ownsNetwork {
+			ferretnet.CloseIdleNetworkConnections(opts.network)
+		}
+
+		return nil, fmt.Errorf("compiler: %w", err)
+	}
+
+	debugCompiler, err := compiler.New(compiler.WithDebugInfo())
 	if err != nil {
 		if ownsNetwork {
 			ferretnet.CloseIdleNetworkConnections(opts.network)

@@ -31,7 +31,7 @@ func TestRegexpOperator(t *testing.T) {
 	}))
 
 	t.Run("Should return an error during compilation when a regexp string invalid", func(t *testing.T) {
-		_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.OptimizationNone)).
+		_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.None)).
 			Compile(source.NewAnonymous(`
 			RETURN "foo" !~ "[ ]\K(?<!\d )(?=(?: ?\d){8})(?!(?: ?\d){9})\d[ \d]+\d" 
 		`))
@@ -54,7 +54,7 @@ func TestRegexpOperator(t *testing.T) {
 			r := r
 
 			t.Run(r, func(t *testing.T) {
-				_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.OptimizationNone)).
+				_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.None)).
 					Compile(source.NewAnonymous(fmt.Sprintf(`
 			RETURN "foo" !~ %s 
 		`, r)))

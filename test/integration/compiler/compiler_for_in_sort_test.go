@@ -27,7 +27,7 @@ func findNthOpcodeIndex(code []bytecode.Instruction, op bytecode.Opcode, nth int
 }
 
 func TestForSortNoneUsesPlainMovesForKeyAndScopeProjection(t *testing.T) {
-	prog := compileWithLevel(t, compiler.OptimizationNone, `
+	prog := compileWithLevel(t, compiler.None, `
 LET strs = ["foo", "bar", "qaz", "abc"]
 
 RETURN FOR s IN strs
@@ -60,7 +60,7 @@ RETURN FOR s IN strs
 }
 
 func TestForSortFullUsesPlainMoveForScopeProjectionAndTrackedSorterTransfer(t *testing.T) {
-	prog := compileWithLevel(t, compiler.OptimizationFull, `
+	prog := compileWithLevel(t, compiler.Full, `
 LET strs = ["foo", "bar", "qaz", "abc"]
 
 RETURN FOR s IN strs

@@ -84,8 +84,8 @@ RETURN {
 }
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
-		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
 			fallbackErr := errors.New("generic fallback must not be used")
 			snapshotList := &spreadSnapshotList{
 				List:        runtime.NewArrayWith(runtime.NewInt(99)),
@@ -166,8 +166,8 @@ objectCopy.nested.value = 3
 RETURN [listSource[0].value, listCopy[0].value, objectSource.nested.value, objectCopy.nested.value]
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
-		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
 			fallbackErr := errors.New("generic fallback must not be used")
 			listValues := runtime.NewArrayWith(runtime.NewObjectWith(map[string]runtime.Value{
 				"value": runtime.NewInt(1),
@@ -302,9 +302,9 @@ func TestLiteralSpreadSnapshotFailures(t *testing.T) {
 		},
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		for _, test := range tests {
-			t.Run(fmt.Sprintf("O%d/%s", level, test.name), func(t *testing.T) {
+			t.Run(fmt.Sprintf("%s/%s", level, test.name), func(t *testing.T) {
 				snapshotErr := errors.New("snapshot failed")
 				fallbackErr := errors.New("generic fallback must not be used")
 				value, calls := test.newValue(snapshotErr, fallbackErr)
@@ -368,9 +368,9 @@ func TestLiteralSpreadNilSnapshots(t *testing.T) {
 		},
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		for _, test := range tests {
-			t.Run(fmt.Sprintf("O%d/%s", level, test.name), func(t *testing.T) {
+			t.Run(fmt.Sprintf("%s/%s", level, test.name), func(t *testing.T) {
 				runtimeErr := runLiteralSpreadError(t, level, test.query, test.newValue())
 				if !errors.Is(runtimeErr, runtime.ErrInvalidOperation) {
 					t.Fatalf("expected invalid-operation cause, got %v", runtimeErr)
@@ -394,8 +394,8 @@ func TestLiteralSpreadEvaluationOrder(t *testing.T) {
   { first: TRACE(4, 1), ...TRACE(5, { second: 2 }), third: TRACE(6, 3) }
 ]`
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
-		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
 			var trace []int
 
 			RunSpecsWith(t, "trace", mustNewCompiler(t, compiler.WithOptimizationLevel(level)), []spec.Spec{
@@ -438,9 +438,9 @@ func TestLiteralSpreadTypeErrors(t *testing.T) {
 		},
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		for _, test := range tests {
-			t.Run(fmt.Sprintf("O%d/%s", level, test.message), func(t *testing.T) {
+			t.Run(fmt.Sprintf("%s/%s", level, test.message), func(t *testing.T) {
 				program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.New("spread.fql", test.query))
 				if err != nil {
 					t.Fatalf("compile failed: %v", err)

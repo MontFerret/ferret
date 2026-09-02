@@ -12,13 +12,13 @@ import (
 )
 
 func TestConstantPropagationBasic(t *testing.T) {
-	RunUseCases(t, compiler.OptimizationBasic, []spec.Spec{
+	RunUseCases(t, compiler.Basic, []spec.Spec{
 		OpcodeNotExists(`LET a = 1 + 2 RETURN a`, []bytecode.Opcode{bytecode.OpAdd}, 3, "Basic folds constant addition"),
 	})
 }
 
 func TestConstantPropagationFull(t *testing.T) {
-	RunUseCases(t, compiler.OptimizationFull, []spec.Spec{
+	RunUseCases(t, compiler.Full, []spec.Spec{
 		OpcodeNotExists(`LET a = 1 + 2 RETURN a`, []bytecode.Opcode{bytecode.OpAdd}, 3, "should fold constant addition"),
 
 		OpcodeNotExists(`LET a = 1 + 2 RETURN -a`, []bytecode.Opcode{bytecode.OpAdd, bytecode.OpFlipNegative}, -3, "should fold constant addition and unary minus"),

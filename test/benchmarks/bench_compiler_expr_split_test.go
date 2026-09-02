@@ -33,37 +33,37 @@ const compilerQueryShorthandQuery = "\n" +
 	"}\n"
 
 func BenchmarkCompilerCompileMemberPipeline_None(b *testing.B) {
-	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.OptimizationNone)
+	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.None)
 }
 
 func BenchmarkCompilerCompileMemberPipeline_Basic(b *testing.B) {
-	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.OptimizationBasic)
+	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.Basic)
 }
 
 func BenchmarkCompilerCompileMemberPipeline_Full(b *testing.B) {
-	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.OptimizationFull)
+	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.Full)
 }
 
 func BenchmarkCompilerCompileMatchQueryMix_None(b *testing.B) {
-	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.OptimizationNone)
+	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.None)
 }
 
 func BenchmarkCompilerCompileMatchQueryMix_Basic(b *testing.B) {
-	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.OptimizationBasic)
+	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.Basic)
 }
 
 func BenchmarkCompilerCompileMatchQueryMix_Full(b *testing.B) {
-	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.OptimizationFull)
+	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.Full)
 }
 
 func BenchmarkCompilerCompileQueryShorthand_None(b *testing.B) {
-	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.OptimizationNone)
+	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.None)
 }
 
 func BenchmarkCompilerCompileQueryShorthand_Basic(b *testing.B) {
-	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.OptimizationBasic)
+	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.Basic)
 }
 
 func BenchmarkCompilerCompileQueryShorthand_Full(b *testing.B) {
-	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.OptimizationFull)
+	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.Full)
 }

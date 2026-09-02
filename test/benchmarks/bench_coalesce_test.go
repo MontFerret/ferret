@@ -69,13 +69,13 @@ func BenchmarkCoalesceFallback_Full(b *testing.B) {
 }
 
 func BenchmarkCompilerCompileCoalesce_None(b *testing.B) {
-	benchmarkCompileQuery(b, coalesceCompilerBenchmarkQuery, compiler.OptimizationNone)
+	benchmarkCompileQuery(b, coalesceCompilerBenchmarkQuery, compiler.None)
 }
 
 func BenchmarkCompilerCompileCoalesce_Basic(b *testing.B) {
-	benchmarkCompileQuery(b, coalesceCompilerBenchmarkQuery, compiler.OptimizationBasic)
+	benchmarkCompileQuery(b, coalesceCompilerBenchmarkQuery, compiler.Basic)
 }
 
 func BenchmarkCompilerCompileCoalesce_Full(b *testing.B) {
-	benchmarkCompileQuery(b, coalesceCompilerBenchmarkQuery, compiler.OptimizationFull)
+	benchmarkCompileQuery(b, coalesceCompilerBenchmarkQuery, compiler.Full)
 }

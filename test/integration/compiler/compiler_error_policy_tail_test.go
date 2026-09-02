@@ -24,7 +24,7 @@ func TestCompiler_RecoveryTailCompiles(t *testing.T) {
 		ProgramCheck("LET ok = (WAITFOR VALUE NONE TIMEOUT 1ms) ON TIMEOUT RETURN NONE\nRETURN ok", expectCatchTableSize(0), "Grouped WAITFOR timeout recovery should compile"),
 		ProgramCheck("LET ok = WAITFOR TRUE ON ERROR FAIL\nRETURN ok", expectCatchTableSize(0), "Explicit FAIL should preserve default propagation"),
 		ProgramCheck("RETURN (FAIL() + 1) ON ERROR RETURN NONE", expectCatchTableSize(1), "Grouped suppression should emit a guarded region"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestSyntaxErrorsRecoveryTail(t *testing.T) {

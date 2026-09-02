@@ -72,5 +72,5 @@ RETURN items[* RETURN .a]
 		}, tc.name))
 	}
 
-	RunSpecsLevels(t, specs, compiler.OptimizationNone, compiler.OptimizationFull)
+	RunSpecsLevels(t, specs, compiler.None, compiler.Full)
 }

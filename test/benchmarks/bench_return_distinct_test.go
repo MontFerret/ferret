@@ -112,13 +112,13 @@ func BenchmarkCountDistinct_Full(b *testing.B) {
 }
 
 func BenchmarkCompilerCompileReturnDistinct_None(b *testing.B) {
-	benchmarkCompileQuery(b, compilerReturnDistinctQuery, compiler.OptimizationNone)
+	benchmarkCompileQuery(b, compilerReturnDistinctQuery, compiler.None)
 }
 
 func BenchmarkCompilerCompileReturnDistinct_Basic(b *testing.B) {
-	benchmarkCompileQuery(b, compilerReturnDistinctQuery, compiler.OptimizationBasic)
+	benchmarkCompileQuery(b, compilerReturnDistinctQuery, compiler.Basic)
 }
 
 func BenchmarkCompilerCompileReturnDistinct_Full(b *testing.B) {
-	benchmarkCompileQuery(b, compilerReturnDistinctQuery, compiler.OptimizationFull)
+	benchmarkCompileQuery(b, compilerReturnDistinctQuery, compiler.Full)
 }

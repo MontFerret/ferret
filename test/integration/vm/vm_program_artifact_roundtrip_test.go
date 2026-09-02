@@ -37,7 +37,7 @@ func TestProgramArtifactRoundTrip(t *testing.T) {
 		return runtime.NewString("var" + runtime.NewInt(len(args)).String()), nil
 	})
 
-	levels := []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull}
+	levels := []compiler.OptimizationLevel{compiler.None, compiler.Full}
 	cases := []artifactRoundTripCase{
 		{
 			Input:       spec.NewExpressionInput(`RETURN [0, ...[1, 2], { ...{ value: 3 } }]`),

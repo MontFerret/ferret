@@ -27,7 +27,7 @@ RETURN used()
 
 			return nil
 		}, "unused udf eliminated"),
-	}, compiler.OptimizationBasic, compiler.OptimizationFull)
+	}, compiler.Basic, compiler.Full)
 }
 
 func TestUdfUnusedEliminationNone(t *testing.T) {
@@ -42,7 +42,7 @@ RETURN used()
 			}
 
 			return nil
-		}, "unused udf metadata kept at o0"),
+		}, "unused udf metadata kept at none"),
 	})
 }
 
@@ -78,7 +78,7 @@ RETURN outer()
 
 			return nil
 		}, "unused nested capture not lifted"),
-	}, compiler.OptimizationFull)
+	}, compiler.Full)
 }
 
 func TestUdfRecursionReachable(t *testing.T) {
@@ -106,5 +106,5 @@ RETURN fact(5)
 
 			return nil
 		}, "recursive udf remains reachable"),
-	}, compiler.OptimizationFull)
+	}, compiler.Full)
 }

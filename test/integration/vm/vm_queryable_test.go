@@ -247,7 +247,7 @@ func TestQueryExpressionClausesEvaluatedOnce(t *testing.T) {
 	)
 
 	if paramsCalls != 2 || optionsCalls != 2 {
-		t.Fatalf("expected params and options to be evaluated once per O0/O1 execution, got params=%d options=%d", paramsCalls, optionsCalls)
+		t.Fatalf("expected params and options to be evaluated once per None/Full execution, got params=%d options=%d", paramsCalls, optionsCalls)
 	}
 	if got, want := strings.Join(clauseOrder, ","), "params,options,params,options"; got != want {
 		t.Fatalf("unexpected clause evaluation order: got %q, want %q", got, want)
@@ -255,7 +255,7 @@ func TestQueryExpressionClausesEvaluatedOnce(t *testing.T) {
 
 	queries := queryable.MockQueries()
 	if len(queries) != 2 {
-		t.Fatalf("expected one captured query per O0/O1 execution, got %d", len(queries))
+		t.Fatalf("expected one captured query per None/Full execution, got %d", len(queries))
 	}
 	for _, query := range queries {
 		if queryMapValue(t, query.Params, "value") != runtime.NewInt(1) {

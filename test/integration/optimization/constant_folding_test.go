@@ -13,7 +13,7 @@ import (
 )
 
 func TestConstantFolding(t *testing.T) {
-	RunUseCases(t, compiler.OptimizationFull, []spec.Spec{
+	RunUseCases(t, compiler.Full, []spec.Spec{
 		OpcodeCount("RETURN ``", map[bytecode.Opcode]int{
 			bytecode.OpConcat:    0,
 			bytecode.OpLoadConst: 1,

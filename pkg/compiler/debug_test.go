@@ -11,15 +11,15 @@ import (
 )
 
 func TestWithDebugInfoEmitsLogicalPointsAndForcesNone(t *testing.T) {
-	program, err := mustNewCompiler(t, WithOptimizationLevel(OptimizationFull), WithDebugInfo()).Compile(
+	program, err := mustNewCompiler(t, WithOptimizationLevel(Full), WithDebugInfo()).Compile(
 		source.New("debug.fql", "LET x = 1\nVAR y = 2\ny = y + x\nRETURN y"),
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if program.Metadata.OptimizationLevel != int(OptimizationNone) {
-		t.Fatalf("optimization level = %d, want %d", program.Metadata.OptimizationLevel, OptimizationNone)
+	if program.Metadata.OptimizationLevel != int(None) {
+		t.Fatalf("optimization level = %d, want %d", program.Metadata.OptimizationLevel, None)
 	}
 
 	if len(program.Metadata.DebugPoints) != 4 {
@@ -44,14 +44,14 @@ func TestWithDebugInfoForcesNoneAfterLaterOptimizationOption(t *testing.T) {
 	program, err := mustNewCompiler(
 		t,
 		WithDebugInfo(),
-		WithOptimizationLevel(OptimizationFull),
+		WithOptimizationLevel(Full),
 	).Compile(source.NewAnonymous("RETURN 1"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if program.Metadata.OptimizationLevel != int(OptimizationNone) {
-		t.Fatalf("optimization level = %d, want %d", program.Metadata.OptimizationLevel, OptimizationNone)
+	if program.Metadata.OptimizationLevel != int(None) {
+		t.Fatalf("optimization level = %d, want %d", program.Metadata.OptimizationLevel, None)
 	}
 	if len(program.Metadata.DebugPoints) == 0 {
 		t.Fatal("expected debug points")
@@ -88,7 +88,7 @@ func TestDebugInfoArtifactRoundTrip(t *testing.T) {
 }
 
 func TestNormalCompilationDoesNotEmitDebugPoints(t *testing.T) {
-	program, err := mustNewCompiler(t, WithOptimizationLevel(OptimizationFull)).Compile(source.NewAnonymous("LET x = 1\nRETURN x"))
+	program, err := mustNewCompiler(t, WithOptimizationLevel(Full)).Compile(source.NewAnonymous("LET x = 1\nRETURN x"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,8 +103,8 @@ func TestNormalCompilationDoesNotEmitDebugPoints(t *testing.T) {
 		}
 	}
 
-	if program.Metadata.OptimizationLevel != int(OptimizationFull) {
-		t.Fatalf("normal compilation optimization changed: O%d", program.Metadata.OptimizationLevel)
+	if program.Metadata.OptimizationLevel != int(Full) {
+		t.Fatalf("normal compilation optimization level = %d, want %d", program.Metadata.OptimizationLevel, Full)
 	}
 }
 

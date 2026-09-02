@@ -227,10 +227,10 @@ var (
 		"enables CPU and Memory profiler",
 	)
 
-	optimizationLevel = flag.Int(
+	optimizationLevel = flag.String(
 		"ol",
-		int(compiler.OptimizationFull),
-		"set optimization level (0-2)",
+		compiler.Full.String(),
+		"set optimization level (none, basic, or full)",
 	)
 
 	logLevel = flag.String(
@@ -597,10 +597,17 @@ func analyzeQuery(query source.Source) error {
 	afterCompilation := "After Compilation"
 	prof := NewProfiler()
 
-	optLevel := compiler.OptimizationLevel(*optimizationLevel)
+	var optLevel compiler.OptimizationLevel
 
-	if optLevel < compiler.OptimizationNone || optLevel > compiler.OptimizationFull {
-		fmt.Printf("Invalid optimization level: %d.", optLevel)
+	switch strings.ToLower(strings.TrimSpace(*optimizationLevel)) {
+	case compiler.None.String():
+		optLevel = compiler.None
+	case compiler.Basic.String():
+		optLevel = compiler.Basic
+	case compiler.Full.String():
+		optLevel = compiler.Full
+	default:
+		fmt.Printf("Invalid optimization level: %q.", *optimizationLevel)
 		os.Exit(1)
 	}
 

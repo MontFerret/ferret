@@ -115,15 +115,15 @@ RETURN 1
 )
 
 func BenchmarkCompilerCompileDirectMutation_None(b *testing.B) {
-	benchmarkCompileQuery(b, compilerDirectMutationQuery, compiler.OptimizationNone)
+	benchmarkCompileQuery(b, compilerDirectMutationQuery, compiler.None)
 }
 
 func BenchmarkCompilerCompileDirectMutation_Basic(b *testing.B) {
-	benchmarkCompileQuery(b, compilerDirectMutationQuery, compiler.OptimizationBasic)
+	benchmarkCompileQuery(b, compilerDirectMutationQuery, compiler.Basic)
 }
 
 func BenchmarkCompilerCompileDirectMutation_Full(b *testing.B) {
-	benchmarkCompileQuery(b, compilerDirectMutationQuery, compiler.OptimizationFull)
+	benchmarkCompileQuery(b, compilerDirectMutationQuery, compiler.Full)
 }
 
 func BenchmarkDirectMutation_BindingNumeric_None(b *testing.B) {

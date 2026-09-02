@@ -52,5 +52,5 @@ RETURN read({ foo: 1, fallback: 2, nested: { answer: 3 } })
 `,
 			"UDF LET, VAR, and reassignment accept member expressions",
 		),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }

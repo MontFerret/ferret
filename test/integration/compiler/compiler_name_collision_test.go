@@ -144,7 +144,7 @@ LET foo = "a"
 DELETE x.a
 RETURN x
 `, compileOnly, "Property DELETE target should not create a host-call collision"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func expectedHostCallBindingCollision(name string) E {

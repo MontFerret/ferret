@@ -72,13 +72,13 @@ func BenchmarkDispatchShorthandStatement_Full(b *testing.B) {
 }
 
 func BenchmarkCompilerCompileDispatchGroupedTarget_None(b *testing.B) {
-	benchmarkCompileQuery(b, dispatchGroupedTargetQuery, compiler.OptimizationNone)
+	benchmarkCompileQuery(b, dispatchGroupedTargetQuery, compiler.None)
 }
 
 func BenchmarkCompilerCompileDispatchGroupedTarget_Basic(b *testing.B) {
-	benchmarkCompileQuery(b, dispatchGroupedTargetQuery, compiler.OptimizationBasic)
+	benchmarkCompileQuery(b, dispatchGroupedTargetQuery, compiler.Basic)
 }
 
 func BenchmarkCompilerCompileDispatchGroupedTarget_Full(b *testing.B) {
-	benchmarkCompileQuery(b, dispatchGroupedTargetQuery, compiler.OptimizationFull)
+	benchmarkCompileQuery(b, dispatchGroupedTargetQuery, compiler.Full)
 }

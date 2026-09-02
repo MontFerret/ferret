@@ -51,7 +51,7 @@ FOR WHILE i < 1000000000 {
 RETURN signal`,
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		for name, query := range queries {
 			t.Run(fmt.Sprintf("%s/%s", optimizationName(level), name), func(t *testing.T) {
 				instance := compileCancellationVM(t, level, query)
@@ -106,7 +106,7 @@ FUNC spin() {
 RETURN spin()
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		t.Run(optimizationName(level), func(t *testing.T) {
 			instance := compileCancellationVM(t, level, query)
 			started := make(chan struct{})
@@ -152,7 +152,7 @@ func TestPreCanceledExecutionStopsAtCallAndReturnSafepoints(t *testing.T) {
 		"udf call": "FUNC value() => 1\nRETURN value()",
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		for name, query := range tests {
 			t.Run(optimizationName(level)+"/"+name, func(t *testing.T) {
 				instance := compileCancellationVM(t, level, query)
@@ -178,7 +178,7 @@ LET value = inner()
 RETURN "after-" + @probe
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		t.Run(optimizationName(level), func(t *testing.T) {
 			instance := compileCancellationVM(t, level, query)
 			ctx, cancel := context.WithCancel(context.Background())
@@ -218,7 +218,7 @@ func TestCancellationBypassesProtectedRecovery(t *testing.T) {
 		{name: "returned deadline", err: fmt.Errorf("host deadline: %w", context.DeadlineExceeded)},
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		for _, test := range tests {
 			t.Run(optimizationName(level)+"/"+test.name, func(t *testing.T) {
 				instance := compileCancellationVM(t, level, query)
@@ -282,5 +282,5 @@ func cancellationEnvironment(t *testing.T, options ...vm.EnvironmentOption) *vm.
 }
 
 func optimizationName(level compiler.OptimizationLevel) string {
-	return fmt.Sprintf("O%d", level)
+	return level.String()
 }

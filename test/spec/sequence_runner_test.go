@@ -11,7 +11,7 @@ import (
 )
 
 func TestSequenceRunnerRunsMultipleStepsWithDistinctEnvironments(t *testing.T) {
-	runner := NewSequenceRunner("Sequence/O0", compilerpkg.WithOptimizationLevel(compilerpkg.OptimizationNone))
+	runner := NewSequenceRunner("Sequence/none", compilerpkg.WithOptimizationLevel(compilerpkg.None))
 
 	runner.Run(t, []Sequence{
 		{
@@ -45,7 +45,7 @@ func TestSequenceRunnerRunsMultipleStepsWithDistinctEnvironments(t *testing.T) {
 }
 
 func TestSequenceRunnerMatchesExpectedPanics(t *testing.T) {
-	runner := NewSequenceRunner("Sequence/O0", compilerpkg.WithOptimizationLevel(compilerpkg.OptimizationNone))
+	runner := NewSequenceRunner("Sequence/none", compilerpkg.WithOptimizationLevel(compilerpkg.None))
 
 	runner.Run(t, []Sequence{
 		{
@@ -79,7 +79,7 @@ func TestSequenceRunnerFailsUnexpectedPanics(t *testing.T) {
 			{
 				Name: "unexpected panic",
 				F: func(t *testing.T) {
-					runner := NewSequenceRunner("Sequence/O0", compilerpkg.WithOptimizationLevel(compilerpkg.OptimizationNone))
+					runner := NewSequenceRunner("Sequence/none", compilerpkg.WithOptimizationLevel(compilerpkg.None))
 
 					runner.Run(t, []Sequence{
 						{

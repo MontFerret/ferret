@@ -166,13 +166,13 @@ func TestWaitforPredicateSynchronizationGroups(t *testing.T) {
 }
 
 func TestWaitforPredicateSynchronizationShortCircuit(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		anySecondCalls := 0
 		allSecondCalls := 0
 
 		RunSpecsWith(
 			t,
-			fmt.Sprintf("VM/O%d", level),
+			fmt.Sprintf("VM/%s", level),
 			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				S(`RETURN WAITFOR ANY { true ANY_SECOND() }`, true, "WAITFOR ANY should short-circuit in declaration order"),
@@ -189,22 +189,22 @@ func TestWaitforPredicateSynchronizationShortCircuit(t *testing.T) {
 		)
 
 		if anySecondCalls != 0 {
-			t.Fatalf("WAITFOR ANY evaluated a later arm for O%d: got %d calls", level, anySecondCalls)
+			t.Fatalf("WAITFOR ANY evaluated a later arm for %s: got %d calls", level, anySecondCalls)
 		}
 		if allSecondCalls != 0 {
-			t.Fatalf("WAITFOR ALL evaluated a later arm after failure for O%d: got %d calls", level, allSecondCalls)
+			t.Fatalf("WAITFOR ALL evaluated a later arm after failure for %s: got %d calls", level, allSecondCalls)
 		}
 	}
 }
 
 func TestWaitforPredicateSynchronizationDoesNotAccumulateAcrossCycles(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		leftCalls := 0
 		rightCalls := 0
 
 		RunSpecsWith(
 			t,
-			fmt.Sprintf("VM/O%d", level),
+			fmt.Sprintf("VM/%s", level),
 			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				S(`RETURN WAITFOR ALL { LEFT() RIGHT() } TIMEOUT 5ms EVERY 0ms ON TIMEOUT RETURN false`, false, "WAITFOR ALL should require every arm to pass in the same polling cycle"),
@@ -220,21 +220,21 @@ func TestWaitforPredicateSynchronizationDoesNotAccumulateAcrossCycles(t *testing
 		)
 
 		if leftCalls < 2 {
-			t.Fatalf("WAITFOR ALL did not begin another full cycle for O%d: got %d left-arm calls", level, leftCalls)
+			t.Fatalf("WAITFOR ALL did not begin another full cycle for %s: got %d left-arm calls", level, leftCalls)
 		}
 		if rightCalls != 1 {
-			t.Fatalf("WAITFOR ALL retained arm state across cycles for O%d: got %d right-arm calls", level, rightCalls)
+			t.Fatalf("WAITFOR ALL retained arm state across cycles for %s: got %d right-arm calls", level, rightCalls)
 		}
 	}
 }
 
 func TestWaitforPredicateWhenRetriesUntilTrue(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		callCount := 0
 
 		RunSpecsWith(
 			t,
-			fmt.Sprintf("VM/O%d", level),
+			fmt.Sprintf("VM/%s", level),
 			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				S(`
@@ -258,18 +258,18 @@ func TestWaitforPredicateWhenRetriesUntilTrue(t *testing.T) {
 		)
 
 		if got, want := callCount, 3; got != want {
-			t.Fatalf("unexpected WAITFOR VALUE WHEN candidate call count for O%d: got %d, want %d", level, got, want)
+			t.Fatalf("unexpected WAITFOR VALUE WHEN candidate call count for %s: got %d, want %d", level, got, want)
 		}
 	}
 }
 
 func TestWaitforValueExpressionReevaluatesUntilPresent(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		callCount := 0
 
 		RunSpecsWith(
 			t,
-			fmt.Sprintf("VM/O%d", level),
+			fmt.Sprintf("VM/%s", level),
 			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				S(`RETURN WAITFOR VALUE CANDIDATE() TIMEOUT 100ms EVERY 0ms`, "ready", "WAITFOR VALUE should reevaluate its expression on every polling cycle"),
@@ -285,18 +285,18 @@ func TestWaitforValueExpressionReevaluatesUntilPresent(t *testing.T) {
 		)
 
 		if got, want := callCount, 3; got != want {
-			t.Fatalf("WAITFOR VALUE candidate calls for O%d = %d, want %d", level, got, want)
+			t.Fatalf("WAITFOR VALUE candidate calls for %s = %d, want %d", level, got, want)
 		}
 	}
 }
 
 func TestWaitforPredicateWhenSkipsPredicateUntilBasePasses(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		predicateCalls := 0
 
 		RunSpecsWith(
 			t,
-			fmt.Sprintf("VM/O%d", level),
+			fmt.Sprintf("VM/%s", level),
 			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				S(`
@@ -316,19 +316,19 @@ func TestWaitforPredicateWhenSkipsPredicateUntilBasePasses(t *testing.T) {
 		)
 
 		if got := predicateCalls; got != 0 {
-			t.Fatalf("WAITFOR EXISTS WHEN evaluated predicate before existence passed for O%d: got %d calls", level, got)
+			t.Fatalf("WAITFOR EXISTS WHEN evaluated predicate before existence passed for %s: got %d calls", level, got)
 		}
 	}
 }
 
 func TestWaitforPredicateMultipleWhenShortCircuits(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		firstCalls := 0
 		secondCalls := 0
 
 		RunSpecsWith(
 			t,
-			fmt.Sprintf("VM/O%d", level),
+			fmt.Sprintf("VM/%s", level),
 			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				Nil(`
@@ -349,10 +349,10 @@ func TestWaitforPredicateMultipleWhenShortCircuits(t *testing.T) {
 		)
 
 		if firstCalls == 0 {
-			t.Fatalf("WAITFOR VALUE repeated WHEN did not evaluate the first predicate for O%d", level)
+			t.Fatalf("WAITFOR VALUE repeated WHEN did not evaluate the first predicate for %s", level)
 		}
 		if secondCalls != 0 {
-			t.Fatalf("WAITFOR VALUE repeated WHEN evaluated a later predicate after false for O%d: got %d calls", level, secondCalls)
+			t.Fatalf("WAITFOR VALUE repeated WHEN evaluated a later predicate after false for %s: got %d calls", level, secondCalls)
 		}
 	}
 }

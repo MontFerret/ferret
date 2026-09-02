@@ -1,10 +1,21 @@
 package optimization
 
-import "github.com/MontFerret/ferret/v2/pkg/bytecode"
+import (
+	"fmt"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+)
+
+// Run applies the optimizer pipeline selected by level. Basic runs constant
+// propagation, liveness analysis, and peephole optimization; Full additionally
+// runs register coalescing.
 func Run(program *bytecode.Program, level Level) error {
-	if level <= None {
+	switch level {
+	case None:
 		return nil
+	case Basic, Full:
+	default:
+		return fmt.Errorf("unsupported optimization level %d", level)
 	}
 
 	p := NewPipeline()

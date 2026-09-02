@@ -28,13 +28,13 @@ RETURN carried
 `
 
 func BenchmarkCompilerCompileVarBindings_None(b *testing.B) {
-	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.OptimizationNone)
+	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.None)
 }
 
 func BenchmarkCompilerCompileVarBindings_Basic(b *testing.B) {
-	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.OptimizationBasic)
+	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.Basic)
 }
 
 func BenchmarkCompilerCompileVarBindings_Full(b *testing.B) {
-	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.OptimizationFull)
+	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.Full)
 }

@@ -57,7 +57,7 @@ func TestLiteralSpreadLowering(t *testing.T) {
 
 			return bytecode.ValidateProgram(program)
 		}, "spread-only array element inference remains conservative"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestLiteralSpreadSyntaxBoundaries(t *testing.T) {

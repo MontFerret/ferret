@@ -13,7 +13,7 @@ func RunSequencesWith(t *testing.T, level compiler.OptimizationLevel, sequences 
 	t.Helper()
 
 	runner := spec.SequenceRunner{
-		Name:     fmt.Sprintf("VM/O%d", level),
+		Name:     fmt.Sprintf("VM/%s", level),
 		Compiler: mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 		Env:      opts,
 	}
@@ -24,7 +24,7 @@ func RunSequencesWith(t *testing.T, level compiler.OptimizationLevel, sequences 
 func RunSequences(t *testing.T, sequences []spec.Sequence, opts ...vm.EnvironmentOption) {
 	t.Helper()
 
-	levels := []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull}
+	levels := []compiler.OptimizationLevel{compiler.None, compiler.Full}
 
 	for _, level := range levels {
 		RunSequencesWith(t, level, sequences, opts...)
@@ -34,7 +34,7 @@ func RunSequences(t *testing.T, sequences []spec.Sequence, opts ...vm.Environmen
 func RunSequenceFactory(t *testing.T, factory func() []spec.Sequence, opts ...vm.EnvironmentOption) {
 	t.Helper()
 
-	levels := []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull}
+	levels := []compiler.OptimizationLevel{compiler.None, compiler.Full}
 
 	for _, level := range levels {
 		RunSequencesWith(t, level, factory(), opts...)

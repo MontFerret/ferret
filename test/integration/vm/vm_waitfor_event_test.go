@@ -163,7 +163,7 @@ RETURN (WAITFOR EVENT "test" IN obs TIMEOUT 1ms) ON ERROR RETURN "error"`, "Grou
 }
 
 func TestWaitforEventSourceExpressionEvaluatesOnce(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		sourceCalls := 0
 		source := NewObservable([]runtime.Value{
 			NewTestEventType("ignored"),
@@ -172,7 +172,7 @@ func TestWaitforEventSourceExpressionEvaluatesOnce(t *testing.T) {
 
 		RunSpecsWith(
 			t,
-			fmt.Sprintf("VM/O%d", level),
+			fmt.Sprintf("VM/%s", level),
 			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			[]spec.Spec{
 				S(`LET event = WAITFOR EVENT "test" IN SOURCE() WHEN .type == "match"
@@ -186,11 +186,11 @@ RETURN event.type`, "match", "WAITFOR EVENT should evaluate its source once whil
 		)
 
 		if got, want := sourceCalls, 1; got != want {
-			t.Fatalf("WAITFOR EVENT source calls for O%d = %d, want %d", level, got, want)
+			t.Fatalf("WAITFOR EVENT source calls for %s = %d, want %d", level, got, want)
 		}
 
 		if got, want := source.ReadCount(), int32(2); got != want {
-			t.Fatalf("WAITFOR EVENT stream reads for O%d = %d, want %d", level, got, want)
+			t.Fatalf("WAITFOR EVENT stream reads for %s = %d, want %d", level, got, want)
 		}
 	}
 }

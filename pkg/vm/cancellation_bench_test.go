@@ -86,7 +86,7 @@ func benchmarkSourcePointCancellationSafepoint(b *testing.B, interval int) {
 }
 
 func benchmarkUDFCallCancellationSafepoint(b *testing.B) {
-	program := benchmarkCompileCancellationProgram(b, mustNewCompiler(b, compiler.WithOptimizationLevel(compiler.OptimizationNone)), `
+	program := benchmarkCompileCancellationProgram(b, mustNewCompiler(b, compiler.WithOptimizationLevel(compiler.None)), `
 FUNC inc(value) => value + 1
 RETURN FOR value IN 1..128 RETURN inc(value)
 `)
@@ -94,7 +94,7 @@ RETURN FOR value IN 1..128 RETURN inc(value)
 }
 
 func benchmarkRecursiveUDFCancellationSafepoint(b *testing.B) {
-	program := benchmarkCompileCancellationProgram(b, mustNewCompiler(b, compiler.WithOptimizationLevel(compiler.OptimizationNone)), `
+	program := benchmarkCompileCancellationProgram(b, mustNewCompiler(b, compiler.WithOptimizationLevel(compiler.None)), `
 FUNC fact(value) {
   RETURN MATCH value {
     0 => 1,
@@ -107,7 +107,7 @@ RETURN fact(16)
 }
 
 func benchmarkTailRecursiveUDFCancellationSafepoint(b *testing.B) {
-	program := benchmarkCompileCancellationProgram(b, mustNewCompiler(b, compiler.WithOptimizationLevel(compiler.OptimizationNone)), `
+	program := benchmarkCompileCancellationProgram(b, mustNewCompiler(b, compiler.WithOptimizationLevel(compiler.None)), `
 FUNC count(value, total) {
   RETURN MATCH value {
     0 => total,
@@ -120,7 +120,7 @@ RETURN count(64, 0)
 }
 
 func benchmarkIteratorCancellationSafepoint(b *testing.B) {
-	program := benchmarkCompileCancellationProgram(b, mustNewCompiler(b, compiler.WithOptimizationLevel(compiler.OptimizationNone)), "FOR value IN 1..1024 RETURN value")
+	program := benchmarkCompileCancellationProgram(b, mustNewCompiler(b, compiler.WithOptimizationLevel(compiler.None)), "FOR value IN 1..1024 RETURN value")
 	benchmarkCancellationContexts(b, program, NewDefaultEnvironment())
 }
 
@@ -133,7 +133,7 @@ func benchmarkHostCallCancellationSafepoint(b *testing.B) {
 	}
 	query.WriteString("RETURN 1")
 
-	program := benchmarkCompileCancellationProgram(b, mustNewCompiler(b, compiler.WithOptimizationLevel(compiler.OptimizationNone)), query.String())
+	program := benchmarkCompileCancellationProgram(b, mustNewCompiler(b, compiler.WithOptimizationLevel(compiler.None)), query.String())
 	env, err := NewEnvironment([]EnvironmentOption{WithFunction("PING", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		return runtime.NewInt(1), nil
 	})})
@@ -144,7 +144,7 @@ func benchmarkHostCallCancellationSafepoint(b *testing.B) {
 }
 
 func benchmarkReleaseCompiledCancellationSafepoint(b *testing.B) {
-	program := benchmarkCompileCancellationProgram(b, mustNewCompiler(b, compiler.WithOptimizationLevel(compiler.OptimizationNone)), "FOR value IN 1..128 RETURN value * 2")
+	program := benchmarkCompileCancellationProgram(b, mustNewCompiler(b, compiler.WithOptimizationLevel(compiler.None)), "FOR value IN 1..128 RETURN value * 2")
 	benchmarkCancellationContexts(b, program, NewDefaultEnvironment())
 }
 

@@ -2,7 +2,7 @@ package benchmarks_test
 
 import "testing"
 
-func BenchmarkLoop_Constants(b *testing.B) {
+func BenchmarkLoop_Constants_None(b *testing.B) {
 	RunBenchmarkNone(b, `
 LET obj = { "a": 1 }
 RETURN FOR i IN 1..100

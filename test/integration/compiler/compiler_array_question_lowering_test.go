@@ -18,7 +18,7 @@ func TestArrayQuestionLowering(t *testing.T) {
 		ProgramCheck(`RETURN @arr[?]`, expectBareArrayQuestionLowering, "bare array question avoids counting loop"),
 		ProgramCheck(`RETURN @arr[? FILTER . > 1]`, expectFilteredArrayQuestionLowering, "filtered array question keeps counting loop"),
 		ProgramCheck(`RETURN @arr[? ANY FILTER . > 1]`, expectFilteredArrayQuestionLowering, "quantified array question keeps counting loop"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func expectBareArrayQuestionLengthLowering(prog *bytecode.Program) error {

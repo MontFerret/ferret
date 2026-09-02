@@ -25,7 +25,7 @@ func collectProjectionValueDefOpcode(prog *bytecode.Program) (bytecode.Opcode, e
 	return valueDef, nil
 }
 
-func TestCollectProjectionO0UsesPlainMoveForAllVarsScopePacking(t *testing.T) {
+func TestCollectProjectionNoneUsesPlainMoveForAllVarsScopePacking(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck(`
 LET users = [{ age: 1 }]
@@ -47,7 +47,7 @@ FOR i IN users
 	})
 }
 
-func TestCollectProjectionO0UsesPlainMoveForKeepProjectionObject(t *testing.T) {
+func TestCollectProjectionNoneUsesPlainMoveForKeepProjectionObject(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck(`
 LET users = [{ age: 1 }]
@@ -69,7 +69,7 @@ FOR i IN users
 	})
 }
 
-func TestCollectProjectionO0UsesPlainMoveForTypedCustomProjection(t *testing.T) {
+func TestCollectProjectionNoneUsesPlainMoveForTypedCustomProjection(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck(`
 LET users = ["alice"]
@@ -91,7 +91,7 @@ FOR i IN users
 	})
 }
 
-func TestCollectProjectionO0KeepsTrackedMoveForUnknownCustomProjection(t *testing.T) {
+func TestCollectProjectionNoneKeepsTrackedMoveForUnknownCustomProjection(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck(`
 FUNC project(v) => v

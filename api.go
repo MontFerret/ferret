@@ -1,7 +1,8 @@
 package ferret
 
 import (
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	gooptions "github.com/ziflex/go-options"
+
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
@@ -24,18 +25,6 @@ type (
 
 	// Output is the encoded result returned from session or engine execution.
 	Output = encoding.Output
-
-	// OptimizationLevel represents the level of optimization applied during query compilation.
-	OptimizationLevel = compiler.OptimizationLevel
-)
-
-const (
-	// OptimizationNone disables optimizer passes.
-	OptimizationNone = compiler.OptimizationNone
-	// OptimizationBasic enables the reduced optimizer pipeline without register coalescing.
-	OptimizationBasic = compiler.OptimizationBasic
-	// OptimizationFull is the default and enables the complete optimizer pipeline.
-	OptimizationFull = compiler.OptimizationFull
 )
 
 // NewSource creates a new Source instance with the given name and content.
@@ -48,11 +37,22 @@ func NewAnonymousSource(content string) Source {
 	return source.NewAnonymous(content)
 }
 
-// WithOptimizationLevel configures the optimization level used by the engine compiler.
+// WithOptimizationLevel configures optimization for normal query compilation.
+// OptimizationFull is used by default; debug compilation always uses OptimizationNone.
 func WithOptimizationLevel(level OptimizationLevel) Option {
-	return func(c *config) error {
-		c.compiler = append(c.compiler, compiler.WithOptimizationLevel(level))
-
-		return nil
-	}
+	return gooptions.New(
+		func(config *config, level OptimizationLevel) {
+			config.optimizationLevel = level
+		},
+	).
+		Named("optimization level").
+		Validators(
+			gooptions.OneOf(
+				OptimizationNone,
+				OptimizationBasic,
+				OptimizationFull,
+			),
+		).
+		Value(level).
+		Build()
 }

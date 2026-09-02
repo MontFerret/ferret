@@ -51,7 +51,7 @@ func TestCompiler_OptionalQueryCatchEndsBeforeFollowingInstruction(t *testing.T)
 
 			return nil
 		}, "optional query catch ends before following instruction"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestCompiler_ExplicitQuerySuppressCatchEndsBeforeFollowingInstruction(t *testing.T) {
@@ -77,7 +77,7 @@ func TestCompiler_ExplicitQuerySuppressCatchEndsBeforeFollowingInstruction(t *te
 
 			return nil
 		}, "explicit query suppress catch ends before following instruction"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestCompiler_RetryWithoutFallbackLeavesFinalAttemptUnprotected(t *testing.T) {
@@ -100,7 +100,7 @@ func TestCompiler_RetryWithoutFallbackLeavesFinalAttemptUnprotected(t *testing.T
 
 			return nil
 		}, "retry without fallback should leave one final uncaught attempt"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestCompiler_OptionalForCatchUsesInclusiveEndAndCleanupJump(t *testing.T) {
@@ -130,7 +130,7 @@ func TestCompiler_OptionalForCatchUsesInclusiveEndAndCleanupJump(t *testing.T) {
 
 			return nil
 		}, "optional for catch uses cleanup jump"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestCompiler_GroupedForRetryRoutesThroughCleanup(t *testing.T) {
@@ -157,7 +157,7 @@ func TestCompiler_GroupedForRetryRoutesThroughCleanup(t *testing.T) {
 
 			return nil
 		}, "grouped for retry should route failures through loop cleanup"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestCompiler_GroupedForRecoveryRoutesThroughCleanup(t *testing.T) {
@@ -197,7 +197,7 @@ func TestCompiler_GroupedForRecoveryRoutesThroughCleanup(t *testing.T) {
 
 			return nil
 		}, "grouped for recovery should route failures through loop cleanup"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestCompiler_WaitForEventSuppressCatchUsesCleanupJump(t *testing.T) {
@@ -235,7 +235,7 @@ func TestCompiler_WaitForEventSuppressCatchUsesCleanupJump(t *testing.T) {
 
 			return nil
 		}, "waitfor event suppress catch uses cleanup jump"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestCompiler_WaitForEventRetryUsesCleanupJump(t *testing.T) {
@@ -273,7 +273,7 @@ func TestCompiler_WaitForEventRetryUsesCleanupJump(t *testing.T) {
 
 			return nil
 		}, "waitfor event retry should route failures through stream cleanup"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestCompiler_GroupedWaitForEventRecoveryUsesTimeoutAwarePath(t *testing.T) {
@@ -292,7 +292,7 @@ func TestCompiler_GroupedWaitForEventRecoveryUsesTimeoutAwarePath(t *testing.T) 
 
 			return expectOpcodeAbsent(program, bytecode.OpIterNext)
 		}, "grouped waitfor event retry should use timeout-aware bytecode"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }
 
 func TestCompiler_RecoveryReturnWideningKeepsGenericMemberAccess(t *testing.T) {
@@ -319,5 +319,5 @@ func TestCompiler_RecoveryReturnWideningKeepsGenericMemberAccess(t *testing.T) {
 
 			return nil
 		}, "recovery return should widen result type for later member access"),
-	}, compiler.OptimizationNone, compiler.OptimizationFull)
+	}, compiler.None, compiler.Full)
 }

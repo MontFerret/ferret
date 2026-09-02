@@ -18,8 +18,8 @@ FUNC effect() {
 effect()
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
-		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
 			program := compileWithLevel(t, level, query)
 			if got, want := len(program.Functions.UserDefined), 1; got != want {
 				t.Fatalf("UDF count = %d, want %d", got, want)
@@ -37,8 +37,8 @@ effect()
 }
 
 func TestReturnedAndStandaloneForBytecodeResults(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
-		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
 			standalone := compileWithLevel(t, level, `FOR value IN [1] { RETURN value }`)
 			assertNoneReturn(t, standalone.Bytecode[len(standalone.Bytecode)-1], "standalone FOR body")
 			assertLoopResultOpcodes(t, standalone, false, "standalone FOR body")
@@ -206,9 +206,9 @@ RETURN values`,
 		},
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		for _, test := range tests {
-			t.Run(fmt.Sprintf("O%d/%s", level, test.name), func(t *testing.T) {
+			t.Run(fmt.Sprintf("%s/%s", level, test.name), func(t *testing.T) {
 				program := compileWithLevel(t, level, test.query)
 				if err := bytecode.ValidateProgram(program); err != nil {
 					t.Fatalf("validate bytecode: %v", err)
@@ -269,9 +269,9 @@ RETURN effect()`,
 }`,
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		for name, query := range queries {
-			t.Run(fmt.Sprintf("O%d/%s", level, name), func(t *testing.T) {
+			t.Run(fmt.Sprintf("%s/%s", level, name), func(t *testing.T) {
 				program := compileWithLevel(t, level, query)
 				if err := bytecode.ValidateProgram(program); err != nil {
 					t.Fatalf("validate bytecode: %v", err)
@@ -295,8 +295,8 @@ FUNC effect() {
 effect()
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
-		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
 			program, err := mustNewCompiler(
 				t,
 				compiler.WithOptimizationLevel(level),
@@ -418,8 +418,8 @@ FUNC outer() {
 outer() + 1
 RETURN NONE`
 
-	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
-		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
 			program := compileWithLevel(t, level, query)
 
 			outer, err := findUserDefined(program, "outer")
@@ -525,7 +525,7 @@ func TestEmptySourceRemainsInvalid(t *testing.T) {
 
 func TestNonBodySourceCanFallThrough(t *testing.T) {
 	for _, input := range []string{"// comment only", "USE FOO AS F"} {
-		for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
+		for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 			program := compileWithLevel(t, level, input)
 			assertNoneReturn(t, program.Bytecode[len(program.Bytecode)-1], "non-body source")
 		}

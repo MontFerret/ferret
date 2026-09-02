@@ -8,7 +8,6 @@ import (
 	gooptions "github.com/ziflex/go-options"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	encodingmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
@@ -32,7 +31,7 @@ type (
 		stdlib            stdlib.Set
 		modules           []module.Module
 		logger            []logging.Option
-		compiler          []compiler.Option
+		optimizationLevel OptimizationLevel
 		maxActiveSessions int
 		maxIdleVMsPerPlan int
 		maxVMsPerPlan     int
@@ -66,6 +65,7 @@ func defaultOptions() config {
 		encoding:          encoding.NewRegistry(encodingjson.Default, encodingmsgpack.Default),
 		programLoader:     artifact.NewDefaultLoader(),
 		hooks:             newHookRegistry(),
+		optimizationLevel: OptimizationFull,
 		maxActiveSessions: defaultMaxActiveSessions,
 		maxIdleVMsPerPlan: defaultVMPoolSize,
 		maxVMsPerPlan:     defaultMaxVMsPerPlan,
@@ -353,29 +353,6 @@ func WithEncodingCodec(contentType string, codec encoding.Codec) Option {
 			Codec:       codec,
 			contentType: contentType,
 		})
-	}
-}
-
-// WithCompilerOptions creates an Option that appends the provided compiler options to the options if not empty.
-func WithCompilerOptions(opts ...compiler.Option) Option {
-	return func(o *config) error {
-		if len(opts) == 0 {
-			return nil
-		}
-
-		if o.compiler == nil {
-			o.compiler = make([]compiler.Option, 0, len(opts))
-		}
-
-		for _, opt := range opts {
-			if opt == nil {
-				return fmt.Errorf("compiler option cannot be nil")
-			}
-
-			o.compiler = append(o.compiler, opt)
-		}
-
-		return nil
 	}
 }
 

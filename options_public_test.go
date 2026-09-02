@@ -12,6 +12,7 @@ func TestPublicOptionTypesRemainUsable(t *testing.T) {
 	t.Parallel()
 
 	engineOptions := []ferret.Option{
+		ferret.WithOptimizationLevel(ferret.OptimizationBasic),
 		ferret.WithMaxActiveSessions(1),
 		ferret.WithMaxIdleVMsPerPlan(0),
 		ferret.WithMaxVMsPerPlan(1),
