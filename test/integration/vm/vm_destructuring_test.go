@@ -222,7 +222,7 @@ func TestForDestructuringValidatesEveryItem(t *testing.T) {
 }
 
 func TestDestructuringAcceptsCapabilityBasedValuesAndSkipsIgnoredLookups(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		t.Run(fmt.Sprintf("O%d/object", level), func(t *testing.T) {
 			value := &observableKeyReadable{
 				Int:    0,
@@ -278,7 +278,7 @@ func TestDestructuringAcceptsCapabilityBasedValuesAndSkipsIgnoredLookups(t *test
 func TestDestructuringSkipsIgnoredStructuredSubtrees(t *testing.T) {
 	getterErr := errors.New("ignored getter ran")
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		t.Run(fmt.Sprintf("O%d/object", level), func(t *testing.T) {
 			ignoredIndexes := &observableIndexReadable{Int: 0, err: getterErr}
 			ignoredKeys := &observableKeyReadable{
@@ -399,7 +399,7 @@ RETURN kept
 func TestMutableAndLoopDestructuringSkipIgnoredStructuredSubtrees(t *testing.T) {
 	getterErr := errors.New("ignored getter ran")
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		t.Run(fmt.Sprintf("O%d/var", level), func(t *testing.T) {
 			value := &observableKeyReadable{
 				Int:    0,
@@ -481,7 +481,7 @@ func TestDestructuringWrongShapeReportsNestedPattern(t *testing.T) {
 	query := `LET { nested: [value] } = { nested: 42 }
 RETURN value`
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		program, err := spec.Compile(query, level)
 		if err != nil {
 			t.Fatal(err)

@@ -143,7 +143,7 @@ func TestHostFunctionRecoveryFallbackFailurePropagates(t *testing.T) {
 		),
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		callCount := 0
 
 		RunSpecsWith(

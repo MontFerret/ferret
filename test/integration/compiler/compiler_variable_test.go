@@ -36,7 +36,7 @@ RETURN outer()
 			Kind:    parserd.NameError,
 			Message: "Variable 'inner' is already defined",
 		}, "Should fail to compile because of nested variable name conflict between function and variable"),
-	}, compiler.O0, compiler.O1)
+	}, compiler.OptimizationNone, compiler.OptimizationFull)
 }
 
 func TestVariablesInnerScopeConstantShadowingCompiles(t *testing.T) {
@@ -50,7 +50,7 @@ LET values = (
 RETURN values
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		_ = compileWithLevel(t, level, expr)
 	}
 }
@@ -61,7 +61,7 @@ LET STEP = 1
 RETURN STEP
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		_ = compileWithLevel(t, level, expr)
 	}
 }

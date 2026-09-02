@@ -28,9 +28,9 @@ RETURN carried
 `
 
 func BenchmarkCompilerCompileVarBindings_O0(b *testing.B) {
-	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.O0)
+	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.OptimizationNone)
 }
 
 func BenchmarkCompilerCompileVarBindings_O1(b *testing.B) {
-	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.O1)
+	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.OptimizationFull)
 }

@@ -14,7 +14,7 @@ import (
 )
 
 func TestConcatChainLowering(t *testing.T) {
-	RunUseCases(t, compiler.O1, []spec.Spec{
+	RunUseCases(t, compiler.OptimizationFull, []spec.Spec{
 		OpcodeCount(`RETURN "a" + 1 + "b" + 2 + "c" + 3`, map[bytecode.Opcode]int{
 			bytecode.OpAdd:       0,
 			bytecode.OpConcat:    0,
@@ -41,7 +41,7 @@ str += "a" + 1 + "b" + 2 + @x + "c" + 3
 }
 
 func TestStringAnchoredTemporalConcatenation(t *testing.T) {
-	RunUseCases(t, compiler.O1, []spec.Spec{
+	RunUseCases(t, compiler.OptimizationFull, []spec.Spec{
 		Opcode(`RETURN TYPENAME(NOW() + "5m")`, compile.OpcodeExistence{
 			Exists: []bytecode.Opcode{bytecode.OpAddConst},
 		}, "String", "String concatenation takes precedence over DateTime arithmetic"),

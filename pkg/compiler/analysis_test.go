@@ -497,7 +497,7 @@ func TestAnalyzeVisitsEveryMatchArm(t *testing.T) {
   _ => THIRD(),
 }`
 
-	analysis, err := mustNewCompiler(t, WithOptimizationLevel(O1), WithDebugInfo()).Analyze(source.NewAnonymous(query))
+	analysis, err := mustNewCompiler(t, WithOptimizationLevel(OptimizationFull), WithDebugInfo()).Analyze(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -579,7 +579,7 @@ func TestAnalyzeIsConcurrentSafeAndOptionIndependent(t *testing.T) {
 FUNC add(value) => base + value
 RETURN add(@value)`
 	src := source.NewAnonymous(query)
-	shared := mustNewCompiler(t, WithOptimizationLevel(O1), WithDebugInfo())
+	shared := mustNewCompiler(t, WithOptimizationLevel(OptimizationFull), WithDebugInfo())
 
 	want, err := shared.Analyze(src)
 	if err != nil {
@@ -616,7 +616,7 @@ RETURN add(@value)`
 		t.Fatal(concurrentErr)
 	}
 
-	o0, err := mustNewCompiler(t, WithOptimizationLevel(O0)).Analyze(src)
+	o0, err := mustNewCompiler(t, WithOptimizationLevel(OptimizationNone)).Analyze(src)
 	if err != nil {
 		t.Fatal(err)
 	}

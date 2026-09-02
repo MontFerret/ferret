@@ -220,7 +220,7 @@ func TestWaitforEventOperandsUseExpressionLowering(t *testing.T) {
 			),
 			"WAITFOR EVENT ALL should lower every name and source expression",
 		),
-	}, compiler.O0, compiler.O1)
+	}, compiler.OptimizationNone, compiler.OptimizationFull)
 }
 
 func TestWaitforValuePresenceLowering(t *testing.T) {
@@ -238,7 +238,7 @@ func TestWaitforValuePresenceLowering(t *testing.T) {
 			Exists:    []bytecode.Opcode{bytecode.OpExists},
 			NotExists: []bytecode.Opcode{bytecode.OpJumpIfNone},
 		}, "WAITFOR EXISTS should preserve EXISTS semantics"),
-	}, compiler.O0, compiler.O1)
+	}, compiler.OptimizationNone, compiler.OptimizationFull)
 }
 
 func expectElapsedWaitWithoutHostFunctions(program *bytecode.Program) error {

@@ -20,7 +20,7 @@ import (
 )
 
 type (
-	options struct {
+	config struct {
 		library           runtime.Library
 		network           ferretnet.Network
 		managedNetworks   []ferretnet.Network
@@ -41,7 +41,7 @@ type (
 	}
 
 	// Option configures an Engine during construction.
-	Option = gooptions.Option[options]
+	Option = gooptions.Option[config]
 )
 
 type encodingCodecAlias struct {
@@ -59,8 +59,8 @@ func (c encodingCodecAlias) ContentType() string {
 	return c.contentType
 }
 
-func defaultOptions() options {
-	return options{
+func defaultOptions() config {
+	return config{
 		library:           runtime.NewLibrary(),
 		params:            make(map[string]runtime.Value),
 		encoding:          encoding.NewRegistry(encodingjson.Default, encodingmsgpack.Default),
@@ -73,7 +73,7 @@ func defaultOptions() options {
 	}
 }
 
-func newOptions(setters []Option) (options, error) {
+func newOptions(setters []Option) (config, error) {
 	opts, err := gooptions.ApplyTo(defaultOptions(), setters...)
 	if err == nil {
 		if registerErr := opts.stdlib.Register(opts.library); registerErr != nil {
@@ -97,7 +97,7 @@ func newOptions(setters []Option) (options, error) {
 	opts.managedNetworks = nil
 
 	if err != nil {
-		return options{}, err
+		return config{}, err
 	}
 
 	return opts, nil
@@ -107,7 +107,7 @@ func newOptions(setters []Option) (options, error) {
 // If a parameter already exists, it will be overwritten.
 // All host values will be converted to a runtime.Value.
 func WithParams(params map[string]any) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if len(params) == 0 {
 			return nil
 		}
@@ -131,7 +131,7 @@ func WithParams(params map[string]any) Option {
 // WithRuntimeParams configures runtime parameters by merging the provided params with existing ones in options.
 // If a parameter already exists, it will be overwritten.
 func WithRuntimeParams(params runtime.Params) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if len(params) == 0 {
 			return nil
 		}
@@ -149,7 +149,7 @@ func WithRuntimeParams(params runtime.Params) Option {
 // WithParam returns an Option that sets a parameter with the specified name and value in the options configuration.
 // The name cannot be empty, and the value cannot be nil. It ensures the parameter value is correctly parsed and stored.
 func WithParam(name string, value any) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if name == "" {
 			return fmt.Errorf("param name cannot be empty")
 		}
@@ -177,7 +177,7 @@ func WithParam(name string, value any) Option {
 // WithRuntimeParam returns an Option that sets a runtime parameter with the specified name and value in the options configuration.
 // The name cannot be empty, and the value cannot be nil.
 func WithRuntimeParam(name string, value runtime.Value) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if name == "" {
 			return fmt.Errorf("param name cannot be empty")
 		}
@@ -198,7 +198,7 @@ func WithRuntimeParam(name string, value runtime.Value) Option {
 
 // WithNamespace merges the functions from the provided runtime.Namespace into the engine's function library.
 func WithNamespace(ns runtime.Namespace) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if ns == nil {
 			return fmt.Errorf("namespace cannot be nil")
 		}
@@ -212,7 +212,7 @@ func WithNamespace(ns runtime.Namespace) Option {
 // WithFunctionsRegistrar creates an Option that invokes the provided registrar with the engine's runtime.Namespace if the registrar is not nil.
 // Registered host-function names and namespace segments are canonicalized to lowercase and resolve case-insensitively in FQL.
 func WithFunctionsRegistrar(setter func(ns runtime.Namespace)) Option {
-	return func(env *options) error {
+	return func(env *config) error {
 		if setter == nil {
 			return fmt.Errorf("functions registrar cannot be nil")
 		}
@@ -225,7 +225,7 @@ func WithFunctionsRegistrar(setter func(ns runtime.Namespace)) Option {
 
 // WithFunctions merges the provided *runtime.Functions into the engine's function library.
 func WithFunctions(funcs *runtime.Functions) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if funcs == nil {
 			return fmt.Errorf("functions cannot be nil")
 		}
@@ -239,7 +239,7 @@ func WithFunctions(funcs *runtime.Functions) Option {
 // WithLog sets the writer for logging output.
 // The writer can be any io.Writer, such as os.Stdout or a file.
 func WithLog(writer io.Writer) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if writer == nil {
 			return fmt.Errorf("log writer cannot be nil")
 		}
@@ -253,7 +253,7 @@ func WithLog(writer io.Writer) Option {
 // WithLogLevel sets the logging level for the engine.
 // The logging level determines the severity of log messages that will be recorded.
 func WithLogLevel(lvl logging.LogLevel) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if lvl < logging.TraceLevel || lvl > logging.Disabled {
 			return fmt.Errorf("invalid log level: %v", lvl)
 		}
@@ -267,7 +267,7 @@ func WithLogLevel(lvl logging.LogLevel) Option {
 // WithLogFields sets the fields to be included in log entries.
 // These fields can provide additional context for debugging and monitoring purposes.
 func WithLogFields(fields map[string]any) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if len(fields) == 0 {
 			return nil
 		}
@@ -280,7 +280,7 @@ func WithLogFields(fields map[string]any) Option {
 
 // WithEncodingRegistry sets a custom encoding registry for query execution.
 func WithEncodingRegistry(registry *encoding.Registry) Option {
-	return gooptions.New(func(opts *options, registry *encoding.Registry) {
+	return gooptions.New(func(opts *config, registry *encoding.Registry) {
 		opts.encoding = registry
 	}).
 		Value(registry).
@@ -291,7 +291,7 @@ func WithEncodingRegistry(registry *encoding.Registry) Option {
 
 // WithProgramLoader sets a custom artifact loader for Engine.Load.
 func WithProgramLoader(loader *artifact.Loader) Option {
-	return gooptions.New(func(opts *options, loader *artifact.Loader) {
+	return gooptions.New(func(opts *config, loader *artifact.Loader) {
 		opts.programLoader = loader
 	}).
 		Value(loader).
@@ -307,7 +307,7 @@ func WithoutStdlib() Option {
 
 // WithStdlib configures which standard library groups are registered by default.
 func WithStdlib(set stdlib.Set) Option {
-	return gooptions.New(func(opts *options, set stdlib.Set) {
+	return gooptions.New(func(opts *config, set stdlib.Set) {
 		opts.stdlib = set
 	}).
 		Value(set).
@@ -317,7 +317,7 @@ func WithStdlib(set stdlib.Set) Option {
 
 // WithModules creates an Option that appends the provided modules to the options if not empty.
 func WithModules(mods ...module.Module) Option {
-	return func(env *options) error {
+	return func(env *config) error {
 		if len(mods) == 0 {
 			return nil
 		}
@@ -340,7 +340,7 @@ func WithModules(mods ...module.Module) Option {
 
 // WithEncodingCodec registers or overrides a codec for the given content type.
 func WithEncodingCodec(contentType string, codec encoding.Codec) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if codec == nil {
 			return encoding.ErrNilCodec
 		}
@@ -358,7 +358,7 @@ func WithEncodingCodec(contentType string, codec encoding.Codec) Option {
 
 // WithCompilerOptions creates an Option that appends the provided compiler options to the options if not empty.
 func WithCompilerOptions(opts ...compiler.Option) Option {
-	return func(o *options) error {
+	return func(o *config) error {
 		if len(opts) == 0 {
 			return nil
 		}
@@ -382,7 +382,7 @@ func WithCompilerOptions(opts ...compiler.Option) Option {
 // WithEngineInitHook returns an Option that registers a hook to execute during engine initialization.
 // It returns an error if hook is nil.
 func WithEngineInitHook(hook module.EngineInitHook) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("engine init hook is nil")
 		}
@@ -396,7 +396,7 @@ func WithEngineInitHook(hook module.EngineInitHook) Option {
 // WithEngineCloseHook returns an Option that registers a hook to execute when the engine is closed.
 // It returns an error if hook is nil.
 func WithEngineCloseHook(hook module.EngineCloseHook) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("engine close hook is nil")
 		}
@@ -410,7 +410,7 @@ func WithEngineCloseHook(hook module.EngineCloseHook) Option {
 // WithBeforeCompileHook returns an Option that registers a hook to execute before each compilation attempt.
 // It returns an error if hook is nil.
 func WithBeforeCompileHook(hook module.BeforeCompileHook) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("before compile hook is nil")
 		}
@@ -424,7 +424,7 @@ func WithBeforeCompileHook(hook module.BeforeCompileHook) Option {
 // WithAfterCompileHook returns an Option that registers a hook to execute after each compilation attempt.
 // The hook receives the compilation error (if any). It returns an error if hook is nil.
 func WithAfterCompileHook(hook module.AfterCompileHook) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("after compile hook is nil")
 		}
@@ -438,7 +438,7 @@ func WithAfterCompileHook(hook module.AfterCompileHook) Option {
 // WithPlanCloseHook returns an Option that registers a hook to execute when a plan is closed.
 // It returns an error if hook is nil.
 func WithPlanCloseHook(hook module.PlanCloseHook) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("plan close hook is nil")
 		}
@@ -453,7 +453,7 @@ func WithPlanCloseHook(hook module.PlanCloseHook) Option {
 // The hook can replace the context used by subsequent hooks and VM execution.
 // It returns an error if hook is nil.
 func WithBeforeRunHook(hook module.BeforeRunHook) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("before run hook is nil")
 		}
@@ -467,7 +467,7 @@ func WithBeforeRunHook(hook module.BeforeRunHook) Option {
 // WithAfterRunHook returns an Option that registers a hook to execute after each session run attempt.
 // The hook receives the run error (if any). It returns an error if hook is nil.
 func WithAfterRunHook(hook module.AfterRunHook) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("after run hook is nil")
 		}
@@ -481,7 +481,7 @@ func WithAfterRunHook(hook module.AfterRunHook) Option {
 // WithSessionCloseHook returns an Option that registers a hook to execute when a session is closed.
 // It returns an error if hook is nil.
 func WithSessionCloseHook(hook module.SessionCloseHook) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("session close hook is nil")
 		}
@@ -509,7 +509,7 @@ func WithSessionCloseHook(hook module.SessionCloseHook) Option {
 //
 // A value of 0 disables the limit.
 func WithMaxActiveSessions(n int) Option {
-	return gooptions.New(func(opts *options, n int) {
+	return gooptions.New(func(opts *config, n int) {
 		opts.maxActiveSessions = n
 	}).
 		Value(n).
@@ -537,7 +537,7 @@ func WithMaxActiveSessions(n int) Option {
 //
 // A value of 0 disables idle retention for the plan.
 func WithMaxIdleVMsPerPlan(n int) Option {
-	return gooptions.New(func(opts *options, n int) {
+	return gooptions.New(func(opts *config, n int) {
 		opts.maxIdleVMsPerPlan = n
 	}).
 		Value(n).
@@ -569,7 +569,7 @@ func WithMaxIdleVMsPerPlan(n int) Option {
 // A value of 0 means the plan may create as many VMs as needed, subject only to
 // other limits such as WithMaxActiveSessions.
 func WithMaxVMsPerPlan(n int) Option {
-	return gooptions.New(func(opts *options, n int) {
+	return gooptions.New(func(opts *config, n int) {
 		opts.maxVMsPerPlan = n
 	}).
 		Value(n).
@@ -580,7 +580,7 @@ func WithMaxVMsPerPlan(n int) Option {
 
 // WithFSRoot sets the root directory for the engine's file system.
 func WithFSRoot(root string) Option {
-	return gooptions.New(func(opts *options, root string) {
+	return gooptions.New(func(opts *config, root string) {
 		opts.fsRoot = strings.TrimSpace(root)
 	}).
 		Value(root).
@@ -591,7 +591,7 @@ func WithFSRoot(root string) Option {
 
 // WithFSReadOnly sets the engine's file system to read-only mode.
 func WithFSReadOnly() Option {
-	return gooptions.New(func(opts *options, readOnly bool) {
+	return gooptions.New(func(opts *config, readOnly bool) {
 		opts.fsReadOnly = readOnly
 	}).
 		Value(true).
@@ -602,7 +602,7 @@ func WithFSReadOnly() Option {
 // If a network is provided, the engine will use it directly and will not manage its lifecycle.
 // The host application is responsible for closing the network when it is no longer needed.
 func WithNetwork(network ferretnet.Network) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if network == nil {
 			return fmt.Errorf("network cannot be nil")
 		}
@@ -617,7 +617,7 @@ func WithNetwork(network ferretnet.Network) Option {
 // WithNetworkOptions creates an Option that constructs a new network service using the provided Ferret network options.
 // If no options are provided, the engine will use the default network service.
 func WithNetworkOptions(setters ...ferretnet.Option) Option {
-	return func(opts *options) error {
+	return func(opts *config) error {
 		if len(setters) == 0 {
 			return nil
 		}

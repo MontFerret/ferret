@@ -166,7 +166,7 @@ func TestWaitforPredicateSynchronizationGroups(t *testing.T) {
 }
 
 func TestWaitforPredicateSynchronizationShortCircuit(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		anySecondCalls := 0
 		allSecondCalls := 0
 
@@ -198,7 +198,7 @@ func TestWaitforPredicateSynchronizationShortCircuit(t *testing.T) {
 }
 
 func TestWaitforPredicateSynchronizationDoesNotAccumulateAcrossCycles(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		leftCalls := 0
 		rightCalls := 0
 
@@ -229,7 +229,7 @@ func TestWaitforPredicateSynchronizationDoesNotAccumulateAcrossCycles(t *testing
 }
 
 func TestWaitforPredicateWhenRetriesUntilTrue(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		callCount := 0
 
 		RunSpecsWith(
@@ -264,7 +264,7 @@ func TestWaitforPredicateWhenRetriesUntilTrue(t *testing.T) {
 }
 
 func TestWaitforValueExpressionReevaluatesUntilPresent(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		callCount := 0
 
 		RunSpecsWith(
@@ -291,7 +291,7 @@ func TestWaitforValueExpressionReevaluatesUntilPresent(t *testing.T) {
 }
 
 func TestWaitforPredicateWhenSkipsPredicateUntilBasePasses(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		predicateCalls := 0
 
 		RunSpecsWith(
@@ -322,7 +322,7 @@ func TestWaitforPredicateWhenSkipsPredicateUntilBasePasses(t *testing.T) {
 }
 
 func TestWaitforPredicateMultipleWhenShortCircuits(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		firstCalls := 0
 		secondCalls := 0
 

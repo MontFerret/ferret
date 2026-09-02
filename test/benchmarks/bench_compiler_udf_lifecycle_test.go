@@ -55,25 +55,29 @@ RETURN first(1)
 `
 
 func BenchmarkCompilerCompileUdfLifecycle_O0(b *testing.B) {
-	benchmarkCompileQuery(b, compilerUdfLifecycleQuery, compiler.O0)
+	benchmarkCompileQuery(b, compilerUdfLifecycleQuery, compiler.OptimizationNone)
 }
 
 func BenchmarkCompilerCompileUdfLifecycle_O1(b *testing.B) {
-	benchmarkCompileQuery(b, compilerUdfLifecycleQuery, compiler.O1)
+	benchmarkCompileQuery(b, compilerUdfLifecycleQuery, compiler.OptimizationFull)
 }
 
 func BenchmarkCompilerCompileUdfMemberStatements_O0(b *testing.B) {
-	benchmarkCompileQuery(b, compilerUdfMemberStatementsQuery, compiler.O0)
+	benchmarkCompileQuery(b, compilerUdfMemberStatementsQuery, compiler.OptimizationNone)
 }
 
 func BenchmarkCompilerCompileUdfMemberStatements_O1(b *testing.B) {
-	benchmarkCompileQuery(b, compilerUdfMemberStatementsQuery, compiler.O1)
+	benchmarkCompileQuery(b, compilerUdfMemberStatementsQuery, compiler.OptimizationFull)
 }
 
 func BenchmarkCompilerCompileUdfTransitiveCapture_O0(b *testing.B) {
-	benchmarkCompileQuery(b, compilerUdfTransitiveCaptureQuery, compiler.O0)
+	benchmarkCompileQuery(b, compilerUdfTransitiveCaptureQuery, compiler.OptimizationNone)
 }
 
 func BenchmarkCompilerCompileUdfTransitiveCapture_O1(b *testing.B) {
-	benchmarkCompileQuery(b, compilerUdfTransitiveCaptureQuery, compiler.O1)
+	benchmarkCompileQuery(b, compilerUdfTransitiveCaptureQuery, compiler.OptimizationFull)
+}
+
+func BenchmarkCompilerCompileUdfTransitiveCapture_Basic(b *testing.B) {
+	benchmarkCompileQuery(b, compilerUdfTransitiveCaptureQuery, compiler.OptimizationBasic)
 }

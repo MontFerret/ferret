@@ -30,6 +30,32 @@ func reportCompilerOptionOnApplication[T any](
 	}
 }
 
+func TestWithOptimizationLevelConfiguresEngineCompiler(t *testing.T) {
+	engine, err := New(WithOptimizationLevel(OptimizationFull))
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	t.Cleanup(func() {
+		if err := engine.Close(); err != nil {
+			t.Errorf("Engine.Close() error = %v", err)
+		}
+	})
+
+	plan, err := engine.Compile(t.Context(), NewAnonymousSource("RETURN 1"))
+	if err != nil {
+		t.Fatalf("Compile() error = %v", err)
+	}
+	t.Cleanup(func() {
+		if err := plan.Close(); err != nil {
+			t.Errorf("Plan.Close() error = %v", err)
+		}
+	})
+
+	if got := plan.prog.Metadata.OptimizationLevel; got != int(OptimizationFull) {
+		t.Fatalf("optimization level = %d, want %d", got, OptimizationFull)
+	}
+}
+
 func TestNewReturnsCompilerOptionErrorsBeforeBootstrap(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -57,7 +83,7 @@ func TestNewReturnsCompilerOptionErrorsBeforeBootstrap(t *testing.T) {
 				Reason: reason,
 			}
 			invalid := reportCompilerOptionOnApplication(
-				compiler.WithOptimizationLevel(compiler.O1),
+				compiler.WithOptimizationLevel(compiler.OptimizationFull),
 				tt.application,
 				validationErr,
 			)
@@ -124,7 +150,7 @@ func TestNewReturnsCompilerOptionErrorsBeforeBootstrap(t *testing.T) {
 func TestNewDoesNotCloseInjectedNetworkAfterCompilerOptionError(t *testing.T) {
 	validationErr := sharedoptions.ValidationError{Reason: errors.New("test validation failure")}
 	invalid := reportCompilerOptionOnApplication(
-		compiler.WithOptimizationLevel(compiler.O1),
+		compiler.WithOptimizationLevel(compiler.OptimizationFull),
 		1,
 		validationErr,
 	)

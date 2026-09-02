@@ -14,7 +14,7 @@ import (
 )
 
 func TestHostFunctionRetryRecoverySuccess(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		callCount := 0
 
 		RunSpecsWith(
@@ -41,7 +41,7 @@ func TestHostFunctionRetryRecoverySuccess(t *testing.T) {
 }
 
 func TestHostFunctionRetryExhaustionPropagatesFinalError(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		callCount := 0
 
 		RunSpecsWith(
@@ -67,7 +67,7 @@ func TestHostFunctionRetryExhaustionPropagatesFinalError(t *testing.T) {
 }
 
 func TestHostFunctionRetryFallbackFailurePropagates(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		callCount := 0
 
 		RunSpecsWith(
@@ -93,7 +93,7 @@ func TestHostFunctionRetryFallbackFailurePropagates(t *testing.T) {
 }
 
 func TestGroupedForRetryRecovery(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		callCount := 0
 
 		RunSpecsWith(
@@ -121,7 +121,7 @@ RETURN xs`, []any{11, 12}, "Grouped FOR retry should restart after cleanup witho
 }
 
 func TestWaitForPredicateRetryRecovery(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		callCount := 0
 
 		RunSpecsWith(
@@ -149,7 +149,7 @@ RETURN token`, "ok", "WAITFOR predicate should retry runtime failures and keep t
 }
 
 func TestWaitForEventRetryRecovery(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		successCalls := 0
 
 		RunSpecsWith(

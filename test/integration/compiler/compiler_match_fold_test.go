@@ -62,5 +62,5 @@ RETURN MATCH 1s {
 
 			return nil
 		}, "cross-type Duration equality folds constant MATCH fallback"),
-	}, compiler.O0, compiler.O1)
+	}, compiler.OptimizationNone, compiler.OptimizationFull)
 }

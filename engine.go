@@ -125,7 +125,7 @@ func (e *Engine) Compile(ctx context.Context, src Source) (*Plan, error) {
 }
 
 // CompileDebug compiles source into a reusable plan with source-level debugger
-// metadata. Debug compilation uses effective O0 optimization.
+// metadata. Debug compilation uses OptimizationNone.
 func (e *Engine) CompileDebug(ctx context.Context, src Source) (*Plan, error) {
 	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
 		return nil, fmt.Errorf("before compile hooks: %w", err)

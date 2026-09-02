@@ -18,7 +18,7 @@ FUNC effect() {
 effect()
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
 			program := compileWithLevel(t, level, query)
 			if got, want := len(program.Functions.UserDefined), 1; got != want {
@@ -37,7 +37,7 @@ effect()
 }
 
 func TestReturnedAndStandaloneForBytecodeResults(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
 			standalone := compileWithLevel(t, level, `FOR value IN [1] { RETURN value }`)
 			assertNoneReturn(t, standalone.Bytecode[len(standalone.Bytecode)-1], "standalone FOR body")
@@ -206,7 +206,7 @@ RETURN values`,
 		},
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		for _, test := range tests {
 			t.Run(fmt.Sprintf("O%d/%s", level, test.name), func(t *testing.T) {
 				program := compileWithLevel(t, level, test.query)
@@ -269,7 +269,7 @@ RETURN effect()`,
 }`,
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		for name, query := range queries {
 			t.Run(fmt.Sprintf("O%d/%s", level, name), func(t *testing.T) {
 				program := compileWithLevel(t, level, query)
@@ -295,7 +295,7 @@ FUNC effect() {
 effect()
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
 			program, err := mustNewCompiler(
 				t,
@@ -418,7 +418,7 @@ FUNC outer() {
 outer() + 1
 RETURN NONE`
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
 			program := compileWithLevel(t, level, query)
 
@@ -525,7 +525,7 @@ func TestEmptySourceRemainsInvalid(t *testing.T) {
 
 func TestNonBodySourceCanFallThrough(t *testing.T) {
 	for _, input := range []string{"// comment only", "USE FOO AS F"} {
-		for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 			program := compileWithLevel(t, level, input)
 			assertNoneReturn(t, program.Bytecode[len(program.Bytecode)-1], "non-body source")
 		}

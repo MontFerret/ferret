@@ -65,7 +65,7 @@ RETURN FOR value IN [1, 2, 3] {
 }
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
 			unbracedProgram := compileWithLevel(t, level, unbraced)
 			bracedProgram := compileWithLevel(t, level, braced)

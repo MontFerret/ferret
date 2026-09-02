@@ -10,8 +10,19 @@ import (
 	. "github.com/MontFerret/ferret/v2/test/spec/optimize"
 )
 
+func TestBasicDoesNotCoalesceRegisters(t *testing.T) {
+	RunUseCases(t, compiler.OptimizationBasic, []spec.Spec{
+		Registers(`
+LET a = 1
+LET b = 2
+LET c = a + b
+RETURN c
+`, 3, 3, "Basic optimization preserves the uncoalesced register layout"),
+	})
+}
+
 func TestRegisterCoalescing(t *testing.T) {
-	RunUseCases(t, compiler.O1, []spec.Spec{
+	RunUseCases(t, compiler.OptimizationFull, []spec.Spec{
 		Registers("LET foo = 'bar' RETURN `${foo} baz`", 1, "bar baz", "Should coalesce registers across string interpolation"),
 		Registers("RETURN `${@foo} baz`", 1, "bar baz", "Should coalesce registers across string interpolation with param").Env(vm.WithParams(map[string]runtime.Value{"foo": runtime.NewString("bar")})),
 		Registers(`

@@ -57,7 +57,7 @@ RETURN FOR outer IN [1] {
 		{name: "do while return", query: `RETURN FOR DO WHILE false {}`, marker: "FOR DO"},
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		for _, test := range tests {
 			t.Run(fmt.Sprintf("O%d/%s", level, test.name), func(t *testing.T) {
 				_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.NewAnonymous(test.query))

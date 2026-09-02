@@ -20,7 +20,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-func mustNewOptionsForTest(t *testing.T, setters ...Option) *options {
+func mustNewOptionsForTest(t *testing.T, setters ...Option) *config {
 	t.Helper()
 
 	opts, err := newOptions(setters)
@@ -76,6 +76,12 @@ func TestEngineSimpleOptionsApplyValidValues(t *testing.T) {
 		WithMaxVMsPerPlan(5),
 		WithFSRoot(" \t"+root+"\n"),
 		WithFSReadOnly(),
+		WithOptimizationLevel(OptimizationNone),
+		WithParam("param1", "value1"),
+		WithParams(map[string]any{"param2": 42}),
+		WithRuntimeParam("param3", runtime.NewString("value3")),
+		WithRuntimeParams(runtime.Params{"param4": runtime.NewInt(100)}),
+		WithLogFields(map[string]any{"component": "engine"}),
 	)
 
 	if opts.encoding != registry {
@@ -246,18 +252,18 @@ func TestNewOptionsAppliesAllOptionsAndJoinsFailuresInOrder(t *testing.T) {
 	var calls []string
 
 	_, err := newOptions([]Option{
-		func(*options) error {
+		func(*config) error {
 			calls = append(calls, "first")
 
 			return firstErr
 		},
 		nil,
-		func(*options) error {
+		func(*config) error {
 			calls = append(calls, "middle")
 
 			return nil
 		},
-		func(*options) error {
+		func(*config) error {
 			calls = append(calls, "second")
 
 			return secondErr
@@ -417,7 +423,7 @@ func TestNewOptionsAcceptsEmptyCompilerOptions(t *testing.T) {
 
 	opts := mustNewOptionsForTest(
 		t,
-		WithCompilerOptions(compiler.WithOptimizationLevel(compiler.O0)),
+		WithCompilerOptions(compiler.WithOptimizationLevel(compiler.OptimizationNone)),
 		WithCompilerOptions(),
 	)
 

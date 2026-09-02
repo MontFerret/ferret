@@ -36,7 +36,7 @@ FUNC TEST() {
 RETURN [val, val2, TEST()]
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
 			program := mustCompileProgram(t, level, "missing_param_mixed_sites.fql", query)
 			instance := mustNewVM(t, program)
@@ -95,7 +95,7 @@ FUNC outer() {
 RETURN outer()
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
 			program := mustCompileProgram(t, level, "missing_param_nested_udf.fql", query)
 			instance := mustNewVM(t, program)
@@ -141,7 +141,7 @@ LET right = read()
 RETURN left + right
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
 			program := mustCompileProgram(t, level, "missing_param_udf_callsites.fql", query)
 			instance := mustNewVM(t, program)
@@ -182,7 +182,7 @@ func TestWarmupMissingParamProtectedUdfCallStillFailsWithoutTrace(t *testing.T) 
 RETURN risky()?
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
 			program := mustCompileProgram(t, level, "missing_param_protected_udf.fql", query)
 			instance := mustNewVM(t, program)

@@ -148,7 +148,7 @@ func TestDispatchSyntaxErrorsIgnoreCommentsAndStrings(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.O0)).Compile(source.New("dispatch_diag", tc.src))
+			_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.OptimizationNone)).Compile(source.New("dispatch_diag", tc.src))
 			if err == nil {
 				t.Fatal("expected compilation error")
 			}

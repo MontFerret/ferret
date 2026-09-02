@@ -11,7 +11,7 @@ import (
 )
 
 func TestDestructuringLoweringUsesAssertionsAndOptionalConstantLoads(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		prog := compileWithLevel(t, level, `
 LET { user: { name }, values: [first, _] } = @payload
 RETURN [name, first]
@@ -37,7 +37,7 @@ RETURN [name, first]
 }
 
 func TestDestructuringLoweringSkipsIgnoredStructuredChildren(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		ignored := compileWithLevel(t, level, `
 LET {
     kept,
@@ -80,7 +80,7 @@ RETURN kept
 }
 
 func TestDestructuringLoweringRetainsMixedStructuredChildren(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		prog := compileWithLevel(t, level, `
 LET { nested: [_, kept, _], ignored: { child: [_] } } = @payload
 RETURN kept

@@ -230,3 +230,25 @@ func TestPipeline_RefreshesLivenessBeforePeepholeAfterRegisterCoalescing(t *test
 		t.Fatalf("expected ADD to remain after peephole, got %s", full.Bytecode[2].Opcode)
 	}
 }
+
+func TestRunBasicIncludesPeepholeWithoutRegisterCoalescing(t *testing.T) {
+	program := &bytecode.Program{
+		Registers: 2,
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpMove, bytecode.NewRegister(1), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(1)),
+		},
+	}
+
+	if err := Run(program, Basic); err != nil {
+		t.Fatalf("Basic optimization failed: %v", err)
+	}
+
+	if len(program.Bytecode) != 1 || program.Bytecode[0].Opcode != bytecode.OpReturn {
+		t.Fatalf("Basic optimization did not apply peephole rewrite: %#v", program.Bytecode)
+	}
+
+	if program.Registers != 2 {
+		t.Fatalf("Basic optimization coalesced registers: got %d, want 2", program.Registers)
+	}
+}

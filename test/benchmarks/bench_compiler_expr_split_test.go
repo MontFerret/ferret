@@ -33,25 +33,25 @@ const compilerQueryShorthandQuery = "\n" +
 	"}\n"
 
 func BenchmarkCompilerCompileMemberPipeline_O0(b *testing.B) {
-	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.O0)
+	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.OptimizationNone)
 }
 
 func BenchmarkCompilerCompileMemberPipeline_O1(b *testing.B) {
-	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.O1)
+	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.OptimizationFull)
 }
 
 func BenchmarkCompilerCompileMatchQueryMix_O0(b *testing.B) {
-	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.O0)
+	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.OptimizationNone)
 }
 
 func BenchmarkCompilerCompileMatchQueryMix_O1(b *testing.B) {
-	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.O1)
+	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.OptimizationFull)
 }
 
 func BenchmarkCompilerCompileQueryShorthand_O0(b *testing.B) {
-	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.O0)
+	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.OptimizationNone)
 }
 
 func BenchmarkCompilerCompileQueryShorthand_O1(b *testing.B) {
-	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.O1)
+	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.OptimizationFull)
 }

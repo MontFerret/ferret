@@ -31,7 +31,7 @@ type (
 	}
 )
 
-func newHostContext(opts *options) (*hostContext, error) {
+func newHostContext(opts *config) (*hostContext, error) {
 	logger, err := logging.New(opts.logger...)
 	if err != nil {
 		return nil, fmt.Errorf("logger: %w", err)

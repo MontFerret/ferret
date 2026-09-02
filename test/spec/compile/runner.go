@@ -22,14 +22,14 @@ func RunSpecsWith(t *testing.T, level compiler.OptimizationLevel, specs []spec.S
 func RunSpecs(t *testing.T, useCases []spec.Spec) {
 	t.Helper()
 
-	RunSpecsWith(t, compiler.O0, useCases)
+	RunSpecsWith(t, compiler.OptimizationNone, useCases)
 }
 
 func RunSpecsLevels(t *testing.T, specs []spec.Spec, levels ...compiler.OptimizationLevel) {
 	t.Helper()
 
 	if len(levels) == 0 {
-		levels = []compiler.OptimizationLevel{compiler.O0}
+		levels = []compiler.OptimizationLevel{compiler.OptimizationNone}
 	}
 
 	for _, level := range levels {

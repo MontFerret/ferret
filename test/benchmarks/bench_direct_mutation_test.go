@@ -115,11 +115,11 @@ RETURN 1
 )
 
 func BenchmarkCompilerCompileDirectMutation_O0(b *testing.B) {
-	benchmarkCompileQuery(b, compilerDirectMutationQuery, compiler.O0)
+	benchmarkCompileQuery(b, compilerDirectMutationQuery, compiler.OptimizationNone)
 }
 
 func BenchmarkCompilerCompileDirectMutation_O1(b *testing.B) {
-	benchmarkCompileQuery(b, compilerDirectMutationQuery, compiler.O1)
+	benchmarkCompileQuery(b, compilerDirectMutationQuery, compiler.OptimizationFull)
 }
 
 func BenchmarkDirectMutation_BindingNumeric_O0(b *testing.B) {

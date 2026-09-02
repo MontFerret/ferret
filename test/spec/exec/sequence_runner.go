@@ -24,7 +24,7 @@ func RunSequencesWith(t *testing.T, level compiler.OptimizationLevel, sequences 
 func RunSequences(t *testing.T, sequences []spec.Sequence, opts ...vm.EnvironmentOption) {
 	t.Helper()
 
-	levels := []compiler.OptimizationLevel{compiler.O0, compiler.O1}
+	levels := []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull}
 
 	for _, level := range levels {
 		RunSequencesWith(t, level, sequences, opts...)
@@ -34,7 +34,7 @@ func RunSequences(t *testing.T, sequences []spec.Sequence, opts ...vm.Environmen
 func RunSequenceFactory(t *testing.T, factory func() []spec.Sequence, opts ...vm.EnvironmentOption) {
 	t.Helper()
 
-	levels := []compiler.OptimizationLevel{compiler.O0, compiler.O1}
+	levels := []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull}
 
 	for _, level := range levels {
 		RunSequencesWith(t, level, factory(), opts...)

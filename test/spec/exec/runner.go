@@ -22,7 +22,7 @@ func RunSpecsWith(t *testing.T, name string, c *compiler.Compiler, specs []spec.
 func RunSpecs(t *testing.T, specs []spec.Spec, opts ...vm.EnvironmentOption) {
 	t.Helper()
 
-	levels := []compiler.OptimizationLevel{compiler.O0, compiler.O1}
+	levels := []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull}
 
 	for _, level := range levels {
 		RunSpecsWith(t, fmt.Sprintf("VM/O%d", level), mustNewCompiler(t, compiler.WithOptimizationLevel(level)), specs, opts...)
@@ -32,7 +32,7 @@ func RunSpecs(t *testing.T, specs []spec.Spec, opts ...vm.EnvironmentOption) {
 func RunSpecFactory(t *testing.T, factory func() []spec.Spec, opts ...vm.EnvironmentOption) {
 	t.Helper()
 
-	levels := []compiler.OptimizationLevel{compiler.O0, compiler.O1}
+	levels := []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull}
 
 	for _, level := range levels {
 		RunSpecsWith(t, fmt.Sprintf("VM/O%d", level), mustNewCompiler(t, compiler.WithOptimizationLevel(level)), factory(), opts...)
@@ -42,5 +42,5 @@ func RunSpecFactory(t *testing.T, factory func() []spec.Spec, opts ...vm.Environ
 func RunProgramSpecs(t *testing.T, specs []spec.Spec, opts ...vm.EnvironmentOption) {
 	t.Helper()
 
-	RunSpecsWith(t, "VM/Program", mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.O0)), specs, opts...)
+	RunSpecsWith(t, "VM/Program", mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.OptimizationNone)), specs, opts...)
 }

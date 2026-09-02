@@ -229,8 +229,8 @@ var (
 
 	optimizationLevel = flag.Int(
 		"ol",
-		int(compiler.O1),
-		"set optimization level (0-3)",
+		int(compiler.OptimizationFull),
+		"set optimization level (0-2)",
 	)
 
 	logLevel = flag.String(
@@ -599,7 +599,7 @@ func analyzeQuery(query source.Source) error {
 
 	optLevel := compiler.OptimizationLevel(*optimizationLevel)
 
-	if optLevel < 0 || optLevel > 3 {
+	if optLevel < compiler.OptimizationNone || optLevel > compiler.OptimizationFull {
 		fmt.Printf("Invalid optimization level: %d.", optLevel)
 		os.Exit(1)
 	}

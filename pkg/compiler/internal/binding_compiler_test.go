@@ -435,7 +435,7 @@ func newBindingCompilerTestState(t *testing.T, query string) *bindingCompilerTes
 
 	src := source.New("binding_compiler_test.fql", query)
 	errors := parserd.NewErrorHandler(src, 10)
-	session := NewCompilationSession(src, errors, optimization.LevelNone)
+	session := NewCompilationSession(src, errors, optimization.None)
 	front := NewCompilationFrontend(session)
 	program := parseBindingCompilerTestProgram(t, src, errors)
 

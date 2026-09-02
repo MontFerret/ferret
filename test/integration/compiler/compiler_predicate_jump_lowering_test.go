@@ -60,5 +60,5 @@ func TestPredicateJumpLowering_ConstEqNeLiteralSides(t *testing.T) {
 		}, tt.name))
 	}
 
-	RunSpecsLevels(t, specs, compiler.O0, compiler.O1)
+	RunSpecsLevels(t, specs, compiler.OptimizationNone, compiler.OptimizationFull)
 }

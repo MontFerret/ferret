@@ -10,11 +10,11 @@ import (
 )
 
 func BenchmarkCompilerCompileConcatChain_O1(b *testing.B) {
-	benchmarkCompileQuery(b, buildConcatCompileQuery(false), compiler.O1)
+	benchmarkCompileQuery(b, buildConcatCompileQuery(false), compiler.OptimizationFull)
 }
 
 func BenchmarkCompilerCompileStringAppend_O1(b *testing.B) {
-	benchmarkCompileQuery(b, buildConcatCompileQuery(true), compiler.O1)
+	benchmarkCompileQuery(b, buildConcatCompileQuery(true), compiler.OptimizationFull)
 }
 
 func benchmarkCompileQuery(b *testing.B, query string, level compiler.OptimizationLevel) {

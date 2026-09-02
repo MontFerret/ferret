@@ -163,7 +163,7 @@ RETURN (WAITFOR EVENT "test" IN obs TIMEOUT 1ms) ON ERROR RETURN "error"`, "Grou
 }
 
 func TestWaitforEventSourceExpressionEvaluatesOnce(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.OptimizationNone, compiler.OptimizationFull} {
 		sourceCalls := 0
 		source := NewObservable([]runtime.Value{
 			NewTestEventType("ignored"),

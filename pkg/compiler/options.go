@@ -7,20 +7,22 @@ import (
 )
 
 const (
-	// O0 represents no optimization level, where the compiler performs minimal or no optimizations.
-	O0 = optimization.LevelNone
-	// O1 represents basic optimization level, providing a balance between performance and resource usage.
-	O1 = optimization.LevelBasic
+	// OptimizationNone disables optimizer passes.
+	OptimizationNone = optimization.None
+	// OptimizationBasic enables constant propagation, liveness analysis, and peephole optimization.
+	OptimizationBasic = optimization.Basic
+	// OptimizationFull is the default and adds register coalescing to the Basic pipeline.
+	OptimizationFull = optimization.Full
 )
 
 type (
-	// OptimizationLevel controls the compiler optimization pipeline.
-	OptimizationLevel = optimization.Level
-
 	config struct {
 		Level     optimization.Level
 		DebugInfo bool
 	}
+
+	// OptimizationLevel controls the compiler optimization pipeline.
+	OptimizationLevel = optimization.Level
 
 	// Option configures a Compiler during construction.
 	Option = options.Option[config]
@@ -28,25 +30,24 @@ type (
 
 func defaultConfig() config {
 	return config{
-		Level: optimization.LevelBasic,
+		Level: OptimizationFull,
 	}
 }
 
 // WithOptimizationLevel configures the compiler optimization level. It accepts
-// levels from 0 through 3.
+// levels from 0 through 2.
 func WithOptimizationLevel(level OptimizationLevel) Option {
 	return options.New(
-		func(config *config, level optimization.Level) {
+		func(config *config, level OptimizationLevel) {
 			config.Level = level
 		},
 	).
 		Named("optimization level").
 		Validators(
 			options.OneOf(
-				optimization.LevelNone,
-				optimization.LevelBasic,
-				optimization.LevelFull,
-				optimization.LevelAggressive,
+				OptimizationNone,
+				OptimizationBasic,
+				OptimizationFull,
 			),
 		).
 		Value(level).
@@ -58,7 +59,7 @@ func WithOptimizationLevel(level OptimizationLevel) Option {
 func WithDebugInfo() Option {
 	return func(config *config) error {
 		config.DebugInfo = true
-		config.Level = optimization.LevelNone
+		config.Level = OptimizationNone
 
 		return nil
 	}

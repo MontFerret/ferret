@@ -13,9 +13,9 @@ var (
 )
 
 func RunBenchmarkO0(b *testing.B, expression string, opts ...vm.EnvironmentOption) {
-	spec.RunBenchmarkWithOptimization(b, expression, compiler.O0, opts...)
+	spec.RunBenchmarkWithOptimization(b, expression, compiler.OptimizationNone, opts...)
 }
 
 func RunBenchmarkO1(b *testing.B, expression string, opts ...vm.EnvironmentOption) {
-	spec.RunBenchmarkWithOptimization(b, expression, compiler.O1, opts...)
+	spec.RunBenchmarkWithOptimization(b, expression, compiler.OptimizationFull, opts...)
 }

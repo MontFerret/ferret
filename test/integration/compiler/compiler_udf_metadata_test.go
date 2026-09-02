@@ -105,7 +105,7 @@ RETURN call()
 			expectHostSignatures(foo...),
 			"protected host overload bindings preserve first-seen order and reuse matching signatures",
 		),
-	}, compiler.O0, compiler.O1)
+	}, compiler.OptimizationNone, compiler.OptimizationFull)
 }
 
 func TestUdfMetadataO0(t *testing.T) {
@@ -409,7 +409,7 @@ RETURN outer(3)
 
 			return nil
 		}, "nested captures tracked across scopes"),
-	}, compiler.O0, compiler.O1)
+	}, compiler.OptimizationNone, compiler.OptimizationFull)
 }
 
 func TestUdfTransitiveCaptureMetadata(t *testing.T) {
@@ -434,7 +434,7 @@ RETURN first(1)
 
 			return nil
 		}, "transitive captures are included in udf metadata"),
-	}, compiler.O0, compiler.O1)
+	}, compiler.OptimizationNone, compiler.OptimizationFull)
 }
 
 func TestUdfNestedCompileStatePropagatesMetadata(t *testing.T) {
@@ -456,7 +456,7 @@ RETURN outer(3)
 
 			return paramSet(prog.Params, "foo")
 		}, "nested udf compile restores metadata after inner state swap"),
-	}, compiler.O0, compiler.O1)
+	}, compiler.OptimizationNone, compiler.OptimizationFull)
 }
 
 func TestUdfNestedDirectReturnStillLowersToTailCall(t *testing.T) {
@@ -490,7 +490,7 @@ RETURN outer(3)
 
 			return fmt.Errorf("expected tail call in forward body between %d and %d", forward.Entry, nextEntry)
 		}, "nested udf direct return preserves tail-call lowering"),
-	}, compiler.O0, compiler.O1)
+	}, compiler.OptimizationNone, compiler.OptimizationFull)
 }
 
 func TestUdfNestedScopeDoesNotLeakToSiblingCompilation(t *testing.T) {
@@ -505,10 +505,10 @@ RETURN sibling()
 `, func(prog *bytecode.Program) error {
 			return hostSignature(prog.Functions.Host, "onlyInside", 0)
 		}, "sibling udf compilation does not reuse prior nested scope"),
-	}, compiler.O0, compiler.O1)
+	}, compiler.OptimizationNone, compiler.OptimizationFull)
 }
 
-func TestUdfMetadataO1(t *testing.T) {
+func TestUdfMetadataOptimized(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(`
 FUNC used() => 1
@@ -516,25 +516,25 @@ FUNC unused() => TEST_FN(@foo)
 RETURN used()
 `, func(prog *bytecode.Program) error {
 			if hasHostName(prog.Functions.Host, "TEST_FN") {
-				return fmt.Errorf("expected TEST_FN metadata to be pruned at O1, got %v", prog.Functions.Host)
+				return fmt.Errorf("expected TEST_FN metadata to be pruned after optimization, got %v", prog.Functions.Host)
 			}
 
 			return paramSet(prog.Params)
-		}, "unused udf metadata pruned at o1"),
+		}, "unused udf metadata pruned after optimization"),
 		ProgramCheck(`
 USE FOO AS F
 FUNC f() => 1
 RETURN f()
 `, func(prog *bytecode.Program) error {
 			if _, err := findUserDefined(prog, "f"); err != nil {
-				return fmt.Errorf("expected UDF f to remain reachable at O1: %w", err)
+				return fmt.Errorf("expected UDF f to remain reachable after optimization: %w", err)
 			}
 
 			if hasHostName(prog.Functions.Host, "FOO") {
-				return fmt.Errorf("expected no bare FOO host metadata at O1, got %v", prog.Functions.Host)
+				return fmt.Errorf("expected no bare FOO host metadata after optimization, got %v", prog.Functions.Host)
 			}
 
 			return nil
 		}, "namespace alias does not shadow udf call"),
-	}, compiler.O1)
+	}, compiler.OptimizationBasic, compiler.OptimizationFull)
 }

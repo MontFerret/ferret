@@ -31,5 +31,5 @@ FOR _ DO WHILE false
 `,
 			"discard loop variable",
 		),
-	}, compiler.O0, compiler.O1)
+	}, compiler.OptimizationNone, compiler.OptimizationFull)
 }
