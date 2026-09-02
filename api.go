@@ -1,8 +1,6 @@
 package ferret
 
 import (
-	gooptions "github.com/ziflex/go-options"
-
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
@@ -35,24 +33,4 @@ func NewSource(name, content string) Source {
 // NewAnonymousSource creates a new anonymous Source instance with the given content.
 func NewAnonymousSource(content string) Source {
 	return source.NewAnonymous(content)
-}
-
-// WithOptimizationLevel configures optimization for normal query compilation.
-// OptimizationFull is used by default; debug compilation always uses OptimizationNone.
-func WithOptimizationLevel(level OptimizationLevel) Option {
-	return gooptions.New(
-		func(config *config, level OptimizationLevel) {
-			config.optimizationLevel = level
-		},
-	).
-		Named("optimization level").
-		Validators(
-			gooptions.OneOf(
-				OptimizationNone,
-				OptimizationBasic,
-				OptimizationFull,
-			),
-		).
-		Value(level).
-		Build()
 }

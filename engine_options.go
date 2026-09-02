@@ -103,6 +103,26 @@ func newOptions(setters []Option) (config, error) {
 	return opts, nil
 }
 
+// WithOptimizationLevel configures optimization for normal query compilation.
+// OptimizationFull is used by default; debug compilation always uses OptimizationNone.
+func WithOptimizationLevel(level OptimizationLevel) Option {
+	return gooptions.New(
+		func(config *config, level OptimizationLevel) {
+			config.optimizationLevel = level
+		},
+	).
+		Named("optimization level").
+		Validators(
+			gooptions.OneOf(
+				OptimizationNone,
+				OptimizationBasic,
+				OptimizationFull,
+			),
+		).
+		Value(level).
+		Build()
+}
+
 // WithParams applies custom parameters to the options by merging them with existing ones, initializing if necessary.
 // If a parameter already exists, it will be overwritten.
 // All host values will be converted to a runtime.Value.
