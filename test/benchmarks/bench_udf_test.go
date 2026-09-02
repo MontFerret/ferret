@@ -143,6 +143,10 @@ func BenchmarkUdfCalls(b *testing.B) {
 			b.ReportAllocs()
 			RunBenchmarkNone(b, udfTopLevelQuery(c))
 		})
+		b.Run(fmt.Sprintf("UDF/TopLevel/%s/Basic", c.name), func(b *testing.B) {
+			b.ReportAllocs()
+			RunBenchmarkBasic(b, udfTopLevelQuery(c))
+		})
 		b.Run(fmt.Sprintf("UDF/TopLevel/%s/Full", c.name), func(b *testing.B) {
 			b.ReportAllocs()
 			RunBenchmarkFull(b, udfTopLevelQuery(c))
@@ -150,6 +154,10 @@ func BenchmarkUdfCalls(b *testing.B) {
 		b.Run(fmt.Sprintf("UDF/Nested/%s/None", c.name), func(b *testing.B) {
 			b.ReportAllocs()
 			RunBenchmarkNone(b, udfNestedQuery(c))
+		})
+		b.Run(fmt.Sprintf("UDF/Nested/%s/Basic", c.name), func(b *testing.B) {
+			b.ReportAllocs()
+			RunBenchmarkBasic(b, udfNestedQuery(c))
 		})
 		b.Run(fmt.Sprintf("UDF/Nested/%s/Full", c.name), func(b *testing.B) {
 			b.ReportAllocs()
@@ -166,6 +174,10 @@ func BenchmarkUdfCalls_HostBaseline(b *testing.B) {
 			b.ReportAllocs()
 			RunBenchmarkNone(b, hostTopLevelQuery(c), hostOption(c))
 		})
+		b.Run(fmt.Sprintf("Host/TopLevel/%s/Basic", c.name), func(b *testing.B) {
+			b.ReportAllocs()
+			RunBenchmarkBasic(b, hostTopLevelQuery(c), hostOption(c))
+		})
 		b.Run(fmt.Sprintf("Host/TopLevel/%s/Full", c.name), func(b *testing.B) {
 			b.ReportAllocs()
 			RunBenchmarkFull(b, hostTopLevelQuery(c), hostOption(c))
@@ -177,12 +189,20 @@ func BenchmarkUdfCalls_TransitiveCapture_None(b *testing.B) {
 	RunBenchmarkNone(b, udfTransitiveCaptureQuery)
 }
 
+func BenchmarkUdfCalls_TransitiveCapture_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, udfTransitiveCaptureQuery)
+}
+
 func BenchmarkUdfCalls_TransitiveCapture_Full(b *testing.B) {
 	RunBenchmarkFull(b, udfTransitiveCaptureQuery)
 }
 
 func BenchmarkUdfCalls_DirectFor_None(b *testing.B) {
 	RunBenchmarkNone(b, udfDirectForQuery)
+}
+
+func BenchmarkUdfCalls_DirectFor_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, udfDirectForQuery)
 }
 
 func BenchmarkUdfCalls_DirectFor_Full(b *testing.B) {
@@ -193,12 +213,20 @@ func BenchmarkUdfCalls_FallthroughFor_None(b *testing.B) {
 	RunBenchmarkNone(b, udfFallthroughForQuery)
 }
 
+func BenchmarkUdfCalls_FallthroughFor_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, udfFallthroughForQuery)
+}
+
 func BenchmarkUdfCalls_FallthroughFor_Full(b *testing.B) {
 	RunBenchmarkFull(b, udfFallthroughForQuery)
 }
 
 func BenchmarkUdfCalls_ExplicitWrapperFor_None(b *testing.B) {
 	RunBenchmarkNone(b, udfExplicitWrapperForQuery)
+}
+
+func BenchmarkUdfCalls_ExplicitWrapperFor_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, udfExplicitWrapperForQuery)
 }
 
 func BenchmarkUdfCalls_ExplicitWrapperFor_Full(b *testing.B) {

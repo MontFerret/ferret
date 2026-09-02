@@ -55,12 +55,20 @@ func BenchmarkReturnDistinct_None(b *testing.B) {
 	RunBenchmarkNone(b, returnDistinctQuery)
 }
 
+func BenchmarkReturnDistinct_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, returnDistinctQuery)
+}
+
 func BenchmarkReturnDistinct_Full(b *testing.B) {
 	RunBenchmarkFull(b, returnDistinctQuery)
 }
 
 func BenchmarkLoopDistinct_None(b *testing.B) {
 	RunBenchmarkNone(b, loopDistinctQuery)
+}
+
+func BenchmarkLoopDistinct_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, loopDistinctQuery)
 }
 
 func BenchmarkLoopDistinct_Full(b *testing.B) {
@@ -71,12 +79,20 @@ func BenchmarkUnique_None(b *testing.B) {
 	RunBenchmarkNone(b, uniqueQuery)
 }
 
+func BenchmarkUnique_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, uniqueQuery)
+}
+
 func BenchmarkUnique_Full(b *testing.B) {
 	RunBenchmarkFull(b, uniqueQuery)
 }
 
 func BenchmarkUnionDistinct_None(b *testing.B) {
 	RunBenchmarkNone(b, unionDistinctQuery)
+}
+
+func BenchmarkUnionDistinct_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, unionDistinctQuery)
 }
 
 func BenchmarkUnionDistinct_Full(b *testing.B) {
@@ -87,12 +103,20 @@ func BenchmarkCountDistinct_None(b *testing.B) {
 	RunBenchmarkNone(b, countDistinctQuery)
 }
 
+func BenchmarkCountDistinct_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, countDistinctQuery)
+}
+
 func BenchmarkCountDistinct_Full(b *testing.B) {
 	RunBenchmarkFull(b, countDistinctQuery)
 }
 
 func BenchmarkCompilerCompileReturnDistinct_None(b *testing.B) {
 	benchmarkCompileQuery(b, compilerReturnDistinctQuery, compiler.OptimizationNone)
+}
+
+func BenchmarkCompilerCompileReturnDistinct_Basic(b *testing.B) {
+	benchmarkCompileQuery(b, compilerReturnDistinctQuery, compiler.OptimizationBasic)
 }
 
 func BenchmarkCompilerCompileReturnDistinct_Full(b *testing.B) {

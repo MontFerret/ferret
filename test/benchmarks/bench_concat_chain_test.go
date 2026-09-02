@@ -11,6 +11,10 @@ func BenchmarkConcatChainMixed_None(b *testing.B) {
 	RunBenchmarkNone(b, concatChainMixedQuery, WithParam("name", "X"), WithParam("count", 7))
 }
 
+func BenchmarkConcatChainMixed_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, concatChainMixedQuery, WithParam("name", "X"), WithParam("count", 7))
+}
+
 func BenchmarkConcatChainMixed_Full(b *testing.B) {
 	RunBenchmarkFull(b, concatChainMixedQuery, WithParam("name", "X"), WithParam("count", 7))
 }

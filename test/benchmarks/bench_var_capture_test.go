@@ -47,12 +47,20 @@ func BenchmarkVarCapture_SingleCell_None(b *testing.B) {
 	RunBenchmarkNone(b, varCaptureSingleCellQuery)
 }
 
+func BenchmarkVarCapture_SingleCell_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, varCaptureSingleCellQuery)
+}
+
 func BenchmarkVarCapture_SingleCell_Full(b *testing.B) {
 	RunBenchmarkFull(b, varCaptureSingleCellQuery)
 }
 
 func BenchmarkVarCapture_MultiCell_None(b *testing.B) {
 	RunBenchmarkNone(b, varCaptureMultiCellQuery)
+}
+
+func BenchmarkVarCapture_MultiCell_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, varCaptureMultiCellQuery)
 }
 
 func BenchmarkVarCapture_MultiCell_Full(b *testing.B) {

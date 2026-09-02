@@ -51,6 +51,10 @@ func BenchmarkDispatchLongStatement_None(b *testing.B) {
 	RunBenchmarkNone(b, dispatchLongStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
 }
 
+func BenchmarkDispatchLongStatement_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, dispatchLongStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
+}
+
 func BenchmarkDispatchLongStatement_Full(b *testing.B) {
 	RunBenchmarkFull(b, dispatchLongStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
 }
@@ -59,12 +63,20 @@ func BenchmarkDispatchShorthandStatement_None(b *testing.B) {
 	RunBenchmarkNone(b, dispatchShorthandStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
 }
 
+func BenchmarkDispatchShorthandStatement_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, dispatchShorthandStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
+}
+
 func BenchmarkDispatchShorthandStatement_Full(b *testing.B) {
 	RunBenchmarkFull(b, dispatchShorthandStatementQuery, vm.WithParam("d", &benchmarkDispatcher{}))
 }
 
 func BenchmarkCompilerCompileDispatchGroupedTarget_None(b *testing.B) {
 	benchmarkCompileQuery(b, dispatchGroupedTargetQuery, compiler.OptimizationNone)
+}
+
+func BenchmarkCompilerCompileDispatchGroupedTarget_Basic(b *testing.B) {
+	benchmarkCompileQuery(b, dispatchGroupedTargetQuery, compiler.OptimizationBasic)
 }
 
 func BenchmarkCompilerCompileDispatchGroupedTarget_Full(b *testing.B) {

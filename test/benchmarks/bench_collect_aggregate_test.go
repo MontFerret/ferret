@@ -64,12 +64,20 @@ func BenchmarkGlobalCollectAggregate_None(b *testing.B) {
 	RunBenchmarkNone(b, globalCollectAggregateQuery)
 }
 
+func BenchmarkGlobalCollectAggregate_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, globalCollectAggregateQuery)
+}
+
 func BenchmarkGlobalCollectAggregate_Full(b *testing.B) {
 	RunBenchmarkFull(b, globalCollectAggregateQuery)
 }
 
 func BenchmarkGlobalCollectAggregateLarge_None(b *testing.B) {
 	RunBenchmarkNone(b, globalCollectAggregateLargeQuery)
+}
+
+func BenchmarkGlobalCollectAggregateLarge_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, globalCollectAggregateLargeQuery)
 }
 
 func BenchmarkGlobalCollectAggregateLarge_Full(b *testing.B) {
@@ -80,12 +88,20 @@ func BenchmarkGlobalCollectAggregateLargeInto_None(b *testing.B) {
 	RunBenchmarkNone(b, globalCollectAggregateLargeIntoQuery)
 }
 
+func BenchmarkGlobalCollectAggregateLargeInto_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, globalCollectAggregateLargeIntoQuery)
+}
+
 func BenchmarkGlobalCollectAggregateLargeInto_Full(b *testing.B) {
 	RunBenchmarkFull(b, globalCollectAggregateLargeIntoQuery)
 }
 
 func BenchmarkGroupedCollectAggregateLarge_None(b *testing.B) {
 	RunBenchmarkNone(b, groupedCollectAggregateLargeQuery)
+}
+
+func BenchmarkGroupedCollectAggregateLarge_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, groupedCollectAggregateLargeQuery)
 }
 
 func BenchmarkGroupedCollectAggregateLarge_Full(b *testing.B) {

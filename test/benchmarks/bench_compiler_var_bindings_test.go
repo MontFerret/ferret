@@ -31,6 +31,10 @@ func BenchmarkCompilerCompileVarBindings_None(b *testing.B) {
 	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.OptimizationNone)
 }
 
+func BenchmarkCompilerCompileVarBindings_Basic(b *testing.B) {
+	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.OptimizationBasic)
+}
+
 func BenchmarkCompilerCompileVarBindings_Full(b *testing.B) {
 	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.OptimizationFull)
 }

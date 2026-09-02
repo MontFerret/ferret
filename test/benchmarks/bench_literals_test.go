@@ -22,6 +22,10 @@ func BenchmarkArrayLiterals_None(b *testing.B) {
 	RunBenchmarkNone(b, arrayLiteralsQuery)
 }
 
+func BenchmarkArrayLiterals_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, arrayLiteralsQuery)
+}
+
 func BenchmarkArrayLiterals_Full(b *testing.B) {
 	RunBenchmarkFull(b, arrayLiteralsQuery)
 }
@@ -30,12 +34,27 @@ func BenchmarkArraySpread_None(b *testing.B) {
 	RunBenchmarkNone(b, arraySpreadQuery)
 }
 
+func BenchmarkArraySpread_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, arraySpreadQuery)
+}
+
 func BenchmarkArraySpread_Full(b *testing.B) {
 	RunBenchmarkFull(b, arraySpreadQuery)
 }
 
 func BenchmarkArraySpreadHostList_None(b *testing.B) {
 	RunBenchmarkNone(b, arrayHostSpreadQuery, benchmarkSpreadSource(struct{ runtime.List }{
+		List: runtime.NewArrayWith(
+			runtime.NewString("foo"),
+			runtime.NewString("bar"),
+			runtime.NewString("qaz"),
+			runtime.NewString("abc"),
+		),
+	}))
+}
+
+func BenchmarkArraySpreadHostList_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, arrayHostSpreadQuery, benchmarkSpreadSource(struct{ runtime.List }{
 		List: runtime.NewArrayWith(
 			runtime.NewString("foo"),
 			runtime.NewString("bar"),
@@ -70,6 +89,20 @@ func BenchmarkArraySpreadHostSnapshot_None(b *testing.B) {
 	}))
 }
 
+func BenchmarkArraySpreadHostSnapshot_Basic(b *testing.B) {
+	values := runtime.NewArrayWith(
+		runtime.NewString("foo"),
+		runtime.NewString("bar"),
+		runtime.NewString("qaz"),
+		runtime.NewString("abc"),
+	)
+
+	RunBenchmarkBasic(b, arrayHostSpreadQuery, benchmarkSpreadSource(&benchmarkSnapshotList{
+		List:     values,
+		snapshot: values,
+	}))
+}
+
 func BenchmarkArraySpreadHostSnapshot_Full(b *testing.B) {
 	values := runtime.NewArrayWith(
 		runtime.NewString("foo"),
@@ -88,6 +121,10 @@ func BenchmarkObjectLiterals_None(b *testing.B) {
 	RunBenchmarkNone(b, objectLiteralsQuery)
 }
 
+func BenchmarkObjectLiterals_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, objectLiteralsQuery)
+}
+
 func BenchmarkObjectLiterals_Full(b *testing.B) {
 	RunBenchmarkFull(b, objectLiteralsQuery)
 }
@@ -96,12 +133,22 @@ func BenchmarkObjectSpread_None(b *testing.B) {
 	RunBenchmarkNone(b, objectSpreadQuery)
 }
 
+func BenchmarkObjectSpread_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, objectSpreadQuery)
+}
+
 func BenchmarkObjectSpread_Full(b *testing.B) {
 	RunBenchmarkFull(b, objectSpreadQuery)
 }
 
 func BenchmarkObjectSpreadHostMap_None(b *testing.B) {
 	RunBenchmarkNone(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkMap{
+		Map: benchmarkSpreadObject(),
+	}))
+}
+
+func BenchmarkObjectSpreadHostMap_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkMap{
 		Map: benchmarkSpreadObject(),
 	}))
 }
@@ -121,6 +168,15 @@ func BenchmarkObjectSpreadHostSnapshot_None(b *testing.B) {
 	}))
 }
 
+func BenchmarkObjectSpreadHostSnapshot_Basic(b *testing.B) {
+	object := benchmarkSpreadObject()
+
+	RunBenchmarkBasic(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkSnapshotObject{
+		Map:      object,
+		snapshot: object,
+	}))
+}
+
 func BenchmarkObjectSpreadHostSnapshot_Full(b *testing.B) {
 	object := benchmarkSpreadObject()
 
@@ -132,6 +188,10 @@ func BenchmarkObjectSpreadHostSnapshot_Full(b *testing.B) {
 
 func BenchmarkObjectComputedLiterals_None(b *testing.B) {
 	RunBenchmarkNone(b, objectComputedLiteralsQuery)
+}
+
+func BenchmarkObjectComputedLiterals_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, objectComputedLiteralsQuery)
 }
 
 func BenchmarkObjectComputedLiterals_Full(b *testing.B) {

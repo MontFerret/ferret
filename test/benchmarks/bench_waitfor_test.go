@@ -55,12 +55,20 @@ func BenchmarkWaitForValuePresent_None(b *testing.B) {
 	RunBenchmarkNone(b, waitForValuePresentQuery, WithParam("candidate", []any{1}))
 }
 
+func BenchmarkWaitForValuePresent_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, waitForValuePresentQuery, WithParam("candidate", []any{1}))
+}
+
 func BenchmarkWaitForValuePresent_Full(b *testing.B) {
 	RunBenchmarkFull(b, waitForValuePresentQuery, WithParam("candidate", []any{1}))
 }
 
 func BenchmarkWaitForEventPresent_None(b *testing.B) {
 	RunBenchmarkNone(b, waitForEventPresentQuery, vm.WithParam("source", newBenchmarkWaitForObservable()))
+}
+
+func BenchmarkWaitForEventPresent_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, waitForEventPresentQuery, vm.WithParam("source", newBenchmarkWaitForObservable()))
 }
 
 func BenchmarkWaitForEventPresent_Full(b *testing.B) {
@@ -71,12 +79,20 @@ func BenchmarkCompilerCompileWaitForEvent_None(b *testing.B) {
 	benchmarkCompileQuery(b, waitForEventCompilerQuery, compiler.OptimizationNone)
 }
 
+func BenchmarkCompilerCompileWaitForEvent_Basic(b *testing.B) {
+	benchmarkCompileQuery(b, waitForEventCompilerQuery, compiler.OptimizationBasic)
+}
+
 func BenchmarkCompilerCompileWaitForEvent_Full(b *testing.B) {
 	benchmarkCompileQuery(b, waitForEventCompilerQuery, compiler.OptimizationFull)
 }
 
 func BenchmarkWaitForValueAnyPresent_None(b *testing.B) {
 	RunBenchmarkNone(b, waitForValueAnyPresentQuery, WithParam("first", []any{1}), WithParam("second", []any{2}))
+}
+
+func BenchmarkWaitForValueAnyPresent_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, waitForValueAnyPresentQuery, WithParam("first", []any{1}), WithParam("second", []any{2}))
 }
 
 func BenchmarkWaitForValueAnyPresent_Full(b *testing.B) {
@@ -87,12 +103,23 @@ func BenchmarkWaitForValueAllPresent_None(b *testing.B) {
 	RunBenchmarkNone(b, waitForValueAllPresentQuery, WithParam("first", []any{1}), WithParam("second", []any{2}))
 }
 
+func BenchmarkWaitForValueAllPresent_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, waitForValueAllPresentQuery, WithParam("first", []any{1}), WithParam("second", []any{2}))
+}
+
 func BenchmarkWaitForValueAllPresent_Full(b *testing.B) {
 	RunBenchmarkFull(b, waitForValueAllPresentQuery, WithParam("first", []any{1}), WithParam("second", []any{2}))
 }
 
 func BenchmarkWaitForEventAnyPresent_None(b *testing.B) {
 	RunBenchmarkNone(b, waitForEventAnyPresentQuery,
+		vm.WithParam("first", newBenchmarkWaitForObservable()),
+		vm.WithParam("second", newBenchmarkWaitForObservable()),
+	)
+}
+
+func BenchmarkWaitForEventAnyPresent_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, waitForEventAnyPresentQuery,
 		vm.WithParam("first", newBenchmarkWaitForObservable()),
 		vm.WithParam("second", newBenchmarkWaitForObservable()),
 	)
@@ -107,6 +134,13 @@ func BenchmarkWaitForEventAnyPresent_Full(b *testing.B) {
 
 func BenchmarkWaitForEventAllPresent_None(b *testing.B) {
 	RunBenchmarkNone(b, waitForEventAllPresentQuery,
+		vm.WithParam("first", newBenchmarkWaitForObservable()),
+		vm.WithParam("second", newBenchmarkWaitForObservable()),
+	)
+}
+
+func BenchmarkWaitForEventAllPresent_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, waitForEventAllPresentQuery,
 		vm.WithParam("first", newBenchmarkWaitForObservable()),
 		vm.WithParam("second", newBenchmarkWaitForObservable()),
 	)

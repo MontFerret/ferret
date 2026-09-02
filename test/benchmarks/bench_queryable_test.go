@@ -22,12 +22,20 @@ func BenchmarkQueryableModifiers_None(b *testing.B) {
 	RunBenchmarkNone(b, queryableModifiersQuery, vm.WithParam("doc", newBenchmarkQueryable()))
 }
 
+func BenchmarkQueryableModifiers_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, queryableModifiersQuery, vm.WithParam("doc", newBenchmarkQueryable()))
+}
+
 func BenchmarkQueryableModifiers_Full(b *testing.B) {
 	RunBenchmarkFull(b, queryableModifiersQuery, vm.WithParam("doc", newBenchmarkQueryable()))
 }
 
 func BenchmarkQueryableConfigured_None(b *testing.B) {
 	RunBenchmarkNone(b, queryableConfiguredQuery, vm.WithParam("doc", newBenchmarkQueryable()))
+}
+
+func BenchmarkQueryableConfigured_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, queryableConfiguredQuery, vm.WithParam("doc", newBenchmarkQueryable()))
 }
 
 func BenchmarkQueryableConfigured_Full(b *testing.B) {

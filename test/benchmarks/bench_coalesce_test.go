@@ -23,6 +23,15 @@ func BenchmarkCoalescePresent_None(b *testing.B) {
 	)
 }
 
+func BenchmarkCoalescePresent_Basic(b *testing.B) {
+	RunBenchmarkBasic(
+		b,
+		coalesceBenchmarkQuery,
+		WithParam("value", runtime.ZeroInt),
+		WithParam("fallback", runtime.NewInt(42)),
+	)
+}
+
 func BenchmarkCoalescePresent_Full(b *testing.B) {
 	RunBenchmarkFull(
 		b,
@@ -34,6 +43,15 @@ func BenchmarkCoalescePresent_Full(b *testing.B) {
 
 func BenchmarkCoalesceFallback_None(b *testing.B) {
 	RunBenchmarkNone(
+		b,
+		coalesceBenchmarkQuery,
+		WithParam("value", runtime.None),
+		WithParam("fallback", runtime.NewInt(42)),
+	)
+}
+
+func BenchmarkCoalesceFallback_Basic(b *testing.B) {
+	RunBenchmarkBasic(
 		b,
 		coalesceBenchmarkQuery,
 		WithParam("value", runtime.None),
@@ -54,10 +72,10 @@ func BenchmarkCompilerCompileCoalesce_None(b *testing.B) {
 	benchmarkCompileQuery(b, coalesceCompilerBenchmarkQuery, compiler.OptimizationNone)
 }
 
-func BenchmarkCompilerCompileCoalesce_Full(b *testing.B) {
-	benchmarkCompileQuery(b, coalesceCompilerBenchmarkQuery, compiler.OptimizationFull)
-}
-
 func BenchmarkCompilerCompileCoalesce_Basic(b *testing.B) {
 	benchmarkCompileQuery(b, coalesceCompilerBenchmarkQuery, compiler.OptimizationBasic)
+}
+
+func BenchmarkCompilerCompileCoalesce_Full(b *testing.B) {
+	benchmarkCompileQuery(b, coalesceCompilerBenchmarkQuery, compiler.OptimizationFull)
 }

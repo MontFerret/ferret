@@ -2,11 +2,11 @@ package benchmarks_test
 
 import "testing"
 
-func BenchmarkRegexp_Loop_None(b *testing.B) {
-	RunBenchmarkNone(b, `
+// Preserve the legacy query bytes without mixed space/tab source indentation.
+const regexpLoopQuery = `
 LET users = [
   {
-  	name: "Alice",
+` + "  \t" + `name: "Alice",
   },
 {
 	name: "Bob",
@@ -23,31 +23,17 @@ LET users = [
 ]
 RETURN FOR i IN users
 	FILTER i.name =~ "^[A-D].*"
-  	RETURN i.name
-`)
+` + "  \t" + `RETURN i.name
+`
+
+func BenchmarkRegexp_Loop_None(b *testing.B) {
+	RunBenchmarkNone(b, regexpLoopQuery)
+}
+
+func BenchmarkRegexp_Loop_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, regexpLoopQuery)
 }
 
 func BenchmarkRegexp_Loop_Full(b *testing.B) {
-	RunBenchmarkFull(b, `
-LET users = [
-  {
-  	name: "Alice",
-  },
-{
-	name: "Bob",
-},
-{
-	name: "Charlie",
-},
-{
-	name: "Dave",
-},
-{
-	name: "Eve",
-}
-]
-RETURN FOR i IN users
-	FILTER i.name =~ "^[A-D].*"
-  	RETURN i.name
-`)
+	RunBenchmarkFull(b, regexpLoopQuery)
 }

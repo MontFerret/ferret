@@ -14,12 +14,20 @@ func BenchmarkBareArrayQuestion_None(b *testing.B) {
 	RunBenchmarkNone(b, bareArrayQuestionQuery, WithParam("arr", bareArrayQuestionValues))
 }
 
+func BenchmarkBareArrayQuestion_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, bareArrayQuestionQuery, WithParam("arr", bareArrayQuestionValues))
+}
+
 func BenchmarkBareArrayQuestion_Full(b *testing.B) {
 	RunBenchmarkFull(b, bareArrayQuestionQuery, WithParam("arr", bareArrayQuestionValues))
 }
 
 func BenchmarkBareLocalArrayQuestion_None(b *testing.B) {
 	RunBenchmarkNone(b, bareLocalArrayQuestionQuery)
+}
+
+func BenchmarkBareLocalArrayQuestion_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, bareLocalArrayQuestionQuery)
 }
 
 func BenchmarkBareLocalArrayQuestion_Full(b *testing.B) {

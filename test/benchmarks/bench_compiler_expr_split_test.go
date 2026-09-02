@@ -36,6 +36,10 @@ func BenchmarkCompilerCompileMemberPipeline_None(b *testing.B) {
 	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.OptimizationNone)
 }
 
+func BenchmarkCompilerCompileMemberPipeline_Basic(b *testing.B) {
+	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.OptimizationBasic)
+}
+
 func BenchmarkCompilerCompileMemberPipeline_Full(b *testing.B) {
 	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.OptimizationFull)
 }
@@ -44,12 +48,20 @@ func BenchmarkCompilerCompileMatchQueryMix_None(b *testing.B) {
 	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.OptimizationNone)
 }
 
+func BenchmarkCompilerCompileMatchQueryMix_Basic(b *testing.B) {
+	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.OptimizationBasic)
+}
+
 func BenchmarkCompilerCompileMatchQueryMix_Full(b *testing.B) {
 	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.OptimizationFull)
 }
 
 func BenchmarkCompilerCompileQueryShorthand_None(b *testing.B) {
 	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.OptimizationNone)
+}
+
+func BenchmarkCompilerCompileQueryShorthand_Basic(b *testing.B) {
+	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.OptimizationBasic)
 }
 
 func BenchmarkCompilerCompileQueryShorthand_Full(b *testing.B) {

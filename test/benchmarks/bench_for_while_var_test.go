@@ -14,6 +14,10 @@ func BenchmarkForWhileVar_None(b *testing.B) {
 	RunBenchmarkNone(b, forWhileVarQuery)
 }
 
+func BenchmarkForWhileVar_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, forWhileVarQuery)
+}
+
 func BenchmarkForWhileVar_Full(b *testing.B) {
 	RunBenchmarkFull(b, forWhileVarQuery)
 }

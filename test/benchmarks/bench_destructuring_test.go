@@ -82,12 +82,20 @@ func BenchmarkLetDestructuring_None(b *testing.B) {
 	RunBenchmarkNone(b, letDestructuringQuery)
 }
 
+func BenchmarkLetDestructuring_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, letDestructuringQuery)
+}
+
 func BenchmarkLetDestructuring_Full(b *testing.B) {
 	RunBenchmarkFull(b, letDestructuringQuery)
 }
 
 func BenchmarkLetManualExtraction_None(b *testing.B) {
 	RunBenchmarkNone(b, letManualExtractionQuery)
+}
+
+func BenchmarkLetManualExtraction_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, letManualExtractionQuery)
 }
 
 func BenchmarkLetManualExtraction_Full(b *testing.B) {
@@ -98,12 +106,20 @@ func BenchmarkVarDestructuring_None(b *testing.B) {
 	RunBenchmarkNone(b, varDestructuringQuery)
 }
 
+func BenchmarkVarDestructuring_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, varDestructuringQuery)
+}
+
 func BenchmarkVarDestructuring_Full(b *testing.B) {
 	RunBenchmarkFull(b, varDestructuringQuery)
 }
 
 func BenchmarkVarManualExtraction_None(b *testing.B) {
 	RunBenchmarkNone(b, varManualExtractionQuery)
+}
+
+func BenchmarkVarManualExtraction_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, varManualExtractionQuery)
 }
 
 func BenchmarkVarManualExtraction_Full(b *testing.B) {
@@ -114,12 +130,20 @@ func BenchmarkForDestructuring_None(b *testing.B) {
 	RunBenchmarkNone(b, forDestructuringQuery)
 }
 
+func BenchmarkForDestructuring_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, forDestructuringQuery)
+}
+
 func BenchmarkForDestructuring_Full(b *testing.B) {
 	RunBenchmarkFull(b, forDestructuringQuery)
 }
 
 func BenchmarkForManualExtraction_None(b *testing.B) {
 	RunBenchmarkNone(b, forManualExtractionQuery)
+}
+
+func BenchmarkForManualExtraction_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, forManualExtractionQuery)
 }
 
 func BenchmarkForManualExtraction_Full(b *testing.B) {
@@ -130,12 +154,20 @@ func BenchmarkLetIgnoredSubtree_None(b *testing.B) {
 	RunBenchmarkNone(b, letIgnoredSubtreeQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
 }
 
+func BenchmarkLetIgnoredSubtree_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, letIgnoredSubtreeQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
+}
+
 func BenchmarkLetIgnoredSubtree_Full(b *testing.B) {
 	RunBenchmarkFull(b, letIgnoredSubtreeQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
 }
 
 func BenchmarkLetDirectIgnore_None(b *testing.B) {
 	RunBenchmarkNone(b, letDirectIgnoreQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
+}
+
+func BenchmarkLetDirectIgnore_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, letDirectIgnoreQuery, WithParam("value", ignoredSubtreeBenchmarkValue))
 }
 
 func BenchmarkLetDirectIgnore_Full(b *testing.B) {

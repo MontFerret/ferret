@@ -71,12 +71,20 @@ func BenchmarkMatch_Scrutinee_None(b *testing.B) {
 	RunBenchmarkNone(b, matchScrutineeQuery, WithParam("x", 1))
 }
 
+func BenchmarkMatch_Scrutinee_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, matchScrutineeQuery, WithParam("x", 1))
+}
+
 func BenchmarkMatch_Scrutinee_Full(b *testing.B) {
 	RunBenchmarkFull(b, matchScrutineeQuery, WithParam("x", 1))
 }
 
 func BenchmarkMatch_Guard_None(b *testing.B) {
 	RunBenchmarkNone(b, matchGuardQuery, WithParam("x", 7))
+}
+
+func BenchmarkMatch_Guard_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, matchGuardQuery, WithParam("x", 7))
 }
 
 func BenchmarkMatch_Guard_Full(b *testing.B) {
@@ -87,12 +95,20 @@ func BenchmarkMatch_ObjectPattern_None(b *testing.B) {
 	RunBenchmarkNone(b, matchObjectPatternQuery, WithParam("obj", map[string]any{"a": 1, "b": 2}))
 }
 
+func BenchmarkMatch_ObjectPattern_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, matchObjectPatternQuery, WithParam("obj", map[string]any{"a": 1, "b": 2}))
+}
+
 func BenchmarkMatch_ObjectPattern_Full(b *testing.B) {
 	RunBenchmarkFull(b, matchObjectPatternQuery, WithParam("obj", map[string]any{"a": 1, "b": 2}))
 }
 
 func BenchmarkMatch_LoopMix_None(b *testing.B) {
 	RunBenchmarkNone(b, matchLoopMixQuery, WithParam("vals", matchLoopVals))
+}
+
+func BenchmarkMatch_LoopMix_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, matchLoopMixQuery, WithParam("vals", matchLoopVals))
 }
 
 func BenchmarkMatch_LoopMix_Full(b *testing.B) {
@@ -103,12 +119,20 @@ func BenchmarkMatch_ConstScrutinee_None(b *testing.B) {
 	RunBenchmarkNone(b, matchConstScrutineeQuery)
 }
 
+func BenchmarkMatch_ConstScrutinee_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, matchConstScrutineeQuery)
+}
+
 func BenchmarkMatch_ConstScrutinee_Full(b *testing.B) {
 	RunBenchmarkFull(b, matchConstScrutineeQuery)
 }
 
 func BenchmarkMatch_MergePureLiteralResults_None(b *testing.B) {
 	RunBenchmarkNone(b, matchMergePureLiteralResults, WithParam("x", 1))
+}
+
+func BenchmarkMatch_MergePureLiteralResults_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, matchMergePureLiteralResults, WithParam("x", 1))
 }
 
 func BenchmarkMatch_MergePureLiteralResults_Full(b *testing.B) {

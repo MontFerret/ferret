@@ -14,6 +14,10 @@ func BenchmarkConstPropagation_None(b *testing.B) {
 	RunBenchmarkNone(b, constPropExpr)
 }
 
+func BenchmarkConstPropagation_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, constPropExpr)
+}
+
 func BenchmarkConstPropagation_Full(b *testing.B) {
 	RunBenchmarkFull(b, constPropExpr)
 }

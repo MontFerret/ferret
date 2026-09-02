@@ -34,6 +34,14 @@ func BenchmarkSuppressedHostCall_None(b *testing.B) {
 	}))
 }
 
+func BenchmarkSuppressedHostCall_Basic(b *testing.B) {
+	boom := errors.New("boom")
+
+	RunBenchmarkBasic(b, suppressedHostCallQuery, vm.WithFunction("FAIL", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+		return runtime.None, boom
+	}))
+}
+
 func BenchmarkSuppressedHostCall_Full(b *testing.B) {
 	boom := errors.New("boom")
 
@@ -46,6 +54,19 @@ func BenchmarkRetriedHostCall_None(b *testing.B) {
 	callCount := 0
 
 	RunBenchmarkNone(b, retriedHostCallQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+		callCount++
+		if callCount%3 != 0 {
+			return runtime.None, errors.New("boom")
+		}
+
+		return runtime.NewInt(1), nil
+	}))
+}
+
+func BenchmarkRetriedHostCall_Basic(b *testing.B) {
+	callCount := 0
+
+	RunBenchmarkBasic(b, retriedHostCallQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		callCount++
 		if callCount%3 != 0 {
 			return runtime.None, errors.New("boom")
@@ -74,6 +95,12 @@ func BenchmarkRetriedHostCallFallback_None(b *testing.B) {
 	}))
 }
 
+func BenchmarkRetriedHostCallFallback_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, retriedHostCallQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+		return runtime.None, errors.New("boom")
+	}))
+}
+
 func BenchmarkRetriedHostCallFallback_Full(b *testing.B) {
 	RunBenchmarkFull(b, retriedHostCallQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, errors.New("boom")
@@ -84,6 +111,10 @@ func BenchmarkWaitForTimeoutReturnNone_None(b *testing.B) {
 	RunBenchmarkNone(b, waitForTimeoutReturnNoneQuery)
 }
 
+func BenchmarkWaitForTimeoutReturnNone_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, waitForTimeoutReturnNoneQuery)
+}
+
 func BenchmarkWaitForTimeoutReturnNone_Full(b *testing.B) {
 	RunBenchmarkFull(b, waitForTimeoutReturnNoneQuery)
 }
@@ -92,6 +123,19 @@ func BenchmarkGroupedForRetry_None(b *testing.B) {
 	callCount := 0
 
 	RunBenchmarkNone(b, groupedForRetryQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+		callCount++
+		if callCount%3 == 1 {
+			return runtime.None, errors.New("boom")
+		}
+
+		return runtime.NewInt(10), nil
+	}))
+}
+
+func BenchmarkGroupedForRetry_Basic(b *testing.B) {
+	callCount := 0
+
+	RunBenchmarkBasic(b, groupedForRetryQuery, vm.WithFunction("STEP", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		callCount++
 		if callCount%3 == 1 {
 			return runtime.None, errors.New("boom")
@@ -118,6 +162,19 @@ func BenchmarkWaitForEventRetry_None(b *testing.B) {
 	sourceCalls := 0
 
 	RunBenchmarkNone(b, waitForEventRetryQuery, vm.WithFunction("SOURCE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+		sourceCalls++
+		if sourceCalls%3 != 0 {
+			return runtime.None, errors.New("boom")
+		}
+
+		return mock.NewObservable([]runtime.Value{mock.NewTestEventType("match")}), nil
+	}))
+}
+
+func BenchmarkWaitForEventRetry_Basic(b *testing.B) {
+	sourceCalls := 0
+
+	RunBenchmarkBasic(b, waitForEventRetryQuery, vm.WithFunction("SOURCE", func(context.Context, ...runtime.Value) (runtime.Value, error) {
 		sourceCalls++
 		if sourceCalls%3 != 0 {
 			return runtime.None, errors.New("boom")
